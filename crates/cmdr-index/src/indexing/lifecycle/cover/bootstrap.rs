@@ -39,6 +39,10 @@ pub(crate) enum NoCoverContext {
     /// already covers everything a search would want walked, and a second writer
     /// on one database races the id counter.
     ScanInProgress,
+    /// A BACKGROUND walk found no running index to write into: the volume was
+    /// stopped (or is between a stop and a start), so the machine that asked has
+    /// nothing left to cover for. Only [`WalkFor::TheIndex`] gets this.
+    NotIndexing,
     /// Standing the index up failed. Log-only.
     Failed(String),
 }
@@ -48,6 +52,7 @@ impl std::fmt::Display for NoCoverContext {
         match self {
             Self::NotMounted => f.write_str("nothing is mounted under that id"),
             Self::ScanInProgress => f.write_str("the volume's own scan is running"),
+            Self::NotIndexing => f.write_str("the volume isn't indexing any more"),
             Self::Failed(e) => write!(f, "the index wouldn't start: {e}"),
         }
     }
@@ -68,6 +73,15 @@ impl std::fmt::Display for NoCoverContext {
 /// `WriterOnly` start below is carved out of the master gate for the same reason
 /// (`state::start_indexing_for`).
 ///
+/// ⚠️ **Only a walk somebody is waiting on ([`WalkFor::TheUser`]) may stand one
+/// up.** A background walk ([`WalkFor::TheIndex`]) belongs to a machine that
+/// exists only while its volume is indexing, so finding no running index means
+/// the volume was stopped under it, ❌ never that it needs one. The machine decides
+/// to walk and resolves the context in two steps with no lock between them, so a
+/// Stop can land in that gap: standing an index up there brought the drive the
+/// user had just stopped back as a registered index, and a start landing in the
+/// stop's drain also skipped the veto (issue #375).
+///
 /// The context carries the walk's own work, minted with the writer under one
 /// registry lock so both name the same life of the volume: a child of `caller`, so
 /// the caller still stops it, also stopped by the volume's stop, which `caller`
@@ -86,6 +100,9 @@ pub(crate) fn context_for_walk(
         // everything a search would have walked, and a second writer on one
         // database races the id counter.
         return Err(NoCoverContext::ScanInProgress);
+    }
+    if for_whom == WalkFor::TheIndex {
+        return Err(NoCoverContext::NotIndexing);
     }
 
     let volume = walkable_volume(volume_id)?;

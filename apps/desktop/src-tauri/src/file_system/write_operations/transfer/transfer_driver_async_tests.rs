@@ -27,6 +27,7 @@ use super::super::super::event_sinks::CollectorEventSink;
 use super::super::super::state::{OperationIntent, register_operation_status, unregister_operation_status};
 use super::super::super::test_support::park_holds_at;
 use super::super::super::types::{WriteOperationError, WriteOperationType};
+use super::super::staged_write::Replaces;
 use super::test_support::{CallLog, copy_config, install_state, make_state, paths, unique_op_id};
 use super::{
     ConflictDecision, ConflictDecisionInput, NameAtDest, PostLoopIntent, TransferContext, TransferOutcome,
@@ -363,7 +364,7 @@ async fn async_driver_proceed_with_rewritten_dest_reaches_closure() {
             Box::pin(async {
                 Ok(ConflictDecision::Proceed {
                     dest_path: PathBuf::from("/dest/a (1).txt"),
-                    replace_after_write: None,
+                    replaces: Replaces::Nothing,
                 })
             })
         },
@@ -457,7 +458,7 @@ async fn async_driver_no_conflict_skips_resolver_entirely() {
                 r.fetch_add(1, Ordering::SeqCst);
                 Ok(ConflictDecision::Proceed {
                     dest_path: PathBuf::new(),
-                    replace_after_write: None,
+                    replaces: Replaces::Nothing,
                 })
             })
         },
@@ -617,7 +618,7 @@ async fn async_driver_skip_counters_zero_when_nothing_skipped() {
             Box::pin(async {
                 Ok(ConflictDecision::Proceed {
                     dest_path: PathBuf::from("/never"),
-                    replace_after_write: None,
+                    replaces: Replaces::Nothing,
                 })
             })
         },

@@ -26,7 +26,8 @@
      */
     import { onMount } from 'svelte'
     import { setGlobalGoToLatestShortcut } from '$lib/tauri-commands'
-    import { getAppLogger } from '$lib/logging/logger'
+    import type { RegistrationError } from '$lib/ipc/bindings'
+    import type { MessageKey } from '$lib/intl/keys.gen'
     import { formatKeyCombo, isModifierKey, toDisplayShortcut } from '$lib/shortcuts'
     import { tooltip } from '$lib/tooltip/tooltip'
     import {
@@ -40,8 +41,6 @@
     import { tString } from '$lib/intl/messages.svelte'
     import Trans from '$lib/intl/Trans.svelte'
     import ShortcutPill from '$lib/settings/sections/ShortcutPill.svelte'
-
-    const log = getAppLogger('downloads')
 
     let binding = $state(getGlobalGoToLatestBinding())
     let editing = $state(false)
@@ -58,28 +57,41 @@
     const isModified = $derived(binding !== DEFAULT_GLOBAL_GO_TO_LATEST_BINDING)
 
     async function applyBinding(next: string): Promise<void> {
+        // Live-apply first: re-register with the backend right away. We pass the
+        // current `enabled` so toggling-off elsewhere isn't overridden.
+        const enabled = getSetting(GLOBAL_GO_TO_LATEST_ENABLED_KEY)
+        const result = await setGlobalGoToLatestShortcut(enabled, next)
+        if (result.status === 'error') {
+            // Save nothing: on a refusal the backend keeps the previous combo
+            // registered, so the saved binding has to stay that one too, or the
+            // row and the next startup would name a combo that doesn't work.
+            // The backend logs the failure; no second warn here.
+            statusText = tString(refusalMessageKey(result.error))
+            statusIsWarn = true
+            return
+        }
         // Reset-aware write: `setGlobalGoToLatestBinding` also clears `acknowledged`
         // so the new combo gets its own first-trigger warning.
         setGlobalGoToLatestBinding(next)
         binding = next
-        // Live-apply: re-register with the backend right away. We pass the
-        // current `enabled` so toggling-off elsewhere isn't overridden.
-        const enabled = getSetting(GLOBAL_GO_TO_LATEST_ENABLED_KEY)
-        const result = await setGlobalGoToLatestShortcut(enabled, next)
-        if (result.status === 'ok') {
-            statusText = tString(
-                result.data.status === 'registered'
-                    ? 'downloads.shortcutRow.registered'
-                    : 'downloads.shortcutRow.notRegistered',
-            )
-            statusIsWarn = false
-        } else if (result.error.kind === 'invalidBinding') {
-            statusText = tString('downloads.shortcutRow.invalidCombo')
-            statusIsWarn = true
-        } else {
-            statusText = tString('downloads.shortcutRow.registerFailed', { reason: result.error.message })
-            statusIsWarn = true
-            log.warn('setGlobalGoToLatestShortcut failed: {error}', { error: JSON.stringify(result.error) })
+        statusText = tString(
+            result.data.status === 'registered'
+                ? 'downloads.shortcutRow.registered'
+                : 'downloads.shortcutRow.notRegistered',
+        )
+        statusIsWarn = false
+    }
+
+    function refusalMessageKey(error: RegistrationError): MessageKey {
+        switch (error.kind) {
+            case 'invalidBinding':
+                return 'downloads.shortcutRow.invalidCombo'
+            case 'unavailable':
+                return 'downloads.shortcutRow.unavailable'
+            case 'pluginError':
+                // An internal plugin failure has nothing the user can act on, and
+                // its message is untranslated English, so say only the outcome.
+                return 'downloads.shortcutRow.notRegistered'
         }
     }
 

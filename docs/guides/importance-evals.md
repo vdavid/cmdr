@@ -82,15 +82,15 @@ The snapshot tool reads a drive index database (not the live filesystem, not `im
 scenario. It derives each folder's signals through the same code the scheduler uses, so a dump scores identically to how
 the live volume would.
 
-Your index databases live in the app data dir as `index-{volume_id}.db`. The local disk is `index-root.db`; a NAS share
-is `index-smb-….db`. Point the tool at one:
+Your index databases live in the cache dir's `drive-index/` folder as `index-{volume_id}.db`. The local disk is
+`index-root.db`; a NAS share is `index-smb-….db`. Point the tool at one:
 
 ```bash
-DATADIR="$HOME/Library/Application Support/com.veszelovszki.cmdr"
+INDEXDIR="$HOME/Library/Caches/com.veszelovszki.cmdr/drive-index"
 CORPUS=apps/desktop/src-tauri/tests/importance-corpus
 
 cargo run -p index-query --bin importance-snapshot -- \
-  "$DATADIR/index-root.db" "$HOME" local root "$CORPUS"
+  "$INDEXDIR/index-root.db" "$HOME" local root "$CORPUS"
 ```
 
 The arguments are: the index database, your home (or mount) root, `local` or `listing-only` (use `listing-only` for a

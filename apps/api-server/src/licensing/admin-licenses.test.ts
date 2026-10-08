@@ -42,8 +42,9 @@ function ledgerRow(overrides: Partial<LedgerRow> & { transaction_id: string }): 
 
 function createD1(rows: LedgerRow[]): D1Database {
   return {
-    prepare: () => ({
-      all: () => Promise.resolve({ results: rows }),
+    // The ledger, and no refunds: `webhook-runtime.test.ts` covers adjustments against a real D1.
+    prepare: (sql: string) => ({
+      all: () => Promise.resolve({ results: sql.includes('license_adjustments') ? [] : rows }),
     }),
   } as unknown as D1Database
 }
@@ -120,6 +121,7 @@ describe('GET /admin/licenses', () => {
         expiresAt: null,
         revokedAt: null,
         state: 'active',
+        adjustments: [],
       },
     ])
   })

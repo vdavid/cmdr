@@ -26,6 +26,8 @@ export interface PaneQuietProbe {
   getListingId: () => string | null
   /** Whether the pane's listing is mid-load. */
   isLoading: () => boolean
+  /** Whether the pane's folder stopped answering mid-read (`listing-stalled`); its load stays in flight. */
+  isStalled: () => boolean
   /** Milliseconds since an arbitrary epoch. Injected so tests drive their own clock. */
   now: () => number
   /** Resolves after `ms`. Injected for the same reason. */
@@ -71,7 +73,15 @@ export interface PanePlace {
  * `apps/desktop/src-tauri/src/mcp/executor/mod.rs`, and matched on the discriminant
  * rather than on any message text.
  */
-export type NavLandingOutcome = { outcome: 'navigated' | 'fell-back' | 'did-not-settle' } & PanePlace
+export type NavLandingOutcome = { outcome: 'navigated' | 'fell-back' | 'did-not-settle' | 'stalled' } & PanePlace
+
+/**
+ * How a wait for the pane ended: at rest, on a folder that stopped answering, or still
+ * restless when the budget ran out. A stalled listing stays in flight and retries until
+ * the server answers, so it never goes quiet: it's reported the moment the pane shows
+ * it, ❌ never waited out.
+ */
+export type PaneRest = 'quiet' | 'stalled' | 'restless'
 
 /**
  * What `mcp-nav-to-path` and `mcp-volume-select` put on the wire. The plain `{ ok, error }`
@@ -85,27 +95,66 @@ export type NavReplyBody = { ok: false; error: string } | ({ ok: boolean } & Nav
 /**
  * Wait for the listing a volume switch kicks off to start AND come to rest.
  *
- * Returns `true` once the pane has held a listing other than `listingIdBefore` with no
- * load in flight for `quietMs`, `false` when the budget runs out first. The quiet window
- * re-arms whenever a load starts again, so a failing listing followed by a fallback's
- * listing resolves against the FALLBACK's resting place, not the doomed one's.
+ * Returns `'quiet'` once the pane has held a listing other than `listingIdBefore` with no
+ * load in flight for `quietMs`, `'stalled'` as soon as that listing stops answering, and
+ * `'restless'` when the budget runs out first. The quiet window re-arms whenever a load
+ * starts again, so a failing listing followed by a fallback's listing resolves against
+ * the FALLBACK's resting place, not the doomed one's.
  */
-export async function waitForPaneToGoQuiet(probe: PaneQuietProbe, options: QuietWaitOptions): Promise<boolean> {
+export async function waitForPaneToGoQuiet(probe: PaneQuietProbe, options: QuietWaitOptions): Promise<PaneRest> {
   const deadline = probe.now() + options.budgetMs
   let quietSince: number | null = null
 
   for (;;) {
     const hasTheListingItNeeds = !options.requireNewListing || probe.getListingId() !== options.listingIdBefore
+    if (hasTheListingItNeeds && probe.isStalled()) return 'stalled'
     if (hasTheListingItNeeds && !probe.isLoading()) {
       if (quietSince === null) quietSince = probe.now()
-      else if (probe.now() - quietSince >= options.quietMs) return true
+      else if (probe.now() - quietSince >= options.quietMs) return 'quiet'
     } else {
       quietSince = null
     }
 
-    if (probe.now() >= deadline) return false
+    if (probe.now() >= deadline) return 'restless'
     await probe.sleep(options.pollMs)
   }
+}
+
+/**
+ * Wait for an in-place navigation's listing (`settled`) to land, or for its folder to
+ * stop answering, whichever comes first. A stall only counts once the pane holds a
+ * listing other than `listingIdBefore`, so the folder it's leaving can't answer for the
+ * one it's going to. Rejects when `settled` does, as awaiting it directly would.
+ */
+export async function waitForListingOrStall(
+  settled: Promise<unknown>,
+  probe: Pick<PaneQuietProbe, 'getListingId' | 'isStalled' | 'sleep'>,
+  options: { listingIdBefore: string | null; pollMs: number },
+): Promise<'quiet' | 'stalled'> {
+  // A property, not a `let`: the callbacks below flip it, which flow analysis can't see
+  // from the loop, so a bare boolean reads to it as forever `false`.
+  const watch = { landed: false }
+  const listing = settled.then(
+    () => {
+      watch.landed = true
+      return 'quiet' as const
+    },
+    (e: unknown) => {
+      watch.landed = true
+      throw e
+    },
+  )
+  // The race below reports a failure; this only keeps one arriving AFTER a stall
+  // (the user pressing Esc on the stalled screen) from going unhandled.
+  listing.catch(() => undefined)
+  const stall = (async () => {
+    while (!watch.landed) {
+      if (probe.getListingId() !== options.listingIdBefore && probe.isStalled()) return 'stalled' as const
+      await probe.sleep(options.pollMs)
+    }
+    return 'quiet' as const
+  })()
+  return Promise.race([listing, stall])
 }
 
 /** Same place? Volume ids must match exactly; a trailing slash on either path doesn't count. */
@@ -119,12 +168,14 @@ function withoutTrailingSlash(path: string): string {
 
 /**
  * Decide what to tell the agent: the pane reached the target, came to rest somewhere
- * else, or never came to rest at all. `quiet: false` outranks a matching location
- * because an unsettled pane reports its destination optimistically.
+ * else, sits on a folder that stopped answering, or never came to rest at all. A rest
+ * other than `'quiet'` outranks a matching location because an unsettled pane reports
+ * its destination optimistically.
  */
-export function classifyLanding(args: { target: PanePlace; landed: PanePlace; quiet: boolean }): NavLandingOutcome {
-  const { target, landed, quiet } = args
-  if (!quiet) return { outcome: 'did-not-settle', ...landed }
+export function classifyLanding(args: { target: PanePlace; landed: PanePlace; rest: PaneRest }): NavLandingOutcome {
+  const { target, landed, rest } = args
+  if (rest === 'stalled') return { outcome: 'stalled', ...landed }
+  if (rest === 'restless') return { outcome: 'did-not-settle', ...landed }
   return { outcome: isSamePlace(landed, target) ? 'navigated' : 'fell-back', ...landed }
 }
 
@@ -149,9 +200,10 @@ export function expectsNewListing(args: { before: PanePlace; landed: PanePlace; 
 export function classifyVolumeLanding(args: {
   targetVolumeId: string
   landed: PanePlace
-  quiet: boolean
+  rest: PaneRest
 }): NavLandingOutcome {
-  const { targetVolumeId, landed, quiet } = args
-  if (!quiet) return { outcome: 'did-not-settle', ...landed }
+  const { targetVolumeId, landed, rest } = args
+  if (rest === 'stalled') return { outcome: 'stalled', ...landed }
+  if (rest === 'restless') return { outcome: 'did-not-settle', ...landed }
   return { outcome: landed.volumeId === targetVolumeId ? 'navigated' : 'fell-back', ...landed }
 }

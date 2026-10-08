@@ -17,7 +17,7 @@
  */
 
 import type { UnlistenFn } from '@tauri-apps/api/event'
-import { SvelteSet } from 'svelte/reactivity'
+import { SvelteMap, SvelteSet } from 'svelte/reactivity'
 import { getAppLogger } from '$lib/logging/logger'
 import type { MessageKey } from '$lib/intl/keys.gen'
 import {
@@ -26,6 +26,7 @@ import {
   onSuggestionsChanged,
   pageSuggestedOps,
   rejectSuggestedGroup,
+  type ApprovalResultView,
   type SuggestedOpView,
   type SuggestedSweepView,
 } from '$lib/tauri-commands'
@@ -49,6 +50,9 @@ interface OpWindow {
 
 /** Why the last Approve or Reject didn't happen, as the notice the dialog shows. */
 export type DecisionNotice = Extract<MessageKey, 'suggestedOps.decisionNotRecorded' | 'suggestedOps.approvalUnsure'>
+
+/** Why an approval didn't start. The group is pending again, and the dialog shows this under it. */
+export type GroupRefusal = Extract<ApprovalResultView, { kind: 'refused' | 'nothingToRun' | 'couldNotStart' }>
 
 interface SuggestedOpsState {
   open: boolean
@@ -76,6 +80,9 @@ interface SuggestedOpsState {
   /** Why the last decision didn't happen, or `null`. Set AFTER the re-read, so it speaks about
    *  the list the user is now looking at, and cleared when the next decision starts. */
   decisionNotice: DecisionNotice | null
+  /** Groups whose last approval refused to start, keyed by group id. Each one is pending again
+   *  and keeps its reason under it until the user answers it again or closes the dialog. */
+  refusals: SvelteMap<number, GroupRefusal>
 }
 
 export const suggestedOpsState = $state<SuggestedOpsState>({
@@ -91,6 +98,7 @@ export const suggestedOpsState = $state<SuggestedOpsState>({
   changedUnderReview: false,
   busyGroupId: null,
   decisionNotice: null,
+  refusals: new SvelteMap<number, GroupRefusal>(),
 })
 
 /** Every group still waiting, flattened out of its sweep. */
@@ -120,6 +128,7 @@ export function closeSuggestedOps(): void {
   suggestedOpsState.open = false
   suggestedOpsState.decisionNotice = null
   collapseGroup()
+  suggestedOpsState.refusals.clear()
   unlistenChanges?.()
   unlistenChanges = null
 }
@@ -274,14 +283,18 @@ export function toggleOp(opId: number): void {
  * built around: an approved op is an ordinary queued op from here on.
  *
  * A refusal is not a failure to hide. Each variant means a different thing to the user, so the
- * dialog re-reads and lets them see the state that actually exists.
+ * dialog re-reads and lets them see the state that actually exists. A refusal to START gives
+ * the group back: nothing ran, it's pending again, and its reason sits under it, so the user is
+ * where they were and knows why.
  */
 export async function approveGroup(groupId: number): Promise<void> {
   if (suggestedOpsState.busyGroupId !== null) return
   suggestedOpsState.busyGroupId = groupId
   suggestedOpsState.decisionNotice = null
+  suggestedOpsState.refusals.delete(groupId)
   try {
     const result = await approveSuggestedGroup(groupId, [...suggestedOpsState.deselected])
+    if (isRefusalToStart(result)) suggestedOpsState.refusals.set(groupId, result)
     if (result.kind === 'started') {
       if (suggestedOpsState.openGroupId === groupId) collapseGroup()
       await refreshSuggestions()
@@ -301,6 +314,21 @@ export async function approveGroup(groupId: number): Promise<void> {
   }
 }
 
+/** The answers that give a group back with a reason, as opposed to closing it or re-reading. */
+function isRefusalToStart(result: ApprovalResultView): result is GroupRefusal {
+  switch (result.kind) {
+    case 'refused':
+    case 'nothingToRun':
+    case 'couldNotStart':
+      return true
+    case 'started':
+    case 'alreadyAnswered':
+    case 'listChanged':
+    case 'unknown':
+      return false
+  }
+}
+
 /**
  * Record the user's "no" for a group, then re-read.
  *
@@ -311,6 +339,7 @@ export async function rejectGroup(groupId: number): Promise<void> {
   if (suggestedOpsState.busyGroupId !== null) return
   suggestedOpsState.busyGroupId = groupId
   suggestedOpsState.decisionNotice = null
+  suggestedOpsState.refusals.delete(groupId)
   try {
     const result = await rejectSuggestedGroup(groupId)
     if (result.kind !== 'rejected') {

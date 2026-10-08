@@ -160,6 +160,10 @@ pub struct SmbFellBackToOsMount {
     /// notice drops the button for it rather than offering a retry that is
     /// certain to land on the same answer.
     pub reason: smb_connect_failure::UpgradeFailure,
+    /// The server's friendly name (mDNS hostname, else the address), for the
+    /// sentence that names the server: `BlockedByThisMac` says what Cmdr couldn't
+    /// connect to.
+    pub display_name: String,
 }
 
 /// Typed `smb-os-mount-notice-withdrawn` Tauri event: the notice a

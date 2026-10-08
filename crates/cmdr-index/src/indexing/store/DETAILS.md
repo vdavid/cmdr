@@ -96,10 +96,18 @@ writer spawns, so it never meets the main thread or another writer. WAL readers 
 connection waits it out under `busy_timeout`. This is the one schema change that needs no bump: purely additive, and
 derivable from rows already there. A new column or a changed meaning still bumps.
 
-Guards: `tests/child_dirs_index.rs` pins each query's plan to the index and covers the open-time build;
-`../writer/repair.rs` pins the symlink query. Still O(children) and deliberately left: the direct-symlink test
-(`parent_id = ? AND is_symlink = 1`, ~60 ms on that folder, but it runs only when a symlink appears, goes, or changes)
-and the repair's children `SUM`, which must read every child.
+**Symlink children have a second one, `idx_child_symlinks`**: `ON entries (parent_id) WHERE is_symlink = 1`, added on
+open the same way. It serves the direct half of `recompute_recursive_has_symlinks` (`../writer/repair.rs`,
+`DIRECT_SYMLINK_CHILD_SQL`), which otherwise read every child of the folder: 150–300 ms on a 200,000-file folder, ~8 µs
+off the index. It holds only symlink rows (154,156 of 5.6 M, 1.9 MB), so ordinary file and directory writes don't
+maintain it; only writing a symlink row, or flipping `is_symlink`, does. The first open after an upgrade builds it once,
+~3 s cold (0.6 s of it CPU). Verified on a `.backup` clone of a real index, `sqlite3 .timer`, under heavy load,
+2026-10-01. The query runs only when a symlink appears, goes, or changes, so this is cheap insurance rather than a
+hot-path fix.
+
+Guards: `tests/child_dirs_index.rs` pins each child-dir query's plan to its index and covers the open-time build of
+both; `../writer/repair.rs` pins both symlink queries. Still O(children) and deliberately left: the repair's children
+`SUM`, which must read every child.
 
 ## What coverage needs
 
@@ -147,11 +155,13 @@ one whole cause across the volume (the retry's tool; ⚠️ a full table scan, s
 **`meta.exclusion_policy_built_for`** (`EXCLUSION_POLICY_KEY`) records WHICH scan-exclusion policy the DB's rows were
 written under: an FNV-1a fingerprint of `EXCLUDED_PREFIXES`, `JUNK_BASENAMES`, `PSEUDO_FS_BASENAMES`, and (macOS)
 `FIRMLINKED_SYSTEM_PREFIXES`, content-derived so editing any list re-arms every existing index with no version constant
-for anyone to forget to bump. Why it exists: an excluded directory gets no `entries` row at all, so it drives nothing to
-zero and its parents read as fully covered — true only while the policy is the one the rows were written under. REMOVE a
-name and the subtrees it used to skip stay row-less while their parents keep claiming coverage: permanently invisible to
-search, with nothing to trigger a re-walk. So an absent or stale stamp means **no coverage claim in that database is
-trusted** and the whole scope goes to the walk.
+for anyone to forget to bump. It's per exclusion tier: the `BootDisk` one also names the cut at filesystems mounted
+inside the boot tree (`../scanner/boot_tree_mounts.rs`), which mount-rooted indexes don't run, so that rule rebuilt only
+the boot index. Why it exists: an excluded directory gets no `entries` row at all, so it drives nothing to zero and its
+parents read as fully covered — true only while the policy is the one the rows were written under. REMOVE a name and the
+subtrees it used to skip stay row-less while their parents keep claiming coverage: permanently invisible to search, with
+nothing to trigger a re-walk. So an absent or stale stamp means **no coverage claim in that database is trusted** and
+the whole scope goes to the walk.
 
 ❌ **Stamp it ONLY while the DB provably holds no row beneath a directory today's policy excludes**, which is exactly
 two moments: right after a `TruncateData`, and on a database that has never held an entry at all (`entry_count <= 1`,
@@ -193,6 +203,23 @@ per-kind key is just "no same-kind calibration yet".
 Which bucket a run reads and writes is decided ONCE, by `events::ScanRunKind::calibration_kind()` at the scan-start
 funnel, and threaded to the completion handler (`lifecycle/scan_completion.rs` for local, `lifecycle/network_scan.rs`'s
 completion arm for SMB/MTP). Pinned by `store::tests::meta_and_calibration::calibration_for_kind_*`.
+
+### The steps after the walk, for the overall "~X left"
+
+A host's overall figure adds what the steps AFTER the walk took last time (`../lifecycle/steps_ahead.rs`), so each of
+them is remembered too, in the same per-kind buckets: `save_duration_ms_<kind>`, `compute_duration_ms_<kind>`, and
+`catch_up_duration_ms_<kind>` (bases on `StepDurations`), read by `IndexStore::read_step_durations(conn, kind)`.
+
+Unlike the walk's own keys these have ❌ no unsuffixed twin and no cross-kind fallback. The walk's fallback seeds ONE
+step's ETA, and that step shows its own progress, so a loose seed corrects itself within seconds. A step that is still
+AHEAD has no live progress to correct a borrowed timing, so it would sit in the overall figure as a guess for the whole
+run. A missing key reads `None`, which is what hides the figure.
+
+Writers: `../lifecycle/scan_completion/stamps.rs::stamp_step_durations`, gated on a walk that ran to the end like every
+stamp there. The local completion splits its post-walk flush into save and compute by the writer's own timing of the
+full aggregate (`IndexWriter::take_last_full_aggregate_ms`, `split_save_and_compute`) and times catch-up from the
+`Reconciling` transition to `Live`; a trait walk records compute only (no save step, no catch-up). Pinned by
+`store::tests::meta_and_calibration::read_step_durations_*` and `scan_completion::tests::a_*_remembers_*`.
 
 ## Decision: a subtree delete is post-order, so an interruption can never strand rows
 
@@ -416,10 +443,11 @@ pages, so `pcache1FetchStage2`'s "abort when nearly full" step (which tests `nMa
 ⚠️ **`cache_size` also sets the SORTER's budget**, which is the one non-obvious cost here. `vdbesort.c` takes
 `mxPmaSize = MAX(SQLITE_SORTER_PMASZ x page_size, cache_size)`, and `SQLITE_SORTER_PMASZ` defaults to 250 pages, so the
 floor is 1 MiB. A read connection running a big `ORDER BY` now sorts against that floor rather than against 8 MiB: more
-PMAs written to the temp file, more runs to merge. The query that reaches it is `ImportanceIndex::above_threshold(0.0)`
-over every scored folder, and that one is already cached behind `../../media_index/coverage/scores.rs`, so it runs once
-per volume rather than once per UI query. Any read budget at or below 1 MiB gives the identical sorter budget, so this
-is the price of a per-connection number small enough to bound at all, not of 128 KiB specifically.
+PMAs written to the temp file, more runs to merge. No read today sorts a big result: `ImportanceIndex::above_threshold`
+reads every scored folder unordered, and the ranked importance reads (`top_n`, `top_above_threshold`) carry a `LIMIT`.
+❌ Don't add an `ORDER BY` over a whole table on a read connection without weighing this. Any read budget at or below 1
+MiB gives the identical sorter budget, so this is the price of a per-connection number small enough to bound at all, not
+of 128 KiB specifically.
 
 **Measured** (`crates/cmdr-fs/src/sqlite_util/page_cache_probe.rs`'s `page_cache_probe`, release build, M1 Max,
 2026-08-21), 132 read connections — the profiled prod count — scanning a 16 MB database continuously:
@@ -438,7 +466,8 @@ that tracks nothing semantic, so it looks like the better lever. It isn't reacha
 `max_blocking_threads` (512 by default; `../../media_index/coverage/scores.rs` records the episode where the app
 actually reached it). Lowering that risks deadlocking blocking work against itself, and the honest alternative —
 retiring thread-local read connections on a timer, or pooling them — is a read-path restructure, not a budget change. So
-the count stays free and the per-connection number carries the bound.
+the count stays free and the per-connection number carries the bound. (A database that goes away IS retired, which is a
+different thing: `crates/cmdr-fs/DETAILS.md` § "Retiring cached read connections".)
 
 **The budget is watched, not enforced.** Nothing bounds the connection count structurally, so
 `sqlite_util::live_read_connections` counts what the `ThreadConnCache`s hold and the first crossing of

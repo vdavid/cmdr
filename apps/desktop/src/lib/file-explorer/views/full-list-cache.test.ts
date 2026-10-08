@@ -1,8 +1,8 @@
 /**
  * The Full view's prefetch buffer. These pin the refresh policy, which is the part
- * that goes wrong invisibly: a hard reset where a soft refresh belonged flickers the
- * pane empty mid-bulk-operation, and a missed reset leaves the previous directory's
- * rows on screen.
+ * that goes wrong invisibly: a hard refresh where a soft refresh belonged wastes
+ * cold-context work, and a missed refresh leaves the previous directory's rows on
+ * screen.
  *
  * `file-list-utils` is mocked: it has its own suite, and stubbing it is what lets
  * these assert on WHEN a fetch happens and with what, not on IPC shapes.
@@ -130,7 +130,7 @@ describe('syncToProps', () => {
     expect(cache.syncToProps(true)).toBe('reset')
   })
 
-  it('wipes the entries on a hard reset so stale rows cannot survive a nav', async () => {
+  it('keeps the previous rows until a hard reset fetch replaces them atomically', async () => {
     const cache = makeCache()
     cache.syncToProps(true)
     await cache.fetch({ startIndex: 0, endIndex: 10 })
@@ -139,8 +139,37 @@ describe('syncToProps', () => {
     props.listingId = 'listing-2'
     cache.syncToProps(true)
 
-    expect(cache.entries).toEqual([])
-    expect(cache.range).toEqual({ start: 0, end: 0 })
+    expect(cache.entries.map((e) => e.name)).toEqual(['a.txt', 'b.txt'])
+
+    utils.fetchVisibleRange.mockResolvedValueOnce({ entries: [entry('new.txt')], range: { start: 0, end: 1 } })
+    await cache.fetch({ startIndex: 0, endIndex: 10, force: true })
+
+    expect(cache.entries.map((e) => e.name)).toEqual(['new.txt'])
+    expect(cache.range).toEqual({ start: 0, end: 1 })
+  })
+
+  it.each([
+    ['a navigation', () => (props.listingId = 'listing-2')],
+    ['an explicit refresh or sort', () => (props.cacheGeneration = 1)],
+  ])('never hands out a retained row as the entry under the cursor after %s', async (_label, change) => {
+    const cache = makeCache()
+    cache.syncToProps(true)
+    await cache.fetch({ startIndex: 0, endIndex: 10 })
+    expect(cache.getEntryAt(1)?.name).toBe('a.txt')
+
+    change()
+    cache.syncToProps(true)
+
+    // Still painted, but not actionable: index 1 means a different file now.
+    expect(cache.entries.map((e) => e.name)).toEqual(['a.txt', 'b.txt'])
+    expect(cache.getEntryAt(1)).toBeUndefined()
+    expect(cache.indexOfEntry('/dir/a.txt')).toBeUndefined()
+    expect(cache.getEntryAt(0)?.name).toBe('..')
+
+    utils.fetchVisibleRange.mockResolvedValueOnce({ entries: [entry('new.txt')], range: { start: 0, end: 1 } })
+    await cache.fetch({ startIndex: 0, endIndex: 10, force: true })
+
+    expect(cache.getEntryAt(1)?.name).toBe('new.txt')
   })
 
   it.each([
@@ -216,6 +245,31 @@ describe('fetch', () => {
     await first
   })
 
+  it('queues a forced navigation fetch and drops the previous listing’s late rows', async () => {
+    let releaseOld: (value: unknown) => void = () => {}
+    utils.fetchVisibleRange
+      .mockReturnValueOnce(
+        new Promise((resolve) => {
+          releaseOld = resolve
+        }),
+      )
+      .mockResolvedValueOnce({ entries: [entry('new.txt')], range: { start: 0, end: 1 } })
+    const cache = makeCache()
+    cache.syncToProps(true)
+
+    const oldFetch = cache.fetch({ startIndex: 0, endIndex: 10, force: true })
+    props.listingId = 'listing-2'
+    expect(cache.syncToProps(true)).toBe('reset')
+    await cache.fetch({ startIndex: 0, endIndex: 10, force: true })
+
+    releaseOld({ entries: [entry('late-old.txt')], range: { start: 0, end: 1 } })
+    await oldFetch
+    await vi.waitFor(() => {
+      expect(cache.entries.map((e) => e.name)).toEqual(['new.txt'])
+    })
+    expect(utils.fetchVisibleRange).toHaveBeenCalledTimes(2)
+  })
+
   it('swallows a fetch rejection instead of leaving the guard stuck', async () => {
     utils.fetchVisibleRange.mockRejectedValueOnce(new Error('listing gone'))
     const cache = makeCache()
@@ -225,6 +279,22 @@ describe('fetch', () => {
     utils.fetchVisibleRange.mockResolvedValue({ entries: [entry('a.txt')], range: { start: 0, end: 1 } })
     await cache.fetch({ startIndex: 0, endIndex: 10 })
     expect(cache.entries).toHaveLength(1)
+  })
+
+  it('clears retained rows when the replacement listing cannot be fetched', async () => {
+    const cache = makeCache()
+    cache.syncToProps(true)
+    await cache.fetch({ startIndex: 0, endIndex: 10, force: true })
+    expect(cache.entries).toHaveLength(2)
+
+    props.listingId = 'listing-2'
+    expect(cache.syncToProps(true)).toBe('reset')
+    utils.fetchVisibleRange.mockRejectedValueOnce(new Error('listing gone'))
+
+    await cache.fetch({ startIndex: 0, endIndex: 10, force: true })
+
+    expect(cache.entries).toEqual([])
+    expect(cache.range).toEqual({ start: 0, end: 0 })
   })
 
   it('makes no IPC call on a static-entries pane', async () => {
@@ -258,6 +328,45 @@ describe('windowRows', () => {
     expect(cache.windowRows({ startIndex: 0, endIndex: 2 }).map((r) => [r.globalIndex, r.file.name])).toEqual([
       [0, 'a.txt'],
       [1, 'b.txt'],
+    ])
+  })
+
+  // Navigating from `/bucket` straight to `/bucket/test/sub` (a restored path, a
+  // history jump) once painted the new `..` (`/bucket/test`) over the old rows,
+  // which hold `/bucket/test` too: a duplicate key in the keyed `#each`.
+  it('paints retained rows under the parent row they were fetched with, so no path repeats', async () => {
+    props.hasParent = false
+    props.parentPath = ''
+    props.currentPath = '/bucket'
+    utils.fetchVisibleRange.mockResolvedValueOnce({
+      entries: [entry('cmdr-live', { path: '/bucket/cmdr-live' }), entry('test', { path: '/bucket/test' })],
+      range: { start: 0, end: 2 },
+    })
+    const cache = makeCache()
+    cache.syncToProps(true)
+    await cache.fetch({ startIndex: 0, endIndex: 10 })
+
+    props.listingId = 'listing-2'
+    props.hasParent = true
+    props.parentPath = '/bucket/test'
+    props.currentPath = '/bucket/test/sub'
+    cache.syncToProps(true)
+
+    const rows = cache.windowRows({ startIndex: 0, endIndex: 10 })
+    expect(rows.map((r) => [r.globalIndex, r.file.path])).toEqual([
+      [0, '/bucket/cmdr-live'],
+      [1, '/bucket/test'],
+    ])
+
+    utils.fetchVisibleRange.mockResolvedValueOnce({
+      entries: [entry('a.txt', { path: '/bucket/test/sub/a.txt' })],
+      range: { start: 0, end: 1 },
+    })
+    await cache.fetch({ startIndex: 0, endIndex: 10, force: true })
+
+    expect(cache.windowRows({ startIndex: 0, endIndex: 10 }).map((r) => [r.globalIndex, r.file.path])).toEqual([
+      [0, '/bucket/test'],
+      [1, '/bucket/test/sub/a.txt'],
     ])
   })
 

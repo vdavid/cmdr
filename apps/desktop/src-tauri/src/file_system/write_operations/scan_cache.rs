@@ -37,7 +37,8 @@ use std::time::{Duration, Instant};
 use tokio::sync::Notify;
 
 use super::types::WriteOperationError;
-use crate::file_system::volume::CopyScanResult;
+use crate::file_system::volume::{CopyScanResult, ScannedFile};
+use crate::ignore_poison::RwLockIgnorePoison;
 
 // ============================================================================
 // Scan preview state
@@ -130,9 +131,17 @@ pub(super) struct CachedScanResult {
     /// recovery path (`get_scan_preview_totals`) can hand it back when the FE
     /// missed the complete event. `None` for copy/move and remote scans.
     estimated_compressed_bytes: Option<super::types::CompressedSizeEstimate>,
+    /// Every file's size and date from a volume scan whose backend keeps them
+    /// (S3, `BatchScanResult::files`), for a cost estimate. `None` otherwise.
+    scanned_files: Option<Vec<ScannedFile>>,
 }
 
 impl CachedScanResult {
+    /// Carries a volume scan's kept files along, for `cached_cost_facts`.
+    pub(super) fn keeping_files(self, scanned_files: Option<Vec<ScannedFile>>) -> Self {
+        Self { scanned_files, ..self }
+    }
+
     /// The LOCAL `std::fs` walk's shape (`run_scan_preview`): a per-file
     /// `FileInfo` list, the directories it found, one `CopyScanResult` per
     /// top-level source, and possibly a compressed-size estimate.
@@ -165,6 +174,7 @@ impl CachedScanResult {
             dedup_bytes,
             per_path,
             estimated_compressed_bytes,
+            scanned_files: None,
         }
     }
 
@@ -188,6 +198,7 @@ impl CachedScanResult {
             dedup_bytes,
             per_path,
             estimated_compressed_bytes: None,
+            scanned_files: None,
         }
     }
 }
@@ -448,6 +459,68 @@ fn same_path_set(a: &[PathBuf], b: &[PathBuf]) -> bool {
     left == right
 }
 
+/// What a cost estimate reads off a settled preview.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct ScanCostFacts {
+    pub files: usize,
+    pub dirs: usize,
+    pub bytes: u64,
+    /// Every file's size, and its date where the scan saw one: a local walk's
+    /// sizes (undated: a local file's date bills nothing), or an S3 scan's
+    /// sizes and upload dates. `None` when the scan kept no per-file list.
+    pub per_file: Option<Vec<ScannedFile>>,
+    /// How many of the selected items are folders. The estimate needs the
+    /// shape of the selection, not only its totals: each selected item is
+    /// stat'd and its name probed at the destination, and only what lands
+    /// inside a folder the operation makes skips the no-overwrite check.
+    pub selected_folders: usize,
+    /// The size of each selected item that's a file, in selection order.
+    pub selected_file_sizes: Vec<u64>,
+}
+
+/// The cost facts of a settled preview, without consuming the entry, or `None`
+/// while it's in flight, after it failed, or once it's gone.
+pub(crate) fn cached_cost_facts(preview_id: &str) -> Option<ScanCostFacts> {
+    let previews = PREVIEWS.read_ignore_poison();
+    let PreviewPhase::Settled {
+        result: Some(cached), ..
+    } = &previews.get(preview_id)?.phase
+    else {
+        return None;
+    };
+    let per_file = match &cached.scanned_files {
+        Some(kept) => Some(kept.clone()),
+        None if !cached.files.is_empty() => Some(
+            cached
+                .files
+                .iter()
+                .map(|file| ScannedFile {
+                    size: file.size,
+                    modified_at: None,
+                })
+                .collect(),
+        ),
+        None => None,
+    };
+    Some(ScanCostFacts {
+        files: cached.file_count,
+        dirs: cached.per_path.iter().map(|(_, scan)| scan.dir_count).sum(),
+        bytes: cached.total_bytes,
+        per_file,
+        selected_folders: cached
+            .per_path
+            .iter()
+            .filter(|(_, scan)| scan.top_level_is_directory)
+            .count(),
+        selected_file_sizes: cached
+            .per_path
+            .iter()
+            .filter(|(_, scan)| !scan.top_level_is_directory)
+            .map(|(_, scan)| scan.total_bytes)
+            .collect(),
+    })
+}
+
 /// Reads the cached totals for `preview_id` without consuming the entry. Keeps
 /// the lock and the map behind the module wall for `get_scan_preview_totals`,
 /// the compress dialog's size estimate.
@@ -491,6 +564,7 @@ pub(crate) fn seed_incoherent_scan_result_for_test(
         dedup_bytes: total_bytes,
         per_path: Vec::new(),
         estimated_compressed_bytes: None,
+        scanned_files: None,
     };
     if let Ok(mut previews) = PREVIEWS.write() {
         previews.insert(

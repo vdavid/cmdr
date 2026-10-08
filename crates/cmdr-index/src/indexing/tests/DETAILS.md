@@ -60,7 +60,8 @@ during cancel) is the trickiest backend state machine to test cleanly. Four rule
    `start_indexing`, also hardcodes `/` as the root; the funnel that takes a path is private to `state`. So the split
    holds: the classifier-extraction approach plus the hand-installed `Initializing` instance cover the race-decision
    logic, `event_stream_tests.rs` drives a real `IndexManager` over a temp-dir fixture, and the rest stays under
-   integration / E2E coverage.
+   integration / E2E coverage. That fixture's root sits on the fake FSEvents journal, since nothing there waits on a
+   delivery (`watch/DETAILS.md` § Module structure).
 
 See `docs/testing.md` for the project-wide testing playbook.
 

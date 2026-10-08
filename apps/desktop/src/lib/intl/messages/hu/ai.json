@@ -227,6 +227,14 @@
   "@ai.translateError.unknownProvider.body": {
     "sourceHash": "7042a75"
   },
+  "ai.translateError.managed.title": "A Cmdrben az AI-t a szervezeted kezeli",
+  "@ai.translateError.managed.title": {
+    "sourceHash": "12f8233"
+  },
+  "ai.translateError.managed.body": "Az IT-csapatodtól megtudhatod, mely AI-szolgáltatásokat használhatod.",
+  "@ai.translateError.managed.body": {
+    "sourceHash": "cb7e811"
+  },
   "ai.cloud.serviceAria": "Felhő-AI-szolgáltatás",
   "@ai.cloud.serviceAria": {
     "sourceHash": "7dec1e0"
@@ -456,5 +464,33 @@
   "ai.secretError.genericBody": "Ellenőrizd, hogy a rendszer kulcstartója elérhető-e, majd próbáld újra. Ha továbbra is fennáll, indítsd újra az appot.",
   "@ai.secretError.genericBody": {
     "sourceHash": "2ee417d"
+  },
+  "ai.secretError.removeTitle": "Nem sikerült eltávolítani a mentett API-kulcsodat.",
+  "@ai.secretError.removeTitle": {
+    "sourceHash": "5986628"
+  },
+  "ai.secretError.removeKeychainBody": "Nyisd meg a Kulcskarika-elérés appot, keresd meg a „Cmdr” bejegyzést, és ott töröld.",
+  "@ai.secretError.removeKeychainBody": {
+    "sourceHash": "4e3abe7"
+  },
+  "ai.managed.aiOff": "A szervezeted kikapcsolta az AI-t a Cmdrben.",
+  "@ai.managed.aiOff": {
+    "sourceHash": "25b7aef"
+  },
+  "ai.managed.cloudAiOff": "A szervezeted csak a helyi AI-t engedélyezi.",
+  "@ai.managed.cloudAiOff": {
+    "sourceHash": "894c53d"
+  },
+  "ai.managed.hostNotAllowed": "A szervezeted nem engedélyezi ezt az AI-szolgáltatást. Az IT-csapatodtól megtudhatod, melyeket használhatod.",
+  "@ai.managed.hostNotAllowed": {
+    "sourceHash": "845a19f"
+  },
+  "ai.managed.localOnlyUnsupported": "A szervezeted csak a helyi AI-t engedélyezi, ez a Mac viszont nem tudja futtatni.",
+  "@ai.managed.localOnlyUnsupported": {
+    "sourceHash": "b760ca4"
+  },
+  "ai.managed.serviceNotAllowed": "a szervezeted nem engedélyezi",
+  "@ai.managed.serviceNotAllowed": {
+    "sourceHash": "026e7e3"
   }
 }

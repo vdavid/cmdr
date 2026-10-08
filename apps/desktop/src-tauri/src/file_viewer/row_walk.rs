@@ -504,10 +504,13 @@ pub struct CollectedRows {
 ///
 /// `first_line` numbers the first row that starts a line; every line-starting row after
 /// it takes the next number. `None` means the backend has no line numbers to give.
+///
+/// `cancel` is checked before each row; flipped, the walk returns `Cancelled`.
 pub fn collect_rows<S: RowSource>(
     reader: &mut RowReader<S>,
     first_line: Option<usize>,
     count: usize,
+    cancel: &std::sync::atomic::AtomicBool,
 ) -> Result<CollectedRows, ViewerError> {
     let mut rows = Vec::new();
     let mut taken = 0u64;
@@ -516,6 +519,9 @@ pub fn collect_rows<S: RowSource>(
     let mut next_line = first_line;
 
     while rows.len() < count {
+        if cancel.load(std::sync::atomic::Ordering::Relaxed) {
+            return Err(ViewerError::Cancelled);
+        }
         let Some((span, text)) = reader.next_row()? else {
             end = ChunkEnd::EndOfFile;
             break;

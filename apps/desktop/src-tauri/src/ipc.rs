@@ -48,6 +48,7 @@ use tauri_specta::{Builder, collect_events};
 use crate::agent::chat::stream::AskCmdrTurn;
 use crate::agent::suggested_ops::SuggestionsChanged;
 use crate::agent::wake::{AgentWakeStaged, AgentWakeStatus};
+use crate::clipboard::ClipboardPasteSettled;
 use crate::commands::search::SearchIndexReadyEvent;
 use crate::events::index_mapping::{
     AggregationProgressEvent, IndexAggregationCompleteEvent, IndexCoverageBranchEndedEvent,
@@ -59,7 +60,7 @@ use crate::events::index_mapping::{
 use crate::file_system::git::wiring::GitStateChangedPayload;
 use crate::file_system::listing::streaming::{
     ListingCancelledEvent, ListingCompleteEvent, ListingErrorEvent, ListingOpeningEvent, ListingProgressEvent,
-    ListingReadCompleteEvent,
+    ListingReadCompleteEvent, ListingStalledEvent,
 };
 use crate::file_system::volume::eject::VolumesEjectingChanged;
 use crate::file_system::write_operations::{
@@ -68,9 +69,11 @@ use crate::file_system::write_operations::{
     WriteConflictEvent, WriteConflictResolvedEvent, WriteErrorEvent, WriteProgressEvent, WriteSettledEvent,
     WriteSourceItemDoneEvent,
 };
-use crate::file_system::write_operations::{OperationsChanged, VolumesBusyChanged};
+use crate::file_system::write_operations::{MutationSettled, OperationsChanged, VolumesBusyChanged};
 use crate::file_viewer::ViewerPullProgress;
+use crate::file_viewer::open_with_extract::OpenWithCopyRefused;
 use crate::listing_index_sizes::ListingIndexSizesChanged;
+use crate::managed_policy::ManagedPolicyChanged;
 use crate::mtp::{
     MtpDeviceConnected, MtpDeviceDisconnected, MtpExclusiveAccessError, MtpPermissionError, MtpPtpcameradRestored,
     MtpPtpcameradSuppressed, MtpStorageRemoved,
@@ -86,9 +89,9 @@ use crate::volume_broadcast::{VolumeContextAction, VolumeMounted, VolumeRootChan
 // Window-management events: emit_to-targeted window lifecycle.
 use crate::window_events::{
     CloseAbout, CloseAllFileViewers, CloseConfirmation, CloseFileViewer, ExecuteCommand, FocusAbout, FocusConfirmation,
-    FocusFileViewer, FocusSettings, ForegroundOperation, FunctionKeyBarHideRequested, McpSettingsClose, MouseNav,
-    OpenFileViewer, OpenSettings, PersistRestrictedSetting, RevealPath, ShowSearchResultInFolder, TabContextAction,
-    ViewerEditAction, ViewerWordWrapToggled,
+    FocusFileViewer, ForegroundOperation, FunctionKeyBarHideRequested, McpSettingsClose, MouseNav, OpenFileViewer,
+    OpenSettings, PersistRestrictedSetting, RevealPath, ShowSearchResultInFolder, TabContextAction,
+    ViewerContextMenuAction, ViewerEditAction, ViewerWordWrapToggled,
 };
 // AI + system/misc events.
 use crate::ai::{
@@ -105,17 +108,9 @@ use crate::quick_look::{QuickLookClosed, QuickLookKeyEvent};
 use crate::quit::{QuitCalledOff, QuitRequested};
 use crate::restricted_paths::RestrictedPathsChangedPayload;
 use crate::system_events::{
-    AccentColorChanged, DragImageSize, DragModifiers, MenuBarRebuilt, OsLocalesChanged, ReduceTransparencyChanged,
-    SessionCompleteEvent, SessionStartedEvent, SystemTextSizeChanged,
+    AccentColorChanged, DragImageSize, DragModifiers, GlassTintChanged, MenuBarRebuilt, OsLocalesChanged,
+    ReduceTransparencyChanged, SessionCompleteEvent, SessionStartedEvent, SystemTextSizeChanged,
 };
-
-/// Public greeting used by the example webview surface; kept here as the
-/// foundational smoke test for the specta wiring.
-#[tauri::command]
-#[specta::specta]
-pub fn greet(name: &str) -> String {
-    format!("Hello, {}! You've been greeted from Rust!", name)
-}
 
 /// Every IPC command the app exposes, written once, grouped by the `#[cfg]` predicate that
 /// decides whether that group compiles. Hands the whole list to a consumer macro; see the
@@ -138,21 +133,24 @@ macro_rules! ipc_command_manifest {
             // Every target.
             cfg(all()) {
                 typed: [
-                    crate::ipc::greet,
-                    crate::commands::file_system::list_directory_start,
                     crate::commands::file_system::list_directory_start_streaming,
                     crate::commands::file_system::cancel_listing,
                     crate::commands::file_system::list_directory_end,
+                    crate::commands::file_system::keep_listings_alive,
                     crate::commands::file_system::set_listing_include_hidden,
+                    crate::commands::file_system::set_listing_name_filter,
                     crate::commands::file_system::refresh_listing,
                     crate::commands::file_system::get_file_range,
                     crate::commands::file_system::get_file_at,
                     crate::commands::file_system::get_file_beside,
                     crate::commands::file_system::get_files_at_indices,
                     crate::commands::file_system::get_paths_at_indices,
-                    crate::commands::file_system::get_total_count,
+                    crate::commands::file_system::get_selection_snapshot,
                     crate::commands::file_system::get_brief_column_text_widths,
                     crate::commands::file_system::find_file_index,
+                    crate::commands::file_system::compare_directories,
+                    crate::commands::file_system::count_folder_sizes,
+                    crate::commands::file_system::cancel_folder_size_count,
                     crate::commands::file_system::find_file_indices,
                     crate::commands::file_system::find_first_fuzzy_match,
                     crate::commands::file_system::resort_listing,
@@ -168,19 +166,15 @@ macro_rules! ipc_command_manifest {
                     crate::commands::file_system::set_archive_password,
                     crate::commands::file_system::clear_archive_password,
                     crate::commands::file_system::benchmark_log,
-                    crate::commands::file_system::copy_files,
                     crate::commands::file_system::move_files,
                     crate::commands::file_system::delete_files,
                     crate::commands::file_system::trash_files,
                     crate::commands::file_system::trash_routing_for_paths,
                     crate::commands::file_system::cancel_write_operation,
-                    crate::commands::file_system::cancel_all_write_operations,
                     crate::commands::file_system::start_scan_preview,
                     crate::commands::file_system::cancel_scan_preview,
                     crate::commands::file_system::check_scan_preview_status,
                     crate::commands::file_system::resolve_write_conflict,
-                    crate::commands::file_system::list_active_operations,
-                    crate::commands::file_system::get_operation_status,
                     crate::commands::file_system::list_operations,
                     crate::commands::file_system::cancel_operation,
                     crate::commands::file_system::cancel_operations,
@@ -192,10 +186,11 @@ macro_rules! ipc_command_manifest {
                     crate::commands::file_system::dismiss_all_failed_operations,
                     crate::commands::file_system::copy_between_volumes,
                     crate::commands::file_system::move_between_volumes,
+                    crate::commands::file_system::rename_by_move,
                     crate::commands::file_system::compress_files,
-                    crate::commands::file_system::scan_volume_for_copy,
                     crate::commands::file_system::scan_volume_for_conflicts,
                     crate::commands::file_system::destination_write_access,
+                    crate::commands::file_system::destination_root_echo,
                     crate::commands::file_system::get_listing_stats,
                     crate::commands::file_system::refresh_listing_index_sizes,
                     crate::commands::file_system::start_selection_drag,
@@ -255,6 +250,7 @@ macro_rules! ipc_command_manifest {
                     crate::commands::menu::show_tab_context_menu,
                     crate::commands::menu::show_network_host_context_menu,
                     crate::commands::menu::show_function_key_bar_context_menu,
+                    crate::commands::menu::show_viewer_context_menu,
                     crate::commands::file_actions::show_in_finder,
                     crate::commands::quick_look::quick_look_open,
                     crate::commands::quick_look::quick_look_set_path,
@@ -263,6 +259,7 @@ macro_rules! ipc_command_manifest {
                     crate::commands::file_actions::open_in_editor,
                     crate::commands::file_actions::open_path,
                     crate::commands::file_actions::google_drive_links,
+                    crate::commands::share_link::copy_share_link,
                     crate::commands::file_actions::cloud_make_available_offline,
                     crate::commands::file_actions::cloud_remove_download,
                     crate::mcp::pane_state::update_left_pane_state,
@@ -295,6 +292,7 @@ macro_rules! ipc_command_manifest {
                     crate::commands::error_reporter::send_error_report,
                     crate::commands::error_reporter::send_crash_log_report,
                     crate::commands::error_reporter::amend_error_report,
+                    crate::commands::error_reporter::save_error_report_to_disk,
                     crate::commands::error_reporter::record_breadcrumb,
                     // prepare_error_report_preview and get_auto_sent_report_preview stay excluded:
                     // BundleManifest has serde-elided optional fields, which specta splits into
@@ -302,7 +300,6 @@ macro_rules! ipc_command_manifest {
                     crate::commands::error_reporter::record_settings_defaults,
                     crate::commands::feedback::send_feedback,
                     crate::commands::licensing::get_license_status,
-                    crate::commands::licensing::activate_license,
                     crate::commands::licensing::verify_license,
                     crate::commands::licensing::commit_license,
                     crate::commands::licensing::get_license_info,
@@ -318,6 +315,7 @@ macro_rules! ipc_command_manifest {
                     // configure_ai, start_ai_server, start_ai_download are generic (<R: Runtime>): excluded
                     crate::ai::server::stop_ai_server,
                     crate::ai::connection_check::check_ai_connection,
+                    crate::ai::managed::cloud_ai_host_verdicts,
                     crate::ai::cloud_consent::cloud_ai_consent_status,
                     crate::ai::cloud_consent::accept_cloud_ai_consent,
                     crate::ai::cloud_consent::revoke_cloud_ai_consent,
@@ -330,7 +328,6 @@ macro_rules! ipc_command_manifest {
                     crate::ai::api_keys::save_ai_api_key,
                     crate::ai::api_keys::get_ai_api_key_status,
                     crate::ai::api_keys::delete_ai_api_key,
-                    crate::ai::suggestions::get_folder_suggestions,
                     // set_mcp_enabled, set_mcp_port are generic (<R: Runtime>): excluded from specta
                     crate::commands::mcp::get_mcp_running,
                     crate::commands::mcp::get_mcp_port,
@@ -354,12 +351,14 @@ macro_rules! ipc_command_manifest {
                     crate::commands::settings::set_show_virtual_git_portal,
                     crate::commands::logging::batch_fe_logs,
                     crate::commands::logging::set_log_level,
+                    crate::commands::logging::get_debug_log_path,
                     crate::downloads::commands::go_to_latest_download,
                     crate::downloads::commands::downloads_watcher_status,
                     crate::downloads::commands::recheck_downloads_watcher_gate,
                     crate::downloads::commands::set_global_go_to_latest_shortcut,
+                    crate::notifications::get_notification_permission,
+                    crate::notifications::show_notification,
                     crate::commands::indexing::start_drive_index,
-                    crate::commands::indexing::stop_drive_index,
                     crate::commands::indexing::get_index_status,
                     crate::commands::indexing::get_dir_stats,
                     crate::commands::indexing::get_dir_stats_batch,
@@ -368,7 +367,6 @@ macro_rules! ipc_command_manifest {
                     crate::commands::indexing::set_indexing_enabled,
                     crate::commands::indexing::start_indexing_after_fda_decision,
                     crate::commands::indexing::get_index_debug_status,
-                    crate::commands::indexing::get_volume_index_status,
                     crate::commands::indexing::get_volume_index_status_by_id,
                     crate::commands::indexing::enable_drive_index,
                     crate::commands::indexing::disable_drive_index,
@@ -523,22 +521,11 @@ macro_rules! ipc_command_manifest {
             cfg(any(target_os = "macos", target_os = "linux")) {
                 typed: [
                     crate::commands::mtp::set_mtp_enabled,
-                    crate::commands::mtp::list_mtp_devices,
                     crate::commands::mtp::connect_mtp_device,
-                    crate::commands::mtp::get_mtp_device_info,
-                    crate::commands::mtp::disconnect_mtp_device,
-                    crate::commands::mtp::get_mtp_storages,
-                    crate::commands::mtp::list_mtp_directory,
                     crate::commands::mtp::get_ptpcamerad_workaround_command,
-                    crate::commands::mtp::delete_mtp_object,
-                    crate::commands::mtp::create_mtp_folder,
-                    crate::commands::mtp::rename_mtp_object,
-                    crate::commands::mtp::move_mtp_object,
-                    crate::commands::mtp::scan_mtp_for_copy,
                     // Android over ADB. ❌ No stub counterpart, like SFTP: the
                     // backend is macOS + Linux only.
                     crate::adb::commands::set_adb_settings,
-                    crate::adb::commands::list_adb_devices,
                     crate::adb::commands::connect_adb_device,
                     crate::adb::commands::cancel_adb_connect,
                     crate::adb::commands::get_adb_install_status,
@@ -549,18 +536,8 @@ macro_rules! ipc_command_manifest {
             cfg(not(any(target_os = "macos", target_os = "linux"))) {
                 typed: [
                     crate::stubs::mtp::set_mtp_enabled,
-                    crate::stubs::mtp::list_mtp_devices,
                     crate::stubs::mtp::connect_mtp_device,
-                    crate::stubs::mtp::get_mtp_device_info,
-                    crate::stubs::mtp::disconnect_mtp_device,
-                    crate::stubs::mtp::get_mtp_storages,
-                    crate::stubs::mtp::list_mtp_directory,
                     crate::stubs::mtp::get_ptpcamerad_workaround_command,
-                    crate::stubs::mtp::delete_mtp_object,
-                    crate::stubs::mtp::create_mtp_folder,
-                    crate::stubs::mtp::rename_mtp_object,
-                    crate::stubs::mtp::move_mtp_object,
-                    crate::stubs::mtp::scan_mtp_for_copy,
                 ]
                 dispatch_only: []
             }
@@ -609,14 +586,11 @@ macro_rules! ipc_command_manifest {
                     crate::commands::network::get_network_discovery_state,
                     crate::commands::network::list_shares_on_host,
                     crate::commands::network::prefetch_shares,
-                    crate::commands::network::get_host_auth_mode,
-                    crate::commands::network::get_known_shares,
                     crate::commands::network::get_known_share_by_name,
                     crate::commands::network::update_known_share,
                     crate::commands::network::get_username_hint,
                     crate::commands::network::save_smb_credentials,
                     crate::commands::network::get_smb_credentials,
-                    crate::commands::network::has_smb_credentials,
                     crate::commands::network::has_cached_smb_credentials,
                     crate::commands::network::delete_smb_credentials,
                     crate::commands::network::is_using_credential_file_fallback,
@@ -635,7 +609,6 @@ macro_rules! ipc_command_manifest {
                     crate::commands::eject::eject_volume,
                     crate::commands::eject::get_ejecting_volume_ids,
                     crate::commands::network::set_smb_account_preference,
-                    crate::commands::network::remove_manual_server,
                     crate::commands::network::disconnect_network_host,
                     crate::commands::network::note_network_action,
                     crate::commands::network::set_servers_view_shown,
@@ -650,17 +623,12 @@ macro_rules! ipc_command_manifest {
             // the Docker E2E lane runs.
             cfg(any(target_os = "macos", target_os = "linux")) {
                 typed: [
-                    crate::commands::sftp::disconnect_sftp_volume,
                     crate::commands::sftp::approve_sftp_host_key,
                     crate::commands::sftp::forget_sftp_host_key,
                     crate::commands::sftp::list_trusted_sftp_host_keys,
                     crate::commands::sftp::save_sftp_credentials,
-                    crate::commands::sftp::has_sftp_credentials,
-                    crate::commands::sftp::delete_sftp_credentials,
                     crate::commands::sftp::get_known_sftp_servers,
-                    crate::commands::sftp::forget_known_sftp_server,
                     crate::commands::sftp::get_sftp_unattended_reconnect,
-                    crate::commands::sftp::cancel_sftp_connect,
                 ]
                 dispatch_only: []
             }
@@ -669,14 +637,21 @@ macro_rules! ipc_command_manifest {
             // no-stub reasoning as the SFTP block above.
             cfg(any(target_os = "macos", target_os = "linux")) {
                 typed: [
-                    crate::commands::webdav::cancel_webdav_connect,
-                    crate::commands::webdav::disconnect_webdav_volume,
                     crate::commands::webdav::save_webdav_credentials,
-                    crate::commands::webdav::has_webdav_credentials,
-                    crate::commands::webdav::delete_webdav_credentials,
                     crate::commands::webdav::get_known_webdav_servers,
-                    crate::commands::webdav::forget_known_webdav_server,
                     crate::commands::webdav::get_webdav_unattended_reconnect,
+                ]
+                dispatch_only: []
+            }
+            // S3 accounts: the secret and the unattended-reconnect answer.
+            // Connecting goes through `commands::servers` below. Same gate and same
+            // no-stub reasoning as the SFTP block.
+            cfg(any(target_os = "macos", target_os = "linux")) {
+                typed: [
+                    crate::commands::s3::save_s3_credentials,
+                    crate::commands::s3::get_s3_unattended_reconnect,
+                    crate::commands::s3::get_known_s3_places,
+                    crate::commands::s3::estimate_operation_cost,
                 ]
                 dispatch_only: []
             }
@@ -697,6 +672,7 @@ macro_rules! ipc_command_manifest {
                     crate::commands::servers::update_saved_server,
                     crate::commands::servers::saved_server_id,
                     crate::commands::servers::update_saved_smb_host,
+                    crate::commands::servers::update_saved_s3_account,
                     crate::commands::servers::forget_saved_smb_host,
                     crate::commands::servers::forget_saved_smb_host_password,
                     crate::commands::confirm_dialog::confirm_with_checkbox,
@@ -714,14 +690,11 @@ macro_rules! ipc_command_manifest {
                     crate::stubs::network::get_network_discovery_state,
                     crate::stubs::network::list_shares_on_host,
                     crate::stubs::network::prefetch_shares,
-                    crate::stubs::network::get_host_auth_mode,
-                    crate::stubs::network::get_known_shares,
                     crate::stubs::network::get_known_share_by_name,
                     crate::stubs::network::update_known_share,
                     crate::stubs::network::get_username_hint,
                     crate::stubs::network::save_smb_credentials,
                     crate::stubs::network::get_smb_credentials,
-                    crate::stubs::network::has_smb_credentials,
                     crate::stubs::network::has_cached_smb_credentials,
                     crate::stubs::network::delete_smb_credentials,
                     crate::stubs::network::is_using_credential_file_fallback,
@@ -737,7 +710,6 @@ macro_rules! ipc_command_manifest {
                     crate::stubs::network::reconnect_volume_with_credentials,
                     crate::stubs::network::get_volume_sign_in_state,
                     crate::stubs::network::disconnect_smb_volume,
-                    crate::stubs::network::remove_manual_server,
                     crate::stubs::network::set_smb_account_preference,
                     crate::stubs::network::disconnect_network_host,
                 ]
@@ -809,6 +781,19 @@ macro_rules! ipc_command_manifest {
             cfg(not(target_os = "macos")) {
                 typed: [
                     crate::stubs::reduce_transparency::get_should_reduce_transparency,
+                ]
+                dispatch_only: []
+            }
+            // Liquid Glass slider.
+            cfg(target_os = "macos") {
+                typed: [
+                    crate::glass_tint::get_glass_tint_amount,
+                ]
+                dispatch_only: []
+            }
+            cfg(not(target_os = "macos")) {
+                typed: [
+                    crate::stubs::glass_tint::get_glass_tint_amount,
                 ]
                 dispatch_only: []
             }
@@ -890,6 +875,13 @@ macro_rules! ipc_command_manifest {
                 ]
                 dispatch_only: []
             }
+            // What the organization's MDM profile restricts (`managed_policy/`).
+            cfg(any(target_os = "macos", target_os = "linux")) {
+                typed: [
+                    crate::managed_policy::view::get_managed_policy,
+                ]
+                dispatch_only: []
+            }
             // E2E-only commands.
             cfg(feature = "playwright-e2e") {
                 typed: [
@@ -920,7 +912,6 @@ macro_rules! ipc_command_manifest {
             // Debug-build helpers.
             cfg(debug_assertions) {
                 typed: [
-                    crate::commands::error_reporter::save_error_report_to_disk,
                     crate::commands::file_system::preview_friendly_error,
                 ]
                 dispatch_only: []
@@ -993,6 +984,9 @@ pub fn builder() -> Builder<tauri::Wry> {
     let combined_commands = tauri_specta::internal::command(runtime_handler, collect_all_types);
     Builder::<tauri::Wry>::new()
         .commands(combined_commands)
+        // The error type of `start_ai_server` / `start_ai_download`, which are generic and so
+        // missing from the collected commands: the frontend branches on its `type`.
+        .typ::<crate::ai::server::LocalAiError>()
         // Typed events. Each registered struct derives `tauri_specta::Event`;
         // its kebab-cased name is the wire event name and its TS type + a typed
         // `events.<name>.listen(...)` helper are generated into `bindings.ts`.
@@ -1011,9 +1005,16 @@ pub fn builder() -> Builder<tauri::Wry> {
             ConflictInfo, // scan-conflict
             DryRunResult, // dry-run-complete
             WriteSettledEvent,
+            // An instant mutation (new folder, new file, rename) that outlived its
+            // reply deadline (write_operations/mutation_reply.rs).
+            MutationSettled,
+            ClipboardPasteSettled, // clipboard-paste-settled (the same, for paste-as-file)
             // The leftover sweep, which belongs to no operation
             // (write_operations/in_flight_sweep.rs).
             MoveLeftoversKeptEvent, // event_name = "move-leftovers-kept"
+            // An "Open with" click on a file inside an archive that couldn't be copied
+            // out, so no app launched (file_viewer/open_with_extract.rs).
+            OpenWithCopyRefused,
             // Operation manager registry snapshot (write_operations/manager.rs).
             OperationsChanged,
             SuggestionsChanged,
@@ -1032,6 +1033,7 @@ pub fn builder() -> Builder<tauri::Wry> {
             QuitCalledOff,
             // Listing sink (file_system/listing/streaming.rs `TauriListingEventSink`).
             ListingOpeningEvent,
+            ListingStalledEvent,
             ListingProgressEvent,
             ListingReadCompleteEvent,
             ListingCompleteEvent,
@@ -1049,8 +1051,8 @@ pub fn builder() -> Builder<tauri::Wry> {
             VolumesChanged,
             VolumeMounted,
             VolumeUnmounted,
-            // A connected SFTP or WebDAV place's root or landing moved on an edit
-            // (network/live_server_edit.rs).
+            // A volume's root or landing moved: an edit to a connected SFTP or WebDAV
+            // place (network/live_server_edit.rs), or a renamed drive (volumes/watcher.rs).
             VolumeRootChanged,
             VolumesBusyChanged,
             // The volumes with an eject still running (file_system/volume/eject/in_flight.rs).
@@ -1142,6 +1144,7 @@ pub fn builder() -> Builder<tauri::Wry> {
             // `system_events` because their emit sites are macOS-gated.
             AccentColorChanged,
             ReduceTransparencyChanged,
+            GlassTintChanged,
             SystemTextSizeChanged,
             MenuBarRebuilt,
             OsLocalesChanged,
@@ -1174,7 +1177,6 @@ pub fn builder() -> Builder<tauri::Wry> {
             ShowSearchResultInFolder,
             OpenSettings,
             OpenFileViewer,
-            FocusSettings,
             FocusFileViewer,
             FocusAbout,
             FocusConfirmation,
@@ -1187,6 +1189,7 @@ pub fn builder() -> Builder<tauri::Wry> {
             // emit_to(viewer label): the viewer bar's Edit > Copy / Select all, which the viewer
             // has to run itself (its selection model isn't in the DOM the responder chain sees).
             ViewerEditAction,
+            ViewerContextMenuAction,
             // emit_to(viewer label): how far a viewer's pull into its preview temp got.
             ViewerPullProgress,
             TabContextAction,
@@ -1198,6 +1201,8 @@ pub fn builder() -> Builder<tauri::Wry> {
             // the agent's memory folder in a pane.
             ForegroundOperation,
             RevealPath,
+            // The organization's managed policy changed while Cmdr runs (managed_policy/cache.rs).
+            ManagedPolicyChanged,
         ])
 }
 

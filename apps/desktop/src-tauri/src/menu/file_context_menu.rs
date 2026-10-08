@@ -17,7 +17,7 @@ use std::path::PathBuf;
 
 use tauri::{
     AppHandle, Runtime,
-    menu::{Menu, MenuItem, PredefinedMenuItem},
+    menu::{Menu, MenuItem, PredefinedMenuItem, Submenu},
 };
 
 #[cfg(target_os = "macos")]
@@ -48,9 +48,10 @@ use super::{
     GET_INFO_ID, QUICK_LOOK_ID,
 };
 use super::{
-    COPY_FILENAME_ID, COPY_PATH_ID, EDIT_ID, FAVORITES_ADD_CONTEXT_ID, FILE_COPY_ID, FILE_DELETE_ID, FILE_DUPLICATE_ID,
-    FILE_MOVE_ID, FILE_NEW_FILE_ID, FILE_NEW_FOLDER_ID, FILE_VIEW_ID, GO_PARENT_ID, ImageIndexMenuState, OPEN_ID,
-    RENAME_ID, SHOW_IN_FINDER_ID, SHOW_SEARCH_RESULT_IN_FOLDER_ID, image_index_menu_items,
+    COPY_FILENAME_ID, COPY_PATH_ID, EDIT_ID, FAVORITES_ADD_CONTEXT_ID, FILE_COMPRESS_ID, FILE_COPY_ID, FILE_DELETE_ID,
+    FILE_DUPLICATE_ID, FILE_MOVE_ID, FILE_NEW_FILE_ID, FILE_NEW_FOLDER_ID, FILE_VIEW_ID, GO_PARENT_ID,
+    ImageIndexMenuState, OPEN_ID, RENAME_ID, SHARE_LINK_ONE_DAY_ID, SHARE_LINK_ONE_HOUR_ID, SHARE_LINK_SEVEN_DAYS_ID,
+    SHARE_LINK_SUBMENU_ID, SHOW_IN_FINDER_ID, SHOW_SEARCH_RESULT_IN_FOLDER_ID, image_index_menu_items,
 };
 
 /// A fact the menu asked off the main thread (`context_menu_facts.rs`): answered in time,
@@ -170,12 +171,21 @@ pub struct ContextMenuPaneFacts {
     /// no, so the two can't be folded into one flag. `Share` needs one more yes on top:
     /// macOS has to actually offer a service (`FileContextInfo::share_services`).
     pub can_share: bool,
+    /// Whether the seven Finder tag colors may appear (macOS). The same reading of the rows as
+    /// `can_share` (a tag is an xattr written through the row's path), its own flag because it
+    /// gates its own item. ❗ Off on a phone, an SFTP / WebDAV server, an archive's insides, or a
+    /// `.git`-portal row: the click would write nothing and say nothing.
+    pub can_tag: bool,
     /// Whether "Add to favorites" may appear on a folder row at all: whether that row is a
     /// place a favorite could point back to next launch. The ROW's answer, like `can_share`,
     /// and the affordance half of Rust's own `add_favorite` gate — which refuses an archive's
     /// insides, a `.git`-portal folder, a phone, and a protocol-only server. Without it the
     /// item is offered where the add would be refused, and the user gets silence.
     pub can_favorite: bool,
+    /// Whether "Copy share link" may appear: the row is a file on a volume that can
+    /// mint a link (`Volume::supports_share_links`). A file-only item, so a folder row
+    /// never shows it whatever this says.
+    pub can_share_link: bool,
 }
 /// Builds a context menu for a specific file.
 ///
@@ -215,11 +225,13 @@ pub fn build_context_menu<R: Runtime>(
         can_show_in_folder,
         can_open_terminal_here,
         can_share,
+        can_tag,
         can_favorite,
+        can_share_link,
     } = pane;
-    // Both gate macOS-only items, so on Linux they're read nowhere.
+    // All three gate macOS-only items, so on Linux they're read nowhere.
     #[cfg(not(target_os = "macos"))]
-    let _ = (can_open_terminal_here, can_share);
+    let _ = (can_open_terminal_here, can_share, can_tag);
     let menu = Menu::new(app)?;
     #[cfg(target_os = "macos")]
     let mut late = LateTargets::new(app);
@@ -266,28 +278,34 @@ pub fn build_context_menu<R: Runtime>(
     menu.append(&PredefinedMenuItem::separator(app)?)?;
 
     // Finder tag colors (macOS): seven circles that toggle the system color tags on the
-    // selection. Shown for files and folders (Finder tags both).
+    // selection. Shown for files and folders (Finder tags both), wherever the rows are real
+    // OS paths a tag can be written to (`can_tag`).
     #[cfg(target_os = "macos")]
-    {
+    if can_tag {
         let tag_items = append_tag_color_group(app, &menu)?;
         if info.applied_tag_colors.is_pending() {
             late.tag_items = tag_items;
         }
     }
 
-    // Copy / Move / Duplicate / Rename group. Rename and Duplicate are omitted on the
+    // Copy / Move / Duplicate / Compress / Rename group, in the File menu's order. Rename
+    // and Duplicate are omitted on the
     // search-results virtual pane: the underlying file CAN be renamed, but doing it from
     // the snapshot view splits the file (snapshot keeps the old name, disk has the new)
     // which is confusing, and a duplicate would have to land in each item's own real
     // folder, which one transfer can't express. The user can navigate to the real folder
-    // and do either there.
+    // and do either there. Compress stays, as Copy and Move do: it writes into the other pane.
     let copy_item = context_item(app, shortcuts, FILE_COPY_ID, menu_t("menu.file.copy"), true)?;
     let move_item = context_item(app, shortcuts, FILE_MOVE_ID, menu_t("menu.file.move"), true)?;
+    let compress_item = context_item(app, shortcuts, FILE_COMPRESS_ID, menu_t("menu.file.compress"), true)?;
     menu.append(&copy_item)?;
     menu.append(&move_item)?;
     if !restrict_destination_actions {
         let duplicate_item = context_item(app, shortcuts, FILE_DUPLICATE_ID, menu_t("menu.file.duplicate"), true)?;
         menu.append(&duplicate_item)?;
+    }
+    menu.append(&compress_item)?;
+    if !restrict_destination_actions {
         let rename_item = context_item(app, shortcuts, RENAME_ID, menu_t("menu.file.rename"), true)?;
         menu.append(&rename_item)?;
     }
@@ -378,6 +396,11 @@ pub fn build_context_menu<R: Runtime>(
     }
     menu.append(&copy_filename_item)?;
     menu.append(&copy_path_item)?;
+    // Beside the other two "copy something about this file" items. Absent, never greyed,
+    // where the volume can't mint one: there's nothing a user could do to enable it.
+    if !is_directory && can_share_link {
+        menu.append(&share_link_submenu(app, shortcuts)?)?;
+    }
 
     // Add to favorites — directories only (favorites are folders), and only where a favorite
     // could point back: `can_favorite` is the caller's reading of the row, matching the gate
@@ -502,6 +525,19 @@ pub fn build_context_menu<R: Runtime>(
         #[cfg(target_os = "macos")]
         late,
     })
+}
+
+/// "Copy share link" with one row per expiry, the seven-day default first.
+fn share_link_submenu<R: Runtime>(app: &AppHandle<R>, shortcuts: &ContextMenuShortcuts) -> tauri::Result<Submenu<R>> {
+    let submenu = Submenu::with_id(app, SHARE_LINK_SUBMENU_ID, menu_t("menu.context.copyShareLink"), true)?;
+    for (id, key) in [
+        (SHARE_LINK_SEVEN_DAYS_ID, "menu.context.shareLinkSevenDays"),
+        (SHARE_LINK_ONE_DAY_ID, "menu.context.shareLinkOneDay"),
+        (SHARE_LINK_ONE_HOUR_ID, "menu.context.shareLinkOneHour"),
+    ] {
+        submenu.append(&context_item(app, shortcuts, id, menu_t(key), true)?)?;
+    }
+    Ok(submenu)
 }
 
 /// Open in Google Drive, Copy Google Drive link, and Ask Gemini, in menu order.

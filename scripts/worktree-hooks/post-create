@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# Worktree hook: `~/.claude/scripts/new-worktree.sh` runs it once a new worktree
+# exists, during its background warming, while `.warming-worktree` still blocks
+# the check runner. Contract: `CLAUDE.md` here.
+#
+# Cmdr: seeds the new worktree's Linux target volume (the `clippy-linux` and
+# `rust-tests-linux` lanes' build cache) with a copy-on-write clone of the main
+# clone's, so its first Linux run starts warm. No main-clone volume, no Docker,
+# or no Go: one line (or none) and exit 0.
+set -uo pipefail
+
+[ $# -eq 2 ] || { echo "usage: post-create <worktree> <main-clone>" >&2; exit 2; }
+# Absolute before the `cd` below, which would otherwise re-root a relative path.
+worktree="$(cd "$1" && pwd)" && main_clone="$(cd "$2" && pwd)" || exit 2
+check_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../check" && pwd)"
+
+command -v go >/dev/null 2>&1 || { echo "linux cache: no Go on PATH, so no seed"; exit 0; }
+cd "$check_dir" && exec go run ./linux-cache seed "$worktree" "$main_clone"

@@ -319,6 +319,18 @@
   "@onboarding.stepAi.off.help": {
     "sourceHash": "3f261be"
   },
+  "onboarding.localDownloadFailed.title": "O download do modelo de IA local não foi concluído",
+  "@onboarding.localDownloadFailed.title": {
+    "sourceHash": "9612750"
+  },
+  "onboarding.localDownloadFailed.body": "Inicie o download de novo em Ajustes › IA.",
+  "@onboarding.localDownloadFailed.body": {
+    "sourceHash": "6601872"
+  },
+  "onboarding.localDownloadFailed.openSettings": "Abrir Ajustes",
+  "@onboarding.localDownloadFailed.openSettings": {
+    "sourceHash": "3f94010"
+  },
   "onboarding.stepBeta.footer.start": "Começar a usar o Cmdr!",
   "@onboarding.stepBeta.footer.start": {
     "sourceHash": "e29bbc7"
@@ -383,9 +395,17 @@
   "@onboarding.stepBeta.analyticsCaption": {
     "sourceHash": "06ce4eb"
   },
-  "onboarding.stepBeta.crashReportsNote": "Os relatórios de falha também estão ligados: se o Cmdr cair, ele envia a versão do app, a sua versão do macOS e o ponto do código onde parou.\nNunca os seus arquivos.\nVocê pode desligar os dois nos Ajustes quando quiser.",
+  "onboarding.stepBeta.crashReportsNote": "Os relatórios de falha também estão ativados: se o Cmdr cair, ele envia a versão do app, a sua versão do macOS e o ponto do código onde parou.\nNunca os seus arquivos.\nVocê pode desativar os dois nos Ajustes quando quiser.",
   "@onboarding.stepBeta.crashReportsNote": {
     "sourceHash": "9be0be1"
+  },
+  "onboarding.stepBeta.analyticsManaged": "Sua organização desativou as estatísticas de uso.",
+  "@onboarding.stepBeta.analyticsManaged": {
+    "sourceHash": "49484ee"
+  },
+  "onboarding.stepBeta.crashReportsNoteAlone": "Os relatórios de falha estão ativados: se o Cmdr cair, ele envia a versão do app, a sua versão do macOS e o ponto do código onde parou.\nNunca os seus arquivos.\nVocê pode desativá-los nos Ajustes quando quiser.",
+  "@onboarding.stepBeta.crashReportsNoteAlone": {
+    "sourceHash": "5084dd0"
   },
   "onboarding.stepBeta.emailTitle": "Mantenha contato (opcional)",
   "@onboarding.stepBeta.emailTitle": {
@@ -562,6 +582,10 @@
   "onboarding.cloudSetup.apiKeyAria": "Chave de API",
   "@onboarding.cloudSetup.apiKeyAria": {
     "sourceHash": "16f0ee4"
+  },
+  "onboarding.cloudSetup.removeKey": "Remover chave",
+  "@onboarding.cloudSetup.removeKey": {
+    "sourceHash": "81c45fd"
   },
   "onboarding.cloudSetup.apiKeyPlaceholder.openai": "Exemplo: sk-abc123…",
   "@onboarding.cloudSetup.apiKeyPlaceholder.openai": {

@@ -13,15 +13,17 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { flushSync } from 'svelte'
 import type { VolumeInfo } from '../types'
 
-const { connectPlace, cancelPlaceConnect } = vi.hoisted(() => ({
+const { connectPlace, cancelPlaceConnect, resolveValidPath } = vi.hoisted(() => ({
   connectPlace: vi.fn(),
   cancelPlaceConnect: vi.fn().mockResolvedValue(undefined),
+  resolveValidPath: vi.fn(),
 }))
 
 vi.mock('$lib/servers/connect-flow', () => ({ connectPlace, cancelPlaceConnect }))
+vi.mock('../navigation/path-resolution', () => ({ resolveValidPath }))
 vi.mock('$lib/servers/connect-refusals', () => ({
-  wordConnectRefusal: (kind: string, subject: { host: string; username: string }) =>
-    `${kind} for ${subject.username} at ${subject.host}`,
+  wordPaneRefusal: (kind: string, subject: { host: string; username: string; name: string }) =>
+    `${kind} for ${subject.username} at ${subject.host}, named ${subject.name}`,
 }))
 vi.mock('$lib/logging/logger', () => ({
   getAppLogger: () => ({ warn: vi.fn(), info: vi.fn(), error: vi.fn(), debug: vi.fn() }),
@@ -128,14 +130,15 @@ describe('createPlaceConnect', () => {
     expect(cancelPlaceConnect).toHaveBeenCalledWith('server-connect-7')
   })
 
-  it('words a refusal from the place’s own host and account, and offers Try again', async () => {
+  it('words a refusal from the place’s own name, host, and account, and offers Try again', async () => {
     connectPlace.mockResolvedValue({ kind: 'refused', refusal: 'unreachable' })
     const { sub } = create()
     await vi.waitFor(() => {
       expect(sub.state?.kind).toBe('refused')
     })
     if (sub.state?.kind !== 'refused') throw new Error('not refused')
-    expect(sub.state.refusal).toBe('unreachable for ada at nas.local')
+    // ❗ The name the user gave it rides along, so "unreachable" can say "Naspolya" over "nas.local".
+    expect(sub.state.refusal).toBe('unreachable for ada at nas.local, named Naspolya')
     // ❌ No Disconnect on a place with no session to drop.
     expect(sub.state.disconnect).toBeUndefined()
 
@@ -166,7 +169,7 @@ describe('createPlaceConnect', () => {
       expect(sub.state?.kind).toBe('refused')
     })
     if (sub.state?.kind !== 'refused') throw new Error('not refused')
-    expect(sub.state.refusal).toBe('unreachable for ada@example.com at cloud.example.com')
+    expect(sub.state.refusal).toBe('unreachable for ada@example.com at cloud.example.com, named Cloud')
   })
 
   /**
@@ -277,6 +280,43 @@ describe('createPlaceConnect: a saved SMB share', () => {
     volumePath = '/Volumes/naspi'
     currentPath = '/Volumes/naspi/docs'
     connectPlace.mockResolvedValue({ kind: 'connected', volumeId: savedShare.id })
+    // Every folder is there unless a cell says otherwise.
+    resolveValidPath.mockImplementation((path: string) => Promise.resolve(path))
+  })
+
+  /**
+   * ❗ A restored tab keeps the folder it was on inside an unmounted share, and that
+   * folder may be gone by the time the mount lands: the pane enters the deepest one
+   * that's still there, inside the share, ❌ never an error over a missing folder.
+   */
+  it('enters the nearest folder that still exists once the share is live', async () => {
+    currentPath = '/Volumes/naspi/docs/2026'
+    resolveValidPath.mockResolvedValue('/Volumes/naspi/docs')
+    const enter = create()
+    await vi.waitFor(() => {
+      expect(enter).toHaveBeenCalledWith({
+        volumeId: savedShare.id,
+        volumePath: '/Volumes/naspi',
+        targetPath: '/Volumes/naspi/docs',
+      })
+    })
+    expect(resolveValidPath).toHaveBeenCalledWith(
+      '/Volumes/naspi/docs/2026',
+      expect.objectContaining({ volumeRoot: '/Volumes/naspi', volumeId: savedShare.id }),
+    )
+  })
+
+  it('enters the share root when the walk finds nothing', async () => {
+    currentPath = '/Volumes/naspi/docs/2026'
+    resolveValidPath.mockResolvedValue(null)
+    const enter = create()
+    await vi.waitFor(() => {
+      expect(enter).toHaveBeenCalledWith({
+        volumeId: savedShare.id,
+        volumePath: '/Volumes/naspi',
+        targetPath: '/Volumes/naspi',
+      })
+    })
   })
 
   afterEach(() => {

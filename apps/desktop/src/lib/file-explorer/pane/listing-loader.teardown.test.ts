@@ -21,6 +21,8 @@ const h = vi.hoisted(() => ({
   pathExistsChecked: vi.fn(),
   resolvePathVolume: vi.fn(),
   trackEvent: vi.fn(),
+  trackLiveListing: vi.fn(),
+  untrackLiveListing: vi.fn(),
   resolveValidPath: vi.fn(),
   getSetting: vi.fn(),
 }))
@@ -34,6 +36,7 @@ function register(bucket: ((p: unknown) => void)[]) {
 
 vi.mock('$lib/tauri-commands', () => ({
   onListingOpening: register(h.listeners.opening),
+  onListingStalled: register([]),
   onListingProgress: register(h.listeners.progress),
   onListingReadComplete: register(h.listeners.readComplete),
   onListingComplete: register(h.listeners.complete),
@@ -46,6 +49,10 @@ vi.mock('$lib/tauri-commands', () => ({
   pathExistsChecked: h.pathExistsChecked,
   resolvePathVolume: h.resolvePathVolume,
   trackEvent: h.trackEvent,
+}))
+vi.mock('./listing-liveness', () => ({
+  trackLiveListing: h.trackLiveListing,
+  untrackLiveListing: h.untrackLiveListing,
 }))
 vi.mock('./tag-sweep', () => ({ sweepListingTags: vi.fn() }))
 vi.mock('../navigation/path-resolution', () => ({ resolveValidPath: h.resolveValidPath }))
@@ -219,5 +226,85 @@ describe('createListingLoader — abandoned listings are torn down, not just for
     await loadA
 
     expect(h.listDirectoryEnd).toHaveBeenCalledWith(idA)
+  })
+})
+
+describe('createListingLoader — a landed listing stays alive, and a lost one is re-listed', () => {
+  // Regression anchor: the backend's orphan reaper took a pane's listing after a
+  // night with no reads and no FS events. The pane kept stale rows, lost its
+  // watcher, and F3–F6 failed with a missing listing until the user navigated away.
+
+  /** The `onGone` the loader registered for `listingId` most recently. */
+  function onGoneFor(listingId: string): () => void {
+    const call = h.trackLiveListing.mock.calls.findLast(([id]) => id === listingId)
+    if (!call) throw new Error(`listing ${listingId} was never tracked`)
+    return call[1] as () => void
+  }
+
+  it('tracks a listing once it lands, not while it loads', async () => {
+    const { loader, state } = makeHarness()
+    await loader.loadDirectory({ path: '/a' })
+    expect(h.trackLiveListing).not.toHaveBeenCalled()
+
+    completeCb(0)({ listingId: state.listingId, totalCount: 3, volumeRoot: '/' })
+
+    await vi.waitFor(() => {
+      expect(h.trackLiveListing).toHaveBeenCalledWith(state.listingId, expect.any(Function))
+    })
+  })
+
+  it('stops tracking a listing the pane walks away from or unmounts with', async () => {
+    const { loader, state } = makeHarness()
+    await loader.loadDirectory({ path: '/a' })
+    const idA = state.listingId
+    await loader.loadDirectory({ path: '/b' })
+    expect(h.untrackLiveListing).toHaveBeenCalledWith(idA)
+
+    const idB = state.listingId
+    loader.cleanup()
+    expect(h.untrackLiveListing).toHaveBeenCalledWith(idB)
+  })
+
+  it('re-lists the same folder with the cursor on the same file when its listing is lost', async () => {
+    const { loader, state } = makeHarness()
+    await loader.loadDirectory({ path: '/Users/me/Downloads' })
+    const lost = state.listingId
+    completeCb(0)({ listingId: lost, totalCount: 3, volumeRoot: '/' })
+    await vi.waitFor(() => {
+      expect(state.loading).toBe(false)
+    })
+    state.cursorName = 'test.jpg'
+    h.listDirectoryStart.mockClear()
+    h.findFileIndex.mockClear()
+
+    onGoneFor(lost)()
+
+    await vi.waitFor(() => {
+      expect(h.listDirectoryStart).toHaveBeenCalledTimes(1)
+    })
+    expect(h.listDirectoryStart.mock.calls[0][1]).toBe('/Users/me/Downloads')
+    const relisted = state.listingId
+    expect(relisted).not.toBe(lost)
+    completeCb(1)({ listingId: relisted, totalCount: 4, volumeRoot: '/' })
+    await vi.waitFor(() => {
+      expect(h.findFileIndex).toHaveBeenCalledWith(relisted, 'test.jpg', false)
+    })
+  })
+
+  it('ignores a loss report for a listing the pane already left', async () => {
+    const { loader, state } = makeHarness()
+    await loader.loadDirectory({ path: '/a' })
+    const idA = state.listingId
+    completeCb(0)({ listingId: idA, totalCount: 3, volumeRoot: '/' })
+    await vi.waitFor(() => {
+      expect(h.trackLiveListing).toHaveBeenCalled()
+    })
+    await loader.loadDirectory({ path: '/b' })
+    h.listDirectoryStart.mockClear()
+
+    onGoneFor(idA)()
+    await Promise.resolve()
+
+    expect(h.listDirectoryStart).not.toHaveBeenCalled()
   })
 })

@@ -83,6 +83,7 @@ function mountQueryDialog(opts: MountOptions = {}): MountedDialog {
   }
 
   const historyStore = createRecentItemsState<HistoryEntry>({
+    logCategory: 'search',
     getRecent: () => Promise.resolve(opts.recentEntries ?? []),
   })
   if (opts.recentEntries) historyStore.setList(opts.recentEntries)

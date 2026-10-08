@@ -133,6 +133,18 @@ export function archiveNameFromPath(path: string): string {
 }
 
 /**
+ * The root of the archive a path is at or inside: the path up to and including
+ * the FIRST archive-extension segment, so `/a/photos.zip/inner/x.jpg` returns
+ * `/a/photos.zip` (leftmost wins, as in `folderContainingArchive`). `null` when no
+ * segment is an archive. Pure, no I/O.
+ */
+export function archiveRootOf(path: string): string | null {
+  const segments = path.split('/')
+  const boundary = segments.findIndex((segment) => hasSupportedArchiveExtension(segment))
+  return boundary === -1 ? null : segments.slice(0, boundary + 1).join('/')
+}
+
+/**
  * The real folder on disk that CONTAINS the archive a path is at or inside: the
  * directory holding the FIRST archive-extension segment, so
  * `/a/b/photos.zip/inner/x.jpg` and `/a/b/photos.zip` both return `/a/b`. The

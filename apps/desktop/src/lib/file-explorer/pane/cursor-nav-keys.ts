@@ -16,9 +16,8 @@
  */
 
 import { handleNavigationShortcut } from '../navigation/keyboard-shortcuts'
-import { comboMatchesCommand } from '$lib/shortcuts'
+import { comboMatchesCommand, resolveKeyCombo } from '$lib/shortcuts'
 import { claimKey } from '$lib/shortcuts/claim-key'
-import { formatKeyCombo } from '$lib/shortcuts/key-capture'
 import type { CommandId } from '$lib/commands'
 import type { ListViewAPI } from './types'
 
@@ -50,7 +49,7 @@ const cursorCommands = [
  * cursor moves (`⇧↓`); the per-view handlers below read `e.shiftKey` for that fill.
  */
 function isCursorKey(event: KeyboardEvent): boolean {
-  const combo = formatKeyCombo(event)
+  const combo = resolveKeyCombo(event)
   return cursorCommands.some((commandId) => comboMatchesCommand(combo, commandId, { allowShift: true }))
 }
 

@@ -8,7 +8,7 @@ be lost the next time we re-vendor.**
 `~/projects-git/vdavid/smb2/crates/smb2/src/testing/fixtures/consumer/` (GitHub:
 https://github.com/vdavid/smb2/tree/main/crates/smb2/src/testing/fixtures/consumer)
 
-**Synced from:** smb2 v0.25.1 (commit `0753bf1`), byte-identical to the published crate's
+**Synced from:** smb2 v0.27.1 (commit `8b55345`), byte-identical to the published crate's
 `src/testing/fixtures/consumer/` apart from the two cmdr-owned files. Keep this line in step with the `smb2` version in
 `Cargo.lock`: the published crate ships the fixtures, so
 `diff -r ~/.cargo/registry/src/*/smb2-<version>/src/testing/fixtures/consumer apps/desktop/test/smb-servers/.compose`

@@ -1,0 +1,4 @@
+# OSV-Scanner config for this module's `go.mod` (see the root `osv-scanner.toml`).
+[[IgnoredVulns]]
+id = "GO-2026-5932"
+reason = "The advisory covers golang.org/x/crypto/openpgp only. release-finish imports x/crypto/blake2b (minisign.go) and never openpgp."

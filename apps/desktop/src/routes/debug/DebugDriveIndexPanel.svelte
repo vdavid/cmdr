@@ -1,58 +1,12 @@
 <script lang="ts">
     import { onMount, onDestroy } from 'svelte'
+    import { commands, type IndexDebugStatusResponse } from '$lib/ipc/bindings'
     import { tooltip } from '$lib/tooltip/tooltip'
     import Spinner from '$lib/ui/Spinner.svelte'
     import { formatInteger } from '$lib/intl/number-format'
     import { formatByteSize, formatMilliseconds } from '$lib/units'
 
-    interface IndexStatusMeta {
-        schemaVersion: string | null
-        volumePath: string | null
-        scanCompletedAt: string | null
-        scanDurationMs: string | null
-        totalEntries: string | null
-        lastEventId: string | null
-    }
-
-    interface PhaseRecord {
-        phase: 'replaying' | 'scanning' | 'aggregating' | 'reconciling' | 'live' | 'idle'
-        startedAt: string
-        durationMs: number | null
-        trigger: string
-        stats: [string, string][]
-    }
-
-    interface IndexDebugStatus {
-        initialized: boolean
-        scanning: boolean
-        entriesScanned: number
-        dirsFound: number
-        indexStatus: IndexStatusMeta | null
-        dbFileSize: number | null
-        watcherActive: boolean
-        liveEventCount: number
-        mustScanCount: number
-        mustScanRescansCompleted: number
-        liveEntryCount: number | null
-        liveDirCount: number | null
-        dirsWithStats: number | null
-        recentMustScanPaths: [string, string][]
-        activityPhase: 'replaying' | 'scanning' | 'aggregating' | 'reconciling' | 'live' | 'idle'
-        phaseStartedAt: string
-        phaseDurationMs: number
-        phaseHistory: PhaseRecord[]
-        verifying: boolean
-        verifyDeclinedDirs: number
-        verifyTruncatedDirs: number
-        reconcileBudgetSubtrees: number
-        reconcileBudgetSkippedDirs: number
-        dbMainSize: number | null
-        dbWalSize: number | null
-        dbPageCount: number | null
-        dbFreelistCount: number | null
-    }
-
-    let debugStatus = $state<IndexDebugStatus | null>(null)
+    let debugStatus = $state<IndexDebugStatusResponse | null>(null)
     let indexMessage = $state('')
     let indexPollInterval: ReturnType<typeof setInterval> | undefined
 
@@ -87,8 +41,8 @@
 
     async function pollDebugStatus() {
         try {
-            const { invoke } = await import('@tauri-apps/api/core')
-            debugStatus = await invoke<IndexDebugStatus>('get_index_debug_status')
+            const result = await commands.getIndexDebugStatus()
+            if (result.status === 'ok') debugStatus = result.data
         } catch {
             // Indexing not available
         }
@@ -96,9 +50,8 @@
 
     async function handleStartScan() {
         try {
-            const { invoke } = await import('@tauri-apps/api/core')
-            await invoke('start_drive_index', { volumeId: 'root' })
-            indexMessage = 'Scan started'
+            const result = await commands.startDriveIndex()
+            indexMessage = result.status === 'ok' ? 'Scan started' : `Couldn't start: ${result.error}`
         } catch (error) {
             indexMessage = `Couldn't start: ${String(error)}`
         }
@@ -106,8 +59,11 @@
 
     async function handleClearIndex() {
         try {
-            const { invoke } = await import('@tauri-apps/api/core')
-            await invoke('clear_drive_index')
+            const result = await commands.clearDriveIndex()
+            if (result.status === 'error') {
+                indexMessage = `Couldn't clear: ${result.error}`
+                return
+            }
             indexMessage = 'Index cleared'
             await pollDebugStatus()
         } catch (error) {
@@ -207,7 +163,7 @@
         return stats.map(([k, v]) => `${k}: ${v}`).join(', ')
     }
 
-    function currentPhaseLiveStat(status: IndexDebugStatus): string {
+    function currentPhaseLiveStat(status: IndexDebugStatusResponse): string {
         if (status.activityPhase === 'scanning') return `${formatCount(status.entriesScanned)} entries scanned`
         if (status.activityPhase === 'live') return `${formatCount(status.liveEventCount)} live events`
         return ''

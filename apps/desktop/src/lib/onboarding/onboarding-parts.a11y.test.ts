@@ -1,6 +1,7 @@
 /**
  * Tier 3 a11y tests for the onboarding pieces that mount on their own: the step
- * shell, the language picker, and the two cloud-provider controls.
+ * shell, the language picker, the two cloud-provider controls, the FDA badge, and the
+ * local-download toast.
  *
  * One file per component would cost about four times as much: `svelte-tests`
  * charges per test FILE, not per test (`docs/testing.md` § "What a test actually
@@ -56,6 +57,7 @@ import CloudProviderSetup from './CloudProviderSetup.svelte'
 import OnboardingLanguagePicker from './OnboardingLanguagePicker.svelte'
 import OnboardingStepShell from './OnboardingStepShell.svelte'
 import FdaBadge from './FdaBadge.svelte'
+import LocalDownloadFailedToastContent from './LocalDownloadFailedToastContent.svelte'
 import { cloudProviderPresets } from '$lib/settings'
 
 let mounted: { target: HTMLElement; instance: ReturnType<typeof mount> } | undefined
@@ -207,6 +209,21 @@ describe('FdaBadge a11y', () => {
       target,
       props: { onOpenOnboarding: () => {} },
     })
+    mounted = { target, instance }
+    await tick()
+    await expectNoA11yViolations(target)
+  })
+})
+
+/**
+ * Tier 3 a11y test for `LocalDownloadFailedToastContent.svelte`: a title, a sentence, and
+ * one button whose visible text names where it goes.
+ */
+describe('LocalDownloadFailedToastContent a11y', () => {
+  it('has no a11y violations', async () => {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    const instance = mount(LocalDownloadFailedToastContent, { target, props: { toastId: 'local-download-failed' } })
     mounted = { target, instance }
     await tick()
     await expectNoA11yViolations(target)

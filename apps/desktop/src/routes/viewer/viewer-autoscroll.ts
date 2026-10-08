@@ -1,44 +1,33 @@
 /**
  * Pure helpers for the drag-past-edge autoscroll loop.
  *
- * When the pointer drifts within `EDGE_AUTOSCROLL_PX` of the viewport's top or bottom
- * during a drag, the viewer scrolls in that direction at a speed proportional to how
- * far past the threshold the pointer is. This gives the user a way to extend a
- * selection past the visible buffer without flicking the wheel.
+ * When the pointer leaves the viewport through its top or bottom during a drag, the
+ * viewer scrolls that way at a speed proportional to how far past the edge the pointer
+ * is. It's WebKit's own selection autoscroll, which Binary and Hex modes get natively
+ * (their rows use native selection): no band inside the edge, a crawl just past it, and
+ * faster the further the user pulls.
  */
-
-/** Distance from the viewport edge at which autoscroll kicks in. */
-export const EDGE_AUTOSCROLL_PX = 30
-
-/** Max scroll speed in px per frame (~30 lines/frame at 18 px/line = 540 px/frame). */
-const MAX_PX_PER_FRAME = 540
 
 /**
- * Returns the autoscroll px-per-frame for the given pointer position relative to a
- * viewport range `[top, bottom]`. Positive means "scroll down", negative means
- * "scroll up", 0 means "no autoscroll".
+ * Scroll speed in px/s for each px the pointer sits past the edge.
  *
- * Speed scales linearly with how far past the threshold the pointer is, capped at
- * `MAX_PX_PER_FRAME`. The threshold is `EDGE_AUTOSCROLL_PX` from each edge.
- *
- * Pure: no DOM, no time, no side effects. Easy to unit-test.
+ * WebKit's autoscroll timer fires every 50 ms and scrolls just far enough to reveal the
+ * pointer, so it moves the distance past the edge 20 times a second. Text mode draws its
+ * own selection (`user-select: none`), so it has to reproduce that curve itself.
  */
-export function computeAutoscrollPxPerFrame(pointerY: number, viewportTop: number, viewportBottom: number): number {
-  const distanceFromTop = pointerY - viewportTop
-  const distanceFromBottom = viewportBottom - pointerY
+export const AUTOSCROLL_PX_PER_SEC_PER_PX_PAST = 20
 
-  if (distanceFromTop < EDGE_AUTOSCROLL_PX) {
-    // Scroll up. The closer to (or past) the top, the faster.
-    const past = EDGE_AUTOSCROLL_PX - distanceFromTop
-    const ratio = Math.min(1, past / EDGE_AUTOSCROLL_PX)
-    return -Math.round(ratio * MAX_PX_PER_FRAME)
-  }
-
-  if (distanceFromBottom < EDGE_AUTOSCROLL_PX) {
-    const past = EDGE_AUTOSCROLL_PX - distanceFromBottom
-    const ratio = Math.min(1, past / EDGE_AUTOSCROLL_PX)
-    return Math.round(ratio * MAX_PX_PER_FRAME)
-  }
-
+/**
+ * Returns the autoscroll speed in px/s (content px, before any scroll scaling) for a
+ * pointer at `pointerY` against a viewport spanning `[viewportTop, viewportBottom]`.
+ * Positive scrolls down, negative scrolls up, 0 means no autoscroll.
+ *
+ * Gotcha/Why: ❌ don't add a band inside the edge, and don't cap it low. The previous
+ * curve hit 540 px per FRAME 30 px inside the edge, so a drag that crossed the bottom
+ * reached the end of the file before the user could stop at the next two lines.
+ */
+export function computeAutoscrollPxPerSecond(pointerY: number, viewportTop: number, viewportBottom: number): number {
+  if (pointerY < viewportTop) return -(viewportTop - pointerY) * AUTOSCROLL_PX_PER_SEC_PER_PX_PAST
+  if (pointerY > viewportBottom) return (pointerY - viewportBottom) * AUTOSCROLL_PX_PER_SEC_PER_PX_PAST
   return 0
 }

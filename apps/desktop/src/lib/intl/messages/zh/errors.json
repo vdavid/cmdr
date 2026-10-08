@@ -163,9 +163,9 @@
   "@errors.listing.notPermitted.explanation": {
     "sourceHash": "e28dd0e"
   },
-  "errors.listing.notPermitted.suggestion": "可以这样试试：\n- 打开 **{system_settings} > {privacy_and_security} > {files_and_folders}**，授予 Cmdr 访问权限\n- 如果这是受系统保护的文件夹（比如系统目录），你可能需要在 {privacy_and_security} 里授予 Cmdr **{full_disk_access}**\n- 在终端里对这个路径运行 `ls -la`，查看所有者和权限",
+  "errors.listing.notPermitted.suggestion": "可以这样试试：\n- 打开 **{system_settings} > {privacy_and_security} > {files_and_folders}**，授予 Cmdr 访问权限\n- 如果这是受系统保护的文件夹，你可能需要在 {privacy_and_security} 里授予 Cmdr **{full_disk_access}**\n- 在终端里对这个路径运行 `ls -la`，查看所有者和权限",
   "@errors.listing.notPermitted.suggestion": {
-    "sourceHash": "bbaa904"
+    "sourceHash": "2926956"
   },
   "errors.listing.pathNotFoundErrno.title": "找不到路径",
   "@errors.listing.pathNotFoundErrno.title": {
@@ -271,9 +271,9 @@
   "@errors.listing.notSupportedErrno.explanation": {
     "sourceHash": "a0ca28f"
   },
-  "errors.listing.notSupportedErrno.suggestion": "换个方式试试，或用 Finder 来完成这项操作。如果你在用外置驱动器，它可能格式化成了有限制的文件系统（比如 FAT32 无法存储大于 4 GB 的文件）。",
+  "errors.listing.notSupportedErrno.suggestion": "换个方式试试，或用 Finder 来完成这项操作。如果你在用外置驱动器，它可能格式化成了有限制的文件系统（比如 FAT32 无法存储 4 GiB 及以上的文件）。",
   "@errors.listing.notSupportedErrno.suggestion": {
-    "sourceHash": "de64ad5"
+    "sourceHash": "8fea918"
   },
   "errors.listing.networkUnreachable.title": "网络无法连到",
   "@errors.listing.networkUnreachable.title": {
@@ -491,6 +491,18 @@
   "@errors.listing.permissionDenied.suggestion": {
     "sourceHash": "3450aff"
   },
+  "errors.listing.objectStoreRefused.title": "你的存储提供方拒绝了访问",
+  "@errors.listing.objectStoreRefused.title": {
+    "sourceHash": "2c26546"
+  },
+  "errors.listing.objectStoreRefused.explanation": "`{path}` 在云存储里，提供方拒绝了这个请求。可能是访问密钥在这里没有权限，也可能是提供方暂停了这个账户的访问，比如用量达到上限或者账单出了问题。",
+  "@errors.listing.objectStoreRefused.explanation": {
+    "sourceHash": "b9f0f12"
+  },
+  "errors.listing.objectStoreRefused.suggestion": "请检查访问密钥的权限，或者到提供方的控制台看看有没有用量上限或账单通知。",
+  "@errors.listing.objectStoreRefused.suggestion": {
+    "sourceHash": "718da2a"
+  },
   "errors.listing.remotePermissionDenied.title": "服务器不让打开这个文件夹",
   "@errors.listing.remotePermissionDenied.title": {
     "sourceHash": "f9cb7bd"
@@ -622,6 +634,18 @@
   "errors.listing.deletePending.suggestion": "可以这样试试：\n- 稍等片刻再重试 — 最后一个句柄一关闭，文件就会消失\n- 关掉其他可能打开着这个文件的 App\n- 如果它一直在，重启 Cmdr，放掉它可能还占着的句柄",
   "@errors.listing.deletePending.suggestion": {
     "sourceHash": "0531cd8"
+  },
+  "errors.listing.coldStorage.title": "这个文件已存档",
+  "@errors.listing.coldStorage.title": {
+    "sourceHash": "73da082"
+  },
+  "errors.listing.coldStorage.explanation": "`{path}` 已存档，恢复之前无法读取里面的内容。",
+  "@errors.listing.coldStorage.explanation": {
+    "sourceHash": "78f52d7"
+  },
+  "errors.listing.coldStorage.suggestion": "可以这样试试：\n- 在存储提供方的控制台里恢复这个文件，然后再打开\n- 恢复可能需要几分钟到两天不等",
+  "@errors.listing.coldStorage.suggestion": {
+    "sourceHash": "0becf43"
   },
   "errors.listing.invalidName.title": "这个名称在这里用不了",
   "@errors.listing.invalidName.title": {
@@ -1102,15 +1126,27 @@
   },
   "errors.write.destinationNotFound.message.copy": "你要拷贝到的文件夹已经不存在了，所以没有地方放你的文件。原文件没有被动过。",
   "@errors.write.destinationNotFound.message.copy": {
-    "sourceHash": "80f4a4c"
+    "sourceHash": "b747547"
   },
   "errors.write.destinationNotFound.message.move": "你要移动到的文件夹已经不存在了，所以没有地方放你的文件。原文件没有被动过。",
   "@errors.write.destinationNotFound.message.move": {
-    "sourceHash": "b764d42"
+    "sourceHash": "20fb725"
   },
   "errors.write.destinationNotFound.suggestion": "它可能被重命名或删除了，也可能是驱动器断开了。换一个目标位置，或者重新打开这个文件夹再试一次。",
   "@errors.write.destinationNotFound.suggestion": {
     "sourceHash": "2e99059"
+  },
+  "errors.write.destinationNotAFolder.title": "有个文件占了位置",
+  "@errors.write.destinationNotAFolder.title": {
+    "sourceHash": "d371870"
+  },
+  "errors.write.destinationNotAFolder.message": "Cmdr 无法创建目标文件夹，因为 {path} 是个文件，但那里需要一个文件夹。什么都没有写入，原文件没有被动过。",
+  "@errors.write.destinationNotAFolder.message": {
+    "sourceHash": "dfebb59"
+  },
+  "errors.write.destinationNotAFolder.suggestion": "换一个目标位置，或者把那个文件改名或移到别处，然后再试一次。",
+  "@errors.write.destinationNotAFolder.suggestion": {
+    "sourceHash": "c410ecf"
   },
   "errors.write.notConnected.title": "尚未连接",
   "@errors.write.notConnected.title": {
@@ -1127,6 +1163,18 @@
   "errors.write.notConnected.suggestion": "从宗卷选择器中打开它来连接，然后再试一次。如果是手机，解锁它并接受它弹出的任何提示。",
   "@errors.write.notConnected.suggestion": {
     "sourceHash": "3fdc936"
+  },
+  "errors.write.noLongerConnected.title": "已经断开连接",
+  "@errors.write.noLongerConnected.title": {
+    "sourceHash": "3974fa0"
+  },
+  "errors.write.noLongerConnected.message": "存放这些文件的手机或服务器已经断开连接了，所以什么都没有改变。",
+  "@errors.write.noLongerConnected.message": {
+    "sourceHash": "d0827c4"
+  },
+  "errors.write.noLongerConnected.suggestion": "把手机重新插上，或者从宗卷选择器中打开服务器，然后再试一次。",
+  "@errors.write.noLongerConnected.suggestion": {
+    "sourceHash": "850ecdb"
   },
   "errors.write.destinationExists.title": "文件已存在",
   "@errors.write.destinationExists.title": {
@@ -1392,9 +1440,9 @@
   "@errors.write.invalidName.message": {
     "sourceHash": "ad395af"
   },
-  "errors.write.invalidName.suggestion": "把它改成更短、更朴素的名称再试一次。有些目标位置还会拒绝 CON、NUL、LPT1 这类保留名称。",
+  "errors.write.invalidName.suggestion": "把它改成更短、更朴素的名称再试一次。有些目标位置不接受名称里的制表符或换行符，有些还会拒绝 CON、NUL、LPT1 这类保留名称。",
   "@errors.write.invalidName.suggestion": {
-    "sourceHash": "3721c3d"
+    "sourceHash": "77cff09"
   },
   "errors.write.trashRefused.title": "无法移到废纸篓",
   "@errors.write.trashRefused.title": {
@@ -1500,6 +1548,10 @@
   "@errors.write.permissionDenied.message.named": {
     "sourceHash": "0ffd79b"
   },
+  "errors.write.permissionDenied.suggestion.objectStoreAccount": "提供方拒绝了，这可能有两种情况。请检查访问密钥的权限，或者到提供方的控制台看看有没有用量上限或账单通知。",
+  "@errors.write.permissionDenied.suggestion.objectStoreAccount": {
+    "sourceHash": "31deca5"
+  },
   "errors.write.permissionDenied.suggestion.needsAdminMac": "这需要管理员权限。要给你自己的账户授权，请在 Finder 里选中这个文件夹，选取“显示简介”，然后查看“共享与权限”部分。",
   "@errors.write.permissionDenied.suggestion.needsAdminMac": {
     "sourceHash": "674192a"
@@ -1528,17 +1580,17 @@
   "@errors.write.permissionDenied.suggestion.sourceRead": {
     "sourceHash": "978e180"
   },
-  "errors.write.insufficientSpace.title": "空间不足",
+  "errors.write.insufficientSpace.title": "目标位置可能没有足够的空间",
   "@errors.write.insufficientSpace.title": {
-    "sourceHash": "c5f8c45"
+    "sourceHash": "9db6685"
   },
-  "errors.write.insufficientSpace.message": "目标需要 {required}，但只有 {available} 可用。",
+  "errors.write.insufficientSpace.message": "最多需要 {required}，目标位置现在有 {available} 可用。",
   "@errors.write.insufficientSpace.message": {
-    "sourceHash": "582f30a"
+    "sourceHash": "931f1e0"
   },
-  "errors.write.insufficientSpace.suggestion": "在目标上删除一些不必要的文件腾出空间，或者换一个位置。",
+  "errors.write.insufficientSpace.suggestion": "如果目标位置已有部分文件，拷贝实际需要的空间可能更少。如果目标位置被占满，Cmdr 会停止并告诉你。稳妥起见，可以腾出一些空间，或者换一个位置。",
   "@errors.write.insufficientSpace.suggestion": {
-    "sourceHash": "257f1d9"
+    "sourceHash": "91fafd3"
   },
   "errors.write.destinationFull.title": "目标位置已满",
   "@errors.write.destinationFull.title": {
@@ -1652,6 +1704,30 @@
   "@errors.write.deletePending.suggestion": {
     "sourceHash": "39e64a9"
   },
+  "errors.write.sourceInColdStorage.title": "这个文件已存档",
+  "@errors.write.sourceInColdStorage.title": {
+    "sourceHash": "73da082"
+  },
+  "errors.write.sourceInColdStorage.message": "位于 {path} 的文件已存档，恢复之前无法读取。",
+  "@errors.write.sourceInColdStorage.message": {
+    "sourceHash": "1015fe5"
+  },
+  "errors.write.sourceInColdStorage.suggestion": "请在存储提供方的控制台里恢复这个文件，然后重试。恢复可能需要几分钟到两天不等。",
+  "@errors.write.sourceInColdStorage.suggestion": {
+    "sourceHash": "f279603"
+  },
+  "errors.write.sourceChanged.title": "这个文件在拷贝期间发生了变化",
+  "@errors.write.sourceChanged.title": {
+    "sourceHash": "1c63c8b"
+  },
+  "errors.write.sourceChanged.message": "位于 {path} 的文件在 Cmdr 拷贝期间发生了变化，所以 Cmdr 什么都没保存。这个文件仍留在原处。",
+  "@errors.write.sourceChanged.message": {
+    "sourceHash": "4c404e0"
+  },
+  "errors.write.sourceChanged.suggestion": "再试一次，就会拷贝现在的那个版本。",
+  "@errors.write.sourceChanged.suggestion": {
+    "sourceHash": "97fc945"
+  },
   "errors.write.newDataKeptAt.title": "你的新文件换了个名字",
   "@errors.write.newDataKeptAt.title": {
     "sourceHash": "06bc297"
@@ -1734,7 +1810,7 @@
   },
   "errors.mutation.notFound": "“{path}”已经不存在了。",
   "@errors.mutation.notFound": {
-    "sourceHash": "64611c8"
+    "sourceHash": "9c068a2"
   },
   "errors.mutation.cantRenameVolumeRoot": "宗卷的顶层文件夹无法在这里重命名。",
   "@errors.mutation.cantRenameVolumeRoot": {
@@ -1754,7 +1830,7 @@
   },
   "errors.mutation.volumeGone": "这个宗卷已经不可用了，所以什么都没有改动。",
   "@errors.mutation.volumeGone": {
-    "sourceHash": "643398b"
+    "sourceHash": "2d24729"
   },
   "errors.mutation.archiveNotEditable": "Cmdr 现在无法打开这个压缩文件来编辑。",
   "@errors.mutation.archiveNotEditable": {
@@ -1790,7 +1866,7 @@
   },
   "errors.volume.notFound": "“{path}”已经不存在了。",
   "@errors.volume.notFound": {
-    "sourceHash": "64611c8"
+    "sourceHash": "9c068a2"
   },
   "errors.volume.permissionDenied": "Cmdr 没有权限访问“{path}”。",
   "@errors.volume.permissionDenied": {
@@ -1836,6 +1912,14 @@
   "@errors.volume.isADirectory": {
     "sourceHash": "224ae5e"
   },
+  "errors.volume.notADirectory": "“{path}”是个文件，但那里需要一个文件夹。",
+  "@errors.volume.notADirectory": {
+    "sourceHash": "2f66bc8"
+  },
+  "errors.volume.invalidNameNamed": "“{name}”这个名称在这里存不下。请换一个名称。",
+  "@errors.volume.invalidNameNamed": {
+    "sourceHash": "6f65c40"
+  },
   "errors.volume.invalidName": "目标位置存不下这个名称。请换一个名称。",
   "@errors.volume.invalidName": {
     "sourceHash": "531488f"
@@ -1843,6 +1927,14 @@
   "errors.volume.deletePending": "这个文件正在退场，还有东西占着它。请稍等片刻再重试。",
   "@errors.volume.deletePending": {
     "sourceHash": "f7d0ab7"
+  },
+  "errors.volume.coldStorage": "“{path}”已存档。请先在存储提供方的控制台里恢复。",
+  "@errors.volume.coldStorage": {
+    "sourceHash": "c742f7c"
+  },
+  "errors.volume.sourceChanged": "“{path}”在 Cmdr 拷贝期间发生了变化，所以 Cmdr 什么都没保存。再试一次就能拷贝新版本。",
+  "@errors.volume.sourceChanged": {
+    "sourceHash": "18062cb"
   },
   "errors.volume.ambiguousName": "服务器上有不止一个项目匹配“{path}”，所以 Cmdr 没有替你选。请到它所在的文件夹里选择。",
   "@errors.volume.ambiguousName": {
@@ -1892,13 +1984,17 @@
   "@errors.serverRequest.unexpected": {
     "sourceHash": "5be7ebd"
   },
-  "errors.eject.busy": "Cmdr 还在读写这个驱动器上的文件。完成后再推出。",
+  "errors.serverRequest.blockedByPolicy": "你的组织在 Cmdr 中关闭了这项功能。",
+  "@errors.serverRequest.blockedByPolicy": {
+    "sourceHash": "9a27fb3"
+  },
+  "errors.eject.busy": "Cmdr 还在那里读写文件。完成后再试一次。",
   "@errors.eject.busy": {
-    "sourceHash": "0600dd5"
+    "sourceHash": "560c0db"
   },
   "errors.eject.volumeNotFound": "这个驱动器已经断开了，所以不用再推出。",
   "@errors.eject.volumeNotFound": {
-    "sourceHash": "2c5112f"
+    "sourceHash": "75b7870"
   },
   "errors.eject.notEjectable": "这个驱动器不可移除，所以会一直保持连接。",
   "@errors.eject.notEjectable": {
@@ -1910,39 +2006,51 @@
   },
   "errors.eject.remoteNotConnected": "这台服务器已经断开了，所以没有连接需要关闭。",
   "@errors.eject.remoteNotConnected": {
-    "sourceHash": "3b531d1"
+    "sourceHash": "3f38dd0"
   },
   "errors.eject.deviceDisconnectRefused": "设备没有关闭连接。等它空闲下来再拔下线缆。",
   "@errors.eject.deviceDisconnectRefused": {
     "sourceHash": "5b99318"
   },
-  "errors.eject.unmountRefused": "还有东西在使用这个驱动器。请关闭打开的文件和 App，然后再次推出。",
+  "errors.eject.unmountRefused": "还有东西开着那里的文件。请关闭打开的文件和 App，然后再试一次。",
   "@errors.eject.unmountRefused": {
-    "sourceHash": "1ff7d31"
+    "sourceHash": "709ecc5"
   },
-  "errors.eject.unmountRefusedByApp": "{app} 还在使用这个驱动器。请关闭它在上面打开的内容，然后再次推出。",
+  "errors.eject.unmountRefusedByApp": "{app} 还开着那里的文件。请把它们关掉，然后再试一次。",
   "@errors.eject.unmountRefusedByApp": {
-    "sourceHash": "bee2660"
+    "sourceHash": "c6e596a"
   },
-  "errors.eject.unmountRefusedByApps": "{apps} 还在使用这个驱动器。请关闭它们在上面打开的内容，然后再次推出。",
+  "errors.eject.unmountRefusedByApps": "{apps} 还开着那里的文件。请把它们关掉，然后再试一次。",
   "@errors.eject.unmountRefusedByApps": {
-    "sourceHash": "0864134"
+    "sourceHash": "93120f1"
   },
   "errors.eject.otherApps": "其他 App",
   "@errors.eject.otherApps": {
     "sourceHash": "09fe5b1"
   },
-  "errors.eject.unmountRefusedByDiskImage": "这个驱动器上有一个磁盘映像还开着。请先推出那个映像，再推出这个驱动器。",
+  "errors.eject.unmountRefusedByProcess": "有一个名为 {process} 的进程还开着那里的文件。（Cmdr 拿不到 App 名称，只有进程名。）",
+  "@errors.eject.unmountRefusedByProcess": {
+    "sourceHash": "ad7c1d5"
+  },
+  "errors.eject.unmountRefusedByProcesses": "有 {countText} 个进程还开着那里的文件，分别是 {processes}。（Cmdr 拿不到 App 名称，只有进程名。）",
+  "@errors.eject.unmountRefusedByProcesses": {
+    "sourceHash": "5e9dbac"
+  },
+  "errors.eject.otherProcesses": "其他进程",
+  "@errors.eject.otherProcesses": {
+    "sourceHash": "01db91d"
+  },
+  "errors.eject.unmountRefusedByDiskImage": "那里存放的一个磁盘映像还开着。请先推出那个映像，然后再试一次。",
   "@errors.eject.unmountRefusedByDiskImage": {
-    "sourceHash": "82fc540"
+    "sourceHash": "1fa3d53"
   },
-  "errors.eject.unmountRefusedBySystem": "macOS 还在处理这个驱动器。请稍等一会儿，然后再次推出。",
+  "errors.eject.unmountRefusedBySystem": "macOS 还开着那里的文件。请稍等一会儿，然后再试一次。",
   "@errors.eject.unmountRefusedBySystem": {
-    "sourceHash": "27636e6"
+    "sourceHash": "e778b5c"
   },
-  "errors.eject.unmountRefusedByCmdr": "Cmdr 自己还在使用这个驱动器。请稍等片刻，然后再次推出；如果一直这样，请发送一份报告。",
+  "errors.eject.unmountRefusedByCmdr": "Cmdr 自己还开着那里的文件。请稍等片刻，然后再试一次；如果一直这样，请发送一份报告。",
   "@errors.eject.unmountRefusedByCmdr": {
-    "sourceHash": "2f56d2c"
+    "sourceHash": "e79c1d8"
   },
   "errors.eject.timedOut": "这个驱动器还没有响应，可能过一会儿它会自己推出。",
   "@errors.eject.timedOut": {

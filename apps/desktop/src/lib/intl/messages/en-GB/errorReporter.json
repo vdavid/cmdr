@@ -1,0 +1,10 @@
+{
+  "errorReporter.amend.unavailable": "That report can’t take a note any more. To get your notes to the team, send a new report from the Help menu.",
+  "@errorReporter.amend.unavailable": {
+    "sourceHash": "08ab034"
+  },
+  "errorReporter.dialog.managedOff": "Your organisation turned off sending reports. You can still save one to disk and share it yourself.",
+  "@errorReporter.dialog.managedOff": {
+    "sourceHash": "9309a39"
+  }
+}

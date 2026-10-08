@@ -150,6 +150,14 @@ where it is shown.
   - ❌ Don't write that the dialog would bounce a queued operation back: auto-queue is a dispatching view's decision
     only, and an adopted one stays put (`../transfer/DETAILS.md` § "Auto-queue surfacing", pinned by
     `../transfer/transfer-progress-state.ownership.svelte.test.ts`).
+- **Every way Show can open nothing leaves a warn line** in the release log: the row logs a rejected emit, and the main
+  window logs a miss in its snapshot (with its row count) or a missing explorer. A refusal already logs and toasts. A
+  CI-only Linux failure once left no trace at all, because the miss logged at info, which release builds drop.
+- **The E2E names the hop a failed Show died on.** That Linux failure (CI runs 37450234515 and 37763174127, both
+  attempts each) came back with NONE of those warns, and never reproduced locally (40 repeats of the spec, three full
+  Linux suites, two of them under CPU contention, 2026-10-08). So `operation-queue.spec.ts` puts a throwaway listener in
+  each window and reads the main window's app listener out of Tauri's listener table; a failure now says whether the
+  request left the queue window, reached the main webview, and found a live handler there.
 - **The main window can refuse.** Its dialog slot is single-occupancy; a refusal comes back as a toast there, next to
   the dialog that refused. Reasoning and the invisible-occupancy hazard: `../../file-explorer/pane/DETAILS.md` § "Birth
   context".
@@ -332,7 +340,7 @@ for a transfer/activity manager — and follows the window's active state.
 
 Under macOS "Reduce transparency" the window opens opaque (no material, `backgroundColor` mirroring the theme) and the
 page surface uses the shared `--color-bg-glass` / `--color-border-glass` tokens, which flip to opaque under
-`html.reduce-transparency` (toggled from the backend `NSWorkspace` value via `$lib/reduce-transparency`, since WKWebView
+`html.reduce-transparency` (toggled from the backend `NSWorkspace` value via `$lib/glass-material`, since WKWebView
 doesn't reflect `prefers-reduced-transparency`). `prefers-color-scheme` IS reflected, so dark detection stays a media
 query. Reduced motion is honored by the shared `ProgressBar` and `Spinner`: the bar's shimmer lives inside
 `@media (prefers-reduced-motion: no-preference)` and the spinner's spin freezes through `app-utilities.css`.

@@ -16,7 +16,7 @@ export interface ConflictFileInfo {
 
 export type RenameConflictResolution = 'overwrite-trash' | 'overwrite-delete' | 'cancel' | 'continue'
 import { checkRenamePermission, checkRenameValidity, renameFile, type RenameValidityResult } from '$lib/tauri-commands'
-import { asMutationError, isMutationTimeout } from '$lib/file-operations/mutation-error'
+import { asMutationError } from '$lib/file-operations/mutation-error'
 import { renderMutationError } from '$lib/file-operations/mutation-error-messages'
 import { getAppLogger } from '$lib/logging/logger'
 import type { RenameTarget } from './rename-state.svelte'
@@ -24,14 +24,20 @@ import type { ExtensionChangePolicy } from '$lib/settings'
 
 const log = getAppLogger('rename')
 
+/** How a rename that outlived the backend's reply deadline ended. */
+export type RenameSettled = { type: 'success'; newName: string } | { type: 'error'; message: string }
+
 export type RenameResult =
   | { type: 'noop' }
   | { type: 'error'; message: string }
-  /** The volume never confirmed the rename. It may still have landed on disk. */
-  | { type: 'timeout' }
+  /** The volume is slow and the rename is still running: it may well land. `settled` says how it ended. */
+  | { type: 'still-renaming'; settled: Promise<RenameSettled> }
   | { type: 'extension-ask'; oldExtension: string; newExtension: string }
   | { type: 'conflict'; validity: RenameValidityResult }
   | { type: 'success'; newName: string }
+  /** The rename copies too much to start unasked (a big S3 folder): the caller
+   *  opens the Move dialog prefilled with `newName`, and nothing renamed yet. */
+  | { type: 'confirm-move'; newName: string }
 
 /**
  * Words for the backend's typed verdict on a name it won't take.
@@ -101,7 +107,7 @@ export async function executeRenameSave(
   } catch (e) {
     // Same typed vocabulary as the rename itself, so a validity check that can't
     // run reads in the user's own language rather than in `diskutil` English.
-    return { type: 'error', message: renameFailureMessage(e, target.isDirectory) }
+    return { type: 'error', message: renameFailureMessage(e, target.isDirectory, trimmedName) }
   }
 
   if (!validity.valid) {
@@ -111,6 +117,13 @@ export async function executeRenameSave(
   // Conflict detected (and not a case-only rename of the same file)
   if (validity.hasConflict && !validity.isCaseOnlyRename) {
     return { type: 'conflict', validity }
+  }
+
+  // A rename that copies past the small-rename count waits for the Move dialog.
+  // A small one (`confirmFirst` false) goes through `renameFile`, which starts
+  // it as a background move by itself.
+  if (validity.byMove?.confirmFirst) {
+    return { type: 'confirm-move', newName: trimmedName }
   }
 
   // Perform the rename
@@ -130,15 +143,20 @@ export async function performRename(
   const fromPath = target.path
   const toPath = target.parentPath + '/' + newName
 
-  try {
-    await renameFile(fromPath, toPath, force, volumeId)
-    return { type: 'success', newName }
-  } catch (e) {
-    // The caller words this one: it aggregates a run of them into a single
-    // toast, so the sentence depends on how many are waiting to be reported.
-    if (isMutationTimeout(e)) return { type: 'timeout' }
-    return { type: 'error', message: renameFailureMessage(e, target.isDirectory) }
-  }
+  // Whichever comes first: the rename's end, or the backend saying it's still
+  // running. The second hands the caller `settled` so the editor needn't wait.
+  let reportStillRunning!: () => void
+  const stillRunning = new Promise<'still-running'>((resolve) => {
+    reportStillRunning = () => {
+      resolve('still-running')
+    }
+  })
+  const settled = renameFile(fromPath, toPath, force, volumeId, undefined, { onStillRunning: reportStillRunning }).then(
+    (): RenameSettled => ({ type: 'success', newName }),
+    (e: unknown): RenameSettled => ({ type: 'error', message: renameFailureMessage(e, target.isDirectory, newName) }),
+  )
+  const first = await Promise.race([settled, stillRunning])
+  return first === 'still-running' ? { type: 'still-renaming', settled } : first
 }
 
 /**
@@ -149,9 +167,9 @@ export async function performRename(
  * thrown `Error` from the IPC layer itself) reads as the same honest fallback
  * the backend would have sent, with the raw value logged instead of shown.
  */
-function renameFailureMessage(e: unknown, isDirectory: boolean): string {
+function renameFailureMessage(e: unknown, isDirectory: boolean, newName?: string): string {
   const failure = asMutationError(e)
-  if (failure) return renderMutationError(failure, isDirectory ? 'folder' : 'file')
+  if (failure) return renderMutationError(failure, isDirectory ? 'folder' : 'file', newName)
   log.warn('A rename call threw an untyped value: {error}', { error: String(e) })
   return renderMutationError({ type: 'unexpected', detail: '' }, isDirectory ? 'folder' : 'file')
 }

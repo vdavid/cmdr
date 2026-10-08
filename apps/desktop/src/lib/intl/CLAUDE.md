@@ -11,7 +11,7 @@ for numbers, sizes, dates.
   maps the language half (`null` = no override), `watchSystemLocales()` follows a live change.
 - `language-analytics.ts`: language events (shipped tags only), fired off the PICK, never a subscription
   (`src-tauri/src/analytics/DETAILS.md`).
-- `number-format.ts`: memoized `Intl.NumberFormat` factory (`getNumberFormatter`), `formatInteger`, and
+- `number-format.ts`: memoized `Intl.NumberFormat` factory (`getNumberFormatter`), `formatInteger`, `formatMoney`, and
   `getGroupSeparator` (the byte-triad separator). `list-format.ts`: the same over `Intl.ListFormat`
   (`formatConjunctionList`), on the UI locale. `duration-format.ts`: narrow durations ("8min 12s"), UI locale, no
   `Intl.DurationFormat` (too new).

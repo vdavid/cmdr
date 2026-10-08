@@ -1,0 +1,95 @@
+{
+  "updates.failure.check": "Cmdr не удалось проверить наличие обновлений. {reason}",
+  "@updates.failure.check": {
+    "sourceHash": "5fb454c"
+  },
+  "updates.failure.checkUntyped": "Cmdr не удалось проверить наличие обновлений. Проверьте подключение к интернету и попробуйте еще раз позже.",
+  "@updates.failure.checkUntyped": {
+    "sourceHash": "233f5d9"
+  },
+  "updates.failure.download": "Cmdr не удалось загрузить обновление. Попробуйте еще раз позже.",
+  "@updates.failure.download": {
+    "sourceHash": "1becb1b"
+  },
+  "updates.failure.install": "Cmdr не удалось установить обновление. Попробуйте еще раз позже или скачайте последнюю версию Cmdr с getcmdr.com.",
+  "@updates.failure.install": {
+    "sourceHash": "05a4714"
+  },
+  "updates.checkToast.sendErrorReport": "Отправить отчет об ошибке",
+  "@updates.checkToast.sendErrorReport": {
+    "sourceHash": "c327e68"
+  },
+  "updates.toast.ready": "Новая версия Cmdr готова.",
+  "@updates.toast.ready": {
+    "sourceHash": "622668e"
+  },
+  "updates.toast.readyDetail": "Можно перезапустить сейчас, а можно ничего не делать: обновление включится при следующем запуске Cmdr.",
+  "@updates.toast.readyDetail": {
+    "sourceHash": "42ce099"
+  },
+  "updates.toast.versionChange": "v{prev} → v{next}",
+  "@updates.toast.versionChange": {
+    "sourceHash": "41b26f1",
+    "sameAsSourceJustification": "Название бренда, стандартное обозначение или строка из подстановок; сохраняется без перевода."
+  },
+  "updates.toast.versionChangeAria": "Обновление с версии {prev} до версии {next}",
+  "@updates.toast.versionChangeAria": {
+    "sourceHash": "911d79c"
+  },
+  "updates.toast.later": "Позже",
+  "@updates.toast.later": {
+    "sourceHash": "73b6e48"
+  },
+  "updates.toast.restart": "Перезапустить сейчас",
+  "@updates.toast.restart": {
+    "sourceHash": "09af100"
+  },
+  "updates.moveToApplicationsDialog.title": "Переместите Cmdr в папку «Программы»",
+  "@updates.moveToApplicationsDialog.title": {
+    "sourceHash": "97f87a0"
+  },
+  "updates.moveToApplicationsDialog.translocated": "Новая версия готова, но macOS запускает Cmdr из временной копии, доступной только для чтения. Так бывает, если открыть приложение прямо оттуда, куда его скачали, и тогда обновлениям некуда записаться.",
+  "@updates.moveToApplicationsDialog.translocated": {
+    "sourceHash": "ed64953"
+  },
+  "updates.moveToApplicationsDialog.readOnlyVolume": "Новая версия готова, но Cmdr запущен из места, доступного только для чтения, обычно из еще подключенного образа диска. Поэтому обновлениям некуда записаться.",
+  "@updates.moveToApplicationsDialog.readOnlyVolume": {
+    "sourceHash": "a23ef5a"
+  },
+  "updates.moveToApplicationsDialog.howTo": "Завершите Cmdr, перетащите его в папку «Программы» и откройте оттуда. Дальше все обновления будут приходить сами.",
+  "@updates.moveToApplicationsDialog.howTo": {
+    "sourceHash": "76a136d"
+  },
+  "updates.moveToApplicationsDialog.gotIt": "Понятно",
+  "@updates.moveToApplicationsDialog.gotIt": {
+    "sourceHash": "5ad3dbd"
+  },
+  "updates.status.noUpdates": "Обновлений нет. Текущая версия: v{version}",
+  "@updates.status.noUpdates": {
+    "sourceHash": "63a4ecb"
+  },
+  "updates.status.checking": "Проверка…",
+  "@updates.status.checking": {
+    "sourceHash": "ec963ff"
+  },
+  "updates.status.downloading": "Найдено обновление. Загрузка v{next} (текущая версия: v{prev})…",
+  "@updates.status.downloading": {
+    "sourceHash": "480c6da"
+  },
+  "updates.status.installing": "Установка v{next} (текущая версия: v{prev})…",
+  "@updates.status.installing": {
+    "sourceHash": "214ef12"
+  },
+  "updates.status.managedOff": "Обновлениями Cmdr управляет ваша организация.",
+  "@updates.status.managedOff": {
+    "sourceHash": "aa342dc"
+  },
+  "updates.status.heldByPolicy": "Вышла версия Cmdr {available}, но ваша организация разрешает на этом Mac версии не новее {ceiling}.",
+  "@updates.status.heldByPolicy": {
+    "sourceHash": "5c9b196"
+  },
+  "updates.status.ready": "Обновление v{next} готово. Перезапустите, чтобы применить.",
+  "@updates.status.ready": {
+    "sourceHash": "2c226ff"
+  }
+}

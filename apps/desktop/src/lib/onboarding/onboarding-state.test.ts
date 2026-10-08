@@ -7,6 +7,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
+import type { SettingLock } from '$lib/ipc/bindings'
 
 // Pretend we're on macOS so `previousStep` / `isAtFirstStep` / `openWizard(... null)`
 // resolve to the macOS branches. Linux behaviour is exercised via the explicit `isMac`
@@ -31,6 +32,9 @@ import {
   requestWizardComplete,
   getOnboardingState,
   ONBOARDING_STEP_COUNT,
+  aiStepSkippedFor,
+  setAiStepSkipped,
+  isAtFirstStep,
   type ResumeContext,
 } from './onboarding-state.svelte'
 
@@ -202,6 +206,49 @@ describe('four-step flow (FDA → AI → Beta → Optional)', () => {
     expect(resumeStepFor(ctxMac({ fullDiskAccessChoice: 'allow', hasFda: true }))).toBe(2)
     expect(resumeStepFor(ctxMac({ fullDiskAccessChoice: 'deny' }))).toBe(2)
     expect(resumeStepFor({ ...ctxMac({}), isMac: false })).toBe(2)
+  })
+})
+
+describe("the AI step under the organization's policy", () => {
+  beforeEach(() => {
+    resetForTesting()
+  })
+
+  const aiOff: SettingLock = { kind: 'fixed', value: 'off' }
+  const onDeviceOnly: SettingLock = { kind: 'disallowedValues', values: ['cloud'], fallback: 'off' }
+
+  it('is skipped only when the policy leaves nothing but "no AI" to pick', () => {
+    expect(aiStepSkippedFor({ lock: aiOff, localAiSupported: true })).toBe(true)
+    expect(aiStepSkippedFor({ lock: onDeviceOnly, localAiSupported: false })).toBe(true)
+    expect(aiStepSkippedFor({ lock: onDeviceOnly, localAiSupported: true })).toBe(false)
+    // An Intel Mac with no policy still has cloud AI to offer.
+    expect(aiStepSkippedFor({ lock: undefined, localAiSupported: false })).toBe(false)
+    expect(aiStepSkippedFor({ lock: undefined, localAiSupported: true })).toBe(false)
+  })
+
+  it('walks 1 → 3 and back 3 → 1 while skipped', () => {
+    openWizard('first-launch', ctxMac({}))
+    setAiStepSkipped(true)
+    nextStep()
+    expect(getOnboardingState().currentStep).toBe(3)
+    previousStep()
+    expect(getOnboardingState().currentStep).toBe(1)
+  })
+
+  it('moves on from the AI step when the skip lands while it is open', () => {
+    openWizard('first-launch', ctxMac({ fullDiskAccessChoice: 'deny' }))
+    expect(getOnboardingState().currentStep).toBe(2)
+    setAiStepSkipped(true)
+    expect(getOnboardingState().currentStep).toBe(3)
+  })
+
+  it('treats step 3 as the first step on Linux while skipped', () => {
+    openWizard('first-launch', { ...ctxMac({}), isMac: false })
+    setAiStepSkipped(true)
+    expect(getOnboardingState().currentStep).toBe(3)
+    expect(isAtFirstStep({ isMac: false })).toBe(true)
+    previousStep({ isMac: false })
+    expect(getOnboardingState().currentStep).toBe(3)
   })
 })
 

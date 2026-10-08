@@ -227,7 +227,7 @@ fn temp_index() -> (tempfile::TempDir, std::path::PathBuf) {
 fn an_unstamped_index_predates_the_exclusion_policy() {
     let (_dir, db_path) = temp_index();
     let conn = IndexStore::open_read_connection(&db_path).expect("read conn");
-    assert!(index_predates_exclusion_policy(&conn));
+    assert!(index_predates_exclusion_policy(&conn, ExclusionTier::BootDisk));
 }
 
 /// The scan-start sequence stamps the index for real, through the writer. What
@@ -238,7 +238,10 @@ fn a_truncating_walk_stamps_the_policy_through_the_writer() {
     let (_dir, db_path) = temp_index();
     {
         let conn = IndexStore::open_read_connection(&db_path).expect("read conn");
-        assert!(index_predates_exclusion_policy(&conn), "test setup: an unstamped index");
+        assert!(
+            index_predates_exclusion_policy(&conn, ExclusionTier::BootDisk),
+            "test setup: an unstamped index"
+        );
     }
 
     // What `lifecycle/manager/start.rs` and `lifecycle/network_scan.rs` send
@@ -246,13 +249,15 @@ fn a_truncating_walk_stamps_the_policy_through_the_writer() {
     let writer =
         crate::indexing::writer::IndexWriter::spawn(&db_path, crate::NoopEventSink::shared()).expect("spawn writer");
     writer.send(WriteMessage::TruncateData).expect("truncate");
-    writer.send(exclusion_policy_stamp_message()).expect("stamp");
+    writer
+        .send(exclusion_policy_stamp_message(ExclusionTier::BootDisk))
+        .expect("stamp");
     writer.flush_blocking().expect("flush");
     writer.shutdown();
 
     let conn = IndexStore::open_read_connection(&db_path).expect("read conn");
     assert!(
-        !index_predates_exclusion_policy(&conn),
+        !index_predates_exclusion_policy(&conn, ExclusionTier::BootDisk),
         "a walk under the current policy leaves the index trustworthy"
     );
 }
@@ -267,13 +272,44 @@ fn a_stamp_from_a_different_policy_re_arms_the_walk() {
     let conn = IndexStore::open_write_connection(&db_path).expect("write conn");
     IndexStore::update_meta(&conn, crate::indexing::store::EXCLUSION_POLICY_KEY, "0123456789abcdef")
         .expect("stamp an older policy");
-    assert!(index_predates_exclusion_policy(&conn));
+    assert!(index_predates_exclusion_policy(&conn, ExclusionTier::BootDisk));
+}
+
+/// The boot disk now stops at every filesystem mounted inside its tree, a rule a
+/// mount-rooted walk doesn't run. So a boot index stamped before it (whose stamp is
+/// what the mount-rooted fingerprint still reads) predates the policy and gets
+/// rebuilt, while every external drive's index keeps its stamp and its rows.
+#[test]
+#[cfg(target_os = "macos")]
+fn the_boot_tree_mount_rule_re_arms_only_the_boot_index() {
+    assert_ne!(
+        exclusion_policy_fingerprint(ExclusionTier::BootDisk),
+        exclusion_policy_fingerprint(ExclusionTier::MountRooted)
+    );
+
+    let (_dir, db_path) = temp_index();
+    let conn = IndexStore::open_write_connection(&db_path).expect("write conn");
+    IndexStore::update_meta(
+        &conn,
+        crate::indexing::store::EXCLUSION_POLICY_KEY,
+        &exclusion_policy_fingerprint(ExclusionTier::MountRooted),
+    )
+    .expect("stamp the shared pre-rule policy");
+    assert!(index_predates_exclusion_policy(&conn, ExclusionTier::BootDisk));
+    assert!(!index_predates_exclusion_policy(&conn, ExclusionTier::MountRooted));
 }
 
 /// The fingerprint is a pure function of compile-time constants, so it can't
 /// drift between the read that decides and the write that stamps.
 #[test]
 fn the_policy_fingerprint_is_stable() {
-    assert_eq!(exclusion_policy_fingerprint(), exclusion_policy_fingerprint());
-    assert_eq!(exclusion_policy_fingerprint().len(), 16, "a 64-bit FNV-1a in hex");
+    assert_eq!(
+        exclusion_policy_fingerprint(ExclusionTier::BootDisk),
+        exclusion_policy_fingerprint(ExclusionTier::BootDisk)
+    );
+    assert_eq!(
+        exclusion_policy_fingerprint(ExclusionTier::BootDisk).len(),
+        16,
+        "a 64-bit FNV-1a in hex"
+    );
 }

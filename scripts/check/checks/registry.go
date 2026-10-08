@@ -42,6 +42,21 @@ var AllChecks = []CheckDefinition{
 		Run:         RunClippy,
 	},
 	{
+		ID:          "desktop-rust-clippy-mimalloc",
+		CpuWeight:   8,
+		Nickname:    "clippy-mimalloc",
+		DisplayName: "clippy with mimalloc on macOS",
+		App:         AppDesktop,
+		Tech:        "🦀 Rust",
+		// A periodic gate: it guards a build nobody ships today, in a build
+		// directory of its own, so a plain `pnpm check` shouldn't pay for it.
+		IsSlow:    true,
+		NotInCI:   "on CI's ubuntu lanes mimalloc is the default and the plain clippy step covers it; the macOS-only mimalloc readers are a build nobody ships, so CI's macOS job doesn't pay for them",
+		DependsOn: []string{"desktop-rust-clippy"},
+		Inputs:    inputs(rustCompileInputs, []string{"clippy.toml"}),
+		Run:       RunClippyMimalloc,
+	},
+	{
 		ID:          "desktop-rust-rustdoc",
 		CpuWeight:   4,
 		Nickname:    "rustdoc",
@@ -103,6 +118,24 @@ var AllChecks = []CheckDefinition{
 		Inputs:      rustCompileInputs,
 		Run:         RunCargoUdeps,
 	},
+	// The fuzz smoke: every target in `fuzz/` for `CMDR_FUZZ_SECONDS` (default 60)
+	// on the pinned nightly. Minutes of CPU per run that can only go red on what
+	// random inputs happen to hit, so it gates nothing locally: CIOnly keeps it out
+	// of every local lane, IsSlow out of CI's default one, and its own job in
+	// `slow-checks.yml` is where it runs. `pnpm check fuzz` runs it on demand. It
+	// builds into `fuzz/target/`, so it holds no lock on the shared `target/`.
+	{
+		ID:          "desktop-rust-fuzz",
+		CpuWeight:   4,
+		Nickname:    "fuzz",
+		DisplayName: "fuzz smoke",
+		App:         AppDesktop,
+		Tech:        "🦀 Rust",
+		CIOnly:      true,
+		IsSlow:      true,
+		Inputs:      inputs(rustCompileInputs, []string{"fuzz/**"}),
+		Run:         RunFuzz,
+	},
 	{
 		ID:        "desktop-rust-module-cycles",
 		CpuWeight: 4,
@@ -115,13 +148,13 @@ var AllChecks = []CheckDefinition{
 		DisplayName: "Rust module cycles",
 		App:         AppDesktop,
 		Tech:        "🦀 Rust",
-		// The baseline is a macOS module graph, and every CI runner is ubuntu. A
+		// The baseline is a macOS module graph, and CI's cheap Rust lanes are ubuntu. A
 		// Linux analysis drops the macOS-gated modules (`drag_image_detection` and
 		// `drag_image_swap` ARE one of the seeded tangles), so its numbers would
 		// disagree with the baseline for reasons that have nothing to do with
 		// coupling. Warn-only besides, so a CI step could only ever print into a log
 		// nobody reads, at the cost of a multi-minute `cargo install`.
-		NotInCI: "warn-only metric measured against a macOS module graph; every runner is ubuntu, which analyzes a different set of cfg-gated modules",
+		NotInCI: "warn-only metric measured against a macOS module graph; CI's ubuntu lanes analyze a different set of cfg-gated modules, and a warn-only step on the macOS job would print into a log nobody reads",
 		// ~30 s across the five library crates, most of it the app crate, and the
 		// thing it measures moves on the scale of a refactor rather than a commit.
 		IsSlow:    true,
@@ -288,6 +321,19 @@ var AllChecks = []CheckDefinition{
 		IsFast:      true,
 		Inputs:      rustScanInputs(KindApp),
 		Run:         RunDeriveDefaultJustified,
+	},
+	{
+		ID:          "desktop-rust-vendor-patch-applied",
+		Nickname:    "vendor-patch-applied",
+		DisplayName: "vendored patches still apply",
+		App:         AppDesktop,
+		Tech:        "🦀 Rust",
+		DependsOn:   nil,
+		IsFast:      true,
+		// The root manifest's `[patch.crates-io]` and the lockfile decide the whole
+		// answer; no cargo call, no compile.
+		Inputs: inputs([]string{"Cargo.toml", "Cargo.lock"}),
+		Run:    RunVendorPatchApplied,
 	},
 	{
 		ID:          "desktop-rust-probe-unwrap-justified",
@@ -708,7 +754,7 @@ var AllChecks = []CheckDefinition{
 		DisplayName:     "integration tests (network fixtures)",
 		App:             AppDesktop,
 		Tech:            "🦀 Rust",
-		NeedsContainers: []StackMode{SmbCore, SftpCore, WebdavCore},
+		NeedsContainers: []StackMode{SmbCore, SftpCore, WebdavCore, S3Core},
 		DependsOn:       []string{"desktop-rust-clippy"},
 		Inputs:          inputs(rustCompileInputs, rustFixtureServerInputs),
 		Run:             RunRustIntegrationTests,
@@ -745,7 +791,7 @@ var AllChecks = []CheckDefinition{
 		// default `pnpm check` should do. `--include-slow` and `pnpm check
 		// disk-images` are the two ways in; off macOS it answers OK untouched.
 		IsSlow:    true,
-		NotInCI:   "every CI runner is ubuntu, and hdiutil and diskutil have no Linux counterpart; runs locally via --include-slow",
+		NotInCI:   "hdiutil and diskutil have no Linux counterpart, and CI's macOS job leaves it out until that job has a green record; runs locally via --include-slow",
 		DependsOn: []string{"desktop-rust-clippy"},
 		Inputs:    rustCompileInputs,
 		Run:       RunDiskImageTests,
@@ -766,6 +812,20 @@ var AllChecks = []CheckDefinition{
 		Run: RunFixtureLaneCoverage,
 	},
 	{
+		ID:          "desktop-rust-clippy-linux",
+		CpuWeight:   8,
+		Nickname:    "clippy-linux",
+		DisplayName: "clippy and rustdoc (Linux)",
+		App:         AppDesktop,
+		Tech:        "🦀 Rust",
+		IsSlow:      true,
+		NotInCI:     "CI's desktop-rust job already runs the same clippy and rustdoc natively on a Linux runner; this check exists to lint the Linux target from a Mac",
+		// After the host clippy, whose `--fix` may still be rewriting shared sources.
+		DependsOn: []string{"desktop-rust-clippy"},
+		Inputs:    inputs(rustCompileInputs, []string{"clippy.toml"}),
+		Run:       RunClippyLinux,
+	},
+	{
 		ID:          "desktop-rust-tests-linux",
 		CpuWeight:   6,
 		Nickname:    "rust-tests-linux",
@@ -774,9 +834,11 @@ var AllChecks = []CheckDefinition{
 		Tech:        "🦀 Rust",
 		IsSlow:      true,
 		NotInCI:     "CI's desktop-rust job already runs the same tests natively on a Linux runner; this check exists to run them from a Mac",
-		DependsOn:   []string{"desktop-rust-clippy"},
-		Inputs:      rustCompileInputs,
-		Run:         RunRustTestsLinux,
+		// Linters before tests, and the two share one target volume: the dependency is
+		// also what keeps their containers from contending for its build-directory lock.
+		DependsOn: []string{"desktop-rust-clippy-linux"},
+		Inputs:    rustCompileInputs,
+		Run:       RunRustTestsLinux,
 	},
 	// The real-API provider smokes. One lane per provider whose key we hold, because a
 	// decommission or a contract break at ANY of them should surface here rather than in a
@@ -998,6 +1060,21 @@ var AllChecks = []CheckDefinition{
 		IsFast:      true,
 		Inputs:      svelteInputs,
 		Run:         RunBarePoll,
+	},
+	{
+		ID:          "desktop-ipc-unused",
+		Nickname:    "ipc-unused",
+		DisplayName: "IPC wrappers and commands have callers",
+		App:         AppDesktop,
+		Tech:        "🎨 Svelte",
+		IsFast:      true,
+		// The frontend source (callers, wrappers, bindings) and the E2E trees whose
+		// raw `invoke('…')` calls count as uses.
+		Inputs: inputs([]string{
+			"apps/desktop/src/**",
+			"apps/desktop/test/**",
+		}, agentDocExclusions, runnerDataInputs(ipcUnusedAllowlistName)),
+		Run: RunIpcUnused,
 	},
 	{
 		ID:          "desktop-svelte-e2e-stale-selector",
@@ -1252,6 +1329,16 @@ var AllChecks = []CheckDefinition{
 		DependsOn: nil,
 		Inputs:    websiteInputs,
 		Run:       RunWebsiteAnalyticsInjection,
+	},
+	{
+		ID:          "website-csp-connect-src",
+		Nickname:    "csp-connect-src",
+		DisplayName: "CSP connect-src",
+		App:         AppWebsite,
+		Tech:        "🚀 Astro",
+		IsFast:      true, // a source-tree walk and a few regexes
+		Inputs:      websiteInputs,
+		Run:         RunWebsiteCSPConnectSrc,
 	},
 
 	// API server checks

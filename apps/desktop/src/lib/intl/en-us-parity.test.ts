@@ -88,10 +88,10 @@ describe('en-US parity: human-friendly sizes (formatFileSizeWithFormat)', () => 
     expect(formatFileSizeWithFormat(0, 'binary')).toBe('0 bytes')
     expect(formatFileSizeWithFormat(512, 'binary')).toBe('512 bytes')
     expect(formatFileSizeWithFormat(1000, 'binary')).toBe('1000 bytes')
-    expect(formatFileSizeWithFormat(1024, 'binary')).toBe('1.00 KB')
-    expect(formatFileSizeWithFormat(1536, 'binary')).toBe('1.50 KB')
-    expect(formatFileSizeWithFormat(1_073_208, 'binary')).toBe('1.02 MB')
-    expect(formatFileSizeWithFormat(1024 ** 4, 'binary')).toBe('1.00 TB')
+    expect(formatFileSizeWithFormat(1024, 'binary')).toBe('1.00 KiB')
+    expect(formatFileSizeWithFormat(1536, 'binary')).toBe('1.50 KiB')
+    expect(formatFileSizeWithFormat(1_073_208, 'binary')).toBe('1.02 MiB')
+    expect(formatFileSizeWithFormat(1024 ** 4, 'binary')).toBe('1.00 TiB')
   })
 
   it('SI, dynamic unit', () => {
@@ -101,9 +101,9 @@ describe('en-US parity: human-friendly sizes (formatFileSizeWithFormat)', () => 
   })
 
   it('forced unit, including large values that stay ungrouped', () => {
-    expect(formatFileSizeWithFormat(0, 'binary', 'MB')).toBe('0.00 MB')
-    expect(formatFileSizeWithFormat(512, 'binary', 'MB')).toBe('0.00 MB')
-    expect(formatFileSizeWithFormat(1_073_208, 'binary', 'MB')).toBe('1.02 MB')
+    expect(formatFileSizeWithFormat(0, 'binary', 'MB')).toBe('0.00 MiB')
+    expect(formatFileSizeWithFormat(512, 'binary', 'MB')).toBe('0.00 MiB')
+    expect(formatFileSizeWithFormat(1_073_208, 'binary', 'MB')).toBe('1.02 MiB')
     expect(formatFileSizeWithFormat(512, 'si', 'kB')).toBe('0.51 kB')
     expect(formatFileSizeWithFormat(1_073_208, 'si', 'kB')).toBe('1073.21 kB')
     expect(formatFileSizeWithFormat(10 * 1000 ** 3, 'si', 'MB')).toBe('10000.00 MB')

@@ -1,0 +1,70 @@
+{
+  "common.attachEmail": "Приложить мой адрес электронной почты ({emailAddress} – <change>изменить</change>), чтобы со мной можно было связаться",
+  "@common.attachEmail": {
+    "sourceHash": "6ce573e"
+  },
+  "common.attachEmailInputLabel": "Ваш адрес электронной почты",
+  "@common.attachEmailInputLabel": {
+    "sourceHash": "3fa7c5e"
+  },
+  "common.attachEmailInvalid": "Это не похоже на адрес электронной почты",
+  "@common.attachEmailInvalid": {
+    "sourceHash": "0e55e59"
+  },
+  "common.attachEmailPlaceholder": "name@example.com",
+  "@common.attachEmailPlaceholder": {
+    "sourceHash": "53e6cdc"
+  },
+  "common.attachEmailPrompt": "Приложить мой адрес электронной почты, чтобы со мной можно было связаться",
+  "@common.attachEmailPrompt": {
+    "sourceHash": "703760b"
+  },
+  "common.downloadsFdaHint": "Чтобы следить за папкой «Загрузки», Cmdr нужен полный доступ к диску. <settingsLink>Открыть Системные настройки</settingsLink>",
+  "@common.downloadsFdaHint": {
+    "sourceHash": "315e1d8"
+  },
+  "common.sizeUnit.byte": "{count, plural, one {байт} few {байта} many {байт} other {байта}}",
+  "@common.sizeUnit.byte": {
+    "sourceHash": "ee1f643"
+  },
+  "common.sizeUnit.kibibyte": "КиБ",
+  "@common.sizeUnit.kibibyte": {
+    "sourceHash": "97ee1b8"
+  },
+  "common.sizeUnit.mebibyte": "МиБ",
+  "@common.sizeUnit.mebibyte": {
+    "sourceHash": "dea6cb8"
+  },
+  "common.sizeUnit.gibibyte": "ГиБ",
+  "@common.sizeUnit.gibibyte": {
+    "sourceHash": "66a1561"
+  },
+  "common.sizeUnit.tebibyte": "ТиБ",
+  "@common.sizeUnit.tebibyte": {
+    "sourceHash": "15c1ec4"
+  },
+  "common.sizeUnit.pebibyte": "ПиБ",
+  "@common.sizeUnit.pebibyte": {
+    "sourceHash": "38ca5a1"
+  },
+  "common.sizeUnit.kilobyte": "кБ",
+  "@common.sizeUnit.kilobyte": {
+    "sourceHash": "591e59c"
+  },
+  "common.sizeUnit.megabyte": "МБ",
+  "@common.sizeUnit.megabyte": {
+    "sourceHash": "1d09f6f"
+  },
+  "common.sizeUnit.gigabyte": "ГБ",
+  "@common.sizeUnit.gigabyte": {
+    "sourceHash": "b4043b0"
+  },
+  "common.sizeUnit.terabyte": "ТБ",
+  "@common.sizeUnit.terabyte": {
+    "sourceHash": "791b0ac"
+  },
+  "common.sizeUnit.petabyte": "ПБ",
+  "@common.sizeUnit.petabyte": {
+    "sourceHash": "f9085bf"
+  }
+}

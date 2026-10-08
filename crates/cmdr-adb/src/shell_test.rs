@@ -299,3 +299,35 @@ fn a_read_only_root_refuses_writes_under_it_but_not_through_a_link_into_storage(
     );
     assert!(!tree.writes_refused_at("/storage/emulated/0/DCIM"));
 }
+
+fn shell_frame(id: u8, len: usize) -> Vec<u8> {
+    let mut frame = vec![id];
+    frame.extend(u32::try_from(len).unwrap().to_le_bytes());
+    frame
+}
+
+// Regression: a frame's length word sized the buffer before anything checked
+// it, so one hostile stderr frame made us allocate 4 GiB (found by the
+// `adb_shell` fuzz target).
+#[tokio::test]
+async fn a_frame_longer_than_adbd_ever_sends_is_refused_before_allocating() {
+    let device = shell_frame(ID_STDERR, u32::MAX as usize);
+
+    let err = read_frames(&mut AdbConnection::scripted(&device), None)
+        .await
+        .unwrap_err();
+
+    assert!(matches!(err, AdbError::Protocol(_)), "got {err:?}");
+}
+
+#[tokio::test]
+async fn a_full_size_frame_still_reads() {
+    let mut device = shell_frame(ID_STDOUT, MAX_FRAME_PAYLOAD);
+    device.extend(vec![b'x'; MAX_FRAME_PAYLOAD]);
+    device.extend(shell_frame(ID_EXIT, 1));
+    device.push(0);
+
+    let outcome = read_frames(&mut AdbConnection::scripted(&device), None).await.unwrap();
+
+    assert_eq!(outcome.stdout.len(), MAX_FRAME_PAYLOAD);
+}

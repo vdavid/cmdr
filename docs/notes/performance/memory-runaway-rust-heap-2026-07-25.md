@@ -6,6 +6,10 @@ reusable measurement recipes now live in `docs/tooling/memory-debugging.md`.
 
 ## The measurement trap (read this first)
 
+Scope: macOS builds on mimalloc, which every macOS build was up to 0.48.0 and a `--features mimalloc` build still is.
+Current macOS builds run the system allocator, and Linux names mimalloc's mappings outright, so neither has this trap
+(`docs/tooling/memory-debugging.md` § "First: which allocator holds the Rust heap").
+
 `vmmap` labels VM regions by their **VM tag number**. macOS defines `VM_MEMORY_IOACCELERATOR = 100`
 (`$(xcrun --show-sdk-path)/usr/include/mach/vm_statistics.h:642`). **mimalloc tags every arena it `mmap`s with `os_tag`
 = 100 by default.** Cmdr's Rust global allocator is mimalloc (`src-tauri/src/main.rs`), so:
@@ -179,13 +183,6 @@ will recognize; the pointer says where the answer now lives.
 and startup paths read `coverage::cached`, so `volume_state` can't trigger a cold build; and concurrent cold callers
 dedupe behind a per-volume build lock. Contract and rationale: `crates/cmdr-index/src/media_index/DETAILS.md` §
 Covered-count preview.
-
-## Still open
-
-- **mimalloc's `os_tag` still collides with `VM_MEMORY_IOACCELERATOR` (100)**, so `vmmap` keeps reporting the Rust heap
-  under a GPU name. Setting a non-colliding tag would retire the trap at the top of this note for good. It has cost
-  three investigations; the counter-argument is that `docs/tooling/memory-debugging.md` now documents it loudly, and
-  changing the tag invalidates that documentation everywhere it appears.
 
 ## Later work this note seeded
 

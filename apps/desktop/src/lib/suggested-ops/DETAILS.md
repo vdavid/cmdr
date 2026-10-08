@@ -96,8 +96,19 @@ failure's message carries both.
   committed is unknown: "check the operation queue before you approve it again". Every other variant is a refusal that
   lands before the claim transaction commits, so nothing ran and "try again" is safe
   (`agent/suggested_ops/bridge/mod.rs::approve_and_execute`).
-- **Open product question:** Approve stays enabled while an expanded group's rows are loading or couldn't load (its
-  count comes from `COUNT(*)`). Whether it should wait for the first window is David's call, not decided here.
+- **An Approve the engine refused to START gives the group back.** `refused`, `nothingToRun`, and `couldNotStart` all
+  mean nothing ran and the group is `pending` again (refused before the claim, or released after it:
+  `apps/desktop/src-tauri/src/agent/suggested_ops/DETAILS.md` § "The approval bridge"). The dialog keeps it on the list
+  and shows the reason under it, right below the button the user pressed, because a refused approval should leave the
+  user where they were and say why. The reason sits in `refusals` by group id and clears when that group is answered
+  again or the dialog closes. `refused` carries the `WriteOperationError` itself, so `suggested-ops-refusal.ts` words it
+  through `getUserFriendlyMessage` with the verb mapped to the transfer wording (a rename reads as the move it runs as):
+  a phone nobody connected reads exactly as a clicked copy off it would. Only the two suggestion-only refusals carry
+  `suggestedOps.refusal.*` copy.
+- **Decision: Approve stays enabled while an expanded group's rows are loading or couldn't load** (David, 2026-09-25,
+  #155). Its count comes from `COUNT(*)`, so the button says exactly how many ops it approves even before any row shows,
+  and approval works per group. Waiting for the first window would leave a group whose rows can't load with no way to
+  approve it at all. ❌ Don't gate Approve on the op window.
 
 ## What isn't here yet
 

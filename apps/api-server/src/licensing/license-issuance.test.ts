@@ -17,11 +17,19 @@ function record(overrides: Partial<IssuanceRecord> = {}): IssuanceRecord {
     customerEmail: null,
     claimedAt,
     emailedAt: null,
+    revokedAt: null,
     ...overrides,
   }
 }
 
 describe('classifyIssuance', () => {
+  it('reports a refunded purchase as revoked, so a late delivery never mints or mails it', () => {
+    const refunded = record({ revokedAt: '2026-08-12T10:03:00.000Z' })
+
+    expect(classifyIssuance(refunded, claimedAtMs + 1000)).toBe('revoked')
+    expect(classifyIssuance(refunded, claimedAtMs + issuanceStaleAfterMs + 1000)).toBe('revoked')
+  })
+
   it('reports a delivered purchase as done, however old the row is', () => {
     const delivered = record({ shortCodes: ['CMDR-2345-6789-ABCD'], emailedAt: '2026-08-12T10:00:05.000Z' })
 

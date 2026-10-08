@@ -13,7 +13,8 @@
 //! is mostly trait signatures, and folding them in put that file over the
 //! `file-length` warn threshold.
 
-use std::path::Path;
+use std::collections::HashMap;
+use std::path::{Path, PathBuf};
 use std::pin::Pin;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -65,13 +66,18 @@ impl VolumeReadStream for GatedChunks {
     fn bytes_read(&self) -> u64 {
         self.emitted as u64
     }
+
+    fn modified_at(&self) -> Option<std::time::SystemTime> {
+        None
+    }
 }
 
-/// A source volume holding one file, whose bytes only move when the cell says
-/// so. Everything but the read stream is an `InMemoryVolume`'s answer.
+/// A source volume whose files' bytes only move when the cell says so, every
+/// file drawing on one gate. Everything but the read stream is an
+/// `InMemoryVolume`'s answer.
 struct GatedUploadSource {
     inner: InMemoryVolume,
-    bytes: Arc<Vec<u8>>,
+    files: HashMap<PathBuf, Arc<Vec<u8>>>,
     gate: Arc<tokio::sync::Semaphore>,
     handed_out: Arc<AtomicU64>,
 }
@@ -122,12 +128,13 @@ impl Volume for GatedUploadSource {
     }
     fn open_read_stream<'a>(
         &'a self,
-        _path: &'a Path,
+        path: &'a Path,
     ) -> Pin<Box<dyn Future<Output = Result<Box<dyn VolumeReadStream>, VolumeError>> + Send + 'a>> {
-        let bytes = Arc::clone(&self.bytes);
+        let bytes = self.files.get(path).map(Arc::clone);
         let gate = Arc::clone(&self.gate);
         let handed_out = Arc::clone(&self.handed_out);
         Box::pin(async move {
+            let bytes = bytes.ok_or_else(|| VolumeError::NotFound(path.display().to_string()))?;
             let stream: Box<dyn VolumeReadStream> = Box::new(GatedChunks {
                 bytes,
                 emitted: 0,
@@ -141,7 +148,7 @@ impl Volume for GatedUploadSource {
 
 /// The handles a cancel cell drives the source through.
 pub(super) struct GatedUpload {
-    /// The source to copy FROM. Holds one file at `/big.bin`.
+    /// The source to copy FROM: one file at `/big.bin`, or a tree.
     pub(super) volume: Arc<dyn Volume>,
     /// One permit buys one chunk.
     pub(super) gate: Arc<tokio::sync::Semaphore>,
@@ -153,18 +160,35 @@ pub(super) struct GatedUpload {
 /// Builds the source with its gate closed, so nothing moves until the cell says
 /// so.
 pub(super) async fn gated_upload(bytes: Vec<u8>) -> GatedUpload {
-    let bytes = Arc::new(bytes);
+    gated_files(vec![("/big.bin".to_string(), bytes)]).await
+}
+
+/// [`gated_upload`] holding several files at absolute paths (`/tree/a.bin`),
+/// their folders made, every one drawing on the same gate, so a cell can let
+/// some files land whole and hold one mid-body.
+pub(super) async fn gated_files(files: Vec<(String, Vec<u8>)>) -> GatedUpload {
     let inner = InMemoryVolume::new("Gated");
-    inner
-        .create_file(Path::new("/big.bin"), &bytes)
-        .await
-        .expect("seeding the gated source");
+    let mut served = HashMap::new();
+    for (path, bytes) in files {
+        let path = PathBuf::from(path);
+        if let Some(parent) = path.parent().filter(|parent| *parent != Path::new("/")) {
+            inner
+                .create_directory_all(parent)
+                .await
+                .expect("making the gated source's folders");
+        }
+        inner
+            .create_file(&path, &bytes)
+            .await
+            .expect("seeding the gated source");
+        served.insert(path, Arc::new(bytes));
+    }
     let gate = Arc::new(tokio::sync::Semaphore::new(0));
     let handed_out = Arc::new(AtomicU64::new(0));
     GatedUpload {
         volume: Arc::new(GatedUploadSource {
             inner,
-            bytes,
+            files: served,
             gate: Arc::clone(&gate),
             handed_out: Arc::clone(&handed_out),
         }),
@@ -215,6 +239,10 @@ impl VolumeReadStream for GatedLiveStream {
 
     fn bytes_read(&self) -> u64 {
         self.inner.bytes_read()
+    }
+
+    fn modified_at(&self) -> Option<std::time::SystemTime> {
+        self.inner.modified_at()
     }
 }
 

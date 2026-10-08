@@ -29,10 +29,10 @@ favorites. Full depth in `DETAILS.md`.
   `DETAILS.md` § The add gate.
 - **`id` is a random UUID minted on add, never derived from `path`.** Paths repeat across renames
   and re-adds, so the id must outlive the path. The frontend's `LocationInfo.id` is `format!("fav-{id}")`.
-- **Data dir is resolved WITHOUT an `AppHandle`** (mirrors `install_id.rs`: `CMDR_DATA_DIR` else the
-  OS default for `BUNDLE_ID`). Load-bearing: `get_favorites()` (the read path, in `volumes/mod.rs`
-  and `volumes_linux/mod.rs`) is sync and `AppHandle`-free, so `store::list()` must stay no-arg. Keep
-  `BUNDLE_ID` in sync with `tauri.conf.json`.
+- **Data dir is resolved WITHOUT an `AppHandle`**, via `config::standalone_app_data_dir()` (a
+  per-process scratch dir under `cfg(test)`, so `list_locations()` in a test never seeds the real
+  file). Load-bearing: `get_favorites()` (the read path, in `volumes/mod.rs` and
+  `volumes_linux/mod.rs`) is sync and `AppHandle`-free, so `store::list()` must stay no-arg.
 - **FDA-pending skip on the read side.** `volumes::get_favorites` must NOT stat a TCC-protected path
   while the FDA gate is pending (even `Path::exists()` trips a TCC popup). It skips the existence
   check for paths where `restricted_paths::tcc_paths::is_potentially_tcc_restricted(path)` is true.

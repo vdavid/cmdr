@@ -21,9 +21,8 @@ chip, and the read-only `Volume` that turns `.git/branches/`, `tags/`, `commits/
 
 - **❌ Nothing here may name `tauri`, `tauri_specta`, or `cmdr`.** `cargo check -p cmdr-git --all-targets` is the whole
   verification loop, and `index-crate-isolation` proves the tree stays app-free.
-- **The public surface is capped** at what the app uses today, with no headroom: 11 root promises, and EVERY module is
-  private, so a host can name no path into this crate. A new `pub` needs David's say-so, like a `file-length` entry. The
-  item-by-item argument is in `DETAILS.md`.
+- **The public surface is capped** with no headroom: 11 root promises, EVERY module private. A new `pub` needs David's
+  say-so. Item by item: `DETAILS.md`.
 - **Everything mutable is a field on `GitPortal`**, ❌ never a static: the repo cache, the watcher registry, the sink.
   The app parks one and a test builds its own. Two memos stay static and `DETAILS.md` says why they may.
 - **❌ No English a user reads.** Every Size cell is a typed `GitEntryMeta` the host words from its catalog, and every
@@ -33,19 +32,20 @@ chip, and the read-only `Volume` that turns `.git/branches/`, `tags/`, `commits/
 - **The `.git/` landing listing is the HOST's, through `GitPortal::category_rows`.** ❌ Never serve those six rows from
   a `Volume`: the moment a copy scan or a delete walker sees a row with no inode behind it, a repo delete stops half-way
   with `.git/` still on disk.
+- **A repo's own commands never run**: its `filter.<driver>` sections are stripped on open. ❌ Never call gix's
+  `Repository::is_dirty` or open a repo around the cache. `DETAILS.md` § "A repo's own commands never run".
 - **Every `gix` call runs on `VolumeHost::runtime().spawn_blocking`**, ❌ never on the caller's async worker.
 - **Anything a CONSUMER's test needs takes `any(test, feature = "testing")`, ❌ never `cfg(test)`**, which is off when
   the app compiles this crate as a dependency. `cfg(test)` alone is for doors only this crate's own cells open
   (`snapshot_dates::clear_cache`, `log::cancel_flag`).
-- **The `.git` watcher watches DIRECTORIES, ❌ never `HEAD` or `index`, and drops READ events.** git's lockfile rename
-  kills an inode-based inotify watch; and inotify reports `IN_OPEN`, so passing a read on makes each recompute trigger
-  the next, forever. Both bite on Linux only. `is_repo_state_change` gates on kind, then path. `DETAILS.md` § "Watcher
-  path set".
-- **A subscription cell builds `GitPortal::with_scripted_watcher`, ❌ never `new`.** Arming a real FSEvents stream over
-  a repo's ~10 `.git/*` paths is most of what a subscribe costs; `fire_watcher` stands in for the OS. Exactly one cell
-  in the repo pays for the real backend, and it's app-side (`wiring_tests`, for the debounce).
+- **The `.git` watcher is ONE recursive gitdir watch (a linked worktree's is the common dir, for the shared refs), ❌
+  never per path or on `HEAD`/`index`, and drops READs.** Each extra path restarts the macOS FSEvents stream, git's
+  lockfile rename kills an inotify FILE watch, and a passed-on `IN_OPEN` makes each recompute trigger the next.
+  `DETAILS.md` § "Watcher path set".
+- **A subscription cell builds `GitPortal::with_scripted_watcher`, ❌ never `new`.** Arming a real FSEvents stream on a
+  repo's gitdir is most of what a subscribe costs; `fire_watcher` stands in for the OS.
 - **`missing_docs` is denied.** Every `pub` item says what a caller must know, and specta copies these into
   `bindings.ts`.
 
-The boundary's rationale, the capped surface item by item, the performance table, the column catalog, and every
-decision: `DETAILS.md`. Read it before any non-trivial work here.
+The boundary's rationale, the capped surface, performance, the column catalog, and every decision: `DETAILS.md`. Read it
+before any non-trivial work here: editing, planning, reorganizing, or advising.

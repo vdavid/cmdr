@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  A sample configuration profile with managed preferences for Cmdr.
+
+  Edit the values in the inner payload, then upload the file to your MDM as a custom
+  configuration profile. It's unsigned on purpose: your MDM signs it when it deploys it.
+  To try it on one Mac without an MDM, open the file, then approve it in System Settings >
+  General > Device Management.
+
+  Every key only turns something off or narrows it. A key that's missing, or set to false,
+  leaves that part up to each user. Delete any key you don't want to manage.
+  All keys, with what each one does: https://getcmdr.com/trust#mdm
+-->
+<plist version="1.0">
+<dict>
+    <key>PayloadType</key>
+    <string>Configuration</string>
+    <key>PayloadVersion</key>
+    <integer>1</integer>
+    <key>PayloadIdentifier</key>
+    <string>com.getcmdr.mdm.managed-preferences</string>
+    <key>PayloadUUID</key>
+    <string>EF389F44-999D-4F74-A76E-D9F04077083D</string>
+    <key>PayloadDisplayName</key>
+    <string>Cmdr managed preferences</string>
+    <key>PayloadDescription</key>
+    <string>Sets which Cmdr features your organization turns off: usage stats, reports, updates, and AI.</string>
+    <key>PayloadOrganization</key>
+    <string>Your organization</string>
+    <key>PayloadScope</key>
+    <string>System</string>
+    <key>PayloadContent</key>
+    <array>
+        <dict>
+            <key>PayloadType</key>
+            <string>com.veszelovszki.cmdr</string>
+            <key>PayloadVersion</key>
+            <integer>1</integer>
+            <key>PayloadIdentifier</key>
+            <string>com.getcmdr.mdm.managed-preferences.cmdr</string>
+            <key>PayloadUUID</key>
+            <string>3F52EF95-8C39-4ED6-B6DC-98E6EF01F468</string>
+            <key>PayloadDisplayName</key>
+            <string>Cmdr</string>
+
+            <!-- No usage stats: no heartbeat, no feature events. Locks "Send usage stats" off. -->
+            <key>DisableUsageStats</key>
+            <true/>
+
+            <!-- No crash reports and no error reports, automatic or by hand. "Save to disk" still works. -->
+            <key>DisableCrashAndErrorReports</key>
+            <true/>
+
+            <!-- No background update checks. A user can still check by hand. -->
+            <key>DisableAutomaticUpdateChecks</key>
+            <true/>
+
+            <!-- true: no update check, download, or install at all (you ship new versions yourself). Overrides the two update keys around it. -->
+            <key>DisableUpdates</key>
+            <false/>
+
+            <!-- Never update past this version. "0.52" allows up to the last 0.52.x, "0.52.3" up to 0.52.3, and "1" anything below 2.0. Cmdr only sees its newest release, so once a release past this one ships, no more updates arrive until you raise it. -->
+            <key>MaxUpdateVersion</key>
+            <string>1</string>
+
+            <!-- true: no AI at all, on-device model included. -->
+            <key>DisableAI</key>
+            <false/>
+
+            <!-- true: on-device AI only; nothing goes to a cloud AI provider, a local Ollama or LM Studio included. -->
+            <key>DisableCloudAI</key>
+            <false/>
+
+            <!-- Cloud AI may only reach these hosts. Entries: a host, host:port, a *. pattern for any subdomain, or a URL. An empty list allows none. For a local Ollama or LM Studio only, list just localhost and 127.0.0.1. Delete this key to allow any provider. -->
+            <key>AllowedCloudAIHosts</key>
+            <array>
+                <string>api.openai.com</string>
+                <string>*.openai.azure.com</string>
+                <string>localhost</string>
+                <string>127.0.0.1</string>
+            </array>
+        </dict>
+    </array>
+</dict>
+</plist>

@@ -41,4 +41,7 @@ var (
 	// is ~1 GB and installs itself before it listens; only the slow-lane
 	// `desktop-rust-webdav-nextcloud` asks for it.
 	WebdavNextcloud = StackMode{Stack: "webdav", Mode: "nextcloud"}
+	// S3Core is the S3 integration set: VersityGW and Garage, the two servers
+	// whose conditional-write behavior differs.
+	S3Core = StackMode{Stack: "s3", Mode: "core"}
 )

@@ -27,7 +27,16 @@ pub struct ReduceTransparencyChanged {
     pub reduce: bool,
 }
 
-/// `system-text-size-changed`: the macOS Accessibility > Display > Text Size
+/// `glass-tint-changed`: the macOS 27 Appearance > Liquid Glass slider moved. `amount` is
+/// the new value in `0.0..=1.0` (clearest to most tinted), or `None` when macOS no longer
+/// reports one.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, specta::Type, Event)]
+#[serde(rename_all = "camelCase")]
+pub struct GlassTintChanged {
+    pub amount: Option<f32>,
+}
+
+/// `system-text-size-changed`:the macOS Accessibility > Display > Text Size
 /// value changed. `multiplier` is the new system text-size multiplier (1.0 =
 /// default).
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]

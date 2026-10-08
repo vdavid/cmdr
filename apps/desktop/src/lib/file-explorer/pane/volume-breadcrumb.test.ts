@@ -63,6 +63,8 @@ vi.mock('$lib/tauri-commands', () => ({
   listDirectoryStart: vi.fn().mockResolvedValue({ listingId: 'mock-listing', status: { status: 'ready' } }),
   cancelListing: vi.fn().mockResolvedValue(undefined),
   listDirectoryEnd: vi.fn().mockResolvedValue(undefined),
+  onListingGone: vi.fn(() => () => {}),
+  keepListingsAlive: vi.fn().mockResolvedValue([]),
   getFileRange: vi.fn().mockResolvedValue([]),
   getFileAt: vi.fn().mockImplementation((_listingId: string, index: number) => {
     if (index === 0) {
@@ -94,7 +96,9 @@ vi.mock('$lib/tauri-commands', () => ({
   }),
   findFileIndex: vi.fn().mockResolvedValue(0),
   getTotalCount: vi.fn().mockResolvedValue(10),
-  setListingIncludeHidden: vi.fn().mockResolvedValue(undefined),
+  setListingIncludeHidden: vi
+    .fn()
+    .mockResolvedValue({ sequence: 0, totalCount: 10, newCursorIndex: null, newSelectedIndices: null }),
   getSyncStatus: vi.fn().mockResolvedValue({ data: {}, timedOut: false }),
   openFile: vi.fn().mockResolvedValue(undefined),
   listen: vi.fn().mockResolvedValue(() => {}),
@@ -133,7 +137,6 @@ vi.mock('$lib/tauri-commands', () => ({
   setServersViewShown: vi.fn().mockResolvedValue(undefined),
   getNetworkDiscoveryState: vi.fn().mockResolvedValue('idle'),
   resolveNetworkHost: vi.fn().mockResolvedValue(null),
-  listMtpDevices: vi.fn().mockResolvedValue([]),
   onMtpDeviceConnected: vi.fn().mockResolvedValue(() => {}),
   onMtpDeviceDisconnected: vi.fn().mockResolvedValue(() => {}),
   onVolumeSpaceChanged: vi.fn().mockResolvedValue(() => {}),

@@ -150,21 +150,21 @@
   "@settings.appearance.tintLocal.description": {
     "sourceHash": "3c86b48"
   },
-  "settings.appearance.tintSmb.label": "Matizar painéis de servidor (SMB, SFTP, WebDAV)",
+  "settings.appearance.tintSmb.label": "Matizar painéis de servidor (SMB, SFTP, WebDAV, S3)",
   "@settings.appearance.tintSmb.label": {
-    "sourceHash": "d801804"
+    "sourceHash": "d912bcf"
   },
-  "settings.appearance.tintSmb.description": "Matiz de fundo aplicado a painéis que mostram um compartilhamento SMB, um servidor SFTP ou um servidor WebDAV.",
+  "settings.appearance.tintSmb.description": "Matiz de fundo aplicado a painéis que mostram um compartilhamento SMB, um servidor SFTP, um servidor WebDAV ou um armazenamento S3.",
   "@settings.appearance.tintSmb.description": {
-    "sourceHash": "2e071d3"
+    "sourceHash": "bddee40"
   },
-  "settings.appearance.tintMtp.label": "Matizar painéis MTP",
+  "settings.appearance.tintMtp.label": "Matizar painéis de dispositivo (MTP, ADB)",
   "@settings.appearance.tintMtp.label": {
-    "sourceHash": "2054351"
+    "sourceHash": "c50c536"
   },
-  "settings.appearance.tintMtp.description": "Matiz de fundo aplicado a painéis que mostram um dispositivo Android, Kindle ou câmera.",
+  "settings.appearance.tintMtp.description": "Matiz de fundo aplicado a painéis que mostram um celular, um Kindle ou uma câmera, seja a conexão por MTP ou por ADB.",
   "@settings.appearance.tintMtp.description": {
-    "sourceHash": "a09d99a"
+    "sourceHash": "d70512d"
   },
   "settings.appearance.textSize.label": "Tamanho do texto",
   "@settings.appearance.textSize.label": {
@@ -218,9 +218,9 @@
   "@settings.listing.sizeUnit.label": {
     "sourceHash": "2a817d3"
   },
-  "settings.listing.sizeUnit.description": "Dinâmica escolhe a unidade mais amigável por arquivo (1,02 MB). Unidades fixas deixam os tamanhos comparáveis entre si em toda a lista. Bytes mostra a contagem exata para comparação precisa.",
+  "settings.listing.sizeUnit.description": "Dinâmica escolhe a unidade mais amigável por arquivo. Unidades fixas deixam os tamanhos comparáveis entre si em toda a lista. Bytes mostra a contagem exata para comparação precisa.",
   "@settings.listing.sizeUnit.description": {
-    "sourceHash": "702a201"
+    "sourceHash": "fae7a91"
   },
   "settings.listing.sizeUnit.opt.dynamic": "Dinâmica",
   "@settings.listing.sizeUnit.opt.dynamic": {
@@ -231,36 +231,21 @@
     "sourceHash": "4d80003",
     "sameAsSourceJustification": "'Bytes' is identical in pt-BR. The unit word is unchanged in pt-BR (Microsoft pt-BR 'byte' to 'byte'; double-commander/total-commander pt-BR keep 'Bytes')."
   },
-  "settings.listing.sizeUnit.opt.kB": "kB",
-  "@settings.listing.sizeUnit.opt.kB": {
-    "sourceHash": "591e59c",
-    "sameAsSourceJustification": "'kB' is a unit symbol (kilobyte), kept as-is in pt-BR."
-  },
-  "settings.listing.sizeUnit.opt.mB": "MB",
-  "@settings.listing.sizeUnit.opt.mB": {
-    "sourceHash": "1d09f6f",
-    "sameAsSourceJustification": "'MB' is a unit symbol (megabyte), kept as-is in pt-BR."
-  },
-  "settings.listing.sizeUnit.opt.gB": "GB",
-  "@settings.listing.sizeUnit.opt.gB": {
-    "sourceHash": "b4043b0",
-    "sameAsSourceJustification": "'GB' is a unit symbol (gigabyte), kept as-is in pt-BR."
-  },
   "settings.appearance.fileSizeFormat.label": "Formato de tamanho de arquivo",
   "@settings.appearance.fileSizeFormat.label": {
     "sourceHash": "355c89b"
   },
-  "settings.appearance.fileSizeFormat.description": "Como mostrar os tamanhos dos arquivos na lista: binário (KiB, MiB, onde 1 KiB = 1024 bytes) ou decimal SI (KB, MB, onde 1 KB = 1000 bytes).",
+  "settings.appearance.fileSizeFormat.description": "Como mostrar os tamanhos em todo o app: binário (KiB, MiB, onde 1 KiB = 1.024 bytes) ou decimal SI (kB, MB, onde 1 kB = 1.000 bytes).",
   "@settings.appearance.fileSizeFormat.description": {
-    "sourceHash": "8219704"
+    "sourceHash": "db264e2"
   },
   "settings.appearance.fileSizeFormat.opt.binary": "Binário (KiB, MiB, GiB)",
   "@settings.appearance.fileSizeFormat.opt.binary": {
     "sourceHash": "0a4ce4e"
   },
-  "settings.appearance.fileSizeFormat.opt.si": "Decimal SI (KB, MB, GB)",
+  "settings.appearance.fileSizeFormat.opt.si": "Decimal SI (kB, MB, GB)",
   "@settings.appearance.fileSizeFormat.opt.si": {
-    "sourceHash": "8984a13"
+    "sourceHash": "4dcc22e"
   },
   "settings.listing.sizeMismatchWarning.label": "Aviso de divergência de tamanho",
   "@settings.listing.sizeMismatchWarning.label": {
@@ -310,13 +295,33 @@
   "@settings.listing.showTags.description": {
     "sourceHash": "005f3b0"
   },
+  "settings.listing.foldersFirst.label": "Mostrar pastas primeiro",
+  "@settings.listing.foldersFirst.label": {
+    "sourceHash": "a61d73e"
+  },
+  "settings.listing.foldersFirst.description": "Mostra as pastas acima dos arquivos na lista. Desative para misturar pastas e arquivos.",
+  "@settings.listing.foldersFirst.description": {
+    "sourceHash": "8505ff3"
+  },
+  "settings.listing.spaceCalculatesFolderSize.label": "Calcular o tamanho da pasta com Espaço",
+  "@settings.listing.spaceCalculatesFolderSize.label": {
+    "sourceHash": "1a403eb"
+  },
+  "settings.listing.spaceCalculatesFolderSize.description": "Quando você seleciona com Espaço uma pasta cujo tamanho ainda não é conhecido, o Cmdr soma o conteúdo dela e mostra o total. Esc interrompe o cálculo.",
+  "@settings.listing.spaceCalculatesFolderSize.description": {
+    "sourceHash": "38d64c1"
+  },
   "settings.listing.directorySortMode.label": "Ordenar pastas",
   "@settings.listing.directorySortMode.label": {
-    "sourceHash": "7f0a1e4"
+    "sourceHash": "7d0b088"
   },
   "settings.listing.directorySortMode.description": "Como as pastas são ordenadas ao trocar a coluna de ordenação.",
   "@settings.listing.directorySortMode.description": {
-    "sourceHash": "fe5f12a"
+    "sourceHash": "797d93b"
+  },
+  "settings.listing.directorySortMode.disabledReason": "Desativado no momento porque as pastas estão misturadas com os arquivos. Ative “Mostrar pastas primeiro” para usar este ajuste.",
+  "@settings.listing.directorySortMode.disabledReason": {
+    "sourceHash": "f17416c"
   },
   "settings.listing.directorySortMode.opt.likeFiles": "Como arquivos",
   "@settings.listing.directorySortMode.opt.likeFiles": {
@@ -682,7 +687,7 @@
   "@settings.mediaIndex.importanceThreshold.waitingForDriveIndex": {
     "sourceHash": "1d50f92"
   },
-  "settings.mediaIndex.importanceThreshold.pending": "Alguns discos ainda estão sendo analisados, então esses números vão crescer.",
+  "settings.mediaIndex.importanceThreshold.pending": "Alguns discos ainda estão em varredura, então esses números vão crescer.",
   "@settings.mediaIndex.importanceThreshold.pending": {
     "sourceHash": "c144f80"
   },
@@ -964,6 +969,10 @@
   "@settings.network.firstTriggerDone.description": {
     "sourceHash": "7982e11"
   },
+  "settings.network.nearbyServersGroup.label": "Grupo de servidores por perto",
+  "@settings.network.nearbyServersGroup.label": {
+    "sourceHash": "cfa28b1"
+  },
   "settings.network.directSmbConnection.label": "Conectar diretamente a compartilhamentos SMB",
   "@settings.network.directSmbConnection.label": {
     "sourceHash": "407c4f1"
@@ -1057,9 +1066,9 @@
   "@settings.fileOperations.adbEnabled.label": {
     "sourceHash": "3651356"
   },
-  "settings.fileOperations.adbEnabled.description": "Acessa o sistema de arquivos inteiro de um celular Android com a depuração USB ativada, algo que o MTP não consegue mostrar. Precisa das ferramentas de plataforma do Android (o comando “adb”) neste Mac. Deixar isto ativado não custa nada quando você não tem nenhuma ferramenta do Android instalada.",
+  "settings.fileOperations.adbEnabled.description": "Acessa o sistema de arquivos inteiro de um celular Android com a depuração USB ativada, algo que o MTP não consegue mostrar. Precisa das ferramentas de plataforma do Android (o comando “adb”) neste Mac. Deixar isto ativado não custa nada se você não tiver nenhuma ferramenta do Android instalada.",
   "@settings.fileOperations.adbEnabled.description": {
-    "sourceHash": "9a22518"
+    "sourceHash": "a89c957"
   },
   "settings.fileOperations.adbBinaryPath.label": "Localização do adb",
   "@settings.fileOperations.adbBinaryPath.label": {
@@ -1189,7 +1198,7 @@
   "@settings.updates.crashReports.description": {
     "sourceHash": "e726766"
   },
-  "settings.updates.errorReports.label": "Enviar relatórios de erro automaticamente",
+  "settings.updates.errorReports.label": "Enviar relatórios de problema automaticamente",
   "@settings.updates.errorReports.label": {
     "sourceHash": "471575d"
   },
@@ -1300,6 +1309,22 @@
   "settings.fileExplorer.typeToJump.resetDelay.description": "Por quanto tempo o buffer do digitar-para-pular fica ativo após a última tecla. Valores menores reiniciam mais rápido entre buscas; valores maiores são mais tolerantes para quem digita devagar.",
   "@settings.fileExplorer.typeToJump.resetDelay.description": {
     "sourceHash": "ff59a6a"
+  },
+  "settings.fileExplorer.typeToJump.mode.label": "Ao digitar em um painel",
+  "@settings.fileExplorer.typeToJump.mode.label": {
+    "sourceHash": "4ee8ef5"
+  },
+  "settings.fileExplorer.typeToJump.mode.description": "“Ir para” move o cursor até a melhor correspondência. “Filtrar” mostra só os arquivos e pastas cujos nomes contêm o que você digita, como o filtro rápido do Total Commander; a tecla Apagar (⌫) edita o texto e Esc limpa o filtro.",
+  "@settings.fileExplorer.typeToJump.mode.description": {
+    "sourceHash": "e142e97"
+  },
+  "settings.fileExplorer.typeToJump.mode.opt.jump": "Ir para",
+  "@settings.fileExplorer.typeToJump.mode.opt.jump": {
+    "sourceHash": "9ee0ca3"
+  },
+  "settings.fileExplorer.typeToJump.mode.opt.filter": "Filtrar",
+  "@settings.fileExplorer.typeToJump.mode.opt.filter": {
+    "sourceHash": "638e249"
   },
   "settings.fileOperations.maxConflictsToShow.label": "Máximo de conflitos a mostrar",
   "@settings.fileOperations.maxConflictsToShow.label": {
@@ -1638,9 +1663,9 @@
   "@settings.behavior.doubleClickOnPaneNotificationSeen.description": {
     "sourceHash": "56238d4"
   },
-  "settings.behavior.serversPinHintSeen.label": "Dica de grupo Rede grande exibida",
+  "settings.behavior.serversPinHintSeen.label": "Dica de “Desafixar do seletor” exibida",
   "@settings.behavior.serversPinHintSeen.label": {
-    "sourceHash": "8d632ca"
+    "sourceHash": "8513a3c"
   },
   "settings.behavior.serversPinHintSeen.description": "Se a dica única sobre desafixar servidores já foi exibida.",
   "@settings.behavior.serversPinHintSeen.description": {
@@ -1906,36 +1931,6 @@
   "@settings.operationLog.maxSize.description": {
     "sourceHash": "ad5152a"
   },
-  "settings.operationLog.maxSize.opt.mb100": "100 MB",
-  "@settings.operationLog.maxSize.opt.mb100": {
-    "sourceHash": "991d5de",
-    "sameAsSourceJustification": "Byte-unit label kept verbatim (numeral literal, MB/GB not localized), matching the app's size-unit setting."
-  },
-  "settings.operationLog.maxSize.opt.mb250": "250 MB",
-  "@settings.operationLog.maxSize.opt.mb250": {
-    "sourceHash": "028b133",
-    "sameAsSourceJustification": "Byte-unit label kept verbatim (numeral literal, MB/GB not localized), matching the app's size-unit setting."
-  },
-  "settings.operationLog.maxSize.opt.gb1": "1 GB",
-  "@settings.operationLog.maxSize.opt.gb1": {
-    "sourceHash": "6c31b63",
-    "sameAsSourceJustification": "Byte-unit label kept verbatim (numeral literal, MB/GB not localized), matching the app's size-unit setting."
-  },
-  "settings.operationLog.maxSize.opt.gb2": "2 GB",
-  "@settings.operationLog.maxSize.opt.gb2": {
-    "sourceHash": "b2dd624",
-    "sameAsSourceJustification": "Byte-unit label kept verbatim (numeral literal, MB/GB not localized), matching the app's size-unit setting."
-  },
-  "settings.operationLog.maxSize.opt.gb3": "3 GB",
-  "@settings.operationLog.maxSize.opt.gb3": {
-    "sourceHash": "485f66b",
-    "sameAsSourceJustification": "Byte-unit label kept verbatim (numeral literal, MB/GB not localized), matching the app's size-unit setting."
-  },
-  "settings.operationLog.maxSize.opt.gb5": "5 GB",
-  "@settings.operationLog.maxSize.opt.gb5": {
-    "sourceHash": "43644bc",
-    "sameAsSourceJustification": "Byte-unit label kept verbatim (numeral literal, MB/GB not localized), matching the app's size-unit setting."
-  },
   "settings.section.mcpServer": "Servidor MCP",
   "@settings.section.mcpServer": {
     "sourceHash": "d938c81"
@@ -1970,7 +1965,7 @@
   },
   "settings.summary.listing": "Ícones de documento, ordenação de pastas e largura de coluna no modo Resumido.",
   "@settings.summary.listing": {
-    "sourceHash": "7756e95"
+    "sourceHash": "ebed448"
   },
   "settings.summary.navigationAndFileOps": "Navegação com clique duplo para a pasta superior e comportamento ao renomear arquivos.",
   "@settings.summary.navigationAndFileOps": {
@@ -1994,7 +1989,7 @@
   },
   "settings.summary.servers": "As chaves de host SSH em que você confiou.",
   "@settings.summary.servers": {
-    "sourceHash": "40940fa"
+    "sourceHash": "3335380"
   },
   "settings.summary.adb": "Navegue por um celular Android com a depuração USB ativada.",
   "@settings.summary.adb": {
@@ -2055,6 +2050,74 @@
   "settings.control.backToPresetsAriaLabel": "Voltar às predefinições",
   "@settings.control.backToPresetsAriaLabel": {
     "sourceHash": "1579f3f"
+  },
+  "settings.control.unitItems": "itens",
+  "@settings.control.unitItems": {
+    "sourceHash": "5f3c4f8"
+  },
+  "settings.managed.rowNote": "Sua organização gerencia este ajuste.",
+  "@settings.managed.rowNote": {
+    "sourceHash": "891206b"
+  },
+  "settings.managed.sectionNote": "Sua organização gerencia alguns destes ajustes.",
+  "@settings.managed.sectionNote": {
+    "sourceHash": "ab52c49"
+  },
+  "settings.managed.summary.title": "O que sua organização gerencia",
+  "@settings.managed.summary.title": {
+    "sourceHash": "5450801"
+  },
+  "settings.managed.summary.usageStats": "Estatísticas de uso",
+  "@settings.managed.summary.usageStats": {
+    "sourceHash": "4e0483c"
+  },
+  "settings.managed.summary.usageStatsOff": "Desativadas",
+  "@settings.managed.summary.usageStatsOff": {
+    "sourceHash": "ca7981b"
+  },
+  "settings.managed.summary.reports": "Relatórios de falha e de problema",
+  "@settings.managed.summary.reports": {
+    "sourceHash": "ef409c3"
+  },
+  "settings.managed.summary.reportsOff": "Desativados",
+  "@settings.managed.summary.reportsOff": {
+    "sourceHash": "ca7981b"
+  },
+  "settings.managed.summary.updates": "Atualizações",
+  "@settings.managed.summary.updates": {
+    "sourceHash": "22e2bad"
+  },
+  "settings.managed.summary.updatesOff": "Desativadas",
+  "@settings.managed.summary.updatesOff": {
+    "sourceHash": "ca7981b"
+  },
+  "settings.managed.summary.ai": "IA",
+  "@settings.managed.summary.ai": {
+    "sourceHash": "11fb682"
+  },
+  "settings.managed.summary.aiOff": "Desativada",
+  "@settings.managed.summary.aiOff": {
+    "sourceHash": "ca7981b"
+  },
+  "settings.managed.summary.upTo": "Até {ceiling}",
+  "@settings.managed.summary.upTo": {
+    "sourceHash": "8989a97"
+  },
+  "settings.managed.summary.manualChecksOnly": "Só verificação manual",
+  "@settings.managed.summary.manualChecksOnly": {
+    "sourceHash": "1969d26"
+  },
+  "settings.managed.summary.upToManualChecksOnly": "Até {ceiling}, só verificação manual",
+  "@settings.managed.summary.upToManualChecksOnly": {
+    "sourceHash": "c769ffd"
+  },
+  "settings.managed.summary.onDeviceOnly": "Só no dispositivo",
+  "@settings.managed.summary.onDeviceOnly": {
+    "sourceHash": "d4f8552"
+  },
+  "settings.managed.summary.cloudHostsOnly": "IA na nuvem só via {hosts}",
+  "@settings.managed.summary.cloudHostsOnly": {
+    "sourceHash": "00f1237"
   },
   "settings.sidebar.searchPlaceholder": "Buscar ajustes…",
   "@settings.sidebar.searchPlaceholder": {
@@ -2524,13 +2587,13 @@
   "@settings.adb.recheck": {
     "sourceHash": "24fcca0"
   },
-  "settings.adb.install.intro": "Instale as ferramentas de plataforma do Android e depois pressione Verificar novamente:",
+  "settings.adb.install.intro": "Instale as ferramentas de plataforma do Android e depois escolha “Verificar novamente”:",
   "@settings.adb.install.intro": {
-    "sourceHash": "5a82ea4"
+    "sourceHash": "9f7a0f4"
   },
-  "settings.adb.pathPlaceholder": "Procurar o adb nos lugares de sempre",
+  "settings.adb.pathPlaceholder": "O Cmdr procura o adb nos lugares de sempre",
   "@settings.adb.pathPlaceholder": {
-    "sourceHash": "e236ef2"
+    "sourceHash": "538b307"
   },
   "settings.adb.browse": "Escolher…",
   "@settings.adb.browse": {
@@ -2539,5 +2602,13 @@
   "settings.adb.pickerTitle": "Escolher o comando adb",
   "@settings.adb.pickerTitle": {
     "sourceHash": "d6fc142"
+  },
+  "settings.fileExplorer.quickFilterIntroSeen.label": "Filtro rápido explicado",
+  "@settings.fileExplorer.quickFilterIntroSeen.label": {
+    "sourceHash": "5d124bb"
+  },
+  "settings.fileExplorer.quickFilterIntroSeen.description": "Se o aviso que explica o primeiro filtro rápido já foi exibido.",
+  "@settings.fileExplorer.quickFilterIntroSeen.description": {
+    "sourceHash": "855c661"
   }
 }

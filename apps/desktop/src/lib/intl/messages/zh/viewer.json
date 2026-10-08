@@ -19,9 +19,9 @@
   "@viewer.error.noPath": {
     "sourceHash": "2b069fc"
   },
-  "viewer.error.readFailed": "无法读取文件",
+  "viewer.error.readFailed": "无法读取这个文件。要重试吗？",
   "@viewer.error.readFailed": {
-    "sourceHash": "ea7d976"
+    "sourceHash": "8c420fd"
   },
   "viewer.error.notFound": "找不到这个文件。它可能被移动、重命名或删除了。",
   "@viewer.error.notFound": {
@@ -42,6 +42,10 @@
   "viewer.error.archiveUnreadable": "无法从压缩文件中打开这个文件。它可能被加密、已损坏，或者采用了 Cmdr 无法读取的格式。",
   "@viewer.error.archiveUnreadable": {
     "sourceHash": "e0b8f4e"
+  },
+  "viewer.error.coldStorage": "这个文件已存档，恢复之前没有要显示的内容。请在存储提供方的控制台里恢复它，然后再打开。",
+  "@viewer.error.coldStorage": {
+    "sourceHash": "236cd1b"
   },
   "viewer.error.retry": "重试",
   "@viewer.error.retry": {
@@ -286,18 +290,6 @@
   "@viewer.pdf.loading": {
     "sourceHash": "7f9acf3"
   },
-  "viewer.contextMenu.ariaLabel": "查看器操作",
-  "@viewer.contextMenu.ariaLabel": {
-    "sourceHash": "4cf8e51"
-  },
-  "viewer.contextMenu.copy": "拷贝",
-  "@viewer.contextMenu.copy": {
-    "sourceHash": "e21f935"
-  },
-  "viewer.contextMenu.selectAll": "全选",
-  "@viewer.contextMenu.selectAll": {
-    "sourceHash": "1fc9a38"
-  },
   "viewer.copyDialog.confirmTitleKnown": "将 {size} 拷贝到剪贴板？",
   "@viewer.copyDialog.confirmTitleKnown": {
     "sourceHash": "7f97ebf"
@@ -403,17 +395,17 @@
   "@viewer.selection.toEndOfFile": {
     "sourceHash": "62d95be"
   },
-  "viewer.selection.singleLine": "已在第 {line} 行选择 {chars} 个字符",
+  "viewer.selection.singleLine": "已在第 {line} 行选择 {chars, plural, other {# 个字符}}",
   "@viewer.selection.singleLine": {
-    "sourceHash": "bb320d5"
+    "sourceHash": "eb11697"
   },
-  "viewer.selection.multiLine": "已选择第 {startLine} 行到第 {endLine} 行，共 {chars} 个字符",
+  "viewer.selection.multiLine": "已选择第 {startLine} 行到第 {endLine} 行，共 {chars, plural, other {# 个字符}}",
   "@viewer.selection.multiLine": {
-    "sourceHash": "074c687"
+    "sourceHash": "5ba7791"
   },
-  "viewer.selection.charsOnly": "已选择 {chars} 个字符",
+  "viewer.selection.charsOnly": "已选择 {chars, plural, other {# 个字符}}",
   "@viewer.selection.charsOnly": {
-    "sourceHash": "b772db6"
+    "sourceHash": "3db2c4e"
   },
   "viewer.selection.toEndOfFileNoLine": "已选择到文件末尾的内容",
   "@viewer.selection.toEndOfFileNoLine": {

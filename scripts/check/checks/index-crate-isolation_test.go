@@ -174,6 +174,37 @@ pub fn also_never() {}
 	}
 }
 
+func TestCeilingCountsTheFuzzingSeamAsGated(t *testing.T) {
+	// The fuzz targets' entry points never ship, exactly like the `testing` fixtures.
+	source := map[string]string{
+		"lib.rs": `
+pub mod volume;
+
+#[cfg(feature = "fuzzing")]
+pub mod fuzzing;
+`,
+		"volume.rs": `
+pub struct Volume {}
+`,
+		"fuzzing.rs": `
+pub fn propfind(body: &[u8]) {}
+`,
+	}
+	counts := countSurface(source, "lib.rs", "")
+	if counts.RootPromises != 1 {
+		t.Fatalf("root promises: want 1 (volume), got %d", counts.RootPromises)
+	}
+	if counts.PublicModules != 1 {
+		t.Fatalf("public modules: want 1 (volume), got %d", counts.PublicModules)
+	}
+	if counts.SubsystemItems != 1 {
+		t.Fatalf("subsystem items: want 1 (Volume), got %d", counts.SubsystemItems)
+	}
+	if counts.Gated != 1 {
+		t.Fatalf("the fuzzing module is counted apart: want 1, got %d", counts.Gated)
+	}
+}
+
 func TestCeilingFailsOnGrowthAndNotesShrink(t *testing.T) {
 	over := surfaceCounts{RootPromises: 5, HandleMethods: 40, PublicModules: 10, SubsystemItems: 90}
 	problems := ceilingBreaches("cmdr-index", over, surfaceCeilings{RootPromises: 5, HandleMethods: 34, PublicModules: 10, SubsystemItems: 90}, "Index")

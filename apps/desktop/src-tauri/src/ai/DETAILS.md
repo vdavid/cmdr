@@ -22,12 +22,13 @@ Three provider modes:
 
 The local-AI machinery is decomposed so each file has one nameable responsibility; they coordinate around the single `ManagerState` owned in `state.rs`. The sibling modules borrow `&mut ManagerState` through the `MANAGER` lock rather than holding their own copy — keep it that way so the shared state stays coherent.
 
-- **`state.rs`**: Owns the global `Mutex<Option<ManagerState>>` singleton and `ai-state.json` persistence (`load_state`/`save_state`), plus the facts derived from disk: `is_fully_installed`, `get_current_model`, and the `get_ai_model_info` command (+ `format_bytes_gb`). `ManagerState` stores provider + cloud-AI config (`cloud_api_key`/`cloud_base_url`/`cloud_model`/`cloud_requires_api_key`), the tracked `child_pid`/`start_cancel`, and the download/startup flags. The `pub fn` accessors (`get_port`/`get_provider`/`get_cloud_config`/`get_cloud_requires_api_key`) are the clean read seam other modules use.
-- **`manager.rs`**: Thin facade / coordinator. Cross-cutting commands only: `init`/`shutdown`, `get_ai_status` (+ pure `compute_ai_status`), `configure_ai`, `get_ai_runtime_status`. Exposes `resolve_backend(app) -> BackendResolution` (+ pure `resolve_backend_inner`) so callers don't reinvent provider routing, and so cloud consent has one place to be enforced (§ Cloud AI consent). Holds no state of its own.
-- **`cloud_consent.rs`**: "Allow cloud AI". `CLOUD_AI_CONSENT_VERSION`, the fail-closed predicate `has_current_cloud_consent(conn, RevokePending)`, `cloud_consent_from_app` (what `resolve_backend` calls), and the four commands: `cloud_ai_consent_status`, `accept_cloud_ai_consent`, `revoke_cloud_ai_consent`, `cloud_ai_consent_revoke_pending_changed`. Each write refreshes the wake readiness and emits `CloudAiConsentChanged`. The record itself lives in `main.db` (`../agent/store/consent.rs`).
+- **`state.rs`**: Owns the global `Mutex<Option<ManagerState>>` singleton and `ai-state.json` persistence (`load_state`/`save_state`), plus the facts derived from disk: `is_fully_installed`, `get_current_model`, and the `get_ai_model_info` command. Sizes cross IPC as bytes only; the frontend words them (`$lib/units`), so they follow the UI language and the binary/SI setting. `ManagerState` stores provider + cloud-AI config (`cloud_api_key`/`cloud_base_url`/`cloud_model`/`cloud_requires_api_key`), the tracked `child_pid`/`start_cancel`, and the download/startup flags. The `pub fn` accessors (`get_port`/`get_provider`/`get_cloud_config`/`get_cloud_requires_api_key`) are the clean read seam other modules use.
+- **`manager.rs`**: Thin facade / coordinator. Cross-cutting commands only: `init`/`shutdown`, `get_ai_status` (+ pure `compute_ai_status`), `configure_ai`, `get_ai_runtime_status`. Exposes `resolve_backend(app) -> BackendResolution` (+ pure `resolve_backend_inner`) so callers don't reinvent provider routing, and so the managed policy and cloud consent have one place to be enforced (§ Managed policy, § Cloud AI consent). Holds no state of its own.
+- **`managed.rs`**: The AI side of the organization's managed policy (§ Managed policy): `local_ai_allowed` (the local-model gate), `apply_policy_change` (the immediate stops `managed_policy`'s change handler calls), and the `cloud_ai_host_verdicts(base_urls) -> Vec<Option<ManagedAiRefusal>>` command for the provider picker.
+- **`cloud_consent.rs`**: "Allow cloud AI". `CLOUD_AI_CONSENT_VERSION`, the fail-closed predicate `has_current_cloud_consent(conn, RevokePending, &ManagedPolicy)`, `cloud_consent_from_app` (what `resolve_backend` calls), and the four commands: `cloud_ai_consent_status`, `accept_cloud_ai_consent`, `revoke_cloud_ai_consent`, `cloud_ai_consent_revoke_pending_changed`. Each write refreshes the wake readiness and emits `CloudAiConsentChanged`. The record itself lives in `main.db` (`../agent/store/consent.rs`).
 - **`install.rs`**: Acquiring/removing the on-disk model + binary: `start_ai_download`/`do_download` (extract → download → verify → hand off to `server` for the health-checked first launch), `cancel_ai_download`, the stale-partial cleanup, and `uninstall_ai`.
 - **`server.rs`**: llama-server *process* orchestration over the stateless `process.rs` syscalls: `start_ai_server`/`stop_ai_server`, `spawn_and_track_server` (sync, inside the lock — see the spawn-race must-know), `wait_for_server_health` + the `StartupOutcome` quiet-stop-vs-failure protocol, `handle_startup_outcome`, `cleanup_failed_server`.
-- **`connection_check.rs`**: Cloud-endpoint probing (`check_ai_connection` → GET `/models`, returns `AiConnectionCheckResult`; refuses with `cloud_consent_missing: true` and no request while cloud AI isn't allowed) and the `validate_ai_base_url` BYOK-key plaintext-exfil gate (reused by `configure_ai`). Self-contained, mostly pure (`host_is_loopback`, `parse_model_ids`, `truncate_body_preview`, `scrub_bearer_tokens`).
+- **`connection_check.rs`**: Cloud-endpoint probing (`check_ai_connection` → GET `/models`, returns `AiConnectionCheckResult`; refuses with `managed: Some(refusal)` when the organization's policy refuses the endpoint, then with `cloud_consent_missing: true` while cloud AI isn't allowed, both with no request) and the `validate_ai_base_url` BYOK-key plaintext-exfil gate (reused by `configure_ai`). Self-contained, mostly pure (`host_is_loopback`, `parse_model_ids`, `truncate_body_preview`, `scrub_bearer_tokens`).
 - **`stream_registry.rs`**: The `STREAM_CANCEL_TOKENS` registry (`register_stream`/`unregister_stream`/`cancel_stream`, plus `cancel_all` for a consent revoke) for in-flight `stream_folder_suggestions` cancellation. Deliberately separate from `ManagerState` (see the decision below).
 
 Each concern module's Tauri commands are registered from their real module path in the `ipc.rs` manifest, not via `manager` — the `#[tauri::command]` macro emits hidden `__cmd__*`/`__specta__fn__*` items in the defining module that a `pub use` re-export wouldn't carry. `manager` re-exports only the plain-fn `ai::manager::…` callers that predate the split (`get_provider`, `cancel_stream`/`register_stream`/`unregister_stream`). Command wire names (and `bindings.ts`) are unchanged.
@@ -48,20 +49,20 @@ Each concern module's Tauri commands are registered from their real module path 
   - **`smoke_providers.rs` owns every endpoint and model id.** A decommission is one line there, not a hunt across a test, a doc comment, and a unit assertion — which is what the 2026-08 Groq shutdown cost. Each constant carries a `(verified …)` anchor and the recipe for refreshing it, and `expect_ok` turns a failure into a message naming the provider, the dead model, the model-list URL, and the constant to edit. It branches on the typed `AiError::NotFound`, never on provider prose.
   - **`nextest.toml` grants `test(ai::client_real_)` 60 s.** The global 8 s cap can't hold a live LLM round trip now that every provider's small model reasons before answering; Groq only ever fit by being fast.
   - **A missing key is a SKIP, and a skip is green.** `GROQ_API_KEY` was never added to the repo secrets, so the nightly step reported SKIPPED for months while looking like coverage. Adding a lane is half the job; adding its secret is the other half.
-- **`translate_error.rs`**: `AiTranslateError { kind, message }` + `AiTranslateErrorKind` enum, the typed error the two translate IPC commands return so the frontend branches on `kind` (not the message string). `From<AiError>` maps transport variants; the commands map `BackendResolution` non-ready cases. Mirror enum: `lib/ai/translate-error-toast.ts`.
+- **`translate_error.rs`**: `AiTranslateError { kind, message, managed }` + `AiTranslateErrorKind` enum (`managed` carries the `ManagedAiRefusal` exactly when `kind` is `managed`), the typed error the two translate IPC commands return so the frontend branches on `kind` (not the message string). `From<AiError>` maps transport variants; the commands map `BackendResolution` non-ready cases. Mirror enum: `lib/ai/translate-error-toast.ts`.
 - **`client_integration_test.rs`**: `wiremock`-based tests covering request shape per adapter (chat completions vs Responses API), parsing, error mapping. Always run in CI.
 - **`client_streaming_test.rs`**: `axum`-based SSE mock server tests for `chat_completion_stream`: chunks arrive in order, empty streams end cleanly, drop-mid-stream closes the connection, HTTP 5xx maps to `ServerError`. Always run in CI. (Wiremock can't chunk-deliver SSE bodies. See Gotchas.)
 - **`client_real_openai_test.rs`**: `#[ignore]`-gated smoke tests against `api.openai.com`, including streaming variants for `gpt-4o-mini`, `gpt-5-mini`, `o3-mini`. Run with `OPENAI_API_KEY=$(secret OPENAI_API_KEY) cargo nextest run --lib --run-ignored only ai::client_real_openai_test`. Costs ~$0.001 per full run.
 - **`client_real_anthropic_test.rs`**: `#[ignore]`-gated smoke tests against `api.anthropic.com` (chat + streaming variants of `claude-3-5-haiku-latest`). Anthropic's native streaming protocol differs from OpenAI's SSE shape; without this we'd only test the OpenAI lineage. Run with `ANTHROPIC_API_KEY=$(secret ANTHROPIC_API_KEY) cargo nextest run --lib --run-ignored only ai::client_real_anthropic_test`.
 - **`client_real_gemini_test.rs`**: `#[ignore]`-gated smokes against `generativelanguage.googleapis.com/v1/` (adapter routing + chat + streaming). Free tier, so a run costs nothing but Google's patience. The retry / triage / inconclusive design and the empirical evidence behind it are in the smoke bullets above; read them before touching this file. Run with `GEMINI_API_KEY=$(secret GEMINI_API_KEY) cargo nextest run --lib --run-ignored only ai::client_real_gemini_test`.
-- **`suggestions.rs`**: Builds few-shot prompt from listing cache, routes to configured backend, sanitizes response. Also exposes `stream_folder_suggestions` + `cancel_folder_suggestions` Tauri commands and a `StreamingSanitizer` that runs the per-line sanitizer on streamed chunks (line-buffers across chunk boundaries, dedupes case-insensitively against existing names + already-emitted, caps at `MAX_SUGGESTIONS`).
+- **`suggestions.rs`**: Builds few-shot prompt from listing cache, routes to configured backend, sanitizes response. Exposes `stream_folder_suggestions` + `cancel_folder_suggestions` Tauri commands and a `StreamingSanitizer` that runs the per-line sanitizer on streamed chunks (line-buffers across chunk boundaries, dedupes case-insensitively against existing names + already-emitted, caps at `MAX_SUGGESTIONS`).
 - **`suggestions_streaming_test.rs`**: Tests for the `manager::register_stream`/`unregister_stream`/`cancel_stream` registry: concurrent ids don't interfere, double-cancel is idempotent, missing id is a no-op.
 
 ### Tauri commands
 
-Core: `get_ai_status`, `get_ai_model_info`, `get_ai_runtime_status`, `configure_ai`, `start_ai_server`, `stop_ai_server`, `check_ai_connection`, `start_ai_download`, `cancel_ai_download`, `get_folder_suggestions`, `stream_folder_suggestions`, `cancel_folder_suggestions`. Note: `get_system_memory_info` moved to top-level `system_memory.rs`.
+Core: `get_ai_status`, `get_ai_model_info`, `get_ai_runtime_status`, `configure_ai`, `start_ai_server`, `stop_ai_server`, `check_ai_connection`, `start_ai_download`, `cancel_ai_download`, `stream_folder_suggestions`, `cancel_folder_suggestions`. (`get_system_memory_info` lives in top-level `system_memory.rs`.)
 API keys: `save_ai_api_key`, `get_ai_api_key_status`, `delete_ai_api_key` (in `api_keys.rs`).
-Also: `uninstall_ai` (the Uninstall button in `AiLocalSection.svelte`). The dead opt-out machinery (`opt_in_ai`, `is_ai_opted_out`, `dismiss_ai_offer`, `opt_out_ai`, and the `AiState.opted_out` field) was removed with the onboarding revamp — `ai.provider` is the single source of truth for whether AI is on.
+Also: `uninstall_ai` (the Uninstall button in `AiLocalSection.svelte`). There's no separate opt-out flag: `ai.provider` is the single source of truth for whether AI is on.
 
 ## Startup flow
 
@@ -109,10 +110,11 @@ Centralized in `manager::resolve_backend(app) -> BackendResolution` (the pure de
 - `NotConfigured(reason)`: provider is set but missing config (local server not running; cloud endpoint blank; or a **key-requiring** cloud provider with a blank key).
 - `Ready(AiBackend)`: backend ready to call `chat_completion` on.
 - `UnknownProvider(name)`: provider value isn't recognized.
+- `Managed(ManagedAiRefusal)`: the organization's policy refuses it. Decided FIRST, for every provider (§ Managed policy).
 
 **The empty-key gate is keyed on `cloud_requires_api_key`, not on "key is blank".** Keyless OpenAI-compatible endpoints (Ollama, LM Studio, a custom endpoint) legitimately have no key, so they resolve to `Ready` on a non-empty base URL; only providers the frontend marks `requiresApiKey` (`cloud-providers.ts`) get `NotConfigured` for a blank key. The frontend owns that fact and pushes it through `configure_ai`'s `cloud_requires_api_key` arg into `ManagerState`. Gating on "key blank" alone (the pre-issue-#29 bug) made every local endpoint look unconfigured even when fully set up.
 
-Callers decide what to do per case. `suggestions.rs` returns empty on any non-Ready (folder suggestions are nice-to-have). The two translate commands (`commands/search.rs::translate_search_query`, `commands/selection.rs::translate_selection_query`) return a typed `AiTranslateError { kind, message }` (in `translate_error.rs`) so the frontend can branch on `kind` and show a SPECIFIC toast (key rejected vs. out of quota vs. timed out vs. empty answer) without string-matching the message. The `kind` set maps both the `BackendResolution` non-ready cases (`off` / `noCloudConsent` / `notConfigured` / `unknownProvider`) and the `AiError` transport variants (`authFailed` / `rateLimited` / `timeout` / `unavailable` / `emptyResponse` / `serverError` / `parseError`). Frontend counterpart: `lib/ai/translate-error-toast.ts`; keep the two enums in lockstep.
+Callers decide what to do per case. `suggestions.rs` returns empty on any non-Ready (folder suggestions are nice-to-have). The two translate commands (`commands/search.rs::translate_search_query`, `commands/selection.rs::translate_selection_query`) return a typed `AiTranslateError { kind, message }` (in `translate_error.rs`) so the frontend can branch on `kind` and show a SPECIFIC toast (key rejected vs. out of quota vs. timed out vs. empty answer) without string-matching the message. The `kind` set maps both the `BackendResolution` non-ready cases (`off` / `noCloudConsent` / `notConfigured` / `unknownProvider` / `managed`) and the `AiError` transport variants (`authFailed` / `rateLimited` / `timeout` / `unavailable` / `emptyResponse` / `serverError` / `parseError`). Frontend counterpart: `lib/ai/translate-error-toast.ts`; keep the two enums in lockstep.
 
 ## Cloud AI consent
 
@@ -125,10 +127,12 @@ the switch on. Local AI needs none: nothing leaves the Mac.
   is what makes it structural: a caller can't resolve without the consent read, and `AiBackend::remote` is
   `pub(in crate::ai)`, so nothing outside `ai/` can build a cloud backend around it. `resolve_backend_with_model`
   (Ask Cmdr's slot) and `resolve_translate_backend` both go through it.
-- **One predicate.** `cloud_consent::has_current_cloud_consent(conn, RevokePending)` is what every gate calls
-  (`resolve_backend` through `cloud_consent_from_app`, the status command, and so the wake readiness snapshot). A
-  future managed preference (MDM) becomes one more argument there, the way `RevokePending` is, plus one more field on
-  `CloudAiConsentStatus` for the switch to render as locked.
+- **One predicate.** `cloud_consent::has_current_cloud_consent(conn, RevokePending, &ManagedPolicy)` is what every
+  gate calls (`resolve_backend` through `cloud_consent_from_app`, the status command, and so the wake readiness
+  snapshot). A policy that rules out every cloud host (`any_cloud_refusal`) answers "not allowed" whatever the record
+  says, and `CloudAiConsentStatus.managed` names that refusal so the switch renders locked. The record itself is never
+  touched, so removing the profile brings the user's own answer back. A host list doesn't count here: it narrows
+  where cloud AI goes, not whether the user agreed.
 - **Fails closed.** An absent record, a stale version, a store that never opened or won't open, and a held "no" all
   read as not allowed.
 - **Versioned.** The record stores the accepted `CLOUD_AI_CONSENT_VERSION`. Bump it whenever the `ai.cloudConsent.*`
@@ -150,9 +154,53 @@ the switch on. Local AI needs none: nothing leaves the Mac.
   pushed the provider.
 - **MCP can't flip it.** The record sits behind dedicated commands no MCP tool reaches; `set_setting` writes registry
   settings only, and `ai.cloudConsentRevokePending` is `mcpSettable: false`. `ai_search` refuses with a typed
-  `data.reason: "cloudAiNotAllowed"`.
+  `data.reason: "cloudAiNotAllowed"` (or the managed refusal's own name, § Managed policy).
 - **Writes answer typed.** `accept_cloud_ai_consent` / `revoke_cloud_ai_consent` return
   `CloudAiConsentWriteError::{StoreUnavailable, StoreRefused}`; the frontend re-reads the status either way.
+
+## Managed policy
+
+How the organization's MDM profile (`managed_policy/DETAILS.md`, the canonical key catalog) reaches AI. One decision,
+`ManagedPolicy::ai_destination(&AiDestination) -> Result<(), ManagedAiRefusal>`, asked from two places:
+
+- **`resolve_backend`, for the reason.** `resolve_backend_inner` asks it FIRST: `LocalServer` for every provider (so
+  `DisableAI` answers `Managed(AiOff)` even for `off`, and a caller names the organization's reason, not "turn AI on"),
+  then the cloud endpoint (`client::remote_destination`, the exact URL `AiBackend::remote` will call), before consent,
+  key, and endpoint checks. `Managed` maps to the `managed` translate kind (with the refusal), a quiet empty for
+  suggestions, `SlotRefusal::Managed` → `AgentErrorKindView::ManagedByOrganization` for Ask Cmdr (the refusal rides beside it as
+  `managed`, on the send refusal and the `failed` event), `ProviderGate::Off`
+  for the wake loop (silent; the stored backlog stays), and MCP `ai_search`'s `data.reason` (`aiOff` / `cloudAiOff` /
+  `hostNotAllowed`). A cloud-only feature on a non-cloud provider (AI selection) answers the organization's refusal
+  when no cloud host is allowed at all (`any_cloud_refusal`).
+- **The client, as the backstop.** `AiBackend` carries its `destination` (`LocalServer` or `Remote(url)`, parsed once
+  where the backend is built), and `chat_completion`, `chat_completion_stream`, and `exec_chat_stream_request` ask
+  `for_egress()` (a fresh read) right before sending, refusing with `AiError::Managed`. An Ask Cmdr turn resolves its
+  backend once and makes many requests, and `resolve_backend_with_model` rebuilds from a second config read, so only
+  this check makes "the next request stops" hold for them. Mid-turn the refusal stays typed:
+  `AgentLlmError::Managed` → `AgentErrorKind::ManagedByOrganization`, the same wire kind the slot refuses with (and a
+  background wake logs it at info).
+- **Redirects.** Remote backends send through `policy_guarded_http_client` (`genai::ClientBuilder::with_reqwest`), whose
+  redirect policy stops at any hop the (cached) policy refuses. Without it, a 3xx from an allowed host reaches any host.
+  The connection probe (`check_ai_connection`) uses the same policy (`client::policy_guarded_redirects`, one function):
+  every HTTP client that talks to an AI endpoint must.
+- **Local model.** Under `DisableAI`, `configure_ai` treats `local` like switching away (stops a running server, never
+  spawns), `start_ai_server` and `start_ai_download` refuse, and `compute_ai_status` never offers the download.
+  The download is egress: `start_ai_download` asks `for_egress()`, and so does `do_download` again before its
+  post-download server start (a transfer takes minutes). `spawn_and_track_server`, the lowest "start" function, asks the
+  cached policy under the `MANAGER` lock, so no caller can spawn `llama-server` under `DisableAI`: a change swaps the
+  cache before `apply_policy_change` takes that lock, so a spawn either sees it or is stopped right after.
+  Both commands reject with the typed `LocalAiError` (`Managed { refusal }`, `Unsupported`, `Cancelled`,
+  `Failed { detail }`; exported through `ipc.rs`'s `.typ`, since generic commands aren't collected). A download that
+  ends with the cancel flag set is `Cancelled`, whoever set it, so a policy-driven cancel is never a failure. The
+  frontend logs `Managed` and `Cancelled` at info (`$lib/ai/local-ai-error.ts`).
+  `DisableCloudAI` leaves all of that alone.
+- **A change while running.** `managed_policy`'s `apply_change` calls `managed::apply_policy_change`: ANY narrowing of
+  the AI policy cancels every in-flight Ask Cmdr turn and suggestion stream (the same `stop_in_flight_calls` a consent
+  revoke runs), `DisableAI` arriving also stops `llama-server` and cancels a model download, and the wake readiness
+  is refreshed. It doesn't work out which call talks to which host: the event is rare, and the next request
+  re-resolves and gets the typed reason.
+- **The picker.** `cloud_ai_host_verdicts(base_urls)` answers per URL with the same decision, as the refusal itself
+  (`None` when allowed), so the picker names the organization's actual reason; a URL crosses IPC, never a key.
 
 ## Download/install event sequence
 
@@ -193,7 +241,7 @@ The frontend (`AiSection.svelte`) tracks `installStep` state and displays "Step 
 **Decision**: Two separate install flags (`installed` + `model_download_complete`) rather than a single boolean.
 **Why**: The download can be interrupted (crash, cancel, network loss). A partial 2 GB file on disk looks "installed" but is corrupt. `model_download_complete` is only set after file-size verification passes. This prevents launching llama-server with a truncated model, which would crash silently or produce garbage.
 
-**Decision**: Frontend pushes AI config to backend via `configure_ai` -- Rust never reads settings files.
+**Decision**: Frontend pushes AI config (provider, endpoint, model) to backend via `configure_ai`; Rust never reads it from `settings.json`. (The held consent revoke, § Cloud AI consent, is the one AI value read from that file, because it must hold before any push.)
 **Why**: The frontend is the single source of truth for settings via `tauri-plugin-store`. Having Rust also read `settings.json` directly would create a second reader with potential format/timing mismatches.
 
 **Decision**: `init()` only sets up directories and cleans stale PIDs. Server start is deferred to `configure_ai`.
@@ -245,8 +293,8 @@ privacy-focused users. The architecture doesn't fight this switch: it's just a d
 **Gotcha**: `tauri::async_runtime::spawn` is used in `configure_ai` and `start_ai_server` instead of `tokio::spawn`.
 **Why**: These may run during Tauri setup before the tokio runtime is fully available. `tauri::async_runtime::spawn` uses Tauri's own runtime which is always ready at that point.
 
-**Gotcha**: `get_folder_suggestions` returns `Ok(Vec::new())` on AI errors, not `Err`.
-**Why**: AI suggestions are a nice-to-have enhancement. Returning empty gracefully hides the failure.
+**Gotcha**: `stream_folder_suggestions` ends a failed stream with a bare `Failed` event, never an `Err` or a message.
+**Why**: AI suggestions are a nice-to-have enhancement. Ending quietly hides the failure; the cause goes to the log.
 
 **Gotcha**: `configure_ai` must NOT block. Only the health check runs async via `tauri::async_runtime::spawn`.
 **Why**: Health check polling takes 5-60s. Blocking would freeze the frontend on startup.

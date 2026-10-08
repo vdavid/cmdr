@@ -31,8 +31,8 @@ use tokio_util::sync::CancellationToken;
 use super::state::ConnectionState;
 use super::{UnattendedReconnect, WebdavVolume, WebdavVolumeInner, build_and_probe};
 use crate::errors::WebdavConnectError;
-use crate::liveness;
 use crate::transport::WebdavClient;
+use cmdr_fs::volume::liveness;
 
 /// Bounded and growing: a handful of tries over a few minutes, then it stops
 /// rather than hammering a server that is genuinely down.
@@ -110,21 +110,23 @@ impl WebdavVolumeInner {
     }
 
     /// Starts the silence watch over `client`'s waiting operations
-    /// (`crate::liveness`). ❗ Holds the client weakly: the watch must not keep
+    /// (`cmdr_fs::volume::liveness`). ❗ Holds the client weakly: the watch must not keep
     /// a dropped client's connection pool alive.
     pub(super) fn watch_over(&self, client: &Arc<WebdavClient>) {
         let timings = *self.silence.read_ignore_poison();
         let liveness = Arc::clone(client.liveness());
         let client = Arc::downgrade(client);
-        self.host.runtime().spawn(liveness::watch(liveness, timings, move || {
-            let client = client.upgrade();
-            async move {
-                match client {
-                    Some(client) => client.ping().await,
-                    None => false,
+        self.host
+            .runtime()
+            .spawn(liveness::watch(liveness, timings, "webdav", move || {
+                let client = client.upgrade();
+                async move {
+                    match client {
+                        Some(client) => client.ping().await,
+                        None => false,
+                    }
                 }
-            }
-        }));
+            }));
     }
     /// Probes now, on the unattended terms. Single-flight.
     pub(super) async fn do_attempt_reconnect(&self) -> Result<(), VolumeError> {

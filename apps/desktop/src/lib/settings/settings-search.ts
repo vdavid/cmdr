@@ -4,6 +4,7 @@
  */
 
 import uFuzzy from '@leeoniya/ufuzzy'
+import { INTRA_MODE_SINGLE_ERROR } from '$lib/utils/ufuzzy-modes'
 import type { SearchableEntry, SettingSearchResult } from './types'
 import { settingsRegistry } from './settings-registry'
 import { searchableRowEntries } from './sections/searchable-rows'
@@ -15,7 +16,7 @@ import { isMacOS } from '$lib/shortcuts/key-capture'
 // ============================================================================
 
 const fuzzy = new uFuzzy({
-  intraMode: 1, // Fuzzy matching within words (catches typos)
+  intraMode: INTRA_MODE_SINGLE_ERROR, // Fuzzy matching within words (catches typos)
   interIns: 3, // Max 3 insertions between matched characters
 })
 

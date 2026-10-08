@@ -20,7 +20,8 @@ use super::super::staged_write::StagedWrite;
 use super::super::recovered_name::FinalizeFailure;
 use super::super::retry;
 pub(super) use super::super::staged_write::{
-    LandingName, WriteStaging, failed_write_leaves_ours_at, resolve_staging, staging_for,
+    LandingName, Replaces, WriteStaging, failed_write_leaves_ours_at, note_pending_for_local_dest, resolve_staging,
+    staging_for,
 };
 use super::super::transfer_driver::{LeafProgressLedger, SourceProgress};
 use super::super::transfer_probe::{
@@ -29,7 +30,8 @@ use super::super::transfer_probe::{
 use super::merge::copy_directory_streaming;
 use super::merge_ctx::{CreatedPaths, MergeCtx};
 use super::preflight::SourceFileFacts;
-use super::transfer_error::{AtPath, PathedVolumeError};
+use super::server_side_copy::try_server_side_copy;
+use super::transfer_error::{AtPath, PathedVolumeError, hard_abort_error};
 use crate::file_system::volume::{Volume, VolumeError, VolumeReadStream};
 
 /// Debounce window for the foreground auto-yield: after foreground work drains,
@@ -163,8 +165,9 @@ pub(super) async fn copy_single_path(
     merge: Option<&MergeCtx<'_>>,
     // Whether `dest_path` is the file's final name (`Stage`) or a `.cmdr-tmp-*`
     // the caller already minted for a safe-replace and will land itself
-    // (`AlreadyStaged`). Every call site derives it the same way:
-    // `replace_after_write.is_some()`. Only the FILE branch reads it — a
+    // (`AlreadyStaged`), or the final name an in-place replace writes over.
+    // Every call site derives it the same way: `staging_for(&replaces,
+    // landing)`. Only the FILE branch reads it — a
     // directory source's children each get their own staging decision inside the
     // merge walker — and a directory conflict never yields a caller temp, so
     // passing the same expression everywhere stays correct.
@@ -195,6 +198,7 @@ pub(super) async fn copy_single_path(
                 created,
                 progress,
                 merge,
+                source_facts.modified_at,
             ))
             .await;
         }
@@ -208,6 +212,7 @@ pub(super) async fn copy_single_path(
             progress,
             merge,
             None,
+            source_facts.modified_at,
         ))
         .await
     } else {
@@ -387,7 +392,10 @@ pub(super) async fn stream_pipe_file(
         // destination-side foreground yield's floor exemption (handed to the
         // `CheckpointStream`). See `resolve_staging`.
         let write_is_single_shot = dest_volume.write_is_single_shot(length).await;
-        let resolved_staging = resolve_staging(staging, write_is_single_shot);
+        // A whole-publishing destination (an object store) needs no staging
+        // either, though it makes no single-shot promise: the yield floor and
+        // the stall watchdog below keep reading the single-shot answer alone.
+        let resolved_staging = resolve_staging(staging, write_is_single_shot || dest_volume.publishes_writes_whole());
         let staged = StagedWrite::begin(state, dest_path, resolved_staging);
         note_pending_for_local_dest(dest_volume, staged.target());
         // Wrap so a paused op parks (and a long copy yields to foreground)
@@ -566,7 +574,11 @@ pub(super) async fn stream_pipe_file(
             Err(FinalizeFailure {
                 error: VolumeError::NotSupported,
                 ..
-            }) if matches!(staging, WriteStaging::Stage | WriteStaging::StageOntoClaimedName) => {
+            }) if matches!(
+                staging,
+                WriteStaging::Stage | WriteStaging::StageInFreshFolder | WriteStaging::StageOntoClaimedName
+            ) =>
+            {
                 log::warn!(
                     target: "copy",
                     "stream_pipe_file: destination can't land a staged write for {}; falling back to writing at the final name",
@@ -614,17 +626,6 @@ async fn cancelled_or_never(token: Option<&tokio_util::sync::CancellationToken>)
     }
 }
 
-/// What tier 2 reports when it ends a wait.
-///
-/// A `Cancelled`, deliberately, and it decides three things at once: `retry.rs`
-/// never re-runs a cancel, the post-loop keys `write-cancelled` off a
-/// `Cancelled`-shaped error (so an abort closes the dialog instead of logging a
-/// failed transfer), and no caller mistakes it for a transport fault worth
-/// reporting to the user.
-fn hard_abort_error(path: &Path) -> VolumeError {
-    VolumeError::Cancelled(format!("stopped waiting for {} so the app can quit", path.display()))
-}
-
 /// How one attempt at a file's write ended.
 enum WriteAttemptOutcome {
     /// The destination's `write_from_stream` returned, one way or the other.
@@ -633,110 +634,6 @@ enum WriteAttemptOutcome {
     /// backend ran none of its own cleanup. ❌ Nothing may go back through that
     /// connection now; the staged partial is left to the sweep.
     HardAborted,
-}
-
-/// Asks the destination to copy the file inside itself, if both sides are the
-/// same volume and it can.
-///
-/// `Ok(None)` means "do it the ordinary way", and that is the answer for
-/// everything except a clean success and a genuine cancel:
-///
-/// - **Two different volumes.** ❗ Compared by `Arc::ptr_eq`, which is exact
-///   here: the command layer resolves both sides through the volume registry, so
-///   one volume id yields one `Arc`. A `copy_within` on a volume the SOURCE path
-///   doesn't belong to would copy whatever happens to sit at that path on the
-///   other server, which is not a failure — it is the wrong file, silently.
-/// - **`NotSupported`**, from a backend that has no server-side copy at all or
-///   from one whose server simply lacks the extension.
-/// - **Any other failure.** The streaming path below has the retry policy, the
-///   stall watchdog, and the pause checkpoints; a fast path that failed for a
-///   real reason will fail there too, with better handling and a better report.
-///
-/// ❌ A cancel is NOT a fall-through. The user asked for it to stop, and running
-/// the file again the slow way is the opposite of stopping.
-///
-/// ⚠️ **A pause doesn't land mid-file here**, only at the next file boundary.
-/// There is no stream to park between chunks, and pausing frees nothing anyway:
-/// no bytes are crossing the link. Same limitation, and the same reasoning, as
-/// the local-FS chunk loop's.
-#[allow(
-    clippy::too_many_arguments,
-    reason = "One file's whole copy context, the same set `stream_pipe_file` carries"
-)]
-async fn try_server_side_copy(
-    source_volume: &Arc<dyn Volume>,
-    source_path: &Path,
-    dest_volume: &Arc<dyn Volume>,
-    dest_path: &Path,
-    state: &Arc<WriteOperationState>,
-    on_file_progress: &(dyn Fn(u64, u64) -> ControlFlow<()> + Sync),
-    staging: WriteStaging,
-) -> Result<Option<u64>, FinalizeFailure> {
-    if !Arc::ptr_eq(source_volume, dest_volume) {
-        return Ok(None);
-    }
-
-    // ❗ The requested staging, ❌ never `resolve_staging`: the destination
-    // genuinely holds a byte-incomplete file while a server-side copy runs, so
-    // the single-shot exemption can't apply however small the file is
-    // (`Volume::copy_within`'s contract).
-    let staged = StagedWrite::begin(state, dest_path, staging);
-    note_pending_for_local_dest(dest_volume, staged.target());
-    set_task_phase(TaskPhase::Streaming);
-    set_task_bytes(0, 0);
-
-    // The quit deadline rides the same `select!` it rides for a streamed write.
-    // Nothing is cleaned up on that arm: the delete would go back through a
-    // connection that is already not answering, and the temp is registered for
-    // the startup sweep.
-    let outcome = tokio::select! {
-        biased;
-        () = state.backend_abort.cancelled() => return Err(hard_abort_error(dest_path).into()),
-        result = dest_volume.copy_within(source_path, staged.target(), on_file_progress) => result,
-    };
-
-    match outcome {
-        Ok(bytes) => {
-            staged.commit(dest_volume).await?;
-            Ok(Some(bytes))
-        }
-        // ❌ A cancel is never retried more slowly. The intent is consulted as
-        // well as the variant, so a backend that labels its own stop something
-        // else can't turn a Cancel click into a second, full-speed attempt.
-        Err(e) if matches!(e, VolumeError::Cancelled(_)) || super::super::super::state::is_cancelled(&state.intent) => {
-            staged.abandon(dest_volume).await;
-            Err(e.into())
-        }
-        Err(VolumeError::NotSupported) => {
-            staged.abandon_attempt(dest_volume).await;
-            Ok(None)
-        }
-        Err(e) => {
-            log::debug!(
-                target: "copy",
-                "try_server_side_copy: {} couldn't copy {} inside itself ({e}); streaming it instead",
-                dest_volume.name(),
-                dest_path.display(),
-            );
-            staged.abandon_attempt(dest_volume).await;
-            Ok(None)
-        }
-    }
-}
-
-/// Resolve `dest_path` against `dest_volume.local_path()` and register it
-/// with the downloads watcher's ignore set. Skips silently when
-/// `dest_volume` isn't local-FS-backed (MTP, SMB, in-memory): those paths
-/// would never trigger the watcher anyway, and synthesizing a non-local
-/// path into the ignore set would just churn the map for no benefit.
-pub(super) fn note_pending_for_local_dest(dest_volume: &Arc<dyn Volume>, dest_path: &Path) {
-    let Some(root) = dest_volume.local_path() else {
-        return;
-    };
-    // The same anchoring `LocalPosixVolume::resolve` applies, so the path we
-    // register matches the one `write_from_stream` will hit.
-    let absolute = cmdr_fs::volume::root_anchored(&root, dest_path);
-    crate::downloads::note_pending_write_for_cmdr(&absolute);
 }
 
 #[cfg(test)]

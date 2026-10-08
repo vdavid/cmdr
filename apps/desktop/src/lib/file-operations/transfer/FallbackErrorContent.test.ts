@@ -53,7 +53,7 @@ describe('FallbackErrorContent', () => {
     const items = target.querySelectorAll('.oversized-files li')
     expect(items).toHaveLength(1)
     expect(items[0].querySelector('.file-name')?.textContent).toBe('movie.mkv')
-    expect(items[0].querySelector('.file-size')?.textContent).toContain('5.00 GB')
+    expect(items[0].querySelector('.file-size')?.textContent).toContain('5.37 GB')
     // One file exactly: nothing is hidden, so no "and N more" line.
     expect(target.querySelector('.oversized-more')).toBeNull()
   })

@@ -395,7 +395,7 @@
   },
   "onboarding.stepAi.local.tooltip": "The local model is significantly dumber than cloud models, and it takes up about 2 GB of space and some RAM and CPU at every use.\nIn return, no data leaves your machine.\nCmdr tries to ship updates so you can use the best small model that’s available. But if you want privacy <em>and</em> a decent model, running your own ollama server and setting it up with option <strong>Yes, I want AI</strong> below is your best choice.",
   "@onboarding.stepAi.local.tooltip": {
-    "description": "The local-AI option's full explanation, in the tooltip behind the info glyph beside it: a weaker on-device model that keeps everything local, and the better route for someone who wants both privacy and quality. Honest, plain tone (\"dumber\" is deliberate). <em> emphasizes \"and\"; <strong> wraps the name of the cloud option below, so keep that wording matching onboarding.stepAi.cloud.label. \"Cmdr\" is the product name; \"GB\" is gigabytes; \"RAM\" and \"CPU\" are the memory and the processor; \"ollama\" is a product name; all stay untranslated. \"2 GB\" is an approximate disk-size figure. Each sentence sits on its own line (the newlines are real line breaks in the tooltip); keep one line per sentence in your translation.",
+    "description": "The local-AI option's full explanation, in the tooltip behind the info glyph beside it: a weaker on-device model that keeps everything local, and the better route for someone who wants both privacy and quality. Honest, plain tone (\"dumber\" is deliberate). <em> emphasizes \"and\"; <strong> wraps the name of the cloud option below, so keep that wording matching onboarding.stepAi.cloud.label. \"Cmdr\" is the product name; \"RAM\" and \"CPU\" are the memory and the processor; \"ollama\" is a product name; all stay untranslated. \"2 GB\" is a rough decimal disk-size figure: write the unit as your common.sizeUnit.gigabyte. Each sentence sits on its own line (the newlines are real line breaks in the tooltip); keep one line per sentence in your translation.",
     "screenshot": "onboarding-ai.png"
   },
   "onboarding.stepAi.local.note": "Started downloading the local model in the background. You can finish onboarding now; the toast in the corner will keep you posted.",
@@ -432,6 +432,18 @@
   "@onboarding.stepAi.off.help": {
     "description": "Helper text under the no-AI radio option, reassuring the user the app is fully usable without AI and AI can be enabled later. \"Cmdr\" is the product name; \"Settings\" is the app's settings screen.",
     "screenshot": "onboarding-ai.png"
+  },
+  "onboarding.localDownloadFailed.title": "The local AI model didn’t finish downloading",
+  "@onboarding.localDownloadFailed.title": {
+    "description": "Bold first line of a warning toast shown in the main window right after the user finishes onboarding, when they picked the private on-device AI model and its background download stopped before it completed (for example, the network dropped or the disk filled up). It corrects the impression that the local model is ready. A statement, not a question."
+  },
+  "onboarding.localDownloadFailed.body": "Start it again from Settings › AI.",
+  "@onboarding.localDownloadFailed.body": {
+    "description": "Second line of the same toast, under \"The local AI model didn’t finish downloading\". Tells the user where to restart the download. \"Settings › AI\" is the app's own settings screen and its AI section: use the same names your translation uses for that window and section, keeping the › separator."
+  },
+  "onboarding.localDownloadFailed.openSettings": "Open Settings",
+  "@onboarding.localDownloadFailed.openSettings": {
+    "description": "Button on the same toast that opens the app's Settings window at the AI section, where the user can restart the local model download. A short verb phrase."
   },
   "onboarding.stepBeta.footer.start": "Start using Cmdr!",
   "@onboarding.stepBeta.footer.start": {
@@ -517,6 +529,14 @@
   "@onboarding.stepBeta.crashReportsNote": {
     "description": "Caption on the open-beta onboarding step, right after the usage-stats disclosure, telling a new user that crash reports are also on by default and what one carries. Transparent and calm. \"Cmdr\" is the product name; \"macOS\" is the operating system; \"Settings\" is the app's settings screen.",
     "screenshot": "onboarding-beta.png"
+  },
+  "onboarding.stepBeta.analyticsManaged": "Your organization turned off usage stats.",
+  "@onboarding.stepBeta.analyticsManaged": {
+    "description": "Shown on the open-beta onboarding step in place of the 'Send usage stats' checkbox, when the person's organization (their employer's or school's IT team, through a device management profile) turned usage statistics off, so there's nothing to choose. Calm, one short sentence."
+  },
+  "onboarding.stepBeta.crashReportsNoteAlone": "Crash reports are on: if Cmdr goes down, it sends the app version, your macOS version, and where the code stopped.\nNever your files.\nYou can turn them off in Settings whenever you like.",
+  "@onboarding.stepBeta.crashReportsNoteAlone": {
+    "description": "Info tip on the open-beta onboarding step, beside the line saying the person's organization turned off usage stats: crash reports are still on by default, and this says what one carries. The same facts as the usual crash-reports caption, without referring back to usage stats. Transparent and calm. \"Cmdr\" is the product name; \"macOS\" is the operating system; \"Settings\" is the app's settings screen."
   },
   "onboarding.stepBeta.emailTitle": "Stay in touch (optional)",
   "@onboarding.stepBeta.emailTitle": {
@@ -616,7 +636,7 @@
   },
   "onboarding.stepOptional.indexing.summary": "Takes 1 GB space, speeds up searches, shows folder sizes",
   "@onboarding.stepOptional.indexing.summary": {
-    "description": "Half-line summary under the drive-indexing toggle's title: one cost and two benefits. The full explanation sits behind the info glyph beside the title. \"1 GB\" is the approximate index size. Keep it to one short line.",
+    "description": "Half-line summary under the drive-indexing toggle's title: one cost and two benefits. The full explanation sits behind the info glyph beside the title. \"1 GB\" is the approximate index size, a rough decimal figure: write the unit as your common.sizeUnit.gigabyte. Keep it to one short line.",
     "screenshot": "onboarding-optional.png"
   },
   "onboarding.stepOptional.indexing.descIntro": "Drive indexing is totally cool! Gives you two main things:",
@@ -636,7 +656,7 @@
   },
   "onboarding.stepOptional.indexing.descCost": "If you turn this off, you only get <code>{dirPlaceholder}</code> for the sizes.\nThe cost is around 1 GB of index on your drive for a few million files, but no extra CPU or memory use after the first 2–3 minutes of you first starting the app, or starting it after a long time.\nIt’s a cheap feature considering the benefits.",
   "@onboarding.stepOptional.indexing.descCost": {
-    "description": "Explains the trade-off of disabling indexing (folders show a placeholder instead of a size) and its cost (disk space, brief startup work). <code> wraps the placeholder the Size column shows for an unmeasured folder, supplied as {dirPlaceholder}. \"1 GB\" is the index size and it scales with how many files the user has, not with the size of the drive; \"CPU\" is the processor; both stay as-is. Each sentence sits on its own line (the newlines are real line breaks in the tooltip); keep one line per sentence in your translation.",
+    "description": "Explains the trade-off of disabling indexing (folders show a placeholder instead of a size) and its cost (disk space, brief startup work). <code> wraps the placeholder the Size column shows for an unmeasured folder, supplied as {dirPlaceholder}. \"1 GB\" is the index size, a rough decimal figure that scales with how many files the user has, not with the size of the drive: write the unit as your common.sizeUnit.gigabyte. \"CPU\" is the processor; keep it. Each sentence sits on its own line (the newlines are real line breaks in the tooltip); keep one line per sentence in your translation.",
     "placeholders": {
       "dirPlaceholder": "the literal text the Size column shows for a folder whose size isn't computed yet, taken from fileExplorer.dirSize.dirPlaceholder (for example \"<dir>\")"
     },
@@ -754,6 +774,12 @@
   "onboarding.cloudSetup.apiKeyAria": "API key",
   "@onboarding.cloudSetup.apiKeyAria": {
     "description": "Accessible label for the API-key password input on the provider setup. \"API key\" is a technical credential term.",
+    "screenshot": "onboarding-ai.png",
+    "screenshotNote": "Cloud-AI setup copy in the onboarding wizard. This shows the onboarding AI step where these strings render."
+  },
+  "onboarding.cloudSetup.removeKey": "Remove key",
+  "@onboarding.cloudSetup.removeKey": {
+    "description": "VERB (imperative), a small button under the API-key field, shown only while a key is saved. Deletes the saved API key from the OS credential store (macOS Keychain or the system keyring); the provider stays selected and the user can paste a new key. Short: the button sits under a text field.",
     "screenshot": "onboarding-ai.png",
     "screenshotNote": "Cloud-AI setup copy in the onboarding wizard. This shows the onboarding AI step where these strings render."
   },

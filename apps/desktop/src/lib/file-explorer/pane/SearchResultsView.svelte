@@ -30,6 +30,7 @@
         type SearchSnapshot,
     } from '$lib/search/snapshot-store.svelte'
     import { nextSnapshotSort, sortSnapshot } from '$lib/search/snapshot-sort.svelte'
+    import { SEARCH_HIT_MENU_FACTS } from '$lib/search/search-hit-menu'
     import { capabilitiesForKind } from './volume-capabilities'
     import { showFileContextMenu } from '$lib/tauri-commands'
     import { tString } from '$lib/intl/messages.svelte'
@@ -266,7 +267,8 @@
                 snapshotBasename(entry.path),
                 entry.isDirectory,
                 paths,
-                { restrictDestinationActions: !caps.canWrite, canShowInFolder: true },
+                // Every snapshot row is a real file, so Share and the tag colors work on it.
+                { restrictDestinationActions: !caps.canWrite, canShowInFolder: true, ...SEARCH_HIT_MENU_FACTS },
                 {
                     countText: contextMenuCountText(paths.length),
                     sizeText: contextMenuSizeText(contextMenuSizeBytes(targets)),

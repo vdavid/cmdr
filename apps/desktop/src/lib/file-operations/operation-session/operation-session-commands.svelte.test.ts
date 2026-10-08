@@ -17,10 +17,6 @@ const { commandMocks, resolveWriteConflictMock } = vi.hoisted(() => {
       cancelWriteOperation: vi.fn<(id: string, rollback: boolean) => Promise<void>>(() => Promise.resolve()),
       resolveWriteConflict: (operationId: string, conflictId: number, resolution: string, applyToAll: boolean) =>
         resolveWriteConflictMock({ operationId, conflictId, resolution, applyToAll }),
-      /** Mocked only so a test can prove the toggle never asks: the session
-       *  already holds the lifecycle status, so a query would be a round trip for
-       *  an answer on screen. */
-      getOperationStatus: vi.fn(() => Promise.resolve({ lifecycle: 'running' })),
     },
   }
 })
@@ -64,7 +60,6 @@ beforeEach(() => {
     commandMocks.resumeOperation,
     commandMocks.cancelOperation,
     commandMocks.cancelWriteOperation,
-    commandMocks.getOperationStatus,
     resolveWriteConflictMock,
   ]) {
     mock.mockReset()
@@ -142,7 +137,6 @@ describe('the pause toggle', () => {
 
     await commands.togglePause()
 
-    expect(commandMocks.getOperationStatus).not.toHaveBeenCalled()
     expect(commandMocks.resumeOperation).toHaveBeenCalledWith('op-1')
     dispose()
   })

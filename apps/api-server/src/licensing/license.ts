@@ -16,6 +16,51 @@ export interface LicenseData {
   type: LicenseType
   organizationName?: string // For commercial licenses
   shortCode?: string // Embedded so the app can display it even when activated via full key
+  /**
+   * ISO 8601, only on a license with a fixed end date (a hand-issued dated one). Signed in so the
+   * app enforces the date offline. A renewing Paddle subscription has no fixed date to sign.
+   */
+  expiresAt?: string
+}
+
+/**
+ * The verdict `/validate` signs for the app. The app drops a perpetual license to Personal only on
+ * a verified `invalid`, so this is what makes a revocation trustworthy when the server, the domain,
+ * or a proxy in between isn't. Bound to the app's nonce, so a captured answer can't be replayed.
+ */
+export interface ValidationAnswer {
+  transactionId: string
+  nonce: string
+  status: 'active' | 'expired' | 'invalid'
+  type: LicenseType | null
+  organizationName: string | null
+  expiresAt: string | null
+}
+
+/**
+ * Prepended to the payload before signing a validation answer. A license key's signature covers the
+ * bare payload JSON, which starts with `{`, so neither kind of signature can verify as the other.
+ */
+export const validationAnswerSignaturePrefix = 'cmdr-validation-answer-v1\n'
+
+/** The app's nonce: 16 random bytes as lowercase hex. Anything else is refused, never signed. */
+export function isValidNonce(nonce: unknown): nonce is string {
+  return typeof nonce === 'string' && /^[0-9a-f]{32}$/.test(nonce)
+}
+
+/** Sign a validation answer: `payload` is base64 JSON, `signature` covers prefix + payload bytes. */
+export async function signValidationAnswer(
+  answer: ValidationAnswer,
+  privateKeyHex: string,
+  now: Date,
+): Promise<{ payload: string; signature: string }> {
+  const payloadBytes = new TextEncoder().encode(JSON.stringify({ ...answer, signedAt: now.toISOString() }))
+  const prefixBytes = new TextEncoder().encode(validationAnswerSignaturePrefix)
+  const message = new Uint8Array(prefixBytes.length + payloadBytes.length)
+  message.set(prefixBytes)
+  message.set(payloadBytes, prefixBytes.length)
+  const signature = await ed.signAsync(message, hexToBytes(privateKeyHex))
+  return { payload: bytesToBase64(payloadBytes), signature: bytesToBase64(signature) }
 }
 
 /** Unambiguous alphabet (no 0/O, 1/I/L). Shared by short license codes and error report IDs. */

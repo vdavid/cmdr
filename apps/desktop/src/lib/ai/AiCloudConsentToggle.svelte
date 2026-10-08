@@ -17,6 +17,7 @@
     import Switch from '$lib/ui/Switch.svelte'
     import Trans from '$lib/intl/Trans.svelte'
     import { tString } from '$lib/intl/messages.svelte'
+    import { managedAiRefusalMessage } from '$lib/managed-policy/ai-refusal'
     import {
         acceptCloudConsent,
         cloudConsentState,
@@ -37,6 +38,9 @@
     })
 
     const accepted = $derived(cloudConsentState.accepted === true)
+    // The organization rules out every cloud host: the switch is locked off, with the reason in view.
+    const managed = $derived(cloudConsentState.managed)
+    const managedNoteId = $derived(anchor ? 'settings-ai-cloud-consent-managed' : 'onboarding-ai-cloud-consent-managed')
     // Follows the store; the switch writes it on a click. The handler below resyncs after
     // every attempt: a refused write leaves `accepted` unchanged, so the derivation wouldn't
     // re-run to flip the switch back.
@@ -88,12 +92,16 @@
         </div>
         <Switch
             bind:checked
-            disabled={busy || cloudConsentState.accepted === null}
+            disabled={busy || cloudConsentState.accepted === null || managed !== null}
             ariaLabel={tString('ai.cloudConsent.label')}
+            ariaDescribedBy={managed ? managedNoteId : undefined}
             onCheckedChange={(next: boolean) => void onCheckedChange(next)}
             data-test="cloud-ai-consent"
         />
     </div>
+    {#if managed}
+        <p class="consent-managed" id={managedNoteId}>{managedAiRefusalMessage(managed)}</p>
+    {/if}
     {#if notSaved}
         <p class="consent-not-saved" role="status">{tString('ai.cloudConsent.notSaved')}</p>
     {/if}
@@ -164,6 +172,12 @@
     .consent-since {
         font-size: var(--font-size-xs);
         color: var(--color-text-tertiary);
+    }
+
+    .consent-managed {
+        margin: var(--spacing-xs) 0 0;
+        font-size: var(--font-size-sm);
+        color: var(--color-text-secondary);
     }
 
     .consent-not-saved {

@@ -149,7 +149,7 @@ async fn respelling_a_name_is_not_a_clash_with_itself() {
         .await
         .unwrap();
 
-    let validity = check_rename_validity_impl("/dir".into(), CAFE_NFD.into(), CAFE_NFC.into(), id.clone()).await;
+    let validity = check_rename_validity_impl("/dir".into(), CAFE_NFD.into(), CAFE_NFC.into(), id.clone(), None).await;
     assert!(!validity.has_conflict, "the only look-alike is the file itself");
 
     rename_managed(
@@ -175,7 +175,7 @@ async fn the_live_rename_check_reports_a_look_alike() {
         .await
         .unwrap();
 
-    let validity = check_rename_validity_impl("/dir".into(), "a.txt".into(), CAFE_NFC.into(), id).await;
+    let validity = check_rename_validity_impl("/dir".into(), "a.txt".into(), CAFE_NFC.into(), id, None).await;
 
     assert!(validity.has_conflict);
     assert_eq!(validity.conflict.map(|c| c.name).as_deref(), Some(CAFE_NFD));
@@ -193,7 +193,7 @@ async fn the_live_rename_check_reports_the_name_a_typed_one_composes_onto() {
         .await
         .unwrap();
 
-    let validity = check_rename_validity_impl("/dir".into(), "a.txt".into(), CAFE_NFD.into(), id).await;
+    let validity = check_rename_validity_impl("/dir".into(), "a.txt".into(), CAFE_NFD.into(), id, None).await;
 
     assert!(validity.has_conflict);
     assert_eq!(validity.conflict.map(|c| c.name).as_deref(), Some(CAFE_NFC));

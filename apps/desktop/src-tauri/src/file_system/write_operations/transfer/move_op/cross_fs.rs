@@ -18,7 +18,9 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use super::super::copy::{JournalDestUnder, copy_single_item, create_scanned_dirs_at_destination};
+use super::super::copy::{
+    JournalDestUnder, copy_single_item, create_scanned_dirs_at_destination, date_created_dirs_like_their_sources,
+};
 use super::MoveTransaction;
 use super::merge_move_directory;
 use super::move_resolved_into_place;
@@ -208,6 +210,7 @@ pub(super) fn move_with_staging(
             let verdict = copy_single_item(
                 &file_info.path,
                 file_info.dest_path(&staging_dir),
+                &staging_dir,
                 // Phase 3 renames the staging tree into place, so the journal
                 // records where each file will live, not where it's written.
                 Some(JournalDestUnder {
@@ -301,6 +304,17 @@ pub(super) fn move_with_staging(
         events.emit_error(event);
         return Err(e);
     }
+
+    // Everything is staged, so the staged folders take their source dates now,
+    // and Phase 3's rename carries each date to the destination.
+    date_created_dirs_like_their_sources(
+        &scan_result.dirs,
+        sources,
+        &staging_dir,
+        state,
+        &transaction.created_dirs,
+        &dir_remap,
+    );
 
     // Where Phase 3 put a staged item under a name other than the one it staged
     // with, or with its own rename inside a merge: staged path → landed path. And

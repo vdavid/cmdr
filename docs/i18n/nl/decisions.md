@@ -53,10 +53,10 @@ after Total Commander's "snelste compressie" / "maximale compressie".
 
 ## Bewerkingenlogboek (`operationLog.*`, `commands.logOperationLog.*`)
 
-- Rename summary `Naam van {countText} onderdeel gewijzigd` / `Namen van … gewijzigd` (Finder's "De naam van het
-  onderdeel … gewijzigd").
-- Lifecycle words reuse `queue.row.status` (`Wachten`, `Bezig`, `Gereed`, `Niet voltooid`, `Geannuleerd`).
+- Rename summary `Naam van {countText} onderdeel gewijzigd` (Finder: "De naam van het onderdeel … gewijzigd").
+- Lifecycle words reuse `queue.row.status`.
 - Initiator You → `Jij` (contrastive, standalone); recorded → `vastgelegd` (tentative); `Niet terug te draaien`.
+- Rollback noun (`rollbackOf`, …) → `Terugdraaibewerking`, not `Terugdraaiing`.
 
 ## Ask Cmdr: chat, hulpmiddelen en kosten (`askCmdr.*`, `settings.askCmdr.*`, `commands.askCmdrToggle.*`)
 
@@ -182,10 +182,8 @@ line.
   so the reason follows the name it explains.
 - Keeps the verb and tense of `chainKeptOriginalName`.
 
-## De onbevestigde naamwijziging en de onbruikbare naam (`fileExplorer.rename.unconfirmed`/`unconfirmedAndOthers`, `fileOperations.validation.nameNotUsable`)
+## De onbruikbare naam (`fileOperations.validation.nameNotUsable`)
 
-- Never say the file kept its name: Cmdr doesn't know. `We konden … niet bevestigen` and the tail
-  `dus de naam is misschien toch gewijzigd`, both from `fileOperations.mkdir.timeoutMessage`.
 - `Deze bestandsnaam kan niet worden gebruikt` (Finder `RN31`), with no final period: it's also inserted before
   `‘{name}’ behoudt zijn naam.`
 
@@ -287,12 +285,8 @@ The description covers crashes and background problems (`een rapport`, no "crash
 
 ## Eén ding, één naam: de interne driftronde (`queue.row.dismiss`, `menu.edit.undo`, `fileOperations.trash.undoAction`, `askCmdr.renameUndo.*`, `shortcuts.section.filterModified`, `commands.navBack.label`)
 
-The boundaries that look like drift and aren't:
+The boundaries that look like drift and aren't (register by UI slot and menu-bar titles: `style.md` digest):
 
-- Button or menu item: bare imperative (`Verstuur foutrapport`); window title: `Foutrapport versturen`; Settings label:
-  infinitive last (`Verborgen bestanden tonen`).
-- Menu-bar titles are Apple's words (`Archief`, `Wijzig`, `Weergave`, `Vergroot/verklein`); the everyday word
-  (`Bestand`, `Bewerk`, `Toon`, `Zoom`) names the thing elsewhere. ❌ Never swap a menu-bar title for it.
 - Undo: `Herstel` (⌘Z, Edit menu), `Zet terug` (trash put-back), `Ongedaan maken` (Ask Cmdr rename run).
 - `Vorige` pairs with `Volgende`; `Terug` is a lone back button; `commands.navBack.label` takes Finder's `Ga terug`.
 - Column headers `Aanmaakdatum` / `Bewerkingsdatum`; the date tooltip uses participles (`Laatst gewijzigd`).
@@ -377,7 +371,6 @@ split EN makes; the frame is that of `settings.archives.zip.description`.
 - `disconnectBusyTooltip` mirrors `ejectBusyTooltip` word for word.
 - `disconnectPlaceAriaLabel` → `Verbreek de verbinding met {name}`: it starts with the visible `Verbreek`, and Dutch
   breaks a connection, never a server.
-- Compromised → `gecompromitteerd` (tentative; Apple has no word for a revoked `known_hosts` key).
 
 ## De serverhub (`servers.hub.*`, `commands.servers*`, `fileExplorer.navigation.server*Toast`, `shortcuts.scope.servers`/`.places`)
 
@@ -472,8 +465,8 @@ Function key bar → `functietoetsbalk`, one name for the setting, the menu item
 
 ## Het Dock-menu van Cmdr zelf (`menu.dock.*`)
 
-`Dock.app` `DockMenus.strings` is the Tier 1 source: `Open Cmdr` (Dock's `Open`), Finder's `Ga naar map…` (distinct from
-`menu.go.goToPath` `Ga naar pad…`), `Verbind met server…`, and `Zoek bestanden…` equal to `menu.edit.searchFiles`.
+`Dock.app` `DockMenus.strings` is the Tier 1 source: `Open Cmdr` (Dock's `Open`), Finder's `Ga naar map…`,
+`Verbind met server…`, and `Zoek bestanden…` equal to `menu.edit.searchFiles`.
 
 ## Het ‘Toon in Finder’-aanbod en de melding bij de eerste keer (`main.revealNudge.*`, `main.revealActivation.*`, `settings.behavior.reveal*`)
 
@@ -562,12 +555,14 @@ In progress → `wordt losgekoppeld`; already gone → `werd losgekoppeld` (the 
 - `Deze map staat al in je favorieten`; `favoritesCantAddHere` gives the reason after a colon with `werken op`, and
   "mounted share" → `gekoppelde netwerkshare` over macOS's `activeren`, which the catalog never uses.
 
-## Wie de schijf vasthoudt: de zes geweigerde-uitwerpzinnen (`errors.eject.unmountRefusedBy*`, `.otherApps`)
+## Wie de schijf vasthoudt: de zes geweigerde-uitwerpzinnen (`errors.eject.unmountRefusedBy*`, `.otherApps`, `.otherProcesses`)
 
-- One verb for the family: `{app} gebruikt deze schijf nog` / `{apps} gebruiken …`, the name first and without an
-  article (a process name is a proper noun).
-- ❌ No pronoun back to `{app}`: `Sluit alles wat daar openstaat`.
-- `andere apps`, never `programma's`; `Intl.ListFormat('nl')` supplies the list conjunctions.
+- One skeleton for the family: `X heeft daar nog bestanden open.` + `… en probeer het daarna opnieuw.` Either wrapper
+  may concern a share or a phone, so `daar`, never `deze schijf` or `werp hem uit`. The name leads without an article (a
+  process name is a proper noun).
+- ❌ No pronoun back to `{app}`: `Sluit ze` points at `bestanden`. The aside keeps Cmdr as subject
+  (`Cmdr heeft geen appnaam`), never `We`.
+- `andere apps` (never `programma's`), `nog andere` (`andere processen` reads as a name); `Intl.ListFormat` joins.
 - Disk image → `schijfkopie`, repeated as a noun since `schijf` is also a de-word.
 - `staat nog open` (tentative) keeps EN's everyday "open" over the technical `gekoppeld`.
 - `Wacht een minuutje` (macOS) vs `Wacht even` (Cmdr), as EN distinguishes.
@@ -629,3 +624,9 @@ points at `deze gedeelde map`, since `hij` floats between two de-words.
 ## Het origineel bleef staan (`errors.write.sourceNotRemoved.*`, `errors.write.permissionDenied.*.source*`, `errors.write.deletePending.message`)
 
 - `het origineel staat er nog` and `op beide plekken`, like `moveAlreadyLanded`.
+
+## S3 (`servers.sheet.s3*`, `servers.refusal.s3*`, `*ShareLink*`, `*.coldStorage*`, `fileOperations.s3Cost.*`)
+
+- MS: `bucket`, `regio`, `toegangssleutel-ID`, `geheime toegangssleutel`, `catalogusprijs`.
+- Share link → `deellink`, never `gedeelde map`.
+- Cold storage: `gearchiveerd`, `koude opslag`; restore → `herstellen` (`terugzetten` is put-back).

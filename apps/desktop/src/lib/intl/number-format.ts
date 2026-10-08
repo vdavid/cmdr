@@ -44,6 +44,16 @@ export function formatInteger(n: number): string {
   return getNumberFormatter({ maximumFractionDigits: 0 }).format(n)
 }
 
+/**
+ * Format a money amount in its own ISO 4217 currency (`USD`, `EUR`), rounded to
+ * that currency's minor unit, in the formatting locale (`$0.02` in en-US,
+ * `0,02 $` in de-DE). Its formatter's `resolvedOptions().maximumFractionDigits`
+ * is that minor unit, for a caller deciding whether an amount shows as zero.
+ */
+export function formatMoney(amount: number, currency: string): string {
+  return getNumberFormatter({ style: 'currency', currency }).format(amount)
+}
+
 /** Cache for the per-locale grouping separator. */
 const groupSeparatorCache = new Map<string, string>()
 

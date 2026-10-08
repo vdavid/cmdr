@@ -345,6 +345,32 @@ where
     }
 }
 
+/// What [`race_detached`] came back with.
+pub enum Raced<T> {
+    /// The work ended inside the deadline. `Err` only when its task panicked.
+    Answered(Result<T, tokio::task::JoinError>),
+    /// The deadline passed first. The work runs on in its own task, and the
+    /// handle is how the caller hears how it ended.
+    StillRunning(tokio::task::JoinHandle<T>),
+}
+
+/// [`timeout_detached_typed`] for work whose END still matters after the
+/// deadline: on expiry the caller gets the running task, not a timeout.
+///
+/// For a write that will still LAND. Answering "timed out" there tells the user
+/// it didn't happen, and then it does; the handle lets the caller report the
+/// real outcome once there is one (`write_operations::mutation_reply`).
+pub async fn race_detached<T: Send + 'static>(
+    timeout_duration: Duration,
+    fut: impl Future<Output = T> + Send + 'static,
+) -> Raced<T> {
+    let mut handle = tokio::spawn(fut);
+    match tokio::time::timeout(timeout_duration, &mut handle).await {
+        Ok(joined) => Raced::Answered(joined),
+        Err(_) => Raced::StillRunning(handle),
+    }
+}
+
 /// The least a read may wait on a volume Cmdr holds a live session to
 /// (see [`io_budget`]).
 ///

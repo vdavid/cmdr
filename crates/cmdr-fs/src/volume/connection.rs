@@ -128,6 +128,8 @@ pub enum BackendKind {
     Sftp,
     /// A WebDAV server.
     Webdav,
+    /// An S3-compatible object store (AWS, R2, B2, Wasabi, Hetzner, …).
+    S3,
     /// A phone or camera over MTP/PTP.
     Mtp,
     /// An Android device over ADB.
@@ -155,7 +157,31 @@ impl BackendKind {
     pub fn can_be_indexed(self) -> bool {
         match self {
             Self::Local | Self::Smb | Self::Mtp | Self::Adb => true,
-            Self::Sftp | Self::Webdav | Self::Archive | Self::GitPortal => false,
+            // S3 too: every request costs money, so no index walks it
+            // (`docs/specs/s3-support-plan.md` § Product decisions).
+            Self::Sftp | Self::Webdav | Self::S3 | Self::Archive | Self::GitPortal => false,
+        }
+    }
+
+    /// Whether a volume this backend serves can also be reached through the OS's
+    /// own mount, so a live session here is one of two ways in
+    /// ([`ConnectionState::Direct`] versus [`ConnectionState::OsMount`]) and the
+    /// UI may say which. Everywhere else "direct" is the only way there is, and a
+    /// green dot claiming "connected directly" would be naming a choice nobody has.
+    ///
+    /// Exhaustive on purpose: a new backend doesn't compile until it answers.
+    #[must_use]
+    pub fn has_os_mount_fallback(self) -> bool {
+        match self {
+            Self::Smb => true,
+            Self::Local
+            | Self::Sftp
+            | Self::Webdav
+            | Self::S3
+            | Self::Mtp
+            | Self::Adb
+            | Self::Archive
+            | Self::GitPortal => false,
         }
     }
 
@@ -173,7 +199,7 @@ impl BackendKind {
     #[must_use]
     pub fn detaches_by_session_drop(self) -> bool {
         match self {
-            Self::Sftp | Self::Webdav => true,
+            Self::Sftp | Self::Webdav | Self::S3 => true,
             Self::Local | Self::Smb | Self::Mtp | Self::Adb | Self::Archive | Self::GitPortal => false,
         }
     }
@@ -204,8 +230,8 @@ impl BackendKind {
 /// break SMB; one reading "editable" as a mode rule would break SFTP.
 ///
 /// **Reserved, ❌ not added until a producer exists**:
-/// - `AccessKeys { session_token: bool }` for S3: an access key id, a secret
-///   access key, and optionally a session token.
+/// - A `session_token` field on [`AccessKeys`](Self::AccessKeys), once
+///   temporary credentials (`~/.aws` profiles, SSO) are in scope.
 /// - `Oauth { provider }`: a "Continue in your browser" button and a waiting
 ///   state, with the callback coming home backend-side; "remember" is implicit
 ///   there (the refresh token is the only sane state), and a revoked token
@@ -231,6 +257,12 @@ pub enum SignInShape {
     /// left lying around, and a user who chose to remember it has already
     /// answered that question themselves.
     KeyPassphrase,
+    /// An S3 secret access key, under the access key id it belongs to, read-only.
+    ///
+    /// ❗ Read-only for [`Password`](Self::Password)'s reason: the access key id
+    /// is part of the volume id, so another key is another account. Same
+    /// refresh-never-seed rule too.
+    AccessKeys,
     /// A username AND a password, both editable: SMB, where the SHARE is the
     /// identity and the account is a field on it.
     UsernamePassword {

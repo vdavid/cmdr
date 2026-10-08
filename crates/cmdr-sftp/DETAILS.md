@@ -192,6 +192,7 @@ tuning.
   `.cmdr-tmp-*` sibling and a partial never wears a real filename. ❌ Which is also why there is no "the create landed
   but the write didn't" classifier like `cmdr-smb/src/volume/streams.rs`'s — that one exists because SMB's compound path
   SKIPS staging.
+- **The upload stamps the source's date** (§ "Dates on copies").
 
 ### The depth, and the curve that set it
 
@@ -230,21 +231,21 @@ the ratio cell alongside the depth curve read 4.3× where the same cell alone re
 fallback be driven from a unit cell rather than only from a server that lacks the extension.
 
 ⚠️ **Only the `support_*` predicates are readable.** `max_read_len` and `max_write_len` sit behind the engine's
-`__ci-tests` feature, and `statvfs@openssh.com` has neither a predicate nor a request to send it (§ "The `Volume`
-answers"). So the value carries exactly five fields, and ❌ nothing should be added for an extension the engine cannot
-answer for.
+`__ci-tests` feature. So the value carries exactly six fields, and ❌ nothing should be added for an extension the
+engine cannot answer for.
 
 ⚠️ **`copy-data` carries NO `@openssh.com` suffix**, where `posix-rename`, `fsync`, `hardlink`, `expand-path`, and
 `statvfs` all do (`openssh-sftp-protocol` 0.24.2 `constants.rs`; OpenSSH `sftp-server.c` 9.9p2, read 2026-08-22). The
 fixture's `QUIRK_DROP_EXTENSIONS` list matches on the wire name, so a suffixed entry there dropped nothing and the
-"server without the extension" fixture quietly had it — `a_server_with_the_extensions_dropped_advertises_neither` is
-what caught that and is what keeps it caught.
+"server without the extension" fixture quietly had it — `a_server_with_the_extensions_dropped_advertises_none_of_them`
+is what caught that and is what keeps it caught.
 
 What each one is spent on:
 
 - **`posix-rename`** gates the forced rename's atomic replace, and its ABSENCE gates the forceless rename's shortcut (§
   "Renaming without clobbering").
 - **`copy_data`** gates `Volume::copy_within` (§ "Copying inside one server").
+- **`statvfs`** gates free space (§ "The `Volume` answers").
 - **`fsync`, `hardlink`, `expand_path` are recorded and logged, and deliberately unspent.** They are worth carrying
   because one `debug!` line at connect answers "why did this server behave differently" before anything else does, and
   the names are protocol constants so the line is PII-free. What each would buy, and why not yet:
@@ -262,8 +263,9 @@ What each one is spent on:
 server otherwise pulls it down the link and pushes it back up: twice the file, four minutes at 30 MB/s against roughly
 nothing.
 
-`copy.rs` answers `Volume::copy_within`, which the app asks BEFORE reaching for a stream whenever both sides of a copy
-are the same volume instance (`write_operations/transfer/volume/strategy.rs::try_server_side_copy`).
+`copy.rs` answers `Volume::copy_within`, which the trait's default `copy_on_server` calls when both sides of a copy are
+the same volume instance; the app asks it BEFORE reaching for a stream
+(`write_operations/transfer/volume/server_side_copy.rs::try_server_side_copy`).
 
 - ❗ **Chunked, ❌ never one request for the whole file.** One `copy-data` for 4 GB is a single unanswered request for
   as long as the server's disks take, with no progress and nowhere to cancel. `COPY_CHUNK_BYTES` is 8 MiB, and each
@@ -278,6 +280,32 @@ are the same volume instance (`write_operations/transfer/volume/strategy.rs::try
 - **A server without the extension answers `NotSupported`**, which the caller reads as "stream it". ❌ Not a failure,
   and ❌ not a fallback the backend does for itself: the caller owns retry, staging, and progress, and a backend quietly
   streaming would take the file outside all three.
+- **The copy keeps the source's date**, from the `fstat` this path already does for the length (§ "Dates on copies"):
+  `copy-data` moves bytes only.
+
+## Dates on copies
+
+Copies onto and off this backend keep the source's modification date. The cross-backend contract is
+`apps/desktop/src-tauri/src/file_system/write_operations/transfer/volume/DETAILS.md` § "Copies keep the source's date";
+this is how SFTP keeps it.
+
+- **Source**: the read stream reports the mtime from the `fstat` it already sends alongside the first chunk
+  (`streams.rs`'s `RemoteFile::stat`), so the date costs no round trip.
+- **Destination**: `writes.rs::keep_source_date` sends a path `SETSTAT` with `ATTR_ACMODTIME` after the awaited close
+  and before the transfer layer's final rename. ❗ After the close, ❌ not an `FSETSTAT` on the open handle: a server
+  that buffers writes until the close could bump the date past ours, and the close is where every byte is committed.
+  Still on the `.cmdr-tmp-*` name, so the real name never wears a wrong date. One round trip per file.
+- **SFTP v3 times are a `u32` of whole seconds**, and atime rides along (the attribute carries both), so atime gets the
+  same value. A sub-second source date truncates; one before 1970 or past 2106 can't be said at all.
+- **Best effort**: a refused `SETSTAT` or an unsayable date is a `warn!`, and the copy still succeeds.
+- **Folders**: `set_modified` sends the same path `SETSTAT` (`mutation.rs::set_modified_impl`), then patches the parent
+  listing with a `Modified`. The copy engine calls it on each folder it created once the contents landed; an unsayable
+  date is an `IoError` there, which the engine logs. Pinned by `conformance_test.rs::set_modified_dates_a_folder` and
+  the engine's `sftp_integration_folders_copied_*` cells.
+- **Pinned by** `conformance_test::a_copy_keeps_the_source_date` (both halves against stock OpenSSH),
+  `copy_test::sftp_integration_a_server_side_copy_keeps_the_source_date`, and the two
+  `sftp_integration_*_keeps_the_source_date` engine cells in
+  `apps/desktop/src-tauri/src/file_system/write_operations/backend_suites/sftp_transfer_integration_test.rs`.
 
 ## Scanning, before a copy runs
 
@@ -396,7 +424,12 @@ Per operation, the primitive and the cell it lands in:
   `TakingAName`. This is what lets `create_directory_errors_on_existing_dir` answer `true`.
 - **`create_directory_all`** runs the leaf's mkdir first (one round trip when the parent is already there) and reads
   `AlreadyExists` back as `AlreadyExisted`. ❗ Only a `NotFound` earns the ancestor walk; anything else fails the same
-  way at every level.
+  way at every level. A FILE in the way is `NotADirectory(path)`, which the table above can't produce: `TakingAName`
+  answers `AlreadyExists` for a file and a directory alike, and a mkdir UNDER a file answers `SSH_FX_NO_SUCH_FILE`
+  (OpenSSH folds `ENOTDIR` into it; verified against `sftp-fixture-openssh` by the Docker cell, 2026-09-30). So the
+  shared walk asks `MakesDirectories::leads_to` after the refusal, and ❗ that one is `SSH_FXP_STAT`, which follows
+  links, ❌ never `probe`'s `LSTAT`: a link to a folder is a folder to a `mkdir -p`, and the lstat answer would refuse
+  every destination reached through one. Both halves are conformance cells. The walk: `cmdr_fs::volume::mkdir_all`.
 - **`delete`** sends `SSH_FXP_REMOVE`, then `SSH_FXP_RMDIR` if that refused, so a bulk delete of files spends one round
   trip each rather than a stat plus a remove. When both refuse it probes once: a directory means the rmdir's refusal
   describes the path (`RemovingANode`), anything else means the FILE delete's own refusal is the honest answer —
@@ -635,10 +668,9 @@ addresses nothing, and a folder copy writes it at the destination. Loud and loss
 
 The escape hatch, if it bites: vendor `openssh-sftp-protocol` plus `ssh_format` under `crates/` as a **path** dependency
 and make `NameEntry::filename` byte-backed (1 594 and 1 162 lines of `src/` at the pinned 0.24.2 and 0.14.1, `wc -l`,
-2026-08-23). ❌ Not `git =`: `deny.toml`'s `unknown-git = "deny"` forbids it. The same vendoring is the only route to
-free space, so the two are one piece of work: GitHub [#193](https://github.com/vdavid/cmdr/issues/193).
-`a_name_that_is_not_utf8_takes_the_whole_session_down` pins the current behaviour so the day it changes is a visible
-day.
+2026-08-23). ❌ Not `git =`: `deny.toml`'s `unknown-git = "deny"` forbids it. Tracked in GitHub
+[#193](https://github.com/vdavid/cmdr/issues/193). `a_name_that_is_not_utf8_takes_the_whole_session_down` pins the
+current behaviour so the day it changes is a visible day.
 
 ## Host-key trust
 
@@ -657,6 +689,12 @@ host. Then a healthy server presents the key we stored, and anything else is a r
 `build_config` filters the pinned names out of russh's **default order** rather than rebuilding the list from them, so
 an rsa entry can't outrank an ed25519 one just because of how the names sorted, and an unparseable stored name narrows
 nothing instead of emptying the offer.
+
+**Host certificates are never asked for.** `build_config` leaves `preferred.host_key_certificates` empty, so a server
+presents a bare key. Should a certificate arrive anyway, `presented` judges it by the key inside it (the one russh
+verified the exchange signature against): we hold no `@cert-authority` trust, so a certificate earns nothing beyond its
+bare key. ❌ Don't advertise certificate algorithms without first teaching `trust::decide` about CAs. Guarded by
+`no_host_certificate_algorithm_is_advertised`.
 
 ### The order of consultation
 
@@ -909,17 +947,18 @@ Beyond the four required methods, `volume_impl.rs` states these deliberately:
 - **`retirement` is published, `on_superseded` retires the id, `attempt_reconnect` and `reconnect_with_credentials` are
   answered** (§ "Coming back"). ❗ `connection_liveness` stays `None`: the keepalive's count lives inside `russh`, which
   exposes no pollable reading, and elapsed silence is not an answer.
-- **`get_space_info` → `NotSupported`, `space_poll_interval` → `None`.** `statvfs@openssh.com` is **not reachable from
-  this crate stack**: `openssh-sftp-client-lowlevel` has no `send_statvfs_request`, and `openssh-sftp-protocol` carries
-  only the extension _name_ so the hello parses. There is no `support_statvfs` predicate either — the predicates are
-  `expand_path`, `fsync`, `hardlink`, `posix_rename`, and `copy`. Free space needs the protocol crate vendored, which is
-  the same escape hatch the filename problem uses. The two answers have to agree, or a pane polls something that always
-  refuses. ❗ **The app owes the other half of this contract**, and for a while it didn't pay it: the transfer
-  pre-flight propagated the `NotSupported` as a failure, so every copy INTO a server died after ~500 ms. `NotSupported`
-  here means "can't tell", ❌ never "no room". Both pre-flights go through
-  `write_operations/transfer/volume/copy.rs::dest_space_if_known`, which reads the refusal as `None` and proceeds while
-  still propagating every OTHER error. ❌ Don't answer this with a guessed number to make a caller's life easier; the
-  caller is the one that has to cope.
+- **`get_space_info` and `get_space_info_at` answer from `statvfs@openssh.com`, polled every 5 s.** One small round trip
+  (`Fs::statvfs`, `openssh-sftp-client` 0.15.10+): the root's filesystem for the pane, the destination folder's for a
+  copy, since one server can hold several mounts. `mapping.rs::statvfs_to_space_info` reads it the way `statvfs(3)`
+  defines it, the same as the local backend: `frsize` units, `bavail` as room left, everything not `bfree` as used, so
+  root-reserved blocks are in neither figure. OpenSSH has answered it since 5.1, but a server that doesn't advertise it
+  (`ServerExtensions::statvfs`) gets `NotSupported` without a request; the poller drops a refused reading, so the 5 s
+  cadence costs nothing on the wire there. `sftp-fixture-noposixrename` is that server. ❗ **The app owes the other half
+  of this contract**, and for a while it didn't pay it: the transfer pre-flight propagated the `NotSupported` as a
+  failure, so every copy INTO a server died after ~500 ms. `NotSupported` here means "can't tell", ❌ never "no room".
+  Both pre-flights go through `write_operations/transfer/volume/copy.rs::dest_space_if_known`, which reads the refusal
+  as `None` and proceeds while still propagating every OTHER error. ❌ Don't answer this with a guessed number to make a
+  caller's life easier; the caller is the one that has to cope.
 
 ## Connecting from the frontend
 
@@ -934,22 +973,21 @@ a sign-in UI genuinely branches on all of it.
 
 ### The commands
 
-- `cancelSftpConnect(attemptId)` / `cancelServerConnect(attemptId)` → `boolean`, the dialog's cancel button. See §
-  "Wiring the cancel button" below.
-- `disconnectSftpVolume(volumeId)` → `boolean` (whether there was an SFTP volume under that id). Drops the session and
-  unregisters the volume.
+- `cancelServerConnect(attemptId)` → `boolean`, the dialog's cancel button. See § "Wiring the cancel button" below.
+- `disconnectPlace(volumeId)` → `boolean` (whether there was a place under that id). Drops the session and unregisters
+  the volume.
 - `approveSftpHostKey({ host, port, algorithm, fingerprint })` → `SftpHostKeyApprovalResult`.
 - `forgetSftpHostKey(host, port, algorithm)` → `boolean`. The next connection to that server is first contact again.
 - `listTrustedSftpHostKeys()` → `TrustedHostKey[]` (`host`, `port`, `algorithm`, `fingerprint`, `approvedAt`), for a
   settings screen.
-- `saveSftpCredentials(host, port, username, secret)` / `hasSftpCredentials(...)` → `boolean` /
-  `deleteSftpCredentials(...)`. The two writing ones throw a `KeychainFailure` carrying the `KeychainError`
+- `saveSftpCredentials(host, port, username, secret)`, plus the protocol-agnostic `hasServerSecret(id)` → `boolean` and
+  `forgetServerSecret(id)` → `boolean` (`servers.ts`). Saving throws a `KeychainFailure` carrying the `KeychainError`
   (`apps/desktop/src/lib/servers/keychain-failure.ts`). ❗ There is deliberately **no** command that hands a secret
   back: the backend reads the store itself when it builds a session. ❗ **One entry per account, whatever the rung uses
   it for** — see § "The one secret entry" below. ❗ **These three ARE the "remember the secret" switch**: save turns it
-  on, `hasSftpCredentials` reads it, delete turns it off, and there is no fourth flag to keep in sync (§ "The two
-  switches").
-- `getKnownSftpServers()` → `KnownSftpServer[]` / `forgetKnownSftpServer(host, port, username)` → `boolean`. Editing a
+  on, `hasServerSecret` reads it, `forgetServerSecret` turns it off, and there is no fourth flag to keep in sync (§ "The
+  two switches").
+- `getKnownSftpServers()` → `KnownSftpServer[]`; forgetting one is the protocol-agnostic `forgetServer(id)`. Editing a
   server without connecting (renaming it, changing its root or key file, or moving the `autoReconnect` switch) goes
   through the protocol-agnostic `updateSavedServer` (`commands/servers.rs`), which calls
   `sftp_volume_wiring::save_without_connecting` directly rather than through a per-protocol command; a successful
@@ -963,7 +1001,7 @@ a sign-in UI genuinely branches on all of it.
   `tauri-commands/sftp.ts` is the one place both defaults are spelled on the frontend.
 - `getSftpUnattendedReconnect(volumeId)` → `SftpUnattendedReconnect | null`, the backend's answer to "the switch is on
   and nothing comes back". ❗ Ask it when the banner renders, the same way `getVolumeSignInState` is asked, and ❌ never
-  derive it in the frontend from a rung plus a `hasSftpCredentials` call: the rung is decided per DIAL, so a derivation
+  derive it in the frontend from a rung plus a `hasServerSecret` call: the rung is decided per DIAL, so a derivation
   goes stale the moment a reconnect lands somewhere else. `null` means nothing SFTP is mounted under that id — an honest
   "there's no rung to reason about" rather than a guess.
 
@@ -1190,7 +1228,9 @@ A cell lives with whatever it **asserts**, never with whatever it connects to.
   `apps/desktop/src-tauri/src/file_system/write_operations/DETAILS.md` § "The network transfer suites".
 
 The suites' prelude is `volume/test_support.rs`, ❌ not a `use super::*` glob out of `mod.rs`: what a glob pulls in
-isn't determinable without building, which is what made the SMB extraction's suites impossible to size in advance.
+isn't determinable without building, which is what made the SMB extraction's suites impossible to size in advance. Its
+session-free volume is `volume::testing::offline_volume`, public behind the `testing` feature so an app-side cell that
+downcasts to `SftpVolume` (the disconnect wiring) gets a real one without a server.
 
 **❗ Every `#[ignore]`d test in this crate is a Docker cell**, by construction: `desktop-rust-integration-tests` runs
 `--run-ignored only` over the whole package, so an ignored test here runs in CI whatever it's called. Something that

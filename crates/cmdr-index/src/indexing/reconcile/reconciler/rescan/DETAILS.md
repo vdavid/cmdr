@@ -161,6 +161,15 @@ the churn signal below); past that the wait is named, and when it DOMINATES (ove
 `debug` and says "reconcile waited" (writer saturation has its own signal in the writer heartbeat), else it warns
 "reconcile slow". The probe mechanism is in `../../../writer/DETAILS.md`.
 
+**Both lines carry the walk's own CPU** (`, 4s CPU`), read from the drain thread's `cmdr_fs::thread_cpu` clock around
+the `reconcile_subtree` call, which runs synchronously on that thread. Wall time can't stand in for it: the walk is
+syscall-latency bound, so on a loaded machine its duration is mostly waiting on the disk. Measured on David's machine
+(2026-10-05, prod log at load average 25–30): a 225 s walk of a worktree root read as the source of 100%+ CPU spikes,
+while the writer heartbeat showed the writer at 70–86% of a core indexing freshly cloned worktrees. The churn window
+sums it per window and per anchor. A platform with no per-thread clock reads `None`, and one `None` drops the figure for
+the whole window rather than printing a total that silently misses a walk. The slow/waited verdict stays about wall
+time; the CPU is evidence beside it, not a new threshold.
+
 ## The churn signal (`churn.rs`)
 
 Both per-walk lines (`reconcile starting`, `reconcile complete`) are DEBUG, because a normal day produces thousands of
@@ -176,7 +185,7 @@ changes (`ROW_BUDGET`). Under both, the window resets silently, so a quiet machi
 stretch can't accumulate its way to one hours later.
 
 ```
-Reconciler: heavy churn in the last 15 min: 1,621 subtree reconciles, 507s of walking, 120,190 row changes, 64+ anchors, 37 signals held back, 8,142 signals queued behind a running rescan. Top: /Users/me/Library/Caches/… (18 walks, 96s), …
+Reconciler: heavy churn in the last 15 min: 1,621 subtree reconciles, 507s of walking (41s CPU), 120,190 row changes, 64+ anchors, 37 signals held back, 8,142 signals queued behind a running rescan. Top: /Users/me/Library/Caches/… (18 walks, 96s, 9s CPU), …
 ```
 
 **The top anchors are the point.** "Which folder" is the entire diagnostic value, so the line ranks anchors by

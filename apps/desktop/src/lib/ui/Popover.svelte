@@ -170,21 +170,15 @@
            as the tooltip primitive — reuse the tooltip's frosted-glass material values exactly.
            See `app.css` § Frosted-glass material for the underlying values. */
         background: var(--color-bg-glass);
-        -webkit-backdrop-filter: saturate(180%) blur(20px);
-        backdrop-filter: saturate(180%) blur(20px);
+        -webkit-backdrop-filter: var(--glass-backdrop);
+        backdrop-filter: var(--glass-backdrop);
         border: 0.5px solid var(--color-border-glass);
         border-radius: var(--radius-md);
-        box-shadow: var(--shadow-md);
+        box-shadow: var(--shadow-md), var(--shadow-glass-rim);
         padding: var(--spacing-sm);
         min-width: 220px;
         color: var(--color-text-primary);
         font-size: var(--font-size-sm);
         line-height: var(--font-line-height-normal);
-    }
-
-    /* Reduced transparency: `--color-bg-glass` flips to opaque (in `app.css`); drop the blur here. */
-    :global(html.reduce-transparency) .ui-popover {
-        -webkit-backdrop-filter: none;
-        backdrop-filter: none;
     }
 </style>

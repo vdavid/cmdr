@@ -1,0 +1,150 @@
+{
+  "queue.windowTitle": "Очередь операций",
+  "@queue.windowTitle": {
+    "sourceHash": "fa91417"
+  },
+  "queue.heading": "Операции",
+  "@queue.heading": {
+    "sourceHash": "358cc20"
+  },
+  "queue.empty.title": "Очередь пуста",
+  "@queue.empty.title": {
+    "sourceHash": "ef2b1ef"
+  },
+  "queue.empty.body": "Копирование, перемещение, удаление и другие операции с файлами появляются здесь, пока выполняются. Их можно приостановить, возобновить или отменить.",
+  "@queue.empty.body": {
+    "sourceHash": "89e6045"
+  },
+  "queue.row.label": "{type, select, copy {Копирование} move {Перемещение} delete {Удаление} trash {Перемещение в Корзину} rename {Переименование} create_folder {Создание папки} create_file {Создание файла} archive_edit {Изменение архива} compress {Сжатие} other {Выполнение}}",
+  "@queue.row.label": {
+    "sourceHash": "3c8e776"
+  },
+  "queue.row.reversalMovingBack": "Возврат файлов на место",
+  "@queue.row.reversalMovingBack": {
+    "sourceHash": "19ac5eb"
+  },
+  "queue.row.reversalDeleting": "Удаление созданных файлов",
+  "@queue.row.reversalDeleting": {
+    "sourceHash": "f88d220"
+  },
+  "queue.row.reversalRenamingBack": "Возврат прежних имен",
+  "@queue.row.reversalRenamingBack": {
+    "sourceHash": "3e00fd5"
+  },
+  "queue.row.reversalInFolder": "в папке {folder}",
+  "@queue.row.reversalInFolder": {
+    "sourceHash": "da9d7fa"
+  },
+  "queue.row.status": "{status, select, queued {Ожидание} running {Выполняется} paused {Приостановлено} done {Готово} cancelled {Отменено} failed {Не удалось завершить} other {Выполняется}}",
+  "@queue.row.status": {
+    "sourceHash": "d7a7517"
+  },
+  "queue.row.statusAwaitingAnswer": "Нужен ваш ответ",
+  "@queue.row.statusAwaitingAnswer": {
+    "sourceHash": "84ec74a"
+  },
+  "queue.row.awaitingAnswerTooltip": "Ответьте на запрос в главном окне, и операция продолжится.",
+  "@queue.row.awaitingAnswerTooltip": {
+    "sourceHash": "bf51776"
+  },
+  "queue.row.pause": "Приостановить",
+  "@queue.row.pause": {
+    "sourceHash": "858e4ba"
+  },
+  "queue.row.resume": "Возобновить",
+  "@queue.row.resume": {
+    "sourceHash": "d640c74"
+  },
+  "queue.row.foreground": "Показать",
+  "@queue.row.foreground": {
+    "sourceHash": "0df6f1c"
+  },
+  "queue.row.foregroundAria": "Показать эту операцию в главном окне",
+  "@queue.row.foregroundAria": {
+    "sourceHash": "ece64ad"
+  },
+  "queue.row.cancel": "Отменить",
+  "@queue.row.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "queue.row.pauseAria": "Приостановить эту операцию",
+  "@queue.row.pauseAria": {
+    "sourceHash": "a836434"
+  },
+  "queue.row.resumeAria": "Возобновить эту операцию",
+  "@queue.row.resumeAria": {
+    "sourceHash": "be841fc"
+  },
+  "queue.row.cancelAria": "Отменить эту операцию",
+  "@queue.row.cancelAria": {
+    "sourceHash": "236ec68"
+  },
+  "queue.row.dismiss": "Скрыть",
+  "@queue.row.dismiss": {
+    "sourceHash": "48845bf"
+  },
+  "queue.row.dismissAria": "Скрыть эту операцию",
+  "@queue.row.dismissAria": {
+    "sourceHash": "ff1b528"
+  },
+  "queue.row.selectAria": "Выбрать эту операцию",
+  "@queue.row.selectAria": {
+    "sourceHash": "6618ecc"
+  },
+  "queue.list.aria": "Операции",
+  "@queue.list.aria": {
+    "sourceHash": "358cc20"
+  },
+  "queue.toolbar.pauseAll": "Приостановить все",
+  "@queue.toolbar.pauseAll": {
+    "sourceHash": "0b6258b"
+  },
+  "queue.toolbar.resumeAll": "Возобновить все",
+  "@queue.toolbar.resumeAll": {
+    "sourceHash": "43e673c"
+  },
+  "queue.toolbar.cancelSelected": "Отменить выбранные",
+  "@queue.toolbar.cancelSelected": {
+    "sourceHash": "34e18e5"
+  },
+  "queue.toolbar.dismissAll": "Скрыть все",
+  "@queue.toolbar.dismissAll": {
+    "sourceHash": "97fac9e"
+  },
+  "queue.toolbar.selectedCount": "{count, plural, one {Выбрано: #} few {Выбрано: #} many {Выбрано: #} other {Выбрано: #}}",
+  "@queue.toolbar.selectedCount": {
+    "sourceHash": "5f13640"
+  },
+  "queue.failureToast.title": "{type, select, copy {Не удалось завершить копирование} move {Не удалось завершить перемещение} delete {Не удалось завершить удаление} trash {Не удалось завершить перемещение в Корзину} rename {Не удалось завершить переименование} create_folder {Не удалось завершить создание папки} create_file {Не удалось завершить создание файла} archive_edit {Не удалось завершить изменение архива} other {Не удалось завершить}}",
+  "@queue.failureToast.title": {
+    "sourceHash": "b5f2b47"
+  },
+  "queue.failureToast.action": "Показать в очереди операций",
+  "@queue.failureToast.action": {
+    "sourceHash": "607fbb1"
+  },
+  "queue.failureToast.summary": "{count, plural, one {Не удалось завершить {countText} операцию} few {Не удалось завершить {countText} операции} many {Не удалось завершить {countText} операций} other {Не удалось завершить {countText} операции}}",
+  "@queue.failureToast.summary": {
+    "sourceHash": "a55d85a"
+  },
+  "queue.chip.failed": "{count, plural, one {Не удалось завершить {countText} операцию} few {Не удалось завершить {countText} операции} many {Не удалось завершить {countText} операций} other {Не удалось завершить {countText} операции}}. Откройте очередь операций, чтобы узнать причину.",
+  "@queue.chip.failed": {
+    "sourceHash": "9c0036b"
+  },
+  "queue.chip.ariaLabel": "{label}, готово {percentText} %. Открыть очередь операций.",
+  "@queue.chip.ariaLabel": {
+    "sourceHash": "3ff7a01"
+  },
+  "queue.chip.scanningAriaLabel": "{label}, сканирование. Открыть очередь операций.",
+  "@queue.chip.scanningAriaLabel": {
+    "sourceHash": "791fc9f"
+  },
+  "queue.chip.indeterminateAriaLabel": "{label}. Открыть очередь операций.",
+  "@queue.chip.indeterminateAriaLabel": {
+    "sourceHash": "d35fc3f"
+  },
+  "queue.chip.tooltip": "{label}{count, plural, =0 {} one { · {countText} объект} few { · {countText} объекта} many { · {countText} объектов} other { · {countText} объекта}}{hasDestination, select, yes { · → {destination}} other {}} · {percentText} %{hasDetail, select, yes { · {detail}} other {}}",
+  "@queue.chip.tooltip": {
+    "sourceHash": "6680100"
+  }
+}

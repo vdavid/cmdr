@@ -116,9 +116,9 @@
   "@commands.searchOpen.label": {
     "sourceHash": "179fed8"
   },
-  "commands.navGoToPath.label": "Đi tới đường dẫn…",
+  "commands.navGoToPath.label": "Đi tới thư mục…",
   "@commands.navGoToPath.label": {
-    "sourceHash": "936edc5"
+    "sourceHash": "33de610"
   },
   "commands.navGoToPath.description": "Đưa khung đang chọn đến một đường dẫn được gõ, dán, hoặc gần đây.",
   "@commands.navGoToPath.description": {
@@ -155,6 +155,14 @@
   "commands.viewShowHidden.label": "Bật/tắt tệp ẩn",
   "@commands.viewShowHidden.label": {
     "sourceHash": "6aa9b55"
+  },
+  "commands.viewCalculateFolderSizes.label": "Tính toán kích cỡ thư mục",
+  "@commands.viewCalculateFolderSizes.label": {
+    "sourceHash": "d2a83da"
+  },
+  "commands.viewCalculateFolderSizes.description": "Hiển thị kích cỡ của mọi thư mục chưa có kích cỡ trong khung này. Nhấn Escape để dừng tính toán.",
+  "@commands.viewCalculateFolderSizes.description": {
+    "sourceHash": "2a7568d"
   },
   "commands.viewBriefMode.label": "Chuyển sang dạng xem Rút gọn",
   "@commands.viewBriefMode.label": {
@@ -235,6 +243,14 @@
   "commands.paneSwap.label": "Hoán đổi khung",
   "@commands.paneSwap.label": {
     "sourceHash": "cc29396"
+  },
+  "commands.paneClone.label": "Khung đích = khung nguồn",
+  "@commands.paneClone.label": {
+    "sourceHash": "74b2c7f"
+  },
+  "commands.paneClone.description": "Mở thư mục của khung này ở cả khung còn lại.",
+  "@commands.paneClone.description": {
+    "sourceHash": "8a13dc9"
   },
   "commands.paneLeftVolumeChooser.label": "Mở bộ chọn ổ đĩa bên trái",
   "@commands.paneLeftVolumeChooser.label": {
@@ -335,6 +351,10 @@
   "commands.navForward.label": "Tiếp theo",
   "@commands.navForward.label": {
     "sourceHash": "8121136"
+  },
+  "commands.navGoToRoot.label": "Đi tới thư mục gốc",
+  "@commands.navGoToRoot.label": {
+    "sourceHash": "3822d7b"
   },
   "commands.navGoHome.label": "Đi tới thư mục chính",
   "@commands.navGoHome.label": {
@@ -486,7 +506,7 @@
   },
   "commands.fileCopyCurrentDirectoryPath.label": "Sao chép đường dẫn thư mục hiện tại",
   "@commands.fileCopyCurrentDirectoryPath.label": {
-    "sourceHash": "ae360d1"
+    "sourceHash": "5ec6586"
   },
   "commands.fileCopyFilename.label": "Sao chép tên tệp",
   "@commands.fileCopyFilename.label": {
@@ -555,6 +575,30 @@
   "commands.cloudAskGemini.description": "Mở trợ lý Gemini của Google Drive với tệp đã chọn làm chủ đề",
   "@commands.cloudAskGemini.description": {
     "sourceHash": "37d4e7c"
+  },
+  "commands.fileCopyShareLink.label": "Sao chép liên kết chia sẻ (bảy ngày)",
+  "@commands.fileCopyShareLink.label": {
+    "sourceHash": "314bee8"
+  },
+  "commands.fileCopyShareLink.description": "Sao chép một liên kết mà ai cũng mở được để tải tệp về trong bảy ngày tới",
+  "@commands.fileCopyShareLink.description": {
+    "sourceHash": "99e912e"
+  },
+  "commands.fileCopyShareLinkOneDay.label": "Sao chép liên kết chia sẻ (một ngày)",
+  "@commands.fileCopyShareLinkOneDay.label": {
+    "sourceHash": "468010c"
+  },
+  "commands.fileCopyShareLinkOneDay.description": "Sao chép một liên kết mà ai cũng mở được để tải tệp về trong một ngày tới",
+  "@commands.fileCopyShareLinkOneDay.description": {
+    "sourceHash": "c2a30be"
+  },
+  "commands.fileCopyShareLinkOneHour.label": "Sao chép liên kết chia sẻ (một giờ)",
+  "@commands.fileCopyShareLinkOneHour.label": {
+    "sourceHash": "ffea990"
+  },
+  "commands.fileCopyShareLinkOneHour.description": "Sao chép một liên kết mà ai cũng mở được để tải tệp về trong một giờ tới",
+  "@commands.fileCopyShareLinkOneHour.description": {
+    "sourceHash": "c334535"
   },
   "commands.tagsToggleGrey.label": "Bật/tắt thẻ Xám",
   "@commands.tagsToggleGrey.label": {
@@ -647,6 +691,30 @@
   "commands.selectionSelectSameKind.description": "Thêm mọi mục cùng loại với mục dưới con trỏ vào lựa chọn mà không xóa lựa chọn hiện có",
   "@commands.selectionSelectSameKind.description": {
     "sourceHash": "9a95212"
+  },
+  "commands.selectionCompareDirectories.label": "So sánh thư mục",
+  "@commands.selectionCompareDirectories.label": {
+    "sourceHash": "5cf3985"
+  },
+  "commands.selectionCompareDirectories.description": "Chọn trong mỗi khung các tệp mà khung kia không có, cùng bản sao mới hơn của các tệp còn lại",
+  "@commands.selectionCompareDirectories.description": {
+    "sourceHash": "190d99f"
+  },
+  "commands.selectionCompareDirectoriesMissing.label": "So sánh thư mục: chỉ tệp bị thiếu",
+  "@commands.selectionCompareDirectoriesMissing.label": {
+    "sourceHash": "d03d3c1"
+  },
+  "commands.selectionCompareDirectoriesMissing.description": "Chỉ chọn trong mỗi khung các tệp mà khung kia không có",
+  "@commands.selectionCompareDirectoriesMissing.description": {
+    "sourceHash": "e61c71b"
+  },
+  "commands.selectionCompareDirectoriesSize.label": "So sánh thư mục: khác kích cỡ",
+  "@commands.selectionCompareDirectoriesSize.label": {
+    "sourceHash": "6c8fd21"
+  },
+  "commands.selectionCompareDirectoriesSize.description": "Chọn trong mỗi khung các tệp mà khung kia không có, cùng cả hai bản sao của những tệp có kích cỡ khác nhau",
+  "@commands.selectionCompareDirectoriesSize.description": {
+    "sourceHash": "ac31996"
   },
   "commands.selectionSelectSameKind.allFolders": "Chọn tất cả thư mục",
   "@commands.selectionSelectSameKind.allFolders": {
@@ -804,6 +872,26 @@
   "@commands.handler.googleDriveCopyFailed": {
     "sourceHash": "0af1fd3"
   },
+  "commands.handler.shareLinkCopied.sevenDays": "Đã sao chép liên kết chia sẻ. Liên kết dùng được trong bảy ngày.",
+  "@commands.handler.shareLinkCopied.sevenDays": {
+    "sourceHash": "6f4055b"
+  },
+  "commands.handler.shareLinkCopied.oneDay": "Đã sao chép liên kết chia sẻ. Liên kết dùng được trong một ngày.",
+  "@commands.handler.shareLinkCopied.oneDay": {
+    "sourceHash": "ca08c52"
+  },
+  "commands.handler.shareLinkCopied.oneHour": "Đã sao chép liên kết chia sẻ. Liên kết dùng được trong một giờ.",
+  "@commands.handler.shareLinkCopied.oneHour": {
+    "sourceHash": "8b9f0cc"
+  },
+  "commands.handler.shareLinkUnavailable": "Hãy đưa con trỏ tới một tệp trong bộ chứa S3 để sao chép liên kết chia sẻ.",
+  "@commands.handler.shareLinkUnavailable": {
+    "sourceHash": "c4ea112"
+  },
+  "commands.handler.shareLinkFailed": "Không thể tạo liên kết chia sẻ. {detail}",
+  "@commands.handler.shareLinkFailed": {
+    "sourceHash": "5ff44b7"
+  },
   "commands.handler.openTerminalHere.hint": "Đã mở thư mục này trong ứng dụng terminal của bạn. Bạn muốn Cmdr mở ứng dụng khác vào lần sau? Hãy chọn trong Cài đặt, mục “Điều hướng & thao tác tệp”.",
   "@commands.handler.openTerminalHere.hint": {
     "sourceHash": "b29b744"
@@ -836,6 +924,18 @@
   "@commands.handler.openTerminalHere.timedOut": {
     "sourceHash": "ed36313"
   },
+  "commands.handler.getInfo.automationOff": "Để mở Lấy thông tin, Cmdr cần được điều khiển Finder, nhưng quyền này đang tắt. Hãy bật Finder bên dưới Cmdr trong Cài đặt hệ thống > Quyền riêng tư & Bảo mật > Tự động hóa.",
+  "@commands.handler.getInfo.automationOff": {
+    "sourceHash": "7e831ef"
+  },
+  "commands.handler.getInfo.openAutomationSettings": "Mở cài đặt Tự động hóa",
+  "@commands.handler.getInfo.openAutomationSettings": {
+    "sourceHash": "f04940d"
+  },
+  "commands.handler.getInfo.notReached": "Cmdr không kết nối được tới Finder để mở cửa sổ Lấy thông tin. Hãy thử lại.",
+  "@commands.handler.getInfo.notReached": {
+    "sourceHash": "9cbc272"
+  },
   "commands.handler.zoomResetHintShortcut": "Bạn có thể đặt lại mức phóng về 100% bằng {shortcut}.",
   "@commands.handler.zoomResetHintShortcut": {
     "sourceHash": "efdd715"
@@ -863,5 +963,21 @@
   "commands.suggestedOpsShow.description": "Xem lại các thao tác tệp mà AI đề xuất và quyết định điều gì sẽ chạy",
   "@commands.suggestedOpsShow.description": {
     "sourceHash": "7efe8c9"
+  },
+  "commands.helpViewDebugLog.label": "Xem nhật ký gỡ lỗi",
+  "@commands.helpViewDebugLog.label": {
+    "sourceHash": "007c98d"
+  },
+  "commands.helpViewDebugLog.description": "Theo dõi trực tiếp nhật ký gỡ lỗi của Cmdr trong trình xem tệp",
+  "@commands.helpViewDebugLog.description": {
+    "sourceHash": "a937e6e"
+  },
+  "commands.handler.viewDebugLog.disabled": "Lưu nhật ký đang tắt. Đặt giới hạn dung lượng đĩa lớn hơn 0 trong Cài đặt > Nâng cao, rồi khởi động lại Cmdr để xem nhật ký gỡ lỗi.",
+  "@commands.handler.viewDebugLog.disabled": {
+    "sourceHash": "96f16fc"
+  },
+  "commands.handler.viewDebugLog.unavailable": "Không mở được nhật ký gỡ lỗi. Hãy thử lại.",
+  "@commands.handler.viewDebugLog.unavailable": {
+    "sourceHash": "794a5b3"
   }
 }

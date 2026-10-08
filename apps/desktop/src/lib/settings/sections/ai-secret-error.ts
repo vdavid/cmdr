@@ -50,7 +50,7 @@ export interface SecretErrorMessage {
 }
 
 /**
- * Translate a save/read refusal from the secret store into user-facing copy.
+ * Translate a save/read/remove refusal from the secret store into user-facing copy.
  *
  * The backend's `AiApiKeyError` is typed, so the branch is a VARIANT: `access_denied`
  * is the one the OS-specific guidance exists for (a Keychain ACL on macOS, a locked
@@ -58,9 +58,25 @@ export interface SecretErrorMessage {
  * inspects the store's message: `detail` carries it for a details affordance and
  * nothing else.
  */
-export function describeSecretError(e: unknown, operation: 'save' | 'read'): SecretErrorMessage {
+export function describeSecretError(e: unknown, operation: 'save' | 'read' | 'remove'): SecretErrorMessage {
   const failure = asAiSecretError(e)
   const detail = failure?.message ?? (e instanceof Error ? e.message : typeof e === 'string' ? e : undefined)
+
+  // Its own keys rather than a third `op` branch: removing needs different guidance
+  // (delete the entry by hand), not just a different verb.
+  if (operation === 'remove') {
+    const denied = failure?.type === 'access_denied'
+    return {
+      title: tString('ai.secretError.removeTitle'),
+      body: denied
+        ? isMacOS()
+          ? tString('ai.secretError.removeKeychainBody')
+          : tString('ai.secretError.keyringBody')
+        : tString('ai.secretError.genericBody'),
+      detail,
+      level: 'error',
+    }
+  }
 
   if (failure?.type === 'access_denied') {
     if (isMacOS()) {

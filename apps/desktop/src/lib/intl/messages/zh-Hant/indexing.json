@@ -14,7 +14,7 @@
   },
   "indexing.scan.counters": "{entriesText} 個{entries, plural, other {項目}}、{dirsText} 個{dirs, plural, other {資料夾}}",
   "@indexing.scan.counters": {
-    "sourceHash": "f635790"
+    "sourceHash": "ecf47f2"
   },
   "indexing.scan.countersElapsed": "{counters} · {elapsed}",
   "@indexing.scan.countersElapsed": {
@@ -133,9 +133,21 @@
   "@indexing.progress.percentEta": {
     "sourceHash": "26b29da"
   },
+  "indexing.overall.eta": "整體：{eta}",
+  "@indexing.overall.eta": {
+    "sourceHash": "a9a2ffc"
+  },
+  "indexing.overall.estimating": "整體：正在估計⋯",
+  "@indexing.overall.estimating": {
+    "sourceHash": "9dac967"
+  },
   "indexing.eta.almostDone": "快好了",
   "@indexing.eta.almostDone": {
     "sourceHash": "506f162"
+  },
+  "indexing.eta.almostDoneMidSentence": "快好了",
+  "@indexing.eta.almostDoneMidSentence": {
+    "sourceHash": "1d2fb48"
   },
   "indexing.eta.secondsLeft": "剩餘 {secondsText} 秒",
   "@indexing.eta.secondsLeft": {
@@ -188,6 +200,10 @@
   "indexing.needsFreshScan.afterDisconnect": "{name} 在 Cmdr 更新索引時中斷了連線。這個磁碟機下次會從頭開始掃描，資料夾大小就會重新準確。",
   "@indexing.needsFreshScan.afterDisconnect": {
     "sourceHash": "a90dbdf"
+  },
+  "indexing.memoryStop.paused": "Cmdr 使用的記憶體太多，已暫停磁碟機索引。在你重新啟動 Cmdr 之前，資料夾大小可能過時。",
+  "@indexing.memoryStop.paused": {
+    "sourceHash": "32d225a"
   },
   "indexing.firstConnect.title": "要為 {name} 建立索引嗎？",
   "@indexing.firstConnect.title": {

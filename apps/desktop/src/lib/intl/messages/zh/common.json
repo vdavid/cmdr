@@ -23,5 +23,59 @@
   "common.downloadsFdaHint": "Cmdr 需要完全磁盘访问权限才能监视你的下载文件夹。<settingsLink>打开系统设置</settingsLink>",
   "@common.downloadsFdaHint": {
     "sourceHash": "315e1d8"
+  },
+  "common.sizeUnit.byte": "{count, plural, other {字节}}",
+  "@common.sizeUnit.byte": {
+    "sourceHash": "ee1f643"
+  },
+  "common.sizeUnit.kibibyte": "KiB",
+  "@common.sizeUnit.kibibyte": {
+    "sourceHash": "97ee1b8",
+    "sameAsSourceJustification": "IEC binary symbol, kept Latin: Chinese writes IEC and SI unit symbols in Latin letters (macOS zh-CN Finder: 64.0 MB/1.33 GB; Double Commander zh leaves KB/MB untranslated), so the binary set stays Latin and distinct from the decimal one."
+  },
+  "common.sizeUnit.mebibyte": "MiB",
+  "@common.sizeUnit.mebibyte": {
+    "sourceHash": "dea6cb8",
+    "sameAsSourceJustification": "IEC binary symbol, kept Latin: Chinese writes IEC and SI unit symbols in Latin letters (macOS zh-CN Finder: 64.0 MB/1.33 GB; Double Commander zh leaves KB/MB untranslated), so the binary set stays Latin and distinct from the decimal one."
+  },
+  "common.sizeUnit.gibibyte": "GiB",
+  "@common.sizeUnit.gibibyte": {
+    "sourceHash": "66a1561",
+    "sameAsSourceJustification": "IEC binary symbol, kept Latin: Chinese writes IEC and SI unit symbols in Latin letters (macOS zh-CN Finder: 64.0 MB/1.33 GB; Double Commander zh leaves KB/MB untranslated), so the binary set stays Latin and distinct from the decimal one."
+  },
+  "common.sizeUnit.tebibyte": "TiB",
+  "@common.sizeUnit.tebibyte": {
+    "sourceHash": "15c1ec4",
+    "sameAsSourceJustification": "IEC binary symbol, kept Latin: Chinese writes IEC and SI unit symbols in Latin letters (macOS zh-CN Finder: 64.0 MB/1.33 GB; Double Commander zh leaves KB/MB untranslated), so the binary set stays Latin and distinct from the decimal one."
+  },
+  "common.sizeUnit.pebibyte": "PiB",
+  "@common.sizeUnit.pebibyte": {
+    "sourceHash": "38ca5a1",
+    "sameAsSourceJustification": "IEC binary symbol, kept Latin: Chinese writes IEC and SI unit symbols in Latin letters (macOS zh-CN Finder: 64.0 MB/1.33 GB; Double Commander zh leaves KB/MB untranslated), so the binary set stays Latin and distinct from the decimal one."
+  },
+  "common.sizeUnit.kilobyte": "kB",
+  "@common.sizeUnit.kilobyte": {
+    "sourceHash": "591e59c",
+    "sameAsSourceJustification": "Decimal SI symbol, kept Latin: macOS zh-CN Finder writes Latin unit symbols after a number (ProgressStatusView: 64.0 MB/1.33 GB), and Double Commander zh leaves its KB/MB untranslated; Chinese has no native unit symbols."
+  },
+  "common.sizeUnit.megabyte": "MB",
+  "@common.sizeUnit.megabyte": {
+    "sourceHash": "1d09f6f",
+    "sameAsSourceJustification": "Decimal SI symbol, kept Latin: macOS zh-CN Finder writes Latin unit symbols after a number (ProgressStatusView: 64.0 MB/1.33 GB), and Double Commander zh leaves its KB/MB untranslated; Chinese has no native unit symbols."
+  },
+  "common.sizeUnit.gigabyte": "GB",
+  "@common.sizeUnit.gigabyte": {
+    "sourceHash": "b4043b0",
+    "sameAsSourceJustification": "Decimal SI symbol, kept Latin: macOS zh-CN Finder writes Latin unit symbols after a number (ProgressStatusView: 64.0 MB/1.33 GB), and Double Commander zh leaves its KB/MB untranslated; Chinese has no native unit symbols."
+  },
+  "common.sizeUnit.terabyte": "TB",
+  "@common.sizeUnit.terabyte": {
+    "sourceHash": "791b0ac",
+    "sameAsSourceJustification": "Decimal SI symbol, kept Latin: macOS zh-CN Finder writes Latin unit symbols after a number (ProgressStatusView: 64.0 MB/1.33 GB), and Double Commander zh leaves its KB/MB untranslated; Chinese has no native unit symbols."
+  },
+  "common.sizeUnit.petabyte": "PB",
+  "@common.sizeUnit.petabyte": {
+    "sourceHash": "f9085bf",
+    "sameAsSourceJustification": "Decimal SI symbol, kept Latin: macOS zh-CN Finder writes Latin unit symbols after a number (ProgressStatusView: 64.0 MB/1.33 GB), and Double Commander zh leaves its KB/MB untranslated; Chinese has no native unit symbols."
   }
 }

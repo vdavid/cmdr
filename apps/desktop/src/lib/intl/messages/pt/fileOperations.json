@@ -3,6 +3,10 @@
   "@fileOperations.button.cancel": {
     "sourceHash": "19766ed"
   },
+  "fileOperations.button.close": "Fechar",
+  "@fileOperations.button.close": {
+    "sourceHash": "7d9eb7a"
+  },
   "fileOperations.button.ok": "OK",
   "@fileOperations.button.ok": {
     "sourceHash": "565339b",
@@ -82,7 +86,7 @@
   },
   "fileOperations.delete.scanDir": "{count, plural, one {pasta} many {pastas} other {pastas}}",
   "@fileOperations.delete.scanDir": {
-    "sourceHash": "1c5273d"
+    "sourceHash": "46b23b5"
   },
   "fileOperations.delete.confirmDelete": "Apagar",
   "@fileOperations.delete.confirmDelete": {
@@ -124,6 +128,14 @@
   "@fileOperations.delete.symlinkNoticeMany": {
     "sourceHash": "56b3f52"
   },
+  "fileOperations.mkfile.notCreatedToast": "O Cmdr não conseguiu criar o arquivo “{name}”. {reason}",
+  "@fileOperations.mkfile.notCreatedToast": {
+    "sourceHash": "4f30e62"
+  },
+  "fileOperations.newEntry.stillCreating": "A criação de “{name}” ainda está em andamento. O volume está demorando para responder. Você pode fechar esta janela sem problemas: a criação vai continuar e não dá mais para cancelá-la.",
+  "@fileOperations.newEntry.stillCreating": {
+    "sourceHash": "74e376f"
+  },
   "fileOperations.mkfile.title": "Novo arquivo",
   "@fileOperations.mkfile.title": {
     "sourceHash": "44dedd0"
@@ -156,17 +168,9 @@
   "@fileOperations.mkdir.placeholder": {
     "sourceHash": "7612b56"
   },
-  "fileOperations.mkdir.timeoutMessage": "Não foi possível confirmar que a pasta foi criada. O volume pode estar lento, então a pasta ainda pode ter sido criada.",
-  "@fileOperations.mkdir.timeoutMessage": {
-    "sourceHash": "8bc758a"
-  },
-  "fileOperations.mkdir.timeoutRefresh": "Atualizar listagem",
-  "@fileOperations.mkdir.timeoutRefresh": {
-    "sourceHash": "b0e5436"
-  },
-  "fileOperations.mkdir.timeoutDismiss": "Dispensar",
-  "@fileOperations.mkdir.timeoutDismiss": {
-    "sourceHash": "48845bf"
+  "fileOperations.mkdir.notCreatedToast": "O Cmdr não conseguiu criar a pasta “{name}”. {reason}",
+  "@fileOperations.mkdir.notCreatedToast": {
+    "sourceHash": "517ef4b"
   },
   "fileOperations.mkdir.aiSuggestionsAria": "Sugestões da IA",
   "@fileOperations.mkdir.aiSuggestionsAria": {
@@ -249,9 +253,21 @@
   "@fileOperations.transferDialog.targetWillBeCreatedCopy": {
     "sourceHash": "4e8d166"
   },
+  "fileOperations.transferDialog.renameByMoveHint": "Renomear este item copia tudo o que há dentro dele no servidor, então a renomeação é feita como uma movimentação que você pode pausar ou cancelar.",
+  "@fileOperations.transferDialog.renameByMoveHint": {
+    "sourceHash": "31987cc"
+  },
   "fileOperations.transferDialog.targetWillBeCreatedMove": "Esta pasta ainda não existe. O Cmdr vai criá-la durante a movimentação.",
   "@fileOperations.transferDialog.targetWillBeCreatedMove": {
     "sourceHash": "1246331"
+  },
+  "fileOperations.transferDialog.rootEchoWarning": "Este local já começa em {rootFolder}, então este caminho leva a {resolvedPath}. Você quis dizer {strippedPath}?",
+  "@fileOperations.transferDialog.rootEchoWarning": {
+    "sourceHash": "b692d10"
+  },
+  "fileOperations.transferDialog.rootEchoUseStripped": "Usar caminho mais curto",
+  "@fileOperations.transferDialog.rootEchoUseStripped": {
+    "sourceHash": "66972e3"
   },
   "fileOperations.transferDialog.destinationReadOnly": "Esta pasta é somente leitura, então nada pode ser colocado aqui.",
   "@fileOperations.transferDialog.destinationReadOnly": {
@@ -275,7 +291,7 @@
   },
   "fileOperations.transferDialog.scanDir": "{count, plural, one {pasta} many {pastas} other {pastas}}",
   "@fileOperations.transferDialog.scanDir": {
-    "sourceHash": "1c5273d"
+    "sourceHash": "46b23b5"
   },
   "fileOperations.transferDialog.hardlinkNote": "<written></written> serão gravados. A origem ocupa <ondisk></ondisk> no disco – o extra são arquivos com hardlink, que não podem continuar vinculados entre discos.",
   "@fileOperations.transferDialog.hardlinkNote": {
@@ -293,6 +309,18 @@
   "@fileOperations.transferDialog.estimatedSizeTooltip": {
     "sourceHash": "2e8ba70"
   },
+  "fileOperations.s3Cost.line": "Cerca de {amount} pelos preços de tabela de {provider}",
+  "@fileOperations.s3Cost.line": {
+    "sourceHash": "e8db02b"
+  },
+  "fileOperations.s3Cost.infoLabel": "Sobre esta estimativa",
+  "@fileOperations.s3Cost.infoLabel": {
+    "sourceHash": "19637c5"
+  },
+  "fileOperations.s3Cost.infoText": "A estimativa usa os preços de tabela públicos do provedor. Níveis gratuitos, descontos, cotas incluídas e cobranças mínimas podem deixar sua fatura mais baixa ou mais alta.",
+  "@fileOperations.s3Cost.infoText": {
+    "sourceHash": "379665c"
+  },
   "fileOperations.transferDialog.scanUnresponsive": "A origem não está respondendo, então este tamanho é tudo o que conseguimos contar.",
   "@fileOperations.transferDialog.scanUnresponsive": {
     "sourceHash": "ec3beb2"
@@ -304,6 +332,10 @@
   "fileOperations.transferDialog.scanRetry": "Tentar novamente",
   "@fileOperations.transferDialog.scanRetry": {
     "sourceHash": "d8b8392"
+  },
+  "fileOperations.transferDialog.sourceNoLongerConnected": "O celular ou servidor que guarda estes arquivos não está mais conectado, então o Cmdr não consegue copiar nada de lá.",
+  "@fileOperations.transferDialog.sourceNoLongerConnected": {
+    "sourceHash": "4741405"
   },
   "fileOperations.transferDialog.conflictsUnknown": "Não conseguimos verificar o que já está no destino. Vamos perguntar sobre cada conflito.",
   "@fileOperations.transferDialog.conflictsUnknown": {
@@ -399,7 +431,7 @@
   },
   "fileOperations.scanPhase.scanDir": "{count, plural, one {pasta} many {pastas} other {pastas}}",
   "@fileOperations.scanPhase.scanDir": {
-    "sourceHash": "1c5273d"
+    "sourceHash": "46b23b5"
   },
   "fileOperations.transferProgress.scanTitleCopy": "Verificando antes de copiar…",
   "@fileOperations.transferProgress.scanTitleCopy": {
@@ -537,9 +569,13 @@
   "@fileOperations.transferProgress.stageFinishingTransferStep": {
     "sourceHash": "1f28724"
   },
-  "fileOperations.transferProgress.warningFileOverFolder": "O destino já existe e é uma <strong>pasta</strong>. Você está prestes a substituí-la por um <strong>arquivo</strong> com o mesmo nome. Todo o conteúdo da pasta de destino seria apagado e substituído pelo arquivo. O que você quer fazer?",
+  "fileOperations.transferProgress.warningFileOverFolder": "O destino já existe e é uma <strong>pasta</strong>. Você está prestes a substituí-la por um <strong>arquivo</strong> com o mesmo nome. Tudo o que está dentro da pasta deixaria de existir. O que você quer fazer?",
   "@fileOperations.transferProgress.warningFileOverFolder": {
-    "sourceHash": "6dce75c"
+    "sourceHash": "bacab9d"
+  },
+  "fileOperations.transferProgress.warningFolderOverFile": "O destino já existe e é um <strong>arquivo</strong>. Você está prestes a substituí-lo por uma <strong>pasta</strong> com o mesmo nome. O arquivo deixaria de existir assim que a pasta ocupasse o lugar dele. O que você quer fazer?",
+  "@fileOperations.transferProgress.warningFolderOverFile": {
+    "sourceHash": "b681083"
   },
   "fileOperations.transferProgress.lookAlikeHint": "Os dois nomes parecem iguais, mas o servidor os escreve de forma diferente. “Substituir” troca o item que já está lá.",
   "@fileOperations.transferProgress.lookAlikeHint": {
@@ -885,6 +921,10 @@
   "fileOperations.errorDialog.retry": "Tentar novamente",
   "@fileOperations.errorDialog.retry": {
     "sourceHash": "942087c"
+  },
+  "fileOperations.errorDialog.copyAnyway": "Copiar mesmo assim",
+  "@fileOperations.errorDialog.copyAnyway": {
+    "sourceHash": "f794181"
   },
   "fileOperations.errorDialog.close": "Fechar",
   "@fileOperations.errorDialog.close": {

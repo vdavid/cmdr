@@ -158,9 +158,7 @@ async fn listing_a_saved_server_nobody_connected_says_it_is_not_connected() {
 
     let listing = TestListingGuard::adopt(unique_test_id("saved-server-listing"));
     let events: std::sync::Arc<dyn ListingEventSink> = std::sync::Arc::new(CollectorListingEventSink::new());
-    let state = std::sync::Arc::new(StreamingListingState {
-        cancel: tokio_util::sync::CancellationToken::new(),
-    });
+    let state = std::sync::Arc::new(StreamingListingState::new());
     let pane_path = format!("sftp://ada@{host}:2222/srv/data/photos");
     let outcome = read_directory_with_progress(
         &events,
@@ -586,4 +584,35 @@ fn a_share_no_mount_went_through_has_no_row() {
     let mut volumes = Vec::new();
     fold_saved_smb_shares(&mut volumes, vec![saved_share("naspi", None, false)], |_| false);
     assert!(volumes.is_empty());
+}
+
+/// ❗ An S3 account's root place and its bucket place spell one object the same
+/// way, so a path in the bucket is under both roots; the bucket, the more
+/// specific place, is the one it names. Anything else on the account stays the
+/// root's.
+#[test]
+fn an_s3_path_in_a_saved_bucket_names_the_bucket_place_over_the_account_root() {
+    use crate::network::s3_known_places::{self, KnownS3Place, S3ProviderChoice};
+    let place = |bucket: Option<&str>| KnownS3Place {
+        provider: S3ProviderChoice::Aws {
+            region: "eu-west-1".to_string(),
+        },
+        // A key no other cell uses: the store is process-global.
+        access_key_id: "AKIASERVERVOLUMES".to_string(),
+        bucket: bucket.map(str::to_string),
+        auto_reconnect: true,
+        pinned: false,
+        last_connected_at: "2026-10-01T00:00:00Z".to_string(),
+    };
+    let root = place(None);
+    let photos = place(Some("photos"));
+    s3_known_places::remember(root.clone());
+    s3_known_places::remember(photos.clone());
+    let prefix = "s3://AKIASERVERVOLUMES@s3.eu-west-1.amazonaws.com:443";
+
+    let in_bucket = server_volume_for_path(&format!("{prefix}/photos/2025/a.jpg")).expect("a saved place");
+    assert_eq!(Some(in_bucket.id), photos.volume_id());
+    assert_eq!(in_bucket.fs_type.as_deref(), Some("s3"));
+    let elsewhere = server_volume_for_path(&format!("{prefix}/backups/a.tar")).expect("the account root");
+    assert_eq!(Some(elsewhere.id), root.volume_id());
 }

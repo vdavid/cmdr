@@ -319,6 +319,18 @@
   "@onboarding.stepAi.off.help": {
     "sourceHash": "3f261be"
   },
+  "onboarding.localDownloadFailed.title": "本機 AI 模型的下載沒有完成",
+  "@onboarding.localDownloadFailed.title": {
+    "sourceHash": "9612750"
+  },
+  "onboarding.localDownloadFailed.body": "請到「設定 › AI」重新開始下載。",
+  "@onboarding.localDownloadFailed.body": {
+    "sourceHash": "6601872"
+  },
+  "onboarding.localDownloadFailed.openSettings": "開啟設定",
+  "@onboarding.localDownloadFailed.openSettings": {
+    "sourceHash": "3f94010"
+  },
   "onboarding.stepBeta.footer.start": "開始使用 Cmdr！",
   "@onboarding.stepBeta.footer.start": {
     "sourceHash": "e29bbc7"
@@ -386,6 +398,14 @@
   "onboarding.stepBeta.crashReportsNote": "當機報告也是開著的：Cmdr 要是掛了，它會傳送 App 版本、你的 macOS 版本，還有程式碼停在哪裡。\n絕不會有你的檔案。\n這兩項你隨時都能在「設定」裡關掉。",
   "@onboarding.stepBeta.crashReportsNote": {
     "sourceHash": "9be0be1"
+  },
+  "onboarding.stepBeta.analyticsManaged": "你的組織已關閉使用統計。",
+  "@onboarding.stepBeta.analyticsManaged": {
+    "sourceHash": "49484ee"
+  },
+  "onboarding.stepBeta.crashReportsNoteAlone": "當機報告是開著的：Cmdr 要是掛了，它會傳送 App 版本、你的 macOS 版本，還有程式碼停在哪裡。\n絕不會有你的檔案。\n你隨時都能在「設定」裡把它關掉。",
+  "@onboarding.stepBeta.crashReportsNoteAlone": {
+    "sourceHash": "5084dd0"
   },
   "onboarding.stepBeta.emailTitle": "保持聯絡（可選）",
   "@onboarding.stepBeta.emailTitle": {
@@ -504,7 +524,7 @@
   "@onboarding.stepOptional.mtp.title": {
     "sourceHash": "473e8e9"
   },
-  "onboarding.stepOptional.mtp.summary": "能連 Android 手機之類的裝置，會壓下 macOS 原生的處理程序",
+  "onboarding.stepOptional.mtp.summary": "能連 Android 手機之類的裝置，會壓下 macOS 內建的處理程序",
   "@onboarding.stepOptional.mtp.summary": {
     "sourceHash": "d5b9a6e"
   },
@@ -563,6 +583,10 @@
   "onboarding.cloudSetup.apiKeyAria": "API 金鑰",
   "@onboarding.cloudSetup.apiKeyAria": {
     "sourceHash": "16f0ee4"
+  },
+  "onboarding.cloudSetup.removeKey": "移除金鑰",
+  "@onboarding.cloudSetup.removeKey": {
+    "sourceHash": "81c45fd"
   },
   "onboarding.cloudSetup.apiKeyPlaceholder.openai": "例如：sk-abc123⋯",
   "@onboarding.cloudSetup.apiKeyPlaceholder.openai": {

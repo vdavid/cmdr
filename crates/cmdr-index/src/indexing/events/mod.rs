@@ -22,14 +22,14 @@ use super::store::{IndexFailure, IndexStatus};
 
 pub(crate) mod payload;
 pub(crate) mod sink;
+#[cfg(any(test, feature = "testing"))]
+mod test_sinks;
 
 pub use payload::{ActivityPhase, CoveragePhase, FolderChangeRollup, MemoryWatchdogAction, RescanReason, ScanRunKind};
 
-#[cfg(any(test, feature = "testing"))]
-pub use sink::RecordingSink;
-#[cfg(any(test, feature = "testing"))]
-pub use sink::one_of_every_kind;
 pub use sink::{Diagnostic, EventSink, IndexErrorReport, IndexEvent, IndexEventKind, NoopEventSink};
+#[cfg(any(test, feature = "testing"))]
+pub use test_sinks::{RecordingSink, one_of_every_kind};
 
 /// A completed or in-progress phase in the indexing timeline.
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
@@ -115,6 +115,21 @@ pub struct IndexStatusResponse {
     pub prior_total_entries: Option<u64>,
     /// How long that previous walk took, the tier-1 ETA's rate.
     pub prior_scan_duration_ms: Option<u64>,
+    /// The remembered time left once the find-files step (the walk) is done: what
+    /// every later step took on the last completed run of this kind. `None` when
+    /// any of them has no such history, so no overall figure shows. Same
+    /// read-only-while-`scanning` rule as the calibration above. A host adds its
+    /// live estimate for the active step to the matching `left_after_*` field to
+    /// get the overall "~X left".
+    pub left_after_find_files_ms: Option<u64>,
+    /// The remembered time left once the save-the-file-list step is done. `None`
+    /// on a run with no such step (a network walk) or no history for what follows.
+    pub left_after_save_ms: Option<u64>,
+    /// The remembered time left once the compute-folder-sizes step is done.
+    pub left_after_compute_ms: Option<u64>,
+    /// The remembered time left once the catch-up step is done: `Some(0)` on a run
+    /// that has one (it's the last step), `None` on a run that doesn't.
+    pub left_after_catch_up_ms: Option<u64>,
 }
 
 impl IndexStatusResponse {

@@ -10,7 +10,7 @@ event into a confirmation toast, whose button reopens the SAME report for a note
   `openErrorReportDialogForAutoSentReport()` (amend). `mode` lives in the store, not in a second argument.
 - `ErrorReportDialog.svelte`: one dialog, both modes. `ErrorReportToastContent.svelte`: the post-send toast for both
   outcomes (`kind` picks the sentence).
-- `BundleSavedToastContent.svelte`: dev-only "Save bundle to disk" toast (path + Reveal in Finder).
+- `BundleSavedToastContent.svelte`: the "saved to disk" toast (path + Reveal in Finder).
 - `auto-send-toast.svelte.ts` + `AutoSendToastContent.svelte`: Flow B listener and toast. Both toasts render
   `SentReportToastBody.svelte` (optional title, sentence + id badge, right-aligned actions).
 - `breadcrumbs.ts`: fire-and-forget `recordBreadcrumb(event)` over the generated closed `BreadcrumbEvent` union; its
@@ -32,12 +32,13 @@ event into a confirmation toast, whose button reopens the SAME report for a note
 - **The reply-to email rides every USER-INITIATED send, amend included**: typing an address into the amend dialog IS the
   explicit per-report consent the Flow-B-never-email rule is about. `apps/desktop/src/lib/attach-email/CLAUDE.md` owns
   the rules; auto-send itself still ships `email: None` structurally (`error_reporter/DETAILS.md` § Flow-B-never-email).
-- **"Save bundle to disk" is dev-only AND compose-only**: it writes the zip under the id the send would use, and amend
-  mode hides it (no local bundle exists there).
+- **Saving to disk is compose-only**: it writes the zip under the id the send would use, and amend mode has no local
+  bundle. It shows in dev, and as the ONLY action when the organization turned reports off (no Send, no attach-email).
+  `DETAILS.md` § When the organization turned reports off.
 
 Compose entry points: the Help menu's "Send error report…" (`command-dispatch.ts`'s `help.sendErrorReport`) and the
 inline link on plain-text error toasts (`ToastItem.svelte`), which pre-fills the note. The dialog mounts in
 `(main)/+layout.svelte`.
 
-Full details (the two modes side by side, Flow B toast lifecycle, note-capture timing, the caps, `<script module>`
-`$state` notes): `DETAILS.md`.
+The two modes, the managed-off dialog, the Flow B toast, and the caps: `DETAILS.md`. Read it before any non-trivial work
+here: editing, planning, reorganizing, or advising.

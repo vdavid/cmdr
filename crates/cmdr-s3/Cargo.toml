@@ -1,0 +1,112 @@
+[package]
+name = "cmdr-s3"
+version = "0.0.0"
+edition = "2024"
+license = "LicenseRef-BSL-1.1"
+publish = false
+
+# The house lint set lives in the workspace root's `[workspace.lints]`, so this
+# crate can't quietly become a lint-free zone. `unused_crate_dependencies` is the
+# one lint that stays at the crate root instead (it's judged per compilation unit).
+[lints]
+workspace = true
+
+# `md-5`'s library is named `md5`, which cargo-machete's name matching can't
+# connect to the package; `ops.rs` uses it for `DeleteObjects`' `Content-MD5`.
+[package.metadata.cargo-machete]
+ignored = ["md-5"]
+
+# Every dependency below was already in `Cargo.lock` at this crate's landing, at
+# the version and with the features pinned here, so the crate added no package
+# and no second configuration of one. Keep it that way: `cargo tree -d` before
+# and after any change here.
+[dependencies]
+# The SigV4 signer. Same versions the SFTP stack and the app already resolve.
+hmac = "0.13.0"
+sha2 = "0.11"
+# `Content-MD5` on `DeleteObjects`, which AWS still demands. Same version `smb2`
+# resolves; `base64` is the app's version.
+md-5 = "0.11"
+base64 = "0.23.0"
+# Response parsing and request bodies. The version `cmdr-webdav` uses.
+quick-xml = "0.41"
+url = "2"
+# Decoding keys from an `encoding-type=url` listing, and encoding them on the
+# way into a URL.
+percent-encoding = "2"
+# `Method`, `HeaderMap`, and `StatusCode`: the vocabulary a built request and an
+# S3 error are made of. `reqwest` re-exports the same crate, so the transport
+# takes these as-is.
+http = "1"
+# The ISO 8601 timestamps S3 lists carry (`2009-10-12T17:50:30.000Z`) and the
+# signer's date fields. A strict subset of the app's features.
+time = { version = "0.3", features = ["parsing"] }
+# R2 stores keys NFC; the profile composes them before they leave.
+unicode-normalization = "0.1"
+log = "0.4"
+# The `Volume` trait, every type it exchanges, the host seams this backend asks
+# the app through, and the HTTP silence watch it shares with `cmdr-webdav`.
+cmdr-fs = { path = "../cmdr-fs" }
+# Builds the HTTP client, so a proxy and its bypass list apply here the way they do
+# everywhere else in Cmdr. A LAN server stays reachable on a proxied network only
+# because this routing sends it direct when macOS would.
+cmdr-http = { path = "../cmdr-http" }
+# The HTTP transport, confined to `transport/`. A subset of the app's
+# features, so no second reqwest configuration enters the graph. ❗ `http2` is
+# declared here although the app gets it anyway (through `genai`): without it
+# this crate's own tests, the live suite included, speak HTTP/1.1 while the app
+# negotiates HTTP/2, and GCS once reset every app request over a header only
+# HTTP/2 refuses. `transport_test.rs` pins it.
+reqwest = { version = "0.13", default-features = false, features = ["http2", "rustls", "stream"] }
+# A HEAD's `Last-Modified` (RFC 1123), the version `cmdr-webdav` resolves.
+httpdate = "1"
+# The price table (`cost/prices.rs`): the JSON `apps/api-server` serves and the
+# crate bundles. The versions `cmdr-fs` resolves.
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+# The upload body: a `Stream` of `Bytes` the transport hands to
+# `reqwest::Body::wrap_stream`, and the part uploads run side by side. The
+# versions `cmdr-webdav` resolves.
+bytes = "1"
+futures-util = "0.3"
+# The backend's own async surface: `sync` for the client lock, `time` for the
+# reconnect backoff, `rt` for the handle background work spawns onto, `macros`
+# for `select!`. Deliberately NOT `rt-multi-thread`: the runtime is the app's,
+# handed down through `VolumeHost::runtime`. `cmdr-webdav`'s exact set.
+tokio = { version = "1", features = ["macros", "rt", "sync", "time"] }
+# `CancellationToken`, on the connect and listing paths. Default features off,
+# the shape `cmdr-fs` pins.
+tokio-util = { version = "0.7.18", default-features = false }
+# `testing` only: the per-process token that keeps two concurrent suites' key
+# prefixes apart on the machine-wide fixtures. Optional, so a shipped build
+# never links it; the version `cmdr-fs` pins.
+uuid = { version = "1.19.0", features = ["v4"], optional = true }
+
+[features]
+# "This is a test build." Widens `volume::testing` (the Docker fixture
+# connection and the seeding helpers) from `#[cfg(test)]`-only to `pub`, so the
+# app's S3 suites share one set of fixtures with this crate's own. Forwards
+# `cmdr-fs/testing` because the fixtures are built on `InMemoryCredentials` and
+# `RecordingVolumeEvents`.
+#
+# Never enable in a production build.
+testing = ["cmdr-fs/testing", "dep:uuid"]
+# Exposes `fuzzing`, the entry points the fuzz targets in `fuzz/` (repo root)
+# drive. Never enable in a production build.
+fuzzing = []
+
+[dev-dependencies]
+# Depending on ourselves turns the `testing` feature on for every DEV target and
+# leaves it off for the lib, so a shipped build carries no fixtures.
+cmdr-s3 = { path = ".", features = ["testing", "fuzzing"] }
+cmdr-fs = { path = "../cmdr-fs", features = ["testing"] }
+# The Docker-backed suites drive real concurrency, so their tests need a
+# multi-threaded runtime the lib deliberately can't build for itself. `net` and
+# `io-util` serve the fake AWS in `transport_routing_test.rs` (`cmdr-fs`'s
+# dev set has both).
+tokio = { version = "1", features = ["rt-multi-thread", "test-util", "net", "io-util"] }
+# Every response decoder reqwest has, on in the TEST build only: the app's graph
+# unifies `gzip` in (through `genai`), and any crate may add another. With them
+# on, `transport_test.rs` proves the client still hands back an encoded body
+# verbatim, and the live suite reads through the client the app ships.
+reqwest = { version = "0.13", default-features = false, features = ["gzip", "brotli", "deflate", "zstd"] }

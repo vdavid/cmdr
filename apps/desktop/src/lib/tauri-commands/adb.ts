@@ -1,10 +1,10 @@
 // Android devices over ADB: the device list and connecting one as a volume.
 // Contract: `docs/specs/android-adb-backend.md` § "App wiring".
 
-import { commands, type AdbConnectOutcomeError, type AdbDevice, type AdbInstallStatus } from '$lib/ipc/bindings'
+import { commands, type AdbConnectOutcomeError, type AdbInstallStatus } from '$lib/ipc/bindings'
 import { TypedFailure } from '$lib/ipc/typed-failure'
 
-export type { AdbConnectOutcomeError, AdbDevice, AdbDeviceState, AdbInstallStatus } from '$lib/ipc/bindings'
+export type { AdbConnectOutcomeError, AdbInstallStatus } from '$lib/ipc/bindings'
 
 /** A connect refusal, still carrying the backend's typed reason. */
 export class AdbConnectFailure extends TypedFailure<AdbConnectOutcomeError> {
@@ -27,11 +27,6 @@ export function asAdbConnectError(error: unknown): AdbConnectOutcomeError | null
  */
 export async function setAdbSettings(enabled: boolean, binaryPath: string | null): Promise<void> {
   await commands.setAdbSettings(enabled, binaryPath)
-}
-
-/** Every device the ADB server knows about, whatever its state. */
-export async function listAdbDevices(): Promise<AdbDevice[]> {
-  return await commands.listAdbDevices()
 }
 
 /**

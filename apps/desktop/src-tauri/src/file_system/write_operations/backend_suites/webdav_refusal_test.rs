@@ -307,7 +307,7 @@ async fn webdav_integration_a_refused_upload_over_the_users_file_keeps_it() {
 
 /// A same-server copy tries a server-side `COPY` first, and a refused one is
 /// never the end of it: the engine streams the file the ordinary way instead
-/// (`strategy.rs::try_server_side_copy`, which treats anything short of success
+/// (`server_side_copy.rs::try_server_side_copy`, which treats anything short of success
 /// or a cancel as "do it the ordinary way"). Here only the `COPY` is refused,
 /// so the streamed copy lands, complete, with the refused attempt's staging
 /// gone. On a server that is genuinely full the streamed PUT is refused too,

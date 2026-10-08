@@ -18,6 +18,8 @@ struct FakeTree {
     /// Every path the walk asked about, so a cell can hold it to one listing
     /// per directory and no stat per child.
     asked: Mutex<Vec<String>>,
+    /// What `ScanSource::keeps_files` answers.
+    keeps_files: bool,
 }
 
 impl FakeTree {
@@ -26,6 +28,7 @@ impl FakeTree {
             dirs: HashMap::new(),
             files: HashMap::new(),
             asked: Mutex::new(Vec::new()),
+            keeps_files: false,
         }
     }
 
@@ -36,6 +39,7 @@ impl FakeTree {
                 let child = format!("{}/{name}", path.trim_end_matches('/'));
                 let mut entry = FileEntry::new(name.to_string(), child, *is_dir, false);
                 entry.size = (!*is_dir).then_some(*size);
+                entry.modified_at = (!*is_dir).then_some(DATED_FROM + *size);
                 entry
             })
             .collect();
@@ -79,6 +83,7 @@ impl ScanSource for FakeTree {
                 Some(size) => {
                     let mut entry = FileEntry::new(name, key, false, false);
                     entry.size = Some(*size);
+                    entry.modified_at = Some(DATED_FROM + *size);
                     Ok(entry)
                 }
                 None => Err(VolumeError::NotFound(key)),
@@ -93,6 +98,49 @@ impl ScanSource for FakeTree {
             self.dirs.get(&key).cloned().ok_or(VolumeError::NotFound(key))
         })
     }
+
+    fn keeps_files(&self) -> bool {
+        self.keeps_files
+    }
+}
+
+/// Every fake file's date is this plus its size, so a cell can tell them apart.
+const DATED_FROM: u64 = 1_700_000_000;
+
+#[tokio::test]
+async fn a_backend_that_keeps_files_gets_every_files_size_and_date() {
+    let mut tree = FakeTree::new()
+        .with_dir("/top", &[("a.txt", false, 10), ("sub", true, 0)])
+        .with_dir("/top/sub", &[("b.txt", false, 5)])
+        .with_dir("/other", &[("c.txt", false, 7)]);
+    tree.keeps_files = true;
+
+    let boundary = ScanBoundary::silent();
+    let batch = scan_trees(
+        &tree,
+        &[PathBuf::from("/top"), PathBuf::from("/other/c.txt")],
+        &boundary,
+    )
+    .await
+    .expect("the batch");
+
+    let mut files = batch.files.expect("kept");
+    files.sort_by_key(|file| file.size);
+    let dated = |size: u64| ScannedFile {
+        size,
+        modified_at: Some(DATED_FROM + size),
+    };
+    assert_eq!(files, vec![dated(5), dated(7), dated(10)]);
+}
+
+#[tokio::test]
+async fn a_backend_that_does_not_keep_files_gets_none() {
+    let tree = FakeTree::new().with_dir("/top", &[("a.txt", false, 10)]);
+    let boundary = ScanBoundary::silent();
+    let batch = scan_trees(&tree, &[PathBuf::from("/top")], &boundary)
+        .await
+        .expect("the batch");
+    assert_eq!(batch.files, None);
 }
 
 fn item(name: &str, size: u64, is_directory: bool) -> SourceItemInfo {

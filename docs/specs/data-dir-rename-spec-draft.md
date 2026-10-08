@@ -21,10 +21,10 @@ Each maps a current path to its target:
 - **`~/Library/Application Support/com.veszelovszki.cmdr-dev/`**: `.../cmdr-dev/`
 - **`~/Library/Application Support/com.veszelovszki.cmdr-dev-<slug>/` (per-worktree)**: `.../cmdr-dev-<slug>/`
 - **`~/Library/Logs/com.veszelovszki.cmdr/`**: `~/Library/Logs/cmdr/`
-- **`~/Library/Caches/com.veszelovszki.cmdr/`**: `~/Library/Caches/cmdr/`. ⚠️ This path doesn't exist yet. The move of
-  the drive index into it is owned by [#203](https://github.com/vdavid/cmdr/issues/203) (which also renames the files to
-  `drive-index-{volume_id}.db`), and that item is not started either. **This doc owns the directory NAME, that one owns
-  what goes in it**; neither should restate the other.
+- **`~/Library/Caches/com.veszelovszki.cmdr/`**: `~/Library/Caches/cmdr/`. The drive index lives in its `drive-index/`
+  subfolder (`crates/cmdr-index/DETAILS.md` § "Where the stores live"), resolved by `config::drive_index_dir`, which
+  would need the same plain-name treatment. **This doc owns the directory NAME, that one owns what goes in it**; neither
+  should restate the other.
 
 Motivation: the `com.veszelovszki` prefix adds no value to the user or the developer; plain `cmdr` is friendlier. This
 is an aesthetic and ergonomics change.

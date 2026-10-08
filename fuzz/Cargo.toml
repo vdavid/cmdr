@@ -1,0 +1,104 @@
+[package]
+name = "cmdr-fuzz"
+version = "0.0.0"
+edition = "2024"
+license = "LicenseRef-BSL-1.1"
+publish = false
+
+# Outside the root workspace on purpose: the targets build on the pinned nightly
+# with sanitizer instrumentation, and cargo-fuzz keeps its own `target/` and
+# `Cargo.lock` here. `Cargo.lock` started as a copy of the root one, so the crates
+# under test resolve to the versions the app ships.
+[workspace]
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "=0.4.13"
+tokio = { version = "1", features = ["rt"] }
+
+cmdr-adb = { path = "../crates/cmdr-adb", features = ["fuzzing"] }
+cmdr-archive = { path = "../crates/cmdr-archive" }
+cmdr-s3 = { path = "../crates/cmdr-s3", features = ["fuzzing"] }
+cmdr-webdav = { path = "../crates/cmdr-webdav", features = ["fuzzing"] }
+
+# The app's own decoders, mirrored rather than reached through `cmdr`: building the
+# Tauri app with sanitizer instrumentation would cost hundreds of crates for a
+# handful of calls. Keep these specs identical to `apps/desktop/src-tauri/Cargo.toml`.
+exif = { package = "kamadak-exif", version = "0.6.1" }
+image = { version = "0.25.10", default-features = false, features = [
+  "rayon",
+  "bmp",
+  "dds",
+  "exr",
+  "ff",
+  "gif",
+  "hdr",
+  "ico",
+  "jpeg",
+  "png",
+  "pnm",
+  "qoi",
+  "tga",
+  "tiff",
+  "webp",
+] }
+pdf-extract = "0.12.0"
+
+# Each target is its own `bin` so libFuzzer links a single entry point.
+[[bin]]
+name = "adb_sync"
+path = "fuzz_targets/adb_sync.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "adb_shell"
+path = "fuzz_targets/adb_shell.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "webdav_propfind"
+path = "fuzz_targets/webdav_propfind.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "s3_xml"
+path = "fuzz_targets/s3_xml.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "archive_index"
+path = "fuzz_targets/archive_index.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "archive_entry_name"
+path = "fuzz_targets/archive_entry_name.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "pdf"
+path = "fuzz_targets/pdf.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "image_headers"
+path = "fuzz_targets/image_headers.rs"
+test = false
+doc = false
+bench = false

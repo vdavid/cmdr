@@ -184,7 +184,7 @@ mcp_tools! {
 
     // ── Tabs ────────────────────────────────────────────────────────────────
     "tab" => {
-        desc: "Manage a pane's tabs: new, close, close_others, activate, set_pinned, or reopen (restore the last-closed tab). tabId defaults to the active tab where it applies; see each pane's tabs in cmdr://state.",
+        desc: "Manage a pane's tabs: new, close, close_others, activate, set_pinned, reopen (restore the last-closed tab), or move (reorder with toIndex, or send to the other pane with toPane). tabId defaults to the active tab where it applies; see each pane's tabs in cmdr://state.",
         schema: schemas::tab_schema(),
         consumers: &[Consumer::AiClient],
         access: Access::Write,
@@ -424,7 +424,7 @@ mcp_tools! {
     // debugging instrument, and its declaration has no business riding every turn of every Ask
     // Cmdr conversation.
     "memory_diagnostics" => {
-        desc: "What this Cmdr process is holding right now: the physical footprint, the Rust (mimalloc) heap split into live data and allocator slack, the system malloc zones, SQLite's page-cache slab, and the kernel's VM map folded by tag with a per-tag region-size histogram. The only reading that spans both allocators. macOS only.",
+        desc: "What this Cmdr process is holding right now: the physical footprint, the Rust heap tagged by the global allocator holding it (mimalloc or system) and split into live data and allocator slack, the other malloc zones, SQLite's page-cache slab, and the kernel's VM map folded by tag with a per-tag region-size histogram. The only reading that spans every allocator. macOS only.",
         schema: schemas::memory_diagnostics_schema(),
         consumers: &[Consumer::AiClient],
         access: Access::Read,

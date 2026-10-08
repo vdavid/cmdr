@@ -233,10 +233,6 @@ export function selectionBytesFromFileSize(sel: Selection | null, file: FileExte
  * and `viewer_write_range_to_file` accept. Endpoints come out in document order, so a
  * reversed drag reads the same range. Returns `null` for no selection.
  *
- * ❗ `RangeEnd`'s `line` field is the wire's spelling of the same ROW coordinate this
- * module counts in; the backend resolves it through `file_viewer::rows`. `RangeEnd::Eof`
- * is untouched.
- *
  * An end at `EOF_ROW` becomes `RangeEnd::Eof`, so the backend resolves the end of the
  * file itself instead of receiving a row index no file has. That holds whether or not a
  * row count has arrived since the selection was made: `EOF_ROW` means end-of-file either
@@ -246,8 +242,8 @@ export function toRangeEnds(sel: Selection | null): { anchor: RangeEnd; focus: R
   if (sel === null) return null
   const { start, end } = normaliseSelection(sel)
   return {
-    anchor: { kind: 'line', line: start.row, offset: start.offset },
-    focus: end.row === EOF_ROW ? { kind: 'eof' } : { kind: 'line', line: end.row, offset: end.offset },
+    anchor: { kind: 'row', row: start.row, offset: start.offset },
+    focus: end.row === EOF_ROW ? { kind: 'eof' } : { kind: 'row', row: end.row, offset: end.offset },
   }
 }
 
@@ -343,18 +339,18 @@ export function describeSelectionForAt(sel: Selection | null, getRow: (row: numb
   const totalChars = countSelectedChars(start, end, getRow)
   const endLine = start.row === end.row ? startLine : lineOfRow(end.row, getRow)
   if (startLine === null || endLine === null) {
-    return tString('viewer.selection.charsOnly', { chars: String(totalChars) })
+    return tString('viewer.selection.charsOnly', { chars: totalChars })
   }
   if (startLine === endLine) {
     return tString('viewer.selection.singleLine', {
-      chars: String(totalChars),
+      chars: totalChars,
       line: String(startLine + 1),
     })
   }
   return tString('viewer.selection.multiLine', {
     startLine: String(startLine + 1),
     endLine: String(endLine + 1),
-    chars: String(totalChars),
+    chars: totalChars,
   })
 }
 
@@ -401,8 +397,8 @@ export interface RowMetrics {
  * Cmdr ended at a segment boundary (`continues`) is followed by no byte at all: the next
  * row resumes the same line. The file's last row is followed by nothing either, so a file
  * with no trailing newline stops being counted as if it had one. Assuming a delimiter per
- * row over-counts a minified file by a byte every 20 000, and those bytes pick the 10 MiB
- * confirm tier and the 100 MiB refusal (invariant I3).
+ * row over-counts a minified file by a byte every 20 000, and those bytes pick the 10 MB
+ * confirm tier and the 100 MB refusal (invariant I3).
  */
 export function rowMetrics({
   text,

@@ -234,12 +234,10 @@ The header `检查更改` has no `正在` (a header, not live status), like its 
 - Stop in the rollback tooltip `停止`, ❌ never `取消` (Cancel keeps the finished files; the tooltip exists to say
   rollback doesn't).
 
-## 无法确认的重命名 + 名称不可用 + 重命名链计数 (`fileExplorer.rename.unconfirmed*`, `fileOperations.validation.nameNotUsable`, `fileExplorer.rename.chainKeptOriginalName*`)
+## 名称不可用 + 重命名链计数 (`fileOperations.validation.nameNotUsable`, `fileExplorer.rename.chainKeptOriginalName*`)
 
-- "Couldn't confirm" family: `无法确认…是否已…`, then `这个宗卷可能比较慢，所以…也许已经…了`, the same hedge across
-  rename, folder creation, and trash.
-- `名称也许已经改好了` mirrors `保留了原来的名称` (the opposite outcome) on the same noun; `重命名` is a verb and reads
-  badly as a subject. ❌ The unconfirmed toast never says the file kept its name.
+- "Couldn't confirm" (`fileExplorer.pane.trashUnconfirmedToast`): `无法确认…是否已…`, then
+  `这个宗卷可能比较慢，但…也许已经…了`.
 - Chain toast: `{reason}` stays last after `：`, hung on `“{name}”…也一样` alone; macOS's merged `“X”和其他 N 个文件都…`
   would bind it to every file.
 - `这个文件名不能使用` / `这个文件夹名不能使用` (Finder `不能使用名称`), no `。`: it's composed into `{reason}。`
@@ -303,14 +301,14 @@ clash. Description `在当前文件夹中为选中的文件创建副本`.
 
 - Sentences land after a colon in `fileExplorer.pane.ejectFailedToast` / `.disconnectFailedToast`, so they continue it.
   Don't echo the wrapper's verb: `没法断开它`, `没有连接需要断开`; `没法` is the spoken stand-in for a second `无法`.
-- `驱动器` over Finder's `磁盘` (the English says "drive"). Unplug `拔下线缆` (the subject is already `设备`).
-- A timeout isn't a failure: `可能过一会儿它会自己推出`.
-- The named refusals end like `unmountRefused` (`…，然后再次推出。`). Singular and plural app differ only in `它` /
-  `它们`. `其他 App` takes no measure word (`几个` would invent a count); `Intl.ListFormat` supplies the joiner.
-- `请关闭它在上面打开的内容` (`内容`, since "anything" is wider than files; close, not quit). A disk image `还开着` (the
-  English says "open", unlike the "mounted" `挂载着` elsewhere). `macOS 还在处理这个驱动器`: `处理`, since the system's
-  background work isn't an app using it.
-- `请稍等一会儿` / `请稍等片刻` keep the English's two lengths. Cmdr's own bug: `发送一份报告`, never `发送错误报告`.
+- Unplug `拔下线缆` (`设备` is the subject). A timeout isn't failure: `可能过一会儿它会自己推出`.
+- Either wrapper may concern a share or a phone, so the refusals share `X 还开着那里的文件。…，然后再试一次。`, never
+  `这个驱动器` or `再次推出`. `请把它们关掉` points at the files, so one tail serves one app or several. `其他 App`
+  takes no measure word (`几个` would invent a count); `Intl.ListFormat` supplies the joiner. The aside keeps Cmdr as
+  subject, never `我们`.
+- A disk image `还开着` (the English says "open", unlike the "mounted" `挂载着` elsewhere); stored there → `那里存放的`.
+- `请稍等一会儿` / `请稍等片刻` mirror the two lengths. Cmdr's own bug: `发送一份报告`, never `发送错误报告`.
+- Processes go last (`分别是 {processes}`): `名为…的` can't hold `其他`.
 
 ## 废纸篓提示条：撤销与前往废纸篓（`fileOperations.trash.*` + `commands.fileGoToTrash.*`）
 
@@ -437,12 +435,11 @@ English contrasts packages with app bundles.
 
 - A date column heading carries the time noun: `上次使用时间` (Keychain Access); the bare `上次使用` is mid-sentence.
 - Type `类型` (protocol), never Finder's `种类` (file kind).
-- Status set `已连接` / `已保存` / `已退出登录`; found nearby `在附近发现` without `已` (the user didn't cause it);
-  signed out is never `被拒绝` / `认证失败`.
+- Signed out is never `被拒绝` / `认证失败` (the status-label rule itself is in `style.md`).
 - Waiting for you `等你核对主机密钥` over `等待用户确认` (reads like a system log). Never `从未`, not `永不` (a
   setting's "never again").
-- Show servers `显示服务器` (English Show → `显示`; `前往` only for Go to). Pin/unpin `固定/取消固定服务器`, slash
-  unspaced. Disconnect server `断开服务器连接`, never `推出`.
+- Show servers `显示服务器` (English Show → `显示`; `前往` only for Go to). Disconnect server `断开服务器连接`, never
+  `推出`.
 - The pin toasts don't say `固定`, like the English; the unpin toast's second sentence answers "was it deleted?".
 - A NAS "turn on" is power, `开机`.
 - The account suffix is a noun label, `身份：{username}` / `身份：客人` (`servers.hub.shareAccount`/`.guestAccount`):
@@ -450,8 +447,7 @@ English contrasts packages with app bundles.
 
 ## 添加服务器的模态表单、SSH 主机密钥确认、前往路径的预览行（`servers.sheet.*`、`servers.hostKey.*`、`servers.paneState.signedOut`/`.signIn`/`.hostKeyChanged*`、`goToPath.dialog.opensServer`/`.addsServer`、`commands.serversConnect.label`）
 
-- Save `保存`, never Apple's older `存储`. Sign in to X `登录 {name}`, no preposition; signed out
-  `已从 {name} 退出登录`.
+- Sign in to X `登录 {name}`, no preposition; signed out `已从 {name} 退出登录`.
 - Passphrase `密码短语`, so the key's is `密钥密码短语`: a bare `密码` would read as the account password.
 - Guest `客人` (macOS zh-CN; `来宾` is Microsoft's); `servers.sheet.connectAsGuest`,
   `fileExplorer.network.browser.status.guest`, and `errors.shareList.signingRequired` change together.
@@ -669,3 +665,8 @@ in prose.
 
 - Cmdr's failed step is `移除` (like `正在移除原文件…`); the user's is `删除`.
 - `什么都没丢失` repeats `deviceDisconnected.sided.destination.copy`, not `originalsKeptAside`'s "thrown away" line.
+
+## 组织管理的设置（`settings.managed.*`、`ai.managed.*`、`updates.status.managedOff`、`errorReporter.dialog.managedOff`）
+
+- Managed `由你的组织管理` (Apple MDM copy: `受…组织管理`); turned off `你的组织关闭了…`, a plain past act, no apology.
+- Card values stay terse: `关闭` (the switch word, `settings.ai.provider.opt.off`), `只限本地`, `只能手动检查`.

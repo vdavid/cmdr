@@ -60,9 +60,20 @@ No query got slower.
 - **Writes**: only directory rows enter the index, so file inserts, updates, and deletes don't touch it. A full scan
   pays the equivalent of the build, ~0.35 s of CPU, spread over minutes of walking.
 
+## Follow-up: the direct-symlink test got its own partial index (2026-10-01, #320)
+
+The direct-symlink test (`parent_id = ? AND is_symlink = 1`) had the same shape and cost ~62 ms on `2998255`. It runs
+only when a symlink appears, goes, or changes, so it was first left alone; it now has
+`idx_child_symlinks ON entries (parent_id) WHERE is_symlink = 1`, created on open like `idx_child_dirs`. Measured on a
+fresh `.backup` of prod's `index-root.db` (5,611,289 rows, 154,156 of them symlinks), `sqlite3 .timer`, warm, load
+average ~40 (other agents building), so the "before" figures run high:
+
+- **Query**: 241–316 ms → ~8 µs on the 200,000-file folder `1179741`, 147–161 ms → ~9 µs on the 162,496-entry folder
+  `1600180`. The plan moves from `idx_parent_name_folded (parent_id=?)` to `idx_child_symlinks`.
+- **Size**: 1,863,680 bytes (`dbstat`).
+- **Build**: 3.1 s wall cold, 0.6 s of it CPU.
+- **Writes**: only symlink rows enter it, so ordinary file and directory writes don't touch it.
+
 ## Left as it is
 
-- **The direct-symlink test** (`parent_id = ? AND is_symlink = 1`) has the same shape and costs ~62 ms on `2998255`, but
-  it runs only when a symlink appears, goes, or changes. A second partial index would serve it; not worth it at that
-  rate.
 - **`recompute_dir_stats_from_children`**'s `SUM` over every child reads every child by definition.

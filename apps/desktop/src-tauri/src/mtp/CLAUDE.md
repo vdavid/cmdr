@@ -31,13 +31,15 @@ rules (`resources/99-cmdr-mtp.rules`). The frontend (`src/lib/mtp/CLAUDE.md`) is
 - **❌ The session layer never registers volumes.** `connect()` attaches storages through its `MtpVolumeRegistrar`
   (`volume_wiring::volume_registrar`), synchronously: the attach must finish before the event loop starts. ❌ The
   `volumes-changed` broadcast lives in that hook and nowhere else. New backends copy this.
-- **`delete` has two scopes; only `delete_mtp_object` may recurse.** `MtpVolume::delete` passes
+- **`delete` has two scopes, and nothing in the app recurses.** `MtpVolume::delete` passes
   `MtpDeleteScope::SingleNode`, so a folder with children is refused (`DirectoryNotEmpty`) and nothing is deleted. ❌
   Never widen a caller to `Tree`: the same-volume move's "a Skipped child keeps its only copy" guarantee IS that
   refusal.
 - **macOS ptpcamerad suppression** runs before connecting and is restored when the last device leaves, on exit, or on
   MTP being disabled; a failed one falls back to the `ExclusiveAccess` dialog. ❌ `needs_ptpcamerad_suppression` keeps it
   off an all-VIRTUAL device set: an E2E run once took `ptpcamerad` down on the developer's machine.
+- **An automated run sees only its virtual device**: `claimable_device_ids` drops real hardware from every enumeration
+  the watcher reads, or a plugged-in phone's ptpcamerad dialog fails random specs.
 - **Error events the frontend depends on**: `mtp-exclusive-access-error` (ptpcamerad still holds the device, carrying
   the blocking process name from `ioreg`, `None` on Linux) and `mtp-permission-error` (Linux udev rules missing →
   `MtpPermissionDialog`).

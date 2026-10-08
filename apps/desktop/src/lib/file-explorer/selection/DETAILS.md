@@ -13,8 +13,9 @@ Depth for the status-bar / header components. `CLAUDE.md` holds the must-knows.
   tier-tagged span (or one per digit triad in bytes mode). Tier color tracks the underlying byte magnitude in every mode
   via `dynamicTierIndex(bytes, format)` from `format-utils.ts`. The kilobyte label casing (`kB` vs `KB`) follows
   `format`.
-- `tierClassForUnit(unit)`: maps the unit suffix from `$lib/units`'s `formatFileSizeWithFormat` (`bytes`, `KB`/`kB`,
-  `MB`, `GB`, `TB`, `PB`) to one of `sizeTierClasses`. TB and PB cap at `size-tb`.
+- `colorizeSize(size)`: wraps a `TieredSize` (`formatByteSizeTiered` from `$lib/units`) in its `sizeTierClasses` span,
+  for HTML strings (tooltips, error copy). The tier comes with the size, never from its unit word, which is translated
+  copy (`common.sizeUnit.*`).
 - `formatDate(timestamp)`: Unix seconds → `"YYYY-MM-DD HH:MM:SS"` local time.
 - `buildDateTooltip(entry, formatter)`: returns `{ html }`. Each timestamp is rendered via the `formatter` callback (the
   caller passes `formattedDate` from `reactive-settings.svelte.ts`), then the year portion of each line is wrapped in an

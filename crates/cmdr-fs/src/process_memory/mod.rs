@@ -4,7 +4,9 @@
 //! watchdog (machine-protection thresholds) and the log RAM gauge
 //! (the app's `logging::ram_gauge`) read the SAME metrics the SAME cheap way.
 //! Policy (thresholds, what to do about a number) lives with the caller — the
-//! app's `indexing::resources::memory_watchdog`; this module only reads.
+//! app's `indexing::resources::memory_watchdog`; this module only reads. It also
+//! owns WHICH global allocator the app runs on (`allocator.rs`), because every
+//! reader below has to know.
 //!
 //! Six readers, four different accountants:
 //!
@@ -14,26 +16,33 @@
 //!
 //! - [`current_phys_footprint`] / `query_task_vm_info`: the kernel's view.
 //! - `query_basic_info`: RSS and its high-water mark.
-//! - `query_mimalloc_heap`: what OUR allocator has committed.
-//! - `query_heap_census` (`heap_census.rs`): how much of that is live data.
-//! - `query_system_malloc_zones`: what the SYSTEM allocator holds.
+//! - `query_rust_heap` / `query_rust_heap_snapshot` (`rust_heap.rs`): what the
+//!   global allocator holds for the Rust heap, and (snapshot only) how much of
+//!   it is live.
+//! - `query_system_malloc_zones`: what the malloc zones hold BEYOND the Rust heap.
 //! - `query_vm_regions` (`vm_regions.rs`): the kernel's VM map folded by tag,
 //!   plus a per-tag histogram of distinct region SIZES.
 //!
-//! **The middle two do not overlap, and neither alone is "the heap".** Cmdr sets
-//! mimalloc as the global allocator (`main.rs`), and mimalloc is not a
-//! registered macOS malloc zone: `malloc_zone_statistics` and
-//! `malloc_get_all_zones` cannot see a single byte of the Rust heap. They see
-//! WebKit, Objective-C, and C-library allocations only. Reading zone totals as
-//! "the app's heap" is how a 16.5 GB `phys_footprint` got reported as a 1.6 GB
-//! heap during the 2026-07 runaway.
+//! **The middle two never overlap, and which zones they split depends on the
+//! allocator.**
 //!
-//! **`vmmap` gotcha:** mimalloc tags its arena `mmap`s with `os_tag` 100, which
-//! macOS defines as `VM_MEMORY_IOACCELERATOR`. So in `vmmap` / `footprint`
-//! output the `IOAccelerator` rows ARE the Rust heap, not GPU memory (verified
-//! on macOS 15 with `MallocStackLogging=1` + `vmmap -fullStacks`: every 128 MB
-//! `IOAccelerator` region backtraces to `mmap` ← `_mi_prim_alloc` ←
-//! `mi_arena_reserve`, 2026-07). Don't read those rows as graphics.
+//! - **Under mimalloc**, the Rust heap is mimalloc's arenas, and mimalloc is not a
+//!   registered macOS malloc zone: `malloc_zone_statistics` and
+//!   `malloc_get_all_zones` cannot see a single byte of it, so every zone belongs
+//!   to WebKit, Objective-C, and C code. Reading zone totals as "the app's heap"
+//!   is how a 16.5 GB `phys_footprint` got reported as a 1.6 GB heap during the
+//!   2026-07 runaway.
+//! - **Under the system allocator**, the Rust heap is the default zone, shared
+//!   with Objective-C and C code, and `query_system_malloc_zones` leaves that
+//!   zone out.
+//!
+//! **`vmmap` gotcha, mimalloc builds only:** mimalloc tags its arena `mmap`s with
+//! `os_tag` 100, which macOS defines as `VM_MEMORY_IOACCELERATOR`. So in `vmmap` /
+//! `footprint` output the `IOAccelerator` rows ARE the Rust heap, not GPU memory
+//! (verified on macOS 15 with `MallocStackLogging=1` + `vmmap -fullStacks`: every
+//! 128 MB `IOAccelerator` region backtraces to `mmap` ← `_mi_prim_alloc` ←
+//! `mi_arena_reserve`, 2026-07). Don't read those rows as graphics. Under the
+//! system allocator the Rust heap is in the `Malloc *` rows instead.
 //!
 //! **We report `phys_footprint`, not `resident_size` (RSS).** RSS counts
 //! graphics and shared mappings that are NOT real memory pressure.
@@ -47,6 +56,9 @@
 //!
 //! On non-macOS platforms [`current_phys_footprint`] returns `None` (the Mach
 //! queries don't exist); callers degrade gracefully.
+
+mod allocator;
+pub use allocator::{GLOBAL_ALLOC, GLOBAL_ALLOCATOR, GlobalAlloc, GlobalAllocator};
 
 /// The cheap read: the current process's `phys_footprint` in bytes, or `None`
 /// if the query failed or the platform has no Mach `task_info`.
@@ -234,57 +246,19 @@ pub fn query_basic_info() -> Option<BasicInfo> {
     }
 }
 
-// ── mimalloc: OUR allocator ──────────────────────────────────────────
-
-/// What mimalloc accounts for. mimalloc is Cmdr's global allocator, so this
-/// covers essentially every Rust allocation in the process, indexing included.
-#[cfg(target_os = "macos")]
-pub struct MimallocHeap {
-    /// Bytes mimalloc has committed from the OS: live allocations plus its own
-    /// free lists and arena slack. mimalloc exposes no cheap process-wide
-    /// "bytes in use", so committed is the number that tracks the Rust heap.
-    pub committed: u64,
-    /// High-water mark of `committed` over the process lifetime.
-    pub peak_committed: u64,
-}
-
-/// Ask mimalloc how much it has committed. This is the only way to see the Rust
-/// heap: the macOS zone APIs are blind to it (see the module docs).
-#[cfg(target_os = "macos")]
-pub fn query_mimalloc_heap() -> MimallocHeap {
-    let mut current_commit: usize = 0;
-    let mut peak_commit: usize = 0;
-
-    // SAFETY: every `mi_process_info` parameter is an independent, nullable out-pointer.
-    // We pass null for the six fields we don't read and pointers to two initialized locals
-    // for the two we do; mimalloc only writes through non-null ones and reads none. It is
-    // documented thread-safe and needs no initialization beyond the allocator already being
-    // in use as our global allocator.
-    unsafe {
-        libmimalloc_sys::mi_process_info(
-            std::ptr::null_mut(),
-            std::ptr::null_mut(),
-            std::ptr::null_mut(),
-            std::ptr::null_mut(),
-            std::ptr::null_mut(),
-            &mut current_commit,
-            &mut peak_commit,
-            std::ptr::null_mut(),
-        );
-    }
-
-    MimallocHeap {
-        committed: current_commit as u64,
-        peak_committed: peak_commit as u64,
-    }
-}
+// ── The Rust heap, from whichever allocator is global ───────────────
 
 #[cfg(target_os = "macos")]
+mod rust_heap;
+#[cfg(target_os = "macos")]
+pub use rust_heap::{
+    HeapCensus, LARGEST_BLOCKS, RustHeap, RustHeapSnapshot, query_rust_heap, query_rust_heap_snapshot,
+};
+
+#[cfg(all(target_os = "macos", cmdr_mimalloc))]
 mod heap_census;
-#[cfg(target_os = "macos")]
-pub use heap_census::{HeapCensus, LARGEST_BLOCKS, query_heap_census};
 
-// ── System malloc zones: everything EXCEPT our allocator ─────────────
+// ── System malloc zones: everything BEYOND the Rust heap ─────────────
 
 /// `malloc_statistics_t` from `<malloc/malloc.h>`.
 // DEFAULT-OK: an all-zero out-param is what `malloc_zone_statistics` expects and fills
@@ -302,8 +276,13 @@ struct MallocStatistics {
 #[cfg(target_os = "macos")]
 unsafe extern "C" {
     /// With a NULL zone, aggregates statistics across every REGISTERED zone in
-    /// the process. mimalloc doesn't register one, so this never sees the Rust heap.
+    /// the process. mimalloc doesn't register one, so under mimalloc this never
+    /// sees the Rust heap.
     fn malloc_zone_statistics(zone: *mut libc::c_void, stats: *mut MallocStatistics);
+    /// The zone `malloc` serves from. A forwarding wrapper: its address isn't
+    /// the registered default zone's, but its statistics are.
+    #[cfg(not(cmdr_mimalloc))]
+    fn malloc_default_zone() -> *mut libc::c_void;
     /// Fills `*addresses` with a pointer to an array of `*count` zone addresses.
     /// A NULL `reader` uses the default in-process reader.
     fn malloc_get_all_zones(
@@ -316,35 +295,28 @@ unsafe extern "C" {
     fn malloc_get_zone_name(zone: *mut libc::c_void) -> *const libc::c_char;
 }
 
-/// What the system malloc zones hold: WebKit, Objective-C, and C-library
-/// allocations. Explicitly NOT the Rust heap (see the module docs).
+/// What the malloc zones hold BEYOND the Rust heap: WebKit, Objective-C, and
+/// C-library allocations. Under mimalloc that's every registered zone; under the
+/// system allocator, every zone but the default one, which [`query_rust_heap`]
+/// reads. Either way it never overlaps the Rust heap reading (see the module docs).
 #[cfg(target_os = "macos")]
 pub struct SystemMallocZones {
     /// Bytes the zones report as handed out.
     pub in_use: u64,
     /// Bytes the zones hold from the OS, in use or not.
     pub reserved: u64,
-    /// How many zones were registered at snapshot time.
+    /// How many zones were counted.
     pub zone_count: u32,
-    /// The largest zone by in-use bytes: `(name, in_use)`.
+    /// The largest counted zone by in-use bytes: `(name, in_use)`.
     pub largest_zone: Option<(String, u64)>,
 }
 
-/// Sum every registered malloc zone, plus the zone count and the largest zone.
+/// Sum the malloc zones beyond the Rust heap, plus their count and the largest.
 #[cfg(target_os = "macos")]
 pub fn query_system_malloc_zones() -> SystemMallocZones {
-    // SAFETY: a NULL zone pointer asks `malloc_zone_statistics` for the
-    // all-zones aggregate (documented behavior); `agg` is a `#[repr(C)]` match
-    // of `malloc_statistics_t` and is fully written by the call.
-    let agg = unsafe {
-        let mut agg = MallocStatistics::default();
-        malloc_zone_statistics(std::ptr::null_mut(), &mut agg);
-        agg
-    };
-
     let mut zones_total = SystemMallocZones {
-        in_use: agg.size_in_use as u64,
-        reserved: agg.size_allocated as u64,
+        in_use: 0,
+        reserved: 0,
         zone_count: 0,
         largest_zone: None,
     };
@@ -361,16 +333,21 @@ pub fn query_system_malloc_zones() -> SystemMallocZones {
     if kr != 0 || addresses.is_null() {
         return zones_total;
     }
-    zones_total.zone_count = count;
 
     // SAFETY: on success `malloc_get_all_zones` set `addresses` to a valid array
     // of `count` zone addresses in this process; we read exactly `count` of them
     // and never mutate or free the buffer.
     let zones = unsafe { std::slice::from_raw_parts(addresses, count as usize) };
 
+    // libmalloc keeps the default zone first in its registry. Under the system
+    // allocator that zone is the Rust heap, so it's [`query_rust_heap`]'s to
+    // report, not ours (a test pins the premise: a `malloc` block never shows up
+    // here).
+    let skip = usize::from(GLOBAL_ALLOCATOR == GlobalAllocator::System);
+
     let mut largest = 0u64;
     let mut largest_name: Option<String> = None;
-    for &addr in zones {
+    for &addr in zones.iter().skip(skip) {
         let zone = addr as *mut libc::c_void;
         if zone.is_null() {
             continue;
@@ -383,6 +360,9 @@ pub fn query_system_malloc_zones() -> SystemMallocZones {
             stats
         };
         let in_use = stats.size_in_use as u64;
+        zones_total.in_use += in_use;
+        zones_total.reserved += stats.size_allocated as u64;
+        zones_total.zone_count += 1;
         if in_use > largest {
             largest = in_use;
             // SAFETY: `zone` is a live zone pointer; `malloc_get_zone_name`
@@ -408,6 +388,20 @@ pub fn query_system_malloc_zones() -> SystemMallocZones {
     zones_total
 }
 
+/// The default zone's statistics: every `malloc` in the process, so under the
+/// system allocator the Rust heap plus Objective-C and C code.
+#[cfg(all(target_os = "macos", not(cmdr_mimalloc)))]
+fn default_zone_statistics() -> MallocStatistics {
+    // SAFETY: `malloc_default_zone` takes nothing and returns the process's
+    // default zone, which lives as long as the process. `stats` is a
+    // `#[repr(C)]` match of `malloc_statistics_t` and is fully written.
+    unsafe {
+        let mut stats = MallocStatistics::default();
+        malloc_zone_statistics(malloc_default_zone(), &mut stats);
+        stats
+    }
+}
+
 // ── The kernel's VM map ──────────────────────────────────────────────
 
 /// The fifth reader, and the only one that spans both allocators: see
@@ -415,7 +409,7 @@ pub fn query_system_malloc_zones() -> SystemMallocZones {
 #[cfg(target_os = "macos")]
 mod vm_regions;
 #[cfg(target_os = "macos")]
-pub use vm_regions::{MIMALLOC_ARENA_TAG, RegionSizeGroup, TagUsage, VmRegionMap, query_vm_regions};
+pub use vm_regions::{MALLOC_TAGS, MIMALLOC_ARENA_TAG, RegionSizeGroup, TagUsage, VmRegionMap, query_vm_regions};
 
 #[cfg(all(test, target_os = "macos"))]
 mod tests {
@@ -435,60 +429,8 @@ mod tests {
     }
 
     #[test]
-    fn system_malloc_zones_sum_is_positive() {
+    fn the_zones_beyond_the_rust_heap_hold_at_least_what_they_hand_out() {
         let zones = query_system_malloc_zones();
-        assert!(zones.in_use > 0, "system malloc zones in-use should be positive");
         assert!(zones.reserved >= zones.in_use, "reserved should be >= in-use");
-        assert!(zones.zone_count >= 1, "there should be at least one malloc zone");
-    }
-
-    #[test]
-    fn mimalloc_reports_a_heap_the_malloc_zones_cannot_see() {
-        let heap = query_mimalloc_heap();
-        assert!(heap.committed > 0, "mimalloc should report committed bytes");
-        assert!(
-            heap.peak_committed >= heap.committed,
-            "peak should be >= current committed"
-        );
-    }
-
-    #[test]
-    fn a_mimalloc_allocation_is_counted_by_mimalloc_and_invisible_to_the_malloc_zones() {
-        // The whole reason `query_mimalloc_heap` exists: the macOS zone APIs
-        // cannot see mimalloc, so a watchdog reading only zones under-reports the
-        // heap it polices by orders of magnitude.
-        //
-        // The allocation goes through `mi_malloc` directly rather than through
-        // Rust's `Vec`, because `#[global_allocator]` is set in `main.rs` — the
-        // shipped binary runs on mimalloc, but this unit-test harness does not.
-        const CHUNK: usize = 512 * 1024 * 1024;
-
-        let zones_before = query_system_malloc_zones().in_use;
-        let mimalloc_before = query_mimalloc_heap().committed;
-
-        // SAFETY: `mi_malloc` returns an owned block of at least `CHUNK` bytes or
-        // null; we check for null, write only within `CHUNK` bytes of it, and hand
-        // the same pointer back to `mi_free` exactly once.
-        let (zones_after, mimalloc_after) = unsafe {
-            let block = libmimalloc_sys::mi_malloc(CHUNK) as *mut u8;
-            assert!(!block.is_null(), "mi_malloc should hand back a {CHUNK}-byte block");
-            // Touch every page so the bytes are really committed, not just reserved.
-            std::ptr::write_bytes(block, 1u8, CHUNK);
-            let readings = (query_system_malloc_zones().in_use, query_mimalloc_heap().committed);
-            libmimalloc_sys::mi_free(block as *mut core::ffi::c_void);
-            readings
-        };
-
-        let mimalloc_growth = mimalloc_after.saturating_sub(mimalloc_before);
-        assert!(
-            mimalloc_growth >= (CHUNK as u64) / 2,
-            "mimalloc should account for most of its own {CHUNK}-byte block, saw {mimalloc_growth}"
-        );
-
-        let zone_growth = zones_after.saturating_sub(zones_before);
-        assert!(
-            zone_growth < (CHUNK as u64) / 4,
-            "the system malloc zones should stay blind to the mimalloc heap, but grew by {zone_growth}"
-        );
     }
 }

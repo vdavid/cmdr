@@ -85,6 +85,129 @@ async fn test_multi_file_copy_overwrite_conflict() {
     assert_eq!(stream.next_chunk().await.unwrap().unwrap(), b"new version");
 }
 
+/// An object store (`publishes_writes_whole`) takes a file→file Overwrite in
+/// place, top-level and deep in a merge alike: the write goes to the original's
+/// own name and replaces it only when complete. ❗ The destination refuses every
+/// rename here, so a temp-and-land path would fail the copy outright: success
+/// is the proof that nothing staged.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn test_overwrite_on_a_whole_publishing_destination_replaces_in_place() {
+    let source: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Source").with_space_info(10_000_000, 10_000_000));
+    let dest: Arc<dyn Volume> = Arc::new(
+        InMemoryVolume::new("Dest")
+            .with_space_info(10_000_000, 10_000_000)
+            .with_whole_publish()
+            .with_rename_failing(VolumeError::NotSupported),
+    );
+    source
+        .create_file(Path::new("/file.txt"), b"new version")
+        .await
+        .unwrap();
+    dest.create_file(Path::new("/file.txt"), b"old version").await.unwrap();
+    source.create_directory(Path::new("/album")).await.unwrap();
+    source
+        .create_file(Path::new("/album/photo.jpg"), b"new photo")
+        .await
+        .unwrap();
+    dest.create_directory(Path::new("/album")).await.unwrap();
+    dest.create_file(Path::new("/album/photo.jpg"), b"old photo")
+        .await
+        .unwrap();
+
+    let config = VolumeCopyConfig {
+        conflict_resolution: ConflictResolution::Overwrite,
+        ..VolumeCopyConfig::default()
+    };
+    let result = copy_volumes_with_progress(
+        Arc::new(CollectorEventSink::new()),
+        "test-op-overwrite-in-place",
+        &make_state(),
+        Arc::clone(&source),
+        &[PathBuf::from("/file.txt"), PathBuf::from("/album")],
+        Arc::clone(&dest),
+        Path::new("/"),
+        &config,
+    )
+    .await;
+
+    assert!(result.is_ok(), "the in-place overwrite must land: {result:?}");
+    let mut stream = dest.open_read_stream(Path::new("/file.txt")).await.unwrap();
+    assert_eq!(stream.next_chunk().await.unwrap().unwrap(), b"new version");
+    let mut stream = dest.open_read_stream(Path::new("/album/photo.jpg")).await.unwrap();
+    assert_eq!(stream.next_chunk().await.unwrap().unwrap(), b"new photo");
+    let names: Vec<String> = dest
+        .list_directory(Path::new("/"), None)
+        .await
+        .unwrap()
+        .into_iter()
+        .map(|entry| entry.name)
+        .collect();
+    assert!(
+        names.iter().all(|name| !name.contains(".cmdr-tmp-")),
+        "no temp was ever minted: {names:?}"
+    );
+}
+
+/// ❗ A failed in-place write leaves the user's ORIGINAL at the name, so nothing
+/// there is the copy's to clean. A cleanup that read the final name as "our
+/// partial" (the way a caller-claimed staged name is) would delete the very file
+/// the protocol just kept safe.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn test_a_failed_in_place_overwrite_leaves_the_original() {
+    use crate::file_system::write_operations::transfer::volume::{FaultyOp, FaultyVolume};
+
+    let source: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Source").with_space_info(10_000_000, 10_000_000));
+    let inner = Arc::new(
+        InMemoryVolume::new("Dest")
+            .with_space_info(10_000_000, 10_000_000)
+            .with_whole_publish(),
+    );
+    source
+        .create_file(Path::new("/file.txt"), b"new version")
+        .await
+        .unwrap();
+    inner.create_file(Path::new("/file.txt"), b"old version").await.unwrap();
+    let faulty = FaultyVolume::wrapping(Arc::clone(&inner))
+        .failing_call(
+            FaultyOp::WriteFromStream,
+            1,
+            VolumeError::PermissionDenied {
+                path: "/file.txt".to_string(),
+                raw_os_error: None,
+            },
+        )
+        .arc();
+    let dest: Arc<dyn Volume> = faulty.clone();
+
+    let config = VolumeCopyConfig {
+        conflict_resolution: ConflictResolution::Overwrite,
+        ..VolumeCopyConfig::default()
+    };
+    let result = copy_volumes_with_progress(
+        Arc::new(CollectorEventSink::new()),
+        "test-op-failed-in-place",
+        &make_state(),
+        Arc::clone(&source),
+        &[PathBuf::from("/file.txt")],
+        Arc::clone(&dest),
+        Path::new("/"),
+        &config,
+    )
+    .await;
+
+    assert!(
+        faulty.fault_fired(FaultyOp::WriteFromStream),
+        "the write must have been refused"
+    );
+    assert!(result.is_err(), "a refused write fails the copy: {result:?}");
+    let mut stream = inner.open_read_stream(Path::new("/file.txt")).await.unwrap();
+    assert_eq!(
+        stream.next_chunk().await.unwrap().unwrap(),
+        b"old version",
+        "the original must survive a failed in-place overwrite"
+    );
+}
+
 /// File→folder overwrite (volume copy), answered on a Stop prompt for THIS
 /// pair: source is a file, dest holds a folder at the same path. That answer
 /// must delete the dest folder (recursively) before the streaming writer lands

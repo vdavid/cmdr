@@ -36,7 +36,7 @@ export function groupByCategory(vols: VolumeInfo[]): VolumeGroup[] {
     } else if (category === 'network') {
       // ❗ The hub row is here whatever `network.enabled` says. That switch gates
       // mDNS discovery and SMB, which is what the macOS Local Network permission
-      // is about; SFTP and WebDAV need none of it, and the hub says so in its own
+      // is about; SFTP, WebDAV, and S3 need none of it, and the hub says so in its own
       // list rather than by refusing to open.
       const networkVolumes = vols.filter((v) => v.category === 'network' && belongsInSwitcher(v))
 

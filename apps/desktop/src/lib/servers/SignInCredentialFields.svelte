@@ -4,8 +4,9 @@
      * ask, and nothing else.
      *
      * ❗ **Username editability is a property of the VARIANT, not of the sheet's
-     * mode.** `password` and `key_passphrase` render the account as a read-only
-     * header, because SFTP's and WebDAV's `reconnect_with_credentials` refuse a
+     * mode.** `password`, `key_passphrase`, and `access_keys` (S3: the access key ID
+     * over one secret access key field) render the account as a read-only
+     * header, because SFTP's, WebDAV's, and S3's `reconnect_with_credentials` refuse a
      * changed username: the volume id IS the account. `username_password` renders
      * it editable, because SMB's accepts a new one and rewrites its params, which
      * is how re-auth-as-someone-else works and must keep working. Reading either
@@ -66,11 +67,22 @@
         { value: 'credentials', label: tString('servers.sheet.signInWithCredentials') },
     ])
 
-    const secretLabel = $derived(
-        shape.kind === 'key_passphrase' ? tString('servers.sheet.passphrase') : tString('servers.sheet.password'),
+    const secretLabel = $derived.by(() => {
+        if (shape.kind === 'key_passphrase') return tString('servers.sheet.passphrase')
+        if (shape.kind === 'access_keys') return tString('servers.sheet.secretAccessKey')
+        return tString('servers.sheet.password')
+    })
+    /** S3's account is its access key ID, read-only like any account the volume id names. */
+    const accountFieldLabel = $derived(
+        shape.kind === 'access_keys' ? tString('servers.sheet.accessKeyId') : tString('servers.sheet.username'),
     )
-    /** A passphrase is not the account's password, and autofill must not offer one. */
-    const secretAutocomplete = $derived(shape.kind === 'key_passphrase' ? 'off' : 'current-password')
+    /**
+     * A passphrase is not the account's password, and a secret access key isn't one
+     * either, so autofill must not offer one for either.
+     */
+    const secretAutocomplete = $derived(
+        shape.kind === 'key_passphrase' || shape.kind === 'access_keys' ? 'off' : 'current-password',
+    )
     const fieldsDisabled = $derived(disabled || guest)
 </script>
 
@@ -111,7 +123,7 @@
     {:else}
         <!-- Read-only because the volume id IS this account: a changed username
              would name a different server, and the backend refuses one. -->
-        <p id="sign-in-username-label" class="field-label">{tString('servers.sheet.username')}</p>
+        <p id="sign-in-username-label" class="field-label">{accountFieldLabel}</p>
         <p id="sign-in-username" class="account-header" aria-labelledby="sign-in-username-label">{accountLabel}</p>
     {/if}
 </div>

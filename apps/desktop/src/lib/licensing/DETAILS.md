@@ -5,10 +5,11 @@ Depth and rationale. `CLAUDE.md` holds the must-knows; decision detail and the f
 
 ## Key decisions
 
-**Decision**: Ed25519 offline verification for all license types, server validation only for subscriptions. **Why**: A
-file manager must work without internet. Perpetual and personal licenses validate purely offline via the Ed25519
-signature. Subscriptions need periodic server checks (every 7 days) to detect cancellation, but get a 30-day offline
-grace so intermittent network issues don't disrupt paid users.
+**Decision**: Ed25519 offline verification for all license types; the 7-day server check only learns a revocation,
+expiry, or renewal. **Why**: A file manager must work without internet, and a paid license must not depend on our server
+existing. A perpetual license stays valid offline forever, and a time-limited one runs to a known date; the rules live
+in `src-tauri/src/licensing/DETAILS.md` § Offline policy. That's also why the license dialog never calls a perpetual
+license "Not yet verified": no server answer is needed to keep it.
 
 **Decision**: Activation uses a verify/commit split (`verifyLicense` read-only, then `commitLicense` persist), with
 server validation in between. **Why**: The old flow stored the key before server validation. If the server rejected it
@@ -62,7 +63,9 @@ Tracked in `licensing-store.svelte.ts`. Derived from backend state on startup: `
 when `last_validation_timestamp` is absent (license committed locally but never server-verified). Also set directly
 during activation on the network-fallback path. Cleared when `triggerValidationIfNeeded` completes successfully.
 Survives restarts because the backend state persists. When set, the validity row shows "Not yet verified" (yellow) with
-a 7-day hint.
+a 7-day hint. `isPendingVerification()` reads false for a commercial perpetual status whatever the flag says: that
+license is valid on its signature alone, and calling it unverified forever (a Mac that never reaches the server) would
+be both alarming and untrue.
 
 ## Other gotchas
 

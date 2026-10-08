@@ -19,7 +19,18 @@ const CONNECTION_TOOLTIP_KEYS: Record<ConnectionState, MessageKey> = {
   saved: 'fileExplorer.navigation.connectionTooltipSaved',
 }
 
+/** What the dot needs to know about the volume besides its state. */
+export interface ConnectionTooltipContext {
+  /**
+   * The volume can also be reached through the OS's own mount (SMB), straight
+   * from the backend's `capabilities.hasOsMountFallback`. Only then is a live
+   * session the "direct" one of two ways in; elsewhere `direct` just means connected.
+   */
+  hasOsMountFallback: boolean
+}
+
 /** The dot's tooltip for one connection state. */
-export function getConnectionTooltip(state: ConnectionState): string {
+export function getConnectionTooltip(state: ConnectionState, { hasOsMountFallback }: ConnectionTooltipContext): string {
+  if (state === 'direct' && !hasOsMountFallback) return tString('fileExplorer.navigation.connectionTooltipConnected')
   return tString(CONNECTION_TOOLTIP_KEYS[state])
 }

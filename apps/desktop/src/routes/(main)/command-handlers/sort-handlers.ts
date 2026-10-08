@@ -4,6 +4,7 @@
  * column + order on a specific pane).
  */
 import type { CommandArgs } from '$lib/commands'
+import { detached } from './detached'
 import type { CommandHandlerRecord } from './types'
 
 export const sortHandlers = {
@@ -44,6 +45,6 @@ export const sortHandlers = {
     // SPECIFIC pane (the `sort.by*` / `sort.ascending` commands act on the
     // focused pane only).
     const { pane, column, order } = dispatchArgs as CommandArgs['sort.set']
-    void explorerRef?.setSort(column, order, pane)
+    detached(explorerRef?.setSort(column, order, pane))
   },
 } satisfies Partial<CommandHandlerRecord>

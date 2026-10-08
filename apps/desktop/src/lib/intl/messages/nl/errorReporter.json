@@ -81,6 +81,14 @@
   "@errorReporter.dialog.saveToDisk": {
     "sourceHash": "36d6589"
   },
+  "errorReporter.dialog.managedOff": "Je organisatie heeft het versturen van rapporten uitgezet. Je kunt een rapport nog wel op schijf bewaren en het zelf delen.",
+  "@errorReporter.dialog.managedOff": {
+    "sourceHash": "9309a39"
+  },
+  "errorReporter.dialog.saveToDiskManaged": "Bewaar op schijf",
+  "@errorReporter.dialog.saveToDiskManaged": {
+    "sourceHash": "5a5d775"
+  },
   "errorReporter.dialog.cancel": "Annuleer",
   "@errorReporter.dialog.cancel": {
     "sourceHash": "19766ed"
@@ -127,7 +135,7 @@
   },
   "errorReporter.amend.unavailable": "Aan dat rapport kun je niets meer toevoegen. Om je notities alsnog bij het team te krijgen, verstuur je een nieuw rapport via het Help-menu.",
   "@errorReporter.amend.unavailable": {
-    "sourceHash": "b96b48a"
+    "sourceHash": "08ab034"
   },
   "errorReporter.amend.close": "Sluit",
   "@errorReporter.amend.close": {

@@ -3,7 +3,16 @@
  * `lib/settings/format-utils.test.ts`.
  */
 import { afterEach, describe, it, expect } from 'vitest'
-import { formatFileSizeWithFormat, formatDriveFigure, fixedUnitFor, dynamicTierIndex, unitLabel } from './byte-size'
+import {
+  formatFileSizeWithFormat,
+  formatDriveFigure,
+  formatTieredSize,
+  formatRoundSize,
+  fixedUnitFor,
+  dynamicTierIndex,
+  unitLabel,
+} from './byte-size'
+import { _setCatalogForTests } from '$lib/intl/messages.svelte'
 import driveFigureCases from './drive-figure-cases.json'
 import type { FileSizeFormat } from '$lib/settings/types'
 import { _setLocaleForTests } from '$lib/intl/locale'
@@ -14,37 +23,37 @@ describe('formatFileSizeWithFormat', () => {
       expect(formatFileSizeWithFormat(0, 'binary')).toBe('0 bytes')
     })
 
-    it('formats bytes below 1 KB', () => {
+    it('formats bytes below 1 KiB', () => {
       expect(formatFileSizeWithFormat(512, 'binary')).toBe('512 bytes')
     })
 
-    it('formats exactly 1 KB', () => {
-      expect(formatFileSizeWithFormat(1024, 'binary')).toBe('1.00 KB')
+    it('formats exactly 1 KiB', () => {
+      expect(formatFileSizeWithFormat(1024, 'binary')).toBe('1.00 KiB')
     })
 
     it('formats megabytes', () => {
-      expect(formatFileSizeWithFormat(1024 * 1024, 'binary')).toBe('1.00 MB')
+      expect(formatFileSizeWithFormat(1024 * 1024, 'binary')).toBe('1.00 MiB')
     })
 
     it('formats gigabytes', () => {
-      expect(formatFileSizeWithFormat(1024 ** 3, 'binary')).toBe('1.00 GB')
+      expect(formatFileSizeWithFormat(1024 ** 3, 'binary')).toBe('1.00 GiB')
     })
 
     it('formats terabytes', () => {
-      expect(formatFileSizeWithFormat(1024 ** 4, 'binary')).toBe('1.00 TB')
+      expect(formatFileSizeWithFormat(1024 ** 4, 'binary')).toBe('1.00 TiB')
     })
 
     it('formats petabytes', () => {
-      expect(formatFileSizeWithFormat(1024 ** 5, 'binary')).toBe('1.00 PB')
+      expect(formatFileSizeWithFormat(1024 ** 5, 'binary')).toBe('1.00 PiB')
     })
 
-    it('caps at PB for very large values', () => {
+    it('caps at PiB for very large values', () => {
       const result = formatFileSizeWithFormat(1024 ** 6, 'binary')
-      expect(result).toBe('1024.00 PB')
+      expect(result).toBe('1024.00 PiB')
     })
 
-    it('formats fractional KB values', () => {
-      expect(formatFileSizeWithFormat(1536, 'binary')).toBe('1.50 KB')
+    it('formats fractional KiB values', () => {
+      expect(formatFileSizeWithFormat(1536, 'binary')).toBe('1.50 KiB')
     })
   })
 
@@ -85,24 +94,24 @@ describe('formatFileSizeWithFormat', () => {
   })
 
   describe('forced unit (kB / MB / GB)', () => {
-    it("'kB' under binary renders 'KB' uppercase with 1024-based math", () => {
-      expect(formatFileSizeWithFormat(2048, 'binary', 'kB')).toBe('2.00 KB')
+    it("'kB' under binary renders the IEC 'KiB' with 1024-based math", () => {
+      expect(formatFileSizeWithFormat(2048, 'binary', 'kB')).toBe('2.00 KiB')
     })
 
     it("'kB' under SI renders 'kB' lowercase k with 1000-based math", () => {
       expect(formatFileSizeWithFormat(2000, 'si', 'kB')).toBe('2.00 kB')
     })
 
-    it("'MB' under binary on 1 MiB returns '1.00 MB'", () => {
-      expect(formatFileSizeWithFormat(1024 ** 2, 'binary', 'MB')).toBe('1.00 MB')
+    it("'MB' under binary on 1 MiB returns '1.00 MiB'", () => {
+      expect(formatFileSizeWithFormat(1024 ** 2, 'binary', 'MB')).toBe('1.00 MiB')
     })
 
     it("'GB' under SI on 2 GB returns '2.00 GB'", () => {
       expect(formatFileSizeWithFormat(2 * 1000 ** 3, 'si', 'GB')).toBe('2.00 GB')
     })
 
-    it("forced kB on a sub-KB value renders fractional ('0.50 KB' binary)", () => {
-      expect(formatFileSizeWithFormat(512, 'binary', 'kB')).toBe('0.50 KB')
+    it("forced kB on a sub-KiB value renders fractional ('0.50 KiB' binary)", () => {
+      expect(formatFileSizeWithFormat(512, 'binary', 'kB')).toBe('0.50 KiB')
     })
 
     it("forced MB doesn't roll over to GB even on 10+ GB inputs", () => {
@@ -160,14 +169,14 @@ describe('formatFileSizeWithFormat: locale-aware decimal', () => {
 
   it('de-DE uses a comma decimal in the dynamic path', () => {
     _setLocaleForTests('de-DE')
-    expect(formatFileSizeWithFormat(1024, 'binary')).toBe('1,00 KB')
-    expect(formatFileSizeWithFormat(1536, 'binary')).toBe('1,50 KB')
+    expect(formatFileSizeWithFormat(1024, 'binary')).toBe('1,00 KiB')
+    expect(formatFileSizeWithFormat(1536, 'binary')).toBe('1,50 KiB')
     expect(formatFileSizeWithFormat(1024, 'si')).toBe('1,02 kB')
   })
 
   it('de-DE uses a comma decimal in the forced-unit path', () => {
     _setLocaleForTests('de-DE')
-    expect(formatFileSizeWithFormat(1_073_208, 'binary', 'MB')).toBe('1,02 MB')
+    expect(formatFileSizeWithFormat(1_073_208, 'binary', 'MB')).toBe('1,02 MiB')
     expect(formatFileSizeWithFormat(512, 'si', 'kB')).toBe('0,51 kB')
   })
 
@@ -194,27 +203,36 @@ describe('formatFileSizeWithFormat: locale-aware decimal', () => {
   it('does NOT group the bytes-as-integer dynamic value', () => {
     _setLocaleForTests('de-DE')
     // 1000 bytes in binary stays sub-base, rendered as a bare integer; no grouping.
-    expect(formatFileSizeWithFormat(1000, 'binary')).toBe('1000 bytes')
+    expect(formatFileSizeWithFormat(1000, 'binary')).toBe('1000 Bytes')
   })
 })
 
 describe('unitLabel', () => {
-  it("'kB' becomes 'KB' under binary", () => {
-    expect(unitLabel('kB', 'binary')).toBe('KB')
+  // Base 1024 is IEC 80000-13 (KiB, MiB, GiB); base 1000 is SI (kB, MB, GB). The symbol
+  // has to name the base the number was divided by, at every tier.
+  it('names the IEC binary symbol under binary', () => {
+    expect(unitLabel('kB', 'binary')).toBe('KiB')
+    expect(unitLabel('MB', 'binary')).toBe('MiB')
+    expect(unitLabel('GB', 'binary')).toBe('GiB')
   })
 
-  it("'kB' stays 'kB' under SI", () => {
+  it('names the SI decimal symbol under SI, with a lowercase k', () => {
     expect(unitLabel('kB', 'si')).toBe('kB')
-  })
-
-  it("'MB' is the same in binary and SI", () => {
-    expect(unitLabel('MB', 'binary')).toBe('MB')
     expect(unitLabel('MB', 'si')).toBe('MB')
+    expect(unitLabel('GB', 'si')).toBe('GB')
+  })
+})
+
+describe('formatRoundSize', () => {
+  it('writes a whole preset value with no fraction digits', () => {
+    expect(formatRoundSize(100 * 1024 ** 2, 'binary')).toBe('100 MiB')
+    expect(formatRoundSize(3 * 1024 ** 3, 'binary')).toBe('3 GiB')
+    expect(formatRoundSize(250_000_000, 'si')).toBe('250 MB')
   })
 
-  it("'GB' is the same in binary and SI", () => {
-    expect(unitLabel('GB', 'binary')).toBe('GB')
-    expect(unitLabel('GB', 'si')).toBe('GB')
+  it('keeps the fraction digits a value actually has', () => {
+    expect(formatRoundSize(1.5 * 1024 ** 3, 'binary')).toBe('1.5 GiB')
+    expect(formatRoundSize(1_250_000, 'si')).toBe('1.25 MB')
   })
 })
 
@@ -283,6 +301,64 @@ describe('formatDriveFigure', () => {
 
   it('writes the decimals the way the locale does', () => {
     _setLocaleForTests('de-DE')
-    expect(formatDriveFigure(5_000_000_000, 16_000_000_000, 'binary')).toBe('4,7 GB')
+    expect(formatDriveFigure(5_000_000_000, 16_000_000_000, 'binary')).toBe('4,7 GiB')
+  })
+})
+
+describe('size units come from the catalog, in the UI language', () => {
+  // French writes "Mo" / "Go" (octets), so the unit is copy a translator owns,
+  // not a code literal. The stand-in catalog is what a French translator would write.
+  const frenchUnits = {
+    'common.sizeUnit.byte': '{count, plural, one {octet} other {octets}}',
+    'common.sizeUnit.kibibyte': 'Kio',
+    'common.sizeUnit.mebibyte': 'Mio',
+    'common.sizeUnit.gibibyte': 'Gio',
+    'common.sizeUnit.tebibyte': 'Tio',
+    'common.sizeUnit.pebibyte': 'Pio',
+    'common.sizeUnit.kilobyte': 'ko',
+    'common.sizeUnit.megabyte': 'Mo',
+    'common.sizeUnit.gigabyte': 'Go',
+    'common.sizeUnit.terabyte': 'To',
+    'common.sizeUnit.petabyte': 'Po',
+  }
+
+  afterEach(() => {
+    _setCatalogForTests('fr', null)
+    _setLocaleForTests(null)
+  })
+
+  it('words every tier in the UI language', () => {
+    _setCatalogForTests('fr', frenchUnits)
+    _setLocaleForTests('fr-FR')
+    expect(formatFileSizeWithFormat(512, 'binary')).toBe('512 octets')
+    expect(formatFileSizeWithFormat(1536, 'binary')).toBe('1,50 Kio')
+    expect(formatFileSizeWithFormat(1500, 'si')).toBe('1,50 ko')
+    expect(formatFileSizeWithFormat(1024 ** 2, 'binary')).toBe('1,00 Mio')
+    expect(formatFileSizeWithFormat(1000 ** 2, 'si')).toBe('1,00 Mo')
+    expect(formatFileSizeWithFormat(1024 ** 3, 'binary', 'GB')).toBe('1,00 Gio')
+    expect(formatFileSizeWithFormat(1024 ** 4, 'binary')).toBe('1,00 Tio')
+    expect(formatFileSizeWithFormat(1000 ** 4, 'si')).toBe('1,00 To')
+    expect(formatFileSizeWithFormat(1024 ** 5, 'binary')).toBe('1,00 Pio')
+    expect(formatFileSizeWithFormat(1000 ** 5, 'si')).toBe('1,00 Po')
+    expect(unitLabel('kB', 'si')).toBe('ko')
+    expect(formatDriveFigure(261 * 1000 ** 3, 1000 ** 4, 'si')).toBe('261 Go')
+  })
+
+  it('picks the byte word by the plural rules of the UI language', () => {
+    expect(formatFileSizeWithFormat(1, 'binary')).toBe('1 byte')
+    expect(formatFileSizeWithFormat(2, 'binary')).toBe('2 bytes')
+    // French counts zero as singular.
+    _setCatalogForTests('fr', frenchUnits)
+    _setLocaleForTests('fr-FR')
+    expect(formatFileSizeWithFormat(0, 'binary')).toBe('0 octet')
+  })
+
+  it('hands back the size-tier with the text, so coloring never parses a unit word', () => {
+    _setCatalogForTests('fr', frenchUnits)
+    _setLocaleForTests('fr-FR')
+    expect(formatTieredSize(3 * 1024 ** 2, 'binary')).toEqual({ text: '3,00 Mio', tier: 2 })
+    // A forced unit keeps the magnitude's tier, the same color dynamic mode would give.
+    expect(formatTieredSize(349, 'binary', 'MB')).toEqual({ text: '0,00 Mio', tier: 0 })
+    expect(formatTieredSize(1024 ** 5, 'binary').tier).toBe(4)
   })
 })

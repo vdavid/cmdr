@@ -31,7 +31,6 @@ vi.mock('$lib/tauri-commands', () => ({
   notifyDialogClosed: vi.fn(() => Promise.resolve()),
   copyBetweenVolumes: vi.fn(() => Promise.resolve({ operationId: 'op-1' })),
   moveBetweenVolumes: vi.fn(() => Promise.resolve({ operationId: 'op-1' })),
-  copyFiles: vi.fn(() => Promise.resolve({ operationId: 'op-1' })),
   moveFiles: vi.fn(() => Promise.resolve({ operationId: 'op-1' })),
   deleteFiles: vi.fn(() => Promise.resolve({ operationId: 'op-1' })),
   trashFiles: vi.fn(() => Promise.resolve({ operationId: 'op-1' })),

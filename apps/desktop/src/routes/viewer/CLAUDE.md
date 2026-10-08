@@ -40,8 +40,7 @@ Each is break-if-ignored; the named `DETAILS.md` section has the why.
   never in `.lines-container`, whose child count derives the wrapped-line height. (§ "Text cursor")
 - **`closeWindow()` goes through `closeSelfWindow()` (backend hide + 100 ms), and `canClose` / `windowReady` flip via
   `setTimeout(0)`, ❌ never rAF.** Each dodges a different hang or crash. (§ Gotchas; `$lib/child-window-close`)
-- **Escape: the page's window keydown runs BEFORE `ViewerContextMenu`'s**, so it gates on `contextMenuPos !== null`
-  first, else an open menu's Escape shuts the window. (§ Gotchas)
+- **The right-click menu is native**; its pick acts on the file, ❌ never via `runViewerEditAction`. (§ Gotchas)
 - **The render window, its prefetch, and eviction are sized in pixels or distance, ❌ never in rows** (a wrapped row is
   hundreds of pixels tall); eviction skips `fullLoad`, whose height map needs every row. A short answer is normal: walk
   by `chunk.end` + `endByteOffset`, cache at `chunk.firstRowNumber`. The walk is `viewer-row-fetch.svelte.ts`: getters

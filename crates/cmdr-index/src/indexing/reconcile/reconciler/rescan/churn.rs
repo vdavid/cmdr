@@ -50,6 +50,8 @@ const TOP_ANCHORS: usize = 3;
 struct AnchorTally {
     walks: u64,
     cost: Duration,
+    /// See [`RescanChurnWindow::cpu`].
+    cpu: Option<Duration>,
 }
 
 /// One anchor's line in a report, ranked by cost.
@@ -58,6 +60,7 @@ pub(in crate::indexing) struct TopAnchor {
     pub(in crate::indexing) path: String,
     pub(in crate::indexing) walks: u64,
     pub(in crate::indexing) cost: Duration,
+    pub(in crate::indexing) cpu: Option<Duration>,
 }
 
 /// One window's aggregate, built only when a budget was crossed.
@@ -68,6 +71,8 @@ pub(in crate::indexing) struct ChurnReport {
     pub(in crate::indexing) elapsed: Duration,
     pub(in crate::indexing) reconciles: u64,
     pub(in crate::indexing) walked: Duration,
+    /// See [`RescanChurnWindow::cpu`].
+    pub(in crate::indexing) cpu: Option<Duration>,
     pub(in crate::indexing) rows: u64,
     /// Anchors tracked (never more than [`MAX_TRACKED_ANCHORS`]).
     pub(in crate::indexing) anchors: usize,
@@ -95,11 +100,23 @@ pub(in crate::indexing) struct RescanChurnWindow {
     started: Instant,
     reconciles: u64,
     walked: Duration,
+    /// The walks' own thread CPU. Walk time on a loaded machine is mostly
+    /// waiting on the disk, so it can't say what the walking cost: on 2026-10-05,
+    /// at load average 25–30, a 225 s walk read as the CPU spike while the writer
+    /// was the one burning it. `None` once any walk had no reading (no per-thread
+    /// clock), because a total missing a walk reads as a confidently low number.
+    cpu: Option<Duration>,
     rows: u64,
     held_back: u64,
     queued_while_active: u64,
     anchors: HashMap<PathBuf, AnchorTally>,
     anchors_capped: bool,
+}
+
+/// Adds a walk's CPU to a running total; any unknown reading makes the total
+/// unknown.
+fn add_cpu(total: Option<Duration>, walk: Option<Duration>) -> Option<Duration> {
+    total.zip(walk).map(|(total, walk)| total.saturating_add(walk))
 }
 
 impl RescanChurnWindow {
@@ -113,6 +130,7 @@ impl RescanChurnWindow {
             started: now,
             reconciles: 0,
             walked: Duration::ZERO,
+            cpu: Some(Duration::ZERO),
             rows: 0,
             held_back: 0,
             queued_while_active: 0,
@@ -125,14 +143,22 @@ impl RescanChurnWindow {
     /// tally takes it if the anchor is tracked or earns a slot (see
     /// [`MAX_TRACKED_ANCHORS`]). Two map operations and no allocation in the
     /// common case, so a quiet machine pays essentially nothing.
-    pub(in crate::indexing) fn record_reconcile(&mut self, anchor: &Path, walk_cost: Duration, rows: u64) {
+    pub(in crate::indexing) fn record_reconcile(
+        &mut self,
+        anchor: &Path,
+        walk_cost: Duration,
+        rows: u64,
+        cpu: Option<Duration>,
+    ) {
         self.reconciles = self.reconciles.saturating_add(1);
         self.walked = self.walked.saturating_add(walk_cost);
+        self.cpu = add_cpu(self.cpu, cpu);
         self.rows = self.rows.saturating_add(rows);
 
         if let Some(tally) = self.anchors.get_mut(anchor) {
             tally.walks = tally.walks.saturating_add(1);
             tally.cost = tally.cost.saturating_add(walk_cost);
+            tally.cpu = add_cpu(tally.cpu, cpu);
             return;
         }
         if self.anchors.len() >= self.max_anchors {
@@ -163,6 +189,7 @@ impl RescanChurnWindow {
             AnchorTally {
                 walks: 1,
                 cost: walk_cost,
+                cpu,
             },
         );
     }
@@ -194,6 +221,7 @@ impl RescanChurnWindow {
             elapsed,
             reconciles: self.reconciles,
             walked: self.walked,
+            cpu: self.cpu,
             rows: self.rows,
             anchors: self.anchors.len(),
             anchors_capped: self.anchors_capped,
@@ -214,6 +242,7 @@ impl RescanChurnWindow {
                 path: path.to_string_lossy().into_owned(),
                 walks: tally.walks,
                 cost: tally.cost,
+                cpu: tally.cpu,
             })
             .collect();
         ranked.sort_by(|a, b| b.cost.cmp(&a.cost).then_with(|| a.path.cmp(&b.path)));
@@ -227,6 +256,7 @@ impl RescanChurnWindow {
         self.started = now;
         self.reconciles = 0;
         self.walked = Duration::ZERO;
+        self.cpu = Some(Duration::ZERO);
         self.rows = 0;
         self.held_back = 0;
         self.queued_while_active = 0;
@@ -243,6 +273,7 @@ impl ChurnReport {
         let minutes = self.elapsed.as_secs() / 60;
         let reconciles = pluralize_grouped(self.reconciles, "subtree reconcile");
         let walked = format_duration(self.walked);
+        let cpu = cpu_aside(self.cpu);
         let rows = pluralize_grouped(self.rows, "row change");
         let anchors = if self.anchors_capped {
             // A floor, not a count: the map stopped tracking new anchors here.
@@ -263,15 +294,18 @@ impl ChurnReport {
             )
         };
         let mut line = format!(
-            "Reconciler: heavy churn in the last {minutes} min: {reconciles}, {walked} of walking, {rows}, {anchors}, {held_back} held back{queued}."
+            "Reconciler: heavy churn in the last {minutes} min: {reconciles}, {walked} of walking{cpu}, {rows}, {anchors}, {held_back} held back{queued}."
         );
         if !self.top.is_empty() {
             let top: Vec<String> = self
                 .top
                 .iter()
                 .map(|anchor| {
+                    let cpu = anchor
+                        .cpu
+                        .map_or_else(String::new, |cpu| format!(", {} CPU", format_duration(cpu)));
                     format!(
-                        "{} ({}, {})",
+                        "{} ({}, {}{cpu})",
                         anchor.path,
                         pluralize_grouped(anchor.walks, "walk"),
                         format_duration(anchor.cost)
@@ -284,9 +318,15 @@ impl ChurnReport {
     }
 }
 
+/// The window total's CPU, as an aside to its walk time: ` (6s CPU)`, or nothing
+/// when a walk had no reading.
+fn cpu_aside(cpu: Option<Duration>) -> String {
+    cpu.map_or_else(String::new, |cpu| format!(" ({} CPU)", format_duration(cpu)))
+}
+
 /// A walk's cost, at the precision that reads honestly: whole seconds once it's
 /// worth a second, milliseconds below that.
-fn format_duration(duration: Duration) -> String {
+pub(super) fn format_duration(duration: Duration) -> String {
     if duration < Duration::from_secs(1) {
         format!("{}ms", duration.as_millis())
     } else {
@@ -302,11 +342,11 @@ static WINDOW: LazyLock<Mutex<RescanChurnWindow>> =
     LazyLock::new(|| Mutex::new(RescanChurnWindow::new(Instant::now())));
 
 /// Record a completed reconcile, and emit if that closed a busy window.
-pub(super) fn record_reconcile(anchor: &Path, walk_cost: Duration, rows: u64) {
+pub(super) fn record_reconcile(anchor: &Path, walk_cost: Duration, rows: u64, cpu: Option<Duration>) {
     let now = Instant::now();
     let report = {
         let mut window = WINDOW.lock_ignore_poison();
-        window.record_reconcile(anchor, walk_cost, rows);
+        window.record_reconcile(anchor, walk_cost, rows, cpu);
         window.poll(now)
     };
     emit(report);
@@ -348,7 +388,7 @@ mod tests {
         let t0 = Instant::now();
         let mut window = RescanChurnWindow::new(t0);
         for _ in 0..20 {
-            window.record_reconcile(Path::new("/Users/me/Documents"), Duration::from_millis(200), 5);
+            window.record_reconcile(Path::new("/Users/me/Documents"), Duration::from_millis(200), 5, None);
         }
         assert!(
             window.poll(t0 + CHURN_WINDOW).is_none(),
@@ -362,7 +402,7 @@ mod tests {
         let t0 = Instant::now();
         let mut window = RescanChurnWindow::new(t0);
         for _ in 0..30 {
-            window.record_reconcile(Path::new("/Users/me/build"), Duration::from_secs(3), 40);
+            window.record_reconcile(Path::new("/Users/me/build"), Duration::from_secs(3), 40, None);
         }
         assert!(
             window.poll(t0 + CHURN_WINDOW - Duration::from_millis(1)).is_none(),
@@ -385,14 +425,24 @@ mod tests {
     fn a_window_over_the_row_budget_reports_once() {
         let t0 = Instant::now();
         let mut at_budget = RescanChurnWindow::new(t0);
-        at_budget.record_reconcile(Path::new("/Users/me/cache"), Duration::from_millis(400), ROW_BUDGET);
+        at_budget.record_reconcile(
+            Path::new("/Users/me/cache"),
+            Duration::from_millis(400),
+            ROW_BUDGET,
+            None,
+        );
         assert!(
             at_budget.poll(t0 + CHURN_WINDOW).is_none(),
             "exactly at the budget is not over it"
         );
 
         let mut over_budget = RescanChurnWindow::new(t0);
-        over_budget.record_reconcile(Path::new("/Users/me/cache"), Duration::from_millis(400), ROW_BUDGET + 1);
+        over_budget.record_reconcile(
+            Path::new("/Users/me/cache"),
+            Duration::from_millis(400),
+            ROW_BUDGET + 1,
+            None,
+        );
         let report = over_budget
             .poll(t0 + CHURN_WINDOW)
             .expect("100,001 row changes crosses the budget");
@@ -414,7 +464,7 @@ mod tests {
     fn a_window_reports_at_most_once() {
         let t0 = Instant::now();
         let mut window = RescanChurnWindow::new(t0);
-        window.record_reconcile(Path::new("/a"), Duration::from_secs(90), 10);
+        window.record_reconcile(Path::new("/a"), Duration::from_secs(90), 10, None);
         assert!(window.poll(t0 + CHURN_WINDOW).is_some(), "the busy window reports");
         assert!(
             window.poll(t0 + CHURN_WINDOW).is_none(),
@@ -432,9 +482,9 @@ mod tests {
     fn a_quiet_window_does_not_carry_its_total_forward() {
         let t0 = Instant::now();
         let mut window = RescanChurnWindow::new(t0);
-        window.record_reconcile(Path::new("/a"), Duration::from_secs(50), 10);
+        window.record_reconcile(Path::new("/a"), Duration::from_secs(50), 10, None);
         assert!(window.poll(t0 + CHURN_WINDOW).is_none(), "50s is under the budget");
-        window.record_reconcile(Path::new("/a"), Duration::from_secs(50), 10);
+        window.record_reconcile(Path::new("/a"), Duration::from_secs(50), 10, None);
         assert!(
             window.poll(t0 + CHURN_WINDOW * 2).is_none(),
             "the second window is judged on its own 50s, not on 100s carried over"
@@ -449,12 +499,12 @@ mod tests {
         let mut window = RescanChurnWindow::new(t0);
         // The cheap anchor walks most often, and still doesn't lead.
         for _ in 0..40 {
-            window.record_reconcile(Path::new("/frequent"), Duration::from_millis(100), 1);
+            window.record_reconcile(Path::new("/frequent"), Duration::from_millis(100), 1, None);
         }
-        window.record_reconcile(Path::new("/middling"), Duration::from_secs(20), 1);
-        window.record_reconcile(Path::new("/priciest"), Duration::from_secs(30), 1);
-        window.record_reconcile(Path::new("/priciest"), Duration::from_secs(5), 1);
-        window.record_reconcile(Path::new("/quietest"), Duration::from_secs(2), 1);
+        window.record_reconcile(Path::new("/middling"), Duration::from_secs(20), 1, None);
+        window.record_reconcile(Path::new("/priciest"), Duration::from_secs(30), 1, None);
+        window.record_reconcile(Path::new("/priciest"), Duration::from_secs(5), 1, None);
+        window.record_reconcile(Path::new("/quietest"), Duration::from_secs(2), 1, None);
 
         let report = window
             .poll(t0 + CHURN_WINDOW)
@@ -466,16 +516,19 @@ mod tests {
                     path: "/priciest".to_string(),
                     walks: 2,
                     cost: Duration::from_secs(35),
+                    cpu: None,
                 },
                 TopAnchor {
                     path: "/middling".to_string(),
                     walks: 1,
                     cost: Duration::from_secs(20),
+                    cpu: None,
                 },
                 TopAnchor {
                     path: "/frequent".to_string(),
                     walks: 40,
                     cost: Duration::from_secs(4),
+                    cpu: None,
                 },
             ],
             "top three by cost, and /quietest doesn't make the cut"
@@ -495,11 +548,17 @@ mod tests {
                 &PathBuf::from(format!("/tmp/one-shot-{i}")),
                 Duration::from_millis(10),
                 3,
+                None,
             );
         }
         // ...and the anchor that actually costs something, arriving LAST, so a
         // first-come cap would have shut it out entirely.
-        window.record_reconcile(Path::new("/Users/me/Library/Caches/hot"), Duration::from_secs(70), 9);
+        window.record_reconcile(
+            Path::new("/Users/me/Library/Caches/hot"),
+            Duration::from_secs(70),
+            9,
+            None,
+        );
 
         let report = window
             .poll(t0 + CHURN_WINDOW)
@@ -532,7 +591,7 @@ mod tests {
     fn signals_queued_behind_an_active_rescan_are_counted() {
         let t0 = Instant::now();
         let mut window = RescanChurnWindow::new(t0);
-        window.record_reconcile(Path::new("/a"), Duration::from_secs(90), 10);
+        window.record_reconcile(Path::new("/a"), Duration::from_secs(90), 10, None);
         for _ in 0..412 {
             window.record_queued_while_active();
         }
@@ -544,7 +603,7 @@ mod tests {
             report.message()
         );
 
-        window.record_reconcile(Path::new("/a"), Duration::from_secs(90), 10);
+        window.record_reconcile(Path::new("/a"), Duration::from_secs(90), 10, None);
         let next = window.poll(t0 + CHURN_WINDOW * 2).expect("another busy window");
         assert_eq!(next.queued_while_active, 0, "the count is per window, not cumulative");
         assert!(
@@ -560,7 +619,7 @@ mod tests {
     fn held_back_signals_are_counted_and_reset_per_window() {
         let t0 = Instant::now();
         let mut window = RescanChurnWindow::new(t0);
-        window.record_reconcile(Path::new("/a"), Duration::from_secs(90), 10);
+        window.record_reconcile(Path::new("/a"), Duration::from_secs(90), 10, None);
         for _ in 0..37 {
             window.record_held_back();
         }
@@ -572,9 +631,65 @@ mod tests {
             report.message()
         );
 
-        window.record_reconcile(Path::new("/a"), Duration::from_secs(90), 10);
+        window.record_reconcile(Path::new("/a"), Duration::from_secs(90), 10, None);
         let next = window.poll(t0 + CHURN_WINDOW * 2).expect("another busy window");
         assert_eq!(next.held_back, 0, "the count is per window, not cumulative");
+    }
+
+    /// Walk time on a loaded machine is mostly waiting on the disk, so it can't
+    /// say what the walking COST. Measured 2026-10-05 at load average 25–30: a
+    /// 225 s walk read as the CPU spike, and the writer was the one burning it.
+    /// The line carries the walks' own CPU beside their wall time, in total and
+    /// per anchor.
+    #[test]
+    fn the_line_says_how_much_of_the_walking_was_cpu() {
+        let t0 = Instant::now();
+        let mut window = RescanChurnWindow::new(t0);
+        window.record_reconcile(
+            Path::new("/wt"),
+            Duration::from_secs(200),
+            781,
+            Some(Duration::from_secs(5)),
+        );
+        window.record_reconcile(
+            Path::new("/wt/target"),
+            Duration::from_secs(10),
+            40,
+            Some(Duration::from_millis(1_500)),
+        );
+
+        let report = window.poll(t0 + CHURN_WINDOW).expect("a busy window");
+        assert_eq!(report.cpu, Some(Duration::from_millis(6_500)));
+        assert_eq!(
+            report.message(),
+            "Reconciler: heavy churn in the last 15 min: 2 subtree reconciles, 210s of walking (6s CPU), \
+             821 row changes, 2 anchors, 0 signals held back. \
+             Top: /wt (1 walk, 200s, 5s CPU), /wt/target (1 walk, 10s, 1s CPU)"
+        );
+    }
+
+    /// A platform with no per-thread clock reads `None`. One unknown reading
+    /// drops the figure for the window, because a total missing a walk would
+    /// read as a confidently low number.
+    #[test]
+    fn an_unknown_cpu_reading_drops_the_figure() {
+        let t0 = Instant::now();
+        let mut window = RescanChurnWindow::new(t0);
+        window.record_reconcile(
+            Path::new("/a"),
+            Duration::from_secs(60),
+            10,
+            Some(Duration::from_secs(3)),
+        );
+        window.record_reconcile(Path::new("/a"), Duration::from_secs(30), 10, None);
+
+        let report = window.poll(t0 + CHURN_WINDOW).expect("a busy window");
+        assert_eq!(report.cpu, None);
+        assert_eq!(
+            report.message(),
+            "Reconciler: heavy churn in the last 15 min: 2 subtree reconciles, 90s of walking, \
+             20 row changes, 1 anchor, 0 signals held back. Top: /a (2 walks, 90s)"
+        );
     }
 
     /// The window closes on a ~1 s sweep tick that a busy machine can starve, so
@@ -583,7 +698,7 @@ mod tests {
     fn the_line_reports_the_measured_window_length() {
         let t0 = Instant::now();
         let mut window = RescanChurnWindow::new(t0);
-        window.record_reconcile(Path::new("/a"), Duration::from_secs(90), 10);
+        window.record_reconcile(Path::new("/a"), Duration::from_secs(90), 10, None);
         let report = window
             .poll(t0 + Duration::from_secs(40 * 60))
             .expect("a busy window, closed late");

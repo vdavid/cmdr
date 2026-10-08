@@ -9,7 +9,7 @@ dedicated subdir).
 
 - **`NewFolderDialog.svelte`**: dialog UI around the shared `../NewEntryNameField.svelte` +
   `../new-entry-name-check.svelte.ts` (subtitle, name field, debounced validation + async conflict check), plus
-  AI-suggestion streaming and the timeout warning.
+  AI-suggestion streaming and the slow-volume notice (`../create-submission.svelte.ts`).
 - **`new-folder-operations.ts`**: `getInitialFolderName()` (the `../cursor-entry.ts` lookup, extension stripped) and
   `moveCursorToNewFolder()`.
 - **`new-folder-utils.ts`**: pure `removeExtension()` for deriving the initial name.

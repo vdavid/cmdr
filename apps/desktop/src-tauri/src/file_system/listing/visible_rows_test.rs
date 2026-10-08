@@ -291,3 +291,34 @@ fn a_row_added_after_the_first_read_shows_up_in_the_next_one() {
         "the new row landed in sort order and every accessor sees it"
     );
 }
+
+/// A live signature is NOT permission to sample ownership again when constructing
+/// rows. Even after the settings change, counts and identities use the capture.
+#[test]
+fn a_captured_projection_pins_rows_without_double_sampling_settings_or_ownership() {
+    use super::visible_rows::{ScratchProjection, VisibleRowsCache};
+    use crate::file_system::staging::{set_show_safe_save_files, set_show_staging_temps};
+    let _settings = ShowTempsGuard::set_both(false, false);
+    let owner = Arc::new(());
+    let temp = StagingTemp::mint(Path::new("/big/a"), Some(Arc::downgrade(&owner)));
+    let name = temp.path().file_name().unwrap().to_str().unwrap();
+    let entries = vec![entry(name), entry("b.sb-temp"), entry("c")];
+    let cache = VisibleRowsCache::new();
+    let committed = ScratchProjection::for_entries(&entries, &ScratchProjection::default());
+    assert_eq!(cache.rows(&entries, true, None, &committed).len(), 1);
+    set_show_staging_temps(true);
+    set_show_safe_save_files(true);
+    let capture = committed.live();
+    set_show_staging_temps(false);
+    set_show_safe_save_files(false);
+    assert_eq!(cache.rows(&entries, true, None, &capture).len(), 3);
+    assert_eq!(
+        cache.rows(&entries, true, None, &capture).get(0).unwrap().path,
+        entries[0].path
+    );
+    assert_eq!(cache.rows(&entries, true, None, &committed).len(), 1);
+    drop(owner);
+    // Ownership can expire between capture and row construction too.
+    assert_eq!(cache.rows(&entries, true, None, &committed).len(), 1);
+    assert_eq!(cache.rows(&entries, true, None, &committed.live()).len(), 2);
+}

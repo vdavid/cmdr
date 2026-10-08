@@ -71,7 +71,9 @@ reviewable, and a half-written GROUP is what would matter — that one is atomic
 
 - `pending` — the only mutable state. The agent may re-propose it; the user may approve or reject it. No expiry: a
   suggestion waits as long as it takes.
-- `approved` — claimed, ops handed to the queue, execution in flight.
+- `approved` — claimed, ops handed to the queue, execution in flight. The one way back is `claim.rs::release_claim`,
+  for a claim the write engine then refused to start: conditional on `approved` AND on no op carrying an outcome, so a
+  group anything ran for can never be offered (and run) twice.
 - `interrupted` — the app restarted while approved. Frozen: nothing here knows which ops ran, so the user re-approves
   (minting a NEW group with a fresh preflight, the old group's rows staying put so the decision record stays whole and
   analytics count one re-approval rather than two proposals) or discards.

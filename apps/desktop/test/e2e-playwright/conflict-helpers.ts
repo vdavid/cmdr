@@ -387,7 +387,8 @@ export interface ConflictSnapshot {
 
 /**
  * Reads the currently-displayed conflict's filename + whether it's the
- * file→folder (red warning) variant. Returns null when no conflict is shown.
+ * file→folder variant (the red warning tagged `data-clash="file-over-folder"`;
+ * folder→file wears a red warning too). Returns null when no conflict is shown.
  */
 export async function readCurrentConflict(tauriPage: PageLike): Promise<ConflictSnapshot | null> {
   return tauriPage.evaluate<ConflictSnapshot | null>(`(function(){
@@ -397,8 +398,9 @@ export async function readCurrentConflict(tauriPage: PageLike): Promise<Conflict
     if (!nameEl) return null;
     var name = (nameEl.textContent || '').trim();
     if (!name) return null;
-    var hasWarning = !!section.querySelector('.conflict-warning');
-    return { filename: name, isFileOverFolder: hasWarning };
+    var warning = section.querySelector('.conflict-warning');
+    var clash = warning ? warning.getAttribute('data-clash') : null;
+    return { filename: name, isFileOverFolder: clash === 'file-over-folder' };
   })()`)
 }
 

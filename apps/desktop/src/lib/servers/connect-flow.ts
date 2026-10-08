@@ -46,8 +46,8 @@ export type ConnectFlowResult =
   | { kind: 'reconnecting' }
   /** The user pressed Cancel. ❗ Says nothing: they know. */
   | { kind: 'cancelled' }
-  /** Something to tell the user, with a Try again beside it. */
-  | { kind: 'refused'; refusal: ConnectRefusalKind }
+  /** Something to tell the user, with a Try again beside it. `region`: `region_mismatch`'s named region. */
+  | { kind: 'refused'; refusal: ConnectRefusalKind; region?: string }
   /** Nothing to do: the session is already serving. */
   | { kind: 'already_live' }
 
@@ -207,6 +207,8 @@ function readOutcome(outcome: ServerDialOutcome): ConnectFlowResult {
     case 'host_key_revoked':
       return { kind: 'refused', refusal: 'host_key_revoked' }
     case 'refused':
-      return { kind: 'refused', refusal: outcome.refusal }
+      return outcome.region
+        ? { kind: 'refused', refusal: outcome.refusal, region: outcome.region }
+        : { kind: 'refused', refusal: outcome.refusal }
   }
 }

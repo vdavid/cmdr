@@ -28,7 +28,12 @@
  * in its markup.
  */
 
-import { scanVolumeForConflicts, type SourceItemInput, type VolumeConflictInfo } from '$lib/tauri-commands'
+import {
+  scanVolumeForConflicts,
+  type KnownClash,
+  type SourceItemInput,
+  type VolumeConflictInfo,
+} from '$lib/tauri-commands'
 import { pluralize } from '$lib/utils/pluralize'
 import { withTimeout } from '$lib/utils/timing'
 import type { Logger } from '$lib/logging/logger'
@@ -79,6 +84,9 @@ export function createTransferConflictCheck(deps: TransferConflictCheckDeps) {
   // per-file dialog's file→folder warning.
   let hasTypeMismatchConflict = $state(false)
   let conflictNames = $state<string[]>([])
+  // The file-vs-file clashes' sizes and dates, which an S3 cost estimate prices
+  // as overwrites under the chosen policy (`S3CostLine`).
+  let fileClashes = $state<KnownClash[]>([])
   // Where the check has got to. `unknown` is the state that must never be
   // collapsed into `answered`: this feeds a data-destroying decision, and an
   // empty conflict list from a check that never ran looks exactly like a clean
@@ -168,6 +176,14 @@ export function createTransferConflictCheck(deps: TransferConflictCheckDeps) {
       conflictNames = realConflicts.map((c) =>
         deps.getDestinationName?.() ? (sourcePaths[0].split('/').pop() ?? sourcePaths[0]) : c.sourcePath,
       )
+      fileClashes = realConflicts
+        .filter((c) => !c.sourceIsDirectory && !c.destIsDirectory)
+        .map((c) => ({
+          sourceSize: c.sourceSize,
+          destSize: c.destSize,
+          sourceModified: c.sourceModified,
+          destModified: c.destModified,
+        }))
 
       if (totalConflictCount > 0 || mergeFolderCount > 0) {
         deps.log.info('Found {count} {conflictsNoun} and {merges} folder merges at destination', {
@@ -202,6 +218,9 @@ export function createTransferConflictCheck(deps: TransferConflictCheckDeps) {
     },
     get conflictNames() {
       return conflictNames
+    },
+    get fileClashes() {
+      return fileClashes
     },
     get isCheckingConflicts() {
       return status === 'checking'

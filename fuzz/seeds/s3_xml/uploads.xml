@@ -1,0 +1,1 @@
+<ListMultipartUploadsResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/"><EncodingType>url</EncodingType><IsTruncated>false</IsTruncated><NextKeyMarker>k</NextKeyMarker><NextUploadIdMarker>u</NextUploadIdMarker><Upload><Key>a+b</Key><UploadId>u1</UploadId><Initiated>2010-11-10T20:48:33.000Z</Initiated></Upload></ListMultipartUploadsResult>

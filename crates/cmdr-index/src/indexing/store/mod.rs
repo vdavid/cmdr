@@ -317,6 +317,29 @@ impl ScanCalibrationSet {
     }
 }
 
+/// How long each step AFTER the walk took on the last completed run of one walk
+/// kind: saving the file list, computing folder sizes, and catching up on the
+/// changes that arrived meanwhile. Together with the walk's own
+/// `ScanCalibration::scan_duration_ms`, this is what an overall "~X left" adds
+/// up for the steps still ahead.
+///
+/// Read per walk kind ONLY, ❌ never from the other kind or the unsuffixed keys:
+/// a borrowed timing would show an overall figure the drive's history doesn't
+/// support. `None` means "no history for this step on this kind of run".
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub(crate) struct StepDurations {
+    pub save_ms: Option<u64>,
+    pub compute_ms: Option<u64>,
+    pub catch_up_ms: Option<u64>,
+}
+
+impl StepDurations {
+    /// The `meta` key bases, suffixed per walk kind by `ScanCalibrationKind::meta_key`.
+    pub const SAVE_KEY: &'static str = "save_duration_ms";
+    pub const COMPUTE_KEY: &'static str = "compute_duration_ms";
+    pub const CATCH_UP_KEY: &'static str = "catch_up_duration_ms";
+}
+
 // ── IndexStore ───────────────────────────────────────────────────────
 
 /// Read-oriented handle to the index database.

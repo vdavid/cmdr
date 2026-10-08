@@ -250,6 +250,29 @@ describe('a rolling-back row offers to pause and to stop', () => {
     expect(control('Cancel')).toBeNull()
   })
 
+  it('re-reads the row once its reversal ends, so the badge stops saying "Rolling back"', async () => {
+    commandMocks.getOperationLogDetail.mockResolvedValue({
+      operation: journalRow({ rollbackState: 'rolledBack' }),
+      items: [],
+      totalItems: 0,
+    })
+    emitSnapshot([reversalSnapshot('inv-1')])
+    await mountDialog([journalRow()])
+
+    // Nothing is read while the reversal runs: the end is an event, never a poll.
+    expect(commandMocks.getOperationLogDetail).not.toHaveBeenCalled()
+
+    // The reversal's only word that it's over: it drops out of the registry.
+    emitSnapshot([])
+
+    await vi.waitFor(() => {
+      expect(target.querySelector('.op-badge-rollback')?.textContent.trim()).toBe('Rolled back')
+    })
+    // The header alone: the row's items aren't what drifted.
+    expect(commandMocks.getOperationLogDetail).toHaveBeenCalledTimes(1)
+    expect(commandMocks.getOperationLogDetail).toHaveBeenCalledWith('op-copy', 0, 0)
+  })
+
   it('gives every control label its full width, whatever the row wants', async () => {
     emitSnapshot([reversalSnapshot('inv-1', 'paused')])
     await mountDialog([journalRow()])

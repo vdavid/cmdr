@@ -109,18 +109,17 @@ Writing them:
   SMB fixtures), `scripts/`. The other three apps are above.
 - `crates/`: `cmdr-fs` (filesystem vocabulary + host primitives), `cmdr-index` (file, media, and folder-importance
   indexes), `cmdr-archive` (zip/tar/7z, and the model a new backend crate copies), `cmdr-smb` (SMB and its protocol
-  layer), `cmdr-adb` (Android over ADB), `cmdr-mtp` (USB phones), `cmdr-git` (repos and the `.git` portal) carry no
-  `tauri`, enforced by `index-crate-isolation`; plus two dev CLIs and a vendored `fsevent-stream` fork. Map:
-  `docs/architecture.md`.
+  layer), `cmdr-adb` (Android over ADB), `cmdr-mtp` (USB phones), `cmdr-git` (repos and the `.git` portal), `cmdr-http`
+  (proxy routing) carry no `tauri`, enforced by `index-crate-isolation`; plus two dev CLIs and a vendored
+  `fsevent-stream` fork. Map: `docs/architecture.md`.
 - `brand/`: brand and press-kit assets.
 - `docs/`: `docs/architecture.md` (the map), `docs/guides/` (how-tos), `tooling/` (service and workflow references),
   `docs/business/README.md` (pricing, licensing, product facts), `docs/specs/DETAILS.md` (big design docs; open work is
   GitHub issues, ❌ not specs), `docs/notes/README.md`, `style-guide.md`, `design-principles.md`, `security.md`,
   `maintenance.md`.
 - `tools/`: dev tooling outside every workspace and check: `tools/intellij-plugin/`, `tools/privatesize-poc/README.md`.
-- `vendor/`: third-party crates we patch and swap in via `[patch.crates-io]`, byte-identical to their published source
-  apart from the fix. Not workspace members, and out of jurisdiction for repo-wide tooling. Today: `vendor/mdns-sd`
-  (`docs/notes/mdns-sd-multicast-join-retry-loop.md`).
+- `vendor/` (empty today): a third-party crate we patch goes here, swapped in via `[patch.crates-io]` and identical to
+  upstream apart from the fix. Tooling skips it; `desktop-rust-vendor-patch-applied` guards the patch.
 - `scripts/check/`: the Go check runner. `.github/workflows/`: CI.
 
 ## Dependencies

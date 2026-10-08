@@ -9,27 +9,34 @@
 //! ❗ **Why a facade and not a rewrite.** The two backends' outcome enums are
 //! already correct and tested, and a frontend that branches on a superset is one
 //! `switch` instead of two half-matching ones. It is also where S3 plugs in
-//! later: one more [`ServerTarget`] arm, one more store, the same outcome enum
-//! plus whatever S3 adds.
+//! the S3 arm: one more [`ServerTarget`] arm, one more store, the same outcome
+//! enum plus what S3 adds.
 //!
 //! ❗ **The three levels this family speaks in**
 //! (`apps/desktop/src/lib/servers/DETAILS.md` § "The model: account, place,
 //! pin"): an ACCOUNT is an endpoint plus an identity and is never
 //! navigable; a PLACE is the mountable thing under it and is what becomes a
 //! `VolumeInfo`; a PIN is whether a place shows in the volume switcher. SFTP and
-//! WebDAV have exactly one place per account, SMB has many.
+//! WebDAV have exactly one place per account; SMB and S3 have many (an S3
+//! account's buckets, plus its root when saved).
 
-use super::sftp::SftpHostKeyIdentity;
 use crate::network::one_shot_credentials::SecretOffer;
+use crate::network::s3_volume_wiring;
 use crate::network::saved_server_fields::{self, SavedServerOutcome};
-use crate::network::sftp_volume_wiring::{self, SftpConnection};
-use crate::network::webdav_volume_wiring::{self, WebdavConnection};
-use crate::network::{known_shares, manual_servers, sftp_known_servers, smb_saved_shares, webdav_known_servers};
+use crate::network::sftp_volume_wiring;
+use crate::network::webdav_volume_wiring;
+use crate::network::{
+    known_shares, manual_servers, s3_known_places, sftp_known_servers, smb_saved_shares, webdav_known_servers,
+};
 use cmdr_sftp::SftpConnectionParams;
 use cmdr_webdav::WebdavConnectionParams;
 
+mod outcomes;
+mod s3_accounts;
 mod smb_hosts;
 mod wire;
+use outcomes::{SavedEntry, outcome_from_s3, outcome_from_sftp, outcome_from_webdav, saved_by_id};
+use s3_accounts::{s3_accounts, s3_place};
 use smb_hosts::smb_hosts;
 pub use wire::{
     SavedPlace, SavedPlaceRefusal, SavedServer, ServerConnectOutcome, ServerNameSource, ServerProtocol, ServerTarget,
@@ -89,6 +96,7 @@ fn saved_servers(
                 pinned: entry.pinned,
                 app_root,
                 username: Some(entry.username.clone()),
+                auto_reconnect: Some(entry.auto_reconnect),
             }],
             id: volume_id,
             protocol: ServerProtocol::Sftp,
@@ -121,6 +129,7 @@ fn saved_servers(
                 pinned: entry.pinned,
                 app_root,
                 username: Some(entry.username.clone()),
+                auto_reconnect: Some(entry.auto_reconnect),
             }],
             id: volume_id,
             protocol: ServerProtocol::Webdav,
@@ -134,6 +143,7 @@ fn saved_servers(
         });
     }
 
+    servers.extend(s3_accounts(manager, &app_roots));
     servers.extend(smb_hosts(manual, known, hosts));
     servers
 }
@@ -206,6 +216,19 @@ pub async fn connect_saved_place(
                 .await,
             )
         }
+        SavedEntry::S3(entry) => outcome_from_s3(
+            s3_volume_wiring::connect_and_register(
+                // Nothing typed: the account keeps the name it has.
+                "",
+                entry.provider,
+                &entry.access_key_id,
+                entry.bucket.as_deref(),
+                entry.auto_reconnect,
+                &attempt_id,
+                secret,
+            )
+            .await,
+        ),
         // A saved SMB share: mounted as its account, then connected the usual way.
         SavedEntry::Smb(row) => smb_saved_shares::connect_saved_share(row, &attempt_id, secret, username).await,
     })
@@ -269,6 +292,24 @@ pub async fn connect_server(
                     .await,
             )
         }
+        ServerTarget::S3 {
+            display_name,
+            provider,
+            access_key_id,
+            bucket,
+            auto_reconnect,
+        } => outcome_from_s3(
+            s3_volume_wiring::connect_and_register(
+                &display_name,
+                provider,
+                &access_key_id,
+                bucket.as_deref(),
+                auto_reconnect,
+                &attempt_id,
+                secret,
+            )
+            .await,
+        ),
     }
 }
 
@@ -282,8 +323,9 @@ pub async fn connect_server(
 pub fn cancel_server_connect(attempt_id: String) -> bool {
     let sftp = sftp_volume_wiring::cancel_connect(&attempt_id);
     let webdav = webdav_volume_wiring::cancel_connect(&attempt_id);
+    let s3 = s3_volume_wiring::cancel_connect(&attempt_id);
     let smb = smb_saved_shares::cancel_connect(&attempt_id);
-    sftp || webdav || smb
+    sftp || webdav || s3 || smb
 }
 
 /// Drops a place's session and takes it out of the registry, answering whether
@@ -312,7 +354,9 @@ pub async fn disconnect_place(volume_id: String) -> bool {
 /// sends a pane standing on the place home.
 pub(crate) async fn disconnect_place_inner(volume_id: &str) -> bool {
     let root = crate::server_volumes::place_root(volume_id);
-    let dropped = sftp_volume_wiring::disconnect(volume_id).await || webdav_volume_wiring::disconnect(volume_id).await;
+    let dropped = sftp_volume_wiring::disconnect(volume_id).await
+        || webdav_volume_wiring::disconnect(volume_id).await
+        || s3_volume_wiring::disconnect(volume_id).await;
     if dropped {
         crate::volume_broadcast::emit_volume_gone(volume_id, root.as_deref().unwrap_or_default());
     }
@@ -342,6 +386,7 @@ fn set_place_pinned_inner(volume_id: &str, pinned: bool) -> bool {
     let moved = match saved {
         SavedEntry::Sftp(entry) => sftp_known_servers::set_pinned(&entry.host, entry.port, &entry.username, pinned),
         SavedEntry::Webdav(entry) => webdav_known_servers::set_pinned(&entry.url, &entry.username, pinned),
+        SavedEntry::S3(_) => s3_known_places::set_pinned(volume_id, pinned),
         SavedEntry::Smb(_) => known_shares::set_share_pinned(volume_id, pinned),
     };
     if moved {
@@ -379,6 +424,7 @@ fn set_place_auto_reconnect_inner(volume_id: &str, on: bool) -> bool {
             sftp_volume_wiring::apply_auto_reconnect(&entry.host, entry.port, &entry.username, on)
         }
         SavedEntry::Webdav(entry) => webdav_volume_wiring::apply_auto_reconnect(&entry.url, &entry.username, on),
+        SavedEntry::S3(_) => s3_volume_wiring::apply_auto_reconnect(volume_id, on),
         // A share has no such switch: the kernel mount's own reconnect is macOS's.
         SavedEntry::Smb(_) => false,
     };
@@ -416,6 +462,7 @@ pub async fn forget_server(id: String) -> bool {
     let forgotten = match saved {
         SavedEntry::Sftp(entry) => sftp_known_servers::forget(&entry.host, entry.port, &entry.username),
         SavedEntry::Webdav(entry) => webdav_known_servers::forget(&entry.url, &entry.username),
+        SavedEntry::S3(_) => s3_known_places::forget(&id),
         SavedEntry::Smb(row) => {
             // ❗ The row and its pin, and nothing else: a mounted share stays
             // mounted, so there's no pane to send home and no session to drop.
@@ -432,7 +479,9 @@ pub async fn forget_server(id: String) -> bool {
     crate::volume_broadcast::emit_volume_gone(&id, root.as_deref().unwrap_or_default());
     // ❗ AFTER the gone event: the wiring requests its own `volumes-changed`, so
     // disconnecting first would put the republish ahead of the redirect.
-    let _ = sftp_volume_wiring::disconnect(&id).await || webdav_volume_wiring::disconnect(&id).await;
+    let _ = sftp_volume_wiring::disconnect(&id).await
+        || webdav_volume_wiring::disconnect(&id).await
+        || s3_volume_wiring::disconnect(&id).await;
     crate::volume_broadcast::emit_volumes_changed();
     true
 }
@@ -458,6 +507,7 @@ pub async fn has_server_secret(id: String) -> bool {
     match saved {
         SavedEntry::Sftp(entry) => super::sftp::has_sftp_credentials(entry.host, entry.port, entry.username).await,
         SavedEntry::Webdav(entry) => super::webdav::has_webdav_credentials(entry.url, entry.username).await,
+        SavedEntry::S3(entry) => super::s3::has_s3_credentials(entry.provider, entry.access_key_id).await,
         SavedEntry::Smb(row) => {
             crate::deadline::blocking_with_timeout(std::time::Duration::from_secs(15), false, move || {
                 crate::network::keychain::has_credentials(&row.server_name, None)
@@ -483,6 +533,11 @@ pub async fn forget_server_secret(id: String) -> bool {
             .await
             .is_ok(),
         SavedEntry::Webdav(entry) => super::webdav::delete_webdav_credentials(entry.url, entry.username)
+            .await
+            .is_ok(),
+        // ❗ The ACCOUNT's secret: every other place under this key stops
+        // remembering it too, since they share the one entry.
+        SavedEntry::S3(entry) => super::s3::delete_s3_credentials(entry.provider, entry.access_key_id)
             .await
             .is_ok(),
         // SMB keeps one password per HOST, which is what a share's sign-in wrote.
@@ -543,6 +598,12 @@ pub fn saved_server_id(server: ServerTarget) -> Option<String> {
                 &username,
             ))
         }
+        ServerTarget::S3 {
+            provider,
+            access_key_id,
+            bucket,
+            ..
+        } => s3_place(provider, access_key_id, bucket, true).volume_id(),
     }
 }
 
@@ -604,7 +665,41 @@ async fn save_target(server: ServerTarget) -> SavedServerOutcome {
             })
             .await
         }
+        ServerTarget::S3 {
+            display_name,
+            provider,
+            access_key_id,
+            bucket,
+            auto_reconnect,
+        } => {
+            s3_volume_wiring::save_without_connecting(
+                s3_place(provider, access_key_id, bucket, auto_reconnect),
+                &display_name,
+            )
+            .await
+        }
     }
+}
+
+/// Names the saved S3 account the listing calls `id`, answering whether any
+/// saved place belongs to it. An empty name unnames it, so the UI calls it
+/// `key id@host` again.
+///
+/// ❗ Its own command rather than a [`ServerTarget`] arm, like
+/// [`update_saved_smb_host`]: the account is no place to save, and a target with
+/// no bucket would save the account ROOT as a new place. A bucket's name is the
+/// bucket's own, so an account is the only S3 thing a person names.
+///
+/// ❗ Emits `volumes-changed`, which is what makes an open servers hub re-read
+/// the saved list and the switcher relabel the account root.
+#[tauri::command]
+#[specta::specta]
+pub fn update_saved_s3_account(id: String, name: String) -> bool {
+    let named = s3_known_places::rename_account(&id, &name);
+    if named {
+        crate::volume_broadcast::emit_volumes_changed();
+    }
+    named
 }
 
 /// Names the saved SMB host the listing calls `id` and sets the account it's used
@@ -691,80 +786,11 @@ pub fn forget_saved_smb_host_password(
 // Shared plumbing
 // ============================================================================
 
-/// A saved entry, found by the id its place carries.
-enum SavedEntry {
-    Sftp(sftp_known_servers::KnownSftpServer),
-    Webdav(webdav_known_servers::KnownWebdavServer),
-    /// A saved SMB share whose last mount had that id.
-    Smb(known_shares::KnownNetworkShare),
-}
-
-/// The saved entry whose derived volume id is `volume_id`.
-///
-/// ❗ Derived rather than stored: the id funnel (`cmdr_fs::volume::ids`) is the
-/// one place an id is minted, so looking one up means re-deriving it from the
-/// same tuple rather than keeping a second copy that can drift.
-fn saved_by_id(volume_id: &str) -> Option<SavedEntry> {
-    let sftp = sftp_known_servers::all()
-        .into_iter()
-        .find(|entry| cmdr_fs::volume::sftp_volume_id(&entry.host, entry.port, &entry.username) == volume_id);
-    if let Some(entry) = sftp {
-        return Some(SavedEntry::Sftp(entry));
-    }
-    let webdav = webdav_known_servers::all().into_iter().find(|entry| {
-        webdav_params(&entry.url, &entry.username, "/").is_some_and(|params| {
-            cmdr_fs::volume::webdav_volume_id(params.host(), params.port(), &entry.username) == volume_id
-        })
-    });
-    if let Some(entry) = webdav {
-        return Some(SavedEntry::Webdav(entry));
-    }
-    // ❗ Stored, ❌ not derived, unlike the two above: an SMB id comes off the
-    // mount's `statfs`, and only the row knows which spelling the mount got.
-    known_shares::share_by_volume_id(volume_id).map(SavedEntry::Smb)
-}
-
 /// Connection params for a saved WebDAV entry, or `None` when its address isn't
 /// an `http`/`https` URL.
-fn webdav_params(url: &str, username: &str, remote_root: &str) -> Option<WebdavConnectionParams> {
+pub(super) fn webdav_params(url: &str, username: &str, remote_root: &str) -> Option<WebdavConnectionParams> {
     let parsed = url::Url::parse(url.trim()).ok()?;
     matches!(parsed.scheme(), "http" | "https").then(|| WebdavConnectionParams::new(parsed, username, remote_root))
-}
-
-/// The SFTP wiring's outcome, widened into the superset.
-fn outcome_from_sftp(connection: SftpConnection) -> ServerConnectOutcome {
-    match connection {
-        // The rung is dropped here: it is a fact about THIS dial, and the
-        // superset's consumers ask `get_sftp_unattended_reconnect` when a banner
-        // renders rather than deriving one from a stale rung.
-        SftpConnection::Connected { volume_id, .. } => ServerConnectOutcome::Connected { volume_id },
-        SftpConnection::NeedsHostKeyApproval(prompt) => ServerConnectOutcome::NeedsHostKeyApproval(prompt),
-        SftpConnection::HostKeyRevoked { algorithm, fingerprint } => {
-            ServerConnectOutcome::HostKeyRevoked(SftpHostKeyIdentity { algorithm, fingerprint })
-        }
-        SftpConnection::AuthenticationRejected => ServerConnectOutcome::AuthenticationRejected,
-        SftpConnection::NeedsCredentials => ServerConnectOutcome::NeedsCredentials,
-        SftpConnection::TimedOut => ServerConnectOutcome::TimedOut,
-        SftpConnection::Unreachable => ServerConnectOutcome::Unreachable,
-        SftpConnection::Cancelled => ServerConnectOutcome::Cancelled,
-    }
-}
-
-/// The WebDAV wiring's outcome, widened into the superset.
-fn outcome_from_webdav(connection: WebdavConnection) -> ServerConnectOutcome {
-    match connection {
-        WebdavConnection::Connected { volume_id } => ServerConnectOutcome::Connected { volume_id },
-        WebdavConnection::AuthenticationRejected => ServerConnectOutcome::AuthenticationRejected,
-        WebdavConnection::NeedsCredentials => ServerConnectOutcome::NeedsCredentials,
-        // ❗ Its own variant, ❌ never folded into `AuthenticationRejected`: a
-        // Digest-only server never saw the password.
-        WebdavConnection::AuthMethodUnsupported => ServerConnectOutcome::AuthMethodUnsupported,
-        WebdavConnection::CertificateUntrusted => ServerConnectOutcome::CertificateUntrusted,
-        WebdavConnection::NotAWebdavServer => ServerConnectOutcome::NotAWebdavServer,
-        WebdavConnection::TimedOut => ServerConnectOutcome::TimedOut,
-        WebdavConnection::Unreachable => ServerConnectOutcome::Unreachable,
-        WebdavConnection::Cancelled => ServerConnectOutcome::Cancelled,
-    }
 }
 
 #[cfg(test)]

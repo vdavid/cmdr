@@ -7,14 +7,14 @@
 
 import { getAppLogger } from '$lib/logging/logger'
 
-const log = getAppLogger('search')
-
 /**
- * IPC surface a consumer must provide to construct a recent-items store. The shapes mirror
+ * What a consumer must provide to construct a recent-items store: its IPC and its log category. The shapes mirror
  * Search's existing tauri-commands (`getRecentSearches`, `addRecentSearch`, …) so Search's
  * wrapper can pass them through unchanged.
  */
 export interface RecentItemsIPC<E> {
+  /** The owning dialog's log category, so a failure names whose recents broke. */
+  logCategory: string
   getRecent: () => Promise<E[]>
 }
 
@@ -44,6 +44,7 @@ export interface RecentItemsStore<E> {
  * `getRecentSearches`-family; Selection wires the `getRecentSelections`-family.
  */
 export function createRecentItemsState<E>(ipc: RecentItemsIPC<E>): RecentItemsStore<E> {
+  const log = getAppLogger(ipc.logCategory)
   let entries = $state<E[]>([])
   let loaded = $state(false)
   let loading = $state(false)

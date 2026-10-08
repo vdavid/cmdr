@@ -22,5 +22,59 @@
   "common.downloadsFdaHint": "Cmdr braucht vollständigen Festplattenzugriff, um deinen Downloads-Ordner zu überwachen. <settingsLink>Systemeinstellungen öffnen</settingsLink>",
   "@common.downloadsFdaHint": {
     "sourceHash": "315e1d8"
+  },
+  "common.sizeUnit.byte": "{count, plural, one {Byte} other {Bytes}}",
+  "@common.sizeUnit.byte": {
+    "sourceHash": "ee1f643"
+  },
+  "common.sizeUnit.kibibyte": "KiB",
+  "@common.sizeUnit.kibibyte": {
+    "sourceHash": "97ee1b8",
+    "sameAsSourceJustification": "IEC binary symbol shared with English: German keeps the Latin IEC 80000-13 symbols (KDE Dolphin de MiB → MiB, Microsoft Terminology de GiB/MiB unchanged), distinct from the SI kB/MB/GB."
+  },
+  "common.sizeUnit.mebibyte": "MiB",
+  "@common.sizeUnit.mebibyte": {
+    "sourceHash": "dea6cb8",
+    "sameAsSourceJustification": "IEC binary symbol shared with English: German keeps the Latin IEC 80000-13 symbols (KDE Dolphin de MiB → MiB, Microsoft Terminology de GiB/MiB unchanged), distinct from the SI kB/MB/GB."
+  },
+  "common.sizeUnit.gibibyte": "GiB",
+  "@common.sizeUnit.gibibyte": {
+    "sourceHash": "66a1561",
+    "sameAsSourceJustification": "IEC binary symbol shared with English: German keeps the Latin IEC 80000-13 symbols (KDE Dolphin de MiB → MiB, Microsoft Terminology de GiB/MiB unchanged), distinct from the SI kB/MB/GB."
+  },
+  "common.sizeUnit.tebibyte": "TiB",
+  "@common.sizeUnit.tebibyte": {
+    "sourceHash": "15c1ec4",
+    "sameAsSourceJustification": "IEC binary symbol shared with English: German keeps the Latin IEC 80000-13 symbols (KDE Dolphin de MiB → MiB, Microsoft Terminology de GiB/MiB unchanged), distinct from the SI kB/MB/GB."
+  },
+  "common.sizeUnit.pebibyte": "PiB",
+  "@common.sizeUnit.pebibyte": {
+    "sourceHash": "38ca5a1",
+    "sameAsSourceJustification": "IEC binary symbol shared with English: German keeps the Latin IEC 80000-13 symbols (KDE Dolphin de MiB → MiB, Microsoft Terminology de GiB/MiB unchanged), distinct from the SI kB/MB/GB."
+  },
+  "common.sizeUnit.kilobyte": "kB",
+  "@common.sizeUnit.kilobyte": {
+    "sourceHash": "591e59c",
+    "sameAsSourceJustification": "SI symbol shared with English: German writes the decimal kilobyte as kB with the lowercase SI prefix (GNOME Nautilus de 4 kB / 4 MB), distinct from the binary KiB."
+  },
+  "common.sizeUnit.megabyte": "MB",
+  "@common.sizeUnit.megabyte": {
+    "sourceHash": "1d09f6f",
+    "sameAsSourceJustification": "Unit symbol shared with English: German macOS Finder writes KB/MB/GB unchanged (pile de/macOS, size formatter strings), and SI keeps the lowercase k (kB)."
+  },
+  "common.sizeUnit.gigabyte": "GB",
+  "@common.sizeUnit.gigabyte": {
+    "sourceHash": "b4043b0",
+    "sameAsSourceJustification": "Unit symbol shared with English: German macOS Finder writes KB/MB/GB unchanged (pile de/macOS, size formatter strings), and SI keeps the lowercase k (kB)."
+  },
+  "common.sizeUnit.terabyte": "TB",
+  "@common.sizeUnit.terabyte": {
+    "sourceHash": "791b0ac",
+    "sameAsSourceJustification": "Unit symbol shared with English: German macOS Finder writes KB/MB/GB unchanged (pile de/macOS, size formatter strings), and SI keeps the lowercase k (kB)."
+  },
+  "common.sizeUnit.petabyte": "PB",
+  "@common.sizeUnit.petabyte": {
+    "sourceHash": "f9085bf",
+    "sameAsSourceJustification": "Unit symbol shared with English: German macOS Finder writes KB/MB/GB unchanged (pile de/macOS, size formatter strings), and SI keeps the lowercase k (kB)."
   }
 }

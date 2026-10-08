@@ -1,39 +1,39 @@
 {
-  "goToPath.dialog.title": "Go to path",
+  "goToPath.dialog.title": "Go to folder",
   "@goToPath.dialog.title": {
-    "description": "Title of the \"Go to path\" dialog (opened with Command-G), which jumps a pane to a typed filesystem location. \"Path\" means a filesystem location like ~/Documents.",
+    "description": "Title of the \"Go to folder\" dialog (opened with Command-G), which jumps a pane to a typed filesystem location. Matches Finder's Go to Folder dialog on purpose; use the wording Finder uses in this language.",
     "screenshot": "go-to-path.png"
   },
   "goToPath.dialog.inputAriaLabel": "Path to go to",
   "@goToPath.dialog.inputAriaLabel": {
-    "description": "Accessibility label (read by screen readers) for the path input in the \"Go to path\" dialog.",
+    "description": "Accessibility label (read by screen readers) for the path input in the \"Go to folder\" dialog.",
     "screenshot": "go-to-path.png"
   },
   "goToPath.dialog.inputPlaceholder": "Type or paste a path, e.g. ~/Documents",
   "@goToPath.dialog.inputPlaceholder": {
-    "description": "Placeholder in the \"Go to path\" dialog's input. \"~/Documents\" is an example filesystem path; keep it literally as a sample.",
+    "description": "Placeholder in the \"Go to folder\" dialog's input. \"~/Documents\" is an example filesystem path; keep it literally as a sample.",
     "screenshot": "go-to-path.png"
   },
   "goToPath.dialog.recentsAriaLabel": "Recent paths",
   "@goToPath.dialog.recentsAriaLabel": {
-    "description": "Accessibility label (read by screen readers) for the list of recently visited paths in the \"Go to path\" dialog.",
+    "description": "Accessibility label (read by screen readers) for the list of recently visited paths in the \"Go to folder\" dialog.",
     "screenshot": "go-to-path.png",
-    "screenshotNote": "The Go to path dialog, pictured here. Your string belongs to a state this screenshot doesn’t show: its list of recent paths, or a hint under the field about the path you typed."
+    "screenshotNote": "The Go to folder dialog, pictured here. Your string belongs to a state this screenshot doesn’t show: its list of recent paths, or a hint under the field about the path you typed."
   },
   "goToPath.dialog.removeFromList": "Remove from list",
   "@goToPath.dialog.removeFromList": {
     "description": "Tooltip and accessibility label for the button that removes one entry from the recent-paths list. A short label.",
     "screenshot": "go-to-path.png",
-    "screenshotNote": "The Go to path dialog, pictured here. Your string belongs to a state this screenshot doesn’t show: its list of recent paths, or a hint under the field about the path you typed."
+    "screenshotNote": "The Go to folder dialog, pictured here. Your string belongs to a state this screenshot doesn’t show: its list of recent paths, or a hint under the field about the path you typed."
   },
   "goToPath.dialog.cancel": "Cancel",
   "@goToPath.dialog.cancel": {
-    "description": "Button that closes the \"Go to path\" dialog without navigating. A short button label.",
+    "description": "Button that closes the \"Go to folder\" dialog without navigating. A short button label.",
     "screenshot": "go-to-path.png"
   },
-  "goToPath.dialog.confirm": "Go to path",
+  "goToPath.dialog.confirm": "Go",
   "@goToPath.dialog.confirm": {
-    "description": "Primary button in the \"Go to path\" dialog that navigates to the typed path. A short button label.",
+    "description": "Primary button in the \"Go to folder\" dialog that navigates to the typed path. A short button label in your language's usual button form, matching the button Finder itself shows in its own Go to Folder dialog (Finder's English one says \"Go\"). The dialog's title already says \"Go to folder\", so the button doesn't need to repeat the whole phrase.",
     "screenshot": "go-to-path.png"
   },
   "goToPath.dialog.ancestorHint": "This path doesn’t exist. The closest place to go is {dir}.",
@@ -43,11 +43,11 @@
       "dir": "the nearest existing parent folder's path (e.g. /Users/me)"
     },
     "screenshot": "go-to-path.png",
-    "screenshotNote": "The Go to path dialog, pictured here. Your string belongs to a state this screenshot doesn’t show: its list of recent paths, or a hint under the field about the path you typed."
+    "screenshotNote": "The Go to folder dialog, pictured here. Your string belongs to a state this screenshot doesn’t show: its list of recent paths, or a hint under the field about the path you typed."
   },
   "goToPath.toast.landedOnAncestor": "<req>{requested}</req> doesn’t exist, so we took you to <land>{landed}</land>.",
   "@goToPath.toast.landedOnAncestor": {
-    "description": "Toast shown after \"Go to path\" navigated to the nearest existing folder because the typed path was missing. Both paths are wrapped in tags (<req></req> and <land></land>) that render them in a monospace font; keep the tags around each path placeholder.",
+    "description": "Toast shown after \"Go to folder\" navigated to the nearest existing folder because the typed path was missing. Both paths are wrapped in tags (<req></req> and <land></land>) that render them in a monospace font; keep the tags around each path placeholder.",
     "placeholders": {
       "requested": "the path the user typed, which doesn't exist (e.g. /tmp/nope)",
       "landed": "the nearest existing folder we navigated to instead (e.g. /tmp)"
@@ -60,23 +60,23 @@
   },
   "goToPath.dialog.opensServer": "Opens {name}",
   "@goToPath.dialog.opensServer": {
-    "description": "Preview line under the Go to path box when what the user typed is an address Cmdr can open right now: a saved server, or a phone. Present tense, third person.",
+    "description": "Preview line under the Go to folder box when what the user typed is an address Cmdr can open right now: a saved server, or a phone. Present tense, third person.",
     "placeholders": {
       "name": "the server’s or device’s name, like “Naspolya”"
     },
     "screenshot": "go-to-path.png",
-    "screenshotNote": "The Go to path dialog, pictured here. Your string belongs to a state this screenshot doesn’t show: its list of recent paths, or a hint under the field about the path you typed."
+    "screenshotNote": "The Go to folder dialog, pictured here. Your string belongs to a state this screenshot doesn’t show: its list of recent paths, or a hint under the field about the path you typed."
   },
   "goToPath.dialog.addsServer": "Adds a server",
   "@goToPath.dialog.addsServer": {
-    "description": "Preview line under the Go to path box when what the user typed is a server address nothing has saved yet, so going there opens the form that adds it. Present tense, third person.",
+    "description": "Preview line under the Go to folder box when what the user typed is a server address nothing has saved yet, so going there opens the form that adds it. Present tense, third person.",
     "screenshot": "go-to-path.png",
-    "screenshotNote": "The Go to path dialog, pictured here. Your string belongs to a state this screenshot doesn’t show: its list of recent paths, or a hint under the field about the path you typed."
+    "screenshotNote": "The Go to folder dialog, pictured here. Your string belongs to a state this screenshot doesn’t show: its list of recent paths, or a hint under the field about the path you typed."
   },
   "goToPath.dialog.snapshotNotAPath": "Search results aren’t a path you can go to.",
   "@goToPath.dialog.snapshotNotAPath": {
-    "description": "Preview line under the Go to path box when the user typed a search-results:// address. A list of search results only exists inside the running app, so there is no folder to go to; the user reaches one by searching again. Do not translate the scheme itself.",
+    "description": "Preview line under the Go to folder box when the user typed a search-results:// address. A list of search results only exists inside the running app, so there is no folder to go to; the user reaches one by searching again. Do not translate the scheme itself.",
     "screenshot": "go-to-path.png",
-    "screenshotNote": "The Go to path dialog, pictured here. Your string belongs to a state this screenshot doesn’t show: its list of recent paths, or a hint under the field about the path you typed."
+    "screenshotNote": "The Go to folder dialog, pictured here. Your string belongs to a state this screenshot doesn’t show: its list of recent paths, or a hint under the field about the path you typed."
   }
 }

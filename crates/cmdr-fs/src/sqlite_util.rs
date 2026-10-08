@@ -3,8 +3,9 @@
 //! budgets sized against that slab, the runtime reading of what the slab actually
 //! holds (which the app's `get_memory_diagnostics` folds in, since the slab is
 //! otherwise an anonymous 64 MiB of the Rust heap), the per-thread connection
-//! cache the read paths keep (and the live count that watches it against its
-//! budget), and freelist reclamation for the writer threads.
+//! cache the read paths keep (in `thread_conn_cache.rs`, with the live count that
+//! watches it against its budget), the one way a database file is deleted, and
+//! freelist reclamation for the writer threads.
 //!
 //! It lives here rather than in the app because the slab is exactly ONE per
 //! process and five stores share it — the three index DBs plus the agent's and the
@@ -18,9 +19,11 @@
 use std::ffi::{c_int, c_void};
 use std::path::{Path, PathBuf};
 use std::sync::LazyLock;
-use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 
 use rusqlite::{Connection, OpenFlags, ffi};
+
+mod thread_conn_cache;
+pub use thread_conn_cache::{THREAD_CONN_SLOTS, ThreadConnCache, live_read_connections, retire_read_connections};
 
 // ── Process-wide shared page cache ───────────────────────────────────
 
@@ -526,171 +529,42 @@ pub fn page_cache_kib(conn: &Connection) -> i64 {
     -raw
 }
 
-// ── Per-thread connection cache ──────────────────────────────────────
+// ── Deleting a database ──────────────────────────────────────────────
 
-/// A small per-thread LRU of open read connections, keyed by db path plus the
-/// caller's invalidation generation.
-///
-/// Both read paths (`indexing::read::enrichment`'s `ReadPool` and
-/// `ImportanceIndex`) keep their connections in a thread-local so enrichment
-/// never takes a lock on the hot path. Holding ONE slot made that lock-freedom
-/// expensive in the ordinary two-pane case: a thread alternating between the
-/// left pane's volume and the right pane's closed and reopened on every
-/// alternation, re-running the pragmas and the collation registration and
-/// throwing away the connection's whole `prepare_cached` statement cache —
-/// recompiling those statements is the expensive part. A handful of slots is
-/// affordable because [`READ_PAGE_CACHE_KIB`] is sized against
-/// [`READ_CONNECTION_BUDGET`] rather than against one connection, so a slot costs
-/// 128 KiB of the page ceiling rather than 8 MiB of it.
-///
-/// Every entry is counted in [`live_read_connections`], including the ones this
-/// cache evicts and the ones it takes down with a dying thread, so the budget is
-/// observable rather than hoped for.
-///
-/// Not thread-safe by design: it lives in a `thread_local!` `RefCell`, so there
-/// is no lock. ❌ Don't wrap it in a mutex.
-pub struct ThreadConnCache {
-    /// Most-recently-used first. Never longer than `capacity`.
-    entries: Vec<(PathBuf, u64, Connection)>,
-    capacity: usize,
+/// The three files a WAL-mode database is on disk: the main file, its write-ahead
+/// log, and its shared-memory index. The sidecars only exist while a connection
+/// has written, so any of them may be missing.
+pub fn database_files(db_path: &Path) -> [PathBuf; 3] {
+    let sidecar = |suffix: &str| {
+        let mut name = db_path.as_os_str().to_owned();
+        name.push(suffix);
+        PathBuf::from(name)
+    };
+    [db_path.to_path_buf(), sidecar("-wal"), sidecar("-shm")]
 }
 
-/// Slots per thread. Two covers the ordinary two-pane case (left pane on the
-/// boot disk, right pane on a NAS share); the third absorbs a background reader
-/// (search, the importance scheduler) landing on the same blocking thread
-/// without evicting either pane.
-pub const THREAD_CONN_SLOTS: usize = 3;
-
-/// Read connections the process's [`ThreadConnCache`]s hold right now.
-static LIVE_READ_CONNECTIONS: AtomicUsize = AtomicUsize::new(0);
-
-/// Latched the first time the count passes [`READ_CONNECTION_BUDGET`], so the
-/// warning is one line rather than one per open from then on.
-static READ_BUDGET_EXCEEDED: AtomicBool = AtomicBool::new(false);
-
-/// How many read connections the process's [`ThreadConnCache`]s hold right now,
-/// across every thread.
+/// Delete a database and its sidecars, retiring the read connections cached to it.
 ///
-/// That is the DURABLE read population and the term the sizing is about: those
-/// connections live as long as their thread, so their count tracks tokio's
-/// blocking pool. Multiply by [`READ_PAGE_CACHE_KIB`] for their share of SQLite's
-/// global ceiling on retained pages, and read it against
-/// [`READ_CONNECTION_BUDGET`], which is what the page cache is sized for.
+/// A file that isn't there is fine. Every file is attempted even when one
+/// refuses, and the first refusal is what comes back.
 ///
-/// ⚠️ NOT every read connection in the process. The media, agent, and
-/// operation-log stores open a read connection per call and drop it, so they
-/// never enter this count; they add [`READ_PAGE_CACHE_KIB`] apiece to
-/// `pGroup->nMaxPage` only for the life of the call.
-pub fn live_read_connections() -> usize {
-    LIVE_READ_CONNECTIONS.load(Ordering::Relaxed)
-}
-
-/// Count one newly opened read connection, and say so once if that puts the
-/// process past the budget its page cache was sized for.
-fn count_read_connection_opened() {
-    let live = LIVE_READ_CONNECTIONS.fetch_add(1, Ordering::Relaxed) + 1;
-    if live > READ_CONNECTION_BUDGET && !READ_BUDGET_EXCEEDED.swap(true, Ordering::Relaxed) {
-        let ceiling_mib = (live * READ_PAGE_CACHE_KIB as usize) / 1024;
-        log::warn!(
-            target: "sqlite",
-            "{} open, past the {READ_CONNECTION_BUDGET} the page cache is sized for; their share of SQLite's global page ceiling is now ~{ceiling_mib} MiB against a {} MiB slab, so the slab can run permanently full",
-            crate::pluralize::pluralize(live as u64, "read connection"),
-            SHARED_PAGE_CACHE_BYTES / (1024 * 1024)
-        );
-    }
-}
-
-/// Count `n` read connections going away (evicted, retired, or dropped with
-/// their thread).
-fn count_read_connections_closed(n: usize) {
-    if n > 0 {
-        LIVE_READ_CONNECTIONS.fetch_sub(n, Ordering::Relaxed);
-    }
-}
-
-impl ThreadConnCache {
-    /// An empty cache holding at most `capacity` connections.
-    pub const fn new(capacity: usize) -> Self {
-        Self {
-            entries: Vec::new(),
-            capacity,
-        }
-    }
-
-    /// Run `f` against the connection for `(db_path, generation)`, opening one
-    /// through `open` when this thread holds no live match.
-    ///
-    /// A hit moves the entry to the front; a miss evicts the least recently used
-    /// entry once the cache is full. An entry for `db_path` at a DIFFERENT
-    /// generation is dropped before the reopen, so a caller's `invalidate()`
-    /// still retires the stale connection rather than leaving two around.
-    pub fn with<T, E>(
-        &mut self,
-        db_path: &Path,
-        generation: u64,
-        open: impl FnOnce(&Path) -> Result<Connection, E>,
-        f: impl FnOnce(&Connection) -> T,
-    ) -> Result<T, E> {
-        match self
-            .entries
-            .iter()
-            .position(|(p, g, _)| p == db_path && *g == generation)
-        {
-            Some(0) => {}
-            Some(hit) => {
-                let entry = self.entries.remove(hit);
-                self.entries.insert(0, entry);
-            }
-            None => {
-                // Retire a same-path entry at a stale generation: the caller
-                // invalidated it, so it must not linger behind the new one.
-                let held = self.entries.len();
-                self.entries.retain(|(p, _, _)| p != db_path);
-                count_read_connections_closed(held - self.entries.len());
-                let conn = open(db_path)?;
-                if self.entries.len() >= self.capacity {
-                    self.entries.pop();
-                    count_read_connections_closed(1);
-                }
-                self.entries.insert(0, (db_path.to_path_buf(), generation, conn));
-                count_read_connection_opened();
+/// ⚠️ The caller stops whatever WRITES the database first (its writer thread, a
+/// running pass). This only reaches the cached READ connections, and only as far
+/// as [`retire_read_connections`] can.
+pub fn delete_database(db_path: &Path) -> std::io::Result<()> {
+    retire_read_connections(db_path);
+    let mut first_refusal = None;
+    for file in database_files(db_path) {
+        match std::fs::remove_file(&file) {
+            Ok(()) => {}
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+            Err(e) => {
+                first_refusal.get_or_insert(e);
             }
         }
-        let (_, _, conn) = self
-            .entries
-            .first()
-            .expect("the MRU entry exists: every branch above leaves a match at index 0");
-        Ok(f(conn))
     }
-
-    /// Test-only: the generation this thread holds for `db_path`, or `None` when
-    /// it holds no connection to it.
-    #[cfg(any(test, feature = "testing"))]
-    pub fn generation_for(&self, db_path: &Path) -> Option<u64> {
-        self.entries.iter().find(|(p, _, _)| p == db_path).map(|(_, g, _)| *g)
-    }
-
-    /// Test-only: how many connections this thread currently holds.
-    #[cfg(any(test, feature = "testing"))]
-    pub fn len(&self) -> usize {
-        self.entries.len()
-    }
-
-    /// Test-only: whether this thread holds no connections at all. Paired with
-    /// [`len`](Self::len) because clippy won't take one without the other.
-    #[cfg(any(test, feature = "testing"))]
-    pub fn is_empty(&self) -> bool {
-        self.entries.is_empty()
-    }
-}
-
-impl Drop for ThreadConnCache {
-    /// A thread dying takes its connections with it, so the process-wide count
-    /// has to follow. Tokio retires an idle blocking thread after ten seconds,
-    /// so this runs routinely rather than only at shutdown.
-    fn drop(&mut self) {
-        count_read_connections_closed(self.entries.len());
-    }
+    retire_read_connections(db_path);
+    first_refusal.map_or(Ok(()), Err)
 }
 
 // ── Freelist reclamation ─────────────────────────────────────────────

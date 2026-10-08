@@ -92,18 +92,21 @@ pub fn show_safe_save_files() -> bool {
 
 /// The listing layer's question: should `name` be left out of the pane?
 ///
-/// ❌ Ask this on the READ path, never when filling the cache. The cache holds
-/// what's on disk; hiding happens when the frontend asks for a range. That's
-/// what keeps the two from ever disagreeing: an entry the pane never received
-/// can't get stuck there, and one it did receive is re-tested on the next fetch.
+/// The cache holds what's on disk; its committed scratch projection records
+/// this decision on admission and reconciles drift at read/mutation boundaries
+/// before interpreting row indices (`listing/DETAILS.md`).
 /// Filtering the WATCHER instead would produce exactly that stuck entry — a
 /// listing shows the temp, the watcher skips the removal that would clear it,
 /// and it stays in the pane pointing at nothing. The `.sb-` filter lived there
 /// until 2026-08-01 and had precisely that bug.
 pub fn is_hidden_from_listings(name: &str) -> bool {
+    hidden_with_settings(name, show_staging_temps(), show_safe_save_files())
+}
+
+/// Evaluate ownership using the switches captured by one projection pass.
+pub(crate) fn hidden_with_settings(name: &str, show_staging: bool, show_safe_save: bool) -> bool {
     could_be_hidden_from_listings(name)
-        && ((!show_staging_temps() && is_staging_temp_in_flight(name))
-            || (!show_safe_save_files() && is_safe_save_name(name)))
+        && ((!show_staging && is_staging_temp_in_flight(name)) || (!show_safe_save && is_safe_save_name(name)))
 }
 
 /// Whether `name` is scratch by NAME: one of Cmdr's, or another app's safe-save.

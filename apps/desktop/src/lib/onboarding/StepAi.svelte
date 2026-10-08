@@ -20,8 +20,16 @@
         openPrivacySettings,
     } from '$lib/tauri-commands'
     import { systemStrings } from '$lib/system-strings.svelte'
-    import { getCloudProvider, getSetting, isExplicitlySet, setSetting, type AiProvider } from '$lib/settings'
+    import {
+        getCloudProvider,
+        getSetting,
+        isExplicitlySet,
+        isOverriddenByPolicy,
+        setSetting,
+        type AiProvider,
+    } from '$lib/settings'
     import { pushConfigToBackend } from '$lib/settings/ai-config'
+    import { clearLocalDownloadFailure, noteLocalDownloadFailed } from './local-download-notice'
     import { cloudAiBlocked, declineCloudConsent } from '$lib/ai/cloud-consent.svelte'
     import AiCloudConsentToggle from '$lib/ai/AiCloudConsentToggle.svelte'
     import InfoTip from '$lib/ui/InfoTip.svelte'
@@ -33,6 +41,10 @@
     import { tString } from '$lib/intl/messages.svelte'
     import Trans from '$lib/intl/Trans.svelte'
     import { dependOn } from '$lib/utils/reactivity'
+    import { getSettingLock } from '$lib/managed-policy/managed-policy.svelte'
+    import { lockAllowsWrite } from '$lib/managed-policy/overlay'
+    import { followPresetHostVerdicts } from '$lib/ai-provider-setup/preset-hosts.svelte'
+    import { localAiErrorLogLevel, toLocalAiError } from '$lib/ai/local-ai-error'
     import type { Snippet } from 'svelte'
 
     /**
@@ -96,6 +108,14 @@
     }
 
     let choice = $state<WizardChoice>(initialChoice())
+    /**
+     * The preselected answer came from the organization's policy, not the person: a stored `cloud`
+     * under on-device only reads as `off`. Until they pick something themselves, Next writes nothing,
+     * or the policy's display would land as their answer (and removing the profile wouldn't bring
+     * their cloud AI, Ask Cmdr, and consent back). Not reactive: only the first read counts.
+     */
+    const preselectedByPolicy = isOverriddenByPolicy('ai.provider')
+    let pickedByPerson = false
     let cloudProviderId = $state<string>(getSetting('ai.cloudProvider'))
     let localAiSupported = $state<boolean>(true)
     let didStartLocalDownload = $state(false)
@@ -238,8 +258,8 @@
     /**
      * How a download this step started came to an end without finishing. Typed so the two
      * never blur: `cancelledByChoice` is the person switching away from Local, and `failed`
-     * is everything else (an HTTP status, a size check, a full disk). Only the log reads it
-     * today; whether onboarding should also SAY a genuine failure is an open product call.
+     * is everything else (an HTTP status, a size check, a full disk). A failure is also SAID,
+     * through `local-download-notice.ts`, which holds it until the wizard closes.
      */
     type LocalDownloadEnd = { kind: 'cancelledByChoice' } | { kind: 'failed'; error: unknown }
 
@@ -250,11 +270,15 @@
      */
     let currentDownload: { cancelledByChoice: boolean } | null = null
 
-    function logDownloadEnd(end: LocalDownloadEnd): void {
+    function reportDownloadEnd(end: LocalDownloadEnd): void {
         if (end.kind === 'cancelledByChoice') {
             log.info('The AI download stopped because the person switched away from Local')
+        } else if (localAiErrorLogLevel(toLocalAiError(end.error)) === 'info') {
+            // The organization's refusal, or a cancel a policy change made: not a failure.
+            log.info('The AI download stopped: {error}', { error: toLocalAiError(end.error) })
         } else {
             log.warn("Couldn't download the local AI model during onboarding: {error}", { error: end.error })
+            noteLocalDownloadFailed()
         }
     }
 
@@ -270,7 +294,10 @@
         }
         previousChoice = next
         choice = next
+        pickedByPerson = true
         showResumeCue = false
+        // An earlier attempt's failure no longer describes what the user ends up with.
+        clearLocalDownloadFailure()
         if (next === 'local' && localAiSupported) {
             startBackgroundDownload()
         }
@@ -281,7 +308,7 @@
         const attempt = { cancelledByChoice: false }
         currentDownload = attempt
         void startAiDownload().catch((error: unknown) => {
-            logDownloadEnd(attempt.cancelledByChoice ? { kind: 'cancelledByChoice' } : { kind: 'failed', error })
+            reportDownloadEnd(attempt.cancelledByChoice ? { kind: 'cancelledByChoice' } : { kind: 'failed', error })
         })
     }
 
@@ -300,6 +327,10 @@
      * agent that starts conversations on its own.
      */
     async function persist(): Promise<void> {
+        if (preselectedByPolicy && !pickedByPerson) {
+            log.info('Keeping the stored AI choice: the preselected answer came from the organization’s policy')
+            return
+        }
         const provider: AiProvider = choice
         setSetting('ai.provider', provider)
         if (provider === 'cloud') {
@@ -383,10 +414,16 @@
      * carries reads as quiet text beside its label instead (`itemTrailing`), except the
      * local model's, which is long enough to belong behind an info glyph.
      */
+    // The organization's policy: under on-device only, Cloud stays listed but can't be picked, with
+    // the reason as its help text. (When nothing but "no AI" is left, the wizard skips this step.)
+    const cloudRuledOut = $derived(!lockAllowsWrite(getSettingLock('ai.provider'), 'cloud'))
+    // A service the organization refuses stays listed in the picker, disabled with the reason.
+    const presetHosts = followPresetHostVerdicts()
+
     const aiOptions = $derived([
         { value: 'off', label: tString('onboarding.stepAi.off.label') },
         { value: 'local', label: tString('onboarding.stepAi.local.label'), disabled: !localAiSupported },
-        { value: 'cloud', label: tString('onboarding.stepAi.cloud.label') },
+        { value: 'cloud', label: tString('onboarding.stepAi.cloud.label'), disabled: cloudRuledOut },
     ])
 
     /** The forward button's own label, so the warning can name the button by its real name. */
@@ -543,11 +580,15 @@
                     <span class="choice-help">{localTooltip}</span>
                 {/if}
             {:else if value === 'cloud'}
-                <span class="choice-badge">
-                    <span class="choice-badge-icon"><Icon name="sparkles" size={12} aria-hidden="true" /></span>
-                    {tString('onboarding.stepAi.cloud.recommended')}
-                </span>
-                <span class="choice-help">{tString('onboarding.stepAi.cloud.help')}</span>
+                {#if cloudRuledOut}
+                    <span class="choice-help">{tString('ai.managed.cloudAiOff')}</span>
+                {:else}
+                    <span class="choice-badge">
+                        <span class="choice-badge-icon"><Icon name="sparkles" size={12} aria-hidden="true" /></span>
+                        {tString('onboarding.stepAi.cloud.recommended')}
+                    </span>
+                    <span class="choice-help">{tString('onboarding.stepAi.cloud.help')}</span>
+                {/if}
             {/if}
         {/snippet}
 
@@ -579,6 +620,7 @@
                         <h3 class="picker-title">{tString('onboarding.stepAi.cloud.pickerTitle')}</h3>
                         <CloudProviderPicker
                             value={cloudProviderId}
+                            isRefused={(id: string) => presetHosts.isRefused(id)}
                             onChange={(id: string) => {
                                 cloudProviderId = id
                                 setSetting('ai.cloudProvider', id)

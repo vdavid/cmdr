@@ -43,6 +43,10 @@ function applyZoomPreset(preset: number): void {
 }
 
 export const viewHandlers = {
+  'view.calculateFolderSizes': async ({ explorerRef }) => {
+    await explorerRef?.calculateFolderSizes()
+  },
+
   'view.showHidden': () => {
     // Local-first toggle: `setSetting` writes its in-memory cache synchronously,
     // so both panes' listing re-fetch effects land in the next Svelte tick. The

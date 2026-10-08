@@ -22,5 +22,49 @@
   "common.downloadsFdaHint": "Cmdr a besoin de l’accès complet au disque pour surveiller votre dossier Téléchargements. <settingsLink>Ouvrir les Réglages Système</settingsLink>",
   "@common.downloadsFdaHint": {
     "sourceHash": "315e1d8"
+  },
+  "common.sizeUnit.byte": "{count, plural, one {octet} many {octets} other {octets}}",
+  "@common.sizeUnit.byte": {
+    "sourceHash": "ee1f643"
+  },
+  "common.sizeUnit.kibibyte": "Kio",
+  "@common.sizeUnit.kibibyte": {
+    "sourceHash": "97ee1b8"
+  },
+  "common.sizeUnit.mebibyte": "Mio",
+  "@common.sizeUnit.mebibyte": {
+    "sourceHash": "dea6cb8"
+  },
+  "common.sizeUnit.gibibyte": "Gio",
+  "@common.sizeUnit.gibibyte": {
+    "sourceHash": "66a1561"
+  },
+  "common.sizeUnit.tebibyte": "Tio",
+  "@common.sizeUnit.tebibyte": {
+    "sourceHash": "15c1ec4"
+  },
+  "common.sizeUnit.pebibyte": "Pio",
+  "@common.sizeUnit.pebibyte": {
+    "sourceHash": "38ca5a1"
+  },
+  "common.sizeUnit.kilobyte": "ko",
+  "@common.sizeUnit.kilobyte": {
+    "sourceHash": "591e59c"
+  },
+  "common.sizeUnit.megabyte": "Mo",
+  "@common.sizeUnit.megabyte": {
+    "sourceHash": "1d09f6f"
+  },
+  "common.sizeUnit.gigabyte": "Go",
+  "@common.sizeUnit.gigabyte": {
+    "sourceHash": "b4043b0"
+  },
+  "common.sizeUnit.terabyte": "To",
+  "@common.sizeUnit.terabyte": {
+    "sourceHash": "791b0ac"
+  },
+  "common.sizeUnit.petabyte": "Po",
+  "@common.sizeUnit.petabyte": {
+    "sourceHash": "f9085bf"
   }
 }

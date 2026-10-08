@@ -69,7 +69,10 @@ impl AdbVolume {
                     return;
                 }
                 let child = join_device_path(&device, &entry.name);
-                let built = stat_to_file_entry(&entry.name, &self.to_app_path(&child).to_string_lossy(), &entry.stat);
+                let Some(app_path) = self.to_app_path(&child) else {
+                    return;
+                };
+                let built = stat_to_file_entry(&entry.name, &app_path.to_string_lossy(), &entry.stat);
                 if built.is_symlink {
                     symlinks.push((entries.len(), child));
                 }
@@ -136,7 +139,10 @@ impl AdbVolume {
             .file_name()
             .map(|n| n.to_string_lossy().into_owned())
             .unwrap_or_else(|| self.name.clone());
-        let mut entry = stat_to_file_entry(&name, &self.to_app_path(&device).to_string_lossy(), &stat);
+        let app_path = self
+            .to_app_path(&device)
+            .ok_or_else(|| VolumeError::NotFound(path.to_string_lossy().into_owned()))?;
+        let mut entry = stat_to_file_entry(&name, &app_path.to_string_lossy(), &stat);
         if entry.is_symlink
             && let Some(target) = self.follow(&mut session, &device).await
         {

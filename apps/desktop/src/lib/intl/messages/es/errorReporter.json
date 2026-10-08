@@ -80,6 +80,14 @@
   "@errorReporter.dialog.saveToDisk": {
     "sourceHash": "36d6589"
   },
+  "errorReporter.dialog.managedOff": "Tu organización ha desactivado el envío de informes. Aun así, puedes guardar el informe en el disco y compartirlo tú.",
+  "@errorReporter.dialog.managedOff": {
+    "sourceHash": "9309a39"
+  },
+  "errorReporter.dialog.saveToDiskManaged": "Guardar en el disco",
+  "@errorReporter.dialog.saveToDiskManaged": {
+    "sourceHash": "5a5d775"
+  },
   "errorReporter.dialog.cancel": "Cancelar",
   "@errorReporter.dialog.cancel": {
     "sourceHash": "19766ed"
@@ -126,7 +134,7 @@
   },
   "errorReporter.amend.unavailable": "Ya no se pueden añadir notas a ese informe. Para hacer llegar tus notas al equipo, envía un informe nuevo desde el menú Ayuda.",
   "@errorReporter.amend.unavailable": {
-    "sourceHash": "b96b48a"
+    "sourceHash": "08ab034"
   },
   "errorReporter.amend.close": "Cerrar",
   "@errorReporter.amend.close": {

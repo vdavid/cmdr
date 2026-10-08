@@ -72,6 +72,14 @@ These keys pass `/validate` too, resolved from the local `license_issuance` ledg
 `wrangler d1 migrations apply cmdr-telemetry --local` once first. Flags, revocation, and the production runbook:
 `apps/api-server/src/licensing/DETAILS.md` § Manual licenses.
 
+## Refund it
+
+The sandbox notification destination needs `adjustment.created` and `adjustment.updated` beside `transaction.completed`.
+Refund the transaction in full from the sandbox dashboard: Paddle approves sandbox refunds within ten minutes, and the
+`adjustment.updated` that follows revokes the license. The app drops to Personal at its next check, and the dashboard's
+Licenses page shows the row as revoked. Rules for partial refunds and chargebacks:
+`apps/api-server/src/licensing/DETAILS.md` § Refunds.
+
 ## Detailed docs
 
 - [API server CLAUDE.md](../../apps/api-server/CLAUDE.md): environments, webhook flow, local dev

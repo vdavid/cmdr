@@ -4,15 +4,17 @@
 //! (`resolve_path_volume_fast` reads `statfs` / `/proc/mounts`), so registration
 //! has to cover that same table. When it didn't, every mount outside `/Volumes`
 //! resolved to an ID nothing served, and the pane died on
-//! `VolumeError::NotFound("Volume not found: vol-…")` — which is what a cloud
+//! `VolumeError::NotFound` — which is what a cloud
 //! client mounting into the home folder (pCloud's `~/pCloud Drive`) hit, along
 //! with any hand-mounted share, disk image, or FUSE filesystem.
 //!
 //! ❗ The rule that keeps it fixed: **registration must never be cleverer than
 //! resolution**. Registering a mount nothing ever resolves to costs a HashMap
 //! entry; skipping one that resolution can name costs the user their folder. So
-//! the sweep takes the whole table, unfiltered, and what the SWITCHER shows is a
-//! separate, stricter question (`volumes::mounts`).
+//! the sweep takes every mount this account can reach, and what the SWITCHER
+//! shows is a separate, stricter question (`volumes::mounts`). The one row left
+//! out is another account's own mount, which this account can't open
+//! (`registrable_mount_roots`); adoption still nets a path `statfs` answers for.
 //!
 //! Three callers share this module: the startup sweep
 //! (`file_system::register_discovered_volumes`), the mount watcher
@@ -86,13 +88,13 @@ fn register_mount_root_as(volume_id: &str, root: &str) {
     }
 }
 
-/// Registers every mount the kernel currently lists, so no path can resolve to
-/// an ID the registry has never heard of.
+/// Registers every mount the kernel currently lists that this account can
+/// reach, so no path can resolve to an ID the registry has never heard of.
 ///
-/// Unfiltered on purpose (see the module header). A table that wouldn't answer
+/// Browsable or not, on purpose (see the module header). A table that wouldn't answer
 /// registers nothing and says so: ❌ never treat it as an empty machine.
 pub(crate) fn register_every_mount() {
-    let Some(roots) = platform::mount_roots() else {
+    let Some(roots) = platform::registrable_mount_roots() else {
         log::warn!(
             target: "volume",
             "The mount table wouldn't answer, so no mounts were registered this pass; \

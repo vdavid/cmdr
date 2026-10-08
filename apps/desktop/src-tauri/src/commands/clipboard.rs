@@ -41,7 +41,8 @@ pub async fn copy_files_to_clipboard(
     include_hidden: bool,
 ) -> Result<usize, String> {
     let indices = resolve_indices(&selected_indices, cursor_index, has_parent);
-    let paths = ops_get_paths_at_indices(&listing_id, &indices, include_hidden, has_parent)?;
+    let paths =
+        ops_get_paths_at_indices(&listing_id, &indices, include_hidden, has_parent).map_err(|e| e.to_string())?;
 
     if paths.is_empty() {
         return Err("No files to copy".to_string());
@@ -144,7 +145,8 @@ pub async fn cut_files_to_clipboard(
     include_hidden: bool,
 ) -> Result<usize, String> {
     let indices = resolve_indices(&selected_indices, cursor_index, has_parent);
-    let paths = ops_get_paths_at_indices(&listing_id, &indices, include_hidden, has_parent)?;
+    let paths =
+        ops_get_paths_at_indices(&listing_id, &indices, include_hidden, has_parent).map_err(|e| e.to_string())?;
 
     if paths.is_empty() {
         return Err("No files to cut".to_string());
@@ -250,14 +252,16 @@ pub async fn read_clipboard_text(app: tauri::AppHandle) -> Result<Option<String>
 }
 
 /// Reads the highest-intent non-file clipboard flavor (image / PDF / text) and
-/// writes it into `directory` as a new `pasted.<ext>` file, returning the created
-/// file's name + kind. `Ok(None)` = nothing pasteable on the clipboard — the
-/// typed no-op the frontend treats as "no file created", NOT an error toast.
+/// writes it into `directory` as a new `pasted.<ext>` file. Answers
+/// `Done { file }` with the created file's name + kind (`file: None` = nothing
+/// pasteable, the typed no-op the frontend treats as "no file created", NOT an
+/// error), or `StillRunning` past the reply deadline with the real end on
+/// `clipboard-paste-settled`.
 ///
 /// Thin edge: reads the RAW pasteboard flavors on the main thread (NSPasteboard is
 /// main-thread-only), then picks the flavor + converts TIFF→PNG OFF the main
 /// thread (that decode can be hundreds of ms — never on the UI thread), and hands
-/// the result to `write_operations::write_payload_to_dir` under the write timeout.
+/// the result to `write_operations::write_payload_replying`.
 /// `directory` is tilde-expanded for the local `root` volume only.
 #[cfg(target_os = "macos")]
 #[tauri::command]
@@ -266,7 +270,7 @@ pub async fn paste_clipboard_as_file(
     app: tauri::AppHandle,
     volume_id: Option<String>,
     directory: String,
-) -> Result<Option<clipboard::PastedClipboardFile>, MutationError> {
+) -> Result<clipboard::PasteClipboardReply, MutationError> {
     // 1. Read the RAW flavors on the main thread (NSPasteboard requires it). This
     // does the minimum on-main: just copies bytes off the pasteboard.
     let (tx, rx) = std::sync::mpsc::channel();
@@ -299,14 +303,16 @@ pub async fn paste_clipboard_as_file(
         directory
     };
 
-    // 3. Write. 30 s tier (not the 5 s empty-mkfile tier): the payload can be a
-    // large image written onto a slow network volume.
-    tokio::time::timeout(
-        std::time::Duration::from_secs(30),
-        crate::file_system::write_operations::write_payload_to_dir(volume_id, std::path::Path::new(&expanded), payload),
+    // 3. Write, detached: a slow write (a large image onto a busy share) answers
+    // `StillRunning` and reports its end on `clipboard-paste-settled`, never a
+    // timeout that drops the write mid-flight.
+    crate::file_system::write_operations::write_payload_replying(
+        volume_id,
+        PathBuf::from(expanded),
+        payload,
+        crate::file_system::write_operations::broadcast_settled(app),
     )
     .await
-    .map_err(|_| MutationError::TimedOut)?
 }
 
 #[cfg(not(target_os = "macos"))]
@@ -323,7 +329,7 @@ pub async fn paste_clipboard_as_file(
     _app: tauri::AppHandle,
     _volume_id: Option<String>,
     _directory: String,
-) -> Result<Option<clipboard::PastedClipboardFile>, MutationError> {
+) -> Result<clipboard::PasteClipboardReply, MutationError> {
     Err(MutationError::Volume {
         error: cmdr_fs::volume::VolumeError::NotSupported,
     })

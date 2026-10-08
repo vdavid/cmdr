@@ -1,11 +1,12 @@
 <script lang="ts">
     /**
-     * The servers hub: every server the user saved, plus every host mDNS found,
-     * in one table. Rendered when a pane is on the `network` volume.
+     * The servers hub: every server the user saved, then the hosts mDNS found
+     * that they didn't, folded into one group. Rendered when a pane is on the
+     * `network` volume.
      *
-     * The merge, the ordering, and the MCP encoding are pure and live next door
-     * (`servers-hub-rows.ts`, `servers-hub-mcp.ts`); this file is the table, the
-     * cursor, and the keys.
+     * The merge, the ordering, the grouping, and the MCP encoding are pure and
+     * live next door (`servers-hub-rows.ts`, `servers-hub-items.ts`,
+     * `servers-hub-mcp.ts`); this file is the table, the cursor, and the keys.
      */
     import { onMount, onDestroy, untrack } from 'svelte'
     import { dependOn } from '$lib/utils/reactivity'
@@ -15,24 +16,17 @@
     import LinkButton from '$lib/ui/LinkButton.svelte'
     import DateLabel from '$lib/ui/DateLabel.svelte'
     import {
-        getNetworkHosts,
         getDiscoveryState,
-        getListedAccount,
         getShareCount,
         clearShareState,
         fetchShares,
         refreshAllStaleShares,
     } from './network-store.svelte'
     import { getStatusTooltip } from './host-status'
-    import {
-        buildHubRows,
-        hubRowIcon,
-        lastUsedSeconds,
-        openMoveFor,
-        type HubRow,
-        type HubRowStatus,
-    } from './servers-hub-rows'
-    import { hubPaneState } from './servers-hub-mcp'
+    import { hubRowIcon, lastUsedSeconds, openMoveFor, type HubRow, type HubRowStatus } from './servers-hub-rows'
+    import { visibleIndexOf, type HubItem } from './servers-hub-items'
+    import { createHubList } from './servers-hub-list.svelte'
+    import { hubPaneState, NEARBY_GROUP_MCP_NAME } from './servers-hub-mcp'
     import { createHubActions, type HubRowMenuAPI } from './servers-hub-actions'
     import { cursorAcrossRebuild } from './servers-hub-keys'
     import { cursorAfterArrow } from './list-cursor'
@@ -43,15 +37,9 @@
     import { tooltip } from '$lib/tooltip/tooltip'
     import { rowAnchorIn } from '../pane/context-menu-anchor'
     import type { NetworkHost } from '../types'
-    import {
-        updateLeftPaneState,
-        updateRightPaneState,
-        onNetworkHostContextAction,
-        listSavedServers,
-        type SavedServer,
-    } from '$lib/tauri-commands'
-    import { getVolumes } from '$lib/stores/volume-store.svelte'
+    import { updateLeftPaneState, updateRightPaneState, onNetworkHostContextAction } from '$lib/tauri-commands'
     import { getNetworkEnabled } from '$lib/settings/reactive-settings.svelte'
+    import { formatInteger } from '$lib/intl/number-format'
     import { openSettingsWindow, settingAnchorId } from '$lib/settings/settings-window'
     import { handleNavigationShortcut } from '../navigation/keyboard-shortcuts'
     import { protocolLabel } from '../navigation/filesystem-label'
@@ -60,9 +48,9 @@
     import { triggerNetworkDiscovery } from './lazy-trigger'
     import { signedInAsLabel } from './signed-in-as-label'
     import { tString } from '$lib/intl/messages.svelte'
+    import { addToast } from '$lib/ui/toast'
     import type { MessageKey } from '$lib/intl/keys.gen'
     import { getAppLogger } from '$lib/logging/logger'
-    import { LogOnceGate } from '$lib/logging/log-once'
 
     const log = getAppLogger('servers')
 
@@ -97,14 +85,15 @@
     const { paneId, isFocused = false, onHostSelect, onServerSelect, onShareViaHost, onConnectToServer }: Props =
         $props()
 
-    /** `listSavedServers()`, refreshed whenever the volume list is. */
-    let savedServers = $state<SavedServer[]>([])
-
-    const hosts = $derived(getNetworkHosts())
-    const volumes = $derived(getVolumes())
+    /** What this hub lists: the saved servers it read, its rows and items, and whether the nearby group is open. */
+    const list = createHubList()
+    const volumes = $derived(list.volumes)
+    const rows = $derived(list.rows)
+    const items = $derived(list.items)
+    const visibleItems = $derived(list.visibleItems)
+    const nearbyGroup = $derived(items.find((item) => item.kind === 'nearby_group'))
     const isSearching = $derived(getDiscoveryState() === 'searching')
     const discoveryEnabled = $derived(getNetworkEnabled())
-    const rows = $derived(buildHubRows({ saved: savedServers, hosts, volumes, listedAs: getListedAccount }))
 
     /**
      * F8, the row menus, and the SMB host menu's answers. Live getters, ❌ never
@@ -113,7 +102,7 @@
     const actions = createHubActions({
         getRows: () => rows,
         getVolumes: () => volumes,
-        refreshSaved: refreshSavedServers,
+        refreshSaved: list.refreshSaved,
         openRow: (row) => {
             openRow(row)
         },
@@ -146,7 +135,7 @@
      */
     $effect(() => {
         dependOn(volumes)
-        void refreshSavedServers()
+        void list.refreshSaved()
     })
 
     onMount(() => {
@@ -166,57 +155,45 @@
         unlistenContextAction?.()
     })
 
-    // Re-sync MCP state when the rows or the cursor change.
+    // Re-sync MCP state when the items or the cursor change.
     $effect(() => {
-        dependOn(rows, cursorIndex)
+        dependOn(items, cursorIndex)
         void syncPaneStateToMcp()
     })
 
-    /** The rows the cursor last sat over: a rebuild keeps it on the same row, clamped if it left. */
-    let rowsBefore: HubRow[] = []
+    /** The items the cursor last sat over: a rebuild keeps it on the same one, clamped if it left. */
+    let itemsBefore: HubItem[] = []
     $effect.pre(() => {
-        const after = rows
+        const after = visibleItems
         untrack(() => {
-            cursorIndex = cursorAcrossRebuild(rowsBefore, after, cursorIndex)
-            rowsBefore = after
+            cursorIndex = cursorAcrossRebuild(itemsBefore, after, cursorIndex)
+            itemsBefore = after
         })
     })
 
-    /** Retried on every `volumes-changed`, so a store that stays broken logs once until a read works. */
-    const savedServersReadFailures = new LogOnceGate()
-
-    async function refreshSavedServers(): Promise<void> {
-        try {
-            // `Array.isArray` because this is an IPC boundary: a command that
-            // answered with nothing would otherwise put `undefined` where the
-            // merge iterates, and the hub would render nothing at all.
-            const answer: unknown = await listSavedServers()
-            savedServers = Array.isArray(answer) ? (answer as SavedServer[]) : []
-            savedServersReadFailures.clear()
-        } catch (e) {
-            // A store that didn't answer costs the hub its saved rows, never the
-            // nearby ones: the list is still useful, and the next `volumes-changed`
-            // tries again.
-            const error = String(e)
-            if (savedServersReadFailures.shouldLog(error)) {
-                log.warn('Reading the saved servers broke down: {error}', { error })
-            }
-        }
-    }
-
-    /** Servers, for the status bar: a share row is a place under one, not a server. */
+    /**
+     * Servers, for the status bar: a share row is a place under one, not a server.
+     * The ones a collapsed nearby group hides count too; its header says how many
+     * of the total those are.
+     */
     const serverCount = $derived(rows.filter((row) => row.kind === 'server').length)
 
-    /** Every row plus the "Add server…" row. */
-    const totalNavigableItems = $derived(rows.length + 1)
+    /** Every item on screen plus the "Add server…" row. */
+    const totalNavigableItems = $derived(visibleItems.length + 1)
 
     /** Whether the cursor sits on the "Add server…" row. */
-    const isCursorOnAddRow = $derived(cursorIndex === rows.length)
+    const isCursorOnAddRow = $derived(cursorIndex === visibleItems.length)
 
-    /** The row under the cursor, or `null` on the add row. */
+    /** The item under the cursor, or `null` on the add row. */
+    function itemUnderCursor(): HubItem | null {
+        if (cursorIndex < 0 || cursorIndex >= visibleItems.length) return null
+        return visibleItems[cursorIndex]
+    }
+
+    /** The row under the cursor, or `null` on the add row and on the nearby group's header. */
     function rowUnderCursor(): HubRow | null {
-        if (isCursorOnAddRow || cursorIndex < 0 || cursorIndex >= rows.length) return null
-        return rows[cursorIndex]
+        const item = itemUnderCursor()
+        return item?.kind === 'row' ? item.row : null
     }
 
     /**
@@ -228,7 +205,7 @@
     async function syncPaneStateToMcp() {
         if (!paneId) return
         try {
-            const state = hubPaneState(rows, cursorIndex, tString('fileExplorer.navigation.networkVolume'), {
+            const state = hubPaneState(items, cursorIndex, tString('fileExplorer.navigation.networkVolume'), {
                 appRootOf: (row) => row.saved?.places[0]?.appRoot ?? null,
                 shareCountOf: (row) => (row.host ? getShareCount(row.host.id) : undefined),
             })
@@ -252,15 +229,31 @@
         }
     }
 
+    /**
+     * Puts the cursor on the item at `index` of the FULL list, the one
+     * `cmdr://state` publishes and `findItemIndex` answers in.
+     *
+     * ❗ A server a collapsed nearby group hides gets the group opened for it
+     * (`revealNearby`): an agent that read a server's name in the state has to
+     * be able to reach it, and the cursor never sits on a row nobody can see.
+     */
     // noinspection JSUnusedGlobalSymbols -- used dynamically by MCP move_cursor
     export function setCursorIndex(index: number) {
-        cursorIndex = Math.max(0, Math.min(index, totalNavigableItems - 1))
+        const fullIndex = Math.max(0, Math.min(index, list.items.length))
+        if (visibleIndexOf(list.items, fullIndex) === null) {
+            list.revealNearby()
+            // The rebuild this causes follows the item the cursor WAS on. It's set
+            // right below, against the opened list, so that list is its "before".
+            itemsBefore = list.visibleItems
+        }
+        cursorIndex = visibleIndexOf(list.items, fullIndex) ?? list.visibleItems.length
         scrollToIndex(cursorIndex)
     }
 
+    /** How many items the FULL list holds, "Add server…" included: what an index is range-checked against. */
     // noinspection JSUnusedGlobalSymbols -- used dynamically by MCP move_cursor's range check
     export function getItemCount(): number {
-        return totalNavigableItems
+        return items.length + 1
     }
 
     /** Refresh everything the hub shows (⌘R). */
@@ -274,23 +267,33 @@
     $effect(() => {
         const id = pendingSelection
         if (id === null) return
-        const index = rows.findIndex((row) => row.id === id || row.host?.id === id)
+        const index = items.findIndex(
+            (item) => item.kind === 'row' && (item.row.id === id || item.row.host?.id === id),
+        )
         if (index < 0) return
         pendingSelection = null
-        setCursorIndex(index)
+        untrack(() => {
+            setCursorIndex(index)
+        })
     })
 
     /** Selects the server `id` names (saved or discovery id), now or once listed: "Add"'s proof (cmdr-reports#6). */
     // noinspection JSUnusedGlobalSymbols -- used by NetworkMountView after an Add
     export function selectServer(id: string) {
         pendingSelection = id
-        void refreshSavedServers()
+        void list.refreshSaved()
     }
 
-    /** Find a row by name, returns its index or -1. */
+    /**
+     * Finds a row by name, or the nearby group's header by the name `cmdr://state`
+     * gives it. Answers its index in the FULL list, or -1.
+     */
     // noinspection JSUnusedGlobalSymbols -- used dynamically
     export function findItemIndex(name: string): number {
-        return rows.findIndex((row) => row.name.toLowerCase() === name.toLowerCase())
+        const wanted = name.toLowerCase()
+        return items.findIndex(
+            (item) => (item.kind === 'row' ? item.row.name : NEARBY_GROUP_MCP_NAME).toLowerCase() === wanted,
+        )
     }
 
     /**
@@ -325,8 +328,9 @@
             onConnectToServer?.()
             return
         }
-        const row = rowUnderCursor()
-        if (row) openRow(row)
+        const item = itemUnderCursor()
+        if (item?.kind === 'nearby_group') list.toggleNearbyGroup()
+        else if (item) openRow(item.row)
     }
 
     /** What Enter does to a row: `openMoveFor` decides, this carries it out. */
@@ -335,13 +339,27 @@
         if (!move) { log.warn('The hub row {server} has nowhere to open', { server: row.name }); return; }
         if (move.kind === 'host') onHostSelect?.(move.host, move.label)
         else if (move.kind === 'place') onServerSelect?.(move.row)
+        // ❗ Says where to go rather than doing nothing: an S3 account is no place itself.
+        else if (move.kind === 'account')
+            addToast(tString('servers.hub.openAccountHint', { name: move.label }), {
+                level: 'info',
+                id: 'servers-open-account-hint',
+            })
         else onShareViaHost?.(move.host, { share: move.share, label: move.label })
     }
 
-    /** Arrow keys and Enter. */
+    /**
+     * Arrow keys and Enter, plus Space on the nearby group's header, which is a
+     * disclosure: Space and Enter both toggle one. Left and Right stay the list's
+     * first-and-last jump there too, as on every other row.
+     */
     function handleArrowAndEnter(key: string): boolean {
         if (key === 'Enter') {
             openCursorItem()
+            return true
+        }
+        if (key === ' ' && itemUnderCursor()?.kind === 'nearby_group') {
+            list.toggleNearbyGroup()
             return true
         }
         const next = cursorAfterArrow(key, cursorIndex, totalNavigableItems)
@@ -414,13 +432,18 @@
         cursorIndex = index
     }
 
-    function handleRowDoubleClick(index: number) {
-        if (index < 0 || index >= rows.length) return
-        openRow(rows[index])
+    function handleRowDoubleClick(row: HubRow) {
+        openRow(row)
+    }
+
+    /** One click: a header has nothing to open, so there's no second click to wait for. */
+    function handleGroupClick(index: number) {
+        cursorIndex = index
+        list.toggleNearbyGroup()
     }
 
     function handleAddRowClick() {
-        cursorIndex = rows.length
+        cursorIndex = visibleItems.length
     }
 
     /** " as testuser" / " as guest", space first: a Svelte block trims the whitespace it opens with. */
@@ -431,12 +454,19 @@
         return protocolLabel(row.protocol) ?? row.protocol.toUpperCase()
     }
 
-    /** Re-read the saved list and re-fetch every host's shares (user-initiated). */
+    /**
+     * Re-read the saved list and re-fetch the saved hosts' shares (user-initiated).
+     *
+     * ❗ A host the person never saved only has its list dropped, so opening it
+     * lists afresh: listing means signing in to it, and refreshing a list of
+     * servers is nobody asking to sign in to each machine on the network (#324).
+     */
     function handleRefreshClick() {
-        void refreshSavedServers()
-        for (const host of hosts) {
+        void list.refreshSaved()
+        const savedHosts = list.savedHostIds()
+        for (const host of list.hosts) {
             clearShareState(host.id)
-            if (host.hostname) {
+            if (host.hostname && savedHosts.has(host.id)) {
                 fetchShares(host).catch(() => {
                     // Errors are stored in shareStates, ignore here
                 })
@@ -469,7 +499,54 @@
         <span class="col-last-used">{tString('servers.hub.colLastUsed')}</span>
     </div>
     <div class="row-list" bind:this={listContainer} bind:clientHeight={containerHeight}>
-        {#each rows as row, index (row.id)}
+        {#each visibleItems as item, index (item.id)}
+            {#if item.kind === 'nearby_group'}
+                <!--
+                    The nearby group's header. A row like the others to the cursor; the
+                    button inside is what says "this opens and collapses" to a screen
+                    reader, and it never takes the focus the pane keeps.
+                -->
+                <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+                <div
+                    class="server-row nearby-group-row"
+                    data-hub-row={index}
+                    class:is-under-cursor={index === cursorIndex}
+                    class:is-focused-and-under-cursor={isFocused && index === cursorIndex}
+                    role="listitem"
+                    onclick={() => {
+                        handleGroupClick(index)
+                    }}
+                    onkeydown={() => {}}
+                >
+                    <button
+                        type="button"
+                        class="nearby-group-toggle"
+                        tabindex="-1"
+                        aria-expanded={item.expanded}
+                        onmousedown={(e: MouseEvent) => {
+                            e.preventDefault()
+                        }}
+                    >
+                        <span class="row-icon"
+                            ><Icon
+                                name={item.expanded ? 'chevron-down' : 'chevron-right'}
+                                size={16}
+                                aria-hidden="true"
+                            /></span
+                        >
+                        <span class="nearby-group-label"
+                            >{tString('servers.hub.nearbyGroup', {
+                                count: item.count,
+                                countText: formatInteger(item.count),
+                            })}</span
+                        >
+                        {#if isSearching && !item.expanded}
+                            <Spinner size="sm" />
+                        {/if}
+                    </button>
+                </div>
+            {:else if item.kind === 'row'}
+            {@const row = item.row}
             <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
             <div
                 class="server-row"
@@ -481,7 +558,7 @@
                     handleRowClick(index)
                 }}
                 ondblclick={() => {
-                    handleRowDoubleClick(index)
+                    handleRowDoubleClick(row)
                 }}
                 oncontextmenu={(e: MouseEvent) => {
                     e.preventDefault()
@@ -489,11 +566,11 @@
                 }}
                 onkeydown={() => {}}
             >
-                <span class="col-name" class:is-share={row.kind === 'share'}>
+                <span class="col-name" class:is-place={row.kind === 'place'}>
                     <span class="row-icon"><Icon name={hubRowIcon(row)} size={16} aria-hidden="true" /></span>
                     <!-- The tooltip sits on the span that clips: an overflow check on the cell never fires. -->
                     <span class="name-text" use:tooltip={{ text: row.name + accountSuffix(row), overflowOnly: true }}
-                        >{row.name}{#if row.account !== null}<span class="share-account">{accountSuffix(row)}</span
+                        >{row.name}{#if row.account !== null}<span class="row-account">{accountSuffix(row)}</span
                             >{/if}</span
                     >
                 </span>
@@ -508,7 +585,7 @@
                     {tString(STATUS_TEXT_KEY[row.status])}
                 </span>
                 <span class="col-last-used">
-                    {#if row.kind === 'share'}
+                    {#if row.kind === 'place'}
                         <!-- The server row above says when it was last used. -->
                     {:else if lastUsedSeconds(row) === null}
                         <span class="never-used">{tString('servers.hub.neverUsed')}</span>
@@ -517,9 +594,11 @@
                     {/if}
                 </span>
             </div>
+            {/if}
         {/each}
 
-        {#if isSearching}
+        <!-- The search is for nearby servers, so a collapsed group says it on its own header. -->
+        {#if isSearching && (!nearbyGroup || list.nearbyExpanded)}
             <div class="searching-indicator">
                 <Spinner size="sm" />
                 {tString('fileExplorer.network.browser.searching')}
@@ -557,7 +636,7 @@
             </span>
         </div>
 
-        {#if !isSearching && rows.length === 0}
+        {#if list.isKnown && !isSearching && rows.length === 0}
             <div class="empty-state">
                 <img class="empty-icon" src="/icons/network-no-hosts.svg" alt="" />
                 <div class="empty-title">{tString('servers.hub.emptyTitle')}</div>
@@ -601,11 +680,40 @@
         grid-template-columns: subgrid;
     }
 
-    /* Anything in the list that isn't a row (the add row's label, the searching and
-       discovery lines, the empty state) spans every column. */
+    /* Anything in the list that isn't a row (the add row's label, the nearby group's
+       header, the searching and discovery lines, the empty state) spans every column. */
     .row-list > :not(.server-row),
-    .add-row .col-name {
+    .add-row .col-name,
+    .nearby-group-toggle {
         grid-column: 1 / -1;
+    }
+
+    /* The nearby group's header reads as a label over its rows, quieter than a server's name. */
+    .nearby-group-row {
+        color: var(--color-text-secondary);
+    }
+
+    /* The header's button is the row's whole content and looks like none: the row
+       carries the cursor, the button only the disclosure state. */
+    .nearby-group-toggle {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+        min-width: 0;
+        padding: 0;
+        border: none;
+        background: none;
+        font: inherit;
+        color: inherit;
+        text-align: left;
+        cursor: default;
+    }
+
+    .nearby-group-label {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
     .header-row {
@@ -685,7 +793,7 @@
 
     /* A share sits one icon plus the gap in. ❗ On the ICON: padding on the flex cell grew
        its base size and pushed Type, Address, and Status right on every share row. */
-    .col-name.is-share .row-icon {
+    .col-name.is-place .row-icon {
         margin-left: var(--spacing-xl);
     }
 
@@ -698,7 +806,7 @@
         padding-right: var(--spacing-sm);
     }
 
-    .share-account {
+    .row-account {
         color: var(--color-text-tertiary);
     }
 

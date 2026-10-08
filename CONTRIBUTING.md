@@ -16,6 +16,10 @@ is managed separately by `rustup`. This version is tested with Rust 1.92.0.
 3. Run `mise install` to set up Node, pnpm, and Go
 4. Run `cd apps/desktop && pnpm install` to install frontend dependencies
 
+`pnpm install` also turns on the repo's git hooks. They format the files you commit (with `oxfmt`, `rustfmt`, and
+`gofmt`), so CI's formatting checks stay green without an extra step. If a push finds something unformatted, it adds a
+format commit and asks you to push again.
+
 ## Dev signing certificate (macOS, optional)
 
 Cmdr stores SMB credentials in macOS Keychain. Keychain ties item access to the binary's code signature; production

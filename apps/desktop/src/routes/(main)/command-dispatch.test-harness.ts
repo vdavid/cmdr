@@ -84,6 +84,8 @@ export function makeExplorerSpy(): Record<string, ReturnType<typeof vi.fn>> {
     'setViewModeFromMenu',
     'switchPane',
     'swapPanes',
+    'compareDirectories',
+    'calculateFolderSizes',
     'toggleVolumeChooser',
     'toggleFavoritesMenu',
     'copyPathBetweenPanes',
@@ -98,6 +100,7 @@ export function makeExplorerSpy(): Record<string, ReturnType<typeof vi.fn>> {
     'sendKeyToFocusedPane',
     'navigate',
     'goHome',
+    'goToRoot',
     'getFocusedPane',
     'openItemUnderCursor',
     'openContextMenuAtCursor',
@@ -229,9 +232,39 @@ export const DELEGATE_ROWS: DelegateRow[] = [
     },
   },
   {
+    id: 'selection.compareDirectories',
+    expect: (e) => {
+      expect(e.compareDirectories).toHaveBeenCalledExactlyOnceWith('newerAndMissing')
+    },
+  },
+  {
+    id: 'selection.compareDirectoriesMissing',
+    expect: (e) => {
+      expect(e.compareDirectories).toHaveBeenCalledExactlyOnceWith('missing')
+    },
+  },
+  {
+    id: 'selection.compareDirectoriesSize',
+    expect: (e) => {
+      expect(e.compareDirectories).toHaveBeenCalledExactlyOnceWith('sizeAndMissing')
+    },
+  },
+  {
+    id: 'view.calculateFolderSizes',
+    expect: (e) => {
+      expect(e.calculateFolderSizes).toHaveBeenCalledOnce()
+    },
+  },
+  {
     id: 'pane.swap',
     expect: (e) => {
       expect(e.swapPanes).toHaveBeenCalledOnce()
+    },
+  },
+  {
+    id: 'pane.clone',
+    expect: (e) => {
+      expect(e.copyPathBetweenPanes).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ followCursor: false }))
     },
   },
   {

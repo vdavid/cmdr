@@ -18,9 +18,12 @@
         progressAtStop?: ProgressAtStop | null
         onClose: () => void
         onRetry?: () => void
+        /** Starts the same copy again with the free-space check skipped. Offered
+         *  only for a copy refused for space, whose figure is an upper bound. */
+        onCopyAnyway?: () => void
     }
 
-    const { operationType, error, progressAtStop = null, onClose, onRetry }: Props = $props()
+    const { operationType, error, progressAtStop = null, onClose, onRetry, onCopyAnyway }: Props = $props()
 
     let showDetails = $state(false)
 
@@ -33,6 +36,11 @@
 
     /** Retry button visibility: transient kinds always offer retry, others gated on explicit retryHint. */
     const showRetry = $derived(onRetry !== undefined && (category === 'transient' || displayMeta.retryHint))
+
+    /** "Copy anyway": a space shortfall is the person's call (`SpaceShortfall` in the backend). */
+    const showCopyAnyway = $derived(
+        onCopyAnyway !== undefined && operationType === 'copy' && error.type === 'insufficient_space',
+    )
 
     /** Container styling per category. */
     const containerStyle = $derived(
@@ -115,6 +123,9 @@
     {#snippet footer()}
         {#if onRetry && showRetry}
             <Button variant="secondary" onclick={onRetry}>{tString('fileOperations.errorDialog.retry')}</Button>
+        {/if}
+        {#if onCopyAnyway && showCopyAnyway}
+            <Button variant="secondary" onclick={onCopyAnyway}>{tString('fileOperations.errorDialog.copyAnyway')}</Button>
         {/if}
         <Button variant="primary" onclick={onClose}>{tString('fileOperations.errorDialog.close')}</Button>
     {/snippet}

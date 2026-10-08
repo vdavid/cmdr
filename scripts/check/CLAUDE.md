@@ -1,6 +1,6 @@
 # Check runner
 
-Go CLI running the monorepo's 137 checks in parallel with dependency ordering, via `pnpm check` at the repo root.
+Go CLI running the monorepo's 144 checks in parallel with dependency ordering, via `pnpm check` at the repo root.
 Authoring a check: `checks/CLAUDE.md`.
 
 ## Module map
@@ -34,7 +34,7 @@ Authoring a check: `checks/CLAUDE.md`.
 - **A scoped run skips the whole-repo lanes**: formatting and doc links go unchecked. ❌ Never finish on one.
   `DETAILS.md` § "Scoped runs".
 - **A check names its Docker fixtures in `NeedsContainers []StackMode`** (`stacklease` registry: `smb`, `sftp`,
-  `webdav`). One machine-wide lease per stack lets worktrees coexist; the stack downs at its last holder. ❌ No
+  `webdav`, `s3`). One machine-wide lease per stack lets worktrees coexist; the stack downs at its last holder. ❌ No
   per-check teardown, ❌ never move SMB's frozen `/tmp` lease paths or its 11480+ ports.
 - **The lane's nextest filter comes from one fixture table** (`checks/fixture-lane-coverage.go`), guarded by
   `desktop-fixture-lane-coverage`. ❌ Never name a `package(x)` for a crate not yet on disk: nextest can't PARSE the

@@ -150,21 +150,21 @@
   "@settings.appearance.tintLocal.description": {
     "sourceHash": "3c86b48"
   },
-  "settings.appearance.tintSmb.label": "Serverpanelen tinten (SMB, SFTP, WebDAV)",
+  "settings.appearance.tintSmb.label": "Serverpanelen tinten (SMB, SFTP, WebDAV, S3)",
   "@settings.appearance.tintSmb.label": {
-    "sourceHash": "d801804"
+    "sourceHash": "d912bcf"
   },
-  "settings.appearance.tintSmb.description": "Achtergrondtint voor panelen die een SMB-share, een SFTP-server of een WebDAV-server tonen.",
+  "settings.appearance.tintSmb.description": "Achtergrondtint voor panelen die een SMB-share, een SFTP-server, een WebDAV-server of S3-opslag tonen.",
   "@settings.appearance.tintSmb.description": {
-    "sourceHash": "2e071d3"
+    "sourceHash": "bddee40"
   },
-  "settings.appearance.tintMtp.label": "MTP-panelen tinten",
+  "settings.appearance.tintMtp.label": "Apparaatpanelen tinten (MTP, ADB)",
   "@settings.appearance.tintMtp.label": {
-    "sourceHash": "2054351"
+    "sourceHash": "c50c536"
   },
-  "settings.appearance.tintMtp.description": "Achtergrondtint voor panelen die een Android-, Kindle- of camera-apparaat tonen.",
+  "settings.appearance.tintMtp.description": "Achtergrondtint voor panelen die een telefoon, Kindle of camera tonen, of die nu via MTP of ADB is aangesloten.",
   "@settings.appearance.tintMtp.description": {
-    "sourceHash": "a09d99a"
+    "sourceHash": "d70512d"
   },
   "settings.appearance.textSize.label": "Tekstgrootte",
   "@settings.appearance.textSize.label": {
@@ -219,9 +219,9 @@
   "@settings.listing.sizeUnit.label": {
     "sourceHash": "2a817d3"
   },
-  "settings.listing.sizeUnit.description": "Dynamisch kiest de prettigste eenheid per bestand (1,02 MB). Vaste eenheden maken groottes door de hele lijst vergelijkbaar. Bytes toont de exacte telling voor een nauwkeurige vergelijking.",
+  "settings.listing.sizeUnit.description": "Dynamisch kiest de prettigste eenheid per bestand. Vaste eenheden maken groottes door de hele lijst vergelijkbaar. Bytes toont de exacte telling voor een nauwkeurige vergelijking.",
   "@settings.listing.sizeUnit.description": {
-    "sourceHash": "702a201"
+    "sourceHash": "fae7a91"
   },
   "settings.listing.sizeUnit.opt.dynamic": "Dynamisch",
   "@settings.listing.sizeUnit.opt.dynamic": {
@@ -232,36 +232,21 @@
     "sourceHash": "4d80003",
     "sameAsSourceJustification": "'Bytes' is the byte unit used verbatim in Dutch (TC NL); the size-unit toggle. Sibling 'dynamic' is translated to 'Dynamisch'; the unit symbols (kB/MB/GB/Bytes) coincide."
   },
-  "settings.listing.sizeUnit.opt.kB": "kB",
-  "@settings.listing.sizeUnit.opt.kB": {
-    "sourceHash": "591e59c",
-    "sameAsSourceJustification": "'kB' is a unit symbol; kept verbatim in Dutch (do-not-translate unit)."
-  },
-  "settings.listing.sizeUnit.opt.mB": "MB",
-  "@settings.listing.sizeUnit.opt.mB": {
-    "sourceHash": "1d09f6f",
-    "sameAsSourceJustification": "'MB' is a unit symbol; kept verbatim in Dutch (do-not-translate unit)."
-  },
-  "settings.listing.sizeUnit.opt.gB": "GB",
-  "@settings.listing.sizeUnit.opt.gB": {
-    "sourceHash": "b4043b0",
-    "sameAsSourceJustification": "'GB' is a unit symbol; kept verbatim in Dutch (do-not-translate unit)."
-  },
   "settings.appearance.fileSizeFormat.label": "Notatie van bestandsgrootte",
   "@settings.appearance.fileSizeFormat.label": {
     "sourceHash": "355c89b"
   },
-  "settings.appearance.fileSizeFormat.description": "Hoe bestandsgroottes in de bestandenlijst worden weergegeven: binair (KiB, MiB, waarbij 1 KiB = 1024 bytes) of SI-decimaal (KB, MB, waarbij 1 KB = 1000 bytes).",
+  "settings.appearance.fileSizeFormat.description": "Hoe Cmdr groottes overal toont: binair (KiB, MiB, waarbij 1 KiB = 1024 bytes) of SI-decimaal (kB, MB, waarbij 1 kB = 1000 bytes).",
   "@settings.appearance.fileSizeFormat.description": {
-    "sourceHash": "8219704"
+    "sourceHash": "db264e2"
   },
   "settings.appearance.fileSizeFormat.opt.binary": "Binair (KiB, MiB, GiB)",
   "@settings.appearance.fileSizeFormat.opt.binary": {
     "sourceHash": "0a4ce4e"
   },
-  "settings.appearance.fileSizeFormat.opt.si": "SI-decimaal (KB, MB, GB)",
+  "settings.appearance.fileSizeFormat.opt.si": "SI-decimaal (kB, MB, GB)",
   "@settings.appearance.fileSizeFormat.opt.si": {
-    "sourceHash": "8984a13"
+    "sourceHash": "4dcc22e"
   },
   "settings.listing.sizeMismatchWarning.label": "Waarschuwing bij grootteverschil",
   "@settings.listing.sizeMismatchWarning.label": {
@@ -311,13 +296,33 @@
   "@settings.listing.showTags.description": {
     "sourceHash": "005f3b0"
   },
+  "settings.listing.foldersFirst.label": "Mappen eerst tonen",
+  "@settings.listing.foldersFirst.label": {
+    "sourceHash": "a61d73e"
+  },
+  "settings.listing.foldersFirst.description": "Toon mappen boven bestanden in de lijst. Zet dit uit om mappen en bestanden door elkaar te tonen.",
+  "@settings.listing.foldersFirst.description": {
+    "sourceHash": "8505ff3"
+  },
+  "settings.listing.spaceCalculatesFolderSize.label": "Mapgrootte berekenen met Spatie",
+  "@settings.listing.spaceCalculatesFolderSize.label": {
+    "sourceHash": "1a403eb"
+  },
+  "settings.listing.spaceCalculatesFolderSize.description": "Als Spatie een map selecteert waarvan de grootte nog niet bekend is, telt Cmdr de inhoud bij elkaar op en toont het totaal. Escape stopt de berekening.",
+  "@settings.listing.spaceCalculatesFolderSize.description": {
+    "sourceHash": "38d64c1"
+  },
   "settings.listing.directorySortMode.label": "Mappen sorteren",
   "@settings.listing.directorySortMode.label": {
-    "sourceHash": "7f0a1e4"
+    "sourceHash": "7d0b088"
   },
   "settings.listing.directorySortMode.description": "Hoe mappen worden gesorteerd bij het wisselen van sorteerkolom.",
   "@settings.listing.directorySortMode.description": {
-    "sourceHash": "fe5f12a"
+    "sourceHash": "797d93b"
+  },
+  "settings.listing.directorySortMode.disabledReason": "Nu uitgeschakeld, omdat mappen en bestanden door elkaar staan. Zet ‘Mappen eerst tonen’ aan om deze instelling in te schakelen.",
+  "@settings.listing.directorySortMode.disabledReason": {
+    "sourceHash": "f17416c"
   },
   "settings.listing.directorySortMode.opt.likeFiles": "Zoals bestanden",
   "@settings.listing.directorySortMode.opt.likeFiles": {
@@ -967,6 +972,10 @@
   "@settings.network.firstTriggerDone.description": {
     "sourceHash": "7982e11"
   },
+  "settings.network.nearbyServersGroup.label": "Groep servers in de buurt",
+  "@settings.network.nearbyServersGroup.label": {
+    "sourceHash": "cfa28b1"
+  },
   "settings.network.directSmbConnection.label": "Rechtstreeks verbinden met SMB-shares",
   "@settings.network.directSmbConnection.label": {
     "sourceHash": "407c4f1"
@@ -1061,7 +1070,7 @@
   },
   "settings.fileOperations.adbEnabled.description": "Krijg toegang tot het hele bestandssysteem van een Android-telefoon waarop USB-foutopsporing is ingeschakeld, iets wat MTP je niet kan laten zien. Hiervoor heb je de Android platform tools (de opdracht ‘adb’) op deze Mac nodig. Het kost niets om dit ingeschakeld te laten als je geen Android-tools hebt geïnstalleerd.",
   "@settings.fileOperations.adbEnabled.description": {
-    "sourceHash": "9a22518"
+    "sourceHash": "a89c957"
   },
   "settings.fileOperations.adbBinaryPath.label": "Locatie van adb",
   "@settings.fileOperations.adbBinaryPath.label": {
@@ -1302,6 +1311,23 @@
   "settings.fileExplorer.typeToJump.resetDelay.description": "Hoe lang de typ-om-te-springen-buffer actief blijft na de laatste toetsaanslag. Lagere waarden resetten sneller tussen zoekopdrachten; hogere waarden zijn vergevingsgezinder voor trage typers.",
   "@settings.fileExplorer.typeToJump.resetDelay.description": {
     "sourceHash": "ff59a6a"
+  },
+  "settings.fileExplorer.typeToJump.mode.label": "Als je in een paneel typt",
+  "@settings.fileExplorer.typeToJump.mode.label": {
+    "sourceHash": "4ee8ef5"
+  },
+  "settings.fileExplorer.typeToJump.mode.description": "‘Ga naar’ zet de cursor op de beste overeenkomst. ‘Filter’ toont alleen de bestanden en mappen waarvan de naam bevat wat je typt, zoals het snelfilter van Total Commander; Delete (⌫) past het aan en Escape wist het.",
+  "@settings.fileExplorer.typeToJump.mode.description": {
+    "sourceHash": "e142e97"
+  },
+  "settings.fileExplorer.typeToJump.mode.opt.jump": "Ga naar",
+  "@settings.fileExplorer.typeToJump.mode.opt.jump": {
+    "sourceHash": "9ee0ca3"
+  },
+  "settings.fileExplorer.typeToJump.mode.opt.filter": "Filter",
+  "@settings.fileExplorer.typeToJump.mode.opt.filter": {
+    "sourceHash": "638e249",
+    "sameAsSourceJustification": "'Filter' is the Dutch bare-stem imperative of filteren, the button form the catalog already ships (Filter recente selecties, Filter op type); nl terms.json filter."
   },
   "settings.fileOperations.maxConflictsToShow.label": "Maximaal aantal conflicten om te tonen",
   "@settings.fileOperations.maxConflictsToShow.label": {
@@ -1642,9 +1668,9 @@
   "@settings.behavior.doubleClickOnPaneNotificationSeen.description": {
     "sourceHash": "56238d4"
   },
-  "settings.behavior.serversPinHintSeen.label": "Hint voor lange groep Netwerk getoond",
+  "settings.behavior.serversPinHintSeen.label": "Hint voor ‘Maak los uit volumekiezer’ getoond",
   "@settings.behavior.serversPinHintSeen.label": {
-    "sourceHash": "8d632ca"
+    "sourceHash": "8513a3c"
   },
   "settings.behavior.serversPinHintSeen.description": "Of de eenmalige hint over het losmaken van servers is getoond.",
   "@settings.behavior.serversPinHintSeen.description": {
@@ -1912,36 +1938,6 @@
   "@settings.operationLog.maxSize.description": {
     "sourceHash": "ad5152a"
   },
-  "settings.operationLog.maxSize.opt.mb100": "100 MB",
-  "@settings.operationLog.maxSize.opt.mb100": {
-    "sourceHash": "991d5de",
-    "sameAsSourceJustification": "Byte-unit label kept verbatim (numeral literal, MB/GB not localized), matching the app's size-unit setting."
-  },
-  "settings.operationLog.maxSize.opt.mb250": "250 MB",
-  "@settings.operationLog.maxSize.opt.mb250": {
-    "sourceHash": "028b133",
-    "sameAsSourceJustification": "Byte-unit label kept verbatim (numeral literal, MB/GB not localized), matching the app's size-unit setting."
-  },
-  "settings.operationLog.maxSize.opt.gb1": "1 GB",
-  "@settings.operationLog.maxSize.opt.gb1": {
-    "sourceHash": "6c31b63",
-    "sameAsSourceJustification": "Byte-unit label kept verbatim (numeral literal, MB/GB not localized), matching the app's size-unit setting."
-  },
-  "settings.operationLog.maxSize.opt.gb2": "2 GB",
-  "@settings.operationLog.maxSize.opt.gb2": {
-    "sourceHash": "b2dd624",
-    "sameAsSourceJustification": "Byte-unit label kept verbatim (numeral literal, MB/GB not localized), matching the app's size-unit setting."
-  },
-  "settings.operationLog.maxSize.opt.gb3": "3 GB",
-  "@settings.operationLog.maxSize.opt.gb3": {
-    "sourceHash": "485f66b",
-    "sameAsSourceJustification": "Byte-unit label kept verbatim (numeral literal, MB/GB not localized), matching the app's size-unit setting."
-  },
-  "settings.operationLog.maxSize.opt.gb5": "5 GB",
-  "@settings.operationLog.maxSize.opt.gb5": {
-    "sourceHash": "43644bc",
-    "sameAsSourceJustification": "Byte-unit label kept verbatim (numeral literal, MB/GB not localized), matching the app's size-unit setting."
-  },
   "settings.section.mcpServer": "MCP-server",
   "@settings.section.mcpServer": {
     "sourceHash": "d938c81"
@@ -1976,7 +1972,7 @@
   },
   "settings.summary.listing": "Documentsymbolen, mapsortering, en kolombreedte in de Beknopte weergave.",
   "@settings.summary.listing": {
-    "sourceHash": "7756e95"
+    "sourceHash": "ebed448"
   },
   "settings.summary.navigationAndFileOps": "Navigeren naar de bovenliggende map met dubbelklik, en gedrag bij het wijzigen van bestandsnamen.",
   "@settings.summary.navigationAndFileOps": {
@@ -2000,7 +1996,7 @@
   },
   "settings.summary.servers": "De SSH-serversleutels die je hebt vertrouwd.",
   "@settings.summary.servers": {
-    "sourceHash": "40940fa"
+    "sourceHash": "3335380"
   },
   "settings.summary.adb": "Blader op een Android-telefoon waarop USB-foutopsporing is ingeschakeld.",
   "@settings.summary.adb": {
@@ -2061,6 +2057,76 @@
   "settings.control.backToPresetsAriaLabel": "Terug naar voorinstellingen",
   "@settings.control.backToPresetsAriaLabel": {
     "sourceHash": "1579f3f"
+  },
+  "settings.control.unitItems": "onderdelen",
+  "@settings.control.unitItems": {
+    "sourceHash": "5f3c4f8"
+  },
+  "settings.managed.rowNote": "Je organisatie beheert deze instelling.",
+  "@settings.managed.rowNote": {
+    "sourceHash": "891206b"
+  },
+  "settings.managed.sectionNote": "Je organisatie beheert een deel van deze instellingen.",
+  "@settings.managed.sectionNote": {
+    "sourceHash": "ab52c49"
+  },
+  "settings.managed.summary.title": "Beheerd door je organisatie",
+  "@settings.managed.summary.title": {
+    "sourceHash": "5450801"
+  },
+  "settings.managed.summary.usageStats": "Gebruiksstatistieken",
+  "@settings.managed.summary.usageStats": {
+    "sourceHash": "4e0483c"
+  },
+  "settings.managed.summary.usageStatsOff": "Uit",
+  "@settings.managed.summary.usageStatsOff": {
+    "sourceHash": "ca7981b"
+  },
+  "settings.managed.summary.reports": "Crash- en foutrapporten",
+  "@settings.managed.summary.reports": {
+    "sourceHash": "ef409c3"
+  },
+  "settings.managed.summary.reportsOff": "Uit",
+  "@settings.managed.summary.reportsOff": {
+    "sourceHash": "ca7981b"
+  },
+  "settings.managed.summary.updates": "Updates",
+  "@settings.managed.summary.updates": {
+    "sourceHash": "22e2bad",
+    "sameAsSourceJustification": "'Updates' is the Dutch loanword the catalog already uses for this section (settings.updates.card.updates, settings.advanced.card.updates -> Updates; terms.json update: noun update)."
+  },
+  "settings.managed.summary.updatesOff": "Uit",
+  "@settings.managed.summary.updatesOff": {
+    "sourceHash": "ca7981b"
+  },
+  "settings.managed.summary.ai": "AI",
+  "@settings.managed.summary.ai": {
+    "sourceHash": "11fb682",
+    "sameAsSourceJustification": "'AI' is the standard Dutch abbreviation the whole catalog uses (settings.ai.* section, ai.translateError.off.title -> AI is uitgeschakeld)."
+  },
+  "settings.managed.summary.aiOff": "Uit",
+  "@settings.managed.summary.aiOff": {
+    "sourceHash": "ca7981b"
+  },
+  "settings.managed.summary.upTo": "Tot en met {ceiling}",
+  "@settings.managed.summary.upTo": {
+    "sourceHash": "8989a97"
+  },
+  "settings.managed.summary.manualChecksOnly": "Alleen handmatig gecontroleerd",
+  "@settings.managed.summary.manualChecksOnly": {
+    "sourceHash": "1969d26"
+  },
+  "settings.managed.summary.upToManualChecksOnly": "Tot en met {ceiling}, alleen handmatig gecontroleerd",
+  "@settings.managed.summary.upToManualChecksOnly": {
+    "sourceHash": "c769ffd"
+  },
+  "settings.managed.summary.onDeviceOnly": "Alleen lokaal",
+  "@settings.managed.summary.onDeviceOnly": {
+    "sourceHash": "d4f8552"
+  },
+  "settings.managed.summary.cloudHostsOnly": "Cloud-AI alleen via {hosts}",
+  "@settings.managed.summary.cloudHostsOnly": {
+    "sourceHash": "00f1237"
   },
   "settings.sidebar.searchPlaceholder": "Zoek in instellingen…",
   "@settings.sidebar.searchPlaceholder": {
@@ -2532,13 +2598,13 @@
   "@settings.adb.recheck": {
     "sourceHash": "24fcca0"
   },
-  "settings.adb.install.intro": "Installeer de Android platform tools en druk daarna op ‘Controleer opnieuw’:",
+  "settings.adb.install.intro": "Installeer de Android platform tools en kies daarna ‘Controleer opnieuw’:",
   "@settings.adb.install.intro": {
-    "sourceHash": "5a82ea4"
+    "sourceHash": "9f7a0f4"
   },
-  "settings.adb.pathPlaceholder": "Zoek op de gebruikelijke manier naar adb",
+  "settings.adb.pathPlaceholder": "Cmdr zoekt op de gebruikelijke manier naar adb",
   "@settings.adb.pathPlaceholder": {
-    "sourceHash": "e236ef2"
+    "sourceHash": "538b307"
   },
   "settings.adb.browse": "Blader…",
   "@settings.adb.browse": {
@@ -2547,5 +2613,13 @@
   "settings.adb.pickerTitle": "Kies de opdracht adb",
   "@settings.adb.pickerTitle": {
     "sourceHash": "d6fc142"
+  },
+  "settings.fileExplorer.quickFilterIntroSeen.label": "Snelfilter uitgelegd",
+  "@settings.fileExplorer.quickFilterIntroSeen.label": {
+    "sourceHash": "5d124bb"
+  },
+  "settings.fileExplorer.quickFilterIntroSeen.description": "Of de melding die het eerste snelfilter uitlegt is getoond.",
+  "@settings.fileExplorer.quickFilterIntroSeen.description": {
+    "sourceHash": "855c661"
   }
 }

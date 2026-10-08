@@ -524,6 +524,10 @@ pub(crate) enum NavAck {
     /// The pane never came to rest. `path` is what it holds meanwhile, which for a volume
     /// switch is the destination it committed optimistically.
     DidNotSettle { path: String },
+    /// The pane is on the requested folder, but its volume stopped answering mid-read:
+    /// the listing keeps retrying in the background. Reported the moment the pane shows
+    /// the stall, so a stalled folder doesn't hold the tool for its whole budget.
+    Stalled { path: String },
 }
 
 /// Parse an `mcp-response` for a navigation, against the request ID we're waiting for.
@@ -546,6 +550,7 @@ fn parse_nav_response(payload: &str, expected_id: &str) -> Option<Result<NavAck,
         Some("navigated") => Some(Ok(NavAck::Navigated { path })),
         Some("fell-back") => Some(Ok(NavAck::FellBack { path })),
         Some("did-not-settle") => Some(Ok(NavAck::DidNotSettle { path })),
+        Some("stalled") => Some(Ok(NavAck::Stalled { path })),
         // No outcome to go on: fall back to the plain ok/error rule, where a missing
         // `ok` counts as failure so a malformed reply can never become a false OK.
         _ => Some(match parse_mcp_response(payload, expected_id)? {

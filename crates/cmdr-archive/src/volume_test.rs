@@ -622,6 +622,68 @@ async fn get_space_info_delegates_to_the_parent() {
     );
 }
 
+// ---- Dates: a copy out of an archive keeps each entry's own date ----------
+
+/// A zip entry's stream reports the date the archive recorded for it, the one
+/// the listing shows, so an extracted file keeps it.
+#[tokio::test]
+async fn a_zip_entry_stream_reports_the_entry_date() {
+    use std::io::{Cursor, Write};
+    // Even seconds: zip's DOS time keeps nothing finer.
+    let recorded = zip::DateTime::from_date_and_time(2021, 1, 29, 8, 30, 14).expect("a valid DOS date");
+    let mut writer = zip::ZipWriter::new(Cursor::new(Vec::new()));
+    let opts = zip::write::SimpleFileOptions::default().last_modified_time(recorded);
+    writer.start_file("dated.txt", opts).expect("start dated.txt");
+    writer.write_all(b"bytes from 2021").expect("write dated.txt");
+    let archive = TestArchive::from_bytes(writer.finish().expect("finish zip").into_inner());
+
+    cmdr_fs::volume::conformance::assert_read_stream_reports_the_listed_date(&archive.volume(), Path::new("dated.txt"))
+        .await;
+}
+
+/// A compressed tar's one-pass extract hands out each member's stream with the
+/// date the tar header recorded, the path a bulk extract of a `.tar.gz` takes.
+#[tokio::test]
+async fn a_sequential_extract_member_stream_reports_the_member_date() {
+    use std::io::Write;
+    let date = cmdr_fs::volume::conformance::SOURCE_DATE_SECS;
+    let mut builder = ::tar::Builder::new(Vec::new());
+    let mut header = ::tar::Header::new_ustar();
+    header.set_mtime(date);
+    header.set_mode(0o644);
+    header.set_size(4);
+    header.set_entry_type(::tar::EntryType::Regular);
+    header.set_cksum();
+    builder
+        .append_data(&mut header, "docs/dated.txt", &b"2021"[..])
+        .expect("append");
+    let mut gz = flate2::write::GzEncoder::new(Vec::new(), flate2::Compression::default());
+    gz.write_all(&builder.into_inner().expect("finish tar")).expect("gzip");
+    let archive = TestArchive::from_bytes(gz.finish().expect("finish gzip"));
+    let volume = ArchiveVolume::new(
+        Arc::new(InMemoryVolume::new("parent").with_local_fs_access()),
+        archive.path.clone(),
+        ArchiveFormat::Tar(crate::TarCodec::Gzip),
+        VolumeHost::detached(),
+    );
+
+    let mut extract = volume
+        .open_sequential_extract(Path::new("docs"))
+        .await
+        .expect("open the extract");
+    extract.next_file().await.expect("next_file").expect("the one member");
+    let reported = extract
+        .current_stream()
+        .modified_at()
+        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+        .map(|d| d.as_secs());
+    assert_eq!(
+        reported,
+        Some(date),
+        "the member's stream must report the tar header's date"
+    );
+}
+
 #[test]
 fn capability_flags_are_read_only_and_virtual() {
     let archive = TestArchive::from_entries(&[stored("a.txt", "x")]);

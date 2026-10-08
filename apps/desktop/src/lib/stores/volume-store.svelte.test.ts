@@ -167,6 +167,7 @@ describe('applyVolumeRootChanged', () => {
       newRoot: 'sftp://ada@nas.local:22/srv/data',
       oldLanding: place.path,
       newLanding: 'sftp://ada@nas.local:22/srv/data/photos',
+      kind: 'edited',
     })
 
     expect(getVolumes()).toEqual([
@@ -188,6 +189,7 @@ describe('applyVolumeRootChanged', () => {
       newRoot: 'sftp://ada@nas.local:22/srv/data',
       oldLanding: place.path,
       newLanding: 'sftp://ada@nas.local:22/srv/data',
+      kind: 'edited',
     })
 
     expect(getVolumes()[0].landingPath).toBeNull()
@@ -204,6 +206,7 @@ describe('applyVolumeRootChanged', () => {
       newRoot: 'sftp://ada@somewhere.else:22/',
       oldLanding: 'sftp://ada@somewhere.else:22/a',
       newLanding: 'sftp://ada@somewhere.else:22/',
+      kind: 'edited',
     })
 
     expect(getVolumes()).toBe(before)

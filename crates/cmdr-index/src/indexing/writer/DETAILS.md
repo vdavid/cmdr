@@ -485,7 +485,8 @@ READ is never "no row" (below), and a failed `get_parent_id` queues the current 
 and the `None` branch with a positive delta `INSERT OR REPLACE`s a fresh row holding ONLY the delta — a transient busy
 read turned into a permanently wrong aggregate. `Err` now writes nothing and queues the chain; `Ok(None)` keeps its
 meaning. Same fix in `repair_dir_stats_upward`'s stored-row read, and `recompute_recursive_has_symlinks` returns
-`Result<bool>` instead of `unwrap_or(false)`.
+`Result<bool>` instead of `unwrap_or(false)`. Its two queries read off partial indexes (`idx_child_symlinks` for the
+direct half, `idx_child_dirs` for the subdir half), never every child: `../store/DETAILS.md` § child directories.
 
 **Decision: the drain point is the writer loop's caught-up tick, outside any explicit transaction.** `writer_loop`
 drains at the end of an iteration when `queue_depth == 0` and `conn.is_autocommit()` — the same "fully caught up" point
@@ -515,6 +516,13 @@ clear the accumulator** — a clear there opens its own window: a `force_scan` o
 truncate + `Maps` path, and an uncancelled in-flight verification's `ComputeSubtreeAggregates` landing mid-scan would
 wipe maps that then partially repopulate. `TruncateData` already clears the maps at the start of every legitimate `Maps`
 flow. The interleaved-aggregate test pins this.
+
+**A full aggregate times itself.** A successful `ComputeAllAggregates` stores its wall clock in the writer's
+`last_full_aggregate_ms` (a failed one clears it), and `IndexWriter::take_last_full_aggregate_ms` reads and clears it. A
+scan's completion handler takes it right after the flush that waited the aggregate out: the writer is one ordered
+thread, so by then the scan's own aggregate is the last one finished. That's what splits the post-walk wait into the
+"save the file list" and "compute folder sizes" steps the overall "~X left" remembers (`../store/DETAILS.md` § "The
+steps after the walk").
 
 **The hourglass for coalesced rescans (the held-roots tier).** A detached `reconcile_subtree` runs for seconds while the
 writer queue oscillates empty, so the wholesale queue-drain clear of `PendingSizes` would wipe the "size updating" mark

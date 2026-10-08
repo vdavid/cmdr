@@ -73,6 +73,65 @@ async fn producer_preserves_names_empty_entries_metadata_and_level() {
     assert_eq!(archive.by_index(1).expect("file").size(), 0);
 }
 
+/// The extended-timestamp (UT) mtime `entry` carries in the central directory.
+fn extended_mtime(archive: &mut zip::ZipArchive<std::io::Cursor<Vec<u8>>>, index: usize) -> Option<u32> {
+    let entry = archive.by_index(index).expect("entry");
+    entry.extra_data_fields().find_map(|field| match field {
+        zip::ExtraField::ExtendedTimestamp(times) => times.mod_time(),
+        _ => None,
+    })
+}
+
+#[tokio::test]
+async fn producer_dates_entries_in_local_time_with_the_exact_utc_second_beside_it() {
+    use chrono::{Datelike, Timelike};
+    // An odd second: the DOS field alone can't carry it.
+    let mtime_secs: u32 = 1_600_000_001;
+    let modified = std::time::UNIX_EPOCH + std::time::Duration::from_secs(u64::from(mtime_secs));
+    let entries = vec![
+        FreshZipEntry {
+            name: "report.txt".into(),
+            source: FreshZipSource::Bytes(b"hello".to_vec()),
+            size: 5,
+            is_directory: false,
+            modified: Some(modified),
+            unix_mode: None,
+        },
+        FreshZipEntry {
+            name: "undated/".into(),
+            source: FreshZipSource::Bytes(vec![]),
+            size: 0,
+            is_directory: true,
+            modified: None,
+            unix_mode: None,
+        },
+    ];
+    let bytes = collect(spawn_fresh_zip(entries, None).expect("spawn producer"))
+        .await
+        .expect("produce");
+    let mut archive = zip::ZipArchive::new(std::io::Cursor::new(bytes)).expect("valid zip");
+
+    // Pre-fix there was no extended field at all, and the DOS field was UTC.
+    assert_eq!(extended_mtime(&mut archive, 0), Some(mtime_secs));
+    let local = chrono::DateTime::<chrono::Local>::from(modified).naive_local();
+    let dos = archive.by_index(0).expect("file").last_modified().expect("a DOS time");
+    assert_eq!(
+        (dos.year(), dos.month(), dos.day(), dos.hour(), dos.minute()),
+        (
+            local.year() as u16,
+            local.month() as u8,
+            local.day() as u8,
+            local.hour() as u8,
+            local.minute() as u8
+        ),
+        "the DOS field is this machine's wall-clock time"
+    );
+
+    // A source with no mtime is dated now, never the format's 1980 zero.
+    let undated = extended_mtime(&mut archive, 1).expect("an undated entry still carries a time");
+    assert!(undated > mtime_secs);
+}
+
 #[tokio::test]
 async fn output_larger_than_capacity_waits_for_a_gated_consumer() {
     let payload = (0..CHUNK_BYTES * (CHANNEL_CHUNKS + 3))

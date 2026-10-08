@@ -9,7 +9,7 @@ browses, extracts, and **writes**; tar (every codec), 7z, and OOXML are **read-o
 
 ## Module map
 
-- `src/volume.rs`: `ArchiveVolume` + `VolumeByteSource` — the only module that touches the `Volume` trait.
+- `src/volume.rs` (+ its private child `src/volume_streams.rs`, the stream adapters): the only `Volume`-trait code.
 - `src/boundary.rs`: the SHARED boundary detector + per-format magic, called by the host's routing and its volume
   commands alike.
 - `src/read/CLAUDE.md` (the reading engine: Zip Slip, DoS caps, sans-IO fsm, codecs), `src/mutation/CLAUDE.md` (the

@@ -5,7 +5,10 @@ import { openUrl } from '@tauri-apps/plugin-opener'
 import {
   commands,
   type DriveItemLinks,
+  type ShareLinkExpiry,
+  type VolumeError,
   type EditorOpenReport,
+  type GetInfoError,
   type OpenInEditorError,
   type OpenTerminalError,
   type OpenTerminalOutcome,
@@ -21,6 +24,7 @@ export type {
   DriveItemLinks,
   EditorOpenOutcome,
   EditorOpenReport,
+  GetInfoError,
   OpenInEditorError,
   OpenTerminalError,
   OpenTerminalOutcome,
@@ -88,12 +92,23 @@ export interface PaneContextMenuFacts {
    */
   canShare?: boolean
   /**
+   * Whether the seven Finder tag colors appear (macOS). A tag is an xattr written through
+   * the row's path, so only rows that are real OS paths can hold one; on a phone, an SFTP or
+   * WebDAV server, or inside an archive the click would store nothing. Omitting it hides them.
+   */
+  canTag?: boolean
+  /**
    * Whether "Add to favorites" appears on a folder row. A favorite has to point somewhere
    * that's still there next launch and openable from a cold start, so an archive's insides,
    * a `.git`-portal folder, a phone, and a protocol-only server all say no. Omitting it
    * hides the item: Rust's `add_favorite` would refuse anyway, and it refuses silently.
    */
   canFavorite?: boolean
+  /**
+   * Whether "Copy share link" appears: the row is a FILE on a volume that can mint a
+   * link (`canShareLinks`, S3 today). Omitting it hides the item.
+   */
+  canShareLink?: boolean
 }
 
 /**
@@ -139,6 +154,20 @@ export interface MenuAnchor {
   y: number
 }
 
+/** Every pane fact the backend expects, with an omitted one read as "no". */
+function paneFactsForIpc(pane: PaneContextMenuFacts): Required<PaneContextMenuFacts> {
+  return {
+    restrictDestinationActions: pane.restrictDestinationActions ?? false,
+    canShowInFolder: pane.canShowInFolder ?? false,
+    listingId: pane.listingId ?? '',
+    canOpenTerminalHere: pane.canOpenTerminalHere ?? false,
+    canShare: pane.canShare ?? false,
+    canTag: pane.canTag ?? false,
+    canFavorite: pane.canFavorite ?? false,
+    canShareLink: pane.canShareLink ?? false,
+  }
+}
+
 /**
  * Shows a native context menu for a file.
  * @param path - Absolute path to the right-clicked file (the "primary" file).
@@ -176,14 +205,7 @@ export async function showFileContextMenu(
     filename,
     isDirectory,
     paths,
-    pane: {
-      restrictDestinationActions: pane.restrictDestinationActions ?? false,
-      canShowInFolder: pane.canShowInFolder ?? false,
-      listingId: pane.listingId ?? '',
-      canOpenTerminalHere: pane.canOpenTerminalHere ?? false,
-      canShare: pane.canShare ?? false,
-      canFavorite: pane.canFavorite ?? false,
-    },
+    pane: paneFactsForIpc(pane),
     target: {
       countText: target.countText ?? null,
       sizeText: target.sizeText ?? null,
@@ -205,6 +227,20 @@ export async function googleDriveLinks(path: string): Promise<DriveItemLinks | n
   const res = await commands.googleDriveLinks(path)
   if (res.status === 'error') throwIpcError(res.error)
   return res.data
+}
+
+/**
+ * Mints a share link to the file at `path` and puts it on the clipboard, in Rust.
+ * ❗ The link never comes back here: its signature is a credential, and keeping
+ * it out of IPC keeps it out of every frontend log. The outcome is all there is.
+ */
+export async function copyShareLink(
+  volumeId: string,
+  path: string,
+  expiresIn: ShareLinkExpiry,
+): Promise<{ ok: true } | { ok: false; error: VolumeError }> {
+  const res = await commands.copyShareLink(volumeId, path, expiresIn)
+  return res.status === 'ok' ? { ok: true } : { ok: false, error: res.error }
 }
 
 /**
@@ -313,13 +349,28 @@ export async function quickLookClose(): Promise<void> {
   if (res.status === 'error') throwIpcError(res.error)
 }
 
+/** A Get Info ask that never reached Finder, still carrying the backend's typed reason. */
+export class GetInfoFailure extends TypedFailure<GetInfoError> {
+  constructor(failure: GetInfoError) {
+    super(failure, `get info refused: ${failure.type}`)
+    this.name = 'GetInfoFailure'
+  }
+}
+
+/** The typed refusal behind a caught value, or `null` when it isn't one. */
+export function asGetInfoError(error: unknown): GetInfoError | null {
+  return error instanceof GetInfoFailure ? error.failure : null
+}
+
 /**
- * Open file info window (macOS only, no-op on other platforms).
+ * Opens Finder's Get Info window for a file (macOS only, no-op on other platforms).
+ * Throws {@link GetInfoFailure} when the ask couldn't reach Finder, most notably
+ * when the user turned off Cmdr's control of Finder in System Settings.
  * @param path - Absolute path to the file.
  */
 export async function getInfo(path: string): Promise<void> {
   const res = await commands.getInfo(path)
-  if (res.status === 'error') throwIpcError(res.error)
+  if (res.status === 'error') throw new GetInfoFailure(res.error)
 }
 
 /** An editor launch that never started, still carrying the backend's typed reason. */

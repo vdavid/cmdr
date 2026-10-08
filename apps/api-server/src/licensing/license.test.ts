@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { generateLicenseKey, generateShortCode, isValidShortCode, type LicenseData } from './license'
+import {
+  generateLicenseKey,
+  generateShortCode,
+  isValidNonce,
+  isValidShortCode,
+  signValidationAnswer,
+  validationAnswerSignaturePrefix,
+  type LicenseData,
+} from './license'
 import * as ed from '@noble/ed25519'
 
 // This file runs in workerd (see `vitest.workerd.config.ts`), so hex and base64 go through the
@@ -262,5 +270,75 @@ describe('generateLicenseKey', () => {
     // Signature should NOT verify for tampered org name
     const isValid = await ed.verifyAsync(signatureBytes, tamperedPayloadBytes, publicKey)
     expect(isValid).toBe(false)
+  })
+
+  it('signs a fixed end date into a dated license, so the app can enforce it offline', async () => {
+    const privateKey = ed.utils.randomSecretKey()
+
+    const key = await generateLicenseKey(
+      {
+        email: 'trial@example.com',
+        transactionId: 'manual-ABCDEFGHJKMN',
+        issuedAt: '2026-10-05T12:00:00Z',
+        type: 'commercial_subscription',
+        expiresAt: '2027-01-31T23:59:59.999Z',
+      },
+      bytesToHex(privateKey),
+    )
+
+    const decoded = JSON.parse(base64ToUtf8(key.split('.')[0])) as LicenseData
+    expect(decoded.expiresAt).toBe('2027-01-31T23:59:59.999Z')
+  })
+})
+
+/**
+ * The `/validate` answer the app trusts. A perpetual license drops to Personal only on an
+ * authenticated "invalid", so the answer is signed with the license key and bound to the app's
+ * nonce: a squatter on a lapsed domain, or a TLS-intercepting proxy, can't forge one, and a captured
+ * one can't be replayed into another request.
+ */
+describe('signValidationAnswer', () => {
+  const answer = {
+    transactionId: 'txn_abc',
+    nonce: '0123456789abcdef0123456789abcdef',
+    status: 'invalid' as const,
+    type: null,
+    organizationName: null,
+    expiresAt: null,
+  }
+
+  it('signs the payload under a domain prefix, so the signature never verifies as a license key', async () => {
+    const privateKey = ed.utils.randomSecretKey()
+    const publicKey = await ed.getPublicKeyAsync(privateKey)
+
+    const signed = await signValidationAnswer(answer, bytesToHex(privateKey), new Date('2026-10-05T12:00:00Z'))
+
+    const payloadBytes = base64ToBytes(signed.payload)
+    const signatureBytes = base64ToBytes(signed.signature)
+    const prefixed = new Uint8Array([...new TextEncoder().encode(validationAnswerSignaturePrefix), ...payloadBytes])
+    expect(await ed.verifyAsync(signatureBytes, prefixed, publicKey)).toBe(true)
+    expect(await ed.verifyAsync(signatureBytes, payloadBytes, publicKey)).toBe(false)
+  })
+
+  it('carries the nonce, the transaction id, the verdict, and the server time', async () => {
+    const privateKey = ed.utils.randomSecretKey()
+
+    const signed = await signValidationAnswer(answer, bytesToHex(privateKey), new Date('2026-10-05T12:00:00Z'))
+
+    expect(JSON.parse(base64ToUtf8(signed.payload))).toEqual({ ...answer, signedAt: '2026-10-05T12:00:00.000Z' })
+  })
+})
+
+describe('isValidNonce', () => {
+  it('takes 32 hex characters, the shape the app sends', () => {
+    expect(isValidNonce('0123456789abcdef0123456789abcdef')).toBe(true)
+  })
+
+  it('refuses anything else, so a caller can’t make us sign arbitrary text', () => {
+    expect(isValidNonce(undefined)).toBe(false)
+    expect(isValidNonce('short')).toBe(false)
+    expect(isValidNonce('0123456789abcdef0123456789abcdeg')).toBe(false)
+    expect(isValidNonce('0123456789abcdef0123456789abcdef0')).toBe(false)
+    expect(isValidNonce(42)).toBe(false)
   })
 })

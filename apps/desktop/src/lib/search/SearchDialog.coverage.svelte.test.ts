@@ -516,7 +516,14 @@ describe('a server search can’t cover', () => {
     path: 'sftp://ada@nas.local:22/srv/data',
     category: 'network',
     fsType: 'sftp',
-    capabilities: { backendCanWrite: true, canExport: true, canBeIndexed: false },
+    capabilities: {
+      backendCanWrite: true,
+      canExport: true,
+      canBeIndexed: false,
+      canShareLinks: false,
+      renamesCanCopy: false,
+      hasOsMountFallback: false,
+    },
   }
   const SCOPE = 'sftp://ada@nas.local:22/srv/data'
 

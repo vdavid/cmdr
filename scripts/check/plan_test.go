@@ -226,6 +226,59 @@ func TestRecordRunCachesPassDropsFail(t *testing.T) {
 	}
 }
 
+// A file edited while the check ran means the pass belongs to content nobody
+// fingerprinted. Recording it under the plan-time key would let an A→B→A edit
+// later hit the cache on content that never ran.
+func TestRecordRunSkipsPassWhenInputsChangedMidRun(t *testing.T) {
+	dir := planGitRepo(t, map[string]string{"a.txt": "v1"})
+	ctx := &checks.CheckContext{RootDir: dir}
+	def := noopCheck("c1", "a.txt")
+
+	plan := planCache(ctx, &cliFlags{}, []checks.CheckDefinition{def})
+	writeFile(t, dir, "a.txt", "v2-edited-mid-run")
+
+	states := []*CheckState{{Definition: &def, Status: StatusCompleted, Result: checks.Success("ok")}}
+	plan.recordRun(dir, states)
+
+	if entry, ok := checks.LoadCheckCache(dir).Entries["c1"]; ok {
+		t.Fatalf("a pass whose inputs changed mid-run must not be cached, got %+v", entry)
+	}
+}
+
+// Two runs in one worktree each save the cache. The second save must not
+// overwrite the first run's passes, nor resurrect an entry the first one dropped.
+func TestRecordRunMergesConcurrentSaves(t *testing.T) {
+	dir := planGitRepo(t, map[string]string{"a.txt": "v1", "b.txt": "v1", "x.txt": "v1"})
+	ctx := &checks.CheckContext{RootDir: dir}
+	a := noopCheck("a", "a.txt")
+	b := noopCheck("b", "b.txt")
+	x := noopCheck("x", "x.txt")
+	seedCache(t, ctx, x)
+
+	// Both runs plan (and load the cache, x included) before either saves.
+	planA := planCache(ctx, &cliFlags{fresh: true}, []checks.CheckDefinition{a})
+	planB := planCache(ctx, &cliFlags{fresh: true}, []checks.CheckDefinition{b, x})
+
+	planB.recordRun(dir, []*CheckState{
+		{Definition: &b, Status: StatusCompleted, Result: checks.Success("ok")},
+		{Definition: &x, Status: StatusFailed},
+	})
+	planA.recordRun(dir, []*CheckState{
+		{Definition: &a, Status: StatusCompleted, Result: checks.Success("ok")},
+	})
+
+	entries := checks.LoadCheckCache(dir).Entries
+	if _, ok := entries["a"]; !ok {
+		t.Error("run A's pass must be cached")
+	}
+	if _, ok := entries["b"]; !ok {
+		t.Error("run B's pass must survive run A's later save")
+	}
+	if _, ok := entries["x"]; ok {
+		t.Error("run A's save must not resurrect the entry run B dropped")
+	}
+}
+
 func TestRecordRunDropsWarn(t *testing.T) {
 	dir := planGitRepo(t, map[string]string{"a.txt": "v1"})
 	plan := &cachePlan{

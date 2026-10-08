@@ -23,6 +23,11 @@
     <string>Cmdr needs this access to let you browse your network shares/drives. If you want fewer popups, grant Cmdr "Full Disk Access" in System Settings.</string>
     <key>NSRemovableVolumesUsageDescription</key>
     <string>Cmdr needs this access to let you browse the USB drives, SD cards, and external disks you connect. If you Don't Allow, macOS won't let Cmdr access those devices.</string>
+    <!-- Shown in the "Cmdr wants access to control Finder" prompt on the first Get info.
+         `osascript` sends the event, but macOS attributes it to Cmdr and reads this key from
+         Cmdr's bundle (`src/file_system/get_info.rs`). -->
+    <key>NSAppleEventsUsageDescription</key>
+    <string>Cmdr asks Finder to open the Get info window for your files. It doesn't ask Finder for anything else.</string>
     <key>NSAppleMusicUsageDescription</key>
     <string>Cmdr reads music file metadata to render file icons matching Apple Music. Cmdr doesn't read your library. If you want fewer popups, grant Cmdr "Full Disk Access" in System Settings.</string>
     <key>NSPhotoLibraryUsageDescription</key>

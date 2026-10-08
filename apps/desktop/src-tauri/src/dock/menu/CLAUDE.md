@@ -35,7 +35,7 @@ folder…, Connect to server…, then the bookmarks, then the open tabs. macOS a
   checked `get`, ❌ never an index.
 - ⚠️ **`command_id` is the third place Rust names a frontend command id.**
   `rust-command-id-drift.test.ts` scans it; keep the two in step.
-- **New label? It's a RAW `menu.dock.*` key** through `menu_t`, ❌ never `t()`, with
+- **New label? It's a RAW `menu.dock.*` key** (Go to folder borrows the bar's `menu.go.goToPath`) through `menu_t`, ❌ never `t()`, with
   apostrophes SINGLE. No capture can photograph a native menu, so the `@key`
   description is the translator's only aid.
 

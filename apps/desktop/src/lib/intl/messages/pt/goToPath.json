@@ -1,7 +1,7 @@
 {
-  "goToPath.dialog.title": "Ir para o caminho",
+  "goToPath.dialog.title": "Ir para pasta",
   "@goToPath.dialog.title": {
-    "sourceHash": "fb65702"
+    "sourceHash": "26fc1cf"
   },
   "goToPath.dialog.inputAriaLabel": "Caminho de destino",
   "@goToPath.dialog.inputAriaLabel": {
@@ -23,9 +23,9 @@
   "@goToPath.dialog.cancel": {
     "sourceHash": "19766ed"
   },
-  "goToPath.dialog.confirm": "Ir para o caminho",
+  "goToPath.dialog.confirm": "Ir",
   "@goToPath.dialog.confirm": {
-    "sourceHash": "fb65702"
+    "sourceHash": "6cc8519"
   },
   "goToPath.dialog.ancestorHint": "Este caminho não existe. O lugar mais próximo para ir é {dir}.",
   "@goToPath.dialog.ancestorHint": {

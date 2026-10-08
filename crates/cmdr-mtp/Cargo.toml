@@ -42,7 +42,11 @@ cmdr-fs = { path = "../cmdr-fs" }
 # The MTP/PTP client: USB enumeration, the PTP session, and the virtual device.
 # Same version the app pinned before this crate existed, so nothing about the
 # wire behavior moved with the code.
-mtp-rs = "0.32.0"
+mtp-rs = "0.33.0"
+# The Mac's time zone, with its DST rules, for reading a phone's zoneless dates
+# (`connection/dates.rs`). Already in the app's graph through `gix-date`, at the
+# same version and default features, so this adds no crate.
+jiff = "0.2.31"
 serde = { version = "1", features = ["derive"] }
 # Type export for the Rust↔TS bindings: the device list, the storage list, the
 # typed connection error, and the disconnect reason all cross IPC. Pinned to the
@@ -76,8 +80,8 @@ tempfile = { version = "3", optional = true }
 
 [dev-dependencies]
 # Depending on ourselves turns `testing` on for every DEV target and leaves it off
-# for the lib, so a shipped build carries no fixtures. Same shape as `cmdr-adb`'s
-# and the app's own self dev-dependency. `virtual-device` rides along because
+# for the lib, so a shipped build carries no fixtures. Same shape as `cmdr-adb`'s.
+# `virtual-device` rides along because
 # nearly every cell here needs a device to talk to.
 cmdr-mtp = { path = ".", features = ["testing", "virtual-device"] }
 # `wait_until_async` and the recording / scripted host-seam fakes this crate's

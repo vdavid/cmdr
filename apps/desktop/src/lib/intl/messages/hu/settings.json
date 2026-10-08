@@ -150,21 +150,21 @@
   "@settings.appearance.tintLocal.description": {
     "sourceHash": "3c86b48"
   },
-  "settings.appearance.tintSmb.label": "Szerverpanelek színezése (SMB, SFTP, WebDAV)",
+  "settings.appearance.tintSmb.label": "Szerverpanelek színezése (SMB, SFTP, WebDAV, S3)",
   "@settings.appearance.tintSmb.label": {
-    "sourceHash": "d801804"
+    "sourceHash": "d912bcf"
   },
-  "settings.appearance.tintSmb.description": "Háttérszínezés az SMB-megosztást, SFTP- vagy WebDAV-szervert mutató paneleken.",
+  "settings.appearance.tintSmb.description": "Háttérszínezés az SMB-megosztást, SFTP- vagy WebDAV-szervert, illetve S3-tárhelyet mutató paneleken.",
   "@settings.appearance.tintSmb.description": {
-    "sourceHash": "2e071d3"
+    "sourceHash": "bddee40"
   },
-  "settings.appearance.tintMtp.label": "MTP-panelek színezése",
+  "settings.appearance.tintMtp.label": "Eszközpanelek színezése (MTP, ADB)",
   "@settings.appearance.tintMtp.label": {
-    "sourceHash": "2054351"
+    "sourceHash": "c50c536"
   },
-  "settings.appearance.tintMtp.description": "Háttérszínezés az Android-, Kindle- vagy kameraeszközt mutató paneleken.",
+  "settings.appearance.tintMtp.description": "Háttérszínezés a telefont, Kindle-t vagy kamerát mutató paneleken, MTP- és ADB-kapcsolatnál egyaránt.",
   "@settings.appearance.tintMtp.description": {
-    "sourceHash": "a09d99a"
+    "sourceHash": "d70512d"
   },
   "settings.appearance.textSize.label": "Szövegméret",
   "@settings.appearance.textSize.label": {
@@ -218,9 +218,9 @@
   "@settings.listing.sizeUnit.label": {
     "sourceHash": "2a817d3"
   },
-  "settings.listing.sizeUnit.description": "A Dinamikus fájlonként a legbarátságosabb egységet választja (1,02 MB). A rögzített egységek összevethetővé teszik a méreteket a listában. A Bájt a pontos darabszámot mutatja a precíz összevetéshez.",
+  "settings.listing.sizeUnit.description": "A Dinamikus fájlonként a legbarátságosabb egységet választja. A rögzített egységek összevethetővé teszik a méreteket a listában. A Bájt a pontos darabszámot mutatja a precíz összevetéshez.",
   "@settings.listing.sizeUnit.description": {
-    "sourceHash": "702a201"
+    "sourceHash": "fae7a91"
   },
   "settings.listing.sizeUnit.opt.dynamic": "Dinamikus",
   "@settings.listing.sizeUnit.opt.dynamic": {
@@ -230,36 +230,21 @@
   "@settings.listing.sizeUnit.opt.bytes": {
     "sourceHash": "4d80003"
   },
-  "settings.listing.sizeUnit.opt.kB": "kB",
-  "@settings.listing.sizeUnit.opt.kB": {
-    "sourceHash": "591e59c",
-    "sameAsSourceJustification": "'kB' is a unit symbol, kept verbatim (en @key). Glossary lists kB/MB/GB as kept units (settings pass)."
-  },
-  "settings.listing.sizeUnit.opt.mB": "MB",
-  "@settings.listing.sizeUnit.opt.mB": {
-    "sourceHash": "1d09f6f",
-    "sameAsSourceJustification": "'MB' is a unit symbol, kept verbatim. Glossary lists kB/MB/GB as kept units (settings pass)."
-  },
-  "settings.listing.sizeUnit.opt.gB": "GB",
-  "@settings.listing.sizeUnit.opt.gB": {
-    "sourceHash": "b4043b0",
-    "sameAsSourceJustification": "'GB' is a unit symbol, kept verbatim. Glossary lists kB/MB/GB as kept units (settings pass)."
-  },
   "settings.appearance.fileSizeFormat.label": "Fájlméret formátuma",
   "@settings.appearance.fileSizeFormat.label": {
     "sourceHash": "355c89b"
   },
-  "settings.appearance.fileSizeFormat.description": "Hogyan jelenjenek meg a fájlméretek a fájllistában: bináris (KiB, MiB, ahol 1 KiB = 1024 bájt) vagy SI decimális (KB, MB, ahol 1 KB = 1000 bájt).",
+  "settings.appearance.fileSizeFormat.description": "Hogyan jelenjenek meg a méretek mindenhol: bináris (KiB, MiB, ahol 1 KiB = 1024 bájt) vagy SI decimális (kB, MB, ahol 1 kB = 1000 bájt).",
   "@settings.appearance.fileSizeFormat.description": {
-    "sourceHash": "8219704"
+    "sourceHash": "db264e2"
   },
   "settings.appearance.fileSizeFormat.opt.binary": "Bináris (KiB, MiB, GiB)",
   "@settings.appearance.fileSizeFormat.opt.binary": {
     "sourceHash": "0a4ce4e"
   },
-  "settings.appearance.fileSizeFormat.opt.si": "SI decimális (KB, MB, GB)",
+  "settings.appearance.fileSizeFormat.opt.si": "SI decimális (kB, MB, GB)",
   "@settings.appearance.fileSizeFormat.opt.si": {
-    "sourceHash": "8984a13"
+    "sourceHash": "4dcc22e"
   },
   "settings.listing.sizeMismatchWarning.label": "Mérteltérés-figyelmeztetés",
   "@settings.listing.sizeMismatchWarning.label": {
@@ -309,13 +294,33 @@
   "@settings.listing.showTags.description": {
     "sourceHash": "005f3b0"
   },
-  "settings.listing.directorySortMode.label": "Könyvtárak rendezése",
-  "@settings.listing.directorySortMode.label": {
-    "sourceHash": "7f0a1e4"
+  "settings.listing.foldersFirst.label": "Mappák megjelenítése felül",
+  "@settings.listing.foldersFirst.label": {
+    "sourceHash": "a61d73e"
   },
-  "settings.listing.directorySortMode.description": "Hogyan rendeződjenek a könyvtárak a rendezőoszlop váltásakor.",
+  "settings.listing.foldersFirst.description": "A listában a mappák a fájlok fölé kerülnek. Kapcsold ki, ha vegyesen szeretnéd látni a mappákat és a fájlokat.",
+  "@settings.listing.foldersFirst.description": {
+    "sourceHash": "8505ff3"
+  },
+  "settings.listing.spaceCalculatesFolderSize.label": "Mappaméret kiszámítása Szóközzel",
+  "@settings.listing.spaceCalculatesFolderSize.label": {
+    "sourceHash": "1a403eb"
+  },
+  "settings.listing.spaceCalculatesFolderSize.description": "Ha a Szóközzel kijelölsz egy mappát, amelynek még nem ismert a mérete, a Cmdr összeadja a tartalmát, és megjeleníti a teljes méretet. Az Escape billentyű leállítja a számítást.",
+  "@settings.listing.spaceCalculatesFolderSize.description": {
+    "sourceHash": "38d64c1"
+  },
+  "settings.listing.directorySortMode.label": "Mappák rendezése",
+  "@settings.listing.directorySortMode.label": {
+    "sourceHash": "7d0b088"
+  },
+  "settings.listing.directorySortMode.description": "Hogyan rendeződjenek a mappák a rendezőoszlop váltásakor.",
   "@settings.listing.directorySortMode.description": {
-    "sourceHash": "fe5f12a"
+    "sourceHash": "797d93b"
+  },
+  "settings.listing.directorySortMode.disabledReason": "Most ki van kapcsolva, mert a mappák és a fájlok vegyesen jelennek meg. Kapcsold be a „Mappák megjelenítése felül” beállítást, hogy ezt is beállíthasd.",
+  "@settings.listing.directorySortMode.disabledReason": {
+    "sourceHash": "f17416c"
   },
   "settings.listing.directorySortMode.opt.likeFiles": "Mint a fájlok",
   "@settings.listing.directorySortMode.opt.likeFiles": {
@@ -963,6 +968,10 @@
   "@settings.network.firstTriggerDone.description": {
     "sourceHash": "7982e11"
   },
+  "settings.network.nearbyServersGroup.label": "A közelben felfedezett szerverek csoportja",
+  "@settings.network.nearbyServersGroup.label": {
+    "sourceHash": "cfa28b1"
+  },
   "settings.network.directSmbConnection.label": "Közvetlen kapcsolódás SMB-megosztásokhoz",
   "@settings.network.directSmbConnection.label": {
     "sourceHash": "407c4f1"
@@ -1057,7 +1066,7 @@
   },
   "settings.fileOperations.adbEnabled.description": "Eléred egy olyan Android-telefon teljes fájlrendszerét, amelyen be van kapcsolva az USB-hibakeresés; az MTP ezt nem mutatja meg. Ehhez kell az Android platform tools csomag (az „adb” parancs) ezen a Macen. Ha nincs telepítve Android-fejlesztőeszköz, nem kerül semmibe, ha bekapcsolva hagyod.",
   "@settings.fileOperations.adbEnabled.description": {
-    "sourceHash": "9a22518"
+    "sourceHash": "a89c957"
   },
   "settings.fileOperations.adbBinaryPath.label": "Az adb helye",
   "@settings.fileOperations.adbBinaryPath.label": {
@@ -1248,15 +1257,15 @@
   "@settings.fileViewer.suppressBinaryWarning.label": {
     "sourceHash": "8cdaada"
   },
-  "settings.fileViewer.suppressBinaryWarning.description": "Az F3 megnyitja a Cmdr fájlmegjelenítőjét, amely nyers bájtokat mutat (nem szöveges tartalomnál veszteséges UTF-8-cal). Amikor képet, PDF-et, archívumot vagy más bináris fájlt nyitsz meg, a megjelenítő piros sávot mutat, amely elmagyarázza, hogy valószínűleg a ⇧Space (Gyorsnézet) vagy az Enter (megnyitás a társított appban) az, amit szerettél volna. Kapcsold ezt be (vagy kattints a sávban a „Ne jelenjen meg többé ez a figyelmeztetés” gombra), hogy végleg elnyomd a figyelmeztetést.",
+  "settings.fileViewer.suppressBinaryWarning.description": "Az F3 megnyitja a Cmdr fájlmegjelenítőjét, amely nyers bájtokat mutat (nem szöveges tartalomnál veszteséges UTF-8-cal). Amikor képet, PDF-et, archívumot vagy más bináris fájlt nyitsz meg, a megjelenítő piros sávot mutat, amely elmagyarázza, hogy valószínűleg a ⇧Szóköz (Gyorsnézet) vagy az Enter (megnyitás a társított appban) az, amit szerettél volna. Kapcsold ezt be (vagy kattints a sávban a „Ne jelenjen meg többé ez a figyelmeztetés” gombra), hogy végleg elnyomd a figyelmeztetést.",
   "@settings.fileViewer.suppressBinaryWarning.description": {
     "sourceHash": "a93b4cb"
   },
-  "settings.fileExplorer.suppressQuickLookHint.label": "Space-billentyűs Gyorsnézet tipp elnyomása",
+  "settings.fileExplorer.suppressQuickLookHint.label": "Szóközbillentyűs Gyorsnézet tipp elnyomása",
   "@settings.fileExplorer.suppressQuickLookHint.label": {
     "sourceHash": "bd9da35"
   },
-  "settings.fileExplorer.suppressQuickLookHint.description": "A Cmdr a Space-szel váltja a fájlkijelölést, és a ⇧Space-szel a Gyorsnézetet (a Finder sima Space-szel hozza a Gyorsnézetet). Valahányszor megnyomod a Space-t a fájllistában, a Cmdr egy bekezdésnyi emlékeztetőt mutat erről a különbségről. Kapcsold ezt be (vagy kattints a buborékban a „Ne jelenjen meg többé” gombra), hogy végleg elnyomd az emlékeztetőt.",
+  "settings.fileExplorer.suppressQuickLookHint.description": "A Cmdr a Szóközzel váltja a fájlkijelölést, és a ⇧Szóközzel a Gyorsnézetet (a Finder sima Szóközzel hozza a Gyorsnézetet). Valahányszor megnyomod a Szóközt a fájllistában, a Cmdr egy bekezdésnyi emlékeztetőt mutat erről a különbségről. Kapcsold ezt be (vagy kattints a buborékban a „Ne jelenjen meg többé” gombra), hogy végleg elnyomd az emlékeztetőt.",
   "@settings.fileExplorer.suppressQuickLookHint.description": {
     "sourceHash": "10357b4"
   },
@@ -1299,6 +1308,22 @@
   "settings.fileExplorer.typeToJump.resetDelay.description": "Meddig marad életben a gépeléses ugrás puffere az utolsó billentyűleütés után. A kisebb értékek gyorsabban visszaállnak a keresések között; a nagyobb értékek megengedőbbek a lassú gépelőkkel.",
   "@settings.fileExplorer.typeToJump.resetDelay.description": {
     "sourceHash": "ff59a6a"
+  },
+  "settings.fileExplorer.typeToJump.mode.label": "Gépelés a panelen",
+  "@settings.fileExplorer.typeToJump.mode.label": {
+    "sourceHash": "4ee8ef5"
+  },
+  "settings.fileExplorer.typeToJump.mode.description": "Az Ugrás mód a legjobb találatra viszi a kurzort. A Szűrés mód csak azokat a fájlokat és mappákat mutatja, amelyek nevében szerepel, amit beírsz, mint a Total Commander gyorsszűrője. A Delete (⌫) billentyűvel módosíthatod, az Escape billentyűvel törölheted.",
+  "@settings.fileExplorer.typeToJump.mode.description": {
+    "sourceHash": "e142e97"
+  },
+  "settings.fileExplorer.typeToJump.mode.opt.jump": "Ugrás",
+  "@settings.fileExplorer.typeToJump.mode.opt.jump": {
+    "sourceHash": "9ee0ca3"
+  },
+  "settings.fileExplorer.typeToJump.mode.opt.filter": "Szűrés",
+  "@settings.fileExplorer.typeToJump.mode.opt.filter": {
+    "sourceHash": "638e249"
   },
   "settings.fileOperations.maxConflictsToShow.label": "Megjelenítendő ütközések maximuma",
   "@settings.fileOperations.maxConflictsToShow.label": {
@@ -1636,9 +1661,9 @@
   "@settings.behavior.doubleClickOnPaneNotificationSeen.description": {
     "sourceHash": "56238d4"
   },
-  "settings.behavior.serversPinHintSeen.label": "A hosszú Hálózat csoport tippje megjelent",
+  "settings.behavior.serversPinHintSeen.label": "A „Rögzítés feloldása a kötetválasztóban” tippje megjelent",
   "@settings.behavior.serversPinHintSeen.label": {
-    "sourceHash": "8d632ca"
+    "sourceHash": "8513a3c"
   },
   "settings.behavior.serversPinHintSeen.description": "Megjelent-e már az egyszeri tipp a szerverek rögzítésének feloldásáról.",
   "@settings.behavior.serversPinHintSeen.description": {
@@ -1905,36 +1930,6 @@
   "@settings.operationLog.maxSize.description": {
     "sourceHash": "ad5152a"
   },
-  "settings.operationLog.maxSize.opt.mb100": "100 MB",
-  "@settings.operationLog.maxSize.opt.mb100": {
-    "sourceHash": "991d5de",
-    "sameAsSourceJustification": "Byte-unit label kept verbatim (numeral literal, MB/GB not localized), matching the app's size-unit setting."
-  },
-  "settings.operationLog.maxSize.opt.mb250": "250 MB",
-  "@settings.operationLog.maxSize.opt.mb250": {
-    "sourceHash": "028b133",
-    "sameAsSourceJustification": "Byte-unit label kept verbatim (numeral literal, MB/GB not localized), matching the app's size-unit setting."
-  },
-  "settings.operationLog.maxSize.opt.gb1": "1 GB",
-  "@settings.operationLog.maxSize.opt.gb1": {
-    "sourceHash": "6c31b63",
-    "sameAsSourceJustification": "Byte-unit label kept verbatim (numeral literal, MB/GB not localized), matching the app's size-unit setting."
-  },
-  "settings.operationLog.maxSize.opt.gb2": "2 GB",
-  "@settings.operationLog.maxSize.opt.gb2": {
-    "sourceHash": "b2dd624",
-    "sameAsSourceJustification": "Byte-unit label kept verbatim (numeral literal, MB/GB not localized), matching the app's size-unit setting."
-  },
-  "settings.operationLog.maxSize.opt.gb3": "3 GB",
-  "@settings.operationLog.maxSize.opt.gb3": {
-    "sourceHash": "485f66b",
-    "sameAsSourceJustification": "Byte-unit label kept verbatim (numeral literal, MB/GB not localized), matching the app's size-unit setting."
-  },
-  "settings.operationLog.maxSize.opt.gb5": "5 GB",
-  "@settings.operationLog.maxSize.opt.gb5": {
-    "sourceHash": "43644bc",
-    "sameAsSourceJustification": "Byte-unit label kept verbatim (numeral literal, MB/GB not localized), matching the app's size-unit setting."
-  },
   "settings.section.mcpServer": "MCP-szerver",
   "@settings.section.mcpServer": {
     "sourceHash": "d938c81"
@@ -1967,9 +1962,9 @@
   "@settings.summary.fileAndFolderSizes": {
     "sourceHash": "cdd8214"
   },
-  "settings.summary.listing": "Dokumentumikonok, könyvtárrendezés és Rövid mód oszlopszélessége.",
+  "settings.summary.listing": "Dokumentumikonok, mapparendezés és Rövid mód oszlopszélessége.",
   "@settings.summary.listing": {
-    "sourceHash": "7756e95"
+    "sourceHash": "ebed448"
   },
   "settings.summary.navigationAndFileOps": "Navigáció a szülőmappába dupla kattintással, és viselkedés fájlok átnevezésekor.",
   "@settings.summary.navigationAndFileOps": {
@@ -1993,7 +1988,7 @@
   },
   "settings.summary.servers": "A megbízhatónak tekintett SSH-szerverkulcsok.",
   "@settings.summary.servers": {
-    "sourceHash": "40940fa"
+    "sourceHash": "3335380"
   },
   "settings.summary.adb": "Böngéssz egy olyan Android-telefont, amelyen be van kapcsolva az USB-hibakeresés.",
   "@settings.summary.adb": {
@@ -2054,6 +2049,75 @@
   "settings.control.backToPresetsAriaLabel": "Vissza az előbeállításokhoz",
   "@settings.control.backToPresetsAriaLabel": {
     "sourceHash": "1579f3f"
+  },
+  "settings.control.unitItems": "elem",
+  "@settings.control.unitItems": {
+    "sourceHash": "5f3c4f8"
+  },
+  "settings.managed.rowNote": "Ezt a beállítást a szervezeted kezeli.",
+  "@settings.managed.rowNote": {
+    "sourceHash": "891206b"
+  },
+  "settings.managed.sectionNote": "Néhány itteni beállítást a szervezeted kezel.",
+  "@settings.managed.sectionNote": {
+    "sourceHash": "ab52c49"
+  },
+  "settings.managed.summary.title": "A szervezeted kezeli",
+  "@settings.managed.summary.title": {
+    "sourceHash": "5450801"
+  },
+  "settings.managed.summary.usageStats": "Használati statisztika",
+  "@settings.managed.summary.usageStats": {
+    "sourceHash": "4e0483c"
+  },
+  "settings.managed.summary.usageStatsOff": "Ki",
+  "@settings.managed.summary.usageStatsOff": {
+    "sourceHash": "ca7981b"
+  },
+  "settings.managed.summary.reports": "Összeomlás- és hibajelentések",
+  "@settings.managed.summary.reports": {
+    "sourceHash": "ef409c3"
+  },
+  "settings.managed.summary.reportsOff": "Ki",
+  "@settings.managed.summary.reportsOff": {
+    "sourceHash": "ca7981b"
+  },
+  "settings.managed.summary.updates": "Frissítések",
+  "@settings.managed.summary.updates": {
+    "sourceHash": "22e2bad"
+  },
+  "settings.managed.summary.updatesOff": "Ki",
+  "@settings.managed.summary.updatesOff": {
+    "sourceHash": "ca7981b"
+  },
+  "settings.managed.summary.ai": "AI",
+  "@settings.managed.summary.ai": {
+    "sourceHash": "11fb682",
+    "sameAsSourceJustification": "'AI' is the catalog's settled Hungarian word for the feature (terms.json cloud-ai/ai-feature: Felhő-AI, AI-funkciók; settings.ai section heading), so the row label matches English."
+  },
+  "settings.managed.summary.aiOff": "Ki",
+  "@settings.managed.summary.aiOff": {
+    "sourceHash": "ca7981b"
+  },
+  "settings.managed.summary.upTo": "Legfeljebb {ceiling}",
+  "@settings.managed.summary.upTo": {
+    "sourceHash": "8989a97"
+  },
+  "settings.managed.summary.manualChecksOnly": "Csak kézi ellenőrzéssel",
+  "@settings.managed.summary.manualChecksOnly": {
+    "sourceHash": "1969d26"
+  },
+  "settings.managed.summary.upToManualChecksOnly": "Legfeljebb {ceiling}, csak kézi ellenőrzéssel",
+  "@settings.managed.summary.upToManualChecksOnly": {
+    "sourceHash": "c769ffd"
+  },
+  "settings.managed.summary.onDeviceOnly": "Csak helyi",
+  "@settings.managed.summary.onDeviceOnly": {
+    "sourceHash": "d4f8552"
+  },
+  "settings.managed.summary.cloudHostsOnly": "Felhő-AI csak ezeken át: {hosts}",
+  "@settings.managed.summary.cloudHostsOnly": {
+    "sourceHash": "00f1237"
   },
   "settings.sidebar.searchPlaceholder": "Beállítások keresése…",
   "@settings.sidebar.searchPlaceholder": {
@@ -2521,13 +2585,13 @@
   "@settings.adb.recheck": {
     "sourceHash": "24fcca0"
   },
-  "settings.adb.install.intro": "Telepítsd az Android platform tools csomagot, majd nyomd meg az Újraellenőrzés gombot:",
+  "settings.adb.install.intro": "Telepítsd az Android platform tools csomagot, majd válaszd az „Újraellenőrzés” lehetőséget:",
   "@settings.adb.install.intro": {
-    "sourceHash": "5a82ea4"
+    "sourceHash": "9f7a0f4"
   },
-  "settings.adb.pathPlaceholder": "Az adb keresése a szokásos módon",
+  "settings.adb.pathPlaceholder": "A Cmdr a szokásos módon keresi az adb-t",
   "@settings.adb.pathPlaceholder": {
-    "sourceHash": "e236ef2"
+    "sourceHash": "538b307"
   },
   "settings.adb.browse": "Böngészés…",
   "@settings.adb.browse": {
@@ -2536,5 +2600,13 @@
   "settings.adb.pickerTitle": "Az adb parancs kiválasztása",
   "@settings.adb.pickerTitle": {
     "sourceHash": "d6fc142"
+  },
+  "settings.fileExplorer.quickFilterIntroSeen.label": "Gyorsszűrő-magyarázat megjelent",
+  "@settings.fileExplorer.quickFilterIntroSeen.label": {
+    "sourceHash": "5d124bb"
+  },
+  "settings.fileExplorer.quickFilterIntroSeen.description": "Megjelent-e már az értesítés, amely az első gyorsszűrést elmagyarázza.",
+  "@settings.fileExplorer.quickFilterIntroSeen.description": {
+    "sourceHash": "855c661"
   }
 }

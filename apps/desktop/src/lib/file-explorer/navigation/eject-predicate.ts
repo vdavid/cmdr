@@ -6,9 +6,10 @@ import { isAdbVolumeId } from '$lib/adb/adb-path-utils'
  * Whether the volume picker offers this row an eject-or-disconnect control at all.
  *
  * `isEjectable` (from NSURL on macOS, sysfs removable bit on Linux) covers USB
- * drives, SD cards, DMG-mounted disk images, and MTP devices. It returns `false`
- * for SMB mounts even though Finder shows an eject button for them, so the row's
- * session answers for those.
+ * drives, SD cards, external disks with fixed media (a Thunderbolt SSD),
+ * DMG-mounted disk images, and MTP devices. It returns `false` for SMB mounts
+ * even though Finder shows an eject button for them, so the row's session
+ * answers for those.
  *
  * The session half is two predicates because the control's WORD differs: a live
  * mount or session ends with Eject or Disconnect (`direct`, `os_mount`), and

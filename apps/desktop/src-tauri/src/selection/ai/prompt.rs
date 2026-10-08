@@ -30,7 +30,8 @@
 ///   frontend so we don't need a structured filter type. `glob` accepts `*` / `?`
 ///   only (anchored full-name match); anything else should come back as `regex`.
 /// - Size filters use byte ranges (`size_min`/`size_max`); the model is told to
-///   spell bytes out so we don't have to parse `mb`/`gb` suffixes again.
+///   spell bytes out so we don't have to parse `mb`/`gb` suffixes again, and that
+///   `MB` is base 1000 while `MiB` is base 1024, the split the app's symbols draw.
 /// - Date filters use ISO `YYYY-MM-DD`; the parser converts to unix seconds.
 /// - `note` is a short caveat the UI surfaces in the AI transparency strip when the
 ///   intent has an unfilterable component (for example "files I never opened").
@@ -59,6 +60,8 @@ Rules:
 - When the intent is purely a size, date, or type filter, set `pattern` to `*` so the matcher selects every name.
 - When the intent has no time component, omit `modified_after` and `modified_before`. Never default to recent.
 - When the intent has no size component, omit `size_min` and `size_max`.
+- Size units: kB/MB/GB/TB are decimal (1 MB = 1,000,000 bytes); KiB/MiB/GiB/TiB are binary (1 MiB = 1,048,576 bytes). \
+Use the user's unit as written; a bare \"KB\" counts as decimal too.
 - `type` is OPTIONAL. The user's current choice is shown below. OMIT `type` unless they clearly want only files \
 (\"the pdf files\", \"just the documents\") or only folders (\"the subfolders\", \"empty directories\"). \
 A bare \"all images\" is files; \"node_modules folders\" is folder. When in doubt, omit it.
@@ -66,7 +69,8 @@ A bare \"all images\" is files; \"node_modules folders\" is folder. When in doub
 Examples (sample lines elided for brevity):
 \"all log files\" \u{2192} pattern: *.log / kind: glob / label: All log files
 \"png and jpg images\" \u{2192} pattern: *.(png|jpg|jpeg) / kind: regex / label: PNG and JPG images
-\"files bigger than 5 MB\" \u{2192} pattern: * / kind: glob / size_min: 5242880 / label: Files bigger than 5 MB
+\"files bigger than 5 MB\" \u{2192} pattern: * / kind: glob / size_min: 5000000 / label: Files bigger than 5 MB
+\"files under 10 MiB\" \u{2192} pattern: * / kind: glob / size_max: 10485760 / label: Files under 10 MiB
 \"the subfolders\" \u{2192} pattern: * / kind: glob / type: folder / label: Subfolders
 \"empty files\" \u{2192} pattern: * / kind: glob / type: file / size_min: 0 / size_max: 0 / label: Empty files
 \"backups from last week\" \u{2192} pattern: *backup* / kind: glob / modified_after: {WEEK_AGO} / label: Recent backups
@@ -204,6 +208,17 @@ mod tests {
         ] {
             assert!(prompt.contains(field), "prompt missing field {field:?}");
         }
+    }
+
+    #[test]
+    fn prompt_teaches_si_and_iec_sizes_apart() {
+        // "MB" is 1,000,000 bytes and "MiB" 1,048,576, the same split the app's size symbols draw.
+        let prompt = build_classification_prompt(&[], None);
+        assert!(prompt.contains("\"files bigger than 5 MB\" \u{2192} pattern: * / kind: glob / size_min: 5000000"));
+        assert!(
+            prompt.contains("size_max: 10485760"),
+            "a MiB example should spell out base 1024"
+        );
     }
 
     #[test]

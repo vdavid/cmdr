@@ -20,22 +20,22 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { getUserFriendlyMessage } from './transfer-error-messages'
 import type { FriendlyErrorMessage } from './transfer-error-messages'
 import type { WriteOperationError, TransferOperationType } from '$lib/file-explorer/types'
-import { colorizeSizeString } from '$lib/file-explorer/selection/selection-info-utils'
-import { formatByteSize } from '$lib/units'
+import { colorizeSize } from '$lib/file-explorer/selection/selection-info-utils'
+import { formatByteSizeTiered } from '$lib/units'
 
 // The insufficient_space message interpolates colorized, formatted sizes. Those
 // helpers are NOT part of the migrated copy (only the template moved), so derive
 // the expected interpolations from them rather than hardcoding their HTML.
 const REQUIRED = 1073741824
 const AVAILABLE = 536870912
-const requiredSize = colorizeSizeString(formatByteSize(REQUIRED))
-const availableSize = colorizeSizeString(formatByteSize(AVAILABLE))
+const requiredSize = colorizeSize(formatByteSizeTiered(REQUIRED))
+const availableSize = colorizeSize(formatByteSizeTiered(AVAILABLE))
 
 // files_too_large_for_filesystem also interpolates colorized, formatted sizes.
 const FAT_MAX = 4294967295
 const BIG_FILE = 5368709120
-const fatMaxSize = colorizeSizeString(formatByteSize(FAT_MAX))
-const bigFileSize = colorizeSizeString(formatByteSize(BIG_FILE))
+const fatMaxSize = colorizeSize(formatByteSizeTiered(FAT_MAX))
+const bigFileSize = colorizeSize(formatByteSizeTiered(BIG_FILE))
 
 // `trash_not_supported` interpolates the live `file.deletePermanently` binding.
 // Pin it so the suggestion is deterministic across platforms.
@@ -90,7 +90,7 @@ const cases: Case[] = [
     expected: {
       title: 'Couldn’t find the destination folder',
       message:
-        'The folder you’re copying into isn’t there any more, so there was nowhere to put your files. The originals are untouched.',
+        'The folder you’re copying into isn’t there anymore, so there was nowhere to put your files. The originals are untouched.',
       suggestion:
         'It may have been renamed or removed, or the drive may have disconnected. Pick another destination, or open the folder again and retry.',
     },
@@ -102,9 +102,22 @@ const cases: Case[] = [
     expected: {
       title: 'Couldn’t find the destination folder',
       message:
-        'The folder you’re moving into isn’t there any more, so there was nowhere to put your files. The originals are untouched.',
+        'The folder you’re moving into isn’t there anymore, so there was nowhere to put your files. The originals are untouched.',
       suggestion:
         'It may have been renamed or removed, or the drive may have disconnected. Pick another destination, or open the folder again and retry.',
+    },
+  },
+  {
+    // One sentence for copy and move: the refusal comes before either writes.
+    // It has to name the FILE, which is often not the folder the user typed.
+    name: 'destination_not_a_folder',
+    error: { type: 'destination_not_a_folder', path: '/photos/2026' },
+    op: 'move',
+    expected: {
+      title: 'A file is in the way',
+      message:
+        'Cmdr couldn’t create the destination folder, because there’s a file at /photos/2026, where a folder needs to be. Nothing was written, and the originals are untouched.',
+      suggestion: 'Pick another destination, or rename or move that file and try again.',
     },
   },
   {
@@ -282,7 +295,7 @@ const cases: Case[] = [
       title: 'Invalid file name',
       message: '/p has a name the destination can’t store.',
       suggestion:
-        'Rename it to something shorter and plainer, then try again. Some destinations also refuse reserved names like CON, NUL, or LPT1.',
+        'Rename it to something shorter and plainer, then try again. Some destinations refuse tabs or line breaks in a name, and some refuse reserved names like CON, NUL, or LPT1.',
     },
   },
   {
@@ -296,7 +309,7 @@ const cases: Case[] = [
       title: 'Invalid file name',
       message: '/share/&lt;b&gt;"a&amp;b"&lt;/b&gt;.json has a name the destination can’t store.',
       suggestion:
-        'Rename it to something shorter and plainer, then try again. Some destinations also refuse reserved names like CON, NUL, or LPT1.',
+        'Rename it to something shorter and plainer, then try again. Some destinations refuse tabs or line breaks in a name, and some refuse reserved names like CON, NUL, or LPT1.',
     },
   },
   {
@@ -493,12 +506,12 @@ const cases: Case[] = [
     name: 'insufficient_space',
     error: { type: 'insufficient_space', required: REQUIRED, available: AVAILABLE, volumeName: null },
     expected: {
-      title: 'Not enough space',
-      // The size HTML comes from colorizeSizeString(formatByteSize(...)); the
+      title: 'The destination may not have enough space',
+      // The size HTML comes from colorizeSize(formatByteSizeTiered(...)); the
       // template text around it is the migrated copy this pins.
-      message: `The destination needs ${requiredSize} but only has ${availableSize} available.`,
+      message: `This needs up to ${requiredSize}, and the destination has ${availableSize} free.`,
       suggestion:
-        'Free up some space on the destination by deleting unnecessary files, or choose a different location.',
+        'Files already at the destination may mean the copy needs less space. If the destination fills up, Cmdr stops and tells you. To be safe, free up some space or choose a different location.',
     },
   },
   {
@@ -582,6 +595,33 @@ const cases: Case[] = [
         'The file at /Volumes/naspi/photos/a.jpg is on its way out. The server marked it for deletion, but another open handle is keeping it around until that handle closes.',
       suggestion:
         'Wait a moment and try again. Once the last handle closes, the file disappears. If it sticks around, close any other apps that might have it open.',
+    },
+  },
+
+  {
+    // Names the archived file: one object deep in a copied folder is the whole
+    // problem, and a restore is asked for by name.
+    name: 'source_in_cold_storage',
+    error: { type: 'source_in_cold_storage', path: 's3://AKIA@s3.eu-west-1.amazonaws.com:443/photos/2019.tar' },
+    expected: {
+      title: 'This file is archived',
+      message:
+        'The file at s3://AKIA@s3.eu-west-1.amazonaws.com:443/photos/2019.tar is archived, so it can’t be read until it’s restored.',
+      suggestion:
+        'Restore it in your storage provider’s console, then try again. A restore can take anywhere from minutes to two days.',
+    },
+  },
+
+  {
+    // A server-side copy saw its source replaced mid-copy and saved nothing:
+    // named, and the source is said to be where it was, since a move kept it.
+    name: 'source_changed',
+    error: { type: 'source_changed', path: 's3://AKIA@nbg1.your-objectstorage.com:443/docs/report.pdf' },
+    expected: {
+      title: 'This file changed during the copy',
+      message:
+        'The file at s3://AKIA@nbg1.your-objectstorage.com:443/docs/report.pdf changed while Cmdr was copying it, so Cmdr saved nothing. The file stays where it was.',
+      suggestion: 'Try again to copy the version that’s there now.',
     },
   },
 
@@ -911,9 +951,9 @@ const cases: Case[] = [
     },
     expected: {
       title: 'Your file is under a new name',
-      message: `Folders took the names of 2 of your files, so those files are now under new names. Nothing was thrown away; the technical details below list every one. The destination needs ${requiredSize} but only has ${availableSize} available.`,
+      message: `Folders took the names of 2 of your files, so those files are now under new names. Nothing was thrown away; the technical details below list every one. This needs up to ${requiredSize}, and the destination has ${availableSize} free.`,
       suggestion:
-        'Check the details below for where each file is. Once you’ve moved the folders out of the way, you can rename them back. Free up some space on the destination by deleting unnecessary files, or choose a different location.',
+        'Check the details below for where each file is. Once you’ve moved the folders out of the way, you can rename them back. Files already at the destination may mean the copy needs less space. If the destination fills up, Cmdr stops and tells you. To be safe, free up some space or choose a different location.',
     },
   },
   {

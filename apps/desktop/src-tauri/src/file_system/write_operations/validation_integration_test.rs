@@ -2,7 +2,7 @@
 
 use std::fs;
 use std::os::unix::fs::PermissionsExt;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use super::unique_name::find_unique_name;
 use super::*;
@@ -240,9 +240,49 @@ fn test_ensure_destination_dir_rejects_a_file() {
     fs::write(&dest, "content").unwrap();
 
     let result = ensure_destination_dir(&dest);
-    assert!(matches!(result, Err(WriteOperationError::IoError { .. })));
+    assert!(
+        matches!(&result, Err(WriteOperationError::DestinationNotAFolder { path }) if Path::new(path) == dest),
+        "got {result:?}"
+    );
     // The file must be left untouched.
     assert!(dest.is_file());
+}
+
+#[test]
+fn test_ensure_destination_dir_names_a_file_above_the_destination() {
+    use super::ensure_destination_dir;
+
+    // The OS says only `ENOTDIR` for the path it was asked to create. The file
+    // to move aside is one or more levels up, and it's the one worth naming.
+    let temp_dir = create_temp_dir("ensure_dest_file_above");
+    let in_the_way = temp_dir.join("file.txt");
+    fs::write(&in_the_way, "content").unwrap();
+
+    for dest in [in_the_way.join("inside"), in_the_way.join("inside").join("deeper")] {
+        let result = ensure_destination_dir(&dest);
+        assert!(
+            matches!(&result, Err(WriteOperationError::DestinationNotAFolder { path }) if Path::new(path) == in_the_way),
+            "creating {}: got {result:?}",
+            dest.display()
+        );
+    }
+    assert_eq!(fs::read_to_string(&in_the_way).unwrap(), "content");
+}
+
+#[cfg(unix)]
+#[test]
+fn test_ensure_destination_dir_creates_through_a_link_to_a_folder() {
+    use super::ensure_destination_dir;
+
+    // A destination reached through a link is an ordinary place to be (`/tmp`
+    // is one), so the file-in-the-way refusal must not catch it.
+    let temp_dir = create_temp_dir("ensure_dest_through_link");
+    fs::create_dir_all(temp_dir.join("real")).unwrap();
+    std::os::unix::fs::symlink(temp_dir.join("real"), temp_dir.join("link")).unwrap();
+
+    ensure_destination_dir(&temp_dir.join("link")).expect("a link to a folder is a folder");
+    ensure_destination_dir(&temp_dir.join("link").join("new").join("deeper")).expect("created through the link");
+    assert!(temp_dir.join("real").join("new").join("deeper").is_dir());
 }
 
 #[cfg(unix)]
@@ -338,7 +378,7 @@ fn test_is_same_filesystem_with_root() {
     let temp_dir = create_temp_dir("same_fs_root");
 
     // Compare temp dir with root (/) - should be same on most systems
-    let result = is_same_filesystem(&temp_dir, std::path::Path::new("/"));
+    let result = is_same_filesystem(&temp_dir, Path::new("/"));
     assert!(result.is_ok());
     // Note: Result depends on whether temp is on the same volume as root
 }
@@ -646,34 +686,4 @@ fn test_special_file_fifo_skipped() {
     assert!(!metadata.is_file());
     assert!(!metadata.is_dir());
     assert!(!metadata.is_symlink());
-}
-
-// ============================================================================
-// Copy safety: disk space check
-// ============================================================================
-
-#[cfg(unix)]
-#[test]
-fn test_validate_disk_space_sufficient() {
-    use super::validate_disk_space;
-
-    let temp_dir = create_temp_dir("disk_space_ok");
-    // Requesting 1 byte should always succeed on any volume with free space
-    let result = validate_disk_space(&temp_dir, 1);
-    assert!(result.is_ok());
-}
-
-#[cfg(unix)]
-#[test]
-fn test_validate_disk_space_insufficient() {
-    use super::validate_disk_space;
-
-    let temp_dir = create_temp_dir("disk_space_fail");
-    // Requesting an absurdly large amount (1 exabyte) should fail
-    let result = validate_disk_space(&temp_dir, u64::MAX);
-    assert!(
-        matches!(result, Err(WriteOperationError::InsufficientSpace { .. })),
-        "Should reject when required space exceeds available, got: {:?}",
-        result
-    );
 }

@@ -43,6 +43,9 @@ Two properties fix it, and both are needed:
   worker, because each yield costs a task hop, but it never holds the thread. The budget is checked against the clock
   rather than a character count, so a machine where each call is 20× slower yields just as promptly, and the loop always
   measures at least one code point per slice so a pathologically slow call can't stall it at index 0.
+- **The platform check runs before the worker starts.** `getWorker` feature-detects `Worker` and `OffscreenCanvas` and
+  logs once at info when either is missing. Without it, WebKitGTK started the worker, failed its first job, and logged a
+  "Measuring worker failed" warn on every launch. The warn stays for a supported worker that fails for real.
 
 `measureCodePointsChunked` takes its `yieldToEventLoop` as a parameter purely so the test can observe the yields without
 waiting on real timers.

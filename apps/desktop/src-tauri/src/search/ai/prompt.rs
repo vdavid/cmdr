@@ -17,7 +17,7 @@ databases|xcode|shell-scripts|ssh-keys|docker-compose|env-files|none
 time:      today|yesterday|this_week|last_week|this_month|last_month|\
 this_quarter|last_quarter|this_year|last_year|last_3_months|last_6_months|\
 recent|old|YYYY|YYYY..YYYY
-size:      empty|tiny|small|large|huge|>NUMBERmb|>NUMBERgb|<NUMBERmb
+size:      empty|tiny|small|large|huge|>NUMBERmb|>NUMBERgb|<NUMBERmb|>NUMBERmib|>NUMBERgib|<NUMBERmib
 scope:     downloads|documents|desktop|dotfiles|PATH
 exclude:   dirname1 dirname2
 folders:   yes|no (OPTIONAL: yes = folders only, no = files only; omit to keep the user's current choice)
@@ -35,6 +35,8 @@ Rules:
 - \"not in X\" / \"but not in X\" / \"excluding X\" / \"except in X\" → ALWAYS use exclude: X
 - \"ssh keys\"/\"env files\"/\"docker compose\"/\"shell scripts\" → type handles this, no keywords needed
 - For content/semantic queries (\"photos of my cat\"), set type + add a note
+- Size units: kb/mb/gb/tb are decimal (1 mb = 1,000,000 bytes); kib/mib/gib/tib are binary (1 mib = 1,048,576 bytes). \
+Copy the user's unit: \"MB\" → mb, \"MiB\" → mib.
 - `folders` is OPTIONAL. The user's current choice is shown below. Only set it when the intent is clearly only \
 folders (\"node_modules folders\", \"empty directories\") or only files (\"the pdf files\"). When in doubt, omit it.
 
@@ -45,6 +47,7 @@ Examples:
 \"screenshots from this week\" → type: screenshots / time: this_week / label: Screenshots from this week
 \"package.json not in node_modules\" → keywords: package.json / exclude: node_modules / label: package.json outside node_modules
 \"empty folders\" → folders: yes / size: empty / label: Empty folders
+\"videos over 2 GiB\" → type: videos / size: >2gib / label: Videos over 2 GiB
 \"ssh keys\" → type: ssh-keys / label: SSH keys
 \"foton fr\u{00e5}n f\u{00f6}rra veckan\" → type: photos / time: last_week / label: Photos from last week
 \"that rust file with the websocket server\" → keywords: websocket / type: rust / label: Rust files mentioning websocket
@@ -93,6 +96,14 @@ mod tests {
         let prompt = build_classification_prompt(None);
         assert!(prompt.contains("photos|screenshots|videos"));
         assert!(prompt.contains("shell-scripts|ssh-keys|docker-compose|env-files"));
+    }
+
+    #[test]
+    fn test_classification_prompt_tells_si_from_iec_sizes() {
+        // `mb` is 1,000,000 bytes and `mib` 1,048,576, the same split the app's size symbols draw.
+        let prompt = build_classification_prompt(None);
+        assert!(prompt.contains(">NUMBERmib"));
+        assert!(prompt.contains("\"videos over 2 GiB\" → type: videos / size: >2gib"));
     }
 
     #[test]

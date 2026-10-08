@@ -184,9 +184,11 @@ Vocabulary: "the agent" is this feature; external MCP consumers are "AI clients"
   regenerable versus valuable data, separate writers, different backup policies. Built; the mutation journal is a
   third, peer durable DB (`operation-log.db`), because a multi-GB append-heavy journal would bloat `main.db` and has its
   own write cadence and retention.
-- **D2**: The drive-index files move to `~/Library/Caches/<bundle id>/`, renamed `drive-index-{volume_id}.db`. Why: the
-  platform-native "purgeable, don't back up"; Time Machine skips Caches, and a purge takes the same path as a full
-  reindex. Unbuilt: the files are still `index-{volume_id}.db` in the app data dir.
+- **D2**: The drive-index files live in `~/Library/Caches/<bundle id>/drive-index/`. Why: the platform-native
+  "purgeable, don't back up"; Time Machine skips Caches, and a purge takes the same path as a full reindex. Built, with
+  two changes from the plan: a `drive-index/` folder of their own (WebKit and Core ML share that cache dir), so the
+  files keep their `index-{volume_id}.db` names rather than becoming `drive-index-{volume_id}.db`. Canonical:
+  `crates/cmdr-index/DETAILS.md` § "Where the stores live".
 - **D3**: `main.db` is a generic catch-all, not agent-specialized. Why: future durable state lands there too. Built.
 - **D4**: No custom collation in `main.db`. Why: it stays inspectable with plain `sqlite3`; the index DB's
   `platform_case` collation forced a custom query tool. Built.

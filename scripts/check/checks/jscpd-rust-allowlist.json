@@ -44,10 +44,6 @@
       "lines": 18,
       "reason": "TODO: the `RUST_LOG` directive parse (split on commas, trim, skip empties, send `module=level` to the overrides list, take a bare level as the default), once in `init` and once in the `#[cfg(test)]` `build_dispatch_for_test`, whose copy is introduced by a comment saying it mirrors `init`. Extract `fn parse_rust_log(rust_log: Option\u003c\u0026str\u003e) -\u003e (log::LevelFilter, Vec\u003c(String, log::LevelFilter)\u003e)` in this file and call it from both. A mirror that drifts means the tests assert a dispatch tree production never builds, and the parse becomes testable on its own rather than only through an assembled tree. The wider mirror (the two chains and their `level_for` loops) stays, since the test build writes to in-memory buffers and skips `apply()`."
     },
-    "apps/desktop/src-tauri/src/native_drag/fulfillment.rs": {
-      "lines": 36,
-      "reason": "`BlockingVolume` and `PartialFailFolderVolume`, two `#[cfg(test)]` fakes that each wrap an `InMemoryVolume` and override exactly one method (a barrier-gated `open_read_stream`, and one that fails on `bad.jpg`); the 36 shared lines are the `Volume` trait's other six methods, whose bodies are one-line delegations to `self.inner`. Folding them takes a generic delegating wrapper that threads a per-method hook through the `Pin\u003cBox\u003cdyn Future\u003e\u003e` signatures, which costs more lines than it saves and buries the one interesting method each test exists to exercise."
-    },
     "apps/desktop/src-tauri/src/network/smb_smbclient.rs ↔ apps/desktop/src-tauri/src/network/smb_smbutil.rs": {
       "lines": 21,
       "reason": "The assertion tail of two parser tests, one per share-listing CLI (`parse_smbclient_output` and `parse_smbutil_output`), each fed a fixture in that tool's own column layout; the assertions spell out the shared `ShareInfo` contract (four disk shares survive, `IPC$` and `ADMIN$` are filtered, a missing comment reads as `None`). An `assert_nas_shares` helper would need a test-support module reachable from both files and would move the expectations away from the fixture that produces them, so a red run would name a helper line instead of the case that broke."
@@ -56,17 +52,9 @@
       "lines": 39,
       "reason": "TODO: the whole `impl SecretStore` body (`set` / `get` / `delete`, each taking `FILE_STORE_LOCK`, then `read_store`, mutate, `write_store`) is identical in `EncryptedFileStore` and `PlainFileStore`; only `read_store` / `write_store` differ (cocoon-encrypted `credentials.enc` versus pretty JSON `secrets.json`). Add `secrets/file_store.rs` with a `FileStoreCodec` trait (`read(\u0026Path)` / `write(\u0026Path, \u0026StoreContents)`) and one generic `FileBackedStore\u003cC\u003e` owning the path, a single `FILE_STORE_LOCK`, and the three trait methods, leaving each backend file with only its codec impl and a type alias; both compile together on Linux, so one generic covers them. The lock discipline is what this single-sources: every read-modify-write of the store file must happen under the lock, and that invariant is currently written out twice."
     },
-    "apps/desktop/src-tauri/src/settings/loader.rs": {
-      "lines": 26,
-      "reason": "TODO: `early_load_max_log_storage_mb`, `early_load_verbose_logging`, and `early_load_global_go_to_latest_shortcut` each repeat the same 12-line prologue: a private `BUNDLE_ID` const, the `CMDR_DATA_DIR` or `dirs::data_dir()` choice, a `read_to_string` of `settings.json`, and `serde_json::from_str`. Add one private `fn early_settings_json() -\u003e Option\u003cserde_json::Value\u003e` in `loader.rs` with `BUNDLE_ID` beside it once, and leave each helper with only its key lookup and type conversion. The bundle id is documented as having to stay in step with `tauri.conf.json`, and today three copies have to move together."
-    },
     "apps/desktop/src-tauri/src/stubs/volumes.rs ↔ apps/desktop/src-tauri/src/volumes_linux/fs_type.rs": {
       "lines": 23,
       "reason": "`get_volume_space`: the `statvfs` call, the `f_frsize` multiply, and the `SpaceInfo::bounded` conversion, under the same SAFETY comment. The two never compile together (`stubs/` builds on neither macOS nor Linux, `volumes_linux/` on Linux only), and neither candidate home works: `cmdr-fs` declares `libc` under a macOS-only target block on purpose, watched by `cfg-gate`, and `stubs/CLAUDE.md` keeps stubs from reaching into platform subsystems, with `libc` and `dirs` as their only non-Tauri deps. Sharing this would mean widening a deliberately narrow dependency to save one syscall wrapper per platform."
-    },
-    "apps/desktop/src-tauri/src/volumes/mod.rs ↔ apps/desktop/src-tauri/src/volumes_linux/mod.rs": {
-      "lines": 15,
-      "reason": "The `list_locations` preamble in the macOS and Linux twins: two `HashSet` accumulators and the `push_unique` closure that inserts into both sets before pushing. The bodies diverge on the very next line (Linux threads a `\u0026[MountEntry]` from `/proc/mounts` through all five sources, macOS has four sources and no mount table), and `LocationInfo` is a separate type per platform, so sharing the accumulator takes a trait bridging two structurally identical types that never coexist. The rule that could drift, dedupe on path AND id rather than path alone, is already stated as an invariant in both `CLAUDE.md`s."
     },
     "crates/cmdr-adb/src/volume/volume_impl.rs ↔ crates/cmdr-webdav/src/volume/volume_impl.rs": {
       "lines": 113,
@@ -91,6 +79,22 @@
     "crates/cmdr-index/src/media_index/network/enrich.rs": {
       "lines": 14,
       "reason": "TODO: the per-image decision ladder shared by `run_sequential` and `run_parallel`'s dispatcher: the cancel and idle checks, `os_join`, the `is_excluded` / `should_enrich` skip, the `done` and `bytes_done` bump, and the `needs_enrichment` / `needs_clip` staleness pair. Extract a pure `fn classify_image(...) -\u003e ImageStep` beside them, with `ImageStep::{Pause(PauseReason), Skip, Enrich { want_vision, want_clip, os_path }}`, and let each arm keep only its own exit shape: the sequential one returns `finish_paused(...)`, the dispatcher sets `reason` and breaks so it can join its workers. Which images a pass touches and when it pauses is the data-safety contract written in `network/CLAUDE.md`, so the two arms agreeing should be a property of the code rather than of two copies staying in step."
+    },
+    "crates/cmdr-s3/src/volume/mod.rs ↔ crates/cmdr-webdav/src/volume/mod.rs": {
+      "lines": 14,
+      "reason": "TODO: the inner state's construction in `assemble` (the atomics, the `Retirement`, the locks, the switches), which the `reconnect.rs` pair's `http_session` extraction folds into one `SessionState::new`."
+    },
+    "crates/cmdr-s3/src/volume/reconnect.rs ↔ crates/cmdr-webdav/src/volume/reconnect.rs": {
+      "lines": 129,
+      "reason": "TODO: the HTTP connection lifecycle `cmdr-s3` copied from `cmdr-webdav` on purpose, to land S3 on rails that already work: the three-state `ConnectionState` with `emit_if_changed`, `note_lost_session` / `drop_dead_client`, the single-flight `rebuild`, `report`, the 2/5/15/30/60/120 s `run_reconnect_loop`, and `noting`. Only the probe and the credential differ. Extract a `cmdr_fs::volume::http_session` module beside `liveness.rs`: a `SessionState` struct owning the atomic, the `Retirement`, the switches, the client slot, and the backoff loop, generic over a `Dial` trait (`async fn dial(\u0026self, secret) -\u003e Result\u003cClient, DialRefusal\u003e` with `DialRefusal::{NeedsUser, Transient}`), so each backend keeps only its probe and its error map. Do it as its own change, with both backends' Docker suites (reconnect, connection drop, slow server) as the guard."
+    },
+    "crates/cmdr-s3/src/volume/state.rs ↔ crates/cmdr-webdav/src/volume/state.rs": {
+      "lines": 24,
+      "reason": "TODO: the same extraction as the `reconnect.rs` pair's entry: the three-state enum and its `VolumeConnection` mapping move into the shared `http_session` module with the rest of the lifecycle."
+    },
+    "crates/cmdr-s3/src/volume/volume_impl.rs ↔ crates/cmdr-webdav/src/volume/volume_impl.rs": {
+      "lines": 164,
+      "reason": "TODO: two kinds of clone. `noting` (the liveness race and the lost-session hook) is lifecycle logic and moves with the `reconnect.rs` pair's `http_session` extraction. The rest is `Volume` trait-method signatures delegating in one line (`list_directory*`, the read path's `open_read_stream*` / `read_range`, the write path's `create_*` / `delete` / `rename` / `notify_mutation`, the copy scans, the lifecycle hooks, `connection_state`), the same trade the `cmdr-sftp` ↔ `cmdr-webdav` entry describes: a macro emitting trait methods costs more than it saves and hides them from symbol search."
     },
     "crates/cmdr-sftp/src/volume/volume_impl.rs ↔ crates/cmdr-webdav/src/volume/volume_impl.rs": {
       "lines": 53,

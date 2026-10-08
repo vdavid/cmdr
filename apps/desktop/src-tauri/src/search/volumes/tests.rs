@@ -61,7 +61,7 @@ fn loads_non_root_volume_with_mount_root_from_meta() {
     make_index_db(dir.path(), "smb-nas", "/Volumes/nas");
 
     let cancel = AtomicBool::new(false);
-    let loaded = match load_volume_blocking("smb-nas", dir.path(), &cancel) {
+    let loaded = match load_volume_blocking("smb-nas", &SearchDirs::single(dir.path()), &cancel) {
         VolumeLoad::Loaded(v) => v,
         other => panic!("expected Loaded, got {}", describe(&other)),
     };
@@ -79,7 +79,7 @@ fn missing_index_db_is_not_indexed() {
     // No index-smb-ghost.db on disk ⇒ the honest "not covered" signal, not a
     // silent empty success.
     assert!(matches!(
-        load_volume_blocking("smb-ghost", dir.path(), &cancel),
+        load_volume_blocking("smb-ghost", &SearchDirs::single(dir.path()), &cancel),
         VolumeLoad::NotIndexed
     ));
 }
@@ -94,7 +94,7 @@ fn loads_per_volume_importance_weights() {
 
     let cancel = AtomicBool::new(false);
     assert!(matches!(
-        load_volume_blocking("smb-weighted", dir.path(), &cancel),
+        load_volume_blocking("smb-weighted", &SearchDirs::single(dir.path()), &cancel),
         VolumeLoad::Loaded(_)
     ));
     let weights = weights_for("smb-weighted");
@@ -110,7 +110,7 @@ fn volume_without_importance_db_degrades_to_empty_weights() {
 
     let cancel = AtomicBool::new(false);
     assert!(matches!(
-        load_volume_blocking("smb-noweights", dir.path(), &cancel),
+        load_volume_blocking("smb-noweights", &SearchDirs::single(dir.path()), &cancel),
         VolumeLoad::Loaded(_)
     ));
     assert!(
@@ -150,7 +150,7 @@ fn mount_root_falls_back_to_the_volume_registry() {
     manager.register(vid, Arc::new(LocalPosixVolume::new("Fallback", root)));
 
     let cancel = AtomicBool::new(false);
-    let loaded = match load_volume_blocking(vid, dir.path(), &cancel) {
+    let loaded = match load_volume_blocking(vid, &SearchDirs::single(dir.path()), &cancel) {
         VolumeLoad::Loaded(v) => v,
         other => {
             manager.unregister(vid);
@@ -176,7 +176,7 @@ fn only_root_goes_stale_against_the_writer_generation() {
     let dir = tempfile::tempdir().expect("temp dir");
     make_index_db(dir.path(), "smb-staleness", "/Volumes/s");
     let cancel = AtomicBool::new(false);
-    let loaded = match load_volume_blocking("smb-staleness", dir.path(), &cancel) {
+    let loaded = match load_volume_blocking("smb-staleness", &SearchDirs::single(dir.path()), &cancel) {
         VolumeLoad::Loaded(v) => v,
         other => panic!("expected Loaded, got {}", describe(&other)),
     };

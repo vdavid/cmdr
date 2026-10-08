@@ -165,6 +165,7 @@ export function buildFlow(
 ) {
   const rename = createRenameState()
   const onRequestFocus = vi.fn()
+  const onConfirmRenameAsMove = vi.fn()
   const flow = createRenameFlow({
     rename,
     paneId: 'left',
@@ -178,6 +179,7 @@ export function buildFlow(
     ...listingDeps,
     getEntryAt: (index: number) => listingDeps.getEntryAt(index) as never,
     indexOfEntry: (path: string) => listingDeps.indexOfEntry(path),
+    onConfirmRenameAsMove,
   })
-  return { rename, flow, onRequestFocus }
+  return { rename, flow, onRequestFocus, onConfirmRenameAsMove }
 }

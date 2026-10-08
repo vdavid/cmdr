@@ -5,7 +5,7 @@
 //! handles FIRST (that IS the read-skip), publish `ShuttingDown` under the lock,
 //! DROP the lock, run the blocking drain, then remove the instance.
 
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::time::{Duration, Instant};
 
 use cmdr_fs::ignore_poison::IgnorePoison;
@@ -21,15 +21,21 @@ use crate::indexing::read::pending_sizes::uninstall_pending_sizes;
 use crate::indexing::reconcile::verifier;
 use crate::indexing::store::IndexStore;
 use crate::indexing::volume::IndexVolumeKind;
+use crate::volume_files::{self, Removal, StoreDirs};
 
 /// Take a volume off the read path and drop what a stopped index is no longer
 /// owed. **The first thing every teardown does**, whatever ends it.
 ///
 /// Withdrawing the `ReadPool` / `PendingSizes` and invalidating the pool BEFORE
 /// anything touches the registry IS the read-skip: in-flight readers stop routing
-/// here and thread-local connections are discarded, so no reader can still open a
-/// connection to a database about to be drained (or deleted). ❌ Don't move it
-/// below the drain.
+/// here, so no reader can still open a connection to a database about to be
+/// drained (or deleted). ❌ Don't move it below the drain.
+///
+/// The connections threads already cache to the volume's databases are retired
+/// here too, the importance database's included: a stopped share would otherwise
+/// keep a connection in every blocking thread that ever read it. Each thread
+/// closes its own at its next read (`cmdr_fs::sqlite_util::retire_read_connections`
+/// says why it can't be sooner).
 ///
 /// Also called again by each `finish_*` on the deferred path, and it has to be:
 /// a teardown that CLAIMED a detached volume runs this at request time, while the
@@ -39,6 +45,7 @@ pub(super) fn withdraw_from_the_read_path(volume_id: &str) {
     verifier::invalidate();
     if let Some(pool) = uninstall_read_pool(volume_id) {
         pool.invalidate();
+        volume_files::retire_read_connections(&StoreDirs::around_index_db(pool.db_path()), volume_id);
     }
     uninstall_pending_sizes(volume_id);
     // The branch set goes with the instance that watched it. A cleared index
@@ -69,8 +76,8 @@ pub(super) fn finish_the_claimed_teardown(
     match claim {
         TeardownClaim::Failed(reason) => super::supervisor::finish_failing(events, volume_id, mgr, reason),
         TeardownClaim::Stopped(persist) => finish_stopping(volume_id, mgr, persist),
-        TeardownClaim::Cleared => {
-            if let Err(e) = finish_clearing(volume_id, mgr) {
+        TeardownClaim::Cleared(why) => {
+            if let Err(e) = finish_clearing(volume_id, mgr, why) {
                 log::warn!("Drive index clear for '{volume_id}' finished with: {e}");
             }
         }
@@ -287,7 +294,7 @@ fn stop_the_volume(volume_id: &str, persist: PersistDisable) -> Result<(), Strin
 /// record the veto if the stop was the user asking for one. The half of
 /// [`stop_indexing`] that runs OFF the lock, shared with the deferred path so both
 /// end the volume in exactly the same place.
-fn finish_stopping(volume_id: &str, mut mgr: Box<IndexManager>, persist: PersistDisable) {
+pub(super) fn finish_stopping(volume_id: &str, mut mgr: Box<IndexManager>, persist: PersistDisable) {
     withdraw_from_the_read_path(volume_id);
     // Guard released: run the blocking drain without holding the registry lock.
     mgr.shutdown();
@@ -451,14 +458,21 @@ pub(super) fn remove_instance_and_handles_on(registry: &Registry, volume_id: &st
     };
     if let Some(pool) = pool {
         pool.invalidate();
+        volume_files::retire_read_connections(&StoreDirs::around_index_db(pool.db_path()), volume_id);
     }
 }
 
-/// Stop all scans, shut down the writer, delete the DB file, and reset state
-/// for a volume.
+/// Stop all scans, shut down the writer, delete the volume's files, and reset
+/// state for a volume.
+///
+/// `why` decides WHICH files: a forgotten volume loses every store that scores or
+/// describes its index, a rebuild loses the index database alone
+/// (`volume_files::Removal`). ❌ Never unlink a volume's database anywhere else:
+/// `volume_files::remove` is the one door, which is what keeps a store from being
+/// left behind by a path written before it existed.
 ///
 /// Call `start_indexing()` to create a fresh index afterward.
-pub fn clear_index(volume_id: &str) -> Result<(), String> {
+pub(crate) fn clear_index(volume_id: &str, why: Removal) -> Result<(), String> {
     withdraw_from_the_read_path(volume_id);
 
     // Take the instance out under the lock, publish `ShuttingDown`, then release
@@ -491,7 +505,7 @@ pub fn clear_index(volume_id: &str) -> Result<(), String> {
                 // files can go straight away.
                 drop(reg);
                 let db_path = resolved_index_db_path(volume_id)?;
-                delete_index_db_files(&db_path)?;
+                volume_files::remove(&StoreDirs::around_index_db(&db_path), volume_id, why)?;
                 log::info!("Drive index cleared for '{volume_id}' (no live index; database deleted)");
                 return Ok(());
             }
@@ -499,7 +513,7 @@ pub fn clear_index(volume_id: &str) -> Result<(), String> {
         // A scan start has the manager out right now, so the clear is RECORDED and
         // run as the manager comes back, rather than reporting success and leaving
         // the database on disk.
-        if instance.phase.claim_the_teardown(TeardownClaim::Cleared) {
+        if instance.phase.claim_the_teardown(TeardownClaim::Cleared(why)) {
             log::info!("Drive index clear for '{volume_id}' lands as its scan start hands the manager back");
             return Ok(());
         }
@@ -520,8 +534,7 @@ pub fn clear_index(volume_id: &str) -> Result<(), String> {
             IndexPhase::Failed { db_path, .. } => {
                 // The failed manager/writer are already torn down. This is the
                 // recovery reclaim: remove the instance and delete the (dead) DB so
-                // a fresh `start_indexing` rebuilds from scratch. The stored
-                // `db_path` avoids re-resolving it off an `AppHandle`.
+                // a fresh `start_indexing` rebuilds from scratch.
                 reg.remove(volume_id);
                 ClearTarget::NoWriter { db_path }
             }
@@ -540,9 +553,9 @@ pub fn clear_index(volume_id: &str) -> Result<(), String> {
 
     // Guard released: run the blocking drain (Running only) without the lock.
     match target {
-        ClearTarget::Running { mgr } => finish_clearing(volume_id, mgr),
+        ClearTarget::Running { mgr } => finish_clearing(volume_id, mgr, why),
         ClearTarget::NoWriter { db_path } => {
-            delete_index_db_files(&db_path)?;
+            volume_files::remove(&StoreDirs::around_index_db(&db_path), volume_id, why)?;
             log::info!("Drive index cleared for '{volume_id}' (DB deleted)");
             Ok(())
         }
@@ -550,14 +563,20 @@ pub fn clear_index(volume_id: &str) -> Result<(), String> {
 }
 
 /// Drain a cleared volume's manager, take its instance out of the registry, and
-/// delete the database. The half of [`clear_index`] that runs OFF the lock, shared
-/// with the deferred path so both end the volume in exactly the same place.
-fn finish_clearing(volume_id: &str, mut mgr: Box<IndexManager>) -> Result<(), String> {
+/// delete the files `why` takes. The half of [`clear_index`] that runs OFF the
+/// lock, shared with the deferred path so both end the volume in exactly the same
+/// place.
+///
+/// ⚠️ The files go AFTER the drain, and that order carries the other stores too:
+/// `mgr.shutdown()` fires the volume's stop signal, which is what stops an
+/// importance pass, so by the time `volume_files::remove` asks the importance
+/// writer to let go nothing is feeding it.
+fn finish_clearing(volume_id: &str, mut mgr: Box<IndexManager>, why: Removal) -> Result<(), String> {
     withdraw_from_the_read_path(volume_id);
     let db_path = mgr.db_path().to_path_buf();
     mgr.shutdown();
     let restart = retire_the_instance(volume_id);
-    let deleted = delete_index_db_files(&db_path);
+    let deleted = volume_files::remove(&StoreDirs::around_index_db(&db_path), volume_id, why);
     log::info!("Drive index cleared for '{volume_id}' (DB deleted)");
     // A start that landed mid-clear runs even if the files wouldn't go: it asked for
     // this drive to be indexed, and a locked database file is not an answer to that.
@@ -565,21 +584,6 @@ fn finish_clearing(volume_id: &str, mut mgr: Box<IndexManager>) -> Result<(), St
         start_again(volume_id, request);
     }
     deleted
-}
-
-/// Delete an index database and its WAL/SHM sidecars. Every caller has already
-/// made sure nothing is reading or writing it.
-fn delete_index_db_files(db_path: &Path) -> Result<(), String> {
-    for path in [
-        db_path.to_path_buf(),
-        db_path.with_extension("db-wal"),
-        db_path.with_extension("db-shm"),
-    ] {
-        if path.exists() {
-            std::fs::remove_file(&path).map_err(|e| format!("Failed to delete {}: {e}", path.display()))?;
-        }
-    }
-    Ok(())
 }
 
 /// Clear EVERY volume's index: the ones running right now and the databases on
@@ -590,6 +594,9 @@ fn delete_index_db_files(db_path: &Path) -> Result<(), String> {
 /// search walked into existence three launches ago, which is precisely the disk
 /// use nobody could see before. Each volume goes through [`clear_index`], so a
 /// live one still drains its writer and withdraws its read handles first.
+///
+/// The data dir's half is read from every store a forgotten volume loses, so it
+/// also reclaims an importance database whose index is already gone.
 ///
 /// Reports the first failure but always finishes the sweep: leaving half the
 /// databases behind because one file was locked would be a worse answer than
@@ -603,7 +610,7 @@ pub fn clear_every_index() -> Result<(), String> {
     }
     let mut first_error = None;
     for volume_id in &volume_ids {
-        if let Err(e) = clear_index(volume_id) {
+        if let Err(e) = clear_index(volume_id, Removal::Forgotten) {
             log::warn!("clear_every_index: clearing '{volume_id}' failed: {e}");
             first_error.get_or_insert(e);
         }
@@ -621,12 +628,15 @@ pub fn clear_every_index() -> Result<(), String> {
 /// per-drive intent survives and the master switch can restore it (see
 /// `master::drives_to_resume`).
 pub(crate) fn stop_all_indexing() {
+    // Tell shared-resident-pool subsystems (media_index enrichment, the importance
+    // scheduler) to yield to the SAME 16 GB ceiling, rather than a second independent
+    // budget over one pool. FIRST, because the hooks only fire signals and return,
+    // while each volume stop below drains for up to seconds: run last, a subsystem
+    // working on the fifth volume would keep allocating through four drains.
+    crate::indexing::resources::subsystem_stop::run_subsystem_stop_hooks();
     for volume_id in all_registered_volume_ids() {
         if let Err(e) = stop_indexing(&volume_id) {
             log::warn!("stop_all_indexing: stop_indexing('{volume_id}') failed: {e}");
         }
     }
-    // Tell shared-resident-pool subsystems (media_index enrichment) to yield to the
-    // SAME 16 GB ceiling, rather than a second independent budget over one pool.
-    crate::indexing::resources::subsystem_stop::run_subsystem_stop_hooks();
 }

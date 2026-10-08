@@ -29,6 +29,7 @@ const WIDENED: VolumeRootChanged = {
   newRoot: NEW_ROOT,
   oldLanding: OLD_ROOT,
   newLanding: NEW_ROOT,
+  kind: 'edited',
 }
 
 interface HarnessOpts {

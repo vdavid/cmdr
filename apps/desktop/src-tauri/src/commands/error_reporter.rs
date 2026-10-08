@@ -8,7 +8,8 @@ use crate::error_reporter::{
     self, AttachedEmail, BundleKind, BundleManifest, BundleRequest, BundleScope, FLOW_A_BUNDLE_CAP_MB,
     breadcrumbs::BreadcrumbEvent, settings_defaults::SettingValue,
 };
-use crate::server_request::ServerRequestError;
+use crate::managed_policy::Egress;
+use crate::server_request::{self, ServerRequestError};
 use serde::Serialize;
 use std::collections::HashMap;
 
@@ -159,6 +160,7 @@ pub async fn send_error_report(
     email: Option<String>,
     id: Option<String>,
 ) -> Result<SendResult, ErrorReportSendError> {
+    server_request::check_policy(Egress::ErrorReport).await?;
     let bundle = error_reporter::build_bundle(&app, flow_a_request(id, user_note, email)?)
         .await
         .map_err(|detail| ErrorReportSendError::BundleUnavailable { detail })?;
@@ -206,6 +208,7 @@ pub async fn amend_error_report(
     user_note: Option<String>,
     email: Option<String>,
 ) -> Result<AmendResult, ErrorReportSendError> {
+    server_request::check_policy(Egress::ErrorReportAmend).await?;
     let note = validate_user_note(user_note)?;
     // One read of the stash resolves both halves, so the URL below and the credential the
     // request carries can't come from two different reports.
@@ -215,12 +218,13 @@ pub async fn amend_error_report(
     Ok(AmendResult { id })
 }
 
-/// Debug-only escape hatch: build the bundle and write it to the app data dir as a `.zip`.
-/// Helpful when iterating on the redactor or the manifest format.
+/// Build the bundle and write it to the app data dir as a `.zip`; nothing leaves the Mac. Two
+/// callers: the dialog's Save to disk when the organization turned off sending reports (the person
+/// passes the file on themselves), and the dev-only button for iterating on the redactor or the
+/// manifest format.
 ///
-/// Takes the same `id` as [`send_error_report`] so the dev path can't drift from the real one:
-/// the zip on disk is the bundle the send would have shipped, id included.
-#[cfg(debug_assertions)]
+/// Takes the same `id` as [`send_error_report`] so this path can't drift from the real one: the
+/// zip on disk is the bundle the send would have shipped, id included.
 #[tauri::command]
 #[specta::specta]
 pub async fn save_error_report_to_disk(
@@ -284,6 +288,7 @@ pub async fn send_crash_log_report(
     crash_short_id: String,
     crash_timestamp: String,
 ) -> Result<SendResult, ErrorReportSendError> {
+    server_request::check_policy(Egress::ErrorReport).await?;
     let request = BundleRequest {
         kind: BundleKind::User,
         scope: crash_log_scope(&crash_timestamp),
@@ -349,6 +354,22 @@ mod tests {
             validate_user_note(Some("a".repeat(MAX_USER_NOTE_CHARS + 1))),
             Err(ErrorReportSendError::NoteTooLong {
                 max_chars: MAX_USER_NOTE_CHARS
+            })
+        );
+    }
+
+    /// The organization's off wins before anything else is looked at, the empty stash included.
+    #[tokio::test]
+    async fn an_amend_under_a_managed_off_is_blocked_by_policy() {
+        use crate::managed_policy::testing;
+        let _policy = testing::override_for_test(testing::forcing(&[testing::DISABLE_CRASH_AND_ERROR_REPORTS]));
+
+        let result = amend_error_report(Some("note".to_string()), None).await;
+
+        assert_eq!(
+            result.map(|r| r.id),
+            Err(ErrorReportSendError::Server {
+                failure: ServerRequestError::BlockedByPolicy
             })
         );
     }

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Managed preferences for Cmdr (preference domain: com.veszelovszki.cmdr).
+
+  Upload this file as-is to your MDM: Jamf Pro "Application & Custom Settings" (upload),
+  Kandji "Custom Profile", or Intune "Preference file". Use com.veszelovszki.cmdr as the
+  preference domain or bundle id.
+
+  Every key only turns something off or narrows it. A key that's missing, or set to false,
+  leaves that part up to each user. Delete any key you don't want to manage.
+  All keys, with what each one does: https://getcmdr.com/trust#mdm
+-->
+<plist version="1.0">
+<dict>
+    <!-- No usage stats: no heartbeat, no feature events. Locks "Send usage stats" off. -->
+    <key>DisableUsageStats</key>
+    <true/>
+
+    <!-- No crash reports and no error reports, automatic or by hand. "Save to disk" still works. -->
+    <key>DisableCrashAndErrorReports</key>
+    <true/>
+
+    <!-- No background update checks. A user can still check by hand. -->
+    <key>DisableAutomaticUpdateChecks</key>
+    <true/>
+
+    <!-- true: no update check, download, or install at all (you ship new versions yourself). Overrides the two update keys around it. -->
+    <key>DisableUpdates</key>
+    <false/>
+
+    <!-- Never update past this version. "0.52" allows up to the last 0.52.x, "0.52.3" up to 0.52.3, and "1" anything below 2.0. Cmdr only sees its newest release, so once a release past this one ships, no more updates arrive until you raise it. -->
+    <key>MaxUpdateVersion</key>
+    <string>1</string>
+
+    <!-- true: no AI at all, on-device model included. -->
+    <key>DisableAI</key>
+    <false/>
+
+    <!-- true: on-device AI only; nothing goes to a cloud AI provider, a local Ollama or LM Studio included. -->
+    <key>DisableCloudAI</key>
+    <false/>
+
+    <!-- Cloud AI may only reach these hosts. Entries: a host, host:port, a *. pattern for any subdomain, or a URL. An empty list allows none. For a local Ollama or LM Studio only, list just localhost and 127.0.0.1. Delete this key to allow any provider. -->
+    <key>AllowedCloudAIHosts</key>
+    <array>
+        <string>api.openai.com</string>
+        <string>*.openai.azure.com</string>
+        <string>localhost</string>
+        <string>127.0.0.1</string>
+    </array>
+</dict>
+</plist>

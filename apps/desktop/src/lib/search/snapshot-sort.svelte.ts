@@ -8,7 +8,7 @@
  * way to guarantee that is to run the SAME comparator
  * (`file_system::listing::sorting::entry_comparator`, reached through the
  * `sort_search_results` command). Natural number ordering, case folding,
- * directories first, and the user's `directorySortMode` come along for free, and
+ * and the user's folders-first and `directorySortMode` choices come along for free, and
  * there is no second copy to drift. A frontend comparator would have had to
  * reproduce `alphanumeric_sort`'s leading-zero and non-ASCII rules by hand, which
  * is exactly the kind of near-copy that goes quietly wrong.

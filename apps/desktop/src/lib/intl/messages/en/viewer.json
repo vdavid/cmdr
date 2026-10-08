@@ -31,9 +31,9 @@
     "screenshot": "viewer-search.png",
     "screenshotNote": "The file viewer window, pictured here with its find bar open. Your string is part of its chrome (title, toolbar, status bar), one of the file-kind or media labels it shows there, or one of the messages it shows in place of content when a file can’t be loaded."
   },
-  "viewer.error.readFailed": "Failed to read file",
+  "viewer.error.readFailed": "Couldn’t read this file. Try again?",
   "@viewer.error.readFailed": {
-    "description": "Generic fallback message when opening the file failed and there's no more specific reason to show.",
+    "description": "Shown in the viewer window, in place of content, when opening the file didn't work and there's no more specific reason to show. A Retry button sits below it, which the closing question invites the user to press. Conversational; do not use the words \"error\" or \"failed\".",
     "screenshot": "viewer-search.png",
     "screenshotNote": "The file viewer window, pictured here with its find bar open. Your string is part of its chrome (title, toolbar, status bar), one of the file-kind or media labels it shows there, or one of the messages it shows in place of content when a file can’t be loaded."
   },
@@ -64,6 +64,12 @@
   "viewer.error.archiveUnreadable": "Couldn’t open this file from the archive. It may be encrypted, damaged, or use a format Cmdr can’t read.",
   "@viewer.error.archiveUnreadable": {
     "description": "Shown when a file inside an archive (zip) can’t be previewed because the archive entry is encrypted, corrupt, or uses an unsupported compression method. \"archive\" means a zip file being browsed like a folder.",
+    "screenshot": "viewer-search.png",
+    "screenshotNote": "The file viewer window, pictured here with its find bar open. Your string is part of its chrome (title, toolbar, status bar), one of the file-kind or media labels it shows there, or one of the messages it shows in place of content when a file can’t be loaded."
+  },
+  "viewer.error.coldStorage": "This file is archived, so there’s nothing to show until it’s restored. Restore it in your storage provider’s console, then open it again.",
+  "@viewer.error.coldStorage": {
+    "description": "Shown in place of the file's content when the file sits in cloud cold storage (for example S3 Glacier) and can't be read until it's restored. \"Storage provider’s console\" means the provider's website or admin tool (for example the AWS console). \"Archived\" here means the file's bytes sit in a cloud provider's cold storage tier (for example S3 Glacier) and must be restored before they can be read. It does NOT mean a zip or other archive file.",
     "screenshot": "viewer-search.png",
     "screenshotNote": "The file viewer window, pictured here with its find bar open. Your string is part of its chrome (title, toolbar, status bar), one of the file-kind or media labels it shows there, or one of the messages it shows in place of content when a file can’t be loaded."
   },
@@ -439,21 +445,6 @@
     "screenshot": "viewer-search.png",
     "screenshotNote": "The file viewer window, pictured here with its find bar open. Your string is part of its chrome (title, toolbar, status bar), one of the file-kind or media labels it shows there, or one of the messages it shows in place of content when a file can’t be loaded."
   },
-  "viewer.contextMenu.ariaLabel": "Viewer actions",
-  "@viewer.contextMenu.ariaLabel": {
-    "description": "Accessibility label for the viewer's right-click context menu, which offers Copy and Select all.",
-    "screenshot": "viewer-context-menu.png"
-  },
-  "viewer.contextMenu.copy": "Copy",
-  "@viewer.contextMenu.copy": {
-    "description": "Context-menu item that copies the selected text to the clipboard. Its keyboard shortcut (⌘C) is shown separately.",
-    "screenshot": "viewer-context-menu.png"
-  },
-  "viewer.contextMenu.selectAll": "Select all",
-  "@viewer.contextMenu.selectAll": {
-    "description": "Context-menu item that selects the whole file's text. Its keyboard shortcut (⌘A) is shown separately.",
-    "screenshot": "viewer-context-menu.png"
-  },
   "viewer.copyDialog.confirmTitleKnown": "Copy {size} to the clipboard?",
   "@viewer.copyDialog.confirmTitleKnown": {
     "description": "Title of the dialog asking the user to confirm copying a large selection to the clipboard, naming the size, e.g. \"Copy 24 MB to the clipboard?\".",
@@ -622,32 +613,32 @@
     "screenshot": "viewer-search.png",
     "screenshotNote": "The file viewer window, pictured here with its find bar open. Your string is part of its chrome (title, toolbar, status bar), one of the file-kind or media labels it shows there, or one of the messages it shows in place of content when a file can’t be loaded."
   },
-  "viewer.selection.singleLine": "Selected {chars} characters on line {line}",
+  "viewer.selection.singleLine": "Selected {chars, plural, one {# character} other {# characters}} on line {line}",
   "@viewer.selection.singleLine": {
     "description": "Screen-reader announcement when text is selected within one line: how many characters, and which line. \"characters\" counts text characters; \"line\" is a line of text in the file.",
     "placeholders": {
-      "chars": "number of selected characters (e.g. 5)",
+      "chars": "number of selected characters (e.g. 5); drives the singular/plural form, and `#` prints it with the locale's digit grouping (e.g. 12,345)",
       "line": "the 1-based line number (e.g. 5)"
     },
     "screenshot": "viewer-search.png",
     "screenshotNote": "The file viewer window, pictured here with its find bar open. Your string is part of its chrome (title, toolbar, status bar), one of the file-kind or media labels it shows there, or one of the messages it shows in place of content when a file can’t be loaded."
   },
-  "viewer.selection.multiLine": "Selected lines {startLine} to {endLine}, {chars} characters",
+  "viewer.selection.multiLine": "Selected lines {startLine} to {endLine}, {chars, plural, one {# character} other {# characters}}",
   "@viewer.selection.multiLine": {
     "description": "Screen-reader announcement when the selection spans multiple lines: the start and end line numbers and the total character count. \"lines\"/\"characters\" refer to text lines and text characters.",
     "placeholders": {
       "startLine": "the 1-based first line of the selection (e.g. 1)",
       "endLine": "the 1-based last line of the selection (e.g. 4)",
-      "chars": "total number of selected characters (e.g. 16)"
+      "chars": "total number of selected characters (e.g. 16); drives the singular/plural form, and `#` prints it with the locale's digit grouping (e.g. 12,345)"
     },
     "screenshot": "viewer-search.png",
     "screenshotNote": "The file viewer window, pictured here with its find bar open. Your string is part of its chrome (title, toolbar, status bar), one of the file-kind or media labels it shows there, or one of the messages it shows in place of content when a file can’t be loaded."
   },
-  "viewer.selection.charsOnly": "Selected {chars} characters",
+  "viewer.selection.charsOnly": "Selected {chars, plural, one {# character} other {# characters}}",
   "@viewer.selection.charsOnly": {
     "description": "Screen-reader announcement for a selection whose line number the viewer can’t work out yet, so it names the character count alone. Happens inside a very long line whose beginning has scrolled far out of view. \"characters\" counts text characters.",
     "placeholders": {
-      "chars": "total number of selected characters (e.g. 16)"
+      "chars": "total number of selected characters (e.g. 16); drives the singular/plural form, and `#` prints it with the locale's digit grouping (e.g. 12,345)"
     },
     "screenshot": "viewer-search.png",
     "screenshotNote": "The file viewer window, pictured here with its find bar open. Your string is part of its chrome (title, toolbar, status bar), one of the file-kind or media labels it shows there, or one of the messages it shows in place of content when a file can’t be loaded."

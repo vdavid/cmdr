@@ -3,6 +3,10 @@
   "@fileOperations.button.cancel": {
     "sourceHash": "19766ed"
   },
+  "fileOperations.button.close": "Đóng",
+  "@fileOperations.button.close": {
+    "sourceHash": "7d9eb7a"
+  },
   "fileOperations.button.ok": "OK",
   "@fileOperations.button.ok": {
     "sourceHash": "565339b",
@@ -82,7 +86,7 @@
   },
   "fileOperations.delete.scanDir": "{count, plural, other {thư mục}}",
   "@fileOperations.delete.scanDir": {
-    "sourceHash": "1c5273d"
+    "sourceHash": "46b23b5"
   },
   "fileOperations.delete.confirmDelete": "Xóa",
   "@fileOperations.delete.confirmDelete": {
@@ -124,6 +128,14 @@
   "@fileOperations.delete.symlinkNoticeMany": {
     "sourceHash": "56b3f52"
   },
+  "fileOperations.mkfile.notCreatedToast": "Cmdr không thể tạo tệp “{name}”. {reason}",
+  "@fileOperations.mkfile.notCreatedToast": {
+    "sourceHash": "4f30e62"
+  },
+  "fileOperations.newEntry.stillCreating": "Vẫn đang tạo “{name}”. Ổ đĩa phản hồi chậm. Bạn cứ yên tâm đóng hộp thoại này: việc tạo vẫn sẽ tiếp tục và giờ không hủy được nữa.",
+  "@fileOperations.newEntry.stillCreating": {
+    "sourceHash": "74e376f"
+  },
   "fileOperations.mkfile.title": "Tệp mới",
   "@fileOperations.mkfile.title": {
     "sourceHash": "44dedd0"
@@ -156,17 +168,9 @@
   "@fileOperations.mkdir.placeholder": {
     "sourceHash": "7612b56"
   },
-  "fileOperations.mkdir.timeoutMessage": "Chưa xác nhận được thư mục đã được tạo. Ổ đĩa có thể chậm, nên thư mục vẫn có thể đã được tạo.",
-  "@fileOperations.mkdir.timeoutMessage": {
-    "sourceHash": "8bc758a"
-  },
-  "fileOperations.mkdir.timeoutRefresh": "Làm mới danh sách tệp",
-  "@fileOperations.mkdir.timeoutRefresh": {
-    "sourceHash": "b0e5436"
-  },
-  "fileOperations.mkdir.timeoutDismiss": "Bỏ qua",
-  "@fileOperations.mkdir.timeoutDismiss": {
-    "sourceHash": "48845bf"
+  "fileOperations.mkdir.notCreatedToast": "Cmdr không thể tạo thư mục “{name}”. {reason}",
+  "@fileOperations.mkdir.notCreatedToast": {
+    "sourceHash": "517ef4b"
   },
   "fileOperations.mkdir.aiSuggestionsAria": "Gợi ý AI",
   "@fileOperations.mkdir.aiSuggestionsAria": {
@@ -248,9 +252,21 @@
   "@fileOperations.transferDialog.targetWillBeCreatedCopy": {
     "sourceHash": "4e8d166"
   },
+  "fileOperations.transferDialog.renameByMoveHint": "Đổi tên mục này sẽ sao chép mọi thứ bên trong trên máy chủ, nên việc này chạy như một thao tác di chuyển mà bạn có thể tạm dừng hoặc hủy.",
+  "@fileOperations.transferDialog.renameByMoveHint": {
+    "sourceHash": "31987cc"
+  },
   "fileOperations.transferDialog.targetWillBeCreatedMove": "Thư mục này chưa tồn tại. Cmdr sẽ tạo nó khi di chuyển.",
   "@fileOperations.transferDialog.targetWillBeCreatedMove": {
     "sourceHash": "1246331"
+  },
+  "fileOperations.transferDialog.rootEchoWarning": "Vị trí này vốn đã bắt đầu ở {rootFolder}, nên đường dẫn này dẫn tới {resolvedPath}. Có phải ý bạn là {strippedPath}?",
+  "@fileOperations.transferDialog.rootEchoWarning": {
+    "sourceHash": "b692d10"
+  },
+  "fileOperations.transferDialog.rootEchoUseStripped": "Dùng đường dẫn ngắn hơn",
+  "@fileOperations.transferDialog.rootEchoUseStripped": {
+    "sourceHash": "66972e3"
   },
   "fileOperations.transferDialog.destinationReadOnly": "Thư mục này chỉ đọc, nên không thể đặt gì vào đây.",
   "@fileOperations.transferDialog.destinationReadOnly": {
@@ -274,7 +290,7 @@
   },
   "fileOperations.transferDialog.scanDir": "{count, plural, other {thư mục}}",
   "@fileOperations.transferDialog.scanDir": {
-    "sourceHash": "1c5273d"
+    "sourceHash": "46b23b5"
   },
   "fileOperations.transferDialog.hardlinkNote": "Sẽ ghi <written></written>. Nguồn là <ondisk></ondisk> trên đĩa – phần dôi ra là các tệp liên kết cứng, vốn không thể giữ liên kết khi qua ổ đĩa khác.",
   "@fileOperations.transferDialog.hardlinkNote": {
@@ -292,6 +308,18 @@
   "@fileOperations.transferDialog.estimatedSizeTooltip": {
     "sourceHash": "2e8ba70"
   },
+  "fileOperations.s3Cost.line": "Khoảng {amount} theo giá niêm yết của {provider}",
+  "@fileOperations.s3Cost.line": {
+    "sourceHash": "e8db02b"
+  },
+  "fileOperations.s3Cost.infoLabel": "Về ước tính này",
+  "@fileOperations.s3Cost.infoLabel": {
+    "sourceHash": "19637c5"
+  },
+  "fileOperations.s3Cost.infoText": "Ước tính này dùng bảng giá niêm yết công khai của nhà cung cấp. Gói miễn phí, chiết khấu, hạn mức đi kèm và phí tối thiểu có thể khiến hóa đơn của bạn thấp hơn hoặc cao hơn.",
+  "@fileOperations.s3Cost.infoText": {
+    "sourceHash": "379665c"
+  },
   "fileOperations.transferDialog.scanUnresponsive": "Nguồn không phản hồi, nên đây là tất cả những gì chúng tôi đếm được.",
   "@fileOperations.transferDialog.scanUnresponsive": {
     "sourceHash": "ec3beb2"
@@ -303,6 +331,10 @@
   "fileOperations.transferDialog.scanRetry": "Thử lại",
   "@fileOperations.transferDialog.scanRetry": {
     "sourceHash": "d8b8392"
+  },
+  "fileOperations.transferDialog.sourceNoLongerConnected": "Điện thoại hoặc máy chủ chứa các tệp này không còn kết nối nữa, nên Cmdr không thể sao chép từ đó.",
+  "@fileOperations.transferDialog.sourceNoLongerConnected": {
+    "sourceHash": "4741405"
   },
   "fileOperations.transferDialog.conflictsUnknown": "Chúng tôi không kiểm tra được những gì đã có ở đích. Bạn sẽ được hỏi về mọi mục trùng tên.",
   "@fileOperations.transferDialog.conflictsUnknown": {
@@ -398,7 +430,7 @@
   },
   "fileOperations.scanPhase.scanDir": "{count, plural, other {thư mục}}",
   "@fileOperations.scanPhase.scanDir": {
-    "sourceHash": "1c5273d"
+    "sourceHash": "46b23b5"
   },
   "fileOperations.transferProgress.scanTitleCopy": "Đang xác minh trước khi sao chép…",
   "@fileOperations.transferProgress.scanTitleCopy": {
@@ -536,9 +568,13 @@
   "@fileOperations.transferProgress.stageFinishingTransferStep": {
     "sourceHash": "1f28724"
   },
-  "fileOperations.transferProgress.warningFileOverFolder": "Đích đã tồn tại và là một <strong>thư mục</strong>. Bạn sắp ghi đè nó bằng một <strong>tệp</strong> trùng tên. Toàn bộ nội dung của thư mục đích sẽ bị xóa và thay bằng tệp đó. Làm gì đây?",
+  "fileOperations.transferProgress.warningFileOverFolder": "Đích đã tồn tại và là một <strong>thư mục</strong>. Bạn sắp thay thế nó bằng một <strong>tệp</strong> trùng tên. Mọi thứ bên trong thư mục đó sẽ mất. Làm gì đây?",
   "@fileOperations.transferProgress.warningFileOverFolder": {
-    "sourceHash": "6dce75c"
+    "sourceHash": "bacab9d"
+  },
+  "fileOperations.transferProgress.warningFolderOverFile": "Đích đã tồn tại và là một <strong>tệp</strong>. Bạn sắp thay thế nó bằng một <strong>thư mục</strong> trùng tên. Tệp đó sẽ mất ngay khi thư mục thế vào chỗ của nó. Làm gì đây?",
+  "@fileOperations.transferProgress.warningFolderOverFile": {
+    "sourceHash": "b681083"
   },
   "fileOperations.transferProgress.lookAlikeHint": "Hai tên này trông giống hệt nhau, nhưng máy chủ lưu chúng theo cách viết khác nhau. Nút Ghi đè sẽ thay thế mục hiện có.",
   "@fileOperations.transferProgress.lookAlikeHint": {
@@ -883,6 +919,10 @@
   "fileOperations.errorDialog.retry": "Thử lại",
   "@fileOperations.errorDialog.retry": {
     "sourceHash": "942087c"
+  },
+  "fileOperations.errorDialog.copyAnyway": "Vẫn sao chép",
+  "@fileOperations.errorDialog.copyAnyway": {
+    "sourceHash": "f794181"
   },
   "fileOperations.errorDialog.close": "Đóng",
   "@fileOperations.errorDialog.close": {

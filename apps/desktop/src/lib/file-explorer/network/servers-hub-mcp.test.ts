@@ -7,8 +7,29 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { hubMcpEntries, ADD_SERVER_MCP_NAME, ADD_SERVER_MCP_PATH } from './servers-hub-mcp'
+import {
+  hubMcpEntries as entriesOf,
+  hubPaneState,
+  ADD_SERVER_MCP_NAME,
+  ADD_SERVER_MCP_PATH,
+  NEARBY_GROUP_MCP_NAME,
+  NEARBY_GROUP_MCP_PATH,
+  type HubMcpLookups,
+} from './servers-hub-mcp'
+import { hubItems } from './servers-hub-items'
 import type { HubRow } from './servers-hub-rows'
+import type { SavedServer } from '$lib/tauri-commands'
+
+/** Saved rows only, so no group: what each entry says is these tests' subject. */
+function hubMcpEntries(rows: HubRow[], lookups: HubMcpLookups) {
+  return entriesOf(
+    hubItems(
+      rows.map((r) => ({ ...r, saved: {} as SavedServer })),
+      false,
+    ),
+    lookups,
+  )
+}
 
 function row(overrides: Partial<HubRow> = {}): HubRow {
   return {
@@ -81,5 +102,40 @@ describe('hubMcpEntries', () => {
 
   it('lists an empty hub as the add row alone', () => {
     expect(hubMcpEntries([], { appRootOf: () => null })).toHaveLength(1)
+  })
+})
+
+describe('the nearby group, as an agent sees it', () => {
+  const saved = row({ id: 'nas', name: 'Naspolya', saved: {} as SavedServer })
+  const nearby = (name: string) =>
+    row({ id: name, name, protocol: 'smb', status: 'found_nearby', volumeId: null, address: `${name}.local` })
+  const lookups = { appRootOf: () => null }
+
+  it('lists the nearby servers while the group is collapsed, with the group saying so', () => {
+    const entries = entriesOf(hubItems([saved, nearby('Printer'), nearby('TV')], false), lookups)
+    expect(entries.map((entry) => entry.name.split('  ')[0])).toEqual([
+      'Naspolya',
+      NEARBY_GROUP_MCP_NAME,
+      'Printer',
+      'TV',
+      ADD_SERVER_MCP_NAME,
+    ])
+    expect(entries[1].name).toBe(`${NEARBY_GROUP_MCP_NAME}  kind=group  state=collapsed  servers=2`)
+    expect(entries[1].path).toBe(NEARBY_GROUP_MCP_PATH)
+    expect(entries[1].isDirectory).toBe(false)
+  })
+
+  it('says when the group is open', () => {
+    const entries = entriesOf(hubItems([nearby('Printer')], true), lookups)
+    expect(entries[0].name).toBe(`${NEARBY_GROUP_MCP_NAME}  kind=group  state=expanded  servers=1`)
+  })
+
+  it('counts the cursor over the full list, which is the one an agent indexes into', () => {
+    // On screen: Naspolya, the collapsed group, "Add server…". The cursor is on the add row.
+    const items = hubItems([saved, nearby('Printer'), nearby('TV')], false)
+    const state = hubPaneState(items, 2, 'Servers', lookups)
+    expect(state.cursorIndex).toBe(4)
+    expect(state.files[state.cursorIndex].name).toBe(ADD_SERVER_MCP_NAME)
+    expect(state.totalFiles).toBe(4)
   })
 })

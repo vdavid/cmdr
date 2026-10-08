@@ -29,6 +29,7 @@ use crate::media_index::store::{EnrichmentState, MediaStatusRow, MediaStore, med
 use crate::media_index::writer::MediaWriter;
 use cmdr_fs::testing::TestDir;
 use cmdr_fs::testing::wait_until;
+use tokio_util::sync::CancellationToken;
 
 const ROOT: &str = "root";
 
@@ -327,6 +328,68 @@ fn has_enriched_row(data_dir: &std::path::Path, volume_id: &str, path: &str) -> 
 
 // ── Async: the dead-start kicks that actually start a pass ───────────────────
 
+/// A volume's listeners last exactly as long as the life of the volume they were
+/// wired for.
+///
+/// Every start of a volume publishes a registration (a share that reconnects, a
+/// drive turned off and on, a search walking a cold drive), and each one wires the
+/// volume again. Pre-fix nothing ended the listeners, so a volume carried one set
+/// per start for the rest of the session: every dir-changed batch was cloned and
+/// re-requested once per set, and every importance recompute woke every bridge.
+/// The passes themselves coalesce, so it cost tasks and wake-ups and not repeated
+/// enrichment, but it grew without bound. The receiver counts are the observable,
+/// since a listener holds its receiver for as long as it runs.
+#[test]
+fn a_volumes_listeners_end_when_the_volume_stops() {
+    const VOLUME_ID: &str = "media-wiring-listeners-end";
+    /// The scan-completion, home-coverage, and dir-changed (live follow) subscriptions.
+    const ON_THE_LIFECYCLE_BUSES: usize = 3;
+    /// The unscored → scored bridge.
+    const ON_THE_RECOMPUTE_BUS: usize = 1;
+    let listening = || {
+        (
+            crate::indexing::lifecycle::lifecycle_bus::subscriber_count_for_test(VOLUME_ID),
+            crate::importance::read::subscriber_count_for_test(VOLUME_ID),
+        )
+    };
+
+    let _guard = crate::test_read_pool_lock();
+    // The master toggle off, so wiring kicks no pass: this is about the listeners.
+    reset_gate();
+    let dir = tempfile::tempdir().expect("temp");
+    let sched = Arc::new(MediaScheduler::new(dir.path().to_path_buf(), fake_backend()));
+    let volume_root = CancellationToken::new();
+
+    wire_volume(
+        Arc::clone(&sched),
+        VOLUME_ID.to_string(),
+        IndexVolumeKind::Local,
+        volume_root.child_token(),
+    );
+    assert_eq!(
+        listening(),
+        (ON_THE_LIFECYCLE_BUSES, ON_THE_RECOMPUTE_BUS),
+        "a wired volume is listened to"
+    );
+
+    // The volume stops: its root signal fires, and the wiring's child with it.
+    volume_root.cancel();
+    wait_until(
+        Duration::from_secs(5),
+        "the stopped volume's listeners to let go of its buses",
+        || listening() == (0, 0),
+    );
+
+    // It starts again, which wires it again: one set of listeners, not two.
+    wire_volume(
+        Arc::clone(&sched),
+        VOLUME_ID.to_string(),
+        IndexVolumeKind::Local,
+        CancellationToken::new(),
+    );
+    assert_eq!(listening(), (ON_THE_LIFECYCLE_BUSES, ON_THE_RECOMPUTE_BUS));
+}
+
 #[test]
 fn wire_volume_kicks_an_initial_pass_for_a_fresh_at_launch_volume() {
     // The restart race (item 1): `start()`'s sweep kick can run before a volume is
@@ -352,7 +415,12 @@ fn wire_volume_kicks_an_initial_pass_for_a_fresh_at_launch_volume() {
     let sched = Arc::new(MediaScheduler::new(dir.path().to_path_buf(), fake_backend()));
     // Wire the volume exactly as the registration bus would: its bus is Pending (we
     // never publish a ScanCompleted) — the Fresh-at-launch shape the race hits.
-    wire_volume(Arc::clone(&sched), ROOT.to_string(), IndexVolumeKind::Local);
+    wire_volume(
+        Arc::clone(&sched),
+        ROOT.to_string(),
+        IndexVolumeKind::Local,
+        CancellationToken::new(),
+    );
 
     wait_until(
         PASS_LANDS_WITHIN,

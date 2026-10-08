@@ -139,7 +139,8 @@ the agent's, the notes in it are about the user.
 
 Verified rather than assumed, and recorded so nobody re-audits it every time something new lands in the data dir
 (against `main`, 2026-08-23): crash and error report bundles never reach this folder. `diagnostics_snapshot.rs` does one
-non-recursive `read_dir` of the data dir and keeps only `index-*.db` names, reading sizes; the log half takes
+non-recursive `read_dir` of the drive-index dir (in the cache dir, outside the data dir) and keeps only `index-*.db`
+names, reading sizes; the log half takes
 `cmdr.log*` out of the LOG dir. The full walk, and the one residual hole (`cmdr.log` itself does ship, so memory content
 must never reach a log line), is in `docs/security.md` § What a bundle never picks up.
 

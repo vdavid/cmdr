@@ -93,12 +93,14 @@ The instrument for the app half is the `testing` feature: `test_fixtures` builds
 makes a watcher report observable without a window, and `GitPortal::with_scripted_watcher` plus `fire_watcher` make one
 observable without FSEvents. **That recorder is what a subscription cell asserts through.** The DEBOUNCE cell lives
 app-side and takes the real backend: it drives the parked portal's `subscribe_state`, writes five commits and a branch
-switch back to back, expects EXACTLY one report carrying the post-burst branch, and then does it all a second time to
-prove the watch outlived git's rename over `HEAD` (§ "Watcher path set"). The debounce is this crate's contract, but the
-path that proves it starts where the portal is parked, so the cell belongs at that end — and it is the only one anywhere
-that arms a real watcher (§ "The watcher splits into bookkeeping and a backend"). The coalescing that makes the count
-one is asserted crate-side on the scripted backend (`watcher_tests`), where a "second batch" is a second `fire_watcher`
-and costs no FSEvents.
+switch back to back, waits until the LAST report carries the post-burst branch and the reports go quiet, and then does
+it all a second time to prove the watch outlived git's rename over `HEAD` (§ "Watcher path set"). ❌ It never asserts a
+count: how many batches a real burst arrives in depends on how long its writes take against the window, and asserting
+"exactly one" made it the most-retried Rust cell (78 runs, 2026-09-06 to 2026-09-11). Delivery is this crate's contract,
+but the path that proves it starts where the portal is parked, so the cell belongs at that end — and it is the only one
+anywhere that arms a real watcher (§ "The watcher splits into bookkeeping and a backend"). The coalescing that makes a
+split burst one report is asserted crate-side on the scripted backend (`watcher_tests`), where a "second batch" is a
+second `fire_watcher` and costs no FSEvents.
 
 ## One burst is one report
 
@@ -148,18 +150,18 @@ Losing rows nobody could open costs less than a `stat` on the route, which runs 
 - **`GitWatcherRegistry` does the bookkeeping**: one watch per canonical repository root however many subscribers it
   has, refcounted, and the last unsubscribe tears the watch down, evicts the repo handle, and drops the status cache.
 - **`GitWatcherBackend` is what talks to the operating system.** `NotifyWatcherBackend` builds the 200 ms debouncer and
-  registers the path set below. `ScriptedWatcherBackend` (behind `testing`) arms nothing: it remembers which
-  repositories have a watch and runs the change callback when a test calls `GitPortal::fire_watcher`.
+  arms the one watch below. `ScriptedWatcherBackend` (behind `testing`) arms nothing: it remembers which repositories
+  have a watch and runs the change callback when a test calls `GitPortal::fire_watcher`.
 
-**Why a seam rather than a real watcher everywhere.** Arming a real FSEvents stream over a repository's ~10 `.git/*`
-paths is nearly the whole cost of `subscribe_state`, and no cell that asserts bookkeeping cares about it. On an idle
-M-series machine the two app-side subscription cells ran 0.35 s and 0.58 s; on the scripted backend the bookkeeping half
-runs in 0.05 s, and under a saturated `cargo nextest run --workspace` the difference is what decided whether they met
-the suite's 8 s cap at all (measured 2026-09-05).
+**Why a seam rather than a real watcher everywhere.** Arming a real FSEvents stream on a repository's gitdir is nearly
+the whole cost of `subscribe_state`, and no cell that asserts bookkeeping cares about it. On an idle M-series machine
+the two app-side subscription cells ran 0.35 s and 0.58 s; on the scripted backend the bookkeeping half runs in 0.05 s,
+and under a saturated `cargo nextest run --workspace` the difference is what decided whether they met the suite's 8 s
+cap at all (measured 2026-09-05).
 
 **Two cells in the repo take the real backend**, and each one is about something only an operating system does.
 
-- `file_system::git::wiring_tests::a_debounced_burst_reports_once_and_the_watch_survives_for_the_next_one`: the debounce
+- `file_system::git::wiring_tests::a_burst_reports_its_end_state_and_the_watch_survives_for_the_next_one`: the debounce
   is `notify`'s own, and so is the watch surviving git's rename over `HEAD`, so a fake standing in for either would
   assert the fake's arithmetic.
 - `watcher_tests::a_deleted_repository_stops_reporting_and_still_gives_its_hold_back`: a scripted backend has no watches
@@ -196,32 +198,46 @@ dropping a watch whose inode is gone is fine.
 
 ## Watcher path set
 
-Four watches, all on DIRECTORIES (`watcher::watch_targets`):
+ONE watch: the gitdir, recursively, through a `NoCache` debouncer (the listing watcher's shape).
 
-- `<gitdir>/` non-recursively. Covers `HEAD`, `ORIG_HEAD`, `MERGE_HEAD`, `FETCH_HEAD`, `packed-refs`, and `index`, which
-  are all direct children, including their creation (no `MERGE_HEAD` exists until a merge starts).
-- `<gitdir>/refs/` recursively, because the ref tree grows (`refs/heads/feature/x`).
-- `<gitdir>/logs/` non-recursively, for `logs/HEAD`. The per-ref reflogs under it say nothing a snapshot or a category
-  listing reads.
-- `<gitdir>/worktrees/` recursively, for each linked worktree's own `HEAD`, and for worktrees added after the subscribe.
+❗ **One path, ❌ never one per state directory.** On macOS `notify`'s `FsEventWatcher::watch` stops the FSEvents
+stream, joins its run-loop thread, and starts a new one for EVERY added path (read in notify 8.2.0, `fsevent.rs`
+`watch_inner`, 2026-10-05), and `notify_debouncer_full::Debouncer` exposes no batched `paths_mut`. The four directory
+watches this replaced cost four restarts before the chip's handshake could run, which is what made the chip late on
+first entry and made the real-watcher cell the most-retried in the Rust lane. FSEvents watches a path's whole subtree in
+the kernel either way (`notify` emulates `NonRecursive` by filtering), so on macOS the recursive gitdir delivers nothing
+the old set didn't.
 
-A missing target is ordinary (`logs/` with reflogs off, `worktrees/` until the first `git worktree add`) and is skipped;
-the gitdir watch sees it appear. Linked worktrees have their `.git` as a FILE (gitlink), and `git_dir_path` resolves
-through it, so a linked worktree watches the same four directories under the common dir.
+❗ **`NoCache`, ❌ never the default `FileIdMap`.** The map pairs a rename's two halves by file id, and pays for it by
+walking and `stat`ing the whole watched tree at arm time, which for a recursive gitdir is every loose object.
+`is_repo_state_path` reads paths only, so the pairing buys nothing.
 
-❗ **Directories, ❌ never the state files themselves.** git never writes `HEAD` or `index` in place: it writes
+❗ **A linked worktree watches the COMMON gitdir.** Its `.git` is a FILE (gitlink) pointing at its own gitdir
+(`<common>/worktrees/<name>/`), which holds only `HEAD`, `index`, `logs/HEAD`, and the merge/fetch heads; every branch,
+tag, and remote-tracking ref lives in the common dir (`commondir` file, verified with `git rev-parse --git-path` on git
+2.x, 2026-10-06). A watch on the own gitdir alone missed `git fetch` / `git push` (stale ahead/behind) and branch
+create/delete. `watcher::WatchScope` puts the one recursive watch on the common dir (which contains the own one) and
+filters to the own gitdir's state files plus the shared `refs/`, `packed-refs`, and `config`; the common dir's top-level
+`HEAD` / `index` (the main worktree's) and `worktrees/<sibling>/` are dropped. Two linked worktrees of one repo hold two
+watches on that dir rather than sharing one: each reports its own root through its own filter, and sharing would buy a
+second refcount layer and a per-worktree fan-out to save a kernel subscription. Pinned by
+`watcher_tests::a_linked_worktree_hears_the_shared_refs_and_not_its_siblings`.
+
+❗ **A directory, ❌ never the state files themselves.** git never writes `HEAD` or `index` in place: it writes
 `HEAD.lock` and renames it over the top. inotify watches an INODE, so a watch on the file dies at the first rename and
-every later write in the same burst is lost with no error anywhere. macOS FSEvents is path-based and tolerated the file
-watches, so this only ever failed on Linux, where the DEBOUNCE cell timed out having received nothing after the first
-commit (CI, 2026-09-06). A directory's inode is what the rename modifies, so it survives.
+every later write in the same burst is lost with no error anywhere. macOS FSEvents is path-based and tolerated file
+watches, so this only ever failed on Linux, where the real-watcher cell timed out having received nothing after the
+first commit (CI, 2026-09-06). A directory's inode is what the rename modifies, so it survives.
 
-**What the directories cost, and what pays it back.** A directory watch also delivers `COMMIT_EDITMSG`, `MERGE_MSG`,
-`*.lock`, and `config`, none of which moves a pane. `watcher::is_repo_state_path` is the allowlist that drops them
-before anything opens the repository: a path counts when it is one of those six direct children, or sits under `refs/`,
-`logs/`, or `worktrees/`, and never when it ends in `.lock`. Dropping the lock half of git's write dance costs no
-report, because the rename's TARGET (`HEAD`) rides in the same event and answers `true`.
-`watcher_tests::only_the_paths_a_snapshot_reads_are_worth_a_recompute` pins the whole table, and
-`every_watch_target_is_a_directory_no_rename_can_kill` pins the shape.
+**What the recursive watch costs, and what pays it back.** It also delivers `objects/`, `hooks/`, `COMMIT_EDITMSG`,
+`MERGE_MSG`, `*.lock`, and the per-ref reflogs, none of which moves a pane. `watcher::is_repo_state_path` is the
+allowlist that drops them before anything opens the repository: a path counts when it is one of the seven state files
+(`HEAD`, `ORIG_HEAD`, `MERGE_HEAD`, `FETCH_HEAD`, `packed-refs`, `index`, and `config`, which names each branch's
+upstream) or `logs/HEAD`, or sits under `refs/` or `worktrees/`, and never when it ends in `.lock`. Dropping the lock
+half of git's write dance costs no report, because the rename's TARGET (`HEAD`) rides in the same event and answers
+`true`. `watcher_tests::only_the_paths_a_snapshot_reads_are_worth_a_recompute` pins the whole table. On Linux the
+recursive watch is one inotify watch per gitdir DIRECTORY (`objects/` fans out to at most 256, plus any `modules/` or
+`lfs/` trees), the price of one code path for both platforms.
 
 ❗ **A READ is dropped by KIND, and that is what keeps the watcher off its own tail.** Linux inotify asks for `IN_OPEN`
 (`notify` 8.2 sets it in `add_single_watch`), so every file a recompute OPENS — `HEAD`, `index`, `packed-refs`, a
@@ -337,6 +353,21 @@ content- or mtime-addressed, so a second portal sharing one can only get an answ
 `list_status` stays callable with a repo handle alone — no portal, no host. The `RepoCache` is the opposite: it owns a
 RESOURCE with a lifecycle (an open `gix` repository, evicted when the last subscriber leaves), so a static one would
 mean a test's evictions reaching the app's handles and back.
+
+## A repo's own commands never run
+
+A repository's config can name commands (`filter.<driver>.clean` / `process`), and gix trusts a repo the user owns in
+full, which covers one they downloaded or unzipped. Status hashes a file whose stat changed through the filter pipeline,
+so browsing such a repo would run its commands. Cmdr only reads, so a filter buys nothing:
+
+- `RepoCache::discover` opens every repo through `repo::without_filter_drivers`, which drops each `filter` section from
+  the in-memory config. Nothing is written to disk.
+- gix opens a submodule with its OWN, unstripped config, so gix's status looks only at a submodule's checked-out commit
+  (`repo::submodule_status`). `repo::dirty_submodule_paths` opens each submodule, strips it the same way, and walks its
+  worktree itself (nested submodules included, `ignore = dirty|all` respected); status marks those paths `Modified`, and
+  the chip's dirty check counts them.
+- ❌ Never call gix's `Repository::is_dirty` (it asks submodules "as configured") or open a repo around the cache.
+  `status_never_runs_a_repos_filter_driver` pins both paths.
 
 ## A miss is not a damaged repo
 
@@ -486,9 +517,9 @@ a _cooperative_ cancel takes effect within one commit decode (microseconds). The
 production listings (which rely on task abort). Changing to streaming would require revisiting the trait contract
 everywhere.
 
-**Decision**: One recursive watch on `<common-dir>/worktrees/` for every linked worktree's `HEAD` **Why**: it needs no
-glob (which notify-debouncer-full has no support for) and no enumeration at subscribe time, and it covers worktrees
-added AFTER the subscribe, which an enumeration cannot. One watch entry replaces one per worktree, and
+**Decision**: One recursive watch on the whole gitdir, ❌ not a watch per state directory **Why**: each `watch` call
+restarts the macOS FSEvents stream, so one path is one start (§ "Watcher path set"). It also needs no glob and no
+enumeration at subscribe time, and it covers linked worktrees and state directories that appear AFTER the subscribe.
 `is_repo_state_path` keeps the extra subtree from turning into extra reports.
 
 **Decision**: `Cat::browses_commit_tree()` covers branches/tags/commits/stash **Why**: All four categories browse a

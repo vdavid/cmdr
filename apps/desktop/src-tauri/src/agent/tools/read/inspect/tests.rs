@@ -592,7 +592,7 @@ fn dense_row(index: usize) -> FileRow {
         name: format!("app-{index:03}.log"),
         extension: Some("log".into()),
         size_bytes: Some(1_000_000),
-        size_human: Some("976.6 KB".into()),
+        size_human: Some("976.6 KiB".into()),
         modified: Some("2026-09-02T08:00:00Z".into()),
         modified_human: Some("2026-09-02".into()),
         mime: None,

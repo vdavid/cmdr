@@ -16,11 +16,15 @@
 //!   lose the id. The main window routes the id to the dialog's own close via the close registry
 //!   (`ModalDialog` / `QueryDialog`). An unregistered id is an honest `invalid_params`, and an
 //!   already-closed dialog acks immediately (the tracker doesn't hold it).
-//! - `focus settings|file-viewer|about` → window is present (no-op fast path; if the window isn't
-//!   there, the wait_for_ack times out, which is the correct contract for focusing a non-existent
-//!   dialog).
-//! - `confirm <transfer|delete>` → pane generation advances (the FE accepted the confirmation and
-//!   the underlying copy/move/delete started, producing a state push).
+//! - `focus settings` → no ack: the backend raises the settings window itself, and a closed one is
+//!   an `invalid_params` up front.
+//! - `focus file-viewer|about` → window is present (no-op fast path; if the window isn't there, the
+//!   wait_for_ack times out, which is the correct contract for focusing a non-existent dialog).
+//! - `confirm <transfer|delete>` → the soft dialog is no longer in `SoftDialogTracker`: the FE takes
+//!   the confirmation down in the same tick it starts the operation. ❌ Not a pane-generation wait:
+//!   a compress, or a copy onto a slow volume, changes nothing in either pane until its first file
+//!   lands, so that signal timed out on operations that had started. No such dialog open is an
+//!   `invalid_params` up front, since "already gone" would otherwise ack at once.
 //! - `confirm quit-confirmation` → no ack: the answer goes to the quit gate, which starts a
 //!   teardown that ends the process. `close quit-confirmation` is the other answer ("keep
 //!   working"); it waits for the soft dialog to go, but reports that as a typed
@@ -37,13 +41,14 @@ use tauri_specta::Event as _;
 
 use crate::window_events::{
     CloseAbout, CloseAllFileViewers, CloseConfirmation, CloseFileViewer, ExecuteCommand, FocusAbout, FocusConfirmation,
-    FocusFileViewer, FocusSettings, McpSettingsClose, OpenFileViewer, OpenSettings,
+    FocusFileViewer, McpSettingsClose, OpenFileViewer, OpenSettings,
 };
 
 use super::{
-    AckSignal, DEFAULT_ACK_TIMEOUT, ToolError, ToolResult, expand_user_path, snapshot_generation,
-    snapshot_window_count, validate_conflict_policy, validate_path_exists, wait_for_ack,
+    AckSignal, DEFAULT_ACK_TIMEOUT, ToolError, ToolResult, expand_user_path, snapshot_window_count,
+    validate_conflict_policy, validate_path_exists, wait_for_ack,
 };
+use crate::mcp::dialog_state::SoftDialogTracker;
 
 /// Execute the unified dialog command.
 /// Handles opening, focusing, and closing dialogs.
@@ -168,8 +173,14 @@ async fn execute_dialog_focus<R: Runtime>(app: &AppHandle<R>, dialog_type: &str,
     // message; that's the correct contract (you can't focus what isn't there).
     match dialog_type {
         "settings" => {
-            FocusSettings.emit_to(app, "main")?;
-            wait_for_ack(app, AckSignal::WindowAppeared("settings"), DEFAULT_ACK_TIMEOUT).await?;
+            // Settings is its own window, so the backend raises it directly: no
+            // frontend hop, and nothing that can listen or not.
+            let window = app.get_webview_window("settings").ok_or_else(|| {
+                ToolError::invalid_params("Settings isn't open. Open it first with `dialog open settings`.")
+            })?;
+            window
+                .set_focus()
+                .map_err(|e| ToolError::internal(format!("Couldn't focus the settings window: {e}")))?;
             Ok(json!("OK: Focused settings"))
         }
         "file-viewer" => {
@@ -331,7 +342,7 @@ async fn execute_dialog_close<R: Runtime>(app: &AppHandle<R>, dialog_type: &str,
 /// a silent 1500 ms ack timeout), pointing the caller at the discovery resource.
 async fn execute_generic_dialog_close<R: Runtime>(app: &AppHandle<R>, dialog_type: &str) -> ToolResult {
     let is_known = app
-        .try_state::<crate::mcp::dialog_state::SoftDialogTracker>()
+        .try_state::<SoftDialogTracker>()
         .is_some_and(|tracker| is_registered_soft_dialog(&tracker.get_known_dialogs(), dialog_type));
     if !is_known {
         return Err(ToolError::invalid_params(format!(
@@ -348,6 +359,34 @@ async fn execute_generic_dialog_close<R: Runtime>(app: &AppHandle<R>, dialog_typ
     Ok(json!(format!("OK: Closed {dialog_type} dialog")))
 }
 
+/// Asks the frontend to confirm the open `dialog_type`, and waits for that dialog
+/// to go away: a confirm the frontend acted on takes the dialog down in the same
+/// tick it starts the operation, whatever the panes do afterwards.
+///
+/// The dialog has to be open FIRST. `SoftDialogDisappeared` is true of a dialog
+/// that was never there, so without this check a confirm of nothing would ack.
+async fn confirm_open_dialog<R: Runtime>(
+    app: &AppHandle<R>,
+    dialog_type: &str,
+    payload: Value,
+) -> Result<(), ToolError> {
+    let is_open = app
+        .try_state::<SoftDialogTracker>()
+        .is_some_and(|tracker| tracker.get_open_types().iter().any(|open| open == dialog_type));
+    if !is_open {
+        return Err(ToolError::invalid_params(format!(
+            "No {dialog_type} dialog is open to confirm. Read cmdr://state dialogs for what is open."
+        )));
+    }
+    app.emit("mcp-confirm-dialog", payload)?;
+    wait_for_ack(
+        app,
+        AckSignal::SoftDialogDisappeared(dialog_type.to_string()),
+        DEFAULT_ACK_TIMEOUT,
+    )
+    .await
+}
+
 /// Execute dialog confirm action.
 /// Programmatically confirms an already-open dialog.
 async fn execute_dialog_confirm<R: Runtime>(
@@ -359,28 +398,16 @@ async fn execute_dialog_confirm<R: Runtime>(
         "transfer-confirmation" => {
             let conflict_policy = on_conflict.unwrap_or("skip_all");
             validate_conflict_policy(conflict_policy)?;
-            let pre_gen = snapshot_generation(app);
-            app.emit(
-                "mcp-confirm-dialog",
-                json!({"type": "transfer-confirmation", "onConflict": conflict_policy}),
-            )?;
-            wait_for_ack(
+            confirm_open_dialog(
                 app,
-                AckSignal::GenerationAdvanced { from: pre_gen },
-                DEFAULT_ACK_TIMEOUT,
+                dialog_type,
+                json!({"type": "transfer-confirmation", "onConflict": conflict_policy}),
             )
             .await?;
             Ok(json!("OK: Transfer dialog confirmed."))
         }
         "delete-confirmation" => {
-            let pre_gen = snapshot_generation(app);
-            app.emit("mcp-confirm-dialog", json!({"type": "delete-confirmation"}))?;
-            wait_for_ack(
-                app,
-                AckSignal::GenerationAdvanced { from: pre_gen },
-                DEFAULT_ACK_TIMEOUT,
-            )
-            .await?;
+            confirm_open_dialog(app, dialog_type, json!({"type": "delete-confirmation"})).await?;
             Ok(json!("OK: Delete dialog confirmed."))
         }
         // Confirming the quit means quitting NOW, skipping the rest of the countdown.
@@ -494,5 +521,83 @@ mod tests {
         assert!(!is_registered_soft_dialog(&dialogs, "not-a-dialog"));
         // Empty registry (e.g. FE hasn't registered yet) rejects everything.
         assert!(!is_registered_soft_dialog(&[], "whats-new"));
+    }
+
+    /// A mock app carrying the two stores the ack signals read.
+    fn app_with_stores() -> tauri::App<tauri::test::MockRuntime> {
+        let app = tauri::test::mock_app();
+        app.manage(crate::mcp::pane_state::PaneStateStore::new());
+        app.manage(SoftDialogTracker::new());
+        app
+    }
+
+    /// Stands in for the frontend: a confirm takes the dialog down, and nothing
+    /// in either pane changes until the operation's first file lands.
+    fn close_dialog_on_confirm(app: &AppHandle<tauri::test::MockRuntime>, dialog_type: &'static str) {
+        use tauri::Listener;
+        let handle = app.clone();
+        app.listen("mcp-confirm-dialog", move |_| {
+            handle.state::<SoftDialogTracker>().close(dialog_type);
+        });
+    }
+
+    #[tokio::test]
+    async fn a_confirm_acks_once_its_dialog_is_gone_with_no_pane_change() {
+        for dialog_type in ["transfer-confirmation", "delete-confirmation"] {
+            let app = app_with_stores();
+            let handle = app.handle().clone();
+            handle.state::<SoftDialogTracker>().open(dialog_type.to_string());
+            close_dialog_on_confirm(&handle, dialog_type);
+
+            // Pre-fix this waited for a pane-state push, which a compress or a copy
+            // onto a slow volume doesn't make for seconds: the tool answered "not
+            // acknowledged" about an operation that had started.
+            let outcome = execute_dialog_command(&handle, &json!({ "action": "confirm", "type": dialog_type })).await;
+            assert!(outcome.is_ok(), "{dialog_type}: {:?}", outcome.err().map(|e| e.message));
+        }
+    }
+
+    #[tokio::test]
+    async fn a_confirm_with_no_such_dialog_open_is_refused_up_front() {
+        let app = app_with_stores();
+        let handle = app.handle().clone();
+        let started = std::time::Instant::now();
+        let outcome = execute_dialog_command(
+            &handle,
+            &json!({ "action": "confirm", "type": "transfer-confirmation" }),
+        )
+        .await;
+        let error = outcome.expect_err("nothing is open to confirm");
+        assert_eq!(error.code, ToolError::invalid_params("").code);
+        assert!(
+            started.elapsed() < DEFAULT_ACK_TIMEOUT,
+            "it must not wait out the ack budget"
+        );
+    }
+
+    #[tokio::test]
+    async fn focusing_an_open_settings_window_answers_ok() {
+        let app = app_with_stores();
+        let handle = app.handle().clone();
+        tauri::WebviewWindowBuilder::new(&handle, "settings", tauri::WebviewUrl::default())
+            .build()
+            .expect("a mock settings window");
+
+        let outcome = execute_dialog_command(&handle, &json!({ "action": "focus", "type": "settings" })).await;
+        assert!(outcome.is_ok(), "{:?}", outcome.err().map(|e| e.message));
+    }
+
+    #[tokio::test]
+    async fn focusing_settings_when_it_isnt_open_is_refused_up_front() {
+        let app = app_with_stores();
+        let handle = app.handle().clone();
+        let started = std::time::Instant::now();
+        let outcome = execute_dialog_command(&handle, &json!({ "action": "focus", "type": "settings" })).await;
+        let error = outcome.expect_err("there's no settings window to focus");
+        assert_eq!(error.code, ToolError::invalid_params("").code);
+        assert!(
+            started.elapsed() < DEFAULT_ACK_TIMEOUT,
+            "it must not wait out the ack budget"
+        );
     }
 }

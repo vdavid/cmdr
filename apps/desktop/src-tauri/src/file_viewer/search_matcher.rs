@@ -386,7 +386,7 @@ pub fn scan_line_with_matcher(
         let len_utf16: usize = line[start_byte..end_byte].chars().map(|c| c.len_utf16()).sum();
         let mut matches = results.lock_ignore_poison();
         matches.push(SearchMatch {
-            line: line_number,
+            row: line_number,
             column: col_utf16,
             length: len_utf16,
             byte_offset: line_byte_offset,

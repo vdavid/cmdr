@@ -34,19 +34,19 @@ import type { HistoryEntry } from '$lib/tauri-commands'
 
 describe('parseSizeToBytes', () => {
   it('converts KB to bytes', () => {
-    expect(parseSizeToBytes('1', 'KB')).toBe(1024)
+    expect(parseSizeToBytes('1', 'KB')).toBe(1000)
   })
 
   it('converts MB to bytes', () => {
-    expect(parseSizeToBytes('1', 'MB')).toBe(1024 * 1024)
+    expect(parseSizeToBytes('1', 'MB')).toBe(1000 * 1000)
   })
 
   it('converts GB to bytes', () => {
-    expect(parseSizeToBytes('1', 'GB')).toBe(1024 * 1024 * 1024)
+    expect(parseSizeToBytes('1', 'GB')).toBe(1000 * 1000 * 1000)
   })
 
   it('handles decimal values', () => {
-    expect(parseSizeToBytes('1.5', 'MB')).toBe(Math.round(1.5 * 1024 * 1024))
+    expect(parseSizeToBytes('1.5', 'MB')).toBe(Math.round(1.5 * 1000 * 1000))
   })
 
   it('returns undefined for empty string', () => {
@@ -111,7 +111,7 @@ describe('buildSearchQuery', () => {
     setSizeUnit('MB')
     const query = buildSearchQuery()
     expect(query.namePattern).toBeNull()
-    expect(query.minSize).toBe(1024 * 1024)
+    expect(query.minSize).toBe(1000 * 1000)
     expect(query.maxSize).toBeNull()
   })
 
@@ -128,7 +128,7 @@ describe('buildSearchQuery', () => {
     setSizeValue('10')
     setSizeUnit('MB')
     const query = buildSearchQuery()
-    expect(query.minSize).toBe(10 * 1024 * 1024)
+    expect(query.minSize).toBe(10 * 1000 * 1000)
     expect(query.maxSize).toBeNull()
   })
 
@@ -138,7 +138,7 @@ describe('buildSearchQuery', () => {
     setSizeValue('5')
     setSizeUnit('KB')
     const query = buildSearchQuery()
-    expect(query.maxSize).toBe(5 * 1024)
+    expect(query.maxSize).toBe(5 * 1000)
     expect(query.minSize).toBeNull()
   })
 
@@ -150,8 +150,8 @@ describe('buildSearchQuery', () => {
     setSizeValueMax('10')
     setSizeUnitMax('MB')
     const query = buildSearchQuery()
-    expect(query.minSize).toBe(1024 * 1024)
-    expect(query.maxSize).toBe(10 * 1024 * 1024)
+    expect(query.minSize).toBe(1000 * 1000)
+    expect(query.maxSize).toBe(10 * 1000 * 1000)
   })
 
   it('honors size "0" as a literal 0-byte bound (round 2 D10)', () => {
@@ -263,7 +263,7 @@ describe('buildHistoryFilters', () => {
     setSizeFilter('gte')
     setSizeValue('1')
     setSizeUnit('MB')
-    expect(buildHistoryFilters()).toEqual({ sizeMin: 1024 * 1024 })
+    expect(buildHistoryFilters()).toEqual({ sizeMin: 1000 * 1000 })
   })
 
   it('includes sizeMax only for lte', () => {
@@ -271,7 +271,7 @@ describe('buildHistoryFilters', () => {
     setSizeFilter('lte')
     setSizeValue('2')
     setSizeUnit('MB')
-    expect(buildHistoryFilters()).toEqual({ sizeMax: 2 * 1024 * 1024 })
+    expect(buildHistoryFilters()).toEqual({ sizeMax: 2 * 1000 * 1000 })
   })
 
   it('includes both bounds for between', () => {
@@ -282,8 +282,8 @@ describe('buildHistoryFilters', () => {
     setSizeValueMax('5')
     setSizeUnitMax('MB')
     expect(buildHistoryFilters()).toEqual({
-      sizeMin: 1024 * 1024,
-      sizeMax: 5 * 1024 * 1024,
+      sizeMin: 1000 * 1000,
+      sizeMax: 5 * 1000 * 1000,
     })
   })
 
@@ -338,7 +338,7 @@ describe('applyHistoryEntry', () => {
     clearSearchState()
     applyHistoryEntry({
       ...baseEntry,
-      filters: { sizeMin: 5 * 1024 * 1024 },
+      filters: { sizeMin: 5 * 1000 * 1000 },
     })
     expect(getSizeFilter()).toBe('gte')
     expect(getSizeValue()).toBe('5')
@@ -349,7 +349,7 @@ describe('applyHistoryEntry', () => {
     clearSearchState()
     applyHistoryEntry({
       ...baseEntry,
-      filters: { sizeMin: 1024, sizeMax: 10 * 1024 * 1024 },
+      filters: { sizeMin: 1000, sizeMax: 10 * 1000 * 1000 },
     })
     expect(getSizeFilter()).toBe('between')
   })

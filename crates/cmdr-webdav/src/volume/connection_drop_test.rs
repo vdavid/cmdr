@@ -14,7 +14,7 @@
 //!
 //! - **Refused**: the pooled connection closes and a new one is refused.
 //! - **Silent** (a black hole): nothing closes, nothing answers, so only the
-//!   silence watchdog (`crate::liveness`) ends the wait. It runs under a paused
+//!   silence watchdog (`cmdr_fs::volume::liveness`) ends the wait. It runs under a paused
 //!   tokio clock, so the production-length deadline elapses in virtual time.
 //!
 //! The slow-but-alive case, which must NOT read as silence, is
@@ -45,7 +45,7 @@ const FIXTURE: &str = "webdav-servers/start.sh (webdav-fixture)";
 
 /// How long a silent server keeps a waiting operation before the volume is
 /// reported down: 10 s of silence, then two probes of 10 s each go unanswered
-/// (`crate::liveness::Timings::PRODUCTION`). The same 30 s SMB and SFTP allow.
+/// (`cmdr_fs::volume::liveness::Timings::PRODUCTION`). The same 30 s SMB and SFTP allow.
 const SILENCE_DEADLINE: Duration = Duration::from_secs(30);
 
 /// How long an operation on a REFUSED connection may take to answer. Generous:

@@ -19,7 +19,7 @@
 import { commands } from '$lib/commands/command-registry'
 import type { CommandId } from '$lib/commands'
 import { getEffectiveShortcuts, onShortcutChange } from './shortcuts-store'
-import { formatKeyCombo, physicalKeyCombo } from './key-capture'
+import { keyComboCandidates } from './key-capture'
 import { getActiveScopes } from './scope-hierarchy'
 
 // Command IDs that have showInPalette: false but still need central dispatch
@@ -87,12 +87,29 @@ export function lookupCommand(shortcutString: string): CommandId | undefined {
  * that extra meaning.
  */
 export function eventMatchesCommand(event: KeyboardEvent, commandId: CommandId, options?: MatchOptions): boolean {
-  if (comboMatchesCommand(formatKeyCombo(event), commandId, options)) return true
-  // A modifier can change what the layout types (`⇧8` is `*` on US and `(` on
-  // Hungarian; `⌥⇧=` is `±`), so those combos need the physical key to match at
-  // all. `physicalKeyCombo` returns null whenever `event.key` was already right.
-  const physical = physicalKeyCombo(event)
-  return physical !== null && comboMatchesCommand(physical, commandId, options)
+  return comboMatchesCommand(resolveKeyCombo(event), commandId, options)
+}
+
+/**
+ * The ONE combo a keypress means: the first of `keyComboCandidates` that any
+ * command binds, or the exact combo when none does. The document dispatcher and
+ * every local handler (`eventMatchesCommand`) resolve through it.
+ *
+ * ❗ Resolving once, across ALL commands, is what keeps a fallback from stealing
+ * a key: the numpad's `⌥+` is `selection.selectSameKind`'s exact combo, so it
+ * must never reach `selection.selectFiles` through the bare typed `+` just
+ * because a handler happened to ask about Select files first. Testing the
+ * candidates per command would let it.
+ */
+export function resolveKeyCombo(event: KeyboardEvent): string {
+  const candidates = keyComboCandidates(event)
+  if (candidates.length === 1) return candidates[0]
+  return candidates.find(isBoundByAnyCommand) ?? candidates[0]
+}
+
+/** True when some command's effective shortcuts hold `combo`. Read live, so a rebind counts at once. */
+function isBoundByAnyCommand(combo: string): boolean {
+  return commands.some((command) => getEffectiveShortcuts(command.id).includes(combo))
 }
 
 /** Options shared by the two matchers. */

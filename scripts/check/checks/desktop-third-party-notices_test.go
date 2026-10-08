@@ -231,6 +231,18 @@ func TestVerifyClarificationsCatchesACrateThatDroppedAFile(t *testing.T) {
 	}
 }
 
+func TestVerifyClarificationsSkipsACrateThatDoesNotShip(t *testing.T) {
+	// macOS runs on the system allocator unless built with `mimalloc`, so the
+	// shipped graph has no `libmimalloc-sys`. Its pin stays for the day it ships
+	// again; until then there's no text to have come from the wrong file.
+	sources := map[string][]string{
+		"miniz_oxide": {"LICENSE"},
+	}
+	if err := verifyClarifications(sources); err != nil {
+		t.Errorf("a pinned crate that doesn't ship has nothing to verify, got: %v", err)
+	}
+}
+
 func TestRenderClarificationsCarriesEveryPinnedChecksum(t *testing.T) {
 	// A file with no checksum would be written without one, and cargo-about
 	// rejects that outright — but silently missing a checksum in the map is the

@@ -136,14 +136,17 @@ pub async fn dispatch<R: Runtime>(
 ) -> RenameDispatchOutcome {
     let outcome = build_draft(app, scope, params).and_then(|draft| stage_draft(app, scope, &draft));
     match outcome {
-        Ok(snapshot) => RenameDispatchOutcome {
-            result: AgentToolResult {
-                call_id: call_id.to_string(),
-                content: serde_json::json!({ "readyForReview": true, "count": snapshot.rows.len() }),
-                elided: false,
-            },
-            proposal: Some(snapshot),
-        },
+        Ok(snapshot) => {
+            super::cut_listing::count_plan_from_cut_listing(app, scope, &snapshot);
+            RenameDispatchOutcome {
+                result: AgentToolResult {
+                    call_id: call_id.to_string(),
+                    content: serde_json::json!({ "readyForReview": true, "count": snapshot.rows.len() }),
+                    elided: false,
+                },
+                proposal: Some(snapshot),
+            }
+        }
         Err(refusal) => {
             // A refused plan stages nothing, and until this line it said so nowhere the user
             // or a maintainer could see: the panel read "nothing is waiting for you", the log

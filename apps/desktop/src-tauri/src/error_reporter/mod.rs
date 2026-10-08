@@ -33,7 +33,6 @@
 //! ([`error_report_url`], [`error_report_amend_url`]), plus the cached-settings and
 //! log-level-snapshot helpers shared between the two pipelines.
 
-#[cfg(debug_assertions)]
 use crate::config;
 use crate::logging;
 use crate::server_request::ServerRequestError;
@@ -249,6 +248,28 @@ pub struct ResolvedSettings {
 }
 
 impl ResolvedSettings {
+    /// The same snapshot with the organization's locks applied, through the one `overlay`: what
+    /// Cmdr actually ran with, as the heartbeat's config shape reports it. Only the lockable fields
+    /// here change; everything else keeps its stored value.
+    pub(crate) fn effective(mut self, policy: &crate::managed_policy::ManagedPolicy) -> Self {
+        let mut map = serde_json::json!({
+            "ai.provider": self.ai_provider,
+            "updates.errorReports": self.error_reports_enabled,
+            "updates.crashReports": self.crash_reports_enabled,
+        });
+        crate::managed_policy::overlay(policy, &mut map);
+        if let Some(provider) = map.get("ai.provider").and_then(serde_json::Value::as_str) {
+            self.ai_provider = provider.to_string();
+        }
+        if let Some(enabled) = map.get("updates.errorReports").and_then(serde_json::Value::as_bool) {
+            self.error_reports_enabled = enabled;
+        }
+        if let Some(enabled) = map.get("updates.crashReports").and_then(serde_json::Value::as_bool) {
+            self.crash_reports_enabled = enabled;
+        }
+        self
+    }
+
     /// Build a snapshot from the loaded backend settings, substituting registry defaults
     /// for any field the user hasn't explicitly set.
     ///
@@ -569,7 +590,7 @@ pub async fn upload(
         let meta_json = serde_json::to_string(manifest)
             .map_err(|e| ServerRequestError::unexpected(format!("serialize manifest: {e}")))?;
 
-        let client = reqwest::Client::builder()
+        let client = cmdr_http::client_builder()
             .timeout(Duration::from_secs(30))
             .build()
             .map_err(|e| ServerRequestError::unexpected(format!("HTTP client: {e}")))?;
@@ -584,36 +605,42 @@ pub async fn upload(
             )
             .text("meta", meta_json);
 
-        let response = crate::server_request::send(client.post(server_url).multipart(form)).await?;
+        let response = crate::server_request::send(
+            crate::managed_policy::Egress::ErrorReport,
+            client.post(server_url).multipart(form),
+        )
+        .await?;
         crate::server_request::read_json(response).await
     }
 }
 
-/// Write the built bundle to the app data dir as `error-report-debug-<timestamp>.zip`.
-/// Gated on `debug_assertions` by the caller (see `commands/error_reporter.rs`).
-#[cfg(debug_assertions)]
+/// Write the built bundle to the app data dir as `error-report-<timestamp>.zip`.
 pub fn save_bundle_to_disk<R: tauri::Runtime>(
     app: &tauri::AppHandle<R>,
     bundle: &BuiltBundle,
 ) -> Result<std::path::PathBuf, String> {
     let dir = config::resolved_app_data_dir(app)?;
     let timestamp = Utc::now().format("%Y%m%dT%H%M%SZ");
-    let path = dir.join(format!("error-report-debug-{timestamp}.zip"));
-    std::fs::write(&path, &bundle.zip_bytes).map_err(|e| format!("write debug bundle: {e}"))?;
+    let path = dir.join(format!("error-report-{timestamp}.zip"));
+    std::fs::write(&path, &bundle.zip_bytes).map_err(|e| format!("write report bundle: {e}"))?;
     Ok(path)
 }
 
 // --- Helpers shared between bundle_builder and the manifest assembly ---
 
-/// Cached snapshot of active settings. Populated lazily from the settings loader the
-/// first time a bundle is built, then reused. Mirrors the crash reporter's cache but
-/// stays local to this module so we don't depend on init ordering.
-pub(crate) fn cached_active_settings<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> &'static ResolvedSettings {
+/// Snapshot of the active settings for a manifest. The stored values are loaded lazily the first
+/// time a bundle is built, then reused (mirrors the crash reporter's cache but stays local to this
+/// module so we don't depend on init ordering). The organization's locks apply on every call, so
+/// a profile that arrived since still shows as the effective value.
+pub(crate) fn cached_active_settings<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> ResolvedSettings {
     static CACHE: OnceLock<ResolvedSettings> = OnceLock::new();
-    CACHE.get_or_init(|| {
-        let s = crate::settings::load_settings(app);
-        ResolvedSettings::from_settings(&s)
-    })
+    CACHE
+        .get_or_init(|| {
+            let s = crate::settings::load_settings(app);
+            ResolvedSettings::from_settings(&s)
+        })
+        .clone()
+        .effective(&crate::managed_policy::current())
 }
 
 /// Build a [`LogLevelSnapshot`] from the live state of `logging::dispatch`. The static

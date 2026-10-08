@@ -1,5 +1,6 @@
 <script lang="ts">
     import type { TabState, TabId } from './tab-types'
+    import type { TabBarDrag } from './tab-drag-controller.svelte'
     import Icon from '$lib/ui/Icon.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
     import { tString } from '$lib/intl/messages.svelte'
@@ -14,6 +15,8 @@
         activeTabId: TabId
         paneId: 'left' | 'right'
         maxTabs: number
+        /** This bar's face of the shared tab drag (reorder, or move to the other pane's bar). */
+        drag: TabBarDrag
         onTabSwitch: (tabId: TabId) => void
         onTabClose: (tabId: TabId) => void
         onTabMiddleClick: (tabId: TabId) => void
@@ -27,6 +30,7 @@
         activeTabId,
         paneId,
         maxTabs,
+        drag,
         onTabSwitch,
         onTabClose,
         onTabMiddleClick,
@@ -116,11 +120,12 @@
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class="tab-bar" onclick={onPaneFocus} ondblclick={handleTabBarDblClick}>
+<div class="tab-bar" use:drag.attach onclick={onPaneFocus} ondblclick={handleTabBarDblClick}>
     <div class="tab-list" role="tablist" aria-label={tString('fileExplorer.tabBar.paneTabsAriaLabel', { paneId })}>
         {#each tabs as tab, index (tab.id)}
             {@const isActive = tab.id === activeTabId}
             {@const isAfterActive = index > 0 && tabs[index - 1].id === activeTabId}
+            {@const label = deriveTabLabel(tab.path, volumeById.get(tab.volumeId))}
             <button
                 class="tab"
                 class:active={isActive}
@@ -128,13 +133,17 @@
                 class:unreachable={!!tab.unreachable}
                 class:after-active={isAfterActive}
                 class:narrow={narrowTabs.has(tab.id)}
+                class:is-dragging={drag.draggedTabId === tab.id}
                 role="tab"
                 aria-selected={isActive}
-                use:tooltip={tabTooltipText(tab)}
+                use:tooltip={drag.isDragging ? null : tabTooltipText(tab)}
                 use:useInlineSize={{
                     onResize: (inlineSize: number) => {
                         measureTab(tab.id, inlineSize)
                     },
+                }}
+                onpointerdown={(event: PointerEvent) => {
+                    drag.press({ tabId: tab.id, label, event })
                 }}
                 onmousedown={(e: MouseEvent) => {
                     handleTabMouseDown(e, tab.id)
@@ -159,7 +168,7 @@
                 {#if tab.unreachable}
                     <span
                         class="warning-icon"
-                        use:tooltip={tString('fileExplorer.tabBar.unreachableAriaLabel')}
+                        use:tooltip={drag.isDragging ? null : tString('fileExplorer.tabBar.unreachableAriaLabel')}
                         aria-label={tString('fileExplorer.tabBar.unreachableAriaLabel')}
                     >
                         <Icon name="triangle-alert" size={12} aria-hidden="true" />
@@ -174,7 +183,7 @@
                     </span>
                 {/if}
                 <span class="tab-label">
-                    {deriveTabLabel(tab.path, volumeById.get(tab.volumeId))}
+                    {label}
                 </span>
                 {#if !isSingleTab}
                     <span
@@ -442,6 +451,12 @@
     /* Hide separator when hovering an inactive tab */
     .tab:hover:not(.active)::before {
         background-color: transparent;
+    }
+
+    /* The tab in flight stays in its slot, dimmed: the ghost in `TabDragOverlay` is the
+       one that moves, and the bar only reorders on drop. */
+    .tab.is-dragging {
+        opacity: 0.4;
     }
 
     .tab-label {

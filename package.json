@@ -3,6 +3,7 @@
   "private": true,
   "scripts": {
     "preinstall": "npx only-allow pnpm",
+    "prepare": "[ -n \"$CI\" ] || git config core.hooksPath .githooks || true",
     "dev": "pnpm --filter @cmdr/desktop tauri dev",
     "dev:ai-debug": "RUST_LOG=cmdr_lib::ai=debug,${RUST_LOG:-info} pnpm --filter @cmdr/desktop tauri dev",
     "build": "pnpm --filter @cmdr/desktop tauri build",

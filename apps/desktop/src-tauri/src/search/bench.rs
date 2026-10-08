@@ -566,7 +566,7 @@ fn process_rss_bytes() -> u64 {
 ///   figure is reproducible to 0.1 MB across runs.
 ///
 /// ⚠️ Both are measured under the test binary's `System`-backed counting allocator, not
-/// the mimalloc the shipping app uses, so ❌ don't quote either as the app's footprint.
+/// the release build's global allocator, so ❌ don't quote either as the app's footprint.
 /// A DIFFERENCE between two builds carries; an absolute figure doesn't.
 ///
 /// ❌ **Run this one ALONE** (`--exact search::bench::bench_arena_bytes`). The harness

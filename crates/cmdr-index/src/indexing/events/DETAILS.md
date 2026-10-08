@@ -102,7 +102,8 @@ passes vacuously for exactly the variant somebody forgot. A `const _: () = { …
 gap, asserting `ALL[i].slot_of() == i` so the array can't hold a duplicate, a stray, or a gap either.
 
 Three sinks ship: the app's `TauriEventSink`, `NoopEventSink` (paths and tests with nothing to say —
-`NoopEventSink::shared()` hands out one `Arc`), and the test `RecordingSink`.
+`NoopEventSink::shared()` hands out one `Arc`), and the test `RecordingSink` (in `test_sinks.rs`, beside
+`one_of_every_kind`, so the production catalog in `sink.rs` reads without its doubles).
 
 `Diagnostic(String)` wraps English the index produces for logs and never for the UI. The newtype is the point: a bare
 `String` leaves the next reader guessing whether it needs translating. `RescanScheduled.details` is the live case (the

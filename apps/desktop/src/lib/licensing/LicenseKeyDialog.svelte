@@ -169,7 +169,7 @@
                 type: 'commercial',
                 licenseType: info.licenseType,
                 organizationName: info.organizationName,
-                expiresAt: null,
+                expiresAt: info.expiresAt,
             }
         }
         return null

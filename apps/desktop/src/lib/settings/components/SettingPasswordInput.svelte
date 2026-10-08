@@ -4,6 +4,7 @@
     import Icon from '$lib/ui/Icon.svelte'
     import TextInput from '$lib/ui/TextInput.svelte'
     import { onMount } from 'svelte'
+    import { useSettingLock } from './setting-lock.svelte'
 
     interface Props {
         id: SettingId
@@ -16,7 +17,16 @@
         onchange?: (value: string) => void
     }
 
-    const { id, placeholder = '', ariaLabel, disabled = false, value: externalValue, onchange }: Props = $props()
+    const {
+        id,
+        placeholder = '',
+        ariaLabel,
+        disabled: ownDisabled = false,
+        value: externalValue,
+        onchange,
+    }: Props = $props()
+    const lock = useSettingLock(id)
+    const disabled = $derived(ownDisabled || lock.locked)
 
     let internalValue = $state(onchange ? (externalValue ?? '') : (getSetting(id) as string))
     let revealed = $state(false)
@@ -76,6 +86,7 @@
     {placeholder}
     {disabled}
     ariaLabel={ariaLabel}
+    aria-describedby={lock.describedBy()}
     autocomplete="off"
     spellcheck={false}
     containerStyle="min-width: 180px"

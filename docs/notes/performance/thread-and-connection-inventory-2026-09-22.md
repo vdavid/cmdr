@@ -184,14 +184,26 @@ Per extra identity, for as long as it is indexed:
 costs **+2 threads**, +1 FSEvents stream, +2 write connections, and a fresh full network scan, persisting until the app
 restarts.
 
-### A smaller loose end, not a leak
+### What the importance databases showed (both halves since fixed)
 
-`lsof` shows 8 and 6 open connections on the two SMB **importance** databases in a run where no SMB volume is indexed at
-all (the only `periodic full refresh` lines after 2026-09-21T20:22:08 are 24 × `'root'`). Those are thread-local read
-connections from the read path, held by tokio blocking threads that touched the share earlier — the documented
-`ThreadConnCache` behaviour, not a running scheduler. ⚠️ Note the asymmetry worth a second look someday: no
-`index-smb-*.db` exists on disk any more, while all three `importance-smb-*.db` survive. Whatever removes an SMB index
-DB is not removing its importance sibling.
+In this run `lsof` showed 8 and 6 open connections on the two SMB **importance** databases while no SMB volume was
+indexed at all (the only `periodic full refresh` lines after 2026-09-21T20:22:08 are 24 × `'root'`). Those were
+thread-local read connections from the read path, held by tokio blocking threads that had touched the share earlier, and
+not a running scheduler. And no `index-smb-*.db` existed on disk any more, while all three `importance-smb-*.db` (34 MB,
+20 MB, 20 KB) survived.
+
+Both had one cause each, and neither is how the code behaves now (GitHub issue #327):
+
+- **The files.** Every path that removed an index database unlinked `index-{id}.db` and stopped: forgetting a drive,
+  "Clear index", and the retention cap's eviction. Removal is now one door that takes a volume's importance database
+  with its index (`crates/cmdr-index/DETAILS.md` § "A volume's files, and the one door they leave by").
+- **The connections.** Nothing asked a thread to let go of a connection it had cached to a database that stopped or went
+  away. A stop or a removal now retires them, and each thread closes its own at its next read
+  (`crates/cmdr-fs/DETAILS.md` § "Retiring cached read connections"). ⚠️ That bound is the honest one: a thread that
+  never reads again keeps its connections until it exits.
+
+The three files this run found are still on that machine: nothing sweeps a leftover automatically, and "Clear index" in
+settings is what reclaims one. Why there's no sweep is in the first doc above.
 
 ## SQLite connections: 119, bounded twice, and the 16 MB figure is stale
 
@@ -286,7 +298,6 @@ construction, and the numbers observed are what the designs predict.
 - **Whether the aliasing is still reachable in the current build.** It is proven for 2026-09-19. Reproduce by mounting
   the same share twice, once by IP and once by mDNS name, and checking whether two `start_indexing: done` lines appear.
   That is the one test that says whether this needs fixing now or is already narrowed by other work.
-- **The importance/index DB asymmetry** above: why an SMB index DB is removed while its importance sibling survives.
 - **Thread count growth over a run.** ⚠️ Nothing here measures it directly: 56 threads at 25 h against 69-71 in the
   2026-08-03 note is suggestive but the two runs had different volume counts and different UI state, so it is not a
   comparison. The honest instrument is a periodic `ps -M | wc -l` logged hourly, which the app could emit itself

@@ -270,6 +270,46 @@ fn verify_detects_new_directory() {
     writer.shutdown();
 }
 
+/// A directory that turns out to be a filesystem mounted inside the boot tree is
+/// the mount's own drive, so navigating past it doesn't write it into `root`'s
+/// index, nor walk into it.
+#[test]
+#[cfg(target_os = "macos")]
+fn verify_skips_a_mount_inside_the_boot_tree() {
+    use crate::indexing::host::volumes::{self, FakeVolumeProvider, MountIdentity};
+    let _pool_guard = READ_POOL_TEST_MUTEX.lock().unwrap();
+    let _serialized = crate::indexing::handle::test_lock();
+    let fs_root = test_tempdir();
+    fs::write(fs_root.path().join("file1.txt"), "hello").unwrap();
+
+    let (writer, db_path, _db_dir) = setup_writer();
+    let parent_id = ensure_path_in_db(&db_path, fs_root.path(), &writer);
+    insert_children_from_disk(&writer, parent_id, fs_root.path());
+    install_read_pool(&db_path);
+
+    let mount = fs_root.path().join("pCloud Drive");
+    fs::create_dir(&mount).unwrap();
+    fs::write(mount.join("theirs.txt"), "x").unwrap();
+    let provider = FakeVolumeProvider::shared();
+    provider
+        .mount("/", MountIdentity::from_raw(1))
+        .mount(&mount, MountIdentity::from_raw(2));
+    let _installed = volumes::install_for_test(provider);
+
+    let rt = tokio::runtime::Runtime::new().unwrap();
+    rt.block_on(verify_root(fs_root.path(), &writer));
+
+    writer.flush_blocking().unwrap();
+    let children_after = list_db_children_on(&db_path, parent_id);
+    assert!(
+        !children_after.iter().any(|e| e.name == "pCloud Drive"),
+        "the mount point gets no row in the boot disk's index"
+    );
+
+    remove_read_pool();
+    writer.shutdown();
+}
+
 /// Leak A, end to end: a new directory appearing on disk must credit the
 /// ancestor chain for its bytes EXACTLY once. `scan_subtree` →
 /// `ComputeSubtreeAggregates` now repairs ancestors on the writer; with the

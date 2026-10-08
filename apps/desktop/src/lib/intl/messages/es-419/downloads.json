@@ -43,10 +43,6 @@
   "@downloads.shortcutRow.invalidCombo": {
     "sourceHash": "0f41b13"
   },
-  "downloads.shortcutRow.registerFailed": "No se pudo registrar: {reason}",
-  "@downloads.shortcutRow.registerFailed": {
-    "sourceHash": "e783852"
-  },
   "downloads.shortcutRow.addModifier": "Agrega un modificador (⌘, ⌃, ⌥ o ⇧)",
   "@downloads.shortcutRow.addModifier": {
     "sourceHash": "1336fa6"

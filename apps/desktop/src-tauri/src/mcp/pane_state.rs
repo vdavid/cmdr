@@ -19,7 +19,11 @@ pub struct TabInfo {
 }
 
 /// Represents a file entry in a pane (simplified subset of the main FileEntry).
-#[derive(Debug, Clone, Default, Serialize, Deserialize, specta::Type)]
+///
+/// `Default` exists for tests only: its zero is a file nobody looked at, claiming
+/// `is_directory: false`. Production rows always arrive whole from the frontend.
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
+#[cfg_attr(test, derive(Default))]
 #[serde(rename_all = "camelCase")]
 pub struct PaneFileEntry {
     pub name: String,
@@ -67,6 +71,8 @@ pub struct PaneFileEntry {
 }
 
 /// State of a single pane.
+// DEFAULT-OK: zero is "the frontend hasn't pushed this pane yet": no path, no rows, and
+// no `PaneFileEntry` to fake, which is what `PaneStateStore` holds until the first push.
 #[derive(Debug, Clone, Serialize, Deserialize, Default, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct PaneState {
@@ -111,6 +117,12 @@ pub struct PaneState {
     /// resource layer suppresses the section when it's `None`.
     #[serde(default)]
     pub type_to_jump: Option<TypeToJumpInfo>,
+    /// The quick filter's pattern while it narrows the pane (`None` when off). The
+    /// files, counts, and indices here are then the FILTERED rows, which is what
+    /// an agent must know before reading an absent file as gone. Always on the wire,
+    /// like `type_to_jump`; the YAML layer prints it only when set.
+    #[serde(default)]
+    pub quick_filter: Option<String>,
     /// Set while a mount the pane tried didn't go through, whichever way the pane
     /// is showing it (the "Couldn't mount share" pane, or the login form an
     /// auth-class failure routes to). Without it a failed mount is invisible from
@@ -119,6 +131,29 @@ pub struct PaneState {
     /// in the resource. Cleared by the next push from any other view.
     #[serde(default)]
     pub mount_error: Option<MountErrorInfo>,
+    /// Where the pane's listing stands. Without it, an empty folder, one still
+    /// loading, one whose server stopped answering, and an error screen all read
+    /// as `totalFiles: 0` with no rows.
+    #[serde(default)]
+    pub listing: PaneListing,
+}
+
+/// Where a pane's listing stands, as the pane shows it.
+// DEFAULT-OK: `Settled` is what a pane that never pushed one says: it shows what it
+// shows, which is every pane that isn't mid-load or on an error screen.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum PaneListing {
+    /// The rows (or the pane's own view) are what's on screen.
+    #[default]
+    Settled,
+    /// A listing is on its way and hasn't gone quiet.
+    Loading,
+    /// The listing's volume stopped answering mid-read. The pane says so and keeps
+    /// retrying in the background; it lands on its own when the volume answers.
+    Stalled,
+    /// The pane shows an error screen for this folder (`recentErrors` says why).
+    Error,
 }
 
 /// Why a pane is showing a mount failure rather than a directory.
@@ -360,7 +395,9 @@ mod tests {
             show_hidden: false,
             tabs: vec![],
             type_to_jump: None,
+            quick_filter: None,
             mount_error: None,
+            listing: Default::default(),
         };
 
         store.set_left(state.clone());

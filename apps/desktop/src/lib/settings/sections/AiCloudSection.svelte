@@ -7,6 +7,8 @@
     import SectionCard from '$lib/ui/SectionCard.svelte'
     import ProviderSetupSteps from '$lib/ai-provider-setup/ProviderSetupSteps.svelte'
     import { ProviderSetupController } from '$lib/ai-provider-setup/provider-setup.svelte'
+    import { followPresetHostVerdicts } from '$lib/ai-provider-setup/preset-hosts.svelte'
+    import { managedAiRefusalMessage } from '$lib/managed-policy/ai-refusal'
     import { getSetting, setSetting, onSpecificSettingChange, cloudProviderPresets } from '$lib/settings'
     import { pushConfigToBackend } from '$lib/settings/ai-config'
     import type { SecretErrorMessage } from './ai-secret-error'
@@ -56,7 +58,7 @@
                 id: secretErrorToastId,
             })
         },
-        onKeyPersisted: () => void pushConfigToBackend(),
+        onKeyChanged: () => void pushConfigToBackend(),
     })
 
     const unlistenFns: Array<() => void> = []
@@ -103,8 +105,19 @@
         }
     })
 
+    // A service the organization refuses stays listed, disabled, with the reason beside it.
+    const presetHosts = followPresetHostVerdicts()
     const providerSelectItems = $derived<SelectItem[]>(
-        cloudProviderPresets.map((preset) => ({ value: preset.id, label: preset.name })),
+        cloudProviderPresets.map((preset) =>
+            presetHosts.isRefused(preset.id)
+                ? {
+                      value: preset.id,
+                      label: preset.name,
+                      description: tString('ai.managed.serviceNotAllowed'),
+                      disabled: true,
+                  }
+                : { value: preset.id, label: preset.name },
+        ),
     )
 </script>
 
@@ -161,7 +174,11 @@
         </div>
     {/if}
 
-    {#if controller.status === 'checking'}
+    {#if controller.status === 'managed' && controller.managedRefusal}
+        <p class="connection-status managed-status" role="status">
+            {managedAiRefusalMessage(controller.managedRefusal)}
+        </p>
+    {:else if controller.status === 'checking'}
         <div class="connection-status">
             <Spinner size="sm" />
             <span class="connection-status-text">{tString('ai.cloud.checking')}</span>
@@ -250,6 +267,11 @@
         gap: var(--spacing-sm);
         padding: var(--spacing-xs) 0;
         font-size: var(--font-size-sm);
+    }
+
+    .managed-status {
+        margin: 0;
+        color: var(--color-text-secondary);
     }
 
     .connection-status-icon {

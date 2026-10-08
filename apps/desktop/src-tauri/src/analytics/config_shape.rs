@@ -12,7 +12,8 @@
 //! - Plus the small [`CATEGORICAL_STRING_KEYS`] allowlist: categorical enum-strings (theme, view
 //!   preferences, AI mode, sort mode, etc.) that are non-PII despite being strings.
 //! - Exclude every other string, and all objects and arrays.
-//! - Add `fdaGranted` explicitly (it's runtime state, not a setting).
+//! - Add `fdaGranted` and `managedByOrganization` explicitly (runtime state, not settings). The
+//!   latter is one coarse bool: never which keys an organization set.
 
 use serde_json::{Map, Value};
 
@@ -51,12 +52,20 @@ const CATEGORICAL_STRING_KEYS: &[&str] = &[
     "network.timeoutMode",
 ];
 
+/// The runtime state the snapshot carries beside the settings.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct RuntimeState {
+    pub fda_granted: bool,
+    /// Whether an organization's managed policy restricts anything on this Mac.
+    pub managed_by_organization: bool,
+}
+
 /// Builds the config-shape object from the raw `settings.json` value plus the runtime FDA-granted
 /// flag. Pure: no I/O, so it's directly unit-testable against a seeded settings JSON.
 ///
 /// `raw_settings` is the parsed `settings.json` (a flat object with dot-notation string keys). A
 /// non-object value (missing/corrupt file) yields a snapshot with only `fdaGranted`.
-pub fn build_config_shape(raw_settings: &Value, fda_granted: bool) -> Value {
+pub fn build_config_shape(raw_settings: &Value, runtime: RuntimeState) -> Value {
     let mut shape = Map::new();
 
     if let Some(obj) = raw_settings.as_object() {
@@ -67,9 +76,13 @@ pub fn build_config_shape(raw_settings: &Value, fda_granted: bool) -> Value {
         }
     }
 
-    // FDA-granted is runtime state, not a setting, so add it explicitly. Last so it can't be
-    // shadowed by a (nonexistent) same-named setting.
-    shape.insert("fdaGranted".to_string(), Value::Bool(fda_granted));
+    // Runtime state, not settings, so added explicitly. Last so neither can be shadowed by a
+    // (nonexistent) same-named setting.
+    shape.insert("fdaGranted".to_string(), Value::Bool(runtime.fda_granted));
+    shape.insert(
+        "managedByOrganization".to_string(),
+        Value::Bool(runtime.managed_by_organization),
+    );
 
     Value::Object(shape)
 }
@@ -96,7 +109,7 @@ mod tests {
             "listing.briefColumnWidthMaxPx": 320,
             "appearance.textSize": 125.0,
         });
-        let shape = build_config_shape(&settings, false);
+        let shape = build_config_shape(&settings, RuntimeState::default());
         assert_eq!(shape["listing.showHiddenFiles"], json!(true));
         assert_eq!(shape["listing.briefColumnWidthMaxPx"], json!(320));
         assert_eq!(shape["appearance.textSize"], json!(125.0));
@@ -109,7 +122,7 @@ mod tests {
             "ai.provider": "cloud",
             "listing.directorySortMode": "name",
         });
-        let shape = build_config_shape(&settings, false);
+        let shape = build_config_shape(&settings, RuntimeState::default());
         assert_eq!(shape["theme.mode"], json!("dark"));
         assert_eq!(shape["ai.provider"], json!("cloud"));
         assert_eq!(shape["listing.directorySortMode"], json!("name"));
@@ -120,10 +133,10 @@ mod tests {
         // A BCP-47 tag or the `system` sentinel: a fixed vocabulary drawn from the
         // shipped catalogs, so it belongs on the allowlist rather than being dropped
         // with the free-text strings.
-        let picked = build_config_shape(&json!({ "appearance.language": "hu" }), false);
+        let picked = build_config_shape(&json!({ "appearance.language": "hu" }), RuntimeState::default());
         assert_eq!(picked["appearance.language"], json!("hu"));
 
-        let following_the_os = build_config_shape(&json!({ "appearance.language": "system" }), false);
+        let following_the_os = build_config_shape(&json!({ "appearance.language": "system" }), RuntimeState::default());
         assert_eq!(following_the_os["appearance.language"], json!("system"));
     }
 
@@ -138,7 +151,7 @@ mod tests {
             "ai.cloudProviderConfigs": "{\"openai\":{\"baseUrl\":\"https://api.openai.com\"}}",
             "behavior.fileSystemWatching.globalGoToLatestShortcut.binding": "\u{2303}\u{2325}\u{2318}J",
         });
-        let shape = build_config_shape(&settings, false);
+        let shape = build_config_shape(&settings, RuntimeState::default());
         let obj = shape.as_object().expect("object");
 
         // None of the PII-shaped keys are present.
@@ -163,7 +176,7 @@ mod tests {
             "someArray": [1, 2, 3],
             "someNull": null,
         });
-        let shape = build_config_shape(&settings, false);
+        let shape = build_config_shape(&settings, RuntimeState::default());
         let obj = shape.as_object().expect("object");
         assert!(!obj.contains_key("someObject"));
         assert!(!obj.contains_key("someArray"));
@@ -172,20 +185,44 @@ mod tests {
 
     #[test]
     fn adds_fda_granted_explicitly() {
-        let shape = build_config_shape(&json!({}), true);
+        let shape = build_config_shape(&json!({}), fda(true));
         assert_eq!(shape["fdaGranted"], json!(true));
 
-        let shape_denied = build_config_shape(&json!({}), false);
+        let shape_denied = build_config_shape(&json!({}), fda(false));
         assert_eq!(shape_denied["fdaGranted"], json!(false));
     }
 
     #[test]
-    fn non_object_settings_yields_only_fda() {
+    fn adds_the_managed_flag_explicitly() {
+        let managed = RuntimeState {
+            managed_by_organization: true,
+            ..RuntimeState::default()
+        };
+        assert_eq!(
+            build_config_shape(&json!({}), managed)["managedByOrganization"],
+            json!(true)
+        );
+        assert_eq!(
+            build_config_shape(&json!({}), fda(true))["managedByOrganization"],
+            json!(false)
+        );
+    }
+
+    fn fda(granted: bool) -> RuntimeState {
+        RuntimeState {
+            fda_granted: granted,
+            ..RuntimeState::default()
+        }
+    }
+
+    #[test]
+    fn non_object_settings_yields_only_the_runtime_flags() {
         // A missing/corrupt settings file parses to something non-object; the snapshot still has
-        // a valid shape carrying just the runtime flag.
-        let shape = build_config_shape(&json!("not an object"), true);
+        // a valid shape carrying just the runtime flags.
+        let shape = build_config_shape(&json!("not an object"), fda(true));
         let obj = shape.as_object().expect("object");
-        assert_eq!(obj.len(), 1);
+        assert_eq!(obj.len(), 2);
         assert_eq!(obj["fdaGranted"], json!(true));
+        assert_eq!(obj["managedByOrganization"], json!(false));
     }
 }

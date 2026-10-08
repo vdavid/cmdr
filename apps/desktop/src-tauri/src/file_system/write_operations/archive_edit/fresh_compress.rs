@@ -50,6 +50,18 @@ impl VolumeReadStream for PausableSpoolStream {
     fn bytes_read(&self) -> u64 {
         self.inner.bytes_read()
     }
+
+    /// This operation's own Cancel and pause, for a destination that buffers
+    /// ahead of this stream (S3).
+    fn stop_signal(&self) -> crate::file_system::volume::ScanStop {
+        crate::file_system::volume::ScanStop::new(
+            Arc::clone(&self.state) as Arc<dyn crate::file_system::volume::ScanStopSignal>
+        )
+    }
+
+    fn modified_at(&self) -> Option<std::time::SystemTime> {
+        self.inner.modified_at()
+    }
 }
 
 #[allow(
@@ -99,7 +111,7 @@ pub(super) async fn start(
         .map_or_else(|| source_volume.lane_key().to_string(), |(id, _)| id.clone());
     let state = Arc::new(
         WriteOperationState::new(Duration::from_millis(progress_interval_ms))
-            .with_journal_volumes(source_volume_id, parent_volume_id.clone()),
+            .with_journal_volumes(source_volume_id.clone(), parent_volume_id.clone()),
     );
     let mut lanes = vec![source_volume.lane_key(), dest_lane];
     lanes.dedup();
@@ -153,7 +165,13 @@ pub(super) async fn start(
                 return;
             }
 
-            super::super::journal::open_archive_op(&op_id, initiator, &parent_volume_id);
+            super::super::journal::open_compress_op(
+                &op_id,
+                initiator,
+                &source_volume_id,
+                &parent_volume_id,
+                source_paths.len() as u64,
+            );
             let hooks = Arc::new(MutatorHooks::new(
                 Arc::clone(&state),
                 Arc::clone(&events),
@@ -210,7 +228,17 @@ pub(super) async fn start(
                     net_new,
                 );
             }
-            super::super::journal::finalize_archive_op(&op_id, ArchiveSubkind::Compress, net_new, execution_status);
+            super::super::journal::finalize_archive_op(
+                &op_id,
+                ArchiveSubkind::Compress,
+                net_new,
+                execution_status,
+                Some(super::super::journal::PackedTotals {
+                    entries: final_progress.entries_total as u64,
+                    entries_done: final_progress.entries_done as u64,
+                    source_bytes: final_progress.bytes_total,
+                }),
+            );
             emit_archive_terminal(
                 events.as_ref(),
                 &op_id,

@@ -7,6 +7,7 @@
 //! `reqwest::Error`'s typed predicates.
 
 use cmdr_fs::volume::VolumeError;
+use cmdr_fs::volume::tls::has_tls_refusal;
 use log::debug;
 use reqwest::StatusCode;
 
@@ -158,20 +159,6 @@ pub(crate) fn classify_connect_error(err: &reqwest::Error) -> WebdavConnectError
         return WebdavConnectError::Unreachable(err.to_string());
     }
     WebdavConnectError::Transport(err.to_string())
-}
-
-/// Whether an `io::Error` of kind `InvalidData` sits anywhere under `err`.
-fn has_tls_refusal(err: &reqwest::Error) -> bool {
-    let mut source = std::error::Error::source(err);
-    while let Some(inner) = source {
-        if let Some(io) = inner.downcast_ref::<std::io::Error>()
-            && io.kind() == std::io::ErrorKind::InvalidData
-        {
-            return true;
-        }
-        source = inner.source();
-    }
-    false
 }
 
 #[cfg(test)]

@@ -13,6 +13,14 @@ printf 'deep\n' > "$root/nested/deep/file.txt"
 printf 'ok\n' > "$root/naïve name.txt"
 printf 'sun\n' > "$root/photos/2024 summer/beach.txt"
 
+# A file dated years back (2021-01-29 08:30:15 UTC, `conformance::SOURCE_DATE_SECS`).
+# ❗ `mod_dav` has no way to SET a date over the wire, so this is the only way a
+# cell gets a file whose date can't be mistaken for "now": the read stream's
+# date cells copy it off and insist the date travels.
+# `cmdr_webdav::volume::testing::FIXTURE_DATED_FILE` names it.
+printf 'from 2021\n' > "$root/dated.txt"
+touch -d @1611909015 "$root/dated.txt"
+
 # A directory big enough that a listing is real work for the multistatus parser.
 i=0
 while [ "$i" -lt 300 ]; do

@@ -44,8 +44,11 @@ pub mod importance;
 pub mod media_index;
 
 // Crate-internal, promising a host nothing: the one content-fingerprint helper
-// behind both disposable caches' policy stamps.
+// behind both disposable caches' policy stamps, and the one place that names and
+// removes the files the three subsystems keep per volume.
+mod drive_index_relocation;
 mod fingerprint;
+mod volume_files;
 
 //noinspection RsUnusedImport
 // We dev-depend on ourselves so the `testing` and `tooling` features are on for

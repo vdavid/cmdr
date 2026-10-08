@@ -122,27 +122,18 @@ else
 fi
 
 echo ""
-echo "Applying 90-day lifecycle rule to $ERROR_REPORTS_BUCKET_NAME..."
-# Lifecycle subcommand names vary across wrangler versions. We probe the help
-# output and pick the first matching form. If none work, print guidance instead
-# of failing the whole script.
-LIFECYCLE_HELP=$(npx wrangler r2 bucket lifecycle --help 2>&1 || true)
-if echo "$LIFECYCLE_HELP" | grep -q " add "; then
-    # wrangler 3.x / 4.x form: takes --name, --prefix (optional), --expire-days.
-    # Idempotency: lifecycle add is tolerant of re-running with the same rule name.
-    npx wrangler r2 bucket lifecycle add "$ERROR_REPORTS_BUCKET_NAME" \
-        --name "expire-90-days" \
-        --expire-days 90 2>/dev/null \
-        || echo "Note: lifecycle rule may already exist (this is fine) or the wrangler CLI subcommand differs. Verify with: npx wrangler r2 bucket lifecycle list $ERROR_REPORTS_BUCKET_NAME"
-elif echo "$LIFECYCLE_HELP" | grep -q " set "; then
-    echo "Your wrangler uses 'lifecycle set'. Please run it manually:"
-    echo "   npx wrangler r2 bucket lifecycle set $ERROR_REPORTS_BUCKET_NAME <rules.json>"
-    echo "   where rules.json expires objects older than 90 days."
+echo "Applying 90-day lifecycle rule to $ERROR_REPORTS_BUCKET_NAME (prefix error-reports/ only)..."
+# The rule MUST stay scoped to `error-reports/`: the same bucket holds the daily license backups
+# under `backups/licenses/`, and an unscoped rule would delete them at 90 days.
+ERROR_REPORTS_LIFECYCLE_RULE="expire-error-reports-90-days"
+if npx wrangler r2 bucket lifecycle list "$ERROR_REPORTS_BUCKET_NAME" 2>/dev/null | grep -q "$ERROR_REPORTS_LIFECYCLE_RULE"; then
+    echo "Lifecycle rule already exists: $ERROR_REPORTS_LIFECYCLE_RULE"
 else
-    echo "Note: 'wrangler r2 bucket lifecycle' subcommand not recognized."
-    echo "  Run 'npx wrangler r2 bucket lifecycle --help' and apply a 90-day"
-    echo "  expiration rule manually, or via the Cloudflare dashboard."
+    npx wrangler r2 bucket lifecycle add "$ERROR_REPORTS_BUCKET_NAME" \
+        "$ERROR_REPORTS_LIFECYCLE_RULE" "error-reports/" \
+        --expire-days 90 --force
 fi
+echo "Verify with: npx wrangler r2 bucket lifecycle list $ERROR_REPORTS_BUCKET_NAME"
 
 echo ""
 echo "Checking KV namespace for error report bookkeeping: $ERROR_REPORT_META_KV_NAME"

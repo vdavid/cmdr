@@ -1,0 +1,40 @@
+# CodeQL config for `codeql.yml`: scans the code we write and ship. Test code stays out on purpose:
+# its hard-coded passwords, nonces, and `http://` URLs are the point of the test, and every one of
+# them read as a high-severity alert. `codeql.yml` drops inline `#[cfg(test)]` modules the same way,
+# through the Rust extractor's `cargo_cfg_overrides`. A single false positive in shipped code goes
+# in `accepted-findings.json` instead, by rule and file, with its reason.
+name: Cmdr CodeQL config
+
+paths-ignore:
+  # Code we don't write by hand, and build output that only exists in a local run.
+  - '**/node_modules/**'
+  - vendor
+  - '**/*.gen.*'
+  - '**/target/**'
+  - '**/.svelte-kit/**'
+  - '**/dist/**'
+  - '**/build/**'
+  # Test fixtures, and the E2E harness, which drives the app by evaluating script strings in its
+  # own webview: CodeQL reads each `JSON.stringify`'d selector constant as code injection.
+  - apps/desktop/test/fixtures
+  - apps/desktop/test/e2e-*
+  # Rust test code that sits in its own files (`#[cfg(test)] mod foo_test;` and friends), and the
+  # test harnesses that live-server suites share (`cmdr-s3`'s `volume/testing/`).
+  - '**/*_test.rs'
+  - '**/*_tests.rs'
+  - '**/tests.rs'
+  - '**/tests/**'
+  - '**/testing/**'
+  - '**/test_support.rs'
+  - '**/test_support/**'
+  - '**/*_test_support.rs'
+  - '**/test_utils.rs'
+  - '**/test_fixtures.rs'
+
+query-filters:
+  # Rust's cleartext-logging query decides what's sensitive by identifier name: it flagged 38 log
+  # lines across 20 files for an `account` label, a `session_id`, a temp file's `uuid`, or an SMB
+  # `username`, and none logged a secret (verified 2026-10-08, CodeQL 2.27.1). Logs stay on the
+  # Mac, and an error report runs them through the redactor before upload (`error_reporter/`).
+  - exclude:
+      id: rust/cleartext-logging

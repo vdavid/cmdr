@@ -127,6 +127,26 @@
   "@suggestedOps.approvalUnsure": {
     "sourceHash": "fba515a"
   },
+  "suggestedOps.refusal.label": "Tại sao chưa bắt đầu được",
+  "@suggestedOps.refusal.label": {
+    "sourceHash": "e176570"
+  },
+  "suggestedOps.refusal.nothingToRun.message": "Cmdr không đọc được tệp nào trong số này khi bạn phê duyệt, nên chưa có gì chạy.",
+  "@suggestedOps.refusal.nothingToRun.message": {
+    "sourceHash": "3018819"
+  },
+  "suggestedOps.refusal.nothingToRun.suggestion": "Hãy kiểm tra xem các tệp đó có còn ở đó không, rồi phê duyệt lại hoặc từ chối.",
+  "@suggestedOps.refusal.nothingToRun.suggestion": {
+    "sourceHash": "f4cfc9e"
+  },
+  "suggestedOps.refusal.couldNotStart.message": "Cmdr không chuyển được đề xuất này thành một thao tác, nên chưa có gì chạy.",
+  "@suggestedOps.refusal.couldNotStart.message": {
+    "sourceHash": "77ef48b"
+  },
+  "suggestedOps.refusal.couldNotStart.suggestion": "Hãy từ chối, rồi nhờ AI đề xuất lại.",
+  "@suggestedOps.refusal.couldNotStart.suggestion": {
+    "sourceHash": "5b5b779"
+  },
   "suggestedOps.indicatorTooltip": "Có đề xuất từ AI đang chờ. Bấm để xem lại.",
   "@suggestedOps.indicatorTooltip": {
     "sourceHash": "4508b0b"

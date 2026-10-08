@@ -80,6 +80,14 @@
   "@updates.status.installing": {
     "sourceHash": "214ef12"
   },
+  "updates.status.managedOff": "Cmdr 的更新由你的組織管理。",
+  "@updates.status.managedOff": {
+    "sourceHash": "aa342dc"
+  },
+  "updates.status.heldByPolicy": "Cmdr {available} 已經推出，但你的組織讓這部 Mac 停留在 {ceiling} 或更早的版本。",
+  "@updates.status.heldByPolicy": {
+    "sourceHash": "5c9b196"
+  },
   "updates.status.ready": "更新項目 v{next} 已準備好。重新啟動即可套用。",
   "@updates.status.ready": {
     "sourceHash": "2c226ff"

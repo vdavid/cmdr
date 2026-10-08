@@ -13,10 +13,10 @@
 // scope they're the escape hatch for a folder importance ranks too low to reach. Adding
 // one kicks an immediate indexing pass backend-side.
 
-import { getSetting, setSetting } from '$lib/settings'
+import { getSetting } from '$lib/settings'
 import { mediaIndexSetAlwaysIndexFolder } from '$lib/tauri-commands'
 import { getAppLogger } from '$lib/logging/logger'
-import { toggleInArray } from './network-volume-prefs'
+import { persistThenApply } from './network-volume-prefs'
 
 const log = getAppLogger('media-index')
 
@@ -34,16 +34,15 @@ export function isFolderChosen(folder: string): boolean {
  * Add or remove a chosen folder. Persists the array AND live-applies via IPC (adding
  * kicks an immediate pass backend-side). Removing stops future indexing but deletes
  * nothing: the folder's existing rows stay searchable until the user reclaims the space.
- * On IPC failure the persisted value rolls back so the setting and backend stay in
- * agreement.
+ * On IPC failure this folder's persisted choice rolls back so the setting and backend
+ * stay in agreement.
  */
 export async function setFolderChosen(folder: string, chosen: boolean): Promise<void> {
-  const previous = getChosenFolders()
-  setSetting('mediaIndex.alwaysIndexFolders', toggleInArray(previous, folder, chosen))
   try {
-    await mediaIndexSetAlwaysIndexFolder(folder, chosen)
+    await persistThenApply({ setting: 'mediaIndex.alwaysIndexFolders', id: folder, on: chosen, rollback: true }, () =>
+      mediaIndexSetAlwaysIndexFolder(folder, chosen),
+    )
   } catch (err) {
-    setSetting('mediaIndex.alwaysIndexFolders', previous)
     log.warn('Failed to apply chosen folder {folder}: {err}', { folder, err: String(err) })
     throw err
   }

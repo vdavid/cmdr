@@ -394,7 +394,7 @@
   },
   "queryUi.recent.systemDirsIncluded": "systemmappar inkluderade",
   "@queryUi.recent.systemDirsIncluded": {
-    "sourceHash": "b7996cc"
+    "sourceHash": "c928638"
   },
   "queryUi.recent.resultCount": "{countText} {count, plural, one {resultat} other {resultat}} förra gången",
   "@queryUi.recent.resultCount": {
@@ -527,15 +527,6 @@
   "queryUi.size.comparator.between": "mellan",
   "@queryUi.size.comparator.between": {
     "sourceHash": "fbb27fb"
-  },
-  "queryUi.size.unit.byte": "byte",
-  "@queryUi.size.unit.byte": {
-    "sourceHash": "1c31626",
-    "sameAsSourceJustification": "byte is 'byte' in Swedish, invariant (glossary byte entry: '1 byte / 2 byte', high). The singular unit word is identical to English."
-  },
-  "queryUi.size.unit.bytes": "byte",
-  "@queryUi.size.unit.bytes": {
-    "sourceHash": "277089d"
   },
   "queryUi.size.customCell": "anpassad…",
   "@queryUi.size.customCell": {

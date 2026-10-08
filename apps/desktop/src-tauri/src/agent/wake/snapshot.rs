@@ -71,7 +71,7 @@ pub fn readiness_snapshot() -> WakeReadiness {
 /// acting on a copy that a later refresh has already moved past.
 pub fn refresh_readiness<R: Runtime>(app: &AppHandle<R>) {
     let gates = AgentGates {
-        ask_cmdr_enabled: crate::settings::load_ask_cmdr_enabled(app),
+        ask_cmdr: crate::settings::load_ask_cmdr_switch(app),
         fda_pending: crate::fda_gate::is_fda_pending_runtime(),
         provider: provider_gate(app),
     };
@@ -105,6 +105,10 @@ fn provider_gate<R: Runtime>(app: &AppHandle<R>) -> ProviderGate {
         BackendResolution::Ready(_) => ProviderGate::Ready,
         BackendResolution::Off => ProviderGate::Off,
         BackendResolution::NoCloudConsent => ProviderGate::NeedsCloudConsent,
+        // The organization's answer, already given: silent like the user's own "off", and the
+        // stored backlog stays (the policy can lift again). `DisableAI` reaches readiness through
+        // the switch first (`AskCmdrSwitch::ManagedOff`), with the same effect.
+        BackendResolution::Managed(_) => ProviderGate::Off,
         BackendResolution::NotConfigured(_) | BackendResolution::UnknownProvider(_) => ProviderGate::NotConfigured,
     }
 }

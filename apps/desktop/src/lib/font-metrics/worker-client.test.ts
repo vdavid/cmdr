@@ -9,9 +9,11 @@ import type { MeasureRequest, MeasureResponse } from './measure-worker'
 
 const spec = { fontFamily: 'Menlo', fontWeight: 400, fontSize: 12 }
 
-vi.mock('$lib/logging/logger', () => ({
-  getAppLogger: () => ({ debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() }),
+const { logger } = vi.hoisted(() => ({
+  logger: { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() },
 }))
+
+vi.mock('$lib/logging/logger', () => ({ getAppLogger: () => logger }))
 
 /** How the fake worker should behave for a case. */
 type WorkerBehavior = 'answer' | 'error-response' | 'silent' | 'throw-on-construct'
@@ -57,10 +59,17 @@ function installCanvas() {
       : null) as typeof HTMLCanvasElement.prototype.getContext)
 }
 
-async function loadClient(behavior: WorkerBehavior) {
+/** Which of the two worker prerequisites the fake WebView offers. Both, unless a case says otherwise. */
+interface Platform {
+  worker?: boolean
+  offscreenCanvas?: boolean
+}
+
+async function loadClient(behavior: WorkerBehavior, platform: Platform = {}) {
   FakeWorker.behavior = behavior
   constructed.length = 0
-  vi.stubGlobal('Worker', FakeWorker)
+  vi.stubGlobal('Worker', platform.worker === false ? undefined : FakeWorker)
+  vi.stubGlobal('OffscreenCanvas', platform.offscreenCanvas === false ? undefined : vi.fn())
   vi.resetModules()
   return import('./worker-client')
 }
@@ -72,6 +81,7 @@ beforeEach(() => {
 afterEach(() => {
   vi.unstubAllGlobals()
   vi.restoreAllMocks()
+  vi.clearAllMocks()
 })
 
 describe('measureOffMainThread', () => {
@@ -160,5 +170,38 @@ describe('measureOffMainThread', () => {
     const { measureOffMainThread } = await loadClient('throw-on-construct')
 
     await expect(measureOffMainThread(spec, new Uint32Array([0x41]))).rejects.toThrow('context unavailable')
+  })
+
+  // WebKitGTK on Linux starts a `Worker` but has no `OffscreenCanvas`, so the worker used to fail its first job
+  // and log a warn on every launch.
+  it('skips the worker without a warn when the WebView has no OffscreenCanvas, and says so once', async () => {
+    const { measureOffMainThread } = await loadClient('answer', { offscreenCanvas: false })
+
+    const first = await measureOffMainThread(spec, new Uint32Array([0x41]))
+    const second = await measureOffMainThread(spec, new Uint32Array([0x42]))
+
+    expect(first.via).toBe('main-thread')
+    expect(second.via).toBe('main-thread')
+    expect(constructed).toHaveLength(0)
+    expect(logger.info).toHaveBeenCalledOnce()
+    expect(logger.warn).not.toHaveBeenCalled()
+  })
+
+  it('skips the worker without a warn when the WebView has no Worker', async () => {
+    const { measureOffMainThread } = await loadClient('answer', { worker: false })
+
+    const result = await measureOffMainThread(spec, new Uint32Array([0x41]))
+
+    expect(result.via).toBe('main-thread')
+    expect(logger.info).toHaveBeenCalledOnce()
+    expect(logger.warn).not.toHaveBeenCalled()
+  })
+
+  it('still warns when a supported worker fails for real', async () => {
+    const { measureOffMainThread } = await loadClient('error-response')
+
+    await measureOffMainThread(spec, new Uint32Array([0x41]))
+
+    expect(logger.warn).toHaveBeenCalledOnce()
   })
 })

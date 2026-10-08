@@ -11,6 +11,10 @@ on:
   push:
     branches:
       - main
+
+permissions:
+  contents: read
+
 jobs:
   # ===========================================
   # Determine which jobs to run based on changed files
@@ -58,9 +62,13 @@ jobs:
           filters: |
             rust:
               - 'apps/desktop/src-tauri/**'
+              - 'apps/desktop/test/s3-servers/**'
               - 'apps/desktop/test/sftp-servers/**'
               - 'apps/desktop/test/smb-servers/**'
               - 'apps/desktop/test/webdav-servers/**'
+              # The managed-policy drift guard embeds these (`managed_policy/public_docs_test.rs`).
+              - 'apps/website/public/mdm/**'
+              - 'apps/website/src/lib/trust.ts'
               - 'crates/**'
               - 'Cargo.toml'
               - 'Cargo.lock'
@@ -224,6 +232,11 @@ jobs:
       - name: Check index-crate isolation
         run: ./scripts/check/check --check index-crate-isolation --ci
 
+      # A dependency bump past a vendored fork's version makes cargo quietly resolve
+      # crates.io again, so the fix stops shipping with nothing but a build warning.
+      - name: Check vendored patches still apply
+        run: ./scripts/check/check --check desktop-rust-vendor-patch-applied --ci
+
       - name: Check cfg-gate
         run: ./scripts/check/check --check desktop-rust-cfg-gate --ci
 
@@ -339,6 +352,72 @@ jobs:
         run: ./scripts/check/check --check desktop-rust-webdav-nextcloud --ci
 
   # ===========================================
+  # Desktop app - Rust on macOS
+  # ===========================================
+  # Cmdr ships on macOS, but every other job here runs on ubuntu, so the code under
+  # `cfg(target_os = "macos")` (FSEvents, AppKit, DiskArbitration, File Provider, TCC, the
+  # `cmdr-fsevent-stream` member) was compiled, linted, and tested only on whichever Mac last ran
+  # `pnpm check`. This job asks the three questions Linux can't answer for that code: does it
+  # lint clean, do its intra-doc links resolve, and do its tests pass. Everything platform-blind
+  # (the static scanners, rustfmt, notices, jscpd) stays in `desktop-rust` alone.
+  #
+  # Deliberately left out:
+  # - `macos-availability`: the committed selector list records the NEWEST SDK it was built on
+  #   (David's Mac), and an older runner SDK that knows a different selector set fails by design.
+  # - `disk-images` (`hdiutil` attaches): opt-in locally for a reason; a candidate once this job
+  #   has a green track record.
+  # - The Docker fixture lanes: GitHub's macOS runners have no Docker.
+  #
+  # Required: in `ci-ok`'s `needs`, so a red macOS job fails the run and both release gates.
+  # `docs/tooling/ci.md` § macOS lane.
+  desktop-rust-macos:
+    name: Desktop (Rust, macOS)
+    # Pinned to the release builder's image so the lanes lint against the SDK the app ships with;
+    # see the `runs-on` comment in `release-pipeline.yml` for why it's never `macos-latest`.
+    runs-on: macos-26
+    # A cold ~1000-crate Tauri compile on a 3-core runner, then clippy, rustdoc, and the suite.
+    timeout-minutes: 75
+    needs: changes
+    if: inputs.run_all || needs.changes.outputs.rust == 'true'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Install mise
+        uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4
+
+      - name: Install tools with mise
+        run: mise install
+
+      # Its own cache (rust-cache keys on job and OS). `save-if` keeps a PR from writing a second
+      # multi-GB entry against the repo's 10 GB ceiling; `cache-on-failure` for the same reason
+      # as in `desktop-rust`: a red run is when the next push needs a warm cache most.
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          cache-on-failure: true
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+
+      - name: Build check tool
+        run: go build -o check .
+        working-directory: ./scripts/check
+
+      - name: Run clippy
+        run: ./scripts/check/check --check desktop-rust-clippy --ci
+
+      - name: Check rustdoc links
+        run: ./scripts/check/check --check desktop-rust-rustdoc --ci
+
+      # Same reason as in `desktop-rust`: rustdoc HTML is cache payload nothing reads.
+      - name: Drop rustdoc HTML before it reaches the cache
+        if: always()
+        run: rm -rf target/doc
+
+      - name: Run Rust tests
+        run: ./scripts/check/check --check desktop-rust-tests --ci
+
+  # ===========================================
   # Desktop app - Svelte frontend
   # ===========================================
   desktop-svelte:
@@ -403,6 +482,9 @@ jobs:
 
       - name: Check bare polls
         run: ./scripts/check/check --check desktop-svelte-bare-poll --ci
+
+      - name: Check IPC wrappers and commands have callers
+        run: ./scripts/check/check --check desktop-ipc-unused --ci
 
       - name: Check E2E stale selectors
         run: ./scripts/check/check --check desktop-svelte-e2e-stale-selector --ci
@@ -654,6 +736,9 @@ jobs:
 
       - name: Run ESLint
         run: ./scripts/check/check --check website-eslint --ci
+
+      - name: Check CSP connect-src covers every fetch
+        run: ./scripts/check/check --check website-csp-connect-src --ci
 
       - name: Run typecheck
         run: ./scripts/check/check --check website-typecheck --ci
@@ -1018,13 +1103,41 @@ jobs:
             -d "$PAYLOAD"
 
   # ===========================================
+  # Full-run marker for the release gate
+  # ===========================================
+  # Runs only when `run_all` is on, so its success is how the release gate
+  # (`scripts/release-ci-gate.sh` and `release-pipeline.yml`'s `ci-gate`) tells a full run from a
+  # dispatch with `run_all` off, which the runs API can't show (it carries no inputs). The gates
+  # match this job's NAME, so ❌ don't rename it without updating both. It needs nothing, so it
+  # marks the MODE only; the gates read green-or-red from the run's own conclusion.
+  full-run:
+    name: Full run (run_all)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: inputs.run_all
+    steps:
+      - name: Mark this run as full
+        run: echo "run_all is on, so no lane skips on change detection."
+
+  # ===========================================
   # Summary job for branch protection
   # ===========================================
   ci-ok:
     name: CI OK
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    needs: [desktop-rust, desktop-svelte, desktop-e2e-linux, website, api-server, dashboard, scripts, hygiene]
+    needs:
+      [
+        desktop-rust,
+        desktop-rust-macos,
+        desktop-svelte,
+        desktop-e2e-linux,
+        website,
+        api-server,
+        dashboard,
+        scripts,
+        hygiene,
+      ]
     if: always()
     steps:
       - name: Check all jobs passed

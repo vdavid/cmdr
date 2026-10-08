@@ -100,6 +100,27 @@ unmounts via `gio mount -u`).
 **Why**: dev setups commonly bind-mount `node_modules` or build dirs as separate partitions for performance. Without the
 filter, every bind mount shows as a separate "volume" in the sidebar, cluttering it with build-system internals.
 
+## Another account's FUSE mounts
+
+**Decision**: a FUSE mount (`fuse`, `fuse.*`, `fuseblk`) whose options carry a `user_id=` other than this process's uid
+and no `allow_other` is another account's own, and hidden: `mounts::is_private_to_another_user`. `get_mounted_volumes`
+gives it no row, `registrable_mount_roots` keeps it out of the registry sweep, and the watcher's `real_mounts` leaves
+it out of the diff, so it never fires `volume-mounted` or `volume-unmounted`. `mount_roots` still lists it, because
+the index cuts its boot scan at every mount, one it can't enter included.
+
+**Why**: the twin of macOS `volumes/DETAILS.md` § "Another account's mounts", which has the report behind it (a second
+account's cloud drive got a row nobody on this account could open) and what each consumer does. The signal differs:
+`/proc/mounts` has no owner column, but a FUSE row prints `user_id=` and `allow_other` in its options, and those two
+ARE the kernel's access rule: `allow_other` "overrides the security measure restricting file access to the user
+mounting the filesystem", and that measure covers root's processes too unless the `allow_sys_admin_access` module option
+is set (read from the kernel's [FUSE overview](https://docs.kernel.org/filesystems/fuse/fuse.html), 2026-09-30; not
+reproduced on a two-account machine). So there's no disk exception and no root exception here, unlike macOS: a
+`fuseblk` NTFS disk that every account can use is one mounted with `allow_other`, and that's what the rule reads. One
+known miss: Cmdr run as root on a machine with `allow_sys_admin_access` could enter a mount this hides.
+
+**What it leaves alone**: every non-FUSE mount. A CIFS `uid=` names who owns the files, which says nothing about who
+may enter, and a kernel filesystem's access is ordinary permissions on its root.
+
 ## A CIFS mount source can name a directory inside the share
 
 `mount -t cifs //server/share/sub /mnt/x` records the whole path in the `/proc/mounts` device field, exactly as macOS
@@ -119,7 +140,8 @@ through this parser at all but through `parse_gvfs_smb_dirname`, which carries n
 ## One volume ID publishes one mount root
 
 **Decision**: `get_mounted_volumes` collapses mounts that share a volume ID through
-`cmdr_fs::volume::canonical_root::collapse_by_volume_id`, and `list_locations` dedupes on ID as well as path. macOS
+`cmdr_fs::volume::canonical_root::collapse_by_volume_id`, and `list_locations` dedupes on ID as well as path (favorites on ID only) through the shared
+`cmdr_fs::volume::published_locations::dedupe_locations`. macOS
 calls the same function from `get_attached_volumes`; the rationale for the rule (and for the shortest-path tie-break)
 lives once, in `volumes/DETAILS.md` § "One volume ID publishes one mount root".
 

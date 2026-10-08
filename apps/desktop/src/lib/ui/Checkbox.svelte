@@ -19,6 +19,8 @@
         id?: string
         /** Accessible name when there's no visible `children` label. */
         ariaLabel?: string
+        /** Id of an element that explains the control, for example why it's disabled. */
+        ariaDescribedBy?: string
         /**
          * Marks the box as a required choice (`aria-required` on the control). A visible
          * asterisk is decoration only; this is what a screen reader announces, so set it
@@ -36,6 +38,7 @@
         indeterminate = false,
         id,
         ariaLabel,
+        ariaDescribedBy,
         required = false,
         onCheckedChange,
         children,
@@ -70,7 +73,11 @@
          a dangling reference leaves the control with NO accessible name. `aria-label`
          on the wrapping `<label>` names the label, not the control. `aria-labelledby`
          still wins when a visible label IS rendered, so passing both is safe. -->
-    <Checkbox.HiddenInput aria-label={ariaLabel} aria-required={required ? 'true' : undefined} />
+    <Checkbox.HiddenInput
+        aria-label={ariaLabel}
+        aria-describedby={ariaDescribedBy}
+        aria-required={required ? 'true' : undefined}
+    />
 </Checkbox.Root>
 
 <style>

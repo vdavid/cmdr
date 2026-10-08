@@ -13,9 +13,11 @@ import {
   getServerParentPath,
   isServerPath,
   isServerVolumeId,
+  isUnderServerRoot,
   joinServerPath,
   parseServerPath,
   serverAppRoot,
+  serverProtocolOfVolumeId,
 } from './server-path-utils'
 
 describe('parseServerPath', () => {
@@ -72,6 +74,20 @@ describe('parseServerPath', () => {
     })
   })
 
+  it('reads an S3 path: the account is the access key id, the first segment the bucket', () => {
+    // `cmdr_fs::volume::s3_app_root` mints the ACCOUNT as the prefix, and a place
+    // hangs under it: `/` for the account root, `/<bucket>` for a bucket.
+    expect(parseServerPath('s3://AKIAEXAMPLE@s3.eu-west-1.amazonaws.com:443/photos/2026/a.jpg')).toEqual({
+      protocol: 's3',
+      username: 'AKIAEXAMPLE',
+      host: 's3.eu-west-1.amazonaws.com',
+      port: 443,
+      path: 'photos/2026/a.jpg',
+    })
+    // The account root's app root carries a trailing slash, and reads as the root.
+    expect(parseServerPath('s3://AKIAEXAMPLE@127.0.0.1:14480/')?.path).toBe('')
+  })
+
   it('refuses anything that is not a server path', () => {
     // ❗ Every one of these would otherwise be handed to a server as a request.
     expect(parseServerPath('/srv/data/photos')).toBeNull()
@@ -111,8 +127,10 @@ describe('constructServerPath', () => {
 })
 
 describe('isServerPath / isServerVolumeId', () => {
-  it('recognizes both schemes and nothing else', () => {
+  it('recognizes the three schemes and nothing else', () => {
     expect(isServerPath('sftp://ada@nas.local:22/srv')).toBe(true)
+    expect(isServerPath('s3://AKIAEXAMPLE@127.0.0.1:14480/bucket')).toBe(true)
+    expect(isServerPath('s3:/not-a-path')).toBe(false)
     expect(isServerPath('webdav://ada@nas.local:5006/')).toBe(true)
     expect(isServerPath('smb://naspolya')).toBe(false)
     expect(isServerPath('/Volumes/naspi')).toBe(false)
@@ -121,8 +139,27 @@ describe('isServerPath / isServerVolumeId', () => {
   it('recognizes the ids the two volume-id minters produce', () => {
     expect(isServerVolumeId('sftp-nas-local-22-ada')).toBe(true)
     expect(isServerVolumeId('webdav-nas-local-5006-ada')).toBe(true)
+    expect(isServerVolumeId('s3-127-0-0-1-14480-akiaexample-photos-1a2b')).toBe(true)
+    expect(serverProtocolOfVolumeId('s3-127-0-0-1-14480-akiaexample-1a2b')).toBe('s3')
     expect(isServerVolumeId('root')).toBe(false)
     expect(isServerVolumeId('adb-pixel-9a3f')).toBe(false)
+  })
+})
+
+describe('isUnderServerRoot', () => {
+  it('matches by whole components, never a string prefix', () => {
+    expect(isUnderServerRoot('sftp://ada@nas:22/srv/data', 'sftp://ada@nas:22/srv/data')).toBe(true)
+    expect(isUnderServerRoot('sftp://ada@nas:22/srv/data', 'sftp://ada@nas:22/srv/data/x')).toBe(true)
+    expect(isUnderServerRoot('sftp://ada@nas:22/srv/data', 'sftp://ada@nas:22/srv/data-1')).toBe(false)
+  })
+
+  it('reads a root with a trailing slash the way Rust does, which is how an S3 account root is spelled', () => {
+    // `server_volumes::path_is_under` trims the root's trailing `/` first: the
+    // account root's app root is `s3://<key>@<host>:<port>/`.
+    const accountRoot = 's3://AKIA@127.0.0.1:14480/'
+    expect(isUnderServerRoot(accountRoot, 's3://AKIA@127.0.0.1:14480/photos/a.jpg')).toBe(true)
+    expect(isUnderServerRoot(accountRoot, 's3://AKIA@127.0.0.1:14480')).toBe(true)
+    expect(isUnderServerRoot(accountRoot, 's3://AKIA@127.0.0.1:144800/x')).toBe(false)
   })
 })
 
@@ -147,6 +184,14 @@ describe('walking a server tree', () => {
     expect(getServerParentPath(`${root}/remote.php`)).toBe(root)
     expect(joinServerPath(root, 'remote.php')).toBe(`${root}/remote.php`)
     expect(getServerDisplayPath(`${root}/remote.php`)).toBe('/remote.php')
+  })
+
+  it('walks an S3 bucket up to the account root, and no further', () => {
+    const account = 's3://AKIAEXAMPLE@127.0.0.1:14480'
+    expect(getServerParentPath(`${account}/photos/2026`)).toBe(`${account}/photos`)
+    expect(getServerParentPath(`${account}/photos`)).toBe(account)
+    expect(getServerParentPath(`${account}/`)).toBeNull()
+    expect(joinServerPath(account, 'photos')).toBe(`${account}/photos`)
   })
 
   it('shows the server-side path, which is what a person on that server would type', () => {

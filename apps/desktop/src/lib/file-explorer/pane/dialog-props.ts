@@ -9,7 +9,7 @@
  */
 
 import type { Initiator, ProgressAtStop } from '$lib/tauri-commands'
-import type { AppearedDuringMove, TopLevelSkipped, TrashRefusedItems, OpKind } from '$lib/ipc/bindings'
+import type { AppearedDuringMove, TopLevelSkipped, TrashRefusedItems, OpKind, SpaceShortfall } from '$lib/ipc/bindings'
 import type { SoftDialogId } from '$lib/ui/dialog-registry'
 import type { CloudOnlineOnlyExtent, DeleteSourceItem } from '$lib/file-operations/delete/delete-dialog-utils'
 import type { TransferOperationType, SortColumn, SortOrder, ConflictResolution, WriteOperationError } from '../types'
@@ -34,7 +34,23 @@ export interface TransferConfirmPayload {
    *  under `Skip all`. Empty when no conflicts were found or the pre-flight
    *  scan failed. */
   preKnownConflicts: string[]
+  /** Rename mode only: the leaf of the edited path, which the source moves under
+   *  into `destination` (then the folder part alone). */
+  newName?: string
 }
+
+/**
+ * The transfer dialog's own confirm, as something a caller outside it can press
+ * (the MCP `dialog confirm`): the same function its button runs, under the
+ * conflict policy the caller names.
+ */
+export type TransferConfirmer = (conflictResolution: ConflictResolution) => void
+
+/**
+ * The delete dialog's own confirm, as something a caller outside it can press
+ * (the MCP `dialog confirm`): the same function its button runs.
+ */
+export type DeleteConfirmer = () => void
 
 /**
  * What a transfer operation reports when it finishes: `TransferProgressDialog`'s
@@ -88,6 +104,8 @@ export interface TransferProgressPropsData {
   /** Source filenames known to conflict at dest (from pre-flight scan).
    *  Forwarded to the BE so it can bulk-skip them upfront under `Skip all`. */
   preKnownConflicts?: string[]
+  /** Copy only: `proceed` when the person chose "Copy anyway" after a space shortfall. */
+  spaceShortfall?: SpaceShortfall
   /** Top-level files the operation will transfer (for the completion toast's per-type
    *  split). Supplied by F5/F6 (real selection counts), drag-and-drop, and clipboard
    *  paste (each from a top-level kind probe). Absent only when the split is unknown
@@ -111,6 +129,9 @@ export interface TransferProgressPropsData {
    * why the answer differs per gesture.
    */
   duplicateFollowUp: DuplicateFollowUp
+  /** Rename mode: a move of the ONE source into `destinationPath` under this name
+   *  (`rename-as-move.ts`). Kept on retry, which renames the same way. */
+  newName?: string
 }
 
 /**

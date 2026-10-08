@@ -221,6 +221,7 @@ async fn delete_consumes_preview_id_skips_rescan() {
                         total_bytes: 5,
                         dedup_bytes: 5,
                         top_level_is_directory: false,
+                        top_level_modified_at: None,
                     },
                 ),
                 (
@@ -231,6 +232,7 @@ async fn delete_consumes_preview_id_skips_rescan() {
                         total_bytes: 6,
                         dedup_bytes: 6,
                         top_level_is_directory: false,
+                        top_level_modified_at: None,
                     },
                 ),
             ],

@@ -55,8 +55,8 @@ use cmdr_fs::firmlinks;
 use rusqlite::{Connection, OptionalExtension, params};
 
 use super::enrichment::get_read_pool_for;
-use crate::indexing::paths::routing::index_read_path;
-use crate::indexing::scanner::index_predates_exclusion_policy;
+use crate::indexing::paths::routing::{exclusion_scope_for_volume, index_read_path};
+use crate::indexing::scanner::{ExclusionTier, index_predates_exclusion_policy};
 use crate::indexing::store::{IndexStore, IndexStoreError, UnreadableCause, resolve_path};
 
 /// How deep the descent will follow the tree before it stops trusting it.
@@ -261,8 +261,9 @@ pub(crate) fn coverage_on_volume(
     let Some(index_path) = index_read_path(volume_id, &normalized) else {
         return Ok(uncovered());
     };
+    let tier = exclusion_scope_for_volume(volume_id).tier();
     pool.with_conn(|conn| {
-        coverage_for_scope(conn, &index_path, &normalized, dimension)
+        coverage_for_scope(conn, &index_path, &normalized, tier, dimension)
             .map_err(|e| format!("Couldn't read coverage for '{normalized}': {e}"))
     })?
 }
@@ -285,11 +286,13 @@ pub(crate) fn coverage_token_on_volume(volume_id: &str) -> CoverageToken {
 /// `scope_index_path` is the scope in the volume's own index path space (what
 /// `paths::routing::index_read_path` produces); `scope_path` is the same folder as
 /// the caller named it, and every path in the answer is built from it, so the
-/// answer comes back in the space the caller asked in.
+/// answer comes back in the space the caller asked in. `tier` is the volume's
+/// exclusion tier, which says which policy stamp its rows must carry to count.
 pub(crate) fn coverage_for_scope(
     conn: &Connection,
     scope_index_path: &str,
     scope_path: &str,
+    tier: ExclusionTier,
     dimension: CoverageDimension,
 ) -> Result<CoverageMap, IndexStoreError> {
     // Deliberately an irrefutable `let` rather than an ignored parameter: adding a
@@ -300,13 +303,19 @@ pub(crate) fn coverage_for_scope(
     let mut permission_denied = Vec::new();
     let mut declined = Vec::new();
     let mut abandoned = Vec::new();
-    let token = walk_coverage(conn, scope_index_path, scope_path, &mut |verdict, path| match verdict {
-        Verdict::Frontier => frontier.push(path.to_string()),
-        Verdict::Unreadable(UnreadableCause::Denied) => permission_denied.push(path.to_string()),
-        Verdict::Unreadable(UnreadableCause::Declined) => declined.push(path.to_string()),
-        Verdict::Unreadable(UnreadableCause::Abandoned) => abandoned.push(path.to_string()),
-        Verdict::Covered | Verdict::Listed => {}
-    })?;
+    let token = walk_coverage(
+        conn,
+        scope_index_path,
+        scope_path,
+        tier,
+        &mut |verdict, path| match verdict {
+            Verdict::Frontier => frontier.push(path.to_string()),
+            Verdict::Unreadable(UnreadableCause::Denied) => permission_denied.push(path.to_string()),
+            Verdict::Unreadable(UnreadableCause::Declined) => declined.push(path.to_string()),
+            Verdict::Unreadable(UnreadableCause::Abandoned) => abandoned.push(path.to_string()),
+            Verdict::Covered | Verdict::Listed => {}
+        },
+    )?;
     Ok(CoverageMap {
         frontier,
         permission_denied,
@@ -334,6 +343,7 @@ pub(crate) fn walk_coverage(
     conn: &Connection,
     scope_index_path: &str,
     scope_path: &str,
+    tier: ExclusionTier,
     on_verdict: &mut impl FnMut(Verdict, &str),
 ) -> Result<CoverageToken, IndexStoreError> {
     let tx = conn.unchecked_transaction()?;
@@ -341,7 +351,7 @@ pub(crate) fn walk_coverage(
 
     // Rows written under a policy this build no longer applies can't be trusted as
     // covered, whatever their epochs say, so the scope goes to the walk whole.
-    if index_predates_exclusion_policy(&tx) {
+    if index_predates_exclusion_policy(&tx, tier) {
         on_verdict(Verdict::Frontier, scope_path);
         return Ok(token);
     }

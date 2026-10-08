@@ -384,3 +384,113 @@ async fn smb_integration_superseded_volume_reconnects_without_reclaiming_the_id(
         "no watcher may be respawned for an id this volume no longer owns"
     );
 }
+
+// ── Socket lifetime (mount/unmount cycles) ───────────────────────
+
+/// The remote ends of this process's TCP sockets connected to `port` on any
+/// address, read with `getpeername` over every open fd.
+///
+/// In-process rather than `lsof`, so the cell runs wherever the lane does. A
+/// socket the server hung up on (`CLOSE_WAIT`) still has a peer, so this sees
+/// both shapes `smb2`'s socket-lifetime bugs left behind.
+#[cfg(unix)]
+fn tcp_peers_on_port(port: u16) -> Vec<std::net::SocketAddr> {
+    // SAFETY: `getdtablesize` takes no arguments and only reads the process's
+    // descriptor-table limit.
+    let max_fd = unsafe { libc::getdtablesize() };
+    (0..max_fd)
+        .filter_map(|fd| {
+            // SAFETY: `sockaddr_storage` is plain old data, for which all-zero
+            // bytes are a valid (`AF_UNSPEC`) value.
+            let mut storage: libc::sockaddr_storage = unsafe { std::mem::zeroed() };
+            let mut len = size_of::<libc::sockaddr_storage>() as libc::socklen_t;
+            // SAFETY: `storage` is a correctly-sized, writable `sockaddr_storage`
+            // and `len` holds its size, as `getpeername` requires; an fd that
+            // isn't an open, connected socket makes it return -1 and write nothing.
+            let rc = unsafe { libc::getpeername(fd, (&raw mut storage).cast::<libc::sockaddr>(), &mut len) };
+            if rc != 0 {
+                return None;
+            }
+            peer_addr(&storage)
+        })
+        .filter(|peer| peer.port() == port)
+        .collect()
+}
+
+#[cfg(unix)]
+fn peer_addr(storage: &libc::sockaddr_storage) -> Option<std::net::SocketAddr> {
+    match i32::from(storage.ss_family) {
+        libc::AF_INET => {
+            // SAFETY: the family says the kernel wrote a `sockaddr_in`, which
+            // fits inside `sockaddr_storage` and shares its alignment.
+            let sin = unsafe { &*std::ptr::from_ref(storage).cast::<libc::sockaddr_in>() };
+            let ip = std::net::Ipv4Addr::from(u32::from_be(sin.sin_addr.s_addr));
+            Some(std::net::SocketAddr::from((ip, u16::from_be(sin.sin_port))))
+        }
+        libc::AF_INET6 => {
+            // SAFETY: the family says the kernel wrote a `sockaddr_in6`, which
+            // fits inside `sockaddr_storage` and shares its alignment.
+            let sin6 = unsafe { &*std::ptr::from_ref(storage).cast::<libc::sockaddr_in6>() };
+            let ip = std::net::Ipv6Addr::from(sin6.sin6_addr.s6_addr);
+            Some(std::net::SocketAddr::from((ip, u16::from_be(sin6.sin6_port))))
+        }
+        _ => None,
+    }
+}
+
+/// Mount/unmount cycles leave no SMB sockets behind: every session a mount opens
+/// (the main one, the watcher's, the scan pool's) closes once the volume is
+/// unmounted and dropped.
+///
+/// Pins the two `smb2` socket-lifetime fixes (0.24.1) in Cmdr's own usage:
+/// before them, 60 E2E mount/unmount cycles left 78 ESTABLISHED sockets in one
+/// process, because a dropped `Connection` never closed its socket while the
+/// server kept it open (the fixtures never reap idle sessions). See
+/// `docs/notes/performance/smb2-socket-lifetime-2026-09-23.md`.
+///
+/// Counts every socket to the fixture's port, so it relies on nextest's
+/// process-per-test: under `cargo test`, a sibling cell's live session would
+/// count too.
+#[cfg(unix)]
+#[tokio::test]
+#[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+async fn smb_integration_mount_unmount_cycles_leave_no_sockets_behind() {
+    const CYCLES: usize = 10;
+    let port = guest_port();
+    assert_eq!(
+        tcp_peers_on_port(port),
+        Vec::new(),
+        "this process holds no fixture sockets before the first mount"
+    );
+
+    for _ in 0..CYCLES {
+        let vol = make_docker_volume().await;
+        vol.list_directory_impl(Path::new(""))
+            .await
+            .expect("the fresh mount lists its root");
+        vol.begin_scan_session().await;
+        assert!(
+            vol.inner.scan_pool.read().await.is_some(),
+            "the scan pool's sessions are up, so the cycle covers them too"
+        );
+        assert!(
+            tcp_peers_on_port(port).len() > 1,
+            "a scanning mount holds more than one session"
+        );
+        // `on_unmount` is sync and takes its locks blocking, the way the FSEvents
+        // thread calls it, so it runs off the runtime.
+        tokio::task::spawn_blocking(move || {
+            vol.on_unmount();
+            drop(vol);
+        })
+        .await
+        .expect("unmount runs to completion");
+    }
+
+    cmdr_fs::testing::wait_until_async(
+        Duration::from_secs(15),
+        "every fixture socket to close after the last unmount",
+        || tcp_peers_on_port(port).is_empty(),
+    )
+    .await;
+}

@@ -129,6 +129,24 @@ pub fn binding_to_accelerator(binding: &str) -> Option<String> {
     Some(out)
 }
 
+/// Everything that decides whether the go-to-latest hotkey is registered.
+struct ShortcutGates {
+    /// The user's toggle.
+    enabled: bool,
+    /// The FDA gate is open (the user decided about Full Disk Access).
+    fda_open: bool,
+    /// The binding parsed to an accelerator.
+    has_accelerator: bool,
+    /// `test_mode::may_register_global_hotkeys`: false in an automated run.
+    may_register_global_hotkeys: bool,
+}
+
+/// Whether the hotkey should be registered right now. The setting stays as the
+/// user left it either way; only the OS registration follows this.
+fn should_register_shortcut(gates: ShortcutGates) -> bool {
+    gates.enabled && gates.fda_open && gates.has_accelerator && gates.may_register_global_hotkeys
+}
+
 /// Apply a Settings change (toggle + binding) to the live global-shortcut
 /// registration. Idempotent. Re-evaluates the FDA gate so the call also
 /// covers the "I just toggled FDA" path.
@@ -140,8 +158,12 @@ pub fn apply_global_go_to_latest_shortcut(
     binding: &str,
 ) -> Result<super::commands::GlobalGoToLatestShortcutState, RegistrationError> {
     let accelerator = binding_to_accelerator(binding);
-    let fda_open = !crate::fda_gate::is_fda_pending_runtime();
-    let should_run = enabled && fda_open && accelerator.is_some();
+    let should_run = should_register_shortcut(ShortcutGates {
+        enabled,
+        fda_open: !crate::fda_gate::is_fda_pending_runtime(),
+        has_accelerator: accelerator.is_some(),
+        may_register_global_hotkeys: crate::test_mode::may_register_global_hotkeys(),
+    });
 
     let mut guard = global_shortcut_manager(app);
     // `unwrap` is safe: `global_shortcut_manager` always populates `Some`.
@@ -193,7 +215,8 @@ pub fn refresh_global_go_to_latest_shortcut(app: &AppHandle) {
         return;
     }
     if let Err(err) = apply_global_go_to_latest_shortcut(app, enabled, &binding) {
-        log::warn!(
+        // Debug, not warn: `GlobalShortcutManager::register` already warned about it.
+        log::debug!(
             target: "downloads::global_shortcut",
             "Focus-driven refresh of global shortcut failed: {err}",
         );
@@ -286,6 +309,38 @@ mod tests {
     use std::sync::Mutex as StdMutex;
     use std::sync::mpsc;
     use std::sync::{Arc, OnceLock};
+
+    fn all_gates_open() -> ShortcutGates {
+        ShortcutGates {
+            enabled: true,
+            fda_open: true,
+            has_accelerator: true,
+            may_register_global_hotkeys: true,
+        }
+    }
+
+    #[test]
+    fn the_hotkey_registers_when_every_gate_is_open() {
+        assert!(should_register_shortcut(all_gates_open()));
+    }
+
+    /// An E2E app holding `⌃⌥⌘J` caught the developer's own press mid-suite: the
+    /// first-trigger warn toast leaked into `mcp-archive-password.spec.ts` and failed it.
+    #[test]
+    fn an_automated_run_never_registers_the_hotkey() {
+        assert!(!should_register_shortcut(ShortcutGates {
+            may_register_global_hotkeys: false,
+            ..all_gates_open()
+        }));
+    }
+
+    #[test]
+    fn the_hotkey_stays_off_while_the_fda_gate_is_closed() {
+        assert!(!should_register_shortcut(ShortcutGates {
+            fda_open: false,
+            ..all_gates_open()
+        }));
+    }
 
     fn install_lock() -> &'static StdMutex<()> {
         static LOCK: OnceLock<StdMutex<()>> = OnceLock::new();

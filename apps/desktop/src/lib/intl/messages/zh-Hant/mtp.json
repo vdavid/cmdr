@@ -78,13 +78,5 @@
   "mtp.deviceFallbackName": "MTP 裝置",
   "@mtp.deviceFallbackName": {
     "sourceHash": "8ba7a69"
-  },
-  "mtp.error.exclusiveAccess": "另一個程序擁有獨佔存取權{blocking, select, none {} other {（被 {blocking} 佔用）}}",
-  "@mtp.error.exclusiveAccess": {
-    "sourceHash": "a81f306"
-  },
-  "mtp.error.permissionDenied": "USB 存取權限遭拒。請安裝 udev 規則並重新連接",
-  "@mtp.error.permissionDenied": {
-    "sourceHash": "3362501"
   }
 }

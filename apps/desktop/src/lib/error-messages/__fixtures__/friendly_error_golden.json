@@ -116,7 +116,7 @@
     "category": "needs_action",
     "explanation": "macOS blocked Cmdr from accessing `/Volumes/share/&#95;todo&#95;&#42;pics/photo.jpg`. This usually means the folder is protected by macOS security policies, or Cmdr hasn’t been granted the right permissions yet.",
     "retryHint": false,
-    "suggestion": "Here’s what to try:\n- Open **System Settings > Privacy & Security > Files & Folders** and grant Cmdr access\n- If this is a system-protected folder (like system directories), you may need to grant Cmdr **Full Disk Access** under Privacy & Security\n- In Terminal, run `ls -la` on this path to check ownership and permissions",
+    "suggestion": "Here’s what to try:\n- Open **System Settings > Privacy & Security > Files & Folders** and grant Cmdr access\n- If this is a system-protected folder, you may need to grant Cmdr **Full Disk Access** under Privacy & Security\n- In Terminal, run `ls -la` on this path to check ownership and permissions",
     "title": "Not permitted"
   },
   "errno:12": {
@@ -228,7 +228,7 @@
     "category": "needs_action",
     "explanation": "This operation isn’t supported on this file system. Different file systems (like FAT32, NTFS, or network shares) support different features, and this one doesn’t support what Cmdr is trying to do.",
     "retryHint": false,
-    "suggestion": "Try a different approach, or use Finder for this operation. If you’re working with an external drive, it might be formatted with a file system that has limitations (for example, FAT32 can’t store files larger than 4 GB).",
+    "suggestion": "Try a different approach, or use Finder for this operation. If you’re working with an external drive, it might be formatted with a file system that has limitations (for example, FAT32 can’t store files of 4 GiB or more).",
     "title": "Not supported"
   },
   "errno:5": {

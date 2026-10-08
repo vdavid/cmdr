@@ -47,9 +47,9 @@ vi.mock('$lib/accent-color', () => ({
   initAccentColor: vi.fn(() => Promise.resolve()),
   cleanupAccentColor: vi.fn(),
 }))
-vi.mock('$lib/reduce-transparency', () => ({
-  initReduceTransparency: vi.fn(() => Promise.resolve()),
-  cleanupReduceTransparency: vi.fn(),
+vi.mock('$lib/glass-material', () => ({
+  initGlassMaterial: vi.fn(() => Promise.resolve()),
+  cleanupGlassMaterial: vi.fn(),
 }))
 vi.mock('$lib/text-size.svelte', () => ({
   initTextSize: vi.fn(() => Promise.resolve()),

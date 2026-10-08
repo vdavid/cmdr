@@ -6,14 +6,18 @@
  */
 
 import type { BundleWriteBlocker } from '$lib/tauri-commands'
-import type { ServerRequestError } from '$lib/ipc/bindings'
+import type { ServerRequestError, UpdateCheckOutcome } from '$lib/ipc/bindings'
 
-/** Metadata returned by the `check_for_update` Tauri command */
+/** The update the last check found and staged. The backend keeps where it came from; the frontend needs the version. */
 export interface UpdateInfo {
   version: string
-  url: string
-  signature: string
 }
+
+/**
+ * A check the organization's policy answered: updates are off, or a release is held back by the ceiling. The backend's
+ * own outcome, rendered as is. ❌ Not a failure: no error copy, no report link.
+ */
+export type ManagedUpdateOutcome = Extract<UpdateCheckOutcome, { kind: 'updatesDisabledByPolicy' | 'heldByPolicy' }>
 
 /**
  * Why the last check, download, or install didn't finish, as a typed value the surfaces word from the catalog
@@ -32,6 +36,8 @@ export interface UpdateState {
   update: UpdateInfo | null
   /** Why the last attempt didn't finish, or `null`. Cleared when a check starts. */
   failure: UpdateFailure | null
+  /** The organization's answer to the last check, or `null`. Cleared when a check starts. */
+  managed: ManagedUpdateOutcome | null
   /** Version the user is currently running. Set when `checking` starts. */
   previousVersion: string | null
   /** Version we're moving to. Set when an update is found. Cleared on `idle`. */
@@ -42,6 +48,7 @@ export const updateState = $state<UpdateState>({
   status: 'idle',
   update: null,
   failure: null,
+  managed: null,
   previousVersion: null,
   nextVersion: null,
 })

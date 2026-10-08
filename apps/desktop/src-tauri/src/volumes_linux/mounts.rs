@@ -26,11 +26,9 @@ pub fn get_mounted_volumes(mounts: &[MountEntry]) -> Vec<LocationInfo> {
 
 /// Every mount point `/proc/mounts` currently lists.
 ///
-/// What the volume REGISTRY sweeps (`file_system::volume::mount_registration`), which is a
-/// different question from what the switcher shows: resolution can mint an ID for any of these,
-/// so registration has to cover all of them, filters and all. ❗ `None` when the table couldn't be
-/// read, ❌ never an empty list, or the sweep would read a machine with no mounts and register
-/// nothing.
+/// What the INDEX cuts its boot-tree scan at, so it's every row, another account's FUSE mounts
+/// included: a scan has to stop at a mount it can't enter too. ❗ `None` when the table couldn't
+/// be read, ❌ never an empty list.
 pub(crate) fn mount_roots() -> Option<Vec<String>> {
     Some(
         crate::file_system::linux_mounts::parse_proc_mounts()?
@@ -38,6 +36,55 @@ pub(crate) fn mount_roots() -> Option<Vec<String>> {
             .map(|mount| mount.mountpoint)
             .collect(),
     )
+}
+
+/// The mount points the volume REGISTRY sweeps (`file_system::volume::mount_registration`):
+/// every row except another account's own FUSE mounts.
+///
+/// A different question from what the switcher shows: resolution can mint an ID for any mount
+/// this account can reach, so registration has to cover all of those, filters and all. ❗ `None`
+/// when the table couldn't be read, ❌ never an empty list, or the sweep would read a machine with
+/// no mounts and register nothing.
+pub(crate) fn registrable_mount_roots() -> Option<Vec<String>> {
+    let mounts = crate::file_system::linux_mounts::parse_proc_mounts()?;
+    Some(registrable_roots(mounts, this_user()))
+}
+
+/// [`registrable_mount_roots`] over a table already read.
+fn registrable_roots(mounts: Vec<MountEntry>, this_user: u32) -> Vec<String> {
+    mounts
+        .into_iter()
+        .filter(|mount| !is_private_to_another_user(mount, this_user))
+        .map(|mount| mount.mountpoint)
+        .collect()
+}
+
+/// The account Cmdr runs as.
+pub(super) fn this_user() -> u32 {
+    // SAFETY: `getuid` reads the process's real UID; always safe, no args or pointers.
+    unsafe { libc::getuid() }
+}
+
+/// Whether `mount` is another account's own FUSE mount, which this account can't open.
+///
+/// The kernel's own rule, read off the row: a FUSE filesystem serves only the user who mounted it
+/// (`user_id=` in its options) unless it was mounted with `allow_other`. That holds for root too,
+/// and for a `fuseblk` disk, so neither gets the exception macOS makes
+/// (`volumes/DETAILS.md` § "Another account's mounts").
+///
+/// ❗ Read off the mount table, ❌ never an access probe: that's a syscall per mount that can hang
+/// on a dead one.
+pub(super) fn is_private_to_another_user(mount: &MountEntry, this_user: u32) -> bool {
+    let is_fuse = mount.fstype == "fuse" || mount.fstype == "fuseblk" || mount.fstype.starts_with("fuse.");
+    if !is_fuse || mount.options.split(',').any(|option| option == "allow_other") {
+        return false;
+    }
+    mount
+        .options
+        .split(',')
+        .find_map(|option| option.strip_prefix("user_id="))
+        .and_then(|owner| owner.parse::<u32>().ok())
+        .is_some_and(|owner| owner != this_user)
 }
 
 /// The body of [`get_mounted_volumes`], with ID derivation injected.
@@ -49,6 +96,14 @@ pub(crate) fn mount_roots() -> Option<Vec<String>> {
 fn get_mounted_volumes_with(mounts: &[MountEntry], volume_id: impl Fn(&str) -> String) -> Vec<LocationInfo> {
     let username = get_username();
 
+    // Another account's own FUSE mount is no drive of this account's: no row, and
+    // it's no parent for `is_submount` to hide a real mount under either.
+    let this_user = this_user();
+    let mounts: Vec<&MountEntry> = mounts
+        .iter()
+        .filter(|e| !is_private_to_another_user(e, this_user))
+        .collect();
+
     // Collect candidate mount points (real, non-hidden, non-root).
     let candidate_paths: Vec<&str> = mounts
         .iter()
@@ -58,7 +113,7 @@ fn get_mounted_volumes_with(mounts: &[MountEntry], volume_id: impl Fn(&str) -> S
 
     let mut volumes = Vec::new();
 
-    for entry in mounts {
+    for entry in &mounts {
         if is_virtual_fs(&entry.fstype) {
             continue;
         }
@@ -226,6 +281,69 @@ gvfsd-fuse /run/user/1000/gvfs fuse.gvfsd-fuse rw 0 0
             !paths.iter().any(|p| p.starts_with("/run/user/")),
             "Should filter user runtime mounts"
         );
+    }
+
+    /// One `/proc/mounts` row.
+    fn row(line: &str) -> MountEntry {
+        linux_mounts::parse_proc_mounts_from_content(line)
+            .pop()
+            .expect("a parseable row")
+    }
+
+    /// The kernel serves a FUSE filesystem only to the user who mounted it, unless
+    /// it was mounted with `allow_other`. Both facts sit in the row's options.
+    #[test]
+    fn a_fuse_mount_is_private_to_whoever_mounted_it_unless_it_allows_others() {
+        let me = 1000;
+        let private = |line: &str| is_private_to_another_user(&row(line), me);
+
+        assert!(
+            private("pcloud /home/rin/pCloudDrive fuse.pcloud rw,nosuid,nodev,relatime,user_id=1001,group_id=1001 0 0"),
+            "another account's cloud drive"
+        );
+        assert!(
+            !private(
+                "pcloud /home/sven/pCloudDrive fuse.pcloud rw,nosuid,nodev,relatime,user_id=1000,group_id=1000 0 0"
+            ),
+            "this account's own"
+        );
+        assert!(
+            !private("sshfs /mnt/shared fuse.sshfs rw,relatime,user_id=1001,group_id=1001,allow_other 0 0"),
+            "mounted for everyone"
+        );
+        // Root's FUSE mount shuts other accounts out just the same, which is why an
+        // NTFS disk is mounted with `allow_other`.
+        assert!(private("vault /mnt/vault fuse rw,relatime,user_id=0,group_id=0 0 0"));
+        assert!(!private(
+            "/dev/sdb1 /media/sven/Win fuseblk rw,relatime,user_id=0,group_id=0,default_permissions,allow_other,blksize=4096 0 0"
+        ));
+        // Not FUSE, so there's no such rule: a CIFS `uid=` says who owns the files.
+        assert!(!private("/dev/sdb1 /mnt/data xfs rw,relatime 0 0"));
+        assert!(!private(
+            "//nas/share /mnt/share cifs rw,relatime,uid=1001,gid=1001 0 0"
+        ));
+    }
+
+    /// Regression anchor for the macOS report: a second account's cloud drive got
+    /// a switcher row and a registered volume this account couldn't open.
+    #[test]
+    fn another_accounts_fuse_mount_gets_no_row_and_no_registration() {
+        let me = this_user();
+        let someone_else = me.wrapping_add(1);
+        let content = format!(
+            "\
+/dev/sda1 / ext4 rw,relatime 0 0
+pcloud /home/sven/pCloudDrive fuse.pcloud rw,nosuid,nodev,relatime,user_id={me},group_id={me} 0 0
+pcloud /home/rin/pCloudDrive fuse.pcloud rw,nosuid,nodev,relatime,user_id={someone_else},group_id={someone_else} 0 0
+"
+        );
+        let mounts = linux_mounts::parse_proc_mounts_from_content(&content);
+
+        let volumes = get_mounted_volumes_with(&mounts, path_volume_id);
+        let paths: Vec<&str> = volumes.iter().map(|v| v.path.as_str()).collect();
+        assert_eq!(paths, ["/home/sven/pCloudDrive"]);
+
+        assert_eq!(registrable_roots(mounts, me), ["/", "/home/sven/pCloudDrive"]);
     }
 
     #[test]

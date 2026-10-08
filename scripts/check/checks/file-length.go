@@ -48,7 +48,7 @@ var fileLengthSourceExtensions = map[string]bool{
 
 // fileLengthSkipDirs are directory names this check never looks inside, matched at
 // any depth. Most are build output that git wouldn't list anyway; `vendor` is the
-// one that earns its keep. A vendored third-party crate (`vendor/mdns-sd`) is kept
+// one that earns its keep. A vendored third-party crate (`vendor/<crate>`) is kept
 // byte-identical to its upstream release, so its length is upstream's call, not
 // ours, and allowlisting it would only churn on the next refresh.
 var fileLengthSkipDirs = map[string]bool{

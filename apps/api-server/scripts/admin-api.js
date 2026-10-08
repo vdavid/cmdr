@@ -70,6 +70,8 @@ export function describe(minted) {
   ]
   if (minted.organizationName) lines.push(`  Licensed to: ${minted.organizationName}`)
   lines.push(`  Expires:     ${minted.expiresAt ? minted.expiresAt.slice(0, 10) : 'never'}`)
+  // The signed key activates without our server; hand it over with the code when replying by hand.
+  if (minted.fullKey) lines.push(`  Offline key: ${minted.fullKey}`)
   return lines.join('\n')
 }
 

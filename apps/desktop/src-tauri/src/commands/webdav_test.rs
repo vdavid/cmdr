@@ -119,7 +119,7 @@ async fn the_known_servers_trio_round_trips() {
         "❗ the switch is the user's, so editing a server has to be able to turn it off"
     );
 
-    assert!(forget_known_webdav_server(url.to_string(), "ada".to_string()));
+    assert!(webdav_known_servers::forget(url, "ada"));
     assert!(
         !get_known_webdav_servers()
             .iter()

@@ -55,6 +55,66 @@ pub struct PastedClipboardFile {
     pub kind: PastedKind,
 }
 
+/// What `paste_clipboard_as_file` answers within its reply deadline. A refusal
+/// inside the deadline is the command's `Err(MutationError)`. Same contract as
+/// `MutationReply` (`write_operations/mutation_reply.rs`), with the created
+/// file riding along.
+#[cfg_attr(
+    not(target_os = "macos"),
+    allow(
+        dead_code,
+        reason = "Linux keeps the reply type for its unsupported clipboard command's wire signature"
+    )
+)]
+#[derive(Clone, Debug, serde::Serialize, specta::Type)]
+#[serde(tag = "type", rename_all = "camelCase", rename_all_fields = "camelCase")]
+pub enum PasteClipboardReply {
+    /// It ended in time: the file it created, or `None` for nothing pasteable.
+    Done {
+        /// The created file.
+        file: Option<PastedClipboardFile>,
+    },
+    /// The write is still running; a [`ClipboardPasteSettled`] with this id follows.
+    StillRunning {
+        /// Names this one paste on the settle event.
+        pending_id: String,
+    },
+}
+
+/// `clipboard-paste-settled`: how a paste that answered `StillRunning` ended.
+/// Broadcast; the waiting caller picks its own by `pending_id`.
+#[derive(Clone, Debug, serde::Serialize, specta::Type, tauri_specta::Event)]
+#[serde(rename_all = "camelCase")]
+pub struct ClipboardPasteSettled {
+    /// The id the `StillRunning` reply carried.
+    pub pending_id: String,
+    /// How it ended.
+    pub outcome: ClipboardPasteOutcome,
+}
+
+/// How a paste that outlived its deadline ended.
+#[cfg_attr(
+    not(target_os = "macos"),
+    allow(
+        dead_code,
+        reason = "the clipboard settle event is shared across platforms but emitted only on macOS"
+    )
+)]
+#[derive(Clone, Debug, serde::Serialize, specta::Type)]
+#[serde(tag = "type", rename_all = "camelCase", rename_all_fields = "camelCase")]
+pub enum ClipboardPasteOutcome {
+    /// It landed as `file`.
+    Landed {
+        /// The created file.
+        file: Option<PastedClipboardFile>,
+    },
+    /// It didn't, for this reason: the same refusal an in-time reply carries.
+    Refused {
+        /// Why.
+        error: crate::file_system::write_operations::MutationError,
+    },
+}
+
 #[cfg(target_os = "macos")]
 pub use payload::{ClipboardPayload, payload_to_content, pick_clipboard_payload};
 

@@ -11,13 +11,14 @@
  * the switch below in lockstep with the `AiTranslateErrorKind` enum on the Rust side.
  */
 
-import type { AiTranslateErrorKind } from '$lib/ipc/bindings'
+import type { AiTranslateErrorKind, ManagedAiRefusal } from '$lib/ipc/bindings'
+import { managedAiRefusalMessage } from '$lib/managed-policy/ai-refusal'
 import { addToast, type ToastLevel } from '$lib/ui/toast/toast-store.svelte'
 import { tString } from '$lib/intl/messages.svelte'
 import CloudAiOffToastContent from './CloudAiOffToastContent.svelte'
 
 /** A thrown AI-translation failure: a real `Error` that also carries the typed `kind`. */
-export type AiTranslateThrown = Error & { kind: AiTranslateErrorKind }
+export type AiTranslateThrown = Error & { kind: AiTranslateErrorKind; managed?: ManagedAiRefusal | null }
 
 const ALL_KINDS: ReadonlySet<string> = new Set<AiTranslateErrorKind>([
   'off',
@@ -31,6 +32,7 @@ const ALL_KINDS: ReadonlySet<string> = new Set<AiTranslateErrorKind>([
   'serverError',
   'parseError',
   'unknownProvider',
+  'managed',
 ])
 
 /**
@@ -56,9 +58,13 @@ export interface AiTranslateToastCopy {
 /**
  * Friendly, actionable copy for each failure kind. Pure, so it's unit-tested directly.
  * Follows the style guide: no "error"/"failed" in the user-facing strings, active voice,
- * sentence case, one concrete next step.
+ * sentence case, one concrete next step. `managed` is the rule a `managed` failure carries
+ * (`err.managed`); the body names it, and stays generic when it's absent.
  */
-export function aiTranslateErrorToast(kind: AiTranslateErrorKind): AiTranslateToastCopy {
+export function aiTranslateErrorToast(
+  kind: AiTranslateErrorKind,
+  managed?: ManagedAiRefusal | null,
+): AiTranslateToastCopy {
   switch (kind) {
     case 'off':
       return {
@@ -126,6 +132,12 @@ export function aiTranslateErrorToast(kind: AiTranslateErrorKind): AiTranslateTo
         body: tString('ai.translateError.unknownProvider.body'),
         level: 'warn',
       }
+    case 'managed':
+      return {
+        title: tString('ai.translateError.managed.title'),
+        body: managed ? managedAiRefusalMessage(managed) : tString('ai.translateError.managed.body'),
+        level: 'info',
+      }
   }
 }
 
@@ -140,7 +152,7 @@ const AI_TRANSLATE_TOAST_ID = 'ai-translate-error'
  */
 export function showAiTranslateErrorToast(err: unknown): boolean {
   if (!isAiTranslateError(err)) return false
-  const copy = aiTranslateErrorToast(err.kind)
+  const copy = aiTranslateErrorToast(err.kind, err.managed)
   // "Cloud AI is off" carries a button into the switch (same copy, rendered by the component),
   // since the fix is one click away and a sentence alone would send the user hunting.
   const content = err.kind === 'noCloudConsent' ? CloudAiOffToastContent : `${copy.title}\n${copy.body}`

@@ -319,6 +319,18 @@
   "@onboarding.stepAi.off.help": {
     "sourceHash": "3f261be"
   },
+  "onboarding.localDownloadFailed.title": "El modelo de IA local no ha terminado de descargarse",
+  "@onboarding.localDownloadFailed.title": {
+    "sourceHash": "9612750"
+  },
+  "onboarding.localDownloadFailed.body": "Vuelve a iniciar la descarga desde Ajustes › IA.",
+  "@onboarding.localDownloadFailed.body": {
+    "sourceHash": "6601872"
+  },
+  "onboarding.localDownloadFailed.openSettings": "Abrir Ajustes",
+  "@onboarding.localDownloadFailed.openSettings": {
+    "sourceHash": "3f94010"
+  },
   "onboarding.stepBeta.footer.start": "¡Empezar a usar Cmdr!",
   "@onboarding.stepBeta.footer.start": {
     "sourceHash": "e29bbc7"
@@ -386,6 +398,14 @@
   "onboarding.stepBeta.crashReportsNote": "Los informes de fallos también están activados: si Cmdr se cierra de golpe, envía la versión de la app, tu versión de macOS y el punto del código donde se detuvo.\nNunca tus archivos.\nPuedes desactivar ambas cosas en Ajustes cuando quieras.",
   "@onboarding.stepBeta.crashReportsNote": {
     "sourceHash": "9be0be1"
+  },
+  "onboarding.stepBeta.analyticsManaged": "Tu organización ha desactivado las estadísticas de uso.",
+  "@onboarding.stepBeta.analyticsManaged": {
+    "sourceHash": "49484ee"
+  },
+  "onboarding.stepBeta.crashReportsNoteAlone": "Los informes de fallos están activados: si Cmdr se cierra de golpe, envía la versión de la app, tu versión de macOS y el punto del código donde se detuvo.\nNunca tus archivos.\nPuedes desactivarlos en Ajustes cuando quieras.",
+  "@onboarding.stepBeta.crashReportsNoteAlone": {
+    "sourceHash": "5084dd0"
   },
   "onboarding.stepBeta.emailTitle": "Sigamos en contacto (opcional)",
   "@onboarding.stepBeta.emailTitle": {
@@ -562,6 +582,10 @@
   "onboarding.cloudSetup.apiKeyAria": "Clave de API",
   "@onboarding.cloudSetup.apiKeyAria": {
     "sourceHash": "16f0ee4"
+  },
+  "onboarding.cloudSetup.removeKey": "Quitar clave",
+  "@onboarding.cloudSetup.removeKey": {
+    "sourceHash": "81c45fd"
   },
   "onboarding.cloudSetup.apiKeyPlaceholder.openai": "Ejemplo: sk-abc123…",
   "@onboarding.cloudSetup.apiKeyPlaceholder.openai": {

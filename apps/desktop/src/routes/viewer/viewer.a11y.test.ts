@@ -18,7 +18,6 @@ import { mount, tick, unmount } from 'svelte'
 
 import EncodingPicker from './EncodingPicker.svelte'
 import ViewModePicker from './ViewModePicker.svelte'
-import ViewerContextMenu from './ViewerContextMenu.svelte'
 import ViewerCopyDialogs from './ViewerCopyDialogs.svelte'
 import ViewerStatusBar from './ViewerStatusBar.svelte'
 import ViewerToolbar from './ViewerToolbar.svelte'
@@ -166,44 +165,6 @@ describe('ViewModePicker accessibility', () => {
     expect(option?.textContent).toContain('Text')
 
     void unmount(instance)
-  })
-})
-
-describe('ViewerContextMenu a11y', () => {
-  it('default state (selection present) has no a11y violations', async () => {
-    const target = document.createElement('div')
-    document.body.appendChild(target)
-    mount(ViewerContextMenu, {
-      target,
-      props: {
-        x: 50,
-        y: 50,
-        hasSelection: true,
-        onCopy: () => {},
-        onSelectAll: () => {},
-        onClose: () => {},
-      },
-    })
-    await tick()
-    await expectNoA11yViolations(target)
-  })
-
-  it('no-selection state (Copy disabled) has no a11y violations', async () => {
-    const target = document.createElement('div')
-    document.body.appendChild(target)
-    mount(ViewerContextMenu, {
-      target,
-      props: {
-        x: 50,
-        y: 50,
-        hasSelection: false,
-        onCopy: () => {},
-        onSelectAll: () => {},
-        onClose: () => {},
-      },
-    })
-    await tick()
-    await expectNoA11yViolations(target)
   })
 })
 

@@ -463,6 +463,73 @@ async fn compress_journals_subkind_and_net_new_from_the_driver() {
     assert_eq!(items[0].source_name, "bundle.zip");
 }
 
+/// The header says where the sources came FROM and how much was packed. Pre-fix
+/// it named the archive's volume on both sides and counted zero items and bytes,
+/// so a Mac-to-phone compress read as a phone-to-phone one that packed nothing.
+#[tokio::test]
+async fn compress_journals_the_source_volume_and_what_it_packed() {
+    use crate::file_system::volume::backends::LocalPosixVolume;
+    use crate::operation_log::TestJournalGuard;
+    use crate::operation_log::capture::WriterJournal;
+    use crate::operation_log::store::{open_read_connection, operation_log_db_path, read_operation};
+    use crate::operation_log::types::{ExecutionStatus, Initiator};
+    use crate::operation_log::writer::OperationLogWriter;
+
+    let jdir = tempfile::tempdir().expect("jdir");
+    let jdb = operation_log_db_path(jdir.path());
+    let _journal = TestJournalGuard::install(Arc::new(WriterJournal::new(
+        OperationLogWriter::spawn(&jdb).expect("spawn writer"),
+    )));
+
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let src_root = tmp.path().join("src");
+    std::fs::create_dir_all(src_root.join("album")).expect("mkdir src");
+    std::fs::write(src_root.join("one.txt"), b"first").expect("w1");
+    std::fs::write(src_root.join("album/two.txt"), b"second!").expect("w2");
+    let source_volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("src", src_root.clone()));
+    let source_id = unique_lane_id();
+    get_volume_manager().register(&source_id, Arc::clone(&source_volume));
+    let parent_id = unique_lane_id();
+
+    let start = compress_start(
+        Arc::new(CollectorEventSink::new()) as Arc<dyn OperationEventSink>,
+        source_volume,
+        vec![PathBuf::from("one.txt"), PathBuf::from("album")],
+        tmp.path().join("bundle.zip"),
+        parent_id.clone(),
+        ConflictResolution::Overwrite,
+        0,
+        None,
+        None,
+        Initiator::User,
+    )
+    .await
+    .expect("start compress");
+
+    let op_id = start.operation_id.clone();
+    let jdb_poll = jdb.clone();
+    wait_until_async(
+        Duration::from_secs(5),
+        "the operation to reach Done in the journal",
+        || {
+            open_read_connection(&jdb_poll)
+                .ok()
+                .and_then(|c| read_operation(&c, &op_id).ok().flatten())
+                .is_some_and(|r| r.execution_status == ExecutionStatus::Done)
+        },
+    )
+    .await;
+    get_volume_manager().unregister(&source_id);
+
+    let conn = open_read_connection(&jdb).expect("read conn");
+    let row = read_operation(&conn, &start.operation_id).expect("read").expect("row");
+    assert_eq!(row.source_volume_id.as_deref(), Some(source_id.as_str()));
+    assert_eq!(row.dest_volume_id.as_deref(), Some(parent_id.as_str()));
+    // `one.txt`, the `album` folder, and `album/two.txt`.
+    assert_eq!((row.item_count, row.items_done), (3, 3));
+    assert_eq!(row.bytes_total, 12, "the uncompressed source bytes");
+}
+
 /// Compressing a whole folder packs its subtree under the folder name — the common
 /// "compress the directory under the cursor" case.
 #[tokio::test]

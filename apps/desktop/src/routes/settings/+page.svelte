@@ -10,7 +10,7 @@
     import { tString } from '$lib/intl/messages.svelte'
     import { initializeShortcuts, flushPendingSave as flushShortcutsSave } from '$lib/shortcuts'
     import { initAccentColor, cleanupAccentColor } from '$lib/accent-color'
-    import { initReduceTransparency, cleanupReduceTransparency } from '$lib/reduce-transparency'
+    import { initGlassMaterial, cleanupGlassMaterial } from '$lib/glass-material'
     import { initTextSize, cleanupTextSize, getEffectiveScale } from '$lib/text-size.svelte'
     import { initSystemStrings } from '$lib/system-strings.svelte'
     import {
@@ -284,7 +284,7 @@
             // Read system accent color from macOS and listen for changes
             await initAccentColor()
 
-            await initReduceTransparency()
+            await initGlassMaterial()
 
             // Apply compounded text size (system Accessibility × user setting)
             await initTextSize()
@@ -414,7 +414,7 @@
         unlistenRectTracking?.()
         unsubscribeLanguage?.()
         cleanupAccentColor()
-        cleanupReduceTransparency()
+        cleanupGlassMaterial()
         cleanupTextSize()
     })
 

@@ -301,3 +301,18 @@ async fn set_stat_failing_fails_the_stat_without_making_the_path_disappear() {
         Err(VolumeError::NotFound(_))
     ));
 }
+
+/// The stream carries the entry's own date, so a copy out of the double reaches
+/// a destination that stores mtimes the way a local file would.
+#[tokio::test]
+async fn test_open_read_stream_reports_the_entry_mtime() {
+    let volume = InMemoryVolume::new("Test");
+    volume.create_file(Path::new("/dated.txt"), b"dated").await.unwrap();
+    volume.set_modified_at(Path::new("/dated.txt"), Some(1_354_040_105));
+
+    let stream = volume.open_read_stream(Path::new("/dated.txt")).await.unwrap();
+    assert_eq!(
+        stream.modified_at(),
+        Some(std::time::UNIX_EPOCH + std::time::Duration::from_secs(1_354_040_105))
+    );
+}

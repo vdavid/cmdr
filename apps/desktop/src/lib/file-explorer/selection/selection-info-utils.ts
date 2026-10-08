@@ -5,7 +5,7 @@
 
 import type { FileEntry } from '../types'
 import type { FileSizeFormat, FileSizeUnit } from '$lib/settings/types'
-import { formatFileSizeWithFormat, fixedUnitFor, dynamicTierIndex } from '$lib/units/byte-size'
+import { formatTieredSize, fixedUnitFor, type TieredSize } from '$lib/units/byte-size'
 import type { DateSegment, FormattedDate } from '$lib/settings/format-utils'
 import { formatInteger, getGroupSeparator } from '$lib/intl/number-format'
 import { tString } from '$lib/intl/messages.svelte'
@@ -45,21 +45,6 @@ export function formatSizeTriads(bytes: number): { value: string; tierClass: str
 }
 
 /**
- * Picks a size tier CSS class for a human-friendly size string like
- * "1.02 MB" or "512 bytes". Returns the closest of `sizeTierClasses` so the
- * unit-tagged span uses the same coloring as the raw-bytes triad mode.
- */
-export function tierClassForUnit(unit: string): string {
-  const lower = unit.toLowerCase()
-  if (lower === 'bytes') return 'size-bytes'
-  if (lower === 'kb') return 'size-kb' // matches KB (binary) and kB (SI)
-  if (lower === 'mb') return 'size-mb'
-  if (lower === 'gb') return 'size-gb'
-  // TB, PB and anything beyond fall back to the highest defined tier
-  return 'size-tb'
-}
-
-/**
  * Formats a byte count for display in views/status bar based on the user's
  * `listing.sizeUnit` preference. Returns an array of tier-tagged spans:
  * - `'bytes'`: delegates to {@link formatSizeTriads} (one span per digit triad).
@@ -85,15 +70,8 @@ export function formatSizeForDisplay(
     return formatSizeTriads(bytes)
   }
   const forced = fixedUnitFor(opts.unit)
-  const formatted = formatFileSizeWithFormat(bytes, opts.format, forced ?? undefined, opts.rounded)
-  if (forced) {
-    return [{ value: formatted, tierClass: sizeTierClasses[dynamicTierIndex(bytes, opts.format)] }]
-  }
-  // Dynamic mode: tier from the chosen unit (the rendered unit IS the magnitude).
-  // The formatter returns "<value> <unit>"; the unit is the last whitespace-separated token.
-  const spaceIndex = formatted.lastIndexOf(' ')
-  const unit = spaceIndex >= 0 ? formatted.slice(spaceIndex + 1) : ''
-  return [{ value: formatted, tierClass: tierClassForUnit(unit) }]
+  const size = formatTieredSize(bytes, opts.format, forced ?? undefined, opts.rounded)
+  return [{ value: size.text, tierClass: sizeTierClasses[size.tier] }]
 }
 
 /**
@@ -117,14 +95,13 @@ export function formatSizeText(bytes: number, opts: { unit: FileSizeUnit; format
 }
 
 /**
- * Wraps an already-formatted size string (e.g. `"1.02 MB"`, `"512 bytes"`) in a colored span
- * based on its unit suffix. Use when the value comes from `$lib/units`
- * (`formatByteSize` / `formatByteRate`) and you just need tier coloring on top, without re-formatting.
+ * Wraps a formatted size in its tier-colored span, for HTML that carries a size
+ * inside a sentence (tooltips, error copy). Takes the size WITH its tier
+ * (`formatByteSizeTiered` from `$lib/units`): the unit word is translated copy,
+ * so the tier can never be read back out of the text.
  */
-export function colorizeSizeString(text: string): string {
-  const spaceIndex = text.lastIndexOf(' ')
-  const unit = spaceIndex >= 0 ? text.slice(spaceIndex + 1) : ''
-  return `<span class="${tierClassForUnit(unit)}">${text}</span>`
+export function colorizeSize(size: TieredSize): string {
+  return `<span class="${sizeTierClasses[size.tier]}">${size.text}</span>`
 }
 
 /** Formats timestamp as YYYY-MM-DD hh:mm:ss */

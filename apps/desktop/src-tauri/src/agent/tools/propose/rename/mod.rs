@@ -17,12 +17,17 @@
 //!   fingerprints apply later checks the sources against.
 //! - [`revise`]: the user's own name for one row, replacing the model's without re-running the
 //!   plan boundary's whole-plan gates.
+//!
+//! Beside them, [`cut_listing`] counts a staged plan whose folder the model last saw as a cut
+//! listing (an analytics signal, nothing refused).
 
+mod cut_listing;
 mod plan;
 mod preflight;
 mod revise;
 mod store;
 
+pub use cut_listing::{PaneListingCuts, note_pane_listing};
 pub use plan::{
     RenameDispatchOutcome, dispatch, execute_propose_rename_plan, note_image_facts_delivered,
     propose_rename_plan_schema, revoke_image_facts_evidence,

@@ -14,6 +14,7 @@ import type {
   WakeDigestFolderView,
   WakeDigestRollupView,
 } from '$lib/tauri-commands'
+import type { ManagedAiRefusal } from '$lib/ipc/bindings'
 
 /** One tool call the assistant made, as the collapsible "looked at X" line shows it. */
 export interface RailToolCall {
@@ -46,6 +47,8 @@ export type RailMessage =
       /** The provider's own wording, shown as escaped plain text under the friendly
        * headline so the user sees what to fix. Display only; never branched on. */
       detail?: string
+      /** Which rule of the organization's policy refused, for `managedByOrganization`. */
+      managed?: ManagedAiRefusal
     }
   /** What a wake noticed, which opens every thread the agent started for itself. It sits
    * where a user bubble would, because that is the role it plays in the transcript.
@@ -94,6 +97,9 @@ export type RailMessage =
       jobOperationIds: string[]
       /** Files across every batch in `jobOperationIds`. */
       jobFileCount: number
+      /** Renames the batch left out because they swap names with each other: a
+       * batch that runs as a move (a rename that copies on S3) can't swap. */
+      swapsSkipped: number
       undo: RenameUndoState
     }
 

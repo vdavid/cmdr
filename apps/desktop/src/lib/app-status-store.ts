@@ -7,6 +7,7 @@ import { defaultSortOrders } from './file-explorer/types'
 import type { PersistedTab, PersistedPaneTabs } from './file-explorer/tabs/tab-types'
 import { resolveValidPath } from './file-explorer/navigation/path-resolution'
 import { isSnapshotPath } from './file-explorer/navigation/real-folder-history'
+import { isSmbVolumeId } from './servers/server-path-utils'
 import { resolveStorePath } from './settings/store-path'
 import type { Location } from './tauri-commands'
 
@@ -89,12 +90,29 @@ async function getStore(): Promise<Store> {
  * at this function's four call sites are the same idea, one volume at a time;
  * this rule is PATH-shaped, so it covers the volumes that don't have a fixed id.
  */
-async function resolvePersistedPath(path: string, pathExistsFn: (p: string) => Promise<boolean>): Promise<string> {
+export async function resolvePersistedPath(
+  path: string,
+  pathExistsFn: (p: string) => Promise<boolean>,
+): Promise<string> {
   // ❗ The second slash is optional: a one-slash `sftp:/srv/data` is not a shape
   // the app writes, but a `://` test misses it and the walk below then chops it
   // to `/` and answers `~` on the boot disk. Same guard as `schemeRootOf`.
   if (/^[a-z][a-z\d+.-]*:\/\/?/i.test(path)) return path
   return (await resolveValidPath(path, { pathExistsFn, timeoutMs: 0 })) ?? DEFAULT_PATH
+}
+
+/**
+ * A stored tab's path, made safe to land on.
+ *
+ * ❗ **A tab on an SMB share comes back unprobed**, like a `<scheme>://` path: an
+ * unmounted share has no folder on disk, so a walk here would shorten a path that was
+ * right to `/Volumes` before anything could tell whether the share is a saved place.
+ * `file-explorer/pane/initialization.ts::restoreShareTab` decides, with the saved
+ * list in hand, and walks it with [`resolvePersistedPath`] when it isn't one.
+ */
+async function resolveTabPath(location: Location, pathExistsFn: (p: string) => Promise<boolean>): Promise<string> {
+  if (location.volumeId === 'network' || isSmbVolumeId(location.volumeId)) return location.path
+  return await resolvePersistedPath(location.path, pathExistsFn)
 }
 
 /**
@@ -491,8 +509,7 @@ export async function loadPaneTabs(
         raw.tabs.map(async (tab) => {
           // A stored snapshot path can't come back; it's swapped for a real folder first.
           const restored = await restoreSnapshotLocation(tab.path, tab.volumeId)
-          if (restored.volumeId === 'network') return { ...tab, ...restored }
-          const resolvedPath = await resolvePersistedPath(restored.path, pathExistsFn)
+          const resolvedPath = await resolveTabPath(restored, pathExistsFn)
           return { ...tab, ...restored, path: resolvedPath }
         }),
       )
@@ -506,8 +523,7 @@ export async function loadPaneTabs(
     const sortBy = parseSortColumn(await store.get(`${side}SortBy`))
     const viewMode = parseViewMode(await store.get(`${side}ViewMode`))
     const restored = await restoreSnapshotLocation(path, volumeId)
-    const resolvedPath =
-      restored.volumeId === 'network' ? restored.path : await resolvePersistedPath(restored.path, pathExistsFn)
+    const resolvedPath = await resolveTabPath(restored, pathExistsFn)
 
     const tab: PersistedTab = {
       id: crypto.randomUUID(),

@@ -14,10 +14,13 @@ import { waitForUpdates, useMountTarget } from './integration-test-utils'
 
 let mockEntry: unknown = null
 
-vi.mock('$lib/tauri-commands', () => ({
+vi.mock('$lib/tauri-commands', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('$lib/tauri-commands')>()),
   listDirectoryStart: vi.fn().mockResolvedValue({ listingId: 'mock-listing', status: { status: 'ready' } }),
   cancelListing: vi.fn().mockResolvedValue(undefined),
   listDirectoryEnd: vi.fn().mockResolvedValue(undefined),
+  onListingGone: vi.fn(() => () => {}),
+  keepListingsAlive: vi.fn().mockResolvedValue([]),
   getFileRange: vi.fn().mockResolvedValue([]),
   getFileAt: vi.fn().mockImplementation((_listingId: string, index: number) => {
     if (index === 0) {
@@ -49,7 +52,9 @@ vi.mock('$lib/tauri-commands', () => ({
   }),
   findFileIndex: vi.fn().mockResolvedValue(0),
   getTotalCount: vi.fn().mockResolvedValue(10),
-  setListingIncludeHidden: vi.fn().mockResolvedValue(undefined),
+  setListingIncludeHidden: vi
+    .fn()
+    .mockResolvedValue({ sequence: 0, totalCount: 10, newCursorIndex: null, newSelectedIndices: null }),
   getSyncStatus: vi.fn().mockResolvedValue({ data: {}, timedOut: false }),
   // FilePane's onMount registers these image-enrichment listeners.
   onMediaEnrichProgress: vi.fn().mockResolvedValue(() => {}),
@@ -91,7 +96,6 @@ vi.mock('$lib/tauri-commands', () => ({
   setServersViewShown: vi.fn().mockResolvedValue(undefined),
   getNetworkDiscoveryState: vi.fn().mockResolvedValue('idle'),
   resolveNetworkHost: vi.fn().mockResolvedValue(null),
-  listMtpDevices: vi.fn().mockResolvedValue([]),
   onMtpDeviceConnected: vi.fn().mockResolvedValue(() => {}),
   onMtpDeviceDisconnected: vi.fn().mockResolvedValue(() => {}),
   onVolumeSpaceChanged: vi.fn().mockResolvedValue(() => {}),
@@ -108,9 +112,10 @@ vi.mock('$lib/tauri-commands', () => ({
   unwatchVolumeSpace: vi.fn().mockResolvedValue(undefined),
 }))
 
-vi.mock('$lib/icon-cache', async () => {
+vi.mock('$lib/icon-cache', async (importOriginal) => {
   const { writable } = await import('svelte/store')
   return {
+    ...(await importOriginal<typeof import('$lib/icon-cache')>()),
     getCachedIcon: vi.fn().mockReturnValue('/icons/file.png'),
     getCachedCustomFolderIcon: () => undefined,
     iconCacheVersion: writable(0),
@@ -120,7 +125,8 @@ vi.mock('$lib/icon-cache', async () => {
   }
 })
 
-vi.mock('$lib/settings/reactive-settings.svelte', () => ({
+vi.mock('$lib/settings/reactive-settings.svelte', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('$lib/settings/reactive-settings.svelte')>()),
   getRowHeight: vi.fn().mockReturnValue(24),
   formatDateTime: vi.fn().mockReturnValue('2025-01-01 00:00'),
   formattedDate: vi.fn().mockReturnValue({

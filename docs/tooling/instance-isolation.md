@@ -212,7 +212,8 @@ The launch sequence:
 5. Write the generated `tauri.instance.json` to `$TMPDIR/cmdr-tauri-instance-<rand>/` and pass `-c <abs-path>` to Tauri.
 6. Write `<data_dir>/tauri-mcp.port` atomically (tempfile + fsync + rename) so external readers can discover the bridge
    port before Tauri's own bind completes.
-7. Export `CMDR_DATA_DIR` (when unset) and `CMDR_SECRET_STORE=file` (when unset).
+7. Export `CMDR_DATA_DIR` (when unset) and `CMDR_SECRET_STORE=file` (when unset). When it composed `CMDR_DATA_DIR`
+   itself, also `CMDR_CACHE_DIR` (`~/Library/Caches/<identifier>`, the instance's drive index home).
 8. Spawn `pnpm exec tauri ...`. On exit / SIGINT / SIGTERM, remove the tmp config dir and the tauri-mcp port file
    (best-effort; `/tmp` self-prunes on macOS anyway).
 
@@ -328,7 +329,9 @@ also why the patterns there never match `cmdr-e2e-fixtures-cache` or a hand-made
 
 ## Precedence rules
 
-1. **`CMDR_DATA_DIR` is authoritative for data-dir paths.** If set, the backend uses it as-is.
+1. **`CMDR_DATA_DIR` is authoritative for data-dir paths.** If set, the backend uses it as-is. The drive index's cache
+   dir follows `CMDR_CACHE_DIR`, else `<CMDR_DATA_DIR>/cache`, else the OS cache dir, so a launcher that sets only
+   `CMDR_DATA_DIR` (every E2E shard) keeps its index inside that dir (`config.rs` `drive_index_dir`).
 2. **`CMDR_INSTANCE_ID` is authoritative for Keychain service name, clipboard backend selection (when the Cargo feature
    isn't already on), and the Dock label.** It does NOT participate in data-dir resolution.
 3. **MCP port read precedence** (external clients): `CMDR_MCP_PORT` env → `<data_dir>/mcp.port` → typed error. Never

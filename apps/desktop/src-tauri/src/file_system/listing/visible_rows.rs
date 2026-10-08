@@ -1,10 +1,11 @@
 //! What a pane's row index MEANS, and the map that answers it in constant time.
 //!
 //! A pane numbers its rows over the entries it is SHOWING, so row 7 is the
-//! seventh visible entry and not `entries[7]`. Two things can leave an entry out:
+//! seventh visible entry and not `entries[7]`. Three things can leave an entry out:
 //! it's hidden (`FileEntry::is_hidden`: a dotfile, macOS's `UF_HIDDEN` flag, or
 //! `/.hidden` membership at a volume root) and the user hasn't asked for hidden
-//! files, or it's scratch a running operation owns (`file_system::staging`).
+//! files, its name misses the pane's quick filter (`name_filter.rs`), or it's
+//! scratch a running operation owns (`file_system::staging`).
 //! Answering "which entry is row 7" by walking the entries and counting is what a listing accessor used to
 //! do, and at the bottom of a 74,144-entry directory that walk, times the ~100
 //! rows a visible range covers, times an index event every couple of seconds,
@@ -18,25 +19,99 @@
 //! Most of the predicate is stable: `is_hidden` is captured at stat time and
 //! never changes for the lifetime of an entry in a listing (a mutation that
 //! could change it — a rename across the dot boundary, a `chflags` — goes
-//! through `entries_mut`, which invalidates this whole cache), and
-//! `include_hidden` is part of the cache key. The scratch half is NOT — a copy
+//! through `entries_mut`, which invalidates this whole cache),
+//! `include_hidden` is part of the cache key, and a quick-filter change drops
+//! the cache (`CachedListing::set_name_filter`). The scratch half is NOT — a copy
 //! finishing un-hides its leftover with no change to the listing at all, and
 //! nothing calls us when that happens (the ownership signal is a `Weak` that just
 //! stops upgrading, `cmdr_fs::staging`).
 //!
 //! Rather than hunt for every event that could flip it, the map keeps the names
-//! that could EVER be hidden that way in a short side list and re-asks about
-//! those, and only those, on every read. `staging::could_be_hidden_from_listings`
+//! that could EVER be hidden that way in a short side list. `CachedListing`
+//! reconciles those decisions with a revisioned projection at read and mutation
+//! boundaries; the map merges only its committed decisions, never live ownership.
+//! `staging::could_be_hidden_from_listings`
 //! is what makes that sound: `is_hidden_from_listings` is gated on it, so a name
 //! it rejects is settled forever. In a real directory that side list is empty and
 //! a row lookup is one array index.
 
+use std::collections::HashMap;
 use std::sync::{RwLock, RwLockReadGuard};
 
 use crate::ignore_poison::RwLockIgnorePoison;
 
 use crate::file_system::listing::metadata::FileEntry;
+use crate::file_system::listing::name_filter::NameFilter;
 use crate::file_system::staging;
+
+/// Exact-path scratch decisions committed with the listing revision. Ordinary
+/// directories have an empty map; checking drift visits only scratch candidates.
+// DEFAULT-OK: an empty set of captured decisions is the seed for inspecting entries, not disk metadata.
+#[derive(Default, PartialEq, Eq)]
+pub(crate) struct ScratchProjection(HashMap<String, (String, bool)>);
+
+impl ScratchProjection {
+    pub(crate) fn for_entries(entries: &[FileEntry], previous: &Self) -> Self {
+        let staging = staging::show_staging_temps();
+        let safe_save = staging::show_safe_save_files();
+        Self(
+            entries
+                .iter()
+                .filter(|e| staging::could_be_hidden_from_listings(&e.name))
+                .map(|e| {
+                    let hidden = previous.0.get(&e.path).filter(|(name, _)| name == &e.name).map_or_else(
+                        || staging::hidden_with_settings(&e.name, staging, safe_save),
+                        |(_, hidden)| *hidden,
+                    );
+                    (e.path.clone(), (e.name.clone(), hidden))
+                })
+                .collect(),
+        )
+    }
+
+    pub(crate) fn live(&self) -> Self {
+        let staging = staging::show_staging_temps();
+        let safe_save = staging::show_safe_save_files();
+        Self(
+            self.0
+                .iter()
+                .map(|(path, (name, _))| {
+                    (
+                        path.clone(),
+                        (name.clone(), staging::hidden_with_settings(name, staging, safe_save)),
+                    )
+                })
+                .collect(),
+        )
+    }
+
+    pub(crate) fn has_drift(&self) -> bool {
+        let staging = staging::show_staging_temps();
+        let safe_save = staging::show_safe_save_files();
+        self.0
+            .values()
+            .any(|(name, hidden)| *hidden != staging::hidden_with_settings(name, staging, safe_save))
+    }
+
+    pub(crate) fn admit(&mut self, entry: &FileEntry) {
+        if !staging::could_be_hidden_from_listings(&entry.name) {
+            self.0.remove(&entry.path);
+        } else if !self.0.get(&entry.path).is_some_and(|(name, _)| name == &entry.name) {
+            self.0.insert(
+                entry.path.clone(),
+                (entry.name.clone(), staging::is_hidden_from_listings(&entry.name)),
+            );
+        }
+    }
+
+    pub(crate) fn remove(&mut self, path: &str) {
+        self.0.remove(path);
+    }
+
+    pub(crate) fn shows(&self, entry: &FileEntry, include_hidden: bool) -> bool {
+        shown_by_setting(entry, include_hidden, None) && !self.0.get(&entry.path).is_some_and(|(_, hidden)| *hidden)
+    }
+}
 
 /// The per-listing store: one map per `include_hidden` value, built on first ask.
 ///
@@ -55,34 +130,43 @@ impl VisibleRowsCache {
     }
 
     /// Drops both maps. Called whenever a listing's entries are handed out for
-    /// mutation, which is the only thing that can change the settled half.
+    /// mutation or its quick filter changes, the only things that can change the
+    /// settled half.
     pub(crate) fn invalidate(&self) {
         for slot in &self.slots {
             *slot.write_ignore_poison() = None;
         }
     }
 
-    /// The rows a pane with this `include_hidden` is showing.
+    /// The rows a pane with this `include_hidden` and `name_filter` is showing.
+    /// The filter is the listing's own, so it is not part of the slot key: a
+    /// filter change drops both slots instead.
     ///
     /// ⚠️ Callers must already hold the `LISTING_CACHE` read lock (every accessor
     /// does). That's what makes the map stable for the lifetime of the returned
     /// value: mutation needs the cache WRITE lock, so `entries` cannot move under
     /// a reader and a map that validates here stays valid.
-    pub(crate) fn rows<'a>(&'a self, entries: &'a [FileEntry], include_hidden: bool) -> VisibleRows<'a> {
+    pub(crate) fn rows<'a>(
+        &'a self,
+        entries: &'a [FileEntry],
+        include_hidden: bool,
+        name_filter: Option<&NameFilter>,
+        projection: &ScratchProjection,
+    ) -> VisibleRows<'a> {
         let slot = &self.slots[usize::from(include_hidden)];
         {
             let map = slot.read_ignore_poison();
             if map.is_some() {
-                return VisibleRows::new(entries, map);
+                return VisibleRows::new(entries, map, projection);
             }
         }
         {
             let mut map = slot.write_ignore_poison();
             if map.is_none() {
-                *map = Some(VisibleMap::build(entries, include_hidden));
+                *map = Some(VisibleMap::build(entries, include_hidden, name_filter));
             }
         }
-        VisibleRows::new(entries, slot.read_ignore_poison())
+        VisibleRows::new(entries, slot.read_ignore_poison(), projection)
     }
 }
 
@@ -102,7 +186,7 @@ struct Candidate {
     rows_before: u32,
 }
 
-/// Row numbers for one `(listing, include_hidden)` pair.
+/// Row numbers for one `(listing, include_hidden, name_filter)` triple.
 struct VisibleMap {
     /// Entry indices of the rows nothing can hide any more, in listing order.
     settled: Vec<u32>,
@@ -111,14 +195,14 @@ struct VisibleMap {
 }
 
 impl VisibleMap {
-    fn build(entries: &[FileEntry], include_hidden: bool) -> Self {
+    fn build(entries: &[FileEntry], include_hidden: bool, name_filter: Option<&NameFilter>) -> Self {
         let mut settled: Vec<u32> = Vec::with_capacity(entries.len());
         let mut candidates: Vec<Candidate> = Vec::new();
 
         for (index, entry) in entries.iter().enumerate() {
             #[cfg(test)]
             scan_probe::record();
-            if !shown_by_setting(entry, include_hidden) {
+            if !shown_by_setting(entry, include_hidden, name_filter) {
                 continue;
             }
             if staging::could_be_hidden_from_listings(&entry.name) {
@@ -136,24 +220,26 @@ impl VisibleMap {
     }
 }
 
-/// Whether a pane with this `include_hidden` shows `entry` right now: THE
-/// visibility predicate, the one the row map is built from. Hidden means
-/// `FileEntry::is_hidden` (a dotfile, macOS's `UF_HIDDEN` flag, `/.hidden` at a
-/// volume root), never a name test; scratch hides whatever the setting.
-pub(crate) fn shows(entry: &FileEntry, include_hidden: bool) -> bool {
-    shown_by_setting(entry, include_hidden) && !staging::is_hidden_from_listings(&entry.name)
+/// Whether a pane with this `include_hidden` and quick filter shows `entry`
+/// right now: THE visibility predicate, the one the row map is built from.
+/// Hidden means `FileEntry::is_hidden` (a dotfile, macOS's `UF_HIDDEN` flag,
+/// `/.hidden` at a volume root), never a name test; scratch hides whatever the
+/// setting.
+#[cfg(test)]
+pub(crate) fn shows(entry: &FileEntry, include_hidden: bool, name_filter: Option<&NameFilter>) -> bool {
+    shown_by_setting(entry, include_hidden, name_filter) && !staging::is_hidden_from_listings(&entry.name)
 }
 
-/// The half of [`shows`] that can't change while the entry sits unchanged.
-fn shown_by_setting(entry: &FileEntry, include_hidden: bool) -> bool {
-    include_hidden || !entry.is_hidden
+/// The hidden-file and name-filter predicates, independent of scratch ownership.
+fn shown_by_setting(entry: &FileEntry, include_hidden: bool, name_filter: Option<&NameFilter>) -> bool {
+    (include_hidden || !entry.is_hidden) && name_filter.is_none_or(|filter| filter.matches(&entry.name))
 }
 
 /// One reader's view of a listing's rows: the settled map, plus the candidates
-/// that are visible at this instant.
+/// visible in its committed projection.
 ///
 /// Holds the map's read lock, so keep it only as long as the read takes. Every
-/// answer it gives comes from one snapshot of the live scratch state, which is
+/// answer it gives comes from one committed scratch projection, which is
 /// why a count and a row read through the same value can never disagree.
 pub(crate) struct VisibleRows<'a> {
     entries: &'a [FileEntry],
@@ -163,7 +249,11 @@ pub(crate) struct VisibleRows<'a> {
 }
 
 impl<'a> VisibleRows<'a> {
-    fn new(entries: &'a [FileEntry], map: RwLockReadGuard<'a, Option<VisibleMap>>) -> Self {
+    fn new(
+        entries: &'a [FileEntry],
+        map: RwLockReadGuard<'a, Option<VisibleMap>>,
+        projection: &ScratchProjection,
+    ) -> Self {
         let live = map
             .as_ref()
             .expect("the map is filled before the read guard is taken")
@@ -173,7 +263,7 @@ impl<'a> VisibleRows<'a> {
             .filter(|candidate| {
                 entries
                     .get(candidate.entry_index as usize)
-                    .is_some_and(|entry| !staging::is_hidden_from_listings(&entry.name))
+                    .is_some_and(|entry| projection.shows(entry, true))
             })
             .collect();
         Self { entries, map, live }

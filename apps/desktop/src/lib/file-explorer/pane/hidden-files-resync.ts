@@ -1,49 +1,42 @@
-/**
- * Keeps a pane consistent after the hidden-files toggle changes how many rows
- * its listing has: republish the total, then put the cursor somewhere sensible.
- *
- * "Somewhere sensible" means the file the user was looking at, wherever it moved
- * to once the hidden entries appeared or vanished. Only when that file is gone
- * (it WAS the hidden one) do we fall back to clamping the cursor into range.
- *
- * The backend hears the setting first: it numbers `directory-diff` rows in the
- * pane's row space and skips changes to rows the pane doesn't show.
- */
-
-import { findFileIndex, getTotalCount, setListingIncludeHidden } from '$lib/tauri-commands'
+import { setListingIncludeHidden } from '$lib/tauri-commands'
+import type { ResortResult } from '../types'
+import type { PaneRowState } from './pane-row-state'
+import type { collectSortState } from './sorting-handlers'
 
 export interface HiddenFilesResyncInput {
   listingId: string
   includeHidden: boolean
-  /** The file under the cursor before the toggle, if any. */
-  nameToFollow: string | undefined
-  /** The cursor position before the toggle. */
-  cursorIndex: number
-  /** Read late: the `..` row's presence can change with the new total. */
-  getHasParent: () => boolean
-  setTotalCount: (count: number) => void
-  setCursorIndex: (index: number) => Promise<void>
+  rowState: PaneRowState
+  getSortState: () => ReturnType<typeof collectSortState>
+  applyResult: (result: ResortResult) => undefined | (() => void)
 }
 
-export async function resyncAfterHiddenFilesToggle(input: HiddenFilesResyncInput): Promise<void> {
-  await setListingIncludeHidden(input.listingId, input.includeHidden)
-  const count = await getTotalCount(input.listingId, input.includeHidden)
-  input.setTotalCount(count)
-
-  const hasParent = input.getHasParent()
-  const total = hasParent ? count + 1 : count
-
-  // Try to keep cursor on the same file
-  if (input.nameToFollow) {
-    const foundIndex = await findFileIndex(input.listingId, input.nameToFollow, input.includeHidden)
-    if (foundIndex !== null) {
-      await input.setCursorIndex(hasParent ? foundIndex + 1 : foundIndex)
-      return
-    }
+/** Visibility and sorting share the pane's serialized row-space transition gate. */
+export function createHiddenFilesResync(getPaneListingId: () => string) {
+  let disposed = false
+  async function resync(input: HiddenFilesResyncInput): Promise<void> {
+    if (disposed) return
+    await input.rowState.changeView({
+      includeHidden: input.includeHidden,
+      isCurrent: () => !disposed && getPaneListingId() === input.listingId,
+      request: (token) => {
+        const state = input.getSortState()
+        return setListingIncludeHidden(
+          token.listingId,
+          input.includeHidden,
+          token.sequence,
+          state.cursorFilename ?? null,
+          state.backendSelectedIndices ?? null,
+          state.allSelected ?? null,
+        )
+      },
+      install: input.applyResult,
+    })
   }
-
-  // File not found (was hidden) or no file: clamp cursor
-  if (input.cursorIndex >= total) {
-    await input.setCursorIndex(Math.max(0, total - 1))
+  return {
+    resync,
+    dispose: () => {
+      disposed = true
+    },
   }
 }

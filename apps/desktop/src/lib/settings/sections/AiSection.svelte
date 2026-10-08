@@ -14,6 +14,9 @@
     import AiLocalSection from './AiLocalSection.svelte'
     import SectionCard from '$lib/ui/SectionCard.svelte'
     import { tString } from '$lib/intl/messages.svelte'
+    import { getSettingLock } from '$lib/managed-policy/managed-policy.svelte'
+    import { lockAllowsWrite } from '$lib/managed-policy/overlay'
+    import { useSettingLock } from '../components/setting-lock.svelte'
 
     interface Props {
         searchQuery?: string
@@ -91,13 +94,32 @@
         'local-disabled': tString('settings.ai.tooltipLocalDisabled'),
     }
 
+    // The organization's lock on the provider: a pinned one (AI off) disables every option and the
+    // row shows the managed note; a narrowed one (on-device only) rules out Cloud alone, and says
+    // so in a visible line under the row, since a tooltip on a disabled option isn't reliably read.
+    const providerLock = useSettingLock('ai.provider')
+    const lock = $derived(getSettingLock('ai.provider'))
+    const cloudRuledOut = $derived(lock?.kind === 'disallowedValues' && !lockAllowsWrite(lock, 'cloud'))
+    const managedNoteId = 'settings-ai-provider-managed'
+    const managedNote = $derived(
+        cloudRuledOut
+            ? tString(localAiSupported ? 'ai.managed.cloudAiOff' : 'ai.managed.localOnlyUnsupported')
+            : undefined,
+    )
+
+    function optionDisabled(value: AiProvider): boolean {
+        if (!lockAllowsWrite(lock, value)) return true
+        return value === 'local' && !localAiSupported
+    }
+
     function getProviderTooltip(value: string): string {
+        if (value === 'cloud' && cloudRuledOut) return tString('ai.managed.cloudAiOff')
         if (value === 'local' && !localAiSupported) return providerTooltips['local-disabled']
         return providerTooltips[value] ?? ''
     }
 
     function handleProviderSelect(value: AiProvider): void {
-        if (value === 'local' && !localAiSupported) return
+        if (optionDisabled(value)) return
         if (value === provider) return
         setSetting('ai.provider', value)
     }
@@ -116,11 +138,17 @@
                     description={tString('settings.ai.provider.description')}
                     {searchQuery}
                 >
-                    <div class="provider-toggle" role="radiogroup" aria-label={tString('settings.ai.providerAria')}>
+                    <div
+                        class="provider-toggle"
+                        role="radiogroup"
+                        aria-label={tString('settings.ai.providerAria')}
+                        aria-describedby={providerLock.describedBy(managedNote ? managedNoteId : undefined)}
+                    >
                         <!-- eslint-disable-next-line cmdr/prefer-ui-primitive -- Bespoke provider segmented row: options carry per-option tooltips and a disabled "local" state a plain RadioGroup option list can't express; the enclosing role="radiogroup" carries the a11y contract. -->
                         <button
                             class="provider-option"
                             class:selected={provider === 'off'}
+                            disabled={optionDisabled('off')}
                             onclick={() => {
                                 handleProviderSelect('off')
                             }}
@@ -134,6 +162,7 @@
                         <button
                             class="provider-option"
                             class:selected={provider === 'cloud'}
+                            disabled={optionDisabled('cloud')}
                             onclick={() => {
                                 handleProviderSelect('cloud')
                             }}
@@ -147,7 +176,7 @@
                         <button
                             class="provider-option"
                             class:selected={provider === 'local'}
-                            disabled={!localAiSupported}
+                            disabled={optionDisabled('local')}
                             onclick={() => {
                                 handleProviderSelect('local')
                             }}
@@ -159,6 +188,9 @@
                         </button>
                     </div>
                 </SettingRow>
+                {#if managedNote}
+                    <p class="managed-note" id={managedNoteId}>{managedNote}</p>
+                {/if}
             </SectionCard>
         {/if}
 
@@ -184,6 +216,12 @@
 </SettingsSection>
 
 <style>
+    .managed-note {
+        margin: 0 0 var(--spacing-sm);
+        font-size: var(--font-size-sm);
+        color: var(--color-text-secondary);
+    }
+
     .loading-text {
         color: var(--color-text-tertiary);
         font-size: var(--font-size-sm);

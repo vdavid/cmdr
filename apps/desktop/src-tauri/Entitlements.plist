@@ -20,6 +20,12 @@
   - `com.apple.security.cs.allow-unsigned-executable-memory` and `…allow-jit` are for
     a process that JITs. WKWebView's JavaScript runs in Apple's own out-of-process
     `com.apple.WebKit.WebContent`, not here.
+  - `com.apple.security.automation.apple-events` is only needed to send an Apple Event
+    from Cmdr's own process. Get Info's ask to Finder is the only event Cmdr sends another
+    app, and it goes
+    through a spawned `osascript`, which still gets the macOS prompt without it
+    (`file_system/get_info.rs`). The prompt's reason is `NSAppleEventsUsageDescription`
+    in `Info.plist`.
 
   ❌ Don't add one back without proving the app needs it on a SIGNED build: an
   unsigned dev build exercises none of this. If Cmdr ever does need library validation

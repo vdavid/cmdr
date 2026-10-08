@@ -2,6 +2,7 @@
 
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::sync::atomic::AtomicBool;
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
@@ -154,7 +155,13 @@ fn get_lines_after_open() {
 
     let open_result = session::open_session(file.to_str().unwrap(), "root").unwrap();
 
-    let chunk = session::get_lines(&open_result.session_id, super::SeekTarget::Line(2), 3).unwrap();
+    let chunk = session::get_lines(
+        &open_result.session_id,
+        super::SeekTarget::Row(2),
+        3,
+        &AtomicBool::new(false),
+    )
+    .unwrap();
     assert_eq!(chunk.first_row_number, 2);
     assert_eq!(chunk.texts(), vec!["c", "d", "e"]);
 
@@ -163,7 +170,12 @@ fn get_lines_after_open() {
 
 #[test]
 fn get_lines_invalid_session() {
-    let result = session::get_lines("nonexistent-session-id", super::SeekTarget::Line(0), 10);
+    let result = session::get_lines(
+        "nonexistent-session-id",
+        super::SeekTarget::Row(0),
+        10,
+        &AtomicBool::new(false),
+    );
     assert!(result.is_err());
 }
 
@@ -176,13 +188,13 @@ fn close_session_cleans_up() {
     let sid = open_result.session_id.clone();
 
     // Session should work
-    assert!(session::get_lines(&sid, super::SeekTarget::Line(0), 1).is_ok());
+    assert!(session::get_lines(&sid, super::SeekTarget::Row(0), 1, &AtomicBool::new(false)).is_ok());
 
     // Close it
     session::close_session(&sid).unwrap();
 
     // Now it should fail
-    assert!(session::get_lines(&sid, super::SeekTarget::Line(0), 1).is_err());
+    assert!(session::get_lines(&sid, super::SeekTarget::Row(0), 1, &AtomicBool::new(false)).is_err());
 }
 
 #[test]
@@ -328,7 +340,7 @@ fn large_file_upgrades_to_line_index() {
     );
 
     // On LineIndex a `Line` target lands on exactly that line, so the chunk reports it back.
-    let chunk = session::get_lines(sid, super::SeekTarget::Line(10), 3).unwrap();
+    let chunk = session::get_lines(sid, super::SeekTarget::Row(10), 3, &AtomicBool::new(false)).unwrap();
     assert_eq!(chunk.first_row_number, 10);
     assert_eq!(chunk.texts().len(), 3);
     assert!(chunk.texts()[0].starts_with("line 00000010 "));
@@ -350,8 +362,8 @@ fn multiple_sessions() {
     assert_eq!(res2.file_name, "b.txt");
 
     // Both should work independently
-    let chunk1 = session::get_lines(&res1.session_id, super::SeekTarget::Line(0), 1).unwrap();
-    let chunk2 = session::get_lines(&res2.session_id, super::SeekTarget::Line(0), 1).unwrap();
+    let chunk1 = session::get_lines(&res1.session_id, super::SeekTarget::Row(0), 1, &AtomicBool::new(false)).unwrap();
+    let chunk2 = session::get_lines(&res2.session_id, super::SeekTarget::Row(0), 1, &AtomicBool::new(false)).unwrap();
     assert_eq!(chunk1.texts()[0], "file a");
     assert_eq!(chunk2.texts()[0], "file b");
 
@@ -413,7 +425,7 @@ fn search_poll_incremental_delivery() {
     let poll_delta = session::search_poll(sid, 2).unwrap();
     assert_eq!(poll_delta.new_matches.len(), 1);
     assert_eq!(poll_delta.total_match_count, 3);
-    assert_eq!(poll_delta.new_matches[0].line, 4); // 5th line (0-indexed)
+    assert_eq!(poll_delta.new_matches[0].row, 4); // 5th line (0-indexed)
 
     // since_index=3 (caught up) returns no new matches
     let poll_none = session::search_poll(sid, 3).unwrap();
@@ -425,8 +437,8 @@ fn search_poll_incremental_delivery() {
 
 // ----- viewer_read_range tests -----
 
-fn line(line: u64, offset: u32) -> RangeEnd {
-    RangeEnd::Line { line, offset }
+fn row(row: u64, offset: u32) -> RangeEnd {
+    RangeEnd::Row { row, offset }
 }
 
 #[test]
@@ -437,7 +449,7 @@ fn read_range_full_load_anchor_equals_focus_returns_empty() {
         .unwrap()
         .session_id;
 
-    let out = session::read_range(&sid, 1, line(0, 3), line(0, 3)).unwrap();
+    let out = session::read_range(&sid, 1, row(0, 3), row(0, 3)).unwrap();
     assert_eq!(out, "");
 
     session::close_session(&sid).unwrap();
@@ -452,7 +464,7 @@ fn read_range_full_load_single_line_slice() {
         .session_id;
 
     // Slice "ello w" out of the first line.
-    let out = session::read_range(&sid, 1, line(0, 1), line(0, 7)).unwrap();
+    let out = session::read_range(&sid, 1, row(0, 1), row(0, 7)).unwrap();
     assert_eq!(out, "ello w");
 
     session::close_session(&sid).unwrap();
@@ -467,7 +479,7 @@ fn read_range_full_load_multi_line_includes_newlines_between() {
         .session_id;
 
     // From (0, 2) "pha\n" + "beta\n" + "gamma\n" + "del" => "pha\nbeta\ngamma\ndel".
-    let out = session::read_range(&sid, 1, line(0, 2), line(3, 3)).unwrap();
+    let out = session::read_range(&sid, 1, row(0, 2), row(3, 3)).unwrap();
     assert_eq!(out, "pha\nbeta\ngamma\ndel");
 
     session::close_session(&sid).unwrap();
@@ -481,8 +493,8 @@ fn read_range_full_load_reversed_inputs_normalised() {
         .unwrap()
         .session_id;
 
-    let forward = session::read_range(&sid, 1, line(0, 0), line(0, 5)).unwrap();
-    let reversed = session::read_range(&sid, 2, line(0, 5), line(0, 0)).unwrap();
+    let forward = session::read_range(&sid, 1, row(0, 0), row(0, 5)).unwrap();
+    let reversed = session::read_range(&sid, 2, row(0, 5), row(0, 0)).unwrap();
     assert_eq!(forward, reversed);
     assert_eq!(forward, "hello");
 
@@ -497,7 +509,7 @@ fn read_range_full_load_out_of_range_returns_typed_error() {
         .unwrap()
         .session_id;
 
-    let err = session::read_range(&sid, 1, line(99, 0), line(99, 5)).unwrap_err();
+    let err = session::read_range(&sid, 1, row(99, 0), row(99, 5)).unwrap_err();
     assert!(matches!(err, ViewerError::OutOfRange));
 
     session::close_session(&sid).unwrap();
@@ -511,7 +523,7 @@ fn read_range_full_load_eof_selects_to_end() {
         .unwrap()
         .session_id;
 
-    let out = session::read_range(&sid, 1, line(0, 0), RangeEnd::Eof).unwrap();
+    let out = session::read_range(&sid, 1, row(0, 0), RangeEnd::Eof).unwrap();
     // The trailing newline is excluded (half-open semantics; the last line's content is included).
     assert_eq!(out, "first\nsecond\nthird\n");
     // Note: this file *has* a trailing newline; the split gives a 4th empty "line", whose
@@ -530,17 +542,17 @@ fn read_range_full_load_utf16_surrogate_clamps_down() {
         .session_id;
 
     // Offset 1 lands inside the surrogate pair; clamp to 0 — output excludes the emoji entirely.
-    let out = session::read_range(&sid, 1, line(0, 1), line(0, 3)).unwrap();
+    let out = session::read_range(&sid, 1, row(0, 1), row(0, 3)).unwrap();
     // From (clamped) 0 to 3 (= 'h'): "👋h"? No — clamp pulls offset 1 down to byte 0, so we get [0..byte_for_3].
     // Byte for offset 3 = end of 'h' = byte 5. So output is the full "👋h" = 5 bytes.
     assert_eq!(out, "👋h");
 
     // A clearer case: offset 1 to 1 (single-line collapsed inside the emoji's surrogate) → "".
-    let out_empty = session::read_range(&sid, 2, line(0, 1), line(0, 1)).unwrap();
+    let out_empty = session::read_range(&sid, 2, row(0, 1), row(0, 1)).unwrap();
     assert_eq!(out_empty, "");
 
     // Offset 0 to 2 (full emoji) → "👋".
-    let out_emoji = session::read_range(&sid, 3, line(0, 0), line(0, 2)).unwrap();
+    let out_emoji = session::read_range(&sid, 3, row(0, 0), row(0, 2)).unwrap();
     assert_eq!(out_emoji, "👋");
 
     session::close_session(&sid).unwrap();
@@ -556,7 +568,7 @@ fn read_range_full_load_only_newlines_file() {
         .session_id;
 
     // Select all up to line 2 offset 0: "(empty)\n(empty)\n" = "\n\n".
-    let out = session::read_range(&sid, 1, line(0, 0), line(2, 0)).unwrap();
+    let out = session::read_range(&sid, 1, row(0, 0), row(2, 0)).unwrap();
     assert_eq!(out, "\n\n");
 
     session::close_session(&sid).unwrap();
@@ -573,7 +585,7 @@ fn read_range_byte_seek_eof_selects_whole_file() {
     let open = session::open_session(file.to_str().unwrap(), "root").unwrap();
     let sid = open.session_id.clone();
 
-    let out = session::read_range(&sid, 1, line(0, 0), RangeEnd::Eof).unwrap();
+    let out = session::read_range(&sid, 1, row(0, 0), RangeEnd::Eof).unwrap();
     // Every byte, final newline included: a file ending in a newline has a final empty
     // row, so ⌘A gives the same answer whichever backend a file's size lands it on.
     assert_eq!(out, content);
@@ -598,7 +610,7 @@ fn read_range_cancellation_returns_cancelled() {
     let backend = FullLoadBackend::from_content(&content, "cancel.txt");
 
     let cancel = AtomicBool::new(true);
-    let result = read_range(&backend, line(0, 0), RangeEnd::Eof, &cancel);
+    let result = read_range(&backend, row(0, 0), RangeEnd::Eof, &cancel);
 
     assert!(
         matches!(result, Err(ViewerError::Cancelled)),
@@ -633,7 +645,7 @@ fn read_range_session_cancellation_returns_cancelled_and_cleans_up() {
         session::cancel_read(&sid_for_cancel, 42).unwrap();
     });
 
-    let result = session::read_range(&sid, 42, line(0, 0), RangeEnd::Eof);
+    let result = session::read_range(&sid, 42, row(0, 0), RangeEnd::Eof);
     let _ = canceller.join();
 
     assert!(
@@ -664,13 +676,13 @@ fn read_range_full_load_crlf_preserves_carriage_returns() {
     // `range_read` rejoins with `\n` between lines and trims exactly one trailing
     // newline at EOF (the same half-open behaviour the LF test asserts). Net: the
     // original CRLF bytes round-trip exactly.
-    let out = session::read_range(&sid, 1, line(0, 0), RangeEnd::Eof).unwrap();
+    let out = session::read_range(&sid, 1, row(0, 0), RangeEnd::Eof).unwrap();
     assert_eq!(out, "alpha\r\nbeta\r\ngamma\r\n");
 
     // Multi-line slice: from (0, 2) to (1, 3). On line 0 the text after offset 2 is
     // "pha\r" (offset 2 in UTF-16 lands on byte 2 of "alpha\r"). Then the joining
     // `\n`. Then on line 1 from offset 0 to 3 = "bet".
-    let slice = session::read_range(&sid, 2, line(0, 2), line(1, 3)).unwrap();
+    let slice = session::read_range(&sid, 2, row(0, 2), row(1, 3)).unwrap();
     assert_eq!(slice, "pha\r\nbet");
 
     session::close_session(&sid).unwrap();
@@ -684,7 +696,7 @@ fn read_range_cleans_up_active_reads_on_success() {
         .unwrap()
         .session_id;
 
-    session::read_range(&sid, 7, line(0, 0), line(0, 5)).unwrap();
+    session::read_range(&sid, 7, row(0, 0), row(0, 5)).unwrap();
     assert_eq!(session::active_read_count(&sid), 0);
 
     session::close_session(&sid).unwrap();
@@ -692,7 +704,7 @@ fn read_range_cleans_up_active_reads_on_success() {
 
 #[test]
 fn read_range_session_not_found_returns_typed_error() {
-    let err = session::read_range("nonexistent-session", 1, line(0, 0), line(0, 5)).unwrap_err();
+    let err = session::read_range("nonexistent-session", 1, row(0, 0), row(0, 5)).unwrap_err();
     assert!(matches!(err, ViewerError::SessionNotFound { .. }));
 }
 
@@ -719,7 +731,7 @@ fn write_range_to_file_writes_atomically() {
         .session_id;
 
     let dest = dir.join("out.txt");
-    session::write_range_to_file(&sid, 1, line(0, 0), line(2, 5), &dest, &session::SaveProgress::new()).unwrap();
+    session::write_range_to_file(&sid, 1, row(0, 0), row(2, 5), &dest, &session::SaveProgress::new()).unwrap();
     let written = fs::read_to_string(&dest).unwrap();
     assert_eq!(written, "alpha\nbeta\ngamma");
 
@@ -742,7 +754,7 @@ fn write_range_to_file_propagates_out_of_range_error() {
         .session_id;
 
     let dest = dir.join("out.txt");
-    let err = session::write_range_to_file(&sid, 1, line(99, 0), line(99, 5), &dest, &session::SaveProgress::new())
+    let err = session::write_range_to_file(&sid, 1, row(99, 0), row(99, 5), &dest, &session::SaveProgress::new())
         .unwrap_err();
     assert!(matches!(err, ViewerError::OutOfRange));
     assert!(!dest.exists());
@@ -798,7 +810,7 @@ fn write_range_to_file_streams_as_it_reads() {
     });
     let sid = session::test_only_install_session(Box::new(backend), dir.join("scripted.txt"));
 
-    session::write_range_to_file(&sid, 1, line(0, 0), RangeEnd::Eof, &dest, &session::SaveProgress::new()).unwrap();
+    session::write_range_to_file(&sid, 1, row(0, 0), RangeEnd::Eof, &dest, &session::SaveProgress::new()).unwrap();
 
     let lens = temp_lens.lock_ignore_poison().clone();
     assert!(
@@ -838,8 +850,8 @@ fn write_range_to_file_matches_the_source_across_chunks() {
     session::write_range_to_file(
         &sid,
         1,
-        line(0, 0),
-        line(29_999, last_line_len),
+        row(0, 0),
+        row(29_999, last_line_len),
         &dest,
         &session::SaveProgress::new(),
     )
@@ -875,7 +887,7 @@ fn write_range_to_file_saves_a_utf16_source_as_utf8() {
         .unwrap()
         .session_id;
     let dest = dir.join("out.txt");
-    session::write_range_to_file(&sid, 1, line(0, 0), line(2, 5), &dest, &session::SaveProgress::new()).unwrap();
+    session::write_range_to_file(&sid, 1, row(0, 0), row(2, 5), &dest, &session::SaveProgress::new()).unwrap();
 
     // UTF-8 text, not the source's UTF-16 code units (which would carry NUL bytes).
     assert_eq!(fs::read(&dest).unwrap(), b"alpha\nbeta\ngamma");
@@ -904,7 +916,7 @@ fn write_range_to_file_cancelled_mid_stream_leaves_nothing_behind() {
     let sid = session::test_only_install_session(Box::new(backend), dir.join("scripted.txt"));
     *session_for_probe.lock_ignore_poison() = Some(sid.clone());
 
-    let err = session::write_range_to_file(&sid, 1, line(0, 0), RangeEnd::Eof, &dest, &session::SaveProgress::new())
+    let err = session::write_range_to_file(&sid, 1, row(0, 0), RangeEnd::Eof, &dest, &session::SaveProgress::new())
         .unwrap_err();
     assert!(matches!(err, ViewerError::Cancelled));
     assert!(!dest.exists(), "a cancelled save must not create the destination");
@@ -926,9 +938,9 @@ fn read_range_stitching_adjacent_ranges_equals_one_big_range() {
         .session_id;
 
     // Pick a split point in the middle of the file: between (1, 2) and (1, 2).
-    let big = session::read_range(&sid, 1, line(0, 0), line(4, 5)).unwrap();
-    let first = session::read_range(&sid, 2, line(0, 0), line(1, 2)).unwrap();
-    let second = session::read_range(&sid, 3, line(1, 2), line(4, 5)).unwrap();
+    let big = session::read_range(&sid, 1, row(0, 0), row(4, 5)).unwrap();
+    let first = session::read_range(&sid, 2, row(0, 0), row(1, 2)).unwrap();
+    let second = session::read_range(&sid, 3, row(1, 2), row(4, 5)).unwrap();
     assert_eq!(big, format!("{}{}", first, second));
 
     session::close_session(&sid).unwrap();
@@ -1021,8 +1033,7 @@ fn test_finalize_writes_cancelled_when_cancel_observed() {
 fn test_watchdog_forces_cancel_when_worker_ignores_flag() {
     // Spawn `run_search_watchdog` against a fake worker that never observes
     // the cancel flag (it just keeps the status at `Running`). The watchdog
-    // must transition the status to `Cancelled` within ~1.25 s of the flag
-    // being set.
+    // must wait out its budget, then transition the status to `Cancelled`.
     use std::sync::atomic::AtomicBool;
     use std::sync::{Arc, Mutex};
 
@@ -1045,10 +1056,19 @@ fn test_watchdog_forces_cancel_when_worker_ignores_flag() {
         matches!(*status.lock().unwrap(), SearchStatus::Cancelled),
         "watchdog must write Cancelled"
     );
+    // The flag is seen on the first poll at the latest, then the budget runs out, so the ideal
+    // is one poll plus the budget (1.25 s). Each of those five sleeps overshoots on a loaded
+    // machine: a 3-core CI runner took 1.63 s. The slack absorbs that and still fails a watchdog
+    // that waits a whole extra budget or never fires.
+    const SCHEDULING_SLACK: Duration = Duration::from_millis(750);
     assert!(
-        elapsed < Duration::from_millis(1_500),
-        "watchdog took too long: {:?}",
-        elapsed
+        elapsed >= session::SEARCH_WATCHDOG_BUDGET,
+        "watchdog must give the worker its full budget first, fired after {elapsed:?}"
+    );
+    let ceiling = session::SEARCH_WATCHDOG_POLL + session::SEARCH_WATCHDOG_BUDGET + SCHEDULING_SLACK;
+    assert!(
+        elapsed < ceiling,
+        "watchdog took too long: {elapsed:?} (ceiling {ceiling:?})"
     );
 }
 
@@ -1222,12 +1242,24 @@ fn set_encoding_full_load_swaps_decoder() {
     assert!(matches!(result.backend_type, session::BackendType::FullLoad));
 
     // Currently Windows-1252 (detected): line should decode as "café".
-    let chunk = session::get_lines(&result.session_id, super::SeekTarget::Line(0), 1).unwrap();
+    let chunk = session::get_lines(
+        &result.session_id,
+        super::SeekTarget::Row(0),
+        1,
+        &AtomicBool::new(false),
+    )
+    .unwrap();
     assert_eq!(chunk.texts()[0], "café");
 
     // Force UTF-8: the high byte becomes U+FFFD.
     session::set_encoding(&result.session_id, FileEncoding::Utf8).unwrap();
-    let chunk = session::get_lines(&result.session_id, super::SeekTarget::Line(0), 1).unwrap();
+    let chunk = session::get_lines(
+        &result.session_id,
+        super::SeekTarget::Row(0),
+        1,
+        &AtomicBool::new(false),
+    )
+    .unwrap();
     assert_eq!(chunk.texts()[0], "caf\u{FFFD}");
 
     session::close_session(&result.session_id).unwrap();
@@ -1322,7 +1354,13 @@ fn test_append_during_encoding_rebuild_not_dropped() {
     // We can't read total_bytes directly from outside; use get_lines with a Fraction
     // target near 1.0 — the chunk's `total_bytes` field reflects the backend's
     // current total.
-    let chunk = session::get_lines(&result.session_id, super::SeekTarget::Fraction(0.0), 1).unwrap();
+    let chunk = session::get_lines(
+        &result.session_id,
+        super::SeekTarget::Fraction(0.0),
+        1,
+        &AtomicBool::new(false),
+    )
+    .unwrap();
     assert_eq!(
         chunk.total_bytes, new_size,
         "rebuild must absorb the queued append (drain-and-swap protocol)"
@@ -1362,7 +1400,7 @@ fn reload_replaces_backend_against_current_disk_contents() {
     session::reload(&sid).unwrap();
     let status = session::get_session_status(&sid).unwrap();
     assert!(status.total_lines.is_some());
-    let chunk = session::get_lines(&sid, super::SeekTarget::Line(1), 2).unwrap();
+    let chunk = session::get_lines(&sid, super::SeekTarget::Row(1), 2, &AtomicBool::new(false)).unwrap();
     assert_eq!(chunk.texts(), vec!["second", "third"]);
 
     session::close_session(&sid).unwrap();
@@ -1397,7 +1435,7 @@ fn set_tail_mode_enabling_catches_up_existing_growth() {
     let backend_bytes = session::get_session_status(&sid).unwrap();
     let _ = backend_bytes; // we re-read via get_lines below
     // get_lines after the snap should not blow up; that's the smoke check.
-    let _chunk = session::get_lines(&sid, super::SeekTarget::Fraction(0.99), 2).unwrap();
+    let _chunk = session::get_lines(&sid, super::SeekTarget::Fraction(0.99), 2, &AtomicBool::new(false)).unwrap();
 
     session::close_session(&sid).unwrap();
 }
@@ -1457,11 +1495,50 @@ fn tail_mode_on_extends_backend_when_watcher_reports_grew() {
 
     let description = format!("the tail-mode handler to extend the backend to a total of {want_size}");
     wait_until(Duration::from_secs(3), &description, || {
-        session::get_lines(&sid, super::SeekTarget::Fraction(0.0), 1)
+        session::get_lines(&sid, super::SeekTarget::Fraction(0.0), 1, &AtomicBool::new(false))
             .expect("get lines")
             .total_bytes
             >= want_size
     });
+
+    session::close_session(&sid).unwrap();
+}
+
+#[test]
+fn tail_mode_on_a_full_load_file_reopens_it_to_take_in_the_append() {
+    // FullLoad can't extend in place, so a small file (a fresh `cmdr.log`) must
+    // reopen on growth; without that, tail mode does nothing below 1 MB.
+    let dir = create_test_dir("tail_full_load");
+    let path = write_test_file(&dir, "small.log", "first line\nsecond line\n");
+
+    let result = session::open_session(path.to_str().unwrap(), "root").unwrap();
+    let sid = result.session_id.clone();
+    assert!(matches!(result.backend_type, session::BackendType::FullLoad));
+    wait_for_watcher_subscribed();
+    session::set_tail_mode(&sid, true).unwrap();
+
+    {
+        use std::io::Write;
+        let mut f = fs::OpenOptions::new().append(true).open(&path).unwrap();
+        f.write_all(b"appended while tailing\n").unwrap();
+    }
+    let want_size = fs::metadata(&path).unwrap().len();
+    let sent = super::watcher::test_only_emit(
+        &fs::canonicalize(&path).unwrap(),
+        super::watcher::WatcherEvent::Grew(want_size),
+    );
+    assert!(sent > 0, "test_only_emit should have found a subscriber");
+
+    wait_until(
+        Duration::from_secs(3),
+        "the tail-mode handler to reopen the FullLoad file",
+        || {
+            session::get_lines(&sid, super::SeekTarget::Row(2), 1, &AtomicBool::new(false))
+                .expect("get lines")
+                .texts()
+                == vec!["appended while tailing"]
+        },
+    );
 
     session::close_session(&sid).unwrap();
 }
@@ -1560,7 +1637,7 @@ fn test_append_during_upgrade_not_dropped() {
         upgraded_to_line_index(&sid)
     });
 
-    let chunk = session::get_lines(&sid, super::SeekTarget::Fraction(0.0), 1).unwrap();
+    let chunk = session::get_lines(&sid, super::SeekTarget::Fraction(0.0), 1, &AtomicBool::new(false)).unwrap();
     assert_eq!(
         chunk.total_bytes, new_size,
         "upgrade drain must absorb the queued append"
@@ -1616,7 +1693,7 @@ fn test_append_between_drain_and_swap_not_dropped() {
         upgraded_to_line_index(&sid)
     });
 
-    let chunk = session::get_lines(&sid, super::SeekTarget::Fraction(0.0), 1).unwrap();
+    let chunk = session::get_lines(&sid, super::SeekTarget::Fraction(0.0), 1, &AtomicBool::new(false)).unwrap();
     assert_eq!(
         chunk.total_bytes, final_size,
         "coalesced queue must land on the final backend"
@@ -1653,7 +1730,7 @@ fn test_session_emits_file_changed_on_append() {
     assert!(sent > 0, "test_only_emit must reach the session's subscriber");
 
     let total_bytes = || {
-        session::get_lines(&sid, super::SeekTarget::Fraction(0.0), 1)
+        session::get_lines(&sid, super::SeekTarget::Fraction(0.0), 1, &AtomicBool::new(false))
             .expect("get lines")
             .total_bytes
     };
@@ -1740,7 +1817,7 @@ fn test_session_rotation_reopens_backend() {
         Duration::from_secs(3),
         "the rotation to reopen against the new bytes",
         || {
-            session::get_lines(&sid, super::SeekTarget::Fraction(0.0), 1)
+            session::get_lines(&sid, super::SeekTarget::Fraction(0.0), 1, &AtomicBool::new(false))
                 .expect("get lines")
                 .total_bytes
                 == new_size

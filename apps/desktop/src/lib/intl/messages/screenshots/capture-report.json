@@ -1985,31 +1985,6 @@
       "viewer.toolbar.viewMode.text"
     ]
   },
-  "viewer-context-menu": {
-    "screenshot": "viewer-context-menu.png",
-    "keys": [
-      "ui.select.placeholder",
-      "viewer.content.ariaLabel",
-      "viewer.contextMenu.ariaLabel",
-      "viewer.contextMenu.copy",
-      "viewer.contextMenu.selectAll",
-      "viewer.srHeading",
-      "viewer.statusBar.ariaLabel",
-      "viewer.statusBar.badge.inMemory",
-      "viewer.statusBar.badge.inMemoryTooltip",
-      "viewer.statusBar.hint.text",
-      "viewer.statusBar.lineCount",
-      "viewer.toolbar.encoding.detectedSuffix",
-      "viewer.toolbar.encoding.placeholder",
-      "viewer.toolbar.tail.ariaLabel",
-      "viewer.toolbar.tail.label",
-      "viewer.toolbar.tail.tooltip",
-      "viewer.toolbar.viewMode.ariaLabel",
-      "viewer.toolbar.viewMode.binary",
-      "viewer.toolbar.viewMode.hex",
-      "viewer.toolbar.viewMode.text"
-    ]
-  },
   "viewer-view-mode": {
     "screenshot": "viewer-view-mode.png",
     "keys": [

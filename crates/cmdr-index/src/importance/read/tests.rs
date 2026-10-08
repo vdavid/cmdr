@@ -94,12 +94,29 @@ fn above_threshold_is_inclusive_at_the_edge() {
         ("/below", 0.49, PathClass::Neutral),
     ]);
     let hits = index.above_threshold(0.50).expect("above_threshold");
-    let paths: Vec<&str> = hits.iter().map(|w| w.path.as_str()).collect();
+    // Unordered by contract, so compare as a sorted set.
+    let mut paths: Vec<&str> = hits.iter().map(|w| w.path.as_str()).collect();
+    paths.sort_unstable();
     assert_eq!(
         paths,
         vec!["/above", "/exactly"],
-        "inclusive at 0.50: /exactly is in, /below is out, ordered by score desc"
+        "inclusive at 0.50: /exactly is in, /below is out"
     );
+}
+
+/// `top_above_threshold` keeps the ranking `above_threshold` drops: score desc and
+/// inclusive at the bound.
+#[test]
+fn top_above_threshold_ranks_by_score() {
+    let (index, _dir) = populated_index(&[
+        ("/exactly", 0.50, PathClass::Neutral),
+        ("/above", 0.51, PathClass::UserContent),
+        ("/top", 0.90, PathClass::ProjectRoot),
+        ("/below", 0.49, PathClass::Neutral),
+    ]);
+    let hits = index.top_above_threshold(10, 0.50).expect("top_above_threshold");
+    let paths: Vec<&str> = hits.iter().map(|w| w.path.as_str()).collect();
+    assert_eq!(paths, vec!["/top", "/above", "/exactly"]);
 }
 
 /// `explain` recomputes the per-signal breakdown from the STORED signals via the

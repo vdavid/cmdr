@@ -116,7 +116,7 @@ pub async fn send(payload: &FeedbackPayload, server_url: &str) -> SendFeedbackRe
             return SendFeedbackResult::Sent;
         }
 
-        let client = match reqwest::Client::builder().timeout(SEND_TIMEOUT).build() {
+        let client = match cmdr_http::client_builder().timeout(SEND_TIMEOUT).build() {
             Ok(c) => c,
             Err(e) => {
                 log::warn!(target: "cmdr_lib::feedback", "Couldn't build HTTP client: {e}");

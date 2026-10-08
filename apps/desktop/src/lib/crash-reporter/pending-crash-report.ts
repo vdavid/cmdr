@@ -47,10 +47,13 @@ export async function checkForPendingCrashReport(showDialog: (report: CrashRepor
     // The file stays until a send lands, so the report comes back next launch. No network, a timeout, or a
     // server having a bad moment stays at warn; a refusal from Cmdr's own server means the contract broke.
     const detail = { error: String(e) }
-    if (serverRequestLogLevel(serverRequestFailureOf(e)) === 'error') {
+    const level = serverRequestLogLevel(serverRequestFailureOf(e))
+    if (level === 'error') {
       log.error('Auto-send crash report returned an error: {error}', detail)
-    } else {
+    } else if (level === 'warn') {
       log.warn('Auto-send crash report returned an error: {error}', detail)
+    } else {
+      log.info('Auto-send crash report not sent: {error}', detail)
     }
   }
 }

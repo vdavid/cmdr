@@ -15,14 +15,12 @@ the `Volume` trait, capability flags, and any write path.
 - `format.rs`: `open_tar_decoder` (the codecs), plus a re-export of the naming vocabulary — `ArchiveFormat`,
   `format_for_name` (detection SoT), `is_sequential` — which lives in `crates/cmdr-fs/src/archive_format.rs` because
   `FileEntry.is_archive` reads it.
-- `zip.rs` / `tar.rs` / `sevenz.rs`: per-format parse + producer + `EntryStore` arm.
+- `zip.rs` / `tar.rs` / `sevenz.rs`: per-format parse + producer + `EntryStore` arm. `zip_times.rs`: DOS-only entry
+  times (DETAILS § Entry times).
 - `source.rs`: the `ArchiveByteSource` seam + `LocalFileSource` / `BytesSource` / `TailCachedSource`.
 - `reader.rs`: `ArchiveEntryReader` — chunked, off-executor decompression. `extract.rs`: `SubtreeExtractReader` — the
   one-pass subtree extractor for sequential formats (compressed tar, 7z), decode-once bulk extract.
 - `name.rs`: `sanitize_entry_name` — the Zip Slip defense. `cache.rs`: `ArchiveIndexCache`. `error.rs`: `ArchiveError`.
-
-Depth, rationale, and the full test list: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
-reorganizing, or advising.
 
 ## Must-knows
 
@@ -45,11 +43,14 @@ reorganizing, or advising.
   since a password WAS supplied, types it `WrongPassword` (never string-matched). **A HEADER-encrypted 7z (`-mhe=on`)
   needs the password to even BROWSE** (encrypted metadata), so `parse` — not just extraction — returns
   `Encrypted`/`WrongPassword`; the volume layer surfaces it as `NeedsPassword` on the LISTING path (browse-time prompt).
-  Filename encoding is rc-zip's job for zip — consume the decoded `entry.name`.
 - **`ArchiveNode::mode` is what the archive RECORDED, `None` when it recorded nothing** (zip external attributes, the
   tar header, 7z's `0x8000` unix extension). ❌ Never a plausible `0o644`: the copy engine puts it on what an extract
   writes. Low nine bits only — setuid/setgid/sticky are dropped at the parser.
 - **The index cache key is `(path, size, mtime)`** (external edits auto-invalidate); `index_for_local` is blocking, call
   it from `spawn_blocking`.
-- **Two DoS caps bound the synthetic tree**: per-entry depth (`name::MAX_COMPONENT_DEPTH`, over-deep entries quarantine)
-  and total node count (`index::MAX_TREE_NODES`, over-cap fails the parse `TooLarge`). Don't remove either.
+- **Three DoS caps**: per-entry depth (`name::MAX_COMPONENT_DEPTH`, over-deep entries quarantine), total node count
+  (`index::MAX_TREE_NODES`), and an xz block's dictionary (`format::XZ_MEMORY_LIMIT_KIB`); the last two fail as
+  `TooLarge`. ❌ Don't remove any. DETAILS § "Resource caps".
+
+Depth, rationale, and the full test list: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
+reorganizing, or advising.

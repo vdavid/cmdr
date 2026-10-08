@@ -24,8 +24,6 @@ export interface TypeToJumpControllerDeps {
   getLoading: () => boolean
   /** Whether the pane's volume kind has a real backend listing to jump within. */
   getHasBackendListing: () => boolean
-  /** The MTP not-yet-connected sub-state (a connected MTP pane jumps fine). */
-  getIsMtpDeviceOnly: () => boolean
   getIncludeHidden: () => boolean
   getHasParent: () => boolean
   /** Move the cursor to a frontend index (scrolls + syncs MCP). */
@@ -111,10 +109,8 @@ export function createTypeToJumpController(deps: TypeToJumpControllerDeps): Type
 
   function handleJumpKeystroke(char: string): void {
     // No real listing to jump within (network / search-results) folds into
-    // `!getHasBackendListing()`. `getIsMtpDeviceOnly` STAYS: it's the MTP
-    // not-yet-connected runtime sub-state, not a kind capability (a CONNECTED MTP
-    // pane has a backend listing and jumps fine).
-    if (!deps.getListingId() || deps.getLoading() || !deps.getHasBackendListing() || deps.getIsMtpDeviceOnly()) return
+    // `!getHasBackendListing()`.
+    if (!deps.getListingId() || deps.getLoading() || !deps.getHasBackendListing()) return
     typeToJump.appendChar(char)
     // Surface the buffer change to MCP (`runJumpMatch` syncs again on success, but
     // a no-match keystroke would otherwise leave MCP stale).

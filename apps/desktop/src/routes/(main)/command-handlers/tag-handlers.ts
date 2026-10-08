@@ -7,10 +7,11 @@
  *
  * Color indices match the backend and `tag-dots-utils.ts`: 1 grey … 7 orange.
  */
+import { detached } from './detached'
 import type { CommandHandlerContext, CommandHandlerRecord } from './types'
 
 function toggleTag(color: number, { explorerRef }: CommandHandlerContext): void {
-  void explorerRef?.toggleTagOnFocusedSelection(color)
+  detached(explorerRef?.toggleTagOnFocusedSelection(color))
 }
 
 export const tagHandlers = {

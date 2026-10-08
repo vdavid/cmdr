@@ -309,6 +309,13 @@ func runShard(desktopDir string, s shardSpec, waitScale float64) shardResult {
 	}
 }
 
+// shardManagedPrefsFile is where a shard's managed-policy override plist goes, in its own data
+// dir, so a spec pushing a policy reaches only its own shard's app. The app and the Playwright
+// process both get it as `CMDR_MANAGED_PREFS_FILE`.
+func shardManagedPrefsFile(s shardSpec) string {
+	return filepath.Join(s.dataDir, "managed-prefs.plist")
+}
+
 // shardPlaywrightEnv builds the environment one Playwright process runs under.
 //
 // The report and output dir are parameters rather than fields off the shard so the
@@ -345,6 +352,9 @@ func shardPlaywrightEnv(s shardSpec, jsonReport, outputDir string, waitScale flo
 		// The MTP specs assert against the backing dir directly (mtp-fixtures.ts),
 		// so the Playwright process has to agree with the app about where it is.
 		"CMDR_MTP_FIXTURE_ROOT="+s.mtpFixtureRoot,
+		// The plist that stands in for the organization's managed preferences: absent (no
+		// policy) until `managed-policy.spec.ts` writes one, and the app re-reads it on change.
+		"CMDR_MANAGED_PREFS_FILE="+shardManagedPrefsFile(s),
 	)
 	// Only the MTP shard is allowed to wipe this run's virtual MTP backing
 	// directory in globalSetup. The non-MTP shards must skip it to avoid

@@ -12,6 +12,7 @@ use tokio::time::Duration;
 
 #[cfg(target_os = "macos")]
 use crate::deadline::{TimedOut, blocking_typed_result_with_timeout, blocking_with_timeout_flag};
+use crate::file_system::get_info::GetInfoError;
 use crate::file_system::google_drive::DriveItemLinks;
 #[cfg(target_os = "macos")]
 use crate::file_system::terminal::{OpenTerminalError, OpenTerminalOutcome, TerminalAppList};
@@ -29,6 +30,11 @@ const TERMINAL_APPS_TIMEOUT: Duration = Duration::from_secs(2);
 /// in front of it.
 #[cfg(target_os = "macos")]
 const OPEN_TERMINAL_TIMEOUT: Duration = Duration::from_secs(5);
+
+/// Get Info is one no-prompt permission read and one `spawn` of `osascript`. The
+/// window, or the first-time prompt, appears after the command has answered.
+#[cfg(target_os = "macos")]
+const GET_INFO_TIMEOUT: Duration = Duration::from_secs(5);
 
 /// Listing text editors is one LaunchServices query plus a name and an icon read
 /// per app. Same bound as the terminal list, for a picked app on a slow mount.
@@ -75,32 +81,29 @@ pub fn show_in_finder(_path: String) -> Result<(), String> {
     Err("Show in file manager is not available on this platform".to_string())
 }
 
-/// Open the Get Info window for a file (macOS only, no-op on other platforms)
+/// Opens Finder's Get Info window for a file, or says why macOS won't let it
+/// (`file_system::get_info`).
 #[tauri::command]
 #[specta::specta]
 #[cfg(target_os = "macos")]
-pub fn get_info(path: String) -> Result<(), String> {
-    // Pass the path as a positional argument via `on run argv` to avoid AppleScript injection.
-    let script = r#"on run argv
-        tell application "Finder"
-            activate
-            open information window of (POSIX file (item 1 of argv) as alias)
-        end tell
-    end run"#;
-
-    Command::new("osascript")
-        .arg("-e")
-        .arg(script)
-        .arg(&path)
-        .spawn()
-        .map_err(|e| e.to_string())?;
-    Ok(())
+pub async fn get_info(path: String) -> Result<(), GetInfoError> {
+    blocking_typed_result_with_timeout(
+        GET_INFO_TIMEOUT,
+        || GetInfoError::TimedOut,
+        |detail| {
+            crate::log_error!(target: "file_actions", "get_info panicked: {detail}");
+            GetInfoError::TimedOut
+        },
+        move || crate::file_system::get_info::open_get_info(std::path::Path::new(&path)),
+    )
+    .await
 }
 
+/// No Get Info window off macOS; a no-op.
 #[tauri::command]
 #[specta::specta]
 #[cfg(not(target_os = "macos"))]
-pub fn get_info(_path: String) -> Result<(), String> {
+pub fn get_info(_path: String) -> Result<(), GetInfoError> {
     Ok(())
 }
 

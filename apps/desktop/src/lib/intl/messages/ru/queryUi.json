@@ -1,0 +1,690 @@
+{
+  "queryUi.bar.placeholder.ai": "Опишите, что вы ищете",
+  "@queryUi.bar.placeholder.ai": {
+    "sourceHash": "d8ef53e"
+  },
+  "queryUi.bar.placeholder.regex": "Шаблон регулярного выражения",
+  "@queryUi.bar.placeholder.regex": {
+    "sourceHash": "342a120"
+  },
+  "queryUi.bar.placeholder.filename": "Шаблон имени файла (* и ? заменяют символы)",
+  "@queryUi.bar.placeholder.filename": {
+    "sourceHash": "bafb340"
+  },
+  "queryUi.bar.aria.ai": "Поисковый запрос на естественном языке",
+  "@queryUi.bar.aria.ai": {
+    "sourceHash": "05ac017"
+  },
+  "queryUi.bar.aria.regex": "Шаблон поиска по регулярному выражению",
+  "@queryUi.bar.aria.regex": {
+    "sourceHash": "9c7754a"
+  },
+  "queryUi.bar.aria.filename": "Шаблон поиска по имени файла",
+  "@queryUi.bar.aria.filename": {
+    "sourceHash": "de1e4cf"
+  },
+  "queryUi.bar.runTitle.ai": "Запустить поиск с ИИ",
+  "@queryUi.bar.runTitle.ai": {
+    "sourceHash": "8a25dfd"
+  },
+  "queryUi.bar.runTitle.default": "Запустить поиск",
+  "@queryUi.bar.runTitle.default": {
+    "sourceHash": "63714be"
+  },
+  "queryUi.bar.runHint": "Нажмите Enter для поиска",
+  "@queryUi.bar.runHint": {
+    "sourceHash": "406d32e"
+  },
+  "queryUi.bar.runLabel": "Поиск",
+  "@queryUi.bar.runLabel": {
+    "sourceHash": "49c266b"
+  },
+  "queryUi.mode.ai.label": "Спросить что угодно",
+  "@queryUi.mode.ai.label": {
+    "sourceHash": "4aff15d"
+  },
+  "queryUi.mode.ai.aria": "Режим ИИ: спросить что угодно (Alt+A)",
+  "@queryUi.mode.ai.aria": {
+    "sourceHash": "1708462"
+  },
+  "queryUi.mode.filename.label": "Имя файла",
+  "@queryUi.mode.filename.label": {
+    "sourceHash": "971b974"
+  },
+  "queryUi.mode.filename.aria": "Режим «Имя файла» (Alt+F)",
+  "@queryUi.mode.filename.aria": {
+    "sourceHash": "62a5f87"
+  },
+  "queryUi.mode.content.label": "Содержимое",
+  "@queryUi.mode.content.label": {
+    "sourceHash": "47bd290"
+  },
+  "queryUi.mode.content.tooltip": "Скоро: полнотекстовый поиск внутри файлов",
+  "@queryUi.mode.content.tooltip": {
+    "sourceHash": "ff69d7a"
+  },
+  "queryUi.mode.content.aria": "Режим «Содержимое» (скоро)",
+  "@queryUi.mode.content.aria": {
+    "sourceHash": "5bce643"
+  },
+  "queryUi.mode.regex.label": "Regex",
+  "@queryUi.mode.regex.label": {
+    "sourceHash": "0f27125",
+    "sameAsSourceJustification": "«Regex» is the developer term Russian tools keep in tight chips and toggles (JetBrains ru, VS Code ru tooltips); the full «Регулярное выражение» stays in prose and placeholders."
+  },
+  "queryUi.mode.regex.aria": "Режим «Regex» (Alt+R)",
+  "@queryUi.mode.regex.aria": {
+    "sourceHash": "7c0b401"
+  },
+  "queryUi.mode.groupAria": "Режим поиска",
+  "@queryUi.mode.groupAria": {
+    "sourceHash": "75f00aa"
+  },
+  "queryUi.empty.tryLine": "Попробуйте…",
+  "@queryUi.empty.tryLine": {
+    "sourceHash": "469fb7f"
+  },
+  "queryUi.empty.tip": "Совет: <newKey>⌘N</newKey> начинает новый поиск, <historyKey>⌘H</historyKey> показывает недавние запросы.",
+  "@queryUi.empty.tip": {
+    "sourceHash": "6d00976"
+  },
+  "queryUi.empty.tipAi": "Совет: <newKey>⌘N</newKey> начинает новый поиск, <historyKey>⌘H</historyKey> показывает недавние запросы, <aiKey>⌘Enter</aiKey> запускает поиск с ИИ.",
+  "@queryUi.empty.tipAi": {
+    "sourceHash": "e83a0d6"
+  },
+  "queryUi.ai.cloudOff.body": "Облачный ИИ отключен. Разрешите его в разделе «Настройки» > «ИИ».",
+  "@queryUi.ai.cloudOff.body": {
+    "sourceHash": "9b76c6f"
+  },
+  "queryUi.ai.openSettings": "Открыть настройки ИИ",
+  "@queryUi.ai.openSettings": {
+    "sourceHash": "edcc53b"
+  },
+  "queryUi.empty.indexReady": "Индекс готов · {countText} {count, plural, one {запись} few {записи} many {записей} other {записи}}",
+  "@queryUi.empty.indexReady": {
+    "sourceHash": "838fcf8"
+  },
+  "queryUi.ai.lead": "Вот что сделал агент:",
+  "@queryUi.ai.lead": {
+    "sourceHash": "0598e43"
+  },
+  "queryUi.ai.empty": "Пока нечего фильтровать. Попробуйте переформулировать запрос.",
+  "@queryUi.ai.empty": {
+    "sourceHash": "df836a8"
+  },
+  "queryUi.ai.refine": "Уточнить…",
+  "@queryUi.ai.refine": {
+    "sourceHash": "488102b"
+  },
+  "queryUi.ai.refineAria": "Уточнить поиск с ИИ (скоро)",
+  "@queryUi.ai.refineAria": {
+    "sourceHash": "fc95971"
+  },
+  "queryUi.ai.refineTooltip": "Скоро: диалог с агентом",
+  "@queryUi.ai.refineTooltip": {
+    "sourceHash": "4846194"
+  },
+  "queryUi.ai.stripAria": "Что агент сделал с вашим последним поиском с ИИ",
+  "@queryUi.ai.stripAria": {
+    "sourceHash": "53ffa17"
+  },
+  "queryUi.ai.patternLabel.glob": "Glob",
+  "@queryUi.ai.patternLabel.glob": {
+    "sourceHash": "18d00f7",
+    "sameAsSourceJustification": "Стандартное техническое имя Glob; сохраняется по правилам имен продуктов и форматов."
+  },
+  "queryUi.ai.patternLabel.regex": "Regex",
+  "@queryUi.ai.patternLabel.regex": {
+    "sourceHash": "0f27125",
+    "sameAsSourceJustification": "«Regex» is the developer term Russian tools keep in tight chips and toggles (JetBrains ru, VS Code ru tooltips); the full «Регулярное выражение» stays in prose and placeholders."
+  },
+  "queryUi.ai.patternLabel.generic": "Шаблон",
+  "@queryUi.ai.patternLabel.generic": {
+    "sourceHash": "4288ade"
+  },
+  "queryUi.ai.filter.size": "Размер",
+  "@queryUi.ai.filter.size": {
+    "sourceHash": "1af8519"
+  },
+  "queryUi.ai.filter.modified": "Дата изменения",
+  "@queryUi.ai.filter.modified": {
+    "sourceHash": "e8ce5dc"
+  },
+  "queryUi.ai.filter.type": "Тип",
+  "@queryUi.ai.filter.type": {
+    "sourceHash": "baaddf7"
+  },
+  "queryUi.ai.typeSummary.filesOnly": "Только файлы",
+  "@queryUi.ai.typeSummary.filesOnly": {
+    "sourceHash": "4bae1c3"
+  },
+  "queryUi.ai.typeSummary.foldersOnly": "Только папки",
+  "@queryUi.ai.typeSummary.foldersOnly": {
+    "sourceHash": "ad851fb"
+  },
+  "queryUi.results.col.name": "Имя",
+  "@queryUi.results.col.name": {
+    "sourceHash": "dcd1d52"
+  },
+  "queryUi.results.col.path": "Путь",
+  "@queryUi.results.col.path": {
+    "sourceHash": "62fa5a5"
+  },
+  "queryUi.results.col.size": "Размер",
+  "@queryUi.results.col.size": {
+    "sourceHash": "1af8519"
+  },
+  "queryUi.results.col.modified": "Дата изменения",
+  "@queryUi.results.col.modified": {
+    "sourceHash": "e8ce5dc"
+  },
+  "queryUi.results.listboxAria": "Результаты поиска",
+  "@queryUi.results.listboxAria": {
+    "sourceHash": "e978b00"
+  },
+  "queryUi.results.scanningWithCount": "Идет сканирование ({countText} {count, plural, one {запись} few {записи} many {записей} other {записи}})…",
+  "@queryUi.results.scanningWithCount": {
+    "sourceHash": "a409baf"
+  },
+  "queryUi.results.scanning": "Идет сканирование…",
+  "@queryUi.results.scanning": {
+    "sourceHash": "c19b8ea"
+  },
+  "queryUi.results.indexUnavailable": "Индекс диска недоступен",
+  "@queryUi.results.indexUnavailable": {
+    "sourceHash": "80e98d0"
+  },
+  "queryUi.results.indexReadyStatus": "Индекс готов ({countText} {count, plural, one {запись} few {записи} many {записей} other {записи}})",
+  "@queryUi.results.indexReadyStatus": {
+    "sourceHash": "b5eca65"
+  },
+  "queryUi.results.resultCount": "{shownText} из {totalText} {total, plural, one {результата} few {результатов} many {результатов} other {результата}}",
+  "@queryUi.results.resultCount": {
+    "sourceHash": "7e17d4b"
+  },
+  "queryUi.results.countOnly.sentence": "{count, plural, one {По этому запросу найден <total>{countText}</total> результат} few {По этому запросу найдено <total>{countText}</total> результата} many {По этому запросу найдено <total>{countText}</total> результатов} other {По этому запросу найдено <total>{countText}</total> результата}}",
+  "@queryUi.results.countOnly.sentence": {
+    "sourceHash": "b265ac5"
+  },
+  "queryUi.results.countOnly.showResults": "Показать результаты",
+  "@queryUi.results.countOnly.showResults": {
+    "sourceHash": "90efa19"
+  },
+  "queryUi.results.criteria.query": "Запрос: {query}",
+  "@queryUi.results.criteria.query": {
+    "sourceHash": "4877824"
+  },
+  "queryUi.results.criteria.size": "Применен фильтр размера",
+  "@queryUi.results.criteria.size": {
+    "sourceHash": "24f552d"
+  },
+  "queryUi.results.criteria.modified": "Применен фильтр даты изменения",
+  "@queryUi.results.criteria.modified": {
+    "sourceHash": "fc2268a"
+  },
+  "queryUi.results.criteria.scope": "Область поиска: {scope}",
+  "@queryUi.results.criteria.scope": {
+    "sourceHash": "960a4c8"
+  },
+  "queryUi.results.widenToVolume": "Искать на всем томе",
+  "@queryUi.results.widenToVolume": {
+    "sourceHash": "7dfc278"
+  },
+  "queryUi.results.indexNotReady": "Индекс диска не готов. Поиск станет доступен после первого сканирования.",
+  "@queryUi.results.indexNotReady": {
+    "sourceHash": "9efe161"
+  },
+  "queryUi.results.scanProgressWithCount": "Идет сканирование ({countText} {count, plural, one {запись} few {записи} many {записей} other {записи}})…",
+  "@queryUi.results.scanProgressWithCount": {
+    "sourceHash": "a409baf"
+  },
+  "queryUi.results.scanProgress": "Идет сканирование…",
+  "@queryUi.results.scanProgress": {
+    "sourceHash": "c19b8ea"
+  },
+  "queryUi.results.loadingIndex": "Загрузка индекса диска…",
+  "@queryUi.results.loadingIndex": {
+    "sourceHash": "e9a7368"
+  },
+  "queryUi.results.searching": "Поиск…",
+  "@queryUi.results.searching": {
+    "sourceHash": "c31723a"
+  },
+  "queryUi.results.noMatchHeading": "Нет файлов, соответствующих этим условиям:",
+  "@queryUi.results.noMatchHeading": {
+    "sourceHash": "15383e2"
+  },
+  "queryUi.results.live.resolvingCoverage": "Проверка уже проиндексированных данных…",
+  "@queryUi.results.live.resolvingCoverage": {
+    "sourceHash": "dc547a0"
+  },
+  "queryUi.results.live.waitingForAnotherWalk": "Ожидание другого сканирования этих папок…",
+  "@queryUi.results.live.waitingForAnotherWalk": {
+    "sourceHash": "4a3b061"
+  },
+  "queryUi.results.live.waitingOnPathAria": "Другое сканирование читает папку {path}",
+  "@queryUi.results.live.waitingOnPathAria": {
+    "sourceHash": "a54a689"
+  },
+  "queryUi.results.live.readingIndex": "Чтение уже проиндексированных данных…",
+  "@queryUi.results.live.readingIndex": {
+    "sourceHash": "b8bd4f7"
+  },
+  "queryUi.results.live.walking": "Просмотр еще не проиндексированных папок…",
+  "@queryUi.results.live.walking": {
+    "sourceHash": "2acf23a"
+  },
+  "queryUi.results.live.matchesSoFar": "Пока найдено: {countText} {count, plural, one {совпадение} few {совпадения} many {совпадений} other {совпадения}}",
+  "@queryUi.results.live.matchesSoFar": {
+    "sourceHash": "5c09eb4"
+  },
+  "queryUi.results.live.foldersScanned": "Просканировано: {countText} {count, plural, one {папка} few {папки} many {папок} other {папки}}",
+  "@queryUi.results.live.foldersScanned": {
+    "sourceHash": "5a3247d"
+  },
+  "queryUi.results.live.incomplete": "{shownText} из {totalText} {total, plural, one {результата} few {результатов} many {результатов} other {результата}}. Cmdr не завершил поиск.",
+  "@queryUi.results.live.incomplete": {
+    "sourceHash": "e83cf63"
+  },
+  "queryUi.results.live.incompleteEmpty": "До остановки поиска ничего не найдено. Cmdr не завершил поиск.",
+  "@queryUi.results.live.incompleteEmpty": {
+    "sourceHash": "6910921"
+  },
+  "queryUi.results.live.capped": "Показаны первые {shownText} из {totalText} {total, plural, one {совпадения} few {совпадений} many {совпадений} other {совпадения}}.",
+  "@queryUi.results.live.capped": {
+    "sourceHash": "d4a7d12"
+  },
+  "queryUi.results.live.stop": "Остановить",
+  "@queryUi.results.live.stop": {
+    "sourceHash": "cae7d57"
+  },
+  "queryUi.results.live.stopTooltip": "Остановить поиск. Все найденное останется на экране.",
+  "@queryUi.results.live.stopTooltip": {
+    "sourceHash": "e72f5d7"
+  },
+  "queryUi.results.live.scanningAria": "Сейчас поиск идет в папке {path}",
+  "@queryUi.results.live.scanningAria": {
+    "sourceHash": "0071028"
+  },
+  "queryUi.results.countOnly.soFar": "{count, plural, one {Пока по этому запросу найден <total>{countText}</total> результат} few {Пока по этому запросу найдено <total>{countText}</total> результата} many {Пока по этому запросу найдено <total>{countText}</total> результатов} other {Пока по этому запросу найдено <total>{countText}</total> результата}}",
+  "@queryUi.results.countOnly.soFar": {
+    "sourceHash": "dbdb208"
+  },
+  "queryUi.pathPills.hiddenAria": "Скрытые части пути: {segments}",
+  "@queryUi.pathPills.hiddenAria": {
+    "sourceHash": "f62e273"
+  },
+  "queryUi.recent.trailingTooltip": "Показать все недавние запросы",
+  "@queryUi.recent.trailingTooltip": {
+    "sourceHash": "e0de323"
+  },
+  "queryUi.recent.allButtonAria": "Все недавние запросы",
+  "@queryUi.recent.allButtonAria": {
+    "sourceHash": "c4faef7"
+  },
+  "queryUi.recent.filterPlaceholder": "Фильтр недавних запросов",
+  "@queryUi.recent.filterPlaceholder": {
+    "sourceHash": "37e55fe"
+  },
+  "queryUi.recent.emptyMessage": "Нет недавних запросов, соответствующих фильтру.",
+  "@queryUi.recent.emptyMessage": {
+    "sourceHash": "7007fba"
+  },
+  "queryUi.recent.popoverAria": "Все недавние запросы",
+  "@queryUi.recent.popoverAria": {
+    "sourceHash": "c4faef7"
+  },
+  "queryUi.recent.listboxAria": "Недавние запросы",
+  "@queryUi.recent.listboxAria": {
+    "sourceHash": "228c84b"
+  },
+  "queryUi.recent.popoverHint": "<moveKey>↑↓</moveKey> — перемещение · <selectKey>Enter</selectKey> — подстановка в поле · нажатие правой кнопкой — удаление",
+  "@queryUi.recent.popoverHint": {
+    "sourceHash": "a7ccaef"
+  },
+  "queryUi.recent.mode.ai": "ИИ",
+  "@queryUi.recent.mode.ai": {
+    "sourceHash": "11fb682"
+  },
+  "queryUi.recent.mode.regex": "Regex",
+  "@queryUi.recent.mode.regex": {
+    "sourceHash": "0f27125",
+    "sameAsSourceJustification": "«Regex» is the developer term Russian tools keep in tight chips and toggles (JetBrains ru, VS Code ru tooltips); the full «Регулярное выражение» stays in prose and placeholders."
+  },
+  "queryUi.recent.mode.filename": "Имя файла",
+  "@queryUi.recent.mode.filename": {
+    "sourceHash": "971b974"
+  },
+  "queryUi.age.justNow": "только что",
+  "@queryUi.age.justNow": {
+    "sourceHash": "7ddb44d"
+  },
+  "queryUi.age.minutes": "{count} мин назад",
+  "@queryUi.age.minutes": {
+    "sourceHash": "0a03167"
+  },
+  "queryUi.age.hours": "{count} ч назад",
+  "@queryUi.age.hours": {
+    "sourceHash": "520c737"
+  },
+  "queryUi.age.days": "{count} дн. назад",
+  "@queryUi.age.days": {
+    "sourceHash": "a412343"
+  },
+  "queryUi.age.weeks": "{count} нед. назад",
+  "@queryUi.age.weeks": {
+    "sourceHash": "7c7a56d"
+  },
+  "queryUi.age.months": "{count} мес. назад",
+  "@queryUi.age.months": {
+    "sourceHash": "e3ca968"
+  },
+  "queryUi.age.years": "{count} г. назад",
+  "@queryUi.age.years": {
+    "sourceHash": "e0d32e9"
+  },
+  "queryUi.recent.scopeSummary": "область: {scope}",
+  "@queryUi.recent.scopeSummary": {
+    "sourceHash": "e5e6dff"
+  },
+  "queryUi.recent.caseSensitive": "с учетом регистра",
+  "@queryUi.recent.caseSensitive": {
+    "sourceHash": "3934758"
+  },
+  "queryUi.recent.systemDirsIncluded": "с системными папками",
+  "@queryUi.recent.systemDirsIncluded": {
+    "sourceHash": "c928638"
+  },
+  "queryUi.recent.resultCount": "В прошлый раз: {countText} {count, plural, one {результат} few {результата} many {результатов} other {результата}}",
+  "@queryUi.recent.resultCount": {
+    "sourceHash": "daa7f19"
+  },
+  "queryUi.recent.rowResultCount": "{countText} {count, plural, one {результат} few {результата} many {результатов} other {результата}}",
+  "@queryUi.recent.rowResultCount": {
+    "sourceHash": "e8c3318"
+  },
+  "queryUi.recent.sizeRange": "размер {minText}–{maxText}",
+  "@queryUi.recent.sizeRange": {
+    "sourceHash": "96bd04f"
+  },
+  "queryUi.recent.sizeMin": "размер > {minText}",
+  "@queryUi.recent.sizeMin": {
+    "sourceHash": "0aab700"
+  },
+  "queryUi.recent.sizeMax": "размер < {maxText}",
+  "@queryUi.recent.sizeMax": {
+    "sourceHash": "7850b6e"
+  },
+  "queryUi.recent.modifiedRange": "изменено {after}…{before}",
+  "@queryUi.recent.modifiedRange": {
+    "sourceHash": "e99ce85"
+  },
+  "queryUi.recent.modifiedAfter": "после {after}",
+  "@queryUi.recent.modifiedAfter": {
+    "sourceHash": "4135ddf"
+  },
+  "queryUi.recent.modifiedBefore": "до {before}",
+  "@queryUi.recent.modifiedBefore": {
+    "sourceHash": "f0a5bd6"
+  },
+  "queryUi.recent.chipTooltipHeader": "{mode} · {age}",
+  "@queryUi.recent.chipTooltipHeader": {
+    "sourceHash": "54a225b",
+    "sameAsSourceJustification": "Строка содержит только подстановки и знаки; пользовательский текст переводится в подставляемых фрагментах."
+  },
+  "queryUi.dialog.actionsAria": "Действия диалога",
+  "@queryUi.dialog.actionsAria": {
+    "sourceHash": "62d23d5"
+  },
+  "queryUi.dialog.aiTranslateFailedToast": "Сейчас не удалось выполнить поиск с ИИ. Попробуйте еще раз.",
+  "@queryUi.dialog.aiTranslateFailedToast": {
+    "sourceHash": "b18f37c"
+  },
+  "queryUi.dialog.runQueryToast": "Не удалось завершить поиск. {message}",
+  "@queryUi.dialog.runQueryToast": {
+    "sourceHash": "51acd6e"
+  },
+  "queryUi.dialog.runQueryUnknownReason": "Причина неизвестна. Попробуйте сузить запрос.",
+  "@queryUi.dialog.runQueryUnknownReason": {
+    "sourceHash": "bb9a283"
+  },
+  "queryUi.filters.toolbarAria": "Фильтры поиска",
+  "@queryUi.filters.toolbarAria": {
+    "sourceHash": "f484e72"
+  },
+  "queryUi.filters.type.both": "Все",
+  "@queryUi.filters.type.both": {
+    "sourceHash": "b6c1d86"
+  },
+  "queryUi.filters.type.files": "Файлы",
+  "@queryUi.filters.type.files": {
+    "sourceHash": "abc7e98"
+  },
+  "queryUi.filters.type.folders": "Папки",
+  "@queryUi.filters.type.folders": {
+    "sourceHash": "c4d6bb2"
+  },
+  "queryUi.filters.type.aria": "Фильтр по типу",
+  "@queryUi.filters.type.aria": {
+    "sourceHash": "51035b5"
+  },
+  "queryUi.filters.chip.pattern": "Шаблон",
+  "@queryUi.filters.chip.pattern": {
+    "sourceHash": "4288ade"
+  },
+  "queryUi.filters.chip.size": "Размер",
+  "@queryUi.filters.chip.size": {
+    "sourceHash": "1af8519"
+  },
+  "queryUi.filters.chip.modified": "Дата изменения",
+  "@queryUi.filters.chip.modified": {
+    "sourceHash": "e8ce5dc"
+  },
+  "queryUi.filters.chip.scope": "Искать в",
+  "@queryUi.filters.chip.scope": {
+    "sourceHash": "fa79255"
+  },
+  "queryUi.filters.countOnly.label": "Только количество",
+  "@queryUi.filters.countOnly.label": {
+    "sourceHash": "a28dbfe"
+  },
+  "queryUi.filters.countOnly.tooltip": "Показать только количество подходящих файлов, без списка",
+  "@queryUi.filters.countOnly.tooltip": {
+    "sourceHash": "7351921"
+  },
+  "queryUi.filters.scope.includesSystemFolders": "с системными папками",
+  "@queryUi.filters.scope.includesSystemFolders": {
+    "sourceHash": "3bb9784"
+  },
+  "queryUi.filters.size.summary.single": "{prefix} {valueText} {unit}",
+  "@queryUi.filters.size.summary.single": {
+    "sourceHash": "bbd5deb",
+    "sameAsSourceJustification": "Строка содержит только подстановки и знаки; пользовательский текст переводится в подставляемых фрагментах."
+  },
+  "queryUi.filters.size.summary.range": "{minText} {minUnit} – {maxText} {maxUnit}",
+  "@queryUi.filters.size.summary.range": {
+    "sourceHash": "ba7eadc",
+    "sameAsSourceJustification": "Строка содержит только подстановки и знаки; пользовательский текст переводится в подставляемых фрагментах."
+  },
+  "queryUi.filters.date.summary.after": "после {date}",
+  "@queryUi.filters.date.summary.after": {
+    "sourceHash": "f70f7dc"
+  },
+  "queryUi.filters.date.summary.before": "до {date}",
+  "@queryUi.filters.date.summary.before": {
+    "sourceHash": "e503949"
+  },
+  "queryUi.filters.date.summary.range": "{after} – {before}",
+  "@queryUi.filters.date.summary.range": {
+    "sourceHash": "801560e",
+    "sameAsSourceJustification": "Строка содержит только подстановки и знаки; пользовательский текст переводится в подставляемых фрагментах."
+  },
+  "queryUi.size.comparator.any": "любой",
+  "@queryUi.size.comparator.any": {
+    "sourceHash": "d6a7cd2"
+  },
+  "queryUi.size.comparator.between": "между",
+  "@queryUi.size.comparator.between": {
+    "sourceHash": "fbb27fb"
+  },
+  "queryUi.size.customCell": "настроить…",
+  "@queryUi.size.customCell": {
+    "sourceHash": "564a4d3"
+  },
+  "queryUi.size.customInputPlaceholder": "значение",
+  "@queryUi.size.customInputPlaceholder": {
+    "sourceHash": "6cdfd27"
+  },
+  "queryUi.size.popover.label": "Размер",
+  "@queryUi.size.popover.label": {
+    "sourceHash": "1af8519"
+  },
+  "queryUi.size.popover.aria": "Параметры фильтра «Размер»",
+  "@queryUi.size.popover.aria": {
+    "sourceHash": "087d449"
+  },
+  "queryUi.size.aria.comparator": "Оператор сравнения",
+  "@queryUi.size.aria.comparator": {
+    "sourceHash": "9a348d5"
+  },
+  "queryUi.size.aria.minValue": "Минимальный размер",
+  "@queryUi.size.aria.minValue": {
+    "sourceHash": "242e7b0"
+  },
+  "queryUi.size.aria.minUnit": "Единица минимального размера",
+  "@queryUi.size.aria.minUnit": {
+    "sourceHash": "4803db9"
+  },
+  "queryUi.size.aria.maxValue": "Максимальный размер",
+  "@queryUi.size.aria.maxValue": {
+    "sourceHash": "a79a52b"
+  },
+  "queryUi.size.aria.maxUnit": "Единица максимального размера",
+  "@queryUi.size.aria.maxUnit": {
+    "sourceHash": "7ab449b"
+  },
+  "queryUi.size.aria.customMin": "Пользовательский минимальный размер",
+  "@queryUi.size.aria.customMin": {
+    "sourceHash": "d841b6a"
+  },
+  "queryUi.size.aria.customMax": "Пользовательский максимальный размер",
+  "@queryUi.size.aria.customMax": {
+    "sourceHash": "4761acf"
+  },
+  "queryUi.date.comparator.any": "любая",
+  "@queryUi.date.comparator.any": {
+    "sourceHash": "d6a7cd2"
+  },
+  "queryUi.date.comparator.after": "после",
+  "@queryUi.date.comparator.after": {
+    "sourceHash": "f395923"
+  },
+  "queryUi.date.comparator.before": "до",
+  "@queryUi.date.comparator.before": {
+    "sourceHash": "6db7d80"
+  },
+  "queryUi.date.comparator.between": "между",
+  "@queryUi.date.comparator.between": {
+    "sourceHash": "fbb27fb"
+  },
+  "queryUi.date.customCell": "настроить…",
+  "@queryUi.date.customCell": {
+    "sourceHash": "564a4d3"
+  },
+  "queryUi.date.popover.label": "Дата изменения",
+  "@queryUi.date.popover.label": {
+    "sourceHash": "e8ce5dc"
+  },
+  "queryUi.date.popover.aria": "Параметры фильтра «Дата изменения»",
+  "@queryUi.date.popover.aria": {
+    "sourceHash": "e0fd68c"
+  },
+  "queryUi.date.aria.comparator": "Оператор сравнения",
+  "@queryUi.date.aria.comparator": {
+    "sourceHash": "9a348d5"
+  },
+  "queryUi.date.aria.value": "Дата",
+  "@queryUi.date.aria.value": {
+    "sourceHash": "8696a46"
+  },
+  "queryUi.date.aria.maxValue": "Максимальная дата",
+  "@queryUi.date.aria.maxValue": {
+    "sourceHash": "733e9f1"
+  },
+  "queryUi.date.aria.custom": "Пользовательская дата",
+  "@queryUi.date.aria.custom": {
+    "sourceHash": "531707c"
+  },
+  "queryUi.date.aria.customMax": "Пользовательская максимальная дата",
+  "@queryUi.date.aria.customMax": {
+    "sourceHash": "fae3317"
+  },
+  "queryUi.date.preset.today": "сегодня {time}",
+  "@queryUi.date.preset.today": {
+    "sourceHash": "171a27d"
+  },
+  "queryUi.date.preset.yesterday": "вчера {time}",
+  "@queryUi.date.preset.yesterday": {
+    "sourceHash": "b40b2e7"
+  },
+  "queryUi.date.preset.thisWeek": "на этой неделе: {weekday}, {time}",
+  "@queryUi.date.preset.thisWeek": {
+    "sourceHash": "9259c67"
+  },
+  "queryUi.date.preset.lastWeek": "на прошлой неделе: {weekday}, {time}",
+  "@queryUi.date.preset.lastWeek": {
+    "sourceHash": "1e4419c"
+  },
+  "queryUi.date.preset.thisMonth": "{month}: 1-е число, {time}",
+  "@queryUi.date.preset.thisMonth": {
+    "sourceHash": "030ee23"
+  },
+  "queryUi.date.preset.lastMonth": "{month}, {year}: 1-е число, {time}",
+  "@queryUi.date.preset.lastMonth": {
+    "sourceHash": "0838509"
+  },
+  "queryUi.date.preset.yearStart": "1 января, {year}, {time}",
+  "@queryUi.date.preset.yearStart": {
+    "sourceHash": "f86a864"
+  },
+  "queryUi.scope.popover.label": "Искать в",
+  "@queryUi.scope.popover.label": {
+    "sourceHash": "fa79255"
+  },
+  "queryUi.scope.popover.aria": "Искать в папках",
+  "@queryUi.scope.popover.aria": {
+    "sourceHash": "989db5d"
+  },
+  "queryUi.scope.hint": "Пути через запятую. Для исключения добавьте <bang>!</bang> в начале. Поддерживаются символы <star>*</star> и <question>?</question>.",
+  "@queryUi.scope.hint": {
+    "sourceHash": "3335512"
+  },
+  "queryUi.scope.textareaAria": "Папки области поиска",
+  "@queryUi.scope.textareaAria": {
+    "sourceHash": "0d82c92"
+  },
+  "queryUi.scope.toggle.hideBoring": "Скрыть скучные папки",
+  "@queryUi.scope.toggle.hideBoring": {
+    "sourceHash": "972df96"
+  },
+  "queryUi.scope.toggle.caseSensitive": "С учетом регистра",
+  "@queryUi.scope.toggle.caseSensitive": {
+    "sourceHash": "9d15f82"
+  },
+  "queryUi.scope.toggle.caseSensitiveAria": "С учетом регистра при поиске совпадений",
+  "@queryUi.scope.toggle.caseSensitiveAria": {
+    "sourceHash": "2700434"
+  },
+  "queryUi.scope.useCurrentFolder": "Использовать текущую папку",
+  "@queryUi.scope.useCurrentFolder": {
+    "sourceHash": "3df292c"
+  },
+  "queryUi.scope.thisVolume": "Этот том",
+  "@queryUi.scope.thisVolume": {
+    "sourceHash": "fd56065"
+  },
+  "queryUi.scope.currentFolder": "Текущая папка",
+  "@queryUi.scope.currentFolder": {
+    "sourceHash": "1a5db52"
+  }
+}

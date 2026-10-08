@@ -23,31 +23,31 @@ describe('deriveSizeChip', () => {
 
   it('treats a zero bound as a real value, not "off" (gte 0)', () => {
     // `0` is a valid bound (find empty files). Only an empty input (NaN) stays unconfigured.
-    expect(deriveSizeChip('gte', '0', 'B', '', 'B')).toEqual({ configured: true, summary: '> 0 B' })
+    expect(deriveSizeChip('gte', '0', 'B', '', 'B')).toEqual({ configured: true, summary: '> 0 bytes' })
   })
 
   it('treats a zero bound as a real value (lte 0)', () => {
-    expect(deriveSizeChip('lte', '0', 'B', '', 'B')).toEqual({ configured: true, summary: '< 0 B' })
+    expect(deriveSizeChip('lte', '0', 'B', '', 'B')).toEqual({ configured: true, summary: '< 0 bytes' })
   })
 
   it('treats a zero bound as a real value in a between range', () => {
     expect(deriveSizeChip('between', '0', 'B', '5', 'MB')).toEqual({
       configured: true,
-      summary: '0 B – 5 MB',
+      summary: '0 bytes – 5 MiB',
     })
   })
 
   it('formats a gte filter as "> N UNIT"', () => {
     expect(deriveSizeChip('gte', '100', 'MB', '', 'MB')).toEqual({
       configured: true,
-      summary: '> 100 MB',
+      summary: '> 100 MiB',
     })
   })
 
   it('formats a lte filter as "< N UNIT"', () => {
     expect(deriveSizeChip('lte', '5', 'GB', '', 'MB')).toEqual({
       configured: true,
-      summary: '< 5 GB',
+      summary: '< 5 GiB',
     })
   })
 
@@ -56,51 +56,56 @@ describe('deriveSizeChip', () => {
     expect(result.configured).toBe(true)
     expect(result.summary).toContain('–') // en dash
     expect(result.summary).not.toContain('—') // never em dash
-    expect(result.summary).toBe('10 MB – 500 MB')
+    expect(result.summary).toBe('10 MiB – 500 MiB')
   })
 
   it('between with only min behaves like gte', () => {
-    expect(deriveSizeChip('between', '10', 'MB', '', 'MB').summary).toBe('> 10 MB')
+    expect(deriveSizeChip('between', '10', 'MB', '', 'MB').summary).toBe('> 10 MiB')
   })
 
   it('between with only max behaves like lte', () => {
-    expect(deriveSizeChip('between', '', 'MB', '500', 'MB').summary).toBe('< 500 MB')
+    expect(deriveSizeChip('between', '', 'MB', '500', 'MB').summary).toBe('< 500 MiB')
   })
 
   // The chip respects the user's `appearance.fileSizeFormat` setting — same
-  // `kiloByteLabel` mapping as the popover, piped through the `format` argument.
+  // `unitLabel` mapping as the popover, piped through the `format` argument.
   it('renders kB (lowercase k) when format is SI', () => {
     expect(deriveSizeChip('gte', '100', 'KB', '', 'KB', 'si').summary).toBe('> 100 kB')
     expect(deriveSizeChip('lte', '5', 'KB', '', 'KB', 'si').summary).toBe('< 5 kB')
     expect(deriveSizeChip('between', '10', 'KB', '500', 'KB', 'si').summary).toBe('10 kB – 500 kB')
   })
 
-  it('renders KB (uppercase K) when format is binary', () => {
-    expect(deriveSizeChip('gte', '100', 'KB', '', 'KB', 'binary').summary).toBe('> 100 KB')
-    expect(deriveSizeChip('between', '10', 'KB', '500', 'KB', 'binary').summary).toBe('10 KB – 500 KB')
+  it('renders the IEC KiB when format is binary', () => {
+    expect(deriveSizeChip('gte', '100', 'KB', '', 'KB', 'binary').summary).toBe('> 100 KiB')
+    expect(deriveSizeChip('between', '10', 'KB', '500', 'KB', 'binary').summary).toBe('10 KiB – 500 KiB')
   })
 
   it('format only affects KB; MB / GB / B remain stable', () => {
     expect(deriveSizeChip('gte', '5', 'MB', '', 'MB', 'si').summary).toBe('> 5 MB')
     expect(deriveSizeChip('gte', '5', 'GB', '', 'GB', 'si').summary).toBe('> 5 GB')
-    expect(deriveSizeChip('gte', '500', 'B', '', 'B', 'si').summary).toBe('> 500 B')
+    expect(deriveSizeChip('gte', '500', 'B', '', 'B', 'si').summary).toBe('> 500 bytes')
+  })
+
+  it('words the byte unit for the count, in the UI language', () => {
+    expect(deriveSizeChip('eq', '1', 'B', '', 'B').summary).toBe('= 1 byte')
+    expect(deriveSizeChip('between', '1', 'B', '2', 'B').summary).toBe('1 byte – 2 bytes')
   })
 
   it('format defaults to binary when omitted (back-compat)', () => {
-    expect(deriveSizeChip('gte', '100', 'KB', '', 'KB').summary).toBe('> 100 KB')
+    expect(deriveSizeChip('gte', '100', 'KB', '', 'KB').summary).toBe('> 100 KiB')
   })
 
   it('formats an eq filter as "= N UNIT"', () => {
     expect(deriveSizeChip('eq', '5', 'MB', '', 'MB')).toEqual({
       configured: true,
-      summary: '= 5 MB',
+      summary: '= 5 MiB',
     })
   })
 
   it('formats "= 0 B" (find empty files, the headline eq use case)', () => {
     expect(deriveSizeChip('eq', '0', 'B', '', 'B')).toEqual({
       configured: true,
-      summary: '= 0 B',
+      summary: '= 0 bytes',
     })
   })
 

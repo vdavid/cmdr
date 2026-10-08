@@ -278,13 +278,11 @@ values write the catalog's `’`.
 - "and so did “{name}”: {reason}" → `ainsi que « {name} » : {reason}` (Finder’s "X et N autres"): the name stays next to
   the colon, as `{reason}` is about it alone.
 
-## Renommage non confirmé : le volume ne répond pas (`fileExplorer.rename.unconfirmed*`, `fileOperations.validation.nameNotUsable`)
+## Volume lent : création et renommage toujours en cours (`fileOperations.newEntry.stillCreating`, `fileExplorer.rename.stillRenaming*`, `fileExplorer.clipboard.stillPasting`, `fileOperations.validation.nameNotUsable`)
 
-- The opposite of `chainKept*`: never imply the name stayed. `Impossible de confirmer le renommage de « X »`, on the
-  `mkdir.timeoutMessage` mold, with the same `quand même`.
-- Name the file in the second sentence (`donc le fichier a peut-être quand même été renommé`), never `il`: the nearest
-  masculine noun is `le volume`. The doubled `peut-être` is deliberate (two different doubts).
-- Several files → `les renommages de « X » et de {n} autres fichiers`: `de` repeats because they’re complements (unlike
+- `<Nom verbal> de « X » toujours en cours. Le volume met du temps à répondre.`: one frame for all four, never `il` /
+  `elle` for X (folder or file).
+- Several files → `Renommage de « X » et de {n} autres fichiers`: `de` repeats because they’re complements (unlike
   `ainsi que` above).
 - `Le nom du fichier ne peut pas être utilisé`, matching its `validation.*` siblings, no final period (it also fills
   `{reason}`).
@@ -355,12 +353,13 @@ values write the catalog's `’`.
 
 ## Le refus d'éjection nommé : qui tient le disque (`errors.eject.unmountRefusedBy*`, `.otherApps`)
 
-- `{app} utilise encore ce disque.`: active like the generic sibling; `{app}` is a bare subject (unknown gender).
-- Close what it has open → `Fermez ce que cette app y a ouvert`, never `ce qu’il y a ouvert` (binds to `ce disque`).
+- Either frame may concern a disk, a share, or a phone, so the place is `y`, never `ce disque`, and the advice ends
+  `puis réessayez`, never `éjectez-le à nouveau`. One skeleton: `X y garde encore des fichiers ouverts.` (`{app} y a…`
+  would read as `il y a`).
+- `{app}` is a bare subject (unknown gender); `Fermez-les` points at `fichiers`. The aside keeps Cmdr as subject
+  (`Cmdr n’a pas de nom d’app`), never `Nous`.
 - other apps → `d’autres apps`, lowercase, no period; `Intl.ListFormat` joins the list.
-- The disk-image key starts from the drive (`Ce disque contient une image disque encore ouverte.`) to avoid stacking
-  three `disque`. macOS still working → `travaille encore sur ce disque`, a different verb from `utiliser` on purpose
-  (nothing to close, only wait).
+- stored there → `qui s’y trouve` (`Une image disque qui s’y trouve est encore ouverte.`).
 - send a report → `envoyez un rapport` (plain: nothing crashed), never `un retour` (the feedback surface).
 
 ## La notification de corbeille : annuler et remettre en place (`fileOperations.trash.*`, `commands.fileGoToTrash.*`)
@@ -485,8 +484,8 @@ values write the catalog's `’`.
 ## Le hub des serveurs : panneau de connexion, refus et oubli (`servers.refusal.*`, `servers.paneState.*`, `fileExplorer.navigation.forget*`, `fileExplorer.navigation.disconnect*`, `menu.network.forgetServer`, `.forgetSavedPassword`)
 
 - Keychain Access (the app) → `Trousseaux d’accès` (Apple’s plural); the store → `le trousseau`.
-- trust → `approuver` (Security.framework) over `faire confiance à`. Host key → `la clé du serveur {host}` (`de` would
-  elide; tentative).
+- trust → `approuver` (Security.framework) over `faire confiance à` and the device-pairing `Se fier`. Host key →
+  `la clé du serveur {host}` (`de` would elide; tentative).
 - Signed out → `Session fermée`: the session carries the agreement, never `Déconnecté(e)`.
 - Confirm titles repeat the menu labels verbatim (`Oublier le serveur`, `Oublier le mot de passe enregistré`).
 - `disconnectPlaceAriaLabel` → `Se déconnecter de {name}`, containing the visible `Se déconnecter`, never Finder’s
@@ -516,10 +515,9 @@ values write the catalog's `’`.
 
 ## Le hub des serveurs : la feuille de connexion et la clé d'hôte SSH (`servers.sheet.*`, `servers.hostKey.*`, `servers.paneState.*`, `goToPath.dialog.opensServer`, `.addsServer`, `commands.serversConnect.label`)
 
-- `Protocole`; SMB / SFTP / WebDAV stay (Apple keeps them, justified). passphrase → `phrase secrète`
-  (`Phrase secrète de la clé`), distinct from the account’s `mot de passe`.
-- fingerprint → `empreinte` (feminine, so `Je l’ai vérifiée` agrees with it). trust a key → `approuver`, never Apple’s
-  device-pairing `Se fier`.
+- `Protocole`; SMB / SFTP / WebDAV stay (Apple keeps them). passphrase → `phrase secrète` (`Phrase secrète de la clé`),
+  distinct from the account’s `mot de passe`.
+- fingerprint → `empreinte` (feminine, so `Je l’ai vérifiée` agrees with it); trusting a key is `approuver` (above).
 - remote → `distant`, postposed (`Dossier distant`). Key file → `Fichier de clé`.
 - Connect to server… → `Se connecter au serveur…` (the Go menu item) on every action surface; `Connexion au serveur` is
   only Apple’s window title.
@@ -548,7 +546,6 @@ values write the catalog's `’`.
 - Re-check → `Rechercher à nouveau` (Apple’s `Rechercher les mises à jour`) over `Vérifier`.
 - Trusted <date> → `Approuvée le` (French needs `le`; agrees with `clé`). plugged in → `branché`.
 - Watching for phones → `Cmdr détecte un téléphone dès qu’il est branché.`, never a technical module name.
-- The server tint now covers three protocols: `Teinter les panneaux de serveur (SMB, SFTP, WebDAV)`.
 - `settings.section.adb` (`Android (ADB)`) is identical and justified.
 
 ## Le téléphone Android : le panneau de connexion, les info-bulles et l'astuce ADB (`adb.*`, `settings.behavior.adbHintDismissed.*`)
@@ -592,11 +589,11 @@ values write the catalog's `’`.
 - `addedButDockDidNotRestart` never says the add failed (it happened); `managedDock` names
   `La personne qui gère ce Mac`, never `l’administrateur`.
 
-## Le menu du Dock : les cinq clés `menu.dock.*`
+## Le menu du Dock et Aller au dossier (`menu.dock.*`, `menu.go.goToPath`, `goToPath.dialog.*`, `commands.navGoToPath.label`)
 
-- Open <App> → `Ouvrir Cmdr`, unquoted (Dock.app quotes file names only). Go to Folder… → `Aller au dossier…`, distinct
-  from `Aller au chemin…`. Connect to Server… → `Se connecter au serveur…`, never `Connexion au serveur` (Apple’s window
-  title). Search files… → `Rechercher des fichiers…`, as `menu.edit.searchFiles`.
+- Open <App> → `Ouvrir Cmdr`, unquoted (Dock.app quotes file names only). Go to folder → `Aller au dossier` (Finder).
+  Connect to Server… → `Se connecter au serveur…`. Search files… → `Rechercher des fichiers…`, as
+  `menu.edit.searchFiles`. The dialog’s Go button → `Aller`, as Finder’s (`FR24`) and the Go menu.
 - `{name} ({parent})` is identical to English (Finder’s own `^0 (^1)` line) and justified.
 
 ## La proposition « Afficher dans le Finder » et l'avis de première fois (`main.revealNudge.*`, `main.revealActivation.*`, `settings.behavior.reveal*`)
@@ -761,3 +758,9 @@ values write the catalog's `’`.
 
 - `le dossier qui le contient` avoids a pronoun agreeing with the inserted item, and `supprimez vous-même l’original`
   marks no gender.
+
+## Le stockage S3 (`servers.sheet.s3*`, `.accessKeyId`, `.secretAccessKey`, `servers.refusal.*`, `*.coldStorage*`)
+
+- bucket → `compartiment`; access key ID → `ID de clé d’accès`; secret access key → `clé d’accès secrète` (AWS FR
+  console, MS FRA).
+- cold storage → `stockage froid`; archived → `archivé` (the file; the chat badge stays `Archivée`).

@@ -74,6 +74,8 @@ export type SettingsSurface =
   | 'wake-indicator'
   /** The paste-from-clipboard toast. */
   | 'paste-toast'
+  /** The first quick filter's "What just happened?" toast, deep-linking to the typing mode. */
+  | 'quick-filter-toast'
   /** A pane's Enter menu ("Configure…" on an archive). */
   | 'enter-menu'
   /** The volume breadcrumb's SMB/network-shares entry. */
@@ -110,6 +112,8 @@ export type SettingsSurface =
   | 'ai-translate-toast'
   /** The one-time "Escape left full screen" toast, deep-linking to its switch. */
   | 'escape-full-screen-toast'
+  /** The "local AI model didn't finish downloading" toast after onboarding, deep-linking to AI > Provider. */
+  | 'local-download-toast'
 
 /**
  * Opens the settings window, or focuses it if already open. When `section` is provided,
@@ -181,7 +185,7 @@ export async function openSettingsWindow(surface: SettingsSurface, section?: str
   // (`NSWorkspace`), NOT a media query: WKWebView doesn't reflect
   // `prefers-reduced-transparency`. The window's opacity is fixed at creation
   // for the current setting; the page content still re-themes live via the
-  // `reduce-transparency` class (see `$lib/reduce-transparency`).
+  // `reduce-transparency` class (see `$lib/glass-material`).
   // `prefers-color-scheme` IS reflected, so dark detection stays a media query.
   const reduceTransparency = await getShouldReduceTransparency()
   const darkAppearance = window.matchMedia('(prefers-color-scheme: dark)').matches
@@ -257,6 +261,14 @@ export async function openSettingsWindow(surface: SettingsSurface, section?: str
  */
 export function settingAnchorId(settingId: SettingId): string {
   return `setting-${settingId}`
+}
+
+/**
+ * The DOM id of a row's `disabledNote` line: `SettingRow` stamps it, and the section points
+ * the control's `aria-describedby` at it while the row is disabled.
+ */
+export function disabledNoteId(settingId: SettingId): string {
+  return `${settingAnchorId(settingId)}-disabled-note`
 }
 
 /**

@@ -2,6 +2,7 @@ package checks
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
@@ -11,6 +12,13 @@ import (
 // RunWebsiteE2E runs Playwright E2E tests on the website.
 func RunWebsiteE2E(ctx *CheckContext) (CheckResult, error) {
 	websiteDir := filepath.Join(ctx.RootDir, "apps", "website")
+
+	// Without a built site, `serve` answers 404 on every path, which Playwright never counts as ready:
+	// the run sits out the full `webServer` timeout and then reports a timeout that doesn't mention the
+	// build. Naming this check alone doesn't run its `website-build` dependency, so that's reachable.
+	if _, err := os.Stat(filepath.Join(websiteDir, "dist", "index.html")); os.IsNotExist(err) {
+		return CheckResult{}, fmt.Errorf("apps/website/dist/index.html not found: build the site first (pnpm check website-build website-e2e)")
+	}
 
 	cmd := exec.Command("pnpm", "exec", "playwright", "test", "--reporter=list")
 	cmd.Dir = websiteDir

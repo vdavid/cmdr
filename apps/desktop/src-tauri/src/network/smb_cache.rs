@@ -3,7 +3,7 @@
 //! Provides caching functionality for share listing results to reduce
 //! network round-trips and improve responsiveness.
 
-use cmdr_smb::{AuthMode, ShareListResult};
+use cmdr_smb::ShareListResult;
 use std::collections::HashMap;
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
@@ -68,21 +68,10 @@ pub fn invalidate_cache(host_id: &str) {
     }
 }
 
-/// Gets the cached auth mode for a host, if available.
-pub fn get_cached_shares_auth_mode(host_id: &str) -> Option<AuthMode> {
-    let cache = get_share_cache().lock().ok()?;
-    let entry = cache.get(host_id)?;
-
-    if Instant::now() < entry.expires_at {
-        Some(entry.result.auth_mode)
-    } else {
-        None
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
+    use cmdr_smb::AuthMode;
     use cmdr_smb::ShareInfo;
 
     #[test]

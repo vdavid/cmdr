@@ -152,7 +152,7 @@ for (const [area, list] of entries) {
 }
 md += `Count: ${String(richCases.length)}\n\n`
 for (const c of richCases.slice(0, 80)) {
-  md += `- \`${c.area}\` ${c.file}:${String(c.line)} (${c.sink}): ${c.value.replace(/\|/g, '\\|')}\n`
+  md += `- \`${c.area}\` ${c.file}:${String(c.line)} (${c.sink}): ${c.value.replace(/[\\|]/g, '\\$&')}\n`
 }
 if (richCases.length > 80) md += `- … and ${String(richCases.length - 80)} more\n`
 
@@ -160,7 +160,7 @@ md += `\n## Full candidate list by area\n\n`
 for (const [area, list] of entries) {
   md += `### \`${area}\` (${String(list.length)})\n\n`
   for (const c of list) {
-    md += `- ${c.file}:${String(c.line)} (${c.sink}): ${c.value.replace(/\|/g, '\\|')}\n`
+    md += `- ${c.file}:${String(c.line)} (${c.sink}): ${c.value.replace(/[\\|]/g, '\\$&')}\n`
   }
   md += `\n`
 }

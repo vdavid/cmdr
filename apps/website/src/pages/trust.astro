@@ -7,7 +7,9 @@ import LegalLayout from '../layouts/LegalLayout.astro'
 import DevTodo from '../components/DevTodo.astro'
 import {
     allowlistHosts,
+    codeRequirement,
     dataLocations,
+    managedPreferenceKeys,
     networkConnections,
     notInPlaceYet,
     serverRetention,
@@ -22,6 +24,7 @@ const euLabel = { yes: 'In the EU', no: 'Outside the EU', partly: 'Partly outsid
 const toc = [
     { id: 'summary', label: 'Summary' },
     { id: 'network', label: 'What the app sends over the network' },
+    { id: 'mdm', label: 'Central management (MDM)' },
     { id: 'eu', label: 'Does data leave the EU?' },
     { id: 'subprocessors', label: 'Subprocessors' },
     { id: 'storage', label: 'What is stored where, and for how long' },
@@ -67,7 +70,7 @@ const toc = [
         </li>
         <li>
             <strong>On by default</strong>: update checks, usage stats, and crash reports. Each user can turn each one
-            off in Settings. There's no central (MDM) control yet.
+            off in Settings, and IT can turn them off for everyone through MDM.
         </li>
         <li>
             <strong>AI is off by default.</strong> If a user turns it on with their own API key, the app talks straight
@@ -131,13 +134,37 @@ const toc = [
         }
     </ul>
     <p>
-        Cmdr uses the macOS system proxy settings and the macOS certificate store, so a company certificate for TLS
-        inspection that's installed in the system keychain should work. This hasn't been tested behind an inspecting
-        proxy yet, and PAC files are untested.
+        Cmdr follows macOS's proxy settings: an HTTP, HTTPS, or SOCKS proxy set by hand, the list of hosts that bypass
+        it, and automatic configuration with a PAC file, which macOS itself runs. If the PAC file can't be loaded, Cmdr
+        connects directly, as macOS does. The <code>HTTPS_PROXY</code>, <code>HTTP_PROXY</code>,
+        <code>ALL_PROXY</code>, and <code>NO_PROXY</code> environment variables work too and take precedence, including
+        a SOCKS address like <code>socks5h://proxy.example:1080</code>. Addresses on the Mac itself always go direct, so
+        on-device AI keeps working behind a proxy.
+    </p>
+    <p>
+        Through a SOCKS proxy from macOS's settings, the proxy looks up host names, as macOS itself does, so the names
+        Cmdr connects to don't reach the local network's DNS.
+    </p>
+    <p>
+        Cmdr checks server certificates with macOS's own certificate trust, so a company's TLS-inspection certificate
+        that the Mac trusts works in Cmdr too. Without that trust, Cmdr refuses the connection.
+    </p>
+    <p>
+        Tested on macOS 27 behind a TLS-inspecting proxy, with its certificate trusted and not trusted, and with a proxy
+        set by hand, a bypass list, a PAC file, and a PAC file that can't be reached. SOCKS was tested set by hand,
+        through a PAC file, and through <code>ALL_PROXY</code>, also with a user name and password.
+    </p>
+    <p>
+        <strong>What doesn't work yet</strong>: proxies that need a sign-in, unless the user name and password are in
+        the proxy's address (<code>HTTPS_PROXY</code> or <code>ALL_PROXY</code>). A PAC file must name a SOCKS proxy as
+        <code>SOCKS</code>: macOS's own PAC reader skips <code>SOCKS5</code> and <code>SOCKS4</code>.
     </p>
     <DevTodo>
-        Test a release build behind an intercepting proxy (for example mitmproxy with its CA in the System keychain)
-        and with a PAC file, then replace the "should work" sentence with the result.
+        Release timing: PAC files, the bypass list, SOCKS proxies, and "the Mac itself always goes direct" ship in the
+        release after 0.50.0 (<code>cmdr-http</code>). Until then this section is ahead of the app: 0.50.0 follows only a proxy set by
+        hand and the environment variables, and it sends local addresses through the proxy. Automatic proxy discovery
+        (WPAD) also works through the PAC path, but wasn't tested end to end, so it isn't claimed above. Evidence:
+        <code>docs/notes/proxy-and-tls-inspection-2026-10.md</code>.
     </DevTodo>
 
     <h3 id="website">The website</h3>
@@ -146,6 +173,158 @@ const toc = [
         uses PostHog (EU cloud) for visit recordings and heatmaps, kept in memory only, so it sets no cookie either.
     </p>
 
+    <h2 id="mdm">Central management (MDM)</h2>
+    <p>
+        IT can turn off usage stats, reports, updates, and AI for every user with a configuration profile from any
+        MDM (Jamf, Kandji, Intune, and others). Cmdr reads managed preferences from the
+        <code>com.veszelovszki.cmdr</code> preference domain, the app's bundle id. A user can't change a managed
+        setting: Settings shows it locked, with a note that the organization manages it, and the MCP server can't
+        change it either. Cmdr picks up a new or changed profile while it runs, before it sends anything else.
+    </p>
+    <ul>
+        <li>
+            <a href="/mdm/cmdr-managed-preferences.mobileconfig" download>Sample configuration profile</a>
+            (<code>.mobileconfig</code>): every key below with an example value and a comment. It's unsigned, because
+            your MDM signs profiles when it deploys them.
+        </li>
+        <li>
+            <a href="/mdm/com.veszelovszki.cmdr.plist" download>Preference file</a> (<code>.plist</code>): the same
+            keys on their own, for Jamf Pro's "Application &amp; Custom Settings", a Kandji custom profile, or an
+            Intune preference file.
+        </li>
+        <li>
+            <a href="/mdm/cmdr-full-disk-access.mobileconfig" download>Full Disk Access profile</a>
+            (<code>.mobileconfig</code>): grants Cmdr Full Disk Access, so users don't have to grant it themselves
+            (<a href="#mdm-deploy">deploying Cmdr</a>).
+        </li>
+    </ul>
+
+    <h3 id="mdm-keys">Keys</h3>
+    <p>
+        Every key only turns something off or narrows it, and no key can turn anything on. A key that's missing, or
+        set to false, leaves that part up to each user.
+    </p>
+    <ul>
+        {
+            managedPreferenceKeys.map((entry) => (
+                <li>
+                    <code>{entry.key}</code> ({entry.type}): <Fragment set:html={entry.effect} />
+                </li>
+            ))
+        }
+    </ul>
+    <ul>
+        <li>
+            <strong>Which key wins</strong>: <code>DisableAI</code> beats <code>DisableCloudAI</code>, which beats
+            <code>AllowedCloudAIHosts</code>. <code>DisableUpdates</code> beats both other update keys, while
+            <code>MaxUpdateVersion</code> and <code>DisableAutomaticUpdateChecks</code> work together.
+        </li>
+        <li>
+            <strong>Values</strong>: a Boolean also accepts the strings <code>true</code>, <code>false</code>,
+            <code>yes</code>, <code>no</code>, <code>1</code>, and <code>0</code>, and a number (0 is false). A value
+            Cmdr can't read counts as the strictest setting of that key, and Cmdr logs a warning.
+        </li>
+        <li>
+            <strong>Only managed values count.</strong> Cmdr reads only what a profile sets (in
+            <code>/Library/Managed Preferences</code>). A user's own <code>defaults write</code> to the same domain
+            changes nothing.
+        </li>
+        <li>
+            <strong>Local Ollama or LM Studio only</strong>: <code>DisableCloudAI</code> blocks <code>localhost</code>
+            too, so leave it off and set <code>AllowedCloudAIHosts</code> to <code>localhost</code> and
+            <code>127.0.0.1</code>.
+        </li>
+        <li>
+            <strong>macOS only.</strong> Cmdr doesn't read managed preferences on other systems.
+        </li>
+        <li>
+            <strong>To check a Mac</strong>, run
+            <code>defaults read "/Library/Managed Preferences/com.veszelovszki.cmdr"</code>, which shows what the
+            profile delivered.
+        </li>
+    </ul>
+
+    <h3 id="mdm-heartbeat">What usage stats say about a managed Mac</h3>
+    <p>
+        If usage stats stay on, the settings values they send are the ones in effect, so a managed setting reports its
+        managed value. They add one yes-or-no flag saying that an organization manages some of Cmdr's settings. They
+        never say which keys are set or to what.
+    </p>
+
+    <h3 id="mdm-not-covered">What no key turns off</h3>
+    <ul>
+        <li>
+            <strong>License checks</strong>: a paid license has to stay checkable. The check sends the license's
+            transaction id and a hashed device id, nothing about files, and only on Macs with a commercial license.
+        </li>
+        <li>
+            <strong>The S3 price table</strong>: public prices for estimating what an S3 operation costs, at most once a
+            day and only for S3 users. It sends no user data.
+        </li>
+        <li>
+            <strong>The image-search model download</strong> from Hugging Face, when a user turns on semantic image
+            search: a download of the on-device model. Nothing is uploaded. (<code>DisableAI</code> does stop the local
+            AI model download.)
+        </li>
+        <li>
+            <strong>Feedback and newsletter signup</strong>: only when the user sends them.
+        </li>
+        <li><strong>Remote files</strong>: servers and devices the user connects to.</li>
+    </ul>
+    <DevTodo>
+        Release timing: managed preferences ship in the first release after 0.50.0. This section, the gap lines it
+        replaced, and the "IT can" sentences elsewhere on this page are only true from then, so publish them with
+        that release. Then David runs plan M9 (the sample profile on a real Mac) before the
+        <a href="https://github.com/vdavid/cmdr/issues/118">#118</a> boxes get ticked.
+    </DevTodo>
+
+    <h3 id="mdm-deploy">Deploying Cmdr</h3>
+    <ul>
+        <li>
+            <strong>Installing</strong>: today Cmdr ships as a disk image (DMG) and a Homebrew cask. An installer package
+            (<code>.pkg</code>), signed and notarized, is ready in the release pipeline and waits on its signing
+            certificate. It installs Cmdr to <code>/Applications</code>, owned by the system, and runs no scripts.
+        </li>
+        <li>
+            <strong>Updates on a managed Mac</strong>: when Cmdr sits in an <code>/Applications</code> folder the user
+            can't write to, as after a package install, its updater asks for an administrator password. Where users
+            aren't administrators, set <code>DisableUpdates</code> and push each new version from your MDM instead.
+        </li>
+        <li>
+            <strong>Full Disk Access</strong>: upload the
+            <a href="/mdm/cmdr-full-disk-access.mobileconfig" download>Full Disk Access profile</a> as a custom
+            configuration profile (Jamf Pro, Kandji, Microsoft Intune, and Mosyle all take one). If your MDM has a
+            privacy (PPPC) editor instead, add Cmdr with identifier <code>com.veszelovszki.cmdr</code>, identifier type
+            Bundle ID, the <a href="#signing">code requirement</a> below, and "Full Disk Access"
+            (<code>SystemPolicyAllFiles</code>) set to Allow.
+        </li>
+        <li>
+            <strong>Only an MDM can grant it.</strong> macOS applies a privacy profile only when it comes from an MDM
+            the Mac is enrolled in with the user's approval or through Apple Business Manager. Opening the file on a
+            Mac doesn't install it.
+        </li>
+        <li>
+            <strong>What else the profile covers</strong>: the Desktop, Documents, and Downloads folders, and network
+            and removable volumes. Full Disk Access already includes them; they're listed separately so you can drop
+            Full Disk Access and grant only those. It leaves out local network access, which isn't a privacy profile
+            setting (macOS 27 can suggest it through the declarative app settings configuration), Photos and Music,
+            which Cmdr only uses for icons and thumbnails, and Automation of Finder, which each user approves the first
+            time they use Get info.
+        </li>
+        <li>
+            <strong>On macOS 27</strong>, Apple marks privacy profiles as deprecated, and they still apply. Full Disk
+            Access has no replacement setting yet.
+        </li>
+    </ul>
+    <DevTodo>
+        The pkg: once David adds the Developer ID Installer certificate (<code>docs/guides/releasing.md</code> § The
+        installer package) and a release ships <code>Cmdr_X.Y.Z_universal.pkg</code>, change the "Installing" bullet
+        to say releases include it, link it, and drop the matching "Not in place yet" line. The PPPC profile: test it
+        on a real MDM-enrolled Mac (the profile installs, System Settings shows Cmdr under Full Disk Access as managed,
+        and onboarding's step 1 shows the "already granted" variant), then drop that gap line and tick the box in
+        <a href="https://github.com/vdavid/cmdr/issues/118">#118</a>.
+    </DevTodo>
+
     <h2 id="eu">Does data leave the EU?</h2>
     <p>
         <strong>Yes.</strong> Rymdskottkärra AB is in Sweden, and much of the data stays in the EU, but not all of it:
@@ -153,12 +332,18 @@ const toc = [
     <ul>
         <li>Downloads and updates come from GitHub (United States), which sees the IP address.</li>
         <li>
-            Error reports, feedback, and signups create notifications in Discord and GitHub (United States). These
-            include an email address if the user attached one.
+            Error reports, feedback, and signups create notifications in Discord, and error reports and feedback
+            become issues on GitHub (both United States). An email address the user attached goes to GitHub only, in
+            a comment that's deleted on a schedule, and never to Discord.
         </li>
         <li>
-            Emails with license keys, and notification emails about reports and feedback, pass through Resend and Gmail
-            (both United States companies).
+            Emails with license keys, and notification emails about reports and feedback, pass through Resend (a United
+            States company).
+        </li>
+        <li>
+            Emails we send from @getcmdr.com addresses leave through SMTP2Go, a New Zealand company. The EU recognizes
+            New Zealand as giving adequate data protection, and SMTP2Go says it stores data of EEA customers only in
+            the EEA.
         </li>
         <li>
             Cloudflare runs the API server on its global network. Its database and file storage are placed in Eastern
@@ -168,8 +353,8 @@ const toc = [
         <li>If a user sets up cloud AI, their data goes to wherever that provider runs.</li>
     </ul>
     <p>
-        Usage stats (PostHog EU cloud), the website (Hetzner, Finland), and newsletter sending (AWS, Stockholm) stay in
-        the EU.
+        Usage stats (PostHog EU cloud), the website and the @getcmdr.com inbox (both self-hosted at Hetzner, Finland),
+        and newsletter sending (AWS, Stockholm) stay in the EU.
     </p>
 
     <h2 id="subprocessors">Subprocessors</h2>
@@ -197,14 +382,16 @@ const toc = [
     <h2 id="storage">What is stored where, and for how long</h2>
     <h3>On the user's Mac</h3>
     <p>
-        Cmdr keeps its data in <code>~/Library/Application Support/com.veszelovszki.cmdr/</code> and its logs in
+        Cmdr keeps its data in <code>~/Library/Application Support/com.veszelovszki.cmdr/</code>, its drive index in
+        <code>~/Library/Caches/com.veszelovszki.cmdr/</code>, and its logs in
         <code>~/Library/Logs/com.veszelovszki.cmdr/</code>. Cmdr doesn't add its own encryption, so this data is as safe
         as the Mac's FileVault. It includes:
     </p>
     <ul>
         <li>
             An index of <strong>every file and folder name and path</strong> on each indexed drive, including network
-            shares.
+            shares. It lives in <code>~/Library/Caches/com.veszelovszki.cmdr/drive-index/</code>, so Time Machine
+            doesn't back it up, and Cmdr rebuilds it if it's deleted.
         </li>
         <li>For image search: text read from images (OCR), tags, and image fingerprints.</li>
         <li>A log of every copy, move, rename, and delete, with paths (up to 3 GB by default).</li>
@@ -232,15 +419,11 @@ const toc = [
         }
     </ul>
     <p>
-        Nothing in Cmdr's code deletes old Discord notifications, emails in the Gmail inbox, or Resend's delivery
-        logs.
+        Nothing in Cmdr's code deletes old Discord notifications, emails in the @getcmdr.com inbox, or Resend's and
+        SMTP2Go's delivery logs.
     </p>
     <DevTodo>
-        The R2 bucket <code>cmdr-error-reports</code> has no 90-day lifecycle rule (only the default multipart-abort
-        rule), and zips from 2026-04-24 still exist. The privacy policy and <code>docs/security.md</code> promise 90
-        days. Add an expiry rule scoped to the <code>error-reports/</code> prefix (NOT bucket-wide: the daily license
-        backup lives in the same bucket), then change this page's error-report line and drop the gap. Also: confirm Cmdr is on PostHog's free plan (events kept one year; a paid plan keeps them seven), and check
-        whether anything enforces Umami's "typically two years".
+        Confirm Cmdr is on PostHog's free plan (events kept one year; a paid plan keeps them seven).
     </DevTodo>
 
     <h2 id="signing">Signing, notarization, and updates</h2>
@@ -259,15 +442,14 @@ const toc = [
         </li>
         <li>
             <strong>Code requirement</strong> for a PPPC profile (to grant Full Disk Access through MDM):
-            <code
-                >identifier "com.veszelovszki.cmdr" and anchor apple generic and certificate
-                1[field.1.2.840.113635.100.6.2.6] /* exists */ and certificate leaf[field.1.2.840.113635.100.6.1.13] /*
-                exists */ and certificate leaf[subject.OU] = "83H6YAQMNP"</code
-            >. It stays the same across updates, so a Full Disk Access grant survives them.
+            <code>{codeRequirement}</code>. It stays the same across updates, so a Full Disk Access grant survives them.
+            The <a href="/mdm/cmdr-full-disk-access.mobileconfig" download>Full Disk Access profile</a> uses it.
         </li>
         <li>
             <strong>Downloads</strong>: a disk image (DMG) from GitHub Releases, or the Homebrew cask. Each release
-            publishes SHA-256 checksums. There's no <code>.pkg</code> installer yet.
+            publishes SHA-256 checksums. There's no <code>.pkg</code> installer yet (<a href="#mdm-deploy"
+                >deploying Cmdr</a
+            >).
         </li>
         <li>
             <strong>Build provenance</strong>: every file in a release carries a signed
@@ -278,8 +460,8 @@ const toc = [
         </li>
         <li>
             <strong>SBOMs</strong>: each release also includes software bills of materials in CycloneDX format, one
-            for the Rust dependencies of each processor type and one for the JavaScript dependencies. From the next
-            release on, they're signed and tied to the builds they describe, the same way.
+            for the Rust dependencies of each processor type and one for the JavaScript dependencies. They're signed and
+            tied to the builds they describe, the same way.
         </li>
         <li>
             <strong>Updates</strong>: the app downloads the new version from GitHub and checks its Ed25519 (minisign)
@@ -289,8 +471,8 @@ const toc = [
             write to, the update asks for an administrator password.
         </li>
         <li>
-            <strong>Turning updates off</strong>: per user only, in Settings &gt; Updates &amp; privacy. There's no
-            central way to pin a version yet.
+            <strong>Turning updates off</strong>: per user in Settings &gt; Updates &amp; privacy. IT can turn them
+            off for everyone or hold Cmdr at a version (<a href="#mdm">central management</a>).
         </li>
         <li>
             <strong>Signing keys</strong>: the release build signs with keys stored as GitHub secrets. The GitHub
@@ -299,16 +481,12 @@ const toc = [
         </li>
     </ul>
     <DevTodo>
-        The entitlements (none) and the code requirement above were read from the 0.47.0 release with
-        <code>codesign -d --entitlements -</code> and <code>codesign -d -r-</code>. Nobody has tested a PPPC profile
-        with it yet.
-    </DevTodo>
-    <DevTodo>
-        Provenance verified on the 0.47.0 DMG. Its SBOM attestations failed (the SBOMs lacked the
-        <code>serialNumber</code> the attest action requires, fixed in <code>release.yml</code> since). After the next
-        release, run the SBOM <code>gh attestation verify</code> from <code>docs/guides/releasing.md</code> § Provenance
-        and SBOM attestations, then drop "From the next release on" from the SBOM line here, on
-        <code>/trust/development</code>, and in the "Not in place yet" line in <code>src/lib/trust.ts</code>.
+        The entitlements (none) and the code requirement above were read from the 0.50.0 release with
+        <code>codesign -d --entitlements -</code> and <code>codesign -d -r-</code>; the requirement matched 0.50.0 in
+        <code>/Applications</code> again on 2026-10-07 (<code>codesign -v -R=</code>). Nobody has tested the PPPC
+        profile on a real MDM yet. Once a release ships <code>Cmdr_X.Y.Z.intoto.jsonl</code> (the release workflow
+        attaches it from the next release on), add to the "Build provenance" bullet: "The same provenance is attached
+        to each release as a file ending in <code>.intoto.jsonl</code>."
     </DevTodo>
 
     <h2 id="permissions">Sandbox and permissions</h2>
@@ -320,7 +498,7 @@ const toc = [
     <p>
         <strong>Full Disk Access</strong>: during first-time setup, Cmdr asks the user to grant it in System Settings,
         so macOS doesn't ask separately for every protected folder. The user can say no; Cmdr then works with the
-        usual macOS prompts.
+        usual macOS prompts. IT can grant it ahead of time through MDM (<a href="#mdm-deploy">deploying Cmdr</a>).
     </p>
     <p>Other macOS permissions Cmdr may ask for, and why:</p>
     <ul>
@@ -328,6 +506,10 @@ const toc = [
         <li><strong>Network volumes and removable volumes</strong>: to browse network shares, USB drives, and SD cards.</li>
         <li><strong>Local network</strong>: to connect to SMB file servers directly and find them on the network.</li>
         <li><strong>Music and Photos</strong>: to read file metadata for icons and thumbnails. Cmdr doesn't read the libraries.</li>
+        <li>
+            <strong>Automation of Finder</strong>: to open Finder's Get Info window for a file, the first time someone
+            uses Get info. Cmdr asks Finder for nothing else, and it needs no entitlement for this.
+        </li>
     </ul>
     <p>Other things Cmdr does on the system that a reviewer might notice:</p>
     <ul>
@@ -392,7 +574,8 @@ const toc = [
     </ul>
     <p>
         Text recognition in images, image tags, and image search always run on the Mac, using Apple's built-in
-        frameworks. IT can't yet turn AI off centrally or limit which providers are allowed.
+        frameworks. IT can turn AI off, allow only on-device AI, or limit which hosts cloud AI may reach
+        (<a href="#mdm">central management</a>).
     </p>
 
     <h2 id="development">How Cmdr is built</h2>
@@ -410,6 +593,11 @@ const toc = [
         <li>
             Development is AI-assisted. One person owns every change; as a one-person company, there's no
             second-person code review.
+        </li>
+        <li>
+            A whole-app <a href="https://github.com/vdavid/cmdr/blob/main/docs/threat-model.md">threat model</a> on
+            GitHub lists what Cmdr protects, from whom, where the trust boundaries run, what stops each threat, and the
+            risks that remain.
         </li>
         <li>
             {releaseCadence.releases} releases in the last {devWindow.days} days. New dependency versions wait three
@@ -442,7 +630,9 @@ const toc = [
         </li>
         <li>
             <strong>If the company stops</strong>: the full source is public today, and each version becomes open source
-            on its change date. There's no faster continuity promise in the terms yet.
+            on its change date. Paid licenses don't need our server: a perpetual license is checked offline and keeps
+            working forever, and the license email includes the full key, so you can set up a new Mac without us.
+            There's no faster continuity promise in the terms yet.
         </li>
         <li>
             <strong>Terms</strong>: the <a href="/terms-and-conditions">terms</a> and the

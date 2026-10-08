@@ -114,14 +114,42 @@ pub(super) fn listing_error_from_errno(errno: i32, path: &Path, _err: &VolumeErr
     }
 }
 
-/// Fallback for non-macOS platforms (mapping will be expanded later).
+/// Fallback for non-macOS platforms: the retry-worthy errnos the macOS table calls
+/// transient, read through `std`'s own per-platform `ErrorKind` mapping (so no
+/// errno number is assumed), and everything else as an unknown read problem.
+///
+/// The transient arm matters beyond the copy: a stalled listing retries exactly
+/// the `Transient` category (`file_system/listing/stall.rs` in the app).
 #[cfg(not(target_os = "macos"))]
-pub(super) fn listing_error_from_errno(_errno: i32, path: &Path, err: &VolumeError) -> ListingError {
-    ListingError {
-        category: ErrorCategory::Serious,
-        reason: ListingErrorReason::CouldntReadUnknown {
+pub(super) fn listing_error_from_errno(errno: i32, path: &Path, err: &VolumeError) -> ListingError {
+    use std::io::ErrorKind;
+
+    let transient = match std::io::Error::from_raw_os_error(errno).kind() {
+        ErrorKind::Interrupted => Some(ListingErrorReason::Interrupted),
+        ErrorKind::OutOfMemory => Some(ListingErrorReason::NotEnoughMemory),
+        ErrorKind::ResourceBusy => Some(ListingErrorReason::ResourceBusy {
             path: path.display().to_string(),
-        },
+        }),
+        ErrorKind::WouldBlock => Some(ListingErrorReason::TemporarilyUnavailable),
+        ErrorKind::NetworkDown => Some(ListingErrorReason::NetworkDown),
+        ErrorKind::ConnectionAborted => Some(ListingErrorReason::ConnectionDropped),
+        ErrorKind::ConnectionReset => Some(ListingErrorReason::ConnectionReset),
+        ErrorKind::TimedOut => Some(ListingErrorReason::ConnectionTimedOutErrno),
+        ErrorKind::StaleNetworkFileHandle => Some(ListingErrorReason::StaleConnection),
+        _ => None,
+    };
+    let (category, reason) = match transient {
+        Some(reason) => (ErrorCategory::Transient, reason),
+        None => (
+            ErrorCategory::Serious,
+            ListingErrorReason::CouldntReadUnknown {
+                path: path.display().to_string(),
+            },
+        ),
+    };
+    ListingError {
+        category,
+        reason,
         provider: None,
         action_kind: None,
         retry_hint: true,

@@ -35,7 +35,26 @@ const h = vi.hoisted(() => ({
   showNetworkHostContextMenu: vi.fn(() => Promise.resolve()),
   /** Every command the document dispatcher resolved a key to, in order. */
   dispatched: [] as string[],
+  setSetting: vi.fn(),
+  /** The stored settings, reactive like the app's, so a toggle re-renders the hub. */
+  settings: new Map<string, string>(),
 }))
+
+/** The saved SMB server behind a discovered host, which is what makes it the person's own. */
+function savedSmb(host: NetworkHost): SavedServer {
+  return {
+    id: `manual-${host.id}`,
+    protocol: 'smb',
+    displayName: host.name,
+    nameSource: 'fallback',
+    address: host.hostname ?? host.name,
+    username: null,
+    pinned: false,
+    lastConnectedAt: null,
+    autoReconnect: null,
+    places: [],
+  }
+}
 
 const mockHosts: NetworkHost[] = [
   { id: 'h1', name: 'Naspolya', hostname: 'Naspolya.local', ipAddress: '192.168.1.111', port: 445 },
@@ -60,6 +79,7 @@ const savedSftp: SavedServer = {
       connected: false,
       appRoot: 'sftp://ada@jump.local:22',
       username: 'ada',
+      autoReconnect: true,
     },
   ],
 }
@@ -84,9 +104,21 @@ vi.mock('./network-store.svelte', () => ({
 
 vi.mock('./lazy-trigger', () => ({ triggerNetworkDiscovery: vi.fn() }))
 vi.mock('$lib/stores/volume-store.svelte', () => ({ getVolumes: () => [] }))
-vi.mock('$lib/settings/reactive-settings.svelte', () => ({
-  getNetworkEnabled: () => true,
-  formattedDate: () => ({ text: '', segments: [] }),
+vi.mock('$lib/settings/reactive-settings.svelte', async () => {
+  const { SvelteMap } = await import('svelte/reactivity')
+  h.settings = new SvelteMap<string, string>()
+  return {
+    getNetworkEnabled: () => true,
+    formattedDate: () => ({ text: '', segments: [] }),
+    getNearbyServersGroupChoice: () => h.settings.get('network.nearbyServersGroup') ?? 'auto',
+  }
+})
+vi.mock('$lib/settings', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('$lib/settings')>()),
+  setSetting: (id: string, value: string) => {
+    h.setSetting(id, value)
+    h.settings.set(id, value)
+  },
 }))
 vi.mock('$lib/settings/settings-window', () => ({
   openSettingsWindow: vi.fn(() => Promise.resolve()),
@@ -101,7 +133,6 @@ vi.mock('$lib/stores/volume-busy-store.svelte', () => ({ isVolumeBusy: () => fal
 vi.mock('$lib/tauri-commands', () => ({
   updateLeftPaneState: vi.fn(() => Promise.resolve()),
   updateRightPaneState: vi.fn(() => Promise.resolve()),
-  removeManualServer: vi.fn(() => Promise.resolve()),
   showNetworkHostContextMenu: h.showNetworkHostContextMenu,
   onNetworkHostContextAction: vi.fn(() => Promise.resolve(() => {})),
   disconnectNetworkHost: vi.fn(() => Promise.resolve()),
@@ -187,6 +218,15 @@ function mountBehindBothHandlers(): MountedHub {
   return { target, api, onHostSelect, onServerSelect, onConnectToServer, cleanup }
 }
 
+/**
+ * Lets the hub's first read of the saved list land. It lists nothing before that:
+ * which servers are saved decides where each row goes and whether the nearby
+ * group starts open.
+ */
+async function settle(): Promise<void> {
+  for (let round = 0; round < 3; round++) await tick()
+}
+
 /** An unmodified keypress the hub's own handler claims. */
 function plainKey(key: string): KeyboardEvent {
   return new KeyboardEvent('keydown', { key, bubbles: true })
@@ -196,6 +236,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   h.dispatched.length = 0
   h.listSavedServers.mockResolvedValue([])
+  h.settings.clear()
   document.body.innerHTML = ''
   // The document dispatcher's reverse lookup is built here in the app's startup.
   initShortcutDispatch()
@@ -207,8 +248,9 @@ afterEach(() => {
 
 describe('ServersHub refresh key', () => {
   it('re-reads each host once per ⌘R, not once per handler on the path', async () => {
+    h.listSavedServers.mockResolvedValue(mockHosts.map(savedSmb))
     const { target, cleanup } = mountBehindBothHandlers()
-    await tick()
+    await settle()
     h.clearShareState.mockClear()
     h.fetchShares.mockClear()
 
@@ -225,8 +267,9 @@ describe('ServersHub refresh key', () => {
   })
 
   it('still refreshes when only the document dispatcher sees the key', async () => {
+    h.listSavedServers.mockResolvedValue(mockHosts.map(savedSmb))
     const { api, cleanup } = mountBehindBothHandlers()
-    await tick()
+    await settle()
     h.clearShareState.mockClear()
     h.fetchShares.mockClear()
 
@@ -239,19 +282,42 @@ describe('ServersHub refresh key', () => {
 
     await cleanup()
   })
+
+  /**
+   * #324: a refresh re-reads the list, and listing a host's shares means signing in
+   * to it (as a guest, where it lets one in). For a host the person never saved,
+   * that waits until they open it.
+   */
+  it('lists no shares on a host the person never saved', async () => {
+    h.listSavedServers.mockResolvedValue([savedSmb(mockHosts[0])])
+    const { api, cleanup } = mountBehindBothHandlers()
+    await settle()
+    h.clearShareState.mockClear()
+    h.fetchShares.mockClear()
+
+    api.refresh()
+
+    expect(h.fetchShares).toHaveBeenCalledOnce()
+    expect(h.fetchShares).toHaveBeenCalledWith(mockHosts[0])
+    // Its stale list still goes, so opening it lists afresh.
+    expect(h.clearShareState).toHaveBeenCalledTimes(mockHosts.length)
+
+    await cleanup()
+  })
 })
 
 describe('ServersHub rows', () => {
   it('always offers one more row than it lists, which is "Add server…"', async () => {
     const { api, cleanup } = mountBehindBothHandlers()
-    await tick()
-    expect(api.getItemCount()).toBe(mockHosts.length + 1)
+    await settle()
+    // The two nearby hosts, their group's header, and the add row.
+    expect(api.getItemCount()).toBe(mockHosts.length + 2)
     await cleanup()
   })
 
   it('opens the row once per Enter, not once per handler on the path', async () => {
     const { target, api, onHostSelect, cleanup } = mountBehindBothHandlers()
-    await tick()
+    await settle()
     api.setCursorIndex(api.findItemIndex('Naspolya'))
 
     const listContainer = target.querySelector('.row-list')
@@ -267,7 +333,7 @@ describe('ServersHub rows', () => {
 
   it('opens an SMB host into its places list', async () => {
     const { api, onHostSelect, onServerSelect, cleanup } = mountBehindBothHandlers()
-    await tick()
+    await settle()
     api.setCursorIndex(api.findItemIndex('Naspolya'))
     api.openCursorItem()
     expect(onHostSelect).toHaveBeenCalledOnce()
@@ -278,8 +344,8 @@ describe('ServersHub rows', () => {
   it('takes a one-place server to its place instead, which is where the pane dials', async () => {
     h.listSavedServers.mockResolvedValue([savedSftp])
     const { api, onHostSelect, onServerSelect, cleanup } = mountBehindBothHandlers()
-    await tick()
-    await tick()
+    await settle()
+    await settle()
     api.setCursorIndex(api.findItemIndex('Jump box'))
     api.openCursorItem()
     expect(onServerSelect).toHaveBeenCalledOnce()
@@ -289,7 +355,7 @@ describe('ServersHub rows', () => {
 
   it('opens the add form from the last row', async () => {
     const { api, onConnectToServer, cleanup } = mountBehindBothHandlers()
-    await tick()
+    await settle()
     api.setCursorIndex(api.getItemCount() - 1)
     api.openCursorItem()
     expect(onConnectToServer).toHaveBeenCalledOnce()
@@ -298,7 +364,7 @@ describe('ServersHub rows', () => {
 
   it('has no row under the cursor on "Add server…", so a command acts on nothing', async () => {
     const { api, cleanup } = mountBehindBothHandlers()
-    await tick()
+    await settle()
     api.setCursorIndex(api.getItemCount() - 1)
     expect(api.getRowUnderCursor()).toBeNull()
     await cleanup()
@@ -312,7 +378,7 @@ describe('ServersHub rows', () => {
 describe('ServersHub selectServer', () => {
   it('puts the cursor on a server that joins the list after the call', async () => {
     const { api, cleanup } = mountBehindBothHandlers()
-    await tick()
+    await settle()
     h.listSavedServers.mockResolvedValue([savedSftp])
 
     api.selectServer('sftp-jump.local-22-ada')
@@ -329,7 +395,7 @@ describe('ServersHub selectServer', () => {
    */
   it('keeps the cursor on the selected row when the list reorders around it', async () => {
     const { api, cleanup } = mountBehindBothHandlers()
-    await tick()
+    await settle()
     api.selectServer('h2')
     await vi.waitFor(() => {
       expect(api.getRowUnderCursor()?.name).toBe('Attic')
@@ -339,9 +405,9 @@ describe('ServersHub selectServer', () => {
     h.listSavedServers.mockResolvedValue([savedSftp])
     api.refresh()
     await vi.waitFor(() => {
-      expect(api.getItemCount()).toBe(mockHosts.length + 2)
+      expect(api.getItemCount()).toBe(mockHosts.length + 3)
     })
-    await tick()
+    await settle()
 
     expect(api.getRowUnderCursor()?.name).toBe('Attic')
     await cleanup()
@@ -349,7 +415,7 @@ describe('ServersHub selectServer', () => {
 
   it('finds an added SMB host by its discovery id too', async () => {
     const { api, cleanup } = mountBehindBothHandlers()
-    await tick()
+    await settle()
     api.selectServer('h2')
     await vi.waitFor(() => {
       expect(api.getRowUnderCursor()?.name).toBe('Attic')
@@ -362,11 +428,11 @@ describe('ServersHub F8', () => {
   it('forgets a saved server through the servers family, so the hub asks what the switcher asks', async () => {
     h.listSavedServers.mockResolvedValue([savedSftp])
     const { api, cleanup } = mountBehindBothHandlers()
-    await tick()
-    await tick()
+    await settle()
+    await settle()
     api.setCursorIndex(api.findItemIndex('Jump box'))
     api.handleKeyDown(plainKey('F8'))
-    await tick()
+    await settle()
     expect(h.forgetSavedServer).toHaveBeenCalledWith('sftp-jump.local-22-ada', 'Jump box')
     await cleanup()
   })
@@ -378,11 +444,11 @@ describe('ServersHub F8', () => {
   it('claims F8, so the document dispatcher never runs file.delete behind it', async () => {
     h.listSavedServers.mockResolvedValue([savedSftp])
     const { target, api, cleanup } = mountBehindBothHandlers()
-    await tick()
-    await tick()
+    await settle()
+    await settle()
     api.setCursorIndex(api.findItemIndex('Jump box'))
     target.querySelector('.row-list')?.dispatchEvent(plainKey('F8'))
-    await tick()
+    await settle()
     expect(h.forgetSavedServer).toHaveBeenCalledOnce()
     expect(h.dispatched).toEqual([])
     await cleanup()
@@ -390,10 +456,10 @@ describe('ServersHub F8', () => {
 
   it('says a discovered host is not the user’s to remove, rather than doing nothing', async () => {
     const { api, cleanup } = mountBehindBothHandlers()
-    await tick()
+    await settle()
     api.setCursorIndex(api.findItemIndex('Naspolya'))
     api.handleKeyDown(plainKey('F8'))
-    await tick()
+    await settle()
     expect(h.forgetSavedServer).not.toHaveBeenCalled()
     expect(h.addToast).toHaveBeenCalledOnce()
     await cleanup()
@@ -408,15 +474,15 @@ describe('ServersHub row menu', () => {
   async function rightClick(name: string): Promise<void> {
     const row = [...document.querySelectorAll<HTMLElement>('.server-row')].find((el) => el.textContent.includes(name))
     row?.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 40, clientY: 60 }))
-    await tick()
-    await tick()
+    await settle()
+    await settle()
   }
 
   it('opens the server list at the pointer, read off the saved entry', async () => {
     h.listSavedServers.mockResolvedValue([savedSftp])
     const { cleanup } = mountBehindBothHandlers()
-    await tick()
-    await tick()
+    await settle()
+    await settle()
     await rightClick('Jump box')
     const labels = [...document.querySelectorAll('[data-menu] [data-menu-row]')].map((el) => el.textContent.trim())
     // Saved, not connected: nothing to disconnect. Saved, so its "Reconnect automatically" rides below.
@@ -434,13 +500,13 @@ describe('ServersHub row menu', () => {
   it('opens the place in THIS pane from the menu’s Open, the way Enter does', async () => {
     h.listSavedServers.mockResolvedValue([savedSftp])
     const { onServerSelect, cleanup } = mountBehindBothHandlers()
-    await tick()
-    await tick()
+    await settle()
+    await settle()
     await rightClick('Jump box')
     document
       .querySelector('[data-menu] [data-menu-row="row:sftp-jump.local-22-ada:open"]')
       ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    await tick()
+    await settle()
     expect(onServerSelect).toHaveBeenCalledOnce()
     expect(document.querySelector('[data-menu]')).toBeNull()
     await cleanup()
@@ -460,13 +526,13 @@ describe('ServersHub keyboard context menu', () => {
   it('opens a one-place row’s menu on ⌃⏎, once', async () => {
     h.listSavedServers.mockResolvedValue([savedSftp])
     const { target, api, onServerSelect, cleanup } = mountBehindBothHandlers()
-    await tick()
-    await tick()
+    await settle()
+    await settle()
     api.setCursorIndex(api.findItemIndex('Jump box'))
 
     target.querySelector('.row-list')?.dispatchEvent(ctrlEnter())
-    await tick()
-    await tick()
+    await settle()
+    await settle()
 
     const labels = [...document.querySelectorAll('[data-menu] [data-menu-row]')].map((el) => el.textContent.trim())
     expect(labels[0]).toBe('Open')
@@ -477,7 +543,7 @@ describe('ServersHub keyboard context menu', () => {
 
   it('raises an SMB host’s menu for the row under the cursor, placed at the row', async () => {
     const { target, api, cleanup } = mountBehindBothHandlers()
-    await tick()
+    await settle()
     api.setCursorIndex(api.findItemIndex('Attic'))
 
     target.querySelector('.row-list')?.dispatchEvent(ctrlEnter())
@@ -514,18 +580,19 @@ describe('ServersHub keyboard context menu', () => {
             connected: false,
             appRoot: '/Volumes/public',
             username: null,
+            autoReconnect: null,
           },
         ],
       } satisfies SavedServer,
     ])
     const { target, api, cleanup } = mountBehindBothHandlers()
-    await tick()
-    await tick()
+    await settle()
+    await settle()
     api.setCursorIndex(api.findItemIndex('public'))
 
     target.querySelector('.row-list')?.dispatchEvent(ctrlEnter())
-    await tick()
-    await tick()
+    await settle()
+    await settle()
 
     const labels = [...document.querySelectorAll('[data-menu] [data-menu-row]')].map((el) => el.textContent.trim())
     expect(labels).toEqual(['Open', expect.stringMatching(/pin/i), 'Forget share'])
@@ -534,7 +601,7 @@ describe('ServersHub keyboard context menu', () => {
 
   it('opens nothing on the "Add server…" row', async () => {
     const { api, cleanup } = mountBehindBothHandlers()
-    await tick()
+    await settle()
     api.setCursorIndex(api.getItemCount() - 1)
     await api.openContextMenuAtCursor()
     expect(h.showNetworkHostContextMenu).not.toHaveBeenCalled()
@@ -562,6 +629,7 @@ describe('ServersHub row text', () => {
         connected: false,
         appRoot: '/Volumes/public',
         username: 'testuser',
+        autoReconnect: null,
       },
     ],
   }
@@ -570,9 +638,9 @@ describe('ServersHub row text', () => {
   it('counts servers in the status bar, not the share rows under them', async () => {
     h.listSavedServers.mockResolvedValue([withShare])
     const { target, cleanup } = mountBehindBothHandlers()
-    await tick()
-    await tick()
-    // Two discovered hosts plus the saved one; its share row doesn't count.
+    await settle()
+    await settle()
+    // Two discovered hosts plus the saved one; neither its share row nor the nearby group's header counts.
     expect(target.querySelector('.status-text')?.textContent.trim()).toBe('3 servers')
     await cleanup()
   })
@@ -585,8 +653,8 @@ describe('ServersHub row text', () => {
   it('puts a row`s name and account in one clipping text span', async () => {
     h.listSavedServers.mockResolvedValue([withShare])
     const { target, cleanup } = mountBehindBothHandlers()
-    await tick()
-    await tick()
+    await settle()
+    await settle()
     const share = [...target.querySelectorAll('.server-row')].find((row) => row.textContent.includes('public'))
     // ❗ With a space: "privateas testuser" ran the two together (QA round 3).
     expect(share?.querySelector('.col-name .name-text')?.textContent).toBe('public as testuser')
@@ -618,6 +686,7 @@ describe('ServersHub row menu after a pin', () => {
         connected: false,
         appRoot: '/Volumes/public',
         username: null,
+        autoReconnect: null,
       },
     ],
   })
@@ -625,12 +694,12 @@ describe('ServersHub row menu after a pin', () => {
   it('shows the pin as it stands now, not as it stood when the menu opened', async () => {
     h.listSavedServers.mockResolvedValue([share(true)])
     const { target, api, cleanup } = mountBehindBothHandlers()
-    await tick()
-    await tick()
+    await settle()
+    await settle()
     const row = [...target.querySelectorAll<HTMLElement>('.server-row')].find((el) => el.textContent.includes('public'))
     row?.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 40, clientY: 60 }))
-    await tick()
-    await tick()
+    await settle()
+    await settle()
     const labels = () =>
       [...document.querySelectorAll('[data-menu] [data-menu-row]')].map((el) => el.textContent.trim())
     expect(labels()).toContain('Unpin from switcher')
@@ -640,6 +709,177 @@ describe('ServersHub row menu after a pin', () => {
     await vi.waitFor(() => {
       expect(labels()).toContain('Pin to switcher')
     })
+    await cleanup()
+  })
+})
+
+/**
+ * The servers Cmdr only FOUND sit in one group under the saved ones: collapsed for
+ * someone who saved a server, open for someone who saved none, and as the person
+ * last left it once they toggled it.
+ */
+describe('ServersHub nearby group', () => {
+  const header = (target: HTMLElement) => target.querySelector<HTMLElement>('.nearby-group-row')
+  const rowNames = (target: HTMLElement) =>
+    [...target.querySelectorAll('.server-row .name-text')].map((el) => el.textContent.trim())
+  const cursorRow = (target: HTMLElement) => target.querySelector<HTMLElement>('.server-row.is-under-cursor')
+
+  it('opens expanded for someone with no saved server, with the cursor on the first server', async () => {
+    const { target, api, cleanup } = mountBehindBothHandlers()
+    await settle()
+    expect(header(target)?.textContent.trim()).toBe('2 servers found nearby')
+    expect(header(target)?.querySelector('button')?.getAttribute('aria-expanded')).toBe('true')
+    expect(rowNames(target)).toEqual(['Attic', 'Naspolya'])
+    expect(api.getRowUnderCursor()?.name).toBe('Attic')
+    await cleanup()
+  })
+
+  it('opens collapsed for someone with a saved server, showing the header alone', async () => {
+    h.listSavedServers.mockResolvedValue([savedSftp])
+    const { target, cleanup } = mountBehindBothHandlers()
+    await settle()
+    expect(rowNames(target)).toEqual(['Jump box'])
+    expect(header(target)?.textContent.trim()).toBe('2 servers found nearby')
+    expect(header(target)?.querySelector('button')?.getAttribute('aria-expanded')).toBe('false')
+    await cleanup()
+  })
+
+  it('keeps a saved host mDNS also sees among the saved ones, out of the group', async () => {
+    h.listSavedServers.mockResolvedValue([savedSmb(mockHosts[0])])
+    const { target, cleanup } = mountBehindBothHandlers()
+    await settle()
+    expect(rowNames(target)).toEqual(['Naspolya'])
+    expect(header(target)?.textContent.trim()).toBe('1 server found nearby')
+    await cleanup()
+  })
+
+  it('walks the arrows over the header and never onto a hidden server', async () => {
+    h.listSavedServers.mockResolvedValue([savedSftp])
+    const { target, api, cleanup } = mountBehindBothHandlers()
+    await settle()
+    expect(api.getRowUnderCursor()?.name).toBe('Jump box')
+
+    api.handleKeyDown(plainKey('ArrowDown'))
+    await settle()
+    expect(cursorRow(target)).toBe(header(target))
+    expect(api.getRowUnderCursor()).toBeNull()
+
+    api.handleKeyDown(plainKey('ArrowDown'))
+    await settle()
+    expect(cursorRow(target)?.classList.contains('add-row')).toBe(true)
+    await cleanup()
+  })
+
+  it('toggles on Enter and on Space, once per key, and remembers each choice', async () => {
+    h.listSavedServers.mockResolvedValue([savedSftp])
+    const { target, api, cleanup } = mountBehindBothHandlers()
+    await settle()
+    api.handleKeyDown(plainKey('ArrowDown'))
+    const list = target.querySelector('.row-list')
+
+    // Through both handlers on the key's path: twice would leave it as it was.
+    list?.dispatchEvent(plainKey('Enter'))
+    await settle()
+    expect(h.setSetting).toHaveBeenLastCalledWith('network.nearbyServersGroup', 'expanded')
+    expect(rowNames(target)).toEqual(['Jump box', 'Attic', 'Naspolya'])
+    expect(cursorRow(target)).toBe(header(target))
+
+    list?.dispatchEvent(plainKey(' '))
+    await settle()
+    expect(h.setSetting).toHaveBeenLastCalledWith('network.nearbyServersGroup', 'collapsed')
+    expect(h.setSetting).toHaveBeenCalledTimes(2)
+    expect(rowNames(target)).toEqual(['Jump box'])
+    expect(h.dispatched).toEqual([])
+    await cleanup()
+  })
+
+  it('toggles on a click, which also takes the cursor', async () => {
+    h.listSavedServers.mockResolvedValue([savedSftp])
+    const { target, cleanup } = mountBehindBothHandlers()
+    await settle()
+    header(target)?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    await settle()
+    expect(rowNames(target)).toEqual(['Jump box', 'Attic', 'Naspolya'])
+    expect(cursorRow(target)).toBe(header(target))
+    await cleanup()
+  })
+
+  it('opens the way the person last left it, whatever they have saved', async () => {
+    h.settings.set('network.nearbyServersGroup', 'expanded')
+    h.listSavedServers.mockResolvedValue([savedSftp])
+    const saved = mountBehindBothHandlers()
+    await settle()
+    expect(rowNames(saved.target)).toEqual(['Jump box', 'Attic', 'Naspolya'])
+    await saved.cleanup()
+
+    h.settings.set('network.nearbyServersGroup', 'collapsed')
+    h.listSavedServers.mockResolvedValue([])
+    const none = mountBehindBothHandlers()
+    await settle()
+    expect(rowNames(none.target)).toEqual([])
+    expect(header(none.target)).not.toBeNull()
+    await none.cleanup()
+  })
+
+  it('stays open through a first save while the view is up, so nothing folds away under the person', async () => {
+    const { target, api, cleanup } = mountBehindBothHandlers()
+    await settle()
+    h.listSavedServers.mockResolvedValue([savedSftp])
+    api.refresh()
+    await settle()
+    expect(rowNames(target)).toEqual(['Jump box', 'Attic', 'Naspolya'])
+    await cleanup()
+  })
+
+  it('moves the cursor to the header when the group collapses over it', async () => {
+    h.settings.set('network.nearbyServersGroup', 'expanded')
+    h.listSavedServers.mockResolvedValue([savedSftp])
+    const { target, api, cleanup } = mountBehindBothHandlers()
+    await settle()
+    api.setCursorIndex(api.findItemIndex('Naspolya'))
+    expect(api.getRowUnderCursor()?.name).toBe('Naspolya')
+
+    // The other pane's hub collapsed it: the setting is one, the views are two.
+    h.settings.set('network.nearbyServersGroup', 'collapsed')
+    await settle()
+    expect(cursorRow(target)).toBe(header(target))
+    expect(api.getRowUnderCursor()).toBeNull()
+    await cleanup()
+  })
+
+  it('shows a hidden server an agent moves the cursor to, without recording a choice', async () => {
+    h.listSavedServers.mockResolvedValue([savedSftp])
+    const { target, api, onHostSelect, cleanup } = mountBehindBothHandlers()
+    await settle()
+    // The full list: Jump box, the header, Attic, Naspolya, "Add server…".
+    expect(api.getItemCount()).toBe(5)
+    expect(api.findItemIndex('Naspolya')).toBe(3)
+
+    api.setCursorIndex(api.findItemIndex('Naspolya'))
+    await settle()
+    expect(api.getRowUnderCursor()?.name).toBe('Naspolya')
+    expect(rowNames(target)).toEqual(['Jump box', 'Attic', 'Naspolya'])
+    expect(h.setSetting).not.toHaveBeenCalled()
+
+    api.openCursorItem()
+    expect(onHostSelect).toHaveBeenCalledOnce()
+    await cleanup()
+  })
+
+  it('reaches the header and the add row by the index an agent counts', async () => {
+    h.listSavedServers.mockResolvedValue([savedSftp])
+    const { target, api, onConnectToServer, cleanup } = mountBehindBothHandlers()
+    await settle()
+
+    api.setCursorIndex(api.findItemIndex('Found nearby'))
+    await settle()
+    expect(cursorRow(target)).toBe(header(target))
+
+    api.setCursorIndex(api.getItemCount() - 1)
+    api.openCursorItem()
+    expect(onConnectToServer).toHaveBeenCalledOnce()
+    // Reaching past a collapsed group is no reason to open it.
+    expect(rowNames(target)).toEqual(['Jump box'])
     await cleanup()
   })
 })

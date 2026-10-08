@@ -8,7 +8,7 @@ use std::sync::atomic::AtomicBool;
 use super::byte_seek::ByteSeekBackend;
 use super::search_cancel_test_support::{assert_search_stops_on_per_match_cancel, many_matches_corpus};
 use super::search_matcher::{Matcher, SearchMode};
-use super::{FileViewerBackend, MAX_SEARCH_MATCHES, SearchMatch, SeekTarget};
+use super::{FileViewerBackend, MAX_SEARCH_MATCHES, SearchMatch, SeekTarget, ViewerError};
 use crate::test_support::TestDir;
 
 /// Build a literal matcher for tests. Mirrors the pre-mode "lowercase substring"
@@ -64,7 +64,9 @@ fn get_lines_from_start() {
     let file = write_test_file(&dir, "test.txt", "line 1\nline 2\nline 3\nline 4\n");
 
     let backend = ByteSeekBackend::open(&file).unwrap();
-    let chunk = backend.get_lines(&SeekTarget::ByteOffset(0), 3).unwrap();
+    let chunk = backend
+        .get_lines(&SeekTarget::ByteOffset(0), 3, &AtomicBool::new(false))
+        .unwrap();
 
     assert_eq!(chunk.texts(), vec!["line 1", "line 2", "line 3"]);
     assert_eq!(chunk.byte_offset, 0);
@@ -80,7 +82,9 @@ fn get_lines_from_middle_byte_offset() {
     let file = write_test_file(&dir, "test.txt", "line 1\nline 2\nline 3\nline 4\n");
 
     let backend = ByteSeekBackend::open(&file).unwrap();
-    let chunk = backend.get_lines(&SeekTarget::ByteOffset(7), 2).unwrap();
+    let chunk = backend
+        .get_lines(&SeekTarget::ByteOffset(7), 2, &AtomicBool::new(false))
+        .unwrap();
 
     assert_eq!(chunk.texts(), vec!["line 2", "line 3"]);
     assert_eq!(chunk.byte_offset, 7);
@@ -93,7 +97,9 @@ fn get_lines_with_backward_scan() {
     let file = write_test_file(&dir, "test.txt", "line 1\nline 2\nline 3\n");
 
     let backend = ByteSeekBackend::open(&file).unwrap();
-    let chunk = backend.get_lines(&SeekTarget::ByteOffset(10), 2).unwrap();
+    let chunk = backend
+        .get_lines(&SeekTarget::ByteOffset(10), 2, &AtomicBool::new(false))
+        .unwrap();
 
     // Should find start of "line 2" (byte 7)
     assert_eq!(chunk.byte_offset, 7);
@@ -109,7 +115,9 @@ fn get_lines_by_fraction() {
     let backend = ByteSeekBackend::open(&file).unwrap();
 
     // Fraction 0.0 should start at beginning
-    let chunk = backend.get_lines(&SeekTarget::Fraction(0.0), 1).unwrap();
+    let chunk = backend
+        .get_lines(&SeekTarget::Fraction(0.0), 1, &AtomicBool::new(false))
+        .unwrap();
     assert_eq!(chunk.byte_offset, 0);
     assert_eq!(chunk.texts()[0], "line 1");
 }
@@ -123,7 +131,9 @@ fn get_lines_fraction_end() {
     let backend = ByteSeekBackend::open(&file).unwrap();
 
     // Fraction 1.0 should go to end (byte 21)
-    let chunk = backend.get_lines(&SeekTarget::Fraction(1.0), 1).unwrap();
+    let chunk = backend
+        .get_lines(&SeekTarget::Fraction(1.0), 1, &AtomicBool::new(false))
+        .unwrap();
     // Should find the last line or be at/near end
     assert!(chunk.byte_offset > 0);
 }
@@ -134,19 +144,25 @@ fn get_lines_row_target_rides_the_sampled_bytes_per_row() {
     let file = write_test_file(&dir, "test.txt", "a\nb\nc\n");
 
     let backend = ByteSeekBackend::open(&file).unwrap();
-    let chunk = backend.get_lines(&SeekTarget::Line(0), 2).unwrap();
+    let chunk = backend
+        .get_lines(&SeekTarget::Row(0), 2, &AtomicBool::new(false))
+        .unwrap();
     assert_eq!(chunk.byte_offset, 0);
     assert_eq!(chunk.texts(), vec!["a", "b"]);
 
     // Every row here is 2 bytes, which is what the open-time sample measures, so row 2
     // lands on byte 4 rather than at `2 * 80` past the end of a six-byte file.
-    let chunk2 = backend.get_lines(&SeekTarget::Line(2), 2).unwrap();
+    let chunk2 = backend
+        .get_lines(&SeekTarget::Row(2), 2, &AtomicBool::new(false))
+        .unwrap();
     assert_eq!(chunk2.byte_offset, 4);
     // "c", then the empty row a file ending in a newline carries.
     assert_eq!(chunk2.texts(), vec!["c", ""]);
 
     // Past the end still clamps to EOF, where only that final empty row is left.
-    let chunk3 = backend.get_lines(&SeekTarget::Line(50), 2).unwrap();
+    let chunk3 = backend
+        .get_lines(&SeekTarget::Row(50), 2, &AtomicBool::new(false))
+        .unwrap();
     assert_eq!(chunk3.byte_offset, 6);
     assert_eq!(chunk3.texts(), vec![""]);
 }
@@ -157,7 +173,9 @@ fn get_lines_last_line_no_newline() {
     let file = write_test_file(&dir, "test.txt", "line 1\nline 2");
 
     let backend = ByteSeekBackend::open(&file).unwrap();
-    let chunk = backend.get_lines(&SeekTarget::ByteOffset(0), 10).unwrap();
+    let chunk = backend
+        .get_lines(&SeekTarget::ByteOffset(0), 10, &AtomicBool::new(false))
+        .unwrap();
 
     assert_eq!(chunk.texts(), vec!["line 1", "line 2"]);
 }
@@ -178,10 +196,10 @@ fn search_finds_matches() {
     let matches = results.lock().unwrap();
 
     assert_eq!(matches.len(), 2);
-    assert_eq!(matches[0].line, 0);
+    assert_eq!(matches[0].row, 0);
     assert_eq!(matches[0].column, 0);
     assert_eq!(matches[0].byte_offset, 0); // First line starts at byte 0
-    assert_eq!(matches[1].line, 2);
+    assert_eq!(matches[1].row, 2);
     // "hello world\n" = 12 bytes, "foo bar\n" = 8 bytes → line 2 starts at byte 20
     assert_eq!(matches[1].byte_offset, 20);
 
@@ -262,7 +280,7 @@ fn search_with_multibyte_chars() {
     let matches = results.lock().unwrap();
 
     assert_eq!(matches.len(), 1);
-    assert_eq!(matches[0].line, 0);
+    assert_eq!(matches[0].row, 0);
     // "café " is 5 characters, not 6 bytes
     assert_eq!(matches[0].column, 5);
     assert_eq!(matches[0].length, 5);
@@ -288,7 +306,7 @@ fn search_with_replacement_chars() {
     let matches = results.lock().unwrap();
 
     assert_eq!(matches.len(), 1);
-    assert_eq!(matches[0].line, 0);
+    assert_eq!(matches[0].row, 0);
     // Column should be 1 (after replacement char), not 3 (byte offset of U+FFFD)
     assert_eq!(matches[0].column, 1);
     assert_eq!(matches[0].length, 3);
@@ -321,7 +339,9 @@ fn a_newline_free_file_breaks_on_the_segment_grid() {
     // line start, which put byte 15 000 at 6 808: an answer that moved with the probe.
     // The row rule puts it on the segment grid, so every probe inside a row agrees.
     for probe in [15_000u64, 20_000, 39_999] {
-        let chunk = backend.get_lines(&SeekTarget::ByteOffset(probe), 1).unwrap();
+        let chunk = backend
+            .get_lines(&SeekTarget::ByteOffset(probe), 1, &AtomicBool::new(false))
+            .unwrap();
         assert_eq!(chunk.byte_offset, probe - probe % super::SEGMENT_BYTES, "probe {probe}");
         assert_eq!(chunk.rows[0].text.len(), super::SEGMENT_BYTES as usize, "probe {probe}");
         // Cmdr made this break, so it carries the marker and no line number.
@@ -329,7 +349,9 @@ fn a_newline_free_file_breaks_on_the_segment_grid() {
     }
 
     // And the file's last row runs out at EOF rather than at a boundary.
-    let tail = backend.get_lines(&SeekTarget::ByteOffset(45_000), 1).unwrap();
+    let tail = backend
+        .get_lines(&SeekTarget::ByteOffset(45_000), 1, &AtomicBool::new(false))
+        .unwrap();
     assert_eq!(tail.byte_offset, 40_000);
     assert!(!tail.rows[0].continues);
     assert_eq!(tail.rows[0].text.len(), 10_000);
@@ -343,7 +365,9 @@ fn empty_file() {
     let backend = ByteSeekBackend::open(&file).unwrap();
     assert_eq!(backend.total_bytes(), 0);
 
-    let chunk = backend.get_lines(&SeekTarget::ByteOffset(0), 10).unwrap();
+    let chunk = backend
+        .get_lines(&SeekTarget::ByteOffset(0), 10, &AtomicBool::new(false))
+        .unwrap();
     // Empty file should produce empty lines
     assert!(chunk.texts().is_empty() || (chunk.texts().len() == 1 && chunk.texts()[0].is_empty()));
 }
@@ -381,7 +405,9 @@ fn seek_mid_multibyte_char_snaps_to_line_start() {
     let file = write_test_file(&dir, "test.txt", "café\nplain\n");
 
     let backend = ByteSeekBackend::open(&file).unwrap();
-    let chunk = backend.get_lines(&SeekTarget::ByteOffset(4), 2).unwrap();
+    let chunk = backend
+        .get_lines(&SeekTarget::ByteOffset(4), 2, &AtomicBool::new(false))
+        .unwrap();
 
     // Should backward-scan to byte 0 (start of "café") since byte 4 is mid-char inside first line
     assert_eq!(chunk.byte_offset, 0);
@@ -395,7 +421,9 @@ fn seek_mid_emoji_snaps_to_line_start() {
     let file = write_test_file(&dir, "test.txt", "🦀go\nnext\n");
 
     let backend = ByteSeekBackend::open(&file).unwrap();
-    let chunk = backend.get_lines(&SeekTarget::ByteOffset(2), 2).unwrap();
+    let chunk = backend
+        .get_lines(&SeekTarget::ByteOffset(2), 2, &AtomicBool::new(false))
+        .unwrap();
 
     assert_eq!(chunk.byte_offset, 0);
     assert_eq!(chunk.texts()[0], "🦀go");
@@ -408,7 +436,9 @@ fn seek_mid_cjk_char_snaps_to_line_start() {
     let file = write_test_file(&dir, "test.txt", "漢字\nnext\n");
 
     let backend = ByteSeekBackend::open(&file).unwrap();
-    let chunk = backend.get_lines(&SeekTarget::ByteOffset(1), 2).unwrap();
+    let chunk = backend
+        .get_lines(&SeekTarget::ByteOffset(1), 2, &AtomicBool::new(false))
+        .unwrap();
 
     assert_eq!(chunk.byte_offset, 0);
     assert_eq!(chunk.texts()[0], "漢字");
@@ -421,7 +451,9 @@ fn read_lines_with_mixed_scripts() {
     let file = write_test_file(&dir, "test.txt", content);
 
     let backend = ByteSeekBackend::open(&file).unwrap();
-    let chunk = backend.get_lines(&SeekTarget::ByteOffset(0), 10).unwrap();
+    let chunk = backend
+        .get_lines(&SeekTarget::ByteOffset(0), 10, &AtomicBool::new(false))
+        .unwrap();
 
     // Five, not four: the file ends in a newline, so it carries a final empty row. That
     // is the one answer all three backends now give, and what makes a whole-file copy
@@ -477,7 +509,9 @@ fn read_emoji_only_lines() {
     let file = write_test_file(&dir, "test.txt", "🎉🎊🎈\n🦀🦞🦐\n");
 
     let backend = ByteSeekBackend::open(&file).unwrap();
-    let chunk = backend.get_lines(&SeekTarget::ByteOffset(0), 10).unwrap();
+    let chunk = backend
+        .get_lines(&SeekTarget::ByteOffset(0), 10, &AtomicBool::new(false))
+        .unwrap();
 
     assert_eq!(chunk.texts()[0], "🎉🎊🎈");
     assert_eq!(chunk.texts()[1], "🦀🦞🦐");
@@ -504,11 +538,25 @@ fn read_file_starting_with_bom() {
     fs::write(&file, &content).unwrap();
 
     let backend = ByteSeekBackend::open(&file).unwrap();
-    let chunk = backend.get_lines(&SeekTarget::ByteOffset(0), 10).unwrap();
+    let chunk = backend
+        .get_lines(&SeekTarget::ByteOffset(0), 10, &AtomicBool::new(false))
+        .unwrap();
 
     // The BOM is not content: the first row starts past it, so the user never gets a
     // selectable zero-width `U+FEFF` and all three backends agree on row 0.
     assert_eq!(chunk.byte_offset, 3);
     assert_eq!(chunk.texts()[0], "hello");
     assert_eq!(chunk.texts()[1], "world");
+}
+
+/// The IPC deadline flips a fetch's flag; a fetch that sees it stops reading rows
+/// rather than finishing for nobody.
+#[test]
+fn a_fetch_whose_flag_is_set_stops_with_cancelled() {
+    let dir = create_test_dir("fetch_cancelled");
+    let file = write_test_file(&dir, "test.txt", "line 1\nline 2\nline 3\n");
+
+    let backend = ByteSeekBackend::open(&file).unwrap();
+    let result = backend.get_lines(&SeekTarget::ByteOffset(0), 3, &AtomicBool::new(true));
+    assert!(matches!(result, Err(ViewerError::Cancelled)), "got {result:?}");
 }

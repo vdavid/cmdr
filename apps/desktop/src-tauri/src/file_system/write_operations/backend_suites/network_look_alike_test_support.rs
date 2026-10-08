@@ -28,7 +28,7 @@ use super::super::types::ConflictResolution;
 use super::super::{BulkRenameRow, MutationError, SourceFingerprint, rename_managed, start_bulk_rename};
 use super::network_safety_test_support::{Registered, delete_on};
 use super::network_semantics_test_support::{Transfer, local_volume, names_in, seed, transfer, try_read};
-use super::network_transfer_test_support::clean_deep;
+use super::network_transfer_test_support::{budget, clean_deep};
 use crate::ignore_poison::IgnorePoison;
 use crate::operation_log::types::Initiator;
 
@@ -434,7 +434,7 @@ pub(super) async fn a_bulk_rename_skips_a_look_alike(remote: Arc<dyn Volume>, di
         Initiator::Agent,
     )
     .expect("start bulk rename");
-    crate::test_support::wait_until_async(Duration::from_secs(6), "the bulk rename to settle", || {
+    crate::test_support::wait_until_async(budget(Duration::from_secs(6)), "the bulk rename to settle", || {
         !events.settled.lock_ignore_poison().is_empty()
     })
     .await;

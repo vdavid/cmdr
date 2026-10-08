@@ -295,6 +295,14 @@ impl Volume for SmbVolume {
         Box::pin(self.create_directory_impl(path))
     }
 
+    fn set_modified<'a>(
+        &'a self,
+        path: &'a Path,
+        modified: std::time::SystemTime,
+    ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+        Box::pin(self.set_modified_impl(path, modified))
+    }
+
     fn delete<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
         Box::pin(self.delete_impl(path))
     }
@@ -446,7 +454,11 @@ impl Volume for SmbVolume {
                         "SmbVolume::open_read_stream_with_hint: share={:?}, path={:?}, size={}; using compound fast-path",
                         self.inner.share_name, smb_path, size
                     );
-                    match tree.read_file_compound_sized(&mut conn, &smb_path, size).await {
+                    // The date rides on the frame's own CREATE response.
+                    let read_result = tree
+                        .read_file_compound_sized_with_info(&mut conn, &smb_path, size)
+                        .await;
+                    match read_result {
                         Err(e) if matches!(e.kind(), smb2::ErrorKind::TooLarge) => {
                             debug!(
                                 "SmbVolume::open_read_stream_with_hint: file grew past the hinted size since the scan ({}); falling back to streaming",
@@ -467,10 +479,13 @@ impl Volume for SmbVolume {
                             );
                         }
                         read_result => {
-                            let data =
+                            let (data, info) =
                                 self.handle_smb_result("open_read_stream_with_hint(compound)", &smb_path, read_result)?;
                             if data.len() as u64 == size {
-                                return Ok(Box::new(InlineReadStream::new(data)) as Box<dyn VolumeReadStream>);
+                                let modified_at = info.modified.to_system_time();
+                                return Ok(
+                                    Box::new(InlineReadStream::new(data, modified_at)) as Box<dyn VolumeReadStream>
+                                );
                             }
                             debug!(
                                 "SmbVolume::open_read_stream_with_hint: compound read returned {} bytes, expected {}; falling back to streaming",

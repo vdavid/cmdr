@@ -129,14 +129,16 @@ pub(super) fn settle_local_conflicts(rows: &[BulkRenameRow], active: &mut [bool]
 /// holds the name under another Unicode spelling (`look_alike.rs`): such a
 /// look-alike is taken like an exact clash, two of them are too many to guess
 /// between, and the row's own source is a respell. A look-alike some other active
-/// row moves away never gets here: its destination counts as claimed.
+/// row moves away never gets here: its destination counts as claimed. The folder
+/// a pane shows is read from that pane's listing, the rest once each.
 pub(super) async fn settle_remote_conflicts(
     rows: &[BulkRenameRow],
     active: &mut [bool],
     outcomes: &mut [BulkRenameOutcome],
     volume: &dyn Volume,
+    volume_id: &str,
 ) {
-    let mut folders = ListedFolders::new(volume);
+    let mut folders = ListedFolders::with_pane_listings(volume, volume_id);
     loop {
         let mut changed = false;
         for index in rows_with_unclaimed_destination(rows, active) {

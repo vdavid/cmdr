@@ -15,6 +15,13 @@ vi.mock('./direct-connect', () => ({ connectDirectly }))
 const { dismissToast } = vi.hoisted(() => ({ dismissToast: vi.fn() }))
 vi.mock('$lib/ui/toast', () => ({ dismissToast }))
 
+const { openLocalNetworkSettings } = vi.hoisted(() => ({
+  openLocalNetworkSettings: vi.fn<() => Promise<void>>(() => Promise.resolve()),
+}))
+vi.mock('$lib/tauri-commands', () => ({ openLocalNetworkSettings }))
+
+import { systemStrings } from '$lib/system-strings.svelte'
+
 import SmbOsMountFallbackToastContent from './SmbOsMountFallbackToastContent.svelte'
 
 function render() {
@@ -99,6 +106,38 @@ describe('SmbOsMountFallbackToastContent', () => {
 
     expect(dismissToast).not.toHaveBeenCalled()
     expect(button.disabled).toBe(false)
+  })
+
+  it('says what to switch when this Mac is what blocked the connection, and still offers the retry', async () => {
+    // ERR-XGS9X: switching the Local Network permission off and on fixed it at
+    // once, so the retry is worth keeping right beside the way to that switch.
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(SmbOsMountFallbackToastContent, {
+      target,
+      props: {
+        toastId: 'smb-os-mount:smb-sven',
+        volumeId: 'smb-sven',
+        share: 'Sven',
+        retryable: true,
+        blockedServer: 'Mars',
+      },
+    })
+    flushSync()
+
+    expect(target.textContent).toContain('Mars')
+    expect(target.textContent).toContain(systemStrings.localNetwork)
+    const buttons = [...target.querySelectorAll('button')]
+    const openSettings = buttons.find((b) => b.textContent.includes(systemStrings.localNetwork))
+    const retry = buttons.find((b) => b !== openSettings)
+    if (!openSettings || !retry) throw new Error('expected both the settings button and the retry')
+
+    openSettings.click()
+    expect(openLocalNetworkSettings).toHaveBeenCalledOnce()
+    retry.click()
+    await vi.waitFor(() => {
+      expect(connectDirectly).toHaveBeenCalledWith({ volumeId: 'smb-sven', shareName: 'Sven' })
+    })
   })
 
   it('ignores a second press while the first attempt is still running', () => {

@@ -147,7 +147,7 @@ impl ByteSeekBackend {
             // 200-byte-a-row file, which is how the old 80-byte guess emptied a
             // clipboard. The sample collapses TO `SEGMENT_BYTES` by itself on a file
             // with no newline in it.
-            SeekTarget::Line(row) => (*row as u64).saturating_mul(self.bytes_per_row).min(self.total_bytes),
+            SeekTarget::Row(row) => (*row as u64).saturating_mul(self.bytes_per_row).min(self.total_bytes),
         }
     }
 }
@@ -202,7 +202,7 @@ impl FileViewerBackend for ByteSeekBackend {
         }))
     }
 
-    fn get_lines(&self, target: &SeekTarget, count: usize) -> Result<LineChunk, ViewerError> {
+    fn get_lines(&self, target: &SeekTarget, count: usize, cancel: &AtomicBool) -> Result<LineChunk, ViewerError> {
         let raw_offset = self.resolve_byte_offset(target);
         let (mut reader, row_start) = self.reader_at(raw_offset)?;
 
@@ -210,13 +210,13 @@ impl FileViewerBackend for ByteSeekBackend {
         // same grid the target would have produced. Both directions run through
         // `bytes_per_row`, so a row the frontend was handed comes back as itself.
         let first_row_number = match target {
-            SeekTarget::Line(row) => *row,
+            SeekTarget::Row(row) => *row,
             _ => self.row_at(row_start),
         };
         // No index, so the line number under a row is the row number: on an ordinary
         // file rows and lines are one-to-one, and inside a long line every continuation
         // row prints nothing at all. An estimate, like every number this backend gives.
-        let collected = collect_rows(&mut reader, Some(first_row_number), count)?;
+        let collected = collect_rows(&mut reader, Some(first_row_number), count, cancel)?;
 
         debug!(
             "ByteSeekBackend::get_lines: target={:?} -> byte {}, row {} ({} rows, {:?})",

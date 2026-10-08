@@ -14,9 +14,11 @@
     import Spinner from '$lib/ui/Spinner.svelte'
     import Icon from '$lib/ui/Icon.svelte'
     import StatusBadge from '$lib/ui/StatusBadge.svelte'
+    import LinkButton from '$lib/ui/LinkButton.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
     import { getBadgeStatus } from '$lib/feature-status'
     import { tString } from '$lib/intl/messages.svelte'
+    import Trans from '$lib/intl/Trans.svelte'
     import { formatInteger } from '$lib/intl/number-format'
     import { formatDateTime } from '$lib/settings/reactive-settings.svelte'
     import RollbackConfirmDialog from '$lib/file-operations/RollbackConfirmDialog.svelte'
@@ -30,12 +32,14 @@
     } from '$lib/tauri-commands'
     import { getAppLogger } from '$lib/logging/logger'
     import { SvelteMap, SvelteSet } from 'svelte/reactivity'
+    import type { Snippet } from 'svelte'
     import { asRollbackRefusal } from './rollback-refusal'
     import {
         operationLogState,
         closeOperationLog,
         loadMoreOperations,
         markOperationRollingBack,
+        refreshOperation,
     } from './operation-log-trigger.svelte'
     import {
         operationSummary,
@@ -92,6 +96,39 @@
         const action = rowRollbackAction(op.rollbackState)
         return action === null ? null : { op, action }
     })
+
+    /** Every listed row by id, so a rollback row can find the operation it undid
+     *  (and the other way round) without a scan per row. */
+    const entriesById = $derived(new Map(operationLogState.entries.map((entry) => [entry.opId, entry])))
+
+    /** How long a row we jumped to stays tinted, so the eye can find it. */
+    const HIGHLIGHT_MS = 2000
+    let highlightedId = $state<string | null>(null)
+    let highlightTimer: ReturnType<typeof setTimeout> | undefined
+
+    $effect(() => () => { clearTimeout(highlightTimer); })
+
+    /**
+     * Take the user to a linked row: scroll it into view, move focus to its head so a
+     * keyboard or screen-reader user lands where a sighted one looks, and tint it for a
+     * moment.
+     */
+    function goToOperation(opId: string) {
+        const head = document.getElementById(`op-head-${opId}`)
+        if (head === null) return
+        head.scrollIntoView({ block: 'nearest' })
+        head.focus({ preventScroll: true })
+        highlightedId = opId
+        clearTimeout(highlightTimer)
+        highlightTimer = setTimeout(() => (highlightedId = null), HIGHLIGHT_MS)
+    }
+
+    /** The row's reversal has ended: re-read it, and its rollback's own row when
+     *  that's listed too, since its status drifted the same way. */
+    function handleReversalEnded(op: OperationRow) {
+        void refreshOperation(op.opId)
+        if (op.inverseOpId !== null) void refreshOperation(op.inverseOpId)
+    }
 
     function handleClose() {
         closeOperationLog()
@@ -189,7 +226,14 @@
                                 ? rowStandingNotice(op.rollbackState, op.notRollbackableReason)
                                 : null}
                         {@const action = rowRollbackAction(op.rollbackState)}
-                        <li class="op">
+                        <!-- The journal's two links between a rollback and what it undid.
+                             A link only goes to a row that's listed; an original that isn't
+                             (an older page, or pruned) is named without one, and a pointer to
+                             a rollback that isn't listed yet (one this dialog just started)
+                             stays quiet until the next read. -->
+                        {@const undid = op.rollsBackOpId !== null ? entriesById.get(op.rollsBackOpId) : undefined}
+                        {@const undoneBy = op.inverseOpId !== null ? entriesById.get(op.inverseOpId) : undefined}
+                        <li class="op" class:op-highlighted={highlightedId === op.opId}>
                             <div class="op-row">
                                 <button
                                     type="button"
@@ -245,9 +289,56 @@
                                     <RollbackControls
                                         inverseOpId={op.inverseOpId}
                                         describedBy="op-head-{op.opId}"
+                                        onEnded={() => { handleReversalEnded(op); }}
                                     />
                                 {/if}
                             </div>
+
+                            {#if op.rollsBackOpId !== null}
+                                <p class="op-relation" id="op-relation-{op.opId}">
+                                    {#if undid}
+                                        {#snippet undidLink(children: Snippet)}
+                                            <LinkButton onclick={() => { goToOperation(undid.opId); }}
+                                                >{@render children()}</LinkButton
+                                            >
+                                        {/snippet}
+                                        <Trans
+                                            key="operationLog.dialog.rollbackOf"
+                                            snippets={{ operationLink: undidLink }}
+                                            params={{
+                                                operation: operationSummary(
+                                                    undid.kind,
+                                                    undid.archiveSubkind,
+                                                    undid.itemCount,
+                                                ),
+                                                time: formatDateTime(undid.endedAt ?? undid.startedAt),
+                                            }}
+                                        />
+                                    {:else}
+                                        {tString('operationLog.dialog.rollbackOfUnlisted')}
+                                    {/if}
+                                </p>
+                            {:else if undoneBy}
+                                <p class="op-relation" id="op-relation-{op.opId}">
+                                    {#snippet undoneByLink(children: Snippet)}
+                                        <LinkButton onclick={() => { goToOperation(undoneBy.opId); }}
+                                            >{@render children()}</LinkButton
+                                        >
+                                    {/snippet}
+                                    <Trans
+                                        key="operationLog.dialog.latestRollback"
+                                        snippets={{ operationLink: undoneByLink }}
+                                        params={{
+                                            operation: operationSummary(
+                                                undoneBy.kind,
+                                                undoneBy.archiveSubkind,
+                                                undoneBy.itemCount,
+                                            ),
+                                            time: formatDateTime(undoneBy.endedAt ?? undoneBy.startedAt),
+                                        }}
+                                    />
+                                </p>
+                            {/if}
 
                             {#if refusal != null}
                                 <p class="op-refusal" role="status">{tString(refusal)}</p>
@@ -394,6 +485,12 @@
         border-radius: var(--radius-md);
     }
 
+    /* A row a relation link jumped to. A plain tint, no animation, so it needs no
+       reduced-motion branch; focus on its head carries the same news for a keyboard. */
+    .op-highlighted {
+        background: var(--color-accent-subtle);
+    }
+
     /* The head button and the row's action sit side by side: a button can't nest in
        a button, and the head has to stay the expand target on its own. */
     .op-row {
@@ -461,6 +558,7 @@
         color: var(--color-text-primary);
     }
 
+    .op-relation,
     .op-refusal,
     .op-reason {
         margin: 0;

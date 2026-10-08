@@ -8,16 +8,53 @@
 
 use std::fs;
 
-/// Whether Ask Cmdr is switched on (`askCmdr.enabled`), read by the send gate and the wake
-/// readiness. An absent key reads as OFF (fail quiet): the registry default is `false`, and every
-/// user who should have it on gets it written explicitly (onboarding, or the one-time mapping
-/// from the legacy Ask Cmdr opt-in).
-pub fn load_ask_cmdr_enabled<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> bool {
-    load_true_flag(app, parse_ask_cmdr_enabled)
+/// Ask Cmdr's switch (`askCmdr.enabled`) as the gates need it: on, off by the person, or on by
+/// the person and pinned off by the organization's policy.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AskCmdrSwitch {
+    On,
+    /// The person's own answer (or no answer yet). Withdraws the purpose of the wake backlog.
+    Off,
+    /// The person switched it on and the organization's policy (`DisableAI`) pins it off. Nothing
+    /// runs, but nothing the person stored is taken away: the policy overlays, it never rewrites.
+    ManagedOff,
 }
 
+/// Ask Cmdr's switch, read by the send gate and the wake readiness. An absent key reads as OFF
+/// (fail quiet): the registry default is `false`, and every user who should have it on gets it
+/// written explicitly (onboarding, or the one-time mapping from the legacy Ask Cmdr opt-in). Read
+/// through the organization's locks (`managed_policy::overlay`).
+pub fn load_ask_cmdr_switch<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> AskCmdrSwitch {
+    let Ok(data_dir) = crate::config::resolved_app_data_dir(app) else {
+        return AskCmdrSwitch::Off;
+    };
+    let Ok(contents) = fs::read_to_string(data_dir.join("settings.json")) else {
+        return AskCmdrSwitch::Off;
+    };
+    ask_cmdr_switch_under(&crate::managed_policy::current(), &contents)
+}
+
+/// The policy's lock over what `settings.json` holds, keeping the person's own off apart.
+fn ask_cmdr_switch_under(policy: &crate::managed_policy::ManagedPolicy, contents: &str) -> AskCmdrSwitch {
+    let stored = serde_json::from_str::<serde_json::Value>(contents).unwrap_or(serde_json::Value::Null);
+    let enabled = |settings: &serde_json::Value| {
+        settings.get("askCmdr.enabled").and_then(serde_json::Value::as_bool) == Some(true)
+    };
+    if !enabled(&stored) {
+        return AskCmdrSwitch::Off;
+    }
+    let mut effective = stored;
+    crate::managed_policy::overlay(policy, &mut effective);
+    if enabled(&effective) {
+        AskCmdrSwitch::On
+    } else {
+        AskCmdrSwitch::ManagedOff
+    }
+}
+
+#[cfg(test)]
 fn parse_ask_cmdr_enabled(contents: &str) -> bool {
-    parse_true_flag(contents, "askCmdr.enabled")
+    ask_cmdr_switch_under(&crate::managed_policy::ManagedPolicy::default(), contents) == AskCmdrSwitch::On
 }
 
 /// Whether a "no" to Ask Cmdr is held for a `main.db` that refused to record it
@@ -103,6 +140,28 @@ mod tests {
         ] {
             assert!(!parse_ask_cmdr_enabled(contents), "{contents} must read as off");
         }
+    }
+
+    /// `DisableAI` pins Ask Cmdr off whatever the person stored, so the send gate and the wake
+    /// loop read the same answer as the switch in Settings. But a pinned off is the policy's, not
+    /// the person's: it reads as `ManagedOff`, which takes nothing away. Only a stored off is `Off`.
+    #[test]
+    fn a_managed_off_is_told_apart_from_the_persons_own_off() {
+        use crate::managed_policy::testing::{self, DISABLE_AI, DISABLE_CLOUD_AI};
+        let on = r#"{ "askCmdr.enabled": true }"#;
+        let off = r#"{ "askCmdr.enabled": false }"#;
+        let ai_off = testing::forcing(&[DISABLE_AI]);
+        assert_eq!(ask_cmdr_switch_under(&ai_off, on), AskCmdrSwitch::ManagedOff);
+        assert_eq!(ask_cmdr_switch_under(&ai_off, off), AskCmdrSwitch::Off);
+        assert_eq!(ask_cmdr_switch_under(&ai_off, "not json at all"), AskCmdrSwitch::Off);
+        assert_eq!(
+            ask_cmdr_switch_under(&testing::forcing(&[DISABLE_CLOUD_AI]), on),
+            AskCmdrSwitch::On
+        );
+        assert_eq!(
+            ask_cmdr_switch_under(&crate::managed_policy::ManagedPolicy::default(), on),
+            AskCmdrSwitch::On
+        );
     }
 
     /// A held "no" to cloud AI closes every cloud gate, so only the value the frontend writes (a

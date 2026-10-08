@@ -35,5 +35,5 @@ decision rationale): `DETAILS.md`.
 - **Tool declarations are never `strict: true`** (Gap D): OpenAI strict also demands all-required, which genai doesn't
   enforce, so an optional prop 400s. `tool_declaration_to_genai` leaves strict unset.
 
-Depth (the `AgentPart` ⇄ genai `ContentPart` mapping table, blob shapes, the thought-signature dedupe, live smokes):
-`DETAILS.md`.
+The `AgentPart` ⇄ genai `ContentPart` mapping table, blob shapes, the thought-signature dedupe, error mapping, and live
+smokes: `DETAILS.md`. Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

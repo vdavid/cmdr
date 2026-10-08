@@ -304,3 +304,227 @@ async fn a_source_that_vanished_before_preflight_is_left_out_of_the_binding() {
 
     assert!(kept.is_none());
 }
+
+/// Registers the local-FS "root" volume the bridge resolves a group's sources through.
+fn ensure_root_volume() {
+    use crate::file_system::volume::LocalPosixVolume;
+    use crate::file_system::volume::manager::get_volume_manager;
+    get_volume_manager().register_if_absent("root", Arc::new(LocalPosixVolume::new("Test root", "/")));
+}
+
+/// A rename group whose files are all gone by the time the user approves it: preflight reads
+/// nothing, so the executor has no row to run.
+fn vanished_rename_group(dir: &TestDir) -> (Connection, Connection, i64) {
+    let db_path = dir.join("main.db");
+    let conn = open_write_connection(&db_path).expect("open");
+    let set_id = create_sweep(&conn, &NewSweep::default(), 100).expect("sweep");
+    let parent = dir.join("shots").display().to_string();
+    let group_id = create_group(
+        &conn,
+        set_id,
+        &NewGroup {
+            intent: GroupIntent::Rename {
+                parent: parent.clone(),
+                renames: vec![crate::agent::store::proposals::NewRename {
+                    source_path: format!("{parent}/gone.png"),
+                    new_name: "renamed.png".to_string(),
+                    snapshot: None,
+                }],
+            },
+            source_volume_id: "root".to_string(),
+            display_name: "one screenshot".to_string(),
+            rationale: None,
+            selector: None,
+        },
+        100,
+    )
+    .expect("group");
+    let reporting = open_write_connection(&db_path).expect("second connection");
+    (conn, reporting, group_id)
+}
+
+/// ❗ **A refused approval gives the group back.** The claim moves it to `approved` before the
+/// engine is asked, so an engine that then refuses used to leave it approved with nothing
+/// running: it vanished from the review list without a word (#184). Nothing ran, so the user
+/// is back where they were, and the group is theirs to approve or reject again.
+#[tokio::test]
+async fn an_approval_the_engine_refuses_returns_the_group_to_pending() {
+    ensure_root_volume();
+    let dir = TestDir::new("bridge_refused_gives_back");
+    let (conn, reporting, group_id) = vanished_rename_group(&dir);
+
+    let outcome = super::approve_and_execute(
+        &conn,
+        reporting,
+        Arc::new(CollectorEventSink::new()),
+        group_id,
+        &[],
+        200,
+        None,
+    )
+    .await
+    .expect("the store answers");
+
+    assert!(
+        matches!(outcome, super::ApprovalOutcome::Refused(_)),
+        "nothing could start: {outcome:?}"
+    );
+    assert_eq!(
+        group_status(&conn, group_id),
+        ProposalStatus::Pending,
+        "the refused group is back on the list"
+    );
+}
+
+/// An approved rename group renames its file. A rename binds only its parent folder and stores
+/// no destination volume, so a target check that wanted one refused every rename group the
+/// review dialog approved.
+#[tokio::test]
+async fn an_approved_rename_group_renames_its_file() {
+    ensure_root_volume();
+    let dir = TestDir::new("bridge_rename_runs");
+    let (conn, reporting, group_id) = vanished_rename_group(&dir);
+    std::fs::create_dir_all(dir.join("shots")).expect("parent");
+    std::fs::write(dir.join("shots").join("gone.png"), b"here after all").expect("seed");
+
+    let outcome = approve(&conn, reporting, group_id).await;
+
+    assert!(matches!(outcome, super::ApprovalOutcome::Started(_)), "{outcome:?}");
+    let renamed = dir.join("shots").join("renamed.png");
+    crate::test_support::wait_until_async(std::time::Duration::from_secs(5), "the rename lands", || {
+        renamed.exists()
+    })
+    .await;
+}
+
+/// ❗ **An approval is counted when its operation STARTS, never at the claim.** A refused start
+/// gives the group back, so counting the claim would count an approval nothing came of, and
+/// count the same group again when the user re-approves it. The acceptance-rate metric then
+/// reads higher than what users actually let run.
+#[tokio::test]
+async fn an_approval_is_counted_once_when_it_starts_and_not_when_the_engine_refuses_it() {
+    ensure_root_volume();
+    let dir = TestDir::new("bridge_counted_at_start");
+    let (conn, reporting, group_id) = vanished_rename_group(&dir);
+    super::super::analytics::take_captured();
+
+    let refused = approve(&conn, reporting, group_id).await;
+    assert!(matches!(refused, super::ApprovalOutcome::Refused(_)), "{refused:?}");
+    assert_eq!(
+        super::super::analytics::take_captured(),
+        Vec::<String>::new(),
+        "nothing ran, so nothing was approved"
+    );
+
+    // The file turns up, and the user approves the same group again.
+    std::fs::create_dir_all(dir.join("shots")).expect("parent");
+    std::fs::write(dir.join("shots").join("gone.png"), b"back").expect("seed");
+    let reporting = open_write_connection(&dir.join("main.db")).expect("second connection");
+    let started = approve(&conn, reporting, group_id).await;
+    assert!(matches!(started, super::ApprovalOutcome::Started(_)), "{started:?}");
+
+    assert_eq!(
+        super::super::analytics::take_captured(),
+        vec!["suggestion_group_approved".to_string()],
+        "one group ran, so one approval"
+    );
+}
+
+/// A trash group on `volume_id`, the shape the source-volume check sees before any claim.
+fn trash_group_on(dir: &TestDir, volume_id: &str) -> (Connection, Connection, i64) {
+    let db_path = dir.join("main.db");
+    let conn = open_write_connection(&db_path).expect("open");
+    let set_id = create_sweep(&conn, &NewSweep::default(), 100).expect("sweep");
+    let group_id = create_group(
+        &conn,
+        set_id,
+        &NewGroup {
+            intent: GroupIntent::Trash {
+                sources: vec![NewOp {
+                    source_path: "/public/old.iso".to_string(),
+                    snapshot: None,
+                }],
+            },
+            source_volume_id: volume_id.to_string(),
+            display_name: "one disk image".to_string(),
+            rationale: None,
+            selector: None,
+        },
+        100,
+    )
+    .expect("group");
+    let reporting = open_write_connection(&db_path).expect("second connection");
+    (conn, reporting, group_id)
+}
+
+async fn approve(conn: &Connection, reporting: Connection, group_id: i64) -> super::ApprovalOutcome {
+    super::approve_and_execute(
+        conn,
+        reporting,
+        Arc::new(CollectorEventSink::new()),
+        group_id,
+        &[],
+        200,
+        None,
+    )
+    .await
+    .expect("the store answers")
+}
+
+/// A suggestion about a saved share nobody has mounted is refused as NOT CONNECTED, the
+/// transfer dialogs' own variant, so the dialog says "open it from the volume switcher" rather
+/// than "it's gone". It was refused before the claim, so the group never left `pending`.
+#[tokio::test]
+async fn approving_a_group_on_a_share_nobody_connected_is_refused_as_not_connected() {
+    use crate::network::known_shares::{self, AuthOptions, ConnectionMode, KnownNetworkShare};
+    let volume_id = "smb-198-51-100-62-11483-public-bridge-test";
+    known_shares::remember_share(KnownNetworkShare {
+        server_name: "198.51.100.62:11483".to_string(),
+        share_name: "public".to_string(),
+        protocol: "smb".to_string(),
+        last_connected_at: "2026-10-06T00:00:00Z".to_string(),
+        last_connection_mode: ConnectionMode::Guest,
+        last_known_auth_options: AuthOptions::GuestOrCredentials,
+        username: None,
+        address: Some("198.51.100.62".to_string()),
+        port: Some(11483),
+        volume_id: Some(volume_id.to_string()),
+        mount_path: Some("/Volumes/public-bridge-test".to_string()),
+        pinned: true,
+    });
+    let dir = TestDir::new("bridge_not_connected");
+    let (conn, reporting, group_id) = trash_group_on(&dir, volume_id);
+
+    let outcome = approve(&conn, reporting, group_id).await;
+
+    assert!(
+        matches!(
+            outcome,
+            super::ApprovalOutcome::Refused(super::ApprovalRefusal::SourceUnavailable(
+                crate::file_system::write_operations::WriteOperationError::SourceNotConnected { .. }
+            ))
+        ),
+        "{outcome:?}"
+    );
+    assert_eq!(group_status(&conn, group_id), ProposalStatus::Pending);
+}
+
+/// An id nothing lists or saves is a drive that LEFT, worded as no longer connected.
+#[tokio::test]
+async fn approving_a_group_on_a_volume_that_left_is_refused_as_no_longer_connected() {
+    let dir = TestDir::new("bridge_volume_left");
+    let (conn, reporting, group_id) = trash_group_on(&dir, "mtp-nothing-lists-this-bridge-test");
+
+    let outcome = approve(&conn, reporting, group_id).await;
+
+    assert!(
+        matches!(
+            outcome,
+            super::ApprovalOutcome::Refused(super::ApprovalRefusal::SourceUnavailable(
+                crate::file_system::write_operations::WriteOperationError::SourceNoLongerConnected { .. }
+            ))
+        ),
+        "{outcome:?}"
+    );
+    assert_eq!(group_status(&conn, group_id), ProposalStatus::Pending);
+}

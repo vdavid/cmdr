@@ -38,7 +38,15 @@ import { tString } from '$lib/intl/messages.svelte'
 import { getAppLogger } from '$lib/logging/logger'
 import { LogOnceGate } from '$lib/logging/log-once'
 import type { ExplorerAPI } from './explorer-api'
-import { classifyLanding, waitForPaneToGoQuiet, NAV_QUIET_WAIT, type NavReplyBody } from './mcp-nav-landing'
+import {
+  classifyLanding,
+  waitForListingOrStall,
+  waitForPaneToGoQuiet,
+  NAV_QUIET_WAIT,
+  type NavReplyBody,
+  type PaneQuietProbe,
+  type PaneRest,
+} from './mcp-nav-landing'
 
 const log = getAppLogger('mcpListeners')
 
@@ -96,14 +104,15 @@ export function parseNames(value: unknown): string[] | undefined {
   return value.every((v): v is string => typeof v === 'string') ? value : undefined
 }
 
-/** Tab action. */
-export function parseTabAction(value: unknown): McpTabAction | undefined {
+/** Tab action. `move` is the one that replies (`mcp-tab-move.ts`); the rest are fire-and-forget. */
+export function parseTabAction(value: unknown): McpTabAction | 'move' | undefined {
   return value === 'new' ||
     value === 'close' ||
     value === 'close_others' ||
     value === 'activate' ||
     value === 'reopen' ||
-    value === 'set_pinned'
+    value === 'set_pinned' ||
+    value === 'move'
     ? value
     : undefined
 }
@@ -413,8 +422,21 @@ export async function setupMcpListeners(ctx: McpListenerContext): Promise<void> 
       // `cmdr://state` reports the navigated one — a follow-up focused-pane op
       // (mkdir/copy/move) would then hit the WRONG pane.
       explorerRef.setFocusedPane(pane)
+      const probe: PaneQuietProbe = {
+        getListingId: () => explorerRef.getPaneListingId(pane),
+        isLoading: () => explorerRef.isPaneLoading(pane),
+        isStalled: () => explorerRef.isPaneStalled(pane),
+        now: () => Date.now(),
+        sleep: (ms) => new Promise<void>((resolve) => setTimeout(resolve, ms)),
+      }
+      // The in-place arm's `settled` IS the listing, which a folder that stopped
+      // answering holds open while it retries: race it against the stall, so the
+      // reply says "stalled" at once instead of after the backend's whole budget.
+      let rest: PaneRest = 'quiet'
       try {
-        await result.settled
+        if (isVolumeSwitch || requestId === undefined) await result.settled
+        else
+          rest = await waitForListingOrStall(result.settled, probe, { listingIdBefore, pollMs: NAV_QUIET_WAIT.pollMs })
       } catch (e) {
         const error = e instanceof Error ? e.message : String(e)
         await reply({ ok: false, error })
@@ -429,27 +451,18 @@ export async function setupMcpListeners(ctx: McpListenerContext): Promise<void> 
         return
       }
 
-      // The in-place arm's `settled` IS the listing, so the pane is already at rest.
-      // The switch arm's resolves immediately, so wait for the pane to come to rest
-      // before reading where it landed (`mcp-nav-landing.ts`).
-      const quiet = isVolumeSwitch
-        ? await waitForPaneToGoQuiet(
-            {
-              getListingId: () => explorerRef.getPaneListingId(pane),
-              isLoading: () => explorerRef.isPaneLoading(pane),
-              now: () => Date.now(),
-              sleep: (ms) => new Promise<void>((resolve) => setTimeout(resolve, ms)),
-            },
-            { listingIdBefore, requireNewListing: true, ...NAV_QUIET_WAIT },
-          )
-        : true
+      // The switch arm's `settled` resolves immediately, so wait for the pane to come
+      // to rest (or stall) before reading where it landed (`mcp-nav-landing.ts`).
+      if (isVolumeSwitch) {
+        rest = await waitForPaneToGoQuiet(probe, { listingIdBefore, requireNewListing: true, ...NAV_QUIET_WAIT })
+      }
 
       const landed = explorerRef.getPaneLocation(pane)
-      const landing = classifyLanding({
-        target,
-        landed: { volumeId: landed.volumeId, path: landed.path },
-        quiet,
-      })
+      const landing = classifyLanding({ target, landed: { volumeId: landed.volumeId, path: landed.path }, rest })
+      // The pane's own push is debounced and can trail its listing, so flush it: a
+      // `cmdr://state` read right after the reply then shows the landing, not the
+      // folder before it. Same as `mcp-volume-select.ts`.
+      await explorerRef.syncPaneStateToMcp(pane)
       if (landing.outcome === 'navigated') {
         navDeclines.clear()
         await reply({ ok: true, ...landing })
@@ -699,6 +712,16 @@ export async function setupMcpListeners(ctx: McpListenerContext): Promise<void> 
     const action = parseTabAction(raw.action)
     if (!pane || !action) return
     const tabId = typeof raw.tabId === 'string' ? raw.tabId : undefined
+    if (action === 'move') {
+      // Round-trip through the bus, like `mcp-volume-select`: the request id rides the
+      // command args and the handler replies with what the move did.
+      const toPane = parsePane(raw.toPane)
+      if (tabId === undefined || !toPane) return
+      const toIndex = typeof raw.toIndex === 'number' ? raw.toIndex : undefined
+      const mcpRequestId = typeof raw.requestId === 'string' ? raw.requestId : undefined
+      void dispatch(tabMcpActionCommand, { pane, action, tabId, toPane, toIndex, mcpRequestId })
+      return
+    }
     const pinned = typeof raw.pinned === 'boolean' ? raw.pinned : undefined
     void dispatch(tabMcpActionCommand, { pane, action, tabId, pinned })
   })

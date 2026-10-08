@@ -11,7 +11,9 @@ import {
   type LineChunk,
   type MediaDimensions,
   type RangeEnd,
+  type SearchMatch as ViewerSearchMatch,
   type SearchMode as ViewerSearchMode,
+  type SearchPollResult,
   type SearchStatus as ViewerSearchStatus,
   type SeekTargetKind,
   type TotalRows,
@@ -28,11 +30,13 @@ export type {
   LineChunk,
   MediaDimensions,
   RangeEnd,
+  SearchPollResult,
   TotalRows,
   ViewerContentKind,
   ViewerError,
   ViewerPullProgress,
   ViewerRow,
+  ViewerSearchMatch,
   ViewerSearchMode,
   ViewerSearchStatus,
 }
@@ -71,7 +75,7 @@ export interface ViewerOpenResult {
    * The file's ROW count. `initialLines.totalRows` carries the same number plus whether
    * it's counted or sampled, which is what the frontend actually reads.
    */
-  estimatedTotalLines: number
+  estimatedTotalRows: number
   backendType: 'fullLoad' | 'byteSeek' | 'lineIndex'
   capabilities: BackendCapabilities
   initialLines: LineChunk
@@ -105,42 +109,6 @@ export interface ViewerSessionStatus {
   totalRows: TotalRows
   /** Physical lines, when the backend knows them. The status bar's count. */
   totalLines: number | null
-}
-
-/**
- * A search match found in the file.
- *
- * ❗ `row`, not a physical line: search scans rows, so a match inside a 300 MB line comes
- * back with a column that fits on screen instead of one 2.5 million units wide. The wire
- * still spells the field `line` (the IPC rename is its own milestone), and
- * `viewerSearchPoll` is the ONE place that crossing happens.
- */
-export interface ViewerSearchMatch {
-  /** 0-based ROW index. */
-  row: number
-  /** UTF-16 code units into that ROW, so a column is bounded by two segments. */
-  column: number
-  length: number
-  /** Byte offset of the ROW start. Used for accurate scroll positioning in ByteSeek mode. */
-  byteOffset: number
-}
-
-/** Result from polling search progress. */
-export interface SearchPollResult {
-  /**
-   * Tagged-union status. `invalidQuery` carries the user-facing reason as plain text;
-   * the FE renders the message verbatim (no string inspection — see the
-   * no-error-string-match rule).
-   */
-  status: ViewerSearchStatus
-  /** Only matches discovered since the caller's `sinceIndex`. Accumulate locally. */
-  newMatches: ViewerSearchMatch[]
-  /** Authoritative total match count (including matches the caller already has). */
-  totalMatchCount: number
-  totalBytes: number
-  bytesScanned: number
-  /** True when match count was capped (search kept scanning for progress but stopped storing) */
-  matchLimitReached: boolean
 }
 
 /**
@@ -227,17 +195,7 @@ export async function viewerSearchStart(sessionId: string, query: string, mode: 
 export async function viewerSearchPoll(sessionId: string, sinceIndex: number): Promise<SearchPollResult> {
   const res = await commands.viewerSearchPoll(sessionId, sinceIndex)
   if (res.status === 'error') throwIpcError(res.error)
-  return {
-    ...res.data,
-    // The wire's `line` IS the row index; renaming it here keeps the rest of the
-    // frontend from having a field called `line` that means a row.
-    newMatches: res.data.newMatches.map((m) => ({
-      row: m.line,
-      column: m.column,
-      length: m.length,
-      byteOffset: m.byteOffset,
-    })),
-  }
+  return res.data
 }
 
 /** Cancels an ongoing search. */
@@ -268,6 +226,15 @@ export async function viewerSetupMenu(label: string): Promise<void> {
 /** Syncs the viewer menu "Word wrap" check state (called when toggled via keyboard). */
 export async function viewerSetWordWrap(label: string, checked: boolean): Promise<void> {
   const res = await commands.viewerSetWordWrap(label, checked)
+  if (res.status === 'error') throwIpcError(res.error)
+}
+
+/**
+ * Pops the viewer's native right-click menu (Copy, Select all) at the pointer. Copy is greyed
+ * unless `hasSelection`; the pick comes back through `onViewerContextMenuAction`.
+ */
+export async function showViewerContextMenu(hasSelection: boolean): Promise<void> {
+  const res = await commands.showViewerContextMenu(hasSelection)
   if (res.status === 'error') throwIpcError(res.error)
 }
 

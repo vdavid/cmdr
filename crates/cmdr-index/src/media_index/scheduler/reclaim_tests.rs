@@ -107,6 +107,7 @@ fn stored_coverage_partitions_rows_by_the_threshold_and_counts_qualifying() {
     let sched = MediaScheduler::new(dir.path().to_path_buf(), fake_backend());
     let cov = sched
         .stored_coverage(ROOT, "/", 0.5, IndexScope::ByImportance)
+        .expect("readable")
         .expect("scored");
     assert_eq!(cov.surviving_stored, 1, "the /keep row survives");
     assert_eq!(cov.doomed_stored, 1, "the /drop row is doomed");
@@ -160,6 +161,7 @@ fn the_volume_state_poll_never_pays_a_cold_coverage_walk() {
     // The user-initiated reclaim preview MAY pay the walk, which warms the cache…
     let preview = sched
         .stored_coverage(ROOT, "/", 0.5, IndexScope::ByImportance)
+        .expect("readable")
         .expect("scored");
     assert_eq!(preview.covered_qualifying, 2, "the covered folder holds two images");
 
@@ -189,6 +191,7 @@ fn stored_coverage_is_none_when_importance_is_unscored() {
     assert!(
         sched
             .stored_coverage(ROOT, "/", 0.0, IndexScope::ByImportance)
+            .expect("readable")
             .is_none()
     );
 }
@@ -213,6 +216,7 @@ fn the_narrow_scope_partitions_without_importance_at_all() {
     let sched = MediaScheduler::new(dir.path().to_path_buf(), fake_backend());
     let cov = sched
         .stored_coverage(ROOT, "/", 0.0, IndexScope::ChosenFolders)
+        .expect("readable")
         .expect("answerable without importance");
     assert_eq!(cov.surviving_stored, 1, "the chosen folder's row stays covered");
     assert_eq!(cov.doomed_paths, vec!["/elsewhere/b.jpg".to_string()]);
@@ -242,6 +246,7 @@ fn narrowing_the_scope_keeps_every_row_until_the_user_reclaims() {
     // The switch itself: the partition changes, the disk doesn't.
     let cov = sched
         .stored_coverage(ROOT, "/", 0.0, IndexScope::ChosenFolders)
+        .expect("readable")
         .expect("partitionable");
     assert_eq!(cov.doomed_paths, vec!["/important/a.jpg".to_string()]);
     assert!(
@@ -296,6 +301,48 @@ fn prune_below_threshold_deletes_the_doomed_set_and_keeps_the_rest() {
 
     crate::test_uninstall_root_read_pool();
     network::config::set_config(NetworkEnrichConfig::default());
+}
+
+#[test]
+fn an_unreadable_store_is_a_failure_not_nothing_to_delete() {
+    // A `media.db` that exists but can't be read (corrupt, locked past the busy timeout)
+    // used to read as zero stored rows, so "Free up space" said there was nothing to delete
+    // when it really couldn't look.
+    let _guard = crate::test_read_pool_lock();
+    let dir = tempfile::tempdir().expect("temp");
+    let db_path = media_db_path(dir.path(), ROOT);
+    std::fs::create_dir_all(db_path.parent().expect("db has a parent")).expect("mk db dir");
+    std::fs::write(&db_path, b"this is not a SQLite database, just bytes").expect("write garbage");
+    network::config::set_config(NetworkEnrichConfig::default());
+
+    let sched = MediaScheduler::new(dir.path().to_path_buf(), fake_backend());
+    assert_eq!(
+        sched.stored_coverage(ROOT, "/", 0.0, IndexScope::ChosenFolders),
+        Err(reclaim::StoreUnreadable),
+        "an unreadable store answers unreadable, never an empty partition"
+    );
+    assert_eq!(
+        sched.prune_below_threshold(ROOT, "/", 0.0, IndexScope::ChosenFolders),
+        Err(reclaim::PruneFailure::StoreUnreadable),
+        "the prune reports it couldn't look"
+    );
+
+    network::config::set_config(NetworkEnrichConfig::default());
+}
+
+#[test]
+fn a_volume_never_enriched_has_nothing_stored() {
+    // No `media.db` at all is the legitimate empty case, distinct from an unreadable one.
+    let _guard = crate::test_read_pool_lock();
+    let dir = tempfile::tempdir().expect("temp");
+    network::config::set_config(NetworkEnrichConfig::default());
+
+    let sched = MediaScheduler::new(dir.path().to_path_buf(), fake_backend());
+    let cov = sched
+        .stored_coverage(ROOT, "/", 0.0, IndexScope::ChosenFolders)
+        .expect("a missing store is readable")
+        .expect("answerable without importance");
+    assert_eq!(cov, reclaim::StoredCoverage::default());
 }
 
 #[test]

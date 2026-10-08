@@ -1,0 +1,3 @@
+# Byte-identical to crates/cmdr-s3/src/cost/s3-prices.json, and s3-prices.test.ts enforces that.
+# Reformatting it here would break the copy, so a price edit copies the crate file across instead.
+src/s3-prices/s3-prices.json

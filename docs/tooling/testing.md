@@ -63,8 +63,8 @@ allocation that pool's threads make, into a counter of its own. Worked example: 
 
 It lives in the indexing tree, not next to `wait_until`, because a `#[global_allocator]` is per BINARY: it has to sit in
 the crate whose test binary is measuring, and a shared crate would give the shipped app a second one. Rust memory
-numbers taken in tests are therefore measured under THIS allocator, not mimalloc — don't compare them with production
-figures.
+numbers taken in tests are therefore measured under THIS allocator, not the release build's global one — don't compare
+them with production figures.
 
 ### `proptest` (property-based testing)
 
@@ -73,6 +73,12 @@ cases: comparators, parsers, transforms, generators. State a property (round-tri
 consumer"), let proptest fuzz inputs. Patterns to copy: `indexing/aggregator/tests.rs` (topological sort),
 `search/query.rs` (glob_to_regex + scope parsing), `indexing/store/tests/path_resolution.rs` (platform_case_compare
 comparator laws). Keep properties **tight**: "function doesn't panic" is too weak.
+
+### `cargo-fuzz` (fuzzing the parsers that read untrusted bytes)
+
+libFuzzer targets for the ADB, WebDAV, S3, archive, PDF, and image parsers live in `fuzz/` (repo root, outside the
+workspace, pinned nightly). `pnpm check fuzz` runs every target for `CMDR_FUZZ_SECONDS` (default 60); CI runs it in
+`slow-checks.yml`. Targets, adding one, and the reproduce-and-fix loop: `fuzz/DETAILS.md`.
 
 ### `cargo-mutants` (mutation testing)
 
@@ -96,9 +102,12 @@ A bench compiles against its crate as an EXTERNAL one, so it sees neither `#[cfg
 The `testing` Cargo feature widens the few scaffolding items a bench needs (today: the root-read-pool installers in
 `indexing/read/enrichment.rs`, and `FileEntry` at the crate root). ❌ Don't reach for `required-features` to enable it:
 `cargo clippy --all-targets` silently SKIPS targets whose required features are off, and an unlinted, never-compiled
-benchmark rots. Instead the package dev-depends on itself (`cmdr = { path = ".", features = ["testing"] }`), which turns
-the feature on for every dev target and leaves it off for the lib and the shipped `Cmdr` binary. That self-dependency is
-load-bearing, and it's why `crate_deps.rs` carries a `#[cfg(test)] use cmdr_lib as _;` marker.
+benchmark rots. Instead the package dev-depends on itself (`cmdr-index = { path = ".", features = ["testing", ...] }`),
+which turns the feature on for every dev target and leaves it off for the lib and every shipped consumer. The workspace
+crates all do this. ❌ The app doesn't: a self dev-dependency links a second copy of it into its test binary, where the
+two copies' Objective-C classes collide (global, unmangled names; `ld` warns `duplicate symbol` and keeps one). The app
+has no `testing` feature of its own and turns on each crate's `testing` through a direct dev-dependency instead
+(`apps/desktop/src-tauri/Cargo.toml`).
 
 ## Frontend + Svelte
 
@@ -108,6 +117,9 @@ For TS, Svelte, and IPC contract tests. Run all: `pnpm check svelte-tests`. Run 
 `cd apps/desktop && pnpm vitest run -t "<name>"`. Existing patterns: component tests in `*.test.ts` next to the source,
 tier-3 a11y tests in `*.a11y.test.ts` (often one per directory covering several components, since the lane's cost is per
 FILE: `docs/testing.md` § "What a test actually costs").
+
+On a shared, busy host, `CMDR_TEST_WORKERS=4 pnpm check svelte-tests` caps desktop Vitest concurrency without changing
+the suite or its deadlines. Unset, Vitest uses its normal worker count. Supply a positive integer.
 
 ### `installIpcMock()`: IPC contract test harness
 
@@ -234,7 +246,9 @@ state with `(cd scripts/check && go run ./stack-lease status)` and force it down
 WebDAV (`apps/desktop/test/webdav-servers/`, ports 13480+, Apache `mod_dav` with one Basic and one Digest-only service,
 plus a real Nextcloud outside the default lane) stacks lease the same way under their own `/tmp/cmdr-<stack>.lock` +
 `/tmp/cmdr-<stack>-leases` namespaces. `CMDR_WEBDAV_TEST_URL` points the whole WebDAV suite at a server of your own
-instead; the fixture README has the variables and which cells opt out.
+instead; the fixture README has the variables and which cells opt out. The S3 stack (`apps/desktop/test/s3-servers/`,
+ports 14480+, VersityGW plus Garage, which ignores conditional writes) leases the same way, and its README records what
+each server answered for every call the backend makes.
 
 ### MCP servers (for ad-hoc exploration during test writing)
 

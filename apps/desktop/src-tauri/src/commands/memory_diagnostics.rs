@@ -8,25 +8,33 @@
 //! including a shipped release build under a real workload, which is the only condition
 //! the interesting numbers appear under.
 //!
-//! **It is the only reading that spans both allocators.** Cmdr's Rust heap is mimalloc,
-//! which is not a registered macOS malloc zone, so `malloc_zone_statistics` is
-//! structurally blind to it; and the zone APIs know nothing about the C and Objective-C
-//! allocations that dominate `MALLOC_LARGE`. The kernel's VM map sees both, because both
-//! take their pages from it. `cmdr_fs::process_memory` owns that argument and the FFI.
+//! **It names the allocator it read.** macOS builds run on the system allocator and
+//! Linux ones (or macOS with the `mimalloc` feature) on mimalloc, and the two account for
+//! the Rust heap so differently that a number from one means nothing in the other's terms.
+//! So `rustHeap` is tagged by `allocator`, and each variant carries only what that
+//! allocator can honestly say (`cmdr_fs::process_memory::GLOBAL_ALLOCATOR`).
+//!
+//! **It is the only reading that spans every allocator in the process.** Under mimalloc
+//! the Rust heap is outside every registered malloc zone, so `malloc_zone_statistics` is
+//! structurally blind to it; under the system allocator it shares the default zone with
+//! Objective-C and C code. The kernel's VM map sees all of it, because everything takes
+//! its pages from there. `cmdr_fs::process_memory` owns that argument and the FFI.
 //!
 //! **It also names the one big block neither allocator explains.** SQLite serves every
 //! store's cached database pages from a single process-wide slab, which is a leaked Rust
-//! allocation: 64 MiB sitting inside the mimalloc total with nothing pointing at it.
+//! allocation: 64 MiB sitting inside the Rust heap total with nothing pointing at it.
 //! `sqlitePageCache` says how big it is, how much of it is really held, and how many read
 //! connections are pushing on it, so the answer to "what is Cmdr holding?" doesn't
 //! require knowing to go ask SQLite separately (`cmdr_fs::sqlite_util`).
 //!
-//! **And it splits the Rust heap into data and slack.** mimalloc's committed total can't
-//! say how much of it the program is using, and its own stats can't either (they merge
-//! per-thread counts late, so they read hundreds of MiB "live" after a free).
-//! `rustHeapCensus` walks every mimalloc page for the live bytes and reads the heap's
-//! resident size off the VM map, so `slackBytes` is what the allocator holds beyond the
-//! program's data (`cmdr_fs::process_memory`'s `heap_census.rs`).
+//! **And it splits the heap into data and slack.** Under mimalloc, the committed total
+//! can't say how much of it the program is using, and mimalloc's own stats can't either
+//! (they merge per-thread counts late, so they read hundreds of MiB "live" after a free):
+//! `rustHeap.census` walks every mimalloc page for the live bytes and reads the heap's
+//! resident size off the VM map (`cmdr_fs::process_memory`'s `heap_census.rs`). The
+//! system allocator counts live bytes exactly, but per zone, and the Rust heap's zone is
+//! shared: there's no Rust-only census, so its variant weighs every zone's live bytes
+//! against every malloc VM tag's resident bytes instead.
 //!
 //! **How to read the payload.** Sort by `dirtyBytes` and start at the top. Then look at
 //! each big tag's `sizes`: a repeated EXACT region size is a fingerprint, because macOS
@@ -37,9 +45,10 @@
 //!   fp32 token embedding, and nothing else in the process is that size
 //!   (`crates/cmdr-index/src/media_index/clip/DETAILS.md` § "What holding the towers
 //!   costs").
-//! - Anything under `IOAccelerator` is the Rust heap, ❌ never graphics. mimalloc tags its
-//!   arenas with `VM_MEMORY_IOACCELERATOR`, and that single mislabel cost two days across
-//!   three agents.
+//! - In a mimalloc build, anything under `IOAccelerator` is the Rust heap, ❌ never
+//!   graphics. mimalloc tags its arenas with `VM_MEMORY_IOACCELERATOR`, and that single
+//!   mislabel cost two days across three agents. In a system-allocator build the Rust heap
+//!   is in the `MALLOC_*` tags instead.
 //! - `IOSurface` (tag 88) is ❌ NOT in `physFootprintBytes`. Those regions are WebKit's
 //!   layer backing stores, mapped here from the GPU process and charged to WebContent, so
 //!   their dirty bytes can exceed the whole footprint
@@ -51,6 +60,7 @@
 //! paths, no filenames, no user data — nothing here can carry any.
 
 use crate::deadline::blocking_with_timeout;
+use cmdr_fs::process_memory::{GlobalAllocator, RustHeapSnapshot};
 use std::time::Duration;
 
 /// How long the walk gets before the command gives up and reports what it has. A Mach
@@ -81,28 +91,23 @@ pub struct MemoryDiagnostics {
     /// Resident set size. Counts graphics and shared mappings that aren't real memory
     /// pressure, so prefer the footprint.
     pub resident_bytes: u64,
-    /// What mimalloc — our global allocator, so essentially every Rust allocation — has
-    /// committed from the OS.
-    pub rust_heap_committed_bytes: u64,
-    /// The high-water mark of `rustHeapCommittedBytes`.
-    pub rust_heap_peak_committed_bytes: u64,
-    /// What the registered macOS malloc zones report as handed out: WebKit,
-    /// Objective-C, and C-library allocations. ❌ Never the Rust heap.
+    /// The Rust heap, tagged by the global allocator that holds it (`allocator`). Read its
+    /// numbers only in that allocator's terms.
+    pub rust_heap: RustHeapDiagnostics,
+    /// What the malloc zones BEYOND the Rust heap report as handed out: WebKit,
+    /// Objective-C, and C-library allocations. Under mimalloc that's every registered
+    /// zone; under the system allocator every zone but the default one, which is
+    /// `rustHeap`'s. ❌ Never overlaps `rustHeap`.
     pub system_zones_in_use_bytes: u64,
     /// What those zones hold from the OS, in use or not.
     pub system_zones_reserved_bytes: u64,
-    /// How many zones were registered at snapshot time.
+    /// How many zones those two fields count.
     pub system_zone_count: u32,
-    /// The biggest registered zone by in-use bytes, as `[name, bytes]`.
+    /// The biggest of those zones by in-use bytes.
     pub largest_system_zone: Option<SystemZone>,
-    /// SQLite's process-wide page memory, which belongs to no allocator above:
-    /// the slab is a leaked Rust allocation, so it's a fixed 64 MiB sitting
-    /// INSIDE `rustHeapCommittedBytes` that nothing else here names.
+    /// SQLite's process-wide page memory, which no allocator reading names: the slab
+    /// is a leaked Rust allocation, so it's a fixed 64 MiB sitting INSIDE `rustHeap`.
     pub sqlite_page_cache: SqlitePageCache,
-    /// How much of the Rust heap is live data, and how much is allocator slack: a census of
-    /// every mimalloc page, read against the heap's resident size. The one field that can
-    /// tell "the program holds this" from "mimalloc holds this".
-    pub rust_heap_census: RustHeapCensus,
     /// The kernel's VM map folded by tag, biggest dirty total first. Empty if the walk
     /// failed or timed out.
     pub tags: Vec<MemoryTag>,
@@ -155,7 +160,39 @@ pub struct SqlitePageCache {
     pub live_read_connections: u32,
 }
 
-/// The Rust heap split into live data and allocator slack.
+/// The Rust heap, as its global allocator accounts for it. `allocator` says which one.
+#[derive(Debug, Clone, serde::Serialize, specta::Type)]
+#[serde(tag = "allocator", rename_all = "camelCase", rename_all_fields = "camelCase")]
+pub enum RustHeapDiagnostics {
+    /// mimalloc: its own committed total, plus a census of its pages.
+    Mimalloc {
+        /// What mimalloc has committed from the OS: live data plus its slack.
+        committed_bytes: u64,
+        /// The high-water mark of `committedBytes`.
+        peak_committed_bytes: u64,
+        /// How much of the heap is live data, and how much is allocator slack. The one
+        /// field that can tell "the program holds this" from "mimalloc holds this".
+        census: RustHeapCensus,
+    },
+    /// The system allocator: the default malloc zone, which the Rust heap shares with
+    /// Objective-C and C code. No page census exists for it: nothing in the zone tells a
+    /// Rust block from theirs, so the live/slack split below spans every zone.
+    System {
+        /// Bytes in live blocks in the default zone: the Rust heap plus Objective-C and C.
+        in_use_bytes: u64,
+        /// What the default zone holds from the OS, in use or free. The zone keeps no
+        /// high-water mark.
+        reserved_bytes: u64,
+        /// Dirty plus swapped bytes under every `MALLOC_*` VM tag, across every zone: what
+        /// malloc costs resident. `0` when the VM walk failed.
+        malloc_resident_bytes: u64,
+        /// `mallocResidentBytes` minus every zone's live bytes, floored at zero: what malloc
+        /// holds beyond live data, in every zone together.
+        malloc_slack_bytes: u64,
+    },
+}
+
+/// The mimalloc heap split into live data and allocator slack.
 ///
 /// `liveBytes` is what the program holds; `residentBytes` is what the heap costs (its VM
 /// tag's dirty plus swapped bytes). The gap, `slackBytes`, is memory mimalloc keeps that
@@ -163,7 +200,7 @@ pub struct SqlitePageCache {
 /// retained memory outside any page's blocks (`residentBytes - blockSpaceBytes`). What the
 /// census can't see, and why `liveBytes` leans high: `cmdr_fs::process_memory` §
 /// `heap_census`.
-#[derive(Debug, Clone, Default, serde::Serialize, specta::Type)]
+#[derive(Debug, Clone, serde::Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct RustHeapCensus {
     /// Bytes in allocated blocks across every mimalloc page.
@@ -224,7 +261,7 @@ pub struct MemoryRegionSize {
 
 // ── The command ───────────────────────────────────────────────────────
 
-/// Snapshot this process's memory: the footprint, both allocators' own accounting,
+/// Snapshot this process's memory: the footprint, the allocators' own accounting,
 /// SQLite's page-cache slab, and the kernel's VM map folded by tag with a per-tag
 /// region-size histogram.
 ///
@@ -248,14 +285,12 @@ fn empty_snapshot() -> MemoryDiagnostics {
         phys_footprint_bytes: 0,
         phys_footprint_peak_bytes: None,
         resident_bytes: 0,
-        rust_heap_committed_bytes: 0,
-        rust_heap_peak_committed_bytes: 0,
+        rust_heap: empty_rust_heap(),
         system_zones_in_use_bytes: 0,
         system_zones_reserved_bytes: 0,
         system_zone_count: 0,
         largest_system_zone: None,
         sqlite_page_cache: SqlitePageCache::default(),
-        rust_heap_census: RustHeapCensus::default(),
         tags: Vec::new(),
         total_dirty_bytes: 0,
         total_region_count: 0,
@@ -263,29 +298,80 @@ fn empty_snapshot() -> MemoryDiagnostics {
     }
 }
 
+/// The empty snapshot's heap: zeros, still tagged with the allocator this build runs on,
+/// so even a timed-out reading can't be read in the wrong allocator's terms.
+fn empty_rust_heap() -> RustHeapDiagnostics {
+    match cmdr_fs::process_memory::GLOBAL_ALLOCATOR {
+        GlobalAllocator::Mimalloc => RustHeapDiagnostics::Mimalloc {
+            committed_bytes: 0,
+            peak_committed_bytes: 0,
+            census: RustHeapCensus {
+                live_bytes: 0,
+                block_space_bytes: 0,
+                resident_bytes: 0,
+                slack_bytes: 0,
+                page_count: 0,
+                largest_live_blocks: Vec::new(),
+                complete: false,
+            },
+        },
+        GlobalAllocator::System => RustHeapDiagnostics::System {
+            in_use_bytes: 0,
+            reserved_bytes: 0,
+            malloc_resident_bytes: 0,
+            malloc_slack_bytes: 0,
+        },
+    }
+}
+
+/// Mirror `cmdr-fs`'s snapshot-grade heap reading into the payload.
+fn rust_heap_diagnostics(snapshot: RustHeapSnapshot) -> RustHeapDiagnostics {
+    match snapshot {
+        RustHeapSnapshot::Mimalloc {
+            committed,
+            peak_committed,
+            census,
+            resident,
+        } => RustHeapDiagnostics::Mimalloc {
+            committed_bytes: committed,
+            peak_committed_bytes: peak_committed,
+            census: RustHeapCensus {
+                live_bytes: census.live_bytes,
+                block_space_bytes: census.block_space_bytes,
+                resident_bytes: resident,
+                slack_bytes: resident.saturating_sub(census.live_bytes),
+                page_count: census.page_count,
+                largest_live_blocks: census.largest_blocks.into_iter().filter(|&size| size > 0).collect(),
+                complete: census.complete,
+            },
+        },
+        RustHeapSnapshot::System {
+            in_use,
+            reserved,
+            all_zones_in_use,
+            resident,
+        } => RustHeapDiagnostics::System {
+            in_use_bytes: in_use,
+            reserved_bytes: reserved,
+            malloc_resident_bytes: resident,
+            malloc_slack_bytes: resident.saturating_sub(all_zones_in_use),
+        },
+    }
+}
+
 /// Read every accountant and fold them into one payload.
 fn collect(sizes_per_tag: usize) -> MemoryDiagnostics {
     let vm = cmdr_fs::process_memory::query_task_vm_info();
-    let heap = cmdr_fs::process_memory::query_mimalloc_heap();
     let zones = cmdr_fs::process_memory::query_system_malloc_zones();
     let regions = cmdr_fs::process_memory::query_vm_regions(sizes_per_tag);
     let page_cache = cmdr_fs::sqlite_util::query_page_cache_usage();
-    let census = cmdr_fs::process_memory::query_heap_census();
-    let heap_resident = regions
-        .as_ref()
-        .and_then(|map| {
-            map.tags
-                .iter()
-                .find(|t| t.tag == cmdr_fs::process_memory::MIMALLOC_ARENA_TAG)
-        })
-        .map_or(0, |t| t.dirty_bytes + t.swapped_bytes);
+    let rust_heap = cmdr_fs::process_memory::query_rust_heap_snapshot(regions.as_ref());
 
     MemoryDiagnostics {
         phys_footprint_bytes: vm.as_ref().map_or(0, |v| v.phys_footprint),
         phys_footprint_peak_bytes: vm.as_ref().and_then(|v| v.phys_footprint_peak),
         resident_bytes: vm.as_ref().map_or(0, |v| v.resident_size),
-        rust_heap_committed_bytes: heap.committed,
-        rust_heap_peak_committed_bytes: heap.peak_committed,
+        rust_heap: rust_heap_diagnostics(rust_heap),
         system_zones_in_use_bytes: zones.in_use,
         system_zones_reserved_bytes: zones.reserved,
         system_zone_count: zones.zone_count,
@@ -299,15 +385,6 @@ fn collect(sizes_per_tag: usize) -> MemoryDiagnostics {
             overflow_bytes: page_cache.overflow_bytes,
             peak_overflow_bytes: page_cache.peak_overflow_bytes,
             live_read_connections: u32::try_from(cmdr_fs::sqlite_util::live_read_connections()).unwrap_or(u32::MAX),
-        },
-        rust_heap_census: RustHeapCensus {
-            live_bytes: census.live_bytes,
-            block_space_bytes: census.block_space_bytes,
-            resident_bytes: heap_resident,
-            slack_bytes: heap_resident.saturating_sub(census.live_bytes),
-            page_count: census.page_count,
-            largest_live_blocks: census.largest_blocks.into_iter().filter(|&size| size > 0).collect(),
-            complete: census.complete,
         },
         tags: regions
             .as_ref()
@@ -345,8 +422,24 @@ fn collect(sizes_per_tag: usize) -> MemoryDiagnostics {
 mod tests {
     use super::*;
 
+    unsafe extern "C" {
+        fn malloc_create_zone(start_size: libc::size_t, flags: libc::c_uint) -> *mut libc::c_void;
+    }
+
     #[tokio::test]
     async fn the_snapshot_reads_every_accountant_at_once() {
+        // Which zones exist beyond the default one is up to the OS: on macOS 27 the Objective-C
+        // runtime registers `objc-class_rw_t`, while the macOS 26 CI runner had none (verified
+        // with `malloc_get_all_zones` locally and a CI run, 2026-10-06). Under the system
+        // allocator the default zone is the Rust heap's and isn't counted here, so a bare
+        // process can legitimately report zero. Registering our own makes "at least one"
+        // hold on every macOS. Leaked on purpose: destroying a zone while a parallel test
+        // walks the registry would hand that walk a dangling pointer.
+        // SAFETY: `malloc_create_zone` takes plain integers and returns a new zone (or NULL),
+        // which we never use or free.
+        let zone = unsafe { malloc_create_zone(0, 0) };
+        assert!(!zone.is_null(), "libmalloc registers the test's own zone");
+
         let snapshot = get_memory_diagnostics(8).await;
 
         assert!(snapshot.phys_footprint_bytes > 0, "a live process has a footprint");
@@ -389,42 +482,64 @@ mod tests {
         );
     }
 
-    /// The question `rustHeapCommittedBytes` can't answer: of what the Rust heap holds,
-    /// how much is the program's data? A block allocated through mimalloc shows up in the
-    /// census by its exact size, counted as live, and inside the heap's resident total.
-    /// Through `mi_malloc` directly: the test harness doesn't run on mimalloc as its
-    /// global allocator, the shipped binary does.
+    /// The two allocators' numbers mean different things, so a reading that doesn't say
+    /// which allocator it came from gets misread. The tag is the first thing in `rustHeap`.
+    #[tokio::test]
+    async fn the_snapshot_names_the_allocator_the_app_runs_on() {
+        let expected = serde_json::to_value(cmdr_fs::process_memory::GLOBAL_ALLOCATOR).expect("serializable");
+
+        let snapshot = serde_json::to_value(get_memory_diagnostics(0).await).expect("serializable");
+        assert_eq!(snapshot["rustHeap"]["allocator"], expected, "a real reading names it");
+
+        let empty = serde_json::to_value(empty_snapshot()).expect("serializable");
+        assert_eq!(
+            empty["rustHeap"]["allocator"], expected,
+            "and so does the timed-out one, so its zeros can't be read in the wrong terms"
+        );
+    }
+
+    /// The question a committed or reserved total can't answer: of what the Rust heap holds,
+    /// how much is live data? Each allocator answers it in its own terms.
     #[tokio::test]
     async fn the_snapshot_splits_the_rust_heap_into_live_data_and_slack() {
+        // Through the global allocator, which in this test binary is `System` whatever the
+        // build's choice: it lands in the default zone, and only the system variant sees it.
         const BLOCK: usize = 24 * 1024 * 1024;
-        // SAFETY: `mi_malloc` returns an owned block of at least `BLOCK` bytes or null; we
-        // check for null, write only inside it, and free the same pointer exactly once.
-        let block = unsafe { libmimalloc_sys::mi_malloc(BLOCK) as *mut u8 };
-        assert!(!block.is_null(), "mi_malloc should hand back a {BLOCK}-byte block");
-        // SAFETY: `block` is a live allocation of at least `BLOCK` bytes.
-        unsafe { std::ptr::write_bytes(block, 1u8, BLOCK) };
+        let block = vec![1u8; BLOCK];
 
-        let census = get_memory_diagnostics(0).await.rust_heap_census;
+        let heap = get_memory_diagnostics(0).await.rust_heap;
+        drop(block);
 
-        // SAFETY: the same pointer `mi_malloc` returned, freed exactly once.
-        unsafe { libmimalloc_sys::mi_free(block.cast()) };
-
-        assert!(census.complete, "a test heap is nowhere near the page ceiling");
-        assert!(
-            census.largest_live_blocks.contains(&(BLOCK as u64)),
-            "the block is named by its size: {:?}",
-            census.largest_live_blocks
-        );
-        assert!(census.live_bytes >= BLOCK as u64, "and counted as live");
-        assert!(
-            census.block_space_bytes >= census.live_bytes,
-            "inside the pages' block space"
-        );
-        assert!(
-            census.resident_bytes >= census.live_bytes,
-            "and inside what the heap's VM tag holds resident"
-        );
-        assert_eq!(census.slack_bytes, census.resident_bytes - census.live_bytes);
+        match heap {
+            RustHeapDiagnostics::System {
+                in_use_bytes,
+                reserved_bytes,
+                malloc_resident_bytes,
+                malloc_slack_bytes,
+            } => {
+                assert!(in_use_bytes >= BLOCK as u64, "the block is live in the default zone");
+                assert!(reserved_bytes >= in_use_bytes, "which holds at least what's live");
+                assert!(
+                    malloc_resident_bytes >= BLOCK as u64,
+                    "and it's resident under the malloc tags"
+                );
+                assert!(
+                    malloc_slack_bytes <= malloc_resident_bytes,
+                    "slack is a share of resident"
+                );
+            }
+            RustHeapDiagnostics::Mimalloc { census, .. } => {
+                assert!(census.complete, "a test heap is nowhere near the page ceiling");
+                assert!(
+                    census.block_space_bytes >= census.live_bytes,
+                    "live is inside block space"
+                );
+                assert_eq!(
+                    census.slack_bytes,
+                    census.resident_bytes.saturating_sub(census.live_bytes)
+                );
+            }
+        }
     }
 
     #[tokio::test]

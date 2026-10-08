@@ -49,6 +49,12 @@ const perVariant: Record<WriteOperationError['type'], TransferErrorFixture> = {
     // is on a NAS that stopped being able to address the folder mid-transfer.
     error: { type: 'destination_not_found', path: '/Volumes/Naspolya/media/photos/2026' },
   },
+  destination_not_a_folder: {
+    operationType: 'copy',
+    // The path is the FILE in the way, a level above the folder the copy was
+    // told to create (`…/photos/2026/trip`).
+    error: { type: 'destination_not_a_folder', path: '/Volumes/Naspolya/media/photos/2026' },
+  },
   source_not_connected: {
     operationType: 'delete',
     // A phone the switcher lists that nobody has opened in a pane yet.
@@ -58,6 +64,11 @@ const perVariant: Record<WriteOperationError['type'], TransferErrorFixture> = {
     operationType: 'copy',
     // A saved server nobody has connected this session.
     error: { type: 'destination_not_connected', path: 'sftp://david@naspolya.local:22/share/photos/2026' },
+  },
+  source_no_longer_connected: {
+    operationType: 'copy',
+    // A phone unplugged while its search results were still on screen.
+    error: { type: 'source_no_longer_connected', path: '/sdcard/DCIM/Camera/PXL_20260714_052311.jpg' },
   },
   destination_exists: {
     operationType: 'move',
@@ -222,6 +233,22 @@ const perVariant: Record<WriteOperationError['type'], TransferErrorFixture> = {
   delete_pending: {
     operationType: 'delete',
     error: { type: 'delete_pending', path: '/Users/david/Downloads/ubuntu-26.04-desktop-amd64.iso' },
+  },
+  // A copy off an S3 bucket meeting an object in Glacier.
+  source_in_cold_storage: {
+    operationType: 'copy',
+    error: {
+      type: 'source_in_cold_storage',
+      path: 's3://AKIAIOSFODNN7EXAMPLE@s3.eu-west-1.amazonaws.com:443/family-photos/2019/holiday-raw.tar',
+    },
+  },
+  // A move within an S3 account whose source another app replaced mid-copy.
+  source_changed: {
+    operationType: 'move',
+    error: {
+      type: 'source_changed',
+      path: 's3://AKIAIOSFODNN7EXAMPLE@nbg1.your-objectstorage.com:443/team-docs/2026/budget.xlsx',
+    },
   },
   // The many-files branch: the body copy counts them and the details block lists
   // every one, so this is where the dialog gets tall.

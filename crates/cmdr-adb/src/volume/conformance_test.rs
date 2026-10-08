@@ -83,6 +83,35 @@ async fn create_directory_all_reports_an_existing_directory_honestly() {
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn create_directory_all_refuses_a_file_in_the_way() {
+    // `mkdir -p` names the problem only on stderr ("File exists", "Not a
+    // directory"), which nothing here may read, so the answer is the probe's.
+    let (_server, volume) = seeded().await;
+    conformance::assert_create_directory_all_refuses_a_file_in_the_way(
+        volume.as_ref(),
+        &fixture_path("/sdcard/notes.txt"),
+    )
+    .await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn create_directory_all_goes_through_a_link_to_a_folder() {
+    // ❗ `/sdcard` is itself a link on a real phone, so a refusal that judged an
+    // occupied name without following it would refuse the whole shared storage.
+    let mut tree = seeded_tree();
+    tree.add_symlink("/sdcard/link", "/sdcard/album");
+    let server = FakeAdbServer::start(tree).await;
+    let (volume, _) = connect_fake(&server, FIXTURE_SERIAL).await;
+
+    conformance::assert_create_directory_all_goes_through_a_link_to_a_folder(
+        volume.as_ref(),
+        &fixture_path("/sdcard/link"),
+        &fixture_path("/sdcard/album"),
+    )
+    .await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn delete_leaves_a_non_empty_directory_intact() {
     let (_server, volume) = seeded().await;
     conformance::assert_delete_leaves_a_non_empty_dir_intact(
@@ -115,6 +144,28 @@ async fn export_matches_the_bytes_offered() {
 async fn not_found_carries_the_path() {
     let (_server, volume) = seeded().await;
     conformance::assert_not_found_carries_the_path(volume.as_ref(), &fixture_path("/sdcard/no-such-file.txt")).await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_copy_keeps_the_source_date() {
+    let (_server, volume) = seeded().await;
+    let dated = fixture_path("/sdcard/dated.txt");
+    conformance::assert_write_from_stream_keeps_the_source_date(volume.as_ref(), &dated, std::time::Duration::ZERO)
+        .await;
+    conformance::assert_read_stream_reports_the_listed_date(volume.as_ref(), &dated).await;
+}
+
+/// The same promise over the v1 verbs, whose `STAT` carries the mtime as a u32
+/// (older phones, and any device that doesn't advertise `stat_v2`).
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_copy_keeps_the_source_date_over_the_v1_verbs() {
+    let server = FakeAdbServer::start(seeded_tree()).await;
+    server.set_features("shell_v2");
+    let (volume, _) = connect_fake(&server, FIXTURE_SERIAL).await;
+    let dated = fixture_path("/sdcard/dated.txt");
+    conformance::assert_write_from_stream_keeps_the_source_date(volume.as_ref(), &dated, std::time::Duration::ZERO)
+        .await;
+    conformance::assert_read_stream_reports_the_listed_date(volume.as_ref(), &dated).await;
 }
 
 // ── This backend's own cells ─────────────────────────────────────────
@@ -210,6 +261,10 @@ impl VolumeReadStream for ChunkedSource {
 
     fn bytes_read(&self) -> u64 {
         self.read
+    }
+
+    fn modified_at(&self) -> Option<std::time::SystemTime> {
+        None
     }
 }
 

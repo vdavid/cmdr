@@ -20,6 +20,7 @@ function makeLicenseInfo(overrides: Partial<LicenseInfo> = {}): LicenseInfo {
     organizationName: null,
     licenseType: null,
     shortCode: null,
+    expiresAt: null,
     ...overrides,
   }
 }

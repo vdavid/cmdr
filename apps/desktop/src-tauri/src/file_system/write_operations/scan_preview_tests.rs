@@ -49,6 +49,7 @@ fn get_scan_preview_totals_returns_cached_counts_after_complete() {
                     total_bytes: 12_345,
                     dedup_bytes: 12_345,
                     top_level_is_directory: true,
+                    top_level_modified_at: None,
                 },
             )],
             None,

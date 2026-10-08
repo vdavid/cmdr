@@ -3,9 +3,9 @@
 `en-AU` is an **overlay** of base `en`, and it agrees with `en-GB` about almost everything.
 
 **Read `docs/i18n/en-GB/style.md` first.** Every ruling there (Bin capitalisation and its count-noun grammar, `licence`
-vs `license`, the deliberate non-fork of the Oxford comma, the fork test, the considered-and-skipped list, and the
-catalog mechanics) applies here unchanged and is NOT repeated. This file records only where Australian English diverges
-from British.
+vs `license`, `any more` for the "no longer" sense (every `en` value saying `anymore` forks here too), the deliberate
+non-fork of the Oxford comma, the fork test, the considered-and-skipped list, and the catalog mechanics) applies here
+unchanged and is NOT repeated. This file records only where Australian English diverges from British.
 
 ## Inheritance: `en-AU` does not read `en-GB`
 

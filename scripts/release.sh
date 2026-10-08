@@ -167,3 +167,8 @@ git tag -s -m "Cmdr v$VERSION" "v$VERSION"
 echo ""
 echo "Release v$VERSION prepared locally."
 echo "To publish, run: git push origin main --tags"
+# With RELEASE_UPDATE_SIGNING=local, the tag push only builds a draft; this laptop signs the update
+# archives and has CI publish. See docs/guides/releasing.md § Who signs the update archives.
+if [[ "$(gh variable get RELEASE_UPDATE_SIGNING -R vdavid/cmdr 2>/dev/null || true)" == "local" ]]; then
+  echo "Then sign and publish it from this laptop: ./scripts/release-finish.sh $VERSION"
+fi

@@ -40,6 +40,7 @@
     import { errorReportSendFailureOf, errorReportSendReason } from './error-report-send-error'
     import { getAppLogger } from '$lib/logging/logger'
     import { t, tString } from '$lib/intl/messages.svelte'
+    import { getManagedPolicyView } from '$lib/managed-policy/managed-policy.svelte'
 
     const log = getAppLogger('errorReportDialog')
 
@@ -81,6 +82,10 @@
     const noteOverLimit = $derived(noteLength > MAX_NOTE_CHARS)
     const showCounter = $derived(noteLength > SOFT_WARN_AT)
     const isDev = import.meta.env.DEV
+    // The organization turned off sending reports (`DisableCrashAndErrorReports`). The backend
+    // refuses every send anyway; this keeps the dialog from offering one, and offers Save to disk
+    // instead, since nothing leaves the Mac that way.
+    const reportsOff = $derived(getManagedPolicyView().reportsDisabled)
 
     // Load the preview ONCE when the dialog mounts. ❌ Nothing read synchronously in here
     // may be reactive: `attachEmail.emailToAttach` used to be an argument, which made every
@@ -151,7 +156,8 @@
      * bundle nobody saw, and rebuild the same bundle that just didn't build.
      */
     const canSend = $derived(
-        !sending &&
+        !reportsOff &&
+            !sending &&
             !noteOverLimit &&
             !preparing &&
             !attachEmail.blocksSend &&
@@ -201,7 +207,9 @@
 
     async function handleSaveToDisk() {
         try {
-            const path = await saveErrorReportToDisk(userNote || undefined, attachEmail.emailToAttach, preview?.id)
+            // The reply-to address is for us; a bundle saved under the policy goes wherever the person takes it.
+            const email = reportsOff ? undefined : attachEmail.emailToAttach
+            const path = await saveErrorReportToDisk(userNote || undefined, email, preview?.id)
             addToast(BundleSavedToastContent, {
                 id: 'error-report-bundle-saved',
                 level: 'success',
@@ -255,9 +263,11 @@
             ? tString('errorReporter.amend.title')
             : tString('errorReporter.dialog.title')}{/snippet}
 
-    {#if amendUnavailable}
+    {#if isAmend && (amendUnavailable || reportsOff)}
         <div>
-            <p id="error-report-body" class="description">{tString('errorReporter.amend.unavailable')}</p>
+            <p id="error-report-body" class="description">
+                {reportsOff ? tString('errorReporter.dialog.managedOff') : tString('errorReporter.amend.unavailable')}
+            </p>
             <div class="button-row">
                 <span class="spacer"></span>
                 <Button variant="primary" onclick={handleClose}>{tString('errorReporter.amend.close')}</Button>
@@ -266,7 +276,11 @@
     {:else}
     <div>
         <p id="error-report-body" class="description">
-            {isAmend ? tString('errorReporter.amend.description') : tString('errorReporter.dialog.description')}
+            {#if reportsOff}
+                {tString('errorReporter.dialog.managedOff')}
+            {:else}
+                {isAmend ? tString('errorReporter.amend.description') : tString('errorReporter.dialog.description')}
+            {/if}
         </p>
 
         {#if preview}
@@ -306,7 +320,9 @@
             </p>
         {/if}
 
-        <AttachEmailCheckbox email={attachEmail} />
+        {#if !reportsOff}
+            <AttachEmailCheckbox email={attachEmail} />
+        {/if}
 
         <button
             class="details-toggle"
@@ -359,7 +375,7 @@
 
         <div class="button-row">
             <!-- Amend mode builds no local bundle, so there's nothing on disk to save. -->
-            {#if isDev && !isAmend}
+            {#if isDev && !isAmend && !reportsOff}
                 <Button variant="secondary" onclick={() => void handleSaveToDisk()} disabled={sending}>
                     {tString('errorReporter.dialog.saveToDisk')}
                 </Button>
@@ -368,13 +384,20 @@
             <Button variant="secondary" onclick={handleClose} disabled={sending}
                 >{tString('errorReporter.dialog.cancel')}</Button
             >
-            <Button variant="primary" onclick={() => void handleSend()} disabled={!canSend}>
-                {#if isAmend}
-                    {sending ? tString('errorReporter.amend.submitting') : tString('errorReporter.amend.submit')}
-                {:else}
-                    {sending ? tString('errorReporter.dialog.sending') : tString('errorReporter.dialog.send')}
-                {/if}
-            </Button>
+            {#if reportsOff}
+                <!-- Saving needs the previewed bundle's id, so the file holds the report the person saw. -->
+                <Button variant="primary" onclick={() => void handleSaveToDisk()} disabled={preview === null}>
+                    {tString('errorReporter.dialog.saveToDiskManaged')}
+                </Button>
+            {:else}
+                <Button variant="primary" onclick={() => void handleSend()} disabled={!canSend}>
+                    {#if isAmend}
+                        {sending ? tString('errorReporter.amend.submitting') : tString('errorReporter.amend.submit')}
+                    {:else}
+                        {sending ? tString('errorReporter.dialog.sending') : tString('errorReporter.dialog.send')}
+                    {/if}
+                </Button>
+            {/if}
         </div>
     </div>
     {/if}

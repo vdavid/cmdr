@@ -12,7 +12,7 @@ satisfies the live-apply rule below.
 - `mod.rs`: re-exports `load_settings` from `loader`.
 - `loader.rs`: `Settings` struct + `load_settings` (reads `settings.json`, falls back to `Default`); the `RestrictedWindowSettings`
   snapshot; the early-load helpers.
-- `ai_gates.rs`: switches the AI gates read fresh (`askCmdr.enabled`, held-"no" markers).
+- `ai_gates.rs`: switches the AI gates read fresh (`askCmdr.enabled` via the policy `overlay`, held-"no" markers).
 - `loader_tests.rs`: `loader`'s own tests, in a sibling file wired in with `#[path]` so they still reach its private
   parse helpers.
 
@@ -27,12 +27,10 @@ satisfies the live-apply rule below.
 - **One-way read only.** This module never writes; all writes go through the frontend's settings store. The restricted
   window's write path (`persist_restricted_window_setting`) forwards to the main window's store rather than writing from
   Rust, keeping this invariant intact.
-- **Dot-notation keys are literal, parsed manually.** `tauri-plugin-store` writes flat JSON with literal dot-notation
-  string keys (`{ "listing.showHiddenFiles": true, "developer.mcpEnabled": true }`): the dot is part of the key name, not a
-  nesting separator. `parse_settings` reads them manually because serde can't express dot-notation field names as struct
-  fields. Don't switch to serde auto-derivation.
-- **Direct file reading is intentional.** Multiple backend systems (MCP server, hidden-files filter, indexing, crash
-  reporter) need their config before any frontend window loads. Reading the file directly avoids a boot race.
+- **Dot-notation keys are literal, parsed manually** (`"listing.showHiddenFiles"` is one flat key). Serde can't express
+  them as struct fields, so `parse_settings` reads them by hand. Don't switch to serde auto-derivation.
+- **Direct file reading is intentional**: the MCP server, hidden-files filter, indexing, and crash reporter need their
+  config before any frontend window loads.
 - **`full_disk_access_choice` gates every launch-time job that could stack a TCC popup** (the recursive `/` scan, the
   Downloads watcher, `NSWorkspace` icon calls): `crate::fda_gate::is_fda_pending` holds the gate closed unless the OS
   grants FDA or the choice is `Deny`. ❌ Don't read the raw key; `read_fda_choice` also reports the
@@ -40,22 +38,11 @@ satisfies the live-apply rule below.
   `apps/desktop/src/lib/onboarding/DETAILS.md` § "FDA gate".
 - **`developer.mcpPort = 0` means "kernel picks an ephemeral port"** (the post-instance-isolation default); non-zero
   pins. See `mcp/DETAILS.md` § Server lifecycle and `docs/tooling/instance-isolation.md`.
+- **`Settings` holds STORED values, not the organization's effective ones.** A gate a managed lock can close reads
+  `settings.json` through `managed_policy::overlay` (`ai_gates.rs`, `analytics::send_permission`), ❌ never through
+  `load_settings`. Key catalog and gate list: `managed_policy/DETAILS.md`.
+- **The restricted-window snapshot is a typed allowlist**: a setting missing from `RestrictedWindowSettings` silently
+  reads as its registry default in the viewer and the Transfers queue. `DETAILS.md` § Restricted-window snapshot.
 
-## Restricted-window snapshot
-
-`load_restricted_window_settings` + `RestrictedWindowSettings` back the `get_restricted_window_settings` command (in
-`commands/settings.rs`): the typed read allowlist for windows without store capability (the viewer AND the Transfers
-queue). Reads `settings.json` fresh per call. A setting missing from the struct reads as its registry default in those
-windows, silently — which is how the queue rendered binary sizes while the copy dialog rendered SI, and how a pinned
-`appearance.language` reached every window except those two. Adding one is a four-place change; the frontend half is
-`apps/desktop/src/lib/settings/CLAUDE.md`.
-
-## Early-load helpers
-
-Two helpers in `loader.rs` read `settings.json` before the Tauri `AppHandle` is fully wired into `setup()`, used by the
-`logging::dispatch` initializer: `early_load_max_log_storage_mb()` (`Option<u64>`, cap in MB, 0 = disabled) and
-`early_load_verbose_logging()` (`Option<bool>`, sets the initial stdout threshold to Debug if true and `RUST_LOG` is
-unset). Both resolve the production default via `dirs::data_dir()` + a hard-coded bundle-id constant kept in sync with
-`tauri.conf.json` → `identifier`.
-
-The full `Settings` struct field list (every key, its source dot-path, and per-field notes) is in `DETAILS.md`.
+The full `Settings` field list, the restricted-window snapshot, the early-load helpers, and the file format:
+`DETAILS.md`. Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

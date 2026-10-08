@@ -8,7 +8,6 @@
  * `FilePane.svelte` read the props and apply the answer.
  */
 
-import { isMtpVolumeId } from '$lib/mtp'
 import type { UnreachableState } from '../tabs/tab-types'
 
 export interface InitialPathSyncInput {
@@ -16,12 +15,8 @@ export interface InitialPathSyncInput {
   initialPath: string
   /** Where the pane actually is (user navigation moves this without the prop). */
   currentPath: string
-  /** The volume id from the previous run of this decision. */
-  prevVolumeId: string
-  volumeId: string
   isSearchResultsView: boolean
   isNetworkView: boolean
-  isMtpDeviceOnly: boolean
   /**
    * Whether `device-connect.svelte.ts` is holding this pane while it opens a
    * phone. ❗ A load here would dial the SAME phone a second time through
@@ -31,42 +26,23 @@ export interface InitialPathSyncInput {
 }
 
 export type InitialPathAction =
-  /** An MTP device finished connecting; load the path on the now-browsable volume. */
-  | { kind: 'mtp-connected'; path: string }
   /** Commit the path and load its listing. */
   | { kind: 'load'; path: string }
   /** Commit the path only: this pane's data doesn't come from a listing (yet). */
   | { kind: 'sync-path'; path: string }
   | { kind: 'none' }
 
-/**
- * One decision for two overlapping triggers (persistence restore and MTP
- * connection completion), so they can't both fire a `loadDirectory` for the same
- * change. The MTP arm takes priority: the device just became browsable, so it
- * loads even at an unchanged path.
- */
+/** What a new `initialPath` prop means for the pane: load it, only commit it, or nothing. */
 export function resolveInitialPathAction(input: InitialPathSyncInput): InitialPathAction {
   const { initialPath, currentPath } = input
 
-  // Case 1: MTP device just connected (device-only → storage-specific).
-  const wasDeviceOnly = isMtpVolumeId(input.prevVolumeId) && !input.prevVolumeId.includes(':')
-  const isNowConnected = isMtpVolumeId(input.volumeId) && input.volumeId.includes(':')
-  if (wasDeviceOnly && isNowConnected) {
-    return { kind: 'mtp-connected', path: initialPath }
-  }
-
   if (initialPath === currentPath) return { kind: 'none' }
 
-  // Case 2: search-results panes get their data from the snapshot store, not a
-  // real listing, so we sync `currentPath` without a backend `list_directory`.
+  // Search-results panes get their data from the snapshot store, not a real
+  // listing, so we sync `currentPath` without a backend `list_directory`.
   if (input.isSearchResultsView) return { kind: 'sync-path', path: initialPath }
 
-  // Case 3: device-only MTP syncs the path only; the auto-connect flow handles
-  // the transition to a browsable storage volume.
-  if (input.isMtpDeviceOnly) return { kind: 'sync-path', path: initialPath }
-
-  // Case 4: a phone being opened over ADB. Same shape as case 3, but the volume
-  // id does NOT change on connect, so what resumes the load is the connect
+  // A phone being opened over ADB: what resumes the load is the connect
   // factory's own `onConnected`, at the path this arm commits.
   if (input.deviceIsConnecting) return { kind: 'sync-path', path: initialPath }
 

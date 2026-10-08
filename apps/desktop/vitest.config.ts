@@ -16,6 +16,8 @@ export default defineConfig({
     __CMDR_WORKTREE_LABEL__: '""',
   },
   test: {
+    // Keep the full suite usable while other sessions build on the same host.
+    maxWorkers: process.env.CMDR_TEST_WORKERS ? Number(process.env.CMDR_TEST_WORKERS) : undefined,
     include: [
       'src/**/*.test.ts',
       'scripts/**/*.test.{js,ts}',

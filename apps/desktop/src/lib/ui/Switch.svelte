@@ -24,6 +24,8 @@
         id?: string
         /** Accessible name when there's no visible `children` label. */
         ariaLabel?: string
+        /** Id of an element that explains the control, for example why it's disabled. */
+        ariaDescribedBy?: string
         /**
          * Annotate the parameter at inline call sites (`(next: boolean) => …`): svelte2tsx
          * doesn't contextually type an arrow passed to a component prop, so an unannotated
@@ -41,6 +43,7 @@
         disabled = false,
         id,
         ariaLabel,
+        ariaDescribedBy,
         onCheckedChange,
         children,
         ...dataAttributes
@@ -71,7 +74,7 @@
          doesn't exist when the caller passes no `children` — a dangling reference
          leaves the control with NO accessible name. `aria-labelledby` still wins when
          a visible label IS rendered, so passing both is safe. -->
-    <Switch.HiddenInput role="switch" aria-label={ariaLabel} {...dataAttributes} />
+    <Switch.HiddenInput role="switch" aria-label={ariaLabel} aria-describedby={ariaDescribedBy} {...dataAttributes} />
 </Switch.Root>
 
 <style>

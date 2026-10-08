@@ -114,10 +114,8 @@ async fn delete_honors_the_shared_non_recursion_contract() {
     device.teardown(test_connection_manager()).await;
 }
 
-/// `MtpDeleteScope::Tree` still removes a whole subtree. Pins the one
-/// intentional `Tree` caller (`commands::mtp::delete_mtp_object`) so the split
-/// stays a decision rather than an accident: if this goes red, someone narrowed
-/// the recursive entry point and the IPC command silently stopped working.
+/// `MtpDeleteScope::Tree` still removes a whole subtree, so the split stays a
+/// decision rather than an accident.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn tree_scope_still_removes_a_whole_subtree() {
     let _guard = device_lock().await;

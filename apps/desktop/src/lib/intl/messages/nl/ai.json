@@ -227,6 +227,14 @@
   "@ai.translateError.unknownProvider.body": {
     "sourceHash": "7042a75"
   },
+  "ai.translateError.managed.title": "Je organisatie beheert AI in Cmdr",
+  "@ai.translateError.managed.title": {
+    "sourceHash": "12f8233"
+  },
+  "ai.translateError.managed.body": "Je IT-team kan je vertellen welke AI-services je mag gebruiken.",
+  "@ai.translateError.managed.body": {
+    "sourceHash": "cb7e811"
+  },
   "ai.cloud.serviceAria": "Cloud-AI-service",
   "@ai.cloud.serviceAria": {
     "sourceHash": "7dec1e0"
@@ -462,5 +470,33 @@
   "ai.secretError.genericBody": "Controleer of de sleutelhanger van je systeem beschikbaar is en probeer het opnieuw. Blijft het gebeuren, herstart dan de app.",
   "@ai.secretError.genericBody": {
     "sourceHash": "2ee417d"
+  },
+  "ai.secretError.removeTitle": "Je bewaarde API-sleutel kon niet worden verwijderd.",
+  "@ai.secretError.removeTitle": {
+    "sourceHash": "5986628"
+  },
+  "ai.secretError.removeKeychainBody": "Open Sleutelhangertoegang, zoek het onderdeel ‘Cmdr’ en verwijder het daar.",
+  "@ai.secretError.removeKeychainBody": {
+    "sourceHash": "4e3abe7"
+  },
+  "ai.managed.aiOff": "Je organisatie heeft AI in Cmdr uitgezet.",
+  "@ai.managed.aiOff": {
+    "sourceHash": "25b7aef"
+  },
+  "ai.managed.cloudAiOff": "Je organisatie staat alleen lokale AI toe.",
+  "@ai.managed.cloudAiOff": {
+    "sourceHash": "894c53d"
+  },
+  "ai.managed.hostNotAllowed": "Je organisatie staat deze AI-service niet toe. Je IT-team kan je vertellen welke je mag gebruiken.",
+  "@ai.managed.hostNotAllowed": {
+    "sourceHash": "845a19f"
+  },
+  "ai.managed.localOnlyUnsupported": "Je organisatie staat alleen lokale AI toe, en deze Mac kan die niet draaien.",
+  "@ai.managed.localOnlyUnsupported": {
+    "sourceHash": "b760ca4"
+  },
+  "ai.managed.serviceNotAllowed": "niet toegestaan door je organisatie",
+  "@ai.managed.serviceNotAllowed": {
+    "sourceHash": "026e7e3"
   }
 }

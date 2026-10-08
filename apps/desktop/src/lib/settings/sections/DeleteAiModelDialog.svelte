@@ -12,8 +12,8 @@
     import { t, tString } from '$lib/intl/messages.svelte'
 
     interface Props {
-        /** The installed model's size, already formatted. Falls back when the status hasn't loaded. */
-        modelSizeFormatted: string | null
+        /** The installed model's size, already formatted (`formatByteSize`). */
+        modelSizeFormatted: string
         /** True while the uninstall is running. */
         isDeleting: boolean
         onConfirm: () => void
@@ -47,7 +47,7 @@
         </div>
     {:else}
         <p class="confirm-message">
-            {t('ai.local.deleteConfirmMessage', { modelSize: modelSizeFormatted ?? '2.0 GB' })}
+            {t('ai.local.deleteConfirmMessage', { modelSize: modelSizeFormatted })}
         </p>
     {/if}
     {#snippet footer()}

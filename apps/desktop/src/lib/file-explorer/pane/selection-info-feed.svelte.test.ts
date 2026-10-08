@@ -104,6 +104,7 @@ describe('createSelectionInfoFeed', () => {
     let searchSnapshot = $state<SearchSnapshot | undefined>(opts.searchSnapshot)
     let selectedIndices = $state<number[]>(opts.selectedIndices ?? [])
     const syncMcp = vi.fn()
+    const onCursorRow = vi.fn()
     let feed!: SelectionInfoFeed
     dispose = $effect.root(() => {
       feed = createSelectionInfoFeed({
@@ -119,12 +120,14 @@ describe('createSelectionInfoFeed', () => {
         getSelectedIndices: () => selectedIndices,
         getSelectionSize: () => selectedIndices.length,
         syncMcp,
+        onCursorRow,
       })
     })
     flushSync()
     return {
       feed,
       syncMcp,
+      onCursorRow,
       setCursorIndex: (v: number) => {
         cursorIndex = v
         flushSync()
@@ -177,6 +180,41 @@ describe('createSelectionInfoFeed', () => {
       await feed.fetchEntry()
       expect(ipc.getFileAt).not.toHaveBeenCalled()
       expect(feed.entry).toBeNull()
+    })
+
+    it('reports the row it read, with the index it read it at', async () => {
+      ipc.getFileAt.mockResolvedValue(fileEntry('b.txt'))
+      const { feed, onCursorRow } = create({ hasParent: true, cursorIndex: 3 })
+      await feed.fetchEntry()
+      expect(onCursorRow).toHaveBeenCalledWith(3, '/dir/b.txt')
+    })
+
+    it('reports nothing when the cursor moved while the row was being read', async () => {
+      let resolveRead!: (entry: unknown) => void
+      ipc.getFileAt.mockReturnValue(new Promise((resolve) => (resolveRead = resolve)))
+      const { feed, onCursorRow, setCursorIndex } = create({ cursorIndex: 3 })
+      const read = feed.fetchEntry()
+      setCursorIndex(4)
+      resolveRead(fileEntry('d.txt'))
+      await read
+      expect(onCursorRow).not.toHaveBeenCalled()
+    })
+
+    it('reports nothing when the listing changed while the row was being read', async () => {
+      let resolveRead!: (entry: unknown) => void
+      ipc.getFileAt.mockReturnValue(new Promise((resolve) => (resolveRead = resolve)))
+      const { feed, onCursorRow, setListingId } = create({ cursorIndex: 3 })
+      const read = feed.fetchEntry()
+      setListingId('listing-2')
+      resolveRead(fileEntry('d.txt'))
+      await read
+      expect(onCursorRow).not.toHaveBeenCalled()
+    })
+
+    it('reports no row for `..`, whose path is the parent folder', async () => {
+      const { feed, onCursorRow } = create({ hasParent: true, cursorIndex: 0, canonicalPath: canonical('/dir/sub') })
+      await feed.fetchEntry()
+      expect(onCursorRow).not.toHaveBeenCalled()
     })
 
     it('falls back to null when the fetch throws', async () => {
@@ -287,6 +325,20 @@ describe('createSelectionInfoFeed', () => {
       expect(created.feed.entry?.name).toBe('one.txt')
       expect(created.feed.entry?.path).toBe('/dir/one.txt')
       expect(created.feed.entry?.extendedMetadataLoaded).toBe(true)
+    })
+
+    it('reports each snapshot row the cursor lands on', () => {
+      const created = create({
+        isSearchResultsView: true,
+        listingId: '',
+        searchSnapshot: snapshot([
+          { name: 'one.txt', path: '/dir/one.txt' },
+          { name: 'two.txt', path: '/x/two.txt' },
+        ]),
+      })
+      expect(created.onCursorRow).toHaveBeenLastCalledWith(0, '/dir/one.txt')
+      created.setCursorIndex(1)
+      expect(created.onCursorRow).toHaveBeenLastCalledWith(1, '/x/two.txt')
     })
 
     it('follows the cursor across snapshot rows', () => {

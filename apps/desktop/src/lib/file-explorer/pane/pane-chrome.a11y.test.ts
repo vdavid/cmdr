@@ -132,10 +132,11 @@ describe('TypeToJumpIndicator a11y', () => {
 
     const el = target.querySelector('.type-to-jump-indicator')
     expect(el).not.toBeNull()
-    expect(el?.getAttribute('role')).toBe('status')
-    expect(el?.getAttribute('aria-live')).toBe('polite')
+    // The live region is the text inside the chip (the filter's × sits beside it).
+    const status = el?.querySelector('[role="status"]')
+    expect(status?.getAttribute('aria-live')).toBe('polite')
     // Accessible name surfaces the buffer so screen-reader users hear "Jump to fil".
-    expect(el?.getAttribute('aria-label')).toBe('Jump to fil')
+    expect(status?.getAttribute('aria-label')).toBe('Jump to fil')
     // Visible text still includes the buffer for sighted users.
     expect(el?.textContent).toContain('fil')
 
@@ -152,11 +153,12 @@ describe('TypeToJumpIndicator a11y', () => {
 
     const el = target.querySelector('.type-to-jump-indicator')
     expect(el).not.toBeNull()
-    expect(el?.getAttribute('role')).toBe('status')
+    const status = el?.querySelector('[role="status"]')
+    expect(status).not.toBeNull()
     // Critical: the live region must NOT be flipped to `aria-live="off"` when
     // the indicator shifts to stale, which would suppress the announcement
     // for the next keystroke. The component leaves it polite.
-    expect(el?.getAttribute('aria-live')).toBe('polite')
+    expect(status?.getAttribute('aria-live')).toBe('polite')
     expect(el?.classList.contains('is-stale')).toBe(true)
 
     await expectNoA11yViolations(target)

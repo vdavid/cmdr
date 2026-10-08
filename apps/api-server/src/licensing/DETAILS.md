@@ -11,29 +11,34 @@ Read this before any non-trivial work here: editing, planning, reorganizing, or 
 - **`manual-licenses.ts`**: `/admin/generate` and `/admin/revoke`, the licenses we hand out rather than sell.
 - **`admin-licenses.ts`**: `GET /admin/licenses` and `PUT /admin/licenses/:transactionId/note`, the dashboard's view of
   every license we've issued and the one write on it, plus the pure `classifyLedgerEntry`. § The licenses listing.
+- **`refunds.ts`**: the `adjustment.*` half of the webhook: records every refund, chargeback, and credit
+  (`license_adjustments`), decides which revoke (`classifyAdjustment`, pure), and lists them for the dashboard. §
+  Refunds.
 - **`license-backup.ts`**: the daily R2 snapshot of the ledger and the key store. § License backups.
 - **`license.ts`**: short-code and license-key generation, the `LicenseType` enum, `isPaddleTransactionId` /
   `generateManualTransactionId` (the id namespaces `/validate` dispatches on), and `generateShortId(prefix, len)` (also
   used for the `ERR-XXXXX` error-report ids).
 - **`license-issuance.ts`**: the D1 ledger (`license_issuance`) behind both kinds of license: claim, take-over, code
   storage, and delivery marking for a Paddle fulfillment; row writing, lookup, and revocation for a manual one; note
-  editing and the two reads (`listLedger`, capped, for the dashboard; `readWholeLedger`, uncapped, for the backup); plus
-  the pure `classifyIssuance` and `classifyManualLicense`.
+  editing and the two reads (`listLedger`, capped, for the dashboard; `readWholeLedger`, uncapped, for the backup);
+  refund revocation (`revokePaddleLicense`, `isPaddleLicenseRevoked`); plus the pure `classifyIssuance` and
+  `classifyManualLicense`.
 - **`paddle.ts`**: HMAC-SHA256 webhook verification and `constantTimeEqual` (the timing-safe compare every bearer-token
   check in the Worker uses).
 - **`paddle-api.ts`**: Paddle REST client (transaction / subscription / customer fetch, `getLicenseTypeFromPriceId`).
 - **`device-tracking.ts`**: device-set helpers — prune stale devices, alert threshold.
-- Tests: `license.test.ts`, `paddle.test.ts`, `license-issuance.test.ts` (the two pure classifiers),
-  `device-tracking.test.ts`, `webhook-paddle.test.ts` (first delivery, duplicate, retry after a failed email, concurrent
-  delivery, Resend rejection), `admin-licenses.test.ts` (the states, the orphan and missing-code reconciliation), and
-  two real-runtime suites that run the built Worker in workerd (`../../DETAILS.md` § Test runtimes):
-  `production-runtime.test.ts` (minting, manual validation, revocation) and `webhook-runtime.test.ts` (the purchase path
-  end to end, with Paddle and Resend stubbed at the socket).
+- Tests: `license.test.ts`, `paddle.test.ts`, `license-issuance.test.ts` (the two pure classifiers), `refunds.test.ts`
+  (`classifyAdjustment`), `device-tracking.test.ts`, `webhook-paddle.test.ts` (first delivery, duplicate, retry after a
+  failed email, concurrent delivery, Resend rejection), `admin-licenses.test.ts` (the states, the orphan and
+  missing-code reconciliation), and two real-runtime suites that run the built Worker in workerd (`../../DETAILS.md` §
+  Test runtimes): `production-runtime.test.ts` (minting, manual validation, revocation) and `webhook-runtime.test.ts`
+  (the purchase and refund paths end to end, with Paddle and Resend stubbed at the socket).
 
 ## Data flow
 
 ```
 Paddle webhook → HMAC verify (tries both live + sandbox secrets)
+  → transaction.completed with a `subscription_*` origin (renewal etc.) → 200 ignored, nothing issued
   → claim the transaction (D1 license_issuance, conditional INSERT; see Fulfillment below)
   → Paddle API: fetch customer details
   → per seat: generateLicenseKey() → generateShortCode() → KV.put(code, {fullKey, orgName})
@@ -41,16 +46,22 @@ Paddle webhook → HMAC verify (tries both live + sandbox secrets)
   → sendLicenseEmail() via Resend
   → mark the row delivered (emailed_at)
 
+Paddle adjustment webhook (refund, chargeback, credit) → same HMAC verify
+  → upsert the adjustment (D1 license_adjustments)
+  → approved full refund or approved chargeback: set revoked_at on the license_issuance row, delete its codes from KV
+
 App activation: POST /activate → KV.get(shortCode) → return fullKey
 
 Validation: POST /validate → dispatch on the transaction id's namespace
-  `txn_...` → Paddle API transactions + subscriptions
+  `txn_...` → ledger: revoked_at set (refunded) → HTTP 200 + invalid, Paddle never asked
+    → otherwise Paddle API transactions + subscriptions
     → HTTP 200 + ValidationResponse on success or invalid transaction (Paddle 404)
     → HTTP 502 + { error: "upstream_error" } if Paddle API unreachable or returns server error
     → if deviceId present: track device in KV (devices:{seatTransactionId}), log to Analytics Engine
     → if device count >= 6 and not recently alerted: send alert email to legal@getcmdr.com
   anything else → D1 license_issuance row where source = 'manual' (see Manual licenses below)
     → HTTP 200 + ValidationResponse, or HTTP 502 if the ledger read throws
+  then, on a 200 with a valid nonce: + signedAnswer (see Key formats)
 ```
 
 ## Key formats
@@ -58,7 +69,16 @@ Validation: POST /validate → dispatch on the transaction id's namespace
 - **Short code:** `CMDR-XXXX-XXXX-XXXX` using 31 unambiguous chars (excludes 0/O/1/I/L). Rejection sampling avoids
   modulo bias (max unbiased byte = `256 - (256 % 31)`).
 - **License key:** `base64(JSON payload).base64(Ed25519 signature)`. Payload: email, transactionId, issuedAt, type,
-  organizationName.
+  organizationName, shortCode, and `expiresAt` on a hand-issued dated license only (signed in so the app enforces the
+  date offline; a renewing Paddle subscription has no fixed date to sign). The license email carries this full key
+  beside the short code, so a buyer can activate without `/activate`.
+- **Signed validation answer:** when the app sends a `nonce` (32 lowercase hex, `isValidNonce`), a 200 from `/validate`
+  also carries `signedAnswer: { payload, signature }`. `payload` is base64 JSON (`transactionId`, `nonce`, `status`,
+  `type`, `organizationName`, `expiresAt`, `signedAt`); `signature` is the license key's Ed25519 signature over
+  `validationAnswerSignaturePrefix` + the payload bytes, so it never verifies as a license key. The app trusts nothing
+  else, so this is what makes a revocation authentic. Why, and what the app does with it:
+  `apps/desktop/src-tauri/src/licensing/DETAILS.md` § Signed validation answers. ❌ Never sign without a valid nonce:
+  that answer could be replayed. A 502 is never signed.
 - **License types:** `commercial_subscription` | `commercial_perpetual`.
 - **Short ids:** `generateShortId(prefix, len)` produces `ERR-A2345`-shaped ids from the same unambiguous alphabet
   (`23456789ABCDEFGHJKMNPQRSTUVWXYZ`), rejection-sampled. The error-report route consumes it (`../telemetry/`).
@@ -78,6 +98,8 @@ keeps those apart, on the D1 table `license_issuance` (migration `0012`), one ro
 
 A delivery that loses the claim reads the row and classifies it (pure `classifyIssuance`, unit-tested):
 
+- `revoked` (`revoked_at` set: refunded or charged back) → 200 `revoked`, nothing minted or mailed. Checked first, so a
+  refund that lands while a stuck fulfillment is still being retried wins (§ Refunds).
 - `delivered` (`emailed_at` set) → 200 `already_processed`, forever.
 - `in_flight` (claimed under `issuanceStaleAfterMs`, 5 min) → **503**, so Paddle redelivers instead of us running a
   second issuance beside the first. Live retries are 60 attempts over 3 days (20 in the first hour), so a transient 503
@@ -93,6 +115,15 @@ one wins and the other gets the 503.
 late redelivery or a replayed webhook mints a second set of usable perpetual licenses. The table also doubles as the
 support/audit trail (who got which codes, when).
 
+**Only a purchase fulfills, never a subscription's follow-up.** Paddle completes a NEW transaction (new `txn_` id) for
+every renewal, one-off charge, plan or seat change, and payment-method update, with `origin` set to
+`subscription_recurring` / `subscription_charge` / `subscription_update` / `subscription_payment_method_change`. The
+buyer's key names the subscription's first transaction and keeps validating through the subscription's status, so those
+are acknowledged and ignored before the claim (`isSubscriptionFollowUp`, `licensing.ts`); before this, every renewal
+mailed a fresh set of keys. A missing or unknown origin still fulfills: a paying buyer without a key is the worse miss.
+Gotcha: a seat INCREASE on a subscription is a `subscription_update` too, so extra seats are not issued automatically;
+mint them by hand until that's built.
+
 **Decision, why not the Paddle `event_id` as the key:** one purchase must yield one set of licenses however many events
 carry it, so the transaction id is the unit of fulfillment. `event_id` is stored on the row for debugging only.
 
@@ -101,12 +132,19 @@ carry it, so the transaction id is the unit of fulfillment. `event_id` is stored
 consequence is here: an unchecked `await` marks the purchase delivered and stops Paddle retrying, so the buyer pays and
 gets nothing.
 
-**Known gap: no webhook timestamp tolerance.** `verifyPaddleWebhook` signs over `ts:body` but doesn't reject an old
-`ts`, so a captured webhook stays replayable forever. The fulfillment row is what actually blocks the damage (a replay
-finds `emailed_at` and does nothing). Paddle recommends a five-second window, but their docs don't say whether a retry
-is re-signed with a fresh `ts` or replays the original signature, and rejecting legitimate retries would lose a
-delivery, which is worse than the replay. So: log the observed `now - ts` on live deliveries first (including one forced
-retry), then enable rejection with a tolerance the data supports.
+**Decision: a webhook's `ts` must sit within `PADDLE_TIMESTAMP_TOLERANCE_SECONDS` (300 s) of now, either way.** The
+timestamp is inside the HMAC, so a captured webhook can't be freshened. Paddle defines `ts` as when the webhook was
+SENT, and its SDKs default to a five-second window on every delivery of a three-day retry schedule, which only works if
+each retry is re-signed (https://developer.paddle.com/webhooks/about/signature-verification, checked 2026-10-05). Five
+minutes leaves room for clock skew and a slow hop. The fulfillment row still backs it: a replay inside the window finds
+`emailed_at` and does nothing. If a live delivery is ever refused for its age, Paddle retries it, and the dashboard's
+notification log shows it.
+
+**`/activate` is rate-limited per IP** (`ACTIVATE_LIMITER`, 10/min): a short code is all it takes to fetch a full key.
+**`/validate` is too, loosely** (`VALIDATE_LIMITER`, 60/min): each request costs a Paddle call, but a company's Macs
+share one NAT address. A 429 is safe: the app reads any non-502 failure like a network error, keeps its cached status,
+and retries after its cooldown (`apps/desktop/src-tauri/src/licensing/validation_client.rs`). Both limits and their
+bindings: `../../DETAILS.md` § Configuration; pinned by `rate-limits.test.ts`.
 
 ## Manual licenses
 
@@ -151,6 +189,9 @@ when you're pasting it into a reply yourself.
   license nobody bought. ❌ Never let the subscription wording reach a dated license: a prospect forwards this mail to
   their IT department, and "will auto-renew" on an evaluation that simply stops is the sentence that ends a deal. Pinned
   by `../email/license.test.ts`.
+- **Every license email carries each seat's full key** ("Offline key") under its short code, and `/admin/generate`
+  returns `fullKey` (the mint script prints it). A Paddle resend reads the keys back from KV (`readStoredLicenses`); a
+  code missing there still goes out alone rather than holding the email back.
 
 **Revoking** (`/admin/revoke`) sets `revoked_at` and deletes the short codes from KV:
 
@@ -158,10 +199,12 @@ when you're pasting it into a reply yourself.
 node apps/api-server/scripts/revoke-license.js --code CMDR-XXXX-XXXX-XXXX
 ```
 
-The code stops activating immediately; machines already running on it fall back to Personal at their next revalidation
-(within seven days). Reinstating means minting a new license, there's no un-revoke. It takes `--transaction-id` too, and
-❌ refuses a `txn_` id rather than pretending: `/validate` resolves those against Paddle and never reads `revoked_at`,
-so cancel or refund a real purchase in Paddle instead.
+The code stops activating immediately; machines already running on it fall back to Personal at their next successful
+check (within seven days when online). The full key from the email still verifies offline, so a Mac that never reaches
+the server keeps the license: the app drops a license only on a signed `invalid`, never on silence. Reinstating means
+minting a new license, there's no un-revoke. It takes `--transaction-id` too, and ❌ refuses a `txn_` id: refund or
+cancel a real purchase in Paddle instead, so Paddle's books and our ledger never disagree. A full refund revokes the
+license on its own (§ Refunds).
 
 **Both scripts read `ADMIN_API_TOKEN`** from sops (`secret CMDR_ADMIN_API_TOKEN`) or the env var of the same name, never
 from an argument, so the credential stays out of shell history.
@@ -179,7 +222,7 @@ to camelCase, plus a computed `state`.
 
 `classifyLedgerEntry` (pure, unit-tested) decides the state, in this order:
 
-- `revoked`: `revokedAt` set. Its codes are gone from KV by design.
+- `revoked`: `revokedAt` set, by `/admin/revoke` or by a refund (§ Refunds). Its codes are gone from KV by design.
 - `expired`: past `expiresAt` (or an unreadable one, the same call `classifyManualLicense` makes, so the page and the
   app never disagree in front of the same person). Only a hand-issued license carries an expiry.
 - `unfinished`: claimed, never minted. A delivery that died, or one in flight this second.
@@ -242,8 +285,8 @@ snapshot therefore holds BOTH halves and is restorable on its own, with no signi
 A restore writes each `keys` entry back under its code and each `licenses` row back into `license_issuance`. There is no
 restore script: doing it by hand from a known-good day is the point, and a script would be the more dangerous half.
 
-- **The prefix is load-bearing.** `backups/` sits outside `error-reports/`, which the eviction sweep and both size
-  watermarks list exclusively, so nothing here is swept or counted against them.
+- **The prefix is load-bearing.** `backups/` sits outside `error-reports/`, which the eviction sweep, both size
+  watermarks, and the bucket's 90-day lifecycle rule are scoped to, so nothing here is swept, counted, or expired.
 - **Append-only, deliberately.** Nothing prunes these; each day is a few kilobytes. Add a rule when there are enough
   objects for one to be worth writing.
 - A second run on the same day overwrites that day's object, so a retried tick can't leave two versions of one day.
@@ -261,6 +304,51 @@ check on mismatch.
 **Price ID → license type mapping:** `getLicenseTypeFromPriceId()` (`paddle-api.ts`) maps Paddle price IDs (from
 `PRICE_ID_*` env vars) to license types. Unknown price IDs fall back to `commercial_subscription` for backwards
 compatibility.
+
+## Refunds
+
+**Why a webhook:** a refund in Paddle is an adjustment that leaves the transaction itself `completed`, so
+`getSubscriptionStatus` keeps answering `active` for a refunded one-time purchase. Only our own record can say
+otherwise. `refunds.ts` handles `adjustment.created` and `adjustment.updated` on the same `/webhook/paddle` route,
+behind the same HMAC check and 300 s replay window (§ Fulfillment).
+
+**How it reaches the Mac:** the webhook sets `revoked_at` on the purchase's `license_issuance` row (and deletes its
+codes from KV, so they stop activating). The `txn_` path of `/validate` reads that column BEFORE asking Paddle, strips
+the seat suffix first so every seat of the purchase goes together, and answers a signed `invalid`. That's the one answer
+the app drops a perpetual license on (`apps/desktop/src-tauri/src/licensing/DETAILS.md` § Signed validation answers),
+within its seven-day check. A ledger read that throws answers 502, like a Paddle outage. The ledger only ever takes a
+Paddle license AWAY: whether one is active, expired, or which type it is still comes from Paddle.
+
+**What revokes** (pure `classifyAdjustment`, unit-tested):
+
+- **Approved full refund: revokes.** `type: full`, or (with no `type`, which Paddle's schema allows) every line item
+  `full`. Pending refunds wait: most live refunds need Paddle's approval, which arrives as `adjustment.updated`. A
+  rejected one never moved money.
+- **Partial refund: records only.** Decision: in practice it's a goodwill amount or a price correction, and which seat
+  of a multi-seat purchase an amount stands for is unknowable. A human who reads it as "two of five seats returned" has
+  no per-seat revoke today; that'd be new work.
+- **Approved chargeback, full or partial: revokes.** Decision: the buyer took the money back through their bank instead
+  of asking, which isn't the goodwill case.
+- **`chargeback_warning`, credits, and every `_reverse`: record only.** A warning moves no money yet. A
+  `chargeback_reverse` (Paddle won the dispute) does NOT reinstate: revocation is one-way everywhere, reinstating means
+  minting a new license by hand. Paddle then marks the original chargeback `reversed`, so the listing shows it with
+  `revokes: false` beside a revoked license, which is the cue for that human.
+
+**Idempotent by construction:** the adjustment is upserted on its `adj_` id and only moves forward in Paddle's own
+`updated_at` order (retries are independent, so `created` can land after `updated`); `revokePaddleLicense` keeps the
+first `revoked_at`; the KV deletes run on every delivery, so a retry finishes a delivery that died between the two.
+
+**A refund can beat its own fulfillment.** If the purchase has no ledger row yet (its `transaction.completed` still
+being retried), the revocation inserts one, born revoked. The late fulfillment then classifies it `revoked` and mails
+nothing. An adjustment that doesn't revoke never creates a row.
+
+**Admin-visible record:** `license_adjustments` (migration `0021`) keeps every adjustment at its latest status, with
+Paddle's reason and amount. `GET /admin/licenses` returns each beside its license (`adjustments`, with a computed
+`revokes`), plus `unmatchedAdjustments` for transactions no row describes (a pre-ledger purchase). Paddle's dashboard
+stays the source for the money itself.
+
+**Paddle setup:** both notification destinations (live and sandbox) must subscribe to `adjustment.created` and
+`adjustment.updated` next to `transaction.completed`. Without them nothing arrives and nothing fails.
 
 **Validation error granularity:** `paddle-api.ts` throws `PaddleApiError` on network/5xx errors and returns `null` on
 404 (transaction not found). That's what lets `/validate` answer 200-invalid versus 502-upstream, and the desktop app

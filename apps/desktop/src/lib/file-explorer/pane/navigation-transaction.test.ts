@@ -79,6 +79,8 @@ vi.mock('$lib/tauri-commands', async (importOriginal) => {
     pathExistsChecked: vi.fn().mockResolvedValue({ data: true, timedOut: false }),
     listDirectoryStart: listDirectoryStartMock,
     listDirectoryEnd: vi.fn().mockResolvedValue(undefined),
+    onListingGone: vi.fn(() => () => {}),
+    keepListingsAlive: vi.fn().mockResolvedValue([]),
     cancelListing: vi.fn().mockResolvedValue(undefined),
     findFileIndex: vi.fn().mockResolvedValue(null),
     findFirstFuzzyMatch: vi.fn().mockResolvedValue(null),
@@ -90,7 +92,9 @@ vi.mock('$lib/tauri-commands', async (importOriginal) => {
     getPathsAtIndices: vi.fn().mockResolvedValue([]),
     getSyncStatus: vi.fn().mockResolvedValue({ data: {}, timedOut: false }),
     getTotalCount: vi.fn().mockResolvedValue(0),
-    setListingIncludeHidden: vi.fn().mockResolvedValue(undefined),
+    setListingIncludeHidden: vi
+      .fn()
+      .mockResolvedValue({ sequence: 0, totalCount: 0, newCursorIndex: null, newSelectedIndices: null }),
     refreshListingIndexSizes: vi.fn().mockResolvedValue(undefined),
     openFile: vi.fn().mockResolvedValue(undefined),
     getIcons: vi.fn().mockResolvedValue({ data: {}, timedOut: false }),
@@ -131,7 +135,6 @@ vi.mock('$lib/tauri-commands', async (importOriginal) => {
     setServersViewShown: vi.fn().mockResolvedValue(undefined),
     getNetworkDiscoveryState: vi.fn().mockResolvedValue('idle'),
     resolveNetworkHost: vi.fn().mockResolvedValue(null),
-    listMtpDevices: vi.fn().mockResolvedValue([]),
     onMtpDeviceConnected: vi.fn().mockResolvedValue(() => {}),
     onMtpDeviceDisconnected: vi.fn().mockResolvedValue(() => {}),
     onVolumeSpaceChanged: vi.fn().mockResolvedValue(() => {}),

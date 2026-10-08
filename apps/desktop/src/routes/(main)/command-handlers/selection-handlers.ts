@@ -41,6 +41,18 @@ export const selectionHandlers = {
     explorerRef?.handleSelectionAction({ action: 'selectSameKind' })
   },
 
+  'selection.compareDirectories': async ({ explorerRef }) => {
+    await explorerRef?.compareDirectories('newerAndMissing')
+  },
+
+  'selection.compareDirectoriesMissing': async ({ explorerRef }) => {
+    await explorerRef?.compareDirectories('missing')
+  },
+
+  'selection.compareDirectoriesSize': async ({ explorerRef }) => {
+    await explorerRef?.compareDirectories('sizeAndMissing')
+  },
+
   'selection.mcpSelect': async ({ explorerRef, dispatchArgs }) => {
     // MCP `select` tool: range/all selection on a SPECIFIC pane with a typed
     // mode (`replace`/`add`/`subtract`). A round-trip — AWAIT so the adapter's

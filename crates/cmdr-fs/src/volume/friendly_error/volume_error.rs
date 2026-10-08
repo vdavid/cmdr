@@ -90,7 +90,13 @@ pub fn listing_error_from_volume_error(err: &VolumeError, path: &Path) -> Listin
             // ruled out, a denial on a mounted share came from the file server, and
             // sending the user to System Settings would have them hunt for a permission
             // they already hold. Everything else is ordinary filesystem permissions.
-            if crate::tcc_paths::tcc_denial_is_plausible(path) {
+            // An S3 path (its own scheme, `server_of_path`) never touches TCC or a
+            // mount: the refusal is the account's, keys or a paused account alike.
+            if crate::volume::server_of_path(&path_display)
+                .is_some_and(|server| server.kind == crate::volume::BackendKind::S3)
+            {
+                kinds::object_store_refused(&path_display, raw)
+            } else if crate::tcc_paths::tcc_denial_is_plausible(path) {
                 kinds::tcc_restricted(&path_display, raw)
             } else if crate::tcc_paths::is_network_volume_path(path) {
                 kinds::remote_permission_denied(&path_display, raw)
@@ -110,14 +116,27 @@ pub fn listing_error_from_volume_error(err: &VolumeError, path: &Path) -> Listin
         VolumeError::InvalidName(_) => kinds::invalid_name(&path_display, raw),
         VolumeError::DeletePending(_) => kinds::delete_pending(&path_display, raw),
         VolumeError::AmbiguousName(_) => kinds::ambiguous_name(&path_display, raw),
+        VolumeError::ColdStorage(_) => kinds::cold_storage(&path_display, raw),
         // Write-only error (the MTP upload path's stale-handle signal); it never
         // reaches the listing pipeline. Mapped defensively to a not-found on the
         // path actually being listed (never a source path), so the match stays
         // exhaustive without inventing a listing reason for a write condition.
         VolumeError::StaleDestinationHandle(_) => kinds::not_found(&path_display, raw),
+        // Copy-only too (a server-side copy's source changed under it); mapped
+        // defensively to the generic serious I/O reason.
+        VolumeError::SourceChanged(_) => kinds::io_serious(&path_display, &raw, raw.clone()),
         VolumeError::IsADirectory(_) => ListingError {
             category: ErrorCategory::NeedsAction,
             reason: ListingErrorReason::IsADirectory { path: path_display },
+            provider: None,
+            action_kind: None,
+            retry_hint: false,
+            raw_detail: raw,
+        },
+        // The same fact `ENOTDIR` states, already typed: no second reason needed.
+        VolumeError::NotADirectory(_) => ListingError {
+            category: ErrorCategory::NeedsAction,
+            reason: ListingErrorReason::NotAFolder { path: path_display },
             provider: None,
             action_kind: None,
             retry_hint: false,

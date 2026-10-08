@@ -76,27 +76,30 @@ func RunClippy(ctx *CheckContext) (CheckResult, error) {
 		}
 	}
 
-	// Try to extract "Compiling X crates" from output
-	re := regexp.MustCompile(`Compiling (\d+) crates?`)
-	matches := re.FindStringSubmatch(output)
-	if len(matches) > 1 {
-		count, _ := strconv.Atoi(matches[1])
-		result := Success(fmt.Sprintf("Checked %d %s, no warnings", count, Pluralize(count, "crate", "crates")))
-		result.Total = count
-		return result, nil
-	}
+	return clippySuccess(output, ""), nil
+}
 
-	// Fallback: count "Checking" lines
-	re2 := regexp.MustCompile(`(?m)^\s*Checking`)
-	checkingMatches := re2.FindAllString(output, -1)
-	if len(checkingMatches) > 0 {
-		count := len(checkingMatches)
-		result := Success(fmt.Sprintf("Checked %d %s, no warnings", count, Pluralize(count, "crate", "crates")))
-		result.Total = count
-		return result, nil
-	}
+var (
+	clippyCompilingCountRE = regexp.MustCompile(`Compiling (\d+) crates?`)
+	clippyCheckingLineRE   = regexp.MustCompile(`(?m)^\s*Checking`)
+)
 
-	return Success("No warnings"), nil
+// clippySuccess turns a clean clippy run's output into its result, counting the crates it
+// checked: cargo's "Compiling X crates" summary when it printed one, else its `Checking`
+// lines. `where` qualifies the message (" on Linux") for a lane that isn't the host's.
+func clippySuccess(output, where string) CheckResult {
+	count := 0
+	if matches := clippyCompilingCountRE.FindStringSubmatch(output); len(matches) > 1 {
+		count, _ = strconv.Atoi(matches[1])
+	} else {
+		count = len(clippyCheckingLineRE.FindAllString(output, -1))
+	}
+	if count == 0 {
+		return Success("No warnings" + where)
+	}
+	result := Success(fmt.Sprintf("Checked %d %s%s, no warnings", count, Pluralize(count, "crate", "crates"), where))
+	result.Total = count
+	return result
 }
 
 // touchWorkspaceCrateRoots bumps the mtime of every member's crate-root source, so

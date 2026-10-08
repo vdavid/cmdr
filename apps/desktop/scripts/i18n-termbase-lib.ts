@@ -100,6 +100,62 @@ export function readJsonIfPresent(path: string): unknown {
   }
 }
 
+/**
+ * Every key a JSON object names more than once, anywhere in the file. `JSON.parse` keeps the
+ * last one and drops the rest without a word, so a hand-added entry beside an existing one of
+ * the same name silently erases one of them (a second `"storage"` once hid in three termbases).
+ * Walks the raw text; assumes it parses, which `readJsonIfPresent` checks separately.
+ */
+export function duplicateKeyErrors(text: string, label: string): string[] {
+  interface Frame {
+    keys: Set<string> | undefined // `undefined` for an array
+    path: string
+    expectingKey: boolean
+    lastKey: string
+  }
+  const errors: string[] = []
+  const stack: Frame[] = []
+  const where = (path: string) => (path === '' ? 'at the top level' : `in "${path}"`)
+  const childPath = (frame: Frame | undefined) => {
+    if (!frame) return ''
+    const step = frame.keys ? frame.lastKey : '[]'
+    return frame.path === '' ? step : `${frame.path}.${step}`
+  }
+
+  const takeKey = (frame: Frame, key: string) => {
+    if (frame.keys?.has(key)) {
+      errors.push(`${label}: "${key}" appears twice ${where(frame.path)}; JSON keeps only the last one, so merge them`)
+    }
+    frame.keys?.add(key)
+    frame.lastKey = key
+    frame.expectingKey = false
+  }
+
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i]
+    const top = stack.at(-1)
+    if (char === '"') {
+      const end = closingQuoteIndex(text, i)
+      if (top?.keys && top.expectingKey) takeKey(top, JSON.parse(text.slice(i, end + 1)) as string)
+      i = end
+    } else if (char === '{' || char === '[') {
+      stack.push({ keys: char === '{' ? new Set() : undefined, path: childPath(top), expectingKey: true, lastKey: '' })
+    } else if (char === '}' || char === ']') {
+      stack.pop()
+    } else if (char === ',' && top) {
+      top.expectingKey = true
+    }
+  }
+  return errors
+}
+
+/** The index of the quote closing the JSON string that opens at `start`, skipping escapes. */
+function closingQuoteIndex(text: string, start: number): number {
+  let end = start + 1
+  while (end < text.length && text[end] !== '"') end += text[end] === '\\' ? 2 : 1
+  return end
+}
+
 /** Reads a text file, or `undefined` when it doesn't exist. */
 export function readTextIfPresent(path: string): string | undefined {
   return existsSync(path) ? readFileSync(path, 'utf8') : undefined
@@ -234,10 +290,13 @@ export function englishMatchText(key: string, value: string): string {
  * concept like "name" or "folder" would otherwise match them dozens of times.
  */
 function stripRawIdentifiers(value: string): string {
-  return value
-    .replace(/\{[^{}]*\}/g, '')
-    .replace(/<\/?[A-Za-z][\w-]*>/g, '')
-    .replace(/\]\([^)\s]*\)/g, ']')
+  let text = value.replace(/\{[^{}]*\}/g, '')
+  // Repeat until stable: one pass over `<a<b>>` leaves a new `<a>` behind.
+  for (let prev = ''; prev !== text;) {
+    prev = text
+    text = text.replace(/<\/?[A-Za-z][\w-]*>/g, '')
+  }
+  return text.replace(/\]\([^)\s]*\)/g, ']')
 }
 
 /** Compiled matchers, one per concept, reused across a run. */

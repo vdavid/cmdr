@@ -299,7 +299,14 @@ because it decides whether the agent can SEE anything.
 `BackendResolution::Off` into the same `false` as a cloud provider with a blank key, so a user who had turned AI off was
 told to finish setting up a provider. `ProviderGate` mirrors `BackendResolution` (`Off` / `NeedsCloudConsent` /
 `NotConfigured` / `Ready`) rather than re-deciding the distinction the backend already models, and `provider_gate` in
-`snapshot.rs` is the one mapping.
+`snapshot.rs` is the one mapping. `BackendResolution::Managed` (the organization's MDM policy refuses AI or the cloud
+host) maps to `Off`: an answer already given, so silent, and the stored backlog stays for when the policy lifts.
+
+**`AgentGates.ask_cmdr` is a tri-state `AskCmdrSwitch`, not a bool, for the same reason.** Under `DisableAI` the
+policy overlay pins `askCmdr.enabled` off; as a bool that read exactly like the person switching Ask Cmdr off, and
+`AskCmdrOff` purges the backlog, so a profile would have deleted what removing it should bring back (the policy
+overlays, it never rewrites). `settings::load_ask_cmdr_switch` keeps the two apart: the person's own `Off` is
+`AskCmdrOff` (purges), a `ManagedOff` (stored on, pinned off) is `Off` (silent, keeps the backlog).
 
 **Silence lies under a pending FDA decision**: a user who declined and a user with a tidy Downloads folder see the
 identical nothing, and only one of those is the feature working. So `NeedsFullDiskAccess` and `NeedsApiKey` both render
@@ -523,7 +530,9 @@ path by which a provider's answer reaches the scheduler.
 ⚠️ **Transient failures must NOT fold in here.** `Unavailable`, `Timeout`, `UnfinishedReply`,
 `BudgetExhausted`, and `Provider` say nothing about the key, and six hours of silence for one
 flaky request would be the agent punishing the user for their network. `NotConfigured` is a gate
-`resolve_slot` refuses ahead of the turn, so reaching it again costs nothing.
+`resolve_slot` refuses ahead of the turn, so reaching it again costs nothing. `ManagedByOrganization` (a policy that
+landed mid-turn) also keeps the ordinary pace and logs at info: the change already refreshed the readiness, which
+keeps the loop quiet on its own.
 
 `SettingsChanged` and `ReadinessChanged` clear the stamp outright, and `refresh_readiness` is what
 a key change already sends, so fixing the key is felt at once rather than six hours later.

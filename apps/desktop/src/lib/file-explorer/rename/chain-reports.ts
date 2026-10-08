@@ -1,37 +1,41 @@
 /**
  * The two running toasts a chained rename speaks through: the names it didn't
- * apply, and the renames the volume never confirmed.
+ * apply, and the renames a slow volume is still working on.
  *
  * Both are ONE toast per pane, replaced in place as more arrive, because the
  * toast stack holds five and silently DROPS a new one once they're all
  * persistent. A toast per name would lose everything past the fifth with
  * nothing said, which is the failure this reporting exists to prevent.
  *
- * Why two and not one: a timeout is not a refusal. Saying a file kept its name
- * when the volume simply never answered would be a lie, and a chain over a slow
- * volume produces both at once, where a shared stack would starve one of them.
+ * Why two and not one: a slow rename is not a refusal. Saying a file kept its
+ * name while the volume is still renaming it would be a lie, and a chain over a
+ * slow volume produces both at once, where a shared stack would starve one.
  *
  * Full rationale: `DETAILS.md` § "Saying so, in one toast that grows".
  */
 
-import { refreshListing } from '$lib/tauri-commands'
 import { addToastForPane, dismissToast, type ToastOriginPane } from '$lib/ui/toast'
 import { tString } from '$lib/intl/messages.svelte'
 import { formatInteger } from '$lib/intl/number-format'
 
+/** A rename the slow volume is still working on (a rename target fits as is). */
+export interface StillRenamingEntry {
+  /** The name it had before the rename. */
+  originalName: string
+  isDirectory: boolean
+}
+
 export interface ChainReportsDeps {
   /** Owning pane, so the reports stay pane-scoped. */
   paneId: ToastOriginPane
-  getListingId: () => string
 }
 
-/**
- * A volume too slow to answer a rename must not then be asked to list the
- * directory once per unanswered rename. The refresh waits out a quiet spell and
- * runs once; landing AFTER the last straggler is also what makes the listing
- * show the settled truth rather than a half-finished chain.
- */
-const UNCONFIRMED_REFRESH_QUIET_MS = 1000
+/** What the toast calls a group of renames: the `kind` select in `stillRenamingAndOthers`. */
+function kindOf(entries: StillRenamingEntry[]): 'folders' | 'files' | 'mixed' {
+  if (entries.every((e) => e.isDirectory)) return 'folders'
+  if (entries.every((e) => !e.isDirectory)) return 'files'
+  return 'mixed'
+}
 
 export function createChainReports(deps: ChainReportsDeps) {
   const keptNamesToastId = `rename-kept-names-${deps.paneId}`
@@ -39,22 +43,40 @@ export function createChainReports(deps: ChainReportsDeps) {
   // saying they've read it, and the next one starts over.
   let keptNamesCount = 0
 
-  const unconfirmedToastId = `rename-unconfirmed-${deps.paneId}`
-  // Renames counted by the toast currently on screen, zeroed when the user
-  // dismisses it, same as the kept names.
-  let unconfirmedCount = 0
+  const stillRenamingToastId = `rename-still-renaming-${deps.paneId}`
+  // The renames the toast counts, oldest first, each by its own token so two
+  // renames of same-named files settle independently.
+  let stillRenaming: StillRenamingEntry[] = []
+  // Whether that toast is on screen. Dismissing it is the user saying they've
+  // read it: the renames run on, but their settles don't bring it back.
+  let stillRenamingShown = false
 
-  let unconfirmedRefreshTimer: ReturnType<typeof setTimeout> | null = null
-
-  function scheduleUnconfirmedRefresh(): void {
-    if (unconfirmedRefreshTimer !== null) clearTimeout(unconfirmedRefreshTimer)
-    unconfirmedRefreshTimer = setTimeout(() => {
-      unconfirmedRefreshTimer = null
-      // Read at fire time: the pane may have moved on, and the listing worth
-      // refreshing is the one it is showing now.
-      // Unforced: a top-up after an unconfirmed rename chain.
-      void refreshListing(deps.getListingId(), false)
-    }, UNCONFIRMED_REFRESH_QUIET_MS)
+  function showStillRenaming(): void {
+    if (stillRenaming.length === 0) {
+      dismissToast(stillRenamingToastId)
+      stillRenamingShown = false
+      return
+    }
+    const newest = stillRenaming[stillRenaming.length - 1]
+    const others = stillRenaming.slice(0, -1)
+    const content =
+      others.length === 0
+        ? tString('fileExplorer.rename.stillRenaming', { name: newest.originalName })
+        : tString('fileExplorer.rename.stillRenamingAndOthers', {
+            name: newest.originalName,
+            kind: kindOf(others),
+            others: others.length,
+            othersText: formatInteger(others.length),
+          })
+    addToastForPane(deps.paneId, content, {
+      level: 'info',
+      dismissal: 'persistent',
+      id: stillRenamingToastId,
+      onDismiss: () => {
+        stillRenamingShown = false
+      },
+    })
+    stillRenamingShown = true
   }
 
   return {
@@ -92,32 +114,24 @@ export function createChainReports(deps: ChainReportsDeps) {
     },
 
     /**
-     * Says which renames the volume never confirmed, and refreshes to find out.
+     * Says a slow volume is still renaming `target` until `settled` resolves,
+     * and hands `settled` back for the caller to report how it ended.
      *
-     * A timeout is NOT a refusal: the rename may well have landed on disk. So
-     * this never says the file kept its name, and stays a separate message from
-     * `keptName` however tempting the shared shape looks.
+     * A slow rename is NOT a refusal: it may well land. So this never says the
+     * file kept its name, and stays a separate message from `keptName` however
+     * tempting the shared shape looks. The toast only counts what's still
+     * running, and goes once nothing is.
      */
-    unconfirmed(name: string): void {
-      unconfirmedCount += 1
-      const others = unconfirmedCount - 1
-      const content =
-        others === 0
-          ? tString('fileExplorer.rename.unconfirmed', { name })
-          : tString('fileExplorer.rename.unconfirmedAndOthers', {
-              name,
-              others,
-              othersText: formatInteger(others),
-            })
-      addToastForPane(deps.paneId, content, {
-        level: 'warn',
-        dismissal: 'persistent',
-        id: unconfirmedToastId,
-        onDismiss: () => {
-          unconfirmedCount = 0
-        },
+    stillRenaming<T>(target: StillRenamingEntry, settled: Promise<T>): Promise<T> {
+      // A copy, so it's this rename's own token even if the caller reuses the object.
+      const entry = { originalName: target.originalName, isDirectory: target.isDirectory }
+      stillRenaming.push(entry)
+      showStillRenaming()
+      return settled.finally(() => {
+        const before = stillRenaming.length
+        stillRenaming = stillRenaming.filter((e) => e !== entry)
+        if (stillRenaming.length !== before && stillRenamingShown) showStillRenaming()
       })
-      scheduleUnconfirmedRefresh()
     },
 
     /**
@@ -135,8 +149,10 @@ export function createChainReports(deps: ChainReportsDeps) {
     forget(): void {
       dismissToast(keptNamesToastId)
       keptNamesCount = 0
-      dismissToast(unconfirmedToastId)
-      unconfirmedCount = 0
+      // The renames run on; their settles just have nothing left to update.
+      dismissToast(stillRenamingToastId)
+      stillRenaming = []
+      stillRenamingShown = false
     },
   }
 }

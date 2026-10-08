@@ -9,6 +9,7 @@
 //! `volume` — the same one-level-shallower rule every other `*_tests.rs` in
 //! this directory follows.
 
+use super::super::super::staged_write::Replaces;
 use super::super::finalize::finalize_safe_replace;
 use super::*;
 use crate::file_system::volume::InMemoryVolume;
@@ -52,7 +53,7 @@ async fn dir_overwrite_must_merge_not_replace_even_with_recursive_delete() {
     // The resolver should hand back the same path (caller will merge into it)
     // and must NOT request a safe-replace finalize (dirs merge, not replace).
     assert_eq!(result.write_path, PathBuf::from("/photos"));
-    assert_eq!(result.replace_after_write, None);
+    assert_eq!(result.replaces, Replaces::Nothing);
 
     // CRITICAL: files unique to dest must still be there. If this fails, the
     // resolver wholesale-deleted the dest tree. Cmdr's "Overwrite means merge
@@ -231,7 +232,7 @@ async fn a_destination_that_raced_away_still_resolves_as_a_plain_write() {
 
     // Resolves as file→file: safe-replace via a temp sibling, exactly as it
     // would if the destination were a plain file.
-    assert_eq!(resolved.replace_after_write, Some(PathBuf::from("/notes.txt")));
+    assert_eq!(resolved.replaces, Replaces::ViaTemp(PathBuf::from("/notes.txt")));
     assert!(
         resolved.write_path.to_string_lossy().contains(".cmdr-tmp-"),
         "expected a temp sibling, got {:?}",
@@ -243,7 +244,7 @@ async fn a_destination_that_raced_away_still_resolves_as_a_plain_write() {
 async fn file_overwrite_keeps_original_until_temp_is_written() {
     // For a file→file Overwrite, the resolver must NOT delete the existing
     // destination. Instead it hands back a temp sibling to write into plus
-    // `replace_after_write: Some(orig)`, so the original survives the full
+    // `Replaces::ViaTemp(orig)`, so the original survives the full
     // streaming write and is only swapped out at finalize time. This is the
     // safe-replace contract that protects data on a mid-stream failure.
     let dest = Arc::new(InMemoryVolume::new("dest"));
@@ -272,8 +273,8 @@ async fn file_overwrite_keeps_original_until_temp_is_written() {
 
     // (b) The caller is told to replace `/notes.txt` after the write lands.
     assert_eq!(
-        resolved.replace_after_write,
-        Some(PathBuf::from("/notes.txt")),
+        resolved.replaces,
+        Replaces::ViaTemp(PathBuf::from("/notes.txt")),
         "file→file Overwrite must request a post-write replace of the original"
     );
 
@@ -311,4 +312,33 @@ async fn finalize_safe_replace_swaps_temp_over_original() {
     assert!(!dest.exists(Path::new("/notes.txt.cmdr-tmp-abc")).await);
     let mut stream = dest.open_read_stream(Path::new("/notes.txt")).await.unwrap();
     assert_eq!(stream.next_chunk().await.unwrap().unwrap(), b"NEW");
+}
+
+/// A destination that publishes every write whole (an object store) keeps the
+/// original readable until the new bytes are complete by protocol, so the
+/// resolver sends the write to the original's own name: a temp there would
+/// cost a server-side copy plus a delete to land. Still no delete here.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn file_overwrite_on_a_whole_publishing_destination_writes_in_place() {
+    let dest = Arc::new(InMemoryVolume::new("dest").with_whole_publish());
+    dest.create_file(Path::new("/notes.txt"), b"old content").await.unwrap();
+    let dest_dyn: Arc<dyn Volume> = dest.clone();
+
+    let resolved = apply_volume_conflict_resolution(
+        ConflictResolution::Overwrite,
+        &dest_dyn,
+        Path::new("/notes.txt"),
+        false,
+        &Arc::new(WriteOperationState::new(std::time::Duration::from_millis(0))),
+    )
+    .await
+    .unwrap()
+    .expect("file→file Overwrite must resolve to a write path, not Skip");
+
+    assert_eq!(resolved.write_path, PathBuf::from("/notes.txt"));
+    assert_eq!(resolved.replaces, Replaces::InPlace);
+    assert!(
+        dest.exists(Path::new("/notes.txt")).await,
+        "the original must survive resolution"
+    );
 }

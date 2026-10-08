@@ -86,7 +86,7 @@ export async function initWindowSettings(pathname?: string): Promise<void> {
  *
  * ❌ A window that gates on `initWindowSettings()` and skips this call sits on
  * the WEBVIEW's own tag forever: English copy under a Hungarian UI, and
- * `58.03 KB` where the main pane writes `58,03 KB`. Nothing throws, so
+ * `58.03 KiB` where the main pane writes `58,03 KiB`. Nothing throws, so
  * `routes/window-route-coverage.test.ts` reads the sources and fails the pair.
  *
  * Applies twice on purpose. The persisted value is available synchronously, so

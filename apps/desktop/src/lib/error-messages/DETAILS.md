@@ -133,6 +133,8 @@ sends one (the error report and its amend today) words it here.
   5xx, 408, 429) and raises only what means Cmdr and its server disagree (another 4xx, a 2xx this client can't read, a
   request Cmdr couldn't build, or an untyped failure, which means the IPC bridge broke). A surface whose error-level
   line would auto-report through the very endpoint that just refused (the error-report dialog) keeps everything at warn.
+- **`blockedByPolicy` logs at info and has its own sentence.** The organization's managed policy turned the pipeline
+  off, so nothing left the Mac and nothing is broken: no warn, no error, no retry hint. It carries no `detail`.
 - **`detail` rides the carrier's diagnostic, for the log.** ❌ Never interpolate it into copy.
 
 ## Convergence (future)

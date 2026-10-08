@@ -75,12 +75,14 @@ const notAccepted: CloudAiConsentStatus = {
   currentVersion: 1,
   acceptedVersion: null,
   acceptedAt: null,
+  managed: null,
 }
 const accepted: CloudAiConsentStatus = {
   accepted: true,
   currentVersion: 1,
   acceptedVersion: 1,
   acceptedAt: 1_760_000_100,
+  managed: null,
 }
 
 describe('refreshCloudConsent', () => {

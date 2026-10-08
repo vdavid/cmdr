@@ -27,6 +27,12 @@ export function isMacOS(): boolean {
 const canonicalKeyNames: Record<string, string> = {
   Backspace: 'Backspace',
   Delete: 'Delete',
+  // macOS reports a PC keyboard's Insert key as the old Apple Help key (`key` AND
+  // `code` both `Help`, verified on macOS 27 with a Genius PC keyboard, Safari key
+  // log, 2026-10-05). Apple stopped shipping Help keys around 2007, and theirs sat
+  // where Insert does, so the name is safe to take over.
+  Help: 'Insert',
+  Insert: 'Insert',
   Enter: 'Enter',
   Return: 'Enter',
   Escape: 'Escape',
@@ -73,6 +79,34 @@ const displayToCanonicalKeyNames: Record<string, string> = {
   Esc: 'Escape',
   PgUp: 'PageUp',
   PgDn: 'PageDown',
+}
+
+/**
+ * The character each US key types with Shift. Heals a stored Shift-only key
+ * position (`⇧8`) to the character it named (`*`) — see `toCanonicalShortcut`.
+ */
+const usShiftedCharacter: Record<string, string> = {
+  '1': '!',
+  '2': '@',
+  '3': '#',
+  '4': '$',
+  '5': '%',
+  '6': '^',
+  '7': '&',
+  '8': '*',
+  '9': '(',
+  '0': ')',
+  '-': '_',
+  '=': '+',
+  '[': '{',
+  ']': '}',
+  '\\': '|',
+  ';': ':',
+  "'": '"',
+  '`': '~',
+  ',': '<',
+  '.': '>',
+  '/': '?',
 }
 
 /**
@@ -141,10 +175,31 @@ export function toDisplayShortcut(shortcut: string): string {
 /**
  * The canonical spelling of a combo that may carry a display or legacy key name
  * (`⌘⌫` → `⌘Backspace`). Used to heal persisted shortcuts on load. Idempotent.
+ *
+ * Also heals a Shift-only key POSITION (`⇧8`, `Shift+=`), which no keypress
+ * produces since typed symbols are named by their character (`formatKeyCombo`).
+ * Those combos were spelled by the US keycap, so they heal to the US character.
  */
 export function toCanonicalShortcut(shortcut: string): string {
   if (!shortcut) return shortcut
+  const shiftOnly = /^(?:⇧|Shift\+)(.)$/u.exec(shortcut)?.[1]
+  if (shiftOnly !== undefined && shiftOnly in usShiftedCharacter) return usShiftedCharacter[shiftOnly]
   return mapKeyName(shortcut, displayToCanonicalKeyNames)
+}
+
+/**
+ * True for a one-character key with no case: a symbol, punctuation, or a digit.
+ * Shift is how a layout TYPES such a character, not a modifier on it, which is
+ * why `formatKeyCombo` names it by the character alone. Letters (`H` / `⇧H`)
+ * and Space (`⇧Space` is Quick Look) keep their Shift.
+ */
+function isTypedSymbol(key: string): boolean {
+  return Array.from(key).length === 1 && key !== ' ' && key.toLowerCase() === key.toUpperCase()
+}
+
+/** True when ⌘ / ⌃ (Ctrl / Super off macOS) is held: the combo is a command, never typing. */
+function hasCommandModifier(event: KeyboardEvent): boolean {
+  return event.metaKey || event.ctrlKey
 }
 
 /**
@@ -163,22 +218,17 @@ export function isModifierKey(key: string): boolean {
  * elsewhere — so a registry default written any other way (Apple's ⌥⌘ display
  * order, say) can never match a keypress. `shortcut-vocabulary.test.ts` pins it.
  *
+ * A symbol typed with Shift alone is named by the character, without the ⇧
+ * (`isTypedSymbol`): US ⇧8, Swedish ⇧', and the numpad all give `*`, and
+ * Hungarian ⇧3 gives `+`. That's what makes a `*` binding mean "the `*` key"
+ * on every layout. With ⌘ / ⌃ / ⌥ held, Shift stays: those combos are commands,
+ * named by key position (`physicalKeyCombo`).
+ *
  * macOS: ⌘⇧P, ⌘Backspace. Windows/Linux: Ctrl+Shift+P.
  */
 export function formatKeyCombo(event: KeyboardEvent): string {
-  const parts: string[] = []
-
-  if (isMacOS()) {
-    if (event.metaKey) parts.push('⌘')
-    if (event.ctrlKey) parts.push('⌃')
-    if (event.altKey) parts.push('⌥')
-    if (event.shiftKey) parts.push('⇧')
-  } else {
-    if (event.ctrlKey) parts.push('Ctrl')
-    if (event.altKey) parts.push('Alt')
-    if (event.shiftKey) parts.push('Shift')
-    if (event.metaKey) parts.push('Super')
-  }
+  const shiftTypedTheKey = event.shiftKey && !hasCommandModifier(event) && !event.altKey && isTypedSymbol(event.key)
+  const parts = modifierTokens({ ...eventModifiers(event), shiftKey: event.shiftKey && !shiftTypedTheKey })
 
   // Don't include modifier keys themselves as the main key
   if (!isModifierKey(event.key)) {
@@ -187,6 +237,25 @@ export function formatKeyCombo(event: KeyboardEvent): string {
   }
 
   return isMacOS() ? parts.join('') : parts.join('+')
+}
+
+/** The held modifiers as combo tokens, in the fixed order: ⌘⌃⌥⇧ on macOS, Ctrl+Alt+Shift+Super elsewhere. */
+function modifierTokens(modifiers: Pick<KeyboardEvent, 'metaKey' | 'ctrlKey' | 'altKey' | 'shiftKey'>): string[] {
+  const { metaKey, ctrlKey, altKey, shiftKey } = modifiers
+  const ordered: [boolean, string][] = isMacOS()
+    ? [
+        [metaKey, '⌘'],
+        [ctrlKey, '⌃'],
+        [altKey, '⌥'],
+        [shiftKey, '⇧'],
+      ]
+    : [
+        [ctrlKey, 'Ctrl'],
+        [altKey, 'Alt'],
+        [shiftKey, 'Shift'],
+        [metaKey, 'Super'],
+      ]
+  return ordered.filter(([held]) => held).map(([, token]) => token)
 }
 
 /**
@@ -209,22 +278,61 @@ function eventModifiers(event: KeyboardEvent): Pick<KeyboardEvent, 'metaKey' | '
  * The combo this keypress would format as if the layout had typed the key's own
  * character, or `null` when `event.key` already IS that character.
  *
- * Shift and Option change what a key types, and what it types varies by layout:
- * `⇧8` is `*` on US QWERTY and `(` on Hungarian, and `⌥⇧=` is `±` on US. So
+ * Option, and Shift alongside ⌘ / ⌃, change what a key types, and what it types
+ * varies by layout: `⌥⇧=` is `±` on US, and `⌘⇧.` reports `>`. So
  * `formatKeyCombo` can never yield those combos from a real keypress, and a
  * default (or a rebind) spelled that way would be dead on the keyboard. Matching
  * the physical key is what makes them bindable at all, and layout-independent.
  *
  * Deliberately narrow: only the digit row and the punctuation `codeToKey` names,
- * and only while Shift or Option is held. Everywhere else `event.key` is the
- * right identity, and the `Dead` branch of `normalizeKeyName` already covers the
- * ⌥+letter layouts.
+ * and only while a command combo's modifiers retyped the key. Shift ALONE is out:
+ * there the typed character is the identity (`formatKeyCombo`), so `⇧8` is `*` and
+ * never the key position. Everywhere else `event.key` is the right identity, and
+ * the `Dead` branch of `normalizeKeyName` already covers the ⌥+letter layouts.
  */
 export function physicalKeyCombo(event: KeyboardEvent): string | null {
-  if (!event.altKey && !event.shiftKey) return null
+  if (!event.altKey && !(event.shiftKey && hasCommandModifier(event))) return null
   const physical = physicalKeyCharacter(event.code)
   if (physical === undefined || physical === event.key) return null
   return formatKeyCombo({ ...eventModifiers(event), key: physical, code: event.code } as KeyboardEvent)
+}
+
+/**
+ * The bare character an Option keypress typed, or `null`. On a Mac, Option is
+ * the PC's AltGr: plenty of layouts type `*`, `+`, or `-` with it. So a binding
+ * on that character works for that user too, the way it does for a Shift-typed
+ * one. Only without ⌘ / ⌃ (those make a command, whatever ⌥ typed), and only
+ * for symbols: ⌥ + a letter is a real ⌥ combo, never typing a different letter.
+ *
+ * A FALLBACK, tried after the exact combo and the physical key
+ * (`keyComboCandidates`): a user who bound the ⌥ combo itself keeps it.
+ */
+export function typedCharacterCombo(event: KeyboardEvent): string | null {
+  if (!event.altKey || hasCommandModifier(event) || !isTypedSymbol(event.key)) return null
+  return normalizeKeyName(event.key, event.code)
+}
+
+/**
+ * Every combo this keypress may mean, most specific first: the exact combo, then
+ * the physical key (`physicalKeyCombo`), then the bare typed character
+ * (`typedCharacterCombo`). No repeats. ❗ The ONE answer to "which bindings can
+ * this keypress trigger?": the document dispatcher and every local handler
+ * (`eventMatchesCommand`) resolve through it, so a binding can't work in one place
+ * and be dead in another.
+ */
+export function keyComboCandidates(event: KeyboardEvent): string[] {
+  const candidates = [formatKeyCombo(event), physicalKeyCombo(event), typedCharacterCombo(event)]
+  return candidates.filter((combo, i): combo is string => combo !== null && candidates.indexOf(combo) === i)
+}
+
+/**
+ * The combo the Settings capture field (and its key-filter box) records for a
+ * keypress: the physical key where a modifier retyped it (a rebind persists `⌥⇧=`,
+ * not the `⌥⇧±` macOS reports), the canonical combo otherwise. Always the first or
+ * second of `keyComboCandidates`, so whatever gets recorded also dispatches.
+ */
+export function capturedKeyCombo(event: KeyboardEvent): string {
+  return physicalKeyCombo(event) ?? formatKeyCombo(event)
 }
 
 /** Modifier symbols used in macOS shortcut format */

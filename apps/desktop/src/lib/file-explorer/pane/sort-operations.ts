@@ -7,7 +7,7 @@
  * wiring — a reactive read + init gate, not logic).
  *
  * The pure helpers stay in `sorting-handlers.ts` (`getNewSortOrder`,
- * `applySortResult`, `collectSortState`); this factory is the IPC-touching
+ * `collectSortState`); this factory is the IPC-touching
  * orchestration over them, in the `clipboard-operations` / `file-operation-commands`
  * factory shape: pass a `SortOperationsDeps` of live store reads/writes, get back
  * the command bodies.
@@ -20,7 +20,7 @@ import { nextSnapshotSort, sortSnapshot } from '$lib/search/snapshot-sort.svelte
 import type { SortColumn, SortOrder } from '../types'
 import { defaultSortOrders } from '../types'
 import type { FilePaneAPI } from './types'
-import { getNewSortOrder, applySortResult, collectSortState } from './sorting-handlers'
+import { getNewSortOrder, collectSortState } from './sorting-handlers'
 
 export interface SortOperationsDeps {
   getPaneRef: (pane: 'left' | 'right') => FilePaneAPI | undefined
@@ -48,6 +48,31 @@ export interface SortOperations {
 }
 
 export function createSortOperations(deps: SortOperationsDeps): SortOperations {
+  async function sortPane(pane: 'left' | 'right', column: SortColumn, order: SortOrder, persist: boolean) {
+    const ref = deps.getPaneRef(pane)
+    if (!ref?.getListingId()) return
+    await ref.getRowState().changeView({
+      isCurrent: () => deps.getPaneRef(pane) === ref,
+      request: (token) => {
+        const state = collectSortState(ref)
+        return resortListing(
+          token.listingId,
+          column,
+          order,
+          state.cursorFilename,
+          token.includeHidden,
+          state.backendSelectedIndices,
+          state.allSelected,
+          getDirectorySortMode(),
+          token.sequence,
+        )
+      },
+      install: (result) => {
+        if (persist) deps.setPaneSort(pane, column, order)
+        return ref.applyRowResult(result)
+      },
+    })
+  }
   /**
    * The snapshot id a pane is showing, or `null` for an ordinary pane.
    *
@@ -84,22 +109,7 @@ export function createSortOperations(deps: SortOperationsDeps): SortOperations {
     const { sortBy, sortOrder } = deps.getPaneSort(pane)
     const newOrder = newColumn === sortBy ? getNewSortOrder(newColumn, sortBy, sortOrder) : defaultSortOrders[newColumn]
 
-    const sortState = collectSortState(paneRef)
-    const result = await resortListing(
-      listingId,
-      newColumn,
-      newOrder,
-      sortState.cursorFilename,
-      deps.getShowHiddenFiles(),
-      sortState.backendSelectedIndices,
-      sortState.allSelected,
-      getDirectorySortMode(),
-    )
-
-    deps.setPaneSort(pane, newColumn, newOrder)
-    // Persistence (saveAppStatus sortBy + the pane's tab set) fires from the
-    // single subscriber's per-pane effect, which reacts to this store change.
-    applySortResult(paneRef, result, sortState.hasParent)
+    await sortPane(pane, newColumn, newOrder, true)
   }
 
   async function resortPaneWithCurrentSort(pane: 'left' | 'right'): Promise<void> {
@@ -118,18 +128,7 @@ export function createSortOperations(deps: SortOperationsDeps): SortOperations {
     if (!listingId) return
 
     const { sortBy, sortOrder } = deps.getPaneSort(pane)
-    const sortState = collectSortState(paneRef)
-    const result = await resortListing(
-      listingId,
-      sortBy,
-      sortOrder,
-      sortState.cursorFilename,
-      deps.getShowHiddenFiles(),
-      sortState.backendSelectedIndices,
-      sortState.allSelected,
-      getDirectorySortMode(),
-    )
-    applySortResult(paneRef, result, sortState.hasParent)
+    await sortPane(pane, sortBy, sortOrder, false)
   }
 
   async function setSort(column: SortColumn, order: 'asc' | 'desc', pane: 'left' | 'right'): Promise<void> {
@@ -148,22 +147,7 @@ export function createSortOperations(deps: SortOperationsDeps): SortOperations {
     if (!listingId) return
 
     const newOrder: SortOrder = newOrderAsked
-
-    const sortState = collectSortState(paneRef)
-    const result = await resortListing(
-      listingId,
-      column,
-      newOrder,
-      sortState.cursorFilename,
-      deps.getShowHiddenFiles(),
-      sortState.backendSelectedIndices,
-      sortState.allSelected,
-      getDirectorySortMode(),
-    )
-
-    deps.setPaneSort(pane, column, newOrder)
-    // Sort persistence (app-status sortBy + tab set) fires from the subscriber.
-    applySortResult(paneRef, result, sortState.hasParent)
+    await sortPane(pane, column, newOrder, true)
   }
 
   function setSortColumn(column: SortColumn, pane?: 'left' | 'right'): void {

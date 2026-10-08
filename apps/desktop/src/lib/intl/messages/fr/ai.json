@@ -227,6 +227,14 @@
   "@ai.translateError.unknownProvider.body": {
     "sourceHash": "7042a75"
   },
+  "ai.translateError.managed.title": "Votre organisation gère l’IA dans Cmdr",
+  "@ai.translateError.managed.title": {
+    "sourceHash": "12f8233"
+  },
+  "ai.translateError.managed.body": "Votre équipe informatique peut vous dire quels services d’IA vous pouvez utiliser.",
+  "@ai.translateError.managed.body": {
+    "sourceHash": "cb7e811"
+  },
   "ai.cloud.serviceAria": "Service d’IA dans le cloud",
   "@ai.cloud.serviceAria": {
     "sourceHash": "7dec1e0"
@@ -455,5 +463,33 @@
   "ai.secretError.genericBody": "Vérifiez que le trousseau de votre système est disponible, puis réessayez. Si le problème persiste, redémarrez l’application.",
   "@ai.secretError.genericBody": {
     "sourceHash": "2ee417d"
+  },
+  "ai.secretError.removeTitle": "Impossible de retirer votre clé d’API enregistrée.",
+  "@ai.secretError.removeTitle": {
+    "sourceHash": "5986628"
+  },
+  "ai.secretError.removeKeychainBody": "Ouvrez Trousseaux d’accès, trouvez l’entrée « Cmdr » et supprimez-la.",
+  "@ai.secretError.removeKeychainBody": {
+    "sourceHash": "4e3abe7"
+  },
+  "ai.managed.aiOff": "Votre organisation a désactivé l’IA dans Cmdr.",
+  "@ai.managed.aiOff": {
+    "sourceHash": "25b7aef"
+  },
+  "ai.managed.cloudAiOff": "Votre organisation n’autorise que l’IA en local.",
+  "@ai.managed.cloudAiOff": {
+    "sourceHash": "894c53d"
+  },
+  "ai.managed.hostNotAllowed": "Votre organisation n’autorise pas ce service d’IA. Votre équipe informatique peut vous dire lesquels vous pouvez utiliser.",
+  "@ai.managed.hostNotAllowed": {
+    "sourceHash": "845a19f"
+  },
+  "ai.managed.localOnlyUnsupported": "Votre organisation n’autorise que l’IA en local, et ce Mac ne peut pas l’exécuter.",
+  "@ai.managed.localOnlyUnsupported": {
+    "sourceHash": "b760ca4"
+  },
+  "ai.managed.serviceNotAllowed": "non autorisé par votre organisation",
+  "@ai.managed.serviceNotAllowed": {
+    "sourceHash": "026e7e3"
   }
 }

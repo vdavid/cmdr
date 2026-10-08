@@ -92,6 +92,9 @@ pub enum AskCmdrStreamEvent {
     Failed {
         kind: AgentErrorKindView,
         detail: Option<String>,
+        /// Which rule of the organization's policy stopped the turn, exactly when `kind` is
+        /// `managedByOrganization`, so the rail words that rule.
+        managed: Option<crate::managed_policy::ManagedAiRefusal>,
     },
     /// The conversation's effective model changed since its previous turn; the persisted
     /// event row's identity rides along. The rail inserts the line BEFORE this turn's
@@ -120,6 +123,21 @@ pub enum AskCmdrStreamEvent {
         budget_tokens: usize,
         elided_results: usize,
     },
+    /// The user answered a suggestion this thread made, and the line saying so just landed in
+    /// its timeline. The persisted event row's identity rides along, so a subscriber that also
+    /// loaded the row shows it once.
+    ///
+    /// ⚠️ **The one event here that is not part of a turn.** A decision lands when the user
+    /// says no, or when an approved operation settles, which is usually with no turn running
+    /// at all, so a subscriber must NOT read it as proof one is. It rides this transport
+    /// anyway because this is the one keyed by conversation: emitted from the single place
+    /// that writes the row (`agent/outcomes.rs`), it reaches exactly the thread the row went
+    /// into, and a decision with no thread to land in emits nothing.
+    ProposalDecided {
+        message_id: i64,
+        seq: i64,
+        decision: crate::agent::types::ProposalDecision,
+    },
     /// The thread this turn ran in is GONE: a wake looked, found nothing worth raising, and
     /// took its thread with it (`agent/wake/quiet.rs`).
     ///
@@ -140,6 +158,9 @@ pub enum AgentErrorKindView {
     /// Cloud AI is picked and the user hasn't allowed it ("Allow cloud AI" in Settings > AI).
     /// View-only: the slot refuses before a thread exists (`session::SlotRefusal`).
     NoCloudConsent,
+    /// The organization's managed policy refuses the provider or its host: the slot refuses
+    /// before a thread exists, and the LLM client's backstop ends a running turn with it.
+    ManagedByOrganization,
     /// The local server runs with a context window too small to hold one prompt, so the send
     /// was refused before it could be assembled against
     /// (`budget::BudgetRefusal::LocalWindowBelowFloor`). View-only: the runtime never produces
@@ -170,6 +191,7 @@ impl AgentErrorKindView {
             AgentErrorKindView::NotConfigured => "not_configured",
             AgentErrorKindView::AskCmdrOff => "ask_cmdr_off",
             AgentErrorKindView::NoCloudConsent => "no_cloud_consent",
+            AgentErrorKindView::ManagedByOrganization => "managed_by_organization",
             AgentErrorKindView::LocalWindowTooSmall => "local_window_too_small",
             AgentErrorKindView::Unavailable => "unavailable",
             AgentErrorKindView::Timeout => "timeout",
@@ -196,6 +218,7 @@ impl From<AgentErrorKind> for AgentErrorKindView {
             AgentErrorKind::RepeatedToolCall => Self::RepeatedToolCall,
             AgentErrorKind::UnfinishedReply => Self::UnfinishedReply,
             AgentErrorKind::Provider => Self::Provider,
+            AgentErrorKind::ManagedByOrganization(_) => Self::ManagedByOrganization,
         }
     }
 }
@@ -271,6 +294,7 @@ pub fn to_wire_event(event: AgentChatEvent) -> AskCmdrStreamEvent {
         AgentChatEvent::Failed { kind, detail } => AskCmdrStreamEvent::Failed {
             kind: kind.into(),
             detail,
+            managed: kind.managed(),
         },
         AgentChatEvent::ModelChanged { message_id, seq, model } => {
             AskCmdrStreamEvent::ModelChanged { message_id, seq, model }
@@ -319,13 +343,29 @@ pub fn init_turn_event_emitter(app: &tauri::AppHandle) {
 /// Fire-and-forget on purpose: nobody listening is the ordinary case (the rail is closed, or
 /// the turn is a wake nobody has opened yet), and the turn persists itself either way.
 pub fn emit_turn_event(conversation_id: i64, event: AskCmdrStreamEvent) {
+    let turn = AskCmdrTurn { conversation_id, event };
+    #[cfg(test)]
+    EMITTED_TURNS.with(|emitted| emitted.borrow_mut().push(turn.clone()));
     let Some(app) = TURN_APP.get() else {
         return;
     };
-    let turn = AskCmdrTurn { conversation_id, event };
     if let Err(e) = turn.emit(app) {
         log::warn!(target: LOG_TARGET, "a turn event didn't reach the windows: {e}");
     }
+}
+
+#[cfg(test)]
+thread_local! {
+    /// Everything this thread handed to [`emit_turn_event`]. No unit test has an app to emit
+    /// into, so this is how one asks what WOULD have reached the windows. Per thread, so tests
+    /// running side by side never read each other's events.
+    static EMITTED_TURNS: std::cell::RefCell<Vec<AskCmdrTurn>> = const { std::cell::RefCell::new(Vec::new()) };
+}
+
+/// Take what the calling thread has emitted so far, leaving nothing behind.
+#[cfg(test)]
+pub(crate) fn take_emitted_turns() -> Vec<AskCmdrTurn> {
+    EMITTED_TURNS.with(|emitted| std::mem::take(&mut *emitted.borrow_mut()))
 }
 
 /// Forward every runtime event a turn produces onto the transport, until the turn drops its

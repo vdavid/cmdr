@@ -10,10 +10,9 @@
  * straight list rendering. Tested in isolation.
  */
 
-import type { FileSizeFormat } from '$lib/settings/types'
 import { getFormatLocale, getUiLocale } from '$lib/intl/locale'
 import { tString } from '$lib/intl/messages.svelte'
-import { unitLabel } from '$lib/units'
+import { bytesLabel } from '$lib/units'
 
 // ── Size column 2: numeric presets ────────────────────────────────────────────────────────
 //
@@ -27,20 +26,13 @@ export const SIZE_PRESETS: readonly string[] = ['0', '1', '5', '10', '20', '50',
 export const CUSTOM_VALUE = '__custom__'
 
 /**
- * Returns the unit-column label given the selected numeric preset and the user's
- * `appearance.fileSizeFormat` setting:
- *   - byte vs bytes: singular only when the value is exactly `'1'`.
- *   - KB vs kB: SI uses `kB` (lower-case k); binary uses `KB`.
- * Used for the col-3 "byte(s)" cell. Other unit labels (MB, GB) stay constant.
+ * The byte cell of the unit column, worded for the selected numeric preset in the
+ * UI language ("1 byte", "5 bytes"). An empty or custom value takes the general
+ * plural form. The kilobyte and larger cells use `unitLabel` from `$lib/units`,
+ * so the popover, the chips, and the file list can't disagree on a unit.
  */
 export function byteUnitLabel(value: string): string {
-  return value === '1' ? tString('queryUi.size.unit.byte') : tString('queryUi.size.unit.bytes')
-}
-
-/** The kilobyte label for the size popover. Delegates to `$lib/units` so the
- *  popover, the chips, and the file list can't disagree on the casing. */
-export function kiloByteLabel(format: FileSizeFormat): 'KB' | 'kB' {
-  return unitLabel('kB', format) as 'KB' | 'kB'
+  return bytesLabel(value.trim() === '' ? Number.NaN : Number(value))
 }
 
 /**

@@ -273,3 +273,57 @@ fn a_rejected_group_cannot_be_claimed() {
         "{outcome:?}"
     );
 }
+
+/// An approval the engine refused gives its group back: nothing ran, so the user is where they
+/// were, and the group can be approved again through the ordinary preflight and claim.
+#[test]
+fn a_released_claim_is_pending_again_and_claims_again() {
+    let conn = migrated_conn();
+    let group_id = group_with_ops(&conn, 2);
+    record_acceptance(&conn, group_id, &[], 200).expect("preflight");
+    claim_group_for_execution(&conn, group_id, 300).expect("claim");
+
+    assert!(
+        release_claim(&conn, group_id).expect("release"),
+        "an untouched claim goes back"
+    );
+    assert_eq!(status_of(&conn, group_id), ProposalStatus::Pending);
+    assert_eq!(
+        get_group(&conn, group_id).expect("read").expect("exists").decided_at,
+        None,
+        "a group given back is undecided"
+    );
+
+    record_acceptance(&conn, group_id, &[], 400).expect("second preflight");
+    let again = claim_group_for_execution(&conn, group_id, 500).expect("second claim");
+    assert!(matches!(again, ClaimOutcome::Claimed(_)), "{again:?}");
+}
+
+/// ❗ **A group any op of which already ran is never given back.** Offering it again is how the
+/// same files would be acted on twice, so once an outcome landed, the claim stays.
+#[test]
+fn a_claim_whose_ops_already_ran_is_never_released() {
+    let conn = migrated_conn();
+    let group_id = group_with_ops(&conn, 2);
+    record_acceptance(&conn, group_id, &[], 200).expect("preflight");
+    claim_group_for_execution(&conn, group_id, 300).expect("claim");
+    let first_op = page_ops(&conn, group_id, 1, 0).expect("ops")[0].id;
+    record_op_outcome(&conn, first_op, OpStatus::Done).expect("outcome");
+
+    assert!(!release_claim(&conn, group_id).expect("release"));
+    assert_eq!(status_of(&conn, group_id), ProposalStatus::Approved);
+}
+
+/// Only a claimed group goes back: a pending one has nothing to release, and a rejected one
+/// keeps the user's answer.
+#[test]
+fn only_an_approved_group_can_be_released() {
+    let conn = migrated_conn();
+    let pending = group_with_ops(&conn, 1);
+    assert!(!release_claim(&conn, pending).expect("release"));
+
+    let rejected = group_with_ops(&conn, 1);
+    reject_group(&conn, rejected, 200).expect("reject");
+    assert!(!release_claim(&conn, rejected).expect("release"));
+    assert_eq!(status_of(&conn, rejected), ProposalStatus::Rejected);
+}

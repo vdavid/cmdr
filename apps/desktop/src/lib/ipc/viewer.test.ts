@@ -42,7 +42,7 @@ const openResult: ViewerOpenResult = {
   fileName: 'README.md',
   totalBytes: 21,
   totalLines: 3,
-  estimatedTotalLines: 3,
+  estimatedTotalRows: 3,
   backendType: 'fullLoad',
   capabilities: {
     supportsLineSeek: true,
@@ -165,7 +165,7 @@ describe('commands.viewerSearchStart and viewerSearchPoll', () => {
     const ipc = installIpcMock()
     const pollResult: SearchPollResult = {
       status: { status: 'running' },
-      newMatches: [{ line: 5, column: 0, length: 4, byteOffset: 80 }],
+      newMatches: [{ row: 5, column: 0, length: 4, byteOffset: 80 }],
       totalMatchCount: 6,
       totalBytes: 1000,
       bytesScanned: 800,
@@ -225,8 +225,8 @@ describe('commands.viewerReadRange', () => {
 
     const sessionId = 'sess-4'
     const readId = 17
-    const anchor = { kind: 'line', line: 0, offset: 0 } as const
-    const focus = { kind: 'line', line: 0, offset: 11 } as const
+    const anchor = { kind: 'row', row: 0, offset: 0 } as const
+    const focus = { kind: 'row', row: 0, offset: 11 } as const
 
     const result = await commands.viewerReadRange(sessionId, readId, anchor, focus)
 
@@ -245,7 +245,7 @@ describe('commands.viewerReadRange', () => {
 
     const sessionId = 'sess-5'
     const readId = 0
-    const anchor = { kind: 'line', line: 0, offset: 0 } as const
+    const anchor = { kind: 'row', row: 0, offset: 0 } as const
     const focus = { kind: 'eof' } as const
 
     await commands.viewerReadRange(sessionId, readId, anchor, focus)
@@ -266,8 +266,8 @@ describe('commands.viewerReadRange', () => {
 
     const sessionId = 'sess-6'
     const readId = 1
-    const anchor = { kind: 'line', line: 0, offset: 0 } as const
-    const focus = { kind: 'line', line: 100, offset: 0 } as const
+    const anchor = { kind: 'row', row: 0, offset: 0 } as const
+    const focus = { kind: 'row', row: 100, offset: 0 } as const
 
     const result = await commands.viewerReadRange(sessionId, readId, anchor, focus)
 
@@ -285,7 +285,7 @@ describe('commands.viewerReadRange', () => {
 
     const sessionId = 'sess-7'
     const readId = 1
-    const anchor = { kind: 'line', line: 0, offset: 0 } as const
+    const anchor = { kind: 'row', row: 0, offset: 0 } as const
     const focus = { kind: 'eof' } as const
 
     const result = await commands.viewerReadRange(sessionId, readId, anchor, focus)

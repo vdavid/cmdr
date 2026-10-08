@@ -2,7 +2,7 @@ import { findFileIndex, findFileIndices, getPathsAtIndices, refreshListing, togg
 import { addToast } from '$lib/ui/toast'
 import { tString } from '$lib/intl/messages.svelte'
 import type { McpSelectMode, ConfirmDialogType } from '$lib/commands'
-import { isPrintableJumpContinuation, isTypeToJumpChar, isTypeToJumpResetKey } from './type-to-jump-keys'
+import { routeTypingKey } from './type-to-jump-keys'
 import { capabilitiesFor } from './volume-capabilities'
 import type { SelectionActionArgs } from '../../../routes/(main)/explorer-api'
 import type { FilePaneAPI } from './types'
@@ -248,16 +248,7 @@ export function createPaneCommands(access: PaneAccess, dialogs: DialogState) {
     // pane's `handleKeyDown` would never see letters/digits as jump chars
     // (FilePane delegates type-to-jump to its parent — see the intercept
     // in this component's own `handleKeyDown` above).
-    if (!paneRef.isRenaming()) {
-      if (isTypeToJumpChar(event) || (paneRef.isJumpActive() && isPrintableJumpContinuation(event))) {
-        paneRef.handleJumpKeystroke(event.key)
-        return
-      }
-      if (isTypeToJumpResetKey(event)) {
-        paneRef.clearJumpState()
-        // Fall through to the navigation handler.
-      }
-    }
+    if (routeTypingKey(paneRef, event)) return
     paneRef.handleKeyDown(event)
   }
 

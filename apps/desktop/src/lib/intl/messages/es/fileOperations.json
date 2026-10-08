@@ -3,6 +3,10 @@
   "@fileOperations.button.cancel": {
     "sourceHash": "19766ed"
   },
+  "fileOperations.button.close": "Cerrar",
+  "@fileOperations.button.close": {
+    "sourceHash": "7d9eb7a"
+  },
   "fileOperations.button.ok": "Aceptar",
   "@fileOperations.button.ok": {
     "sourceHash": "565339b"
@@ -81,7 +85,7 @@
   },
   "fileOperations.delete.scanDir": "{count, plural, one {carpeta} many {carpetas} other {carpetas}}",
   "@fileOperations.delete.scanDir": {
-    "sourceHash": "1c5273d"
+    "sourceHash": "46b23b5"
   },
   "fileOperations.delete.confirmDelete": "Eliminar",
   "@fileOperations.delete.confirmDelete": {
@@ -123,6 +127,14 @@
   "@fileOperations.delete.symlinkNoticeMany": {
     "sourceHash": "56b3f52"
   },
+  "fileOperations.mkfile.notCreatedToast": "Cmdr no ha podido crear el archivo “{name}”. {reason}",
+  "@fileOperations.mkfile.notCreatedToast": {
+    "sourceHash": "4f30e62"
+  },
+  "fileOperations.newEntry.stillCreating": "Todavía se está creando “{name}”. El volumen tarda en responder. Puedes cerrar este diálogo sin problema: la creación seguirá adelante y ya no se puede cancelar.",
+  "@fileOperations.newEntry.stillCreating": {
+    "sourceHash": "74e376f"
+  },
   "fileOperations.mkfile.title": "Nuevo archivo",
   "@fileOperations.mkfile.title": {
     "sourceHash": "44dedd0"
@@ -155,17 +167,9 @@
   "@fileOperations.mkdir.placeholder": {
     "sourceHash": "7612b56"
   },
-  "fileOperations.mkdir.timeoutMessage": "No se ha podido confirmar que se haya creado la carpeta. El volumen puede ir lento, así que es posible que la carpeta sí se haya creado.",
-  "@fileOperations.mkdir.timeoutMessage": {
-    "sourceHash": "8bc758a"
-  },
-  "fileOperations.mkdir.timeoutRefresh": "Actualizar la lista",
-  "@fileOperations.mkdir.timeoutRefresh": {
-    "sourceHash": "b0e5436"
-  },
-  "fileOperations.mkdir.timeoutDismiss": "Descartar",
-  "@fileOperations.mkdir.timeoutDismiss": {
-    "sourceHash": "48845bf"
+  "fileOperations.mkdir.notCreatedToast": "Cmdr no ha podido crear la carpeta “{name}”. {reason}",
+  "@fileOperations.mkdir.notCreatedToast": {
+    "sourceHash": "517ef4b"
   },
   "fileOperations.mkdir.aiSuggestionsAria": "Sugerencias de IA",
   "@fileOperations.mkdir.aiSuggestionsAria": {
@@ -248,9 +252,21 @@
   "@fileOperations.transferDialog.targetWillBeCreatedCopy": {
     "sourceHash": "4e8d166"
   },
+  "fileOperations.transferDialog.renameByMoveHint": "Renombrar esto copia todo su contenido en el servidor, así que se ejecuta como un movimiento que puedes pausar o cancelar.",
+  "@fileOperations.transferDialog.renameByMoveHint": {
+    "sourceHash": "31987cc"
+  },
   "fileOperations.transferDialog.targetWillBeCreatedMove": "Esta carpeta todavía no existe. Cmdr la creará durante el movimiento.",
   "@fileOperations.transferDialog.targetWillBeCreatedMove": {
     "sourceHash": "1246331"
+  },
+  "fileOperations.transferDialog.rootEchoWarning": "Este lugar ya empieza en {rootFolder}, así que esta ruta lleva a {resolvedPath}. ¿Querías decir {strippedPath}?",
+  "@fileOperations.transferDialog.rootEchoWarning": {
+    "sourceHash": "b692d10"
+  },
+  "fileOperations.transferDialog.rootEchoUseStripped": "Usar la ruta más corta",
+  "@fileOperations.transferDialog.rootEchoUseStripped": {
+    "sourceHash": "66972e3"
   },
   "fileOperations.transferDialog.destinationReadOnly": "Esta carpeta es de solo lectura, así que aquí no se puede poner nada.",
   "@fileOperations.transferDialog.destinationReadOnly": {
@@ -274,7 +290,7 @@
   },
   "fileOperations.transferDialog.scanDir": "{count, plural, one {carpeta} many {carpetas} other {carpetas}}",
   "@fileOperations.transferDialog.scanDir": {
-    "sourceHash": "1c5273d"
+    "sourceHash": "46b23b5"
   },
   "fileOperations.transferDialog.hardlinkNote": "Se escribirán <written></written>. El origen ocupa <ondisk></ondisk> en disco; lo extra son archivos con enlace físico, que no pueden seguir enlazados entre unidades.",
   "@fileOperations.transferDialog.hardlinkNote": {
@@ -292,6 +308,18 @@
   "@fileOperations.transferDialog.estimatedSizeTooltip": {
     "sourceHash": "2e8ba70"
   },
+  "fileOperations.s3Cost.line": "Unos {amount} según los precios de lista de {provider}",
+  "@fileOperations.s3Cost.line": {
+    "sourceHash": "e8db02b"
+  },
+  "fileOperations.s3Cost.infoLabel": "Acerca de esta estimación",
+  "@fileOperations.s3Cost.infoLabel": {
+    "sourceHash": "19637c5"
+  },
+  "fileOperations.s3Cost.infoText": "La estimación usa los precios de lista públicos del proveedor. Los niveles gratuitos, los descuentos, las cuotas incluidas y los cargos mínimos pueden hacer que tu factura sea más baja o más alta.",
+  "@fileOperations.s3Cost.infoText": {
+    "sourceHash": "379665c"
+  },
   "fileOperations.transferDialog.scanUnresponsive": "El origen no responde, así que este tamaño es todo lo que hemos podido contar.",
   "@fileOperations.transferDialog.scanUnresponsive": {
     "sourceHash": "ec3beb2"
@@ -303,6 +331,10 @@
   "fileOperations.transferDialog.scanRetry": "Reintentar",
   "@fileOperations.transferDialog.scanRetry": {
     "sourceHash": "d8b8392"
+  },
+  "fileOperations.transferDialog.sourceNoLongerConnected": "El teléfono o servidor que contiene estos archivos ya no está conectado, así que Cmdr no puede copiar nada de ahí.",
+  "@fileOperations.transferDialog.sourceNoLongerConnected": {
+    "sourceHash": "4741405"
   },
   "fileOperations.transferDialog.conflictsUnknown": "No hemos podido comprobar qué hay ya en el destino. Te preguntaremos por cada coincidencia.",
   "@fileOperations.transferDialog.conflictsUnknown": {
@@ -398,7 +430,7 @@
   },
   "fileOperations.scanPhase.scanDir": "{count, plural, one {carpeta} many {carpetas} other {carpetas}}",
   "@fileOperations.scanPhase.scanDir": {
-    "sourceHash": "1c5273d"
+    "sourceHash": "46b23b5"
   },
   "fileOperations.transferProgress.scanTitleCopy": "Verificando antes de copiar…",
   "@fileOperations.transferProgress.scanTitleCopy": {
@@ -536,9 +568,13 @@
   "@fileOperations.transferProgress.stageFinishingTransferStep": {
     "sourceHash": "1f28724"
   },
-  "fileOperations.transferProgress.warningFileOverFolder": "El destino existe y es una <strong>carpeta</strong>. Estás a punto de sobrescribirla con un <strong>archivo</strong> del mismo nombre. Todo el contenido de la carpeta de destino se eliminaría y se sustituiría por el archivo. ¿Qué quieres hacer?",
+  "fileOperations.transferProgress.warningFileOverFolder": "El destino existe y es una <strong>carpeta</strong>. Estás a punto de reemplazarla por un <strong>archivo</strong> del mismo nombre. Todo lo que hay dentro de la carpeta desaparecería. ¿Qué quieres hacer?",
   "@fileOperations.transferProgress.warningFileOverFolder": {
-    "sourceHash": "6dce75c"
+    "sourceHash": "bacab9d"
+  },
+  "fileOperations.transferProgress.warningFolderOverFile": "El destino existe y es un <strong>archivo</strong>. Estás a punto de reemplazarlo por una <strong>carpeta</strong> del mismo nombre. El archivo desaparecería en cuanto la carpeta ocupara su lugar. ¿Qué quieres hacer?",
+  "@fileOperations.transferProgress.warningFolderOverFile": {
+    "sourceHash": "b681083"
   },
   "fileOperations.transferProgress.lookAlikeHint": "Estos nombres se ven iguales, pero el servidor los escribe de forma distinta. “Sobrescribir” reemplaza el elemento que ya está ahí.",
   "@fileOperations.transferProgress.lookAlikeHint": {
@@ -884,6 +920,10 @@
   "fileOperations.errorDialog.retry": "Reintentar",
   "@fileOperations.errorDialog.retry": {
     "sourceHash": "942087c"
+  },
+  "fileOperations.errorDialog.copyAnyway": "Copiar de todos modos",
+  "@fileOperations.errorDialog.copyAnyway": {
+    "sourceHash": "f794181"
   },
   "fileOperations.errorDialog.close": "Cerrar",
   "@fileOperations.errorDialog.close": {

@@ -655,8 +655,8 @@ async fn first_contact_prompt(
 
 // ── What the server said it can do ───────────────────────────────────
 
-/// A stock OpenSSH server advertises the four extensions this crate asks about,
-/// and the probe reads all four off one hello.
+/// A stock OpenSSH server advertises the extensions this crate asks about, and
+/// the probe reads them all off one hello.
 ///
 /// ❗ Read ONCE, at dial. The set arrives in `SSH_FXP_VERSION` and cannot change
 /// while the session lives, so a path that branches on it branches on a plain
@@ -675,10 +675,11 @@ async fn a_stock_server_advertises_the_extensions_this_crate_asks_about() {
     assert!(extensions.copy_data, "and this one since 9.0");
     assert!(extensions.fsync);
     assert!(extensions.hardlink);
+    assert!(extensions.statvfs, "and this one since 5.1");
 }
 
-/// ⚠️ A server that advertises neither says so, and every path that branches on
-/// one takes its fallback.
+/// ⚠️ A server that advertises none of them says so, and every path that
+/// branches on one takes its fallback.
 ///
 /// ❗ `copy-data` carries NO `@openssh.com` suffix where every other extension
 /// here does (`sftp-server.c`, OpenSSH 9.9p2, read 2026-08-22). The fixture's
@@ -686,7 +687,7 @@ async fn a_stock_server_advertises_the_extensions_this_crate_asks_about() {
 /// silently dropped nothing — which is what this cell caught.
 #[tokio::test]
 #[ignore = "needs the SFTP fixture stack: sftp-servers/start.sh (sftp-fixture)"]
-async fn a_server_with_the_extensions_dropped_advertises_neither() {
+async fn a_server_with_the_extensions_dropped_advertises_none_of_them() {
     let params = fixture_params("NOPOSIXRENAME", 12486);
     let host = fixture_host(&params, Some(FIXTURE_PASSWORD));
     let volume = connect_fixture(&host, params).await;
@@ -698,10 +699,47 @@ async fn a_server_with_the_extensions_dropped_advertises_neither() {
         "the rename fallback is what this fixture is for"
     );
     assert!(!extensions.copy_data, "and so is the copy one");
+    assert!(!extensions.statvfs, "and the free-space one");
     assert!(
         extensions.fsync,
-        "only the two named are dropped: the fixture is stock OpenSSH otherwise"
+        "only the three named are dropped: the fixture is stock OpenSSH otherwise"
     );
+}
+
+/// A server that answers `statvfs@openssh.com` reports a real, bounded figure
+/// for the volume root, and the same one for a folder on the same filesystem.
+#[tokio::test]
+#[ignore = "needs the SFTP fixture stack: sftp-servers/start.sh (sftp-fixture)"]
+async fn a_server_with_statvfs_reports_its_free_space() {
+    let params = fixture_params("OPENSSH", 12480);
+    let host = fixture_host(&params, Some(FIXTURE_PASSWORD));
+    let volume = connect_fixture(&host, params).await;
+
+    let space = volume.get_space_info().await.expect(FIXTURE);
+
+    let total = space.total_bytes().expect("a real filesystem has a ceiling");
+    let available = space.available_bytes().expect("and so room left to report");
+    assert!(total > 0, "a zero total is a misread unit, not a disk");
+    assert!(available <= total);
+    assert!(space.used_bytes() <= total);
+    let at_root = volume.get_space_info_at(Path::new("/")).await.expect(FIXTURE);
+    assert_eq!(
+        at_root.total_bytes(),
+        Some(total),
+        "the root asked by path is the same filesystem"
+    );
+}
+
+/// A server without `statvfs@openssh.com` can't tell, and says so without
+/// asking: `NotSupported`, which every caller reads as "go ahead", ❌ never "full".
+#[tokio::test]
+#[ignore = "needs the SFTP fixture stack: sftp-servers/start.sh (sftp-fixture)"]
+async fn a_server_without_statvfs_cant_tell_its_free_space() {
+    let params = fixture_params("NOPOSIXRENAME", 12486);
+    let host = fixture_host(&params, Some(FIXTURE_PASSWORD));
+    let volume = connect_fixture(&host, params).await;
+
+    assert!(matches!(volume.get_space_info().await, Err(VolumeError::NotSupported)));
 }
 
 /// A volume with no session behind it has no answer, rather than a wrong one.

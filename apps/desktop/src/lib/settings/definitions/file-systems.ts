@@ -32,6 +32,22 @@ export const fileSystemsSettings: SettingDefinitionSource[] = [
     hidden: true,
   },
   {
+    // Internal: hidden from the Settings UI. Remembers whether the person last
+    // opened or collapsed the servers hub's "found nearby" group; `auto` until
+    // they toggle it, which is when the hub picks by whether they saved a server.
+    id: 'network.nearbyServersGroup',
+    section: ['File systems', 'SMB/Network shares'],
+    labelKey: 'settings.network.nearbyServersGroup.label',
+    keywords: [],
+    // A `string`, not an `enum`: an enum's options each need a rendered label, and
+    // nothing ever renders these. `NearbyServersGroupChoice` keeps the three
+    // tokens type-safe at every call site.
+    type: 'string',
+    default: 'auto',
+    component: 'text-input',
+    hidden: true,
+  },
+  {
     id: 'network.directSmbConnection',
     section: ['File systems', 'SMB/Network shares'],
     labelKey: 'settings.network.directSmbConnection.label',

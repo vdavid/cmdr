@@ -43,6 +43,20 @@ retry loop. Branch on `canAmend`, never on a message (`cmdr/no-error-string-matc
 An amend can land more than once for the same report; amendments accumulate server-side and `canAmend` stays true. The
 button is therefore disabled DURING the call, not after it.
 
+## When the organization turned reports off
+
+Under `DisableCrashAndErrorReports` (`getManagedPolicyView().reportsDisabled`, read reactively) the backend refuses
+every send; the dialog stops offering one rather than letting the person hit that refusal:
+
+- Compose: the explanation becomes `errorReporter.dialog.managedOff`, Send and the attach-email checkbox go away, and
+  the primary button is "Save to disk" (`saveErrorReportToDisk` with the previewed id and no email, then the
+  `BundleSavedToastContent` toast with Reveal in Finder). `canSend` is false, so ⌘Enter does nothing. The dev-only debug
+  save button hides, since the primary one does the same.
+- Amend: the same sentence and a lone Close, like the dead end above.
+
+`save_error_report_to_disk` is a command in every build for this (`src-tauri/src/error_reporter/DETAILS.md` § Managed
+policy).
+
 ## Flow B: auto-send toast
 
 When `updates.errorReports` is on, the Rust auto-dispatcher fires `error-report-auto-sent` (payload: server-issued

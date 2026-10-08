@@ -3,6 +3,10 @@
   "@fileOperations.button.cancel": {
     "sourceHash": "19766ed"
   },
+  "fileOperations.button.close": "关闭",
+  "@fileOperations.button.close": {
+    "sourceHash": "7d9eb7a"
+  },
   "fileOperations.button.ok": "好",
   "@fileOperations.button.ok": {
     "sourceHash": "565339b"
@@ -79,9 +83,9 @@
   "@fileOperations.delete.scanFile": {
     "sourceHash": "46012b1"
   },
-  "fileOperations.delete.scanDir": "{count, plural, other {个目录}}",
+  "fileOperations.delete.scanDir": "{count, plural, other {个文件夹}}",
   "@fileOperations.delete.scanDir": {
-    "sourceHash": "1c5273d"
+    "sourceHash": "46b23b5"
   },
   "fileOperations.delete.confirmDelete": "删除",
   "@fileOperations.delete.confirmDelete": {
@@ -123,6 +127,14 @@
   "@fileOperations.delete.symlinkNoticeMany": {
     "sourceHash": "56b3f52"
   },
+  "fileOperations.mkfile.notCreatedToast": "Cmdr 无法创建文件“{name}”。{reason}",
+  "@fileOperations.mkfile.notCreatedToast": {
+    "sourceHash": "4f30e62"
+  },
+  "fileOperations.newEntry.stillCreating": "仍在创建“{name}”。宗卷响应很慢。你可以放心关闭这个对话框，创建会继续进行，而且现在已经无法取消了。",
+  "@fileOperations.newEntry.stillCreating": {
+    "sourceHash": "74e376f"
+  },
   "fileOperations.mkfile.title": "新建文件",
   "@fileOperations.mkfile.title": {
     "sourceHash": "44dedd0"
@@ -155,17 +167,9 @@
   "@fileOperations.mkdir.placeholder": {
     "sourceHash": "7612b56"
   },
-  "fileOperations.mkdir.timeoutMessage": "无法确认文件夹是否已创建。这个宗卷可能比较慢，所以文件夹也许已经创建好了。",
-  "@fileOperations.mkdir.timeoutMessage": {
-    "sourceHash": "8bc758a"
-  },
-  "fileOperations.mkdir.timeoutRefresh": "刷新列表",
-  "@fileOperations.mkdir.timeoutRefresh": {
-    "sourceHash": "b0e5436"
-  },
-  "fileOperations.mkdir.timeoutDismiss": "关闭",
-  "@fileOperations.mkdir.timeoutDismiss": {
-    "sourceHash": "48845bf"
+  "fileOperations.mkdir.notCreatedToast": "Cmdr 无法创建文件夹“{name}”。{reason}",
+  "@fileOperations.mkdir.notCreatedToast": {
+    "sourceHash": "517ef4b"
   },
   "fileOperations.mkdir.aiSuggestionsAria": "AI 建议",
   "@fileOperations.mkdir.aiSuggestionsAria": {
@@ -247,9 +251,21 @@
   "@fileOperations.transferDialog.targetWillBeCreatedCopy": {
     "sourceHash": "4e8d166"
   },
+  "fileOperations.transferDialog.renameByMoveHint": "重命名它要在服务器上拷贝里面的全部内容，所以会作为一次移动来进行，你可以暂停或取消。",
+  "@fileOperations.transferDialog.renameByMoveHint": {
+    "sourceHash": "31987cc"
+  },
   "fileOperations.transferDialog.targetWillBeCreatedMove": "这个文件夹还不存在。Cmdr 会在移动时自动创建它。",
   "@fileOperations.transferDialog.targetWillBeCreatedMove": {
     "sourceHash": "1246331"
+  },
+  "fileOperations.transferDialog.rootEchoWarning": "这个位置本来就从 {rootFolder} 开始，所以这个路径会指向 {resolvedPath}。你是想用 {strippedPath} 吗？",
+  "@fileOperations.transferDialog.rootEchoWarning": {
+    "sourceHash": "b692d10"
+  },
+  "fileOperations.transferDialog.rootEchoUseStripped": "使用更短的路径",
+  "@fileOperations.transferDialog.rootEchoUseStripped": {
+    "sourceHash": "66972e3"
   },
   "fileOperations.transferDialog.destinationReadOnly": "这个文件夹是只读的，无法放入任何东西。",
   "@fileOperations.transferDialog.destinationReadOnly": {
@@ -271,9 +287,9 @@
   "@fileOperations.transferDialog.scanFile": {
     "sourceHash": "46012b1"
   },
-  "fileOperations.transferDialog.scanDir": "{count, plural, other {个目录}}",
+  "fileOperations.transferDialog.scanDir": "{count, plural, other {个文件夹}}",
   "@fileOperations.transferDialog.scanDir": {
-    "sourceHash": "1c5273d"
+    "sourceHash": "46b23b5"
   },
   "fileOperations.transferDialog.hardlinkNote": "这次要写入 <written></written> 的数据，而源文件在磁盘上只占 <ondisk></ondisk> 的空间。多出的部分是硬链接文件，跨驱动器后没法保持链接。",
   "@fileOperations.transferDialog.hardlinkNote": {
@@ -291,6 +307,18 @@
   "@fileOperations.transferDialog.estimatedSizeTooltip": {
     "sourceHash": "2e8ba70"
   },
+  "fileOperations.s3Cost.line": "按 {provider} 的标价计算，约 {amount}",
+  "@fileOperations.s3Cost.line": {
+    "sourceHash": "e8db02b"
+  },
+  "fileOperations.s3Cost.infoLabel": "关于这个估算",
+  "@fileOperations.s3Cost.infoLabel": {
+    "sourceHash": "19637c5"
+  },
+  "fileOperations.s3Cost.infoText": "这里用的是提供方公开的标价。免费额度、折扣、套餐内含用量和最低收费都可能让你的账单更低或更高。",
+  "@fileOperations.s3Cost.infoText": {
+    "sourceHash": "379665c"
+  },
   "fileOperations.transferDialog.scanUnresponsive": "来源没有响应，我们只统计到这些。",
   "@fileOperations.transferDialog.scanUnresponsive": {
     "sourceHash": "ec3beb2"
@@ -302,6 +330,10 @@
   "fileOperations.transferDialog.scanRetry": "重试",
   "@fileOperations.transferDialog.scanRetry": {
     "sourceHash": "d8b8392"
+  },
+  "fileOperations.transferDialog.sourceNoLongerConnected": "存放这些文件的手机或服务器已经断开连接了，所以 Cmdr 无法从那里拷贝。",
+  "@fileOperations.transferDialog.sourceNoLongerConnected": {
+    "sourceHash": "4741405"
   },
   "fileOperations.transferDialog.conflictsUnknown": "我们无法检查目标位置已有的内容。遇到重名时会逐个询问你。",
   "@fileOperations.transferDialog.conflictsUnknown": {
@@ -395,9 +427,9 @@
   "@fileOperations.scanPhase.scanFile": {
     "sourceHash": "46012b1"
   },
-  "fileOperations.scanPhase.scanDir": "{count, plural, other {个目录}}",
+  "fileOperations.scanPhase.scanDir": "{count, plural, other {个文件夹}}",
   "@fileOperations.scanPhase.scanDir": {
-    "sourceHash": "1c5273d"
+    "sourceHash": "46b23b5"
   },
   "fileOperations.transferProgress.scanTitleCopy": "拷贝前正在核对…",
   "@fileOperations.transferProgress.scanTitleCopy": {
@@ -535,9 +567,13 @@
   "@fileOperations.transferProgress.stageFinishingTransferStep": {
     "sourceHash": "1f28724"
   },
-  "fileOperations.transferProgress.warningFileOverFolder": "目标已存在，是一个<strong>文件夹</strong>。你即将用同名的<strong>文件</strong>覆盖它。目标文件夹的全部内容会被删除，并由该文件取代。要怎么做？",
+  "fileOperations.transferProgress.warningFileOverFolder": "目标已存在，是一个<strong>文件夹</strong>。你即将用同名的<strong>文件</strong>替换它。这个文件夹里的所有东西都会没了。要怎么做？",
   "@fileOperations.transferProgress.warningFileOverFolder": {
-    "sourceHash": "6dce75c"
+    "sourceHash": "bacab9d"
+  },
+  "fileOperations.transferProgress.warningFolderOverFile": "目标已存在，是一个<strong>文件</strong>。你即将用同名的<strong>文件夹</strong>替换它。文件夹一旦取而代之，这个文件就没了。要怎么做？",
+  "@fileOperations.transferProgress.warningFolderOverFile": {
+    "sourceHash": "b681083"
   },
   "fileOperations.transferProgress.lookAlikeHint": "这两个名称看起来一样，但服务器存储的写法不同。“覆盖”会替换现有的那一项。",
   "@fileOperations.transferProgress.lookAlikeHint": {
@@ -882,6 +918,10 @@
   "fileOperations.errorDialog.retry": "重试",
   "@fileOperations.errorDialog.retry": {
     "sourceHash": "942087c"
+  },
+  "fileOperations.errorDialog.copyAnyway": "仍要拷贝",
+  "@fileOperations.errorDialog.copyAnyway": {
+    "sourceHash": "f794181"
   },
   "fileOperations.errorDialog.close": "关闭",
   "@fileOperations.errorDialog.close": {

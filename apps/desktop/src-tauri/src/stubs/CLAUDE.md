@@ -2,8 +2,8 @@
 
 Compilation stubs for platform-specific modules on platforms that aren't macOS and aren't Linux. Never compiled on
 macOS. Most sub-modules are gated `#[cfg(not(target_os = "linux"))]` since Linux has real implementations (volumes,
-MTP, network, accent color, permissions); `text_size.rs` is gated `#[cfg(not(target_os = "macos"))]` because the
-Accessibility text-size signal is macOS-only.
+MTP, network, accent color, permissions); `text_size.rs`, `reduce_transparency.rs`, and `glass_tint.rs` are gated
+`#[cfg(not(target_os = "macos"))]` because those signals are macOS-only.
 
 ## Module map
 
@@ -12,16 +12,18 @@ Accessibility text-size signal is macOS-only.
   stubs returning empty/success values; types mirror the macOS shapes for JSON compatibility.
 - **`text_size.rs`**: non-macOS `get_system_text_size_multiplier` returns `1.0`. The in-app `appearance.textSize`
   slider still works on every platform.
+- **`reduce_transparency.rs`** / **`glass_tint.rs`**: report "don't reduce" and "no Liquid Glass slider"; their
+  observers are no-ops.
 
 Per-stub behavior is cataloged in `DETAILS.md`.
 
 ## Invariants
 
 - **JSON shape must match macOS.** The frontend doesn't branch on platform; it calls the same commands everywhere. If a
-  macOS type gains or loses a field, align the corresponding stub type by hand. Most fragile in `mtp.rs`, which keeps a
-  local `FileEntry` duplicating `crate::file_system::FileEntry`.
-- **`mtp.rs` deliberately doesn't import `crate::file_system`**: that keeps the stub dependency-free and fast to compile
-  on targets where the real module's platform-specific deps may not build. The duplicated `FileEntry` is intentional.
+  macOS type gains or loses a field, align the corresponding stub type by hand.
+- **Stubs import nothing from the real modules** (`mtp.rs` doesn't import `cmdr_mtp`): that keeps them dependency-free
+  and fast to compile on targets where the real module's platform-specific deps may not build. The duplicated types are
+  intentional.
 - **Stubs return hardcoded success** (empty vecs, `true` for permissions), never errors: the frontend doesn't branch on
   platform, so an error would trigger error UI; empty/success makes the feature silently not appear, the correct UX for
   "not available here."

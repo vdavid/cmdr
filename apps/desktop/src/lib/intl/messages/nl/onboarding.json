@@ -321,6 +321,18 @@
   "@onboarding.stepAi.off.help": {
     "sourceHash": "3f261be"
   },
+  "onboarding.localDownloadFailed.title": "Het downloaden van het lokale AI-model is niet voltooid",
+  "@onboarding.localDownloadFailed.title": {
+    "sourceHash": "9612750"
+  },
+  "onboarding.localDownloadFailed.body": "Start de download opnieuw via Instellingen › AI.",
+  "@onboarding.localDownloadFailed.body": {
+    "sourceHash": "6601872"
+  },
+  "onboarding.localDownloadFailed.openSettings": "Open Instellingen",
+  "@onboarding.localDownloadFailed.openSettings": {
+    "sourceHash": "3f94010"
+  },
   "onboarding.stepBeta.footer.start": "Begin met Cmdr!",
   "@onboarding.stepBeta.footer.start": {
     "sourceHash": "e29bbc7"
@@ -388,6 +400,14 @@
   "onboarding.stepBeta.crashReportsNote": "Crashrapporten staan ook aan: als Cmdr onderuitgaat, stuurt het de appversie, je macOS-versie en de plek in de code waar het stopte.\nNooit je bestanden.\nJe kunt allebei uitzetten in de instellingen wanneer je wilt.",
   "@onboarding.stepBeta.crashReportsNote": {
     "sourceHash": "9be0be1"
+  },
+  "onboarding.stepBeta.analyticsManaged": "Je organisatie heeft gebruiksstatistieken uitgezet.",
+  "@onboarding.stepBeta.analyticsManaged": {
+    "sourceHash": "49484ee"
+  },
+  "onboarding.stepBeta.crashReportsNoteAlone": "Crashrapporten staan aan: als Cmdr onderuitgaat, stuurt het de appversie, je macOS-versie en de plek in de code waar het stopte.\nNooit je bestanden.\nJe kunt ze uitzetten in de instellingen wanneer je wilt.",
+  "@onboarding.stepBeta.crashReportsNoteAlone": {
+    "sourceHash": "5084dd0"
   },
   "onboarding.stepBeta.emailTitle": "Blijf in contact (optioneel)",
   "@onboarding.stepBeta.emailTitle": {
@@ -564,6 +584,10 @@
   "onboarding.cloudSetup.apiKeyAria": "API-sleutel",
   "@onboarding.cloudSetup.apiKeyAria": {
     "sourceHash": "16f0ee4"
+  },
+  "onboarding.cloudSetup.removeKey": "Verwijder sleutel",
+  "@onboarding.cloudSetup.removeKey": {
+    "sourceHash": "81c45fd"
   },
   "onboarding.cloudSetup.apiKeyPlaceholder.openai": "Voorbeeld: sk-abc123…",
   "@onboarding.cloudSetup.apiKeyPlaceholder.openai": {

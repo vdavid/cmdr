@@ -70,10 +70,8 @@ function makeKeyboardDeps(overrides: Partial<KeyboardDeps> = {}): KeyboardDeps {
     copy: { busy: false, cancelInFlight: () => Promise.resolve() },
     isCopyConfirmOpen: () => false,
     isCopyRefuseOpen: () => false,
-    isContextMenuOpen: () => false,
     cancelCopyConfirm: noop,
     dismissCopyRefuse: noop,
-    closeContextMenu: noop,
     logEscape: noop,
     runCopy: noop,
     toggleTailMode: noop,
@@ -231,7 +229,7 @@ describe('createViewerKeyboard: ⌘A when the last line is not cached', () => {
 
     expect(selection.selection?.focus.row).toBe(EOF_ROW)
     expect(toRangeEnds(selection.selection)).toEqual({
-      anchor: { kind: 'line', line: 0, offset: 0 },
+      anchor: { kind: 'row', row: 0, offset: 0 },
       focus: { kind: 'eof' },
     })
   })
@@ -282,7 +280,7 @@ describe('createViewerKeyboard: ⌘A in ByteSeek-no-index mode', () => {
     expect(selection.selection).toEqual(makeSelectToEof())
     // And the read must go out as `RangeEnd::Eof`, never a row index no file has.
     expect(toRangeEnds(selection.selection)).toEqual({
-      anchor: { kind: 'line', line: 0, offset: 0 },
+      anchor: { kind: 'row', row: 0, offset: 0 },
       focus: { kind: 'eof' },
     })
   })

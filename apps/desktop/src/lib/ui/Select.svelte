@@ -18,6 +18,11 @@
          * reserves the space, so labels stay aligned down the list.
          */
         iconUrl?: string
+        /**
+         * Listed but can't be picked: pointer and keyboard skip it (Ark reads `disabled` off the item
+         * by default), and it renders dimmed. Say why in `description`.
+         */
+        disabled?: boolean
     }
 </script>
 
@@ -61,6 +66,8 @@
         disabled?: boolean
         placeholder?: string
         ariaLabel: string
+        /** Id of an element that explains the control, for example why it's disabled. */
+        ariaDescribedBy?: string
         /** Extra class on the `.select-content` element (for example `custom-highlighted`). */
         contentClass?: string
     }
@@ -73,6 +80,7 @@
         disabled = false,
         placeholder,
         ariaLabel,
+        ariaDescribedBy,
         contentClass = '',
     }: Props = $props()
 
@@ -227,7 +235,7 @@
         {disabled}
     >
         <Select.Control>
-            <Select.Trigger class="select-trigger" aria-label={ariaLabel}>
+            <Select.Trigger class="select-trigger" aria-label={ariaLabel} aria-describedby={ariaDescribedBy}>
                 {#if selectedIconUrl}
                     <img class="select-item-icon" src={selectedIconUrl} alt="" width="16" height="16" />
                 {/if}
@@ -387,11 +395,11 @@
            (`portal-target.ts`): body level, or a hosting dialog's overlay, under `--z-modal`. */
         z-index: var(--z-dropdown);
         background: var(--color-bg-glass);
-        -webkit-backdrop-filter: saturate(180%) blur(20px);
-        backdrop-filter: saturate(180%) blur(20px);
+        -webkit-backdrop-filter: var(--glass-backdrop);
+        backdrop-filter: var(--glass-backdrop);
         border: 0.5px solid var(--color-border-glass);
-        border-radius: var(--radius-lg);
-        box-shadow: var(--shadow-lg);
+        border-radius: var(--radius-menu);
+        box-shadow: var(--shadow-glass), var(--shadow-glass-rim);
         padding: var(--spacing-xs);
         max-height: 300px;
         overflow-y: auto;
@@ -401,11 +409,6 @@
         outline: none;
         /* The macOS overlap shift (transform) and the until-measured hide (opacity) are applied
            inline per instance; see `contentStyle`. */
-    }
-
-    :global(html.reduce-transparency .select-content) {
-        -webkit-backdrop-filter: none;
-        backdrop-filter: none;
     }
 
     :global(.select-content:focus),
@@ -461,6 +464,11 @@
 
     :global(.select-item[data-highlighted]:hover) {
         background: var(--color-accent-hover);
+    }
+
+    /* A disabled row stays readable but dimmed, and the cursor never lands on it. */
+    :global(.select-item[data-disabled]) {
+        color: var(--color-text-tertiary);
     }
 
     :global(.select-item:focus),

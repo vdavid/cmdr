@@ -130,6 +130,11 @@ impl DriveWatcher {
         since_when: u64,
         event_sender: mpsc::UnboundedSender<FsChangeEvent>,
     ) -> Result<Self, WatcherError> {
+        #[cfg(test)]
+        if fake_journal::covers(root) {
+            return Ok(fake_journal::watcher(root, event_sender));
+        }
+
         let running = Arc::new(AtomicBool::new(true));
         let last_event_id = Arc::new(AtomicU64::new(0));
 
@@ -596,20 +601,38 @@ fn parse_fsevent(event: &Event) -> FsChangeEvent {
     }
 }
 
-/// Get the current system-wide FSEvents event ID.
+/// Get the current FSEvents event ID, as seen by a volume rooted at `root`.
 ///
 /// Useful for determining `sinceWhen` at the start of a scan.
 /// Returns `0` on non-macOS platforms (no event ID concept).
+///
+/// The ID is system-wide, so the real journal ignores `root`; it's there so a test
+/// can fake one volume's journal (`fake_journal`, test builds only) without touching
+/// anybody else's.
+///
+/// ⚠️ It's a round trip to `fseventsd`, ❌ not a local read: 0.2 ms idle, up to 3.7 s
+/// with the daemon pegged at 100% CPU by other processes' disk churn (verified on
+/// macOS 27, `sample` + timing logs, 2026-10-07). Treat it as blocking I/O.
 #[cfg(target_os = "macos")]
-pub fn current_event_id() -> u64 {
-    // SAFETY: FSEventsGetCurrentEventId is a simple read of the global counter
+pub fn current_event_id(root: &Path) -> u64 {
+    #[cfg(test)]
+    if fake_journal::covers(root) {
+        return fake_journal::next_event_id();
+    }
+    #[cfg(not(test))]
+    let _ = root;
+    // SAFETY: FSEventsGetCurrentEventId takes no arguments and has no preconditions.
     unsafe { cmdr_fsevent_stream::ffi::FSEventsGetCurrentEventId() }
 }
 
 #[cfg(not(target_os = "macos"))]
-pub fn current_event_id() -> u64 {
+pub fn current_event_id(_root: &std::path::Path) -> u64 {
     0
 }
+
+/// The test-only fake FSEvents journal (`watcher/fake_journal.rs`).
+#[cfg(all(test, target_os = "macos"))]
+pub(crate) mod fake_journal;
 
 // ── Tests ────────────────────────────────────────────────────────────
 
@@ -654,7 +677,7 @@ mod tests {
 
     #[test]
     fn current_event_id_returns_nonzero() {
-        let id = current_event_id();
+        let id = current_event_id(Path::new("/"));
         assert!(id > 0, "system FSEvents event ID should be nonzero");
     }
 
@@ -749,7 +772,7 @@ mod linux_tests {
 
     #[test]
     fn current_event_id_returns_zero_on_linux() {
-        assert_eq!(current_event_id(), 0);
+        assert_eq!(current_event_id(std::path::Path::new("/")), 0);
     }
 
     #[test]

@@ -29,8 +29,10 @@ arriving mid-pass sets a single re-run flag rather than starting a second pass (
 `ScanCompleted` collapse to one pass, then at most one re-run). The recompute itself is full-volume: walk the index tree
 through the read pool (`get_read_pool_for`), assemble a `FolderSignals` per folder (`signals::signals_for_dir`), run the
 pure scorer, and write every row at a freshly-bumped generation. It runs on a blocking background task (SQLite plus
-scoring), never on the IPC thread; a `None` read pool (index not registered) is a no-op. Wiring a volume twice is
-harmless: the coordinator collapses the duplicate pass, and a volume is wired from at most two places.
+scoring), never on the IPC thread; a `None` read pool (index not registered) is a no-op. Wiring a volume twice within
+one life of it is harmless: the coordinator collapses the duplicate pass, and a life is wired from at most two places
+(the sweep and its registration). Across lives nothing piles up, because a wiring ends with the life it was made for (§
+"How a pass stops").
 
 ## Generation semantics
 
@@ -121,28 +123,90 @@ marker, hidden) come from the shared `classify.rs` module that BOTH `signals::si
 `fixtures::signals_for` (tests) call, so the formula's test stand-in and the real assembler can't drift on what a signal
 means.
 
-## A pass can't be stopped
+## How a pass stops
 
-Every other long walk in the crate runs under a `CancellationToken` rooted at the volume
-(`../../indexing/host/DETAILS.md` § Cancellation). An importance pass runs under nothing: no token reaches
-`run_pass_blocking` or the walk below it, and the scheduler registers no
-`indexing::resources::subsystem_stop::register_subsystem_stop_hook`. Two consequences worth knowing before you assume
-otherwise:
+A pass runs under a child of its volume's `CancellationToken`, like every other long walk in the crate
+(`../../indexing/host/DETAILS.md` § Cancellation). ❌ There is no second primitive here (no `AtomicBool`, no `Notify`):
+the one-token tree is what makes stopping a volume stop everything under it at once.
 
-- **`stop_all_indexing` doesn't reach it.** That's both the memory watchdog's emergency stop and the shutdown path, so a
-  recompute that's running when either fires walks the whole index to the end anyway.
-- **Nothing observes a stop request**, so there's no `Cancelled` outcome to handle and no partial-pass state to reason
-  about. A pass either completes and stamps its generation, or fails.
+**Where the signal comes from.** A volume arrives at `wire_volume` WITH its signal: `RegisteredVolume.stop`, a child of
+the volume's root token, minted by whoever held the instance (the registration funnel, or the startup sweep under the
+registry lock). It is handed down, never looked up by volume id. The scheduler keeps the latest one per volume
+(`adopt_stop`), and each pass resolves it when it STARTS (`run_pass_under_current_stop`), never when it was requested: a
+request from a restarted volume can coalesce into a run its previous life began, and that re-run has to hear the new
+signal, since the old one has already fired for good. A volume nothing wired reads as already stopped, so a pass that
+couldn't be stopped doesn't start.
 
-**Why it hasn't hurt.** The full walk is O(dirs) in a small constant: 5.5–6.4 s over real 391k / 611k-folder indexes
-(measured 2026-07-29, § "The scoped walk"), and an incremental is microseconds. Seconds of unstoppable work inside a 16
-GB emergency stop is survivable, where a scan's minutes wouldn't be.
+It is a bare token, not a `VolumeWork`, on purpose: a pass reads the local index database and never the drive, so it
+must not hold the volume against an eject.
 
-**Closing it** (the `TODO(importance)` sits on `recompute_folders`, the loop that would poll): thread a child of the
-volume's token in from whoever starts the pass (it is handed down, never looked up by id — `indexing/host/DETAILS.md` §
-Cancellation), and register a stop hook. ❌ Don't introduce a second primitive (an `AtomicBool`, a `Notify`): the
-one-token tree is what makes stopping a volume stop everything under it at once. The hook must be cheap and
-non-blocking; it runs INLINE in the stop path.
+**Two things fire it, and quitting isn't one of them:**
+
+- **The volume stopping** (disabled, ejected, failed, torn down, cleared). Its root token fires and the child with it.
+- **`stop_all_indexing`**, through the scheduler's subsystem stop hook (`wiring::stop_hook_for`), which fires every
+  wired volume's signal. Its two callers are the memory watchdog's emergency stop and the master indexing switch going
+  off. The hooks run BEFORE the per-volume drains (seconds apiece, one after another), so every pass hears an emergency
+  stop at once, and the hook still reaches a pass whose own volume's stop was deferred or failed.
+- ⚠️ **Quitting the app fires nothing**: no exit path stops the index, so a pass running at quit dies with the process.
+  That is safe for the same reason a crash is (below), and it is why "is redone later" can't depend on anything a stop
+  writes.
+
+A volume the hook stopped stays stopped here until it registers again, the rule `media_index` follows: a pass that was
+stopped doesn't quietly resume.
+
+**The signal scopes the LISTENERS too, not only the passes.** `wire_volume`'s three listeners (scan completion plus home
+coverage, dir-changed, the hourly refresh timer) wait on process-global buses and timers that never close, so
+`host::runtime::spawn_until_stopped` ends each one when the signal fires. Every start of a volume registers it, and so
+wires it again: without this a share that reconnected ten times carried ten hourly refresh timers, each driving its own
+full pass. `a_volumes_listeners_end_when_the_volume_stops` pins it through the buses' receiver counts. ❌ Don't spawn a
+per-volume listener any other way.
+
+**Where a pass looks.** Every loop that can run long polls through `stop::StopPoll`: both row streams of the full walk
+(the store's `for_each_*` callbacks return `ControlFlow`, so a stopped walk stops FETCHING), the two propagations, the
+scoring loop, the incremental's whole-volume filter, and the full-pass write, chunk by chunk on the writer thread. The
+scoped walk looks once per origin, which `SCOPED_WALK_MAX_DIRS` bounds. Three stretches don't poll, each bounded: the
+`kMDItemLastUsedDate` sample (at most `SAMPLE_CAP` round-trips, with a look before it), an incremental's write (one
+transaction over what MOVED, milliseconds), and a full pass's last two stamp writes plus its commit.
+
+**The interval.** A look takes the token's mutex, so `StopPoll` looks once per `STOP_CHECK_INTERVAL` (1,024) items and
+counts the rest on a local. Against the 7.4 M file rows of a real root index that is ~7,200 looks for the stream that
+dominates a pass. Counting 7.4 M items costs 76 ms and a per-item look 224 ms (verified on macOS 27 aarch64, an
+UNOPTIMIZED test build, a timed loop over `StopPoll::tick` and `stop::check`, 2026-09-30), against the 4.7 s that stream
+takes in a release build, so the polled cost is under 2% even at debug speed. The gap a stop waits out is 1,024 of the
+slowest polled item: 1,024 store inserts, a few milliseconds. ❌ Don't look per item, and don't raise the interval to
+"save" a cost that isn't there.
+
+### What a stopped pass leaves behind
+
+**Nothing, which is the whole design.** `PassError::Cancelled` is an error variant, and everything that records a
+finished pass sits behind an `Ok`: the table replace, the `recompute_generation` stamp, the `SCORING_POLICY_KEY` stamp
+(all one transaction, `../writer.rs` `apply_full_pass`), the `recompute of … scored` log line, and
+`notify_recompute_completed`. So a stop can't be taken for a finished pass by a caller that forgets to check.
+
+- **Stopped while walking or scoring**: nothing was written. The walk and the rows live in memory and are dropped.
+  `score_folders` returns no rows at all, never the ones it had, because a partial row set handed to a full-pass write
+  would replace the table with part of a volume.
+- **Stopped during the write**: the transaction has already emptied the table and inserted some rows, so it ROLLS BACK.
+  The previous pass's rows and both stamps come back together. `ImportanceWriter::write_full_pass` blocks for that
+  outcome, so a write that FAILS is an `Err` to the pass too. ❌ Don't send a live pass through the fire-and-forget
+  `write_weights`: its failure only logs, and the pass would announce a generation that was never stamped.
+- **Either way** the store holds exactly what the last finished pass left: stale by one pass, consistent, at its own
+  generation. The stopped pass consumed no generation, so the next one takes the very next number and replaces the table
+  whole. A process that dies mid-pass (a quit, a crash) leaves the same thing, by the same transaction.
+- **A stopped incremental** wrote nothing either (it looks up to its write and never inside it), and its batch goes back
+  into the pending set (`run_incremental_under_current_stop`), so the volume's next rescore folds it in.
+
+**What redoes it.** No marker says "a pass is owed", because the absence of the finished-pass stamps already does:
+
+- A FIRST pass, or a scoring-policy re-arm, that was stopped leaves `needs_full_pass` true, so the next `wire_volume`
+  (every registration runs the probe) enqueues it again. `a_stopped_first_pass_is_still_owed` pins this.
+- A pass over an already-scored volume that was stopped is redone by whatever scores the volume next: the retained
+  `ScanCompleted` a re-wire observes, a new `ScanCompleted`, or the hourly `FULL_REFRESH_INTERVAL` tick.
+
+⚠️ **The one staleness left, and it predates stopping.** A `ScanCompleted`-driven pass that doesn't land before the app
+quits isn't redone at the next launch when the volume loads `Fresh` (no `ScanCompleted` re-fires, and the store already
+has a generation), so the scores trail the index until the hourly tick. Closing it means stamping which scan a pass
+scored (compare the index's `scan_completed_at` in `needs_full_pass`), which is a design change of its own.
 
 ## The measurement entry point
 
@@ -538,6 +602,9 @@ The scheduler tests run over synthetic indexes with no FFI and no registry, spli
   a change at the volume root, a batch spanning unrelated subtrees, an origin deleted between publish and pass, a
   case-variant origin, and nested-origin de-duplication.
 - `walk_memory_tests.rs` — the walk's per-folder byte and allocation ceilings.
+- `stop_tests.rs` — a walk and a scoring loop stopped from INSIDE themselves (SQLite's progress handler fires the signal
+  mid-stream, so nothing races and nothing sleeps), what a stopped full pass and a stopped rescore leave in the store,
+  and whose signal a pass hears. The write's rollback is pinned in `../writer/tests.rs`.
 - `test_support.rs` — the shared synthetic-index builders.
 
 The registration bus's late-volume delivery is covered in `indexing/lifecycle/lifecycle_bus.rs`.

@@ -158,6 +158,31 @@ async fn smb_integration_create_directory_all_honors_the_shared_honesty_contract
     ensure_clean(&smb_vol, &base).await;
 }
 
+/// The shared file-in-the-way assertion, against a real SMB server: the
+/// trait's default walk, with the server's own answer for a create under a file.
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+async fn smb_integration_create_directory_all_honors_the_shared_file_in_the_way_contract() {
+    let smb_vol = Arc::new(make_docker_volume().await);
+    let base = test_dir_name();
+    ensure_clean(&smb_vol, &base).await;
+
+    let notes = format!("{base}/notes");
+    smb_vol.create_directory(Path::new(&base)).await.unwrap();
+    smb_vol
+        .create_file(Path::new(&notes), b"the user's notes")
+        .await
+        .unwrap();
+
+    cmdr_fs::volume::conformance::assert_create_directory_all_refuses_a_file_in_the_way(
+        smb_vol.as_ref(),
+        Path::new(&notes),
+    )
+    .await;
+
+    ensure_clean(&smb_vol, &base).await;
+}
+
 /// The shared writability-declaration assertion, against a real SMB server:
 /// `is_writable()` and what the share actually accepts say the same thing.
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
@@ -191,6 +216,187 @@ async fn smb_integration_export_honors_the_shared_handshake_contract() {
         .await;
 
     ensure_clean(&smb_vol, &base).await;
+}
+
+/// The shared date assertions, over a real share: a copy onto it keeps the
+/// source's date, and a read off it reports the date it lists. The dated
+/// source is a few bytes, so this is the one-frame compound write, stamped by
+/// path once the frame has closed the handle.
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+async fn smb_integration_a_copy_keeps_the_source_date_per_the_shared_contract() {
+    let smb_vol = Arc::new(make_docker_volume().await);
+    let base = test_dir_name();
+    ensure_clean(&smb_vol, &base).await;
+    smb_vol.create_directory(Path::new(&base)).await.unwrap();
+
+    let dated = format!("{base}/dated.txt");
+    cmdr_fs::volume::conformance::assert_write_from_stream_keeps_the_source_date(
+        smb_vol.as_ref(),
+        Path::new(&dated),
+        Duration::ZERO,
+    )
+    .await;
+    cmdr_fs::volume::conformance::assert_read_stream_reports_the_listed_date(smb_vol.as_ref(), Path::new(&dated)).await;
+
+    ensure_clean(&smb_vol, &base).await;
+}
+
+/// A folder dated after a file landed in it lists that date.
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+async fn smb_integration_set_modified_dates_a_folder() {
+    let smb_vol = Arc::new(make_docker_volume().await);
+    let base = test_dir_name();
+    ensure_clean(&smb_vol, &base).await;
+    smb_vol.create_directory(Path::new(&base)).await.unwrap();
+
+    cmdr_fs::volume::conformance::assert_set_modified_dates_a_folder(
+        smb_vol.as_ref(),
+        Path::new(&format!("{base}/dated")),
+        Duration::ZERO,
+    )
+    .await;
+
+    ensure_clean(&smb_vol, &base).await;
+}
+
+/// A write too big for one frame keeps the source's date too: the streaming
+/// writer stamps its OWN handle before `finish()`, since the server rewrites
+/// the date when a writing handle closes and a path stamp while it's open
+/// would lose to that close.
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+async fn smb_integration_a_streamed_write_keeps_the_source_date() {
+    let smb_vol = Arc::new(make_docker_volume().await);
+    let base = test_dir_name();
+    ensure_clean(&smb_vol, &base).await;
+    smb_vol.create_directory(Path::new(&base)).await.unwrap();
+
+    let max_write = smb_vol
+        .negotiated_max_write()
+        .await
+        .expect("a connected volume has negotiated params");
+    let size = max_write + 64 * 1024;
+    assert!(
+        !smb_vol.write_is_single_shot(StreamLength::Known(size)).await,
+        "this cell only means something on the streaming writer"
+    );
+    let aged = format!("{base}/aged.bin");
+    smb_vol
+        .create_file(Path::new(&aged), &vec![0x5A; size as usize])
+        .await
+        .unwrap();
+    age_in_the_container(&aged, cmdr_fs::volume::conformance::SOURCE_DATE_SECS);
+
+    let stream = smb_vol.open_read_stream(Path::new(&aged)).await.unwrap();
+    assert!(
+        stream.modified_at().is_some(),
+        "the aged source's stream must carry its 2021 date, or this cell proves nothing about the destination"
+    );
+    let copy = format!("{base}/copy.bin");
+    smb_vol
+        .write_from_stream(
+            Path::new(&copy),
+            cmdr_fs::volume::WriteMode::CreateNew,
+            StreamLength::Known(size),
+            stream,
+            &|_| std::ops::ControlFlow::Continue(()),
+        )
+        .await
+        .unwrap();
+
+    let listed = smb_vol
+        .get_metadata(Path::new(&copy))
+        .await
+        .unwrap()
+        .modified_at
+        .expect("SMB lists `LastWriteTime` on every file");
+    assert_eq!(
+        listed,
+        cmdr_fs::volume::conformance::SOURCE_DATE_SECS,
+        "a streamed copy must keep the source's date (2021-01-29 08:30:15 UTC)"
+    );
+
+    ensure_clean(&smb_vol, &base).await;
+}
+
+/// The read half of the shared date contract on its own, on both read paths:
+/// the streamed download and the hinted one-frame compound read.
+///
+/// The file is aged inside the container (`touch -d`), so the read half is
+/// pinned apart from this backend's own write half.
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+async fn smb_integration_a_read_stream_reports_the_listed_date_on_both_read_paths() {
+    let smb_vol = Arc::new(make_docker_volume().await);
+    let base = test_dir_name();
+    ensure_clean(&smb_vol, &base).await;
+
+    smb_vol.create_directory(Path::new(&base)).await.unwrap();
+    let aged = format!("{base}/aged.txt");
+    smb_vol
+        .create_file(Path::new(&aged), b"bytes from a file last changed in 2021\n")
+        .await
+        .unwrap();
+    age_in_the_container(&aged, cmdr_fs::volume::conformance::SOURCE_DATE_SECS);
+
+    cmdr_fs::volume::conformance::assert_read_stream_reports_the_listed_date(smb_vol.as_ref(), Path::new(&aged)).await;
+
+    let size = smb_vol.get_metadata(Path::new(&aged)).await.unwrap().size;
+    let hinted = smb_vol
+        .open_read_stream_with_hint(Path::new(&aged), size)
+        .await
+        .unwrap();
+    let reported = hinted
+        .modified_at()
+        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+        .map(|d| d.as_secs());
+    assert_eq!(
+        reported,
+        Some(cmdr_fs::volume::conformance::SOURCE_DATE_SECS),
+        "the one-frame compound read of {aged} must report the date the share lists"
+    );
+
+    ensure_clean(&smb_vol, &base).await;
+}
+
+/// Sets `share_relative`'s modification date to `unix_secs` from inside the
+/// guest fixture container, the one way to age a file on a share that doesn't
+/// depend on this backend setting dates.
+fn age_in_the_container(share_relative: &str, unix_secs: u64) {
+    let port = docker_guest_params().port;
+    let container = docker(&["ps", "--filter", &format!("publish={port}"), "--format", "{{.Names}}"]);
+    let container = container.lines().next().unwrap_or_default();
+    assert!(
+        !container.is_empty(),
+        "no container publishes the guest SMB port {port}"
+    );
+    docker(&[
+        "exec",
+        container,
+        "touch",
+        "-d",
+        &format!("@{unix_secs}"),
+        &format!("/shares/public/{share_relative}"),
+    ]);
+}
+
+/// One `docker` invocation, or a panic naming what could not be run.
+fn docker(args: &[&str]) -> String {
+    let out = std::process::Command::new("docker")
+        .args(args)
+        .output()
+        .unwrap_or_else(|e| {
+            panic!("this cell ages a file inside the fixture container and needs the `docker` CLI: {e}")
+        });
+    assert!(
+        out.status.success(),
+        "`docker {}` did not run: {}",
+        args.join(" "),
+        String::from_utf8_lossy(&out.stderr)
+    );
+    String::from_utf8_lossy(&out.stdout).into_owned()
 }
 
 /// The shared `NotFound`-payload assertion, against a real SMB server: what the

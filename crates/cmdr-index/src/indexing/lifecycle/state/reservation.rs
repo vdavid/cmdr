@@ -134,7 +134,7 @@ pub(super) fn try_reserve_initializing_phase_on(
         volume_id.to_string(),
         IndexInstance {
             phase: IndexPhase::Initializing { store },
-            kind,
+            started_as: request,
             signals,
             work: work.clone(),
         },

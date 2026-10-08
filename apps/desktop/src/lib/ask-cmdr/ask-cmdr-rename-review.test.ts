@@ -73,7 +73,7 @@ beforeEach(() => {
   preflightRenameMock.mockResolvedValue({ status: 'ready', rows: [] })
   reviseRenameMock.mockReset()
   applyRenameMock.mockReset()
-  applyRenameMock.mockResolvedValue({ operationId: 'op-1' })
+  applyRenameMock.mockResolvedValue({ operationId: 'op-1', swapsLeftOut: 0 })
   cancelProposalMock.mockReset()
   cancelProposalMock.mockResolvedValue()
   undoOperationsMock.mockReset()
@@ -158,7 +158,9 @@ describe('one review for one job', () => {
   })
 
   it('starts one operation per batch, in the order they were staged', async () => {
-    applyRenameMock.mockResolvedValueOnce({ operationId: 'op-1' }).mockResolvedValueOnce({ operationId: 'op-2' })
+    applyRenameMock
+      .mockResolvedValueOnce({ operationId: 'op-1', swapsLeftOut: 0 })
+      .mockResolvedValueOnce({ operationId: 'op-2', swapsLeftOut: 0 })
     sendMessage('rename all of them')
     stageBatch('proposal-1', [proposalRow('row-1', 'a.png', 'invoice-a.png')])
     stageBatch('proposal-2', [proposalRow('row-2', 'b.png', 'invoice-b.png', '/receipts')])

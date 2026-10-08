@@ -34,6 +34,27 @@ async fn delete_honors_the_shared_non_recursion_contract() {
         .await;
 }
 
+/// The batch delete a move's source sweep uses, through the trait's default.
+#[tokio::test]
+async fn delete_files_honors_the_shared_batch_contract() {
+    let test_dir = TestDir::new("delete_files_batch_test");
+    let volume = LocalPosixVolume::new("Test", &*test_dir);
+    volume.create_directory(Path::new("level")).await.unwrap();
+    for name in ["a.txt", "b.txt", "kept.txt"] {
+        volume
+            .create_file(&Path::new("level").join(name), b"bytes")
+            .await
+            .unwrap();
+    }
+
+    cmdr_fs::volume::conformance::assert_delete_files_removes_exactly_what_it_names(
+        &volume,
+        [Path::new("level/a.txt"), Path::new("level/b.txt")],
+        Path::new("level/kept.txt"),
+    )
+    .await;
+}
+
 /// The shared `Volume::rename` no-clobber assertion. LocalPosix earns it with
 /// `renamex_np(RENAME_EXCL)` / `renameat2(RENAME_NOREPLACE)`, one kernel
 /// operation with no TOCTOU window — a different mechanism from every other
@@ -96,6 +117,38 @@ async fn write_from_stream_create_new_honors_the_shared_no_clobber_contract() {
     .await;
 }
 
+/// The shared date assertions. Every copy landing on local disk from another
+/// volume goes through `write_from_stream`, so this is the cell that keeps a
+/// phone's photos dated when they land in `~/Pictures`.
+#[tokio::test]
+async fn a_copy_keeps_the_source_date_per_the_shared_contract() {
+    let test_dir = TestDir::new("dated_write_conformance_test");
+    let volume = LocalPosixVolume::new("Test", &*test_dir);
+
+    cmdr_fs::volume::conformance::assert_write_from_stream_keeps_the_source_date(
+        &volume,
+        Path::new("dated.txt"),
+        std::time::Duration::ZERO,
+    )
+    .await;
+    cmdr_fs::volume::conformance::assert_read_stream_reports_the_listed_date(&volume, Path::new("dated.txt")).await;
+}
+
+/// A copy onto local disk dates the folders it created, once their contents
+/// landed.
+#[tokio::test]
+async fn set_modified_honors_the_shared_folder_date_contract() {
+    let test_dir = TestDir::new("folder_date_conformance_test");
+    let volume = LocalPosixVolume::new("Test", &*test_dir);
+
+    cmdr_fs::volume::conformance::assert_set_modified_dates_a_folder(
+        &volume,
+        Path::new("dated"),
+        std::time::Duration::ZERO,
+    )
+    .await;
+}
+
 #[tokio::test]
 async fn unknown_write_streams_all_bytes_and_reports_the_accepted_count() {
     let test_dir = TestDir::new("unknown_write_conformance_test");
@@ -144,6 +197,42 @@ async fn create_directory_all_honors_the_shared_honesty_contract() {
     cmdr_fs::volume::conformance::assert_create_directory_all_reports_an_existing_dir_honestly(
         &volume,
         Path::new("album"),
+    )
+    .await;
+}
+
+/// The shared file-in-the-way assertion, over the trait's default walk. The OS
+/// answers a create under a file with `ENOTDIR`, which reaches the user as a
+/// generic refusal unless the walk names the file.
+#[tokio::test]
+async fn create_directory_all_honors_the_shared_file_in_the_way_contract() {
+    let test_dir = TestDir::new("create_directory_all_file_in_the_way_conformance_test");
+    let volume = LocalPosixVolume::new("Test", &*test_dir);
+
+    volume
+        .create_file(Path::new("notes"), b"the user's notes")
+        .await
+        .unwrap();
+
+    cmdr_fs::volume::conformance::assert_create_directory_all_refuses_a_file_in_the_way(&volume, Path::new("notes"))
+        .await;
+}
+
+/// The shared through-a-link assertion. ❗ The cell that keeps the refusal above
+/// from overreaching: `/tmp` and `/var` are links on macOS, so a walk that
+/// judged an occupied name by `lstat` would refuse most of the disk.
+#[tokio::test]
+async fn create_directory_all_honors_the_shared_through_a_link_contract() {
+    let test_dir = TestDir::new("create_directory_all_through_a_link_conformance_test");
+    let volume = LocalPosixVolume::new("Test", &*test_dir);
+
+    volume.create_directory(Path::new("real")).await.unwrap();
+    std::os::unix::fs::symlink(test_dir.join("real"), test_dir.join("link")).unwrap();
+
+    cmdr_fs::volume::conformance::assert_create_directory_all_goes_through_a_link_to_a_folder(
+        &volume,
+        Path::new("link"),
+        Path::new("real"),
     )
     .await;
 }

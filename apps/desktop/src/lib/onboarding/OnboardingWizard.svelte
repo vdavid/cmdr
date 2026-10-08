@@ -2,7 +2,8 @@
     import { onMount, onDestroy, tick, untrack } from 'svelte'
     import { relaunch } from '@tauri-apps/plugin-process'
     import Icon from '$lib/ui/Icon.svelte'
-    import { notifyDialogOpened, notifyDialogClosed } from '$lib/tauri-commands'
+    import { getAiRuntimeStatus, notifyDialogOpened, notifyDialogClosed } from '$lib/tauri-commands'
+    import { getSettingLock } from '$lib/managed-policy/managed-policy.svelte'
     import { markDialogOpen, markDialogClosed } from '$lib/ui/open-dialogs.svelte'
     import Button from '$lib/ui/Button.svelte'
     import { trapFocus } from '$lib/ui/focus-trap'
@@ -17,6 +18,8 @@
         isAtLastStep,
         nextStep,
         previousStep,
+        aiStepSkippedFor,
+        setAiStepSkipped,
         openWizard,
         type OnboardingStep,
     } from './onboarding-state.svelte'
@@ -60,6 +63,14 @@
 
     const onboardingState = getOnboardingState()
 
+    // The organization's policy can leave step 2 nothing but "no AI" (AI off, or on-device only on a
+    // Mac that can't run it); the wizard then walks past it. Until the backend says otherwise, local
+    // AI counts as supported, so the step shows rather than vanishing on a slow answer.
+    let localAiSupported = $state(true)
+    $effect(() => {
+        setAiStepSkipped(aiStepSkippedFor({ lock: getSettingLock('ai.provider'), localAiSupported }))
+    })
+
     onMount(async () => {
         previousActiveElement = document.activeElement instanceof HTMLElement ? document.activeElement : null
 
@@ -77,6 +88,14 @@
         // `onDestroy` below: an unpaired close blocks every file operation until restart.
         markDialogOpen('onboarding')
         void notifyDialogOpened('onboarding')
+
+        void getAiRuntimeStatus()
+            .then((status) => {
+                localAiSupported = status.localAiSupported
+            })
+            .catch((error: unknown) => {
+                log.warn("Couldn't read whether this Mac runs local AI; the AI step shows: {error}", { error })
+            })
 
         // Wait for layout, then focus the panel so our keydown handler captures Tab.
         await tick()

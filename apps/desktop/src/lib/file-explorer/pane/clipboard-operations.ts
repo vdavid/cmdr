@@ -34,8 +34,8 @@ type DialogState = ReturnType<typeof createDialogState>
  * the kinds that refuse at all.
  *
  * Two families, because that's where the right word splits: MTP covers phones,
- * e-readers, and cameras, so "device" is the only honest noun for it, while SFTP
- * and WebDAV are both a "server". ❌ Don't collapse them back into one word: the
+ * e-readers, and cameras, so "device" is the only honest noun for it, while SFTP,
+ * WebDAV, and S3 are all a "server". ❌ Don't collapse them back into one word: the
  * three toasts said "MTP devices" for every kind once, and an SFTP user read a
  * phone message and reported it as a bug (ERR-HGGU3).
  */
@@ -46,8 +46,8 @@ type ClipboardRefusalFamily = 'device' | 'server'
  * refusal that points the user at the copy/move keys instead — or `null` when
  * this volume has no such trouble.
  *
- * Four kinds qualify, and every one of them hands out a scheme path no other app
- * can open: `mtp://`, `adb://`, `sftp://`, `webdav://`. ❌ Don't generalize this
+ * Five kinds qualify, and every one of them hands out a scheme path no other app
+ * can open: `mtp://`, `adb://`, `sftp://`, `webdav://`, `s3://`. ❌ Don't generalize this
  * to a "no system clipboard" capability: `network` and `search-results` lack one
  * too, and a device-worded toast firing on a reachable network paste would be a
  * new, mis-worded toast.
@@ -65,7 +65,7 @@ type ClipboardRefusalFamily = 'device' | 'server'
 function schemePathClipboardFamily(volumeId: string): ClipboardRefusalFamily | null {
   const kind = capabilitiesFor(volumeId).kind
   if (kind === 'mtp' || kind === 'adb') return 'device'
-  if (kind === 'sftp' || kind === 'webdav') return 'server'
+  if (kind === 'sftp' || kind === 'webdav' || kind === 's3') return 'server'
   return null
 }
 

@@ -5,8 +5,9 @@
  * doesn't render. `listing.showHiddenFiles` is reachable from the View menu and
  * `⌘⇧.` too, so a missing row here wouldn't break anything visibly — it would
  * just quietly leave the Settings page without the toggle. This pins the row,
- * its position (first in the card, above "Sort directories"), and that flipping
- * it writes the setting the panes and the menu both read.
+ * its position (first in the card, above "Sort folders"), and that flipping
+ * it writes the setting the panes and the menu both read. Also pins the note
+ * that explains why "Sort folders" is greyed out while folders mix with files.
  *
  * The settings-store is stubbed so the section mounts without real IPC.
  */
@@ -16,8 +17,11 @@ import { mount, tick } from 'svelte'
 import ListingSection from './ListingSection.svelte'
 import { setSetting } from '$lib/settings/settings-store'
 
+const stubs = vi.hoisted(() => ({ foldersFirst: true }))
+
 vi.mock('$lib/settings/settings-store', () => ({
   getSetting: vi.fn((key: string) => {
+    if (key === 'listing.foldersFirst') return stubs.foldersFirst
     if (key === 'listing.showHiddenFiles') return true
     if (key === 'appearance.useAppIconsForDocuments') return true
     if (key === 'appearance.showFunctionKeyBar') return true
@@ -46,11 +50,11 @@ function rowLabels(target: HTMLElement): string[] {
 }
 
 describe('ListingSection: show hidden files', () => {
-  it('renders the row first in the card, above "Sort directories"', async () => {
+  it('renders the row first in the card, above "Sort folders"', async () => {
     const target = await mountSection()
     const labels = rowLabels(target)
     expect(labels[0]).toBe('Show hidden files')
-    expect(labels.indexOf('Show hidden files')).toBeLessThan(labels.indexOf('Sort directories'))
+    expect(labels.indexOf('Show hidden files')).toBeLessThan(labels.indexOf('Sort folders'))
     target.remove()
   })
 
@@ -67,6 +71,30 @@ describe('ListingSection: show hidden files', () => {
     input?.click()
     await tick()
     expect(setSetting).toHaveBeenCalledWith('listing.showHiddenFiles', false)
+    target.remove()
+  })
+})
+
+describe('ListingSection: "Sort folders" disabled note', () => {
+  const noteSelector = '#setting-listing\\.directorySortMode-disabled-note'
+
+  it('explains the greyed-out row while folders mix with files', async () => {
+    stubs.foldersFirst = false
+    const target = await mountSection()
+    const note = target.querySelector(noteSelector)
+    expect(note?.textContent.trim()).toBe(
+      'Currently disabled because folders are mixed with files. Turn on “Show folders first” to enable this setting.',
+    )
+    const group = target.querySelector('[aria-label="Sort folders"]')
+    expect(group?.getAttribute('aria-describedby')).toBe(note?.id)
+    target.remove()
+    stubs.foldersFirst = true
+  })
+
+  it('shows no note while folders come first', async () => {
+    const target = await mountSection()
+    expect(target.querySelector(noteSelector)).toBeNull()
+    expect(target.querySelector('[aria-label="Sort folders"]')?.hasAttribute('aria-describedby')).toBe(false)
     target.remove()
   })
 })

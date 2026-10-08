@@ -102,6 +102,7 @@ export type ListingErrorReason =
   | { reason: 'tccRestricted'; path: string }
   | { reason: 'permissionDenied'; path: string }
   | { reason: 'remotePermissionDenied'; path: string }
+  | { reason: 'objectStoreRefused'; path: string }
   | { reason: 'alreadyExists'; path: string }
   | { reason: 'cancelled' }
   | { reason: 'deviceDisconnected'; path: string }
@@ -112,6 +113,7 @@ export type ListingErrorReason =
   | { reason: 'connectionTimedOut' }
   | { reason: 'notSupported' }
   | { reason: 'deletePending'; path: string }
+  | { reason: 'coldStorage'; path: string }
   | { reason: 'invalidName'; path: string }
   | { reason: 'ambiguousName'; path: string }
   | { reason: 'ioSerious'; path: string; osMessage: string }

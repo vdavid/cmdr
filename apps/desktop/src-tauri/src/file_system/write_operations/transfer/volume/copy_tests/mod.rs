@@ -4,12 +4,11 @@
 //! `#[path]` suites reach the fixtures as `super::tests::make_state`.
 
 use super::*;
-use crate::file_system::volume::{InMemoryVolume, ListingProgress, LocalPosixVolume};
+use crate::file_system::volume::{InMemoryVolume, ListingProgress};
 use crate::file_system::write_operations::event_sinks::CollectorEventSink;
 use crate::file_system::write_operations::types::{
     ConflictResolution, WriteConflictEvent, WriteConflictResolvedEvent, WriteErrorEvent, WriteSourceItemDoneEvent,
 };
-use crate::test_support::TestDir;
 use std::sync::atomic::AtomicU8;
 
 // `pub(super)` so the sibling `volume_copy_crashsafe_tests` and

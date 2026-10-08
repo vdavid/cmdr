@@ -19,7 +19,7 @@ use crate::volume::friendly_error::git::{FriendlyGitError, FriendlyGitErrorKind}
 // Build an `IoError { raw_os_error: Some(_) }` so the macOS arms in `errno`
 // get exercised end-to-end via `listing_error_from_volume_error`.
 
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "linux"))]
 fn make_io_error(errno: i32) -> VolumeError {
     VolumeError::IoError {
         message: format!("test error {}", errno),
@@ -283,6 +283,20 @@ fn volume_error_variants_map_correctly() {
             |r| matches!(r, ListingErrorReason::IsADirectory { .. }),
         ),
         (
+            // A zip in S3 Glacier, browsed: its bytes can't be read until a
+            // restore lands, so a retry can only fail again.
+            VolumeError::ColdStorage("x".into()),
+            ErrorCategory::NeedsAction,
+            false,
+            |r| matches!(r, ListingErrorReason::ColdStorage { .. }),
+        ),
+        (
+            VolumeError::NotADirectory("x".into()),
+            ErrorCategory::NeedsAction,
+            false,
+            |r| matches!(r, ListingErrorReason::NotAFolder { .. }),
+        ),
+        (
             // The destination can't hold this name, so retrying it can only fail
             // again: NeedsAction with ❌ no retry hint. Renaming is the only fix.
             VolumeError::InvalidName("x".into()),
@@ -366,6 +380,11 @@ fn typed_variants_populate_path_param() {
     }
     // The message names the path whose spelling matched twice, so the user knows
     // which folder holds the look-alike names.
+    // The message names the archived file, which is what a restore is asked for.
+    match listing_error_from_volume_error(&VolumeError::ColdStorage("x".into()), path).reason {
+        ListingErrorReason::ColdStorage { path } => assert_eq!(path, want),
+        other => panic!("ColdStorage should carry a path, got {other:?}"),
+    }
     match listing_error_from_volume_error(&VolumeError::AmbiguousName("x".into()), path).reason {
         ListingErrorReason::AmbiguousName { path } => assert_eq!(path, want),
         other => panic!("AmbiguousName should carry a path, got {other:?}"),
@@ -475,6 +494,28 @@ fn permission_denied_below_an_open_tcc_gate_is_not_tcc_restricted() {
         "an open gate should fall through to the generic PermissionDenied, got {:?}",
         listing.reason
     );
+}
+
+/// ❗ A refusal on an S3 volume is the object store account's: its keys may lack
+/// the permission, or the provider may have paused the account (a usage cap, a
+/// billing hold), and the answer can't tell the two apart. Read off the app
+/// path's own scheme (`server_of_path`), ❌ never a message, and with no
+/// privacy-settings action: nothing on this Mac grants it.
+#[test]
+fn an_s3_refusal_is_the_object_store_accounts() {
+    let path = Path::new("s3://AKIATEST@s3.eu-central-003.backblazeb2.com:443/photos/a.jpg");
+    let err = VolumeError::PermissionDenied {
+        path: "/photos/a.jpg".to_string(),
+        raw_os_error: None,
+    };
+    let listing = listing_error_from_volume_error(&err, path);
+    match &listing.reason {
+        ListingErrorReason::ObjectStoreRefused { path: shown } => assert_eq!(shown, &path.display().to_string()),
+        other => panic!("expected ObjectStoreRefused, got {other:?}"),
+    }
+    assert_eq!(listing.category, ErrorCategory::NeedsAction);
+    assert_eq!(listing.action_kind, None);
+    assert!(!listing.retry_hint);
 }
 
 /// A share's own permissions are the file server's business, so the remote reason
@@ -628,4 +669,22 @@ fn restricted_empty_root_unknown_volume_returns_none() {
     let path = Path::new("/some/other/path");
     assert!(listing_error_for_restricted_empty_root("root", path).is_none());
     assert!(listing_error_for_restricted_empty_root("cloud-dropbox", path).is_none());
+}
+
+/// Off macOS, the connection-class errnos still classify as transient (read through
+/// `std`'s `ErrorKind`), which is what lets a stalled listing retry them there.
+#[cfg(target_os = "linux")]
+#[test]
+fn linux_timeouts_and_resets_are_transient_and_the_rest_stays_unknown() {
+    let path = Path::new("/mnt/nas");
+    // ETIMEDOUT and ECONNRESET as Linux numbers them.
+    let timed_out = listing_error_from_volume_error(&make_io_error(110), path);
+    assert_eq!(timed_out.category, ErrorCategory::Transient);
+    assert!(matches!(timed_out.reason, ListingErrorReason::ConnectionTimedOutErrno));
+    let reset = listing_error_from_volume_error(&make_io_error(104), path);
+    assert!(matches!(reset.reason, ListingErrorReason::ConnectionReset));
+
+    let unknown = listing_error_from_volume_error(&make_io_error(9999), path);
+    assert_eq!(unknown.category, ErrorCategory::Serious);
+    assert!(matches!(unknown.reason, ListingErrorReason::CouldntReadUnknown { .. }));
 }

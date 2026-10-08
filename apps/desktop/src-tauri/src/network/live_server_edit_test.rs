@@ -17,7 +17,7 @@ use crate::file_system::listing::FileEntry;
 use crate::file_system::volume::manager::VolumeManager;
 use crate::file_system::volume::{InMemoryVolume, ListingProgress, Volume, VolumeError};
 use crate::network::saved_server_fields::SavedServerOutcome;
-use crate::volume_broadcast::{self, VolumeRootChanged};
+use crate::volume_broadcast::{self, RootChangeKind, VolumeRootChanged};
 
 const PREFIX: &str = "sftp://ada@nas.local:22";
 
@@ -180,6 +180,7 @@ async fn a_wider_root_the_server_has_is_installed_and_announced() {
             new_root: app("/srv/data"),
             old_landing: app("/srv/data/tmp"),
             new_landing: app("/srv/data"),
+            kind: RootChangeKind::Edited,
         }]
     );
 }
@@ -272,6 +273,7 @@ async fn a_start_folder_alone_moves_the_landing_and_keeps_the_instance() {
             new_root: app("/srv/data"),
             old_landing: app("/srv/data"),
             new_landing: app("/srv/data/photos"),
+            kind: RootChangeKind::Edited,
         }]
     );
 }

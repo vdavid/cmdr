@@ -75,6 +75,8 @@ pub enum SlotRefusal {
     NotConfigured,
     /// Cloud AI is picked, and the user hasn't allowed it (`ai::cloud_consent`).
     NoCloudConsent,
+    /// The organization's managed policy refuses the provider or its host.
+    Managed(crate::managed_policy::ManagedAiRefusal),
 }
 
 impl SlotRefusal {
@@ -84,6 +86,41 @@ impl SlotRefusal {
         match self {
             SlotRefusal::NotConfigured => AgentErrorKindView::NotConfigured,
             SlotRefusal::NoCloudConsent => AgentErrorKindView::NoCloudConsent,
+            SlotRefusal::Managed(_) => AgentErrorKindView::ManagedByOrganization,
+        }
+    }
+
+    /// The organization's reason, when the policy is what refused: the wire kind is one unit
+    /// variant, so the reason rides beside it for the rail's copy map.
+    pub fn managed(self) -> Option<crate::managed_policy::ManagedAiRefusal> {
+        match self {
+            SlotRefusal::Managed(refusal) => Some(refusal),
+            SlotRefusal::NotConfigured | SlotRefusal::NoCloudConsent => None,
+        }
+    }
+}
+
+/// Why the rail's send gate refused: Ask Cmdr's own switch, or the slot.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SendGateRefusal {
+    AskCmdrOff,
+    Slot(SlotRefusal),
+}
+
+impl SendGateRefusal {
+    /// The wire kind the rail renders.
+    pub fn view(self) -> AgentErrorKindView {
+        match self {
+            SendGateRefusal::AskCmdrOff => AgentErrorKindView::AskCmdrOff,
+            SendGateRefusal::Slot(refusal) => refusal.view(),
+        }
+    }
+
+    /// The organization's reason, when the policy refused.
+    pub fn managed(self) -> Option<crate::managed_policy::ManagedAiRefusal> {
+        match self {
+            SendGateRefusal::AskCmdrOff => None,
+            SendGateRefusal::Slot(refusal) => refusal.managed(),
         }
     }
 }
@@ -128,21 +165,25 @@ fn slot_backend(resolution: crate::ai::manager::BackendResolution) -> Result<AiB
         }
         // Refused before a thread exists: nothing reaches a cloud service the user didn't allow.
         BackendResolution::NoCloudConsent => Err(SlotRefusal::NoCloudConsent),
+        BackendResolution::Managed(refusal) => Err(SlotRefusal::Managed(refusal)),
     }
 }
 
 /// The rail's send gate, decided before a thread or an LLM exists: Ask Cmdr's own switch first,
 /// then the slot (which carries the cloud consent gate, `ai::manager::resolve_backend`).
-/// `resolve` runs only when Ask Cmdr is on, so a switched-off Ask Cmdr never looks at the
-/// provider. `ask_cmdr_send_message` is the caller; a wake has its own gates (`wake::readiness`).
+/// `resolve` never runs when the person switched Ask Cmdr off, so it never looks at the provider.
+/// A managed off (`DisableAI` pins the switch) goes on to the slot, whose resolution refuses with
+/// the organization's own reason: the person didn't turn Ask Cmdr off, so "Ask Cmdr is off" would
+/// be the wrong answer. `ask_cmdr_send_message` is the caller; a wake has its own gates
+/// (`wake::readiness`).
 pub fn admit_send<T>(
-    ask_cmdr_enabled: bool,
+    ask_cmdr: crate::settings::AskCmdrSwitch,
     resolve: impl FnOnce() -> Result<T, SlotRefusal>,
-) -> Result<T, AgentErrorKindView> {
-    if !ask_cmdr_enabled {
-        return Err(AgentErrorKindView::AskCmdrOff);
+) -> Result<T, SendGateRefusal> {
+    if ask_cmdr == crate::settings::AskCmdrSwitch::Off {
+        return Err(SendGateRefusal::AskCmdrOff);
     }
-    resolve().map_err(SlotRefusal::view)
+    resolve().map_err(SendGateRefusal::Slot)
 }
 
 /// The scripted turn the E2E fake streams: a short multi-chunk reply, so the test sees
@@ -368,9 +409,14 @@ mod tests {
     #[test]
     fn a_backend_resolution_maps_onto_the_slot() {
         use crate::ai::manager::BackendResolution;
+        use crate::managed_policy::ManagedAiRefusal;
         assert!(matches!(
             slot_backend(BackendResolution::NoCloudConsent),
             Err(SlotRefusal::NoCloudConsent)
+        ));
+        assert!(matches!(
+            slot_backend(BackendResolution::Managed(ManagedAiRefusal::HostNotAllowed)),
+            Err(SlotRefusal::Managed(ManagedAiRefusal::HostNotAllowed))
         ));
         for unconfigured in [
             BackendResolution::Off,
@@ -379,6 +425,24 @@ mod tests {
         ] {
             assert!(matches!(slot_backend(unconfigured), Err(SlotRefusal::NotConfigured)));
         }
+    }
+
+    /// The organization's reason rides along with the wire kind, so the rail words `cloudAiOff`
+    /// as "only on-device AI", not as "doesn't allow this AI service".
+    #[test]
+    fn a_managed_refusal_keeps_its_reason_through_the_send_gate() {
+        use crate::managed_policy::ManagedAiRefusal;
+        use crate::settings::AskCmdrSwitch;
+        let refused = admit_send(AskCmdrSwitch::On, || {
+            Err::<(), _>(SlotRefusal::Managed(ManagedAiRefusal::CloudAiOff))
+        })
+        .expect_err("the slot refused");
+        assert!(matches!(refused.view(), AgentErrorKindView::ManagedByOrganization));
+        assert_eq!(refused.managed(), Some(ManagedAiRefusal::CloudAiOff));
+
+        let off = admit_send(AskCmdrSwitch::Off, || Ok::<(), SlotRefusal>(())).expect_err("switched off");
+        assert_eq!(off.managed(), None);
+        assert_eq!(SlotRefusal::NoCloudConsent.managed(), None);
     }
 
     #[test]
@@ -390,6 +454,11 @@ mod tests {
         assert_eq!(
             serde_json::to_value(SlotRefusal::NotConfigured.view()).expect("serializes"),
             "notConfigured"
+        );
+        assert_eq!(
+            serde_json::to_value(SlotRefusal::Managed(crate::managed_policy::ManagedAiRefusal::CloudAiOff).view())
+                .expect("serializes"),
+            "managedByOrganization"
         );
     }
 }

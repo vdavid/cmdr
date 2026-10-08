@@ -470,7 +470,7 @@ impl SmbVolume {
                     }
                     Err(e) if is_pool_member_dead(&e) => {
                         log::debug!(
-                            "smb scan pool: member {idx} died listing {smb_path:?} ({e}); retrying on a sibling"
+                            "smb scan pool: member {idx} died listing smb_path={smb_path:?} ({e}); retrying on a sibling"
                         );
                         pool.mark_member_dead(idx);
                         continue;
@@ -542,13 +542,16 @@ impl SmbVolume {
                     // serves the file as it is now.
                     match tree.read_file_compound_sized(&mut conn, &smb_path, size).await {
                         Ok(data) if data.len() as u64 == size => {
-                            return Ok(Box::new(InlineReadStream::new(data)) as Box<dyn VolumeReadStream>);
+                            // No date: enrichment reads the bytes and never copies
+                            // them, so a stat per prefetch would double the
+                            // background load for an answer nobody asks.
+                            return Ok(Box::new(InlineReadStream::new(data, None)) as Box<dyn VolumeReadStream>);
                         }
                         // Short of the hint: the file SHRANK since the scan.
                         Ok(_) => break, // ⇒ streaming serves today's bytes
                         Err(e) if is_pool_member_dead(&e) => {
                             log::debug!(
-                                "smb scan pool: member {idx} died reading {smb_path:?} ({e}); retrying on a sibling"
+                                "smb scan pool: member {idx} died reading smb_path={smb_path:?} ({e}); retrying on a sibling"
                             );
                             pool.mark_member_dead(idx);
                             continue;

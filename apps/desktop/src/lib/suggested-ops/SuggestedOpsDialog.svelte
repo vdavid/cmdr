@@ -17,6 +17,7 @@
     import { tString } from '$lib/intl/messages.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
     import { calculateVirtualWindow } from '$lib/file-explorer/views/virtual-scroll'
+    import type { SuggestedGroupView } from '$lib/tauri-commands'
     import {
         approvableCount,
         approveGroup,
@@ -31,6 +32,7 @@
         suggestedOpsState,
         toggleOp,
     } from './suggested-ops-trigger.svelte'
+    import { refusalReason, type RefusalReason } from './suggested-ops-refusal'
 
     /** Row height in pixels, fixed so the virtual window stays plain arithmetic. */
     const ROW_HEIGHT = 30
@@ -67,6 +69,12 @@
     const visibleIndexes = $derived(
         Array.from({ length: Math.max(0, virtual.endIndex - virtual.startIndex) }, (_, i) => virtual.startIndex + i),
     )
+
+    /** The reason under a group whose last approval didn't start, or `null`. */
+    function reasonFor(g: SuggestedGroupView): RefusalReason | null {
+        const refusal = suggestedOpsState.refusals.get(g.groupId)
+        return refusal ? refusalReason(refusal, g.verb) : null
+    }
 
     function reversibilityLabel(reversible: string): string {
         if (reversible === 'restoreMove') return tString('suggestedOps.reversibleRestoreMove')
@@ -115,6 +123,7 @@
                 </header>
 
                 {#each sweep.groups as g (g.groupId)}
+                    {@const reason = reasonFor(g)}
                     <article class="group" class:expanded={g.groupId === suggestedOpsState.openGroupId}>
                         <div class="group-head">
                             <h3 class="group-name">{g.displayName}</h3>
@@ -171,6 +180,18 @@
                                 {tString('suggestedOps.reject')}
                             </Button>
                         </div>
+
+                        {#if reason}
+                            <!-- An approval that didn't start gave the group back: it's pending
+                                 again and nothing ran, so the reason sits right under the button
+                                 the user just pressed. -->
+                            <div class="refusal" role="alert">
+                                <span class="refusal-label">{tString('suggestedOps.refusal.label')}</span>
+                                <!-- eslint-disable-next-line svelte/no-at-html-tags -- markup from the typed error via `refusalReason`: the write-error pipeline escapes every name and path. Same boundary as the queue's failed row. -->
+                                <p class="refusal-message selectable">{@html reason.message}</p>
+                                <p class="refusal-suggestion selectable">{reason.suggestion}</p>
+                            </div>
+                        {/if}
 
                         {#if g.groupId === suggestedOpsState.openGroupId}
                             {#if suggestedOpsState.changedUnderReview}
@@ -365,6 +386,34 @@
         display: flex;
         gap: var(--spacing-xxs);
         margin-top: var(--spacing-xs);
+    }
+
+    /* A refusal is the one thing on the group the user has to act on, so it carries the error
+       color, like the queue's failed row that words the same errors. */
+    .refusal {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-xxs);
+        margin-top: var(--spacing-xs);
+    }
+
+    .refusal-label {
+        color: var(--color-text-tertiary);
+        font-size: var(--font-size-xs);
+    }
+
+    .refusal-message,
+    .refusal-suggestion {
+        margin: 0;
+        font-size: var(--font-size-sm);
+    }
+
+    .refusal-message {
+        color: var(--color-error-text);
+    }
+
+    .refusal-suggestion {
+        color: var(--color-text-secondary);
     }
 
     .changed {

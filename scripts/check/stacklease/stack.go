@@ -104,6 +104,10 @@ type Stack struct {
 	// servicesWithoutHealthcheck are the services that intentionally ship no
 	// HEALTHCHECK, so adoption must NOT require them healthy — only running.
 	servicesWithoutHealthcheck map[string]bool
+	// soloResets maps a service to a shell script that clears state a killed
+	// client leaves behind in it, run when a lease starts with no other holder
+	// (`soloreset.go`).
+	soloResets map[string]string
 
 	// portEnvPrefix selects the env vars that change container port bindings,
 	// which is the one config dimension that genuinely differs across

@@ -24,13 +24,14 @@ use std::sync::Arc;
 
 use cmdr_fs::volume::Volume;
 
+use super::network_dates_test_support::a_copy_off_the_server_keeps_the_date_it_lists;
 use super::network_transfer_test_support::{
     a_cancelled_upload_leaves_nothing_behind, a_directory_tree_lands_intact_off_the_server,
     a_directory_tree_lands_intact_on_the_server, a_pre_existing_destination_still_probes_each_name,
     an_overwrite_answer_replaces_the_destination_bytes, awkward_names_survive_a_round_trip, clean_deep, read_all,
     run_copy, self_describing_bytes, sha256,
 };
-use super::webdav_test_support::fixture;
+use super::webdav_test_support::{WebdavFixture, connect, fixture};
 use crate::file_system::volume::LocalPosixVolume;
 use crate::test_support::TestDir;
 
@@ -164,4 +165,22 @@ async fn webdav_integration_a_pre_existing_destination_still_probes_each_name() 
 async fn webdav_integration_awkward_names_survive_a_round_trip() {
     let (remote, dir) = fixture().await;
     awkward_names_survive_a_round_trip(remote, dir).await;
+}
+
+// ❗ No "a copy onto the server keeps the source date" cell here: this stack's
+// servers are Apache `mod_dav`, which can't store a date, and the Nextcloud that
+// can isn't reachable from this lane. The destination half is pinned in the
+// backend's own crate (`nextcloud_test.rs`'s
+// `nextcloud_a_copy_keeps_the_source_date`), and the engine carrying the date to
+// any destination by `in_memory_dates_test.rs` and the SFTP cells.
+
+/// Copy off the server: the date `GET` answers with (`Last-Modified`) lands on
+/// local disk. The source is `seed.sh`'s pre-dated file, since this server can't
+/// be handed a date to seed one with.
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[ignore = "needs the WebDAV fixture stack: apps/desktop/test/webdav-servers/start.sh (webdav-fixture)"]
+async fn webdav_integration_a_copy_off_a_server_keeps_the_source_date() {
+    let remote: Arc<dyn Volume> = Arc::new(connect(WebdavFixture::Stock).await);
+    let seeded = remote.root().join(cmdr_webdav::volume::testing::FIXTURE_DATED_FILE);
+    a_copy_off_the_server_keeps_the_date_it_lists(remote, seeded).await;
 }

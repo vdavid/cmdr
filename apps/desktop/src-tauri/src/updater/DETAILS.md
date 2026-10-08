@@ -22,8 +22,11 @@ Read this before any non-trivial work here: editing, planning, reorganizing, or 
 - **Privilege escalation via `osascript` with `rsync -a --delete`.** When installed in `/Applications` (root-owned),
   direct writes fail; `osascript`'s `do shell script … with administrator privileges` shows the native auth dialog.
   `rsync` expresses the full sync (copy + delete stale) in one shell command. Only triggers when direct writes are
-  denied, so users running from `~/Applications` or a dev build won't see the dialog.
+  denied, so users running from `~/Applications` or a dev build won't see the dialog. A `.pkg` install is always
+  `root:wheel`, so it always takes this path; why that's accepted: `docs/guides/releasing.md` § The installer package.
 - **Atomic rename instead of in-place `fs::copy`.** (Inode / code-signing-cache rationale is in `CLAUDE.md`.)
+- **Per-instance staging dir: `<tmp>/cmdr-update-staging-{CMDR_INSTANCE_ID}`**, `…-default` for production with no env
+  var set, so a main-clone and a worktree `Cmdr` never share one path.
 - **Bounded manifest-fetch timeouts.** `reqwest::get`'s default client has no overall timeout; a stuck TCP handshake to
   the redirect target was observed hanging ~2.5 min, which made transient network blips look like a hung app and tripped
   the auto error reporter. Download/install stay untimed (user attention; can legitimately take a while).
@@ -33,9 +36,56 @@ Read this before any non-trivial work here: editing, planning, reorganizing, or 
   `ServerRequestError::Refused { status }`, and only a 2xx that doesn't parse is `BadResponse`: the one failure the
   frontend logs at error, since it means Cmdr's server and this build disagree. The frontend owns the log line, once
   per condition (`apps/desktop/src/lib/updates/DETAILS.md`), so the command logs nothing of its own on a failure.
+- **The tarball download is typed too (`UpdateDownloadError`).** `fetch_verified_tarball` also goes through
+  `crate::server_request`, so a 5xx maintenance page is a `Request { Refused }` rather than bytes that fail their
+  signature. `SignatureMismatch` and `Disk` stay separate variants: the frontend logs those at error and a network
+  `Request` failure at warn. `install_update` answers `UpdateInstallError` (`BlockedByPolicy`, `NothingStaged`,
+  `Failed { detail }`): every `Failed` is local and logs at error; `BlockedByPolicy` is quiet.
 - **Walk `reqwest::Error::source()` for log-friendly messages (`crate::server_request::describe_error_chain`).** `reqwest::Error`'s `Display`
   only prints the outermost layer, hiding the real cause (DNS, TCP connect timeout, TLS). Walking the source chain
   surfaces the underlying class without pulling in `anyhow`.
+
+## Who may check
+
+`skip_reason` allows a check only from a real user's production install. Two conditions: the exe must sit inside a
+`.app` bundle (`installer::is_running_from_app_bundle`), and none of `crate::prod_instance::NON_PROD_ENV_VARS` may be
+set. Outside a bundle the updater can't work and would spam noisy errors into the auto error reporter; a tooling
+instance that slips through writes an `update_checks` row the dashboard counts as an active install. Don't loosen
+either. `crate::prod_instance` is the one definition of the env-var list, shared with the analytics gate so the two
+can't disagree about what a real install is.
+
+The manifest URL (`https://api.getcmdr.com/update-check/{version}?arch={arch}`) is built at runtime from the
+compile-time version and arch; the API server logs the check to D1 for active-user counting, then 302-redirects to
+`https://getcmdr.com/latest.json`.
+
+## Managed policy (MDM)
+
+The organization's `DisableUpdates`, `DisableAutomaticUpdateChecks`, and `MaxUpdateVersion` (key catalog:
+`managed_policy/DETAILS.md`) apply at every step, each on a fresh read (`managed_policy::for_egress`):
+
+- **Check.** `check_for_update(trigger)` answers `UpdateCheckOutcome`: `UpToDate`, `Available { version }`,
+  `HeldByPolicy { available, ceiling }`, `UpdatesDisabledByPolicy`, or `AutomaticChecksDisabledByPolicy`. The last two
+  return before any request (so no `update-check` row either). `trigger` is the Rust `UpdateCheckTrigger` enum,
+  passed by the frontend and carried by its `update_check` analytics event too; `is_automatic` decides: `startup` /
+  `poll` / `auto_check_on` are automatic, `command` / `settings` are a person asking, which
+  `DisableAutomaticUpdateChecks` still allows. The policy is asked BEFORE `skip_reason`, so a dev build run with
+  `CMDR_MANAGED_PREFS_FILE` shows the managed answer. The backend trusts that trigger; why that's accepted:
+  `managed_policy/DETAILS.md` § Accepted residuals.
+- **Offer.** Only `Available` stores the release (`UpdateInfo`: version, URL, signature) in `UpdateState.offered`; every
+  check clears the slot first, so a download can only fetch what the newest check offered under the newest policy.
+- **Download.** `download_update` takes no arguments: it fetches the offered URL, never one the frontend names, after
+  `ManagedPolicy::update_to(version)` on a fresh read (`BlockedByPolicy`, `NothingOffered`). The staged slot records the
+  version beside the tarball path.
+- **Install.** `install_update` re-asks `update_to` for the staged version on a fresh read, so a download staged before
+  a profile arrived doesn't install. Then `installer::vet_staged_bundle` asks again for the version the extracted
+  `Info.plist` names: the manifest isn't signed, so it could offer 0.52.1 under a `"0.52"` ceiling and serve a genuine,
+  signed 0.53.0. The rollback check (`refuse_unless_newer`) runs first, so an older archive is a `Failed`, not a policy
+  refusal.
+- **Already synced.** A build `install_update` already wrote into the bundle (frontend `ready`) applies at the next
+  restart whatever the policy says later: the sync is the install.
+- The ceiling compares the release core only (`UpdateCeiling::allows`), so `0.53.0-rc.1` doesn't pass `"0.52"`.
+- Out of scope: the Linux Tauri-plugin path (the frontend calls `@tauri-apps/plugin-updater` directly), since the policy
+  source is macOS-only.
 
 ## A bundle that can't be written
 

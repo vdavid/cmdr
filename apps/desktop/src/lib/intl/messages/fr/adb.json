@@ -13,7 +13,7 @@
   },
   "adb.connect.deviceGone": "Votre téléphone n’est plus connecté.",
   "@adb.connect.deviceGone": {
-    "sourceHash": "e2766e6"
+    "sourceHash": "00d5254"
   },
   "adb.connect.unauthorized": "Regardez votre téléphone et appuyez sur Autoriser.",
   "@adb.connect.unauthorized": {
@@ -67,9 +67,9 @@
   "@adb.disconnectDeviceAriaLabel": {
     "sourceHash": "8f755cb"
   },
-  "adb.disconnectBusyTooltip": "Impossible de se déconnecter tant que des opérations sont en cours sur cet appareil",
+  "adb.disconnectBusyTooltip": "Cmdr travaille encore sur des fichiers de cet appareil. Déconnectez-vous une fois l’opération terminée.",
   "@adb.disconnectBusyTooltip": {
-    "sourceHash": "a425d4b"
+    "sourceHash": "73c355e"
   },
   "adb.disconnectingDeviceAriaLabel": "Déconnexion de {name}…",
   "@adb.disconnectingDeviceAriaLabel": {

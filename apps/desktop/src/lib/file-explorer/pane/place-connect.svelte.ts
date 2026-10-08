@@ -14,8 +14,9 @@
 import { connectPlace, cancelPlaceConnect } from '$lib/servers/connect-flow'
 import { openSignInForPlace } from '$lib/servers/open-sign-in'
 import type { ConnectRefusalKind } from '$lib/servers/connect-refusals'
-import { wordConnectRefusal } from '$lib/servers/connect-refusals'
-import { isSmbVolumeId, parseServerPath } from '$lib/servers/server-path-utils'
+import { wordPaneRefusal } from '$lib/servers/connect-refusals'
+import { isAtOrUnder, isSmbVolumeId, parseServerPath } from '$lib/servers/server-path-utils'
+import { resolveValidPath } from '../navigation/path-resolution'
 import { getAppLogger } from '$lib/logging/logger'
 import type { RemoteConnectState } from './remote-connect-state'
 import type { VolumeInfo } from '../types'
@@ -138,8 +139,13 @@ export function createPlaceConnect(deps: PlaceConnectDeps): PlaceConnect {
         const landing = await landingOf(volumeId)
         const root = deps.getVolumePath()
         const volumePath = landing ?? root
+        const targetPath = await folderThatExists(
+          volumeId,
+          rebaseOnRoot(deps.getCurrentPath(), root, volumePath),
+          volumePath,
+        )
         state = null
-        deps.enter({ volumeId, volumePath, targetPath: rebaseOnRoot(deps.getCurrentPath(), root, volumePath) })
+        deps.enter({ volumeId, volumePath, targetPath })
         return
       }
       case 'reconnecting':
@@ -164,7 +170,7 @@ export function createPlaceConnect(deps: PlaceConnectDeps): PlaceConnect {
         }
         return
       case 'refused':
-        state = refusedState(volumeId, info, result.refusal)
+        state = refusedState(volumeId, info, result.refusal, result.region)
         return
     }
   }
@@ -182,7 +188,25 @@ export function createPlaceConnect(deps: PlaceConnectDeps): PlaceConnect {
     return (await deps.landingOf?.(volumeId)) ?? null
   }
 
-  function refusedState(volumeId: string, info: VolumeInfo, refusal: ConnectRefusalKind): RemoteConnectState {
+  /**
+   * The deepest folder of `target` that exists inside a share that just went live,
+   * else its root. ❗ A restored tab keeps the folder it stood on inside an unmounted
+   * share (`initialization.ts`), and that folder may be gone by the time the mount
+   * lands. Only an SMB share: a server place's folders aren't probed before the
+   * listing asks.
+   */
+  async function folderThatExists(volumeId: string, target: string, volumePath: string): Promise<string> {
+    if (!isSmbVolumeId(volumeId) || target === volumePath) return target
+    const found = await resolveValidPath(target, { volumeRoot: volumePath, volumeId })
+    return found && isAtOrUnder(found, volumePath) ? found : volumePath
+  }
+
+  function refusedState(
+    volumeId: string,
+    info: VolumeInfo,
+    refusal: ConnectRefusalKind,
+    region: string | undefined,
+  ): RemoteConnectState {
     const parsed = parseServerPath(info.path)
     // An SMB share's path is its mount point, which names no server by design.
     if (!parsed && !isSmbVolumeId(volumeId)) {
@@ -190,9 +214,12 @@ export function createPlaceConnect(deps: PlaceConnectDeps): PlaceConnect {
     }
     return {
       kind: 'refused',
-      refusal: wordConnectRefusal(refusal, {
+      refusal: wordPaneRefusal(refusal, {
         host: parsed?.host ?? info.name,
         username: parsed?.username ?? info.name,
+        name: info.name,
+        protocol: parsed?.protocol,
+        region,
       }),
       retry: () => {
         // A fresh attempt, with a fresh id: the old one is spent.
@@ -221,11 +248,6 @@ export function createPlaceConnect(deps: PlaceConnectDeps): PlaceConnect {
     },
     picked,
   }
-}
-
-/** Whether `path` is `root` or a folder inside it, by whole components. */
-function isAtOrUnder(path: string, root: string): boolean {
-  return path === root || path.startsWith(root.endsWith('/') ? root : `${root}/`)
 }
 
 /**

@@ -379,20 +379,30 @@ impl FakeTree {
                 .is_some_and(|m| m.read_only)
     }
 
-    /// Creates `path` and every missing ancestor (`mkdir -p`).
+    /// Creates `path` and every missing ancestor (`mkdir -p`), as a phone's
+    /// kernel resolves it: links along the way are followed, the last one
+    /// included, and a file in the way refuses the whole verb (`EEXIST` at
+    /// `path` itself, `ENOTDIR` above it).
     pub fn mkdir_p(&mut self, path: &str) -> Result<(), i32> {
         if self.writes_refused_at(path) {
             return Err(EROFS);
         }
-        let path = Self::normalize(path);
-        match self.nodes.get(&path) {
-            Some(FakeNode::Dir { .. }) => Ok(()),
-            Some(_) => Err(EEXIST),
-            None => {
-                self.add_dir(&path);
-                Ok(())
+        // A link to nothing holds the name without being a directory.
+        if matches!(self.get(path), Some(FakeNode::Symlink { .. })) && self.resolve(path).is_err() {
+            return Err(EEXIST);
+        }
+        let path = self.canonical(path)?;
+        let mut at = Some(path.clone());
+        while let Some(level) = at {
+            match self.nodes.get(&level) {
+                Some(FakeNode::Dir { .. }) => break,
+                Some(_) if level == path => return Err(EEXIST),
+                Some(_) => return Err(ENOTDIR),
+                None => at = Self::parent_of(&level),
             }
         }
+        self.add_dir(&path);
+        Ok(())
     }
 
     /// Writes a file (`SEND`). The parent must exist and be a directory.

@@ -192,12 +192,12 @@ describe('history walk ({ history } arm)', () => {
     expect(h.tab('left').history.currentIndex).toBe(0)
   })
 
-  it('back into a search-results snapshot resets the cursor instead of carrying the real-folder index across', () => {
+  it("back into a search-results snapshot hands the pane the snapshot's own cursor, not the real folder's", () => {
     const mgr = h.mgr('left')
     getActiveTab(mgr).history = {
       stack: [
-        { volumeId: 'search-results', path: 'search-results://sr-1' },
-        { volumeId: 'root', path: '/Users/me/reports' },
+        { volumeId: 'search-results', path: 'search-results://sr-1', cursor: { index: 1, rowPath: '/r/two.pdf' } },
+        { volumeId: 'root', path: '/Users/me/reports', cursor: { index: 10 } },
       ],
       currentIndex: 1,
     }
@@ -208,7 +208,49 @@ describe('history walk ({ history } arm)', () => {
 
     expect(h.tab('left').volumeId).toBe('search-results')
     expect(h.tab('left').path).toBe('search-results://sr-1')
-    expect(h.paneState.left.paneRef?.setCursorIndex).toHaveBeenCalledWith(0)
+    expect(h.paneState.left.paneRef?.restoreHistoryCursor).toHaveBeenCalledWith({
+      path: 'search-results://sr-1',
+      cursor: { index: 1, rowPath: '/r/two.pdf' },
+    })
+  })
+
+  it('back and forward hand each folder its own remembered cursor, across volumes too', () => {
+    const mgr = h.mgr('left')
+    getActiveTab(mgr).history = {
+      stack: [
+        { volumeId: 'root', path: '/Users/me', cursor: { index: 4, rowPath: '/Users/me/docs' } },
+        { volumeId: 'ext', path: '/Volumes/Ext/photos', cursor: { index: 12 } },
+      ],
+      currentIndex: 1,
+    }
+    getActiveTab(mgr).volumeId = 'ext'
+    getActiveTab(mgr).path = '/Volumes/Ext/photos'
+    const restore = h.paneState.left.paneRef?.restoreHistoryCursor
+
+    navigate({ pane: 'left', to: { history: 'back' }, source: 'user' }, h.deps)
+    expect(restore).toHaveBeenLastCalledWith({ path: '/Users/me', cursor: { index: 4, rowPath: '/Users/me/docs' } })
+
+    navigate({ pane: 'left', to: { history: 'forward' }, source: 'user' }, h.deps)
+    expect(restore).toHaveBeenLastCalledWith({ path: '/Volumes/Ext/photos', cursor: { index: 12 } })
+  })
+
+  it('hands over a copy, so later cursor readings for the entry cannot move the pending restore', () => {
+    const mgr = h.mgr('left')
+    const remembered = { index: 4 }
+    getActiveTab(mgr).history = {
+      stack: [
+        { volumeId: 'root', path: '/Users/me', cursor: remembered },
+        { volumeId: 'root', path: '/Users/me/b' },
+      ],
+      currentIndex: 1,
+    }
+    getActiveTab(mgr).path = '/Users/me/b'
+
+    navigate({ pane: 'left', to: { history: 'back' }, source: 'user' }, h.deps)
+
+    const handed = (h.paneState.left.paneRef?.restoreHistoryCursor.mock.calls[0]?.[0] as { cursor: unknown }).cursor
+    expect(handed).toEqual(remembered)
+    expect(handed).not.toBe(remembered)
   })
 
   it('back at the oldest entry is a no-op', () => {
@@ -244,6 +286,8 @@ describe('history walk ({ history } arm)', () => {
     expect(h.tab('left').volumeId).toBe('network')
     expect(h.tab('left').path).toBe('smb://')
     expect(h.paneState.left.paneRef?.setNetworkHost).toHaveBeenCalledWith(host)
+    // The servers hub has no rows of its own to put a cursor on.
+    expect(h.paneState.left.paneRef?.restoreHistoryCursor).not.toHaveBeenCalled()
   })
 })
 

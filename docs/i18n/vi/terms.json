@@ -19,6 +19,11 @@
     "forms": "quyền truy cập (privacy access), không có quyền (no permission), quyền ghi (write access)",
     "sources": "Xfce Thunar (Quyền hạn, không có quyền), macOS (quyền truy cập)"
   },
+  "access-key-id": {
+    "chosen": "ID khóa truy cập",
+    "confidence": "tentative",
+    "sources": "catalog servers.sheet.accessKeyId and servers.sheet.identityLockedS3; MS access key → khóa truy cập; no AWS console ships Vietnamese"
+  },
   "account": {
     "chosen": "tài khoản",
     "confidence": "high",
@@ -36,6 +41,12 @@
     "decision": "Thêm ghi chú vào báo cáo đã gửi",
     "forms": "button Thêm; Thêm vào X (Thêm vào báo cáo, Thêm vào Dock, Thêm vào mục ưa thích); progress Đang thêm…; toast Đã thêm …",
     "sources": "macOS (Thêm, Thêm vào Dock, Thêm vào Mục ưa thích), Xfce Thunar, MS (add → thêm)"
+  },
+  "advanced": {
+    "chosen": "Nâng cao",
+    "confidence": "high",
+    "forms": "Cmdr Settings section → Nâng cao; quote settings.section.advanced exactly in navigation paths",
+    "sources": "Network.appex Localizable (ADVANCED); catalog settings.section.advanced (macOS 26.6.2 build 25G83, live loctable key cross-reference, 2026-10-02)"
   },
   "ai-feature": {
     "accept": ["tính năng AI"],
@@ -69,6 +80,19 @@
     "confidence": "high",
     "forms": "conflict title Tệp đã tồn tại; There's already something at X → Đã có thứ gì đó ở \"{path}\"; doesn't exist yet → chưa tồn tại",
     "sources": "macOS AppKit SavePanel (already exists → đã tồn tại), Finder NE21"
+  },
+  "android-platform-tools": {
+    "accept": ["bộ công cụ nền tảng"],
+    "chosen": "bộ công cụ nền tảng Android",
+    "confidence": "high",
+    "forms": "the full name with Android when naming the download; bare bộ công cụ nền tảng once Android SDK is already in the sentence; Android SDK stays verbatim",
+    "sources": "Google's vi Android developer docs; catalog (adb.connect.adbNotInstalled, settings.adb.install.intro, adbEnabled.description); decisions.md § Điện thoại Android qua ADB"
+  },
+  "android-tools": {
+    "chosen": "công cụ Android",
+    "confidence": "high",
+    "forms": "no Android tooling installed → chưa cài công cụ Android nào; The Android tools on this Mac → Công cụ Android trên máy Mac này",
+    "sources": "catalog (adb.connect.serverUnreachable, adbEnabled.description); the pile has no vi string for it"
   },
   "answer": {
     "avoid": [
@@ -176,10 +200,10 @@
     "sources": "macOS Finder AR40 (Archive → Lưu trữ); Bỏ lưu trữ mirrors Gmail/Zalo (tentative)"
   },
   "ask": {
-    "accept": ["Ask Cmdr", "nhờ", "yêu cầu", "xin"],
+    "accept": ["Ask Cmdr"],
     "chosen": "hỏi",
     "confidence": "high",
-    "forms": "option hỏi mỗi lần (ask each time); asking a helper or a person to do something → nhờ",
+    "forms": "option hỏi mỗi lần (ask each time)",
     "sources": "macOS Finder (hỏi in prompts)"
   },
   "ask-cmdr": {
@@ -193,6 +217,11 @@
     "confidence": "high",
     "forms": "attachment (noun) → tệp đính kèm; Remove attachment → Gỡ tệp đính kèm",
     "sources": "MS terminology (attach / attachment → đính kèm)"
+  },
+  "automation": {
+    "chosen": "Tự động hóa",
+    "confidence": "high",
+    "sources": "macOS 27.0 (26A428) SecurityPrivacyExtension.appex Localizable.loctable, key AUTOMATION, 2026-10-08"
   },
   "available-offline": {
     "chosen": "dùng ngoại tuyến",
@@ -254,17 +283,46 @@
     "forms": "button Duyệt… keeps the … (U+2026)",
     "sources": "macOS StandardAdditions ChooseApplication (Browse... → Duyệt...), Finder ConnectToWindow (Browse → Duyệt)"
   },
+  "bucket": {
+    "chosen": "bộ chứa",
+    "forms": "All buckets → Tất cả bộ chứa",
+    "confidence": "tentative",
+    "sources": "catalog servers.sheet.s3Bucket and servers.hub.openAccountHint; no AWS console ships Vietnamese"
+  },
   "button": {
     "chosen": "nút",
     "confidence": "high",
     "forms": "the + button → nút “+”; the button below → nút bên dưới",
     "sources": "macOS AppKit (\"the Add (+) button\" → \"nút Thêm (+)\", \"this button\" → \"nút này\"); catalog (8 of 8 keys)"
   },
+  "byte": {
+    "chosen": "byte",
+    "confidence": "high",
+    "forms": "one ICU other arm, uninflected: {count} byte; Zero bytes → 0 byte; the setting option Bytes → Byte; unit symbols stay Latin: binary KiB/MiB/GiB/TiB/PiB (KDE Dolphin, Xfce Thunar vi), decimal kB/MB/GB/TB/PB (lowercase SI k, though macOS vi writes KB); 1.024 and 1.000 take the vi period separator",
+    "sources": "macOS vi Foundation FileSizeFormatting.loctable (bytes → byte, %@ bytes → %@ byte) and Finder vi SP27/SP28 (byte), verified on macOS 26 via plutil, 2026-10-06"
+  },
   "cache": {
     "chosen": "bộ đệm",
     "confidence": "high",
     "forms": "verb → lưu vào bộ đệm",
     "sources": "MS terminology (bộ đệm ẩn), plain bộ đệm for UI brevity"
+  },
+  "calculate": {
+    "avoid": [
+      {
+        "form": "tính",
+        "why": "Finder writes Tính toán tất cả kích cỡ; TC 503 Tính dung lượng is the only bare use, TC 5138 also says Tính toán"
+      }
+    ],
+    "chosen": "tính toán",
+    "confidence": "high",
+    "forms": "Calculate folder sizes → Tính toán kích cỡ thư mục; stop the work → dừng tính toán; adding up in prose → cộng dồn",
+    "sources": "macOS Finder ViewOptionsWindow 65.title (Tính toán tất cả kích cỡ); TC 5138 Tính toán dung lượng chiếm (503 has bare Tính dung lượng)"
+  },
+  "camera": {
+    "chosen": "máy ảnh",
+    "confidence": "high",
+    "sources": "macOS AppKit NSStillCameraTemplate “máy ảnh”; catalog (mtpEnabled)"
   },
   "camera-details": {
     "chosen": "thông tin máy ảnh",
@@ -389,6 +447,22 @@
     "forms": "click X → bấm X; click the + button → bấm vào nút Thêm (+) / bấm nút “+”; a key is pressed, not clicked → nhấn",
     "sources": "macOS AppKit (\"click Printers & Scanners, and then click the Add (+) button\" → \"bấm vào Máy in & Máy quét rồi bấm vào nút Thêm (+)\"); catalog (26 keys after the onboarding.stepFda.* sweep)"
   },
+  "clone-pane": {
+    "avoid": [
+      {
+        "form": "Nhân bản khung",
+        "why": "nhân bản is the Duplicate ruling (Finder Tệp > Nhân bản), so it reads as duplicating the pane"
+      },
+      {
+        "form": "Sao chép khung",
+        "why": "sao chép is Copy (F5), and MS vi renders clone that way"
+      }
+    ],
+    "chosen": "Khung đích = khung nguồn",
+    "confidence": "tentative",
+    "note": "Total Commander’s name for the command with Cmdr’s pane word, because both clone verbs collide with a shipped command. The palette description says what it does.",
+    "sources": "TC vi 532 (Đích=Nguồn); pane ruling (khung); MS vi clone → bản sao / sao chép; DC has no Vietnamese"
+  },
   "close": {
     "chosen": "đóng",
     "confidence": "high",
@@ -407,6 +481,12 @@
     "forms": "cloud folders → thư mục đám mây; cloud service → dịch vụ đám mây; sync app → ứng dụng đồng bộ; cloud mount → mục gắn kết đám mây",
     "sources": "MS terminology, catalog (Đám mây group)"
   },
+  "column": {
+    "chosen": "cột",
+    "confidence": "high",
+    "forms": "the Name column → cột Tên; sort column → cột sắp xếp; column width → độ rộng cột; by the chosen column → theo cột đã chọn",
+    "sources": "macOS Finder (SV2 cột sắp xếp); catalog"
+  },
   "command": {
     "chosen": "lệnh",
     "confidence": "high",
@@ -423,6 +503,12 @@
     "chosen": "so sánh",
     "confidence": "tentative",
     "sources": "catalog"
+  },
+  "compare-folders": {
+    "chosen": "So sánh thư mục",
+    "accept": ["so sánh"],
+    "confidence": "high",
+    "sources": "TC 11.58 vi menu So sánh thư mục (exact match, ⇧F2); compare by content → So sánh theo nội dung; Finder thư mục. DC has no vi catalog; MC vi leaves it untranslated"
   },
   "complete": {
     "accept": ["hoàn chỉnh", "đầy đủ"],
@@ -467,7 +553,7 @@
     "confidence": "high",
     "decision": "A move that could not be confirmed",
     "forms": "couldn't confirm → chưa xác nhận được (not yet proven), never a flat không thể",
-    "sources": "MS terminology (confirm → xác nhận); catalog (fileOperations.mkdir.timeoutMessage)"
+    "sources": "MS terminology (confirm → xác nhận); catalog (errors.write.moveNotConfirmed.*)"
   },
   "conflict": {
     "chosen": "xung đột",
@@ -486,6 +572,12 @@
     "confidence": "high",
     "forms": "connect to a server → kết nối tới (prose) but the label Kết nối với máy chủ… (Finder N84); reconnect → kết nối lại; the connection dropped → Đã mất kết nối",
     "sources": "Xfce Thunar (kết nối mạng), macOS Finder (Kết nối với máy chủ), CFNetwork (Đã mất kết nối mạng)"
+  },
+  "provider-console": {
+    "chosen": "bảng điều khiển",
+    "confidence": "high",
+    "forms": "a storage provider’s console → bảng điều khiển của nhà cung cấp dịch vụ lưu trữ, after a first mention bảng điều khiển của nhà cung cấp",
+    "sources": "catalog errors.listing.coldStorage.suggestion; MS terminology says bàn điều khiển quản lí for management console, the catalog form kept"
   },
   "context-menu": {
     "accept": ["chuột phải"],
@@ -518,6 +610,13 @@
     "confidence": "high",
     "forms": "the noun (a copy) → bản sao; a fresh copy of a file → một bản mới; Duplicate → Nhân bản (separate command)",
     "sources": "macOS AppKit (Sao chép)"
+  },
+  "cost": {
+    "accept": ["tốn", "cái giá"],
+    "chosen": "chi phí",
+    "confidence": "high",
+    "forms": "the noun (money spent) → chi phí; the verb (it costs, costs nothing) → tốn: không tốn gì, tốn tiền, không tốn thêm CPU; the trade-off (The cost is …) → Cái giá là …",
+    "sources": "MS terminology (cost → chi phí); catalog (tốn ×3 in settings.json and onboarding.json)"
   },
   "crash-report": {
     "accept": ["sự cố", "sập"],
@@ -576,6 +675,13 @@
     "confidence": "high",
     "sources": "MS terminology (dashboard → bảng thông tin)"
   },
+  "debugging": {
+    "chosen": "gỡ lỗi",
+    "accept": ["debug"],
+    "confidence": "high",
+    "forms": "debug log → nhật ký gỡ lỗi; the technical level stays debug",
+    "sources": "ConsoleKit.framework Localizable (Debug Type, value_debug); catalog settings.developer.verboseLogging.description (macOS 26.6.2 build 25G83, live loctable key cross-reference, 2026-10-02)"
+  },
   "default": {
     "chosen": "mặc định",
     "confidence": "high",
@@ -594,6 +700,13 @@
     "confidence": "high",
     "forms": "anything that really destroys bytes (incl. Remove download → Xóa bản tải về); the Delete key keeps its English name",
     "sources": "macOS AppKit (Xóa)"
+  },
+  "delete-key": {
+    "chosen": "Delete",
+    "confidence": "high",
+    "forms": "phím Delete (⌫)",
+    "note": "Pile mined 2026-10-07 (macOS 27.0.1 live bundles): VoiceOver SCRWorkspace.loctable deleteKey, Terminal keyDescriptions.loctable 007F, AccessibilitySharedSupport symbol names delete.backward.",
+    "sources": "macOS VoiceOver (Delete Key → Phím Delete; Presses the delete key → Nhấn phím delete); Terminal says ⌫ Xóa and the symbol names phím xóa lùi"
   },
   "delete-permanently": {
     "chosen": "vĩnh viễn",
@@ -622,6 +735,12 @@
     "chosen": "thiết bị",
     "confidence": "high",
     "sources": "GNOME (thiết bị này), Xfce Thunar (Ngắt kết nối thiết bị)"
+  },
+  "dialog": {
+    "chosen": "hộp thoại",
+    "confidence": "high",
+    "forms": "a named Cmdr dialog → hộp thoại <Tên> (hộp thoại Di chuyển, the title from `fileOperations.transferDialog.titleVerbOnly`)",
+    "sources": "macOS AppKit (hộp thoại); catalog (13 keys)"
   },
   "disable": {
     "chosen": "tắt",
@@ -700,7 +819,7 @@
     "sources": "catalog; macOS Finder/AppKit click verb bấm"
   },
   "download": {
-    "accept": ["tải lại", "tải-về"],
+    "accept": ["tải lại", "tải-về", "tải tệp về"],
     "avoid": [
       {
         "form": "tải xuống",
@@ -825,6 +944,13 @@
     "confidence": "tentative",
     "sources": "natural rendering; no pile string for this UI sense"
   },
+  "example": {
+    "accept": ["ví dụ"],
+    "chosen": "Ví dụ:",
+    "confidence": "high",
+    "forms": "placeholder prefix Ví dụ: {example}; inline \"like https://…\" → ví dụ https://…",
+    "sources": "catalog (servers.sheet.usernamePlaceholder, onboarding.cloudSetup.step.endpointPlaceholder, four keys)"
+  },
   "expired": {
     "chosen": "hết hạn",
     "confidence": "high",
@@ -928,6 +1054,13 @@
     "chosen": "hệ thống tệp",
     "confidence": "high",
     "sources": "macOS Disk Utility / ASR (Verifying file system. → Đang xác minh hệ thống tệp.)"
+  },
+  "filter": {
+    "accept": ["bộ lọc"],
+    "chosen": "lọc",
+    "confidence": "high",
+    "forms": "verb lọc; noun bộ lọc (Xóa bộ lọc, bộ lọc nhanh); the typing-mode name and badge Lọc (Lọc: …), beside Nhảy tới",
+    "sources": "macOS live (Filter → Lọc 38×, Bộ lọc 25×; Clear Filter → Xóa bộ lọc); MC (Lọc tập tin); catalog (Nhấn Enter để lọc)"
   },
   "finder": {
     "chosen": "Finder",
@@ -1089,12 +1222,16 @@
       {
         "form": "Đến đường dẫn",
         "why": "a stray variant; the go family is Đi tới"
+      },
+      {
+        "form": "Đi tới đường dẫn",
+        "why": "the command's old English name; EN now says Go to folder after Finder"
       }
     ],
     "chosen": "đi tới",
     "confidence": "high",
-    "forms": "Go to path → Đi tới đường dẫn…; Go to Folder… → Đi tới thư mục…; input label Đường dẫn cần đi tới",
-    "sources": "macOS Finder GotoWindow (Go to Folder → Đi tới thư mục)"
+    "forms": "the command, menu item, dialog title, and its button all read Đi tới thư mục (… on the command and menu item); input label Đường dẫn cần đi tới",
+    "sources": "macOS Finder MenuBar 261.title (Go to Folder… → Đi tới thư mục…), GotoWindow 1.title (Đi tới thư mục)"
   },
   "go-to-trash": {
     "chosen": "đi tới thùng rác",
@@ -1112,6 +1249,12 @@
     "chosen": "Đã hiểu",
     "confidence": "high",
     "sources": "catalog (ai.toast.gotIt, main.oldMacos.gotIt, updates.moveToApplicationsDialog.gotIt)"
+  },
+  "group": {
+    "chosen": "nhóm",
+    "confidence": "high",
+    "forms": "a named group takes the name bare after it (nhóm Mạng); the servers found nearby → Nhóm máy chủ ở gần",
+    "sources": "macOS Finder MenuBar (Use Groups → Sử dụng Nhóm), verified on macOS 27.0 (26A428), live bundle, 2026-09-30; catalog (servers.pinHint.title)"
   },
   "guest": {
     "chosen": "khách",
@@ -1146,6 +1289,12 @@
     "chosen": "gợi ý",
     "confidence": "high",
     "sources": "macOS (Cửa sổ gợi ý, Gợi ý mật khẩu); MS terminology"
+  },
+  "history": {
+    "chosen": "lịch sử",
+    "confidence": "high",
+    "forms": "file history (Ask Cmdr) → lịch sử thao tác; the repo’s history → lịch sử của repo",
+    "sources": "macOS AppKit (NSToolbarHistoryTemplate lịch sử; lịch sử phiên bản); catalog (errors.git.blobTooLarge.title, operationLog.dialog.loadError)"
   },
   "host": {
     "chosen": "máy chủ",
@@ -1395,6 +1544,42 @@
     "forms": "tool labels Đang xem bên trong tệp / Đã xem bên trong tệp",
     "sources": "catalog (bên trong), sibling tool labels"
   },
+  "overall": {
+    "chosen": "Tổng thể",
+    "confidence": "tentative",
+    "forms": "the whole-run time-left label → Tổng thể: {eta}",
+    "sources": "GN tổng (a summed quantity); no source names a whole-run time; tổng thể is the standard gloss for overall"
+  },
+  "size-unit-gibibyte": {
+    "chosen": "GiB",
+    "confidence": "high",
+    "sources": "catalog common.sizeUnit.gibibyte; IEC 80000-13 (binary) / SI (decimal)"
+  },
+  "size-unit-kibibyte": {
+    "chosen": "KiB",
+    "confidence": "high",
+    "sources": "catalog common.sizeUnit.kibibyte; IEC 80000-13 (binary) / SI (decimal)"
+  },
+  "size-unit-kilobyte": {
+    "chosen": "kB",
+    "confidence": "high",
+    "sources": "catalog common.sizeUnit.kilobyte; IEC 80000-13 (binary) / SI (decimal)"
+  },
+  "size-unit-mebibyte": {
+    "chosen": "MiB",
+    "confidence": "high",
+    "sources": "catalog common.sizeUnit.mebibyte; IEC 80000-13 (binary) / SI (decimal)"
+  },
+  "size-unit-pebibyte": {
+    "chosen": "PiB",
+    "confidence": "high",
+    "sources": "catalog common.sizeUnit.pebibyte; IEC 80000-13 (binary) / SI (decimal)"
+  },
+  "size-unit-tebibyte": {
+    "chosen": "TiB",
+    "confidence": "high",
+    "sources": "catalog common.sizeUnit.tebibyte; IEC 80000-13 (binary) / SI (decimal)"
+  },
   "step": {
     "chosen": "bước",
     "accept": ["Bước"],
@@ -1531,7 +1716,7 @@
     "sources": "composed from ổ đĩa + mạng"
   },
   "network-share": {
-    "accept": ["thư mục chia sẻ"],
+    "accept": ["thư mục chia sẻ", "liên kết chia sẻ"],
     "avoid": [
       {
         "form": "bản chia sẻ",
@@ -1545,7 +1730,10 @@
     "chosen": "mục chia sẻ",
     "confidence": "high",
     "decision": "Tên tiện ích macOS, mục chia sẻ, liên kết mềm, beta công khai",
-    "forms": "a share → mục chia sẻ (also inside Settings); shared folder → thư mục chia sẻ",
+    "exceptions": {
+      "errorReporter.dialog.managedOff": "English-sense: \"share it yourself\" is the verb (pass a saved report on), so `tự chia sẻ`, not the SMB noun."
+    },
+    "forms": "a share → mục chia sẻ (also inside Settings); shared folder → thư mục chia sẻ; an S3 share link (a web address, another English sense) → liên kết chia sẻ",
     "sources": "macOS Finder (Thư mục được chia sẻ, chia sẻ); catalog (37 keys)"
   },
   "new-file": {
@@ -1584,6 +1772,13 @@
     "confidence": "high",
     "forms": "toast → thông báo nhỏ",
     "sources": "macOS/MS"
+  },
+  "on-device": {
+    "accept": ["cục bộ", "trên máy"],
+    "chosen": "trên thiết bị",
+    "confidence": "high",
+    "forms": "on-device AI → AI trên thiết bị; value On-device only → Chỉ trên thiết bị; the local-AI option keeps its own name (AI cục bộ, LLM cục bộ)",
+    "sources": "macOS live sweep 2026-10-05: ContentKit On-Device → Trên thiết bị, TranslationUI On-Device Translation → Bản dịch trên thiết bị, ImagePlaygroundInternal on-device image generation → tạo hình ảnh trên thiết bị; catalog ai.local.notInstalled (trên thiết bị của bạn)"
   },
   "onboarding": {
     "accept": ["thiết lập"],
@@ -1676,6 +1871,19 @@
     "chosen": "tùy chọn",
     "confidence": "high",
     "sources": "MS terminology"
+  },
+  "organization": {
+    "chosen": "tổ chức",
+    "confidence": "high",
+    "forms": "your organization → tổ chức của bạn; managed by your organization → do tổ chức của bạn quản lý; IT team → bộ phận IT (no Tier 1 source, see review-queue.md)",
+    "sources": "MS terminology (organization → tổ chức); macOS live sweep 2026-10-05: SoftwareUpdateSettingsExtension (This setting is currently managed by your organization → Cài đặt này hiện được tổ chức của bạn quản lý), DMCUtilities (tổ chức của bạn ×20); catalog licensing.about.fallbackOrg"
+  },
+  "original": {
+    "accept": ["gốc"],
+    "chosen": "bản gốc",
+    "confidence": "high",
+    "forms": "the originals → các bản gốc; the original file → tệp gốc (Finder)",
+    "sources": "macOS Finder PE117 (…the original could not be deleted): tệp gốc; catalog (errors.write.destinationNotFound.message.copy, errors.write.deviceDisconnected.sided.destination.copy)"
   },
   "outdated": {
     "chosen": "lỗi thời",
@@ -1871,6 +2079,11 @@
     "confidence": "high",
     "sources": "macOS Finder (Truy vấn để tìm kiếm trong Finder), MS"
   },
+  "quick-filter": {
+    "chosen": "bộ lọc nhanh",
+    "confidence": "high",
+    "sources": "TC vi 3018/3019 (tắt/bật lọc nhanh) + the filter ruling’s noun bộ lọc"
+  },
   "quick-look": {
     "chosen": "Xem nhanh",
     "confidence": "high",
@@ -1994,11 +2207,13 @@
     "confidence": "high",
     "decision": "Rà soát trôi thuật ngữ toàn catalog",
     "exceptions": {
+      "ai.secretError.removeTitle": "The saved API key is deleted from the credential store, so `xóa` (like `fileExplorer.network.share.forgetPasswordTooltip`).",
       "commands.cloudRemoveDownload.description": "The local copy really is deleted, so `xóa` (Finder: Remove Download → Xóa bản tải về).",
       "commands.cloudRemoveDownload.label": "Finder's own item: Remove Download → `Xóa bản tải về` (N153.4_V1); the local bytes really go.",
       "commands.handler.cloudRemoveDownloadFailed": "Same deletion as `commands.cloudRemoveDownload.label`, so `xóa`.",
       "fileExplorer.network.share.forgetPasswordTooltip": "The saved password is deleted from the keychain, so `xóa` (like `fileExplorer.network.deletePasswordFailed`).",
-      "menu.context.removeDownload": "Finder's own item: Remove Download → `Xóa bản tải về`; identical to `commands.cloudRemoveDownload.label`."
+      "menu.context.removeDownload": "Finder's own item: Remove Download → `Xóa bản tải về`; identical to `commands.cloudRemoveDownload.label`.",
+      "onboarding.cloudSetup.removeKey": "Same deletion as `ai.secretError.removeTitle`, so `xóa`."
     },
     "forms": "taking an item off a list while it lives on → gỡ bỏ (one form, even with an object); the tag row → Gỡ bỏ “{color}”; forget a saved item → Quên",
     "sources": "Xfce Thunar (_Remove → Gỡ bỏ), GNOME Nautilus (Gỡ bỏ ổ đĩa một cách an toàn)"
@@ -2066,6 +2281,12 @@
     "confidence": "high",
     "forms": "the OS's restart gets an explicit máy (khởi động lại máy)",
     "sources": "macOS (Khởi động lại)"
+  },
+  "restore": {
+    "chosen": "khôi phục",
+    "confidence": "high",
+    "forms": "restore a cold-storage file → khôi phục tệp; a restore (noun) → việc khôi phục",
+    "sources": "MS terminology (restore → khôi phục, two entries)"
   },
   "resume": {
     "avoid": [
@@ -2350,10 +2571,30 @@
     "forms": "Stopped after … → Đã dừng sau khi …; the rollback tooltip button → Dừng lại; stopped doing X → đã dừng + verb; something that quit on its own → ngừng",
     "sources": "macOS Finder (Dừng xóa, Dừng nén), Keychain First Aid"
   },
+  "storage": {
+    "accept": ["dung lượng", "bộ nhớ"],
+    "chosen": "lưu trữ",
+    "confidence": "high",
+    "forms": "S3 storage → kho lưu trữ S3; cold storage → kho lưu trữ lạnh; storage provider → nhà cung cấp dịch vụ lưu trữ; free space on a drive or iCloud → dung lượng; a phone's storage → bộ nhớ; storing logs → lưu trữ nhật ký (catalog settings.applier.logStorageRestart)",
+    "note": "The cold-storage \"Archived\" (S3 Glacier, `*coldStorage*`, `fileExplorer.archivedFile.*`) is `kho lưu trữ lạnh`, label `Lưu trữ lạnh`, over the chat's `Đã lưu trữ` (`archive-chat`): every file is stored, so the bare word says nothing.",
+    "sources": "MS terminology (Storage → Lưu trữ, cloud storage → kho lưu trữ đám mây); catalog (dung lượng, bộ nhớ)"
+  },
+  "store": {
+    "accept": ["chứa", "nằm"],
+    "chosen": "lưu",
+    "confidence": "high",
+    "forms": "store a secret in the keychain → lưu … vào chuỗi khóa; a drive that can't store a file → không thể chứa; a disk image stored there → nằm ở đó",
+    "sources": "catalog (servers.refusal.secretNotStored, errors.write.filesTooLargeForFilesystem.*)"
+  },
   "streaming": {
     "chosen": "phát trực tiếp",
     "confidence": "tentative",
     "sources": "MS-style rendering"
+  },
+  "subfolder": {
+    "chosen": "thư mục con",
+    "confidence": "high",
+    "sources": "macOS Finder (PE26.1 … các thư mục con của nó); TC vi, Nautilus, Thunar, Dolphin agree"
   },
   "subscription": {
     "chosen": "đăng ký",
@@ -2514,6 +2755,13 @@
     "forms": "còn {duration}; countdown aria → Thời gian còn lại …",
     "sources": "catalog"
   },
+  "tint": {
+    "accept": ["màu nền"],
+    "chosen": "phủ",
+    "confidence": "high",
+    "forms": "Tint X panes → Phủ màu cho khung X; background tint → màu nền phủ lên",
+    "sources": "catalog (settings.appearance.tint*, six keys); MS terminology (tint → sắc) names the color property, not the overlay"
+  },
   "timeout": {
     "accept": ["kịp thời"],
     "chosen": "thời gian chờ",
@@ -2608,6 +2856,12 @@
     "confidence": "tentative",
     "forms": "a bare status → Không tới được; reaching a SERVER → không kết nối được tới; reaching a PATH or drive → không thể truy cập; a USB device → truy cập",
     "sources": "catalog (errors.listing.networkUnreachable.title); no pile string"
+  },
+  "untouched": {
+    "chosen": "nguyên vẹn",
+    "confidence": "high",
+    "forms": "the originals are untouched → các bản gốc vẫn nguyên vẹn",
+    "sources": "catalog (errors.write.destinationNotFound.message.copy, errors.write.deviceDisconnected.sided.destination.copy); macOS AppKit Document (To keep the file unchanged…): không bị thay đổi, the verb-side form"
   },
   "update": {
     "chosen": "cập nhật",
@@ -2797,6 +3051,18 @@
     "chosen": "Mission Control",
     "confidence": "high",
     "sources": "live bundles, macOS 27.0 (Disk Utility.app InfoPlist.loctable, MainMenu.loctable; Activity Monitor.app InfoPlist.loctable), 2026-09-24"
+  },
+  "space-key": {
+    "avoid": [
+      {
+        "form": "Space",
+        "why": "macOS vi localizes this key (Dấu cách) though it keeps Escape and Enter Latin; TC 5139 says phím cách"
+      }
+    ],
+    "chosen": "dấu cách",
+    "confidence": "high",
+    "forms": "key label Dấu cách, chord ⇧Dấu cách (macOS: Giữ Command Dấu cách); in a sentence → phím dấu cách",
+    "sources": "macOS AppKit FunctionKeyNames (Space), SystemSettings Siri/Spotlight SPACEBAR_KEY → Dấu cách (Space bar → Thanh dấu cách); AppKit Date Picker help (phím dấu cách); TC 5139 (phím cách)"
   },
   "spaces": {
     "chosen": "Spaces",

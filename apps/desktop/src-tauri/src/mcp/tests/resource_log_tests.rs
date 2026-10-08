@@ -34,7 +34,7 @@ fn select_log_lines_redacts_pii() {
 }
 
 #[test]
-fn select_log_lines_keeps_pre_report_remote_and_id_policy() {
+fn select_log_lines_redact_remote_references_and_ids_with_bare_tokens() {
     let opts = LogOptions {
         since_iso: None,
         filter: None,
@@ -46,9 +46,9 @@ fn select_log_lines_keeps_pre_report_remote_and_id_policy() {
 
     assert_eq!(
         select_log_lines(raw, false, &opts),
-        "2026-05-31T08:30:02.000+02:00 INFO sftp://<userinfo>@files.example.test:2222/home/ada/report.pdf?token=secret#customer\n\
-         2026-05-31T08:30:03.000+02:00 WARN webdav://<host>.local/dav/ada/report.pdf?owner=<email>#customer\n\
-         2026-05-31T08:30:04.000+02:00 INFO volume smb-nas-private-445-client-0123456789abcdef"
+        "2026-05-31T08:30:02.000+02:00 INFO sftp://<user>:<credential>@<host>:2222/<dir>/<dir>/<file>.pdf?<query>=<query>#<fragment>\n\
+         2026-05-31T08:30:03.000+02:00 WARN webdav://<host>.local/<dir>/<dir>/<file>.pdf?<query>=<query>#<fragment>\n\
+         2026-05-31T08:30:04.000+02:00 INFO volume smb-<volume-id>"
     );
 }
 

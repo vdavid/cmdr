@@ -17,6 +17,11 @@ pub(super) use crate::importance::signals::OptionalSignals;
 pub(super) use crate::importance::store::{ImportanceStore, importance_db_path};
 pub(super) use crate::importance::writer::WeightRow;
 
+/// The stop signal for a test with no volume behind it: one that never fires.
+/// ❌ Never cancel it; a test about stopping builds its own token.
+pub(super) static NEVER_STOPPED: std::sync::LazyLock<CancellationToken> =
+    std::sync::LazyLock::new(CancellationToken::new);
+
 /// Full-pass a hand-built walk, returning the writer + store path for a follow-up
 /// incremental. Shared by the two transition tests.
 pub(super) fn full_pass_walk(dir: &std::path::Path, home: &str, folders: &mut WalkedFolders) -> ImportanceWriter {
@@ -30,12 +35,92 @@ pub(super) fn full_pass_walk(dir: &std::path::Path, home: &str, folders: &mut Wa
             available: SignalSet::listing_only(),
             visits: &HashMap::new(),
             last_used: &HashMap::new(),
+            stop: &NEVER_STOPPED,
         },
         folders,
     )
     .expect("full pass");
     writer.flush_blocking().expect("flush");
     writer
+}
+
+/// A folder-heavy index with a few files in each leaf: the shape a real home or NAS
+/// has, and the one where per-folder cost dominates. `branches` folders sit directly
+/// under the home, each holding `leaves_per_branch` leaf folders of `files_per_leaf`
+/// files (at most six). Returns the home path.
+pub(super) fn build_folder_heavy_index(
+    path: &std::path::Path,
+    branches: i64,
+    leaves_per_branch: i64,
+    files_per_leaf: usize,
+) -> String {
+    use crate::indexing::store::{IndexStore, ROOT_ID};
+
+    let store = IndexStore::open(path).expect("open index");
+    let conn = store.read_conn();
+    // One transaction for the whole tree: tens of thousands of autocommits cost seconds in
+    // a debug build, which pushed the tests on this fixture past the 8 s cap on CI.
+    conn.execute_batch("BEGIN").expect("begin fixture txn");
+    let mut next_id = ROOT_ID + 1;
+    let insert = |parent_id: i64, name: &str, id: i64, is_directory: bool| {
+        IndexStore::insert_entry_v2_with_id(
+            conn,
+            id,
+            parent_id,
+            name,
+            is_directory,
+            false,
+            None,
+            None,
+            Some(1_000_000_000),
+            None,
+        )
+        .expect("insert entry");
+    };
+
+    let users_id = next_id;
+    next_id += 1;
+    insert(ROOT_ID, "Users", users_id, true);
+    let home_id = next_id;
+    next_id += 1;
+    insert(users_id, "test", home_id, true);
+
+    for branch in 0..branches {
+        let branch_id = next_id;
+        next_id += 1;
+        insert(home_id, &format!("branch{branch}"), branch_id, true);
+        for leaf in 0..leaves_per_branch {
+            let leaf_id = next_id;
+            next_id += 1;
+            insert(branch_id, &format!("leaf{leaf}"), leaf_id, true);
+            for file in 0..files_per_leaf {
+                let file_id = next_id;
+                next_id += 1;
+                // A handful of extensions, some repeated, so the distinct-extension
+                // fold has something to deduplicate.
+                let extension = ["txt", "jpg", "TXT", "md", "jpg", "rs"][file];
+                insert(leaf_id, &format!("file{file}.{extension}"), file_id, false);
+            }
+        }
+    }
+    conn.execute_batch("COMMIT").expect("commit fixture txn");
+    "/Users/test".to_string()
+}
+
+/// Build an index DB for `volume_id` over the canonical synthetic home and route
+/// the volume's read pool at it, so a pass has something real to walk. Without a
+/// pool, a pass reads nothing and writes nothing, and a test asserting "no pass
+/// ran" would pass for the wrong reason. Pair it with `uninstall_read_pool`.
+pub(super) fn install_index_for(data_dir: &std::path::Path, volume_id: &str) {
+    let index_path = data_dir.join(format!("index-{volume_id}.db"));
+    build_index_from_home(
+        &index_path,
+        &crate::importance::fixtures::SyntheticHome::canonical(1_000_000_000),
+    );
+    crate::indexing::read::enrichment::install_read_pool(
+        volume_id,
+        Arc::new(crate::indexing::read::enrichment::ReadPool::new(index_path).expect("read pool")),
+    );
 }
 
 /// Build an index DB over a `SyntheticHome` using the real `IndexStore` +

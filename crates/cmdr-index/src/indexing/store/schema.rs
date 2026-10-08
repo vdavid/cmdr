@@ -121,6 +121,7 @@ const CREATE_TABLES_SQL: &str = "
     CREATE UNIQUE INDEX IF NOT EXISTS idx_parent_name_folded ON entries (parent_id, name_folded);
     CREATE INDEX IF NOT EXISTS idx_inode ON entries (inode);
     CREATE INDEX IF NOT EXISTS idx_child_dirs ON entries (parent_id) WHERE is_directory = 1;
+    CREATE INDEX IF NOT EXISTS idx_child_symlinks ON entries (parent_id) WHERE is_symlink = 1;
 
     CREATE TABLE IF NOT EXISTS dir_stats (
         entry_id                 INTEGER PRIMARY KEY,
@@ -214,9 +215,9 @@ pub(super) fn apply_pragmas(conn: &Connection, readonly: bool) -> Result<(), Ind
 /// Create tables if they don't exist and insert root sentinel.
 ///
 /// Runs on every writable open, so an index added here with `IF NOT EXISTS`
-/// reaches existing DBs without a [`SCHEMA_VERSION`] bump: `idx_child_dirs` is
-/// built once, on the first open after an upgrade (~2.5 s cold on a 5.9 M-row
-/// index), before the writer spawns.
+/// reaches existing DBs without a [`SCHEMA_VERSION`] bump: `idx_child_dirs` and
+/// `idx_child_symlinks` are each built once, on the first open after an upgrade
+/// (~2.5 s cold for the first on a 5.9 M-row index), before the writer spawns.
 pub(super) fn create_tables(conn: &Connection) -> Result<(), IndexStoreError> {
     conn.execute_batch(CREATE_TABLES_SQL)?;
     ensure_root_sentinel(conn)?;

@@ -77,6 +77,13 @@ Settings apply immediately, never on restart. A setting that changes Rust-side b
 command, (b) a typed wrapper in `$lib/tauri-commands/settings.ts`, (c) an `onSettingChange` case in
 `settings-applier.ts` that calls it. Pure frontend settings (read via `getSetting` where they're used) skip this.
 
+A setting an organization's MDM policy can lock gets its lock in `src-tauri/src/managed_policy/locked.rs`; the store,
+the row, and MCP `set_setting` pick it up from there (`apps/desktop/src/lib/managed-policy/CLAUDE.md`). Every `Setting*`
+primitive locks itself through `useSettingLock(id)`; a hand-rolled control (like the AI provider radios) reads the lock
+itself. A flow that preselects from `getSetting` and writes the answer back checks `isOverriddenByPolicy(id)` first, or
+the policy's value lands in `settings.json` as the person's own (`apps/desktop/src/lib/managed-policy/DETAILS.md` § The
+settings store under a lock).
+
 ## 4. If you're adding a whole new section
 
 Register the route in `components/SettingsContent.svelte`, add the entry to `TOP_LEVEL_ORDER` in
@@ -85,7 +92,8 @@ asserts the section list).
 
 ## 5. If you change the stored format
 
-Bump `SCHEMA_VERSION` and add a `migrateSettings()` case, or old `settings.json` files may fail to load.
+Append an idempotent step to `MIGRATIONS` in `lib/settings/settings-migrations.ts` (`SCHEMA_VERSION` derives from its
+last entry), or old `settings.json` files may fail to load. A new key is additive and needs no step.
 
 ## Verify
 

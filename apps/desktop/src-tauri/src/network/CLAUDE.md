@@ -1,14 +1,15 @@
 # Network support
 
-The app-side half of SMB, plus the saved-server stores and connect wiring SFTP and WebDAV share. Protocol layers:
-`crates/cmdr-smb/`, `crates/cmdr-sftp/`, `crates/cmdr-webdav/`. Frontend: `apps/desktop/src/lib/servers/CLAUDE.md`
+The app-side half of SMB, plus the saved-server stores and connect wiring SFTP, WebDAV, and S3 share. Protocol layers:
+`crates/cmdr-smb/`, `crates/cmdr-sftp/`, `crates/cmdr-webdav/`, `crates/cmdr-s3/`. Frontend: `apps/desktop/src/lib/servers/CLAUDE.md`
 and `apps/desktop/src/lib/file-explorer/network/CLAUDE.md`.
 
 ## Module map
 
 SMB (discovery, share listing with CLI fallbacks, mounting through `mod.rs::mount_share`, OS-mount → direct upgrade at
 launch, on mount, and on pane open),
-SFTP and WebDAV (host keys, a saved-server store each, a `*_volume_wiring.rs` that dials and registers), and their
+SFTP, WebDAV, and S3 (host keys, a saved-server store each, ❗ one entry per PLACE for S3, a `*_volume_wiring.rs` that
+dials and registers), and their
 shared seams (`connect_wiring.rs`, `server_list_file.rs`, `saved_server_fields.rs`, `one_shot_credentials.rs`,
 `credential_store.rs`). Every typed event: `events.rs`.
 

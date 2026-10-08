@@ -282,7 +282,7 @@ describe('menuCommands', () => {
   })
 
   it('includes both Go-menu jump commands so accelerator sync covers them', () => {
-    // The Go menu contains "Go to path…" (⌘G) and "Go to latest download" (⌘J); both
+    // The Go menu contains "Go to folder…" (⌘G) and "Go to latest download" (⌘J); both
     // are native menu items, so their accelerators must sync from custom shortcuts.
     expect(menuCommands).toContain('nav.goToPath')
     expect(menuCommands).toContain('downloads.goToLatest')

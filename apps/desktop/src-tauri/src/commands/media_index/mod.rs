@@ -89,11 +89,13 @@ pub(crate) fn kick_all_ready_passes_for(app: &tauri::AppHandle) {
 /// setters below whenever the user changes one of these.
 pub(crate) fn index_config_from(
     data_dir: std::path::PathBuf,
+    drive_index_dir: std::path::PathBuf,
     settings: &crate::settings::loader::Settings,
 ) -> IndexConfig {
     use cmdr_index::media_index::gate;
     IndexConfig {
         data_dir,
+        drive_index_dir,
         // Not a settings key: the escape hatch for the phased first index is a user
         // default, read once per launch (`crate::index_host::phased_first_index`).
         phased_first_index: crate::index_host::phased_first_index(),

@@ -36,21 +36,22 @@ describe('classifySelectionKey', () => {
     expect(classifySelectionKey(keydown({ key: 'a', metaKey: true, shiftKey: true }))).toBe('selection.deselectAll')
   })
 
-  it('maps ⇧8 to invert by its physical key, whatever the layout types', () => {
-    // US QWERTY types `*`, Hungarian types `(`; both are the Digit8 key with Shift.
+  it('maps whichever key types `*` to invert, on any layout', () => {
+    // US ⇧8, Swedish ⇧', and the numpad all type `*`. Hungarian ⇧8 types `(`, so
+    // it's that user's `(` key, not their `*`.
     expect(classifySelectionKey(keydown({ key: '*', code: 'Digit8', shiftKey: true }))).toBe('selection.invert')
-    expect(classifySelectionKey(keydown({ key: '(', code: 'Digit8', shiftKey: true }))).toBe('selection.invert')
+    expect(classifySelectionKey(keydown({ key: '*', code: 'Backslash', shiftKey: true }))).toBe('selection.invert')
+    expect(classifySelectionKey(keydown({ key: '*', code: 'NumpadMultiply' }))).toBe('selection.invert')
+    expect(classifySelectionKey(keydown({ key: '(', code: 'Digit8', shiftKey: true }))).toBeNull()
   })
 
-  it('maps the numpad `*` to invert, the other way Total Commander users type it', () => {
-    // The numpad key reports `*` with NO Shift on every layout, so it needs its own
-    // default; the Digit8 fallback can't reach it (`NumpadMultiply` is not `Digit<n>`).
-    expect(classifySelectionKey(keydown({ key: '*', code: 'NumpadMultiply' }))).toBe('selection.invert')
+  it('maps the PC Insert key to toggle-and-down, though macOS reports it as Help', () => {
+    expect(classifySelectionKey(keydown({ key: 'Help', code: 'Help' }))).toBe('selection.toggleAndDown')
   })
 
   it('maps ⌥⇧= to select-same-kind by its physical key, whatever the layout types', () => {
     // macOS types `±` on a US layout with ⌥⇧ held, and something else again on a
-    // Hungarian one; both are the Equal key. Same problem as ⇧8, one key over.
+    // Hungarian one; both are the Equal key. ⌥ makes it a command, named by position.
     expect(classifySelectionKey(keydown({ key: '±', code: 'Equal', altKey: true, shiftKey: true }))).toBe(
       'selection.selectSameKind',
     )

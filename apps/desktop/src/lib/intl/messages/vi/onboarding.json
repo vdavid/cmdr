@@ -319,6 +319,18 @@
   "@onboarding.stepAi.off.help": {
     "sourceHash": "3f261be"
   },
+  "onboarding.localDownloadFailed.title": "Mô hình AI cục bộ chưa tải về xong",
+  "@onboarding.localDownloadFailed.title": {
+    "sourceHash": "9612750"
+  },
+  "onboarding.localDownloadFailed.body": "Hãy tải lại trong Cài đặt › AI.",
+  "@onboarding.localDownloadFailed.body": {
+    "sourceHash": "6601872"
+  },
+  "onboarding.localDownloadFailed.openSettings": "Mở cài đặt",
+  "@onboarding.localDownloadFailed.openSettings": {
+    "sourceHash": "3f94010"
+  },
   "onboarding.stepBeta.footer.start": "Bắt đầu dùng Cmdr!",
   "@onboarding.stepBeta.footer.start": {
     "sourceHash": "e29bbc7"
@@ -386,6 +398,14 @@
   "onboarding.stepBeta.crashReportsNote": "Báo cáo sự cố cũng đang bật: nếu Cmdr sập, ứng dụng gửi phiên bản ứng dụng, phiên bản macOS của bạn và chỗ mã dừng lại.\nKhông bao giờ gồm tệp của bạn.\nBạn có thể tắt cả hai trong Cài đặt bất cứ lúc nào.",
   "@onboarding.stepBeta.crashReportsNote": {
     "sourceHash": "9be0be1"
+  },
+  "onboarding.stepBeta.analyticsManaged": "Tổ chức của bạn đã tắt thống kê sử dụng.",
+  "@onboarding.stepBeta.analyticsManaged": {
+    "sourceHash": "49484ee"
+  },
+  "onboarding.stepBeta.crashReportsNoteAlone": "Báo cáo sự cố đang bật: nếu Cmdr sập, ứng dụng gửi phiên bản ứng dụng, phiên bản macOS của bạn và chỗ mã dừng lại.\nKhông bao giờ gồm tệp của bạn.\nBạn có thể tắt chúng trong Cài đặt bất cứ lúc nào.",
+  "@onboarding.stepBeta.crashReportsNoteAlone": {
+    "sourceHash": "5084dd0"
   },
   "onboarding.stepBeta.emailTitle": "Giữ liên lạc (tùy chọn)",
   "@onboarding.stepBeta.emailTitle": {
@@ -562,6 +582,10 @@
   "onboarding.cloudSetup.apiKeyAria": "Khóa API",
   "@onboarding.cloudSetup.apiKeyAria": {
     "sourceHash": "16f0ee4"
+  },
+  "onboarding.cloudSetup.removeKey": "Xóa khóa",
+  "@onboarding.cloudSetup.removeKey": {
+    "sourceHash": "81c45fd"
   },
   "onboarding.cloudSetup.apiKeyPlaceholder.openai": "Ví dụ: sk-abc123…",
   "@onboarding.cloudSetup.apiKeyPlaceholder.openai": {

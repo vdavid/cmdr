@@ -20,7 +20,7 @@ fn test_compute_diff_addition() {
     let old = vec![make_entry("a.txt", Some(100))];
     let new = vec![make_entry("a.txt", Some(100)), make_entry("b.txt", Some(200))];
 
-    let diff = compute_diff(&old, &new, true);
+    let diff = compute_diff(&old, &new, true, None);
     assert_eq!(diff.len(), 1);
     assert_eq!(diff[0].change_type, DiffChangeType::Add);
     assert_eq!(diff[0].entry.name, "b.txt");
@@ -32,7 +32,7 @@ fn test_compute_diff_removal() {
     let old = vec![make_entry("a.txt", Some(100)), make_entry("b.txt", Some(200))];
     let new = vec![make_entry("a.txt", Some(100))];
 
-    let diff = compute_diff(&old, &new, true);
+    let diff = compute_diff(&old, &new, true, None);
     assert_eq!(diff.len(), 1);
     assert_eq!(diff[0].change_type, DiffChangeType::Remove);
     assert_eq!(diff[0].entry.name, "b.txt");
@@ -44,7 +44,7 @@ fn test_compute_diff_modification() {
     let old = vec![make_entry("a.txt", Some(100))];
     let new = vec![make_entry("a.txt", Some(200))]; // Size changed
 
-    let diff = compute_diff(&old, &new, true);
+    let diff = compute_diff(&old, &new, true, None);
     assert_eq!(diff.len(), 1);
     assert_eq!(diff[0].change_type, DiffChangeType::Modify);
     assert_eq!(diff[0].entry.size, Some(200));
@@ -56,7 +56,7 @@ fn test_compute_diff_no_change() {
     let old = vec![make_entry("a.txt", Some(100))];
     let new = vec![make_entry("a.txt", Some(100))];
 
-    let diff = compute_diff(&old, &new, true);
+    let diff = compute_diff(&old, &new, true, None);
     assert!(diff.is_empty());
 }
 
@@ -78,7 +78,7 @@ fn diff_marks_entry_modified_when_modified_at_differs() {
     let mut new_entry = make_entry("a.txt", Some(100));
     old_entry.modified_at = Some(1000);
     new_entry.modified_at = Some(2000);
-    let diff = compute_diff(&[old_entry], &[new_entry], true);
+    let diff = compute_diff(&[old_entry], &[new_entry], true, None);
     assert_eq!(diff.len(), 1, "modified_at change should produce a modify diff");
     assert_eq!(diff[0].change_type, DiffChangeType::Modify);
 }
@@ -89,7 +89,7 @@ fn diff_marks_entry_modified_when_permissions_differ() {
     let mut new_entry = make_entry("a.txt", Some(100));
     old_entry.permissions = 0o644;
     new_entry.permissions = 0o755;
-    let diff = compute_diff(&[old_entry], &[new_entry], true);
+    let diff = compute_diff(&[old_entry], &[new_entry], true, None);
     assert_eq!(diff.len(), 1, "permissions change should produce a modify diff");
     assert_eq!(diff[0].change_type, DiffChangeType::Modify);
 }
@@ -110,7 +110,7 @@ fn diff_marks_entry_modified_when_is_directory_flips() {
         size: Some(100),
         ..make_entry("thing", Some(100))
     };
-    let diff = compute_diff(&[old_entry], &[new_entry], true);
+    let diff = compute_diff(&[old_entry], &[new_entry], true, None);
     assert_eq!(diff.len(), 1, "is_directory flip should produce a modify diff");
     assert_eq!(diff[0].change_type, DiffChangeType::Modify);
 }
@@ -125,7 +125,7 @@ fn diff_marks_entry_modified_when_is_symlink_flips() {
         is_symlink: true,
         ..make_entry("thing", Some(100))
     };
-    let diff = compute_diff(&[old_entry], &[new_entry], true);
+    let diff = compute_diff(&[old_entry], &[new_entry], true, None);
     assert_eq!(diff.len(), 1, "is_symlink flip should produce a modify diff");
     assert_eq!(diff[0].change_type, DiffChangeType::Modify);
 }
@@ -140,7 +140,7 @@ fn diff_does_not_mark_modified_when_only_owner_or_group_change() {
     old_entry.owner = "alice".to_string();
     new_entry.owner = "bob".to_string();
     new_entry.group = "wheel".to_string();
-    let diff = compute_diff(&[old_entry], &[new_entry], true);
+    let diff = compute_diff(&[old_entry], &[new_entry], true, None);
     assert!(
         diff.is_empty(),
         "owner/group changes alone must NOT trigger a modify diff (is_entry_modified watches only size, mtime, perms, kind, symlink)"
@@ -160,7 +160,7 @@ fn diff_includes_add_modify_and_remove_in_one_pass() {
     let old = vec![make_entry("a.txt", Some(100)), make_entry("b.txt", Some(200))];
     let new = vec![make_entry("a.txt", Some(300)), make_entry("c.txt", Some(50))];
 
-    let diff = compute_diff(&old, &new, true);
+    let diff = compute_diff(&old, &new, true, None);
     assert_eq!(diff.len(), 3, "expected add + modify + remove");
 
     let by_type: std::collections::HashMap<DiffChangeType, &super::diff::DiffChange> =
@@ -198,7 +198,7 @@ fn diff_reports_a_row_that_jumped_the_queue_as_a_move() {
         make_entry("c.txt", Some(100)),
     ];
 
-    let diff = compute_diff(&old, &new, true);
+    let diff = compute_diff(&old, &new, true, None);
     assert_eq!(diff.len(), 1, "only the row that jumped changed");
     assert_eq!(diff[0].change_type, DiffChangeType::Move);
     assert_eq!(diff[0].entry.name, "jumper");
@@ -216,7 +216,7 @@ fn diff_calls_only_one_side_of_a_swap_moved() {
     bumped.modified_at = Some(9000);
     let new = vec![bumped, make_entry("a.txt", Some(100))];
 
-    let diff = compute_diff(&old, &new, true);
+    let diff = compute_diff(&old, &new, true, None);
     let moves: Vec<_> = diff.iter().filter(|c| c.change_type == DiffChangeType::Move).collect();
     assert_eq!(moves.len(), 1, "a swap is one move, not two");
 }
@@ -236,7 +236,7 @@ fn diff_does_not_call_the_rows_an_add_or_a_remove_shifted_moved() {
         make_entry("d.txt", Some(100)),
     ];
 
-    let diff = compute_diff(&old, &new, true);
+    let diff = compute_diff(&old, &new, true, None);
     assert!(
         diff.iter().all(|c| c.change_type != DiffChangeType::Move),
         "an add above and a remove in the middle shift rows, they don't move them"

@@ -58,5 +58,13 @@
   "commands.favoritesOpenByNumber.label": "Open the favourite with that number",
   "@commands.favoritesOpenByNumber.label": {
     "sourceHash": "e74b98f"
+  },
+  "commands.handler.openTerminalHere.appMissing": "{app} isn’t installed any more, so this opened in Terminal.",
+  "@commands.handler.openTerminalHere.appMissing": {
+    "sourceHash": "770ded9"
+  },
+  "commands.handler.openTerminalHere.appMissingUnnamed": "Your terminal app isn’t installed any more, so this opened in Terminal.",
+  "@commands.handler.openTerminalHere.appMissingUnnamed": {
+    "sourceHash": "8e40ade"
   }
 }

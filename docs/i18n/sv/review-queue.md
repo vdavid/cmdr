@@ -36,6 +36,17 @@ wording into `terms.json` (and `decisions.md` when the reason is worth keeping).
   `under arbete`**: no first-party source.
 - **viewer → `förhandsvisning`**: macOS uses `granskare` for the inspector; that's the fallback if the viewer ever
   becomes a distinct inspector surface.
+- **S3 bucket → `bucket`, en-word, `bucketen` / `bucketar` / `bucketarna`** (`servers.*`, `commands.handler.*`): MS
+  keeps `bucket`; the plural is Swedish tech usage, no first-party source. No shared concept exists yet, so it has no
+  `terms.json` ruling.
+- **share link → `delningslänk`** (`commands.fileCopyShareLink*`, `menu.context.*ShareLink*`): composed from `dela` +
+  `länk`; MS has `delningsbar länk` / `Alla-länk` for OneDrive's anonymous link.
+- **secret access key → `hemlig åtkomstnyckel`**, **access key ID → `Åtkomstnyckel-ID`**: MS `hemlig nyckel` +
+  `åtkomstnyckel`; AWS has no Swedish console to quote.
+- **cold storage → `kall lagring`** (MS), **archived (cold-storage tier) → `arkiverad`**, **restore → `återställa`**:
+  check the pair reads as a storage tier and not as a zip archive.
+- **path-style addressing → `sökvägsbaserad adressering (path-style)`** and **Google's Interoperability tab →
+  `fliken Interoperabilitet`** (`servers.sheet.s3GcsKeyHelp`): unverified against Google Cloud's Swedish console.
 
 ## Phrasing and tone
 
@@ -53,6 +64,13 @@ wording into `terms.json` (and `decisions.md` when the reason is worth keeping).
 - **`Använd gäståtkomst`** (`fileExplorer.network.share.useGuest`): `Byt till gäst` is shorter if it reads stiff.
 - **`Välj en server för att redigera den.`** (`servers.hub.editPickHint`): the English means moving the cursor to a
   server row; confirm `Välj` doesn't suggest a picker.
+- **`Bara manuell kontroll`** (`settings.managed.summary.manualChecksOnly`, `.upToManualChecksOnly`): updates checked by
+  hand only; confirm it reads as update checks, or whether `Bara när du söker själv` is clearer.
+- **`din organisation håller den här Macen på {ceiling} eller tidigare`** (`updates.status.heldByPolicy`): confirm
+  `håller … på` reads naturally for a version cap.
+- **`Ångrade ”…” från {time}` / `Ångrades senast av ”…” från {time}`** (`operationLog.dialog.rollbackOf`,
+  `.latestRollback`): verbs over the stilted noun `ångring`; confirm the past tense reads right on a row whose rollback
+  is still running, and that `från {time}` reads as dated.
 
 ## Layout (overflow-check against the pseudolocale)
 

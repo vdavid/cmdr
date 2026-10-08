@@ -14,6 +14,7 @@ import type {
   ActivityPhase,
   AggregationProgressEvent,
   IndexAggregationCompleteEvent,
+  IndexMemoryWarningEvent,
   IndexCoverageBranchEndedEvent,
   IndexCoverageBranchStartedEvent,
   IndexCoveragePhaseStartedEvent,
@@ -26,6 +27,7 @@ import type {
   IndexStatusResponse,
   CoveragePhase,
   ScanRunKind,
+  StepsAheadMs,
 } from '$lib/ipc/bindings'
 
 // Captured callbacks the module registers via the wrappers below.
@@ -40,6 +42,7 @@ let replayProgressCb: ((p: IndexReplayProgressEvent) => void) | undefined
 let branchStartedCb: ((p: IndexCoverageBranchStartedEvent) => void) | undefined
 let branchEndedCb: ((p: IndexCoverageBranchEndedEvent) => void) | undefined
 let coveragePhaseCb: ((p: IndexCoveragePhaseStartedEvent) => void) | undefined
+let memoryWarningCb: ((p: IndexMemoryWarningEvent) => void) | undefined
 
 const noopUnlisten = () => {}
 
@@ -47,6 +50,10 @@ const noopUnlisten = () => {}
 // reloaded window catches up on a run already in progress. Defaults to "not
 // scanning" (a no-op backfill); a test that IS a reload sets its own answer
 // before `initIndexState`.
+// The memory-stop notice is a toast; capture it rather than mount the toast store.
+const addToast = vi.hoisted(() => vi.fn())
+vi.mock('$lib/ui/toast', () => ({ addToast }))
+
 const backfill = vi.hoisted((): { status: Partial<IndexStatusResponse> } => ({ status: { scanning: false } }))
 
 // Mock the typed event wrappers: capture the ones the tests drive, no-op the rest.
@@ -94,6 +101,10 @@ vi.mock('$lib/tauri-commands', () => ({
   },
   onIndexRescanNotification: () => Promise.resolve(noopUnlisten),
   onIndexNeedsFreshScan: () => Promise.resolve(noopUnlisten),
+  onIndexMemoryWarning: (cb: (p: IndexMemoryWarningEvent) => void) => {
+    memoryWarningCb = cb
+    return Promise.resolve(noopUnlisten)
+  },
   onIndexReplayProgress: (cb: (p: IndexReplayProgressEvent) => void) => {
     replayProgressCb = cb
     return Promise.resolve(noopUnlisten)
@@ -115,6 +126,7 @@ import {
   getEntriesScanned,
   getVolumePhase,
   getVolumeScanRunKind,
+  getVolumeStepsAhead,
   getActivePhaseVolumeIds,
   getAggregatingVolumeIds,
   isVolumeScanning,
@@ -345,6 +357,8 @@ describe('index-state per-volume pipeline phase', () => {
   })
 })
 
+const remembered: StepsAheadMs = { findFiles: 61_000, saveFileList: 21_000, computeFolderSizes: 2_000, catchUp: 0 }
+
 describe('index-state per-volume scan run kind (the run-kind header fact)', () => {
   beforeEach(async () => {
     destroyIndexState()
@@ -371,8 +385,25 @@ describe('index-state per-volume scan run kind (the run-kind header fact)', () =
       priorScanDurationMs: null,
       volumeUsedBytes: null,
       coveredInPhases,
+      stepsAheadMs: remembered,
     })
   }
+
+  it('keeps the remembered steps ahead through the pipeline, and drops them when it ends', () => {
+    if (!phaseCb || !scanAbortedCb) throw new Error('callbacks not registered')
+    emitStarted('root', 'change_check', 1000)
+    expect(getVolumeStepsAhead('root')).toEqual(remembered)
+    // The overall figure matters most during save and compute, after the live
+    // scan entry is gone.
+    phaseCb({ volumeId: 'root', phase: 'aggregating' })
+    expect(getVolumeStepsAhead('root')).toEqual(remembered)
+    phaseCb({ volumeId: 'root', phase: 'live' })
+    expect(getVolumeStepsAhead('root')).toBeUndefined()
+
+    emitStarted('smb-nas', 'change_check')
+    scanAbortedCb({ volumeId: 'smb-nas' })
+    expect(getVolumeStepsAhead('smb-nas')).toBeUndefined()
+  })
 
   it('takes the backend answer verbatim, including the case a prior-totals guess got wrong', () => {
     emitStarted('root', 'change_check', 405356)
@@ -498,6 +529,7 @@ describe('index-state walked ground', () => {
       priorScanDurationMs: null,
       volumeUsedBytes: null,
       coveredInPhases,
+      stepsAheadMs: { findFiles: null, saveFileList: null, computeFolderSizes: null, catchUp: null },
     })
   }
 
@@ -712,6 +744,7 @@ describe('index-state after the walk ends but before the run does', () => {
       priorScanDurationMs: null,
       volumeUsedBytes: null,
       coveredInPhases: true,
+      stepsAheadMs: { findFiles: null, saveFileList: null, computeFolderSizes: null, catchUp: null },
     })
     coveragePhaseCb({ volumeId: 'root', phase: 'wholeVolume' })
   }
@@ -767,5 +800,41 @@ describe('index-state after the walk ends but before the run does', () => {
     expect(isVolumeAggregating('root')).toBe(false)
     expect(getVolumeAggregation('root')).toBeUndefined()
     expect(isAnyVolumeIndexing()).toBe(false)
+  })
+})
+
+describe('index-state memory watchdog notice', () => {
+  beforeEach(async () => {
+    destroyIndexState()
+    memoryWarningCb = undefined
+    addToast.mockReset()
+    await initIndexState()
+  })
+
+  function warn(action: IndexMemoryWarningEvent['action']): void {
+    if (!memoryWarningCb) throw new Error('memory-warning callback not registered')
+    memoryWarningCb({
+      physFootprintBytes: 17_000_000_000,
+      residentBytes: 17_500_000_000,
+      globalAllocator: 'system',
+      rustHeapBytes: 9_000_000_000,
+      systemMallocBytes: 6_000_000_000,
+      untrackedBytes: 2_000_000_000,
+      action,
+    })
+  }
+
+  it('tells the person when indexing stopped to protect memory, and keeps the notice up', () => {
+    warn('stoppedIndexing')
+
+    expect(addToast).toHaveBeenCalledTimes(1)
+    const [message, options] = addToast.mock.calls[0] as [string, { level: string; dismissal: string; id: string }]
+    expect(message).toContain('paused drive indexing')
+    expect(options).toMatchObject({ level: 'warn', dismissal: 'persistent', id: 'index-memory-stopped' })
+  })
+
+  it('stays quiet about growth after the stop: that one is for the logs', () => {
+    warn('stillGrowingAfterStop')
+    expect(addToast).not.toHaveBeenCalled()
   })
 })

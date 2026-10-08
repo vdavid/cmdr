@@ -358,6 +358,10 @@ impl VolumeReadStream for ErroringReadStream {
     fn bytes_read(&self) -> u64 {
         self.bytes_read
     }
+
+    fn modified_at(&self) -> Option<std::time::SystemTime> {
+        None
+    }
 }
 
 #[tokio::test]

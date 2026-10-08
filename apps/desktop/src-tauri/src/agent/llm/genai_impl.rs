@@ -397,6 +397,9 @@ impl From<AiError> for AgentLlmError {
             AiError::EmptyResponse => AgentLlmError::Provider("the model returned no text".to_string()),
             AiError::ServerError(detail) => AgentLlmError::Provider(detail),
             AiError::ParseError(detail) => AgentLlmError::Provider(detail),
+            // Only reachable mid-turn (a policy that arrived after the slot resolved): the turn
+            // ends as the organization's "no", typed.
+            AiError::Managed(refusal) => AgentLlmError::Managed(refusal),
         }
     }
 }
@@ -733,6 +736,12 @@ mod tests {
             AgentLlmError::from(AiError::ParseError("garbled".into())),
             AgentLlmError::Provider(_)
         ));
+        // The client backstop's refusal mid-turn stays typed, never a provider sentence.
+        use crate::managed_policy::ManagedAiRefusal;
+        assert_eq!(
+            AgentLlmError::from(AiError::Managed(ManagedAiRefusal::HostNotAllowed)),
+            AgentLlmError::Managed(ManagedAiRefusal::HostNotAllowed)
+        );
     }
 
     #[test]

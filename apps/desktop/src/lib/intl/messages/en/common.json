@@ -33,5 +33,63 @@
     "description": "Hint shown when the downloads watcher lacks Full Disk Access. <settingsLink> wraps the inline action that opens System Settings.",
     "screenshot": "settings-behavior-notifications.png",
     "screenshotNote": "Settings > Behavior > Notifications, pictured here. Your string is the hint at the top of this section that appears only while Cmdr can’t watch the Downloads folder for lack of Full Disk Access, with a link that opens System Settings."
+  },
+
+  "common.sizeUnit.byte": "{count, plural, one {byte} other {bytes}}",
+  "@common.sizeUnit.byte": {
+    "description": "The byte unit word after a whole number of bytes, everywhere Cmdr shows a size below one kilobyte ('512 bytes') or an exact byte count ('(1,234,567 bytes)' in a size tooltip). The app writes the number and one space in front of it, so this is ONLY the word. Use your language's usual word or symbol for bytes (French 'octet' / 'octets'), and its own plural categories. Keep it short: it sits in narrow size columns.",
+    "placeholders": {
+      "count": "the number of bytes (drives the singular/plural form; not shown by this string)"
+    }
+  },
+
+  "common.sizeUnit.kibibyte": "KiB",
+  "@common.sizeUnit.kibibyte": {
+    "description": "Unit symbol for a kibibyte, the BINARY (base 1024, IEC 80000-13) unit: 1 KiB = 1,024 bytes. Shown after a number in every size, free-space readout, and transfer speed when the user picked the binary size format (Settings > Appearance > File and folder sizes, the default), like '1.50 KiB'; the app adds the number and the space. Write your language's IEC binary symbol (for example French 'Kio', Russian 'КиБ'), never the decimal one: it must stay distinct from common.sizeUnit.kilobyte, which means base 1000. Symbol only, never the full word. Keep it in step with the other binary common.sizeUnit symbols and with the symbols named in settings.appearance.fileSizeFormat.*."
+  },
+
+  "common.sizeUnit.mebibyte": "MiB",
+  "@common.sizeUnit.mebibyte": {
+    "description": "Unit symbol for a mebibyte, the BINARY (base 1024, IEC 80000-13) unit: 1 MiB = 1,024 KiB. Shown after a number in every size, free-space readout, and transfer speed when the user picked the binary size format (Settings > Appearance > File and folder sizes, the default), like '83.59 MiB'; the app adds the number and the space. Write your language's IEC binary symbol (for example French 'Mio', Russian 'МиБ'), never the decimal one: it must stay distinct from common.sizeUnit.megabyte, which means base 1000. Symbol only, never the full word. Keep it in step with the other binary common.sizeUnit symbols and with the symbols named in settings.appearance.fileSizeFormat.*."
+  },
+
+  "common.sizeUnit.gibibyte": "GiB",
+  "@common.sizeUnit.gibibyte": {
+    "description": "Unit symbol for a gibibyte, the BINARY (base 1024, IEC 80000-13) unit: 1 GiB = 1,024 MiB. Shown after a number in every size, free-space readout, and transfer speed when the user picked the binary size format (Settings > Appearance > File and folder sizes, the default), like '1.70 GiB'; the app adds the number and the space. Write your language's IEC binary symbol (for example French 'Gio', Russian 'ГиБ'), never the decimal one: it must stay distinct from common.sizeUnit.gigabyte, which means base 1000. Symbol only, never the full word. Keep it in step with the other binary common.sizeUnit symbols and with the symbols named in settings.appearance.fileSizeFormat.*."
+  },
+
+  "common.sizeUnit.tebibyte": "TiB",
+  "@common.sizeUnit.tebibyte": {
+    "description": "Unit symbol for a tebibyte, the BINARY (base 1024, IEC 80000-13) unit: 1 TiB = 1,024 GiB. Shown after a number in every size, free-space readout, and transfer speed when the user picked the binary size format (Settings > Appearance > File and folder sizes, the default), like '1.23 TiB'; the app adds the number and the space. Write your language's IEC binary symbol (for example French 'Tio', Russian 'ТиБ'), never the decimal one: it must stay distinct from common.sizeUnit.terabyte, which means base 1000. Symbol only, never the full word. Keep it in step with the other binary common.sizeUnit symbols and with the symbols named in settings.appearance.fileSizeFormat.*."
+  },
+
+  "common.sizeUnit.pebibyte": "PiB",
+  "@common.sizeUnit.pebibyte": {
+    "description": "Unit symbol for a pebibyte, the BINARY (base 1024, IEC 80000-13) unit: 1 PiB = 1,024 TiB, the largest unit Cmdr shows. Shown after a number in every size, free-space readout, and transfer speed when the user picked the binary size format (Settings > Appearance > File and folder sizes, the default), like '1.00 PiB'; the app adds the number and the space. Write your language's IEC binary symbol (for example French 'Pio', Russian 'ПиБ'), never the decimal one: it must stay distinct from common.sizeUnit.petabyte, which means base 1000. Symbol only, never the full word. Keep it in step with the other binary common.sizeUnit symbols and with the symbols named in settings.appearance.fileSizeFormat.*."
+  },
+
+  "common.sizeUnit.kilobyte": "kB",
+  "@common.sizeUnit.kilobyte": {
+    "description": "Unit symbol for a kilobyte, the DECIMAL (base 1000, SI) unit: 1 kB = 1,000 bytes. Shown after a number in every size, free-space readout, and transfer speed when the user picked the SI size format (Settings > Appearance > File and folder sizes), like '1.50 kB', and in fixed copy that names a decimal amount; the app adds the number and the space. The lowercase k is the SI prefix. Write your language's SI symbol (for example French 'ko'), never the binary one: it must stay distinct from common.sizeUnit.kibibyte, which means base 1024. Symbol only, never the full word. Keep it in step with the other decimal common.sizeUnit symbols and with the symbols named in settings.appearance.fileSizeFormat.*."
+  },
+
+  "common.sizeUnit.megabyte": "MB",
+  "@common.sizeUnit.megabyte": {
+    "description": "Unit symbol for a megabyte, the DECIMAL (base 1000, SI) unit: 1 MB = 1,000 kB. Shown after a number in every size, free-space readout, and transfer speed when the user picked the SI size format (Settings > Appearance > File and folder sizes), like '87.65 MB', and in fixed copy that names a decimal amount; the app adds the number and the space. Write your language's SI symbol (for example French 'Mo'), never the binary one: it must stay distinct from common.sizeUnit.mebibyte, which means base 1024. Symbol only, never the full word. Keep it in step with the other decimal common.sizeUnit symbols and with the symbols named in settings.appearance.fileSizeFormat.*."
+  },
+
+  "common.sizeUnit.gigabyte": "GB",
+  "@common.sizeUnit.gigabyte": {
+    "description": "Unit symbol for a gigabyte, the DECIMAL (base 1000, SI) unit: 1 GB = 1,000 MB. Shown after a number in every size, free-space readout, and transfer speed when the user picked the SI size format (Settings > Appearance > File and folder sizes), like '1.70 GB', and in fixed copy that names a decimal amount; the app adds the number and the space. Write your language's SI symbol (for example French 'Go'), never the binary one: it must stay distinct from common.sizeUnit.gibibyte, which means base 1024. Symbol only, never the full word. Keep it in step with the other decimal common.sizeUnit symbols and with the symbols named in settings.appearance.fileSizeFormat.*."
+  },
+
+  "common.sizeUnit.terabyte": "TB",
+  "@common.sizeUnit.terabyte": {
+    "description": "Unit symbol for a terabyte, the DECIMAL (base 1000, SI) unit: 1 TB = 1,000 GB. Shown after a number in every size, free-space readout, and transfer speed when the user picked the SI size format (Settings > Appearance > File and folder sizes), like '1.23 TB', and in fixed copy that names a decimal amount; the app adds the number and the space. Write your language's SI symbol (for example French 'To'), never the binary one: it must stay distinct from common.sizeUnit.tebibyte, which means base 1024. Symbol only, never the full word. Keep it in step with the other decimal common.sizeUnit symbols and with the symbols named in settings.appearance.fileSizeFormat.*."
+  },
+
+  "common.sizeUnit.petabyte": "PB",
+  "@common.sizeUnit.petabyte": {
+    "description": "Unit symbol for a petabyte, the DECIMAL (base 1000, SI) unit: 1 PB = 1,000 TB, the largest unit Cmdr shows. Shown after a number in every size, free-space readout, and transfer speed when the user picked the SI size format (Settings > Appearance > File and folder sizes), like '1.00 PB', and in fixed copy that names a decimal amount; the app adds the number and the space. Write your language's SI symbol (for example French 'Po'), never the binary one: it must stay distinct from common.sizeUnit.pebibyte, which means base 1024. Symbol only, never the full word. Keep it in step with the other decimal common.sizeUnit symbols and with the symbols named in settings.appearance.fileSizeFormat.*."
   }
 }

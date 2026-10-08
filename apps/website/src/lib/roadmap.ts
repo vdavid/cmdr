@@ -363,7 +363,7 @@ export const roadmapSections: RoadmapSection[] = [
         milestones: [
           {
             date: '(Jun 3)',
-            title: 'Go to path',
+            title: 'Go to folder',
             description: '⌘G to jump anywhere: paste a path, ~ expansion, recent paths.',
             done: true,
           },
@@ -646,6 +646,36 @@ export const roadmapSections: RoadmapSection[] = [
             description: 'Now a good variety of rich and raw modes.',
             done: true,
           },
+          {
+            date: '(Sep 29)',
+            title: 'Streamed compression',
+            description: 'Zips stream straight to servers and local devices.',
+            done: true,
+          },
+          {
+            date: '(Sep 30)',
+            title: 'Reorder tabs',
+            description: 'Drag&drop tabs, in-pane and cross-pane.',
+            done: true,
+          },
+        ],
+      },
+      {
+        heading: 'Oct 2026',
+        milestones: [
+          {
+            date: '(Oct 2)',
+            title: 'Russian',
+            description: 'A community translation. With es-419 recently added, 15 languages now.',
+            done: true,
+          },
+          {
+            date: '(Oct 3)',
+            title: 'S3 buckets',
+            description: 'AWS, GCS, R2, B2, Hetzner, Wasabi, etc. With cost estimates and share links.',
+            icon: 'server',
+            done: true,
+          },
         ],
       },
     ],
@@ -665,7 +695,7 @@ export const roadmapSections: RoadmapSection[] = [
           {
             date: '(this fall?)',
             title: 'Support more file systems',
-            description: 'S3 buckets, SCP, NFS, Google Drive, Dropbox, and OneDrive',
+            description: 'SCP, NFS, Google Drive, Dropbox, and OneDrive',
             done: false,
           },
         ],

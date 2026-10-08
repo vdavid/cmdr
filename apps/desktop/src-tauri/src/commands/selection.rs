@@ -40,9 +40,8 @@ pub async fn translate_selection_query(
 
     log::debug!(
         target: "selection::ai",
-        "translate_selection_query: prompt={prompt:?}, sample_count={}, system_prompt_chars={}",
-        sample_names.len(),
-        system_prompt.len()
+        "{}",
+        selection_request_for_log(&prompt, sample_names.len(), system_prompt.len())
     );
 
     let options = ChatOptions::default()
@@ -55,6 +54,15 @@ pub async fn translate_selection_query(
 
     let parsed = ai::parse_selection_response(&response);
     Ok(query_builder::build_selection_translate_result(&parsed))
+}
+
+/// The request's length only, never its text: this debug line reaches error reports, and a
+/// select-by-description request often names the user's files, people, or projects.
+fn selection_request_for_log(prompt: &str, sample_count: usize, system_prompt_chars: usize) -> String {
+    format!(
+        "translate_selection_query: request ({} chars), sample_count={sample_count}, system_prompt_chars={system_prompt_chars}",
+        prompt.chars().count()
+    )
 }
 
 // ============================================================================
@@ -111,6 +119,17 @@ pub fn apply_recent_selections_max_count(app: tauri::AppHandle, max_count: u32) 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// The request is the user's own words, and the debug log reaches error reports: the line
+    /// carries its length only.
+    #[test]
+    fn the_selection_request_logs_its_length_not_its_words() {
+        let line = selection_request_for_log("photos of anna from the kovacs wedding", 212, 4_096);
+        assert!(!line.contains("anna"), "{line}");
+        assert!(!line.contains("kovacs"), "{line}");
+        assert!(line.contains("38 chars"), "{line}");
+        assert!(line.contains("sample_count=212"), "{line}");
+    }
 
     #[test]
     fn translate_result_serialization_round_trips() {

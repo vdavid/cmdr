@@ -10,7 +10,7 @@
     import IndexingStatusBody from '$lib/indexing/IndexingStatusBody.svelte'
     import IndexingDriveSummary from '$lib/indexing/IndexingDriveSummary.svelte'
     import type { VolumeIndexActivity, AggregationActivity } from '$lib/indexing/index-state.svelte'
-    import type { ActivityPhase, ScanRunKind } from '$lib/ipc/bindings'
+    import type { ActivityPhase, ScanRunKind, StepsAheadMs } from '$lib/ipc/bindings'
 
     // A fixed "now" so elapsed clocks ("· 5:23") and ETAs render identically every
     // capture. All `scanStartedAt` / `startedAt` fixtures are offsets from this.
@@ -49,6 +49,11 @@
          *  one step that happens rather than three that never separately do. */
         coveredInPhases?: boolean
         windowedEta: string | null
+        /** The same scan ETA in seconds, for the overall figure. */
+        windowedEtaSeconds?: number | null
+        /** What the steps after each one took last time. Set only where the tile
+         *  shows the overall "~X left" line. */
+        stepsAhead?: StepsAheadMs
         driveName: string
         /** Set only where the tile is ABOUT the run kind (it adds the run-kind
          *  header and swaps the second step's wording). */
@@ -122,6 +127,8 @@
             phase: 'scanning',
             isNetwork: false,
             windowedEta: '18m left',
+            windowedEtaSeconds: 1_080,
+            stepsAhead: { findFiles: 95_000, saveFileList: 21_000, computeFolderSizes: 3_000, catchUp: 0 },
             driveName: 'Macintosh HD',
             scanRunKind: 'change_check',
         },
@@ -147,12 +154,13 @@
         },
         {
             id: 'compute-computing',
-            caption: 'Local · compute folder sizes (computing → bar + ETA)',
+            caption: 'Local · compute folder sizes (computing → bar + ETA, plus the overall figure)',
             activity: scan({ entriesScanned: 1_400_000, dirsFound: 96_400 }),
             aggregation: agg('computing', 8_200, 16_101, 40),
             phase: 'aggregating',
             isNetwork: false,
             windowedEta: null,
+            stepsAhead: { findFiles: 95_000, saveFileList: 21_000, computeFolderSizes: 3_000, catchUp: 0 },
             driveName: 'Macintosh HD',
         },
         {
@@ -272,6 +280,8 @@
                         aggregation={s.aggregation}
                         now={NOW}
                         windowedEta={s.windowedEta}
+                        windowedEtaSeconds={s.windowedEtaSeconds ?? null}
+                        stepsAhead={s.stepsAhead}
                         phase={s.phase}
                         isNetwork={s.isNetwork}
                         coveredInPhases={s.coveredInPhases ?? false}

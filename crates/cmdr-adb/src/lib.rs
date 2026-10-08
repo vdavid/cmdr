@@ -41,6 +41,9 @@ pub mod volume;
 #[cfg(any(test, feature = "testing"))]
 pub mod testing;
 
+#[cfg(feature = "fuzzing")]
+pub mod fuzzing;
+
 pub use devices::{AdbDevice, AdbDeviceState, DeviceTracker, list_devices, track_devices};
 pub use errors::{AdbConnectError, AdbError, volume_error_from_adb, volume_error_from_errno};
 pub use features::DeviceFeatures;

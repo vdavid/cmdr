@@ -220,6 +220,10 @@
   "@askCmdr.error.noCloudConsent": {
     "sourceHash": "cd2af1d"
   },
+  "askCmdr.error.managedByOrganization": "Deine Organisation erlaubt diesen KI-Dienst nicht. Dein IT-Team kann dir sagen, welche Dienste du nutzen kannst.",
+  "@askCmdr.error.managedByOrganization": {
+    "sourceHash": "845a19f"
+  },
   "askCmdr.error.localWindowTooSmall": "Cmdr braucht ein größeres Kontextfenster, als dein lokales Modell hat. Wähle in den Einstellungen unter KI 32.768 Token oder mehr.",
   "@askCmdr.error.localWindowTooSmall": {
     "sourceHash": "8ac7452"
@@ -577,6 +581,10 @@
   "askCmdr.renameUndo.applied": "{countText} {count, plural, one {Datei} other {Dateien}} umbenannt.",
   "@askCmdr.renameUndo.applied": {
     "sourceHash": "b06c599"
+  },
+  "askCmdr.renameUndo.swapsSkipped": "{count, plural, one {{countText} Umbenennung übersprungen, die Namen vertauscht} other {{countText} Umbenennungen übersprungen, die Namen vertauschen}}. Benenne diese Dateien einzeln um.",
+  "@askCmdr.renameUndo.swapsSkipped": {
+    "sourceHash": "90e8dfc"
   },
   "askCmdr.renameUndo.undo": "Widerrufen",
   "@askCmdr.renameUndo.undo": {

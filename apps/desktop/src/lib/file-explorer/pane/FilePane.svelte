@@ -8,6 +8,7 @@
         SelectPayload,
         SortColumn,
         SortOrder,
+        ResortResult,
         VisibleRangePayload,
     } from '../types'
     import {
@@ -19,6 +20,9 @@
     } from '$lib/tauri-commands'
     import { createTypeToJumpController } from './type-to-jump-controller.svelte'
     import TypeToJumpIndicator from './TypeToJumpIndicator.svelte'
+    import { createQuickFilterController } from './quick-filter-controller.svelte'
+    import { createListingUpdateQueue } from './listing-update-queue'
+    import { maybeShowQuickFilterIntro } from './quick-filter-intro'
     import type { ViewMode } from '$lib/app-status-store'
     import type { CommandId } from '$lib/commands'
     import { tooltip } from '$lib/tooltip/tooltip'
@@ -42,16 +46,24 @@
     import RepoChip from '../git/RepoChip.svelte'
     import { createGitBrowserSync } from './git-browser-sync.svelte'
     import { createListingLoader } from './listing-loader'
+    import { createListingPresentation } from './listing-presentation.svelte'
     import { createSmbViewState } from './smb-view-state.svelte'
     import { createVolumeSpace } from './volume-space.svelte'
     import ErrorPane from './ErrorPane.svelte'
+    import ListingStalledView from './ListingStalledView.svelte'
+    import type { StalledOn } from '$lib/ipc/bindings'
     import VolumeUnreachableBanner from './VolumeUnreachableBanner.svelte'
     import NetworkMountView from './NetworkMountView.svelte'
     import SearchResultsView from './SearchResultsView.svelte'
-    import type { CancelLoadingPayload, PaneViewKind, SearchResultsViewAPI, VolumeChangePayload } from './types'
+    import type {
+        CancelLoadingPayload,
+        HistoryCursorTarget,
+        PaneViewKind,
+        SearchResultsViewAPI,
+        VolumeChangePayload,
+    } from './types'
     import { paneFooterVisibility } from './pane-footer'
     import { getMutationTick, getSnapshot, snapshotIdFromPanePath } from '$lib/search/snapshot-store.svelte'
-    import MtpConnectionView from './MtpConnectionView.svelte'
     import RemoteConnectView from './RemoteConnectView.svelte'
     import { createPlaceConnect } from './place-connect.svelte'
     import { createLiveRetry } from './live-retry.svelte'
@@ -61,12 +73,14 @@
     import { createDeviceConnect } from './device-connect.svelte'
     import AdbHint from '$lib/adb/AdbHint.svelte'
     import { createSelectionState } from './selection-state.svelte'
-    import { createPaneMcpSync } from './pane-mcp-sync.svelte'
+    import { createPaneMcpSync, paneListingOf } from './pane-mcp-sync.svelte'
     import { initListingDiffSync } from './listing-diff-sync.svelte'
+    import { createPaneRowState } from './pane-row-state'
+    import { toBackendIndices, toFrontendIndices } from './sorting-handlers'
     import { createRenameState } from '../rename/rename-state.svelte'
-    import { type DirectorySortMode } from '$lib/settings'
+    import { type ListingDirectorySortMode } from '$lib/settings'
     import { tString } from '$lib/intl/messages.svelte'
-    import { createRenameFlow } from './rename-flow.svelte'
+    import { createRenameFlow, type RenameAsMoveRequest } from './rename-flow.svelte'
     import ExtensionChangeDialog from '../rename/ExtensionChangeDialog.svelte'
     import RenameConflictDialog from '../rename/RenameConflictDialog.svelte'
     import { getAppLogger } from '$lib/logging/logger'
@@ -91,7 +105,12 @@
     import { getVolumes as getStoreVolumes } from '$lib/stores/volume-store.svelte'
     import type { UnreachableState } from '../tabs/tab-types'
     import { getUsageBar, formatBarTooltip } from '../disk-space-utils'
-    import { getFileSizeFormat, getTypeToJumpResetDelay } from '$lib/settings/reactive-settings.svelte'
+    import {
+        getFileSizeFormat,
+        getSpaceCalculatesFolderSize,
+        getTypeToJumpMode,
+        getTypeToJumpResetDelay,
+    } from '$lib/settings/reactive-settings.svelte'
     import { createRowOverlays } from './row-overlays.svelte'
     import { createSelectionInfoFeed } from './selection-info-feed.svelte'
     import { createPaneKeyRouter } from './pane-key-router'
@@ -102,10 +121,13 @@
     import { createDeletedDirPoll } from './deleted-dir-poll'
     import { fetchEntriesSnapshot, fetchSelectedNames } from './entries-snapshot'
     import { resolveInitialPathAction, shouldReloadAfterReachable } from './path-sync'
-    import { resyncAfterHiddenFilesToggle } from './hidden-files-resync'
+    import { createHiddenFilesResync } from './hidden-files-resync'
+    import { countFolderOnSpace as countFolderOnSpaceAt } from './folder-size-count'
     import { createNetworkHostState } from './network-host-state.svelte'
     import { createMtpDisconnectWatch } from './mtp-disconnect-watch.svelte'
     import { createSnapshotSelectionSync } from './snapshot-selection-sync.svelte'
+    import { createHistoryCursorSync } from './history-cursor-sync.svelte'
+    import type { CursorReading } from '../navigation/history-cursor'
     import { getFirstShortcutReactive } from '$lib/shortcuts/reactive-shortcuts.svelte'
 
     interface Props {
@@ -119,7 +141,7 @@
         viewMode?: ViewMode
         sortBy?: SortColumn
         sortOrder?: SortOrder
-        directorySortMode?: DirectorySortMode
+        directorySortMode?: ListingDirectorySortMode
         onPathChange?: (path: string) => void
         /**
          * The listing landed on the volume's own spelling of the pane's path (a
@@ -127,6 +149,8 @@
          * another way). The parent re-spells the tab and its history in place.
          */
         onStoredSpelling?: (spelling: { from: string; to: string }) => void
+        /** Where the cursor sits, for the current history entry to remember (`history-cursor-sync.svelte.ts`). */
+        onCursorReading?: (reading: CursorReading) => void
         onVolumeChange?: (change: VolumeChangePayload) => void
         /**
          * Go to an already-resolved `Location` (volume id + path). Used when a row
@@ -181,6 +205,8 @@
         onCommand?: (commandId: CommandId) => void
         /** Reveals a snapshot result through the coordinator's navigation transaction. */
         onRevealSearchResult?: (path: string) => void
+        /** Opens the Move dialog for a rename that copies too much to start unasked. */
+        onConfirmRenameAsMove?: (request: RenameAsMoveRequest) => void
     }
 
     const {
@@ -197,6 +223,7 @@
         directorySortMode = 'likeFiles',
         onPathChange,
         onStoredSpelling,
+        onCursorReading,
         onVolumeChange,
         onGoToLocation,
         onSortChange,
@@ -213,6 +240,7 @@
         onGoBack,
         onCommand,
         onRevealSearchResult,
+        onConfirmRenameAsMove,
     }: Props = $props()
 
     let currentPath = $state(untrack(() => initialPath))
@@ -254,37 +282,48 @@
     // Operation snapshot: tracks which files were selected when an operation started,
     // so the diff handler can adjust selection as files disappear.
     let operationSelectedNames = $state<string[] | 'all' | null>(null)
-    let diffGeneration = 0 // NOT $state: only used in async callbacks, never for rendering
+    const rowState = createPaneRowState({ getListingId: () => listingId, getLoading: () => loading,
+        getOperationActive: () => operationSelectedNames !== null || renameFlow.pendingCursorName !== null,
+        getIncludeHidden: () => includeHidden, onReconfigure: () => { renameFlow.pendingCursorName = null } })
 
-    // Type-to-jump: per-pane buffer + indicator + the IPC fuzzy-match runner and
-    // the MCP mirror of the last matched name, all in a `*.svelte.ts` controller.
-    // The reset delay is read live from Settings on each keystroke (reactive
-    // getter), so moving the slider takes effect on the next keystroke. FilePane
-    // reads `jump.buffer` / `.indicatorVisible` / `.indicatorStale` /
-    // `.lastMatchedName` and keeps one-line handleJumpKeystroke / isJumpActive /
-    // clearJumpState delegates.
+    // Read the reset delay live so moving the Settings slider affects the next keystroke.
     const jump = createTypeToJumpController({
         getResetMs: () => getTypeToJumpResetDelay(),
         getListingId: () => listingId,
         getLoading: () => loading,
         getHasBackendListing: () => caps.hasBackendListing,
-        getIsMtpDeviceOnly: () => isMtpDeviceOnly,
         getIncludeHidden: () => includeHidden,
         getHasParent: () => hasParent,
         setCursorIndex: (index: number) => void setCursorIndex(index),
         onSyncMcp: () => { debouncedSyncMcp.call(); },
     })
 
-    // Rename state (inline rename editor)
+    // Backend filtering shares the pane's revision gate with sort and visibility.
+    const runListingUpdate = createListingUpdateQueue()
+    const quickFilter = createQuickFilterController({
+        rowState,
+        runListingUpdate,
+        getListingId: () => listingId,
+        getLoading: () => loading,
+        getHasBackendListing: () => caps.hasBackendListing,
+        getIncludeHidden: () => includeHidden,
+        getHasParent: () => hasParent,
+        getCursorFilename: () => selectionInfo.entry?.name,
+        getSelectedIndices: () => selection.getSelectedIndices(),
+        apply: ({ totalCount: count, cursorIndex: cursor, selectedIndices }) => {
+            // Diffs numbered up to the switch speak the old rows; the refetch below holds them.
+            totalCount = count
+            selection.setSelectedIndices(selectedIndices)
+            cacheGeneration++
+            void setCursorIndex(cursor)
+            void selectionInfo.fetchStats()
+            debouncedSyncMcp.call()
+        },
+    })
+
     const rename = createRenameState()
 
-    // Listing loader: the streaming directory-load pipeline + the generation /
-    // listingId drop-foreign-listings token model, in a `*.svelte.ts` factory.
-    // The pane's lifecycle `$state` (listingId / loading / totalCount / error /
-    // …) STAYS here (many non-loader readers); the loader reads/writes it through
-    // the accessors below. Deps are deferred closures, so the state they touch may
-    // be declared later in this file (the pattern `jump` already uses for
-    // `debouncedSyncMcp`).
+    // The streaming loader reads pane lifecycle state through deferred accessors.
     const loader = createListingLoader({
         paneId,
         getVolumeId: () => volumeId,
@@ -308,19 +347,22 @@
         getFullListRef: () => fullListRef,
         getListingId: () => listingId,
         setListingId: (id) => {
+            rowState.reset()
+            operationSelectedNames = null
             listingId = id
         },
         getLoading: () => loading,
         setLoading: (value) => {
             loading = value
+            if (!value) rowState.initialize()
         },
         getTotalCount: () => totalCount,
         setTotalCount: (count) => {
             totalCount = count
         },
-        getLastSequence: () => lastSequence,
+        getLastSequence: rowState.getSequence,
         setLastSequence: (sequence) => {
-            lastSequence = sequence
+            rowState.setSequence(sequence)
         },
         setError: (value) => {
             error = value
@@ -330,6 +372,9 @@
         },
         setOpeningFolder: (value) => {
             openingFolder = value
+        },
+        setStalled: (value) => {
+            stalled = value
         },
         setLoadingCount: (count) => {
             loadingCount = count
@@ -341,9 +386,11 @@
             volumeRootFromEvent = root
         },
         getCursorIndex: () => cursorIndex,
+        getCursorName: () => selectionInfo.entry?.name,
         setCursorIndexRaw: (index) => {
             cursorIndex = index
         },
+        takeHistoryCursor: (path) => historyCursor.takeForLoad(path),
         clearEntryUnderCursor: () => {
             selectionInfo.clearEntry()
         },
@@ -378,6 +425,18 @@
         onCancelLoading: (cancelled) => onCancelLoading?.(cancelled),
         onArchiveNeedsPassword: (info) => onArchiveNeedsPassword?.(info),
     })
+
+    // Keep the last settled rows through a sub-100 ms navigation. The list
+    // props switch to the new listing only once it lands, and both list caches
+    // replace their visible window atomically at that point.
+    const listingPresentation = createListingPresentation({
+        getListingId: () => listingId,
+        getTotalCount: () => effectiveTotalCount,
+        getLoading: () => loading,
+        getParentRow: () => ({ hasParent, parentPath: hasParent && canonicalPath ? parentOf(canonicalPath) : '' }),
+    })
+    /** A load past the grace period: the list's rows give way to `LoadingIcon`, its header stays. */
+    const showLoadingView = $derived(loading && listingPresentation.showLoading)
 
     // Volume root path from listing-complete event (accurate for MTP and all volume types)
     let volumeRootFromEvent = $state<string | undefined>(undefined)
@@ -554,16 +613,11 @@
     // Check if we're viewing an MTP device
     const isMtpView = $derived(isMtpVolumeId(volumeId))
 
-    // Check if this is a device-only MTP ID (needs connection)
-    // Device-only IDs start with "mtp-" but don't contain ":" (no storage ID)
-    const isMtpDeviceOnly = $derived(isMtpView && volumeId.startsWith('mtp-') && !volumeId.includes(':'))
-
     /**
      * The KIND-structural alt-view selector for the `{#if}` chain below. It picks
-     * which non-list view a pane renders purely as a function of `caps.kind` (plus
-     * the MTP device-only connection sub-state, which the kind table doesn't carry
-     * — it's a runtime connection state, not a kind). This is NOT a new component:
-     * it's a derived discriminant the existing chain branches on.
+     * which non-list view a pane renders purely as a function of `caps.kind`. This
+     * is NOT a new component: it's a derived discriminant the existing chain
+     * branches on.
      *
      * Only the KIND-driven branches live here. The runtime-state branches
      * (`unreachable`, SMB reconnecting / gave-up, the inline SMB upgrade login,
@@ -572,7 +626,7 @@
      * state always wins over the kind view, exactly as the string-compare chain did.
      */
     const paneViewKind = $derived<PaneViewKind>(
-        isNetworkView ? 'network' : isSearchResultsView ? 'search-results' : isMtpDeviceOnly ? 'mtp-connect' : 'normal',
+        isNetworkView ? 'network' : isSearchResultsView ? 'search-results' : 'normal',
     )
 
     /** Which pieces of the status footer this pane renders (`pane-footer.ts`). */
@@ -614,6 +668,7 @@
         getCurrentVolumeInfo: () => currentVolumeInfo,
         loadDirectory: (path: string) => void loader.loadDirectory({ path }),
         navigateToFallback: loader.navigateToFallback,
+        enter: (change) => { breadcrumb.handleVolumeChange(change) },
     })
 
     // A pane standing on a SAVED place dials it, showing the connecting view with a
@@ -710,6 +765,10 @@
 
     export function isLoading(): boolean {
         return loading
+    }
+
+    export function isStalled(): boolean {
+        return stalled !== null
     }
 
     /**
@@ -835,34 +894,21 @@
         await syncPaneStateToMcp()
     }
 
-    /**
-     * Sets the "land the cursor on this name when the next diff applies" marker.
-     * The diff handler already reads `renameFlow.pendingCursorName` for the rename
-     * flow; mkdir/mkfile reuse the same channel so a freshly-created entry can
-     * dodge the structural cursor shift `adjustSelectionIndices` would otherwise
-     * apply when an `add` lands at or above the cursor's index.
-     */
+    /** Rename and create share a cursor target that overrides the next diff's structural shift. */
     export function setPendingCursorName(name: string | null): void {
         renameFlow.pendingCursorName = name
     }
 
-    /**
-     * Handles one keystroke for the type-to-jump feature. Appends to the buffer,
-     * fires the IPC match, and (on the response) moves the cursor.
-     *
-     * Streaming listings: per the plan, we do NOT auto-jump on
-     * `listing-progress`: each keystroke = exactly one match against the
-     * cache as it stands at that moment.
-     */
+    export function restoreHistoryCursor(target: HistoryCursorTarget): void {
+        historyCursor.restore(target)
+    }
+
+    /** Match once per keystroke against the current cache, never on streaming progress. */
     export function handleJumpKeystroke(char: string): void {
         jump.handleJumpKeystroke(char)
     }
 
-    /**
-     * True while a type-to-jump is active: the buffer holds at least one character
-     * (i.e. before the reset timeout empties it). DualPaneExplorer reads this to
-     * decide whether a printable keystroke extends the buffer or runs its command.
-     */
+    /** An active buffer captures printable keys until its reset timeout. */
     export function isJumpActive(): boolean {
         return jump.isJumpActive()
     }
@@ -871,6 +917,40 @@
     export function clearJumpState(): void {
         jump.clearJumpState()
     }
+
+    // Quick filter delegates (`FilePaneAPI`), driven by `routeTypingKey`.
+    export function isQuickFilterMode(): boolean {
+        return getTypeToJumpMode() === 'filter'
+    }
+    export function isQuickFilterActive(): boolean {
+        return quickFilter.isActive()
+    }
+    export function appendQuickFilter(char: string): void {
+        const starting = !quickFilter.isActive()
+        quickFilter.append(char)
+        // The first time typing ever narrows a pane, say what happened and how to undo it.
+        if (starting && quickFilter.isActive()) maybeShowQuickFilterIntro()
+    }
+    export function backspaceQuickFilter(): void {
+        quickFilter.backspace()
+    }
+    export function clearQuickFilter(): void {
+        quickFilter.clear()
+    }
+
+    // A pattern belongs to its listing; a new one starts unfiltered on the backend.
+    $effect(() => {
+        dependOn(listingId)
+        untrack(() => { quickFilter.reset(); })
+    })
+
+    // Leaving Filter mode takes its pattern along: in Jump mode nothing could clear it.
+    $effect(() => {
+        const mode = getTypeToJumpMode()
+        untrack(() => {
+            if (mode !== 'filter') quickFilter.clear()
+        })
+    })
 
     /** Find an item by name in network views. Returns index or -1. */
     export function findNetworkItemIndex(name: string): number {
@@ -902,12 +982,27 @@
         return hasParent
     }
 
+    /** The last `directory-diff` sequence this pane applied: which state of its listing its rows show. */
+    export function getLastSequence(): number {
+        return rowState.getSequence()
+    }
+    export function getViewGeneration(): number { return rowState.getGeneration() }
+    export function isRowStateReady(): boolean { return rowState.isReady() }
+    export function getRowState() { return rowState }
+    export function applyRowResult(result: ResortResult): () => void {
+        totalCount = result.totalCount
+        if (result.newSelectedIndices !== null) selection.setSelectedIndices(toFrontendIndices(result.newSelectedIndices, hasParent))
+        cursorIndex = result.newCursorIndex === null ? Math.max(0, Math.min(cursorIndex, effectiveTotalCount - 1)) : result.newCursorIndex + (hasParent ? 1 : 0)
+        return () => { void setCursorIndex(cursorIndex); refreshView() }
+    }
+
     // noinspection JSUnusedGlobalSymbols -- Used dynamically
     export function isAllSelected(): boolean {
         return selection.isAllSelected(hasParent, effectiveTotalCount)
     }
 
     export function setSelectedIndices(indices: number[]): void {
+        rowState.invalidateWork()
         selection.setSelectedIndices(indices)
     }
 
@@ -970,7 +1065,18 @@
     }
 
     export function toggleSelectionAtCursor(): void {
-        selection.toggleAt(cursorIndex, hasParent)
+        countFolderOnSpace(selection.toggleAt(cursorIndex, hasParent))
+    }
+
+    /** Space on a folder also calculates its size, like Total Commander (`folder-size-count.ts`). */
+    function countFolderOnSpace(selected: boolean): void {
+        void countFolderOnSpaceAt({
+            listingId,
+            backendRow: hasParent ? cursorIndex - 1 : cursorIndex,
+            includeHidden,
+            selected,
+            enabled: getSpaceCalculatesFolderSize(),
+        })
     }
 
     /**
@@ -1044,20 +1150,20 @@
 
     /** Snapshots the current selection as file names for diff-driven adjustment during operations. */
     export async function snapshotSelectionForOperation(): Promise<void> {
-        operationSelectedNames = await fetchSelectedNames({
-            listingId,
-            includeHidden,
-            hasParent,
-            isAllSelected: selection.isAllSelected(hasParent, effectiveTotalCount),
-            selectedIndices: selection.getSelectedIndices(),
-        })
+        const token = rowState.capture()
+        const endWork = rowState.beginAsyncWork()
+        try {
+            const names = await fetchSelectedNames({ listingId, includeHidden, hasParent, expectedSequence: token.sequence,
+                isAllSelected: selection.isAllSelected(hasParent, effectiveTotalCount), selectedIndices: selection.getSelectedIndices() })
+            if (rowState.matches(token)) operationSelectedNames = names
+        } finally { endWork() }
     }
 
     /** Clears the operation snapshot and invalidates in-flight findFileIndices callbacks. Returns the previous value. */
     export function clearOperationSnapshot(): string[] | 'all' | null {
         const prev = operationSelectedNames
         operationSelectedNames = null
-        diffGeneration++
+        rowState.invalidateWork()
         return prev
     }
 
@@ -1080,6 +1186,7 @@
         getEntryAt: (index: number) => activeListRef()?.getEntryAt(index),
         indexOfEntry: (path: string) => activeListRef()?.indexOfEntry(path),
         moveCursorTo,
+        onConfirmRenameAsMove: (request: RenameAsMoveRequest) => onConfirmRenameAsMove?.(request),
     })
 
     // Destructure handlers: factory methods don't use `this`, safe to destructure
@@ -1115,15 +1222,14 @@
 
     // Cache generation counter — bumped on **cold context changes** (sort,
     // hidden-files toggle, explicit refresh, listing swap). The List components
-    // treat this as a hard reset: wipe rendered entries and column widths,
-    // refetch from scratch.
+    // treat this as a hard refresh: invalidate cold-context metadata, force a
+    // refetch, and atomically replace the rendered window when it lands.
     let cacheGeneration = $state(0)
 
     // Soft-refresh tick — bumped on every `directory-diff` event (bulk delete,
     // copy, rename). The List components refetch the visible range in the
     // background and atomically replace, keeping existing entries on screen
-    // until the new ones land. This is what prevents the empty-pane flicker
-    // that destructive `cacheGeneration` bumps caused mid-bulk-op.
+    // until the new ones land without invalidating cold-context metadata.
     let softRefreshTick = $state(0)
 
     // Throttle the brief-mode column-width refetch during diff bursts. Without
@@ -1248,11 +1354,11 @@
         return loader.navigateToParent()
     }
 
-    // Track last sequence for file watcher diffs (read/written by the loader's
-    // swap-state accessors and by `listing-diff-sync`).
-    let lastSequence = 0
     // Opening folder state (before read_dir starts - slow for network folders)
     let openingFolder = $state(false)
+    // What the folder waits on once its volume stopped answering mid-read, else `null`;
+    // the load stays in flight (`listing-loader.ts`)
+    let stalled = $state<StalledOn | null>(null)
     // Loading progress state for streaming
     let loadingCount = $state<number | undefined>(undefined)
     // Finalizing state (read_dir done, now sorting/caching)
@@ -1299,6 +1405,8 @@
             indicatorStale: jump.indicatorStale,
         }),
         getLastJumpMatchedName: () => jump.lastMatchedName,
+        getQuickFilterPattern: () => quickFilter.pattern,
+        getListing: () => paneListingOf({ hasError: Boolean(friendlyError || error), loading, stalled: stalled !== null }),
     })
     const syncPaneStateToMcp = mcpSync.syncPaneStateToMcp
 
@@ -1563,7 +1671,7 @@
         openEntry: (entry) => void handleNavigate(entry),
         navigateToParent: () => void navigateToParent(),
         onCommand: (commandId) => onCommand?.(commandId),
-        toggleSelectionAtCursor: () => { selection.toggleAt(cursorIndex, hasParent); },
+        toggleSelectionAtCursor: () => { countFolderOnSpace(selection.toggleAt(cursorIndex, hasParent)); },
         toggleSelectionAndMoveDown: toggleSelectionAndMoveDownAtCursor,
         selectAll: () => { selection.selectAll(hasParent, effectiveTotalCount); },
         deselectAll: () => { selection.deselectAll(); },
@@ -1604,25 +1712,22 @@
         return friendlyError !== null || unreachable !== null
     }
 
-    // When includeHidden changes, cancel rename and re-sync the count + cursor
-    // (`hidden-files-resync.ts`).
+    // A listing landed or includeHidden changed: cancel rename, re-sync count + cursor (`hidden-files-resync.ts`).
+    const hiddenFilesResync = createHiddenFilesResync(() => listingId)
     $effect(() => {
         if (listingId && !loading) {
             // Cancel rename on hidden files toggle (spec: sort change / toggle hidden = cancel)
             untrack(() => {
                 rename.cancel()
             })
-            void resyncAfterHiddenFilesToggle({
+            void hiddenFilesResync.resync({
                 listingId,
                 includeHidden,
-                // Read cursor state without tracking to avoid infinite re-triggers
-                nameToFollow: untrack(() => selectionInfo.entry?.name),
-                cursorIndex: untrack(() => cursorIndex),
-                getHasParent: () => hasParent,
-                setTotalCount: (count) => {
-                    totalCount = count
-                },
-                setCursorIndex,
+                rowState,
+                getSortState: () => ({ cursorFilename: selectionInfo.entry?.name,
+                    backendSelectedIndices: toBackendIndices(selection.getSelectedIndices(), hasParent),
+                    allSelected: isAllSelected(), hasParent }),
+                applyResult: applyRowResult,
             })
         }
     })
@@ -1647,31 +1752,18 @@
         prevUnreachable = unreachable
     })
 
-    // Track the previous volumeId to detect MTP connection completion
-    let prevVolumeId = $state(volumeId)
-
-    // Reactive path loading: handles persistence restore AND MTP connection
-    // completion in one effect, so overlapping triggers can't both fire a
-    // `loadDirectory`. The truth table is pure, in `path-sync.ts`.
+    // Reactive path loading on persistence restore and prop changes. The truth
+    // table is pure, in `path-sync.ts`.
     $effect(() => {
         const action = resolveInitialPathAction({
             initialPath, // Track this
             currentPath: untrack(() => currentPath), // Don't track: user navigation changes this
-            prevVolumeId,
-            volumeId,
             isSearchResultsView,
             isNetworkView,
-            isMtpDeviceOnly,
             deviceIsConnecting: deviceConnect.holdsListing,
         })
-        prevVolumeId = volumeId
 
         switch (action.kind) {
-            case 'mtp-connected':
-                log.info('MTP volume connected, loading directory: {path}', { path: action.path })
-                currentPath = action.path
-                void loader.loadDirectory({ path: action.path })
-                break
             case 'load':
                 log.debug('[FilePane] initialPath effect: triggering loadDirectory, paneId={paneId}, newPath={newPath}', {
                     paneId,
@@ -1735,6 +1827,9 @@
         syncMcp: () => {
             debouncedSyncMcp.call()
         },
+        onCursorRow: (index: number, rowPath: string) => {
+            historyCursor.reportRow(index, rowPath)
+        },
     })
 
     // Scroll the entry under the cursor into view when view mode changes
@@ -1751,6 +1846,7 @@
     // Registered once during init; deps pass reactive reads via getters and the
     // few mutations back via setters/callbacks (see `listing-diff-sync.svelte.ts`).
     initListingDiffSync({
+        rowState,
         selection,
         rename,
         renameFlow,
@@ -1765,12 +1861,6 @@
         getCurrentPath: () => currentPath,
         getVolumePath: () => volumePath,
         getOperationSelectedNames: () => operationSelectedNames,
-        getLastSequence: () => lastSequence,
-        setLastSequence: (sequence: number) => {
-            lastSequence = sequence
-        },
-        getDiffGeneration: () => diffGeneration,
-        bumpDiffGeneration: () => ++diffGeneration,
         setTotalCount: (count: number) => {
             totalCount = count
         },
@@ -1803,6 +1893,19 @@
         },
     })
 
+    // After the snapshot remap above, so a Back onto a snapshot lands its restore last.
+    const historyCursor = createHistoryCursorSync({
+        getCursorIndex: () => cursorIndex,
+        getShownLocation: () => {
+            const settled = isSearchResultsView ? searchSnapshot !== undefined : listingId !== '' && !loading
+            return settled && !isNetworkView ? { volumeId, path: currentPath } : null
+        },
+        getSnapshotRows: () => searchSnapshot?.entries,
+        getCurrentPath: () => currentPath,
+        setCursorIndex: (index: number) => void setCursorIndex(index),
+        onReading: onCursorReading,
+    })
+
     // The pane's MTP device being unplugged: the listener re-registers itself on
     // every volume switch, so it can't fire on a stale device id.
     // (`mtp-disconnect-watch.svelte.ts`.)
@@ -1824,13 +1927,11 @@
         // Live disk-space updates from the backend poller (typed event).
         diskSpace.startListening()
 
-        // Skip directory loading for:
-        // - Network views (they handle their own data via ServersHub/PlacesBrowser)
-        // - Device-only MTP views (they need connection first, handled by auto-connect effect)
-        // But DO load for connected MTP views (storage-specific volume ID)
+        // Skip directory loading for network views (they handle their own data via
+        // ServersHub/PlacesBrowser) and the search-results snapshot.
         log.debug(
-            '[FilePane] onMount: paneId={paneId}, volumeId={volumeId}, currentPath={currentPath}, isNetworkView={isNetworkView}, isMtpDeviceOnly={isMtpDeviceOnly}',
-            { paneId, volumeId, currentPath, isNetworkView, isMtpDeviceOnly },
+            '[FilePane] onMount: paneId={paneId}, volumeId={volumeId}, currentPath={currentPath}, isNetworkView={isNetworkView}',
+            { paneId, volumeId, currentPath, isNetworkView },
         )
         if (unreachable) {
             log.debug('[FilePane] onMount: SKIPPING loadDirectory for unreachable tab, paneId={paneId}', { paneId })
@@ -1839,7 +1940,7 @@
             // A restored tab on a phone: the dial owns the pane until it answers.
             log.debug('[FilePane] onMount: SKIPPING loadDirectory while the phone opens, paneId={paneId}', { paneId })
             loading = false
-        } else if (!isNetworkView && !isMtpDeviceOnly && !isSearchResultsView) {
+        } else if (!isNetworkView && !isSearchResultsView) {
             log.debug('[FilePane] onMount: triggering loadDirectory for paneId={paneId}', { paneId })
             void loader.loadDirectory({ path: currentPath })
         } else {
@@ -1878,6 +1979,9 @@
         diskSpace.cleanup()
         // Drop the git subscriptions (setting listeners + repo watcher) on unmount.
         gitBrowser.cleanup()
+        // The teardown above ended this pane's listing; a resync mid-flight must stop quietly.
+        hiddenFilesResync.dispose()
+        rowState.dispose()
     })
 </script>
 
@@ -1922,10 +2026,20 @@
          renders it unconditionally and it decides. -->
     <AdbHint {volumeId} />
     <div class="content">
+        {#snippet listLoadingView()}
+            <LoadingIcon {openingFolder} loadedCount={loadingCount} {finalizingCount} showCancelHint={true} />
+        {/snippet}
         <TypeToJumpIndicator
             buffer={jump.buffer}
             visible={jump.indicatorVisible}
             stale={jump.indicatorStale}
+        />
+        <TypeToJumpIndicator
+            buffer={quickFilter.pattern}
+            visible={quickFilter.isActive()}
+            stale={false}
+            kind="filter"
+            onClear={quickFilter.clear}
         />
         {#if unreachable}
             <VolumeUnreachableBanner
@@ -1979,11 +2093,14 @@
                 }}
                 onVisibleRangeChange={handleVisibleRangeChange}
             />
-        {:else if paneViewKind === 'mtp-connect'}
-            <MtpConnectionView {volumeId} {onVolumeChange} />
-        {:else if loading}
-            <LoadingIcon {openingFolder} loadedCount={loadingCount} {finalizingCount} showCancelHint={true} />
-        {:else if friendlyError}
+        {:else if loading && stalled !== null}
+            <ListingStalledView
+                folderPath={currentPath}
+                stalledOn={stalled}
+                onRetry={() => navigateToPath(currentPath)}
+                onGoBack={() => { loader.handleCancelLoading() }}
+            />
+        {:else if friendlyError && !showLoadingView}
             <ErrorPane
                 friendly={friendlyError}
                 folderPath={currentPath}
@@ -1993,14 +2110,17 @@
                 onGoHome={() => onOpenHome?.()}
                 {isFocused}
             />
-        {:else if error}
+        {:else if error && !showLoadingView}
             <div class="error-message">{error}</div>
         {:else if viewMode === 'brief'}
+            <!-- ❗ The list stays mounted through a load, so its column header never blinks
+                 out; only its rows give way to the loading view. -->
             <BriefList
                 bind:this={briefListRef}
-                {listingId}
+                loadingOverlay={showLoadingView ? listLoadingView : undefined}
+                listingId={listingPresentation.listingId}
                 {volumeId}
-                totalCount={effectiveTotalCount}
+                totalCount={listingPresentation.totalCount}
                 {includeHidden}
                 {cacheGeneration}
                 {softRefreshTick}
@@ -2010,11 +2130,11 @@
                 indexStatusMap={overlays.indexStatusMap}
                 folderCoverageMap={overlays.folderCoverageMap}
                 selectedIndices={selection.selectedIndices}
-                {hasParent}
+                hasParent={listingPresentation.parentRow.hasParent}
                 {sortBy}
                 {sortOrder}
                 renameState={rename.active ? rename : null}
-                parentPath={hasParent && canonicalPath ? parentOf(canonicalPath) : ''}
+                parentPath={listingPresentation.parentRow.parentPath}
                 {currentPath}
                 onSelect={handleSelect}
                 onNavigate={handleNavigate}
@@ -2037,12 +2157,17 @@
                 onStartRename={startRename}
                 onDragInitiate={clearJumpState}
             />
+            {#if loading}
+                <!-- Retained rows and the header are visual continuity only; loading still blocks every action. -->
+                <div class="loading-shield" aria-hidden="true"></div>
+            {/if}
         {:else}
             <FullList
                 bind:this={fullListRef}
-                {listingId}
+                loadingOverlay={showLoadingView ? listLoadingView : undefined}
+                listingId={listingPresentation.listingId}
                 {volumeId}
-                totalCount={effectiveTotalCount}
+                totalCount={listingPresentation.totalCount}
                 {includeHidden}
                 {cacheGeneration}
                 {softRefreshTick}
@@ -2052,13 +2177,13 @@
                 indexStatusMap={overlays.indexStatusMap}
                 folderCoverageMap={overlays.folderCoverageMap}
                 selectedIndices={selection.selectedIndices}
-                {hasParent}
+                hasParent={listingPresentation.parentRow.hasParent}
                 {sortBy}
                 {sortOrder}
                 gitRepoRoot={gitBrowser.gitRepoInfo?.repoRoot ?? null}
                 showGitColumn={gitBrowser.showGitStatusColumn}
                 renameState={rename.active ? rename : null}
-                parentPath={hasParent && canonicalPath ? parentOf(canonicalPath) : ''}
+                parentPath={listingPresentation.parentRow.parentPath}
                 {currentPath}
                 onSelect={handleSelect}
                 onNavigate={handleNavigate}
@@ -2081,6 +2206,9 @@
                 onVisibleRangeChange={handleVisibleRangeChange}
                 onDragInitiate={clearJumpState}
             />
+            {#if loading}
+                <div class="loading-shield" aria-hidden="true"></div>
+            {/if}
         {/if}
     </div>
     <!-- The status footer: which panes get it, and which of those talk about disk
@@ -2281,5 +2409,10 @@
         color: var(--color-error);
         text-align: center;
         padding: var(--spacing-lg);
+    }
+
+    .loading-shield {
+        position: absolute;
+        inset: 0;
     }
 </style>

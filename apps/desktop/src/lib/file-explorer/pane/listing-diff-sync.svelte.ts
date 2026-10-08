@@ -1,7 +1,7 @@
 import {
   findFileIndex,
   findFileIndices,
-  getTotalCount,
+  getSelectionSnapshot,
   onDirectoryDeleted,
   onDirectoryDiff,
   onListingRespelled,
@@ -15,6 +15,7 @@ import { createThrottle } from '$lib/utils/timing'
 import type { DiffChange } from '../types'
 import type { createSelectionState } from './selection-state.svelte'
 import type { createRenameState } from '../rename/rename-state.svelte'
+import type { PaneRowState } from './pane-row-state'
 
 const log = getAppLogger('fileExplorer')
 
@@ -45,8 +46,7 @@ export const INDEX_LISTING_UPDATE_MIN_INTERVAL_MS = 250
  * Returns the new frontend cursor index, whether it got there by following its
  * row rather than by sliding with the listing (the caller scrolls that row back
  * into view), and the new selection indices when they need replacing (`null` =
- * leave the selection untouched, which is the case during an active operation or
- * when nothing is selected).
+ * leave the selection untouched when nothing is selected).
  */
 export function reconcileCursorAndSelection(input: {
   changes: DiffChange[]
@@ -56,7 +56,7 @@ export function reconcileCursorAndSelection(input: {
   operationSelectedNames: string[] | 'all' | null
   count: number
 }): { cursorIndex: number; cursorFollowedMove: boolean; selectedIndices: number[] | null } {
-  const { changes, hasParent, cursorIndex, selectedIndices, operationSelectedNames, count } = input
+  const { changes, hasParent, cursorIndex, selectedIndices, count } = input
 
   const moves = movesByPreviousIndex(changes)
   const hasStructuralChanges = moves.size > 0 || changes.some((c) => c.type === 'add' || c.type === 'remove')
@@ -82,9 +82,10 @@ export function reconcileCursorAndSelection(input: {
     newCursorIndex = Math.max(0, Math.min(cursorIndex, count - 1 + offset))
   }
 
-  // Selection: only adjust outside operations (operations handle via findFileIndices)
+  // Name tracking may refine an operation's selection later, but even while that
+  // lookup waits the indices must belong to the applied revision (including for sort).
   let newSelectedIndices: number[] | null = null
-  if (operationSelectedNames === null && selectedIndices.length > 0) {
+  if (selectedIndices.length > 0) {
     const backendSelected = selectedIndices.map((i) => i - offset)
     newSelectedIndices = remapIndicesAcrossDiff(backendSelected, removeIndices, addIndices, moves).map(
       (i) => i + offset,
@@ -95,6 +96,7 @@ export function reconcileCursorAndSelection(input: {
 }
 
 export interface ListingDiffSyncDeps {
+  rowState: PaneRowState
   selection: ReturnType<typeof createSelectionState>
   rename: ReturnType<typeof createRenameState>
   renameFlow: { pendingCursorName: string | null }
@@ -108,10 +110,6 @@ export interface ListingDiffSyncDeps {
   getCurrentPath: () => string
   getVolumePath: () => string
   getOperationSelectedNames: () => string[] | 'all' | null
-  getLastSequence: () => number
-  setLastSequence: (sequence: number) => void
-  getDiffGeneration: () => number
-  bumpDiffGeneration: () => number
   setTotalCount: (count: number) => void
   bumpSoftRefreshTick: () => void
   scheduleColumnWidthRefetch: () => void
@@ -141,12 +139,8 @@ export function initListingDiffSync(deps: ListingDiffSyncDeps): void {
   $effect(() => {
     // Leading + trailing throttle for the visible-listing refetch. The first
     // diff fires it immediately (instant feedback); a burst then coalesces to
-    // ≤4/sec, with the trailing flush landing the final count. Cursor and
-    // selection reconciliation below stays UNthrottled so it's always exact.
-    // `latestTotalCount` carries the newest count into the trailing flush.
-    let latestTotalCount = 0
+    // ≤4/sec. Count, cursor, and selection reconciliation stay synchronous.
     const throttledListingRefresh = createThrottle(() => {
-      deps.setTotalCount(latestTotalCount)
       // Bump the soft-refresh tick (renames don't change totalCount, so the
       // tick is what guarantees a refresh), and schedule the brief-mode
       // column-width refetch. We deliberately DON'T bump `cacheGeneration`:
@@ -157,14 +151,9 @@ export function initListingDiffSync(deps: ListingDiffSyncDeps): void {
       deps.fetchListingStats()
     }, INDEX_LISTING_UPDATE_MIN_INTERVAL_MS)
 
-    const listenerPromise = onDirectoryDiff((diff) => {
+    let scrollCursor = false
+    deps.rowState.setBatchApplier((diff) => {
       const listingId = deps.getListingId()
-      // Only process diffs for our current listing
-      if (diff.listingId !== listingId) return
-
-      // Ignore out-of-order events
-      if (diff.sequence <= deps.getLastSequence()) return
-      deps.setLastSequence(diff.sequence)
 
       // If a rename is active and the file being renamed was removed
       // externally, cancel the rename gracefully
@@ -178,63 +167,56 @@ export function initListingDiffSync(deps: ListingDiffSyncDeps): void {
       }
 
       const includeHidden = deps.getIncludeHidden()
-
-      void getTotalCount(listingId, includeHidden).then(async (count) => {
-        // The visible-range refetch (soft tick + count + stats + column widths)
-        // is throttled to ≤4/sec; the reconciliation that follows is immediate.
-        latestTotalCount = count
+      const hasParent = deps.getHasParent()
+      const operationSelectedNames = deps.getOperationSelectedNames()
+      const reconciled = reconcileCursorAndSelection({
+        changes: diff.changes,
+        hasParent,
+        cursorIndex: deps.getCursorIndex(),
+        selectedIndices: deps.selection.getSelectedIndices(),
+        operationSelectedNames,
+        count: diff.totalCount,
+      })
+      if (reconciled.selectedIndices !== null) deps.selection.setSelectedIndices(reconciled.selectedIndices)
+      deps.applyCursorIndex(reconciled.cursorIndex)
+      deps.setTotalCount(diff.totalCount)
+      scrollCursor ||= reconciled.cursorFollowedMove
+      return () => {
+        // All logical row writes above are synchronous. Scroll/fetch are effects, never prerequisites.
+        if (scrollCursor) void deps.setCursorIndex(deps.getCursorIndex())
+        scrollCursor = false
+        deps.fetchEntryUnderCursor()
         throttledListingRefresh.call()
 
-        const hasParent = deps.getHasParent()
-
-        // Post-rename cursor tracking: move cursor to the renamed file
         const nameToFind = deps.renameFlow.pendingCursorName
-        if (nameToFind) {
-          deps.renameFlow.pendingCursorName = null
-          const foundIndex = await findFileIndex(listingId, nameToFind, includeHidden)
-          if (foundIndex !== null) {
-            const adjustedIndex = hasParent ? foundIndex + 1 : foundIndex
-            await deps.setCursorIndex(adjustedIndex)
-            return
-          }
+        if (nameToFind || (operationSelectedNames !== null && operationSelectedNames !== 'all')) {
+          const endWork = deps.rowState.beginAsyncWork()
+          const token = { ...deps.rowState.capture(), sequence: diff.sequence }
+          void Promise.resolve()
+            .then(async () => {
+              if (!deps.rowState.matches(token)) return
+              if (nameToFind) {
+                const found = await findFileIndex(listingId, nameToFind, includeHidden)
+                await getSelectionSnapshot(listingId, includeHidden, [], token.sequence)
+                if (!deps.rowState.matches(token)) return
+                if (deps.renameFlow.pendingCursorName !== nameToFind) return
+                deps.renameFlow.pendingCursorName = null
+                if (found !== null) void deps.setCursorIndex(found + (hasParent ? 1 : 0))
+              }
+              if (Array.isArray(operationSelectedNames)) {
+                const indices = await findFileIndices(listingId, operationSelectedNames, includeHidden)
+                await getSelectionSnapshot(listingId, includeHidden, [], token.sequence)
+                if (!deps.rowState.matches(token) || deps.getOperationSelectedNames() !== operationSelectedNames) return
+                deps.selection.setSelectedIndices(buildFrontendIndices(indices, hasParent))
+              }
+            })
+            .catch(() => {})
+            .finally(endWork)
         }
-
-        // Adjust cursor and selection BEFORE fetching entry under cursor,
-        // otherwise fetchEntryUnderCursor uses the old index against the
-        // new (shorter) listing, causing "index out of bounds" errors.
-        const operationSelectedNames = deps.getOperationSelectedNames()
-        const reconciled = reconcileCursorAndSelection({
-          changes: diff.changes,
-          hasParent,
-          cursorIndex: deps.getCursorIndex(),
-          selectedIndices: deps.selection.getSelectedIndices(),
-          operationSelectedNames,
-          count,
-        })
-        if (reconciled.selectedIndices !== null) {
-          deps.selection.setSelectedIndices(reconciled.selectedIndices)
-        }
-        // A row that jumped its sorted position takes the cursor with it, which can
-        // carry it clean out of the viewport; scroll it back. An ordinary shift leaves
-        // the row where it was on screen, so it gets the side-effect-free write. The
-        // selection lands first, because the scrolling write awaits a tick.
-        if (reconciled.cursorFollowedMove) {
-          await deps.setCursorIndex(reconciled.cursorIndex)
-        } else {
-          deps.applyCursorIndex(reconciled.cursorIndex)
-        }
-
-        deps.fetchEntryUnderCursor()
-
-        // Diff-driven selection adjustment: re-resolve selected names to new indices
-        if (operationSelectedNames !== null && operationSelectedNames !== 'all') {
-          const myGeneration = deps.bumpDiffGeneration()
-          void findFileIndices(listingId, operationSelectedNames, includeHidden).then((nameToIndexMap) => {
-            if (myGeneration !== deps.getDiffGeneration()) return
-            deps.selection.setSelectedIndices(buildFrontendIndices(nameToIndexMap, hasParent))
-          })
-        }
-      })
+      }
+    })
+    const listenerPromise = onDirectoryDiff((diff) => {
+      if (diff.listingId === deps.getListingId()) deps.rowState.receive(diff.batches)
     })
 
     return () => {
@@ -255,12 +237,21 @@ export function initListingDiffSync(deps: ListingDiffSyncDeps): void {
       // Only process when we have an active operation with explicit name tracking
       if (!Array.isArray(deps.getOperationSelectedNames())) return
 
+      const token = deps.rowState.capture()
+      const names = deps.getOperationSelectedNames()
+      const endWork = deps.rowState.beginAsyncWork()
       const filename = extractFilename(payload.sourcePath)
-      void findFileIndex(deps.getListingId(), filename, deps.getIncludeHidden()).then((backendIndex) => {
-        if (backendIndex === null) return
-        const frontendIndex = deps.getHasParent() ? backendIndex + 1 : backendIndex
-        deps.selection.selectedIndices.delete(frontendIndex)
-      })
+      const includeHidden = deps.getIncludeHidden()
+      void findFileIndex(token.listingId, filename, includeHidden)
+        .then(async (backendIndex) => {
+          await getSelectionSnapshot(token.listingId, includeHidden, [], token.sequence)
+          if (backendIndex === null || !deps.rowState.matches(token) || deps.getOperationSelectedNames() !== names)
+            return
+          const frontendIndex = deps.getHasParent() ? backendIndex + 1 : backendIndex
+          deps.selection.selectedIndices.delete(frontendIndex)
+        })
+        .catch(() => {})
+        .finally(endWork)
     })
 
     return () => {

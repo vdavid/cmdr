@@ -5,7 +5,13 @@ const { trackEventSpy } = vi.hoisted(() => ({
 }))
 vi.mock('$lib/tauri-commands', () => ({ trackEvent: trackEventSpy }))
 
-import { reportTabClosed, reportTabOpened, reportTabPinToggled, reportTabSwitched } from './tab-analytics'
+import {
+  reportTabClosed,
+  reportTabMoved,
+  reportTabOpened,
+  reportTabPinToggled,
+  reportTabSwitched,
+} from './tab-analytics'
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -47,7 +53,18 @@ describe('tab analytics', () => {
     expect(sent()).toEqual(['tab_pin_toggled', { pinned: true }])
   })
 
+  it('reports a move with where the tab went and how full that pane is', () => {
+    reportTabMoved('otherPane', 'moved', 4)
+    expect(sent()).toEqual(['tab_moved', { scope: 'otherPane', outcome: 'moved', open_tabs: 4 }])
+  })
+
+  it('reports a refused move, so a low cross-pane count is readable', () => {
+    reportTabMoved('otherPane', 'atCap', 10)
+    expect(sent()[1]).toMatchObject({ scope: 'otherPane', outcome: 'atCap' })
+  })
+
   it('carries no path anywhere, since a path is a tab whole identity', () => {
+    reportTabMoved('samePane', 'moved', 2)
     reportTabOpened('new', 'opened', 1)
     reportTabClosed('others', 'closed', 1, false)
     reportTabSwitched('pick')

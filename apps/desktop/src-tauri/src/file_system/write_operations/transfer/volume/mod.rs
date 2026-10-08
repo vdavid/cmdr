@@ -23,6 +23,7 @@ mod displaced_destination;
 // concatenates it with the child's header and resolves the merged doc in THIS
 // scope, so the child's links to its own items break.
 mod finalize;
+mod folder_dates;
 mod item_identity;
 /// What mode a file lands with on a LOCAL destination. The volumes report a
 /// mode; this is the layer that applies it.
@@ -42,13 +43,14 @@ mod naming;
 mod preflight;
 mod rename_merge;
 mod sequential_extract;
+mod server_side_copy;
 mod source_sweep;
 mod strategy;
 mod transfer_error;
 
 // The public surface. Everything else in here is an implementation detail of
 // `volume/`; add a re-export rather than widening a submodule's visibility.
-pub use copy::{copy_between_volumes, scan_for_volume_copy};
+pub use copy::copy_between_volumes;
 pub use r#move::move_between_volumes;
 
 pub(crate) use copy::copy_volumes_with_progress;
@@ -64,6 +66,8 @@ pub(in crate::file_system::write_operations) use move_file::move_file_across_vol
 pub(in crate::file_system::write_operations) use source_sweep::{CarriedSource, stamp_source, sweep_carried_source};
 /// Pull a remote path down to a local scratch copy (remote zip edits).
 pub(in crate::file_system::write_operations) use strategy::pull_path_to_local;
+/// The same refusal for a source, reachable from outside the engine.
+pub(crate) use transfer_error::unregistered_source_error;
 /// The refusal for a volume id the registry had nothing for, shared by the
 /// transfer routing and the volume delete so both name an unconnected phone or
 /// server the same way.
@@ -133,6 +137,14 @@ mod finalize_recovery_tests;
 #[cfg(test)]
 mod dest_precheck_failure_tests;
 
+/// A copied folder keeps its source folder's date, dated after its contents.
+#[cfg(test)]
+mod folder_dates_tests;
+
+/// A listed name that isn't one plain path component (`../x`, `/x`) never
+/// lands outside the destination.
+#[cfg(test)]
+mod hostile_names_tests;
 /// The same rule on a backend whose `is_directory` follows a link (ADB, SFTP).
 #[cfg(test)]
 mod link_following_backend_tests;

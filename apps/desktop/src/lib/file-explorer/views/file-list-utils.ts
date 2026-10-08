@@ -316,10 +316,10 @@ export async function fetchVisibleRange(params: FetchRangeParams): Promise<Fetch
 }
 
 /**
- * Checks if cache props changed in a way that warrants a hard reset (wipe
- * cached entries and column widths, refetch from scratch).
+ * Checks if cache props changed in a way that warrants a hard refresh (invalidate
+ * cold-context metadata and force a visible-range fetch).
  *
- * Hard resets are for cold context changes: navigation, hidden-files toggle,
+ * Hard refreshes are for cold context changes: navigation, hidden-files toggle,
  * sort, explicit refresh. `totalCount` changes alone (caused by `directory-diff`
  * events during bulk ops) trigger a *soft* refresh instead — the visible range
  * refetches in the background and atomically replaces, so the user never sees

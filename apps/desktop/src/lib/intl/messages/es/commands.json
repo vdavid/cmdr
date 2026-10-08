@@ -116,9 +116,9 @@
   "@commands.searchOpen.label": {
     "sourceHash": "179fed8"
   },
-  "commands.navGoToPath.label": "Ir a la ruta…",
+  "commands.navGoToPath.label": "Ir a la carpeta…",
   "@commands.navGoToPath.label": {
-    "sourceHash": "936edc5"
+    "sourceHash": "33de610"
   },
   "commands.navGoToPath.description": "Lleva el panel activo a una ruta escrita, pegada o reciente.",
   "@commands.navGoToPath.description": {
@@ -155,6 +155,14 @@
   "commands.viewShowHidden.label": "Mostrar u ocultar archivos ocultos",
   "@commands.viewShowHidden.label": {
     "sourceHash": "6aa9b55"
+  },
+  "commands.viewCalculateFolderSizes.label": "Calcular tamaños de carpetas",
+  "@commands.viewCalculateFolderSizes.label": {
+    "sourceHash": "d2a83da"
+  },
+  "commands.viewCalculateFolderSizes.description": "Muestra el tamaño de cada carpeta de este panel que aún no lo tiene. La tecla Esc detiene el cálculo.",
+  "@commands.viewCalculateFolderSizes.description": {
+    "sourceHash": "2a7568d"
   },
   "commands.viewBriefMode.label": "Cambiar a la vista breve",
   "@commands.viewBriefMode.label": {
@@ -235,6 +243,14 @@
   "commands.paneSwap.label": "Intercambiar paneles",
   "@commands.paneSwap.label": {
     "sourceHash": "cc29396"
+  },
+  "commands.paneClone.label": "Clonar panel",
+  "@commands.paneClone.label": {
+    "sourceHash": "74b2c7f"
+  },
+  "commands.paneClone.description": "Abre la carpeta de este panel también en el otro panel.",
+  "@commands.paneClone.description": {
+    "sourceHash": "8a13dc9"
   },
   "commands.paneLeftVolumeChooser.label": "Abrir el selector de volúmenes izquierdo",
   "@commands.paneLeftVolumeChooser.label": {
@@ -335,6 +351,10 @@
   "commands.navForward.label": "Adelante",
   "@commands.navForward.label": {
     "sourceHash": "8121136"
+  },
+  "commands.navGoToRoot.label": "Ir a la carpeta raíz",
+  "@commands.navGoToRoot.label": {
+    "sourceHash": "3822d7b"
   },
   "commands.navGoHome.label": "Ir a la carpeta de inicio",
   "@commands.navGoHome.label": {
@@ -486,7 +506,7 @@
   },
   "commands.fileCopyCurrentDirectoryPath.label": "Copiar la ruta de la carpeta actual",
   "@commands.fileCopyCurrentDirectoryPath.label": {
-    "sourceHash": "ae360d1"
+    "sourceHash": "5ec6586"
   },
   "commands.fileCopyFilename.label": "Copiar nombre de archivo",
   "@commands.fileCopyFilename.label": {
@@ -555,6 +575,30 @@
   "commands.cloudAskGemini.description": "Abre el asistente Gemini de Google Drive con el archivo seleccionado como tema",
   "@commands.cloudAskGemini.description": {
     "sourceHash": "37d4e7c"
+  },
+  "commands.fileCopyShareLink.label": "Copiar enlace para compartir (siete días)",
+  "@commands.fileCopyShareLink.label": {
+    "sourceHash": "314bee8"
+  },
+  "commands.fileCopyShareLink.description": "Copia un enlace que cualquiera puede abrir para descargar el archivo durante siete días",
+  "@commands.fileCopyShareLink.description": {
+    "sourceHash": "99e912e"
+  },
+  "commands.fileCopyShareLinkOneDay.label": "Copiar enlace para compartir (un día)",
+  "@commands.fileCopyShareLinkOneDay.label": {
+    "sourceHash": "468010c"
+  },
+  "commands.fileCopyShareLinkOneDay.description": "Copia un enlace que cualquiera puede abrir para descargar el archivo durante un día",
+  "@commands.fileCopyShareLinkOneDay.description": {
+    "sourceHash": "c2a30be"
+  },
+  "commands.fileCopyShareLinkOneHour.label": "Copiar enlace para compartir (una hora)",
+  "@commands.fileCopyShareLinkOneHour.label": {
+    "sourceHash": "ffea990"
+  },
+  "commands.fileCopyShareLinkOneHour.description": "Copia un enlace que cualquiera puede abrir para descargar el archivo durante una hora",
+  "@commands.fileCopyShareLinkOneHour.description": {
+    "sourceHash": "c334535"
   },
   "commands.tagsToggleGrey.label": "Alternar etiqueta Gris",
   "@commands.tagsToggleGrey.label": {
@@ -647,6 +691,30 @@
   "commands.selectionSelectSameKind.description": "Añade a la selección todos los elementos de la misma clase que el que está bajo el cursor, sin vaciar la selección actual",
   "@commands.selectionSelectSameKind.description": {
     "sourceHash": "9a95212"
+  },
+  "commands.selectionCompareDirectories.label": "Comparar carpetas",
+  "@commands.selectionCompareDirectories.label": {
+    "sourceHash": "5cf3985"
+  },
+  "commands.selectionCompareDirectories.description": "Selecciona, en cada panel, los archivos que faltan en el otro panel y, del resto, las copias más recientes",
+  "@commands.selectionCompareDirectories.description": {
+    "sourceHash": "190d99f"
+  },
+  "commands.selectionCompareDirectoriesMissing.label": "Comparar carpetas: solo archivos que faltan",
+  "@commands.selectionCompareDirectoriesMissing.label": {
+    "sourceHash": "d03d3c1"
+  },
+  "commands.selectionCompareDirectoriesMissing.description": "Selecciona, en cada panel, solo los archivos que faltan en el otro panel",
+  "@commands.selectionCompareDirectoriesMissing.description": {
+    "sourceHash": "e61c71b"
+  },
+  "commands.selectionCompareDirectoriesSize.label": "Comparar carpetas: tamaño distinto",
+  "@commands.selectionCompareDirectoriesSize.label": {
+    "sourceHash": "6c8fd21"
+  },
+  "commands.selectionCompareDirectoriesSize.description": "Selecciona, en cada panel, los archivos que faltan en el otro panel y las dos copias de los archivos cuyo tamaño difiere",
+  "@commands.selectionCompareDirectoriesSize.description": {
+    "sourceHash": "ac31996"
   },
   "commands.selectionSelectSameKind.allFolders": "Seleccionar todas las carpetas",
   "@commands.selectionSelectSameKind.allFolders": {
@@ -804,6 +872,26 @@
   "@commands.handler.googleDriveCopyFailed": {
     "sourceHash": "0af1fd3"
   },
+  "commands.handler.shareLinkCopied.sevenDays": "Se ha copiado un enlace para compartir. Funciona durante siete días.",
+  "@commands.handler.shareLinkCopied.sevenDays": {
+    "sourceHash": "6f4055b"
+  },
+  "commands.handler.shareLinkCopied.oneDay": "Se ha copiado un enlace para compartir. Funciona durante un día.",
+  "@commands.handler.shareLinkCopied.oneDay": {
+    "sourceHash": "ca08c52"
+  },
+  "commands.handler.shareLinkCopied.oneHour": "Se ha copiado un enlace para compartir. Funciona durante una hora.",
+  "@commands.handler.shareLinkCopied.oneHour": {
+    "sourceHash": "8b9f0cc"
+  },
+  "commands.handler.shareLinkUnavailable": "Mueve el cursor a un archivo de un bucket de S3 para copiar su enlace para compartir.",
+  "@commands.handler.shareLinkUnavailable": {
+    "sourceHash": "c4ea112"
+  },
+  "commands.handler.shareLinkFailed": "No se ha podido crear un enlace para compartir. {detail}",
+  "@commands.handler.shareLinkFailed": {
+    "sourceHash": "5ff44b7"
+  },
   "commands.handler.openTerminalHere.hint": "Carpeta abierta en tu app de terminal. ¿Quieres que Cmdr abra otra app la próxima vez? Elígela en Ajustes, en “Navegación y operaciones de archivos”.",
   "@commands.handler.openTerminalHere.hint": {
     "sourceHash": "b29b744"
@@ -836,6 +924,18 @@
   "@commands.handler.openTerminalHere.timedOut": {
     "sourceHash": "ed36313"
   },
+  "commands.handler.getInfo.automationOff": "Para Obtener información, Cmdr necesita controlar el Finder, y eso está desactivado. Activa el Finder debajo de Cmdr en Ajustes del Sistema > Privacidad y seguridad > Automatización.",
+  "@commands.handler.getInfo.automationOff": {
+    "sourceHash": "7e831ef"
+  },
+  "commands.handler.getInfo.openAutomationSettings": "Abrir los ajustes de Automatización",
+  "@commands.handler.getInfo.openAutomationSettings": {
+    "sourceHash": "f04940d"
+  },
+  "commands.handler.getInfo.notReached": "Cmdr no ha podido acceder al Finder para abrir Obtener información. Inténtalo de nuevo.",
+  "@commands.handler.getInfo.notReached": {
+    "sourceHash": "9cbc272"
+  },
   "commands.handler.zoomResetHintShortcut": "Puedes restablecer el zoom al 100% con {shortcut}.",
   "@commands.handler.zoomResetHintShortcut": {
     "sourceHash": "efdd715"
@@ -863,5 +963,21 @@
   "commands.suggestedOpsShow.description": "Revisa las operaciones de archivos que ha sugerido la IA y decide qué se ejecuta",
   "@commands.suggestedOpsShow.description": {
     "sourceHash": "7efe8c9"
+  },
+  "commands.helpViewDebugLog.label": "Ver registro de depuración",
+  "@commands.helpViewDebugLog.label": {
+    "sourceHash": "007c98d"
+  },
+  "commands.helpViewDebugLog.description": "Sigue en vivo el registro de depuración de Cmdr en el visor de archivos",
+  "@commands.helpViewDebugLog.description": {
+    "sourceHash": "a937e6e"
+  },
+  "commands.handler.viewDebugLog.disabled": "El almacenamiento de registros está desactivado. Pon un límite de espacio en disco mayor que 0 en Ajustes > Avanzado y reinicia Cmdr para ver el registro de depuración.",
+  "@commands.handler.viewDebugLog.disabled": {
+    "sourceHash": "96f16fc"
+  },
+  "commands.handler.viewDebugLog.unavailable": "No se ha podido abrir el registro de depuración. Inténtalo de nuevo.",
+  "@commands.handler.viewDebugLog.unavailable": {
+    "sourceHash": "794a5b3"
   }
 }

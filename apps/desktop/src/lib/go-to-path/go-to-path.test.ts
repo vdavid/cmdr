@@ -23,8 +23,8 @@ const {
   addRecentPathStateMock: vi.fn(() => Promise.resolve()),
   addToastMock: vi.fn(() => 'toast-id'),
   getEffectiveShortcutsMock: vi.fn(() => ['⌘[']),
-  navigateToDirMock: vi.fn(() => Promise.resolve()),
-  navigateToFileMock: vi.fn(() => Promise.resolve()),
+  navigateToDirMock: vi.fn(() => Promise.resolve(true)),
+  navigateToFileMock: vi.fn(() => Promise.resolve(true)),
   getFocusedPaneMock: vi.fn(() => 'left'),
   getFocusedPanePathMock: vi.fn(() => '/home/me'),
 }))
@@ -101,8 +101,8 @@ describe('goToPath handler', () => {
     addRecentPathStateMock.mockReset().mockResolvedValue(undefined)
     addToastMock.mockReset().mockReturnValue('toast-id')
     getEffectiveShortcutsMock.mockReset().mockReturnValue(['⌘['])
-    navigateToDirMock.mockReset().mockResolvedValue(undefined)
-    navigateToFileMock.mockReset().mockResolvedValue(undefined)
+    navigateToDirMock.mockReset().mockResolvedValue(true)
+    navigateToFileMock.mockReset().mockResolvedValue(true)
     getFocusedPaneMock.mockReset().mockReturnValue('left')
     getFocusedPanePathMock.mockReset().mockReturnValue('/home/me')
     readSchemeInputMock.mockReset().mockResolvedValue(null)
@@ -202,6 +202,40 @@ describe('goToPath handler', () => {
     expect(navigateToDirMock).not.toHaveBeenCalled()
     expect(navigateToFileMock).not.toHaveBeenCalled()
     expect(addRecentPathStateMock).not.toHaveBeenCalled()
+  })
+
+  // A refused navigation left the pane where it was, so the path didn't work and isn't worth offering again.
+  describe('a navigation the pane refused records no recent', () => {
+    it('directory', async () => {
+      okResolve({ kind: 'directory', path: '/tmp/here' })
+      navigateToDirMock.mockResolvedValue(false)
+      await goToPath(makeExplorerStub(), '/tmp/here')
+      expect(addRecentPathStateMock).not.toHaveBeenCalled()
+    })
+
+    it('file', async () => {
+      okResolve({ kind: 'file', path: '/tmp/a.txt', parentDir: '/tmp', fileName: 'a.txt' })
+      navigateToFileMock.mockResolvedValue(false)
+      await goToPath(makeExplorerStub(), '/tmp/a.txt')
+      expect(addRecentPathStateMock).not.toHaveBeenCalled()
+    })
+
+    it('nearestAncestor, which also skips the "landed on" toast', async () => {
+      okResolve({ kind: 'nearestAncestor', requested: '/tmp/nope/a.txt', ancestorDir: '/tmp' })
+      navigateToDirMock.mockResolvedValue(false)
+      await goToPath(makeExplorerStub(), '/tmp/nope/a.txt')
+      expect(addRecentPathStateMock).not.toHaveBeenCalled()
+      expect(addToastMock).not.toHaveBeenCalled()
+    })
+
+    it('a saved place', async () => {
+      const path = 'sftp://ada@nas.local:22/srv/data'
+      readSchemeInputMock.mockResolvedValue({ kind: 'place', path, label: 'Naspolya' })
+      actOnSchemeInputMock.mockResolvedValue({ kind: 'directory', path })
+      navigateToDirMock.mockResolvedValue(false)
+      await goToPath(makeExplorerStub(), path)
+      expect(addRecentPathStateMock).not.toHaveBeenCalled()
+    })
   })
 
   it('nearestAncestor → builds the toast with the SNAPSHOTTED nav.back shortcut', async () => {

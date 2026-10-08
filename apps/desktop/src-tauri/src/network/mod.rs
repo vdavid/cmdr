@@ -22,6 +22,8 @@ pub mod live_server_edit;
 pub mod manual_servers;
 pub mod mdns_discovery;
 pub mod one_shot_credentials;
+pub mod s3_known_places;
+pub mod s3_volume_wiring;
 pub mod saved_server_fields;
 
 // The durable trusted-SSH-host-key store, which answers the `HostKeys` seam.
@@ -49,6 +51,12 @@ pub fn load_sftp_stores<R: tauri::Runtime>(app: &AppHandle<R>) {
 /// [`load_sftp_stores`].
 pub fn load_webdav_stores<R: tauri::Runtime>(app: &AppHandle<R>) {
     webdav_known_servers::load_known_webdav_servers(app);
+}
+
+/// Reads the S3 place list off disk. One call at startup, beside
+/// [`load_webdav_stores`].
+pub fn load_s3_stores<R: tauri::Runtime>(app: &AppHandle<R>) {
+    s3_known_places::load_known_s3_places(app);
 }
 
 #[cfg(target_os = "macos")]
@@ -112,7 +120,7 @@ pub use events::{
     NetworkHostLost, NetworkHostResolved, SmbFellBackToOsMount, SmbOsMountNoticeWithdrawn, VolumeConnection,
     VolumeConnectionChanged,
 };
-pub use smb_client::{AuthMode, ShareListError, ShareListResult};
+pub use smb_client::{ShareListError, ShareListResult};
 
 /// Runtime mirror of the `network.enabled` setting. Default `true` matches the
 /// settings default. `lib.rs::setup` updates this from the persisted settings;

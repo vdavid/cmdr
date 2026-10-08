@@ -127,9 +127,9 @@
   "@downloads.shortcutRow.invalidCombo": {
     "sourceHash": "d2601f3"
   },
-  "downloads.shortcutRow.registerFailed": "Không thể đăng ký: {reason}",
-  "@downloads.shortcutRow.registerFailed": {
-    "sourceHash": "3b0841e"
+  "downloads.shortcutRow.unavailable": "Có thể một ứng dụng khác đang dùng tổ hợp phím đó",
+  "@downloads.shortcutRow.unavailable": {
+    "sourceHash": "8882532"
   },
   "downloads.shortcutRow.addModifier": "Thêm một phím bổ trợ (⌘, ⌃, ⌥, hoặc ⇧)",
   "@downloads.shortcutRow.addModifier": {

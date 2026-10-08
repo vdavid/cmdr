@@ -11,56 +11,18 @@ import { throwKeychainError } from '$lib/servers/keychain-failure'
 export type { KnownWebdavServer, WebdavUnattendedReconnect }
 
 /**
- * Calls off the connect running under `attemptId`, and returns whether one was.
- *
- * This is what a dialog's cancel button calls. The probe stops where it stands,
- * the connect promise (`connectServer` / `connectSavedPlace`) settles with
- * `cancelled`, and no volume, saved server, or secret is left behind.
- *
- * `false` means nobody was connecting under that id, which is what a click landing
- * a moment after the connect finished looks like. Nothing is wrong with it.
- */
-export async function cancelWebdavConnect(attemptId: string): Promise<boolean> {
-  return await commands.cancelWebdavConnect(attemptId)
-}
-
-/**
- * Drops a WebDAV volume's client and takes it out of the volume registry.
- * Returns whether there was a WebDAV volume under that id.
- */
-export async function disconnectWebdavVolume(volumeId: string): Promise<boolean> {
-  return await commands.disconnectWebdavVolume(volumeId)
-}
-
-/**
  * Saves the secret for one account on one server, so the next connection is silent.
  *
  * This call is the "remember the secret" switch: its meaning is exactly "put this in
- * the Keychain". `hasWebdavCredentials` reads the switch back,
- * `deleteWebdavCredentials` turns it off, and there's no second flag that could
- * disagree with the store. Remembering it makes an unattended reconnect possible;
+ * the Keychain". `hasServerSecret` reads the switch back, `forgetServerSecret` turns
+ * it off (both in `servers.ts`), and there's no second flag that could disagree with
+ * the store. Remembering it makes an unattended reconnect possible;
  * turning one on is the other switch (`autoReconnect`).
  *
  * Throws a `KeychainFailure` if the store refused, or if `url` never named a server.
  */
 export async function saveWebdavCredentials(url: string, username: string, secret: string): Promise<void> {
   const res = await commands.saveWebdavCredentials(url, username, secret)
-  if (res.status === 'error') throwKeychainError(res.error)
-}
-
-/**
- * Whether a password is stored for one account on one server.
- *
- * There's deliberately no command that returns the secret itself: the backend
- * reads the store when it builds a client.
- */
-export async function hasWebdavCredentials(url: string, username: string): Promise<boolean> {
-  return await commands.hasWebdavCredentials(url, username)
-}
-
-/** Forgets the stored password for one account on one server. Throws a `KeychainFailure` if the store refused. */
-export async function deleteWebdavCredentials(url: string, username: string): Promise<void> {
-  const res = await commands.deleteWebdavCredentials(url, username)
   if (res.status === 'error') throwKeychainError(res.error)
 }
 
@@ -84,15 +46,6 @@ export async function getKnownWebdavServers(): Promise<SavedWebdavServer[]> {
     autoReconnect: server.autoReconnect ?? true,
     pinned: server.pinned ?? false,
   }))
-}
-
-/**
- * Drops a server from the saved list, returning whether one was there.
- *
- * Leaves the stored password alone: `deleteWebdavCredentials` is that.
- */
-export async function forgetKnownWebdavServer(url: string, username: string): Promise<boolean> {
-  return await commands.forgetKnownWebdavServer(url, username)
 }
 
 /**

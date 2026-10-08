@@ -32,7 +32,7 @@ impl SftpVolume {
     pub(super) fn display_path_for(&self, path: &Path) -> Option<PathBuf> {
         self.root
             .to_remote_path(path)
-            .map(|remote| self.root.to_app_path(&remote))
+            .and_then(|remote| self.root.to_app_path(&remote))
     }
 }
 

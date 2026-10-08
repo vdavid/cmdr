@@ -12,6 +12,7 @@ import {
   applyParsedAddress,
   emptyServerForm,
   formFromPrefill,
+  formFromS3Place,
   formFromSftpServer,
   isStartFolderUnderRoot,
   nameFallbackOf,
@@ -415,3 +416,93 @@ describe('withSavedAccount', () => {
 function typed_(address: string) {
   return applyParsedAddress({ ...emptyServerForm(), address }, parseServerAddress(address))
 }
+
+describe('the S3 form', () => {
+  /** An S3 form as the sheet would hold it once someone picked a preset and typed a key. */
+  function s3Form(s3: Partial<ReturnType<typeof emptyServerForm>['s3']>, username = 'AKIAEXAMPLE') {
+    const form = emptyServerForm()
+    return { ...form, protocol: 's3' as const, username, s3: { ...form.s3, ...s3 } }
+  }
+
+  it('names a target with no address at all: the preset makes the endpoint', () => {
+    expect(serverTargetFrom({ ...s3Form({ provider: 'aws', region: 'eu-west-1' }), displayName: ' Photos ' })).toEqual({
+      protocol: 's3',
+      displayName: 'Photos',
+      provider: { kind: 'aws', region: 'eu-west-1' },
+      accessKeyId: 'AKIAEXAMPLE',
+      bucket: null,
+      autoReconnect: true,
+    })
+  })
+
+  it('sends a typed bucket trimmed, and an empty one as the account root', () => {
+    expect(serverTargetFrom(s3Form({ provider: 'hetzner', location: 'nbg1', bucket: ' photos ' }))).toMatchObject({
+      bucket: 'photos',
+    })
+    expect(serverTargetFrom(s3Form({ provider: 'hetzner', location: 'nbg1', bucket: '  ' }))).toMatchObject({
+      bucket: null,
+    })
+  })
+
+  it('trims the access key ID, which is part of the identity', () => {
+    expect(serverTargetFrom(s3Form({ provider: 'r2', accountId: 'abc' }, ' AKIA1 '))).toMatchObject({
+      accessKeyId: 'AKIA1',
+    })
+  })
+
+  it('opens a saved S3 place in the edit form with its preset, key, bucket, raw name, and switch', () => {
+    const form = formFromS3Place({
+      provider: { kind: 'other', endpoint: 'http://nas:9000', region: null, pathStyle: false },
+      accessKeyId: 'AKIA1',
+      bucket: 'photos',
+      displayName: '',
+      autoReconnect: false,
+      pinned: true,
+      volumeId: 's3-photos',
+    })
+    expect(form).toMatchObject({
+      protocol: 's3',
+      username: 'AKIA1',
+      displayName: '',
+      autoReconnect: false,
+      remember: false,
+    })
+    expect(form.s3).toMatchObject({
+      provider: 'other',
+      endpoint: 'http://nas:9000',
+      pathStyle: false,
+      bucket: 'photos',
+    })
+    // The target it saves back is the place it opened on: same identity, so the save edits rather than duplicates.
+    expect(serverTargetFrom(form)).toMatchObject({
+      provider: { kind: 'other', endpoint: 'http://nas:9000', region: null, pathStyle: false },
+      accessKeyId: 'AKIA1',
+      bucket: 'photos',
+    })
+  })
+
+  it('lets no address left over from another protocol fill the access key ID', () => {
+    const sftp = typed('ada@nas.local', 'sftp')
+    expect(sftp.username).toBe('ada')
+    const switched = applyParsedAddress({ ...sftp, protocol: 's3' }, parseServerAddress(sftp.address))
+    expect(switched.username).toBe('')
+  })
+
+  it('opens a pasted `s3://` path on S3, with the key, the preset, and the bucket filled in', () => {
+    const form = formFromPrefill('s3://AKIAEXAMPLE@s3.eu-west-1.amazonaws.com:443/photos/2026')
+    expect(form.protocol).toBe('s3')
+    expect(form.username).toBe('AKIAEXAMPLE')
+    expect(form.s3).toMatchObject({ provider: 'aws', region: 'eu-west-1', bucket: 'photos' })
+  })
+
+  it('promises the name the backend gives an unnamed ACCOUNT: the key at the endpoint host, whatever the bucket', () => {
+    // The Name field names the account; a bucket reads as its own name under it.
+    expect(nameFallbackOf(s3Form({ provider: 'aws', region: 'eu-west-1', bucket: 'photos' }))).toBe(
+      'AKIAEXAMPLE@s3.eu-west-1.amazonaws.com',
+    )
+    expect(nameFallbackOf(s3Form({ provider: 'aws', region: 'eu-west-1' }))).toBe(
+      'AKIAEXAMPLE@s3.eu-west-1.amazonaws.com',
+    )
+    expect(nameFallbackOf(s3Form({ provider: 'aws', region: '' }))).toBeNull()
+  })
+})

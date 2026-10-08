@@ -38,6 +38,7 @@ const { actions, store } = vi.hoisted(() => ({
       changedUnderReview: false,
       busyGroupId: null as number | null,
       decisionNotice: null as string | null,
+      refusals: new Map<number, unknown>(),
     },
     ops: [] as unknown[],
   },
@@ -109,6 +110,7 @@ beforeEach(() => {
   store.state.busyGroupId = null
   store.state.windowError = false
   store.state.decisionNotice = null
+  store.state.refusals = new Map<number, unknown>()
   store.state.deselected = new Set<number>()
   store.ops = [
     {
@@ -272,5 +274,25 @@ describe('honest absence', () => {
 
     expect(host.textContent).toContain('Cmdr couldn’t read the suggestions.')
     expect(host.textContent).not.toContain('Nothing is waiting for you right now.')
+  })
+
+  it('shows why an approval didn’t start under the group it gave back', async () => {
+    store.state.refusals = new Map([
+      [7, { kind: 'refused', error: { type: 'source_not_connected', path: '/DCIM/one.jpg' } }],
+    ])
+    const host = mountDialog()
+
+    const refusal = host.querySelector('.group .refusal')
+    expect(refusal?.getAttribute('role')).toBe('alert')
+    expect(refusal?.textContent).toContain('Why this didn’t start')
+    expect(refusal?.textContent).toContain('Cmdr hasn’t connected to the phone or server holding these files yet')
+    expect(host.textContent).toContain('five invoices')
+    await expectNoA11yViolations(host)
+  })
+
+  it('says nothing under a group whose approval nobody refused', () => {
+    const host = mountDialog()
+
+    expect(host.querySelector('.refusal')).toBeNull()
   })
 })

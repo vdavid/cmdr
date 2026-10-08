@@ -1,19 +1,19 @@
 //! New-folder / new-file creation and the managed create mutations.
 //!
 //! The command layer (`commands/file_system/write_ops.rs`) is a thin
-//! pass-through: it expands tilde, resolves the `volume_id`, calls
-//! `create_directory_managed` / `create_file_managed` wrapped in its 5 s IPC
-//! timeout, and ships the typed `MutationError` unchanged. All the logic lives
-//! here per "smart backend / thin frontend"; the backend never names the command
-//! layer or `expand_tilde`.
+//! pass-through: it expands tilde, resolves the `volume_id`, runs
+//! `create_directory_managed` / `create_file_managed` detached under its reply
+//! deadline (`mutation_reply.rs`: `Done`, the typed `MutationError`, or
+//! `StillRunning` with a settle event later). All the logic lives here per "smart
+//! backend / thin frontend"; the backend never names the command layer or
+//! `expand_tilde`.
 //!
 //! Create is a managed instant op: the mutation runs inside
 //! `manager::run_instant`, so it registers a `Running` record + marks its volume
-//! busy (eject guard) for its sub-second duration, yet still runs inline and
-//! returns the new path to the caller. It does NOT reserve a lane or queue behind
-//! transfers (see `manager::run_instant`). There's no inner timeout: the
-//! command's outer 5 s timeout drops the whole future on a hang, and the
-//! `InstantTaskGuard` releases the busy set on that drop.
+//! busy (eject guard) for its duration, yet still runs inline and returns the new
+//! path to its caller. It does NOT reserve a lane or queue behind transfers (see
+//! `manager::run_instant`). There's no inner timeout: the work runs to its own
+//! end, and the `InstantTaskGuard` releases the busy set even on a panic.
 //!
 //! The synthetic-listing-diff update (`emit_synthetic_entry_diff` /
 //! `should_emit_synthetic_diff`) lives here, co-located with the create op it
@@ -344,7 +344,7 @@ pub(crate) async fn create_directory_core(
 
     // Try to use Volume abstraction
     if let Some(volume) = get_volume_manager().get(&volume_id) {
-        let new_path = new_entry_path(volume.as_ref(), &expanded_path, name).await?;
+        let new_path = new_entry_path(volume.as_ref(), &volume_id, &expanded_path, name).await?;
 
         // Register the new directory path with the downloads watcher's
         // ignore set; no-ops for paths outside ~/Downloads.
@@ -370,9 +370,15 @@ pub(crate) async fn create_directory_core(
 /// Where the new folder or file `name` goes in `parent`: spelled the way the
 /// volume wants new names, and refused as taken when the folder already holds
 /// the name under another Unicode spelling, which a byte-exact share would
-/// otherwise create a twin beside (`look_alike.rs`).
-async fn new_entry_path(volume: &dyn Volume, parent: &str, name: &str) -> Result<PathBuf, MutationError> {
-    match place_new_entry(volume, &PathBuf::from(parent).join(name), None).await {
+/// otherwise create a twin beside (`look_alike.rs`). A pane showing `parent`
+/// answers that from its listing, so the person isn't waiting on a re-read.
+async fn new_entry_path(
+    volume: &dyn Volume,
+    volume_id: &str,
+    parent: &str,
+    name: &str,
+) -> Result<PathBuf, MutationError> {
+    match place_new_entry(volume, volume_id, &PathBuf::from(parent).join(name), None).await {
         Ok(NewEntry::Free(path)) => Ok(path),
         Ok(NewEntry::Taken(_) | NewEntry::Ambiguous) => Err(MutationError::AlreadyExists { name: name.to_string() }),
         Err(error) => Err(MutationError::Volume { error }),
@@ -420,7 +426,7 @@ pub(crate) async fn create_file_core(
 
     // Try to use Volume abstraction
     if let Some(volume) = get_volume_manager().get(&volume_id) {
-        let new_path = new_entry_path(volume.as_ref(), &expanded_path, name).await?;
+        let new_path = new_entry_path(volume.as_ref(), &volume_id, &expanded_path, name).await?;
 
         // Register the new file path with the downloads watcher's ignore
         // set; no-ops for paths outside ~/Downloads.
@@ -463,8 +469,6 @@ pub(super) fn should_emit_synthetic_diff(volume_id: Option<&str>) -> bool {
 /// `pub(super)` so the sibling paste-clipboard writer reuses it (see
 /// `should_emit_synthetic_diff`).
 pub(super) fn emit_synthetic_entry_diff(volume_id: Option<&str>, entry_path: &Path, parent_path: &Path) {
-    use crate::file_system::listing::DiffChange;
-    use crate::file_system::listing::diff_emitter::enqueue_diff;
     use crate::file_system::listing::reading::get_single_entry;
     use crate::file_system::listing::{find_listings_for_path, insert_entry_sorted};
 
@@ -490,15 +494,8 @@ pub(super) fn emit_synthetic_entry_diff(volume_id: Option<&str>, entry_path: &Pa
 
     // 4. For each listing, insert and enqueue (nothing, to a pane that doesn't show it)
     for (listing_id, _sort_by, _sort_order, _dir_sort_mode) in listings {
-        // insert_entry_sorted acquires LISTING_CACHE write lock and releases it on return
-        let Some(rows) = insert_entry_sorted(&listing_id, entry.clone()) else {
-            continue; // Already exists or listing gone
-        };
-
-        enqueue_diff(
-            &listing_id,
-            DiffChange::for_pane(entry.clone(), rows).into_iter().collect(),
-        );
+        // The insertion owns revision allocation and publication under its write lock.
+        let _ = insert_entry_sorted(&listing_id, entry.clone());
     }
 }
 

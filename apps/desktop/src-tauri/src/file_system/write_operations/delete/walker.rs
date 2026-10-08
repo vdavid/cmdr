@@ -569,7 +569,9 @@ fn emit_cancelled_if_aborted(
 
 /// Deletes files on a non-local volume (like MTP) with progress reporting.
 ///
-/// Uses `volume.list_directory()` for scanning and `volume.delete()` per item.
+/// Uses `volume.list_directory()` for scanning, and `volume.delete()` per file or
+/// `volume.delete_files()` per batch where the backend batches
+/// (`Volume::delete_batch_size`).
 /// Emits the same events as `delete_files_with_progress` so the frontend progress
 /// dialog works unchanged.
 #[allow(
@@ -831,11 +833,15 @@ pub(in crate::file_system::write_operations) async fn delete_volume_files_with_p
     let mut bytes_done = 0u64;
     let mut last_progress_time = Instant::now();
 
-    // Delete files
-    for entry in entries.iter().filter(|e| !e.is_dir) {
-        // The cooperative boundary, between files in the destructive phase. The
-        // scan recursion above is NOT gated, so pausing mid-enumeration can't
-        // freeze a half-counted "Scanning…".
+    // Delete files: one at a time, or in the backend's own batches
+    // (`Volume::delete_batch_size`, an object store's `DeleteObjects`). A batch
+    // goes by key with no per-file stat: these are files the scan just listed.
+    let files: Vec<&VolumeDeleteEntry> = entries.iter().filter(|e| !e.is_dir).collect();
+    let batch_size = volume.delete_batch_size();
+    for batch in files.chunks(batch_size.map_or(1, std::num::NonZeroUsize::get)) {
+        // The cooperative boundary, between files (or batches) in the
+        // destructive phase. The scan recursion above is NOT gated, so pausing
+        // mid-enumeration can't freeze a half-counted "Scanning…".
         if state.stop_or_park_async().await {
             events.emit_cancelled(WriteCancelledEvent {
                 operation_id: operation_id.to_string(),
@@ -858,54 +864,86 @@ pub(in crate::file_system::write_operations) async fn delete_volume_files_with_p
             tokio::time::sleep(Duration::from_millis(ms)).await;
         }
 
-        match volume
-            .delete_with_cancel(&entry.path, Some(&state.backend_cancel))
-            .await
-        {
-            Ok(()) => {}
-            // Cancel landed mid-iteration (during the throttle sleep or inside
-            // delete_with_cancel itself). The top-of-loop cancel check only
-            // catches cancels that land between iterations; without this arm,
-            // the `?` propagation would surface as a Cancelled error with no
-            // `write-cancelled` event, breaking the settle contract (see the
-            // module CLAUDE.md § "Settle contract").
-            Err(VolumeError::Cancelled(_)) => {
-                events.emit_cancelled(WriteCancelledEvent {
-                    operation_id: operation_id.to_string(),
-                    operation_type: WriteOperationType::Delete,
-                    files_processed: files_done,
-                    rollback: CancelRollback::none(),
-                });
-                return Err(WriteOperationError::Cancelled {
-                    message: "Operation cancelled by user".to_string(),
-                });
+        let results: Vec<Result<(), VolumeError>> = match batch_size {
+            Some(_) => {
+                let paths: Vec<PathBuf> = batch.iter().map(|entry| entry.path.clone()).collect();
+                volume.delete_files(&paths).await
             }
-            Err(e) => return Err(map_volume_error(&entry.path.display().to_string(), PathRole::Source, e)),
+            None => {
+                let mut one = Vec::with_capacity(batch.len());
+                for entry in batch {
+                    one.push(
+                        volume
+                            .delete_with_cancel(&entry.path, Some(&state.backend_cancel))
+                            .await,
+                    );
+                }
+                one
+            }
+        };
+
+        // Every file the batch removed is journaled and counted, even when
+        // another in the same batch failed; the FIRST failure then ends the
+        // delete, reported against its own path.
+        let mut first_failure: Option<WriteOperationError> = None;
+        for (entry, result) in batch.iter().zip(results) {
+            match result {
+                Ok(()) => {}
+                // Cancel landed mid-iteration (during the throttle sleep or
+                // inside delete_with_cancel itself). The top-of-loop cancel
+                // check only catches cancels that land between iterations;
+                // without this arm, the `?` propagation would surface as a
+                // Cancelled error with no `write-cancelled` event, breaking the
+                // settle contract (see the module CLAUDE.md § "Settle
+                // contract").
+                Err(VolumeError::Cancelled(_)) => {
+                    events.emit_cancelled(WriteCancelledEvent {
+                        operation_id: operation_id.to_string(),
+                        operation_type: WriteOperationType::Delete,
+                        files_processed: files_done,
+                        rollback: CancelRollback::none(),
+                    });
+                    return Err(WriteOperationError::Cancelled {
+                        message: "Operation cancelled by user".to_string(),
+                    });
+                }
+                Err(e) => {
+                    if first_failure.is_none() {
+                        first_failure = Some(map_volume_error(&entry.path.display().to_string(), PathRole::Source, e));
+                    }
+                    continue;
+                }
+            }
+
+            // Journal the deleted leaf under the REAL volume id so "when did I
+            // delete dog.jpg" is searchable for SMB / MTP too. Delete is never
+            // rollbackable (the op finalizes `permanent_delete`), so these rows
+            // exist purely for search — one per leaf, deliberately.
+            super::super::journal::record_volume_leaf(
+                operation_id,
+                crate::operation_log::types::EntryType::File,
+                volume_id,
+                &entry.path,
+                None,
+                Some(entry.progress_bytes as i64),
+                None,
+                false,
+                crate::operation_log::types::ItemOutcome::Done,
+            );
+
+            files_done += 1;
+            // `progress_bytes` (not `size`) so the numerator stays in lockstep
+            // with the dedup'd `total_bytes` denominator. See
+            // `VolumeDeleteEntry::progress_bytes` for the contract.
+            bytes_done += entry.progress_bytes;
+        }
+        if let Some(failure) = first_failure {
+            return Err(failure);
         }
 
-        // Journal the deleted leaf under the REAL volume id so "when did I delete
-        // dog.jpg" is searchable for SMB / MTP too. Delete is never rollbackable
-        // (the op finalizes `permanent_delete`), so these rows exist purely for
-        // search — one per leaf, deliberately.
-        super::super::journal::record_volume_leaf(
-            operation_id,
-            crate::operation_log::types::EntryType::File,
-            volume_id,
-            &entry.path,
-            None,
-            Some(entry.progress_bytes as i64),
-            None,
-            false,
-            crate::operation_log::types::ItemOutcome::Done,
-        );
-
-        files_done += 1;
-        // `progress_bytes` (not `size`) so the numerator stays in lockstep
-        // with the dedup'd `total_bytes` denominator. See
-        // `VolumeDeleteEntry::progress_bytes` for the contract.
-        bytes_done += entry.progress_bytes;
-
-        if last_progress_time.elapsed() >= state.progress_interval {
+        if last_progress_time.elapsed() >= state.progress_interval
+            && let Some(entry) = batch.last()
+        {
             let current_file = entry.path.file_name().map(|n| n.to_string_lossy().to_string());
             state.emit_progress_via_sink(
                 events,

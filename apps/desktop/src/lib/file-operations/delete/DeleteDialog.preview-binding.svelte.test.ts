@@ -41,6 +41,7 @@ const { scanPreviewDeferred, startScanPreviewMock } = vi.hoisted(() => {
 })
 
 vi.mock('$lib/tauri-commands', () => ({
+  estimateOperationCost: vi.fn(() => Promise.resolve([])),
   notifyDialogOpened: vi.fn(() => Promise.resolve()),
   notifyDialogClosed: vi.fn(() => Promise.resolve()),
   startScanPreview: startScanPreviewMock,

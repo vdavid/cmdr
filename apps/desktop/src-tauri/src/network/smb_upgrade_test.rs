@@ -427,6 +427,29 @@ async fn a_slow_first_attempt_spends_the_retry_budget() {
         1,
         "a slow attempt spends the budget; don't stack another"
     );
+    let dial = result.expect_err("the attempt failed");
+    assert!(
+        dial.slowest_attempt >= CONNECT_RETRY_BUDGET,
+        "the slow attempt is what the dial reports, got {:?}",
+        dial.slowest_attempt
+    );
+}
+
+/// The failed dial reports its slowest ATTEMPT, ❌ never the time since the first
+/// one: the backoff sleeps between retries are Cmdr waiting, not the route
+/// answering, and counting them would hide the 1–3 ms refusals ERR-XGS9X showed.
+#[tokio::test]
+async fn a_failed_dial_reports_its_slowest_attempt_without_the_backoff() {
+    let result: Result<&str, _> =
+        connect_with_retry(|| async { Err(io_error(std::io::ErrorKind::HostUnreachable)) }).await;
+
+    let dial = result.expect_err("every attempt failed");
+    assert!(
+        dial.slowest_attempt < Duration::from_millis(250),
+        "instant failures stay instant across {:?} of backoff, got {:?}",
+        CONNECT_RETRY_BACKOFF,
+        dial.slowest_attempt
+    );
 }
 
 // ── Upgrade idempotence and pass coalescing ────────────────────────

@@ -36,10 +36,11 @@ pub enum BulkRenameError {
         /// What the propose layer reported, for the log.
         detail: String,
     },
-    /// The rename batch wouldn't start.
+    /// The rename batch wouldn't start, and nothing was renamed.
     CouldntStart {
-        /// What the write-operations layer reported, for the log.
-        detail: String,
+        /// Why, typed: a volume refusal carries the `WriteOperationError` the transfer
+        /// dialogs already word.
+        reason: crate::file_system::write_operations::RenameStartError,
     },
     /// The preflight didn't finish inside the command's wait.
     TimedOut,
@@ -58,7 +59,7 @@ impl std::fmt::Display for BulkRenameError {
             Self::NeedsAnotherLook => f.write_str("the plan changed under the review"),
             Self::NothingToApply => f.write_str("no rows to apply"),
             Self::RowRefused { detail } => write!(f, "row refused: {detail}"),
-            Self::CouldntStart { detail } => write!(f, "couldn't start: {detail}"),
+            Self::CouldntStart { reason } => write!(f, "couldn't start: {reason}"),
             Self::TimedOut => f.write_str("timed out"),
             Self::Unexpected { detail } => write!(f, "unexpected: {detail}"),
         }
@@ -66,6 +67,18 @@ impl std::fmt::Display for BulkRenameError {
 }
 
 impl std::error::Error for BulkRenameError {}
+
+/// An applied rename plan: the operation it started, and the renames it left
+/// out for the thread's result line to mention.
+#[derive(Debug, Clone, serde::Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct BulkRenameStarted {
+    pub operation_id: String,
+    /// Renames that swap names with each other, left out of a plan that runs
+    /// as a move (a rename that copies on S3): a move onto a folder still there
+    /// would merge the two.
+    pub swaps_left_out: u32,
+}
 use crate::file_system::write_operations::{LocalContent, RemoteContent, SourceFingerprint};
 
 const BULK_RENAME_PREFLIGHT_TIMEOUT: Duration = Duration::from_secs(5);
@@ -96,7 +109,7 @@ pub async fn apply_bulk_rename(
     app: AppHandle,
     proposal_id: String,
     allowed_row_ids: Vec<String>,
-) -> Result<crate::file_system::write_operations::WriteOperationStartResult, BulkRenameError> {
+) -> Result<BulkRenameStarted, BulkRenameError> {
     let (Some(db), Some(accepted_preflights)) =
         (app.try_state::<AgentDb>(), app.try_state::<AcceptedRenamePreflights>())
     else {
@@ -165,20 +178,44 @@ pub async fn apply_bulk_rename(
     // group out of `pending`, and it refuses when the op set no longer matches what preflight
     // accepted (a revised name) or when somebody already answered. Last, so a refusal leaves
     // the group reviewable rather than approved-but-unstarted.
-    let claimed = crate::agent::suggested_ops::approve(&conn, group_id_of(&proposal_id)?, now_secs())
-        .map_err(|_| review_is_over())?;
-    if !matches!(claimed, ClaimOutcome::Claimed(_)) {
+    let group_id = group_id_of(&proposal_id)?;
+    let claimed = crate::agent::suggested_ops::approve(&conn, group_id, now_secs()).map_err(|_| review_is_over())?;
+    let ClaimOutcome::Claimed(claimed) = claimed else {
         return Err(review_again());
-    }
+    };
 
     let initiator = bulk_rename_initiator(&applied_rows);
-    crate::file_system::write_operations::start_bulk_rename(
+    // Routed: where a rename copies (an S3 folder), the batch runs as one move.
+    let started = crate::file_system::write_operations::start_renames(
         Arc::new(crate::file_system::write_operations::TauriEventSink::new(app)),
         volume_id,
         rows,
         initiator,
     )
-    .map_err(|detail| BulkRenameError::CouldntStart { detail })
+    .await;
+    match started {
+        Ok(started) => {
+            crate::agent::suggested_ops::started(&claimed);
+            Ok(BulkRenameStarted {
+                operation_id: started.operation.operation_id,
+                swaps_left_out: u32::try_from(started.swaps_left_out).unwrap_or(u32::MAX),
+            })
+        }
+        Err(reason) => {
+            // Nothing ran, so the claim goes back: the review re-reads the plan, and a group left
+            // `approved` would read as expired with no operation behind it.
+            match crate::agent::suggested_ops::give_back(&conn, group_id) {
+                Ok(true) => {}
+                Ok(false) => {
+                    log::warn!(target: "agent::propose", "rename group {group_id} didn't start ({reason}) and is no longer a claim to give back")
+                }
+                Err(e) => {
+                    log::warn!(target: "agent::propose", "rename group {group_id} didn't start ({reason}) and couldn't go back to pending: {e}")
+                }
+            }
+            Err(BulkRenameError::CouldntStart { reason })
+        }
+    }
 }
 
 fn group_id_of(proposal_id: &str) -> Result<i64, BulkRenameError> {
@@ -504,6 +541,33 @@ mod wire_tests {
             })
             .unwrap(),
             serde_json::json!({ "type": "rowRefused", "detail": "that name is taken" })
+        );
+    }
+
+    /// A batch that wouldn't start says why as a variant, ❌ never a sentence: an
+    /// English string here was only ever loggable, never wordable (#184).
+    #[test]
+    fn a_batch_that_wouldnt_start_carries_a_typed_reason() {
+        use crate::file_system::write_operations::{RenameStartError, WriteOperationError};
+
+        assert_eq!(
+            serde_json::to_value(BulkRenameError::CouldntStart {
+                reason: RenameStartError::NothingToRename
+            })
+            .unwrap(),
+            serde_json::json!({ "type": "couldntStart", "reason": { "type": "nothingToRename" } })
+        );
+        assert_eq!(
+            serde_json::to_value(BulkRenameError::CouldntStart {
+                reason: RenameStartError::Engine {
+                    error: WriteOperationError::SourceNotConnected { path: "/a.png".into() }
+                }
+            })
+            .unwrap(),
+            serde_json::json!({
+                "type": "couldntStart",
+                "reason": { "type": "engine", "error": { "type": "source_not_connected", "path": "/a.png" } }
+            })
         );
     }
 }

@@ -2,7 +2,7 @@
 // the `tauri-specta` `events.*` helpers for the `emit_to`-targeted window
 // lifecycle events: the MCP `dialog` tool's open/focus/close round-trips, the
 // unified `execute-command` menu/cross-window relay, the tab context menu, the
-// settings-window self-close, the viewer's word-wrap toggle and Edit-menu actions,
+// settings-window self-close, the viewer's word-wrap toggle, Edit-menu, and right-click actions,
 // and the viewer's restricted-settings forward.
 //
 // Payloadless events (unit structs → `type X = null`) wrap a `() => void`
@@ -20,6 +20,7 @@ import {
   type OpenSettings,
   type PersistRestrictedSetting,
   type RevealPath,
+  type ViewerContextMenuAction,
   type ViewerEditAction,
 } from '$lib/ipc/bindings'
 
@@ -80,13 +81,6 @@ export function onOpenSettings(handler: (payload: Partial<OpenSettings>) => void
 export function onOpenFileViewer(handler: (payload: OpenFileViewer) => void): Promise<UnlistenFn> {
   return events.openFileViewer.listen((event) => {
     handler(event.payload)
-  })
-}
-
-/** MCP `dialog focus settings`: bring the settings window forward. */
-export function onFocusSettings(handler: () => void): Promise<UnlistenFn> {
-  return events.focusSettings.listen(() => {
-    handler()
   })
 }
 
@@ -167,6 +161,17 @@ export function onViewerWordWrapToggled(handler: () => void): Promise<UnlistenFn
  */
 export function onViewerEditAction(handler: (payload: ViewerEditAction) => void): Promise<UnlistenFn> {
   return events.viewerEditAction.listen((event) => {
+    handler(event.payload)
+  })
+}
+
+/**
+ * Copy or Select all was picked from the viewer's native right-click menu
+ * (`showViewerContextMenu`). Emitted to that viewer's label; unlike the bar's pair, it
+ * always acts on the file, never the search box.
+ */
+export function onViewerContextMenuAction(handler: (payload: ViewerContextMenuAction) => void): Promise<UnlistenFn> {
+  return events.viewerContextMenuAction.listen((event) => {
     handler(event.payload)
   })
 }

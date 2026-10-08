@@ -64,6 +64,9 @@ export function buildPaneRef(
 ): FilePaneAPI {
   const stub = {
     getListingId: () => ('listingId' in overrides ? overrides.listingId : 'listing-1'),
+    getLastSequence: () => 0,
+    getViewGeneration: () => 0,
+    isRowStateReady: () => true,
     getVolumeId: () => overrides.volumeId ?? 'root',
     hasParentEntry: () => overrides.hasParent ?? false,
     getSelectedIndices: () => overrides.selectedIndices ?? [],

@@ -397,6 +397,10 @@ async fn a_branch_watched_volume_never_routes_an_anchor_to_the_whole_volume_scan
         VolumeWork::for_test("reconciler-test"),
     );
     reconciler.switch_to_live();
+    // Keep the queued anchor visible (no spawn): a spawned rescan of `/covered`, which
+    // the DB doesn't hold, finishes at once and empties `rescan_scopes`, so on a busy
+    // machine it could win the race to the assertion below.
+    reconciler.rescan_active.store(true, Ordering::Relaxed);
     let sink = Arc::new(Mutex::new(Vec::<String>::new()));
     reconciler.set_recording_scan_trigger(Arc::clone(&sink));
 

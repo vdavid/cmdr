@@ -7,13 +7,24 @@
  */
 import { tString } from '$lib/intl/messages.svelte'
 import { describeServerRequestFailure, serverRequestLogLevel } from '$lib/error-messages/server-request'
-import type { UpdateFailure } from './update-state.svelte'
+import type { ManagedUpdateOutcome, UpdateFailure } from './update-state.svelte'
 
 export interface UpdateStatusReadable {
   status: 'idle' | 'checking' | 'downloading' | 'installing' | 'ready'
   failure: UpdateFailure | null
+  managed: ManagedUpdateOutcome | null
   previousVersion: string | null
   nextVersion: string | null
+}
+
+/** The sentence for a check the organization's policy answered. */
+function describeManagedOutcome(managed: ManagedUpdateOutcome): string {
+  switch (managed.kind) {
+    case 'updatesDisabledByPolicy':
+      return tString('updates.status.managedOff')
+    case 'heldByPolicy':
+      return tString('updates.status.heldByPolicy', { available: managed.available, ceiling: managed.ceiling })
+  }
 }
 
 export function formatUpdateStatus(state: UpdateStatusReadable): string | null {
@@ -24,6 +35,7 @@ export function formatUpdateStatus(state: UpdateStatusReadable): string | null {
 
   switch (state.status) {
     case 'idle':
+      if (state.managed !== null) return describeManagedOutcome(state.managed)
       // Two sub-cases share idle. If we just finished a successful check (we have a previousVersion
       // and no nextVersion), say "no updates found". Before any check has run, say nothing.
       if (state.previousVersion !== null && state.nextVersion === null) {

@@ -31,7 +31,12 @@ fn open_test_index() -> Connection {
 /// Stamp the DB as built against the exclusion policy this build applies, which is
 /// what a truncating full walk does.
 fn stamp_current_policy(conn: &Connection) {
-    IndexStore::update_meta(conn, EXCLUSION_POLICY_KEY, &exclusion_policy_fingerprint()).expect("stamp policy");
+    IndexStore::update_meta(
+        conn,
+        EXCLUSION_POLICY_KEY,
+        &exclusion_policy_fingerprint(ExclusionTier::BootDisk),
+    )
+    .expect("stamp policy");
 }
 
 /// Insert a directory and return its id.
@@ -55,7 +60,7 @@ fn list_and_aggregate(conn: &Connection, listed: &[i64], epoch: u64) {
 /// Run the descent and collect every directory's verdict, keyed by path.
 fn verdicts(conn: &Connection, scope: &str) -> Vec<(Verdict, String)> {
     let mut seen = Vec::new();
-    walk_coverage(conn, scope, scope, &mut |verdict, path| {
+    walk_coverage(conn, scope, scope, ExclusionTier::BootDisk, &mut |verdict, path| {
         seen.push((verdict, path.to_string()));
     })
     .expect("walk coverage");
@@ -65,7 +70,8 @@ fn verdicts(conn: &Connection, scope: &str) -> Vec<(Verdict, String)> {
 /// Just the frontier and unreadable lists, sorted so assertions don't depend on
 /// the descent's stack order.
 fn coverage(conn: &Connection, scope: &str) -> CoverageMap {
-    let mut map = coverage_for_scope(conn, scope, scope, CoverageDimension::Listing).expect("coverage for scope");
+    let mut map = coverage_for_scope(conn, scope, scope, ExclusionTier::BootDisk, CoverageDimension::Listing)
+        .expect("coverage for scope");
     map.frontier.sort();
     map.permission_denied.sort();
     map.declined.sort();
@@ -229,7 +235,7 @@ fn materialize(conn: &Connection, tree: &GeneratedTree) -> Materialized {
 /// was reported for.
 fn descend(conn: &Connection, model: &Materialized) -> Vec<(Verdict, i64)> {
     let mut out = Vec::new();
-    walk_coverage(conn, "/", "/", &mut |verdict, path| {
+    walk_coverage(conn, "/", "/", ExclusionTier::BootDisk, &mut |verdict, path| {
         out.push((verdict, model.id_of(path)));
     })
     .expect("walk coverage");
@@ -726,13 +732,14 @@ fn measure_frontier_query_on_a_real_index() {
     // Warm the page cache the way a second search would find it, then measure.
     let mut considered = 0usize;
     let first_started = std::time::Instant::now();
-    let warm = coverage_for_scope(&conn, "/", "/", CoverageDimension::Listing).expect("warm-up run");
+    let warm =
+        coverage_for_scope(&conn, "/", "/", ExclusionTier::BootDisk, CoverageDimension::Listing).expect("warm-up run");
     let first_run = first_started.elapsed();
     let mut timings = Vec::new();
     for _ in 0..5 {
         considered = 0;
         let started = std::time::Instant::now();
-        walk_coverage(&conn, "/", "/", &mut |_, _| considered += 1).expect("measured run");
+        walk_coverage(&conn, "/", "/", ExclusionTier::BootDisk, &mut |_, _| considered += 1).expect("measured run");
         timings.push(started.elapsed());
     }
     timings.sort();

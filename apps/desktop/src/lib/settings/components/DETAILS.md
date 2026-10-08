@@ -8,8 +8,13 @@ Every row is a `SettingRow` (label + description + control + reset pip + restart
 and `searchQuery`, and its description text spans the full width regardless of `split`). Two snippets escape the plain
 shape: `descriptionContent` replaces the description text with markup, and `labelTrailing` lands right after the label,
 ahead of the pip and the badges, for a small adornment belonging to the label rather than the control (an `<InfoTip>`
-carrying the long version of the description, say — onboarding's step 4 does exactly that). Pick the inner control by
-shape:
+carrying the long version of the description, say — onboarding's step 4 does exactly that). A disabled row says why in
+one of two ways: `disabledReason`, a short badge beside the label, or `disabledNote`, a full sentence with an info glyph
+under the description that also says how to enable the row ("Sort folders" uses it). The note is a visible line, not a
+tooltip, because a disabled control can't take focus, so a tooltip on it is out of reach for keyboard and screen-reader
+users. A disabled row dims its children rather than itself, which keeps the note at full AA contrast; point the
+control's `aria-describedby` at `disabledNoteId(id)` (`settings-window.ts`, beside `settingAnchorId`) while it's
+disabled. Pick the inner control by shape:
 
 - `SettingSwitch`: the primary boolean, wrapping `lib/ui/Switch`.
 - `SettingCheckbox`: a secondary boolean, for one hanging off a switch or in a denser layout.
@@ -37,6 +42,28 @@ Every `.svelte` here ships a `*.a11y.test.ts` (axe tier-3); the swatch picker an
 One setting rendered in two UI locations follows the parent's mirror pattern (`../CLAUDE.md`). The card-group frame
 guard has a worked reference in `../sections/DETAILS.md`, under the Notifications section
 (`behavior.fileSystemWatching.*`).
+
+## Managed rows
+
+A setting the organization's MDM policy pins (`fixed` lock) renders locked wherever its row appears, with nothing passed
+from the section. The policy and the store overlay are `../../managed-policy/DETAILS.md`.
+
+- **`SettingRow`** reads `isSettingLocked(id)`: the row disables, its note becomes "Your organization manages this
+  setting." (`settings.managed.rowNote`), and any `disabledNote` or `disabledReason` the section passed is dropped, so
+  the row carries one reason. The reset pip hides too: a reset is refused anyway, and the stored choice comes back when
+  the profile goes away.
+- **Every primitive** calls `useSettingLock(id)` (`setting-lock.svelte.ts`): `disabled={disabled || lock.locked}`, and
+  `lock.describedBy(own)` as the control's `aria-describedby`, the row's note while locked, else the section's own
+  target. `SettingSlider` puts it on the thumb (`thumbProps`), the focusable part. `SettingColorSwatchPicker` has no
+  disabled state; no lockable setting uses it.
+- **A narrowed setting** (`disallowedValues`, like `ai.provider` under `DisableCloudAI`) stays usable: the row isn't
+  disabled, and its own control rules out the values.
+- **`SettingsSection`** says "Your organization manages some of these settings." under its title when any row it holds
+  is managed, pinned or narrowed. Each `SettingRow` registers its id with the nearest section through context
+  (`section-rows.svelte.ts`) while mounted, so the line follows the rows actually rendered and no section keeps a list.
+  It's plain text in reading order because native `disabled` takes a control out of the Tab order: a keyboard or
+  VoiceOver user meets the reason before the controls.
+- Tests: `managed-lock.test.ts` (with `test/fixtures/managed-setting-section-fixture.svelte`).
 
 ## Slider vs number input
 

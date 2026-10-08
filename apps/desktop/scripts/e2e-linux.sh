@@ -11,6 +11,7 @@
 #   ./scripts/e2e-linux.sh --shell       # Start interactive shell in container
 #   ./scripts/e2e-linux.sh --vnc         # Interactive VNC mode with hot reload
 #   ./scripts/e2e-linux.sh --clean       # Clean Linux build cache
+#   ./scripts/e2e-linux.sh --grep "X" --repeat-each 10  # Chase a flake
 
 set -e
 
@@ -89,6 +90,11 @@ sha256_stdin() {
 # from-scratch workspace), and each checkout holds its own ~4.6 GB target
 # volume. `reap_stale_cache_volumes` below drops the volumes of checkouts that
 # no longer exist. Numbers and method: test/e2e-linux/DETAILS.md § Volumes.
+#
+# The Rust Linux check lanes reuse this key and both labels for their own target
+# volume (`checkoutCacheKey` in scripts/check/checks/desktop-rust-linux-container.go),
+# so the reaper collects theirs too. A Go test runs the three CHECKOUT_ lines below
+# against that copy; keep them one assignment per line.
 CHECKOUT_SLUG="${REPO_ROOT##*/}"                          # the checkout's dir name
 CHECKOUT_SLUG="${CHECKOUT_SLUG//[^a-zA-Z0-9_.-]/-}"       # Docker volume-name charset
 CHECKOUT_KEY="${CHECKOUT_SLUG:0:24}-$(printf '%s' "$REPO_ROOT" | sha256_stdin | cut -c1-8)"
@@ -175,6 +181,7 @@ INTERACTIVE=false
 VNC_MODE=false
 CLEAN=false
 GREP_FILTER=""
+REPEAT_EACH=""
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -202,6 +209,10 @@ while [[ $# -gt 0 ]]; do
             GREP_FILTER="$2"
             shift 2
             ;;
+        --repeat-each)
+            REPEAT_EACH="$2"
+            shift 2
+            ;;
         --help)
             echo "Usage: $0 [OPTIONS]"
             echo ""
@@ -214,6 +225,8 @@ while [[ $# -gt 0 ]]; do
             echo "  --clean           Clean this checkout's Linux build cache (forces rebuild);"
             echo "                    leaves the shared cargo registry and other checkouts alone"
             echo "  --grep <pattern>  Filter tests by title pattern (passed to Playwright --grep)"
+            echo "  --repeat-each <n> Run each selected test n times in a row (Playwright --repeat-each),"
+            echo "                    for chasing a flake on the Linux harness"
             echo "  --help            Show this help message"
             exit 0
             ;;
@@ -504,6 +517,7 @@ else
         -w /app/apps/desktop \
         -e TAURI_BINARY="$DOCKER_TAURI_BINARY" \
         -e CI=true \
+        -e "E2E_REPEAT_EACH=${REPEAT_EACH:-}" \
         -e "E2E_GREP=${GREP_FILTER:-}" \
         -e "CMDR_E2E_JSON_REPORT=$CONTAINER_E2E_JSON_REPORT" \
         -e "RUST_LOG=${RUST_LOG:-info,cmdr_lib::mtp=debug,stall_probe::reconciler=debug}" \
@@ -622,11 +636,11 @@ else
                 npx playwright test \
                     --config test/e2e-playwright/playwright.config.ts \
                     --project tauri \
-                    --grep "$E2E_GREP"
+                    --grep "$E2E_GREP" ${E2E_REPEAT_EACH:+--repeat-each "$E2E_REPEAT_EACH"}
             else
                 npx playwright test \
                     --config test/e2e-playwright/playwright.config.ts \
-                    --project tauri
+                    --project tauri ${E2E_REPEAT_EACH:+--repeat-each "$E2E_REPEAT_EACH"}
             fi
         '
     docker_test_status=$?

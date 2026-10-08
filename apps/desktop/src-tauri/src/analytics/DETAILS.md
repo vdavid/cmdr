@@ -69,7 +69,10 @@ an attached email links only to the diagnostics stream; the analytics stream sta
 - **Granted**: adds the time since the last wake to the unreported uptime, beats if `CADENCE` says one is due, and
   persists its state.
 - **Opted out**: zeroes the unreported uptime and deletes the spool. Nothing collected while opted in leaves after an
-  opt-out.
+  opt-out. An organization's `DisableUsageStats` lands here too: `send_permission` reads `analytics.enabled` through
+  `managed_policy::overlay`, so a managed off is an ordinary opt-out with no variant of its own. Consent is tri-state
+  because the frontend persists only non-default values: `analytics_consent_granted` reads an absent key (`None`) and
+  `Some(true)` as granted, `Some(false)` as opted out. There's no "I opted out" bit on the wire.
 - **Suppressed**: does nothing, and logs why once.
 
 **The schedule is a throttle** (`crate::send_schedule`, shared with the update check): at most one acknowledged beat per
@@ -89,6 +92,9 @@ the app being open, never the person at the keyboard (same caveat as the session
 - **400 / 413 / 422**: the server refused these exact bytes, so the batch is dropped (logged at `warn`) and the uptime
   kept. Retrying the same batch would be refused every 15 min forever, and the daily-active signal with it.
 - **Anything else** (no answer, timeout, 429, 5xx): a failure; everything stays for the retry.
+- **Blocked by policy**: the beat rides `server_request::send(Egress::Heartbeat, …)`, which reads the managed policy
+  fresh. A policy that arrived after the permission check stops it before anything leaves, and the beat forgets the
+  spool and uptime like an opt-out.
 
 ## Heartbeat payload
 
@@ -100,7 +106,8 @@ the app being open, never the person at the keyboard (same caveat as the session
 - `osVersion` (required): from `crate::platform::os_version()`, always non-empty.
 - `arch` (required): `std::env::consts::ARCH`.
 - `buildMode` (optional): `"release"` / `"debug"`.
-- `config` (optional): the config-shape object, verbatim.
+- `config` (optional): the config-shape object, verbatim. It shows EFFECTIVE values (the managed locks over the
+  stored settings) plus `managedByOrganization`, one coarse bool: never which keys an organization set.
 - `uptimeSeconds`: runtime no earlier acknowledged beat reported. Always sent.
 - `events`: up to 500 spooled events, oldest first, and at most 192 KB of them (the server caps the body at 256 KB).
   Always sent, possibly empty. Each is `{ event, timestamp, id, appVersion, properties }`.
@@ -217,7 +224,9 @@ Backend events fire at success chokepoints; frontend events ride `track_event`.
 - `sftp_connected` (backend, `crates/cmdr-sftp/src/volume/mod.rs`): no host/account/port/path props.
 - `webdav_connected` (backend, `crates/cmdr-webdav/src/volume/mod.rs` `connect_webdav_volume`): no host/account/port/path
   props.
-  Both connection events go through the `AnalyticsSink` seam rather than `capture` directly, since the backend crates
+- `s3_connected` (backend, `crates/cmdr-s3/src/volume/mod.rs` `connect_s3_volume`): one prop, `provider` (`aws`, `r2`,
+  `b2`, `wasabi`, `hetzner`, `gcs`, `digitalocean`, `other`: `S3Provider::kind_name`), a fixed preset name. No endpoint, key, bucket, or region.
+  The connection events go through the `AnalyticsSink` seam rather than `capture` directly, since the backend crates
   can't see `tauri` (`volume_sink.rs`).
 - `mtp_connected` (backend, `crates/cmdr-mtp/src/connection/mod.rs` `connect`): no device/product props.
 - `adb_connected` (backend, `crates/cmdr-adb/src/volume/mod.rs`): no serial/model/Android-version props. Rides the
@@ -242,7 +251,9 @@ Backend events fire at success chokepoints; frontend events ride `track_event`.
   inline because the media path is an early return and the text path has a dozen `?`s.
 - `update_check` (frontend, `$lib/updates/update-analytics.ts`, once per finished check, from every exit of
   `checkForUpdates()`): `trigger` (what set it going: `startup` / `poll` / `auto_check_on` / `command` / `settings`),
-  `outcome` (`up_to_date` / `staged` / `already_staged` / `blocked` / `failed`), `failure` (the
+  `outcome` (`up_to_date` / `staged` / `already_staged` / `blocked` / `failed`, plus the organization's answers
+  `updates_disabled_by_policy` / `held_by_policy` / `automatic_checks_disabled_by_policy` / `blocked_by_policy`, none of
+  which carries the held or ceiling version), `failure` (the
   typed kind, or `none`: `check` / `download` / `install` for a phase that didn't get there, `translocated` /
   `read_only_volume` for a bundle that can't be written), and `staged_version`, the release sitting in the bundle
   waiting for a restart (one of our own release numbers, or `none`). ❌ Never a URL, a bundle path, or the text of a
@@ -270,13 +281,22 @@ Backend events fire at success chokepoints; frontend events ride `track_event`.
   `ask_cmdr_turn`'s `origin: "wake"`; the gap between them is the point.
 - `suggestion_group_proposed` / `suggestion_group_approved` / `suggestion_group_rejected` (backend,
   `agent/suggested_ops/analytics.rs`): `verb` (the `ProposalVerb` token) + `op_count` bucket. Acceptance rate is the
-  agent's north-star metric, which is why the proposal and both outcomes are all counted; never a path, file name,
+  agent's north-star metric, which is why the proposal and both outcomes are all counted; `approved` counts a group
+  whose operation STARTED, not a claim (`agent/suggested_ops/DETAILS.md` § The metric). Never a path, file name,
   rationale, or selector pattern.
-- `tab_opened` / `tab_closed` / `tab_switched` / `tab_pin_toggled` (frontend, `file-explorer/tabs/tab-analytics.ts`,
-  called from `file-explorer/pane/tab-operations.ts`): `source` (`new` / `reopened`, or `single` / `others` on a
-  close), `outcome` (`opened` / `atCap` / `nothingToReopen`; `closed` / `cancelled` / `lastTab`), `open_tabs`, a
-  `pinned` bool on the close and the pin toggle, and `method` (`cycle` / `pick`) on the switch. Never a path, which is
-  a tab's whole identity.
+- `rename_plan_from_cut_listing` (backend, `../agent/tools/propose/rename/cut_listing.rs`, when a rename plan stages):
+  fires only when the thread's latest `list_pane_files` result was cut (`returned < total`) and the plan renames files
+  in that folder. `rows` (the plan's rows in that folder), `listing_returned`, and `listing_total` buckets, plus
+  `coverage` (`within_returned` / `beyond_returned` / `matches_total` / `beyond_total`). It exists to decide #214's
+  step 2: a non-trivial share of `matches_total` means models claim the whole folder from one page, and that plan
+  shape should be refused. Never the folder or a name.
+- `tab_opened` / `tab_closed` / `tab_switched` / `tab_pin_toggled` / `tab_moved` (frontend,
+  `file-explorer/tabs/tab-analytics.ts`, called from `file-explorer/pane/tab-operations.ts`): `source` (`new` /
+  `reopened`, or `single` / `others` on a close), `outcome` (`opened` / `atCap` / `nothingToReopen`; `closed` /
+  `cancelled` / `lastTab`), `open_tabs`, a `pinned` bool on the close and the pin toggle, and `method` (`cycle` /
+  `pick`) on the switch. A move (a tab drag, or the MCP `tab` tool) carries `scope` (`samePane` / `otherPane`),
+  `outcome` (`moved`, or the refusal: `pinned` / `onlyTab` / `atCap`), and the `open_tabs` of the pane the tab was
+  headed for; a drop back on the tab's own slot reports nothing. Never a path, which is a tab's whole identity.
   **`open_tabs` is a RAW count, the one documented exception to `item_count_bucket`**: a pane caps at ten tabs, and
   that ladder has two values (`1`, `2-10`) across the entire range, so bucketing would throw the answer away for no
   privacy gain. Ten possible integers identifies nobody.

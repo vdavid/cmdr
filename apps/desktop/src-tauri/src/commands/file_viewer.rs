@@ -1,6 +1,7 @@
 //! Tauri commands for the file viewer.
 
 use std::sync::Arc;
+use std::sync::atomic::AtomicBool;
 
 use tauri_specta::Event as _;
 use tokio::time::Duration;
@@ -220,7 +221,7 @@ pub async fn viewer_get_lines(
     count: usize,
 ) -> Result<LineChunk, ViewerError> {
     let target = match target_type {
-        SeekTargetKind::Line => SeekTarget::Line(target_value as usize),
+        SeekTargetKind::Row => SeekTarget::Row(target_value as usize),
         SeekTargetKind::Byte => SeekTarget::ByteOffset(target_value as u64),
         SeekTargetKind::Fraction => SeekTarget::Fraction(target_value),
     };
@@ -230,12 +231,9 @@ pub async fn viewer_get_lines(
         session_id, target_type, target_value, count
     );
 
-    let result = blocking_typed_result_with_timeout(
-        VIEWER_TIMEOUT,
-        || ViewerError::TimedOut,
-        |message| ViewerError::Io { message },
-        move || file_viewer::get_lines(&session_id, target, count),
-    )
+    let result = get_lines_within(VIEWER_TIMEOUT, move |cancel| {
+        file_viewer::get_lines(&session_id, target, count, cancel)
+    })
     .await?;
 
     debug!(
@@ -251,6 +249,30 @@ pub async fn viewer_get_lines(
     );
 
     Ok(result)
+}
+
+/// Runs one row fetch under `deadline`, handing it a cancel flag of its own.
+///
+/// The deadline only stops the WAIT; the blocking read can't be dropped. So when it
+/// fires, the flag flips too, and the fetch stops at its next row instead of reading
+/// on for nobody (on a stuck network mount, holding a blocking thread each time).
+async fn get_lines_within(
+    deadline: Duration,
+    fetch: impl FnOnce(&AtomicBool) -> Result<LineChunk, ViewerError> + Send + 'static,
+) -> Result<LineChunk, ViewerError> {
+    let cancel = Arc::new(AtomicBool::new(false));
+    let work_cancel = Arc::clone(&cancel);
+    let result = blocking_typed_result_with_timeout(
+        deadline,
+        || ViewerError::TimedOut,
+        |message| ViewerError::Io { message },
+        move || fetch(&work_cancel),
+    )
+    .await;
+    if matches!(result, Err(ViewerError::TimedOut)) {
+        cancel.store(true, std::sync::atomic::Ordering::Relaxed);
+    }
+    result
 }
 
 /// Reads at most 64 KiB of original file bytes for the binary and hex views.

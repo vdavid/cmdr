@@ -6,6 +6,7 @@ timestamps. The Rust side's fern dispatch tree, with its per-output level filter
 
 ## Module map
 
+- **`open-debug-log.ts`**: Help and palette entry point for the read-only debug log viewer.
 - **`logger.ts`**: LogTape config, `getAppLogger()` entry point, verbose toggle, `debugCategories`.
 - **`log-bridge.ts`**: batching sink (collects FE logs for 100 ms, dedups, throttles at 200/s, sends to Rust via IPC).
 - **`uncaught-errors.ts`**: forwards `window` `error` / `unhandledrejection` to `log.error` under the `uncaught`

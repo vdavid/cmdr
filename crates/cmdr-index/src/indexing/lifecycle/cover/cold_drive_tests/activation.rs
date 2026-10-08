@@ -221,7 +221,10 @@ fn an_index_that_predates_the_exclusion_policy_is_dropped_before_the_next_walk()
     );
     let conn = IndexStore::open_read_connection(&drive.db_path()).expect("read conn");
     assert!(
-        !crate::indexing::scanner::index_predates_exclusion_policy(&conn),
+        !crate::indexing::scanner::index_predates_exclusion_policy(
+            &conn,
+            crate::indexing::scanner::ExclusionTier::MountRooted
+        ),
         "the rebuilt index carries this build's policy, so its coverage counts"
     );
 }

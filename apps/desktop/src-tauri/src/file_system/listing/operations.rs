@@ -5,34 +5,44 @@
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::path::{Path, PathBuf};
+#[cfg(test)]
+use std::path::Path;
+use std::path::PathBuf;
+use std::sync::atomic::Ordering;
+#[cfg(test)]
 use uuid::Uuid;
 
 use cmdr_fs::ignore_poison::RwLockIgnorePoison;
 
+#[cfg(test)]
 use crate::benchmark;
+pub(crate) use crate::file_system::listing::cached_listing::reconciled_cache;
 use crate::file_system::listing::cached_listing::{CachedListing, LISTING_CACHE, OverlayRows};
 use crate::file_system::listing::metadata::FileEntry;
 use crate::file_system::listing::sorting::{DirectorySortMode, SortColumn, SortOrder, sort_entries};
 use crate::file_system::listing::visible_rows::VisibleRows;
-use crate::file_system::watcher::{start_watching_detached, stop_watching};
+#[cfg(test)]
+use crate::file_system::watcher::start_watching_detached;
+use crate::file_system::watcher::stop_watching;
 use crate::index_host::index;
 
 // ============================================================================
 // Listing lifecycle
 // ============================================================================
 
-/// Result of starting a new directory listing.
-#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
+/// Result of starting a new directory listing synchronously.
+#[cfg(test)]
+#[derive(Debug, Clone)]
 pub struct ListingStartResult {
     pub listing_id: String,
     pub total_count: usize,
 }
 
-/// Starts a new directory listing using a specific volume.
-///
-/// This is the internal implementation that supports multi-volume access.
+/// Starts a directory listing on a volume and returns once it's cached: the
+/// synchronous twin of `list_directory_start_streaming`, which needs a Tauri
+/// runtime for its events. A test seam only; every pane lists through the
+/// streaming path.
+#[cfg(test)]
 pub async fn list_directory_start_with_volume(
     volume_id: &str,
     path: &Path,
@@ -129,12 +139,11 @@ pub fn list_directory_end(listing_id: &str) {
     // Stop the file watcher
     stop_watching(listing_id);
 
-    // Drop any pending coalesced diff for this listing
-    crate::file_system::listing::diff_emitter::drop_pending(listing_id);
-
-    // Remove from listing cache
-    if let Ok(mut cache) = LISTING_CACHE.write() {
+    // Remove and discard publication under the mutation lock (cache then queue).
+    {
+        let mut cache = LISTING_CACHE.write_ignore_poison();
         cache.remove(listing_id);
+        super::diff_emitter::drop_pending(listing_id);
     }
 
     // AFTER the cache removal, ❗ never before: an observer's own detached arm
@@ -143,45 +152,134 @@ pub fn list_directory_end(listing_id: &str) {
     crate::listing_lifecycle::listing_closed(listing_id);
 }
 
-/// Records the hidden-files setting of the pane showing `listing_id`, the row
-/// space its `directory-diff` events speak from here on.
-///
-/// A change drops what's queued for the listing: it was numbered in the old row
-/// space, and the pane re-reads its count and rows after the toggle anyway. The
-/// cache already holds every one of those changes, so nothing is lost.
-pub fn set_listing_include_hidden(listing_id: &str, include_hidden: bool) -> Result<(), String> {
-    let changed = {
-        let mut cache = LISTING_CACHE.write().map_err(|_| "Failed to acquire cache lock")?;
-        let listing = cache
-            .get_mut(listing_id)
-            .ok_or_else(|| format!("Listing not found: {}", listing_id))?;
-        listing.set_include_hidden(include_hidden)
-    };
-    if changed {
-        crate::file_system::listing::diff_emitter::drop_pending(listing_id);
+/// Commits visibility and remaps the cursor and selection under one lock.
+/// The response supersedes queued old-space transitions, including their counts.
+pub fn set_listing_include_hidden(
+    listing_id: &str,
+    include_hidden: bool,
+    expected_sequence: Option<u64>,
+    cursor_filename: Option<&str>,
+    selected_indices: Option<&[usize]>,
+    all_selected: bool,
+) -> Result<ResortResult, ListingLookupError> {
+    let mut cache = LISTING_CACHE.write_ignore_poison();
+    let listing = cache
+        .get_mut(listing_id)
+        .ok_or_else(|| ListingLookupError::gone(listing_id))?;
+    listing.reconcile_scratch(listing_id);
+    check_expected(listing_id, listing, expected_sequence)?;
+    let old_rows = listing.pane_rows();
+    let selected_paths = selected_indices.or(all_selected.then_some(&[])).map(|indices| {
+        if all_selected {
+            old_rows.iter().map(|e| e.path.clone()).collect::<Vec<_>>()
+        } else {
+            indices
+                .iter()
+                .filter_map(|&i| old_rows.get(i).map(|e| e.path.clone()))
+                .collect()
+        }
+    });
+    let cursor_path = cursor_filename.and_then(|name| old_rows.iter().find(|e| e.name == name).map(|e| e.path.clone()));
+    drop(old_rows);
+    if listing.set_include_hidden(include_hidden) {
+        listing.advance_sequence();
+        super::diff_emitter::drop_pending(listing_id);
     }
-    Ok(())
+    listing.touch();
+    let rows = listing.pane_rows();
+    Ok(ResortResult {
+        sequence: listing.sequence.load(Ordering::Acquire),
+        total_count: rows.len(),
+        new_cursor_index: cursor_path.and_then(|path| rows.iter().position(|e| e.path == path)),
+        new_selected_indices: selected_paths.map(|paths| {
+            let paths: std::collections::HashSet<_> = paths.into_iter().collect();
+            rows.iter()
+                .enumerate()
+                .filter(|(_, e)| paths.contains(&e.path))
+                .map(|(i, _)| i)
+                .collect()
+        }),
+    })
 }
 
 // ============================================================================
 // On-demand virtual scrolling API (cache accessors)
 // ============================================================================
 
+/// Why a listing accessor couldn't answer: gone, or a guarded row space changed.
+///
+/// Typed so the frontend can tell a pane whose listing went away (and re-list it)
+/// from stale row indices, without reading a message. The cache lock recovers
+/// from poison rather than refusing.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(tag = "type", rename_all = "camelCase", rename_all_fields = "camelCase")]
+pub enum ListingLookupError {
+    /// Ended by its pane, never started, or reclaimed by the orphan reaper.
+    Gone { listing_id: String },
+    /// The supplied row space is not the committed listing state.
+    Changed { listing_id: String },
+}
+
+impl ListingLookupError {
+    pub(crate) fn changed(listing_id: &str) -> Self {
+        Self::Changed {
+            listing_id: listing_id.to_string(),
+        }
+    }
+
+    pub(crate) fn gone(listing_id: &str) -> Self {
+        Self::Gone {
+            listing_id: listing_id.to_string(),
+        }
+    }
+}
+
+impl std::fmt::Display for ListingLookupError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Gone { listing_id } => write!(f, "listing {listing_id} isn't cached"),
+            Self::Changed { listing_id } => write!(f, "listing {listing_id} changed"),
+        }
+    }
+}
+
 /// Runs `f` against a cached listing, or reports that it's gone.
 ///
 /// Every read accessor below shares this preamble: take the cache read lock, find
 /// the listing, and stamp it so the six-hour orphan reaper knows a live pane is
 /// still behind it.
-fn with_listing<R>(listing_id: &str, f: impl FnOnce(&CachedListing) -> R) -> Result<R, String> {
-    let cache = LISTING_CACHE.read().map_err(|_| "Failed to acquire cache lock")?;
-
+pub(crate) fn with_listing<R>(listing_id: &str, f: impl FnOnce(&CachedListing) -> R) -> Result<R, ListingLookupError> {
+    let cache = reconciled_cache(&[listing_id]);
     let listing = cache
         .get(listing_id)
-        .ok_or_else(|| format!("Listing not found: {}", listing_id))?;
+        .ok_or_else(|| ListingLookupError::gone(listing_id))?;
 
     listing.touch();
 
     Ok(f(listing))
+}
+
+/// The panes' heartbeat: stamps every listing in `listing_ids` as still on screen,
+/// and returns the ids this cache no longer holds.
+///
+/// A pane can sit on one folder for days with no reads and no FS events, so access
+/// alone can't tell the orphan reaper a listing is live. Each pane names its listing
+/// here well inside `ORPHAN_IDLE_WINDOW`; a listing whose pane leaked stops being
+/// named and is reaped as before. A returned id is a pane showing rows the backend
+/// can't serve, which the frontend answers by re-listing that folder.
+pub fn keep_listings_alive(listing_ids: &[String]) -> Vec<String> {
+    let cache = LISTING_CACHE.read_ignore_poison();
+    listing_ids
+        .iter()
+        .filter(|id| match cache.get(id.as_str()) {
+            Some(listing) => {
+                listing.touch();
+                false
+            }
+            None => true,
+        })
+        .cloned()
+        .collect()
 }
 
 /// Gets a range of entries from a cached listing.
@@ -190,7 +288,7 @@ pub fn get_file_range(
     start: usize,
     count: usize,
     include_hidden: bool,
-) -> Result<Vec<FileEntry>, String> {
+) -> Result<Vec<FileEntry>, ListingLookupError> {
     with_listing(listing_id, |listing| {
         let rows = listing.rows(include_hidden);
         let end = start.saturating_add(count).min(rows.len());
@@ -201,7 +299,8 @@ pub fn get_file_range(
 }
 
 /// Gets total count of entries in a cached listing.
-pub fn get_total_count(listing_id: &str, include_hidden: bool) -> Result<usize, String> {
+#[cfg(test)]
+pub fn get_total_count(listing_id: &str, include_hidden: bool) -> Result<usize, ListingLookupError> {
     with_listing(listing_id, |listing| listing.rows(include_hidden).len())
 }
 
@@ -210,7 +309,11 @@ pub fn get_total_count(listing_id: &str, include_hidden: bool) -> Result<usize, 
 /// The name may come from outside this listing (a restored cursor, MCP, a reveal
 /// from Finder) and spell an accented name another way than the volume stores it,
 /// so a unique look-alike answers when the exact name doesn't (`row_of_any_spelling`).
-pub fn find_file_index(listing_id: &str, name: &str, include_hidden: bool) -> Result<Option<usize>, String> {
+pub fn find_file_index(
+    listing_id: &str,
+    name: &str,
+    include_hidden: bool,
+) -> Result<Option<usize>, ListingLookupError> {
     with_listing(listing_id, |listing| {
         listing.rows(include_hidden).row_of_any_spelling(name)
     })
@@ -238,7 +341,7 @@ pub fn get_file_beside(
     name: &str,
     side: RowBeside,
     include_hidden: bool,
-) -> Result<Option<FileEntry>, String> {
+) -> Result<Option<FileEntry>, ListingLookupError> {
     with_listing(listing_id, |listing| {
         let rows = listing.rows(include_hidden);
         let anchor = rows.row_of(name)?;
@@ -258,7 +361,7 @@ pub fn find_file_indices(
     listing_id: &str,
     names: &[String],
     include_hidden: bool,
-) -> Result<HashMap<String, usize>, String> {
+) -> Result<HashMap<String, usize>, ListingLookupError> {
     with_listing(listing_id, |listing| {
         let lookup: std::collections::HashSet<&str> = names.iter().map(|n| n.as_str()).collect();
         let mut result = HashMap::with_capacity(names.len());
@@ -274,7 +377,11 @@ pub fn find_file_indices(
 }
 
 /// Gets a single file at the given index.
-pub fn get_file_at(listing_id: &str, index: usize, include_hidden: bool) -> Result<Option<FileEntry>, String> {
+pub fn get_file_at(
+    listing_id: &str,
+    index: usize,
+    include_hidden: bool,
+) -> Result<Option<FileEntry>, ListingLookupError> {
     with_listing(listing_id, |listing| {
         let rows = listing.rows(include_hidden);
         let result = rows.get(index).cloned();
@@ -305,7 +412,7 @@ pub fn get_paths_at_indices(
     selected_indices: &[usize],
     include_hidden: bool,
     has_parent: bool,
-) -> Result<Vec<PathBuf>, String> {
+) -> Result<Vec<PathBuf>, ListingLookupError> {
     with_listing(listing_id, |listing| {
         let rows = listing.rows(include_hidden);
         let mut paths = Vec::with_capacity(selected_indices.len());
@@ -335,7 +442,7 @@ pub fn get_files_at_indices(
     listing_id: &str,
     selected_indices: &[usize],
     include_hidden: bool,
-) -> Result<Vec<FileEntry>, String> {
+) -> Result<Vec<FileEntry>, ListingLookupError> {
     with_listing(listing_id, |listing| {
         let rows = listing.rows(include_hidden);
         selected_indices
@@ -353,6 +460,8 @@ pub fn get_files_at_indices(
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct ResortResult {
+    pub sequence: u64,
+    pub total_count: usize,
     /// New index of the file that was at the cursor position before re-sorting.
     /// None if the filename wasn't provided or wasn't found.
     pub new_cursor_index: Option<usize>,
@@ -377,13 +486,19 @@ pub fn resort_listing(
     include_hidden: bool,
     selected_indices: Option<&[usize]>,
     all_selected: bool,
-) -> Result<ResortResult, String> {
-    let mut cache = LISTING_CACHE.write().map_err(|_| "Failed to acquire cache lock")?;
+    expected_sequence: Option<u64>,
+) -> Result<ResortResult, ListingLookupError> {
+    let mut cache = LISTING_CACHE.write_ignore_poison();
 
     let listing = cache
         .get_mut(listing_id)
-        .ok_or_else(|| format!("Listing not found: {}", listing_id))?;
+        .ok_or_else(|| ListingLookupError::gone(listing_id))?;
 
+    listing.reconcile_scratch(listing_id);
+    check_expected(listing_id, listing, expected_sequence)?;
+    if expected_sequence.is_some() && listing.include_hidden() != include_hidden {
+        return Err(ListingLookupError::changed(listing_id));
+    }
     listing.touch();
 
     // Collect filenames of selected files before re-sorting
@@ -409,6 +524,8 @@ pub fn resort_listing(
     listing.sort_by = sort_by;
     listing.directory_sort_mode = dir_sort_mode;
     listing.sort_order = sort_order;
+    listing.advance_sequence();
+    super::diff_emitter::drop_pending(listing_id);
 
     let rows = listing.rows(include_hidden);
 
@@ -433,6 +550,8 @@ pub fn resort_listing(
     };
 
     Ok(ResortResult {
+        sequence: listing.sequence.load(Ordering::Acquire),
+        total_count: rows.len(),
         new_cursor_index,
         new_selected_indices,
     })
@@ -453,9 +572,9 @@ pub(crate) fn get_listing_entries(listing_id: &str) -> Option<(PathBuf, Vec<File
 /// Updates the entries in the listing cache (after watcher detects changes).
 /// Re-sorts using the stored sort parameters so the cache stays consistent.
 pub(crate) fn update_listing_entries(listing_id: &str, entries: Vec<FileEntry>, overlay_rows: OverlayRows) {
-    if let Ok(mut cache) = LISTING_CACHE.write()
-        && let Some(listing) = cache.get_mut(listing_id)
-    {
+    let mut cache = LISTING_CACHE.write_ignore_poison();
+    if let Some(listing) = cache.get_mut(listing_id) {
+        listing.reconcile_scratch(listing_id);
         listing.touch();
         let mut entries = entries;
         index().enrich(&listing.volume_id, &mut entries);
@@ -465,11 +584,65 @@ pub(crate) fn update_listing_entries(listing_id: &str, entries: Vec<FileEntry>, 
             listing.sort_order,
             listing.directory_sort_mode,
         );
-        listing.set_entries(entries);
+        let changes = listing.replace_entries(entries);
         if let OverlayRows::Recounted(count) = overlay_rows {
             listing.set_overlay_rows(count);
         }
+        listing.publish_changes(listing_id, changes);
     }
+}
+
+pub(super) fn check_expected(
+    listing_id: &str,
+    listing: &CachedListing,
+    expected: Option<u64>,
+) -> Result<(), ListingLookupError> {
+    if expected.is_some_and(|s| s != listing.sequence.load(Ordering::Acquire)) {
+        return Err(ListingLookupError::changed(listing_id));
+    }
+    Ok(())
+}
+
+/// Exact paths and kinds consumed from one guarded backend row space.
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct SelectionSnapshot {
+    pub paths: Vec<String>,
+    pub file_count: usize,
+    pub folder_count: usize,
+}
+
+pub fn get_selection_snapshot(
+    listing_id: &str,
+    include_hidden: bool,
+    selected_indices: &[usize],
+    expected_sequence: u64,
+) -> Result<SelectionSnapshot, ListingLookupError> {
+    let cache = reconciled_cache(&[listing_id]);
+    let listing = cache
+        .get(listing_id)
+        .ok_or_else(|| ListingLookupError::gone(listing_id))?;
+    check_expected(listing_id, listing, Some(expected_sequence))?;
+    if listing.include_hidden() != include_hidden {
+        return Err(ListingLookupError::changed(listing_id));
+    }
+    let rows = listing.pane_rows();
+    let mut snapshot = SelectionSnapshot {
+        paths: Vec::new(),
+        file_count: 0,
+        folder_count: 0,
+    };
+    for &row in selected_indices {
+        let entry = rows.get(row).ok_or_else(|| ListingLookupError::changed(listing_id))?;
+        snapshot.paths.push(entry.path.clone());
+        if entry.is_directory {
+            snapshot.folder_count += 1;
+        } else {
+            snapshot.file_count += 1;
+        }
+    }
+    listing.touch();
+    Ok(snapshot)
 }
 
 /// The distinct volume ids under `prefix` that have at least one cached listing.
@@ -529,7 +702,7 @@ pub fn get_listing_stats(
     listing_id: &str,
     include_hidden: bool,
     selected_indices: Option<&[usize]>,
-) -> Result<ListingStats, String> {
+) -> Result<ListingStats, ListingLookupError> {
     with_listing(listing_id, |listing| {
         listing_stats(listing.rows(include_hidden), selected_indices)
     })

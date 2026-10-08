@@ -278,7 +278,7 @@ impl MtpConnectionManager {
             path,
             is_directory,
             size: if is_directory { None } else { Some(info.size) },
-            modified_at: info.modified.map(super::convert_mtp_datetime),
+            modified_at: info.modified.and_then(super::convert_mtp_datetime),
         })
     }
 

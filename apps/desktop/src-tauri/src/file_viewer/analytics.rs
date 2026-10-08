@@ -63,6 +63,7 @@ pub(super) fn failure_token(error: &ViewerError) -> &'static str {
         // arm is here for exhaustiveness and no shipped series carries the token.
         ViewerError::DestinationIsReadOnly => "destination_read_only",
         ViewerError::Archive { .. } => "archive",
+        ViewerError::ColdStorage => "cold_storage",
     }
 }
 

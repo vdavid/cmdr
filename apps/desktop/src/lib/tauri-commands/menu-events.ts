@@ -12,6 +12,7 @@ import {
   type MediaIndexFolderExclusion,
   type MenuBarRebuilt,
   type MenuSort,
+  type OpenWithCopyRefused,
   type ShowSearchResultInFolder,
   type ViewModeChanged,
 } from '$lib/ipc/bindings'
@@ -82,6 +83,17 @@ export function onMediaIndexFolderExclusion(
  */
 export function onMediaIndexFolderChoice(handler: (payload: MediaIndexFolderChoice) => void): Promise<UnlistenFn> {
   return events.mediaIndexFolderChoice.listen((event) => {
+    handler(event.payload)
+  })
+}
+
+/**
+ * An "Open with" click on a file inside an archive (or a repo's `.git` snapshot)
+ * couldn't copy the file out, so no app launched. The payload names the file, the
+ * app, and the typed reason the toast words.
+ */
+export function onOpenWithCopyRefused(handler: (payload: OpenWithCopyRefused) => void): Promise<UnlistenFn> {
+  return events.openWithCopyRefused.listen((event) => {
     handler(event.payload)
   })
 }

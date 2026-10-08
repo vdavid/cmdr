@@ -44,7 +44,11 @@ impl Tree {
         IndexStore::open(&db_path).expect("open store");
         let writer = IndexWriter::spawn(&db_path, crate::NoopEventSink::shared()).expect("spawn writer");
         writer.send(WriteMessage::BumpCurrentEpoch).expect("seed the epoch");
-        writer.send(exclusion_policy_stamp_message()).expect("stamp the policy");
+        writer
+            .send(exclusion_policy_stamp_message(
+                crate::indexing::scanner::ExclusionTier::BootDisk,
+            ))
+            .expect("stamp the policy");
         writer.flush_blocking().expect("flush the preparation");
 
         let fixture = Self {
@@ -156,7 +160,14 @@ impl Tree {
 
     fn coverage(&self, scope: &str) -> CoverageMap {
         let conn = IndexStore::open_read_connection(&self.db_path).expect("read connection");
-        coverage_for_scope(&conn, scope, scope, CoverageDimension::Listing).expect("coverage")
+        coverage_for_scope(
+            &conn,
+            scope,
+            scope,
+            crate::indexing::scanner::ExclusionTier::BootDisk,
+            CoverageDimension::Listing,
+        )
+        .expect("coverage")
     }
 
     fn frontier(&self, scope: &str) -> Vec<String> {
@@ -226,6 +237,11 @@ mod interleaving;
 /// The two drive-menu actions a user can reach a half-covered volume with.
 mod menu_actions;
 
+/// What a walk may hold while it waits on `fseventsd`. macOS only: the gate it
+/// parks at is the fake FSEvents journal's.
+#[cfg(target_os = "macos")]
+mod lock_discipline;
+
 /// What resuming an interrupted run costs, measured against covering the same
 /// ground in one go. `#[ignore]`d.
 mod resume_bench;
@@ -264,6 +280,11 @@ struct Drive {
     /// again. Held because a presence gate asks the host, never the filesystem.
     volumes: std::sync::Arc<crate::indexing::host::volumes::FakeVolumeProvider>,
     volume_id: &'static str,
+    /// No real FSEvents for this tree: nothing here waits on a delivery, and each
+    /// real call queues on the one `fseventsd` every process shares, which is what
+    /// timed these tests out at full parallelism (`watch/watcher/fake_journal.rs`).
+    #[cfg(target_os = "macos")]
+    _journal: crate::indexing::watch::watcher::fake_journal::Guard,
     _serialized: std::sync::MutexGuard<'static, ()>,
 }
 
@@ -361,6 +382,8 @@ impl Drive {
             .tempdir_in(tree_parent())
             .expect("temp tree");
         build(tree.path());
+        #[cfg(target_os = "macos")]
+        let journal = crate::indexing::watch::watcher::fake_journal::fake_for(tree.path());
 
         let volumes = crate::indexing::host::volumes::FakeVolumeProvider::shared();
         volumes.register(
@@ -391,6 +414,8 @@ impl Drive {
             events,
             volumes,
             volume_id,
+            #[cfg(target_os = "macos")]
+            _journal: journal,
             _serialized: serialized,
         }
     }

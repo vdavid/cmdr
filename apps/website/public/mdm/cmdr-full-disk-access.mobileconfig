@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  A Privacy Preferences Policy Control (PPPC) profile that gives Cmdr Full Disk Access,
+  so users don't have to grant it in System Settings and get no file-access prompts.
+  Cmdr's first-launch setup then shows Full Disk Access as already granted.
+
+  Upload it to your MDM as a custom configuration profile. It's unsigned on purpose:
+  your MDM signs it when it deploys it. macOS applies a PPPC payload only when it comes
+  from an MDM the Mac is enrolled in with user approval (or automated enrollment).
+  Opening the file on a Mac does nothing useful: macOS refuses to install it by hand.
+
+  Each grant names Cmdr by its bundle id AND its code requirement, so it applies only
+  to the real Cmdr, signed by Rymdskottkarra AB (Team ID 83H6YAQMNP). The requirement
+  stays the same across updates, so the grant survives them.
+
+  The first entry, Full Disk Access, covers everything below it. The other five are the
+  narrower permissions Cmdr asks for one by one. To grant only those, delete the
+  SystemPolicyAllFiles key and its array.
+
+  Not included, and why:
+  - Local network (for SMB servers): not a PPPC service. On macOS 27 and later, the
+    declarative app settings configuration can suggest it, with a prompt the user accepts.
+  - Photos and Music: Cmdr asks only to show icons and thumbnails, and works without them.
+  - Automation of Finder (File > Get Info): untested with a profile so far.
+  - Accessibility, screen recording, input monitoring: Cmdr doesn't use them.
+
+  Apple marks these PPPC keys deprecated in macOS 27, and they still apply there. Full
+  Disk Access has no declarative replacement yet. More: https://getcmdr.com/trust#mdm-deploy
+-->
+<plist version="1.0">
+<dict>
+    <key>PayloadType</key>
+    <string>Configuration</string>
+    <key>PayloadVersion</key>
+    <integer>1</integer>
+    <key>PayloadIdentifier</key>
+    <string>com.getcmdr.mdm.full-disk-access</string>
+    <key>PayloadUUID</key>
+    <string>7816B8B4-201A-4365-8A31-C126F7C8D901</string>
+    <key>PayloadDisplayName</key>
+    <string>Cmdr Full Disk Access</string>
+    <key>PayloadDescription</key>
+    <string>Gives Cmdr, the file manager, access to all files, so users don't have to grant it themselves.</string>
+    <key>PayloadOrganization</key>
+    <string>Your organization</string>
+    <key>PayloadScope</key>
+    <string>System</string>
+    <key>PayloadContent</key>
+    <array>
+        <dict>
+            <key>PayloadType</key>
+            <string>com.apple.TCC.configuration-profile-policy</string>
+            <key>PayloadVersion</key>
+            <integer>1</integer>
+            <key>PayloadIdentifier</key>
+            <string>com.getcmdr.mdm.full-disk-access.tcc</string>
+            <key>PayloadUUID</key>
+            <string>3F7BD2F7-EB63-455F-B25E-A9AF31BC3617</string>
+            <key>PayloadDisplayName</key>
+            <string>Cmdr privacy permissions</string>
+            <key>Services</key>
+            <dict>
+                <!-- Full Disk Access: every protected file and folder, network and removable volumes included. -->
+                <key>SystemPolicyAllFiles</key>
+                <array>
+                    <dict>
+                        <key>Identifier</key>
+                        <string>com.veszelovszki.cmdr</string>
+                        <key>IdentifierType</key>
+                        <string>bundleID</string>
+                        <key>CodeRequirement</key>
+                        <string>identifier "com.veszelovszki.cmdr" and anchor apple generic and certificate 1[field.1.2.840.113635.100.6.2.6] /* exists */ and certificate leaf[field.1.2.840.113635.100.6.1.13] /* exists */ and certificate leaf[subject.OU] = "83H6YAQMNP"</string>
+                        <key>StaticCode</key>
+                        <false/>
+                        <key>Allowed</key>
+                        <true/>
+                        <key>Comment</key>
+                        <string>Cmdr is a file manager: it lists, copies, and moves files anywhere the user can reach.</string>
+                    </dict>
+                </array>
+                <!-- The Desktop folder. -->
+                <key>SystemPolicyDesktopFolder</key>
+                <array>
+                    <dict>
+                        <key>Identifier</key>
+                        <string>com.veszelovszki.cmdr</string>
+                        <key>IdentifierType</key>
+                        <string>bundleID</string>
+                        <key>CodeRequirement</key>
+                        <string>identifier "com.veszelovszki.cmdr" and anchor apple generic and certificate 1[field.1.2.840.113635.100.6.2.6] /* exists */ and certificate leaf[field.1.2.840.113635.100.6.1.13] /* exists */ and certificate leaf[subject.OU] = "83H6YAQMNP"</string>
+                        <key>StaticCode</key>
+                        <false/>
+                        <key>Allowed</key>
+                        <true/>
+                    </dict>
+                </array>
+                <!-- The Documents folder. -->
+                <key>SystemPolicyDocumentsFolder</key>
+                <array>
+                    <dict>
+                        <key>Identifier</key>
+                        <string>com.veszelovszki.cmdr</string>
+                        <key>IdentifierType</key>
+                        <string>bundleID</string>
+                        <key>CodeRequirement</key>
+                        <string>identifier "com.veszelovszki.cmdr" and anchor apple generic and certificate 1[field.1.2.840.113635.100.6.2.6] /* exists */ and certificate leaf[field.1.2.840.113635.100.6.1.13] /* exists */ and certificate leaf[subject.OU] = "83H6YAQMNP"</string>
+                        <key>StaticCode</key>
+                        <false/>
+                        <key>Allowed</key>
+                        <true/>
+                    </dict>
+                </array>
+                <!-- The Downloads folder. -->
+                <key>SystemPolicyDownloadsFolder</key>
+                <array>
+                    <dict>
+                        <key>Identifier</key>
+                        <string>com.veszelovszki.cmdr</string>
+                        <key>IdentifierType</key>
+                        <string>bundleID</string>
+                        <key>CodeRequirement</key>
+                        <string>identifier "com.veszelovszki.cmdr" and anchor apple generic and certificate 1[field.1.2.840.113635.100.6.2.6] /* exists */ and certificate leaf[field.1.2.840.113635.100.6.1.13] /* exists */ and certificate leaf[subject.OU] = "83H6YAQMNP"</string>
+                        <key>StaticCode</key>
+                        <false/>
+                        <key>Allowed</key>
+                        <true/>
+                    </dict>
+                </array>
+                <!-- Network shares the Mac mounts (SMB, AFP, NFS). -->
+                <key>SystemPolicyNetworkVolumes</key>
+                <array>
+                    <dict>
+                        <key>Identifier</key>
+                        <string>com.veszelovszki.cmdr</string>
+                        <key>IdentifierType</key>
+                        <string>bundleID</string>
+                        <key>CodeRequirement</key>
+                        <string>identifier "com.veszelovszki.cmdr" and anchor apple generic and certificate 1[field.1.2.840.113635.100.6.2.6] /* exists */ and certificate leaf[field.1.2.840.113635.100.6.1.13] /* exists */ and certificate leaf[subject.OU] = "83H6YAQMNP"</string>
+                        <key>StaticCode</key>
+                        <false/>
+                        <key>Allowed</key>
+                        <true/>
+                    </dict>
+                </array>
+                <!-- USB drives, SD cards, and external disks. -->
+                <key>SystemPolicyRemovableVolumes</key>
+                <array>
+                    <dict>
+                        <key>Identifier</key>
+                        <string>com.veszelovszki.cmdr</string>
+                        <key>IdentifierType</key>
+                        <string>bundleID</string>
+                        <key>CodeRequirement</key>
+                        <string>identifier "com.veszelovszki.cmdr" and anchor apple generic and certificate 1[field.1.2.840.113635.100.6.2.6] /* exists */ and certificate leaf[field.1.2.840.113635.100.6.1.13] /* exists */ and certificate leaf[subject.OU] = "83H6YAQMNP"</string>
+                        <key>StaticCode</key>
+                        <false/>
+                        <key>Allowed</key>
+                        <true/>
+                    </dict>
+                </array>
+            </dict>
+        </dict>
+    </array>
+</dict>
+</plist>

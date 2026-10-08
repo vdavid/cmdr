@@ -18,7 +18,7 @@ async fn http_surface_requires_auth_before_dispatch_or_session_mutation() {
             .await
             .expect("test server should serve");
     });
-    let client = reqwest::Client::new();
+    let client = cmdr_http::client_builder().build().expect("a plain client builds");
     let mcp_url = format!("http://{addr}/mcp");
     let health_url = format!("http://{addr}/mcp/health");
     set_mcp_token(Some("transport-test-token".to_string()));

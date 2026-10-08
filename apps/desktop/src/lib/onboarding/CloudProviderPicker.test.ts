@@ -141,3 +141,47 @@ describe('CloudProviderPicker', () => {
     expect(mounted.selected).toBe('groq')
   })
 })
+
+describe("CloudProviderPicker under the organization's policy", () => {
+  const picked: string[] = []
+  let target: HTMLElement
+
+  function mountRefusing(refused: string[], value: string) {
+    target = document.createElement('div')
+    document.body.appendChild(target)
+    return mount(CloudProviderPicker, {
+      target,
+      props: {
+        value,
+        onChange: (id: string) => picked.push(id),
+        isRefused: (id: string) => refused.includes(id),
+      },
+    })
+  }
+
+  afterEach(() => {
+    picked.length = 0
+    target.remove()
+  })
+
+  it('keeps a refused service listed, disabled, with the reason beside its name', async () => {
+    const instance = mountRefusing(['groq'], cloudProviderPresets[0].id)
+    await settle()
+    const groq = target.querySelector<HTMLLIElement>('li[data-provider-id="groq"]')
+    expect(groq?.getAttribute('aria-disabled')).toBe('true')
+    expect(groq?.textContent).toContain('not allowed by your organization')
+    groq?.click()
+    await settle()
+    expect(picked).toEqual([])
+    await unmount(instance)
+  })
+
+  it('steps over a refused service with the arrow keys', async () => {
+    const instance = mountRefusing([cloudProviderPresets[1].id], cloudProviderPresets[0].id)
+    await settle()
+    listEl(target).dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true }))
+    await settle()
+    expect(picked).toEqual([cloudProviderPresets[2].id])
+    await unmount(instance)
+  })
+})

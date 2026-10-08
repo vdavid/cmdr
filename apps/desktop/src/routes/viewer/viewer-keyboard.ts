@@ -236,11 +236,8 @@ interface KeyboardDeps {
   isCopyConfirmOpen: () => boolean
   /** Whether the > 100 MiB copy refuse dialog is currently showing. */
   isCopyRefuseOpen: () => boolean
-  /** Whether the in-app context menu is currently open. */
-  isContextMenuOpen: () => boolean
   cancelCopyConfirm: () => void
   dismissCopyRefuse: () => void
-  closeContextMenu: () => void
   /** Debug-logs the Escape press (search-visible / window-ready snapshot). */
   logEscape: () => void
   /** Runs the copy gesture (⌘C / context-menu Copy). */
@@ -371,18 +368,13 @@ export function createViewerKeyboard(deps: KeyboardDeps) {
   }
 
   /**
-   * Routes Escape to the right cancel surface in priority order: open context menu
-   * (the menu owns its own Escape too, but we short-circuit here so the page's
-   * `closeWindow()` path doesn't fire after the menu closes itself), then in-flight
-   * copy read, then any open copy dialog, then the search bar logic.
+   * Routes Escape to the right cancel surface in priority order: in-flight copy read,
+   * then any open copy dialog, then the search bar logic. (The right-click menu is
+   * native and swallows its own Escape, so the webview never sees it.)
    *
    * Returns `true` if Escape was consumed here.
    */
   function tryConsumeEscapeForCopy(): boolean {
-    if (deps.isContextMenuOpen()) {
-      deps.closeContextMenu()
-      return true
-    }
     if (deps.copy.busy) {
       void deps.copy.cancelInFlight()
       return true

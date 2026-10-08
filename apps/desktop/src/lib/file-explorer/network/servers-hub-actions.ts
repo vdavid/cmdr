@@ -20,6 +20,7 @@ import {
   forgetSavedSmbHostPassword,
   listSavedServers,
   forgetServer,
+  forgetServerSecret,
   showNetworkHostContextMenu,
 } from '$lib/tauri-commands'
 import {
@@ -120,7 +121,7 @@ const EDIT_HINT = { level: 'info', id: 'servers-edit-hint' } as const
  * mDNS knows) says why, ❌ never does nothing: a key that silently did nothing reads as a broken key.
  */
 export async function editHubRow(row: HubRow): Promise<void> {
-  if (row.kind === 'share') {
+  if (row.kind === 'place' && row.protocol === 'smb') {
     addToast(tString('servers.hub.editShareHint'), EDIT_HINT)
     return
   }
@@ -128,10 +129,12 @@ export async function editHubRow(row: HubRow): Promise<void> {
     addToast(tString('servers.hub.editNearbyHint', { name: row.name }), EDIT_HINT)
     return
   }
+  // A one-place server, or an S3 place, which edits on its own through its volume id.
   if (row.volumeId) {
     await runServerRowAction({ action: 'edit', volumeId: row.volumeId, volumeName: row.name })
     return
   }
+  // An SMB host, or an S3 account: no place, so the sheet edits the server itself (its name, for S3 its secret too).
   await openEditServerSheet(row.saved)
 }
 
@@ -166,7 +169,7 @@ export function createHubActions(deps: HubActionDeps): HubActions {
    * has nothing to forget, and says so.
    */
   async function forget(row: HubRow): Promise<void> {
-    if (row.kind === 'share') {
+    if (row.kind === 'place' && row.protocol === 'smb') {
       await forgetShare(row)
       return
     }
@@ -175,12 +178,49 @@ export function createHubActions(deps: HubActionDeps): HubActions {
       return
     }
     if (row.volumeId) {
-      // A one-place server: the servers family owns the confirmation and the
-      // toast, so the hub and the switcher's menu ask the same question.
+      // A one-place server, or an S3 place: the servers family owns the confirmation
+      // and the toast, so the hub and the switcher's menu ask the same question.
       await forgetSavedServer(row.volumeId, row.name)
       return
     }
+    if (row.protocol === 's3') {
+      await forgetS3Account(row)
+      return
+    }
     await removeSavedSmbHost(row)
+  }
+
+  /**
+   * Forgets an S3 account: every place saved under it, and (the box, checked by
+   * default) the secret access key they share. ❗ The secret FIRST, through one of
+   * the places: once they're gone, nothing names the account's entry any more.
+   */
+  async function forgetS3Account(row: HubRow): Promise<void> {
+    const places = row.saved?.places ?? []
+    if (places.length === 0) return
+    const { confirmed, checked } = await confirmWithCheckbox(
+      forgetServerQuestion(
+        tString('servers.hub.forgetAccountConfirm', { name: row.name, count: places.length }),
+        tString('servers.hub.forgetSecretKeyToo'),
+      ),
+    )
+    if (!confirmed) return
+    if (checked) {
+      try {
+        await forgetServerSecret(places[0].volumeId)
+      } catch (e) {
+        log.warn('Forgetting the secret of the S3 account {id} broke down: {error}', { id: row.id, error: String(e) })
+        addToast(tString('fileExplorer.navigation.forgetSecretRefusedToast', { name: row.name }), { level: 'error' })
+      }
+    }
+    for (const place of places) {
+      try {
+        await forgetServer(place.volumeId)
+      } catch (e) {
+        log.warn('Forgetting the S3 place {id} broke down: {error}', { id: place.volumeId, error: String(e) })
+        addToast(tString('fileExplorer.navigation.forgetServerRefusedToast', { name: place.name }), { level: 'error' })
+      }
+    }
   }
 
   /**
@@ -259,7 +299,8 @@ export function createHubActions(deps: HubActionDeps): HubActions {
    * ([`openHostMenu`]).
    */
   function rowMenu(row: HubRow): RowMenu | null {
-    if (row.kind === 'share') return shareMenu(row)
+    // An S3 place is a server place like any one-place row, so it gets that menu below.
+    if (row.kind === 'place' && row.protocol === 'smb') return shareMenu(row)
     if (!row.volumeId) return null
     const volume = volumeForRow(row)
     return volumeRowMenu(volume, {
@@ -267,8 +308,18 @@ export function createHubActions(deps: HubActionDeps): HubActions {
       ejecting: false,
       isSaved: row.saved !== null,
       directConnection: undefined,
-      autoReconnect: row.saved?.autoReconnect ?? undefined,
+      autoReconnect: placeAutoReconnect(row) ?? undefined,
     })
+  }
+
+  /**
+   * The row's place's own "Reconnect automatically" switch: a place row's, else a
+   * one-place server's only place. ❗ Per PLACE, ❌ never the server's: an S3 account's
+   * buckets each keep their own.
+   */
+  function placeAutoReconnect(row: HubRow): boolean | null {
+    const place = row.place ?? row.saved?.places.find((p) => p.volumeId === row.volumeId) ?? null
+    return place?.autoReconnect ?? row.saved?.autoReconnect ?? null
   }
 
   /**
@@ -317,7 +368,7 @@ export function createHubActions(deps: HubActionDeps): HubActions {
       deps.openRow(row)
       return
     }
-    if (row.kind === 'share' && entry.action === 'forget-server') {
+    if (row.kind === 'place' && row.protocol === 'smb' && entry.action === 'forget-server') {
       await forgetShare(row)
       return
     }
@@ -331,7 +382,7 @@ export function createHubActions(deps: HubActionDeps): HubActions {
     // The row shows the saved entry's switch; the `volumes-changed` the command emits is what
     // re-reads the saved list, so the next open shows the new state.
     'auto-reconnect': async (row) => {
-      if (row.volumeId && row.saved) await setServerAutoReconnect(row.volumeId, !row.saved.autoReconnect)
+      if (row.volumeId && row.saved) await setServerAutoReconnect(row.volumeId, !placeAutoReconnect(row))
     },
   }
 

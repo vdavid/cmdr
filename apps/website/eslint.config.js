@@ -162,7 +162,7 @@ export default tseslint.config(
     files: ['src/**/*.astro', 'src/**/*.ts'],
     plugins: { 'better-tailwindcss': betterTailwindcss },
     // The plugin's default selectors already cover Astro's `class:list` (strings and object keys).
-    settings: { 'better-tailwindcss': { entryPoint: 'src/styles/global.css' } },
+    settings: { 'better-tailwindcss': { entryPoint: 'src/styles/global.css', rootFontSize: 16 } },
     rules: {
       'better-tailwindcss/enforce-canonical-classes': 'error',
       'better-tailwindcss/enforce-consistent-class-order': 'error',

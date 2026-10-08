@@ -8,7 +8,7 @@ use std::sync::atomic::AtomicBool;
 use super::line_index::LineIndexBackend;
 use super::search_cancel_test_support::{assert_search_stops_on_per_match_cancel, many_matches_corpus};
 use super::search_matcher::{Matcher, SearchMode};
-use super::{FileViewerBackend, INDEX_CHECKPOINT_INTERVAL, SearchMatch, SeekTarget};
+use super::{FileViewerBackend, INDEX_CHECKPOINT_INTERVAL, SearchMatch, SeekTarget, ViewerError};
 use crate::test_support::TestDir;
 
 fn literal_matcher(query: &str, case_sensitive: bool) -> Matcher {
@@ -30,6 +30,18 @@ fn write_test_file(dir: &Path, name: &str, content: &str) -> PathBuf {
     let file = dir.join(name);
     fs::write(&file, content).unwrap();
     file
+}
+
+/// The IPC deadline flips a fetch's flag; a fetch that sees it stops reading rows
+/// rather than finishing for nobody.
+#[test]
+fn a_fetch_whose_flag_is_set_stops_with_cancelled() {
+    let dir = create_test_dir("fetch_cancelled");
+    let file = write_test_file(&dir, "test.txt", "line 1\nline 2\nline 3\n");
+
+    let backend = LineIndexBackend::open(&file, &AtomicBool::new(false)).unwrap();
+    let result = backend.get_lines(&SeekTarget::Row(0), 3, &AtomicBool::new(true));
+    assert!(matches!(result, Err(ViewerError::Cancelled)), "got {result:?}");
 }
 
 #[test]
@@ -80,7 +92,9 @@ fn get_lines_from_start() {
     let cancel = AtomicBool::new(false);
     let backend = LineIndexBackend::open(&file, &cancel).unwrap();
 
-    let chunk = backend.get_lines(&SeekTarget::Line(0), 3).unwrap();
+    let chunk = backend
+        .get_lines(&SeekTarget::Row(0), 3, &AtomicBool::new(false))
+        .unwrap();
     assert_eq!(chunk.texts(), vec!["alpha", "beta", "gamma"]);
     assert_eq!(chunk.first_row_number, 0);
     assert_eq!(chunk.total_rows, super::TotalRows::Exact(5));
@@ -94,7 +108,9 @@ fn get_lines_from_middle() {
     let cancel = AtomicBool::new(false);
     let backend = LineIndexBackend::open(&file, &cancel).unwrap();
 
-    let chunk = backend.get_lines(&SeekTarget::Line(3), 2).unwrap();
+    let chunk = backend
+        .get_lines(&SeekTarget::Row(3), 2, &AtomicBool::new(false))
+        .unwrap();
     assert_eq!(chunk.texts(), vec!["d", "e"]);
     assert_eq!(chunk.first_row_number, 3);
 }
@@ -107,7 +123,9 @@ fn get_lines_past_end() {
     let cancel = AtomicBool::new(false);
     let backend = LineIndexBackend::open(&file, &cancel).unwrap();
 
-    let chunk = backend.get_lines(&SeekTarget::Line(10), 5).unwrap();
+    let chunk = backend
+        .get_lines(&SeekTarget::Row(10), 5, &AtomicBool::new(false))
+        .unwrap();
     // Should clamp to last line
     assert_eq!(chunk.first_row_number, 3); // 4 lines (including trailing empty), last is index 3
 }
@@ -122,7 +140,9 @@ fn get_lines_by_fraction() {
     let backend = LineIndexBackend::open(&file, &cancel).unwrap();
 
     // Fraction 0.0 = first line
-    let chunk = backend.get_lines(&SeekTarget::Fraction(0.0), 1).unwrap();
+    let chunk = backend
+        .get_lines(&SeekTarget::Fraction(0.0), 1, &AtomicBool::new(false))
+        .unwrap();
     assert_eq!(chunk.first_row_number, 0);
     assert_eq!(chunk.texts()[0], "line 1");
 }
@@ -135,7 +155,9 @@ fn get_lines_no_trailing_newline() {
     let cancel = AtomicBool::new(false);
     let backend = LineIndexBackend::open(&file, &cancel).unwrap();
 
-    let chunk = backend.get_lines(&SeekTarget::Line(0), 10).unwrap();
+    let chunk = backend
+        .get_lines(&SeekTarget::Row(0), 10, &AtomicBool::new(false))
+        .unwrap();
     assert_eq!(chunk.texts(), vec!["a", "b", "c"]);
     assert_eq!(backend.total_lines(), Some(3));
 }
@@ -156,13 +178,17 @@ fn sparse_index_checkpoints() {
 
     // Seek to a line past the first checkpoint
     let target_line = INDEX_CHECKPOINT_INTERVAL + 10;
-    let chunk = backend.get_lines(&SeekTarget::Line(target_line), 3).unwrap();
+    let chunk = backend
+        .get_lines(&SeekTarget::Row(target_line), 3, &AtomicBool::new(false))
+        .unwrap();
     assert_eq!(chunk.first_row_number, target_line);
     assert_eq!(chunk.texts()[0], format!("line {:06}", target_line));
 
     // Seek to a line past the second checkpoint
     let target_line2 = INDEX_CHECKPOINT_INTERVAL * 2 + 5;
-    let chunk2 = backend.get_lines(&SeekTarget::Line(target_line2), 2).unwrap();
+    let chunk2 = backend
+        .get_lines(&SeekTarget::Row(target_line2), 2, &AtomicBool::new(false))
+        .unwrap();
     assert_eq!(chunk2.first_row_number, target_line2);
     assert_eq!(chunk2.texts()[0], format!("line {:06}", target_line2));
 }
@@ -185,9 +211,9 @@ fn search_finds_matches() {
     let matches = results.lock().unwrap();
 
     assert_eq!(matches.len(), 2);
-    assert_eq!(matches[0].line, 0);
+    assert_eq!(matches[0].row, 0);
     assert_eq!(matches[0].byte_offset, 0); // First line starts at byte 0
-    assert_eq!(matches[1].line, 2);
+    assert_eq!(matches[1].row, 2);
     // "hello world\n" = 12 bytes, "foo bar\n" = 8 bytes → line 2 starts at byte 20
     assert_eq!(matches[1].byte_offset, 20);
 }
@@ -274,7 +300,9 @@ fn line_count_with_multibyte_chars() {
     // 4 lines + trailing empty = 5
     assert_eq!(backend.total_lines(), Some(5));
 
-    let chunk = backend.get_lines(&SeekTarget::Line(0), 4).unwrap();
+    let chunk = backend
+        .get_lines(&SeekTarget::Row(0), 4, &AtomicBool::new(false))
+        .unwrap();
     assert_eq!(chunk.texts(), vec!["café", "漢字", "🦀🎉", "plain"]);
 }
 
@@ -288,7 +316,9 @@ fn seek_line_after_multibyte_content() {
     let backend = LineIndexBackend::open(&file, &cancel).unwrap();
 
     // Seek to line 2 ("plain"): verifies byte offset tracking through multibyte lines
-    let chunk = backend.get_lines(&SeekTarget::Line(2), 1).unwrap();
+    let chunk = backend
+        .get_lines(&SeekTarget::Row(2), 1, &AtomicBool::new(false))
+        .unwrap();
     assert_eq!(chunk.first_row_number, 2);
     assert_eq!(chunk.texts()[0], "plain");
 }
@@ -380,7 +410,7 @@ fn search_on_last_line_without_newline_utf16() {
     let matches = results.lock().unwrap();
 
     assert_eq!(matches.len(), 1);
-    assert_eq!(matches[0].line, 1);
+    assert_eq!(matches[0].row, 1);
     assert_eq!(matches[0].column, 2); // 🦀 = 2 UTF-16 code units
     assert_eq!(matches[0].length, 4);
 }
@@ -414,8 +444,12 @@ fn extend_to_matches_open_at_target_size() {
     assert_eq!(extended.total_lines(), fresh.total_lines());
     assert_eq!(extended.total_bytes(), fresh.total_bytes());
 
-    let ext_chunk = extended.get_lines(&SeekTarget::Line(0), 10).unwrap();
-    let fresh_chunk = fresh.get_lines(&SeekTarget::Line(0), 10).unwrap();
+    let ext_chunk = extended
+        .get_lines(&SeekTarget::Row(0), 10, &AtomicBool::new(false))
+        .unwrap();
+    let fresh_chunk = fresh
+        .get_lines(&SeekTarget::Row(0), 10, &AtomicBool::new(false))
+        .unwrap();
     assert_eq!(ext_chunk.texts(), fresh_chunk.texts());
 }
 
@@ -448,7 +482,9 @@ fn extend_to_appends_checkpoints_past_interval() {
 
     // Spot check: a line that lives past the original EOF is correctly seekable.
     let target = INDEX_CHECKPOINT_INTERVAL * 2 + 5;
-    let chunk = extended.get_lines(&SeekTarget::Line(target), 1).unwrap();
+    let chunk = extended
+        .get_lines(&SeekTarget::Row(target), 1, &AtomicBool::new(false))
+        .unwrap();
     assert_eq!(chunk.first_row_number, target);
     assert_eq!(chunk.texts()[0], format!("more  {:06}", 5));
 }
@@ -471,7 +507,7 @@ fn extend_to_observes_cancel() {
     let new_size = fs::metadata(&path).unwrap().len();
     let pre_cancel = AtomicBool::new(true);
     let result = backend.extend_to(new_size, &pre_cancel);
-    assert!(matches!(result, Err(super::ViewerError::Cancelled)));
+    assert!(matches!(result, Err(ViewerError::Cancelled)));
 }
 
 // -- Property test: extend_to(N) ≡ open-at-N -------------------------------------

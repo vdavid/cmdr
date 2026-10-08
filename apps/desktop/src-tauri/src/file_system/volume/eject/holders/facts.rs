@@ -1,9 +1,9 @@
 //! What KIND of thing each named holder is, which is what picks the sentence a refusal
 //! says.
 //!
-//! "Something is still using this drive" leaves a person guessing. "Photos is still
-//! using this drive", "macOS is still working with this drive", and "a disk image stored
-//! on this drive is still open" each say what to do next, and they're different actions,
+//! "Something still has files open there" leaves a person guessing. "Photos still has
+//! files open there", "macOS still has files open there", and "a disk image stored
+//! there is still open" each say what to do next, and they're different actions,
 //! so the kind has to be a decision rather than a guess. ❌ Never from a process name, a
 //! path prefix, or a message: [`classify`] reads typed signals only, and it's pure.
 //!

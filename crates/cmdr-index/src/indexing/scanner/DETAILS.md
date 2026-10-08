@@ -54,6 +54,9 @@ the shared `extract_metadata` primitive at `../metadata.rs` (documented in the [
   unchanged. It's the single exclusion gate for every code path (scanner, reconcile, watch verification, verifier). Its
   tests live in `exclusions_tests.rs`, pulled in as `exclusions`'s own `tests` child module via `#[path]` so they keep
   reaching the module's private helpers.
+- **boot_tree_mounts.rs** — the filesystems mounted inside the boot tree, cached off the host's mount table, which
+  `should_exclude`'s `BootDisk` tier stops at and read routing sends to their own volume ids (§ "Filesystems mounted
+  inside the boot tree"). Tests in `boot_tree_mounts_tests.rs`.
 - **tests.rs** — the scanner-driver test module.
 
 E2E scan restriction: when `CMDR_E2E_START_PATH` is set, `should_exclude` restricts scanning to the fixture path, its
@@ -129,8 +132,9 @@ volume's `dir_stats`.
   device as `$HOME` and belong to the boot volume's scope; the guarded walker's stall detection is what makes descending
   into a disconnected one safe. ❌ Never repurpose `cmdr_fs::file_provider::domain_id_for_dir` (wired as
   `RootProbes::is_domain_root`) as a cut — it answers where a volume ROOT sits, for the pseudo-filesystem rule.
-- **A full scan pins nothing**, deliberately: it bounds itself by path prefix (`/Volumes/` under `BootDisk`) and pinning
-  it would silently change what a boot index contains for anyone with a disk image mounted in their home dir.
+- **A full scan pins no device**, but it does stop at every filesystem mounted inside the boot tree, via the exclusion
+  gate rather than this pin (next section). A device pin can't serve the boot disk: `/` is the sealed system volume, so
+  every firmlinked directory (`/Users`, `/Applications`, …) already reads as another device.
 - Accepted edge, the same one an exclusion carries: a cut directory's parent reads as covered, so if the drive is later
   UNMOUNTED, the (now ordinary, and almost always empty) mount-point directory stays invisible to search until something
   re-lists its parent — which FSEvents does on the next change there. `/Volumes/X` under the boot scan has behaved this
@@ -139,6 +143,44 @@ volume's `dir_stats`.
   (`docs/notes/cover-walk-primitive-2026-08-05.md`, which also records why `ATTR_CMN_DEVID` on the batched read and a
   `getmntinfo` snapshot were both rejected). The probe is a `fn` pointer so a test can put a mount anywhere in a temp
   tree without one, the same way `RootProbes` injects its two.
+
+### Filesystems mounted inside the boot tree (`boot_tree_mounts.rs`)
+
+A mount with its own switcher row is a separate drive, so it isn't in `root`'s index, search, or folder sizes: a disk
+image or an NFS share mounted in the home folder, an rclone / sshfs / macFUSE mount, pCloud's `~/pCloud Drive`, Xcode's
+`~/Library/Developer/CoreDevice/DeviceFS`. `/Volumes/` always got this by prefix; `boot_tree_mounts` extends it to every
+other mount point.
+
+- **macOS only** (`CUTS_AT_BOOT_TREE_MOUNTS`). On Linux the rule would also cut a separate `/home` partition (Fedora
+  Workstation mounts `/home` as its own btrfs subvolume), and nothing else indexes it, since only `/mnt` and `/media`
+  mounts get their own indexes. So Linux keeps walking into mounts inside its tree, and its `BootDisk` fingerprint
+  doesn't carry the rule (no rebuild there).
+
+- **Where it lives: inside `should_exclude`'s `BootDisk` tier**, after the prefix checks. That's the one gate every
+  boot-disk path already asks (the walker per child, the reconciler's listing and live events, the verifier, FSEvents
+  verification, enrichment), so none of them needed its own check. A mount-rooted scope never asks: the mount's own
+  index walks all of it.
+- **What's in the set**: every mount point in the host's table (`VolumeProvider::mount_points`), firmlink-normalized,
+  minus `/` and minus any mount the prefix policy already excludes. That second filter is what keeps the boot disk's own
+  volumes out: `/System/Volumes/Data` is a mount, and cutting it would empty the index. Each entry keeps the table's raw
+  spelling too, which is what the host registry knows the mount by (`paths::routing` asks with it).
+- **How fresh: re-read at most once a second, by whoever asks.** `getfsstat(MNT_NOWAIT)` costs ~8.5 µs for 17 mounts
+  (macOS 26, 2026-09-30, a 10,000-iteration loop), so there's no watcher and no background work while nothing asks. A
+  fresh, empty set costs the hot path two atomic loads and a clock read, no lock. A new mount (FUSE and NFS post no
+  `NSWorkspace` notification, and mounting emits no FSEvent that starts a walk) is seen by every gate within a second.
+  What can still enter one: a walk already listing its parent inside that second. The fake provider bumps
+  `host::volumes::table_generation` on every table change, and so does installing a provider, so tests never wait out
+  the second.
+- **An unreadable table keeps the previous set**, ❌ never an empty one, or every mount's rows would flow back into
+  `root` for as long as the table didn't answer.
+- **Rebuild, not migrate.** The `BootDisk` exclusion fingerprint includes this rule (`exclusion_policy_fingerprint`), so
+  a boot index built before it predates the policy and the launch rebuilds it (`../lifecycle/DETAILS.md` § "The rebuild
+  marker"). The `MountRooted` fingerprint is exactly what both tiers shared before, so no external drive's index was
+  touched.
+- **Accepted edges**: an unmounted mount point's directory stays row-less until its parent is re-listed (the same edge
+  `/Volumes/X` has always had), and a filesystem mounted over a directory `root` already listed keeps that directory's
+  old row until a reconcile or rebuild re-lists its parent. The per-navigation verifier only skips excluded children it
+  hasn't seen; it doesn't reap one it already holds.
 
 **Why `Virgin` can't just reuse `Rebuild`.** A frontier node is one nothing has listed, which does NOT mean nothing is
 known below it: FSEvents verification upserts newly-seen children under a directory without ever marking that directory
@@ -260,8 +302,9 @@ that waits on it: `../lifecycle/DETAILS.md` § "When a volume has been let go". 
 own subtree while the boot-disk scan stays off mounted volumes:
 
 - **Tier (a) — boot-disk absolute prefixes** (`EXCLUDED_PREFIXES`: `/Volumes/`, `/System/...`, `/private/var/`, `/dev/`,
-  ...; plus the `/System/` firmlink allowlist). Applied ONLY under `ExclusionTier::BootDisk`. These keep the `/`-rooted
-  boot scan from wandering onto mounted volumes and system trees.
+  ...; plus the `/System/` firmlink allowlist), then every filesystem mounted inside the boot tree
+  (`boot_tree_mounts.rs`). Applied ONLY under `ExclusionTier::BootDisk`. These keep the `/`-rooted boot scan from
+  wandering onto mounted volumes and system trees.
 - **Tier (b) — per-volume skips**, applied under BOTH tiers:
   - **Junk basenames** (`JUNK_BASENAMES`: `.Spotlight-V100`, `.fseventsd`, `.Trashes`, `.TemporaryItems`), matched on
     the path's final component so they're caught at the boot root AND under a mount. `.Spotlight-V100`/`.fseventsd` used

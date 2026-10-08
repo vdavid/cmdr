@@ -101,6 +101,28 @@
       "name": "the server name, like Naspolya"
     }
   },
+  "servers.hub.s3AllBuckets": "All buckets",
+  "@servers.hub.s3AllBuckets": {
+    "description": "Name of a row in the Servers list, indented right under an S3 storage account’s row (which shows the account’s name): opening it shows every bucket that account can see. The other rows under the account are single buckets, shown by their own names. “Bucket” is the S3 term for a top-level storage container; use the term the providers’ consoles use in your language. Short, NOUN phrase, sentence case."
+  },
+  "servers.hub.openAccountHint": "{name} isn’t a place to open. Open one of the buckets under it.",
+  "@servers.hub.openAccountHint": {
+    "description": "Toast when the user presses Enter or double-clicks an S3 account’s row in the Servers list. The account itself can’t be opened; its saved buckets, listed as rows right below it, can. “Bucket” is the S3 term; keep the provider console’s term.",
+    "placeholders": {
+      "name": "the account’s name in the list, like \"Photos backup\""
+    }
+  },
+  "servers.hub.forgetAccountConfirm": "Forget {name} and every bucket saved under it? Cmdr drops their connections and stops listing them. Your files stay in the buckets.",
+  "@servers.hub.forgetAccountConfirm": {
+    "description": "Body of the confirmation dialog before an S3 account and all its saved buckets leave the Servers list and the volume switcher (F8 on the account’s row). Reassures that nothing in storage is deleted. “Bucket” is the S3 term; keep the provider console’s term.",
+    "placeholders": {
+      "name": "the account’s name in the list, like \"Photos backup\""
+    }
+  },
+  "servers.hub.forgetSecretKeyToo": "Also forget the account’s secret access key",
+  "@servers.hub.forgetSecretKeyToo": {
+    "description": "Checkbox in the Forget confirmation for an S3 account or one of its buckets: when checked, the secret access key Cmdr saved for the account is deleted too. Every bucket under the account uses that one key, so it’s unchecked when forgetting a single bucket. Same term as servers.sheet.secretAccessKey. Sentence case, no final period."
+  },
   "servers.hub.forgetShare": "Forget share",
   "@servers.hub.forgetShare": {
     "description": "VERB phrase. Item in a saved SMB share's right-click menu in the Servers list: drops the saved share from the list and the volume switcher. Match the wording of menu.network.forgetServer, with share in place of server."
@@ -114,6 +136,14 @@
     "description": "Body of the confirmation dialog before a saved SMB share leaves the Servers list and the volume switcher. {name} is the share's name. Reassures that nothing is unmounted or deleted.",
     "placeholders": {
       "name": "the share name, like Container"
+    }
+  },
+  "servers.hub.nearbyGroup": "{count, plural, one {{countText} server found nearby} other {{countText} servers found nearby}}",
+  "@servers.hub.nearbyGroup": {
+    "description": "Header row in the servers hub, below the servers the user saved. It groups the servers Cmdr found on the local network that the user never saved, and it opens and collapses that group; collapsed, this line is all that shows of them. The rows under it carry the status \"Found nearby\", so use the same wording for \"found nearby\" here.",
+    "placeholders": {
+      "count": "the number of servers in the group, for choosing the plural form",
+      "countText": "the number as the user’s locale writes it, like \"12\""
     }
   },
   "servers.hub.discoveryOff": "Local network discovery is off.",
@@ -216,9 +246,16 @@
   },
   "servers.refusal.unreachable": "Cmdr couldn’t reach {host}.",
   "@servers.refusal.unreachable": {
-    "description": "Shown in the pane when there was no route to the server at all: it’s off, the name doesn’t resolve, or the network is down. \"Cmdr\" is the product name.",
+    "description": "Shown in the Add server form and the sign-in form when there was no route to the server at all: it’s off, the name doesn’t resolve, or the network is down. Names the address the person typed (a pane standing on a saved server says servers.paneState.unreachable instead). \"Cmdr\" is the product name.",
     "placeholders": {
       "host": "the server’s hostname or address, like \"nas.local\""
+    }
+  },
+  "servers.refusal.localNetworkHint": "If the server is on, check that Cmdr is allowed under {localNetwork}.",
+  "@servers.refusal.localNetworkHint": {
+    "description": "A softer second line under \"Cmdr couldn’t reach {host}.\" (\"servers.refusal.unreachable\") in the Add server form, shown only when this Mac itself refused the route to a local-network address. That is also how a stuck macOS Local Network privacy permission shows, but a server that’s switched off can look the same, so this only suggests checking. \"Cmdr\" is the product name.",
+    "placeholders": {
+      "localNetwork": "the OS-localized macOS \"Local Network\" permission name, as System Settings shows it under Privacy & Security, injected at runtime (it follows the Mac’s system language, which can differ from Cmdr’s, so it may arrive in English)"
     }
   },
   "servers.refusal.hostKeyUntrusted": "Cmdr hasn’t trusted the key for {host} yet.",
@@ -274,6 +311,68 @@
   "servers.refusal.savedSecretNotUpdated": "Cmdr saved your changes but couldn’t update the password in your Keychain. Save again to try once more.",
   "@servers.refusal.savedSecretNotUpdated": {
     "description": "Shown under the password field of the edit server sheet when the server’s other settings were saved, but the system’s password store refused to keep or remove the password: the user clicked Deny on the system prompt, the keychain is locked, or no password store is available. ❗ The other changes DID save, so don’t word it as if nothing was saved. Pressing Save again is safe and only retries the password. “Save” is the sheet’s button (servers.sheet.save). “Keychain” is Apple’s name for the password store; use the name your language’s macOS uses."
+  },
+  "servers.refusal.s3AuthenticationRejected": "That secret access key didn’t work.",
+  "@servers.refusal.s3AuthenticationRejected": {
+    "description": "Shown when an S3 storage server refused the secret access key Cmdr offered for this access key ID. Factual, not accusing. “Secret access key” is the credential name S3 providers use; match the provider console’s term in your language if it has one, and use the same words as servers.sheet.secretAccessKey."
+  },
+  "servers.refusal.s3NeedsCredentials": "This account asks for a secret access key.",
+  "@servers.refusal.s3NeedsCredentials": {
+    "description": "Shown when an S3 account wants its secret access key and Cmdr has none stored. ❗ NOT a rejection: nothing was ever offered, so don’t word it as a wrong key. Same term as servers.sheet.secretAccessKey."
+  },
+  "servers.refusal.s3SecretMissing": "Enter the secret access key.",
+  "@servers.refusal.s3SecretMissing": {
+    "description": "Under the secret access key field of the Add server sheet, when the field is empty and Cmdr has no stored key for this account, so nothing was sent yet. Same term as servers.sheet.secretAccessKey."
+  },
+  "servers.refusal.s3SecretNotStored": "Cmdr couldn’t store this secret access key in your Keychain. Try again, or turn off “Remember in Keychain” to sign in without storing it.",
+  "@servers.refusal.s3SecretNotStored": {
+    "description": "The S3 twin of servers.refusal.secretNotStored: the user turned on “Remember in Keychain” and the system’s password store refused to keep the key (Deny on the system prompt, a locked keychain, or no store). Nothing else changed. “Remember in Keychain” must match the servers.sheet.remember label word for word. “Keychain” is Apple’s name; use the name your language’s macOS uses."
+  },
+  "servers.refusal.s3SavedSecretNotUpdated": "Cmdr saved your changes but couldn’t update the secret access key in your Keychain. Save again to try once more.",
+  "@servers.refusal.s3SavedSecretNotUpdated": {
+    "description": "The S3 twin of servers.refusal.savedSecretNotUpdated: the edit DID save, and only writing the secret access key to the system’s password store didn’t. Pressing Save again is safe. “Save” is servers.sheet.save. “Keychain” is Apple’s name; use the name your language’s macOS uses."
+  },
+  "servers.refusal.accessDenied": "This key can’t reach this bucket. Check the bucket name and the secret access key, and that the key may read the bucket.",
+  "@servers.refusal.accessDenied": {
+    "description": "Under the secret access key field when an S3 bucket refused the key. The server can’t say whether the bucket name is mistyped (Cloudflare R2 answers this way for a bucket that doesn’t exist), the secret is wrong, or the key has no rights to this bucket, so the sentence asks about all three. “Key” is the S3 access key; “bucket” is the S3 term for a top-level storage container; keep the provider console’s terms."
+  },
+  "servers.refusal.bucketListRefused": "This key can’t list the buckets on this account. Type a bucket name to open that bucket, or check the secret access key.",
+  "@servers.refusal.bucketListRefused": {
+    "description": "Under the Bucket field when the user left it empty (which opens the whole account and lists its buckets) and the key isn’t allowed to list buckets. On some servers a wrong secret answers the same way, so it mentions both. “Bucket” is the S3 term; keep the provider console’s term."
+  },
+  "servers.refusal.bucketNotFound": "There’s no bucket by that name at {host}.",
+  "@servers.refusal.bucketNotFound": {
+    "description": "Under the Bucket field when the S3 server has no bucket with the typed name. “Bucket” is the S3 term; keep the provider console’s term.",
+    "placeholders": {
+      "host": "the storage server’s host name, like \"s3.eu-west-1.amazonaws.com\""
+    }
+  },
+  "servers.refusal.regionMismatch": "This bucket is in a different region. Pick its region and try again.",
+  "@servers.refusal.regionMismatch": {
+    "description": "Under the Region field when the S3 bucket lives in another region than the one chosen, and the server didn’t say which. “Region” must match servers.sheet.s3Region."
+  },
+  "servers.refusal.regionMismatchNamed": "This bucket is in {region}. Pick that region and try again.",
+  "@servers.refusal.regionMismatchNamed": {
+    "description": "Under the Region field when the S3 bucket lives in another region than the one chosen. “Region” matches servers.sheet.s3Region.",
+    "placeholders": {
+      "region": "a region code, like \"us-east-2\"; never translated"
+    }
+  },
+  "servers.refusal.clockSkewed": "This Mac’s clock is off by more than 15 minutes, so the server won’t accept Cmdr’s requests. Set the date and time automatically in System Settings, then try again.",
+  "@servers.refusal.clockSkewed": {
+    "description": "Shown when an S3 server refused the request because this Mac’s clock is too far off: S3 signatures carry a timestamp. “System Settings” is the macOS app name; use the name your language’s macOS uses."
+  },
+  "servers.refusal.notAnS3Endpoint": "Nothing at this address answers as S3 storage.",
+  "@servers.refusal.notAnS3Endpoint": {
+    "description": "Under the endpoint field when the address answers as a web server but not as S3-compatible storage. “S3” is a protocol name; don’t translate it."
+  },
+  "servers.refusal.s3FieldMalformed": "Use only lowercase letters, digits, and dashes here.",
+  "@servers.refusal.s3FieldMalformed": {
+    "description": "Under the Region, Location, or Account ID field of the S3 form, before anything was sent, when the typed value holds other characters. Short and instructive."
+  },
+  "servers.refusal.endpointMalformed": "Enter the endpoint as http:// or https:// plus a host name, like https://s3.example.com.",
+  "@servers.refusal.endpointMalformed": {
+    "description": "Under the Endpoint field of the S3 form (“Other S3-compatible”), before anything was sent, when the typed value isn’t a web address made of a scheme, a host, and an optional port. Keep http://, https://, and the example address as they are."
   },
   "servers.sheet.addTitle": "Add server",
   "@servers.sheet.addTitle": {
@@ -415,6 +514,10 @@
     "description": "Label of the password field. One word, NOUN.",
     "screenshot": "server-sign-in-add-prefilled.png"
   },
+  "servers.sheet.secretKeptPlaceholder": "Saved in Keychain. Leave empty to keep it.",
+  "@servers.sheet.secretKeptPlaceholder": {
+    "description": "Placeholder inside the empty Password field (or the Secret access key field, for S3 storage) of the Edit server sheet, when Cmdr already has that secret stored in the macOS Keychain. Cmdr never shows a stored secret, so the field is always empty; this says one is saved, and that leaving the field empty and pressing Save keeps it. “It” is the password or the key, whichever the field is for. “Keychain” is the macOS feature name; use the name your language’s macOS uses (same as in servers.sheet.remember). Short: it has to fit inside a text field."
+  },
   "servers.sheet.smbUsernamePlaceholder": "Optional",
   "@servers.sheet.smbUsernamePlaceholder": {
     "description": "Placeholder inside the optional Username field of the Add server sheet when SMB is selected. One word saying the field may stay empty.",
@@ -458,6 +561,120 @@
   "@servers.sheet.name": {
     "description": "Label of the field for what to call this server in the app. One word, NOUN.",
     "screenshot": "server-sign-in-add.png"
+  },
+  "servers.sheet.protocolS3": "S3",
+  "@servers.sheet.protocolS3": {
+    "description": "One option of the protocol picker in the Add server sheet: S3-compatible object storage (Amazon S3, Cloudflare R2, Backblaze B2, and others). A protocol name; keep it as-is."
+  },
+  "servers.sheet.s3Provider": "Provider",
+  "@servers.sheet.s3Provider": {
+    "description": "Label of the dropdown in the Add server sheet, S3 selected, that picks the storage service (Amazon S3, Cloudflare R2, and so on). One word, NOUN."
+  },
+  "servers.sheet.s3ProviderAws": "Amazon S3",
+  "@servers.sheet.s3ProviderAws": {
+    "description": "One choice in the S3 Provider dropdown. A product name; keep it as-is."
+  },
+  "servers.sheet.s3ProviderR2": "Cloudflare R2",
+  "@servers.sheet.s3ProviderR2": {
+    "description": "One choice in the S3 Provider dropdown. A product name; keep it as-is."
+  },
+  "servers.sheet.s3ProviderB2": "Backblaze B2",
+  "@servers.sheet.s3ProviderB2": {
+    "description": "One choice in the S3 Provider dropdown. A product name; keep it as-is."
+  },
+  "servers.sheet.s3ProviderWasabi": "Wasabi",
+  "@servers.sheet.s3ProviderWasabi": {
+    "description": "One choice in the S3 Provider dropdown. A product name; keep it as-is."
+  },
+  "servers.sheet.s3ProviderHetzner": "Hetzner Object Storage",
+  "@servers.sheet.s3ProviderHetzner": {
+    "description": "One choice in the S3 Provider dropdown. A product name; keep it as-is."
+  },
+  "servers.sheet.s3ProviderGcs": "Google Cloud Storage",
+  "@servers.sheet.s3ProviderGcs": {
+    "description": "One choice in the S3 Provider dropdown. A product name; keep it as-is."
+  },
+  "servers.sheet.s3ProviderDigitalOcean": "DigitalOcean Spaces",
+  "@servers.sheet.s3ProviderDigitalOcean": {
+    "description": "One choice in the S3 Provider dropdown. A product name; keep it as-is."
+  },
+  "servers.sheet.s3GcsKeyHelp": "Sign in with an HMAC key from the Interoperability tab of your Cloud Storage settings.",
+  "@servers.sheet.s3GcsKeyHelp": {
+    "description": "One line under the S3 Provider dropdown when Google Cloud Storage is picked: the access key ID and secret it asks for are an HMAC key, made in the Google Cloud console under Cloud Storage › Settings › Interoperability. “HMAC”, “Interoperability”, and “Cloud Storage” are Google’s own terms: keep “HMAC” as-is, and use the console’s own wording in your language for the tab and the settings if it has one."
+  },
+  "servers.sheet.s3ProviderOther": "Other S3-compatible",
+  "@servers.sheet.s3ProviderOther": {
+    "description": "The last choice in the S3 Provider dropdown: any other storage server that speaks the S3 protocol (a self-hosted MinIO or Garage, for example). Picking it asks for the server’s web address. “S3” is a protocol name; keep it as-is."
+  },
+  "servers.sheet.s3Region": "Region",
+  "@servers.sheet.s3Region": {
+    "description": "Label of the field in the S3 form where the user types the storage region, a code like eu-west-1. One word, NOUN. Use the term the providers’ consoles use in your language."
+  },
+  "servers.sheet.s3RegionOptionalPlaceholder": "Optional. Leave empty to use us-east-1",
+  "@servers.sheet.s3RegionOptionalPlaceholder": {
+    "description": "Placeholder inside the Region field for “Other S3-compatible” storage, where the region is optional. Keep us-east-1 as-is: it’s a region code. Short: it has to fit inside a text field."
+  },
+  "servers.sheet.s3AccountId": "Account ID",
+  "@servers.sheet.s3AccountId": {
+    "description": "Label of the field in the S3 form, Cloudflare R2 selected, where the user types their Cloudflare account ID. Use the term Cloudflare’s dashboard uses in your language."
+  },
+  "servers.sheet.s3AccountIdHelp": "The account ID on your Cloudflare R2 overview page.",
+  "@servers.sheet.s3AccountIdHelp": {
+    "description": "One line under the Account ID field (Cloudflare R2 selected) saying where to find it. “Cloudflare R2” is a product name; keep it as-is."
+  },
+  "servers.sheet.s3Location": "Location",
+  "@servers.sheet.s3Location": {
+    "description": "Label of the dropdown in the S3 form, Hetzner Object Storage selected, that picks the data center location (fsn1, nbg1, hel1). One word, NOUN."
+  },
+  "servers.sheet.s3Endpoint": "Endpoint",
+  "@servers.sheet.s3Endpoint": {
+    "description": "Label of the field in the S3 form, “Other S3-compatible” selected, where the user types the storage server’s web address, like https://s3.example.com. One word, NOUN; use the term S3 tools use in your language."
+  },
+  "servers.sheet.s3PathStyle": "Use path-style addressing",
+  "@servers.sheet.s3PathStyle": {
+    "description": "Checkbox in the S3 form, “Other S3-compatible” selected, on by default: the bucket name goes in the web address’s path rather than in the host name. “Path-style” is the S3 term for it; keep it recognizable. Sentence case, no final period."
+  },
+  "servers.sheet.s3PathStyleHelp": "Most self-hosted servers, like MinIO and Garage, need this.",
+  "@servers.sheet.s3PathStyleHelp": {
+    "description": "One line under the “Use path-style addressing” checkbox. MinIO and Garage are product names; keep them as-is."
+  },
+  "servers.sheet.s3Bucket": "Bucket",
+  "@servers.sheet.s3Bucket": {
+    "description": "Label of the field in the S3 form where the user may type a bucket name. “Bucket” is the S3 term for a top-level storage container; use the term the providers’ consoles use in your language. One word, NOUN."
+  },
+  "servers.sheet.s3BucketHelp": "Leave it empty to see every bucket. If your key is limited to one bucket, type its name.",
+  "@servers.sheet.s3BucketHelp": {
+    "description": "One line under the Bucket field of the S3 form, the field has no placeholder. An empty Bucket opens the whole account and lists its buckets, which works only when the access key may list them; a key made for a single bucket (common with Cloudflare R2 and AWS) can’t, so for that key the field is needed. Shown in the add and edit forms, and stays visible beside a refusal under the field. “Bucket” is the S3 term; keep the providers’ term. “Key” is the access key."
+  },
+  "servers.sheet.s3UseRegion": "Use {region}",
+  "@servers.sheet.s3UseRegion": {
+    "description": "Button under the Region field when the bucket turned out to live in another region and the server said which. It switches the Region field to that region and tries again. VERB phrase, imperative.",
+    "placeholders": {
+      "region": "a region code, like \"us-east-2\"; never translated"
+    }
+  },
+  "servers.sheet.accessKeyId": "Access key ID",
+  "@servers.sheet.accessKeyId": {
+    "description": "Label of the field in the S3 form where the user types the access key ID, the public half of an S3 key pair (like AKIAIOSFODNN7EXAMPLE). Use the term the providers’ consoles use in your language."
+  },
+  "servers.sheet.secretAccessKey": "Secret access key",
+  "@servers.sheet.secretAccessKey": {
+    "description": "Label of the field in the S3 form and the S3 sign-in sheet where the user types the secret access key, the private half of an S3 key pair (it works like a password). Use the term the providers’ consoles use in your language."
+  },
+  "servers.sheet.examplePlaceholder": "Example: {example}",
+  "@servers.sheet.examplePlaceholder": {
+    "description": "Placeholder inside an S3 form field, showing a sample value. The word before it is the ordinary label your language puts in front of an example: match the catalog’s usual “Example:” prefix, the one most other placeholders use.",
+    "placeholders": {
+      "example": "a sample value kept as-is, like a region code \"eu-west-1\", an access key ID, or a web address"
+    }
+  },
+  "servers.sheet.identityLockedS3": "The provider, the access key ID, and the bucket are what name this place. Forget it and add it again to change them.",
+  "@servers.sheet.identityLockedS3": {
+    "description": "Two lines under the greyed-out S3 fields when the user is EDITING a saved S3 place, explaining why those can’t be typed in and what to do instead. The S3 twin of servers.sheet.identityLocked; “Forget” is the same word as there. “Bucket” is the S3 term; keep the providers’ term."
+  },
+  "servers.sheet.identityLockedS3Account": "The provider and the access key ID are what name this account. Forget it and add it again to change them.",
+  "@servers.sheet.identityLockedS3Account": {
+    "description": "Two lines under the greyed-out provider and access key ID fields when the user is EDITING a saved S3 storage account (opened from the account’s row in the Servers list, so the Name field above is the account’s name and there’s no bucket field). Explains why those can’t be typed in and what to do instead. The account twin of servers.sheet.identityLockedS3; “Forget” is the same word as in servers.sheet.identityLocked. “Access key ID” matches servers.sheet.accessKeyId."
   },
   "servers.sheet.namePlaceholder": "Leave empty to use {label}",
   "@servers.sheet.namePlaceholder": {
@@ -586,6 +803,15 @@
     "screenshot": "servers-hub.png",
     "screenshotNote": "Shown inside a file pane while it connects to a server: \"Connecting…\", \"Signed out\", a changed host key, or a \"Reconnecting…\" state with a countdown and Retry/Cancel controls. This shows the servers list those connections start from; your string appears in the pane, in the same network context."
   },
+  "servers.paneState.unreachable": "Cmdr couldn’t reach {name}.",
+  "@servers.paneState.unreachable": {
+    "description": "Heading of the pane view shown when the user opened a saved server and there was no route to it at all: it’s off, its address doesn’t resolve, or the network is down. Names the server by the name the user gave it. A Try again button sits below. \"Cmdr\" is the product name.",
+    "placeholders": {
+      "name": "the name the user gave the saved server, like “Naspolya”, or its hostname, like “nas.local”, when it has no name"
+    },
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Shown inside a file pane while it connects to a server: \"Connecting…\", \"Signed out\", a changed host key, or a \"Reconnecting…\" state with a countdown and Retry/Cancel controls. This shows the servers list those connections start from; your string appears in the pane, in the same network context."
+  },
   "servers.paneState.goBack": "Go back",
   "@servers.paneState.goBack": {
     "description": "Button that takes the pane back to where it was before it opened this server or share. VERB phrase, imperative.",
@@ -607,9 +833,15 @@
     "screenshot": "servers-hub.png",
     "screenshotNote": "Shown inside a file pane while it connects to a server: \"Connecting…\", \"Signed out\", a changed host key, or a \"Reconnecting…\" state with a countdown and Retry/Cancel controls. This shows the servers list those connections start from; your string appears in the pane, in the same network context."
   },
-  "servers.paneState.hostKeyChangedHint": "Its key changed. That can mean the server was reinstalled, or that something is sitting between you and it. Disconnect, then open it again to check the fingerprint.",
+  "servers.paneState.hostKeyChangedHint": "Its key changed. That can mean the server was reinstalled, or that something is sitting between you and it. Check the new key before you connect again.",
   "@servers.paneState.hostKeyChangedHint": {
-    "description": "One line under that heading, saying both innocent and serious causes and what to do. “Key” is the server’s SSH host key; “fingerprint” is the short string a person compares before trusting it.",
+    "description": "One line under that heading, saying both innocent and serious causes and what to do. “Key” is the server’s SSH host key, the identity it proves itself with. A “Check the key” button (servers.paneState.checkHostKey) sits right below it and opens the screen that shows the new key; use the same word for “key” in both.",
+    "screenshot": "servers-hub.png",
+    "screenshotNote": "Shown inside a file pane while it connects to a server: \"Connecting…\", \"Signed out\", a changed host key, or a \"Reconnecting…\" state with a countdown and Retry/Cancel controls. This shows the servers list those connections start from; your string appears in the pane, in the same network context."
+  },
+  "servers.paneState.checkHostKey": "Check the key",
+  "@servers.paneState.checkHostKey": {
+    "description": "Button under the changed-key message in a file pane. It opens the sign-in sheet on its host-key step, which shows the server’s new SSH host key and its fingerprint, with that screen’s own choices to trust it or not. The button itself trusts nothing. VERB, imperative, short control label. “Key” is the same SSH host key as in servers.paneState.hostKeyChangedHint.",
     "screenshot": "servers-hub.png",
     "screenshotNote": "Shown inside a file pane while it connects to a server: \"Connecting…\", \"Signed out\", a changed host key, or a \"Reconnecting…\" state with a countdown and Retry/Cancel controls. This shows the servers list those connections start from; your string appears in the pane, in the same network context."
   },

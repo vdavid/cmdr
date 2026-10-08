@@ -1,4 +1,4 @@
-//! The SFTP and WebDAV servers, as rows in the volume list.
+//! The SFTP, WebDAV, and S3 places, as rows in the volume list.
 //!
 //! The server twin of `device_volumes`: that module turns attached devices into
 //! volumes, this one turns SAVED and LIVE servers into them. A server is not
@@ -24,10 +24,10 @@
 use cmdr_fs::volume::remote_paths::RemoteRoot;
 use cmdr_fs::volume::{BackendKind, ConnectionState};
 
-use crate::network::{saved_server_fields, sftp_known_servers, webdav_known_servers};
+use crate::network::{s3_known_places, saved_server_fields, sftp_known_servers, webdav_known_servers};
 use crate::volume_listing::{LocationCategory, LocationInfo};
 
-/// One SFTP or WebDAV place, from the stores and the registry.
+/// One SFTP, WebDAV, or S3 place, from the stores and the registry.
 #[derive(Debug, Clone)]
 pub(crate) struct ServerPlace {
     /// The volume id, from the same funnel the registry keys on.
@@ -42,7 +42,7 @@ pub(crate) struct ServerPlace {
     /// folder as an app path. `None` when there is none, when the root no longer
     /// holds it, and for a live volume nothing saved.
     pub landing_path: Option<String>,
-    /// `"sftp"` or `"webdav"`. ❗ Load-bearing beyond display: the MCP volumes
+    /// `"sftp"`, `"webdav"`, or `"s3"`. ❗ Load-bearing beyond display: the MCP volumes
     /// resource keys `kind` on it, and the frontend's `volumeKindFor` reads it
     /// AHEAD of the `category === 'network'` arm, so a row without it is an SMB
     /// pane.
@@ -120,6 +120,29 @@ pub(crate) fn server_places() -> Vec<ServerPlace> {
         });
     }
 
+    for entry in s3_known_places::all() {
+        let Ok(params) = entry.params() else {
+            log::warn!(target: "volume", "a saved S3 place's provider no longer makes an endpoint; skipping its row");
+            continue;
+        };
+        let id = s3_known_places::place_id(&params);
+        let root = RemoteRoot::new(
+            cmdr_fs::volume::s3_app_root(params.host(), params.port(), params.access_key_id()),
+            std::path::Path::new(&params.remote_root()),
+        );
+        places.push(ServerPlace {
+            state: registered(&id, BackendKind::S3).unwrap_or(ConnectionState::Saved),
+            id,
+            // A bucket by its own name, the account root by its account's.
+            name: s3_known_places::place_label(&entry),
+            app_root: root.app_root().to_string_lossy().into_owned(),
+            // An S3 place has no start folder: a bucket place IS its landing.
+            landing_path: None,
+            fs_type: "s3",
+            pinned: entry.pinned,
+        });
+    }
+
     // ❗ And every REGISTERED server volume the stores don't know about, so a
     // live session is never a ghost. `forget_server` removes the saved entry
     // before it disconnects, and in that window a volume with no row is one a
@@ -128,6 +151,7 @@ pub(crate) fn server_places() -> Vec<ServerPlace> {
         let fs_type = match volume.backend_kind() {
             BackendKind::Sftp => "sftp",
             BackendKind::Webdav => "webdav",
+            BackendKind::S3 => "s3",
             _ => continue,
         };
         if places.iter().any(|place| place.id == id) {
@@ -158,7 +182,8 @@ fn landing_under(root: &RemoteRoot, remote_root: &str, start_folder: Option<&str
     saved_server_fields::start_folder_under_root(remote_root, start_folder)
         .ok()
         .flatten()
-        .map(|folder| root.to_app_path(&folder).to_string_lossy().into_owned())
+        .and_then(|folder| root.to_app_path(&folder))
+        .map(|landing| landing.to_string_lossy().into_owned())
 }
 
 /// The row a place becomes.
@@ -284,8 +309,14 @@ pub(crate) fn place_root(volume_id: &str) -> Option<String> {
         .map(|place| place.app_root)
 }
 
-/// The server volume an `sftp://` or `webdav://` path belongs to, registered or
-/// merely saved.
+/// The server volume an `sftp://`, `webdav://`, or `s3://` path belongs to,
+/// registered or merely saved.
+///
+/// ❗ **The most specific root wins.** An S3 account's root place
+/// (`s3://key@host:443/`) and its bucket places (`…/photos`) spell one object
+/// the same way, so a path in a bucket is under both; the bucket place, the
+/// longer root, is the one it names. Every other protocol has one place per
+/// account, where this changes nothing.
 ///
 /// ❗ **This never dials.** Resolving says WHERE a path lives; activating the
 /// row is what brings it to life. A dial here would make every restored server
@@ -295,7 +326,8 @@ pub(crate) fn place_root(volume_id: &str) -> Option<String> {
 pub(crate) fn server_volume_for_path(path: &str) -> Option<LocationInfo> {
     server_places()
         .into_iter()
-        .find(|place| path_is_under(path, &place.app_root))
+        .filter(|place| path_is_under(path, &place.app_root))
+        .max_by_key(|place| place.app_root.trim_end_matches('/').len())
         .map(location_from_place)
 }
 

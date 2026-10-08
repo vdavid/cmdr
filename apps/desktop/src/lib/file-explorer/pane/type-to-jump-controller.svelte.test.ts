@@ -34,7 +34,6 @@ function setup(over: Partial<TypeToJumpControllerDeps> = {}) {
     getListingId: () => 'listing-1',
     getLoading: () => false,
     getHasBackendListing: () => true,
-    getIsMtpDeviceOnly: () => false,
     getIncludeHidden: () => true,
     getHasParent: () => true,
     setCursorIndex,
@@ -90,12 +89,11 @@ describe('createTypeToJumpController', () => {
     ctl.dispose()
   })
 
-  it('does not jump when there is no listing / while loading / no backend listing / MTP not connected', () => {
+  it('does not jump when there is no listing / while loading / no backend listing', () => {
     for (const over of [
       { getListingId: () => '' },
       { getLoading: () => true },
       { getHasBackendListing: () => false },
-      { getIsMtpDeviceOnly: () => true },
     ] as Partial<TypeToJumpControllerDeps>[]) {
       vi.clearAllMocks()
       const { ctl } = setup(over)

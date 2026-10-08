@@ -44,7 +44,7 @@ pub(crate) fn volume_registrar() -> MtpVolumeRegistrar {
             let volume_id = cmdr_fs::volume::mtp_ids::mtp_volume_id(device_id, storage_id);
             let volume = Arc::new(MtpVolume::new(Arc::clone(manager), device_id, storage_id, storage_name));
             get_volume_manager().register(&volume_id, volume);
-            debug!("Registered MTP volume: {volume_id} ({storage_name})");
+            debug!("Registered MTP volume: {volume_id} (volumeName={storage_name:?})");
             crate::volume_broadcast::emit_volumes_changed();
         },
         detach: |device_id, storage_id| {

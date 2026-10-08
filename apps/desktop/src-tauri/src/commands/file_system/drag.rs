@@ -112,7 +112,8 @@ pub fn start_selection_drag(
     has_parent: bool,
     icon_path: String,
 ) -> Result<(), String> {
-    let paths = ops_get_paths_at_indices(&listing_id, &selected_indices, include_hidden, has_parent)?;
+    let paths = ops_get_paths_at_indices(&listing_id, &selected_indices, include_hidden, has_parent)
+        .map_err(|e| e.to_string())?;
 
     if paths.is_empty() {
         return Err("No valid files to drag".to_string());

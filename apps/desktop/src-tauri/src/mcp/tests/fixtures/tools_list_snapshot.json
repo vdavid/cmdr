@@ -503,7 +503,7 @@
       "name": "sort"
     },
     {
-      "description": "Manage a pane's tabs: new, close, close_others, activate, set_pinned, or reopen (restore the last-closed tab). tabId defaults to the active tab where it applies; see each pane's tabs in cmdr://state.",
+      "description": "Manage a pane's tabs: new, close, close_others, activate, set_pinned, reopen (restore the last-closed tab), or move (reorder with toIndex, or send to the other pane with toPane). tabId defaults to the active tab where it applies; see each pane's tabs in cmdr://state.",
       "inputSchema": {
         "properties": {
           "action": {
@@ -514,12 +514,13 @@
               "close_others",
               "activate",
               "set_pinned",
-              "reopen"
+              "reopen",
+              "move"
             ],
             "type": "string"
           },
           "pane": {
-            "description": "Which pane to operate on",
+            "description": "Which pane to operate on. For move: the pane the tab is in now.",
             "enum": [
               "left",
               "right"
@@ -531,7 +532,20 @@
             "type": "boolean"
           },
           "tabId": {
-            "description": "Tab ID. Defaults to active tab for close, close_others, set_pinned. Required for activate. Not used for new or reopen.",
+            "description": "Tab ID. Defaults to active tab for close, close_others, set_pinned, move. Required for activate. Not used for new or reopen.",
+            "type": "string"
+          },
+          "toIndex": {
+            "description": "For move: the 0-based index the tab holds once moved, as `i:` in cmdr://state then shows it. Defaults to the end; a larger index also means the end. move needs toPane, toIndex, or both.",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "toPane": {
+            "description": "For move: the pane the tab goes to. Defaults to `pane` (a reorder). A move never activates the tab or changes pane focus, and is refused for a pinned tab, a pane's only tab, or a pane at its tab limit.",
+            "enum": [
+              "left",
+              "right"
+            ],
             "type": "string"
           }
         },
@@ -730,7 +744,7 @@
             "type": "string"
           },
           "sizeMin": {
-            "description": "Minimum file size, human-readable (for example, \"1 MB\", \"500 KB\")",
+            "description": "Minimum file size, human-readable (for example, \"1 MB\", \"500 KiB\")",
             "type": "string"
           },
           "sortBy": {
@@ -1276,7 +1290,7 @@
       "name": "image_facts"
     },
     {
-      "description": "What this Cmdr process is holding right now: the physical footprint, the Rust (mimalloc) heap split into live data and allocator slack, the system malloc zones, SQLite's page-cache slab, and the kernel's VM map folded by tag with a per-tag region-size histogram. The only reading that spans both allocators. macOS only.",
+      "description": "What this Cmdr process is holding right now: the physical footprint, the Rust heap tagged by the global allocator holding it (mimalloc or system) and split into live data and allocator slack, the other malloc zones, SQLite's page-cache slab, and the kernel's VM map folded by tag with a per-tag region-size histogram. The only reading that spans every allocator. macOS only.",
       "inputSchema": {
         "additionalProperties": false,
         "properties": {

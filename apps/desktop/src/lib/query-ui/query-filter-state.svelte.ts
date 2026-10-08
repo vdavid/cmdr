@@ -54,8 +54,8 @@ export function typeFilterToIsDirectory(typeFilter: TypeFilter): boolean | null 
 /**
  * Size unit. `B` (bytes) was added in round 2 (D10) so the list-style popover can let the
  * user pick a byte-level filter without leaving the popover. The byte unit's label varies
- * between `byte` / `bytes` depending on the selected count (see `byteUnitLabel`); KB/kB
- * follows the user's binary-vs-SI setting (`kiloByteLabel`).
+ * between `byte` / `bytes` depending on the selected count (see `byteUnitLabel`); the KB/MB/GB IDs
+ * render as KiB/MiB/GiB or kB/MB/GB by the user's binary-vs-SI setting (`unitLabel` in `$lib/units`).
  */
 export type SizeUnit = 'B' | 'KB' | 'MB' | 'GB'
 
@@ -92,7 +92,7 @@ export { deriveEnterAction, type LastDialogEvent }
 
 /**
  * Converts size input + unit to bytes, using the user's binary/SI base so the
- * math agrees with the `KB` / `kB` label the popover shows. Returns `undefined`
+ * math agrees with the `KiB` / `kB` label the popover shows. Returns `undefined`
  * if empty or invalid. A value of
  * exactly `0` is honored (the user explicitly picked 0 bytes from the D10 grid preset and
  * the engine should pin the lower / upper bound to zero rather than silently skip the

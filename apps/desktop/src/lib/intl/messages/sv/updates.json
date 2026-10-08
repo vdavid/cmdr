@@ -80,6 +80,14 @@
   "@updates.status.installing": {
     "sourceHash": "214ef12"
   },
+  "updates.status.managedOff": "Din organisation hanterar uppdateringarna för Cmdr.",
+  "@updates.status.managedOff": {
+    "sourceHash": "aa342dc"
+  },
+  "updates.status.heldByPolicy": "Cmdr {available} finns nu, men din organisation håller den här Macen på {ceiling} eller tidigare.",
+  "@updates.status.heldByPolicy": {
+    "sourceHash": "5c9b196"
+  },
   "updates.status.ready": "Uppdatering v{next} är klar. Starta om för att tillämpa.",
   "@updates.status.ready": {
     "sourceHash": "2c226ff"

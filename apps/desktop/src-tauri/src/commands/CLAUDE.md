@@ -7,7 +7,7 @@ Thin Tauri IPC layer. Each file groups one domain's `#[tauri::command]` function
 
 One file per domain plus `mod.rs` (re-exports + platform gates), and the directories `agent/`, `file_system/`,
 `media_index/`, and `servers/` (`servers.rs`'s own wire-vocabulary sibling, `wire.rs`). `servers.rs` is the
-protocol-agnostic facade over `sftp.rs`, `webdav.rs`, and `network.rs`. AI and space-poller commands register
+protocol-agnostic facade over `sftp.rs`, `webdav.rs`, `s3.rs`, and `network.rs`. AI and space-poller commands register
 themselves; the index subsystems are the reverse, since they can't carry `tauri::`. Timeouts and budgets come from
 `crate::deadline` (`../deadline/CLAUDE.md`).
 
@@ -17,6 +17,8 @@ themselves; the index subsystems are the reverse, since they can't carry `tauri:
   `#[tauri::command]` runs on the MAIN thread (an in-memory scan of a 74k listing once stopped the app answering IPC).
   Tiers: 2 s reads, 5 s writes, 15 s trash, 30 s recursive scans. A person-waited command on a volume with a live
   session takes `deadline::io_budget` instead (at least 10 s): a busy NAS holds one `stat` for seconds while healthy.
+  New folder, new file, rename, and paste-as-file answer `StillRunning` at their deadline and settle later, ❌ never `TimedOut`: the
+  work lands after a timeout said it didn't (`../file_system/write_operations/mutation_reply.rs`).
 - **Time out through `crate::deadline`, ❌ never a bare `tokio::time::timeout`** (it drops the future and wedges an MTP
   phone mid-transaction). Multi-leg commands share ONE `Deadline`. ❌ Don't wrap `sync_status`: it carries its own.
 - **❌ Every command's `Err` is its own typed enum, never a shared message-carrying struct**, or typed refusals flatten

@@ -11,6 +11,7 @@
 use serde::Serialize;
 
 use super::client::AiError;
+use crate::managed_policy::ManagedAiRefusal;
 
 /// Coarse, frontend-branchable classification of an AI translation failure.
 ///
@@ -41,6 +42,9 @@ pub enum AiTranslateErrorKind {
     ParseError,
     /// The configured provider value isn't recognized.
     UnknownProvider,
+    /// The organization's managed policy refuses this AI request. [`AiTranslateError::managed`]
+    /// says which rule.
+    Managed,
 }
 
 /// Typed error returned by `translate_search_query` / `translate_selection_query`.
@@ -52,6 +56,8 @@ pub enum AiTranslateErrorKind {
 pub struct AiTranslateError {
     pub kind: AiTranslateErrorKind,
     pub message: String,
+    /// Which managed-policy rule refused, set exactly when `kind` is `Managed`.
+    pub managed: Option<ManagedAiRefusal>,
 }
 
 impl AiTranslateError {
@@ -59,6 +65,16 @@ impl AiTranslateError {
         Self {
             kind,
             message: message.into(),
+            managed: None,
+        }
+    }
+
+    /// The organization's policy refused the request.
+    pub fn from_refusal(refusal: ManagedAiRefusal) -> Self {
+        Self {
+            kind: AiTranslateErrorKind::Managed,
+            message: format!("Refused by the organization's policy ({refusal:?})"),
+            managed: Some(refusal),
         }
     }
 }
@@ -74,6 +90,9 @@ impl std::error::Error for AiTranslateError {}
 impl From<AiError> for AiTranslateError {
     fn from(e: AiError) -> Self {
         use AiTranslateErrorKind as K;
+        if let AiError::Managed(refusal) = e {
+            return Self::from_refusal(refusal);
+        }
         let kind = match e {
             AiError::Unavailable => K::Unavailable,
             AiError::Timeout => K::Timeout,
@@ -87,6 +106,7 @@ impl From<AiError> for AiTranslateError {
             AiError::EmptyResponse => K::EmptyResponse,
             AiError::ServerError(_) => K::ServerError,
             AiError::ParseError(_) => K::ParseError,
+            AiError::Managed(_) => K::Managed,
         };
         Self::new(kind, e.to_string())
     }
@@ -112,6 +132,18 @@ mod tests {
         for (err, expected) in cases {
             assert_eq!(AiTranslateError::from(err).kind, expected);
         }
+    }
+
+    #[test]
+    fn a_managed_refusal_keeps_its_rule() {
+        let err = AiTranslateError::from(AiError::Managed(ManagedAiRefusal::HostNotAllowed));
+        assert_eq!(err.kind, AiTranslateErrorKind::Managed);
+        assert_eq!(err.managed, Some(ManagedAiRefusal::HostNotAllowed));
+        assert_eq!(AiTranslateError::from(AiError::Timeout).managed, None);
+        assert_eq!(
+            serde_json::to_value(&err).expect("serializes"),
+            serde_json::json!({ "kind": "managed", "message": err.message, "managed": "hostNotAllowed" })
+        );
     }
 
     /// The frontend branches on this token (`translate-error-toast.ts`), so it's pinned here.

@@ -249,6 +249,8 @@ fn share_place(row: &KnownNetworkShare, manager: &crate::file_system::volume::ma
         name: row.share_name.clone(),
         pinned: row.pinned,
         username: row.username.clone(),
+        // A share has no such switch: the kernel mount's own reconnect is macOS's.
+        auto_reconnect: None,
         volume_id,
     }
 }

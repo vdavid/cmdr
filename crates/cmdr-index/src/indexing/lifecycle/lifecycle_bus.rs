@@ -33,6 +33,7 @@ use std::sync::Mutex;
 
 use tokio::sync::broadcast;
 use tokio::sync::watch;
+use tokio_util::sync::CancellationToken;
 
 use crate::indexing::volume::IndexVolumeKind;
 use cmdr_fs::ignore_poison::IgnorePoison;
@@ -93,13 +94,26 @@ static BUS: LazyLock<Mutex<HashMap<String, watch::Sender<ScanState>>>> = LazyLoc
 static DIR_BUS: LazyLock<Mutex<HashMap<String, watch::Sender<DirsChanged>>>> =
     LazyLock::new(|| Mutex::new(HashMap::new()));
 
-/// A volume that just registered with the index (reserved its
-/// `Initializing` slot), carrying its typed kind so a consumer branches on the
-/// kind (score Local + SMB, exclude MTP) without touching the volume-id string.
-#[derive(Debug, Clone, PartialEq, Eq)]
+/// A registered volume, as a subsystem that wires per-volume work receives it:
+/// from this bus when the volume reserves its `Initializing` slot, or from the
+/// startup sweep (`state::ready_volumes_to_wire`) when it was already there.
+///
+/// Carries its typed kind so a consumer branches on the kind (score Local + SMB,
+/// exclude MTP) without touching the volume-id string, and a stop signal so the
+/// work it starts ends with this life of the volume.
+#[derive(Debug, Clone)]
 pub(crate) struct RegisteredVolume {
     pub volume_id: String,
     pub kind: IndexVolumeKind,
+    /// A CHILD of the volume's root stop signal, minted by whoever held the
+    /// instance, so it's handed down rather than looked up by id later
+    /// (`indexing/host/DETAILS.md` § Cancellation). It fires when the volume stops;
+    /// a consumer may also fire it to stop its own work without stopping the volume.
+    ///
+    /// A bare token and not a `VolumeWork`, on purpose: the consumers here read the
+    /// local index database, never the drive, so they must not hold the volume
+    /// against an eject.
+    pub stop: CancellationToken,
 }
 
 /// The registration bus: a single fan-out `broadcast` of every volume that
@@ -230,16 +244,18 @@ pub(crate) fn subscribe(volume_id: &str) -> watch::Receiver<ScanState> {
     with_sender(volume_id, |sender| sender.subscribe())
 }
 
-/// Announce that a volume registered (reserved its index slot), with its kind.
+/// Announce that a volume registered (reserved its index slot), with its kind and
+/// a child of its root stop signal.
 ///
 /// Published once from the neutral registration funnel (`state::start_indexing_for`,
 /// right after the reservation wins). A `send` with no receivers is a harmless
 /// no-op — the consumer's startup sweep covers any volume that registered before
 /// it subscribed, so nothing is lost.
-pub(crate) fn publish_volume_registered(volume_id: &str, kind: IndexVolumeKind) {
+pub(crate) fn publish_volume_registered(volume_id: &str, kind: IndexVolumeKind, stop: CancellationToken) {
     let _ = REGISTRATION_BUS.send(RegisteredVolume {
         volume_id: volume_id.to_string(),
         kind,
+        stop,
     });
 }
 
@@ -249,6 +265,16 @@ pub(crate) fn publish_volume_registered(volume_id: &str, kind: IndexVolumeKind) 
 /// pre-subscribe set is the sweep's job.
 pub(crate) fn subscribe_registrations() -> broadcast::Receiver<RegisteredVolume> {
     REGISTRATION_BUS.subscribe()
+}
+
+/// How many receivers a volume's three per-volume buses (scan, home coverage,
+/// dir-changed) hold between them: for a test that pins how long a subscriber keeps
+/// listening.
+#[cfg(test)]
+pub(crate) fn subscriber_count_for_test(volume_id: &str) -> usize {
+    with_sender(volume_id, |sender| sender.receiver_count())
+        + with_home_sender(volume_id, |sender| sender.receiver_count())
+        + with_dir_sender(volume_id, |sender| sender.receiver_count())
 }
 
 #[cfg(test)]
@@ -383,21 +409,27 @@ mod tests {
         let mut rx = subscribe_registrations();
 
         // A share registers AFTER the subscribe (the mid-session mount case).
-        publish_volume_registered("smb-late", IndexVolumeKind::Smb);
+        let volume_stop = CancellationToken::new();
+        publish_volume_registered("smb-late", IndexVolumeKind::Smb, volume_stop.child_token());
 
         let got = rx.try_recv().expect("the late registration is delivered");
         assert_eq!(
-            got,
-            RegisteredVolume {
-                volume_id: "smb-late".to_string(),
-                kind: IndexVolumeKind::Smb,
-            },
+            (got.volume_id.as_str(), got.kind),
+            ("smb-late", IndexVolumeKind::Smb),
             "the registration carries the volume id and its typed kind"
+        );
+        // And the stop signal that rides along is the volume's own: stopping the
+        // volume is what stops the work a subscriber starts for it.
+        assert!(!got.stop.is_cancelled());
+        volume_stop.cancel();
+        assert!(
+            got.stop.is_cancelled(),
+            "the subscriber's signal fires with the volume's"
         );
 
         // An MTP registration is delivered too (the consumer, not the bus, applies
         // the exclusion) — the bus stays a neutral publisher.
-        publish_volume_registered("mtp-cam:1", IndexVolumeKind::Mtp);
+        publish_volume_registered("mtp-cam:1", IndexVolumeKind::Mtp, CancellationToken::new());
         let mtp = rx.try_recv().expect("mtp registration delivered");
         assert_eq!(mtp.kind, IndexVolumeKind::Mtp, "the bus reports the kind verbatim");
     }

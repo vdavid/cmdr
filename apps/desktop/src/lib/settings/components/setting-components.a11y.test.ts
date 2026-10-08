@@ -431,6 +431,7 @@ describe('SettingRow a11y', () => {
         description: 'How much vertical space each row uses.',
         disabled: true,
         disabledReason: 'Preview only',
+        disabledNote: 'Currently disabled because the preview is on.',
         requiresRestart: true,
         children: controlSnippet,
       },

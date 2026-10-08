@@ -26,9 +26,10 @@
     type SystemMemoryInfo } from '$lib/tauri-commands'
     import { computeGaugeSegments } from './ram-gauge-utils'
     import { getAppLogger } from '$lib/logging/logger'
-    import { colorizeSizeString } from '$lib/file-explorer/selection/selection-info-utils'
+    import { localAiErrorLogLevel, toLocalAiError } from '$lib/ai/local-ai-error'
+    import { colorizeSize } from '$lib/file-explorer/selection/selection-info-utils'
     import { t, tString } from '$lib/intl/messages.svelte'
-    import { formatByteSize } from '$lib/units'
+    import { formatByteSize, formatByteSizeTiered } from '$lib/units'
 
     interface Props {
         searchQuery: string
@@ -42,6 +43,9 @@
 
     // Dynamic state from backend
     let status = $state<AiRuntimeStatus | null>(initialStatus)
+    // The backend sends the model size as bytes; it's worded here so it follows the UI language and the
+    // binary/SI setting like every other size.
+    const modelSizeText = $derived(status ? formatByteSize(status.modelSizeBytes) : null)
     let showDeleteConfirm = $state(false)
     let isDeleting = $state(false)
     let downloadProgress = $state<AiDownloadProgress | null>(null)
@@ -153,6 +157,15 @@
         }
     }
 
+    /**
+     * Logs a `start_ai_server` / `start_ai_download` rejection at its level: the organization's
+     * refusal and a cancel at info (an error log can send an automatic report), the rest at error.
+     */
+    function logLocalAiError(message: string, rejection: unknown): void {
+        const error = toLocalAiError(rejection)
+        logger[localAiErrorLogLevel(error)](message, { error })
+    }
+
     async function performContextRestart(): Promise<void> {
         isRestarting = true
         try {
@@ -160,7 +173,7 @@
             const ctxSize = Number(getSetting('ai.localContextSize'))
             await startAiServer(ctxSize)
         } catch (e) {
-            logger.error("Couldn't restart AI server: {error}", { error: e })
+            logLocalAiError("Couldn't restart AI server: {error}", e)
             isRestarting = false
         }
         await refreshStatus()
@@ -177,7 +190,7 @@
             activeContextSize = ctxSize
             await refreshStatus()
         } catch (e) {
-            logger.error("Couldn't start AI server: {error}", { error: e })
+            logLocalAiError("Couldn't start AI server: {error}", e)
         }
     }
 
@@ -201,7 +214,8 @@
             if (downloadCancelledByUser) {
                 logger.info('AI download cancelled by user')
             } else {
-                logger.error("Couldn't start AI download: {error}", { error: e })
+                // A cancel from a policy change, or the organization's refusal, logs at info too.
+                logLocalAiError("Couldn't start AI download: {error}", e)
             }
             downloadProgress = null
             installStep = null
@@ -297,9 +311,9 @@
     const downloadProgressText = $derived.by(() => {
         if (!downloadProgress) return ''
         if (downloadProgress.totalBytes === 0) return tString('ai.local.startingDownload')
-        const downloaded = colorizeSizeString(formatByteSize(downloadProgress.bytesDownloaded))
-        const total = colorizeSizeString(formatByteSize(downloadProgress.totalBytes))
-        const speed = colorizeSizeString(formatByteSize(downloadProgress.speed))
+        const downloaded = colorizeSize(formatByteSizeTiered(downloadProgress.bytesDownloaded))
+        const total = colorizeSize(formatByteSizeTiered(downloadProgress.totalBytes))
+        const speed = colorizeSize(formatByteSizeTiered(downloadProgress.speed))
         const eta = formatEta(downloadProgress.etaSeconds)
         const parts = [`${String(downloadPercent)}%`, `${downloaded} / ${total}`, `${speed}/s`]
         if (eta) parts.push(eta)
@@ -359,7 +373,7 @@
         <div class="status-row">
             <span class="status-label">{tString('ai.local.modelLabel')}</span>
             <span class="status-value"
-                >{status?.modelName ?? tString('ai.local.modelUnknown')} ({status?.modelSizeFormatted ??
+                >{status?.modelName ?? tString('ai.local.modelUnknown')} ({modelSizeText ??
                     tString('ai.local.modelSizeUnknown')})</span
             >
         </div>
@@ -374,12 +388,10 @@
                     <span class="status-detail">&middot; {serverStatusDetail}</span>{/if}
             </span>
         </div>
-    {:else}
+    {:else if status && modelSizeText}
+        <!-- Waits for the status: the model's name and size come from the backend, never a guessed default. -->
         <p class="not-installed-text">
-            {t('ai.local.notInstalled', {
-                modelName: status?.modelName ?? 'Ministral 3B',
-                modelSize: status?.modelSizeFormatted ?? '2.0 GB',
-            })}
+            {t('ai.local.notInstalled', { modelName: status.modelName, modelSize: modelSizeText })}
         </p>
     {/if}
 </div>
@@ -522,9 +534,9 @@
 </div>
 
 <!-- Delete model confirmation dialog -->
-{#if showDeleteConfirm}
+{#if showDeleteConfirm && modelSizeText}
     <DeleteAiModelDialog
-        modelSizeFormatted={status?.modelSizeFormatted ?? null}
+        modelSizeFormatted={modelSizeText}
         {isDeleting}
         onConfirm={() => void handleDeleteModel()}
         onCancel={() => (showDeleteConfirm = false)}

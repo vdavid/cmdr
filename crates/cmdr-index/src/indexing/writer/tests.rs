@@ -820,6 +820,7 @@ fn a_fatal_storage_error_stops_the_writer_and_trips_the_signal() {
             crate::NoopEventSink::shared(),
             "root".to_string(),
             Arc::new(AtomicU64::new(0)),
+            Arc::new(AtomicU64::new(0)),
             Arc::new(AtomicI64::new(2)),
             Arc::new(MutationTracker::new(true)),
             queue_depth_for_loop,

@@ -79,13 +79,5 @@
   "mtp.deviceFallbackName": "Appareil MTP",
   "@mtp.deviceFallbackName": {
     "sourceHash": "8ba7a69"
-  },
-  "mtp.error.exclusiveAccess": "Un autre processus a un accès exclusif{blocking, select, none {} other { (bloqué par {blocking})}}",
-  "@mtp.error.exclusiveAccess": {
-    "sourceHash": "a81f306"
-  },
-  "mtp.error.permissionDenied": "Autorisation USB refusée. Installez les règles udev et reconnectez",
-  "@mtp.error.permissionDenied": {
-    "sourceHash": "3362501"
   }
 }

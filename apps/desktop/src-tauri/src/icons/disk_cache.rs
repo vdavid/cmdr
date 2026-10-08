@@ -41,15 +41,7 @@ struct DiskEntry {
 /// harnesses) the same way the secret store and settings loader do, so dev / prod
 /// / per-worktree instances stay isolated. Resolved once and memoized.
 static CACHE_DIR: LazyLock<Option<PathBuf>> = LazyLock::new(|| {
-    let base = if let Ok(custom) = std::env::var("CMDR_DATA_DIR") {
-        if custom.is_empty() {
-            return None;
-        }
-        PathBuf::from(custom)
-    } else {
-        dirs::data_dir()?.join("com.veszelovszki.cmdr")
-    };
-    let dir = base.join("icon-cache");
+    let dir = crate::config::standalone_app_data_dir()?.join("icon-cache");
     if let Err(e) = fs::create_dir_all(&dir) {
         log::warn!(target: "icons", "Could not create icon-cache dir {}: {e}", dir.display());
         return None;

@@ -107,14 +107,6 @@ export const REPRESENTATIVE_SCREENSHOTS: RepresentativeMapping[] = [
     note: 'Shown while mounting a network share, in the network flow that starts at the servers list pictured here.',
   },
   {
-    // MTP device connection states + dialogs share the MTP browsing context.
-    prefix: 'fileExplorer.mtp.',
-    screenshot: 'mtp-browse.png',
-    note:
-      'MTP (phone/camera) connection status shown in the device pane. This shows the MTP browse surface; your string appears ' +
-      'as a status message in this same device context (connecting, busy, disconnected, etc.).',
-  },
-  {
     prefix: 'mtp.',
     screenshot: 'mtp-browse.png',
     note:
@@ -277,6 +269,23 @@ export const REPRESENTATIVE_SCREENSHOTS: RepresentativeMapping[] = [
       'content when a file can’t be loaded.',
   },
   {
+    // The rollback cross-reference lines sit under a list row, not in another
+    // dialog state. Listed BEFORE the blanket `operationLog.` mapping, whose
+    // note would otherwise misplace them. `rollbackOf` also covers `rollbackOfUnlisted`.
+    prefix: 'operationLog.dialog.rollbackOf',
+    screenshot: 'operation-log-more-pages.png',
+    note:
+      'The operation log dialog, pictured here with entries in it. Your string is the quiet second line under one of those ' +
+      'rows, shown only when that operation is a rollback or has been rolled back, so this screenshot may not show it.',
+  },
+  {
+    prefix: 'operationLog.dialog.latestRollback',
+    screenshot: 'operation-log-more-pages.png',
+    note:
+      'The operation log dialog, pictured here with entries in it. Your string is the quiet second line under one of those ' +
+      'rows, shown only when that operation is a rollback or has been rolled back, so this screenshot may not show it.',
+  },
+  {
     // The operation log's other states (loading, empty, load error) are the same
     // dialog with a different body.
     prefix: 'operationLog.',
@@ -343,7 +352,7 @@ export const REPRESENTATIVE_SCREENSHOTS: RepresentativeMapping[] = [
     prefix: 'goToPath.dialog.',
     screenshot: 'go-to-path.png',
     note:
-      'The Go to path dialog, pictured here. Your string belongs to a state this screenshot doesn’t show: its list of recent ' +
+      'The Go to folder dialog, pictured here. Your string belongs to a state this screenshot doesn’t show: its list of recent ' +
       'paths, or a hint under the field about the path you typed.',
   },
   {
@@ -357,6 +366,12 @@ export const REPRESENTATIVE_SCREENSHOTS: RepresentativeMapping[] = [
     prefix: 'indexing.run.',
     screenshot: 'indexing-checklist.png',
     note: 'The drive-indexing checklist, pictured here. Your string is the header naming the kind of run in progress, for a run this screenshot doesn’t show.',
+  },
+  {
+    // Before the `indexing.eta.` family, whose "longer waits" note would mislead here.
+    prefix: 'indexing.eta.almostDoneMidSentence',
+    screenshot: 'indexing-checklist.png',
+    note: 'The drive-indexing checklist, pictured here. Your string is what a time-left phrase in it (like the overall line or the one after the percent) reads in the last seconds, in the middle of that line.',
   },
   {
     prefix: 'indexing.eta.',

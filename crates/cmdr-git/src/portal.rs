@@ -45,8 +45,8 @@ impl GitPortal {
     ///
     /// The instrument for every cell that asserts the registry's BOOKKEEPING —
     /// which repositories are watched, what a change reports, what a listing
-    /// arms — none of which needs a real FSEvents stream. Arming one over a
-    /// repository's ~10 `.git/*` paths is most of what a subscribe costs, and it
+    /// arms — none of which needs a real FSEvents stream. Arming one on a
+    /// repository's gitdir is most of what a subscribe costs, and it
     /// is the one thing that made those cells miss the suite's 8 s cap under
     /// load.
     #[cfg(any(test, feature = "testing"))]

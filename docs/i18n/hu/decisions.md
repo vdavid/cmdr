@@ -61,10 +61,10 @@ collapses to `volt`.
 `errors.json` suggestions); switching is one whole-catalog migration, never piecemeal. Never do this again =
 `Soha többé` (tentative).
 
-## A FAT32-korlát üzenetei (`errors.write.filesTooLargeForFilesystem.*`, `fileOperations.errorDialog.tooLargeAndMore`)
+## A FAT32-korlát üzenetei (`errors.write.filesTooLargeForFilesystem.*`, `fileOperations.errorDialog.tooLargeAndMore`, `errors.listing.notSupportedErrno.suggestion`)
 
-larger than {maxSize} → `{maxSize} méretnél nagyobb`: the base noun takes the suffix, since a unit's spoken vowel isn't
-safe (`KB` reads kábé or kilobájt). `%` always reads `százalék`, so `{size}%-ra` stays.
+`{maxSize} méretnél nagyobb`, `4 GiB vagy annál nagyobb méretű`: suffix the base noun (a unit's vowel is unsafe). `%`
+reads `százalék`, so `{size}%-ra` stays.
 
 ## A célmappa még nem létezik (`fileOperations.transferDialog.targetWillBeCreatedCopy`/`…Move`)
 
@@ -214,13 +214,8 @@ usage stats → `használati statisztika`, a random id → `egy véletlenszerű 
 `{othersText} másik fájl megtartotta a nevét, és „{name}” is: {reason}`. The gapped `is` carries "and so did" and puts
 the named file right before its colon, since `{reason}` covers only that file. `one` spells out `Egy másik fájl`.
 
-## A meg nem erősített átnevezés buboréka és a fel nem használható név (`fileExplorer.rename.unconfirmed`/`unconfirmedAndOthers`, `fileOperations.validation.nameNotUsable`)
+## A fel nem használható név (`fileOperations.validation.nameNotUsable`)
 
-- Couldn't confirm → `Nem sikerült megerősíteni, hogy „{name}” átneveződött`, the family's opener
-  (`trashUnconfirmedToast`, `mkdir.timeoutMessage`). The object form `… átnevezését megerősíteni` reads as "approve".
-- The mediopassive `átneveződött` over `átnevezték`, which implies someone outside Cmdr.
-- `az átnevezés attól még sikerülhetett` names its subject: dropped, it would read as the volume. The subject is the
-  rename, never `a fájl`, since a folder can stand there too.
 - That filename can't be used → `A fájlnév nem használható` / `A mappa neve nem használható` (macOS), no final period:
   it's embedded in a longer sentence.
 
@@ -334,20 +329,18 @@ ours: `vedd ki a „Zárolt” pipát`, never Apple's `szüntesse meg a … kije
 
 `desktop-i18n-term-consistency` holds one Hungarian form per English value. Settled: Quit Cmdr → `Kilépés a Cmdrből`;
 Connect to server → `Kapcsolódás szerverre` (Finder `N84`, over `szerverhez`); Connected → `Kapcsolódva`, Connecting →
-`Csatlakozás…` (Apple's `SavePanel`); Retrying → `Újrapróbálás`; case-sensitive → `Kis- és nagybetűérzékeny`.
+`Csatlakozás…` (Apple's `SavePanel`); case-sensitive → `Kis- és nagybetűérzékeny`.
 
 ### A határvonalak, amiket NEM szabad elsimítani
 
-- **Cancel**: `Mégsem` dismisses a dialog, `Megszakítás` stops a running operation, `Leállítás` stops a service.
+- Cancel, put back, and scan split as `style.md` § Digest, top traps, says.
 - **View**: `Nézet` is the menu title, `Megtekintés` the verb that opens the viewer.
 - **Zoom**: `Nagyítás` is text zoom, `Méretezés` the window action.
 - **Select**: `Kijelölés` marks files, `Válassz` is a dropdown placeholder.
 - **Bytes**: `Bájtok` beside `Fájlok`, `Bájt` beside `kB` / `MB`.
 - **Purple**: `Bíbor` is Finder's tag color, `Lila` Cmdr's volume tint.
-- **Put back**: `visszaállítva` an old name, `visszahelyezve` from the Trash; English's one phrase is its own blur.
 - **Rolling back**: `Visszagörgetés…` titles the window, `Visszagörgetés folyamatban` is the log cell.
 - **Send report**: the title asks (`Elküldöd a jelentést?`), the button names (`Jelentés küldése`).
-- **Scan**: `átnézés` is the live folder walk, `átvizsgálás` the index and size scan, `keresés` the Search feature.
 - **memory**: `memória` is RAM, `jegyzet` Ask Cmdr's memory.
 
 ## Az angol önellentmondásainak magyar utóélete
@@ -382,25 +375,17 @@ Connect to server → `Kapcsolódás szerverre` (Finder `N84`, over `szerverhez`
 
 ## A megszakított visszagörgetés eredményértesítése (`fileOperations.cancelRollback.*`, `fileOperations.rollbackConfirm.body`)
 
-- Left X alone → `<alany> változatlan maradt: <indok>.`, the `askCmdr.renameUndo.skipReason.*` frame, in every reason
-  row: the `folderNotEmpty` pairs share their English, and one notice mustn't mix frames. The intro keeps `kihagyja`. ❌
-  Not `békén hagyja` / `érintetlenül hagyja`: zero pile hits.
-- Result rows say `visszahelyez`, progress rows `visszavitel`: `visz` is the motion, `helyez` the end state, and
-  `visszavíve` doesn't read.
-- Removed → `eltávolítva`, never `törölve`: the notice reassures.
-- Full vs partial lives in the sentence: `A Cmdr mindent eltávolított, amit létrehozott: {countText} elem.` vs
-  `{countText} elem eltávolítva.` The full notice's `one` branch drops the count: `A Cmdr eltávolította az elemet, …`.
-- it changed → `módosult` (macOS) over `megváltozott`; check → `ellenőriz`, apart from the `megerősít` (confirm) family.
-- Couldn't undo {name} → `Nem sikerült visszagörgetni: „{name}”.`: the per-item outcome word is `visszagörgetés`, and
-  `visszavonás` is for an operation.
-- `counted` rows agree singular with the numeral subject, and the clause after the colon may go plural.
-- put it there → `odatette` (tentative): true for copy and move alike, where `odamásolta` isn't.
-- A named item leads bare and quoted (`„{name}” változatlan maradt`), never with an article, which follows the name's
-  unknown first sound. Where English adds a noun (the folder {name}), the reason carries it:
-  `„{name}” változatlan maradt: a mappában már van valami.`
-- `askCmdr.renameUndo.undoJob` → `Az összes {csomag} visszavonása ({countText})`: the article agrees with `összes`, a
-  word we pick, and the number sits in parentheses (macOS `Az összes lemez (^0)`).
-- `rollbackConfirm.body`'s new third sentence copies `bodyUndoByDeleting`'s tail verbatim.
+- Left X alone → `<alany> változatlan maradt: <indok>.` (the `skipReason.*` frame) in every reason row; the intro keeps
+  `kihagyja`. ❌ Not `békén hagyja` / `érintetlenül hagyja`: zero pile hits.
+- Result rows `visszahelyez`, progress rows `visszavitel` (`visszavíve` doesn't read). Removed → `eltávolítva`, never
+  `törölve`: the notice reassures.
+- Full vs partial lives in the sentence (`A Cmdr mindent eltávolított, amit létrehozott: {countText} elem.` vs
+  `{countText} elem eltávolítva.`); the full `one` branch drops the count.
+- it changed → `módosult` (macOS); check → `ellenőriz`, apart from `megerősít` (confirm).
+- Couldn't undo {name} → `Nem sikerült visszagörgetni: „{name}”.`; `visszavonás` is for an operation.
+- put it there → `odatette` (tentative): true for copy and move alike.
+- A named item leads bare and quoted (`„{name}” változatlan maradt: a mappában már van valami.`).
+- `undoJob` → `Az összes {csomag} visszavonása ({countText})` (macOS `Az összes lemez (^0)`).
 
 ### `cancelRollback.stagedLeftover.*` (a Cmdr saját maradéka a célhelyen)
 
@@ -703,18 +688,19 @@ The notice never suggests deleting: these may be the only copies. Its one action
   paired with its sibling's subject; a plain locative over a `-ra/-re` "points to".
 - already a favorite → `Ez a mappa már a kedvencek között van`: `között` names the list the user is looking at.
 
-## Az elutasított kiadás megnevezi, KI fogja a meghajtót (`errors.eject.unmountRefusedBy*`, `errors.eject.otherApps`)
+## Az elutasított kiadás megnevezi, KI fogja a meghajtót (`errors.eject.unmountRefusedBy*`, `errors.eject.otherApps`/`.otherProcesses`)
 
-- Every key keeps the family skeleton `X még használja ezt a meghajtót.` + a `te` imperative, active like English, over
-  Apple's passive `által használatban van`.
-- `{app}` leads bare, unquoted (`{app} még használja…`): a process name's first sound is unknown, so no article.
-- `{apps}` arrives as an `Intl.ListFormat` list ending in `egyéb alkalmazások`, so it takes no article either, and a
-  plural verb (`még használják`) that holds for any list.
-- other apps → `egyéb alkalmazások` (Thunar's msgid), over `más`, which suggests a different kind.
-- disk image → `lemezkép`; is still open → `még nyitva van`, over `csatolva van`, since English says open.
-- Cmdr itself → `Maga a Cmdr`, in the family's subject-first skeleton. send a report → `küldj jelentést`, never
-  `hibajelentést`.
+- Every key keeps the family skeleton `X még nyitva tart ott fájlokat.` + `…, majd próbáld újra.`, active like English,
+  over Apple's passive `által használatban van`. Either wrapper may concern a share or a phone, so `ott`, never
+  `ezt a meghajtót` or `add ki újra`.
+- `{app}` leads bare, unquoted: its first sound is unknown, so no article. `{apps}` (a list) also takes none, plus a
+  plural verb (`még nyitva tartanak`); `Zárd be őket` points at `fájlokat`. The aside keeps Cmdr as subject
+  (`A Cmdr nem ismeri…`), never `nem ismerjük`.
+- other apps → `egyéb alkalmazások` (Thunar), over `más` (a different kind); others → `egyéb folyamatok`.
+- disk image → `lemezkép`; is still open → `még nyitva van`, over `csatolva van`.
+- Cmdr itself → `Maga a Cmdr`; send a report → `küldj jelentést`, never `hibajelentést`.
 - `Várj egy percet` (system) vs `Várj egy pillanatot` (Cmdr) follows English's minute vs moment.
+- `Egy {process} nevű folyamat…` names the type; the plural lists after a colon so the numeral keeps a singular verb.
 
 ## Select all of the same kind (`menu.select.sameKind`/`.allFolders`/`.sameExtension`/`.noExtension`, `commands.selectionSelectSameKind.*`, `menu.context.selection`)
 
@@ -779,3 +765,22 @@ share options → `Nincs megosztási lehetőség`.
 
 - Bare placeholders in colon frames: `Minden megérkezett ide: {landedAt}`, `az eredetit innen: {path}`.
 - `engedély` over `jogosultság`, like the informal `permissionDenied.message.*` siblings.
+
+## Archívumban lévő fájl „Megnyitás ezzel” toastjai (`fileExplorer.openWith.copyRefused.*`)
+
+- `{appName}` takes the menu's colon frame (`nem nyitható meg ezzel: {appName}`): a `-ban/-ben` or `a/az` on a runtime
+  app name would be a guess. "Couldn't X" takes the possessor slot (`„{fileName}” kicsomagolása … nem sikerült`).
+
+## S3 (`servers.sheet.s3*`, `servers.refusal.*`, `servers.hub.*Account*`, `errors.*.coldStorage*`, `*shareLink*`)
+
+- bucket stays `bucket`, front suffixes (`bucketet`, `bucketben`): no console ships Hungarian, tech prose writes
+  `S3 bucketbe`; MS `gyűjtő` is another sense.
+- secret access key → `titkos hozzáférési kulcs`; region → `régió` (both MS).
+- cold-storage archived → `archiválva van`, restore → `visszaállít`, console → `konzol`.
+- share link → `Megosztási link` (macOS `Link másolása`); the submenu stays nominal: `Lejárat hét nap múlva`.
+
+## Szervezeti kezelés, MDM (`*.managed.*`, `*managedOff`, `updates.status.heldByPolicy`, `errors.serverRequest.blockedByPolicy`)
+
+- manage → `kezel` (ms): `A szervezeted kezeli`; IT team → `IT-csapat`, the shipped `errors.*` form; the card's Off →
+  `Ki`, a switch state that agrees with no label.
+- `{ceiling}` sits in a colon slot (`legfeljebb ezt a verziót engedi: {ceiling}`): a version's article can't be known.

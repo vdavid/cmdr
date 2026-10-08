@@ -116,9 +116,9 @@
   "@commands.searchOpen.label": {
     "sourceHash": "179fed8"
   },
-  "commands.navGoToPath.label": "Ugrás útvonalra…",
+  "commands.navGoToPath.label": "Ugrás mappához…",
   "@commands.navGoToPath.label": {
-    "sourceHash": "936edc5"
+    "sourceHash": "33de610"
   },
   "commands.navGoToPath.description": "A fókuszált panelt egy beírt, beillesztett vagy korábbi útvonalra ugratja.",
   "@commands.navGoToPath.description": {
@@ -155,6 +155,14 @@
   "commands.viewShowHidden.label": "Rejtett fájlok ki-be",
   "@commands.viewShowHidden.label": {
     "sourceHash": "6aa9b55"
+  },
+  "commands.viewCalculateFolderSizes.label": "Mappaméretek kiszámítása",
+  "@commands.viewCalculateFolderSizes.label": {
+    "sourceHash": "d2a83da"
+  },
+  "commands.viewCalculateFolderSizes.description": "Megjeleníti ezen a panelen minden olyan mappa méretét, amelynél még nem látszik. Az Escape billentyű leállítja a számítást.",
+  "@commands.viewCalculateFolderSizes.description": {
+    "sourceHash": "2a7568d"
   },
   "commands.viewBriefMode.label": "Váltás Rövid nézetre",
   "@commands.viewBriefMode.label": {
@@ -235,6 +243,14 @@
   "commands.paneSwap.label": "Panelek felcserélése",
   "@commands.paneSwap.label": {
     "sourceHash": "cc29396"
+  },
+  "commands.paneClone.label": "Panel klónozása",
+  "@commands.paneClone.label": {
+    "sourceHash": "74b2c7f"
+  },
+  "commands.paneClone.description": "Megnyitja ennek a panelnek a mappáját a másik panelen is.",
+  "@commands.paneClone.description": {
+    "sourceHash": "8a13dc9"
   },
   "commands.paneLeftVolumeChooser.label": "Bal oldali kötetválasztó megnyitása",
   "@commands.paneLeftVolumeChooser.label": {
@@ -335,6 +351,10 @@
   "commands.navForward.label": "Előre",
   "@commands.navForward.label": {
     "sourceHash": "8121136"
+  },
+  "commands.navGoToRoot.label": "Ugrás a gyökérmappára",
+  "@commands.navGoToRoot.label": {
+    "sourceHash": "3822d7b"
   },
   "commands.navGoHome.label": "Ugrás a saját mappára",
   "@commands.navGoHome.label": {
@@ -484,9 +504,9 @@
   "@commands.fileCopyPath.label": {
     "sourceHash": "333608a"
   },
-  "commands.fileCopyCurrentDirectoryPath.label": "Aktuális könyvtár útvonalának másolása",
+  "commands.fileCopyCurrentDirectoryPath.label": "Aktuális mappa útvonalának másolása",
   "@commands.fileCopyCurrentDirectoryPath.label": {
-    "sourceHash": "ae360d1"
+    "sourceHash": "5ec6586"
   },
   "commands.fileCopyFilename.label": "Fájlnév másolása",
   "@commands.fileCopyFilename.label": {
@@ -555,6 +575,30 @@
   "commands.cloudAskGemini.description": "Megnyitja a Google Drive Gemini asszisztensét, a kijelölt fájlra ráállítva",
   "@commands.cloudAskGemini.description": {
     "sourceHash": "37d4e7c"
+  },
+  "commands.fileCopyShareLink.label": "Megosztási link másolása (hét nap)",
+  "@commands.fileCopyShareLink.label": {
+    "sourceHash": "314bee8"
+  },
+  "commands.fileCopyShareLink.description": "Olyan linket másol, amelyet hét napig bárki megnyithat a fájl letöltéséhez",
+  "@commands.fileCopyShareLink.description": {
+    "sourceHash": "99e912e"
+  },
+  "commands.fileCopyShareLinkOneDay.label": "Megosztási link másolása (egy nap)",
+  "@commands.fileCopyShareLinkOneDay.label": {
+    "sourceHash": "468010c"
+  },
+  "commands.fileCopyShareLinkOneDay.description": "Olyan linket másol, amelyet egy napig bárki megnyithat a fájl letöltéséhez",
+  "@commands.fileCopyShareLinkOneDay.description": {
+    "sourceHash": "c2a30be"
+  },
+  "commands.fileCopyShareLinkOneHour.label": "Megosztási link másolása (egy óra)",
+  "@commands.fileCopyShareLinkOneHour.label": {
+    "sourceHash": "ffea990"
+  },
+  "commands.fileCopyShareLinkOneHour.description": "Olyan linket másol, amelyet egy óráig bárki megnyithat a fájl letöltéséhez",
+  "@commands.fileCopyShareLinkOneHour.description": {
+    "sourceHash": "c334535"
   },
   "commands.tagsToggleGrey.label": "Szürke címke be-/kikapcsolása",
   "@commands.tagsToggleGrey.label": {
@@ -647,6 +691,30 @@
   "commands.selectionSelectSameKind.description": "A kurzor alatti elemmel azonos fajtájú összes elemet hozzáadja a kijelöléshez, anélkül hogy törölné",
   "@commands.selectionSelectSameKind.description": {
     "sourceHash": "9a95212"
+  },
+  "commands.selectionCompareDirectories.label": "Mappák összehasonlítása",
+  "@commands.selectionCompareDirectories.label": {
+    "sourceHash": "5cf3985"
+  },
+  "commands.selectionCompareDirectories.description": "Mindkét panelen kijelöli a másik panelről hiányzó fájlokat, a többi fájlnak pedig az újabb másolatát",
+  "@commands.selectionCompareDirectories.description": {
+    "sourceHash": "190d99f"
+  },
+  "commands.selectionCompareDirectoriesMissing.label": "Mappák összehasonlítása: csak a hiányzó fájlok",
+  "@commands.selectionCompareDirectoriesMissing.label": {
+    "sourceHash": "d03d3c1"
+  },
+  "commands.selectionCompareDirectoriesMissing.description": "Mindkét panelen csak a másik panelről hiányzó fájlokat jelöli ki",
+  "@commands.selectionCompareDirectoriesMissing.description": {
+    "sourceHash": "e61c71b"
+  },
+  "commands.selectionCompareDirectoriesSize.label": "Mappák összehasonlítása: eltérő méret",
+  "@commands.selectionCompareDirectoriesSize.label": {
+    "sourceHash": "6c8fd21"
+  },
+  "commands.selectionCompareDirectoriesSize.description": "Mindkét panelen kijelöli a másik panelről hiányzó fájlokat, valamint az eltérő méretű fájlok mindkét másolatát",
+  "@commands.selectionCompareDirectoriesSize.description": {
+    "sourceHash": "ac31996"
   },
   "commands.selectionSelectSameKind.allFolders": "Összes mappa kijelölése",
   "@commands.selectionSelectSameKind.allFolders": {
@@ -804,6 +872,26 @@
   "@commands.handler.googleDriveCopyFailed": {
     "sourceHash": "0af1fd3"
   },
+  "commands.handler.shareLinkCopied.sevenDays": "Megosztási link másolva. Hét napig működik.",
+  "@commands.handler.shareLinkCopied.sevenDays": {
+    "sourceHash": "6f4055b"
+  },
+  "commands.handler.shareLinkCopied.oneDay": "Megosztási link másolva. Egy napig működik.",
+  "@commands.handler.shareLinkCopied.oneDay": {
+    "sourceHash": "ca08c52"
+  },
+  "commands.handler.shareLinkCopied.oneHour": "Megosztási link másolva. Egy óráig működik.",
+  "@commands.handler.shareLinkCopied.oneHour": {
+    "sourceHash": "8b9f0cc"
+  },
+  "commands.handler.shareLinkUnavailable": "Megosztási link másolásához vidd a kurzort egy S3-bucketben lévő fájlra.",
+  "@commands.handler.shareLinkUnavailable": {
+    "sourceHash": "c4ea112"
+  },
+  "commands.handler.shareLinkFailed": "Nem sikerült megosztási linket készíteni. {detail}",
+  "@commands.handler.shareLinkFailed": {
+    "sourceHash": "5ff44b7"
+  },
   "commands.handler.openTerminalHere.hint": "Ez a mappa megnyílt a terminálappodban. Szeretnéd, hogy a Cmdr legközelebb másik appot nyisson? Válaszd ki a Beállításokban, a „Navigáció és fájlműveletek” alatt.",
   "@commands.handler.openTerminalHere.hint": {
     "sourceHash": "b29b744"
@@ -836,6 +924,18 @@
   "@commands.handler.openTerminalHere.timedOut": {
     "sourceHash": "ed36313"
   },
+  "commands.handler.getInfo.automationOff": "Az Infó megjelenítése parancshoz a Cmdrnek vezérelnie kell a Findert, de ez ki van kapcsolva. Kapcsold be a Findert a Cmdr alatt itt: Rendszerbeállítások > Adatvédelem és biztonság > Automatizálás.",
+  "@commands.handler.getInfo.automationOff": {
+    "sourceHash": "7e831ef"
+  },
+  "commands.handler.getInfo.openAutomationSettings": "Beállítások megnyitása: Automatizálás",
+  "@commands.handler.getInfo.openAutomationSettings": {
+    "sourceHash": "f04940d"
+  },
+  "commands.handler.getInfo.notReached": "A Cmdr nem tudta elérni a Findert, hogy megnyissa az Infó megjelenítése ablakot. Próbáld újra.",
+  "@commands.handler.getInfo.notReached": {
+    "sourceHash": "9cbc272"
+  },
   "commands.handler.zoomResetHintShortcut": "A nagyítási szintet 100%-ra állíthatod vissza így: {shortcut}.",
   "@commands.handler.zoomResetHintShortcut": {
     "sourceHash": "efdd715"
@@ -863,5 +963,21 @@
   "commands.suggestedOpsShow.description": "Tekintsd át az AI által javasolt fájlműveleteket, és döntsd el, mi fusson",
   "@commands.suggestedOpsShow.description": {
     "sourceHash": "7efe8c9"
+  },
+  "commands.helpViewDebugLog.label": "Hibakeresési napló megtekintése",
+  "@commands.helpViewDebugLog.label": {
+    "sourceHash": "007c98d"
+  },
+  "commands.helpViewDebugLog.description": "Élőben követi a Cmdr hibakeresési naplóját a fájlmegjelenítőben",
+  "@commands.helpViewDebugLog.description": {
+    "sourceHash": "a937e6e"
+  },
+  "commands.handler.viewDebugLog.disabled": "A naplótárolás ki van kapcsolva. Állíts be 0-nál nagyobb lemezterület-korlátot itt: Beállítások > Speciális, majd indítsd újra a Cmdrt a hibakeresési napló megtekintéséhez.",
+  "@commands.handler.viewDebugLog.disabled": {
+    "sourceHash": "96f16fc"
+  },
+  "commands.handler.viewDebugLog.unavailable": "Nem sikerült megnyitni a hibakeresési naplót. Próbáld újra.",
+  "@commands.handler.viewDebugLog.unavailable": {
+    "sourceHash": "794a5b3"
   }
 }

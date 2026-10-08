@@ -10,7 +10,8 @@ frontend; every decision that has to look at the machine is here.
   `DockPinBlocker`, `DockPinFailure`) behind `../commands/dock.rs`.
 - **`entries.rs`**: `persistent-apps` as pure `plist::Value` data — build a tile, decide whether an
   app is in the array, put a tile first.
-- **`prefs.rs`**: the CFPreferences boundary. **`restart.rs`**: asking the Dock to reload.
+- **`prefs.rs`**: the CFPreferences boundary (CF ⇄ `plist::Value` conversion is `crate::cf_plist`).
+  **`restart.rs`**: asking the Dock to reload.
 - **`menu/`**: the tile's context menu, with its own `CLAUDE.md`. Separate concern,
   separate rules — it runs inside an AppKit callback where a panic is undefined
   behavior and a blocking read beachballs the Dock.
@@ -40,4 +41,5 @@ frontend; every decision that has to look at the machine is here.
 - **Cmdr is already in David's own Dock**, so his manual check needs him to drag it out first.
 
 The verified entry shape, why the POSIX-path form, what the `book` blob is and why we skip it, the
-TCC findings, and the manual check: `DETAILS.md`.
+TCC findings, and the manual check: `DETAILS.md`. Read it before any non-trivial work here: editing,
+planning, reorganizing, or advising.

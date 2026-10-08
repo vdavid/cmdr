@@ -19,6 +19,11 @@ vi.mock('$lib/tauri-commands', () => ({
   requestForegroundOperation: vi.fn(() => Promise.resolve()),
 }))
 
+const logWarn = vi.hoisted(() => vi.fn())
+vi.mock('$lib/logging/logger', () => ({
+  getAppLogger: () => ({ error: vi.fn(), debug: vi.fn(), warn: logWarn, info: vi.fn() }),
+}))
+
 function buildRow(
   status: OperationSnapshot['status'],
   opType: OperationSnapshot['operationType'] = 'copy',
@@ -543,6 +548,23 @@ describe('QueueRow: Show (back to the main window)', () => {
     ;(button as HTMLButtonElement).click()
 
     expect(requestForegroundOperation).toHaveBeenCalledWith('op-1')
+  })
+
+  it('says so in the log when the request never leaves this window', async () => {
+    // The click is the only witness: nothing else records that Show was pressed,
+    // so a swallowed rejection reads as the main window ignoring the button.
+    vi.mocked(requestForegroundOperation).mockRejectedValueOnce(new Error('event emit refused'))
+    logWarn.mockClear()
+    render({ row: buildRow('running') })
+
+    ;(showButton() as HTMLButtonElement).click()
+
+    await vi.waitFor(() => {
+      expect(logWarn).toHaveBeenCalledWith(expect.stringContaining('{operationId}'), {
+        operationId: 'op-1',
+        error: 'Error: event emit refused',
+      })
+    })
   })
 
   it('offers Show on a paused row and on one still counting', () => {

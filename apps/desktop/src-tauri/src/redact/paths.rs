@@ -67,26 +67,23 @@ const HOME_ROLE_DIRS: &[&str] = &[
     "Library",
 ];
 
-/// Whether an allowlisted parent keeps its name. In report mode a home role name only proves
-/// its role under `$HOME` (`redact_home_tail`); a remote or nested folder spelled `Documents`
-/// is the user's own naming and gets a token.
-pub(super) fn keeps_parent_name(seg: &str, context: Option<&RedactionContext>) -> bool {
-    is_safe_parent_dir(seg) && (context.is_none() || !HOME_ROLE_DIRS.contains(&seg))
+/// Whether an allowlisted parent keeps its name. A home role name only proves its role under
+/// `$HOME` (`redact_home_tail`); a remote or nested folder spelled `Documents` is the user's
+/// own naming and gets a token.
+pub(super) fn keeps_parent_name(seg: &str) -> bool {
+    is_safe_parent_dir(seg) && !HOME_ROLE_DIRS.contains(&seg)
 }
 
 fn redact_home_tail(tail: &str, context: Option<&RedactionContext>) -> String {
-    let Some(context) = context else {
-        return redact_path_tail(tail, None);
-    };
     let body = tail.strip_prefix('/').unwrap_or(tail);
     for role in HOME_ROLE_DIRS {
         if let Some(after) = body.strip_prefix(role)
             && (after.is_empty() || after.starts_with('/'))
         {
-            return format!("/{role}{}", redact_path_tail(after, Some(context)));
+            return format!("/{role}{}", redact_path_tail(after, context));
         }
     }
-    redact_path_tail(tail, Some(context))
+    redact_path_tail(tail, context)
 }
 
 pub(super) fn redact_unix_system(path: &str, context: Option<&RedactionContext>) -> String {
@@ -177,7 +174,7 @@ pub(super) fn redact_path_tail(tail: &str, context: Option<&RedactionContext>) -
             out.push_str(&redact_leaf(seg, is_file, context));
         } else if i == last_idx - 1 {
             // Immediate parent dir of the leaf; allowlist check.
-            if keeps_parent_name(seg, context) {
+            if keeps_parent_name(seg) {
                 out.push_str(seg);
             } else {
                 out.push_str(&dir_token(seg, context));
@@ -208,7 +205,7 @@ fn redact_leaf_in_domain(seg: &str, is_file: bool, context: Option<&RedactionCon
         );
     }
     if !is_file {
-        return if keeps_parent_name(seg, context) {
+        return if keeps_parent_name(seg) {
             seg.to_string()
         } else {
             token_for("dir", seg, context, domain)

@@ -112,8 +112,9 @@ pub struct ViewerOpenResult {
     pub file_name: String,
     pub total_bytes: u64,
     pub total_lines: Option<usize>,
-    /// For ByteSeek where `total_lines` is unknown. Based on `total_bytes / avg_bytes_per_line`.
-    pub estimated_total_lines: usize,
+    /// The file's ROW count, exact or (on ByteSeek) from its bytes-per-row sample. The
+    /// first chunk's `total_rows` carries the same number plus which of the two it is.
+    pub estimated_total_rows: usize,
     pub backend_type: BackendType,
     pub capabilities: BackendCapabilities,
     pub initial_lines: LineChunk,
@@ -498,13 +499,14 @@ fn open_session_core(
         };
 
     // Get initial lines
-    let initial_lines = backend_box.get_lines(&SeekTarget::Line(0), INITIAL_LINE_COUNT)?;
+    // Never cancelled: the open's own deadline handling closes a late session whole.
+    let initial_lines = backend_box.get_lines(&SeekTarget::Row(0), INITIAL_LINE_COUNT, &AtomicBool::new(false))?;
     let capabilities = backend_box.capabilities();
     let total_bytes = backend_box.total_bytes();
     let total_lines = backend_box.total_lines();
     // The backend counts rows itself now, exactly or by its own bytes-per-row sample,
     // so there is nothing left to estimate here from the first chunk's string lengths.
-    let estimated_total_lines = backend_box.total_rows().rows();
+    let estimated_total_rows = backend_box.total_rows().rows();
     let file_name = backend_box.file_name().to_string();
 
     let session_id = generate_session_id();
@@ -531,7 +533,7 @@ fn open_session_core(
         file_name,
         total_bytes,
         total_lines,
-        estimated_total_lines,
+        estimated_total_rows,
         backend_type,
         capabilities,
         initial_lines,
@@ -665,8 +667,14 @@ pub fn get_session_status(session_id: &str) -> Result<ViewerSessionStatus, Viewe
     })
 }
 
-/// Gets a range of lines from a session.
-pub fn get_lines(session_id: &str, target: SeekTarget, count: usize) -> Result<LineChunk, ViewerError> {
+/// Gets a range of lines from a session. `cancel` is the fetch's own flag (see
+/// [`FileViewerBackend::get_lines`]).
+pub fn get_lines(
+    session_id: &str,
+    target: SeekTarget,
+    count: usize,
+    cancel: &AtomicBool,
+) -> Result<LineChunk, ViewerError> {
     let (backend, backend_type) = {
         let sessions = SESSIONS.lock_ignore_poison();
         let session = sessions.get(session_id).ok_or_else(|| ViewerError::SessionNotFound {
@@ -683,7 +691,7 @@ pub fn get_lines(session_id: &str, target: SeekTarget, count: usize) -> Result<L
         session_id, backend_type, target, count
     );
 
-    backend.get_lines(&target, count)
+    backend.get_lines(&target, count, cancel)
 }
 
 /// Reads a bounded slice of the session's original bytes, without text decoding.
@@ -841,18 +849,24 @@ pub(super) fn finalize_search_status(status: &Arc<Mutex<SearchStatus>>, cancel: 
     };
 }
 
+/// How often the search watchdog checks the worker's status and `cancel` flag.
+pub(super) const SEARCH_WATCHDOG_POLL: Duration = Duration::from_millis(250);
+/// How long the watchdog lets a worker ignore a set `cancel` flag before it
+/// writes `Cancelled` itself.
+pub(super) const SEARCH_WATCHDOG_BUDGET: Duration = Duration::from_secs(1);
+
 /// Watchdog: polls the worker's `cancel` flag and forces the search status to
 /// `Cancelled` if the worker hasn't observed the flag within 1 s. Exits as soon
 /// as the worker writes a non-Running status (i.e. it finished naturally or got
 /// cancelled cooperatively).
 ///
-/// The 250 ms poll + 1 s budget pair keeps user-visible cancellation under
-/// 1.25 s in the worst case even for runaway-regex paths where the inner
-/// `iter.next()` call doesn't observe the per-match cancel.
+/// The poll + budget pair keeps user-visible cancellation under 1.25 s (plus
+/// scheduling delay) in the worst case even for runaway-regex paths where the
+/// inner `iter.next()` call doesn't observe the per-match cancel.
 pub(super) fn run_search_watchdog(cancel: Arc<AtomicBool>, status: Arc<Mutex<SearchStatus>>) {
     let mut cancel_seen_at: Option<std::time::Instant> = None;
     loop {
-        thread::sleep(Duration::from_millis(250));
+        thread::sleep(SEARCH_WATCHDOG_POLL);
         // Cheap check first; bail out if the worker is done.
         let still_running = matches!(*status.lock_ignore_poison(), SearchStatus::Running);
         if !still_running {
@@ -860,7 +874,7 @@ pub(super) fn run_search_watchdog(cancel: Arc<AtomicBool>, status: Arc<Mutex<Sea
         }
         if cancel.load(Ordering::Relaxed) {
             let started = cancel_seen_at.get_or_insert_with(std::time::Instant::now);
-            if started.elapsed() >= Duration::from_secs(1) {
+            if started.elapsed() >= SEARCH_WATCHDOG_BUDGET {
                 let mut guard = status.lock_ignore_poison();
                 if matches!(*guard, SearchStatus::Running) {
                     *guard = SearchStatus::Cancelled;
@@ -1389,18 +1403,7 @@ pub fn reload(session_id: &str) -> Result<(), ViewerError> {
         encoding = *session.encoding.lock_ignore_poison();
     }
 
-    let metadata = std::fs::metadata(&path)?;
-    let file_size = metadata.len();
-    let new_backend: Box<dyn FileViewerBackend> = if file_size <= FULL_LOAD_THRESHOLD {
-        Box::new(FullLoadBackend::open_with_encoding(&path, encoding)?)
-    } else {
-        Box::new(ByteSeekBackend::open_with_encoding(&path, encoding)?)
-    };
-    let new_type = if file_size <= FULL_LOAD_THRESHOLD {
-        BackendType::FullLoad
-    } else {
-        BackendType::ByteSeek
-    };
+    let (new_backend, new_type) = reopen_backend(&path, encoding)?;
 
     let sessions = SESSIONS.lock_ignore_poison();
     if let Some(session) = sessions.get(session_id) {
@@ -1411,6 +1414,26 @@ pub fn reload(session_id: &str) -> Result<(), ViewerError> {
         *session.pending_grew.lock_ignore_poison() = None;
     }
     Ok(())
+}
+
+/// A fresh backend for the file as it is on disk now: FullLoad under the
+/// threshold, ByteSeek above it.
+fn reopen_backend(
+    path: &Path,
+    encoding: FileEncoding,
+) -> Result<(Box<dyn FileViewerBackend>, BackendType), ViewerError> {
+    let file_size = std::fs::metadata(path)?.len();
+    if file_size <= FULL_LOAD_THRESHOLD {
+        Ok((
+            Box::new(FullLoadBackend::open_with_encoding(path, encoding)?),
+            BackendType::FullLoad,
+        ))
+    } else {
+        Ok((
+            Box::new(ByteSeekBackend::open_with_encoding(path, encoding)?),
+            BackendType::ByteSeek,
+        ))
+    }
 }
 
 /// Manager thread spawned once per session. Does the (blocking,
@@ -1556,10 +1579,14 @@ fn handle_watcher_event(session_id: &str, event: WatcherEvent) {
 /// detect that case and discard the stale extend instead of clobbering the
 /// fresh backend. The new EOF is re-queued into `pending_grew` so the rebuild
 /// swap or a follow-up watcher event still catches up.
+///
+/// FullLoad can't extend in place, so it reopens instead, through the same
+/// snapshot-and-compare: still FullLoad while the file fits, ByteSeek once it
+/// crosses the threshold. Without this, tail mode does nothing under 1 MB.
 fn apply_tail_extend(session_id: &str, new_size: u64) {
     let dummy_cancel = AtomicBool::new(false);
 
-    let backend_snapshot = {
+    let (backend_snapshot, reopen_from) = {
         let sessions = SESSIONS.lock_ignore_poison();
         let Some(session) = sessions.get(session_id) else {
             return;
@@ -1574,16 +1601,26 @@ fn apply_tail_extend(session_id: &str, new_size: u64) {
         if new_size <= backend.total_bytes() {
             return;
         }
-        backend
+        let reopen_from = matches!(*session.backend_type.lock_ignore_poison(), BackendType::FullLoad)
+            .then(|| (session.path.clone(), *session.encoding.lock_ignore_poison()));
+        (backend, reopen_from)
     };
 
-    let extended = match backend_snapshot.extend_to_boxed(new_size, &dummy_cancel) {
-        Ok(b) => b,
-        Err(_) => {
-            // The active backend can't extend (FullLoad). The viewer remains
-            // valid against the older byte range until the user reloads.
-            return;
-        }
+    let (extended, new_type) = match reopen_from {
+        Some((path, encoding)) => match reopen_backend(&path, encoding) {
+            Ok((backend, backend_type)) => (backend, Some(backend_type)),
+            Err(e) => {
+                debug!("apply_tail_extend: reopening session {session_id} failed: {e}");
+                return;
+            }
+        },
+        None => match backend_snapshot.extend_to_boxed(new_size, &dummy_cancel) {
+            Ok(b) => (b, None),
+            Err(e) => {
+                debug!("apply_tail_extend: extending session {session_id} failed: {e}");
+                return;
+            }
+        },
     };
 
     // Re-acquire the lock and verify the backend we extended is still the one
@@ -1596,6 +1633,9 @@ fn apply_tail_extend(session_id: &str, new_size: u64) {
     let current = session.backend.load_full();
     if Arc::ptr_eq(&current, &backend_snapshot) {
         session.backend.store(Arc::new(extended));
+        if let Some(new_type) = new_type {
+            *session.backend_type.lock_ignore_poison() = new_type;
+        }
     } else {
         // A fresh backend was installed during our extend. Discard the stale
         // extend and re-queue the EOF so the rebuild's drain-and-swap (or a

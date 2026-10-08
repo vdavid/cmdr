@@ -12,8 +12,10 @@ use tokio_util::sync::CancellationToken;
 
 use crate::benchmark;
 use crate::file_system::listing::cached_listing::{CachedListing, LISTING_CACHE};
-use crate::file_system::listing::foreign_path::{Listed, list_as_stored, respell_if_read_by_a_replaced_backend};
+use crate::file_system::listing::foreign_path::{Listed, respell_if_read_by_a_replaced_backend};
 use crate::file_system::listing::sorting::{DirectorySortMode, SortColumn, SortOrder, sort_entries};
+use crate::file_system::listing::stall::{ListingRead, ReadOutcome, StallWatch, read_until_answered};
+use crate::file_system::listing::stalled_on::StalledOn;
 use crate::file_system::volume::friendly_error::{
     ListingError, archive_needs_password_listing_error, archive_unreadable_listing_error, enrich_with_provider,
     listing_error_for_restricted_empty_root, listing_error_from_volume_error,
@@ -112,6 +114,18 @@ pub struct ListingOpeningEvent {
     pub listing_id: String,
 }
 
+/// Stalled event payload: the read has gone `StallPolicy::stall_after` without
+/// a new entry. The listing keeps waiting and retrying (`stall.rs`); a later
+/// progress, complete, error, or cancelled event for the same id supersedes it.
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
+#[serde(rename_all = "camelCase")]
+#[tauri_specta(event_name = "listing-stalled")]
+pub struct ListingStalledEvent {
+    pub listing_id: String,
+    /// What the folder lives on, which picks the screen's wording (`stalled_on.rs`).
+    pub stalled_on: StalledOn,
+}
+
 /// State for an in-progress streaming listing
 pub struct StreamingListingState {
     /// The listing's stop signal. Read at the sync cancellation points (before
@@ -120,6 +134,21 @@ pub struct StreamingListingState {
     /// trips (MTP) stops on the wire and not just in the loop above it. One
     /// token rather than a flag plus a `Notify`: they could never disagree.
     pub cancel: CancellationToken,
+    /// When the read counts as stalled, and the per-volume bound on hung reads.
+    pub stall: StallWatch,
+}
+
+impl StreamingListingState {
+    pub fn new() -> Self {
+        Self::with_stall_watch(StallWatch::production())
+    }
+
+    pub(crate) fn with_stall_watch(stall: StallWatch) -> Self {
+        Self {
+            cancel: CancellationToken::new(),
+            stall,
+        }
+    }
 }
 
 /// Cache for streaming state (separate from completed listings cache)
@@ -135,6 +164,7 @@ pub(crate) static STREAMING_STATE: LazyLock<RwLock<HashMap<String, Arc<Streaming
 /// Tests: `CollectorListingEventSink` stores events for assertion.
 pub(crate) trait ListingEventSink: Send + Sync {
     fn emit_opening(&self, listing_id: &str);
+    fn emit_stalled(&self, listing_id: &str, stalled_on: StalledOn);
     fn emit_progress(&self, listing_id: &str, loaded_count: usize);
     fn emit_read_complete(&self, listing_id: &str, total_count: usize);
     fn emit_complete(&self, listing_id: &str, total_count: usize, volume_root: String, stored_path: Option<String>);
@@ -157,6 +187,14 @@ impl ListingEventSink for TauriListingEventSink {
     fn emit_opening(&self, listing_id: &str) {
         let _ = ListingOpeningEvent {
             listing_id: listing_id.to_string(),
+        }
+        .emit(&self.app);
+    }
+
+    fn emit_stalled(&self, listing_id: &str, stalled_on: StalledOn) {
+        let _ = ListingStalledEvent {
+            listing_id: listing_id.to_string(),
+            stalled_on,
         }
         .emit(&self.app);
     }
@@ -218,6 +256,7 @@ impl ListingEventSink for TauriListingEventSink {
 #[cfg(test)]
 pub(crate) struct CollectorListingEventSink {
     pub opening: std::sync::Mutex<Vec<String>>,
+    pub stalled: std::sync::Mutex<Vec<(String, StalledOn)>>,
     pub progress: std::sync::Mutex<Vec<(String, usize)>>,
     pub read_complete: std::sync::Mutex<Vec<(String, usize)>>,
     pub complete: std::sync::Mutex<Vec<(String, usize)>>,
@@ -232,6 +271,7 @@ impl CollectorListingEventSink {
     pub fn new() -> Self {
         Self {
             opening: std::sync::Mutex::new(Vec::new()),
+            stalled: std::sync::Mutex::new(Vec::new()),
             progress: std::sync::Mutex::new(Vec::new()),
             read_complete: std::sync::Mutex::new(Vec::new()),
             complete: std::sync::Mutex::new(Vec::new()),
@@ -246,6 +286,12 @@ impl CollectorListingEventSink {
 impl ListingEventSink for CollectorListingEventSink {
     fn emit_opening(&self, listing_id: &str) {
         self.opening.lock_ignore_poison().push(listing_id.to_string());
+    }
+
+    fn emit_stalled(&self, listing_id: &str, stalled_on: StalledOn) {
+        self.stalled
+            .lock_ignore_poison()
+            .push((listing_id.to_string(), stalled_on));
     }
 
     fn emit_progress(&self, listing_id: &str, loaded_count: usize) {
@@ -305,9 +351,7 @@ pub async fn list_directory_start_streaming(
     benchmark::log_event_value("list_directory_start_streaming CALLED", path.display());
 
     // Create streaming state with cancellation flag
-    let state = Arc::new(StreamingListingState {
-        cancel: CancellationToken::new(),
-    });
+    let state = Arc::new(StreamingListingState::new());
 
     // Store state for cancellation
     if let Ok(mut cache) = STREAMING_STATE.write() {
@@ -452,7 +496,7 @@ async fn missing_volume_error(volume_id: &str, path: &Path) -> VolumeError {
 
     match why_unregistered(volume_id).await {
         Unregistered::NotConnected => VolumeError::NotConnected(path.display().to_string()),
-        Unregistered::Gone => VolumeError::NotFound(format!("Volume not found: {}", volume_id)),
+        Unregistered::Gone => VolumeError::NotFound(path.display().to_string()),
     }
 }
 
@@ -527,83 +571,45 @@ pub(crate) async fn read_directory_with_progress(
             None => return Err(missing_volume_error(volume_id, path).await),
         },
     };
-    // The listing task consumes its own handle; keep `volume` for the watcher
-    // check and `volume_root` below (an archive's `root()` is the `.zip` path).
-    let volume_for_task = Arc::clone(&volume);
-
-    // Read directory entries via Volume abstraction.
-    // Spawn the listing as a tokio task and use select! with a cancellation poll loop
-    // to remain responsive even when filesystem I/O blocks (slow/stuck network drives).
+    // Read directory entries via Volume abstraction. Each read runs in its own
+    // tokio task, raced against the cancel, so the pane stays responsive even
+    // when filesystem I/O blocks (slow or stuck network drives). A read that goes
+    // quiet reports the listing stalled and keeps it alive until the volume
+    // answers again (`stall.rs`).
     let total_start = std::time::Instant::now();
     let read_start = std::time::Instant::now();
-    let path_for_task = path.to_path_buf();
-    let events_for_progress = Arc::clone(events);
-    let listing_id_for_progress = listing_id.to_string();
-    let cancel_for_task = state.cancel.clone();
-
-    let mut listing_task = tokio::spawn(async move {
-        // Stall-probe: marker logged as the FIRST executable line inside the spawned task.
-        // If `read_directory_with_progress: entry` fires but this `task started` line doesn't,
-        // the tokio runtime didn't schedule this task (worker starvation). If both fire but
-        // `list_directory_core` doesn't follow, the Volume's list_directory itself is blocked.
-        // Info-level (matches the other `stall_probe::*` lifecycle markers); always lands in
-        // the prod file chain for organic-repro triage.
-        log::info!(
-            target: "stall_probe::listing_task",
-            "task started: listing_id={}, path={}",
-            listing_id_for_progress,
-            path_for_task.display(),
-        );
-        let on_progress = |p: crate::file_system::volume::ListingProgress| {
-            // A cancelled listing keeps running until the backend reaches a safe
-            // boundary (see the cancel arm below), but its listing_id is spent —
-            // the caller already emitted `listing-cancelled` and the pane moved
-            // on. Stay quiet so a superseded listing can't post progress against
-            // an id the frontend has retired.
-            if cancel_for_task.is_cancelled() {
-                return;
-            }
-            // Streaming listing UI shows "Loaded N entries…", so it wants total
-            // entry count, not just files. `ListingProgress::entries()` sums
-            // files + dirs for that.
-            events_for_progress.emit_progress(&listing_id_for_progress, p.entries());
-        };
-        // A pane can ask by a spelling its volume doesn't store (typed, restored,
-        // carried over from the kernel mount); this lands it on the stored one.
-        list_as_stored(
-            volume_for_task.as_ref(),
-            &path_for_task,
-            Some(&on_progress),
-            Some(&cancel_for_task),
-        )
-        .await
-    });
-
-    // Wait for either listing completion or cancellation (no polling).
-    let entries_result = tokio::select! {
-        biased;  // check cancellation first if both are ready
-        () = state.cancel.cancelled() => {
+    let on_stalled = |stalled_on| events.emit_stalled(listing_id, stalled_on);
+    let on_progress: Arc<dyn Fn(usize) + Send + Sync> = {
+        let events = Arc::clone(events);
+        let listing_id = listing_id.to_string();
+        Arc::new(move |loaded| events.emit_progress(&listing_id, loaded))
+    };
+    let outcome = read_until_answered(
+        ListingRead {
+            on_stalled: &on_stalled,
+            on_progress,
+            listing_id,
+            volume_id,
+            volume: &volume,
+            path,
+            cancel: &state.cancel,
+        },
+        &state.stall,
+    )
+    .await;
+    let listed = match outcome {
+        ReadOutcome::Listed(listed) => listed,
+        ReadOutcome::Refused(error) => return Err(error),
+        ReadOutcome::Cancelled => {
             benchmark::log_event("read_directory_with_progress CANCELLED (during read_dir)");
-            // ❌ Never `listing_task.abort()` here. `state.cancel` is already
-            // cancelled (that IS what woke this arm), so the backend
-            // sees the token and unwinds at its own safe boundary; aborting
-            // would instead DROP its future wherever it happens to be, which on
-            // MTP abandons an in-flight PTP transaction and wedges the phone
-            // (`mtp/connection/CLAUDE.md`). Dropping the `JoinHandle` on return
-            // detaches the task rather than cancelling it, so the user gets a
-            // prompt cancel while the backend finishes unwinding behind it.
+            // The reads were detached, never aborted: an aborted future on MTP
+            // abandons an in-flight PTP transaction and wedges the phone
+            // (`mtp/connection/CLAUDE.md`). The backend sees the token and unwinds
+            // at its own safe boundary while the user gets a prompt cancel.
             events.emit_cancelled(listing_id);
             return Ok(());
         }
-        result = &mut listing_task => {
-            result.map_err(|e| VolumeError::IoError {
-                message: format!("Directory listing task failed: {}", e),
-                raw_os_error: None,
-            })?
-        }
     };
-
-    let listed = entries_result?;
     // From here on the listing is the directory as its volume spells it: the cache
     // key, the watch, the overlays, and every log line use the stored spelling.
     let stored_path = listed.stored_spelling_of(path);

@@ -746,9 +746,7 @@ async fn a_stale_report_id_cannot_send_or_delete_a_replacement() {
 async fn a_failed_upload_retains_the_pending_file() {
     let dir = crate::test_support::TestDir::new("crash-send-failure");
     let path = dir.join(CRASH_FILE_NAME);
-    let mut report = make_test_report();
-    report.short_id = Some("CRASH-A2345".to_string());
-    write_crash_report(&path, &report).unwrap();
+    write_report_with_id(&path, "CRASH-A2345");
 
     let result = send_pending_crash_report_from_path(&path, "CRASH-A2345", None, false, |_| async {
         Err(ServerRequestError::Unreachable {
@@ -758,7 +756,133 @@ async fn a_failed_upload_retains_the_pending_file() {
     .await;
 
     assert!(matches!(result, Err(ServerRequestError::Unreachable { .. })));
-    assert!(path.exists(), "a retryable report stays pending");
+    assert_eq!(
+        pending_report_id(&path).as_deref(),
+        Some("CRASH-A2345"),
+        "a retryable report goes back to pending, so Send can retry it"
+    );
+    assert!(!claimed_crash_path(&path, "CRASH-A2345").exists());
+}
+
+fn write_report_with_id(path: &Path, id: &str) {
+    let mut report = make_test_report();
+    report.short_id = Some(id.to_string());
+    write_crash_report(path, &report).unwrap();
+}
+
+#[tokio::test]
+async fn a_crash_written_mid_upload_never_shares_the_file_the_send_deletes() {
+    // The send claims the report before uploading, so the pending slot is free for the whole
+    // upload: a crash landing then gets its own file, and the delete after upload can only
+    // reach the claimed one. Without the claim, an id recheck followed by a remove leaves a
+    // window where a new report is deleted unsent.
+    let dir = crate::test_support::TestDir::new("crash-send-claim");
+    let path = dir.join(CRASH_FILE_NAME);
+    write_report_with_id(&path, "CRASH-A2345");
+    let in_flight_path = path.clone();
+
+    send_pending_crash_report_from_path(&path, "CRASH-A2345", None, false, move |report| async move {
+        assert_eq!(report.short_id.as_deref(), Some("CRASH-A2345"));
+        assert!(
+            !in_flight_path.exists(),
+            "the pending slot is free while the upload runs"
+        );
+        assert!(claimed_crash_path(&in_flight_path, "CRASH-A2345").exists());
+        write_report_with_id(&in_flight_path, "CRASH-B2345");
+        Ok(())
+    })
+    .await
+    .expect("the original upload landed");
+
+    assert_eq!(pending_report_id(&path).as_deref(), Some("CRASH-B2345"));
+    assert!(
+        !claimed_crash_path(&path, "CRASH-A2345").exists(),
+        "the sent report is gone"
+    );
+}
+
+#[tokio::test]
+async fn a_failed_upload_never_overwrites_a_newer_crash_in_the_slot() {
+    let dir = crate::test_support::TestDir::new("crash-send-failure-with-newer");
+    let path = dir.join(CRASH_FILE_NAME);
+    write_report_with_id(&path, "CRASH-A2345");
+    let in_flight_path = path.clone();
+
+    let result = send_pending_crash_report_from_path(&path, "CRASH-A2345", None, false, move |_| async move {
+        write_report_with_id(&in_flight_path, "CRASH-B2345");
+        Err(ServerRequestError::Unreachable {
+            detail: "offline".to_string(),
+        })
+    })
+    .await;
+
+    assert!(matches!(result, Err(ServerRequestError::Unreachable { .. })));
+    assert_eq!(pending_report_id(&path).as_deref(), Some("CRASH-B2345"));
+    assert_eq!(
+        pending_report_id(&claimed_crash_path(&path, "CRASH-A2345")).as_deref(),
+        Some("CRASH-A2345"),
+        "the unsent report waits under its claim for a later launch"
+    );
+}
+
+#[test]
+fn a_send_cut_short_by_a_crash_is_offered_again_at_the_next_launch() {
+    let dir = crate::test_support::TestDir::new("crash-claim-recovery");
+    let path = dir.join(CRASH_FILE_NAME);
+    write_report_with_id(&claimed_crash_path(&path, "CRASH-A2345"), "CRASH-A2345");
+
+    process_pending_crash(&path, &dir.join(RAW_CRASH_FILE_NAME));
+
+    assert_eq!(pending_report_id(&path).as_deref(), Some("CRASH-A2345"));
+    assert!(!claimed_crash_path(&path, "CRASH-A2345").exists());
+}
+
+#[test]
+fn a_leftover_claim_waits_while_a_newer_report_holds_the_slot() {
+    let dir = crate::test_support::TestDir::new("crash-claim-waits");
+    let path = dir.join(CRASH_FILE_NAME);
+    write_report_with_id(&claimed_crash_path(&path, "CRASH-A2345"), "CRASH-A2345");
+    write_report_with_id(&path, "CRASH-B2345");
+
+    process_pending_crash(&path, &dir.join(RAW_CRASH_FILE_NAME));
+
+    assert_eq!(pending_report_id(&path).as_deref(), Some("CRASH-B2345"));
+    assert_eq!(
+        pending_report_id(&claimed_crash_path(&path, "CRASH-A2345")).as_deref(),
+        Some("CRASH-A2345")
+    );
+}
+
+#[tokio::test]
+async fn sending_the_pending_report_leaves_a_waiting_claim_alone() {
+    let dir = crate::test_support::TestDir::new("crash-claim-coexists");
+    let path = dir.join(CRASH_FILE_NAME);
+    write_report_with_id(&claimed_crash_path(&path, "CRASH-A2345"), "CRASH-A2345");
+    write_report_with_id(&path, "CRASH-B2345");
+
+    send_pending_crash_report_from_path(&path, "CRASH-B2345", None, false, |_| async { Ok(()) })
+        .await
+        .expect("the upload landed");
+
+    assert!(!path.exists());
+    assert!(!claimed_crash_path(&path, "CRASH-B2345").exists());
+    assert_eq!(
+        pending_report_id(&claimed_crash_path(&path, "CRASH-A2345")).as_deref(),
+        Some("CRASH-A2345")
+    );
+}
+
+#[test]
+fn a_leftover_claim_that_duplicates_the_pending_report_is_dropped() {
+    let dir = crate::test_support::TestDir::new("crash-claim-duplicate");
+    let path = dir.join(CRASH_FILE_NAME);
+    write_report_with_id(&claimed_crash_path(&path, "CRASH-A2345"), "CRASH-A2345");
+    write_report_with_id(&path, "CRASH-A2345");
+
+    process_pending_crash(&path, &dir.join(RAW_CRASH_FILE_NAME));
+
+    assert_eq!(pending_report_id(&path).as_deref(), Some("CRASH-A2345"));
+    assert!(!claimed_crash_path(&path, "CRASH-A2345").exists());
 }
 
 #[tokio::test]
@@ -952,4 +1076,74 @@ fn recording_a_delivery_with_no_crash_file_is_a_quiet_no_op() {
     survival::record_in_session_delivery(&path);
 
     assert!(!path.exists(), "a delivery notice must never conjure a report");
+}
+
+fn reports_off() -> crate::managed_policy::testing::PolicyOverride {
+    use crate::managed_policy::testing;
+    testing::override_for_test(testing::forcing(&[testing::DISABLE_CRASH_AND_ERROR_REPORTS]))
+}
+
+#[test]
+fn a_pending_report_is_discarded_unoffered_when_reports_are_managed_off() {
+    let dir = crate::test_support::TestDir::new("crash-pending-managed-off");
+    let path = dir.join(CRASH_FILE_NAME);
+    write_report_with_id(&path, "CRASH-A2345");
+    let _policy = reports_off();
+
+    assert!(take_pending_crash_report_at(&path).is_none());
+    assert!(!path.exists(), "the report is discarded, not kept for a later offer");
+}
+
+#[test]
+fn a_pending_report_is_offered_without_a_policy() {
+    let dir = crate::test_support::TestDir::new("crash-pending-unmanaged");
+    let path = dir.join(CRASH_FILE_NAME);
+    write_report_with_id(&path, "CRASH-A2345");
+
+    let report = take_pending_crash_report_at(&path).expect("offered");
+    assert_eq!(report.short_id.as_deref(), Some("CRASH-A2345"));
+}
+
+#[tokio::test]
+async fn a_send_the_policy_blocks_never_claims_or_uploads() {
+    let dir = crate::test_support::TestDir::new("crash-send-managed-off");
+    let path = dir.join(CRASH_FILE_NAME);
+    write_report_with_id(&path, "CRASH-A2345");
+    let _policy = reports_off();
+
+    let result = send_pending_crash_report_from_path(&path, "CRASH-A2345", None, false, |_| async {
+        panic!("a blocked send must not reach the upload")
+    })
+    .await;
+
+    assert_eq!(result, Err(ServerRequestError::BlockedByPolicy));
+    assert!(path.exists(), "nothing was claimed");
+    assert!(!claimed_crash_path(&path, "CRASH-A2345").exists());
+}
+
+/// A crash report says what Cmdr actually ran with: the organization's locks over the stored
+/// choice, the same as the heartbeat's config shape. A stored `cloud` under on-device only ran as
+/// `off`; a provider nobody stored stays `None` (the default).
+#[test]
+fn active_settings_report_the_effective_ai_provider_under_a_managed_policy() {
+    use crate::managed_policy::testing::{self, DISABLE_AI, DISABLE_CLOUD_AI};
+    let stored = settings::loader::Settings {
+        ai_provider: Some("cloud".to_string()),
+        ..settings::loader::Settings::default()
+    };
+    let effective = |policy: &crate::managed_policy::ManagedPolicy| active_settings_from(&stored, policy).ai_provider;
+    assert_eq!(
+        effective(&testing::forcing(&[DISABLE_CLOUD_AI])).as_deref(),
+        Some("off")
+    );
+    assert_eq!(effective(&testing::forcing(&[DISABLE_AI])).as_deref(), Some("off"));
+    assert_eq!(
+        effective(&crate::managed_policy::ManagedPolicy::default()).as_deref(),
+        Some("cloud")
+    );
+    let unset = settings::loader::Settings::default();
+    assert_eq!(
+        active_settings_from(&unset, &testing::forcing(&[DISABLE_CLOUD_AI])).ai_provider,
+        None
+    );
 }

@@ -148,21 +148,21 @@
   "@settings.appearance.tintLocal.description": {
     "sourceHash": "3c86b48"
   },
-  "settings.appearance.tintSmb.label": "Phủ màu cho khung máy chủ (SMB, SFTP, WebDAV)",
+  "settings.appearance.tintSmb.label": "Phủ màu cho khung máy chủ (SMB, SFTP, WebDAV, S3)",
   "@settings.appearance.tintSmb.label": {
-    "sourceHash": "d801804"
+    "sourceHash": "d912bcf"
   },
-  "settings.appearance.tintSmb.description": "Màu nền phủ lên các khung hiển thị mục chia sẻ SMB, máy chủ SFTP, hoặc máy chủ WebDAV.",
+  "settings.appearance.tintSmb.description": "Màu nền phủ lên các khung hiển thị mục chia sẻ SMB, máy chủ SFTP, máy chủ WebDAV, hoặc kho lưu trữ S3.",
   "@settings.appearance.tintSmb.description": {
-    "sourceHash": "2e071d3"
+    "sourceHash": "bddee40"
   },
-  "settings.appearance.tintMtp.label": "Phủ màu cho khung MTP",
+  "settings.appearance.tintMtp.label": "Phủ màu cho khung thiết bị (MTP, ADB)",
   "@settings.appearance.tintMtp.label": {
-    "sourceHash": "2054351"
+    "sourceHash": "c50c536"
   },
-  "settings.appearance.tintMtp.description": "Màu nền phủ lên các khung hiển thị thiết bị Android, Kindle, hoặc máy ảnh.",
+  "settings.appearance.tintMtp.description": "Màu nền phủ lên các khung hiển thị điện thoại, Kindle, hoặc máy ảnh, dù kết nối qua MTP hay ADB.",
   "@settings.appearance.tintMtp.description": {
-    "sourceHash": "a09d99a"
+    "sourceHash": "d70512d"
   },
   "settings.appearance.textSize.label": "Cỡ chữ",
   "@settings.appearance.textSize.label": {
@@ -216,9 +216,9 @@
   "@settings.listing.sizeUnit.label": {
     "sourceHash": "2a817d3"
   },
-  "settings.listing.sizeUnit.description": "Linh hoạt chọn đơn vị dễ đọc nhất cho mỗi tệp (1,02 MB). Đơn vị cố định giúp so sánh các kích cỡ đồng nhất trên cả danh sách. Byte hiển thị số chính xác để so sánh tỉ mỉ.",
+  "settings.listing.sizeUnit.description": "Linh hoạt chọn đơn vị dễ đọc nhất cho mỗi tệp. Đơn vị cố định giúp so sánh các kích cỡ đồng nhất trên cả danh sách. Byte hiển thị số chính xác để so sánh tỉ mỉ.",
   "@settings.listing.sizeUnit.description": {
-    "sourceHash": "702a201"
+    "sourceHash": "fae7a91"
   },
   "settings.listing.sizeUnit.opt.dynamic": "Linh hoạt",
   "@settings.listing.sizeUnit.opt.dynamic": {
@@ -228,36 +228,21 @@
   "@settings.listing.sizeUnit.opt.bytes": {
     "sourceHash": "4d80003"
   },
-  "settings.listing.sizeUnit.opt.kB": "kB",
-  "@settings.listing.sizeUnit.opt.kB": {
-    "sourceHash": "591e59c",
-    "sameAsSourceJustification": "Unit symbol 'kB'; kept verbatim (locale-neutral unit symbol)."
-  },
-  "settings.listing.sizeUnit.opt.mB": "MB",
-  "@settings.listing.sizeUnit.opt.mB": {
-    "sourceHash": "1d09f6f",
-    "sameAsSourceJustification": "Unit symbol 'MB'; kept verbatim (locale-neutral unit symbol)."
-  },
-  "settings.listing.sizeUnit.opt.gB": "GB",
-  "@settings.listing.sizeUnit.opt.gB": {
-    "sourceHash": "b4043b0",
-    "sameAsSourceJustification": "Unit symbol 'GB'; kept verbatim (locale-neutral unit symbol)."
-  },
   "settings.appearance.fileSizeFormat.label": "Định dạng kích cỡ tệp",
   "@settings.appearance.fileSizeFormat.label": {
     "sourceHash": "355c89b"
   },
-  "settings.appearance.fileSizeFormat.description": "Cách hiển thị kích cỡ tệp trong danh sách tệp: nhị phân (KiB, MiB, trong đó 1 KiB = 1024 byte) hoặc thập phân SI (KB, MB, trong đó 1 KB = 1000 byte).",
+  "settings.appearance.fileSizeFormat.description": "Cách hiển thị kích cỡ ở mọi nơi: nhị phân (KiB, MiB, trong đó 1 KiB = 1.024 byte) hoặc thập phân SI (kB, MB, trong đó 1 kB = 1.000 byte).",
   "@settings.appearance.fileSizeFormat.description": {
-    "sourceHash": "8219704"
+    "sourceHash": "db264e2"
   },
   "settings.appearance.fileSizeFormat.opt.binary": "Nhị phân (KiB, MiB, GiB)",
   "@settings.appearance.fileSizeFormat.opt.binary": {
     "sourceHash": "0a4ce4e"
   },
-  "settings.appearance.fileSizeFormat.opt.si": "Thập phân SI (KB, MB, GB)",
+  "settings.appearance.fileSizeFormat.opt.si": "Thập phân SI (kB, MB, GB)",
   "@settings.appearance.fileSizeFormat.opt.si": {
-    "sourceHash": "8984a13"
+    "sourceHash": "4dcc22e"
   },
   "settings.listing.sizeMismatchWarning.label": "Cảnh báo lệch kích cỡ",
   "@settings.listing.sizeMismatchWarning.label": {
@@ -307,13 +292,33 @@
   "@settings.listing.showTags.description": {
     "sourceHash": "005f3b0"
   },
+  "settings.listing.foldersFirst.label": "Hiển thị thư mục lên đầu",
+  "@settings.listing.foldersFirst.label": {
+    "sourceHash": "a61d73e"
+  },
+  "settings.listing.foldersFirst.description": "Liệt kê thư mục phía trên tệp. Tắt tùy chọn này để xếp lẫn thư mục và tệp với nhau.",
+  "@settings.listing.foldersFirst.description": {
+    "sourceHash": "8505ff3"
+  },
+  "settings.listing.spaceCalculatesFolderSize.label": "Tính toán kích cỡ thư mục bằng phím dấu cách",
+  "@settings.listing.spaceCalculatesFolderSize.label": {
+    "sourceHash": "1a403eb"
+  },
+  "settings.listing.spaceCalculatesFolderSize.description": "Khi bạn nhấn phím dấu cách để chọn một thư mục chưa biết kích cỡ, Cmdr sẽ cộng dồn nội dung bên trong và hiển thị tổng. Nhấn Escape để dừng tính toán.",
+  "@settings.listing.spaceCalculatesFolderSize.description": {
+    "sourceHash": "38d64c1"
+  },
   "settings.listing.directorySortMode.label": "Sắp xếp thư mục",
   "@settings.listing.directorySortMode.label": {
-    "sourceHash": "7f0a1e4"
+    "sourceHash": "7d0b088"
   },
   "settings.listing.directorySortMode.description": "Cách sắp xếp thư mục khi đổi cột sắp xếp.",
   "@settings.listing.directorySortMode.description": {
-    "sourceHash": "fe5f12a"
+    "sourceHash": "797d93b"
+  },
+  "settings.listing.directorySortMode.disabledReason": "Hiện đang tắt vì thư mục và tệp đang xếp lẫn với nhau. Hãy bật “Hiển thị thư mục lên đầu” để dùng cài đặt này.",
+  "@settings.listing.directorySortMode.disabledReason": {
+    "sourceHash": "f17416c"
   },
   "settings.listing.directorySortMode.opt.likeFiles": "Như tệp",
   "@settings.listing.directorySortMode.opt.likeFiles": {
@@ -961,6 +966,10 @@
   "@settings.network.firstTriggerDone.description": {
     "sourceHash": "7982e11"
   },
+  "settings.network.nearbyServersGroup.label": "Nhóm máy chủ ở gần",
+  "@settings.network.nearbyServersGroup.label": {
+    "sourceHash": "cfa28b1"
+  },
   "settings.network.directSmbConnection.label": "Kết nối trực tiếp tới mục chia sẻ SMB",
   "@settings.network.directSmbConnection.label": {
     "sourceHash": "407c4f1"
@@ -1053,9 +1062,9 @@
   "@settings.fileOperations.adbEnabled.label": {
     "sourceHash": "3651356"
   },
-  "settings.fileOperations.adbEnabled.description": "Truy cập toàn bộ hệ thống tệp của một điện thoại Android đang bật gỡ lỗi qua USB, phần mà MTP không cho bạn thấy. Cần có bộ công cụ nền tảng Android (lệnh “adb”) trên máy Mac này. Cứ để bật cũng không tốn gì khi bạn chưa cài công cụ Android nào.",
+  "settings.fileOperations.adbEnabled.description": "Truy cập toàn bộ hệ thống tệp của một điện thoại Android đang bật gỡ lỗi qua USB, phần mà MTP không cho bạn thấy. Cần có bộ công cụ nền tảng Android (lệnh “adb”) trên máy Mac này. Cứ để bật cũng không tốn gì nếu bạn chưa cài công cụ Android nào.",
   "@settings.fileOperations.adbEnabled.description": {
-    "sourceHash": "9a22518"
+    "sourceHash": "a89c957"
   },
   "settings.fileOperations.adbBinaryPath.label": "Vị trí của adb",
   "@settings.fileOperations.adbBinaryPath.label": {
@@ -1245,15 +1254,15 @@
   "@settings.fileViewer.suppressBinaryWarning.label": {
     "sourceHash": "8cdaada"
   },
-  "settings.fileViewer.suppressBinaryWarning.description": "F3 mở trình xem tệp của Cmdr, vốn hiển thị byte thô (với UTF-8 mất mát cho nội dung phi văn bản). Khi bạn mở ảnh, PDF, tệp nén, hoặc tệp nhị phân khác, trình xem hiển thị biểu ngữ đỏ giải thích rằng ⇧Space (Xem nhanh) hoặc Enter (mở trong ứng dụng liên kết) có lẽ là điều bạn muốn. Bật mục này (hoặc bấm “Không hiển thị cảnh báo này nữa” trên biểu ngữ) để ẩn cảnh báo vĩnh viễn.",
+  "settings.fileViewer.suppressBinaryWarning.description": "F3 mở trình xem tệp của Cmdr, vốn hiển thị byte thô (với UTF-8 mất mát cho nội dung phi văn bản). Khi bạn mở ảnh, PDF, tệp nén, hoặc tệp nhị phân khác, trình xem hiển thị biểu ngữ đỏ giải thích rằng ⇧Dấu cách (Xem nhanh) hoặc Enter (mở trong ứng dụng liên kết) có lẽ là điều bạn muốn. Bật mục này (hoặc bấm “Không hiển thị cảnh báo này nữa” trên biểu ngữ) để ẩn cảnh báo vĩnh viễn.",
   "@settings.fileViewer.suppressBinaryWarning.description": {
     "sourceHash": "a93b4cb"
   },
-  "settings.fileExplorer.suppressQuickLookHint.label": "Ẩn gợi ý Xem nhanh bằng phím Space",
+  "settings.fileExplorer.suppressQuickLookHint.label": "Ẩn gợi ý Xem nhanh bằng phím dấu cách",
   "@settings.fileExplorer.suppressQuickLookHint.label": {
     "sourceHash": "bd9da35"
   },
-  "settings.fileExplorer.suppressQuickLookHint.description": "Cmdr dùng Space để bật/tắt chọn tệp và ⇧Space cho Xem nhanh (Finder dùng Space thường cho Xem nhanh). Mỗi lần bạn nhấn Space trong danh sách tệp, Cmdr hiển thị một đoạn nhắc về khác biệt này. Bật mục này (hoặc bấm “Không hiển thị lại” trên thông báo nhỏ) để ẩn lời nhắc vĩnh viễn.",
+  "settings.fileExplorer.suppressQuickLookHint.description": "Cmdr dùng phím dấu cách để bật/tắt chọn tệp và ⇧Dấu cách cho Xem nhanh (Finder chỉ dùng phím dấu cách cho Xem nhanh). Mỗi lần bạn nhấn phím dấu cách trong danh sách tệp, Cmdr hiển thị một đoạn nhắc về khác biệt này. Bật mục này (hoặc bấm “Không hiển thị lại” trên thông báo nhỏ) để ẩn lời nhắc vĩnh viễn.",
   "@settings.fileExplorer.suppressQuickLookHint.description": {
     "sourceHash": "10357b4"
   },
@@ -1296,6 +1305,22 @@
   "settings.fileExplorer.typeToJump.resetDelay.description": "Bộ đệm gõ-để-nhảy còn sống bao lâu sau lần gõ phím cuối. Giá trị thấp hơn đặt lại nhanh hơn giữa các lần tìm kiếm; giá trị cao hơn dễ chịu hơn cho người gõ chậm.",
   "@settings.fileExplorer.typeToJump.resetDelay.description": {
     "sourceHash": "ff59a6a"
+  },
+  "settings.fileExplorer.typeToJump.mode.label": "Khi bạn gõ trong khung",
+  "@settings.fileExplorer.typeToJump.mode.label": {
+    "sourceHash": "4ee8ef5"
+  },
+  "settings.fileExplorer.typeToJump.mode.description": "“Nhảy tới” đưa con trỏ tới kết quả khớp nhất. “Lọc” chỉ hiển thị các tệp và thư mục có tên chứa nội dung bạn gõ, giống bộ lọc nhanh của Total Commander. Nhấn phím Delete (⌫) để sửa và Escape để xóa bộ lọc.",
+  "@settings.fileExplorer.typeToJump.mode.description": {
+    "sourceHash": "e142e97"
+  },
+  "settings.fileExplorer.typeToJump.mode.opt.jump": "Nhảy tới",
+  "@settings.fileExplorer.typeToJump.mode.opt.jump": {
+    "sourceHash": "9ee0ca3"
+  },
+  "settings.fileExplorer.typeToJump.mode.opt.filter": "Lọc",
+  "@settings.fileExplorer.typeToJump.mode.opt.filter": {
+    "sourceHash": "638e249"
   },
   "settings.fileOperations.maxConflictsToShow.label": "Số xung đột tối đa cần hiển thị",
   "@settings.fileOperations.maxConflictsToShow.label": {
@@ -1634,9 +1659,9 @@
   "@settings.behavior.doubleClickOnPaneNotificationSeen.description": {
     "sourceHash": "56238d4"
   },
-  "settings.behavior.serversPinHintSeen.label": "Đã hiển thị gợi ý về nhóm Mạng dài",
+  "settings.behavior.serversPinHintSeen.label": "Đã hiển thị gợi ý về “Bỏ ghim khỏi bộ chọn ổ đĩa”",
   "@settings.behavior.serversPinHintSeen.label": {
-    "sourceHash": "8d632ca"
+    "sourceHash": "8513a3c"
   },
   "settings.behavior.serversPinHintSeen.description": "Gợi ý một lần về việc bỏ ghim máy chủ đã hiển thị hay chưa.",
   "@settings.behavior.serversPinHintSeen.description": {
@@ -1903,36 +1928,6 @@
   "@settings.operationLog.maxSize.description": {
     "sourceHash": "ad5152a"
   },
-  "settings.operationLog.maxSize.opt.mb100": "100 MB",
-  "@settings.operationLog.maxSize.opt.mb100": {
-    "sourceHash": "991d5de",
-    "sameAsSourceJustification": "Byte-unit label kept verbatim (numeral literal, MB/GB not localized), matching the app's size-unit setting."
-  },
-  "settings.operationLog.maxSize.opt.mb250": "250 MB",
-  "@settings.operationLog.maxSize.opt.mb250": {
-    "sourceHash": "028b133",
-    "sameAsSourceJustification": "Byte-unit label kept verbatim (numeral literal, MB/GB not localized), matching the app's size-unit setting."
-  },
-  "settings.operationLog.maxSize.opt.gb1": "1 GB",
-  "@settings.operationLog.maxSize.opt.gb1": {
-    "sourceHash": "6c31b63",
-    "sameAsSourceJustification": "Byte-unit label kept verbatim (numeral literal, MB/GB not localized), matching the app's size-unit setting."
-  },
-  "settings.operationLog.maxSize.opt.gb2": "2 GB",
-  "@settings.operationLog.maxSize.opt.gb2": {
-    "sourceHash": "b2dd624",
-    "sameAsSourceJustification": "Byte-unit label kept verbatim (numeral literal, MB/GB not localized), matching the app's size-unit setting."
-  },
-  "settings.operationLog.maxSize.opt.gb3": "3 GB",
-  "@settings.operationLog.maxSize.opt.gb3": {
-    "sourceHash": "485f66b",
-    "sameAsSourceJustification": "Byte-unit label kept verbatim (numeral literal, MB/GB not localized), matching the app's size-unit setting."
-  },
-  "settings.operationLog.maxSize.opt.gb5": "5 GB",
-  "@settings.operationLog.maxSize.opt.gb5": {
-    "sourceHash": "43644bc",
-    "sameAsSourceJustification": "Byte-unit label kept verbatim (numeral literal, MB/GB not localized), matching the app's size-unit setting."
-  },
   "settings.section.mcpServer": "Máy chủ MCP",
   "@settings.section.mcpServer": {
     "sourceHash": "d938c81"
@@ -1967,7 +1962,7 @@
   },
   "settings.summary.listing": "Biểu tượng tài liệu, sắp xếp thư mục, và độ rộng cột chế độ Rút gọn.",
   "@settings.summary.listing": {
-    "sourceHash": "7756e95"
+    "sourceHash": "ebed448"
   },
   "settings.summary.navigationAndFileOps": "Điều hướng bằng bấm đúp tới thư mục cha, và hành vi khi đổi tên tệp.",
   "@settings.summary.navigationAndFileOps": {
@@ -1991,7 +1986,7 @@
   },
   "settings.summary.servers": "Các khóa máy chủ SSH mà bạn đã tin cậy.",
   "@settings.summary.servers": {
-    "sourceHash": "40940fa"
+    "sourceHash": "3335380"
   },
   "settings.summary.adb": "Duyệt điện thoại Android đang bật gỡ lỗi qua USB.",
   "@settings.summary.adb": {
@@ -2052,6 +2047,75 @@
   "settings.control.backToPresetsAriaLabel": "Quay lại tùy chọn đặt trước",
   "@settings.control.backToPresetsAriaLabel": {
     "sourceHash": "1579f3f"
+  },
+  "settings.control.unitItems": "mục",
+  "@settings.control.unitItems": {
+    "sourceHash": "5f3c4f8"
+  },
+  "settings.managed.rowNote": "Cài đặt này do tổ chức của bạn quản lý.",
+  "@settings.managed.rowNote": {
+    "sourceHash": "891206b"
+  },
+  "settings.managed.sectionNote": "Một số cài đặt ở đây do tổ chức của bạn quản lý.",
+  "@settings.managed.sectionNote": {
+    "sourceHash": "ab52c49"
+  },
+  "settings.managed.summary.title": "Do tổ chức của bạn quản lý",
+  "@settings.managed.summary.title": {
+    "sourceHash": "5450801"
+  },
+  "settings.managed.summary.usageStats": "Thống kê sử dụng",
+  "@settings.managed.summary.usageStats": {
+    "sourceHash": "4e0483c"
+  },
+  "settings.managed.summary.usageStatsOff": "Tắt",
+  "@settings.managed.summary.usageStatsOff": {
+    "sourceHash": "ca7981b"
+  },
+  "settings.managed.summary.reports": "Báo cáo sự cố và trục trặc",
+  "@settings.managed.summary.reports": {
+    "sourceHash": "ef409c3"
+  },
+  "settings.managed.summary.reportsOff": "Tắt",
+  "@settings.managed.summary.reportsOff": {
+    "sourceHash": "ca7981b"
+  },
+  "settings.managed.summary.updates": "Cập nhật",
+  "@settings.managed.summary.updates": {
+    "sourceHash": "22e2bad"
+  },
+  "settings.managed.summary.updatesOff": "Tắt",
+  "@settings.managed.summary.updatesOff": {
+    "sourceHash": "ca7981b"
+  },
+  "settings.managed.summary.ai": "AI",
+  "@settings.managed.summary.ai": {
+    "sourceHash": "11fb682",
+    "sameAsSourceJustification": "'AI' is the vi term ruling for ai-feature (terms.json); the catalog writes it bare, like settings.section AI."
+  },
+  "settings.managed.summary.aiOff": "Tắt",
+  "@settings.managed.summary.aiOff": {
+    "sourceHash": "ca7981b"
+  },
+  "settings.managed.summary.upTo": "Tối đa {ceiling}",
+  "@settings.managed.summary.upTo": {
+    "sourceHash": "8989a97"
+  },
+  "settings.managed.summary.manualChecksOnly": "Chỉ kiểm tra thủ công",
+  "@settings.managed.summary.manualChecksOnly": {
+    "sourceHash": "1969d26"
+  },
+  "settings.managed.summary.upToManualChecksOnly": "Tối đa {ceiling}, chỉ kiểm tra thủ công",
+  "@settings.managed.summary.upToManualChecksOnly": {
+    "sourceHash": "c769ffd"
+  },
+  "settings.managed.summary.onDeviceOnly": "Chỉ trên thiết bị",
+  "@settings.managed.summary.onDeviceOnly": {
+    "sourceHash": "d4f8552"
+  },
+  "settings.managed.summary.cloudHostsOnly": "AI đám mây chỉ qua {hosts}",
+  "@settings.managed.summary.cloudHostsOnly": {
+    "sourceHash": "00f1237"
   },
   "settings.sidebar.searchPlaceholder": "Tìm kiếm trong cài đặt…",
   "@settings.sidebar.searchPlaceholder": {
@@ -2519,13 +2583,13 @@
   "@settings.adb.recheck": {
     "sourceHash": "24fcca0"
   },
-  "settings.adb.install.intro": "Hãy cài bộ công cụ nền tảng Android, rồi nhấn Kiểm tra lại:",
+  "settings.adb.install.intro": "Hãy cài bộ công cụ nền tảng Android, rồi chọn Kiểm tra lại:",
   "@settings.adb.install.intro": {
-    "sourceHash": "5a82ea4"
+    "sourceHash": "9f7a0f4"
   },
-  "settings.adb.pathPlaceholder": "Tìm adb theo cách thông thường",
+  "settings.adb.pathPlaceholder": "Cmdr tìm adb theo cách thông thường",
   "@settings.adb.pathPlaceholder": {
-    "sourceHash": "e236ef2"
+    "sourceHash": "538b307"
   },
   "settings.adb.browse": "Duyệt…",
   "@settings.adb.browse": {
@@ -2534,5 +2598,13 @@
   "settings.adb.pickerTitle": "Chọn lệnh adb",
   "@settings.adb.pickerTitle": {
     "sourceHash": "d6fc142"
+  },
+  "settings.fileExplorer.quickFilterIntroSeen.label": "Đã hiển thị giải thích bộ lọc nhanh",
+  "@settings.fileExplorer.quickFilterIntroSeen.label": {
+    "sourceHash": "5d124bb"
+  },
+  "settings.fileExplorer.quickFilterIntroSeen.description": "Thông báo nhỏ giải thích bộ lọc nhanh đầu tiên đã hiển thị hay chưa.",
+  "@settings.fileExplorer.quickFilterIntroSeen.description": {
+    "sourceHash": "855c661"
   }
 }

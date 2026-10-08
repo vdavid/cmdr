@@ -1,0 +1,195 @@
+{
+  "errorReporter.dialog.title": "Отправить отчет об ошибке",
+  "@errorReporter.dialog.title": {
+    "sourceHash": "c327e68"
+  },
+  "errorReporter.dialog.description": "Cmdr отправит команде недавние журналы, чтобы мы могли исправить проблему. Перед отправкой прямо на вашем устройстве из них удаляются пути к файлам, имена хостов, IP-адреса и адреса электронной почты.",
+  "@errorReporter.dialog.description": {
+    "sourceHash": "ba4012f"
+  },
+  "errorReporter.dialog.referenceIdLabel": "Идентификатор обращения:",
+  "@errorReporter.dialog.referenceIdLabel": {
+    "sourceHash": "ef8c421"
+  },
+  "errorReporter.dialog.copy": "Скопировать",
+  "@errorReporter.dialog.copy": {
+    "sourceHash": "e21f935"
+  },
+  "errorReporter.dialog.copied": "Скопировано",
+  "@errorReporter.dialog.copied": {
+    "sourceHash": "8d525e5"
+  },
+  "errorReporter.dialog.noteLabel": "Добавить примечание (необязательно)",
+  "@errorReporter.dialog.noteLabel": {
+    "sourceHash": "6bb0c6b"
+  },
+  "errorReporter.dialog.counter": "{currentText} / {maxText}",
+  "@errorReporter.dialog.counter": {
+    "sourceHash": "36ca789",
+    "sameAsSourceJustification": "Название бренда, стандартное обозначение или строка из подстановок; сохраняется без перевода."
+  },
+  "errorReporter.dialog.notePlaceholder": "Что вы пытались сделать? Какого результата ожидали?",
+  "@errorReporter.dialog.notePlaceholder": {
+    "sourceHash": "003300b"
+  },
+  "errorReporter.dialog.noteTooLong": "Примечание слишком длинное. Максимум: {maxText} {max, plural, one {символ} few {символа} many {символов} other {символа}}.",
+  "@errorReporter.dialog.noteTooLong": {
+    "sourceHash": "afcefac"
+  },
+  "errorReporter.dialog.detailsToggle": "Что будет отправлено",
+  "@errorReporter.dialog.detailsToggle": {
+    "sourceHash": "f57398b"
+  },
+  "errorReporter.dialog.manifestHeading": "Состав пакета",
+  "@errorReporter.dialog.manifestHeading": {
+    "sourceHash": "3c99f1f"
+  },
+  "errorReporter.dialog.sampleFirstHeading": "Пример начала журнала: {count, plural, one {# строка} few {# строки} many {# строк} other {# строки}}",
+  "@errorReporter.dialog.sampleFirstHeading": {
+    "sourceHash": "7a2e538"
+  },
+  "errorReporter.dialog.sampleLastHeading": "Пример конца журнала: {count, plural, one {# строка} few {# строки} many {# строк} other {# строки}}",
+  "@errorReporter.dialog.sampleLastHeading": {
+    "sourceHash": "a36f420"
+  },
+  "errorReporter.dialog.noLogLines": "(записей журнала нет)",
+  "@errorReporter.dialog.noLogLines": {
+    "sourceHash": "a2d54fd"
+  },
+  "errorReporter.dialog.totalLines": "Всего строк журнала после удаления личных данных: {countText}",
+  "@errorReporter.dialog.totalLines": {
+    "sourceHash": "9c5cab7"
+  },
+  "errorReporter.dialog.preparing": "Подготовка просмотра…",
+  "@errorReporter.dialog.preparing": {
+    "sourceHash": "11e66e1"
+  },
+  "errorReporter.dialog.prepareFailed": "Не удалось подготовить просмотр.",
+  "@errorReporter.dialog.prepareFailed": {
+    "sourceHash": "24cd5ba"
+  },
+  "errorReporter.dialog.tryAgain": "Повторить попытку",
+  "@errorReporter.dialog.tryAgain": {
+    "sourceHash": "d8b8392"
+  },
+  "errorReporter.dialog.bundleUnavailable": "Cmdr не удалось собрать журналы для отчета. Попробуйте еще раз чуть позже.",
+  "@errorReporter.dialog.bundleUnavailable": {
+    "sourceHash": "15bc5b8"
+  },
+  "errorReporter.dialog.saveToDisk": "Сохранить пакет на диск (отладка)",
+  "@errorReporter.dialog.saveToDisk": {
+    "sourceHash": "36d6589"
+  },
+  "errorReporter.dialog.managedOff": "Ваша организация выключила отправку отчетов. Отчет все равно можно сохранить на диск и передать самостоятельно.",
+  "@errorReporter.dialog.managedOff": {
+    "sourceHash": "9309a39"
+  },
+  "errorReporter.dialog.saveToDiskManaged": "Сохранить на диск",
+  "@errorReporter.dialog.saveToDiskManaged": {
+    "sourceHash": "5a5d775"
+  },
+  "errorReporter.dialog.cancel": "Отменить",
+  "@errorReporter.dialog.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "errorReporter.dialog.send": "Отправить отчет",
+  "@errorReporter.dialog.send": {
+    "sourceHash": "a44d353"
+  },
+  "errorReporter.dialog.sending": "Отправка…",
+  "@errorReporter.dialog.sending": {
+    "sourceHash": "b8ed527"
+  },
+  "errorReporter.dialog.sendFailedToast": "Не удалось отправить отчет об ошибке. {reason}",
+  "@errorReporter.dialog.sendFailedToast": {
+    "sourceHash": "1eedf49"
+  },
+  "errorReporter.dialog.saveFailedToast": "Не удалось сохранить пакет: {error}",
+  "@errorReporter.dialog.saveFailedToast": {
+    "sourceHash": "6405cca"
+  },
+  "errorReporter.amend.title": "Дополнить отчет об ошибке",
+  "@errorReporter.amend.title": {
+    "sourceHash": "b19796b"
+  },
+  "errorReporter.amend.description": "Cmdr уже отправил этот отчет. Напишите примечание или приложите адрес электронной почты, и мы добавим их к уже полученному отчету.",
+  "@errorReporter.amend.description": {
+    "sourceHash": "9e1a80f"
+  },
+  "errorReporter.amend.noteLabel": "Ваше примечание",
+  "@errorReporter.amend.noteLabel": {
+    "sourceHash": "5331e47"
+  },
+  "errorReporter.amend.detailsToggle": "Что было отправлено",
+  "@errorReporter.amend.detailsToggle": {
+    "sourceHash": "cb2415e"
+  },
+  "errorReporter.amend.submit": "Добавить к отчету",
+  "@errorReporter.amend.submit": {
+    "sourceHash": "e05fdbe"
+  },
+  "errorReporter.amend.submitting": "Добавление…",
+  "@errorReporter.amend.submitting": {
+    "sourceHash": "c6de6f4"
+  },
+  "errorReporter.amend.unavailable": "К этому отчету больше нельзя добавить примечание. Чтобы передать его команде, отправьте новый отчет через меню «Справка».",
+  "@errorReporter.amend.unavailable": {
+    "sourceHash": "08ab034"
+  },
+  "errorReporter.amend.close": "Закрыть",
+  "@errorReporter.amend.close": {
+    "sourceHash": "7d9eb7a"
+  },
+  "errorReporter.amend.addFailedToast": "Не удалось добавить примечание. {reason}",
+  "@errorReporter.amend.addFailedToast": {
+    "sourceHash": "02f82ce"
+  },
+  "errorReporter.sentToast.message": "Отчет об ошибке отправлен. Идентификатор обращения:",
+  "@errorReporter.sentToast.message": {
+    "sourceHash": "75be6ba"
+  },
+  "errorReporter.sentToast.dismiss": "Закрыть",
+  "@errorReporter.sentToast.dismiss": {
+    "sourceHash": "48845bf"
+  },
+  "errorReporter.sentToast.copyId": "Скопировать идентификатор",
+  "@errorReporter.sentToast.copyId": {
+    "sourceHash": "72ac0d5"
+  },
+  "errorReporter.sentToast.copied": "Скопировано",
+  "@errorReporter.sentToast.copied": {
+    "sourceHash": "8d525e5"
+  },
+  "errorReporter.amendedToast.message": "Примечание добавлено к отчету. Идентификатор обращения:",
+  "@errorReporter.amendedToast.message": {
+    "sourceHash": "5471d7f"
+  },
+  "errorReporter.bundleSavedToast.message": "Пакет сохранен на диск",
+  "@errorReporter.bundleSavedToast.message": {
+    "sourceHash": "7c1604d"
+  },
+  "errorReporter.bundleSavedToast.dismiss": "Закрыть",
+  "@errorReporter.bundleSavedToast.dismiss": {
+    "sourceHash": "48845bf"
+  },
+  "errorReporter.bundleSavedToast.reveal": "Показать в Finder",
+  "@errorReporter.bundleSavedToast.reveal": {
+    "sourceHash": "cc84938"
+  },
+  "errorReporter.autoSentToast.title": "Отчет об ошибке отправлен",
+  "@errorReporter.autoSentToast.title": {
+    "sourceHash": "b69ee37"
+  },
+  "errorReporter.autoSentToast.referenceIdLabel": "Идентификатор обращения:",
+  "@errorReporter.autoSentToast.referenceIdLabel": {
+    "sourceHash": "ef8c421"
+  },
+  "errorReporter.autoSentToast.changeSettings": "Изменить настройки",
+  "@errorReporter.autoSentToast.changeSettings": {
+    "sourceHash": "873512a"
+  },
+  "errorReporter.autoSentToast.viewOrAddNotes": "Посмотреть отчет или добавить примечание",
+  "@errorReporter.autoSentToast.viewOrAddNotes": {
+    "sourceHash": "81a00a0"
+  }
+}

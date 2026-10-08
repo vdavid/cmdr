@@ -3,6 +3,34 @@
 
 use super::*;
 
+/// The reconcile's listing drops a filesystem mounted inside the boot tree, so a
+/// full rescan-in-place neither walks into the mount nor keeps a row for it (a
+/// listing that lacks a child is what the diff deletes a stale row on).
+#[test]
+#[cfg(target_os = "macos")]
+fn the_reconcile_read_drops_a_mount_inside_the_boot_tree() {
+    use crate::indexing::host::volumes::{self, FakeVolumeProvider, MountIdentity};
+    let _serialized = crate::indexing::handle::test_lock();
+    let dir = read_test_tree();
+    let root = dir.path();
+    std::fs::create_dir(root.join("mnt")).unwrap();
+    std::fs::write(root.join("ours.txt"), b"x").unwrap();
+    let provider = FakeVolumeProvider::shared();
+    provider
+        .mount("/", MountIdentity::from_raw(1))
+        .mount(root.join("mnt"), MountIdentity::from_raw(2));
+    let _installed = volumes::install_for_test(provider);
+
+    let space = IndexPathSpace::root();
+    for children in [
+        read_fs_children(root, &space).expect("lists").children,
+        read_fs_children_via_read_dir(root, &space).expect("lists").children,
+    ] {
+        let names: Vec<_> = children.iter().map(|c| c.name.as_str()).collect();
+        assert_eq!(names, vec!["ours.txt"], "both reads drop the mount point");
+    }
+}
+
 // ── The reconcile read matches a per-entry stat, field for field ──────
 
 /// A tree under CWD (not `/tmp` — excluded on Linux, a canonicalization alias on

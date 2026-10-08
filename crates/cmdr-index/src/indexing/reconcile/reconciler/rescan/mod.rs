@@ -537,15 +537,22 @@ pub(super) fn start_next_rescan(drain: RescanDrain, writer: &IndexWriter) {
         #[cfg(test)]
         gate::pass(&path);
         let walk_work = &drain_for_next.work;
-        let (escalation, walk_cost) = match reconcile_subtree(&path, &space_for_task, &conn, &writer, walk_work, None) {
+        // The walk runs right here on this thread, so the thread's own CPU clock
+        // around it is the walk's CPU and nothing else's.
+        let cpu_before = cmdr_fs::thread_cpu::current_thread_cpu_time();
+        let walked = reconcile_subtree(&path, &space_for_task, &conn, &writer, walk_work, None);
+        let cpu = cpu_before
+            .zip(cmdr_fs::thread_cpu::current_thread_cpu_time())
+            .map(|(before, after)| after.saturating_sub(before));
+        let (escalation, walk_cost) = match walked {
             Ok(summary) => {
-                let (level, message) = reconcile_report(&path, &summary);
+                let (level, message) = reconcile_report(&path, &summary, cpu);
                 log::log!(level, "{message}");
                 let walk_cost = summary.walk_cost();
                 // Feed the 15-minute aggregate that replaces this line at info.
                 // Only a walk that finished is counted: a failed one measured
                 // nothing, so it would report as free churn.
-                churn::record_reconcile(&path, walk_cost, summary.added + summary.removed + summary.updated);
+                churn::record_reconcile(&path, walk_cost, summary.added + summary.removed + summary.updated, cpu);
                 (summary.escalation, walk_cost)
             }
             Err(e) => {
@@ -643,8 +650,13 @@ const RECONCILE_SLOW_SECS: u64 = 10;
 /// it DOMINATES the line stays at `debug`: writer saturation already has its own
 /// signal (the writer heartbeat), and repeating it under the reconciler's name is
 /// worse than not repeating it at all.
-fn reconcile_report(path: &Path, summary: &ReconcileSummary) -> (log::Level, String) {
+///
+/// `cpu` is the walk's own thread CPU, printed beside the wall time because on a
+/// loaded machine the wall time is mostly waiting on the disk. `None` (no
+/// per-thread clock) prints nothing rather than a number that looks measured.
+fn reconcile_report(path: &Path, summary: &ReconcileSummary, cpu: Option<Duration>) -> (log::Level, String) {
     let changes = format!("+{} -{} ~{}", summary.added, summary.removed, summary.updated);
+    let cpu = cpu.map_or_else(String::new, |cpu| format!(", {} CPU", churn::format_duration(cpu)));
     // The one aggregate that replaced a per-path DEBUG line. Printed only when it
     // happened: on a healthy walk it's zero, and "0 unreadable dirs" on every line
     // is the noise this change removed.
@@ -660,7 +672,7 @@ fn reconcile_report(path: &Path, summary: &ReconcileSummary) -> (log::Level, Str
         return (
             log::Level::Debug,
             format!(
-                "MustScanSubDirs: reconcile complete for {} ({changes}{unreadable}, {}ms)",
+                "MustScanSubDirs: reconcile complete for {} ({changes}{unreadable}, {}ms{cpu})",
                 path.display(),
                 summary.duration.as_millis(),
             ),
@@ -687,7 +699,7 @@ fn reconcile_report(path: &Path, summary: &ReconcileSummary) -> (log::Level, Str
     (
         level,
         format!(
-            "MustScanSubDirs: {what} for {} ({changes}{unreadable}, {}s{attribution})",
+            "MustScanSubDirs: {what} for {} ({changes}{unreadable}, {}s{cpu}{attribution})",
             path.display(),
             summary.duration.as_secs(),
         ),

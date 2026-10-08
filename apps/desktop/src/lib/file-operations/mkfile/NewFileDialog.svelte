@@ -1,9 +1,10 @@
 <script lang="ts">
+    import { onDestroy } from 'svelte'
     import { createFile, type Initiator } from '$lib/tauri-commands'
-    import { asMutationError } from '$lib/file-operations/mutation-error'
-    import { renderMutationError } from '$lib/file-operations/mutation-error-messages'
+    import { CreateSubmission } from '$lib/file-operations/create-submission.svelte'
     import { NewEntryNameCheck } from '$lib/file-operations/new-entry-name-check.svelte'
     import NewEntryNameField from '$lib/file-operations/NewEntryNameField.svelte'
+    import StillCreatingNotice from '$lib/file-operations/StillCreatingNotice.svelte'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import Button from '$lib/ui/Button.svelte'
     import { tString } from '$lib/intl/messages.svelte'
@@ -33,18 +34,27 @@
     // Name validation + clash lookup; `NewEntryNameField` runs its lifecycle.
     const check = new NewEntryNameCheck({ currentPath, listingId, showHiddenFiles, getName: () => fileName })
 
+    // OK to how the create really ended, slow volumes included.
+    const submission = new CreateSubmission({
+        kind: 'file',
+        create: (name, wait) => createFile(currentPath, name, volumeId, initiator, wait),
+        onCreated,
+        onRefused: (message) => {
+            check.errorMessage = message
+        },
+    })
+
+    // A create still running carries on; its end no longer steers this dialog.
+    onDestroy(() => {
+        submission.close()
+    })
+
     const isValid = $derived(fileName.trim().length > 0 && !check.errorMessage)
 
     async function handleConfirm() {
         const trimmed = fileName.trim()
         if (!trimmed || check.errorMessage) return
-        try {
-            await createFile(currentPath, trimmed, volumeId, initiator)
-            onCreated(trimmed)
-        } catch (e) {
-            const failure = asMutationError(e)
-            check.errorMessage = failure ? renderMutationError(failure, 'file') : String(e)
-        }
+        await submission.submit(trimmed)
     }
 
     function handleKeydown(event: KeyboardEvent) {
@@ -66,12 +76,20 @@
 
     <div class="dialog-body">
         <NewEntryNameField kind="file" {currentPath} {volumeId} {check} bind:value={fileName} onSubmit={() => void handleConfirm()} />
+
+        {#if submission.phase === 'stillCreating'}
+            <StillCreatingNotice name={submission.submittedName} />
+        {/if}
     </div>
 
     {#snippet footer()}
-        <Button variant="secondary" onclick={onCancel}>{tString('fileOperations.button.cancel')}</Button>
-        <Button variant="primary" onclick={() => void handleConfirm()} disabled={!isValid || check.isChecking}
-            >{tString('fileOperations.button.ok')}</Button
+        <Button variant="secondary" onclick={onCancel}
+            >{tString(submission.phase === 'stillCreating' ? 'fileOperations.button.close' : 'fileOperations.button.cancel')}</Button
+        >
+        <Button
+            variant="primary"
+            onclick={() => void handleConfirm()}
+            disabled={!isValid || check.isChecking || submission.busy}>{tString('fileOperations.button.ok')}</Button
         >
     {/snippet}
 </ModalDialog>

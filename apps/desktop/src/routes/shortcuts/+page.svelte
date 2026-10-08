@@ -5,7 +5,7 @@
     import { initWindowSettings, initWindowLanguageSync } from '$lib/settings/window-settings'
     import { initializeShortcuts } from '$lib/shortcuts'
     import { initAccentColor, cleanupAccentColor } from '$lib/accent-color'
-    import { initReduceTransparency, cleanupReduceTransparency } from '$lib/reduce-transparency'
+    import { initGlassMaterial, cleanupGlassMaterial } from '$lib/glass-material'
     import { initTextSize, cleanupTextSize } from '$lib/text-size.svelte'
     import { requestOpenSettings } from '$lib/tauri-commands'
     import { trackOwnRect } from '$lib/window-positioning'
@@ -54,7 +54,7 @@
             // chrome in English under a Hungarian UI and never follows a switch.
             unsubscribeLanguage = initWindowLanguageSync()
             await initAccentColor()
-            await initReduceTransparency()
+            await initGlassMaterial()
             await initTextSize()
             initialized = true
 
@@ -78,7 +78,7 @@
         unlistenFocusSelf?.()
         unlistenRectTracking?.()
         cleanupAccentColor()
-        cleanupReduceTransparency()
+        cleanupGlassMaterial()
         cleanupTextSize()
     })
 </script>

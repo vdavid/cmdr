@@ -10,6 +10,7 @@
     } from '$lib/settings'
     import type { Snippet } from 'svelte'
     import { onMount } from 'svelte'
+    import { useSettingLock } from './setting-lock.svelte'
 
     interface Props {
         id: SettingId
@@ -21,6 +22,7 @@
 
     const { id, disabled = false, customContent, itemTrailing }: Props = $props()
 
+    const lock = useSettingLock(id)
     const definition = getSettingDefinition(id)
     const label = definition?.label ?? id
     const options = definition?.constraints?.options ?? []
@@ -45,7 +47,15 @@
     }
 </script>
 
-<RadioGroup {items} bind:value {disabled} ariaLabel={label} onValueChange={handleValueChange} {itemTrailing}>
+<RadioGroup
+    {items}
+    bind:value
+    disabled={disabled || lock.locked}
+    ariaLabel={label}
+    ariaDescribedBy={lock.describedBy()}
+    onValueChange={handleValueChange}
+    {itemTrailing}
+>
     {#snippet footer(currentValue: string)}
         {#if customContent}
             <!-- Custom content rendered at end, visible only when 'custom' is selected -->

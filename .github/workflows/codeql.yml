@@ -1,0 +1,124 @@
+name: CodeQL
+
+# Static analysis (SAST) over GitHub Actions workflows, JavaScript/TypeScript, and Rust. Results
+# land in the repo's code-scanning tab, and a run FAILS when a high or critical finding is left:
+# `.github/codeql/filter-sarif.sh` drops the accepted false positives
+# (`.github/codeql/accepted-findings.json`), uploads the rest, and fails on what blocks. The release
+# gate (`scripts/release-codeql-gate.sh`) won't tag over a red run or an open high alert.
+#
+# Rust takes far longer than the other two (8.5 min against ~1.5 min for JS/TS and 10 s for Actions
+# with the CodeQL 2.27.1 CLI on an M-series Mac, 2026-10-08; expect 2–3x that on a runner), so a
+# push analyzes it only when Rust sources changed. The weekly run and a manual
+# dispatch always cover all three, which also picks up new queries from CodeQL releases.
+on:
+  push:
+    branches:
+      - main
+  schedule:
+    - cron: '41 4 * * 2' # weekly, Tuesday 4:41 AM UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  languages:
+    name: Pick languages
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      list: ${{ steps.pick.outputs.list }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Detect Rust changes
+        if: github.event_name == 'push'
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        id: filter
+        with:
+          filters: |
+            rust:
+              - '**/*.rs'
+              - '**/Cargo.toml'
+              - 'Cargo.lock'
+              - 'rust-toolchain.toml'
+              - '.github/codeql/**'
+              - '.github/workflows/codeql.yml'
+
+      - name: Pick languages
+        id: pick
+        env:
+          EVENT: ${{ github.event_name }}
+          RUST_CHANGED: ${{ steps.filter.outputs.rust }}
+        run: |
+          if [ "$EVENT" != "push" ] || [ "$RUST_CHANGED" = "true" ]; then
+            echo 'list=["actions","javascript-typescript","rust"]' >> "$GITHUB_OUTPUT"
+          else
+            echo 'list=["actions","javascript-typescript"]' >> "$GITHUB_OUTPUT"
+          fi
+
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    needs: languages
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    # A job-level block replaces the workflow-level one, so it restates the reads it needs.
+    permissions:
+      contents: read # check out the code
+      actions: read # the CodeQL action reads the run's own workflow details
+      security-events: write # upload the SARIF to code scanning
+    strategy:
+      fail-fast: false
+      matrix:
+        language: ${{ fromJSON(needs.languages.outputs.list) }}
+    env:
+      # Rust only: analyze the shipped target (macOS), and leave inline `#[cfg(test)]` modules out,
+      # as `codeql-config.yml` does for test files. Other extractors ignore these.
+      CODEQL_EXTRACTOR_RUST_OPTION_CARGO_TARGET: aarch64-apple-darwin
+      CODEQL_EXTRACTOR_RUST_OPTION_CARGO_CFG_OVERRIDES: -test
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v4.38.2
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: none
+          config-file: ./.github/codeql/codeql-config.yml
+
+      - name: Analyze
+        uses: github/codeql-action/analyze@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v4.38.2
+        with:
+          category: /language:${{ matrix.language }}
+          upload: never
+          output: ${{ runner.temp }}/codeql
+
+      - name: Drop accepted findings and check for blocking ones
+        id: gate
+        env:
+          FILTERED: ${{ runner.temp }}/codeql-filtered.sarif
+        # Runs to the end even when it finds blockers, so the upload below still records them. The
+        # SARIF is named after CodeQL's own language id (`javascript.sarif`), so take the only one.
+        run: |
+          set +e
+          .github/codeql/filter-sarif.sh "$RUNNER_TEMP"/codeql/*.sarif "$FILTERED"
+          echo "blocking=$?" >> "$GITHUB_OUTPUT"
+
+      - name: Upload to code scanning
+        uses: github/codeql-action/upload-sarif@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v4.38.2
+        with:
+          sarif_file: ${{ runner.temp }}/codeql-filtered.sarif
+          category: /language:${{ matrix.language }}
+
+      - name: Fail on blocking findings
+        if: steps.gate.outputs.blocking != '0'
+        run: |
+          echo "::error::CodeQL found high or critical issues; the step above lists them."
+          exit 1

@@ -160,13 +160,13 @@ function refusedBy(named: VolumeHolder[]): EjectError {
 describe('a refused unmount names who held the drive', () => {
   it('names the one app, so the person knows what to close', () => {
     expect(renderEjectError(refusedBy([holder('app', 'Preview')]))).toBe(
-      'Preview is still using this drive. Close anything it has open there, then eject again.',
+      'Preview still has files open there. Close them, then try again.',
     )
   })
 
   it('joins two names with "and"', () => {
     expect(renderEjectError(refusedBy([holder('app', 'Preview'), holder('app', 'Warp')]))).toBe(
-      'Preview and Warp are still using this drive. Close anything they have open there, then eject again.',
+      'Preview and Warp still have files open there. Close them, then try again.',
     )
   })
 
@@ -174,15 +174,13 @@ describe('a refused unmount names who held the drive', () => {
     const rendered = renderEjectError(
       refusedBy([holder('app', 'Preview'), holder('app', 'Warp'), holder('app', 'Photos')]),
     )
-    expect(rendered).toBe(
-      'Preview, Warp, and Photos are still using this drive. Close anything they have open there, then eject again.',
-    )
+    expect(rendered).toBe('Preview, Warp, and Photos still have files open there. Close them, then try again.')
   })
 
   it('stops at three names and says "other apps" for the rest, so the toast stays one line', () => {
     const four = [holder('app', 'Preview'), holder('app', 'Warp'), holder('app', 'Photos'), holder('app', 'Music')]
     expect(renderEjectError(refusedBy(four))).toBe(
-      'Preview, Warp, Photos, and other apps are still using this drive. Close anything they have open there, then eject again.',
+      'Preview, Warp, Photos, and other apps still have files open there. Close them, then try again.',
     )
     const six = [...four, holder('app', 'Mail'), holder('app', 'Notes')]
     expect(renderEjectError(refusedBy(six))).toBe(renderEjectError(refusedBy(four)))
@@ -190,7 +188,7 @@ describe('a refused unmount names who held the drive', () => {
 
   it('words a tool exactly like an app, because a name is a name to the person reading it', () => {
     expect(renderEjectError(refusedBy([holder('tool', 'mds_stores')]))).toBe(
-      'mds_stores is still using this drive. Close anything it has open there, then eject again.',
+      'mds_stores still has files open there. Close them, then try again.',
     )
   })
 
@@ -201,19 +199,19 @@ describe('a refused unmount names who held the drive', () => {
 
   it('sends someone to the disk image first, since the drive can’t go before it does', () => {
     expect(renderEjectError(refusedBy([holder('diskImage', 'Installer')]))).toBe(
-      'A disk image stored on this drive is still open. Eject that image first, then eject this drive.',
+      'A disk image stored there is still open. Eject that image first, then try again.',
     )
   })
 
   it('tells someone to wait when macOS itself is the holder, because there is nothing to close', () => {
     expect(renderEjectError(refusedBy([holder('system', 'mds_stores')]))).toBe(
-      'macOS is still working with this drive. Wait a minute, then eject again.',
+      'macOS still has files open there. Wait a minute, then try again.',
     )
   })
 
   it('owns it when Cmdr is the holder, and invites a report', () => {
     expect(renderEjectError(refusedBy([holder('cmdr', 'cmdr')]))).toBe(
-      'Cmdr itself is still using this drive. Wait a moment and eject again, or send a report if it keeps happening.',
+      'Cmdr itself still has files open there. Wait a moment and try again, or send a report if it keeps happening.',
     )
   })
 
@@ -224,17 +222,43 @@ describe('a refused unmount names who held the drive', () => {
 
   it('falls back to the unnamed sentence when the scan named nobody', () => {
     expect(renderEjectError(refusedBy([]))).toBe(
-      'Something is still using this drive. Close any open files and apps, then eject again.',
+      'Something still has files open there. Close any open files and apps, then try again.',
     )
   })
 
-  it('falls back to the unnamed sentence when nothing said what the holders are, and never calls one an app', () => {
+  it('names the one process when nothing said what kind it is, and says it is only a process name', () => {
+    expect(renderEjectError(refusedBy([holder('unclassified', 'mdworker')]))).toBe(
+      'A process called mdworker still has files open there. (Cmdr doesn’t have an app name, only the process name.)',
+    )
+  })
+
+  it('names several unclassified processes with their count, and never calls them apps', () => {
     const rendered = renderEjectError(
       refusedBy([holder('unclassified', 'some-helper'), holder('unclassified', 'mdworker')]),
     )
-    expect(rendered).toBe(renderEjectError(refusedBy([])))
-    expect(rendered).not.toContain('some-helper')
-    expect(rendered).not.toContain('mdworker')
+    expect(rendered).toBe(
+      '2 processes called some-helper and mdworker still have files open there. (Cmdr doesn’t have app names, only the process names.)',
+    )
+    expect(rendered).not.toContain('apps still have')
+  })
+
+  it('counts two processes of one name once, like an app', () => {
+    const twoOfOne = [holder('unclassified', 'mdworker', 101), holder('unclassified', 'mdworker', 102)]
+    expect(renderEjectError(refusedBy(twoOfOne))).toBe(
+      renderEjectError(refusedBy([holder('unclassified', 'mdworker', 101)])),
+    )
+  })
+
+  it('stops at three process names and says "others" for the rest, counting them all', () => {
+    const five = ['a-helper', 'b-helper', 'c-helper', 'd-helper', 'e-helper'].map((n) => holder('unclassified', n))
+    expect(renderEjectError(refusedBy(five))).toBe(
+      '5 processes called a-helper, b-helper, c-helper, and others still have files open there. (Cmdr doesn’t have app names, only the process names.)',
+    )
+  })
+
+  it('still prefers macOS, Cmdr, or a disk image over an unclassified name', () => {
+    const mixed = [holder('unclassified', 'mdworker'), holder('system', 'mds_stores')]
+    expect(renderEjectError(refusedBy(mixed))).toBe(renderEjectError(refusedBy([holder('system', 'mds_stores')])))
   })
 
   it('words an incomplete scan from the names it did see', () => {

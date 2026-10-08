@@ -200,6 +200,23 @@ describe('DownloadToastContent', () => {
     expect(goToDownloadMock).not.toHaveBeenCalled()
   })
 
+  it('"Stop showing these" still closes the toast when Settings fails to open', async () => {
+    openSettingsToDownloadsNotificationsMock.mockRejectedValue(new Error('Settings window refused'))
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(DownloadToastContent, { target, props: makeProps() })
+    await tick()
+
+    const stopButton = Array.from(target.querySelectorAll('button')).find((b) => /stop showing/i.test(b.textContent))
+    if (!stopButton) throw new Error('Stop button not found')
+    stopButton.click()
+    await tick()
+    await Promise.resolve()
+
+    expect(setDownloadsNotificationsModeMock).toHaveBeenCalledWith('neither')
+    expect(dismissToastMock).toHaveBeenCalledWith('downloads:test-id')
+  })
+
   it('the clickable body is not focusable (mouse-only convenience; buttons own keyboard focus)', async () => {
     const target = document.createElement('div')
     document.body.appendChild(target)

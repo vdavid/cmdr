@@ -493,6 +493,11 @@ pub struct IndexWriter {
     /// completes. The writer thread reads this to report flushing progress as
     /// it processes remaining `InsertEntriesV2` batches.
     expected_total_entries: Arc<AtomicU64>,
+    /// How long the last successful `ComputeAllAggregates` took, in ms (0 = none
+    /// since the last read). The completion handler takes it after its flush to
+    /// split the post-walk wait into its save and compute steps, which are
+    /// remembered separately for the overall "~X left".
+    last_full_aggregate_ms: Arc<AtomicU64>,
     /// Shared ID counter for entry allocation. The scanner atomically increments
     /// this to get unique IDs, and the writer bumps it after `UpsertEntryV2` inserts
     /// (which let SQLite auto-assign). Reset to 2 on `TruncateData`.
@@ -592,6 +597,8 @@ impl IndexWriter {
         let (sender, receiver) = mpsc::sync_channel::<WriteMessage>(WRITER_CHANNEL_CAPACITY);
         let expected_total_entries = Arc::new(AtomicU64::new(0));
         let expected_total_clone = Arc::clone(&expected_total_entries);
+        let last_full_aggregate_ms = Arc::new(AtomicU64::new(0));
+        let last_full_aggregate_clone = Arc::clone(&last_full_aggregate_ms);
         let next_id = Arc::new(AtomicI64::new(initial_next_id));
         let next_id_clone = Arc::clone(&next_id);
         let mutation_tracker = Arc::new(MutationTracker::new(feeds_search));
@@ -618,6 +625,7 @@ impl IndexWriter {
                         events,
                         volume_id,
                         expected_total_clone,
+                        last_full_aggregate_clone,
                         next_id_clone,
                         mutation_tracker_clone,
                         queue_depth_clone,
@@ -635,6 +643,7 @@ impl IndexWriter {
             db_path: db_path.to_path_buf(),
             events,
             expected_total_entries,
+            last_full_aggregate_ms,
             next_id,
             mutation_tracker,
             queue_depth,
@@ -675,6 +684,19 @@ impl IndexWriter {
     /// reads this to report flushing progress as it drains `InsertEntriesV2`.
     pub fn set_expected_total_entries(&self, total: u64) {
         self.expected_total_entries.store(total, Ordering::Relaxed);
+    }
+
+    /// How long the most recent successful `ComputeAllAggregates` took, and clear
+    /// it, so a second read can't hand the same timing to another run. `None`
+    /// when none ran (or the last one failed) since the previous take.
+    ///
+    /// Read it AFTER a flush that follows the aggregate you mean: the writer is
+    /// one ordered thread, so by then that aggregate is the last one finished.
+    pub(crate) fn take_last_full_aggregate_ms(&self) -> Option<u64> {
+        match self.last_full_aggregate_ms.swap(0, Ordering::Relaxed) {
+            0 => None,
+            ms => Some(ms),
+        }
     }
 
     /// Per-writer mutation counter. Bumped alongside the global `WRITER_GENERATION`
@@ -1090,6 +1112,7 @@ fn writer_loop(
     events: Arc<dyn EventSink>,
     volume_id: String,
     expected_total_entries: Arc<AtomicU64>,
+    last_full_aggregate_ms: Arc<AtomicU64>,
     next_id: Arc<AtomicI64>,
     mutation_tracker: Arc<MutationTracker>,
     queue_depth: Arc<AtomicUsize>,
@@ -1198,6 +1221,7 @@ fn writer_loop(
                 events.as_ref(),
                 &volume_id,
                 &expected_total_entries,
+                &last_full_aggregate_ms,
                 &next_id,
                 &mutation_tracker,
                 &mut probe,
@@ -1217,6 +1241,7 @@ fn writer_loop(
             events.as_ref(),
             &volume_id,
             &expected_total_entries,
+            &last_full_aggregate_ms,
             &next_id,
             &mutation_tracker,
             &mut probe,
@@ -1343,6 +1368,7 @@ fn process_message(
     events: &dyn EventSink,
     volume_id: &str,
     expected_total_entries: &AtomicU64,
+    last_full_aggregate_ms: &AtomicU64,
     next_id: &AtomicI64,
     mutation_tracker: &MutationTracker,
     probe: &mut ProbeStats,
@@ -1467,6 +1493,7 @@ fn process_message(
                 events,
                 volume_id,
                 expected_total_entries,
+                last_full_aggregate_ms,
                 source,
                 heal_latch,
                 signal,
@@ -1627,6 +1654,7 @@ fn process_message(
                     events,
                     volume_id,
                     expected_total_entries,
+                    last_full_aggregate_ms,
                     AggSource::Sql,
                     heal_latch,
                     signal,

@@ -2,8 +2,7 @@
 
 macOS-only native drag-and-drop OUT of Cmdr. Builds the `NSDraggingSession` that carries dragged files to other apps
 (Finder, terminals, editors). Driven by `start_selection_drag` / `start_drag_paths` in `commands/file_system/drag.rs`,
-which hop to the AppKit main thread and call `start_drag`. The whole module is `#[cfg(target_os = "macos")]`. Full
-details: `DETAILS.md`.
+which hop to the AppKit main thread and call `start_drag`. The whole module is `#[cfg(target_os = "macos")]`.
 
 ## Files
 
@@ -16,7 +15,7 @@ details: `DETAILS.md`.
 - `promises.rs`: the file-promise providers + delegate (`CmdrPromiseDelegate`), the shared serial queue, the
   session-lifetime storage, and `NSError` mapping.
 - `fulfillment.rs`: plain-Rust fulfillment service, downloads a virtual file to the Finder-chosen destination. NO
-  AppKit; unit-testable.
+  AppKit; tests in `fulfillment_test.rs`. A listed child name joins only as a `ChildName` (`DETAILS.md`).
 - `session_summary.rs`: pure per-session outcome accounting (`summarize`), folds per-item outcomes into the
   file/folder/failure counts the completion toast reads. NO AppKit/Tauri.
 - `uti.rs`: pure filename-extension → UTI mapping for promise providers.
@@ -49,11 +48,12 @@ each in `DETAILS.md`.
   thread, so the delegate must be usable off-main. The one main-thread-only method (`fileNameForType:`) gets its
   `MainThreadMarker` from the protocol signature; ivars are all `Send + Sync` (queue via the `SendQueue` wrapper). The
   drag SOURCE (`source.rs`) IS `MainThreadOnly` (`NSDraggingSource` requires it).
-- **`session_key` is a monotonic counter, NOT the drag sequence number.** The promise delegates must register BEFORE the
-  drag begins (weak refs alive the instant Finder might query them), but `draggingSequenceNumber` is only known AFTER
-  `beginDraggingSessionWithItems:…` returns. A monotonic key generated up front and stashed on the source sidesteps the
-  chicken-and-egg; the source reads its own key back in the end callback.
+- **`session_key` is a monotonic counter, NOT the drag sequence number**: delegates register BEFORE the drag begins, and
+  `draggingSequenceNumber` exists only AFTER. The source stashes the key and reads it back in its end callback.
 - **Completion toasts**: Finder shows nothing while a promise downloads, so typed
   `SessionStarted`/`SessionComplete` events (in the always-compiled `crate::system_events`) become ONE toast per session
   via `lib/file-explorer/drag/drag-out-event-bridge.ts`. Counts are top-level items (one folder = one folder); a drag
   dropped back into Cmdr never fulfills, so it emits nothing.
+
+Flows, the promise lifecycle, and the manual test plan: `DETAILS.md`. Read it before any non-trivial work here: editing,
+planning, reorganizing, or advising.

@@ -237,3 +237,42 @@ describe('retry from the error dialog', () => {
     expect(dialogs.transferProgressProps?.initiator).toBe('user')
   })
 })
+
+/**
+ * "Copy anyway" after a space shortfall (#351). The pre-flight's figure is an
+ * upper bound, so the person decides: the same copy starts again, told to skip
+ * the free-space check.
+ */
+describe('copy anyway from the error dialog', () => {
+  const shortfall: WriteOperationError = {
+    type: 'insufficient_space',
+    required: 2_000_000_000,
+    available: 500_000_000,
+    volumeName: 'Naspolya',
+  }
+
+  it('starts the same copy again with the free-space check skipped', () => {
+    const dialogs = makeState()
+    failInForeground(dialogs, 'op-9', shortfall)
+
+    dialogs.handleTransferErrorCopyAnyway()
+
+    expect(dialogs.showTransferErrorDialog).toBe(false)
+    expect(dialogs.showTransferProgressDialog).toBe(true)
+    const again = dialogs.transferProgressProps
+    expect(again?.sourcePaths).toEqual(copyProps().sourcePaths)
+    expect(again?.conflictResolution).toBe('stop')
+    expect(again?.spaceShortfall).toBe('proceed')
+    expect(again?.previewId).toBeNull()
+    expect(dismissFailedOperation).toHaveBeenCalledWith('op-9')
+  })
+
+  it('leaves a plain retry asking about space again', () => {
+    const dialogs = makeState()
+    failInForeground(dialogs, 'op-10', shortfall)
+
+    dialogs.handleTransferErrorRetry()
+
+    expect(dialogs.transferProgressProps?.spaceShortfall).toBeUndefined()
+  })
+})

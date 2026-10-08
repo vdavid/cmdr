@@ -55,9 +55,29 @@ pub enum WriteMode {
     /// SMB's `FileCreate`, `SSH_FXF_EXCL`, WebDAV's `If-None-Match: *`) and
     /// check just before writing where they don't (MTP, ADB).
     CreateNew,
+    /// [`CreateNew`](Self::CreateNew) for a name inside a folder THIS operation
+    /// created, which the creation proved empty at that moment (the
+    /// `create_directory` that made it succeeded rather than finding it).
+    ///
+    /// It refuses an occupied name exactly as `CreateNew` does wherever that
+    /// costs nothing extra (an atomic create, a conditional header). A backend
+    /// whose no-overwrite check is a request of its own (an object store's HEAD
+    /// before each write) may skip that request: a file another writer puts in
+    /// the brand-new folder during the operation is then overwritten, the
+    /// window the caller accepted by handing down this fact. ❌ Only from the
+    /// caller that made the folder; never a guess at write time.
+    CreateNewInFreshFolder,
     /// Whatever holds the name is the caller's to replace: a temp it minted, a
     /// name it claimed with a placeholder, a file the user chose to overwrite.
     CreateOrReplace,
+}
+
+impl WriteMode {
+    /// Whether a write in this mode must not replace what holds the name:
+    /// everything but [`CreateOrReplace`](Self::CreateOrReplace).
+    pub fn refuses_occupied(self) -> bool {
+        !matches!(self, Self::CreateOrReplace)
+    }
 }
 
 /// Whether a stream's final byte length is known before writing starts.
@@ -334,6 +354,15 @@ pub struct CopyScanResult {
     /// issuing a separate `is_directory` probe per source, saving one round-trip
     /// per file on network-backed volumes (SMB, MTP).
     pub top_level_is_directory: bool,
+    /// The scanned top-level path's own modification date (Unix seconds), from
+    /// the same stat, or `None` when that stat carried none (an S3 prefix) or
+    /// the result is an aggregate over several paths.
+    ///
+    /// The copy pipeline dates a copied top-level FOLDER with it, once the
+    /// folder's contents have landed, so that date costs no round trip of its
+    /// own. `apps/desktop/src-tauri/src/file_system/write_operations/transfer/volume/DETAILS.md`
+    /// § "Copies keep the source's date".
+    pub top_level_modified_at: Option<u64>,
 }
 
 /// Result of a batch scan over multiple source paths.
@@ -352,6 +381,20 @@ pub struct BatchScanResult {
     /// caller passed in. Paths that failed to scan won't appear. On a
     /// per-path failure the method returns `Err` without partial data.
     pub per_path: Vec<(PathBuf, CopyScanResult)>,
+    /// Every file's size and date, kept only by a backend whose operations are
+    /// billed per object (S3, through `ScanSource::keeps_files`), for a cost
+    /// estimate; `None` everywhere else, and wherever any part of the scan
+    /// answered without walking (a cached listing).
+    pub files: Option<Vec<ScannedFile>>,
+}
+
+/// One file a scan walked past, as a cost estimate needs it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ScannedFile {
+    /// Logical size in bytes.
+    pub size: u64,
+    /// Last-modified time, Unix seconds; on an object store, the upload time.
+    pub modified_at: Option<u64>,
 }
 
 /// A conflict detected during pre-copy scanning: a source item that already exists at the

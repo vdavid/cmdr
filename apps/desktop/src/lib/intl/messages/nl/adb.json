@@ -13,7 +13,7 @@
   },
   "adb.connect.deviceGone": "Je telefoon is niet meer aangesloten.",
   "@adb.connect.deviceGone": {
-    "sourceHash": "e2766e6"
+    "sourceHash": "00d5254"
   },
   "adb.connect.unauthorized": "Kijk op je telefoon en tik op ‘Toestaan’.",
   "@adb.connect.unauthorized": {
@@ -67,9 +67,9 @@
   "@adb.disconnectDeviceAriaLabel": {
     "sourceHash": "8f755cb"
   },
-  "adb.disconnectBusyTooltip": "Verbinding verbreken kan niet terwijl er bewerkingen op dit apparaat bezig zijn",
+  "adb.disconnectBusyTooltip": "Cmdr is nog bezig met bestanden op dit apparaat. Verbreek de verbinding zodra dat klaar is.",
   "@adb.disconnectBusyTooltip": {
-    "sourceHash": "a425d4b"
+    "sourceHash": "73c355e"
   },
   "adb.disconnectingDeviceAriaLabel": "Verbinding met {name} wordt verbroken…",
   "@adb.disconnectingDeviceAriaLabel": {

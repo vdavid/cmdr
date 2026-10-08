@@ -4,16 +4,9 @@
 //! determinable without building, which is what made the SMB extraction's suites
 //! impossible to size in advance.
 
-use std::path::Path;
-use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, AtomicU8};
-
-use cmdr_fs::volume::Retirement;
 use cmdr_fs::volume::host::VolumeHost;
-use cmdr_fs::volume::remote_paths::RemoteRoot;
 
-use super::state::ConnectionState;
-use super::{AuthRungUsed, SftpConnectionParams, SftpVolume, SftpVolumeInner};
+use super::{AuthRungUsed, SftpConnectionParams, SftpVolume};
 
 /// The remote directory the path suites pretend a volume is rooted at.
 pub const TEST_ROOT: &str = "/srv/data";
@@ -45,31 +38,10 @@ pub fn make_test_volume_at(root: &str) -> SftpVolume {
 /// The reconnect suites live on this one: the rung is what the policy keys off,
 /// and the host is where the connection events and the secret store come from.
 pub fn make_test_volume_with(root: &str, rung: AuthRungUsed, host: VolumeHost) -> SftpVolume {
-    SftpVolume {
-        name: "data".to_string(),
-        root: RemoteRoot::new(
-            cmdr_fs::volume::sftp_app_root("127.0.0.1", CLOSED_PORT, "ada"),
-            Path::new(root),
-        ),
-        inner: Arc::new_cyclic(|me| SftpVolumeInner {
-            volume_id: cmdr_fs::volume::sftp_volume_id("127.0.0.1", CLOSED_PORT, "ada"),
-            params: std::sync::RwLock::new(
-                SftpConnectionParams::new("127.0.0.1", CLOSED_PORT, "ada", root).without_agent(),
-            ),
-            rung: std::sync::Mutex::new(rung),
-            session: tokio::sync::RwLock::new(None),
-            // A volume with no session behind it is one whose session went away,
-            // which is what the reconnect cells are about.
-            state: AtomicU8::new(ConnectionState::Connected as u8),
-            retirement: Retirement::new(),
-            me: me.clone(),
-            reconnect_lock: tokio::sync::Mutex::new(()),
-            unmounted: AtomicBool::new(false),
-            // On, the way every saved server is: a cell that wants the switch off
-            // moves it the way the app does, through `set_auto_reconnect`.
-            auto_reconnect: AtomicBool::new(true),
-            auth_attempt_spent: AtomicBool::new(false),
-            host,
-        }),
-    }
+    super::testing::offline_volume(
+        "data",
+        SftpConnectionParams::new("127.0.0.1", CLOSED_PORT, "ada", root).without_agent(),
+        rung,
+        host,
+    )
 }

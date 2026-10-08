@@ -1,7 +1,31 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { _setLocaleForTests } from './locale'
-import { _clearCachesForTests, formatInteger, getGroupSeparator, getNumberFormatter } from './number-format'
+import {
+  _clearCachesForTests,
+  formatInteger,
+  formatMoney,
+  getGroupSeparator,
+  getNumberFormatter,
+} from './number-format'
+
+describe('formatMoney', () => {
+  afterEach(() => {
+    _setLocaleForTests(null)
+  })
+
+  it('formats an amount in its own currency, rounded to the minor unit', () => {
+    _setLocaleForTests('en-US')
+    expect(formatMoney(0.023, 'USD')).toBe('$0.02')
+    expect(formatMoney(1234.5, 'USD')).toBe('$1,234.50')
+  })
+
+  it('follows the formatting locale, not the currency', () => {
+    _setLocaleForTests('de-DE')
+    // German puts the symbol last, after a no-break space, with a decimal comma.
+    expect(formatMoney(0.5, 'EUR')).toBe('0,50 €')
+  })
+})
 
 describe('formatInteger', () => {
   afterEach(() => {

@@ -6,7 +6,7 @@
 //! when the journal has a gap. `resume_or_scan` in `manager.rs` picks between
 //! them; everything after either one starts is the same live-event machinery.
 
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
@@ -21,14 +21,12 @@ use crate::indexing::lifecycle::cover;
 use crate::indexing::lifecycle::progress_reporter::ScanProgressReporter;
 use crate::indexing::lifecycle::rescan_request::ScanStartError;
 use crate::indexing::lifecycle::state;
+use crate::indexing::lifecycle::steps_ahead::{RunShape, StepsAhead};
 use crate::indexing::reconcile::local_reconcile;
-use crate::indexing::reconcile::reconciler::EventReconciler;
 use crate::indexing::scanner::{self, ScanConfig};
-use crate::indexing::store::IndexStore;
-use crate::indexing::watch::branches::{self, AfterWalk, WatchScope};
-use crate::indexing::watch::event_loop::{
-    JOURNAL_GAP_THRESHOLD, LiveConfig, ReplayConfig, run_live_event_loop, run_replay_event_loop,
-};
+use crate::indexing::store::{IndexStore, StepDurations};
+use crate::indexing::watch::branches::{self, AfterWalk};
+use crate::indexing::watch::event_loop::{ReplayConfig, run_replay_event_loop};
 use crate::indexing::watch::watcher::{self, DriveWatcher};
 use crate::indexing::writer::{AggSource, IndexWriter, WriteMessage};
 use cmdr_fs::ignore_poison::IgnorePoison;
@@ -84,7 +82,7 @@ impl IndexManager {
         // forward task into dropping events (Fix 2). Memory is bounded by the
         // ingestion hard cap in `run_replay_event_loop`, not by the channel.
         let (event_tx, event_rx) = tokio::sync::mpsc::unbounded_channel();
-        let current_id = watcher::current_event_id();
+        let current_id = watcher::current_event_id(&self.volume_root);
 
         let watcher_overflow: Option<Arc<AtomicBool>>;
         match DriveWatcher::start(&self.volume_root, since_event_id, event_tx) {
@@ -231,138 +229,6 @@ impl IndexManager {
         Ok(())
     }
 
-    /// Watch the branches a search walk covered on this volume, if anything is
-    /// covered and nothing is watching yet.
-    ///
-    /// This is the whole of what makes walk-written coverage keep its promise:
-    /// without it a walked branch is a snapshot of a folder taken once, and the
-    /// plan would need the expiry Decision 9 replaced. It runs on a volume whose
-    /// index a SEARCH built (`Activation::WriterOnly`) — the one shape that has
-    /// coverage and no watcher. A scanned volume already has one over everything,
-    /// and starting a second would give one database two live loops.
-    ///
-    /// Four things have to be true, and each is a decision rather than a
-    /// precaution:
-    ///
-    /// - the volume is read by the LOCAL walker, since this is a local-filesystem
-    ///   watcher; a share or a phone is watched (or not) by its own transport, and
-    ///   its walked branches are exactly as stale as its scanned index, which
-    ///   loads Stale on every launch anyway;
-    /// - nothing is watching it yet;
-    /// - something is actually covered;
-    /// - both indexing switches allow it (`master::branch_watch_allowed`) — this
-    ///   is where the per-drive veto gets its teeth.
-    pub(in crate::indexing) fn ensure_branch_watch(&mut self, resuming: bool) {
-        if !self.kind.uses_local_scanner() || self.drive_watcher.is_some() {
-            return;
-        }
-        let branches = branches::live_for(&self.volume_id);
-        if branches.is_empty() {
-            return;
-        }
-        if !super::super::master::branch_watch_allowed(super::super::master::master_enabled(), self.db_path()) {
-            log::info!(
-                "Branch watch: '{}' walked ground stays covered but unwatched; indexing is off for this drive",
-                self.volume_id
-            );
-            return;
-        }
-
-        let paths: Vec<PathBuf> = branches.branch_paths().into_iter().map(PathBuf::from).collect();
-        // Replay from where this volume's stream last left off, so a branch covered
-        // in an earlier session comes back current rather than as a snapshot of
-        // whenever the app last ran. A gap too wide to be worth replaying takes the
-        // same exit a cold start does: watch from now, and let the epoch bump say
-        // the rows are stale rather than current.
-        let since_event_id = self.replayable_event_id();
-        if resuming && since_event_id == 0 {
-            // Nothing to replay, so this session can't know what happened to the
-            // covered ground while the app was off. The rows stay trusted (Decision
-            // 5: a covered-but-stale subtree is not re-walked) and the epoch bump is
-            // what makes the read side RENDER them as stale rather than current.
-            // Only on a resume: a bump right after a walk would mark rows stale that
-            // were written a second ago.
-            let _ = self.writer.send(WriteMessage::BumpCurrentEpoch);
-        }
-        let (event_tx, event_rx) = tokio::sync::mpsc::unbounded_channel();
-        let watcher_overflow = match DriveWatcher::start_branches(&self.volume_root, &paths, since_event_id, event_tx) {
-            Ok(watcher) => {
-                let flag = watcher.overflow_flag();
-                self.drive_watcher = Some(watcher);
-                self.branch_watched = true;
-                DEBUG_STATS.watcher_active.store(true, Ordering::Relaxed);
-                log::info!(
-                    "Branch watch: '{}' is watching {} (since_event_id={since_event_id})",
-                    self.volume_id,
-                    pluralize(paths.len() as u64, "walked branch"),
-                );
-                Some(flag)
-            }
-            Err(e) => {
-                // Non-fatal, and honest: the coverage stays served, it just stops
-                // being kept current.
-                log::warn!("Branch watch: '{}' couldn't start a watcher: {e}", self.volume_id);
-                return;
-            }
-        };
-
-        let space = self.path_space();
-        let scope = WatchScope::Branches(Arc::clone(&branches));
-        let mut reconciler = EventReconciler::new_for(
-            self.volume_id.clone(),
-            space.clone(),
-            self.work.child(HoldKind::LiveLoop),
-        );
-        reconciler.within(scope.clone());
-        // Live from the first event: there is no scan to wait for, and the branches
-        // that ARE being walked buffer on their own (`WatchScope`).
-        reconciler.switch_to_live();
-
-        let writer = self.writer.clone();
-        let events = Arc::clone(&self.events);
-        let volume_id = self.volume_id.clone();
-        let handle = crate::indexing::host::runtime::spawn(async move {
-            run_live_event_loop(
-                event_rx,
-                reconciler,
-                writer,
-                events,
-                LiveConfig {
-                    volume_id,
-                    space,
-                    watcher_overflow,
-                    scope,
-                },
-            )
-            .await;
-        });
-        let mut guard = self.live_event_task.lock_ignore_poison();
-        if let Some(previous) = guard.replace(handle) {
-            previous.abort();
-        }
-    }
-
-    /// A search walk is about to cover `paths` on this volume.
-    ///
-    /// Registering them BEFORE the walk reads anything is the whole point: from
-    /// here their events wait for the walk instead of racing it. It runs on every
-    /// volume with a live loop, not only a branch-watched one — a walk over a hole
-    /// in an indexed drive races that drive's loop identically.
-    pub(in crate::indexing) fn begin_branch_coverage(&mut self, paths: &[String]) {
-        let branches = branches::live_for(&self.volume_id);
-        let added = branches.begin_covering(paths);
-        self.ensure_branch_watch(false);
-        // A watcher that watches branch by branch (inotify) has to be told about
-        // each new one; one that watches the volume root already carries them.
-        if self.branch_watched
-            && let Some(watcher) = self.drive_watcher.as_ref()
-        {
-            for path in &added {
-                watcher.watch_branch(Path::new(path));
-            }
-        }
-    }
-
     /// What a finished cover walk leaves on this volume's branch set, and what it
     /// takes to write that down.
     ///
@@ -382,32 +248,6 @@ impl IndexManager {
             return (AfterWalk::Forget, None);
         }
         (AfterWalk::Watch, Some((self.path_space(), self.writer.clone())))
-    }
-
-    /// The event id a (re)started watcher may replay from: the stored one, unless
-    /// the journal has moved so far past it that replaying costs more than it's
-    /// worth. `0` means "from now".
-    ///
-    /// Same threshold the cold-start replay uses, for the same reason, and the
-    /// same consolation: nothing is lost that the index claimed to know, because a
-    /// gap this wide leaves the covered rows stale-but-trusted (Decision 5) rather
-    /// than wrong-and-confident.
-    fn replayable_event_id(&self) -> u64 {
-        if !watcher::supports_event_replay() {
-            return 0;
-        }
-        let stored = self
-            .store
-            .get_index_status()
-            .ok()
-            .and_then(|status| status.last_event_id)
-            .and_then(|id| id.parse::<u64>().ok())
-            .unwrap_or(0);
-        let current = watcher::current_event_id();
-        if stored == 0 || (current > 0 && current > stored + JOURNAL_GAP_THRESHOLD) {
-            return 0;
-        }
-        stored
     }
 
     /// Start a full volume scan with concurrent FSEvents watching.
@@ -458,8 +298,12 @@ impl IndexManager {
         // (see `local_rescan_reconciles` for the completeness gate). Read the entry
         // count from the live read connection BEFORE any truncate. (NOTE: the network
         // predicate in `lifecycle/network_scan.rs` is intentionally left unchanged.)
+        let predates_policy = scanner::index_predates_exclusion_policy(
+            self.store.read_conn(),
+            self.path_space().exclusion_scope().tier(),
+        );
         let reconcile = IndexStore::get_entry_count(self.store.read_conn())
-            .map(|n| local_rescan_reconciles(n, prior_scan_completed))
+            .map(|n| local_rescan_reconciles(n, prior_scan_completed, predates_policy))
             .unwrap_or(false);
 
         // Step 0: Capture this scan's calibration BEFORE truncating.
@@ -479,6 +323,15 @@ impl IndexManager {
         });
         let run_kind = ScanRunKind::classify(reconcile, calibration_set.any.total_entries);
         let prior = calibration_set.for_kind(run_kind.calibration_kind());
+        // And what each step after the walk took on the last run of this kind, for
+        // the overall "~X left". Same kind only: a borrowed timing would be a guess.
+        let steps_ahead = StepsAhead::remembered(
+            RunShape::Local,
+            IndexStore::read_step_durations(self.store.read_conn(), run_kind.calibration_kind()).unwrap_or_else(|e| {
+                log::warn!("Failed to read the remembered step durations (no overall estimate this run): {e}");
+                StepDurations::default()
+            }),
+        );
 
         // Fetch the scanned volume's used bytes ONCE (tier-2 denominator). The call
         // does disk I/O — an NSURL XPC round-trip on macOS, `statvfs` on Linux — and
@@ -494,6 +347,7 @@ impl IndexManager {
             prior,
             volume_used_bytes,
             run_kind,
+            steps_ahead,
         };
         self.scan_calibration = Some(calibration);
 
@@ -555,7 +409,9 @@ impl IndexManager {
             // must never claim it: it doesn't re-list the volume, so it can't clear
             // what an older policy let in. Coverage answers are worthless without
             // this stamp — see `store::EXCLUSION_POLICY_KEY`.
-            let _ = self.writer.send(scanner::exclusion_policy_stamp_message());
+            let _ = self.writer.send(scanner::exclusion_policy_stamp_message(
+                self.path_space().exclusion_scope().tier(),
+            ));
         }
         if let Err(e) = tokio::task::block_in_place(|| self.writer.flush_blocking()) {
             log::warn!("Failed to flush before scan: {e}");
@@ -579,8 +435,6 @@ impl IndexManager {
         // task into dropping events (Fix 2); memory is capped by the ingestion hard
         // cap in the live loop, not the channel.
         let (event_tx, event_rx) = tokio::sync::mpsc::unbounded_channel();
-        let scan_start_event_id = watcher::current_event_id();
-
         // In E2E mode, scope the watcher to the fixture directory instead of `/`.
         // On Linux, inotify's RecursiveMode::Recursive adds a watch per subdirectory,
         // so watching `/` blocks for minutes on a container with thousands of dirs.
@@ -588,6 +442,7 @@ impl IndexManager {
             .ok()
             .map(PathBuf::from)
             .unwrap_or_else(|| self.volume_root.clone());
+        let scan_start_event_id = watcher::current_event_id(&watcher_root);
 
         // watcher_overflow is None if the watcher failed to start (non-fatal).
         let watcher_overflow: Option<Arc<AtomicBool>>;
@@ -618,6 +473,10 @@ impl IndexManager {
             // Which family of steps the checklist shows. This walk takes the
             // volume whole, so it runs the four-step pipeline.
             covered_in_phases: false,
+            left_after_find_files_ms: calibration.steps_ahead.after_find_files_ms,
+            left_after_save_ms: calibration.steps_ahead.after_save_ms,
+            left_after_compute_ms: calibration.steps_ahead.after_compute_ms,
+            left_after_catch_up_ms: calibration.steps_ahead.after_catch_up_ms,
         });
         // And the ground it covers, which is all of it. The listing tests one
         // list of walked roots either way; nothing downstream knows there are two

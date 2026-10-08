@@ -14,19 +14,24 @@
 
     interface Props {
         state: ConnectionState
+        /**
+         * The volume can also be reached through the OS mount (SMB), from its backend's
+         * `capabilities.hasOsMountFallback`: only then does a green dot say "directly".
+         */
+        hasOsMountFallback?: boolean
         /** Chip placement: a small left margin so it doesn't jam against the label. */
         breadcrumb?: boolean
         /** Off where an enclosing control says it instead (the chip's options trigger). */
         explain?: boolean
     }
 
-    const { state, breadcrumb = false, explain = true }: Props = $props()
+    const { state, hasOsMountFallback = false, breadcrumb = false, explain = true }: Props = $props()
 </script>
 
 <span
     class="smb-indicator smb-indicator-{state}"
     class:breadcrumb-smb-indicator={breadcrumb}
-    use:tooltip={explain ? getConnectionTooltip(state) : ''}
+    use:tooltip={explain ? getConnectionTooltip(state, { hasOsMountFallback }) : ''}
 ></span>
 
 <style>

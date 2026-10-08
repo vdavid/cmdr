@@ -26,5 +26,9 @@
   "updates.status.noUpdates": "No se encontraron actualizaciones. Versión actual: v{version}",
   "@updates.status.noUpdates": {
     "sourceHash": "b77b683"
+  },
+  "updates.status.managedOff": "Tu organización administra las actualizaciones de Cmdr.",
+  "@updates.status.managedOff": {
+    "sourceHash": "452084b"
   }
 }

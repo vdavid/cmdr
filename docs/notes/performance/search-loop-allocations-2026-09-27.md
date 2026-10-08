@@ -82,16 +82,37 @@ Allocations per full query:
 - **After the fix, a query costs ~6,600 allocations regardless of arena size**: one regex cache per scan chunk (~160
   chunks at ~40 allocations each).
 
+## Follow-up: a per-chunk memo of ancestor verdicts (2026-10-01, #322)
+
+After the fixes above, two costs were left in the exclude check: non-ASCII ancestor names still folded through `String`s
+(~1% of directory names; `*.pdf` 74,333 allocations with excludes against 6,983 without, one letter 216,000 against
+8,700), and every match re-walked its ancestors (a binary search each) even when hundreds of matches shared the same
+folders. An allocation-free fold was off the table (it would re-derive `normalize_for_comparison`'s rules in
+`excludes.rs`, which `search/CLAUDE.md` forbids), so each scan chunk now keeps its own memo of folder verdicts
+(`engine.rs`, `AncestorVerdicts`): each folder is judged once per chunk, and a walk stops at the first folder already
+judged.
+
+Method: `bench_query_allocations`, release test binaries before and after (mimalloc, the test binary's default), against
+fresh `sqlite3 .backup` snapshots of prod's `index-root.db` (**5,611,289 rows**) and `importance-root.db` (174,379
+scored folders), 2026-10-01. Four interleaved rounds, order alternating, seven timed runs per query each. Load average
+38–46 throughout (other agents building). Median of the four per-round medians, ms:
+
+| query               | matches   | before | after     | allocs before | allocs after | scan allocs before | scan allocs after |
+| ------------------- | --------- | ------ | --------- | ------------- | ------------ | ------------------ | ----------------- |
+| no match            | 0         | 10.4   | 10.5      | 7,077         | 7,077        | 7,075              | 7,077             |
+| rare literal        | 531       | 18.2   | 17.8      | 8,174         | 8,357        | 7,826              | 8,005             |
+| word (`report`)     | 2,704     | 17.7   | 16.8      | 9,350         | 10,257       | 8,969              | 9,878             |
+| extension (`*.pdf`) | 13,885    | 19.1   | 17.5      | 34,843        | 9,866        | 34,510             | 9,536             |
+| one letter (`e`)    | 1,857,548 | 300.0  | **174.8** | 133,443       | 44,635       | 107,899            | 19,108            |
+
+- **One letter: 1.7× faster** (300 → 175 ms), and the scan's allocations with excludes on are now within ~10,000 of the
+  scan with them off (19,108 against ~9,350), where they were ~98,500 over.
+- **Small queries don't move**: within run-to-run noise. They pay ~200–900 extra allocations for the memo maps' growth
+  (a few per chunk that sees a match), far below a single row's worth on any arena.
+- The remaining one-letter time is ranking 1.9 M matches and the first walk per folder per chunk.
+
 ## What's left
 
-- **Non-ASCII ancestor names still fold through `String`s.** The scan-with-excludes column against the
-  scan-without-excludes column shows it: `*.pdf` 74,333 against 6,983, and one letter 216,000 against 8,700. Only ~1% of
-  directory names are non-ASCII (4,903 of 543,364 in this snapshot). An allocation-free fold would have to re-derive
-  `normalize_for_comparison`'s NFD and lowercase rules in `excludes.rs`, which `search/CLAUDE.md` forbids. The other way
-  out is a per-chunk memo of ancestor verdicts, which would also stop re-walking the same ancestors for every match in a
-  folder. Not measured, not done.
-- **One letter still takes ~275 ms.** With allocation gone, that's the ancestor walk (a binary search per ancestor per
-  match) and ranking 1.9 M matches. A per-chunk verdict memo is the likely next lever.
 - **The unit test can't reliably catch the regex regression.** In a debug build the pool's lock is rarely contended
   (231–1,388 allocations for the shared-`Regex` shape against ~225 for the chunked one), so the budget test pins the
   fold and ranking halves only. The release bench is the check for the regex half.

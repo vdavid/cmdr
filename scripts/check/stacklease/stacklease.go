@@ -67,7 +67,8 @@
 // log.go holds the two log sinks (Logf/InfoLogf) and the OnReconcileStart/
 // OnTeardown hooks; confighash.go the config-hash stamp/compare; leases.go the
 // per-holder lease files and the dead-PID sweep; keymaterial.go the
-// host-key-material heal/wait pair.
+// host-key-material heal/wait pair; soloreset.go the resets an Acquire runs when
+// no other holder remains.
 package stacklease
 
 import (
@@ -128,6 +129,9 @@ type Composer interface {
 	// entrypoint is the only way to refill key material that vanished from the
 	// host side of a bind mount.
 	Restart(services []string) error
+	// Exec runs a shell script inside a running service's container and returns
+	// what it printed. Used only for a stack's solo resets (`soloreset.go`).
+	Exec(service, script string) (string, error)
 	// RunningServices returns the list of services currently in the project
 	// (running), used for the all-services adoption decision when the requested
 	// set is "all".
@@ -213,6 +217,12 @@ func (s *Stack) Acquire(holderID, mode string) (AcquireResult, error) {
 	//    healthy, and hash-matching with its published keys long gone.
 	if err := s.healKeyMaterial(composer, services, action == ActionReconcile); err != nil {
 		return AcquireResult{}, err
+	}
+
+	// 5. Alone on the stack: clear what killed clients left behind before this
+	//    run trips over it. ❌ Never under another holder.
+	if otherLeases == 0 {
+		s.runSoloResets(composer, services)
 	}
 
 	return AcquireResult{Action: action, Services: services}, nil

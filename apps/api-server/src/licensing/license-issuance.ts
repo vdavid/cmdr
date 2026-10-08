@@ -7,7 +7,8 @@
  * before any side effect, the minted codes are stored before the email goes out, and the row is
  * marked delivered only after Resend accepts it. A redelivery therefore re-sends the SAME codes
  * instead of minting a second set. Rows never expire: "this purchase was fulfilled" has no useful
- * end date.
+ * end date. A full refund or a chargeback sets `revoked_at` (`refunds.ts`), the one fact about a
+ * purchase `/validate` reads from here rather than from Paddle.
  *
  * **Manual rows are the license itself.** There is no Paddle transaction to resolve against, so the
  * row is what `/validate` answers from: its type, organization, expiry, and revocation. See the
@@ -28,19 +29,24 @@ export interface IssuanceRecord {
   claimedAt: string
   /** ISO timestamp of the accepted license email; set means the purchase is fully fulfilled. */
   emailedAt: string | null
+  /** ISO timestamp of a full refund or chargeback (`refunds.ts`); set means never fulfill it again. */
+  revokedAt: string | null
 }
 
 /**
  * What a delivery should do when it finds an existing row.
  *
+ * - `revoked`: refunded or charged back. Acknowledge and do nothing, even if it was never delivered:
+ *   a refund can land before a stuck fulfillment's retry does.
  * - `delivered`: fulfilled, forever. Acknowledge and do nothing.
  * - `in_flight`: another delivery holds a fresh claim. Ask Paddle to retry.
  * - `resend`: a stale claim already minted codes. Re-send those, mint nothing.
  * - `remint`: a stale claim died before minting. Start over.
  */
-export type IssuanceState = 'delivered' | 'in_flight' | 'resend' | 'remint'
+export type IssuanceState = 'revoked' | 'delivered' | 'in_flight' | 'resend' | 'remint'
 
 export function classifyIssuance(record: IssuanceRecord, nowMs: number): IssuanceState {
+  if (record.revokedAt) return 'revoked'
   if (record.emailedAt) return 'delivered'
   // An unparseable timestamp reads as stale (NaN fails the comparison), so a broken row still
   // ends in a delivered license rather than a purchase nobody ever completes.
@@ -73,7 +79,7 @@ export async function claimIssuance(
 export async function loadIssuance(db: D1Database, transactionId: string): Promise<IssuanceRecord | null> {
   const row = await db
     .prepare(
-      `SELECT transaction_id, short_codes, customer_email, claimed_at, emailed_at
+      `SELECT transaction_id, short_codes, customer_email, claimed_at, emailed_at, revoked_at
        FROM license_issuance WHERE transaction_id = ?`,
     )
     .bind(transactionId)
@@ -83,6 +89,7 @@ export async function loadIssuance(db: D1Database, transactionId: string): Promi
       customer_email: string | null
       claimed_at: string
       emailed_at: string | null
+      revoked_at: string | null
     }>()
   if (!row) return null
 
@@ -92,6 +99,7 @@ export async function loadIssuance(db: D1Database, transactionId: string): Promi
     customerEmail: row.customer_email,
     claimedAt: row.claimed_at,
     emailedAt: row.emailed_at,
+    revokedAt: row.revoked_at,
   }
 }
 
@@ -145,6 +153,48 @@ export async function markIssuanceDelivered(db: D1Database, transactionId: strin
     .prepare(`UPDATE license_issuance SET emailed_at = ? WHERE transaction_id = ?`)
     .bind(now.toISOString(), transactionId)
     .run()
+}
+
+/**
+ * Revoke a purchase after a full refund or a chargeback (`refunds.ts`). Keeps the first
+ * `revoked_at`, so a redelivered refund changes nothing, and returns the row's codes either way so
+ * the caller can make sure they're gone from KV.
+ *
+ * A transaction with no row yet gets one, born revoked: the refund can arrive while the purchase's
+ * own fulfillment is still being retried, and that row is what makes the late delivery stand down
+ * (`classifyIssuance` → `revoked`) instead of mailing licenses for money already returned.
+ */
+export async function revokePaddleLicense(
+  db: D1Database,
+  transactionId: string,
+  now: Date,
+): Promise<{ newlyRevoked: boolean; shortCodes: string[] }> {
+  const revoked = await db
+    .prepare(
+      `INSERT INTO license_issuance (transaction_id, source, claimed_at, revoked_at) VALUES (?, 'paddle', ?, ?)
+       ON CONFLICT(transaction_id) DO UPDATE SET revoked_at = excluded.revoked_at
+       WHERE license_issuance.revoked_at IS NULL AND license_issuance.source = 'paddle'
+       RETURNING transaction_id`,
+    )
+    .bind(transactionId, now.toISOString(), now.toISOString())
+    .first()
+  const row = await db
+    .prepare(`SELECT short_codes FROM license_issuance WHERE transaction_id = ? AND source = 'paddle'`)
+    .bind(transactionId)
+    .first<{ short_codes: string | null }>()
+  return { newlyRevoked: revoked !== null, shortCodes: parseShortCodes(row?.short_codes ?? null) }
+}
+
+/**
+ * Whether a purchase was refunded or charged back. The ledger can only take a Paddle license AWAY:
+ * everything else about one (active, expired, its type) is still Paddle's to say.
+ */
+export async function isPaddleLicenseRevoked(db: D1Database, transactionId: string): Promise<boolean> {
+  const row = await db
+    .prepare(`SELECT revoked_at FROM license_issuance WHERE transaction_id = ? AND source = 'paddle'`)
+    .bind(transactionId)
+    .first<{ revoked_at: string | null }>()
+  return Boolean(row?.revoked_at)
 }
 
 /**

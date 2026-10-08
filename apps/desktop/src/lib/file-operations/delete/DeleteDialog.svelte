@@ -30,10 +30,13 @@
     import { tooltip } from '$lib/tooltip/tooltip'
     import { getAppLogger } from '$lib/logging/logger'
     import { ScanThroughput } from '../scan-throughput'
+    import S3CostLine from '../S3CostLine.svelte'
+    import { costRequestFor } from '../s3-cost-line'
     import { useShortenMiddle } from '$lib/utils/shorten-middle-action'
     import { withTimeout } from '$lib/utils/timing'
     import Trans from '$lib/intl/Trans.svelte'
     import { t, tString } from '$lib/intl/messages.svelte'
+    import type { DeleteConfirmer } from '$lib/file-explorer/pane/dialog-props'
 
     const log = getAppLogger('deleteDialog')
 
@@ -67,6 +70,10 @@
         /** When true, dialog auto-confirms without user interaction (MCP). */
         autoConfirm?: boolean
         onConfirm: (previewId: string | null, isPermanent: boolean) => void
+        /** Takes this dialog's own confirm for as long as it's mounted, so an MCP
+         *  `dialog confirm` presses the same button a person does. Returns the
+         *  unregister. */
+        registerConfirmer?: (confirm: DeleteConfirmer) => () => void
         onCancel: () => void
     }
 
@@ -85,6 +92,7 @@
         sourceVolumeId,
         autoConfirm = false,
         onConfirm,
+        registerConfirmer,
         onCancel,
     }: Props = $props()
 
@@ -188,6 +196,16 @@
      *  bare `Math.round` produced. `null` once it rounds to nothing, which is
      *  also what hides the line. */
     const scanRate = $derived(filesPerSec === null ? null : formatFilesPerSecond(filesPerSec))
+    // Priced as a permanent delete only: a trash is unpriced, so it gets no line.
+    const costRequest = $derived(
+        costRequestFor({
+            operation: isPermanent ? 'delete' : 'trash',
+            scanComplete,
+            previewId,
+            sourceVolumeId,
+            destinationVolumeId: null,
+        }),
+    )
     let unlisteners: UnlistenFn[] = []
     /** Set first thing in `onDestroy`. A plain `let`, read by `startScan`, which can outlive the dialog. */
     let destroyed = false
@@ -279,6 +297,14 @@
             progressIntervalMs,
             request.sourceVolumeId,
         )
+        if ('refusal' in result) {
+            // No volume answers for the source (an unplugged phone): nothing was
+            // walked and no preview exists. Same as a walk that stopped; the
+            // delete itself is refused typed if it's confirmed.
+            isScanning = false
+            settleOnlineOnlyAnswer()
+            return
+        }
         // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- may have changed during await
         if (destroyed) {
             void cancelScanPreview(result.previewId)
@@ -338,6 +364,7 @@
 
     onDestroy(() => {
         destroyed = true
+        unregisterConfirmer?.()
         // Nothing may await an answer that can no longer arrive.
         settleOnlineOnlyAnswer()
         // Free the scan preview unless the user confirmed (the op then consumes
@@ -384,6 +411,13 @@
         confirmed = true
         onConfirm(previewId, isPermanent)
     }
+
+    // An MCP `dialog confirm` is the Confirm button: same preview, same mode.
+    // Registered during init, so a confirm that lands while the scan is still
+    // starting finds it and waits for the id like a fast Enter does.
+    const unregisterConfirmer = registerConfirmer?.(() => {
+        void handleConfirm()
+    })
 
     function handleCancel() {
         // Free the scan preview (cancels an in-flight scan and evicts any cached
@@ -549,6 +583,7 @@
                 </span>
             {/if}
         </div>
+        <S3CostLine request={costRequest} />
 
         <!-- Throughput -->
         {#if isScanning && scanRate !== null}

@@ -11,17 +11,11 @@
 // arrives as the `media-index-folder-exclusion` event (wired in the main route's
 // `setupMenuListeners`).
 
-import { getSetting, setSetting } from '$lib/settings'
 import { mediaIndexSetExcludedFolder } from '$lib/tauri-commands'
 import { getAppLogger } from '$lib/logging/logger'
-import { toggleInArray } from './network-volume-prefs'
+import { persistThenApply } from './network-volume-prefs'
 
 const log = getAppLogger('media-index')
-
-/** Absolute OS folder paths excluded from image indexing. */
-function getExcludedFolders(): string[] {
-  return getSetting('mediaIndex.excludedFolders')
-}
 
 /**
  * Exclude (or re-include) a folder from image indexing. Persists the array AND
@@ -36,9 +30,10 @@ function getExcludedFolders(): string[] {
  * rollback would un-exclude a folder the running app may still be treating as excluded.
  */
 export async function setFolderExcluded(folder: string, excluded: boolean): Promise<void> {
-  setSetting('mediaIndex.excludedFolders', toggleInArray(getExcludedFolders(), folder, excluded))
   try {
-    await mediaIndexSetExcludedFolder(folder, excluded)
+    await persistThenApply({ setting: 'mediaIndex.excludedFolders', id: folder, on: excluded, rollback: false }, () =>
+      mediaIndexSetExcludedFolder(folder, excluded),
+    )
   } catch (err) {
     log.warn(
       'Folder exclusion for {folder} is saved but did not reach the backend; the next launch applies it: {err}',

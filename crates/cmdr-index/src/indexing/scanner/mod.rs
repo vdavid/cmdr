@@ -29,6 +29,7 @@ use crate::indexing::store::{IndexStore, UnreadableCause, resolve_scan_root};
 use crate::indexing::writer::{AggSource, IndexWriter, WriteMessage};
 use cmdr_fs::pluralize::{pluralize, pluralize_with};
 
+pub(in crate::indexing) mod boot_tree_mounts;
 mod exclusions;
 pub use exclusions::SYSTEM_DIR_EXCLUDES;
 pub(in crate::indexing) use exclusions::*;
@@ -160,9 +161,10 @@ impl ScanRoot {
     ///
     /// Only the search walk does. A search targets ONE volume (Decision 4), so
     /// crossing into another one has left its scope, and the other volume's rows
-    /// belong to the other volume's index. A full scan keeps today's behavior: it
-    /// bounds itself by path prefix (`/Volumes/` on the boot disk) rather than by
-    /// device, and pinning it would silently change what a boot index contains.
+    /// belong to the other volume's index. A full scan pins nothing: the boot disk's
+    /// own firmlinked directories already sit on another device than `/`, so it
+    /// stops at other filesystems through the exclusion gate instead, by prefix and
+    /// by the mount table ([`boot_tree_mounts`]).
     fn stays_on_one_device(self) -> bool {
         self == ScanRoot::Virgin
     }

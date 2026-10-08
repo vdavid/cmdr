@@ -220,6 +220,10 @@
   "@askCmdr.error.noCloudConsent": {
     "sourceHash": "cd2af1d"
   },
+  "askCmdr.error.managedByOrganization": "Din organisation tillåter inte den här AI-tjänsten. Din IT-avdelning kan berätta vilka AI-tjänster du får använda.",
+  "@askCmdr.error.managedByOrganization": {
+    "sourceHash": "845a19f"
+  },
   "askCmdr.error.localWindowTooSmall": "Cmdr behöver ett större kontextfönster än din lokala modell har. Välj 32 768 token eller mer i inställningarna, under AI.",
   "@askCmdr.error.localWindowTooSmall": {
     "sourceHash": "8ac7452"
@@ -445,7 +449,7 @@
   "@askCmdr.renameReview.openPreview": {
     "sourceHash": "f687d18"
   },
-  "askCmdr.renameReview.openPreviewTooltip": "Öppna filen för att kontrollera namnet (blanksteg)",
+  "askCmdr.renameReview.openPreviewTooltip": "Öppna filen för att kontrollera namnet (Mellanslag)",
   "@askCmdr.renameReview.openPreviewTooltip": {
     "sourceHash": "17163aa"
   },
@@ -576,6 +580,10 @@
   "askCmdr.renameUndo.applied": "{countText} {count, plural, one {fil} other {filer}} bytte namn.",
   "@askCmdr.renameUndo.applied": {
     "sourceHash": "b06c599"
+  },
+  "askCmdr.renameUndo.swapsSkipped": "Hoppade över {countText} {count, plural, one {namnbyte} other {namnbyten}} där filer byter namn med varandra. Byt namn på de filerna en i taget.",
+  "@askCmdr.renameUndo.swapsSkipped": {
+    "sourceHash": "90e8dfc"
   },
   "askCmdr.renameUndo.undo": "Ångra",
   "@askCmdr.renameUndo.undo": {

@@ -342,6 +342,131 @@ fn a_failed_open_leaves_the_cache_unchanged() {
     assert_eq!(cache.len(), 0);
 }
 
+// ── Retiring cached read connections ─────────────────────────────────
+
+/// A database that is going away can't wait for the threads that read it to die.
+/// The cache is thread-local, so nobody can reach in and close its connections;
+/// retiring the path is the request, and the owning thread honours it the next
+/// time it uses its cache for ANYTHING. Pre-fix a thread that had moved on to
+/// another volume kept the connection for as long as it lived, which is how a
+/// forgotten share's databases stayed open (and their disk allocated) for the
+/// rest of the session.
+#[test]
+fn a_retired_db_is_closed_the_next_time_its_thread_uses_the_cache() {
+    let mut cache = ThreadConnCache::new(THREAD_CONN_SLOTS);
+    let opener = CountingOpener::new();
+    let gone = Path::new("/retire/importance-smb-gone.db");
+    let staying = Path::new("/retire/index-root.db");
+
+    cache.with(gone, 0, opener.open(), |_| ()).expect("the share's db");
+    cache
+        .with(staying, 0, opener.open(), |_| ())
+        .expect("the boot disk's db");
+    assert_eq!(cache.len(), 2);
+
+    retire_read_connections(gone);
+    assert_eq!(cache.len(), 2, "nothing reaches into another thread's cache");
+
+    // The thread never asks for the retired db again. Any use is enough.
+    cache
+        .with(staying, 0, opener.open(), |_| ())
+        .expect("the boot disk's db");
+    assert_eq!(cache.generation_for(gone), None, "the retired connection is closed");
+    assert!(cache.generation_for(staying).is_some(), "and no other one is");
+    assert_eq!(opener.count(), 2, "the db that stayed wasn't reopened");
+}
+
+/// Retiring closes what was open at the time, and nothing after it: a database
+/// recreated under the same path (a schema wipe, a share indexed again) is
+/// cached like any other.
+#[test]
+fn a_connection_opened_after_the_retirement_is_kept() {
+    let mut cache = ThreadConnCache::new(THREAD_CONN_SLOTS);
+    let opener = CountingOpener::new();
+    let db = Path::new("/retire/importance-smb-back.db");
+    let other = Path::new("/retire/index-root.db");
+
+    cache.with(db, 0, opener.open(), |_| ()).expect("before");
+    retire_read_connections(db);
+    cache.with(db, 0, opener.open(), |_| ()).expect("after: reopened");
+    assert_eq!(opener.count(), 2, "the retired connection was replaced");
+
+    // A later retirement of some other db sweeps this cache again.
+    retire_read_connections(other);
+    cache.with(db, 0, opener.open(), |_| ()).expect("still cached");
+    assert_eq!(opener.count(), 2, "the connection opened after the retirement stays");
+}
+
+/// The cross-thread shape the mechanism exists for: the retirement comes from
+/// one thread, the connection lives in another's cache, and the process-wide
+/// count follows when the owner lets go.
+#[test]
+fn a_retirement_from_another_thread_reaches_the_owning_threads_cache() {
+    let gone = PathBuf::from("/retire/importance-smb-other-thread.db");
+    let staying = PathBuf::from("/retire/index-root.db");
+    let before = live_read_connections();
+    let (opened_tx, opened_rx) = std::sync::mpsc::channel::<()>();
+    let (retired_tx, retired_rx) = std::sync::mpsc::channel::<()>();
+
+    let reader = {
+        let (gone, staying) = (gone.clone(), staying.clone());
+        std::thread::spawn(move || {
+            let mut cache = ThreadConnCache::new(THREAD_CONN_SLOTS);
+            cache.with(&gone, 0, |_| open_in_memory(), |_| ()).expect("gone");
+            cache.with(&staying, 0, |_| open_in_memory(), |_| ()).expect("staying");
+            opened_tx.send(()).expect("tell the test both are open");
+            retired_rx.recv().expect("wait for the retirement");
+            cache.with(&staying, 0, |_| open_in_memory(), |_| ()).expect("staying");
+            let held = (cache.len(), live_read_connections());
+            drop(cache);
+            held
+        })
+    };
+
+    opened_rx.recv().expect("the reader opened both");
+    assert_eq!(live_read_connections() - before, 2);
+    retire_read_connections(&gone);
+    retired_tx.send(()).expect("let the reader carry on");
+
+    let (cached, live) = reader.join().expect("reader thread");
+    assert_eq!(cached, 1, "the owning thread closed the retired connection");
+    assert_eq!(live - before, 1, "and the process-wide count followed");
+}
+
+/// Deleting a database takes its WAL and SHM along, tolerates the ones that were
+/// never there, and retires the cached connections that would otherwise keep the
+/// unlinked file's blocks allocated.
+#[test]
+fn deleting_a_database_takes_its_sidecars_and_retires_its_connections() {
+    let dir = tempfile::tempdir().expect("temp dir");
+    let db = dir.path().join("importance-smb-nas.db");
+    {
+        let conn = open(&db).expect("create");
+        conn.execute_batch("PRAGMA journal_mode = WAL; CREATE TABLE t (id INTEGER PRIMARY KEY);")
+            .expect("a wal-mode table");
+        // Left open across the writes below so the WAL and SHM files exist on disk.
+        let reader = open_read_only(&db).expect("reader");
+        conn.execute_batch("INSERT INTO t VALUES (1);").expect("insert");
+        let [main, wal, shm] = database_files(&db);
+        assert!(main.exists() && wal.exists() && shm.exists(), "test setup: all three");
+        drop(reader);
+    }
+    let mut cache = ThreadConnCache::new(THREAD_CONN_SLOTS);
+    cache.with(&db, 0, open_read_only, |_| ()).expect("a cached reader");
+    let other = dir.path().join("other.db");
+    open(&other).expect("create the other db");
+
+    delete_database(&db).expect("delete");
+
+    for file in database_files(&db) {
+        assert!(!file.exists(), "{} must be gone", file.display());
+    }
+    cache.with(&other, 0, open_read_only, |_| ()).expect("any later use");
+    assert_eq!(cache.generation_for(&db), None, "the cached reader was retired");
+
+    delete_database(&db).expect("deleting what is already gone is fine");
+}
+
 // ── Freelist reclamation ─────────────────────────────────────────────
 
 /// Build an `auto_vacuum = INCREMENTAL` DB with a freelist of at least

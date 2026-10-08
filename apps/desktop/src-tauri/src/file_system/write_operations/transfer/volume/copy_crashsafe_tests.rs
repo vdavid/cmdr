@@ -62,6 +62,10 @@ impl VolumeReadStream for FailAfterOneChunkStream {
         // Best-effort: 4 once the single chunk has been handed out, else 0.
         if self.chunk.is_some() { 0 } else { 4 }
     }
+
+    fn modified_at(&self) -> Option<std::time::SystemTime> {
+        None
+    }
 }
 
 /// Wraps an `InMemoryVolume` source but returns a stream that fails partway

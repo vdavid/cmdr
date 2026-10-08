@@ -344,18 +344,28 @@ pub async fn execute_rename<R: Runtime>(app: &AppHandle<R>, params: &Value) -> T
             .ok_or_else(|| ToolError::internal(format!("Couldn't derive the parent of {from_path}")))?;
         let to_path = parent.join(&new_name).to_string_lossy().into_owned();
         let volume_id = state.volume_id.clone();
-        crate::commands::rename::rename_file(
+        let reply = crate::commands::rename::rename_file_replying(
             from_path,
             to_path,
             false,
             volume_id,
             Some(crate::operation_log::types::Initiator::AiClient),
+            // Nobody waits on the settle here: the reply below says it's pending,
+            // and the pane's listing shows the end when it lands.
+            |_| {},
         )
         .await
         // `Display` on a `MutationError` is the log/diagnostic form, which is what
         // an MCP tool error is: a machine-facing report, not user-facing prose.
         .map_err(|e| ToolError::internal(e.to_string()))?;
-        Ok(json!(format!("OK: Renamed to {new_name}.")))
+        match reply {
+            crate::file_system::write_operations::MutationReply::Done => {
+                Ok(json!(format!("OK: Renamed to {new_name}.")))
+            }
+            crate::file_system::write_operations::MutationReply::StillRunning { .. } => Ok(json!(format!(
+                "OK: The rename to {new_name} is still running on a slow volume. It may still land, so check the pane's listing before retrying."
+            ))),
+        }
     } else {
         // Resolution lives in the FE (it holds the live listing): the mcp-rename
         // handler moves the cursor to `name` (erroring honestly if it's not in the

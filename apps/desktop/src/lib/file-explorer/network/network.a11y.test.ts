@@ -1,6 +1,6 @@
 /**
  * Tier 3 a11y tests for the network browsing surfaces: the host list, a row's menu, its status
- * bar, the share list and its header, and the OS-mount fallback toast.
+ * bar, the share list and its header, the OS-mount fallback toast, and the Local Network toast.
  *
  * One file per component would cost about five times as much: `svelte-tests`
  * charges per test FILE, not per test (`docs/testing.md` § "What a test actually
@@ -23,6 +23,7 @@ import ServersHub from './ServersHub.svelte'
 import ServersHubRowMenu from './ServersHubRowMenu.svelte'
 import PlacesBrowser from './PlacesBrowser.svelte'
 import SmbOsMountFallbackToastContent from './SmbOsMountFallbackToastContent.svelte'
+import LocalNetworkBlockedToastContent from './LocalNetworkBlockedToastContent.svelte'
 import PlacesHeader from './PlacesHeader.svelte'
 import ServersHubStatusBar from './ServersHubStatusBar.svelte'
 import type { HubActions, HubRowMenuAPI } from './servers-hub-actions'
@@ -70,7 +71,6 @@ vi.mock('$lib/tauri-commands', async (importOriginal) => ({
   setServersViewShown: vi.fn(() => Promise.resolve()),
   updateLeftPaneState: vi.fn(() => Promise.resolve()),
   updateRightPaneState: vi.fn(() => Promise.resolve()),
-  removeManualServer: vi.fn(() => Promise.resolve()),
   showNetworkHostContextMenu: vi.fn(() => Promise.resolve()),
   onNetworkHostContextAction: vi.fn(() => Promise.resolve(() => {})),
   disconnectNetworkHost: vi.fn(() => Promise.resolve()),
@@ -314,6 +314,33 @@ describe('SmbOsMountFallbackToastContent a11y', () => {
       target,
       props: { toastId: 'smb-os-mount:smb-archive', volumeId: 'smb-archive', share: 'archive', retryable: true },
     })
+    await tick()
+    await expectNoA11yViolations(target)
+  })
+
+  it('the this-Mac-blocked state, with its two buttons, has no a11y violations', async () => {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(SmbOsMountFallbackToastContent, {
+      target,
+      props: {
+        toastId: 'smb-os-mount:smb-archive',
+        volumeId: 'smb-archive',
+        share: 'archive',
+        retryable: true,
+        blockedServer: 'Naspolya',
+      },
+    })
+    await tick()
+    await expectNoA11yViolations(target)
+  })
+})
+
+describe('LocalNetworkBlockedToastContent a11y', () => {
+  it('default state has no a11y violations', async () => {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(LocalNetworkBlockedToastContent, { target, props: { server: 'Naspolya' } })
     await tick()
     await expectNoA11yViolations(target)
   })

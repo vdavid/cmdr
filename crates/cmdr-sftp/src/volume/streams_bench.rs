@@ -272,6 +272,10 @@ impl cmdr_fs::volume::VolumeReadStream for GeneratedSource {
     fn bytes_read(&self) -> u64 {
         self.total - self.left
     }
+
+    fn modified_at(&self) -> Option<std::time::SystemTime> {
+        None
+    }
 }
 
 /// Uploads `BENCH_BYTES` at `depth`, returning what landed.

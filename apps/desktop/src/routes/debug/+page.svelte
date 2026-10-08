@@ -5,7 +5,7 @@
     import { closeSelfWindow } from '$lib/child-window-close'
     import { initWindowSettings, initWindowLanguageSync } from '$lib/settings/window-settings'
     import { initAccentColor, cleanupAccentColor } from '$lib/accent-color'
-    import { initReduceTransparency, cleanupReduceTransparency } from '$lib/reduce-transparency'
+    import { initGlassMaterial, cleanupGlassMaterial } from '$lib/glass-material'
     import { getAppLogger } from '$lib/logging/logger'
     import DebugAppearancePanel from './DebugAppearancePanel.svelte'
     import DebugClosedTabsPanel from './DebugClosedTabsPanel.svelte'
@@ -187,7 +187,7 @@
             // webview's own tag and formats sizes and dates unlike the main pane.
             unsubscribeLanguage = initWindowLanguageSync()
             await initAccentColor()
-            await initReduceTransparency()
+            await initGlassMaterial()
         } catch (error) {
             log.error('Failed to initialize debug window appearance: {error}', { error })
         }
@@ -201,7 +201,7 @@
         unsubscribeLanguage?.()
         unlistenRectTracking?.()
         cleanupAccentColor()
-        cleanupReduceTransparency()
+        cleanupGlassMaterial()
     })
 
     function handleKeydown(event: KeyboardEvent) {

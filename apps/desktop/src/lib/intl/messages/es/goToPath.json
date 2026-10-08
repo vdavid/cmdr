@@ -1,7 +1,7 @@
 {
-  "goToPath.dialog.title": "Ir a la ruta",
+  "goToPath.dialog.title": "Ir a la carpeta",
   "@goToPath.dialog.title": {
-    "sourceHash": "fb65702"
+    "sourceHash": "26fc1cf"
   },
   "goToPath.dialog.inputAriaLabel": "Ruta a la que ir",
   "@goToPath.dialog.inputAriaLabel": {
@@ -23,9 +23,9 @@
   "@goToPath.dialog.cancel": {
     "sourceHash": "19766ed"
   },
-  "goToPath.dialog.confirm": "Ir a la ruta",
+  "goToPath.dialog.confirm": "Ir",
   "@goToPath.dialog.confirm": {
-    "sourceHash": "fb65702"
+    "sourceHash": "6cc8519"
   },
   "goToPath.dialog.ancestorHint": "Esta ruta no existe. El lugar más cercano al que ir es {dir}.",
   "@goToPath.dialog.ancestorHint": {

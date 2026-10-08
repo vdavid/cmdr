@@ -10,7 +10,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import type { MutationError, VolumeError } from '$lib/ipc/bindings'
 import { _setLocaleForTests } from '$lib/intl/locale'
 import { renderMutationError, renderVolumeError, technicalDetail } from './mutation-error-messages'
-import { MutationFailure, asMutationError, isMutationTimeout, throwMutationError } from './mutation-error'
+import { asMutationError, throwMutationError } from './mutation-error'
 
 beforeAll(() => {
   _setLocaleForTests('en-US')
@@ -33,8 +33,12 @@ const VOLUME_CASES: VolumeError[] = [
   { type: 'connectionTimeout', data: 'no reply in 10s' },
   { type: 'cancelled', data: 'Operation cancelled by user' },
   { type: 'isADirectory', data: '/Volumes/share/album' },
+  { type: 'notADirectory', data: '/Volumes/share/album/notes' },
   { type: 'invalidName', data: 'STATUS_OBJECT_NAME_INVALID' },
   { type: 'deletePending', data: '/Volumes/share/doomed.txt' },
+  { type: 'coldStorage', data: '/photos/2019.tar' },
+  { type: 'sourceChanged', data: '/docs/report.pdf' },
+  { type: 'ambiguousName', data: '/Volumes/share/café.txt' },
   { type: 'staleDestinationHandle', data: '/DCIM/Camera' },
   { type: 'ioError', data: { message: 'input/output error', rawOsError: 5 } },
   { type: 'needsPassword', data: { wrongAttempt: false } },
@@ -118,6 +122,14 @@ describe('renderMutationError', () => {
     expect(renderMutationError({ type: 'nameEmpty' }, 'file')).toBe('Filename can’t be empty')
   })
 
+  it('names the refused name when the caller knows it, since a toast has no field beside it', () => {
+    const refused: MutationError = { type: 'volume', error: { type: 'invalidName', data: 'U+0009' } }
+    const named = renderMutationError(refused, 'file', 'tab\there.txt')
+    expect(named).toContain('“tab\there.txt”')
+    assertErrorCopyRules(named, 'mutation volume invalidName (named)')
+    expect(renderMutationError(refused, 'file')).toBe(renderVolumeError(refused.error))
+  })
+
   it('says a timeout may still land, because the backend’s deadline detaches rather than cancels', () => {
     expect(renderMutationError({ type: 'timedOut' }).toLowerCase()).toContain('may still')
   })
@@ -159,11 +171,5 @@ describe('MutationFailure', () => {
       expect(asMutationError(e)).toEqual({ type: 'alreadyExists', name: 'notes.txt' })
       expect(e).toBeInstanceOf(Error)
     }
-  })
-
-  it('reports a timeout without anyone reading a sentence', () => {
-    expect(isMutationTimeout(new MutationFailure({ type: 'timedOut' }))).toBe(true)
-    expect(isMutationTimeout(new MutationFailure({ type: 'nameEmpty' }))).toBe(false)
-    expect(isMutationTimeout(new Error('something else'))).toBe(false)
   })
 })

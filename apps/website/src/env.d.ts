@@ -11,7 +11,6 @@
  */
 interface ImportMetaEnv {
   readonly PUBLIC_DOWNLOAD_BASE_URL?: string
-  readonly PUBLIC_LISTMONK_LIST_UUID?: string
   readonly PUBLIC_PADDLE_ALLOW_SANDBOX?: string
   readonly PUBLIC_PADDLE_CLIENT_TOKEN?: string
   readonly PUBLIC_PADDLE_ENVIRONMENT?: string

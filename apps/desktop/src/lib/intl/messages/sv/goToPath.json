@@ -1,7 +1,7 @@
 {
-  "goToPath.dialog.title": "Gå till sökväg",
+  "goToPath.dialog.title": "Gå till mapp",
   "@goToPath.dialog.title": {
-    "sourceHash": "fb65702"
+    "sourceHash": "26fc1cf"
   },
   "goToPath.dialog.inputAriaLabel": "Sökväg att gå till",
   "@goToPath.dialog.inputAriaLabel": {
@@ -23,9 +23,9 @@
   "@goToPath.dialog.cancel": {
     "sourceHash": "19766ed"
   },
-  "goToPath.dialog.confirm": "Gå till sökväg",
+  "goToPath.dialog.confirm": "Gå",
   "@goToPath.dialog.confirm": {
-    "sourceHash": "fb65702"
+    "sourceHash": "6cc8519"
   },
   "goToPath.dialog.ancestorHint": "Den här sökvägen finns inte. Närmaste plats att gå till är {dir}.",
   "@goToPath.dialog.ancestorHint": {

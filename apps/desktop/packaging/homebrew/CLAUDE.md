@@ -4,9 +4,9 @@
 ❗ The `uninstall script:` block clears the machine-wide `NSFileViewer` key when it still holds a Cmdr bundle id, and
 that lives in `uninstall` rather than `zap` on purpose: `docs/guides/homebrew-cask.md`. The live channel is the personal
 tap [`vdavid/homebrew-tap`](https://github.com/vdavid/homebrew-tap), whose `Casks/cmdr.rb` must carry this exact shape.
-Release CI (`release.yml`'s `bump-tap` job) rewrites only its `version` + `sha256` per release, so make shape edits here
-AND copy them into the tap in the same effort; don't hand-bump `version` / `sha256` (CI does it). The tap stays
-canonical until `vdavid/cmdr` clears Homebrew's notability bar, at which point a resubmission to
+Release CI (`release-pipeline.yml`'s `bump-tap` job) rewrites only its `version` + `sha256` per release, so make shape
+edits here AND copy them into the tap in the same effort; don't hand-bump `version` / `sha256` (CI does it). The tap
+stays canonical until `vdavid/cmdr` clears Homebrew's notability bar, at which point a resubmission to
 `Homebrew/homebrew-cask` becomes the canonical home and the tap retires.
 
 Before touching `cmdr.rb`, read `docs/guides/homebrew-cask.md`: it explains the non-obvious constraints (why the `url`

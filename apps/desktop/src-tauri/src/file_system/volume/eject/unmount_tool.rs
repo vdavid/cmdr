@@ -409,7 +409,7 @@ mod tests {
 
     #[test]
     fn a_tool_that_couldnt_start_is_unexpected_not_a_refusal() {
-        // "Something is still using this drive" would be a lie when `diskutil`
+        // "Something still has files open there" would be a lie when `diskutil`
         // never ran at all.
         let outcome = ToolOutcome::CouldNotStart {
             detail: "No such file or directory".to_string(),

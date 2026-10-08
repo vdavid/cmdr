@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# Worktree hook: `~/.claude/scripts/remove-worktree.sh` runs it before it deletes
+# anything, while the worktree and its branch still exist. Contract: `CLAUDE.md`
+# here.
+#
+# Cmdr: when the worktree is merged into the main clone's HEAD (by git ancestry,
+# with no uncommitted changes), copies its Linux target volume over the main
+# clone's, so the next worktree seeds from the freshest cache. It copies rather
+# than moves: the teardown's own label sweep reaps the worktree's volume after.
+set -uo pipefail
+
+[ $# -ge 2 ] && [ $# -le 3 ] || { echo "usage: pre-remove <worktree> <main-clone> [--dry-run]" >&2; exit 2; }
+# Absolute before the `cd` below, which would otherwise re-root a relative path.
+worktree="$(cd "$1" && pwd)" && main_clone="$(cd "$2" && pwd)" || exit 2
+check_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../check" && pwd)"
+
+command -v go >/dev/null 2>&1 || { echo "linux cache: no Go on PATH, so no promotion"; exit 0; }
+cd "$check_dir" && exec go run ./linux-cache promote "$worktree" "$main_clone" "${@:3}"

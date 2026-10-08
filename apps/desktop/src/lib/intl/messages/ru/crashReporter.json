@@ -1,0 +1,94 @@
+{
+  "crashReporter.dialog.title.crash": "Отправить отчет о сбое?",
+  "@crashReporter.dialog.title.crash": {
+    "sourceHash": "06ba6fb"
+  },
+  "crashReporter.dialog.title.report": "Отправить отчет?",
+  "@crashReporter.dialog.title.report": {
+    "sourceHash": "d8b86d2"
+  },
+  "crashReporter.dialog.body.ended": "В прошлый раз Cmdr неожиданно завершил работу. Вот отчет о сбое со сведениями, которые помогут это исправить.",
+  "@crashReporter.dialog.body.ended": {
+    "sourceHash": "d67f8cb"
+  },
+  "crashReporter.dialog.body.keptRunning": "В прошлый раз в фоновой задаче Cmdr возникла проблема, но приложение продолжило работу. Вот отчет со сведениями, которые помогут это исправить.",
+  "@crashReporter.dialog.body.keptRunning": {
+    "sourceHash": "a972339"
+  },
+  "crashReporter.dialog.body.unknown": "В прошлый раз в Cmdr возникла проблема. Вот отчет со сведениями, которые помогут это исправить.",
+  "@crashReporter.dialog.body.unknown": {
+    "sourceHash": "bed6934"
+  },
+  "crashReporter.dialog.privacyNote": "В отчет входят версия приложения, версия macOS и участок кода, где возникла проблема. Имена файлов и личные данные не включены.",
+  "@crashReporter.dialog.privacyNote": {
+    "sourceHash": "c6875a7"
+  },
+  "crashReporter.dialog.reportIdLabel": "Идентификатор отчета:",
+  "@crashReporter.dialog.reportIdLabel": {
+    "sourceHash": "df3d47e"
+  },
+  "crashReporter.dialog.reportIdHelp": "Укажите его при обращении по этой проблеме.",
+  "@crashReporter.dialog.reportIdHelp": {
+    "sourceHash": "c63b08a"
+  },
+  "crashReporter.dialog.showDetails": "Показать подробности отчета",
+  "@crashReporter.dialog.showDetails": {
+    "sourceHash": "11756f2"
+  },
+  "crashReporter.dialog.copy": "Скопировать",
+  "@crashReporter.dialog.copy": {
+    "sourceHash": "e21f935"
+  },
+  "crashReporter.dialog.copied": "Скопировано",
+  "@crashReporter.dialog.copied": {
+    "sourceHash": "8d525e5"
+  },
+  "crashReporter.dialog.alwaysSend": "Всегда отправлять отчеты о сбоях",
+  "@crashReporter.dialog.alwaysSend": {
+    "sourceHash": "8306c0e"
+  },
+  "crashReporter.dialog.dismiss": "Закрыть",
+  "@crashReporter.dialog.dismiss": {
+    "sourceHash": "48845bf"
+  },
+  "crashReporter.dialog.send": "Отправить отчет",
+  "@crashReporter.dialog.send": {
+    "sourceHash": "a44d353"
+  },
+  "crashReporter.dialog.sending": "Отправка…",
+  "@crashReporter.dialog.sending": {
+    "sourceHash": "b8ed527"
+  },
+  "crashReporter.dialog.notSent": "Отчет не отправлен. {reason}",
+  "@crashReporter.dialog.notSent": {
+    "sourceHash": "56fe2bc"
+  },
+  "crashReporter.sentToast.message.crash": "Отчет о сбое отправлен. Спасибо за помощь в улучшении Cmdr.",
+  "@crashReporter.sentToast.message.crash": {
+    "sourceHash": "734d62a"
+  },
+  "crashReporter.sentToast.message.report": "Отчет отправлен. Спасибо за помощь в улучшении Cmdr.",
+  "@crashReporter.sentToast.message.report": {
+    "sourceHash": "a676ed5"
+  },
+  "crashReporter.sentToast.changeSettings": "Изменить в настройках «Обновления и конфиденциальность»",
+  "@crashReporter.sentToast.changeSettings": {
+    "sourceHash": "25d151d"
+  },
+  "crashReporter.sentToast.sendLog": "Приложить журналы",
+  "@crashReporter.sentToast.sendLog": {
+    "sourceHash": "61a9b1a"
+  },
+  "crashReporter.sentToast.sendLogHint": "Хотите помочь с диагностикой, приложив фрагмент журнала Cmdr? В журнале гораздо больше подробностей. Личные сведения, в том числе имена файлов и папок, обезличиваются перед отправкой.",
+  "@crashReporter.sentToast.sendLogHint": {
+    "sourceHash": "aec472c"
+  },
+  "crashReporter.sentToast.logSent": "Журнал отправлен, идентификатор: {id}. Так найти причину будет гораздо проще.",
+  "@crashReporter.sentToast.logSent": {
+    "sourceHash": "9a0dc9e"
+  },
+  "crashReporter.sentToast.logNotSent": "Журнал не отправлен. {reason}",
+  "@crashReporter.sentToast.logNotSent": {
+    "sourceHash": "a9f5323"
+  }
+}

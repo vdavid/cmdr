@@ -44,7 +44,7 @@ vi.mock('$lib/indexing/index-state.svelte', () => ({ getWalkedGround, isVolumeAg
 
 import type { CanonicalPath } from '$lib/path/canonical'
 import type { SearchResultEntry } from '$lib/ipc/bindings'
-import { createPaneMcpSync, type PaneMcpSyncDeps } from './pane-mcp-sync.svelte'
+import { createPaneMcpSync, paneListingOf, type PaneMcpSyncDeps } from './pane-mcp-sync.svelte'
 
 const TOTAL_COUNT = 74_144
 
@@ -85,6 +85,8 @@ function deps(overrides: Partial<PaneMcpSyncDeps> = {}): PaneMcpSyncDeps {
     getShowHiddenFiles: () => true,
     getTypeToJump: () => ({ buffer: '', indicatorVisible: false, indicatorStale: false }),
     getLastJumpMatchedName: () => null,
+    getQuickFilterPattern: () => '',
+    getListing: () => 'settled',
     ...overrides,
   }
 }
@@ -379,5 +381,32 @@ describe('the parent row a normal pane counts', () => {
     const state = updateLeftPaneState.mock.calls[0][0] as { totalFiles: number; hasParentRow: boolean }
     expect(state.totalFiles).toBe(5)
     expect(state.hasParentRow).toBe(true)
+  })
+})
+
+/**
+ * A pane whose server stopped answering used to push `totalFiles: 0` and no rows,
+ * which reads exactly like an empty folder. The `listing` field is what tells them apart.
+ */
+describe('where the listing stands', () => {
+  it('pushes a stalled listing so an agent can tell stuck from empty', async () => {
+    getFileRange.mockResolvedValue([])
+    updateLeftPaneState.mockClear()
+    const sync = createPaneMcpSync(
+      deps({ getListingId: () => '', getTotalCount: () => 0, getRowCount: () => 0, getListing: () => 'stalled' }),
+    )
+
+    await sync.syncPaneStateToMcp()
+
+    const state = updateLeftPaneState.mock.calls[0][0] as { totalFiles: number; listing: string }
+    expect(state.totalFiles).toBe(0)
+    expect(state.listing).toBe('stalled')
+  })
+
+  it('reads the pane: an error screen wins, then a stalled or plain load, else settled', () => {
+    expect(paneListingOf({ hasError: true, loading: true, stalled: true })).toBe('error')
+    expect(paneListingOf({ hasError: false, loading: true, stalled: true })).toBe('stalled')
+    expect(paneListingOf({ hasError: false, loading: true, stalled: false })).toBe('loading')
+    expect(paneListingOf({ hasError: false, loading: false, stalled: false })).toBe('settled')
   })
 })

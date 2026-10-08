@@ -80,6 +80,18 @@ pub enum VolumeError {
     Cancelled(String),
     /// The path is a directory, not a file (for example, SMB STATUS_FILE_IS_A_DIRECTORY).
     IsADirectory(String),
+    /// Something that isn't a directory sits where a directory has to be: a file,
+    /// or a link that leads to anything but a folder. Carries the path of the
+    /// thing IN THE WAY, which for a `mkdir -p` is often an ancestor of the path
+    /// that was asked for.
+    ///
+    /// [`Volume::create_directory_all`](super::Volume::create_directory_all)
+    /// raises it, on every backend. ❌ Never [`AlreadyExists`](Self::AlreadyExists),
+    /// which callers of a `mkdir -p` read as "the folder is there, carry on", and
+    /// ❌ never [`NotFound`](Self::NotFound), which names a folder the user asked
+    /// Cmdr to CREATE as the thing that's missing. A link that leads to a folder
+    /// is a folder here: see `mkdir_all` § "A link to a folder is a folder".
+    NotADirectory(String),
     /// The destination can't hold this name, whatever it's asked to do with it.
     ///
     /// Distinct from [`NotFound`](Self::NotFound): the backend never got as far as
@@ -116,6 +128,25 @@ pub enum VolumeError {
     /// Carries the destination folder path for a destination-correct message if
     /// the retry also fails. MTP-only today.
     StaleDestinationHandle(String),
+    /// The file's bytes sit in a cold storage class and can't be read until
+    /// someone restores them (S3 Glacier Flexible Retrieval and Deep Archive,
+    /// and Intelligent-Tiering's archive tiers, answer `InvalidObjectState`).
+    /// Carries the path.
+    ///
+    /// The UI calls such a file "archived"; the internals say "cold storage"
+    /// because "archive" already means a zip or tar here (`is_archive`,
+    /// `NeedsPassword`). Retrying can only fail the same way until a restore
+    /// lands, so it's typed rather than an [`IoError`](Self::IoError), which
+    /// offers a Retry. S3-only today.
+    ColdStorage(String),
+    /// The source changed while a copy read it, so the copy stopped before
+    /// publishing anything that might mix two versions. Carries the source's
+    /// path. ❗ The source is the NEW version now: a move must never delete it.
+    ///
+    /// Typed rather than an [`IoError`](Self::IoError) so the user is told
+    /// what happened; a retry copies the new version. S3-only today (a
+    /// server-side copy in parts, `cmdr-s3` `server_copy.rs`).
+    SourceChanged(String),
     /// Anything the backend couldn't classify further. The classifier
     /// re-dispatches on `raw_os_error` when one is present.
     IoError {
@@ -166,10 +197,13 @@ impl std::fmt::Display for VolumeError {
             Self::ConnectionTimeout(msg) => write!(f, "Connection timed out: {}", msg),
             Self::Cancelled(msg) => write!(f, "Cancelled: {}", msg),
             Self::IsADirectory(path) => write!(f, "Is a directory: {}", path),
+            Self::NotADirectory(path) => write!(f, "Not a directory: {}", path),
             Self::InvalidName(msg) => write!(f, "Name not usable at the destination: {}", msg),
             Self::DeletePending(path) => write!(f, "Delete pending: {}", path),
             Self::AmbiguousName(path) => write!(f, "More than one stored name matches: {}", path),
             Self::StaleDestinationHandle(path) => write!(f, "Destination folder handle was stale: {}", path),
+            Self::ColdStorage(path) => write!(f, "In cold storage, needs a restore before reading: {}", path),
+            Self::SourceChanged(path) => write!(f, "The source changed during the copy: {}", path),
             Self::IoError { message, .. } => write!(f, "I/O error: {}", message),
             Self::NeedsPassword { wrong_attempt } => {
                 if *wrong_attempt {
@@ -184,6 +218,14 @@ impl std::fmt::Display for VolumeError {
 }
 
 impl std::error::Error for VolumeError {}
+
+// Here, not in `child_name.rs`: the module-cycle check files an impl under the type it
+// produces, so beside `ChildName` it reads as `error` ↔ `child_name`.
+impl From<super::NotAChildName> for VolumeError {
+    fn from(err: super::NotAChildName) -> Self {
+        VolumeError::InvalidName(err.to_string())
+    }
+}
 
 impl VolumeError {
     /// Classifies a [`std::io::Error`] that happened at a KNOWN path.

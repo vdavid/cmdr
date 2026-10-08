@@ -14,6 +14,21 @@ export interface EtaSnapshot {
   eventsProcessed: number
 }
 
+/** Where a time-left phrase lands: on its own, or inside a wrapper sentence. */
+export type EtaPlacement = 'standalone' | 'midSentence'
+
+/** Whether an ETA is short (or broken) enough to read "Almost done" in place of a countdown. */
+export function isAlmostDone(seconds: number): boolean {
+  return !Number.isFinite(seconds) || seconds < 2
+}
+
+/** The "Almost done" phrase for a placement; see {@link formatEta}. */
+export function formatAlmostDone(placement: EtaPlacement = 'standalone'): string {
+  return placement === 'midSentence'
+    ? tString('indexing.eta.almostDoneMidSentence')
+    : tString('indexing.eta.almostDone')
+}
+
 /**
  * Format an ETA in seconds to a short human-readable string.
  *
@@ -22,11 +37,16 @@ export interface EtaSnapshot {
  * hour up the wait is spelled out in words ("1 hour 24 minutes left") — a bare "84m left"
  * makes the reader do the division — and from ten hours up the minutes are dropped
  * entirely ("20 hours left"), because minute precision is noise at that scale.
+ *
+ * `placement` says where the phrase lands: on its own it starts a sentence ("Almost done"),
+ * while inside a wrapper like "Overall: {eta}" or "95%, {eta}" it reads mid-sentence
+ * ("almost done"). It picks a dedicated message per placement because capitalizing a
+ * translated string by hand breaks across locales. The "N left" phrases read the same in both.
  */
-export function formatEta(seconds: number): string {
+export function formatEta(seconds: number, placement: EtaPlacement = 'standalone'): string {
   // Non-finite guard: every planned caller null-gates before reaching here, but the scan
   // branch is a new caller and a future edit dropping that gate would surface "Infinitym left".
-  if (!Number.isFinite(seconds) || seconds < 2) return tString('indexing.eta.almostDone')
+  if (isAlmostDone(seconds)) return formatAlmostDone(placement)
   if (seconds < 60) return tString('indexing.eta.secondsLeft', { secondsText: String(Math.round(seconds)) })
   const totalMinutes = Math.round(seconds / 60)
   if (totalMinutes < 60) return tString('indexing.eta.minutesLeft', { minutesText: String(totalMinutes) })

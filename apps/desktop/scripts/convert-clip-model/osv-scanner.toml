@@ -1,0 +1,9 @@
+# `requirements.txt` here is a frozen record of the exact versions that built the published CLIP
+# model, kept so the conversion is reproducible. Nothing installs it: no CI job, no build, no app
+# code; Renovate ignores this folder and Dependabot auto-dismisses pip. Its advisories can't reach
+# anything we ship, and bumping the pins would falsify the record. Re-run the conversion in a fresh
+# venv with current versions when the model next changes, and drop this file then.
+[[PackageOverrides]]
+ecosystem = "PyPI"
+vulnerability.ignore = true
+reason = "Frozen provenance record for the published CLIP model; never installed by CI or shipped."

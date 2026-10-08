@@ -218,6 +218,37 @@ fn intern_dir_handles_the_volume_root() {
     assert_eq!(reconstruct_dir_path(&conn, root).expect("path"), "/");
 }
 
+/// A remote volume's paths are rooted at `scheme://authority`, and that root has
+/// to come back byte-for-byte: the rollback hands the rebuilt path to the volume.
+/// Pre-fix the `//` was split away and `adb://serial/…` came back `/adb:/serial/…`.
+#[test]
+fn intern_dir_round_trips_a_scheme_rooted_path() {
+    let dir = tempfile::tempdir().expect("temp dir");
+    let path = operation_log_db_path(dir.path());
+    let conn = open_write_connection(&path).expect("write conn");
+
+    for remote in [
+        "adb://46061FDAS000A4/sdcard/Download",
+        "sftp://ada@nas.local:22/home/ada",
+        "smb://nas/share",
+        // A file directly at the remote root.
+        "mtp://device",
+    ] {
+        let id = intern_dir(&conn, "remote", remote).expect("intern");
+        assert_eq!(reconstruct_dir_path(&conn, id).expect("path"), remote);
+        assert_eq!(join_leaf(remote, "a.zip").to_str(), Some(&*format!("{remote}/a.zip")));
+    }
+
+    // The root is one shared row: two folders under it are siblings of each other.
+    let download = intern_dir(&conn, "remote", "adb://46061FDAS000A4/sdcard/Download").expect("intern");
+    let dcim = intern_dir(&conn, "remote", "adb://46061FDAS000A4/sdcard/DCIM").expect("intern");
+    assert_ne!(download, dcim);
+
+    // A local path is untouched by the scheme rule, colon or not.
+    let local = intern_dir(&conn, "root", "/Users/me/a:b/c").expect("intern local");
+    assert_eq!(reconstruct_dir_path(&conn, local).expect("path"), "/Users/me/a:b/c");
+}
+
 // ── Folding ──────────────────────────────────────────────────────────────────
 
 /// `fold_name` lowercases (Unicode) and NFC-normalizes, so case variants and

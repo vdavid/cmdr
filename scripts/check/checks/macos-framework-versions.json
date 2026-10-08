@@ -31,6 +31,7 @@
     "Security": "10.0",
     "SystemConfiguration": "10.0",
     "UniformTypeIdentifiers": "11.0",
+    "UserNotifications": "10.14",
     "Vision": "10.13",
     "WebKit": "10.2"
   }

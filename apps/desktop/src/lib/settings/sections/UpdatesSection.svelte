@@ -16,6 +16,8 @@
     import { openErrorReportDialog } from '$lib/error-reporter/error-report-flow.svelte'
     import { createBetaEmailSignup } from './beta-email-signup.svelte'
     import { tString } from '$lib/intl/messages.svelte'
+    import { getManagedPolicyView } from '$lib/managed-policy/managed-policy.svelte'
+    import ManagedPolicySummary from '$lib/managed-policy/ManagedPolicySummary.svelte'
 
     interface Props {
         searchQuery: string
@@ -32,10 +34,18 @@
     const crashReportsDef = getSettingDefinition('updates.crashReports') ?? { label: '', description: '' }
     const errorReportsDef = getSettingDefinition('updates.errorReports') ?? { label: '', description: '' }
 
-    const statusText = $derived(formatUpdateStatus(updateState))
+    // Under the organization's `DisableUpdates` a check could only say so, so the button stays off and
+    // the status line says why up front. A build already staged keeps its own line: it still applies.
+    const updatesOff = $derived(getManagedPolicyView().updates.kind === 'disabled')
+    const statusText = $derived(
+        updatesOff && updateState.status === 'idle' && updateState.failure === null
+            ? tString('updates.status.managedOff')
+            : formatUpdateStatus(updateState),
+    )
     const failureText = $derived(updateState.failure === null ? null : describeUpdateFailure(updateState.failure))
     const offersReport = $derived(updateState.failure !== null && updateFailureOffersReport(updateState.failure))
-    const buttonDisabled = $derived(updateState.status !== 'idle')
+    const buttonDisabled = $derived(updateState.status !== 'idle' || updatesOff)
+    const statusId = 'updates-check-status'
 
     // The beta contact email field: persists on every keystroke, subscribes on commit. The logic is
     // shared with the onboarding sheet's `StepBeta`, so both surfaces behave identically.
@@ -52,16 +62,27 @@
 </script>
 
 <SettingsSection title={tString('settings.section.updatesAndPrivacy')}>
+    <!-- Not searchable: it renders only on a managed Mac, and a static search entry would hit on
+         every other one. A search hides it with the cards it doesn't match. -->
+    {#if searchQuery.trim() === ''}
+        <ManagedPolicySummary />
+    {/if}
     {#if anyVisible(shouldShow, 'row:updates.checkForUpdates', 'updates.autoCheck', 'whatsNew.showOnUpdate')}
         <SectionCard label={tString('settings.updates.card.updates')}>
             <!-- Not a setting, so it carries a searchable-row id (`UpdatesSection.rows.ts`)
                  and rides the same `shouldShow` gate as the switches below it. -->
             {#if shouldShow('row:updates.checkForUpdates')}
                 <div class="check-row">
-                    <Button variant="secondary" size="mini" onclick={handleCheckForUpdates} disabled={buttonDisabled}>
+                    <Button
+                        variant="secondary"
+                        size="mini"
+                        onclick={handleCheckForUpdates}
+                        disabled={buttonDisabled}
+                        aria-describedby={statusId}
+                    >
                         {tString('settings.updates.checkForUpdates')}
                     </Button>
-                    <div class="status">
+                    <div class="status" id={statusId}>
                         {#if failureText !== null}
                             <span class="failure-message">{failureText}</span>
                             {#if offersReport}

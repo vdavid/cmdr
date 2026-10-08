@@ -2,7 +2,7 @@
 //!
 //! Every volume renders through one uniform shape so agents stop guessing which
 //! entries carry ids or what a bare string meant: `name`, `id`, and `kind`
-//! (`local` / `smb` / `sftp` / `webdav` / `mtp` / `adb` / `network` / `virtual`) always, plus
+//! (`local` / `smb` / `sftp` / `webdav` / `s3` / `mtp` / `adb` / `network` / `virtual`) always, plus
 //! the present-when-known
 //! `filesystem`, `readOnly`, `ejectable`, `indexStatus`, `connectionState`,
 //! `totalBytes` / `availableBytes`, and their spelled-out twins `totalHuman` /
@@ -49,6 +49,12 @@ pub(crate) enum VolumeKind {
         allow(dead_code, reason = "macOS-path-only today; unconstructed off macOS, see `Smb`")
     )]
     Webdav,
+    /// One place on an S3 account (a bucket, or the account root).
+    #[cfg_attr(
+        not(target_os = "macos"),
+        allow(dead_code, reason = "macOS-path-only today; unconstructed off macOS, see `Smb`")
+    )]
+    S3,
     /// An MTP device storage (Android / camera over USB).
     Mtp,
     /// An Android device over ADB.
@@ -80,6 +86,7 @@ impl VolumeKind {
             VolumeKind::Smb => "smb",
             VolumeKind::Sftp => "sftp",
             VolumeKind::Webdav => "webdav",
+            VolumeKind::S3 => "s3",
             VolumeKind::Mtp => "mtp",
             VolumeKind::Adb => "adb",
             VolumeKind::Network => "network",
@@ -205,6 +212,7 @@ fn kind_for_location(fs_type: Option<&str>, has_session: bool) -> VolumeKind {
     match fs_type {
         Some("sftp") => VolumeKind::Sftp,
         Some("webdav") => VolumeKind::Webdav,
+        Some("s3") => VolumeKind::S3,
         Some("adb") => VolumeKind::Adb,
         Some("mtp") => VolumeKind::Mtp,
         other if crate::volumes::is_smb_fs_type(other) => VolumeKind::Smb,
@@ -462,6 +470,8 @@ mod tests {
         assert_eq!(kind_for_location(Some("apfs"), false), VolumeKind::Local);
         assert_eq!(kind_for_location(Some("smbfs"), false), VolumeKind::Smb);
         assert_eq!(kind_for_location(Some("webdav"), false), VolumeKind::Webdav);
+        // ❗ Before the session arm: an S3 place has a session, and isn't SMB.
+        assert_eq!(kind_for_location(Some("s3"), true), VolumeKind::S3);
     }
 
     #[test]

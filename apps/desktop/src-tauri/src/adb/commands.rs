@@ -2,7 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use cmdr_adb::{AdbConnectError, AdbDevice};
+use cmdr_adb::AdbConnectError;
 
 use super::volume_wiring::AdbInstallStatus;
 
@@ -60,13 +60,6 @@ impl From<AdbConnectError> for AdbConnectOutcomeError {
             }
         }
     }
-}
-
-/// The ADB devices the server last reported, from the cache the tracker keeps.
-#[tauri::command]
-#[specta::specta]
-pub async fn list_adb_devices() -> Vec<AdbDevice> {
-    super::device_provider::cached_devices()
 }
 
 /// Where the `adb` binary is and whether the device list is live, as the

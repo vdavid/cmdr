@@ -89,7 +89,7 @@ export default tseslint.config(
     // each choice).
     files: ['src/**/*.{ts,svelte}'],
     plugins: { 'better-tailwindcss': betterTailwindcss },
-    settings: { 'better-tailwindcss': { entryPoint: 'src/app.css' } },
+    settings: { 'better-tailwindcss': { entryPoint: 'src/app.css', rootFontSize: 16 } },
     rules: {
       'better-tailwindcss/enforce-canonical-classes': 'error',
       'better-tailwindcss/enforce-consistent-class-order': 'error',

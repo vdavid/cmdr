@@ -278,12 +278,12 @@ func codesign(path, identity string) error {
 		"--sign", identity,
 	}
 	// In CI the identity lives in a dedicated keychain (see the "Set up llama-server
-	// signing keychain" step in release.yml). Target it explicitly so identity
+	// signing keychain" step in release-pipeline.yml). Target it explicitly so identity
 	// resolution can't be ambiguous and doesn't depend on the runner session's
 	// login-keychain access (codesign fails with errSecInternalComponent when the
 	// runner's launchd security session tries to use the login keychain's private key).
 	// The keychain must ALSO be in the search list; --keychain alone isn't enough
-	// (verified on the runner), which is why release.yml adds it there too.
+	// (verified on the runner), which is why release-pipeline.yml adds it there too.
 	if keychain := os.Getenv("LLAMA_SIGN_KEYCHAIN"); keychain != "" {
 		args = append(args, "--keychain", keychain)
 	}

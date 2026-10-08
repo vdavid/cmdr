@@ -1197,6 +1197,64 @@ fn a_clip_model_bump_re_embeds_without_touching_vision() {
 }
 
 #[test]
+fn delete_clip_model_reports_a_prune_that_did_not_land() {
+    // A full disk or a locked database refuses one volume's CLIP delete. "Delete model" must
+    // say so rather than claim every volume's data is gone, and still prune the others.
+    let dir = tempfile::tempdir().expect("temp");
+    let data_dir = dir.path();
+    for vid in ["root", "naspi"] {
+        let writer = media_writer(data_dir, vid);
+        writer
+            .upsert(
+                MediaStatusRow {
+                    path: "/p/beach.jpg".to_string(),
+                    mtime: Some(1),
+                    size: Some(10),
+                    media_kind: MediaKind::Image,
+                    state: EnrichmentState::Done,
+                    engine_version: "e1".to_string(),
+                    clip_stamp: String::new(),
+                },
+                Some(crate::media_index::writer::UpsertAnalysis::ocr_only("beach text")),
+            )
+            .expect("seed vision");
+        writer
+            .upsert_clip("/p/beach.jpg".to_string(), "clip-v1".to_string(), Some(vec![1.0, 0.0]))
+            .expect("seed clip");
+        writer.flush_blocking().expect("flush");
+        writer.shutdown();
+    }
+    let refused_db = media_db_path(data_dir, "naspi");
+    crate::media_index::store::open_write_connection(&refused_db)
+        .expect("open media.db to install the fault")
+        .execute_batch(
+            "CREATE TRIGGER refuse_clip_deletes BEFORE DELETE ON media_clip_embedding
+             BEGIN SELECT RAISE(ABORT, 'clip deletes refused by a test'); END;",
+        )
+        .expect("install the delete-refusing trigger");
+
+    let backend: std::sync::Arc<dyn crate::media_index::backend::VisionBackend> =
+        std::sync::Arc::new(FakeVisionBackend::new());
+    let scheduler = super::MediaScheduler::new(data_dir.to_path_buf(), backend);
+
+    assert_eq!(
+        scheduler.delete_clip_model(),
+        Err(super::reclaim::PruneFailure::DeleteFailed),
+        "a prune that didn't land is a failure, never a success"
+    );
+    assert_eq!(
+        clip_state(&refused_db, "/p/beach.jpg").0,
+        1,
+        "the refused volume still holds its embedding"
+    );
+    assert_eq!(
+        clip_state(&media_db_path(data_dir, "root"), "/p/beach.jpg"),
+        (0, String::new()),
+        "the other volume's prune still landed"
+    );
+}
+
+#[test]
 fn delete_clip_model_removes_the_model_and_every_volumes_embeddings() {
     use crate::media_index::clip::install;
     // Two enriched volumes, each with a CLIP embedding + stamp, plus a fake installed
@@ -1237,7 +1295,7 @@ fn delete_clip_model_removes_the_model_and_every_volumes_embeddings() {
         std::sync::Arc::new(FakeVisionBackend::new());
     let scheduler = super::MediaScheduler::new(data_dir.to_path_buf(), backend);
 
-    let removed = scheduler.delete_clip_model();
+    let removed = scheduler.delete_clip_model().expect("every volume's prune lands");
     assert_eq!(removed, 2, "one CLIP embedding removed per volume");
 
     // Status transitions back to not-installed (the on-disk artifacts are gone).

@@ -12,8 +12,6 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::file_system::volume::{ScanConflict, SpaceInfo};
-
 mod errors;
 mod events;
 pub use errors::*;
@@ -157,6 +155,26 @@ pub enum ConflictResolution {
     /// Overwrite only when the destination is strictly older than the source.
     /// All other conflicts (equal or newer destination, or unknown timestamps) are skipped.
     OverwriteOlder,
+}
+
+/// What a copy does when the destination looks too small for it.
+///
+/// The pre-flight's figure is an upper bound: files already at the destination
+/// can make a copy need less than it says (`free_space.rs`). So a shortfall is
+/// the person's call, ❌ never a verdict. `Refuse` stops with `InsufficientSpace`
+/// before anything is written, and the error dialog's "Copy anyway" starts the
+/// same copy again with `Proceed`. A destination that really fills up mid-copy
+/// still stops it, as `DestinationFull`.
+// DEFAULT-OK: the zero value is `Refuse`, which asks the person rather than
+// starting a copy the destination may not hold.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default, specta::Type)]
+#[serde(rename_all = "snake_case")]
+pub enum SpaceShortfall {
+    /// Stop before writing anything, with `InsufficientSpace`.
+    #[default]
+    Refuse,
+    /// Skip the check: the person chose to copy anyway.
+    Proceed,
 }
 
 /// Which clash an answer is for.
@@ -335,19 +353,6 @@ pub struct OperationStatus {
     pub activity: Option<TransferActivity>,
 }
 
-/// Summary of an active operation for list view.
-#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct OperationSummary {
-    pub operation_id: String,
-    pub operation_type: WriteOperationType,
-    pub phase: WriteOperationPhase,
-    /// 0-100.
-    pub percent_complete: u8,
-    /// Unix timestamp in milliseconds.
-    pub started_at: u64,
-}
-
 // ============================================================================
 // Result types
 // ============================================================================
@@ -394,6 +399,9 @@ pub struct WriteOperationConfig {
     /// Explicit leaf name for a single copy or move; the destination still names its parent.
     #[serde(default)]
     pub destination_name: Option<String>,
+    /// What a copy does when the destination looks too small. See [`SpaceShortfall`].
+    #[serde(default)]
+    pub space_shortfall: SpaceShortfall,
 }
 
 impl Default for WriteOperationConfig {
@@ -408,6 +416,7 @@ impl Default for WriteOperationConfig {
             max_conflicts_to_show: default_max_conflicts_to_show(),
             pre_known_conflicts: Vec::new(),
             destination_name: None,
+            space_shortfall: SpaceShortfall::Refuse,
         }
     }
 }
@@ -434,6 +443,18 @@ fn default_max_conflicts_to_show() -> usize {
 #[serde(rename_all = "camelCase")]
 pub struct ScanPreviewStartResult {
     pub preview_id: String,
+}
+
+/// Why a scan preview wouldn't start. Nothing is walked and no preview exists.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(tag = "type", rename_all = "snake_case", rename_all_fields = "camelCase")]
+pub enum ScanPreviewRefusal {
+    /// No volume answers for the source's (non-local) volume id: a phone that was
+    /// unplugged, or one listed but not connected, typically under a
+    /// search-results pane still showing its files. Walking the path on the Mac
+    /// instead is what this exists to stop: it can only fail, and the dialog
+    /// would then offer a Retry that never works.
+    SourceNotConnected { volume_id: String },
 }
 
 /// Cached scan-preview totals, returned by `check_scan_preview_status` when the
@@ -494,6 +515,9 @@ pub struct VolumeCopyConfig {
     /// 1..=9 (an out-of-range level hard-errors the edit, not clamps).
     #[serde(default)]
     pub compression_level: Option<i64>,
+    /// What a copy does when the destination looks too small. See [`SpaceShortfall`].
+    #[serde(default)]
+    pub space_shortfall: SpaceShortfall,
 }
 
 impl Default for VolumeCopyConfig {
@@ -506,6 +530,7 @@ impl Default for VolumeCopyConfig {
             pre_known_conflicts: Vec::new(),
             destination_name: None,
             compression_level: None,
+            space_shortfall: SpaceShortfall::Refuse,
         }
     }
 }
@@ -522,24 +547,7 @@ impl From<&WriteOperationConfig> for VolumeCopyConfig {
             // `WriteOperationConfig` is the legacy local-only path (no archive
             // routing rides it), so the level has no source here.
             compression_level: None,
+            space_shortfall: config.space_shortfall,
         }
     }
-}
-
-/// Result of a pre-flight scan for volume copy.
-#[derive(Debug, Clone, Serialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct VolumeCopyScanResult {
-    pub file_count: usize,
-    pub dir_count: usize,
-    pub total_bytes: u64,
-    /// What the destination reports it has room for, or `None` when the backend
-    /// genuinely can't answer (SFTP: `statvfs@openssh.com` is out of reach). ❗
-    /// `None` is "can't tell", ❌ never "no room" — a preview must still open.
-    pub dest_space: Option<SpaceInfo>,
-    /// Whether the destination folder takes writes, asked BEFORE its space. An
-    /// unwritable one is reported here rather than as a space shortfall, so a
-    /// read-only place never reads as a full one.
-    pub dest_write_access: crate::file_system::volume::WriteAccess,
-    pub conflicts: Vec<ScanConflict>,
 }

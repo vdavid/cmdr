@@ -29,6 +29,7 @@ import {
   getFixtureRoot,
   navigateToRoute,
   TRANSFER_DIALOG,
+  pointerClick,
 } from './helpers.js'
 import { recreateFixtures } from '../e2e-shared/fixtures.js'
 import { initMcpClient, mcpNavToPath, mcpAwaitPath } from '../e2e-shared/mcp-client.js'
@@ -47,92 +48,190 @@ import {
 import { isOverflowPass, isStageOnly, overflowLocale } from './i18n-capture-config.js'
 import { CROP_PADDING_TIGHT_CSS_PX, scanForClipping } from './i18n-capture-frame.js'
 
+/** The Colors and formats section, which hosts the two hidden-state surfaces below. */
+const COLORS_SECTION = '[data-section-id="appearance-colors-and-formats"]'
+/** The date and time format row's "Custom" choice, as a JS expression for `pointerClick`. */
+const CUSTOM_DATE_FORMAT_ITEM = `document.querySelector('${COLORS_SECTION} .date-time-setting input[value="custom"]')?.closest('.radio-item')`
+
 /**
- * Every Settings section to capture, in capture (coupling) order. `path` is the
+ * A state the section hides until the user opens it. Stages it on the settings
+ * page and returns the selector that proves it's showing (re-checked in
+ * the frame being photographed) plus the undo the loop runs after the shot.
+ */
+type RevealHiddenState = (page: TauriPage) => Promise<{ readySelector: string; restore: () => Promise<void> }>
+
+/**
+ * Picks the date and time format's Custom choice and opens its placeholder help,
+ * so the custom-format editor, its preview, and the placeholder list are in shot.
+ * Restores the choice that was there before, so a stage-only run hands the shared
+ * app back as it found it.
+ */
+const revealCustomDateFormat: RevealHiddenState = async (page) => {
+  const before = await page.evaluate<string | null>(
+    `(function(){ var el = document.querySelector('${COLORS_SECTION} .date-time-setting .radio-item[data-state="checked"] input'); return el ? el.value : null; })()`,
+  )
+  expect(await pointerClick(page, CUSTOM_DATE_FORMAT_ITEM)).toBe('clicked')
+  await page.waitForSelector(`${COLORS_SECTION} .custom-format .help-toggle-wrapper button`, 5000)
+  await page.evaluate(`document.querySelector('${COLORS_SECTION} .custom-format .help-toggle-wrapper button').click()`)
+  return {
+    readySelector: `${COLORS_SECTION} .custom-format .format-help`,
+    restore: async () => {
+      if (before === null || before === 'custom') return
+      await pointerClick(
+        page,
+        `document.querySelector('${COLORS_SECTION} .date-time-setting input[value="${before}"]')?.closest('.radio-item')`,
+      )
+    },
+  }
+}
+
+/**
+ * Opens the first pane-tint picker, whose popover names every tint color (each
+ * swatch's label and screen-reader name). Closing it is the trigger's own toggle.
+ */
+const revealTintPicker: RevealHiddenState = async (page) => {
+  const trigger = `document.querySelector('${COLORS_SECTION} .picker-wrapper .trigger')`
+  await page.evaluate(`${trigger}.click()`)
+  return {
+    readySelector: `${COLORS_SECTION} .picker-wrapper .popover`,
+    restore: async () => {
+      await page.evaluate(
+        `(function(){ if (document.querySelector('${COLORS_SECTION} .picker-wrapper .popover')) ${trigger}.click(); })()`,
+      )
+    },
+  }
+}
+
+/**
+ * Every Settings surface to capture, in capture (coupling) order. `path` is the
  * English section identity the production `navigate-to-section` deep-link takes
- * (NOT the localized sidebar title), so passing the full SUBSECTION path lands on
- * real content rather than a parent's summary-card grid. `sectionId` is the
- * stable `data-section-id` on the rendered `<section>` (see
- * `SettingsContent.svelte`) used as the per-section readiness signal; `label` is
- * the capture surface name. Mirrors the section table in `accessibility.spec.ts`
- * and `SettingsContent.svelte`: keep in sync if a section is added, renamed, or
- * re-homed.
+ * (NOT the localized sidebar title): a full SUBSECTION path lands on real
+ * content, and a bare top-level path of a parent with subsections lands on its
+ * summary-card grid. `readySelector` proves the deep-link landed: the stable
+ * `data-section-id` on the rendered `<section>`, or the summary grid's
+ * `data-summary-section` (both in `SettingsContent.svelte` /
+ * `SectionSummary.svelte`). `reveal` opens a state the section hides behind a
+ * disclosure or picker. `label` is the capture surface name. Mirrors the section
+ * table in `accessibility.spec.ts` and `SettingsContent.svelte`: keep in sync if a
+ * section is added, renamed, or re-homed.
  *
- * EVERY section (including the first, Appearance › Colors and formats) is reached
+ * EVERY surface (including the first, Appearance › Colors and formats) is reached
  * by an explicit deep-link, never by relying on the window's default-rendered
  * section: that default is the last-viewed section restored from the persisted
- * store, which is non-deterministic (a prior session can leave it on "Advanced",
- * and a top-level section like "Appearance" renders a summary grid with no
- * `data-section-id` at all). Deep-linking each one makes the run deterministic.
+ * store, which is non-deterministic (a prior session can leave it on "Advanced").
+ * Deep-linking each one makes the run deterministic.
+ *
+ * The summaries come LAST, as the broadest surfaces: the coupler gives a key to
+ * the first surface that resolved it, so a subsection title stays with its own
+ * page and a summary only claims its card blurbs.
  */
-const SETTINGS_SECTIONS: { path: string[]; sectionId: string; label: string }[] = [
+const SETTINGS_SECTIONS: { path: string[]; readySelector: string; label: string; reveal?: RevealHiddenState }[] = [
   {
     path: ['Appearance', 'Colors and formats'],
-    sectionId: 'appearance-colors-and-formats',
+    readySelector: COLORS_SECTION,
     label: 'settings-appearance',
   },
   {
+    path: ['Appearance', 'Colors and formats'],
+    readySelector: COLORS_SECTION,
+    label: 'settings-appearance-date-format',
+    reveal: revealCustomDateFormat,
+  },
+  {
+    path: ['Appearance', 'Colors and formats'],
+    readySelector: COLORS_SECTION,
+    label: 'settings-appearance-tint',
+    reveal: revealTintPicker,
+  },
+  {
     path: ['Appearance', 'Zoom and density'],
-    sectionId: 'appearance-zoom-and-density',
+    readySelector: '[data-section-id="appearance-zoom-and-density"]',
     label: 'settings-appearance-zoom',
   },
   {
     path: ['Appearance', 'File and folder sizes'],
-    sectionId: 'appearance-file-and-folder-sizes',
+    readySelector: '[data-section-id="appearance-file-and-folder-sizes"]',
     label: 'settings-appearance-sizes',
   },
-  { path: ['Appearance', 'Listing'], sectionId: 'appearance-listing', label: 'settings-appearance-listing' },
+  {
+    path: ['Appearance', 'Listing'],
+    readySelector: '[data-section-id="appearance-listing"]',
+    label: 'settings-appearance-listing',
+  },
   {
     path: ['Behavior', 'Navigation & file ops'],
-    sectionId: 'behavior-navigation-and-file-ops',
+    readySelector: '[data-section-id="behavior-navigation-and-file-ops"]',
     label: 'settings-behavior-navigation-and-file-ops',
   },
   {
+    path: ['Behavior', 'Archives'],
+    readySelector: '[data-section-id="behavior-archives"]',
+    label: 'settings-behavior-archives',
+  },
+  {
     path: ['Behavior', 'Notifications'],
-    sectionId: 'behavior-notifications',
+    readySelector: '[data-section-id="behavior-notifications"]',
     label: 'settings-behavior-notifications',
   },
-  { path: ['Behavior', 'Search'], sectionId: 'behavior-search', label: 'settings-behavior-search' },
+  {
+    path: ['Behavior', 'Search'],
+    readySelector: '[data-section-id="behavior-search"]',
+    label: 'settings-behavior-search',
+  },
   {
     path: ['Indexing', 'Drive indexing'],
-    sectionId: 'indexing-drive-indexing',
+    readySelector: '[data-section-id="indexing-drive-indexing"]',
     label: 'settings-indexing-drive-indexing',
   },
   {
     path: ['Indexing', 'Image indexing'],
-    sectionId: 'indexing-image-indexing',
+    readySelector: '[data-section-id="indexing-image-indexing"]',
     label: 'settings-indexing-image-indexing',
   },
-  { path: ['AI', 'Provider'], sectionId: 'ai-provider', label: 'settings-ai-provider' },
-  { path: ['AI', 'Ask Cmdr'], sectionId: 'ai-ask-cmdr', label: 'settings-ai-ask-cmdr' },
-  { path: ['AI', 'MCP server'], sectionId: 'ai-mcp-server', label: 'settings-ai-mcp-server' },
+  { path: ['AI', 'Provider'], readySelector: '[data-section-id="ai-provider"]', label: 'settings-ai-provider' },
+  { path: ['AI', 'Ask Cmdr'], readySelector: '[data-section-id="ai-ask-cmdr"]', label: 'settings-ai-ask-cmdr' },
+  { path: ['AI', 'MCP server'], readySelector: '[data-section-id="ai-mcp-server"]', label: 'settings-ai-mcp-server' },
   {
     path: ['File systems', 'SMB/Network shares'],
-    sectionId: 'file-systems-smb-network-shares',
+    readySelector: '[data-section-id="file-systems-smb-network-shares"]',
     label: 'settings-file-systems-smb',
   },
   {
     path: ['File systems', 'MTP (Android/Kindle/cameras)'],
-    sectionId: 'file-systems-mtp-android-kindle-cameras',
+    readySelector: '[data-section-id="file-systems-mtp-android-kindle-cameras"]',
     label: 'settings-file-systems-mtp',
   },
-  { path: ['File systems', 'Git'], sectionId: 'file-systems-git', label: 'settings-file-systems-git' },
-  { path: ['Viewer'], sectionId: 'viewer', label: 'settings-viewer' },
-  { path: ['Keyboard shortcuts'], sectionId: 'keyboard-shortcuts', label: 'settings-keyboard-shortcuts' },
-  { path: ['Updates & privacy'], sectionId: 'updates', label: 'settings-updates' },
-  { path: ['License'], sectionId: 'license', label: 'settings-license' },
-  { path: ['Advanced'], sectionId: 'advanced', label: 'settings-advanced' },
+  {
+    path: ['File systems', 'Git'],
+    readySelector: '[data-section-id="file-systems-git"]',
+    label: 'settings-file-systems-git',
+  },
+  { path: ['Viewer'], readySelector: '[data-section-id="viewer"]', label: 'settings-viewer' },
+  {
+    path: ['Keyboard shortcuts'],
+    readySelector: '[data-section-id="keyboard-shortcuts"]',
+    label: 'settings-keyboard-shortcuts',
+  },
+  { path: ['Updates & privacy'], readySelector: '[data-section-id="updates"]', label: 'settings-updates' },
+  { path: ['License'], readySelector: '[data-section-id="license"]', label: 'settings-license' },
+  { path: ['Advanced'], readySelector: '[data-section-id="advanced"]', label: 'settings-advanced' },
+  ...['Appearance', 'Behavior', 'Indexing', 'AI', 'File systems'].map((parent) => ({
+    path: [parent],
+    readySelector: `[data-summary-section="${parent}"]`,
+    label: `settings-summary-${parent.toLowerCase().replace(/ /g, '-')}`,
+  })),
 ]
 
 /**
- * Captures the Settings window's every section.
+ * Captures the Settings window's every section, its hidden states, and the
+ * parents' summary grids.
  *
  * Settings runs in its own Tauri WebviewWindow (own webview JS context, own
  * `__cmdrI18nCapture` sink). Open it ONCE, then drive the production
  * `navigate-to-section` deep-link (the same event the volume picker / shortcut
- * chips use, passing the English section PATH so subsections land on real
- * content, not a parent summary grid) to each section, reusing the one window +
- * sink. Each `captureSurface` re-focuses for the shot so macOS composites the
+ * chips use, passing the English section PATH) to each surface, reusing the one
+ * window + sink. A surface with a `reveal` opens its hidden state after landing
+ * and hands it back after the shot. Each `captureSurface` re-focuses for the shot so macOS composites the
  * current frame into the backing store the native capture reads.
  *
  * Wrapped so an open failure marks every not-yet-done settings surface failed
@@ -161,6 +260,7 @@ export async function captureSettingsWindow(
     await captureCall<boolean>(settingsPage, 'enable')
 
     for (const section of SETTINGS_SECTIONS) {
+      let restore: (() => Promise<void>) | undefined
       await captureSurface(section.label, report, failed, async () => {
         const sectionJson = JSON.stringify({ section: section.path })
         await settingsPage.evaluate(`window.__TAURI_INTERNALS__.invoke('plugin:event|emit_to', {
@@ -168,11 +268,23 @@ export async function captureSettingsWindow(
           event: 'navigate-to-section',
           payload: ${sectionJson}
         })`)
-        await settingsPage.waitForSelector(`[data-section-id="${section.sectionId}"]`, 5000)
+        await settingsPage.waitForSelector(section.readySelector, 5000)
+        let readySelector = section.readySelector
+        if (section.reveal) {
+          const revealed = await section.reveal(settingsPage)
+          restore = revealed.restore
+          readySelector = revealed.readySelector
+          await settingsPage.waitForSelector(readySelector, 5000)
+        }
         // The tallest sections (Advanced, Drive indexing) run off the bottom of
         // the default settings window; grow the window so the whole section is in
         // the shot rather than shrinking the text a translator has to judge.
-        return { page: settingsPage, focusLabel: 'settings', fitSelector: '.settings-content-wrapper' }
+        return { page: settingsPage, focusLabel: 'settings', readySelector, fitSelector: '.settings-content-wrapper' }
+      })
+      await restore?.().catch((err: unknown) => {
+        console.warn(
+          `[i18n-capture] ${section.label} left its revealed state open: ${err instanceof Error ? err.message : String(err)}`,
+        )
       })
     }
     await captureCall(settingsPage, 'disable')

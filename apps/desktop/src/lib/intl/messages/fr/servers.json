@@ -84,6 +84,22 @@
   "@servers.hub.editNearbyHint": {
     "sourceHash": "64653de"
   },
+  "servers.hub.s3AllBuckets": "Tous les compartiments",
+  "@servers.hub.s3AllBuckets": {
+    "sourceHash": "2a5828a"
+  },
+  "servers.hub.openAccountHint": "Le compte {name} ne s’ouvre pas. Ouvrez l’un des compartiments sous ce compte.",
+  "@servers.hub.openAccountHint": {
+    "sourceHash": "c52ee6f"
+  },
+  "servers.hub.forgetAccountConfirm": "Oublier {name} et tous les compartiments enregistrés sous ce compte ? Cmdr ferme leurs connexions et ne les affiche plus. Vos fichiers restent dans les compartiments.",
+  "@servers.hub.forgetAccountConfirm": {
+    "sourceHash": "e1c636e"
+  },
+  "servers.hub.forgetSecretKeyToo": "Oublier aussi la clé d’accès secrète du compte",
+  "@servers.hub.forgetSecretKeyToo": {
+    "sourceHash": "4f3ac6d"
+  },
   "servers.hub.forgetShare": "Oublier le partage",
   "@servers.hub.forgetShare": {
     "sourceHash": "8888a9d"
@@ -95,6 +111,10 @@
   "servers.hub.forgetShareConfirm": "Oublier {name} ? Cmdr n’affiche plus ce partage. S’il est monté, il le reste, et vos fichiers restent sur le serveur.",
   "@servers.hub.forgetShareConfirm": {
     "sourceHash": "8c14aaa"
+  },
+  "servers.hub.nearbyGroup": "{count, plural, one {{countText} serveur découvert à proximité} many {{countText} serveurs découverts à proximité} other {{countText} serveurs découverts à proximité}}",
+  "@servers.hub.nearbyGroup": {
+    "sourceHash": "cd7a44d"
   },
   "servers.hub.discoveryOff": "La découverte du réseau local est désactivée.",
   "@servers.hub.discoveryOff": {
@@ -172,6 +192,10 @@
   "@servers.refusal.unreachable": {
     "sourceHash": "6fcba90"
   },
+  "servers.refusal.localNetworkHint": "Si le serveur est allumé, vérifiez que Cmdr est autorisé dans {localNetwork}.",
+  "@servers.refusal.localNetworkHint": {
+    "sourceHash": "baa1753"
+  },
   "servers.refusal.hostKeyUntrusted": "Cmdr n’a pas encore approuvé la clé du serveur {host}.",
   "@servers.refusal.hostKeyUntrusted": {
     "sourceHash": "83dc719"
@@ -207,6 +231,62 @@
   "servers.refusal.savedSecretNotUpdated": "Cmdr a enregistré vos modifications, mais n’a pas pu mettre à jour le mot de passe dans le trousseau. Enregistrez à nouveau pour réessayer.",
   "@servers.refusal.savedSecretNotUpdated": {
     "sourceHash": "2ae1e2b"
+  },
+  "servers.refusal.s3AuthenticationRejected": "Cette clé d’accès secrète n’a pas fonctionné.",
+  "@servers.refusal.s3AuthenticationRejected": {
+    "sourceHash": "14f90c8"
+  },
+  "servers.refusal.s3NeedsCredentials": "Ce compte demande une clé d’accès secrète.",
+  "@servers.refusal.s3NeedsCredentials": {
+    "sourceHash": "23695df"
+  },
+  "servers.refusal.s3SecretMissing": "Saisissez la clé d’accès secrète.",
+  "@servers.refusal.s3SecretMissing": {
+    "sourceHash": "f1f32f2"
+  },
+  "servers.refusal.s3SecretNotStored": "Cmdr n’a pas pu enregistrer cette clé d’accès secrète dans le trousseau. Réessayez ou désactivez « Mémoriser dans le trousseau » pour vous identifier sans l’enregistrer.",
+  "@servers.refusal.s3SecretNotStored": {
+    "sourceHash": "f7a9fb0"
+  },
+  "servers.refusal.s3SavedSecretNotUpdated": "Cmdr a enregistré vos modifications, mais n’a pas pu mettre à jour la clé d’accès secrète dans le trousseau. Enregistrez à nouveau pour réessayer.",
+  "@servers.refusal.s3SavedSecretNotUpdated": {
+    "sourceHash": "1d2889d"
+  },
+  "servers.refusal.accessDenied": "Cette clé ne peut pas accéder à ce compartiment. Vérifiez le nom du compartiment et la clé d’accès secrète, et que la clé a le droit de lire ce compartiment.",
+  "@servers.refusal.accessDenied": {
+    "sourceHash": "8372e73"
+  },
+  "servers.refusal.bucketListRefused": "Cette clé ne peut pas lister les compartiments de ce compte. Saisissez un nom de compartiment pour ouvrir ce compartiment, ou vérifiez la clé d’accès secrète.",
+  "@servers.refusal.bucketListRefused": {
+    "sourceHash": "1b9ebf5"
+  },
+  "servers.refusal.bucketNotFound": "Il n’y a aucun compartiment portant ce nom sur {host}.",
+  "@servers.refusal.bucketNotFound": {
+    "sourceHash": "0f5a04d"
+  },
+  "servers.refusal.regionMismatch": "Ce compartiment se trouve dans une autre région. Choisissez sa région et réessayez.",
+  "@servers.refusal.regionMismatch": {
+    "sourceHash": "27a37f8"
+  },
+  "servers.refusal.regionMismatchNamed": "Ce compartiment se trouve dans la région {region}. Choisissez cette région et réessayez.",
+  "@servers.refusal.regionMismatchNamed": {
+    "sourceHash": "30abb0d"
+  },
+  "servers.refusal.clockSkewed": "L’horloge de ce Mac a plus de 15 minutes d’écart, donc le serveur n’accepte pas les requêtes de Cmdr. Activez « Régler la date et l’heure automatiquement » dans Réglages Système, puis réessayez.",
+  "@servers.refusal.clockSkewed": {
+    "sourceHash": "cdee0ef"
+  },
+  "servers.refusal.notAnS3Endpoint": "Aucun stockage S3 ne répond à cette adresse.",
+  "@servers.refusal.notAnS3Endpoint": {
+    "sourceHash": "78557ec"
+  },
+  "servers.refusal.s3FieldMalformed": "N’utilisez ici que des minuscules, des chiffres et des tirets.",
+  "@servers.refusal.s3FieldMalformed": {
+    "sourceHash": "ac8fbea"
+  },
+  "servers.refusal.endpointMalformed": "Saisissez le point de terminaison sous la forme http:// ou https:// suivi d’un nom d’hôte, par exemple https://s3.example.com.",
+  "@servers.refusal.endpointMalformed": {
+    "sourceHash": "beb63dd"
   },
   "servers.sheet.addTitle": "Ajouter un serveur",
   "@servers.sheet.addTitle": {
@@ -324,6 +404,10 @@
   "@servers.sheet.password": {
     "sourceHash": "e7cf3ef"
   },
+  "servers.sheet.secretKeptPlaceholder": "Valeur enregistrée dans le trousseau. Laissez vide pour la conserver.",
+  "@servers.sheet.secretKeptPlaceholder": {
+    "sourceHash": "8711f6c"
+  },
   "servers.sheet.smbUsernamePlaceholder": "Facultatif",
   "@servers.sheet.smbUsernamePlaceholder": {
     "sourceHash": "59be713"
@@ -359,6 +443,122 @@
   "servers.sheet.name": "Nom",
   "@servers.sheet.name": {
     "sourceHash": "dcd1d52"
+  },
+  "servers.sheet.protocolS3": "S3",
+  "@servers.sheet.protocolS3": {
+    "sourceHash": "44d6a8a",
+    "sameAsSourceJustification": "A protocol name, kept verbatim like the sibling SMB, SFTP, and WebDAV options (Apple keeps protocol acronyms in French macOS, see `servers.sheet.protocolWebdav`); the AWS French docs also write \"Amazon S3\" and \"compatible S3\" unchanged (docs.aws.amazon.com/fr_fr, 2026-10-02)."
+  },
+  "servers.sheet.s3Provider": "Fournisseur",
+  "@servers.sheet.s3Provider": {
+    "sourceHash": "472590a"
+  },
+  "servers.sheet.s3ProviderAws": "Amazon S3",
+  "@servers.sheet.s3ProviderAws": {
+    "sourceHash": "a4f6352",
+    "sameAsSourceJustification": "\"Amazon S3\" is a product name its vendor ships unchanged in French (the @key says to keep it as-is), like the neighboring provider choices; translating it would name a product that doesn't exist. AWS French documentation writes \"Amazon S3\" (docs.aws.amazon.com/fr_fr, 2026-10-02)."
+  },
+  "servers.sheet.s3ProviderR2": "Cloudflare R2",
+  "@servers.sheet.s3ProviderR2": {
+    "sourceHash": "9f2f1ed",
+    "sameAsSourceJustification": "\"Cloudflare R2\" is a product name its vendor ships unchanged in French (the @key says to keep it as-is), like the neighboring provider choices; translating it would name a product that doesn't exist."
+  },
+  "servers.sheet.s3ProviderB2": "Backblaze B2",
+  "@servers.sheet.s3ProviderB2": {
+    "sourceHash": "ed40187",
+    "sameAsSourceJustification": "\"Backblaze B2\" is a product name its vendor ships unchanged in French (the @key says to keep it as-is), like the neighboring provider choices; translating it would name a product that doesn't exist."
+  },
+  "servers.sheet.s3ProviderWasabi": "Wasabi",
+  "@servers.sheet.s3ProviderWasabi": {
+    "sourceHash": "493861e",
+    "sameAsSourceJustification": "\"Wasabi\" is a product name its vendor ships unchanged in French (the @key says to keep it as-is), like the neighboring provider choices; translating it would name a product that doesn't exist."
+  },
+  "servers.sheet.s3ProviderHetzner": "Hetzner Object Storage",
+  "@servers.sheet.s3ProviderHetzner": {
+    "sourceHash": "a339b4f",
+    "sameAsSourceJustification": "\"Hetzner Object Storage\" is a product name its vendor ships unchanged in French (the @key says to keep it as-is), like the neighboring provider choices; translating it would name a product that doesn't exist. Hetzner publishes no French UI, so the English product name is the only one a French user sees."
+  },
+  "servers.sheet.s3ProviderGcs": "Google Cloud Storage",
+  "@servers.sheet.s3ProviderGcs": {
+    "sourceHash": "53fa0ba",
+    "sameAsSourceJustification": "\"Google Cloud Storage\" is a product name its vendor ships unchanged in French (the @key says to keep it as-is), like the neighboring provider choices; translating it would name a product that doesn't exist. Google’s French console keeps \"Cloud Storage\" as the product name."
+  },
+  "servers.sheet.s3ProviderDigitalOcean": "DigitalOcean Spaces",
+  "@servers.sheet.s3ProviderDigitalOcean": {
+    "sourceHash": "c3f48e3",
+    "sameAsSourceJustification": "\"DigitalOcean Spaces\" is a product name its vendor ships unchanged in French (the @key says to keep it as-is), like the neighboring provider choices; translating it would name a product that doesn't exist. DigitalOcean publishes no French UI."
+  },
+  "servers.sheet.s3GcsKeyHelp": "Identifiez-vous avec une clé HMAC créée dans l’onglet Interopérabilité des paramètres de Cloud Storage.",
+  "@servers.sheet.s3GcsKeyHelp": {
+    "sourceHash": "acb72a4"
+  },
+  "servers.sheet.s3ProviderOther": "Autre service compatible S3",
+  "@servers.sheet.s3ProviderOther": {
+    "sourceHash": "13d2bdc"
+  },
+  "servers.sheet.s3Region": "Région",
+  "@servers.sheet.s3Region": {
+    "sourceHash": "d3a008e"
+  },
+  "servers.sheet.s3RegionOptionalPlaceholder": "Facultatif. Laissez vide pour utiliser us-east-1",
+  "@servers.sheet.s3RegionOptionalPlaceholder": {
+    "sourceHash": "12dd731"
+  },
+  "servers.sheet.s3AccountId": "ID de compte",
+  "@servers.sheet.s3AccountId": {
+    "sourceHash": "919bb4c"
+  },
+  "servers.sheet.s3AccountIdHelp": "L’ID de compte affiché sur la page de présentation de Cloudflare R2.",
+  "@servers.sheet.s3AccountIdHelp": {
+    "sourceHash": "963d1f5"
+  },
+  "servers.sheet.s3Location": "Emplacement",
+  "@servers.sheet.s3Location": {
+    "sourceHash": "15b6197"
+  },
+  "servers.sheet.s3Endpoint": "Point de terminaison",
+  "@servers.sheet.s3Endpoint": {
+    "sourceHash": "3df9726"
+  },
+  "servers.sheet.s3PathStyle": "Utiliser l’adressage de type chemin",
+  "@servers.sheet.s3PathStyle": {
+    "sourceHash": "627c522"
+  },
+  "servers.sheet.s3PathStyleHelp": "La plupart des serveurs auto-hébergés, comme MinIO et Garage, en ont besoin.",
+  "@servers.sheet.s3PathStyleHelp": {
+    "sourceHash": "bc6e240"
+  },
+  "servers.sheet.s3Bucket": "Compartiment",
+  "@servers.sheet.s3Bucket": {
+    "sourceHash": "c83b657"
+  },
+  "servers.sheet.s3BucketHelp": "Laissez ce champ vide pour voir tous les compartiments. Si votre clé est limitée à un seul compartiment, saisissez son nom.",
+  "@servers.sheet.s3BucketHelp": {
+    "sourceHash": "8d380d9"
+  },
+  "servers.sheet.s3UseRegion": "Utiliser {region}",
+  "@servers.sheet.s3UseRegion": {
+    "sourceHash": "5734184"
+  },
+  "servers.sheet.accessKeyId": "ID de clé d’accès",
+  "@servers.sheet.accessKeyId": {
+    "sourceHash": "14eb0f9"
+  },
+  "servers.sheet.secretAccessKey": "Clé d’accès secrète",
+  "@servers.sheet.secretAccessKey": {
+    "sourceHash": "3de6b75"
+  },
+  "servers.sheet.examplePlaceholder": "Exemple : {example}",
+  "@servers.sheet.examplePlaceholder": {
+    "sourceHash": "9c7df45"
+  },
+  "servers.sheet.identityLockedS3": "Le fournisseur, l’ID de clé d’accès et le compartiment identifient cet emplacement. Pour les modifier, oubliez cet emplacement puis ajoutez-le à nouveau.",
+  "@servers.sheet.identityLockedS3": {
+    "sourceHash": "fe4d469"
+  },
+  "servers.sheet.identityLockedS3Account": "Le fournisseur et l’ID de clé d’accès identifient ce compte. Pour les modifier, oubliez ce compte puis ajoutez-le à nouveau.",
+  "@servers.sheet.identityLockedS3Account": {
+    "sourceHash": "e03a769"
   },
   "servers.sheet.namePlaceholder": "Laissez vide pour utiliser {label}",
   "@servers.sheet.namePlaceholder": {
@@ -452,6 +652,10 @@
   "@servers.paneState.notConnected": {
     "sourceHash": "5020fac"
   },
+  "servers.paneState.unreachable": "Cmdr n’a pas pu joindre {name}.",
+  "@servers.paneState.unreachable": {
+    "sourceHash": "a7bc9bc"
+  },
   "servers.paneState.goBack": "Revenir",
   "@servers.paneState.goBack": {
     "sourceHash": "6aadac2"
@@ -464,9 +668,13 @@
   "@servers.paneState.hostKeyChanged": {
     "sourceHash": "c73ddf3"
   },
-  "servers.paneState.hostKeyChangedHint": "Sa clé a changé. Cela peut signifier que le serveur a été réinstallé, ou que quelque chose s’est interposé entre vous et lui. Déconnectez-vous, puis ouvrez-le à nouveau pour vérifier l’empreinte.",
+  "servers.paneState.hostKeyChangedHint": "Sa clé a changé. Cela peut signifier que le serveur a été réinstallé, ou que quelque chose s’est interposé entre vous et lui. Vérifiez la nouvelle clé avant de vous reconnecter.",
   "@servers.paneState.hostKeyChangedHint": {
-    "sourceHash": "923de62"
+    "sourceHash": "866b619"
+  },
+  "servers.paneState.checkHostKey": "Vérifier la clé",
+  "@servers.paneState.checkHostKey": {
+    "sourceHash": "fefa256"
   },
   "servers.paneState.reconnecting": "Reconnexion à {name}…",
   "@servers.paneState.reconnecting": {

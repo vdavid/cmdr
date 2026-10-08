@@ -156,13 +156,13 @@ impl ScriptedBackend {
 
 #[cfg(test)]
 impl FileViewerBackend for ScriptedBackend {
-    fn get_lines(&self, target: &SeekTarget, count: usize) -> Result<LineChunk, ViewerError> {
+    fn get_lines(&self, target: &SeekTarget, count: usize, _cancel: &AtomicBool) -> Result<LineChunk, ViewerError> {
         let call = self.calls.fetch_add(1, Ordering::SeqCst);
         (self.on_get_lines)(call);
 
         let stride = self.stride();
         let start = match target {
-            SeekTarget::Line(n) => *n,
+            SeekTarget::Row(n) => *n,
             SeekTarget::ByteOffset(b) => (*b as usize) / stride,
             SeekTarget::Fraction(f) => ((self.line_count as f64) * f) as usize,
         }

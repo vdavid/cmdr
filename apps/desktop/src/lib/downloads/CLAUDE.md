@@ -18,9 +18,8 @@ notification, both, neither) and owns go-to-latest navigation. Backend counterpa
 ## Settings-gated dispatch
 
 `startDownloadsEventBridge` reads `getDownloadsNotificationsMode()` per event: `'in-app'` → toast, `'macos'` →
-`sendNotification`, `'both'` → both, `'neither'` → no-op. The macOS path asks permission via
-`$lib/notifications/macos-notification-permission.ts` (session-cached, one deduped INFO toast on denial, no retries, and
-we DON'T flip the user's setting).
+`sendMacosNotification` (`$lib/notifications/`: asks macOS per send whether Cmdr's notifications are on, one INFO toast
+when they're off, never throws), `'both'` → both, `'neither'` → no-op. We DON'T flip the user's setting.
 
 ## Must-knows
 

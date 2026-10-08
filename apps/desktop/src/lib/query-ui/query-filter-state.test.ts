@@ -17,9 +17,9 @@ import {
 
 describe('parseSizeToBytes (pure helper)', () => {
   it('converts KB / MB / GB to bytes', () => {
-    expect(parseSizeToBytes('1', 'KB')).toBe(1024)
-    expect(parseSizeToBytes('1', 'MB')).toBe(1024 * 1024)
-    expect(parseSizeToBytes('1', 'GB')).toBe(1024 * 1024 * 1024)
+    expect(parseSizeToBytes('1', 'KB')).toBe(1000)
+    expect(parseSizeToBytes('1', 'MB')).toBe(1000 * 1000)
+    expect(parseSizeToBytes('1', 'GB')).toBe(1000 * 1000 * 1000)
   })
 
   it('honors 0 as a literal lower / upper bound', () => {
@@ -49,9 +49,9 @@ describe('parseDateToTimestamp (pure helper)', () => {
 
 describe('bytesToSize (pure helper)', () => {
   it('picks the friendliest unit by magnitude', () => {
-    expect(bytesToSize(1024)).toEqual({ value: '1', unit: 'KB' })
-    expect(bytesToSize(5 * 1024 * 1024)).toEqual({ value: '5', unit: 'MB' })
-    expect(bytesToSize(2 * 1024 * 1024 * 1024)).toEqual({ value: '2', unit: 'GB' })
+    expect(bytesToSize(1000)).toEqual({ value: '1', unit: 'KB' })
+    expect(bytesToSize(5 * 1000 * 1000)).toEqual({ value: '5', unit: 'MB' })
+    expect(bytesToSize(2 * 1000 * 1000 * 1000)).toEqual({ value: '2', unit: 'GB' })
   })
 })
 
@@ -129,7 +129,7 @@ describe('createQueryFilterState: buildBaseSearchQuery', () => {
     s.setDateFilter('after')
     s.setDateValue('2026-01-01')
     const q = s.buildBaseSearchQuery()
-    expect(q.minSize).toBe(10 * 1024 * 1024)
+    expect(q.minSize).toBe(10 * 1000 * 1000)
     expect(q.modifiedAfter).toBeTypeOf('number')
   })
 
@@ -275,8 +275,8 @@ describe('createQueryFilterState: history filters round-trip', () => {
     s.setDateValue('2026-01-01')
     const filters = s.readHistoryFilters()
     expect(filters).toEqual({
-      sizeMin: 1024 * 1024,
-      sizeMax: 10 * 1024 * 1024,
+      sizeMin: 1000 * 1000,
+      sizeMax: 10 * 1000 * 1000,
       modifiedAfter: '2026-01-01',
     })
 
@@ -324,7 +324,7 @@ describe('createQueryFilterState: history filters round-trip', () => {
     s.setSizeValue('5')
     s.setSizeUnit('MB')
     const filters = s.readHistoryFilters()
-    expect(filters).toEqual({ sizeMin: 5 * 1024 * 1024, sizeMax: 5 * 1024 * 1024 })
+    expect(filters).toEqual({ sizeMin: 5 * 1000 * 1000, sizeMax: 5 * 1000 * 1000 })
 
     const fresh = createQueryFilterState()
     fresh.applyHistoryFilters(filters)

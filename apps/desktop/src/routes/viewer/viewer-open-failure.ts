@@ -29,8 +29,9 @@ function openFailureCopy(e: unknown): OpenFailure {
     if (ve.kind === 'isDirectory') return { message: tString('viewer.error.isDirectory'), canRetry: false }
     if (ve.kind === 'tooLargeToPreview') return { message: tString('viewer.error.tooLargeToPreview'), canRetry: false }
     if (ve.kind === 'archive') return { message: tString('viewer.error.archiveUnreadable'), canRetry: false }
+    if (ve.kind === 'coldStorage') return { message: tString('viewer.error.coldStorage'), canRetry: false }
   }
-  return { message: tString('viewer.error.readFailed'), canRetry: false }
+  return { message: tString('viewer.error.readFailed'), canRetry: true }
 }
 
 /**
@@ -52,6 +53,7 @@ function logLevelFor(ve: ViewerError): 'warn' | 'error' {
     case 'isDirectory':
     case 'tooLargeToPreview':
     case 'archive':
+    case 'coldStorage':
     case 'cancelled':
     case 'io':
       return 'warn'

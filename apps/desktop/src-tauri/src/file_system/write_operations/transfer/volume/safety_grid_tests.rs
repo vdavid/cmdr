@@ -164,6 +164,7 @@ fn seed_cache(state: CacheState, cell: &str, sources: &[&str], file_count: usize
                             total_bytes: bytes,
                             dedup_bytes: bytes,
                             top_level_is_directory: true,
+                            top_level_modified_at: None,
                         },
                     )
                 })

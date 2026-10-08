@@ -119,7 +119,13 @@ fn frontier_len(db_path: &Path, home: &Path) -> u64 {
         return 0;
     };
     let home = home.to_string_lossy();
-    coverage_for_scope(&conn, "/", &home, CoverageDimension::Listing)
-        .map(|map| map.frontier.len() as u64)
-        .unwrap_or(0)
+    coverage_for_scope(
+        &conn,
+        "/",
+        &home,
+        crate::indexing::scanner::ExclusionTier::MountRooted,
+        CoverageDimension::Listing,
+    )
+    .map(|map| map.frontier.len() as u64)
+    .unwrap_or(0)
 }

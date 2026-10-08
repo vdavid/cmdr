@@ -1,6 +1,6 @@
 //! Volume mount/unmount watcher for macOS.
 //!
-//! Subscribes to `NSWorkspace`'s mount/unmount notifications. When the OS
+//! Subscribes to `NSWorkspace`'s mount, unmount, and rename notifications. When the OS
 //! mounts a volume (USB drive, disk image, SMB share, etc.), `diskarbitrationd`
 //! posts `NSWorkspaceDidMountNotification` on the shared workspace's
 //! notification center. By the time our observer fires, the volume is fully
@@ -13,7 +13,8 @@ use block2::RcBlock;
 use log::{debug, error};
 use objc2::rc::Retained;
 use objc2_app_kit::{
-    NSWorkspace, NSWorkspaceDidMountNotification, NSWorkspaceDidUnmountNotification, NSWorkspaceVolumeURLKey,
+    NSWorkspace, NSWorkspaceDidMountNotification, NSWorkspaceDidRenameVolumeNotification,
+    NSWorkspaceDidUnmountNotification, NSWorkspaceVolumeOldURLKey, NSWorkspaceVolumeURLKey,
     NSWorkspaceWillUnmountNotification,
 };
 use objc2_foundation::{NSDictionary, NSNotification, NSString, NSURL};
@@ -22,6 +23,7 @@ use std::sync::OnceLock;
 use tauri::AppHandle;
 use tauri_specta::Event;
 
+use super::rename::{follow_with_the_index, handle_volume_renamed};
 use crate::file_system::volume::manager::RootRemoval;
 use crate::volume_broadcast::{VolumeMounted, VolumeUnmounted};
 
@@ -71,6 +73,25 @@ fn install_observers() {
         }
     });
 
+    let rename_block = RcBlock::new(|n: NonNull<NSNotification>| {
+        // SAFETY: NSNotificationCenter delivers a valid notification pointer.
+        let notification = unsafe { n.as_ref() };
+        // SAFETY: `NSWorkspaceVolumeOldURLKey` is a `&'static NSString` constant from AppKit (an
+        // `extern "C"` static, so reading it requires `unsafe`).
+        let old_key: &NSString = unsafe { NSWorkspaceVolumeOldURLKey };
+        match (
+            volume_path_from_notification(notification),
+            path_under_key(notification, old_key),
+        ) {
+            // Off the main thread: following the rename derives an id (an NSURL read) and
+            // restarts the drive's index, which drains for up to a few seconds.
+            (Some(new_path), Some(old_path)) => {
+                std::thread::spawn(move || handle_volume_renamed(&old_path, &new_path));
+            }
+            _ => debug!("NSWorkspaceDidRenameVolumeNotification missing a volume URL"),
+        }
+    });
+
     // SAFETY: the notification name constants are valid AppKit globals, and
     // `addObserverForName:object:queue:usingBlock:` retains the block for the
     // lifetime of the observer registration. We never remove the observer
@@ -89,9 +110,15 @@ fn install_observers() {
             None,
             &unmount_block,
         );
+        center.addObserverForName_object_queue_usingBlock(
+            Some(NSWorkspaceDidRenameVolumeNotification),
+            None,
+            None,
+            &rename_block,
+        );
     }
 
-    debug!("NSWorkspace volume mount/unmount observer installed");
+    debug!("NSWorkspace volume mount/unmount/rename observer installed");
 }
 
 /// Marker: set after the will-unmount observer has been installed.
@@ -140,17 +167,24 @@ pub(crate) fn install_will_unmount_observer() {
 /// includes it for these notifications, but synthetic posts (e.g. tests) might
 /// not).
 pub(crate) fn volume_path_from_notification(notification: &NSNotification) -> Option<String> {
-    let user_info = notification.userInfo()?;
-
-    // SAFETY: the notification's `userInfo` is `NSDictionary<NSString *, id>` per Apple docs, and
-    // every observed mount/unmount notification carries an `NSURL` under `NSWorkspaceVolumeURLKey`.
-    // We narrow the value type to `NSURL` so `objectForKey` returns the URL directly; the cast only
-    // refines the generic value type of the same live dictionary, not its identity.
-    let typed: Retained<NSDictionary<NSString, NSURL>> = unsafe { Retained::cast_unchecked(user_info) };
-
     // SAFETY: `NSWorkspaceVolumeURLKey` is a `&'static NSString` constant from AppKit (an
     // `extern "C"` static, so reading it requires `unsafe`).
     let key: &NSString = unsafe { NSWorkspaceVolumeURLKey };
+    path_under_key(notification, key)
+}
+
+/// The file path of the `NSURL` a volume notification's `userInfo` carries under `key`.
+fn path_under_key(notification: &NSNotification, key: &NSString) -> Option<String> {
+    let user_info = notification.userInfo()?;
+
+    // SAFETY: the notification's `userInfo` is `NSDictionary<NSString *, id>` per Apple docs, and
+    // every observed volume notification carries an `NSURL` under `NSWorkspaceVolumeURLKey` (a
+    // rename also under `NSWorkspaceVolumeOldURLKey`), the only two keys callers pass. We narrow the
+    // value type to `NSURL` so `objectForKey` returns the URL directly; the cast only refines the
+    // generic value type of the same live dictionary, not its identity, and the values read through
+    // it are the URL ones.
+    let typed: Retained<NSDictionary<NSString, NSURL>> = unsafe { Retained::cast_unchecked(user_info) };
+
     let url = typed.objectForKey(key)?;
 
     let ns_path = url.path()?;
@@ -163,6 +197,14 @@ pub(crate) fn volume_path_from_notification(notification: &NSNotification) -> Op
 /// Public for tests so the handler logic can be exercised without posting
 /// real `NSWorkspace` notifications.
 pub(crate) fn handle_volume_mounted(volume_path: &str) {
+    // Another account's own mount is nothing this account can open, so it's not
+    // news here: no registration, no event, no refresh. The startup sweep and
+    // discovery skip the same rows (`mounts::MountEntry::is_private_to_another_user`).
+    if super::is_private_to_another_user(volume_path) {
+        debug!("Another account's mount appeared; leaving it alone: {}", volume_path);
+        return;
+    }
+
     debug!("Volume mounted: {}", volume_path);
 
     // Same funnel the startup sweep uses, so a drive that arrives now and one
@@ -231,6 +273,10 @@ pub(crate) fn handle_volume_unmounted(volume_path: &str) {
                 "{volume_path} unmounted, but volume {id} is still mounted at {}; promoted it to that root.",
                 new_root.display(),
             );
+            // A local drive's index read the gone root itself, so it restarts at the
+            // survivor, the same as after a rename. Off this main-thread observer: the
+            // restart drains.
+            std::thread::spawn(move || follow_with_the_index(&id));
         }
         RootRemoval::ActiveRootStranded { id } => {
             log::warn!(

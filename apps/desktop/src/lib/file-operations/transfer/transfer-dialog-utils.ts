@@ -205,6 +205,25 @@ export function initialEditedPath(
   return `${base}/${name}`
 }
 
+/** `folder` + `/` + `leaf`, with no doubled slash at the root or after a trailing one. */
+export function joinPathLeaf(folder: string, leaf: string): string {
+  const base = folder.replace(/\/+$/, '')
+  return `${base}/${leaf}`
+}
+
+/**
+ * The rename-mode path box split back into the folder the source moves into and
+ * the name it lands under. Everything after the last slash is the name, so a
+ * trailing slash (the user deleted the name) gives an empty one for validation
+ * to refuse, ❌ never the folder's own name one level up.
+ */
+export function splitPathLeaf(path: string): { folder: string; leaf: string } {
+  const slash = path.lastIndexOf('/')
+  if (slash === -1) return { folder: '/', leaf: path }
+  const folder = path.slice(0, slash).replace(/\/+$/, '')
+  return { folder: folder === '' ? '/' : folder, leaf: path.slice(slash + 1) }
+}
+
 /** Split a complete transfer target, resolving relative paths against the source folder. */
 export function resolveTransferFilename(
   path: string,

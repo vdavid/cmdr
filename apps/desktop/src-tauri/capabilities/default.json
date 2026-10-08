@@ -61,7 +61,6 @@
         "process:allow-exit",
         "dialog:allow-ask",
         "dialog:allow-open",
-        "notification:default",
         "global-shortcut:default"
     ]
 }

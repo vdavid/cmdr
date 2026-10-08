@@ -364,13 +364,19 @@ impl DownloadsWatcher {
     /// Register a Cmdr-own pending write so its FS event gets suppressed.
     /// Silently no-ops for paths outside the watched Downloads root.
     ///
-    /// The path is canonicalized via its parent directory so it matches the
-    /// shape `notify` reports (macOS resolves firmlinks like
-    /// `/var/folders/...` → `/private/var/folders/...`). The file leaf may
-    /// not exist yet — that's the whole point of the pre-write hook — so
-    /// canonicalization happens at parent-dir granularity.
+    /// Matching the spelling `notify` reports is the ignore set's prefix swap
+    /// (`IgnoreSet::key_for`). ❌ Don't resolve the path here: every write op
+    /// registers its target on an async worker, a share's folder included,
+    /// and a `realpath` on a network mount waits on the server, seconds on a
+    /// busy NAS (ERR-AREUV's slow New Folder).
     pub fn note_pending_write(&self, path: PathBuf, ttl: Duration) {
-        self.ignore_set.note_pending(canonicalize_for_match(&path), ttl);
+        self.ignore_set.note_pending(path, ttl);
+    }
+
+    /// Test-only view of the ignore set: is `path` registered right now?
+    #[cfg(test)]
+    pub fn is_pending_write(&self, path: &Path) -> bool {
+        self.ignore_set.is_pending(path)
     }
 
     /// Most-recently observed eligible download, or `None` if the ring is
@@ -479,37 +485,6 @@ pub(crate) fn scan_latest(root: &Path) -> Option<PathBuf> {
         }
     }
     best.map(|(p, _)| p)
-}
-
-/// Canonicalize `path` so its prefix matches the canonicalized
-/// `downloads_root` used internally. `notify` reports the canonical form
-/// on macOS (firmlinks `/var/folders/...` → `/private/var/folders/...`),
-/// so a hook caller's un-canonicalized path would silently drop on the
-/// ignore set's prefix check.
-///
-/// The file leaf may not exist yet (the hook fires before the syscall), so
-/// we canonicalize the parent and rejoin the leaf. If canonicalization of
-/// the parent fails — missing dir, broken symlink, permission denied — we
-/// return the original path unchanged; the worst case is a one-off
-/// false-positive toast for a Cmdr-own write.
-fn canonicalize_for_match(path: &Path) -> PathBuf {
-    let Some(parent) = path.parent() else {
-        return path.to_path_buf();
-    };
-    let Some(name) = path.file_name() else {
-        return path.to_path_buf();
-    };
-    match std::fs::canonicalize(parent) {
-        Ok(canon_parent) => canon_parent.join(name),
-        Err(err) => {
-            log::debug!(
-                target: "downloads::watcher",
-                "canonicalize_for_match: parent {} failed ({err}); falling back to raw path",
-                parent.display(),
-            );
-            path.to_path_buf()
-        }
-    }
 }
 
 /// Pure helper: decide whether the watcher should be running given the FDA

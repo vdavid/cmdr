@@ -264,6 +264,61 @@ fn tar_traversal_entry_is_quarantined_not_browsable() {
     assert_eq!(index.quarantined().len(), 1, "hostile name recorded as quarantined");
 }
 
+/// CRC-32 (IEEE), which the xz stream and block headers carry.
+fn crc32(bytes: &[u8]) -> u32 {
+    let mut crc = !0u32;
+    for &byte in bytes {
+        crc ^= u32::from(byte);
+        for _ in 0..8 {
+            crc = if crc & 1 != 0 {
+                (crc >> 1) ^ 0xedb8_8320
+            } else {
+                crc >> 1
+            };
+        }
+    }
+    !crc
+}
+
+/// An xz stream whose one block header names an LZMA2 dictionary of
+/// `dict_byte` (the xz property encoding: 40 is 4 GiB - 1), followed by a few
+/// bytes of nothing the decoder should ever reach.
+fn xz_naming_dictionary(dict_byte: u8) -> Vec<u8> {
+    let flags = [0x00, 0x01]; // CRC32 check
+    let mut out = vec![0xfd, 0x37, 0x7a, 0x58, 0x5a, 0x00];
+    out.extend(flags);
+    out.extend(crc32(&flags).to_le_bytes());
+    // Header size (12 / 4 - 1), block flags (one filter), LZMA2 id, one property byte, padding.
+    let header = [0x02, 0x00, 0x21, 0x01, dict_byte, 0x00, 0x00, 0x00];
+    out.extend(header);
+    out.extend(crc32(&header).to_le_bytes());
+    out.extend([0u8; 16]);
+    out
+}
+
+// Regression: an xz block header names its LZMA2 dictionary and the decoder
+// allocated it up front, so 40 bytes could ask for 4 GiB. Refused before
+// allocating, typed as `TooLarge`.
+#[test]
+fn an_xz_tar_naming_a_dictionary_past_the_cap_is_too_large() {
+    let src: Arc<dyn ArchiveByteSource> = Arc::new(BytesSource::new(xz_naming_dictionary(40)));
+
+    let err = ArchiveIndex::parse(src, ArchiveFormat::Tar(TarCodec::Xz), None).unwrap_err();
+
+    assert!(matches!(err, ArchiveError::TooLarge(_)), "got {err:?}");
+}
+
+// The cap must not refuse what the presets write: 64 MiB (property byte 28) is
+// `xz -9`'s dictionary. This stream is otherwise broken, so it fails, just not on size.
+#[test]
+fn an_xz_tar_naming_the_largest_preset_dictionary_is_not_refused_for_size() {
+    let src: Arc<dyn ArchiveByteSource> = Arc::new(BytesSource::new(xz_naming_dictionary(28)));
+
+    let err = ArchiveIndex::parse(src, ArchiveFormat::Tar(TarCodec::Xz), None).unwrap_err();
+
+    assert!(!matches!(err, ArchiveError::TooLarge(_)), "got {err:?}");
+}
+
 #[tokio::test]
 async fn tar_symlink_entry_is_marked_and_creates_no_symlink() {
     // A symlink entry's data is empty (its target lives in the header), so

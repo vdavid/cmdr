@@ -90,6 +90,12 @@ var laneFixtures = []laneFixture{
 		ownLaneTests:   WebdavNextcloudTestAtom,
 		ownLaneCheckID: "desktop-rust-webdav-nextcloud",
 	},
+	{
+		name:           "S3",
+		lanePrefix:     "s3_integration_",
+		markers:        []string{"s3-servers/start.sh", "s3-fixture"},
+		backendPackage: "cmdr-s3",
+	},
 }
 
 // AllowOutOfLaneFixtureCellComment marks a gated cell that belongs OUTSIDE the

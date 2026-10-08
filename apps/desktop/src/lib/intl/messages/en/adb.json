@@ -11,7 +11,7 @@
   "@adb.connect.serverUnreachable": {
     "description": "Shown in the pane when the Android tools are installed but the background program they run isn't answering, so Cmdr can't reach any phone. About this Mac, never about the phone. ❌ Never name the background program or the protocol."
   },
-  "adb.connect.deviceGone": "Your phone isn’t connected any more.",
+  "adb.connect.deviceGone": "Your phone isn’t connected anymore.",
   "@adb.connect.deviceGone": {
     "description": "Shown in the pane when the phone was unplugged, switched off, or otherwise vanished while Cmdr was opening it. Address the user directly (\"your phone\"). Terminal: there is no button, because plugging the phone back in is what fixes it."
   },
@@ -73,9 +73,9 @@
       "name": "the device's name, for example Pixel 7"
     }
   },
-  "adb.disconnectBusyTooltip": "Can’t disconnect while operations are in progress on this device",
+  "adb.disconnectBusyTooltip": "Cmdr is still working with files on this device. Disconnect once that’s done.",
   "@adb.disconnectBusyTooltip": {
-    "description": "Accessible name and hover tooltip on that Disconnect button while it is greyed out, because a file operation is still copying to or from the phone. States the reason, never blames the user."
+    "description": "Accessible name and hover tooltip on that Disconnect button while it is greyed out, because a file operation is still copying to or from the phone. States the reason and when the button comes back, never blames the user. Keep it in step with fileExplorer.navigation.disconnectBusyTooltip and fileExplorer.navigation.ejectBusyTooltip."
   },
   "adb.disconnectingDeviceAriaLabel": "Disconnecting {name}…",
   "@adb.disconnectingDeviceAriaLabel": {

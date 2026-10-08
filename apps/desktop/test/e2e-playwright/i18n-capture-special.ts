@@ -361,7 +361,6 @@ export async function captureOperationChipSurfaces(
  *  - `viewer-search`: the find bar (⌘F / Ctrl+F inside the viewer). It runs
  *    FIRST, so the chrome every viewer state shares couples here, and it's what
  *    the `viewer.` representative points at.
- *  - `viewer-context-menu`: the right-click menu on `.file-content`.
  *  - `viewer-view-mode` / `viewer-encoding`: the toolbar Select dropdowns
  *    (their group labels + items only mount while open).
  *
@@ -379,7 +378,7 @@ export async function captureViewerSubsurfaces(
 ): Promise<void> {
   const startRoot = process.env.CMDR_E2E_START_PATH
   if (!startRoot) {
-    for (const label of ['viewer-search', 'viewer-context-menu', 'viewer-view-mode', 'viewer-encoding']) {
+    for (const label of ['viewer-search', 'viewer-view-mode', 'viewer-encoding']) {
       if (!failed.includes(label)) failed.push(label)
     }
     console.warn('[i18n-capture] viewer subsurfaces: CMDR_E2E_START_PATH unset; cannot resolve fixtures')
@@ -424,14 +423,6 @@ export async function captureViewerSubsurfaces(
       el.dispatchEvent(new KeyboardEvent('keydown', {
         key: 'f', ctrlKey: ${String(CTRL_OR_META === 'Control')}, metaKey: ${String(CTRL_OR_META === 'Meta')}, bubbles: true
       }));
-    })()`)
-  })
-
-  // Context menu: right-click `.file-content`. Renders `viewer.contextMenu.*`.
-  await viewerSurface('viewer-context-menu', textFixture, '.viewer-context-menu', async (v) => {
-    await v.evaluate(`(function(){
-      var el = document.querySelector('.file-content');
-      if (el) el.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, button: 2, clientX: 80, clientY: 80 }));
     })()`)
   })
 

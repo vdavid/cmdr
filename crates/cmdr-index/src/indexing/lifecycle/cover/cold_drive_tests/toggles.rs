@@ -26,7 +26,11 @@ const PROOF: &str = "scope/found.txt";
 /// asynchronously, so a `scans_started()` baseline read before it lands counts
 /// that walk against whatever the test does next.
 pub(super) fn an_indexed_drive(volume_id: &'static str) -> ColdDrive {
-    let drive = ColdDrive::new(volume_id);
+    indexed(ColdDrive::new(volume_id))
+}
+
+/// The same drive turned on and indexed, from whichever fixture the test needs.
+pub(super) fn indexed(drive: ColdDrive) -> ColdDrive {
     std::fs::create_dir_all(drive.tree.path().join("scope")).expect("dirs");
     std::fs::write(drive.tree.path().join(PROOF), "x").expect("file");
     turn_on(&drive);

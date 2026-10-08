@@ -226,7 +226,9 @@ var licenseClarifications = []crateClarification{
 		// be credited. Naming both files also settles which one wins, since
 		// letting the filesystem decide credited only one of them, and which one
 		// depended on the machine. The v2 and v3 vendored trees carry a
-		// byte-identical text, so v2 stands for both.
+		// byte-identical text, so v2 stands for both. The default macOS build
+		// runs on the system allocator and doesn't ship it; a mimalloc one does
+		// (`crates/cmdr-fs/DETAILS.md` § "Which global allocator").
 		files: []clarifiedFile{
 			{"LICENSE.txt", "MIT"},
 			{"c_src/mimalloc/v2/LICENSE", "MIT"},
@@ -268,7 +270,13 @@ func verifyClarifications(sourcesByCrate map[string][]string) error {
 			expected = append(expected, file.path)
 		}
 		sort.Strings(expected)
-		actual := slices.Clone(sourcesByCrate[clarification.crate])
+		sources, ships := sourcesByCrate[clarification.crate]
+		if !ships {
+			// Not in the shipped graph, so there's no text to have come from the
+			// wrong file. The pin stays for the build that ships it again.
+			continue
+		}
+		actual := slices.Clone(sources)
 		sort.Strings(actual)
 
 		if slices.Equal(expected, actual) {

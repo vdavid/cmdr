@@ -16,6 +16,7 @@
  * the row under the cursor, and the stats are folded by `snapshot-stats.ts`.
  */
 
+import { untrack } from 'svelte'
 import { getFileAt, getListingStats, type FolderSizes } from '$lib/tauri-commands'
 import type { FileEntry, ListingStats } from '../types'
 import type { CanonicalPath } from '$lib/path/canonical'
@@ -48,6 +49,12 @@ export interface SelectionInfoFeedDeps {
   getSelectionSize: () => number
   /** Push pane state to MCP (debounced by the caller) after a cursor move. */
   syncMcp: () => void
+  /**
+   * A read confirmed which row sits at `index`: same listing, cursor unmoved since
+   * the read started. Feeds the history entry's remembered cursor
+   * (`history-cursor-sync.svelte.ts`). Never fired for `..`.
+   */
+  onCursorRow?: (index: number, rowPath: string) => void
 }
 
 export interface SelectionInfoFeed {
@@ -105,6 +112,9 @@ export function createSelectionInfoFeed(deps: SelectionInfoFeedDeps): SelectionI
       entry = await getFileAt(listingId, backendIndex, deps.getIncludeHidden())
     } catch {
       entry = null
+    }
+    if (entry && deps.getListingId() === listingId && deps.getCursorIndex() === cursorIndex) {
+      deps.onCursorRow?.(cursorIndex, entry.path)
     }
 
     // Overlay the per-folder `recursiveSizePending` flag (and refresh the
@@ -179,12 +189,14 @@ export function createSelectionInfoFeed(deps: SelectionInfoFeedDeps): SelectionI
     // cursor can briefly point past the snapshot's entries after a delete-
     // sync mutation. Keep the guard at runtime.
 
-    const e = snap.entries[deps.getCursorIndex()]
+    const cursorIndex = deps.getCursorIndex()
+    const e = snap.entries[cursorIndex]
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- runtime bounds guard; cursor can point past entries after delete-sync (see comment above)
     if (!e) {
       entry = null
       return
     }
+    untrack(() => deps.onCursorRow?.(cursorIndex, e.path))
     entry = {
       name: e.name,
       path: e.path,

@@ -12,6 +12,7 @@ use super::SmbVolume;
 use cmdr_fs::volume::{MutationEvent, Volume, VolumeError};
 use log::{debug, warn};
 use std::path::Path;
+use std::time::SystemTime;
 
 impl SmbVolume {
     /// Writes `content` to a file that must not already exist, then tells the
@@ -63,6 +64,38 @@ impl SmbVolume {
         }
 
         self.notify_created(path).await;
+        Ok(())
+    }
+
+    /// Sets `LastWriteTime` alone on a file or folder, by path (one
+    /// CREATE + SET_INFO + CLOSE frame), then tells the panes about it. The
+    /// server keeps its own creation and access times.
+    pub(super) async fn set_modified_impl(&self, path: &Path, modified: SystemTime) -> Result<(), VolumeError> {
+        let smb_path = self.to_smb_path(path)?;
+
+        debug!(
+            "SmbVolume::set_modified: share={:?}, path={:?}",
+            self.inner.share_name, smb_path
+        );
+
+        {
+            let (tree, mut conn) = self.clone_session().await?;
+            let result = tree
+                .set_times(&mut conn, &smb_path, smb2::FileTimes::new().set_modified(modified))
+                .await;
+            self.handle_smb_result("set_modified", &smb_path, result)?;
+        }
+
+        if let (Some(parent), Some(name)) = (path.parent(), path.file_name())
+            && let Some(parent_display) = self.display_path_for(parent)
+        {
+            self.notify_mutation(
+                &self.inner.volume_id,
+                &parent_display,
+                MutationEvent::Modified(name.to_string_lossy().to_string()),
+            )
+            .await;
+        }
         Ok(())
     }
 

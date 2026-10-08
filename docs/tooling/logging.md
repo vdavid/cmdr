@@ -156,6 +156,7 @@ RUST_LOG=trace pnpm dev
 - **Cap**: `Advanced > Maximum disk space for log files (MB)`, default 200 MB, range 0–5000. Set to `0` to disable log
   storage entirely. Error reports cannot be sent without logs. Lowering the cap at runtime eagerly prunes excess files.
   `0 ↔ non-zero` transitions (and raising the cap beyond its baked-in value) require an app restart.
+- Open the current file read-only from **Help > View debug log** or **View debug log** in the command palette.
 - Accessible from **Settings > Advanced > "Logging and diagnostics" > "Open log file"**, which reveals the log FOLDER in
   Finder rather than opening a file. Also bundled into error reports sent via **Help > Send error report…** (passes
   through the shared redactor first)
@@ -267,13 +268,16 @@ minutes, and only when the window crossed a budget: more than 60 s of cumulative
 cumulative row changes.
 
 ```
-Reconciler: heavy churn in the last 15 min: 120 subtree reconciles, 169s of walking, 102,229 row changes, 64+ anchors, 37 signals held back, 8,142 signals queued behind a running rescan. Top: /Users/me/Library/Caches/… (18 walks, 96s), …
+Reconciler: heavy churn in the last 15 min: 120 subtree reconciles, 169s of walking (12s CPU), 102,229 row changes, 64+ anchors, 37 signals held back, 8,142 signals queued behind a running rescan. Top: /Users/me/Library/Caches/… (18 walks, 96s, 7s CPU), …
 ```
 
-Read it as "this machine is spending real CPU staying in sync, and here is where". The top anchors are ranked by
-accumulated walk cost, so the first one named is the folder to look at. `64+ anchors` means the per-window anchor list
-hit its cap, so the count is a floor. `signals held back` counts the change signals the per-subtree throttle and the
-new-subtree settle delay absorbed; a window that churns hard while that reads zero means one of those stopped working.
+Read it as "this machine is spending real time staying in sync, and here is where". The top anchors are ranked by
+accumulated walk cost, so the first one named is the folder to look at. The `CPU` figures are the walks' own thread CPU:
+walking is disk-bound, so on a busy machine the walk time is mostly waiting, and a big walk time with a small CPU figure
+means the CPU went somewhere else (the writer heartbeat's `writer_cpu_ms_total` is the next place to look). Each
+per-walk Debug line carries its CPU the same way. `64+ anchors` means the per-window anchor list hit its cap, so the
+count is a floor. `signals held back` counts the change signals the per-subtree throttle and the new-subtree settle
+delay absorbed; a window that churns hard while that reads zero means one of those stopped working.
 `signals queued behind a running rescan` counts the ones that arrived while the single-flight drain was already walking,
 so it reads as queue pressure; it's omitted when it's zero, and it replaces what used to be a Debug line per signal.
 

@@ -83,8 +83,13 @@ fn a_refusal_carries_who_the_attempt_went_out_as() {
 /// so the sheet can ask for the right thing, and everything else is a network answer.
 #[test]
 fn a_failed_upgrade_is_a_refusal_or_a_network_answer() {
-    let at_share = UpgradeError::from_connect_error(
-        &protocol(NtStatus::ACCESS_DENIED, Command::TreeConnect),
+    let failed = |error| FailedDial {
+        error,
+        slowest_attempt: std::time::Duration::from_millis(5),
+    };
+    let at_share = UpgradeError::from_failed_dial(
+        &failed(protocol(NtStatus::ACCESS_DENIED, Command::TreeConnect)),
+        MountEvidence::Answered,
         Some("ada"),
         "Naspolya".to_string(),
     );
@@ -99,8 +104,9 @@ fn a_failed_upgrade_is_a_refusal_or_a_network_answer() {
         "an account the share turned away signed in fine, got {at_share:?}"
     );
 
-    let wrong_password = UpgradeError::from_connect_error(
-        &protocol(NtStatus::LOGON_FAILURE, Command::SessionSetup),
+    let wrong_password = UpgradeError::from_failed_dial(
+        &failed(protocol(NtStatus::LOGON_FAILURE, Command::SessionSetup)),
+        MountEvidence::Answered,
         Some("ada"),
         "Naspolya".to_string(),
     );
@@ -115,7 +121,12 @@ fn a_failed_upgrade_is_a_refusal_or_a_network_answer() {
         "got {wrong_password:?}"
     );
 
-    let slow = UpgradeError::from_connect_error(&smb2::Error::Timeout, None, "Naspolya".to_string());
+    let slow = UpgradeError::from_failed_dial(
+        &failed(smb2::Error::Timeout),
+        MountEvidence::Answered,
+        None,
+        "Naspolya".to_string(),
+    );
     assert!(
         matches!(
             slow,
@@ -262,4 +273,187 @@ fn a_missing_share_is_read_as_such_and_its_look_alikes_are_not() {
     for (what, error, expected) in &cases {
         assert_eq!(UpgradeFailure::from_smb_error(error), *expected, "{what}");
     }
+}
+
+// ── A connection this Mac refused ──────────────────────────────────
+
+/// A dial that failed the way smb2 reports a TCP connect that got nowhere: one
+/// attempt per address, each with the io kind it failed with (`None` is no answer
+/// within the budget).
+fn connect_failed(kinds: &[Option<std::io::ErrorKind>]) -> smb2::Error {
+    let attempts = kinds
+        .iter()
+        .zip(10u8..)
+        .map(|(&error_kind, last_octet)| smb2::transport::ConnectAttempt {
+            addr: std::net::SocketAddr::from(([192, 168, 0, last_octet], 445)),
+            error_kind,
+        })
+        .collect();
+    smb2::Error::ConnectFailed {
+        host: "192.168.0.10".to_string(),
+        attempts,
+    }
+}
+
+fn dial(error: smb2::Error, slowest_attempt: std::time::Duration) -> FailedDial {
+    FailedDial { error, slowest_attempt }
+}
+
+/// ERR-XGS9X (macOS 27.0, 2026-09-30): the kernel mount of a share listed fine
+/// while every one of Cmdr's own dials to the same address came back
+/// `EHOSTUNREACH` in 1–3 ms. The user's Local Network permission was stuck on;
+/// switching it off and on fixed it at once. So this Mac refusing the route is
+/// read from three things together, and ❌ never from the errno alone: a server
+/// that's off, or a router that gave up on it, says `EHOSTUNREACH` too.
+#[test]
+fn a_route_this_mac_refused_is_told_apart_from_a_server_that_isnt_there() {
+    use std::io::ErrorKind as Io;
+    use std::time::Duration;
+    let fast = Duration::from_millis(3);
+    let slow = Duration::from_secs(3);
+    let blocked = UpgradeFailure::BlockedByThisMac;
+    let unreachable = UpgradeFailure::Unreachable;
+
+    // (what, error, slowest attempt, mount, expected)
+    let cases: Vec<(&str, smb2::Error, Duration, MountEvidence, UpgradeFailure)> = vec![
+        (
+            "ERR-XGS9X: instant EHOSTUNREACH while the mount answers",
+            connect_failed(&[Some(Io::HostUnreachable)]),
+            fast,
+            MountEvidence::Answered,
+            blocked,
+        ),
+        (
+            "instant ENETUNREACH while the mount answers",
+            connect_failed(&[Some(Io::NetworkUnreachable)]),
+            fast,
+            MountEvidence::Answered,
+            blocked,
+        ),
+        (
+            "the same answer as a bare io error",
+            smb2::Error::Io(std::io::Error::from_raw_os_error(libc::EHOSTUNREACH)),
+            fast,
+            MountEvidence::Answered,
+            blocked,
+        ),
+        (
+            "every address refused the same way",
+            connect_failed(&[Some(Io::HostUnreachable), Some(Io::NetworkUnreachable)]),
+            fast,
+            MountEvidence::Answered,
+            blocked,
+        ),
+        (
+            "no mount to vouch for the server: it may just be off",
+            connect_failed(&[Some(Io::HostUnreachable)]),
+            fast,
+            MountEvidence::NoAnswer,
+            unreachable,
+        ),
+        (
+            "a slow EHOSTUNREACH came from the network (a router giving up), not from this Mac",
+            connect_failed(&[Some(Io::HostUnreachable)]),
+            slow,
+            MountEvidence::Answered,
+            unreachable,
+        ),
+        (
+            "a slow one with no mount either",
+            connect_failed(&[Some(Io::HostUnreachable)]),
+            slow,
+            MountEvidence::NoAnswer,
+            unreachable,
+        ),
+        (
+            "refused: something listens there and said no, so the route was fine",
+            connect_failed(&[Some(Io::ConnectionRefused)]),
+            fast,
+            MountEvidence::Answered,
+            unreachable,
+        ),
+        (
+            "one address refused the route, another never answered",
+            connect_failed(&[Some(Io::HostUnreachable), None]),
+            fast,
+            MountEvidence::Answered,
+            unreachable,
+        ),
+        (
+            "a timeout is its own answer",
+            smb2::Error::Timeout,
+            fast,
+            MountEvidence::Answered,
+            UpgradeFailure::TooSlow,
+        ),
+    ];
+    for (what, error, slowest, mount, expected) in cases {
+        assert_eq!(
+            UpgradeFailure::of_dial(&dial(error, slowest), mount),
+            expected,
+            "{what}"
+        );
+    }
+}
+
+/// The ceiling sits far above what a refusal inside this Mac takes (1–3 ms in
+/// ERR-XGS9X) and far below what an answer from the network does.
+#[test]
+fn the_speed_ceiling_is_inclusive() {
+    use std::io::ErrorKind as Io;
+    let at_ceiling = dial(connect_failed(&[Some(Io::HostUnreachable)]), BLOCKED_DIAL_CEILING);
+    assert_eq!(
+        UpgradeFailure::of_dial(&at_ceiling, MountEvidence::Answered),
+        UpgradeFailure::BlockedByThisMac
+    );
+    let past = dial(
+        connect_failed(&[Some(Io::HostUnreachable)]),
+        BLOCKED_DIAL_CEILING + std::time::Duration::from_millis(1),
+    );
+    assert_eq!(
+        UpgradeFailure::of_dial(&past, MountEvidence::Answered),
+        UpgradeFailure::Unreachable
+    );
+}
+
+/// "Connect directly" gets the same reading the log does, so its toast can say
+/// what to switch.
+#[test]
+fn a_refused_route_reaches_connect_directly_as_a_network_answer() {
+    let refused_route = dial(
+        connect_failed(&[Some(std::io::ErrorKind::HostUnreachable)]),
+        std::time::Duration::from_millis(2),
+    );
+    let answer = UpgradeError::from_failed_dial(&refused_route, MountEvidence::Answered, None, "Mars".to_string());
+    assert!(
+        matches!(
+            answer,
+            UpgradeError::Network {
+                reason: UpgradeFailure::BlockedByThisMac,
+                ..
+            }
+        ),
+        "got {answer:?}"
+    );
+}
+
+/// The log line is where the next report gets read, so it names the io kind and,
+/// where the error carries one, the raw errno: EHOSTUNREACH at a glance.
+#[test]
+fn the_log_detail_names_the_io_kind_and_errno() {
+    let bare = smb2::Error::Io(std::io::Error::from_raw_os_error(libc::EHOSTUNREACH));
+    let detail = dial_detail(&bare);
+    assert!(detail.contains("HostUnreachable"), "{detail}");
+    assert!(detail.contains(&format!("errno={}", libc::EHOSTUNREACH)), "{detail}");
+
+    let per_address = connect_failed(&[Some(std::io::ErrorKind::HostUnreachable), None]);
+    let detail = dial_detail(&per_address);
+    assert!(detail.contains("HostUnreachable"), "{detail}");
+    assert!(detail.contains("no answer"), "{detail}");
+
+    assert_eq!(
+        dial_detail(&smb2::Error::Timeout),
+        "io_kind=none",
+        "a failure that isn't io says so"
+    );
 }

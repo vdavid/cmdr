@@ -1,5 +1,7 @@
-//! Pure type mapping: SFTP metadata into `FileEntry`.
+//! Pure type mapping: SFTP metadata into `FileEntry`, and a `statvfs` answer into `SpaceInfo`.
 use cmdr_fs::entry::FileEntry;
+use cmdr_fs::volume::SpaceInfo;
+use openssh_sftp_client::fs::Statvfs;
 use openssh_sftp_client::metadata::{MetaData, RawFileType};
 
 /// Builds a [`FileEntry`] from one SFTP stat answer.
@@ -36,6 +38,27 @@ fn entry_of_type(name: &str, app_path: &str, file_type: Option<RawFileType>) -> 
     entry
 }
 
+/// The free and total space of the filesystem a `statvfs@openssh.com` answer describes.
+///
+/// Read the way `statvfs(3)` defines it, the same as the local backend does:
+/// block counts are in `frsize` units (`bsize` only when a server sends a zero
+/// `frsize`), the room left is `bavail` (what a non-root account may use), and
+/// what's stored is everything that isn't `bfree`. ❗ So `used` is NOT the
+/// complement of `available`: root-reserved blocks are in neither, which is why
+/// this builds [`SpaceInfo::Bounded`] itself rather than through
+/// [`SpaceInfo::bounded`]. Every product saturates, because these numbers come
+/// off the wire.
+pub(super) fn statvfs_to_space_info(stat: &Statvfs) -> SpaceInfo {
+    let unit = if stat.frsize == 0 { stat.bsize } else { stat.frsize };
+    let total_bytes = stat.blocks.saturating_mul(unit);
+    let free_bytes = stat.bfree.saturating_mul(unit);
+    SpaceInfo::Bounded {
+        total_bytes,
+        available_bytes: stat.bavail.saturating_mul(unit).min(total_bytes),
+        used_bytes: total_bytes.saturating_sub(free_bytes),
+    }
+}
+
 /// Seconds since the epoch, matching `FileEntry`'s own unit.
 fn unix_secs(stamp: openssh_sftp_client::UnixTimeStamp) -> Option<u64> {
     stamp
@@ -66,6 +89,59 @@ mod tests {
             assert_eq!(entry.permissions & S_IFMT, bits, "{raw:?}");
             assert!(!entry.is_directory && !entry.is_symlink);
         }
+    }
+
+    fn statvfs(frsize: u64, bsize: u64, blocks: u64, bfree: u64, bavail: u64) -> Statvfs {
+        Statvfs {
+            bsize,
+            frsize,
+            blocks,
+            bfree,
+            bavail,
+            files: 0,
+            ffree: 0,
+            favail: 0,
+            fsid: 0,
+            flag: 0,
+            namemax: 255,
+        }
+    }
+
+    #[test]
+    fn space_counts_in_fragments_and_keeps_the_reserved_blocks_out_of_both_figures() {
+        // 50 blocks are reserved for root: free to nobody we can be, holding nothing.
+        let space = statvfs_to_space_info(&statvfs(4096, 1_048_576, 1000, 300, 250));
+        assert_eq!(
+            space,
+            SpaceInfo::Bounded {
+                total_bytes: 4_096_000,
+                available_bytes: 1_024_000,
+                used_bytes: 2_867_200,
+            },
+            "`blocks` count in `frsize` units, ❌ never `bsize`, and `used` is what isn't `bfree`"
+        );
+    }
+
+    #[test]
+    fn a_zero_fragment_size_falls_back_to_the_block_size() {
+        let space = statvfs_to_space_info(&statvfs(0, 512, 1000, 400, 400));
+        assert_eq!(
+            space.total_bytes(),
+            Some(512_000),
+            "a zero unit would report every server as full"
+        );
+        assert_eq!(space.available_bytes(), Some(204_800));
+    }
+
+    #[test]
+    fn a_nonsense_answer_saturates_instead_of_wrapping() {
+        let space = statvfs_to_space_info(&statvfs(u64::MAX, 0, 2, 3, 3));
+        assert_eq!(space.total_bytes(), Some(u64::MAX));
+        assert_eq!(
+            space.used_bytes(),
+            0,
+            "more free than total is clamped, never a wrapped huge figure"
+        );
     }
 
     #[test]

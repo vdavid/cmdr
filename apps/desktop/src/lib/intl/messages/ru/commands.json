@@ -1,0 +1,983 @@
+{
+  "commands.appQuit.label": "Завершить Cmdr",
+  "@commands.appQuit.label": {
+    "sourceHash": "b3455b4"
+  },
+  "commands.appHide.label": "Скрыть Cmdr",
+  "@commands.appHide.label": {
+    "sourceHash": "8f86f89"
+  },
+  "commands.appHideOthers.label": "Скрыть остальные",
+  "@commands.appHideOthers.label": {
+    "sourceHash": "74376e4"
+  },
+  "commands.appShowAll.label": "Показать все",
+  "@commands.appShowAll.label": {
+    "sourceHash": "2150d8d"
+  },
+  "commands.appAbout.label": "О приложении Cmdr",
+  "@commands.appAbout.label": {
+    "sourceHash": "efe010f"
+  },
+  "commands.appAcknowledgements.label": "Благодарности…",
+  "@commands.appAcknowledgements.label": {
+    "sourceHash": "7d0e506"
+  },
+  "commands.appLicenseKey.seeDetails.label": "Сведения о лицензии",
+  "@commands.appLicenseKey.seeDetails.label": {
+    "sourceHash": "0e660e8"
+  },
+  "commands.appLicenseKey.enterKey.label": "Ввести лицензионный ключ",
+  "@commands.appLicenseKey.enterKey.label": {
+    "sourceHash": "357d05e"
+  },
+  "commands.appCommandPalette.label": "Открыть палитру команд",
+  "@commands.appCommandPalette.label": {
+    "sourceHash": "c022b19"
+  },
+  "commands.appSettings.label": "Открыть настройки",
+  "@commands.appSettings.label": {
+    "sourceHash": "ca381c1"
+  },
+  "commands.appCheckForUpdates.label": "Проверить обновления…",
+  "@commands.appCheckForUpdates.label": {
+    "sourceHash": "52d6f7d"
+  },
+  "commands.appCheckForUpdates.description": "Проверить наличие новой версии Cmdr и скачать ее, если она доступна",
+  "@commands.appCheckForUpdates.description": {
+    "sourceHash": "c53dab0"
+  },
+  "commands.cmdrOpenOnboarding.label": "Знакомство с приложением…",
+  "@commands.cmdrOpenOnboarding.label": {
+    "sourceHash": "c4cc4aa"
+  },
+  "commands.cmdrOpenOnboarding.description": "Повторно открыть мастер знакомства, чтобы проверить или изменить настройки первого запуска",
+  "@commands.cmdrOpenOnboarding.description": {
+    "sourceHash": "a45c542"
+  },
+  "commands.helpOpenShortcuts.label": "Сочетания клавиш",
+  "@commands.helpOpenShortcuts.label": {
+    "sourceHash": "e9bef0b"
+  },
+  "commands.helpOpenShortcuts.description": "Открыть окно только для чтения со всеми сочетаниями клавиш; оно сразу учитывает ваши изменения",
+  "@commands.helpOpenShortcuts.description": {
+    "sourceHash": "a9a1e0d"
+  },
+  "commands.helpSendErrorReport.label": "Отправить отчет об ошибке…",
+  "@commands.helpSendErrorReport.label": {
+    "sourceHash": "063c94e"
+  },
+  "commands.helpSendErrorReport.description": "Отправить команде журналы Cmdr, чтобы помочь исправить то, что пошло не так",
+  "@commands.helpSendErrorReport.description": {
+    "sourceHash": "021d333"
+  },
+  "commands.queueShow.label": "Очередь операций",
+  "@commands.queueShow.label": {
+    "sourceHash": "fa91417"
+  },
+  "commands.queueShow.description": "Открыть окно выполняемых и ожидающих операций, чтобы приостанавливать, возобновлять или отменять их",
+  "@commands.queueShow.description": {
+    "sourceHash": "37b616a"
+  },
+  "commands.helpWhatsNew.label": "Что нового",
+  "@commands.helpWhatsNew.label": {
+    "sourceHash": "37e6112"
+  },
+  "commands.helpWhatsNew.description": "Посмотреть изменения в последних версиях Cmdr",
+  "@commands.helpWhatsNew.description": {
+    "sourceHash": "f8ad411"
+  },
+  "commands.logOperationLog.label": "Журнал операций",
+  "@commands.logOperationLog.label": {
+    "sourceHash": "2c97965"
+  },
+  "commands.logOperationLog.description": "Посмотреть историю файловых операций и откатить их",
+  "@commands.logOperationLog.description": {
+    "sourceHash": "ea2d082"
+  },
+  "commands.askCmdrToggle.label": "Ask Cmdr",
+  "@commands.askCmdrToggle.label": {
+    "sourceHash": "aafb1ce",
+    "sameAsSourceJustification": "Product name (the built-in AI panel); kept verbatim in every locale, matching menu.view.askCmdr. The ru termbase rules Ask Cmdr verbatim (ask-cmdr)."
+  },
+  "commands.askCmdrToggle.description": "Обсудить с ИИ ваши файлы, диски и историю",
+  "@commands.askCmdrToggle.description": {
+    "sourceHash": "c520468"
+  },
+  "commands.feedbackSend.label": "Отправить отзыв",
+  "@commands.feedbackSend.label": {
+    "sourceHash": "8235980"
+  },
+  "commands.feedbackSend.description": "Рассказать автору Cmdr о своих идеях, пожеланиях и впечатлениях",
+  "@commands.feedbackSend.description": {
+    "sourceHash": "89d08a8"
+  },
+  "commands.searchOpen.label": "Найти файлы",
+  "@commands.searchOpen.label": {
+    "sourceHash": "179fed8"
+  },
+  "commands.navGoToPath.label": "Переход к папке…",
+  "@commands.navGoToPath.label": {
+    "sourceHash": "33de610"
+  },
+  "commands.navGoToPath.description": "Открыть в активной панели введенный, вставленный или недавний путь.",
+  "@commands.navGoToPath.description": {
+    "sourceHash": "fc6a00c"
+  },
+  "commands.favoritesAdd.label": "Добавить в избранное",
+  "@commands.favoritesAdd.label": {
+    "sourceHash": "7f3c078"
+  },
+  "commands.favoritesAdd.description": "Добавить текущую папку активной панели в избранное, чтобы возвращаться к ней через меню избранного.",
+  "@commands.favoritesAdd.description": {
+    "sourceHash": "999aa52"
+  },
+  "commands.favoritesOpen.label": "Показать избранное",
+  "@commands.favoritesOpen.label": {
+    "sourceHash": "f4dfe9b"
+  },
+  "commands.favoritesOpen.description": "Открыть меню избранного в активной панели и нажать цифру для перехода к соответствующему пункту.",
+  "@commands.favoritesOpen.description": {
+    "sourceHash": "d188872"
+  },
+  "commands.favoritesOpenByNumber.label": "Открыть избранное с этим номером",
+  "@commands.favoritesOpenByNumber.label": {
+    "sourceHash": "e74b98f"
+  },
+  "commands.downloadsGoToLatest.label": "Перейти к последней загрузке",
+  "@commands.downloadsGoToLatest.label": {
+    "sourceHash": "492d0b6"
+  },
+  "commands.downloadsGoToLatest.description": "Открыть ~/Downloads и поставить курсор на самый новый файл.",
+  "@commands.downloadsGoToLatest.description": {
+    "sourceHash": "42a26a2"
+  },
+  "commands.viewShowHidden.label": "Переключить показ скрытых файлов",
+  "@commands.viewShowHidden.label": {
+    "sourceHash": "6aa9b55"
+  },
+  "commands.viewCalculateFolderSizes.label": "Вычислить размеры папок",
+  "@commands.viewCalculateFolderSizes.label": {
+    "sourceHash": "d2a83da"
+  },
+  "commands.viewCalculateFolderSizes.description": "Показать размер каждой папки на этой панели, у которой его еще нет. Остановить вычисление можно клавишей Escape.",
+  "@commands.viewCalculateFolderSizes.description": {
+    "sourceHash": "2a7568d"
+  },
+  "commands.viewBriefMode.label": "Переключить на краткий режим",
+  "@commands.viewBriefMode.label": {
+    "sourceHash": "bcf6636"
+  },
+  "commands.viewFullMode.label": "Переключить на подробный режим",
+  "@commands.viewFullMode.label": {
+    "sourceHash": "b44150e"
+  },
+  "commands.viewSetMode.label": "Задать вид панели",
+  "@commands.viewSetMode.label": {
+    "sourceHash": "1e050a6"
+  },
+  "commands.viewZoomSet75.label": "Масштаб 75 %",
+  "@commands.viewZoomSet75.label": {
+    "sourceHash": "70ac915"
+  },
+  "commands.viewZoomSet100.label": "Масштаб 100 %",
+  "@commands.viewZoomSet100.label": {
+    "sourceHash": "c23bdb4"
+  },
+  "commands.viewZoomSet125.label": "Масштаб 125 %",
+  "@commands.viewZoomSet125.label": {
+    "sourceHash": "9191980"
+  },
+  "commands.viewZoomSet150.label": "Масштаб 150 %",
+  "@commands.viewZoomSet150.label": {
+    "sourceHash": "2e247da"
+  },
+  "commands.viewZoomIn.label": "Увеличить масштаб",
+  "@commands.viewZoomIn.label": {
+    "sourceHash": "0e47f09"
+  },
+  "commands.viewZoomOut.label": "Уменьшить масштаб",
+  "@commands.viewZoomOut.label": {
+    "sourceHash": "bc7b631"
+  },
+  "commands.sortByName.label": "Сортировать по имени",
+  "@commands.sortByName.label": {
+    "sourceHash": "588a082"
+  },
+  "commands.sortByExtension.label": "Сортировать по расширению",
+  "@commands.sortByExtension.label": {
+    "sourceHash": "bb899db"
+  },
+  "commands.sortByModified.label": "Сортировать по дате изменения",
+  "@commands.sortByModified.label": {
+    "sourceHash": "d9349cb"
+  },
+  "commands.sortBySize.label": "Сортировать по размеру",
+  "@commands.sortBySize.label": {
+    "sourceHash": "b5fa7af"
+  },
+  "commands.sortByCreated.label": "Сортировать по дате создания",
+  "@commands.sortByCreated.label": {
+    "sourceHash": "9bdaf4e"
+  },
+  "commands.sortAscending.label": "Сортировать по возрастанию",
+  "@commands.sortAscending.label": {
+    "sourceHash": "ec3c9c7"
+  },
+  "commands.sortDescending.label": "Сортировать по убыванию",
+  "@commands.sortDescending.label": {
+    "sourceHash": "8993b78"
+  },
+  "commands.sortToggleOrder.label": "Переключить порядок сортировки",
+  "@commands.sortToggleOrder.label": {
+    "sourceHash": "e0eb85f"
+  },
+  "commands.sortSet.label": "Задать сортировку панели",
+  "@commands.sortSet.label": {
+    "sourceHash": "64232ef"
+  },
+  "commands.paneSwitch.label": "Переключить панель",
+  "@commands.paneSwitch.label": {
+    "sourceHash": "377471f"
+  },
+  "commands.paneSwap.label": "Поменять панели местами",
+  "@commands.paneSwap.label": {
+    "sourceHash": "cc29396"
+  },
+  "commands.paneClone.label": "Клонировать панель",
+  "@commands.paneClone.label": {
+    "sourceHash": "74b2c7f"
+  },
+  "commands.paneClone.description": "Открыть папку этой панели и в другой панели.",
+  "@commands.paneClone.description": {
+    "sourceHash": "8a13dc9"
+  },
+  "commands.paneLeftVolumeChooser.label": "Открыть переключатель томов левой панели",
+  "@commands.paneLeftVolumeChooser.label": {
+    "sourceHash": "6210f8e"
+  },
+  "commands.paneRightVolumeChooser.label": "Открыть переключатель томов правой панели",
+  "@commands.paneRightVolumeChooser.label": {
+    "sourceHash": "6103296"
+  },
+  "commands.paneCopyPathLeftToRight.label": "Скопировать путь из левой панели в правую",
+  "@commands.paneCopyPathLeftToRight.label": {
+    "sourceHash": "d1376f6"
+  },
+  "commands.paneCopyPathLeftToRight.description": "Открыть расположение левой панели в правой. Если активна левая панель и курсор находится на папке, справа откроется эта папка.",
+  "@commands.paneCopyPathLeftToRight.description": {
+    "sourceHash": "07ac6a1"
+  },
+  "commands.paneCopyPathRightToLeft.label": "Скопировать путь из правой панели в левую",
+  "@commands.paneCopyPathRightToLeft.label": {
+    "sourceHash": "266a30d"
+  },
+  "commands.paneCopyPathRightToLeft.description": "Открыть расположение правой панели в левой. Если активна правая панель и курсор находится на папке, слева откроется эта папка.",
+  "@commands.paneCopyPathRightToLeft.description": {
+    "sourceHash": "95c566f"
+  },
+  "commands.paneRefresh.label": "Обновить панель",
+  "@commands.paneRefresh.label": {
+    "sourceHash": "42ce075"
+  },
+  "commands.tabNew.label": "Новая вкладка",
+  "@commands.tabNew.label": {
+    "sourceHash": "1e08fda"
+  },
+  "commands.tabClose.label": "Закрыть вкладку",
+  "@commands.tabClose.label": {
+    "sourceHash": "50a3f95"
+  },
+  "commands.tabReopen.label": "Открыть закрытую вкладку",
+  "@commands.tabReopen.label": {
+    "sourceHash": "5ca5397"
+  },
+  "commands.tabNext.label": "Следующая вкладка",
+  "@commands.tabNext.label": {
+    "sourceHash": "1ef9522"
+  },
+  "commands.tabPrev.label": "Предыдущая вкладка",
+  "@commands.tabPrev.label": {
+    "sourceHash": "c88d5e7"
+  },
+  "commands.tabTogglePin.label": "Закрепить или открепить вкладку",
+  "@commands.tabTogglePin.label": {
+    "sourceHash": "3fdfcd1"
+  },
+  "commands.tabCloseOthers.label": "Закрыть остальные вкладки",
+  "@commands.tabCloseOthers.label": {
+    "sourceHash": "0ddc2c5"
+  },
+  "commands.tabMcpAction.label": "Действие со вкладкой панели",
+  "@commands.tabMcpAction.label": {
+    "sourceHash": "405ed9c"
+  },
+  "commands.navUp.label": "Перейти к предыдущему файлу",
+  "@commands.navUp.label": {
+    "sourceHash": "40dca00"
+  },
+  "commands.navDown.label": "Перейти к следующему файлу",
+  "@commands.navDown.label": {
+    "sourceHash": "61e81ee"
+  },
+  "commands.navOpen.label": "Открыть файл или папку",
+  "@commands.navOpen.label": {
+    "sourceHash": "ef8d6a5"
+  },
+  "commands.navParent.label": "Перейти на уровень выше",
+  "@commands.navParent.label": {
+    "sourceHash": "7d4c500"
+  },
+  "commands.navHome.label": "Перейти к первому файлу",
+  "@commands.navHome.label": {
+    "sourceHash": "5750de6"
+  },
+  "commands.navEnd.label": "Перейти к последнему файлу",
+  "@commands.navEnd.label": {
+    "sourceHash": "f39205a"
+  },
+  "commands.navPageUp.label": "На страницу вверх",
+  "@commands.navPageUp.label": {
+    "sourceHash": "43f41b5"
+  },
+  "commands.navPageDown.label": "На страницу вниз",
+  "@commands.navPageDown.label": {
+    "sourceHash": "72a825f"
+  },
+  "commands.navBack.label": "Назад",
+  "@commands.navBack.label": {
+    "sourceHash": "6aadac2"
+  },
+  "commands.navForward.label": "Вперед",
+  "@commands.navForward.label": {
+    "sourceHash": "8121136"
+  },
+  "commands.navGoToRoot.label": "Перейти в корневую папку",
+  "@commands.navGoToRoot.label": {
+    "sourceHash": "3822d7b"
+  },
+  "commands.navGoHome.label": "Перейти в папку пользователя",
+  "@commands.navGoHome.label": {
+    "sourceHash": "74b2a8b"
+  },
+  "commands.errorPaneToggleTechnicalDetails.label": "Показать технические подробности",
+  "@commands.errorPaneToggleTechnicalDetails.label": {
+    "sourceHash": "bde0de8"
+  },
+  "commands.navOpenUnderCursor.label": "Открыть объект под курсором",
+  "@commands.navOpenUnderCursor.label": {
+    "sourceHash": "6b54df9"
+  },
+  "commands.cursorMoveTo.label": "Переместить курсор панели",
+  "@commands.cursorMoveTo.label": {
+    "sourceHash": "4c196ef"
+  },
+  "commands.cursorScrollTo.label": "Прокрутить панель к позиции",
+  "@commands.cursorScrollTo.label": {
+    "sourceHash": "98ca70c"
+  },
+  "commands.navLeft.label": "Перейти в левую колонку",
+  "@commands.navLeft.label": {
+    "sourceHash": "db46f08"
+  },
+  "commands.navRight.label": "Перейти в правую колонку",
+  "@commands.navRight.label": {
+    "sourceHash": "21b59f0"
+  },
+  "commands.navFirstInFull.label": "Перейти к первому файлу",
+  "@commands.navFirstInFull.label": {
+    "sourceHash": "f0ea135"
+  },
+  "commands.navLastInFull.label": "Перейти к последнему файлу",
+  "@commands.navLastInFull.label": {
+    "sourceHash": "e6d6a52"
+  },
+  "commands.fileRename.label": "Переименовать",
+  "@commands.fileRename.label": {
+    "sourceHash": "3064d79"
+  },
+  "commands.fileView.label": "Просмотр",
+  "@commands.fileView.label": {
+    "sourceHash": "dcc839a"
+  },
+  "commands.fileEdit.label": "Открыть в редакторе по умолчанию",
+  "@commands.fileEdit.label": {
+    "sourceHash": "badc768"
+  },
+  "commands.fileCopy.label": "Скопировать",
+  "@commands.fileCopy.label": {
+    "sourceHash": "e21f935"
+  },
+  "commands.fileMove.label": "Переместить",
+  "@commands.fileMove.label": {
+    "sourceHash": "6ecc3df"
+  },
+  "commands.fileDuplicate.label": "Дублировать",
+  "@commands.fileDuplicate.label": {
+    "sourceHash": "02cdaab"
+  },
+  "commands.fileDuplicate.description": "Создать копию выделенных файлов в той же папке",
+  "@commands.fileDuplicate.description": {
+    "sourceHash": "2c038a2"
+  },
+  "commands.fileCompress.label": "Сжать",
+  "@commands.fileCompress.label": {
+    "sourceHash": "033fc04"
+  },
+  "commands.editCopy.label": "Скопировать в буфер обмена",
+  "@commands.editCopy.label": {
+    "sourceHash": "b749e20"
+  },
+  "commands.editCopy.description": "Скопировать выделенные файлы в буфер обмена для вставки",
+  "@commands.editCopy.description": {
+    "sourceHash": "5c769a7"
+  },
+  "commands.editCut.label": "Вырезать в буфер обмена",
+  "@commands.editCut.label": {
+    "sourceHash": "a954b4a"
+  },
+  "commands.editCut.description": "Вырезать выделенные файлы (при вставке они переместятся)",
+  "@commands.editCut.description": {
+    "sourceHash": "5bc3870"
+  },
+  "commands.editPaste.label": "Вставить",
+  "@commands.editPaste.label": {
+    "sourceHash": "f3380f7"
+  },
+  "commands.editPaste.description": "Вставить файлы из буфера обмена в текущую папку",
+  "@commands.editPaste.description": {
+    "sourceHash": "32545d7"
+  },
+  "commands.editPasteAsMove.label": "Переместить объекты сюда",
+  "@commands.editPasteAsMove.label": {
+    "sourceHash": "56f1247"
+  },
+  "commands.editPasteAsMove.description": "Переместить файлы из буфера обмена",
+  "@commands.editPasteAsMove.description": {
+    "sourceHash": "961316d"
+  },
+  "commands.fileNewFolder.label": "Новая папка",
+  "@commands.fileNewFolder.label": {
+    "sourceHash": "cf28f49"
+  },
+  "commands.fileNewFile.label": "Создать новый файл",
+  "@commands.fileNewFile.label": {
+    "sourceHash": "6e70b95"
+  },
+  "commands.fileDelete.label": "Удалить",
+  "@commands.fileDelete.label": {
+    "sourceHash": "e2d0a54"
+  },
+  "commands.fileDeletePermanently.label": "Удалить безвозвратно",
+  "@commands.fileDeletePermanently.label": {
+    "sourceHash": "280b10c"
+  },
+  "commands.fileGoToTrash.label": "Перейти в Корзину",
+  "@commands.fileGoToTrash.label": {
+    "sourceHash": "5332858"
+  },
+  "commands.fileGoToTrash.description": "Открыть Корзину просматриваемого диска",
+  "@commands.fileGoToTrash.description": {
+    "sourceHash": "73eae92"
+  },
+  "commands.dialogConfirm.label": "Подтвердить открытый диалог",
+  "@commands.dialogConfirm.label": {
+    "sourceHash": "b58a959"
+  },
+  "commands.fileShowInFinder.mac.label": "Показать в Finder",
+  "@commands.fileShowInFinder.mac.label": {
+    "sourceHash": "c2a9c77"
+  },
+  "commands.fileShowInFinder.other.label": "Показать в файловом менеджере",
+  "@commands.fileShowInFinder.other.label": {
+    "sourceHash": "3ca4dad"
+  },
+  "commands.fileOpenTerminalHere.label": "Открыть терминал здесь",
+  "@commands.fileOpenTerminalHere.label": {
+    "sourceHash": "b7eda27"
+  },
+  "commands.fileOpenTerminalHere.description": "Открыть приложение терминала в просматриваемой папке",
+  "@commands.fileOpenTerminalHere.description": {
+    "sourceHash": "ac0ddb8"
+  },
+  "commands.fileCopyPath.label": "Скопировать путь в буфер обмена",
+  "@commands.fileCopyPath.label": {
+    "sourceHash": "333608a"
+  },
+  "commands.fileCopyCurrentDirectoryPath.label": "Скопировать путь текущей папки",
+  "@commands.fileCopyCurrentDirectoryPath.label": {
+    "sourceHash": "5ec6586"
+  },
+  "commands.fileCopyFilename.label": "Скопировать имя файла",
+  "@commands.fileCopyFilename.label": {
+    "sourceHash": "5cdf7f8"
+  },
+  "commands.fileGetInfo.mac.label": "Свойства",
+  "@commands.fileGetInfo.mac.label": {
+    "sourceHash": "91c64ca"
+  },
+  "commands.fileGetInfo.other.label": "Свойства файла",
+  "@commands.fileGetInfo.other.label": {
+    "sourceHash": "5d9ebf2"
+  },
+  "commands.fileQuickLook.mac.label": "Быстрый просмотр",
+  "@commands.fileQuickLook.mac.label": {
+    "sourceHash": "f5616ce"
+  },
+  "commands.fileQuickLook.other.label": "Предпросмотр",
+  "@commands.fileQuickLook.other.label": {
+    "sourceHash": "324b134"
+  },
+  "commands.fileContextMenu.label": "Открыть контекстное меню",
+  "@commands.fileContextMenu.label": {
+    "sourceHash": "c07efaf"
+  },
+  "commands.fileContextMenu.description": "Открыть контекстное меню файла под курсором",
+  "@commands.fileContextMenu.description": {
+    "sourceHash": "8fb1721"
+  },
+  "commands.cloudMakeOffline.label": "Сделать доступным офлайн",
+  "@commands.cloudMakeOffline.label": {
+    "sourceHash": "b75c09f"
+  },
+  "commands.cloudMakeOffline.description": "Скачать файл из облака, чтобы он был доступен без подключения к интернету",
+  "@commands.cloudMakeOffline.description": {
+    "sourceHash": "d5cd793"
+  },
+  "commands.cloudRemoveDownload.label": "Удалить загрузку",
+  "@commands.cloudRemoveDownload.label": {
+    "sourceHash": "5dfc369"
+  },
+  "commands.cloudRemoveDownload.description": "Удалить локальную копию облачного файла, оставив доступ только онлайн",
+  "@commands.cloudRemoveDownload.description": {
+    "sourceHash": "470afd2"
+  },
+  "commands.cloudOpenInGoogleDrive.label": "Открыть в Google Drive",
+  "@commands.cloudOpenInGoogleDrive.label": {
+    "sourceHash": "98c7516"
+  },
+  "commands.cloudOpenInGoogleDrive.description": "Открыть выделенный объект на сайте Google Drive, где настраивается общий доступ",
+  "@commands.cloudOpenInGoogleDrive.description": {
+    "sourceHash": "0328e04"
+  },
+  "commands.cloudCopyGoogleDriveLink.label": "Скопировать ссылку Google Drive",
+  "@commands.cloudCopyGoogleDriveLink.label": {
+    "sourceHash": "070b383"
+  },
+  "commands.cloudCopyGoogleDriveLink.description": "Скопировать веб-адрес выделенного объекта, чтобы вставить его в сообщение",
+  "@commands.cloudCopyGoogleDriveLink.description": {
+    "sourceHash": "920f0d4"
+  },
+  "commands.cloudAskGemini.label": "Спросить Gemini",
+  "@commands.cloudAskGemini.label": {
+    "sourceHash": "7eec77f"
+  },
+  "commands.cloudAskGemini.description": "Открыть помощника Gemini в Google Drive для выделенного файла",
+  "@commands.cloudAskGemini.description": {
+    "sourceHash": "37d4e7c"
+  },
+  "commands.fileCopyShareLink.label": "Скопировать публичную ссылку (семь дней)",
+  "@commands.fileCopyShareLink.label": {
+    "sourceHash": "314bee8"
+  },
+  "commands.fileCopyShareLink.description": "Скопировать ссылку, по которой кто угодно сможет открыть и скачать файл в течение семи дней",
+  "@commands.fileCopyShareLink.description": {
+    "sourceHash": "99e912e"
+  },
+  "commands.fileCopyShareLinkOneDay.label": "Скопировать публичную ссылку (один день)",
+  "@commands.fileCopyShareLinkOneDay.label": {
+    "sourceHash": "468010c"
+  },
+  "commands.fileCopyShareLinkOneDay.description": "Скопировать ссылку, по которой кто угодно сможет открыть и скачать файл в течение одного дня",
+  "@commands.fileCopyShareLinkOneDay.description": {
+    "sourceHash": "c2a30be"
+  },
+  "commands.fileCopyShareLinkOneHour.label": "Скопировать публичную ссылку (один час)",
+  "@commands.fileCopyShareLinkOneHour.label": {
+    "sourceHash": "ffea990"
+  },
+  "commands.fileCopyShareLinkOneHour.description": "Скопировать ссылку, по которой кто угодно сможет открыть и скачать файл в течение одного часа",
+  "@commands.fileCopyShareLinkOneHour.description": {
+    "sourceHash": "c334535"
+  },
+  "commands.tagsToggleGrey.label": "Переключить серый тег",
+  "@commands.tagsToggleGrey.label": {
+    "sourceHash": "1309c09"
+  },
+  "commands.tagsToggleGrey.description": "Добавить или удалить серый тег Finder у выделенных файлов",
+  "@commands.tagsToggleGrey.description": {
+    "sourceHash": "ca38860"
+  },
+  "commands.tagsToggleGreen.label": "Переключить зеленый тег",
+  "@commands.tagsToggleGreen.label": {
+    "sourceHash": "397b880"
+  },
+  "commands.tagsToggleGreen.description": "Добавить или удалить зеленый тег Finder у выделенных файлов",
+  "@commands.tagsToggleGreen.description": {
+    "sourceHash": "fa8396b"
+  },
+  "commands.tagsTogglePurple.label": "Переключить фиолетовый тег",
+  "@commands.tagsTogglePurple.label": {
+    "sourceHash": "ee137d2"
+  },
+  "commands.tagsTogglePurple.description": "Добавить или удалить фиолетовый тег Finder у выделенных файлов",
+  "@commands.tagsTogglePurple.description": {
+    "sourceHash": "c6872a8"
+  },
+  "commands.tagsToggleBlue.label": "Переключить синий тег",
+  "@commands.tagsToggleBlue.label": {
+    "sourceHash": "11ba925"
+  },
+  "commands.tagsToggleBlue.description": "Добавить или удалить синий тег Finder у выделенных файлов",
+  "@commands.tagsToggleBlue.description": {
+    "sourceHash": "7a21c5f"
+  },
+  "commands.tagsToggleYellow.label": "Переключить желтый тег",
+  "@commands.tagsToggleYellow.label": {
+    "sourceHash": "2afc261"
+  },
+  "commands.tagsToggleYellow.description": "Добавить или удалить желтый тег Finder у выделенных файлов",
+  "@commands.tagsToggleYellow.description": {
+    "sourceHash": "16a2608"
+  },
+  "commands.tagsToggleRed.label": "Переключить красный тег",
+  "@commands.tagsToggleRed.label": {
+    "sourceHash": "f2d314d"
+  },
+  "commands.tagsToggleRed.description": "Добавить или удалить красный тег Finder у выделенных файлов",
+  "@commands.tagsToggleRed.description": {
+    "sourceHash": "c6e0bee"
+  },
+  "commands.tagsToggleOrange.label": "Переключить оранжевый тег",
+  "@commands.tagsToggleOrange.label": {
+    "sourceHash": "d0c0702"
+  },
+  "commands.tagsToggleOrange.description": "Добавить или удалить оранжевый тег Finder у выделенных файлов",
+  "@commands.tagsToggleOrange.description": {
+    "sourceHash": "79e5c97"
+  },
+  "commands.selectionToggle.label": "Выделить или снять выделение",
+  "@commands.selectionToggle.label": {
+    "sourceHash": "6cb5515"
+  },
+  "commands.selectionToggleAndDown.label": "Выделить или снять выделение и перейти вниз",
+  "@commands.selectionToggleAndDown.label": {
+    "sourceHash": "72ccb36"
+  },
+  "commands.selectionToggleAndDown.description": "Выделить файл под курсором или снять с него выделение, затем перейти вниз (как в Total Commander)",
+  "@commands.selectionToggleAndDown.description": {
+    "sourceHash": "378bb7a"
+  },
+  "commands.selectionSelectAll.label": "Выделить все",
+  "@commands.selectionSelectAll.label": {
+    "sourceHash": "1fc9a38"
+  },
+  "commands.selectionDeselectAll.label": "Снять выделение со всех",
+  "@commands.selectionDeselectAll.label": {
+    "sourceHash": "9675494"
+  },
+  "commands.selectionInvert.label": "Инвертировать выделение",
+  "@commands.selectionInvert.label": {
+    "sourceHash": "d2e128a"
+  },
+  "commands.selectionInvert.description": "Выделить все невыделенные файлы и снять выделение с выделенных",
+  "@commands.selectionInvert.description": {
+    "sourceHash": "b63ce32"
+  },
+  "commands.selectionSelectSameKind.label": "Выделить все того же типа",
+  "@commands.selectionSelectSameKind.label": {
+    "sourceHash": "9933028"
+  },
+  "commands.selectionSelectSameKind.description": "Добавить к выделению все объекты того же типа, что и объект под курсором, не снимая текущее выделение",
+  "@commands.selectionSelectSameKind.description": {
+    "sourceHash": "9a95212"
+  },
+  "commands.selectionCompareDirectories.label": "Сравнить папки",
+  "@commands.selectionCompareDirectories.label": {
+    "sourceHash": "5cf3985"
+  },
+  "commands.selectionCompareDirectories.description": "Выделить в каждой панели файлы, которых нет в другой панели, и более новые копии остальных",
+  "@commands.selectionCompareDirectories.description": {
+    "sourceHash": "190d99f"
+  },
+  "commands.selectionCompareDirectoriesMissing.label": "Сравнить папки: только отсутствующие файлы",
+  "@commands.selectionCompareDirectoriesMissing.label": {
+    "sourceHash": "d03d3c1"
+  },
+  "commands.selectionCompareDirectoriesMissing.description": "Выделить в каждой панели только файлы, которых нет в другой панели",
+  "@commands.selectionCompareDirectoriesMissing.description": {
+    "sourceHash": "e61c71b"
+  },
+  "commands.selectionCompareDirectoriesSize.label": "Сравнить папки: разный размер",
+  "@commands.selectionCompareDirectoriesSize.label": {
+    "sourceHash": "6c8fd21"
+  },
+  "commands.selectionCompareDirectoriesSize.description": "Выделить в каждой панели файлы, которых нет в другой панели, и обе копии файлов разного размера",
+  "@commands.selectionCompareDirectoriesSize.description": {
+    "sourceHash": "ac31996"
+  },
+  "commands.selectionSelectSameKind.allFolders": "Выделить все папки",
+  "@commands.selectionSelectSameKind.allFolders": {
+    "sourceHash": "5351f8b"
+  },
+  "commands.selectionSelectSameKind.sameExtension": "Выделить все с расширением *.{extension}",
+  "@commands.selectionSelectSameKind.sameExtension": {
+    "sourceHash": "7809a58"
+  },
+  "commands.selectionSelectSameKind.noExtension": "Выделить все файлы без расширения",
+  "@commands.selectionSelectSameKind.noExtension": {
+    "sourceHash": "d04751e"
+  },
+  "commands.selectionSelectFiles.label": "Выделить файлы…",
+  "@commands.selectionSelectFiles.label": {
+    "sourceHash": "b7f202e"
+  },
+  "commands.selectionSelectFiles.description": "Открыть диалог «Выделить файлы», чтобы добавить подходящие файлы к выделению",
+  "@commands.selectionSelectFiles.description": {
+    "sourceHash": "7695f3e"
+  },
+  "commands.selectionDeselectFiles.label": "Снять выделение с файлов…",
+  "@commands.selectionDeselectFiles.label": {
+    "sourceHash": "6fb10d5"
+  },
+  "commands.selectionDeselectFiles.description": "Открыть диалог «Снять выделение с файлов», чтобы исключить подходящие файлы из выделения",
+  "@commands.selectionDeselectFiles.description": {
+    "sourceHash": "2a6f82f"
+  },
+  "commands.selectionMcpSelect.label": "Выделить диапазон в панели",
+  "@commands.selectionMcpSelect.label": {
+    "sourceHash": "d8bb646"
+  },
+  "commands.selectionMcpSelectByNames.label": "Выделить файлы по имени в панели",
+  "@commands.selectionMcpSelectByNames.label": {
+    "sourceHash": "8cfc75d"
+  },
+  "commands.networkSelectHost.label": "Выбрать сетевой хост",
+  "@commands.networkSelectHost.label": {
+    "sourceHash": "4a9ede5"
+  },
+  "commands.serversShow.label": "Показать серверы",
+  "@commands.serversShow.label": {
+    "sourceHash": "092283a"
+  },
+  "commands.serversTogglePin.label": "Закрепить или открепить сервер",
+  "@commands.serversTogglePin.label": {
+    "sourceHash": "7d800c8"
+  },
+  "commands.serversDisconnect.label": "Отключиться от сервера",
+  "@commands.serversDisconnect.label": {
+    "sourceHash": "8656022"
+  },
+  "commands.serversForgetSecret.label": "Забыть сохраненный пароль",
+  "@commands.serversForgetSecret.label": {
+    "sourceHash": "ed68566"
+  },
+  "commands.serversEdit.label": "Изменить сервер…",
+  "@commands.serversEdit.label": {
+    "sourceHash": "a3282a7"
+  },
+  "commands.serversConnect.label": "Подключение к серверу…",
+  "@commands.serversConnect.label": {
+    "sourceHash": "6188f47"
+  },
+  "commands.networkRefresh.label": "Обновить сетевые хосты",
+  "@commands.networkRefresh.label": {
+    "sourceHash": "73966bd"
+  },
+  "commands.shareBack.label": "Назад к списку хостов",
+  "@commands.shareBack.label": {
+    "sourceHash": "42c44d5"
+  },
+  "commands.shareSelectShare.label": "Подключиться к общей папке",
+  "@commands.shareSelectShare.label": {
+    "sourceHash": "6c48c8c"
+  },
+  "commands.volumeSelect.label": "Выбрать том",
+  "@commands.volumeSelect.label": {
+    "sourceHash": "60f5ce1"
+  },
+  "commands.volumeClose.label": "Закрыть переключатель томов",
+  "@commands.volumeClose.label": {
+    "sourceHash": "075481e"
+  },
+  "commands.volumeSelectByName.label": "Выбрать том панели по имени",
+  "@commands.volumeSelectByName.label": {
+    "sourceHash": "9f16865"
+  },
+  "commands.aboutOpenWebsite.label": "Открыть сайт",
+  "@commands.aboutOpenWebsite.label": {
+    "sourceHash": "3451735"
+  },
+  "commands.aboutOpenUpgrade.label": "Открыть страницу обновления лицензии",
+  "@commands.aboutOpenUpgrade.label": {
+    "sourceHash": "9df3bf0"
+  },
+  "commands.aboutClose.label": "Закрыть окно «О приложении»",
+  "@commands.aboutClose.label": {
+    "sourceHash": "d0096c3"
+  },
+  "commands.paletteUp.label": "Предыдущий результат",
+  "@commands.paletteUp.label": {
+    "sourceHash": "965bc32"
+  },
+  "commands.paletteDown.label": "Следующий результат",
+  "@commands.paletteDown.label": {
+    "sourceHash": "bf56a19"
+  },
+  "commands.paletteExecute.label": "Выполнить команду",
+  "@commands.paletteExecute.label": {
+    "sourceHash": "20f9b97"
+  },
+  "commands.paletteClose.label": "Закрыть палитру",
+  "@commands.paletteClose.label": {
+    "sourceHash": "2e75050"
+  },
+  "commands.handler.favoriteAdded": "Добавлено в избранное: «{name}»",
+  "@commands.handler.favoriteAdded": {
+    "sourceHash": "ee59953"
+  },
+  "commands.handler.favoriteAddFailed": "Не удалось добавить папку в избранное. Попробуйте еще раз.",
+  "@commands.handler.favoriteAddFailed": {
+    "sourceHash": "0792537"
+  },
+  "commands.handler.tabLimitReached": "Достигнут предел вкладок",
+  "@commands.handler.tabLimitReached": {
+    "sourceHash": "2d4205a"
+  },
+  "commands.handler.noRecentlyClosedTabs": "В этой панели нет недавно закрытых вкладок.",
+  "@commands.handler.noRecentlyClosedTabs": {
+    "sourceHash": "e560789"
+  },
+  "commands.handler.cloudDownloadFailed": "Не удалось скачать из облака. {detail}",
+  "@commands.handler.cloudDownloadFailed": {
+    "sourceHash": "9efe237"
+  },
+  "commands.handler.cloudRemoveDownloadFailed": "Не удалось удалить загрузку. {detail}",
+  "@commands.handler.cloudRemoveDownloadFailed": {
+    "sourceHash": "11189fb"
+  },
+  "commands.handler.googleDriveLinkMissing": "У этого объекта нет ссылки Google Drive.",
+  "@commands.handler.googleDriveLinkMissing": {
+    "sourceHash": "7be9109"
+  },
+  "commands.handler.googleDriveOpenFailed": "Не удалось открыть в Google Drive. {detail}",
+  "@commands.handler.googleDriveOpenFailed": {
+    "sourceHash": "e7fd439"
+  },
+  "commands.handler.googleDriveLinkCopied": "Ссылка Google Drive скопирована.",
+  "@commands.handler.googleDriveLinkCopied": {
+    "sourceHash": "0997eb8"
+  },
+  "commands.handler.googleDriveCopyFailed": "Не удалось скопировать ссылку Google Drive. {detail}",
+  "@commands.handler.googleDriveCopyFailed": {
+    "sourceHash": "0af1fd3"
+  },
+  "commands.handler.shareLinkCopied.sevenDays": "Публичная ссылка скопирована. Она действует семь дней.",
+  "@commands.handler.shareLinkCopied.sevenDays": {
+    "sourceHash": "6f4055b"
+  },
+  "commands.handler.shareLinkCopied.oneDay": "Публичная ссылка скопирована. Она действует один день.",
+  "@commands.handler.shareLinkCopied.oneDay": {
+    "sourceHash": "ca08c52"
+  },
+  "commands.handler.shareLinkCopied.oneHour": "Публичная ссылка скопирована. Она действует один час.",
+  "@commands.handler.shareLinkCopied.oneHour": {
+    "sourceHash": "8b9f0cc"
+  },
+  "commands.handler.shareLinkUnavailable": "Переместите курсор на файл в бакете S3, чтобы скопировать публичную ссылку.",
+  "@commands.handler.shareLinkUnavailable": {
+    "sourceHash": "c4ea112"
+  },
+  "commands.handler.shareLinkFailed": "Не удалось создать публичную ссылку. {detail}",
+  "@commands.handler.shareLinkFailed": {
+    "sourceHash": "5ff44b7"
+  },
+  "commands.handler.openTerminalHere.hint": "Папка открыта в вашем терминале. Хотите, чтобы Cmdr в следующий раз открывал другое приложение? Выберите его в настройках, в разделе «Навигация и файловые операции».",
+  "@commands.handler.openTerminalHere.hint": {
+    "sourceHash": "b29b744"
+  },
+  "commands.handler.openTerminalHere.dismiss": "Закрыть",
+  "@commands.handler.openTerminalHere.dismiss": {
+    "sourceHash": "48845bf"
+  },
+  "commands.handler.openTerminalHere.openSettings": "Открыть настройки",
+  "@commands.handler.openTerminalHere.openSettings": {
+    "sourceHash": "ca381c1"
+  },
+  "commands.handler.openTerminalHere.appMissing": "Приложение {app} больше не установлено, поэтому папка открылась в Терминале.",
+  "@commands.handler.openTerminalHere.appMissing": {
+    "sourceHash": "770ded9"
+  },
+  "commands.handler.openTerminalHere.appMissingUnnamed": "Ваше приложение терминала больше не установлено, поэтому папка открылась в Терминале.",
+  "@commands.handler.openTerminalHere.appMissingUnnamed": {
+    "sourceHash": "8e40ade"
+  },
+  "commands.handler.openTerminalHere.noPath": "У этой папки нет пути, который можно открыть в терминале.",
+  "@commands.handler.openTerminalHere.noPath": {
+    "sourceHash": "7851182"
+  },
+  "commands.handler.openTerminalHere.launchRefused": "Cmdr не удалось запустить ваше приложение терминала. Откройте его один раз вручную, а потом вернитесь.",
+  "@commands.handler.openTerminalHere.launchRefused": {
+    "sourceHash": "dd7296e"
+  },
+  "commands.handler.openTerminalHere.timedOut": "Ваше приложение терминала долго запускается. Возможно, оно еще откроется.",
+  "@commands.handler.openTerminalHere.timedOut": {
+    "sourceHash": "ed36313"
+  },
+  "commands.handler.getInfo.automationOff": "Чтобы открыть окно «Свойства», Cmdr нужно управлять Finder, а это выключено. Включите Finder под Cmdr в разделе «Системные настройки > Конфиденциальность и безопасность > Автоматизация».",
+  "@commands.handler.getInfo.automationOff": {
+    "sourceHash": "7e831ef"
+  },
+  "commands.handler.getInfo.openAutomationSettings": "Открыть настройки «Автоматизация»",
+  "@commands.handler.getInfo.openAutomationSettings": {
+    "sourceHash": "f04940d"
+  },
+  "commands.handler.getInfo.notReached": "Cmdr не удалось связаться с Finder, чтобы открыть окно «Свойства». Попробуйте еще раз.",
+  "@commands.handler.getInfo.notReached": {
+    "sourceHash": "9cbc272"
+  },
+  "commands.handler.zoomResetHintShortcut": "Вернуть масштаб 100 % можно сочетанием {shortcut}.",
+  "@commands.handler.zoomResetHintShortcut": {
+    "sourceHash": "efdd715"
+  },
+  "commands.handler.zoomResetHintMenu": "Вернуть масштаб 100 % можно в меню «Вид» > «Масштаб» > «100 %».",
+  "@commands.handler.zoomResetHintMenu": {
+    "sourceHash": "f10315d"
+  },
+  "commands.handler.zoomReset": "Масштаб возвращен к 100 %.",
+  "@commands.handler.zoomReset": {
+    "sourceHash": "8c6bf82"
+  },
+  "commands.handler.zoomIncreased": "Масштаб увеличен до {size} %. {hint}",
+  "@commands.handler.zoomIncreased": {
+    "sourceHash": "39fea10"
+  },
+  "commands.handler.zoomDecreased": "Масштаб уменьшен до {size} %. {hint}",
+  "@commands.handler.zoomDecreased": {
+    "sourceHash": "71404cb"
+  },
+  "commands.suggestedOpsShow.label": "Предложенные операции",
+  "@commands.suggestedOpsShow.label": {
+    "sourceHash": "4f24ca6"
+  },
+  "commands.suggestedOpsShow.description": "Просмотреть предложенные ИИ файловые операции и решить, какие выполнить",
+  "@commands.suggestedOpsShow.description": {
+    "sourceHash": "7efe8c9"
+  },
+  "commands.helpViewDebugLog.label": "Просмотреть журнал отладки",
+  "@commands.helpViewDebugLog.label": {
+    "sourceHash": "007c98d"
+  },
+  "commands.helpViewDebugLog.description": "Следить в реальном времени за журналом отладки Cmdr в окне просмотра",
+  "@commands.helpViewDebugLog.description": {
+    "sourceHash": "a937e6e"
+  },
+  "commands.handler.viewDebugLog.disabled": "Хранение журналов выключено. Задайте ограничение места для журналов больше 0 в разделе «Настройки > Дополнения» и перезапустите Cmdr, чтобы просмотреть журнал отладки.",
+  "@commands.handler.viewDebugLog.disabled": {
+    "sourceHash": "96f16fc"
+  },
+  "commands.handler.viewDebugLog.unavailable": "Не удалось открыть журнал отладки. Попробуйте еще раз.",
+  "@commands.handler.viewDebugLog.unavailable": {
+    "sourceHash": "794a5b3"
+  }
+}

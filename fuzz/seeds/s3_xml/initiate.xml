@@ -1,0 +1,1 @@
+<InitiateMultipartUploadResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/"><Bucket>b</Bucket><Key>k</Key><UploadId>id-1</UploadId></InitiateMultipartUploadResult>

@@ -325,6 +325,10 @@ impl VolumeReadStream for NeverAnsweringStream {
     fn bytes_read(&self) -> u64 {
         0
     }
+
+    fn modified_at(&self) -> Option<std::time::SystemTime> {
+        None
+    }
 }
 
 impl Volume for HungSource {

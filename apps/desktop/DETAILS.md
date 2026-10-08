@@ -163,6 +163,10 @@ Data dirs are separate for prod, dev, and each worktree:
 `tauri-wrapper.ts` exports `CMDR_DATA_DIR` to the same path it gives Tauri's `app_data_dir()`, so direct file I/O (crash
 reports, logs, file-backed secret store) agrees without round-tripping through Tauri's API.
 
+The drive index lives apart, in the cache dir's `drive-index/` (out of Time Machine): `~/Library/Caches/<identifier>/`
+for each of the three above, through `CMDR_CACHE_DIR`. A run that sets only `CMDR_DATA_DIR` (E2E) keeps it in
+`<CMDR_DATA_DIR>/cache/drive-index/`. Resolution: `src-tauri/src/config.rs` `drive_index_dir`.
+
 - **Logging**: frontend and backend logs land together in the terminal and the log dir (dev: `<CMDR_DATA_DIR>/logs/`,
   prod: `~/Library/Logs/com.veszelovszki.cmdr/`). Read `docs/tooling/logging.md` before using `RUST_LOG`: it has
   per-subsystem recipes. Key gotcha: the Rust library target is `cmdr_lib`, not `cmdr`, so use
@@ -242,10 +246,15 @@ The repo-wide worktree workflow is in `AGENTS.md` § Workflow. Desktop-specific 
   — a self-contained copy, so the worktree also works bind-mounted into the Linux-E2E Docker container), else downloads.
   So raw `cargo check` works in a fresh worktree.
 
-When FF-ing `main`, tear the worktree down with `~/.claude/scripts/remove-worktree.sh <slug>`, which takes the three
-pieces together: the worktree directory, the `worktree-<slug>` branch, and the dev state that lives OUTSIDE the repo as
+When FF-ing `main`, tear the worktree down with `~/.claude/scripts/remove-worktree.sh <slug>`, which takes the pieces
+together: the worktree directory, the `worktree-<slug>` branch, the dev state that lives OUTSIDE the repo as
 `~/Library/{Application Support,Preferences,Caches}/com.veszelovszki.cmdr-dev-<slug>` (the data dir is often ~1 GB once
-its drive index builds). Git never sees that third piece, and nothing else collects it, so by-hand teardowns pile it up.
+its drive index builds), and the Docker cache volumes labelled with the worktree's path. Git never sees the last two,
+and nothing else collects them, so by-hand teardowns pile them up.
+
+Both `new-worktree.sh` and `remove-worktree.sh` run this repo's worktree hooks (`scripts/worktree-hooks/CLAUDE.md`):
+creation seeds the worktree's Linux build volume from the main clone's, and a merged worktree's teardown hands its
+volume back to the main clone before the label sweep reaps it.
 
 Doing the three by hand also has a trap: `git worktree remove` unregisters the worktree BEFORE deleting its directory,
 and the delete can still fail with "Directory not empty" (a cloned `target/` is enough). That leaves the worst state —

@@ -127,6 +127,26 @@
   "@suggestedOps.approvalUnsure": {
     "description": "Notice at the top of the Suggested ops dialog when an approval stopped answering partway, so whether its files started moving is unknown. \"Operation queue\" names the queue window by its title (queue.windowTitle); keep the two matching. The point is to stop the person running the same files twice."
   },
+  "suggestedOps.refusal.label": "Why this didn’t start",
+  "@suggestedOps.refusal.label": {
+    "description": "Small label above the reason shown under a suggestion group whose approval didn't start. The group is back on the list as waiting, nothing ran, and the person can approve or reject it again. The reason itself sits below this label."
+  },
+  "suggestedOps.refusal.nothingToRun.message": "Cmdr couldn’t read any of these files when you approved, so nothing ran.",
+  "@suggestedOps.refusal.nothingToRun.message": {
+    "description": "Reason shown under a suggestion group whose approval didn't start because every file it names was gone or unreadable at that moment. The group is back on the list, waiting for an answer. Followed by suggestedOps.refusal.nothingToRun.suggestion."
+  },
+  "suggestedOps.refusal.nothingToRun.suggestion": "Check that they’re still there, then approve it again, or reject it.",
+  "@suggestedOps.refusal.nothingToRun.suggestion": {
+    "description": "What to do next, under suggestedOps.refusal.nothingToRun.message. \"It\" is the suggestion group; Approve and Reject are the buttons on it."
+  },
+  "suggestedOps.refusal.couldNotStart.message": "Cmdr couldn’t turn this suggestion into an operation, so nothing ran.",
+  "@suggestedOps.refusal.couldNotStart.message": {
+    "description": "Reason shown under a suggestion group whose approval didn't start because the stored suggestion itself was incomplete (rare, an internal inconsistency). The group is back on the list, waiting for an answer. Followed by suggestedOps.refusal.couldNotStart.suggestion."
+  },
+  "suggestedOps.refusal.couldNotStart.suggestion": "Reject it, and ask the AI to suggest it again.",
+  "@suggestedOps.refusal.couldNotStart.suggestion": {
+    "description": "What to do next, under suggestedOps.refusal.couldNotStart.message. \"It\" is the suggestion group; Reject is the button on it, and \"the AI\" is Ask Cmdr, as elsewhere in this dialog."
+  },
   "suggestedOps.indicatorTooltip": "AI suggestions are waiting. Click to review them.",
   "@suggestedOps.indicatorTooltip": {
     "description": "Tooltip and accessible name for the status-corner indicator that opens the Suggested ops dialog. The number itself is in the badge beside it, so the sentence doesn't repeat it."

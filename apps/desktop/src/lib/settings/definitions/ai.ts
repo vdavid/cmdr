@@ -120,7 +120,7 @@ export const aiSettings: SettingDefinitionSource[] = [
   {
     // Ask Cmdr's plain on/off. It grants no data flow: on Cloud, "Allow cloud AI" still
     // gates every call. The backend reads it fresh from `settings.json` per send
-    // (`settings::load_ask_cmdr_enabled`, absent = off), and the wake loop's cached
+    // (`settings::load_ask_cmdr_switch`, absent = off), and the wake loop's cached
     // readiness hears about a change through `askCmdrEnabledChanged()` (settings-applier).
     // Existing installs get it set once at startup from the legacy opt-in
     // (`lib/ask-cmdr/ask-cmdr-enabled-mapping.ts`); new ones from the onboarding pick.

@@ -17,6 +17,7 @@ import { createRecentItemsState } from '$lib/query-ui/recent-items/recent-items-
 // the getter/setter surface. The named helpers below stay around because the rest of
 // `lib/search/` still imports them through the named-export API.
 export const recentSearchesStore = createRecentItemsState<HistoryEntry>({
+  logCategory: 'search',
   getRecent: () => getRecentSearches(),
 })
 const store = recentSearchesStore

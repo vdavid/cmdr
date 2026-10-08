@@ -338,7 +338,7 @@ describe('GET /download/latest/:arch', () => {
   /** Stub `fetch` so each release source either answers or fails, per test. */
   function stubReleaseSources(options: { latestJson?: ReleaseSource; githubApi?: ReleaseSource }) {
     const fetchMock = vi.fn((input: RequestInfo | URL) => {
-      const source = requestUrl(input).includes('api.github.com') ? options.githubApi : options.latestJson
+      const source = new URL(requestUrl(input)).hostname === 'api.github.com' ? options.githubApi : options.latestJson
       if (source === undefined) return Promise.resolve(new Response(null, { status: 404 }))
       if (source === 'fail') return Promise.reject(new Error('network down'))
       return Promise.resolve(new Response(JSON.stringify(source), { status: 200 }))

@@ -17,7 +17,7 @@ recipe for adding one is § "Adding a new check". Only the layout rules live her
 - **An allowlist is a sibling JSON named `<check>-allowlist.json`**, and it's NEVER hand-edited: the owning check
   shrink-wraps it on local runs, so you run the check and commit its rewrite (`.claude/rules/file-length-allowlist.md`).
   The shared staleness policy, and why it lives inside each check rather than a meta-check, is § "Allowlist
-  shrink-wrap". Eleven exist today; `a11y-coverage-allowlist.json` and `ui-primitive-coverage-allowlist.json` are the
+  shrink-wrap". Twelve exist today; `a11y-coverage-allowlist.json` and `ui-primitive-coverage-allowlist.json` are the
   two with no § of their own (both are exempt-with-reason lists whose checks FAIL on a dead or redundant entry rather
   than auto-removing it). `macos-availability-selectors.json` is a sibling JSON that isn't an allowlist: it's the SDK's
   own answer, cached so the Linux CI lanes can enforce it (§ "macOS availability"). Neither is
@@ -583,11 +583,11 @@ the same rule and point here.
 
 **The form is a bare trailing group**: `- Some change (b626d7a4, 2d41cc14)`. The changelog stores hashes, never markdown
 links, and each renderer linkifies (website) or strips (What's new popup) on the way out. The third consumer, the GitHub
-release body that `release.yml` seds out of the section, leans on GitHub's own autolinking of a bare same-repo SHA
-(documented behavior, not yet observed on a real Cmdr release: confirm on the first release after 2026-08-03). Dropping
-the URLs cut the file by ~43% (206 KB to 117 KB); it was ~40% URL boilerplate, which every agent reading the file paid
-for and which wrapped entries across three or four lines. The check **fails on any `…/commit/<sha>` URL** so the linked
-form can't creep back.
+release body that `release-pipeline.yml` seds out of the section, leans on GitHub's own autolinking of a bare same-repo
+SHA (documented behavior, not yet observed on a real Cmdr release: confirm on the first release after 2026-08-03).
+Dropping the URLs cut the file by ~43% (206 KB to 117 KB); it was ~40% URL boilerplate, which every agent reading the
+file paid for and which wrapped entries across three or four lines. The check **fails on any `…/commit/<sha>` URL** so
+the linked form can't creep back.
 
 **Recognition is structural, not positional-guess:** rebuild each bullet entry from its wrapped source lines, then
 require that the entry ENDS with a parenthetical whose every comma-separated item is 6-40 lowercase hex chars. Anchoring
@@ -874,6 +874,43 @@ run `pnpm check bundle-size` against a fresh build. A missing baseline is create
 warning in CI. The same exemption covers `desktop-bundle-size`; the reasoning is in
 `.claude/rules/file-length-allowlist.md`.
 
+## Website CSP connect-src
+
+`website-csp-connect-src` (`IsFast`, no build) reads the one `Content-Security-Policy` in
+`apps/website/nginx-security-headers.conf` and walks `apps/website/src` and `public` (minus the dev-only `src/dev/` and
+the build-time-only `src/build/`) for `fetch`, `sendBeacon`, `EventSource`, and `WebSocket` calls. Each target resolves
+to an origin from a literal URL, or from a template or identifier naming a same-file `const X = 'https://…'`; a target
+it can't resolve fails the check, so every call site stays readable to it. Every origin must pass `connect-src`
+(`'self'`, exact origins, and `https://*.host` wildcards). **Why**: the browser blocks a disallowed request before it
+leaves the page, the caller sees a generic network failure, and dev serves no CSP, so the blog's like button and the
+`?r=` lookup were both dead in production for months with nothing failing anywhere. Violations it can't see (third-party
+scripts) reach Discord through `/csp-report` (`apps/api-server/src/website/DETAILS.md` § CSP reports).
+
+## IPC dead code
+
+`desktop-ipc-unused` (`IsFast`, an error) fails on an exported wrapper in `apps/desktop/src/lib/tauri-commands/*.ts`
+with no production caller outside that folder, and on a `commands.*` entry in `lib/ipc/bindings.ts` with no live caller.
+The rule and what counts as a caller live in `apps/desktop/src/lib/tauri-commands/DETAILS.md` § "Unused wrappers and
+commands"; this is how the scan reads it.
+
+- **Token scanning, no parser.** Production files are tracked `.ts` / `.svelte` / `.js` under `apps/desktop/src`, minus
+  `*.test.*`, `*.spec.*`, and `test-*`. Full-line comments (`//`, `*`, `/*`, `<!--`) are dropped first; trailing ones
+  stay, because stripping them safely needs a tokenizer (`'https://…'`, `'**/*.ts'`).
+- **Wrappers** are `export function` / `export const` at column 0 of a sub-file (`index.ts` excluded). A wrapper is used
+  when a production file outside the folder names it in an import clause whose module path ends in `tauri-commands` (or
+  a sub-file of it), or a sibling sub-file imports it from `./x`.
+- **Commands** are the 2-space-indented keys of `export const commands = {`, each paired with the first string its
+  `__TAURI_INVOKE` call passes. A wrapper file is cut into top-level declarations; `commands.<key>` and raw invokes
+  count only inside a LIVE one (a used or allowlisted export, or any non-exported helper). Raw `invoke('snake')` in
+  production code and in `apps/desktop/test/e2e-*` counts too.
+- **The allowlist** has `wrappers` (by name) and `commands` (by snake_case name), each value a mandatory reason; a blank
+  reason fails. Shrink-wrap drops an entry whose wrapper or command is gone or now has a caller; CI only warns. Adding
+  one needs David's OK (`.claude/rules/file-length-allowlist.md`).
+- **Events are out of scope**: an `events.*` entry nothing listens to has no `commands` entry, so only its `on…`
+  wrapper, if one exists, is checked.
+- **Verified** against the tree before the audit's deletion (`128e9f10b^`, 2026-10-03): it named every command and
+  wrapper the audit deleted or kept (46 and 34), nothing else, and it passes after it.
+
 ## Allowlist shrink-wrap
 
 Checks that own an allowlist verify their own entries are still needed; the helpers live in `allowlist.go` and
@@ -1032,11 +1069,12 @@ Who stays out, and why it's not an oversight:
   is compiled by the test lane and linted by nothing.
   `cargo clippy --workspace --all-targets --features cmdr/virtual-mtp` passes clean today, so closing that is available
   whenever someone wants it.)
-- **`desktop-rust-tests-linux`** builds in its container's own `CARGO_TARGET_DIR`, and deliberately omits the feature:
-  that lane is already tight against the 8 s per-test cap on a slower VM, and MTP's virtual-device coverage doesn't
-  differ by platform.
-- **`desktop-rust-rustdoc`** owns a private target dir. **`desktop-rust-cargo-udeps`** runs on the pinned nightly, whose
-  artifacts can't be shared with stable anyway.
+- **`desktop-rust-tests-linux`** builds on its per-worktree Docker volume, and deliberately omits the feature: that lane
+  is already tight against the 8 s per-test cap on a slower VM, and MTP's virtual-device coverage doesn't differ by
+  platform.
+- **`desktop-rust-rustdoc`** and **`desktop-rust-clippy-mimalloc`** own private target dirs (the latter because its
+  `cmdr-fs` feature flip would rebuild every workspace crate above it twice per run). **`desktop-rust-cargo-udeps`**
+  runs on the pinned nightly, whose artifacts can't be shared with stable anyway.
 
 ### Why the feature set is `virtual-mtp`
 
@@ -1229,9 +1267,9 @@ belongs to nobody's branch either.)
 ### The Docker lane re-runs inside its own container
 
 `desktop-rust-tests-linux` starts its container **detached** (PID 1 is a bounded `sleep`) and execs each phase into it:
-provision, test run, then any contention re-run. That's the whole reason for the detached shape. A re-run in a fresh
-`docker run` would re-provision and recompile the workspace from a cold `CARGO_TARGET_DIR`, costing tens of minutes and
-making the mechanism unaffordable; execing back into the live container costs seconds.
+the test run, then any contention re-run. That's the whole reason for the detached shape: the re-run lands in the same
+container, with the same toolchain and the same build state, so it costs seconds. The image and the build cache are
+shared with `clippy-linux` (§ "The Linux Docker lanes share an image and a build cache").
 
 - **The container is removed on every exit path** (deferred `docker rm -f`, bounded by `dockerControlTimeout`). The
   `sleep` cap (`containerKeepAlive`, 4 h) exists only for the case where the check runner is hard-killed and never runs
@@ -1350,7 +1388,8 @@ That's every compiling lane, including the ones named for macOS: CI's "Desktop (
 
 **Gotcha: the Docker lane computes its selection for `linux`, not for the host.** `desktop-rust-tests-linux` runs cargo
 inside a container from a Mac, so `HostCargoSelectionArgs` would answer for the wrong OS.
-`TestProvisionScriptSelectsForTheContainerNotTheHost` pins it.
+`TestTheContainerRunSelectsForTheContainerNotTheHost` pins it for the tests lane, `TestLinuxClippyAsksCIsQuestion` for
+`desktop-rust-clippy-linux`.
 
 Feature specs are package-qualified (`cmdr/virtual-mtp`). A bare `--features virtual-mtp` changes meaning once more than
 one package is selected.
@@ -1376,6 +1415,77 @@ for reading its output:
   `go run .`, and killing the wrapper orphans the whole tree of Playwright, Docker, and cargo children, which then keep
   competing with whatever you start next. Kill `go-build.*/check` and `go run \. --include-slow`, then confirm with `ps`
   before drawing conclusions from the next run.
+
+## The Linux Docker lanes share an image and a build cache
+
+`desktop-rust-clippy-linux` and `desktop-rust-tests-linux` answer CI's three Linux questions (clippy and rustdoc, then
+the suite) from a Mac. The clippy lane runs `cargo doc` in the same container once clippy passes, under the host rustdoc
+lane's lint contract (`rustdocArgs` for `linux`), because a link to an item gated to macOS resolves on a Mac and breaks
+only on ubuntu: 27 CI runs went red that way in three months (`docs/notes/ci-health-2026-10.md`). Both run from one
+image and build into one per-worktree volume (`desktop-rust-linux-container.go`), so a warm run compiles only what
+changed. Order: `clippy` → `clippy-linux` → `rust-tests-linux`.
+
+- **The image is the provisioning**: `cmdr-rust-linux:<sha256[0..12]>` of the rendered Dockerfile plus
+  `rust-toolchain.toml`, built on a miss and the older tags pruned (the E2E lane's `cmdr-e2e-base:<hash>` pattern). It
+  carries the GTK/WebKit dev libraries, the `.mise.toml` Go, the pinned nextest, and the pinned toolchain's components
+  and targets. The base is `rust:<channel>` from `rust-toolchain.toml`, so the container compiles with exactly the
+  repo's toolchain; over `rust:latest`, rustup re-synced it on every cold container. Cold build: 38 s (2026-09-30).
+- **The target volume is per checkout**: `cmdr-rust-linux-target-<checkout key>-<channel>`, the key being the E2E
+  script's `CHECKOUT_KEY` (`TestCheckoutCacheKeyMatchesTheE2ELinuxScript` runs the script's own lines against the Go
+  copy). Per checkout because the repo bind mount is what the artifacts belong to: two checkouts sharing one would have
+  cargo compare this tree's mtimes against another tree's rlibs (`apps/desktop/test/e2e-linux/DETAILS.md` has the
+  failure). The channel is in the name because cargo keys artifacts by rustc: a toolchain bump starts a fresh volume and
+  drops this checkout's old one.
+- **Cleanup rides the E2E lane's labels** (`com.cmdr.e2e-linux-cache=1`, `com.cmdr.e2e-linux-checkout=<abs path>`,
+  applied at `docker volume create`, which must precede any `docker run -v`). `remove-worktree.sh` removes every volume
+  labelled with the worktree's path, and `e2e-linux.sh`'s reaper removes any whose checkout is gone. Nothing prunes a
+  LIVE checkout's volume, which is what keeps the main clone's safe: it carries the same two labels, valued with the
+  main clone's path.
+- **The main clone owns one volume, and worktrees hand it on** (`scripts/check/linux-cache/handoff.go`, run by the hooks
+  in `scripts/worktree-hooks/CLAUDE.md`, with the names, labels, and stale sweep exported from
+  `desktop-rust-linux-container.go`). A new worktree is SEEDED with a copy of the main clone's volume for its channel
+  (none there: it builds cold). A seed makes every third-party crate fresh, but the workspace crates still recheck:
+  cargo judges a path crate by source mtime, and a new checkout's files are all newer than the seeded fingerprints
+  (numbers: `scripts/worktree-hooks/DETAILS.md` § "What seeding buys, measured"). So a seeded first run is roughly half
+  a cold one, not the ~1 s of a warm no-change run. A worktree torn down after merging PROMOTES its volume into the main
+  clone's, since after the fast-forward its tree is the main clone's tree; "merged" is its HEAD being an ancestor of the
+  main clone's, with no uncommitted tracked changes. A promotion also drops the main clone's volumes of other channels.
+  Both directions copy, so the source keeps its volume until its own reaper takes it.
+- **A handoff is a btrfs reflink, swapped in whole**: one container mounts both volumes, takes every cargo lock on both
+  sides with `flock -n` (busy means a build is running: skip, keep the old cache), clones into `/to/.incoming` with
+  `cp --reflink=always`, then swaps each top-level entry in with `mv --exchange` (`renameat2`), so no path ever holds a
+  half-copied tree. 15 GB and 24,500 files clone in 0.4 s and cost 12 MB of new disk (OrbStack's `/dev/vdb1` is btrfs
+  with `nodatacow`, and reflinks still work; verified 2026-09-30); a whole seed or promotion is ~1 s. `docker system df`
+  counts each volume's apparent size, so it double-counts shared extents: `df` inside a container is the honest number.
+- **The accepted race**: a cargo that starts during the sub-second swap waits on the OLD lock file, then builds into the
+  new tree alongside any cargo that took the new one. Two worktrees promoting back to back are fine: the later one wins,
+  which is the fresher cache.
+- **`CARGO_HOME` is one machine-wide volume** (`cmdr-rust-linux-cargo-home`, unlabelled, ~0.65 GB), mounted WHOLE:
+  cargo's package-cache lock lives in `CARGO_HOME` itself, so a shared `registry/` alone would let two containers unpack
+  one crate at once.
+- **Concurrency is cargo's**: the volume sits in one VM kernel, so `flock` holds across containers. Verified 2026-09-30
+  with two concurrent `cargo clippy` containers on one volume: the second printed
+  `Blocking waiting for file lock on package cache`, then `… on build directory`, then found everything fresh. Within a
+  run, `DependsOn` keeps the two lanes apart, which is why neither declares an `Exclusive` resource.
+- **Size**: ~18.6 GB after one clippy plus one test build (about 8 GB `incremental/`, 8 GB `deps/`; the workspace dev
+  profile is already `line-tables-only`). Per worktree, reaped at teardown. `CARGO_INCREMENTAL=0` would roughly halve it
+  at the cost of slower one-file rebuilds; unmeasured.
+- **A lint failure reads as clippy's**: its own check, message `clippy found issues on Linux`, with cargo's progress
+  lines stripped (`trimCargoProgress`) so the `--> file:line:col` diagnostic is what shows. It never runs `--fix`: host
+  `clippy` already fixed what the two targets share.
+
+**Gotcha: a worktree whose `resources/ai/` only the container ever prepared rebuilds `cmdr` on every run.** `build.rs`
+watches `resources/ai/.version`, and `download-llama-server.go` on Linux writes only a 0-byte `llama-server`
+placeholder, no marker, so cargo sees a missing watched file and reruns the build script (~30 s of clippy per run). A
+normal run never hits it, because host `clippy` runs the script on the Mac first and populates the real files. Running
+the Linux lanes by name in a fresh worktree does; `cd apps/desktop && go run scripts/download-llama-server.go` fixes it.
+
+Timings, 2026-09-30, OrbStack on 16 cores, host load 5–13 (shared machine):
+
+- **Cold** (fresh volumes): clippy 2m7s including the image build, tests 3m28s. The lane's September median before the
+  cache was 335 s per run, p90 650 s.
+- **Warm, no change**: clippy ~1 s, tests ~40 s (the suite itself).
+- **Warm, one `cmdr-fs` file touched**: clippy 32 s (12 crates), tests 1m50s.
 
 ## Rust module cycles
 
@@ -1570,8 +1680,9 @@ the transfer's real-detach pins, and the unmount approver's pins.
   30 s cap, and the set reads the same before and after the approver landed (22.6 s at `56eca71f4`; 22.2 s and 24.1 s at
   `270a97766`). It can't be the approver by construction either: no approval session exists in a test process at all,
   since `install_for_app` runs only from the app's Tauri setup and the approver's own pins drop their session per test.
-- **When it skips**: off macOS it answers OK with "skipped: macOS only" and never touches cargo. It's `NotInCI`: every
-  CI runner is ubuntu, and `hdiutil` has no Linux counterpart.
+- **When it skips**: off macOS it answers OK with "skipped: macOS only" and never touches cargo. It's `NotInCI`:
+  `hdiutil` has no Linux counterpart, and CI's one macOS job (`desktop-rust-macos`) leaves it out until that job has a
+  green record.
 - **What it runs**: `cargo nextest run --run-ignored only` with `HostCargoLaneArgs`, so it reuses `desktop-rust-tests`'
   build, over a filter built from two lists: the union of `diskImageLaneTestAtoms` (module paths ending in `::`) minus
   every `diskImageHandRunTestAtoms` entry. A run that selects zero tests fails, since a moved module would otherwise
@@ -1662,10 +1773,10 @@ How it decides:
   lists the ones (like `objc2` itself) that legitimately bind no framework. `Headers` is a symlink into `Versions/`, and
   a walk doesn't follow one, so it's resolved before reading.
 - **The answer is committed**, in `macos-availability-selectors.json` (floor, SDK name, and every selector above the
-  floor). CI is Linux end to end, so a check that needed the SDK would never gate anything; a macOS run refreshes the
-  file from the installed SDK and every run scans against it. A stale file under `--ci` is an error, and a file built
-  against a different floor is too, since it only lists what was above the floor at the time. Not hand-edited: run
-  `pnpm check macos-availability` on a Mac and commit the rewrite.
+  floor). CI's Linux lanes have no SDK, and its macOS job's SDK lags the newest Mac's, so a check that needed the SDK
+  would never gate anything; a macOS run refreshes the file from the installed SDK and every run scans against it. A
+  stale file under `--ci` is an error, and a file built against a different floor is too, since it only lists what was
+  above the floor at the time. Not hand-edited: run `pnpm check macos-availability` on a Mac and commit the rewrite.
 - ❗ **The recorded SDK only moves FORWARD, so two Macs on different SDKs can't rewrite the file back and forth.** `sdk`
   is the resolved version from `xcrun --show-sdk-version` (`27.0`), ❌ never `filepath.Base` of `--show-sdk-path`, which
   answers the unversioned `MacOSX.sdk` symlink and reads identical on every machine — the reason this went unnoticed. A
@@ -1727,11 +1838,11 @@ How it decides:
   the binary's reach silently. Several entries are the release a framework left an umbrella and became loadable on its
   own (`CoreGraphics`, `CoreText`, and `ImageIO` left `ApplicationServices` in 10.8), which is the date that matters
   here.
-- **Where it runs.** It needs a built Mach-O, so it skips where there is none, which is every CI runner (all ubuntu).
-  Locally it reads `target/release/Cmdr` if there is one, else `target/debug/Cmdr`, so any Mac that has run the app is
-  covered. The gate that can't be skipped is `release.yml`, which points `CMDR_MACOS_BINARY` at the signed bundled
-  binary right after `tauri-action` builds it; that's the only run that sees what users actually get, which is also why
-  `ci-coverage` counts it as wired without a `ci.yml` step.
+- **Where it runs.** It needs a built Mach-O, so it skips where there is none, which is every CI run (`ci.yml`'s macOS
+  job never links the app). Locally it reads `target/release/Cmdr` if there is one, else `target/debug/Cmdr`, so any Mac
+  that has run the app is covered. The gate that can't be skipped is `release-pipeline.yml`, which points
+  `CMDR_MACOS_BINARY` at the signed bundled binary right after `tauri-action` builds it; that's the only run that sees
+  what users actually get, which is also why `ci-coverage` counts it as wired without a `ci.yml` step.
 
 ## macOS symbol floor
 
@@ -1764,8 +1875,8 @@ How it decides:
   AND version-gated at every call, so dyld binds it to null rather than aborting. A strongly-linked one can't be
   excused, and an entry needs David's consent.
 - **Where it runs**: it needs both a Mach-O and the SDK headers, so it skips on Linux CI and anywhere without a build.
-  `release.yml` runs it right after the framework check, against the signed bundled binary, which is the gate that can't
-  be skipped.
+  `release-pipeline.yml` runs it right after the framework check, against the signed bundled binary, which is the gate
+  that can't be skipped.
 
 ## Vendored credits
 
@@ -1796,40 +1907,46 @@ notices file.
 
 Checks by app and tech:
 
-- **Desktop / Rust**: rustfmt, clippy, rustdoc (`cargo doc --all-features --document-private-items` over every
-  first-party member, with every doc lint in `rustdocDeniedLints` denied and any leftover warning failing the check too;
-  the vendored fork is skipped because `--all-features` turns on two mutually exclusive arms there), cargo-audit,
-  cargo-deny, cargo-machete, cargo-udeps (CI-only), jscpd (the clone list, on a per-file-pair ratchet), log-error-macro,
-  macos-availability (no call to a selector newer than the bundle's `minimumSystemVersion`; § "macOS availability"),
-  macos-framework-floor (no framework in the BUILT binary's load commands newer than that same floor, which is the half
-  no runtime gate can save; § "macOS framework floor"), sqlite-open-direct (every SQLite connection opens through
-  `crate::sqlite_util`, so the process-wide shared page cache is always installed before SQLite initializes),
-  error-string-match, write-ops-isolation (the write engine may not name the `agent` module: an approved operation is an
-  ordinary operation, and an engine that can see the agent grows a second execution path; per-source outcomes reach a
-  caller through the injected `OperationEventSink` instead), lock-poison (two lanes: an error-level one for an
-  acquisition that records no poison-handling choice, and a warn-only one for a failure that's silently discarded, on a
-  per-file ratchet), test-sleep (flags a fixed `thread::sleep` / `tokio::time::sleep` in test code, where a
-  condition-based `wait_until` belongs; opt out a genuine sleep-is-the-subject site with
-  `// allowed-test-sleep: <reason>`), fixed-temp-dir (flags a test fixture built on `std::env::temp_dir()`, where every
-  process on the machine shares the path and two suite runs delete each other's live fixtures; the sanctioned fixture is
-  `crate::test_support::TestDir`, and a site where the temp root is load bearing opts out with
-  `// allowed-fixed-temp-dir: <reason>`), no-hand-rolled-fixture (bans a struct literal of `CachedScanResult` /
-  `SourceHint` / `VolumePreflight` / `WrittenFile` in test code, so a fixture can only be one of the shapes a named
-  constructor actually builds; it ships with ZERO findings on purpose and is a regression fence rather than a finder —
-  the shapes are already clean, and the point is that the next test author can't undo that by copy-pasting an old
-  literal), derive-default-justified (every `#[derive(..., Default, ...)]` under `file_system/` and `cmdr-fs` carries a
-  `// DEFAULT-OK: <why>` line, because a zero value on a fact-carrying type isn't "no information", it's a claim about
-  the disk that nobody made), probe-unwrap-justified (flags `\.is_directory(…).await.unwrap_or(…)` in production
-  `file_system/` code, where a probe that COULDN'T answer gets collapsed into a confident "no" and picks the branch that
-  deletes; opt out with `// allowed-probe-unwrap: <why the guess is truthful>`), discarded-outcome (a function that
-  returns NOTHING while dropping a typed answer from the free function it delegates to; three of these shipped before it
-  existed, and each ended as an IPC command or MCP tool inventing a success. `Result` and `Option` returns are
-  deliberately out of scope: `Result` is `#[must_use]`, so the compiler already warns, and an `Option` discard is the
-  map/set idiom. That leaves exactly the gap the compiler can't see, a bare `bool` or a named outcome type. Every
-  ambiguity resolves to "don't flag" — an unresolvable name, two definitions disagreeing on their return type, a method
-  call — because a check people learn to ignore is worse than none. Opt out with
-  `// allowed-discarded-outcome: <why nobody above needs the answer>`), mtp-dropping-timeout, mtp-no-transport-reset,
-  bindings-fresh, ipc-enum-camelcase, the five `<provider>-smoke` lanes (CI-only: one `--lib` module each against a live
+- **Desktop / Rust**: rustfmt, clippy, clippy-mimalloc (slow, macOS only, not in CI; clippy with `cmdr/mimalloc` in a
+  private target dir, so the global-allocator path macOS doesn't ship can't rot), rustdoc
+  (`cargo doc --all-features --document-private-items` over every first-party member, with every doc lint in
+  `rustdocDeniedLints` denied and any leftover warning failing the check too; the vendored fork is skipped because
+  `--all-features` turns on two mutually exclusive arms there), cargo-audit, cargo-deny, cargo-machete, cargo-udeps
+  (CI-only), fuzz (CI-only and slow: every target in `fuzz/` for `CMDR_FUZZ_SECONDS`, default 60, `fuzz/DETAILS.md`; a
+  target loosens its sanitizer limits only through `fuzzTargetOverrides`, each entry naming its upstream finding), jscpd
+  (the clone list, on a per-file-pair ratchet), log-error-macro, macos-availability (no call to a selector newer than
+  the bundle's `minimumSystemVersion`; § "macOS availability"), macos-framework-floor (no framework in the BUILT
+  binary's load commands newer than that same floor, which is the half no runtime gate can save; § "macOS framework
+  floor"), sqlite-open-direct (every SQLite connection opens through `crate::sqlite_util`, so the process-wide shared
+  page cache is always installed before SQLite initializes), error-string-match, write-ops-isolation (the write engine
+  may not name the `agent` module: an approved operation is an ordinary operation, and an engine that can see the agent
+  grows a second execution path; per-source outcomes reach a caller through the injected `OperationEventSink` instead),
+  lock-poison (two lanes: an error-level one for an acquisition that records no poison-handling choice, and a warn-only
+  one for a failure that's silently discarded, on a per-file ratchet), test-sleep (flags a fixed `thread::sleep` /
+  `tokio::time::sleep` in test code, where a condition-based `wait_until` belongs; opt out a genuine
+  sleep-is-the-subject site with `// allowed-test-sleep: <reason>`), fixed-temp-dir (flags a test fixture built on
+  `std::env::temp_dir()`, where every process on the machine shares the path and two suite runs delete each other's live
+  fixtures; the sanctioned fixture is `crate::test_support::TestDir`, and a site where the temp root is load bearing
+  opts out with `// allowed-fixed-temp-dir: <reason>`), no-hand-rolled-fixture (bans a struct literal of
+  `CachedScanResult` / `SourceHint` / `VolumePreflight` / `WrittenFile` in test code, so a fixture can only be one of
+  the shapes a named constructor actually builds; it ships with ZERO findings on purpose and is a regression fence
+  rather than a finder — the shapes are already clean, and the point is that the next test author can't undo that by
+  copy-pasting an old literal), derive-default-justified (every `#[derive(..., Default, ...)]` under `file_system/`,
+  `cmdr-fs`, and the IPC twins of `cmdr-fs` file types listed in `deriveDefaultTrees` carries a `// DEFAULT-OK: <why>`
+  line, because a zero value on a fact-carrying type isn't "no information", it's a claim about the disk that nobody
+  made), probe-unwrap-justified (flags `\.is_directory(…).await.unwrap_or(…)` in production `file_system/` code, where a
+  probe that COULDN'T answer gets collapsed into a confident "no" and picks the branch that deletes; opt out with
+  `// allowed-probe-unwrap: <why the guess is truthful>`), discarded-outcome (a function that returns NOTHING while
+  dropping a typed answer from the free function it delegates to; three of these shipped before it existed, and each
+  ended as an IPC command or MCP tool inventing a success. `Result` and `Option` returns are deliberately out of scope:
+  `Result` is `#[must_use]`, so the compiler already warns, and an `Option` discard is the map/set idiom. That leaves
+  exactly the gap the compiler can't see, a bare `bool` or a named outcome type. Every ambiguity resolves to "don't
+  flag" — an unresolvable name, two definitions disagreeing on their return type, a method call — because a check people
+  learn to ignore is worse than none. Opt out with `// allowed-discarded-outcome: <why nobody above needs the answer>`),
+  mtp-dropping-timeout, mtp-no-transport-reset, bindings-fresh, ipc-enum-camelcase, vendor-patch-applied (every
+  `[patch.crates-io]` path entry in the root `Cargo.toml` still resolves to that path in `Cargo.lock`: a bump past the
+  vendored version makes cargo resolve crates.io again and park the patch under `[[patch.unused]]` with one warning;
+  skipped while there's no patch), the five `<provider>-smoke` lanes (CI-only: one `--lib` module each against a live
   provider, self-skipping without its key; `gemini-smoke` additionally has a warn-level "inconclusive" outcome — see §
   "Decision: a smoke lane has a THIRD outcome"), shipped-locales-fresh (regenerate-and-diff
   `intl/shipped_locales.gen.rs` from the message-catalog dirs, so the locale resolver's CLDR script table can't go stale
@@ -1840,7 +1957,8 @@ Checks by app and tech:
   one cell lived its whole life that way, and it was the sole caller of the crate extraction's one sanctioned
   public-surface widening — see § "Fixture lane coverage"), tests, integration-tests (Docker network fixtures),
   disk-images (slow, macOS only, not in CI; the real-image tests on synthetic APFS and HFS+ disk images, see § "The
-  disk-image lane"), tests-linux (slow)
+  disk-image lane"), clippy-linux (slow, not in CI; CI's clippy and rustdoc commands against the Linux target, run from
+  a Mac in Docker), tests-linux (slow; both in § "The Linux Docker lanes share an image and a build cache")
 
 Four of those scanners share one region tracker, `rustTestModState` / `advanceTestModRegion`
 (`desktop-rust-test-sleep.go`), in opposite polarities: test-sleep and fixed-temp-dir scan ONLY inside an inline test
@@ -1851,10 +1969,12 @@ doubles as production code.
 
 - **Crates / Rust**: workspace-member-coverage (every workspace member is reachable by the cargo lanes and the source
   scanners, and every Rust check has declared which of the two it is), index-crate-isolation (no guarded crate —
-  `cmdr-index`, `cmdr-fs`, `cmdr-archive`, `cmdr-smb`, `cmdr-sftp`, `cmdr-webdav`, `cmdr-mtp`, `cmdr-git` — reaches
-  `tauri`, `tauri-specta`, or `cmdr` anywhere in its `cargo metadata` tree, plus a per-bucket public-surface ceiling on
-  all of them except `cmdr-fs`, which is permanently uncapped: it's shared vocabulary whose job is to be named from
-  everywhere. See `crates/cmdr-index/src/indexing/handle/DETAILS.md` for what each index number means, the crate's own
+  `cmdr-index`, `cmdr-fs`, `cmdr-archive`, `cmdr-smb`, `cmdr-sftp`, `cmdr-webdav`, `cmdr-s3`, `cmdr-mtp`, `cmdr-adb`,
+  `cmdr-git` — reaches `tauri`, `tauri-specta`, or `cmdr` anywhere in its `cargo metadata` tree, plus a per-bucket
+  public-surface ceiling on all of them except `cmdr-fs`, which is permanently uncapped: it's shared vocabulary whose
+  job is to be named from everywhere. An item whose attributes gate it on `cfg(test)` or the `testing`, `tooling`, or
+  `fuzzing` feature (`isGated`) counts as a gated door, never as public API, so a fuzz entry point doesn't eat a crate's
+  ceiling. See `crates/cmdr-index/src/indexing/handle/DETAILS.md` for what each index number means, the crate's own
   entry in `index-crate-isolation.go` for the backend ones, and why raising any of them needs David's say-so),
   nextest-filter-coverage (every `test(...)` atom in `.config/nextest.toml` still selects a live test, so a per-test cap
   or `test-group` can't be silently detached by a module move; it lists the workspace's tests with
@@ -1868,15 +1988,16 @@ doubles as production code.
   stylelint, css-unused, a11y-contrast, a11y-coverage (every component has a tier-3 a11y test, colocated or in a
   directory-level `*.a11y.test.ts` that imports it), ui-primitive-coverage (every top-level `lib/ui/*.svelte` primitive
   has a Debug > Components catalog section), dialog-gallery-coverage (every `SOFT_DIALOG_REGISTRY` id has a row in the
-  Debug > Soft dialogs gallery, and every row names a registered id), btn-restyle, bare-poll, e2e-stale-selector (ERROR;
-  a Playwright selector naming a class or `data-*` attribute that appears nowhere in `apps/desktop/src`, see § "E2E
-  stale selectors"), svelte-check, import-cycles, jscpd (the frontend clone list, TypeScript and Svelte),
-  message-keys-fresh (regenerate-and-diff `keys.gen.ts` from the message catalogs), message-key-naming (the
-  `area.feature.leaf` shape + known-area first segment), message-keys-unused (catalog keys never referenced in `src/`;
-  error-level, with a closed dynamic-prefix allowlist for runtime-built keys), message-screenshots-fresh (ERROR on a
-  structural break: a representative rule reaching no catalog key, or a rule or `@key.screenshot` naming an image the
-  committed capture report lacks; warns on stale couplings and on a rule every key of which has its own capture; runs
-  the coupler's `--check` and maps its exit code, reads no PNGs), i18n-stale (warn-only; a non-`en` translation whose
+  Debug > Soft dialogs gallery, and every row names a registered id), btn-restyle, bare-poll, ipc-unused (every
+  `tauri-commands` wrapper and `commands.*` binding has a caller; § "IPC dead code"), e2e-stale-selector (ERROR; a
+  Playwright selector naming a class or `data-*` attribute that appears nowhere in `apps/desktop/src`, see § "E2E stale
+  selectors"), svelte-check, import-cycles, jscpd (the frontend clone list, TypeScript and Svelte), message-keys-fresh
+  (regenerate-and-diff `keys.gen.ts` from the message catalogs), message-key-naming (the `area.feature.leaf` shape +
+  known-area first segment), message-keys-unused (catalog keys never referenced in `src/`; error-level, with a closed
+  dynamic-prefix allowlist for runtime-built keys), message-screenshots-fresh (ERROR on a structural break: a
+  representative rule reaching no catalog key, or a rule or `@key.screenshot` naming an image the committed capture
+  report lacks; warns on stale couplings and on a rule every key of which has its own capture; runs the coupler's
+  `--check` and maps its exit code, reads no PNGs), i18n-stale (warn-only; a non-`en` translation whose
   `@key.sourceHash` no longer matches the value it was translated from), i18n-parity (ERROR; each locale key's
   `{placeholder}`+`<tag>` set, or raw `{token}` set for `errors.*`, must equal that of the value it renders instead of,
   since a mismatch crashes at runtime), i18n-icu (ERROR; every message is written in its own family's grammar: an ICU
@@ -1966,13 +2087,14 @@ doubles as production code.
   `rustup target/component add` in workflows), ci-coverage (registry-to-workflows contract)
 - **Other / Go**: go-version-single-source (errors when anything but `.mise.toml` names a Go toolchain version, when the
   `go.mod` floors disagree with each other, or when a floor exceeds the pinned toolchain)
-- **Other / Security**: workflows-hardening (SHA-pinning, no `pull_request_target`, job-scoped `id-token: write`)
+- **Other / Security**: workflows-hardening (SHA-pinning, no `pull_request_target`, job-scoped `id-token: write`,
+  read-only workflow-level `permissions:`)
 
 ## The single source for the Go version
 
 `.mise.toml`'s `go` entry is the only place the repo names a Go toolchain. Renovate bumps it weekly, every CI job runs
-`mise install`, and `MiseGoVersion(rootDir)` (in `go-version-single-source.go`) is how code reads it. The Linux Rust
-test container provisions from that call, so its Go can't drift from the host's.
+`mise install`, and `MiseGoVersion(rootDir)` (in `go-version-single-source.go`) is how code reads it. The Linux Docker
+lanes' image provisions from that call, so its Go can't drift from the host's.
 
 It used to drift. `desktop-rust-tests-linux.go` carried `const goVersion = "1.25.7"` under a comment saying it must
 match `.mise.toml`, nothing enforced that, and a Renovate bump to 1.27 left the container two minors behind, testing
@@ -2027,9 +2149,10 @@ the check could not be green in both places at once, and wasn't from the day it 
 the file instead of leaving the choice to the host. The checksums cargo-about wants alongside a pin don't guard
 themselves: a stale one yields a warning, exit code 0, and a silent fall back to scanning, which is the exact behavior
 being removed. So `verifyClarifications` compares each pinned crate's resolved `source_path` against the pin and fails
-when they differ, naming the `shasum` command that fixes it. Every text also carries its `Text from:` file into the
-generated notices, so the next crate to develop this ambiguity surfaces as a diff line naming a file rather than as a
-license count that moved for no visible reason.
+when they differ, naming the `shasum` command that fixes it. A pinned crate absent from the shipped graph is skipped,
+not failed: the default macOS build runs on the system allocator and ships no `libmimalloc-sys`, and its pin stays for a
+build that does. Every text also carries its `Text from:` file into the generated notices, so the next crate to develop
+this ambiguity surfaces as a diff line naming a file rather than as a license count that moved for no visible reason.
 
 **Gotcha**: a clarification REPLACES the crate's declared license expression, so `crateClarification.license` repeats
 that expression verbatim (`miniz_oxide` is `MIT OR Zlib OR Apache-2.0`, not the single `MIT` whose text is pinned).
@@ -2056,7 +2179,8 @@ lacks it (reading `rustup toolchain list`, rather than classifying a cargo failu
 nightly toolchain" step asks the check tool for the version via `./scripts/check/check --print-nightly`, so the date
 exists in exactly one place. Renovate can't track it: dated Rust nightlies aren't a Renovate datasource (there's no
 registry of nightly dates to query, and the `rust`/`rust-version` datasources cover stable releases only), so the bump
-is a maintenance task instead, listed in `docs/maintenance.md`.
+is a maintenance task instead, listed in `docs/maintenance.md`. The fuzz lane (`desktop-rust-fuzz.go`) builds on the
+same pin, so one bump moves both.
 
 ### Bumping the pinned nightly
 
@@ -2064,8 +2188,9 @@ is a maintenance task instead, listed in `docs/maintenance.md`.
    exists: `curl -sI https://static.rust-lang.org/dist/<YYYY-MM-DD>/channel-rust-nightly.toml` returns `200`.
 2. Edit `nightlyToolchain` in `checks/desktop-rust-cargo-udeps.go`. That's the only place the date appears.
 3. Run `pnpm check cargo-udeps` (it installs the toolchain if needed) and fix whatever new lints the newer nightly
-   surfaces. Nightly lints are usually genuine (the `unused_imports` tightening flagged real redundant imports), so fix
-   the code rather than reaching for an `allow`.
+   surfaces, then `CMDR_FUZZ_SECONDS=10 pnpm check fuzz` to prove the fuzz targets still build on it. Nightly lints are
+   usually genuine (the `unused_imports` tightening flagged real redundant imports), so fix the code rather than
+   reaching for an `allow`.
 
 **Decision**: `cargo-deny` checks advisories over the macOS graph only; `cargo-audit` sweeps the full graph. **Why**:
 Tauri's Linux GTK3 stack carries unmaintained-crate advisories no macOS build links, which once got the whole advisory
@@ -2074,12 +2199,16 @@ release and sets `unmaintained = "workspace"`, so any RUSTSEC vulnerability in a
 transitive unmaintained noise doesn't. `cargo-audit` (the six-day CI lane) still reads the whole lockfile: a hit there
 but not in deny means "real, but nothing we ship links it". See `deny.toml` and `docs/maintenance.md`.
 
-**Decision**: `workflows-hardening` check enforces three GitHub Actions invariants and acts as a regression guard.
+**Decision**: `workflows-hardening` check enforces four GitHub Actions invariants and acts as a regression guard.
 **Why**: cmdr's workflows are already correctly hardened (every third-party action is SHA-pinned with a comment, no
 `pull_request_target` triggers, no workflow-scoped `id-token: write`). Without an automated guard, a future PR or a
 Renovate misconfiguration could silently regress any of those without anyone noticing in review. The check fails on
 tag/branch-pinned third-party actions, on `pull_request_target` triggers (wave-4's entry vector), and on workflow-scoped
 `id-token: write` (must be job-scoped per the wave-4 OIDC-token-extraction lesson). Local actions (`./...`) are exempt.
+The fourth: every workflow declares a workflow-level `permissions:` that grants no write (jobs ask for write in their
+own block). A missing block inherits the repo's default token setting, which a settings click can widen without a
+commit, and it's exactly what OpenSSF Scorecard's Token-Permissions check scores (`docs/tooling/ci.md` § OpenSSF
+Scorecard).
 
 **Decision**: `govulncheck` runs against every Go module. **Why**: cargo-audit covers Rust deps; nothing covered Go
 until now. `govulncheck` is static-analysis-based, so it only flags vulns actually reachable from the code (low false
@@ -2368,13 +2497,7 @@ toolchain, then execs the x86 nextest binary and OrbStack crashes with
 `Dynamic loader not found: /lib64/ld-linux-x86-64.so.2`. The fix is `dpkg --print-architecture` → `linux` for amd64 and
 `linux-arm` for arm64, matching the Go tarball selection.
 
-**Decision**: silence apt/dpkg at the source, not via a post-hoc denylist. **Why**: `provisionScript` redirects both apt
-commands to a log file under `DEBIAN_FRONTEND=noninteractive` + `-qq`, so on a successful provision the check's stdout
-gets zero apt lines. The log lives on a per-run host directory (`/tmp/cmdr-rust-tests-linux-<unix-ts>/provision.log`)
-bind-mounted into the container at `/cmdr-logs`, so it survives the container's `--rm` and is discoverable from the
-check's Success/failure message. On apt failure, the script dumps the full log to stderr (captured by Go) so the user
-sees what went wrong without having to fish for the file. Redirection at source is bulletproof and zero-maint vs a
-denylist treadmill: every Debian version adds new dpkg verbs (`Setting up`, `Unpacking`, `Processing triggers`, …),
-continuation lines from multi-line apt prompts have no stable shape, and `apt-get -qq` alone doesn't propagate to dpkg's
-per-package chatter. `trimBuildNoise` now only cuts everything before the last `Compiling …` line; when no such line
-exists (provisioning died before cargo ran), the output is returned verbatim.
+**Decision**: apt/dpkg output never reaches a Linux lane's result. **Why**: provisioning happens in `docker build`,
+whose output is captured whole and shown only when the build fails, so there's no denylist treadmill (every Debian
+version adds new dpkg verbs, and multi-line apt prompts have no stable shape). `trimBuildNoise` only cuts everything
+before the last `Compiling …` line; when no such line exists, the output is returned verbatim.

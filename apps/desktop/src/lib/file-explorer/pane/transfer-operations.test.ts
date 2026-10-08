@@ -13,9 +13,12 @@ import type { VolumeInfo } from '../types'
 vi.mock('$lib/tauri-commands', () => ({
   getListingStats: vi.fn(),
   getPathsAtIndices: vi.fn(),
+  getSelectionSnapshot: vi.fn(),
 }))
+vi.mock('$lib/ui/toast', () => ({ addToast: vi.fn() }))
+vi.mock('$lib/intl/messages.svelte', () => ({ tString: (key: string) => key }))
 
-const { getListingStats, getPathsAtIndices } = await import('$lib/tauri-commands')
+const { getListingStats, getPathsAtIndices, getSelectionSnapshot } = await import('$lib/tauri-commands')
 
 describe('getDestinationVolumeInfo', () => {
   const volumes: VolumeInfo[] = [
@@ -115,10 +118,25 @@ describe('buildTransferPropsFromSelection', () => {
   beforeEach(() => vi.clearAllMocks())
 
   it('returns null for empty indices', async () => {
-    expect(await buildTransferPropsFromSelection('copy', 'listing-1', [], false, true, context)).toBeNull()
+    expect(await buildTransferPropsFromSelection('copy', 'listing-1', [], false, true, context, 0)).toBeNull()
+  })
+
+  it('refuses F5 when the selected revision changed, never resolving the same rows in a newer cache', async () => {
+    vi.mocked(getListingStats).mockResolvedValueOnce({ selectedFiles: 1 } as never)
+    vi.mocked(getPathsAtIndices).mockResolvedValueOnce(['/source/wrong-neighbor'])
+    vi.mocked(getSelectionSnapshot).mockRejectedValueOnce({ type: 'changed', listingId: 'listing-1' })
+    const result = await buildTransferPropsFromSelection('copy', 'listing-1', [2], true, true, context, 7)
+    expect(result).toBeNull()
+    expect(getSelectionSnapshot).toHaveBeenCalledWith('listing-1', false, [1], 7)
+    expect(getPathsAtIndices).not.toHaveBeenCalled()
   })
 
   it('returns correct props for copy selection', async () => {
+    vi.mocked(getSelectionSnapshot).mockResolvedValueOnce({
+      paths: ['/source/file1.txt', '/source/folder'],
+      fileCount: 2,
+      folderCount: 1,
+    })
     vi.mocked(getListingStats).mockResolvedValueOnce({
       totalFiles: 2,
       totalDirs: 1,
@@ -131,7 +149,7 @@ describe('buildTransferPropsFromSelection', () => {
     })
     vi.mocked(getPathsAtIndices).mockResolvedValueOnce(['/source/file1.txt', '/source/folder'])
 
-    const result = await buildTransferPropsFromSelection('copy', 'listing-1', [0, 1], false, true, context)
+    const result = await buildTransferPropsFromSelection('copy', 'listing-1', [0, 1], false, true, context, 0)
     expect(result).toEqual({
       operationType: 'copy',
       sourcePaths: ['/source/file1.txt', '/source/folder'],
@@ -149,6 +167,7 @@ describe('buildTransferPropsFromSelection', () => {
   })
 
   it('returns correct props for move selection', async () => {
+    vi.mocked(getSelectionSnapshot).mockResolvedValueOnce({ paths: ['/source/file.txt'], fileCount: 1, folderCount: 0 })
     vi.mocked(getListingStats).mockResolvedValueOnce({
       totalFiles: 1,
       totalDirs: 0,
@@ -161,7 +180,7 @@ describe('buildTransferPropsFromSelection', () => {
     })
     vi.mocked(getPathsAtIndices).mockResolvedValueOnce(['/source/file.txt'])
 
-    const result = await buildTransferPropsFromSelection('move', 'listing-1', [0], false, true, context)
+    const result = await buildTransferPropsFromSelection('move', 'listing-1', [0], false, true, context, 0)
     expect(result?.operationType).toBe('move')
   })
 })

@@ -8,7 +8,7 @@
     import SectionCard from '$lib/ui/SectionCard.svelte'
     import { getSettingDefinition } from '$lib/settings'
     import { createShouldShow, anyVisible } from '$lib/settings/settings-search'
-    import { openSystemSettingsUrl } from '$lib/tauri-commands'
+    import { openLocalNetworkSettings } from '$lib/tauri-commands'
     import { systemStrings } from '$lib/system-strings.svelte'
     import { tString } from '$lib/intl/messages.svelte'
 
@@ -28,7 +28,7 @@
 
     function handlePrivacyLinkClick(event: MouseEvent) {
         event.preventDefault()
-        void openSystemSettingsUrl('x-apple.systempreferences:com.apple.preference.security?Privacy_LocalNetwork')
+        void openLocalNetworkSettings()
     }
 
     // allowed-pluralize-noun: "access" is a singular noun, not a count-driven plural; the interpolation is the localized pane label, not a count.

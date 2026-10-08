@@ -20,7 +20,7 @@ import { refreshRailGate } from './ask-cmdr-gate.svelte'
 import { buildRailMessages } from './ask-cmdr-history'
 import { discardRenameReview } from './ask-cmdr-rename-review.svelte'
 import { askCmdrState, hasOlderMessages, MESSAGE_PAGE, RAIL_MAX_WIDTH, RAIL_MIN_WIDTH } from './ask-cmdr-state.svelte'
-import { stopStreaming } from './ask-cmdr-stream.svelte'
+import { settleDecisionsHeardWhileLoading, stopStreaming } from './ask-cmdr-stream.svelte'
 import { growMainWindowForRail, shrinkMainWindowForRail } from './rail-window'
 import {
   getAskCmdrConversation,
@@ -141,6 +141,7 @@ export function newChat(): void {
   askCmdrState.contextUsage = null
   askCmdrState.deniedNames = []
   discardRenameReview()
+  abandonThreadLoad()
 }
 
 /** Switch the rail to an existing thread and load its most recent page. */
@@ -152,24 +153,60 @@ export async function switchToThread(id: number): Promise<void> {
 }
 
 async function bootstrapActiveThread(): Promise<void> {
-  askCmdrState.loadingHistory = true
+  const load = beginThreadLoad()
   try {
     const recent = await listAskCmdrConversations(1, 0, false)
     const latest = recent.at(0)
-    if (latest) {
+    // Picking a thread (or starting a new chat) while the list was on its way back wins.
+    if (latest && load === latestThreadLoad) {
       await loadConversation(latest.id)
     }
   } catch (e) {
     log.warn('bootstrapping the active thread failed: {error}', { error: String(e) })
   } finally {
-    askCmdrState.loadingHistory = false
+    finishThreadLoad(load)
   }
+}
+
+/**
+ * The newest thread load, so an older one can tell it has been overtaken.
+ *
+ * Each read is its own command, so the first one asked can be the last one answered. Without
+ * this, picking thread A and then thread B could leave A on screen (its answer arriving second),
+ * and a late answer could repaint a chat the user had already cleared. Only the latest load may
+ * touch the rail; an overtaken one ends without writing anything, the loading flag included.
+ */
+let latestThreadLoad = 0
+
+/** Start a thread load, overtaking any that is still in flight. Returns its token. */
+function beginThreadLoad(): number {
+  askCmdrState.loadingHistory = true
+  return ++latestThreadLoad
+}
+
+/** End `load`, unless a newer one has taken over (which then owns the ending). */
+function finishThreadLoad(load: number): void {
+  if (load === latestThreadLoad) endThreadLoad()
+}
+
+/** The rail moved on without loading anything (a new chat): whatever is in flight is stale. */
+function abandonThreadLoad(): void {
+  latestThreadLoad++
+  endThreadLoad()
+}
+
+/** A thread load is over, whether or not it put anything on screen. Decisions the rail heard
+ * meanwhile go back in here, because the load replaced the list they were shown in (or the
+ * rail wasn't on their thread yet) and its read may have been too early to include them. */
+function endThreadLoad(): void {
+  askCmdrState.loadingHistory = false
+  settleDecisionsHeardWhileLoading()
 }
 
 /** Load a thread's most recent page into the rail (tail-first). One probe fetch learns
  * the total; a thread longer than a page then refetches its newest page. */
 async function loadConversation(id: number): Promise<void> {
-  askCmdrState.loadingHistory = true
+  const load = beginThreadLoad()
   try {
     const probe = await getAskCmdrConversation(id, MESSAGE_PAGE, 0)
     if (!probe) return
@@ -178,6 +215,7 @@ async function loadConversation(id: number): Promise<void> {
       const tailOffset = probe.totalMessages - MESSAGE_PAGE
       detail = (await getAskCmdrConversation(id, MESSAGE_PAGE, tailOffset)) ?? probe
     }
+    if (load !== latestThreadLoad) return
     askCmdrState.conversationId = id
     askCmdrState.messageTotal = detail.totalMessages
     askCmdrState.historyCount = detail.messages.length
@@ -193,7 +231,7 @@ async function loadConversation(id: number): Promise<void> {
         }
       : null
   } finally {
-    askCmdrState.loadingHistory = false
+    finishThreadLoad(load)
   }
 }
 
@@ -204,12 +242,15 @@ export async function loadOlderMessages(): Promise<void> {
   const id = askCmdrState.conversationId
   if (id === null || askCmdrState.loadingOlder || !hasOlderMessages()) return
   askCmdrState.loadingOlder = true
+  // The page tiles against the list as it was loaded, so any thread load since (another
+  // thread, or this one again) makes it a page of something no longer on screen.
+  const shownBy = latestThreadLoad
   try {
     const remaining = askCmdrState.messageTotal - askCmdrState.historyCount
     const limit = Math.min(MESSAGE_PAGE, remaining)
     const offset = remaining - limit
     const detail = await getAskCmdrConversation(id, limit, offset)
-    if (!detail) return
+    if (!detail || shownBy !== latestThreadLoad) return
     askCmdrState.messages = [...buildRailMessages(detail), ...askCmdrState.messages]
     askCmdrState.historyCount += detail.messages.length
   } catch (e) {

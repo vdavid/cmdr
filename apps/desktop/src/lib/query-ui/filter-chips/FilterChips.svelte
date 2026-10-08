@@ -245,8 +245,8 @@
     let dateChipEl: HTMLButtonElement | undefined = $state()
     let scopeChipEl: HTMLButtonElement | undefined = $state()
 
-    // Pipe the user's file-size format through so the chip's KB/kB label matches
-    // the popover (`kB` for SI, `KB` for binary).
+    // Pipe the user's file-size format through so the chip's unit label matches
+    // the popover (`kB` for SI, `KiB` for binary).
     const sizeState = $derived(
         deriveSizeChip(sizeFilter, sizeValue, sizeUnit, sizeValueMax, sizeUnitMax, getFileSizeFormat()),
     )

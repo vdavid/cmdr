@@ -90,6 +90,29 @@ where
     handle().spawn(future)
 }
 
+/// Spawns one of a volume's listeners, to run until `stop` fires.
+///
+/// For a task that waits on something that never closes: the lifecycle buses and
+/// the importance recompute channel are process-global, and a timer is a timer, so
+/// nothing else would ever end it. `stop` is a child of the volume's root token, so
+/// the listener lasts one life of the volume. Every start of a volume registers it
+/// and a subscriber wires it again; without this the previous life's listeners are
+/// still there, one more set per start.
+///
+/// Dropping the listener mid-wait has to be safe, which it is for one that only
+/// awaits a channel or a timer and hands the work itself to a run that stops on
+/// its own. ❌ Don't put the work inside it.
+#[track_caller]
+pub(crate) fn spawn_until_stopped<F>(stop: &tokio_util::sync::CancellationToken, listener: F)
+where
+    F: Future<Output = ()> + Send + 'static,
+{
+    let stop = stop.clone();
+    spawn(async move {
+        stop.run_until_cancelled_owned(listener).await;
+    });
+}
+
 /// Runs a blocking closure on the index runtime's blocking pool.
 ///
 /// ❌ Don't lower the thread's QoS inside `f`: this is a pooled thread and the class

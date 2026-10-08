@@ -3,14 +3,10 @@ package checks
 import (
 	"context"
 	"fmt"
-	"os"
 	"os/exec"
-	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
-	"sync"
-	"time"
 )
 
 // containerNextestVersion pins the container's cargo-nextest to the same version the host
@@ -21,165 +17,41 @@ import (
 // lanes with nothing to say it had.
 const containerNextestVersion = NextestVersion
 
-// containerKeepAlive bounds the idle container's lifetime. The container outlives the test
-// exec on purpose (the contention re-run execs back into it, warm), so PID 1 is a sleep
-// rather than the suite. The normal exit path is the deferred `docker rm -f`; this cap is
-// what stops a hard-killed check runner (SIGKILL, so no defer) from leaving a container
-// parked forever. Generous because a cold container run compiles the whole workspace, and
-// a worst-case re-run adds ~12 minutes on top.
-const containerKeepAlive = 4 * time.Hour
-
-// provisionScript installs the GTK/WebKit dev libraries Tauri's compile step needs,
-// plus a matching Go toolchain and cargo-nextest. It deliberately stops there: the test
-// run and any contention re-run are separate `docker exec`s into the same container, so
-// a re-run pays neither the provisioning nor the compile again. Each step
-// short-circuits on failure via `set -e`. dpkg's architecture names (amd64 / arm64)
-// line up with Go's download filenames AND with nextest's pre-built URLs
-// (`https://get.nexte.st/<version>/linux` for x86, `…/linux-arm` for ARM), so a single
-// $(dpkg --print-architecture) covers both. Installing the wrong-arch nextest binary
-// caused a silent OrbStack crash on Apple Silicon (`Dynamic loader not found:
-// /lib64/ld-linux-x86-64.so.2`). Cargo triggers a rustup toolchain sync, then execs
-// nextest, which is when the x86 binary hit the arm64 dynamic-loader wall.
-//
-// nextest (vs raw `cargo test`) is required: a handful of tests (e.g.
-// `ai::api_keys::tests::*`) rely on per-test process isolation because the underlying
-// secret-store backend caches `CMDR_DATA_DIR` in a `LazyLock` on first access. `cargo
-// test` runs siblings as threads in one process and silently shares that cache,
-// producing cross-test state leaks. nextest spawns a fresh process per test, matching
-// macOS local and CI behavior. Precompiled binary from get.nexte.st (no `cargo install`
-// recompile) keeps the cold-cache run fast.
-//
-// Apt output: silenced via -qq + DEBIAN_FRONTEND=noninteractive + redirection to
-// /cmdr-logs/provision.log (host-mounted to a per-run dir under /tmp). On success the
-// log file is preserved for post-mortem; on apt failure the full log is dumped to
-// stderr (captured by the Go side and shown to the user). The Success message
-// includes the host log path so it's discoverable in the 1% case where someone wants
-// to inspect what got installed.
-var provisionScriptTemplate = `set -e
-export DEBIAN_FRONTEND=noninteractive
-PROVISION_LOG=/cmdr-logs/provision.log
-mkdir -p /cmdr-logs
-
-ARCH=$(dpkg --print-architecture)
-case "$ARCH" in
-  amd64) NEXTEST_PLATFORM=linux ;;
-  arm64) NEXTEST_PLATFORM=linux-arm ;;
-  *) echo "unsupported architecture: $ARCH" >&2; exit 1 ;;
-esac
-NEXTEST_URL=https://get.nexte.st/%[2]s/${NEXTEST_PLATFORM}
-
-{
-  echo "=== apt-get update ==="
-  apt-get update -qq
-  echo "=== apt-get install ==="
-  apt-get install -y -qq --no-install-recommends \
-    libgtk-3-dev libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev libacl1-dev \
-    curl ca-certificates
-} >> "$PROVISION_LOG" 2>&1 || {
-  echo "--- apt failed; full provision log follows ---" >&2
-  cat "$PROVISION_LOG" >&2
-  exit 1
-}
-
-curl -fsSL https://go.dev/dl/go%[1]s.linux-${ARCH}.tar.gz | tar -xz -C /usr/local
-curl -LsSf "$NEXTEST_URL" | tar zxf - -C /usr/local/bin`
-
-// buildProvisionScript fills in the Go and nextest versions the container installs.
-//
-// Go comes from `.mise.toml` rather than a const here, so the container always
-// provisions the same toolchain the host and CI use. The script downloads that
-// exact tarball because build.rs invokes
-// `go run scripts/download-llama-server.go` (which Tauri's beforeBuildCommand
-// needs), and Debian's `golang-go` apt package lags too far behind to track mise.
-// `go-version-single-source` is what keeps a literal from creeping back in.
-func buildProvisionScript(rootDir string) (string, error) {
-	goVersion, err := MiseGoVersion(rootDir)
-	if err != nil {
-		return "", err
-	}
-	return fmt.Sprintf(provisionScriptTemplate, goVersion, containerNextestVersion), nil
-}
-
-// linuxSelectionArgs computes the cargo package selection for `linux`, NOT for this
-// machine: the container is always Linux even though the host running the check is a Mac.
-// Getting that wrong leaves `cmdr-fsevent-stream` in the selection set, where it fails at
-// `cargo check` with `E0455: link kind 'framework' is only supported on Apple targets`.
-func linuxSelectionArgs(rootDir string) ([]string, error) {
-	members, err := WorkspaceMembers(rootDir)
-	if err != nil {
-		return nil, err
-	}
-	return CargoSelectionArgs(members, "linux"), nil
-}
-
-// containerNextestScript is the ONE place a `cargo nextest run` command is built for the
-// container, so the main run and the contention re-run can't drift apart in selection,
-// `--locked`, or PATH. Go is on PATH because `build.rs` shells out to it.
-//
-// Every argument is single-quoted: the re-run passes a nextest filter expression
-// (`test(=a::b) + test(=c::d)`) whose spaces and parens `sh -c` would otherwise split.
+// containerNextestScript builds a `cargo nextest run` for the container, so the main run
+// and the contention re-run can't drift apart in selection, `--locked`, or quoting.
 func containerNextestScript(args ...string) string {
-	quoted := make([]string, 0, len(args))
-	for _, a := range args {
-		quoted = append(quoted, shellQuote(a))
-	}
-	return "export PATH=/usr/local/go/bin:$PATH\ncargo nextest run " + strings.Join(quoted, " ") + " 2>&1"
-}
-
-// shellQuote wraps an argument for `sh -c`, escaping any embedded single quote.
-func shellQuote(s string) string {
-	return "'" + strings.ReplaceAll(s, "'", `'\''`) + "'"
+	return containerCargoScript(append([]string{"nextest", "run"}, args...)...)
 }
 
 // RunRustTestsLinux runs Rust tests in a Linux Docker container.
 // This catches platform-specific issues before CI.
 //
-// The container is started detached and each phase (provision, test run, contention
-// re-run) is a `docker exec` into it, rather than one `docker run sh -c <everything>`.
-// That's what lets a red run re-run its failures alone the way the host lanes do: the
-// re-run lands in the same container, with the same toolchain and the same warm
-// `CARGO_TARGET_DIR`, so it costs seconds instead of a fresh provision plus a full
-// workspace rebuild. The container is removed on every exit path.
+// The container runs from the provisioned image and builds into this checkout's target
+// volume (`desktop-rust-linux-container.go`), so a warm run compiles only what changed.
+// It's started detached and each phase (test run, contention re-run) is a `docker exec`
+// into it, rather than one `docker run sh -c <everything>`. That's what lets a red run
+// re-run its failures alone the way the host lanes do: the re-run lands in the same
+// container, so it costs seconds. The container is removed on every exit path.
 func RunRustTestsLinux(ctx *CheckContext) (CheckResult, error) {
-	// Check if Docker is available
-	if !CommandExists("docker") {
-		return Skipped("Docker not installed"), nil
+	if skip, unavailable := dockerUnavailable(); unavailable {
+		return skip, nil
 	}
-
-	// Check if Docker daemon is running
-	checkCmd := exec.Command("docker", "info")
-	if _, err := RunCommand(checkCmd, true); err != nil {
-		return Skipped("Docker not running"), nil
-	}
-
-	// Per-run host log dir, bind-mounted into the container at /cmdr-logs so
-	// the apt log survives the container. macOS auto-cleans /tmp on reboot; we don't
-	// otherwise prune.
-	logDir := fmt.Sprintf("/tmp/cmdr-rust-tests-linux-%d", time.Now().Unix())
-	if err := os.MkdirAll(logDir, 0o755); err != nil {
-		return CheckResult{}, fmt.Errorf("failed to create log dir: %w", err)
-	}
-	provisionLog := filepath.Join(logDir, "provision.log")
 
 	selection, err := linuxSelectionArgs(ctx.RootDir)
 	if err != nil {
 		return CheckResult{}, err
 	}
 
-	container := fmt.Sprintf("cmdr-rust-tests-linux-%d-%d", os.Getpid(), time.Now().UnixNano())
-	if err := startTestContainer(container, ctx.RootDir, logDir); err != nil {
-		return CheckResult{}, err
-	}
-	defer removeTestContainer(container)
-
-	provisionScript, err := buildProvisionScript(ctx.RootDir)
+	env, err := prepareLinuxContainer(ctx.RootDir)
 	if err != nil {
 		return CheckResult{}, err
 	}
-	if out, err := dockerExec(container, provisionScript); err != nil {
-		return CheckResult{}, fmt.Errorf("provisioning the Linux test container failed (provision log: %s)\n%s",
-			provisionLog, indentOutput(out))
+
+	container := linuxContainerName("tests")
+	if err := startLinuxContainer(container, ctx.RootDir, env); err != nil {
+		return CheckResult{}, err
 	}
+	defer removeLinuxContainer(container)
 
 	testArgs := append([]string{"--locked"}, selection...)
 	testArgs = append(testArgs, "--no-fail-fast")
@@ -197,7 +69,7 @@ func RunRustTestsLinux(ctx *CheckContext) (CheckResult, error) {
 		// runs in 0.07 s natively.
 		summary := trimRustTestProgress(trimBuildNoise(output))
 		return resolveRustFailure(
-			fmt.Sprintf("rust tests failed on Linux (provision log: %s)", provisionLog),
+			"rust tests failed on Linux"+env.buildNote(),
 			dockerContentionRunner(container, selection),
 			dockerLoadSampler(container),
 			summary)
@@ -208,93 +80,18 @@ func RunRustTestsLinux(ctx *CheckContext) (CheckResult, error) {
 	if flaky := ParseFlakyTests(output); len(flaky) > 0 {
 		return CheckResult{
 			Code:    ResultWarning,
-			Message: fmt.Sprintf("All tests passed on Linux; %s (provision log: %s)", FlakySummary(flaky), provisionLog),
+			Message: fmt.Sprintf("All tests passed on Linux; %s%s", FlakySummary(flaky), env.buildNote()),
 			Total:   -1,
 			Issues:  len(flaky),
 			Changes: -1,
 		}, nil
 	}
-	return Success(fmt.Sprintf("All tests passed on Linux (provision log: %s)", provisionLog)), nil
+	return Success("All tests passed on Linux" + env.buildNote()), nil
 }
-
-// startTestContainer brings up the detached container every phase execs into.
-//
-// The whole repo is mounted so cargo can find the workspace root Cargo.toml (and its
-// Cargo.lock, and `.config/nextest.toml`, which is where the contention profiles live).
-// Working directory is the workspace root, since the run is workspace-wide.
-//
-// PID 1 is a bounded `sleep`, not the suite: the container has to outlive the test exec
-// for the contention re-run to reuse it. `--rm` plus the deferred removal is the normal
-// path; the sleep is the backstop for a check runner that never gets to run its defers.
-func startTestContainer(name, rootDir, logDir string) error {
-	cmd := exec.Command("docker", "run", "-d", "--rm",
-		"--name", name,
-		"-v", rootDir+":/repo",
-		"-v", logDir+":/cmdr-logs",
-		"-w", "/repo",
-		"-e", "CARGO_TARGET_DIR=/tmp/cargo-target",
-		"rust:latest",
-		"sleep", strconv.Itoa(int(containerKeepAlive.Seconds())))
-
-	// Tracked BEFORE the start returns: a container that came up while the command was
-	// being interrupted is exactly the one that would otherwise be orphaned.
-	containerTracker.mu.Lock()
-	containerTracker.names[name] = struct{}{}
-	containerTracker.mu.Unlock()
-
-	if out, err := RunCommand(cmd, true); err != nil {
-		return fmt.Errorf("failed to start the Linux test container: %w\n%s", err, indentOutput(out))
-	}
-	return nil
-}
-
-// containerTracker holds the containers a check has running, so `KillAllProcesses` can
-// remove them on Ctrl+C. The runner `os.Exit`s there, so a `defer` alone isn't enough.
-var containerTracker = struct {
-	mu    sync.Mutex
-	names map[string]struct{}
-}{names: make(map[string]struct{})}
-
-// RemoveTrackedContainers force-removes every container a check still has running.
-func RemoveTrackedContainers() {
-	containerTracker.mu.Lock()
-	names := make([]string, 0, len(containerTracker.names))
-	for name := range containerTracker.names {
-		names = append(names, name)
-	}
-	containerTracker.mu.Unlock()
-
-	for _, name := range names {
-		removeTestContainer(name)
-	}
-}
-
-// removeTestContainer tears the container down on every exit path, pass or fail. Bounded
-// so a wedged daemon can't turn cleanup into the thing that hangs the check.
-func removeTestContainer(name string) {
-	rmCtx, cancel := context.WithTimeout(context.Background(), dockerControlTimeout)
-	defer cancel()
-	_, _ = RunCommand(exec.CommandContext(rmCtx, "docker", "rm", "-f", name), true)
-
-	containerTracker.mu.Lock()
-	delete(containerTracker.names, name)
-	containerTracker.mu.Unlock()
-}
-
-// dockerExec runs a shell script inside the live container and returns its combined output.
-func dockerExec(container, script string) (string, error) {
-	return RunCommand(exec.Command("docker", "exec", container, "sh", "-c", script), true)
-}
-
-// dockerControlTimeout bounds the small housekeeping docker calls (load sampling,
-// teardown). The test execs themselves stay unbounded, as they were: their deadlines are
-// nextest's, not the wall clock's.
-const dockerControlTimeout = 30 * time.Second
 
 // dockerContentionRunner re-runs the named tests inside the SAME container the failing run
 // used, under one of the contention profiles. Reusing the container is what makes the
-// re-run affordable: the toolchain is provisioned and `CARGO_TARGET_DIR` is warm, so
-// nothing recompiles and only the named tests execute.
+// re-run affordable: nothing recompiles and only the named tests execute.
 //
 // The package selection is carried over verbatim. A re-run that selected differently could
 // find no tests at all and read as "everything passed alone", which is the failure mode
@@ -375,9 +172,8 @@ var compilingLineRe = regexp.MustCompile(`(?m)^\s*Compiling \w+ v`)
 // trimBuildNoise drops cargo's pre-test build chatter by keeping everything
 // after the last `Compiling …` line. If no Compiling line exists (nothing
 // needed rebuilding, or the failure came before cargo got that far), the
-// output is returned as-is. Apt is silenced at source via -qq +
-// DEBIAN_FRONTEND=noninteractive in provisionScript, and provisioning is its
-// own exec, so a no-Compiling failure already comes back clean.
+// output is returned as-is. Provisioning happens at image build time, so no
+// apt chatter ever reaches a test exec.
 //
 // Nothing is ever truncated by length: if the test run produces 500 lines of
 // real failures, all 500 survive.

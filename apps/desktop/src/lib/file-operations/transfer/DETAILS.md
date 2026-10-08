@@ -60,6 +60,9 @@ COMPLETED files".
 
 ## File map
 
+`TransferDialog.test.ts` covers preflight and conflict UX; `TransferDialog.targets.test.ts` covers filename targets and
+rename-by-move. Both use the IPC doubles and mount helpers in `test-transfer-dialog-harness.ts`.
+
 Where a symbol lives and who calls it: `codegraph_search` / `codegraph_explore`. The area's shape: `CLAUDE.md` § Module
 map. What the pieces DO is in the sections below: the two dialogs and both state factories in § "How transfer flows",
 the compress components (level slider, estimate line, name helper, dest-exists check) in § "Compress mode", the password
@@ -183,7 +186,7 @@ already supplied a name. Backend landing and safety:
        window's prompt (`../DETAILS.md` § "Conflict prompts for operations with no dialog"). So a deep clash that nobody
        answers is a missing listener, never a reason to widen this check.
      - **Cross-type guardrail.** When a real conflict is a type mismatch AND the user selects "Overwrite all", a red
-       warning appears (mirrors the per-file dialog's file→folder warning): overwriting replaces items of a different
+       warning appears (mirrors the per-file dialog's file↔folder warning): overwriting replaces items of a different
        type, including folder contents.
 
 2. **TransferProgressDialog** (operation execution)
@@ -422,7 +425,7 @@ lives in § "Single-item destinations". Batch F5 and Paste retain the inline ren
 Copy and Move share 95%+ of UI/flow. Differences:
 
 - Labels ("Copy" vs "Move")
-- Backend command (`copyFiles()` vs `moveFiles()`)
+- Backend command (`copyBetweenVolumes()` vs `moveBetweenVolumes()` / same-volume `moveFiles()`)
 - Post-completion: move refreshes both panes (source files gone)
 - Cross-FS move has an extra closing stage, § "Removing the originals"
 
@@ -486,6 +489,17 @@ user-visible differences from copy/move:
   The slide duration is 0 under `prefers-reduced-motion` and 0 before the first paint, so opening straight into Compress
   doesn't animate.
 
+### Rename mode (F2 on a big S3 folder)
+
+`TransferDialogPropsData.newName` turns the Move dialog into a rename confirmation (`rename/DETAILS.md` § "A rename that
+copies"). The path box holds folder + new name, the Copy/Move/Compress toggle gives way to one hint line, and the volume
+picker is disabled (`renameByMove` works on one volume). It is ❌ never `isSameVolumeMove`: the deep scan runs so the
+dialog shows the counts, and the backend consumes the preview. The top-level conflict check is skipped
+(`data-conflict-state="skipped"`; the source would clash with itself), the leaf is validated as a NAME, and the
+dest-exists probe asks about the folder. Confirm splits the box (`splitPathLeaf`: a trailing slash is an empty name, ❌
+never the folder's name one level up) into `destination` + `newName`, which rides to `transfer-dispatch.ts` and routes
+to `renameByMove`. `retryPropsFrom` keeps it.
+
 ### Same-FS move optimization
 
 When source and destination are on the same filesystem (checked via `metadata.dev()`), backend uses instant `rename()`.
@@ -497,16 +511,20 @@ Frontend handles this by:
 
 ### Same-volume move skips the deep scan preview
 
-`isSameVolumeMove = activeOperationType === 'move' && sourceVolumeId !== DEFAULT_VOLUME_ID && sourceVolumeId === selectedVolumeId`
-(derived in `TransferDialog`, no extra prop). For a same-volume move the backend does a server-side rename-merge that
-transfers zero bytes, so the deep recursive scan preview — which exists only to feed the Size bar — is pure waste. On a
-NAS it used to cost 30–40 s of "Verifying before move…" before a 100 ms rename. So:
+`isSameVolumeMove = activeOperationType === 'move' && sourceVolumeId !== DEFAULT_VOLUME_ID && sourceVolumeId === selectedVolumeId && !renamesCanCopy`
+(derived in `TransferDialog`, no extra prop; rename mode is never it either). For a same-volume move the backend does a
+server-side rename-merge that transfers zero bytes, so the deep recursive scan preview — which exists only to feed the
+Size bar — is pure waste. On a NAS it used to cost 30–40 s of "Verifying before move…" before a 100 ms rename. So:
 
 The `DEFAULT_VOLUME_ID` exclusion is load-bearing and mirrors the same guard in `TransferProgressDialog`'s
 `isSameVolumeMove`: a local→local move (root → root) is NOT a server-side rename. The backend's local move path
 **consumes** the preview cache via `config.preview_id`, and the dialog's tallies come from the preview — so cancelling
 it for a local→local move both zeroes the dialog counters and forces a backend re-scan. Local→local keeps the deep
 preview running.
+
+**A volume whose renames copy keeps the scan too** (`capabilitiesFor(sourceVolumeId).renamesCanCopy`, S3): its move is a
+server-side copy per object, billed, so the dialog scans for the counts and the S3 cost line, and confirm hands the
+preview id to `move_within_same_volume`, which waits it out through `await_claimed_preview` exactly as for rename mode.
 
 The scan-preview machinery (the listeners, `start()` / `cancelPreview()`, the toggle `$effect`, the awaitable
 `scanStarted` promise) lives in **`transfer-scan-state.svelte.ts`** (`createTransferScanState`), and the conflict-check
@@ -623,9 +641,9 @@ reaches for a fixed `sleep`. `waitForConflictCheck` in `conflict-helpers.ts` pol
 
 The destination box (`editedPath`) accepts the home shortcut as well as absolute paths: `validateDirectoryPath` passes a
 leading `/`, a bare `~`, or `~/…`. `~` is the app's internal stand-in for the home dir; the backend expands it on
-execution (the local `copy_files`/`move_files` commands always did, and `copy_between_volumes`/`move_between_volumes`
-expand a leading `~` for a destination volume with a local path via `write_operations/routing.rs::resolve_dest_path`,
-which the write-access probe below anchors through too).
+execution (the local `move_files` command always did, and `copy_between_volumes`/`move_between_volumes` expand a leading
+`~` for a destination volume with a local path via `write_operations/routing.rs::resolve_dest_path`, which the
+write-access probe below anchors through too).
 
 Two niceties on top:
 
@@ -649,10 +667,20 @@ Two niceties on top:
   unregistered volume). A definite `unwritable` shows a red line under the box (`#transfer-path-refusal`, keys
   `destinationReadOnly` / `destinationNoPermission` / `destinationNotWritable`, one per reason the backend could tell
   apart) and suppresses the yellow "will be created" warning, which would be a promise the transfer can't keep. The
-  structural red error still wins. ❗ `unknown` shows nothing, and confirm stays enabled: the transfer asks again before
-  it writes and refuses with the typed `destination_not_writable` error, which is also what an MCP auto-confirm meets (a
-  disabled confirm would leave its round trip waiting). The phone case this exists for: copying onto a Pixel's `/`
-  surfaced only after confirm, as "Not enough space".
+  structural red error still wins. While it shows, Confirm is disabled and Enter does nothing (`confirmFromUser`), the
+  way a path error disables them, with the notice as the reason. Decision/Why: the transfer asks the same question
+  before it writes and refuses with the typed `destination_not_writable` error anyway, so an enabled button led only to
+  that refusal in an extra dialog. ❗ The gate sits in `confirmFromUser`, ❌ never `handleConfirm`: an MCP confirm and
+  the auto-confirm go through `handleConfirm` and meet the backend's typed refusal, where a refused confirm would leave
+  their round trip waiting. `unknown` shows nothing and blocks nothing. The phone case this exists for: copying onto a
+  Pixel's `/` surfaced only after confirm, as "Not enough space".
+- **Yellow "this path repeats the place's folder" warning (#164).** The same debounced probe asks `destinationRootEcho`
+  (the `destination_root_echo` command over `cmdr_fs::volume::root_echo`, whose rule and why live in
+  `crates/cmdr-fs/DETAILS.md` § "`root_anchored`"). On a place rooted at a server folder, `/srv/data/photos` reads two
+  ways, so `#transfer-path-root-echo` names where it goes (`/srv/data/srv/data/photos`) and offers `/photos` behind a
+  "Use shorter path" button. ❌ Nothing rewrites the box on its own, and Enter sends what the box says: the doubled
+  folder can be real. It shows for a prefilled path too, and outranks "will be created" (usually also true of the
+  doubled folder); red errors and the refusal outrank it.
 
 Backend counterpart: every transfer path creates a missing destination (and ancestors) before transferring — the local
 copy/move paths via `ensure_destination_dir` (`write_operations/validation.rs`), and the cross-volume +
@@ -709,6 +737,15 @@ button stays live throughout, because the preview only feeds this Size line and 
 itself. A second button for something the primary button already does would be noise. What the user can't do without
 help is ask again after plugging the network back in.
 
+**A source no volume answers for is refused, with neither Retry nor Confirm.** A phone unplugged under a search-results
+pane leaves a non-local volume id nothing registers. `start_scan_preview` refuses it with a typed `ScanPreviewRefusal`
+(`SourceNotConnected`) instead of walking `adb://…` on the Mac, and the wrapper hands it back as `{ refusal }`, which
+the scan state keeps as `sourceRefusal`. The dialog reads `unavailable`, says the phone or server isn't connected any
+more, and disables Confirm (Enter too): retrying or proceeding can only fail until it's back. A confirm that beats the
+refusal (MCP auto-confirm) reaches the backend, which answers `source_no_longer_connected` and its own error dialog. The
+delete dialog treats the refusal like a walk that stopped. Pinned by `TransferDialog.unavailable.test.ts` § "a source no
+volume answers for".
+
 **The conflict check.** `transfer-conflict-check.svelte.ts` carries a `status` of `idle` / `checking` / `answered` /
 `unknown` (a bounded `withTimeout` at 35 s over the IPC, just above the backend's own 30 s budget, catches a call that
 never returns at all). `unknown` renders its own line, because rendering nothing is what a genuinely clean destination
@@ -750,6 +787,25 @@ backend session that dropped with no typed side (MTP, SMB). The move-to-the-driv
 a move that stops keeps every original, so there is no partial state to report. `move_not_confirmed` is its neighbour:
 the move's closing flush couldn't prove the copies were on disk, so every original stayed put, and the copy says exactly
 that.
+
+## Copy anyway
+
+`insufficient_space` is a question, not a verdict: its `required` is an upper bound (files already at the destination
+can make a copy need less, and the backend only looks at them on a local disk), so the copy is worded "may not have
+enough space" and the error dialog offers **Copy anyway** beside Close. The click runs
+`dialog-state.handleTransferErrorCopyAnyway`, which starts the failed copy's birth context again (`retryPropsFrom`,
+fresh preview, same conflict policy) with `spaceShortfall: 'proceed'`, settling the failed one like a close. The field
+rides `TransferProgressPropsData` → `TransferProgressDialog` → `TransferDispatchConfig` → `copyBetweenVolumes`, and the
+backend then skips its free-space check (`SpaceShortfall` in
+`apps/desktop/src-tauri/src/file_system/write_operations/DETAILS.md` § "The free-space pre-flight"). A destination that
+really fills up still stops the copy, as `destination_full`.
+
+Close stays primary, so Enter takes the safe way out. The button appears only for a `copy` with a birth context: an
+adopted operation (queue window) and a retained failure have nothing to start again, and the suggestion text never names
+the button for that reason. A plain Retry of a refused copy asks about space again; one of a copy already started anyway
+keeps `proceed`. An MCP-started copy surfaces the same refusal to the agent, and only the person's click goes ahead.
+Pinned by `TransferErrorDialog.typed.test.ts`, `DialogManager.svelte.test.ts`, and
+`dialog-state.failure-handover.svelte.test.ts`.
 
 ## Gotchas
 

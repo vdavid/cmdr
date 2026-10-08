@@ -2,7 +2,8 @@
 
 use super::*;
 use cmdr_fs::volume::{
-    adb_volume_id, local_volume_id, mtp_ids, path_volume_id, sftp_volume_id, smb_volume_id, webdav_volume_id,
+    adb_volume_id, local_volume_id, mtp_ids, path_volume_id, s3_volume_id, sftp_volume_id, smb_volume_id,
+    webdav_volume_id,
 };
 
 const TEST_PROCESS_SECRET: [u8; 32] = [0x7c; 32];
@@ -21,50 +22,114 @@ fn report_shape(input: &str) -> String {
     token.replace_all(&output, "<$1>").into_owned()
 }
 
-/// `redact_line` is also the compatibility sanitizer for ordinary MCP resources. These outputs
-/// pin its byte-for-byte policy, which deliberately stops short of the report-mode handling of
-/// complete remote references, structured identities, and name-derived IDs.
+/// `redact_line` serves ordinary MCP resources with the SAME policy as a report, only with bare
+/// tokens: complete remote references, structured identities, and name-derived IDs included.
+/// A second, weaker policy for MCP once let a space-containing URL swallow the path after it.
 #[test]
-fn unsalted_api_preserves_pre_report_policy_bytes() {
+fn unsalted_api_runs_the_report_policy_with_bare_tokens() {
     let cases = [
         ("/Users/alice/Secret Project/report.pdf", "$HOME/<dir>/<file>.pdf"),
         (
             "smb://ada:secret@nas.local:1445/Finance/Downloads/report.pdf?token=secret#customer",
-            "smb://<host>/<share>/Downloads/<dir>",
+            "smb://<user>:<credential>@<host>.local:1445/<share>/<dir>/<file>.pdf?<query>=<query>#<fragment>",
         ),
         (
             r"\\nas.local\Finance\Downloads\report.pdf",
-            r"\\<host>\<share>\Downloads\<file>.pdf",
+            r"\\<host>.local\<share>\<dir>\<file>.pdf",
         ),
         (
             "sftp://ada:secret@files.example.test:2222/home/ada/Client/report.pdf?token=secret#customer",
-            "sftp://<userinfo>@files.example.test:2222/home/ada/Client/report.pdf?token=secret#customer",
+            "sftp://<user>:<credential>@<host>:2222/<dir>/<dir>/<dir>/<file>.pdf?<query>=<query>#<fragment>",
         ),
+        // A URL path may contain spaces, so the prose after it rides along as path segments:
+        // over-redacted, never leaked.
         (
             "https://u@host.example/a then /Users/alice/secret.txt",
-            "https://<userinfo>@host.example/a then $HOME/<file>.txt",
+            "https://<user>@<host>/<dir>/<dir>/<dir>/<file>.txt",
         ),
         (
             "webdav://nas.local/dav/ada/report.pdf?owner=ada@example.test#customer",
-            "webdav://<host>.local/dav/ada/report.pdf?owner=<email>#customer",
+            "webdav://<host>.local/<dir>/<dir>/<file>.pdf?<query>=<query>#<fragment>",
         ),
         (
             "https://10.24.8.3/customer/acme/report.json?owner=ada@example.test#customer",
-            "https://<ipv4>/customer/acme/report.json?owner=<email>#customer",
+            "https://<ipv4-private>/<dir>/<dir>/<file>.json?<query>=<query>#<fragment>",
         ),
         (
             r#"host="Client Nimbus" share="Private Vault""#,
-            r#"host="Client Nimbus" share="Private Vault""#,
+            r#"host="<host>" share="<share>""#,
         ),
         (r#"host="nas.local" user="ada""#, r#"host="<host>.local" user="<user>""#),
         (
             "IDs smb-nas-private-445-client-0123456789abcdef manual-192-168-40-9-1445",
-            "IDs smb-nas-private-445-client-0123456789abcdef manual-192-168-40-9-1445",
+            "IDs smb-<volume-id> manual-<server-id>-1445",
         ),
     ];
 
     for (input, expected) in cases {
-        assert_eq!(r(input), expected, "legacy compatibility changed for {input:?}");
+        assert_eq!(r(input), expected, "unsalted output for {input:?}");
+        assert_eq!(r(input), report_shape(input), "the two policies split for {input:?}");
+    }
+}
+
+/// cmdr-reports#30: a URL with a space in its path once swallowed the absolute path after it
+/// under the unsalted policy, so the user's home folder name shipped raw.
+#[test]
+fn a_space_containing_url_never_hides_the_path_after_it() {
+    let cases = [
+        "fetched https://u@host.example/My Folder/a.txt then /Users/alice/secret.txt",
+        "fetched sftp://ada@nas.example/Client Nimbus/report.pdf and /Users/alice/Private Plans/b.pdf",
+        "webdav://nas.local/dav/Shared Stuff/x.docx then /Volumes/Alice Backup/notes.md",
+    ];
+    for input in cases {
+        for out in [r(input), report_shape(input)] {
+            assert!(!out.contains("alice") && !out.contains("Alice"), "{out}");
+            assert!(
+                !out.contains("Private") && !out.contains("Nimbus") && !out.contains("Shared"),
+                "{out}"
+            );
+        }
+    }
+}
+
+/// A production Svelte build throws `Error("https://svelte.dev/e/<code>")` and nothing else, so
+/// tokenizing that URL erased the only clue an uncaught frontend error carries (ERR-DAN3Q's
+/// `each_key_duplicate` took a rebuild and a stack-offset lookup to name). Only the exact public
+/// shape survives: any userinfo, port, query, fragment, extra segment, or other host is redacted.
+#[test]
+fn svelte_error_code_urls_survive_but_only_in_their_exact_shape() {
+    let kept = [
+        r#"ERROR FE:uncaught  Uncaught error at tauri://localhost/_app/immutable/chunks/D6pBjj6a.js:1:14434: detail="Error: https://svelte.dev/e/each_key_duplicate""#,
+        "Error: https://svelte.dev/e/effect_update_depth_exceeded.",
+        "https://svelte.dev/e/state_unsafe_mutation",
+    ];
+    for input in kept {
+        assert!(r(input).contains("https://svelte.dev/e/"), "unsalted: {:?}", r(input));
+        assert_eq!(r(input), report_shape(input), "the two policies split for {input:?}");
+        let code = input
+            .split("svelte.dev/e/")
+            .nth(1)
+            .expect("code")
+            .trim_end_matches(['"', '.']);
+        assert!(context().redact_line(input).contains(code), "report lost {code:?}");
+    }
+
+    let redacted = [
+        ("https://svelte.dev/e/Alice", "https://<host>/<dir>/<dir>"),
+        ("https://svelte.dev/e/code/secret", "https://<host>/<dir>/<dir>/<dir>"),
+        (
+            "https://svelte.dev/e/code?owner=ada",
+            "https://<host>/<dir>/<dir>?<query>=<query>",
+        ),
+        ("https://svelte.dev/e/code#ada", "https://<host>/<dir>/<dir>#<fragment>"),
+        ("https://ada@svelte.dev/e/code", "https://<user>@<host>/<dir>/<dir>"),
+        ("https://svelte.dev:8443/e/code", "https://<host>:8443/<dir>/<dir>"),
+        ("https://svelte.dev.evil.test/e/code", "https://<host>/<dir>/<dir>"),
+        ("http://svelte.dev/e/code", "http://<host>/<dir>/<dir>"),
+        ("https://svelte.dev/docs/code", "https://<host>/<dir>/<dir>"),
+    ];
+    for (input, expected) in redacted {
+        assert_eq!(report_shape(input), expected, "input: {input:?}");
     }
 }
 
@@ -92,6 +157,10 @@ fn complete_remote_urls_redact_every_identity_but_keep_diagnostic_shape() {
         (
             "webdav://ada@nas.local:8443/remote.php/dav/files/ada/Secret%20Plan.docx",
             "webdav://<user>@<host>.local:8443/<dir>/<dir>/<dir>/<dir>/<file>.docx",
+        ),
+        (
+            "s3://AKIACLIENTKEY@s3.eu-west-1.amazonaws.com:443/client-photos/Client Nimbus/plan.pdf",
+            "s3://<user>@<host>:443/<dir>/<dir>/<file>.pdf",
         ),
         (
             "https://api.private.test:9443/customer/acme/report.json?access_token=s3cret&folder=Client%20Nimbus#invoice-42",
@@ -207,6 +276,10 @@ fn current_name_derived_ids_are_tokenized_only_at_the_diagnostic_boundary() {
         (smb_volume_id("nas.private", 445, "Client Share"), "smb-<volume-id>"),
         (sftp_volume_id("nas.private", 22, "ada"), "sftp-<volume-id>"),
         (webdav_volume_id("dav.private", 443, "ada"), "webdav-<volume-id>"),
+        (
+            s3_volume_id("s3.private", 443, "AKIAKEY", Some("client-photos")),
+            "s3-<volume-id>",
+        ),
         (adb_volume_id("R58M1/Client"), "adb-<device-id>"),
         (mtp.clone(), "mtp-<device-id>"),
         (mtp_ids::mtp_volume_id(&mtp, 65_537), "mtp-<device-id>:65537"),

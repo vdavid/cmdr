@@ -20,11 +20,11 @@
      popovers; the FILL is the tinted variant so a tooltip reads as a distinct surface.
      See `--color-bg-tooltip` above. */
   background: var(--color-bg-tooltip);
-  -webkit-backdrop-filter: saturate(180%) blur(20px);
-  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: var(--glass-backdrop);
+  backdrop-filter: var(--glass-backdrop);
   border: 0.5px solid var(--color-border-glass);
   border-radius: var(--radius-sm);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-tooltip);
 
   /* Typography */
   font-size: var(--font-size-sm);
@@ -52,13 +52,6 @@
    this case gets a real reading width. The tooltip action sets the class, never a caller. */
 .cmdr-tooltip.cmdr-tooltip-rich {
   max-width: 460px;
-}
-
-/* Reduced transparency: the `--color-bg-glass` token already flips to opaque above;
-   here we only drop the blur. */
-html.reduce-transparency .cmdr-tooltip {
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
 }
 
 /* Keyboard shortcut badge inside tooltip */

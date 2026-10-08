@@ -12,7 +12,7 @@ use std::time::{Duration, Instant};
 
 use super::super::OperationEventSink;
 use super::super::operation_intent::is_cancelled;
-use super::super::state::WriteOperationState;
+use super::super::state::{WriteOperationState, update_operation_status};
 use super::super::types::{
     AppearedDuringMove, CancelRollback, ProgressStep, WriteCancelledEvent, WriteCompleteEvent, WriteErrorEvent,
     WriteOperationError, WriteOperationPhase, WriteOperationType, WriteProgressEvent,
@@ -245,6 +245,24 @@ impl MutatorHooks {
             0,
         )
         .with_scan_meta(current_dir.map(|dir| dir.display().to_string()), tally.dirs, None);
+        self.emit(event);
+    }
+
+    /// Emits one `write-progress` AND mirrors it into the status cache, the pair
+    /// the transfer driver's `emit_progress_and_status` keeps. Every emit here
+    /// goes through it: the cache is all a query API sees (the MCP `cmdr://state`
+    /// resource), and an op that only emits reads there as `Scanning` with no
+    /// bytes from start to finish.
+    fn emit(&self, event: WriteProgressEvent) {
+        update_operation_status(
+            &self.operation_id,
+            event.phase,
+            event.current_file.clone(),
+            event.files_done,
+            event.files_total,
+            event.bytes_done,
+            event.bytes_total,
+        );
         self.state.emit_progress_via_sink(&*self.events, event);
     }
 
@@ -299,8 +317,7 @@ impl MutatorHooks {
             } => (WriteOperationPhase::Transferring, bytes_done, bytes_total),
             RemoteCommitProgress::Finishing => (WriteOperationPhase::FinishingTransfer, 0, 0),
         };
-        self.state.emit_progress_via_sink(
-            &*self.events,
+        self.emit(
             WriteProgressEvent::new(
                 self.operation_id.clone(),
                 self.operation_type,
@@ -358,7 +375,7 @@ impl MutatorHooks {
             bytes_total,
         )
         .with_step(self.step_for(phase));
-        self.state.emit_progress_via_sink(&*self.events, event);
+        self.emit(event);
     }
 
     /// E2E-only per-entry pacing, the archive twin of the copy loop's per-file
@@ -426,6 +443,69 @@ mod tests {
         let started = Instant::now();
         sleep_unless_cancelled(Duration::from_millis(30), || false);
         assert!(started.elapsed() >= Duration::from_millis(30));
+    }
+
+    /// What a query API (the MCP `cmdr://state` resource) reads for this op.
+    fn cached(id: &str) -> (WriteOperationPhase, usize, usize, u64, u64) {
+        let status = super::super::super::state::get_operation_status(id).expect("the op is registered");
+        (
+            status.phase,
+            status.files_done,
+            status.files_total,
+            status.bytes_done,
+            status.bytes_total,
+        )
+    }
+
+    #[test]
+    fn every_emitted_phase_of_a_compress_reaches_the_status_cache() {
+        use super::super::super::state::{register_operation_status, unregister_operation_status};
+
+        let id = "compress-status-mirror";
+        register_operation_status(id, WriteOperationType::Compress, vec![]);
+        let hooks = MutatorHooks::new(
+            Arc::new(WriteOperationState::new(Duration::ZERO)),
+            Arc::new(CollectorEventSink::new()) as Arc<dyn OperationEventSink>,
+            id.to_string(),
+            WriteOperationType::Compress,
+            Duration::ZERO,
+        );
+
+        hooks.emit_scan_progress(
+            super::super::fresh_plan::PlanProgress {
+                files: 2,
+                dirs: 1,
+                bytes: 100,
+                current_dir: Path::new("/src"),
+            },
+            None,
+            true,
+        );
+        assert_eq!(cached(id), (WriteOperationPhase::Scanning, 2, 0, 100, 0));
+
+        // Pre-fix the cache stayed at `Scanning` from here to the terminal event.
+        let tick = |entries_done, bytes_done| MutationProgress {
+            entries_done,
+            entries_total: 3,
+            entries_changed: 3,
+            bytes_done,
+            bytes_total: 100,
+        };
+        MutationHooks::on_progress(&hooks, tick(1, 40));
+        assert_eq!(cached(id), (WriteOperationPhase::Compressing, 1, 3, 40, 100));
+
+        MutationHooks::on_progress(&hooks, tick(3, 100));
+        assert_eq!(cached(id), (WriteOperationPhase::FinishingCompression, 0, 0, 0, 0));
+
+        hooks.emit_remote_progress(RemoteCommitProgress::Transferring {
+            bytes_done: 0,
+            bytes_total: 60,
+        });
+        assert_eq!(cached(id), (WriteOperationPhase::Transferring, 0, 0, 0, 60));
+
+        hooks.emit_remote_progress(RemoteCommitProgress::Finishing);
+        assert_eq!(cached(id), (WriteOperationPhase::FinishingTransfer, 0, 0, 0, 0));
+        unregister_operation_status(id);
     }
 
     #[test]

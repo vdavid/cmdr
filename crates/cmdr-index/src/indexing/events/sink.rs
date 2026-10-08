@@ -6,7 +6,7 @@
 //! renders them into the Tauri payloads the frontend subscribes to).
 //!
 //! Two implementations ship: the app's `TauriEventSink` (production) and
-//! [`RecordingSink`] (tests, which assert on the event stream instead of standing
+//! `RecordingSink` (tests, in `test_sinks.rs`, which assert on the event stream instead of standing
 //! up an app). [`NoopEventSink`] covers the handle-free callers that have nothing
 //! to emit to.
 //!
@@ -153,6 +153,17 @@ pub enum IndexEvent {
         /// ground is under the walker instead of treating the whole volume as
         /// in flux for the run's whole length.
         covered_in_phases: bool,
+        /// The remembered time left once the walk is done, from the last completed
+        /// run of this kind. `None` when a later step has no such history, which
+        /// is how a host knows to show no overall figure. See
+        /// `IndexStatusResponse::left_after_find_files_ms` for the whole set.
+        left_after_find_files_ms: Option<u64>,
+        /// The remembered time left once the file list is saved.
+        left_after_save_ms: Option<u64>,
+        /// The remembered time left once folder sizes are computed.
+        left_after_compute_ms: Option<u64>,
+        /// The remembered time left once the catch-up step is done.
+        left_after_catch_up_ms: Option<u64>,
     },
     /// A branch of a volume is being walked, and it is the walker's for as long
     /// as this holds.
@@ -287,9 +298,11 @@ pub enum IndexEvent {
         phys_footprint_bytes: u64,
         /// Resident set size, which counts mappings `phys_footprint` excludes.
         resident_bytes: u64,
-        /// Bytes our global allocator has committed.
+        /// The global allocator the two figures below come from.
+        global_allocator: cmdr_fs::process_memory::GlobalAllocator,
+        /// Bytes the global allocator holds for the Rust heap (committed, or reserved).
         rust_heap_bytes: u64,
-        /// Bytes the system malloc zones hold, disjoint from the figure above.
+        /// Bytes the other malloc zones hold, disjoint from the figure above.
         system_malloc_bytes: u64,
         /// `phys_footprint` minus both allocators.
         untracked_bytes: u64,
@@ -627,170 +640,4 @@ impl NoopEventSink {
 
 impl EventSink for NoopEventSink {
     fn emit(&self, _event: IndexEvent) {}
-}
-
-/// One event of every kind, for a host to prove its mapping is complete.
-///
-/// Paired with [`IndexEventKind::ALL`], which the compiler keeps complete (see
-/// its `slot_of`): a new variant fails to compile until it's listed there, and
-/// the host's completeness test then fails until it's built here too. So neither
-/// list can quietly fall behind the enum.
-#[cfg(any(test, feature = "testing"))]
-pub fn one_of_every_kind() -> Vec<IndexEvent> {
-    vec![
-        IndexEvent::ScanStarted {
-            volume_id: "root".into(),
-            run_kind: ScanRunKind::FirstScan,
-            prior_total_entries: Some(1),
-            prior_scan_duration_ms: Some(2),
-            volume_used_bytes: Some(3),
-            covered_in_phases: false,
-        },
-        IndexEvent::CoverageBranchStarted {
-            volume_id: "root".into(),
-            roots: vec!["/Users/someone/Downloads".into()],
-        },
-        IndexEvent::CoverageBranchEnded {
-            volume_id: "root".into(),
-            roots: vec!["/Users/someone/Downloads".into()],
-        },
-        IndexEvent::CoveragePhaseStarted {
-            volume_id: "root".into(),
-            phase: CoveragePhase::PriorityRoot,
-            root: "/Users/someone/Downloads".into(),
-        },
-        IndexEvent::HomeCovered {
-            volume_id: "root".into(),
-        },
-        IndexEvent::ScanProgress {
-            volume_id: "root".into(),
-            entries_scanned: 1,
-            dirs_found: 2,
-            bytes_scanned: 3,
-        },
-        IndexEvent::ScanComplete {
-            volume_id: "root".into(),
-            total_entries: 1,
-            total_dirs: 2,
-            duration_ms: 3,
-        },
-        IndexEvent::ScanAborted {
-            volume_id: "root".into(),
-        },
-        IndexEvent::DirsUpdated {
-            paths: vec!["/tmp".into()],
-        },
-        IndexEvent::ReplayProgress {
-            volume_id: "root".into(),
-            events_processed: 1,
-            estimated_total: Some(2),
-        },
-        IndexEvent::ReplayComplete {
-            volume_id: "root".into(),
-            duration_ms: 1,
-        },
-        IndexEvent::RescanScheduled {
-            volume_id: "root".into(),
-            reason: RescanReason::StaleIndex,
-            details: Diagnostic("stale".into()),
-        },
-        IndexEvent::AggregationProgress {
-            volume_id: "root".into(),
-            phase: AggregationPhase::Computing,
-            current: 1,
-            total: 2,
-        },
-        IndexEvent::AggregationComplete {
-            volume_id: "root".into(),
-        },
-        IndexEvent::MemoryWarning {
-            phys_footprint_bytes: 1,
-            resident_bytes: 2,
-            rust_heap_bytes: 3,
-            system_malloc_bytes: 4,
-            untracked_bytes: 5,
-            action: MemoryWatchdogAction::StoppedIndexing,
-        },
-        IndexEvent::FreshnessChanged {
-            volume_id: "root".into(),
-            freshness: Freshness::Fresh,
-        },
-        IndexEvent::PhaseChanged {
-            volume_id: "root".into(),
-            phase: ActivityPhase::Live,
-        },
-        IndexEvent::MediaEnrichProgress {
-            volume_id: "root".into(),
-            done: 1,
-            total: 2,
-            bytes_done: 3,
-            bytes_total: 4,
-        },
-        IndexEvent::MediaEnrichTerminal {
-            volume_id: "root".into(),
-            reason: MediaEnrichTerminalReason::Cancelled,
-        },
-        IndexEvent::Error {
-            report: IndexErrorReport::WalkWorkerSpawnFailed {
-                detail: Diagnostic("out of threads".into()),
-            },
-        },
-        IndexEvent::PathAccessDenied {
-            path: PathBuf::from("/Users/someone/Downloads"),
-        },
-        IndexEvent::FolderActivity {
-            volume_id: "root".into(),
-            observed_at: 1_780_000_027,
-            folders: vec![FolderChangeRollup {
-                folder: "/Users/someone/Downloads".into(),
-                created: 3,
-                modified: 1,
-                removed: 0,
-                renamed: 2,
-                last_event_at: 1_780_000_027,
-            }],
-        },
-        IndexEvent::IndexNeedsFreshScan {
-            volume_id: "root".into(),
-        },
-    ]
-}
-
-/// A sink that keeps every event for a test to assert on.
-#[cfg(any(test, feature = "testing"))]
-#[derive(Default)]
-pub struct RecordingSink {
-    events: std::sync::Mutex<Vec<IndexEvent>>,
-}
-
-#[cfg(any(test, feature = "testing"))]
-impl RecordingSink {
-    /// An empty recorder.
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    /// Everything recorded so far, in emit order.
-    pub fn events(&self) -> Vec<IndexEvent> {
-        use cmdr_fs::ignore_poison::IgnorePoison;
-        self.events.lock_ignore_poison().clone()
-    }
-
-    /// The kinds recorded for `volume_id`, in emit order. The shape assertion
-    /// most tests actually want.
-    pub fn kinds_for(&self, volume_id: &str) -> Vec<IndexEventKind> {
-        self.events()
-            .iter()
-            .filter(|e| e.volume_id() == Some(volume_id))
-            .map(IndexEvent::kind)
-            .collect()
-    }
-}
-
-#[cfg(any(test, feature = "testing"))]
-impl EventSink for RecordingSink {
-    fn emit(&self, event: IndexEvent) {
-        use cmdr_fs::ignore_poison::IgnorePoison;
-        self.events.lock_ignore_poison().push(event);
-    }
 }

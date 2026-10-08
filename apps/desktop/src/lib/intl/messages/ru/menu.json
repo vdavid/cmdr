@@ -1,0 +1,704 @@
+{
+  "menu.bar.file": "Файл",
+  "@menu.bar.file": {
+    "sourceHash": "50009ce"
+  },
+  "menu.bar.edit": "Правка",
+  "@menu.bar.edit": {
+    "sourceHash": "464c4ff"
+  },
+  "menu.bar.select": "Выделение",
+  "@menu.bar.select": {
+    "sourceHash": "2a78025"
+  },
+  "menu.bar.view": "Вид",
+  "@menu.bar.view": {
+    "sourceHash": "dcc839a"
+  },
+  "menu.bar.go": "Переход",
+  "@menu.bar.go": {
+    "sourceHash": "6cc8519"
+  },
+  "menu.bar.tab": "Вкладка",
+  "@menu.bar.tab": {
+    "sourceHash": "90ddf19"
+  },
+  "menu.bar.window": "Окно",
+  "@menu.bar.window": {
+    "sourceHash": "19734a1"
+  },
+  "menu.bar.help": "Справка",
+  "@menu.bar.help": {
+    "sourceHash": "b79cac9"
+  },
+  "menu.app.about": "О приложении Cmdr",
+  "@menu.app.about": {
+    "sourceHash": "efe010f"
+  },
+  "menu.app.acknowledgements": "Благодарности",
+  "@menu.app.acknowledgements": {
+    "sourceHash": "c9015d5"
+  },
+  "menu.app.licenseDetails": "Сведения о лицензии",
+  "@menu.app.licenseDetails": {
+    "sourceHash": "0e660e8"
+  },
+  "menu.app.licenseEnter": "Ввести лицензионный ключ…",
+  "@menu.app.licenseEnter": {
+    "sourceHash": "24a8d77"
+  },
+  "menu.app.checkForUpdates": "Проверить обновления…",
+  "@menu.app.checkForUpdates": {
+    "sourceHash": "52d6f7d"
+  },
+  "menu.app.changelog": "Журнал изменений",
+  "@menu.app.changelog": {
+    "sourceHash": "ead07c8"
+  },
+  "menu.app.onboarding": "Знакомство с приложением…",
+  "@menu.app.onboarding": {
+    "sourceHash": "c4cc4aa"
+  },
+  "menu.app.settings": "Настройки…",
+  "@menu.app.settings": {
+    "sourceHash": "7a04083"
+  },
+  "menu.app.services": "Службы",
+  "@menu.app.services": {
+    "sourceHash": "604dce4"
+  },
+  "menu.app.hide": "Скрыть Cmdr",
+  "@menu.app.hide": {
+    "sourceHash": "8f86f89"
+  },
+  "menu.app.hideOthers": "Скрыть остальные",
+  "@menu.app.hideOthers": {
+    "sourceHash": "74376e4"
+  },
+  "menu.app.showAll": "Показать все",
+  "@menu.app.showAll": {
+    "sourceHash": "2150d8d"
+  },
+  "menu.app.quit": "Завершить Cmdr",
+  "@menu.app.quit": {
+    "sourceHash": "b3455b4"
+  },
+  "menu.file.open": "Открыть",
+  "@menu.file.open": {
+    "sourceHash": "ed077f3"
+  },
+  "menu.file.view": "Просмотр",
+  "@menu.file.view": {
+    "sourceHash": "dcc839a"
+  },
+  "menu.file.edit": "Открыть в редакторе",
+  "@menu.file.edit": {
+    "sourceHash": "691ca0f"
+  },
+  "menu.file.copy": "Скопировать…",
+  "@menu.file.copy": {
+    "sourceHash": "7f743d4"
+  },
+  "menu.file.move": "Переместить…",
+  "@menu.file.move": {
+    "sourceHash": "cd799da"
+  },
+  "menu.file.duplicate": "Дублировать",
+  "@menu.file.duplicate": {
+    "sourceHash": "02cdaab"
+  },
+  "menu.file.compress": "Сжать…",
+  "@menu.file.compress": {
+    "sourceHash": "66b9d2c"
+  },
+  "menu.file.newFolder": "Новая папка…",
+  "@menu.file.newFolder": {
+    "sourceHash": "6cca529"
+  },
+  "menu.file.newFile": "Новый файл…",
+  "@menu.file.newFile": {
+    "sourceHash": "6b2727f"
+  },
+  "menu.file.delete": "Удалить",
+  "@menu.file.delete": {
+    "sourceHash": "e2d0a54"
+  },
+  "menu.file.deletePermanently": "Удалить безвозвратно",
+  "@menu.file.deletePermanently": {
+    "sourceHash": "280b10c"
+  },
+  "menu.file.rename": "Переименовать",
+  "@menu.file.rename": {
+    "sourceHash": "3064d79"
+  },
+  "menu.context.showInFolder": "Показать в папке",
+  "@menu.context.showInFolder": {
+    "sourceHash": "da47876"
+  },
+  "menu.file.showInFinder": "Показать в Finder",
+  "@menu.file.showInFinder": {
+    "sourceHash": "c2a9c77"
+  },
+  "menu.file.showInFileManager": "Показать в файловом менеджере",
+  "@menu.file.showInFileManager": {
+    "sourceHash": "3ca4dad"
+  },
+  "menu.file.openTerminalHere": "Открыть терминал здесь",
+  "@menu.file.openTerminalHere": {
+    "sourceHash": "b7eda27"
+  },
+  "menu.file.getInfo": "Свойства",
+  "@menu.file.getInfo": {
+    "sourceHash": "91c64ca"
+  },
+  "menu.file.quickLook": "Быстрый просмотр",
+  "@menu.file.quickLook": {
+    "sourceHash": "f5616ce"
+  },
+  "menu.edit.undo": "Отменить",
+  "@menu.edit.undo": {
+    "sourceHash": "a8283ad"
+  },
+  "menu.edit.redo": "Повторить",
+  "@menu.edit.redo": {
+    "sourceHash": "7427398"
+  },
+  "menu.edit.cut": "Вырезать",
+  "@menu.edit.cut": {
+    "sourceHash": "1f45f02"
+  },
+  "menu.edit.copy": "Скопировать",
+  "@menu.edit.copy": {
+    "sourceHash": "e21f935"
+  },
+  "menu.edit.paste": "Вставить",
+  "@menu.edit.paste": {
+    "sourceHash": "f3380f7"
+  },
+  "menu.edit.moveHere": "Переместить объекты сюда",
+  "@menu.edit.moveHere": {
+    "sourceHash": "56f1247"
+  },
+  "menu.edit.copyPath": "Скопировать путь",
+  "@menu.edit.copyPath": {
+    "sourceHash": "720ff41"
+  },
+  "menu.edit.copyFilename": "Скопировать имя файла",
+  "@menu.edit.copyFilename": {
+    "sourceHash": "5cdf7f8"
+  },
+  "menu.edit.searchFiles": "Найти файлы…",
+  "@menu.edit.searchFiles": {
+    "sourceHash": "149a9d1"
+  },
+  "menu.select.all": "Выделить все",
+  "@menu.select.all": {
+    "sourceHash": "1fc9a38"
+  },
+  "menu.select.deselectAll": "Снять выделение со всех",
+  "@menu.select.deselectAll": {
+    "sourceHash": "9675494"
+  },
+  "menu.select.sameKind": "Выделить все того же типа",
+  "@menu.select.sameKind": {
+    "sourceHash": "9933028"
+  },
+  "menu.select.compareDirectories": "Сравнить папки",
+  "@menu.select.compareDirectories": {
+    "sourceHash": "5cf3985"
+  },
+  "menu.select.allFolders": "Выделить все папки",
+  "@menu.select.allFolders": {
+    "sourceHash": "5351f8b"
+  },
+  "menu.select.sameExtension": "Выделить все с расширением *.{extension}",
+  "@menu.select.sameExtension": {
+    "sourceHash": "7809a58"
+  },
+  "menu.select.noExtension": "Выделить все файлы без расширения",
+  "@menu.select.noExtension": {
+    "sourceHash": "d04751e"
+  },
+  "menu.select.invert": "Инвертировать выделение",
+  "@menu.select.invert": {
+    "sourceHash": "d2e128a"
+  },
+  "menu.select.files": "Выделить файлы…",
+  "@menu.select.files": {
+    "sourceHash": "b7f202e"
+  },
+  "menu.select.deselectFiles": "Снять выделение с файлов…",
+  "@menu.select.deselectFiles": {
+    "sourceHash": "6fb10d5"
+  },
+  "menu.view.leftPane": "Левая панель",
+  "@menu.view.leftPane": {
+    "sourceHash": "1c5078a"
+  },
+  "menu.view.rightPane": "Правая панель",
+  "@menu.view.rightPane": {
+    "sourceHash": "b2d98e6"
+  },
+  "menu.view.fullView": "Подробный режим",
+  "@menu.view.fullView": {
+    "sourceHash": "93f9dde"
+  },
+  "menu.view.briefView": "Краткий режим",
+  "@menu.view.briefView": {
+    "sourceHash": "7bfd572"
+  },
+  "menu.view.showHiddenFiles": "Показать скрытые файлы",
+  "@menu.view.showHiddenFiles": {
+    "sourceHash": "b5ede7f"
+  },
+  "menu.view.sortBy": "Сортировать",
+  "@menu.view.sortBy": {
+    "sourceHash": "c912902"
+  },
+  "menu.view.zoom": "Масштаб",
+  "@menu.view.zoom": {
+    "sourceHash": "509c517"
+  },
+  "menu.view.switchPane": "Переключить панель",
+  "@menu.view.switchPane": {
+    "sourceHash": "377471f"
+  },
+  "menu.view.swapPanes": "Поменять панели местами",
+  "@menu.view.swapPanes": {
+    "sourceHash": "cc29396"
+  },
+  "menu.view.clonePane": "Клонировать панель",
+  "@menu.view.clonePane": {
+    "sourceHash": "74b2c7f"
+  },
+  "menu.view.calculateFolderSizes": "Вычислить размеры папок",
+  "@menu.view.calculateFolderSizes": {
+    "sourceHash": "d2a83da"
+  },
+  "menu.view.commandPalette": "Палитра команд…",
+  "@menu.view.commandPalette": {
+    "sourceHash": "6b1c93d"
+  },
+  "menu.view.operationQueue": "Очередь операций",
+  "@menu.view.operationQueue": {
+    "sourceHash": "fa91417"
+  },
+  "menu.view.operationLog": "Журнал операций",
+  "@menu.view.operationLog": {
+    "sourceHash": "2c97965"
+  },
+  "menu.view.suggestedOps": "Предложенные операции",
+  "@menu.view.suggestedOps": {
+    "sourceHash": "4f24ca6"
+  },
+  "menu.view.askCmdr": "Ask Cmdr",
+  "@menu.view.askCmdr": {
+    "sourceHash": "aafb1ce",
+    "sameAsSourceJustification": "Product name (the built-in AI panel); kept verbatim in every locale, matching commands.askCmdrToggle.label. The ru termbase rules Ask Cmdr verbatim (ask-cmdr)."
+  },
+  "menu.sort.name": "Имя",
+  "@menu.sort.name": {
+    "sourceHash": "dcd1d52"
+  },
+  "menu.sort.extension": "Расширение",
+  "@menu.sort.extension": {
+    "sourceHash": "395aeb9"
+  },
+  "menu.sort.dateModified": "Дата изменения",
+  "@menu.sort.dateModified": {
+    "sourceHash": "eb5e7a5"
+  },
+  "menu.sort.size": "Размер",
+  "@menu.sort.size": {
+    "sourceHash": "1af8519"
+  },
+  "menu.sort.dateCreated": "Дата создания",
+  "@menu.sort.dateCreated": {
+    "sourceHash": "fa91f76"
+  },
+  "menu.sort.ascending": "По возрастанию",
+  "@menu.sort.ascending": {
+    "sourceHash": "7718459"
+  },
+  "menu.sort.descending": "По убыванию",
+  "@menu.sort.descending": {
+    "sourceHash": "79479a6"
+  },
+  "menu.zoom.percent75": "75 %",
+  "@menu.zoom.percent75": {
+    "sourceHash": "10963ac",
+    "sameAsSourceJustification": "Числовой уровень масштаба с универсальным знаком процента; как в меню macOS."
+  },
+  "menu.zoom.percent100": "100 %",
+  "@menu.zoom.percent100": {
+    "sourceHash": "32e4899",
+    "sameAsSourceJustification": "Числовой уровень масштаба с универсальным знаком процента; как в меню macOS."
+  },
+  "menu.zoom.percent125": "125 %",
+  "@menu.zoom.percent125": {
+    "sourceHash": "38cb31c",
+    "sameAsSourceJustification": "Числовой уровень масштаба с универсальным знаком процента; как в меню macOS."
+  },
+  "menu.zoom.percent150": "150 %",
+  "@menu.zoom.percent150": {
+    "sourceHash": "00a4e80",
+    "sameAsSourceJustification": "Числовой уровень масштаба с универсальным знаком процента; как в меню macOS."
+  },
+  "menu.zoom.in": "Увеличить масштаб",
+  "@menu.zoom.in": {
+    "sourceHash": "0e47f09"
+  },
+  "menu.zoom.out": "Уменьшить масштаб",
+  "@menu.zoom.out": {
+    "sourceHash": "bc7b631"
+  },
+  "menu.go.back": "Назад",
+  "@menu.go.back": {
+    "sourceHash": "76900f1"
+  },
+  "menu.go.forward": "Вперед",
+  "@menu.go.forward": {
+    "sourceHash": "f1c65e1"
+  },
+  "menu.go.parentFolder": "На уровень выше",
+  "@menu.go.parentFolder": {
+    "sourceHash": "158f5a0"
+  },
+  "menu.go.rootFolder": "Корневая папка",
+  "@menu.go.rootFolder": {
+    "sourceHash": "6d92528"
+  },
+  "menu.go.home": "Личное",
+  "@menu.go.home": {
+    "sourceHash": "3a78695"
+  },
+  "menu.go.goToPath": "Переход к папке…",
+  "@menu.go.goToPath": {
+    "sourceHash": "33de610"
+  },
+  "menu.go.goToLatestDownload": "Перейти к последней загрузке",
+  "@menu.go.goToLatestDownload": {
+    "sourceHash": "492d0b6"
+  },
+  "menu.go.showFavorites": "Показать избранное",
+  "@menu.go.showFavorites": {
+    "sourceHash": "f4dfe9b"
+  },
+  "menu.go.addToFavorites": "Добавить в избранное",
+  "@menu.go.addToFavorites": {
+    "sourceHash": "7f3c078"
+  },
+  "menu.go.connectToServer": "Подключение к серверу…",
+  "@menu.go.connectToServer": {
+    "sourceHash": "6188f47"
+  },
+  "menu.go.showServers": "Показать серверы",
+  "@menu.go.showServers": {
+    "sourceHash": "092283a"
+  },
+  "menu.tab.newTab": "Новая вкладка",
+  "@menu.tab.newTab": {
+    "sourceHash": "1e08fda"
+  },
+  "menu.tab.closeTab": "Закрыть вкладку",
+  "@menu.tab.closeTab": {
+    "sourceHash": "50a3f95"
+  },
+  "menu.tab.reopenClosedTab": "Открыть закрытую вкладку",
+  "@menu.tab.reopenClosedTab": {
+    "sourceHash": "5ca5397"
+  },
+  "menu.tab.nextTab": "Следующая вкладка",
+  "@menu.tab.nextTab": {
+    "sourceHash": "1ef9522"
+  },
+  "menu.tab.previousTab": "Предыдущая вкладка",
+  "@menu.tab.previousTab": {
+    "sourceHash": "c88d5e7"
+  },
+  "menu.tab.pinTab": "Закрепить вкладку",
+  "@menu.tab.pinTab": {
+    "sourceHash": "bf5083a"
+  },
+  "menu.tab.unpinTab": "Открепить вкладку",
+  "@menu.tab.unpinTab": {
+    "sourceHash": "20553dd"
+  },
+  "menu.tab.closeOtherTabs": "Закрыть остальные вкладки",
+  "@menu.tab.closeOtherTabs": {
+    "sourceHash": "0ddc2c5"
+  },
+  "menu.window.minimize": "Убрать в Dock",
+  "@menu.window.minimize": {
+    "sourceHash": "d72e311"
+  },
+  "menu.window.zoom": "Изменить масштаб",
+  "@menu.window.zoom": {
+    "sourceHash": "509c517"
+  },
+  "menu.help.keyboardShortcuts": "Сочетания клавиш",
+  "@menu.help.keyboardShortcuts": {
+    "sourceHash": "e9bef0b"
+  },
+  "menu.help.whatsNew": "Что нового",
+  "@menu.help.whatsNew": {
+    "sourceHash": "37e6112"
+  },
+  "menu.help.sendFeedback": "Отправить отзыв…",
+  "@menu.help.sendFeedback": {
+    "sourceHash": "60e1072"
+  },
+  "menu.help.sendErrorReport": "Отправить отчет об ошибке…",
+  "@menu.help.sendErrorReport": {
+    "sourceHash": "063c94e"
+  },
+  "menu.context.edit": "Редактировать",
+  "@menu.context.edit": {
+    "sourceHash": "464c4ff"
+  },
+  "menu.context.selection": "Выделение",
+  "@menu.context.selection": {
+    "sourceHash": "ca40670"
+  },
+  "menu.context.toggleSelection": "Выделить или снять выделение",
+  "@menu.context.toggleSelection": {
+    "sourceHash": "6cb5515"
+  },
+  "menu.context.copyNamed": "Скопировать «{name}»",
+  "@menu.context.copyNamed": {
+    "sourceHash": "2131c34"
+  },
+  "menu.context.addToFavorites": "Добавить в избранное",
+  "@menu.context.addToFavorites": {
+    "sourceHash": "7f3c078"
+  },
+  "menu.context.hideFunctionKeyBar": "Скрыть панель функциональных клавиш",
+  "@menu.context.hideFunctionKeyBar": {
+    "sourceHash": "343a561"
+  },
+  "menu.context.makeAvailableOffline": "Сделать доступным офлайн",
+  "@menu.context.makeAvailableOffline": {
+    "sourceHash": "b75c09f"
+  },
+  "menu.context.removeDownload": "Удалить загрузку",
+  "@menu.context.removeDownload": {
+    "sourceHash": "5dfc369"
+  },
+  "menu.context.openInGoogleDrive": "Открыть в Google Drive",
+  "@menu.context.openInGoogleDrive": {
+    "sourceHash": "98c7516"
+  },
+  "menu.context.copyGoogleDriveLink": "Скопировать ссылку Google Drive",
+  "@menu.context.copyGoogleDriveLink": {
+    "sourceHash": "070b383"
+  },
+  "menu.context.copyShareLink": "Скопировать публичную ссылку",
+  "@menu.context.copyShareLink": {
+    "sourceHash": "d31483e"
+  },
+  "menu.context.shareLinkSevenDays": "Истекает через семь дней",
+  "@menu.context.shareLinkSevenDays": {
+    "sourceHash": "06949d8"
+  },
+  "menu.context.shareLinkOneDay": "Истекает через один день",
+  "@menu.context.shareLinkOneDay": {
+    "sourceHash": "5ff3dbc"
+  },
+  "menu.context.shareLinkOneHour": "Истекает через один час",
+  "@menu.context.shareLinkOneHour": {
+    "sourceHash": "faf9c50"
+  },
+  "menu.context.askGemini": "Спросить Gemini",
+  "@menu.context.askGemini": {
+    "sourceHash": "7eec77f"
+  },
+  "menu.context.share": "Поделиться",
+  "@menu.context.share": {
+    "sourceHash": "29887a5"
+  },
+  "menu.context.shareLoading": "Поиск вариантов, чтобы поделиться…",
+  "@menu.context.shareLoading": {
+    "sourceHash": "1db46ae"
+  },
+  "menu.context.shareNone": "Нет вариантов, чтобы поделиться",
+  "@menu.context.shareNone": {
+    "sourceHash": "cd12a10"
+  },
+  "menu.context.editExtensions": "Изменить расширения…",
+  "@menu.context.editExtensions": {
+    "sourceHash": "c1d99c8"
+  },
+  "menu.context.openWithLoading": "Поиск приложений…",
+  "@menu.context.openWithLoading": {
+    "sourceHash": "5bcff61"
+  },
+  "menu.context.openWith": "Открыть в приложении",
+  "@menu.context.openWith": {
+    "sourceHash": "fe94d58"
+  },
+  "menu.context.openWithDefault": "{app} (по умолчанию)",
+  "@menu.context.openWithDefault": {
+    "sourceHash": "32a7cca"
+  },
+  "menu.context.openWithOther": "Другое…",
+  "@menu.context.openWithOther": {
+    "sourceHash": "1e37529"
+  },
+  "menu.tag.red": "Красный",
+  "@menu.tag.red": {
+    "sourceHash": "ba19e9c"
+  },
+  "menu.tag.orange": "Оранжевый",
+  "@menu.tag.orange": {
+    "sourceHash": "78e7771"
+  },
+  "menu.tag.yellow": "Желтый",
+  "@menu.tag.yellow": {
+    "sourceHash": "19dd83f"
+  },
+  "menu.tag.green": "Зеленый",
+  "@menu.tag.green": {
+    "sourceHash": "d486dfb"
+  },
+  "menu.tag.blue": "Синий",
+  "@menu.tag.blue": {
+    "sourceHash": "ec7d56a"
+  },
+  "menu.tag.purple": "Фиолетовый",
+  "@menu.tag.purple": {
+    "sourceHash": "7d465fb"
+  },
+  "menu.tag.gray": "Серый",
+  "@menu.tag.gray": {
+    "sourceHash": "0d5adda"
+  },
+  "menu.tag.rowLabel": "Теги",
+  "@menu.tag.rowLabel": {
+    "sourceHash": "1331275"
+  },
+  "menu.tag.addNamed": "Добавить «{color}»",
+  "@menu.tag.addNamed": {
+    "sourceHash": "3be3f57"
+  },
+  "menu.tag.removeNamed": "Удалить «{color}»",
+  "@menu.tag.removeNamed": {
+    "sourceHash": "7a067fb"
+  },
+  "menu.mediaIndex.addFolder": "Добавить в индексируемые папки",
+  "@menu.mediaIndex.addFolder": {
+    "sourceHash": "c0a87cd"
+  },
+  "menu.mediaIndex.addFolderExcluded": "Добавить в индексируемые папки (исключена)",
+  "@menu.mediaIndex.addFolderExcluded": {
+    "sourceHash": "fc7c7ce"
+  },
+  "menu.mediaIndex.coveredByParent": "Индексируется через родительскую папку",
+  "@menu.mediaIndex.coveredByParent": {
+    "sourceHash": "9dffdcd"
+  },
+  "menu.mediaIndex.removeFolder": "Убрать из индексируемых папок",
+  "@menu.mediaIndex.removeFolder": {
+    "sourceHash": "7079859"
+  },
+  "menu.mediaIndex.excludeFolder": "Не индексировать изображения в этой папке",
+  "@menu.mediaIndex.excludeFolder": {
+    "sourceHash": "9119500"
+  },
+  "menu.mediaIndex.includeFolder": "Снова индексировать изображения здесь",
+  "@menu.mediaIndex.includeFolder": {
+    "sourceHash": "0a8a3a0"
+  },
+  "menu.breadcrumb.copyPath": "Скопировать путь",
+  "@menu.breadcrumb.copyPath": {
+    "sourceHash": "720ff41"
+  },
+  "menu.volume.eject": "Извлечь ({name})",
+  "@menu.volume.eject": {
+    "sourceHash": "913d6ea"
+  },
+  "menu.volume.ejectBusy": "Извлечь ({name}) (занято)",
+  "@menu.volume.ejectBusy": {
+    "sourceHash": "e2145a6"
+  },
+  "menu.volume.renameFavorite": "Переименовать",
+  "@menu.volume.renameFavorite": {
+    "sourceHash": "3064d79"
+  },
+  "menu.volume.editFavoriteShortcut": "Назначить сочетание клавиш…",
+  "@menu.volume.editFavoriteShortcut": {
+    "sourceHash": "be52b50"
+  },
+  "menu.volume.removeFavorite": "Убрать",
+  "@menu.volume.removeFavorite": {
+    "sourceHash": "c3812fc"
+  },
+  "menu.network.open": "Открыть",
+  "@menu.network.open": {
+    "sourceHash": "ed077f3"
+  },
+  "menu.network.edit": "Изменить сервер…",
+  "@menu.network.edit": {
+    "sourceHash": "a3282a7"
+  },
+  "menu.network.disconnect": "Отключиться",
+  "@menu.network.disconnect": {
+    "sourceHash": "acfc5be"
+  },
+  "menu.network.pinToSwitcher": "Закрепить в переключателе",
+  "@menu.network.pinToSwitcher": {
+    "sourceHash": "868b68d"
+  },
+  "menu.network.unpin": "Открепить от переключателя",
+  "@menu.network.unpin": {
+    "sourceHash": "82297d8"
+  },
+  "menu.network.forgetServer": "Забыть сервер",
+  "@menu.network.forgetServer": {
+    "sourceHash": "e43c85d"
+  },
+  "menu.network.forgetSavedPassword": "Забыть сохраненный пароль",
+  "@menu.network.forgetSavedPassword": {
+    "sourceHash": "ed68566"
+  },
+  "menu.volume.disconnectBusy": "Отключиться (занято)",
+  "@menu.volume.disconnectBusy": {
+    "sourceHash": "598ba81"
+  },
+  "menu.volume.forgetSavedPasswordBusy": "Забыть сохраненный пароль (занято)",
+  "@menu.volume.forgetSavedPasswordBusy": {
+    "sourceHash": "2a05847"
+  },
+  "menu.volume.forgetServerBusy": "Забыть сервер (занято)",
+  "@menu.volume.forgetServerBusy": {
+    "sourceHash": "53df26b"
+  },
+  "menu.viewer.close": "Закрыть",
+  "@menu.viewer.close": {
+    "sourceHash": "7d9eb7a"
+  },
+  "menu.viewer.wordWrap": "Перенос строк",
+  "@menu.viewer.wordWrap": {
+    "sourceHash": "9e210f3"
+  },
+  "menu.dock.openCmdr": "Открыть Cmdr",
+  "@menu.dock.openCmdr": {
+    "sourceHash": "f898c5b"
+  },
+  "menu.dock.searchFiles": "Найти файлы…",
+  "@menu.dock.searchFiles": {
+    "sourceHash": "149a9d1"
+  },
+  "menu.dock.connectToServer": "Подключение к серверу…",
+  "@menu.dock.connectToServer": {
+    "sourceHash": "6188f47"
+  },
+  "menu.dock.locationInParent": "{name} ({parent})",
+  "@menu.dock.locationInParent": {
+    "sourceHash": "0bf83e2",
+    "sameAsSourceJustification": "Строка содержит только подстановки и знаки; пользовательский текст переводится в подставляемых фрагментах."
+  },
+  "menu.help.viewDebugLog": "Просмотреть журнал отладки",
+  "@menu.help.viewDebugLog": {
+    "sourceHash": "007c98d"
+  }
+}

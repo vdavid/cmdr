@@ -97,14 +97,16 @@ pub async fn media_index_reclaim_preview(
         let mut estimated_bytes = 0u64;
         for (vid, mount) in &volumes {
             match scheduler.stored_coverage(vid, mount, threshold, scope) {
-                Some(cov) => {
+                Ok(Some(cov)) => {
                     total_stored += cov.surviving_stored + cov.doomed_stored;
                     covered_stored += cov.surviving_stored;
                     doomed_count += cov.doomed_stored;
                     estimated_bytes += scheduler.estimate_doomed_bytes(vid, &cov.doomed_paths);
                 }
-                // Importance hasn't scored this volume yet ⇒ can't partition safely.
-                None => pending = true,
+                // Importance hasn't scored this volume yet ⇒ can't partition safely. An
+                // unreadable `media.db` can't be counted either, so the line hides rather
+                // than offering a total that leaves this volume out.
+                Ok(None) | Err(_) => pending = true,
             }
         }
         Ok(ReclaimPreview {

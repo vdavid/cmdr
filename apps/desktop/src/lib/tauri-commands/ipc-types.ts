@@ -52,21 +52,6 @@ export function throwIpcError(error: unknown): never {
 
 export type PatternType = 'glob' | 'regex'
 
-export interface SearchQuery {
-  namePattern?: string
-  patternType: PatternType
-  minSize?: number
-  maxSize?: number
-  modifiedAfter?: number
-  modifiedBefore?: number
-  isDirectory?: boolean
-  includePaths?: string[]
-  excludeDirNames?: string[]
-  limit: number
-  caseSensitive?: boolean
-  excludeSystemDirs?: boolean
-}
-
 export interface SearchResult {
   entries: SearchResultEntry[]
   totalCount: number
@@ -97,39 +82,6 @@ export interface PrepareResult {
    * the dialog stops waiting and runs the search, which answers with its coverage gap named.
    */
   loading: boolean
-}
-
-export interface TranslatedQuery {
-  namePattern: string | null
-  patternType: string
-  minSize: number | null
-  maxSize: number | null
-  modifiedAfter: number | null
-  modifiedBefore: number | null
-  isDirectory: boolean | null
-  includePaths?: string[]
-  excludeDirNames?: string[]
-  caseSensitive?: boolean
-  excludeSystemDirs?: boolean
-}
-
-export interface TranslateDisplay {
-  namePattern: string | null
-  patternType: string | null
-  minSize: number | null
-  maxSize: number | null
-  modifiedAfter: string | null
-  modifiedBefore: string | null
-  isDirectory: boolean | null
-  caseSensitive: boolean | null
-  includePaths?: string[]
-  excludeDirNames?: string[]
-}
-
-export interface TranslateResult {
-  query: TranslatedQuery
-  display: TranslateDisplay
-  caveat?: string
 }
 
 export interface ParsedScope {

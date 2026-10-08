@@ -7,6 +7,7 @@ import {
   resolveInstanceId,
   resolveWorktreeLabel,
   computeAppDataDir,
+  computeAppCacheDir,
   bundleIdentifier,
   productName,
   extractWorktreeFlag,
@@ -237,6 +238,38 @@ describe('computeAppDataDir', () => {
   })
 })
 
+describe('computeAppCacheDir', () => {
+  it('returns the macOS Caches path on darwin, which Time Machine skips', () => {
+    expect(
+      computeAppCacheDir({
+        identifier: 'com.veszelovszki.cmdr-dev-foo',
+        platform: 'darwin',
+        home: '/Users/me',
+        xdgCacheHome: '/ignored',
+      }),
+    ).toBe('/Users/me/Library/Caches/com.veszelovszki.cmdr-dev-foo')
+  })
+
+  it('uses XDG_CACHE_HOME on Linux when set, else ~/.cache', () => {
+    expect(
+      computeAppCacheDir({
+        identifier: 'com.veszelovszki.cmdr-dev',
+        platform: 'linux',
+        home: '/home/me',
+        xdgCacheHome: '/custom/cache',
+      }),
+    ).toBe('/custom/cache/com.veszelovszki.cmdr-dev')
+    expect(
+      computeAppCacheDir({
+        identifier: 'com.veszelovszki.cmdr-dev',
+        platform: 'linux',
+        home: '/home/me',
+        xdgCacheHome: '',
+      }),
+    ).toBe('/home/me/.cache/com.veszelovszki.cmdr-dev')
+  })
+})
+
 describe('bundleIdentifier + productName', () => {
   it('returns prod values when instance is null', () => {
     expect(bundleIdentifier(null)).toBe('com.veszelovszki.cmdr')
@@ -401,6 +434,7 @@ describe('deriveInstance', () => {
     })
     expect(out.identifier).toBe('com.veszelovszki.cmdr-dev')
     expect(out.dataDir).toBe('/Users/me/Library/Application Support/com.veszelovszki.cmdr-dev')
+    expect(out.cacheDir).toBe('/Users/me/Library/Caches/com.veszelovszki.cmdr-dev')
     expect(out.config?.productName).toBe('Cmdr (dev)')
   })
 

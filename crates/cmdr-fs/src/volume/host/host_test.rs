@@ -275,3 +275,19 @@ fn a_dead_device_session_reports_one_gap_for_the_whole_device() {
         "a device gap is not a per-volume gap; the host fans it out over the device's storages"
     );
 }
+
+/// A backend keeps its durable private state (S3's record of unfinished
+/// uploads) in a directory of its own under the app's, and a host with none
+/// answers `None`, never a guess: a backend writing into the working directory
+/// would scatter state no later launch finds.
+#[test]
+fn the_state_dir_is_the_backends_own_under_the_hosts_root() {
+    assert_eq!(VolumeHost::detached().state_dir("s3"), None);
+    let host = VolumeHost::builder()
+        .state_root(Path::new("/data/backend-state"))
+        .build();
+    assert_eq!(
+        host.state_dir("s3"),
+        Some(Path::new("/data/backend-state/s3").to_path_buf())
+    );
+}

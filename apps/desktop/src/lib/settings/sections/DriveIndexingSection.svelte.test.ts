@@ -111,7 +111,7 @@ describe('DriveIndexingSection', () => {
     getIndexDiskUsageMock.mockResolvedValue({ status: 'ok', data: 42_000_000 })
     const target = await mountSection()
 
-    expect(target.querySelector('.info-value')?.textContent).toContain('MB')
+    expect(target.querySelector('.info-value')?.textContent).toContain('42.00 MB')
     const clearButton = Array.from(target.querySelectorAll('button')).find(
       (b) => b.textContent.trim() === 'Clear index',
     )

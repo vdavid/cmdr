@@ -83,7 +83,10 @@ the shared on-disk `clip-model` dir (both towers), then, for EVERY volume with a
 resetting the stamp is what makes a later re-download re-embed (the row goes CLIP-stale again against the reinstalled
 stamp). Vision data (status/OCR/tags/feature print) is untouched, and CLIP embeddings aren't part of the `accounted`
 aggregate (that counts `media_status` rows), so no aggregate delta. After the delete, `media_index_clip_model_status`
-reads `installed: false`, so the UI returns to the download affordance.
+reads `installed: false`, so the UI returns to the download affordance. A volume whose writer won't start or whose
+`prune_all_clip` SQLite refuses makes `delete_clip_model` answer a `PruneFailure` (after still pruning every other
+volume), and the command answers `ReclaimError::NotDeleted`, so the panel shows its "couldn't delete" line instead of
+claiming the embeddings are gone.
 
 ## The Core ML towers + worker thread (`macos.rs`)
 
@@ -147,8 +150,10 @@ what a session controls is which towers it loads at all. Both towers together co
 - one typed query and no enrichment: 245,891,072 bytes, 39 regions.
 - both: 304,873,472 bytes, 64 regions, the exact sum of the two.
 
-⚠️ **It is invisible to `query_mimalloc_heap`.** Core ML allocates through the SYSTEM allocator, and mimalloc is not a
-registered macOS zone, so a Rust-side heap reading reports none of this.
+⚠️ **It sits in `MALLOC_LARGE`, not in the Rust heap reading.** Core ML allocates through the SYSTEM allocator. In a
+mimalloc build that's outside the Rust heap entirely, so `query_rust_heap` reports none of it; in a system-allocator
+build (macOS by default) Core ML's large blocks still show under `MALLOC_LARGE`, where the region-size fingerprint below
+names them.
 
 The regions are the model's weight matrices, one malloc each, and they add up to the byte (310,444,032 on the reference
 run):

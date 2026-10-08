@@ -431,14 +431,30 @@ pub(super) fn finalize_op(op_id: &str, kind: OpKind, execution_status: Execution
     );
 }
 
+/// What a fresh compress packed, for its header's aggregates: every entry it
+/// planned (files and folders), how many it wrote, and the uncompressed source
+/// bytes. The status cache can't answer this at finalize, because both finishing
+/// phases clear their totals.
+#[derive(Debug, Clone, Copy)]
+pub(super) struct PackedTotals {
+    pub entries: u64,
+    pub entries_done: u64,
+    pub source_bytes: u64,
+}
+
 /// Finalize an `archive_edit` op, carrying the driver-supplied subkind + net-new
-/// flag into eligibility.
+/// flag into eligibility. `packed` is a compress's tally; an in-ZIP edit passes
+/// `None` and keeps its open-time header.
 pub(super) fn finalize_archive_op(
     op_id: &str,
     subkind: ArchiveSubkind,
     net_new: bool,
     execution_status: ExecutionStatus,
+    packed: Option<PackedTotals>,
 ) {
+    // A compress that stopped before its plan finished has no entry total yet;
+    // `None` keeps the open-time count (its top-level sources).
+    let item_count = packed.map(|totals| totals.entries).filter(|entries| *entries > 0);
     // allowed-discarded-outcome: `FinalizeOutcome`'s row counts feed the completeness check, which runs inside `operation_log::capture::finalize` where they're produced. These wrappers only pick the kind.
     journal_finalize(
         op_id,
@@ -448,10 +464,9 @@ pub(super) fn finalize_archive_op(
             archive_subkind: Some(subkind),
             net_new,
             ended_at: now_secs(),
-            // A compress produces one archive; keep the open-time item_count.
-            item_count: None,
-            items_done: 0,
-            bytes_total: 0,
+            item_count,
+            items_done: packed.map_or(0, |totals| totals.entries_done),
+            bytes_total: packed.map_or(0, |totals| totals.source_bytes),
             dev_summary: None,
         },
     );
@@ -488,13 +503,37 @@ impl ArchiveProvenance {
 /// op opens `not_rollbackable` until [`finalize_archive_op`] computes eligibility
 /// from the subkind + net-new flag.
 pub(super) fn open_archive_op(op_id: &str, initiator: Initiator, parent_volume_id: &str) {
+    open_archive_op_between(op_id, initiator, parent_volume_id, parent_volume_id, 0);
+}
+
+/// Open a fresh compress in the journal: the sources live on `source_volume_id`
+/// and the archive lands on `parent_volume_id`, which are different volumes for a
+/// Mac-to-phone compress. `item_count` is the provisional top-level source count;
+/// [`finalize_archive_op`] refines it to what was packed.
+pub(super) fn open_compress_op(
+    op_id: &str,
+    initiator: Initiator,
+    source_volume_id: &str,
+    parent_volume_id: &str,
+    item_count: u64,
+) {
+    open_archive_op_between(op_id, initiator, source_volume_id, parent_volume_id, item_count);
+}
+
+fn open_archive_op_between(
+    op_id: &str,
+    initiator: Initiator,
+    source_volume_id: &str,
+    dest_volume_id: &str,
+    item_count: u64,
+) {
     journal_open(OpenOperation {
         op_id: op_id.to_string(),
         kind: OpKind::ArchiveEdit,
         initiator,
-        source_volume_id: Some(parent_volume_id.to_string()),
-        dest_volume_id: Some(parent_volume_id.to_string()),
-        item_count: 0,
+        source_volume_id: Some(source_volume_id.to_string()),
+        dest_volume_id: Some(dest_volume_id.to_string()),
+        item_count,
         started_at: now_secs(),
         rolls_back_op_id: None,
         execution_status: ExecutionStatus::Running,

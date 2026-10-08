@@ -184,15 +184,18 @@ pub(crate) struct SlowVolume {
     read_delay: std::time::Duration,
     /// What a `rename` waits before landing.
     rename_delay: std::time::Duration,
+    /// What a new folder or file waits before landing.
+    create_delay: std::time::Duration,
 }
 
 impl SlowVolume {
-    /// Every metadata read takes `delay`; a rename lands at once.
+    /// Every metadata read takes `delay`; a rename or a create lands at once.
     pub(crate) fn new(inner: InMemoryVolume, delay: std::time::Duration) -> Self {
         Self {
             inner,
             read_delay: delay,
             rename_delay: std::time::Duration::ZERO,
+            create_delay: std::time::Duration::ZERO,
         }
     }
 
@@ -202,6 +205,17 @@ impl SlowVolume {
             inner,
             read_delay: std::time::Duration::ZERO,
             rename_delay: delay,
+            create_delay: std::time::Duration::ZERO,
+        }
+    }
+
+    /// Reads answer at once; creating a folder or file is what the server holds.
+    pub(crate) fn creating_slowly(inner: InMemoryVolume, delay: std::time::Duration) -> Self {
+        Self {
+            inner,
+            read_delay: std::time::Duration::ZERO,
+            rename_delay: std::time::Duration::ZERO,
+            create_delay: delay,
         }
     }
 }
@@ -275,6 +289,29 @@ impl Volume for SlowVolume {
             // allowed-test-sleep: the fake latency IS the fixture
             tokio::time::sleep(self.rename_delay).await;
             self.inner.rename(from, to, force).await
+        })
+    }
+
+    fn create_directory<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            // allowed-test-sleep: the fake latency IS the fixture
+            tokio::time::sleep(self.create_delay).await;
+            self.inner.create_directory(path).await
+        })
+    }
+
+    fn create_file<'a>(
+        &'a self,
+        path: &'a Path,
+        content: &'a [u8],
+    ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            // allowed-test-sleep: the fake latency IS the fixture
+            tokio::time::sleep(self.create_delay).await;
+            self.inner.create_file(path, content).await
         })
     }
 }
@@ -360,10 +397,12 @@ thread_local! {
 
 /// The test binary's allocator: `System`, plus a thread-local live-bytes counter.
 ///
-/// Installed only under `cfg(test)`; the shipping binary keeps mimalloc (`main.rs`).
+/// Installed only under `cfg(test)`; the shipping binary installs
+/// `cmdr_fs::process_memory::GLOBAL_ALLOC` (`main.rs`): the system allocator on macOS, mimalloc
+/// on Linux or with the `mimalloc` feature.
 ///
 /// Note for anyone comparing memory baselines: Rust test-run numbers are measured under THIS
-/// allocator, not mimalloc, so they aren't comparable with production figures.
+/// allocator, with a counter on every call, so they aren't comparable with production figures.
 struct CountingAllocator;
 
 // SAFETY: every method forwards its arguments unchanged to `System`, whose `GlobalAlloc` impl is

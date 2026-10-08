@@ -577,13 +577,14 @@ impl OperationManager {
     /// reserve a lane and does NOT go through admission: a metadata syscall must
     /// never queue behind a multi-minute transfer (an inline rename that hangs
     /// until its IPC timeout is worse than useless, and the MTP/SMB connection
-    /// layer already serializes physical device access). The command layer wraps
-    /// this in its own IPC timeout; nothing here spawns.
+    /// layer already serializes physical device access). The command layer runs
+    /// this detached under its reply deadline (`mutation_reply.rs`); nothing here
+    /// spawns.
     ///
-    /// **RAII cleanup is mandatory, not happy-path only.** The command wraps this
-    /// in a `tokio::time::timeout`, so a slow op that exceeds it makes the timeout
-    /// DROP this future mid-`op.await`; the async volume path can also panic.
-    /// Either exit MUST still free the record AND unregister the busy status, or
+    /// **RAII cleanup is mandatory, not happy-path only.** The async volume path
+    /// can panic, and any caller that drops this future mid-`op.await` (a quit
+    /// deadline, a future caller that isn't detached) abandons it there. Either
+    /// exit MUST still free the record AND unregister the busy status, or
     /// the eject guard sticks ON forever (the volume can never be ejected again)
     /// and a phantom `Running` row lingers. An `InstantTaskGuard` held across the
     /// `op.await` guarantees that on drop/unwind; the happy path frees explicitly

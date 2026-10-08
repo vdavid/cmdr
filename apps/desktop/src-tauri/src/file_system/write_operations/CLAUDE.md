@@ -38,9 +38,8 @@ Copy, move, delete, trash, and zip edits as managed background ops.
   as it lands: ❌ never batch to the end, nor put a rotation temp in `in_flight_temps` (its sweep DELETES it).
 - **A transfer carries both volumes as typed sides** (`transfer_sides.rs`), captured at start: a vanished drive can't be
   named later. A drive that LEFT is the mount table's answer, ❌ never an errno.
-- **❌ Never `statvfs` for macOS disk space** (it rejects copies APFS purgeable space permits): use
-  `volumes::get_volume_space()`. Scans report `total_bytes` (copy/move) and `dedup_bytes` (delete): ❌ never point copy
-  at the dedup'd one.
+- **Free space: `free_space.rs`**, `statvfs` first, slow NSURL only on a shortfall; a shortfall is the person's call
+  (`SpaceShortfall`). Copy reserves `total_bytes`, ❌ never the dedup'd `dedup_bytes` (delete's).
 - **❌ The `types` vocabulary floor `use`s no sibling**, `types/events.rs` included. It holds `LifecycleStatus`, the ONE
   lifecycle answer: ❌ never re-derive it from a presence test, no new variant.
 - **Every preview runs under a `ScanWatchdog`**, bounded by INACTIVITY: feed the progress callback, and whoever settles

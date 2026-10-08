@@ -6,7 +6,7 @@
 # ❗ Pinned to the 2.4 line, not `latest`: the cells assert on server behaviour
 # (COPY/MOVE semantics, `Depth: infinity` PROPFIND, Range on GET), and a major
 # bump is a fixture change to review, not to inherit.
-FROM httpd:2.4
+FROM httpd:2.4@sha256:c842ac797bd1fe8b3cd26d002ac9d948aa2814097544600600b35aef42e6785a
 
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 COPY seed.sh /usr/local/bin/seed.sh

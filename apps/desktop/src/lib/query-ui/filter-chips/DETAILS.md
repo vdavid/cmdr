@@ -33,8 +33,9 @@ cross-consumer state factory.
   body wraps it, threading `anchor` / `open` / `onClose` / `label`
 - **`filter-chip-state.ts`**: Pure helpers: `deriveSizeChip`, `deriveDateChip`, `deriveScopeChip`, `derivePatternChip`
   (testable in isolation)
-- **`filter-popover-helpers.ts`**: Pure: `SIZE_PRESETS`, `byteUnitLabel`, `kiloByteLabel`, `isSizeRangeDisabled`,
-  `showsUpperBound`, `isDateRangeDisabled`, `showsDateUpperBound`, `buildDatePresets`
+- **`filter-popover-helpers.ts`**: Pure: `SIZE_PRESETS`, `byteUnitLabel`, `isSizeRangeDisabled`, `showsUpperBound`,
+  `isDateRangeDisabled`, `showsDateUpperBound`, `buildDatePresets`. Unit words come from `$lib/units` (`bytesLabel`,
+  `unitLabel`), so the popover, the chips, and the file list read the same in every language
 
 Companion tests (colocated):
 
@@ -95,8 +96,8 @@ popover children).
   cols 2 + 3, never the upper-bound cols.
 - Col 2: `0`, `1`, `5`, `10`, `20`, `50`, `100`, `200`, `500`, `Custom…`. Disabled when col 1 = `any`. Selecting
   `Custom…` reveals an inline `<input type="number">`.
-- Col 3: unit. The "byte(s)" cell label flips based on the selected value. The "kB/KB" cell follows
-  `appearance.fileSizeFormat` (SI → `kB`, binary → `KB`). `MB` and `GB` are constant.
+- Col 3: unit. The "byte(s)" cell label flips based on the selected value. The unit cells follow
+  `appearance.fileSizeFormat` (SI → `kB` / `MB` / `GB`, binary → `KiB` / `MiB` / `GiB`), and so does the math.
 - When col 1 = `between`: cols 4 + 5 mirror cols 2 + 3 for the upper bound.
 
 **Modified popover** (`DateFilterPopover.svelte`):
@@ -166,5 +167,5 @@ Clicking × clears the pattern only; the AI transparency strip stays put.
 ## Dependencies
 
 - `../query-filter-state.svelte.ts` — `QueryFilterState`, `SizeFilter`, `SizeUnit`, `DateFilter` types and setters
-- `$lib/settings/reactive-settings.svelte` — `getFileSizeFormat()` for the `kB/KB` cell label
+- `$lib/settings/reactive-settings.svelte` — `getFileSizeFormat()` for the unit cell labels
 - `$lib/tooltip/tooltip` — chip tooltips

@@ -35,13 +35,12 @@
  */
 
 import { type UnlistenFn } from '@tauri-apps/api/event'
-import { sendNotification } from '@tauri-apps/plugin-notification'
 import type { DownloadDetectedEvent } from '$lib/ipc/bindings'
 import { downloadsWatcherStatus, onDownloadDetected } from '$lib/tauri-commands'
 import { addToast } from '$lib/ui/toast'
 import { getEffectiveShortcuts, toDisplayShortcut } from '$lib/shortcuts'
 import { getAppLogger } from '$lib/logging/logger'
-import { ensureMacosNotificationPermission } from '$lib/notifications/macos-notification-permission'
+import { sendMacosNotification } from '$lib/notifications/send-macos-notification'
 import { tString } from '$lib/intl/messages.svelte'
 import { formatInteger } from '$lib/intl/number-format'
 import { getDownloadsNotificationsMode } from './notifications-mode'
@@ -223,17 +222,7 @@ async function flushMacosBurst(): Promise<void> {
   macosBurst = null
   if (burst === null) return
 
-  // Ask for permission only once the window has closed: a burst that the user
-  // never gets a banner for shouldn't cost them a permission prompt either.
-  const ok = await ensureMacosNotificationPermission()
-  if (!ok) return
-
-  const { title, body } = describeMacosBurst(burst.latest, burst.count)
-  try {
-    sendNotification({ title, body })
-  } catch (err) {
-    log.warn('Failed to send macOS notification: {err}', { err: String(err) })
-  }
+  await sendMacosNotification(describeMacosBurst(burst.latest, burst.count))
 }
 
 /**

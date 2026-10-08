@@ -1,0 +1,1778 @@
+{
+  "fileExplorer.archiveEnterMenu.ariaLabel": "Открыть архив или пакет",
+  "@fileExplorer.archiveEnterMenu.ariaLabel": {
+    "sourceHash": "df385c5"
+  },
+  "fileExplorer.archiveEnterMenu.browse": "Просматривать как папку",
+  "@fileExplorer.archiveEnterMenu.browse": {
+    "sourceHash": "8da5c95"
+  },
+  "fileExplorer.archiveEnterMenu.open": "Открыть в приложении по умолчанию",
+  "@fileExplorer.archiveEnterMenu.open": {
+    "sourceHash": "d3d5d6e"
+  },
+  "fileExplorer.archiveEnterMenu.configure": "Настроить…",
+  "@fileExplorer.archiveEnterMenu.configure": {
+    "sourceHash": "37d7822"
+  },
+  "fileExplorer.breadcrumb.navigateTooltip": "Нажмите, чтобы перейти в папку {path}",
+  "@fileExplorer.breadcrumb.navigateTooltip": {
+    "sourceHash": "9d08428"
+  },
+  "fileExplorer.doubleClickHint.title": "Что сейчас произошло?",
+  "@fileExplorer.doubleClickHint.title": {
+    "sourceHash": "865b71e"
+  },
+  "fileExplorer.doubleClickHint.body": "Вы дважды нажали на фон панели. Так открывается папка на уровень выше.",
+  "@fileExplorer.doubleClickHint.body": {
+    "sourceHash": "cfbc7d3"
+  },
+  "fileExplorer.doubleClickHint.dontLikeIt": "Не нравится?",
+  "@fileExplorer.doubleClickHint.dontLikeIt": {
+    "sourceHash": "4801954"
+  },
+  "fileExplorer.doubleClickHint.neverAgain": "Больше так не делать",
+  "@fileExplorer.doubleClickHint.neverAgain": {
+    "sourceHash": "5026f4a"
+  },
+  "fileExplorer.doubleClickHint.iLikeIt": "Мне нравится",
+  "@fileExplorer.doubleClickHint.iLikeIt": {
+    "sourceHash": "6859406"
+  },
+  "fileExplorer.pane.filePaneAriaLabel": "{side, select, left {Левая} other {Правая}} файловая панель",
+  "@fileExplorer.pane.filePaneAriaLabel": {
+    "sourceHash": "77f3961"
+  },
+  "fileExplorer.pane.diskUsageAriaLabel": "Использование диска",
+  "@fileExplorer.pane.diskUsageAriaLabel": {
+    "sourceHash": "4fe60c1"
+  },
+  "fileExplorer.restrictedFolder.tooltip": "Доступ к этой папке ограничен. Предоставьте Cmdr разрешение «{fullDiskAccess}» в разделе {systemSettings} → {privacyAndSecurity} → {fullDiskAccess}, чтобы снять такие ограничения. Или разрешите доступ к отдельным папкам в разделе {systemSettings} → {privacyAndSecurity} → {filesAndFolders} → Cmdr.",
+  "@fileExplorer.restrictedFolder.tooltip": {
+    "sourceHash": "27b86a9"
+  },
+  "fileExplorer.restrictedFolder.label": "Папка с ограниченным доступом",
+  "@fileExplorer.restrictedFolder.label": {
+    "sourceHash": "bbcf72f"
+  },
+  "fileExplorer.archivedFile.label": "В архивном хранилище",
+  "@fileExplorer.archivedFile.label": {
+    "sourceHash": "bdb8650"
+  },
+  "fileExplorer.archivedFile.tooltip": "Файл в архивном хранилище. Восстановите его в консоли поставщика хранилища, прежде чем открывать или копировать.",
+  "@fileExplorer.archivedFile.tooltip": {
+    "sourceHash": "8897d71"
+  },
+  "fileExplorer.diskSpace.free": "Свободно {freeText} из {totalText} ({percentText} %)",
+  "@fileExplorer.diskSpace.free": {
+    "sourceHash": "97781f4"
+  },
+  "fileExplorer.diskSpace.freeShort": "Свободно {freeText} из {totalText}",
+  "@fileExplorer.diskSpace.freeShort": {
+    "sourceHash": "b8f52a6"
+  },
+  "fileExplorer.diskSpace.used": "Использовано {usedText}",
+  "@fileExplorer.diskSpace.used": {
+    "sourceHash": "6285805"
+  },
+  "fileExplorer.diskSpace.noLimitNote": "Размер этого хранилища не ограничен, поэтому индикатор заполнения не показан.",
+  "@fileExplorer.diskSpace.noLimitNote": {
+    "sourceHash": "7e2a153"
+  },
+  "fileExplorer.diskSpace.lowNote": "Красный цвет индикатора означает, что на томе осталось мало свободного места.",
+  "@fileExplorer.diskSpace.lowNote": {
+    "sourceHash": "4f558cd"
+  },
+  "fileExplorer.diskSpace.somewhatLowNote": "Желтый цвет индикатора означает, что на томе осталось немного свободного места.",
+  "@fileExplorer.diskSpace.somewhatLowNote": {
+    "sourceHash": "4f24bbf"
+  },
+  "fileExplorer.diskSpace.barTooltip": "{hasNotes, select, yes {{sizes}. {notes}} other {{sizes}}}",
+  "@fileExplorer.diskSpace.barTooltip": {
+    "sourceHash": "3bc0afc",
+    "sameAsSourceJustification": "Строка содержит только подстановки и знаки; пользовательский текст переводится в подставляемых фрагментах."
+  },
+  "fileExplorer.pane.resizePanesAriaLabel": "Изменить размеры панелей",
+  "@fileExplorer.pane.resizePanesAriaLabel": {
+    "sourceHash": "ff22a46"
+  },
+  "fileExplorer.pane.fileExplorerAriaLabel": "Файловый менеджер",
+  "@fileExplorer.pane.fileExplorerAriaLabel": {
+    "sourceHash": "bfd3c67"
+  },
+  "fileExplorer.pane.disconnectFailedToast": "Не удалось отключиться: {message}",
+  "@fileExplorer.pane.disconnectFailedToast": {
+    "sourceHash": "e394098"
+  },
+  "fileExplorer.pane.connectedDirectlyToast": "Установлено прямое подключение: доступ будет быстрее",
+  "@fileExplorer.pane.connectedDirectlyToast": {
+    "sourceHash": "5c6bcd2"
+  },
+  "fileExplorer.pane.directConnectionUnreachableToast": "Сейчас не удается связаться с сервером {server}, поэтому общая папка продолжает работать через системное подключение.",
+  "@fileExplorer.pane.directConnectionUnreachableToast": {
+    "sourceHash": "4a5ca66"
+  },
+  "fileExplorer.pane.directConnectionBlockedByThisMacToast": "Что-то на этом Mac не дает Cmdr подключиться к серверу {server} напрямую, поэтому общая папка продолжает работать через системное подключение. Выключите и снова включите Cmdr в разделе «{localNetwork}» или проверьте приложение-брандмауэр.",
+  "@fileExplorer.pane.directConnectionBlockedByThisMacToast": {
+    "sourceHash": "74f758e"
+  },
+  "fileExplorer.pane.openLocalNetworkSettings": "Открыть настройки «{localNetwork}»",
+  "@fileExplorer.pane.openLocalNetworkSettings": {
+    "sourceHash": "c3931df"
+  },
+  "fileExplorer.pane.directConnectionTooSlowToast": "Сервер {server} слишком долго не отвечал, поэтому общая папка продолжает работать через системное подключение.",
+  "@fileExplorer.pane.directConnectionTooSlowToast": {
+    "sourceHash": "bb5baea"
+  },
+  "fileExplorer.pane.directConnectionUnexpectedToast": "Не удалось установить прямое подключение к серверу {server}, поэтому общая папка продолжает работать через системное подключение.",
+  "@fileExplorer.pane.directConnectionUnexpectedToast": {
+    "sourceHash": "1b14bd0"
+  },
+  "fileExplorer.pane.directConnectionShareNotOnServerToast": "Сервер {server} сообщает, что такой общей папки у него нет, поэтому она продолжает работать через системное подключение.",
+  "@fileExplorer.pane.directConnectionShareNotOnServerToast": {
+    "sourceHash": "1936abc"
+  },
+  "fileExplorer.pane.directConnectionUnavailableToast": "Сейчас не удалось установить прямое подключение, поэтому общая папка продолжает работать через системное подключение.",
+  "@fileExplorer.pane.directConnectionUnavailableToast": {
+    "sourceHash": "282f96d"
+  },
+  "fileExplorer.pane.directConnectionShareGoneToast": "Общая папка {share} больше не подключена, так что ускорять нечего.",
+  "@fileExplorer.pane.directConnectionShareGoneToast": {
+    "sourceHash": "d562549"
+  },
+  "fileExplorer.pane.directConnectionMountNotRespondingToast": "Общая папка {share} сейчас не отвечает, поэтому Cmdr не может подключиться к ней напрямую. Попробуйте еще раз чуть позже.",
+  "@fileExplorer.pane.directConnectionMountNotRespondingToast": {
+    "sourceHash": "baa6b1a"
+  },
+  "fileExplorer.pane.directConnectionNotNetworkShareToast": "Том {volume} не является общей сетевой папкой, так что ускорять нечего.",
+  "@fileExplorer.pane.directConnectionNotNetworkShareToast": {
+    "sourceHash": "f634743"
+  },
+  "fileExplorer.pane.trashUnconfirmedToast": "Не удалось подтвердить перемещение файла в Корзину. Возможно, том отвечает медленно и файл все же перемещен. Проверьте Корзину.",
+  "@fileExplorer.pane.trashUnconfirmedToast": {
+    "sourceHash": "6764112"
+  },
+  "fileExplorer.pane.refreshStillRunningToast": "Чтение папки продолжается. Список обновится сразу после получения данных.",
+  "@fileExplorer.pane.refreshStillRunningToast": {
+    "sourceHash": "0636af4"
+  },
+  "fileExplorer.pane.dialogRenderFailedToast": "Это диалоговое окно не открылось, поэтому мы его закрыли и вернули управление клавиатурой. Попробуйте еще раз.",
+  "@fileExplorer.pane.dialogRenderFailedToast": {
+    "sourceHash": "1e8ed2d"
+  },
+  "fileExplorer.pane.ejectFailedToast": "Том {volumeName} не извлечен: {message}",
+  "@fileExplorer.pane.ejectFailedToast": {
+    "sourceHash": "f4072a7"
+  },
+  "fileExplorer.errorPane.tryAgain": "Повторить попытку",
+  "@fileExplorer.errorPane.tryAgain": {
+    "sourceHash": "d8b8392"
+  },
+  "fileExplorer.errorPane.openSystemSettings": "Открыть {systemSettings}",
+  "@fileExplorer.errorPane.openSystemSettings": {
+    "sourceHash": "f735c5c"
+  },
+  "fileExplorer.errorPane.goBack": "Назад",
+  "@fileExplorer.errorPane.goBack": {
+    "sourceHash": "6aadac2"
+  },
+  "fileExplorer.errorPane.goHome": "Перейти в папку пользователя",
+  "@fileExplorer.errorPane.goHome": {
+    "sourceHash": "74b2a8b"
+  },
+  "fileExplorer.errorPane.technicalDetails": "Технические подробности",
+  "@fileExplorer.errorPane.technicalDetails": {
+    "sourceHash": "890ab35"
+  },
+  "fileExplorer.errorPane.aMomentAgo": "только что",
+  "@fileExplorer.errorPane.aMomentAgo": {
+    "sourceHash": "65b0cae"
+  },
+  "fileExplorer.errorPane.secondsAgo": "{seconds} с назад",
+  "@fileExplorer.errorPane.secondsAgo": {
+    "sourceHash": "b5907e4"
+  },
+  "fileExplorer.errorPane.minutesAgo": "{minutes} мин назад",
+  "@fileExplorer.errorPane.minutesAgo": {
+    "sourceHash": "0e91828"
+  },
+  "fileExplorer.errorPane.hoursAgo": "{hours} ч назад",
+  "@fileExplorer.errorPane.hoursAgo": {
+    "sourceHash": "bbfb1e5"
+  },
+  "fileExplorer.errorPane.retryInfo": "Повторная попытка №{count} · первая {firstAgo}",
+  "@fileExplorer.errorPane.retryInfo": {
+    "sourceHash": "03bb746"
+  },
+  "fileExplorer.errorPane.retryInfoWithLast": "Повторная попытка №{count} · первая {firstAgo} · последняя {lastAgo}",
+  "@fileExplorer.errorPane.retryInfoWithLast": {
+    "sourceHash": "e11bb94"
+  },
+  "fileExplorer.functionKeyBar.toolbarAriaLabel": "Функциональные клавиши",
+  "@fileExplorer.functionKeyBar.toolbarAriaLabel": {
+    "sourceHash": "f69e00d"
+  },
+  "fileExplorer.functionKeyBar.actionWithShortcut": "{action} ({shortcut})",
+  "@fileExplorer.functionKeyBar.actionWithShortcut": {
+    "sourceHash": "49e258f",
+    "sameAsSourceJustification": "Строка содержит только подстановки и знаки; пользовательский текст переводится в подставляемых фрагментах."
+  },
+  "fileExplorer.functionKeyBar.noShiftAction": "{fnKey} (нет действия с Shift)",
+  "@fileExplorer.functionKeyBar.noShiftAction": {
+    "sourceHash": "83b9f17"
+  },
+  "fileExplorer.functionKeyBar.newFileLabel": "Новый файл",
+  "@fileExplorer.functionKeyBar.newFileLabel": {
+    "sourceHash": "44dedd0"
+  },
+  "fileExplorer.functionKeyBar.newFileAction": "Создать новый файл",
+  "@fileExplorer.functionKeyBar.newFileAction": {
+    "sourceHash": "6e70b95"
+  },
+  "fileExplorer.functionKeyBar.renameLabel": "Переименовать",
+  "@fileExplorer.functionKeyBar.renameLabel": {
+    "sourceHash": "3064d79"
+  },
+  "fileExplorer.functionKeyBar.renameAction": "Переименовать",
+  "@fileExplorer.functionKeyBar.renameAction": {
+    "sourceHash": "3064d79"
+  },
+  "fileExplorer.functionKeyBar.permanentlyLabel": "Безвозвратно",
+  "@fileExplorer.functionKeyBar.permanentlyLabel": {
+    "sourceHash": "d06138e"
+  },
+  "fileExplorer.functionKeyBar.deletePermanentlyAction": "Удалить безвозвратно",
+  "@fileExplorer.functionKeyBar.deletePermanentlyAction": {
+    "sourceHash": "280b10c"
+  },
+  "fileExplorer.functionKeyBar.viewLabel": "Просмотр",
+  "@fileExplorer.functionKeyBar.viewLabel": {
+    "sourceHash": "dcc839a"
+  },
+  "fileExplorer.functionKeyBar.viewAction": "Просмотреть файл",
+  "@fileExplorer.functionKeyBar.viewAction": {
+    "sourceHash": "6ef3f36"
+  },
+  "fileExplorer.functionKeyBar.editLabel": "Правка",
+  "@fileExplorer.functionKeyBar.editLabel": {
+    "sourceHash": "464c4ff"
+  },
+  "fileExplorer.functionKeyBar.editAction": "Редактировать файл",
+  "@fileExplorer.functionKeyBar.editAction": {
+    "sourceHash": "9608dd1"
+  },
+  "fileExplorer.functionKeyBar.copyLabel": "Скопировать",
+  "@fileExplorer.functionKeyBar.copyLabel": {
+    "sourceHash": "e21f935"
+  },
+  "fileExplorer.functionKeyBar.copyAction": "Скопировать",
+  "@fileExplorer.functionKeyBar.copyAction": {
+    "sourceHash": "e21f935"
+  },
+  "fileExplorer.functionKeyBar.moveLabel": "Переместить",
+  "@fileExplorer.functionKeyBar.moveLabel": {
+    "sourceHash": "6ecc3df"
+  },
+  "fileExplorer.functionKeyBar.moveAction": "Переместить",
+  "@fileExplorer.functionKeyBar.moveAction": {
+    "sourceHash": "6ecc3df"
+  },
+  "fileExplorer.functionKeyBar.newFolderLabel": "Новая папка",
+  "@fileExplorer.functionKeyBar.newFolderLabel": {
+    "sourceHash": "cf28f49"
+  },
+  "fileExplorer.functionKeyBar.newFolderAction": "Новая папка",
+  "@fileExplorer.functionKeyBar.newFolderAction": {
+    "sourceHash": "cf28f49"
+  },
+  "fileExplorer.functionKeyBar.deleteLabel": "Удалить",
+  "@fileExplorer.functionKeyBar.deleteLabel": {
+    "sourceHash": "e2d0a54"
+  },
+  "fileExplorer.functionKeyBar.deleteAction": "Удалить",
+  "@fileExplorer.functionKeyBar.deleteAction": {
+    "sourceHash": "e2d0a54"
+  },
+  "fileExplorer.functionKeyBar.hiddenToast": "Панель функциональных клавиш скрыта. Снова включить ее можно в <settingsLink>настройках</settingsLink>.",
+  "@fileExplorer.functionKeyBar.hiddenToast": {
+    "sourceHash": "f961d3b"
+  },
+  "fileExplorer.typeToJump.ariaLabel": "Переход: {buffer}",
+  "@fileExplorer.typeToJump.ariaLabel": {
+    "sourceHash": "da879a5"
+  },
+  "fileExplorer.typeToJump.prefix": "Переход: ",
+  "@fileExplorer.typeToJump.prefix": {
+    "sourceHash": "e9e3412"
+  },
+  "fileExplorer.quickFilter.prefix": "Фильтр: ",
+  "@fileExplorer.quickFilter.prefix": {
+    "sourceHash": "b549365"
+  },
+  "fileExplorer.quickFilter.ariaLabel": "Показаны имена, содержащие «{pattern}»",
+  "@fileExplorer.quickFilter.ariaLabel": {
+    "sourceHash": "9b223b0"
+  },
+  "fileExplorer.searchResults.unavailableTitle": "Результаты поиска больше недоступны",
+  "@fileExplorer.searchResults.unavailableTitle": {
+    "sourceHash": "ebcc5a7"
+  },
+  "fileExplorer.searchResults.unavailableBody": "Результаты этого поиска очищены. Откройте новый поиск.",
+  "@fileExplorer.searchResults.unavailableBody": {
+    "sourceHash": "3e4cfa2"
+  },
+  "fileExplorer.network.connect": "Подключиться",
+  "@fileExplorer.network.connect": {
+    "sourceHash": "1a2303e"
+  },
+  "fileExplorer.network.connecting": "Подключение…",
+  "@fileExplorer.network.connecting": {
+    "sourceHash": "72021eb"
+  },
+  "fileExplorer.network.back": "Назад",
+  "@fileExplorer.network.back": {
+    "sourceHash": "76900f1"
+  },
+  "fileExplorer.network.retry": "Повторить",
+  "@fileExplorer.network.retry": {
+    "sourceHash": "942087c"
+  },
+  "fileExplorer.network.signIn": "Войти",
+  "@fileExplorer.network.signIn": {
+    "sourceHash": "bfd402b"
+  },
+  "fileExplorer.network.osMountFallback.message": "Не удалось подключиться напрямую к <shareName>{share}</shareName>. Подключение установлено через системное SMB-подключение macOS. Обычно оно в 4 раза медленнее прямого подключения Cmdr, а иногда — в 100 раз. Нажмите кнопку ниже, чтобы попробовать еще раз.",
+  "@fileExplorer.network.osMountFallback.message": {
+    "sourceHash": "cb53372"
+  },
+  "fileExplorer.network.osMountFallback.shareNotOnServer": "Не удалось подключиться напрямую к <shareName>{share}</shareName>: сервер сообщает, что общей папки с таким именем нет. Подключение по-прежнему идет через системное SMB-подключение macOS, а оно намного медленнее. Повторная попытка тут не поможет: возможно, папку переименовали или удалили на сервере, так что стоит проверить там.",
+  "@fileExplorer.network.osMountFallback.shareNotOnServer": {
+    "sourceHash": "3ae984e"
+  },
+  "fileExplorer.network.osMountFallback.retry": "Попробовать подключиться напрямую",
+  "@fileExplorer.network.osMountFallback.retry": {
+    "sourceHash": "fb3905d"
+  },
+  "fileExplorer.network.osMountFallback.closeTooltip": "Закрыть",
+  "@fileExplorer.network.osMountFallback.closeTooltip": {
+    "sourceHash": "48845bf"
+  },
+  "fileExplorer.network.browser.searching": "Поиск…",
+  "@fileExplorer.network.browser.searching": {
+    "sourceHash": "c31723a"
+  },
+  "fileExplorer.network.browser.refresh": "Обновить",
+  "@fileExplorer.network.browser.refresh": {
+    "sourceHash": "0e91610"
+  },
+  "fileExplorer.network.browser.refreshAriaLabel": "Обновить сетевые хосты",
+  "@fileExplorer.network.browser.refreshAriaLabel": {
+    "sourceHash": "73966bd"
+  },
+  "fileExplorer.network.browser.refreshHint": "Чтобы обновить, нажмите <key></key> или сюда",
+  "@fileExplorer.network.browser.refreshHint": {
+    "sourceHash": "7f65c7d"
+  },
+  "fileExplorer.network.browser.status.resolving": "Определение адреса…",
+  "@fileExplorer.network.browser.status.resolving": {
+    "sourceHash": "6d2b99e"
+  },
+  "fileExplorer.network.browser.status.waitingForNetwork": "Ожидание сети…",
+  "@fileExplorer.network.browser.status.waitingForNetwork": {
+    "sourceHash": "d1c5574"
+  },
+  "fileExplorer.network.browser.status.notChecked": "Не проверено",
+  "@fileExplorer.network.browser.status.notChecked": {
+    "sourceHash": "d16948e"
+  },
+  "fileExplorer.network.browser.status.loggedIn": "Вход выполнен",
+  "@fileExplorer.network.browser.status.loggedIn": {
+    "sourceHash": "55a8cd8"
+  },
+  "fileExplorer.network.browser.status.loginFailed": "Не удалось войти",
+  "@fileExplorer.network.browser.status.loginFailed": {
+    "sourceHash": "5a96e84"
+  },
+  "fileExplorer.network.browser.status.loginNeeded": "Требуется вход",
+  "@fileExplorer.network.browser.status.loginNeeded": {
+    "sourceHash": "de0b59e"
+  },
+  "fileExplorer.network.browser.status.timeout": "Время ожидания истекло",
+  "@fileExplorer.network.browser.status.timeout": {
+    "sourceHash": "70594d9"
+  },
+  "fileExplorer.network.browser.status.unreachable": "Недоступно",
+  "@fileExplorer.network.browser.status.unreachable": {
+    "sourceHash": "abaa46a"
+  },
+  "fileExplorer.network.browser.status.error": "Проблема",
+  "@fileExplorer.network.browser.status.error": {
+    "sourceHash": "54a0e8c"
+  },
+  "fileExplorer.network.browser.status.loggedInOk": "Вход выполнен",
+  "@fileExplorer.network.browser.status.loggedInOk": {
+    "sourceHash": "55a8cd8"
+  },
+  "fileExplorer.network.browser.status.guest": "Гость",
+  "@fileExplorer.network.browser.status.guest": {
+    "sourceHash": "5ed8944"
+  },
+  "fileExplorer.network.browser.status.connected": "Подключено",
+  "@fileExplorer.network.browser.status.connected": {
+    "sourceHash": "2296556"
+  },
+  "fileExplorer.network.browser.tooltip.resolving": "Определение имени хоста и IP-адреса…",
+  "@fileExplorer.network.browser.tooltip.resolving": {
+    "sourceHash": "cac249d"
+  },
+  "fileExplorer.network.browser.tooltip.waitingForNetwork": "Ожидание определения сетевого имени",
+  "@fileExplorer.network.browser.tooltip.waitingForNetwork": {
+    "sourceHash": "81ac569"
+  },
+  "fileExplorer.network.browser.tooltip.doubleClickToConnect": "Дважды нажмите, чтобы подключиться и посмотреть общие папки",
+  "@fileExplorer.network.browser.tooltip.doubleClickToConnect": {
+    "sourceHash": "a068f74"
+  },
+  "fileExplorer.network.browser.tooltip.credsStored": "Учетные данные сохранены. Дважды нажмите, чтобы подключиться.",
+  "@fileExplorer.network.browser.tooltip.credsStored": {
+    "sourceHash": "ff82a32"
+  },
+  "fileExplorer.network.browser.tooltip.credsRejected": "Сохраненные учетные данные отклонены. Войдите с актуальными данными.",
+  "@fileExplorer.network.browser.tooltip.credsRejected": {
+    "sourceHash": "a3d55a2"
+  },
+  "fileExplorer.network.browser.tooltip.requiresLogin": "Этот хост требует входа. Дважды нажмите, чтобы ввести учетные данные.",
+  "@fileExplorer.network.browser.tooltip.requiresLogin": {
+    "sourceHash": "8e64ac0"
+  },
+  "fileExplorer.network.browser.tooltip.authFailed": "Не удалось пройти аутентификацию. Проверьте учетные данные и попробуйте еще раз.",
+  "@fileExplorer.network.browser.tooltip.authFailed": {
+    "sourceHash": "b8620ab"
+  },
+  "fileExplorer.network.browser.cannotRemoveDiscovered": "Найденные в сети хосты удалить нельзя",
+  "@fileExplorer.network.browser.cannotRemoveDiscovered": {
+    "sourceHash": "bde1b3c"
+  },
+  "fileExplorer.network.browser.removeHostConfirm": "Забыть {hostName}? Cmdr перестанет показывать этот хост и сохраненные для него общие папки. Подключенные тома останутся подключенными.",
+  "@fileExplorer.network.browser.removeHostConfirm": {
+    "sourceHash": "25262e0"
+  },
+  "fileExplorer.network.browser.hostRemoved": "Хост забыт: {hostName}",
+  "@fileExplorer.network.browser.hostRemoved": {
+    "sourceHash": "51e025a"
+  },
+  "fileExplorer.network.browser.hostRemoveFailed": "Не удалось забыть хост {hostName}",
+  "@fileExplorer.network.browser.hostRemoveFailed": {
+    "sourceHash": "4411547"
+  },
+  "fileExplorer.network.forgotPassword": "Сохраненный пароль для {hostName} забыт",
+  "@fileExplorer.network.forgotPassword": {
+    "sourceHash": "6b53741"
+  },
+  "fileExplorer.network.deletePasswordFailed": "Не удалось удалить сохраненный пароль",
+  "@fileExplorer.network.deletePasswordFailed": {
+    "sourceHash": "e9c0375"
+  },
+  "fileExplorer.network.browser.disconnected": "Подключение к {hostName} закрыто",
+  "@fileExplorer.network.browser.disconnected": {
+    "sourceHash": "6cb30d3"
+  },
+  "fileExplorer.network.browser.noMountedShares": "Нет подключенных общих папок с сервера {hostName}",
+  "@fileExplorer.network.browser.noMountedShares": {
+    "sourceHash": "913c7e6"
+  },
+  "fileExplorer.network.browser.disconnectFailed": "Не удалось отключиться: {message}",
+  "@fileExplorer.network.browser.disconnectFailed": {
+    "sourceHash": "e394098"
+  },
+  "fileExplorer.network.share.credentialsStoredLocally": "Учетные данные сохранены локально (системное хранилище ключей не найдено)",
+  "@fileExplorer.network.share.credentialsStoredLocally": {
+    "sourceHash": "18dd24e"
+  },
+  "fileExplorer.network.share.notFound": "Общая папка «{shareName}» не найдена на сервере {hostName}",
+  "@fileExplorer.network.share.notFound": {
+    "sourceHash": "afdd472"
+  },
+  "fileExplorer.network.share.connecting": "Подключение к {hostName}…",
+  "@fileExplorer.network.share.connecting": {
+    "sourceHash": "fe38aec"
+  },
+  "fileExplorer.network.share.connectFailedTitle": "Не удалось подключиться к {hostName}",
+  "@fileExplorer.network.share.connectFailedTitle": {
+    "sourceHash": "4c3d88d"
+  },
+  "fileExplorer.network.share.signInTitle": "Войти на {hostName}",
+  "@fileExplorer.network.share.signInTitle": {
+    "sourceHash": "c6ff588"
+  },
+  "fileExplorer.network.share.signInMessage": "Этот сервер показывает общие папки после входа.",
+  "@fileExplorer.network.share.signInMessage": {
+    "sourceHash": "a07c053"
+  },
+  "fileExplorer.network.share.noSharesTitle": "Нет доступных общих папок",
+  "@fileExplorer.network.share.noSharesTitle": {
+    "sourceHash": "56890aa"
+  },
+  "fileExplorer.network.share.noSharesMessage": "У этого хоста нет доступных общих папок, или требуется аутентификация.",
+  "@fileExplorer.network.share.noSharesMessage": {
+    "sourceHash": "6633416"
+  },
+  "fileExplorer.network.share.backArrow": "Назад",
+  "@fileExplorer.network.share.backArrow": {
+    "sourceHash": "76900f1"
+  },
+  "fileExplorer.network.share.forgetPasswordTooltip": "Удалить сохраненный пароль из Связки ключей",
+  "@fileExplorer.network.share.forgetPasswordTooltip": {
+    "sourceHash": "f067186"
+  },
+  "fileExplorer.network.share.useGuest": "Войти как гость",
+  "@fileExplorer.network.share.useGuest": {
+    "sourceHash": "53540e5"
+  },
+  "fileExplorer.network.share.signInAs": "Войти как…",
+  "@fileExplorer.network.share.signInAs": {
+    "sourceHash": "6a34e17"
+  },
+  "fileExplorer.network.share.forgetPassword": "Забыть сохраненный пароль",
+  "@fileExplorer.network.share.forgetPassword": {
+    "sourceHash": "ed68566"
+  },
+  "fileExplorer.network.share.shareCount": "{count, plural, one {{countText} общая папка} few {{countText} общие папки} many {{countText} общих папок} other {{countText} общей папки}}",
+  "@fileExplorer.network.share.shareCount": {
+    "sourceHash": "4cc6002"
+  },
+  "fileExplorer.network.reconnect.once": "один раз",
+  "@fileExplorer.network.reconnect.once": {
+    "sourceHash": "200651a"
+  },
+  "fileExplorer.network.reconnect.twice": "два раза",
+  "@fileExplorer.network.reconnect.twice": {
+    "sourceHash": "dc8ffdb"
+  },
+  "fileExplorer.network.reconnect.times": "{count, plural, one {{countText} раз} few {{countText} раза} many {{countText} раз} other {{countText} раза}}",
+  "@fileExplorer.network.reconnect.times": {
+    "sourceHash": "bf5fc9c"
+  },
+  "fileExplorer.network.reconnect.finalAttempt": "Подключение повторено {retried}. Это последняя попытка. Если она не удастся, подключение будет закрыто.",
+  "@fileExplorer.network.reconnect.finalAttempt": {
+    "sourceHash": "7418a78"
+  },
+  "fileExplorer.network.reconnect.willTryMore": "Подключение повторено {retried}. После этой попытки Cmdr попробует еще {remaining}.",
+  "@fileExplorer.network.reconnect.willTryMore": {
+    "sourceHash": "a7d887a"
+  },
+  "fileExplorer.networkMount.mounting": "Подключение: {target}…",
+  "@fileExplorer.networkMount.mounting": {
+    "sourceHash": "7b7368d"
+  },
+  "fileExplorer.networkMount.shareFallback": "общая папка",
+  "@fileExplorer.networkMount.shareFallback": {
+    "sourceHash": "c3bc45a"
+  },
+  "fileExplorer.networkMount.mountFailedTitle": "Не удалось подключить общую папку",
+  "@fileExplorer.networkMount.mountFailedTitle": {
+    "sourceHash": "d04d142"
+  },
+  "fileExplorer.networkMount.signInTitle": "Войдите, чтобы открыть «{share}»",
+  "@fileExplorer.networkMount.signInTitle": {
+    "sourceHash": "8e161f1"
+  },
+  "fileExplorer.networkMount.signInMessage": "Сервер «{server}» открывает эту общую папку только после входа в учетную запись.",
+  "@fileExplorer.networkMount.signInMessage": {
+    "sourceHash": "bec2bf7"
+  },
+  "fileExplorer.networkMount.tryAgain": "Повторить попытку",
+  "@fileExplorer.networkMount.tryAgain": {
+    "sourceHash": "d8b8392"
+  },
+  "fileExplorer.networkMount.back": "Назад",
+  "@fileExplorer.networkMount.back": {
+    "sourceHash": "76900f1"
+  },
+  "fileExplorer.unreachable.title": "Папка {path} недоступна",
+  "@fileExplorer.unreachable.title": {
+    "sourceHash": "5fa39ab"
+  },
+  "fileExplorer.unreachable.detailGaveUp": "Cmdr несколько раз пытался восстановить подключение, но сервер не ответил. Подключение пока сохранено. Повторите попытку или отключитесь, чтобы закрыть его.",
+  "@fileExplorer.unreachable.detailGaveUp": {
+    "sourceHash": "720e642"
+  },
+  "fileExplorer.unreachable.detailTimeout": "Том для этого пути не ответил вовремя. Возможно, это сетевой диск, который сейчас недоступен.",
+  "@fileExplorer.unreachable.detailTimeout": {
+    "sourceHash": "c68d5d3"
+  },
+  "fileExplorer.unreachable.retrying": "Повторная попытка…",
+  "@fileExplorer.unreachable.retrying": {
+    "sourceHash": "a16c8b1"
+  },
+  "fileExplorer.unreachable.retry": "Повторить",
+  "@fileExplorer.unreachable.retry": {
+    "sourceHash": "942087c"
+  },
+  "fileExplorer.unreachable.disconnect": "Отключиться",
+  "@fileExplorer.unreachable.disconnect": {
+    "sourceHash": "acfc5be"
+  },
+  "fileExplorer.unreachable.openHome": "Открыть папку пользователя",
+  "@fileExplorer.unreachable.openHome": {
+    "sourceHash": "a178b4d"
+  },
+  "fileExplorer.listingStalled.title": "Ожидание этой папки продолжается",
+  "@fileExplorer.listingStalled.title": {
+    "sourceHash": "2c288e7"
+  },
+  "fileExplorer.listingStalled.detail": "Сервер или диск с этой папкой не отвечает. Cmdr продолжает попытки в фоне и откроет папку, как только получит ответ.",
+  "@fileExplorer.listingStalled.detail": {
+    "sourceHash": "3d5ca69"
+  },
+  "fileExplorer.listingStalled.detailServer": "Сервер с этой папкой не отвечает. Cmdr продолжает попытки в фоне и откроет папку, как только получит ответ.",
+  "@fileExplorer.listingStalled.detailServer": {
+    "sourceHash": "f8f8837"
+  },
+  "fileExplorer.listingStalled.detailDrive": "Диск с этой папкой не отвечает. Cmdr продолжает попытки в фоне и откроет папку, как только получит ответ.",
+  "@fileExplorer.listingStalled.detailDrive": {
+    "sourceHash": "e2f3046"
+  },
+  "fileExplorer.listingStalled.tryAgain": "Повторить попытку",
+  "@fileExplorer.listingStalled.tryAgain": {
+    "sourceHash": "d8b8392"
+  },
+  "fileExplorer.listingStalled.goBack": "Назад",
+  "@fileExplorer.listingStalled.goBack": {
+    "sourceHash": "6aadac2"
+  },
+  "fileExplorer.clipboard.copied": "Скопировано: {countText} {count, plural, one {объект} few {объекта} many {объектов} other {объекта}}",
+  "@fileExplorer.clipboard.copied": {
+    "sourceHash": "1c25075"
+  },
+  "fileExplorer.compareDirectories.marked": "Выделены отличающиеся файлы: {leftCountText} {leftCount, plural, one {файл} few {файла} many {файлов} other {файла}} слева и {rightCountText} {rightCount, plural, one {файл} few {файла} many {файлов} other {файла}} справа.",
+  "@fileExplorer.compareDirectories.marked": {
+    "sourceHash": "73e3ccf"
+  },
+  "fileExplorer.compareDirectories.noDifferences.newerAndMissing": "Нечего выделять: каждый файл есть в обеих папках, и ни одна из копий не новее. Вложенные папки не сравниваются.",
+  "@fileExplorer.compareDirectories.noDifferences.newerAndMissing": {
+    "sourceHash": "c2960d8"
+  },
+  "fileExplorer.compareDirectories.noDifferences.missing": "Нечего выделять: каждый файл есть в обеих папках. Вложенные папки не сравниваются.",
+  "@fileExplorer.compareDirectories.noDifferences.missing": {
+    "sourceHash": "ed2e696"
+  },
+  "fileExplorer.compareDirectories.noDifferences.sizeAndMissing": "Нечего выделять: каждый файл есть в обеих папках, и копии одного размера. Вложенные папки не сравниваются.",
+  "@fileExplorer.compareDirectories.noDifferences.sizeAndMissing": {
+    "sourceHash": "5f7b808"
+  },
+  "fileExplorer.compareDirectories.keptChanging": "Папки все время менялись, пока шло сравнение. Попробуйте еще раз, когда они перестанут меняться.",
+  "@fileExplorer.compareDirectories.keptChanging": {
+    "sourceHash": "3051074"
+  },
+  "fileExplorer.compareDirectories.needsTwoFolders": "Откройте папку в каждой панели, чтобы сравнить папки",
+  "@fileExplorer.compareDirectories.needsTwoFolders": {
+    "sourceHash": "c04ef80"
+  },
+  "fileExplorer.compareDirectories.couldNotFinish": "Не удалось завершить сравнение папок. Попробуйте еще раз чуть позже.",
+  "@fileExplorer.compareDirectories.couldNotFinish": {
+    "sourceHash": "0900bc9"
+  },
+  "fileExplorer.folderSizes.notConnected": "Не удается вычислить размеры папок здесь: это место сейчас не подключено.",
+  "@fileExplorer.folderSizes.notConnected": {
+    "sourceHash": "8b51988"
+  },
+  "fileExplorer.clipboard.cutReady": "Готово к перемещению: {countText} {count, plural, one {объект} few {объекта} many {объектов} other {объекта}}. Вставьте, чтобы завершить.",
+  "@fileExplorer.clipboard.cutReady": {
+    "sourceHash": "846d8af"
+  },
+  "fileExplorer.clipboard.copyFromDevice": "Буфер обмена не поддерживает файлы с этого устройства. Для копирования используйте {copyKey}.",
+  "@fileExplorer.clipboard.copyFromDevice": {
+    "sourceHash": "ba69ee7"
+  },
+  "fileExplorer.clipboard.moveFromDevice": "Буфер обмена не поддерживает файлы с этого устройства. Для перемещения используйте {moveKey}.",
+  "@fileExplorer.clipboard.moveFromDevice": {
+    "sourceHash": "e7da049"
+  },
+  "fileExplorer.clipboard.copyFromServer": "Буфер обмена не поддерживает файлы с этого сервера. Для копирования используйте {copyKey}.",
+  "@fileExplorer.clipboard.copyFromServer": {
+    "sourceHash": "12cb39f"
+  },
+  "fileExplorer.clipboard.moveFromServer": "Буфер обмена не поддерживает файлы с этого сервера. Для перемещения используйте {moveKey}.",
+  "@fileExplorer.clipboard.moveFromServer": {
+    "sourceHash": "4ae83d7"
+  },
+  "fileExplorer.clipboard.copyFromUnknown": "Эти файлы нельзя поместить в буфер обмена. Для копирования используйте {copyKey}.",
+  "@fileExplorer.clipboard.copyFromUnknown": {
+    "sourceHash": "7aaabdb"
+  },
+  "fileExplorer.clipboard.moveFromUnknown": "Эти файлы нельзя поместить в буфер обмена. Для перемещения используйте {moveKey}.",
+  "@fileExplorer.clipboard.moveFromUnknown": {
+    "sourceHash": "7fed360"
+  },
+  "fileExplorer.edit.notOnThisMac": "Cmdr пока не может открыть этот файл в редакторе: это не обычный файл на вашем Mac. Нажмите F3 для просмотра.",
+  "@fileExplorer.edit.notOnThisMac": {
+    "sourceHash": "710100c"
+  },
+  "fileExplorer.edit.hint": "Файл открыт в {app}. Хотите другой редактор в следующий раз? Выберите его в настройках.",
+  "@fileExplorer.edit.hint": {
+    "sourceHash": "3632f06"
+  },
+  "fileExplorer.edit.hintUnnamed": "Файл открыт в текстовом редакторе по умолчанию. Хотите другой редактор в следующий раз? Выберите его в настройках.",
+  "@fileExplorer.edit.hintUnnamed": {
+    "sourceHash": "6216471"
+  },
+  "fileExplorer.edit.dismiss": "Закрыть",
+  "@fileExplorer.edit.dismiss": {
+    "sourceHash": "48845bf"
+  },
+  "fileExplorer.edit.openSettings": "Открыть настройки",
+  "@fileExplorer.edit.openSettings": {
+    "sourceHash": "ca381c1"
+  },
+  "fileExplorer.edit.appMissing": "Cmdr не может найти выбранный редактор, поэтому файл открыт в {app}.",
+  "@fileExplorer.edit.appMissing": {
+    "sourceHash": "9a21bc7"
+  },
+  "fileExplorer.edit.appMissingUnnamed": "Cmdr не может найти выбранный редактор, поэтому файл открыт в текстовом редакторе по умолчанию.",
+  "@fileExplorer.edit.appMissingUnnamed": {
+    "sourceHash": "c61458b"
+  },
+  "fileExplorer.edit.launchRefused": "Cmdr не удалось запустить текстовый редактор. Откройте его один раз вручную, затем вернитесь сюда.",
+  "@fileExplorer.edit.launchRefused": {
+    "sourceHash": "8a18c5c"
+  },
+  "fileExplorer.edit.timedOut": "Ваш текстовый редактор долго запускается. Возможно, он еще откроется.",
+  "@fileExplorer.edit.timedOut": {
+    "sourceHash": "70d283f"
+  },
+  "fileExplorer.clipboard.copyToDevice": "Для копирования файлов на это устройство используйте {copyKey}.",
+  "@fileExplorer.clipboard.copyToDevice": {
+    "sourceHash": "f56d0c4"
+  },
+  "fileExplorer.clipboard.copyToServer": "Для копирования файлов на этот сервер используйте {copyKey}.",
+  "@fileExplorer.clipboard.copyToServer": {
+    "sourceHash": "f6002a0"
+  },
+  "fileExplorer.clipboard.empty": "В буфере обмена нет файлов. Сначала скопируйте файлы с помощью ⌘C.",
+  "@fileExplorer.clipboard.empty": {
+    "sourceHash": "0cbe304"
+  },
+  "fileExplorer.clipboard.stillPasting": "Файл из буфера обмена все еще создается. Том медленно отвечает.",
+  "@fileExplorer.clipboard.stillPasting": {
+    "sourceHash": "0e98ca7"
+  },
+  "fileExplorer.clipboard.notPasted": "Cmdr не удалось создать файл из буфера обмена. {reason}",
+  "@fileExplorer.clipboard.notPasted": {
+    "sourceHash": "a6e63c7"
+  },
+  "fileExplorer.clipboard.pastedAsFile": "{kind, select, image {Изображение из буфера обмена вставлено} pdf {PDF из буфера обмена вставлен} other {Текст из буфера обмена вставлен}} как файл {filename}",
+  "@fileExplorer.clipboard.pastedAsFile": {
+    "sourceHash": "d61d4b5"
+  },
+  "fileExplorer.clipboard.pastedAsFileSettings": "Настройки",
+  "@fileExplorer.clipboard.pastedAsFileSettings": {
+    "sourceHash": "74a883a"
+  },
+  "fileExplorer.clipboard.copiedPath": "Путь скопирован в буфер обмена:",
+  "@fileExplorer.clipboard.copiedPath": {
+    "sourceHash": "a2eec16"
+  },
+  "fileExplorer.tabs.limitReached": "Достигнут предел вкладок",
+  "@fileExplorer.tabs.limitReached": {
+    "sourceHash": "2d4205a"
+  },
+  "fileExplorer.tabs.closePinnedConfirm": "Эта вкладка закреплена. Все равно закрыть?",
+  "@fileExplorer.tabs.closePinnedConfirm": {
+    "sourceHash": "d5757f9"
+  },
+  "fileExplorer.tabs.closePinnedTitle": "Закрыть закрепленную вкладку",
+  "@fileExplorer.tabs.closePinnedTitle": {
+    "sourceHash": "5d22e58"
+  },
+  "fileExplorer.readOnly.volumeTitle": "Том только для чтения",
+  "@fileExplorer.readOnly.volumeTitle": {
+    "sourceHash": "e2d3bf1"
+  },
+  "fileExplorer.readOnly.renameMessage": "Этот том доступен только для чтения. Переименование невозможно.",
+  "@fileExplorer.readOnly.renameMessage": {
+    "sourceHash": "5806c75"
+  },
+  "fileExplorer.readOnly.mkdirMessage": "Этот том доступен только для чтения. Создание папок невозможно.",
+  "@fileExplorer.readOnly.mkdirMessage": {
+    "sourceHash": "6385636"
+  },
+  "fileExplorer.readOnly.mkfileMessage": "Этот том доступен только для чтения. Создание файлов невозможно.",
+  "@fileExplorer.readOnly.mkfileMessage": {
+    "sourceHash": "32e1afa"
+  },
+  "fileExplorer.readOnly.deleteMessage": "Этот том доступен только для чтения. Удаление файлов невозможно.",
+  "@fileExplorer.readOnly.deleteMessage": {
+    "sourceHash": "a456b51"
+  },
+  "fileExplorer.readOnly.archiveTitle": "Архив только для чтения",
+  "@fileExplorer.readOnly.archiveTitle": {
+    "sourceHash": "56ff9e9"
+  },
+  "fileExplorer.readOnly.archiveMessage": "Cmdr просматривает и распаковывает архивы tar и 7z, но редактировать можно только архивы zip.",
+  "@fileExplorer.readOnly.archiveMessage": {
+    "sourceHash": "32a03f0"
+  },
+  "fileExplorer.readOnly.deviceTitle": "Устройство только для чтения",
+  "@fileExplorer.readOnly.deviceTitle": {
+    "sourceHash": "3f79690"
+  },
+  "fileExplorer.readOnly.deviceMessage": "Устройство «{name}» доступно только для чтения. Можно копировать файлы с него, но не на него.",
+  "@fileExplorer.readOnly.deviceMessage": {
+    "sourceHash": "5582a47"
+  },
+  "fileExplorer.readOnly.gitPortalTitle": "Портал git только для чтения",
+  "@fileExplorer.readOnly.gitPortalTitle": {
+    "sourceHash": "d4bd9c1"
+  },
+  "fileExplorer.readOnly.gitPortalMessage": "Ветки, теги и коммиты — снимки истории git. Их можно просматривать и копировать, но нельзя изменять.",
+  "@fileExplorer.readOnly.gitPortalMessage": {
+    "sourceHash": "87bc79d"
+  },
+  "fileExplorer.archive.useTransferToCopyOut": "Для копирования файлов из архива используйте F5, для перемещения — F6.",
+  "@fileExplorer.archive.useTransferToCopyOut": {
+    "sourceHash": "3edbc36"
+  },
+  "fileExplorer.git.useTransferToCopyOut": "Для копирования файлов из снимка git используйте F5, для перемещения — F6.",
+  "@fileExplorer.git.useTransferToCopyOut": {
+    "sourceHash": "a0d65fe"
+  },
+  "fileExplorer.openWith.copyRefused.tooLarge": "Размер файла {fileName} превышает {limit}. Cmdr не может открыть его в {appName} прямо из архива.",
+  "@fileExplorer.openWith.copyRefused.tooLarge": {
+    "sourceHash": "43399e6"
+  },
+  "fileExplorer.openWith.copyRefused.tooLargeInRepoHistory": "Размер файла {fileName} превышает {limit}. Cmdr не может открыть его в {appName} из истории репозитория.",
+  "@fileExplorer.openWith.copyRefused.tooLargeInRepoHistory": {
+    "sourceHash": "aab64d0"
+  },
+  "fileExplorer.openWith.copyRefused.needsPassword": "Файл {fileName} находится в архиве, защищенном паролем. Сначала скопируйте его в папку (Cmdr запросит пароль), затем откройте в {appName}.",
+  "@fileExplorer.openWith.copyRefused.needsPassword": {
+    "sourceHash": "882a23f"
+  },
+  "fileExplorer.openWith.copyRefused.archiveUnreadable": "Не удалось извлечь файл {fileName} из архива для открытия в {appName}. Возможно, архив поврежден или его формат не поддерживается Cmdr.",
+  "@fileExplorer.openWith.copyRefused.archiveUnreadable": {
+    "sourceHash": "4ff2573"
+  },
+  "fileExplorer.openWith.copyRefused.unreadable": "Не удалось прочитать файл {fileName} для открытия в {appName}. Проверьте подключение диска и попробуйте еще раз.",
+  "@fileExplorer.openWith.copyRefused.unreadable": {
+    "sourceHash": "8af2399"
+  },
+  "fileExplorer.rename.hiddenAfterRename": "Файл исчез из списка, потому что показ скрытых файлов отключен.",
+  "@fileExplorer.rename.hiddenAfterRename": {
+    "sourceHash": "6258274"
+  },
+  "fileExplorer.rename.keptOriginalName": "{reason}. Прежнее имя сохранено.",
+  "@fileExplorer.rename.keptOriginalName": {
+    "sourceHash": "27acd0a"
+  },
+  "fileExplorer.rename.chainKeptOriginalName": "Файл «{name}» сохранил имя: {reason}",
+  "@fileExplorer.rename.chainKeptOriginalName": {
+    "sourceHash": "174ff14"
+  },
+  "fileExplorer.rename.chainKeptOriginalNameAndOthers": "{others, plural, =1 {Еще один файл сохранил имя} one {{othersText} другой файл сохранил имя} few {{othersText} других файла сохранили имена} many {{othersText} других файлов сохранили имена} other {{othersText} другого файла сохранили имена}}. Файл «{name}» тоже: {reason}",
+  "@fileExplorer.rename.chainKeptOriginalNameAndOthers": {
+    "sourceHash": "016797b"
+  },
+  "fileExplorer.rename.needsOwnMoveDialog": "Переименование здесь выполняется копированием на сервере, поэтому нужно отдельное диалоговое окно «Переместить». Переименуйте этот объект еще раз, отдельно от других.",
+  "@fileExplorer.rename.needsOwnMoveDialog": {
+    "sourceHash": "87110e0"
+  },
+  "fileExplorer.rename.stillRenaming": "«{name}» все еще переименовывается. Том медленно отвечает.",
+  "@fileExplorer.rename.stillRenaming": {
+    "sourceHash": "a05cca5"
+  },
+  "fileExplorer.rename.stillRenamingAndOthers": "«{name}» и {kind, select, folders {{others, plural, =1 {еще одна папка} one {еще {othersText} папка} few {еще {othersText} папки} many {еще {othersText} папок} other {еще {othersText} папки}}} files {{others, plural, =1 {еще один файл} one {еще {othersText} файл} few {еще {othersText} файла} many {еще {othersText} файлов} other {еще {othersText} файла}}} other {{others, plural, one {другие файлы и папки ({othersText})} few {другие файлы и папки ({othersText})} many {другие файлы и папки ({othersText})} other {другие файлы и папки ({othersText})}}}} все еще переименовываются. Том медленно отвечает.",
+  "@fileExplorer.rename.stillRenamingAndOthers": {
+    "sourceHash": "933be25"
+  },
+  "fileExplorer.columns.name": "Имя",
+  "@fileExplorer.columns.name": {
+    "sourceHash": "dcd1d52"
+  },
+  "fileExplorer.columns.ext": "Расш.",
+  "@fileExplorer.columns.ext": {
+    "sourceHash": "8c92eec"
+  },
+  "fileExplorer.columns.size": "Размер",
+  "@fileExplorer.columns.size": {
+    "sourceHash": "1af8519"
+  },
+  "fileExplorer.columns.modified": "Дата изменения",
+  "@fileExplorer.columns.modified": {
+    "sourceHash": "e8ce5dc"
+  },
+  "fileExplorer.columns.created": "Дата создания",
+  "@fileExplorer.columns.created": {
+    "sourceHash": "d70b9e2"
+  },
+  "fileExplorer.columns.sortByRelevance": "Сортировать по релевантности",
+  "@fileExplorer.columns.sortByRelevance": {
+    "sourceHash": "20632dd"
+  },
+  "fileExplorer.columns.git": "Git",
+  "@fileExplorer.columns.git": {
+    "sourceHash": "b949c92",
+    "sameAsSourceJustification": "Стандартное техническое имя Git; сохраняется по правилам имен продуктов и форматов."
+  },
+  "fileExplorer.columns.gitTitle": "Состояние Git каждого файла",
+  "@fileExplorer.columns.gitTitle": {
+    "sourceHash": "c4cc002"
+  },
+  "fileExplorer.list.empty": "Пустая папка",
+  "@fileExplorer.list.empty": {
+    "sourceHash": "ca1fd45"
+  },
+  "fileExplorer.list.fileListAriaLabel": "Список файлов",
+  "@fileExplorer.list.fileListAriaLabel": {
+    "sourceHash": "0728b8e"
+  },
+  "fileExplorer.list.sortColumnsAriaLabel": "Сортировка по колонкам",
+  "@fileExplorer.list.sortColumnsAriaLabel": {
+    "sourceHash": "21f76f8"
+  },
+  "fileExplorer.dirSize.updatingIndexTooltip": "Обновление индекса: размер может измениться.",
+  "@fileExplorer.dirSize.updatingIndexTooltip": {
+    "sourceHash": "2689358"
+  },
+  "fileExplorer.dirSize.scanProgressTooltip": "Размеры появляются по мере сканирования",
+  "@fileExplorer.dirSize.scanProgressTooltip": {
+    "sourceHash": "8151629"
+  },
+  "fileExplorer.dirSize.contentLabel": "Содержимое",
+  "@fileExplorer.dirSize.contentLabel": {
+    "sourceHash": "47bd290"
+  },
+  "fileExplorer.dirSize.onDiskLabel": "На диске",
+  "@fileExplorer.dirSize.onDiskLabel": {
+    "sourceHash": "00ca4da"
+  },
+  "fileExplorer.dirSize.noPerms": "'<'нет доступа>",
+  "@fileExplorer.dirSize.noPerms": {
+    "sourceHash": "bf8fb9d"
+  },
+  "fileExplorer.dirSize.noPermsTooltip": "У Cmdr нет разрешения на чтение этой папки",
+  "@fileExplorer.dirSize.noPermsTooltip": {
+    "sourceHash": "4920b4f"
+  },
+  "fileExplorer.dirSize.noFiles": "Нет файлов",
+  "@fileExplorer.dirSize.noFiles": {
+    "sourceHash": "c219d96"
+  },
+  "fileExplorer.dirSize.noFolders": "нет папок",
+  "@fileExplorer.dirSize.noFolders": {
+    "sourceHash": "055fa42"
+  },
+  "fileExplorer.dirSize.fileCount": "{count, plural, one {{countText} файл} few {{countText} файла} many {{countText} файлов} other {{countText} файла}}",
+  "@fileExplorer.dirSize.fileCount": {
+    "sourceHash": "3c08428"
+  },
+  "fileExplorer.dirSize.folderCount": "{count, plural, one {{countText} папка} few {{countText} папки} many {{countText} папок} other {{countText} папки}}",
+  "@fileExplorer.dirSize.folderCount": {
+    "sourceHash": "3c46f04"
+  },
+  "fileExplorer.dirSize.updatingIndexLine": "Индекс обновляется. Размер может измениться.",
+  "@fileExplorer.dirSize.updatingIndexLine": {
+    "sourceHash": "ddb01a2"
+  },
+  "fileExplorer.dirSize.dirPlaceholder": "'<'папка>",
+  "@fileExplorer.dirSize.dirPlaceholder": {
+    "sourceHash": "1cb5400"
+  },
+  "fileExplorer.dirSize.mismatchTooltipPrefix": "Размер содержимого существенно отличается от размера на диске.",
+  "@fileExplorer.dirSize.mismatchTooltipPrefix": {
+    "sourceHash": "3ff9147"
+  },
+  "fileExplorer.dirSize.lowerBoundLine": "Не меньше указанного: некоторые вложенные папки еще не просканированы, поэтому итоговый размер может быть больше.",
+  "@fileExplorer.dirSize.lowerBoundLine": {
+    "sourceHash": "2aaea43"
+  },
+  "fileExplorer.dirSize.unknownTooltip": "Размер неизвестен: эта папка еще не просканирована.",
+  "@fileExplorer.dirSize.unknownTooltip": {
+    "sourceHash": "f5771e5"
+  },
+  "fileExplorer.dirSize.staleLine": "Эти размеры получены при предыдущем сканировании и могут быть неактуальны.",
+  "@fileExplorer.dirSize.staleLine": {
+    "sourceHash": "4d6d21c"
+  },
+  "fileExplorer.git.size.branches": "{count, plural, one {{countText} ветка} few {{countText} ветки} many {{countText} веток} other {{countText} ветки}}",
+  "@fileExplorer.git.size.branches": {
+    "sourceHash": "ea4d085"
+  },
+  "fileExplorer.git.size.tags": "{count, plural, one {{countText} тег} few {{countText} тега} many {{countText} тегов} other {{countText} тега}}",
+  "@fileExplorer.git.size.tags": {
+    "sourceHash": "f9c07cd"
+  },
+  "fileExplorer.git.size.commits": "{count, plural, one {{countText} коммит} few {{countText} коммита} many {{countText} коммитов} other {{countText} коммита}}",
+  "@fileExplorer.git.size.commits": {
+    "sourceHash": "cfdb4be"
+  },
+  "fileExplorer.git.size.stashEntries": "{count, plural, one {{countText} запись в stash} few {{countText} записи в stash} many {{countText} записей в stash} other {{countText} записи в stash}}",
+  "@fileExplorer.git.size.stashEntries": {
+    "sourceHash": "d9f98ff"
+  },
+  "fileExplorer.git.size.linkedWorktrees": "{count, plural, one {{countText} связанный worktree} few {{countText} связанных worktree} many {{countText} связанных worktree} other {{countText} связанного worktree}}",
+  "@fileExplorer.git.size.linkedWorktrees": {
+    "sourceHash": "7bc228e"
+  },
+  "fileExplorer.git.size.submodules": "{count, plural, one {{countText} подмодуль} few {{countText} подмодуля} many {{countText} подмодулей} other {{countText} подмодуля}}",
+  "@fileExplorer.git.size.submodules": {
+    "sourceHash": "b1b847e"
+  },
+  "fileExplorer.git.size.filesChanged": "{count, plural, one {{countText} файл} few {{countText} файла} many {{countText} файлов} other {{countText} файла}}",
+  "@fileExplorer.git.size.filesChanged": {
+    "sourceHash": "3c08428"
+  },
+  "fileExplorer.git.size.aheadBehind": "+{aheadText} / -{behindText}",
+  "@fileExplorer.git.size.aheadBehind": {
+    "sourceHash": "6ff31ac",
+    "sameAsSourceJustification": "Строка содержит только подстановки и знаки; пользовательский текст переводится в подставляемых фрагментах."
+  },
+  "fileExplorer.git.size.onBranch": "ветка: {branch}",
+  "@fileExplorer.git.size.onBranch": {
+    "sourceHash": "b94a28d"
+  },
+  "fileExplorer.git.tooltip.branches": "В этом репозитории: {count, plural, one {{countText} ветка} few {{countText} ветки} many {{countText} веток} other {{countText} ветки}}",
+  "@fileExplorer.git.tooltip.branches": {
+    "sourceHash": "a3372d8"
+  },
+  "fileExplorer.git.tooltip.tags": "В этом репозитории: {count, plural, one {{countText} тег} few {{countText} тега} many {{countText} тегов} other {{countText} тега}}",
+  "@fileExplorer.git.tooltip.tags": {
+    "sourceHash": "cac35ae"
+  },
+  "fileExplorer.git.tooltip.commits": "Доступно из HEAD: {count, plural, one {{countText} коммит} few {{countText} коммита} many {{countText} коммитов} other {{countText} коммита}}",
+  "@fileExplorer.git.tooltip.commits": {
+    "sourceHash": "4d9cea8"
+  },
+  "fileExplorer.git.tooltip.filesChanged": "Изменено относительно родительского коммита: {count, plural, one {{countText} файл} few {{countText} файла} many {{countText} файлов} other {{countText} файла}}",
+  "@fileExplorer.git.tooltip.filesChanged": {
+    "sourceHash": "9808044"
+  },
+  "fileExplorer.git.tooltip.aheadBehind": "Впереди «{vs}» на {ahead, plural, one {{aheadText} коммит} few {{aheadText} коммита} many {{aheadText} коммитов} other {{aheadText} коммита}}, позади на {behind, plural, one {{behindText} коммит} few {{behindText} коммита} many {{behindText} коммитов} other {{behindText} коммита}}",
+  "@fileExplorer.git.tooltip.aheadBehind": {
+    "sourceHash": "6a24049"
+  },
+  "fileExplorer.git.tooltip.taggedCommit": "Коммит с тегом: {id}",
+  "@fileExplorer.git.tooltip.taggedCommit": {
+    "sourceHash": "39e11d5"
+  },
+  "fileExplorer.git.tooltip.pinnedCommit": "Закреплено на коммите {id}",
+  "@fileExplorer.git.tooltip.pinnedCommit": {
+    "sourceHash": "f80ccba"
+  },
+  "fileExplorer.git.tooltip.stashedOnBranch": "Создано в ветке «{branch}»",
+  "@fileExplorer.git.tooltip.stashedOnBranch": {
+    "sourceHash": "5a1ad8d"
+  },
+  "fileExplorer.git.tooltip.worktreeOnBranch": "Извлечена ветка «{branch}»",
+  "@fileExplorer.git.tooltip.worktreeOnBranch": {
+    "sourceHash": "4941fa5"
+  },
+  "fileExplorer.git.tooltip.worktreeDetached": "Отсоединенный HEAD: {id}",
+  "@fileExplorer.git.tooltip.worktreeDetached": {
+    "sourceHash": "8455479"
+  },
+  "fileExplorer.selectionTooltip.selected": "Выделено",
+  "@fileExplorer.selectionTooltip.selected": {
+    "sourceHash": "57fd7a0"
+  },
+  "fileExplorer.selectionTooltip.ofTotal": "Всего",
+  "@fileExplorer.selectionTooltip.ofTotal": {
+    "sourceHash": "1269b5a"
+  },
+  "fileExplorer.selectionTooltip.onDiskHeader": "На диске:",
+  "@fileExplorer.selectionTooltip.onDiskHeader": {
+    "sourceHash": "9795f99"
+  },
+  "fileExplorer.entry.brokenSymlink": "(битая ссылка)",
+  "@fileExplorer.entry.brokenSymlink": {
+    "sourceHash": "a7ffd43"
+  },
+  "fileExplorer.dateTooltip.created": "Дата создания",
+  "@fileExplorer.dateTooltip.created": {
+    "sourceHash": "d70b9e2"
+  },
+  "fileExplorer.dateTooltip.lastOpened": "Последнее открытие",
+  "@fileExplorer.dateTooltip.lastOpened": {
+    "sourceHash": "e300685"
+  },
+  "fileExplorer.dateTooltip.lastMoved": "Последнее перемещение («добавление»)",
+  "@fileExplorer.dateTooltip.lastMoved": {
+    "sourceHash": "1366405"
+  },
+  "fileExplorer.dateTooltip.lastModified": "Последнее изменение",
+  "@fileExplorer.dateTooltip.lastModified": {
+    "sourceHash": "0fe1058"
+  },
+  "fileExplorer.imageIndex.file.indexed": "Проиндексировано для поиска изображений",
+  "@fileExplorer.imageIndex.file.indexed": {
+    "sourceHash": "9b72aa0"
+  },
+  "fileExplorer.imageIndex.file.pending": "Ожидает индексации",
+  "@fileExplorer.imageIndex.file.pending": {
+    "sourceHash": "73eb99a"
+  },
+  "fileExplorer.imageIndex.file.indexing": "Индексируется сейчас",
+  "@fileExplorer.imageIndex.file.indexing": {
+    "sourceHash": "44501db"
+  },
+  "fileExplorer.imageIndex.file.stale": "Изменено после индексации; будет переиндексировано",
+  "@fileExplorer.imageIndex.file.stale": {
+    "sourceHash": "1766bc3"
+  },
+  "fileExplorer.imageIndex.file.failed": "Не удалось проиндексировать",
+  "@fileExplorer.imageIndex.file.failed": {
+    "sourceHash": "0ca54ae"
+  },
+  "fileExplorer.imageIndex.file.excluded": "Не включено в поиск изображений",
+  "@fileExplorer.imageIndex.file.excluded": {
+    "sourceHash": "1f68cee"
+  },
+  "fileExplorer.imageIndex.folder.allIndexed": "{total, plural, one {Проиндексированы все изображения ({totalText})} few {Проиндексированы все изображения ({totalText})} many {Проиндексированы все изображения ({totalText})} other {Проиндексированы все изображения ({totalText})}}",
+  "@fileExplorer.imageIndex.folder.allIndexed": {
+    "sourceHash": "c19fe12"
+  },
+  "fileExplorer.imageIndex.folder.someIndexed": "Проиндексировано {doneText} из {totalText} {total, plural, one {изображения} few {изображений} many {изображений} other {изображения}}",
+  "@fileExplorer.imageIndex.folder.someIndexed": {
+    "sourceHash": "c7fd5ca"
+  },
+  "fileExplorer.imageIndex.drive.ariaLabel": "Состояние поиска изображений на этом диске",
+  "@fileExplorer.imageIndex.drive.ariaLabel": {
+    "sourceHash": "bea5d87"
+  },
+  "fileExplorer.imageIndex.drive.off": "Поиск изображений на этом диске отключен.",
+  "@fileExplorer.imageIndex.drive.off": {
+    "sourceHash": "a7f3c42"
+  },
+  "fileExplorer.imageIndex.drive.indexing": "На этом диске проиндексировано {doneText} из {totalText} {total, plural, one {изображения} few {изображений} many {изображений} other {изображения}}; работа продолжается.",
+  "@fileExplorer.imageIndex.drive.indexing": {
+    "sourceHash": "23d351d"
+  },
+  "fileExplorer.imageIndex.drive.done": "{total, plural, one {Все изображения на этом диске ({totalText}) проиндексированы.} few {Все изображения на этом диске ({totalText}) проиндексированы.} many {Все изображения на этом диске ({totalText}) проиндексированы.} other {Все изображения на этом диске ({totalText}) проиндексированы.}}",
+  "@fileExplorer.imageIndex.drive.done": {
+    "sourceHash": "0f4f795"
+  },
+  "fileExplorer.selectionInfo.nothingHere": "Здесь ничего нет.",
+  "@fileExplorer.selectionInfo.nothingHere": {
+    "sourceHash": "140a431"
+  },
+  "fileExplorer.selectionInfo.dir": "ПАПКА",
+  "@fileExplorer.selectionInfo.dir": {
+    "sourceHash": "d313ad9"
+  },
+  "fileExplorer.selectionInfo.sizeNotReadyAriaLabel": "Размер пока не определен",
+  "@fileExplorer.selectionInfo.sizeNotReadyAriaLabel": {
+    "sourceHash": "4f2542d"
+  },
+  "fileExplorer.selectionInfo.sizeUpdatingAriaLabel": "Размер обновляется",
+  "@fileExplorer.selectionInfo.sizeUpdatingAriaLabel": {
+    "sourceHash": "f237144"
+  },
+  "fileExplorer.selectionInfo.indexUpdatingTooltip": "Индекс обновляется, размер может измениться.",
+  "@fileExplorer.selectionInfo.indexUpdatingTooltip": {
+    "sourceHash": "2f69a1b"
+  },
+  "fileExplorer.selectionInfo.symlinkHint": "Эта папка содержит символические ссылки. Содержимое по ссылкам не учитывается в общем размере, чтобы избежать двойного подсчета.",
+  "@fileExplorer.selectionInfo.symlinkHint": {
+    "sourceHash": "414ed75"
+  },
+  "fileExplorer.selectionInfo.noSelectionFiles": "{count, plural, one {{countText} файл} few {{countText} файла} many {{countText} файлов} other {{countText} файла}}",
+  "@fileExplorer.selectionInfo.noSelectionFiles": {
+    "sourceHash": "3c08428"
+  },
+  "fileExplorer.selectionInfo.noSelectionDirs": " и {count, plural, one {{countText} папка} few {{countText} папки} many {{countText} папок} other {{countText} папки}}",
+  "@fileExplorer.selectionInfo.noSelectionDirs": {
+    "sourceHash": "e1259ef"
+  },
+  "fileExplorer.selectionInfo.noSelection": "Ничего не выделено, {files}{dirs}.",
+  "@fileExplorer.selectionInfo.noSelection": {
+    "sourceHash": "beea8ac"
+  },
+  "fileExplorer.selectionInfo.noSelectionOfMatches": "Ничего не выделено, {shownText} из {count, plural, one {{totalText} совпадения} few {{totalText} совпадений} many {{totalText} совпадений} other {{totalText} совпадения}}.",
+  "@fileExplorer.selectionInfo.noSelectionOfMatches": {
+    "sourceHash": "4063c2b"
+  },
+  "fileExplorer.tabBar.paneTabsAriaLabel": "{paneId, select, left {Вкладки левой панели} other {Вкладки правой панели}}",
+  "@fileExplorer.tabBar.paneTabsAriaLabel": {
+    "sourceHash": "d641870"
+  },
+  "fileExplorer.tabBar.unreachableAriaLabel": "Недоступно",
+  "@fileExplorer.tabBar.unreachableAriaLabel": {
+    "sourceHash": "abaa46a"
+  },
+  "fileExplorer.tabBar.pinnedAriaLabel": "Закреплена",
+  "@fileExplorer.tabBar.pinnedAriaLabel": {
+    "sourceHash": "f20c879"
+  },
+  "fileExplorer.tabBar.closeTabTooltip": "Закрыть вкладку",
+  "@fileExplorer.tabBar.closeTabTooltip": {
+    "sourceHash": "50a3f95"
+  },
+  "fileExplorer.tabBar.newTabAriaLabel": "Новая вкладка",
+  "@fileExplorer.tabBar.newTabAriaLabel": {
+    "sourceHash": "1e08fda"
+  },
+  "fileExplorer.summary.fileNoun": "{count, plural, one {файла} few {файлов} many {файлов} other {файла}}",
+  "@fileExplorer.summary.fileNoun": {
+    "sourceHash": "46012b1"
+  },
+  "fileExplorer.summary.dirNoun": "{count, plural, one {папки} few {папок} many {папок} other {папки}}",
+  "@fileExplorer.summary.dirNoun": {
+    "sourceHash": "1c5273d"
+  },
+  "fileExplorer.summary.of": "из",
+  "@fileExplorer.summary.of": {
+    "sourceHash": "28391d3"
+  },
+  "fileExplorer.summary.percentSelectedIn": "({percent} %) выделено —",
+  "@fileExplorer.summary.percentSelectedIn": {
+    "sourceHash": "7e01a02"
+  },
+  "fileExplorer.summary.and": "и",
+  "@fileExplorer.summary.and": {
+    "sourceHash": "6201111"
+  },
+  "fileExplorer.summary.selectedSuffix": "выделено",
+  "@fileExplorer.summary.selectedSuffix": {
+    "sourceHash": "d7cbbb6"
+  },
+  "fileExplorer.contextMenu.itemCount": "{countText} {count, plural, one {объект} few {объекта} many {объектов} other {объекта}}",
+  "@fileExplorer.contextMenu.itemCount": {
+    "sourceHash": "66337df"
+  },
+  "fileExplorer.renameConflict.title": "Файл с таким именем уже существует",
+  "@fileExplorer.renameConflict.title": {
+    "sourceHash": "92ae292"
+  },
+  "fileExplorer.renameConflict.description": "«{name}» уже существует в этой папке. Что сделать?",
+  "@fileExplorer.renameConflict.description": {
+    "sourceHash": "e3f2532"
+  },
+  "fileExplorer.renameConflict.yours": "{name} (ваш)",
+  "@fileExplorer.renameConflict.yours": {
+    "sourceHash": "e907024"
+  },
+  "fileExplorer.renameConflict.existing": "{name} (существующий)",
+  "@fileExplorer.renameConflict.existing": {
+    "sourceHash": "0ff925b"
+  },
+  "fileExplorer.renameConflict.size": "Размер",
+  "@fileExplorer.renameConflict.size": {
+    "sourceHash": "1af8519"
+  },
+  "fileExplorer.renameConflict.modified": "Дата изменения",
+  "@fileExplorer.renameConflict.modified": {
+    "sourceHash": "e8ce5dc"
+  },
+  "fileExplorer.renameConflict.overwriteTrash": "Заменить, отправив старый файл в Корзину",
+  "@fileExplorer.renameConflict.overwriteTrash": {
+    "sourceHash": "e0192f6"
+  },
+  "fileExplorer.renameConflict.overwriteDelete": "Заменить, удалив старый файл",
+  "@fileExplorer.renameConflict.overwriteDelete": {
+    "sourceHash": "02093d5"
+  },
+  "fileExplorer.renameConflict.cancel": "Отменить",
+  "@fileExplorer.renameConflict.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "fileExplorer.renameConflict.continueRenaming": "Продолжить переименование",
+  "@fileExplorer.renameConflict.continueRenaming": {
+    "sourceHash": "96480ec"
+  },
+  "fileExplorer.extensionChange.title": "Изменить расширение файла?",
+  "@fileExplorer.extensionChange.title": {
+    "sourceHash": "799828d"
+  },
+  "fileExplorer.extensionChange.description": "Изменить расширение с «.{oldExt}» на «.{newExt}»? При следующем открытии файл может открыться в другом приложении.",
+  "@fileExplorer.extensionChange.description": {
+    "sourceHash": "ef7ac59"
+  },
+  "fileExplorer.extensionChange.alwaysAllow": "Всегда разрешать изменение расширений",
+  "@fileExplorer.extensionChange.alwaysAllow": {
+    "sourceHash": "52a5c5e"
+  },
+  "fileExplorer.extensionChange.keepOld": "Оставить .{oldExt}",
+  "@fileExplorer.extensionChange.keepOld": {
+    "sourceHash": "08808e4"
+  },
+  "fileExplorer.extensionChange.useNew": "Использовать .{newExt}",
+  "@fileExplorer.extensionChange.useNew": {
+    "sourceHash": "b1c0e92"
+  },
+  "fileExplorer.quickLookHint.spaceSelects": "В Cmdr клавиша <space></space> по умолчанию выделяет файл под курсором.",
+  "@fileExplorer.quickLookHint.spaceSelects": {
+    "sourceHash": "192689a"
+  },
+  "fileExplorer.quickLookHint.finderComparison": "После Finder это может быть непривычно: в Finder клавиша <space></space> открывает Быстрый просмотр.",
+  "@fileExplorer.quickLookHint.finderComparison": {
+    "sourceHash": "c9d0ac7"
+  },
+  "fileExplorer.quickLookHint.quickView": "В Cmdr Быстрый просмотр открывается клавишами <key></key>. (Кстати, <key></key> работает и в Finder!)",
+  "@fileExplorer.quickLookHint.quickView": {
+    "sourceHash": "5ddbea1"
+  },
+  "fileExplorer.quickLookHint.enterOpens": "Клавиша <enter></enter> также открывает файлы в приложении по умолчанию.",
+  "@fileExplorer.quickLookHint.enterOpens": {
+    "sourceHash": "5c1f2a3"
+  },
+  "fileExplorer.quickLookHint.configurable": "Все это можно изменить в разделе <settingsLink>Настройки > Сочетания клавиш</settingsLink>.",
+  "@fileExplorer.quickLookHint.configurable": {
+    "sourceHash": "a382250"
+  },
+  "fileExplorer.quickLookHint.dontShowAgain": "Больше не показывать",
+  "@fileExplorer.quickLookHint.dontShowAgain": {
+    "sourceHash": "f6f62e0"
+  },
+  "fileExplorer.navigation.groupFavorites": "Избранное",
+  "@fileExplorer.navigation.groupFavorites": {
+    "sourceHash": "7a1f2a8"
+  },
+  "fileExplorer.navigation.groupVolumes": "Тома",
+  "@fileExplorer.navigation.groupVolumes": {
+    "sourceHash": "53a480e"
+  },
+  "fileExplorer.navigation.groupCloud": "Облако",
+  "@fileExplorer.navigation.groupCloud": {
+    "sourceHash": "b977b95"
+  },
+  "fileExplorer.navigation.groupMobile": "Мобильные устройства",
+  "@fileExplorer.navigation.groupMobile": {
+    "sourceHash": "cbaad3c"
+  },
+  "fileExplorer.navigation.groupNetwork": "Сеть",
+  "@fileExplorer.navigation.groupNetwork": {
+    "sourceHash": "1744b96"
+  },
+  "fileExplorer.navigation.networkVolume": "Серверы",
+  "@fileExplorer.navigation.networkVolume": {
+    "sourceHash": "68d7beb"
+  },
+  "fileExplorer.navigation.searchResultsVolume": "Результаты поиска",
+  "@fileExplorer.navigation.searchResultsVolume": {
+    "sourceHash": "e978b00"
+  },
+  "fileExplorer.navigation.volumeFallback": "Том",
+  "@fileExplorer.navigation.volumeFallback": {
+    "sourceHash": "b10fb96"
+  },
+  "fileExplorer.navigation.favoritesEmpty": "(Здесь появится ваше избранное)",
+  "@fileExplorer.navigation.favoritesEmpty": {
+    "sourceHash": "b4f099e"
+  },
+  "fileExplorer.navigation.favoritesAddCurrent": "Добавить текущую папку в избранное",
+  "@fileExplorer.navigation.favoritesAddCurrent": {
+    "sourceHash": "7d7e21c"
+  },
+  "fileExplorer.navigation.favoritesAlreadyAdded": "Эта папка уже в избранном",
+  "@fileExplorer.navigation.favoritesAlreadyAdded": {
+    "sourceHash": "731a929"
+  },
+  "fileExplorer.navigation.favoritesCantAddHere": "Эту папку нельзя добавить в избранное: избранное работает только с дисками и подключенными общими папками",
+  "@fileExplorer.navigation.favoritesCantAddHere": {
+    "sourceHash": "86564ea"
+  },
+  "fileExplorer.navigation.seeFavorites": "{count, plural, =0 {Посмотреть избранное} one {Посмотреть избранное ({count})} few {Посмотреть избранное ({count})} many {Посмотреть избранное ({count})} other {Посмотреть избранное ({count})}}",
+  "@fileExplorer.navigation.seeFavorites": {
+    "sourceHash": "7a7e169"
+  },
+  "fileExplorer.navigation.favoriteTooltip": "{path}\nПеретащите, чтобы изменить порядок, или используйте {reorder}. Нажмите правой кнопкой, чтобы переименовать или убрать.",
+  "@fileExplorer.navigation.favoriteTooltip": {
+    "sourceHash": "88d54d3"
+  },
+  "fileExplorer.navigation.renameFavoriteAriaLabel": "Переименовать пункт избранного",
+  "@fileExplorer.navigation.renameFavoriteAriaLabel": {
+    "sourceHash": "5f4fcbb"
+  },
+  "fileExplorer.navigation.favoriteShortcutPrompt": "A–Z или Delete",
+  "@fileExplorer.navigation.favoriteShortcutPrompt": {
+    "sourceHash": "51f3d7d"
+  },
+  "fileExplorer.navigation.favoriteShortcutAriaLabel": "Сочетание клавиш для «{name}». Нажмите A–Z или Delete, чтобы очистить.",
+  "@fileExplorer.navigation.favoriteShortcutAriaLabel": {
+    "sourceHash": "31515c1"
+  },
+  "fileExplorer.navigation.favoriteShortcutSaveFailed": "Не удалось сохранить сочетание клавиш. Попробуйте еще раз.",
+  "@fileExplorer.navigation.favoriteShortcutSaveFailed": {
+    "sourceHash": "38e7225"
+  },
+  "fileExplorer.navigation.removeFavoriteFailed": "Не удалось убрать пункт из избранного. Попробуйте еще раз.",
+  "@fileExplorer.navigation.removeFavoriteFailed": {
+    "sourceHash": "a3c8665"
+  },
+  "fileExplorer.navigation.renameFavoriteFailed": "Не удалось переименовать пункт избранного. Попробуйте еще раз.",
+  "@fileExplorer.navigation.renameFavoriteFailed": {
+    "sourceHash": "cbf60d7"
+  },
+  "fileExplorer.navigation.reorderFavoritesFailed": "Не удалось изменить порядок избранного. Попробуйте еще раз.",
+  "@fileExplorer.navigation.reorderFavoritesFailed": {
+    "sourceHash": "875befb"
+  },
+  "fileExplorer.navigation.locationUnreachableToast": "Не удалось получить доступ к диску этого расположения. Возможно, он отключен.",
+  "@fileExplorer.navigation.locationUnreachableToast": {
+    "sourceHash": "61da177"
+  },
+  "fileExplorer.navigation.connectionTooltipDirect": "Прямое подключение для быстрых файловых операций",
+  "@fileExplorer.navigation.connectionTooltipDirect": {
+    "sourceHash": "a69a3ad"
+  },
+  "fileExplorer.navigation.connectionTooltipConnected": "Подключено",
+  "@fileExplorer.navigation.connectionTooltipConnected": {
+    "sourceHash": "2296556"
+  },
+  "fileExplorer.navigation.connectionTooltipSystem": "Используется системное подключение. Для быстрого доступа выберите пункт «Подключиться напрямую для быстрого доступа».",
+  "@fileExplorer.navigation.connectionTooltipSystem": {
+    "sourceHash": "e4ac697"
+  },
+  "fileExplorer.navigation.connectDirectly": "Подключиться напрямую для быстрого доступа",
+  "@fileExplorer.navigation.connectDirectly": {
+    "sourceHash": "3fbb55a"
+  },
+  "fileExplorer.navigation.useDirectConnection": "Использовать быстрое прямое подключение Cmdr",
+  "@fileExplorer.navigation.useDirectConnection": {
+    "sourceHash": "68ff111"
+  },
+  "fileExplorer.navigation.connectDirectlyNow": "Подключиться напрямую сейчас",
+  "@fileExplorer.navigation.connectDirectlyNow": {
+    "sourceHash": "e81ea20"
+  },
+  "fileExplorer.navigation.connectDirectlyNowTooltip": "Эта общая папка все еще работает через медленное системное подключение. Подключитесь напрямую для быстрого доступа.",
+  "@fileExplorer.navigation.connectDirectlyNowTooltip": {
+    "sourceHash": "42b6bcc"
+  },
+  "fileExplorer.navigation.connectingDirectly": "Прямое подключение…",
+  "@fileExplorer.navigation.connectingDirectly": {
+    "sourceHash": "1f2d487"
+  },
+  "fileExplorer.navigation.connectingWithSavedPassword": "Подключение с сохраненным паролем…",
+  "@fileExplorer.navigation.connectingWithSavedPassword": {
+    "sourceHash": "0fb0ca3"
+  },
+  "fileExplorer.navigation.useSavedPasswordMessage": "Cmdr может использовать пароль, уже сохраненный macOS для «{displayName}». Появится системный запрос доступа к Связке ключей. Это ожидаемо: нажмите «Разрешить».",
+  "@fileExplorer.navigation.useSavedPasswordMessage": {
+    "sourceHash": "96fa0b9"
+  },
+  "fileExplorer.navigation.useSavedPasswordTitle": "Использовать сохраненный пароль?",
+  "@fileExplorer.navigation.useSavedPasswordTitle": {
+    "sourceHash": "44b60f6"
+  },
+  "fileExplorer.navigation.useSavedPasswordConfirm": "Использовать сохраненный пароль",
+  "@fileExplorer.navigation.useSavedPasswordConfirm": {
+    "sourceHash": "95f07b4"
+  },
+  "fileExplorer.navigation.useSavedPasswordCancel": "Ввести вручную",
+  "@fileExplorer.navigation.useSavedPasswordCancel": {
+    "sourceHash": "d54c488"
+  },
+  "fileExplorer.navigation.readOnlyTooltip": "Только для чтения",
+  "@fileExplorer.navigation.readOnlyTooltip": {
+    "sourceHash": "72bb908"
+  },
+  "fileExplorer.navigation.volumeOptionsTooltip": "Параметры тома",
+  "@fileExplorer.navigation.volumeOptionsTooltip": {
+    "sourceHash": "570fb94"
+  },
+  "fileExplorer.navigation.connectionTooltipDisconnected": "Подключение прервано. Cmdr пытается восстановить его.",
+  "@fileExplorer.navigation.connectionTooltipDisconnected": {
+    "sourceHash": "58af304"
+  },
+  "fileExplorer.navigation.connectionTooltipNeedsSignIn": "Сеанс завершен. Откройте сервер, чтобы войти снова.",
+  "@fileExplorer.navigation.connectionTooltipNeedsSignIn": {
+    "sourceHash": "6105b01"
+  },
+  "fileExplorer.navigation.connectionTooltipNeedsHostKey": "Ключ этого сервера изменился. Откройте сервер для просмотра ключа.",
+  "@fileExplorer.navigation.connectionTooltipNeedsHostKey": {
+    "sourceHash": "a657aa4"
+  },
+  "fileExplorer.navigation.connectionTooltipSaved": "Сохранено. Откройте для подключения.",
+  "@fileExplorer.navigation.connectionTooltipSaved": {
+    "sourceHash": "4d94616"
+  },
+  "fileExplorer.navigation.disconnectPlaceAriaLabel": "Отключить {name}",
+  "@fileExplorer.navigation.disconnectPlaceAriaLabel": {
+    "sourceHash": "8f755cb"
+  },
+  "fileExplorer.navigation.disconnectBusyTooltip": "Cmdr еще работает с файлами на этом сервере. Отключитесь после завершения.",
+  "@fileExplorer.navigation.disconnectBusyTooltip": {
+    "sourceHash": "bd52d60"
+  },
+  "fileExplorer.navigation.serverPinnedToast": "Сервер {name} добавлен в переключатель томов.",
+  "@fileExplorer.navigation.serverPinnedToast": {
+    "sourceHash": "d09b133"
+  },
+  "fileExplorer.navigation.serverUnpinnedToast": "Сервер {name} убран из переключателя томов, но остается сохраненным.",
+  "@fileExplorer.navigation.serverUnpinnedToast": {
+    "sourceHash": "7fa97b2"
+  },
+  "fileExplorer.navigation.pinRefusedToast": "Cmdr не удалось изменить, где показывается сервер {name}.",
+  "@fileExplorer.navigation.pinRefusedToast": {
+    "sourceHash": "59f1f8b"
+  },
+  "fileExplorer.navigation.disconnectRefusedToast": "Cmdr не удалось отключиться от сервера {name}.",
+  "@fileExplorer.navigation.disconnectRefusedToast": {
+    "sourceHash": "375b424"
+  },
+  "fileExplorer.navigation.forgetServerConfirmTitle": "Забыть сервер",
+  "@fileExplorer.navigation.forgetServerConfirmTitle": {
+    "sourceHash": "e43c85d"
+  },
+  "fileExplorer.navigation.forgetConfirmButton": "Забыть",
+  "@fileExplorer.navigation.forgetConfirmButton": {
+    "sourceHash": "a6bd489"
+  },
+  "fileExplorer.navigation.forgetServerConfirm": "Забыть {name}? Cmdr закроет подключение и перестанет показывать сервер. Ваши файлы останутся на сервере.",
+  "@fileExplorer.navigation.forgetServerConfirm": {
+    "sourceHash": "6a43f67"
+  },
+  "fileExplorer.navigation.forgetPasswordToo": "Также забыть сохраненный пароль",
+  "@fileExplorer.navigation.forgetPasswordToo": {
+    "sourceHash": "6d79654"
+  },
+  "fileExplorer.navigation.forgetServerRefusedToast": "Cmdr не удалось забыть сервер {name}.",
+  "@fileExplorer.navigation.forgetServerRefusedToast": {
+    "sourceHash": "f7c6c64"
+  },
+  "fileExplorer.navigation.forgetSecretConfirmTitle": "Забыть сохраненный пароль",
+  "@fileExplorer.navigation.forgetSecretConfirmTitle": {
+    "sourceHash": "ed68566"
+  },
+  "fileExplorer.navigation.forgetSecretConfirm": "Забыть сохраненный пароль для {name}? При следующем подключении Cmdr запросит его снова.",
+  "@fileExplorer.navigation.forgetSecretConfirm": {
+    "sourceHash": "300d043"
+  },
+  "fileExplorer.navigation.forgetSecretRefusedToast": "Cmdr не удалось забыть сохраненный пароль для сервера {name}.",
+  "@fileExplorer.navigation.forgetSecretRefusedToast": {
+    "sourceHash": "b7a15b2"
+  },
+  "fileExplorer.navigation.forgetSecretNoneToast": "Для {name} не было сохраненного пароля.",
+  "@fileExplorer.navigation.forgetSecretNoneToast": {
+    "sourceHash": "3d40a09"
+  },
+  "fileExplorer.navigation.ejectVolumeAriaLabel": "Извлечь «{name}»",
+  "@fileExplorer.navigation.ejectVolumeAriaLabel": {
+    "sourceHash": "61db18b"
+  },
+  "fileExplorer.navigation.ejectBusyTooltip": "Cmdr еще работает с файлами на этом устройстве. Извлеките его после завершения.",
+  "@fileExplorer.navigation.ejectBusyTooltip": {
+    "sourceHash": "3da6312"
+  },
+  "fileExplorer.navigation.ejectingVolumeAriaLabel": "Извлечение «{name}»…",
+  "@fileExplorer.navigation.ejectingVolumeAriaLabel": {
+    "sourceHash": "e8bca64"
+  },
+  "fileExplorer.navigation.usbSpeed": "{label} (макс. {mbps} МБ/с)",
+  "@fileExplorer.navigation.usbSpeed": {
+    "sourceHash": "07cb80b"
+  },
+  "fileExplorer.navigation.usbSpeedNegotiated": "Согласованная скорость для этого кабеля, порта и устройства",
+  "@fileExplorer.navigation.usbSpeedNegotiated": {
+    "sourceHash": "3731939"
+  },
+  "fileExplorer.navigation.spaceRetryingAuto": "Автоматическая повторная попытка…",
+  "@fileExplorer.navigation.spaceRetryingAuto": {
+    "sourceHash": "aa9f4b8"
+  },
+  "fileExplorer.navigation.spaceRetrying": "Повторная попытка…",
+  "@fileExplorer.navigation.spaceRetrying": {
+    "sourceHash": "a16c8b1"
+  },
+  "fileExplorer.navigation.spaceRetryingText": "Повторная попытка",
+  "@fileExplorer.navigation.spaceRetryingText": {
+    "sourceHash": "f8fe6f8"
+  },
+  "fileExplorer.navigation.spaceStillUnavailable": "Все еще недоступно. Нажмите для повторной попытки",
+  "@fileExplorer.navigation.spaceStillUnavailable": {
+    "sourceHash": "1c37064"
+  },
+  "fileExplorer.navigation.spaceFetchFailed": "Не удалось узнать свободное место. Нажмите для повторной попытки",
+  "@fileExplorer.navigation.spaceFetchFailed": {
+    "sourceHash": "55f2eab"
+  },
+  "fileExplorer.navigation.spaceUnavailableText": "Недоступно",
+  "@fileExplorer.navigation.spaceUnavailableText": {
+    "sourceHash": "ca18449"
+  },
+  "fileExplorer.navigation.spaceMtpHint": "На телефоне сюда входят также приложения и системные файлы. Через USB Cmdr имеет доступ только к вашим общим файлам, поэтому папки здесь занимают меньше использованного места.",
+  "@fileExplorer.navigation.spaceMtpHint": {
+    "sourceHash": "43ec861"
+  },
+  "fileExplorer.navigation.volumesStillUnreachable": "Все еще недоступно. Попробуйте позже",
+  "@fileExplorer.navigation.volumesStillUnreachable": {
+    "sourceHash": "e4661d2"
+  },
+  "fileExplorer.navigation.volumesMayBeMissing": "Некоторые тома могут отсутствовать",
+  "@fileExplorer.navigation.volumesMayBeMissing": {
+    "sourceHash": "a5b5792"
+  },
+  "fileExplorer.navigation.refreshVolumeList": "Обновить список томов",
+  "@fileExplorer.navigation.refreshVolumeList": {
+    "sourceHash": "f668a8c"
+  },
+  "fileExplorer.navigation.driveIndex.ariaLabel": "Состояние индекса диска",
+  "@fileExplorer.navigation.driveIndex.ariaLabel": {
+    "sourceHash": "ff831be"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipDisabled": "Индексация этого диска отключена. Включите ее, чтобы видеть размеры папок и выполнять поиск.",
+  "@fileExplorer.navigation.driveIndex.tooltipDisabled": {
+    "sourceHash": "61d11e9"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipFresh": "Индекс актуален. Последняя индексация: {date}, длительность: {duration}.",
+  "@fileExplorer.navigation.driveIndex.tooltipFresh": {
+    "sourceHash": "d036851"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipFreshNoScan": "Индекс актуален.",
+  "@fileExplorer.navigation.driveIndex.tooltipFreshNoScan": {
+    "sourceHash": "fedc5ae"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipStale": "Этот диск мог измениться, пока был отключен. Размеры и поиск могут быть неточными. Просканируйте его снова для обновления.",
+  "@fileExplorer.navigation.driveIndex.tooltipStale": {
+    "sourceHash": "0d85b0b"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipStalePhone": "Cmdr обновляет этот индекс при собственных изменениях. Изменения на самом телефоне появятся после повторного сканирования.",
+  "@fileExplorer.navigation.driveIndex.tooltipStalePhone": {
+    "sourceHash": "d5a58a7"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipFailed": "Индексация остановлена: возникла проблема при сохранении индекса этого диска. Просканируйте диск заново, чтобы восстановить индекс.",
+  "@fileExplorer.navigation.driveIndex.tooltipFailed": {
+    "sourceHash": "7c7e776"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipCoalesced": "{hours, plural, =1 {За последний час} one {За последний {hoursText} час} few {За последние {hoursText} часа} many {За последние {hoursText} часов} other {За последние {hoursText} часа}} macOS {count, plural, =1 {один раз} one {{countText} раз} few {{countText} раза} many {{countText} раз} other {{countText} раза}} потеряла часть изменений файловой системы, поэтому размеры некоторых папок могут быть немного неточными. Обычно это кэши с множеством мелких файлов. Следующая полная проверка Cmdr {remaining, plural, =1 {через час} one {через {remainingText} час} few {через {remainingText} часа} many {через {remainingText} часов} other {через {remainingText} часа}} все исправит.",
+  "@fileExplorer.navigation.driveIndex.tooltipCoalesced": {
+    "sourceHash": "eb09aed"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning": "macOS {count, plural, =1 {один раз} one {{countText} раз} few {{countText} раза} many {{countText} раз} other {{countText} раза}} потеряла часть изменений файловой системы, поэтому размеры некоторых папок могут быть немного неточными. Обычно это кэши с множеством мелких файлов. Текущая проверка все исправит.",
+  "@fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning": {
+    "sourceHash": "0ff330c"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": "{hours, plural, =1 {За последний час} one {За последний {hoursText} час} few {За последние {hoursText} часа} many {За последние {hoursText} часов} other {За последние {hoursText} часа}} macOS {count, plural, =1 {один раз} one {{countText} раз} few {{countText} раза} many {{countText} раз} other {{countText} раза}} потеряла часть изменений файловой системы, поэтому размеры некоторых папок могут быть немного неточными. Обычно это кэши с множеством мелких файлов, так что ничего страшного.",
+  "@fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": {
+    "sourceHash": "68420b0"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipUnreadable": "Cmdr не удалось прочитать {count, plural, =1 {одно расположение} one {{countText} расположение} few {{countText} расположения} many {{countText} расположений} other {{countText} расположения}} на этом диске, поэтому поиск здесь может найти не все.",
+  "@fileExplorer.navigation.driveIndex.tooltipUnreadable": {
+    "sourceHash": "6523d04"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipUnreadableRetried": "Cmdr не удалось прочитать {count, plural, =1 {одно расположение} one {{countText} расположение} few {{countText} расположения} many {{countText} расположений} other {{countText} расположения}} на этом диске, поэтому поиск здесь может найти не все. Cmdr сам вернется к ним позже.",
+  "@fileExplorer.navigation.driveIndex.tooltipUnreadableRetried": {
+    "sourceHash": "f1ea5cb"
+  },
+  "fileExplorer.navigation.driveIndex.menuEnable": "Включить индексацию этого диска",
+  "@fileExplorer.navigation.driveIndex.menuEnable": {
+    "sourceHash": "4e06151"
+  },
+  "fileExplorer.navigation.driveIndex.menuRescan": "Просканировать сейчас",
+  "@fileExplorer.navigation.driveIndex.menuRescan": {
+    "sourceHash": "c07d16a"
+  },
+  "fileExplorer.navigation.driveIndex.menuDisable": "Отключить индексацию этого диска",
+  "@fileExplorer.navigation.driveIndex.menuDisable": {
+    "sourceHash": "d14cf11"
+  },
+  "fileExplorer.navigation.driveIndex.menuStop": "Остановить индексацию",
+  "@fileExplorer.navigation.driveIndex.menuStop": {
+    "sourceHash": "70ae907"
+  },
+  "fileExplorer.navigation.driveIndex.menuForget": "Забыть индекс этого диска",
+  "@fileExplorer.navigation.driveIndex.menuForget": {
+    "sourceHash": "90c53ac"
+  },
+  "fileExplorer.navigation.driveIndex.footer": "Последняя индексация: {date} · длительность: {duration}",
+  "@fileExplorer.navigation.driveIndex.footer": {
+    "sourceHash": "9877397"
+  },
+  "fileExplorer.navigation.driveIndex.durationMinSec": "{minutes} мин, {seconds} с",
+  "@fileExplorer.navigation.driveIndex.durationMinSec": {
+    "sourceHash": "57a57d1"
+  },
+  "fileExplorer.navigation.driveIndex.durationSec": "{seconds} с",
+  "@fileExplorer.navigation.driveIndex.durationSec": {
+    "sourceHash": "fde82d3"
+  },
+  "fileExplorer.navigation.driveIndex.refusedUpgradeFailed": "Cmdr не удалось подключиться напрямую к {name}, а без этого общую папку не проиндексировать. Проверьте, доступна ли папка, и попробуйте еще раз.",
+  "@fileExplorer.navigation.driveIndex.refusedUpgradeFailed": {
+    "sourceHash": "79a31a4"
+  },
+  "fileExplorer.navigation.driveIndex.refusedDisconnected": "Подключение к {name} закрыто. Подключитесь снова, затем включите индексацию.",
+  "@fileExplorer.navigation.driveIndex.refusedDisconnected": {
+    "sourceHash": "0cf83a1"
+  },
+  "fileExplorer.navigation.driveIndex.deferredRescan": "Cmdr сейчас выполняет поиск на {name}. Повторное сканирование начнется после его завершения.",
+  "@fileExplorer.navigation.driveIndex.deferredRescan": {
+    "sourceHash": "4e0f748"
+  },
+  "fileExplorer.navigation.driveIndex.deferredEnable": "Cmdr сейчас выполняет поиск на {name}. Индексация начнется после его завершения.",
+  "@fileExplorer.navigation.driveIndex.deferredEnable": {
+    "sourceHash": "b27d24c"
+  },
+  "fileExplorer.navigation.driveIndex.queuedBehindScan": "Cmdr сейчас индексирует {name}. Запрошенное сканирование начнется после завершения индексации.",
+  "@fileExplorer.navigation.driveIndex.queuedBehindScan": {
+    "sourceHash": "09106ce"
+  },
+  "fileExplorer.navigation.driveIndex.refusedGeneric": "Cmdr сейчас не может индексировать {name}. Подключите диск снова и повторите попытку.",
+  "@fileExplorer.navigation.driveIndex.refusedGeneric": {
+    "sourceHash": "83bd66e"
+  },
+  "fileExplorer.navigation.driveIndex.refusedInternal": "Что-то помешало Cmdr включить индексацию для {name}. Так быть не должно. Обычно помогает перезапуск Cmdr.",
+  "@fileExplorer.navigation.driveIndex.refusedInternal": {
+    "sourceHash": "e3841d9"
+  },
+  "fileExplorer.navigation.driveIndex.refusedIndexingOff": "Индексация дисков отключена в настройках, поэтому {name} не индексируется. Включите ее в разделе «Индексация» > «Индексация дисков».",
+  "@fileExplorer.navigation.driveIndex.refusedIndexingOff": {
+    "sourceHash": "ce0d45c"
+  },
+  "fileExplorer.navigation.driveIndex.driveLeaving": "Диск {name} отключается, поэтому Cmdr оставил его индекс без изменений. Если диск останется подключенным, попробуйте еще раз чуть позже.",
+  "@fileExplorer.navigation.driveIndex.driveLeaving": {
+    "sourceHash": "99f19f9"
+  },
+  "fileExplorer.navigation.driveIndex.tooltipIndexingOff": "Индексация дисков отключена в настройках. Сейчас диски не индексируются.",
+  "@fileExplorer.navigation.driveIndex.tooltipIndexingOff": {
+    "sourceHash": "6ebf6f4"
+  },
+  "fileExplorer.navigation.driveIndex.menuIndexingOffNote": "Индексация дисков отключена в настройках. Включите ее в разделе «Индексация» > «Индексация дисков», и работа с этим диском продолжится.",
+  "@fileExplorer.navigation.driveIndex.menuIndexingOffNote": {
+    "sourceHash": "e045664"
+  },
+  "fileExplorer.dragOut.failed": "{count, plural, =1 {Не удалось скопировать «{name}».} one {Не удалось скопировать {countText} объект.} few {Не удалось скопировать {countText} объекта.} many {Не удалось скопировать {countText} объектов.} other {Не удалось скопировать {countText} объекта.}}",
+  "@fileExplorer.dragOut.failed": {
+    "sourceHash": "73468bd"
+  },
+  "fileExplorer.dragOut.partial": "{summary} {count, plural, =1 {Не удалось скопировать «{name}».} one {Не удалось скопировать {countText} объект.} few {Не удалось скопировать {countText} объекта.} many {Не удалось скопировать {countText} объектов.} other {Не удалось скопировать {countText} объекта.}}",
+  "@fileExplorer.dragOut.partial": {
+    "sourceHash": "9215226"
+  },
+  "fileExplorer.folderSizes.unreadable": "{count, plural, =1 {Не удалось полностью прочитать # папку, поэтому ее размер может быть неполным.} one {Не удалось полностью прочитать # папку, поэтому их размеры могут быть неполными.} few {Не удалось полностью прочитать # папки, поэтому их размеры могут быть неполными.} many {Не удалось полностью прочитать # папок, поэтому их размеры могут быть неполными.} other {Не удалось полностью прочитать # папки, поэтому их размеры могут быть неполными.}}",
+  "@fileExplorer.folderSizes.unreadable": {
+    "sourceHash": "ad31a56"
+  },
+  "fileExplorer.quickFilter.clear": "Снять фильтр",
+  "@fileExplorer.quickFilter.clear": {
+    "sourceHash": "ba59e2d"
+  },
+  "fileExplorer.quickFilter.intro.title": "Панель отфильтрована по вводу",
+  "@fileExplorer.quickFilter.intro.title": {
+    "sourceHash": "eef3e92"
+  },
+  "fileExplorer.quickFilter.intro.body": "Вы ввели несколько букв, поэтому в панели теперь показаны только файлы и папки, в именах которых они есть.",
+  "@fileExplorer.quickFilter.intro.body": {
+    "sourceHash": "e406349"
+  },
+  "fileExplorer.quickFilter.intro.escape": "Нажмите Escape, чтобы снова увидеть все файлы.",
+  "@fileExplorer.quickFilter.intro.escape": {
+    "sourceHash": "af749ad"
+  },
+  "fileExplorer.quickFilter.intro.jumpNote": "Хотите вместо этого переводить курсор на подходящее имя, ничего не скрывая? Переключитесь на «Переход» здесь или в настройках.",
+  "@fileExplorer.quickFilter.intro.jumpNote": {
+    "sourceHash": "ac6d3c8"
+  },
+  "fileExplorer.quickFilter.intro.switchToJump": "Переключить на «Переход»",
+  "@fileExplorer.quickFilter.intro.switchToJump": {
+    "sourceHash": "38642f9"
+  },
+  "fileExplorer.quickFilter.intro.openSettings": "Настройки…",
+  "@fileExplorer.quickFilter.intro.openSettings": {
+    "sourceHash": "7a04083"
+  },
+  "fileExplorer.quickFilter.intro.gotIt": "Понятно",
+  "@fileExplorer.quickFilter.intro.gotIt": {
+    "sourceHash": "5ad3dbd"
+  }
+}

@@ -16,7 +16,8 @@
 use crate::ignore_poison::IgnorePoison;
 use crate::network::os_mount_notice::FallbackNotice;
 use crate::network::smb_connect_failure::{
-    DirectConnectOutcome, UpgradeError, UpgradeFailure, log_direct_connect_failure,
+    DirectConnectOutcome, FailedDial, MountEvidence, UpgradeError, UpgradeFailure, dial_detail,
+    log_direct_connect_failure,
 };
 use crate::network::smb_server_address::{
     ServerAddress, discover_server, friendly_server_name, get_keychain_password, resolve_server_address,
@@ -144,32 +145,52 @@ const CONNECT_RETRY_BUDGET: std::time::Duration = std::time::Duration::from_secs
 /// moment's wait can fix. An auth rejection is final (retrying risks locking the
 /// account; the "Sign in" flow owns that recovery), and so is anything the
 /// server itself answered with.
-async fn connect_with_retry<T, F, Fut>(mut connect: F) -> Result<T, smb2::Error>
+///
+/// A failure comes back with its slowest attempt, which `UpgradeFailure::of_dial`
+/// reads: only once the retries are spent does an instant `EHOSTUNREACH` say
+/// something other than "the route is still settling".
+async fn connect_with_retry<T, F, Fut>(mut connect: F) -> Result<T, FailedDial>
 where
     F: FnMut() -> Fut,
     Fut: Future<Output = Result<T, smb2::Error>>,
 {
     let started = std::time::Instant::now();
+    let mut slowest_attempt = std::time::Duration::ZERO;
+    let mut attempt = || {
+        let attempt_started = std::time::Instant::now();
+        let fut = connect();
+        async move {
+            let result = fut.await;
+            (result, attempt_started.elapsed())
+        }
+    };
     for delay in CONNECT_RETRY_BACKOFF {
-        match connect().await {
+        let (result, took) = attempt().await;
+        slowest_attempt = slowest_attempt.max(took);
+        match result {
             Ok(value) => return Ok(value),
-            Err(e) => {
-                if UpgradeFailure::from_smb_error(&e) != UpgradeFailure::Unreachable
+            Err(error) => {
+                if UpgradeFailure::from_smb_error(&error) != UpgradeFailure::Unreachable
                     || started.elapsed() >= CONNECT_RETRY_BUDGET
                 {
-                    return Err(e);
+                    return Err(FailedDial { error, slowest_attempt });
                 }
                 log::debug!(
-                    "Direct connect didn't reach the server: backend=smb2, error_kind={:?}, nt_status={:?}, detail={:?}; retrying in {delay:?}",
-                    e.kind(),
-                    e.status(),
-                    cmdr_fs::log_detail::LogDetail(&e.to_string())
+                    "Direct connect didn't reach the server: backend=smb2, error_kind={:?}, nt_status={:?}, {}, took={took:?}, detail={:?}; retrying in {delay:?}",
+                    error.kind(),
+                    error.status(),
+                    dial_detail(&error),
+                    cmdr_fs::log_detail::LogDetail(&error.to_string())
                 );
                 tokio::time::sleep(delay).await;
             }
         }
     }
-    connect().await
+    let (result, took) = attempt().await;
+    result.map_err(|error| FailedDial {
+        error,
+        slowest_attempt: slowest_attempt.max(took),
+    })
 }
 
 /// Whether `volume_id` already resolves to a HEALTHY direct smb2 volume, in
@@ -407,6 +428,13 @@ pub(crate) async fn register_smb_volume(
             return;
         }
     };
+    // An SMB mount that answered is what vouches for the server if the dial is
+    // refused on the way: the Mac reaches it, so a refusal is this Mac's own.
+    let mount = if identity.is_some() {
+        MountEvidence::Answered
+    } else {
+        MountEvidence::NoAnswer
+    };
     let share_root = identity.as_ref().map(|i| i.share_root.clone()).unwrap_or_default();
     let volume_id = identity
         .map(|i| i.volume_id)
@@ -470,22 +498,24 @@ pub(crate) async fn register_smb_volume(
             // a never-enabled share.
             crate::index_host::index().resume_after_reconnect(volume_id.clone());
         }
-        Err(e) => {
+        Err(dial) => {
+            let reason = UpgradeFailure::of_dial(&dial, mount);
             // The raw error belongs in the log, where it's the diagnostic. The volume
             // stays on the OS mount, which still works, at a fraction of the speed.
-            log_direct_connect_failure(server, share, &e, DirectConnectOutcome::StaysOnKernelMount, username);
+            log_direct_connect_failure(
+                server,
+                share,
+                &dial,
+                reason,
+                DirectConnectOutcome::StaysOnKernelMount,
+                username,
+            );
             // And tell the person, once per server, if the caller says someone is
             // watching: this is the only path that leaves someone on the slow
             // connection with nothing but a small yellow dot to notice it by. The
             // reason rides along so the notice can drop its retry button for the one
             // failure repeating it cannot fix.
-            crate::network::os_mount_notice::announce_os_mount_fallback(
-                server,
-                &volume_id,
-                share,
-                UpgradeFailure::from_smb_error(&e),
-                notice,
-            );
+            crate::network::os_mount_notice::announce_os_mount_fallback(server, &volume_id, share, reason, notice);
         }
     }
 }
@@ -627,17 +657,21 @@ pub(crate) async fn try_smb_upgrade(
             crate::index_host::index().resume_after_reconnect(volume_id.to_string());
             Ok(())
         }
-        Err(e) => {
+        Err(dial) => {
+            // `info` IS the caller's answered read of the mount, under
+            // `MOUNT_READ_LIMIT`: there's no `SmbMountInfo` without one.
+            let mount = MountEvidence::Answered;
             // The raw error stays in the log where it's useful; the caller gets the
             // typed reason and the frontend writes the sentence.
             log_direct_connect_failure(
                 &resolved_server,
                 share,
-                &e,
+                &dial,
+                UpgradeFailure::of_dial(&dial, mount),
                 DirectConnectOutcome::SurfacedToCaller,
                 username,
             );
-            Err(UpgradeError::from_connect_error(&e, username, display))
+            Err(UpgradeError::from_failed_dial(&dial, mount, username, display))
         }
     }
 }

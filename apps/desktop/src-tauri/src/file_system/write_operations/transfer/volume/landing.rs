@@ -16,7 +16,6 @@
 //!
 //! `DETAILS.md` § "Look-alike names and new-name spelling".
 
-use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
@@ -27,7 +26,7 @@ use super::super::transfer_driver::{FetchFut, NameAtDest};
 use super::super::transfer_probe::{DriverPhase, OperationProbe};
 use super::transfer_error::{PathRole, map_volume_error};
 use crate::file_system::listing::FileEntry;
-use crate::file_system::volume::{Volume, VolumeError};
+use crate::file_system::volume::{ChildName, Volume, VolumeError};
 
 /// Where a name lands.
 pub(super) enum Landing {
@@ -122,7 +121,10 @@ async fn name_at_destination(
 ) -> Result<NameAtDest, WriteOperationError> {
     let refused = |e| map_volume_error(&dest.display().to_string(), PathRole::Destination, e);
     let landing = match (dest.parent(), dest.file_name()) {
-        (Some(dir), Some(name)) => where_it_lands(dest_volume, dir, name, DestFolder::Unlisted, new_name).await,
+        (Some(dir), Some(name)) => match ChildName::new(name) {
+            Ok(name) => where_it_lands(dest_volume, dir, name, DestFolder::Unlisted, new_name).await,
+            Err(not_a_name) => Err(not_a_name.into()),
+        },
         // A source with no name of its own lands on the destination folder
         // itself, which no listing of a parent describes.
         _ => match dest_volume.get_metadata(dest).await {
@@ -150,14 +152,19 @@ async fn name_at_destination(
 /// overwrites is data loss. Any other `Err` is a probe or listing that couldn't
 /// answer, and fails the item: ❌ never "nothing is there", which hands the
 /// name to a fresh write whose landing clears what the probe was asked about.
+///
+/// ❗ `name` is a [`ChildName`] because it usually comes off a SOURCE listing,
+/// which a hostile server or device writes: a raw `../x` or `/x` joined here
+/// would land outside `dest_dir`. A look-alike's stored name, read off the
+/// DESTINATION's listing, passes the same check before it's joined.
 pub(super) async fn where_it_lands(
     dest_volume: &Arc<dyn Volume>,
     dest_dir: &Path,
-    name: &OsStr,
+    name: ChildName<'_>,
     folder: DestFolder<'_>,
     new_name: NewName,
 ) -> Result<Landing, VolumeError> {
-    let asked = dest_dir.join(name);
+    let asked = name.under(dest_dir);
     let free = || {
         let spelled = match (new_name, name.to_str()) {
             (NewName::Respell, Some(name)) => dest_dir.join(dest_volume.spell_new_name(name).as_ref()),
@@ -165,18 +172,20 @@ pub(super) async fn where_it_lands(
         };
         Landing::Free(spelled)
     };
-    let look_alike_at = |entry: Box<FileEntry>| Landing::Taken {
-        path: dest_dir.join(&entry.name),
-        entry,
+    let look_alike_at = |entry: Box<FileEntry>| -> Result<Landing, VolumeError> {
+        Ok(Landing::Taken {
+            path: ChildName::new(&entry.name)?.under(dest_dir),
+            entry,
+        })
     };
     let ambiguous = || VolumeError::AmbiguousName(asked.display().to_string());
 
     let may_be_a_look_alike = match folder {
         DestFolder::CreatedByUs => return Ok(free()),
-        DestFolder::Listed(index) => match index.lookup(Some(name)) {
+        DestFolder::Listed(index) => match index.lookup(Some(name.as_os_str())) {
             DestLookup::Absent => return Ok(free()),
             DestLookup::Present(entry) => return Ok(Landing::Taken { path: asked, entry }),
-            DestLookup::LookAlike(entry) => return Ok(look_alike_at(entry)),
+            DestLookup::LookAlike(entry) => return look_alike_at(entry),
             DestLookup::Ambiguous => return Err(ambiguous()),
             // The listing already ruled out a look-alike; only a case-only match
             // (or an alias it can't enumerate) is left for the backend to call.
@@ -196,7 +205,7 @@ pub(super) async fn where_it_lands(
             };
             match look_alike_in(dest_volume.as_ref(), dest_dir, text).await? {
                 LookAlike::None => Ok(free()),
-                LookAlike::One(entry) => Ok(look_alike_at(entry)),
+                LookAlike::One(entry) => look_alike_at(entry),
                 LookAlike::Several => Err(ambiguous()),
             }
         }

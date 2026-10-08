@@ -1,9 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { FilePaneAPI } from './types'
-import type { SortColumn, SortOrder } from '../types'
+import type { ResortResult, SortColumn, SortOrder } from '../types'
+import { createPaneRowState } from './pane-row-state'
 
 const { resortListingSpy, getDirectorySortModeSpy, sortSnapshotSpy, getSnapshotSpy } = vi.hoisted(() => ({
-  resortListingSpy: vi.fn<() => Promise<{ newCursorIndex: number | null; newSelectedIndices: number[] | null }>>(),
+  resortListingSpy: vi.fn<(...args: unknown[]) => Promise<ResortResult>>(),
   getDirectorySortModeSpy: vi.fn<() => string>(),
   sortSnapshotSpy: vi.fn<() => Promise<void>>(),
   getSnapshotSpy: vi.fn<() => { sort: { column: SortColumn; order: SortOrder } | null } | undefined>(),
@@ -32,7 +33,13 @@ import { createSortOperations, type SortOperationsDeps } from './sort-operations
 
 /** Minimal FilePaneAPI stub carrying only the methods the sort path touches. */
 function makePaneRef(overrides: Record<string, unknown> = {}) {
-  return {
+  const rows = createPaneRowState({
+    getListingId: () => ref.getListingId(),
+    getLoading: () => false,
+    getOperationActive: () => false,
+    getIncludeHidden: () => false,
+  })
+  const ref = {
     cancelRename: vi.fn(),
     clearJumpState: vi.fn(),
     getListingId: vi.fn(() => 'listing-1'),
@@ -45,8 +52,12 @@ function makePaneRef(overrides: Record<string, unknown> = {}) {
     setCursorIndex: vi.fn(),
     setSelectedIndices: vi.fn(),
     refreshView: vi.fn(),
+    getRowState: () => rows,
+    applyRowResult: vi.fn(),
     ...overrides,
   }
+  rows.initialize()
+  return ref
 }
 
 function makeDeps(
@@ -70,10 +81,35 @@ function makeDeps(
 describe('createSortOperations', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    resortListingSpy.mockResolvedValue({ newCursorIndex: null, newSelectedIndices: null })
+    resortListingSpy.mockResolvedValue({ newCursorIndex: null, newSelectedIndices: null, sequence: 1, totalCount: 3 })
     getDirectorySortModeSpy.mockReturnValue('foldersFirst')
     sortSnapshotSpy.mockResolvedValue(undefined)
     getSnapshotSpy.mockReturnValue(undefined)
+  })
+
+  it('gates comparison before the request and supplies the exact applied revision', async () => {
+    const paneRef = makePaneRef()
+    paneRef.getRowState().setSequence(7)
+    const { deps } = makeDeps(paneRef, { sortBy: 'name', sortOrder: 'ascending' })
+    const done = createSortOperations(deps).setSort('size', 'desc', 'left')
+    expect(paneRef.getRowState().isReady()).toBe(false)
+    await done
+    expect(resortListingSpy.mock.calls[0].at(-1)).toBe(7)
+  })
+
+  it('never installs a sort answer into a replaced pane', async () => {
+    const paneRef = makePaneRef()
+    let current = paneRef
+    const { deps, setPaneSort } = makeDeps(paneRef, { sortBy: 'name', sortOrder: 'ascending' })
+    deps.getPaneRef = () => current as unknown as FilePaneAPI
+    resortListingSpy.mockImplementationOnce(() => {
+      current = makePaneRef()
+      return Promise.resolve({ newCursorIndex: 1, newSelectedIndices: [1], sequence: 1, totalCount: 3 })
+    })
+    await createSortOperations(deps).setSort('size', 'desc', 'left')
+    expect(setPaneSort).not.toHaveBeenCalled()
+    expect(paneRef.setSelectedIndices).not.toHaveBeenCalled()
+    expect(paneRef.applyRowResult).not.toHaveBeenCalled()
   })
 
   // ── A search-results pane sorts its SNAPSHOT, never its tab ──────────────
@@ -144,6 +180,7 @@ describe('createSortOperations', () => {
       [],
       false,
       'foldersFirst',
+      0,
     )
   })
 
@@ -185,7 +222,9 @@ describe('createSortOperations', () => {
     const ops = createSortOperations(deps)
 
     ops.setSortOrder('toggle')
-    await Promise.resolve()
+    await vi.waitFor(() => {
+      expect(setPaneSort).toHaveBeenCalled()
+    })
 
     expect(setPaneSort).toHaveBeenCalledWith('left', 'name', 'descending')
   })
@@ -219,6 +258,7 @@ describe('createSortOperations', () => {
       [],
       false,
       'foldersFirst',
+      0,
     )
   })
 
@@ -228,7 +268,9 @@ describe('createSortOperations', () => {
     const ops = createSortOperations(deps)
 
     ops.setSortColumn('size')
-    await Promise.resolve()
+    await vi.waitFor(() => {
+      expect(setPaneSort).toHaveBeenCalled()
+    })
 
     expect(setPaneSort).toHaveBeenCalledWith('left', 'size', 'descending')
   })

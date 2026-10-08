@@ -14,6 +14,7 @@ import type { NetworkHost, VolumeInfo } from '../types'
 
 const forgetSavedSmbHost = vi.fn((_id: string) => Promise.resolve(true))
 const forgetServer = vi.fn((_volumeId: string) => Promise.resolve(true))
+const forgetServerSecret = vi.fn((_volumeId: string) => Promise.resolve(true))
 const disconnectNetworkHost = vi.fn(() => Promise.resolve(['/Volumes/Public']))
 const showNetworkHostContextMenu = vi.fn(() => Promise.resolve())
 const forgetSavedServer = vi.fn(() => Promise.resolve())
@@ -37,6 +38,7 @@ vi.mock('$lib/tauri-commands', () => ({
   forgetSavedSmbHostPassword: (id: string) => forgetSavedSmbHostPassword(id),
   listSavedServers: () => listSavedServers(),
   forgetServer: (volumeId: string) => forgetServer(volumeId),
+  forgetServerSecret: (volumeId: string) => forgetServerSecret(volumeId),
   disconnectNetworkHost: (...args: unknown[]) => disconnectNetworkHost(...(args as [])),
   showNetworkHostContextMenu: (...args: unknown[]) => showNetworkHostContextMenu(...(args as [])),
 }))
@@ -110,6 +112,7 @@ const placeRow: HubRow = {
         connected: false,
         appRoot: 'sftp://ada@nas.local:22',
         username: 'ada',
+        autoReconnect: true,
       },
     ],
   },
@@ -149,7 +152,7 @@ const savedHostRow: HubRow = {
 const shareRow: HubRow = {
   ...savedHostRow,
   id: 'share:smb-container',
-  kind: 'share',
+  kind: 'place',
   parentId: savedHostRow.id,
   account: { kind: 'user', username: 'sven' },
   name: 'Container',
@@ -163,6 +166,7 @@ const shareRow: HubRow = {
     connected: false,
     appRoot: '/Volumes/Container',
     username: 'sven',
+    autoReconnect: null,
   },
 }
 
@@ -601,5 +605,103 @@ describe('editServerInView', () => {
       level: 'info',
       id: 'servers-edit-hint',
     })
+  })
+})
+
+describe('an S3 account and its places', () => {
+  const s3Place = (bucket: string) => ({
+    volumeId: `s3-host-443-akia-${bucket}`,
+    name: bucket,
+    pinned: true,
+    connected: false,
+    appRoot: `s3://AKIA@host:443/${bucket}`,
+    username: 'AKIA',
+    autoReconnect: true,
+  })
+  const account: HubRow = {
+    ...placeRow,
+    id: 's3-host-443-akia-root',
+    name: 'AKIA@host',
+    protocol: 's3',
+    volumeId: null,
+    pinned: false,
+    saved: {
+      id: 's3-host-443-akia-root',
+      protocol: 's3',
+      displayName: 'AKIA@host',
+      nameSource: 'fallback',
+      address: 'host',
+      username: 'AKIA',
+      pinned: false,
+      lastConnectedAt: null,
+      autoReconnect: true,
+      places: [s3Place('photos'), s3Place('scans')],
+    },
+  }
+  const bucketRow: HubRow = {
+    ...account,
+    id: 'share:s3-host-443-akia-photos',
+    kind: 'place',
+    parentId: account.id,
+    name: 'photos',
+    volumeId: 's3-host-443-akia-photos',
+    pinned: true,
+    place: s3Place('photos'),
+  }
+
+  it('forgets a bucket on its own, through the servers family, like a one-place row', async () => {
+    await actions().forget(bucketRow)
+    expect(forgetSavedServer).toHaveBeenCalledExactlyOnceWith('s3-host-443-akia-photos', 'photos')
+    expect(forgetServer).not.toHaveBeenCalled()
+  })
+
+  it('forgets the whole account: the shared secret FIRST, then every place under it', async () => {
+    await actions().forget(account)
+    expect(forgetServerSecret).toHaveBeenCalledExactlyOnceWith('s3-host-443-akia-photos')
+    expect(forgetServer.mock.calls.map(([id]) => id)).toEqual(['s3-host-443-akia-photos', 's3-host-443-akia-scans'])
+    expect(forgetServerSecret.mock.invocationCallOrder[0]).toBeLessThan(forgetServer.mock.invocationCallOrder[0])
+  })
+
+  it('keeps the secret when the box is cleared, and forgets nothing when the question is declined', async () => {
+    confirmWithCheckbox.mockResolvedValueOnce({ confirmed: true, checked: false })
+    await actions().forget(account)
+    expect(forgetServerSecret).not.toHaveBeenCalled()
+    expect(forgetServer).toHaveBeenCalledTimes(2)
+
+    vi.clearAllMocks()
+    confirmWithCheckbox.mockResolvedValueOnce({ confirmed: false, checked: true })
+    await actions().forget(account)
+    expect(forgetServer).not.toHaveBeenCalled()
+  })
+
+  it('edits a bucket through its own volume id, and the account row as the account', async () => {
+    await editHubRow(bucketRow)
+    expect(runServerRowAction).toHaveBeenCalledExactlyOnceWith({
+      action: 'edit',
+      volumeId: 's3-host-443-akia-photos',
+      volumeName: 'photos',
+    })
+    await editHubRow(account)
+    expect(openEditServerSheet).toHaveBeenCalledExactlyOnceWith(account.saved)
+    expect(addToast).not.toHaveBeenCalled()
+  })
+
+  it('shows and flips the bucket’s OWN "Reconnect automatically", ❌ not the account’s', async () => {
+    const quietBucket: HubRow = { ...bucketRow, place: { ...s3Place('photos'), autoReconnect: false } }
+    expect(actions().rowMenu(quietBucket)?.settings[0]).toMatchObject({ toggle: 'auto-reconnect', checked: false })
+    await actions().runRowEntry(quietBucket, {
+      type: 'toggle',
+      toggle: 'auto-reconnect',
+      label: 'Reconnect automatically',
+      checked: false,
+    })
+    expect(setServerAutoReconnect).toHaveBeenCalledWith('s3-host-443-akia-photos', true)
+  })
+
+  it('gives a bucket the server-place menu, ❌ not a share’s', () => {
+    const menu = actions().rowMenu(bucketRow)
+    const picks = menu?.actions.map((entry) => entry.action) ?? []
+    expect(picks).toContain('edit')
+    expect(menu?.actions.some((entry) => entry.label === 'Forget share')).toBe(false)
   })
 })

@@ -396,7 +396,7 @@
   },
   "queryUi.recent.systemDirsIncluded": "systeemmappen inbegrepen",
   "@queryUi.recent.systemDirsIncluded": {
-    "sourceHash": "b7996cc"
+    "sourceHash": "c928638"
   },
   "queryUi.recent.resultCount": "{countText} {count, plural, one {resultaat} other {resultaten}} vorige keer",
   "@queryUi.recent.resultCount": {
@@ -529,16 +529,6 @@
   "queryUi.size.comparator.between": "tussen",
   "@queryUi.size.comparator.between": {
     "sourceHash": "fbb27fb"
-  },
-  "queryUi.size.unit.byte": "byte",
-  "@queryUi.size.unit.byte": {
-    "sourceHash": "1c31626",
-    "sameAsSourceJustification": "'byte' is the singular byte unit, used verbatim in Dutch (Total Commander NL uses 'byte'/'bytes' unchanged). The full-word unit coincides with English."
-  },
-  "queryUi.size.unit.bytes": "bytes",
-  "@queryUi.size.unit.bytes": {
-    "sourceHash": "277089d",
-    "sameAsSourceJustification": "'bytes' is the plural byte unit, used verbatim in Dutch (Total Commander NL: '%s bytes'). Coincides with English."
   },
   "queryUi.size.customCell": "aangepast…",
   "@queryUi.size.customCell": {

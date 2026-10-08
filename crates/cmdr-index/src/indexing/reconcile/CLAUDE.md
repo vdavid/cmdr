@@ -11,7 +11,8 @@ the serial full-tree rescan-in-place; `verifier.rs` the per-navigation `read_dir
 ## Must-knows
 
 - **A rescan of a populated+completed index RECONCILES in place, ❌ never truncates.** LOCAL:
-  `entry_count > 1 && prior_scan_completed`; NETWORK: `entry_count > 1`. Keep the two predicates in lock-step.
+  `entry_count > 1 && prior_scan_completed`, unless it predates the exclusion policy; NETWORK: `entry_count > 1`. Keep
+  the two predicates in lock-step.
 - **A row is reaped only from a WHOLE observation**: the listing saw everything (`Listing::complete`) AND the drive was
   still listed after the read (`MissingRows`). ❌ Never read presence BEFORE the listing — an unmounted `/Volumes/X`
   whose mount-point folder survives lists as empty and complete. `DETAILS.md` § "The delete gates".

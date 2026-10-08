@@ -33,6 +33,13 @@ pub const FIXTURE_ROOT: &str = "/";
 /// it belongs.
 pub const FIXTURE_LARGE_FILE: &str = "large.bin";
 
+/// A file every Apache fixture carries dated 2021-01-29 08:30:15 UTC
+/// (`conformance::SOURCE_DATE_SECS`), set by `seed.sh`.
+///
+/// ❗ The only way an Apache cell gets an old file: `mod_dav` can't set a date
+/// over the wire, so the date cells that need one copy this.
+pub const FIXTURE_DATED_FILE: &str = "dated.txt";
+
 /// What `large.bin` holds, for its first `len` bytes.
 pub fn fixture_large_bytes(len: usize) -> Vec<u8> {
     let mut out = Vec::with_capacity(len);

@@ -79,13 +79,5 @@
   "mtp.deviceFallbackName": "MTP-apparaat",
   "@mtp.deviceFallbackName": {
     "sourceHash": "8ba7a69"
-  },
-  "mtp.error.exclusiveAccess": "Een ander proces heeft exclusieve toegang{blocking, select, none {} other { (geblokkeerd door {blocking})}}",
-  "@mtp.error.exclusiveAccess": {
-    "sourceHash": "a81f306"
-  },
-  "mtp.error.permissionDenied": "Geen USB-toegang. Installeer udev-regels en verbind opnieuw",
-  "@mtp.error.permissionDenied": {
-    "sourceHash": "3362501"
   }
 }

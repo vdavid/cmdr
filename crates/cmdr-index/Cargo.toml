@@ -166,8 +166,7 @@ objc2-core-ml = { version = "0.3.2", features = [
 [dev-dependencies]
 # Depending on ourselves turns the `testing` feature on for every DEV target
 # (tests, benches) and leaves it off for the lib, so a consumer that doesn't ask
-# for it never links the scaffolding. Same trick, and the same reason, as the
-# app's self dev-dependency.
+# for it never links the scaffolding.
 cmdr-index = { path = ".", features = ["testing", "tooling"] }
 # The test-wait helpers (`cmdr_fs::testing::wait_until`), switched on for dev
 # targets only.

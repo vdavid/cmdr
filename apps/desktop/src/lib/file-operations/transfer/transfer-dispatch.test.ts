@@ -13,6 +13,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 vi.mock('$lib/tauri-commands', () => ({
   copyBetweenVolumes: vi.fn(() => Promise.resolve({ operationId: 'op-1', operationType: 'copy' })),
   moveBetweenVolumes: vi.fn(() => Promise.resolve({ operationId: 'op-1', operationType: 'move' })),
+  renameByMove: vi.fn(() => Promise.resolve({ operationId: 'op-1', operationType: 'move' })),
   compressFiles: vi.fn(() => Promise.resolve({ operationId: 'op-1', operationType: 'copy' })),
   moveFiles: vi.fn(() => Promise.resolve({ operationId: 'op-1', operationType: 'move' })),
   deleteFiles: vi.fn(() => Promise.resolve({ operationId: 'op-1', operationType: 'delete' })),
@@ -30,6 +31,7 @@ import { dispatchTransferOperation, type TransferDispatchConfig } from './transf
 import {
   copyBetweenVolumes,
   moveBetweenVolumes,
+  renameByMove,
   compressFiles,
   moveFiles,
   deleteFiles,
@@ -58,6 +60,37 @@ beforeEach(() => {
 })
 
 describe('dispatchTransferOperation: routing', () => {
+  it('dispatches a move in rename mode through renameByMove, with the volume move config', async () => {
+    await dispatchTransferOperation(
+      makeConfig({
+        operationType: 'move',
+        sourceVolumeId: 's3-acct',
+        destVolumeId: 's3-acct',
+        sourcePaths: ['/bucket/photos'],
+        destinationPath: '/bucket',
+        newName: 'pictures',
+        previewId: 'preview-9',
+        conflictResolution: 'stop',
+      }),
+    )
+    expect(renameByMove).toHaveBeenCalledWith(
+      's3-acct',
+      '/bucket/photos',
+      '/bucket',
+      'pictures',
+      {
+        conflictResolution: 'stop',
+        progressIntervalMs: 200,
+        maxConflictsToShow: 200,
+        previewId: 'preview-9',
+        preKnownConflicts: [],
+        compressionLevel: 6,
+      },
+      undefined,
+    )
+    expect(moveBetweenVolumes).not.toHaveBeenCalled()
+  })
+
   it('dispatches a local copy through copyBetweenVolumes', async () => {
     await dispatchTransferOperation(makeConfig({ operationType: 'copy' }))
     expect(copyBetweenVolumes).toHaveBeenCalledTimes(1)

@@ -25,10 +25,6 @@ use std::path::{Path, PathBuf};
 use std::sync::{Mutex, OnceLock};
 use uuid::Uuid;
 
-/// Bundle id from `tauri.conf.json`. Mirrored here so the data-dir resolution works without an
-/// `AppHandle`, matching `settings/loader.rs`'s early-load helpers. Keep in sync if it changes.
-const BUNDLE_ID: &str = "com.veszelovszki.cmdr";
-
 const INSTALL_IDS_FILE_NAME: &str = "install-ids.json";
 
 const ANALYTICS_PREFIX: &str = "anal_";
@@ -56,12 +52,9 @@ struct InstallIds {
 
 /// Resolves the install-ids file path without an `AppHandle`.
 fn install_ids_path() -> PathBuf {
-    let data_dir: PathBuf = if let Ok(custom) = std::env::var("CMDR_DATA_DIR") {
-        PathBuf::from(custom)
-    } else {
-        dirs::data_dir().map(|base| base.join(BUNDLE_ID)).unwrap_or_default()
-    };
-    data_dir.join(INSTALL_IDS_FILE_NAME)
+    config::standalone_app_data_dir()
+        .unwrap_or_default()
+        .join(INSTALL_IDS_FILE_NAME)
 }
 
 fn read_from_disk(path: &Path) -> InstallIds {

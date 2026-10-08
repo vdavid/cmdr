@@ -73,13 +73,27 @@ export function getItemRangeForColumns(
   return { startItem, endItem }
 }
 
-/** Double-click detection helper */
-export function isDoubleClick(
-  lastClickTime: number,
-  lastClickIndex: number,
-  currentIndex: number,
-  currentTime: number,
-  doubleClickMs: number = 300,
-): boolean {
-  return lastClickIndex === currentIndex && currentTime - lastClickTime < doubleClickMs
+/** One click identity. The listing is part of the row's identity, not only its index. */
+export interface BriefListClick {
+  listingId: string
+  index: number
+  time: number
+}
+
+/** Double-click detection helper. Clicks from different listings never combine. */
+export function isDoubleClick({
+  previous,
+  current,
+  doubleClickMs = 300,
+}: {
+  previous: BriefListClick | undefined
+  current: BriefListClick
+  doubleClickMs?: number
+}): boolean {
+  return (
+    previous !== undefined &&
+    previous.listingId === current.listingId &&
+    previous.index === current.index &&
+    current.time - previous.time < doubleClickMs
+  )
 }

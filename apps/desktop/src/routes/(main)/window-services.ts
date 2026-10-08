@@ -30,6 +30,7 @@ import { startWakeToast, stopWakeToast } from '$lib/ask-cmdr/wake-toast.svelte'
 import { startDragOutEventBridge } from '$lib/file-explorer/drag/drag-out-event-bridge'
 import { startOsMountNoticeBridge } from '$lib/file-explorer/network/os-mount-notice-bridge'
 import { startLeftoverNoticeBridge } from '$lib/file-operations/leftover-notice-bridge'
+import { startOpenWithRefusedBridge } from '$lib/file-explorer/open-with-refused-bridge'
 import { initQuickLookListeners } from '$lib/file-explorer/quick-look/quick-look-state.svelte'
 import { startOperationConflictHost, stopOperationConflictHost } from '$lib/file-operations/operation-conflict.svelte'
 import {
@@ -227,6 +228,10 @@ export async function startWindowServices(ctx: WindowServicesContext): Promise<v
   // "a drive came back holding an unfinished move's working folder, and every file in it stays"
   // into an info toast. Belongs to no operation, so it has no transfer toast to join.
   unlistenFns.push(await startLeftoverNoticeBridge())
+  // "Open with" refusal notice: one `open-with-copy-refused` listener turning a file inside an
+  // archive that couldn't be copied out for the chosen app (too big, locked, damaged) into a
+  // warning toast. The native menu launches from Rust, so this event is all the frontend hears.
+  unlistenFns.push(await startOpenWithRefusedBridge())
   // Drag-out completion bridge: one `drag-out-session-started` + `drag-out-session-complete`
   // pair per drag session, turned into a single signs-of-life → completion toast (downloading a
   // phone/NAS file to Finder shows nothing on Finder's side; this is our feedback surface).

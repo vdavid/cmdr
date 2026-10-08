@@ -203,6 +203,10 @@
   "@menu.select.sameKind": {
     "sourceHash": "9933028"
   },
+  "menu.select.compareDirectories": "比對資料夾",
+  "@menu.select.compareDirectories": {
+    "sourceHash": "5cf3985"
+  },
   "menu.select.allFolders": "選取所有資料夾",
   "@menu.select.allFolders": {
     "sourceHash": "5351f8b"
@@ -262,6 +266,14 @@
   "menu.view.swapPanes": "交換窗格",
   "@menu.view.swapPanes": {
     "sourceHash": "cc29396"
+  },
+  "menu.view.clonePane": "目標窗格 = 來源窗格",
+  "@menu.view.clonePane": {
+    "sourceHash": "74b2c7f"
+  },
+  "menu.view.calculateFolderSizes": "計算資料夾大小",
+  "@menu.view.calculateFolderSizes": {
+    "sourceHash": "d2a83da"
   },
   "menu.view.commandPalette": "指令面板⋯",
   "@menu.view.commandPalette": {
@@ -352,13 +364,17 @@
   "@menu.go.parentFolder": {
     "sourceHash": "158f5a0"
   },
+  "menu.go.rootFolder": "根資料夾",
+  "@menu.go.rootFolder": {
+    "sourceHash": "6d92528"
+  },
   "menu.go.home": "個人專屬",
   "@menu.go.home": {
     "sourceHash": "3a78695"
   },
-  "menu.go.goToPath": "前往路徑⋯",
+  "menu.go.goToPath": "前往資料夾⋯",
   "@menu.go.goToPath": {
-    "sourceHash": "936edc5"
+    "sourceHash": "33de610"
   },
   "menu.go.goToLatestDownload": "前往最新下載項目",
   "@menu.go.goToLatestDownload": {
@@ -475,6 +491,22 @@
   "menu.context.copyGoogleDriveLink": "複製 Google Drive 連結",
   "@menu.context.copyGoogleDriveLink": {
     "sourceHash": "070b383"
+  },
+  "menu.context.copyShareLink": "複製分享連結",
+  "@menu.context.copyShareLink": {
+    "sourceHash": "d31483e"
+  },
+  "menu.context.shareLinkSevenDays": "7 天後過期",
+  "@menu.context.shareLinkSevenDays": {
+    "sourceHash": "06949d8"
+  },
+  "menu.context.shareLinkOneDay": "1 天後過期",
+  "@menu.context.shareLinkOneDay": {
+    "sourceHash": "5ff3dbc"
+  },
+  "menu.context.shareLinkOneHour": "1 小時後過期",
+  "@menu.context.shareLinkOneHour": {
+    "sourceHash": "faf9c50"
   },
   "menu.context.askGemini": "詢問 Gemini",
   "@menu.context.askGemini": {
@@ -656,10 +688,6 @@
   "@menu.dock.searchFiles": {
     "sourceHash": "149a9d1"
   },
-  "menu.dock.goToFolder": "前往資料夾⋯",
-  "@menu.dock.goToFolder": {
-    "sourceHash": "33de610"
-  },
   "menu.dock.connectToServer": "連接伺服器⋯",
   "@menu.dock.connectToServer": {
     "sourceHash": "6188f47"
@@ -667,5 +695,9 @@
   "menu.dock.locationInParent": "{name}（{parent}）",
   "@menu.dock.locationInParent": {
     "sourceHash": "0bf83e2"
+  },
+  "menu.help.viewDebugLog": "檢視除錯記錄檔",
+  "@menu.help.viewDebugLog": {
+    "sourceHash": "007c98d"
   }
 }

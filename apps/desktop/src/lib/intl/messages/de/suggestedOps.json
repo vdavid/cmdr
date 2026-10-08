@@ -127,6 +127,26 @@
   "@suggestedOps.approvalUnsure": {
     "sourceHash": "fba515a"
   },
+  "suggestedOps.refusal.label": "Warum es nicht gestartet ist",
+  "@suggestedOps.refusal.label": {
+    "sourceHash": "e176570"
+  },
+  "suggestedOps.refusal.nothingToRun.message": "Cmdr konnte keine dieser Dateien lesen, als du zugestimmt hast, deshalb lief nichts.",
+  "@suggestedOps.refusal.nothingToRun.message": {
+    "sourceHash": "3018819"
+  },
+  "suggestedOps.refusal.nothingToRun.suggestion": "Prüfe, ob die Dateien noch da sind, und stimme dem Vorschlag dann noch einmal zu oder lehne ihn ab.",
+  "@suggestedOps.refusal.nothingToRun.suggestion": {
+    "sourceHash": "f4cfc9e"
+  },
+  "suggestedOps.refusal.couldNotStart.message": "Cmdr konnte aus diesem Vorschlag keinen Vorgang machen, deshalb lief nichts.",
+  "@suggestedOps.refusal.couldNotStart.message": {
+    "sourceHash": "77ef48b"
+  },
+  "suggestedOps.refusal.couldNotStart.suggestion": "Lehne den Vorschlag ab und bitte die KI, das noch einmal vorzuschlagen.",
+  "@suggestedOps.refusal.couldNotStart.suggestion": {
+    "sourceHash": "5b5b779"
+  },
   "suggestedOps.indicatorTooltip": "KI-Vorschläge warten auf dich. Zum Ansehen klicken.",
   "@suggestedOps.indicatorTooltip": {
     "sourceHash": "4508b0b"

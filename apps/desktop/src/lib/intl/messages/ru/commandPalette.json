@@ -1,0 +1,26 @@
+{
+  "commandPalette.searchPlaceholder": "Поиск команд…",
+  "@commandPalette.searchPlaceholder": {
+    "sourceHash": "baad3d0"
+  },
+  "commandPalette.searchAriaLabel": "Поиск команд",
+  "@commandPalette.searchAriaLabel": {
+    "sourceHash": "00ff739"
+  },
+  "commandPalette.noResults": "Команды не найдены",
+  "@commandPalette.noResults": {
+    "sourceHash": "eac0d09"
+  },
+  "commandPalette.resultsAriaLabel": "Команды",
+  "@commandPalette.resultsAriaLabel": {
+    "sourceHash": "b269dc4"
+  },
+  "commandPalette.groupRecent": "Недавние",
+  "@commandPalette.groupRecent": {
+    "sourceHash": "690dbe9"
+  },
+  "commandPalette.groupAll": "Все команды",
+  "@commandPalette.groupAll": {
+    "sourceHash": "f9c4287"
+  }
+}

@@ -220,6 +220,10 @@
   "@askCmdr.error.noCloudConsent": {
     "sourceHash": "cd2af1d"
   },
+  "askCmdr.error.managedByOrganization": "Tổ chức của bạn không cho phép dịch vụ AI này. Bộ phận IT có thể cho bạn biết những dịch vụ nào bạn được dùng.",
+  "@askCmdr.error.managedByOrganization": {
+    "sourceHash": "845a19f"
+  },
   "askCmdr.error.localWindowTooSmall": "Cmdr cần cửa sổ ngữ cảnh lớn hơn mức mô hình cục bộ của bạn có. Hãy chọn 32.768 token trở lên trong cài đặt, ở phần AI.",
   "@askCmdr.error.localWindowTooSmall": {
     "sourceHash": "8ac7452"
@@ -445,7 +449,7 @@
   "@askCmdr.renameReview.openPreview": {
     "sourceHash": "f687d18"
   },
-  "askCmdr.renameReview.openPreviewTooltip": "Mở tệp để kiểm tra tên (Space)",
+  "askCmdr.renameReview.openPreviewTooltip": "Mở tệp để kiểm tra tên (Dấu cách)",
   "@askCmdr.renameReview.openPreviewTooltip": {
     "sourceHash": "17163aa"
   },
@@ -576,6 +580,10 @@
   "askCmdr.renameUndo.applied": "Đã đổi tên {countText} {count, plural, other {tệp}}.",
   "@askCmdr.renameUndo.applied": {
     "sourceHash": "b06c599"
+  },
+  "askCmdr.renameUndo.swapsSkipped": "Đã bỏ qua {countText} {count, plural, other {lần đổi tên}} hoán đổi tên cho nhau. Hãy đổi tên từng tệp một.",
+  "@askCmdr.renameUndo.swapsSkipped": {
+    "sourceHash": "90e8dfc"
   },
   "askCmdr.renameUndo.undo": "Hoàn tác",
   "@askCmdr.renameUndo.undo": {

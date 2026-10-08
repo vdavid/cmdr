@@ -13,7 +13,7 @@
   },
   "adb.connect.deviceGone": "你的手机已经断开连接了。",
   "@adb.connect.deviceGone": {
-    "sourceHash": "e2766e6"
+    "sourceHash": "00d5254"
   },
   "adb.connect.unauthorized": "看一下你的手机，然后点按“允许”。",
   "@adb.connect.unauthorized": {
@@ -67,9 +67,9 @@
   "@adb.disconnectDeviceAriaLabel": {
     "sourceHash": "8f755cb"
   },
-  "adb.disconnectBusyTooltip": "此设备上有操作正在进行，无法断开连接",
+  "adb.disconnectBusyTooltip": "Cmdr 还在处理这个设备上的文件。完成后再断开连接。",
   "@adb.disconnectBusyTooltip": {
-    "sourceHash": "a425d4b"
+    "sourceHash": "73c355e"
   },
   "adb.disconnectingDeviceAriaLabel": "正在断开连接：{name}…",
   "@adb.disconnectingDeviceAriaLabel": {

@@ -27,6 +27,8 @@
 //!   ([`sftp_volume_id`]).
 //! - `webdav-`: a WebDAV server keyed by (host, port, username)
 //!   ([`webdav_volume_id`]).
+//! - `s3-`: one place on an S3 account (a bucket, or the account root), keyed by
+//!   (host, port, access key id, bucket) ([`s3_volume_id`]).
 //! - `mtp-`: an MTP device keyed by its serial (`super::mtp_ids`).
 //! - `path-`: the fallback when nothing better exists ([`path_volume_id`]),
 //!   keyed by the mount path. Stable only as long as the mount path is.
@@ -235,96 +237,32 @@ pub fn webdav_volume_id(host: &str, port: u16, username: &str) -> String {
     )
 }
 
-/// The `sftp://<user>@<host>:<port>` prefix every app path on an SFTP volume
-/// carries.
+/// Build the ID for one S3 PLACE: a bucket under an account, or (with no bucket)
+/// the account's root, which lists the buckets.
 ///
-/// Minted here, beside [`sftp_volume_id`], so the crate and the app spell it from
-/// one function and a saved server's row, a restored tab, and the live volume all
-/// agree. The volume's app root is this plus the remote root
-/// (`sftp://ada@nas.local:22/srv/data`).
-///
-/// ❗ **The prefix is what makes a remote path self-describing.** The mount table
-/// answers the LOCAL root for any absolute path it doesn't recognize, on both
-/// platforms, so a scheme-free `/srv/data/x` resolves to the boot disk at every
-/// resolver site. `cmdr_fs::volume::remote_paths` is the translation, and
-/// `commands/volumes.rs::resolve_path_to_volume` is the arm that reads it.
+/// The account is the endpoint plus the access key id, and the bucket is the
+/// place under it (`apps/desktop/src/lib/servers/DETAILS.md` § "The model"):
+/// a pin, a tab, and a switcher row each key on a place, so two buckets under
+/// one key, and the root beside them, get an id each. Two keys on one endpoint
+/// are two accounts, since each may see different buckets with different rights.
 ///
 /// # Case folding
 ///
-/// The host is lowercased and the username is not, exactly as in
-/// [`sftp_volume_id`], so a path and the id it resolves to agree on identity.
-pub fn sftp_app_root(host: &str, port: u16, username: &str) -> String {
-    remote_app_root(SFTP_SCHEME, host, port, username)
-}
-
-/// The `webdav://<user>@<host>:<port>` prefix every app path on a WebDAV volume
-/// carries. The SFTP twin, for the same reasons: [`sftp_app_root`].
+/// The host is lowercased (DNS). The access key id and the bucket are NOT: both
+/// are case-sensitive (a legacy `us-east-1` bucket may carry capitals).
 ///
-/// ❗ `webdav://` whatever the transport is. `http` and `https` to one host and
-/// port are the same server (the port tells the two default listeners apart),
-/// which is the same call [`webdav_volume_id`] makes, so the two can't disagree.
-pub fn webdav_app_root(host: &str, port: u16, username: &str) -> String {
-    remote_app_root(WEBDAV_SCHEME, host, port, username)
-}
-
-/// The scheme [`sftp_app_root`] mints and [`server_of_path`] reads back.
-const SFTP_SCHEME: &str = "sftp";
-
-/// The scheme [`webdav_app_root`] mints and [`server_of_path`] reads back.
-const WEBDAV_SCHEME: &str = "webdav";
-
-/// `{scheme}://{username}@{host}:{port}`, with the host folded the way the volume
-/// id folds it.
-fn remote_app_root(scheme: &str, host: &str, port: u16, username: &str) -> String {
+/// ❗ The slug is the bucket and the host (bucket first, so the slug's cap cuts
+/// the host), ❌ never the key id: an id lands in logs and data-dir names, and
+/// the digest already carries the key.
+pub fn s3_volume_id(host: &str, port: u16, access_key_id: &str, bucket: Option<&str>) -> String {
     let host = host.to_lowercase();
-    format!("{scheme}://{username}@{host}:{port}")
-}
-
-/// The server account an app path names, as [`server_of_path`] reads it.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ServerPath {
-    /// The backend its scheme names: [`BackendKind::Sftp`](super::BackendKind::Sftp)
-    /// or [`BackendKind::Webdav`](super::BackendKind::Webdav).
-    pub kind: super::BackendKind,
-    /// The id that account mints ([`sftp_volume_id`] or [`webdav_volume_id`]).
-    pub volume_id: String,
-}
-
-/// The server account an `sftp://` or `webdav://<user>@<host>:<port>[/…]` app
-/// path names, or `None` for any other path, and for one missing its user, host,
-/// or port.
-///
-/// The one split of what [`remote_app_root`] joins, kept beside it so the two
-/// can't drift. Pure for the reason [`adb_serial_of_path`] is: the path IS the
-/// identity its id is minted from, so a saved server nobody has connected answers
-/// the same as a live one, and the kind rides along so a caller can ask
-/// [`BackendKind::can_be_indexed`](super::BackendKind::can_be_indexed) without a
-/// registry.
-///
-/// The user is everything before the authority's LAST `@` and the port everything
-/// after its last `:`, which is how an IPv6 host (`sftp://ada@::1:22`) still
-/// splits.
-pub fn server_of_path(path: &str) -> Option<ServerPath> {
-    type Mint = fn(&str, u16, &str) -> String;
-    let servers: [(&str, super::BackendKind, Mint); 2] = [
-        (SFTP_SCHEME, super::BackendKind::Sftp, sftp_volume_id),
-        (WEBDAV_SCHEME, super::BackendKind::Webdav, webdav_volume_id),
-    ];
-    let (rest, kind, mint) = servers.into_iter().find_map(|(scheme, kind, mint)| {
-        let rest = path.strip_prefix(scheme)?.strip_prefix("://")?;
-        Some((rest, kind, mint))
-    })?;
-    let authority = rest.split('/').next()?;
-    let (username, host_port) = authority.rsplit_once('@')?;
-    let (host, port) = host_port.rsplit_once(':')?;
-    let port: u16 = port.parse().ok()?;
-    if username.is_empty() || host.is_empty() {
-        return None;
-    }
-    Some(ServerPath {
-        kind,
-        volume_id: mint(host, port, username),
-    })
+    let port = port.to_string();
+    let bucket = bucket.unwrap_or_default();
+    derived_id(
+        "s3",
+        &format!("{bucket}-{host}"),
+        &[&host, &port, access_key_id, bucket],
+    )
 }
 
 /// Build the ID for an MTP device from its (opaque, verbatim) serial.
@@ -349,38 +287,6 @@ pub fn mtp_device_id(serial_or_location: &str) -> String {
 /// `.` in it out of the `index-{id}.db` filename.
 pub fn adb_volume_id(serial: &str) -> String {
     derived_id("adb", serial, &[serial])
-}
-
-/// The `adb://<serial>` prefix every app path on an ADB volume carries, and the
-/// volume's root.
-///
-/// Minted here, beside [`adb_volume_id`], for the reason [`sftp_app_root`] is:
-/// the crate, the device provider's row, and a restored tab all spell it from
-/// one function. The device's own tree hangs under it
-/// (`adb://R58M1/sdcard/DCIM`), and `cmdr_fs::volume::remote_paths` is the
-/// translation.
-///
-/// ❗ The serial goes in VERBATIM, case and all. The id's slug is folded for
-/// readability, but the id's digest and the ADB server both key on the exact
-/// serial, so a folded prefix would name a device the server doesn't list.
-pub fn adb_app_root(serial: &str) -> String {
-    format!("{ADB_PATH_SCHEME}{serial}")
-}
-
-/// The scheme every [`adb_app_root`] starts with.
-const ADB_PATH_SCHEME: &str = "adb://";
-
-/// The serial an `adb://<serial>[/…]` app path names, verbatim, or `None` for
-/// any other path.
-///
-/// The one split of what [`adb_app_root`] joins, kept beside it so the two can't
-/// drift: the device provider asks it which phone a path is on, and the index
-/// asks it which phone's index a path belongs to. It reads the serial only; the
-/// device path under it is the volume's own translation (`remote_paths`).
-pub fn adb_serial_of_path(path: &str) -> Option<&str> {
-    let rest = path.strip_prefix(ADB_PATH_SCHEME)?;
-    let serial = rest.split('/').next()?;
-    (!serial.is_empty()).then_some(serial)
 }
 
 /// Whether `id` names an Android device reached over ADB.

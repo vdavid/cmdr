@@ -8,27 +8,6 @@ import * as __TAURI_EVENT from '@tauri-apps/api/event'
 /** Commands */
 export const commands = {
   /**
-   *  Public greeting used by the example webview surface; kept here as the
-   *  foundational smoke test for the specta wiring.
-   */
-  greet: (name: string) => __TAURI_INVOKE<string>('greet', { name }),
-  // Synchronous version. Prefer `list_directory_start_streaming` for non-blocking operation.
-  listDirectoryStart: (
-    path: string,
-    includeHidden: boolean,
-    sortBy: SortColumn,
-    sortOrder: SortOrder,
-    directorySortMode:
-      // Directories sort by the same column as files (using recursive_size for Size column).
-      | 'likeFiles'
-      // Directories always sort by name, regardless of the active sort column.
-      | 'alwaysByName'
-      | null,
-  ) =>
-    typedError<ListingStartResult, ListingStartError>(
-      __TAURI_INVOKE('list_directory_start', { path, includeHidden, sortBy, sortOrder, directorySortMode }),
-    ),
-  /**
    *  Returns immediately; reads in background.
    *  Emits listing-progress, listing-complete, listing-error, listing-cancelled.
    */
@@ -41,8 +20,16 @@ export const commands = {
     directorySortMode:
       // Directories sort by the same column as files (using recursive_size for Size column).
       | 'likeFiles'
-      // Directories always sort by name, regardless of the active sort column.
+      /**
+       *  Directories always sort by name, A→Z, regardless of the active sort column
+       *  and its direction. Only the Name column's arrow reverses them.
+       */
       | 'alwaysByName'
+      /**
+       *  Directories don't lead: they sort among the files by the same column ("Show
+       *  folders first" off). Size ranks a directory by its `recursive_size`.
+       */
+      | 'mixedWithFiles'
       | null,
     listingId: string,
   ) =>
@@ -60,13 +47,61 @@ export const commands = {
   cancelListing: (listingId: string) => __TAURI_INVOKE<void>('cancel_listing', { listingId }),
   listDirectoryEnd: (listingId: string) => __TAURI_INVOKE<void>('list_directory_end', { listingId }),
   /**
+   *  The panes' heartbeat: keeps the named listings safe from the orphan reaper and
+   *  returns the ids no longer cached, which the frontend re-lists.
+   *  See `file_system::listing::operations::keep_listings_alive`.
+   */
+  keepListingsAlive: (listingIds: string[]) => __TAURI_INVOKE<string[]>('keep_listings_alive', { listingIds }),
+  /**
    *  Tells the backend the pane showing `listing_id` now shows (or hides) hidden
    *  files. Its `directory-diff` events speak that pane's rows, and skip changes
    *  to rows it doesn't show, so the pane calls this before re-reading its rows
    *  after the hidden-files toggle.
    */
-  setListingIncludeHidden: (listingId: string, includeHidden: boolean) =>
-    typedError<null, string>(__TAURI_INVOKE('set_listing_include_hidden', { listingId, includeHidden })),
+  setListingIncludeHidden: (
+    listingId: string,
+    includeHidden: boolean,
+    expectedSequence: number | null,
+    cursorFilename: string | null,
+    selectedIndices: number[] | null,
+    allSelected: boolean | null,
+  ) =>
+    typedError<ResortResult, ListingLookupError>(
+      __TAURI_INVOKE('set_listing_include_hidden', {
+        listingId,
+        includeHidden,
+        expectedSequence,
+        cursorFilename,
+        selectedIndices,
+        allSelected,
+      }),
+    ),
+  /**
+   *  Sets the quick filter of the pane showing `listing_id` (an empty or `null`
+   *  pattern clears it), and returns the new row count plus where the cursor's
+   *  file and the selected files landed in the filtered rows. With
+   *  `refuse_empty`, a pattern that matches nothing is refused (`accepted: false`).
+   */
+  setListingNameFilter: (
+    listingId: string,
+    pattern: string | null,
+    includeHidden: boolean,
+    cursorFilename: string | null,
+    selectedIndices: number[],
+    refuseEmpty: boolean,
+    expectedSequence: number | null,
+  ) =>
+    typedError<NameFilterResult, ListingLookupError>(
+      __TAURI_INVOKE('set_listing_name_filter', {
+        listingId,
+        pattern,
+        includeHidden,
+        cursorFilename,
+        selectedIndices,
+        refuseEmpty,
+        expectedSequence,
+      }),
+    ),
   /**
    *  Re-reads a directory listing, emitting any diff.
    *
@@ -107,7 +142,9 @@ export const commands = {
   refreshListing: (listingId: string, force: boolean) =>
     __TAURI_INVOKE<TimedOut<null>>('refresh_listing', { listingId, force }),
   getFileRange: (listingId: string, start: number, count: number, includeHidden: boolean) =>
-    typedError<FileEntry[], string>(__TAURI_INVOKE('get_file_range', { listingId, start, count, includeHidden })),
+    typedError<FileEntry[], ListingLookupError>(
+      __TAURI_INVOKE('get_file_range', { listingId, start, count, includeHidden }),
+    ),
   getFileAt: (listingId: string, index: number, includeHidden: boolean) =>
     typedError<
       {
@@ -242,8 +279,18 @@ export const commands = {
          *  tradeoff. `None` on every non-portal entry.
          */
         gitMeta: GitEntryMeta | null
+        /**
+         *  `true` for a file whose bytes sit in a cold storage class and can't be
+         *  read until someone restores them: S3 Glacier Flexible Retrieval or Deep
+         *  Archive, from the listing's `StorageClass`. The pane shows it as
+         *  "archived" (the internals say "cold storage" because `is_archive`
+         *  already means a zip), and a read answers `VolumeError::ColdStorage`.
+         *  A restored object still lists as archived: the listing can't tell.
+         *  `false` on every other backend.
+         */
+        inColdStorage: boolean
       } | null,
-      string
+      ListingLookupError
     >(__TAURI_INVOKE('get_file_at', { listingId, index, includeHidden })),
   /**
    *  The entry immediately before or after the one named `name`, in one call.
@@ -386,15 +433,25 @@ export const commands = {
          *  tradeoff. `None` on every non-portal entry.
          */
         gitMeta: GitEntryMeta | null
+        /**
+         *  `true` for a file whose bytes sit in a cold storage class and can't be
+         *  read until someone restores them: S3 Glacier Flexible Retrieval or Deep
+         *  Archive, from the listing's `StorageClass`. The pane shows it as
+         *  "archived" (the internals say "cold storage" because `is_archive`
+         *  already means a zip), and a read answers `VolumeError::ColdStorage`.
+         *  A restored object still lists as archived: the listing can't tell.
+         *  `false` on every other backend.
+         */
+        inColdStorage: boolean
       } | null,
-      string
+      ListingLookupError
     >(__TAURI_INVOKE('get_file_beside', { listingId, name, side, includeHidden })),
   /**
    *  Gets full FileEntry objects at specific backend indices from a cached listing.
    *  Callers are responsible for any parent offset adjustment before passing indices.
    */
   getFilesAtIndices: (listingId: string, selectedIndices: number[], includeHidden: boolean) =>
-    typedError<FileEntry[], string>(
+    typedError<FileEntry[], ListingLookupError>(
       __TAURI_INVOKE('get_files_at_indices', { listingId, selectedIndices, includeHidden }),
     ),
   /**
@@ -402,11 +459,19 @@ export const commands = {
    *  extraction). Handles the parent ".." offset internally; callers pass frontend indices.
    */
   getPathsAtIndices: (listingId: string, selectedIndices: number[], includeHidden: boolean, hasParent: boolean) =>
-    typedError<string[], string>(
+    typedError<string[], ListingLookupError>(
       __TAURI_INVOKE('get_paths_at_indices', { listingId, selectedIndices, includeHidden, hasParent }),
     ),
-  getTotalCount: (listingId: string, includeHidden: boolean) =>
-    typedError<number, string>(__TAURI_INVOKE('get_total_count', { listingId, includeHidden })),
+  // Consume a selection only while it still names the committed backend rows.
+  getSelectionSnapshot: (
+    listingId: string,
+    includeHidden: boolean,
+    selectedIndices: number[],
+    expectedSequence: number,
+  ) =>
+    typedError<SelectionSnapshot, ListingLookupError>(
+      __TAURI_INVOKE('get_selection_snapshot', { listingId, includeHidden, selectedIndices, expectedSequence }),
+    ),
   /**
    *  Returns the widest filename's text-only width (in px) per Brief-mode column.
    *
@@ -435,9 +500,44 @@ export const commands = {
       __TAURI_INVOKE('get_brief_column_text_widths', { listingId, itemsPerColumn, hasParent, fontId, includeHidden }),
     ),
   findFileIndex: (listingId: string, name: string, includeHidden: boolean) =>
-    typedError<number | null, string>(__TAURI_INVOKE('find_file_index', { listingId, name, includeHidden })),
+    typedError<number | null, ListingLookupError>(
+      __TAURI_INVOKE('find_file_index', { listingId, name, includeHidden }),
+    ),
+  /**
+   *  Compare directories (⇧F2): which rows each pane should mark against the
+   *  other. A pure read of the two cached listings; see `listing/compare.rs`.
+   */
+  compareDirectories: (
+    leftListingId: string,
+    leftIncludeHidden: boolean,
+    rightListingId: string,
+    rightIncludeHidden: boolean,
+    mode: CompareDirectoriesMode,
+  ) =>
+    typedError<CompareDirectoriesResult, CompareDirectoriesError>(
+      __TAURI_INVOKE('compare_directories', {
+        leftListingId,
+        leftIncludeHidden,
+        rightListingId,
+        rightIncludeHidden,
+        mode,
+      }),
+    ),
+  /**
+   *  Calculates the sizes of folders the pane shows (⌥⇧⏎; `paths` for Space on a
+   *  folder), sending each reading as `listing-index-sizes-changed`. A request
+   *  while a count of the same listing runs joins its queue. Resolves when the
+   *  count ends: done, or stopped by [`cancel_folder_size_count`]. See
+   *  `listing_index_sizes/count/`.
+   */
+  countFolderSizes: (listingId: string, includeHidden: boolean, paths: string[] | null) =>
+    typedError<FolderSizeCountOutcome, CountFolderSizesError>(
+      __TAURI_INVOKE('count_folder_sizes', { listingId, includeHidden, paths }),
+    ),
+  // Stops the folder-size count running for `listing_id` (Esc). Reports whether one was running.
+  cancelFolderSizeCount: (listingId: string) => __TAURI_INVOKE<boolean>('cancel_folder_size_count', { listingId }),
   findFileIndices: (listingId: string, names: string[], includeHidden: boolean) =>
-    typedError<{ [key in string]: number }, string>(
+    typedError<{ [key in string]: number }, ListingLookupError>(
       __TAURI_INVOKE('find_file_indices', { listingId, names, includeHidden }),
     ),
   /**
@@ -458,15 +558,24 @@ export const commands = {
     directorySortMode:
       // Directories sort by the same column as files (using recursive_size for Size column).
       | 'likeFiles'
-      // Directories always sort by name, regardless of the active sort column.
+      /**
+       *  Directories always sort by name, A→Z, regardless of the active sort column
+       *  and its direction. Only the Name column's arrow reverses them.
+       */
       | 'alwaysByName'
+      /**
+       *  Directories don't lead: they sort among the files by the same column ("Show
+       *  folders first" off). Size ranks a directory by its `recursive_size`.
+       */
+      | 'mixedWithFiles'
       | null,
     cursorFilename: string | null,
     includeHidden: boolean,
     selectedIndices: number[] | null,
     allSelected: boolean | null,
+    expectedSequence: number | null,
   ) =>
-    typedError<ResortResult, string>(
+    typedError<ResortResult, ListingLookupError>(
       __TAURI_INVOKE('resort_listing', {
         listingId,
         sortBy,
@@ -476,6 +585,7 @@ export const commands = {
         includeHidden,
         selectedIndices,
         allSelected,
+        expectedSequence,
       }),
     ),
   getPathLimits: () => __TAURI_INVOKE<PathLimits>('get_path_limits'),
@@ -542,27 +652,30 @@ export const commands = {
   storedSpellings: (volumeId: string, paths: string[]) =>
     __TAURI_INVOKE<TimedOut<string[]>>('stored_spellings', { volumeId, paths }),
   /**
-   *  Creates a folder and returns its new path. Thin pass-through to the managed
-   *  create op (`write_operations::create`): expand tilde (root only), wrap in the
-   *  5 s write timeout, and ship the typed `MutationError` the frontend renders
-   *  its words from.
+   *  Creates a folder. Thin pass-through to the managed create op
+   *  (`write_operations::create`): expand tilde (root only), answer within
+   *  `MUTATION_REPLY_DEADLINE`, and ship the typed `MutationError` the frontend
+   *  renders its words from. A create still running at the deadline answers
+   *  `StillRunning` and reports its end on `mutation-settled`
+   *  (`write_operations/mutation_reply.rs`).
    */
   createDirectory: (
     volumeId: string | null,
     parentPath: string,
     name: string,
     initiator: 'user' | 'aiClient' | 'agent' | 'agentEdited' | null,
-  ) => typedError<string, MutationError>(__TAURI_INVOKE('create_directory', { volumeId, parentPath, name, initiator })),
-  /**
-   *  Creates an empty file and returns its new path. Same shape as
-   *  [`create_directory`].
-   */
+  ) =>
+    typedError<MutationReply, MutationError>(
+      __TAURI_INVOKE('create_directory', { volumeId, parentPath, name, initiator }),
+    ),
+  // Creates an empty file. Same shape as [`create_directory`].
   createFile: (
     volumeId: string | null,
     parentPath: string,
     name: string,
     initiator: 'user' | 'aiClient' | 'agent' | 'agentEdited' | null,
-  ) => typedError<string, MutationError>(__TAURI_INVOKE('create_file', { volumeId, parentPath, name, initiator })),
+  ) =>
+    typedError<MutationReply, MutationError>(__TAURI_INVOKE('create_file', { volumeId, parentPath, name, initiator })),
   /**
    *  Stores `password` for the archive at `archive_path` on `parent_volume_id`,
    *  overwriting any previous one (so a fresh attempt replaces a rejected password).
@@ -585,41 +698,9 @@ export const commands = {
    *  Only logs if RUSTY_COMMANDER_BENCHMARK=1 is set.
    */
   benchmarkLog: (message: string) => __TAURI_INVOKE<void>('benchmark_log', { message }),
-  // Emits write-progress, write-complete, write-error, write-cancelled.
-  copyFiles: (
-    sources: string[],
-    destination: string,
-    config: {
-      // Progress update interval in milliseconds (default: 200)
-      progressIntervalMs?: number
-      conflictResolution?: ConflictResolution
-      /**
-       *  If true, only scan and detect conflicts without executing the operation.
-       *  Returns a DryRunResult with totals and conflicts.
-       */
-      dryRun?: boolean
-      sortColumn?: SortColumn
-      sortOrder?: SortOrder
-      // Preview scan ID to reuse cached scan results (from start_scan_preview)
-      previewId?: string | null
-      // Maximum number of conflicts to include in DryRunResult (default: 100)
-      maxConflictsToShow?: number
-      /**
-       *  Source filenames already known to conflict at the destination. See
-       *  `VolumeCopyConfig::pre_known_conflicts` for the full rationale.
-       */
-      preKnownConflicts?: string[]
-      // Explicit leaf name for a single copy or move; the destination still names its parent.
-      destinationName?: string | null
-    } | null,
-    initiator: 'user' | 'aiClient' | 'agent' | 'agentEdited' | null,
-  ) =>
-    typedError<WriteOperationStartResult, WriteOperationError>(
-      __TAURI_INVOKE('copy_files', { sources, destination, config, initiator }),
-    ),
   /**
    *  Uses rename() for same-filesystem (instant), copy+delete for cross-filesystem.
-   *  Same events as `copy_files`.
+   *  Emits write-progress, write-complete, write-error, write-cancelled.
    */
   moveFiles: (
     sources: string[],
@@ -646,6 +727,8 @@ export const commands = {
       preKnownConflicts?: string[]
       // Explicit leaf name for a single copy or move; the destination still names its parent.
       destinationName?: string | null
+      // What a copy does when the destination looks too small. See [`SpaceShortfall`].
+      spaceShortfall?: SpaceShortfall
     } | null,
     initiator: 'user' | 'aiClient' | 'agent' | 'agentEdited' | null,
   ) =>
@@ -653,7 +736,7 @@ export const commands = {
       __TAURI_INVOKE('move_files', { sources, destination, config, initiator }),
     ),
   /**
-   *  Recursively deletes files and directories. Same events as `copy_files`.
+   *  Recursively deletes files and directories. Same events as `move_files`.
    *  When `volume_id` is provided and is not "root", routes through the Volume trait.
    */
   deleteFiles: (
@@ -681,13 +764,15 @@ export const commands = {
       preKnownConflicts?: string[]
       // Explicit leaf name for a single copy or move; the destination still names its parent.
       destinationName?: string | null
+      // What a copy does when the destination looks too small. See [`SpaceShortfall`].
+      spaceShortfall?: SpaceShortfall
     } | null,
     initiator: 'user' | 'aiClient' | 'agent' | 'agentEdited' | null,
   ) =>
     typedError<WriteOperationStartResult, WriteOperationError>(
       __TAURI_INVOKE('delete_files', { sources, volumeId, config, initiator }),
     ),
-  // Moves files to macOS Trash. Same events as `copy_files` but with `operationType: trash`.
+  // Moves files to macOS Trash. Same events as `move_files` but with `operationType: trash`.
   trashFiles: (
     sources: string[],
     itemSizes: number[] | null,
@@ -713,6 +798,8 @@ export const commands = {
       preKnownConflicts?: string[]
       // Explicit leaf name for a single copy or move; the destination still names its parent.
       destinationName?: string | null
+      // What a copy does when the destination looks too small. See [`SpaceShortfall`].
+      spaceShortfall?: SpaceShortfall
     } | null,
     initiator: 'user' | 'aiClient' | 'agent' | 'agentEdited' | null,
   ) =>
@@ -734,7 +821,6 @@ export const commands = {
     __TAURI_INVOKE<TrashRoutingAnswer>('trash_routing_for_paths', { sources }),
   cancelWriteOperation: (operationId: string, rollback: boolean) =>
     __TAURI_INVOKE<void>('cancel_write_operation', { operationId, rollback }),
-  cancelAllWriteOperations: () => __TAURI_INVOKE<void>('cancel_all_write_operations'),
   /**
    *  Scans source files for Copy dialog stats. Results are cached for reuse by the actual copy.
    *  Emits scan-preview-progress, scan-preview-complete, scan-preview-error, scan-preview-cancelled.
@@ -750,14 +836,16 @@ export const commands = {
     progressIntervalMs: number | null,
     sampleForEstimate: boolean | null,
   ) =>
-    __TAURI_INVOKE<ScanPreviewStartResult>('start_scan_preview', {
-      sources,
-      sourceVolumeId,
-      sortColumn,
-      sortOrder,
-      progressIntervalMs,
-      sampleForEstimate,
-    }),
+    typedError<ScanPreviewStartResult, ScanPreviewRefusal>(
+      __TAURI_INVOKE('start_scan_preview', {
+        sources,
+        sourceVolumeId,
+        sortColumn,
+        sortOrder,
+        progressIntervalMs,
+        sampleForEstimate,
+      }),
+    ),
   cancelScanPreview: (previewId: string) => __TAURI_INVOKE<void>('cancel_scan_preview', { previewId }),
   /**
    *  Returns the cached totals from a completed scan preview, or `null` while the
@@ -807,44 +895,6 @@ export const commands = {
       resolution,
       applyToAll,
     }),
-  listActiveOperations: () => __TAURI_INVOKE<OperationSummary[]>('list_active_operations'),
-  getOperationStatus: (operationId: string) =>
-    __TAURI_INVOKE<{
-      operationId: string
-      operationType: WriteOperationType
-      phase: WriteOperationPhase
-      /**
-       *  The manager's own lifecycle status. `None` once the operation has left the
-       *  registry and only its status-cache row survives.
-       *
-       *  ❌ Never re-derive one from `WRITE_OPERATION_STATE.contains` or any other
-       *  presence test: the entry lands at spawn and survives a pause, so presence
-       *  is `true` for queued, running, and parked alike. DETAILS § "Lifecycle
-       *  status and `operations-changed`".
-       */
-      lifecycle: LifecycleStatus | null
-      // Filename only.
-      currentFile: string | null
-      filesDone: number
-      // 0 if unknown/scanning.
-      filesTotal: number
-      bytesDone: number
-      // 0 if unknown/scanning.
-      bytesTotal: number
-      // Unix timestamp in milliseconds.
-      startedAt: number
-      /**
-       *  What the operation is waiting on right now, classified live at read time
-       *  (`WriteOperationState::activity`) rather than cached: a stale wait is
-       *  worse than none.
-       *
-       *  `None` means the operation can't classify itself, ❌ never "it's moving":
-       *  it has settled (the cache row outlives the state entry), or it's a backend
-       *  that keeps no in-flight table and has nobody parked on a decision (a local
-       *  copy, a delete, a trash).
-       */
-      activity: TransferActivity | null
-    } | null>('get_operation_status', { operationId }),
   /**
    *  Returns the thin operation registry snapshot (membership + lifecycle
    *  status) for the queue window. Live per-row progress comes from the separate
@@ -902,7 +952,7 @@ export const commands = {
   dismissAllFailedOperations: () => __TAURI_INVOKE<void>('dismiss_all_failed_operations'),
   /**
    *  Unified copy across volume types (local, MTP, extract out of a `.zip`).
-   *  Same events as `copy_files`.
+   *  Emits write-progress, write-complete, write-error, write-cancelled.
    */
   copyBetweenVolumes: (
     sourceVolumeId: string,
@@ -938,6 +988,8 @@ export const commands = {
        *  1..=9 (an out-of-range level hard-errors the edit, not clamps).
        */
       compressionLevel?: number | null
+      // What a copy does when the destination looks too small. See [`SpaceShortfall`].
+      spaceShortfall?: SpaceShortfall
     } | null,
     initiator: 'user' | 'aiClient' | 'agent' | 'agentEdited' | null,
   ) =>
@@ -990,6 +1042,8 @@ export const commands = {
        *  1..=9 (an out-of-range level hard-errors the edit, not clamps).
        */
       compressionLevel?: number | null
+      // What a copy does when the destination looks too small. See [`SpaceShortfall`].
+      spaceShortfall?: SpaceShortfall
     } | null,
     initiator: 'user' | 'aiClient' | 'agent' | 'agentEdited' | null,
   ) =>
@@ -1002,6 +1056,54 @@ export const commands = {
         config,
         initiator,
       }),
+    ),
+  /**
+   *  A rename that runs as a move on one volume: `source_path` moves into
+   *  `dest_path` under `new_name`. What the Move dialog confirms when F2 opens
+   *  it for a rename that copies (an S3 folder past the small-rename count,
+   *  `RenameValidityResult::by_move`). Same events as `move_between_volumes`.
+   */
+  renameByMove: (
+    volumeId: string,
+    sourcePath: string,
+    destPath: string,
+    newName: string,
+    config: {
+      // In milliseconds.
+      progressIntervalMs: number
+      conflictResolution: ConflictResolution
+      // Maximum returned in pre-flight scan.
+      maxConflictsToShow: number
+      // Preview scan ID to reuse cached scan results (from start_scan_preview).
+      previewId?: string | null
+      /**
+       *  Source filenames already known to conflict at the destination (from the
+       *  pre-flight `scan_for_conflicts` call). When `conflict_resolution == Skip`,
+       *  the copy pipeline bulk-skips these upfront so the progress bar jumps to
+       *  reflect them immediately, rather than discovering each one serially via
+       *  per-file `get_metadata` stats while non-conflict copies run in between.
+       *  Ignored for other resolution modes (Stop still prompts; Overwrite still
+       *  proceeds normally). Empty if the FE didn't pre-scan or found no
+       *  conflicts.
+       */
+      preKnownConflicts?: string[]
+      // Explicit leaf name for a single copy or move; the destination still names its parent.
+      destinationName?: string | null
+      /**
+       *  Deflate level (1..=9) for zip writes this op produces (compress, or
+       *  copy/move INTO an archive); `None` = the crate default (level 6). The
+       *  frontend reads the `behavior.archiveCompressionLevel` setting at dispatch
+       *  and passes it here; non-archive copies ignore it. The mutator clamps to
+       *  1..=9 (an out-of-range level hard-errors the edit, not clamps).
+       */
+      compressionLevel?: number | null
+      // What a copy does when the destination looks too small. See [`SpaceShortfall`].
+      spaceShortfall?: SpaceShortfall
+    } | null,
+    initiator: 'user' | 'aiClient' | 'agent' | 'agentEdited' | null,
+  ) =>
+    typedError<WriteOperationStartResult, WriteOperationError>(
+      __TAURI_INVOKE('rename_by_move', { volumeId, sourcePath, destPath, newName, config, initiator }),
     ),
   /**
    *  Compresses `source_paths` into a NEW zip at `dest_zip_path` on `dest_volume_id`.
@@ -1042,22 +1144,13 @@ export const commands = {
        *  1..=9 (an out-of-range level hard-errors the edit, not clamps).
        */
       compressionLevel?: number | null
+      // What a copy does when the destination looks too small. See [`SpaceShortfall`].
+      spaceShortfall?: SpaceShortfall
     } | null,
     initiator: 'user' | 'aiClient' | 'agent' | 'agentEdited' | null,
   ) =>
     typedError<WriteOperationStartResult, WriteOperationError>(
       __TAURI_INVOKE('compress_files', { sourceVolumeId, sourcePaths, destVolumeId, destZipPath, config, initiator }),
-    ),
-  // Pre-flight scan: total count/bytes, available space, conflicts. Doesn't copy anything.
-  scanVolumeForCopy: (
-    sourceVolumeId: string,
-    sourcePaths: string[],
-    destVolumeId: string,
-    destPath: string,
-    maxConflicts: number | null,
-  ) =>
-    typedError<VolumeCopyScanResult, VolumeScanError>(
-      __TAURI_INVOKE('scan_volume_for_copy', { sourceVolumeId, sourcePaths, destVolumeId, destPath, maxConflicts }),
     ),
   /**
    *  Checks which source items already exist at the destination. Returns conflict details for UI.
@@ -1094,9 +1187,24 @@ export const commands = {
    */
   destinationWriteAccess: (destVolumeId: string, destPath: string) =>
     __TAURI_INVOKE<WriteAccess>('destination_write_access', { destVolumeId, destPath }),
+  /**
+   *  Whether the destination box's path repeats the place's own root folder, so
+   *  the dialog can warn. ❌ Never rewrites anything: the transfer still anchors
+   *  the path as typed (`resolve_dest_path`), because the doubled folder can be
+   *  real. `None` for an unregistered volume and for any path that reads one way.
+   */
+  destinationRootEcho: (destVolumeId: string, destPath: string) =>
+    __TAURI_INVOKE<{
+      // The server-side folder the place is rooted at (`/srv/data`).
+      rootFolder: string
+      // Where the transfer goes as typed (`/srv/data/srv/data/photos`).
+      resolved: string
+      // The box's text with the repeated root folder taken off (`/photos`).
+      stripped: string
+    } | null>('destination_root_echo', { destVolumeId, destPath }),
   // Returns total file/dir counts and sizes, plus selection stats if `selected_indices` is given.
   getListingStats: (listingId: string, includeHidden: boolean, selectedIndices: number[] | null) =>
-    typedError<ListingStats, string>(
+    typedError<ListingStats, ListingLookupError>(
       __TAURI_INVOKE('get_listing_stats', { listingId, includeHidden, selectedIndices }),
     ),
   /**
@@ -1208,7 +1316,9 @@ export const commands = {
    *  When `volume_id` is provided and not `"root"`, routes through the Volume trait
    *  (needed for MTP and other non-local volumes). Otherwise uses `std::fs::rename`.
    *  The mutation runs as a managed instant op (busy-marks the volume, appears
-   *  briefly in the queue), still inline and result-returning.
+   *  briefly in the queue). A rename still running at `MUTATION_REPLY_DEADLINE`
+   *  answers `StillRunning` and reports its end on `mutation-settled`
+   *  (`write_operations/mutation_reply.rs`).
    */
   renameFile: (
     from: string,
@@ -1216,7 +1326,8 @@ export const commands = {
     force: boolean,
     volumeId: string | null,
     initiator: 'user' | 'aiClient' | 'agent' | 'agentEdited' | null,
-  ) => typedError<null, MutationError>(__TAURI_INVOKE('rename_file', { from, to, force, volumeId, initiator })),
+  ) =>
+    typedError<MutationReply, MutationError>(__TAURI_INVOKE('rename_file', { from, to, force, volumeId, initiator })),
   // Moves a file or directory to the macOS Trash via NSFileManager.
   moveToTrash: (path: string) => typedError<null, MutationError>(__TAURI_INVOKE('move_to_trash', { path })),
   /**
@@ -1525,6 +1636,14 @@ export const commands = {
    *  [`show_tab_context_menu`].
    */
   showFunctionKeyBarContextMenu: () => typedError<null, string>(__TAURI_INVOKE('show_function_key_bar_context_menu')),
+  /**
+   *  Shows the viewer's right-click menu over the file text (fire-and-forget), at the pointer.
+   *  The pick comes back as `ViewerContextMenuAction` to this viewer, same shape as
+   *  [`show_tab_context_menu`]. `has_selection` greys Copy: the selection model lives in the
+   *  viewer's frontend, which reads it at open time.
+   */
+  showViewerContextMenu: (hasSelection: boolean) =>
+    typedError<null, string>(__TAURI_INVOKE('show_viewer_context_menu', { hasSelection })),
   // Show a file in Finder (reveal in parent folder)
   showInFinder: (path: string) => typedError<null, string>(__TAURI_INVOKE('show_in_finder', { path })),
   // Open (or re-open) Quick Look on the given path.
@@ -1533,8 +1652,11 @@ export const commands = {
   quickLookSetPath: (path: string, volumeId: string) =>
     typedError<null, string>(__TAURI_INVOKE('quick_look_set_path', { path, volumeId })),
   quickLookClose: () => typedError<null, string>(__TAURI_INVOKE('quick_look_close')),
-  // Open the Get Info window for a file (macOS only, no-op on other platforms)
-  getInfo: (path: string) => typedError<null, string>(__TAURI_INVOKE('get_info', { path })),
+  /**
+   *  Opens Finder's Get Info window for a file, or says why macOS won't let it
+   *  (`file_system::get_info`).
+   */
+  getInfo: (path: string) => typedError<null, GetInfoError>(__TAURI_INVOKE('get_info', { path })),
   /**
    *  Opens a file in the text editor `app_choice` names.
    *
@@ -1589,6 +1711,15 @@ export const commands = {
       } | null,
       string
     >(__TAURI_INVOKE('google_drive_links', { path })),
+  /**
+   *  Mints a share link to the file at `path` on `volume_id`, valid for
+   *  `expires_in`, and copies it to the clipboard.
+   *
+   *  No timeout wrapper: minting reads a lock and signs a string; it reaches no
+   *  server and no disk.
+   */
+  copyShareLink: (volumeId: string, path: string, expiresIn: ShareLinkExpiry) =>
+    typedError<null, VolumeError>(__TAURI_INVOKE('copy_share_link', { volumeId, path, expiresIn })),
   /**
    *  Make a cloud-managed file available offline (download it). **iCloud Drive only**:
    *  this routes through the `FileManager` ubiquity APIs, which accept iCloud URLs and
@@ -1891,6 +2022,17 @@ export const commands = {
    */
   amendErrorReport: (userNote: string | null, email: string | null) =>
     typedError<AmendResult, ErrorReportSendError>(__TAURI_INVOKE('amend_error_report', { userNote, email })),
+  /**
+   *  Build the bundle and write it to the app data dir as a `.zip`; nothing leaves the Mac. Two
+   *  callers: the dialog's Save to disk when the organization turned off sending reports (the person
+   *  passes the file on themselves), and the dev-only button for iterating on the redactor or the
+   *  manifest format.
+   *
+   *  Takes the same `id` as [`send_error_report`] so this path can't drift from the real one: the
+   *  zip on disk is the bundle the send would have shipped, id included.
+   */
+  saveErrorReportToDisk: (userNote: string | null, email: string | null, id: string | null) =>
+    typedError<string, string>(__TAURI_INVOKE('save_error_report_to_disk', { userNote, email, id })),
   // Records one closed, diagnostic-safe event for the error-report manifest.
   recordBreadcrumb: (event: BreadcrumbEvent) => __TAURI_INVOKE<void>('record_breadcrumb', { event }),
   /**
@@ -1917,13 +2059,6 @@ export const commands = {
   // Get the current app status (personal, commercial, or expired).
   getLicenseStatus: () => __TAURI_INVOKE<AppStatus>('get_license_status'),
   /**
-   *  Activate a license key or short code (verify + commit in one call).
-   *  If the input is a short code (CMDR-XXXX-XXXX-XXXX), it first exchanges it for the full key.
-   *  Kept for backward compatibility; new code should use verify_license + commit_license.
-   */
-  activateLicense: (licenseKey: string) =>
-    typedError<LicenseInfo, LicenseActivationError>(__TAURI_INVOKE('activate_license', { licenseKey })),
-  /**
    *  Verify a license key or short code without writing anything to disk.
    *  Returns the verify result (LicenseInfo + full key) for the frontend to inspect
    *  before deciding whether to commit.
@@ -1946,6 +2081,8 @@ export const commands = {
       licenseType: string | null
       // The short code used to activate (if available)
       shortCode: string | null
+      // The end date signed into the key (RFC 3339), only on a dated license.
+      expiresAt: string | null
     } | null>('get_license_info'),
   // Mark the expiration modal as shown (so it won't show again).
   markExpirationModalShown: () => __TAURI_INVOKE<void>('mark_expiration_modal_shown'),
@@ -1982,6 +2119,13 @@ export const commands = {
    */
   checkAiConnection: (baseUrl: string, providerId: string) =>
     __TAURI_INVOKE<AiConnectionCheckResult>('check_ai_connection', { baseUrl, providerId }),
+  /**
+   *  For each base URL, the policy's refusal of cloud AI sending there, or `None` when it may. The
+   *  provider picker renders a refused preset disabled with that reason, so the frontend never works
+   *  out which rule refused it. A URL, never a key, crosses IPC.
+   */
+  cloudAiHostVerdicts: (baseUrls: string[]) =>
+    __TAURI_INVOKE<(ManagedAiRefusal | null)[]>('cloud_ai_host_verdicts', { baseUrls }),
   /**
    *  The cloud AI consent status. A missing or unreadable store reads as not accepted, so the gate
    *  stays closed rather than failing open.
@@ -2043,15 +2187,6 @@ export const commands = {
     typedError<AiApiKeyStatus, AiApiKeyError>(__TAURI_INVOKE('get_ai_api_key_status', { providerId })),
   deleteAiApiKey: (providerId: string) =>
     typedError<null, AiApiKeyError>(__TAURI_INVOKE('delete_ai_api_key', { providerId })),
-  /**
-   *  Generates folder name suggestions for the given directory.
-   *
-   *  Suggestions are a nice-to-have enhancement: every "no backend" case (provider off,
-   *  cloud AI not allowed, missing key, local server not running) silently returns `Ok(Vec::new())`. UI hides
-   *  the feature instead of surfacing an error.
-   */
-  getFolderSuggestions: (listingId: string, currentPath: string, includeHidden: boolean) =>
-    typedError<string[], string>(__TAURI_INVOKE('get_folder_suggestions', { listingId, currentPath, includeHidden })),
   // Returns whether the MCP server is currently running.
   getMcpRunning: () => __TAURI_INVOKE<boolean>('get_mcp_running'),
   // Returns the port the MCP server is actually listening on, or null if not running.
@@ -2220,6 +2355,7 @@ export const commands = {
    *  stays at Debug regardless, so error report bundles always carry useful context.
    */
   setLogLevel: (level: string) => __TAURI_INVOKE<void>('set_log_level', { level }),
+  getDebugLogPath: () => __TAURI_INVOKE<string | null>('get_debug_log_path'),
   /**
    *  Go to the most recently observed eligible download.
    *
@@ -2255,8 +2391,18 @@ export const commands = {
     typedError<GlobalGoToLatestShortcutState, RegistrationError>(
       __TAURI_INVOKE('set_global_go_to_latest_shortcut', { enabled, binding }),
     ),
+  /**
+   *  Whether macOS will show Cmdr's notifications right now. Asked per send, so a
+   *  user who switches them back on doesn't have to restart Cmdr.
+   */
+  getNotificationPermission: () => __TAURI_INVOKE<NotificationPermission>('get_notification_permission'),
+  /**
+   *  Send a native notification. An `Err` carries the plugin's message for the
+   *  log only; nobody reads it.
+   */
+  showNotification: (title: string, body: string) =>
+    typedError<null, string>(__TAURI_INVOKE('show_notification', { title, body })),
   startDriveIndex: () => typedError<null, string>(__TAURI_INVOKE('start_drive_index')),
-  stopDriveIndex: () => typedError<null, string>(__TAURI_INVOKE('stop_drive_index')),
   getIndexStatus: () => typedError<IndexStatusResponse, string>(__TAURI_INVOKE('get_index_status')),
   getDirStats: (path: string) =>
     typedError<
@@ -2377,24 +2523,11 @@ export const commands = {
   // Extended debug status for the debug window (dev only).
   getIndexDebugStatus: () => typedError<IndexDebugStatusResponse, string>(__TAURI_INVOKE('get_index_debug_status')),
   /**
-   *  Per-volume index status for the freshness badge (the per-drive freshness UX).
-   *
-   *  Returns the volume's freshness color plus the last completed scan's facts
-   *  (`scan_completed_at`, `scan_duration_ms`). Resolves the owning volume from
-   *  the path so the FE can pass a listing path; an SMB path maps to its SMB
-   *  volume id, everything else to `root`. A not-indexed volume reports
-   *  `enabled: false`, `freshness: None` (gray).
-   */
-  getVolumeIndexStatus: (path: string) =>
-    typedError<VolumeIndexStatus, string>(__TAURI_INVOKE('get_volume_index_status', { path })),
-  /**
    *  Per-volume index status keyed by volume id (the per-drive badge surface).
    *
    *  The dropdown renders one badge per drive ROW, and the FE identifies drives by
-   *  `volume.id` (`"root"`, `smb-…`, `mtp-…`), not by a path. This is the id-keyed
-   *  sibling of `get_volume_index_status` (which takes a listing path for the
-   *  always-visible active-drive badge). Both return the same [`VolumeIndexStatus`]
-   *  shape; a not-indexed volume reports `enabled: false`, `freshness: None` (gray).
+   *  `volume.id` (`"root"`, `smb-…`, `mtp-…`), not by a path. A not-indexed volume
+   *  reports `enabled: false`, `freshness: None` (gray).
    */
   getVolumeIndexStatusById: (volumeId: string) =>
     typedError<VolumeIndexStatus, string>(__TAURI_INVOKE('get_volume_index_status_by_id', { volumeId })),
@@ -2433,9 +2566,10 @@ export const commands = {
   disableDriveIndex: (volumeId: string) =>
     typedError<null, string>(__TAURI_INVOKE('disable_drive_index', { volumeId })),
   /**
-   *  Forget a drive's index entirely: stop it, DELETE its index DB (plus WAL/SHM
-   *  sidecars), and drop its registry instance, so its badge goes gray and a
-   *  future enable does a clean fresh scan rather than resuming a stale DB.
+   *  Forget a drive's index entirely: stop it, DELETE its index DB and the
+   *  folder-importance DB that scores it (each with its WAL/SHM sidecars), and
+   *  drop its registry instance, so its badge goes gray and a future enable does a
+   *  clean fresh scan rather than resuming a stale DB. The media index stays.
    *
    *  This is the per-volume sibling of `clear_drive_index` (which clears every volume):
    *  the user-facing "forget this drive" action for an external (SMB/MTP) index
@@ -2717,8 +2851,11 @@ export const commands = {
    *  (installed → false) while keeping keyword + tag search working. Runs OFF the IPC
    *  thread (it blocks on each volume's writer). Idempotent: with nothing installed and
    *  nothing enriched it removes any stray artifacts and returns.
+   *
+   *  [`ReclaimError::NotDeleted`] when some of it is still on disk (a volume's prune didn't
+   *  land, or the artifacts wouldn't go), so the panel never says the data is gone when it isn't.
    */
-  mediaIndexDeleteClipModel: () => typedError<null, string>(__TAURI_INVOKE('media_index_delete_clip_model')),
+  mediaIndexDeleteClipModel: () => typedError<null, ReclaimError>(__TAURI_INVOKE('media_index_delete_clip_model')),
   /**
    *  Classify the index status of each file in `paths` (in request order) on `volume_id`.
    *
@@ -3036,9 +3173,7 @@ export const commands = {
    *  names never cross this IPC boundary: the frontend submits only opaque ids.
    */
   applyBulkRename: (proposalId: string, allowedRowIds: string[]) =>
-    typedError<WriteOperationStartResult, BulkRenameError>(
-      __TAURI_INVOKE('apply_bulk_rename', { proposalId, allowedRowIds }),
-    ),
+    typedError<BulkRenameStarted, BulkRenameError>(__TAURI_INVOKE('apply_bulk_rename', { proposalId, allowedRowIds })),
   /**
    *  Replaces one row's proposed name with the one the user typed in the review, and answers the
    *  row as the dialog should now show it. The name is validated server-side; the row keeps no
@@ -3365,24 +3500,20 @@ export const commands = {
   readClipboardText: () => typedError<string | null, string>(__TAURI_INVOKE('read_clipboard_text')),
   /**
    *  Reads the highest-intent non-file clipboard flavor (image / PDF / text) and
-   *  writes it into `directory` as a new `pasted.<ext>` file, returning the created
-   *  file's name + kind. `Ok(None)` = nothing pasteable on the clipboard — the
-   *  typed no-op the frontend treats as "no file created", NOT an error toast.
+   *  writes it into `directory` as a new `pasted.<ext>` file. Answers
+   *  `Done { file }` with the created file's name + kind (`file: None` = nothing
+   *  pasteable, the typed no-op the frontend treats as "no file created", NOT an
+   *  error), or `StillRunning` past the reply deadline with the real end on
+   *  `clipboard-paste-settled`.
    *
    *  Thin edge: reads the RAW pasteboard flavors on the main thread (NSPasteboard is
    *  main-thread-only), then picks the flavor + converts TIFF→PNG OFF the main
    *  thread (that decode can be hundreds of ms — never on the UI thread), and hands
-   *  the result to `write_operations::write_payload_to_dir` under the write timeout.
+   *  the result to `write_operations::write_payload_replying`.
    *  `directory` is tilde-expanded for the local `root` volume only.
    */
   pasteClipboardAsFile: (volumeId: string | null, directory: string) =>
-    typedError<
-      {
-        name: string
-        kind: PastedKind
-      } | null,
-      MutationError
-    >(__TAURI_INVOKE('paste_clipboard_as_file', { volumeId, directory })),
+    typedError<PasteClipboardReply, MutationError>(__TAURI_INVOKE('paste_clipboard_as_file', { volumeId, directory })),
   // Clears the in-process cut state without touching the system clipboard.
   clearClipboardCutState: () => __TAURI_INVOKE<void>('clear_clipboard_cut_state'),
   /**
@@ -3412,17 +3543,6 @@ export const commands = {
    */
   setMtpEnabled: (enabled: boolean) => __TAURI_INVOKE<void>('set_mtp_enabled', { enabled }),
   /**
-   *  Lists all connected MTP devices.
-   *
-   *  This returns devices detected via USB that support MTP protocol.
-   *  Use this to populate the "Mobile" section in the volume picker.
-   *
-   *  # Returns
-   *
-   *  A vector of device info structs. Empty if no devices are connected.
-   */
-  listMtpDevices: () => __TAURI_INVOKE<MtpDeviceInfo[]>('list_mtp_devices'),
-  /**
    *  Connects to an MTP device by ID.
    *
    *  Opens an MTP session to the device and retrieves storage information.
@@ -3431,7 +3551,7 @@ export const commands = {
    *
    *  # Arguments
    *
-   *  * `device_id` - The device ID from `list_mtp_devices` (format: "mtp-{bus}-{address}")
+   *  * `device_id` - The device ID (format: "mtp-{bus}-{address}")
    *
    *  # Returns
    *
@@ -3440,65 +3560,6 @@ export const commands = {
   connectMtpDevice: (deviceId: string) =>
     typedError<ConnectedDeviceInfo, MtpConnectionError>(__TAURI_INVOKE('connect_mtp_device', { deviceId })),
   /**
-   *  Gets information about a connected MTP device.
-   *
-   *  Returns device metadata and storage information for a currently connected device.
-   *  Returns `None` if the device is not connected.
-   *
-   *  # Arguments
-   *
-   *  * `device_id` - The device ID to query
-   */
-  getMtpDeviceInfo: (deviceId: string) =>
-    __TAURI_INVOKE<{
-      // Device information.
-      device: MtpDeviceInfo
-      // Available storages on the device.
-      storages: MtpStorageInfo[]
-    } | null>('get_mtp_device_info', { deviceId }),
-  /**
-   *  Disconnects from an MTP device.
-   *
-   *  Closes the MTP session gracefully. The device remains available in
-   *  `list_mtp_devices` for reconnection.
-   *
-   *  # Arguments
-   *
-   *  * `device_id` - The device ID to disconnect from
-   */
-  disconnectMtpDevice: (deviceId: string) =>
-    typedError<null, MtpConnectionError>(__TAURI_INVOKE('disconnect_mtp_device', { deviceId })),
-  /**
-   *  Gets storage information for all storages on a connected device.
-   *
-   *  # Arguments
-   *
-   *  * `device_id` - The connected device ID
-   *
-   *  # Returns
-   *
-   *  A vector of storage info, or empty if device is not connected.
-   */
-  getMtpStorages: (deviceId: string) => __TAURI_INVOKE<MtpStorageInfo[]>('get_mtp_storages', { deviceId }),
-  /**
-   *  Lists the contents of a directory on a connected MTP device.
-   *
-   *  Returns file entries in the same format as local directory listings,
-   *  allowing the frontend to use the same file list components.
-   *
-   *  # Arguments
-   *
-   *  * `device_id` - The connected device ID
-   *  * `storage_id` - The storage ID within the device
-   *  * `path` - Virtual path to list (for example, "/" or "/DCIM")
-   *
-   *  # Returns
-   *
-   *  A vector of FileEntry objects, sorted with directories first.
-   */
-  listMtpDirectory: (deviceId: string, storageId: number, path: string) =>
-    typedError<FileEntry[], MtpConnectionError>(__TAURI_INVOKE('list_mtp_directory', { deviceId, storageId, path })),
-  /**
    *  Gets the ptpcamerad workaround command for macOS.
    *
    *  Returns the Terminal command that users can run to work around
@@ -3506,94 +3567,12 @@ export const commands = {
    */
   getPtpcameradWorkaroundCommand: () => __TAURI_INVOKE<string>('get_ptpcamerad_workaround_command'),
   /**
-   *  Deletes an object (file or folder) from an MTP device.
-   *
-   *  For folders, this recursively deletes all contents first since MTP requires
-   *  folders to be empty before deletion.
-   *
-   *  **The only `MtpDeleteScope::Tree` caller in the repo.** Every other delete
-   *  goes through `MtpVolume::delete`, which is bound by `Volume::delete`'s
-   *  "one file or one EMPTY directory" contract and passes `SingleNode`; the
-   *  tree-shaped deletes (the delete walker, the transfer engine's cleanup) walk
-   *  the tree themselves so each node gets its own error attribution and its own
-   *  chance to be preserved. This command exists as a direct recursive-delete
-   *  entry point, so it names that intent explicitly rather than inheriting it.
-   *
-   *  # Arguments
-   *
-   *  * `device_id` - The connected device ID
-   *  * `storage_id` - The storage ID within the device
-   *  * `object_path` - Virtual path on the device
-   */
-  deleteMtpObject: (deviceId: string, storageId: number, objectPath: string) =>
-    typedError<null, MtpConnectionError>(__TAURI_INVOKE('delete_mtp_object', { deviceId, storageId, objectPath })),
-  /**
-   *  Creates a new folder on an MTP device.
-   *
-   *  # Arguments
-   *
-   *  * `device_id` - The connected device ID
-   *  * `storage_id` - The storage ID within the device
-   *  * `parent_path` - Parent folder path (for example, "/DCIM")
-   *  * `folder_name` - Name of the new folder
-   */
-  createMtpFolder: (deviceId: string, storageId: number, parentPath: string, folderName: string) =>
-    typedError<MtpObjectInfo, MtpConnectionError>(
-      __TAURI_INVOKE('create_mtp_folder', { deviceId, storageId, parentPath, folderName }),
-    ),
-  /**
-   *  Renames an object on an MTP device.
-   *
-   *  # Arguments
-   *
-   *  * `device_id` - The connected device ID
-   *  * `storage_id` - The storage ID within the device
-   *  * `object_path` - Current path of the object
-   *  * `new_name` - New name for the object
-   */
-  renameMtpObject: (deviceId: string, storageId: number, objectPath: string, newName: string) =>
-    typedError<MtpObjectInfo, MtpConnectionError>(
-      __TAURI_INVOKE('rename_mtp_object', { deviceId, storageId, objectPath, newName }),
-    ),
-  /**
-   *  Moves an object to a new parent folder on an MTP device.
-   *
-   *  May fail if the device doesn't support MoveObject operation.
-   *
-   *  # Arguments
-   *
-   *  * `device_id` - The connected device ID
-   *  * `storage_id` - The storage ID within the device
-   *  * `object_path` - Current path of the object
-   *  * `new_parent_path` - New parent folder path
-   */
-  moveMtpObject: (deviceId: string, storageId: number, objectPath: string, newParentPath: string) =>
-    typedError<MtpObjectInfo, MtpConnectionError>(
-      __TAURI_INVOKE('move_mtp_object', { deviceId, storageId, objectPath, newParentPath }),
-    ),
-  /**
-   *  Scans an MTP path for copy statistics.
-   *
-   *  Recursively scans the specified path to get file count, directory count,
-   *  and total bytes. Useful for showing progress during copy operations.
-   *
-   *  # Arguments
-   *
-   *  * `device_id` - The connected device ID
-   *  * `storage_id` - The storage ID within the device
-   *  * `path` - Virtual path on the device to scan
-   */
-  scanMtpForCopy: (deviceId: string, storageId: number, path: string) =>
-    typedError<MtpScanResult, MtpConnectionError>(__TAURI_INVOKE('scan_mtp_for_copy', { deviceId, storageId, path })),
-  /**
    *  Applies `fileOperations.adbEnabled` and `fileOperations.adbBinaryPath`
    *  without a restart: the tracker restarts under the new binary, or stops and
    *  takes its device rows with it.
    */
   setAdbSettings: (enabled: boolean, binaryPath: string | null) =>
     __TAURI_INVOKE<void>('set_adb_settings', { enabled, binaryPath }),
-  // The ADB devices the server last reported, from the cache the tracker keeps.
-  listAdbDevices: () => __TAURI_INVOKE<AdbDevice[]>('list_adb_devices'),
   /**
    *  Dials the device with `serial` and answers its volume id.
    *
@@ -3727,9 +3706,13 @@ export const commands = {
       __TAURI_INVOKE('list_shares_on_host', { hostId, hostname, ipAddress, port, timeoutMs, cacheTtlMs }),
     ),
   /**
-   *  Prefetches shares for a host (for example, on hover).
+   *  Prefetches shares for a host, so its share list is cached by the time someone opens it.
    *  Same as list_shares_on_host but designed for prefetching - errors are silently ignored.
    *  Returns immediately if shares are already cached.
+   *
+   *  Listing signs in to the host (as a guest, where it lets one in), so the frontend calls
+   *  this for servers the user saved, only while a Servers view is on screen, and never for
+   *  one that was only discovered.
    */
   prefetchShares: (
     hostId: string,
@@ -3739,10 +3722,6 @@ export const commands = {
     timeoutMs: number | null,
     cacheTtlMs: number | null,
   ) => __TAURI_INVOKE<void>('prefetch_shares', { hostId, hostname, ipAddress, port, timeoutMs, cacheTtlMs }),
-  // Gets auth mode detected for a host (from cached share list if available).
-  getHostAuthMode: (hostId: string) => __TAURI_INVOKE<AuthMode>('get_host_auth_mode', { hostId }),
-  // Gets all known network shares (previously connected).
-  getKnownShares: () => __TAURI_INVOKE<KnownNetworkShare[]>('get_known_shares'),
   // Gets a specific known share by server and share name.
   getKnownShareByName: (serverName: string, shareName: string) =>
     __TAURI_INVOKE<{
@@ -3821,9 +3800,6 @@ export const commands = {
    */
   getSmbCredentials: (server: string, share: string | null) =>
     typedError<SmbCredentials, KeychainError>(__TAURI_INVOKE('get_smb_credentials', { server, share })),
-  // Checks if credentials exist in the Keychain for a server/share.
-  hasSmbCredentials: (server: string, share: string | null) =>
-    __TAURI_INVOKE<boolean>('has_smb_credentials', { server, share }),
   /**
    *  Whether a server-level password was already read this session, from the
    *  in-memory cache only. ❗ Never touches the Keychain (`keychain::has_cached_credentials`):
@@ -4073,9 +4049,6 @@ export const commands = {
    */
   setSmbAccountPreference: (serverName: string, username: string | null) =>
     __TAURI_INVOKE<boolean>('set_smb_account_preference', { serverName, username }),
-  // Removes a manually-added server by ID.
-  removeManualServer: (serverId: string) =>
-    typedError<null, string>(__TAURI_INVOKE('remove_manual_server', { serverId })),
   /**
    *  Unmounts all SMB shares mounted from `host`, answering the mount paths that went.
    *  Uses a 15s timeout because `statfs` on hung mounts can block indefinitely
@@ -4114,14 +4087,6 @@ export const commands = {
    *  browse resumes if the Servers view is holding it.
    */
   setNetworkEnabled: (enabled: boolean) => __TAURI_INVOKE<void>('set_network_enabled', { enabled }),
-  /**
-   *  Drops an SFTP volume's session and takes it out of the volume registry.
-   *
-   *  Answers whether there was an SFTP volume under that id. ❗ Dropping the
-   *  session IS the shutdown; there is no `close()` to call, and the one the
-   *  protocol crate offers hangs forever over an SSH channel.
-   */
-  disconnectSftpVolume: (volumeId: string) => __TAURI_INVOKE<boolean>('disconnect_sftp_volume', { volumeId }),
   /**
    *  Records a host key the user approved, ❗ only if the server still presents it.
    *
@@ -4171,33 +4136,8 @@ export const commands = {
    */
   saveSftpCredentials: (host: string, port: number, username: string, secret: string) =>
     typedError<null, KeychainError>(__TAURI_INVOKE('save_sftp_credentials', { host, port, username, secret })),
-  /**
-   *  Whether a secret is stored for one account on one server.
-   *
-   *  ❗ There is deliberately no command that HANDS the secret to the frontend: the
-   *  backend reads the store itself at the moment it builds a session, and a
-   *  secret that crosses IPC is a secret in a renderer process.
-   *
-   *  A store that didn't answer in time reads as `false`, which is the one place
-   *  collapsing a timeout into its fallback is harmless: both answers send the
-   *  frontend to the same place, which is to ask.
-   */
-  hasSftpCredentials: (host: string, port: number, username: string) =>
-    __TAURI_INVOKE<boolean>('has_sftp_credentials', { host, port, username }),
-  // Forgets the stored secret for one account on one server.
-  deleteSftpCredentials: (host: string, port: number, username: string) =>
-    typedError<null, KeychainError>(__TAURI_INVOKE('delete_sftp_credentials', { host, port, username })),
   // Every SFTP server the user has connected to.
   getKnownSftpServers: () => __TAURI_INVOKE<KnownSftpServer[]>('get_known_sftp_servers'),
-  /**
-   *  Drops a server from the list, answering whether one was there.
-   *
-   *  ❌ Leaves the stored secret and the trusted host key alone: forgetting a
-   *  server from a list isn't the same request as revoking its credential or its
-   *  identity. `delete_sftp_credentials` and `forget_sftp_host_key` are those.
-   */
-  forgetKnownSftpServer: (host: string, port: number, username: string) =>
-    __TAURI_INVOKE<boolean>('forget_known_sftp_server', { host, port, username }),
   /**
    *  Whether an SFTP volume can actually come back on its own as it stands.
    *
@@ -4238,48 +4178,12 @@ export const commands = {
       | null
     >('get_sftp_unattended_reconnect', { volumeId }),
   /**
-   *  Calls off the connect running under `attempt_id`, answering whether one was.
-   *
-   *  ❗ The way out of a connect that is going nowhere. A dial can hold for up to
-   *  30 s across its three phases, and this ends the user's wait at once: the key
-   *  exchange and the auth ladder stop where they stand, and a cancel landing in
-   *  the SFTP hello lets the engine finish quietly on its own and throws away what
-   *  it built (`crates/cmdr-sftp/DETAILS.md` § "Cancelling a connect").
-   *
-   *  ❗ A cancelled connect leaves ❌ no volume registered, ❌ no server remembered,
-   *  and ❌ no secret written. The connect command (`connectServer` /
-   *  `connectSavedPlace`) answers `cancelled`.
-   *
-   *  An id nobody is connecting under answers `false`: a cancel racing a connect
-   *  that just finished is ordinary, and there is nothing wrong to report.
-   */
-  cancelSftpConnect: (attemptId: string) => __TAURI_INVOKE<boolean>('cancel_sftp_connect', { attemptId }),
-  /**
-   *  Calls off the connect running under `attempt_id`, answering whether one was.
-   *
-   *  ❗ The way out of a connect that is going nowhere. The probe stops where it
-   *  stands, and the connect command (`connectServer` / `connectSavedPlace`)
-   *  answers `cancelled`.
-   *
-   *  ❗ A cancelled connect leaves ❌ no volume registered, ❌ no server remembered,
-   *  and ❌ no secret written.
-   *
-   *  An id nobody is connecting under answers `false`: a cancel racing a connect
-   *  that just finished is ordinary, and there is nothing wrong to report.
-   */
-  cancelWebdavConnect: (attemptId: string) => __TAURI_INVOKE<boolean>('cancel_webdav_connect', { attemptId }),
-  /**
-   *  Drops a WebDAV volume's client and takes it out of the volume registry.
-   *
-   *  Answers whether there was a WebDAV volume under that id.
-   */
-  disconnectWebdavVolume: (volumeId: string) => __TAURI_INVOKE<boolean>('disconnect_webdav_volume', { volumeId }),
-  /**
    *  Saves the secret for one account on one server.
    *
    *  ❗ **This command IS the "remember the secret" switch.** Its meaning is exactly
    *  "put this in the Keychain" and ❌ nothing else: `has_webdav_credentials` reads
-   *  the switch back and `delete_webdav_credentials` turns it off, so there is no
+   *  the switch back and `delete_webdav_credentials` turns it off (the frontend
+   *  reaches both through `servers.rs`), so there is no
    *  second flag anywhere that could disagree with the store.
    *
    *  ❗ Remembering a secret is what makes unattended reconnects POSSIBLE; it
@@ -4292,32 +4196,8 @@ export const commands = {
    */
   saveWebdavCredentials: (url: string, username: string, secret: string) =>
     typedError<null, KeychainError>(__TAURI_INVOKE('save_webdav_credentials', { url, username, secret })),
-  /**
-   *  Whether a secret is stored for one account on one server.
-   *
-   *  ❗ There is deliberately no command that HANDS the secret to the frontend: the
-   *  backend reads the store itself at the moment it builds a client, and a secret
-   *  that crosses IPC is a secret in a renderer process.
-   *
-   *  A store that didn't answer in time reads as `false`, which is the one place
-   *  collapsing a timeout into its fallback is harmless: both answers send the
-   *  frontend to the same place, which is to ask.
-   */
-  hasWebdavCredentials: (url: string, username: string) =>
-    __TAURI_INVOKE<boolean>('has_webdav_credentials', { url, username }),
-  // Forgets the stored secret for one account on one server.
-  deleteWebdavCredentials: (url: string, username: string) =>
-    typedError<null, KeychainError>(__TAURI_INVOKE('delete_webdav_credentials', { url, username })),
   // Every WebDAV server the user has connected to.
   getKnownWebdavServers: () => __TAURI_INVOKE<KnownWebdavServer[]>('get_known_webdav_servers'),
-  /**
-   *  Drops a server from the list, answering whether one was there.
-   *
-   *  ❌ Leaves the stored secret alone: forgetting a server from a list isn't the
-   *  same request as revoking its credential. `delete_webdav_credentials` is that.
-   */
-  forgetKnownWebdavServer: (url: string, username: string) =>
-    __TAURI_INVOKE<boolean>('forget_known_webdav_server', { url, username }),
   /**
    *  Whether a WebDAV volume can actually come back on its own as it stands.
    *
@@ -4347,6 +4227,43 @@ export const commands = {
       | 'no_stored_secret'
       | null
     >('get_webdav_unattended_reconnect', { volumeId }),
+  /**
+   *  Saves the secret access key for one account.
+   *
+   *  ❗ **This command IS the "remember the secret" switch**, the WebDAV twin's
+   *  contract: `has_s3_credentials` reads it back, `delete_s3_credentials` turns
+   *  it off, and there's no second flag anywhere. On a blocking task: the store
+   *  can put a Keychain prompt in front of it.
+   */
+  saveS3Credentials: (provider: S3ProviderChoice, accessKeyId: string, secret: string) =>
+    typedError<null, KeychainError>(__TAURI_INVOKE('save_s3_credentials', { provider, accessKeyId, secret })),
+  /**
+   *  Whether an S3 volume can come back on its own as it stands. `null` when
+   *  nothing S3 is registered under that id. ❗ Reads the store: ask when a
+   *  banner renders, ❌ never poll.
+   */
+  getS3UnattendedReconnect: (volumeId: string) =>
+    __TAURI_INVOKE<
+      // On, and it works.
+      | 'possible'
+      // The switch is off.
+      | 'switch_off'
+      // ❗ On, and nothing is stored to redial with: the state a UI warns about.
+      | 'no_stored_secret'
+      | null
+    >('get_s3_unattended_reconnect', { volumeId }),
+  getKnownS3Places: () => __TAURI_INVOKE<SavedS3Place[]>('get_known_s3_places'),
+  /**
+   *  Every S3 place the user has saved, with its provider, for an edit sheet
+   *  that has to show (and resend) what identifies the place. A place whose
+   *  provider no longer makes an endpoint has no id, so it's left out.
+   *  What a copy, move, or delete about to start will cost at list prices, one
+   *  entry per S3 provider it touches (`crate::s3_costs`). Reads the dialog's
+   *  settled scan preview, never S3; the price table may come off disk, hence the
+   *  blocking pool and the deadline, which answers "no estimate".
+   */
+  estimateOperationCost: (request: CostEstimateRequest) =>
+    __TAURI_INVOKE<CostEstimate[]>('estimate_operation_cost', { request }),
   /**
    *  Every server the user has saved, across all three stores.
    *
@@ -4558,6 +4475,20 @@ export const commands = {
   updateSavedSmbHost: (id: string, name: string, username: string | null) =>
     __TAURI_INVOKE<boolean>('update_saved_smb_host', { id, name, username }),
   /**
+   *  Names the saved S3 account the listing calls `id`, answering whether any
+   *  saved place belongs to it. An empty name unnames it, so the UI calls it
+   *  `key id@host` again.
+   *
+   *  ❗ Its own command rather than a [`ServerTarget`] arm, like
+   *  [`update_saved_smb_host`]: the account is no place to save, and a target with
+   *  no bucket would save the account ROOT as a new place. A bucket's name is the
+   *  bucket's own, so an account is the only S3 thing a person names.
+   *
+   *  ❗ Emits `volumes-changed`, which is what makes an open servers hub re-read
+   *  the saved list and the switcher relabel the account root.
+   */
+  updateSavedS3Account: (id: string, name: string) => __TAURI_INVOKE<boolean>('update_saved_s3_account', { id, name }),
+  /**
    *  Forgets the saved SMB host the listing calls `id`: its manual entry, its
    *  sign-in history, and every share saved under it. Answers whether anything was
    *  there.
@@ -4683,6 +4614,11 @@ export const commands = {
    *  channel fails.
    */
   getShouldReduceTransparency: () => __TAURI_INVOKE<boolean>('get_should_reduce_transparency'),
+  /**
+   *  Tauri command: the Liquid Glass slider value in `0.0..=1.0`, or `None` when macOS doesn't
+   *  report one.
+   */
+  getGlassTintAmount: () => __TAURI_INVOKE<number | null>('get_glass_tint_amount'),
   // Tauri command: returns the current system text-size multiplier.
   getSystemTextSizeMultiplier: () => __TAURI_INVOKE<number>('get_system_text_size_multiplier'),
   /**
@@ -4737,7 +4673,7 @@ export const commands = {
    */
   openSystemSettingsUrl: (url: string) => typedError<null, string>(__TAURI_INVOKE('open_system_settings_url', { url })),
   /**
-   *  Snapshot this process's memory: the footprint, both allocators' own accounting,
+   *  Snapshot this process's memory: the footprint, the allocators' own accounting,
    *  SQLite's page-cache slab, and the kernel's VM map folded by tag with a per-tag
    *  region-size histogram.
    *
@@ -4773,28 +4709,18 @@ export const commands = {
    */
   drainPendingReveals: () => __TAURI_INVOKE<void>('drain_pending_reveals'),
   /**
-   *  Fetches `latest.json` (via the update check proxy for analytics) and returns update info
-   *  if a newer version is available.
+   *  Fetches `latest.json` (via the update check proxy for analytics) and says what it found, with
+   *  the organization's policy applied. An `Available` release is remembered for `download_update`.
    *
-   *  Returns `None` when:
-   *  - This isn't a real user's production install ([`skip_reason`]): the executable isn't inside a
-   *    `.app` bundle (dev builds: install can't possibly succeed, so there's no point checking and
-   *    no point letting the user click "Update"), or one of
-   *    [`crate::prod_instance::NON_PROD_ENV_VARS`] is set. Every check reaches
-   *    `api.getcmdr.com/update-check`, which writes an `update_checks` row that the dashboard counts
-   *    as an active install, so Cmdr's own runs must never call it.
-   *  - The remote version is not newer than the current version
-   *  - The manifest doesn't contain an entry for this platform
+   *  Answers `UpToDate` when this isn't a real user's production install ([`skip_reason`]): the
+   *  executable isn't inside a `.app` bundle (dev builds: install can't possibly succeed), or one of
+   *  [`crate::prod_instance::NON_PROD_ENV_VARS`] is set. Every check reaches
+   *  `api.getcmdr.com/update-check`, which writes an `update_checks` row that the dashboard counts as
+   *  an active install, so Cmdr's own runs must never call it. Also `UpToDate` when the remote version
+   *  isn't newer, or the manifest has no entry for this platform.
    */
-  checkForUpdate: () =>
-    typedError<
-      {
-        version: string
-        url: string
-        signature: string
-      } | null,
-      ServerRequestError
-    >(__TAURI_INVOKE('check_for_update')),
+  checkForUpdate: (trigger: UpdateCheckTrigger) =>
+    typedError<UpdateCheckOutcome, ServerRequestError>(__TAURI_INVOKE('check_for_update', { trigger })),
   /**
    *  Reports whether the running bundle sits somewhere an update can be written into, or `None`
    *  when nothing is in the way.
@@ -4821,18 +4747,21 @@ export const commands = {
       string
     >(__TAURI_INVOKE('update_write_blocker')),
   /**
-   *  Downloads the update tarball and verifies its minisign signature.
+   *  Downloads the update the last check offered and verifies its minisign signature. Takes no URL:
+   *  the backend fetches only what it offered, so a bypassed frontend can't stage anything else.
    *
-   *  On success, stores the tarball path in `UpdateState` for `install_update` to consume.
+   *  On success, records the tarball and its version in `UpdateState` for `install_update`.
    */
-  downloadUpdate: (url: string, signature: string) =>
-    typedError<null, string>(__TAURI_INVOKE('download_update', { url, signature })),
+  downloadUpdate: () => typedError<null, UpdateDownloadError>(__TAURI_INVOKE('download_update')),
   /**
    *  Installs a previously downloaded update by syncing files into the running `.app` bundle.
    *
-   *  Reads (and clears) the tarball path stored by `download_update`.
+   *  Takes the download `download_update` recorded, and refuses it when the CURRENT policy doesn't
+   *  allow its version: a download staged before a profile arrived must not install.
    */
-  installUpdate: () => typedError<null, string>(__TAURI_INVOKE('install_update')),
+  installUpdate: () => typedError<null, UpdateInstallError>(__TAURI_INVOKE('install_update')),
+  // The organization's policy as the UI shows it. Reads the cache, never CFPreferences.
+  getManagedPolicy: () => __TAURI_INVOKE<ManagedPolicyView>('get_managed_policy'),
   /**
    *  Debug-only: makes sure the dialog gallery's throwaway fixture directory
    *  exists under the app data dir, and returns its path plus the landmarks inside
@@ -4848,15 +4777,6 @@ export const commands = {
    */
   createDialogGalleryFixtures: () =>
     typedError<DialogGalleryFixtures, DeadlineError>(__TAURI_INVOKE('create_dialog_gallery_fixtures')),
-  /**
-   *  Debug-only escape hatch: build the bundle and write it to the app data dir as a `.zip`.
-   *  Helpful when iterating on the redactor or the manifest format.
-   *
-   *  Takes the same `id` as [`send_error_report`] so the dev path can't drift from the real one:
-   *  the zip on disk is the bundle the send would have shipped, id included.
-   */
-  saveErrorReportToDisk: (userNote: string | null, email: string | null, id: string | null) =>
-    typedError<string, string>(__TAURI_INVOKE('save_error_report_to_disk', { userNote, email, id })),
   /**
    *  Debug-only command that generates a real typed `ListingError` for the debug
    *  error pane preview.
@@ -4881,6 +4801,7 @@ export const events = {
   aiStarting: makeEvent<AiStarting>('ai-starting'),
   aiVerifying: makeEvent<AiVerifying>('ai-verifying'),
   askCmdrTurn: makeEvent<AskCmdrTurn>('ask-cmdr-turn'),
+  clipboardPasteSettled: makeEvent<ClipboardPasteSettled>('clipboard-paste-settled'),
   closeAbout: makeEvent<CloseAbout>('close-about'),
   closeAllFileViewers: makeEvent<CloseAllFileViewers>('close-all-file-viewers'),
   closeConfirmation: makeEvent<CloseConfirmation>('close-confirmation'),
@@ -4899,10 +4820,10 @@ export const events = {
   focusAbout: makeEvent<FocusAbout>('focus-about'),
   focusConfirmation: makeEvent<FocusConfirmation>('focus-confirmation'),
   focusFileViewer: makeEvent<FocusFileViewer>('focus-file-viewer'),
-  focusSettings: makeEvent<FocusSettings>('focus-settings'),
   foregroundOperation: makeEvent<ForegroundOperation>('foreground-operation'),
   functionKeyBarHideRequested: makeEvent<FunctionKeyBarHideRequested>('function-key-bar-hide-requested'),
   gitStateChanged: makeEvent<GitStateChangedPayload>('git-state-changed'),
+  glassTintChanged: makeEvent<GlassTintChanged>('glass-tint-changed'),
   globalShortcutFired: makeEvent<GlobalShortcutFired>('global-shortcut-fired'),
   indexAggregationComplete: makeEvent<IndexAggregationCompleteEvent>('index-aggregation-complete'),
   indexAggregationProgress: makeEvent<AggregationProgressEvent>('index-aggregation-progress'),
@@ -4928,7 +4849,9 @@ export const events = {
   listingProgress: makeEvent<ListingProgressEvent>('listing-progress'),
   listingReadComplete: makeEvent<ListingReadCompleteEvent>('listing-read-complete'),
   listingRespelled: makeEvent<ListingRespelledEvent>('listing-respelled'),
+  listingStalled: makeEvent<ListingStalledEvent>('listing-stalled'),
   lowDiskSpace: makeEvent<LowDiskSpacePayload>('low-disk-space'),
+  managedPolicyChanged: makeEvent<ManagedPolicyChanged>('managed-policy-changed'),
   mcpSettingsClose: makeEvent<McpSettingsClose>('mcp-settings-close'),
   mediaEnrichProgress: makeEvent<MediaEnrichProgressEvent>('media-enrich-progress'),
   mediaEnrichTerminal: makeEvent<MediaEnrichTerminalEvent>('media-enrich-terminal'),
@@ -4945,6 +4868,7 @@ export const events = {
   mtpPtpcameradRestored: makeEvent<MtpPtpcameradRestored>('mtp-ptpcamerad-restored'),
   mtpPtpcameradSuppressed: makeEvent<MtpPtpcameradSuppressed>('mtp-ptpcamerad-suppressed'),
   mtpStorageRemoved: makeEvent<MtpStorageRemoved>('mtp-storage-removed'),
+  mutationSettled: makeEvent<MutationSettled>('mutation-settled'),
   networkDiscoveryStateChanged: makeEvent<NetworkDiscoveryStateChanged>('network-discovery-state-changed'),
   networkHostContextAction: makeEvent<NetworkHostContextAction>('network-host-context-action'),
   networkHostFound: makeEvent<NetworkHostFound>('network-host-found'),
@@ -4952,6 +4876,7 @@ export const events = {
   networkHostResolved: makeEvent<NetworkHostResolved>('network-host-resolved'),
   openFileViewer: makeEvent<OpenFileViewer>('open-file-viewer'),
   openSettings: makeEvent<OpenSettings>('open-settings'),
+  openWithCopyRefused: makeEvent<OpenWithCopyRefused>('open-with-copy-refused'),
   operationsChanged: makeEvent<OperationsChanged>('operations-changed'),
   osLocalesChanged: makeEvent<OsLocalesChanged>('os-locales-changed'),
   persistRestrictedSetting: makeEvent<PersistRestrictedSetting>('persist-restricted-setting'),
@@ -4982,6 +4907,7 @@ export const events = {
   systemTextSizeChanged: makeEvent<SystemTextSizeChanged>('system-text-size-changed'),
   tabContextAction: makeEvent<TabContextAction>('tab-context-action'),
   viewModeChanged: makeEvent<ViewModeChanged>('view-mode-changed'),
+  viewerContextMenuAction: makeEvent<ViewerContextMenuAction>('viewer-context-menu-action'),
   viewerEditAction: makeEvent<ViewerEditAction>('viewer-edit-action'),
   viewerPullProgress: makeEvent<ViewerPullProgress>('viewer-pull-progress'),
   viewerWordWrapToggled: makeEvent<ViewerWordWrapToggled>('viewer-word-wrap-toggled'),
@@ -5082,45 +5008,6 @@ export type AdbConnectOutcomeError =
   // The transport refused or broke in a way none of the above names.
   | { type: 'transport' }
 
-// One device the server knows about.
-export type AdbDevice = {
-  // The serial (`host:devices` column one). Identity of the volume.
-  serial: string
-  // What the server can do with it. Only [`AdbDeviceState::Ready`] mounts.
-  state: AdbDeviceState
-  // `ro.product.name`, when the server reports it.
-  product: string | null
-  // `ro.product.model`, when the server reports it. Underscores for spaces.
-  model: string | null
-  // `ro.product.device`, when the server reports it.
-  device: string | null
-  // The server's transport id, for telling two identical serials apart.
-  transportId: number | null
-}
-
-// The server's state word for a device.
-export type AdbDeviceState =
-  // `device`: authorized and online. The only mountable state.
-  | 'ready'
-  // `unauthorized`: waiting on the phone's "Allow USB debugging" prompt.
-  | 'unauthorized'
-  // `offline`: attached but `adbd` isn't answering.
-  | 'offline'
-  // `no permissions`: the host can't open the USB device (udev on Linux).
-  | 'noPermissions'
-  // `connecting`: a TCP device mid-handshake.
-  | 'connecting'
-  // `authorizing`: mid RSA handshake.
-  | 'authorizing'
-  // `recovery`: booted to recovery.
-  | 'recovery'
-  // `bootloader`: in fastboot.
-  | 'bootloader'
-  // `sideload`: recovery's sideload mode.
-  | 'sideload'
-  // A word this crate doesn't know.
-  | 'unknown'
-
 /**
  *  Where Cmdr found the `adb` binary, and whether it is following the server.
  *
@@ -5168,7 +5055,15 @@ export type AddServerError =
   // The address isn't one this reads (`ParseError`), with why, for the log.
   | { type: 'invalid_address'; message: string }
   // Nothing answered on the address's SMB port within the probe's budget.
-  | { type: 'unreachable'; message: string }
+  | {
+      type: 'unreachable'
+      message: string
+      /**
+       *  Something besides the server worth checking, when the way the probe
+       *  failed points at one.
+       */
+      hint: UnreachableHint | null
+    }
 
 // The wire form of [`AgentErrorKind`] — the frontend renders each honestly.
 export type AgentErrorKindView =
@@ -5184,6 +5079,11 @@ export type AgentErrorKindView =
    *  View-only: the slot refuses before a thread exists (`session::SlotRefusal`).
    */
   | 'noCloudConsent'
+  /**
+   *  The organization's managed policy refuses the provider or its host: the slot refuses
+   *  before a thread exists, and the LLM client's backstop ends a running turn with it.
+   */
+  | 'managedByOrganization'
   /**
    *  The local server runs with a context window too small to hold one prompt, so the send
    *  was refused before it could be assembled against
@@ -5280,6 +5180,11 @@ export type AiConnectionCheckResult = {
   error: string | null
   // The user hasn't allowed cloud AI, so nothing was sent. The other fields are empty.
   cloudConsentMissing: boolean
+  /**
+   *  The organization's policy refuses this endpoint, so nothing was sent. The other fields are
+   *  empty. Decided before consent.
+   */
+  managed: ManagedAiRefusal | null
 }
 
 export type AiExtracting = null
@@ -5293,12 +5198,28 @@ export type AiModelInfo = {
   id: string
   displayName: string
   sizeBytes: number
-  // Human-readable size (like "4.3 GB")
-  sizeFormatted: string
   // Bytes per token for KV cache (used for memory estimation)
   kvBytesPerToken: number
   // Base memory overhead in bytes (model weights + compute buffers)
   baseOverheadBytes: number
+}
+
+// How much AI the organization allows.
+export type AiPolicy =
+  // Any provider, cloud hosts subject to `AllowedCloudAIHosts`.
+  | 'allowed'
+  // Cmdr's own local model only.
+  | 'localOnly'
+  // No AI at all.
+  | 'off'
+
+export type AiPolicyView = {
+  mode: AiPolicy
+  /**
+   *  The hosts cloud AI may reach, normalized (`api.openai.com`, `*.openai.azure.com`,
+   *  `localhost:11434`). `null` when any host goes, or when cloud AI is off altogether.
+   */
+  allowedCloudHosts: string[] | null
 }
 
 // Runtime status of the AI subsystem, returned to frontend.
@@ -5310,7 +5231,6 @@ export type AiRuntimeStatus = {
   modelInstalled: boolean
   modelName: string
   modelSizeBytes: number
-  modelSizeFormatted: string
   downloadInProgress: boolean
   localAiSupported: boolean
   kvBytesPerToken: number
@@ -5347,6 +5267,8 @@ export type AiStatus =
 export type AiTranslateError = {
   kind: AiTranslateErrorKind
   message: string
+  // Which managed-policy rule refused, set exactly when `kind` is `Managed`.
+  managed: ManagedAiRefusal | null
 }
 
 /**
@@ -5378,6 +5300,11 @@ export type AiTranslateErrorKind =
   | 'parseError'
   // The configured provider value isn't recognized.
   | 'unknownProvider'
+  /**
+   *  The organization's managed policy refuses this AI request. [`AiTranslateError::managed`]
+   *  says which rule.
+   */
+  | 'managed'
 
 export type AiVerifying = null
 
@@ -5470,7 +5397,10 @@ export type AppearedDuringMove = {
  *
  *  Every refusal is a typed variant rather than a sentence, because the recoveries genuinely
  *  differ: "somebody already answered this" closes the group, "the list changed" sends the user
- *  back to re-read it, and a missing drive is neither.
+ *  back to re-read it, and a refusal to START gives the group back with its reason under it.
+ *
+ *  The last three are that give-back: nothing ran, and the group is `pending` again (refused
+ *  before the claim, or released after it by the bridge), so the dialog keeps it on the list.
  */
 export type ApprovalResultView =
   // The ops are queued and running. The dialog closes and the queue takes over.
@@ -5481,10 +5411,23 @@ export type ApprovalResultView =
   | { kind: 'listChanged' }
   // No group with that id.
   | { kind: 'unknown' }
-  // The drive the sources live on isn't mounted any more.
-  | { kind: 'sourceVolumeGone'; volumeId: string }
-  // The group claimed, but the write engine wouldn't start it.
-  | { kind: 'couldNotStart'; detail: string }
+  /**
+   *  The write engine, or the volume check in front of it, refused. The error is the one a
+   *  clicked operation would have shown, so the dialog words it with the same copy: a phone
+   *  or server nobody connected is `source_not_connected`, a drive that left is
+   *  `source_no_longer_connected`.
+   */
+  | { kind: 'refused'; error: WriteOperationError }
+  /**
+   *  Every file was gone or unreadable by the time the user approved, so there was nothing
+   *  to run.
+   */
+  | { kind: 'nothingToRun' }
+  /**
+   *  The stored group can't become an operation (a target its verb needs is missing). Not
+   *  reachable through `GroupIntent`; the detail goes to the log, never to the dialog.
+   */
+  | { kind: 'couldNotStart' }
 
 // The archive-specific distinction a non-UI viewer consumer may act on.
 export type ArchiveFailureKind =
@@ -5492,6 +5435,11 @@ export type ArchiveFailureKind =
   | 'unsupported'
   // The archive entry could not be read for another archive-specific reason.
   | 'unreadable'
+  /**
+   *  The entry is encrypted and the archive hasn't been given its password yet (or
+   *  was given a wrong one).
+   */
+  | 'needsPassword'
 
 /**
  *  Why a name can't be a fresh-ZIP entry, for
@@ -5564,7 +5512,8 @@ export type ArchiveSubkind = 'compress' | 'edit' | 'extract'
  *  carries the same typed kinds a mid-turn failure does, so the rail renders one set of
  *  honest copy either way.
  *
- *  **Build one through [`AskCmdrSendRefusal::of`] or [`AskCmdrSendRefusal::detailed`], never
+ *  **Build one through [`AskCmdrSendRefusal::of`], [`AskCmdrSendRefusal::gated`], or
+ *  [`AskCmdrSendRefusal::detailed`], never
  *  as a struct literal.** Both constructors report the anonymous `ask_cmdr_turn` refusal, and
  *  these gates are the only account of the funnel's top: a send refused here never reaches
  *  `run_turn`, so a literal that skipped the report would make "AI is off" and "nobody opened
@@ -5577,6 +5526,11 @@ export type AskCmdrSendRefusal = {
    *  wouldn't open). Display only: the frontend branches on `kind`, never on this.
    */
   detail: string | null
+  /**
+   *  Which rule of the organization's policy refused, exactly when `kind` is
+   *  `managedByOrganization`, so the rail words that rule.
+   */
+  managed: ManagedAiRefusal | null
 }
 
 /**
@@ -5620,7 +5574,16 @@ export type AskCmdrStreamEvent =
    *  wording, shown verbatim under the typed headline so the user sees what to fix;
    *  display only — the frontend branches on `kind`, never on this string.
    */
-  | { type: 'failed'; kind: AgentErrorKindView; detail: string | null }
+  | {
+      type: 'failed'
+      kind: AgentErrorKindView
+      detail: string | null
+      /**
+       *  Which rule of the organization's policy stopped the turn, exactly when `kind` is
+       *  `managedByOrganization`, so the rail words that rule.
+       */
+      managed: ManagedAiRefusal | null
+    }
   /**
    *  The conversation's effective model changed since its previous turn; the persisted
    *  event row's identity rides along. The rail inserts the line BEFORE this turn's
@@ -5645,6 +5608,19 @@ export type AskCmdrStreamEvent =
    *  usage gauge. Both figures are `chars/4` estimates and the UI labels them so.
    */
   | { type: 'contextUsage'; estimatedTokens: number; budgetTokens: number; elidedResults: number }
+  /**
+   *  The user answered a suggestion this thread made, and the line saying so just landed in
+   *  its timeline. The persisted event row's identity rides along, so a subscriber that also
+   *  loaded the row shows it once.
+   *
+   *  ⚠️ **The one event here that is not part of a turn.** A decision lands when the user
+   *  says no, or when an approved operation settles, which is usually with no turn running
+   *  at all, so a subscriber must NOT read it as proof one is. It rides this transport
+   *  anyway because this is the one keyed by conversation: emitted from the single place
+   *  that writes the row (`agent/outcomes.rs`), it reaches exactly the thread the row went
+   *  into, and a decision with no thread to land in emits nothing.
+   */
+  | { type: 'proposalDecided'; messageId: number; seq: number; decision: ProposalDecision }
   /**
    *  The thread this turn ran in is GONE: a wake looked, found nothing worth raising, and
    *  took its thread with it (`agent/wake/quiet.rs`).
@@ -5840,11 +5816,14 @@ export type BulkRenameError =
       // What the propose layer reported, for the log.
       detail: string
     }
-  // The rename batch wouldn't start.
+  // The rename batch wouldn't start, and nothing was renamed.
   | {
       type: 'couldntStart'
-      // What the write-operations layer reported, for the log.
-      detail: string
+      /**
+       *  Why, typed: a volume refusal carries the `WriteOperationError` the transfer
+       *  dialogs already word.
+       */
+      reason: RenameStartError
     }
   // The preflight didn't finish inside the command's wait.
   | { type: 'timedOut' }
@@ -5874,6 +5853,20 @@ export type BulkRenamePreflightRow = {
 export type BulkRenamePreflightStatus = 'ready' | 'blocked' | 'expired'
 
 export type BulkRenameRowStatus = 'ready' | 'blocked'
+
+/**
+ *  An applied rename plan: the operation it started, and the renames it left
+ *  out for the thread's result line to mention.
+ */
+export type BulkRenameStarted = {
+  operationId: string
+  /**
+   *  Renames that swap names with each other, left out of a plan that runs
+   *  as a move (a rename that copies on S3): a move onto a folder still there
+   *  would merge the two.
+   */
+  swapsLeftOut: number
+}
 
 export type BulkRenameWarning = 'extensionChanged' | 'cycle'
 
@@ -5999,6 +5992,15 @@ export type ChunkEnd =
   // The chunk reached the end of the file. There is nothing past it.
   | 'endOfFile'
 
+/**
+ *  The clashes the conflict check found, and the policy the dialog will
+ *  answer them with.
+ */
+export type ClashPlan = {
+  resolution: ConflictResolution
+  clashes: KnownClash[]
+}
+
 export type ClientInfoDto = {
   primary_server: string
   timeout_ms: number
@@ -6032,6 +6034,32 @@ export type ClipModelStatus = {
   configured: boolean
   // The total download size in bytes, for the honest "~X MB" copy.
   downloadBytes: number
+}
+
+// How a paste that outlived its deadline ended.
+export type ClipboardPasteOutcome =
+  // It landed as `file`.
+  | {
+      type: 'landed'
+      // The created file.
+      file: PastedClipboardFile | null
+    }
+  // It didn't, for this reason: the same refusal an in-time reply carries.
+  | {
+      type: 'refused'
+      // Why.
+      error: MutationError
+    }
+
+/**
+ *  `clipboard-paste-settled`: how a paste that answered `StillRunning` ended.
+ *  Broadcast; the waiting caller picks its own by `pending_id`.
+ */
+export type ClipboardPasteSettled = {
+  // The id the `StillRunning` reply carried.
+  pendingId: string
+  // How it ended.
+  outcome: ClipboardPasteOutcome
 }
 
 export type ClipboardReadResult = {
@@ -6091,6 +6119,11 @@ export type CloudAiConsentStatus = {
   acceptedVersion: number | null
   // When the user last accepted (unix secs), or `None` if never.
   acceptedAt: number | null
+  /**
+   *  Set when the organization's policy rules out every cloud host: the switch is locked off
+   *  for this reason, whatever the record says.
+   */
+  managed: ManagedAiRefusal | null
 }
 
 /**
@@ -6102,6 +6135,51 @@ export type CloudAiConsentWriteError =
   | { kind: 'storeUnavailable' }
   // `main.db` refused the write. `detail` is for logs only.
   | { kind: 'storeRefused'; detail: string }
+
+// Why a comparison didn't answer. Typed, so the frontend never reads a message.
+export type CompareDirectoriesError =
+  // A pane's listing is no longer cached (its pane moved on).
+  | { type: 'gone'; listingId: string }
+  | { type: 'changed'; listingId: string }
+  // The comparison didn't finish within its deadline.
+  | { type: 'timedOut' }
+  // The comparison's worker failed; `detail` is log text only.
+  | { type: 'internal'; detail: string }
+
+/**
+ *  Which copies count as different, beyond the files missing on the other side
+ *  (marked in every mode).
+ */
+export type CompareDirectoriesMode =
+  /**
+   *  Total Commander's default: the newer copy of a file is marked, the older
+   *  one isn't.
+   */
+  | 'newerAndMissing'
+  // Only the files the other side doesn't have.
+  | 'missing'
+  // Both copies of a file whose size differs, whichever is newer.
+  | 'sizeAndMissing'
+
+/**
+ *  The rows to mark in each pane, in that pane's row space (no `..` offset), and
+ *  which state of each listing they were read from.
+ */
+export type CompareDirectoriesResult = {
+  left: number[]
+  right: number[]
+  /**
+   *  The committed visible revision the rows were read at. A pane may mark them
+   *  only while its applied revision is exactly this.
+   */
+  leftSequence: number
+  rightSequence: number
+  /**
+   *  Requested visibility matches both reconciled committed listings.
+   *  Publication latency is irrelevant.
+   */
+  settled: boolean
+}
 
 /**
  *  Estimated compressed output size for a Compress operation, split by
@@ -6426,10 +6504,47 @@ export type CostDay = {
   fullyPriced: boolean
 }
 
+// One provider's share of the cost.
+export type CostEstimate = {
+  // Unrounded; the dialog rounds it to the currency and hides a zero.
+  amount: number
+  // ISO 4217 (`USD`, `EUR`), for the formatter.
+  currency: string
+  // The provider as its prices page names it (`AWS`, `Cloudflare R2`).
+  providerLabel: string
+}
+
+// What a dialog asks about, once its scan preview has settled.
+export type CostEstimateRequest = {
+  operation: CostedOperation
+  // The settled preview whose files the operation will touch.
+  previewId: string
+  sourceVolumeId: string
+  // `None` for a delete.
+  destinationVolumeId: string | null
+  /**
+   *  What the dialog's conflict check found at the destination, and the
+   *  policy answering it, so overwrites are priced. `None` for a delete, or
+   *  before the check answers. Only the clashes the check's one listing saw:
+   *  a file inside a folder that merges isn't known until it's written.
+   */
+  clashes?: ClashPlan | null
+}
+
 // The per-day cost rollup, newest day first. Wire type (the settings spend list).
 export type CostSummary = {
   days: CostDay[]
 }
+
+// The operation a dialog is about to start.
+export type CostedOperation = 'copy' | 'move' | 'delete'
+
+// Why a count didn't start. Typed, so the frontend never reads a message.
+export type CountFolderSizesError =
+  // The pane's listing is no longer cached (it moved on).
+  | { type: 'gone'; listingId: string }
+  // No volume answers for the listing's folder (unplugged, disconnected).
+  | { type: 'notConnected'; volumeId: string }
 
 /**
  *  What ground a run's answer was drawn from: the index, a live walk, or both.
@@ -6693,6 +6808,21 @@ export type DedupCluster = {
 }
 
 /**
+ *  The transfer dialog's destination when it starts with the place's own root
+ *  folder: both readings, for the warning under the path box. Paths are
+ *  server-side (`resolved`, `rootFolder`) or volume-relative (`stripped`, what
+ *  the box would hold instead). The rule: `cmdr_fs::volume::root_echo`.
+ */
+export type DestinationRootEcho = {
+  // The server-side folder the place is rooted at (`/srv/data`).
+  rootFolder: string
+  // Where the transfer goes as typed (`/srv/data/srv/data/photos`).
+  resolved: string
+  // The box's text with the repeated root folder taken off (`/photos`).
+  stripped: string
+}
+
+/**
  *  Whether approving a group would create its target folder.
  *
  *  `Unknown` is a real answer, not a failure: a remote volume that isn't responding leaves the
@@ -6877,8 +7007,14 @@ export type DirectoryDeletedEvent = {
 // `directory-diff` event sent to the frontend.
 export type DirectoryDiff = {
   listingId: string
-  // Monotonic.
+  batches: DirectoryDiffBatch[]
+}
+
+// One committed transition, with indices in its own old/new row spaces.
+export type DirectoryDiffBatch = {
+  fromSequence: number
   sequence: number
+  totalCount: number
   changes: DiffChange[]
 }
 
@@ -6886,8 +7022,16 @@ export type DirectoryDiff = {
 export type DirectorySortMode =
   // Directories sort by the same column as files (using recursive_size for Size column).
   | 'likeFiles'
-  // Directories always sort by name, regardless of the active sort column.
+  /**
+   *  Directories always sort by name, A→Z, regardless of the active sort column
+   *  and its direction. Only the Name column's arrow reverses them.
+   */
   | 'alwaysByName'
+  /**
+   *  Directories don't lead: they sort among the files by the same column ("Show
+   *  folders first" off). Size ranks a directory by its `recursive_size`.
+   */
+  | 'mixedWithFiles'
 
 /**
  *  The volume that left the mount table while a transfer was running.
@@ -7635,6 +7779,16 @@ export type FileEntry = {
    *  tradeoff. `None` on every non-portal entry.
    */
   gitMeta: GitEntryMeta | null
+  /**
+   *  `true` for a file whose bytes sit in a cold storage class and can't be
+   *  read until someone restores them: S3 Glacier Flexible Retrieval or Deep
+   *  Archive, from the listing's `StorageClass`. The pane shows it as
+   *  "archived" (the internals say "cold storage" because `is_archive`
+   *  already means a zip), and a read answers `VolumeError::ColdStorage`.
+   *  A restored object still lists as archived: the listing can't tell.
+   *  `false` on every other backend.
+   */
+  inColdStorage: boolean
 }
 
 /**
@@ -7687,9 +7841,9 @@ export type FileIndexStatus = {
 
 // The `appearance.fileSizeFormat` setting: which base the size units step by.
 export type FileSizeFormat =
-  // Base 1024 (`KB`, `MB`, `GB`), the setting's default.
+  // Base 1024 (`KiB`, `MiB`, `GiB`).
   | 'binary'
-  // Base 1000 (`kB`, `MB`, `GB`).
+  // Base 1000 (`kB`, `MB`, `GB`), the setting's default.
   | 'si'
 
 /**
@@ -7748,9 +7902,6 @@ export type FocusFileViewer = {
   path: string | null
 }
 
-// `focus-settings`: bring the settings window forward (MCP `dialog focus`).
-export type FocusSettings = null
-
 /**
  *  One folder's index coverage: the eligible denominator and accounted numerator, each a
  *  subtree total (the folder plus all its descendants). Serialized camelCase; the
@@ -7763,6 +7914,22 @@ export type FolderCoverage = {
   eligible: number
   // Of those, how many have a stored `done`/`failed` row (both count as accounted).
   accounted: number
+}
+
+// How a count ended. A request that joined a running count gets that count's outcome.
+export type FolderSizeCountOutcome = {
+  /**
+   *  Folders whose size landed in a pane that still shows them (exact, or a
+   *  lower bound when parts couldn't be read).
+   */
+  counted: number
+  /**
+   *  Folders it couldn't read, wholly (their rows went back to what they showed)
+   *  or in part (their size is a lower bound).
+   */
+  unreadable: number
+  // Stopped early: Esc, or the listing closing.
+  cancelled: boolean
 }
 
 // One folder row's fresh index reading.
@@ -7905,6 +8072,21 @@ export type FuzzyJumpError =
     listingId: string
   }
 
+// Why `open_get_info` couldn't ask Finder for the window.
+export type GetInfoError =
+  /**
+   *  The user turned off Cmdr's control of Finder (System Settings > Privacy &
+   *  Security > Automation), so macOS would drop the ask without a word.
+   */
+  | { type: 'automationDenied' }
+  /**
+   *  `osascript` couldn't be spawned. Carries the OS errno where there is one, so
+   *  nothing has to read the message.
+   */
+  | { type: 'launchRefused'; errno: number | null }
+  // The ask didn't finish inside the command's deadline.
+  | { type: 'timedOut' }
+
 /**
  *  What a [`GitEntryMeta::Count`] is counting.
  *
@@ -8029,6 +8211,28 @@ export type GitSubscribeError =
       // What the runtime reported, for the log.
       detail: string
     }
+
+/**
+ *  `glass-tint-changed`: the macOS 27 Appearance > Liquid Glass slider moved. `amount` is
+ *  the new value in `0.0..=1.0` (clearest to most tinted), or `None` when macOS no longer
+ *  reports one.
+ */
+export type GlassTintChanged = {
+  amount: number | null
+}
+
+// The allocator behind every Rust allocation in the shipped app.
+export type GlobalAllocator =
+  /**
+   *  mimalloc. Its arenas sit under VM tag 100 (`IOAccelerator`), outside every malloc
+   *  zone, so the zone APIs can't see the Rust heap.
+   */
+  | 'mimalloc'
+  /**
+   *  The platform's `malloc`. On macOS the Rust heap shares the default malloc zone with
+   *  Objective-C and C code, and shows as the `MALLOC_*` VM tags.
+   */
+  | 'system'
 
 /**
  *  Result of [`set_global_go_to_latest_shortcut`]: the new status the Settings row
@@ -8378,12 +8582,18 @@ export type IndexMemoryWarningEvent = {
    */
   residentBytes: number
   /**
-   *  Bytes mimalloc (our global allocator, so all Rust allocation including
-   *  indexing) has committed.
+   *  The global allocator the two figures below come from. Their meaning
+   *  depends on it, so a report carries it rather than leaving a reader to guess.
+   */
+  globalAllocator: GlobalAllocator
+  /**
+   *  Bytes the global allocator holds for the Rust heap (all Rust allocation,
+   *  indexing included): mimalloc's committed bytes, or the default malloc
+   *  zone's reserved bytes, which it shares with Objective-C and C code.
    */
   rustHeapBytes: number
   /**
-   *  Bytes the system malloc zones hold: WebKit, Objective-C, and C libraries.
+   *  Bytes the other malloc zones hold: WebKit, Objective-C, and C libraries.
    *  Does NOT include the Rust heap above.
    */
   systemMallocBytes: number
@@ -8549,6 +8759,11 @@ export type IndexScanStartedEvent = {
    *  while a phased run puts only the ground the branch events name in flux.
    */
   coveredInPhases: boolean
+  /**
+   *  What the steps after each one took on the last completed run of this kind:
+   *  the remembered half of the overall "~X left".
+   */
+  stepsAheadMs: StepsAheadMs
 }
 
 /**
@@ -8669,6 +8884,27 @@ export type IndexStatusResponse = {
   priorTotalEntries: number | null
   // How long that previous walk took, the tier-1 ETA's rate.
   priorScanDurationMs: number | null
+  /**
+   *  The remembered time left once the find-files step (the walk) is done: what
+   *  every later step took on the last completed run of this kind. `None` when
+   *  any of them has no such history, so no overall figure shows. Same
+   *  read-only-while-`scanning` rule as the calibration above. A host adds its
+   *  live estimate for the active step to the matching `left_after_*` field to
+   *  get the overall "~X left".
+   */
+  leftAfterFindFilesMs: number | null
+  /**
+   *  The remembered time left once the save-the-file-list step is done. `None`
+   *  on a run with no such step (a network walk) or no history for what follows.
+   */
+  leftAfterSaveMs: number | null
+  // The remembered time left once the compute-folder-sizes step is done.
+  leftAfterComputeMs: number | null
+  /**
+   *  The remembered time left once the catch-up step is done: `Some(0)` on a run
+   *  that has one (it's the last step), `None` on a run that doesn't.
+   */
+  leftAfterCatchUpMs: number | null
 }
 
 /**
@@ -8692,6 +8928,20 @@ export type KeychainError =
   | { type: 'access_denied'; message: string }
   // Other error
   | { type: 'other'; message: string }
+
+/**
+ *  A file the dialog's conflict check found at the destination under a name
+ *  a copied file takes: the two files' sizes and dates, as the check's one
+ *  destination listing saw them (on S3, the destination's upload time).
+ */
+export type KnownClash = {
+  sourceSize: number
+  destSize: number
+  // Unix seconds.
+  sourceModified: number | null
+  // Unix seconds.
+  destModified: number | null
+}
 
 // A dialog type registered by the frontend at startup.
 export type KnownDialog = {
@@ -8970,6 +9220,8 @@ export type LicenseInfo = {
   licenseType: string | null
   // The short code used to activate (if available)
   shortCode: string | null
+  // The end date signed into the key (RFC 3339), only on a dated license.
+  expiresAt: string | null
 }
 
 // Type of license.
@@ -9265,6 +9517,17 @@ export type ListingErrorReason =
       // The path the failure was about.
       path: string
     }
+  /**
+   *  An object store account (S3) refused a path: its keys may lack the
+   *  permission, or the provider may have paused the account (a usage cap, a
+   *  billing hold). The answer can't tell the two apart, so the advice names
+   *  both.
+   */
+  | {
+      reason: 'objectStoreRefused'
+      // The path the failure was about.
+      path: string
+    }
   // `VolumeError::AlreadyExists`: the destination is taken.
   | {
       reason: 'alreadyExists'
@@ -9312,6 +9575,16 @@ export type ListingErrorReason =
   // A delete is pending on the path and an open handle is keeping it alive.
   | {
       reason: 'deletePending'
+      // The path the failure was about.
+      path: string
+    }
+  /**
+   *  `VolumeError::ColdStorage`: the file's bytes sit in a cold storage class
+   *  (S3 Glacier) and need a restore before they can be read, which is how a
+   *  listing meets it: browsing into an archived zip. No retry hint.
+   */
+  | {
+      reason: 'coldStorage'
       // The path the failure was about.
       path: string
     }
@@ -9391,6 +9664,19 @@ export type ListingIndexSizesChanged = {
   currentDir: DirStats | null
 }
 
+/**
+ *  Why a listing accessor couldn't answer: gone, or a guarded row space changed.
+ *
+ *  Typed so the frontend can tell a pane whose listing went away (and re-list it)
+ *  from stale row indices, without reading a message. The cache lock recovers
+ *  from poison rather than refusing.
+ */
+export type ListingLookupError =
+  // Ended by its pane, never started, or reclaimed by the orphan reaper.
+  | { type: 'gone'; listingId: string }
+  // The supplied row space is not the committed listing state.
+  | { type: 'changed'; listingId: string }
+
 // Opening event payload (emitted just before read_dir starts - the slow part for network folders)
 export type ListingOpeningEvent = {
   listingId: string
@@ -9423,28 +9709,14 @@ export type ListingRespelledEvent = {
 }
 
 /**
- *  Why a synchronous listing start didn't produce a listing.
- *
- *  ❌ Not prose: `VolumeError` is the wire type the frontend's listing-error
- *  factory already words, in every locale.
+ *  Stalled event payload: the read has gone `StallPolicy::stall_after` without
+ *  a new entry. The listing keeps waiting and retrying (`stall.rs`); a later
+ *  progress, complete, error, or cancelled event for the same id supersedes it.
  */
-export type ListingStartError =
-  // The volume refused, and said why in its own vocabulary.
-  | {
-      type: 'volume'
-      // The backend's typed answer, errno and path intact.
-      error: VolumeError
-    }
-  /**
-   *  The read didn't finish inside the command's wait. ❗ It was NOT
-   *  cancelled.
-   */
-  | { type: 'timedOut' }
-
-// Result of starting a new directory listing.
-export type ListingStartResult = {
+export type ListingStalledEvent = {
   listingId: string
-  totalCount: number
+  // What the folder lives on, which picks the screen's wording (`stalled_on.rs`).
+  stalledOn: StalledOn
 }
 
 // Statistics about a directory listing.
@@ -9516,6 +9788,22 @@ export type LiveSystemState = {
   // Seconds since the process started. Distinguishes "died on launch" from "leaked over days".
   uptimeSecs: number
 }
+
+/**
+ *  Why `start_ai_server` or `start_ai_download` didn't do its job. Exported to `bindings.ts`
+ *  through `ipc.rs`'s `.typ` (both commands are generic, so specta doesn't collect them).
+ *
+ *  ❌ `detail` is for logs only, never a sentence a person reads.
+ */
+export type LocalAiError =
+  // The organization's policy refuses local AI. Not a failure: ❌ never log it at warn or error.
+  | { type: 'managed'; refusal: ManagedAiRefusal }
+  // Local AI needs Apple Silicon.
+  | { type: 'unsupported' }
+  // The download stopped on request: the person's, or a policy change's (`apply_policy_change`).
+  | { type: 'cancelled' }
+  // Anything else: extraction, the download, the size check, the spawn.
+  | { type: 'failed'; detail: string }
 
 /**
  *  Snapshot of the system pane labels we surface in user-facing copy.
@@ -9673,6 +9961,19 @@ export type LocationInfo = {
   mountAccount: string | null
 }
 
+// One setting the organization manages.
+export type LockedSetting = {
+  // The settings-registry id, like `analytics.enabled`.
+  id: string
+  lock: SettingLock
+}
+
+/**
+ *  A setting value the policy pins. Typed rather than `serde_json::Value`, which can't cross IPC
+ *  (`src/lib/ipc/CLAUDE.md`); crosses as a plain `boolean | string`.
+ */
+export type LockedValue = boolean | string
+
 export type LogLevel = 'debug' | 'info' | 'warn' | 'warning' | 'error'
 
 /**
@@ -9693,6 +9994,34 @@ export type LowDiskSpacePayload = {
   freePercent: number
   thresholdPercent: number
   isLow: boolean
+}
+
+// Why the policy refused an AI request. Produced only by [`super::ManagedPolicy::ai_destination`].
+export type ManagedAiRefusal =
+  // `DisableAI`: no AI at all, local included.
+  | 'aiOff'
+  // `DisableCloudAI`, or an empty `AllowedCloudAIHosts`: on-device only.
+  | 'cloudAiOff'
+  // The request's host isn't in `AllowedCloudAIHosts`.
+  | 'hostNotAllowed'
+
+// The policy changed while Cmdr runs. Same payload as `get_managed_policy`.
+export type ManagedPolicyChanged = {
+  policy: ManagedPolicyView
+}
+
+/**
+ *  Everything the UI shows about the policy: per-row locks, feature-level states, and the "what
+ *  your organization manages" summary.
+ */
+export type ManagedPolicyView = {
+  // Whether any key restricts anything.
+  managed: boolean
+  usageStatsDisabled: boolean
+  reportsDisabled: boolean
+  updates: UpdatePolicyView
+  ai: AiPolicyView
+  lockedSettings: LockedSetting[]
 }
 
 /**
@@ -9904,35 +10233,28 @@ export type MemoryDiagnostics = {
    */
   residentBytes: number
   /**
-   *  What mimalloc — our global allocator, so essentially every Rust allocation — has
-   *  committed from the OS.
+   *  The Rust heap, tagged by the global allocator that holds it (`allocator`). Read its
+   *  numbers only in that allocator's terms.
    */
-  rustHeapCommittedBytes: number
-  // The high-water mark of `rustHeapCommittedBytes`.
-  rustHeapPeakCommittedBytes: number
+  rustHeap: RustHeapDiagnostics
   /**
-   *  What the registered macOS malloc zones report as handed out: WebKit,
-   *  Objective-C, and C-library allocations. ❌ Never the Rust heap.
+   *  What the malloc zones BEYOND the Rust heap report as handed out: WebKit,
+   *  Objective-C, and C-library allocations. Under mimalloc that's every registered
+   *  zone; under the system allocator every zone but the default one, which is
+   *  `rustHeap`'s. ❌ Never overlaps `rustHeap`.
    */
   systemZonesInUseBytes: number
   // What those zones hold from the OS, in use or not.
   systemZonesReservedBytes: number
-  // How many zones were registered at snapshot time.
+  // How many zones those two fields count.
   systemZoneCount: number
-  // The biggest registered zone by in-use bytes, as `[name, bytes]`.
+  // The biggest of those zones by in-use bytes.
   largestSystemZone: SystemZone | null
   /**
-   *  SQLite's process-wide page memory, which belongs to no allocator above:
-   *  the slab is a leaked Rust allocation, so it's a fixed 64 MiB sitting
-   *  INSIDE `rustHeapCommittedBytes` that nothing else here names.
+   *  SQLite's process-wide page memory, which no allocator reading names: the slab
+   *  is a leaked Rust allocation, so it's a fixed 64 MiB sitting INSIDE `rustHeap`.
    */
   sqlitePageCache: SqlitePageCache
-  /**
-   *  How much of the Rust heap is live data, and how much is allocator slack: a census of
-   *  every mimalloc page, read against the heap's resident size. The one field that can
-   *  tell "the program holds this" from "mimalloc holds this".
-   */
-  rustHeapCensus: RustHeapCensus
   /**
    *  The kernel's VM map folded by tag, biggest dirty total first. Empty if the walk
    *  failed or timed out.
@@ -10569,20 +10891,6 @@ export type MtpExclusiveAccessError = {
   blockingProcess: string | null
 }
 
-// Information about an object on the device (returned after creation).
-export type MtpObjectInfo = {
-  // Object handle.
-  handle: number
-  // Object name.
-  name: string
-  // Virtual path on device.
-  path: string
-  // Whether it's a directory.
-  isDirectory: boolean
-  // Size in bytes (None for directories).
-  size: number | null
-}
-
 /**
  *  Emitted when opening a device fails for lack of USB permission (Linux:
  *  missing udev rules). The frontend shows a copyable udev install command.
@@ -10599,16 +10907,6 @@ export type MtpPtpcameradRestored = null
 
 // Emitted (macOS) when Cmdr suppresses `ptpcamerad` to claim a device.
 export type MtpPtpcameradSuppressed = null
-
-// Result of scanning an MTP path for copy operation.
-export type MtpScanResult = {
-  // Number of files found.
-  fileCount: number
-  // Number of directories found.
-  dirCount: number
-  // Total bytes of all files.
-  totalBytes: number
-}
 
 /**
  *  Information about a storage area on an MTP device.
@@ -10759,6 +11057,77 @@ export type MutationError =
       detail: string
     }
 
+/**
+ *  The reply of `create_directory`, `create_file`, and `rename_file`. A refusal
+ *  inside the deadline is the command's `Err(MutationError)`, as before.
+ */
+export type MutationReply =
+  // It landed.
+  | { type: 'done' }
+  /**
+   *  The deadline passed with the work still running. A [`MutationSettled`]
+   *  carrying this `pending_id` follows when it ends.
+   */
+  | {
+      type: 'stillRunning'
+      // Names this one mutation on the settle event.
+      pendingId: string
+    }
+
+/**
+ *  `mutation-settled`: how a mutation that answered `StillRunning` ended.
+ *  Broadcast; the waiting caller picks its own by `pending_id`.
+ */
+export type MutationSettled = {
+  // The id the `StillRunning` reply carried.
+  pendingId: string
+  // How it ended.
+  outcome: MutationSettledOutcome
+}
+
+// How a mutation that outlived its deadline ended.
+export type MutationSettledOutcome =
+  // It landed.
+  | { type: 'landed' }
+  // It didn't, for this reason: the same refusal an in-time reply carries.
+  | {
+      type: 'refused'
+      // Why.
+      error: MutationError
+    }
+
+/**
+ *  Where the pane's cursor and selection land after a quick-filter change, in
+ *  the new row space.
+ */
+export type NameFilterResult = {
+  /**
+   *  Whether the listing took the new pattern. `false` only when the caller
+   *  asked to refuse a pattern nothing matches: the listing then keeps its
+   *  previous filter, and the rest of this answer describes that one.
+   */
+  accepted: boolean
+  // How many rows the pane shows under the new filter.
+  totalCount: number
+  /**
+   *  The row of the file that was under the cursor, or `None` when the new
+   *  filter leaves it out (or no file was given).
+   */
+  newCursorIndex: number | null
+  /**
+   *  The rows of the previously selected files the new filter still shows. A
+   *  selected file the filter leaves out drops out of the selection, so no
+   *  operation ever acts on a row the user can't see.
+   */
+  newSelectedIndices: number[]
+  /**
+   *  The diff sequence the new row space starts at, when the filter changed. Every
+   *  `directory-diff` numbered up to it describes the old rows: the pane takes it
+   *  as its last applied sequence and skips them. `None` when nothing changed.
+   */
+  sequence: number | null
+}
+
 export type NegotiatedSummaryDto = {
   dialect: string
   max_read_size: number
@@ -10894,6 +11263,17 @@ export type NotRollbackableReason =
    */
   | 'stagedConflictResolved'
 
+// Whether macOS will show Cmdr's notifications.
+export type NotificationPermission =
+  // The user allowed them (including macOS's quiet "provisional" delivery).
+  | 'allowed'
+  // The user switched them off, or hasn't answered macOS's first-post prompt yet.
+  | 'denied'
+  // Cmdr hasn't posted yet. The first post makes macOS ask.
+  | 'notDetermined'
+  // No way to tell: not macOS, a dev build, or macOS didn't answer.
+  | 'unknown'
+
 /**
  *  One OCR search hit: the matched image's path and a highlighted snippet of the
  *  matched text (the "why matched" reason the results grid shows). Crosses the IPC
@@ -10996,6 +11376,45 @@ export type OpenTerminalOutcome =
    *  mount went away), so nothing was launched.
    */
   | 'not_a_local_path'
+
+// Why the copy couldn't be made, in the terms the toast words differently.
+export type OpenWithCopyRefusal =
+  // Over `OPEN_WITH_CAP_BYTES` (`cap`), refused before a byte was written.
+  | { kind: 'tooLarge'; cap: number }
+  /**
+   *  The archive needs a password it hasn't been given. Copying the file out asks
+   *  for it, after which "Open with" works too.
+   */
+  | { kind: 'needsPassword' }
+  // The archive is damaged or uses something this build can't decode.
+  | { kind: 'archiveUnreadable' }
+  // Anything else: the source went away or couldn't be read.
+  | { kind: 'unreadable' }
+
+/**
+ *  `open-with-copy-refused`: an "Open with" click on a file only a route serves
+ *  couldn't copy it out, so no app was launched. The main window says why in a toast;
+ *  without it, the click would do nothing at all.
+ */
+export type OpenWithCopyRefused = {
+  // The file's own name, as the person sees it in the pane.
+  fileName: string
+  // The chosen app's display name (its bundle name without `.app`).
+  appName: string
+  reason: OpenWithCopyRefusal
+  // Where the file sits, which the too-big toast names.
+  source: OpenWithCopySource
+}
+
+/**
+ *  What served the file the copy was pulled from. The archive refusals only ever come
+ *  from an archive; a repo snapshot's reads that break off are plain `Unreadable`.
+ */
+export type OpenWithCopySource =
+  // An entry inside a zip, tar, or 7z Cmdr browses like a folder.
+  | 'archive'
+  // A blob in one of a repo's virtual `.git` history trees.
+  | 'repoHistory'
 
 /**
  *  An operation's header plus a page of its items, with dir prefixes resolved to
@@ -11100,67 +11519,6 @@ export type OperationSnapshot = {
    *  failures".
    */
   error: WriteOperationError | null
-}
-
-/**
- *  Current status of an operation for query APIs.
- *
- *  Two INDEPENDENT axes: [`Self::lifecycle`] is what the operation is doing,
- *  [`Self::phase`] is what KIND of work. A paused op is mid-`Copying`; a scanning
- *  one is `Running`. ❌ Neither may be inferred from the other.
- *
- *  A snapshot, ❌ not an event: a reader that never caught a `write-progress`
- *  (an agent polling `cmdr://state`, a window that opened mid-transfer) gets the
- *  same answers a subscriber does, [`activity`](Self::activity) included.
- *  Otherwise "a slow copy", "a wedged mount", "parked on a conflict prompt", and
- *  "queued behind a lane" all read as `running` with frozen counters.
- */
-export type OperationStatus = {
-  operationId: string
-  operationType: WriteOperationType
-  phase: WriteOperationPhase
-  /**
-   *  The manager's own lifecycle status. `None` once the operation has left the
-   *  registry and only its status-cache row survives.
-   *
-   *  ❌ Never re-derive one from `WRITE_OPERATION_STATE.contains` or any other
-   *  presence test: the entry lands at spawn and survives a pause, so presence
-   *  is `true` for queued, running, and parked alike. DETAILS § "Lifecycle
-   *  status and `operations-changed`".
-   */
-  lifecycle: LifecycleStatus | null
-  // Filename only.
-  currentFile: string | null
-  filesDone: number
-  // 0 if unknown/scanning.
-  filesTotal: number
-  bytesDone: number
-  // 0 if unknown/scanning.
-  bytesTotal: number
-  // Unix timestamp in milliseconds.
-  startedAt: number
-  /**
-   *  What the operation is waiting on right now, classified live at read time
-   *  (`WriteOperationState::activity`) rather than cached: a stale wait is
-   *  worse than none.
-   *
-   *  `None` means the operation can't classify itself, ❌ never "it's moving":
-   *  it has settled (the cache row outlives the state entry), or it's a backend
-   *  that keeps no in-flight table and has nobody parked on a decision (a local
-   *  copy, a delete, a trash).
-   */
-  activity: TransferActivity | null
-}
-
-// Summary of an active operation for list view.
-export type OperationSummary = {
-  operationId: string
-  operationType: WriteOperationType
-  phase: WriteOperationPhase
-  // 0-100.
-  percentComplete: number
-  // Unix timestamp in milliseconds.
-  startedAt: number
 }
 
 /**
@@ -11271,7 +11629,12 @@ export type OversizedFile = {
   size: number
 }
 
-// Represents a file entry in a pane (simplified subset of the main FileEntry).
+/**
+ *  Represents a file entry in a pane (simplified subset of the main FileEntry).
+ *
+ *  `Default` exists for tests only: its zero is a file nobody looked at, claiming
+ *  `is_directory: false`. Production rows always arrive whole from the frontend.
+ */
 export type PaneFileEntry = {
   name: string
   path: string
@@ -11323,6 +11686,20 @@ export type PaneFileEntry = {
   tags?: TagRef[]
 }
 
+// Where a pane's listing stands, as the pane shows it.
+export type PaneListing =
+  // The rows (or the pane's own view) are what's on screen.
+  | 'settled'
+  // A listing is on its way and hasn't gone quiet.
+  | 'loading'
+  /**
+   *  The listing's volume stopped answering mid-read. The pane says so and keeps
+   *  retrying in the background; it lands on its own when the volume answers.
+   */
+  | 'stalled'
+  // The pane shows an error screen for this folder (`recentErrors` says why).
+  | 'error'
+
 // State of a single pane.
 export type PaneState = {
   path: string
@@ -11361,6 +11738,13 @@ export type PaneState = {
    */
   typeToJump?: TypeToJumpInfo | null
   /**
+   *  The quick filter's pattern while it narrows the pane (`None` when off). The
+   *  files, counts, and indices here are then the FILTERED rows, which is what
+   *  an agent must know before reading an absent file as gone. Always on the wire,
+   *  like `type_to_jump`; the YAML layer prints it only when set.
+   */
+  quickFilter?: string | null
+  /**
    *  Set while a mount the pane tried didn't go through, whichever way the pane
    *  is showing it (the "Couldn't mount share" pane, or the login form an
    *  auth-class failure routes to). Without it a failed mount is invisible from
@@ -11369,6 +11753,12 @@ export type PaneState = {
    *  in the resource. Cleared by the next push from any other view.
    */
   mountError?: MountErrorInfo | null
+  /**
+   *  Where the pane's listing stands. Without it, an empty folder, one still
+   *  loading, one whose server stopped answering, and an error screen all read
+   *  as `totalFiles: 0` with no rows.
+   */
+  listing?: PaneListing
 }
 
 // Parsed search scope: which subtrees to include and which directory names/paths to exclude.
@@ -11376,6 +11766,26 @@ export type ParsedScope = {
   includePaths: string[]
   excludePatterns: string[]
 }
+
+/**
+ *  What `paste_clipboard_as_file` answers within its reply deadline. A refusal
+ *  inside the deadline is the command's `Err(MutationError)`. Same contract as
+ *  `MutationReply` (`write_operations/mutation_reply.rs`), with the created
+ *  file riding along.
+ */
+export type PasteClipboardReply =
+  // It ended in time: the file it created, or `None` for nothing pasteable.
+  | {
+      type: 'done'
+      // The created file.
+      file: PastedClipboardFile | null
+    }
+  // The write is still running; a [`ClipboardPasteSettled`] with this id follows.
+  | {
+      type: 'stillRunning'
+      // Names this one paste on the settle event.
+      pendingId: string
+    }
 
 /**
  *  Result of pasting clipboard content as a file: the created file's name and
@@ -11487,6 +11897,12 @@ export type PermissionRefusal =
    *  an errno outside the two above.
    */
   | 'unclassified'
+  /**
+   *  An object store account (S3) refused: its keys may lack the permission, or
+   *  the provider may have paused the account (a usage cap, a billing hold).
+   *  One answer covers both, so the advice names both.
+   */
+  | 'objectStoreAccount'
 
 /**
  *  Which half of a transfer refused on permission grounds, for
@@ -11789,11 +12205,11 @@ export type QuitRequested = {
 }
 
 /**
- *  One endpoint of a selection. Frontend uses `Line { line, offset }`; for the
- *  "select all" path in ByteSeek-no-index mode (where `totalLines` is unknown),
- *  it uses `Eof` so the backend can resolve the end without a fake line number.
+ *  One endpoint of a selection: a ROW index plus a UTF-16 offset into that row. For the
+ *  "select all" path in ByteSeek-no-index mode (where the row count is unknown), the
+ *  frontend sends `Eof` so the backend can resolve the end without a fake row number.
  */
-export type RangeEnd = { kind: 'line'; line: number; offset: number } | { kind: 'eof' }
+export type RangeEnd = { kind: 'row'; row: number; offset: number } | { kind: 'eof' }
 
 /**
  *  Which half of a transfer refused the write, for [`WriteOperationError::ReadOnlyDevice`].
@@ -11929,15 +12345,6 @@ export type ReduceTransparencyChanged = {
 /**
  *  Typed errors from a registration attempt. The FE branches on `kind`;
  *  never match on the message string.
- *
- *  Two variants is deliberately the whole surface. `InvalidBinding` is the
- *  only failure we can disambiguate cheaply (via `Shortcut::from_str` BEFORE
- *  the plugin call). Every other plugin failure — including the "another app
- *  holds it" case — lands in `PluginError` carrying the underlying message.
- *  The Settings row renders the message tail when one is present; there's no
- *  user action that depends on distinguishing "in use by another app" from
- *  "allocation failure" (both mean "pick a different combo or move on"), so a
- *  single bucket keeps us off the brittle string-match path.
  */
 export type RegistrationError =
   /**
@@ -11955,9 +12362,16 @@ export type RegistrationError =
       binding: string
     }
   /**
-   *  Any plugin failure: conflict with another app, allocation, OS IO, etc.
-   *  Carries the underlying message for both the log line and the Settings
-   *  row's "Couldn't register: …" tail.
+   *  The OS refused the hotkey, most likely because another app holds the
+   *  combo. The plugin's `Error::GlobalHotkey` arm: it flattens
+   *  `global_hotkey`'s typed `AlreadyRegistered` / `FailedToRegister` into a
+   *  string, so the arm is the typed signal and the reason isn't knowable.
+   *  The row says "Another app may be using that combo".
+   */
+  | { kind: 'unavailable'; message: string }
+  /**
+   *  Any other plugin failure (its internal channel, the Tauri runtime).
+   *  Nothing the user can act on; the message is for the log only.
    */
   | { kind: 'pluginError'; message: string }
 
@@ -11978,6 +12392,25 @@ export type RejectResultView =
   | { kind: 'alreadyAnswered'; found: ProposalStatus }
   // No group with that id, which usually means the list on screen is stale.
   | { kind: 'unknown' }
+
+/**
+ *  What a rename that runs as a move would carry, counted with a bounded
+ *  listing (`Volume::tally_subtree`).
+ */
+export type RenameByMove = {
+  // Files the move copies, counted up to one past [`SMALL_RENAME_FILES`].
+  files: number
+  // Their bytes.
+  bytes: number
+  // `false` when the count stopped at its cap, so there are more.
+  countedAll: boolean
+  /**
+   *  Big enough, uncounted, or costing money to confirm in the Move dialog
+   *  first (which shows the cost); else it starts as a background move with
+   *  the progress chip.
+   */
+  confirmFirst: boolean
+}
 
 /**
  *  One item's evidence: the typed source plus the short quote or note behind it.
@@ -12025,6 +12458,29 @@ export type RenameProposalSnapshot = {
   rows: RenameProposalRowSnapshot[]
 }
 
+/**
+ *  Why a reviewed batch of renames wouldn't start. Nothing was renamed.
+ *
+ *  ❌ Not prose: each surface words its own variant, and a volume refusal rides as the
+ *  `WriteOperationError` the transfer dialogs already word.
+ */
+export type RenameStartError =
+  /**
+   *  No row is left to run: every source was dropped before the batch got here (unreadable
+   *  at preflight, or turned off in the review).
+   */
+  | { type: 'nothingToRename' }
+  /**
+   *  A row would move its file to another folder. Unreachable through a rename group, which
+   *  binds one shared parent, and refused rather than run as a move.
+   */
+  | { type: 'notInOneFolder' }
+  /**
+   *  The engine refused before anything ran: the volume isn't connected, or the batch's
+   *  move couldn't start.
+   */
+  | { type: 'engine'; error: WriteOperationError }
+
 // Result of a rename validity check.
 export type RenameValidityResult = {
   // Whether the new name is valid (passes filename validation).
@@ -12037,6 +12493,12 @@ export type RenameValidityResult = {
   isCaseOnlyRename: boolean
   // Conflicting file info, if any.
   conflict: ConflictFileInfo | null
+  /**
+   *  Set when renaming this entry isn't one call on its volume
+   *  (`Volume::rename_work`), so it runs as a move: what that move carries,
+   *  and whether to confirm it first.
+   */
+  byMove: RenameByMove | null
 }
 
 /**
@@ -12109,6 +12571,8 @@ export type ResolveLocationResult = {
 
 // Result of re-sorting a directory listing.
 export type ResortResult = {
+  sequence: number
+  totalCount: number
   /**
    *  New index of the file that was at the cursor position before re-sorting.
    *  None if the filename wasn't provided or wasn't found.
@@ -12164,7 +12628,7 @@ export type RestrictedWindowSettings = {
   appearanceTextSize: number | null
   appearanceAppColor: string | null
   /**
-   *  `"binary"` (1024-based, `KB`) or `"si"` (1000-based, `kB`). The Transfers
+   *  `"binary"` (1024-based, `KiB`) or `"si"` (1000-based, `kB`, the default). The Transfers
    *  window is restricted but renders `<Size>`, so it needs this or it shows a
    *  different number than the copy dialog for the same byte count.
    */
@@ -12320,6 +12784,19 @@ export type RollbackRefusal =
  */
 export type RollbackState = 'notRollbackable' | 'rollbackable' | 'rollingBack' | 'rolledBack' | 'partiallyRolledBack'
 
+// Why a volume's root moved, which decides where a path inside the old root goes.
+export type RootChangeKind =
+  /**
+   *  Someone edited a saved place: the new root is a different folder, so a path
+   *  inside the old one has no counterpart under it and goes to the new landing.
+   */
+  | 'edited'
+  /**
+   *  The same tree is reached at a new root (a renamed drive): a path inside the
+   *  old root keeps its place under the new one.
+   */
+  | 'moved'
+
 // Which side of a named row to read: the one before it or the one after it.
 export type RowBeside = 'previous' | 'next'
 
@@ -12331,7 +12808,7 @@ export type RowBeside = 'previous' | 'next'
 export type RowRole = 'rollbackUnit' | 'searchOnly'
 
 /**
- *  The Rust heap split into live data and allocator slack.
+ *  The mimalloc heap split into live data and allocator slack.
  *
  *  `liveBytes` is what the program holds; `residentBytes` is what the heap costs (its VM
  *  tag's dirty plus swapped bytes). The gap, `slackBytes`, is memory mimalloc keeps that
@@ -12366,6 +12843,117 @@ export type RustHeapCensus = {
   complete: boolean
 }
 
+// The Rust heap, as its global allocator accounts for it. `allocator` says which one.
+export type RustHeapDiagnostics =
+  // mimalloc: its own committed total, plus a census of its pages.
+  | {
+      allocator: 'mimalloc'
+      // What mimalloc has committed from the OS: live data plus its slack.
+      committedBytes: number
+      // The high-water mark of `committedBytes`.
+      peakCommittedBytes: number
+      /**
+       *  How much of the heap is live data, and how much is allocator slack. The one
+       *  field that can tell "the program holds this" from "mimalloc holds this".
+       */
+      census: RustHeapCensus
+    }
+  /**
+   *  The system allocator: the default malloc zone, which the Rust heap shares with
+   *  Objective-C and C code. No page census exists for it: nothing in the zone tells a
+   *  Rust block from theirs, so the live/slack split below spans every zone.
+   */
+  | {
+      allocator: 'system'
+      // Bytes in live blocks in the default zone: the Rust heap plus Objective-C and C.
+      inUseBytes: number
+      /**
+       *  What the default zone holds from the OS, in use or free. The zone keeps no
+       *  high-water mark.
+       */
+      reservedBytes: number
+      /**
+       *  Dirty plus swapped bytes under every `MALLOC_*` VM tag, across every zone: what
+       *  malloc costs resident. `0` when the VM walk failed.
+       */
+      mallocResidentBytes: number
+      /**
+       *  `mallocResidentBytes` minus every zone's live bytes, floored at zero: what malloc
+       *  holds beyond live data, in every zone together.
+       */
+      mallocSlackBytes: number
+    }
+
+/**
+ *  Which provider a saved S3 place is on, as the connect form's presets name
+ *  it. The wire and store twin of `cmdr_s3::S3Provider`.
+ *
+ *  ❗ The preset decides the endpoint, the signing region, and the addressing,
+ *  so only "Other" carries an endpoint at all.
+ */
+export type S3ProviderChoice =
+  // Amazon S3, in one region (`eu-west-1`).
+  | {
+      kind: 'aws'
+      // The endpoint's region.
+      region: string
+    }
+  // Cloudflare R2, by account ID.
+  | {
+      kind: 'r2'
+      // The 32-hex account ID from the R2 dashboard.
+      accountId: string
+    }
+  // Backblaze B2, in one region (`us-west-004`).
+  | {
+      kind: 'b2'
+      // The region from the bucket's S3 endpoint.
+      region: string
+    }
+  // Wasabi, in one region (`eu-central-1`).
+  | {
+      kind: 'wasabi'
+      // The endpoint's region.
+      region: string
+    }
+  // Hetzner Object Storage, in one location (`fsn1`, `nbg1`, `hel1`).
+  | {
+      kind: 'hetzner'
+      // The endpoint's location.
+      location: string
+    }
+  // Google Cloud Storage, through its S3-compatible XML API with HMAC keys.
+  | { kind: 'gcs' }
+  // DigitalOcean Spaces, in one region (`fra1`).
+  | {
+      kind: 'digitalocean'
+      // The endpoint's region.
+      region: string
+    }
+  // Any other S3-compatible server.
+  | {
+      kind: 'other'
+      // `http(s)://host[:port]`, nothing after it.
+      endpoint: string
+      // The signing region; `us-east-1` when empty.
+      region: string | null
+      // Whether buckets go in the path rather than the host name.
+      pathStyle: boolean
+    }
+
+/**
+ *  Whether an S3 volume can actually come back on its own as it stands. The
+ *  WebDAV twin (`WebdavUnattendedReconnect`), for the same reasons: ❌ never
+ *  derive it in the frontend from a credential check.
+ */
+export type S3UnattendedReconnect =
+  // On, and it works.
+  | 'possible'
+  // The switch is off.
+  | 'switch_off'
+  // ❗ On, and nothing is stored to redial with: the state a UI warns about.
+  | 'no_stored_secret'
+
 /**
  *  One mountable thing under an account: an SFTP or WebDAV root, later an S3
  *  bucket or a shared drive. What a tab, a favorite, and a path point at.
@@ -12397,10 +12985,17 @@ export type SavedPlace = {
    */
   appRoot: string
   /**
-   *  The account this place is opened as: the SFTP or WebDAV account, or the one
-   *  an SMB share was last mounted with (`None` for guest).
+   *  The account this place is opened as: the SFTP or WebDAV account, the S3
+   *  access key id, or the account an SMB share was last mounted with (`None`
+   *  for guest).
    */
   username: string | null
+  /**
+   *  This place's own "Reconnect automatically" switch. `None` for an SMB
+   *  share, which has none. ❗ Per PLACE: an S3 account's buckets each carry
+   *  their own, so a row menu reads it here rather than off the account.
+   */
+  autoReconnect: boolean | null
 }
 
 /**
@@ -12429,6 +13024,31 @@ export type SavedPlaceRefusal =
       // The id that is already live.
       volumeId: string
     }
+
+/**
+ *  One saved S3 place as the frontend reads it: the stored entry plus the
+ *  volume id its row and its switcher entry carry, so a caller matches by id
+ *  rather than re-deriving one.
+ */
+export type SavedS3Place = {
+  // The place's volume id (`cmdr_fs::volume::s3_volume_id`).
+  volumeId: string
+  // The provider preset, with Other's endpoint, region, and path style.
+  provider: S3ProviderChoice
+  // The account's key.
+  accessKeyId: string
+  // The bucket, or `null` for the account root.
+  bucket: string | null
+  /**
+   *  The name a person gave its ACCOUNT, empty when nobody did. ❗ The
+   *  account's, ❌ never the place's: a bucket reads as its own name.
+   */
+  displayName: string
+  // The place's "Reconnect automatically" switch.
+  autoReconnect: boolean
+  // Whether it shows in the volume switcher.
+  pinned: boolean
+}
 
 /**
  *  An endpoint plus an identity, as the hub lists it.
@@ -12635,6 +13255,17 @@ export type ScanPreviewProgressEvent = {
   onlineOnlyFound?: boolean
 }
 
+// Why a scan preview wouldn't start. Nothing is walked and no preview exists.
+export type ScanPreviewRefusal =
+  /**
+   *  No volume answers for the source's (non-local) volume id: a phone that was
+   *  unplugged, or one listed but not connected, typically under a
+   *  search-results pane still showing its files. Walking the path on the Mac
+   *  instead is what this exists to stop: it can only fail, and the dialog
+   *  would then offer a Retry that never works.
+   */
+  { type: 'source_not_connected'; volumeId: string }
+
 // Result of starting a scan preview.
 export type ScanPreviewStartResult = {
   previewId: string
@@ -12782,11 +13413,10 @@ export type SearchIndexReadyEvent = {
 // A search match found by a backend.
 export type SearchMatch = {
   /**
-   *  0-based ROW index (the coordinate is already a row; the field rename is open,
-   *  GitHub #263). Search scans rows, so a match inside a 300 MB line comes back with a
-   *  column that fits on screen instead of one 2.5 million units wide.
+   *  0-based ROW index. Search scans rows, so a match inside a 300 MB line comes back
+   *  with a column that fits on screen instead of one 2.5 million units wide.
    */
-  line: number
+  row: number
   /**
    *  UTF-16 code unit offset within the ROW (matches JS string indexing). Bounded by
    *  the row's length, which is bounded by two segments.
@@ -13197,8 +13827,8 @@ export type SecretOffer = {
  *  error arm for a case typed callers can't reach.
  */
 export type SeekTargetKind =
-  // `target_value` is a 0-based line number.
-  | 'line'
+  // `target_value` is a 0-based row index.
+  | 'row'
   // `target_value` is a byte offset.
   | 'byte'
   // `target_value` is a fraction of the file (0.0 = start, 1.0 = end).
@@ -13239,6 +13869,13 @@ export type SelectionHistoryEntry = {
    *  rather than "returns results".
    */
   matchCount: number
+}
+
+// Exact paths and kinds consumed from one guarded backend row space.
+export type SelectionSnapshot = {
+  paths: string[]
+  fileCount: number
+  folderCount: number
 }
 
 /**
@@ -13365,8 +14002,37 @@ export type ServerConnectOutcome =
   | { outcome: 'certificate_untrusted' }
   // WebDAV only: the URL answers HTTP but not WebDAV.
   | { outcome: 'not_a_webdav_server' }
-  // WebDAV only: the address the user typed isn't a `http`/`https` URL.
+  /**
+   *  WebDAV and S3: the address the user typed isn't a usable `http`/`https`
+   *  URL (for S3, also a region, location, or account ID a host name can't
+   *  carry).
+   */
   | { outcome: 'invalid_url' }
+  /**
+   *  S3 only: the bucket refused this key, which is a wrong key or one without
+   *  rights here (a bodyless 403 can't say which).
+   */
+  | { outcome: 'access_denied' }
+  /**
+   *  S3 only: the account root needs `ListBuckets` and this key may not (or,
+   *  on some servers, its secret is wrong). A bucket name is the way in.
+   */
+  | { outcome: 'bucket_list_refused' }
+  // S3 only: no bucket by that name on this endpoint.
+  | { outcome: 'bucket_not_found' }
+  // S3 only: the bucket lives in another region than the one chosen.
+  | {
+      outcome: 'region_mismatch'
+      // The bucket's region, when the server named it.
+      region: string | null
+    }
+  /**
+   *  S3 only: this Mac's clock is too far off for the server to accept a
+   *  signature.
+   */
+  | { outcome: 'clock_skewed' }
+  // S3 only: the address answers, but not as S3.
+  | { outcome: 'not_an_s3_endpoint' }
   /**
    *  The start folder isn't the root or under it. ❗ Refused before dialing,
    *  so nothing was registered or saved.
@@ -13405,12 +14071,17 @@ export type ServerNameSource =
 
 // Which protocol an account speaks.
 export type ServerProtocol =
-  // An SMB host. ❗ Listed, never pinned in this effort; see [`SavedServer`].
+  // An SMB host. ❗ The host row is never pinned; its saved shares are, see [`SavedServer`].
   | 'smb'
   // An SFTP server, one account per entry.
   | 'sftp'
   // A WebDAV server, one account per entry.
   | 'webdav'
+  /**
+   *  An S3 account (an endpoint plus an access key id), whose places are its
+   *  saved buckets and, when saved, its root.
+   */
+  | 's3'
 
 // Why a request to Cmdr's api server didn't come back with a usable answer.
 export type ServerRequestError =
@@ -13424,6 +14095,11 @@ export type ServerRequestError =
   | { type: 'badResponse'; detail: string }
   // Cmdr couldn't put the request together (building the HTTP client, encoding the payload).
   | { type: 'unexpected'; detail: string }
+  /**
+   *  The organization's managed policy turns this pipeline off, so nothing was sent. Not a
+   *  failure: ❌ never log it at warn or error.
+   */
+  | { type: 'blockedByPolicy' }
 
 /**
  *  Which server to dial, in add mode.
@@ -13483,6 +14159,26 @@ export type ServerTarget =
        *  under `remote_root`, in the same space. `None` is the root.
        */
       startFolder: string | null
+      // Whether Cmdr may re-probe unattended when a request finds it gone.
+      autoReconnect: boolean
+    }
+  /**
+   *  One S3 place: display name, provider (which fixes the endpoint), access
+   *  key id, an optional bucket, and the auto-reconnect switch.
+   */
+  | {
+      protocol: 's3'
+      // What to call it in the UI.
+      displayName: string
+      // The provider preset, and with it the endpoint.
+      provider: S3ProviderChoice
+      // The account's key. ❗ Part of the identity.
+      accessKeyId: string
+      /**
+       *  The bucket this place is, or `None` for the account root, which lists
+       *  the buckets. ❗ Part of the identity: each bucket is its own place.
+       */
+      bucket: string | null
       // Whether Cmdr may re-probe unattended when a request finds it gone.
       autoReconnect: boolean
     }
@@ -13554,6 +14250,13 @@ export type SetFavoriteShortcutError =
   | { type: 'invalidLetter' }
   | { type: 'timedOut' }
   | { type: 'unexpected'; detail: string }
+
+// How the policy constrains one setting.
+export type SettingLock =
+  // The setting reads as `value`, whatever is stored.
+  | { kind: 'fixed'; value: LockedValue }
+  // The setting can't hold any of `values`; a stored one reads as `fallback`.
+  | { kind: 'disallowedValues'; values: LockedValue[]; fallback: LockedValue }
 
 /**
  *  Settings registry default values pushed from FE. The wire format matches JSON
@@ -13641,6 +14344,18 @@ export type ShareInfo = {
   // The server's own description of the share, when it set one.
   comment: string | null
 }
+
+/**
+ *  How long a share link lasts. The three choices the menu and the palette
+ *  offer, ❗ all inside S3's seven-day ceiling on a SigV4 signature.
+ */
+export type ShareLinkExpiry =
+  // One hour.
+  | 'oneHour'
+  // One day.
+  | 'oneDay'
+  // Seven days: the default, and the longest a SigV4 signature may live.
+  | 'sevenDays'
 
 /**
  *  Error types for share listing operations.
@@ -13745,8 +14460,8 @@ export type ShowSearchResultInFolder = {
  *  break SMB; one reading "editable" as a mode rule would break SFTP.
  *
  *  **Reserved, ❌ not added until a producer exists**:
- *  - `AccessKeys { session_token: bool }` for S3: an access key id, a secret
- *    access key, and optionally a session token.
+ *  - A `session_token` field on [`AccessKeys`](Self::AccessKeys), once
+ *    temporary credentials (`~/.aws` profiles, SSO) are in scope.
  *  - `Oauth { provider }`: a "Continue in your browser" button and a waiting
  *    state, with the callback coming home backend-side; "remember" is implicit
  *    there (the refresh token is the only sane state), and a revoked token
@@ -13777,6 +14492,14 @@ export type SignInShape =
    *  answered that question themselves.
    */
   | { kind: 'key_passphrase' }
+  /**
+   *  An S3 secret access key, under the access key id it belongs to, read-only.
+   *
+   *  ❗ Read-only for [`Password`](Self::Password)'s reason: the access key id
+   *  is part of the volume id, so another key is another account. Same
+   *  refresh-never-seed rule too.
+   */
+  | { kind: 'access_keys' }
   /**
    *  A username AND a password, both editable: SMB, where the SHARE is the
    *  identity and the account is a field on it.
@@ -13912,6 +14635,12 @@ export type SmbFellBackToOsMount = {
    *  certain to land on the same answer.
    */
   reason: UpgradeFailure
+  /**
+   *  The server's friendly name (mDNS hostname, else the address), for the
+   *  sentence that names the server: `BlockedByThisMac` says what Cmdr couldn't
+   *  connect to.
+   */
+  displayName: string
 }
 
 /**
@@ -14044,6 +14773,22 @@ export type SpaceInfo =
     }
 
 /**
+ *  What a copy does when the destination looks too small for it.
+ *
+ *  The pre-flight's figure is an upper bound: files already at the destination
+ *  can make a copy need less than it says (`free_space.rs`). So a shortfall is
+ *  the person's call, ❌ never a verdict. `Refuse` stops with `InsufficientSpace`
+ *  before anything is written, and the error dialog's "Copy anyway" starts the
+ *  same copy again with `Proceed`. A destination that really fills up mid-copy
+ *  still stops it, as `DestinationFull`.
+ */
+export type SpaceShortfall =
+  // Stop before writing anything, with `InsufficientSpace`.
+  | 'refuse'
+  // Skip the check: the person chose to copy anyway.
+  | 'proceed'
+
+/**
  *  SQLite's page memory: the one process-wide slab every store's cached database
  *  pages come out of, plus the read-connection count that decides whether it can
  *  stay a cap.
@@ -14105,6 +14850,34 @@ export type StagedLeftovers = {
    *  which is what the user would be looking for at the destination.
    */
   exampleName: string
+}
+
+// What a stalled listing's folder lives on, as far as the mount proves it.
+export type StalledOn =
+  // A network share or a direct server connection (SMB, NFS, AFP, WebDAV, SFTP, S3, ...).
+  | 'server'
+  // A known local disk: a block device, or a local filesystem type.
+  | 'drive'
+  // Anything else: a phone, a FUSE or cloud mount, or a mount we couldn't read.
+  | 'unknown'
+
+/**
+ *  The remembered time left after each checklist step finishes, keyed by the
+ *  frontend's step kinds. The frontend adds its live estimate for the active
+ *  step to the entry for that step, and shows no overall figure where the entry
+ *  is `None` (no history for a step still ahead, or a step this run doesn't
+ *  have). The sum and its honesty gate are the index crate's
+ *  (`lifecycle/steps_ahead.rs`); this only renames the keys for the wire.
+ */
+export type StepsAheadMs = {
+  // Left once the walk (find files) is done.
+  findFiles: number | null
+  // Left once the file list is saved (or updated, on a change check).
+  saveFileList: number | null
+  // Left once folder sizes are computed.
+  computeFolderSizes: number | null
+  // Left once the catch-up step is done.
+  catchUp: number | null
 }
 
 /**
@@ -14240,6 +15013,8 @@ export type SuggestionChange =
   | 'approved'
   // The user rejected a group.
   | 'rejected'
+  // An approval the write engine refused gave its group back: pending again, nothing ran.
+  | 'given_back'
 
 // The pending suggestion set changed.
 export type SuggestionsChanged = {
@@ -14321,7 +15096,7 @@ export type SystemSnapshot = {
 }
 
 /**
- *  `system-text-size-changed`: the macOS Accessibility > Display > Text Size
+ *  `system-text-size-changed`:the macOS Accessibility > Display > Text Size
  *  value changed. `multiplier` is the new system text-size multiplier (1.0 =
  *  default).
  */
@@ -14804,6 +15579,19 @@ export type UndoReport = {
 }
 
 /**
+ *  What else to check when the reachability probe didn't get through. Word-free:
+ *  the Add sheet words it under the "couldn't reach" sentence.
+ */
+export type UnreachableHint =
+  /**
+   *  This Mac refused the route to a LAN address (`EHOSTUNREACH` /
+   *  `ENETUNREACH`), which is also how a stuck macOS Local Network permission
+   *  shows (ERR-XGS9X). Only a hint: with no mount to compare against, a server
+   *  that's off can answer the same.
+   */
+  'local_network_permission'
+
+/**
  *  Why a folder takes no writes ([`WriteAccess::Unwritable`]).
  *
  *  Read-only and no-permission are different truths with different fixes, so a
@@ -14821,12 +15609,90 @@ export type UnwritableReason =
    */
   | 'unexplained'
 
-// Update metadata returned to the frontend when a newer version is available.
-export type UpdateInfo = {
-  version: string
-  url: string
-  signature: string
-}
+/**
+ *  What one update check found. The managed outcomes are answers, not failures: the frontend
+ *  renders them and ❌ never logs them at warn or error.
+ */
+export type UpdateCheckOutcome =
+  // Nothing newer than what's running (or this isn't a production install, see `skip_reason`).
+  | { kind: 'upToDate' }
+  // A newer release this Mac may install. `download_update` fetches exactly this one.
+  | { kind: 'available'; version: string }
+  // A newer release is out, but `MaxUpdateVersion` holds this Mac at `ceiling` or earlier.
+  | { kind: 'heldByPolicy'; available: string; ceiling: string }
+  // `DisableUpdates`: no request was made.
+  | { kind: 'updatesDisabledByPolicy' }
+  /**
+   *  `DisableAutomaticUpdateChecks` refused a background check: no request was made. A check a
+   *  person asks for still runs.
+   */
+  | { kind: 'automaticChecksDisabledByPolicy' }
+
+/**
+ *  What set an update check going. The frontend's `update_check` analytics event carries the same
+ *  token, and the backend reads it to refuse a background check under
+ *  `DisableAutomaticUpdateChecks`.
+ */
+export type UpdateCheckTrigger =
+  // The first wake of the poll loop as the app comes up.
+  | 'startup'
+  // A background tick of the poll loop.
+  | 'poll'
+  // `updates.autoCheck` going from off to on.
+  | 'auto_check_on'
+  // The `app.checkForUpdates` command (menu, command palette, shortcut).
+  | 'command'
+  // The "Check for updates" button on Settings > Updates.
+  | 'settings'
+
+/**
+ *  Why a tarball download didn't leave a verified file behind. The frontend picks the log level
+ *  off the variant: a `Request` failure follows the api-server rule (no network, a timeout, or a
+ *  5xx is the person's network or the host's bad moment, so warn), while a signature mismatch or a
+ *  disk failure means something is wrong with the release or this machine, so error.
+ *
+ *  ❌ `detail` is for logs only, never a sentence a person reads.
+ */
+export type UpdateDownloadError =
+  // The tarball request didn't come back with the bytes.
+  | { type: 'request'; failure: ServerRequestError }
+  // The bytes arrived but don't verify against the manifest's signature.
+  | { type: 'signatureMismatch'; detail: string }
+  // The verified tarball couldn't be written to the temp dir.
+  | { type: 'disk'; detail: string }
+  // No check has offered an update since the last one: the frontend asked out of turn.
+  | { type: 'nothingOffered' }
+  /**
+   *  The organization's policy, read fresh, no longer allows the offered version (it arrived
+   *  after the check). Nothing was fetched. Not a failure: ❌ never log it at warn or error.
+   */
+  | { type: 'blockedByPolicy' }
+
+/**
+ *  Why `install_update` didn't install. `Failed` covers everything local (extraction, the version
+ *  check, the sync), which the frontend logs at error.
+ *
+ *  ❌ `detail` is for logs only, never a sentence a person reads.
+ */
+export type UpdateInstallError =
+  /**
+   *  The organization's policy, read fresh, doesn't allow the staged version. Nothing was
+   *  written. Not a failure: ❌ never log it at warn or error.
+   */
+  | { type: 'blockedByPolicy' }
+  // No verified download is waiting: the frontend asked out of turn.
+  | { type: 'nothingStaged' }
+  // The install ran and didn't finish.
+  | { type: 'failed'; detail: string }
+
+export type UpdatePolicyView =
+  | { kind: 'disabled' }
+  | {
+      kind: 'enabled'
+      automaticChecks: boolean
+      // The canonical spelling, like `0.52`. `null` when there's no ceiling.
+      ceiling: string | null
+    }
 
 /**
  *  Why a direct connection couldn't be established, as a typed reason rather
@@ -14858,6 +15724,13 @@ export type UpgradeFailure =
   | 'shareNotOnServer'
   // It answered and then something we can't act on went wrong.
   | 'unexpected'
+  /**
+   *  Something on this Mac refused Cmdr's own route to a server the Mac itself
+   *  can reach: the macOS Local Network permission (stuck on in ERR-XGS9X, fixed
+   *  by switching it off and on), or a firewall app. Read by [`Self::of_dial`],
+   *  ❌ never from the errno alone.
+   */
+  | 'blockedByThisMac'
 
 /**
  *  Where a "Connect directly" left the volume.
@@ -14979,6 +15852,18 @@ export type ViewModeChanged = {
 export type ViewerContentKind = 'text' | 'image' | 'pdf'
 
 /**
+ *  `viewer-context-menu-action`: Copy or Select all was picked from the viewer's right-click menu
+ *  over the file text. Emitted to that viewer's label.
+ *
+ *  Its own event rather than a `ViewerEditAction`: the bar's pair hands both actions to the
+ *  search box while it has focus, and a right-click on the text leaves focus where it was, so
+ *  this pair always acts on the file.
+ */
+export type ViewerContextMenuAction = {
+  action: ViewerEditActionKind
+}
+
+/**
  *  `viewer-edit-action`: Edit > Copy or Edit > Select all was picked while a viewer window
  *  had focus. Emitted to that viewer's label.
  *
@@ -15052,6 +15937,12 @@ export type ViewerError =
    *  the message; the FE still renders one generic archive message.
    */
   | { kind: 'archive'; failure: ArchiveFailureKind; message: string }
+  /**
+   *  The file is archived in cold storage (S3 Glacier Flexible Retrieval or
+   *  Deep Archive) and can't be read until someone restores it, so there's
+   *  nothing to preview yet and a Retry can't help.
+   */
+  | { kind: 'coldStorage' }
 
 // Result returned when opening a viewer session.
 export type ViewerOpenResult = {
@@ -15059,8 +15950,11 @@ export type ViewerOpenResult = {
   fileName: string
   totalBytes: number
   totalLines: number | null
-  // For ByteSeek where `total_lines` is unknown. Based on `total_bytes / avg_bytes_per_line`.
-  estimatedTotalLines: number
+  /**
+   *  The file's ROW count, exact or (on ByteSeek) from its bytes-per-row sample. The
+   *  first chunk's `total_rows` carries the same number plus which of the two it is.
+   */
+  estimatedTotalRows: number
   backendType: BackendType
   capabilities: BackendCapabilities
   initialLines: LineChunk
@@ -15173,11 +16067,31 @@ export type VolumeCapabilities = {
    */
   canExport: boolean
   /**
+   *  "Copy share link" can mint a link to a file here, which anyone can open
+   *  to download it for a while (S3's presigned GET).
+   */
+  canShareLinks: boolean
+  /**
    *  A drive index can be turned on for this volume, because the index has a
    *  transport that walks and watches this backend. `BackendKind::can_be_indexed`
    *  is the one decider.
    */
   canBeIndexed: boolean
+  /**
+   *  Some entries here rename by copying their bytes on the server and
+   *  deleting the source (`Volume::rename_work` can answer
+   *  `CopyThenDelete`), so a move within this volume is billed work with a
+   *  scan, not one cheap rename. The Move dialog scans such a move (for its
+   *  counts and the S3 cost line) where it would skip the scan elsewhere.
+   */
+  renamesCanCopy: boolean
+  /**
+   *  The same place can also be reached through the OS's own mount (SMB), so
+   *  a live session here is the "direct" one of two ways in, and the
+   *  connection dot may say so. `BackendKind::has_os_mount_fallback` is the
+   *  one decider.
+   */
+  hasOsMountFallback: boolean
 }
 
 /**
@@ -15315,26 +16229,8 @@ export type VolumeCopyConfig = {
    *  1..=9 (an out-of-range level hard-errors the edit, not clamps).
    */
   compressionLevel?: number | null
-}
-
-// Result of a pre-flight scan for volume copy.
-export type VolumeCopyScanResult = {
-  fileCount: number
-  dirCount: number
-  totalBytes: number
-  /**
-   *  What the destination reports it has room for, or `None` when the backend
-   *  genuinely can't answer (SFTP: `statvfs@openssh.com` is out of reach). ❗
-   *  `None` is "can't tell", ❌ never "no room" — a preview must still open.
-   */
-  destSpace: SpaceInfo | null
-  /**
-   *  Whether the destination folder takes writes, asked BEFORE its space. An
-   *  unwritable one is reported here rather than as a space shortfall, so a
-   *  read-only place never reads as a full one.
-   */
-  destWriteAccess: WriteAccess
-  conflicts: ScanConflict[]
+  // What a copy does when the destination looks too small. See [`SpaceShortfall`].
+  spaceShortfall?: SpaceShortfall
 }
 
 /**
@@ -15419,6 +16315,20 @@ export type VolumeError =
   // The path is a directory, not a file (for example, SMB STATUS_FILE_IS_A_DIRECTORY).
   | { type: 'isADirectory'; data: string }
   /**
+   *  Something that isn't a directory sits where a directory has to be: a file,
+   *  or a link that leads to anything but a folder. Carries the path of the
+   *  thing IN THE WAY, which for a `mkdir -p` is often an ancestor of the path
+   *  that was asked for.
+   *
+   *  [`Volume::create_directory_all`](super::Volume::create_directory_all)
+   *  raises it, on every backend. ❌ Never [`AlreadyExists`](Self::AlreadyExists),
+   *  which callers of a `mkdir -p` read as "the folder is there, carry on", and
+   *  ❌ never [`NotFound`](Self::NotFound), which names a folder the user asked
+   *  Cmdr to CREATE as the thing that's missing. A link that leads to a folder
+   *  is a folder here: see `mkdir_all` § "A link to a folder is a folder".
+   */
+  | { type: 'notADirectory'; data: string }
+  /**
    *  The destination can't hold this name, whatever it's asked to do with it.
    *
    *  Distinct from [`NotFound`](Self::NotFound): the backend never got as far as
@@ -15462,6 +16372,29 @@ export type VolumeError =
    *  the retry also fails. MTP-only today.
    */
   | { type: 'staleDestinationHandle'; data: string }
+  /**
+   *  The file's bytes sit in a cold storage class and can't be read until
+   *  someone restores them (S3 Glacier Flexible Retrieval and Deep Archive,
+   *  and Intelligent-Tiering's archive tiers, answer `InvalidObjectState`).
+   *  Carries the path.
+   *
+   *  The UI calls such a file "archived"; the internals say "cold storage"
+   *  because "archive" already means a zip or tar here (`is_archive`,
+   *  `NeedsPassword`). Retrying can only fail the same way until a restore
+   *  lands, so it's typed rather than an [`IoError`](Self::IoError), which
+   *  offers a Retry. S3-only today.
+   */
+  | { type: 'coldStorage'; data: string }
+  /**
+   *  The source changed while a copy read it, so the copy stopped before
+   *  publishing anything that might mix two versions. Carries the source's
+   *  path. ❗ The source is the NEW version now: a move must never delete it.
+   *
+   *  Typed rather than an [`IoError`](Self::IoError) so the user is told
+   *  what happened; a retry copies the new version. S3-only today (a
+   *  server-side copy in parts, `cmdr-s3` `server_copy.rs`).
+   */
+  | { type: 'sourceChanged'; data: string }
   /**
    *  Anything the backend couldn't classify further. The classifier
    *  re-dispatches on `raw_os_error` when one is present.
@@ -15629,14 +16562,15 @@ export type VolumeMounted = {
 }
 
 /**
- *  Typed `volume-root-changed` Tauri event: saving an edit to a CONNECTED place
- *  moved its root, its start folder, or both, and the registry already serves
- *  the new root.
+ *  Typed `volume-root-changed` Tauri event: a volume's root, its start folder, or
+ *  both moved, and the registry already serves the new root. Two causes, named by
+ *  [`RootChangeKind`]: saving an edit to a CONNECTED place, or a mounted drive
+ *  being renamed.
  *
- *  Every path is an APP path (`sftp://ada@nas.local:22/srv/data`), and a landing
- *  is where opening the place lands: its start folder, else its root. Emitted
- *  only when the root or the landing actually moved. What a pane does with it:
- *  `network/DETAILS.md` § "Editing a connected place".
+ *  Every path is an APP path (`sftp://ada@nas.local:22/srv/data`, `/Volumes/New`),
+ *  and a landing is where opening the place lands: its start folder, else its root.
+ *  Emitted only when the root or the landing actually moved. What a pane does with
+ *  it: `network/DETAILS.md` § "Editing a connected place".
  */
 export type VolumeRootChanged = {
   // The place's volume id, which an edit never changes.
@@ -15649,6 +16583,8 @@ export type VolumeRootChanged = {
   oldLanding: string
   // Where it lands now.
   newLanding: string
+  // Why it moved, which decides where a path inside the old root goes.
+  kind: RootChangeKind
 }
 
 /**
@@ -15659,12 +16595,6 @@ export type VolumeRootChanged = {
  *  so a scan that fails on the device says exactly what the device said.
  */
 export type VolumeScanError =
-  // The source volume isn't registered (a race: it was ejected mid-dialog).
-  | {
-      type: 'sourceVolumeNotFound'
-      // The id that no longer resolves.
-      volumeId: string
-    }
   // The destination volume isn't registered.
   | {
       type: 'destinationVolumeNotFound'
@@ -15672,17 +16602,8 @@ export type VolumeScanError =
       volumeId: string
     }
   /**
-   *  The source is a listed phone or a saved server that nothing has
-   *  connected yet (`crate::unregistered_volumes`).
-   */
-  | {
-      type: 'sourceVolumeNotConnected'
-      // The id nothing has connected.
-      volumeId: string
-    }
-  /**
    *  The destination is a listed phone or a saved server that nothing has
-   *  connected yet.
+   *  connected yet (`crate::unregistered_volumes`).
    */
   | {
       type: 'destinationVolumeNotConnected'
@@ -16122,6 +17043,8 @@ export type WriteOperationConfig = {
   preKnownConflicts?: string[]
   // Explicit leaf name for a single copy or move; the destination still names its parent.
   destinationName?: string | null
+  // What a copy does when the destination looks too small. See [`SpaceShortfall`].
+  spaceShortfall?: SpaceShortfall
 }
 
 // Errors that can occur during write operations.
@@ -16137,6 +17060,20 @@ export type WriteOperationError =
    *  passes to `map_volume_error`, never guessed from the path.
    */
   | { type: 'destination_not_found'; path: string }
+  /**
+   *  The destination folder couldn't be created because something that isn't
+   *  a folder sits where it, or one of the folders above it, has to be.
+   *  Refused before anything is written, by the volume engines
+   *  (`VolumeError::NotADirectory` out of `create_directory_all`) and the
+   *  local one (`ensure_destination_dir`) alike.
+   *
+   *  ❗ `path` is the thing IN THE WAY, which is often an ancestor of the
+   *  folder the user typed. It is the whole point of the variant: as a
+   *  `DestinationNotFound` or a generic `IoError` the dialog named the folder
+   *  Cmdr was asked to create, or nothing, and the file to move aside was
+   *  never mentioned.
+   */
+  | { type: 'destination_not_a_folder'; path: string }
   /**
    *  The volume holding the sources is a phone its provider lists, or a saved
    *  server, that nothing has connected yet, so no volume answers for it.
@@ -16155,6 +17092,18 @@ export type WriteOperationError =
    *  reason `SourceNotFound` and `DestinationNotFound` do.
    */
   | { type: 'destination_not_connected'; path: string }
+  /**
+   *  The volume holding the sources left the registry, and nothing lists or
+   *  saves it any more: a phone that was unplugged, or a server that went
+   *  away, typically under a search-results pane still showing its files.
+   *  Refused before anything is read. `path` is the first source as the
+   *  caller sent it.
+   *
+   *  ❌ Never `SourceNotConnected`: there's no row to open, so "open it from
+   *  the volume switcher" would send the user looking for one. ❌ Never a bare
+   *  "volume not found" either, which names an internal id.
+   */
+  | { type: 'source_no_longer_connected'; path: string }
   // Overwrite not enabled.
   | { type: 'destination_exists'; path: string }
   /**
@@ -16303,6 +17252,19 @@ export type WriteOperationError =
    *  last handle closes. SMB-only today.
    */
   | { type: 'delete_pending'; path: string }
+  /**
+   *  The source file is archived in cold storage (S3 Glacier Flexible
+   *  Retrieval or Deep Archive) and can't be read until someone restores it.
+   *  Not transient: a retry meets the same archived object.
+   */
+  | { type: 'source_in_cold_storage'; path: string }
+  /**
+   *  The source changed while a server-side copy read it, so the copy
+   *  published nothing (it could have mixed two versions). The source is the
+   *  new version now, and a move left it in place. A retry copies the new
+   *  version. S3-only today.
+   */
+  | { type: 'source_changed'; path: string }
   /**
    *  One or more files exceed the destination filesystem's per-file size
    *  limit (FAT32's 4 GiB cap). Detected during the pre-copy scan, before any

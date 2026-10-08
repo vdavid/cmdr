@@ -31,7 +31,8 @@ invariants: `CLAUDE.md`. Only the layout facts neither of those carries live her
   `stream_pipe_file`, both cancel tiers, `copy_single_path`); the vocabulary both halves and both drivers speak
   (`FileWindow`, `MergeCtx`, `MergeProbe`, `CreatedPaths`) sits beside it in `merge_ctx.rs`. `merge.rs` walks a tree (`copy_directory_streaming`, `resolve_merge_child`): a directory child
   recurses there, a file child goes to `strategy.rs`. `sequential_extract.rs` reuses the same walk in plan mode, which
-  is why the merge/conflict/rollback code is not reimplemented for one-pass archives.
+  is why the merge/conflict/rollback code is not reimplemented for one-pass archives. `folder_dates.rs` holds what the
+  walk notes about the folders it created, dated once the subtree landed (§ "Copies keep the source's date").
 - **The move is three files, and the dependency runs ONE way.** `r#move` is the DISPATCHER and nothing else: it picks
   same-volume (`move_same`), both-local (`move_files_start`, one level up), or cross-volume (`move_cross`), then owns
   the managed-op lifecycle around whichever it picked. Both engines are leaves under it. ❗ Nothing in an engine may
@@ -39,7 +40,9 @@ invariants: `CLAUDE.md`. Only the layout facts neither of those carries live her
   do from `r#move`, and three lines of type alias were the whole of a three-module cycle. They live with the driver
   whose contract they are now (`../transfer_driver/mod.rs`), which also single-sources the shape `copy_serial.rs` had
   been restating privately. Shared vocabulary between the dispatcher and its engines belongs in `transfer_driver` or in
-  `preflight.rs`, ❌ never in the dispatcher.
+  `preflight.rs`, ❌ never in the dispatcher. One engine may hand off to the other: `move_same` calls
+  `move_cross::move_volumes_with_progress` when a rename copies (§ "A same-volume move whose renames copy"), and
+  `move_cross` names nothing back, so the edge stays one-way.
 - **`conflict.rs` DECIDES; two thin siblings act and answer.** The resolver keeps the policy (`resolve_volume_conflict`,
   `apply_volume_conflict_resolution`, the conditional reduction). `landing.rs` answers where a name lands before any
   of that (§ "Look-alike names and new-name spelling"). `finalize.rs` holds the
@@ -247,7 +250,7 @@ The compiler can't see a hand-written `volume.is_directory(p).await.unwrap_or(fa
 
 - **`conflict.rs`'s source probe (no hint) — PROPAGATES.** `is_file_to_folder` is `!source_is_directory && destination_is_directory`, so a guessed `false` on a real FOLDER flips the cross-type latch on, and Overwrite's cross-type arm replaces the user's destination folder (today by setting it aside, which success then discards as a tree). The old comment claimed the opposite of what the code did ("we'd rather over-prompt than route an unknown clash into the destructive file→folder latch"); `false` is precisely what routes it there. An unanswerable stat now fails the item.
 - **`conflict.rs`'s destination probes (two of them, in the resolver and in `apply_volume_conflict_resolution`) — PROPAGATE, via `resolve_dest_is_directory`.** A guessed `false` reaches the same arm's replace-the-destination branch. The helper keeps ONE exception, and it's load-bearing: `VolumeError::NotFound` means the destination raced away between detection and resolution, which is an ANSWER (nothing to protect), so it resolves as "not a directory" and the write proceeds. Failing there would break a write that would simply have succeeded. It asks `Volume::entry_kind`, so a LINK at the destination is a leaf too: a merge into one lands the files in its target (`../DETAILS.md` § "Symlinks are opaque to a move").
-- **`rename_merge.rs`'s `write_path` dir check — PROPAGATES.** A guessed `false` falls through to `exists()` and then `ctx.volume.delete(&write_path)`, aimed at a destination directory. Its input is now guarded upstream by the resolver, so this is the transient-fault residue plus defense in depth on the last destructive branch of the family.
+- **`rename_merge.rs`'s `write_path` dir check — PROPAGATES.** A guessed `false` falls through to `exists()` and then `ctx.volume.delete(&write_path)`, aimed at a destination directory. Its input is now guarded upstream by the resolver, so this is the transient-fault residue plus defense in depth on the last destructive branch of the family. It asks `entry_kind`, because a `true` here descends: a link that took the name after the resolver freed it must not read as a directory to merge into (pinned by `link_following_backend_tests.rs::a_link_racing_into_a_freed_name_is_never_merged_into`).
 - **`move_same.rs`'s source and destination probes — PROPAGATE, through `move_same.rs::source_merges_as_a_directory` and `Volume::entry_kind`, with the same NotFound-is-an-answer shape.** A wrong `false` here picks `resolve_volume_conflict` over `rename_merge_directory` for a folder-onto-folder collision and mislabels the journal row's entry type. Neither asks `strategy::resolve_source_is_directory`: its probe is `Volume::is_directory`, which some backends answer by following a link, and a wrong `true` for a link is the dangerous direction here (a merge through it renames the target's children out).
 - **`write_operations/rename.rs`'s probe — LEFT ALONE, with a comment saying why.** It feeds the journal snapshot's entry type only. A wrong value mislabels an undo entry and reaches no destructive branch.
 - **`delete/walker.rs`'s no-preview probe** is the same family and is decided in `../../delete/DETAILS.md` § "What each branch does with a missing or wrong fact".
@@ -257,11 +260,11 @@ The rule the list encodes: **a probe whose answer can select a destructive branc
 
 **Cost**: exactly zero where hints exist. The probe fires only for a source the preflight didn't describe. ❌ Don't reintroduce a probe on the hinted path: it was removed because 15k MTP sources meant 15k parent listings, roughly two minutes of frozen dialog. Pinned by `copy_source_hint_tests.rs` (serial and concurrent × copies-the-subtree and spares-the-dest-folder, all against an EMPTY `per_path`). The root fix that keeps the map full lives in `../../DETAILS.md` § "A completed preview always carries `per_path`".
 
-**The destination free-space pre-flight compares only where a CEILING exists.** Two different silences reach it and both mean "go ahead", which is why `copy.rs::room_to_check` collapses them into one `Option<u64>`. The first is a backend that can't measure: `Volume::get_space_info` is explicitly allowed to answer `VolumeError::NotSupported`, and `SftpVolume` does exactly that (`statvfs@openssh.com` isn't reachable from its crate stack), so `dest_space_if_known` maps it to `None`. The second is a backend that measured and found no ceiling: `SpaceInfo::Unbounded`, which a Nextcloud account with no quota reports and which is the DEFAULT state of a real account, so it is the common case rather than an edge one. Its `available_bytes()` is `None` by construction, and that is the whole point of the enum: an `available` with no `total` can't be built, so no comparison site has to remember to skip it. ❗ Every OTHER error still propagates: a destination that answered with a dead mount or a permission refusal has told us something, and walking past it would fail later and worse. ❌ Reading either silence as "no room" makes such a volume a destination nothing can ever be written to; that shipped once, and every copy into an SFTP server died in pre-flight after ~500 ms with `IoError { message: "Operation not supported by this volume type" }`, naming the destination path and nothing else. `VolumeCopyScanResult.dest_space` stays `Option<SpaceInfo>` for the same reason, and an unbounded reading travels intact so the dialog can state what the destination holds. The helper asks `Volume::get_space_info_at(dest_path)`, the filesystem the destination FOLDER is on, ❌ never the volume's one figure: a phone over ADB mounts a read-only system image at `/` that reports 0 free beside its shared storage and any SD card, and a volume-wide answer refused every copy onto a real Pixel. Backends on one filesystem inherit the default, which is their `get_space_info`. Both pre-flights — `scan_for_volume_copy`'s, which powers the dialog PREVIEW, and `copy_volumes_with_progress`' Phase 2 — go through the same helper, so the tolerance can't drift between them. Pinned by `copy_space_tests.rs`, which is exactly this matrix: the three answers (can't tell, a real ceiling, no ceiling) × both entry points — the second is the one that stops the tolerance growing into ignoring a genuine "no room" — and end to end by `write_operations/backend_suites/sftp_transfer_integration_test.rs`.
+**The destination free-space pre-flight compares only where a CEILING exists.** Two different silences reach it and both mean "go ahead", which is why `copy.rs::room_to_check` collapses them into one `Option<u64>`. The first is a backend that can't measure: `Volume::get_space_info` is explicitly allowed to answer `VolumeError::NotSupported`, and `SftpVolume` does exactly that on a server without `statvfs@openssh.com`, so `dest_space_if_known` maps it to `None`. The second is a backend that measured and found no ceiling: `SpaceInfo::Unbounded`, which a Nextcloud account with no quota reports and which is the DEFAULT state of a real account, so it is the common case rather than an edge one. Its `available_bytes()` is `None` by construction, and that is the whole point of the enum: an `available` with no `total` can't be built, so no comparison site has to remember to skip it. ❗ Every OTHER error still propagates: a destination that answered with a dead mount or a permission refusal has told us something, and walking past it would fail later and worse. ❌ Reading either silence as "no room" makes such a volume a destination nothing can ever be written to; that shipped once, and every copy into an SFTP server died in pre-flight after ~500 ms with `IoError { message: "Operation not supported by this volume type" }`, naming the destination path and nothing else. The helper asks `Volume::get_space_info_at(dest_path)`, the filesystem the destination FOLDER is on, ❌ never the volume's one figure: a phone over ADB mounts a read-only system image at `/` that reports 0 free beside its shared storage and any SD card, and a volume-wide answer refused every copy onto a real Pixel. Backends on one filesystem inherit the default, which is their `get_space_info`. `copy_volumes_with_progress`' Phase 2 goes through it. Pinned by `copy_space_tests.rs`, which is exactly this matrix: the three answers (can't tell, a real ceiling, no ceiling), the real ceiling being the one that stops the tolerance growing into ignoring a genuine "no room", and end to end by `write_operations/backend_suites/sftp_transfer_integration_test.rs`. A real ceiling that refuses is still a question for the person: the refusal is `InsufficientSpace`, and "Copy anyway" re-runs the copy with `SpaceShortfall::Proceed`, which skips the Phase 2 comparison. Unlike the local engine, this one never looks at what's already at the destination (`../../DETAILS.md` § "The free-space pre-flight").
 
-**A destination folder that takes no writes is refused BEFORE its space is measured.** `copy.rs::destination_refusal` asks `Volume::write_access_at(dest_path)` first: in `copy_volumes_with_progress` (Phase 0.4, before Phase 0.5 creates the folder), in `move_volumes_with_progress` (before its Phase 0 create), and in `move_within_same_volume_with_progress` (before its create). An `Unwritable { reason }` answer becomes `WriteOperationError::DestinationNotWritable { path, reason }`, which the frontend words per reason and about the FOLDER, never the device. The preview (`scan_for_volume_copy`) carries the same answer as `VolumeCopyScanResult.dest_write_access` and skips its space refusal for such a folder. Why before: a phone's `/` over ADB is a read-only system image reporting 0 free, and with only the space check a copy onto it said "Not enough space: the destination needs X but only has 0 bytes available" (observed on a Pixel 9 Pro XL, 2026-09-10), true of `df` and wrong as the reason. `Unknown` goes ahead, ❌ never a refusal, for the same reason `NotSupported` does in the space check: SMB over smb2, SFTP, and WebDAV have no way to ask without writing. It's a pre-flight, so the answer can go stale before the first write; a write refused later still fails, with the backend's own error. What each backend answers: `Volume::write_access_at` in `crates/cmdr-fs/src/volume/mod.rs` (default `Unknown`), `local_posix.rs::write_access_for_path` (`statvfs` `ST_RDONLY` plus `access(W_OK)`, so read-only and no permission are told apart), `MtpVolume` (a storage the device reports read-only), and `AdbVolume` (`test -w`, where exit 1 is `Unexplained`: `crates/cmdr-adb/DETAILS.md`). Pinned by `copy_space_tests.rs` § "The destination folder takes no writes", by `move_tests.rs` and `move_same_tests.rs` (the refusal leaves the source whole and creates nothing), and end to end by `adb_transfer_test.rs::a_copy_onto_a_phones_root_is_refused_as_not_writable_rather_than_as_out_of_space`.
+**A destination folder that takes no writes is refused BEFORE its space is measured.** `copy.rs::destination_refusal` asks `Volume::write_access_at(dest_path)` first: in `copy_volumes_with_progress` (Phase 0.4, before Phase 0.5 creates the folder), in `move_volumes_with_progress` (before its Phase 0 create), and in `move_within_same_volume_with_progress` (before its create). An `Unwritable { reason }` answer becomes `WriteOperationError::DestinationNotWritable { path, reason }`, which the frontend words per reason and about the FOLDER, never the device. Why before: a phone's `/` over ADB is a read-only system image reporting 0 free, and with only the space check a copy onto it said "Not enough space: the destination needs X but only has 0 bytes available" (observed on a Pixel 9 Pro XL, 2026-09-10), true of `df` and wrong as the reason. `Unknown` goes ahead, ❌ never a refusal, for the same reason `NotSupported` does in the space check: SMB over smb2, SFTP, and WebDAV have no way to ask without writing. It's a pre-flight, so the answer can go stale before the first write; a write refused later still fails, with the backend's own error. What each backend answers: `Volume::write_access_at` in `crates/cmdr-fs/src/volume/mod.rs` (default `Unknown`), `local_posix.rs::write_access_for_path` (`statvfs` `ST_RDONLY` plus `access(W_OK)`, so read-only and no permission are told apart), `MtpVolume` (a storage the device reports read-only), and `AdbVolume` (`test -w`, where exit 1 is `Unexplained`: `crates/cmdr-adb/DETAILS.md`). Pinned by `copy_space_tests.rs` § "The destination folder takes no writes", by `move_tests.rs` and `move_same_tests.rs` (the refusal leaves the source whole and creates nothing), and end to end by `adb_transfer_test.rs::a_copy_onto_a_phones_root_is_refused_as_not_writable_rather_than_as_out_of_space`.
 
-**A volume nobody has connected yet is refused as such, before anything starts.** `routing.rs` (copy, move, compress), `../../delete/volume_start.rs`, and `commands/file_system/volume_copy.rs` (the copy preview and the conflict check) resolve their volumes first, and an empty lookup goes through `transfer_error.rs::unregistered_volume_error`, which asks `crate::unregistered_volumes::why_unregistered`. A device its provider lists but nobody dialed, or a saved SFTP / WebDAV server nobody connected, becomes `WriteOperationError::SourceNotConnected` / `DestinationNotConnected { path }` (the preview's `VolumeScanError::*VolumeNotConnected`), and the frontend says "Not connected yet" and points at the volume switcher, with no Retry. Any other id stays the `IoError` naming the volume, as an unmount race is. `map_volume_error` maps a backend's `VolumeError::NotConnected` to the same pair by `PathRole`. ❌ Never `DeviceDisconnected`: no session existed to drop. ❌ Never "volume not found" for a listed one either: the user reads a place that's gone, when opening it is the way through. A refusal never dials; only a pane's connect does. Pinned by `adb_transfer_test.rs` § "A phone the switcher lists but nobody dialed" (copy, move, delete, new folder, preview, against the fake ADB server), `server_volumes_test.rs::a_copy_onto_a_saved_server_nobody_connected_is_refused_as_not_connected`, and `routing/tests.rs` (the mapping row, and an unknown id staying a missing volume).
+**A volume nobody has connected yet is refused as such, before anything starts.** `routing.rs` (copy, move, compress), `../../delete/volume_start.rs`, and `commands/file_system/volume_copy.rs` (the copy preview and the conflict check) resolve their volumes first, and an empty lookup goes through `transfer_error.rs::unregistered_volume_error`, which asks `crate::unregistered_volumes::why_unregistered`. A device its provider lists but nobody dialed, or a saved SFTP / WebDAV server nobody connected, becomes `WriteOperationError::SourceNotConnected` / `DestinationNotConnected { path }` (the preview's `VolumeScanError::*VolumeNotConnected`), and the frontend says "Not connected yet" and points at the volume switcher, with no Retry. Any other id is a volume that left the registry: as a SOURCE it becomes `SourceNoLongerConnected { path }` ("Not connected anymore", plug the phone back in or reopen the server; a phone unplugged under a search-results pane is how a person gets there), and as a destination it stays the `IoError` naming the volume, as an unmount race is. The scan preview (`commands/file_system/write_ops.rs::scan_preview_source_volume`) refuses any unregistered non-local id up front with `ScanPreviewRefusal::SourceNotConnected`, ❌ never walking it on the Mac (frontend side: `apps/desktop/src/lib/file-operations/transfer/DETAILS.md` § "When the dialog can't find out"). `map_volume_error` maps a backend's `VolumeError::NotConnected` to the same pair by `PathRole`. ❌ Never `DeviceDisconnected`: no session existed to drop. ❌ Never "volume not found" for a listed one either: the user reads a place that's gone, when opening it is the way through. A refusal never dials; only a pane's connect does. Pinned by `adb_transfer_test.rs` § "A phone the switcher lists but nobody dialed" (copy, move, delete, new folder, preview, against the fake ADB server), `server_volumes_test.rs::a_copy_onto_a_saved_server_nobody_connected_is_refused_as_not_connected`, and `routing/tests.rs` (the mapping row, an unknown destination id staying a missing volume, and an unknown source id reading as no longer connected).
 
 **Dest-inside-source guard on the same volume.** `copy_volumes_with_progress` rejects copying a directory into its own descendant when `Arc::ptr_eq(source_volume, dest_volume)` (the command layer hands the same `Arc` for a same-volume-id copy). Without it, `copy_directory_streaming` re-lists each subdir live, so copying `/A` into `/A/sub` re-discovers and re-copies the files it just wrote — unbounded recursion that fills the volume (or overflows the streaming copy's stack). Returns `WriteOperationError::DestinationInsideSource`, mirroring the local-FS path's `validate_destination_not_inside_source`. Cross-DEVICE copies can't hit it (separate path spaces), so the guard is scoped to the same-volume branch and uses a path-prefix check (no `std::fs::canonicalize`, which doesn't apply to MTP/SMB/InMemory paths). Pinned by `copy_rollback_tests.rs::{same_volume_copy_into_own_descendant_is_rejected, same_volume_copy_into_sibling_dir_is_allowed}`.
 
@@ -276,9 +279,9 @@ The rule the list encodes: **a probe whose answer can select a destructive branc
 
 **The move drops the item rather than renaming it**, in `move_same.rs` before the driver runs, so no engine below can represent the case. Only the same-volume path can reach one at all: `move_between_volumes` routes `Arc::ptr_eq` there FIRST, the both-local branch hands off to `move_files_start` (whose own rule lives in `../DETAILS.md`), and a genuine cross-volume move names two different volumes, so no two paths there name one item. Without the drop a folder reaches `rename_merge_directory`, which threads the destination down through recursion and renames every leaf onto itself or shuffles it aside to `name (1)`. Dropped items still emit `write-source-item-done` as `Done` with `source_removed: false`, and they count in `files_total` and `files_processed` so the tally matches what was asked for. Pinned by `self_collision_tests.rs`.
 
-**Dir-vs-dir is NEVER a conflict — it always merges, silently.** `resolve_volume_conflict`'s first check after the self-collision one, and still before any policy lookup or `write-conflict` emit, is "are both sides directories?" — if so it returns the dest path as the merge target with no `replace_after_write`, regardless of `conflict_resolution`. A source folder landing on an existing same-named dest folder always merges into it; the configured **file** policy governs every clash _inside_ the merge. So even Stop / Skip / Rename merge the folder itself; only files ever prompt. The FE never sees a dir-vs-dir `write-conflict`. Cross-type clashes (file↔folder) are NOT merges — they keep the full conflict machinery (red file-over-folder warning, explicit Overwrite/Rename).
+**Dir-vs-dir is NEVER a conflict — it always merges, silently.** `resolve_volume_conflict`'s first check after the self-collision one, and still before any policy lookup or `write-conflict` emit, is "are both sides directories?" — if so it returns the dest path as the merge target with `Replaces::Nothing`, regardless of `conflict_resolution`. A source folder landing on an existing same-named dest folder always merges into it; the configured **file** policy governs every clash _inside_ the merge. So even Stop / Skip / Rename merge the folder itself; only files ever prompt. The FE never sees a dir-vs-dir `write-conflict`. Cross-type clashes (file↔folder) are NOT merges — they keep the full conflict machinery (a red warning worded per direction, explicit Overwrite/Rename).
 
-**Scan-as-you-merge: deep per-file conflicts resolved inline, one dest listing per merged level.** `merge.rs::copy_directory_streaming` discovers deep clashes as it walks, with no upfront recursive pre-scan. The trigger is `create_directory`'s result: `Ok(())` means WE created the level fresh (nothing can clash — skip the dest listing, stream every child straight in); `AlreadyExists` means we're MERGING into the user's pre-existing dir (list the dest level ONCE, index it into a `DestNameIndex`, dispatch each clashing source child through `resolve_volume_conflict`). Dir-vs-dir children recurse unconditionally (no resolver call for the folder); a type mismatch routes through the resolver; a Skip leaves the dest child untouched. The listing answers every ordinary child in memory; the one `get_metadata` a level can owe is for a name the listing can't settle (see "The deep merge asks the same question" below). Context is threaded via a `MergeCtx` struct (sink, op id, config, `state`, the op-wide apply-to-all latch cell, source hints) so `copy_single_path`'s signature doesn't grow per item. The merge engine is shared by all three pipelines: volume copy (serial `copy.rs` AND concurrent `copy_concurrent.rs`), and cross-volume move (`move_cross.rs::move_volumes_with_progress`). `MergeCtx` is `None` only for the cross-volume move's _staging_ writes and tests that never merge.
+**Scan-as-you-merge: deep per-file conflicts resolved inline, one dest listing per merged level.** `merge.rs::copy_directory_streaming` discovers deep clashes as it walks, with no upfront recursive pre-scan. The trigger is `create_directory`'s result: `Ok(())` means WE created the level fresh (nothing can clash — skip the dest listing, stream every child straight in); `AlreadyExists` means we're MERGING into the user's pre-existing dir (list the dest level ONCE, index it into a `DestNameIndex`, dispatch each clashing source child through `resolve_volume_conflict`). Dir-vs-dir children recurse unconditionally (no resolver call for the folder); a type mismatch routes through the resolver; a Skip leaves the dest child untouched. A destination LINK is a leaf here whatever it points at, so a folder meeting one is a type mismatch, never a recursion (`../DETAILS.md` § "Symlinks are opaque to a move"). The listing answers every ordinary child in memory; the one `get_metadata` a level can owe is for a name the listing can't settle (see "The deep merge asks the same question" below). Context is threaded via a `MergeCtx` struct (sink, op id, config, `state`, the op-wide apply-to-all latch cell, source hints) so `copy_single_path`'s signature doesn't grow per item. The merge engine is shared by all three pipelines: volume copy (serial `copy.rs` AND concurrent `copy_concurrent.rs`), and cross-volume move (`move_cross.rs::move_volumes_with_progress`). `MergeCtx` is `None` only for the cross-volume move's _staging_ writes and tests that never merge.
 
 **The two legs of a level run concurrently, unless a backend is single-transport.** `merge_level` drives the source
 `list_directory` and the whole destination chain (`create_directory`, then the conditional dest `list_directory`) under
@@ -410,6 +413,15 @@ Three answers, cheapest first, in `copy.rs`'s spawn loop:
 2. **The listing Phase 0.6 already paid for.** `reap_stale_transfer_temps` does one `list_directory` of `dest_path` on every copy, merges included, immediately before the spawn loop. It now RETURNS that listing (minus the temps it reaped), and the driver indexes it into a `DestNameIndex` (`dest_name_index.rs`) the loop consults in memory. This is the ordinary F5 copy's case: `TransferDialog` seeds the destination with the opposite pane's current folder, which exists, so a merge is what most copies are.
 3. **The per-file probe**, for anything the index won't answer.
 
+**The merge walker hands the same fact to the destination.** A level its own `create_directory` made (`Ok`, ❌ not the
+`NotSupported` "treat as fresh" fallback, which proved nothing) writes each child with
+`LandingName::FreeInFreshFolder` → `WriteStaging::StageInFreshFolder` → on a whole-publishing destination
+`WriteMode::CreateNewInFreshFolder`. Every backend treats that mode as `CreateNew` (`WriteMode::refuses_occupied`)
+except where its no-overwrite check is a request of its own: S3 then skips the HEAD before each object (the
+"No-overwrite writes" section of `crates/cmdr-s3/DETAILS.md` has the accepted window). A staged write lands exactly as `Stage` does. Top-level
+files copied straight into a destination folder Phase 0.5 created keep `ExpectedFree` (the concurrent and serial
+drivers don't thread the fact yet); the folders a copy or a rename carries are where the requests were.
+
 **A probe that can't ANSWER fails the item, and is never read as "the name is free."** `landing.rs::where_it_lands` is the one rule for all four top-level pre-check sites (`copy_serial.rs`, `move_cross.rs`, and `move_same.rs` through `landing.rs::top_level_precheck`, and the concurrent driver's `copy_concurrent_source.rs::existing_dest_entry`) and for every merge child: only `VolumeError::NotFound` means free, and every other refusal — `ConnectionTimeout`, `DeviceSessionReset`, `PermissionDenied` — becomes a failure of THAT item at the DESTINATION path. Nothing is written for it. A stat that fails is what a flaky share or a phone mid-session-reset looks like, and folding it into "nothing is there" runs no resolver, consults no Skip/Stop policy, and lets the landing clear whatever the probe was asked about — a silent overwrite under a policy that promised the opposite. The driver's `FetchFut` carries the `Result` so the shape is unrepresentable rather than only written down. ❌ No retry here: per-file retry is `retry.rs`'s, inside `stream_pipe_file`, and a second layer would multiply the wait on a dead link. Pinned by `dest_precheck_failure_tests.rs` (one cell per site) and `transfer_driver_async_tests.rs::async_driver_fails_the_item_whose_destination_probe_refuses`.
 
 **Decision (2)**: answer the merge case from the one listing, and accept that it is a snapshot.
@@ -452,6 +464,13 @@ Pinned by `copy_precheck_tests.rs` (end to end, against a destination that resol
 - **The behavior change is consistency, and it's accepted**: a deep child whose name only folds onto a destination name now costs one probe and can raise a prompt it didn't before. That is what the top level already does.
 - Pinned by `merge_case_fold_tests.rs` (case, normalization, a case-SENSITIVE destination keeping both spellings with no prompt, an unanswerable probe, a folded directory child merging into the directory that is there, and `an_ordinary_merge_costs_no_probes` for the cost side: a plain ASCII tree asks the destination nothing beyond the driver's own top-level pre-check). The same-volume engine's twin is `rename_merge.rs::late_detected_collision`.
 
+### Listed names are untrusted
+
+A source listing comes from whoever answers it: an SMB, SFTP, WebDAV, or S3 server, an MTP or ADB device, an archive. A hostile one can list `../x` or `/x`, and `dest_dir.join(name)` would then write outside the folder the user dropped onto. So a listed name reaches a destination path ONLY as a `cmdr_fs::volume::ChildName`, proven to be one plain path component (not empty, `.`, or `..`, no `/`, no NUL). A refusal is the typed `VolumeError::InvalidName`, which fails that item the way any unusable name does.
+
+- `landing.rs::where_it_lands` takes a `ChildName`, so the merge walk, the concurrent top-level copy, and the top-level pre-check all validate before joining; the same-volume rename-merge and the native drag-out fulfillment (`apps/desktop/src-tauri/src/native_drag/fulfillment.rs`) do too. One check under every backend, so a new backend can't forget it.
+- `InMemoryVolume::set_reported_name` models a source that lists a hostile name. Pinned by `hostile_names_tests.rs` (a bad file name, a folder listed as `..`, and the symlink-then-folder trick: a copy never merges a source folder through a link already at the destination, under every policy) and a drag-out cell in `apps/desktop/src-tauri/src/native_drag/fulfillment_test.rs`.
+
 ### Look-alike names and new-name spelling
 
 A byte-exact destination (an SMB share since paths reach it byte-for-byte, SFTP, a phone, `InMemoryVolume`) holds `café` composed and `café` decomposed as two entries and finds each only by its own bytes. So a copy asking about a name in the other spelling would hear "free" and write a second entry nobody can tell from the user's: Skip and Overwrite silently wouldn't apply (`ERR-VETBX`, `crates/cmdr-smb/DETAILS.md` § "SMB names are opaque bytes").
@@ -479,9 +498,9 @@ A byte-exact destination (an SMB share since paths reach it byte-for-byte, SFTP,
 
 **Overwrite means merge for dirs, replace for files, enforced architecturally, not by trait contract.** `apply_volume_conflict_resolution` stats the dest first; for directories it skips the delete entirely (the recursive copy merges into the existing tree). This is enforced at the call site rather than relying on `Volume::delete`'s "file or empty directory only" contract. A future backend with recursive delete semantics, or a refactor that consolidates `delete` + `delete_recursive`, would otherwise silently flip the UX from merge to wholesale replace and delete files unique to dest. `conflict_tests.rs::dir_overwrite_must_merge_not_replace_even_with_recursive_delete` pins this with a wrapper Volume that violates the trait contract.
 
-**Cross-volume file→file Overwrite is a safe-replace, NOT a delete-then-write.** A cross-volume file Overwrite (Local↔SMB↔MTP↔USB) must never destroy the existing destination before the new bytes are fully written — otherwise a mid-stream failure (network drop, USB yank, cancel) leaves the user with neither the old file nor a complete new one. So `apply_volume_conflict_resolution`'s file→file branch does NOT delete the dest. It returns a `ResolvedConflict { write_path: <temp sibling>, replace_after_write: Some(orig) }`: the streaming writer lands bytes in a `<name>.cmdr-tmp-<uuid>` sibling on the dest volume, and only after the temp is fully written does the caller call `finalize_safe_replace(dest_volume, temp, orig)`, which deletes `orig` (which survived the whole write) then `rename(temp, orig, force=false)`. On a failure BEFORE the finalize the original is untouched and the existing partial-cleanup sweep removes the temp; on a failure INSIDE it the original may be gone, so the temp is rescued to a ` (recovered)` name instead (below).
+**Cross-volume file→file Overwrite is a safe-replace, NOT a delete-then-write.** A cross-volume file Overwrite (Local↔SMB↔MTP↔USB) must never destroy the existing destination before the new bytes are fully written — otherwise a mid-stream failure (network drop, USB yank, cancel) leaves the user with neither the old file nor a complete new one. So `apply_volume_conflict_resolution`'s file→file branch does NOT delete the dest. It returns a `ResolvedConflict { write_path: <temp sibling>, replaces: Replaces::ViaTemp(orig) }`: the streaming writer lands bytes in a `<name>.cmdr-tmp-<uuid>` sibling on the dest volume, and only after the temp is fully written does the caller call `finalize_safe_replace(dest_volume, temp, orig)`, which deletes `orig` (which survived the whole write) then `rename(temp, orig, force=false)`. On a failure BEFORE the finalize the original is untouched and the existing partial-cleanup sweep removes the temp; on a failure INSIDE it the original may be gone, so the temp is rescued to a ` (recovered)` name instead (below).
 - **Why explicit delete-then-rename, not `rename(force=true)`:** MTP's `rename(force=true)` does NOT delete an existing destination — it can create a duplicate. SMB(force=true) deletes-then-renames internally and Local replaces atomically, but the finalize must be uniform across all backends, so it always deletes `orig` first then renames into the now-absent slot. There is a tiny window between the delete and the rename where neither name resolves, but the complete new data lives in the temp throughout, so a crash there leaves a recoverable `.cmdr-tmp-*` sibling rather than data loss. If the `delete(orig)` fails, `finalize_safe_replace` returns the error WITHOUT deleting the temp (the new data must survive), and reports no rescue: nothing was lost, since the destination still holds the user's file.
-- **Threading:** `resolve_volume_conflict` / `apply_volume_conflict_resolution` return `Option<ResolvedConflict>`. The three streaming write sites (`volume::copy` serial + concurrent, `volume::move_cross`) carry `replace_after_write` through to their `transfer_one` work, track the TEMP as the in-flight partial (so cancel/error cleanup removes the temp, never the original), and after a successful `copy_single_path` call `finalize_safe_replace` and record the ORIGINAL (not the temp) in `copied_paths` / the milestone for rollback bookkeeping. The cross-volume move finalizes BEFORE deleting the source (a move must never delete the source if the dest isn't fully in place). When `replace_after_write` is `None`, behavior is byte-for-byte identical to before.
+- **Threading:** `resolve_volume_conflict` / `apply_volume_conflict_resolution` return `Option<ResolvedConflict>`. The three streaming write sites (`volume::copy` serial + concurrent, `volume::move_cross`) carry `replaces` through to their `transfer_one` work, track the TEMP as the in-flight partial (so cancel/error cleanup removes the temp, never the original), and after a successful `copy_single_path` call `finalize_safe_replace` and record the ORIGINAL (not the temp) in `copied_paths` / the milestone for rollback bookkeeping. The cross-volume move finalizes BEFORE deleting the source (a move must never delete the source if the dest isn't fully in place). Under `Replaces::Nothing` nothing is finalized. A destination that publishes every write whole takes the Overwrite in place instead (`Replaces::InPlace`, § "Whole-publish destinations").
 - **The post-write temp is committed data, NOT a cleanable partial, and it does not STAY a temp.** `finalize_safe_replace` deletes the original first, then renames the temp in. If the rename fails after the delete succeeded (a disconnect at that instant), the temp holds the ONLY complete copy of the new data and the original is gone. So the finalize immediately renames it out of temp space, to `<name> (recovered)<.ext>` (continuing the house ` (N)` series if that name is taken), and returns a `FinalizeFailure` naming where the bytes are. ❗ **Getting it out of `.cmdr-tmp-*` space is a data-safety act, not tidiness**: `cleanup.rs::reap_stale_transfer_temps` matches on the `.cmdr-tmp-` marker plus an age and runs at the start of every copy and every volume move into that directory, and `staged_write::land` deregisters its temp before clearing the way, so the in-flight ledger neither protects nor deletes it. Left under its temp name, the user's only copy is deleted by the next transfer into the same folder an hour later. Only `AlreadyExists` earns another candidate: the rename has already failed once, so a dead link would fail identically under eight names and only add eight timeouts. When no rename lands at all, the bytes stay under the temp name and the failure reports THAT path, which is the one shape in which committed data still wears a sweepable name. The partial-cleanup contract ("delete partials on error") must not touch either. Each write site stops treating the temp as a partial the moment `copy_single_path` returns `Ok`, BEFORE finalize runs: the **serial** closure clears `last_dest_cell` to `None` up front; the **concurrent** task returns `cleanup_temp = false` so the result handler skips adding the temp to `last_dest_path` (a stream failure sets `true` and cleans as before); the **cross-volume move** has no dest partial-cleanup at all. Pinned by `finalize_recovery_tests.rs` (the rescue, the reap that can no longer reach it, the taken-name series, and both give-up shapes), `copy_crashsafe_tests.rs::{cross_volume_overwrite_serial_preserves_new_data_on_finalize_failure, cross_volume_overwrite_concurrent_preserves_new_data_on_finalize_failure}`, and `move_failure_tests.rs::cross_volume_move_preserves_new_data_on_finalize_failure`.
 - **A cross-type Overwrite renames the destination ASIDE and holds it until the operation ends.** A type swap can't stage the new side the way file→file does: a folder replacing a file appears the moment its walk starts and fills in leaf by leaf over the rest of the operation, and any leaf can fail or be cancelled. Deleting the destination first would turn that ordinary failure into losing both: no old file, no complete folder. So `apply_volume_conflict_resolution` calls `displaced_destination.rs::displace_destination` (a refused rename fails the item: the name is still taken) and hands the aside back on `ResolvedConflict::displaced`. The cross-volume copy and move give it to the operation's `DisplacedLedger` (top-level resolvers and `merge.rs::resolve_merge_child` alike, through `MergeCtx.displaced`), op-wide rather than per source because the concurrent driver can abandon a task's future at its cancel deadline. Each source that finishes marks every aside at or under its landed path as replaced (`landed_under`). The post-loop settles them: success discards all (a folder as a tree, `TreeRemoval::UserChoseOverwriteAcrossTypes`); a rollback restores all AFTER the reversal frees their names; a stop or failure discards the replaced ones and restores the rest AFTER the partial cleanup, keeping one beside a half-built folder under a ` (recovered)` name, which a failure reports as `WriteOperationError::OriginalsKeptAside`. The same-volume move settles its aside on the one replacing rename, below. Reachable only from an Overwrite a person picked on a Stop prompt that named both types; see "A blanket Overwrite never crosses types" below. Same-type dir→dir still merges (no delete). Pinned by `cross_type_aside_tests.rs`, `move_failure_tests.rs::a_cross_type_move_that_fails_halfway_keeps_the_file_it_was_replacing`, and `move_same_overwrite_tests.rs::a_refused_rename_puts_back_the_folder_a_file_was_replacing`.
 - **Same-volume Overwrite renames the destination ASIDE, it does not delete it.** A same-volume move replaces by renaming the SOURCE onto the name, so the name has to be free first (`rename(force=false)` can't replace, and MTP's `force = true` doesn't delete an existing dest either). There is no stream here, so no temp dance is needed for the new bytes — but the replacing rename is still a SEPARATE call, and an SMB `STATUS_SHARING_VIOLATION` (the source is open elsewhere), an MTP `MoveObject` refusal, or a session blip fails it. Freeing the name with a delete makes that ordinary failure fatal: the destination gone, the source not moved, neither copy where the user left it. So `displaced_destination.rs::displace_destination` renames it to a `.cmdr-temp-<uuid>` sibling, the source rename runs, and the aside is dropped on success or renamed back on failure. One extra call on every backend. Both sites: `move_same.rs`'s resolver (top level, the entry crossing to the transfer closure through `displaced_dests` the way the overwrite verdict crosses through `overwritten_sources`, with a post-loop sweep for anything whose rename never ran) and `rename_merge.rs::rename_replacing` (deep children, both the file→file Overwrite and the dir-subtree-over-a-dest-file case). A cross-type clash arrives already set aside by the resolver (`ResolvedConflict::displaced`), and both sites answer for that aside the same way. ❗ The `.cmdr-temp-` marker is deliberately the one `cleanup.rs::reap_stale_transfer_temps` does NOT match (it reaps `.cmdr-tmp-` only), so an aside nothing could put back survives for the user. When the put-back refuses too — the same dead link — `../recovered_name.rs::rescue_out_of_temp_space` gives it a ` (recovered)` name and the failure carries that path as a typed `WriteOperationError::OriginalsKeptAside`. The one delete that stays a delete is the `Rename`-policy branch clearing its own `O_EXCL` placeholder: that zero-byte file is ours, not the user's. Pinned by `move_same_overwrite_tests.rs`.
@@ -508,7 +527,7 @@ sources**.
    function's entire merge machinery — it creates the whole destination directory structure (walking the tree, so empty
    and synthetic dirs land too), resolves every file's conflict (policy, Stop-prompt, apply-to-all latch, type
    mismatches, safe-replace, Rename reservation), and records newly-created dirs in `created` for rollback — but instead
-   of streaming each file's bytes it records the resolved destination (`PlannedWrite { dest_path, replace_after_write }`)
+   of streaming each file's bytes it records the resolved destination (`PlannedWrite { dest_path, replaces }`)
    in the plan, keyed by the file's full source path, and streams nothing.
 2. **Data** — it opens `source_volume.open_sequential_extract(source_path)` (the archive's one-pass extractor, decode
    ONCE; mechanism in `crates/cmdr-archive/src/read/DETAILS.md` § "One-pass subtree
@@ -528,43 +547,83 @@ report `max_concurrent_ops() == 1`, so this always runs on the serial copy path.
 `strategy_sequential_tests.rs` (nested-subtree correctness, the random-vs-sequential routing gate, empty
 dirs + symlinks + out-of-order entries, and cancel-between-members).
 
-## Letting the server do a same-volume copy
+## Server-side copy
 
 Duplicating a file inside one remote volume used to pull every byte down the link and push it straight back up. A
-protocol that can copy for itself (SFTP's `copy-data`) skips both halves, so `stream_pipe_file` asks
-`Volume::copy_within` before it opens a stream. MOVE has had a same-volume fast path since forever
-(`move.rs` → `move_within_same_volume`, a server-side rename); this is COPY's.
+protocol that can copy for itself (SFTP's `copy-data`, S3's `CopyObject`) skips both halves, so `stream_pipe_file`
+asks `Volume::copy_on_server(source, from, to, mode, progress)` before it opens a stream (`server_side_copy.rs`'s
+`try_server_side_copy`). It's also the byte path of a same-volume move whose renames copy (§ "A same-volume move whose
+renames copy").
 
-**Eligibility is `Arc::ptr_eq` on the two volumes**, which is exact rather than approximate: `routing.rs` resolves both
-sides through the volume registry, so one volume id yields one `Arc`. ❗ Asking a DIFFERENT volume to copy `from`
-inside itself is not a failure — on a server that happens to hold a same-named file it is the wrong file, copied
-silently.
+**Which sources a backend copies from is the BACKEND's decision**, from `source`'s concrete type and identity: the
+trait default answers only for the very same instance (through `copy_within`, so SFTP and ADB are unchanged), and S3
+copies between any places of one account (`crates/cmdr-s3/DETAILS.md` § "Server-side copy"). ❗ Asking a server to copy
+a path that belongs to a DIFFERENT server is not a failure; on one that holds a same-named file it is the wrong file,
+copied silently. So the engine never decides it from paths or ids; it hands over both volumes and takes the answer.
 
-**`Ok(None)` means "do it the ordinary way"**, and that is the answer for everything except a clean success and a
-cancel:
+**`Ok(None)` means "do it the ordinary way"**, and that is the answer for everything except a clean success, a cancel,
+and a taken name:
 
-- Two different volumes.
-- `NotSupported`, from a backend with no server-side copy or from one whose SERVER lacks the extension.
+- `NotSupported`, from a backend with no server-side copy, one whose SERVER lacks the extension, or one that doesn't
+  recognize the source (another account, another backend, a bucket-bound provider asked to cross buckets).
 - ⚠️ **Any other failure.** The streaming loop below carries the retry policy, the stall watchdog, and the pause
   checkpoints, so a fast path that failed for a real reason fails there too with better handling and a better report.
   The cost is one doomed extra attempt on a genuinely broken destination, which is the cheaper side of the trade.
 - ❌ **A cancel is never one of them.** The intent is consulted as well as the error variant, so a backend that labels
   its own stop something other than `Cancelled` can't turn a Cancel click into a second, full-speed attempt.
+- ❌ **Nor is `AlreadyExists`**: the streamed write would refuse the same name.
 
-**It stages exactly like a streamed write**, with the REQUESTED staging rather than `resolve_staging`'s: the destination
-genuinely holds a byte-incomplete file while a server-side copy runs, so the single-shot exemption can't apply however
-small the file is. The quit deadline (`state.backend_abort`) rides the same `select!` it rides for a streamed write, and
-cleans up nothing for the same reason.
+**Staging follows the destination.** A whole-publishing destination (§ "Whole-publish destinations") publishes a
+server-side copy whole as well, so `resolve_staging(staging, publishes_writes_whole)` sends it to the final name, as
+`CreateNew` when the name was expected free; a temp there would only cost a landing rename, a second full copy.
+Everywhere else the destination genuinely holds a byte-incomplete file while the copy runs, so it stages exactly like a
+streamed write, ❌ never with the single-shot exemption however small the file is. The quit deadline
+(`state.backend_abort`) rides the same `select!` it rides for a streamed write, and cleans up nothing for the same
+reason.
 
-⚠️ **A pause doesn't land mid-file here**, only at the next file boundary. There is no stream to park between chunks,
-and pausing frees nothing anyway — no bytes are crossing the link. Same limitation, and the same reasoning, as the
-local-FS chunk loop's. What bounds it is the walk above: `merge_level` parks per entry (§ "Pause in the volume walks"),
-so a paused same-share subtree copy stops after the leaves already in flight finish — at most the operation's
-`FileWindow` width, one of them on MTP. Closing the mid-file gap would mean a cooperative stop inside
-`Volume::copy_within` itself, per backend, which is the same work that would give it a cancel.
+**A pause lands at the backend's checkpoints.** The engine's `ServerCopyProgress` answers `checkpoint` with the
+operation's own `stop_or_park_async`, and S3 asks it before each part, so a paused multipart copy parks between parts
+while the parts already in flight finish. A backend that copies in one call (SFTP's `copy-data`) has no checkpoint, so
+its pause lands at the next file, bounded by the walk above: `merge_level` parks per entry (§ "Pause in the volume
+walks"), at most the operation's `FileWindow` width of leaves still finishing.
 
-Cells: `strategy_server_side_copy_tests.rs` (eligibility, the fallback, staging, cancel) with a counting double;
-`crates/cmdr-sftp/src/volume/copy_test.rs` for what a real server does, including a fixture that lacks the extension.
+Cells: `strategy_server_side_copy_tests.rs` (who's asked, the fallback, staging, the final-name copy on a whole-publish
+destination, a sibling place of one account, cancel, and the checkpoint parking a paused copy) with counting doubles;
+`crates/cmdr-sftp/src/volume/copy_test.rs` and `crates/cmdr-s3/src/volume/copy_test.rs` for what real servers do;
+`backend_suites/s3_rename_integration_test.rs` for a cross-bucket copy through the engine, on the server or streamed.
+
+## A same-volume move whose renames copy
+
+**Decision**: a same-volume move asks `Volume::rename_work` for each top-level source, and if ANY answers
+`CopyThenDelete` (an S3 folder, or an object past the part floor), the whole move runs through the copy-then-delete
+engine (`move_cross.rs`'s `move_volumes_with_progress`) with the one volume on both sides (`move_same.rs`). **Why**:
+`rename_merge` assumes a rename is one cheap call that carries a subtree; on an object store it's a copy per object, and
+only the transfer engine gives that a scan, byte progress, pause, cancel, conflicts, and journaling. A volume that
+renames everything in one call answers with no I/O, so nothing changes for local disks, SMB, MTP, SFTP, or WebDAV.
+
+- **Copy everything, then delete.** Per top-level source, the copy lands every file (server-side, § "Server-side
+  copy") before the source sweep removes anything, so the worst a crash or a cancel leaves is duplicates, ❌ never
+  loss. The sweep removes what the copy's LEDGER carried, as every cross-volume move does (`source_sweep.rs`).
+- **Batched deletes.** The sweep collects each folder level's files and hands them to `Volume::delete_files` in one
+  call (S3: `DeleteObjects`, 1,000 keys a request, per-key failures reported against their own paths), then deletes
+  the folder. ❗ A folder that existed only through what was in it (an object store's prefix with no marker) is gone
+  once its last file is, so the folder's own `NotFound` counts as removed.
+- **The dest-inside-source guard and the already-in-place filter run first**, the same as for a rename-merge; only
+  the remaining sources take the copy route.
+- **Not rollbackable while running**, like every cross-volume move (`supports_rollback: false`); what it journals
+  (per-leaf rows under the one volume id) is what the operation log offers to undo afterwards.
+
+**Renames that run as moves name their target.** A move's destination is a FOLDER, so a rename (`/a/foo` → `/a/bar`)
+carries the new NAME per source on `WriteOperationState::target_names` (`../../target_names.rs`), which the async
+driver reads where every volume engine builds a top-level destination path. Both engines honor it: the rename-merge
+renames straight to the new name, and the copy engine copies to it. A name is one plain component, refused otherwise,
+so a source can't land outside the folder it was given; ❌ the local and cross-volume engines take none
+(`move_between_volumes` refuses a map there). Who starts these: `../../DETAILS.md` § "Renames that run as moves".
+
+Cells: `move_by_copy_tests.rs` (routing, batched sweep, a rename to a new name on both kinds of volume, a stop keeping
+every source) with `InMemoryVolume::with_renames_by_copy`, which refuses `rename` outright so a move that forgot to
+route fails loudly; `backend_suites/s3_rename_integration_test.rs` against both S3 fixtures (a 1,005-object folder
+rename paging its deletes, a multipart-copy rename keeping the date, pause and cancel).
 
 ## The single-shot exemption
 
@@ -649,6 +708,35 @@ too big, or a backend that makes no promise, still stages; a caller temp is neve
 `cmdr-smb`'s `wire_shape_integration_test.rs::smb_integration_a_single_shot_write_leaves_as_one_compound_frame`, which counts wire
 frames to prove the promised write really is one compound frame.
 
+## Whole-publish destinations
+
+**Decision**: a destination answering `Volume::publishes_writes_whole` (an object store: S3's PUT and multipart
+completion) is written at the FINAL name, a fresh file and a file→file Overwrite alike. **Why**: the protocol already
+gives both properties staging buys (no partial at a real name even after a force-quit, and a replace that keeps the
+original readable until the new bytes are complete), while a staged landing there is a `rename`, which on S3 is a
+server-side copy plus a delete: twice the requests, a copy that fails outright past 5 GB, and no more atomic than the
+write. A failed landing would also have left committed data under a `.cmdr-tmp-*` name the hourly reap matches.
+
+- **A fresh file**: `resolve_staging` takes `write_is_single_shot || publishes_writes_whole`, so a `Stage` becomes
+  `SingleShot(ExpectedFree)` and goes out as `WriteMode::CreateNew`. The backend owns that refusal, by the provider's
+  conditional header where it's trusted, else by a check just before the write plus a check after it that reports a
+  clash it notices (`crates/cmdr-s3/DETAILS.md` § "No-overwrite writes").
+- **A file→file Overwrite**: `apply_volume_conflict_resolution` answers `Replaces::InPlace` (write path = the original)
+  instead of a temp sibling. `staging_for` maps it straight to `SingleShot(ClaimedByTheCaller)`, so it goes out as
+  `CreateOrReplace` with nothing to finalize. ❗ It must never fall back to a staged landing, and ❗ a failed write's
+  cleanup must never touch the name: what's there is the user's original (`failed_write_leaves_ours_at` answers `false`
+  for `SingleShot`). Every write site still records the overwrite (`Replaces::overwrites`), so the op stays
+  not-rollbackable. A same-volume move treats `InPlace` like a safe-replace: the original goes aside and the source is
+  renamed onto its name.
+- **Only staging reads the OR.** The destination-side yield floor and the stall watchdog keep reading
+  `write_is_single_shot`: an upload holds a request open while the source drains, so neither exemption applies.
+
+Pinned by `strategy_single_shot_tests.rs::a_whole_publishing_destination_*`, `conflict_tests.rs::
+file_overwrite_on_a_whole_publishing_destination_writes_in_place`, and `copy_tests/conflicts.rs::{
+test_overwrite_on_a_whole_publishing_destination_replaces_in_place, test_a_failed_in_place_overwrite_leaves_the_original}`
+(the last fails if `InPlace` is ever staged onto a claimed name: the cleanup deletes the original). The double is
+`InMemoryVolume::with_whole_publish`.
+
 ## What mode a landed file wears
 
 **The rule: the volume REPORTS a mode, this engine APPLIES it, and only on a LOCAL destination.** `landed_mode.rs` is
@@ -706,14 +794,116 @@ construction sites across every backend to save a stat the copy has already paid
 **Three write paths, three hooks, and they must stay in step.** `stream_pipe_file` (every streamed cross-volume file,
 copy and cross-volume move alike, since `move_cross.rs` routes through `copy_single_path`), `sequential_extract.rs`'s
 data pass (which writes its own files — the mode rides `PlannedWrite::source_mode`, recorded by the plan pass, the only
-one that lists the archive), and `try_server_side_copy`, which needs no hook: it is a same-`Arc` `Volume::copy_within`,
-where the backend copying a file inside itself owns what it copies. A fourth write path owes the same call.
+one that lists the archive), and `try_server_side_copy`, which needs no hook: it is `Volume::copy_on_server`, where the
+backend copying a file on its own server owns what it copies. A fourth write path owes the same call.
 
 Pinned by `landed_mode_tests.rs` (the fold, per umask and per source shape), `copy_snapshot_out_tests.rs` and
 `copy_extract_out_tests.rs` (end to end out of the two routed volumes, into a real local destination, both alone and
 inside a folder — the two shapes take different routes through the engine), `move_tests.rs`
 (`a_cross_volume_move_carries_the_executable_bit`), and `strategy_sequential_tests.rs`
 (`a_sequential_extract_carries_the_executable_bit`).
+
+## Copies keep the source's date
+
+**The rule: the source REPORTS its file's modification date on the read stream, the destination WRITES it.** This is
+the canonical home of the contract; the trait doc, the conformance assertions, and the backend docs point here. Local →
+local copies keep file dates on their own path (`chunked_copy.rs`, copyfile/clonefile); their folder dates are below.
+
+- **Source half**: `VolumeReadStream::modified_at` is a REQUIRED trait method, so a new backend can't skip it by
+  omission. A stream answers the date its open already learned (the stat or listing it did anyway), ❌ never an extra
+  round trip. `None` means "no meaningful date" (fresh `create_file` bytes, a generated ZIP, a git blob, a test double),
+  and a wrapper (`CheckpointStream`, `fresh_compress.rs`'s pause wrapper) forwards its inner stream's answer. `ChannelReadStream` takes the
+  date through `with_modified_at`.
+- **Destination half**: every destination that can store a date writes `stream.modified_at()` inside
+  `write_from_stream`, so every engine path (staged, single-shot, whole-publish) gets it with no engine code. A staged
+  write sets it on the temp, and the engine's final rename carries it, so the real name never shows a wrong date. An
+  in-place writer sets it after the last byte (a later write would bump it again).
+- **Best effort**: a date that won't set is a `log::warn!`, and the copy still succeeds; the bytes are the copy.
+- **`None` leaves the destination's own date**, ❌ never an invented one. Only mtime is in scope: where a protocol
+  forces atime alongside (SFTP `ATTR_ACMODTIME`), atime gets the same value. Sub-second where both ends keep it.
+- **Not covered**: birth time and permissions (§ "What mode a landed file wears").
+
+**Folders keep their source's date too, set AFTER their contents land.** Writing a child bumps its folder's date on
+every real store, so a folder dated when it's created lists "now" by the end of the copy.
+
+- **Cross-volume** (`folder_dates.rs`): `merge_level` answers whether IT created a level (`DirectoryCreation`), and its
+  parent notes each created child folder with the source date the parent's listing carried, as the walk leaves it
+  (post-order). `copy_directory_streaming` stamps the list through `Volume::set_modified` only once the subtree's leaves
+  have drained with no error, then the top-level folder last. Its date is the one no walk listing carries, so it rides
+  in from the preflight scan's stat of the top-level path (`CopyScanResult::top_level_modified_at` → `SourceHint` →
+  `SourceFileFacts::modified_at`) at no round trip of its own. A source whose scan carried none (an S3 prefix, MTP's
+  single-path scan, a top-level dispatch with no hint) leaves it the destination's. The one-pass sequential extract
+  hands the list to its `ExtractPlan` and stamps after the data pass, since the planning pass writes no file.
+- **Decision/Why the scan carries the root's date, ❌ not a `get_metadata` at stamp time**: that stat was one more
+  request per top-level folder, which `s3_engine_integration_test.rs::the_engine_sends_what_the_estimate_counts`
+  caught as a HEAD and a LIST over the cost estimate (an S3 prefix has no date to find, so it was pure cost), and a
+  whole parent listing on MTP.
+- **Local → local and the cross-FS local move** (`../copy/scanned_dirs.rs::date_created_dirs_like_their_sources`):
+  after the file loop and the empty-folder pass, every folder in the transaction's `created_dirs` takes its scanned
+  source folder's `lstat` mtime. The move dates its STAGED folders, and Phase 3's rename carries each date along.
+- **Only folders the copy CREATED.** A merge into a folder the user already had leaves it to the store: it's theirs,
+  and the copy only added to it. A folder the merge created inside it is the copy's own and is dated.
+- **Never on a failed or stopped copy**: one failure fails the whole subtree, so nothing in it is dated, not even a
+  folder whose own contents all landed. Every stamp also checks the intent first.
+- **Best effort, and cheap where it can't happen**: a refusal is a `log::warn!`. `set_modified` defaults to
+  `NotSupported` (S3's prefixes, MTP, WebDAV, ADB's sync protocol has no setstat, read-only backends), and the first
+  `NotSupported` ends the pass.
+- **Decision/Why a defaulted trait method, ❌ not a required one**: every mutation on the trait defaults to
+  `NotSupported` and opts in, and over 20 test doubles and wrappers would each need a refusal body. The omission a
+  required method would catch is caught instead by `conformance::assert_set_modified_dates_a_folder`, which every
+  backend that implements it runs. ❗ A wrapper volume forwards it explicitly (`forward_volume_methods!`'s
+  `set_modified`), or it silently takes the default.
+
+**Where each backend stands.**
+
+- **Local** (`local_posix/streams.rs`): reports the open's `stat` date; writes it with `File::set_modified` on the open
+  handle after the last byte, before `sync_data`. Dates a folder with `filetime::set_file_mtime`.
+- **S3**: reports and writes the date as `x-amz-meta-mtime` (`crates/cmdr-s3/DETAILS.md`).
+- **`InMemoryVolume`**: keeps the stream's date (whole seconds), so an engine test copying onto it sees what a real
+  destination does. It also moves a folder's date to now when an entry lands in or leaves it, which is what lets an
+  engine test tell a folder dated after its contents from one dated before.
+- **ADB**: reports the open's `STAT`/`STA2` date; writes it as the push's `DONE` mtime (a u32: whole seconds, clamped
+  at 2106), falling back to now only for a dateless source (`crates/cmdr-adb/DETAILS.md`).
+- **MTP**: reports the `DateModified` from the `ObjectInfo` the read's open already fetched; writes it as the upload's
+  `DateModified`, in UTC with a `Z`. Whole seconds. A zoneless device date reads as the Mac's local time at that
+  date (`crates/cmdr-mtp/DETAILS.md` § "Dates on copies").
+- **SMB**: reports the server's `LastWriteTime` on both foreground read paths (streamed and one-frame compound); writes
+  `LastWriteTime` alone through SET_INFO, on the streaming writer's own handle before it closes, or by path right after
+  a one-frame compound write (one more frame). The read date rides on the read's own CREATE response
+  (`crates/cmdr-smb/DETAILS.md` § "Dates on copies"). Dates a folder by path (`Tree::set_times`, one frame).
+- **Archive (source only)**: reports each entry's date from the parsed index, on random-access reads and the one-pass
+  sequential extract alike (whole seconds; zip's DOS time keeps even seconds).
+- **SFTP**: reports the mtime from the `fstat` its open already sends; writes it with a path `SETSTAT` on the staging
+  temp after the awaited close (so a server buffering until close can't bump it), before the final rename. Whole
+  seconds, atime set alongside. Server-side `copy-data` copies keep it too (`crates/cmdr-sftp/DETAILS.md` § "Dates on
+  copies"). Dates a folder with the same path `SETSTAT`.
+- **WebDAV**: reports the GET's `Last-Modified`; writes it as an `X-OC-Mtime` header on the PUT, which Nextcloud,
+  ownCloud, and rclone honor. ❗ Plain Apache `mod_dav` can't store a date at all, so a copy onto it keeps the server's
+  own: best effort by design, with the destination half pinned on Nextcloud (`crates/cmdr-webdav/DETAILS.md` §
+  "Dates").
+
+**How it's pinned.** Two layers, so a gap shows where it lives:
+
+- **Per backend**, in its own crate: `cmdr_fs::volume::conformance::assert_write_from_stream_keeps_the_source_date`
+  (the destination half, with a `tolerance` for a coarse clock) and `assert_read_stream_reports_the_listed_date` (the
+  source half, on a file dated a day or more back, so a stream reporting "now" can't pass). Every mutable backend's
+  `conformance_test.rs` runs both; a read-only backend, or a server that stores no date (Apache `mod_dav`), runs only
+  the second, seeded by its fixture's own means.
+- **Through the engine**: `backend_suites/network_dates_test_support.rs`'s
+  `a_copy_onto_the_server_keeps_the_source_date` and `a_copy_off_the_server_keeps_the_source_date`, with cells for ADB,
+  MTP (`mtp_dates_test.rs`, on the virtual device), SMB (`smb_transfer_semantics_test.rs`), and SFTP; WebDAV runs only the copy-off half, through `a_copy_off_the_server_keeps_the_date_it_lists` on a file its
+  fixture dated. Plus `in_memory_dates_test.rs`, which pins the engine's own half (the checkpoint wrapper,
+  staging, the final rename) against the double in the unit lane. S3's engine cell is
+  `s3_transfer_integration_test.rs::copying_onto_a_bucket_lands_every_byte_and_the_mtime`.
+- **Folder dates**: `conformance::assert_set_modified_dates_a_folder` per backend (local, in-memory, SFTP, SMB);
+  `copied_folders_onto_the_server_keep_their_dates` and `copied_folders_off_the_server_keep_their_dates` through the
+  engine (in-memory, SFTP, SMB cells); `folder_dates_tests.rs` (both drivers, a merge, a failure partway);
+  `strategy_sequential_tests.rs::sequential_extract_keeps_the_folders_dates`; and for the local engine
+  `../copy/folder_dates_tests.rs` plus `move_op_tests.rs::cross_fs_move_keeps_folder_dates`.
+
+**Why it took a test layer of its own.** Every copy suite checksums both ends, and a destination stamping its own date
+passes all of them. On 2026-10-07 a 562-photo copy from a Pixel (ADB) onto a QNAP (SFTP) landed every file dated to
+the copy, with both gaps at once: ADB's stream reported no date, and SFTP never set one.
 
 ## Pause in the volume walks
 

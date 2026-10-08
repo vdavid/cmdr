@@ -7,6 +7,9 @@ import {
   toDisplayShortcut,
   toCanonicalShortcut,
   comboHasShift,
+  typedCharacterCombo,
+  keyComboCandidates,
+  capturedKeyCombo,
 } from './key-capture'
 
 // Mock navigator to control isMacOS() behavior
@@ -166,10 +169,18 @@ describe('physicalKeyCombo', () => {
     expect(physicalKeyCombo(otherLayout)).toBe('⌥⇧=')
   })
 
-  it('keeps the Shift+digit case it grew out of', () => {
+  it('stays out of a Shift-only keypress: the typed character IS its name', () => {
     setMacOS(true)
-    expect(physicalKeyCombo(makeKeyEvent({ key: '*', code: 'Digit8', shiftKey: true }))).toBe('⇧8')
-    expect(physicalKeyCombo(makeKeyEvent({ key: '(', code: 'Digit8', shiftKey: true }))).toBe('⇧8')
+    // `⇧8` types `*` on US and `(` on Hungarian; those are the `*` and `(` keys
+    // for that user, so naming the physical key would make the combo layout-bound.
+    expect(physicalKeyCombo(makeKeyEvent({ key: '*', code: 'Digit8', shiftKey: true }))).toBeNull()
+    expect(physicalKeyCombo(makeKeyEvent({ key: '(', code: 'Digit8', shiftKey: true }))).toBeNull()
+  })
+
+  it('names the physical key when ⌘⇧ changed what the layout typed', () => {
+    setMacOS(true)
+    // ⌘⇧. reports `>` on US: the command key stays a key position, like any ⌘ combo.
+    expect(physicalKeyCombo(makeKeyEvent({ key: '>', code: 'Period', metaKey: true, shiftKey: true }))).toBe('⌘⇧.')
   })
 
   it('returns null when event.key already IS the physical character', () => {
@@ -191,6 +202,103 @@ describe('physicalKeyCombo', () => {
     expect(physicalKeyCombo(makeKeyEvent({ key: 'å', code: 'KeyA', altKey: true }))).toBeNull()
     expect(physicalKeyCombo(makeKeyEvent({ key: '+', code: 'NumpadAdd', altKey: true }))).toBeNull()
     expect(physicalKeyCombo(makeKeyEvent({ key: 'F1', code: 'F1', shiftKey: true }))).toBeNull()
+  })
+})
+
+/**
+ * Real keypresses captured on macOS (Safari key logger, 2026-10-05, US layout plus a
+ * PC-layout Genius keyboard), and the layouts the character rule exists for.
+ */
+describe('typed symbols are named by the character, on any layout', () => {
+  it.each([
+    ['US ⇧8', { key: '*', code: 'Digit8', shiftKey: true }, '*'],
+    ["Swedish ⇧'", { key: '*', code: 'Backslash', shiftKey: true }, '*'],
+    ['numpad *', { key: '*', code: 'NumpadMultiply' }, '*'],
+    ['US ⇧=', { key: '+', code: 'Equal', shiftKey: true }, '+'],
+    ['Hungarian ⇧3', { key: '+', code: 'Digit3', shiftKey: true }, '+'],
+    ['Swedish +', { key: '+', code: 'Minus' }, '+'],
+    ['numpad +', { key: '+', code: 'NumpadAdd' }, '+'],
+    ['US ⇧-', { key: '_', code: 'Minus', shiftKey: true }, '_'],
+    ['French ⇧1', { key: '1', code: 'Digit1', shiftKey: true }, '1'],
+  ])('%s formats as %s', (_layout, event, expected) => {
+    setMacOS(true)
+    expect(formatKeyCombo(makeKeyEvent(event))).toBe(expected)
+  })
+
+  it('drops Shift off macOS the same way', () => {
+    setMacOS(false)
+    expect(formatKeyCombo(makeKeyEvent({ key: '*', code: 'Digit8', shiftKey: true }))).toBe('*')
+  })
+
+  it('keeps Shift where it means something: letters, Space, and named keys', () => {
+    setMacOS(true)
+    expect(formatKeyCombo(makeKeyEvent({ key: 'H', code: 'KeyH', shiftKey: true }))).toBe('⇧H')
+    expect(formatKeyCombo(makeKeyEvent({ key: 'Ő', code: 'BracketLeft', shiftKey: true }))).toBe('⇧Ő')
+    expect(formatKeyCombo(makeKeyEvent({ key: ' ', code: 'Space', shiftKey: true }))).toBe('⇧Space')
+    expect(formatKeyCombo(makeKeyEvent({ key: 'F8', code: 'F8', shiftKey: true }))).toBe('⇧F8')
+    expect(formatKeyCombo(makeKeyEvent({ key: 'Tab', code: 'Tab', shiftKey: true }))).toBe('⇧Tab')
+  })
+
+  it('keeps Shift when a command modifier is held: that combo is a key position', () => {
+    setMacOS(true)
+    expect(formatKeyCombo(makeKeyEvent({ key: '>', code: 'Period', metaKey: true, shiftKey: true }))).toBe('⌘⇧>')
+    expect(formatKeyCombo(makeKeyEvent({ key: '±', code: 'Equal', altKey: true, shiftKey: true }))).toBe('⌥⇧±')
+  })
+})
+
+describe('PC keys macOS renames', () => {
+  it('names the PC Insert key Insert, though macOS reports it as Help', () => {
+    setMacOS(true)
+    // Captured: key "Help", code "Help", keyCode 45 (a Genius PC keyboard on macOS).
+    expect(formatKeyCombo(makeKeyEvent({ key: 'Help', code: 'Help' }))).toBe('Insert')
+    expect(formatKeyCombo(makeKeyEvent({ key: 'Insert', code: 'Insert' }))).toBe('Insert')
+  })
+
+  it('names forward delete Delete', () => {
+    setMacOS(true)
+    expect(formatKeyCombo(makeKeyEvent({ key: 'Delete', code: 'Delete' }))).toBe('Delete')
+  })
+})
+
+describe('typedCharacterCombo', () => {
+  it('names the character ⌥ typed, the way AltGr types symbols on PC layouts', () => {
+    setMacOS(true)
+    expect(typedCharacterCombo(makeKeyEvent({ key: '*', code: 'Slash', altKey: true }))).toBe('*')
+    expect(typedCharacterCombo(makeKeyEvent({ key: '*', code: 'Slash', altKey: true, shiftKey: true }))).toBe('*')
+  })
+
+  it('stays out of everything else', () => {
+    setMacOS(true)
+    expect(typedCharacterCombo(makeKeyEvent({ key: '*', code: 'Digit8', shiftKey: true }))).toBeNull()
+    expect(typedCharacterCombo(makeKeyEvent({ key: '*', code: 'Slash', altKey: true, metaKey: true }))).toBeNull()
+    expect(typedCharacterCombo(makeKeyEvent({ key: '*', code: 'Slash', altKey: true, ctrlKey: true }))).toBeNull()
+    expect(typedCharacterCombo(makeKeyEvent({ key: 'å', code: 'KeyA', altKey: true }))).toBeNull()
+    expect(typedCharacterCombo(makeKeyEvent({ key: ' ', code: 'Space', altKey: true }))).toBeNull()
+    expect(typedCharacterCombo(makeKeyEvent({ key: 'Dead', code: 'KeyE', altKey: true }))).toBeNull()
+  })
+})
+
+describe('keyComboCandidates', () => {
+  it('lists the exact combo, then the physical key, then the typed character, without repeats', () => {
+    setMacOS(true)
+    expect(keyComboCandidates(makeKeyEvent({ key: '±', code: 'Equal', altKey: true, shiftKey: true }))).toEqual([
+      '⌥⇧±',
+      '⌥⇧=',
+      '±',
+    ])
+    expect(keyComboCandidates(makeKeyEvent({ key: '*', code: 'Digit8', shiftKey: true }))).toEqual(['*'])
+    expect(keyComboCandidates(makeKeyEvent({ key: 'a', code: 'KeyA', metaKey: true }))).toEqual(['⌘A'])
+  })
+})
+
+describe('capturedKeyCombo', () => {
+  it('records what the Settings capture field persists', () => {
+    setMacOS(true)
+    expect(capturedKeyCombo(makeKeyEvent({ key: '*', code: 'Digit8', shiftKey: true }))).toBe('*')
+    expect(capturedKeyCombo(makeKeyEvent({ key: '*', code: 'NumpadMultiply' }))).toBe('*')
+    expect(capturedKeyCombo(makeKeyEvent({ key: '±', code: 'Equal', altKey: true, shiftKey: true }))).toBe('⌥⇧=')
+    expect(capturedKeyCombo(makeKeyEvent({ key: 'Help', code: 'Help' }))).toBe('Insert')
+    expect(capturedKeyCombo(makeKeyEvent({ key: 'Delete', code: 'Delete' }))).toBe('Delete')
   })
 })
 
@@ -233,6 +341,21 @@ describe('canonical vs display forms', () => {
     expect(toCanonicalShortcut('PgUp')).toBe('PageUp')
     expect(toCanonicalShortcut('Ctrl+Esc')).toBe('Ctrl+Escape')
     expect(toCanonicalShortcut('⌘A')).toBe('⌘A')
+  })
+
+  it('heals a Shift-only US key position to the character it typed', () => {
+    setMacOS(true)
+    // Stored before typed symbols were named by their character: no keypress can
+    // produce `⇧8` any more, and on the US layout those names were written on it meant `*`.
+    expect(toCanonicalShortcut('⇧8')).toBe('*')
+    expect(toCanonicalShortcut('⇧=')).toBe('+')
+    expect(toCanonicalShortcut('⇧-')).toBe('_')
+    expect(toCanonicalShortcut('⇧/')).toBe('?')
+    expect(toCanonicalShortcut('Shift+8')).toBe('*')
+    expect(toCanonicalShortcut('⇧A')).toBe('⇧A')
+    expect(toCanonicalShortcut('⇧F8')).toBe('⇧F8')
+    expect(toCanonicalShortcut('⌘⇧8')).toBe('⌘⇧8')
+    expect(toCanonicalShortcut('⌥⇧=')).toBe('⌥⇧=')
   })
 })
 

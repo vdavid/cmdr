@@ -12,7 +12,15 @@ How the GitHub workflows fit together, and the invariants that keep them honest.
 | `advisories.yml`        | Daily (4:17 AM UTC), manual             | cargo-audit and cargo-deny on `Cargo.lock` only (no compile): new advisories surface in a day        |
 | `deploy-api-server.yml` | Push to main touching `apps/api-server` | Deploys the Cloudflare Worker.                                                                       |
 | `deploy-dashboard.yml`  | Push to main touching the dashboard     | Builds and deploys the analytics dashboard to Cloudflare Pages.                                      |
-| `release.yml`           | `v*` tags                               | Builds, signs, and publishes the desktop app (self-hosted macOS runners).                            |
+| `release.yml`           | `v*` tags                               | Only calls `release-pipeline.yml` (so attestations name the reusable workflow as signer).            |
+| `release-pipeline.yml`  | Called by `release.yml`                 | Builds, signs, and publishes the desktop app on macOS runners. `docs/guides/releasing.md`            |
+| `scorecard.yml`         | Push to main, weekly, rule edits        | OpenSSF Scorecard: publishes the score (README badge) and SARIF to code scanning. § below            |
+| `codeql.yml`            | Push to main, weekly, manual            | CodeQL (Actions, JS/TS, Rust); a high or critical finding fails it and blocks releases. § below      |
+| `gradle-wrapper.yml`    | Push to main, weekly, manual            | Checks the IntelliJ plugin's `gradle-wrapper.jar` against Gradle's published checksums. § Scorecard  |
+
+`slow-checks.yml` also runs the fuzz smoke job (120 s per target, findings uploaded as `fuzz-artifacts`;
+`fuzz/CLAUDE.md`). `ci.yml`'s `Full run (run_all)` job runs only on a `run_all` dispatch: both release gates match it by
+name to prove a run was full, so renaming it breaks releases (`docs/guides/releasing.md`).
 
 The website deploy is a job inside `ci.yml` (gated on the website checks passing), NOT a standalone workflow. There used
 to be a standalone `deploy-website.yml` on the same path filters; it deployed a second time per push and didn't wait for
@@ -76,7 +84,8 @@ with a reason.** When you rename one, CI fails until every workflow catches up. 
 Always runs (no change gate). Holds the checks whose inputs no per-app filter can cover:
 
 - `oxfmt` formats the whole monorepo (docs, configs, workflows). Before the hygiene job, a docs-only commit ran zero CI,
-  so unformatted markdown could land on main and fail the next unrelated PR's CI.
+  so unformatted markdown could land on main and fail the next unrelated PR's CI. Locally, the git hooks apply all three
+  formatters at commit and push time: `docs/tooling/git-hooks.md`.
 - `changelog-commit-links` (previously duplicated across three jobs; needs `fetch-depth: 0`).
 - `workflows-hardening`, `workflows-rustup`, and `ci-coverage` — the workflow files they scan are no app's territory.
 
@@ -142,7 +151,89 @@ schedule would let it go cold every time, defeating the cache. `*/6` on day-of-m
   starts compiling cold again despite the cron, check `gh cache list` and consider dropping this cache (the per-push one
   is far more valuable).
 
+## macOS lane (`desktop-rust-macos`)
+
+Every other `ci.yml` job runs on ubuntu, so code under `cfg(target_os = "macos")` used to be compiled only on whichever
+Mac last ran `pnpm check`. This job runs on `macos-26` (the release builder's image, so it lints against the shipping
+SDK; free for a public repo) and asks the three questions Linux can't answer for that code: `desktop-rust-clippy`,
+`desktop-rust-rustdoc`, and `desktop-rust-tests`. The platform-blind scanners stay in `desktop-rust` alone. Gated on the
+`rust` filter like `desktop-rust`, so it runs in parallel and adds no wall time unless it outlasts that job (~29 min
+warm on 2026-10-05).
+
+- **Required.** It's in `ci-ok`'s `needs`, so a red macOS job fails the run, `ci-ok`, and both release gates. Its first
+  run (2026-10-06) failed on two tests that assumed David's Mac (a malloc zone macOS 26 doesn't register, a tight
+  watchdog margin); the second was green, and it was promoted then.
+- **Left out on purpose**: `macos-availability` (the committed selector list records the newest SDK it was built on, and
+  an older runner SDK that knows a different selector set fails by design), `disk-images` (a candidate once the job has
+  a track record), and the Docker fixture lanes (no Docker on GitHub's macOS runners).
+- **Cache**: its own rust-cache entry (keys are per job and OS), saved only from `main` so a PR can't add a second
+  multi-GB entry. The repo already sits at the 10 GB ceiling (11.6 GB on 2026-10-06, three ~1.9 GB `docker-e2e` entries,
+  one per `Cargo.lock`), so LRU evicts the stale E2E entries first; if this job starts building cold, check
+  `gh cache list`.
+
+The CI failure history that motivated it: `docs/notes/ci-health-2026-10.md`.
+
+## OpenSSF Scorecard
+
+`scorecard.yml` runs `ossf/scorecard-action` and publishes to the public API that backs the README badge and
+`https://scorecard.dev/viewer/?uri=github.com/vdavid/cmdr`; the SARIF lands in the repo's code-scanning tab. The API
+verifies the workflow before accepting a result, so keep it minimal (the header comment lists the rules). Run it locally
+with the `scorecard` release binary:
+`GITHUB_AUTH_TOKEN=$(gh auth token) scorecard --repo=github.com/vdavid/cmdr --show-details` (the `gcr.io` image needs a
+billed GCP project).
+
+Where the score stands (scorecard v5.5.0 against the pushed `main`, 2026-10-07: 7.1 with Vulnerabilities erroring out;
+the CodeQL, digest-pin, and OSV-config changes of 2026-10-08 should lift it to ~7.5 once pushed):
+
+- **Held by `workflows-hardening`**: Pinned-Dependencies' GitHub Actions half, Token-Permissions (every workflow has a
+  read-only top-level `permissions:`, jobs ask for write themselves), and part of Dangerous-Workflow (no
+  `pull_request_target`).
+- **SAST** reads check runs on merged PRs; with none, it scores on whether a CodeQL workflow exists, so `codeql.yml`
+  takes it to 10.
+- **Binary-Artifacts**: the one binary is `tools/intellij-plugin/gradle/wrapper/gradle-wrapper.jar`. Scorecard stops
+  counting it only when a `gradle/actions/wrapper-validation` workflow has a successful run on `main`'s latest commit,
+  so `gradle-wrapper.yml` runs on every push with no path filter (10 s). A push's Scorecard run could in theory finish
+  first and still see 9; the next run corrects it.
+- **Structurally low for a solo, no-PR project**: Branch-Protection, Code-Review, and CI-Tests (n/a).
+- **Structurally capped**: License (BSL isn't OSI, 9), CII-Best-Practices (needs an OSI license), Contributors.
+- **Vulnerabilities is 10 minus a raw OSV count** over every lockfile, not cargo-deny's macOS-scoped view. Per-lockfile
+  `osv-scanner.toml` files (root, `convert-clip-model/`, `fuzz/`, `benchmarks/smb/`, `scripts/release-finish/`) ignore
+  what can't put the shipped app at risk, each with its reason: the frozen CLIP-conversion pins, Linux-only GTK/Wayland
+  crates, build- and test-only crates, dev-only npm tooling with no fix, "unmaintained" notices with no known
+  vulnerability (`ttf-parser`, five `unic-*` crates, each naming the upgrade that drops it), and `rsa`, whose Marvin
+  timing attack needs a decryption oracle our client-side SSH signing isn't (`deny.toml` holds the analysis). ❌ Never
+  ignore a vulnerability that applies to the shipped app. That leaves 0 (10/10, verified with osv-scanner v2.6.0,
+  2026-10-08). Preview with `osv-scanner scan source -r .` (Scorecard runs osv-scanner's v2 library with the same
+  per-directory configs).
+- **Pinned-Dependencies' container half**: every pulled image is digest-pinned, and Renovate's `docker images` group
+  keeps the digests fresh (`renovate.json`). The one gap is `FROM ${BASE_IMAGE}` in the E2E `Dockerfile`, our own
+  locally built base, which nothing can pin.
+
+## CodeQL
+
+`codeql.yml` runs CodeQL (`build-mode: none`, the default `code-scanning` suite) on GitHub Actions workflows, JS/TS, and
+Rust. Rust takes ~6x the other two together, so a push runs it only when Rust sources changed; the weekly run and a
+dispatch always run all three. The Rust extractor analyzes the shipped target (`aarch64-apple-darwin`) with `cfg(test)`
+off, through `CODEQL_EXTRACTOR_RUST_OPTION_*` env vars.
+
+- **What it scans**: `.github/codeql/codeql-config.yml`. Test code, fixtures, the E2E harness, and generated files stay
+  out (their hard-coded passwords and `http://` URLs are the point of a test), and `rust/cleartext-logging` is excluded:
+  it judges by identifier name and flagged 38 log lines, none logging a secret.
+- **Blocking**: `.github/codeql/filter-sarif.sh` drops the findings `accepted-findings.json` lists (rule + file, each
+  with a reason), uploads the rest, and fails the run on anything at security-severity 7.0+ or level `error`. A false
+  positive in shipped code goes in that list; ❌ don't dismiss it in GitHub's UI, which the run can't see.
+- **Release gate**: `scripts/release-codeql-gate.sh` needs a green CodeQL run on the released commit AND no open high or
+  critical CodeQL alert on `main` (which catches a Rust finding from an older run). `release-ci-gate.sh` calls it with
+  `--wait`; `release-pipeline.yml`'s `ci-gate` job calls it again, behind the same `RELEASE_SKIP_CI_GATE_TAG` bypass.
+- **Run it locally** (the action's own bundle, `codeql-bundle-v<cli>` from `github/codeql-action` releases, with the CLI
+  version in that action tag's `src/defaults.json`):
+  `codeql database create db --language=rust --build-mode=none --codescanning-config=.github/codeql/codeql-config.yml`
+  (with the two Rust env vars set), then `codeql database analyze db --format=sarif-latest --output=rust.sarif`, then
+  `filter-sarif.sh rust.sarif out.sarif`. Timing on an M-series Mac (CLI 2.27.1, 2026-10-08): Rust 8.5 min, JS/TS 1.3
+  min, Actions 10 s.
+
 ## Branch protection
 
 `ci-ok` is the single required status check. It needs every first-class job and fails if any needed job failed or was
-cancelled; skipped jobs (change detection said "not affected") count as OK.
+cancelled; skipped jobs (change detection said "not affected") count as OK. `desktop-rust-macos` isn't one of them yet
+(see § macOS lane).

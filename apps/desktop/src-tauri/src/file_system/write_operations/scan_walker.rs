@@ -158,6 +158,13 @@ pub(super) fn walk_sources_with_per_path<E>(
                 // what the copy reserves and fills against.
                 dedup_bytes: *dedup_bytes - dedup_bytes_before,
                 top_level_is_directory,
+                // One `lstat` per selected item, local and cheap: the walk above
+                // kept no handle on the top-level entry it read.
+                top_level_modified_at: fs::symlink_metadata(source)
+                    .ok()
+                    .and_then(|meta| meta.modified().ok())
+                    .and_then(|modified| modified.duration_since(std::time::UNIX_EPOCH).ok())
+                    .map(|since| since.as_secs()),
             },
         ));
     }

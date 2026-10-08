@@ -12,9 +12,9 @@
   "@indexing.scan.label": {
     "sourceHash": "5b0433c"
   },
-  "indexing.scan.counters": "{entriesText} {entries, plural, other {个条目}}，{dirsText} {dirs, plural, other {个目录}}",
+  "indexing.scan.counters": "{entriesText} {entries, plural, other {个条目}}，{dirsText} {dirs, plural, other {个文件夹}}",
   "@indexing.scan.counters": {
-    "sourceHash": "f635790"
+    "sourceHash": "ecf47f2"
   },
   "indexing.scan.countersElapsed": "{counters} · {elapsed}",
   "@indexing.scan.countersElapsed": {
@@ -133,9 +133,21 @@
   "@indexing.progress.percentEta": {
     "sourceHash": "26b29da"
   },
+  "indexing.overall.eta": "总体：{eta}",
+  "@indexing.overall.eta": {
+    "sourceHash": "a9a2ffc"
+  },
+  "indexing.overall.estimating": "总体：正在估算…",
+  "@indexing.overall.estimating": {
+    "sourceHash": "9dac967"
+  },
   "indexing.eta.almostDone": "即将完成",
   "@indexing.eta.almostDone": {
     "sourceHash": "506f162"
+  },
+  "indexing.eta.almostDoneMidSentence": "即将完成",
+  "@indexing.eta.almostDoneMidSentence": {
+    "sourceHash": "1d2fb48"
   },
   "indexing.eta.secondsLeft": "剩余 {secondsText} 秒",
   "@indexing.eta.secondsLeft": {
@@ -188,6 +200,10 @@
   "indexing.needsFreshScan.afterDisconnect": "{name} 在 Cmdr 更新索引时断开了连接。这个驱动器下次会从头开始扫描，文件夹大小就会重新准确。",
   "@indexing.needsFreshScan.afterDisconnect": {
     "sourceHash": "a90dbdf"
+  },
+  "indexing.memoryStop.paused": "Cmdr 占用的内存过多，已暂停驱动器索引。在你重新启动 Cmdr 之前，文件夹大小可能已过期。",
+  "@indexing.memoryStop.paused": {
+    "sourceHash": "32d225a"
   },
   "indexing.firstConnect.title": "为 {name} 建立索引？",
   "@indexing.firstConnect.title": {

@@ -9,8 +9,9 @@ use std::sync::atomic::Ordering;
 
 use cmdr_fs::ignore_poison::IgnorePoison;
 
-use super::{INDEX_REGISTRY, IndexPhase, Registry};
+use super::{INDEX_REGISTRY, IndexInstance, IndexPhase, Registry};
 use crate::indexing::lifecycle::freshness::Freshness;
+use crate::indexing::lifecycle::lifecycle_bus::RegisteredVolume;
 use crate::indexing::store::{IndexFailure, IndexStore};
 use crate::indexing::volume::{IndexVolumeKind, VolumeId};
 
@@ -37,21 +38,36 @@ use crate::indexing::volume::{IndexVolumeKind, VolumeId};
 /// again — a relaunch mid-coverage would wire nothing for a home-covered volume,
 /// and the signal it publishes would have no subscriber.
 pub(crate) fn ready_volumes_with_kind() -> Vec<(VolumeId, IndexVolumeKind)> {
-    ready_candidates_on(&INDEX_REGISTRY)
+    ready_volumes_to_wire()
         .into_iter()
-        .filter(|(vid, _, fresh)| *fresh || has_covered_home(vid))
-        .map(|(vid, kind, _)| (vid, kind))
+        .map(|ready| (ready.volume_id, ready.kind))
         .collect()
 }
 
-/// The under-the-lock half of [`ready_volumes_with_kind`]: every registered
-/// volume with its kind and whether its freshness reads `Fresh`.
+/// [`ready_volumes_with_kind`], in the shape the registration bus delivers: each
+/// ready volume WITH a child of its root stop signal, for a sweep that starts
+/// per-volume work and needs that work to end with the volume.
+///
+/// The child is minted under the registry lock, off the instance itself, which is
+/// what "handed down, never looked up by id" means for a sweep
+/// (`indexing/host/DETAILS.md` § Cancellation).
+pub(crate) fn ready_volumes_to_wire() -> Vec<RegisteredVolume> {
+    ready_candidates_on(&INDEX_REGISTRY)
+        .into_iter()
+        .filter(|(candidate, fresh)| *fresh || has_covered_home(&candidate.volume_id))
+        .map(|(candidate, _)| candidate)
+        .collect()
+}
+
+/// The under-the-lock half of [`ready_volumes_to_wire`]: every registered volume
+/// (its id, kind, and a child of its stop signal) with whether its freshness reads
+/// `Fresh`.
 ///
 /// Split out for two reasons. The decision needs SQLite (`has_covered_home`), and
 /// nothing that touches a database belongs under the lifecycle lock. And taking
 /// the registry as a parameter rather than reaching for the static is what lets a
 /// test drive it against a poisoned lock of its own.
-pub(super) fn ready_candidates_on(reg: &Registry) -> Vec<(VolumeId, IndexVolumeKind, bool)> {
+pub(super) fn ready_candidates_on(reg: &Registry) -> Vec<(RegisteredVolume, bool)> {
     reg.lock_ignore_poison()
         .iter()
         .map(|(vid, instance)| {
@@ -60,7 +76,12 @@ pub(super) fn ready_candidates_on(reg: &Registry) -> Vec<(VolumeId, IndexVolumeK
                 .freshness
                 .lock_ignore_poison()
                 .is_some_and(|f| f == Freshness::Fresh);
-            (vid.clone(), instance.kind, fresh)
+            let candidate = RegisteredVolume {
+                volume_id: vid.clone(),
+                kind: instance.kind(),
+                stop: instance.work.cancel.child_token(),
+            };
+            (candidate, fresh)
         })
         .collect()
 }
@@ -89,7 +110,10 @@ pub(crate) fn all_registered_volume_ids() -> Vec<VolumeId> {
 /// visit for a Local/SMB volume, skip an MTP one — without inspecting the
 /// volume-id string.
 pub(crate) fn volume_kind(volume_id: &str) -> Option<IndexVolumeKind> {
-    INDEX_REGISTRY.lock_ignore_poison().get(volume_id).map(|i| i.kind)
+    INDEX_REGISTRY
+        .lock_ignore_poison()
+        .get(volume_id)
+        .map(IndexInstance::kind)
 }
 
 /// All registered MTP volume ids belonging to `device_id` (one device hosts N

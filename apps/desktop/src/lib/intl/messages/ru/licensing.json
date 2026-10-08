@@ -1,0 +1,443 @@
+{
+  "licensing.windowTitle.personalUse": "Cmdr – только для личного использования",
+  "@licensing.windowTitle.personalUse": {
+    "sourceHash": "2b855d7"
+  },
+  "licensing.acknowledgements.srTitle": "Благодарности",
+  "@licensing.acknowledgements.srTitle": {
+    "sourceHash": "c9015d5"
+  },
+  "licensing.acknowledgements.note": "Посмотрите, какой длинный список! Я очень ценю труд авторов и сопровождающих всех этих библиотек, на которых построен Cmdr.",
+  "@licensing.acknowledgements.note": {
+    "sourceHash": "7d0542d"
+  },
+  "licensing.acknowledgements.thanks": "Спасибо всем за вклад в мир открытого ПО! ❤️",
+  "@licensing.acknowledgements.thanks": {
+    "sourceHash": "302273d"
+  },
+  "licensing.acknowledgements.signature": "David",
+  "@licensing.acknowledgements.signature": {
+    "sourceHash": "a6b54c2",
+    "sameAsSourceJustification": "Product name, author attribution, copyright or universal symbol is kept verbatim per docs/i18n/translation-principles.md and the Russian style guide."
+  },
+  "licensing.acknowledgements.rustHeading": "Крейты Rust ({count, number})",
+  "@licensing.acknowledgements.rustHeading": {
+    "sourceHash": "b2f91ff"
+  },
+  "licensing.acknowledgements.npmHeading": "Пакеты npm ({count, number})",
+  "@licensing.acknowledgements.npmHeading": {
+    "sourceHash": "44bdf59"
+  },
+  "licensing.acknowledgements.vendoredHeading": "Значки и другие файлы ({count, number})",
+  "@licensing.acknowledgements.vendoredHeading": {
+    "sourceHash": "f5bcd78"
+  },
+  "licensing.acknowledgements.jumpToRust": "Перейти к крейтам Rust",
+  "@licensing.acknowledgements.jumpToRust": {
+    "sourceHash": "60d4a21"
+  },
+  "licensing.acknowledgements.jumpToNpm": "Перейти к пакетам npm",
+  "@licensing.acknowledgements.jumpToNpm": {
+    "sourceHash": "9f55ebb"
+  },
+  "licensing.acknowledgements.fullTexts": "Полные тексты лицензий входят в комплект Cmdr в файле <notices>THIRD-PARTY-NOTICES.md</notices>.",
+  "@licensing.acknowledgements.fullTexts": {
+    "sourceHash": "1760aeb"
+  },
+  "licensing.acknowledgements.loading": "Загрузка списка…",
+  "@licensing.acknowledgements.loading": {
+    "sourceHash": "0b6efaa"
+  },
+  "licensing.about.srTitle": "О приложении Cmdr",
+  "@licensing.about.srTitle": {
+    "sourceHash": "efe010f"
+  },
+  "licensing.about.appName": "Cmdr",
+  "@licensing.about.appName": {
+    "sourceHash": "40c6a1b",
+    "sameAsSourceJustification": "Product name, author attribution, copyright or universal symbol is kept verbatim per docs/i18n/translation-principles.md and the Russian style guide."
+  },
+  "licensing.about.tagline": "Файловый менеджер для работы с клавиатуры",
+  "@licensing.about.tagline": {
+    "sourceHash": "e399865"
+  },
+  "licensing.about.version": "Версия {version} (открытая бета)",
+  "@licensing.about.version": {
+    "sourceHash": "1496c81"
+  },
+  "licensing.about.betaNote": "Нашли проблему? Сообщите мне на <github>GitHub</github>. Я читаю каждый отчет!",
+  "@licensing.about.betaNote": {
+    "sourceHash": "49a09cb"
+  },
+  "licensing.about.noLicense": "Без лицензии – разрешено только личное использование",
+  "@licensing.about.noLicense": {
+    "sourceHash": "e2ce8da"
+  },
+  "licensing.about.perpetual": "Бессрочная коммерческая лицензия для {org}",
+  "@licensing.about.perpetual": {
+    "sourceHash": "591d7a8"
+  },
+  "licensing.about.commercial": "Коммерческая лицензия для {org}",
+  "@licensing.about.commercial": {
+    "sourceHash": "577f55b"
+  },
+  "licensing.about.commercialUntil": "Коммерческая лицензия для {org}, действует до {date}",
+  "@licensing.about.commercialUntil": {
+    "sourceHash": "eb44f8d"
+  },
+  "licensing.about.fallbackOrg": "вашей организации",
+  "@licensing.about.fallbackOrg": {
+    "sourceHash": "bb0bdf0"
+  },
+  "licensing.about.aiAttribution": "ИИ работает на базе Falcon-H1R-7B от Technology Innovation Institute (TII)",
+  "@licensing.about.aiAttribution": {
+    "sourceHash": "54d9ac4"
+  },
+  "licensing.about.linkWebsite": "Сайт",
+  "@licensing.about.linkWebsite": {
+    "sourceHash": "b5a229a"
+  },
+  "licensing.about.linkGetLicense": "Получить лицензию",
+  "@licensing.about.linkGetLicense": {
+    "sourceHash": "fab19d3"
+  },
+  "licensing.about.linkGithub": "GitHub",
+  "@licensing.about.linkGithub": {
+    "sourceHash": "f911e41",
+    "sameAsSourceJustification": "Product name, author attribution, copyright or universal symbol is kept verbatim per docs/i18n/translation-principles.md and the Russian style guide."
+  },
+  "licensing.about.linkDiscord": "Discord",
+  "@licensing.about.linkDiscord": {
+    "sourceHash": "053bc65",
+    "sameAsSourceJustification": "Product name, author attribution, copyright or universal symbol is kept verbatim per docs/i18n/translation-principles.md and the Russian style guide."
+  },
+  "licensing.about.copyright": "© 2024-2026 David Veszelovszki",
+  "@licensing.about.copyright": {
+    "sourceHash": "e6ab7e3",
+    "sameAsSourceJustification": "Product name, author attribution, copyright or universal symbol is kept verbatim per docs/i18n/translation-principles.md and the Russian style guide."
+  },
+  "licensing.commercialReminder.title": "Спасибо, что пользуетесь Cmdr!",
+  "@licensing.commercialReminder.title": {
+    "sourceHash": "6898650"
+  },
+  "licensing.commercialReminder.usingPersonal": "Вы используете личную лицензию.",
+  "@licensing.commercialReminder.usingPersonal": {
+    "sourceHash": "3aa6518"
+  },
+  "licensing.commercialReminder.askCommercial": "Если вы используете Cmdr на работе, приобретите коммерческую лицензию, чтобы соблюдать условия использования.",
+  "@licensing.commercialReminder.askCommercial": {
+    "sourceHash": "84b372c"
+  },
+  "licensing.commercialReminder.priceInfo": "Коммерческая лицензия стоит $59 единоразово и поддерживает дальнейшую разработку.",
+  "@licensing.commercialReminder.priceInfo": {
+    "sourceHash": "55bd2ed"
+  },
+  "licensing.commercialReminder.declinePersonal": "Я использую Cmdr<break></break>только в личных целях",
+  "@licensing.commercialReminder.declinePersonal": {
+    "sourceHash": "49641ff"
+  },
+  "licensing.commercialReminder.getCommercial": "Получить коммерческую лицензию",
+  "@licensing.commercialReminder.getCommercial": {
+    "sourceHash": "07f081b"
+  },
+  "licensing.expiration.title": "Срок действия коммерческой лицензии истек",
+  "@licensing.expiration.title": {
+    "sourceHash": "7067c40"
+  },
+  "licensing.expiration.orgName": "Владелец лицензии: <strong>{org}</strong>",
+  "@licensing.expiration.orgName": {
+    "sourceHash": "a5f0bab"
+  },
+  "licensing.expiration.message": "Срок коммерческой подписки истек <strong>{date}</strong>.",
+  "@licensing.expiration.message": {
+    "sourceHash": "92b6b97"
+  },
+  "licensing.expiration.info": "Теперь Cmdr работает в режиме личного использования. Если вы по-прежнему используете его для работы, продлите лицензию.",
+  "@licensing.expiration.info": {
+    "sourceHash": "274de6c"
+  },
+  "licensing.expiration.renew": "Продлить лицензию",
+  "@licensing.expiration.renew": {
+    "sourceHash": "1ee8746"
+  },
+  "licensing.expiration.continue": "Продолжить в личном режиме",
+  "@licensing.expiration.continue": {
+    "sourceHash": "b5c90b4"
+  },
+  "licensing.dialog.loading": "Загрузка…",
+  "@licensing.dialog.loading": {
+    "sourceHash": "ba3bbbe"
+  },
+  "licensing.dialog.detailsTitle": "Сведения о лицензии",
+  "@licensing.dialog.detailsTitle": {
+    "sourceHash": "57327bb"
+  },
+  "licensing.dialog.enterTitle": "Ввести лицензионный ключ",
+  "@licensing.dialog.enterTitle": {
+    "sourceHash": "357d05e"
+  },
+  "licensing.dialog.serverInvalidBanner": "Не удалось проверить этот ключ на сервере. Попробуйте другой ключ или напишите нам на <supportEmail>{email}</supportEmail>.",
+  "@licensing.dialog.serverInvalidBanner": {
+    "sourceHash": "fa68511"
+  },
+  "licensing.dialog.labelType": "Тип лицензии",
+  "@licensing.dialog.labelType": {
+    "sourceHash": "72f256a"
+  },
+  "licensing.dialog.labelOrganization": "Организация",
+  "@licensing.dialog.labelOrganization": {
+    "sourceHash": "d764d42"
+  },
+  "licensing.dialog.labelValidity": "Срок действия",
+  "@licensing.dialog.labelValidity": {
+    "sourceHash": "9c3050e"
+  },
+  "licensing.dialog.labelKey": "Лицензионный ключ",
+  "@licensing.dialog.labelKey": {
+    "sourceHash": "f73a795"
+  },
+  "licensing.dialog.typeCommercialPerpetual": "Коммерческая бессрочная",
+  "@licensing.dialog.typeCommercialPerpetual": {
+    "sourceHash": "2c6933c"
+  },
+  "licensing.dialog.typeCommercialSubscription": "Коммерческая подписка",
+  "@licensing.dialog.typeCommercialSubscription": {
+    "sourceHash": "e521480"
+  },
+  "licensing.dialog.validityNotYetVerified": "Еще не проверена",
+  "@licensing.dialog.validityNotYetVerified": {
+    "sourceHash": "5b2f7a6"
+  },
+  "licensing.dialog.validityPerpetualUntil": "Бессрочная: обновления до {date}",
+  "@licensing.dialog.validityPerpetualUntil": {
+    "sourceHash": "cde0711"
+  },
+  "licensing.dialog.validityPerpetual": "Бессрочная",
+  "@licensing.dialog.validityPerpetual": {
+    "sourceHash": "2d34320"
+  },
+  "licensing.dialog.validityValidUntil": "Действует до {date}",
+  "@licensing.dialog.validityValidUntil": {
+    "sourceHash": "d658db0"
+  },
+  "licensing.dialog.validityActive": "Активна",
+  "@licensing.dialog.validityActive": {
+    "sourceHash": "9234069"
+  },
+  "licensing.dialog.validityExpiredOn": "Срок истек {date}",
+  "@licensing.dialog.validityExpiredOn": {
+    "sourceHash": "f8383a3"
+  },
+  "licensing.dialog.pendingHint": "Мы автоматически проверим ключ на сервере в течение {days, plural, one {# дня} few {# дней} many {# дней} other {# дня}}.",
+  "@licensing.dialog.pendingHint": {
+    "sourceHash": "b4bbb38"
+  },
+  "licensing.dialog.useDifferentKey": "Использовать другой ключ",
+  "@licensing.dialog.useDifferentKey": {
+    "sourceHash": "b0a5362"
+  },
+  "licensing.dialog.close": "Закрыть",
+  "@licensing.dialog.close": {
+    "sourceHash": "7d9eb7a"
+  },
+  "licensing.dialog.resetConfirm": "Текущая лицензия будет деактивирована на этом устройстве. Вы сможете активировать ее снова с действующим ключом.",
+  "@licensing.dialog.resetConfirm": {
+    "sourceHash": "2d77d69"
+  },
+  "licensing.dialog.cancel": "Отменить",
+  "@licensing.dialog.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "licensing.dialog.continue": "Продолжить",
+  "@licensing.dialog.continue": {
+    "sourceHash": "31fbef1"
+  },
+  "licensing.dialog.enterPrompt": "Вставьте лицензионный ключ из письма, полученного после покупки. Еще нет ключа? <getLicense>Получить лицензию</getLicense>.",
+  "@licensing.dialog.enterPrompt": {
+    "sourceHash": "4e3a096"
+  },
+  "licensing.dialog.inputPlaceholder": "Пример: CMDR-ABCD-EFGH-1234",
+  "@licensing.dialog.inputPlaceholder": {
+    "sourceHash": "3fb5cf9"
+  },
+  "licensing.dialog.retryExhausted": "Мы попробовали {count, plural, one {# раз} few {# раза} many {# раз} other {# раза}}, но не получилось. Извините за неудобства. Напишите нам на <supportEmail>{email}</supportEmail>, и мы во всем разберемся.",
+  "@licensing.dialog.retryExhausted": {
+    "sourceHash": "d2aa21a"
+  },
+  "licensing.dialog.serverInvalidHelp": "Если вы считаете это ошибкой, напишите нам на <supportEmail>{email}</supportEmail>, и мы разберемся.",
+  "@licensing.dialog.serverInvalidHelp": {
+    "sourceHash": "743cbed"
+  },
+  "licensing.dialog.genericHelp": "Если вам нужна помощь, свяжитесь с нами: <supportEmail>{email}</supportEmail>.",
+  "@licensing.dialog.genericHelp": {
+    "sourceHash": "145df34"
+  },
+  "licensing.dialog.cancelButton": "Отменить",
+  "@licensing.dialog.cancelButton": {
+    "sourceHash": "19766ed"
+  },
+  "licensing.dialog.checking": "Проверка…",
+  "@licensing.dialog.checking": {
+    "sourceHash": "ec963ff"
+  },
+  "licensing.dialog.tryAgain": "Повторить попытку",
+  "@licensing.dialog.tryAgain": {
+    "sourceHash": "d8b8392"
+  },
+  "licensing.dialog.activating": "Активация…",
+  "@licensing.dialog.activating": {
+    "sourceHash": "230f6d1"
+  },
+  "licensing.dialog.activate": "Активировать",
+  "@licensing.dialog.activate": {
+    "sourceHash": "24433c7"
+  },
+  "licensing.dialog.activatedToast": "Лицензия активирована. Спасибо за поддержку! ❤️",
+  "@licensing.dialog.activatedToast": {
+    "sourceHash": "af76e26"
+  },
+  "licensing.dialog.activatedToastNamed": "Добро пожаловать, {org}! Спасибо за поддержку. ❤️",
+  "@licensing.dialog.activatedToastNamed": {
+    "sourceHash": "d0c136a"
+  },
+  "licensing.dialog.networkFallbackError": "Не удалось проверить лицензию на сервере. Попробуйте позже.",
+  "@licensing.dialog.networkFallbackError": {
+    "sourceHash": "fc7e124"
+  },
+  "licensing.dialog.expiredOnError": "Срок этой лицензии истек {date}.",
+  "@licensing.dialog.expiredOnError": {
+    "sourceHash": "130a045"
+  },
+  "licensing.dialog.expiredOnHelp": "Вы можете продлить подписку или купить новую лицензию на getcmdr.com.",
+  "@licensing.dialog.expiredOnHelp": {
+    "sourceHash": "036bb88"
+  },
+  "licensing.dialog.serverInvalidError": "Этот ключ есть в нашей базе, но платежный сервис не распознал его при проверке. Это бывает, если платеж возвращен или еще не обработан.",
+  "@licensing.dialog.serverInvalidError": {
+    "sourceHash": "58f1457"
+  },
+  "licensing.dialog.emptyKeyError": "Введите лицензионный ключ",
+  "@licensing.dialog.emptyKeyError": {
+    "sourceHash": "2b36779"
+  },
+  "licensing.dialog.mailtoSubject": "Проблема с лицензионным ключом",
+  "@licensing.dialog.mailtoSubject": {
+    "sourceHash": "685a80d"
+  },
+  "licensing.dialog.mailtoBody": "Здравствуйте,\n\nУ меня проблема с активацией лицензионного ключа:\n{key}\n\n",
+  "@licensing.dialog.mailtoBody": {
+    "sourceHash": "c076655"
+  },
+  "licensing.error.badSignature": "Подпись этого лицензионного ключа не прошла проверку: похоже, ключ недействителен.",
+  "@licensing.error.badSignature": {
+    "sourceHash": "3bcac8e"
+  },
+  "licensing.error.badSignatureHint": "Проверьте, нет ли опечаток, и снова вставьте ключ из письма о покупке.",
+  "@licensing.error.badSignatureHint": {
+    "sourceHash": "8734aa5"
+  },
+  "licensing.error.badFormat": "Этот ключ не соответствует нашему формату.",
+  "@licensing.error.badFormat": {
+    "sourceHash": "6012f8b"
+  },
+  "licensing.error.badFormatHint": "Лицензионный ключ — это короткий код (CMDR-XXXX-XXXX-XXXX) или длинный криптографический ключ из письма о покупке.",
+  "@licensing.error.badFormatHint": {
+    "sourceHash": "a62b901"
+  },
+  "licensing.error.shortCodeNotFound": "Ключ выглядит правильно, но нам не удалось найти его в базе данных.",
+  "@licensing.error.shortCodeNotFound": {
+    "sourceHash": "0f9ccbf"
+  },
+  "licensing.error.shortCodeNotFoundHint": "Убедитесь, что вставили правильный ключ из письма о покупке.",
+  "@licensing.error.shortCodeNotFoundHint": {
+    "sourceHash": "a2f07d2"
+  },
+  "licensing.error.network": "Ой, на этот раз не получилось связаться с сервером лицензий.",
+  "@licensing.error.network": {
+    "sourceHash": "d03567c"
+  },
+  "licensing.error.networkHint": "Проверьте подключение к интернету и попробуйте еще раз.",
+  "@licensing.error.networkHint": {
+    "sourceHash": "67cba62"
+  },
+  "licensing.error.server": "Хм, сервер лицензий прислал странный ответ. Извините за это.",
+  "@licensing.error.server": {
+    "sourceHash": "89870f9"
+  },
+  "licensing.error.serverHint": "Попробуйте позже.",
+  "@licensing.error.serverHint": {
+    "sourceHash": "386b914"
+  },
+  "licensing.error.generic": "При активации этого ключа что-то пошло не так.",
+  "@licensing.error.generic": {
+    "sourceHash": "436e264"
+  },
+  "licensing.error.genericHint": "Повторите попытку. Если проблема останется, напишите нам, и мы поможем.",
+  "@licensing.error.genericHint": {
+    "sourceHash": "be0771c"
+  },
+  "licensing.section.title": "Лицензия",
+  "@licensing.section.title": {
+    "sourceHash": "c011d60"
+  },
+  "licensing.section.loading": "Загрузка…",
+  "@licensing.section.loading": {
+    "sourceHash": "ba3bbbe"
+  },
+  "licensing.section.labelType": "Тип лицензии",
+  "@licensing.section.labelType": {
+    "sourceHash": "72f256a"
+  },
+  "licensing.section.labelOrganization": "Организация",
+  "@licensing.section.labelOrganization": {
+    "sourceHash": "d764d42"
+  },
+  "licensing.section.labelStatus": "Состояние",
+  "@licensing.section.labelStatus": {
+    "sourceHash": "920e413"
+  },
+  "licensing.section.labelKey": "Лицензионный ключ",
+  "@licensing.section.labelKey": {
+    "sourceHash": "f73a795"
+  },
+  "licensing.section.manageKey": "Управление лицензионным ключом",
+  "@licensing.section.manageKey": {
+    "sourceHash": "501cc54"
+  },
+  "licensing.section.enterKey": "Ввести лицензионный ключ",
+  "@licensing.section.enterKey": {
+    "sourceHash": "357d05e"
+  },
+  "licensing.section.getLicense": "Получить лицензию",
+  "@licensing.section.getLicense": {
+    "sourceHash": "fab19d3"
+  },
+  "licensing.section.typePersonal": "Личная (бесплатная)",
+  "@licensing.section.typePersonal": {
+    "sourceHash": "4af5ca9"
+  },
+  "licensing.section.typeCommercialPerpetual": "Коммерческая бессрочная",
+  "@licensing.section.typeCommercialPerpetual": {
+    "sourceHash": "2c6933c"
+  },
+  "licensing.section.typeCommercialSubscription": "Коммерческая подписка",
+  "@licensing.section.typeCommercialSubscription": {
+    "sourceHash": "e521480"
+  },
+  "licensing.section.statusExpiredOn": "Срок истек {date}",
+  "@licensing.section.statusExpiredOn": {
+    "sourceHash": "f8383a3"
+  },
+  "licensing.section.statusUpdatesUntil": "Обновления до {date}",
+  "@licensing.section.statusUpdatesUntil": {
+    "sourceHash": "7b84d1c"
+  },
+  "licensing.section.statusValidUntil": "Действует до {date}",
+  "@licensing.section.statusValidUntil": {
+    "sourceHash": "d658db0"
+  },
+  "licensing.section.statusActive": "Активна",
+  "@licensing.section.statusActive": {
+    "sourceHash": "9234069"
+  }
+}

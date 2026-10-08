@@ -68,15 +68,15 @@ describe('filterSummary', () => {
   })
 
   it('shows "size >" when only sizeMin is set', () => {
-    const entry = makeEntry({ filters: { sizeMin: 1024 * 1024 } })
+    const entry = makeEntry({ filters: { sizeMin: 1000 * 1000 } })
     expect(filterSummary(entry)).toContain('size > 1.00 MB')
   })
 
   it('shows a range when both size bounds are set', () => {
     const entry = makeEntry({
-      filters: { sizeMin: 1024, sizeMax: 1024 * 1024 },
+      filters: { sizeMin: 1000, sizeMax: 1000 * 1000 },
     })
-    expect(filterSummary(entry)).toContain('size 1.00 KB–1.00 MB')
+    expect(filterSummary(entry)).toContain('size 1.00 kB–1.00 MB')
   })
 
   it('includes scope, case-sensitive, and system-dirs notes when set', () => {
@@ -88,7 +88,7 @@ describe('filterSummary', () => {
     const out = filterSummary(entry)
     expect(out).toContain('scope: /Users/test')
     expect(out).toContain('case-sensitive')
-    expect(out).toContain('system dirs included')
+    expect(out).toContain('system folders included')
   })
 })
 
@@ -99,7 +99,7 @@ describe('chipTooltip', () => {
     const entry = makeEntry({
       mode: 'ai',
       timestamp: NOW - 60 * 60 * 1000,
-      filters: { sizeMin: 1024 * 1024 },
+      filters: { sizeMin: 1000 * 1000 },
       resultCount: 42,
     })
     const out = chipTooltip(entry, NOW)

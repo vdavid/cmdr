@@ -8,6 +8,12 @@
 //! (`index-crate-isolation` enforces it). So the vocabulary lives here and the
 //! owner of a scan implements [`ScanStopSignal`] above it.
 //!
+//! The copy that follows the scan hands the same signal to its destination
+//! through [`VolumeReadStream::stop_signal`](super::VolumeReadStream::stop_signal):
+//! an upload that buffers ahead of the wire (S3's parts) parks its requests on
+//! it, since the pause that parks the source stream can't reach bytes already
+//! read.
+//!
 //! ❗ A walk doesn't reach for this directly. It threads a
 //! [`ScanBoundary`](super::ScanBoundary), which carries the stop next to the
 //! counts and turns "report an entry" and "may I keep going?" into one call.
@@ -21,7 +27,8 @@ use std::sync::Arc;
 ///
 /// One implementor per owner, not per backend. In the app that's a write
 /// operation's cancel intent plus its pause gate; a test owner is a pair of
-/// flags. A `Volume` backend never writes one.
+/// flags. A `Volume` backend never writes one; it only asks one, in a scan or
+/// in an upload.
 pub trait ScanStopSignal: Send + Sync {
     /// Cheap: `true` when this boundary must consult
     /// [`stop_or_park`](Self::stop_or_park).

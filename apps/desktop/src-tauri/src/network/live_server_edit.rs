@@ -16,7 +16,7 @@ use cmdr_fs::volume::{Volume, VolumeError};
 
 use super::saved_server_fields::SavedServerOutcome;
 use crate::file_system::volume::manager::{RootReplacement, VolumeManager};
-use crate::volume_broadcast::{self, VolumeRootChanged};
+use crate::volume_broadcast::{self, RootChangeKind, VolumeRootChanged};
 
 /// How long the live session gets to confirm the folders an edit names, shared
 /// by the root and the start folder. The IPC writes tier: a person is waiting on
@@ -83,20 +83,22 @@ pub async fn check(
     let successor =
         (root_moved || edit.label != place.live.name()).then(|| successor_for(edit.label, new_root.remote_root()));
 
-    // `to_app_path` only prefixes, so the new root's spells a start folder the
-    // way either root would.
+    // The saved start folder is spelled against the WHOLE server: the new root
+    // refuses a folder it doesn't hold, and one the OLD root held is still where
+    // the place landed.
+    let whole_server = RemoteRoot::new(place.app_prefix.clone(), Path::new("/"));
     let old_landing = place
         .saved_start_folder
         .as_deref()
-        .map(|folder| new_root.to_app_path(folder))
+        .and_then(|folder| whole_server.to_app_path(folder))
         // A saved start folder the live root doesn't hold can't be where the
         // place landed: the store drifted from the session.
         .filter(|landing| landing.starts_with(&old_root))
         .unwrap_or_else(|| old_root.clone());
-    let new_landing = edit.start_folder.map_or_else(
-        || new_root.app_root().to_path_buf(),
-        |folder| new_root.to_app_path(folder),
-    );
+    let new_landing = edit
+        .start_folder
+        .and_then(|folder| new_root.to_app_path(folder))
+        .unwrap_or_else(|| new_root.app_root().to_path_buf());
     let landing_moved = new_landing != old_landing;
 
     let asked = successor.as_ref().unwrap_or(&place.live);
@@ -113,6 +115,7 @@ pub async fn check(
         new_root: new_root.app_root().to_string_lossy().into_owned(),
         old_landing: old_landing.to_string_lossy().into_owned(),
         new_landing: new_landing.to_string_lossy().into_owned(),
+        kind: RootChangeKind::Edited,
     });
     Ok(AcceptedEdit {
         volume_id: place.volume_id.clone(),

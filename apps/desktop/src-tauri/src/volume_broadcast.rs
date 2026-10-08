@@ -189,14 +189,15 @@ pub struct VolumeUnmounted {
     pub volume_id: Option<String>,
 }
 
-/// Typed `volume-root-changed` Tauri event: saving an edit to a CONNECTED place
-/// moved its root, its start folder, or both, and the registry already serves
-/// the new root.
+/// Typed `volume-root-changed` Tauri event: a volume's root, its start folder, or
+/// both moved, and the registry already serves the new root. Two causes, named by
+/// [`RootChangeKind`]: saving an edit to a CONNECTED place, or a mounted drive
+/// being renamed.
 ///
-/// Every path is an APP path (`sftp://ada@nas.local:22/srv/data`), and a landing
-/// is where opening the place lands: its start folder, else its root. Emitted
-/// only when the root or the landing actually moved. What a pane does with it:
-/// `network/DETAILS.md` § "Editing a connected place".
+/// Every path is an APP path (`sftp://ada@nas.local:22/srv/data`, `/Volumes/New`),
+/// and a landing is where opening the place lands: its start folder, else its root.
+/// Emitted only when the root or the landing actually moved. What a pane does with
+/// it: `network/DETAILS.md` § "Editing a connected place".
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, specta::Type, Event)]
 #[serde(rename_all = "camelCase")]
 pub struct VolumeRootChanged {
@@ -210,6 +211,20 @@ pub struct VolumeRootChanged {
     pub old_landing: String,
     /// Where it lands now.
     pub new_landing: String,
+    /// Why it moved, which decides where a path inside the old root goes.
+    pub kind: RootChangeKind,
+}
+
+/// Why a volume's root moved, which decides where a path inside the old root goes.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum RootChangeKind {
+    /// Someone edited a saved place: the new root is a different folder, so a path
+    /// inside the old one has no counterpart under it and goes to the new landing.
+    Edited,
+    /// The same tree is reached at a new root (a renamed drive): a path inside the
+    /// old root keeps its place under the new one.
+    Moved,
 }
 
 /// The action vocabulary of a volume, server, or favorite row: what the user can

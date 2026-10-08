@@ -1,6 +1,7 @@
 /**
  * Tier 3 a11y tests for the file-operations chrome: the conflict dialog, the
- * rollback confirmation, the progress readout, and the new-entry name field.
+ * rollback confirmation, the progress readout, the new-entry name field, and the
+ * slow-create notice.
  *
  * One file per component would cost about three times as much: `svelte-tests`
  * charges per test FILE, not per test (`docs/testing.md` § "What a test actually
@@ -41,6 +42,8 @@ vi.mock('$lib/tauri-commands', async (importOriginal) => ({
   findFileIndex: vi.fn(() => Promise.resolve(null)),
   getFileAt: vi.fn(() => Promise.resolve(null)),
   onDirectoryDiff: vi.fn(() => Promise.resolve(() => {})),
+  // The S3 cost line's one question: an AWS estimate worth a line.
+  estimateOperationCost: vi.fn(() => Promise.resolve([{ amount: 0.02, currency: 'USD', providerLabel: 'AWS' }])),
 }))
 
 vi.mock('$lib/settings/reactive-settings.svelte', async (importOriginal) => ({
@@ -54,6 +57,8 @@ import OperationConflictDialog from './OperationConflictDialog.svelte'
 import RollbackConfirmDialog from './RollbackConfirmDialog.svelte'
 import TransferProgressReadout from './TransferProgressReadout.svelte'
 import NewEntryNameField from './NewEntryNameField.svelte'
+import S3CostLine from './S3CostLine.svelte'
+import StillCreatingNotice from './StillCreatingNotice.svelte'
 import { NewEntryNameCheck } from './new-entry-name-check.svelte'
 
 // These components share one jsdom document, the dialogs portal into
@@ -259,6 +264,50 @@ describe('NewEntryNameField a11y', () => {
   it('an error line the field describes itself by has no a11y violations', async () => {
     const host = await mountField('folder', 'There is already a folder by this name in this folder.')
     expect(host.querySelector('input')?.getAttribute('aria-describedby')).toBe('new-folder-error')
+    await expectNoA11yViolations(host)
+  })
+})
+
+/**
+ * Tier 3 a11y test for `S3CostLine.svelte`: the estimate line and its InfoTip,
+ * which carries no visible text and so has to name itself.
+ */
+describe('S3CostLine a11y', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('the estimate line and its info glyph have no a11y violations', async () => {
+    const host = document.createElement('div')
+    document.body.appendChild(host)
+    mount(S3CostLine, {
+      target: host,
+      props: {
+        request: { operation: 'copy', previewId: 'preview-1', sourceVolumeId: 'root', destinationVolumeId: 's3-1' },
+      },
+    })
+    await vi.waitFor(() => {
+      expect(host.querySelector('.s3-cost')).not.toBeNull()
+    })
+    await expectNoA11yViolations(host)
+  })
+})
+
+/**
+ * Tier 3 a11y test for `StillCreatingNotice.svelte`: the new-folder / new-file
+ * dialogs' "still creating" line, a live status beside a spinner.
+ */
+describe('StillCreatingNotice a11y', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('the slow-create notice has no a11y violations', async () => {
+    const host = document.createElement('div')
+    document.body.appendChild(host)
+    mount(StillCreatingNotice, { target: host, props: { name: 'photos' } })
+    await tick()
+    expect(host.querySelector('[role="status"]')).not.toBeNull()
     await expectNoA11yViolations(host)
   })
 })

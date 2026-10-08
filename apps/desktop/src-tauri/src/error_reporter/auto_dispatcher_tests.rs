@@ -14,6 +14,7 @@ use super::BundleKind;
 use super::auto_dispatcher::{
     TEST_LOCK, flush_spawned_for_test, jitter_window, note_for_test, pick_jitter_offset_for_test,
     record_error_for_test, reset_for_test, set_enabled, simulate_late_app_handle_for_test, snapshot_for_test,
+    take_window_to_send_for_test,
 };
 use super::bundle_builder::prepare_user_note;
 use std::time::{Duration, Instant};
@@ -299,4 +300,41 @@ fn the_opt_out_gate_means_a_crash_file_can_never_be_stamped_as_reported() {
         snapshot_for_test().is_none(),
         "and no window exists, so nothing can ever reach the upload that stamps the crash file"
     );
+}
+
+/// Runs `future` on this thread, so the test's mutex guard isn't held across an `await` and a
+/// policy override (per thread) reaches it.
+fn block_on<F: Future>(future: F) -> F::Output {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .expect("a current-thread runtime builds")
+        .block_on(future)
+}
+
+/// A stored `updates.errorReports: true` seeds the switch on; the organization's off still wins at
+/// send time, and the window is drained so it can't fire later.
+#[test]
+fn a_managed_off_wins_over_the_enabled_switch_at_send_time() {
+    use crate::managed_policy::testing;
+    let _guard = lock_and_reset();
+    set_enabled(true);
+    record_error_for_test("cmdr_lib::network", "first failure").expect("a window opens");
+    let _policy = testing::override_for_test(testing::forcing(&[testing::DISABLE_CRASH_AND_ERROR_REPORTS]));
+
+    assert!(block_on(take_window_to_send_for_test()).is_none(), "nothing to send");
+    assert!(snapshot_for_test().is_none(), "the window is gone");
+
+    reset_for_test();
+}
+
+#[test]
+fn a_window_goes_out_without_a_policy() {
+    let _guard = lock_and_reset();
+    set_enabled(true);
+    record_error_for_test("cmdr_lib::network", "first failure").expect("a window opens");
+
+    assert!(block_on(take_window_to_send_for_test()).is_some());
+
+    reset_for_test();
 }

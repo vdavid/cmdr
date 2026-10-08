@@ -37,7 +37,7 @@ use super::conflict::resolve_volume_conflict;
 use super::displaced_destination::DisplacedLedger;
 use super::preflight::SourceFileFacts;
 use super::preflight::SourceHint;
-use super::strategy::copy_single_path;
+use super::strategy::{Replaces, copy_single_path};
 use super::transfer_error::{PathRole, WriteFailure, map_volume_error};
 use crate::file_system::volume::Volume;
 use crate::ignore_poison::IgnorePoison;
@@ -279,7 +279,7 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
                             }
                             ConflictDecision::Proceed {
                                 dest_path: rc.write_path,
-                                replace_after_write: rc.replace_after_write,
+                                replaces: rc.replaces,
                             }
                         }
                     })
@@ -349,10 +349,10 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
                     .dest_path
                     .expect("async driver always supplies dest_path")
                     .to_path_buf();
-                // `Some(orig)` ⇒ `dest_item_path` is a temp sibling; after a
+                // `ViaTemp(orig)` ⇒ `dest_item_path` is a temp sibling; after a
                 // successful write we delete `orig` and rename the temp into
                 // place (safe-replace for file→file Overwrite).
-                let replace_after_write = ctx.replace_after_write.map(Path::to_path_buf);
+                let replaces = ctx.replaces.clone();
                 // Whether the driver's conflict resolution PICKED this
                 // destination name (a `Rename`, an Overwrite that cleared it),
                 // which is what the landing needs to tell its own placeholder
@@ -395,8 +395,7 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
                             ));
                         }
                     };
-                    let source_facts =
-                        SourceFileFacts::from_size_hint(hint.and_then(|h| (!h.is_directory).then_some(h.size)));
+                    let source_facts = SourceFileFacts::from_hint(hint);
 
                     // Per-file intra-progress: a fresh per-source
                     // throttle mutex (the serial-path closure outlives
@@ -443,7 +442,7 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
                         }),
                     };
 
-                    let staging = super::strategy::staging_for(&replace_after_write, landing);
+                    let staging = super::strategy::staging_for(&replaces, landing);
                     // ❗ Only a path that can hold OUR partial is designated for
                     // the post-loop cleanup. A plain staged write's final name
                     // never does, and deleting it on failure deleted whatever
@@ -519,12 +518,13 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
                             // of the new data — it must survive on disk as a
                             // recoverable `.cmdr-tmp-*` artifact.
                             *last_dest_cell.lock_ignore_poison() = None;
-                            // Overwrote iff a top-level file→file safe-replace
-                            // fires, OR a deep-merge child replaced a dest file.
-                            // Captured before `replace_after_write` is consumed.
-                            let source_overwrote = replace_after_write.is_some() || created.any_overwrote();
-                            let landed_path = match replace_after_write {
-                                Some(orig) => {
+                            // Overwrote iff a top-level file→file Overwrite
+                            // replaced a file (safe-replace or in place), OR a
+                            // deep-merge child replaced a dest file. Captured
+                            // before `replaces` is consumed.
+                            let source_overwrote = replaces.overwrites() || created.any_overwrote();
+                            let landed_path = match replaces {
+                                Replaces::ViaTemp(orig) => {
                                     if let Err(e) =
                                         super::finalize::finalize_safe_replace(&dest_volume, &dest_item_path, &orig)
                                             .await
@@ -541,7 +541,7 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
                                     }
                                     orig
                                 }
-                                None => dest_item_path,
+                                Replaces::InPlace | Replaces::Nothing => dest_item_path,
                             };
                             // Whatever this source set aside is now fully replaced.
                             displaced.landed_under(&landed_path);

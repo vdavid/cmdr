@@ -28,6 +28,7 @@ mod durability;
 mod error_classification;
 mod eta;
 mod event_sinks;
+mod free_space;
 mod human_wait;
 mod in_flight_temps;
 mod journal;
@@ -38,6 +39,7 @@ mod look_alike;
 mod look_alike_instant_tests;
 mod manager;
 mod mutation_error;
+mod mutation_reply;
 mod operation_intent;
 mod overwrite;
 #[cfg(target_os = "macos")]
@@ -58,6 +60,7 @@ mod scratch_dir;
 mod source_binding;
 mod state;
 mod status_cache;
+mod target_names;
 mod transfer;
 mod transfer_sides;
 mod types;
@@ -114,10 +117,11 @@ pub use in_flight_temps::init_and_sweep as init_and_sweep_in_flight_temps;
 /// leaves on a returning drive is something the person hears about rather than
 /// a silent absence at the source. Startup only.
 pub use in_flight_temps::init_sweep_app_handle;
+pub(crate) use scan_cache::{ScanCostFacts, cached_cost_facts};
 pub use scan_preview::{cancel_scan_preview, get_scan_preview_totals, start_scan_preview};
 pub use state::{
     VolumesBusyChanged, busy_volume_ids, cancel_all_write_operations, cancel_write_operation, get_operation_status,
-    init_busy_volume_emitter, list_active_operations, pending_write_conflict, resolve_write_conflict,
+    init_busy_volume_emitter, pending_write_conflict, resolve_write_conflict,
 };
 // The hard-abort tier. Exactly one legitimate caller: the quit deadline
 // (`crate::quit`), which fires it only after the cooperative cancel has had its
@@ -143,16 +147,23 @@ pub(crate) use create::{create_directory_managed, create_file_managed};
 // The transfer and compress dialogs' destination probe (`destination_exists`).
 pub(crate) use look_alike::held_in_another_spelling;
 #[cfg(target_os = "macos")]
-pub(crate) use paste_clipboard::write_payload_to_dir;
+pub(crate) use paste_clipboard::write_payload_replying;
 pub(crate) use rename::{
-    BulkRenameRow, RenameValidityResult, check_rename_permission_for_volume, check_rename_validity_impl,
-    rename_managed, same_local_file, start_bulk_rename,
+    BulkRenameRow, RenameStartError, RenameValidityResult, check_rename_permission_for_volume,
+    check_rename_validity_impl, rename_managed, same_local_file, start_renames,
 };
+// How a backend caller outside the engine words a source volume nothing has registered.
+pub(crate) use transfer::volume::unregistered_source_error;
+// The batch executor alone, for the suites that drive it without the routing
+// `start_renames` puts in front of it.
+#[cfg(test)]
+pub(crate) use rename::start_bulk_rename;
 // The source-identity binding a reviewed batch may supply. `source_binding.rs`.
 // Volume + destination resolution and the three routed cross-volume entry points,
 // reachable by a backend caller and not only the IPC edge. `routing.rs`.
 pub(crate) use routing::{
-    resolve_dest_path, resolve_source_volume, start_volume_compress, start_volume_copy, start_volume_move,
+    resolve_dest_path, resolve_source_volume, start_rename_by_move, start_volume_compress, start_volume_copy,
+    start_volume_move,
 };
 #[cfg(not(test))]
 use source_binding::retain_bound_sources;
@@ -173,12 +184,12 @@ pub(crate) use state::{register_external_volume_op, release_external_volume_op};
 #[allow(unused_imports, reason = "Public API re-exports for consumers of this module")]
 pub use types::{
     ConflictId, ConflictInfo, ConflictResolution, ConflictResolutionOutcome, DryRunResult, LifecycleStatus,
-    MoveLeftoversKeptEvent, OperationStatus, OperationSummary, ReadOnlySide, ScanPreviewCancelledEvent,
-    ScanPreviewCompleteEvent, ScanPreviewErrorEvent, ScanPreviewProgressEvent, ScanPreviewStartResult,
-    ScanPreviewTotals, ScanProgressEvent, SortColumn, SortOrder, SourceItemOutcome, TransferActivity,
-    TransferWaitReason, WriteCancelledEvent, WriteCompleteEvent, WriteConflictEvent, WriteConflictResolvedEvent,
-    WriteErrorEvent, WriteOperationConfig, WriteOperationError, WriteOperationPhase, WriteOperationStartResult,
-    WriteOperationType, WriteProgressEvent, WriteSettledEvent, WriteSourceItemDoneEvent,
+    MoveLeftoversKeptEvent, OperationStatus, ReadOnlySide, ScanPreviewCancelledEvent, ScanPreviewCompleteEvent,
+    ScanPreviewErrorEvent, ScanPreviewProgressEvent, ScanPreviewRefusal, ScanPreviewStartResult, ScanPreviewTotals,
+    ScanProgressEvent, SortColumn, SortOrder, SourceItemOutcome, SpaceShortfall, TransferActivity, TransferWaitReason,
+    WriteCancelledEvent, WriteCompleteEvent, WriteConflictEvent, WriteConflictResolvedEvent, WriteErrorEvent,
+    WriteOperationConfig, WriteOperationError, WriteOperationPhase, WriteOperationStartResult, WriteOperationType,
+    WriteProgressEvent, WriteSettledEvent, WriteSourceItemDoneEvent,
 };
 
 // Re-export for tests (these are pub(crate) in validation.rs and state.rs)
@@ -188,8 +199,7 @@ pub(crate) use state::{OperationIntent, WriteOperationState, is_cancelled, load_
 #[allow(unused_imports, reason = "Re-exports for test modules in file_system")]
 pub(crate) use validation::{
     ensure_destination_dir, is_same_file, is_same_filesystem, validate_destination_not_inside_source,
-    validate_destination_writable, validate_disk_space, validate_path_length, validate_source_names_are_distinct,
-    validate_sources,
+    validate_destination_writable, validate_path_length, validate_source_names_are_distinct, validate_sources,
 };
 // Exposed for the integration suites that drive `copy_volumes_with_progress`
 // directly against a real backend instead of through the full Tauri path (for
@@ -235,8 +245,11 @@ pub(crate) fn test_retain_failure(operation_id: &str, operation_type: WriteOpera
 // reached through `super::` inside this module and are NOT re-exported: one
 // routing, one place to keep it right.
 pub use mutation_error::MutationError;
-pub use transfer::volume::scan_for_volume_copy;
-pub use types::{VolumeCopyConfig, VolumeCopyScanResult};
+#[cfg(test)]
+pub(crate) use mutation_reply::MutationSettledOutcome;
+pub(crate) use mutation_reply::{MUTATION_REPLY_DEADLINE, broadcast_settled, reply_within};
+pub use mutation_reply::{MutationReply, MutationSettled};
+pub use types::VolumeCopyConfig;
 // The transfer dialog's pre-flight conflict check: `commands/file_system/
 // volume_copy.rs`'s `scan_volume_for_conflicts` is a thin wrapper around
 // `scan_volume_for_conflicts_within`, budgeted the same way as every other
@@ -796,6 +809,8 @@ mod scan_watchdog_tests;
 #[cfg(test)]
 mod settle_event_tests;
 // The one cooperative-stop boundary every serial loop here asks at.
+#[cfg(test)]
+mod free_space_tests;
 #[cfg(test)]
 mod stop_or_park_tests;
 #[cfg(test)]

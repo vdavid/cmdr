@@ -8,6 +8,8 @@ import { tString } from '$lib/intl/messages.svelte'
 import { formatInteger } from '$lib/intl/number-format'
 import type { AskCmdrErrorKind, RenameEvidenceSource, SkipBreakdown, SkipReason } from '$lib/tauri-commands'
 import type { MessageKey } from '$lib/intl/keys.gen'
+import type { ManagedAiRefusal } from '$lib/ipc/bindings'
+import { managedAiRefusalMessage } from '$lib/managed-policy/ai-refusal'
 
 /** Present-tense (running) and past-tense (done) label keys per read-only tool. */
 const TOOL_LABEL_KEYS: Record<string, { doing: MessageKey; done: MessageKey }> = {
@@ -59,6 +61,7 @@ const ERROR_KEYS: Record<AskCmdrErrorKind, MessageKey> = {
   // refusal also flips the rail back to its gate, which carries the way out.
   askCmdrOff: 'askCmdr.error.askCmdrOff',
   noCloudConsent: 'askCmdr.error.noCloudConsent',
+  managedByOrganization: 'askCmdr.error.managedByOrganization',
   localWindowTooSmall: 'askCmdr.error.localWindowTooSmall',
   unavailable: 'askCmdr.error.unavailable',
   timeout: 'askCmdr.error.timeout',
@@ -70,8 +73,13 @@ const ERROR_KEYS: Record<AskCmdrErrorKind, MessageKey> = {
   provider: 'askCmdr.error.provider',
 }
 
-/** The friendly, honest message for a typed turn failure (never the words error/failed). */
-export function errorMessage(kind: AskCmdrErrorKind): string {
+/**
+ * The friendly, honest message for a typed turn failure (never the words error/failed). The
+ * organization's refusal names the rule that refused (`managed`, from the backend) through the
+ * shared copy map, so "only on-device AI" never reads as "doesn't allow this AI service".
+ */
+export function errorMessage(kind: AskCmdrErrorKind, managed?: ManagedAiRefusal | null): string {
+  if (kind === 'managedByOrganization' && managed) return managedAiRefusalMessage(managed)
   return tString(ERROR_KEYS[kind])
 }
 

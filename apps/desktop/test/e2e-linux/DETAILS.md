@@ -106,6 +106,10 @@ in-use volumes refuse removal, so a concurrent run is safe. Labelling happens BE
 already exists (verified on Docker 29.4.0, 2026-09-02), so a volume born from `-v` would be invisible to the reaper
 forever.
 
+The Rust Linux check lanes (`clippy-linux`, `rust-tests-linux`) key and label their target volume the same way, so this
+reaper collects theirs too: `scripts/check/checks/DETAILS.md` § "The Linux Docker lanes share an image and a build
+cache".
+
 `CARGO_VOLUME`, `TARGET_VOLUME`, `ROOT_NODE_MODULES_VOLUME`, `DESKTOP_NODE_MODULES_VOLUME`, and
 `DESKTOP_SVELTEKIT_VOLUME` each override the name. An override is taken verbatim: no suffix, no label, no reaping. CI
 sets the first two to host bind-mount paths (`/tmp/cmdr-docker-cache/...`) so `actions/cache` can persist them (it can't

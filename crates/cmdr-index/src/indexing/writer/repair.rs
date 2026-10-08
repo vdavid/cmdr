@@ -15,6 +15,10 @@ use crate::indexing::store::{DirStatsById, IndexStore, IndexStoreError};
 
 use super::deferred_repair::DeferredRepairs;
 
+/// "Is any direct child a symlink?", for [`recompute_recursive_has_symlinks`].
+/// Served by `idx_child_symlinks`.
+const DIRECT_SYMLINK_CHILD_SQL: &str = "SELECT EXISTS(SELECT 1 FROM entries WHERE parent_id = ?1 AND is_symlink = 1)";
+
 /// "Does any child dir carry the symlink flag?", for
 /// [`recompute_recursive_has_symlinks`]. Served by `idx_child_dirs`.
 const SUBDIR_HAS_SYMLINKS_SQL: &str = "SELECT EXISTS(
@@ -193,11 +197,9 @@ pub(super) fn recompute_recursive_has_symlinks(
     dir_id: i64,
 ) -> Result<bool, IndexStoreError> {
     // Direct symlink child?
-    let direct: bool = conn.query_row(
-        "SELECT EXISTS(SELECT 1 FROM entries WHERE parent_id = ?1 AND is_symlink = 1)",
-        rusqlite::params![dir_id],
-        |row| row.get::<_, i32>(0).map(|n| n != 0),
-    )?;
+    let direct: bool = conn.query_row(DIRECT_SYMLINK_CHILD_SQL, rusqlite::params![dir_id], |row| {
+        row.get::<_, i32>(0).map(|n| n != 0)
+    })?;
     if direct {
         return Ok(true);
     }
@@ -581,6 +583,21 @@ mod tests {
         let conn = IndexStore::open_write_connection(&db_path).unwrap();
         let plan = crate::indexing::store::explain_query_plan(&conn, SUBDIR_HAS_SYMLINKS_SQL);
         assert!(plan.contains("idx_child_dirs"), "not served by idx_child_dirs:\n{plan}");
+    }
+
+    /// The direct half of [`recompute_recursive_has_symlinks`] reads a folder's
+    /// symlink children alone, off `idx_child_symlinks`. Through
+    /// `idx_parent_name_folded` it read every child instead: ~62 ms on a
+    /// 92,000-file folder of a real index.
+    #[test]
+    fn direct_symlink_query_is_served_by_the_partial_index() {
+        let (db_path, _dir) = setup_db();
+        let conn = IndexStore::open_write_connection(&db_path).unwrap();
+        let plan = crate::indexing::store::explain_query_plan(&conn, DIRECT_SYMLINK_CHILD_SQL);
+        assert!(
+            plan.contains("idx_child_symlinks"),
+            "not served by idx_child_symlinks:\n{plan}"
+        );
     }
 
     /// Repair recomputes `has_symlinks` and `min_subtree_epoch` consistently with

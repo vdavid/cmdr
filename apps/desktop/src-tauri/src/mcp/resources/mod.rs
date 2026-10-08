@@ -473,7 +473,7 @@ async fn build_state_yaml<R: Runtime>(app: &tauri::AppHandle<R>, opts: &StateOpt
 }
 
 /// Pure YAML builder for the `recentErrors:` section. The identifiers remain functional
-/// MCP values; only the path and diagnostic prose pass through the compatibility sanitizer.
+/// MCP values; only the path and diagnostic prose pass through the redactor.
 pub(crate) fn build_recent_errors_yaml(errors: &[super::listing_errors::RecentListingError]) -> String {
     if errors.is_empty() {
         return "recentErrors: []\n".to_string();
@@ -482,8 +482,7 @@ pub(crate) fn build_recent_errors_yaml(errors: &[super::listing_errors::RecentLi
     let mut yaml = String::from("recentErrors:\n");
     for error in errors {
         // `path` / `message` come from failed directory listings and can carry SMB URIs or
-        // home paths the user never saw rendered. Ordinary MCP deliberately uses the
-        // unsalted compatibility policy, not the report-delivery policy.
+        // home paths the user never saw rendered. Unsalted: bare tokens, no report-local key.
         let path = crate::redact::redact_line(&error.path);
         let message = crate::redact::redact_line(&error.message);
         yaml.push_str(&format!(

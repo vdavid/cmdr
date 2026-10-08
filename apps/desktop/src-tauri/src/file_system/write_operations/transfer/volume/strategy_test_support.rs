@@ -82,6 +82,10 @@ impl VolumeReadStream for SlowChunkedStream {
     fn bytes_read(&self) -> u64 {
         self.emitted
     }
+
+    fn modified_at(&self) -> Option<std::time::SystemTime> {
+        None
+    }
 }
 
 /// Minimal source volume whose `open_read_stream` returns a `SlowChunkedStream`
@@ -866,6 +870,10 @@ impl VolumeReadStream for ReleasingStream {
                 self.log.lock_ignore_poison().releases += 1;
             }
         })
+    }
+
+    fn modified_at(&self) -> Option<std::time::SystemTime> {
+        None
     }
 }
 

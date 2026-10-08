@@ -5,6 +5,11 @@
     "screenshot": "new-folder-dialog.png"
   },
 
+  "fileOperations.button.close": "Close",
+  "@fileOperations.button.close": {
+    "description": "Replaces Cancel in the new-folder and new-file dialogs while a slow create is still running: it closes the dialog but does NOT stop the create, which is why it isn't 'Cancel'. Short control label."
+  },
+
   "fileOperations.button.ok": "OK",
   "@fileOperations.button.ok": {
     "description": "Confirm button in the new-file and new-folder dialogs. Short control label; this is the affirmative OK, not a status word.",
@@ -138,11 +143,11 @@
     "screenshot": "delete-confirm.png"
   },
 
-  "fileOperations.delete.scanDir": "{count, plural, one {dir} other {dirs}}",
+  "fileOperations.delete.scanDir": "{count, plural, one {folder} other {folders}}",
   "@fileOperations.delete.scanDir": {
-    "description": "Unit noun shown after the live directory tally in the delete dialog's scan stats (e.g. '4 dirs'). 'dir' is the abbreviation of directory/folder. The number is rendered separately.",
+    "description": "Unit noun shown after the live folder tally in the delete dialog's scan stats (e.g. '4 folders'). The number is rendered separately.",
     "placeholders": {
-      "count": "the directory count (drives the singular/plural noun)"
+      "count": "the folder count (drives the singular/plural noun)"
     },
     "screenshot": "delete-confirm.png"
   },
@@ -225,6 +230,23 @@
     "screenshotNote": "The delete confirmation dialog, pictured here. Your string is one of its variants: a different item count, an archive or symlink warning, or the progress line it shows while scanning."
   },
 
+  "fileOperations.mkfile.notCreatedToast": "Cmdr couldn’t create the file “{name}”. {reason}",
+  "@fileOperations.mkfile.notCreatedToast": {
+    "description": "Toast shown when a new file on a slow volume turns out NOT to have been created, after the person already closed the new-file dialog while it was still working.",
+    "placeholders": {
+      "name": "the file name the person typed, e.g. notes.txt",
+      "reason": "a full sentence saying why, already translated, e.g. 'There is already a file by this name in this folder.'"
+    }
+  },
+
+  "fileOperations.newEntry.stillCreating": "Still creating “{name}”. The volume is slow to answer. Feel free to close this dialog, the creation will keep going, and there is no way to cancel it now.",
+  "@fileOperations.newEntry.stillCreating": {
+    "description": "Notice in the new-folder and new-file dialogs once the volume (a slow network share, a phone) has taken more than a couple of seconds to create the entry. It is still working and will most likely finish; the dialog closes by itself when it does. At this moment the dialog’s Cancel button turns into Close: closing the dialog does NOT stop the creation, which carries on in the background. There is no way to cancel it because the request is already with the volume, and the sentence tells the user so plainly.",
+    "placeholders": {
+      "name": "the folder or file name being created, e.g. photos"
+    }
+  },
+
   "fileOperations.mkfile.title": "New file",
   "@fileOperations.mkfile.title": {
     "description": "Title of the dialog that creates a new empty file (Shift+F4).",
@@ -279,19 +301,13 @@
     "screenshot": "new-folder-dialog.png"
   },
 
-  "fileOperations.mkdir.timeoutMessage": "Couldn’t confirm the folder was created. The volume may be slow, so the folder may still have been created.",
-  "@fileOperations.mkdir.timeoutMessage": {
-    "description": "Warning in the new-folder dialog when the create command did not confirm in time (slow volume). Reassures the folder may still exist. Conversational, not alarming."
-  },
-
-  "fileOperations.mkdir.timeoutRefresh": "Refresh listing",
-  "@fileOperations.mkdir.timeoutRefresh": {
-    "description": "Button in the new-folder timeout warning that reloads the current folder's file list to check whether the folder appeared. Control label."
-  },
-
-  "fileOperations.mkdir.timeoutDismiss": "Dismiss",
-  "@fileOperations.mkdir.timeoutDismiss": {
-    "description": "Button in the new-folder timeout warning that closes the warning without refreshing. Control label."
+  "fileOperations.mkdir.notCreatedToast": "Cmdr couldn’t create the folder “{name}”. {reason}",
+  "@fileOperations.mkdir.notCreatedToast": {
+    "description": "Toast shown when a new folder on a slow volume turns out NOT to have been created, after the person already closed the new-folder dialog while it was still working.",
+    "placeholders": {
+      "name": "the folder name the person typed, e.g. photos",
+      "reason": "a full sentence saying why, already translated, e.g. 'There is already a folder by this name in this folder.'"
+    }
   },
 
   "fileOperations.mkdir.aiSuggestionsAria": "AI suggestions",
@@ -427,9 +443,28 @@
     "description": "Yellow inline warning beneath the destination path box in the Copy/Move dialog, shown when the typed destination folder doesn’t exist yet and the Copy action is selected. Reassures the user the folder will be made automatically. Active voice, friendly. Keep the product name 'Cmdr' as-is. There’s a separate '...Move' variant for the Move action."
   },
 
+  "fileOperations.transferDialog.renameByMoveHint": "Renaming this copies everything inside it on the server, so it runs as a move you can pause or cancel.",
+  "@fileOperations.transferDialog.renameByMoveHint": {
+    "description": "One-line note in the Move dialog when it opens to confirm a rename (the user pressed F2 on a big folder or file on cloud storage such as S3). There, a rename has no shortcut: every file gets copied to the new name and the originals deleted, so it runs as a regular move with progress. Reassures the user they can pause or cancel it. Friendly, active voice."
+  },
   "fileOperations.transferDialog.targetWillBeCreatedMove": "This folder doesn’t exist yet. Cmdr will create it during the move.",
   "@fileOperations.transferDialog.targetWillBeCreatedMove": {
     "description": "Yellow inline warning beneath the destination path box in the Copy/Move dialog, shown when the typed destination folder doesn’t exist yet and the Move action is selected. Reassures the user the folder will be made automatically. Active voice, friendly. Keep the product name 'Cmdr' as-is. There’s a separate '...Copy' variant for the Copy action."
+  },
+
+  "fileOperations.transferDialog.rootEchoWarning": "This place already starts in {rootFolder}, so this path leads to {resolvedPath}. Did you mean {strippedPath}?",
+  "@fileOperations.transferDialog.rootEchoWarning": {
+    "description": "Yellow inline warning beneath the destination path box in the Copy/Move/Compress dialog. The box takes paths relative to the chosen place (a server folder or phone storage), but the typed path starts with that place's own folder, so the folder appears twice in where the files go. Cmdr does what the box says; this explains the result and suggests the shorter path. A button beside it puts the shorter path in the box. Keep the three paths exactly as given.",
+    "placeholders": {
+      "rootFolder": "the folder the place starts in, as a path (e.g. /srv/data)",
+      "resolvedPath": "where the files go if the box stays as typed, as a path with the folder doubled (e.g. /srv/data/srv/data/photos)",
+      "strippedPath": "the typed path with the repeated folder taken off, which is probably what the user meant (e.g. /photos)"
+    }
+  },
+
+  "fileOperations.transferDialog.rootEchoUseStripped": "Use shorter path",
+  "@fileOperations.transferDialog.rootEchoUseStripped": {
+    "description": "Small button inside the yellow warning beneath the destination path box (see fileOperations.transferDialog.rootEchoWarning). Pressing it replaces the typed path with the shorter one the warning suggests. A verb phrase for a button; keep it short."
   },
 
   "fileOperations.transferDialog.destinationReadOnly": "This folder is read-only, so nothing can go here.",
@@ -461,11 +496,11 @@
     "screenshot": "conflict-dialog.png"
   },
 
-  "fileOperations.transferDialog.scanDir": "{count, plural, one {dir} other {dirs}}",
+  "fileOperations.transferDialog.scanDir": "{count, plural, one {folder} other {folders}}",
   "@fileOperations.transferDialog.scanDir": {
-    "description": "Unit noun after the live directory tally in the transfer dialog's scan stats (e.g. '4 dirs'). 'dir' abbreviates directory/folder. The number is rendered separately.",
+    "description": "Unit noun after the live folder tally in the transfer dialog's scan stats (e.g. '4 folders'). The number is rendered separately.",
     "placeholders": {
-      "count": "the directory count (drives the singular/plural noun)"
+      "count": "the folder count (drives the singular/plural noun)"
     },
     "screenshot": "conflict-dialog.png"
   },
@@ -490,6 +525,25 @@
     "description": "Tooltip on the \"Estimated size\" label in the Compress dialog, clarifying the number is a quick approximation and the real packed size may differ. \"zip\" is a file format; do not translate it."
   },
 
+  "fileOperations.s3Cost.line": "About {amount} at {provider} list prices",
+  "@fileOperations.s3Cost.line": {
+    "description": "One line in the Copy, Move, and Delete confirmation dialogs, shown once the size scan finishes when the source or destination is cloud storage (S3). It estimates what the operation will cost on the user's cloud bill, at the provider's published (list) prices. One line per provider involved; an ⓘ after the line(s) explains the estimate. \"About\" signals it's an approximation. \"list prices\" means the provider's public, undiscounted price list.",
+    "placeholders": {
+      "amount": "the estimated cost, already formatted with its currency (e.g. $0.02 or €1.50)",
+      "provider": "the cloud storage provider's name (e.g. AWS, Cloudflare R2, Backblaze B2, Wasabi, Hetzner); a brand name, never translated"
+    }
+  },
+
+  "fileOperations.s3Cost.infoLabel": "About this estimate",
+  "@fileOperations.s3Cost.infoLabel": {
+    "description": "Accessible name (read by screen readers) of the ⓘ button after the cloud storage cost estimate in the Copy, Move, and Delete dialogs. Hovering or focusing it shows the explanation in fileOperations.s3Cost.infoText. Here \"About\" means \"regarding\", not \"approximately\"."
+  },
+
+  "fileOperations.s3Cost.infoText": "This uses the provider’s public list prices. Free tiers, discounts, included allowances, and minimum charges can make your bill lower or higher.",
+  "@fileOperations.s3Cost.infoText": {
+    "description": "Tooltip behind the ⓘ after the cloud storage cost estimate in the Copy, Move, and Delete dialogs. Explains that the estimate uses the provider's published prices, so the real bill can differ. \"Free tiers\" are a provider's no-cost usage allowances; \"minimum charges\" are fees a provider bills even for tiny usage."
+  },
+
   "fileOperations.transferDialog.scanUnresponsive": "The source isn’t responding, so this size is all we could count.",
   "@fileOperations.transferDialog.scanUnresponsive": {
     "description": "Shown in the transfer dialog when the size scan gave up because the source volume (a network share, say) stopped answering. The counters above it stay on screen, so the sentence explains that they're a partial count rather than a total. A 'Try again' button sits beside it."
@@ -503,6 +557,11 @@
   "fileOperations.transferDialog.scanRetry": "Try again",
   "@fileOperations.transferDialog.scanRetry": {
     "description": "Button beside the message about a size scan that couldn't finish. Starts the scan over. Short control label."
+  },
+
+  "fileOperations.transferDialog.sourceNoLongerConnected": "The phone or server holding these files isn’t connected anymore, so Cmdr can’t copy from it.",
+  "@fileOperations.transferDialog.sourceNoLongerConnected": {
+    "description": "Shown in the copy or move dialog, in place of the file and size counts' usual notice, when the phone or server the selected files live on is no longer connected (typically a phone unplugged while its search results were still on screen). There's no 'Try again' button and the confirm button is disabled, because neither can help until the device or server is back. Says 'copy' even in the move dialog, since reading the files is the part that can't happen."
   },
 
   "fileOperations.transferDialog.conflictsUnknown": "We couldn’t check what’s already at the destination. You’ll be asked about anything that clashes.",
@@ -684,11 +743,11 @@
     "screenshot": "conflict-dialog.png"
   },
 
-  "fileOperations.scanPhase.scanDir": "{count, plural, one {dir} other {dirs}}",
+  "fileOperations.scanPhase.scanDir": "{count, plural, one {folder} other {folders}}",
   "@fileOperations.scanPhase.scanDir": {
-    "description": "Unit noun after the live directory tally during a transfer's scan phase (e.g. '4 dirs'). 'dir' abbreviates directory/folder. The number is rendered separately.",
+    "description": "Unit noun after the live folder tally during a transfer's scan phase (e.g. '4 folders'). The number is rendered separately.",
     "placeholders": {
-      "count": "the directory count (drives the singular/plural noun)"
+      "count": "the folder count (drives the singular/plural noun)"
     },
     "screenshot": "conflict-dialog.png"
   },
@@ -966,9 +1025,16 @@
     "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
   },
 
-  "fileOperations.transferProgress.warningFileOverFolder": "The target exists and is a <strong>folder</strong>. You’re about to overwrite it with a <strong>file</strong> by the same name. All contents of the target folder would be deleted and replaced by the file. What to do?",
+  "fileOperations.transferProgress.warningFileOverFolder": "The target exists and is a <strong>folder</strong>. You’re about to replace it with a <strong>file</strong> by the same name. Everything inside the folder would be gone. What to do?",
   "@fileOperations.transferProgress.warningFileOverFolder": {
     "description": "Red warning shown in the conflict step when a file would replace a same-named folder, deleting the folder's contents. <strong> wraps the emphasized words 'folder' and 'file'. Keep it stark; this is a destructive action.",
+    "screenshot": "transfer-dialog.png",
+    "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
+  },
+
+  "fileOperations.transferProgress.warningFolderOverFile": "The target exists and is a <strong>file</strong>. You’re about to replace it with a <strong>folder</strong> by the same name. The file would be gone once the folder takes its place. What to do?",
+  "@fileOperations.transferProgress.warningFolderOverFile": {
+    "description": "Red warning shown in the copy/move conflict prompt when a folder would replace a same-named file: the mirror of warningFileOverFolder. <strong> wraps the emphasized words 'file' and 'folder'. Shown above the filename, before the user picks Overwrite, Skip, and so on. Keep it stark, so nobody overwrites on muscle memory.",
     "screenshot": "transfer-dialog.png",
     "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
   },
@@ -1573,6 +1639,11 @@
   "@fileOperations.errorDialog.retry": {
     "description": "Button that re-attempts a failed copy/move/delete. Shown for errors worth trying again. Short control label.",
     "screenshot": "transfer-error-cancelled.png"
+  },
+
+  "fileOperations.errorDialog.copyAnyway": "Copy anyway",
+  "@fileOperations.errorDialog.copyAnyway": {
+    "description": "Button on the \"destination may not have enough space\" dialog that starts the same copy again without the free-space check. The space figure is only an estimate, so the user may go ahead; the copy stops if the destination really fills up. Short control label."
   },
 
   "fileOperations.errorDialog.close": "Close",

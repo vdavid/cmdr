@@ -11,8 +11,7 @@ The frontend of Ask Cmdr: a right-side panel for chatting with a BYO-key LLM abo
   `ask-cmdr-sessions.svelte.ts` is a SEPARATE slice for the sessions panel: it calls the trigger, never the reverse.
 - `ask-cmdr-turn-stream.svelte.ts`: the window's one turn-event subscription, fanned out to the stream reducer and the
   sessions slice — the only module knowing both, so that loop stays open.
-- `wake-indicator.svelte.ts` + `WakeIndicator.svelte`: the status corner's word on the PROACTIVE half, on its own event
-  rather than the turn stream.
+- `wake-indicator.svelte.ts` + `WakeIndicator.svelte`: the status corner's word on the PROACTIVE half (its own event).
 - `AskCmdrRail.svelte`: the panel, mounted beside `DualPaneExplorer` by `routes/(main)/+page.svelte`, overlaid by
   `AskCmdrSessions.svelte`, with its `AskCmdrMessage` / `ToolLine` / `Composer` / `AttachmentChip` / `WakeDigest` /
   `ProposalDecisions` parts. `BulkRenameReviewDialog.svelte` is the rename review.
@@ -30,8 +29,9 @@ The frontend of Ask Cmdr: a right-side panel for chatting with a BYO-key LLM abo
 - **No reasoning blob reaches the frontend.** `MessageView` carries display blocks only. ❌ Never add a wire field
   leaking provider state.
 - **Turn events are subscribed by CONVERSATION, never per send**, so a reload mid-answer keeps rendering: ❌ never key a
-  turn to the invoke that started it. Any live event means a turn is running; `discarded` means a quiet wake deleted the
-  thread. Each mutates the LAST assistant message in place, and cancel finalizes LOCALLY.
+  turn to the invoke that started it. Any live event means a turn is running, except `proposalDecided` (a decision
+  line); `discarded`: a quiet wake deleted the thread. Each mutates the LAST assistant message, cancel finalizes
+  LOCALLY.
 - **The wake indicator is SILENT while any gate is shut or `askCmdr.proactive` is off**, and shows a running wake either
   way (it's spending money now). `wakeIndicatorMode` is the gate. ❌ Subscription stays in the `.svelte.ts`.
 - **The toggle is wired in four places; a miss fails silently** (`ask-cmdr-shortcut.test.ts`).
@@ -48,4 +48,5 @@ The frontend of Ask Cmdr: a right-side panel for chatting with a BYO-key LLM abo
 - **Attachments cross as path + kind ONLY, never contents** (the read-only privacy line). A pane drag is a NATIVE
   webview drag, so a DOM `ondrop` never fires.
 
-Architecture, flows, and decisions: `DETAILS.md`. Read it before any non-trivial work here.
+Architecture, flows, and decisions: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
+reorganizing, or advising.

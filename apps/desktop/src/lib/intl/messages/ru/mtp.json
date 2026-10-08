@@ -1,0 +1,83 @@
+{
+  "mtp.connectedToast.title": "Подключено: {deviceName}",
+  "@mtp.connectedToast.title": {
+    "sourceHash": "562319d"
+  },
+  "mtp.connectedToast.bodyMac": "Cmdr приостановил системную службу камеры macOS (ptpcamerad), чтобы получить доступ к устройству. Чтобы использовать устройство в другом приложении, выключите поддержку MTP в настройках.",
+  "@mtp.connectedToast.bodyMac": {
+    "sourceHash": "3ace37b"
+  },
+  "mtp.connectedToast.bodyOther": "Чтобы использовать устройство в другом приложении, выключите поддержку MTP в настройках.",
+  "@mtp.connectedToast.bodyOther": {
+    "sourceHash": "6f42620"
+  },
+  "mtp.connectedToast.dontShowAgain": "Больше не показывать",
+  "@mtp.connectedToast.dontShowAgain": {
+    "sourceHash": "f6f62e0"
+  },
+  "mtp.connectedToast.disableMtp": "Выключить MTP…",
+  "@mtp.connectedToast.disableMtp": {
+    "sourceHash": "17c54f2"
+  },
+  "mtp.connectedToast.ok": "OK",
+  "@mtp.connectedToast.ok": {
+    "sourceHash": "565339b",
+    "sameAsSourceJustification": "Название бренда, стандартное обозначение или строка из подстановок; сохраняется без перевода."
+  },
+  "mtp.permissionDialog.title": "Нет доступа к USB-устройству",
+  "@mtp.permissionDialog.title": {
+    "sourceHash": "1b440ed"
+  },
+  "mtp.permissionDialog.description": "У Cmdr нет разрешения на доступ к этому устройству. В Linux для доступа к устройствам MTP нужны правила udev.",
+  "@mtp.permissionDialog.description": {
+    "sourceHash": "fdb8772"
+  },
+  "mtp.permissionDialog.explanation": "Выполните эту команду в терминале, чтобы установить и перезагрузить правила:",
+  "@mtp.permissionDialog.explanation": {
+    "sourceHash": "6bc70dd"
+  },
+  "mtp.permissionDialog.helpText": "После выполнения команды отсоедините и снова подключите устройство, затем попробуйте еще раз.",
+  "@mtp.permissionDialog.helpText": {
+    "sourceHash": "519f195"
+  },
+  "mtp.permissionDialog.close": "Закрыть",
+  "@mtp.permissionDialog.close": {
+    "sourceHash": "7d9eb7a"
+  },
+  "mtp.permissionDialog.retry": "Повторить подключение",
+  "@mtp.permissionDialog.retry": {
+    "sourceHash": "eccee4e"
+  },
+  "mtp.ptpcameradDialog.title": "Не удалось подключиться к устройству MTP",
+  "@mtp.ptpcameradDialog.title": {
+    "sourceHash": "8cb1f59"
+  },
+  "mtp.ptpcameradDialog.inUseBy": "Устройство использует процесс <processName>{process}</processName>.",
+  "@mtp.ptpcameradDialog.inUseBy": {
+    "sourceHash": "5b97c25"
+  },
+  "mtp.ptpcameradDialog.inUseGeneric": "Другой процесс получил монопольный доступ к устройству.",
+  "@mtp.ptpcameradDialog.inUseGeneric": {
+    "sourceHash": "cfba635"
+  },
+  "mtp.ptpcameradDialog.explanation": "В macOS системная служба <code>ptpcamerad</code> автоматически занимает устройства Android. Чтобы обойти это, выполните следующую команду в Терминале и не закрывайте ее, пока пользуетесь Cmdr:",
+  "@mtp.ptpcameradDialog.explanation": {
+    "sourceHash": "65b6ee3"
+  },
+  "mtp.ptpcameradDialog.helpText": "Пока эта команда работает, она постоянно останавливает ptpcamerad. Когда закончите, нажмите <key>Ctrl+C</key> в Терминале, чтобы остановить ее.",
+  "@mtp.ptpcameradDialog.helpText": {
+    "sourceHash": "85b5060"
+  },
+  "mtp.ptpcameradDialog.close": "Закрыть",
+  "@mtp.ptpcameradDialog.close": {
+    "sourceHash": "7d9eb7a"
+  },
+  "mtp.ptpcameradDialog.retry": "Повторить подключение",
+  "@mtp.ptpcameradDialog.retry": {
+    "sourceHash": "eccee4e"
+  },
+  "mtp.deviceFallbackName": "Устройство MTP",
+  "@mtp.deviceFallbackName": {
+    "sourceHash": "8ba7a69"
+  }
+}

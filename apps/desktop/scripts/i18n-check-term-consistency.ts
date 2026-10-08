@@ -35,6 +35,16 @@
  * written down once, next to the term, where the next translator reads it. A
  * silent allowlist would just be a mute button.
  *
+ * ## A value that agrees with its label (`@key.agreesWith`)
+ *
+ * One recurring split is structural, not a judgment: a value word that takes the
+ * gender and number of the label beside it (the managed card's per-row "Off":
+ * es `Desactivadas` beside `Estadísticas de uso`, against the plain switch option
+ * `Desactivado`). The `en` key says so once with `agreesWith: "<label key>"`, and
+ * it then groups only with keys sharing both its English and its label, in every
+ * locale, with no allowlist entry. A malformed or dangling one fails the run
+ * (`agreementProblems`), since it would otherwise drop its key from comparison.
+ *
  * ## Locales that haven't been triaged yet
  *
  * Nine locales predate this check and carry 20-40 divergences each. Listing 300
@@ -133,18 +143,60 @@ export function normalizeForComparison(value: string, key: string): string {
 }
 
 /**
- * Every source value carried by two or more keys, mapped to those keys. Values
- * shorter than two characters are skipped: a bare `/` or `%` connector collides
- * across unrelated surfaces and says nothing about terminology.
+ * The label a key's value must agree with, from its `en` `@key.agreesWith`: a
+ * value word like the managed card's per-row "Off", which takes the gender and
+ * number of the row label beside it. English writes every such value the same
+ * ("Off"), so without this they'd group with the plain switch option and with
+ * each other, and every agreeing language would read as drift.
  */
-function groupBySourceValue(source: Catalog): Map<string, string[]> {
-  const groups = new Map<string, string[]>()
+function agreesWith(source: Catalog, key: string): string | undefined {
+  if (!(key in source.metadata)) return undefined
+  const target = source.metadata[key].agreesWith
+  return typeof target === 'string' ? target : undefined
+}
+
+/**
+ * Every malformed `@key.agreesWith` in the source catalog: one that isn't a
+ * non-empty string, names the key itself, or names a key the catalog lacks.
+ * A dangling one would quietly take its key out of comparison forever, so the
+ * check refuses to run on one rather than warning.
+ *
+ * @param source the `en` catalog (or an overlay's layered source)
+ * @returns one human-readable line per problem
+ */
+export function agreementProblems(source: Catalog): string[] {
+  const problems: string[] = []
+  for (const [key, meta] of Object.entries(source.metadata)) {
+    if (!('agreesWith' in meta)) continue
+    const target = meta.agreesWith
+    if (typeof target !== 'string' || target.length === 0) {
+      problems.push(`@${key}.agreesWith must name the label key its value agrees with`)
+    } else if (target === key) {
+      problems.push(`@${key}.agreesWith names the key itself; name the label beside it`)
+    } else if (!(target in source.messages)) {
+      problems.push(`@${key}.agreesWith names "${target}", which isn't a key`)
+    }
+  }
+  return problems
+}
+
+/**
+ * Every source value carried by two or more keys, mapped to its English and those
+ * keys. Values shorter than two characters are skipped: a bare `/` or `%`
+ * connector collides across unrelated surfaces and says nothing about terminology.
+ * A key with `@key.agreesWith` groups only with keys that share both its English
+ * AND its label, since agreeing with a different label is a different word.
+ */
+function groupBySourceValue(source: Catalog): Map<string, { text: string; keys: string[] }> {
+  const groups = new Map<string, { text: string; keys: string[] }>()
   for (const [key, value] of Object.entries(source.messages)) {
     const normalized = normalizeForComparison(value, key)
     if (normalized.length < 2) continue
-    const bucket = groups.get(normalized)
-    if (bucket) bucket.push(key)
-    else groups.set(normalized, [key])
+    const label = agreesWith(source, key)
+    const groupKey = label === undefined ? normalized : `${normalized}\u0000${label}`
+    const bucket = groups.get(groupKey)
+    if (bucket) bucket.keys.push(key)
+    else groups.set(groupKey, { text: normalized, keys: [key] })
   }
   return groups
 }
@@ -161,7 +213,7 @@ function groupBySourceValue(source: Catalog): Map<string, string[]> {
  */
 export function findDivergences(source: Catalog, catalog: Catalog, isOverlay: boolean): DivergenceFinding[] {
   const findings: DivergenceFinding[] = []
-  for (const [normalizedSource, keys] of groupBySourceValue(source)) {
+  for (const { text: normalizedSource, keys } of groupBySourceValue(source).values()) {
     if (keys.length < 2) continue
 
     // What the user actually sees for each key: the locale's own value, or for an
@@ -249,10 +301,18 @@ export function inspectLocales({
     return fresh
   }
 
+  const base = load(BASE_LOCALE)
+  const problems = agreementProblems(base)
+  if (problems.length > 0) throw new Error(`Malformed @key.agreesWith in ${BASE_LOCALE}:\n  ${problems.join('\n  ')}`)
+
   const outcomes: LocaleOutcome[] = []
   for (const locale of available.filter((tag) => tag !== BASE_LOCALE)) {
     const { overrides, isOverlay } = resolveLocaleSource(locale, available)
-    const source = isOverlay ? layerCatalogs(load(BASE_LOCALE), load(overrides)) : load(BASE_LOCALE)
+    // `agreesWith` is a fact about the English key, so an overlay's source keeps
+    // `en`'s metadata: layering would let the base locale's `@key` blocks replace it.
+    const source = isOverlay
+      ? { messages: layerCatalogs(base, load(overrides)).messages, metadata: base.metadata }
+      : base
     const divergences = findDivergences(source, load(locale), isOverlay)
 
     const entries = locale in allowlist.reviewed ? allowlist.reviewed[locale] : []

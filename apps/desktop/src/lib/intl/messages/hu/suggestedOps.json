@@ -127,6 +127,26 @@
   "@suggestedOps.approvalUnsure": {
     "sourceHash": "fba515a"
   },
+  "suggestedOps.refusal.label": "Miért nem indult el",
+  "@suggestedOps.refusal.label": {
+    "sourceHash": "e176570"
+  },
+  "suggestedOps.refusal.nothingToRun.message": "A Cmdr a jóváhagyáskor ezek közül egyik fájlt sem tudta beolvasni, így semmi nem indult el.",
+  "@suggestedOps.refusal.nothingToRun.message": {
+    "sourceHash": "3018819"
+  },
+  "suggestedOps.refusal.nothingToRun.suggestion": "Nézd meg, hogy megvannak-e még, aztán hagyd jóvá újra, vagy utasítsd el.",
+  "@suggestedOps.refusal.nothingToRun.suggestion": {
+    "sourceHash": "f4cfc9e"
+  },
+  "suggestedOps.refusal.couldNotStart.message": "A Cmdr nem tudta műveletté alakítani ezt a javaslatot, így semmi nem indult el.",
+  "@suggestedOps.refusal.couldNotStart.message": {
+    "sourceHash": "77ef48b"
+  },
+  "suggestedOps.refusal.couldNotStart.suggestion": "Utasítsd el, és kérd meg az AI-t, hogy javasolja újra.",
+  "@suggestedOps.refusal.couldNotStart.suggestion": {
+    "sourceHash": "5b5b779"
+  },
   "suggestedOps.indicatorTooltip": "AI-javaslatok várnak rád. Kattints az áttekintésükhöz.",
   "@suggestedOps.indicatorTooltip": {
     "sourceHash": "4508b0b"

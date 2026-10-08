@@ -130,6 +130,10 @@ impl VolumeReadStream for BufferSource {
     fn bytes_read(&self) -> u64 {
         self.at as u64
     }
+
+    fn modified_at(&self) -> Option<std::time::SystemTime> {
+        None
+    }
 }
 
 /// The piece size a source here hands its bytes over in by default: a number
@@ -356,7 +360,7 @@ async fn raw_ranged_get(service: &str, port: u16, at: &str, range: &str) -> (req
         .base_url
         .join(at)
         .unwrap_or_else(|e| panic!("joining {at} onto the fixture base URL: {e}"));
-    let response = reqwest::Client::builder()
+    let response = cmdr_http::client_builder()
         .user_agent("Cmdr")
         .build()
         .expect("a client with no TLS options is infallible")

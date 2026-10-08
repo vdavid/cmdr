@@ -174,9 +174,10 @@ function rustTypeToTs(rustType: string): { tsType: string; optional: boolean } {
 function parseRustStructs(content: string): RustStruct[] {
   const structs: RustStruct[] = []
 
-  // Match structs with #[derive(...Serialize...)] or #[derive(...Deserialize...)]
-  const structPattern =
-    /(?:#\[derive\([^\]]*(?:Serialize|Deserialize)[^\]]*\)\]\s*)*(?:#\[serde\(([^\]]*)\)\]\s*)*pub\s+struct\s+(\w+)\s*\{([^}]+)\}/g
+  // Match structs with their leading `#[derive(...)]` and `#[serde(...)]` attributes. The derive
+  // part stays content-agnostic: requiring `Serialize|Deserialize` between two `[^\]]*` runs
+  // backtracked exponentially (CodeQL `js/redos`), and the group is optional, so it never filtered.
+  const structPattern = /(?:#\[derive\([^\]]*\)\]\s*)*(?:#\[serde\(([^\]]*)\)\]\s*)*pub\s+struct\s+(\w+)\s*\{([^}]+)\}/g
 
   let match
   while ((match = structPattern.exec(content)) !== null) {
@@ -245,9 +246,8 @@ function parseRustStructs(content: string): RustStruct[] {
 function parseRustEnums(content: string): RustEnum[] {
   const enums: RustEnum[] = []
 
-  // Match enums with serde attributes
-  const enumPattern =
-    /(?:#\[derive\([^\]]*(?:Serialize|Deserialize)[^\]]*\)\]\s*)*(?:#\[serde\(([^\]]*)\)\]\s*)*pub\s+enum\s+(\w+)\s*\{([^}]+)\}/g
+  // Match enums with serde attributes (derive part: see `parseRustStructs`)
+  const enumPattern = /(?:#\[derive\([^\]]*\)\]\s*)*(?:#\[serde\(([^\]]*)\)\]\s*)*pub\s+enum\s+(\w+)\s*\{([^}]+)\}/g
 
   let match
   while ((match = enumPattern.exec(content)) !== null) {

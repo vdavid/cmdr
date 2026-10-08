@@ -106,11 +106,13 @@ pub struct FactsRequest {
     pub is_icloud_drive: bool,
     /// Whether the rows are real OS paths a share service can take.
     pub can_share: bool,
+    /// Whether the menu shows the tag colors, so their applied state is worth reading.
+    pub can_tag: bool,
 }
 
 impl FactsRequest {
-    /// The facts this menu can use. "Open with" is a file-only submenu, `Share` needs OS
-    /// paths, and sync status matters only in iCloud Drive.
+    /// The facts this menu can use. "Open with" is a file-only submenu, `Share` and the tag
+    /// colors need OS paths, and sync status matters only in iCloud Drive.
     ///
     /// On sync status: the probe is provider-agnostic and answers correctly for third-party
     /// providers too (a streamed Google Drive file carries `SF_DATALESS` like any other stub,
@@ -118,7 +120,10 @@ impl FactsRequest {
     /// thing it picks between is the eviction pair, which is iCloud-only; widening the menu,
     /// not this call, is what a third-party provider would need.
     pub fn kinds(&self) -> BTreeSet<FactKind> {
-        let mut kinds = BTreeSet::from([FactKind::DriveLinks, FactKind::ProviderOffer, FactKind::Tags]);
+        let mut kinds = BTreeSet::from([FactKind::DriveLinks, FactKind::ProviderOffer]);
+        if self.can_tag {
+            kinds.insert(FactKind::Tags);
+        }
         if self.is_icloud_drive {
             kinds.insert(FactKind::SyncStatus);
         }
@@ -329,9 +334,15 @@ fn jobs_for(request: FactsRequest) -> Vec<(FactKind, FactJob)> {
                     FILE_PROVIDER_ACTIONS_BUDGET,
                 ))
             }),
-            FactKind::OpenWith => {
-                Box::new(move || Fact::OpenWith(crate::file_system::open_with::compute_open_with_choices(paths)))
-            }
+            FactKind::OpenWith => Box::new(move || {
+                // A file inside an archive has nothing at its path for LaunchServices to
+                // type, so it's asked about a stand-in with the same extension.
+                let listing_paths = paths
+                    .iter()
+                    .map(|path| crate::file_viewer::open_with_extract::listing_path(path))
+                    .collect();
+                Fact::OpenWith(crate::file_system::open_with::compute_open_with_choices(listing_paths))
+            }),
             FactKind::Share => Box::new(move || Fact::Share(crate::file_system::share::enumerate_offer(&paths))),
             FactKind::Tags => Box::new(move || {
                 // Which colors the WHOLE selection carries: each path's tags read once, and a
@@ -490,17 +501,18 @@ mod tests {
 
     #[test]
     fn a_right_click_asks_only_for_the_facts_its_menu_can_show() {
-        let request = |is_directory, is_icloud_drive, can_share| FactsRequest {
+        let request = |is_directory, is_icloud_drive, rows_are_os_paths| FactsRequest {
             primary: PathBuf::from("/x"),
             paths: vec![PathBuf::from("/x")],
             is_directory,
             is_icloud_drive,
-            can_share,
+            can_share: rows_are_os_paths,
+            can_tag: rows_are_os_paths,
         };
-        // A folder on a phone: no Open with, no Share, no eviction pair.
+        // A folder on a phone: no Open with, no Share, no tag colors, no eviction pair.
         assert_eq!(
             request(true, false, false).kinds(),
-            BTreeSet::from([FactKind::DriveLinks, FactKind::ProviderOffer, FactKind::Tags])
+            BTreeSet::from([FactKind::DriveLinks, FactKind::ProviderOffer])
         );
         // A file in iCloud Drive: everything.
         assert_eq!(

@@ -6,22 +6,21 @@ size, speed, or ETA to the DOM.
 ```ts
 import { formatByteSize, formatDuration, seconds } from '$lib/units'
 
-formatByteSize(87_654_321) // "83.59 MB" (binary) or "87.65 MB" (SI)
+formatByteSize(87_654_321) // "83.59 MiB" (binary) or "87.65 MB" (SI)
 formatDuration(seconds(492)) // "8m 12s"
 ```
 
-A RATE is a number plus a per-second marker, and that marker is user-facing copy, so it comes from the catalog and never
-from code. Transfer speed: `<Trans key="fileOperations.shared.byteRate" snippets={{ size }} />` over a
-`<Size bytes={rate}>` snippet. Files per second: `formatFilesPerSecond(rate)` for the number and the plural selector,
-rendered through `tString('fileOperations.shared.fileRate', { count, rateText })`. ❌ Never a code-side rate formatter
-that bakes in the noun: `'files/s'` was a literal once and shipped English to all thirteen locales.
+A RATE's per-second marker is catalog copy: `<Trans key="fileOperations.shared.byteRate" snippets={{ size }} />` over a
+`<Size bytes={rate}>` snippet, or `formatFilesPerSecond(rate)` through `fileOperations.shared.fileRate`. ❌ Never a
+code-side rate formatter that bakes in the noun: `'files/s'` once shipped English to all thirteen locales.
 
 ## Module map
 
 - `index.ts`: the public surface. `formatByteSize` reads the user's `appearance.fileSizeFormat`; everything else
   re-exports from the two leaves.
-- `byte-size.ts`: the unit math with the base passed in (`formatFileSizeWithFormat`, `formatDriveFigure`, `unitLabel`,
-  `fixedUnitFor`, `dynamicTierIndex`, `baseFor`), plus the `ByteCount` / `BytesPerSecond` brands.
+- `byte-size.ts`: the unit math with the base passed in (`formatFileSizeWithFormat`, `formatTieredSize`,
+  `formatDriveFigure`, `formatRoundSize`, `unitLabel`, `bytesLabel`, `fixedUnitFor`, `dynamicTierIndex`, `baseFor`),
+  plus the `ByteCount` / `BytesPerSecond` brands.
 - `duration.ts`: `formatDuration` (seconds, worded by `$lib/intl/duration-format` in the UI language),
   `formatMilliseconds` (sub-second precision), `formatFilesPerSecond` (the rounding policy plus a locale-formatted
   `text` and the `value` the catalog pluralizes on), and the `Seconds` brand.
@@ -31,8 +30,7 @@ that bakes in the noun: `'files/s'` was a literal once and shipped English to al
 - **❌ Never write a private `formatBytes` / `formatSpeed` / `formatEta`.** Four once drifted apart here, each
   hardcoding base 1024 while labelling the result "KB"/"MB"/"GB", which is how two windows came to show different
   numbers for the same transfer. `cmdr/no-private-unit-format` rejects new ones (binary ladder literals in arithmetic,
-  and formatter-shaped names whose body does unit work). Opt out per-line with a reason for a genuine fixed binary
-  threshold.
+  and formatter-shaped names whose body does unit work). Opt out per-line, with a reason.
 - **`<Size bytes>`** (`$lib/ui/Size.svelte`) is the COMPONENT form: same numbers plus the size-tier colors. Prefer it in
   markup; use `formatByteSize` for tooltips, toasts, and anything composing a string. `<Size bytes rounded>` is the LIVE
   form — a tenth below ten, whole units above ("1.7 GB", "24 GB") — for the transfer bars only, where the number changes
@@ -44,14 +42,18 @@ that bakes in the noun: `'files/s'` was a literal once and shipped English to al
   numbers, so brand at the edge — for `write-progress` that's `transferReadout(event)` in
   `apps/desktop/src/lib/file-operations/progress-readout.ts`. `formatByteSize` takes a plain `number` on purpose: ~40
   call sites, and the lint rather than the type is what guards it.
-- **Size-tier COLORING is a separate layer**: `formatSizeForDisplay` / `colorizeSizeString` / `sizeTierClasses` in
+- **The symbol names the base**: binary is IEC `KiB` … `PiB`, SI is `kB` … `PB`. Copy naming a fixed amount must match
+  its constant's base; label a binary preset with `formatRoundSize(n, 'binary')`.
+- **Size unit words are catalog copy** (`common.sizeUnit.*`: French `Mo`). ❌ Never parse one back out of a size string;
+  `formatTieredSize` hands the tier over with the text. Time units come from `Intl` (CLDR).
+- **Size-tier COLORING is a separate layer**: `formatSizeForDisplay` / `colorizeSize` / `sizeTierClasses` in
   `file-explorer/selection/selection-info-utils.ts`, because the classes belong to the list views' stylesheet. It
   consumes this module's ladder; don't re-derive tiers from a threshold cascade.
 - **Dates are NOT here.** `settings/format-utils.ts` (pure) → `formattedDate()` (reactive) → `<DateLabel>`.
 - **Decimals and separators follow the active locale** via `$lib/intl`'s `getNumberFormatter`, in EVERY unit. ❌ Never
   `toFixed`, which always emits an ASCII dot and once put "2.3 files/s" beside a pane reading "250,00 MB". The
-  value↔unit ASCII space is added by us, never by Intl (`colorizeSizeString` parses the unit by the last space).
-- **`settings/types.ts::formatDurationSetting(ms)` is a deliberate second duration formatter** for rendering a duration
-  SETTING's stored value in the settings UI ("500ms" / "5min"). Different surface, different shape; don't merge them.
+  value↔unit ASCII space is added by us, never by Intl.
+- **`settings/types.ts::formatDurationSetting(ms)` is a deliberate second duration formatter** for a duration SETTING's
+  stored value ("500ms" / "5min"). Don't merge them.
 
 Rationale, the speed/ETA definitions, and the type-safety decision: `DETAILS.md`.

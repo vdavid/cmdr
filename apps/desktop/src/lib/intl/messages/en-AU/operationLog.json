@@ -6,5 +6,9 @@
   "operationLog.status.canceled": "Cancelled",
   "@operationLog.status.canceled": {
     "sourceHash": "13ca2ee"
+  },
+  "operationLog.rollback.refusalUnknown": "This operation isn’t in your history any more.",
+  "@operationLog.rollback.refusalUnknown": {
+    "sourceHash": "f94c33d"
   }
 }

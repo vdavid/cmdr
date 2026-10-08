@@ -7,10 +7,12 @@
 //!
 //! ## Command surface
 //!
-//! - [`write_weights`](ImportanceWriter::write_weights): write a recompute pass's
-//!   weights, stamping every row with the pass generation and advancing the
-//!   stored generation to it. Rows upsert on the folded-path PK (a pass rewrites every
-//!   folder).
+//! - [`write_full_pass`](ImportanceWriter::write_full_pass): write a live recompute
+//!   pass's weights, stamping every row with the pass generation and advancing the
+//!   stored generation to it. Blocks for the outcome, and rolls back when the pass's
+//!   stop signal fires mid-write.
+//! - [`write_weights`](ImportanceWriter::write_weights): the same write,
+//!   fire-and-forget, for a test or a dev tool staging weights.
 //! - [`write_weights_incremental`](ImportanceWriter::write_weights_incremental):
 //!   reconcile the changed subtrees against a live change's rescored rows at the
 //!   CURRENT generation — write only the rows whose SIGNALS moved, delete the ones
@@ -35,7 +37,9 @@ use std::thread;
 use std::time::Duration;
 
 use rusqlite::{Connection, OptionalExtension};
+use tokio_util::sync::CancellationToken;
 
+use super::stop::{PassError, STOP_CHECK_INTERVAL, check};
 use super::store::{ImportanceStoreError, RECOMPUTE_GENERATION_KEY, SCORING_POLICY_KEY, open_write_connection};
 use crate::indexing::store::normalize_for_comparison;
 use cmdr_fs::ignore_poison::IgnorePoison;
@@ -77,7 +81,17 @@ pub struct WeightRow {
 enum WriteMessage {
     /// Write a recompute pass's weights at `generation`, advancing the stored
     /// recompute generation to it. Rows upsert on the folded-path PK.
-    WriteWeights { generation: u64, rows: Vec<WeightRow> },
+    ///
+    /// `stop` is the pass's stop signal: the transaction polls it and rolls back
+    /// when it fires, leaving the store exactly as it was. `reply` carries what the
+    /// transaction came to, for a caller that must know before it announces the
+    /// pass; a staged write (tests, tooling) sends neither a live signal nor a reply.
+    WriteWeights {
+        generation: u64,
+        rows: Vec<WeightRow>,
+        stop: CancellationToken,
+        reply: Option<mpsc::Sender<Result<(), PassError>>>,
+    },
     /// Write an INCREMENTAL rescore's weights at `generation` WITHOUT advancing the
     /// stored generation, keeping untouched folders' as-of markers. In ONE
     /// transaction it READS each subtree in `rescored_subtrees` (a changed path and
@@ -158,8 +172,44 @@ impl ImportanceWriter {
     /// Write a recompute pass's weights, stamping them at `generation` and
     /// advancing the stored generation to it. Blocks if the channel is full
     /// (backpressure).
+    ///
+    /// Fire-and-forget: nothing can stop it and a failure only logs, which is what a
+    /// test or a dev tool staging weights wants. A live recompute goes through
+    /// [`write_full_pass`](ImportanceWriter::write_full_pass) instead.
     pub fn write_weights(&self, generation: u64, rows: Vec<WeightRow>) -> Result<(), ImportanceStoreError> {
-        self.send(WriteMessage::WriteWeights { generation, rows })
+        self.send(WriteMessage::WriteWeights {
+            generation,
+            rows,
+            stop: CancellationToken::new(),
+            reply: None,
+        })
+    }
+
+    /// Write a live recompute pass's weights at `generation`, and say what the
+    /// transaction came to.
+    ///
+    /// **Blocks until the transaction commits or rolls back**, so it's the flush too.
+    /// `Ok` means the table was replaced and the generation and scoring policy were
+    /// stamped, all in one transaction. [`PassError::Cancelled`] means `stop` fired
+    /// first and the transaction rolled back: the store holds the previous pass's
+    /// rows and stamps, untouched. ❌ Don't announce a pass, or log it as scored,
+    /// off anything but that `Ok`.
+    pub(crate) fn write_full_pass(
+        &self,
+        generation: u64,
+        rows: Vec<WeightRow>,
+        stop: &CancellationToken,
+    ) -> Result<(), PassError> {
+        let (tx, rx) = mpsc::channel();
+        self.send(WriteMessage::WriteWeights {
+            generation,
+            rows,
+            stop: stop.clone(),
+            reply: Some(tx),
+        })
+        .map_err(|e| PassError::Failed(e.to_string()))?;
+        rx.recv()
+            .map_err(|_| PassError::Failed("importance writer thread is gone".to_string()))?
     }
 
     /// Reconcile each subtree in `rescored_subtrees` against `rows` at `generation`
@@ -279,9 +329,23 @@ impl ImportanceWriter {
 fn writer_loop(mut conn: Connection, receiver: mpsc::Receiver<WriteMessage>) {
     while let Ok(msg) = receiver.recv() {
         match msg {
-            WriteMessage::WriteWeights { generation, rows } => {
-                if let Err(e) = apply_full_pass(&mut conn, generation, &rows) {
-                    log::warn!(target: "importance", "write_weights failed (generation {generation}): {e}");
+            WriteMessage::WriteWeights {
+                generation,
+                rows,
+                stop,
+                reply,
+            } => {
+                let outcome = apply_full_pass(&mut conn, generation, &rows, &stop);
+                match reply {
+                    // The caller reports it (and knows a stop from a failure).
+                    Some(reply) => {
+                        let _ = reply.send(outcome);
+                    }
+                    None => {
+                        if let Err(e) = outcome {
+                            log::warn!(target: "importance", "write_weights failed (generation {generation}): {e}");
+                        }
+                    }
                 }
             }
             WriteMessage::WriteWeightsIncremental {
@@ -343,22 +407,39 @@ fn writer_loop(mut conn: Connection, receiver: mpsc::Receiver<WriteMessage>) {
 /// produced; an incremental only touches the folders the filesystem changed, so it
 /// can't vouch for the rest and stamping there would strand every untouched row
 /// under a policy it was never scored by.
-fn apply_full_pass(conn: &mut Connection, generation: u64, rows: &[WeightRow]) -> Result<(), ImportanceStoreError> {
-    let tx = conn.transaction()?;
-    {
-        tx.execute("DELETE FROM weights", [])?;
-        insert_rows(&tx, generation, rows)?;
-        tx.execute(
-            "INSERT OR REPLACE INTO meta (key, value) VALUES (?1, ?2)",
-            rusqlite::params![RECOMPUTE_GENERATION_KEY, generation.to_string()],
-        )?;
-        tx.execute(
-            "INSERT OR REPLACE INTO meta (key, value) VALUES (?1, ?2)",
-            rusqlite::params![SCORING_POLICY_KEY, super::classify::scoring_policy_fingerprint()],
-        )?;
+///
+/// **`stop` is polled between row chunks, and a stop rolls the whole thing back.**
+/// The table is already empty inside the transaction by then, which is exactly why
+/// the answer is a rollback and never a partial commit: the previous pass's rows and
+/// both stamps come back together, so a stopped pass can't be told from one that
+/// never started. The last look is just before the stamps; past it the commit is two
+/// tiny writes and isn't worth interrupting.
+fn apply_full_pass(
+    conn: &mut Connection,
+    generation: u64,
+    rows: &[WeightRow],
+    stop: &CancellationToken,
+) -> Result<(), PassError> {
+    let failed = |e: rusqlite::Error| PassError::from(ImportanceStoreError::from(e));
+    // Every early return below drops `tx`, which rolls it back.
+    let tx = conn.transaction().map_err(failed)?;
+    tx.execute("DELETE FROM weights", []).map_err(failed)?;
+    for chunk in rows.chunks(STOP_CHECK_INTERVAL as usize) {
+        check(stop)?;
+        insert_rows(&tx, generation, chunk)?;
     }
-    tx.commit()?;
-    Ok(())
+    check(stop)?;
+    tx.execute(
+        "INSERT OR REPLACE INTO meta (key, value) VALUES (?1, ?2)",
+        rusqlite::params![RECOMPUTE_GENERATION_KEY, generation.to_string()],
+    )
+    .map_err(failed)?;
+    tx.execute(
+        "INSERT OR REPLACE INTO meta (key, value) VALUES (?1, ?2)",
+        rusqlite::params![SCORING_POLICY_KEY, super::classify::scoring_policy_fingerprint()],
+    )
+    .map_err(failed)?;
+    tx.commit().map_err(failed)
 }
 
 /// Apply an INCREMENTAL rescore under one transaction: READ each subtree in

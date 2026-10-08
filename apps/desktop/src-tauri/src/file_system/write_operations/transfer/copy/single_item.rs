@@ -14,6 +14,7 @@ use super::super::macos_copy::copy_symlink;
 
 use super::super::chunked_copy::ChunkedCopyProgressFn;
 use super::super::copy_strategy::copy_file_with_strategy;
+use super::dest_chain::leaf_in_the_way;
 
 use crate::file_system::write_operations::conflict::{ApplyToAll, IncomingItem, resolve_conflict};
 use crate::file_system::write_operations::error_classification::IoResultExt;
@@ -162,6 +163,11 @@ fn incoming_folder_for(source: &Path, dest_path: &Path, blocking: &Path) -> Path
 pub(in crate::file_system::write_operations::transfer) fn copy_single_item(
     source: &Path,
     dest_path: PathBuf,
+    // The folder this operation writes under: the destination the person
+    // picked, or the staging directory. `dest_path` lies below it, and every
+    // level in between must be a real directory (`dest_chain.rs`); the root
+    // itself and what's above it may be links.
+    dest_root: &Path,
     // `Some` when the write is staged and the caller renames it into place
     // afterwards, so the journal records the final path instead of the staging
     // one. `None` for a plain copy, which writes where it records.
@@ -240,150 +246,136 @@ pub(in crate::file_system::write_operations::transfer) fn copy_single_item(
         && !created_dirs.contains(&parent)
     {
         let parent = parent.as_path();
-        // Fast path: parent already exists and is a directory; record it and skip the ancestor walk
-        if parent.is_dir() {
-            created_dirs.insert(parent.to_path_buf());
+        // Every level from `dest_root` down to `parent` that exists must be a
+        // directory in its own right. ❌ Never `parent.is_dir()`: it follows
+        // links, so a LINK standing where an incoming folder lands reads as
+        // that folder and the file below is written into the link's target, a
+        // folder the user never picked. A real `parent` joins `created_dirs`
+        // here, which is what skips this walk for its next file.
+        if let Some(blocking) = leaf_in_the_way(dest_root, parent, created_dirs)? {
+            // A leaf (a file, or a link whatever it points at) stands where
+            // we need a directory: a folder→leaf clash, so resolve it. The
+            // pair handed over is the source FOLDER that maps onto
+            // `blocking` and the blocking entry itself, so the prompt asks
+            // "replace this with this whole folder?" rather than describing
+            // the child file that happened to reach the clash first.
+            //
+            // `apply_resolution` distinguishes the two non-skip outcomes by
+            // path: Overwrite returns `path == blocking` (replace in place),
+            // Rename returns `path == find_unique_name(blocking)` (land the
+            // incoming folder aside, keep the existing file). We branch on
+            // that difference rather than on `needs_safe_overwrite`, which is
+            // now `true` for both (Rename also reserves a placeholder it must
+            // consume).
+            match resolve_conflict(
+                &incoming_folder_for(source, &dest_path, &blocking),
+                &blocking,
+                IncomingItem::Directory,
+                config,
+                events,
+                operation_id,
+                state,
+                apply_to_all_resolution,
+            )? {
+                Some(resolved) if resolved.path == blocking => {
+                    // Folder→leaf OVERWRITE: the dest tree wants a directory at
+                    // `blocking` but a file is there (or a link, renamed as the
+                    // link). It is renamed aside and a directory stands in its
+                    // place, and the TRANSACTION takes
+                    // both — the aside, so a rollback or a failure can put the
+                    // user's file back, and the directory, so the same reversal can
+                    // take it away first. The subtree lands lazily over the
+                    // iterations that follow, which is exactly why the aside can't
+                    // be dropped here: for most of this operation the directory is
+                    // empty and the file is the only thing anybody has.
+                    //
+                    // Only `blocking` itself is created. Any deeper level `parent`
+                    // needs falls to the ordinary create-and-record walk below, so
+                    // every directory this copy makes reaches the ledger.
+                    let displaced = displace_with_directory(state, &blocking)?;
+                    transaction.record_dir(blocking.clone());
+                    created_dirs.insert(blocking.clone());
+                    transaction.record_displaced(displaced);
+                    log::debug!(
+                        "copy: replaced file with directory at {} (type mismatch overwrite)",
+                        blocking.display()
+                    );
+                }
+                Some(resolved) => {
+                    // Folder→file RENAME: keep the existing file at `blocking`,
+                    // land the incoming folder (and its whole subtree) at the
+                    // reserved unique name. `resolved.path` is a 0-byte placeholder
+                    // file that `find_unique_name` reserved; consume it by removing
+                    // it and creating the directory in its place (the reservation
+                    // still holds the name against concurrent writers). Record the
+                    // redirect so every later child of this subtree follows it.
+                    let renamed_root = resolved.path;
+                    let _ = fs::remove_file(&renamed_root);
+                    fs::create_dir_all(&renamed_root).map_err(|e| WriteOperationError::IoError {
+                        path: renamed_root.display().to_string(),
+                        message: format!("Failed to create renamed directory: {}", e),
+                    })?;
+                    transaction.record_dir(renamed_root.clone());
+                    created_dirs.insert(renamed_root.clone());
+                    log::debug!(
+                        "copy: landing incoming folder at {} (type mismatch rename; existing file {} kept)",
+                        renamed_root.display(),
+                        blocking.display()
+                    );
+                    dir_remap.insert(blocking.clone(), renamed_root.clone());
+                    // Redirect the current item and recompute its parent.
+                    dest_path = super::apply_dir_remap(&dest_path, dir_remap);
+                }
+                None => {
+                    // Skip: don't copy this file, nor anything else the
+                    // incoming folder holds. Use `write_weight`
+                    // (not `metadata.len()`) so the dedup decision baked
+                    // in by scan stays consistent across skip paths.
+                    let _ = fs::symlink_metadata(source).with_path(source)?;
+                    skipped_subtrees.insert(blocking);
+                    record_file_done(&progress_ctx, source, write_weight, files_done, bytes_done);
+                    return Ok(FileVerdict::Skipped);
+                }
+            }
+        }
+
+        // Honor any redirect applied above: the child's effective parent may
+        // now be the renamed subtree root (folder→file Rename) instead of the
+        // original `parent` (which still holds the kept dest file).
+        let effective_parent = dest_path.parent().map(Path::to_path_buf);
+        let parent = effective_parent.as_deref().unwrap_or(parent);
+
+        if !parent.exists() {
+            // Collect directories that don't exist BEFORE creating them
+            // (so we know exactly which ones we're creating for rollback)
+            let mut dirs_to_create: Vec<PathBuf> = Vec::new();
+            let mut dir = parent.to_path_buf();
+            while !dir.exists() && !created_dirs.contains(&dir) {
+                dirs_to_create.push(dir.clone());
+                match dir.parent() {
+                    Some(p) => dir = p.to_path_buf(),
+                    None => break,
+                }
+            }
+
+            // Create all directories
+            fs::create_dir_all(parent).map_err(|e| WriteOperationError::IoError {
+                path: parent.display().to_string(),
+                message: format!("Failed to create directory: {}", e),
+            })?;
+
+            // Record only the directories we actually created (in creation order: deepest last)
+            // dirs_to_create is in reverse order (deepest first), so iterate in reverse
+            for created_dir in dirs_to_create.into_iter().rev() {
+                transaction.record_dir(created_dir.clone());
+                created_dirs.insert(created_dir);
+            }
         } else {
-            // Check for type mismatch: a file exists where we need a directory.
-            // This happens when source has a directory and dest has a file with the same name.
-            // Walk up from parent to find any file blocking directory creation.
-            let blocking_file = {
-                let mut check = parent.to_path_buf();
-                let mut found: Option<PathBuf> = None;
-                loop {
-                    if check.exists() && !check.is_dir() {
-                        found = Some(check);
-                        break;
-                    }
-                    if check.exists() || created_dirs.contains(&check) {
-                        break;
-                    }
-                    match check.parent() {
-                        Some(p) => check = p.to_path_buf(),
-                        None => break,
-                    }
-                }
-                found
-            };
-
-            if let Some(blocking) = blocking_file {
-                // A file exists where we need a directory (folder→file clash):
-                // resolve it. The pair handed over is the source FOLDER that
-                // maps onto `blocking` and the blocking file itself, so the
-                // prompt asks "replace this file with this whole folder?"
-                // rather than describing the child file that happened to reach
-                // the clash first.
-                //
-                // `apply_resolution` distinguishes the two non-skip outcomes by
-                // path: Overwrite returns `path == blocking` (replace in place),
-                // Rename returns `path == find_unique_name(blocking)` (land the
-                // incoming folder aside, keep the existing file). We branch on
-                // that difference rather than on `needs_safe_overwrite`, which is
-                // now `true` for both (Rename also reserves a placeholder it must
-                // consume).
-                match resolve_conflict(
-                    &incoming_folder_for(source, &dest_path, &blocking),
-                    &blocking,
-                    IncomingItem::Directory,
-                    config,
-                    events,
-                    operation_id,
-                    state,
-                    apply_to_all_resolution,
-                )? {
-                    Some(resolved) if resolved.path == blocking => {
-                        // Folder→file OVERWRITE: the dest tree wants a directory at
-                        // `blocking` but a file is there. The file is renamed aside and
-                        // a directory stands in its place, and the TRANSACTION takes
-                        // both — the aside, so a rollback or a failure can put the
-                        // user's file back, and the directory, so the same reversal can
-                        // take it away first. The subtree lands lazily over the
-                        // iterations that follow, which is exactly why the aside can't
-                        // be dropped here: for most of this operation the directory is
-                        // empty and the file is the only thing anybody has.
-                        //
-                        // Only `blocking` itself is created. Any deeper level `parent`
-                        // needs falls to the ordinary create-and-record walk below, so
-                        // every directory this copy makes reaches the ledger.
-                        let displaced = displace_with_directory(state, &blocking)?;
-                        transaction.record_dir(blocking.clone());
-                        created_dirs.insert(blocking.clone());
-                        transaction.record_displaced(displaced);
-                        log::debug!(
-                            "copy: replaced file with directory at {} (type mismatch overwrite)",
-                            blocking.display()
-                        );
-                    }
-                    Some(resolved) => {
-                        // Folder→file RENAME: keep the existing file at `blocking`,
-                        // land the incoming folder (and its whole subtree) at the
-                        // reserved unique name. `resolved.path` is a 0-byte placeholder
-                        // file that `find_unique_name` reserved; consume it by removing
-                        // it and creating the directory in its place (the reservation
-                        // still holds the name against concurrent writers). Record the
-                        // redirect so every later child of this subtree follows it.
-                        let renamed_root = resolved.path;
-                        let _ = fs::remove_file(&renamed_root);
-                        fs::create_dir_all(&renamed_root).map_err(|e| WriteOperationError::IoError {
-                            path: renamed_root.display().to_string(),
-                            message: format!("Failed to create renamed directory: {}", e),
-                        })?;
-                        transaction.record_dir(renamed_root.clone());
-                        created_dirs.insert(renamed_root.clone());
-                        log::debug!(
-                            "copy: landing incoming folder at {} (type mismatch rename; existing file {} kept)",
-                            renamed_root.display(),
-                            blocking.display()
-                        );
-                        dir_remap.insert(blocking.clone(), renamed_root.clone());
-                        // Redirect the current item and recompute its parent.
-                        dest_path = super::apply_dir_remap(&dest_path, dir_remap);
-                    }
-                    None => {
-                        // Skip: don't copy this file, nor anything else the
-                        // incoming folder holds. Use `write_weight`
-                        // (not `metadata.len()`) so the dedup decision baked
-                        // in by scan stays consistent across skip paths.
-                        let _ = fs::symlink_metadata(source).with_path(source)?;
-                        skipped_subtrees.insert(blocking);
-                        record_file_done(&progress_ctx, source, write_weight, files_done, bytes_done);
-                        return Ok(FileVerdict::Skipped);
-                    }
-                }
-            }
-
-            // Honor any redirect applied above: the child's effective parent may
-            // now be the renamed subtree root (folder→file Rename) instead of the
-            // original `parent` (which still holds the kept dest file).
-            let effective_parent = dest_path.parent().map(Path::to_path_buf);
-            let parent = effective_parent.as_deref().unwrap_or(parent);
-
-            if !parent.exists() {
-                // Collect directories that don't exist BEFORE creating them
-                // (so we know exactly which ones we're creating for rollback)
-                let mut dirs_to_create: Vec<PathBuf> = Vec::new();
-                let mut dir = parent.to_path_buf();
-                while !dir.exists() && !created_dirs.contains(&dir) {
-                    dirs_to_create.push(dir.clone());
-                    match dir.parent() {
-                        Some(p) => dir = p.to_path_buf(),
-                        None => break,
-                    }
-                }
-
-                // Create all directories
-                fs::create_dir_all(parent).map_err(|e| WriteOperationError::IoError {
-                    path: parent.display().to_string(),
-                    message: format!("Failed to create directory: {}", e),
-                })?;
-
-                // Record only the directories we actually created (in creation order: deepest last)
-                // dirs_to_create is in reverse order (deepest first), so iterate in reverse
-                for created_dir in dirs_to_create.into_iter().rev() {
-                    transaction.record_dir(created_dir.clone());
-                    created_dirs.insert(created_dir);
-                }
-            }
+            // Standing, and the walk above proved every level below
+            // `dest_root`, so this only adds the root itself (the walk never
+            // looks at it). Without it every file landing directly in the root
+            // re-enters this block and stats the same folder again.
+            created_dirs.insert(parent.to_path_buf());
         }
     }
 

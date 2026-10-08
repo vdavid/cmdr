@@ -117,9 +117,9 @@
   "@commands.searchOpen.label": {
     "sourceHash": "179fed8"
   },
-  "commands.navGoToPath.label": "Ga naar pad…",
+  "commands.navGoToPath.label": "Ga naar map…",
   "@commands.navGoToPath.label": {
-    "sourceHash": "936edc5"
+    "sourceHash": "33de610"
   },
   "commands.navGoToPath.description": "Spring met het actieve paneel naar een getypt, geplakt of recent pad.",
   "@commands.navGoToPath.description": {
@@ -156,6 +156,14 @@
   "commands.viewShowHidden.label": "Verborgen bestanden aan/uit",
   "@commands.viewShowHidden.label": {
     "sourceHash": "6aa9b55"
+  },
+  "commands.viewCalculateFolderSizes.label": "Bereken mapgroottes",
+  "@commands.viewCalculateFolderSizes.label": {
+    "sourceHash": "d2a83da"
+  },
+  "commands.viewCalculateFolderSizes.description": "Toont de grootte van elke map in dit paneel die er nog geen heeft. Escape stopt de berekening.",
+  "@commands.viewCalculateFolderSizes.description": {
+    "sourceHash": "2a7568d"
   },
   "commands.viewBriefMode.label": "Schakel naar Beknopte weergave",
   "@commands.viewBriefMode.label": {
@@ -237,6 +245,14 @@
   "commands.paneSwap.label": "Verwissel panelen",
   "@commands.paneSwap.label": {
     "sourceHash": "cc29396"
+  },
+  "commands.paneClone.label": "Kloon paneel",
+  "@commands.paneClone.label": {
+    "sourceHash": "74b2c7f"
+  },
+  "commands.paneClone.description": "Open de map van dit paneel ook in het andere paneel.",
+  "@commands.paneClone.description": {
+    "sourceHash": "8a13dc9"
   },
   "commands.paneLeftVolumeChooser.label": "Open linker volumekiezer",
   "@commands.paneLeftVolumeChooser.label": {
@@ -337,6 +353,10 @@
   "commands.navForward.label": "Ga vooruit",
   "@commands.navForward.label": {
     "sourceHash": "8121136"
+  },
+  "commands.navGoToRoot.label": "Ga naar hoofdmap",
+  "@commands.navGoToRoot.label": {
+    "sourceHash": "3822d7b"
   },
   "commands.navGoHome.label": "Ga naar thuismap",
   "@commands.navGoHome.label": {
@@ -488,7 +508,7 @@
   },
   "commands.fileCopyCurrentDirectoryPath.label": "Kopieer pad van huidige map",
   "@commands.fileCopyCurrentDirectoryPath.label": {
-    "sourceHash": "ae360d1"
+    "sourceHash": "5ec6586"
   },
   "commands.fileCopyFilename.label": "Kopieer bestandsnaam",
   "@commands.fileCopyFilename.label": {
@@ -557,6 +577,30 @@
   "commands.cloudAskGemini.description": "Opent de Gemini-assistent van Google Drive met het geselecteerde bestand als onderwerp",
   "@commands.cloudAskGemini.description": {
     "sourceHash": "37d4e7c"
+  },
+  "commands.fileCopyShareLink.label": "Kopieer deellink (zeven dagen)",
+  "@commands.fileCopyShareLink.label": {
+    "sourceHash": "314bee8"
+  },
+  "commands.fileCopyShareLink.description": "Kopieert een link die iedereen de komende zeven dagen kan openen om het bestand te downloaden",
+  "@commands.fileCopyShareLink.description": {
+    "sourceHash": "99e912e"
+  },
+  "commands.fileCopyShareLinkOneDay.label": "Kopieer deellink (één dag)",
+  "@commands.fileCopyShareLinkOneDay.label": {
+    "sourceHash": "468010c"
+  },
+  "commands.fileCopyShareLinkOneDay.description": "Kopieert een link die iedereen de komende dag kan openen om het bestand te downloaden",
+  "@commands.fileCopyShareLinkOneDay.description": {
+    "sourceHash": "c2a30be"
+  },
+  "commands.fileCopyShareLinkOneHour.label": "Kopieer deellink (één uur)",
+  "@commands.fileCopyShareLinkOneHour.label": {
+    "sourceHash": "ffea990"
+  },
+  "commands.fileCopyShareLinkOneHour.description": "Kopieert een link die iedereen het komende uur kan openen om het bestand te downloaden",
+  "@commands.fileCopyShareLinkOneHour.description": {
+    "sourceHash": "c334535"
   },
   "commands.tagsToggleGrey.label": "Tag ‘Grijs’ in-/uitschakelen",
   "@commands.tagsToggleGrey.label": {
@@ -649,6 +693,30 @@
   "commands.selectionSelectSameKind.description": "Voegt elk onderdeel van dezelfde soort als dat onder de cursor toe aan de selectie, zonder die te wissen",
   "@commands.selectionSelectSameKind.description": {
     "sourceHash": "9a95212"
+  },
+  "commands.selectionCompareDirectories.label": "Vergelijk mappen",
+  "@commands.selectionCompareDirectories.label": {
+    "sourceHash": "5cf3985"
+  },
+  "commands.selectionCompareDirectories.description": "Selecteert in elk paneel de bestanden die in het andere paneel ontbreken, en van de rest de nieuwere kopieën",
+  "@commands.selectionCompareDirectories.description": {
+    "sourceHash": "190d99f"
+  },
+  "commands.selectionCompareDirectoriesMissing.label": "Vergelijk mappen: alleen ontbrekende bestanden",
+  "@commands.selectionCompareDirectoriesMissing.label": {
+    "sourceHash": "d03d3c1"
+  },
+  "commands.selectionCompareDirectoriesMissing.description": "Selecteert in elk paneel alleen de bestanden die in het andere paneel ontbreken",
+  "@commands.selectionCompareDirectoriesMissing.description": {
+    "sourceHash": "e61c71b"
+  },
+  "commands.selectionCompareDirectoriesSize.label": "Vergelijk mappen: afwijkende grootte",
+  "@commands.selectionCompareDirectoriesSize.label": {
+    "sourceHash": "6c8fd21"
+  },
+  "commands.selectionCompareDirectoriesSize.description": "Selecteert in elk paneel de bestanden die in het andere paneel ontbreken, en beide kopieën van bestanden waarvan de grootte verschilt",
+  "@commands.selectionCompareDirectoriesSize.description": {
+    "sourceHash": "ac31996"
   },
   "commands.selectionSelectSameKind.allFolders": "Selecteer alle mappen",
   "@commands.selectionSelectSameKind.allFolders": {
@@ -807,6 +875,26 @@
   "@commands.handler.googleDriveCopyFailed": {
     "sourceHash": "0af1fd3"
   },
+  "commands.handler.shareLinkCopied.sevenDays": "Deellink gekopieerd. De link werkt zeven dagen.",
+  "@commands.handler.shareLinkCopied.sevenDays": {
+    "sourceHash": "6f4055b"
+  },
+  "commands.handler.shareLinkCopied.oneDay": "Deellink gekopieerd. De link werkt één dag.",
+  "@commands.handler.shareLinkCopied.oneDay": {
+    "sourceHash": "ca08c52"
+  },
+  "commands.handler.shareLinkCopied.oneHour": "Deellink gekopieerd. De link werkt één uur.",
+  "@commands.handler.shareLinkCopied.oneHour": {
+    "sourceHash": "8b9f0cc"
+  },
+  "commands.handler.shareLinkUnavailable": "Zet de cursor op een bestand in een S3-bucket om een deellink te kopiëren.",
+  "@commands.handler.shareLinkUnavailable": {
+    "sourceHash": "c4ea112"
+  },
+  "commands.handler.shareLinkFailed": "Deellink maken lukte niet. {detail}",
+  "@commands.handler.shareLinkFailed": {
+    "sourceHash": "5ff44b7"
+  },
   "commands.handler.openTerminalHere.hint": "Deze map is geopend in je terminal-app. Wil je dat Cmdr de volgende keer een andere app opent? Kies er een in Instellingen, onder ‘Navigatie en bewerkingen’.",
   "@commands.handler.openTerminalHere.hint": {
     "sourceHash": "b29b744"
@@ -839,6 +927,18 @@
   "@commands.handler.openTerminalHere.timedOut": {
     "sourceHash": "ed36313"
   },
+  "commands.handler.getInfo.automationOff": "Voor ‘Toon info’ moet Cmdr Finder kunnen besturen, en dat staat uit. Zet Finder onder Cmdr aan in Systeeminstellingen > Privacy en beveiliging > Automatisering.",
+  "@commands.handler.getInfo.automationOff": {
+    "sourceHash": "7e831ef"
+  },
+  "commands.handler.getInfo.openAutomationSettings": "Open instellingen voor Automatisering",
+  "@commands.handler.getInfo.openAutomationSettings": {
+    "sourceHash": "f04940d"
+  },
+  "commands.handler.getInfo.notReached": "Cmdr kon Finder niet bereiken om ‘Toon info’ te openen. Probeer het opnieuw.",
+  "@commands.handler.getInfo.notReached": {
+    "sourceHash": "9cbc272"
+  },
   "commands.handler.zoomResetHintShortcut": "Je kunt het zoomniveau terugzetten naar 100% met {shortcut}.",
   "@commands.handler.zoomResetHintShortcut": {
     "sourceHash": "efdd715"
@@ -866,5 +966,21 @@
   "commands.suggestedOpsShow.description": "Beoordeel de bestandsbewerkingen die de AI heeft voorgesteld en bepaal wat er gebeurt",
   "@commands.suggestedOpsShow.description": {
     "sourceHash": "7efe8c9"
+  },
+  "commands.helpViewDebugLog.label": "Bekijk foutopsporingslogbestand",
+  "@commands.helpViewDebugLog.label": {
+    "sourceHash": "007c98d"
+  },
+  "commands.helpViewDebugLog.description": "Volg het foutopsporingslogbestand van Cmdr live in het weergavevenster",
+  "@commands.helpViewDebugLog.description": {
+    "sourceHash": "a937e6e"
+  },
+  "commands.handler.viewDebugLog.disabled": "Logopslag staat uit. Zet de schijfruimtelimiet in Instellingen > Geavanceerd op meer dan 0 en herstart daarna Cmdr om het foutopsporingslogbestand te bekijken.",
+  "@commands.handler.viewDebugLog.disabled": {
+    "sourceHash": "96f16fc"
+  },
+  "commands.handler.viewDebugLog.unavailable": "Kon het foutopsporingslogbestand niet openen. Probeer het opnieuw.",
+  "@commands.handler.viewDebugLog.unavailable": {
+    "sourceHash": "794a5b3"
   }
 }

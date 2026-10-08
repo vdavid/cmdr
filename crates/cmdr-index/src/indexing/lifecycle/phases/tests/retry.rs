@@ -45,9 +45,9 @@ fn a_machine_that_stops_short_asks_for_another_go() {
         !drive.frontier(&drive.path("")).is_empty(),
         "precondition: the folders the churn added are what it stopped short of"
     );
-    assert!(
-        completion_retry::is_waiting(drive.volume_id),
-        "❌ the drive stays unmarked until somebody relaunches Cmdr: nothing asked for another pass"
+    wait_for_the_retry(
+        drive.volume_id,
+        "❌ the drive stays unmarked until somebody relaunches Cmdr: nothing asked for another pass",
     );
 }
 
@@ -59,6 +59,7 @@ fn the_retry_completes_the_drive_once_the_churn_stops() {
     drive.start();
     drive.wait_for_the_machine();
     assert_eq!(drive.meta("scan_completed_at"), None, "precondition: it stopped short");
+    wait_for_the_retry(drive.volume_id, "precondition: the machine asked for another go");
 
     // The build finished, the package manager stopped unpacking. Nothing else
     // changes: the retry is the ordinary resume over what is left.
@@ -131,6 +132,18 @@ fn a_retry_that_lands_mid_run_never_starts_a_second_machine() {
 }
 
 // ── The fixture ──────────────────────────────────────────────────────
+
+/// Wait for the machine that stopped short to ask for its retry.
+///
+/// ⚠️ `wait_for_the_machine` alone isn't enough: `Machine::finish` stops reporting
+/// as busy BEFORE it arms the retry, so a test that nudges (or asserts) the moment
+/// the drive reads idle can beat the arming and find nothing to run. Masked while
+/// these tests were slow; it failed about one run in 20 once they weren't.
+fn wait_for_the_retry(volume_id: &str, what_it_means: &str) {
+    cmdr_fs::testing::wait_until(std::time::Duration::from_secs(5), what_it_means, || {
+        completion_retry::is_waiting(volume_id)
+    });
+}
 
 /// A drive with a folder appearing under its root after every walk, which is what
 /// keeps its frontier non-empty however many passes the machine spends.

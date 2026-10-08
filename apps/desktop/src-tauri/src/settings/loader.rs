@@ -123,11 +123,6 @@ pub struct Settings {
     pub network_enabled: Option<bool>,
     #[serde(alias = "network.firstTriggerDone", default)]
     pub network_first_trigger_done: Option<bool>,
-    /// The analytics opt-out (tri-state). `None`/`Some(true)` → analytics on, `Some(false)` →
-    /// opted out. The frontend store only persists non-default values, so an opted-in install has
-    /// no key. See `analytics_consent_granted` and `analytics/CLAUDE.md` § "Consent is tri-state".
-    #[serde(alias = "analytics.enabled", default)]
-    pub analytics_enabled: Option<bool>,
     /// The master "Index image contents" toggle for the media-ML enrichment
     /// subsystem (`media_index`). Off by default and sparse-persisted, so an absent
     /// key means off. Seeded into `media_index::gate` at startup; live changes flow
@@ -231,7 +226,6 @@ impl Default for Settings {
             show_virtual_git_portal: None,
             network_enabled: None,
             network_first_trigger_done: None,
-            analytics_enabled: None,
             image_index_enabled: None,
             media_index_network_volumes: Vec::new(),
             media_index_always_index_volumes: Vec::new(),
@@ -359,7 +353,6 @@ fn parse_settings(contents: &str) -> Result<Settings, serde_json::Error> {
         .and_then(|v| v.as_bool());
     let network_enabled = json.get("network.enabled").and_then(|v| v.as_bool());
     let network_first_trigger_done = json.get("network.firstTriggerDone").and_then(|v| v.as_bool());
-    let analytics_enabled = json.get("analytics.enabled").and_then(|v| v.as_bool());
     let image_index_enabled = json.get("mediaIndex.enabled").and_then(|v| v.as_bool());
     let media_index_network_volumes = parse_string_array(&json, "mediaIndex.networkVolumes");
     let media_index_always_index_volumes = parse_string_array(&json, "mediaIndex.alwaysIndexVolumes");
@@ -404,7 +397,6 @@ fn parse_settings(contents: &str) -> Result<Settings, serde_json::Error> {
         show_virtual_git_portal,
         network_enabled,
         network_first_trigger_done,
-        analytics_enabled,
         image_index_enabled,
         media_index_network_volumes,
         media_index_always_index_volumes,
@@ -443,7 +435,7 @@ pub struct RestrictedWindowSettings {
     pub file_viewer_suppress_binary_warning: Option<bool>,
     pub appearance_text_size: Option<f64>,
     pub appearance_app_color: Option<String>,
-    /// `"binary"` (1024-based, `KB`) or `"si"` (1000-based, `kB`). The Transfers
+    /// `"binary"` (1024-based, `KiB`) or `"si"` (1000-based, `kB`, the default). The Transfers
     /// window is restricted but renders `<Size>`, so it needs this or it shows a
     /// different number than the copy dialog for the same byte count.
     pub appearance_file_size_format: Option<String>,
@@ -509,16 +501,7 @@ fn parse_restricted_window_settings(contents: &str) -> RestrictedWindowSettings 
 /// Returns `None` when the file is missing or the key is unset; the caller substitutes the
 /// 200 MB default. Returns `Some(0)` for explicit "log storage disabled".
 pub fn early_load_max_log_storage_mb() -> Option<u64> {
-    /// Bundle id from `tauri.conf.json`. Mirrored here so this function works without the
-    /// app handle. Keep in sync if the bundle id ever changes.
-    const BUNDLE_ID: &str = "com.veszelovszki.cmdr";
-
-    let data_dir: PathBuf = if let Ok(custom) = std::env::var("CMDR_DATA_DIR") {
-        PathBuf::from(custom)
-    } else {
-        let base = dirs::data_dir()?;
-        base.join(BUNDLE_ID)
-    };
+    let data_dir = crate::config::standalone_app_data_dir()?;
 
     let settings_path = data_dir.join("settings.json");
     let contents = fs::read_to_string(&settings_path).ok()?;
@@ -616,16 +599,7 @@ fn parse_ask_cmdr_wake_delay_secs(contents: &str) -> Option<u64> {
 /// the stdout threshold can start at Debug if the user persisted the verbose toggle.
 /// Returns `None` when the file or key is missing.
 pub fn early_load_verbose_logging() -> Option<bool> {
-    /// Bundle id from `tauri.conf.json`. Mirrored here so this function works without
-    /// the app handle. Keep in sync if the bundle id ever changes.
-    const BUNDLE_ID: &str = "com.veszelovszki.cmdr";
-
-    let data_dir: PathBuf = if let Ok(custom) = std::env::var("CMDR_DATA_DIR") {
-        PathBuf::from(custom)
-    } else {
-        let base = dirs::data_dir()?;
-        base.join(BUNDLE_ID)
-    };
+    let data_dir = crate::config::standalone_app_data_dir()?;
 
     let settings_path = data_dir.join("settings.json");
     let contents = fs::read_to_string(&settings_path).ok()?;
@@ -640,15 +614,7 @@ pub fn early_load_verbose_logging() -> Option<bool> {
 /// which case the registry defaults apply — `enabled = true`,
 /// `binding = "⌃⌥⌘J"`).
 pub fn early_load_global_go_to_latest_shortcut() -> Option<(bool, String)> {
-    /// Bundle id from `tauri.conf.json`. Keep in sync if it ever changes.
-    const BUNDLE_ID: &str = "com.veszelovszki.cmdr";
-
-    let data_dir: PathBuf = if let Ok(custom) = std::env::var("CMDR_DATA_DIR") {
-        PathBuf::from(custom)
-    } else {
-        let base = dirs::data_dir()?;
-        base.join(BUNDLE_ID)
-    };
+    let data_dir = crate::config::standalone_app_data_dir()?;
     let settings_path = data_dir.join("settings.json");
     let contents = fs::read_to_string(&settings_path).ok()?;
     let json: serde_json::Value = serde_json::from_str(&contents).ok()?;

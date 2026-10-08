@@ -168,6 +168,15 @@ export const appCommands: CommandSource[] = [
     descriptionKey: 'commands.queueShow.description',
   },
   {
+    id: 'help.viewDebugLog',
+    nameKey: 'commands.helpViewDebugLog.label',
+    scope: 'App',
+    showInPalette: true,
+    shortcuts: [],
+    whileDialogOpen: OPENS_OWN_WINDOW,
+    descriptionKey: 'commands.helpViewDebugLog.description',
+  },
+  {
     id: 'help.sendErrorReport',
     nameKey: 'commands.helpSendErrorReport.label',
     scope: 'App',

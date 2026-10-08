@@ -25,7 +25,7 @@ import { addToast } from '$lib/ui/toast'
 import { confirmDialog, confirmWithCheckbox } from '$lib/utils/confirm-dialog'
 import { tString } from '$lib/intl/messages.svelte'
 import { getAppLogger } from '$lib/logging/logger'
-import { isServerVolumeId } from '$lib/servers/server-path-utils'
+import { isServerVolumeId, serverProtocolOfVolumeId } from '$lib/servers/server-path-utils'
 import { openEditServerSheet } from '$lib/servers/open-sign-in'
 import type { VolumeContextActionKind } from '$lib/ipc/bindings'
 import type { VolumeInfo } from '../types'
@@ -36,7 +36,7 @@ const log = getAppLogger('fileExplorer')
 /**
  * Whether the servers command family owns this row.
  *
- * ❗ Off the VOLUME ID, which the two id minters spell (`sftp-…`, `webdav-…`), ❌
+ * ❗ Off the VOLUME ID, which the id minters spell (`sftp-…`, `webdav-…`, `s3-…`), ❌
  * never off `category === 'network'`: a mounted SMB share is one of those, and
  * its session is an OS mount that `disconnectPlace` doesn't speak. SMB shares
  * reach the switcher as ordinary mounted volumes and leave through Eject; they
@@ -44,6 +44,11 @@ const log = getAppLogger('fileExplorer')
  */
 export function isServerPlaceRow(volume: VolumeInfo): boolean {
   return volume.category === 'network' && isServerVolumeId(volume.id)
+}
+
+/** Whether a volume id names an S3 place (`s3-…`), whose secret its account's other places share. */
+function isS3VolumeId(volumeId: string): boolean {
+  return serverProtocolOfVolumeId(volumeId) === 's3'
 }
 
 /** What a saved server tells a row menu about its place. */
@@ -71,7 +76,8 @@ export async function listSavedPlaces(): Promise<Map<string, SavedPlaceFacts>> {
       servers.flatMap((server) =>
         server.places.map((place): [string, SavedPlaceFacts] => [
           place.volumeId,
-          { autoReconnect: server.autoReconnect ?? undefined },
+          // ❗ The PLACE's own switch: an S3 account's buckets each keep theirs.
+          { autoReconnect: place.autoReconnect ?? server.autoReconnect ?? undefined },
         ]),
       ),
     )
@@ -125,9 +131,14 @@ export async function disconnectServerPlace(volumeId: string, volumeName: string
  * [`forgetSavedSecret`], a separate request the menu offers separately.
  */
 export async function forgetSavedServer(volumeId: string, volumeName: string): Promise<void> {
-  const { confirmed, checked } = await confirmWithCheckbox(
-    forgetServerQuestion(tString('fileExplorer.navigation.forgetServerConfirm', { name: volumeName })),
-  )
+  const message = tString('fileExplorer.navigation.forgetServerConfirm', { name: volumeName })
+  // ❗ An S3 place shares its account's secret access key with every other place under
+  // that key, so the box says whose it is and starts OFF: forgetting one bucket
+  // shouldn't sign the account's other buckets out.
+  const question = isS3VolumeId(volumeId)
+    ? { ...forgetServerQuestion(message, tString('servers.hub.forgetSecretKeyToo')), checked: false }
+    : forgetServerQuestion(message)
+  const { confirmed, checked } = await confirmWithCheckbox(question)
   if (!confirmed) return
   // ❗ The password FIRST: once the server is gone, nothing names its entry any more.
   if (checked) {
@@ -149,12 +160,12 @@ export async function forgetSavedServer(volumeId: string, volumeName: string): P
  * checked, under it. ❗ Checked by default: someone forgetting a server rarely means to
  * leave its password behind, and nothing saved it anywhere they'd look for it.
  */
-export function forgetServerQuestion(message: string): CheckboxQuestion {
+export function forgetServerQuestion(message: string, checkboxLabel?: string): CheckboxQuestion {
   return {
     message,
     title: tString('fileExplorer.navigation.forgetServerConfirmTitle'),
     confirmLabel: tString('fileExplorer.navigation.forgetConfirmButton'),
-    checkboxLabel: tString('fileExplorer.navigation.forgetPasswordToo'),
+    checkboxLabel: checkboxLabel ?? tString('fileExplorer.navigation.forgetPasswordToo'),
     checked: true,
   }
 }
@@ -303,5 +314,6 @@ async function editServer(volumeId: string, volumeName: string): Promise<void> {
     log.info('Editing {volumeName} found no saved server behind it', { volumeName })
     return
   }
-  await openEditServerSheet(server)
+  // ❗ The place too: an S3 account's buckets are each saved, and edited, on their own.
+  await openEditServerSheet(server, volumeId)
 }

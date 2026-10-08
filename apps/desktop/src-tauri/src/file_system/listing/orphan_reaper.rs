@@ -21,12 +21,13 @@ use crate::file_system::listing::cached_listing::{LISTING_CACHE, epoch_millis_no
 /// primary, fast eviction path is the explicit `list_directory_end` IPC; this backstop
 /// only catches listings that genuinely leaked (a thrown FE handler skipped the close
 /// IPC, an `$effect` teardown that threw, a future code path that forgot the call).
-/// Every read accessor that proves a pane is still alive (`get_file_range`,
-/// `get_total_count`, `get_file_at`, `get_listing_stats`, resort, watcher-diff patches,
-/// …) refreshes `last_accessed_ms`, so a pane the user is interacting with — or that is
-/// receiving FS-change diffs — is never six continuous hours idle. We err strongly
-/// toward NOT evicting: six hours of zero interaction AND zero FS activity on a path is
-/// overwhelmingly a leak, not a pane the user is actively using.
+///
+/// Access alone can't prove a pane is alive: a pane left on a quiet folder overnight
+/// makes no reads and gets no FS events. So every pane heartbeats its listing through
+/// `keep_listings_alive` every 30 minutes, and a listing nobody names for six hours is
+/// a leak. Gotcha/Why: ❌ don't rely on read accessors and watcher patches alone.
+/// Before the heartbeat, an idle ~/Downloads pane lost its listing overnight: stale
+/// rows, no watcher, and F3–F6 failing until the user navigated away.
 pub(crate) const ORPHAN_IDLE_WINDOW: Duration = Duration::from_secs(6 * 60 * 60);
 
 /// How often the backstop reaper task wakes up to scan for orphaned listings.
@@ -107,7 +108,7 @@ fn reap_orphaned_listings_scoped(now_ms: u64, window_ms: u64, only: Option<&[&st
         crate::file_system::listing::operations::list_directory_end(id);
         log::warn!(
             target: "listing_cache",
-            "Reaped orphaned listing `{id}`: no access for >= {} min. Its `list_directory_end` IPC was likely never delivered (a skipped FE cleanup).",
+            "Reaped orphaned listing `{id}`: no access or heartbeat for >= {} min. Its `list_directory_end` IPC was likely never delivered (a skipped FE cleanup).",
             ORPHAN_IDLE_WINDOW.as_secs() / 60,
         );
     }

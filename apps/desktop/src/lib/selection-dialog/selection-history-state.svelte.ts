@@ -20,6 +20,7 @@ import type { QueryFilterState } from '$lib/query-ui/query-filter-state.svelte'
  * don't throw at import time.
  */
 export const recentSelectionsStore = createRecentItemsState<SelectionHistoryEntry>({
+  logCategory: 'selection',
   getRecent: () => getRecentSelections(),
 })
 

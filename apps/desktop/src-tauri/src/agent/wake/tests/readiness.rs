@@ -1,11 +1,28 @@
 //! What the agent may do when Ask Cmdr, AI itself, cloud consent, disk access, or a key is missing.
 
 use super::super::*;
+use crate::settings::AskCmdrSwitch;
+
+/// **The organization pinning Ask Cmdr off is not the person switching it off.** The policy
+/// overlays and never rewrites: removing the profile must bring the backlog back, so a managed off
+/// stores nothing new and runs nothing, like `Off`, but takes nothing away.
+#[test]
+fn a_managed_off_keeps_the_backlog_a_switched_off_ask_cmdr_would_take() {
+    let managed_off = readiness(AgentGates {
+        ask_cmdr: AskCmdrSwitch::ManagedOff,
+        ..ready()
+    });
+
+    assert_eq!(managed_off, WakeReadiness::Off);
+    assert!(managed_off.permits_stored_signal(), "the policy withdraws no purpose");
+    assert!(!managed_off.admits_to_inbox());
+    assert!(!managed_off.may_wake());
+}
 
 /// Everything in place.
 fn ready() -> AgentGates {
     AgentGates {
-        ask_cmdr_enabled: true,
+        ask_cmdr: AskCmdrSwitch::On,
         fda_pending: false,
         provider: ProviderGate::Ready,
     }
@@ -23,7 +40,7 @@ fn everything_in_place_is_ready() {
 #[test]
 fn ask_cmdr_off_outranks_every_other_gap() {
     let nothing_configured = AgentGates {
-        ask_cmdr_enabled: false,
+        ask_cmdr: AskCmdrSwitch::Off,
         fda_pending: true,
         provider: ProviderGate::NotConfigured,
     };
@@ -37,7 +54,7 @@ fn ask_cmdr_off_outranks_every_other_gap() {
 #[test]
 fn ask_cmdr_off_outranks_ai_being_off() {
     let switched_off = AgentGates {
-        ask_cmdr_enabled: false,
+        ask_cmdr: AskCmdrSwitch::Off,
         provider: ProviderGate::Off,
         ..ready()
     };
@@ -93,7 +110,7 @@ fn a_missing_cloud_consent_outranks_disk_access_and_the_key() {
 #[test]
 fn ask_cmdr_being_off_outranks_a_missing_cloud_consent() {
     let both = AgentGates {
-        ask_cmdr_enabled: false,
+        ask_cmdr: AskCmdrSwitch::Off,
         provider: ProviderGate::NeedsCloudConsent,
         ..ready()
     };
@@ -147,7 +164,7 @@ fn a_missing_key_is_the_last_gap() {
 #[test]
 fn nothing_is_stored_with_ask_cmdr_off() {
     let ask_cmdr_off = readiness(AgentGates {
-        ask_cmdr_enabled: false,
+        ask_cmdr: AskCmdrSwitch::Off,
         ..ready()
     });
 
@@ -179,7 +196,7 @@ fn turning_ai_off_keeps_the_backlog_that_ask_cmdr_off_would_take() {
         ..ready()
     });
     let ask_cmdr_off = readiness(AgentGates {
-        ask_cmdr_enabled: false,
+        ask_cmdr: AskCmdrSwitch::Off,
         ..ready()
     });
 

@@ -1,8 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import type { UpgradeFailure } from '$lib/ipc/bindings'
-import { directConnectionUnavailableMessage, mountNotRespondingMessage } from './upgrade-messages'
+import { systemStrings } from '$lib/system-strings.svelte'
+import {
+  directConnectionUnavailableMessage,
+  mountNotRespondingMessage,
+  openLocalNetworkSettingsLabel,
+} from './upgrade-messages'
 
-const ALL_REASONS: UpgradeFailure[] = ['unreachable', 'tooSlow', 'shareNotOnServer', 'unexpected']
+const ALL_REASONS: UpgradeFailure[] = ['unreachable', 'tooSlow', 'shareNotOnServer', 'unexpected', 'blockedByThisMac']
 
 describe('directConnectionUnavailableMessage', () => {
   it('names the server so the user knows which one to check', () => {
@@ -24,6 +29,16 @@ describe('directConnectionUnavailableMessage', () => {
       const message = directConnectionUnavailableMessage(reason, 'Naspolya').toLowerCase()
       expect(message).not.toMatch(/\berrors?\b|\bfail(ed|ure)?\b/)
     }
+  })
+
+  it('points a connection this Mac blocked at the permission to switch, in the name System Settings shows', () => {
+    // ERR-XGS9X: the Local Network permission looked on and wasn't, and switching
+    // it off and on was the fix. The name is the OS-localized one, so it matches
+    // what's on screen in System Settings.
+    const message = directConnectionUnavailableMessage('blockedByThisMac', 'Mars')
+    expect(message).toContain(systemStrings.localNetwork)
+    expect(message).toContain('firewall')
+    expect(openLocalNetworkSettingsLabel()).toContain(systemStrings.localNetwork)
   })
 
   it('names a share whose mount stopped answering, without saying anything failed', () => {

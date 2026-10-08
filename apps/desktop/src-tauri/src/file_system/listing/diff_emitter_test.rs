@@ -6,14 +6,28 @@
 //! (that's covered by the existing watcher integration tests).
 
 use super::caching_test_support::{TestListing, TestListingGuard};
-use super::diff_emitter::{drop_pending, enqueue_diff, flush_now_for_test, pending_count};
+use super::diff_emitter::{drop_pending, flush_now_for_test, hold_for_test, pending_count};
 use super::metadata::FileEntry;
 use crate::file_system::listing::diff::DiffChange;
 
 /// A cached listing under a unique id. Dropping the guard runs the production
 /// teardown, which also drops the listing's pending diff buffer.
 fn install_listing(tag: &str) -> TestListingGuard {
-    TestListing::new().insert(tag)
+    let listing = TestListing::new().insert(tag);
+    hold_for_test(listing.id());
+    listing
+}
+
+fn enqueue_diff(listing_id: &str, changes: Vec<DiffChange>) {
+    super::diff_emitter::enqueue_diff(
+        listing_id,
+        super::diff::DirectoryDiffBatch {
+            from_sequence: 0,
+            sequence: 1,
+            total_count: 0,
+            changes,
+        },
+    );
 }
 
 fn make_change(name: &str, index: usize) -> DiffChange {
@@ -78,6 +92,7 @@ fn flush_empties_buffer_and_re_arms_for_next_burst() {
     assert_eq!(pending_count(listing.id()), 0);
 
     // A new enqueue after flush should accumulate again.
+    hold_for_test(listing.id());
     enqueue_diff(listing.id(), vec![make_change("c", 0)]);
     assert_eq!(pending_count(listing.id()), 1);
 }

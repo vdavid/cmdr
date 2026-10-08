@@ -12,8 +12,8 @@
 //! These tests assert the invariant at the point each mutation writes it.
 
 use super::DeviceWatch;
-use super::MtpDeleteScope;
 use super::testing::test_connection_manager as connection_manager;
+use super::{MtpDeleteScope, UploadedFile};
 use crate::virtual_device::{
     VirtualDeviceFixture, setup_virtual_mtp_device, unregister_virtual_mtp_device, virtual_device_test_lock,
 };
@@ -153,8 +153,11 @@ async fn upload_records_the_new_object_in_both_directions() {
             &device.id,
             device.storage_id,
             "Documents",
-            "uploaded.txt",
-            payload.len() as u64,
+            UploadedFile {
+                name: "uploaded.txt",
+                size: payload.len() as u64,
+                modified: None,
+            },
             Box::pin(stream),
         )
         .await

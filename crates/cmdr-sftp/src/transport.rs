@@ -66,7 +66,7 @@ use cmdr_fs::volume::host::credentials::StoredCredentials;
 use openssh_sftp_client::{Sftp, SftpOptions};
 use russh::client::{self, AuthResult, Handler, KeyboardInteractiveAuthResponse};
 use russh::keys::agent::AgentIdentity;
-use russh::keys::{Algorithm, HashAlg, PrivateKeyWithHashAlg, PublicKey};
+use russh::keys::{Algorithm, HashAlg, PrivateKeyWithHashAlg, PublicKeyOrCertificate};
 use russh::{Channel, Disconnect};
 use tokio::task::JoinHandle;
 use tokio_util::sync::CancellationToken;
@@ -977,8 +977,8 @@ struct TrustHandler {
 impl Handler for TrustHandler {
     type Error = russh::Error;
 
-    async fn check_server_key(&mut self, server_public_key: &PublicKey) -> Result<bool, Self::Error> {
-        let key = presented(server_public_key);
+    async fn check_server_key(&mut self, server_key: &PublicKeyOrCertificate) -> Result<bool, Self::Error> {
+        let key = presented(server_key);
         let decision = trust::decide(
             self.volume_host.host_keys(),
             &self.known_hosts,
@@ -1004,14 +1004,22 @@ struct ProbeHandler {
 impl Handler for ProbeHandler {
     type Error = russh::Error;
 
-    async fn check_server_key(&mut self, server_public_key: &PublicKey) -> Result<bool, Self::Error> {
-        *self.seen.lock_ignore_poison() = Some(presented(server_public_key));
+    async fn check_server_key(&mut self, server_key: &PublicKeyOrCertificate) -> Result<bool, Self::Error> {
+        *self.seen.lock_ignore_poison() = Some(presented(server_key));
         Ok(false)
     }
 }
 
-/// The three forms a trust decision needs, out of one `ssh_key::PublicKey`.
-fn presented(key: &PublicKey) -> PresentedHostKey {
+/// The three forms a trust decision needs, out of the key the server proved it
+/// holds.
+///
+/// A host certificate is judged by the key inside it, which is the key russh
+/// verified the exchange signature against: we hold no certificate authorities,
+/// so the certificate itself vouches for nothing here. In practice the variant
+/// never arrives, because `build_config` advertises no certificate algorithms
+/// (`preferred.host_key_certificates` stays empty).
+fn presented(server_key: &PublicKeyOrCertificate) -> PresentedHostKey {
+    let key = server_key.public_key();
     // `to_openssh` writes `<keytype> <base64>[ comment]`, and the base64 field is
     // exactly what `known_hosts` stores, so comparing it needs no key parsing
     // further down.

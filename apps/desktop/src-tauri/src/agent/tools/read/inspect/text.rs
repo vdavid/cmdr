@@ -55,7 +55,13 @@ pub(super) fn read_text(
             // backend, without leaning on `total_lines` (unknown on the ByteSeek fallback).
             let chunk = opened
                 .backend
-                .get_lines(&SeekTarget::Line(opts.start_line - 1), opts.max_lines + 1)?;
+                // Not `cancel`: a deadline that stopped the line index has set it, and the
+                // ByteSeek fallback it left still serves this bounded window.
+                .get_lines(
+                    &SeekTarget::Row(opts.start_line - 1),
+                    opts.max_lines + 1,
+                    &AtomicBool::new(false),
+                )?;
             Ok(TextContent {
                 encoding: encoding.label().to_string(),
                 total_lines: opened.backend.total_lines(),

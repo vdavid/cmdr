@@ -6,13 +6,11 @@ interface Props {
 }
 
 const { variant, message, class: className } = Astro.props
-const listUuid = import.meta.env.PUBLIC_LISTMONK_LIST_UUID
 const uniqueId = `newsletter-${variant}-${Math.random().toString(36).slice(2, 8)}`
 ---
 
 <form
     class:list={['newsletter-form', `newsletter-form--${variant}`, className]}
-    data-list-uuid={listUuid}
     data-newsletter-form
     novalidate
 >
@@ -151,6 +149,12 @@ const uniqueId = `newsletter-${variant}-${Math.random().toString(36).slice(2, 8)
 </style>
 
 <script>
+    function signupProblemText(status: number): string {
+        if (status === 400 || status === 422) return "That email address doesn't look right. Check it and try again?"
+        if (status === 429) return 'Lots of tries in a row. Wait a minute, then try again?'
+        return "Couldn't sign you up right now. Try again in a few minutes?"
+    }
+
     document.addEventListener('astro:page-load', () => {
         document.querySelectorAll<HTMLFormElement>('[data-newsletter-form]').forEach((form) => {
             // Skip forms that already have a listener attached
@@ -161,7 +165,6 @@ const uniqueId = `newsletter-${variant}-${Math.random().toString(36).slice(2, 8)
             const honeypot = form.querySelector<HTMLInputElement>('input[name="hp"]')!
             const button = form.querySelector<HTMLButtonElement>('button[type="submit"]')!
             const feedback = form.querySelector<HTMLDivElement>('.newsletter-form__feedback')!
-            const listUuid = form.dataset.listUuid
 
             function showFeedback(text: string, type: 'success' | 'error') {
                 feedback.textContent = text
@@ -186,10 +189,12 @@ const uniqueId = `newsletter-${variant}-${Math.random().toString(36).slice(2, 8)
                 button.textContent = 'Signing up...'
 
                 try {
-                    const res = await fetch('/api/newsletter/subscribe', {
+                    // The API server subscribes through Listmonk and answers 502 when the
+                    // confirmation mail didn't go out (apps/api-server/src/website/listmonk-signup.ts).
+                    const res = await fetch('https://api.getcmdr.com/newsletter-signup', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ email, name: '', list_uuids: [listUuid] }),
+                        body: JSON.stringify({ email }),
                     })
 
                     if (res.ok) {
@@ -197,12 +202,10 @@ const uniqueId = `newsletter-${variant}-${Math.random().toString(36).slice(2, 8)
                         showFeedback('Check your inbox to confirm your subscription!', 'success')
                         emailInput.value = ''
                     } else {
-                        const data = await res.json().catch(() => null)
-                        const message = data?.message || 'Something went wrong. Try again?'
-                        showFeedback(message, 'error')
+                        showFeedback(signupProblemText(res.status), 'error')
                     }
                 } catch {
-                    showFeedback('Network error. Check your connection and try again.', 'error')
+                    showFeedback("Couldn't reach getcmdr.com. Check your connection and try again?", 'error')
                 } finally {
                     button.disabled = false
                     button.textContent = 'Sign up'

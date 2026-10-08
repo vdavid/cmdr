@@ -81,6 +81,14 @@
   "@errorReporter.dialog.saveToDisk": {
     "sourceHash": "36d6589"
   },
+  "errorReporter.dialog.managedOff": "Deine Organisation hat das Senden von Berichten ausgeschaltet. Du kannst einen Bericht trotzdem auf Datenträger sichern und selbst weitergeben.",
+  "@errorReporter.dialog.managedOff": {
+    "sourceHash": "9309a39"
+  },
+  "errorReporter.dialog.saveToDiskManaged": "Auf Datenträger sichern",
+  "@errorReporter.dialog.saveToDiskManaged": {
+    "sourceHash": "5a5d775"
+  },
   "errorReporter.dialog.cancel": "Abbrechen",
   "@errorReporter.dialog.cancel": {
     "sourceHash": "19766ed"
@@ -127,7 +135,7 @@
   },
   "errorReporter.amend.unavailable": "Zu diesem Bericht lässt sich keine Notiz mehr hinzufügen. Damit deine Notizen beim Team ankommen, sende über das Menü „Hilfe“ einen neuen Bericht.",
   "@errorReporter.amend.unavailable": {
-    "sourceHash": "b96b48a"
+    "sourceHash": "08ab034"
   },
   "errorReporter.amend.close": "Schließen",
   "@errorReporter.amend.close": {

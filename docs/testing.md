@@ -130,6 +130,15 @@ few seconds one directory buys. Measure the directory in isolation and read the 
 - **A network volume's server going away (refused, or silent)**: a `cmdr_fs::testing::tcp_proxy::TcpProxy` the test
   owns, between the client and the fixture. ❌ Never pause or stop a shared fixture container
 
+## The app data dir under test (Rust)
+
+Every store that resolves its data dir without an `AppHandle` (favorites, the icon disk cache, install ids, settings
+early-loads, the pane-state read) goes through `config::standalone_app_data_dir()`. Under `cfg(test)`, with
+`CMDR_DATA_DIR` unset, that's a per-process scratch dir under `$TMPDIR/cmdr-unit-test-data/`, so no test can read or
+write the developer's real one. ❌ Never resolve `dirs::data_dir()` plus the bundle id at a call site: `volumes::tests`
+once seeded the real `favorites.json` through `list_locations()` that way. A test that asserts on a store's contents
+still isolates it with its own `TestDir`; the scratch dir is a floor, not a fixture.
+
 ## Secret-store isolation (Rust)
 
 Any test that reaches `crate::secrets::store()` opens with `crate::test_support::isolate_secrets()` and keeps the
@@ -664,10 +673,17 @@ Keychain — and ask what it finds on a developer's laptop.
 `launchctl disable com.apple.ptpcamerad` (a real macOS daemon) and toast about it because the run's OWN virtual device
 made the device list non-empty. The gate there keys off the DEVICE, not the run
 (`mtp/watcher.rs::needs_ptpcamerad_suppression`): a virtual device is filesystem-backed and claims no USB interface, so
-it never earns a host workaround, while a real phone plugged in during a run still gets one. Prefer that shape when the
-subsystem can tell its own fixtures apart from the real thing — it also covers a `CMDR_VIRTUAL_MTP=1` dev session, which
-an `CMDR_E2E_MODE` check would miss. **Known remaining instance:** that same enumeration still auto-connects a real USB
-device it finds alongside the virtual one.
+it never earns a host workaround. Prefer that shape when the subsystem can tell its own fixtures apart from the real
+thing — it also covers a `CMDR_VIRTUAL_MTP=1` dev session, which an `CMDR_E2E_MODE` check would miss.
+
+**The third instance:** a phone plugged into the Mac during a run got auto-connected, and its `ptpcamerad` dialog failed
+four unrelated specs. `test_mode::may_discover_real_devices` now keeps real devices out of an automated run at
+discovery: MTP enumeration keeps only the virtual device (`mtp/watcher.rs::claimable_device_ids`), and the ADB tracker
+never follows the real `adb` server.
+
+**The fourth instance, input rather than discovery:** the E2E app registered the system-wide `⌃⌥⌘J` hotkey, so the
+developer's own press reached the run and its warn toast failed an unrelated spec.
+`test_mode::may_register_global_hotkeys` keeps an automated run from claiming any system-wide hotkey.
 
 **The unit-test variant: a bare test binary asking macOS about its own bundle.** A test executable has no `.app` around
 it, so CoreFoundation resolves its main bundle by listing the directory it sits in, which is `target/debug/deps`
@@ -718,6 +734,10 @@ entry needs a real "we can't make this faster" justification, not convenience.
   drop, so two of them on one share tear down each other's mount, and the symptom lands somewhere else entirely: a wait
   expiring against a path that has stopped being a mount. The two kernel-mount tests hold `public` on the guest fixture
   and `café` on the `unicode` one.
+- **`an_outside_change_in_an_accented_directory_names_the_path_the_pane_opened`**
+  (`crates/cmdr-smb/src/volume/unicode_names_integration_test.rs`): a **20 s** delivery budget under a 30 s cap, for
+  ~0.3 s of real work. It waits on the fixture Samba's `notifyd`, which lags by seconds when several lanes share the
+  stack. The measurements are in its `.config/nextest.toml` override.
 - **`smb_integration_concurrent_streaming_writes_no_deadlock`** (~2.8-4.3 s, the integration lane's slowest local test):
   don't shrink it to buy suite time. Its shape (200 files, 60 × 1 MB writes forced through the streaming fallback at
   concurrency 8) is deliberately tuned to the production workload that surfaced the deadlock it guards, and no smaller
@@ -838,6 +858,10 @@ E2E test hooks split along two axes:
   (`search-walk-handoff.spec.ts`). Background scans are never throttled. Read in
   `crates/cmdr-index/src/indexing/scanner/mod.rs` (`cover_walk_throttle`) rather than `crate::test_mode`, because the
   index crate can't reach the app; it's cached in a `LazyLock`, so an unset var costs one deref per walk.
+- **`CMDR_MANAGED_PREFS_FILE`** (debug and `playwright-e2e` builds only, never a plain release): a plist that replaces
+  the organization's managed preferences (MDM policy). The macOS lane points every shard at `managed-prefs.plist` in its
+  data dir, which doesn't exist (no policy) until `managed-policy.spec.ts` writes it; the app watches the file and
+  re-reads it on change. `apps/desktop/src-tauri/src/managed_policy/DETAILS.md` § Testing.
 - **`CMDR_PLAYWRIGHT_SOCKET`**: Override the plugin's Unix socket path (one socket per shard).
 - **`CMDR_SHOTS_PID` / `CMDR_SHOTS_OUT_DIR` / `CMDR_SHOTS_BROWSE_ROOT`**: read by the marketing capture's spec, never by
   the app, so they stay out of `crate::test_mode`. The orchestrator passes its own app pid (nothing exposes it over the

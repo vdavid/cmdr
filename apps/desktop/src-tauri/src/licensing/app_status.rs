@@ -2,12 +2,14 @@
 //!
 //! This module handles:
 //! - License status checking (personal, commercial)
-//! - Server-side validation for subscription status
-//! - Caching for offline use (30-day grace period)
+//! - Periodic server checks, which only ever learn a signed verdict (revoked, expired, renewed)
+//! - Caching that verdict, and the clock guard for time-limited licenses
 //! - Mock mode for local testing
+//!
+//! What a license is worth offline is decided in `offline_policy.rs`.
 
-use crate::licensing::redact_email;
-use crate::licensing::verification::{LicenseInfo, get_license_info};
+use crate::licensing::offline_policy::{self, KeyTerms, LicenseState};
+use crate::licensing::verification::{LicenseInfo, SignedValidationAnswer, get_license_info};
 use serde::{Deserialize, Serialize};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
@@ -27,8 +29,9 @@ static VALIDATION_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new((
 /// Unix timestamp of the last failed validation attempt (0 = never failed).
 static LAST_FAILED_VALIDATION_AT: AtomicU64 = AtomicU64::new(0);
 
-/// Grace period for offline use (30 days in seconds).
-const OFFLINE_GRACE_PERIOD_SECS: u64 = 30 * 24 * 60 * 60;
+/// The clock guard only writes when the clock has moved on by this much, so a status check (which
+/// runs often) doesn't write the store every time.
+const CLOCK_HIGH_WATER_STEP_SECS: u64 = 60 * 60;
 
 /// How often to show commercial license reminder to Personal users (30 days in seconds).
 const COMMERCIAL_REMINDER_INTERVAL_SECS: u64 = 30 * 24 * 60 * 60;
@@ -38,6 +41,9 @@ const STORE_KEY_CACHED_STATUS: &str = "cached_license_status";
 const STORE_KEY_LAST_VALIDATION: &str = "last_validation_timestamp";
 const STORE_KEY_EXPIRATION_SHOWN: &str = "expiration_modal_shown";
 const STORE_KEY_REMINDER_LAST_DISMISSED: &str = "commercial_reminder_last_dismissed";
+/// The latest time this install has seen (Unix seconds). Time-limited licenses are judged against
+/// it, so setting the clock back doesn't stretch one. A verified server answer resets it.
+const STORE_KEY_CLOCK_HIGH_WATER: &str = "license_clock_high_water";
 
 /// Type of license.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
@@ -193,22 +199,29 @@ pub async fn validate_license_async(app: &tauri::AppHandle, transaction_id: Opti
     let outcome = crate::licensing::validation_client::validate_with_server(&resolved_transaction_id).await;
 
     match outcome {
-        ValidationOutcome::Success(resp) => {
+        ValidationOutcome::Success(answer) => {
             LAST_FAILED_VALIDATION_AT.store(0, Ordering::Relaxed);
-            // Convert response to LicenseType
-            let license_type = resp.license_type.as_deref().and_then(string_to_license_type);
+            let license_type = answer.license_type.as_deref().and_then(string_to_license_type);
 
-            // Update cache: server gave a definitive answer
+            // The server signed a definitive answer for this request: cache it, and take its clock
+            // as the truth (this is also how a clock that ran ahead gets corrected).
             update_cached_status(
                 app,
-                &resp.status,
+                &answer.status,
                 license_type,
-                resp.organization_name.clone(),
-                resp.expires_at.clone(),
+                answer.organization_name.clone(),
+                answer.expires_at.clone(),
             );
+            if let Some(server_now) = offline_policy::parse_timestamp(&answer.signed_at) {
+                set_clock_high_water(app, server_now);
+            }
 
-            // Return the new status based on the response
-            Ok(response_to_app_status(app, &resp))
+            Ok(response_to_app_status(app, &answer))
+        }
+        ValidationOutcome::Unverified => {
+            // validation_client logged why. An answer we can't verify changes nothing.
+            LAST_FAILED_VALIDATION_AT.store(current_timestamp(), Ordering::Relaxed);
+            Err("Couldn't verify the license server's answer".to_string())
         }
         ValidationOutcome::UpstreamError => {
             LAST_FAILED_VALIDATION_AT.store(current_timestamp(), Ordering::Relaxed);
@@ -229,10 +242,7 @@ fn failed_validation_recently(last_failed_at: u64, now: u64) -> bool {
 }
 
 /// Convert validation response to AppStatus.
-fn response_to_app_status(
-    app: &tauri::AppHandle,
-    resp: &crate::licensing::validation_client::ValidationResponse,
-) -> AppStatus {
+fn response_to_app_status(app: &tauri::AppHandle, resp: &SignedValidationAnswer) -> AppStatus {
     let license_type = resp.license_type.as_deref().and_then(string_to_license_type);
     to_app_status(
         app,
@@ -287,54 +297,67 @@ fn to_app_status(
     }
 }
 
-/// Get cached status or fallback to personal use.
+/// The status from the signed key and the last verified server answer, with no network involved.
+/// `offline_policy::resolve_license_state` makes the call; this adds the store reads and UI flags.
 fn get_cached_or_validate(app: &tauri::AppHandle, license_info: &LicenseInfo) -> AppStatus {
-    let store = match app.store("license.json") {
-        Ok(s) => s,
-        Err(_) => {
-            return AppStatus::Personal {
-                show_commercial_reminder: should_show_commercial_reminder(app),
-            };
-        }
+    let cached: Option<CachedLicenseStatus> = app
+        .store("license.json")
+        .ok()
+        .and_then(|store| store.get(STORE_KEY_CACHED_STATUS))
+        .and_then(|v| serde_json::from_value(v).ok());
+
+    let key = KeyTerms {
+        license_type: license_info.license_type.as_deref().and_then(string_to_license_type),
+        expires_at: license_info.expires_at.clone(),
     };
+    let organization_name = cached
+        .as_ref()
+        .and_then(|c| c.organization_name.clone())
+        .or_else(|| license_info.organization_name.clone());
 
-    // Check if we have cached status
-    let cached: Option<CachedLicenseStatus> = store
-        .get(STORE_KEY_CACHED_STATUS)
-        .and_then(|v| serde_json::from_value(v.clone()).ok());
-
-    let now = current_timestamp();
-
-    // Use cached status if available and within grace period
-    if let Some(cached) = cached {
-        let cache_age = now.saturating_sub(cached.cached_at);
-
-        if cache_age <= OFFLINE_GRACE_PERIOD_SECS {
-            return cached_to_app_status(app, &cached);
-        }
-    }
-
-    // No valid cache - for first-time validation, create initial cache from license key
-    // The license key contains the email/transaction info but not subscription status
-    // We'll return Personal until async validation completes
-    log::debug!(
-        "License key found for {} but no cached status, returning Personal until validation",
-        redact_email(&license_info.email)
-    );
-    AppStatus::Personal {
-        show_commercial_reminder: should_show_commercial_reminder(app),
+    match offline_policy::resolve_license_state(&key, cached.as_ref(), effective_now(app)) {
+        LicenseState::Active {
+            license_type,
+            expires_at,
+        } => AppStatus::Commercial {
+            license_type,
+            organization_name,
+            expires_at,
+        },
+        LicenseState::Expired { expired_at } => AppStatus::Expired {
+            organization_name,
+            expired_at,
+            show_modal: !expiration_modal_shown(app),
+        },
+        LicenseState::Unlicensed => AppStatus::Personal {
+            show_commercial_reminder: should_show_commercial_reminder(app),
+        },
     }
 }
 
-/// Convert cached status to AppStatus.
-fn cached_to_app_status(app: &tauri::AppHandle, cached: &CachedLicenseStatus) -> AppStatus {
-    to_app_status(
-        app,
-        &cached.status,
-        cached.license_type,
-        cached.organization_name.clone(),
-        cached.expires_at.clone(),
-    )
+/// The clock-guarded "now": the later of the system clock and the latest time this install has
+/// seen, so winding the clock back can't stretch a time-limited license. Perpetual licenses don't
+/// read the clock at all.
+fn effective_now(app: &tauri::AppHandle) -> u64 {
+    let now = current_timestamp();
+    let Ok(store) = app.store("license.json") else {
+        return now;
+    };
+    let high_water = store
+        .get(STORE_KEY_CLOCK_HIGH_WATER)
+        .and_then(|v| v.as_u64())
+        .unwrap_or(0);
+    if now >= high_water.saturating_add(CLOCK_HIGH_WATER_STEP_SECS) {
+        store.set(STORE_KEY_CLOCK_HIGH_WATER, serde_json::json!(now));
+    }
+    now.max(high_water)
+}
+
+/// Replace the clock guard with the server's signed time.
+fn set_clock_high_water(app: &tauri::AppHandle, timestamp: u64) {
+    if let Ok(store) = app.store("license.json") {
+        store.set(STORE_KEY_CLOCK_HIGH_WATER, serde_json::json!(timestamp));
+    }
 }
 
 /// Check if expiration modal has been shown for current expiration.
@@ -496,6 +519,7 @@ pub fn reset_license(app: &tauri::AppHandle) {
         store.delete(STORE_KEY_LAST_VALIDATION);
         store.delete(STORE_KEY_EXPIRATION_SHOWN);
         store.delete(STORE_KEY_REMINDER_LAST_DISMISSED);
+        store.delete(STORE_KEY_CLOCK_HIGH_WATER);
     }
 
     refresh_window_title(app);

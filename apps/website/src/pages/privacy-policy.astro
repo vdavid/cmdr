@@ -5,7 +5,7 @@ import LegalLayout from '../layouts/LegalLayout.astro'
 <LegalLayout
     title="Privacy policy"
     description="How Cmdr collects, uses, and protects your personal data. GDPR compliant."
-    lastUpdated="2026-09-24"
+    lastUpdated="2026-10-06"
 >
     <p>
         Your privacy matters to us a lot. This policy explains what data we collect, why, and how we protect it. We've
@@ -19,8 +19,8 @@ import LegalLayout from '../layouts/LegalLayout.astro'
             It sends crash reports (on by default, with an easy off switch), and you can send error reports if you
             want. During the open beta, the desktop app also sends usage stats (which features you use), tied to a
             random id, never to your name, with an easy off switch. Your file contents never reach us. Usage stats and
-            crash reports carry no file names, and in an error report you send, file names are replaced with
-            placeholders, with a small gap we explain below. We don't sell your data.
+            crash reports carry no file names, and in an error report you send, file and folder names are replaced
+            with placeholders, with one narrow gap we explain below. We don't sell your data.
         </p>
     </div>
 
@@ -82,7 +82,8 @@ import LegalLayout from '../layouts/LegalLayout.astro'
     <ul>
         <li>
             <strong>License key</strong>: stored locally on your machine. The app verifies it cryptographically offline,
-            and periodically checks our server to see if your subscription has expired or been extended. During these
+            and periodically checks our server to see if your license has been revoked, or your subscription has expired
+            or been extended. During these
             checks, we also send a hashed device identifier so we can detect key sharing. We don't use this to track you
             or your activity, only to count distinct devices per license.
         </li>
@@ -107,9 +108,10 @@ import LegalLayout from '../layouts/LegalLayout.astro'
             <strong>Error reports</strong> (opt-in): a zip of recent app logs plus your app and macOS version, sent from
             Help &gt; Send error report. The app shows you what's inside before it goes anywhere. File and folder names
             are replaced with placeholders on your Mac first, so a path arrives as something like
-            <code>$HOME/Documents/&lt;file&gt;.pdf</code>. This isn't perfect: a file name that shows up in a log
-            message outside a path can slip through, and so can the text of a natural-language search, since the app
-            logs it. That's why you see the preview first. If you've added a beta contact email, you can tick a box to
+            <code>$HOME/Documents/&lt;file&gt;.pdf</code>. This covers every path, and a name repeated in the same log
+            line as its path. One gap remains: a name that appears in a log line on its own, with no path next to it,
+            can slip through. That's why you see the preview first. If you've added a beta
+            contact email, you can tick a box to
             attach it so we can reply; we include it only when you do. You can also add a note or your email address to
             a report you already sent, and that goes to the same place. Everything here is kept for 90 days.
         </li>
@@ -140,7 +142,7 @@ import LegalLayout from '../layouts/LegalLayout.astro'
         We <strong>never</strong> collect your file contents, keystrokes, or screenshots. Usage stats and crash reports
         never include file names, search queries, or AI prompts. The one place these can reach us is the logs of an
         error report you chose to send: file names there are replaced with placeholders, but, as explained above, a
-        stray file name or a natural-language search can get through. Beyond the usage stats, the desktop app's network
+        name that appears on its own can get through. Beyond the usage stats, the desktop app's network
         calls are license validation (including the device identifier above), checking for updates, sending crash
         reports (unless you've turned them off), and sending error reports you choose to send.
     </p>
@@ -150,9 +152,9 @@ import LegalLayout from '../layouts/LegalLayout.astro'
         <li>
             The contents of your files, ever. We don't want to know your files. Your file and folder names don't reach
             us either: in an error report they're replaced with placeholders on your Mac, keeping only the file
-            extension and everyday folder names like Documents or Downloads. (A name mentioned outside a path can slip
-            through, which is why you see the report before you send it.) We see the shape of what happened, not what
-            you were working on.
+            extension and everyday folder names like Documents or Downloads. (A name mentioned on its own, with no path
+            next to it, can slip through, which is why you see the report before you send it.) We see the shape of what
+            happened, not what you were working on.
         </li>
         <li>
             Your prompts, the AI's answers, tool calls, etc. With a cloud provider, the app talks to it directly using
@@ -234,9 +236,9 @@ import LegalLayout from '../layouts/LegalLayout.astro'
             >
         </li>
         <li>
-            <strong>Discord</strong> (how we hear about problems): crash reports, error reports, feedback, and beta
-            signups ping a private channel only we can read, so we notice things fast. An email address you attached to
-            feedback or a signup is in that ping. Discord is a US company.
+            <strong>Discord</strong> (how we hear about problems): error reports, feedback, and beta signups ping a
+            private channel only we can read, so we notice things fast. The ping never includes your email address.
+            Discord is a US company.
             <a href="https://discord.com/privacy" target="_blank" rel="noopener noreferrer">Discord's privacy policy</a>
         </li>
         <li>
@@ -252,8 +254,8 @@ import LegalLayout from '../layouts/LegalLayout.astro'
             >
         </li>
         <li>
-            <strong>Resend</strong> (license and notification emails): sends the email with your license key, and the
-            notification emails that tell us about new crash reports, error reports, and feedback, including what you
+            <strong>Resend</strong> (license, newsletter, and notification emails): sends the email with your license
+            key, the newsletter and its confirmation emails, and the notification emails that tell us about new crash reports, error reports, and feedback, including what you
             wrote and your email address if you attached one. Resend is a US company, sending our emails from its
             Ireland region.
             <a href="https://resend.com/legal/privacy-policy" target="_blank" rel="noopener noreferrer"
@@ -261,28 +263,26 @@ import LegalLayout from '../layouts/LegalLayout.astro'
             >
         </li>
         <li>
-            <strong>Google Gmail</strong> (our inbox): email you send to any <code>@getcmdr.com</code> address lands in
-            a Gmail inbox, and so do the notification emails above. Google is a US company.
-            <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer"
-                >Google's privacy policy</a
+            <strong>SMTP2Go</strong> (outgoing email): relays the emails we send from <code>@getcmdr.com</code>
+            addresses, like our replies to you. SMTP2Go is a New Zealand company and says it stores data of EEA
+            customers only in the EEA.
+            <a href="https://www.smtp2go.com/privacy/" target="_blank" rel="noopener noreferrer"
+                >SMTP2Go's privacy policy</a
             >
         </li>
         <li>
-            <strong>Hetzner</strong> (our server): hosts the website, Umami, and Listmonk on a server in Helsinki,
-            Finland.
+            <strong>Hetzner</strong> (our server): hosts the website, Umami, Listmonk, and our mail server on a server
+            in Helsinki, Finland. Email you send to any <code>@getcmdr.com</code> address lands in our self-hosted
+            inbox there, and so do the notification emails above.
             <a href="https://www.hetzner.com/legal/privacy-policy/" target="_blank" rel="noopener noreferrer"
                 >Hetzner's privacy policy</a
             >
         </li>
         <li>
             <strong>Listmonk</strong> (newsletter and beta list): self-hosted on our server. Stores your email address
-            and subscription status, including the optional beta contact email you can share in the desktop app. No data
-            leaves our infrastructure except when sending emails via AWS SES.
-        </li>
-        <li>
-            <strong>AWS SES</strong> (email delivery): sends newsletter and confirmation emails on our behalf, from
-            Stockholm, Sweden.
-            <a href="https://aws.amazon.com/privacy/" target="_blank" rel="noopener noreferrer">AWS privacy policy</a>
+            and subscription status, including the optional beta contact email you can share in the desktop app. Your
+            signup passes through our API server on its way there, which doesn't keep it. No data leaves our
+            infrastructure except when sending emails via Resend.
         </li>
     </ul>
     <p>
@@ -293,15 +293,16 @@ import LegalLayout from '../layouts/LegalLayout.astro'
 
     <h2>6. Where we store your data</h2>
     <p>
-        Page-level website analytics (Umami) and our newsletter system (Listmonk) are self-hosted on our own server at
-        Hetzner in Helsinki, Finland. Our license, telemetry, and report server runs on Cloudflare Workers on a global CDN, with its database
+        Page-level website analytics (Umami), our newsletter system (Listmonk), and our email inbox (mailcow) are
+        self-hosted on our own server at Hetzner in Helsinki, Finland. Our license, telemetry, and report server runs on Cloudflare Workers on a global CDN, with its database
         and file storage in Cloudflare's network. PostHog and Paddle are GDPR-compliant and have appropriate data
         processing agreements in place.
     </p>
     <p>
-        Discord, GitHub, Resend, and Google are US companies, so our Discord notifications, the downloads GitHub
-        serves, the license and notification emails Resend sends, and the email that lands in our Gmail inbox involve
-        a transfer outside the EU, under those companies' own data protection terms.
+        Discord, GitHub, and Resend are US companies, so our Discord notifications, the downloads GitHub serves, and
+        the license and notification emails Resend sends involve a transfer outside the EU, under those companies' own
+        data protection terms. SMTP2Go, which relays the emails we send, is a New Zealand company, a country the EU
+        recognizes as giving adequate data protection.
     </p>
 
     <h2>7. How long we keep your data</h2>
@@ -314,8 +315,12 @@ import LegalLayout from '../layouts/LegalLayout.astro'
             <strong>Email subscriptions</strong>: kept until you unsubscribe, then we have no use for it.
         </li>
         <li>
-            <strong>Website analytics</strong>: typically two years, then aggregated further, or deleted. Old data is less
-            helpful.
+            <strong>Website analytics</strong>: deleted after two years. A monthly job removes everything older than 23
+            months.
+        </li>
+        <li>
+            <strong>Website server logs</strong>: our web server notes each request's time, page, referring site,
+            browser, and preferred language, but never your IP address. We delete them after 30 days.
         </li>
         <li>
             <strong>Downloads</strong>: the hashed IP address and user agent go after 90 days. What's left (version,

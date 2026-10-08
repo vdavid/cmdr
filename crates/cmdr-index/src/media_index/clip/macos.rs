@@ -471,9 +471,10 @@ mod residency_test {
     /// regions shaped like the model's weight matrices.
     ///
     /// This is the measurement behind `docs/notes/performance/idle-malloc-large-clip-towers-2026-08-21.md`:
-    /// Core ML allocates through the SYSTEM allocator, not through our mimalloc
-    /// global, so tower weights are invisible to `query_mimalloc_heap` and land
-    /// in the block that three memory investigations could not name.
+    /// Core ML allocates through the SYSTEM allocator's own zones, so in a
+    /// mimalloc build tower weights are invisible to `query_rust_heap`, and in any
+    /// build they land in `MALLOC_LARGE`, the block that three memory
+    /// investigations could not name.
     ///
     /// `#[ignore]`d and env-gated: it needs the real ~267 MB model on disk.
     ///

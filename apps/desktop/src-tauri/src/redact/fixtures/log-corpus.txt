@@ -167,3 +167,5 @@
 23:40:00.001 INFO  remote  WebDAV https://dav.example.test:8443/dav/Client%20Nimbus/report.json?token=secret#customer
 23:40:00.002 INFO  volume  IDs smb-nas-private-445-client-0123456789abcdef and manual-192-168-40-9-1445
 23:40:00.003 INFO  identity  host="Client Nimbus" server=Some("Office NAS") share="Private Vault" volumeId="legacy-private-volume" serverId="private-server" deviceId="private-device"
+23:40:00.004 WARN  indexing::cover  Cover: can't walk /srv/clients/Acme Corp/plans.pdf: permission denied
+23:40:00.005 WARN  trash  op 01a0 (Trash) failed: /Users/kajotac/Desktop/Shot 1.jpeg: the Trash refused it: “Shot 1.jpeg”

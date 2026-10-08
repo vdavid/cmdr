@@ -13,6 +13,16 @@ and no `read_timeout`, redirects off, Basic auth on every request, plus a pool-f
 proves it with one `PROPFIND Depth: 0` on the root. The probe rides `tokio::select!` against the cancel token; a cancel
 leaves nothing behind. On success the backend records the PII-free analytics event `webdav_connected`.
 
+**Decision: the client turns every response decoder off and the crate declares `http2` itself.** The app's reqwest has
+`gzip` and `http2` unified in through `genai`, which `cmdr-webdav` built alone never saw. Decoders: a file manager
+copies bytes, so a file served with `Content-Encoding: gzip` (a `.gz` handed out as-is, or a server compressing on the
+fly) must copy as the bytes the server holds, at its `Content-Length`; with `gzip` on, reqwest decoded it and dropped
+the length. The builder sets `no_gzip`, `no_brotli`, `no_deflate`, and `no_zstd`, and the test build turns every decoder
+on through a dev-dependency so `transport_test.rs::an_encoded_file_reads_back_as_its_stored_bytes` runs against the
+client the app ships. `http2`: so this crate's own tests negotiate what the app does; the gap hid a GCS-only HTTP/2
+refusal from `cmdr-s3`'s live suite (`crates/cmdr-s3/DETAILS.md` § "Connecting"). `transport_test.rs` fails to compile
+without it (2026-10-02).
+
 **An instance is a name and a root over a shared client.** `WebdavVolume` is `{ name, root, inner }`, the same split
 `crates/cmdr-sftp/DETAILS.md` § "The connection model" describes, and
 `WebdavVolume::sharing_connection(name, remote_root)` builds another instance over the same client with no re-probe. It
@@ -55,6 +65,20 @@ policy has the reasoning; it is the same here). Transport errors: timeout → `C
 `DeviceDisconnected(volume_id)`; body/decode → `IoError`. Per-request budgets: 60 s on a PROPFIND (`PROPFIND_BUDGET`),
 10 min on MOVE, COPY, DELETE, MKCOL, and `create_file`'s in-memory PUT (`MUTATION_BUDGET`); the streaming PUT and GET
 have none (`transport.rs` has the `read_timeout` reasoning, `streams.rs` the download idle budget).
+
+**A file where a folder should be can't be read off a status.** A MKCOL on a name a FILE holds, and one on a path under
+that file, answer differently per server, and neither answer says "file":
+
+- sabre/dav answers by the book: 405 on the file's own name, 409 under it (verified on Nextcloud 34.0.2, by `curl` and
+  by the Docker cell, 2026-09-30). Those read as "already there" and "parent missing".
+- Apache `mod_dav` answers **400 to everything addressed under a file**, a PROPFIND included, and to the file's own name
+  when the URL carries the trailing slash a collection takes, which is how `mkcol` spells it (verified on httpd 2.4.68,
+  same way, same date). That is an unclassified `IoError`.
+
+So `create_directory_all` asks: `MakesDirectories::leads_to` is one `Depth: 0` PROPFIND, sent only after a MKCOL was
+refused, and the shared walk turns a non-collection at or above the failed level into `NotADirectory(path)`. The walk
+reads an unclassified answer to that PROPFIND as "look one level up", which is what gets past Apache's 400. Both servers
+are held to it (`conformance_test.rs`, `nextcloud_test.rs`); the walk itself: `cmdr_fs::volume::mkdir_all`.
 
 A `multistatus` entity (`&amp;`) reaches the parser as its own `Event::GeneralRef`, never inside a text node, so
 `propfind.rs` resolves it there; a text-level `unescape` would silently drop the character.
@@ -223,6 +247,29 @@ here as one server's answer, evidence-anchored, rather than as the protocol's.
 
 What the pane does with each shape: `cmdr-fs`'s `SpaceInfo`, and `apps/desktop/src/lib/file-explorer/DETAILS.md`.
 
+## Dates
+
+Copies off this backend always keep the source's modification date; copies onto it keep it only where the SERVER can
+store one. The cross-backend contract is
+`apps/desktop/src-tauri/src/file_system/write_operations/transfer/volume/DETAILS.md` § "Copies keep the source's date".
+
+- **Source**: the read stream reports the GET's `Last-Modified`, the same date a PROPFIND lists as `getlastmodified`
+  (whole seconds), so it costs no round trip. Both Apache and Nextcloud send it on 200 and 206 alike.
+- **Destination, best effort**: the PUT carries `X-OC-Mtime: <Unix seconds>` when the source has a date. ownCloud's
+  extension, honored by Nextcloud (it answers `X-OC-MTime: accepted`), ownCloud, and rclone. WebDAV itself has no way to
+  set a date: `getlastmodified` is a protected live property that no PROPPATCH may change. A server without the
+  extension ignores the header and keeps its own date; that's a `debug!`, never a failure. The staging `MOVE` keeps what
+  the PUT set (verified on `nextcloud:34.0.2-apache` by `nextcloud_a_copy_keeps_the_source_date`, 2026-10-07).
+- ❗ **Apache `mod_dav` stores no date at all** (verified on httpd 2.4, by `conformance_test.rs`, 2026-10-07), so its
+  cells split the contract: the source half runs on `seed.sh`'s `dated.txt` (the fixture's own `touch -d`, the only way
+  to age a file there), and `apache_stores_no_date_so_a_copy_onto_it_carries_its_own` asserts the limit so it stays a
+  fact. The destination half is pinned where it can hold, `nextcloud_test.rs`, so a PUT that stops sending the header
+  fails a cell. That's a per-fixture expectation, ❌ not a capability flag: nothing in the app branches on whether a
+  server keeps dates, and a flag would only move the same fact from a test into the trait.
+- **Through the engine**, only the copy-off cell exists
+  (`webdav_integration_a_copy_off_a_server_keeps_the_source_date`): the shared lane's servers are all Apache, and the
+  Nextcloud lane runs this crate's cells only.
+
 ## The reconnect model
 
 `state.rs` keeps `Connected | Disconnected | NeedsCredentials` in an atomic; `emit_if_changed` reports transitions only,
@@ -243,12 +290,25 @@ client is installed and marked `Connected` under ONE write guard, and `drop_dead
 non-`Connected` state, so the late task can never take the fresh one. The same pair as `crates/cmdr-sftp/DETAILS.md` §
 "Coming back".
 
+## Bounded bodies
+
+A hostile or broken server can stream an answer forever, so every buffered body reads through `WebdavClient::read_body`
+with a cap, ❌ never `.text()` / `.bytes()`. An announced `Content-Length` past the cap is refused before a byte is
+read; a streamed overrun stops at the cap. `MAX_LISTING_BODY` (128 MiB, about 200,000 children at 500–700 bytes each)
+bounds a PROPFIND; `MAX_PROBE_BODY` (1 MiB) bounds the connect probe's `Depth: 0`. A listing past its cap is a typed
+`PropfindOutcome::TooLarge`, which `volume/query.rs` answers as an `IoError`. Streaming reads and writes (GET, PUT) are
+never buffered, so they carry no cap.
+
+What fits under the cap still reaches `propfind.rs`, so the parser is fuzzed: the `fuzzing` feature exposes
+`fuzzing::propfind`, which the `webdav_propfind` target drives (`fuzz/DETAILS.md`).
+
 ## Silent or slow
 
 A server that goes SILENT (a NAS asleep, Wi-Fi gone, a VPN dropped) closes nothing, and HTTP has no keepalive, so a
 request on one waits for its budget and ends with `ConnectionTimeout`, which says nothing about the server. ❌ A timeout
 can't be the signal: a huge listing on a slow NAS times out just the same, and reading one as a lost connection would
-flicker `Disconnected` on a server that's merely busy. So `liveness.rs` watches for silence instead:
+flicker `Disconnected` on a server that's merely busy. So `cmdr_fs::volume::liveness` (shared with `cmdr-s3`) watches
+for silence instead:
 
 - **What counts as hearing from the server**: a response's headers (`WebdavClient::send`, which every request goes out
   through), each body chunk (PROPFIND bodies are read chunk by chunk for this; `WebdavReadStream` notes its own), and
@@ -273,10 +333,10 @@ that: `reqwest` keeps TCP keepalive on pooled connections (15 s idle, 3 probes 1
 single-threaded server too busy to answer anything for 30 s would read as gone; no NAS or Nextcloud setup works that
 way.
 
-Pinned three ways: `liveness_test.rs` runs the ladder on a paused clock with a closure for a probe (exact deadlines, no
-server); `volume/slow_server_test.rs` runs it for real on a shortened ladder against an in-process server that holds a
-listing, trickles a body, or goes quiet on command; `volume/connection_drop_test.rs` runs the production ladder against
-Apache behind a black-holed `TcpProxy`.
+Pinned three ways: `crates/cmdr-fs/src/volume/liveness_test.rs` runs the ladder on a paused clock with a closure for a
+probe (exact deadlines, no server); `volume/slow_server_test.rs` runs it for real on a shortened ladder against an
+in-process server that holds a listing, trickles a body, or goes quiet on command; `volume/connection_drop_test.rs` runs
+the production ladder against Apache behind a black-holed `TcpProxy`.
 
 ## Connecting from the frontend
 
@@ -286,10 +346,10 @@ already saved) in `apps/desktop/src-tauri/src/commands/servers.rs`, documented e
 answers with outcomes (`ServerConnectOutcome`, widened across protocols)
 `connected | authentication_rejected | needs_credentials | auth_method_unsupported | certificate_untrusted | not_a_webdav_server | timed_out | unreachable | cancelled`
 (`AuthMethodUnsupported` is its own variant, ❌ never folded into `AuthenticationRejected`: a Digest-only server never
-saw the password). The rest of the app's commands: `cancelServerConnect`, `disconnectWebdavVolume`,
-`saveWebdavCredentials(url, username, secret)` / `hasWebdavCredentials` / `deleteWebdavCredentials`,
-`getKnownWebdavServers` / `forgetKnownWebdavServer`. Editing a saved server without connecting goes through the
-protocol-agnostic `updateSavedServer` (`commands/servers.rs`), which calls
+saw the password). The rest of the app's commands: `cancelServerConnect`, `disconnectPlace`,
+`saveWebdavCredentials(url, username, secret)` / `hasServerSecret` / `forgetServerSecret`, `getKnownWebdavServers` /
+`forgetServer` (the unsuffixed ones are the protocol-agnostic `servers.ts`). Editing a saved server without connecting
+goes through the protocol-agnostic `updateSavedServer` (`commands/servers.rs`), which calls
 `webdav_volume_wiring::save_without_connecting` directly. ❗ Neither that edit nor a connect can change `pinned`:
 `webdav_known_servers::remember` honors it only for a NEW entry and carries the stored value across on a replace, so a
 reconnect can't undo an unpin; it defaults to FALSE, and `getKnownWebdavServers` in `tauri-commands/webdav.ts` is the

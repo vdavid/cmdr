@@ -20,6 +20,7 @@ interface FakePane {
   path: string
   listingId: string | null
   loading: boolean
+  stalled?: boolean
 }
 
 /**
@@ -36,6 +37,7 @@ function fakeExplorer(start: FakePane, onSelect: (pane: FakePane) => VolumeSelec
     getPaneLocation: () => ({ volumeId: pane.volumeId, volumePath: '/', path: pane.path }),
     getPaneListingId: () => pane.listingId,
     isPaneLoading: () => pane.loading,
+    isPaneStalled: () => pane.stalled ?? false,
     syncPaneStateToMcp: vi.fn(() => {
       calls.push('sync')
       return Promise.resolve()
@@ -105,6 +107,38 @@ describe('selectVolumeForMcp', () => {
       outcome: 'navigated',
       volumeId: 'mtp-1',
       path: 'mtp://1/65537/Documents',
+    })
+  })
+
+  it('replies `stalled` as soon as the folder the switch opened stops answering', async () => {
+    const correction = pendingCorrection('nas')
+    const { pane, explorer } = fakeExplorer(
+      { volumeId: 'root', path: '/Users/david', listingId: 'L0', loading: false },
+      (p) => {
+        p.volumeId = 'nas'
+        p.path = '/Volumes/nas/photos'
+        p.listingId = 'L1'
+        p.loading = true
+        return correction.outcome
+      },
+    )
+    correction.resolve()
+
+    const done = selectVolumeForMcp({ explorer, pane: 'left', name: 'nas', requestId: 'req-stall' })
+    await vi.advanceTimersByTimeAsync(300)
+    expect(emit).not.toHaveBeenCalled()
+
+    // A stalled listing keeps loading and retrying: it would never come to rest.
+    pane.stalled = true
+    await vi.advanceTimersByTimeAsync(200)
+    await done
+
+    expect(emit).toHaveBeenCalledExactlyOnceWith('mcp-response', {
+      requestId: 'req-stall',
+      ok: false,
+      outcome: 'stalled',
+      volumeId: 'nas',
+      path: '/Volumes/nas/photos',
     })
   })
 

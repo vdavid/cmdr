@@ -27,7 +27,7 @@ import type {
   SftpHostKeyIdentity,
   SignInShape,
 } from '$lib/ipc/bindings'
-import type { ConnectRefusalKind } from './connect-refusals'
+import type { ConnectRefusalKind, RefusalHint } from './connect-refusals'
 
 /** The server a sign-in is FOR, as its read-only header spells it. */
 export interface SignInEndpoint {
@@ -118,7 +118,11 @@ export type SignInAttemptOutcome =
   | { kind: 'added'; serverId: string }
   | { kind: 'needs_host_key'; prompt: HostKeyPrompt }
   | { kind: 'host_key_revoked'; key: SftpHostKeyIdentity }
-  | { kind: 'refused'; refusal: ConnectRefusalKind }
+  /**
+   * `hint`: a softer line under the refusal, for something besides the server worth checking. `region`:
+   * `region_mismatch` only, the region the server says the bucket lives in.
+   */
+  | { kind: 'refused'; refusal: ConnectRefusalKind; hint?: RefusalHint; region?: string }
   /** The user pressed Cancel. ❗ Says nothing: they know. */
   | { kind: 'cancelled' }
 
@@ -170,8 +174,12 @@ export type SignInSheetRequest =
        */
       refusal?: ConnectRefusalKind
     }
-  /** Change a saved server: the add form prefilled, plus the two switches. */
-  | { mode: 'edit'; server: SavedServer }
+  /**
+   * Change a saved server: the add form prefilled, plus the two switches. `placeVolumeId`
+   * names WHICH place for a server with many editable ones (an S3 account's buckets,
+   * each its own saved entry); absent, the server's one place is meant.
+   */
+  | { mode: 'edit'; server: SavedServer; placeVolumeId?: string }
 
 /** How the sheet closed. */
 export type SignInSheetResult =

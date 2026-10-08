@@ -16,7 +16,7 @@
  *   dialog instead of reaching `pane.switch` behind it.
  */
 import { formatKeyCombo, isTypingKeyCombo } from '$lib/shortcuts/key-capture'
-import { lookupCommand } from '$lib/shortcuts/shortcut-dispatch'
+import { lookupCommand, resolveKeyCombo } from '$lib/shortcuts/shortcut-dispatch'
 import { isTextInputFocused } from '$lib/utils/text-input-focus'
 import type { CommandId } from '$lib/commands'
 import type { DialogsOnScreen } from './command-dispatch-context'
@@ -97,6 +97,17 @@ function commandForCombo(combo: string): CommandId | undefined {
 }
 
 /**
+ * The command this keypress means, resolved by `resolveKeyCombo` exactly as every
+ * local handler resolves it, so a binding the Settings capture recorded can't be
+ * live in the pane and dead here. In a text input only the exact combo counts: a
+ * key a modifier retyped (`⌥⇧=` → `±`, AltGr → `*`) typed a character there, and
+ * typing wins.
+ */
+function commandForEvent(event: KeyboardEvent, combo: string): CommandId | undefined {
+  return commandForCombo(isTextInputFocused() ? combo : resolveKeyCombo(event))
+}
+
+/**
  * Decides what the keypress means, given what's on screen (`+page.svelte`'s
  * `dialogsOnScreen()`).
  *
@@ -108,7 +119,7 @@ function commandForCombo(combo: string): CommandId | undefined {
 export function resolveGlobalKeyAction(event: KeyboardEvent, onScreen: DialogsOnScreen): GlobalKeyAction {
   const combo = formatKeyCombo(event)
   if (combo === 'Escape') return resolveEscape(event, onScreen)
-  const commandId = commandForCombo(combo)
+  const commandId = commandForEvent(event, combo)
   if (
     commandId &&
     !isRefusedOverDialog({ commandId, source: 'keyboard', onScreen, textInputFocused: isTextInputFocused() })

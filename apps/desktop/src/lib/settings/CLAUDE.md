@@ -26,6 +26,8 @@ Registry-based user settings: defined once in `settings-registry.ts`, accessed u
 - **Persistence is sparse: `settings.json` holds ONLY keys an actor explicitly set.** "Explicit" is structural (which
   mutator ran), NEVER `value !== default` — seeding defaults or comparing values re-opens the `developer.mcpEnabled`
   leak. DETAILS § Sparse persistence.
+- **An MDM lock overlays reads and refuses writes, ❌ never persists**: `getSetting` returns the locked value,
+  `isModified` compares the stored one. `../managed-policy/CLAUDE.md`.
 - **Changing the settings FORMAT needs an idempotent step in `settings-migrations.ts`'s `MIGRATIONS`** (a new key is
   additive, no bump). DETAILS § Schema version.
 - **Card visibility is section-owned**, never re-derived from the registry `card` field (the empty-card bug); a row that

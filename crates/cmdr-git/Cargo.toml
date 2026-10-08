@@ -62,8 +62,8 @@ log = "0.4"
 
 [dev-dependencies]
 # Depending on ourselves turns `testing` on for every DEV target and leaves it off
-# for the lib, so a shipped build carries no fixtures. Same shape as `cmdr-mtp`'s,
-# `cmdr-adb`'s, and the app's own self dev-dependency.
+# for the lib, so a shipped build carries no fixtures. Same shape as `cmdr-mtp`'s
+# and `cmdr-adb`'s.
 cmdr-git = { path = ".", features = ["testing"] }
 # `TestDir`, `wait_until`, `InMemoryVolume`, and the shared read-only `Volume`
 # conformance cells every backend runs.

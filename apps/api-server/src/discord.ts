@@ -37,26 +37,28 @@ export interface FeedbackNotification {
   buildMode: 'release' | 'debug'
   appVersion: string
   osVersion: string
-  /** Reply-to email the sender chose to attach; absent means they want to stay anonymous. */
-  email?: string
+  /**
+   * Whether the sender attached a reply-to address. Only the fact travels: ❌ no email address ever
+   * goes to Discord (the privacy policy promises it). The address itself lives in the D1 `feedback`
+   * row and the reports-repo comment.
+   */
+  hasReplyTo: boolean
   feedback: string
 }
 
-export interface BetaSignupNotification {
-  /** The signup email, shown in full (same precedent as the feedback route's reply-to field). */
-  email: string
+/** Which Listmonk list a signup joined. */
+export type SignupList = 'beta' | 'newsletter'
+
+/**
+ * A signup Listmonk mailed a confirmation for (`website/listmonk-signup.ts` only pings then). Carries
+ * no email on purpose: Discord never receives an address. The Listmonk link finds the subscriber.
+ */
+export interface ListSignupNotification {
+  list: SignupList
   /** When the signup landed, rendered as a Discord relative timestamp (`<t:…:R>`). */
   signupUnixSeconds: number
-  /** Deep link to the Listmonk admin filtered to the beta list. */
+  /** Deep link to the Listmonk admin filtered to the list. */
   listAdminUrl: string
-  /**
-   * Which path established the subscription, so the embed states the honest consent status:
-   * - `'new'`: a fresh `POST /api/subscribers`. Listmonk sends its own double-opt-in mail.
-   * - `'added-existing'`: an existing subscriber (for example already on the newsletter) added to the
-   *   beta list, then explicitly nudged with `POST /api/subscribers/{id}/optin` to send the same mail
-   *   (the list-add endpoint alone does NOT send it).
-   */
-  status: 'new' | 'added-existing'
 }
 
 export interface IntakeRejectedInfo {
@@ -101,7 +103,7 @@ const ERROR_REPORT_EMBED_COLOR = 0xff6b6b
 const USER_NOTE_EMBED_CAP = 500
 const FEEDBACK_EMBED_COLOR = 0x5bc0de
 /** Discord's green. Distinct from the error-report red and the feedback blue at a glance. */
-const BETA_SIGNUP_EMBED_COLOR = 0x57f287
+const SIGNUP_EMBED_COLOR = 0x57f287
 /**
  * Discord caps embed descriptions at 4096 chars. The full text always lives in the
  * D1 `feedback` table, so a truncated embed never loses data.
@@ -151,8 +153,8 @@ export function buildFeedbackPayload(n: FeedbackNotification): unknown {
     { name: 'App version', value: n.appVersion, inline: true },
     { name: 'OS', value: n.osVersion, inline: true },
   ]
-  if (n.email) {
-    fields.push({ name: 'Reply to', value: n.email, inline: true })
+  if (n.hasReplyTo) {
+    fields.push({ name: 'Reply-to attached', value: 'Yes (address in the feedback table)', inline: true })
   }
 
   const titlePrefix = n.buildMode === 'debug' ? '[DEV] ' : '[PROD] '
@@ -168,23 +170,18 @@ export function buildFeedbackPayload(n: FeedbackNotification): unknown {
   }
 }
 
-/** Build the Discord webhook JSON body for a newly-established beta-tester signup. */
-export function buildBetaSignupPayload(n: BetaSignupNotification): unknown {
-  const description =
-    n.status === 'new'
-      ? 'Status: unconfirmed — Listmonk sent them the confirmation email.'
-      : 'Existing subscriber, added to the beta list — Listmonk sent them the confirmation email.'
-
+/** Build the Discord webhook JSON body for a signup Listmonk mailed a confirmation for. */
+export function buildListSignupPayload(n: ListSignupNotification): unknown {
+  const beta = n.list === 'beta'
   return {
     embeds: [
       {
-        title: 'New beta-tester signup',
-        description,
-        color: BETA_SIGNUP_EMBED_COLOR,
+        title: beta ? 'New beta-tester signup' : 'New newsletter signup',
+        description: 'Status: unconfirmed — Listmonk sent them the confirmation email.',
+        color: SIGNUP_EMBED_COLOR,
         fields: [
-          { name: 'Email', value: n.email, inline: true },
           { name: 'When', value: `<t:${n.signupUnixSeconds.toString()}:R>`, inline: true },
-          { name: 'Listmonk', value: `[Beta list subscribers](${n.listAdminUrl})` },
+          { name: 'Listmonk', value: `[${beta ? 'Beta list' : 'Newsletter'} subscribers](${n.listAdminUrl})` },
         ],
       },
     ],
@@ -272,6 +269,33 @@ export function buildCronFailurePayload(info: CronFailureInfo): unknown {
   }
 }
 
+export interface CspViolationInfo {
+  /** The CSP directive that blocked it, for example `connect-src`. */
+  directive: string
+  /** What the browser refused to load, query string stripped. */
+  blockedUrl: string
+  /** The page it happened on, query string stripped. */
+  documentUrl: string
+  /** The script that made the request, when the browser says. */
+  sourceFile?: string
+}
+
+/**
+ * Build the Discord webhook JSON body for a CSP violation on getcmdr.com. Plain `content`, like the
+ * cron alert: it's short, and it must not have a failure mode of its own.
+ */
+export function buildCspViolationPayload(info: CspViolationInfo): unknown {
+  const source = info.sourceFile ? `\nScript: ${info.sourceFile}` : ''
+  return {
+    content:
+      `getcmdr.com's CSP (\`${info.directive}\`) blocked ${info.blockedUrl}\n` +
+      `Page: ${info.documentUrl}${source}\n` +
+      `Visitors' browsers are refusing this request, so whatever feature makes it is broken for them. ` +
+      `Allow the origin in \`apps/website/nginx-security-headers.conf\` if it's ours. ` +
+      `This pair stays quiet for 24 hours.`,
+  }
+}
+
 async function postOnce(url: string, body: unknown): Promise<Response> {
   return fetch(url, {
     method: 'POST',
@@ -331,13 +355,17 @@ export async function postCronFailureNotification(webhookUrl: string, info: Cron
   await postWithRetry(webhookUrl, buildCronFailurePayload(info), 'cron-failure')
 }
 
+export async function postCspViolationNotification(webhookUrl: string, info: CspViolationInfo): Promise<void> {
+  await postWithRetry(webhookUrl, buildCspViolationPayload(info), 'csp-violation')
+}
+
 export async function postFeedbackNotification(webhookUrl: string, notification: FeedbackNotification): Promise<void> {
   await postWithRetry(webhookUrl, buildFeedbackPayload(notification), 'feedback')
 }
 
-export async function postBetaSignupNotification(
+export async function postListSignupNotification(
   webhookUrl: string,
-  notification: BetaSignupNotification,
+  notification: ListSignupNotification,
 ): Promise<void> {
-  await postWithRetry(webhookUrl, buildBetaSignupPayload(notification), 'beta-signup')
+  await postWithRetry(webhookUrl, buildListSignupPayload(notification), `${notification.list}-signup`)
 }

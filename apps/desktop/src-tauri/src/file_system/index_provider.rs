@@ -15,39 +15,67 @@ use cmdr_index::host::volumes::{
     EnsureDirectSmbFut, MountFacts, MountIdentity, ResolveMtpFut, ResolvedMtpObject, SmbUpgradeRefusal, VolumeProvider,
 };
 
-/// Whether `path` sits on a network filesystem (SMB, NFS, AFP, WebDAV, ...).
+/// Whether `path` sits on anything but a known local disk: a network share (SMB,
+/// NFS, AFP, WebDAV, ...), a FUSE or cloud mount (`pcloudfs`, rclone, sshfs), or a
+/// mount the probe couldn't resolve.
 ///
-/// One `statfs`, so ❌ never call it in a loop over entries or on a hot read
-/// path: it can block for as long as the mount takes to answer. `mount_facts`
-/// below is the index's caller; `watcher::start_watching` is the other, deciding
-/// a watch's [`WatchCoverage`](cmdr_fs::volume::WatchCoverage) once at arm time
-/// rather than per query.
-///
-/// The kind → network mapping is per-platform, which is why this lives app-side
-/// rather than as a predicate `cmdr-fs` could offer.
+/// One `statfs` (a `/proc/mounts` read on Linux), so ❌ never call it in a loop
+/// over entries or on a hot read path: it can block for as long as the mount
+/// takes to answer. `mount_facts` below is the index's caller (the walker
+/// choice); `watcher::start_watching` is the other, deciding a watch's
+/// [`WatchCoverage`](cmdr_fs::volume::WatchCoverage) once at arm time rather than
+/// per query. Both want the same answer: a remote tree can't be walked at local
+/// speed, and its other writers never reach FSEvents.
 pub fn path_is_on_network_mount(path: &Path) -> bool {
-    is_network(&super::filesystem_kind::detect_filesystem_for_path(path))
+    is_network(&super::filesystem_kind::probe_mount_for_path(path))
 }
 
-/// The kind → network mapping, split out so one probe can answer both of
+/// "Network" here means "not a known local disk" ([`mount_is_local_disk`]), so
+/// FUSE and cloud mounts count too. Split out so one probe can answer both of
 /// [`mount_facts`](AppVolumeProvider::mount_facts)' questions.
-fn is_network(info: &cmdr_fs::filesystem_kind::FilesystemInfo) -> bool {
-    #[cfg(target_os = "macos")]
-    {
-        crate::volumes::is_network_fs_type(info.raw_type.as_deref())
+fn is_network(probe: &super::filesystem_kind::MountProbe) -> bool {
+    !mount_is_local_disk(probe.source.as_deref(), probe.info.raw_type.as_deref())
+}
+
+/// Whether a mount is a KNOWN local disk: its source is a block device (`/dev/…`:
+/// disks, partitions, attached disk images), or its type is a local disk type
+/// whose source isn't a device node (ZFS datasets, a container's overlay root,
+/// RAM-backed mounts).
+///
+/// An allowlist on purpose. Everything else (FUSE, cloud mounts like `pcloudfs`,
+/// network shares, an unprobeable mount) reads as network, so the index picks
+/// the network walker for it: a miss here is a slower walk of a local disk, while
+/// a miss in a network denylist crawls a remote tree at local-walker speed.
+/// ❌ Don't trust `MNT_LOCAL` instead: Xcode's `devicefs` is flagged local.
+/// ❌ Don't fold this into `volumes::is_network_fs_type`: that one also picks the
+/// volume-ID derivation, so widening it would re-ID existing FUSE volumes.
+pub(crate) fn mount_is_local_disk(source: Option<&str>, fs_type: Option<&str>) -> bool {
+    if source.is_some_and(|s| s.starts_with("/dev/")) {
+        return true;
     }
-    #[cfg(target_os = "linux")]
-    {
-        info.raw_type
-            .as_deref()
-            .map(super::linux_mounts::is_network_fs_type)
-            .unwrap_or(false)
-    }
-    #[cfg(not(any(target_os = "macos", target_os = "linux")))]
-    {
-        let _ = info;
-        false
-    }
+    let Some(fs_type) = fs_type else { return false };
+    matches!(
+        fs_type.to_ascii_lowercase().as_str(),
+        "apfs"
+            | "hfs"
+            | "exfat"
+            | "msdos"
+            | "vfat"
+            | "ntfs"
+            | "ntfs3"
+            | "ufsd_ntfs"
+            | "zfs"
+            | "btrfs"
+            | "bcachefs"
+            | "ext2"
+            | "ext3"
+            | "ext4"
+            | "xfs"
+            | "f2fs"
+            | "overlay"
+            | "tmpfs"
+            | "ramfs"
+    )
 }
 
 /// Answers the index from the app's real volume registry and platform probes.
@@ -71,12 +99,12 @@ impl VolumeProvider for AppVolumeProvider {
     }
 
     fn mount_facts(&self, path: &Path) -> MountFacts {
-        // ONE `detect_filesystem_for_path` probe answers both questions: it can
-        // block on a wedged mount, so don't grow this into two.
-        let info = super::filesystem_kind::detect_filesystem_for_path(path);
+        // ONE `probe_mount_for_path` probe answers both questions: it can block on
+        // a wedged mount, so don't grow this into two.
+        let probe = super::filesystem_kind::probe_mount_for_path(path);
         MountFacts {
-            is_network: is_network(&info),
-            inodes_trustworthy: info.kind.has_stable_inodes(),
+            is_network: is_network(&probe),
+            inodes_trustworthy: probe.info.kind.has_stable_inodes(),
         }
     }
 
@@ -113,6 +141,18 @@ impl VolumeProvider for AppVolumeProvider {
             let _ = identity;
             None
         }
+    }
+
+    fn mount_points(&self) -> Option<Vec<std::path::PathBuf>> {
+        // The whole table, ❌ never `registrable_mount_roots`: the boot scan has to
+        // stop at another account's mount too, which the registry leaves out.
+        #[cfg(target_os = "macos")]
+        let roots = crate::volumes::mount_roots();
+        #[cfg(target_os = "linux")]
+        let roots = crate::volumes_linux::mount_roots();
+        #[cfg(not(any(target_os = "macos", target_os = "linux")))]
+        let roots: Option<Vec<String>> = Some(Vec::new());
+        roots.map(|roots| roots.into_iter().map(std::path::PathBuf::from).collect())
     }
 
     fn smb_volume_id_for_path(&self, path: &str) -> Option<String> {
@@ -233,6 +273,75 @@ mod tests {
         assert!(facts.inodes_trustworthy);
     }
 
+    /// Block-device-backed mounts are local whatever their type: disks, partitions,
+    /// and attached disk images (verified on macOS 26 with `hdiutil attach`,
+    /// 2026-09-30: exFAT, FAT, and HFS+ images report `/dev/diskNs1` sources).
+    #[test]
+    fn a_block_device_backed_mount_is_a_local_disk() {
+        for (source, fs_type) in [
+            ("/dev/disk3s1s1", "apfs"),
+            ("/dev/disk4s1", "exfat"),
+            ("/dev/disk5s1", "msdos"),
+            ("/dev/disk6s1", "hfs"),
+            ("/dev/sda1", "ext4"),
+            ("/dev/sdb1", "fuseblk"),
+            ("/dev/mapper/vg-root", "xfs"),
+        ] {
+            assert!(
+                mount_is_local_disk(Some(source), Some(fs_type)),
+                "{fs_type} from {source} is a local disk"
+            );
+        }
+    }
+
+    /// A known local disk type is local even when its source isn't a device node:
+    /// ZFS datasets, a container's overlay root, and RAM-backed mounts.
+    #[test]
+    fn a_known_local_type_is_a_local_disk_without_a_device_source() {
+        for (source, fs_type) in [
+            ("tank/home", "zfs"),
+            ("overlay", "overlay"),
+            ("tmpfs", "tmpfs"),
+            ("rpool/ROOT/ubuntu", "ZFS"),
+        ] {
+            assert!(
+                mount_is_local_disk(Some(source), Some(fs_type)),
+                "{fs_type} from {source} is a local disk"
+            );
+        }
+    }
+
+    /// The regression: FUSE and cloud filesystems aren't local disks, so a drive
+    /// index scoped into one picks the network walker instead of crawling the
+    /// remote tree at local-walker speed. Network shares stay network, and so does
+    /// FUSE-T posing as `nfs`.
+    #[test]
+    fn fuse_cloud_and_network_mounts_are_not_local_disks() {
+        for (source, fs_type) in [
+            ("pCloud", "pcloudfs"),
+            ("rclone:remote", "macfuse"),
+            ("sshfs@host:/home/me", "osxfuse"),
+            ("sshfs@host:/home/me", "fuse.sshfs"),
+            ("//me@nas/share", "smbfs"),
+            ("nas:/export", "nfs"),
+            ("fuse-t:/remote", "nfs"),
+            ("https://dav.example.com", "webdav"),
+            ("devicefs", "devicefs"),
+        ] {
+            assert!(
+                !mount_is_local_disk(Some(source), Some(fs_type)),
+                "{fs_type} from {source} must not read as a local disk"
+            );
+        }
+    }
+
+    /// A mount that couldn't be probed isn't known to be local, so it gets the
+    /// network walker: slower if it was local after all, but it can't crawl a wire.
+    #[test]
+    fn an_unprobed_mount_is_not_a_local_disk() {
+        assert!(!mount_is_local_disk(None, None));
+    }
+
     /// The index's presence seam reads the kernel mount table by filesystem: the boot
     /// volume's root names its filesystem and that filesystem reads mounted, a plain
     /// folder names none (how a drive's lingering mount-point folder reads once the
@@ -254,6 +363,16 @@ mod tests {
             AppVolumeProvider.is_mounted(MountIdentity::from_raw(u64::MAX)),
             Some(false)
         );
+    }
+
+    /// The index's boot-tree cut reads the real kernel table through this: it lists
+    /// the boot disk's own `/` (which the index then leaves out), so an empty answer
+    /// can only mean the read went wrong.
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    #[test]
+    fn mount_points_come_from_the_kernel_table() {
+        let points = AppVolumeProvider.mount_points().expect("the mount table reads");
+        assert!(points.iter().any(|p| p == Path::new("/")), "`/` is mounted: {points:?}");
     }
 
     /// The negative half, against a REAL filesystem: a FAT32 mount's inodes are

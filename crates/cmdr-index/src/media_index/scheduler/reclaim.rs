@@ -87,6 +87,29 @@ pub enum PruneFailure {
     WriterUnavailable,
     /// SQLite refused the delete and rolled it back (a full disk, a locked database).
     DeleteFailed,
+    /// The volume's `media.db` couldn't be read, so the prune couldn't tell what to delete.
+    StoreUnreadable,
+}
+
+/// A volume's `media.db` exists but couldn't be read (corrupt, or locked past the busy
+/// timeout). Distinct from a volume that was never enriched, which has no file and
+/// honestly stores nothing.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct StoreUnreadable;
+
+/// The stored (index-relative) paths in `volume_id`'s `media.db`: empty when the volume was
+/// never enriched (no file), [`StoreUnreadable`] when the file is there but won't read.
+fn read_stored_paths(data_dir: &std::path::Path, volume_id: &str) -> Result<Vec<String>, StoreUnreadable> {
+    let db_path = store::media_db_path(data_dir, volume_id);
+    if !db_path.exists() {
+        return Ok(Vec::new());
+    }
+    store::open_read_connection(&db_path)
+        .and_then(|conn| store::read_status_paths(&conn))
+        .map_err(|e| {
+            log::warn!(target: "media_index", "stored coverage: media.db for '{volume_id}' didn't read: {e}");
+            StoreUnreadable
+        })
 }
 
 impl MediaScheduler {
@@ -118,9 +141,11 @@ impl MediaScheduler {
     /// `mount_root` maps a stored (index-relative) path into OS space for the
     /// override/exclude config lookup ("/" on a local volume, the mount root on a network
     /// one), exactly as enrichment does; importance keys on the index identity directly.
-    /// Returns `None` when the partition can't be computed safely (the automatic scope on a
+    /// Returns `Ok(None)` when the partition can't be computed safely (the automatic scope on a
     /// volume importance hasn't scored — transient), so the caller reports pending rather
     /// than proposing a destructive count. See [`partition_scores`](Self::partition_scores).
+    /// [`StoreUnreadable`] when the volume's `media.db` won't read: ❌ never an empty
+    /// partition, which the reclaim panel would voice as "nothing to delete".
     /// The selection reuses [`coverage::partition_stored`] (the enrichment precedence) and
     /// the [`coverage`] cache (the slider's qualifying counts), never a second derivation.
     pub fn stored_coverage(
@@ -129,15 +154,13 @@ impl MediaScheduler {
         mount_root: &str,
         threshold: f64,
         scope: IndexScope,
-    ) -> Option<StoredCoverage> {
-        let scores = self.partition_scores(volume_id, scope)?;
+    ) -> Result<Option<StoredCoverage>, StoreUnreadable> {
+        let Some(scores) = self.partition_scores(volume_id, scope) else {
+            return Ok(None);
+        };
 
         // The stored-row paths (empty when the volume was never enriched).
-        let db_path = store::media_db_path(&self.data_dir, volume_id);
-        let stored: Vec<String> = store::open_read_connection(&db_path)
-            .ok()
-            .and_then(|conn| store::read_status_paths(&conn).ok())
-            .unwrap_or_default();
+        let stored = read_stored_paths(&self.data_dir, volume_id)?;
 
         // Override/exclude are OS-path keyed; map each stored (index) path into OS space.
         let config = network::config::snapshot();
@@ -152,12 +175,12 @@ impl MediaScheduler {
             .map(|counts| coverage::covered_in_scope(&counts, &scores, threshold, scope, &is_override).1)
             .unwrap_or(0);
 
-        Some(StoredCoverage {
+        Ok(Some(StoredCoverage {
             surviving_stored: partition.surviving,
             doomed_stored: partition.doomed.len() as u64,
             covered_qualifying,
             doomed_paths: partition.doomed,
-        })
+        }))
     }
 
     /// The counts-only stored-coverage split for `volume_id` at `threshold`:
@@ -168,7 +191,7 @@ impl MediaScheduler {
     /// prune. It reuses the ONE canonical survival rule ([`coverage::stored_row_survives`])
     /// and the [`coverage`] cache, so its numbers can never disagree with the reclaim
     /// preview. `None` when importance hasn't scored the volume (the partition isn't safe
-    /// yet).
+    /// yet) or its `media.db` won't read: either way the number is unknown, never `0`.
     ///
     /// ❌ This is a POLL, so it reads the coverage cache and never builds it
     /// ([`coverage::cached`], not `get_or_build`) — a cold build here is a whole-index walk
@@ -182,12 +205,7 @@ impl MediaScheduler {
         scope: IndexScope,
     ) -> Option<StoredCoverageCounts> {
         let scores = self.partition_scores(volume_id, scope)?;
-
-        let db_path = store::media_db_path(&self.data_dir, volume_id);
-        let stored: Vec<String> = store::open_read_connection(&db_path)
-            .ok()
-            .and_then(|conn| store::read_status_paths(&conn).ok())
-            .unwrap_or_default();
+        let stored = read_stored_paths(&self.data_dir, volume_id).ok()?;
 
         let config = network::config::snapshot();
         let mount_root = mount_root.to_string();
@@ -245,8 +263,8 @@ impl MediaScheduler {
     /// retro-delete it needs no completed-scan edge (see `../DETAILS.md` § The GC safety argument).
     ///
     /// Answers the rows deleted and the freed-byte estimate, all zeros when the partition
-    /// isn't safe or nothing is doomed. A writer that won't start or a delete SQLite refuses
-    /// is a [`PruneFailure`], never zero rows. A `VACUUM` that fails after the delete landed
+    /// isn't safe or nothing is doomed. An unreadable store, a writer that won't start, or a
+    /// delete SQLite refuses is a [`PruneFailure`], never zero rows. A `VACUUM` that fails after the delete landed
     /// reports `freed_bytes: None` and owes the volume a `VACUUM` its next pass runs.
     ///
     /// [`stored_coverage`]: MediaScheduler::stored_coverage
@@ -257,7 +275,10 @@ impl MediaScheduler {
         threshold: f64,
         scope: IndexScope,
     ) -> Result<PruneOutcome, PruneFailure> {
-        let Some(coverage) = self.stored_coverage(volume_id, mount_root, threshold, scope) else {
+        let Some(coverage) = self
+            .stored_coverage(volume_id, mount_root, threshold, scope)
+            .map_err(|StoreUnreadable| PruneFailure::StoreUnreadable)?
+        else {
             return Ok(PruneOutcome::NOTHING);
         };
         if coverage.doomed_paths.is_empty() {

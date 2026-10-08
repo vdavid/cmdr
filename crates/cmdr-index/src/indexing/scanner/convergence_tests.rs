@@ -45,7 +45,12 @@ fn level(subdir: Option<&'static str>) -> Vec<MockChild> {
 fn seed_chain(db_path: &Path, path: &Path, writer: &IndexWriter) -> i64 {
     test_fixtures::ensure_path_in_db(db_path, path, writer);
     let conn = IndexStore::open_write_connection(db_path).expect("write connection");
-    IndexStore::update_meta(&conn, EXCLUSION_POLICY_KEY, &exclusion_policy_fingerprint()).expect("stamp policy");
+    IndexStore::update_meta(
+        &conn,
+        EXCLUSION_POLICY_KEY,
+        &exclusion_policy_fingerprint(ExclusionTier::BootDisk),
+    )
+    .expect("stamp policy");
     crate::indexing::store::resolve_path(&conn, &path.to_string_lossy())
         .expect("resolve")
         .expect("seeded path")
@@ -83,7 +88,8 @@ fn recursive_physical_size(db_path: &Path, path: &str) -> Option<u64> {
 /// The frontier a search would be handed for `scope`, sorted.
 fn frontier(db_path: &Path, scope: &str) -> Vec<String> {
     let conn = IndexStore::open_read_connection(db_path).expect("read connection");
-    let mut map = coverage_for_scope(&conn, scope, scope, CoverageDimension::Listing).expect("coverage");
+    let mut map =
+        coverage_for_scope(&conn, scope, scope, ExclusionTier::BootDisk, CoverageDimension::Listing).expect("coverage");
     map.frontier.sort();
     map.frontier
 }
@@ -242,6 +248,7 @@ fn a_folder_the_walk_cannot_read_stops_re_entering_the_frontier() {
         &conn,
         &a.to_string_lossy(),
         &a.to_string_lossy(),
+        ExclusionTier::BootDisk,
         CoverageDimension::Listing,
     )
     .expect("coverage");
@@ -427,6 +434,7 @@ fn marking_abandoned_ground_costs_no_coverage() {
         &conn,
         &a.to_string_lossy(),
         &a.to_string_lossy(),
+        ExclusionTier::BootDisk,
         CoverageDimension::Listing,
     )
     .expect("coverage");

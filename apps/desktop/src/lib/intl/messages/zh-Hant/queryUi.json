@@ -389,9 +389,9 @@
   "@queryUi.recent.caseSensitive": {
     "sourceHash": "3934758"
   },
-  "queryUi.recent.systemDirsIncluded": "包含系統目錄",
+  "queryUi.recent.systemDirsIncluded": "包含系統資料夾",
   "@queryUi.recent.systemDirsIncluded": {
-    "sourceHash": "b7996cc"
+    "sourceHash": "c928638"
   },
   "queryUi.recent.resultCount": "上次有 {countText} 個{count, plural, other {結果}}",
   "@queryUi.recent.resultCount": {
@@ -524,14 +524,6 @@
   "queryUi.size.comparator.between": "介於",
   "@queryUi.size.comparator.between": {
     "sourceHash": "fbb27fb"
-  },
-  "queryUi.size.unit.byte": "位元組",
-  "@queryUi.size.unit.byte": {
-    "sourceHash": "1c31626"
-  },
-  "queryUi.size.unit.bytes": "位元組",
-  "@queryUi.size.unit.bytes": {
-    "sourceHash": "277089d"
   },
   "queryUi.size.customCell": "自訂⋯",
   "@queryUi.size.customCell": {

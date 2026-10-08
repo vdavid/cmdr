@@ -41,10 +41,7 @@
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, OnceLock};
 
-use super::{
-    ItemHome, ItemKind, Record, RecordedTemp, SweepTally, TrackedItem, claim_pending, defer, pending_count,
-    pending_volume_ids, retire_record,
-};
+use super::{ItemHome, ItemKind, Ledger, Record, RecordedTemp, SweepTally, TrackedItem};
 use crate::file_system::volume::manager::get_volume_manager;
 use crate::file_system::volume::{Volume, VolumeError, rename_local_exclusive};
 use crate::file_system::write_operations::transfer_sides::root_is_listed;
@@ -56,29 +53,29 @@ use crate::file_system::write_operations::unique_name::{NameCandidates, RESCUE_N
 ///
 /// Runs on its own thread (`init_and_sweep` says why nothing waits on it), so
 /// blocking filesystem calls inside the async rules are free here.
-pub(super) fn persisted_orphans(locals: &[Record]) -> SweepTally {
+pub(super) fn persisted_orphans(ledger: &Ledger, locals: &[Record]) -> SweepTally {
     let mut tally = SweepTally::default();
     for record in locals {
-        tauri::async_runtime::block_on(settle_and_record(record, &mut tally));
+        tauri::async_runtime::block_on(settle_and_record(ledger, record, &mut tally));
     }
 
     // A volume registered before the sweep thread got here (the boot volume, an
     // external disk) can be served right away; everything else waits for its
     // arrival. Asking the registry whether an ID is present is a lock and a hash
     // lookup, so a dead NAS costs nothing and blocks nobody.
-    for volume_id in pending_volume_ids() {
+    for volume_id in ledger.pending_volume_ids() {
         if get_volume_manager().get(&volume_id).is_none() {
             continue;
         }
-        let claimed = claim_pending(&volume_id);
-        tally.add(tauri::async_runtime::block_on(on_volume(&volume_id, claimed)));
+        let claimed = ledger.claim_pending(&volume_id);
+        tally.add(tauri::async_runtime::block_on(on_volume(ledger, &volume_id, claimed)));
     }
     // ASSIGNED, not added: a record a reachable volume then refused is already
     // back in `pending`, so counting both would report it twice. What's still
     // waiting when the launch finishes is the one honest number. A LOCAL record
     // the sweep couldn't settle has nothing to wait for and is counted as left
     // alone instead.
-    tally.deferred = pending_count();
+    tally.deferred = ledger.pending_count();
 
     report(&tally);
     tally
@@ -97,17 +94,18 @@ pub(super) fn persisted_orphans(locals: &[Record]) -> SweepTally {
 /// mount for 30-120 s. On a runtime worker that parks a thread the whole app
 /// shares. "It's only a handful of records" is today's shape, not a property: a
 /// drive back from a long trip can carry many.
-pub(super) fn on_volume_arrival(volume_id: &str) {
-    let claimed = claim_pending(volume_id);
+pub(super) fn on_volume_arrival(ledger: &Ledger, volume_id: &str) {
+    let claimed = ledger.claim_pending(volume_id);
     if claimed.is_empty() {
         return;
     }
     let volume_id = volume_id.to_string();
+    let ledger = ledger.clone();
     tauri::async_runtime::spawn_blocking(move || {
         // The same shape the launch sweep runs in: a blocking context that
         // `block_on`s the volume-backed rules. One shape for both entry points
         // is what keeps the rules themselves a single set.
-        let tally = tauri::async_runtime::block_on(on_volume(&volume_id, claimed));
+        let tally = tauri::async_runtime::block_on(on_volume(&ledger, &volume_id, claimed));
         report(&tally);
     });
 }
@@ -118,20 +116,20 @@ pub(super) fn on_volume_arrival(volume_id: &str) {
 /// arrives (this session or a later launch) the sweep tries again. ❌ Never
 /// reconnects or authenticates: the volume is used exactly as the registry hands
 /// it over.
-async fn on_volume(volume_id: &str, records: Vec<Record>) -> SweepTally {
+async fn on_volume(ledger: &Ledger, volume_id: &str, records: Vec<Record>) -> SweepTally {
     let mut tally = SweepTally::default();
     for record in &records {
-        settle_and_record(record, &mut tally).await;
+        settle_and_record(ledger, record, &mut tally).await;
     }
     log::debug!(target: "copy", "settled {} recorded leftovers on `{volume_id}`: {tally:?}", records.len());
     tally
 }
 
 /// Settles one record and puts the ledger in step with what happened.
-async fn settle_and_record(record: &Record, tally: &mut SweepTally) {
+async fn settle_and_record(ledger: &Ledger, record: &Record, tally: &mut SweepTally) {
     match settle(record).await {
         Outcome::Deferred => {
-            defer(vec![record.clone()]);
+            ledger.defer(vec![record.clone()]);
             // A volume-homed record is counted once at the end, by what's still
             // waiting. A local one has no arrival to wait for — it's re-recorded
             // for the next launch — so it's counted here.
@@ -140,7 +138,7 @@ async fn settle_and_record(record: &Record, tally: &mut SweepTally) {
             }
         }
         settled => {
-            retire_record(record);
+            ledger.retire_record(record);
             settled.tally_into(tally);
         }
     }

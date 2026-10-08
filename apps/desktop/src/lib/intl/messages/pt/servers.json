@@ -84,6 +84,22 @@
   "@servers.hub.editNearbyHint": {
     "sourceHash": "64653de"
   },
+  "servers.hub.s3AllBuckets": "Todos os buckets",
+  "@servers.hub.s3AllBuckets": {
+    "sourceHash": "2a5828a"
+  },
+  "servers.hub.openAccountHint": "A conta {name} não é um local para abrir. Abra um dos buckets abaixo dela.",
+  "@servers.hub.openAccountHint": {
+    "sourceHash": "c52ee6f"
+  },
+  "servers.hub.forgetAccountConfirm": "Esquecer a conta {name} e todos os buckets salvos nela? O Cmdr encerra as conexões e tira a conta e os buckets da lista. Seus arquivos continuam nos buckets.",
+  "@servers.hub.forgetAccountConfirm": {
+    "sourceHash": "e1c636e"
+  },
+  "servers.hub.forgetSecretKeyToo": "Esquecer também a chave de acesso secreta da conta",
+  "@servers.hub.forgetSecretKeyToo": {
+    "sourceHash": "4f3ac6d"
+  },
   "servers.hub.forgetShare": "Esquecer compartilhamento",
   "@servers.hub.forgetShare": {
     "sourceHash": "8888a9d"
@@ -95,6 +111,10 @@
   "servers.hub.forgetShareConfirm": "Esquecer {name}? O Cmdr tira esse compartilhamento da lista. Se ele estiver montado, continua montado, e seus arquivos continuam no servidor.",
   "@servers.hub.forgetShareConfirm": {
     "sourceHash": "8c14aaa"
+  },
+  "servers.hub.nearbyGroup": "{count, plural, one {{countText} servidor encontrado por perto} many {{countText} servidores encontrados por perto} other {{countText} servidores encontrados por perto}}",
+  "@servers.hub.nearbyGroup": {
+    "sourceHash": "cd7a44d"
   },
   "servers.hub.discoveryOff": "A descoberta na rede local está desativada.",
   "@servers.hub.discoveryOff": {
@@ -172,6 +192,10 @@
   "@servers.refusal.unreachable": {
     "sourceHash": "6fcba90"
   },
+  "servers.refusal.localNetworkHint": "Se o servidor estiver ligado, confira se o Cmdr tem permissão em {localNetwork}.",
+  "@servers.refusal.localNetworkHint": {
+    "sourceHash": "baa1753"
+  },
   "servers.refusal.hostKeyUntrusted": "O Cmdr ainda não confia na chave de {host}.",
   "@servers.refusal.hostKeyUntrusted": {
     "sourceHash": "83dc719"
@@ -207,6 +231,62 @@
   "servers.refusal.savedSecretNotUpdated": "O Cmdr salvou suas alterações, mas não conseguiu atualizar a senha no Acesso às Chaves. Salve novamente para tentar outra vez.",
   "@servers.refusal.savedSecretNotUpdated": {
     "sourceHash": "2ae1e2b"
+  },
+  "servers.refusal.s3AuthenticationRejected": "Essa chave de acesso secreta não funcionou.",
+  "@servers.refusal.s3AuthenticationRejected": {
+    "sourceHash": "14f90c8"
+  },
+  "servers.refusal.s3NeedsCredentials": "Esta conta pede uma chave de acesso secreta.",
+  "@servers.refusal.s3NeedsCredentials": {
+    "sourceHash": "23695df"
+  },
+  "servers.refusal.s3SecretMissing": "Digite a chave de acesso secreta.",
+  "@servers.refusal.s3SecretMissing": {
+    "sourceHash": "f1f32f2"
+  },
+  "servers.refusal.s3SecretNotStored": "O Cmdr não conseguiu salvar esta chave de acesso secreta no Acesso às Chaves. Tente novamente ou desative “Lembrar no Acesso às Chaves” para iniciar a sessão sem salvá-la.",
+  "@servers.refusal.s3SecretNotStored": {
+    "sourceHash": "f7a9fb0"
+  },
+  "servers.refusal.s3SavedSecretNotUpdated": "O Cmdr salvou suas alterações, mas não conseguiu atualizar a chave de acesso secreta no Acesso às Chaves. Salve novamente para tentar outra vez.",
+  "@servers.refusal.s3SavedSecretNotUpdated": {
+    "sourceHash": "1d2889d"
+  },
+  "servers.refusal.accessDenied": "Esta chave não consegue acessar este bucket. Confira o nome do bucket e a chave de acesso secreta, e se a chave tem permissão para ler o bucket.",
+  "@servers.refusal.accessDenied": {
+    "sourceHash": "8372e73"
+  },
+  "servers.refusal.bucketListRefused": "Esta chave não pode listar os buckets desta conta. Digite o nome de um bucket para abri-lo, ou confira a chave de acesso secreta.",
+  "@servers.refusal.bucketListRefused": {
+    "sourceHash": "1b9ebf5"
+  },
+  "servers.refusal.bucketNotFound": "Não há nenhum bucket com esse nome em {host}.",
+  "@servers.refusal.bucketNotFound": {
+    "sourceHash": "0f5a04d"
+  },
+  "servers.refusal.regionMismatch": "Este bucket está em outra região. Escolha a região dele e tente novamente.",
+  "@servers.refusal.regionMismatch": {
+    "sourceHash": "27a37f8"
+  },
+  "servers.refusal.regionMismatchNamed": "Este bucket está em {region}. Escolha essa região e tente novamente.",
+  "@servers.refusal.regionMismatchNamed": {
+    "sourceHash": "30abb0d"
+  },
+  "servers.refusal.clockSkewed": "O relógio deste Mac está errado em mais de 15 minutos, então o servidor não aceita as solicitações do Cmdr. Ative o ajuste automático de data e hora nos Ajustes do Sistema e tente novamente.",
+  "@servers.refusal.clockSkewed": {
+    "sourceHash": "cdee0ef"
+  },
+  "servers.refusal.notAnS3Endpoint": "Nenhum serviço S3 responde neste endereço.",
+  "@servers.refusal.notAnS3Endpoint": {
+    "sourceHash": "78557ec"
+  },
+  "servers.refusal.s3FieldMalformed": "Use apenas letras minúsculas, números e hifens aqui.",
+  "@servers.refusal.s3FieldMalformed": {
+    "sourceHash": "ac8fbea"
+  },
+  "servers.refusal.endpointMalformed": "Digite o ponto de extremidade como http:// ou https:// mais um nome de host, como https://s3.example.com.",
+  "@servers.refusal.endpointMalformed": {
+    "sourceHash": "beb63dd"
   },
   "servers.sheet.addTitle": "Adicionar servidor",
   "@servers.sheet.addTitle": {
@@ -324,6 +404,10 @@
   "@servers.sheet.password": {
     "sourceHash": "e7cf3ef"
   },
+  "servers.sheet.secretKeptPlaceholder": "Salva no Acesso às Chaves. Deixe em branco para mantê-la.",
+  "@servers.sheet.secretKeptPlaceholder": {
+    "sourceHash": "8711f6c"
+  },
   "servers.sheet.smbUsernamePlaceholder": "Opcional",
   "@servers.sheet.smbUsernamePlaceholder": {
     "sourceHash": "59be713"
@@ -359,6 +443,123 @@
   "servers.sheet.name": "Nome",
   "@servers.sheet.name": {
     "sourceHash": "dcd1d52"
+  },
+  "servers.sheet.protocolS3": "S3",
+  "@servers.sheet.protocolS3": {
+    "sourceHash": "44d6a8a",
+    "sameAsSourceJustification": "Protocol name, kept verbatim in pt-BR like its siblings servers.sheet.protocolWebdav and protocolSftp; settings.appearance.tintSmb.label ships “S3” untouched too."
+  },
+  "servers.sheet.s3Provider": "Provedor",
+  "@servers.sheet.s3Provider": {
+    "sourceHash": "472590a"
+  },
+  "servers.sheet.s3ProviderAws": "Amazon S3",
+  "@servers.sheet.s3ProviderAws": {
+    "sourceHash": "a4f6352",
+    "sameAsSourceJustification": "Product name, kept verbatim: the provider markets Amazon S3 under this name in pt-BR too, and the @key says to keep it as-is."
+  },
+  "servers.sheet.s3ProviderR2": "Cloudflare R2",
+  "@servers.sheet.s3ProviderR2": {
+    "sourceHash": "9f2f1ed",
+    "sameAsSourceJustification": "Product name, kept verbatim: the provider markets Cloudflare R2 under this name in pt-BR too, and the @key says to keep it as-is."
+  },
+  "servers.sheet.s3ProviderB2": "Backblaze B2",
+  "@servers.sheet.s3ProviderB2": {
+    "sourceHash": "ed40187",
+    "sameAsSourceJustification": "Product name, kept verbatim: the provider markets Backblaze B2 under this name in pt-BR too, and the @key says to keep it as-is."
+  },
+  "servers.sheet.s3ProviderWasabi": "Wasabi",
+  "@servers.sheet.s3ProviderWasabi": {
+    "sourceHash": "493861e",
+    "sameAsSourceJustification": "Product name, kept verbatim: the provider markets Wasabi under this name in pt-BR too, and the @key says to keep it as-is."
+  },
+  "servers.sheet.s3ProviderHetzner": "Hetzner Object Storage",
+  "@servers.sheet.s3ProviderHetzner": {
+    "sourceHash": "a339b4f",
+    "sameAsSourceJustification": "Product name, kept verbatim: the provider markets Hetzner Object Storage under this name in pt-BR too, and the @key says to keep it as-is."
+  },
+  "servers.sheet.s3ProviderGcs": "Google Cloud Storage",
+  "@servers.sheet.s3ProviderGcs": {
+    "sourceHash": "53fa0ba",
+    "sameAsSourceJustification": "Product name, kept verbatim: the provider markets Google Cloud Storage under this name in pt-BR too, and the @key says to keep it as-is."
+  },
+  "servers.sheet.s3ProviderDigitalOcean": "DigitalOcean Spaces",
+  "@servers.sheet.s3ProviderDigitalOcean": {
+    "sourceHash": "c3f48e3",
+    "sameAsSourceJustification": "Product name, kept verbatim: the provider markets DigitalOcean Spaces under this name in pt-BR too, and the @key says to keep it as-is."
+  },
+  "servers.sheet.s3GcsKeyHelp": "Inicie a sessão com uma chave HMAC da aba Interoperabilidade nas configurações do Cloud Storage.",
+  "@servers.sheet.s3GcsKeyHelp": {
+    "sourceHash": "acb72a4"
+  },
+  "servers.sheet.s3ProviderOther": "Outro compatível com S3",
+  "@servers.sheet.s3ProviderOther": {
+    "sourceHash": "13d2bdc"
+  },
+  "servers.sheet.s3Region": "Região",
+  "@servers.sheet.s3Region": {
+    "sourceHash": "d3a008e"
+  },
+  "servers.sheet.s3RegionOptionalPlaceholder": "Opcional. Deixe em branco para usar us-east-1",
+  "@servers.sheet.s3RegionOptionalPlaceholder": {
+    "sourceHash": "12dd731"
+  },
+  "servers.sheet.s3AccountId": "ID da conta",
+  "@servers.sheet.s3AccountId": {
+    "sourceHash": "919bb4c"
+  },
+  "servers.sheet.s3AccountIdHelp": "O ID da conta na página de visão geral do Cloudflare R2.",
+  "@servers.sheet.s3AccountIdHelp": {
+    "sourceHash": "963d1f5"
+  },
+  "servers.sheet.s3Location": "Localização",
+  "@servers.sheet.s3Location": {
+    "sourceHash": "15b6197"
+  },
+  "servers.sheet.s3Endpoint": "Ponto de extremidade",
+  "@servers.sheet.s3Endpoint": {
+    "sourceHash": "3df9726"
+  },
+  "servers.sheet.s3PathStyle": "Usar endereçamento no estilo de caminho",
+  "@servers.sheet.s3PathStyle": {
+    "sourceHash": "627c522"
+  },
+  "servers.sheet.s3PathStyleHelp": "A maioria dos servidores auto-hospedados, como MinIO e Garage, precisa disso.",
+  "@servers.sheet.s3PathStyleHelp": {
+    "sourceHash": "bc6e240"
+  },
+  "servers.sheet.s3Bucket": "Bucket",
+  "@servers.sheet.s3Bucket": {
+    "sourceHash": "c83b657",
+    "sameAsSourceJustification": "S3 term kept as the providers’ pt-BR consoles keep it: the AWS S3 console and docs in pt-BR say “bucket” (“Criar bucket”), as does Google Cloud Storage pt-BR; the pt catalog uses “bucket” in every S3 string (servers.refusal.*, servers.hub.*)."
+  },
+  "servers.sheet.s3BucketHelp": "Deixe em branco para ver todos os buckets. Se sua chave for limitada a um bucket, digite o nome dele.",
+  "@servers.sheet.s3BucketHelp": {
+    "sourceHash": "8d380d9"
+  },
+  "servers.sheet.s3UseRegion": "Usar {region}",
+  "@servers.sheet.s3UseRegion": {
+    "sourceHash": "5734184"
+  },
+  "servers.sheet.accessKeyId": "ID da chave de acesso",
+  "@servers.sheet.accessKeyId": {
+    "sourceHash": "14eb0f9"
+  },
+  "servers.sheet.secretAccessKey": "Chave de acesso secreta",
+  "@servers.sheet.secretAccessKey": {
+    "sourceHash": "3de6b75"
+  },
+  "servers.sheet.examplePlaceholder": "Exemplo: {example}",
+  "@servers.sheet.examplePlaceholder": {
+    "sourceHash": "9c7df45"
+  },
+  "servers.sheet.identityLockedS3": "O provedor, o ID da chave de acesso e o bucket identificam este local. Para mudá-los, esqueça este local e adicione-o de novo.",
+  "@servers.sheet.identityLockedS3": {
+    "sourceHash": "fe4d469"
+  },
+  "servers.sheet.identityLockedS3Account": "O provedor e o ID da chave de acesso identificam esta conta. Para mudá-los, esqueça esta conta e adicione-a de novo.",
+  "@servers.sheet.identityLockedS3Account": {
+    "sourceHash": "e03a769"
   },
   "servers.sheet.namePlaceholder": "Deixe em branco para usar {label}",
   "@servers.sheet.namePlaceholder": {
@@ -452,6 +653,10 @@
   "@servers.paneState.notConnected": {
     "sourceHash": "5020fac"
   },
+  "servers.paneState.unreachable": "O Cmdr não conseguiu alcançar {name}.",
+  "@servers.paneState.unreachable": {
+    "sourceHash": "a7bc9bc"
+  },
   "servers.paneState.goBack": "Voltar",
   "@servers.paneState.goBack": {
     "sourceHash": "6aadac2"
@@ -464,9 +669,13 @@
   "@servers.paneState.hostKeyChanged": {
     "sourceHash": "c73ddf3"
   },
-  "servers.paneState.hostKeyChangedHint": "A chave do servidor mudou. Isso pode significar que ele foi reinstalado, ou que algo está entre você e ele. Desconecte e abra o servidor de novo para conferir a impressão digital.",
+  "servers.paneState.hostKeyChangedHint": "A chave do servidor mudou. Isso pode significar que ele foi reinstalado, ou que algo está entre você e ele. Confira a nova chave antes de se conectar de novo.",
   "@servers.paneState.hostKeyChangedHint": {
-    "sourceHash": "923de62"
+    "sourceHash": "866b619"
+  },
+  "servers.paneState.checkHostKey": "Conferir a chave",
+  "@servers.paneState.checkHostKey": {
+    "sourceHash": "fefa256"
   },
   "servers.paneState.reconnecting": "Reconectando a {name}…",
   "@servers.paneState.reconnecting": {

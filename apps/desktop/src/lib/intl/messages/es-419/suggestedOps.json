@@ -22,5 +22,13 @@
   "suggestedOps.decisionNotRecorded": "Cmdr no pudo guardar tu respuesta. Vuelve a intentarlo.",
   "@suggestedOps.decisionNotRecorded": {
     "sourceHash": "f3ae80c"
+  },
+  "suggestedOps.refusal.nothingToRun.message": "Cmdr no pudo leer ninguno de estos archivos cuando lo aprobaste, así que no se ejecutó nada.",
+  "@suggestedOps.refusal.nothingToRun.message": {
+    "sourceHash": "c5e5b0a"
+  },
+  "suggestedOps.refusal.couldNotStart.message": "Cmdr no pudo convertir esta sugerencia en una operación, así que no se ejecutó nada.",
+  "@suggestedOps.refusal.couldNotStart.message": {
+    "sourceHash": "2630cd3"
   }
 }

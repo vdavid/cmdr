@@ -39,6 +39,31 @@ async fn a_phone_sending_slowly(id: &str, len: usize, delay: Duration) -> String
     path
 }
 
+/// A row fetch past its deadline answers `TimedOut`, and the fetch itself is told
+/// to stop: its cancel flag flips, so a read stuck on a slow mount quits at its next
+/// row instead of holding a blocking thread for nobody.
+#[tokio::test]
+async fn a_row_fetch_that_times_out_is_told_to_stop() {
+    use std::sync::atomic::Ordering;
+
+    let stopped = Arc::new(AtomicBool::new(false));
+    let fetch_stopped = Arc::clone(&stopped);
+    let outcome = get_lines_within(Duration::from_millis(20), move |cancel| {
+        crate::test_support::wait_until(Duration::from_secs(5), "the deadline to flip the fetch's flag", || {
+            cancel.load(Ordering::Relaxed)
+        });
+        fetch_stopped.store(true, Ordering::Relaxed);
+        Err(ViewerError::Cancelled)
+    })
+    .await;
+
+    assert!(matches!(outcome, Err(ViewerError::TimedOut)), "got {outcome:?}");
+    crate::test_support::wait_until_async(Duration::from_secs(5), "the orphaned fetch to stop", || {
+        stopped.load(Ordering::Relaxed)
+    })
+    .await;
+}
+
 /// A pull that gets no bytes for the stall limit answers the typed
 /// `StoppedResponding` without waiting for the source, and the pull, detached
 /// rather than dropped, still stops at its chunk boundary and removes its temp.
@@ -194,7 +219,7 @@ async fn escape_during_a_watched_save_stops_it_and_leaves_no_temp() {
     let result = write_range_watched(
         session_id.clone(),
         1,
-        RangeEnd::Line { line: 0, offset: 0 },
+        RangeEnd::Row { row: 0, offset: 0 },
         RangeEnd::Eof,
         dest.to_string_lossy().into_owned(),
         Duration::from_secs(30),
@@ -234,7 +259,7 @@ async fn a_save_that_keeps_writing_runs_past_the_limit() {
     let result = write_range_watched(
         session_id.clone(),
         1,
-        RangeEnd::Line { line: 0, offset: 0 },
+        RangeEnd::Row { row: 0, offset: 0 },
         RangeEnd::Eof,
         dest.to_string_lossy().into_owned(),
         Duration::from_secs(1),
@@ -279,7 +304,7 @@ async fn a_save_that_goes_quiet_gives_up_and_leaves_no_temp() {
     let result = write_range_watched(
         quiet_session.clone(),
         1,
-        RangeEnd::Line { line: 0, offset: 0 },
+        RangeEnd::Row { row: 0, offset: 0 },
         RangeEnd::Eof,
         dest.to_string_lossy().into_owned(),
         Duration::from_millis(500),

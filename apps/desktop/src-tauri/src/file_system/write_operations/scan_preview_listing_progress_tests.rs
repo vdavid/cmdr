@@ -126,6 +126,7 @@ impl Volume for ProgressEmittingVolume {
                 total_bytes: emit.bytes,
                 dedup_bytes: emit.bytes,
                 top_level_is_directory: false,
+                top_level_modified_at: None,
             };
             let per_path = paths
                 .iter()
@@ -138,11 +139,16 @@ impl Volume for ProgressEmittingVolume {
                             total_bytes: 0,
                             dedup_bytes: 0,
                             top_level_is_directory: false,
+                            top_level_modified_at: None,
                         },
                     )
                 })
                 .collect();
-            Ok(BatchScanResult { aggregate, per_path })
+            Ok(BatchScanResult {
+                aggregate,
+                per_path,
+                files: None,
+            })
         })
     }
 }

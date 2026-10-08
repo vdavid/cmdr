@@ -19,6 +19,11 @@
     "forms": "exclusive access (to a device) → accès exclusif; access a place → accéder à",
     "sources": "macOS; MS terminology FRA"
   },
+  "access-key-id": {
+    "chosen": "ID de clé d’accès",
+    "confidence": "high",
+    "sources": "decisions.md \"Le stockage S3\" (AWS FR console, MS FRA); catalog servers.sheet.accessKeyId"
+  },
   "account": {
     "chosen": "compte",
     "confidence": "high",
@@ -39,6 +44,12 @@
     "decision": "Compléter un rapport déjà envoyé : les 11 clés `errorReporter.amend*`",
     "forms": "bare `Ajouter à X` with no explicit object, like Apple (Ajouter au Dock, Ajouter aux favoris, Ajouter à votre rapport d’incident); progress `Ajout…`; participle agrees with its noun (Note ajoutée)",
     "sources": "macOS Finder/AppKit (\"Ajouter à la barre latérale\", \"Ajouter au Dock\", \"Ajouter aux favoris\")"
+  },
+  "advanced": {
+    "chosen": "Avancé",
+    "confidence": "high",
+    "forms": "Cmdr Settings section → Avancé; quote settings.section.advanced exactly in navigation paths; the shipped section name stays distinct from Apple’s generic Advanced label",
+    "sources": "Network.appex Localizable (ADVANCED); catalog settings.section.advanced (macOS 26.6.2 build 25G83, live loctable key cross-reference, 2026-10-02)"
   },
   "ai-feature": {
     "accept": ["l’IA", "d’IA", "une IA"],
@@ -80,6 +91,20 @@
     "confidence": "high",
     "forms": "conflict title Le fichier existe déjà",
     "sources": "macOS Finder; catalog"
+  },
+  "android-platform-tools": {
+    "accept": ["Platform Tools"],
+    "chosen": "Android Platform Tools",
+    "confidence": "high",
+    "forms": "kept as Google’s product name, capitalized even where the English lowercases it (les Android Platform Tools)",
+    "sources": "developer.android.com/tools/releases/platform-tools?hl=fr (Notes de version du composant SDK Platform Tools, the name untranslated); style.md § Brand; catalog (adb.connect.adbNotInstalled)"
+  },
+  "android-tools": {
+    "accept": ["outil Android"],
+    "chosen": "outils Android",
+    "confidence": "high",
+    "forms": "the generic group, lowercase (Les outils Android de ce Mac; aucun outil Android installé)",
+    "sources": "catalog (adb.connect.serverUnreachable, settings.fileOperations.adbEnabled.description)"
   },
   "answer": {
     "accept": ["réponse", "répondu"],
@@ -221,6 +246,11 @@
     "forms": "authentication required → authentification requise; failed → Authentification refusée",
     "sources": "macOS (verbatim)"
   },
+  "automation": {
+    "chosen": "Automatisation",
+    "confidence": "high",
+    "sources": "macOS 27.0 (26A428) SecurityPrivacyExtension.appex Localizable.loctable, key AUTOMATION, 2026-10-08"
+  },
   "available-offline": {
     "avoid": [
       {
@@ -294,6 +324,12 @@
     "note": "Same word as the browse cell of the archives setting; French doesn’t split the two senses.",
     "sources": "macOS Finder ConnectToWindow.strings 48.title (macOS 26.6.2 build 25G83, 2026-09-07)"
   },
+  "bucket": {
+    "chosen": "compartiment",
+    "forms": "le compartiment, pl. les compartiments; All buckets → Tous les compartiments",
+    "confidence": "high",
+    "sources": "decisions.md \"Le stockage S3\" (AWS FR console); catalog servers.sheet.s3Bucket"
+  },
   "buffer": {
     "accept": ["saturé"],
     "avoid": [
@@ -331,10 +367,34 @@
     "forms": "click the + button → cliquez sur le bouton « + »",
     "sources": "macOS System Settings (puis sur le bouton Ajouter (+)); catalog"
   },
+  "byte": {
+    "accept": ["octets"],
+    "avoid": [
+      {
+        "form": "Ko (binary or SI)",
+        "why": "Finder’s capital K for a decimal kilo-octet; SI writes the k lowercase, and the binary unit has its own IEC symbol Kio"
+      },
+      {
+        "form": "KiB, MiB, GiB (English IEC symbols)",
+        "why": "French IEC symbols swap B for o (Kio, Mio, Gio), as Microsoft and Total Commander write them"
+      }
+    ],
+    "chosen": "octet",
+    "confidence": "confirmed",
+    "forms": "unit word after a count → octet / octets (plural many = other); binary (IEC) symbols Kio, Mio, Gio, Tio, Pio; decimal (SI) symbols ko (lowercase SI k, like the English kB), Mo, Go, To, Po; the Bytes size-unit option → Octets",
+    "sources": "macOS Finder (SP22–SP28: Po, To, Go, Mo, Ko, octet, octets; decimal only); Microsoft Terminology (MiB → Mio, GiB → Gio, TiB → Tio); Total Commander (Kio); Thunar (Mio, Gio); catalog (Octets)"
+  },
   "cache": {
     "chosen": "cache",
     "confidence": "high",
     "sources": "MS terminology FRA"
+  },
+  "calculate": {
+    "accept": ["calcul"],
+    "chosen": "calculer",
+    "confidence": "high",
+    "forms": "Calculate folder sizes → Calculer la taille des dossiers; the running work in prose → le calcul",
+    "sources": "macOS Finder ViewOptionsWindow 65.title (Calculer toutes les tailles); TC 503, 5138 (Calculer l'espace occupé); Double Commander Calculer l'espace occupé"
   },
   "camera": {
     "accept": ["appareils photo"],
@@ -460,7 +520,7 @@
     "sources": "catalog (main.quit.body, fileOperations.cancelRollback.stagedLeftover.*)"
   },
   "clear": {
-    "accept": ["effacé", "effacez"],
+    "accept": ["efface", "effacé", "effacez"],
     "chosen": "Effacer",
     "confidence": "high",
     "exceptions": {
@@ -480,6 +540,17 @@
     "confidence": "high",
     "forms": "definite article, never a possessive: dans le presse-papiers",
     "sources": "macOS Finder (\"Afficher le presse-papiers\")"
+  },
+  "clone-pane": {
+    "avoid": [
+      {
+        "form": "Dupliquer",
+        "why": "Finder's Duplicate makes a file copy"
+      }
+    ],
+    "chosen": "Cloner le panneau",
+    "confidence": "high",
+    "sources": "MS terminology (clone → cloner) + the pane ruling (panneau). TC 532 and DC name the same command Cible = Source; Finder has none"
   },
   "close": {
     "accept": ["ferme", "fermé"],
@@ -502,6 +573,12 @@
     "forms": "cloud folders → dossiers cloud",
     "sources": "catalog"
   },
+  "column": {
+    "chosen": "colonne",
+    "confidence": "high",
+    "forms": "feminine; the Name column → la colonne Nom; sort column → colonne de tri; column width → largeur de colonne",
+    "sources": "macOS Finder (SV2 colonne de tri); catalog"
+  },
   "command": {
     "chosen": "commande",
     "confidence": "high",
@@ -521,6 +598,18 @@
     "chosen": "comparateur",
     "confidence": "high",
     "sources": "MS terminology FRA"
+  },
+  "compare-folders": {
+    "chosen": "Comparer les dossiers",
+    "accept": ["compar"],
+    "avoid": [
+      {
+        "form": "Comparer les répertoires",
+        "why": "TC's wording; Cmdr follows Finder's dossier"
+      }
+    ],
+    "confidence": "high",
+    "sources": "DC Comparer les dossiers (exact match); TC 11.58 menu Comparaison de répertoires, command list Comparer les répertoires; MC Comparer des répertoires; Finder dossier"
   },
   "complete": {
     "accept": ["terminé", "finalis", "incomplet", "incomplète", "complet", "complète"],
@@ -572,7 +661,7 @@
     "accept": ["confirmation", "confirmé", "confirmez"],
     "chosen": "confirmer",
     "confidence": "high",
-    "forms": "Couldn’t confirm X → Impossible de confirmer X (the fixed family of mkdir.timeoutMessage, rename.unconfirmed, trashUnconfirmedToast)",
+    "forms": "Couldn’t confirm X → Impossible de confirmer X (the fixed family of trashUnconfirmedToast)",
     "sources": "MS terminology FRA (ids 1475887, 37786)"
   },
   "conflict": {
@@ -593,6 +682,12 @@
     "forms": "action (to a server) Se connecter, Connect to server… → Se connecter au serveur… on every surface; progress Connexion à {name}…; state Connecté (agrees with the server); network connection → connexion réseau; You are connected → Vous y avez bien accès (names the access, not the person)",
     "note": "`se connecter` is the network action; signing in is `s’identifier`.",
     "sources": "macOS Finder (\"Se connecter comme…\", MenuBar 266.title, MN1 « Connexion à « ^0 »… »)"
+  },
+  "provider-console": {
+    "chosen": "console",
+    "confidence": "high",
+    "forms": "a storage provider’s console → la console de votre fournisseur de stockage, after a first mention la console de votre fournisseur",
+    "sources": "MS terminology (console → console); catalog errors.listing.coldStorage.suggestion"
   },
   "context-menu": {
     "accept": ["clic droit", "bouton droit"],
@@ -621,11 +716,18 @@
     "sources": "MS terminology FRA"
   },
   "copy": {
-    "accept": ["copie", "copié"],
+    "accept": ["copie", "copié", "copiait"],
     "chosen": "Copier",
     "confidence": "high",
     "forms": "progress noun Copie (Copie en cours..., Copie vers {destination}); participles copié/copiés; Copied → Copié",
     "sources": "macOS Finder MenuBar (Copier, Copier en tant que lien)"
+  },
+  "cost": {
+    "accept": ["coûte", "coûter", "coûts"],
+    "chosen": "coût",
+    "confidence": "high",
+    "forms": "costs nothing → ne coûte rien; The cost is that… → Le coût, c’est que…",
+    "sources": "Microsoft terminology (cost → coût); catalog (onboarding.stepOptional.mtp.desc, settings.fileOperations.adbEnabled.description)"
   },
   "crash-report": {
     "accept": ["incident", "rapport"],
@@ -745,6 +847,13 @@
     "forms": "progress noun Suppression (Suppression…); Erase → Effacer is the reformat/wipe sense",
     "sources": "macOS AppKit (Delete → Supprimer, Supprimer des favoris)"
   },
+  "delete-key": {
+    "chosen": "Supprimer",
+    "confidence": "high",
+    "forms": "la touche Supprimer (⌫)",
+    "note": "Pile mined 2026-10-07 (macOS 27.0.1 live bundles): VoiceOver SCRWorkspace.loctable deleteKey, Terminal keyDescriptions.loctable 007F, AccessibilitySharedSupport symbol names delete.backward.",
+    "sources": "macOS Terminal key descriptions (⌫ Delete → ⌫ Supprimer), VoiceOver (Delete Key → Touche de suppression); the symbol names say retour arrière, the Windows word"
+  },
   "delete-permanently": {
     "accept": ["définitivement"],
     "chosen": "supprimer définitivement",
@@ -786,6 +895,13 @@
     "forms": "USB device → appareil USB; transitive disconnect → déconnecter l’appareil",
     "note": "A phone the source calls a phone is téléphone; appareil stays the generic MTP word (Kindle, camera).",
     "sources": "macOS; catalog"
+  },
+  "dialog": {
+    "accept": ["fenêtre"],
+    "chosen": "boîte de dialogue",
+    "confidence": "high",
+    "forms": "a named Cmdr dialog → la boîte de dialogue Déplacer (the dialog’s own title, unquoted)",
+    "sources": "MS terminology FRA (dialog box → boîte de dialogue); catalog (boîte de dialogue, nine uses)"
   },
   "disable": {
     "accept": ["désactive", "désactivé"],
@@ -899,7 +1015,7 @@
     "chosen": "Éjecter",
     "confidence": "high",
     "decision": "Éjection et déconnexion refusées : les neuf clés `errors.eject.*`",
-    "forms": "Eject all → Tout éjecter; eject it again → éjectez-le à nouveau",
+    "forms": "Eject all → Tout éjecter; Eject that image first → Éjectez d’abord cette image",
     "sources": "macOS AppKit (NSNavEjectButton), Finder (Éjecter, Tout éjecter)"
   },
   "email": {
@@ -982,6 +1098,13 @@
     "confidence": "high",
     "sources": "catalog"
   },
+  "example": {
+    "accept": ["exemple", "ex."],
+    "chosen": "Exemple",
+    "confidence": "high",
+    "forms": "placeholder prefix → Exemple : {value} (no-break space before the colon); in running prose → par exemple",
+    "sources": "catalog (servers.sheet.usernamePlaceholder, ai.cloud.modelPlaceholderExample, onboarding.cloudSetup.step.endpointPlaceholder)"
+  },
   "expired": {
     "accept": ["expire", "expiration"],
     "chosen": "expiré",
@@ -1056,6 +1179,18 @@
     "forms": "status noun Récupération…; title follows Finder’s progress moule (Préparation de la copie de « ^1 »), with the file name in « »",
     "sources": "macOS Réglages Système Localizable.json (Fetching… → Récupération…)"
   },
+  "history": {
+    "chosen": "historique",
+    "confidence": "high",
+    "forms": "masculine (l’historique); git history → historique git; the repo’s history → l’historique du dépôt; file history → historique de fichiers",
+    "sources": "macOS AppKit (NSToolbarHistoryTemplate historique; historique des versions); catalog (operationLog.dialog.loadError, errors.git.blobTooLarge.title)"
+  },
+  "overall": {
+    "chosen": "Au total",
+    "confidence": "high",
+    "forms": "the whole-run time-left label → Au total : {eta}",
+    "sources": "GN total, DC Total :; Au total is the adverbial form (Dans l’ensemble reads as on the whole, a judgment)"
+  },
   "placeholder": {
     "chosen": "espace réservé",
     "confidence": "high",
@@ -1094,6 +1229,13 @@
     "forms": "File system watching → Surveillance du système de fichiers",
     "sources": "macOS AppKit DocumentDragging (macOS 26.6.2 build 25G83, 2026-09-06)"
   },
+  "filter": {
+    "accept": ["filtr"],
+    "chosen": "filtrer",
+    "confidence": "high",
+    "forms": "noun le filtre (filtre rapide); the typing-mode name and badge Filtrer (Filtrer : …), beside Aller à",
+    "sources": "macOS live (Filter → Filtrer 43×, Filtre 16×; Show Filter Bar → Afficher la barre de filtrage); DC (Filtres), MC (Filtre); catalog (selection.runHint)"
+  },
   "finder": {
     "chosen": "Finder",
     "confidence": "high",
@@ -1111,7 +1253,7 @@
     "accept": ["répertoire", "rép."],
     "chosen": "dossier",
     "confidence": "high",
-    "forms": "empty folder → dossier vide; the dir/dirs abbreviation in scan stats and the status bar → rép. (RÉP. for the all-caps marker); directory in a technical sense → répertoire",
+    "forms": "empty folder → dossier vide; scan tallies say dossiers; the dir abbreviation in the status bar → rép. (RÉP. for the all-caps marker); directory in a technical sense → répertoire",
     "sources": "macOS Finder (Nouveau dossier); MS terminology FRA"
   },
   "force-quit": {
@@ -1218,11 +1360,17 @@
     "sources": "macOS Finder; catalog"
   },
   "go-to-path": {
-    "accept": ["Aller au dossier"],
-    "chosen": "Aller au chemin",
+    "avoid": [
+      {
+        "form": "Aller au chemin",
+        "why": "the English now follows Finder’s Go to Folder; one command, one name"
+      }
+    ],
+    "chosen": "Aller au dossier",
     "confidence": "high",
-    "forms": "Go to path… → Aller au chemin… (a path you type); Go to Folder… (Dock menu) → Aller au dossier… (Finder’s command); keep the two distinct",
-    "sources": "macOS Finder MenuBar 261.title (Aller au dossier…); catalog"
+    "decision": "Le menu du Dock et Aller au dossier (`menu.dock.*`, `menu.go.goToPath`, `goToPath.dialog.*`, `commands.navGoToPath.label`)",
+    "forms": "menu item and palette command → Aller au dossier… (keep the …); dialog title and its button → Aller au dossier; the typed input is still a chemin",
+    "sources": "macOS Finder MenuBar 261.title (Aller au dossier…); Finder Aller au dossier (3 hits)"
   },
   "go-to-trash": {
     "chosen": "Aller à la corbeille",
@@ -1245,6 +1393,22 @@
     "confidence": "high",
     "decision": "Un mot anglais, un mot français : la revue de dérive",
     "sources": "macOS fr (Got It → D'accord, verified on macOS 26.6.2, 2026-08-30)"
+  },
+  "grant": {
+    "accept": ["accord", "autoris", "accès", "reçu"],
+    "chosen": "accorder",
+    "confidence": "high",
+    "exceptions": {
+      "onboarding.fdaBadge.tooltip": "The grant folds into fonctionne bien mieux avec (the access the badge names), so no verb is left to carry it."
+    },
+    "forms": "grant Cmdr access → accordez l’accès à Cmdr",
+    "sources": "macOS Finder (Impossible d’accorder les autorisations à « %@ »…); catalog (errors.listing.*.suggestion)"
+  },
+  "group": {
+    "chosen": "groupe",
+    "confidence": "high",
+    "forms": "a named group takes the name bare after it (votre groupe Réseau); the servers found nearby → Groupe des serveurs à proximité",
+    "sources": "macOS Finder MenuBar (Use Groups → Utiliser les groupes), verified on macOS 27.0 (26A428), live bundle, 2026-09-30; catalog (servers.pinHint.title)"
   },
   "guest": {
     "chosen": "invité",
@@ -1401,6 +1565,13 @@
     "forms": "conserver = preserve a thing or a duration (Conserver les fichiers, Conserver l’ancienne); garder = leave as is or keep running (Garder les deux, a gardé son nom)",
     "sources": "macOS fr (Garder les deux / Conserver la copie partielle)"
   },
+  "key-combination": {
+    "accept": ["combinaisons", "combinaison de touches"],
+    "chosen": "combinaison",
+    "confidence": "high",
+    "forms": "combo in a shortcut warning → cette combinaison; spelled out → combinaison de touches",
+    "sources": "MS terminology FRA (combinaison de touches, seven uses; its key combination entry gives touche de raccourci, which names a single key); catalog (downloads.shortcutRow.invalidCombo, shortcuts.*: combinaison)"
+  },
   "key-file": {
     "accept": ["phrase secrète"],
     "chosen": "fichier de clé",
@@ -1532,7 +1703,7 @@
     "accept": ["journalisation", "journaux"],
     "chosen": "journal",
     "confidence": "high",
-    "forms": "logging → journalisation; log file → fichier journal (Cmdr’s log FILE, never bare journal when it points at the file)",
+    "forms": "logging → journalisation; log file → fichier journal (Cmdr’s log FILE, never bare journal when it points at the file); debug log → journal de débogage (the qualifier already names the file, so no fichier: Visualiser le journal de débogage, `menu.help.viewDebugLog`)",
     "sources": "MS terminology FRA"
   },
   "look-inside": {
@@ -1832,6 +2003,19 @@
     "forms": "identical to English on the popover and carries sameAsSourceJustification",
     "sources": "standard FR"
   },
+  "organization": {
+    "chosen": "organisation",
+    "confidence": "high",
+    "forms": "feminine; your organization → votre organisation (licence and device-management senses alike); manages → gère, managed by → géré par votre organisation; your IT team → votre équipe informatique (catalog: errors.listing.authRequiredEauth.suggestion)",
+    "sources": "MS terminology FRA (organization → organisation, feminine, ids 182657 / 2698193); catalog licensing.about.fallbackOrg"
+  },
+  "original": {
+    "accept": ["originaux"],
+    "chosen": "original",
+    "confidence": "high",
+    "forms": "the originals → les originaux",
+    "sources": "macOS Finder PE117 (…the original could not be deleted): l’original; catalog (errors.write.destinationNotFound.message.copy, errors.write.deviceDisconnected.sided.destination.copy)"
+  },
   "outdated": {
     "accept": ["obsolescence"],
     "chosen": "obsolète",
@@ -1844,6 +2028,13 @@
     "confidence": "high",
     "forms": "overwrite all → Tout écraser; the badge → (écrasement !)",
     "sources": "macOS Finder (Écraser à la destination, Écraser les extensions)"
+  },
+  "owner": {
+    "accept": ["propriété"],
+    "chosen": "propriétaire",
+    "confidence": "high",
+    "forms": "ownership (a volume setting) → propriété",
+    "sources": "macOS Finder (Saisissez le nom d’un nouveau propriétaire :); catalog (errors.listing.noPermissionErrno.suggestion)"
   },
   "package": {
     "chosen": "paquet",
@@ -2064,6 +2255,11 @@
     "confidence": "high",
     "sources": "catalog"
   },
+  "quick-filter": {
+    "chosen": "filtre rapide",
+    "confidence": "high",
+    "sources": "TC 3018/3019 (filtre rapide désactivé/activé); DC actQuickFilter (Filtre rapide)"
+  },
   "quick-look": {
     "avoid": [
       {
@@ -2232,6 +2428,19 @@
     "forms": "a report with no crash → rapport plain; send a report → envoyez un rapport (never envoyez un retour, the feedback surface)",
     "sources": "MS terminology FRA (report → rapport)"
   },
+  "repository": {
+    "accept": ["dépôts"],
+    "avoid": [
+      {
+        "form": "référentiel",
+        "why": "MS terminology’s general data-store sense; git’s own French documentation and the catalog say dépôt"
+      }
+    ],
+    "chosen": "dépôt",
+    "confidence": "high",
+    "forms": "masculine (le dépôt, du dépôt); a bare repo → dépôt nu; the repo chip → la pastille du dépôt",
+    "sources": "catalog (errors.git.*, fileExplorer.git.tooltip.*); Pro Git French (dépôt); MS terminology FRA has only référentiel"
+  },
   "request": {
     "accept": ["demande"],
     "chosen": "requête",
@@ -2269,6 +2478,14 @@
     "chosen": "Redémarrer",
     "confidence": "high",
     "sources": "macOS Menus (Restart → Redémarrer)"
+  },
+  "restore": {
+    "accept": ["restauré", "restauration", "restaurez"],
+    "chosen": "restaurer",
+    "confidence": "high",
+    "forms": "a file in cloud cold storage → le fichier est archivé … tant qu’il n’a pas été restauré; noun → une restauration",
+    "sources": "macOS Finder (Restaurer, Restaurer une copie, Préparation de la restauration de la version…); AWS French docs (restaurer un objet archivé)",
+    "note": "Not rollback: Cmdr undoing its own operation is revenir en arrière."
   },
   "resume": {
     "accept": ["reprend", "reprise"],
@@ -2471,6 +2688,9 @@
     "chosen": "Réglages",
     "confidence": "high",
     "decision": "Sections des réglages et noms de présentation",
+    "exceptions": {
+      "servers.sheet.s3GcsKeyHelp": "Third-party UI: Google Cloud’s French console names Cloud Storage’s settings page Paramètres, so the hint quotes the vendor’s word (tentative)."
+    },
     "forms": "Cmdr’s own window → les Réglages (Ouvrir les réglages, Activez-la dans les Réglages); breadcrumbs Réglages > IA, Réglages › Mises à jour et confidentialité (mirror EN’s separator); Apple’s app is Réglages Système",
     "sources": "macOS (Réglages Système CFBundleName)"
   },
@@ -2565,6 +2785,36 @@
     "forms": "folder sizes → les tailles des dossiers; on disk → sur le disque (pairs with Contenu)",
     "sources": "macOS; catalog"
   },
+  "size-unit-gibibyte": {
+    "chosen": "Gio",
+    "confidence": "high",
+    "sources": "catalog common.sizeUnit.gibibyte; IEC 80000-13 (binary) / SI (decimal)"
+  },
+  "size-unit-kibibyte": {
+    "chosen": "Kio",
+    "confidence": "high",
+    "sources": "catalog common.sizeUnit.kibibyte; IEC 80000-13 (binary) / SI (decimal)"
+  },
+  "size-unit-kilobyte": {
+    "chosen": "ko",
+    "confidence": "high",
+    "sources": "catalog common.sizeUnit.kilobyte; IEC 80000-13 (binary) / SI (decimal)"
+  },
+  "size-unit-mebibyte": {
+    "chosen": "Mio",
+    "confidence": "high",
+    "sources": "catalog common.sizeUnit.mebibyte; IEC 80000-13 (binary) / SI (decimal)"
+  },
+  "size-unit-pebibyte": {
+    "chosen": "Pio",
+    "confidence": "high",
+    "sources": "catalog common.sizeUnit.pebibyte; IEC 80000-13 (binary) / SI (decimal)"
+  },
+  "size-unit-tebibyte": {
+    "chosen": "Tio",
+    "confidence": "high",
+    "sources": "catalog common.sizeUnit.tebibyte; IEC 80000-13 (binary) / SI (decimal)"
+  },
   "skip": {
     "accept": ["ignoré", "laisse de côté", "ignore"],
     "chosen": "Ignorer",
@@ -2574,9 +2824,10 @@
   },
   "slow": {
     "chosen": "lent",
+    "proseAccept": ["met du temps"],
     "confidence": "high",
     "decision": "Notification de repli sur le montage macOS",
-    "forms": "agrees with the named object (la connexion … plus lente); speed multipliers spelled out (4 fois plus lente)",
+    "forms": "agrees with the named object (la connexion … plus lente); speed multipliers spelled out (4 fois plus lente); a volume slow to answer → le volume met du temps à répondre",
     "sources": "Nautilus (plus lente)"
   },
   "sort": {
@@ -2637,6 +2888,22 @@
     "forms": "the Stop button → Arrêter; Stop, and … (rollback tooltip) → Arrêter et …; You stopped X → Vous avez arrêté X",
     "sources": "macOS fr (Arrêter la copie, Arrêter le déplacement)"
   },
+  "storage": {
+    "chosen": "stockage",
+    "confidence": "high",
+    "forms": "cloud storage → stockage cloud; cold storage → stockage froid; storage provider → fournisseur de stockage; S3 storage → un stockage S3; storing logs → stockage des journaux",
+    "sources": "macOS AppKit (Stockage dans le cloud, Gérer le stockage…); MS terminology FRA (cold storage → stockage froid, storage provider → fournisseur de stockage)"
+  },
+  "store": {
+    "accept": ["enregistr", "stock", "trouve"],
+    "chosen": "enregistrer",
+    "confidence": "high",
+    "exceptions": {
+      "errors.listing.ambiguousName.explanation": "English-sense: the server stores the names differently means it spells them differently, so écrit."
+    },
+    "forms": "a secret stored in the keychain → enregistrer dans le trousseau; a destination that can’t store a name → stocker",
+    "sources": "catalog (servers.refusal.secretNotStored, errors.volume.invalidName)"
+  },
   "streaming": {
     "chosen": "streaming",
     "confidence": "tentative",
@@ -2646,6 +2913,12 @@
     "chosen": "lignes alternées",
     "confidence": "high",
     "sources": "descriptive FR"
+  },
+  "subfolder": {
+    "chosen": "sous-dossier",
+    "accept": ["sous-dossiers"],
+    "confidence": "high",
+    "sources": "macOS Finder (PE26.1 … dans un de ses sous-dossiers); DC, Nautilus, Thunar, Dolphin (Créer un sous-dossier) agree"
   },
   "subscription": {
     "chosen": "abonnement",
@@ -2941,6 +3214,13 @@
     "forms": "reach → joindre; can’t reach X → X est injoignable / Impossible de joindre X; an unreachable resource → inaccessible",
     "sources": "catalog (directConnectionUnreachableToast, onboarding.cloudSetup.status.connectionError)"
   },
+  "untouched": {
+    "accept": ["intacts", "intacte", "intactes"],
+    "chosen": "intact",
+    "confidence": "high",
+    "forms": "the originals are untouched → les originaux sont intacts",
+    "sources": "catalog (errors.write.destinationNotFound.message.copy, errors.write.deviceDisconnected.sided.destination.copy); macOS AppKit Document (To keep the file unchanged…): conserver le fichier tel quel"
+  },
   "update": {
     "accept": ["à jour"],
     "chosen": "mise à jour",
@@ -3129,6 +3409,13 @@
     "chosen": "Mission Control",
     "confidence": "high",
     "sources": "macOS app names"
+  },
+  "space-key": {
+    "accept": ["barre d’espace"],
+    "chosen": "Espace",
+    "confidence": "high",
+    "forms": "key name Espace, ⇧Espace; prose → la touche Espace",
+    "sources": "macOS AppKit FunctionKeyNames (Space), SystemSettings Siri/Spotlight SPACEBAR_KEY → Espace (Space bar → Barre d’espace); TC 5139 barre-espace; Midnight Commander Espace; Double Commander barre d'espace"
   },
   "spaces": {
     "chosen": "Spaces",

@@ -743,6 +743,168 @@ fn a_local_path_add_carries_the_source_files_mtime() {
     );
 }
 
+/// The modification time OUR reader reports for `name`, as Unix seconds.
+fn indexed_mtime(path: &Path, name: &str) -> i64 {
+    use crate::{ArchiveFormat, ArchiveIndex, LocalFileSource};
+    let source = LocalFileSource::open(path).expect("open archive");
+    let index = ArchiveIndex::parse(std::sync::Arc::new(source), ArchiveFormat::Zip, None).expect("parse index");
+    index
+        .get(name)
+        .and_then(|node| node.modified)
+        .unwrap_or_else(|| panic!("{name} has a modification time"))
+}
+
+fn now_secs() -> i64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .expect("after the epoch")
+        .as_secs() as i64
+}
+
+#[test]
+fn a_local_path_add_keeps_the_source_mtime_to_the_second() {
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let path = write_zip(tmp.path(), "a", &build_zip(&[stored("keep.txt", b"keep".to_vec())]));
+    let src = tmp.path().join("src.txt");
+    std::fs::write(&src, b"payload").expect("write source");
+    // An ODD second: the DOS field alone rounds it to an even one, so only the
+    // extended timestamp can bring it back exact.
+    let mtime_secs: i64 = 1_600_000_001;
+    filetime::set_file_mtime(&src, filetime::FileTime::from_unix_time(mtime_secs, 0)).expect("set mtime");
+
+    apply(
+        &path,
+        &Changeset {
+            adds: vec![AddEntry {
+                inner_path: "added.txt".to_string(),
+                source: AddSource::LocalPath(src),
+            }],
+            ..Default::default()
+        },
+        &NoHooks,
+    )
+    .expect("apply local-path add");
+
+    assert_eq!(indexed_mtime(&path, "added.txt"), mtime_secs);
+    assert!(unzip_accepts(&path));
+}
+
+#[test]
+fn a_new_folder_and_an_in_memory_file_are_dated_now() {
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let path = write_zip(tmp.path(), "a", &build_zip(&[stored("keep.txt", b"keep".to_vec())]));
+    let before = now_secs();
+
+    apply(
+        &path,
+        &Changeset {
+            mkdirs: vec!["made".to_string()],
+            adds: vec![add_bytes("note.txt", b"hello")],
+            ..Default::default()
+        },
+        &NoHooks,
+    )
+    .expect("apply mkdir + mkfile");
+
+    // Pre-fix both read 1980-01-01: `zip`'s "now" default needs its `time` feature.
+    let after = now_secs();
+    for name in ["made", "note.txt"] {
+        let reported = indexed_mtime(&path, name);
+        assert!(
+            (before..=after).contains(&reported),
+            "{name} is dated {reported}, outside {before}..={after}"
+        );
+    }
+}
+
+/// What one entry stamped by `with_entry_mtime_in` records: its DOS field as
+/// `(year, month, day, hour, minute, second)`, the extended timestamp the central
+/// directory carries, and whether the LOCAL header carries the same field.
+struct StampedTimes {
+    dos: (u16, u8, u8, u8, u8, u8),
+    extended: Option<u32>,
+    local_header_has_extended: bool,
+}
+
+fn stamp_and_read_back(utc: (i32, u32, u32, u32, u32, u32), offset_hours: i32) -> StampedTimes {
+    use chrono::TimeZone;
+    let (year, month, day, hour, minute, second) = utc;
+    let modified: std::time::SystemTime = chrono::Utc
+        .with_ymd_and_hms(year, month, day, hour, minute, second)
+        .single()
+        .expect("a real instant")
+        .into();
+    let zone = chrono::FixedOffset::east_opt(offset_hours * 3600).expect("a real offset");
+    let mut writer = ZipWriter::new(io::Cursor::new(Vec::new()));
+    writer
+        .start_file(
+            "f.txt",
+            with_entry_mtime_in(SimpleFileOptions::default(), modified, &zone),
+        )
+        .expect("start entry");
+    writer.write_all(b"x").expect("write entry");
+    let bytes = writer.finish().expect("finish zip").into_inner();
+
+    // The local header is at offset 0: name length at 26, extra length at 28.
+    let name_len = u16::from_le_bytes([bytes[26], bytes[27]]) as usize;
+    let extra_len = u16::from_le_bytes([bytes[28], bytes[29]]) as usize;
+    let local_extra = &bytes[30 + name_len..30 + name_len + extra_len];
+    let local_header_has_extended = local_extra.windows(4).any(|field| field == [0x55, 0x54, 5, 0]);
+
+    let mut archive = ZipArchive::new(io::Cursor::new(bytes)).expect("result parses");
+    let entry = archive.by_index(0).expect("entry");
+    let dos = entry.last_modified().expect("a DOS time");
+    let extended = entry.extra_data_fields().find_map(|field| match field {
+        zip::ExtraField::ExtendedTimestamp(times) => times.mod_time(),
+        _ => None,
+    });
+    StampedTimes {
+        dos: (
+            dos.year(),
+            dos.month(),
+            dos.day(),
+            dos.hour(),
+            dos.minute(),
+            dos.second(),
+        ),
+        extended,
+        local_header_has_extended,
+    }
+}
+
+#[test]
+fn an_entry_time_is_local_in_the_dos_field_and_exact_utc_in_the_extended_one() {
+    // 07:44:03 UTC is 09:44:03 in UTC+2, which is what `unzip -l` must show there.
+    // Pre-fix the DOS field said 07:44 and there was no extended field.
+    let east = stamp_and_read_back((2026, 9, 30, 7, 44, 3), 2);
+    assert_eq!(
+        east.dos,
+        (2026, 9, 30, 9, 44, 2),
+        "local wall clock, on a 2-second grid"
+    );
+    assert_eq!(east.extended, Some(1_790_754_243));
+    assert!(east.local_header_has_extended);
+
+    // The local date can differ from the UTC one.
+    let west = stamp_and_read_back((2026, 1, 1, 3, 0, 0), -8);
+    assert_eq!(west.dos, (2025, 12, 31, 19, 0, 0));
+    assert_eq!(west.extended, Some(1_767_236_400));
+}
+
+#[test]
+fn an_entry_time_outside_a_fields_range_leaves_that_field_out() {
+    // Before 1980 the DOS field can't say it and stays at the format's zero.
+    let early = stamp_and_read_back((1975, 6, 1, 12, 0, 0), 0);
+    assert_eq!(early.dos, (1980, 1, 1, 0, 0, 0));
+    assert_eq!(early.extended, Some(170_856_000));
+
+    // Past 2038 the extended field's signed 32 bits can't, so only DOS carries it.
+    let late = stamp_and_read_back((2040, 6, 1, 12, 0, 0), 0);
+    assert_eq!(late.dos, (2040, 6, 1, 12, 0, 0));
+    assert_eq!(late.extended, None);
+    assert!(!late.local_header_has_extended);
+}
+
 // ---- Compression level on added entries ---------------------------------------
 
 /// `add_entry_options` sets the deflate level on a NEW entry from the per-edit

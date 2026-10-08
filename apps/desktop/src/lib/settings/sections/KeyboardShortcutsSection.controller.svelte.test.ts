@@ -28,32 +28,13 @@ const confirmDialog = vi.fn<(payload: { message: string; title: string }) => Pro
   Promise.resolve(false),
 )
 
-/**
- * The two punctuation codes the capture tests below press. Typed as possibly
- * `undefined` because that's what a lookup of any other code returns — the real
- * `codeToKey` table names a fixed set, and the `undefined` branch is the one
- * that keeps letters and F-keys out of the physical-key path.
- */
-const PHYSICAL_PUNCTUATION: Record<string, string | undefined> = { Equal: '=', Minus: '-' }
+vi.stubGlobal('navigator', {
+  get userAgent() {
+    return macOS ? 'Mozilla/5.0 (Macintosh; Intel Mac OS X)' : 'Mozilla/5.0 (X11; Linux x86_64)'
+  },
+})
 
-/**
- * Everything the fake formatter reads. Narrower than `KeyboardEvent` on purpose:
- * the physical-key mock builds one of these from scratch rather than spreading
- * the event, which would drop the prototype and quietly weaken every test here.
- */
-type ComboParts = Pick<KeyboardEvent, 'metaKey' | 'ctrlKey' | 'altKey' | 'shiftKey' | 'key'>
-
-/** Prefix held modifiers (mac glyphs), then the key. */
-function fakeFormatKeyCombo(e: ComboParts): string {
-  let s = ''
-  if (e.metaKey) s += '⌘'
-  if (e.ctrlKey) s += '⌃'
-  if (e.altKey) s += '⌥'
-  if (e.shiftKey) s += '⇧'
-  return s + e.key
-}
-
-vi.mock('$lib/shortcuts', () => ({
+vi.mock('$lib/shortcuts', async () => ({
   getEffectiveShortcuts: (id: string) => effectiveShortcuts.get(id) ?? [],
   isShortcutModified: (id: string) => modifiedIds.has(id),
   setShortcut: (commandId: string, index: number, shortcut: string) => {
@@ -71,25 +52,11 @@ vi.mock('$lib/shortcuts', () => ({
   resetAllShortcuts: () => resetAllShortcuts(),
   isMacOS: () => macOS,
   isModifierKey: (key: string) => ['Meta', 'Control', 'Alt', 'Shift'].includes(key),
-  // Minimal deterministic combo formatter: prefix held modifiers (mac glyphs), then the key.
-  formatKeyCombo: fakeFormatKeyCombo,
-  // Mirrors the real helper's contract on the codes these tests exercise: with a
-  // character-altering modifier held, name the physical key rather than whatever
-  // the layout typed (⌥⇧= reports `±`).
-  physicalKeyCombo: (e: KeyboardEvent) => {
-    const physical = /^Digit(\d)$/.exec(e.code)?.[1] ?? PHYSICAL_PUNCTUATION[e.code]
-    if (physical === undefined || physical === e.key) return null
-    if (!e.altKey && !e.shiftKey) return null
-    // Named field by field, mirroring the real helper's `eventModifiers`: the
-    // modifiers from the keypress, the key from the physical table.
-    return fakeFormatKeyCombo({
-      metaKey: e.metaKey,
-      ctrlKey: e.ctrlKey,
-      altKey: e.altKey,
-      shiftKey: e.shiftKey,
-      key: physical,
-    })
-  },
+  // The REAL capture helper: what the field records is the vocabulary contract
+  // itself (typed symbols by character, retyped ⌥ keys by position), and a
+  // hand-copied fake here would drift from it. `navigator` follows `macOS` below.
+  capturedKeyCombo: (await vi.importActual<typeof import('$lib/shortcuts/key-capture')>('$lib/shortcuts/key-capture'))
+    .capturedKeyCombo,
   findConflictsForShortcut: (shortcut: string, scope: string, excludeCommandId: string) =>
     findConflictsForShortcut({ shortcut, scope, excludeCommandId }),
   getConflictingCommandIds: () => new Set<string>(),
@@ -260,13 +227,31 @@ describe('filtering', () => {
 })
 
 describe('capture + conflict engine', () => {
-  it('Backspace on an empty existing slot removes that binding', () => {
+  // Regression anchor: both keys used to mean "remove this binding" on an empty
+  // capture, so neither could ever be bound, not even forward delete to Delete
+  // (issue #362). Removing is the pill's × button.
+  it.each([
+    ['⌫', 'Backspace'],
+    ['⌦', 'Delete'],
+  ])('captures %s like any other key', (_glyph, key) => {
+    vi.useFakeTimers()
     effectiveShortcuts.set('file.copy', ['F5'])
     const c = create()
     c.startEditingShortcut('file.copy', 0)
-    c.handleKeyDown(keyEvent({ key: 'Backspace' }))
-    expect(removeShortcut).toHaveBeenCalledWith('file.copy', 0)
-    expect(c.editingShortcut).toBe(null)
+    c.handleKeyDown(keyEvent({ key, code: key }))
+    expect(c.pendingKey).toBe(key)
+    vi.advanceTimersByTime(500)
+    expect(removeShortcut).not.toHaveBeenCalled()
+    expect(setShortcut).toHaveBeenCalledWith({ commandId: 'file.copy', index: 0, shortcut: key })
+    vi.useRealTimers()
+  })
+
+  it('captures a typed symbol by its character, on any layout', () => {
+    effectiveShortcuts.set('file.copy', ['F5'])
+    const c = create()
+    c.startEditingShortcut('file.copy', 0)
+    c.handleKeyDown(keyEvent({ key: '*', code: 'Backslash', shiftKey: true }))
+    expect(c.pendingKey).toBe('*')
   })
 
   it('Escape cancels the edit without touching the store', () => {

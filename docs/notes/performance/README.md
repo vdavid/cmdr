@@ -10,7 +10,8 @@ Pure throughput benchmarks (scan, copy, search latency) stay in `docs/notes/READ
 
 1. This page, all of it. The methodology rules below have each cost at least one wrong answer.
 2. `docs/tooling/memory-debugging.md`: how to measure memory (the `memory_diagnostics` MCP tool first, `vmmap` second),
-   the `IOAccelerator` and `IOSurface` traps, fingerprinting a block by region size, and attributing allocations.
+   which allocator holds the Rust heap, the `IOAccelerator` and `IOSurface` traps, fingerprinting a block by region
+   size, and attributing allocations.
 3. `idle-cpu-attribution-2026-08-03.md`: how idle CPU was mis-attributed four times and what method held.
 4. The dated note for the area you're in, from the index at the bottom.
 
@@ -24,22 +25,32 @@ Pure throughput benchmarks (scan, copy, search latency) stay in `docs/notes/READ
 All readings below are release builds of `main` on David's dev Mac, the heavy case (see § "Methodology rules"), over a
 clone of prod's data unless marked otherwise.
 
-**Memory, idle: met** (verified on release `e9fd713ad`, `memory_diagnostics` with `rustHeapCensus`, 2026-09-27;
-`idle-census-2026-09-27.md` § "Idle memory"):
+**The global allocator is the system one on macOS** and mimalloc on Linux, a split David chose on the post-burst numbers
+below (`crates/cmdr-fs/DETAILS.md` § "Which global allocator"). Readings from before that switch are mimalloc builds;
+say which one a new reading is.
+
+**Memory, idle: met** (verified on release `e9fd713ad`, a mimalloc build, `memory_diagnostics` with `rustHeapCensus`,
+2026-09-27; `idle-census-2026-09-27.md` § "Idle memory"; the system allocator reads ~95 MiB lower at idle,
+`allocator-comparison-2026-09-23.md`):
 
 - Indexing on: footprint **263–273 MiB** at 10–37 min; heap ~206–211, of which ~103 live (64 of it the SQLite page slab)
   and ~105 slack.
 - Indexing off: **~195 MiB** (194–196); heap ~146, ~80 live.
 - Prod 0.47.0 after 2 h: footprint 295 MiB (`main-process-iosurface-2026-09-27.md`).
 
-**Memory, after search and listing bursts: missed, the open RAM gap** (verified on release builds with the arena
-catch-up, `memory_diagnostics` plus a `proc_pid_rusage` poller, 2026-09-27; `search-arena-reload-2026-09-27.md`):
+**Memory, after search and listing bursts: met in most runs on the system allocator** (verified on release builds,
+`memory_diagnostics` plus a `proc_pid_rusage` poller; four rounds on 2026-09-28–29,
+`allocator-slack-release-2026-09-27.md`, and one check round of the switch itself on 2026-09-30, § "Check round after
+the switch" there):
 
-- The footprint settles at **~405–418 MiB** and stays there past 15 min, against the 300 target.
-- Live bytes return to their pre-burst level (~100 MiB) within 30 s of the arena's drop. What stays is allocator slack
-  (~240 MiB), mostly from listing the two big folders (~100 MiB of it on its own); a search alone gives its memory back
-  within 5 min.
-- The burst peak is ~1,334 MiB.
+- The footprint settles at a median **241 MiB** at +15 min [211–382], under 300 in five of seven runs, against
+  mimalloc's 403 [276–456]. The check round read 308 at +15 min, with a mimalloc build of the same commit beside it at
+  517, at load average 15–99.
+- What it costs: a higher burst peak (median 1,976 MiB against mimalloc's 1,458; the check round 1,825 against 1,582),
+  and a transient that sometimes outlasts a minute (777 MiB at +1 min in the check round). #333 is the design that would
+  cut both.
+- Live bytes return to their pre-burst level (~100 MiB) within 30 s of the search arena's drop. On mimalloc what stayed
+  was ~240 MiB of slack, mostly from listing the two big folders (`search-arena-reload-2026-09-27.md`).
 
 **Idle CPU** (verified on release builds, per-thread `proc_pidinfo` deltas, 2026-09-27):
 
@@ -47,9 +58,12 @@ catch-up, `memory_diagnostics` plus a `proc_pid_rusage` poller, 2026-09-27; `sea
   (0.13–0.17%), after the space-poll fix (`space-poll-cost-2026-09-27.md`). Met.
 - **Indexing on: 2.2%** main process, WebContent 0.73%, GPU helper 0.31% (`idle-census-2026-09-27.md` § "Idle CPU").
   Measured before the child-dir index, the space-poll fix, and mDNS gating, under ~160 FS events/s from sibling agents'
-  builds; the indexing-driven share was ~1.1–1.4%. Not yet re-measured.
+  builds; the indexing-driven share was ~1.1–1.4%. Prod 0.48.0 (all three fixes in) reads **0.8–1.2%** in Activity
+  Monitor (David, 2026-09-29–30): at the target line, not yet attributed per thread.
 - **No hotspot**: the cost is spread over many threads at a few hundredths of a percent each, so each remaining item
   below shaves a thread or two.
+- **The allocator doesn't move it**: indexing off, MCP on, one 240 s window side by side, the system allocator 0.229%
+  and mimalloc 0.241% (check round, 2026-09-30).
 
 **Idle frontend**: `webcontent-idle-cost-2026-09-23.md` (before) and `webcontent-idle-fixes-2026-09-23.md` (after).
 
@@ -65,16 +79,19 @@ Rules canonical elsewhere are one line here plus the pointer; the rest are canon
   minute; the process delta minus the live threads' deltas is what exited threads spent (`idle-census-2026-09-27.md` §
   "A better CPU instrument").
 - **`top`'s `IDLEW` column is unreliable on macOS 27**: it read static across intervals. Don't use it for wakeups.
-- **`IOAccelerator` in `vmmap` is the Rust heap** (mimalloc tags its arenas 100), and `Malloc *` is NOT Cmdr's heap
-  (`docs/tooling/memory-debugging.md` § "The trap").
+- **Know the build's allocator before reading `vmmap`.** On the system allocator (macOS by default) the Rust heap is in
+  the `Malloc *` rows, shared with Objective-C and C. On a macOS mimalloc build (`--features mimalloc`, and every build
+  up to 0.48.0) `IOAccelerator` is the Rust heap (tag 100) and `Malloc *` is NOT. On Linux, which always runs mimalloc,
+  the heap is `[anon:mimalloc]` in `/proc/<pid>/maps` (`docs/tooling/memory-debugging.md` § "First: which allocator
+  holds the Rust heap"). `memory_diagnostics` names it in `rustHeap.allocator`; say which build a reading came from.
 - **`IOSurface` (tag 88) in the main process isn't its cost**: it's WebKit's layer backing, owned and paid for by
   WebContent, and outside the main footprint (`docs/tooling/memory-debugging.md` § "The second trap").
 - **The same tag is spelled three ways**: `vmmap` says `Malloc Small`, older notes say `MALLOC_SMALL`, and
   `memory_diagnostics` reports `VM_MEMORY_*` names. Match on the tag NUMBER (`docs/tooling/memory-debugging.md`).
 - **`vmmap`'s `SQLite Page Cache` row (32 KB) is not the page slab.** The slab is a leaked Rust allocation inside the
   heap; `memory_diagnostics` names it as `sqlitePageCache`.
-- **mimalloc's own stats (`MI_STAT`, `MIMALLOC_SHOW_STATS`) are unreliable for live bytes.** Use `rustHeapCensus`
-  (`docs/tooling/memory-debugging.md` § "Live bytes vs allocator slack").
+- **mimalloc's own stats (`MI_STAT`, `MIMALLOC_SHOW_STATS`) are unreliable for live bytes.** Use the census in
+  `rustHeap` (`docs/tooling/memory-debugging.md` § "Live bytes vs allocator slack").
 - **Swapped doesn't mean "built once and left"**: on a pressured machine, heap pages swap within 2–5 minutes
   (`rust-heap-attribution-2026-09-23.md`).
 - **Release builds only for memory work.** Debug builds allocate differently and their absolute numbers mean nothing off
@@ -86,8 +103,12 @@ Rules canonical elsewhere are one line here plus the pointer; the rest are canon
 - **Interleave A/B runs and report medians with their spread.** Machine load moves every number here; a single pair
   proves nothing. Every A/B is a fresh launch (`docs/tooling/memory-debugging.md` § "Rules for A/B experiments").
 - **Isolated instances only**: before launch, verify the data dir, bundle id, and ports are the instance's own (`lsof`),
-  and clone prod data with `cp -c`, including every `-wal` and `-shm` (or `sqlite3 .backup` while prod runs). Exclude
-  secrets and the crash report. Never touch the running prod app beyond read-only reads.
+  and clone prod data with `cp -c`, including every `-wal`. Exclude secrets and the crash report. Never touch the
+  running prod app beyond read-only reads.
+- **Snapshot a DB prod is writing by holding a read transaction, not with `sqlite3 .backup`.** `.backup` of
+  `index-root.db` never finishes while prod writes heavily (it restarts on every change). Instead open it read-only,
+  `BEGIN` and read one row so no checkpoint can restart the WAL, `cp -c` the DB and its `-wal`, then end the
+  transaction; `PRAGMA quick_check` on the copy said `ok` (verified on prod 0.48.0, 2026-09-30).
 - **Check the peer before calling a socket leaked.** The MCP "leak" was live clients with keep-alive pools
   (`mcp-connection-leak-2026-09-22.md`); the real SMB leak showed as sockets whose peer had hung up or that outlived
   their owner (`smb2-socket-lifetime-2026-09-23.md`).
@@ -96,6 +117,9 @@ Rules canonical elsewhere are one line here plus the pointer; the rest are canon
 
 ## What's fixed, and where it's documented
 
+- **Post-burst slack on macOS**: the system allocator replaced mimalloc as macOS's global allocator (Linux keeps
+  mimalloc), taking the settled post-burst footprint from a median 403 to 241 MiB:
+  `allocator-slack-release-2026-09-27.md`, `crates/cmdr-fs/DETAILS.md` § "Which global allocator".
 - **Search arena catch-up**: a search after a walk appends the walk's new rows to the warm arena, which takes ~610 MiB
   off the burst peak and cuts that search from 1.4 s to 0.1 s: `search-arena-reload-2026-09-27.md`.
 - **Child-dir partial index**: the writer's child-dir lookups drop from ~60 ms to ~10 µs on a 92,000-file folder, added
@@ -117,9 +141,10 @@ Rules canonical elsewhere are one line here plus the pointer; the rest are canon
   reaches it, and diff indices are the pane's rows: `hidden-entry-diffs-2026-09-23.md`.
 - **Rust heap**: the score cache, the MCP search arena's 30 s drop, the wake inbox paged to `main.db`, and the heap
   census: `rust-heap-attribution-2026-09-23.md`.
-- **SMB sockets**: fixed in `smb2` 0.24.1 (Cmdr ships 0.25.0): `smb2-socket-lifetime-2026-09-23.md`.
-- **mDNS log storm**: `vendor/mdns-sd` stops a multicast-join retry every 5 s on machines with a VM bridge:
-  `docs/notes/mdns-sd-multicast-join-retry-loop.md`.
+- **SMB sockets**: fixed in `smb2` 0.24.1, and pinned in Cmdr by a mount/unmount Docker cell:
+  `smb2-socket-lifetime-2026-09-23.md`.
+- **mDNS log storm**: fixed upstream in `mdns-sd` 0.21.5, which is Cmdr's floor:
+  `apps/desktop/src-tauri/src/network/DETAILS.md`.
 - **`memory_diagnostics` over MCP**, release builds included: `docs/tooling/memory-debugging.md`.
 - **Each CLIP tower loads on demand**, so enrichment never pays for the text tower:
   `crates/cmdr-index/src/media_index/clip/DETAILS.md` § "What holding the towers costs". **A rescan-anchor storm costs
@@ -130,44 +155,40 @@ Rules canonical elsewhere are one line here plus the pointer; the rest are canon
 
 ## Open follow-ups
 
-The single ranked list, and #92's exit condition: #92 closes when it's empty, so it holds only items that plausibly move
-the RAM or CPU targets. Where an issue exists, it's the place to track the work; the rest have none yet. Ranked by
+The single ranked list of items that plausibly move the RAM or CPU targets. #92 closed on 2026-09-30 with the targets
+met or at the line and no known meaningful waste at rest; #336 (someday) holds the next actions in order, so pick up
+there when someone reports Cmdr as wasteful again. Where an issue exists, it's the place to track the work. Ranked by
 expected payoff against the targets over effort. Each item's **Effect** line is the expected move against a target, from
 the linked note's numbers.
 
-1. **Settled allocator slack after bursts: ~405–418 MiB against the 300 target.** Big listings keep ~100 MiB, and the
-   slack sits in free arena slices mimalloc keeps committed (`search-arena-reload-2026-09-27.md` § "What the settled
-   footprint is made of"). A slack-probe effort is running: a forced `mi_collect`, the listing source, and the system
-   allocator plus `malloc_zone_pressure_relief`. The allocator choice is David's once the numbers are in. Status: in
-   progress. **Effect**: this is the whole post-burst RAM gap (~105–118 MiB over target, out of ~240 MiB of slack); how
-   much comes back is unknown until the probe's numbers are in.
-2. **Re-measure idle CPU with indexing on, on current `main`.** The 2.2% predates the child-dir index, the space-poll
-   fix, and mDNS gating. Use the census recipe (`idle-census-2026-09-27.md`) and say how many FS events/s the machine
-   saw. Status: not started. **Effect**: none by itself; it decides whether the CPU target is met with indexing on (the
-   indexing-driven share was ~1.1–1.4% before those three fixes).
-3. **Explain the rest of the heap on a long-running prod**: run `memory_diagnostics` (it now includes `rustHeapCensus`)
-   on 0.48.0 or later (~360 MiB was unexplained at 0.46.1). Status: not started. **Effect**: none by itself; what it
-   finds is unknown.
-4. **The search arena's 30 s background refresh still does a full rebuild with the old arena alive**: the same
+1. **Get idle CPU with indexing on reliably under 1%.** David's prod 0.48.0 reads 0.8–1.2% (Activity Monitor, observed
+   2026-09-29–30), so it straddles the target. Next step: attribute it per thread on the running prod, read-only
+   (`proc_pidinfo` deltas, the census recipe in `idle-census-2026-09-27.md`), note the FS events/s, and rank what's
+   left. Status: one pass on prod 0.50.0 at load average 25–30 (2026-10-05, per-thread `proc_pidinfo` over 90 s plus the
+   log): 2.3% of a core averaged over 48 h, the index writer at 0.1–0.2% in quiet hours and 1–3% from 13:00 under agent
+   churn (~420–1,000 FS events/s), and the 100%+ spikes were the writer at 70–86% of a core indexing freshly cloned
+   worktrees (90,000–270,000 rows each), not the rescan walks. Two fixes landed from it: removal storms anchor per
+   cluster (`crates/cmdr-index/src/indexing/watch/DETAILS.md` § "Removal-storm coalescing"; one worktree's root had been
+   walked 36 times that day), and the rescan lines carry each walk's CPU. **Effect**: decides the last target; the
+   indexing-driven share was ~1.1–1.4% before the child-dir index, the space-poll fix, and mDNS gating.
+2. **Explain the rest of the heap on a long-running prod**: run `memory_diagnostics` on a long-running prod (~360 MiB
+   was unexplained at 0.46.1). 0.48.0 carries the mimalloc census (`rustHeapCensus`); a later, system-allocator release
+   reports the default zone's live and reserved bytes instead, with no census. Status: not started. **Effect**: none by
+   itself; what it finds is unknown.
+3. **The search arena's 30 s background refresh still does a full rebuild with the old arena alive**: the same
    three-copies peak, on a timer, while someone keeps searching. Options: catch up on each refresh and rebuild whole
    only every few minutes (the rebuild is what carries deletions), or drop the old arena first
    (`search-arena-reload-2026-09-27.md` § "Still open"). Status: not started. **Effect**: lowers the peak during
    repeated searches (the catch-up took ~610 MiB off the post-walk peak, and this is the same shape); the effect on the
    settled footprint is unknown.
-5. **WebContent costs 0.73% of a core with indexing on against 0.11% off**: coalesce the index-driven size updates on
+4. **WebContent costs 0.73% of a core with indexing on against 0.11% off**: coalesce the index-driven size updates on
    the frontend side, for rows whose readout doesn't change (`idle-census-2026-09-27.md` § "The levers", lever 5).
    Status: not started. **Effect**: up to −0.5% of a core in WebContent on a churning machine (estimate); the main
    process doesn't move.
-6. **WebContent grows over days** (138 → 262 MB): take a Web Inspector heap snapshot on a long-running build before
+5. **WebContent grows over days** (138 → 262 MB): take a Web Inspector heap snapshot on a long-running build before
    changing anything. Status: not started. **Effect**: unknown until the snapshot; up to the ~120 MB of growth, in
    WebContent.
-7. **One SMB share reached three ways becomes three volumes.** `smb_volume_id` keys on the address as mounted, so the
-   LAN IP, a VPN IP, and the mDNS name make three indexes, writers, and scans
-   (`thread-and-connection-inventory-2026-09-22.md`). Fix with an alias-adoption layer, not `same_server*` as a key.
-   Risk: a wrong match merges two indexes. Status: not started; worth a spec. **Effect**: only on machines that reach
-   one share at 2+ addresses; per extra alias, two writer threads, an FSEvents stream, 32 MiB of page-slab budget, and a
-   duplicate scan over the network. Idle CPU and RAM not measured.
-8. **The root volume can skip `drive_is_listed`'s `getfsstat` on every subtree reconcile**: the boot volume can't be
+6. **The root volume can skip `drive_is_listed`'s `getfsstat` on every subtree reconcile**: the boot volume can't be
    unlisted, and the call showed ~470 samples in a churn window (`idle-census-2026-09-27.md` lever 6). Small. Status:
    not started. **Effect**: small idle CPU under FS churn; unmeasured as a share of a core.
 
@@ -178,32 +199,26 @@ Smaller or already filed, unranked:
   costs". **Effect**: only for someone who has run a semantic search since launch; #232 measured ~410 MB against 11.8
   MB, and #234 would roughly halve the text tower's ~184–246 MB.
 - **Set the rescan-storm threshold from a week of data**: #235. **Effect**: CPU during rescan storms; unknown.
-- **Drop the `ORDER BY` from `above_threshold` when nobody needs the order**: #237. **Effect**: a sort of up to ~90,000
-  folders per call; small.
 - **Spotlight "last used" sampling cost**: #229. **Effect**: CPU per importance pass, probably small; unmeasured.
 - **The media live tick's `load_statuses`** reads every stored status on any tick that survives the filter
   (`live-tick-cost-2026-08-21.md`). **Effect**: unknown; unmeasured.
 
-## Moved out of #92
+## Tracked in their own issues
 
-Items that don't move #92's targets, each tracked in its own issue:
+Items that don't move the targets, each tracked in its own issue:
 
-- #317: the parked `bridge*` interface filter for mDNS (needs a decision).
+- #335: one SMB share reached at several addresses (LAN, VPN, mDNS name) becomes several volumes; recognize it by
+  ServerGuid + share name + volume serial after connecting, and adopt the existing index. Only on that setup.
+- #333: give burst-transient data (listing entries, search side tables) its own allocation region, dropped wholesale, to
+  stay low at the burst peak as well as at rest.
 - #318: `SmbClient::close()` (LOGOFF) in `smb2`.
-- #319: upstream the `mdns-sd` fix, and guard that `mdns-sd` resolves from `vendor/`.
-- #320: the direct-symlink EXISTS query's O(children) shape.
 - #321: the CPU half of the diagnostics instrument (per-thread CPU and wakeups over MCP).
-- #322: a per-chunk memo of ancestor verdicts in the search exclude check.
 - #323: a stuck-loop watchdog at the log sink, and third-party `log::error!` reaching Flow B.
 - #324: share lists prefetched for every discovered SMB host at launch.
 - #325: a sync-status pool thread wedged in a File Provider call.
-- #326: Cmdr's acceptance check for the `smb2` 0.24.1 socket fix.
-- #327: the SMB importance DB outliving its index DB.
-- #328: mimalloc's `os_tag` colliding with `VM_MEMORY_IOACCELERATOR`.
 - #308: refresh the Finder-style free space when purgeable space changes.
 - #134: load only the active language's messages.
 - #231: a fresh idle baseline on a quiet machine (largely answered by `idle-census-2026-09-27.md`).
-- #230: a running importance pass ignores the memory watchdog and shutdown.
 
 ## Retired: don't reopen
 
@@ -230,8 +245,9 @@ Items that don't move #92's targets, each tracked in its own issue:
 Newest first.
 
 - `allocator-slack-release-2026-09-27.md`: neither `mi_collect(true)` nor malloc pressure relief returns the post-burst
-  slack; where mimalloc keeps it (idle threads' empty pages, sparse pages, unpurged slices), park-time collects, and
-  four rounds of mimalloc against the system allocator's settle (median 403 against 241 MiB at +15 min).
+  slack; where mimalloc keeps it (idle threads' empty pages, sparse pages, unpurged slices), park-time collects, four
+  rounds of mimalloc against the system allocator's settle (median 403 against 241 MiB at +15 min), and the check round
+  after macOS switched to the system allocator.
 - `search-arena-reload-2026-09-27.md`: the arena reload after a walk set the burst peak (~610 MiB) and put 1.4 s in
   front of the next search, the catch-up that replaced it, and why the settled post-burst footprint comes from big
   listings instead.
@@ -257,9 +273,9 @@ Newest first.
   matters, and the frontend memory picture (including the eager translation catalogs).
 - `rust-heap-attribution-2026-09-23.md`: live data against slack in the Rust heap, the named live consumers, the four
   changes and their measured effect, and the ~360 MiB still unexplained at 0.46.1.
-- `allocator-comparison-2026-09-23.md`: v3 against v2 and the system allocator, and the decision to keep v3 (its search
-  penalty argument is gone: `search-loop-allocations-2026-09-27.md`). Raw numbers:
-  `allocator-comparison-2026-09-23.csv`.
+- `allocator-comparison-2026-09-23.md`: v3 against v2 and the system allocator, and the decision to keep v3 that the
+  slack note later reversed for macOS (its search penalty argument is gone: `search-loop-allocations-2026-09-27.md`).
+  Raw numbers: `allocator-comparison-2026-09-23.csv`.
 - `smb2-socket-lifetime-2026-09-23.md`: the two `smb2` socket bugs behind the leftover SMB sockets, fixed in 0.24.1.
 - `mimalloc-purge-experiment-2026-09-22.md`: what's tunable in mimalloc v3 (option names, `launchctl setenv`, why
   `MIMALLOC_SHOW_STATS` is half-useful), the 0.46.1 baseline, and a purge A/B protocol whose prior is low.

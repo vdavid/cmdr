@@ -13,6 +13,8 @@
 
 import { tString } from '$lib/intl/messages.svelte'
 import type { MessageKey } from '$lib/intl/keys.gen'
+import type { ServerProtocol, UnreachableHint } from '$lib/ipc/bindings'
+import { systemStrings } from '$lib/system-strings.svelte'
 
 /**
  * Why a connect stopped, in the vocabulary the app words.
@@ -67,6 +69,31 @@ export type ConnectRefusalKind =
    * (WebDAV asks the store before it dials). ❗ Not `needs_credentials`, whose sentence reads as a server's answer.
    */
   | 'password_missing'
+  /**
+   * S3: the bucket refused this key, which is a wrong secret OR a key without rights here (a bodyless 403
+   * can't say which), so its words ask about both.
+   */
+  | 'access_denied'
+  /**
+   * S3: the account root needs to list buckets and this key may not (on some servers, a wrong secret answers
+   * the same). The way in is typing a bucket.
+   */
+  | 'bucket_list_refused'
+  /** S3: no bucket by that name on this endpoint. */
+  | 'bucket_not_found'
+  /** S3: the bucket lives in another region than the one chosen. Names it when the server did (`RefusalSubject.region`). */
+  | 'region_mismatch'
+  /** S3: this Mac's clock is too far off for the server to accept a signature. */
+  | 'clock_skewed'
+  /** S3: the address answers, but not as S3. */
+  | 'not_an_s3_endpoint'
+  /**
+   * Add mode, before any round trip: an S3 region, location, or account ID holds something besides
+   * `a–z 0–9 -`, which no host name can carry.
+   */
+  | 's3_field_malformed'
+  /** Add mode, before any round trip: the "Other S3-compatible" endpoint isn't `http(s)://host[:port]`. */
+  | 'endpoint_malformed'
 
 const REFUSAL_KEYS: Record<ConnectRefusalKind, MessageKey> = {
   authentication_rejected: 'servers.refusal.authenticationRejected',
@@ -87,6 +114,27 @@ const REFUSAL_KEYS: Record<ConnectRefusalKind, MessageKey> = {
   secret_not_stored: 'servers.refusal.secretNotStored',
   saved_secret_not_updated: 'servers.refusal.savedSecretNotUpdated',
   password_missing: 'servers.refusal.passwordMissing',
+  access_denied: 'servers.refusal.accessDenied',
+  bucket_list_refused: 'servers.refusal.bucketListRefused',
+  bucket_not_found: 'servers.refusal.bucketNotFound',
+  region_mismatch: 'servers.refusal.regionMismatch',
+  clock_skewed: 'servers.refusal.clockSkewed',
+  not_an_s3_endpoint: 'servers.refusal.notAnS3Endpoint',
+  s3_field_malformed: 'servers.refusal.s3FieldMalformed',
+  endpoint_malformed: 'servers.refusal.endpointMalformed',
+}
+
+/**
+ * The sentences that say "password", worded for an S3 account, which has a secret
+ * access key instead. ❗ A sentence asking for a password sends the reader looking
+ * for something their provider never gave them.
+ */
+const S3_REFUSAL_KEYS: Partial<Record<ConnectRefusalKind, MessageKey>> = {
+  authentication_rejected: 'servers.refusal.s3AuthenticationRejected',
+  needs_credentials: 'servers.refusal.s3NeedsCredentials',
+  password_missing: 'servers.refusal.s3SecretMissing',
+  secret_not_stored: 'servers.refusal.s3SecretNotStored',
+  saved_secret_not_updated: 'servers.refusal.s3SavedSecretNotUpdated',
 }
 
 /** What the place is called in a refusal: its host where there is one, else its name. */
@@ -95,11 +143,54 @@ export interface RefusalSubject {
   host: string
   /** The account, for the sentence about a password that didn't work. */
   username: string
+  /** Which protocol is asking, where its words differ: an S3 account has a secret access key, not a password. */
+  protocol?: ServerProtocol
+  /** `region_mismatch` only: the region the server says the bucket lives in, when it said. */
+  region?: string | null
 }
 
 /** The one sentence a refusal says. */
 export function wordConnectRefusal(kind: ConnectRefusalKind, subject: RefusalSubject): string {
-  return tString(REFUSAL_KEYS[kind], { host: subject.host, username: subject.username })
+  if (kind === 'region_mismatch' && subject.region) {
+    return tString('servers.refusal.regionMismatchNamed', { region: subject.region })
+  }
+  const key = (subject.protocol === 's3' ? S3_REFUSAL_KEYS[kind] : undefined) ?? REFUSAL_KEYS[kind]
+  return tString(key, { host: subject.host, username: subject.username })
+}
+
+/** A saved place in a pane, which also has the name the user gave it. */
+export interface PaneRefusalSubject extends RefusalSubject {
+  /** The place's display name. Empty falls back to the host. */
+  name: string
+}
+
+/**
+ * The sentence a pane standing on a saved place says. ❗ `unreachable` names the
+ * place by the name the user gave it ("Naspolya", not "nas.local"); the sheet and
+ * the Add form keep the host, since there it's the address the person typed.
+ */
+export function wordPaneRefusal(kind: ConnectRefusalKind, subject: PaneRefusalSubject): string {
+  if (kind === 'unreachable') {
+    return tString('servers.paneState.unreachable', { name: subject.name.trim() || subject.host })
+  }
+  return wordConnectRefusal(kind, subject)
+}
+
+/**
+ * Something besides the server worth checking, which the backend reads off how a
+ * probe failed. Rendered as a softer line under the refusal, ❌ never instead of
+ * it: a hint only suggests (a stuck Local Network permission and a server that's
+ * off look the same to the Add probe).
+ */
+export type RefusalHint = UnreachableHint
+
+const HINT_KEYS: Record<RefusalHint, MessageKey> = {
+  local_network_permission: 'servers.refusal.localNetworkHint',
+}
+
+/** The softer line under a refusal. The permission's name is the one System Settings shows. */
+export function wordRefusalHint(hint: RefusalHint): string {
+  return tString(HINT_KEYS[hint], { localNetwork: systemStrings.localNetwork })
 }
 
 /**
@@ -113,8 +204,15 @@ export function wordConnectRefusal(kind: ConnectRefusalKind, subject: RefusalSub
 export type RefusalField =
   /** The password or passphrase. */
   | 'secret'
-  /** The address, which in add mode is where a wrong endpoint is fixed. */
+  /**
+   * The address, which in add mode is where a wrong endpoint is fixed. For S3, whose form has no address,
+   * the field that makes the endpoint: the Other endpoint URL, else the preset's region, location, or account ID.
+   */
   | 'address'
+  /** S3: the region (or a preset's location or account ID), which also picks the endpoint for a preset. */
+  | 'region'
+  /** S3: the bucket field, where typing a bucket is the way past a key that can't list buckets. */
+  | 'bucket'
   /** The root folder, the ceiling nothing navigates above. */
   | 'root'
   /** The start folder, where opening the place lands. */
@@ -148,6 +246,18 @@ const REFUSAL_FIELDS: Record<ConnectRefusalKind, RefusalField> = {
   // The password is the one thing that didn't land, so its field is where the retry happens.
   secret_not_stored: 'secret',
   saved_secret_not_updated: 'secret',
+  // ❗ Under the secret, ❌ not the form: a wrong secret is one of the two things it can mean, and the
+  // sentence asks about the key's rights too.
+  access_denied: 'secret',
+  // Typing a bucket is the way past both.
+  bucket_list_refused: 'bucket',
+  bucket_not_found: 'bucket',
+  region_mismatch: 'region',
+  s3_field_malformed: 'region',
+  not_an_s3_endpoint: 'address',
+  endpoint_malformed: 'address',
+  // No field fixes this Mac's clock.
+  clock_skewed: 'form',
 }
 
 /** Where `kind`'s sentence goes. */

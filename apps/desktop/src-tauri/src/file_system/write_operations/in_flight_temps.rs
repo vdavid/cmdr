@@ -102,7 +102,7 @@ use std::collections::BTreeSet;
 use std::fs::File;
 use std::io::Write;
 use std::path::Path;
-use std::sync::{LazyLock, Mutex, Once};
+use std::sync::{Arc, LazyLock, Mutex, MutexGuard, Once};
 
 use super::state::WriteOperationState;
 use crate::file_system::volume::manager::get_volume_manager;
@@ -164,7 +164,70 @@ impl SweepTally {
     }
 }
 
-/// The process-wide half: the open log, and what it claims exists.
+/// One persisted ledger: the open log, what it claims exists, and the listener
+/// that settles its deferred records when their volume arrives.
+///
+/// Production has exactly one, [`Ledger::process`], which every operation state
+/// records into unless it carries another ([`Ledger::of`]). A test builds its
+/// own and hands it to the states it drives
+/// (`WriteOperationState::with_in_flight_ledger`), so a test that
+/// replays and sweeps its log only ever meets its own records. ❌ Don't go back
+/// to one singleton the tests install a log into: a sweep test then replays the
+/// records of every transfer test running beside it and deletes their live
+/// temps mid-copy, under plain `cargo test`.
+#[derive(Clone)]
+pub(super) struct Ledger(Arc<LedgerInner>);
+
+struct LedgerInner {
+    store: Mutex<Store>,
+    /// Guards the one-time install of this ledger's volume-arrival listener.
+    arrival_listener: Once,
+}
+
+static PROCESS_LEDGER: LazyLock<Ledger> = LazyLock::new(Ledger::new);
+
+impl Ledger {
+    /// A ledger with no log open and nothing recorded.
+    fn new() -> Self {
+        Self(Arc::new(LedgerInner {
+            store: Mutex::new(Store::default()),
+            arrival_listener: Once::new(),
+        }))
+    }
+
+    /// The app's one ledger, in the app data dir once [`init_and_sweep`] has run.
+    pub(super) fn process() -> Self {
+        PROCESS_LEDGER.clone()
+    }
+
+    /// The ledger `state` records into: a test's own, else the process's.
+    fn of(state: &WriteOperationState) -> &Self {
+        state.in_flight_ledger.as_ref().unwrap_or_else(|| &*PROCESS_LEDGER)
+    }
+
+    fn store(&self) -> MutexGuard<'_, Store> {
+        self.0.store.lock_ignore_poison()
+    }
+
+    /// Asks the registry to tell this ledger when a volume arrives, once.
+    ///
+    /// Installed lazily, so an app whose ledger stays clean (the overwhelming
+    /// case) carries no listener at all. The listener holds the ledger weakly:
+    /// a test's ledger that's gone stops answering rather than living on in the
+    /// registry.
+    fn ensure_arrival_listener(&self) {
+        self.0.arrival_listener.call_once(|| {
+            let ledger = Arc::downgrade(&self.0);
+            get_volume_manager().on_volume_arrival(move |volume_id| {
+                if let Some(inner) = ledger.upgrade() {
+                    sweep::on_volume_arrival(&Ledger(inner), volume_id);
+                }
+            });
+        });
+    }
+}
+
+/// What one ledger's log holds, and what it claims exists.
 ///
 // DEFAULT-OK: the zero value is the truthful pre-startup state — no log open
 // yet, nothing written to it, and nothing recorded, which is exactly where a
@@ -188,21 +251,6 @@ struct Store {
     pending: BTreeSet<Record>,
 }
 
-static STORE: LazyLock<Mutex<Store>> = LazyLock::new(|| Mutex::new(Store::default()));
-
-/// Guards the one-time install of the volume-arrival listener.
-static ARRIVAL_LISTENER: Once = Once::new();
-
-/// Asks the registry to tell us when a volume arrives, once per process.
-///
-/// Installed lazily, so an app whose ledger stays clean (the overwhelming case)
-/// carries no listener at all.
-fn ensure_arrival_listener() {
-    ARRIVAL_LISTENER.call_once(|| {
-        get_volume_manager().on_volume_arrival(sweep::on_volume_arrival);
-    });
-}
-
 /// Records `temp` as a partial this operation is writing, in both ledgers.
 ///
 /// Call before the first byte can land there, and pair with [`deregister`] the
@@ -224,7 +272,7 @@ pub(super) fn register(state: &WriteOperationState, temp: &Path, home: Option<Te
         );
         return;
     };
-    let mut store = STORE.lock_ignore_poison();
+    let mut store = Ledger::of(state).store();
     store.recorded.insert(record.clone());
     append(&mut store, record.add_op(), &record);
 }
@@ -236,7 +284,7 @@ pub(super) fn deregister(state: &WriteOperationState, temp: &Path, home: Option<
     let Some(record) = record_for(temp, home) else {
         return;
     };
-    let mut store = STORE.lock_ignore_poison();
+    let mut store = Ledger::of(state).store();
     store.recorded.remove(&record);
     append(&mut store, record.retire_op(), &record);
     compact_if_large(&mut store);
@@ -295,7 +343,7 @@ fn record(state: &WriteOperationState, home: RecordHome, kind: ItemKind, absolut
     if is_temp {
         state.in_flight_temps.lock_ignore_poison().push(absolute.to_path_buf());
     }
-    let mut store = STORE.lock_ignore_poison();
+    let mut store = Ledger::of(state).store();
     store.recorded.insert(record.clone());
     append(&mut store, record.add_op(), &record);
 
@@ -312,7 +360,7 @@ pub(super) fn retire(state: &WriteOperationState, record: &TrackedRecord) {
         .in_flight_temps
         .lock_ignore_poison()
         .retain(|p| p != &record.absolute);
-    retire_record(&record.record);
+    Ledger::of(state).retire_record(&record.record);
 }
 
 /// The thing is still on disk and its volume isn't reachable, so hold the record
@@ -328,8 +376,9 @@ pub(super) fn keep_for_arrival(state: &WriteOperationState, record: TrackedRecor
     if record.record.volume_id().is_none() {
         return;
     }
-    STORE.lock_ignore_poison().pending.insert(record.record);
-    ensure_arrival_listener();
+    let ledger = Ledger::of(state);
+    ledger.store().pending.insert(record.record);
+    ledger.ensure_arrival_listener();
 }
 
 /// Pushes whatever the ledger is holding out to the kernel, so the next launch's
@@ -342,7 +391,8 @@ pub(super) fn keep_for_arrival(state: &WriteOperationState, record: TrackedRecor
 /// Deliberately NOT an `fsync`; see the module docs on why a power loss is the
 /// directory scan's problem, not this ledger's.
 pub fn flush() {
-    let mut store = STORE.lock_ignore_poison();
+    let ledger = Ledger::process();
+    let mut store = ledger.store();
     let Some(log) = &mut store.log else {
         return;
     };
@@ -408,111 +458,121 @@ impl SweepHandle {
 /// held pending instead, which is why the truncate can't simply throw the log
 /// away.
 pub fn init_and_sweep(data_dir: &Path) -> SweepHandle {
-    let path = data_dir.join(STORE_FILENAME);
-    let recorded = read_recorded(&path);
-
-    // Truncating as we open is what retires the records we're about to act on:
-    // sweeping twice would be harmless, but a log that only ever grew wouldn't.
-    match File::options().create(true).append(true).open(&path) {
-        Ok(log) => {
-            // `truncate` isn't legal alongside `append`; retire the replayed
-            // records with an explicit `ftruncate` instead.
-            let _ = log.set_len(0);
-            let mut store = STORE.lock_ignore_poison();
-            store.log = Some(log);
-            store.logged_bytes = 0;
-        }
-        Err(e) => log::warn!(
-            target: "copy",
-            "couldn't open the in-flight temp ledger at {}: {e}. A copy interrupted this session will \
-             leave its leftovers for the next transfer into that directory to reap.",
-            path.display()
-        ),
-    }
-
-    if recorded.is_empty() {
-        return SweepHandle(None);
-    }
-
-    // Split by path space. The local ones this thread can act on directly; a
-    // volume's can only be reached once that volume is registered, which at this
-    // point in the launch it usually isn't.
-    let (on_volumes, locals): (Vec<Record>, Vec<Record>) =
-        recorded.into_iter().partition(|record| record.volume_id().is_some());
-    if !on_volumes.is_empty() {
-        defer(on_volumes);
-        ensure_arrival_listener();
-    }
-
-    match std::thread::Builder::new()
-        .name("cmdr-temp-sweep".to_string())
-        .spawn(move || sweep::persisted_orphans(&locals))
-    {
-        Ok(sweep) => SweepHandle(Some(sweep)),
-        Err(e) => {
-            log::warn!(target: "copy", "couldn't start the orphaned-leftover sweep: {e}");
-            SweepHandle(None)
-        }
-    }
+    Ledger::process().init_and_sweep(data_dir)
 }
 
-/// Re-records `records` and holds the ones with a volume to wait for.
-///
-/// The re-record is what carries them past the truncate in [`init_and_sweep`]:
-/// a record the sweep couldn't act on has to outlive the launch that replayed
-/// it, or a NAS orphan is forgotten by the one ledger that knew about it. A
-/// LOCAL record is re-recorded but not held pending: nothing is going to arrive
-/// for it, so the next launch is when it gets another look.
-fn defer(records: Vec<Record>) {
-    let mut store = STORE.lock_ignore_poison();
-    for record in records {
-        store.recorded.insert(record.clone());
-        append(&mut store, record.add_op(), &record);
-        if record.volume_id().is_some() {
-            store.pending.insert(record);
+impl Ledger {
+    /// [`init_and_sweep`], for this ledger.
+    fn init_and_sweep(&self, data_dir: &Path) -> SweepHandle {
+        let path = data_dir.join(STORE_FILENAME);
+        let recorded = read_recorded(&path);
+
+        // Truncating as we open is what retires the records we're about to act
+        // on: sweeping twice would be harmless, but a log that only ever grew
+        // wouldn't.
+        match File::options().create(true).append(true).open(&path) {
+            Ok(log) => {
+                // `truncate` isn't legal alongside `append`; retire the replayed
+                // records with an explicit `ftruncate` instead.
+                let _ = log.set_len(0);
+                let mut store = self.store();
+                store.log = Some(log);
+                store.logged_bytes = 0;
+            }
+            Err(e) => log::warn!(
+                target: "copy",
+                "couldn't open the in-flight temp ledger at {}: {e}. A copy interrupted this session will \
+                 leave its leftovers for the next transfer into that directory to reap.",
+                path.display()
+            ),
+        }
+
+        if recorded.is_empty() {
+            return SweepHandle(None);
+        }
+
+        // Split by path space. The local ones this thread can act on directly; a
+        // volume's can only be reached once that volume is registered, which at
+        // this point in the launch it usually isn't.
+        let (on_volumes, locals): (Vec<Record>, Vec<Record>) =
+            recorded.into_iter().partition(|record| record.volume_id().is_some());
+        if !on_volumes.is_empty() {
+            self.defer(on_volumes);
+            self.ensure_arrival_listener();
+        }
+
+        let ledger = self.clone();
+        match std::thread::Builder::new()
+            .name("cmdr-temp-sweep".to_string())
+            .spawn(move || sweep::persisted_orphans(&ledger, &locals))
+        {
+            Ok(sweep) => SweepHandle(Some(sweep)),
+            Err(e) => {
+                log::warn!(target: "copy", "couldn't start the orphaned-leftover sweep: {e}");
+                SweepHandle(None)
+            }
         }
     }
-}
 
-/// Drops a record the sweep is done with, on disk too.
-fn retire_record(record: &Record) {
-    let mut store = STORE.lock_ignore_poison();
-    store.recorded.remove(record);
-    store.pending.remove(record);
-    append(&mut store, record.retire_op(), record);
-}
+    /// Re-records `records` and holds the ones with a volume to wait for.
+    ///
+    /// The re-record is what carries them past the truncate in
+    /// [`init_and_sweep`]: a record the sweep couldn't act on has to outlive the
+    /// launch that replayed it, or a NAS orphan is forgotten by the one ledger
+    /// that knew about it. A LOCAL record is re-recorded but not held pending:
+    /// nothing is going to arrive for it, so the next launch is when it gets
+    /// another look.
+    fn defer(&self, records: Vec<Record>) {
+        let mut store = self.store();
+        for record in records {
+            store.recorded.insert(record.clone());
+            append(&mut store, record.add_op(), &record);
+            if record.volume_id().is_some() {
+                store.pending.insert(record);
+            }
+        }
+    }
 
-/// The volume IDs the ledger is currently waiting on.
-fn pending_volume_ids() -> BTreeSet<String> {
-    STORE
-        .lock_ignore_poison()
-        .pending
-        .iter()
-        .filter_map(|record| record.volume_id().map(str::to_string))
-        .collect()
-}
-
-/// How many records are still waiting for a volume.
-fn pending_count() -> usize {
-    STORE.lock_ignore_poison().pending.len()
-}
-
-/// Takes the pending records for `volume_id`, so exactly one sweep acts on each.
-///
-/// They stay in [`Store::recorded`] until a sweep retires them: a claim that
-/// fails has to leave the log still claiming the thing exists.
-fn claim_pending(volume_id: &str) -> Vec<Record> {
-    let mut store = STORE.lock_ignore_poison();
-    let claimed: Vec<Record> = store
-        .pending
-        .iter()
-        .filter(|record| record.volume_id() == Some(volume_id))
-        .cloned()
-        .collect();
-    for record in &claimed {
+    /// Drops a record the sweep is done with, on disk too.
+    fn retire_record(&self, record: &Record) {
+        let mut store = self.store();
+        store.recorded.remove(record);
         store.pending.remove(record);
+        append(&mut store, record.retire_op(), record);
     }
-    claimed
+
+    /// The volume IDs the ledger is currently waiting on.
+    fn pending_volume_ids(&self) -> BTreeSet<String> {
+        self.store()
+            .pending
+            .iter()
+            .filter_map(|record| record.volume_id().map(str::to_string))
+            .collect()
+    }
+
+    /// How many records are still waiting for a volume.
+    fn pending_count(&self) -> usize {
+        self.store().pending.len()
+    }
+
+    /// Takes the pending records for `volume_id`, so exactly one sweep acts on
+    /// each.
+    ///
+    /// They stay in [`Store::recorded`] until a sweep retires them: a claim that
+    /// fails has to leave the log still claiming the thing exists.
+    fn claim_pending(&self, volume_id: &str) -> Vec<Record> {
+        let mut store = self.store();
+        let claimed: Vec<Record> = store
+            .pending
+            .iter()
+            .filter(|record| record.volume_id() == Some(volume_id))
+            .cloned()
+            .collect();
+        for record in &claimed {
+            store.pending.remove(record);
+        }
+        claimed
+    }
 }
 
 /// Replays the log and returns what an earlier session left behind.
@@ -613,102 +673,43 @@ pub(super) use records::{
 mod sweep;
 pub use sweep::init_app_handle as init_sweep_app_handle;
 
+/// A test's own ledger. Each test builds one, hands it to the states it drives
+/// (`WriteOperationState::with_in_flight_ledger`), and asserts on it alone, so
+/// no other test's records ever land in its log or its sweep.
 #[cfg(test)]
-pub(super) mod test_support {
-    use super::{File, Path, Record, STORE};
-    use crate::ignore_poison::IgnorePoison;
-    use std::path::PathBuf;
-    use std::sync::{Mutex, MutexGuard};
-
-    /// Serializes every test that installs its own ledger into [`STORE`].
-    ///
-    /// [`STORE`] is ONE singleton for the whole test binary, and installing a
-    /// log into it redirects every `register` in the process, from any thread,
-    /// into that file. Two tests doing it at once is how one test's records
-    /// land in another's log, and how a startup-sweep fixture ends up replaying
-    /// an empty log and never sweeping at all. Both shapes reproduced at
-    /// `--test-threads=2` (47 failures in 60 runs) before this lock existed.
-    static SINGLE_FILE: Mutex<()> = Mutex::new(());
-
-    /// Exclusive use of the process-wide ledger for the length of the guard.
-    ///
-    /// Hold it across the WHOLE test body, ❌ never just the part that writes:
-    /// the moment it drops, another test may install its log and take over
-    /// every `register` this one still had coming.
-    pub(in crate::file_system::write_operations) struct StoreGuard {
-        previous: Option<File>,
-        previous_bytes: u64,
-        // Declared last so it's released after `Drop` has put the singleton
-        // back: the next test in line must never see this one's log.
-        _single_file: MutexGuard<'static, ()>,
+impl Ledger {
+    /// A ledger for a process that hasn't launched yet: no log, nothing
+    /// recorded. [`launch_in`](Self::launch_in) is that launch.
+    pub(super) fn for_test() -> Self {
+        Self::new()
     }
 
-    /// Takes the ledger for the length of the guard and leaves it EMPTY: no log
-    /// open, nothing recorded, which is exactly where a process begins.
-    pub(in crate::file_system::write_operations) fn take_store() -> StoreGuard {
-        // Poison here just means an earlier test panicked while holding it. The
-        // singleton was restored by that guard's `Drop` on the way out, so the
-        // state is sound and the next test deserves a real verdict, not an
-        // unwrap on someone else's failure.
-        let single_file = SINGLE_FILE.lock_ignore_poison();
-        let mut store = STORE.lock_ignore_poison();
-        let previous = store.log.take();
-        let previous_bytes = std::mem::take(&mut store.logged_bytes);
-        store.recorded.clear();
-        store.pending.clear();
-        StoreGuard {
-            previous,
-            previous_bytes,
-            _single_file: single_file,
-        }
-    }
-
-    /// [`take_store`], then points the ledger at `data_dir` so [`super::register`]
-    /// records into a file this test can read back.
-    pub(in crate::file_system::write_operations) fn use_store_in(data_dir: &Path) -> StoreGuard {
-        let guard = take_store();
+    /// A ledger recording into a fresh log in `data_dir`, so a test can read
+    /// back what [`register`] wrote. Drop it to stand in for the process
+    /// dying: the log on disk stays exactly as it was, and a new
+    /// [`for_test`](Self::for_test) ledger launching against `data_dir` is the
+    /// next run.
+    pub(super) fn recording_in(data_dir: &Path) -> Self {
+        let ledger = Self::new();
         let log = File::options()
             .create(true)
             .append(true)
-            .open(data_dir.join(super::STORE_FILENAME))
+            .open(data_dir.join(STORE_FILENAME))
             .expect("open a test in-flight temp ledger");
         log.set_len(0).expect("start the test ledger empty");
-        STORE.lock_ignore_poison().log = Some(log);
-        guard
+        ledger.store().log = Some(log);
+        ledger
     }
 
-    impl StoreGuard {
-        /// Drops the process's handle on the ledger without giving the
-        /// singleton back to the next test: what a crash looks like to the next
-        /// launch. The log on disk is left exactly as it was, which is the
-        /// whole point of the fixture.
-        pub(in crate::file_system::write_operations) fn simulate_process_exit(&self) {
-            let mut store = STORE.lock_ignore_poison();
-            store.log = None;
-            store.logged_bytes = 0;
-            store.recorded.clear();
-            store.pending.clear();
-        }
+    /// [`init_and_sweep`] against this ledger: a launch that replays
+    /// `data_dir`'s log.
+    pub(super) fn launch_in(&self, data_dir: &Path) -> SweepHandle {
+        self.init_and_sweep(data_dir)
     }
 
-    impl Drop for StoreGuard {
-        fn drop(&mut self) {
-            let mut store = STORE.lock_ignore_poison();
-            store.log = self.previous.take();
-            store.logged_bytes = self.previous_bytes;
-            store.recorded.clear();
-            store.pending.clear();
-        }
-    }
-
-    /// The set the process currently believes is on disk.
-    ///
-    /// Process-wide, so a concurrent transfer test's staged write shows up here
-    /// too: ask whether it holds the path under test, ❌ never whether it's
-    /// empty.
-    pub(in crate::file_system::write_operations) fn live_paths() -> Vec<PathBuf> {
-        STORE
-            .lock_ignore_poison()
+    /// The set this ledger currently believes is on disk.
+    pub(super) fn live_paths(&self) -> Vec<std::path::PathBuf> {
+        self.store()
             .recorded
             .iter()
             .map(Record::path)

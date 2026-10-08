@@ -35,6 +35,7 @@ import {
   compileConcepts,
   conceptsPath,
   decisionsPath,
+  duplicateKeyErrors,
   englishMatchText,
   isNameKey,
   loadTerms,
@@ -45,6 +46,7 @@ import {
   resolveDecision,
   readJsonIfPresent,
   readTextIfPresent,
+  termsPath,
 } from './i18n-termbase-lib.ts'
 import type { Concepts, Termbase } from './i18n-termbase-lib.ts'
 
@@ -356,6 +358,11 @@ export function inspectTermbase({
   baseline: Baseline
 }): TermbaseOutcome {
   const schemaErrors: string[] = []
+  const duplicates = (path: string, label: string) => {
+    const text = readTextIfPresent(path)
+    if (text !== undefined) schemaErrors.push(...duplicateKeyErrors(text, label))
+  }
+  duplicates(conceptsPath(docsRoot), 'concepts.json')
   const sharedRaw = readJsonIfPresent(conceptsPath(docsRoot)) ?? {}
   schemaErrors.push(...validateConcepts(sharedRaw, 'concepts.json'))
   const shared = (isRecord(sharedRaw) ? sharedRaw : {}) as Concepts
@@ -368,6 +375,8 @@ export function inspectTermbase({
     if (tag === BASE_LOCALE || resolveLocaleSource(tag, available).isOverlay) continue
     const terms = loadTerms(tag, docsRoot)
     if (terms === undefined) continue
+    duplicates(termsPath(tag, docsRoot), `${tag}/terms.json`)
+    duplicates(proposedConceptsPath(tag, docsRoot), `${tag}/concepts-proposed.json`)
 
     const concepts = localeConcepts(tag, shared, docsRoot, schemaErrors)
     schemaErrors.push(

@@ -7,7 +7,6 @@ import {
   DATE_PRESETS,
   CUSTOM_VALUE,
   byteUnitLabel,
-  kiloByteLabel,
   isSizeRangeDisabled,
   showsUpperBound,
   isDateRangeDisabled,
@@ -37,16 +36,6 @@ describe('byteUnitLabel (D10)', () => {
   it('returns the plural for an empty / custom selection', () => {
     expect(byteUnitLabel('')).toBe('bytes')
     expect(byteUnitLabel(CUSTOM_VALUE)).toBe('bytes')
-  })
-})
-
-describe('kiloByteLabel (D10)', () => {
-  it("uses uppercase 'KB' for binary mode (default)", () => {
-    expect(kiloByteLabel('binary')).toBe('KB')
-  })
-
-  it("uses lowercase k 'kB' for SI mode", () => {
-    expect(kiloByteLabel('si')).toBe('kB')
   })
 })
 

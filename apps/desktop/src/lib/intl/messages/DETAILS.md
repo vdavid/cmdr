@@ -77,7 +77,8 @@ before anyone "simplifies" the plugin away. `messages.svelte.ts` eagerly globs e
 can tree-shake a module's named exports but not properties of a JSON default export, so the runtime `stripMetadata()`
 was discarding bytes that had already shipped, been parsed, and been materialized. Removing it at build time took the
 frontend bundle from 8.3 MB to 5.6 MB (measured 2026-08-21, `pnpm build` with the plugin toggled, pseudolocale absent as
-in a release). `desktop-bundle-size` now holds that line.
+in a release). With 14 catalogs, the messages chunk is 8.64 MB raw / 1,935 KB gzipped without the plugin and 4.53 MB /
+1,144 KB with it (measured 2026-10-02 the same way). `desktop-bundle-size` now holds that line.
 
 The shape:
 
@@ -122,6 +123,12 @@ The shape:
   explains how a stand-in screenshot maps to this key ("this shows a different error, but your string is the
   title/explanation in this same pane"). Absent on direct (captured) couplings. Like `screenshot`, it's harness-written,
   never hand-authored, and stripped before runtime/codegen.
+- `agreesWith` (`en` only, optional): the key of the LABEL this value sits beside and agrees with in gender and number,
+  for a value word English writes identically across rows (the managed card's per-row "Off":
+  `@settings.managed.summary.usageStatsOff` carries `"agreesWith": "settings.managed.summary.usageStats"`). It takes the
+  key out of the term-consistency check's plain same-English group, so an agreeing language needs no allowlist entry
+  (`docs/guides/i18n.md` § Term consistency). It must name a real key other than itself, or that check fails. Give each
+  such row its own key; one shared value can't agree with labels of different gender.
 - `sourceHash` (non-`en` locales only): a 7-char lowercase hex hash (git-style; the SHA-256 prefix of the EXACT value
   the translation was made from), computed by `sourceHash()` in `apps/desktop/scripts/i18n-catalog-lib.ts`. That value
   is the English one for a full translation; for an OVERLAY (`en-GB`, `pt-PT`) it's the value the key overrides, so a

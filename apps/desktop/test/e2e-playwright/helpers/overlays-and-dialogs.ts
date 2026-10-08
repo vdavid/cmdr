@@ -435,13 +435,13 @@ export async function expectAndDismissToast(
  *
  * `bytes` is optional and format-aware. The dialog renders the byte total via
  * the `<Size>` component in dynamic mode, so it's the user-facing string like
- * `"3.19 KB"` — NOT a raw byte count. Pass that exact string, or a RegExp when
+ * `"1.02 kB"` — NOT a raw byte count. Pass that exact string, or a RegExp when
  * the fixture's size is allowed to drift within a band (e.g. /^\d+(\.\d+)? KB$/).
  * Omit it when only the file/dir split matters. There's no substring shrug:
  * a string is matched whole, a RegExp is `.test()`-ed against the whole cell.
  */
 export interface ExpectedDialogCounters {
-  /** Exact byte string the FE renders (e.g. "3.19 KB"), or a RegExp to match it. Omit to skip the byte assertion. */
+  /** Exact byte string the FE renders (e.g. "1.02 kB"), or a RegExp to match it. Omit to skip the byte assertion. */
   bytes?: string | RegExp
   /** Exact top-level file count. */
   files: number
@@ -458,7 +458,7 @@ export interface ExpectedDialogCounters {
 /**
  * Reads the three live counter cells out of the transfer dialog's tallies
  * element and returns them as `{ scanState, bytes, files, dirs }` (or `null`
- * when the dialog isn't open). `bytes` is the rendered cell text (`"3.19 KB"`);
+ * when the dialog isn't open). `bytes` is the rendered cell text (`"1.02 kB"`);
  * `files` / `dirs` are the parsed integer counts. Used internally by
  * {@link expectDialogCounters}; exposed for the rare test that wants the raw
  * snapshot.
@@ -489,7 +489,7 @@ export async function readDialogCounters(
 }
 
 /**
- * Asserts the transfer dialog's counter line ("3.19 KB / 1 file / 0 dirs"),
+ * Asserts the transfer dialog's counter line ("3.19 KB / 1 file / 0 folders"),
  * race-free.
  *
  * First polls `data-scan-state` on the tallies element until it reads `done`
@@ -504,7 +504,7 @@ export async function readDialogCounters(
  *
  * @example
  * await tauriPage.waitForSelector(TRANSFER_DIALOG, 5000)
- * await expectDialogCounters(tauriPage, { bytes: '3.19 KB', files: 1, dirs: 0 })
+ * await expectDialogCounters(tauriPage, { bytes: '1.02 kB', files: 1, dirs: 0 })
  */
 export async function expectDialogCounters(
   tauriPage: PageLike,

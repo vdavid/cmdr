@@ -213,13 +213,8 @@ fn isolated_store_dir() -> PathBuf {
 /// Returns the directory for file-based stores.
 /// Respects `CMDR_DATA_DIR` env var, otherwise uses the platform data directory.
 fn secret_store_dir() -> PathBuf {
-    let dir = if let Ok(custom) = std::env::var("CMDR_DATA_DIR") {
-        PathBuf::from(custom)
-    } else {
-        dirs::data_dir()
-            .unwrap_or_else(|| PathBuf::from("/tmp"))
-            .join("com.veszelovszki.cmdr")
-    };
+    let dir = crate::config::standalone_app_data_dir()
+        .unwrap_or_else(|| PathBuf::from("/tmp").join(crate::config::BUNDLE_ID));
 
     if let Err(e) = std::fs::create_dir_all(&dir) {
         log::warn!("Could not create secret store directory {}: {}", dir.display(), e);

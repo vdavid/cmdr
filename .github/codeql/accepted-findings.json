@@ -1,0 +1,45 @@
+{
+  "$comment": "CodeQL findings we've read and accepted, by rule and file. `filter-sarif.sh` drops them before upload, so they never become alerts and never block. Each needs a reason a reviewer can check. A new finding of the same rule in the same file is accepted too, so keep entries to files where the rule can't apply.",
+  "accepted": [
+    {
+      "rule": "rust/hard-coded-cryptographic-value",
+      "path": "crates/cmdr-s3/src/sigv4.rs",
+      "reason": "The `AWS4` / `GOOG4` key prefixes are fixed by the SigV4 spec: the signing key is HMAC(prefix + secret, date). The secret itself comes from the user's profile."
+    },
+    {
+      "rule": "rust/hard-coded-cryptographic-value",
+      "path": "apps/desktop/src-tauri/src/ipc.rs",
+      "reason": "Both the value and its use point at the `ipc_command_manifest!(build_invoke_handler)` call in `builder()`, which expands to `tauri::generate_handler!` over every command: the finding lives in macro-generated dispatch code. The file holds no secret literal."
+    },
+    {
+      "rule": "rust/hard-coded-cryptographic-value",
+      "path": "crates/cmdr-smb/src/volume/mod.rs",
+      "reason": "An SMB guest sign-in is the `Guest` user with an empty password by protocol; it's the fallback when the user gave no credentials."
+    },
+    {
+      "rule": "rust/hard-coded-cryptographic-value",
+      "path": "apps/desktop/src-tauri/src/network/smb_smbclient.rs",
+      "reason": "Linux-only module (`#[cfg(target_os = \"linux\")]`), so the macOS-target analysis can't see its `#[cfg(test)]` module as test code; the flagged passwords are that module's test inputs."
+    },
+    {
+      "rule": "rust/weak-sensitive-data-hashing",
+      "path": "apps/desktop/src-tauri/src/ai/api_keys.rs",
+      "reason": "`fingerprint` is a truncated SHA-256 of an API key, used to tell keys apart in the UI and logs. It isn't password storage; the key itself lives in the Keychain."
+    },
+    {
+      "rule": "rust/cleartext-transmission",
+      "path": "crates/cmdr-s3/src/transport/mod.rs",
+      "reason": "The `account_id` it flags is the Cloudflare R2 account id, which is part of the endpoint hostname by design (`<account>.r2.cloudflarestorage.com`). It's an identifier, not a credential."
+    },
+    {
+      "rule": "js/clear-text-logging",
+      "path": "apps/desktop/scripts/tauri-wrapper.ts",
+      "reason": "Dev-only launcher. It logs the dev data dir and instance id, which derive from `XDG_DATA_HOME` and `CMDR_INSTANCE_ID`; CodeQL treats all of `process.env` as sensitive."
+    },
+    {
+      "rule": "js/clear-text-logging",
+      "path": "apps/desktop/scripts/instance-id.ts",
+      "reason": "Dev-only helper of `tauri-wrapper.ts`. It logs a port-file path under the dev data dir, which derives from `XDG_DATA_HOME`; CodeQL treats all of `process.env` as sensitive."
+    }
+  ]
+}

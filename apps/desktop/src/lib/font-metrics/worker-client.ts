@@ -44,6 +44,14 @@ function getWorker(): Worker | undefined {
   if (workerUnavailable) return undefined
   if (worker) return worker
 
+  // A WebView without these (WebKitGTK on Linux has no `OffscreenCanvas`) would start the worker
+  // only to fail its first job, logging a warn on every launch for a platform fact.
+  if (typeof Worker === 'undefined' || typeof OffscreenCanvas === 'undefined') {
+    log.info('This WebView has no Worker or OffscreenCanvas, so fonts are measured on the main thread in slices')
+    workerUnavailable = true
+    return undefined
+  }
+
   try {
     worker = new Worker(new URL('./measure-worker.ts', import.meta.url), { type: 'module' })
     worker.onmessage = (event: MessageEvent<MeasureResponse>) => {

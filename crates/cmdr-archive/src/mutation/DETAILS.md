@@ -20,10 +20,23 @@ sink, pause gate, cancel intent via the `MutationHooks` seam, and the remote pul
   until the final rename; a cancel or crash at any earlier point leaves it fully readable.
 - **Retained entries copy verbatim** via `raw_copy_file_rename` (no decompress/recompress); only added files
   stream-compress (chunked, never whole-buffered — the add chunk is also the pause/cancel granularity mid-file). An
-  added file carries its SOURCE's modification time into the entry (`add_entry_options`), not the write time — zip
-  stores it as MS-DOS date/time (2-second granularity, 1980–2107 range; an mtime outside that range keeps the default).
-  The decompose is done in UTC because `rc-zip` reads the DOS fields back as UTC, so the mtime round-trips through the
-  index parse.
+  added file carries its SOURCE's modification time into the entry (`add_entry_options`); a new folder and an in-memory
+  file carry the write time.
+- **Every new entry's time is written twice, by `with_entry_mtime`** (the one place, which the host's fresh-ZIP producer
+  calls too, so the two writers can't drift apart again):
+  - The header's MS-DOS date and time, decomposed in LOCAL time. The field carries no zone and every tool (`unzip -l`,
+    Finder, Explorer) shows it as wall-clock time, so a UTC decompose reads hours off: a file modified at 09:44 in UTC+2
+    listed as 07:44. 2-second granularity, 1980–2107; outside that it stays at the format's zero.
+  - The Info-ZIP extended-timestamp extra field (`UT`, `0x5455`), the exact UTC second, in the local header and the
+    central directory. Tools prefer it over the DOS field, and so does `rc-zip`, our reader, which is what keeps an
+    mtime stable across write-then-reparse in any zone. Written when the time fits the field's signed 32 bits
+    (1970–2038).
+  - ❗ `SimpleFileOptions::default()` dates an entry 1980-01-01: `zip`'s "now" default needs its `time` feature, which
+    this workspace doesn't enable (verified on `zip` 8.6.0, `DateTime::default_for_write`, 2026-09-30). ❌ Never hand
+    `start_file` / `add_directory` bare default options.
+  - The read side takes a DOS-only entry as the writer's wall clock in the reader's zone (`../read/DETAILS.md` § "Entry
+    times"). Entries an older Cmdr wrote (UTC DOS, no `UT`) therefore list off by the reader's offset, an accepted
+    shift.
 - **Compression level applies to ADDED entries only.** `add_entry_options` sets the deflate level from
   `Changeset::compression_level` on each newly added entry; retained entries are raw-copied and keep their original
   compression untouched. `None` (the default) means the `zip` crate default, level 6 — so an unset level is byte-stable

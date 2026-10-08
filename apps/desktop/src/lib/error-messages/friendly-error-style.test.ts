@@ -105,6 +105,7 @@ const LISTING_REASONS: ListingErrorReason[] = [
   { reason: 'tccRestricted', path: PATH },
   { reason: 'permissionDenied', path: PATH },
   { reason: 'remotePermissionDenied', path: PATH },
+  { reason: 'objectStoreRefused', path: PATH },
   { reason: 'alreadyExists', path: PATH },
   { reason: 'cancelled' },
   { reason: 'deviceDisconnected', path: PATH },
@@ -115,6 +116,7 @@ const LISTING_REASONS: ListingErrorReason[] = [
   { reason: 'connectionTimedOut' },
   { reason: 'notSupported' },
   { reason: 'deletePending', path: PATH },
+  { reason: 'coldStorage', path: PATH },
   { reason: 'invalidName', path: PATH },
   { reason: 'ambiguousName', path: PATH },
   { reason: 'ioSerious', path: PATH, osMessage: 'something went wrong' },
@@ -212,6 +214,14 @@ const REFUSAL_KINDS: ConnectRefusalKind[] = [
   'account_not_permitted',
   'secret_not_stored',
   'saved_secret_not_updated',
+  'access_denied',
+  'bucket_list_refused',
+  'bucket_not_found',
+  'region_mismatch',
+  'clock_skewed',
+  'not_an_s3_endpoint',
+  's3_field_malformed',
+  'endpoint_malformed',
 ]
 
 /**

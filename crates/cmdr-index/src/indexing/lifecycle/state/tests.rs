@@ -5,6 +5,7 @@ use crate::indexing::lifecycle::freshness::FreshnessEvent;
 use crate::indexing::read::enrichment::{ReadPool, get_read_pool_for, uninstall_read_pool};
 use crate::indexing::read::pending_sizes::{PendingSizes, uninstall_pending_sizes};
 use crate::indexing::volume::ROOT_VOLUME_ID;
+use crate::volume_files::Removal;
 use std::time::Duration;
 
 /// The read path's skip-vs-route gate is "does `get_read_pool_for` return a
@@ -394,7 +395,7 @@ fn forget_stale_index_transitions_to_gray_and_deletes_db() {
     );
 
     // Forget it.
-    clear_index("smb-forget-test").expect("clear_index must succeed");
+    clear_index("smb-forget-test", Removal::Forgotten).expect("clear_index must succeed");
 
     // Badge goes gray (no instance ⇒ no freshness), and the DB is gone.
     assert_eq!(
@@ -487,7 +488,7 @@ fn disconnect_storm_two_volumes_never_wedges_the_registry() {
         // disable (stop_indexing, keeps DB) so both teardown drains churn.
         for vid in &ordered {
             if round % 2 == 0 {
-                clear_index(vid).expect("clear_index must not fail under churn");
+                clear_index(vid, Removal::Forgotten).expect("clear_index must not fail under churn");
             } else {
                 stop_indexing(vid).expect("stop_indexing must not fail under churn");
             }
@@ -833,7 +834,7 @@ fn clearing_reaches_a_database_no_volume_is_registered_for() {
     std::fs::write(dir.path().join("index-smb-walked-only.db-wal"), vec![0u8; 8]).expect("write wal");
 
     assert!(!is_active("smb-walked-only"), "test setup: nothing is registered");
-    clear_index("smb-walked-only").expect("clearing an unregistered index must succeed");
+    clear_index("smb-walked-only", Removal::Forgotten).expect("clearing an unregistered index must succeed");
 
     assert!(!db_path.exists(), "the database must be gone");
     assert!(
@@ -886,6 +887,168 @@ fn clearing_everything_takes_the_registered_and_the_forgotten_alike() {
     );
 }
 
+/// Stand in for a share's folder-importance database: the main file and the two
+/// sidecars a live writer leaves beside it, all named after the volume id.
+fn write_importance_files(data_dir: &std::path::Path, volume_id: &str) -> [PathBuf; 3] {
+    let files = ["db", "db-wal", "db-shm"].map(|ext| data_dir.join(format!("importance-{volume_id}.{ext}")));
+    for file in &files {
+        std::fs::write(file, vec![0u8; 32]).expect("write an importance file");
+    }
+    files
+}
+
+/// Forgetting a share takes everything the index kept for it, and the index
+/// database is only one of those things. The folder-importance database is named
+/// after the same volume id and scores folders of an index that no longer exists,
+/// so it goes too. Pre-fix it stayed: a production data dir held three
+/// `importance-smb-*.db` (34 MB, 20 MB, 20 KB) with no `index-smb-*.db` left
+/// beside any of them, and nothing would ever have collected them.
+#[test]
+fn forgetting_a_share_leaves_none_of_its_databases_behind() {
+    const VOLUME_ID: &str = "smb-forget-siblings";
+    let _guard = INDEX_REGISTRY_TEST_GUARD.lock().unwrap_or_else(|e| e.into_inner());
+    clear_registry_and_pools();
+
+    let dir = tempfile::tempdir().expect("temp dir");
+    let db_path = dir.path().join(format!("index-{VOLUME_ID}.db"));
+    let store = IndexStore::open(&db_path).expect("open store");
+    let pool = Arc::new(ReadPool::new(db_path.clone()).expect("pool"));
+    assert!(
+        try_reserve_initializing_phase(
+            VOLUME_ID,
+            StartRequest::for_test(IndexVolumeKind::Smb),
+            store,
+            pool,
+            Arc::new(PendingSizes::new()),
+            VolumeSignals::new(fresh(Some(Freshness::Stale)), NoopEventSink::shared()),
+        )
+        .is_ok(),
+        "reserve must succeed"
+    );
+    let importance = write_importance_files(dir.path(), VOLUME_ID);
+
+    clear_index(VOLUME_ID, Removal::Forgotten).expect("forgetting the share must succeed");
+
+    assert!(!db_path.exists(), "the index database goes");
+    for file in &importance {
+        assert!(!file.exists(), "{} must go with it", file.display());
+    }
+    clear_registry_and_pools();
+}
+
+/// A share that stops (disconnected, turned off, the watchdog) keeps its files,
+/// and the threads that read it let go of the connections they cached to BOTH of
+/// its databases. Pre-fix nothing asked them to: a production run with no share
+/// indexed at all still held 8 and 6 connections on two shares' importance
+/// databases, in blocking threads that had read them hours earlier.
+///
+/// The open counter is the observable. A cached connection is reused, so a read
+/// that has to open again proves the cached one was closed.
+#[test]
+fn stopping_a_share_retires_the_read_connections_cached_to_its_databases() {
+    use crate::importance::store::{ImportanceStore, importance_db_path};
+    use crate::importance::{ImportanceIndex, SignalSet};
+    use cmdr_fs::sqlite_util::open_count_for;
+
+    const VOLUME_ID: &str = "smb-stop-retires-readers";
+    let _guard = INDEX_REGISTRY_TEST_GUARD.lock().unwrap_or_else(|e| e.into_inner());
+    clear_registry_and_pools();
+
+    let dir = tempfile::tempdir().expect("temp dir");
+    let db_path = dir.path().join(format!("index-{VOLUME_ID}.db"));
+    let store = IndexStore::open(&db_path).expect("open store");
+    let pool = Arc::new(ReadPool::new(db_path.clone()).expect("pool"));
+    assert!(
+        try_reserve_initializing_phase(
+            VOLUME_ID,
+            StartRequest::for_test(IndexVolumeKind::Smb),
+            store,
+            Arc::clone(&pool),
+            Arc::new(PendingSizes::new()),
+            VolumeSignals::new(fresh(Some(Freshness::Stale)), NoopEventSink::shared()),
+        )
+        .is_ok(),
+        "reserve must succeed"
+    );
+    let importance_db = importance_db_path(dir.path(), VOLUME_ID);
+    drop(ImportanceStore::open(&importance_db).expect("create the importance database"));
+    let importance = ImportanceIndex::open(dir.path(), VOLUME_ID, SignalSet::listing_only());
+
+    // This thread reads both databases, so it caches a connection to each.
+    pool.with_conn(|_| ()).expect("read the index");
+    assert_eq!(importance.scored_folder_count().expect("read importance"), 0);
+    let (index_opens, importance_opens) = (open_count_for(&db_path), open_count_for(&importance_db));
+    assert_eq!(importance.scored_folder_count().expect("read importance"), 0);
+    assert_eq!(
+        open_count_for(&importance_db),
+        importance_opens,
+        "test setup: a second read reuses the cached connection"
+    );
+
+    stop_indexing(VOLUME_ID).expect("stop");
+
+    assert!(db_path.exists() && importance_db.exists(), "a stop keeps the files");
+    // The files are still there, so both reads answer, each by opening again.
+    assert_eq!(importance.scored_folder_count().expect("read importance"), 0);
+    assert_eq!(
+        open_count_for(&importance_db),
+        importance_opens + 1,
+        "the importance connection cached before the stop was closed"
+    );
+    pool.with_conn(|_| ()).expect("read the index");
+    assert_eq!(open_count_for(&db_path), index_opens + 1, "and so was the index's");
+    clear_registry_and_pools();
+}
+
+/// The same, for a share nothing is registered for: the shape a forgotten drive
+/// has after a restart, and the one "Clear index" in settings sweeps.
+#[test]
+fn forgetting_a_share_nothing_is_registered_for_takes_its_importance_database_too() {
+    const VOLUME_ID: &str = "smb-forget-offline-siblings";
+    let _lock = crate::indexing::handle::test_lock();
+    let _guard = INDEX_REGISTRY_TEST_GUARD.lock().unwrap_or_else(|e| e.into_inner());
+    clear_registry_and_pools();
+
+    let dir = tempfile::tempdir().expect("temp dir");
+    let _config = crate::indexing::host::config::install_data_dir_for_test(dir.path());
+    let db_path = dir.path().join(format!("index-{VOLUME_ID}.db"));
+    std::fs::write(&db_path, vec![0u8; 64]).expect("write db");
+    let importance = write_importance_files(dir.path(), VOLUME_ID);
+
+    clear_index(VOLUME_ID, Removal::Forgotten).expect("forgetting the share must succeed");
+
+    assert!(!db_path.exists(), "the index database goes");
+    for file in &importance {
+        assert!(!file.exists(), "{} must go with it", file.display());
+    }
+}
+
+/// "Clear index" reaches an importance database whose index is ALREADY gone: the
+/// leftovers of every share forgotten before the two were removed together. It
+/// is the one way a person reclaims them, so the sweep reads every store's files
+/// and not just the index's.
+#[test]
+fn clearing_everything_reclaims_an_importance_database_whose_index_is_already_gone() {
+    let _lock = crate::indexing::handle::test_lock();
+    let _guard = INDEX_REGISTRY_TEST_GUARD.lock().unwrap_or_else(|e| e.into_inner());
+    clear_registry_and_pools();
+
+    let dir = tempfile::tempdir().expect("temp dir");
+    let _config = crate::indexing::host::config::install_data_dir_for_test(dir.path());
+    let leftover = write_importance_files(dir.path(), "smb-forgotten-long-ago");
+    assert_eq!(
+        crate::indexing::resources::retention::total_index_db_bytes(),
+        96,
+        "what a clear would reclaim is what the settings screen reports"
+    );
+
+    clear_every_index().expect("the sweep must succeed");
+
+    for file in &leftover {
+        assert!(!file.exists(), "{} must be reclaimed", file.display());
+    }
+}
+
 /// **Every phase a start can meet, and what it does about each.** The bug this
 /// pins existed because one of the five was never considered: the reservation
 /// asked `contains_key`, which conflates "already live, correctly refuse" with "on
@@ -911,7 +1074,7 @@ fn a_start_answers_every_phase_it_can_meet() {
             "phase-table".to_string(),
             IndexInstance {
                 phase,
-                kind: IndexVolumeKind::Local,
+                started_as: StartRequest::for_test(IndexVolumeKind::Local),
                 signals: VolumeSignals::new(fresh(None), NoopEventSink::shared()),
                 work: VolumeWork::for_test("phase-table"),
             },

@@ -7,6 +7,7 @@
  */
 import { readClipboardText } from '$lib/tauri-commands'
 import { isTextInputFocused } from '$lib/utils/text-input-focus'
+import { detached } from './detached'
 import type { CommandHandlerRecord } from './types'
 
 export const clipboardHandlers = {
@@ -23,10 +24,10 @@ export const clipboardHandlers = {
     // sees the keydown; this branch is the actual entry point in that case.
     const selection = window.getSelection()
     if (selection && !selection.isCollapsed && selection.toString().length > 0) {
-      void navigator.clipboard.writeText(selection.toString())
+      detached(navigator.clipboard.writeText(selection.toString()))
       return
     }
-    void explorerRef?.copyToClipboard()
+    detached(explorerRef?.copyToClipboard())
   },
 
   'edit.cut': ({ explorerRef }) => {
@@ -35,7 +36,7 @@ export const clipboardHandlers = {
       document.execCommand('cut')
       return
     }
-    void explorerRef?.cutToClipboard()
+    detached(explorerRef?.cutToClipboard())
   },
 
   'edit.paste': async ({ explorerRef }) => {
@@ -49,11 +50,11 @@ export const clipboardHandlers = {
       }
       return
     }
-    void explorerRef?.pasteFromClipboard(false)
+    detached(explorerRef?.pasteFromClipboard(false))
   },
 
   'edit.pasteAsMove': ({ explorerRef }) => {
     // Option+Cmd+V is not a text shortcut, so no activeElement check needed
-    void explorerRef?.pasteFromClipboard(true)
+    detached(explorerRef?.pasteFromClipboard(true))
   },
 } satisfies Partial<CommandHandlerRecord>

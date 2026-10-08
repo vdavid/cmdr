@@ -12,10 +12,13 @@
 
 use std::collections::HashMap;
 
+use tokio_util::sync::CancellationToken;
+
 use super::scoped_walk::{BatchPlan, plan_incremental_batch};
 use super::walk::{IndexFolder, WalkedFolders, walk_index_folders};
 use crate::importance::scorer::{SignalSet, Weights, explain};
 use crate::importance::signals::{OptionalSignals, signals_for_dir};
+use crate::importance::stop::{PassError, StopPoll, check};
 use crate::importance::store::importance_db_path;
 use crate::importance::writer::{ImportanceWriter, WeightDelta, WeightRow};
 #[cfg(any(test, feature = "tooling"))]
@@ -35,16 +38,22 @@ use crate::indexing::store::IndexStore;
 /// derivable from its path alone at read time, so persisting its full signal blob
 /// would only bloat the store — on a dev home ~76% of folders floor. Split out so a
 /// test can drive it with synthetic folders and no index.
+///
+/// Polls `stop` as it goes, and a stopped scoring returns no rows at all: a partial
+/// row set handed to a full-pass write would replace the table with half a volume.
 pub(super) fn score_folders(
     folders: &mut WalkedFolders,
     home: &str,
     weights: &Weights,
     available: &SignalSet,
     now_secs: u64,
+    stop: &CancellationToken,
     mut optional_for: impl FnMut(&str) -> OptionalSignals,
-) -> Vec<WeightRow> {
+) -> Result<Vec<WeightRow>, PassError> {
     let mut rows = Vec::new();
-    folders.for_each(|f, path| {
+    let mut poll = StopPoll::new(stop);
+    folders.try_for_each(|f, path| {
+        poll.tick()?;
         let optional = optional_for(path);
         let signals = signals_for_dir(
             f.modified_at,
@@ -59,7 +68,7 @@ pub(super) fn score_folders(
         // A floored folder gets no row: its floored-ness is re-derivable from the
         // path at read time (`WeightLookup::Floored`), so the signal blob is waste.
         if explanation.floored {
-            return;
+            return Ok(());
         }
         let signals_json = serde_json::to_string(&signals).unwrap_or_else(|_| "{}".to_string());
         rows.push(WeightRow {
@@ -67,8 +76,9 @@ pub(super) fn score_folders(
             score: explanation.score.value(),
             signals_json,
         });
-    });
-    rows
+        Ok::<(), PassError>(())
+    })?;
+    Ok(rows)
 }
 
 /// The inputs to a full-volume recompute pass, bundled so the pass signature
@@ -89,6 +99,8 @@ pub(super) struct RecomputeInputs<'a> {
     pub(super) visits: &'a HashMap<String, u32>,
     /// Per-folder sampled `kMDItemLastUsedDate` seconds (macOS-local).
     pub(super) last_used: &'a HashMap<String, u64>,
+    /// The volume's stop signal, polled through scoring and through the write.
+    pub(super) stop: &'a CancellationToken,
 }
 
 /// Run a full-volume recompute over the already-walked `folders`, writing to
@@ -100,15 +112,15 @@ pub(super) struct RecomputeInputs<'a> {
 /// with a synthetic walk (no registry, no FFI). Weights are stamped at a
 /// freshly-bumped generation so every row carries the pass's as-of marker.
 ///
-/// TODO(importance): this loop is where a cancellation check belongs. Nothing in
-/// this subsystem is stoppable today, so `stop_all_indexing` (the memory
-/// watchdog's emergency stop, and shutdown) waits out a full pass. Closing it
-/// means the volume's `CancellationToken` here plus a stop hook in the
-/// scheduler; `DETAILS.md` § "A pass can't be stopped".
+/// **`Ok` means the pass is on disk.** The write blocks until its one transaction
+/// commits, so the outcome's generation is a stamped one. A stop during scoring
+/// writes nothing, and a stop during the write rolls it back; both return
+/// [`PassError::Cancelled`] with the previous pass's rows and stamps intact
+/// (`DETAILS.md` § "How a pass stops").
 pub(super) fn recompute_folders(
     inputs: &RecomputeInputs<'_>,
     folders: &mut WalkedFolders,
-) -> Result<RecomputeOutcome, String> {
+) -> Result<RecomputeOutcome, PassError> {
     if folders.is_empty() {
         return Ok(RecomputeOutcome {
             count: 0,
@@ -122,17 +134,17 @@ pub(super) fn recompute_folders(
         inputs.weights,
         &inputs.available,
         inputs.now_secs,
+        inputs.stop,
         |path| OptionalSignals {
             visit_count: inputs.visits.get(path).copied(),
             last_used_secs: inputs.last_used.get(path).copied(),
         },
-    );
+    )?;
     let count = rows.len();
 
     let writer = inputs.writer;
-    let generation = writer.next_generation().map_err(|e| e.to_string())?;
-    writer.write_weights(generation, rows).map_err(|e| e.to_string())?;
-    writer.flush_blocking().map_err(|e| e.to_string())?;
+    let generation = writer.next_generation()?;
+    writer.write_full_pass(generation, rows, inputs.stop)?;
     // A full pass REPLACES the whole `weights` table, so the WAL just grew to ~DB size.
     // Truncate it now that the pass is committed (a quiet point). Best-effort: it never
     // fails the recompute.
@@ -195,7 +207,9 @@ pub fn recompute_index_to_db(
     let footprint_before = cmdr_fs::process_memory::current_phys_footprint();
     let walk_started = std::time::Instant::now();
     let conn = IndexStore::open_read_connection(index_db).map_err(|e| e.to_string())?;
-    let mut folders = walk_index_folders(&conn, home)?;
+    // A dev tool measuring a database file has no volume behind it, so no stop signal.
+    let never = CancellationToken::new();
+    let mut folders = walk_index_folders(&conn, home, &never).map_err(|e| e.to_string())?;
     // Read the footprint while the walk's output is still the only thing resident,
     // so the number is the walk's cost rather than the whole pass's.
     let walk_footprint_bytes = footprint_growth(footprint_before);
@@ -210,9 +224,16 @@ pub fn recompute_index_to_db(
         });
     }
     let folders_walked = folders.len();
-    let rows = score_folders(&mut folders, home, &Weights::default(), &available, now_secs, |_| {
-        OptionalSignals::default()
-    });
+    let rows = score_folders(
+        &mut folders,
+        home,
+        &Weights::default(),
+        &available,
+        now_secs,
+        &never,
+        |_| OptionalSignals::default(),
+    )
+    .map_err(|e| e.to_string())?;
     let walk_and_score = walk_started.elapsed();
 
     // Write + flush (the write phase).
@@ -291,20 +312,24 @@ pub(super) enum RescoreScope {
 /// Returns the [`BatchPlan`] alongside the walk because the two are one decision: the
 /// plan says which origins were too big to descend, and the caller needs that to keep
 /// the clear list off them.
+///
+/// `stop` reaches both walks: the fallback is the same seconds-long walk a full pass
+/// takes, and the scoped one looks between origins.
 pub(super) fn walk_for_incremental(
     conn: &rusqlite::Connection,
     home: &str,
     origins: &[String],
     previous_markers: &HashMap<String, bool>,
-) -> Result<(WalkedFolders, RescoreScope, BatchPlan), String> {
+    stop: &CancellationToken,
+) -> Result<(WalkedFolders, RescoreScope, BatchPlan), PassError> {
     let plan = plan_incremental_batch(conn, origins)?;
-    match super::scoped_walk::try_scoped_walk(conn, home, &plan, previous_markers)? {
+    match super::scoped_walk::try_scoped_walk(conn, home, &plan, previous_markers, stop)? {
         super::scoped_walk::ScopedWalkOutcome::Scoped(folders) => {
             Ok((folders, RescoreScope::ChangedSubtreesOnly, plan))
         }
         super::scoped_walk::ScopedWalkOutcome::FullWalkNeeded(reason) => {
             log::debug!(target: "importance", "incremental rescore takes the full walk: {reason}");
-            Ok((walk_index_folders(conn, home)?, RescoreScope::WithAncestors, plan))
+            Ok((walk_index_folders(conn, home, stop)?, RescoreScope::WithAncestors, plan))
         }
     }
 }
@@ -384,12 +409,16 @@ pub(super) struct ScoringInputs<'a> {
 
 /// The inputs to an incremental rescore, bundled like [`RecomputeInputs`].
 pub(super) struct IncrementalInputs<'a> {
+    /// The volume being rescored, so the Spotlight sample can find its folders on disk.
+    pub(super) volume_id: &'a str,
     pub(super) writer: &'a ImportanceWriter,
     pub(super) weights: &'a Weights,
     pub(super) home: &'a str,
     pub(super) now_secs: u64,
     pub(super) available: SignalSet,
     pub(super) visits: &'a HashMap<String, u32>,
+    /// The volume's stop signal, polled up to the write.
+    pub(super) stop: &'a CancellationToken,
 }
 
 impl<'a> IncrementalInputs<'a> {
@@ -432,20 +461,25 @@ impl<'a> IncrementalInputs<'a> {
 /// Split from the pool/registry resolution so a test drives it with a synthetic
 /// walk and a directly-built writer (no registry, no FFI). Samples
 /// `kMDItemLastUsedDate` only for the touched subset (bounded work).
+///
+/// **A stop is heard up to the write, and never inside it.** Everything before the
+/// write is in memory, so a stopped rescore leaves the store untouched. The write
+/// itself is one transaction bounded by what MOVED, which is milliseconds
+/// (`DETAILS.md` § "Only what moved is written"), so it runs to its commit.
 pub(super) fn incremental_rescore(
     inputs: &IncrementalInputs<'_>,
     folders: &mut WalkedFolders,
     changed_paths: &[String],
     scope: RescoreScope,
     demoted: &[String],
-) -> Result<IncrementalOutcome, String> {
+) -> Result<IncrementalOutcome, PassError> {
     // The set of folders to (re)insert: every walked folder in a changed path's
     // subtree (downward floor propagation), plus each demoted origin on its own, plus
     // — on a full walk only — each changed path's capped ancestor chain (upward marker
     // propagation). The ancestor cap bounds the upward walk; the downward side is
     // bounded by the subtree that actually changed. Only THIS subset materializes a
     // path, so the memory stays proportional to what changed.
-    let subset = rescore_subset(folders, changed_paths, scope, demoted);
+    let subset = rescore_subset(folders, changed_paths, scope, demoted, inputs.stop)?;
     if subset.is_empty() && changed_paths.is_empty() {
         return Ok(IncrementalOutcome::default());
     }
@@ -460,19 +494,22 @@ pub(super) fn incremental_rescore(
             .take(crate::importance::last_used::SAMPLE_CAP)
             .map(|(_, path)| path.clone())
             .collect();
-        crate::importance::last_used::sample_last_used(&subset_paths)
+        crate::importance::last_used::sample_last_used(inputs.volume_id, &subset_paths)
     } else {
         HashMap::new()
     };
 
-    let rows = rescore_rows(&inputs.scoring(), &subset, &last_used);
+    let rows = rescore_rows(&inputs.scoring(), &subset, &last_used, inputs.stop)?;
 
     let writer = inputs.writer;
     // The incremental rows carry the CURRENT generation (no bump), so they're
     // as-fresh-as the last full pass and untouched folders don't turn stale. The
     // changed subtrees are cleared first so renamed-away / deleted / now-floored
     // folders leave no orphan row.
-    let generation = writer.next_generation().map_err(|e| e.to_string())?.saturating_sub(1);
+    let generation = writer.next_generation()?.saturating_sub(1);
+
+    // The last look: past here the pass is one bounded transaction.
+    check(inputs.stop)?;
 
     // Blocks until the transaction commits (so it's the flush too) and hands back what
     // it really wrote: the rescored rows are the CANDIDATES, and the writer skips
@@ -480,9 +517,7 @@ pub(super) fn incremental_rescore(
     // of them, which is what stops a `$HOME`-origin batch from rewriting ~51 k rows a
     // minute (`docs/notes/performance/importance-treadmill-2026-08-04.md`).
     let considered = rows.len();
-    let write = writer
-        .write_weights_incremental(generation, rows, changed_paths.to_vec())
-        .map_err(|e| e.to_string())?;
+    let write = writer.write_weights_incremental(generation, rows, changed_paths.to_vec())?;
     // The every-60s incremental is the WAL churn source: truncate at this
     // quiet point so the file doesn't creep up in place. Best-effort, never fails.
     let _ = writer.checkpoint_wal();
@@ -528,7 +563,8 @@ pub(super) fn rescore_subset(
     changed_paths: &[String],
     scope: RescoreScope,
     demoted: &[String],
-) -> Vec<(IndexFolder, String)> {
+    stop: &CancellationToken,
+) -> Result<Vec<(IndexFolder, String)>, PassError> {
     let touched = match scope {
         RescoreScope::WithAncestors => touched_folder_set(changed_paths),
         // A scoped walk never read the ancestors, and doesn't need to: the only
@@ -539,12 +575,16 @@ pub(super) fn rescore_subset(
         RescoreScope::ChangedSubtreesOnly => demoted.iter().cloned().collect(),
     };
     let mut subset = Vec::new();
-    folders.for_each(|f, path| {
+    // On the full-walk fallback this filter sees the whole volume, so it polls too.
+    let mut poll = StopPoll::new(stop);
+    folders.try_for_each(|f, path| {
+        poll.tick()?;
         if touched.contains(path) || is_in_changed_subtree(path, changed_paths) {
             subset.push((*f, path.to_string()));
         }
-    });
-    subset
+        Ok::<(), PassError>(())
+    })?;
+    Ok(subset)
 }
 
 /// Assemble each subset folder's signals and score it; only the NON-FLOORED ones get
@@ -553,35 +593,37 @@ pub(super) fn rescore_rows(
     inputs: &ScoringInputs<'_>,
     subset: &[(IndexFolder, String)],
     last_used: &HashMap<String, u64>,
-) -> Vec<WeightRow> {
-    subset
-        .iter()
-        .filter_map(|(f, path)| {
-            let optional = OptionalSignals {
-                visit_count: inputs.visits.get(path).copied(),
-                last_used_secs: last_used.get(path).copied(),
-            };
-            let signals = signals_for_dir(
-                f.modified_at,
-                f.children,
-                path,
-                inputs.home,
-                f.has_marker_below,
-                f.under_floored_ancestor,
-                optional,
-            );
-            let explanation = explain(&signals, &inputs.available, inputs.weights, inputs.now_secs);
-            if explanation.floored {
-                return None;
-            }
-            let signals_json = serde_json::to_string(&signals).unwrap_or_else(|_| "{}".to_string());
-            Some(WeightRow {
-                path: path.clone(),
-                score: explanation.score.value(),
-                signals_json,
-            })
-        })
-        .collect()
+    stop: &CancellationToken,
+) -> Result<Vec<WeightRow>, PassError> {
+    let mut rows = Vec::new();
+    let mut poll = StopPoll::new(stop);
+    for (f, path) in subset {
+        poll.tick()?;
+        let optional = OptionalSignals {
+            visit_count: inputs.visits.get(path).copied(),
+            last_used_secs: last_used.get(path).copied(),
+        };
+        let signals = signals_for_dir(
+            f.modified_at,
+            f.children,
+            path,
+            inputs.home,
+            f.has_marker_below,
+            f.under_floored_ancestor,
+            optional,
+        );
+        let explanation = explain(&signals, &inputs.available, inputs.weights, inputs.now_secs);
+        if explanation.floored {
+            continue;
+        }
+        let signals_json = serde_json::to_string(&signals).unwrap_or_else(|_| "{}".to_string());
+        rows.push(WeightRow {
+            path: path.clone(),
+            score: explanation.score.value(),
+            signals_json,
+        });
+    }
+    Ok(rows)
 }
 
 /// Whether `path` sits at or under any of `changed_paths` — the downward subtree

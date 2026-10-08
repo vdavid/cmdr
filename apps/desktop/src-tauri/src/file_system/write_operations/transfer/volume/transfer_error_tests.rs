@@ -74,6 +74,23 @@ fn a_not_found_from_the_destination_is_not_a_missing_source() {
     );
 }
 
+#[test]
+fn a_file_in_the_way_of_the_destination_folder_keeps_its_own_path() {
+    // The volume names the thing in the way, which is often an ancestor of the
+    // folder the copy was told to land in (`/ctx`). That path is the only fact
+    // that tells the user what to move aside, so it must not be swapped for the
+    // context path or flattened into a generic I/O refusal with a Retry.
+    let err = map_volume_error(
+        "/photos/2026/trip",
+        PathRole::Destination,
+        VolumeError::NotADirectory("/photos/2026".to_string()),
+    );
+    assert!(
+        matches!(&err, WriteOperationError::DestinationNotAFolder { path } if path == "/photos/2026"),
+        "got {err:?}"
+    );
+}
+
 /// cmdr-reports#17: a move whose source delete hit `EPERM` (a Finder-locked
 /// file) told the user "you don't have permission to move files here". The
 /// errno died inside `VolumeError::PermissionDenied`, so the refusal read as
@@ -117,6 +134,53 @@ fn test_map_volume_error_permission_denied() {
     );
     assert!(
         matches!(err, WriteOperationError::PermissionDenied { path, message, errno: None, refusal: PermissionRefusal::Unclassified, refused_folder: None, side: Some(PermissionSide::Source) } if message == "Access denied" && path == "/ctx")
+    );
+}
+
+/// ❗ An S3 refusal can be the key's permissions OR the provider pausing the
+/// account (a usage cap, a billing hold: B2's daily cap answers `403
+/// AccessDenied`, live), and the answer can't say which, so the refusal is
+/// typed for advice naming both. Read off the app path's own scheme, ❌ never a
+/// message.
+#[test]
+fn an_s3_refusal_is_the_object_store_accounts() {
+    let err = map_volume_error(
+        "s3://AKIATEST@s3.eu-central-003.backblazeb2.com:443/photos/a.jpg",
+        PathRole::Source,
+        VolumeError::PermissionDenied {
+            path: "/photos/a.jpg".to_string(),
+            raw_os_error: None,
+        },
+    );
+    assert!(
+        matches!(
+            &err,
+            WriteOperationError::PermissionDenied {
+                refusal: PermissionRefusal::ObjectStoreAccount,
+                errno: None,
+                side: Some(PermissionSide::Source),
+                ..
+            }
+        ),
+        "{err:?}"
+    );
+    let local = map_volume_error(
+        "/Users/me/a.jpg",
+        PathRole::Source,
+        VolumeError::PermissionDenied {
+            path: "/Users/me/a.jpg".to_string(),
+            raw_os_error: None,
+        },
+    );
+    assert!(
+        matches!(
+            &local,
+            WriteOperationError::PermissionDenied {
+                refusal: PermissionRefusal::Unclassified,
+                ..
+            }
+        ),
+        "{local:?}"
     );
 }
 
@@ -171,6 +235,32 @@ fn test_map_volume_error_delete_pending() {
         VolumeError::DeletePending("STATUS_DELETE_PENDING".to_string()),
     );
     assert!(matches!(err, WriteOperationError::DeletePending { path } if path == "/ctx"));
+}
+
+#[test]
+fn test_map_volume_error_cold_storage() {
+    // An S3 object in Glacier can't be read until it's restored. It must stay
+    // typed to the dialog: as an `IoError` it would offer a Retry that can only
+    // meet the same archived object again.
+    let err = map_volume_error(
+        "/ctx",
+        PathRole::Source,
+        VolumeError::ColdStorage("/bucket/old.tar".to_string()),
+    );
+    assert!(matches!(err, WriteOperationError::SourceInColdStorage { path } if path == "/ctx"));
+}
+
+#[test]
+fn test_map_volume_error_source_changed() {
+    // A server-side copy whose source was replaced mid-copy published nothing.
+    // Typed to the dialog, so the user hears what happened rather than a
+    // generic I/O failure.
+    let err = map_volume_error(
+        "/ctx",
+        PathRole::Source,
+        VolumeError::SourceChanged("/bucket/report.pdf".to_string()),
+    );
+    assert!(matches!(err, WriteOperationError::SourceChanged { path } if path == "/ctx"));
 }
 
 #[test]

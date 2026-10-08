@@ -57,11 +57,11 @@ fn unix_home_paths() {
         ("/Users/john", "$HOME"),
         (
             "/Users/veszelovszki/Library/Application Support/com.veszelovszki.cmdr-dev",
-            // "Library" is in allowlist as a parent dir. The leaf `com.veszelovszki.cmdr-dev`
-            // has dots but the trailing segment `cmdr-dev` contains a `-` (not alnum), so
-            // `has_extension_like_suffix` returns false → leaf labeled `<dir>` (correct: it
-            // IS a directory). "Application Support" is the allowlisted penultimate parent.
-            "$HOME/<dir>/Application Support/<dir>",
+            // `Library/Application Support` is a home role, kept whole under `$HOME`. The leaf
+            // `com.veszelovszki.cmdr-dev` has dots but the trailing segment `cmdr-dev` contains
+            // a `-` (not alnum), so `has_extension_like_suffix` returns false → leaf labeled
+            // `<dir>` (correct: it IS a directory).
+            "$HOME/Library/Application Support/<dir>",
         ),
     ];
     for (input, expected) in cases {
@@ -96,8 +96,9 @@ fn volumes_paths() {
     let cases = [
         ("/Volumes/MyDrive/file.txt", "/Volumes/<volume>/<file>.txt"),
         (
+            // A home role name off `$HOME` is the user's own naming.
             "/Volumes/My Backup Drive/Documents/photo.jpg",
-            "/Volumes/<volume>/Documents/<file>.jpg",
+            "/Volumes/<volume>/<dir>/<file>.jpg",
         ),
         (
             "/Volumes/Backup/2026/january/data.csv",
@@ -122,7 +123,7 @@ fn media_paths() {
         ("/media/usb0/file.txt", "/media/<volume>/<file>.txt"),
         (
             "/media/alice/External/Documents/x.pdf",
-            "/media/<volume>/<dir>/Documents/<file>.pdf",
+            "/media/<volume>/<dir>/<dir>/<file>.pdf",
         ),
         ("/media/cdrom", "/media/<volume>"),
         ("/media/My Stick/data.bin", "/media/<volume>/<file>.bin"),
@@ -130,7 +131,8 @@ fn media_paths() {
             "mounted /media/sdcard/dcim/photo.jpg ok",
             "mounted /media/<volume>/<dir>/<file>.jpg ok",
         ),
-        ("/media/usb1/Music/track.mp3", "/media/<volume>/Music/<file>.mp3"),
+        // Non-role allowlisted parents survive anywhere.
+        ("/media/usb1/src/main.rs", "/media/<volume>/src/<file>.rs"),
     ];
     for (input, expected) in cases {
         assert_eq!(r(input), expected, "input: {input:?}");
@@ -224,7 +226,7 @@ fn trash_refusal_line_redacts_its_path() {
                  Screenshot 2026-09-04 at 01.13.03 PM-2.jpeg: the Trash refused it";
     let out = r(input);
     assert!(
-        out.starts_with("op 01a0 (Trash) failed: $HOME/<dir>/<dir>/<dir>/<dir>/<file>.jpeg"),
+        out.starts_with("op 01a0 (Trash) failed: $HOME/Library/CloudStorage/<dir>/<dir>/<file>.jpeg"),
         "path not fully redacted: {out}"
     );
     assert!(
@@ -289,10 +291,15 @@ fn share_relative_paths_in_fields() {
             r#"checking 1 item(s) against path="/trips/2023/summer trip" on volume smb-1"#,
             r#"checking 1 item(s) against path="/<dir>/<dir>/<dir>" on volume smb-1"#,
         ),
-        // Allowlisted parents survive, like in every other path shape.
+        // Allowlisted parents survive, like in every other path shape, but a home role name
+        // proves nothing off `$HOME`.
+        (
+            r#"write_from_stream: share=media, path="src/report.pdf", size=12"#,
+            r#"write_from_stream: share=media, path="src/<file>.pdf", size=12"#,
+        ),
         (
             r#"write_from_stream: share=media, path="Documents/report.pdf", size=12"#,
-            r#"write_from_stream: share=media, path="Documents/<file>.pdf", size=12"#,
+            r#"write_from_stream: share=media, path="<dir>/<file>.pdf", size=12"#,
         ),
     ];
     for (input, expected) in cases {
@@ -603,12 +610,13 @@ fn mdns_hostnames() {
 #[test]
 fn ipv4_addresses() {
     let cases = [
-        ("connect to 192.168.1.1 timeout", "connect to <ipv4> timeout"),
-        ("10.0.0.5", "<ipv4>"),
-        ("from 8.8.8.8 to 8.8.4.4", "from <ipv4> to <ipv4>"),
-        ("172.16.254.1:8080", "<ipv4>:8080"),
-        ("0.0.0.0", "<ipv4>"),
-        ("255.255.255.255", "<ipv4>"),
+        ("connect to 192.168.1.1 timeout", "connect to <ipv4-private> timeout"),
+        ("10.0.0.5", "<ipv4-private>"),
+        ("from 8.8.8.8 to 8.8.4.4", "from <ipv4-public> to <ipv4-public>"),
+        ("172.16.254.1:8080", "<ipv4-private>:8080"),
+        ("0.0.0.0", "<ipv4-unspecified>"),
+        ("127.0.0.1", "<ipv4-loopback>"),
+        ("169.254.10.20", "<ipv4-link-local>"),
     ];
     for (input, expected) in cases {
         assert_eq!(r(input), expected, "input: {input:?}");
@@ -618,12 +626,12 @@ fn ipv4_addresses() {
 #[test]
 fn ipv6_addresses() {
     let cases = [
-        ("2001:db8:85a3::8a2e:370:7334", "<ipv6>"),
-        ("::1", "<ipv6>"),
-        ("fe80::1", "<ipv6>"),
-        ("from 2001:db8::1 to ::1", "from <ipv6> to <ipv6>"),
-        ("fe80::abcd:1234", "<ipv6>"),
-        ("2001:0db8:0000:0000:0000:ff00:0042:8329", "<ipv6>"),
+        ("2001:db8:85a3::8a2e:370:7334", "<ipv6-public>"),
+        ("::1", "<ipv6-loopback>"),
+        ("fe80::1", "<ipv6-link-local>"),
+        ("from 2001:db8::1 to ::1", "from <ipv6-public> to <ipv6-loopback>"),
+        ("fd00::abcd:1234", "<ipv6-private>"),
+        ("2001:0db8:0000:0000:0000:ff00:0042:8329", "<ipv6-public>"),
     ];
     for (input, expected) in cases {
         assert_eq!(r(input), expected, "input: {input:?}");
@@ -999,10 +1007,9 @@ fn replacement_count_histogram() {
         ("smb://<host>", redacted.matches("smb://<host>").count()),
         (r"\\<host>", redacted.matches(r"\\<host>").count()),
         ("<host>.local", redacted.matches("<host>.local").count()),
-        ("<ipv4>", redacted.matches("<ipv4>").count()),
-        ("<ipv6>", redacted.matches("<ipv6>").count()),
+        ("<ipv4-…>", redacted.matches("<ipv4-").count()),
+        ("<ipv6-…>", redacted.matches("<ipv6-").count()),
         ("<email>", redacted.matches("<email>").count()),
-        ("<userinfo>", redacted.matches("<userinfo>").count()),
         ("<share>", redacted.matches("<share>").count()),
         ("<file>", redacted.matches("<file>").count()),
         ("<dir>", redacted.matches("<dir>").count()),

@@ -16,12 +16,12 @@ Depth and rationale for inline rename. `CLAUDE.md` holds the must-knows.
 - **rename-operations.ts**: pure save-flow logic returning a `RenameResult` discriminated union instead of side effects.
 - **rename-activation.ts**: click-to-rename timer logic (800 ms hold, 10 px threshold, cancel on double-click).
 - **rename-step.ts**: the two pure halves of a chained rename: which keypress chains, and which row it lands on.
-- **chain-reports.ts**: the two running toasts a chain speaks through (kept names, unconfirmed renames), each one per
-  pane, plus the debounced refresh the unconfirmed one owns.
+- **chain-reports.ts**: the two running toasts a chain speaks through (kept names, renames a slow volume is still
+  running), each one per pane.
 
 ## Three-stage save flow (`rename-operations.ts::executeRenameSave()`)
 
-`RenameResult` variants: `noop`, `error`, `timeout`, `extension-ask`, `conflict`, `success`.
+`RenameResult` variants: `noop`, `error`, `still-renaming`, `extension-ask`, `conflict`, `success`, `confirm-move`.
 
 1. **Extension check**: if `extensionPolicy === 'ask'` and extensions differ meaningfully
    (`extensionsDifferMeaningfully()` from `filename-validation.ts`), return `{ type: 'extension-ask' }`; the caller
@@ -30,9 +30,27 @@ Depth and rationale for inline rename. `CLAUDE.md` holds the must-knows.
 2. **Backend validity check**: `checkRenameValidity(parentPath, originalName, trimmedName)`. `valid: false` →
    `{ type: 'error' }`. `hasConflict: true, isCaseOnlyRename: false` → `{ type: 'conflict', validity }`.
    `hasConflict: true, isCaseOnlyRename: true` → proceed (same inode, just case). `hasConflict: false` → proceed.
-3. **Perform rename**: `renameFile(from, to, force)`. Success → `{ type: 'success', newName }`. Timeout →
-   `{ type: 'timeout' }`, wordless: the caller aggregates a run of them into one toast, so the sentence depends on how
-   many are waiting to be reported (see "Saying so, in one toast that grows").
+3. **Perform rename**: `renameFile(from, to, force)`. Success → `{ type: 'success', newName }`. A slow volume (the
+   backend answers `stillRunning` past its 2 s reply deadline, `$lib/tauri-commands/mutation-reply.ts`) →
+   `{ type: 'still-renaming', settled }`, wordless: `settled` resolves to the `success` or `error` the rename really
+   ended with. The editor lets go at once rather than hold the person on the volume; the flow counts the rename in a
+   running toast and reports its end the way a superseded save does (it may toast, never steer: no cursor move, no
+   shake), since by then the person may be anywhere (see "Saying so, in one toast that grows").
+
+**A rename that copies.** On S3 a folder or big file has no rename: the backend copies every object and deletes the
+source, and says so in `validity.byMove`. A small, free one (`confirmFirst: false`) goes through `renameFile` as usual,
+which starts it as a background move with the progress chip. A big, uncounted, or priced one (`confirmFirst: true`; the
+rule is Rust's, `RenameByMove::from_tally`) returns `{ type: 'confirm-move', newName }` before renaming anything: the
+flow ends the session like a success (minus the cursor follow, since nothing moved yet) and calls the pane's
+`onConfirmRenameAsMove`, which opens the Move dialog in rename mode, with its cost line (`../pane/rename-as-move.ts`,
+`../../file-operations/transfer/DETAILS.md` § "Rename mode").
+
+**In a chain, the Move dialog waits for the editor to close** (`../pane/rename-move-dialog.ts`). A SUPERSEDED save
+answering `confirm-move` is held and opened once `closeEditor` runs (every editor close goes through it), a microtask
+later so the pane's focus hand-back doesn't steal the dialog's focus; if no editor is open when it lands, it opens at
+once. A chain opens ONE Move dialog (`claim`): confirming it starts a move that holds the progress slot, so a second
+couldn't open anyway. Its other renames that need one keep their names, in the kept-names toast
+(`fileExplorer.rename.needsOwnMoveDialog`).
 
 Conflict resolution calls `performRename(target, newName, force: true)` after "Overwrite and trash/delete". The
 `moveToTrash` call in the overwrite-trash path also has timeout detection (persistent toast + refresh).
@@ -252,9 +270,12 @@ one REPLACES the message in place. It names the newest file with the reason that
 count. All three ways a chained name gets dropped go through it: the keypress-time `severity === 'error'`, the backend's
 `conflict`, and the backend's `error` (a read-only volume, a permission refusal).
 
-A `timeout` gets a SECOND running toast of its own (`unconfirmed` / `unconfirmedAndOthers`), never a place in the first.
-The rename may well have landed on disk, and saying the file kept its name would be a lie about a volume we simply got
-no answer from. Same mechanics, separate id, separate count.
+A `still-renaming` gets a SECOND running toast of its own (`stillRenaming` / `stillRenamingAndOthers`), never a place in
+the first: the rename may well land, and saying the file kept its name would be a lie. It counts what's still running,
+so it shrinks as renames settle and goes once none is left (`stillRenaming` hands back the call that takes one off).
+Each entry carries the target's `isDirectory`, so the count reads "other folders", "other files", or "other files and
+folders" by what the OTHER running renames are (the `kind` select). A rename that ends refused moves into the kept-names
+toast with the volume's reason; one that lands says nothing more, since the listing already shows it.
 
 Two properties of the toast store force that shape, and both fail silently:
 
@@ -262,21 +283,21 @@ Two properties of the toast store force that shape, and both fail silently:
   which is exactly when the user is typing the next name. A transient toast would be gone before it was read.
 - The stack holds five and silently DROPS a new toast once they're all persistent (`ui/DETAILS.md` § Toast system). One
   toast per kept name therefore loses everything past the fifth with nothing said, which is the failure this feature
-  exists to prevent. Worse, a stack the timeouts had filled would leave the kept-names toast unable to be created at
+  exists to prevent. Worse, a stack the slow renames had filled would leave the kept-names toast unable to be created at
   all, on exactly the slow volumes where a chain produces both. Two toasts can't stack, so no length of chain can drop
   either one.
 
-The unconfirmed toast also owns the refresh, and DEBOUNCES it: `scheduleUnconfirmedRefresh` resets a 1 s timer per
-timeout and refreshes once the volume has gone quiet. A refresh per unanswered rename would be N directory listings
-asked of a volume already too slow to answer a rename, and the one that runs last is also the only one that sees the
-whole chain settled. The listing id is read when the timer fires, not when it's set, so a pane that has moved on
-refreshes what it's actually showing.
+No refresh follows a slow rename: each one reports its own end, and the volume's `notify_mutation` (or the local
+watcher) puts the result in the listing, so asking a volume already too slow to rename for a directory listing would
+only add load.
 
-The count belongs to the toast on screen, not to the chain: dismissing it is the user saying they've read it, so the
-`onDismiss` callback zeroes the tally and the next kept name starts a fresh message. It deliberately carries ACROSS a
-chain boundary while the toast is still up, because a name nobody has acknowledged is still unacknowledged, and
-resetting the count there would quietly drop what an earlier chain reported. `pane/rename-chain-toast.test.ts` drives
-this against the real store; the rest of the chain tests stub it.
+The kept-names count belongs to the toast on screen, not to the chain: dismissing it is the user saying they've read it,
+so the `onDismiss` callback zeroes the tally and the next kept name starts a fresh message. Dismissing the
+still-renaming toast only stops its settles from bringing it back; the next rename that goes slow shows it again,
+counting everything still running. It deliberately carries ACROSS a chain boundary while the toast is still up, because
+a name nobody has acknowledged is still unacknowledged, and resetting the count there would quietly drop what an earlier
+chain reported. `pane/rename-chain-toast.test.ts` drives this against the real store; the rest of the chain tests stub
+it.
 
 Both toasts DO go when the pane navigates to another directory: `forget` drops each one and zeroes its tally, called
 from `loadDirectory` (`pane/listing-loader.ts`) when the path actually changes. A report that outlives its directory

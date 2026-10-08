@@ -159,13 +159,18 @@ Optional methods default to `Err(VolumeError::NotSupported)` or `false`, so new 
 - `can_watch_listings()`: enables the `notify`-based *listing* file watcher in `operations.rs` (separate from the drive-index watcher, which the indexing lifecycle owns). `MtpVolume` returns `false` (it has its own USB event loop).
 - `supports_export()`: "this volume can stream its bytes via `open_read_stream`" (so it can act as a source in a cross-volume copy). Gates the copy dialog's "copy from this volume" UI, and `copy_between_volumes` refuses a `false` source synchronously, before it opens anything and without logging a line. Local, MTP, SMB, Archive, SFTP, WebDAV, and InMemory return `true`. ❗ Implementing the read path does NOT declare it, and that gap is invisible from inside a backend: `SftpVolume` shipped with `open_read_stream`, `read_range`, and `supports_streaming()` all working and this predicate defaulted to `false`, so every copy off a server was refused with nothing failing anywhere. `conformance::assert_export_matches_the_bytes_offered` now streams a seeded file back byte for byte and holds the declaration to what happened, in both directions; every backend's suite runs it.
 - `is_writable()`: whether the backend accepts mutations at all (create, rename, delete). Default `false`, matching the `NotSupported` default of every mutation method, so a backend opts in when it implements them. `true` for `LocalPosixVolume`, `SmbVolume`, `MtpVolume`, and `InMemoryVolume`; `ArchiveVolume` restates `false` explicitly, because writing INTO a zip is the app's managed archive-edit rewrite and never mutates through the volume. It is a claim about the BACKEND, so a read-only MOUNT of a writable backend still answers `true` — that mount's own read-only flag travels separately as the location's `mountIsReadOnly`. The predicate keeps the bare name while the published field spells its subject out (`backend_can_write`): inside a `Volume` impl the subject can only be the backend, while the published struct sits next to the location's mount flag, where it can't. This is the one capability predicate whose answer reaches the user as UI state (New folder / New file / Rename / Paste render enabled off it), so `conformance::assert_writability_matches_the_mutations_offered` pins it against real behavior in both directions.
-- `capabilities()`: the published fold of the predicates above into `VolumeCapabilities` (`backend_can_write`, `can_export`, and `can_be_indexed`, which folds `backend_kind().can_be_indexed()`), the struct that travels over IPC so the frontend receives capability as DATA. `can_be_indexed` is one decision read twice: the switcher's index affordances gate on it, and `cmdr-index`'s `Index::start_volume` refuses a registered volume it says no for. ❌ Never override it and never compute an answer inside it: growing the surface means adding a predicate and folding it there. Only what a consumer OUTSIDE the backend acts on belongs in the struct; the predicates that steer the operations engine stay predicates. Published onto each `LocationInfo` by `volumes::enrich_from_volume_registry` (and its Linux twin), which is also why a location with no registered volume carries `capabilities: null` and lets the frontend fall back to its per-kind defaults.
+- `capabilities()`: the published fold of the predicates above into `VolumeCapabilities` (`backend_can_write`, `can_export`, `can_share_links`, `renames_can_copy`, `can_be_indexed`, which folds `backend_kind().can_be_indexed()`, and `has_os_mount_fallback`, which folds `backend_kind().has_os_mount_fallback()` and is `true` for SMB alone, so only an SMB share's green dot says "connected directly"), the struct that travels over IPC so the frontend receives capability as DATA. `can_be_indexed` is one decision read twice: the switcher's index affordances gate on it, and `cmdr-index`'s `Index::start_volume` refuses a registered volume it says no for. ❌ Never override it and never compute an answer inside it: growing the surface means adding a predicate and folding it there. Only what a consumer OUTSIDE the backend acts on belongs in the struct; the predicates that steer the operations engine stay predicates. Published onto each `LocationInfo` by `volumes::enrich_from_volume_registry` (and its Linux twin), which is also why a location with no registered volume carries `capabilities: null` and lets the frontend fall back to its per-kind defaults.
 - `supports_streaming()`: enables cross-volume transfers via `open_read_stream` / `write_from_stream`. `LocalPosixVolume`, `MtpVolume`, `SmbVolume`, `ArchiveVolume`, `SftpVolume`, `WebdavVolume`, and `InMemoryVolume` all return `true`. This is the universal byte path for every non-APFS-clone copy. A new backend implements the two streaming methods AND states both this and `supports_export()`; nothing in production reads this predicate on its own, so `assert_export_matches_the_bytes_offered` is what keeps it honest alongside the one that is read.
-- `supports_unknown_length_writes()`: whether `write_from_stream` can consume generated output whose final byte count is unavailable before EOF. It is deliberately separate from `supports_streaming()`: WebDAV's `Content-Length` and MTP's `SendObject` can stream known files but cannot frame an unknown body. Default `false`; no backend opts in yet. A false backend rejects `StreamLength::Unknown` before destination or source I/O, and `write_is_single_shot(Unknown)` is always false. The shared conformance assertion pins refusal, zero source polls, and byte-for-byte destination preservation.
+- `supports_unknown_length_writes()`: whether `write_from_stream` can consume generated output whose final byte count is unavailable before EOF. It is deliberately separate from `supports_streaming()`: WebDAV's `Content-Length` and MTP's `SendObject` can stream known files but cannot frame an unknown body. Default `false`; Local, SMB, and S3 (a multipart upload, or one PUT when the stream ends inside its first part) opt in. A false backend rejects `StreamLength::Unknown` before destination or source I/O, and `write_is_single_shot(Unknown)` is always false. The shared conformance assertion pins refusal, zero source polls, and byte-for-byte destination preservation.
+- `publishes_writes_whole()`: whether EVERY `write_from_stream` is published whole by the protocol (nothing at the name until the write completes, nothing after one that doesn't, and a replaced file readable until then). Default `false`; `true` for `S3Volume` only (PUT and `CompleteMultipartUpload`). The transfer engine then writes the final name with no `.cmdr-tmp-*` staging and takes a file→file Overwrite in place, because a staged landing there is a server-side copy plus a delete. Weaker than `write_is_single_shot` (a request stays open while the source drains, and `CreateNew` may be a check before the write), so only the staging decision reads it: `write_operations/transfer/volume/DETAILS.md` § "Whole-publish destinations".
+- `rename_work(path)`: whether renaming that ENTRY is one cheap server-side call (`RenameWork::OneCall`, the default, with no I/O) or a copy of its bytes plus a delete (`CopyThenDelete`). Answered per entry, ❌ never inferred from a backend kind: `S3Volume` renames an object up to its part floor (64 MiB) in one call and a folder or a bigger object never. ❗ Every `rename` caller asks it first and sends a `CopyThenDelete` entry through the transfer engine as a same-volume move (`write_operations/transfer/volume/DETAILS.md` § "A same-volume move whose renames copy"); `rename` itself still refuses one with `NotSupported`, so nothing copies a folder by accident. The callers and their routes: `write_operations/DETAILS.md` § "Renames that run as moves".
+- `tally_subtree(path, cap)`: files, bytes, folders, and each file's size and date under a path, stopping once more than `cap` are found (`SubtreeTally::complete` says whether it did). F2 asks it how big a rename that copies would be, and what it costs. Default: one listing per folder (`cmdr_fs::volume::server_side::tally_by_listing`); `S3Volume` lists recursively, a thousand keys a request.
+- `delete_files(paths)`: deletes a batch of FILES the caller just listed, one result per path. Default: `delete` per path, a path already gone answering `Ok`. `S3Volume` sends `DeleteObjects`, a thousand keys a request; a move's source sweep calls it once per folder level.
+- `copy_on_server(source, from, to, mode, progress)`: the transfer engine's one server-side copy, asked before every streamed file. `source` may be the same volume or a sibling the backend can copy across; ❗ the backend decides that from `source`'s concrete type and identity, ❌ never a path. The default is `copy_within` for the very same instance (SFTP's `copy-data`, ADB's `cp`) under `CreateOrReplace` only; `S3Volume` copies between any places of one account (`CopyObject`, or `UploadPartCopy` past the part floor), unless the provider copies within one bucket only. A pause lands at `ServerCopyProgress::checkpoint`, between an S3 copy's parts. `NotSupported` means "stream it". `write_operations/transfer/volume/DETAILS.md` § "Server-side copy".
 - `reports_posix_mode()`: whether a `FileEntry::permissions` from this backend is a REAL mode somebody recorded, rather than the `0` that means "no permission concept". Default `false`; `true` for `LocalPosixVolume` (`st_mode`), `GitPortalVolume` (the tree entry's kind), `ArchiveVolume` (zip external attributes / the tar header / 7z's unix extension), and `AdbVolume` (the device's `stat`). SMB, SFTP, WebDAV, and MTP carry no mode and answer `false`. What it buys is a ROUND TRIP, not a branch: the cross-volume copy engine puts the source's mode on what it writes to a local destination, and for a top-level file it has no listing in hand, so without this it would spend one `get_metadata` per selected file on a share that has nothing to answer with. ❗ A backend answering `true` without real bits is worse than one answering nothing — the engine treats a non-zero mode as a fact and puts it on the user's file. The full contract: `write_operations/transfer/volume/DETAILS.md` § "What mode a landed file wears".
 - `max_concurrent_ops()`: how many streaming copies the copy engine can drive in parallel against this volume. The batch copy path resolves a pair through `transfer_concurrency` (`write_operations/transfer/volume/copy.rs`), clamped to 32, and spawns that many `FuturesUnordered` tasks. It is NOT a plain `min()`: a volume answering `operations_are_local() == true` reports a CPU guard-rail rather than a transport limit, so its cap doesn't bound a remote peer. Defaults to `1` (safe for any new backend). Current values: `LocalPosixVolume` returns `available_parallelism()/2` clamped to 4..=16 (local); `SmbVolume` returns the `network.smbConcurrency` setting, default 10, range 1..=32; `MtpVolume` returns 1 (USB bulk transport is serial, and that 1 is what routes a phone to the serial driver); `InMemoryVolume` returns 32 (local).
 - `operations_are_local()`: whether one operation here is a local syscall rather than a transport round trip. A claim about COST, so it is a different question from `supports_local_fs_access` (an OS-mounted SMB share is `true` there, `false` here). Default `false`, the conservative answer in both directions. `true` for `LocalPosixVolume` and `InMemoryVolume` only.
-- `create_directory_all()`: reports `DirectoryCreation::{Created, AlreadyExisted}` for the LEAF. The copy driver skips its destination conflict pre-check entirely on `Created` (`transfer/DETAILS.md` § "Answering the pre-check from one listing"), so an overriding backend must answer honestly and answer `AlreadyExisted` when unsure — including when it lost a create race.
+- `create_directory_all()`: reports `DirectoryCreation::{Created, AlreadyExisted}` for the LEAF. The copy driver skips its destination conflict pre-check entirely on `Created` (`transfer/DETAILS.md` § "Answering the pre-check from one listing"), so an overriding backend must answer honestly and answer `AlreadyExisted` when unsure — including when it lost a create race. A FILE at the path or at an ancestor is refused with `VolumeError::NotADirectory` carrying the file's path, ❌ never `AlreadyExisted` and never the `NotFound` of the level below; a link that leads to a folder is a folder here, and the walk creates through it (`crates/cmdr-fs/src/volume/mkdir_all.rs`).
 - `exists()` / `is_directory()`: both default to deriving themselves from `get_metadata` (`is_ok()`, and the directory bit). `MtpVolume` and `GitPortalVolume` take both defaults, and `AdbVolume`, `SftpVolume`, and `WebDavVolume` take the `is_directory` one. Override only for a cheaper primitive or a different truth: `SmbVolume` answers `exists` with a bare protocol `stat` (and the share root without a round trip at all), `ArchiveVolume` reads its parsed central directory, `InMemoryVolume` its map, and `LocalPosixVolume` uses `symlink_metadata`, because a BROKEN symlink is still something on disk the user can see and delete while `get_metadata` would say it isn't there. `AdbVolume`, `SftpVolume`, and `WebDavVolume` keep an `exists` override for a lifecycle reason rather than a cost one: the default routes through their `noting`-wrapped `get_metadata`, so a bare existence probe on a dropped link would report a connection transition and drive a reconnect.
 - `local_path()`: returns `Some` only for local volumes; allows `copyfile(2)` fast-path in copy operations. `SmbVolume` returns `None` so copies go through smb2 instead of the slow OS mount. ❗ Also THE predicate for "this volume's paths are ones a local library can open", which is what the git portal's route and listing overlay both key on (`file_system/git/DETAILS.md` § "Two seams, no hooks").
 - `routes_over_a_parent()`: whether a ROUTE minted this volume rather than a mount, so its root is a path inside another volume's storage. Default `false`; `true` on `ArchiveVolume` (root = the `.zip` file) and `GitPortalVolume` (root = `<worktree>/.git`). Read by `mount_id_for_path`, which must not hand a routed volume a path that belongs to the disk under it. ❗ A new routed backend has to declare it: nothing else can tell, and the symptom is silent (index reads land on a mount with no index). `InMemoryVolume::routing_over_a_parent()` is the stub for pinning a host's rule without naming a concrete backend.
@@ -173,9 +178,9 @@ Optional methods default to `Err(VolumeError::NotSupported)` or `false`, so new 
 - `paths_are_os_visible()`: whether ANOTHER app can open a `file://` URL built from a path this volume hands out. Defaults to whatever `supports_local_fs_access()` says, which is right wherever the two coincide. `SmbVolume` is the one backend that splits them: it answers `false` above (its own I/O rides smb2, never `std::fs`) and `true` here, because the sneaky mount keeps the share OS-mounted and every path it yields is an ordinary `/Volumes/…` path. Consumed by the macOS drag-out path (`commands/file_system/drag.rs::locality_for_volume`) to pick the pasteboard layout: `false` means promise-only items, which only Finder accepts, so a backend that answers it wrong makes drags into browsers and mail clients silently do nothing while Finder keeps working. It is a claim about the MOUNT, not the backend kind, so it has to track the mount going away — see `note_root_mount_gone` below.
 - `note_root_mount_gone()`: the registry telling a volume that its active mount root is gone and there was no live sibling to promote it to (§ "A volume ID owns a set of mount roots"). Default no-op; only `SmbVolume` overrides, latching `paths_are_os_visible()` to `false` while its smb2 session keeps browsing. A volume can't work this out for itself — nothing may probe a mount — and the failure it prevents is silent: paths that still list fine in Cmdr, and a drag out of them that does nothing.
 - `notify_mutation(volume_id, parent_path, mutation)`: called after a successful mutation (create, delete, rename, and `write_from_stream`) to update the listing cache immediately. Fire-and-forget, no error propagation. See "Mutation notification" below.
-- `connection_state()`: how live this volume's session is, for the switcher dot and the reconnect manager. Default `None`. Every connecting backend implements it: `SmbVolume` (`Direct` / `Disconnected`; the `OsMount` variant is attached by `enrich_from_volume_registry`, never by a volume), `SftpVolume` (all four, including `NeedsHostKeyApproval`), `WebdavVolume`, and `AdbVolume`. ❗ `is_some()` is NOT an "is this SMB" test — that's `backend_kind()`.
-- `attempt_reconnect()`: tries to rebuild the volume's underlying session in place after a transient connection loss. Default `Err(NotSupported)`. `SmbVolume`, `SftpVolume`, and `WebdavVolume` override it; the Tauri command `reconnect_volume` and the FE reconnect manager call this on each backoff tick. Idempotent and single-flight: concurrent callers wait on the same in-flight attempt instead of dog-piling the server.
-- `reconnect_with_credentials(username, password)`: reconnect with freshly-entered credentials, replacing whatever was cached. Default `Err(NotSupported)`; `SmbVolume` persists the new password (so the next reconnect is silent) then runs `attempt_reconnect`, and accepts a CHANGED username. ❗ `SftpVolume` and `WebdavVolume` refuse a changed one, because the volume id IS the account; `SignInShape` is what tells the sheet which it is. Invoked by the Tauri command `reconnect_volume_with_credentials` behind the "Sign in" prompt shown after an auth-failure reconnect give-up.
+- `connection_state()`: how live this volume's session is, for the switcher dot and the reconnect manager. Default `None`. Every connecting backend implements it: `SmbVolume` (`Direct` / `Disconnected`; the `OsMount` variant is attached by `enrich_from_volume_registry`, never by a volume), `SftpVolume` (all four, including `NeedsHostKeyApproval`), `WebdavVolume`, `S3Volume`, and `AdbVolume`. ❗ `is_some()` is NOT an "is this SMB" test — that's `backend_kind()`.
+- `attempt_reconnect()`: tries to rebuild the volume's underlying session in place after a transient connection loss. Default `Err(NotSupported)`. `SmbVolume`, `SftpVolume`, `WebdavVolume`, and `S3Volume` override it; the Tauri command `reconnect_volume` and the FE reconnect manager call this on each backoff tick. Idempotent and single-flight: concurrent callers wait on the same in-flight attempt instead of dog-piling the server.
+- `reconnect_with_credentials(username, password)`: reconnect with freshly-entered credentials, replacing whatever was cached. Default `Err(NotSupported)`; `SmbVolume` persists the new password (so the next reconnect is silent) then runs `attempt_reconnect`, and accepts a CHANGED username. ❗ `SftpVolume`, `WebdavVolume`, and `S3Volume` (whose username is the access key id) refuse a changed one, because the volume id IS the account; `SignInShape` is what tells the sheet which it is. Invoked by the Tauri command `reconnect_volume_with_credentials` behind the "Sign in" prompt shown after an auth-failure reconnect give-up.
 - `on_unmount()`: lifecycle hook called before unregistration. `SmbVolume` uses it to disconnect its smb2 session. Default is no-op.
 - `on_superseded()`: lifecycle hook for "a newer instance took my id, but the device is still here". Defaults to `on_unmount()`; `SmbVolume` overrides it to keep serving the holders that already have it. Contract: `backends/DETAILS.md` § "Supersede vs. unmount".
 - `begin_scan_session()` / `end_scan_session()`: default-no-op async hooks the indexing lifecycle
@@ -197,7 +202,7 @@ Optional methods default to `Err(VolumeError::NotSupported)` or `false`, so new 
 - `write_access_at(path)`: whether a write into the folder at `path`, or the nearest existing one above it, would be taken, as a three-state `WriteAccess` (`Writable` / `Unwritable { reason }` / `Unknown`), asked WITHOUT writing. Default `Unknown`. `LocalPosixVolume` reads `statvfs` `ST_RDONLY` and `access(W_OK)`, so it tells `ReadOnlyFilesystem` from `NoPermission`; `MtpVolume` answers `ReadOnlyFilesystem` for a storage the device reports read-only and `Unknown` otherwise; `AdbVolume` runs `test -w`, whose exit 1 is `Unexplained` because the exit code can't say why. The transfer pre-flight asks it before the space check: `write_operations/transfer/volume/DETAILS.md` § "A destination folder that takes no writes".
 - `create_directory_errors_on_existing_dir()`: whether `create_directory` reliably returns `VolumeError::AlreadyExists` for an existing same-name dir. Default `true` (LocalPosix, SMB, InMemory all do). `MtpVolume` overrides to `false` — the MTP protocol allows same-name sibling objects and `create_folder` silently makes a duplicate, so the folder-merge walker (`write_operations/transfer/volume/strategy.rs`) pre-checks existence on MTP instead of trusting the create to error. A blindly-created duplicate would make a merge target the wrong directory.
 - `listing_watch_coverage(path)`: what a live watch on this volume's cached listing for `path` actually observes, as a three-state `WatchCoverage` (`None` / `ThisMachineOnly` / `EveryWriter`). Three consumers today:
-    1. `file_system::listing::caching::try_get_authoritative_listing` (the "fresh-listing oracle") — write-op pre-flight scans reuse a cached listing instead of re-reading.
+    1. `file_system::listing::caching::try_get_authoritative_listing` (the "fresh-listing oracle") — write-op pre-flight scans, and the look-alike check before a new name (`write_operations/DETAILS.md` § "Look-alike names"), reuse a cached listing instead of re-reading.
     2. `write_operations::delete::scan_volume_recursive` (the oracle-aware delete walker) — same idea, per-recursion-level.
     3. The `refresh_listing` Tauri command (`commands/file_system/listing.rs`) — short-circuits the post-transfer redundant `list_directory` re-read entirely when the volume is keeping the cache fresh via `notify_mutation`. Without this, a 1k-entry MTP folder paid ~17 s + USB session collision after every transfer outcome, wedging the next user op. Only the unforced callers consult it: a `force: true` refresh (⌘R, the MCP `refresh` tool) re-reads regardless, since `EveryWriter` covers the volume's own writes and a user asking for a re-read is usually asking about someone else's.
   Only `EveryWriter` authorizes any of them to skip a read. Default `None`, so a new backend without a real watcher can't accidentally claim freshness.
@@ -296,7 +301,7 @@ Everything below is optional per the trait (methods default to `Err(NotSupported
 
 ### Tier 4: E2E and friendly-error polish
 
-- [ ] **Call every `cmdr_fs::volume::conformance` assertion your backend can run.** These are the promises that only a comment would otherwise hold, each one load-bearing for data safety: `delete` never recurses, `rename(force = false)` refuses an existing destination, `create_file` refuses rather than truncates, `create_directory_all` reports a pre-existing leaf as `AlreadyExisted`, `scan_for_conflicts` reads a destination that isn't there yet as empty, the two capability declarations match the methods they speak for, and `NotFound` carries the path. Every existing backend calls the ones it implements, and skipping yours is how a backend claims a contract by implementing the trait and breaks it where nobody looks (MTP's `delete` did exactly that, for years). What each one is for: `crates/cmdr-fs/DETAILS.md` § "The shared assertions in `volume::conformance`".
+- [ ] **Call every `cmdr_fs::volume::conformance` assertion your backend can run.** These are the promises that only a comment would otherwise hold, each one load-bearing for data safety: `delete` never recurses, `rename(force = false)` refuses an existing destination, `create_file` refuses rather than truncates, `create_directory_all` reports a pre-existing leaf as `AlreadyExisted`, names a file in the way, and creates through a link to a folder, `scan_for_conflicts` reads a destination that isn't there yet as empty, the two capability declarations match the methods they speak for, and `NotFound` carries the path. Every existing backend calls the ones it implements, and skipping yours is how a backend claims a contract by implementing the trait and breaks it where nobody looks (MTP's `delete` did exactly that, for years). What each one is for: `crates/cmdr-fs/DETAILS.md` § "The shared assertions in `volume::conformance`".
 - [ ] Add integration tests (real fixtures if possible; see the Docker SMB containers for inspiration).
 - [ ] Verify your backend's common failure modes classify well: each one should reach a `ListingErrorReason` that words up usefully, not the generic I/O fallback. The Rust side ships no prose, so check the reason in `friendly_error/tests.rs` and the rendered copy through the debug window's error-pane preview. `docs/guides/error-handling.md`.
 - [ ] Stress-test concurrent reads and writes (the `stress_tests_*` modules in indexing are the reference pattern).
@@ -305,35 +310,47 @@ Everything below is optional per the trait (methods default to `Err(NotSupported
 
 At-a-glance view of which capabilities each current volume opts into. Use this when picking a reference implementation for your new volume.
 
-| Capability | Local | MTP | SMB | InMemory | Archive |
-| --- | --- | --- | --- | --- | --- |
-| `list_directory` / metadata | yes | yes | yes | yes | yes |
-| Mutations (create/delete/rename) | yes | yes | yes | yes | no: read-only (mutation planned) |
-| `supports_export` | yes | yes | yes | yes | yes |
-| `supports_streaming` | yes | yes | yes | yes | yes |
-| `supports_unknown_length_writes` | yes | no | yes | no | no |
-| `supports_atomic_replace_rename` | yes | no | no | no | no |
-| `open_read_stream` | yes: spawn_blocking | yes: owned download | yes: channel-backed | yes: in-memory | yes: core `ArchiveEntryReader` |
-| `write_from_stream` | yes: spawn_blocking | yes: streaming | yes: streaming | yes: in-memory | no (mutation planned) |
-| `can_watch_listings` | yes: FSEvents/inotify | no (own USB watcher) | no (own smb2 CHANGE_NOTIFY watcher) | no | no (own content watch on the `.zip`) |
-| `listing_watch_coverage` | path-level (WATCHER_MANAGER); `ThisMachineOnly` on a network mount | volume-level `EveryWriter` (device connected) | volume-level `EveryWriter` (watcher + Direct) | `None` (default) | `EveryWriter` while the content watch lives |
-| `supports_local_fs_access` | yes (default) | no | no | no | no (inner paths) |
-| `paths_are_os_visible` | yes (inherited) | no (inherited) | yes: OVERRIDE while its mount lives | no (inherited) | no (inherited) |
-| `local_path` | yes: `Some(root)` | `None` | `None` | `None` | `None` |
-| `notify_mutation` | default (std::fs) | yes: MTP `get_metadata` | yes: smb2 `get_metadata` | yes: in-memory | n/a (read-only) |
-| `create_directory_errors_on_existing_dir` | yes (default) | no (protocol allows dup names) | yes (default) | yes (default) | n/a (read-only) |
-| `scanner` / `watcher` (indexing) | yes / yes | no | no | no | no |
-| `rerooted` | yes: new instance | `None` (device-anchored) | yes: new instance, shared session; `None` for an unrecorded root when anchored inside the share | `None` (default) | `None` (inner paths) |
-| `on_unmount` | default | default | yes: drops smb2 session | default | default |
-| `on_superseded` | default | default | yes: retires id, keeps session | default | default |
-| `connection_state` | `None` | `None` | yes | `None` | `None` |
-| `backend_kind` | `Local` (default) | `Mtp` | `Smb` | `Archive` | `GitPortal` |
-| `space_poll_interval` | 2 s (default) | 5 s | 5 s | `None` | `None` |
-| `lane_key` / `get_space_info` | mount root / statvfs+NSURL | device serial / device | server+share / smb2 | root or override / configured | **parent's** / **parent's** |
-| `max_concurrent_ops` | 4..=16 (core-based) | 1 (USB bulk serial) | `network.smbConcurrency` | 32 | 1 (initial cap) |
-| `operations_are_local` | yes: `true` | `false` | `false` | yes: `true` | `false` |
+| Capability | Local | MTP | SMB | InMemory | Archive | S3 |
+| --- | --- | --- | --- | --- | --- | --- |
+| `list_directory` / metadata | yes | yes | yes | yes | yes | yes |
+| Mutations (create/delete/rename) | yes | yes | yes | yes | no: read-only (mutation planned) | yes: folder markers, one-node delete, small-file rename by copy |
+| `rename_work` | `OneCall` (default) | `OneCall` (default) | `OneCall` (default) | `OneCall`, or `CopyThenDelete` (knob: `with_renames_by_copy`) | `OneCall` (default; renames refused) | `CopyThenDelete` for a folder or an object past 64 MiB |
+| `delete_files` | default (one by one) | default | default | default, batch sizes recorded | default | yes: `DeleteObjects`, 1,000 keys a request |
+| `copy_on_server` | default (`copy_within`: none) | default | default | default | default | yes: within one account, across buckets unless the provider forbids it |
+| `supports_export` | yes | yes | yes | yes | yes | yes |
+| `supports_streaming` | yes | yes | yes | yes | yes | yes |
+| `supports_unknown_length_writes` | yes | no | yes | no | no | yes: multipart, or one PUT for a short stream |
+| `publishes_writes_whole` | no | no | no | no (knob: `with_whole_publish`) | no | yes: PUT and multipart completion |
+| `supports_atomic_replace_rename` | yes | no | no | no | no | no |
+| `open_read_stream` | yes: spawn_blocking | yes: owned download | yes: channel-backed | yes: in-memory | yes: core `ArchiveEntryReader` | yes: ranged GET, body pulled per chunk |
+| `read_range` | yes: `pread` | yes: `GetPartialObject64` | yes: positioned READ | no | no | yes: ranged GET |
+| `supports_share_links` | no | no | no | no | no | yes: presigned GET, signed offline |
+| `renames_can_copy` | no | no | no | no (knob: `with_renames_by_copy`) | no | yes: a folder, or an object past the part floor |
+| `write_from_stream` | yes: spawn_blocking | yes: streaming | yes: streaming | yes: in-memory | no (mutation planned) | yes: final key, one streamed PUT or a multipart upload |
+| `can_watch_listings` | yes: FSEvents/inotify | no (own USB watcher) | no (own smb2 CHANGE_NOTIFY watcher) | no | no (own content watch on the `.zip`) | no (S3 has no change feed a client holds) |
+| `listing_watch_coverage` | path-level (WATCHER_MANAGER); `ThisMachineOnly` on a network mount | volume-level `EveryWriter` (device connected) | volume-level `EveryWriter` (watcher + Direct) | `None` (default) | `EveryWriter` while the content watch lives | `None` (default) |
+| `supports_local_fs_access` | yes (default) | no | no | no | no (inner paths) | no |
+| `paths_are_os_visible` | yes (inherited) | no (inherited) | yes: OVERRIDE while its mount lives | no (inherited) | no (inherited) | no (inherited) |
+| `local_path` | yes: `Some(root)` | `None` | `None` | `None` | `None` | `None` |
+| `notify_mutation` | default (std::fs) | yes: MTP `get_metadata` | yes: smb2 `get_metadata` | yes: in-memory | n/a (read-only) | yes: the write's own verifying HEAD, else a stat |
+| `create_directory_errors_on_existing_dir` | yes (default) | no (protocol allows dup names) | yes (default) | yes (default) | n/a (read-only) | yes: checked before the marker is written |
+| `scanner` / `watcher` (indexing) | yes / yes | no | no | no | no | no (every request costs money) |
+| `rerooted` | yes: new instance | `None` (device-anchored) | yes: new instance, shared session; `None` for an unrecorded root when anchored inside the share | `None` (default) | `None` (inner paths) | `None` (default) |
+| `on_unmount` | default | default | yes: drops smb2 session | default | default | yes: drops the client |
+| `on_superseded` | default | default | yes: retires id, keeps session | default | default | yes: retires id, keeps client |
+| `connection_state` | `None` | `None` | yes | `None` | `None` | yes |
+| `backend_kind` | `Local` (default) | `Mtp` | `Smb` | `Archive` | `GitPortal` | `S3` |
+| `space_poll_interval` | 2 s (default) | 5 s | 5 s | `None` | `None` | `None` |
+| `lane_key` / `get_space_info` | mount root / statvfs+NSURL | device serial / device | server+share / smb2 | root or override / configured | **parent's** / **parent's** | account (endpoint + key id) / `NotSupported` |
+| `max_concurrent_ops` | 4..=16 (core-based) | 1 (USB bulk serial) | `network.smbConcurrency` | 32 | 1 (initial cap) | 4 (constant) |
+| `operations_are_local` | yes: `true` | `false` | `false` | yes: `true` | `false` | `false` |
 
 Legend: `yes` = implemented, `no` = opted out (default or explicitly), ⚠️ = implemented but suboptimal (memory-heavy or otherwise worth revisiting).
+
+`S3Volume` is one place on an S3 account (a bucket, or the account root that lists them). It lists, stats, reads,
+writes (to the final key: `publishes_writes_whole`), copies on the server within the account, and mints share links
+(`crates/cmdr-s3/CLAUDE.md`). A folder or a big object renames by copy (`rename_work`). Its `lane_key` is the ACCOUNT,
+since every bucket under one key shares the endpoint's request budget.
 
 `ArchiveVolume` is the read-only zip backend (`crates/cmdr-archive/CLAUDE.md`); its `lane_key` and
 `get_space_info` uniquely delegate to a **parent** volume (the volume storing the `.zip`), so archive work shares the
@@ -473,7 +490,7 @@ holding the drive ("Unmount was dissented by PID 51419"). It has to be Rust's lo
 `wordEjectRefusal` is a warn, and production frontend logging keeps errors only. `unmount_tool::run` answers a
 `ToolOutcome` rather than an `EjectError` so the exit status survives to that line, and `unmount_tool::settle` maps it
 onto the wire type: only a tool that EXITED with a code is `UnmountRefused`. One that couldn't start or died to a
-signal is `Unexpected`, since "something is still using this drive" would be a lie there.
+signal is `Unexpected`, since "something still has files open there" would be a lie there.
 
 **A failure for a volume that's no longer mounted counts as done.** When the tool doesn't succeed, `settle` asks
 whether the mount root is still in the OS mount table (`volumes::is_mount_point`, the non-blocking
@@ -551,8 +568,8 @@ answer rides on `EjectError::UnmountRefused`, and the MCP `eject` tool repeats i
 - **Linux answers `Incomplete`**, having no walk at all: ❌ not an empty `Complete`, which would claim nothing holds the
   drive.
 
-**What KIND of holder each one is** (`holders/facts.rs`) is what picks the sentence: "macOS is still working with this
-drive" and "Photos is still using this drive" are different actions. ❌ Never decided from a process name, a path
+**What KIND of holder each one is** (`holders/facts.rs`) is what picks the sentence: "macOS still has files open
+there. Wait a minute…" and "Photos still has files open there. Close them…" are different actions. ❌ Never decided from a process name, a path
 prefix, or a message. The rules run in order and the first that answers wins:
 
 1. Cmdr's own process, or one it started (its whole ancestor chain, up to eight levels, stopping at launchd) → `Cmdr`.
@@ -745,7 +762,8 @@ start of a non-root index. Stops: the eject's pre-stop (`stop_index_blocking`), 
 ask (`volumes/unmount_approver/`, which also sets the unmount-pending flag and resumes what it stopped), and the
 `WillUnmount` / `DidUnmount` hooks (`volumes/watcher.rs`; BOTH stand down while the approver is installed, and stand in
 only for one that couldn't). Starts: `enable_drive_index` and `rescan_drive_index` (IPC and MCP), the master switch's
-resume loop in `set_indexing_enabled`, and a search's `Index::cover` (`search/execute/live_run.rs`). The user's
+resume loop in `set_indexing_enabled`, a search's `Index::cover` (`search/execute/live_run.rs`), and a renamed drive's restart
+(`Index::follow_volume_move`, `volumes/watcher.rs`). The user's
 `disable_drive_index` goes through it too. The boot disk's launch and FDA starts stay outside, and the gate passes `root`
 straight through: it never unmounts.
 
@@ -770,8 +788,8 @@ release's `LateStop`), a pending-resume flag, and an unmount-pending flag.
   returned, ❌ never at spawn. Every kind waits for a ticket in flight. A person's `UserEnable` / `UserRescan` also waits
   out `unmount_pending` and Cmdr's own eject in flight (`eject::is_ejecting`), bounded by `UNMOUNT_PENDING_WAIT` (30 s;
   the slowest refusal measured took 27.8 s). Past it, or when the drive left the mount table meanwhile, no start runs and
-  the command answers `EnableIndexingOutcome::DriveLeaving`. `MasterResume` and `SearchCover` skip a leaving drive at
-  once, and the search answers without it as for an unmounted drive. Past the wait with only another start in flight, the
+  the command answers `EnableIndexingOutcome::DriveLeaving`. `MasterResume`, `SearchCover`, and `DriveRenamed` skip a
+  leaving drive at once, and the search answers without it as for an unmounted drive. Past the wait with only another start in flight, the
   answer is `AnotherStartStillRunning`, which the command returns as its `Err`.
 - **`disable`** moves the epoch, waits for a ticket in flight, holds a `Disable` ticket through `Index::disable_volume`,
   and moves the epoch again before letting go: a disable always has the last word over a resume.
@@ -902,24 +920,24 @@ The rules over the set:
   panes stop pointing at a root that's no longer active.
 
 **What a promotion does NOT do**: it never calls `on_unmount` and never stops an index — the filesystem is still there,
-just addressed differently. An index instance keeps the mount root it captured at start, which is correct for the case
-this exists for (double mounts are network shares, and their indexes are `IndexVolumeKind::Smb`, torn down through
-their own path) and would need re-pointing if a `LocalExternal` disk ever showed up at two mount points.
+just addressed differently. A local-scanner index captured its mount root at start, so the unmount watcher's `Promoted`
+arm hands it to `Index::follow_volume_move` through the drive-release gate, the same restart a rename takes (§ "A
+renamed drive"). A share's index reads through its `Volume` and needs nothing.
 
 **Decision**: `register` replaces only at the SAME root; an identity conflict keeps the incumbent
 **Why**: replacing the volume at one root is routine (that's the SMB upgrade: an OS-mounted `LocalPosixVolume` becomes a direct `SmbVolume` at `/Volumes/naspi`, and a live transfer holding an `Arc` keeps working through it). Two DIFFERENT roots claiming one ID is not routine, and letting the last writer win made registration ORDER decide where the volume was rooted. A share mounted at both `/Volumes/naspi` and `/Volumes/naspi-1` derives one ID from both mounts, so the registry ended up rooted at `/Volumes/naspi-1` and a pane restoring a saved `/Volumes/naspi/…` path failed its listing. Keeping the incumbent makes the outcome deterministic without pretending the ambiguity is resolved: `report_identity_conflict` still logs it, because the honest answers (a cloned volume, a double mount) both deserve a human's attention. Discovery collapses double mounts before they reach here (`volumes/DETAILS.md` § "One volume ID publishes one mount root"); this is defense in depth, not the only guard. `is_identity_conflict` (root inequality) is what tells the two cases apart. Restoring a remembered registration in a test goes through `force_register`, which skips the guard, since putting back the previous value has to be unconditional.
 
 ### Registration covers the whole mount table
 
-**Decision**: `mount_registration::register_every_mount` registers EVERY row of the kernel's mount table at startup,
-unfiltered, and it is the only way a mount becomes a registered volume (the mount watcher and the listing's adoption
+**Decision**: `mount_registration::register_every_mount` registers every row of the kernel's mount table this account
+can reach at startup, browsable or not, and it is the only way a mount becomes a registered volume (the mount watcher and the listing's adoption
 path go through the same module). What the volume SWITCHER publishes stays a separate, stricter question that
 `volumes/mounts.rs` answers.
 
 **Why**: path resolution and volume registration were two different answers to "which volumes exist", and resolution's
 was bigger. `resolve_path_volume_fast` reads `statfs`, so it mints an ID for any mount; registration took
 `get_attached_volumes()`, which required a `/Volumes/` prefix. Every mount elsewhere therefore resolved to an ID nothing
-served, and the listing ended in `VolumeError::NotFound("Volume not found: vol-…")` with the pane on a dead end. Users
+served, and the listing ended in `VolumeError::NotFound` with the pane on a dead end. Users
 hit it through cloud clients that mount into the home folder (pCloud's `~/pCloud Drive` is `pcloudfs`, a real mount, and
 a favorite pointing at it failed every time), and it was reproducible with any `mount -t hfs` outside `/Volumes`.
 
@@ -928,6 +946,12 @@ while skipping one that resolution can name costs the user their folder. So the 
 registration is an insert plus the arrival listeners, and `register_if_absent` keeps every incumbent, so it can't
 downgrade an upgraded `smb2` session or rename a switcher row (discovery re-registers those with their pretty names
 right after).
+
+**The one row the sweep leaves out** is another account's own mount (a second user's cloud or FUSE drive), which this
+account can't open, so resolution has no business naming it either. The platform's `registrable_mount_roots` draws that
+line, and the mount watcher asks the same question; adoption below still covers the case where `statfs` does answer for
+a path inside one. The rule and its evidence: `volumes/DETAILS.md` § "Another account's mounts" (Linux:
+`volumes_linux/DETAILS.md` § "Another account's FUSE mounts").
 
 **Adoption**, the net under the sweep: a listing whose ID nothing serves asks whether the mount under its path derives
 exactly that ID, and registers it if so (`adopt_mount_serving`). It covers the two gaps a startup sweep can't: a
@@ -971,6 +995,32 @@ that case wrong, silently:
 root edit it would make `find_by_root` keep answering for a path the place no longer covers.
 Pinned by `manager/root_replace_tests.rs`.
 
+### A renamed drive
+
+**Decision**: a drive renamed while mounted MOVES its root (`VolumeManager::move_root`, `manager/root_move.rs`), keeping
+its id. ❌ Not an unmount plus a mount.
+**Why**: renaming moves the mount point (`/Volumes/Old` → `/Volumes/New`) and nothing else, and macOS posts ONE
+`NSWorkspaceDidRenameVolumeNotification` naming both, no unmount or mount around it (verified on macOS 27.0, APFS and
+FAT32 disk images under a Swift `NSWorkspace` observer while `diskutil rename` ran, 2026-10-05). Before the handler, the
+registry stayed rooted at a path that no longer existed, so listings, the index, and the panes all failed until a
+restart. Unmount plus mount would stop the drive's index and send every pane on it home, for a drive that never left.
+
+What `volumes/watcher.rs::handle_volume_renamed` does with it:
+
+- **Only when the id survives.** The new root has to derive the same id the old one is registered under (a UUID-keyed
+  local volume does). A volume with no UUID keys on its path, so its rename IS a new id, and unmount plus mount is the
+  honest model for that one.
+- **The registry**: the active root moves via `Volume::rerooted`, the old root leaves the set, nothing is retired (the
+  same mount goes on). A fallback root moving only renames it in the set.
+- **The panes**: `volume-root-changed` with `RootChangeKind::Moved`, so a pane deep inside keeps its place under the new
+  root rather than being sent to the top (`navigation/root-change-follow.ts`).
+- **The index**: `Index::follow_volume_move` restarts a local-scanner drive's index at the new root, through the
+  drive-release gate as `StartKind::DriveRenamed` (§ "One release, one start"). Why a restart and what it costs:
+  `crates/cmdr-index/src/indexing/lifecycle/DETAILS.md` § "A drive whose mount point moved".
+
+Pinned by `manager/root_move_tests.rs` and, on real APFS and HFS+ images,
+`apps/desktop/src-tauri/src/volumes/rename_real_image.rs`.
+
 **Decision**: a caller that retires the incumbent asks `would_keep_incumbent` first
 **Why**: `register_replacing_predecessor` (the SMB upgrade's entry point) calls `on_superseded` on the volume it is displacing, which stops that volume's watcher. On a refused registration the registry keeps that same volume active, so retiring first left the ID pointing at a live share with no watcher: it stayed listed, and silently stopped seeing its own changes. `would_keep_incumbent(id, root)` answers the guard's question under the read lock so the caller can skip the retirement, and the ordering (retire, then register) is unchanged for the routine same-root swap, where two live watchers on one ID would double-feed the index. Covered by `a_registration_the_registry_refuses_leaves_the_incumbent_untouched`.
 
@@ -995,7 +1045,7 @@ Pinned by `manager/root_replace_tests.rs`.
 ### Recursive destination create
 
 **Decision**: `Volume::create_directory_all` is a trait DEFAULT (mkdir -p), not a per-backend method
-**Why**: The volume-aware transfer pipelines (`copy_volumes_with_progress` / `move_volumes_with_progress` / `move_within_same_volume_with_progress`) need to auto-create a missing destination folder on EVERY backend, matching the local-FS `ensure_destination_dir`. A default method built on the existing `exists()` + `create_directory()` primitives gives every backend (local, SMB, MTP, in-memory) the behavior for free, with no `smb2`/`mtp-rs` changes. The default walks `dest`'s ancestors leaf→root until one already `exists()`, then creates the missing ones shallowest-first. Probing existence per component before creating is what makes it safe on backends whose `create_directory` can't signal a collision (`MtpVolume`, `create_directory_errors_on_existing_dir() == false`, which would otherwise make a duplicate same-name sibling): the helper never calls `create_directory` on a level it already saw exist. An `AlreadyExists` from `create_directory` (a concurrent op won the race) is also treated as success, so re-creating an existing ancestor is a no-op. The leaf-first walk keeps the network/IPC round-trips minimal — when only the leaf is new, it's one `exists()` plus one `create_directory`. Backends override only if they gain a cheaper native recursive mkdir; SMB and MTP don't, so the per-component loop is correct there. Wired into the transfer gate AFTER the dest-inside-source guard (same order as local), so a copy can't create a folder inside its own source. Covered by `inmemory_test.rs` (the trait default, idempotency, partial-tree, typed-failure, and MTP-semantics no-duplicate cases), the cross/same-volume in-memory transfer tests, and the Docker SMB `smb_integration_copy_creates_missing_nested_dest`. MTP recursive-create rides the shared default + the `errors_on_existing` pre-check path; it lacks a device test (no mockable MTP harness).
+**Why**: The volume-aware transfer pipelines (`copy_volumes_with_progress` / `move_volumes_with_progress` / `move_within_same_volume_with_progress`) need to auto-create a missing destination folder on EVERY backend, matching the local-FS `ensure_destination_dir`. A default method built on the existing `is_directory()` + `create_directory()` primitives gives every backend (local, SMB, MTP, in-memory) the behavior for free, with no `smb2`/`mtp-rs` changes. The default walks `dest`'s ancestors leaf→root until one leads to a directory, then creates the missing ones shallowest-first; one that exists and leads anywhere else stops it with `NotADirectory` before anything is created (a bare `exists()` stopped at a FILE just as happily). Probing per component before creating is what makes it safe on backends whose `create_directory` can't signal a collision (`MtpVolume`, `create_directory_errors_on_existing_dir() == false`, which would otherwise make a duplicate same-name sibling): the helper never calls `create_directory` on a level it already saw exist. An `AlreadyExists` from `create_directory` (a concurrent op won the race) is also treated as success, so re-creating an existing ancestor is a no-op. The leaf-first walk keeps the network/IPC round-trips minimal — when only the leaf is new, it's one probe plus one `create_directory`. Backends override only if they gain a cheaper native recursive mkdir; SMB and MTP don't, so the per-component loop is correct there. Wired into the transfer gate AFTER the dest-inside-source guard (same order as local), so a copy can't create a folder inside its own source. Covered by `inmemory_test.rs` (the trait default, idempotency, partial-tree, typed-failure, and MTP-semantics no-duplicate cases), the cross/same-volume in-memory transfer tests, and the Docker SMB `smb_integration_copy_creates_missing_nested_dest`. MTP recursive-create rides the shared default + the `errors_on_existing` pre-check path; it lacks a device test (no mockable MTP harness).
 
 **Decision**: `Volume::scan_for_copy_batch` returns `BatchScanResult { aggregate, per_path }`
 **Why**: The copy engine needs per-source type+size hints (`is_directory`, `total_bytes`) for its `source_hints` map, which seeds conflict detection and feeds the SMB compound fast-path's size hint. Returning both at once (one trait call, one round-trip per backend) avoids the N separate `scan_for_copy` calls that an aggregate-only batch API would force. Scan-preview callers that only want the aggregate just read `.aggregate`. `LocalPosixVolume` and `InMemoryVolume` inherit the default (serial per-path loop, cheap); `MtpVolume` preserves its "group by parent dir" batch; `SmbVolume` overrides with the pipelined stat path. See `backends/CLAUDE.md` for the per-backend overrides.

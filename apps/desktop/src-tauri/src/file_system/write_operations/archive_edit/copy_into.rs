@@ -771,7 +771,7 @@ async fn archive_copy_into_start(
                     prov.net_new,
                 );
             }
-            super::super::journal::finalize_archive_op(&op_id, prov.subkind, prov.net_new, execution_status);
+            super::super::journal::finalize_archive_op(&op_id, prov.subkind, prov.net_new, execution_status, None);
 
             task_guard.disarm();
             manager::manager().on_settled(&op_id);

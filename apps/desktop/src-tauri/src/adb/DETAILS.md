@@ -29,7 +29,10 @@ then `start_adb_tracker` starts the `host:track-devices` subscription (a second 
 no-op). The tracker talks only to the local server socket, never to USB. With no `adb` binary the tracker STOPS
 itself and says so at `debug`: there is nothing to reconnect to, and retrying would warn every 15 s for the whole
 session on the many machines that carry no Android tooling. A machine without the platform tools therefore sees
-nothing and pays nothing after startup.
+nothing and pays nothing after startup. ❗ An automated run (`test_mode::may_discover_real_devices` false) never
+follows the real server: `start_adb_tracker` (so `recheck_adb_install` too) is a no-op and `set_adb_settings` only
+records the path, so a phone on the developer's desk can't land in the switcher mid-spec. `adb.spec.ts` publishes
+synthetic rows instead.
 
 **Settings** (`fileOperations.adbEnabled`, default on; `fileOperations.adbBinaryPath`, empty for the platform
 search): both are live-applied, and they travel TOGETHER through one `set_adb_settings` command, because the tracker
@@ -128,8 +131,8 @@ registered volume), and a pane standing on it holds its listing and dials again 
   - `offline` → `unavailable { offline }`; `no permissions` → `unavailable { no_permissions }`. The row is there so
     the reason can be its tooltip.
   - `recovery`, `bootloader`, `sideload`, and a state word the crate can't read are NOT listed: a phone that isn't
-    running Android has no filesystem, and a row that can never open is worse than no row. `list_adb_devices` still
-    returns them with their typed state.
+    running Android has no filesystem, and a row that can never open is worse than no row. The device cache
+    (`device_provider::cached_devices`) still holds them with their typed state.
 
   ❗ `device_readiness` is PRESENCE, never session health: `connection_state` stays `None` on a device row, so nothing
   enrolls a phone waiting for its Allow tap in the reconnect backoff (`cmdr_fs::volume::connection` carries the split).
@@ -145,7 +148,6 @@ registered volume), and a pane standing on it holds its listing and dials again 
 
 ## IPC and frontend
 
-- `list_adb_devices() -> Vec<AdbDevice>`: the cached list, typed states included.
 - `connect_adb_device(serial, attempt_id) -> Result<volume_id, AdbConnectOutcomeError>`, and
   `cancel_adb_connect(attempt_id) -> bool`.
 - `set_adb_settings(enabled, binary_path)`: the live apply above.

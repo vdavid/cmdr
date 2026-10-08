@@ -19,9 +19,9 @@
   "@viewer.error.noPath": {
     "sourceHash": "2b069fc"
   },
-  "viewer.error.readFailed": "Het bestand kon niet worden gelezen",
+  "viewer.error.readFailed": "Dit bestand kon niet worden gelezen. Opnieuw proberen?",
   "@viewer.error.readFailed": {
-    "sourceHash": "ea7d976"
+    "sourceHash": "8c420fd"
   },
   "viewer.error.notFound": "Kon dit bestand niet vinden. Het is misschien verplaatst, van naam veranderd of verwijderd.",
   "@viewer.error.notFound": {
@@ -42,6 +42,10 @@
   "viewer.error.archiveUnreadable": "Kon dit bestand niet vanuit het archief openen. Het is mogelijk versleuteld of beschadigd, of het gebruikt een structuur die Cmdr niet kan lezen.",
   "@viewer.error.archiveUnreadable": {
     "sourceHash": "e0b8f4e"
+  },
+  "viewer.error.coldStorage": "Dit bestand is gearchiveerd, dus er valt niets te tonen tot het is hersteld. Herstel het bestand in de console van je opslagaanbieder en open het daarna opnieuw.",
+  "@viewer.error.coldStorage": {
+    "sourceHash": "236cd1b"
   },
   "viewer.error.retry": "Probeer opnieuw",
   "@viewer.error.retry": {
@@ -289,18 +293,6 @@
   "@viewer.pdf.loading": {
     "sourceHash": "7f9acf3"
   },
-  "viewer.contextMenu.ariaLabel": "Acties weergavevenster",
-  "@viewer.contextMenu.ariaLabel": {
-    "sourceHash": "4cf8e51"
-  },
-  "viewer.contextMenu.copy": "Kopieer",
-  "@viewer.contextMenu.copy": {
-    "sourceHash": "e21f935"
-  },
-  "viewer.contextMenu.selectAll": "Selecteer alles",
-  "@viewer.contextMenu.selectAll": {
-    "sourceHash": "1fc9a38"
-  },
   "viewer.copyDialog.confirmTitleKnown": "{size} naar het klembord kopiëren?",
   "@viewer.copyDialog.confirmTitleKnown": {
     "sourceHash": "7f97ebf"
@@ -405,17 +397,17 @@
   "@viewer.selection.toEndOfFile": {
     "sourceHash": "62d95be"
   },
-  "viewer.selection.singleLine": "{chars} tekens geselecteerd op regel {line}",
+  "viewer.selection.singleLine": "{chars, plural, one {# teken} other {# tekens}} geselecteerd op regel {line}",
   "@viewer.selection.singleLine": {
-    "sourceHash": "bb320d5"
+    "sourceHash": "eb11697"
   },
-  "viewer.selection.multiLine": "Regels {startLine} tot {endLine} geselecteerd, {chars} tekens",
+  "viewer.selection.multiLine": "Regels {startLine} tot {endLine} geselecteerd, {chars, plural, one {# teken} other {# tekens}}",
   "@viewer.selection.multiLine": {
-    "sourceHash": "074c687"
+    "sourceHash": "5ba7791"
   },
-  "viewer.selection.charsOnly": "{chars} tekens geselecteerd",
+  "viewer.selection.charsOnly": "{chars, plural, one {# teken} other {# tekens}} geselecteerd",
   "@viewer.selection.charsOnly": {
-    "sourceHash": "b772db6"
+    "sourceHash": "3db2c4e"
   },
   "viewer.selection.toEndOfFileNoLine": "Geselecteerd tot het einde van het bestand",
   "@viewer.selection.toEndOfFileNoLine": {

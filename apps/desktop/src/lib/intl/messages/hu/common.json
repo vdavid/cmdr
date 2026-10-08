@@ -22,5 +22,59 @@
   "common.downloadsFdaHint": "A Cmdrnek teljes lemezhozzáférésre van szüksége a Letöltések mappád figyeléséhez. <settingsLink>Rendszerbeállítások megnyitása</settingsLink>",
   "@common.downloadsFdaHint": {
     "sourceHash": "315e1d8"
+  },
+  "common.sizeUnit.byte": "{count, plural, one {bájt} other {bájt}}",
+  "@common.sizeUnit.byte": {
+    "sourceHash": "ee1f643"
+  },
+  "common.sizeUnit.kibibyte": "KiB",
+  "@common.sizeUnit.kibibyte": {
+    "sourceHash": "97ee1b8",
+    "sameAsSourceJustification": "IEC binary unit symbol, kept Latin in Hungarian: Xfce Thunar hu writes KiB (thunar.po, 512 KiB / 1 MiB / 1 GiB), KDE Dolphin hu keeps MiB, and Microsoft Terminology hu lists MiB/GiB unchanged."
+  },
+  "common.sizeUnit.mebibyte": "MiB",
+  "@common.sizeUnit.mebibyte": {
+    "sourceHash": "dea6cb8",
+    "sameAsSourceJustification": "IEC binary unit symbol, kept Latin in Hungarian: Xfce Thunar hu writes MiB (thunar.po, 512 KiB / 1 MiB / 1 GiB), KDE Dolphin hu keeps MiB, and Microsoft Terminology hu lists MiB/GiB unchanged."
+  },
+  "common.sizeUnit.gibibyte": "GiB",
+  "@common.sizeUnit.gibibyte": {
+    "sourceHash": "66a1561",
+    "sameAsSourceJustification": "IEC binary unit symbol, kept Latin in Hungarian: Xfce Thunar hu writes GiB (thunar.po, 512 KiB / 1 MiB / 1 GiB), KDE Dolphin hu keeps MiB, and Microsoft Terminology hu lists MiB/GiB unchanged."
+  },
+  "common.sizeUnit.tebibyte": "TiB",
+  "@common.sizeUnit.tebibyte": {
+    "sourceHash": "15c1ec4",
+    "sameAsSourceJustification": "IEC binary unit symbol, kept Latin in Hungarian: Xfce Thunar hu writes TiB (thunar.po, 512 KiB / 1 MiB / 1 GiB), KDE Dolphin hu keeps MiB, and Microsoft Terminology hu lists MiB/GiB unchanged."
+  },
+  "common.sizeUnit.pebibyte": "PiB",
+  "@common.sizeUnit.pebibyte": {
+    "sourceHash": "38ca5a1",
+    "sameAsSourceJustification": "IEC binary unit symbol, kept Latin in Hungarian: Xfce Thunar hu writes PiB (thunar.po, 512 KiB / 1 MiB / 1 GiB), KDE Dolphin hu keeps MiB, and Microsoft Terminology hu lists MiB/GiB unchanged."
+  },
+  "common.sizeUnit.kilobyte": "kB",
+  "@common.sizeUnit.kilobyte": {
+    "sourceHash": "591e59c",
+    "sameAsSourceJustification": "SI kilobyte symbol with lowercase k, as Hungarian writes it: GNOME Nautilus hu (4 kB / 4 MB) and Total Commander hu (kB/mp, kB-ban)."
+  },
+  "common.sizeUnit.megabyte": "MB",
+  "@common.sizeUnit.megabyte": {
+    "sourceHash": "1d09f6f",
+    "sameAsSourceJustification": "International unit symbol; Hungarian macOS Finder writes MB (LocalizableMerged SP25)."
+  },
+  "common.sizeUnit.gigabyte": "GB",
+  "@common.sizeUnit.gigabyte": {
+    "sourceHash": "b4043b0",
+    "sameAsSourceJustification": "International unit symbol; Hungarian macOS Finder writes GB (LocalizableMerged SP24)."
+  },
+  "common.sizeUnit.terabyte": "TB",
+  "@common.sizeUnit.terabyte": {
+    "sourceHash": "791b0ac",
+    "sameAsSourceJustification": "International unit symbol; Hungarian macOS Finder writes TB (LocalizableMerged SP23)."
+  },
+  "common.sizeUnit.petabyte": "PB",
+  "@common.sizeUnit.petabyte": {
+    "sourceHash": "f9085bf",
+    "sameAsSourceJustification": "International unit symbol; Hungarian macOS Finder writes PB (LocalizableMerged SP22)."
   }
 }

@@ -26,7 +26,9 @@ const CLEAN_TICK_BODY = 'All cron jobs finished.'
  * the thing it watches is worse than no alarm.
  */
 export async function pingCronHealth(pingUrl: string, failedJobs: string[]): Promise<void> {
-  const base = pingUrl.replace(/\/+$/, '')
+  let end = pingUrl.length
+  while (end > 0 && pingUrl[end - 1] === '/') end--
+  const base = pingUrl.slice(0, end)
   const url = failedJobs.length > 0 ? `${base}/fail` : base
   const body = failedJobs.length > 0 ? `These cron jobs threw: ${failedJobs.join(', ')}.` : CLEAN_TICK_BODY
 

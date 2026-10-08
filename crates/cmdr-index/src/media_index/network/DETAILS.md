@@ -115,7 +115,9 @@ live-applied through the `media_index_set_*` commands. Folder overrides store ab
 is a component-safe prefix (`/Photos2` isn't "within" `/Photos`, and a trailing slash doesn't matter), folded like the
 drive index's `platform_case` collation (`normalize_for_comparison`: the NFC and NFD forms of a name, and a case-only
 difference, match on macOS; byte-exact elsewhere). It's the ONE folder matcher the exclusion veto, the read-time
-exclusion filter, the purge, and these overrides share, so none of them can disagree about what a folder holds.
+exclusion filter, the purge, and these overrides share, so none of them can disagree about what a folder holds. The
+purge's mount-root strip (`fetch::os_folder_to_index_prefix`) folds the same way, component by component, so an
+exclusion spelled in a different case or Unicode form than the mount root purges its stored rows too.
 
 **Two coverage questions, one prefix test.** `covers(volume_id, os_path)` answers it for a FILE.
 `may_cover_within(volume_id, dir)` answers it for a DIRECTORY, for a caller deciding whether a directory is worth

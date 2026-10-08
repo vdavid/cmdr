@@ -17,6 +17,16 @@ post-replay verification COST-BOUNDING (the two teeth) in `../reconcile/DETAILS.
   `sinceWhen` replay. Linux: `notify` (inotify) with recursive watching and a synthetic event counter. Other platforms:
   stub. `supports_event_replay()` lets callers branch on whether journal replay is available. `start_branches` +
   `watch_branch` are the branch-watched entry points (below).
+  - **Gotcha/Why**: every stream start AND every `current_event_id` is a round trip to `fseventsd`, one daemon for the
+    whole machine. With other processes' disk churn pegging it at 100% CPU, each took 0.7–3.7 s (verified on macOS 27,
+    `sample` + timing logs, 2026-10-07, issue #374), which timed the phase-machine tests out at full parallelism. Treat
+    both as blocking I/O. A test that never waits on a delivery puts its root on the cfg(test)
+    `watcher/fake_journal.rs`; one that asserts on delivery keeps the real stream and the `real-notify` nextest group.
+    On the fake by default: the phases `Drive`, the cover `ColdDrive`, and `event_stream_tests.rs`. Real, and
+    self-healing (redo the change on a fresh name until it lands, since a just-armed stream DROPS a change outright):
+    `ColdDrive::watched_for_real`, used only by the four cold-drive tests that prove a delivery. ⚠️ Don't mix the two
+    across one drive's life: a fake id stored as `last_event_id` and handed to a real restart watches from a moment that
+    never existed and delivers nothing (`cold_drive_tests/moves.rs`).
 - **branches.rs (+branches/tests.rs)** — `WatchScope`, `BranchWatch`, and the admission rule a live loop reads events by
   (below).
 - **event_loop.rs** — holds only what more than one loop uses: `merge_fs_events` (deduplication with flag priority),
@@ -294,9 +304,21 @@ faithfully, so the cheap one-`DeleteSubtreeById` path used to fire only at the v
 through hundreds of thousands of per-file removals (2–5 minutes on a 60 GB tree). `process_live_batch` now synthesizes
 the coalescing the kernel didn't: per 1 s batch it groups removal events by a component-capped prefix
 (`STORM_GROUP_PREFIX_DEPTH = 8`, the GROUPING KEY only) and, when a group exceeds `REMOVAL_STORM_THRESHOLD` (200),
-queues ONE `queue_must_scan_sub_dirs` anchored at the group's **deepest common ancestor** — NOT the capped prefix, which
-on a deep incident path (~11 components) would re-list a whole worktree instead of just `target`. From then on, removal
-events under a queued-or-active rescan prefix are dropped, with three load-bearing rules:
+queues `queue_must_scan_sub_dirs` anchored at a **deepest common ancestor** — NOT the capped prefix, which on a deep
+incident path (~11 components) would re-list a whole worktree instead of just `target`. From then on, removal events
+under a queued-or-active rescan prefix are dropped, under the three drop rules below.
+
+**Anchor per cluster, not per group (`cluster_anchors`).** One common ancestor over the whole group is only as tight as
+its strayest member: cargo clearing 1,400 files under `target/debug` plus 60 deletes under `.svelte-kit` in the same
+second gives the WORKTREE ROOT, and the walk re-lists everything below it, `node_modules` included. Measured on David's
+machine (2026-10-05, prod log): 36 storms anchored at one worktree's root in a day, the worst a 225 s walk that changed
+781 rows. So a group splits by the child of its common ancestor each member falls under: every child holding more than
+the threshold anchors on its own, recursively, and the remainder takes the per-file path. **The bound that keeps it
+safe**: when the remainder is itself more than a threshold's worth, the whole group keeps the wide anchor instead,
+because that remainder is a per-file storm of its own. So each split level leaks at most `REMOVAL_STORM_THRESHOLD`
+removals to the per-file path, and a delete spread thin over many small folders still coalesces at their ancestor.
+
+The three drop rules, each load-bearing:
 
 - the reconciler reads the active rescan path from a shared slot (`active_rescan_path`, set at spawn / cleared on
   completion — `start_next_rescan` pops the path out of `pending_rescans` before spawning);

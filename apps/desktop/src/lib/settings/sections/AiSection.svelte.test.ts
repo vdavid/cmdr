@@ -7,12 +7,17 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount, tick, unmount, flushSync } from 'svelte'
+import type { ManagedAiRefusal, SettingLock } from '$lib/ipc/bindings'
 
 const stubs = vi.hoisted(() => ({
   settings: Object.create(null) as Record<string, unknown>,
   // Several subscribers per id (the section AND each `SettingRow`'s reset affordance).
   listeners: new Map<string, Set<(value: unknown) => void>>(),
   consent: { accepted: false },
+  locks: new Map<string, SettingLock>(),
+  managedConsent: null as ManagedAiRefusal | null,
+  refusedUrls: new Set<string>(),
+  localAiSupported: true,
 }))
 
 vi.mock('$lib/settings', async (importOriginal) => {
@@ -33,14 +38,31 @@ vi.mock('$lib/settings', async (importOriginal) => {
   }
 })
 
+vi.mock('$lib/managed-policy/managed-policy.svelte', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  getSettingLock: (id: string) => stubs.locks.get(id),
+  isSettingLocked: (id: string) => stubs.locks.get(id)?.kind === 'fixed',
+  isSettingManaged: (id: string) => stubs.locks.has(id),
+}))
+
 vi.mock('$lib/settings/ai-config', () => ({ pushConfigToBackend: vi.fn(() => Promise.resolve()) }))
 
 vi.mock('$lib/tauri-commands', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
-  getAiRuntimeStatus: vi.fn(() => Promise.resolve({ localAiSupported: true })),
+  getAiRuntimeStatus: vi.fn(() => Promise.resolve({ localAiSupported: stubs.localAiSupported })),
+  cloudAiHostVerdicts: vi.fn((urls: string[]) =>
+    Promise.resolve(urls.map((url) => (stubs.refusedUrls.has(url) ? ('hostNotAllowed' as const) : null))),
+  ),
   stopAiServer: vi.fn(() => Promise.resolve()),
   checkAiConnection: vi.fn(() =>
-    Promise.resolve({ connected: false, authError: false, models: [], error: null, cloudConsentMissing: false }),
+    Promise.resolve({
+      connected: false,
+      authError: false,
+      models: [],
+      error: null,
+      cloudConsentMissing: false,
+      managed: null,
+    }),
   ),
   saveAiApiKey: vi.fn(() => Promise.resolve(null)),
   getAiApiKeyStatus: vi.fn(() => Promise.resolve({ isSet: false, fingerprint: '' })),
@@ -51,6 +73,7 @@ vi.mock('$lib/tauri-commands', async (importOriginal) => ({
       currentVersion: 1,
       acceptedVersion: stubs.consent.accepted ? 1 : null,
       acceptedAt: stubs.consent.accepted ? 1_760_000_000 : null,
+      managed: stubs.managedConsent,
     }),
   ),
   acceptCloudAiConsent: vi.fn(() => {
@@ -59,6 +82,10 @@ vi.mock('$lib/tauri-commands', async (importOriginal) => ({
   }),
   revokeCloudAiConsent: vi.fn(() => {
     stubs.consent.accepted = false
+    stubs.locks.clear()
+    stubs.managedConsent = null
+    stubs.refusedUrls.clear()
+    stubs.localAiSupported = true
     return Promise.resolve()
   }),
   cloudAiConsentRevokePendingChanged: vi.fn(() => Promise.resolve()),
@@ -183,5 +210,72 @@ describe('Allow cloud AI in Settings > AI > Provider', () => {
     expect(acceptCloudAiConsent).not.toHaveBeenCalled()
     expect(revokeCloudAiConsent).not.toHaveBeenCalled()
     expect(cloudSetup(target)?.hasAttribute('inert')).toBe(true)
+  })
+})
+
+describe("the organization's AI policy in Settings > AI > Provider", () => {
+  function providerOption(target: HTMLElement, label: string): HTMLButtonElement | undefined {
+    return [...target.querySelectorAll<HTMLButtonElement>('[role="radio"]')].find(
+      (radio) => radio.textContent.trim() === label,
+    )
+  }
+
+  const cloudRuledOut: SettingLock = { kind: 'disallowedValues', values: ['cloud'], fallback: 'off' }
+
+  it('locks every option when the organization turned AI off', async () => {
+    stubs.settings['ai.provider'] = 'off'
+    stubs.locks.set('ai.provider', { kind: 'fixed', value: 'off' })
+    const target = await mountSection()
+
+    for (const label of ['Off', 'Cloud AI', 'Local LLM']) {
+      expect(providerOption(target, label)?.disabled, label).toBe(true)
+    }
+    expect(target.textContent).toContain('Your organization manages this setting.')
+  })
+
+  it('rules out only Cloud under on-device-only, and says so in a visible line', async () => {
+    stubs.settings['ai.provider'] = 'local'
+    stubs.locks.set('ai.provider', cloudRuledOut)
+    const target = await mountSection()
+
+    expect(providerOption(target, 'Cloud AI')?.disabled).toBe(true)
+    expect(providerOption(target, 'Local LLM')?.disabled).toBe(false)
+    expect(providerOption(target, 'Off')?.disabled).toBe(false)
+    const note = target.querySelector('#settings-ai-provider-managed')
+    expect(note?.textContent.trim()).toBe('Your organization allows only on-device AI.')
+    expect(target.querySelector('[role="radiogroup"]')?.getAttribute('aria-describedby')).toBe(
+      'settings-ai-provider-managed',
+    )
+  })
+
+  it("says nothing is left on a Mac that can't run on-device AI", async () => {
+    stubs.settings['ai.provider'] = 'off'
+    stubs.localAiSupported = false
+    stubs.locks.set('ai.provider', cloudRuledOut)
+    const target = await mountSection()
+
+    expect(target.querySelector('#settings-ai-provider-managed')?.textContent.trim()).toBe(
+      'Your organization allows only on-device AI, and this Mac can’t run it.',
+    )
+  })
+
+  it('lists a refused service disabled with the reason, and says why when it is the chosen one', async () => {
+    stubs.consent.accepted = true
+    stubs.refusedUrls.add('https://api.openai.com/v1')
+    const target = await mountSection()
+
+    const openai = target.querySelector<HTMLOptionElement>('select option[value="openai"]')
+    expect(openai?.disabled).toBe(true)
+    expect(target.querySelector<HTMLOptionElement>('select option[value="anthropic"]')?.disabled).toBe(false)
+    expect(target.textContent).toContain('Your organization doesn’t allow this AI service.')
+    expect(checkAiConnection).not.toHaveBeenCalled()
+  })
+
+  it('locks the Allow cloud AI switch off when the organization rules out every cloud host', async () => {
+    stubs.managedConsent = 'cloudAiOff'
+    const target = await mountSection()
+
+    expect(consentSwitch(target)?.disabled).toBe(true)
+    expect(target.textContent).toContain('Your organization allows only on-device AI.')
   })
 })

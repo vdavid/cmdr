@@ -12,9 +12,10 @@ mod type_mapping;
 
 // ── Constants ────────────────────────────────────────────────────────
 
-pub(crate) const KB: u64 = 1_024;
-pub(crate) const MB: u64 = 1_024 * KB;
-pub(crate) const GB: u64 = 1_024 * MB;
+/// The `size` enum buckets (`tiny` … `huge`) are vague words, so their edges are just round binary amounts.
+pub(crate) const KIB: u64 = 1_024;
+pub(crate) const MIB: u64 = 1_024 * KIB;
+pub(crate) const GIB: u64 = 1_024 * MIB;
 
 /// Known file extensions for exact filename detection in `keywords_to_pattern`.
 const KNOWN_EXTENSIONS: &[&str] = &[

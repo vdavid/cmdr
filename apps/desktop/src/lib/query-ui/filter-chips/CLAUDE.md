@@ -35,10 +35,10 @@ Search and Selection. See `../CLAUDE.md` for the orchestrator and cross-consumer
   Don't add an `eq` kind to `SizePredicate` / `HistoryFilters`.
 - **`parseSizeToBytes('0', unit)` is `0`, not `undefined`.** The grid lets the user explicitly pick 0 as a lower or
   upper bound, so the helper honors it. `deriveSizeChip` likewise treats a `0` bound as configured (the guard is `>= 0`,
-  not `> 0`); an empty input stays unconfigured because `parseFloat('')` is `NaN`. So "= 0 B" / "≥ 0 B" render as real
-  filters.
-- **Size unit is `'B' | 'KB' | 'MB' | 'GB'`.** The "byte(s)" cell is selectable from the unit column manually; the AI
-  translator's `bytesToDisplaySize` still produces `KB | MB | GB`.
+  not `> 0`); an empty input stays unconfigured because `parseFloat('')` is `NaN`. So "= 0 bytes" / "> 0 bytes" render
+  as real filters.
+- **Size unit is `'B' | 'KB' | 'MB' | 'GB'`**: IDs, labelled IEC or SI by the user's base. The "byte(s)" cell is
+  selectable from the unit column manually; the AI translator's `bytesToDisplaySize` still produces `KB | MB | GB`.
 - **macOS Option-key shortcuts match on `event.code`, not `event.key`.** The Option key remaps `event.key` to
   typographic glyphs (Option+S → `ß`, Option+M → `µ`), so the `⌥S` / `⌥M` / `⌥I` popover openers match on `KeyS` /
   `KeyM` / `KeyI` first and fall back to `event.key` for synthesized test events. `⌥I` (Search in) is Search-only;

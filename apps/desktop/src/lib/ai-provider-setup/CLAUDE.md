@@ -8,7 +8,8 @@ Settings › AI › Provider (`lib/settings/sections/AiCloudSection.svelte`).
 
 `provider-setup.svelte.ts` (`ProviderSetupController`: all the state, the debounces, the race guards),
 `provider-setup-plan.ts` (pure: preset → ordered steps), `ProviderSetupSteps.svelte` (the numbered list and its
-controls). Presets live in `lib/settings/cloud-providers.ts`.
+controls), `preset-hosts.svelte.ts` (which presets the organization refuses). Presets live in
+`lib/settings/cloud-providers.ts`.
 
 ## Must-knows
 
@@ -28,6 +29,8 @@ controls). Presets live in `lib/settings/cloud-providers.ts`.
   `keyIsSet` (from `getAiApiKeyStatus`) drives the gate. `docs/security.md` § "AI API keys".
 - **Every async answer is compared against `providerId` before it lands.** A keychain read or a check for a provider the
   user already clicked away from is dropped, ❌ never rendered against the new one.
+- **The organization's policy is asked, ❌ never derived**: the controller asks `cloud_ai_host_verdicts` before every
+  check, and a refusal is `status: 'managed'`, never a connection problem. DETAILS § The organization's policy.
 - **The connection status is NOT rendered here.** Each surface owns that block (the wizard a quiet line, Settings a row
   with a recheck button), and each uses its own message keys.
 

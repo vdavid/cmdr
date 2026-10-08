@@ -1,5 +1,5 @@
 /**
- * What a pasted `sftp://`, `smb://`, `adb://`, or `https://` means to Go to path,
+ * What a pasted `sftp://`, `s3://`, `smb://`, `adb://`, or `https://` means to Go to path,
  * decided BEFORE the local resolver is asked.
  *
  * ❗ **The Rust resolver is local-only by design** (`commands/go_to_path.rs` walks
@@ -19,7 +19,7 @@
 
 import { isSnapshotPath } from '$lib/file-explorer/navigation/real-folder-history'
 import { parseServerAddress } from '$lib/servers/address-parser'
-import { isServerPath, parseServerPath } from '$lib/servers/server-path-utils'
+import { isServerPath, isUnderServerRoot, parseServerPath } from '$lib/servers/server-path-utils'
 import { openAddServerSheet, type ConnectedPlace, type SmbHandOff } from '$lib/servers/open-sign-in'
 import { listSavedServers } from '$lib/tauri-commands'
 import { getAppLogger } from '$lib/logging/logger'
@@ -119,7 +119,7 @@ export function actOnSchemeInput(
      * sheet ending differently for one input is what this exists to prevent.
      */
     onSmbHandOff: (handOff: SmbHandOff) => void
-    /** Where an SFTP or WebDAV address lands once the sheet connected it: the place itself. */
+    /** Where an SFTP, WebDAV, or S3 address lands once the sheet connected it: the place itself. */
     onConnected: (place: ConnectedPlace) => void
   },
 ): Promise<GoToPathOutcome> {
@@ -147,9 +147,9 @@ async function savedPlaceFor(path: string): Promise<string | null> {
     const servers = await listSavedServers()
     for (const server of servers) {
       for (const place of server.places) {
-        // Whole-prefix containment is `server-path-utils`'s own rule; here the
-        // app root is a prefix of any path inside the place.
-        if (path === place.appRoot || path.startsWith(`${place.appRoot}/`)) return place.name
+        // Whole-component containment, trailing slash and all: an S3 account
+        // root's app root ends in `/`.
+        if (isUnderServerRoot(place.appRoot, path)) return place.name
       }
     }
   } catch (e) {

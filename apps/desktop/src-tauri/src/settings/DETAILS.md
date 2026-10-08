@@ -1,11 +1,14 @@
 # Settings (Rust) details
 
-`CLAUDE.md` holds the must-knows. This file holds the full `Settings` struct field list and the file format.
+`CLAUDE.md` holds the must-knows. This file holds per-field notes, the restricted-window snapshot, the early-load
+helpers, and the file format.
 
 ## Settings struct
 
-Each field is `parse_settings`-extracted from a literal dot-notation key in `settings.json`. Source key noted where it
-differs from the field name.
+Each field is `parse_settings`-extracted from a literal dot-notation key in `settings.json`, as STORED: no managed
+lock applies here. The struct's doc comments in `loader.rs` are the complete list (the image-index, ADB, and
+drive-indexing fields are documented there only); the notes below cover the fields with non-obvious behavior. Source
+key noted where it differs from the field name.
 
 - `show_hidden_files: bool` (default off). The three backend spellings of that default (the serde attribute,
   `Settings::default` for a missing/unreadable file, and `parse_settings` for a file without the key) all read one
@@ -15,8 +18,8 @@ differs from the field name.
 - `full_disk_access_choice`: consulted at launch by the FDA gate, via `read_fda_choice` (registry key, falling back to
   the pre-migration top-level name, and reporting a value it can't parse).
 - `developer_mcp_enabled: Option<bool>`. Absent (the common case) → `None` → `mcp/config.rs` uses its
-  env → setting → debug-build-on fallback. The FE settings store persists sparsely now (only keys an actor explicitly
-  set), so it no longer writes the registry-default `false` here as if it were a user choice. A pre-fix data dir may
+  env → setting → debug-build-on fallback. The FE settings store persists sparsely (only keys an actor explicitly
+  set), so it doesn't write the registry-default `false` here as if it were a user choice. An older data dir may
   still carry a leaked explicit `false` (we don't rewrite existing files); the dev wrapper's `CMDR_MCP_ENABLED=1` export
   (`scripts/DETAILS.md`) neutralizes that for the dev workflow. See the FE `lib/settings/DETAILS.md` § "Sparse
   persistence".
@@ -43,11 +46,26 @@ differs from the field name.
 - `network_enabled: Option<bool>` (from `network.enabled`; default on, off renders the picker as "Network (disabled)").
 - `network_first_trigger_done: Option<bool>` (from `network.firstTriggerDone`; hidden internal flag, true once the macOS
   Local Network prompt has fired).
-- `analytics_enabled: Option<bool>` (from `analytics.enabled`; tri-state consent: None/Some(true) → on, Some(false) →
-  opted out; see `analytics/CLAUDE.md`).
 
 `early_load_global_go_to_latest_shortcut()` is a third early-load helper returning `Option<(bool, String)>` (enabled +
 shortcut string) for the downloads global shortcut, read before the `AppHandle` is wired in.
+
+## Restricted-window snapshot
+
+`load_restricted_window_settings` + `RestrictedWindowSettings` back the `get_restricted_window_settings` command (in
+`commands/settings.rs`): the typed read allowlist for windows without store capability (the viewer AND the Transfers
+queue). Reads `settings.json` fresh per call. A setting missing from the struct reads as its registry default in those
+windows, silently — which is how the queue rendered binary sizes while the copy dialog rendered SI, and how a pinned
+`appearance.language` reached every window except those two. Adding one is a four-place change; the frontend half is
+`apps/desktop/src/lib/settings/CLAUDE.md`.
+
+## Early-load helpers
+
+Two helpers in `loader.rs` read `settings.json` before the Tauri `AppHandle` is fully wired into `setup()`, used by the
+`logging::dispatch` initializer: `early_load_max_log_storage_mb()` (`Option<u64>`, cap in MB, 0 = disabled) and
+`early_load_verbose_logging()` (`Option<bool>`, sets the initial stdout threshold to Debug if true and `RUST_LOG` is
+unset). Both resolve the data dir via `config::standalone_app_data_dir()` (`CMDR_DATA_DIR`, else the OS default for
+`config::BUNDLE_ID`, kept in sync with `tauri.conf.json` → `identifier`).
 
 ## File format
 

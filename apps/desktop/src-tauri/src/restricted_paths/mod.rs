@@ -167,16 +167,19 @@ fn schedule_emit() {
 #[cfg(target_os = "macos")]
 fn install_did_become_active_observer() {
     use block2::RcBlock;
-    use objc2_app_kit::{NSApplicationDidBecomeActiveNotification, NSWorkspace};
-    use objc2_foundation::NSNotification;
+    use objc2_app_kit::NSApplicationDidBecomeActiveNotification;
+    use objc2_foundation::{NSNotification, NSNotificationCenter};
     use std::ptr::NonNull;
 
     static INSTALLED: OnceLock<()> = OnceLock::new();
     if INSTALLED.set(()).is_err() {
         return;
     }
-    let workspace = NSWorkspace::sharedWorkspace();
-    let center = workspace.notificationCenter();
+    // ❗ The DEFAULT center: `NSApplication` posts its own activation there. The `NSWorkspace`
+    // center never delivers it, so an observer there silently never fires (verified on macOS
+    // 27.0: the same observer in `glass_tint.rs` stayed silent on the workspace center and fired
+    // on the default one, 2026-09-30).
+    let center = NSNotificationCenter::defaultCenter();
     let block = RcBlock::new(move |_n: NonNull<NSNotification>| {
         reprobe_all_async();
     });
@@ -187,12 +190,6 @@ fn install_did_become_active_observer() {
     // long, which holding no token achieves (the center retains it).
     unsafe {
         center.addObserverForName_object_queue_usingBlock(
-            // NSApplication notification (posted on the app itself, not NSWorkspace).
-            // NotificationCenter still routes by name, so this works via
-            // the NSWorkspace center too, but for symmetry with the rest
-            // of our observers we use the workspace center. The
-            // app-became-active name is rebroadcast through the workspace
-            // center on macOS 12+.
             Some(NSApplicationDidBecomeActiveNotification),
             None,
             None,

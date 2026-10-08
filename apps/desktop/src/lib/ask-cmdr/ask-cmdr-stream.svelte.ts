@@ -22,6 +22,7 @@
 import { getAppLogger } from '$lib/logging/logger'
 import { refreshRailGate } from './ask-cmdr-gate.svelte'
 import type { RailMessage } from './ask-cmdr-messages'
+import type { ManagedAiRefusal } from '$lib/ipc/bindings'
 import {
   discardStagedRenameProposals,
   openStagedRenameReview,
@@ -34,9 +35,13 @@ import {
   type AskCmdrErrorKind,
   type AskCmdrStreamEvent,
   type AskCmdrTurn,
+  type ProposalDecision,
 } from '$lib/tauri-commands'
 
 const log = getAppLogger('askCmdr')
+
+/** What the turn reducer folds: every event but the one that isn't part of a turn. */
+type TurnEvent = Exclude<AskCmdrStreamEvent, { type: 'proposalDecided' }>
 
 /** How long a turn may go without any event before its bubble says so, and before the rail
  * gives up on it entirely. */
@@ -83,7 +88,7 @@ export function sendMessage(text: string): void {
         askCmdrState.conversationId = outcome.conversationId
         stoppedTurns.delete(outcome.conversationId)
       } else {
-        if (askCmdrState.streaming) applyFailed(outcome.kind, outcome.detail)
+        if (askCmdrState.streaming) applyFailed(outcome.kind, outcome.detail, outcome.managed)
         // A switch moved since the rail last looked (in Settings, or in another window).
         // Re-reading turns the rail back into its gate, which carries the way out.
         if (outcome.kind === 'askCmdrOff' || outcome.kind === 'noCloudConsent') void refreshRailGate()
@@ -126,6 +131,12 @@ export function stopStreaming(): void {
  */
 export function handleTurnEvent(turn: AskCmdrTurn): void {
   const { conversationId, event } = turn
+  if (event.type === 'proposalDecided') {
+    // Not part of a turn, so it takes none of the turn rules below: it adopts no id for a
+    // fresh chat, and a stopped thread still shows it.
+    noteProposalDecided({ conversationId, messageId: event.messageId, decision: event.decision })
+    return
+  }
   if (askCmdrState.conversationId === null) {
     if (event.type === 'started' && askCmdrState.streaming) askCmdrState.conversationId = conversationId
     return
@@ -138,11 +149,67 @@ export function handleTurnEvent(turn: AskCmdrTurn): void {
 
 /** The events that end a turn. They're allowed through on a stopped thread so a `discarded`
  * can still take the thread away. */
-function isTerminal(event: AskCmdrStreamEvent): boolean {
+function isTerminal(event: TurnEvent): boolean {
   return event.type === 'done' || event.type === 'failed' || event.type === 'discarded'
 }
 
-function applyStreamEvent(event: AskCmdrStreamEvent): void {
+/** One answer the user gave to a suggestion, and the thread whose timeline it was written to. */
+interface HeardDecision {
+  conversationId: number
+  /** The decision's timeline row, which is what makes a line heard twice one line. */
+  messageId: number
+  decision: ProposalDecision
+}
+
+/**
+ * Decisions heard while a thread load was in flight, for {@link settleDecisionsHeardWhileLoading}
+ * to put back. A load replaces the whole message list with what the backend read, and that read
+ * can be a moment older than a decision the rail has already heard.
+ */
+let heardWhileLoading: HeardDecision[] = []
+
+/**
+ * The user answered a suggestion: show the line in the thread that made it, and only there.
+ *
+ * The event carries the decision itself, so the rail adds ONE line instead of re-reading the
+ * thread. That is not only cheaper: a re-read replaces the message list, which would throw
+ * away an answer that is mid-stream, and its reply could arrive after the user moved to
+ * another thread. Nothing here waits on anything, so neither can happen.
+ */
+function noteProposalDecided(heard: HeardDecision): void {
+  if (askCmdrState.loadingHistory) heardWhileLoading.push(heard)
+  if (heard.conversationId === askCmdrState.conversationId) showDecision(heard)
+}
+
+/**
+ * Put back what a thread load may have missed. The trigger calls this when a load ends, however
+ * it ended: whatever was heard for the thread now on screen is shown (once), and the rest was
+ * about threads the rail isn't showing.
+ */
+export function settleDecisionsHeardWhileLoading(): void {
+  const heard = heardWhileLoading
+  heardWhileLoading = []
+  for (const decision of heard) {
+    if (decision.conversationId === askCmdrState.conversationId) showDecision(decision)
+  }
+}
+
+/** Add a decision's line unless the thread already shows that row: the row is written before
+ * its event is emitted, so a load can deliver it first and the event still follow. It goes
+ * above a bubble that is still streaming, which has to stay last for the next chunk to find. */
+function showDecision({ messageId, decision }: HeardDecision): void {
+  const shown = askCmdrState.messages.some((m) => m.kind === 'proposalDecisions' && m.id === messageId)
+  if (shown) return
+  const line: RailMessage = { kind: 'proposalDecisions', id: messageId, decisions: [decision] }
+  const assistant = currentAssistant()
+  if (assistant?.streaming) {
+    askCmdrState.messages.splice(askCmdrState.messages.indexOf(assistant), 0, line)
+  } else {
+    askCmdrState.messages.push(line)
+  }
+}
+
+function applyStreamEvent(event: TurnEvent): void {
   switch (event.type) {
     case 'started':
       return
@@ -182,7 +249,7 @@ function applyStreamEvent(event: AskCmdrStreamEvent): void {
       applyDone(event.messageId)
       return
     case 'failed':
-      applyFailed(event.kind, event.detail)
+      applyFailed(event.kind, event.detail, event.managed)
       return
     case 'modelChanged':
       insertBeforeCurrentTurn({ kind: 'modelChange', model: event.model })
@@ -201,7 +268,7 @@ function applyStreamEvent(event: AskCmdrStreamEvent): void {
 /** The two events that report on the CONTEXT rather than on the answer: what the assembly set
  * aside, and what it cost. Split out so `applyStreamEvent` stays under the complexity ceiling
  * and both halves stay exhaustive. */
-function handleContextEvent(event: Extract<AskCmdrStreamEvent, { type: 'contextTrimmed' | 'contextUsage' }>): void {
+function handleContextEvent(event: Extract<TurnEvent, { type: 'contextTrimmed' | 'contextUsage' }>): void {
   switch (event.type) {
     case 'contextTrimmed':
       applyContextTrimmed(event.elidedResults)
@@ -307,9 +374,14 @@ function applyDone(messageId: number): void {
   openStagedRenameReview()
 }
 
-function applyFailed(kind: AskCmdrErrorKind, detail: string | null): void {
+function applyFailed(kind: AskCmdrErrorKind, detail: string | null, managed: ManagedAiRefusal | null = null): void {
   finalizeAssistant()
-  askCmdrState.messages.push({ kind: 'error', errorKind: kind, detail: detail ?? undefined })
+  askCmdrState.messages.push({
+    kind: 'error',
+    errorKind: kind,
+    detail: detail ?? undefined,
+    managed: managed ?? undefined,
+  })
   askCmdrState.streaming = false
   clearProgressWatchdog()
   // Whatever got staged before the failure is real and still the user's to answer.

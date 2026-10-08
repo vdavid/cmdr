@@ -46,7 +46,7 @@ pub(crate) fn set_ground_in_flux_for_test(volume_id: &str, in_flux: bool) {
 pub(crate) fn rescan_with_phases_owed_for_test(volume_id: &str) -> Result<(), ScanStartError> {
     use crate::indexing::lifecycle::manager::PendingPhases;
 
-    let mut held = DetachedManager::take(volume_id, |_| {}).expect("a registered volume to rescan");
+    let mut held = DetachedManager::take(volume_id).expect("a registered volume to rescan");
     held.manager().pending_phases = PendingPhases::Owed;
     let result = held.manager().force_rescan("phases-owed test");
     held.manager().pending_phases = PendingPhases::No;
@@ -64,7 +64,7 @@ pub(crate) fn rescan_with_phases_owed_for_test(volume_id: &str) -> Result<(), Sc
 /// is carried out on the way back, exactly as it would be in the app.
 #[cfg(test)]
 pub(crate) fn while_detached_for_test(volume_id: &str, f: impl FnOnce()) {
-    let held = DetachedManager::take(volume_id, |_| {}).expect("a registered volume to detach");
+    let held = DetachedManager::take(volume_id).expect("a registered volume to detach");
     f();
     let _ = held.hand_back();
 }
@@ -155,31 +155,27 @@ pub fn force_scan(volume_id: &str) -> Result<RescanOutcome, String> {
     // here ran the local guarded walker over a network mount — walking nothing and
     // falsely marking the index complete — so a NAS "Rescan now" indexed zero
     // entries.
-    let detached = off_the_registry(
-        volume_id,
-        |_| {},
-        |mgr| {
-            cover::remember_rescan(volume_id);
-            match mgr.force_rescan("manual start") {
-                Ok(()) | Err(ScanStartError::AlreadyScanning) => {
-                    cover::forget_rescan(volume_id);
-                    Ok(RescanOutcome::Started)
-                }
-                Err(ScanStartError::GroundBeingWalked) => {
-                    log::info!("force_scan: '{volume_id}' is being walked; its scan runs when that walk ends");
-                    Ok(RescanOutcome::DeferredUntilSearchEnds)
-                }
-                Err(ScanStartError::GroundBeingRewritten) => {
-                    log::info!("force_scan: '{volume_id}' is being rebuilt; its scan runs when that run ends");
-                    Ok(RescanOutcome::DeferredUntilScanEnds)
-                }
-                Err(ScanStartError::Internal(diagnostic)) => {
-                    cover::forget_rescan(volume_id);
-                    Err(diagnostic)
-                }
+    let detached = off_the_registry(volume_id, |mgr| {
+        cover::remember_rescan(volume_id);
+        match mgr.force_rescan("manual start") {
+            Ok(()) | Err(ScanStartError::AlreadyScanning) => {
+                cover::forget_rescan(volume_id);
+                Ok(RescanOutcome::Started)
             }
-        },
-    )?;
+            Err(ScanStartError::GroundBeingWalked) => {
+                log::info!("force_scan: '{volume_id}' is being walked; its scan runs when that walk ends");
+                Ok(RescanOutcome::DeferredUntilSearchEnds)
+            }
+            Err(ScanStartError::GroundBeingRewritten) => {
+                log::info!("force_scan: '{volume_id}' is being rebuilt; its scan runs when that run ends");
+                Ok(RescanOutcome::DeferredUntilScanEnds)
+            }
+            Err(ScanStartError::Internal(diagnostic)) => {
+                cover::forget_rescan(volume_id);
+                Err(diagnostic)
+            }
+        }
+    })?;
     match detached {
         Handover::Restored(result) => result,
         Handover::TornDownWhileAway(result) => {
@@ -205,7 +201,7 @@ pub fn force_scan(volume_id: &str) -> Result<RescanOutcome, String> {
 /// registry lock for the blocking start, and the machine is stood up on the far
 /// side of the restore.
 pub(in crate::indexing::lifecycle) fn resume_the_phases(volume_id: &str) -> PhaseResume {
-    match off_the_registry(volume_id, |_| {}, IndexManager::cover_again) {
+    match off_the_registry(volume_id, IndexManager::cover_again) {
         // A volume that isn't running has no machine to resume; whatever the
         // retry was waiting for is gone.
         Err(e) => {
@@ -249,17 +245,17 @@ struct DetachedManager<'a> {
 
 impl<'a> DetachedManager<'a> {
     /// Take a `Running` volume's manager out, publishing [`IndexPhase::Detached`]
-    /// with its writer, and run `prepare` against it while the lock is still held.
+    /// with its writer.
     ///
-    /// ⚠️ `prepare` is for the non-blocking teardown a rescan does to what it is
-    /// about to replace (stopping the old watcher and live loop). ❌ Nothing that
-    /// blocks or re-enters the registry may go in it; that is what `work` is for.
-    fn take(volume_id: &'a str, prepare: impl FnOnce(&mut IndexManager)) -> Result<Self, String> {
+    /// ❌ Nothing runs against the manager in here. A rescan's teardown of what it
+    /// replaces looks non-blocking and isn't: stopping a watcher joins its FSEvents
+    /// run-loop thread. Everything goes in `work`, off the lock, where nobody else
+    /// can reach the manager anyway.
+    fn take(volume_id: &'a str) -> Result<Self, String> {
         let mut reg = INDEX_REGISTRY.lock_ignore_poison();
         let instance = reg.get_mut(volume_id).ok_or("Indexing not initialized")?;
         match std::mem::replace(&mut instance.phase, IndexPhase::ShuttingDown { restart: None }) {
-            IndexPhase::Running(mut mgr) => {
-                prepare(&mut mgr);
+            IndexPhase::Running(mgr) => {
                 instance.phase = IndexPhase::Detached {
                     writer: mgr.writer.clone(),
                     teardown: None,
@@ -373,10 +369,15 @@ fn hand_the_manager_back(volume_id: &str, mgr: Box<IndexManager>, start_phases: 
 
     match next {
         Next::Restored => {
-            // A volume with no completed scan had its PHASES restarted rather than
-            // its index truncated, and the machine starts here — on the far side of
-            // the registry restore, never inside the window above.
             if start_phases == StartPhases::Yes {
+                // A branch watch whose start was in flight when the manager left
+                // found nobody to install into and stopped (`start_the_branch_watch`),
+                // so a volume that came back with covered ground and no watcher gets
+                // one here. A no-op for every other shape.
+                super::ensure_branch_watch(volume_id, false);
+                // A volume with no completed scan had its PHASES restarted rather
+                // than its index truncated, and the machine starts here — on the far
+                // side of the registry restore, never inside the window above.
                 super::startup::start_pending_phases(volume_id);
             }
             Handover::Restored(())
@@ -414,10 +415,9 @@ fn hand_the_manager_back(volume_id: &str, mgr: Box<IndexManager>, start_phases: 
 /// [`DetachedManager`] guard ends it on every path out, panic included.
 pub(in crate::indexing::lifecycle) fn off_the_registry<T>(
     volume_id: &str,
-    prepare: impl FnOnce(&mut IndexManager),
     work: impl FnOnce(&mut IndexManager) -> T,
 ) -> Result<Handover<T>, String> {
-    let mut held = DetachedManager::take(volume_id, prepare)?;
+    let mut held = DetachedManager::take(volume_id)?;
     let result = work(held.manager());
     Ok(match held.hand_back() {
         Handover::Restored(()) => Handover::Restored(result),
@@ -426,15 +426,25 @@ pub(in crate::indexing::lifecycle) fn off_the_registry<T>(
 }
 
 /// Stop the active scan for a volume without shutting down the manager.
+///
+/// Under the lock only what doesn't block. Stopping the watcher joins its FSEvents
+/// run-loop thread and the branch watch it hands back is a stream start, both
+/// `fseventsd` round trips, so both run after the guard drops.
 pub fn stop_scan(volume_id: &str) -> Result<(), String> {
-    let mut reg = INDEX_REGISTRY.lock().map_err(|e| format!("Lock poisoned: {e}"))?;
-    match reg.get_mut(volume_id).map(|i| &mut i.phase) {
-        Some(IndexPhase::Running(mgr)) => {
-            mgr.stop_scan();
-            Ok(())
+    let retired = {
+        let mut reg = INDEX_REGISTRY.lock().map_err(|e| format!("Lock poisoned: {e}"))?;
+        match reg.get_mut(volume_id).map(|i| &mut i.phase) {
+            Some(IndexPhase::Running(mgr)) => mgr.end_the_scan(),
+            _ => return Err("Indexing not initialized".to_string()),
         }
-        _ => Err("Indexing not initialized".to_string()),
+    };
+    if let Some(mut watcher) = retired {
+        watcher.stop();
     }
+    // Stopping a SCAN must not silently retire a branch watch that was never part
+    // of it (`IndexManager::stop_scan` says why).
+    super::ensure_branch_watch(volume_id, false);
+    Ok(())
 }
 
 #[cfg(test)]

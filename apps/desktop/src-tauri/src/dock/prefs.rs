@@ -13,10 +13,11 @@
 //! [`is_forced`] asks the managed question separately.
 
 use objc2_core_foundation::{
-    CFData, CFPreferencesAppSynchronize, CFPreferencesAppValueIsForced, CFPreferencesCopyValue, CFPreferencesSetValue,
-    CFPropertyList, CFPropertyListCreateData, CFPropertyListCreateWithData, CFPropertyListFormat, CFString,
-    kCFPreferencesAnyHost, kCFPreferencesCurrentUser,
+    CFPreferencesAppSynchronize, CFPreferencesAppValueIsForced, CFPreferencesCopyValue, CFPreferencesSetValue,
+    CFPropertyList, CFRetained, CFString, kCFPreferencesAnyHost, kCFPreferencesCurrentUser,
 };
+
+use crate::cf_plist;
 
 /// What can go wrong reaching a preferences domain. Each variant is a distinct thing the caller
 /// can say to a person; ❌ never a message to match on.
@@ -82,98 +83,35 @@ pub(super) fn is_forced(domain: &str, key: &str) -> bool {
     CFPreferencesAppValueIsForced(&CFString::from_str(key), &CFString::from_str(domain))
 }
 
-/// A Core Foundation property list as a `plist::Value`, via the binary plist both sides speak.
+/// A Core Foundation property list as a `plist::Value`.
 fn to_plist(value: &CFPropertyList) -> Result<plist::Value, PrefsError> {
-    // SAFETY: `value` came from CFPreferences, so it is a property list of the correct type; the
-    // null error pointer is allowed and means "don't hand me a CFError".
-    let data = unsafe {
-        CFPropertyListCreateData(
-            None,
-            Some(value),
-            CFPropertyListFormat::BinaryFormat_v1_0,
-            0,
-            std::ptr::null_mut(),
-        )
-    }
-    .ok_or(PrefsError::Unreadable)?;
-
-    plist::Value::from_reader(std::io::Cursor::new(data.to_vec())).map_err(|_| PrefsError::Unreadable)
+    cf_plist::to_plist(value).ok_or(PrefsError::Unreadable)
 }
 
 /// A `plist::Value` as a Core Foundation property list, the same way round.
-fn from_plist(value: &plist::Value) -> Result<objc2_core_foundation::CFRetained<CFPropertyList>, PrefsError> {
-    let mut encoded = Vec::new();
-    value
-        .to_writer_binary(&mut encoded)
-        .map_err(|_| PrefsError::Unencodable)?;
-    let data = CFData::from_bytes(&encoded);
-
-    // SAFETY: `data` is a live CFData holding a well-formed binary plist; both out-parameters are
-    // null, which CFPropertyListCreateWithData documents as "don't report the format or the error".
-    unsafe { CFPropertyListCreateWithData(None, Some(&data), 0, std::ptr::null_mut(), std::ptr::null_mut()) }
-        .ok_or(PrefsError::Unencodable)
+fn from_plist(value: &plist::Value) -> Result<CFRetained<CFPropertyList>, PrefsError> {
+    cf_plist::from_plist(value).ok_or(PrefsError::Unencodable)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::cf_plist::ScratchDomain;
     use crate::dock::entries::{PERSISTENT_APPS_KEY, app_tile};
     use std::path::Path;
 
     /// The Dock's real domain, read-only. Reading is safe; writing here from a test is not.
     const DOCK_DOMAIN: &str = "com.apple.dock";
 
-    /// A preferences domain that belongs to nobody, so a test can write freely.
-    ///
-    /// One domain per test, so the teardown below can delete the whole thing without racing a
-    /// sibling test writing to it (nextest runs each test in its own process, concurrently).
-    ///
-    /// ❌ Never point a test at `com.apple.dock`: a test run would rearrange the machine's Dock.
-    struct Scratch(String);
-
-    impl Scratch {
-        fn new(tag: &str) -> Self {
-            Self(format!("com.getcmdr.docktest.{tag}"))
-        }
-
-        fn domain(&self) -> &str {
-            &self.0
-        }
-
-        /// Writes a raw value under `key`, for the cases `write_array` can't express.
-        fn set(&self, key: &str, value: Option<&CFPropertyList>) {
-            let key = CFString::from_str(key);
-            let domain = CFString::from_str(&self.0);
-            // SAFETY: as in `write_array`; `None` removes the key.
-            unsafe {
-                let (user, host) = (kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
-                CFPreferencesSetValue(&key, value, &domain, user, host);
-            }
-            assert!(CFPreferencesAppSynchronize(&domain), "flush the scratch domain");
-        }
-    }
-
-    impl Drop for Scratch {
-        /// Takes the whole domain with it, so a test run leaves nothing in
-        /// `~/Library/Preferences`.
-        ///
-        /// Both steps are needed, in this order (measured on macOS 26, 2026-09-09): `defaults
-        /// delete` drops the domain from `cfprefsd`'s memory but leaves an empty plist on disk,
-        /// and unlinking on its own loses a race with the daemon, which still holds the domain and
-        /// writes the file straight back out.
-        fn drop(&mut self) {
-            let _ = std::process::Command::new("/usr/bin/defaults")
-                .args(["delete", &self.0])
-                .output();
-            if let Some(home) = dirs::home_dir() {
-                let _ = std::fs::remove_file(home.join("Library/Preferences").join(format!("{}.plist", self.0)));
-            }
-        }
+    /// A per-test scratch domain. ❌ Never point a test at `com.apple.dock`: a test run would
+    /// rearrange the machine's Dock.
+    fn scratch(tag: &str) -> ScratchDomain {
+        ScratchDomain::new(&format!("com.getcmdr.docktest.{tag}"))
     }
 
     #[test]
     fn an_array_survives_the_round_trip_through_cfprefsd() {
-        let scratch = Scratch::new("roundtrip");
+        let scratch = scratch("roundtrip");
         let key = "entries";
 
         let written = vec![
@@ -190,7 +128,7 @@ mod tests {
 
     #[test]
     fn a_key_that_was_never_written_reads_as_missing() {
-        let scratch = Scratch::new("missing");
+        let scratch = scratch("missing");
 
         assert_eq!(
             read_array(scratch.domain(), "aKeyNobodyEverWrote"),
@@ -200,7 +138,7 @@ mod tests {
 
     #[test]
     fn a_key_holding_something_other_than_an_array_is_typed_as_such() {
-        let scratch = Scratch::new("notanarray");
+        let scratch = scratch("notanarray");
         let key = "entries";
         let value = from_plist(&plist::Value::String("nope".to_string())).expect("encode");
 

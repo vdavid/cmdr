@@ -5,13 +5,17 @@
 //! busy-timeouts: both the recompute scheduler and the `record_visit` command
 //! write to a volume's `importance.db`, and if each spawned its own short-lived
 //! writer thread they'd be two writers on one file. This registry hands both a
-//! SHARED, long-lived writer per volume, created on first use and living for the
-//! process.
+//! SHARED, long-lived writer per volume, created on first use and living until
+//! the volume's importance database is removed.
 //!
 //! Keyed by volume id, independent of the index registry: a writer outlives a
 //! volume unmount so a late `record_visit` or a queued recompute still has one
 //! writer to go through. Creation is guarded so two concurrent first-uses can't
 //! race two threads onto one DB (reserve the slot, then build).
+//!
+//! The one thing that ends a writer early is its database being deleted
+//! ([`WriterRegistry::retire`]): a writer left in the map would keep writing into
+//! the unlinked file, and the volume's next life would inherit it.
 
 use std::collections::HashMap;
 use std::path::Path;
@@ -61,6 +65,23 @@ impl WriterRegistry {
         let mut map = self.writers.lock_ignore_poison();
         let entry = map.entry(volume_id.to_string()).or_insert(built);
         Ok(entry.clone())
+    }
+
+    /// Shut down and forget `volume_id`'s writer, because its database is about to
+    /// be deleted. Returns once the writer thread has exited and closed its
+    /// connection, so the unlink that follows frees the file's blocks. The next
+    /// [`writer_for`](Self::writer_for) builds a fresh one on a fresh database.
+    ///
+    /// A handle some caller still holds answers "writer thread is gone" from here
+    /// on, which is the right answer for a write to a database that no longer
+    /// exists.
+    pub(crate) fn retire(&self, volume_id: &str) {
+        // Out of the map first and the lock dropped, so the join below never holds
+        // up another volume's `writer_for`.
+        let writer = self.writers.lock_ignore_poison().remove(volume_id);
+        if let Some(writer) = writer {
+            writer.shutdown();
+        }
     }
 
     /// Shut down and forget every writer. Called on app teardown so the writer

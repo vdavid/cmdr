@@ -285,11 +285,11 @@ async function stageCosmetics(page: TauriPage): Promise<void> {
 
   // The Size column, whose two settings are independent: `listing.sizeUnit` decides
   // whether a row reads `1.2 MB` or a raw byte count, `appearance.fileSizeFormat` only
-  // picks the scale. Both are staged here rather than seeded because a data dir cloned
-  // from the production app arrives carrying its owner's choices, which is how a round
-  // once shipped with SI sizes.
+  // picks the scale (SI, the default a new user sees). Both are staged here rather than
+  // seeded because a data dir cloned from the production app arrives carrying its
+  // owner's choices, which is how a round once shipped with the wrong scale.
   await setSetting(page, 'listing.sizeUnit', 'dynamic')
-  await setSetting(page, 'appearance.fileSizeFormat', 'binary')
+  await setSetting(page, 'appearance.fileSizeFormat', 'si')
 }
 
 /**

@@ -36,6 +36,8 @@ pub enum SuggestionChange {
     Approved,
     /// The user rejected a group.
     Rejected,
+    /// An approval the write engine refused gave its group back: pending again, nothing ran.
+    GivenBack,
 }
 
 /// The pending suggestion set changed.

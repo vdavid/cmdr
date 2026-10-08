@@ -9,18 +9,6 @@ pub fn get_license_status(app: tauri::AppHandle) -> licensing::AppStatus {
     licensing::get_app_status(&app)
 }
 
-/// Activate a license key or short code (verify + commit in one call).
-/// If the input is a short code (CMDR-XXXX-XXXX-XXXX), it first exchanges it for the full key.
-/// Kept for backward compatibility; new code should use verify_license + commit_license.
-#[tauri::command]
-#[specta::specta]
-pub async fn activate_license(
-    app: tauri::AppHandle,
-    license_key: String,
-) -> Result<licensing::LicenseInfo, licensing::LicenseActivationError> {
-    licensing::activate_license_async(&app, &license_key).await
-}
-
 /// Verify a license key or short code without writing anything to disk.
 /// Returns the verify result (LicenseInfo + full key) for the frontend to inspect
 /// before deciding whether to commit.

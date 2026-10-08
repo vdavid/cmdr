@@ -20,6 +20,7 @@ function change(over: Partial<VolumeRootChanged>): VolumeRootChanged {
     newRoot: NASPI,
     oldLanding: `${NASPI}/tmp`,
     newLanding: NASPI,
+    kind: 'edited',
     ...over,
   }
 }
@@ -96,6 +97,37 @@ describe('pathAfterRootChange: a start-folder-only edit', () => {
   it('leaves a pane below the old start folder alone, since the root still holds it', () => {
     const edit = change({ oldRoot: root, newRoot: root, oldLanding: `${root}/docs`, newLanding: `${root}/photos` })
     expect(pathAfterRootChange(`${root}/docs/2024`, edit)).toBe(`${root}/docs/2024`)
+  })
+})
+
+describe('pathAfterRootChange: a moved root (a renamed drive)', () => {
+  const renamed = change({
+    volumeId: 'vol-uuid-1234',
+    oldRoot: '/Volumes/Old',
+    oldLanding: '/Volumes/Old',
+    newRoot: '/Volumes/New',
+    newLanding: '/Volumes/New',
+    kind: 'moved',
+  })
+
+  it('keeps a pane deep inside the drive at the same place under the new root', () => {
+    // The same tree, reached at a new name: sending the pane to the drive's top
+    // would lose the person's place for nothing.
+    expect(pathAfterRootChange('/Volumes/Old/photos/2024', renamed)).toBe('/Volumes/New/photos/2024')
+  })
+
+  it('moves a pane on the old root to the new one', () => {
+    expect(pathAfterRootChange('/Volumes/Old', renamed)).toBe('/Volumes/New')
+    expect(pathAfterRootChange('/Volumes/Old/', renamed)).toBe('/Volumes/New')
+  })
+
+  it('treats a sibling sharing the old root as a prefix as another drive', () => {
+    expect(pathAfterRootChange('/Volumes/Old-1/x', renamed)).toBe('/Volumes/New')
+  })
+
+  it('gives the same answer when applied twice', () => {
+    const once = pathAfterRootChange('/Volumes/Old/photos', renamed)
+    expect(pathAfterRootChange(once, renamed)).toBe(once)
   })
 })
 

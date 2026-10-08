@@ -489,6 +489,9 @@ describe('SearchResultsView', () => {
       expect(showFileContextMenuSpy.mock.calls[0][4]).toEqual({
         restrictDestinationActions: true,
         canShowInFolder: true,
+        // Every snapshot row is a real file, so Share and the tag colors both work on it.
+        canShare: true,
+        canTag: true,
       })
       target.remove()
     })

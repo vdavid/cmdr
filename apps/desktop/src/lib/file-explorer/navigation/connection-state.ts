@@ -1,8 +1,8 @@
 /**
  * What a volume's `connectionState` means to each consumer, as named predicates.
  *
- * ❌ Never test a `connectionState` with `!= null`. Four backends carry one now
- * (SMB, SFTP, WebDAV, ADB) plus a saved-but-unconnected server, so "has a value"
+ * ❌ Never test a `connectionState` with `!= null`. Five backends carry one now
+ * (SMB, SFTP, WebDAV, S3, ADB) plus a saved-but-unconnected server, so "has a value"
  * stopped answering any of the questions callers actually ask: whether the
  * reconnect manager should run a backoff cycle, whether an answer this volume
  * just gave can be trusted, whether a Disconnect control has a subject. A phone

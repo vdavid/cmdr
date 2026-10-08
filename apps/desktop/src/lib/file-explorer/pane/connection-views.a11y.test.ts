@@ -1,6 +1,6 @@
 /**
  * Tier 3 a11y tests for the full-pane views that stand in for a listing: the
- * error pane, the MTP connection states, and the remote-place ones (a first dial,
+ * error pane and the remote-place ones (a first dial,
  * a reconnect cycle, a refusal, signed out, and a changed host key).
  *
  * One file per view would cost about four times as much: `svelte-tests` charges
@@ -50,19 +50,7 @@ vi.mock('@tauri-apps/api/event', () => ({
   listen: vi.fn().mockResolvedValue(() => {}),
 }))
 
-// Don't resolve: `MtpConnectionView` auto-connects on mount, but a pending
-// promise keeps the UI in the "Connecting…" state we want to audit.
-vi.mock('$lib/mtp/mtp-store.svelte', () => ({
-  connect: vi.fn(() => new Promise<never>(() => {})),
-}))
-
-vi.mock('$lib/mtp', () => ({
-  isMtpVolumeId: (id: string) => id.startsWith('mtp-'),
-  constructMtpPath: (device: string, storage: number) => `mtp://${device}/${String(storage)}`,
-}))
-
 import ErrorPane from './ErrorPane.svelte'
-import MtpConnectionView from './MtpConnectionView.svelte'
 import RemoteConnectView from './RemoteConnectView.svelte'
 
 /** A fresh container, appended to the document and ready to mount into. */
@@ -171,34 +159,6 @@ describe('ErrorPane a11y', () => {
         onGoHome: () => {},
         isFocused: true,
       },
-    })
-    await tick()
-    await expectNoA11yViolations(target)
-  })
-})
-
-/**
- * Tier 3 a11y tests for `MtpConnectionView.svelte`.
- *
- * Only renders when the current volume is a device-only MTP ID. Tests
- * verify that the connecting and error UIs have no violations.
- */
-describe('MtpConnectionView a11y', () => {
-  it('connecting state (device-only volumeId) has no a11y violations', async () => {
-    const target = container()
-    mount(MtpConnectionView, {
-      target,
-      props: { volumeId: 'mtp-336592896' },
-    })
-    await tick()
-    await expectNoA11yViolations(target)
-  })
-
-  it('non-MTP volume (no render) has no a11y violations', async () => {
-    const target = container()
-    mount(MtpConnectionView, {
-      target,
-      props: { volumeId: 'root' },
     })
     await tick()
     await expectNoA11yViolations(target)
@@ -348,7 +308,7 @@ describe('RemoteConnectView a11y', () => {
       target,
       props: {
         name: 'Pixel 7',
-        state: { kind: 'refused' as const, refusal: "Your phone isn't connected any more." },
+        state: { kind: 'refused' as const, refusal: "Your phone isn't connected anymore." },
       },
     })
     await tick()
@@ -376,7 +336,7 @@ describe('RemoteConnectView a11y', () => {
     const target = container()
     mount(RemoteConnectView, {
       target,
-      props: { name: 'Naspolya', state: { kind: 'host_key_changed' as const, disconnect: vi.fn() } },
+      props: { name: 'Naspolya', state: { kind: 'host_key_changed' as const, checkKey: vi.fn(), disconnect: vi.fn() } },
     })
     await tick()
     await expectNoA11yViolations(target)

@@ -1,19 +1,19 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
 
+import { AUTOSCROLL_PX_PER_SEC_PER_PX_PAST } from './viewer-autoscroll'
 import { createViewerAutoscroll } from './viewer-autoscroll.svelte'
 
 /**
  * Stub `requestAnimationFrame` / `cancelAnimationFrame` so tests can drive the loop
  * deterministically. Each `start()` queues a tick; the test then calls `runOneFrame()`
- * to fire it.
+ * to fire it, `frameMs` after the previous frame (the RAF timestamp is the loop's clock).
  */
-let scheduledTick: (() => void) | null = null
+let scheduledTick: ((now: number) => void) | null = null
 let nextRafId = 1
+let clockMs = 0
 
 function rafStub(cb: FrameRequestCallback): number {
-  scheduledTick = () => {
-    cb(performance.now())
-  }
+  scheduledTick = cb
   return nextRafId++
 }
 
@@ -21,10 +21,11 @@ function cancelStub(): void {
   scheduledTick = null
 }
 
-function runOneFrame(): void {
+function runOneFrame(frameMs = 1000 / 60): void {
   const fn = scheduledTick
   scheduledTick = null
-  fn?.()
+  clockMs += frameMs
+  fn?.(clockMs)
 }
 
 let originalRaf: typeof requestAnimationFrame
@@ -37,6 +38,7 @@ beforeEach(() => {
   globalThis.cancelAnimationFrame = cancelStub
   scheduledTick = null
   nextRafId = 1
+  clockMs = 1000
 })
 
 afterEach(() => {
@@ -59,6 +61,12 @@ function makeContent(rectTop: number, rectBottom: number): { el: HTMLElement; ge
     toJSON: () => ({}),
   })
   return { el, getScrollTop: () => el.scrollTop }
+}
+
+/** Runs `frames` frames of `frameMs` each, after the loop's first (timing-only) frame. */
+function runFrames(frames: number, frameMs: number): void {
+  runOneFrame(frameMs)
+  for (let i = 0; i < frames; i++) runOneFrame(frameMs)
 }
 
 describe('createViewerAutoscroll', () => {
@@ -90,27 +98,100 @@ describe('createViewerAutoscroll', () => {
     expect(scheduledTick).toBe(firstTick)
   })
 
-  it('loop scrolls and calls onScrollStep when the pointer is near the edge', () => {
+  it('loop scrolls and calls onScrollStep when the pointer is past the edge', () => {
     const { el } = makeContent(0, 400)
     const onStep = vi.fn()
     const ctrl = createViewerAutoscroll({
       getContentRef: () => el,
-      getPointerY: () => 395, // 5 px from the bottom edge → autoscroll down.
+      getPointerY: () => 420, // 20 px past the bottom edge → autoscroll down.
       onScrollStep: onStep,
     })
 
     ctrl.start()
-    runOneFrame()
+    runFrames(1, 50)
     expect(el.scrollTop).toBeGreaterThan(0)
-    expect(onStep).toHaveBeenCalledTimes(1)
-    expect(onStep).toHaveBeenCalledWith(395)
+    expect(onStep).toHaveBeenCalledWith(420)
     // The tick re-queued itself for the next frame.
     expect(ctrl.isRunning()).toBe(true)
   })
 
-  it('loop self-terminates when the pointer re-enters the safe band', () => {
+  it('scrolls by speed × elapsed time: 10 px past for one second moves 10 × the per-px rate', () => {
     const { el } = makeContent(0, 400)
-    let y = 5
+    const ctrl = createViewerAutoscroll({
+      getContentRef: () => el,
+      getPointerY: () => 410,
+      onScrollStep: () => {},
+    })
+
+    ctrl.start()
+    runFrames(60, 1000 / 60)
+    expect(el.scrollTop).toBeCloseTo(10 * AUTOSCROLL_PX_PER_SEC_PER_PX_PAST, -1)
+  })
+
+  // A 120 Hz ProMotion display fires twice the frames; the distance covered must not double.
+  it('covers the same distance at 60 Hz and 120 Hz', () => {
+    const at60 = makeContent(0, 400)
+    const ctrl60 = createViewerAutoscroll({
+      getContentRef: () => at60.el,
+      getPointerY: () => 410,
+      onScrollStep: () => {},
+    })
+    ctrl60.start()
+    runFrames(30, 1000 / 60)
+    ctrl60.stop()
+
+    const at120 = makeContent(0, 400)
+    const ctrl120 = createViewerAutoscroll({
+      getContentRef: () => at120.el,
+      getPointerY: () => 410,
+      onScrollStep: () => {},
+    })
+    ctrl120.start()
+    runFrames(60, 1000 / 120)
+
+    expect(Math.abs(at120.el.scrollTop - at60.el.scrollTop)).toBeLessThanOrEqual(1)
+  })
+
+  it('keeps moving at a crawl: sub-pixel frames accumulate instead of rounding to zero', () => {
+    const { el } = makeContent(0, 400)
+    const ctrl = createViewerAutoscroll({
+      getContentRef: () => el,
+      getPointerY: () => 401, // 1 px past: well under 1 px per frame.
+      onScrollStep: () => {},
+    })
+
+    ctrl.start()
+    runFrames(60, 1000 / 60)
+    expect(el.scrollTop).toBeGreaterThan(0)
+  })
+
+  it('converts content px to scroll px when the scroll range is scaled down', () => {
+    const plain = makeContent(0, 400)
+    const plainCtrl = createViewerAutoscroll({
+      getContentRef: () => plain.el,
+      getPointerY: () => 410,
+      onScrollStep: () => {},
+    })
+    plainCtrl.start()
+    runFrames(60, 1000 / 60)
+    plainCtrl.stop()
+
+    const scaled = makeContent(0, 400)
+    const scaledCtrl = createViewerAutoscroll({
+      getContentRef: () => scaled.el,
+      getPointerY: () => 410,
+      getScrollScale: () => 0.5,
+      onScrollStep: () => {},
+    })
+    scaledCtrl.start()
+    runFrames(60, 1000 / 60)
+
+    expect(scaled.el.scrollTop).toBeCloseTo(plain.el.scrollTop / 2, -1)
+  })
+
+  it('loop self-terminates when the pointer re-enters the viewport', () => {
+    const { el } = makeContent(0, 400)
+    let y = -5
     const ctrl = createViewerAutoscroll({
       getContentRef: () => el,
       getPointerY: () => y,
@@ -118,10 +199,10 @@ describe('createViewerAutoscroll', () => {
     })
 
     ctrl.start()
-    runOneFrame() // First frame: pointer is at y=5 (near top), so we scroll up.
+    runOneFrame() // First frame: pointer is above the top, so we scroll up.
     expect(ctrl.isRunning()).toBe(true)
-    y = 200 // Move pointer back to the middle.
-    runOneFrame() // delta = 0, loop terminates.
+    y = 5 // Back inside, even if only just.
+    runOneFrame() // No autoscroll, loop terminates.
     expect(ctrl.isRunning()).toBe(false)
   })
 
@@ -129,7 +210,7 @@ describe('createViewerAutoscroll', () => {
     let contentRef: HTMLElement | undefined = makeContent(0, 400).el
     const ctrl = createViewerAutoscroll({
       getContentRef: () => contentRef,
-      getPointerY: () => 5,
+      getPointerY: () => -5,
       onScrollStep: () => {},
     })
 
@@ -144,7 +225,7 @@ describe('createViewerAutoscroll', () => {
     const { el } = makeContent(0, 400)
     const ctrl = createViewerAutoscroll({
       getContentRef: () => el,
-      getPointerY: () => 5,
+      getPointerY: () => -5,
       onScrollStep: () => {},
     })
 
@@ -158,30 +239,31 @@ describe('createViewerAutoscroll', () => {
   })
 
   describe('prefers-reduced-motion', () => {
-    it('snaps once per `start()` instead of running a RAF loop', () => {
+    it('steps once per `start()`, by the distance past the edge, instead of running a RAF loop', () => {
       const { el } = makeContent(0, 400)
       const onStep = vi.fn()
       const ctrl = createViewerAutoscroll({
         getContentRef: () => el,
-        getPointerY: () => 395, // 5 px from bottom; would scroll down.
+        getPointerY: () => 405, // 5 px past the bottom; would scroll down.
         onScrollStep: onStep,
         prefersReducedMotion: () => true,
       })
 
       ctrl.start()
-      // The single snap step ran synchronously inside `start()` — no RAF queued.
-      expect(el.scrollTop).toBeGreaterThan(0)
+      // The single step ran synchronously inside `start()` — no RAF queued. One WebKit
+      // autoscroll tick's worth: the distance past the edge, not a page.
+      expect(el.scrollTop).toBe(5)
       expect(onStep).toHaveBeenCalledTimes(1)
       expect(scheduledTick).toBeNull()
       expect(ctrl.isRunning()).toBe(false)
     })
 
-    it('each subsequent `start()` snaps again (the page calls it on every pointermove)', () => {
+    it('each subsequent `start()` steps again (the page calls it on every pointermove)', () => {
       const { el } = makeContent(0, 400)
       const onStep = vi.fn()
       const ctrl = createViewerAutoscroll({
         getContentRef: () => el,
-        getPointerY: () => 395,
+        getPointerY: () => 405,
         onScrollStep: onStep,
         prefersReducedMotion: () => true,
       })
@@ -198,12 +280,12 @@ describe('createViewerAutoscroll', () => {
       expect(onStep).toHaveBeenCalledTimes(3)
     })
 
-    it('safe-band pointer does not move scrollTop even under reduced motion', () => {
+    it('an in-viewport pointer does not move scrollTop even under reduced motion', () => {
       const { el } = makeContent(0, 400)
       const onStep = vi.fn()
       const ctrl = createViewerAutoscroll({
         getContentRef: () => el,
-        getPointerY: () => 200, // middle of viewport, no autoscroll.
+        getPointerY: () => 395, // Near the edge but inside: no autoscroll.
         onScrollStep: onStep,
         prefersReducedMotion: () => true,
       })

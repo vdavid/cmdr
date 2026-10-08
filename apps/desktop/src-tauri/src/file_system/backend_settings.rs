@@ -42,6 +42,8 @@ type ConcurrencySource = (BackendName, fn() -> usize);
 /// - `"webdav"` reads a constant too: one in-flight request per HTTP/1.1
 ///   connection, and a server's per-host connection limit is what an extra one
 ///   would run into.
+/// - `"s3"` reads a constant, a starting point until per-provider throughput
+///   is measured on real accounts.
 /// - `"adb"` reads the constant 1: the device's `adbd` serializes I/O, so more
 ///   sockets buy nothing.
 ///
@@ -51,6 +53,7 @@ const MAX_CONCURRENT_OPERATIONS_SOURCES: &[ConcurrencySource] = &[
     ("smb", super::smb_concurrency),
     ("sftp", sftp_concurrency),
     ("webdav", webdav_concurrency),
+    ("s3", s3_concurrency),
     ("adb", adb_concurrency),
 ];
 
@@ -89,6 +92,18 @@ const WEBDAV_MAX_CONCURRENT_OPERATIONS: usize = 4;
 
 fn webdav_concurrency() -> usize {
     WEBDAV_MAX_CONCURRENT_OPERATIONS
+}
+
+/// How many operations an S3 volume runs at once.
+///
+/// Not a user-facing knob. Four, WebDAV's number and for its reason (one HTTP/1.1
+/// connection per request in flight), until per-provider throughput and
+/// throttling are measured on real accounts: Hetzner's 750 requests/s per
+/// bucket is the low bar, and a `SlowDown` is what overshooting costs.
+const S3_MAX_CONCURRENT_OPERATIONS: usize = 4;
+
+fn s3_concurrency() -> usize {
+    S3_MAX_CONCURRENT_OPERATIONS
 }
 
 /// What a backend with no row above gets.

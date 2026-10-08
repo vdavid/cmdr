@@ -55,6 +55,14 @@
   "@fileExplorer.restrictedFolder.label": {
     "sourceHash": "bbcf72f"
   },
+  "fileExplorer.archivedFile.label": "已存档",
+  "@fileExplorer.archivedFile.label": {
+    "sourceHash": "bdb8650"
+  },
+  "fileExplorer.archivedFile.tooltip": "已存档到冷存储。打开或拷贝之前，请先在存储提供方的控制台里恢复它。",
+  "@fileExplorer.archivedFile.tooltip": {
+    "sourceHash": "8897d71"
+  },
   "fileExplorer.diskSpace.free": "{totalText} 中剩余 {freeText}（{percentText}%）",
   "@fileExplorer.diskSpace.free": {
     "sourceHash": "97781f4"
@@ -102,6 +110,14 @@
   "fileExplorer.pane.directConnectionUnreachableToast": "暂时无法连接到 {server}，这个共享会继续使用系统连接。",
   "@fileExplorer.pane.directConnectionUnreachableToast": {
     "sourceHash": "4a5ca66"
+  },
+  "fileExplorer.pane.directConnectionBlockedByThisMacToast": "这台 Mac 上有东西在阻止 Cmdr 直接连接到 {server}，这个共享会继续使用系统连接。试试在“{localNetwork}”里把 Cmdr 关掉再打开，或者检查一下你的防火墙 App。",
+  "@fileExplorer.pane.directConnectionBlockedByThisMacToast": {
+    "sourceHash": "74f758e"
+  },
+  "fileExplorer.pane.openLocalNetworkSettings": "打开“{localNetwork}”设置",
+  "@fileExplorer.pane.openLocalNetworkSettings": {
+    "sourceHash": "c3931df"
   },
   "fileExplorer.pane.directConnectionTooSlowToast": "{server} 响应太慢，这个共享会继续使用系统连接。",
   "@fileExplorer.pane.directConnectionTooSlowToast": {
@@ -286,6 +302,14 @@
   "fileExplorer.typeToJump.prefix": "跳转：",
   "@fileExplorer.typeToJump.prefix": {
     "sourceHash": "e9e3412"
+  },
+  "fileExplorer.quickFilter.prefix": "筛选：",
+  "@fileExplorer.quickFilter.prefix": {
+    "sourceHash": "b549365"
+  },
+  "fileExplorer.quickFilter.ariaLabel": "正在显示名称中包含“{pattern}”的项目",
+  "@fileExplorer.quickFilter.ariaLabel": {
+    "sourceHash": "9b223b0"
   },
   "fileExplorer.searchResults.unavailableTitle": "搜索结果已不可用",
   "@fileExplorer.searchResults.unavailableTitle": {
@@ -535,38 +559,6 @@
   "@fileExplorer.network.reconnect.willTryMore": {
     "sourceHash": "a7d887a"
   },
-  "fileExplorer.mtp.connectTimedOut": "连接超时。设备可能较慢或无响应。",
-  "@fileExplorer.mtp.connectTimedOut": {
-    "sourceHash": "cc01ae7"
-  },
-  "fileExplorer.mtp.exclusiveAccess": "另一个 App 正在使用这个设备。请运行 ptpcamerad 临时方案。",
-  "@fileExplorer.mtp.exclusiveAccess": {
-    "sourceHash": "1fac18c"
-  },
-  "fileExplorer.mtp.deviceNotFound": "找不到设备。可能已被拔出。",
-  "@fileExplorer.mtp.deviceNotFound": {
-    "sourceHash": "15d2382"
-  },
-  "fileExplorer.mtp.disconnected": "设备已断开连接。",
-  "@fileExplorer.mtp.disconnected": {
-    "sourceHash": "57e823a"
-  },
-  "fileExplorer.mtp.deviceBusy": "设备忙。请重试。",
-  "@fileExplorer.mtp.deviceBusy": {
-    "sourceHash": "7199b1d"
-  },
-  "fileExplorer.mtp.noStorage": "设备没有可访问的存储",
-  "@fileExplorer.mtp.noStorage": {
-    "sourceHash": "ff30402"
-  },
-  "fileExplorer.mtp.connecting": "正在连接到设备…",
-  "@fileExplorer.mtp.connecting": {
-    "sourceHash": "860bb9b"
-  },
-  "fileExplorer.mtp.tryAgain": "重试",
-  "@fileExplorer.mtp.tryAgain": {
-    "sourceHash": "d8b8392"
-  },
   "fileExplorer.networkMount.mounting": "正在装载 {target}…",
   "@fileExplorer.networkMount.mounting": {
     "sourceHash": "7b7368d"
@@ -623,9 +615,65 @@
   "@fileExplorer.unreachable.openHome": {
     "sourceHash": "a178b4d"
   },
+  "fileExplorer.listingStalled.title": "还在等待这个文件夹",
+  "@fileExplorer.listingStalled.title": {
+    "sourceHash": "2c288e7"
+  },
+  "fileExplorer.listingStalled.detail": "这个文件夹所在的服务器或驱动器没有响应。Cmdr 会在后台继续尝试，一有响应就打开这个文件夹。",
+  "@fileExplorer.listingStalled.detail": {
+    "sourceHash": "3d5ca69"
+  },
+  "fileExplorer.listingStalled.detailServer": "这个文件夹所在的服务器没有响应。Cmdr 会在后台继续尝试，一有响应就打开这个文件夹。",
+  "@fileExplorer.listingStalled.detailServer": {
+    "sourceHash": "f8f8837"
+  },
+  "fileExplorer.listingStalled.detailDrive": "这个文件夹所在的驱动器没有响应。Cmdr 会在后台继续尝试，一有响应就打开这个文件夹。",
+  "@fileExplorer.listingStalled.detailDrive": {
+    "sourceHash": "e2f3046"
+  },
+  "fileExplorer.listingStalled.tryAgain": "重试",
+  "@fileExplorer.listingStalled.tryAgain": {
+    "sourceHash": "d8b8392"
+  },
+  "fileExplorer.listingStalled.goBack": "返回",
+  "@fileExplorer.listingStalled.goBack": {
+    "sourceHash": "6aadac2"
+  },
   "fileExplorer.clipboard.copied": "已拷贝 {countText} {count, plural, other {个项目}}",
   "@fileExplorer.clipboard.copied": {
     "sourceHash": "1c25075"
+  },
+  "fileExplorer.compareDirectories.marked": "已选择不同的文件：左侧 {leftCountText} {leftCount, plural, other {个文件}}，右侧 {rightCountText} {rightCount, plural, other {个文件}}。",
+  "@fileExplorer.compareDirectories.marked": {
+    "sourceHash": "73e3ccf"
+  },
+  "fileExplorer.compareDirectories.noDifferences.newerAndMissing": "没有可选择的文件：每个文件在两个文件夹中都有，而且没有哪个副本较新。子文件夹不参与比较。",
+  "@fileExplorer.compareDirectories.noDifferences.newerAndMissing": {
+    "sourceHash": "c2960d8"
+  },
+  "fileExplorer.compareDirectories.noDifferences.missing": "没有可选择的文件：每个文件在两个文件夹中都有。子文件夹不参与比较。",
+  "@fileExplorer.compareDirectories.noDifferences.missing": {
+    "sourceHash": "ed2e696"
+  },
+  "fileExplorer.compareDirectories.noDifferences.sizeAndMissing": "没有可选择的文件：每个文件在两个文件夹中都有，而且大小相同。子文件夹不参与比较。",
+  "@fileExplorer.compareDirectories.noDifferences.sizeAndMissing": {
+    "sourceHash": "5f7b808"
+  },
+  "fileExplorer.compareDirectories.keptChanging": "比较期间文件夹一直在变化。等它们不再变化后再试一次。",
+  "@fileExplorer.compareDirectories.keptChanging": {
+    "sourceHash": "3051074"
+  },
+  "fileExplorer.compareDirectories.needsTwoFolders": "在两个窗格中各打开一个文件夹，才能进行比较",
+  "@fileExplorer.compareDirectories.needsTwoFolders": {
+    "sourceHash": "c04ef80"
+  },
+  "fileExplorer.compareDirectories.couldNotFinish": "无法完成文件夹比较。请稍后重试。",
+  "@fileExplorer.compareDirectories.couldNotFinish": {
+    "sourceHash": "0900bc9"
+  },
+  "fileExplorer.folderSizes.notConnected": "无法在这里计算文件夹大小：这个位置现在没有连接。",
+  "@fileExplorer.folderSizes.notConnected": {
+    "sourceHash": "8b51988"
   },
   "fileExplorer.clipboard.cutReady": "{countText} {count, plural, other {个项目}}已就绪，可以移动。粘贴即可完成。",
   "@fileExplorer.clipboard.cutReady": {
@@ -703,6 +751,14 @@
   "@fileExplorer.clipboard.empty": {
     "sourceHash": "0cbe304"
   },
+  "fileExplorer.clipboard.stillPasting": "仍在用剪贴板内容创建文件。宗卷响应很慢。",
+  "@fileExplorer.clipboard.stillPasting": {
+    "sourceHash": "0e98ca7"
+  },
+  "fileExplorer.clipboard.notPasted": "Cmdr 无法用剪贴板内容创建文件。{reason}",
+  "@fileExplorer.clipboard.notPasted": {
+    "sourceHash": "a6e63c7"
+  },
   "fileExplorer.clipboard.pastedAsFile": "已将剪贴板{kind, select, image {图像} pdf { PDF } other {文本}}粘贴为 {filename}",
   "@fileExplorer.clipboard.pastedAsFile": {
     "sourceHash": "d61d4b5"
@@ -779,6 +835,26 @@
   "@fileExplorer.git.useTransferToCopyOut": {
     "sourceHash": "a0d65fe"
   },
+  "fileExplorer.openWith.copyRefused.tooLarge": "“{fileName}”超过 {limit}，所以 Cmdr 无法从压缩文件里用 {appName} 打开它。",
+  "@fileExplorer.openWith.copyRefused.tooLarge": {
+    "sourceHash": "43399e6"
+  },
+  "fileExplorer.openWith.copyRefused.tooLargeInRepoHistory": "“{fileName}”超过 {limit}，所以 Cmdr 无法从仓库历史里用 {appName} 打开它。",
+  "@fileExplorer.openWith.copyRefused.tooLargeInRepoHistory": {
+    "sourceHash": "aab64d0"
+  },
+  "fileExplorer.openWith.copyRefused.needsPassword": "“{fileName}”在一个受密码保护的压缩文件里。请先把它拷贝到一个文件夹（Cmdr 会问你要密码），再用 {appName} 打开。",
+  "@fileExplorer.openWith.copyRefused.needsPassword": {
+    "sourceHash": "882a23f"
+  },
+  "fileExplorer.openWith.copyRefused.archiveUnreadable": "没能把“{fileName}”从压缩文件里取出来，所以无法用 {appName} 打开。这个压缩文件可能已损坏，或者采用了 Cmdr 无法读取的格式。",
+  "@fileExplorer.openWith.copyRefused.archiveUnreadable": {
+    "sourceHash": "4ff2573"
+  },
+  "fileExplorer.openWith.copyRefused.unreadable": "无法读取“{fileName}”，所以没法用 {appName} 打开。请确认它所在的驱动器仍连接着，然后再试一次。",
+  "@fileExplorer.openWith.copyRefused.unreadable": {
+    "sourceHash": "8af2399"
+  },
   "fileExplorer.rename.hiddenAfterRename": "你的文件从视图中消失了，因为当前不显示隐藏文件。",
   "@fileExplorer.rename.hiddenAfterRename": {
     "sourceHash": "6258274"
@@ -795,13 +871,17 @@
   "@fileExplorer.rename.chainKeptOriginalNameAndOthers": {
     "sourceHash": "016797b"
   },
-  "fileExplorer.rename.unconfirmed": "无法确认“{name}”是否已重命名。这个宗卷可能比较慢，所以名称也许已经改好了。",
-  "@fileExplorer.rename.unconfirmed": {
-    "sourceHash": "059ac81"
+  "fileExplorer.rename.needsOwnMoveDialog": "重命名它需要在服务器上拷贝，得在“移动”对话框里另行确认。请单独再重命名它一次。",
+  "@fileExplorer.rename.needsOwnMoveDialog": {
+    "sourceHash": "87110e0"
   },
-  "fileExplorer.rename.unconfirmedAndOthers": "无法确认“{name}”和{others, plural, other {其他 {othersText} 个文件}}是否已重命名。这个宗卷可能比较慢，所以这些名称也许已经改好了。",
-  "@fileExplorer.rename.unconfirmedAndOthers": {
-    "sourceHash": "f16b15d"
+  "fileExplorer.rename.stillRenaming": "仍在重命名“{name}”。宗卷响应很慢。",
+  "@fileExplorer.rename.stillRenaming": {
+    "sourceHash": "a05cca5"
+  },
+  "fileExplorer.rename.stillRenamingAndOthers": "仍在重命名“{name}”和{kind, select, folders {{others, plural, other {其他 {othersText} 个文件夹}}} files {{others, plural, other {其他 {othersText} 个文件}}} other {{others, plural, other {其他 {othersText} 个文件和文件夹}}}}。宗卷响应很慢。",
+  "@fileExplorer.rename.stillRenamingAndOthers": {
+    "sourceHash": "933be25"
   },
   "fileExplorer.columns.name": "名称",
   "@fileExplorer.columns.name": {
@@ -1333,6 +1413,10 @@
   "@fileExplorer.navigation.connectionTooltipDirect": {
     "sourceHash": "a69a3ad"
   },
+  "fileExplorer.navigation.connectionTooltipConnected": "已连接",
+  "@fileExplorer.navigation.connectionTooltipConnected": {
+    "sourceHash": "2296556"
+  },
   "fileExplorer.navigation.connectionTooltipSystem": "正在使用系统连接。使用“直接连接，访问更快”菜单项可获得更快的访问速度。",
   "@fileExplorer.navigation.connectionTooltipSystem": {
     "sourceHash": "e4ac697"
@@ -1405,9 +1489,9 @@
   "@fileExplorer.navigation.disconnectPlaceAriaLabel": {
     "sourceHash": "8f755cb"
   },
-  "fileExplorer.navigation.disconnectBusyTooltip": "此服务器上有操作正在进行，无法断开连接",
+  "fileExplorer.navigation.disconnectBusyTooltip": "Cmdr 还在处理这台服务器上的文件。完成后再断开连接。",
   "@fileExplorer.navigation.disconnectBusyTooltip": {
-    "sourceHash": "a659820"
+    "sourceHash": "bd52d60"
   },
   "fileExplorer.navigation.serverPinnedToast": "{name} 现在会出现在你的宗卷选择器里。",
   "@fileExplorer.navigation.serverPinnedToast": {
@@ -1419,7 +1503,7 @@
   },
   "fileExplorer.navigation.pinRefusedToast": "Cmdr 无法更改 {name} 的显示位置。",
   "@fileExplorer.navigation.pinRefusedToast": {
-    "sourceHash": "3ed5f60"
+    "sourceHash": "59f1f8b"
   },
   "fileExplorer.navigation.disconnectRefusedToast": "Cmdr 无法断开与 {name} 的连接。",
   "@fileExplorer.navigation.disconnectRefusedToast": {
@@ -1465,9 +1549,9 @@
   "@fileExplorer.navigation.ejectVolumeAriaLabel": {
     "sourceHash": "61db18b"
   },
-  "fileExplorer.navigation.ejectBusyTooltip": "此设备上有操作正在进行，无法推出",
+  "fileExplorer.navigation.ejectBusyTooltip": "Cmdr 还在处理这个设备上的文件。完成后再推出。",
   "@fileExplorer.navigation.ejectBusyTooltip": {
-    "sourceHash": "eafd9bd"
+    "sourceHash": "3da6312"
   },
   "fileExplorer.navigation.ejectingVolumeAriaLabel": "正在推出 {name}…",
   "@fileExplorer.navigation.ejectingVolumeAriaLabel": {
@@ -1652,5 +1736,41 @@
   "fileExplorer.dragOut.partial": "{summary}{count, plural, =1 {无法拷贝“{name}”。} other {无法拷贝 {countText} 个项目。}}",
   "@fileExplorer.dragOut.partial": {
     "sourceHash": "9215226"
+  },
+  "fileExplorer.folderSizes.unreadable": "{count, plural, other {有 # 个文件夹无法完整读取，所以文件夹大小可能不完整。}}",
+  "@fileExplorer.folderSizes.unreadable": {
+    "sourceHash": "ad31a56"
+  },
+  "fileExplorer.quickFilter.clear": "清除筛选",
+  "@fileExplorer.quickFilter.clear": {
+    "sourceHash": "ba59e2d"
+  },
+  "fileExplorer.quickFilter.intro.title": "已按输入内容筛选这个窗格",
+  "@fileExplorer.quickFilter.intro.title": {
+    "sourceHash": "eef3e92"
+  },
+  "fileExplorer.quickFilter.intro.body": "你输入了几个字母，所以窗格现在只显示名称中包含这些字母的文件和文件夹。",
+  "@fileExplorer.quickFilter.intro.body": {
+    "sourceHash": "e406349"
+  },
+  "fileExplorer.quickFilter.intro.escape": "按 Esc 键即可重新看到所有文件。",
+  "@fileExplorer.quickFilter.intro.escape": {
+    "sourceHash": "af749ad"
+  },
+  "fileExplorer.quickFilter.intro.jumpNote": "想把光标移到匹配的名称上，而不隐藏任何内容？可以在这里或在“设置”中切换到“跳转”。",
+  "@fileExplorer.quickFilter.intro.jumpNote": {
+    "sourceHash": "ac6d3c8"
+  },
+  "fileExplorer.quickFilter.intro.switchToJump": "切换到“跳转”",
+  "@fileExplorer.quickFilter.intro.switchToJump": {
+    "sourceHash": "38642f9"
+  },
+  "fileExplorer.quickFilter.intro.openSettings": "设置…",
+  "@fileExplorer.quickFilter.intro.openSettings": {
+    "sourceHash": "7a04083"
+  },
+  "fileExplorer.quickFilter.intro.gotIt": "知道了",
+  "@fileExplorer.quickFilter.intro.gotIt": {
+    "sourceHash": "5ad3dbd"
   }
 }

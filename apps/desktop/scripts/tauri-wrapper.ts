@@ -197,11 +197,12 @@ try {
       }
     }
 
-    const { identifier, dataDir, config } = deriveInstance({
+    const { identifier, dataDir, cacheDir, config } = deriveInstance({
       instanceId,
       platform: process.platform,
       home: homedir(),
       xdgDataHome: env.XDG_DATA_HOME,
+      xdgCacheHome: env.XDG_CACHE_HOME,
       vitePort,
     })
 
@@ -211,8 +212,16 @@ try {
     // secret store, etc.) per the precedence rules in instance-isolation-plan.md. Tauri's
     // own app_data_dir() honors the identifier in the generated config and lands on the
     // same path. Both routes agree.
+    //
+    // CMDR_CACHE_DIR rides along ONLY when this wrapper composed the data dir too: it puts the
+    // instance's drive index in `~/Library/Caches/<identifier>/drive-index`, out of Time
+    // Machine. A caller that brought its own CMDR_DATA_DIR (an E2E run) gets the backend's
+    // fallback instead, `<CMDR_DATA_DIR>/cache`, so its index stays inside its isolated dir.
     if (!env.CMDR_DATA_DIR) {
       env.CMDR_DATA_DIR = dataDir
+      if (!env.CMDR_CACHE_DIR) {
+        env.CMDR_CACHE_DIR = cacheDir
+      }
     }
 
     // Non-prod uses the plain-file secret store so we never trigger the macOS Keychain

@@ -99,41 +99,6 @@ pub enum SftpHostKeyApprovalResult {
 }
 
 // ============================================================================
-// Connecting
-// ============================================================================
-
-/// Calls off the connect running under `attempt_id`, answering whether one was.
-///
-/// ❗ The way out of a connect that is going nowhere. A dial can hold for up to
-/// 30 s across its three phases, and this ends the user's wait at once: the key
-/// exchange and the auth ladder stop where they stand, and a cancel landing in
-/// the SFTP hello lets the engine finish quietly on its own and throws away what
-/// it built (`crates/cmdr-sftp/DETAILS.md` § "Cancelling a connect").
-///
-/// ❗ A cancelled connect leaves ❌ no volume registered, ❌ no server remembered,
-/// and ❌ no secret written. The connect command (`connectServer` /
-/// `connectSavedPlace`) answers `cancelled`.
-///
-/// An id nobody is connecting under answers `false`: a cancel racing a connect
-/// that just finished is ordinary, and there is nothing wrong to report.
-#[tauri::command]
-#[specta::specta]
-pub async fn cancel_sftp_connect(attempt_id: String) -> bool {
-    sftp_volume_wiring::cancel_connect(&attempt_id)
-}
-
-/// Drops an SFTP volume's session and takes it out of the volume registry.
-///
-/// Answers whether there was an SFTP volume under that id. ❗ Dropping the
-/// session IS the shutdown; there is no `close()` to call, and the one the
-/// protocol crate offers hangs forever over an SSH channel.
-#[tauri::command]
-#[specta::specta]
-pub async fn disconnect_sftp_volume(volume_id: String) -> bool {
-    sftp_volume_wiring::disconnect(&volume_id).await
-}
-
-// ============================================================================
 // Host-key trust
 // ============================================================================
 
@@ -233,7 +198,8 @@ pub async fn save_sftp_credentials(
     .await
 }
 
-/// Whether a secret is stored for one account on one server.
+/// Whether a secret is stored for one account on one server. The frontend asks
+/// through `servers.rs`'s protocol-agnostic `has_server_secret`.
 ///
 /// ❗ There is deliberately no command that HANDS the secret to the frontend: the
 /// backend reads the store itself at the moment it builds a session, and a
@@ -242,9 +208,7 @@ pub async fn save_sftp_credentials(
 /// A store that didn't answer in time reads as `false`, which is the one place
 /// collapsing a timeout into its fallback is harmless: both answers send the
 /// frontend to the same place, which is to ask.
-#[tauri::command]
-#[specta::specta]
-pub async fn has_sftp_credentials(host: String, port: u16, username: String) -> bool {
+pub(crate) async fn has_sftp_credentials(host: String, port: u16, username: String) -> bool {
     let service = credential_key(&host, port);
     crate::deadline::blocking_with_timeout(std::time::Duration::from_secs(15), false, move || {
         keychain::has_credentials(&service, Some(&username))
@@ -252,10 +216,9 @@ pub async fn has_sftp_credentials(host: String, port: u16, username: String) -> 
     .await
 }
 
-/// Forgets the stored secret for one account on one server.
-#[tauri::command]
-#[specta::specta]
-pub async fn delete_sftp_credentials(host: String, port: u16, username: String) -> Result<(), KeychainError> {
+/// Forgets the stored secret for one account on one server. The frontend asks
+/// through `servers.rs`'s `forget_server_secret`.
+pub(crate) async fn delete_sftp_credentials(host: String, port: u16, username: String) -> Result<(), KeychainError> {
     let service = credential_key(&host, port);
     crate::deadline::blocking_with_timeout(
         std::time::Duration::from_secs(15),
@@ -303,17 +266,6 @@ pub async fn get_sftp_unattended_reconnect(volume_id: String) -> Option<SftpUnat
     sftp_volume_wiring::unattended_reconnect(&volume_id)
         .await
         .map(SftpUnattendedReconnect::from)
-}
-
-/// Drops a server from the list, answering whether one was there.
-///
-/// ❌ Leaves the stored secret and the trusted host key alone: forgetting a
-/// server from a list isn't the same request as revoking its credential or its
-/// identity. `delete_sftp_credentials` and `forget_sftp_host_key` are those.
-#[tauri::command]
-#[specta::specta]
-pub fn forget_known_sftp_server(host: String, port: u16, username: String) -> bool {
-    sftp_known_servers::forget(&host, port, &username)
 }
 
 #[cfg(test)]

@@ -33,26 +33,26 @@ fixture and cut that (`crates/cmdr-sftp/src/volume/connection_drop_test.rs`).
 
 ## The servers
 
-| Service                      | Port  | What it's for                                                        |
-| ---------------------------- | ----- | -------------------------------------------------------------------- |
-| `sftp-fixture-openssh`       | 12480 | Stock OpenSSH: password + key, and it HAS `posix-rename@openssh.com` |
-| `sftp-fixture-keyonly`       | 12481 | `PasswordAuthentication no`, so the ladder must reach its key rung   |
-| `sftp-fixture-passphrase`    | 12482 | Key-only, and its key is passphrase-protected (`letmein`)            |
-| `sftp-fixture-kbdint`        | 12483 | `KbdInteractiveAuthentication yes` over PAM: one hidden prompt       |
-| `sftp-fixture-twokeys`       | 12484 | Two host key types on one server, which is a healthy thing to be     |
-| `sftp-fixture-changedkey`    | 12485 | A second, deliberately different identity                            |
-| `sftp-fixture-noposixrename` | 12486 | No `posix-rename@openssh.com`, no `copy-data`                        |
-| `sftp-fixture-shortreads`    | 12487 | Truncates every `SSH_FXP_DATA` to 4 KiB                              |
-| `sftp-fixture-smalllimits`   | 12488 | `limits@openssh.com` far stingier than OpenSSH's own                 |
-| `sftp-fixture-bigdir`        | 12489 | 5 000 entries in one directory, and a 40-level nest                  |
-| `sftp-fixture-oddnames`      | 12490 | Filenames that aren't valid UTF-8, plus awkward ones that are        |
-| `sftp-fixture-bench`         | 12491 | 128 MiB export and `NET_ADMIN`, for measuring. ❗ Not in `core`      |
+| Service                      | Port  | What it's for                                                           |
+| ---------------------------- | ----- | ----------------------------------------------------------------------- |
+| `sftp-fixture-openssh`       | 12480 | Stock OpenSSH: password + key, and it HAS `posix-rename@openssh.com`    |
+| `sftp-fixture-keyonly`       | 12481 | `PasswordAuthentication no`, so the ladder must reach its key rung      |
+| `sftp-fixture-passphrase`    | 12482 | Key-only, and its key is passphrase-protected (`letmein`)               |
+| `sftp-fixture-kbdint`        | 12483 | `KbdInteractiveAuthentication yes` over PAM: one hidden prompt          |
+| `sftp-fixture-twokeys`       | 12484 | Two host key types on one server, which is a healthy thing to be        |
+| `sftp-fixture-changedkey`    | 12485 | A second, deliberately different identity                               |
+| `sftp-fixture-noposixrename` | 12486 | No `posix-rename@openssh.com`, no `copy-data`, no `statvfs@openssh.com` |
+| `sftp-fixture-shortreads`    | 12487 | Truncates every `SSH_FXP_DATA` to 4 KiB                                 |
+| `sftp-fixture-smalllimits`   | 12488 | `limits@openssh.com` far stingier than OpenSSH's own                    |
+| `sftp-fixture-bigdir`        | 12489 | 5 000 entries in one directory, and a 40-level nest                     |
+| `sftp-fixture-oddnames`      | 12490 | Filenames that aren't valid UTF-8, plus awkward ones that are           |
+| `sftp-fixture-bench`         | 12491 | 128 MiB export and `NET_ADMIN`, for measuring. ❗ Not in `core`         |
 
 ⚠️ **`QUIRK_DROP_EXTENSIONS` matches the name the server actually sends, and `copy-data` has NO `@openssh.com` suffix**
 where every other extension in this stack does (OpenSSH `sftp-server.c` 9.9p2, read 2026-08-22). A name that matches
 nothing drops nothing, silently, and the fixture then quietly HAS the extension it is named for lacking. That happened;
-`crates/cmdr-sftp/src/volume/integration_test.rs`'s `a_server_with_the_extensions_dropped_advertises_neither` is what
-caught it and what keeps it caught.
+`crates/cmdr-sftp/src/volume/integration_test.rs`'s `a_server_with_the_extensions_dropped_advertises_none_of_them` is
+what caught it and what keeps it caught.
 
 **The stock server gets two CPUs; every other server gets half of one.** It carries most of the app's cells and the
 crate's, one SSH session each, and at half a CPU two concurrent lanes pinned it and pushed old and new cells alike past

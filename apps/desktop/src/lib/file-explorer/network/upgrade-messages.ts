@@ -14,6 +14,7 @@
 
 import type { UpgradeFailure } from '$lib/ipc/bindings'
 import { tString } from '$lib/intl/messages.svelte'
+import { systemStrings } from '$lib/system-strings.svelte'
 
 /**
  * The toast text for a direct-connection attempt that couldn't reach the server.
@@ -31,7 +32,21 @@ export function directConnectionUnavailableMessage(reason: UpgradeFailure, serve
       return tString('fileExplorer.pane.directConnectionShareNotOnServerToast', { server })
     case 'unexpected':
       return tString('fileExplorer.pane.directConnectionUnexpectedToast', { server })
+    case 'blockedByThisMac':
+      return tString('fileExplorer.pane.directConnectionBlockedByThisMacToast', {
+        server,
+        localNetwork: systemStrings.localNetwork,
+      })
   }
+}
+
+/**
+ * The label of the button that opens System Settings at the Local Network
+ * permission, which goes with every `blockedByThisMac` sentence. The permission's
+ * name is the one System Settings shows, in the Mac's own language.
+ */
+export function openLocalNetworkSettingsLabel(): string {
+  return tString('fileExplorer.pane.openLocalNetworkSettings', { localNetwork: systemStrings.localNetwork })
 }
 
 /**

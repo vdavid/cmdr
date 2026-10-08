@@ -20,7 +20,7 @@ const PLATFORMS: [Platform; 2] = [Platform::MacOs, Platform::Linux];
 ///
 /// ❗ The Select menu's last three rows read differently here than in `LINUX_MENU_BAR`, and
 /// that's the point: a display-only shortcut rides on the macOS item's attributed title
-/// (`[display ⇧8]`) and inside the Linux item's own label (`(⇧8)`). See `item_accelerator`.
+/// (`[display *]`) and inside the Linux item's own label (`(*)`). See `item_accelerator`.
 const MACOS_MENU_BAR: &str = "\
 menu Cmdr id=menu_app
   0 item about menu.app.about untracked
@@ -76,10 +76,12 @@ menu menu.bar.select id=menu_select
   0 item select_all_files menu.select.all [Cmd+A] tracked
   1 item deselect_all menu.select.deselectAll [Cmd+Shift+A] tracked
   2 item select_same_kind menu.select.sameKind [display ⌥⇧=] tracked
-  3 item invert_selection menu.select.invert [display ⇧8] tracked
+  3 item invert_selection menu.select.invert [display *] tracked
   4 separator
   5 item select_files menu.select.files [display +] tracked
   6 item deselect_files menu.select.deselectFiles [display -] tracked
+  7 separator
+  8 item compare_directories menu.select.compareDirectories [Shift+F2] tracked
 menu menu.bar.view id=menu_view
   0 submenu menu.view.leftPane pane:left
       0 check view_mode_full_left menu.view.fullView [Cmd+1] view-mode:left:full
@@ -109,27 +111,30 @@ menu menu.bar.view id=menu_view
   6 separator
   7 item switch_pane menu.view.switchPane [Tab] tracked
   8 item swap_panes menu.view.swapPanes [Cmd+U] tracked
-  9 separator
-  10 item command_palette menu.view.commandPalette [Cmd+Shift+P] tracked
-  11 item queue_show menu.view.operationQueue [Cmd+Alt+Q] tracked
-  12 item operation_log menu.view.operationLog [Cmd+Alt+L] tracked
-  13 item suggested_ops menu.view.suggestedOps tracked
-  14 item ask_cmdr menu.view.askCmdr [Cmd+Alt+A] tracked
+  9 item clone_pane menu.view.clonePane [Cmd+Shift+C] tracked
+  10 item calculate_folder_sizes menu.view.calculateFolderSizes [Alt+Shift+Enter] tracked
+  11 separator
+  12 item command_palette menu.view.commandPalette [Cmd+Shift+P] tracked
+  13 item queue_show menu.view.operationQueue [Cmd+Alt+Q] tracked
+  14 item operation_log menu.view.operationLog [Cmd+Alt+L] tracked
+  15 item suggested_ops menu.view.suggestedOps tracked
+  16 item ask_cmdr menu.view.askCmdr [Cmd+Alt+A] tracked
 menu menu.bar.go id=menu_go
   0 item go_back menu.go.back [Cmd+[] tracked
   1 item go_forward menu.go.forward [Cmd+]] tracked
   2 separator
   3 item go_parent menu.go.parentFolder [Cmd+Up] tracked
-  4 item go_home menu.go.home [Shift+Cmd+H] tracked
-  5 separator
-  6 item go_to_path menu.go.goToPath [Cmd+G] tracked
-  7 item go_latest_download menu.go.goToLatestDownload [Cmd+J] tracked
-  8 separator
-  9 item favorites_add menu.go.addToFavorites tracked
-  10 item favorites_open menu.go.showFavorites [Ctrl+D] tracked
-  11 separator
-  12 item servers_connect menu.go.connectToServer [Cmd+K] tracked
-  13 item servers_show menu.go.showServers tracked
+  4 item go_root menu.go.rootFolder [Cmd+/] tracked
+  5 item go_home menu.go.home [Shift+Cmd+H] tracked
+  6 separator
+  7 item go_to_path menu.go.goToPath [Cmd+G] tracked
+  8 item go_latest_download menu.go.goToLatestDownload [Cmd+J] tracked
+  9 separator
+  10 item favorites_add menu.go.addToFavorites tracked
+  11 item favorites_open menu.go.showFavorites [Ctrl+D] tracked
+  12 separator
+  13 item servers_connect menu.go.connectToServer [Cmd+K] tracked
+  14 item servers_show menu.go.showServers tracked
 menu menu.bar.tab id=menu_tab
   0 item new_tab menu.tab.newTab [Cmd+T] tracked
   1 item close_tab menu.tab.closeTab [Cmd+W] tracked
@@ -148,7 +153,8 @@ menu menu.bar.help id=menu_help
   1 separator
   2 item help_whats_new menu.help.whatsNew tracked
   3 item help_send_feedback menu.help.sendFeedback tracked
-  4 item help_send_error_report menu.help.sendErrorReport tracked
+  4 item help_debug_log menu.help.viewDebugLog tracked
+  5 item help_send_error_report menu.help.sendErrorReport tracked
 ";
 
 const LINUX_MENU_BAR: &str = "\
@@ -190,10 +196,12 @@ menu menu.bar.select
   0 item select_all_files menu.select.all [Cmd+A] tracked
   1 item deselect_all menu.select.deselectAll [Cmd+Shift+A] tracked
   2 item select_same_kind menu.select.sameKind (⌥⇧=) tracked
-  3 item invert_selection menu.select.invert (⇧8) tracked
+  3 item invert_selection menu.select.invert (*) tracked
   4 separator
   5 item select_files menu.select.files (+) tracked
   6 item deselect_files menu.select.deselectFiles (-) tracked
+  7 separator
+  8 item compare_directories menu.select.compareDirectories tracked
 menu menu.bar.view
   0 submenu menu.view.leftPane pane:left
       0 check view_mode_full_left menu.view.fullView [Cmd+1] view-mode:left:full
@@ -223,27 +231,30 @@ menu menu.bar.view
   6 separator
   7 item switch_pane menu.view.switchPane tracked
   8 item swap_panes menu.view.swapPanes [Cmd+U] tracked
-  9 separator
-  10 item command_palette menu.view.commandPalette [Cmd+Shift+P] tracked
-  11 item queue_show menu.view.operationQueue [Cmd+Alt+Q] tracked
-  12 item operation_log menu.view.operationLog [Cmd+Alt+L] tracked
-  13 item suggested_ops menu.view.suggestedOps tracked
-  14 item ask_cmdr menu.view.askCmdr [Cmd+Alt+A] tracked
+  9 item clone_pane menu.view.clonePane [Cmd+Shift+C] tracked
+  10 item calculate_folder_sizes menu.view.calculateFolderSizes [Alt+Shift+Enter] tracked
+  11 separator
+  12 item command_palette menu.view.commandPalette [Cmd+Shift+P] tracked
+  13 item queue_show menu.view.operationQueue [Cmd+Alt+Q] tracked
+  14 item operation_log menu.view.operationLog [Cmd+Alt+L] tracked
+  15 item suggested_ops menu.view.suggestedOps tracked
+  16 item ask_cmdr menu.view.askCmdr [Cmd+Alt+A] tracked
 menu menu.bar.go
   0 item go_back menu.go.back [Cmd+[] tracked
   1 item go_forward menu.go.forward [Cmd+]] tracked
   2 separator
   3 item go_parent menu.go.parentFolder [Cmd+Up] tracked
-  4 item go_home menu.go.home [Shift+Cmd+H] tracked
-  5 separator
-  6 item go_to_path menu.go.goToPath [Cmd+G] tracked
-  7 item go_latest_download menu.go.goToLatestDownload [Cmd+J] tracked
-  8 separator
-  9 item favorites_add menu.go.addToFavorites tracked
-  10 item favorites_open menu.go.showFavorites [Ctrl+D] tracked
-  11 separator
-  12 item servers_connect menu.go.connectToServer [Cmd+K] tracked
-  13 item servers_show menu.go.showServers tracked
+  4 item go_root menu.go.rootFolder [Cmd+/] tracked
+  5 item go_home menu.go.home [Shift+Cmd+H] tracked
+  6 separator
+  7 item go_to_path menu.go.goToPath [Cmd+G] tracked
+  8 item go_latest_download menu.go.goToLatestDownload [Cmd+J] tracked
+  9 separator
+  10 item favorites_add menu.go.addToFavorites tracked
+  11 item favorites_open menu.go.showFavorites [Ctrl+D] tracked
+  12 separator
+  13 item servers_connect menu.go.connectToServer [Cmd+K] tracked
+  14 item servers_show menu.go.showServers tracked
 menu menu.bar.tab
   0 item new_tab menu.tab.newTab [Cmd+T] tracked
   1 item close_tab menu.tab.closeTab [Cmd+W] tracked
@@ -261,7 +272,8 @@ menu menu.bar.help
   3 item help_shortcuts menu.help.keyboardShortcuts tracked
   4 item help_whats_new menu.help.whatsNew tracked
   5 item help_send_feedback menu.help.sendFeedback tracked
-  6 item help_send_error_report menu.help.sendErrorReport tracked
+  6 item help_debug_log menu.help.viewDebugLog tracked
+  7 item help_send_error_report menu.help.sendErrorReport tracked
 ";
 
 #[test]
@@ -502,7 +514,7 @@ fn item_label(item: &ItemSpec, platform: Platform) -> String {
     }
 }
 
-/// `[Cmd+A]` for an accelerator the platform registers, `[display ⇧8]` for one it only
+/// `[Cmd+A]` for an accelerator the platform registers, `[display *]` for one it only
 /// draws on the item's attributed title (macOS), and nothing at all on Linux, where the
 /// shortcut is already inside the label above.
 ///

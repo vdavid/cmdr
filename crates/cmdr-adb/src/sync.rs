@@ -9,6 +9,8 @@
 //! device advertises them: they carry an errno and 64-bit sizes, which the v1
 //! verbs lose (a missing path is mode 0, a 5 GB file wraps).
 
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
+
 use crate::errors::AdbError;
 use crate::features::{DeviceFeatures, connect_as_transport};
 use crate::server::AdbEndpoint;
@@ -65,6 +67,25 @@ impl SyncStat {
     pub fn exists(&self) -> bool {
         self.errno.is_none() && self.mode != 0
     }
+
+    /// The mtime as a date, whole seconds. `None` before 1970, matching the
+    /// listing, which shows no date there either.
+    pub fn modified_at(&self) -> Option<SystemTime> {
+        let secs = u64::try_from(self.mtime).ok()?;
+        UNIX_EPOCH.checked_add(Duration::from_secs(secs))
+    }
+}
+
+/// The `DONE` word for a push that should land dated `date`.
+///
+/// ❗ `DONE` carries the mtime as a u32 on BOTH verb sets (`SND2` only adds
+/// flags), so the device can't be told a date past 2106-02-07: it clamps
+/// there, and a pre-1970 date clamps to the epoch. Sub-seconds are dropped.
+pub fn done_mtime_word(date: SystemTime) -> u32 {
+    match date.duration_since(UNIX_EPOCH) {
+        Ok(since) => u32::try_from(since.as_secs()).unwrap_or(u32::MAX),
+        Err(_) => 0,
+    }
 }
 
 /// One entry of a listing.
@@ -96,7 +117,12 @@ impl SyncSession {
         let mut conn = endpoint.connect().await.map_err(connect_as_transport)?;
         conn.bind_device(serial).await?;
         conn.request("sync:").await?;
-        Ok(Self { conn, features })
+        Ok(Self::from_connection(conn, features))
+    }
+
+    /// Wraps a connection that already speaks `sync:`.
+    pub(crate) fn from_connection(conn: AdbConnection, features: DeviceFeatures) -> Self {
+        Self { conn, features }
     }
 
     /// Writes `[id][u32 LE]`.
@@ -126,9 +152,19 @@ impl SyncSession {
         }
     }
 
-    /// Reads `[u32 len][bytes]`.
+    /// Reads `[u32 len][bytes]`, refusing a length past [`MAX_DATA_CHUNK`]
+    /// before allocating: the device chooses the length word, and nothing on
+    /// this wire is longer than a `DATA` chunk (the reference client caps names
+    /// at 255 bytes and messages at `SYNC_DATA_MAX`; `client/file_sync_client.cpp`,
+    /// AOSP `packages/modules/adb` main, 2026-10-05).
     async fn read_len_prefixed(&mut self) -> Result<Vec<u8>, AdbError> {
         let len = self.conn.read_u32_le().await? as usize;
+        if len > MAX_DATA_CHUNK {
+            return Err(AdbError::Protocol(format!(
+                // allowed-pluralize-noun: `len` is past the cap here, so never 1.
+                "sync payload of {len} bytes exceeds the {MAX_DATA_CHUNK}-byte maximum"
+            )));
+        }
         let mut buf = vec![0u8; len];
         self.conn.read_exact(&mut buf).await?;
         Ok(buf)

@@ -99,6 +99,41 @@ describe('resolveGlobalKeyAction', () => {
     })
   })
 
+  // Keypresses as macOS reports them (Safari key log, 2026-10-05: US layout plus a
+  // PC-layout keyboard), and the layouts the character rule exists for.
+  describe('keys from any keyboard and layout', () => {
+    const key = (init: KeyboardEventInit) => new KeyboardEvent('keydown', init)
+
+    it.each([
+      ['US ⇧8', { key: '*', code: 'Digit8', shiftKey: true }, 'selection.invert'],
+      ["Swedish ⇧'", { key: '*', code: 'Backslash', shiftKey: true }, 'selection.invert'],
+      ['numpad *', { key: '*', code: 'NumpadMultiply' }, 'selection.invert'],
+      ['AltGr-style ⌥ *', { key: '*', code: 'Slash', altKey: true }, 'selection.invert'],
+      ['US ⇧=', { key: '+', code: 'Equal', shiftKey: true }, 'selection.selectFiles'],
+      ['Hungarian ⇧3', { key: '+', code: 'Digit3', shiftKey: true }, 'selection.selectFiles'],
+      ['numpad +', { key: '+', code: 'NumpadAdd' }, 'selection.selectFiles'],
+      ['numpad -', { key: '-', code: 'NumpadSubtract' }, 'selection.deselectFiles'],
+      ['US ⌥⇧= (types ±)', { key: '±', code: 'Equal', altKey: true, shiftKey: true }, 'selection.selectSameKind'],
+      ['numpad ⌥+', { key: '+', code: 'NumpadAdd', altKey: true }, 'selection.selectSameKind'],
+      ['forward delete ⌦', { key: 'Delete', code: 'Delete' }, 'file.delete'],
+      ['PC Insert (macOS says Help)', { key: 'Help', code: 'Help' }, 'selection.toggleAndDown'],
+    ])('%s dispatches %s', (_name, init, commandId) => {
+      expect(resolveGlobalKeyAction(key(init), NOTHING_OPEN)).toEqual({ kind: 'dispatch', commandId })
+    })
+
+    it('leaves typed symbols to a focused text input, whichever modifier typed them', () => {
+      cleanupFocus = focus('input')
+      for (const init of [
+        { key: '*', code: 'Digit8', shiftKey: true },
+        { key: '*', code: 'Slash', altKey: true },
+        { key: '±', code: 'Equal', altKey: true, shiftKey: true },
+        { key: 'Delete', code: 'Delete' },
+      ]) {
+        expect(resolveGlobalKeyAction(key(init), NOTHING_OPEN)).toEqual({ kind: 'ignore' })
+      }
+    })
+  })
+
   describe('with a modal open', () => {
     it('blocks pane-scoped commands', () => {
       // ⌘T (new tab) fires with nothing open, and must not fire behind a dialog.

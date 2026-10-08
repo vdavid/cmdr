@@ -14,6 +14,7 @@
 
 mod bulk_ops;
 mod cache;
+mod dates;
 mod directory_ops;
 pub(crate) mod errors;
 mod event_loop;
@@ -53,12 +54,13 @@ mod usb_owner;
 mod volume_registrar;
 
 use cache::{EVENT_DEBOUNCE_MS, EventDebouncer, ListingCache, PathHandleCache};
+use dates::convert_mtp_datetime;
 pub use errors::MtpConnectionError;
 use errors::map_mtp_error;
 #[cfg(any(test, feature = "testing"))]
 pub use events::RecordingMtpDeviceEvents;
 pub use events::{MtpDeviceEvent, MtpDeviceEvents, no_device_events};
-pub(crate) use file_ops::MtpReadSession;
+pub(crate) use file_ops::{MtpReadSession, UploadedFile};
 pub use handle_resolver::ResolvedMtpObject;
 pub use mutation_ops::MtpDeleteScope;
 use scheduler::{DevicePriorityGate, ForegroundGuard};
@@ -1003,9 +1005,9 @@ async fn probe_write_capability(storage: &mtp_rs::Storage, storage_name: &str) -
     match storage.create_folder(None, PROBE_FOLDER_NAME).await {
         Ok(handle) => {
             // Success! Clean up by deleting the probe folder
-            debug!("Storage '{}': write probe succeeded, cleaning up", storage_name);
+            debug!("Storage volumeName={storage_name:?}: write probe succeeded, cleaning up");
             if let Err(e) = storage.delete(handle).await {
-                warn!("Storage '{}': failed to clean up probe folder: {:?}", storage_name, e);
+                warn!("Storage volumeName={storage_name:?}: failed to clean up probe folder: {e:?}");
             }
             true
         }
@@ -1099,30 +1101,6 @@ fn normalize_mtp_path(path: &str) -> PathBuf {
     } else {
         PathBuf::from(path)
     }
-}
-
-/// Converts MTP DateTime to Unix timestamp.
-pub(super) fn convert_mtp_datetime(dt: mtp_rs::DateTime) -> u64 {
-    // Convert the DateTime struct fields to Unix timestamp
-    // This is a simplified conversion - MTP DateTime has year, month, day, hour, minute, second
-
-    // Create a rough Unix timestamp from the date components
-    // Note: This is a simplified calculation that doesn't account for leap years perfectly
-    let year = dt.year as u64;
-    let month = dt.month as u64;
-    let day = dt.day as u64;
-    let hour = dt.hour as u64;
-    let minute = dt.minute as u64;
-    let second = dt.second as u64;
-
-    // Simplified calculation: days since epoch + time
-    // This is approximate but good enough for file listing purposes
-    let years_since_1970 = year.saturating_sub(1970);
-    let days = years_since_1970 * 365 + (years_since_1970 / 4) // leap years approximation
-        + (month.saturating_sub(1)) * 30  // approximate days per month
-        + day.saturating_sub(1);
-
-    days * 86400 + hour * 3600 + minute * 60 + second
 }
 
 /// Generates icon ID for MTP files.

@@ -474,8 +474,12 @@ test.describe('Rolling an operation back from the history dialog', () => {
     await confirmRollBack(page)
 
     // The badge flips under the cursor that pressed it, off the journal's own
-    // synchronous write rather than optimism in the component.
-    await expect.poll(() => rowRollbackBadge(page, opId), { timeout: waitBudget(5000) }).toBe('Rolling back')
+    // synchronous write rather than optimism in the component. A three-file rollback
+    // can finish before the first poll, and a finished one says "Rolled back", so
+    // either word proves the flip.
+    await expect
+      .poll(() => rowRollbackBadge(page, opId), { timeout: waitBudget(5000) })
+      .toMatch(/^(Rolling back|Rolled back)$/)
 
     expect(await settledRollbackState(page, opId)).toBe('rolledBack')
     expect(goneCount(fixtureRoot, 'rb-copy', 3)).toBe(3)

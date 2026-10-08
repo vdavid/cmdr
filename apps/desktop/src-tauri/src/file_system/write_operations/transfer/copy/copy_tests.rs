@@ -304,6 +304,7 @@ fn a_local_copy_never_acts_on_a_preview_of_a_different_selection() {
                     total_bytes: other_metadata.len(),
                     dedup_bytes: other_metadata.len(),
                     top_level_is_directory: false,
+                    top_level_modified_at: None,
                 },
             )],
             None,
@@ -365,7 +366,7 @@ fn local_copy_bench_many_small_files() {
     let tmp = tempfile::tempdir().expect("tempdir");
     // Measure with the persisted in-flight-temp ledger live, since production
     // rewrites it twice per file. Without this the bench would quietly skip it.
-    let _store = crate::file_system::write_operations::in_flight_temps::test_support::use_store_in(tmp.path());
+    let ledger = crate::file_system::write_operations::in_flight_temps::Ledger::recording_in(tmp.path());
     let src_dir = tmp.path().join("src");
     fs::create_dir_all(&src_dir).unwrap();
     let payload = vec![0xAB_u8; FILE_BYTES];
@@ -383,7 +384,9 @@ fn local_copy_bench_many_small_files() {
         fs::create_dir_all(&dst_dir).unwrap();
 
         let events = Arc::new(CollectorEventSink::new());
-        let state = make_state(1_000_000); // effectively no progress emits
+        // Effectively no progress emits.
+        let state =
+            Arc::new(WriteOperationState::new(Duration::from_millis(1_000_000)).with_in_flight_ledger(ledger.clone()));
         let config = WriteOperationConfig::default();
 
         let started = std::time::Instant::now();
@@ -471,6 +474,12 @@ fn a_bulk_skipped_source_reports_itself_as_skipped() {
 /// Copies one file through `copy_single_item` and hands back the ledger it
 /// recorded into, so a test can ask what the copy claims to have written.
 fn copy_one_file(source: &Path, dest_dir: &Path) -> CopyTransaction {
+    copy_one_file_knowing(source, dest_dir, &mut HashSet::new())
+}
+
+/// [`copy_one_file`] over a caller-held `created_dirs`, the operation's set of
+/// directories it has already proven or made.
+fn copy_one_file_knowing(source: &Path, dest_dir: &Path, created_dirs: &mut HashSet<PathBuf>) -> CopyTransaction {
     let events = Arc::new(CollectorEventSink::new());
     let state = make_state(200);
     let config = WriteOperationConfig::default();
@@ -483,6 +492,7 @@ fn copy_one_file(source: &Path, dest_dir: &Path) -> CopyTransaction {
     copy_single_item(
         source,
         dest_dir.join(source.file_name().unwrap()),
+        dest_dir,
         None,
         is_symlink,
         write_weight,
@@ -498,7 +508,7 @@ fn copy_one_file(source: &Path, dest_dir: &Path) -> CopyTransaction {
         &config,
         &mut transaction,
         &mut ApplyToAll::default(),
-        &mut HashSet::new(),
+        created_dirs,
         &mut HashMap::new(),
         &mut HashSet::new(),
         &mut HashSet::new(),
@@ -506,6 +516,27 @@ fn copy_one_file(source: &Path, dest_dir: &Path) -> CopyTransaction {
     .expect("the copy should land");
 
     transaction
+}
+
+/// A file landing DIRECTLY in the destination root leaves the root in
+/// `created_dirs`, which is what lets the next file skip the parent checks. The
+/// link-aware chain walk looks only BELOW the root, so without this a flat copy
+/// of many files paid a stat of the same folder per file.
+#[test]
+fn a_file_landing_in_the_destination_root_proves_the_root_once() {
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let dest_dir = tmp.path().join("dst");
+    fs::create_dir_all(&dest_dir).unwrap();
+    let source = tmp.path().join("a.txt");
+    fs::write(&source, "A").unwrap();
+    let mut created_dirs = HashSet::new();
+
+    copy_one_file_knowing(&source, &dest_dir, &mut created_dirs);
+
+    assert!(
+        created_dirs.contains(&dest_dir),
+        "the root must be known after its first file, got {created_dirs:?}"
+    );
 }
 
 /// The ledger entry for a copied file identifies the file that landed: the same

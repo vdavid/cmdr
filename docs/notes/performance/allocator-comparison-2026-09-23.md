@@ -2,8 +2,10 @@
 
 **What this settles:** whether switching Cmdr's global allocator would cut its footprint, and at what cost. **Decision:
 keep mimalloc v3 for now.** The system allocator saves a median ~95 MiB at idle, but it's 30–45% slower on search
-queries and leaves multi-hundred-MiB peaks for minutes after a big free. mimalloc v2 buys nothing. The idle gap looked
-like thread churn, but pooling the walker's threads left it unchanged (`walker-thread-pool-2026-09-27.md`).
+queries and leaves multi-hundred-MiB peaks for minutes after a big free. mimalloc v2 buys nothing. (Reversed for macOS
+once the search penalty was gone and the post-burst settle was measured: `allocator-slack-release-2026-09-27.md`, and
+`crates/cmdr-fs/DETAILS.md` § "Which global allocator" for the current split.) The idle gap looked like thread churn,
+but pooling the walker's threads left it unchanged (`walker-thread-pool-2026-09-27.md`).
 
 The live-versus-slack method this builds on: `rust-heap-attribution-2026-09-23.md`. Per-round raw numbers:
 `allocator-comparison-2026-09-23.csv` (one row per round, condition, and sample point; bytes).

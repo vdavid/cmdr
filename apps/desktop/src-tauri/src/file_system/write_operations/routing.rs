@@ -25,6 +25,7 @@ use std::sync::Arc;
 use super::archive_edit::{compress_start, route_archive_copy_into_with_provenance};
 use super::event_sinks::OperationEventSink;
 use super::source_binding::ExpectedSources;
+use super::target_names::{NotAName, TargetNames};
 use super::transfer::volume::{PathRole, copy_between_volumes, move_between_volumes, unregistered_volume_error};
 use super::types::{ReadOnlySide, VolumeCopyConfig, WriteOperationError, WriteOperationStartResult};
 use crate::file_system::volume::Volume;
@@ -369,6 +370,54 @@ pub(crate) async fn start_volume_move(
         dest_volume,
         dest_path,
         config,
+        TargetNames::default(),
+        initiator,
+        expected_sources,
+    )
+    .await
+}
+
+/// Starts renames that run as a move on one volume: each source moves into
+/// `dest_path` under its new NAME. The route for an entry whose rename isn't
+/// one call (`Volume::rename_work`): F2's background move and its Move dialog,
+/// the MCP rename, and a bulk rename on an object store all start here, so
+/// each one gets the transfer engine's progress, pause, cancel, conflicts, and
+/// journaling.
+///
+/// A name that isn't one plain component is refused before anything starts.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "the move's whole request: its sink, volume, renames, destination folder, config, initiator, and source binding"
+)]
+pub(crate) async fn start_rename_by_move(
+    events: Arc<dyn OperationEventSink>,
+    volume_id: String,
+    renames: Vec<(PathBuf, String)>,
+    dest_path: String,
+    config: VolumeCopyConfig,
+    initiator: Initiator,
+    expected_sources: Option<ExpectedSources>,
+) -> Result<WriteOperationStartResult, WriteOperationError> {
+    let target_names =
+        TargetNames::new(renames.iter().cloned()).map_err(|NotAName(name)| WriteOperationError::InvalidName {
+            path: name,
+            message: "a new name is one name, not a path".to_string(),
+        })?;
+    let sources: Vec<PathBuf> = renames.into_iter().map(|(source, _)| source).collect();
+    let Some(volume) = get_volume_manager().get(&volume_id) else {
+        return Err(source_volume_missing(&volume_id, &sources).await);
+    };
+    let dest_path = resolve_dest_path(&volume, dest_path);
+    move_between_volumes(
+        events,
+        volume_id.clone(),
+        Arc::clone(&volume),
+        sources,
+        volume_id,
+        volume,
+        dest_path,
+        config,
+        target_names,
         initiator,
         expected_sources,
     )

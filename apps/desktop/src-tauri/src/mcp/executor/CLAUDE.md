@@ -25,9 +25,9 @@ which calls these by path. Up: `../CLAUDE.md`.
 - **Use `mcp_round_trip` when the backend can't fully validate preconditions or must wait on the OS.** It waits for the
   FE `mcp-response` (`{ requestId, ok, error? }`) so FE knowledge isn't replicated in Rust. Its users, and
   `resource_round_trip`: DETAILS.md.
-- **`move_cursor` and `select` flush the MCP state push (`syncStateToMcpNow`) before replying**, and the read-only `tag`
-  calls `flush_pane_state` for the same freshness. ❌ Don't drop it: a follow-up `copy`/`move`/`delete` would read stale
-  state and `check_operation_has_target` would wrongly reject "Nothing to copy".
+- **`move_cursor`, `select`, `nav_to_path`, `select_volume` flush the MCP state push before replying**; the read-only
+  `tag` calls `flush_pane_state` for the same freshness. ❌ Don't drop it: a follow-up `copy`/`move`/`delete` would read
+  stale state and `check_operation_has_target` would wrongly reject "Nothing to copy".
 - **Read filesystem path params through `user_path_param` / `expand_user_path`, ❌ never raw `params.get(...)`.** Agents
   routinely send `~/Downloads`, and a literal `~` fails validation or silently never matches, burning the full timeout.
   Validate existence via `validate_path_exists`, ❌ never bare `Path::exists()` (blocks forever on a hung mount). The

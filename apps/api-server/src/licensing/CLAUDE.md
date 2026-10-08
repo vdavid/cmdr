@@ -1,11 +1,10 @@
 # Licensing
 
-Everything money touches: the Paddle webhook that fulfills a purchase, `/activate`, `/validate`, and the hand-issued
-licenses behind `/admin/generate` and `/admin/revoke`. `licensing.ts` holds the routes and mounts `manual-licenses.ts`
-plus `admin-licenses.ts` (the dashboard's list, and its note editor); `license.ts` (short codes, key signing, id
-namespaces), `license-issuance.ts` (the D1 ledger), `license-backup.ts` (the daily R2 snapshot), `paddle.ts` (HMAC
-verify, `constantTimeEqual`), `paddle-api.ts` (Paddle REST), and `device-tracking.ts` (fair-use device sets) are its
-leaves.
+Everything money touches: the Paddle webhook (fulfill a purchase, revoke on a refund), `/activate`, `/validate`, and the
+hand-issued licenses behind `/admin/generate` and `/admin/revoke`. `licensing.ts` holds the routes and mounts
+`manual-licenses.ts` plus `admin-licenses.ts` (the dashboard's list, and its note editor). Leaves: `license.ts` (codes,
+signing, id namespaces), `license-issuance.ts` (the D1 ledger), `refunds.ts` (refund and chargeback adjustments),
+`license-backup.ts`, `paddle.ts` (HMAC verify), `paddle-api.ts`, and `device-tracking.ts`.
 
 ## Must-knows
 
@@ -23,24 +22,24 @@ leaves.
   key by build mode; rationale and rotation caveat in `apps/desktop/src-tauri/src/licensing/DETAILS.md` § Signing keys.
 - **One purchase yields ONE set of license codes, but the email may repeat.** `/webhook/paddle` claims the transaction
   in D1 (`license_issuance`) BEFORE any side effect, stores the codes before emailing, and marks `emailed_at` after. A
-  delivery that loses the claim classifies the row (`classifyIssuance`) instead of issuing beside it. DETAILS §
-  Fulfillment.
+  delivery that loses the claim classifies the row (`classifyIssuance`) instead of issuing beside it. A renewal (any
+  `subscription_*` origin) issues nothing. DETAILS § Fulfillment.
 - **Issuance rows never expire.** An expiring marker is exactly how a late redelivery mints a second set of usable
   perpetual licenses. ❌ Don't add a TTL or a cleanup job.
 - **A take-over is conditional** (`UPDATE ... WHERE claimed_at = <the value we read>`), so two deliveries finding the
   same stale claim can't both proceed.
 - **`/validate` separates "Paddle says invalid" (200 + `status: "invalid"`) from "Paddle is unreachable" (502 +
-  `upstream_error`).** The desktop app falls back to its cached status only on the 502, so collapsing the two would
-  overwrite a valid "active" cache during a Paddle outage.
+  `upstream_error`).** Collapsing the two would revoke working licenses during a Paddle outage. The app trusts only the
+  200's `signedAnswer` (signed over its nonce): DETAILS § Key formats.
 - **Device tracking never affects the validation response**: it's fire-and-forget, and the server never rejects a
   validation over device count. Alerts go to a human. DETAILS § Device tracking.
 - **Paddle preserves `custom_data` key casing**, so it's `organizationName`, ❌ never `organization_name`.
 - **A license we hand out lives in our ledger, not in Paddle.** `/validate` dispatches on the id namespace: `txn_` asks
-  Paddle, anything else resolves from `license_issuance` where `source = 'manual'`. ❌ Never answer a `txn_` id from the
-  table, a canceled subscription would keep validating. `/admin/generate` and `/admin/revoke` (`manual-licenses.ts`)
-  take `ADMIN_API_TOKEN` like every other admin route, and minting refuses without a `note`. DETAILS § Manual licenses.
+  Paddle, anything else resolves from `license_issuance` where `source = 'manual'`. For a `txn_` id the table only takes
+  the license AWAY (`revoked_at`, set by a refund, DETAILS § Refunds); ❌ never let it grant one, a canceled
+  subscription would keep validating. Minting refuses without a `note`. DETAILS § Manual licenses.
 - **`/admin/licenses` reports OUR records, ❌ never Paddle's truth.** `active` on a `paddle` row means we fulfilled the
   purchase; whether the subscription still runs only Paddle knows. DETAILS § The licenses listing.
 
-Fulfillment states, webhook verification, the replay-tolerance gap, price-ID mapping, device sets, and the sandbox
-runbooks: `DETAILS.md`. Read it before any non-trivial work here: editing, planning, reorganizing, or advising.
+Fulfillment states, webhook verification and its replay window, price-ID mapping, device sets, and the sandbox runbooks:
+`DETAILS.md`. Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

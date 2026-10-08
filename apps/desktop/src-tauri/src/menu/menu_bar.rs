@@ -36,17 +36,18 @@ use super::menu_spec::{
     macos_only, menu, predefined, split, submenu,
 };
 use super::{
-    ABOUT_ID, ACKNOWLEDGEMENTS_ID, APP_MENU_ID, ASK_CMDR_ID, CHANGELOG_ID, CHECK_FOR_UPDATES_ID, CLOSE_OTHER_TABS_ID,
-    CLOSE_TAB_ID, COMMAND_PALETTE_ID, COPY_FILENAME_ID, COPY_PATH_ID, DESELECT_ALL_ID, DESELECT_FILES_ID, EDIT_COPY_ID,
-    EDIT_CUT_ID, EDIT_ID, EDIT_MENU_ID, EDIT_PASTE_ID, EDIT_PASTE_MOVE_ID, ENTER_LICENSE_KEY_ID, FAVORITES_ADD_ID,
-    FAVORITES_OPEN_ID, FILE_COMPRESS_ID, FILE_COPY_ID, FILE_DELETE_ID, FILE_DELETE_PERMANENTLY_ID, FILE_DUPLICATE_ID,
-    FILE_MENU_ID, FILE_MOVE_ID, FILE_NEW_FILE_ID, FILE_NEW_FOLDER_ID, FILE_VIEW_ID, GET_INFO_ID, GO_BACK_ID,
-    GO_FORWARD_ID, GO_HOME_ID, GO_LATEST_DOWNLOAD_ID, GO_MENU_ID, GO_PARENT_ID, GO_TO_PATH_ID, HELP_MENU_ID,
-    HELP_SEND_ERROR_REPORT_ID, HELP_SEND_FEEDBACK_ID, HELP_SHORTCUTS_ID, HELP_WHATS_NEW_ID, INVERT_SELECTION_ID,
-    NEW_TAB_ID, NEXT_TAB_ID, OPEN_ID, OPEN_ONBOARDING_ID, OPEN_TERMINAL_HERE_ID, OPERATION_LOG_ID, PIN_TAB_MENU_ID,
-    PREV_TAB_ID, QUEUE_SHOW_ID, QUICK_LOOK_ID, RENAME_ID, REOPEN_CLOSED_TAB_ID, SEARCH_FILES_ID, SELECT_ALL_ID,
-    SELECT_FILES_ID, SELECT_MENU_ID, SELECT_SAME_KIND_ID, SERVERS_CONNECT_ID, SERVERS_SHOW_ID, SETTINGS_ID,
-    SHOW_HIDDEN_FILES_ID, SHOW_IN_FINDER_ID, SORT_ASCENDING_ID, SORT_BY_CREATED_ID, SORT_BY_EXTENSION_ID,
+    ABOUT_ID, ACKNOWLEDGEMENTS_ID, APP_MENU_ID, ASK_CMDR_ID, CALCULATE_FOLDER_SIZES_ID, CHANGELOG_ID,
+    CHECK_FOR_UPDATES_ID, CLONE_PANE_ID, CLOSE_OTHER_TABS_ID, CLOSE_TAB_ID, COMMAND_PALETTE_ID, COMPARE_DIRECTORIES_ID,
+    COPY_FILENAME_ID, COPY_PATH_ID, DESELECT_ALL_ID, DESELECT_FILES_ID, EDIT_COPY_ID, EDIT_CUT_ID, EDIT_ID,
+    EDIT_MENU_ID, EDIT_PASTE_ID, EDIT_PASTE_MOVE_ID, ENTER_LICENSE_KEY_ID, FAVORITES_ADD_ID, FAVORITES_OPEN_ID,
+    FILE_COMPRESS_ID, FILE_COPY_ID, FILE_DELETE_ID, FILE_DELETE_PERMANENTLY_ID, FILE_DUPLICATE_ID, FILE_MENU_ID,
+    FILE_MOVE_ID, FILE_NEW_FILE_ID, FILE_NEW_FOLDER_ID, FILE_VIEW_ID, GET_INFO_ID, GO_BACK_ID, GO_FORWARD_ID,
+    GO_HOME_ID, GO_LATEST_DOWNLOAD_ID, GO_MENU_ID, GO_PARENT_ID, GO_ROOT_ID, GO_TO_PATH_ID, HELP_DEBUG_LOG_ID,
+    HELP_MENU_ID, HELP_SEND_ERROR_REPORT_ID, HELP_SEND_FEEDBACK_ID, HELP_SHORTCUTS_ID, HELP_WHATS_NEW_ID,
+    INVERT_SELECTION_ID, NEW_TAB_ID, NEXT_TAB_ID, OPEN_ID, OPEN_ONBOARDING_ID, OPEN_TERMINAL_HERE_ID, OPERATION_LOG_ID,
+    PIN_TAB_MENU_ID, PREV_TAB_ID, QUEUE_SHOW_ID, QUICK_LOOK_ID, RENAME_ID, REOPEN_CLOSED_TAB_ID, SEARCH_FILES_ID,
+    SELECT_ALL_ID, SELECT_FILES_ID, SELECT_MENU_ID, SELECT_SAME_KIND_ID, SERVERS_CONNECT_ID, SERVERS_SHOW_ID,
+    SETTINGS_ID, SHOW_HIDDEN_FILES_ID, SHOW_IN_FINDER_ID, SORT_ASCENDING_ID, SORT_BY_CREATED_ID, SORT_BY_EXTENSION_ID,
     SORT_BY_MENU_ID, SORT_BY_MODIFIED_ID, SORT_BY_NAME_ID, SORT_BY_SIZE_ID, SORT_DESCENDING_ID, SUGGESTED_OPS_ID,
     SWAP_PANES_ID, SWITCH_PANE_ID, TAB_MENU_ID, VIEW_MENU_ID, VIEW_MODE_BRIEF_LEFT_ID, VIEW_MODE_BRIEF_RIGHT_ID,
     VIEW_MODE_FULL_LEFT_ID, VIEW_MODE_FULL_RIGHT_ID, VIEW_ZOOM_75_ID, VIEW_ZOOM_100_ID, VIEW_ZOOM_125_ID,
@@ -223,12 +224,18 @@ pub(crate) const MENU_BAR: &[BarMenu] = &[
             // would select right now (`update_select_same_kind_menu`). `⌥⇧=` is the physical
             // spelling, the one honest on a layout where that key isn't `+`.
             displayed_item(SELECT_SAME_KIND_ID, "menu.select.sameKind", "⌥⇧="),
-            // `⇧8`, the main-row spelling, not `*`: it's honest on every layout, and it's the
-            // first of the command's two shortcuts (`sources/file-list.ts`).
-            displayed_item(INVERT_SELECTION_ID, "menu.select.invert", "⇧8"),
+            // `*` means whichever key types `*` on the user's layout (`sources/file-list.ts`).
+            displayed_item(INVERT_SELECTION_ID, "menu.select.invert", "*"),
             SEPARATOR,
             displayed_item(SELECT_FILES_ID, "menu.select.files", "+"),
             displayed_item(DESELECT_FILES_ID, "menu.select.deselectFiles", "-"),
+            SEPARATOR,
+            // Linux leaves F-keys to JS dispatch, like the File menu's ⇧F4.
+            item(
+                COMPARE_DIRECTORIES_ID,
+                "menu.select.compareDirectories",
+                macos("Shift+F2"),
+            ),
         ],
     ),
     menu(
@@ -325,6 +332,12 @@ pub(crate) const MENU_BAR: &[BarMenu] = &[
             // Tab conflicts with GTK's own keyboard navigation, so Linux leaves it to JS dispatch.
             item(SWITCH_PANE_ID, "menu.view.switchPane", macos("Tab")),
             item(SWAP_PANES_ID, "menu.view.swapPanes", both("Cmd+U")),
+            item(CLONE_PANE_ID, "menu.view.clonePane", both("Cmd+Shift+C")),
+            item(
+                CALCULATE_FOLDER_SIZES_ID,
+                "menu.view.calculateFolderSizes",
+                both("Alt+Shift+Enter"),
+            ),
             SEPARATOR,
             item(COMMAND_PALETTE_ID, "menu.view.commandPalette", both("Cmd+Shift+P")),
             // The next four sync their accelerators from registry shortcuts (`queue.show`,
@@ -349,6 +362,7 @@ pub(crate) const MENU_BAR: &[BarMenu] = &[
             item(GO_FORWARD_ID, "menu.go.forward", both("Cmd+]")),
             SEPARATOR,
             item(GO_PARENT_ID, "menu.go.parentFolder", both("Cmd+Up")),
+            item(GO_ROOT_ID, "menu.go.rootFolder", both("Cmd+/")),
             // Shift+Cmd+H, not Cmd+H: AppKit owns Cmd+H for Hide Cmdr and swallows it before the
             // webview ever sees a keydown.
             item(GO_HOME_ID, "menu.go.home", both("Shift+Cmd+H")),
@@ -404,6 +418,7 @@ pub(crate) const MENU_BAR: &[BarMenu] = &[
             macos_only(SEPARATOR),
             item(HELP_WHATS_NEW_ID, "menu.help.whatsNew", NONE),
             item(HELP_SEND_FEEDBACK_ID, "menu.help.sendFeedback", NONE),
+            item(HELP_DEBUG_LOG_ID, "menu.help.viewDebugLog", NONE),
             item(HELP_SEND_ERROR_REPORT_ID, "menu.help.sendErrorReport", NONE),
         ],
     ),

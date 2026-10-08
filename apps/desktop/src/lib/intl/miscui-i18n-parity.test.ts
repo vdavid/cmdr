@@ -178,14 +178,6 @@ describe('mtp area parity (en)', () => {
     expect(help[0]).toBe('This command continuously stops ptpcamerad while running. Press ')
     expect(help[help.length - 1]).toBe(' in Terminal to stop it when done.')
   })
-
-  it('resolves the device-error strings with and without a blocking process', () => {
-    expect(tString('mtp.error.exclusiveAccess', { blocking: 'none' })).toBe('Another process has exclusive access')
-    expect(tString('mtp.error.exclusiveAccess', { blocking: 'pid 45145, ptpcamerad' })).toBe(
-      'Another process has exclusive access (blocked by pid 45145, ptpcamerad)',
-    )
-    expect(tString('mtp.error.permissionDenied')).toBe('USB permission denied. Install udev rules and reconnect')
-  })
 })
 
 describe('updates area parity (en)', () => {

@@ -23,6 +23,7 @@ use super::{
 /// gather and left in place; a raw signal-crash file is read and converted to one; and a report
 /// already delivered in-session is deleted rather than offered twice.
 pub(super) fn process_pending_crash(crash_json_path: &Path, raw_crash_path: &Path) {
+    super::pending_delivery::restore_unfinished_sends(crash_json_path);
     if let Some(mut report) = read_crash_report(crash_json_path) {
         finish_panic_report(crash_json_path, &mut report);
         return;

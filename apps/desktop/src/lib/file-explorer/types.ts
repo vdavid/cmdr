@@ -84,6 +84,13 @@ export interface FileEntry {
    */
   gitMeta?: GitEntryMeta
   /**
+   * The file's bytes sit in cold storage (S3 Glacier Flexible Retrieval or Deep
+   * Archive) and can't be read until someone restores them. The row shows an
+   * "archived" glyph; a read answers `coldStorage`. Set by the backend listing;
+   * optional so synthetic entries can omit it.
+   */
+  inColdStorage?: boolean
+  /**
    * Parent directory path. Optional on FileEntry because normal directory
    * listings derive it implicitly from the containing folder, but search-results
    * snapshots carry it per row so the optional Path column in FullList can
@@ -186,9 +193,14 @@ export interface DiffChange {
 export interface DirectoryDiff {
   /** Listing ID this diff belongs to */
   listingId: string
-  /** Monotonic sequence number for ordering */
+  /** Each transition keeps its own old/new index spaces. */
+  batches: DirectoryDiffBatch[]
+}
+
+export interface DirectoryDiffBatch {
+  fromSequence: number
   sequence: number
-  /** List of changes */
+  totalCount: number
   changes: DiffChange[]
 }
 
@@ -212,7 +224,7 @@ export type LocationCategory =
 /**
  * How live a remote volume's session is. Mirrors Rust's `ConnectionState`.
  *
- * `direct` = a live session Cmdr owns (smb2, SFTP, WebDAV, a dialed phone),
+ * `direct` = a live session Cmdr owns (smb2, SFTP, WebDAV, S3, a dialed phone),
  * `os_mount` = SMB's kernel-mount fallback, `disconnected` = the session dropped
  * and the backoff loop owns recovery, `needs_sign_in` = the backend stopped
  * retrying because a credential is missing, `needs_host_key_approval` = SFTP's
@@ -251,6 +263,12 @@ export interface VolumeBackendCapabilities {
   canExport: boolean
   /** A drive index can be turned on for this volume: the index has a way to walk and watch this backend. */
   canBeIndexed: boolean
+  /** "Copy share link" can mint a link to a file here (S3's presigned GET). */
+  canShareLinks: boolean
+  /** Some entries here rename by copying on the server (S3), so a move within the volume scans. */
+  renamesCanCopy: boolean
+  /** The same place can also be reached through the OS's own mount (SMB), so a live session is the "direct" one of two. */
+  hasOsMountFallback: boolean
 }
 
 /**
@@ -288,7 +306,7 @@ export interface VolumeInfo {
   supportsTrash?: boolean
   /**
    * How live this volume's session is. Set for every volume a connecting backend
-   * serves (SMB, SFTP, WebDAV, ADB) plus a saved-but-unconnected server.
+   * serves (SMB, SFTP, WebDAV, S3, ADB) plus a saved-but-unconnected server.
    * ❌ Never an "is this SMB" test: `navigation/connection-state.ts` has the
    * predicates, `pane/volume-capabilities.ts` has the kind.
    */
@@ -384,6 +402,8 @@ export const DEFAULT_SORT_BY: SortColumn = 'name'
 
 /** Result of re-sorting a listing. */
 export interface ResortResult {
+  sequence: number
+  totalCount: number
   /** New index of the cursor file after re-sorting, if found. */
   newCursorIndex: number | null
   /** New indices of previously selected files after re-sorting. */

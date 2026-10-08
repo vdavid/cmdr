@@ -13,7 +13,9 @@ getcmdr.com → Caddy → listmonk:9000 (Docker, proxy-net)
                     Resend (SMTP relay for sending emails)
 ```
 
-- Caddy proxies `/api/newsletter/subscribe` to Listmonk's public subscription API
+- Signups reach Listmonk through the api-server Worker (`/newsletter-signup`, `/beta-signup`), which calls Listmonk's
+  public subscription API at `mail.getcmdr.com`: `apps/api-server/src/website/DETAILS.md` § Signups
+- Caddy proxies Listmonk's public pages on getcmdr.com (the confirm and unsubscribe links in its emails, the archive)
 - `mail.getcmdr.com` serves the Listmonk admin UI (also proxied by Caddy)
 - Postgres is isolated on `listmonk-internal`, not reachable from Caddy or the internet
 - No host ports are exposed for either container
@@ -77,12 +79,6 @@ And inside the existing `getcmdr.com` block:
 
 ```caddy
 getcmdr.com {
-    # Listmonk: rewrite our custom paths to listmonk's expected paths
-    handle /api/newsletter/subscribe {
-        rewrite * /api/public/subscription
-        reverse_proxy listmonk:9000
-    }
-
     # Listmonk: all public routes (pages, assets, campaign links, archive)
     @listmonk path /subscription/* /public/* /campaign/* /link/* /archive /archive/* /archive.xml /api/public/*
     handle @listmonk {
@@ -139,25 +135,11 @@ Reload Caddy: `docker compose restart caddy` in Caddy's folder.
    newsletter content. The default works fine but you can brand it here too. Campaign templates must include
    `{{ template "content" . }}` exactly once.
 
-### 7. Connect the website
+### 7. Connect the signup routes
 
-The `.env` file is not in the repo (only `.env.example` is). Add the list UUID directly on the VPS:
-
-```bash
-sudo -u deploy-cmdr -i
-cd /opt/cmdr/apps/website
-cat .env             # see if it exists and check that PUBLIC_LISTMONK_LIST_UUID is not set
-cp .env.example .env # only if it doesn't exist yet!
-nano .env            # set PUBLIC_LISTMONK_LIST_UUID=<uuid from step 6.4>
-```
-
-Then rebuild so the env var gets baked into the static build:
-
-```bash
-docker compose down
-docker compose build --no-cache
-docker compose up -d
-```
+The website form and the desktop app sign up through the api-server, which needs each list's UUID (from step 6.4): set
+`LISTMONK_NEWSLETTER_LIST_UUID` and `LISTMONK_BETA_LIST_UUID` under `[vars]` in `apps/api-server/wrangler.toml`, then
+deploy the Worker. The lists must stay **public**: the public subscription API refuses private lists.
 
 ## Maintenance
 
@@ -511,7 +493,9 @@ every index gets rebuilt, which is another reason to prefer it over `pg_upgrade`
 
 ### Updates
 
-Update the `LISTMONK_VERSION` ARG in the `Dockerfile`, then:
+Update the `LISTMONK_VERSION` ARG in the `Dockerfile`, and the `@sha256:` digest on its `FROM listmonk/listmonk` line to
+match (`docker buildx imagetools inspect listmonk/listmonk:v<version>` prints it; Renovate can't, since the tag is an
+ARG). Then:
 
 ```bash
 docker compose up -d --build
@@ -633,7 +617,8 @@ handle /webhooks/ses {
 
 | Problem                                                      | Check                                                                                                                        |
 | ------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
-| Form returns 502                                             | Is the listmonk container running? `docker compose ps`                                                                       |
+| Form returns 502                                             | Is the listmonk container running? `docker compose ps`. Then `docker compose logs listmonk`: see the next row                |
+| Listmonk log: `535 Authentication credentials invalid`       | Resend rejected the SMTP key: no opt-in mail goes out. Make a new sending-only key, paste it in Settings > SMTP > Password   |
 | Confirmation email not arriving                              | Check Resend dashboard for delivery status and errors, check Listmonk logs                                                   |
 | Admin UI unreachable                                         | Check `mail.getcmdr.com` DNS, Caddy config, container health                                                                 |
 | Database connection errors                                   | Check `.env` password matches, Postgres container is healthy                                                                 |

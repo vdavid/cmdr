@@ -16,7 +16,7 @@ Directory listing, file writing, sync status, volume management, and file watchi
 - **Transient scratch hides on the listing READ path, nowhere but `CachedListing::rows`**: a watcher-side skip strands
   an entry in the pane forever. Cmdr's own (`.cmdr-tmp-*`) hides by OWNERSHIP, other apps' (`.sb-`) by NAME, and
   `is_hidden_from_listings` is GATED on the pure `could_be_hidden_from_listings`, which is what keeps cached row numbers
-  valid. § "Hiding transient scratch".
+  valid. Rows use a committed projection, not live re-sampling; `listing/DETAILS.md` § "Diff event coalescing".
 - **Tag writes (`tags.rs`) touch ONLY `_kMDItemUserTags`, never `com.apple.FinderInfo`** (zeroing it destroys custom
   folder icons), and encode a **binary** plist.
 - **Never call macOS frameworks from rayon or any constrained-stack pool**: FileProvider XPC blows the 2 MB stack and
@@ -49,5 +49,4 @@ Directory listing, file writing, sync status, volume management, and file watchi
   up to a root by inode, down by indexed `(parent, name)`, then proves the row with the file's inode. Read-only, and
   every failure means no menu item: a wrong link points at someone else's file. § "Mirror mode".
 
-Open-with internals, cloud-actions rationale, and the full threading/watcher story: `DETAILS.md`. Read it before any
-non-trivial work here: editing, planning, reorganizing, or advising.
+Read `DETAILS.md` before non-trivial work here: open-with, cloud actions, threading, and watchers.

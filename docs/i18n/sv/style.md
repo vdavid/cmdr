@@ -120,7 +120,7 @@ action, not an adjective agreeing with a noun in the label, and the thing that's
 `en`-gender anyway. `high` (macOS Finder grays such items out without a marker, so the parenthetical is Cmdr's own; the
 word itself is the standard Swedish "busy"). A disabled BUTTON's tooltip doesn't carry it:
 `fileExplorer.navigation.disconnectBusyTooltip` says
-`Det går inte att koppla från medan åtgärder pågår på den här servern`.
+`Cmdr arbetar fortfarande med filer på den här servern. Koppla från när det är klart.`
 
 ## Brand and do-not-translate
 

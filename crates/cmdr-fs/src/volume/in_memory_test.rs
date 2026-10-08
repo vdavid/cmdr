@@ -201,6 +201,27 @@ async fn delete_honors_the_shared_non_recursion_contract() {
     conformance::assert_delete_leaves_a_non_empty_dir_intact(&volume, Path::new("/album"), "keep.txt").await;
 }
 
+/// The batch delete a move's source sweep uses, over the double whose batches
+/// the engine's own cells count.
+#[tokio::test]
+async fn delete_files_honors_the_shared_batch_contract() {
+    let volume = InMemoryVolume::new("Test");
+    volume.create_directory(Path::new("/level")).await.unwrap();
+    for name in ["a.txt", "b.txt", "kept.txt"] {
+        volume
+            .create_file(&Path::new("/level").join(name), b"bytes")
+            .await
+            .unwrap();
+    }
+
+    conformance::assert_delete_files_removes_exactly_what_it_names(
+        &volume,
+        [Path::new("/level/a.txt"), Path::new("/level/b.txt")],
+        Path::new("/level/kept.txt"),
+    )
+    .await;
+}
+
 /// The shared no-clobber assertions, over the double every other suite's
 /// fixtures stand on. Same reasoning as the delete one above: if the double
 /// stops honoring a contract, hundreds of tests keep passing while the thing
@@ -247,6 +268,29 @@ async fn write_from_stream_create_new_honors_the_shared_no_clobber_contract() {
     .await;
 }
 
+/// The double keeps the source's date too, so an engine test copying onto it
+/// sees what a real destination does.
+#[tokio::test]
+async fn a_copy_keeps_the_source_date_per_the_shared_contract() {
+    let volume = InMemoryVolume::new("Test");
+
+    conformance::assert_write_from_stream_keeps_the_source_date(
+        &volume,
+        Path::new("/dated.txt"),
+        std::time::Duration::ZERO,
+    )
+    .await;
+    conformance::assert_read_stream_reports_the_listed_date(&volume, Path::new("/dated.txt")).await;
+}
+
+/// And dates a folder, so an engine test can see a copied folder keep its date.
+#[tokio::test]
+async fn set_modified_honors_the_shared_folder_date_contract() {
+    let volume = InMemoryVolume::new("Test");
+
+    conformance::assert_set_modified_dates_a_folder(&volume, Path::new("/dated"), std::time::Duration::ZERO).await;
+}
+
 #[tokio::test]
 async fn unknown_write_honors_the_shared_early_refusal_contract() {
     let volume = InMemoryVolume::new("Test");
@@ -262,6 +306,21 @@ async fn create_directory_all_honors_the_shared_honesty_contract() {
     volume.create_directory(Path::new("/album")).await.unwrap();
 
     conformance::assert_create_directory_all_reports_an_existing_dir_honestly(&volume, Path::new("/album")).await;
+}
+
+/// The shared file-in-the-way assertion. The double runs the trait's default
+/// walk, which every backend without a walk of its own inherits, so this is the
+/// cell that pins the default for all of them.
+#[tokio::test]
+async fn create_directory_all_honors_the_shared_file_in_the_way_contract() {
+    let volume = InMemoryVolume::new("Test");
+    volume.create_directory(Path::new("/album")).await.unwrap();
+    volume
+        .create_file(Path::new("/album/notes"), b"the user's notes")
+        .await
+        .unwrap();
+
+    conformance::assert_create_directory_all_refuses_a_file_in_the_way(&volume, Path::new("/album/notes")).await;
 }
 
 /// The shared export-handshake assertion, over the double every other suite's

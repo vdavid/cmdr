@@ -11,8 +11,8 @@ that interleave key-cap chips / `<code>` glyphs). `cmdr/no-raw-user-facing-strin
 add new copy as a catalog key, not a literal. Pure helpers that compose chip/tooltip strings (`filter-chip-state.ts`,
 `filter-popover-helpers.ts`, `recent-items/recent-items-utils.ts`, `ai-summary.ts`) call `tString()` directly; counts
 are passed in as preformatted `*Text` params (with a raw integer alongside only to drive plural selection). Symbol-like
-mode badges (`AI` / `.*` / `Aa` in `modeBadge`), unit abbreviations (`kB` / `KB` / `MB` / `GB`), and the regex
-slash-wrap are typography, not copy, and stay literal. Parity net: `queryui-i18n-parity.test.ts`.
+mode badges (`AI` / `.*` / `Aa` in `modeBadge`), unit-ID tokens (`KB` / `MB` / `GB`, rendered through `$lib/units`), and
+the regex slash-wrap are typography, not copy, and stay literal. Parity net: `queryui-i18n-parity.test.ts`.
 
 **Consumer-supplied copy overrides the `queryUi.*` default, and the fallback lives at the call site.** A few strings
 belong to the DIALOG rather than to the shared primitive, because the two consumers name the same control with different

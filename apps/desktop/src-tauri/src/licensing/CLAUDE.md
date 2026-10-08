@@ -1,60 +1,48 @@
 # Licensing subsystem (backend)
 
-Ed25519 offline license verification with optional server-side subscription validation. License keys are self-contained:
-`base64(JSON payload).base64(Ed25519 signature)`, verified offline against a compiled-in public key. Server validation
-only checks subscription expiry. Frontend counterpart: `src/lib/licensing/CLAUDE.md`.
+Ed25519-signed license keys (`base64(JSON payload).base64(signature)`), verified offline against a compiled-in public
+key. The server is asked every seven days, but only to learn a signed verdict (revoked, expired, renewed). Frontend
+counterpart: `src/lib/licensing/CLAUDE.md`.
 
 ## Module map
 
-- **`verification.rs`**: Ed25519 crypto, `LicenseActivationError` typed enum, `PUBLIC_KEY_HEX` (compiled-in public key).
-  Verify/commit split: `verify_license_async` (read-only check + short-code exchange) and `commit_license` (persist +
-  update caches). `get_license_info` (lazy, cached). `VerifyResult` = `LicenseInfo` + `full_key` + `short_code`.
-- **`app_status.rs`**: `AppStatus` enum, server re-validation and offline-grace logic, commercial-use reminder timer,
-  `CMDR_MOCK_LICENSE` override, and `refresh_window_title` — ❗ every cached-status write calls it, keep it that way.
-- **`validation_client.rs`**: HTTP client (`POST /validate`, `POST /activate`); debug → `localhost:8787`, release →
-  `api.getcmdr.com`, E2E builds → no request at all. Returns the `ValidationOutcome` enum (Success/UpstreamError/NetworkError).
-- **`device_id.rs`**: stable hashed device id for fair-use tracking (`IOPlatformUUID` via IOKit, salted + SHA-256,
-  `v1:` prefix; `None` on failure, Linux stub returns `None`).
+- **`verification.rs`**: Ed25519 crypto, `PUBLIC_KEY_HEX`, `LicenseActivationError`, the verify/commit split
+  (`verify_license_async`, `commit_license`), `get_license_info`, and `verify_validation_answer` (signed `/validate`
+  answers).
+- **`offline_policy.rs`**: `resolve_license_state`, the pure decision of what a license is worth without the server.
+- **`app_status.rs`**: `AppStatus`, server re-validation, the cached verdict, the clock guard, reminder timer,
+  `CMDR_MOCK_LICENSE`, and `refresh_window_title`. ❗ Every cached-status write calls it; keep it that way.
+- **`validation_client.rs`**: `POST /validate` (with a nonce) and `POST /activate`; debug → `localhost:8787`, release →
+  `api.getcmdr.com`, E2E → no request. Returns `ValidationOutcome`.
+- **`device_id.rs`**: hashed `IOPlatformUUID` for fair-use tracking.
 
 ## Must-knows
 
-- **`PUBLIC_KEY_HEX` has a dev and a production arm, gated on `debug_assertions` exactly like
-  `validation_client.rs`'s `LICENSE_SERVER_URL`.** Each build trusts only the server it talks to. ❌ Never put the
-  production private key in `apps/api-server/.dev.vars`: it mints licenses every shipped build accepts. Changing one
-  gate without the other makes the build reject every license. `DETAILS.md` § Signing keys.
-- **Grace period is 30 days; server re-validation interval is 7 days** (`OFFLINE_GRACE_PERIOD_SECS`,
-  `VALIDATION_INTERVAL_SECS` in `app_status.rs`). After the grace window with no successful validation, status reverts to
-  Personal.
-- **Verify/commit split keeps invalid keys off disk.** Frontend calls verify (nothing stored), validates with the
-  server, and only `commit_license` persists. Don't reintroduce a path that stores the key before server validation:
-  that's the bug this split fixed (invalid key persisting on force-quit). `commit_license` writes `license.json` + the
-  initial `cached_license_status` + updates `LICENSE_CACHE`, but deliberately NOT `last_validation_timestamp` (so
-  `needs_validation()` stays true until a real validation lands).
-- **`validate_with_server` returns `ValidationOutcome`, not `Option`.** `UpstreamError` (HTTP 502, Paddle unreachable)
-  and `NetworkError` must fall back to cached status WITHOUT overwriting it; only `Success` (even `status: "invalid"`) is
-  definitive and cached. Collapsing these to `None` lets a transient Paddle outage overwrite a cached "active".
-- **`validate_license_async` returns `Result<AppStatus, String>`, not bare `AppStatus`.** The `Err` lets the frontend
-  distinguish "server rejected the key" (`Ok(Personal)`) from "couldn't reach the server" (`Err`); without it the
-  frontend's catch never fires and stale `Personal` reads as a rejection.
-- **`validate_license_async` is single-flight with a 60 s failure cooldown.** A static `tokio::sync::Mutex` serializes
-  validations; periodic re-validation (`transaction_id == None`) short-circuits when another caller just succeeded or the
-  last attempt failed under 60 s ago. Explicit activation (`transaction_id == Some`) always goes through (the user is
-  waiting). The network-error log lives only in `validation_client.rs`; don't log it a second time here.
-- **Two-layer cache**: in-memory `LICENSE_CACHE: Mutex<Option<LicenseInfo>>` (avoids re-verifying per call) + on-disk
-  `license.json` via `tauri-plugin-store` (persists server result across sessions).
-- **`CMDR_MOCK_LICENSE` bypasses ALL license logic including server calls** (debug and `playwright-e2e` builds only,
-  neither of which ships). Values: `personal`,
-  `personal_reminder`, `commercial`, `perpetual`, `expired`, `expired_no_modal`.
-- **`should_show_commercial_reminder` starts the 30-day timer on first call, it doesn't show immediately.** Showing it on
-  first launch would be a hostile first impression.
+- **Unreachability alone never downgrades a valid signed license.** Perpetual: valid forever, changed only by a verified
+  `invalid`/`expired`. Dated key: its signed `expiresAt`. Renewing subscription: last reported period end + 30 days.
+  Rules and every hostile case: `DETAILS.md` § Offline policy. ❌ Never reintroduce an age limit on a perpetual license.
+- **Only a signed answer counts.** The server signs `/validate` with the license key over our nonce and transaction id
+  (prefix `cmdr-validation-answer-v1\n`, matching `api-server/src/licensing/license.ts`). Anything unsigned, forged,
+  replayed, or mismatched is `ValidationOutcome::Unverified` and keeps the cache, exactly like `NetworkError` and
+  `UpstreamError`.
+- **`PUBLIC_KEY_HEX` and `LICENSE_SERVER_URL` share the `debug_assertions` gate.** Each build trusts only its own server's
+  signer. ❌ Never put the production private key in `apps/api-server/.dev.vars`. `DETAILS.md` § Signing keys.
+- **Verify/commit split keeps invalid keys off disk.** Verify (nothing stored) → validate → `commit_license`.
+  `commit_license` deliberately skips `last_validation_timestamp`, so `needs_validation()` stays true.
+- **`validate_license_async` returns `Result`**: `Err` means "couldn't get a trustworthy answer", `Ok(Personal)` means
+  "the server rejected it". Single-flight with a 60 s failure cooldown for periodic runs; explicit activation always
+  goes through.
+- **Time-limited licenses use `effective_now`** (the later of the clock and `license_clock_high_water`), so winding the
+  clock back can't stretch one. Perpetual licenses never read the clock.
+- **`CMDR_MOCK_LICENSE` bypasses everything** (debug and `playwright-e2e` builds only): `personal`, `personal_reminder`,
+  `commercial`, `perpetual`, `expired`, `expired_no_modal`.
+- **`should_show_commercial_reminder` starts its 30-day timer on first call** rather than showing on day one.
 
 ## Types
 
-- `AppStatus`: `Personal { show_commercial_reminder }`, `Commercial { license_type, organization_name, expires_at }`,
-  `Expired { organization_name, expired_at, show_modal }`.
+- `AppStatus`: `Personal`, `Commercial { license_type, organization_name, expires_at }`, `Expired`.
 - `LicenseType`: `CommercialSubscription`, `CommercialPerpetual`.
-- Short codes: `CMDR-XXXX-XXXX-XXXX`, exchanged server-side for the full crypto key (too short to embed an Ed25519 sig).
+- Short codes `CMDR-XXXX-XXXX-XXXX` are exchanged by `/activate` for the full key; the license email carries both, and
+  the full key activates offline.
 
-Key generation / test-key setup: see `apps/api-server/CLAUDE.md` and `README.md#first-time-setup`.
-
-Full details (activation flow diagram, BSL model rationale, all decisions and gotchas): `DETAILS.md`.
+Activation flow, signing keys, offline policy, decisions, and gotchas: `DETAILS.md`.

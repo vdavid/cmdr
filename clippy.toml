@@ -18,6 +18,13 @@ disallowed-methods = [
   { path = "tauri::menu::MenuBuilder::native_icon", reason = "builds an `IconMenuItem`, whose image macOS 27 hides; set it through `set_menu_item_image`" },
   { path = "tauri::menu::SubmenuBuilder::icon", reason = "builds an `IconMenuItem`, whose image macOS 27 hides; set it through `set_menu_item_image`" },
   { path = "tauri::menu::SubmenuBuilder::native_icon", reason = "builds an `IconMenuItem`, whose image macOS 27 hides; set it through `set_menu_item_image`" },
+  # Every HTTP client goes through `cmdr_http::client_builder()`, which routes by the macOS proxy
+  # settings, PAC, and bypass list, and never proxies loopback. A bare reqwest client would proxy
+  # `127.0.0.1` and ignore PAC. See `crates/cmdr-http/CLAUDE.md`.
+  { path = "reqwest::Client::new", reason = "build HTTP clients with `cmdr_http::client_builder()`, which owns proxy routing" },
+  { path = "reqwest::Client::builder", reason = "build HTTP clients with `cmdr_http::client_builder()`, which owns proxy routing" },
+  { path = "reqwest::ClientBuilder::new", reason = "build HTTP clients with `cmdr_http::client_builder()`, which owns proxy routing" },
+  { path = "reqwest::get", reason = "build HTTP clients with `cmdr_http::client_builder()`, which owns proxy routing" },
 ]
 disallowed-types = [
   { path = "tauri::menu::IconMenuItem", reason = "macOS 27 hides its image; build a plain item and set the image through `menu::macos_appkit::set_menu_item_image`" },

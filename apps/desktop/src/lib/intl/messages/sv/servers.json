@@ -84,6 +84,22 @@
   "@servers.hub.editNearbyHint": {
     "sourceHash": "64653de"
   },
+  "servers.hub.s3AllBuckets": "Alla bucketar",
+  "@servers.hub.s3AllBuckets": {
+    "sourceHash": "2a5828a"
+  },
+  "servers.hub.openAccountHint": "Kontot {name} är ingen plats att öppna. Öppna en bucket under kontot i stället.",
+  "@servers.hub.openAccountHint": {
+    "sourceHash": "c52ee6f"
+  },
+  "servers.hub.forgetAccountConfirm": "Glöm {name} och varje bucket som är sparad under kontot? Cmdr släpper anslutningarna och slutar visa kontot och dess bucketar i listan. Dina filer ligger kvar i bucketarna.",
+  "@servers.hub.forgetAccountConfirm": {
+    "sourceHash": "e1c636e"
+  },
+  "servers.hub.forgetSecretKeyToo": "Glöm även kontots hemliga åtkomstnyckel",
+  "@servers.hub.forgetSecretKeyToo": {
+    "sourceHash": "4f3ac6d"
+  },
   "servers.hub.forgetShare": "Glöm den delade mappen",
   "@servers.hub.forgetShare": {
     "sourceHash": "8888a9d"
@@ -95,6 +111,10 @@
   "servers.hub.forgetShareConfirm": "Glöm {name}? Cmdr slutar visa den delade mappen i listan. Om mappen är monterad förblir den monterad. Dina filer ligger kvar på servern.",
   "@servers.hub.forgetShareConfirm": {
     "sourceHash": "8c14aaa"
+  },
+  "servers.hub.nearbyGroup": "{count, plural, one {{countText} server hittad i närheten} other {{countText} servrar hittade i närheten}}",
+  "@servers.hub.nearbyGroup": {
+    "sourceHash": "cd7a44d"
   },
   "servers.hub.discoveryOff": "Sökning i det lokala nätverket är avstängd.",
   "@servers.hub.discoveryOff": {
@@ -172,6 +192,10 @@
   "@servers.refusal.unreachable": {
     "sourceHash": "6fcba90"
   },
+  "servers.refusal.localNetworkHint": "Om servern är påslagen, kontrollera att Cmdr tillåts under {localNetwork}.",
+  "@servers.refusal.localNetworkHint": {
+    "sourceHash": "baa1753"
+  },
   "servers.refusal.hostKeyUntrusted": "Cmdr litar inte på nyckeln från {host} än.",
   "@servers.refusal.hostKeyUntrusted": {
     "sourceHash": "83dc719"
@@ -207,6 +231,62 @@
   "servers.refusal.savedSecretNotUpdated": "Cmdr sparade dina ändringar men kunde inte uppdatera lösenordet i nyckelringen. Spara igen för att försöka en gång till.",
   "@servers.refusal.savedSecretNotUpdated": {
     "sourceHash": "2ae1e2b"
+  },
+  "servers.refusal.s3AuthenticationRejected": "Den hemliga åtkomstnyckeln fungerade inte.",
+  "@servers.refusal.s3AuthenticationRejected": {
+    "sourceHash": "14f90c8"
+  },
+  "servers.refusal.s3NeedsCredentials": "Det här kontot vill ha en hemlig åtkomstnyckel.",
+  "@servers.refusal.s3NeedsCredentials": {
+    "sourceHash": "23695df"
+  },
+  "servers.refusal.s3SecretMissing": "Ange den hemliga åtkomstnyckeln.",
+  "@servers.refusal.s3SecretMissing": {
+    "sourceHash": "f1f32f2"
+  },
+  "servers.refusal.s3SecretNotStored": "Cmdr kunde inte spara den här hemliga åtkomstnyckeln i nyckelringen. Försök igen eller stäng av ”Kom ihåg i nyckelringen” för att logga in utan att spara den.",
+  "@servers.refusal.s3SecretNotStored": {
+    "sourceHash": "f7a9fb0"
+  },
+  "servers.refusal.s3SavedSecretNotUpdated": "Cmdr sparade dina ändringar men kunde inte uppdatera den hemliga åtkomstnyckeln i nyckelringen. Spara igen för att försöka en gång till.",
+  "@servers.refusal.s3SavedSecretNotUpdated": {
+    "sourceHash": "1d2889d"
+  },
+  "servers.refusal.accessDenied": "Den här nyckeln kommer inte åt den här bucketen. Kontrollera bucketnamnet och den hemliga åtkomstnyckeln, och att nyckeln får läsa bucketen.",
+  "@servers.refusal.accessDenied": {
+    "sourceHash": "8372e73"
+  },
+  "servers.refusal.bucketListRefused": "Den här nyckeln kan inte lista bucketarna på det här kontot. Skriv namnet på en bucket för att öppna just den, eller kontrollera den hemliga åtkomstnyckeln.",
+  "@servers.refusal.bucketListRefused": {
+    "sourceHash": "1b9ebf5"
+  },
+  "servers.refusal.bucketNotFound": "Det finns ingen bucket med det namnet på {host}.",
+  "@servers.refusal.bucketNotFound": {
+    "sourceHash": "0f5a04d"
+  },
+  "servers.refusal.regionMismatch": "Den här bucketen ligger i en annan region. Välj bucketens region och försök igen.",
+  "@servers.refusal.regionMismatch": {
+    "sourceHash": "27a37f8"
+  },
+  "servers.refusal.regionMismatchNamed": "Den här bucketen ligger i {region}. Välj den regionen och försök igen.",
+  "@servers.refusal.regionMismatchNamed": {
+    "sourceHash": "30abb0d"
+  },
+  "servers.refusal.clockSkewed": "Klockan på den här Macen går fel med mer än 15 minuter, så servern godtar inte Cmdrs förfrågningar. Slå på ”Ställ in tid och datum automatiskt” i Systeminställningar och försök sedan igen.",
+  "@servers.refusal.clockSkewed": {
+    "sourceHash": "cdee0ef"
+  },
+  "servers.refusal.notAnS3Endpoint": "Ingenting på den här adressen svarar som S3-lagring.",
+  "@servers.refusal.notAnS3Endpoint": {
+    "sourceHash": "78557ec"
+  },
+  "servers.refusal.s3FieldMalformed": "Använd bara små bokstäver, siffror och bindestreck här.",
+  "@servers.refusal.s3FieldMalformed": {
+    "sourceHash": "ac8fbea"
+  },
+  "servers.refusal.endpointMalformed": "Ange slutpunkten som http:// eller https:// följt av ett värdnamn, till exempel https://s3.example.com.",
+  "@servers.refusal.endpointMalformed": {
+    "sourceHash": "beb63dd"
   },
   "servers.sheet.addTitle": "Lägg till server",
   "@servers.sheet.addTitle": {
@@ -324,6 +404,10 @@
   "@servers.sheet.password": {
     "sourceHash": "e7cf3ef"
   },
+  "servers.sheet.secretKeptPlaceholder": "Sparat i nyckelringen. Lämna fältet tomt för att behålla det.",
+  "@servers.sheet.secretKeptPlaceholder": {
+    "sourceHash": "8711f6c"
+  },
   "servers.sheet.smbUsernamePlaceholder": "Valfritt",
   "@servers.sheet.smbUsernamePlaceholder": {
     "sourceHash": "59be713"
@@ -359,6 +443,124 @@
   "servers.sheet.name": "Namn",
   "@servers.sheet.name": {
     "sourceHash": "dcd1d52"
+  },
+  "servers.sheet.protocolS3": "S3",
+  "@servers.sheet.protocolS3": {
+    "sourceHash": "44d6a8a",
+    "sameAsSourceJustification": "S3 is a protocol name and stays verbatim in Swedish, like the sibling protocolSmb / protocolSftp / protocolWebdav options. Deliberately identical."
+  },
+  "servers.sheet.s3Provider": "Leverantör",
+  "@servers.sheet.s3Provider": {
+    "sourceHash": "472590a"
+  },
+  "servers.sheet.s3ProviderAws": "Amazon S3",
+  "@servers.sheet.s3ProviderAws": {
+    "sourceHash": "a4f6352",
+    "sameAsSourceJustification": "Amazon S3 is a product name and stays verbatim in Swedish, as the key description asks. Deliberately identical."
+  },
+  "servers.sheet.s3ProviderR2": "Cloudflare R2",
+  "@servers.sheet.s3ProviderR2": {
+    "sourceHash": "9f2f1ed",
+    "sameAsSourceJustification": "Cloudflare R2 is a product name and stays verbatim in Swedish, as the key description asks. Deliberately identical."
+  },
+  "servers.sheet.s3ProviderB2": "Backblaze B2",
+  "@servers.sheet.s3ProviderB2": {
+    "sourceHash": "ed40187",
+    "sameAsSourceJustification": "Backblaze B2 is a product name and stays verbatim in Swedish, as the key description asks. Deliberately identical."
+  },
+  "servers.sheet.s3ProviderWasabi": "Wasabi",
+  "@servers.sheet.s3ProviderWasabi": {
+    "sourceHash": "493861e",
+    "sameAsSourceJustification": "Wasabi is a product name and stays verbatim in Swedish, as the key description asks. Deliberately identical."
+  },
+  "servers.sheet.s3ProviderHetzner": "Hetzner Object Storage",
+  "@servers.sheet.s3ProviderHetzner": {
+    "sourceHash": "a339b4f",
+    "sameAsSourceJustification": "Hetzner Object Storage is a product name and stays verbatim in Swedish, as the key description asks. Deliberately identical."
+  },
+  "servers.sheet.s3ProviderGcs": "Google Cloud Storage",
+  "@servers.sheet.s3ProviderGcs": {
+    "sourceHash": "53fa0ba",
+    "sameAsSourceJustification": "Google Cloud Storage is a product name and stays verbatim in Swedish, as the key description asks. Deliberately identical."
+  },
+  "servers.sheet.s3ProviderDigitalOcean": "DigitalOcean Spaces",
+  "@servers.sheet.s3ProviderDigitalOcean": {
+    "sourceHash": "c3f48e3",
+    "sameAsSourceJustification": "DigitalOcean Spaces is a product name and stays verbatim in Swedish, as the key description asks. Deliberately identical."
+  },
+  "servers.sheet.s3GcsKeyHelp": "Logga in med en HMAC-nyckel från fliken Interoperabilitet i dina Cloud Storage-inställningar.",
+  "@servers.sheet.s3GcsKeyHelp": {
+    "sourceHash": "acb72a4"
+  },
+  "servers.sheet.s3ProviderOther": "Annan S3-kompatibel",
+  "@servers.sheet.s3ProviderOther": {
+    "sourceHash": "13d2bdc"
+  },
+  "servers.sheet.s3Region": "Region",
+  "@servers.sheet.s3Region": {
+    "sourceHash": "d3a008e",
+    "sameAsSourceJustification": "region is region in Swedish: MS terminology (State/Province UI field → Region) and the Swedish cloud consoles (Azure, Google Cloud) label the field Region. Deliberately identical."
+  },
+  "servers.sheet.s3RegionOptionalPlaceholder": "Valfritt. Lämna tomt för att använda us-east-1",
+  "@servers.sheet.s3RegionOptionalPlaceholder": {
+    "sourceHash": "12dd731"
+  },
+  "servers.sheet.s3AccountId": "Konto-ID",
+  "@servers.sheet.s3AccountId": {
+    "sourceHash": "919bb4c"
+  },
+  "servers.sheet.s3AccountIdHelp": "Konto-ID:t står på översiktssidan för Cloudflare R2.",
+  "@servers.sheet.s3AccountIdHelp": {
+    "sourceHash": "963d1f5"
+  },
+  "servers.sheet.s3Location": "Plats",
+  "@servers.sheet.s3Location": {
+    "sourceHash": "15b6197"
+  },
+  "servers.sheet.s3Endpoint": "Slutpunkt",
+  "@servers.sheet.s3Endpoint": {
+    "sourceHash": "3df9726"
+  },
+  "servers.sheet.s3PathStyle": "Använd sökvägsbaserad adressering (path-style)",
+  "@servers.sheet.s3PathStyle": {
+    "sourceHash": "627c522"
+  },
+  "servers.sheet.s3PathStyleHelp": "De flesta servrar som du kör själv, som MinIO och Garage, behöver det här.",
+  "@servers.sheet.s3PathStyleHelp": {
+    "sourceHash": "bc6e240"
+  },
+  "servers.sheet.s3Bucket": "Bucket",
+  "@servers.sheet.s3Bucket": {
+    "sourceHash": "c83b657",
+    "sameAsSourceJustification": "MS terminology renders the storage container bucket → bucket in Swedish, and Swedish cloud consoles keep the word; sv/terms.json bucket ruling. Deliberately identical."
+  },
+  "servers.sheet.s3BucketHelp": "Lämna fältet tomt för att se alla bucketar. Om din nyckel är begränsad till en bucket skriver du in dess namn.",
+  "@servers.sheet.s3BucketHelp": {
+    "sourceHash": "8d380d9"
+  },
+  "servers.sheet.s3UseRegion": "Använd {region}",
+  "@servers.sheet.s3UseRegion": {
+    "sourceHash": "5734184"
+  },
+  "servers.sheet.accessKeyId": "Åtkomstnyckel-ID",
+  "@servers.sheet.accessKeyId": {
+    "sourceHash": "14eb0f9"
+  },
+  "servers.sheet.secretAccessKey": "Hemlig åtkomstnyckel",
+  "@servers.sheet.secretAccessKey": {
+    "sourceHash": "3de6b75"
+  },
+  "servers.sheet.examplePlaceholder": "Exempel: {example}",
+  "@servers.sheet.examplePlaceholder": {
+    "sourceHash": "9c7df45"
+  },
+  "servers.sheet.identityLockedS3": "Leverantören, åtkomstnyckel-ID:t och bucketen är det som identifierar den här platsen. Glöm platsen och lägg till den igen om du vill ändra dem.",
+  "@servers.sheet.identityLockedS3": {
+    "sourceHash": "fe4d469"
+  },
+  "servers.sheet.identityLockedS3Account": "Leverantören och åtkomstnyckel-ID:t är det som identifierar det här kontot. Glöm kontot och lägg till det igen om du vill ändra dem.",
+  "@servers.sheet.identityLockedS3Account": {
+    "sourceHash": "e03a769"
   },
   "servers.sheet.namePlaceholder": "Lämna tomt för att använda {label}",
   "@servers.sheet.namePlaceholder": {
@@ -452,6 +654,10 @@
   "@servers.paneState.notConnected": {
     "sourceHash": "5020fac"
   },
+  "servers.paneState.unreachable": "Cmdr kunde inte nå {name}.",
+  "@servers.paneState.unreachable": {
+    "sourceHash": "a7bc9bc"
+  },
   "servers.paneState.goBack": "Gå bakåt",
   "@servers.paneState.goBack": {
     "sourceHash": "6aadac2"
@@ -464,9 +670,13 @@
   "@servers.paneState.hostKeyChanged": {
     "sourceHash": "c73ddf3"
   },
-  "servers.paneState.hostKeyChangedHint": "Serverns nyckel har ändrats. Det kan betyda att servern har installerats om, eller att något sitter mellan dig och den. Koppla från och öppna servern igen för att kontrollera fingeravtrycket.",
+  "servers.paneState.hostKeyChangedHint": "Serverns nyckel har ändrats. Det kan betyda att servern har installerats om, eller att något sitter mellan dig och den. Kontrollera den nya nyckeln innan du ansluter igen.",
   "@servers.paneState.hostKeyChangedHint": {
-    "sourceHash": "923de62"
+    "sourceHash": "866b619"
+  },
+  "servers.paneState.checkHostKey": "Kontrollera nyckeln",
+  "@servers.paneState.checkHostKey": {
+    "sourceHash": "fefa256"
   },
   "servers.paneState.reconnecting": "Återansluter till {name}…",
   "@servers.paneState.reconnecting": {

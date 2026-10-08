@@ -74,6 +74,7 @@
     import { SOFT_DIALOG_REGISTRY } from '$lib/ui/dialog-registry'
     import { isAnySoftDialogOpen } from '$lib/ui/open-dialogs.svelte'
     import { notifyOnboardingComplete, setOnboardingShowing } from '$lib/updates/updater.svelte'
+    import { setWizardShowingForDownloadNotice } from '$lib/onboarding/local-download-notice'
     import { initSystemStrings } from '$lib/system-strings.svelte'
     import { getShowFunctionKeyBar } from '$lib/settings/reactive-settings.svelte'
     import { revealSearchResultInPane } from '$lib/file-explorer/navigation/navigate-and-select'
@@ -302,13 +303,14 @@
     }
 
     /**
-     * Flips the wizard's visibility. The updater reads its own mirror of the flag
-     * (to hold the update toast back while onboarding is up), so the two always
-     * move together; every wizard open and close goes through here.
+     * Flips the wizard's visibility. The updater and the local-AI download notice each
+     * read their own mirror of the flag (to hold their toast back while onboarding is up),
+     * so all three always move together; every wizard open and close goes through here.
      */
     function setOnboardingVisible(visible: boolean): void {
         showOnboarding = visible
         setOnboardingShowing(visible)
+        setWizardShowingForDownloadNotice(visible)
     }
 
     /**

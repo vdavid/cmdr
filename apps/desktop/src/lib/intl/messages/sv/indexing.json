@@ -14,7 +14,7 @@
   },
   "indexing.scan.counters": "{entriesText} {entries, plural, one {post} other {poster}}, {dirsText} {dirs, plural, one {mapp} other {mappar}}",
   "@indexing.scan.counters": {
-    "sourceHash": "f635790"
+    "sourceHash": "ecf47f2"
   },
   "indexing.scan.countersElapsed": "{counters} · {elapsed}",
   "@indexing.scan.countersElapsed": {
@@ -133,9 +133,21 @@
   "@indexing.progress.percentEta": {
     "sourceHash": "26b29da"
   },
+  "indexing.overall.eta": "Totalt: {eta}",
+  "@indexing.overall.eta": {
+    "sourceHash": "a9a2ffc"
+  },
+  "indexing.overall.estimating": "Totalt: beräknar…",
+  "@indexing.overall.estimating": {
+    "sourceHash": "9dac967"
+  },
   "indexing.eta.almostDone": "Snart klar",
   "@indexing.eta.almostDone": {
     "sourceHash": "506f162"
+  },
+  "indexing.eta.almostDoneMidSentence": "snart klar",
+  "@indexing.eta.almostDoneMidSentence": {
+    "sourceHash": "1d2fb48"
   },
   "indexing.eta.secondsLeft": "{secondsText} s kvar",
   "@indexing.eta.secondsLeft": {
@@ -188,6 +200,10 @@
   "indexing.needsFreshScan.afterDisconnect": "{name} kopplades från medan Cmdr uppdaterade indexet. Nästa genomsökning av enheten startar från början, så att mappstorlekarna stämmer igen.",
   "@indexing.needsFreshScan.afterDisconnect": {
     "sourceHash": "a90dbdf"
+  },
+  "indexing.memoryStop.paused": "Cmdr pausade enhetsindexeringen eftersom Cmdr använde för mycket minne. Mappstorlekarna kan vara inaktuella tills du startar om Cmdr.",
+  "@indexing.memoryStop.paused": {
+    "sourceHash": "32d225a"
   },
   "indexing.firstConnect.title": "Indexera {name}?",
   "@indexing.firstConnect.title": {

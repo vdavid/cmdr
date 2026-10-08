@@ -274,6 +274,10 @@ pub fn os_join(mount_root: &str, index_relative: &str) -> String {
 /// itself (the whole volume); the OS folder passes through unchanged on a `root`/local
 /// volume (mount root `/`). `None` when the folder isn't under this volume's mount at
 /// all (a different volume) — the caller skips it.
+///
+/// The mount root matches with the same case and Unicode folding as the exclusion veto
+/// (`config::path_is_within`), one component at a time: folding can change a component's
+/// byte length but never adds or removes a `/`, so the rest keeps the folder's own bytes.
 pub(crate) fn os_folder_to_index_prefix(folder: &str, mount_root: &str) -> Option<String> {
     if mount_root == "/" || mount_root.is_empty() {
         return Some(folder.to_string());
@@ -282,10 +286,23 @@ pub(crate) fn os_folder_to_index_prefix(folder: &str, mount_root: &str) -> Optio
     if folder == trimmed {
         return Some(String::new());
     }
-    folder
-        .strip_prefix(trimmed)
-        .filter(|rest| rest.starts_with('/'))
-        .map(|rest| rest.to_string())
+    if let Some(rest) = folder.strip_prefix(trimmed).filter(|rest| rest.starts_with('/')) {
+        return Some(rest.to_string());
+    }
+    let fold = crate::indexing::store::normalize_for_comparison;
+    let mut folder_parts = folder.split('/');
+    for root_part in trimmed.split('/') {
+        let folder_part = folder_parts.next()?;
+        if folder_part != root_part && fold(folder_part) != fold(root_part) {
+            return None;
+        }
+    }
+    let rest: Vec<&str> = folder_parts.collect();
+    Some(if rest.is_empty() {
+        String::new()
+    } else {
+        format!("/{}", rest.join("/"))
+    })
 }
 
 /// A scripted fetcher for tests: maps an OS path to bytes, or to a disconnect, so the
@@ -383,6 +400,33 @@ mod tests {
         assert_eq!(os_folder_to_index_prefix("/Volumes/other/x", "/Volumes/naspi"), None);
         // A name-prefix sibling is NOT within the mount.
         assert_eq!(os_folder_to_index_prefix("/Volumes/naspi2/x", "/Volumes/naspi"), None);
+    }
+
+    /// The exclusion veto already matches a folder against the mount root with the
+    /// platform's case and Unicode folding (`path_is_within`); the purge has to fold the
+    /// same way, or an exclusion spelled differently from the mount root is honored by
+    /// every search while its stored rows stay on disk. The stored rest keeps the
+    /// folder's own spelling.
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn os_folder_to_index_prefix_folds_the_mount_root_like_the_veto() {
+        assert_eq!(
+            os_folder_to_index_prefix("/Volumes/NASPI/Photos", "/Volumes/naspi"),
+            Some("/Photos".to_string()),
+            "a mount root differing only in case"
+        );
+        // "Fotók" in NFC (precomposed ó) against a mount root in NFD (o + combining acute).
+        assert_eq!(
+            os_folder_to_index_prefix("/Volumes/Fot\u{f3}k/Kép", "/Volumes/Foto\u{301}k"),
+            Some("/Kép".to_string()),
+            "a mount root differing only in Unicode form"
+        );
+        assert_eq!(
+            os_folder_to_index_prefix("/volumes/Naspi", "/Volumes/naspi/"),
+            Some(String::new()),
+            "the mount root itself, folded"
+        );
+        assert_eq!(os_folder_to_index_prefix("/Volumes/NASPI2/x", "/Volumes/naspi"), None);
     }
 
     #[test]
@@ -602,6 +646,10 @@ mod tests {
             }
             fn bytes_read(&self) -> u64 {
                 if self.sent { 1024 } else { 0 }
+            }
+
+            fn modified_at(&self) -> Option<std::time::SystemTime> {
+                None
             }
         }
 

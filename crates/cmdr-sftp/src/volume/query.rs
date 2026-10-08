@@ -2,14 +2,14 @@
 use std::path::Path;
 
 use cmdr_fs::entry::FileEntry;
-use cmdr_fs::volume::{EntryKind, ListingProgress, VolumeError};
+use cmdr_fs::volume::{EntryKind, ListingProgress, SpaceInfo, VolumeError};
 use openssh_sftp_client::fs::DirEntry;
 use tokio_util::sync::CancellationToken;
 
 use super::SftpVolume;
 use cmdr_fs::volume::remote_paths::RemoteRoot;
 
-use super::mapping::metadata_to_file_entry;
+use super::mapping::{metadata_to_file_entry, statvfs_to_space_info};
 use crate::errors::map_sftp_error;
 
 // ⚠️ **A filename that isn't UTF-8 costs the SESSION, not just the listing.**
@@ -96,11 +96,11 @@ impl SftpVolume {
             .file_name()
             .map(|n| n.to_string_lossy().into_owned())
             .unwrap_or_else(|| self.name.clone());
-        Ok(metadata_to_file_entry(
-            &name,
-            &self.root.to_app_path(&remote).to_string_lossy(),
-            &meta,
-        ))
+        let app_path = self
+            .root
+            .to_app_path(&remote)
+            .ok_or_else(|| VolumeError::NotFound(path.to_string_lossy().into_owned()))?;
+        Ok(metadata_to_file_entry(&name, &app_path.to_string_lossy(), &meta))
     }
 
     /// What is AT `path`, with a link reported as the link: one `lstat`.
@@ -123,6 +123,28 @@ impl SftpVolume {
         })
     }
 
+    /// The free and total space of the filesystem holding `path`: one
+    /// `statvfs@openssh.com` round trip.
+    ///
+    /// A server without the extension answers `NotSupported` without touching
+    /// the wire, which callers read as "can't tell", ❌ never "no room".
+    /// Asked per path because one server can hold several filesystems, and a
+    /// copy is judged against the one it lands on.
+    pub(super) async fn space_info_impl(&self, path: &Path) -> Result<SpaceInfo, VolumeError> {
+        let remote = self.to_remote_path(path)?;
+        let session = self.clone_session().await?;
+        if !session.extensions().statvfs {
+            return Err(VolumeError::NotSupported);
+        }
+        let stat = session
+            .sftp()
+            .fs()
+            .statvfs(&remote)
+            .await
+            .map_err(|e| map_sftp_error(&e, &remote))?;
+        Ok(statvfs_to_space_info(&stat))
+    }
+
     /// Whether `path` is there, as a plain yes/no.
     pub(super) async fn exists_impl(&self, path: &Path) -> bool {
         // A path off this volume doesn't exist ON THIS VOLUME, which is the
@@ -132,7 +154,7 @@ impl SftpVolume {
 }
 
 /// One directory entry as a `FileEntry`, or `None` for the two the protocol
-/// includes and a pane never shows.
+/// includes and a pane never shows, and for a name that would land off the root.
 fn file_entry(root: &RemoteRoot, entry: &DirEntry, parent: &str) -> Option<FileEntry> {
     let name = entry.filename().to_string_lossy().into_owned();
     if name == "." || name == ".." {
@@ -143,9 +165,10 @@ fn file_entry(root: &RemoteRoot, entry: &DirEntry, parent: &str) -> Option<FileE
     } else {
         format!("{parent}/{name}")
     };
+    let app_path = root.to_app_path(&remote_path)?;
     Some(metadata_to_file_entry(
         &name,
-        &root.to_app_path(&remote_path).to_string_lossy(),
+        &app_path.to_string_lossy(),
         &entry.metadata(),
     ))
 }

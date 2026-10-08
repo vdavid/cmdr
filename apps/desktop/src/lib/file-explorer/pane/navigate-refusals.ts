@@ -5,7 +5,7 @@
  * contract (L12), byte-pinned by `navigate.refusals.test.ts`.
  */
 import { isAdbVolumeId } from '$lib/adb/adb-path-utils'
-import { isServerPath, isServerVolumeId } from '$lib/servers/server-path-utils'
+import { isServerPath, isServerVolumeId, isUnderServerRoot } from '$lib/servers/server-path-utils'
 
 /** Why a synchronous navigation refused. `message` is the exact current string — contract (L12). */
 export interface NavigateRefusal {
@@ -119,7 +119,7 @@ export function validateAdbNavigation(
 }
 
 /**
- * Server capability check, the ADB twin for an SFTP or WebDAV place: a scheme
+ * Server capability check, the ADB twin for an SFTP, WebDAV, or S3 place: a scheme
  * path is navigable only while the pane sits on the volume rooted at or above
  * it. Returns a refusal or `null`.
  *
@@ -148,9 +148,4 @@ export function validateServerNavigation(
     }
   }
   return null
-}
-
-/** Whether `path` is the volume root or sits under it, matched by whole components. */
-function isUnderServerRoot(volumeRoot: string, path: string): boolean {
-  return path === volumeRoot || path.startsWith(`${volumeRoot}/`)
 }

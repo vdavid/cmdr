@@ -75,7 +75,7 @@ import {
   updateState,
 } from './updater.svelte'
 
-const anUpdate = { version: '0.33.0', url: 'https://example.invalid/Cmdr.tar.gz', signature: 'sig' }
+const anUpdate = { kind: 'available', version: '0.33.0' } as const
 
 describe('an update found on an install that can’t write its own bundle', () => {
   beforeEach(() => {
@@ -99,7 +99,8 @@ describe('an update found on an install that can’t write its own bundle', () =
 
     await checkForUpdates('poll')
 
-    expect(downloadUpdateMock).toHaveBeenCalledWith(anUpdate.url, anUpdate.signature)
+    expect(checkForUpdateMock).toHaveBeenCalledWith('poll')
+    expect(downloadUpdateMock).toHaveBeenCalledWith()
     expect(installUpdateMock).toHaveBeenCalledTimes(1)
     expect(updateState.status).toBe('ready')
     expect(updateBlockerNotice.blocker).toBeNull()
@@ -181,7 +182,7 @@ describe('an update found on an install that can’t write its own bundle', () =
     // Same install, same answer, two entry points. Without `trigger` a run of manual checks (a
     // user hunting for a fix) and the loop ticking are one indistinguishable number.
     await notifyOnboardingComplete()
-    checkForUpdateMock.mockResolvedValue(null)
+    checkForUpdateMock.mockResolvedValue({ kind: 'upToDate' })
 
     await checkForUpdates('poll')
     await checkForUpdates('command')
@@ -222,7 +223,7 @@ describe('what set a check going', () => {
   beforeEach(() => {
     _resetUpdaterStateForTest()
     checkForUpdateMock.mockReset()
-    checkForUpdateMock.mockResolvedValue(null)
+    checkForUpdateMock.mockResolvedValue({ kind: 'upToDate' })
     updateWriteBlockerMock.mockReset()
     updateWriteBlockerMock.mockResolvedValue(null)
     trackEventMock.mockClear()

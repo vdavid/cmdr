@@ -1,8 +1,9 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { createTestHarness } from 'wrangler'
 import * as ed from '@noble/ed25519'
-import { isValidShortCode, type LicenseData } from './license'
+import { isValidShortCode, validationAnswerSignaturePrefix, type LicenseData } from './license'
 import type { LicenseListing } from './admin-licenses'
+import type { ValidationResponse } from './paddle-api'
 import { issuanceStaleAfterMs } from './license-issuance'
 
 /**
@@ -97,6 +98,12 @@ async function stubbedFetch(input: RequestInfo | URL, init?: RequestInit): Promi
   if (url.startsWith('https://api.paddle.com/customers/')) {
     return Response.json({ data: paddleCustomer })
   }
+  // Every transaction is a completed one-time purchase, which Paddle keeps answering for after a
+  // refund: the refund is an adjustment beside the transaction, never a change to it.
+  if (url.startsWith('https://api.paddle.com/transactions/')) {
+    const id = url.slice('https://api.paddle.com/transactions/'.length)
+    return Response.json({ data: { id, status: 'completed', customer_id: 'ctm_01hv8x', custom_data: null } })
+  }
   if (url === 'https://api.resend.com/emails') {
     return await answerResend(await requestBody(input, init))
   }
@@ -144,7 +151,7 @@ function holdEmail(): { release: () => void } {
   }
 }
 
-async function sign(body: string, timestamp = '1704700000'): Promise<string> {
+async function sign(body: string, timestamp = String(Math.floor(Date.now() / 1000))): Promise<string> {
   const encoder = new TextEncoder()
   const key = await crypto.subtle.importKey(
     'raw',
@@ -397,6 +404,203 @@ describe('redelivering a purchase in the Worker runtime', () => {
     } finally {
       held.release()
     }
+  })
+})
+
+/** Deliver a signed adjustment event, the way Paddle does on a refund or a chargeback. */
+async function deliverAdjustment(params: {
+  transactionId: string
+  adjustmentId: string
+  eventType?: 'adjustment.created' | 'adjustment.updated'
+  action?: string
+  type?: 'full' | 'partial'
+  status?: string
+  updatedAt?: string
+}): Promise<Delivery> {
+  const body = JSON.stringify({
+    event_id: `evt_${params.adjustmentId}_${params.status ?? 'approved'}`,
+    event_type: params.eventType ?? 'adjustment.created',
+    occurred_at: params.updatedAt ?? new Date().toISOString(),
+    data: {
+      id: params.adjustmentId,
+      transaction_id: params.transactionId,
+      action: params.action ?? 'refund',
+      type: params.type ?? 'full',
+      status: params.status ?? 'approved',
+      reason: 'requested_by_customer',
+      totals: { total: '6900', currency_code: 'USD' },
+      updated_at: params.updatedAt ?? new Date().toISOString(),
+    },
+  })
+  const response = await server.fetch('http://api.getcmdr.com/webhook/paddle', {
+    method: 'POST',
+    headers: { 'Paddle-Signature': await sign(body), 'Content-Type': 'application/json' },
+    body,
+  })
+  const text = await response.text()
+  return { status: response.status, text, body: parseDeliveryBody(text) }
+}
+
+type ValidateBody = Partial<ValidationResponse> & { signedAnswer?: { payload: string; signature: string } }
+
+async function validate(transactionId: string, nonce?: string): Promise<{ status: number; body: ValidateBody }> {
+  const response = await server.fetch('http://api.getcmdr.com/validate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ transactionId, nonce }),
+  })
+  return { status: response.status, body: JSON.parse(await response.text()) as ValidateBody }
+}
+
+async function listLicenses(): Promise<LicenseListing> {
+  const response = await server.fetch('http://api.getcmdr.com/admin/licenses', {
+    headers: { Authorization: `Bearer ${adminToken}` },
+  })
+  return JSON.parse(await response.text()) as LicenseListing
+}
+
+/** Buy a perpetual license and return its codes. */
+async function buy(transactionId: string, quantity = 1): Promise<string[]> {
+  const before = await storedCodes()
+  const delivery = await deliver({ transactionId, quantity })
+  expect(delivery.status, `Body: ${delivery.text}\nWorker logs:\n${workerLogs()}`).toBe(200)
+  return (await storedCodes()).filter((code) => !before.includes(code))
+}
+
+/**
+ * A refund in Paddle is an adjustment that leaves the transaction completed, so `/validate` asking
+ * Paddle would keep answering `active` for a refunded perpetual license forever. The adjustment
+ * webhook writes the refund into our ledger, and `/validate` honors it with a SIGNED `invalid`,
+ * which is the only answer that takes a license off a Mac.
+ */
+describe('refunding a purchase in the Worker runtime', () => {
+  it('revokes a fully refunded perpetual license with a signed answer, and stops its codes activating', async () => {
+    const transactionId = 'txn_refund_full'
+    const codes = await buy(transactionId, 2)
+    expect((await validate(`${transactionId}-1`)).body.status).toBe('active')
+
+    const refund = await deliverAdjustment({ transactionId, adjustmentId: 'adj_refund_full' })
+
+    expect(refund.status, `Body: ${refund.text}\nWorker logs:\n${workerLogs()}`).toBe(200)
+    const nonce = 'aaaabbbbccccdddd0000111122223333'
+    for (const seat of [`${transactionId}-1`, `${transactionId}-2`]) {
+      const { status, body } = await validate(seat, nonce)
+      expect(status).toBe(200)
+      expect(body.status).toBe('invalid')
+      const payloadBytes = base64ToBytes(body.signedAnswer?.payload ?? '')
+      const prefixed = new Uint8Array([...new TextEncoder().encode(validationAnswerSignaturePrefix), ...payloadBytes])
+      const publicKey = await ed.getPublicKeyAsync(privateKey)
+      expect(await ed.verifyAsync(base64ToBytes(body.signedAnswer?.signature ?? ''), prefixed, publicKey)).toBe(true)
+      expect(JSON.parse(new TextDecoder().decode(payloadBytes))).toMatchObject({
+        transactionId: seat,
+        status: 'invalid',
+      })
+    }
+    const remaining = await storedCodes()
+    expect(codes.filter((code) => remaining.includes(code))).toEqual([])
+
+    const listed = (await listLicenses()).licenses.find((license) => license.transactionId === transactionId)
+    expect(listed?.state).toBe('revoked')
+    expect(listed?.adjustments).toMatchObject([
+      { adjustmentId: 'adj_refund_full', action: 'refund', type: 'full', status: 'approved', revokes: true },
+    ])
+  })
+
+  it('takes a redelivered refund as already done', async () => {
+    const transactionId = 'txn_refund_redelivered'
+    await buy(transactionId)
+    await deliverAdjustment({ transactionId, adjustmentId: 'adj_refund_twice' })
+    const revokedAt = (await listLicenses()).licenses.find(
+      (license) => license.transactionId === transactionId,
+    )?.revokedAt
+
+    const again = await deliverAdjustment({ transactionId, adjustmentId: 'adj_refund_twice' })
+
+    expect(again.status).toBe(200)
+    const listed = (await listLicenses()).licenses.find((license) => license.transactionId === transactionId)
+    expect(listed?.revokedAt).toBe(revokedAt)
+    expect(listed?.adjustments).toHaveLength(1)
+  })
+
+  it('waits for Paddle to approve a refund, then revokes on the update', async () => {
+    const transactionId = 'txn_refund_pending'
+    await buy(transactionId)
+    const createdAt = new Date(Date.now() - 60_000).toISOString()
+
+    await deliverAdjustment({
+      transactionId,
+      adjustmentId: 'adj_pending',
+      status: 'pending_approval',
+      updatedAt: createdAt,
+    })
+    expect((await validate(transactionId)).body.status).toBe('active')
+
+    await deliverAdjustment({ transactionId, adjustmentId: 'adj_pending', eventType: 'adjustment.updated' })
+    expect((await validate(transactionId)).body.status).toBe('invalid')
+
+    // A late redelivery of the older `pending_approval` event can't walk the record backwards.
+    await deliverAdjustment({
+      transactionId,
+      adjustmentId: 'adj_pending',
+      status: 'pending_approval',
+      updatedAt: createdAt,
+    })
+    const listed = (await listLicenses()).licenses.find((license) => license.transactionId === transactionId)
+    expect(listed?.adjustments).toMatchObject([{ adjustmentId: 'adj_pending', status: 'approved' }])
+    expect((await validate(transactionId)).body.status).toBe('invalid')
+  })
+
+  it('keeps the license on a partial refund, and records it for a human', async () => {
+    const transactionId = 'txn_refund_partial'
+    await buy(transactionId)
+
+    const refund = await deliverAdjustment({ transactionId, adjustmentId: 'adj_partial', type: 'partial' })
+
+    expect(refund.status).toBe(200)
+    expect((await validate(transactionId)).body.status).toBe('active')
+    const listed = (await listLicenses()).licenses.find((license) => license.transactionId === transactionId)
+    expect(listed?.state).toBe('active')
+    expect(listed?.adjustments).toMatchObject([{ adjustmentId: 'adj_partial', type: 'partial', revokes: false }])
+  })
+
+  it('revokes on a chargeback', async () => {
+    const transactionId = 'txn_refund_chargeback'
+    await buy(transactionId)
+
+    await deliverAdjustment({ transactionId, adjustmentId: 'adj_chargeback', action: 'chargeback' })
+
+    expect((await validate(transactionId)).body.status).toBe('invalid')
+  })
+
+  it('never fulfills a purchase whose refund arrived first', async () => {
+    const transactionId = 'txn_refund_before_fulfillment'
+    const before = await storedCodes()
+
+    const refund = await deliverAdjustment({ transactionId, adjustmentId: 'adj_early' })
+    expect(refund.status, `Body: ${refund.text}\nWorker logs:\n${workerLogs()}`).toBe(200)
+
+    const late = await deliver({ transactionId })
+
+    expect(late.status).toBe(200)
+    expect(late.body.status).toBe('revoked')
+    expect(await storedCodes()).toEqual(before)
+    expect(resend.sent).toHaveLength(0)
+    expect((await validate(transactionId)).body.status).toBe('invalid')
+  })
+
+  it('records an adjustment for a transaction it never issued, without inventing a license', async () => {
+    const refund = await deliverAdjustment({
+      transactionId: 'txn_refund_unknown',
+      adjustmentId: 'adj_unknown_partial',
+      type: 'partial',
+    })
+
+    expect(refund.status).toBe(200)
+    const listing = await listLicenses()
+    expect(listing.licenses.find((license) => license.transactionId === 'txn_refund_unknown')).toBeUndefined()
+    expect(listing.unmatchedAdjustments).toMatchObject([
+      { adjustmentId: 'adj_unknown_partial', transactionId: 'txn_refund_unknown' },
+    ])
   })
 })
 

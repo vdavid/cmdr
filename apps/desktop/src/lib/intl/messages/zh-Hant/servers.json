@@ -1,5 +1,5 @@
 {
-  "servers.sheet.usernamePlaceholder": "範例：barry",
+  "servers.sheet.usernamePlaceholder": "例如：barry",
   "@servers.sheet.usernamePlaceholder": {
     "sourceHash": "1b5b09c"
   },
@@ -83,6 +83,22 @@
   "@servers.hub.editNearbyHint": {
     "sourceHash": "64653de"
   },
+  "servers.hub.s3AllBuckets": "所有儲存貯體",
+  "@servers.hub.s3AllBuckets": {
+    "sourceHash": "2a5828a"
+  },
+  "servers.hub.openAccountHint": "{name} 不是可以開啟的位置。請開啟底下的其中一個儲存貯體。",
+  "@servers.hub.openAccountHint": {
+    "sourceHash": "c52ee6f"
+  },
+  "servers.hub.forgetAccountConfirm": "要忘記 {name} 和儲存在底下的所有儲存貯體嗎？Cmdr 會中斷連線，也不再列出它們。你的檔案會留在儲存貯體裡。",
+  "@servers.hub.forgetAccountConfirm": {
+    "sourceHash": "e1c636e"
+  },
+  "servers.hub.forgetSecretKeyToo": "同時忘記這個帳號的私密存取金鑰",
+  "@servers.hub.forgetSecretKeyToo": {
+    "sourceHash": "4f3ac6d"
+  },
   "servers.hub.forgetShare": "忘記共享資料夾",
   "@servers.hub.forgetShare": {
     "sourceHash": "8888a9d"
@@ -94,6 +110,10 @@
   "servers.hub.forgetShareConfirm": "要忘記 {name} 嗎？Cmdr 不會再列出這個共享資料夾。如果它已經裝載，會繼續保持裝載，你的檔案也會留在伺服器上。",
   "@servers.hub.forgetShareConfirm": {
     "sourceHash": "8c14aaa"
+  },
+  "servers.hub.nearbyGroup": "{count, plural, other {在附近找到 {countText} 部伺服器}}",
+  "@servers.hub.nearbyGroup": {
+    "sourceHash": "cd7a44d"
   },
   "servers.hub.discoveryOff": "區域網路探索已關閉。",
   "@servers.hub.discoveryOff": {
@@ -171,6 +191,10 @@
   "@servers.refusal.unreachable": {
     "sourceHash": "6fcba90"
   },
+  "servers.refusal.localNetworkHint": "如果伺服器開著，請確認已在「{localNetwork}」裡允許 Cmdr。",
+  "@servers.refusal.localNetworkHint": {
+    "sourceHash": "baa1753"
+  },
   "servers.refusal.hostKeyUntrusted": "Cmdr 還沒有信任 {host} 的主機金鑰。",
   "@servers.refusal.hostKeyUntrusted": {
     "sourceHash": "83dc719"
@@ -206,6 +230,62 @@
   "servers.refusal.savedSecretNotUpdated": "Cmdr 已儲存你的變更，但沒辦法更新鑰匙圈中的密碼。再儲存一次即可重試。",
   "@servers.refusal.savedSecretNotUpdated": {
     "sourceHash": "2ae1e2b"
+  },
+  "servers.refusal.s3AuthenticationRejected": "那組私密存取金鑰不管用。",
+  "@servers.refusal.s3AuthenticationRejected": {
+    "sourceHash": "14f90c8"
+  },
+  "servers.refusal.s3NeedsCredentials": "這個帳號要求輸入私密存取金鑰。",
+  "@servers.refusal.s3NeedsCredentials": {
+    "sourceHash": "23695df"
+  },
+  "servers.refusal.s3SecretMissing": "請輸入私密存取金鑰。",
+  "@servers.refusal.s3SecretMissing": {
+    "sourceHash": "f1f32f2"
+  },
+  "servers.refusal.s3SecretNotStored": "Cmdr 沒辦法把這組私密存取金鑰存進鑰匙圈。請再試一次，或關閉「記住在鑰匙圈中」，不儲存金鑰直接登入。",
+  "@servers.refusal.s3SecretNotStored": {
+    "sourceHash": "f7a9fb0"
+  },
+  "servers.refusal.s3SavedSecretNotUpdated": "Cmdr 已儲存你的變更，但沒辦法更新鑰匙圈中的私密存取金鑰。再儲存一次即可重試。",
+  "@servers.refusal.s3SavedSecretNotUpdated": {
+    "sourceHash": "1d2889d"
+  },
+  "servers.refusal.accessDenied": "這組金鑰無法存取這個儲存貯體。請確認儲存貯體名稱和私密存取金鑰，以及這組金鑰有權限讀取這個儲存貯體。",
+  "@servers.refusal.accessDenied": {
+    "sourceHash": "8372e73"
+  },
+  "servers.refusal.bucketListRefused": "這組金鑰無法列出這個帳號裡的儲存貯體。請輸入儲存貯體名稱來開啟它，或確認私密存取金鑰。",
+  "@servers.refusal.bucketListRefused": {
+    "sourceHash": "1b9ebf5"
+  },
+  "servers.refusal.bucketNotFound": "{host} 上沒有叫這個名稱的儲存貯體。",
+  "@servers.refusal.bucketNotFound": {
+    "sourceHash": "0f5a04d"
+  },
+  "servers.refusal.regionMismatch": "這個儲存貯體在其他區域。請選擇它所在的區域，然後再試一次。",
+  "@servers.refusal.regionMismatch": {
+    "sourceHash": "27a37f8"
+  },
+  "servers.refusal.regionMismatchNamed": "這個儲存貯體在 {region}。請選擇這個區域，然後再試一次。",
+  "@servers.refusal.regionMismatchNamed": {
+    "sourceHash": "30abb0d"
+  },
+  "servers.refusal.clockSkewed": "這部 Mac 的時鐘誤差超過 15 分鐘，所以伺服器不接受 Cmdr 的請求。請在「系統設定」中開啟自動設定日期和時間，然後再試一次。",
+  "@servers.refusal.clockSkewed": {
+    "sourceHash": "cdee0ef"
+  },
+  "servers.refusal.notAnS3Endpoint": "這個位址沒有任何東西以 S3 儲存空間回應。",
+  "@servers.refusal.notAnS3Endpoint": {
+    "sourceHash": "78557ec"
+  },
+  "servers.refusal.s3FieldMalformed": "這裡只能使用小寫字母、數字和連字號。",
+  "@servers.refusal.s3FieldMalformed": {
+    "sourceHash": "ac8fbea"
+  },
+  "servers.refusal.endpointMalformed": "請以 http:// 或 https:// 加上主機名稱輸入端點，例如 https://s3.example.com。",
+  "@servers.refusal.endpointMalformed": {
+    "sourceHash": "beb63dd"
   },
   "servers.sheet.addTitle": "加入伺服器",
   "@servers.sheet.addTitle": {
@@ -323,6 +403,10 @@
   "@servers.sheet.password": {
     "sourceHash": "e7cf3ef"
   },
+  "servers.sheet.secretKeptPlaceholder": "已儲存在鑰匙圈中。留空就維持不變。",
+  "@servers.sheet.secretKeptPlaceholder": {
+    "sourceHash": "8711f6c"
+  },
   "servers.sheet.smbUsernamePlaceholder": "選填",
   "@servers.sheet.smbUsernamePlaceholder": {
     "sourceHash": "59be713"
@@ -358,6 +442,122 @@
   "servers.sheet.name": "名稱",
   "@servers.sheet.name": {
     "sourceHash": "dcd1d52"
+  },
+  "servers.sheet.protocolS3": "S3",
+  "@servers.sheet.protocolS3": {
+    "sourceHash": "44d6a8a",
+    "sameAsSourceJustification": "“S3” is a protocol name kept verbatim, the same call as its siblings `servers.sheet.protocolSmb` / `.protocolWebdav`. AWS's own zh-TW documentation writes it Latin (`S3 儲存貯體`, docs.aws.amazon.com/zh_tw, checked 2026-10-02), and Traditional Chinese has no rendering of the acronym."
+  },
+  "servers.sheet.s3Provider": "提供者",
+  "@servers.sheet.s3Provider": {
+    "sourceHash": "472590a"
+  },
+  "servers.sheet.s3ProviderAws": "Amazon S3",
+  "@servers.sheet.s3ProviderAws": {
+    "sourceHash": "a4f6352",
+    "sameAsSourceJustification": "“Amazon S3” is a product name kept verbatim: AWS's own zh-TW docs write “Amazon S3” Latin (docs.aws.amazon.com/zh_tw, checked 2026-10-02), and the provider picker lists brands the way the provider's console shows them."
+  },
+  "servers.sheet.s3ProviderR2": "Cloudflare R2",
+  "@servers.sheet.s3ProviderR2": {
+    "sourceHash": "9f2f1ed",
+    "sameAsSourceJustification": "“Cloudflare R2” is a product name kept verbatim: AWS's own zh-TW docs write “Amazon S3” Latin (docs.aws.amazon.com/zh_tw, checked 2026-10-02), and the provider picker lists brands the way the provider's console shows them. Cloudflare's zh-TW site keeps “R2” Latin."
+  },
+  "servers.sheet.s3ProviderB2": "Backblaze B2",
+  "@servers.sheet.s3ProviderB2": {
+    "sourceHash": "ed40187",
+    "sameAsSourceJustification": "“Backblaze B2” is a product name kept verbatim: AWS's own zh-TW docs write “Amazon S3” Latin (docs.aws.amazon.com/zh_tw, checked 2026-10-02), and the provider picker lists brands the way the provider's console shows them. Backblaze ships no Traditional Chinese UI."
+  },
+  "servers.sheet.s3ProviderWasabi": "Wasabi",
+  "@servers.sheet.s3ProviderWasabi": {
+    "sourceHash": "493861e",
+    "sameAsSourceJustification": "“Wasabi” is a product name kept verbatim: AWS's own zh-TW docs write “Amazon S3” Latin (docs.aws.amazon.com/zh_tw, checked 2026-10-02), and the provider picker lists brands the way the provider's console shows them. Wasabi ships no Traditional Chinese UI."
+  },
+  "servers.sheet.s3ProviderHetzner": "Hetzner Object Storage",
+  "@servers.sheet.s3ProviderHetzner": {
+    "sourceHash": "a339b4f",
+    "sameAsSourceJustification": "“Hetzner Object Storage” is a product name kept verbatim: AWS's own zh-TW docs write “Amazon S3” Latin (docs.aws.amazon.com/zh_tw, checked 2026-10-02), and the provider picker lists brands the way the provider's console shows them. Hetzner ships no Chinese UI, so the English product name is the only one a user ever sees."
+  },
+  "servers.sheet.s3ProviderGcs": "Google Cloud Storage",
+  "@servers.sheet.s3ProviderGcs": {
+    "sourceHash": "53fa0ba",
+    "sameAsSourceJustification": "“Google Cloud Storage” is a product name kept verbatim: AWS's own zh-TW docs write “Amazon S3” Latin (docs.aws.amazon.com/zh_tw, checked 2026-10-02), and the provider picker lists brands the way the provider's console shows them. Google's zh-TW console keeps the product name “Cloud Storage” Latin."
+  },
+  "servers.sheet.s3ProviderDigitalOcean": "DigitalOcean Spaces",
+  "@servers.sheet.s3ProviderDigitalOcean": {
+    "sourceHash": "c3f48e3",
+    "sameAsSourceJustification": "“DigitalOcean Spaces” is a product name kept verbatim: AWS's own zh-TW docs write “Amazon S3” Latin (docs.aws.amazon.com/zh_tw, checked 2026-10-02), and the provider picker lists brands the way the provider's console shows them. DigitalOcean ships no Chinese UI."
+  },
+  "servers.sheet.s3GcsKeyHelp": "請使用 Cloud Storage 設定中「互通性」分頁的 HMAC 金鑰登入。",
+  "@servers.sheet.s3GcsKeyHelp": {
+    "sourceHash": "acb72a4"
+  },
+  "servers.sheet.s3ProviderOther": "其他 S3 相容服務",
+  "@servers.sheet.s3ProviderOther": {
+    "sourceHash": "13d2bdc"
+  },
+  "servers.sheet.s3Region": "區域",
+  "@servers.sheet.s3Region": {
+    "sourceHash": "d3a008e"
+  },
+  "servers.sheet.s3RegionOptionalPlaceholder": "選填。留空就使用 us-east-1",
+  "@servers.sheet.s3RegionOptionalPlaceholder": {
+    "sourceHash": "12dd731"
+  },
+  "servers.sheet.s3AccountId": "帳戶 ID",
+  "@servers.sheet.s3AccountId": {
+    "sourceHash": "919bb4c"
+  },
+  "servers.sheet.s3AccountIdHelp": "Cloudflare R2 概觀頁面上的帳戶 ID。",
+  "@servers.sheet.s3AccountIdHelp": {
+    "sourceHash": "963d1f5"
+  },
+  "servers.sheet.s3Location": "位置",
+  "@servers.sheet.s3Location": {
+    "sourceHash": "15b6197"
+  },
+  "servers.sheet.s3Endpoint": "端點",
+  "@servers.sheet.s3Endpoint": {
+    "sourceHash": "3df9726"
+  },
+  "servers.sheet.s3PathStyle": "使用路徑樣式定址",
+  "@servers.sheet.s3PathStyle": {
+    "sourceHash": "627c522"
+  },
+  "servers.sheet.s3PathStyleHelp": "大多數自行架設的伺服器（例如 MinIO 和 Garage）都需要開啟這個選項。",
+  "@servers.sheet.s3PathStyleHelp": {
+    "sourceHash": "bc6e240"
+  },
+  "servers.sheet.s3Bucket": "儲存貯體",
+  "@servers.sheet.s3Bucket": {
+    "sourceHash": "c83b657"
+  },
+  "servers.sheet.s3BucketHelp": "留空就能看到所有儲存貯體。如果你的金鑰只能存取一個儲存貯體，就輸入它的名稱。",
+  "@servers.sheet.s3BucketHelp": {
+    "sourceHash": "8d380d9"
+  },
+  "servers.sheet.s3UseRegion": "使用 {region}",
+  "@servers.sheet.s3UseRegion": {
+    "sourceHash": "5734184"
+  },
+  "servers.sheet.accessKeyId": "存取金鑰 ID",
+  "@servers.sheet.accessKeyId": {
+    "sourceHash": "14eb0f9"
+  },
+  "servers.sheet.secretAccessKey": "私密存取金鑰",
+  "@servers.sheet.secretAccessKey": {
+    "sourceHash": "3de6b75"
+  },
+  "servers.sheet.examplePlaceholder": "例如：{example}",
+  "@servers.sheet.examplePlaceholder": {
+    "sourceHash": "9c7df45"
+  },
+  "servers.sheet.identityLockedS3": "提供者、存取金鑰 ID 和儲存貯體決定了這是哪個位置。要改這幾項，先忘記這個位置，再重新加入。",
+  "@servers.sheet.identityLockedS3": {
+    "sourceHash": "fe4d469"
+  },
+  "servers.sheet.identityLockedS3Account": "提供者和存取金鑰 ID 決定了這是哪個帳號。要改這兩項，先忘記這個帳號，再重新加入。",
+  "@servers.sheet.identityLockedS3Account": {
+    "sourceHash": "e03a769"
   },
   "servers.sheet.namePlaceholder": "留空就使用 {label}",
   "@servers.sheet.namePlaceholder": {
@@ -451,6 +651,10 @@
   "@servers.paneState.notConnected": {
     "sourceHash": "5020fac"
   },
+  "servers.paneState.unreachable": "Cmdr 連不上 {name}。",
+  "@servers.paneState.unreachable": {
+    "sourceHash": "a7bc9bc"
+  },
   "servers.paneState.goBack": "返回",
   "@servers.paneState.goBack": {
     "sourceHash": "6aadac2"
@@ -463,9 +667,13 @@
   "@servers.paneState.hostKeyChanged": {
     "sourceHash": "c73ddf3"
   },
-  "servers.paneState.hostKeyChangedHint": "它的主機金鑰變了。這可能表示伺服器重新安裝過，也可能有東西夾在你和它中間。請先中斷連線，再重新開啟它來核對指紋。",
+  "servers.paneState.hostKeyChangedHint": "它的主機金鑰變了。這可能表示伺服器重新安裝過，也可能有東西夾在你和它中間。重新連線之前，請先核對新的主機金鑰。",
   "@servers.paneState.hostKeyChangedHint": {
-    "sourceHash": "923de62"
+    "sourceHash": "866b619"
+  },
+  "servers.paneState.checkHostKey": "核對主機金鑰",
+  "@servers.paneState.checkHostKey": {
+    "sourceHash": "fefa256"
   },
   "servers.paneState.reconnecting": "正在重新連線到 {name}⋯",
   "@servers.paneState.reconnecting": {

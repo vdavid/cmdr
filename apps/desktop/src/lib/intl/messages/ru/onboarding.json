@@ -1,0 +1,642 @@
+{
+  "onboarding.fdaBadge.label": "Нет полного доступа к диску",
+  "@onboarding.fdaBadge.label": {
+    "sourceHash": "0aa10cf"
+  },
+  "onboarding.fdaBadge.tooltip": "Этот доступ необязателен, но с ним Cmdr работает гораздо лучше: ищет по всему диску, читает облачные папки и меняет файлы, которые macOS бережет для себя. Нажмите, чтобы вернуться к этому выбору.",
+  "@onboarding.fdaBadge.tooltip": {
+    "sourceHash": "d7ff906"
+  },
+  "onboarding.fdaBadge.ariaLabel": "Нет полного доступа к диску. Открыть шаг знакомства с приложением, посвященный полному доступу к диску.",
+  "@onboarding.fdaBadge.ariaLabel": {
+    "sourceHash": "60ee833"
+  },
+  "onboarding.wizard.title": "Знакомство с Cmdr",
+  "@onboarding.wizard.title": {
+    "sourceHash": "3b97a1b"
+  },
+  "onboarding.wizard.progressLabel": "Ход знакомства с приложением",
+  "@onboarding.wizard.progressLabel": {
+    "sourceHash": "ad8a0da"
+  },
+  "onboarding.wizard.stepProgress": "Шаг {step} из {total}{isOptional, select, true { (необязательный)} other {}}",
+  "@onboarding.wizard.stepProgress": {
+    "sourceHash": "41705d0"
+  },
+  "onboarding.moreAbout": "Подробнее: {topic}",
+  "@onboarding.moreAbout": {
+    "sourceHash": "b4d183a"
+  },
+  "onboarding.wizard.stepTooltip": "Шаг {step} из {mandatory}+1{note, select, remaining {, остался один необязательный шаг} last {, это последний необязательный шаг} other {}}",
+  "@onboarding.wizard.stepTooltip": {
+    "sourceHash": "53f848a"
+  },
+  "onboarding.wizard.back": "Назад",
+  "@onboarding.wizard.back": {
+    "sourceHash": "76900f1"
+  },
+  "onboarding.wizard.backAria": "Перейти к предыдущему шагу",
+  "@onboarding.wizard.backAria": {
+    "sourceHash": "a729451"
+  },
+  "onboarding.wizard.next": "Далее",
+  "@onboarding.wizard.next": {
+    "sourceHash": "1ff57a2"
+  },
+  "onboarding.wizard.finish": "Завершить",
+  "@onboarding.wizard.finish": {
+    "sourceHash": "a6c7a84"
+  },
+  "onboarding.wizard.restart": "Перезапустить Cmdr",
+  "@onboarding.wizard.restart": {
+    "sourceHash": "e62c550"
+  },
+  "onboarding.stepFda.granted.title": "Полный доступ к диску предоставлен!",
+  "@onboarding.stepFda.granted.title": {
+    "sourceHash": "6740141"
+  },
+  "onboarding.stepFda.granted.body": "Отлично, это все, что нужно Cmdr. Перезапустите приложение, чтобы пользоваться всеми возможностями.",
+  "@onboarding.stepFda.granted.body": {
+    "sourceHash": "1f59b5f"
+  },
+  "onboarding.stepFda.granted.hint": "Cmdr получит новое разрешение при следующем запуске. Ход настройки сохранен: вы вернетесь на этот шаг.",
+  "@onboarding.stepFda.granted.hint": {
+    "sourceHash": "dc1d332"
+  },
+  "onboarding.stepFda.alreadyGranted.title": "У Cmdr уже есть полный доступ к диску",
+  "@onboarding.stepFda.alreadyGranted.title": {
+    "sourceHash": "403273d"
+  },
+  "onboarding.stepFda.alreadyGranted.body": "Отозвать доступ можно в любой момент в приложении «{systemSettings}».",
+  "@onboarding.stepFda.alreadyGranted.body": {
+    "sourceHash": "98fb9f4"
+  },
+  "onboarding.stepFda.welcome.title": "Добро пожаловать в Cmdr!",
+  "@onboarding.stepFda.welcome.title": {
+    "sourceHash": "504b1bb"
+  },
+  "onboarding.stepFda.revoked.intro": "Похоже, раньше вы предоставили полный доступ к диску, а затем отозвали его.",
+  "@onboarding.stepFda.revoked.intro": {
+    "sourceHash": "9087914"
+  },
+  "onboarding.stepFda.revoked.noAccess": "Сейчас у приложения нет полного доступа к диску.",
+  "@onboarding.stepFda.revoked.noAccess": {
+    "sourceHash": "415a3f3"
+  },
+  "onboarding.stepFda.revoked.ifIntentional": "Если это сделано намеренно, нажмите <deny>Отклонить</deny>, и приложение больше не будет спрашивать.",
+  "@onboarding.stepFda.revoked.ifIntentional": {
+    "sourceHash": "6ab4c94"
+  },
+  "onboarding.stepFda.revoked.ifNot": "Если это сделано <em>случайно</em>, подумайте о повторном предоставлении полного доступа к диску. Вот плюсы и минусы:",
+  "@onboarding.stepFda.revoked.ifNot": {
+    "sourceHash": "b40412b"
+  },
+  "onboarding.stepFda.firstAsk.lede": "<strong>Вам наверняка хочется сразу начать пользоваться приложением.</strong> Простите, что начинаем с этого, но это действительно нужно.",
+  "@onboarding.stepFda.firstAsk.lede": {
+    "sourceHash": "4f2f392"
+  },
+  "onboarding.stepFda.firstAsk.explain": "Дело в том, что Cmdr — файловый менеджер, и ему нужен доступ к диску, чтобы видеть все ваши файлы. macOS не дает такое разрешение автоматически.",
+  "@onboarding.stepFda.firstAsk.explain": {
+    "sourceHash": "4196968"
+  },
+  "onboarding.stepFda.firstAsk.askPermission": "Предоставить приложению полный доступ к диску? Вот что это означает:",
+  "@onboarding.stepFda.firstAsk.askPermission": {
+    "sourceHash": "28a5c77"
+  },
+  "onboarding.stepFda.why": "Зачем?",
+  "@onboarding.stepFda.why": {
+    "sourceHash": "5d8a995"
+  },
+  "onboarding.stepFda.pro.label": "Плюс:",
+  "@onboarding.stepFda.pro.label": {
+    "sourceHash": "4fc6650"
+  },
+  "onboarding.stepFda.pro.body": "Приложение получит доступ ко всему диску и не будет запрашивать разрешение для каждой папки, например «Загрузки», «Документы» и «Рабочий стол».",
+  "@onboarding.stepFda.pro.body": {
+    "sourceHash": "c624227"
+  },
+  "onboarding.stepFda.con.label": "Минус:",
+  "@onboarding.stepFda.con.label": {
+    "sourceHash": "ebfc77d"
+  },
+  "onboarding.stepFda.con.body": "Полный доступ к диску — серьезное разрешение: приложение сможет прочитать любой файл на Mac. Предоставляйте его, только если доверяете Cmdr. Cmdr пользуется этим правом бережно, а если сомневаетесь, <sourceLink>исходный код Cmdr открыт для просмотра</sourceLink>.",
+  "@onboarding.stepFda.con.body": {
+    "sourceHash": "af7f0de"
+  },
+  "onboarding.stepFda.ifAllow": "Три шага:",
+  "@onboarding.stepFda.ifAllow": {
+    "sourceHash": "2e6fb66"
+  },
+  "onboarding.stepFda.openSettings": "Открыть {systemSettings}",
+  "@onboarding.stepFda.openSettings": {
+    "sourceHash": "f735c5c"
+  },
+  "onboarding.stepFda.step1": "Нажмите <strong>Открыть {systemSettings}</strong> ниже",
+  "@onboarding.stepFda.step1": {
+    "sourceHash": "1e462a1"
+  },
+  "onboarding.stepFda.step2.ventura": "Найдите <strong>Cmdr</strong> в списке и включите переключатель",
+  "@onboarding.stepFda.step2.ventura": {
+    "sourceHash": "03e71c6"
+  },
+  "onboarding.stepFda.step2.older": "Найдите <strong>Cmdr</strong> в конце списка и включите переключатель",
+  "@onboarding.stepFda.step2.older": {
+    "sourceHash": "0dd40f1"
+  },
+  "onboarding.stepFda.step2.tip": "Нет Cmdr в списке? Нажмите кнопку «+» внизу и выберите <strong>Cmdr</strong> в папке <strong>Программы</strong>.",
+  "@onboarding.stepFda.step2.tip": {
+    "sourceHash": "ffc4289"
+  },
+  "onboarding.stepFda.step3": "Подтвердите и нажмите <strong>Перезапустить</strong>",
+  "@onboarding.stepFda.step3": {
+    "sourceHash": "cf59f30"
+  },
+  "onboarding.stepFda.deny": "Отклонить",
+  "@onboarding.stepFda.deny": {
+    "sourceHash": "05a2d73"
+  },
+  "onboarding.stepFda.postAction.intro": "Нужно перезапустить Cmdr, чтобы новое разрешение вступило в силу.",
+  "@onboarding.stepFda.postAction.intro": {
+    "sourceHash": "cac5247"
+  },
+  "onboarding.stepFda.postAction.body": "Когда будете готовы, нажмите <restart>Перезапустить Cmdr</restart> ниже. Если передумаете, нажмите <deny>Отклонить</deny> выше.",
+  "@onboarding.stepFda.postAction.body": {
+    "sourceHash": "7a5c238"
+  },
+  "onboarding.stepFda.openSettingsFailed": "Cmdr не удалось открыть {systemSettings}. Откройте настройки самостоятельно, перейдите в раздел <strong>{privacyAndSecurity}</strong>, затем <strong>{fullDiskAccess}</strong> и включите <strong>Cmdr</strong>.",
+  "@onboarding.stepFda.openSettingsFailed": {
+    "sourceHash": "7da3acc"
+  },
+  "onboarding.stepAi.bannerTitle.granted": "Полный доступ к диску предоставлен",
+  "@onboarding.stepAi.bannerTitle.granted": {
+    "sourceHash": "f5872be"
+  },
+  "onboarding.stepAi.bannerBody.granted": "Спасибо за полный доступ к диску! Теперь приложение может обращаться к вашему диску. Отлично!",
+  "@onboarding.stepAi.bannerBody.granted": {
+    "sourceHash": "236f3f5"
+  },
+  "onboarding.stepAi.bannerTitle.denied": "Нет полного доступа к диску",
+  "@onboarding.stepAi.bannerTitle.denied": {
+    "sourceHash": "0aa10cf"
+  },
+  "onboarding.stepAi.bannerBody.denied": "Вы решили не предоставлять полный доступ к диску. Мы уважаем ваш выбор. Вскоре macOS запросит разрешения для доступа Cmdr к папкам «Рабочий стол», «Загрузки» и другим. Принимайте или отклоняйте их на свое усмотрение. Все это можно изменить позже в приложении «{systemSettings}».",
+  "@onboarding.stepAi.bannerBody.denied": {
+    "sourceHash": "fa85a39"
+  },
+  "onboarding.stepAi.bannerTitle.stuck": "Похоже, у Cmdr пока нет полного доступа к диску",
+  "@onboarding.stepAi.bannerTitle.stuck": {
+    "sourceHash": "6e60ae7"
+  },
+  "onboarding.stepAi.bannerBody.stuck": "Вы решили предоставить полный доступ к диску, но Cmdr, похоже, еще не получил его. Возможно, нужно перезапустить приложение (можно сейчас, мы продолжим с этого шага!) или открыть <settingsLink>{systemSettings} > Конфиденциальность и безопасность > Доступ к диску</settingsLink> и найти Cmdr либо добавить его вручную кнопкой «+» внизу.",
+  "@onboarding.stepAi.bannerBody.stuck": {
+    "sourceHash": "c13bbbe"
+  },
+  "onboarding.stepAi.welcomeLinux.title": "Добро пожаловать в Cmdr!",
+  "@onboarding.stepAi.welcomeLinux.title": {
+    "sourceHash": "504b1bb"
+  },
+  "onboarding.stepAi.welcomeLinux.subtitle": "Настроим ИИ.",
+  "@onboarding.stepAi.welcomeLinux.subtitle": {
+    "sourceHash": "e4c4251"
+  },
+  "onboarding.stepAi.title": "Теперь поговорим об ИИ",
+  "@onboarding.stepAi.title": {
+    "sourceHash": "7fb7b12"
+  },
+  "onboarding.stepAi.intro": "В Cmdr есть немало функций ИИ, которые <em>могут</em> вам пригодиться, а могут и нет. Сейчас ИИ — тема спорная.",
+  "@onboarding.stepAi.intro": {
+    "sourceHash": "3b6b6c6"
+  },
+  "onboarding.stepAi.comparisonIntro": "Вот как выполняются обычные действия с ИИ и без него:",
+  "@onboarding.stepAi.comparisonIntro": {
+    "sourceHash": "440ea64"
+  },
+  "onboarding.stepAi.table.colFeature": "Задача",
+  "@onboarding.stepAi.table.colFeature": {
+    "sourceHash": "3d377ae"
+  },
+  "onboarding.stepAi.table.colWithout": "Без ИИ",
+  "@onboarding.stepAi.table.colWithout": {
+    "sourceHash": "aadb0ba"
+  },
+  "onboarding.stepAi.table.colWith": "С ИИ",
+  "@onboarding.stepAi.table.colWith": {
+    "sourceHash": "c83835a"
+  },
+  "onboarding.stepAi.table.rowSearch": "Поиск",
+  "@onboarding.stepAi.table.rowSearch": {
+    "sourceHash": "49c266b"
+  },
+  "onboarding.stepAi.table.searchWithout": "Вы вводите что-то вроде <code>*fish*.ppt</code> и выбираете фильтр «после 1-го числа этого месяца».",
+  "@onboarding.stepAi.table.searchWithout": {
+    "sourceHash": "ebd8f45"
+  },
+  "onboarding.stepAi.table.searchWith": "Вы говорите «мои недавние презентации о рыбах», и агент настраивает фильтры.",
+  "@onboarding.stepAi.table.searchWith": {
+    "sourceHash": "457e19a"
+  },
+  "onboarding.stepAi.table.rowRename": "Групповое переименование",
+  "@onboarding.stepAi.table.rowRename": {
+    "sourceHash": "9246b56"
+  },
+  "onboarding.stepAi.table.renameWithout": "Вы вручную задаете шаблон в окне группового переименования, проверяете и применяете.",
+  "@onboarding.stepAi.table.renameWithout": {
+    "sourceHash": "b12d997"
+  },
+  "onboarding.stepAi.table.renameWith": "Вы говорите «добавить дату в формате ISO в начало», агент задает шаблон, а вы проверяете и применяете по желанию.",
+  "@onboarding.stepAi.table.renameWith": {
+    "sourceHash": "5287ae3"
+  },
+  "onboarding.stepAi.table.rowSelect": "Выделение",
+  "@onboarding.stepAi.table.rowSelect": {
+    "sourceHash": "2a78025"
+  },
+  "onboarding.stepAi.table.selectWithoutBound": "Вы нажимаете клавишу <chip></chip> и вводите что-то вроде <code>*.jpg,*.png,*.gif,*.heic,*.webp,*.jpeg</code>, проверяете и применяете.",
+  "@onboarding.stepAi.table.selectWithoutBound": {
+    "sourceHash": "83f83b9"
+  },
+  "onboarding.stepAi.table.selectWithoutUnbound": "Вы открываете «Выделить файлы…» и вводите что-то вроде <code>*.jpg,*.png,*.gif,*.heic,*.webp,*.jpeg</code>, проверяете и применяете.",
+  "@onboarding.stepAi.table.selectWithoutUnbound": {
+    "sourceHash": "bf9239a"
+  },
+  "onboarding.stepAi.table.selectWith": "Вы говорите «выделить все изображения», агент предлагает, что выделить, а вы проверяете и применяете по желанию.",
+  "@onboarding.stepAi.table.selectWith": {
+    "sourceHash": "c1cc90b"
+  },
+  "onboarding.stepAi.resumeCue": "Это ваш прошлый выбор. Подтвердите или измените его ниже.",
+  "@onboarding.stepAi.resumeCue": {
+    "sourceHash": "586e2ae"
+  },
+  "onboarding.stepAi.choiceGroupAria": "Выбор ИИ",
+  "@onboarding.stepAi.choiceGroupAria": {
+    "sourceHash": "9083caa"
+  },
+  "onboarding.stepAi.cloud.label": "Да, мне нужен ИИ",
+  "@onboarding.stepAi.cloud.label": {
+    "sourceHash": "ba08450"
+  },
+  "onboarding.stepAi.cloud.recommended": "Рекомендуется",
+  "@onboarding.stepAi.cloud.recommended": {
+    "sourceHash": "d70604e"
+  },
+  "onboarding.stepAi.cloud.help": "Подключите любого поставщика облачного ИИ со своим API-ключом или собственный ollama/LLM. Настройка ниже.",
+  "@onboarding.stepAi.cloud.help": {
+    "sourceHash": "0841a0d"
+  },
+  "onboarding.stepAi.cloud.pickerTitle": "Выберите поставщика",
+  "@onboarding.stepAi.cloud.pickerTitle": {
+    "sourceHash": "71e2ca7"
+  },
+  "onboarding.stepAi.local.label": "Да, мне нужен ИИ, но с максимальной конфиденциальностью и простой локальной моделью.",
+  "@onboarding.stepAi.local.label": {
+    "sourceHash": "2ee5605"
+  },
+  "onboarding.stepAi.local.tooltip": "Локальная модель заметно глупее облачных, занимает около 2 ГБ на диске и при каждом обращении нагружает оперативную память и процессор.\nЗато данные не покидают ваш компьютер.\nCmdr старается выпускать обновления, чтобы у вас была лучшая из доступных небольших моделей. Но если вам нужна конфиденциальность <em>и</em> приличная модель, лучше всего запустить собственный сервер ollama и настроить его через вариант <strong>Да, мне нужен ИИ</strong> ниже.",
+  "@onboarding.stepAi.local.tooltip": {
+    "sourceHash": "ddc1a76"
+  },
+  "onboarding.stepAi.local.note": "Загрузка локальной модели началась в фоне. Вы можете завершить настройку: уведомление в углу сообщит о ходе загрузки.",
+  "@onboarding.stepAi.local.note": {
+    "sourceHash": "af89d60"
+  },
+  "onboarding.stepAi.localTooltip": "Для локальной LLM нужен Mac с чипом Apple. Облачный ИИ работает и на Intel.",
+  "@onboarding.stepAi.localTooltip": {
+    "sourceHash": "75c6d48"
+  },
+  "onboarding.stepAi.missingKeyWarning": "Вы включили ИИ, но не ввели API-ключ. ИИ не будет работать, и появится предупреждение. Исправьте это выше.\n\n<strong>Нажмите «{nextLabel}» снова, чтобы пропустить предупреждение и продолжить.</strong>",
+  "@onboarding.stepAi.missingKeyWarning": {
+    "sourceHash": "b942278"
+  },
+  "onboarding.stepAi.cloudConsentOffNote": "Облачный ИИ останется выключенным, пока вы его не разрешите. Это можно сделать позже в разделе «Настройки > ИИ».",
+  "@onboarding.stepAi.cloudConsentOffNote": {
+    "sourceHash": "82d27b6"
+  },
+  "onboarding.stepAi.off.label": "Спасибо, но мне не нужен ИИ",
+  "@onboarding.stepAi.off.label": {
+    "sourceHash": "c2a8322"
+  },
+  "onboarding.stepAi.off.help": "Cmdr полноценно работает без ИИ. Его можно включить позже в настройках.",
+  "@onboarding.stepAi.off.help": {
+    "sourceHash": "3f261be"
+  },
+  "onboarding.localDownloadFailed.title": "Загрузка локальной модели ИИ не завершилась",
+  "@onboarding.localDownloadFailed.title": {
+    "sourceHash": "9612750"
+  },
+  "onboarding.localDownloadFailed.body": "Запустите загрузку снова в разделе «Настройки › ИИ».",
+  "@onboarding.localDownloadFailed.body": {
+    "sourceHash": "6601872"
+  },
+  "onboarding.localDownloadFailed.openSettings": "Открыть настройки",
+  "@onboarding.localDownloadFailed.openSettings": {
+    "sourceHash": "3f94010"
+  },
+  "onboarding.stepBeta.footer.start": "Начать пользоваться Cmdr!",
+  "@onboarding.stepBeta.footer.start": {
+    "sourceHash": "e29bbc7"
+  },
+  "onboarding.stepBeta.footer.continue": "Еще один необязательный шаг настройки",
+  "@onboarding.stepBeta.footer.continue": {
+    "sourceHash": "4024130"
+  },
+  "onboarding.stepBeta.title": "Помогите улучшить Cmdr!",
+  "@onboarding.stepBeta.title": {
+    "sourceHash": "6e8be73"
+  },
+  "onboarding.stepBeta.greeting": "Привет, я <david>David</david>! Я создаю Cmdr, а вы — среди первых пользователей. Спасибо за доверие! ❤️",
+  "@onboarding.stepBeta.greeting": {
+    "sourceHash": "2736b42"
+  },
+  "onboarding.stepBeta.openBeta": "Cmdr находится в открытом бета-тестировании: в целом приложение надежно и пригодно для работы, но некоторые части еще дорабатываются. Значки <alpha></alpha> отмечают самые незавершенные области. Ваши отзывы помогают исправлять ошибки и выбирать следующие возможности.",
+  "@onboarding.stepBeta.openBeta": {
+    "sourceHash": "f3bed8c"
+  },
+  "onboarding.stepBeta.checklist.title": "Контрольный список знакомства (каждый пункт займет 30 секунд):",
+  "@onboarding.stepBeta.checklist.title": {
+    "sourceHash": "6c0fc62"
+  },
+  "onboarding.stepBeta.checklist.star": "Поставить звезду репозиторию на GitHub",
+  "@onboarding.stepBeta.checklist.star": {
+    "sourceHash": "c271317"
+  },
+  "onboarding.stepBeta.checklist.starNote": "Для установки через <code>brew install cmdr</code> Homebrew требует, чтобы у Cmdr было 225 звезд",
+  "@onboarding.stepBeta.checklist.starNote": {
+    "sourceHash": "6553ce2"
+  },
+  "onboarding.stepBeta.checklist.alternativeTo": "Поставить лайк Cmdr на AlternativeTo",
+  "@onboarding.stepBeta.checklist.alternativeTo": {
+    "sourceHash": "c9b1e1e"
+  },
+  "onboarding.stepBeta.checklist.alternativeToNote": "В самом верху страницы, рядом с названием «Cmdr». Это помогает людям и Google замечать Cmdr!",
+  "@onboarding.stepBeta.checklist.alternativeToNote": {
+    "sourceHash": "ee4aed4"
+  },
+  "onboarding.stepBeta.checklist.email": "Введите адрес электронной почты <field></field>, чтобы изредка получать новости и вопросы",
+  "@onboarding.stepBeta.checklist.email": {
+    "sourceHash": "e53bd44"
+  },
+  "onboarding.stepBeta.checklist.emailSave": "Сохранить",
+  "@onboarding.stepBeta.checklist.emailSave": {
+    "sourceHash": "1509f56"
+  },
+  "onboarding.stepBeta.checklist.emailMark": "Адрес электронной почты сохранен",
+  "@onboarding.stepBeta.checklist.emailMark": {
+    "sourceHash": "1bf8647"
+  },
+  "onboarding.stepBeta.analyticsLede": "Чтобы понять, что работает, а что нет, в период открытого бета-тестирования Cmdr отправляет статистику использования: какие возможности используются и как часто. Данные из ваших файлов никогда не отправляются.\nСтатистика связана со случайным идентификатором, а не с именем или почтой.\nСейчас отправка включена, но ее можно отключить в любой момент.",
+  "@onboarding.stepBeta.analyticsLede": {
+    "sourceHash": "7544e4c"
+  },
+  "onboarding.stepBeta.analyticsTitle": "Отправлять статистику использования",
+  "@onboarding.stepBeta.analyticsTitle": {
+    "sourceHash": "89b309e"
+  },
+  "onboarding.stepBeta.analyticsCaption": "Во время бета-тестирования отправка включена по умолчанию, чтобы пользователи чаще делились со мной данными.\nЭто можно изменить в настройках в любой момент.",
+  "@onboarding.stepBeta.analyticsCaption": {
+    "sourceHash": "06ce4eb"
+  },
+  "onboarding.stepBeta.crashReportsNote": "Отчеты о сбоях тоже включены: при сбое Cmdr отправляет версию приложения, версию macOS и место, где остановился код.\nВаши файлы никогда не отправляются.\nОба параметра можно отключить в настройках в любой момент.",
+  "@onboarding.stepBeta.crashReportsNote": {
+    "sourceHash": "9be0be1"
+  },
+  "onboarding.stepBeta.analyticsManaged": "Ваша организация выключила статистику использования.",
+  "@onboarding.stepBeta.analyticsManaged": {
+    "sourceHash": "49484ee"
+  },
+  "onboarding.stepBeta.crashReportsNoteAlone": "Отчеты о сбоях включены: при сбое Cmdr отправляет версию приложения, версию macOS и место, где остановился код.\nВаши файлы никогда не отправляются.\nОтчеты можно отключить в настройках в любой момент.",
+  "@onboarding.stepBeta.crashReportsNoteAlone": {
+    "sourceHash": "5084dd0"
+  },
+  "onboarding.stepBeta.emailTitle": "Будем на связи (необязательно)",
+  "@onboarding.stepBeta.emailTitle": {
+    "sourceHash": "cf691fa"
+  },
+  "onboarding.stepBeta.emailPlaceholder": "name@example.com",
+  "@onboarding.stepBeta.emailPlaceholder": {
+    "sourceHash": "53e6cdc"
+  },
+  "onboarding.stepBeta.signup.success": "Проверьте почту, чтобы подтвердить адрес. Спасибо за помощь!",
+  "@onboarding.stepBeta.signup.success": {
+    "sourceHash": "b96010e"
+  },
+  "onboarding.stepBeta.signup.failure": "Простите, сейчас не получилось вас подписать. Попробовать еще раз?",
+  "@onboarding.stepBeta.signup.failure": {
+    "sourceHash": "14adb30"
+  },
+  "onboarding.stepBeta.signup.rejected": "Сервис рассылки не принял адрес. Проверьте, нет ли опечатки, и снова нажмите «Сохранить».",
+  "@onboarding.stepBeta.signup.rejected": {
+    "sourceHash": "5a1bca7"
+  },
+  "onboarding.stepBeta.signup.unreachable": "Не удалось связаться с сервером подписки, поэтому вы пока не в списке. Адрес сохранен на этом Mac: снова нажмите «Сохранить» через минуту или позже в разделе «Настройки › Обновления и конфиденциальность».",
+  "@onboarding.stepBeta.signup.unreachable": {
+    "sourceHash": "e4d8f67"
+  },
+  "onboarding.stepBeta.emailNote": "Оставьте адрес, и я изредка буду присылать вопросы или новости.\nУказанный адрес хранится только на вашем Mac и никогда не связан со статистикой использования: это намеренно две разные подсистемы.",
+  "@onboarding.stepBeta.emailNote": {
+    "sourceHash": "0a793b1"
+  },
+  "onboarding.stepBeta.terms.title": "И еще один пункт",
+  "@onboarding.stepBeta.terms.title": {
+    "sourceHash": "f2a6e08"
+  },
+  "onboarding.stepBeta.terms.lede": "Закон требует разместить это здесь.",
+  "@onboarding.stepBeta.terms.lede": {
+    "sourceHash": "26e1bbf"
+  },
+  "onboarding.stepBeta.terms.consent": "Я принимаю <terms>условия использования</terms> и подтверждаю ознакомление с ними.",
+  "@onboarding.stepBeta.terms.consent": {
+    "sourceHash": "7becd05"
+  },
+  "onboarding.stepBeta.terms.blockedTooltip": "Примите условия использования, чтобы продолжить.",
+  "@onboarding.stepBeta.terms.blockedTooltip": {
+    "sourceHash": "f03426e"
+  },
+  "onboarding.stepOptional.footer.start": "Начать пользоваться Cmdr",
+  "@onboarding.stepOptional.footer.start": {
+    "sourceHash": "d11e058"
+  },
+  "onboarding.stepOptional.title": "Почти все готово",
+  "@onboarding.stepOptional.title": {
+    "sourceHash": "a7bb760"
+  },
+  "onboarding.stepOptional.lede": "Вы выбрали подробную настройку, поэтому осталось несколько быстрых решений. Если они не важны для вас, нажмите кнопку ниже. Все параметры необязательны, а значения по умолчанию подобраны для вашего удобства.",
+  "@onboarding.stepOptional.lede": {
+    "sourceHash": "94c3a5a"
+  },
+  "onboarding.stepOptional.recommendedOn": "Рекомендуется: включено",
+  "@onboarding.stepOptional.recommendedOn": {
+    "sourceHash": "d91a6df"
+  },
+  "onboarding.stepOptional.changeAnytime": "Это можно изменить в настройках в любой момент.",
+  "@onboarding.stepOptional.changeAnytime": {
+    "sourceHash": "895d675"
+  },
+  "onboarding.stepOptional.networking.title": "Сеть",
+  "@onboarding.stepOptional.networking.title": {
+    "sourceHash": "204de4b"
+  },
+  "onboarding.stepOptional.networking.summary": "Нужно один раз разрешить пункт «Локальная сеть»",
+  "@onboarding.stepOptional.networking.summary": {
+    "sourceHash": "f49fbc6"
+  },
+  "onboarding.stepOptional.networking.desc": "Когда этот параметр <em>включен</em>, можно подключаться к SMB-серверам: рабочим сетевым папкам, домашнему NAS и тому подобному.\nЕдинственная плата: macOS покажет диалоговое окно с запросом разрешения для пункта «Локальная сеть» и еще одно такое окно для входящих подключений.\nОба окна безобидны, но если не знать, что это такое, они могут напугать или раздражать.",
+  "@onboarding.stepOptional.networking.desc": {
+    "sourceHash": "d473c62"
+  },
+  "onboarding.stepOptional.indexing.title": "Индексация дисков",
+  "@onboarding.stepOptional.indexing.title": {
+    "sourceHash": "38d916b"
+  },
+  "onboarding.stepOptional.indexing.summary": "Занимает 1 ГБ, ускоряет поиск, показывает размеры папок",
+  "@onboarding.stepOptional.indexing.summary": {
+    "sourceHash": "6413c6f"
+  },
+  "onboarding.stepOptional.indexing.descIntro": "Индексация дисков очень полезна! Она дает две основные возможности:",
+  "@onboarding.stepOptional.indexing.descIntro": {
+    "sourceHash": "6b86a1f"
+  },
+  "onboarding.stepOptional.indexing.benefit1": "Мгновенный поиск по всему диску. Как Spotlight, но еще быстрее.",
+  "@onboarding.stepOptional.indexing.benefit1": {
+    "sourceHash": "5fa0e9f"
+  },
+  "onboarding.stepOptional.indexing.benefit2": "Размеры папок на всем диске в реальном времени. Вы всегда знаете, сколько данных в каждой папке.",
+  "@onboarding.stepOptional.indexing.benefit2": {
+    "sourceHash": "6fe5223"
+  },
+  "onboarding.stepOptional.indexing.descCost": "Если выключить этот параметр, вместо размеров будет только <code>{dirPlaceholder}</code>.\nИндекс для нескольких миллионов файлов занимает около 1 ГБ на диске. После первых 2–3 минут при первом запуске приложения или запуске после долгого перерыва дополнительные ресурсы процессора и памяти не нужны.\nЗатраты невелики по сравнению с пользой.",
+  "@onboarding.stepOptional.indexing.descCost": {
+    "sourceHash": "954cf6b"
+  },
+  "onboarding.stepOptional.updates.title": "Автоматические обновления",
+  "@onboarding.stepOptional.updates.title": {
+    "sourceHash": "147b1b6"
+  },
+  "onboarding.stepOptional.updates.summary": "Одна крошечная проверка при запуске приложения и раз в день, чтобы у вас всегда была последняя версия",
+  "@onboarding.stepOptional.updates.summary": {
+    "sourceHash": "c44fcd4"
+  },
+  "onboarding.stepOptional.updates.desc": "Если включить этот параметр, Cmdr отправляет крошечный сетевой запрос центральному серверу лицензий при каждом запуске приложения и раз в 24 часа, и у вас всегда последние обновления.\nЕсли выключить, текущая версия сохранится, а Cmdr не будет делать автоматических сетевых запросов (кроме периодических проверок коммерческой лицензии, если она у вас есть).",
+  "@onboarding.stepOptional.updates.desc": {
+    "sourceHash": "e1a0582"
+  },
+  "onboarding.stepOptional.mtp.title": "MTP (телефоны Android, Kindle, камеры)",
+  "@onboarding.stepOptional.mtp.title": {
+    "sourceHash": "473e8e9"
+  },
+  "onboarding.stepOptional.mtp.summary": "Позволяет подключать телефоны Android и подобные устройства, приостанавливает обработчик macOS",
+  "@onboarding.stepOptional.mtp.summary": {
+    "sourceHash": "d5b9a6e"
+  },
+  "onboarding.stepOptional.mtp.desc": "Если включить этот параметр, Cmdr сможет <strong>подключаться к телефонам Android, Kindle, камерам</strong>, некоторым музыкальным плеерам и другим устройствам с протоколами MTP или PTP.\nПлата за это: macOS <em>тоже</em> пытается подключиться к ним (обычно безуспешно, поэтому Finder не позволяет просто скопировать фотографии с Android), и Cmdr приходится приостанавливать этот процесс macOS, пока Cmdr работает.\nПосле завершения Cmdr все аккуратно восстанавливается.",
+  "@onboarding.stepOptional.mtp.desc": {
+    "sourceHash": "8a60e7f"
+  },
+  "onboarding.cloudPicker.listAria": "Поставщики облачного ИИ",
+  "@onboarding.cloudPicker.listAria": {
+    "sourceHash": "9494a49"
+  },
+  "onboarding.cloudSetup.title": "Настроить {provider}",
+  "@onboarding.cloudSetup.title": {
+    "sourceHash": "c10333a"
+  },
+  "onboarding.cloudSetup.step.signup": "Зарегистрируйтесь на <signupLink>{provider}</signupLink> (если у вас нет учетной записи)",
+  "@onboarding.cloudSetup.step.signup": {
+    "sourceHash": "06a92f1"
+  },
+  "onboarding.cloudSetup.step.createKey": "Создайте API-ключ <keyLink>здесь</keyLink>",
+  "@onboarding.cloudSetup.step.createKey": {
+    "sourceHash": "5705da6"
+  },
+  "onboarding.cloudSetup.step.install": "Загрузите и установите <installLink>{provider}</installLink>",
+  "@onboarding.cloudSetup.step.install": {
+    "sourceHash": "cd0221c"
+  },
+  "onboarding.cloudSetup.step.ollamaModel": "Загрузите модель в терминале командой ollama pull llama3.2 или <libraryLink>откройте библиотеку моделей</libraryLink>",
+  "@onboarding.cloudSetup.step.ollamaModel": {
+    "sourceHash": "5999d6a"
+  },
+  "onboarding.cloudSetup.step.lmStudioServer": "Загрузите модель в LM Studio, затем запустите <serverLink>локальный сервер</serverLink>",
+  "@onboarding.cloudSetup.step.lmStudioServer": {
+    "sourceHash": "447957a"
+  },
+  "onboarding.cloudSetup.hint.azureEndpoint": "Замените заполнитель в адресе именем своего ресурса Azure OpenAI. Для этого адреса параметр api-version не нужен.",
+  "@onboarding.cloudSetup.hint.azureEndpoint": {
+    "sourceHash": "b1d408e"
+  },
+  "onboarding.cloudSetup.hint.azureModel": "В Azure это имя развертывания, которое может отличаться от имени используемой модели.",
+  "@onboarding.cloudSetup.hint.azureModel": {
+    "sourceHash": "e856224"
+  },
+  "onboarding.cloudSetup.step.endpoint": "URL сервиса",
+  "@onboarding.cloudSetup.step.endpoint": {
+    "sourceHash": "2578179"
+  },
+  "onboarding.cloudSetup.step.endpointPlaceholder": "Пример: https://api.example.com/v1",
+  "@onboarding.cloudSetup.step.endpointPlaceholder": {
+    "sourceHash": "dbc7343"
+  },
+  "onboarding.cloudSetup.step.pasteKey": "Вставьте API-ключ",
+  "@onboarding.cloudSetup.step.pasteKey": {
+    "sourceHash": "e35b296"
+  },
+  "onboarding.cloudSetup.apiKeyAria": "API-ключ",
+  "@onboarding.cloudSetup.apiKeyAria": {
+    "sourceHash": "16f0ee4"
+  },
+  "onboarding.cloudSetup.removeKey": "Удалить ключ",
+  "@onboarding.cloudSetup.removeKey": {
+    "sourceHash": "81c45fd"
+  },
+  "onboarding.cloudSetup.apiKeyPlaceholder.openai": "Пример: sk-abc123…",
+  "@onboarding.cloudSetup.apiKeyPlaceholder.openai": {
+    "sourceHash": "9352883"
+  },
+  "onboarding.cloudSetup.apiKeyPlaceholder.anthropic": "Пример: sk-ant-abc123…",
+  "@onboarding.cloudSetup.apiKeyPlaceholder.anthropic": {
+    "sourceHash": "89347d5"
+  },
+  "onboarding.cloudSetup.apiKeyPlaceholder.generic": "API-ключ",
+  "@onboarding.cloudSetup.apiKeyPlaceholder.generic": {
+    "sourceHash": "16f0ee4"
+  },
+  "onboarding.cloudSetup.apiKeyPlaceholder.saved": "Ключ сохранен. Введите новый, чтобы заменить его.",
+  "@onboarding.cloudSetup.apiKeyPlaceholder.saved": {
+    "sourceHash": "974ffdf"
+  },
+  "onboarding.cloudSetup.status.checking": "Проверка ключа…",
+  "@onboarding.cloudSetup.status.checking": {
+    "sourceHash": "e8c3a83"
+  },
+  "onboarding.cloudSetup.status.authError": "Этот ключ не подошел",
+  "@onboarding.cloudSetup.status.authError": {
+    "sourceHash": "b93b44a"
+  },
+  "onboarding.cloudSetup.status.connectionError": "Сейчас не удается связаться с сервисом",
+  "@onboarding.cloudSetup.status.connectionError": {
+    "sourceHash": "fcab672"
+  },
+  "onboarding.cloudSetup.status.genericError": "Что-то пошло не так",
+  "@onboarding.cloudSetup.status.genericError": {
+    "sourceHash": "ab827e3"
+  },
+  "onboarding.cloudSetup.status.connected": "Подключено!",
+  "@onboarding.cloudSetup.status.connected": {
+    "sourceHash": "78ae377"
+  },
+  "onboarding.cloudSetup.step.pickModel": "Выберите модель",
+  "@onboarding.cloudSetup.step.pickModel": {
+    "sourceHash": "f159730"
+  },
+  "onboarding.cloudSetup.modelAria": "Модель",
+  "@onboarding.cloudSetup.modelAria": {
+    "sourceHash": "5e2c614"
+  },
+  "onboarding.cloudSetup.modelPlaceholderExample": "Пример: {model}",
+  "@onboarding.cloudSetup.modelPlaceholderExample": {
+    "sourceHash": "2287b9f"
+  },
+  "onboarding.cloudSetup.modelPlaceholder": "Название модели",
+  "@onboarding.cloudSetup.modelPlaceholder": {
+    "sourceHash": "a3c3370"
+  }
+}

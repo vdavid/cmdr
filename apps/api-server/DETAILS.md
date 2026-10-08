@@ -7,6 +7,7 @@ Must-know invariants live in `CLAUDE.md`. Per-area depth lives with the code:
 - `src/telemetry/DETAILS.md` — crash/heartbeat/download/update-check payloads, error-report eviction and intake.
 - `src/website/DETAILS.md` — Listmonk signup, blog likes, `?r=` link codes.
 - `src/admin/DETAILS.md` — the dashboard endpoints and the funnel's column derivations.
+- `src/s3-prices/DETAILS.md` — the S3 price table's response headers and caching.
 
 Read this before any non-trivial work here: editing, planning, reorganizing, or advising.
 
@@ -69,7 +70,7 @@ Read this before any non-trivial work here: editing, planning, reorganizing, or 
 | Method  | Path                       | Auth          | Purpose                                                                                            |
 | ------- | -------------------------- | ------------- | -------------------------------------------------------------------------------------------------- |
 | GET     | `/`                        | none          | Health check                                                                                       |
-| POST    | `/webhook/paddle`          | HMAC sig      | Purchase completed → generate & email key(s)                                                       |
+| POST    | `/webhook/paddle`          | HMAC sig      | Purchase completed → generate & email key(s); full refund or chargeback → revoke them              |
 | POST    | `/activate`                | none          | Exchange short code → full cryptographic key                                                       |
 | POST    | `/validate`                | none          | Check subscription status via Paddle API                                                           |
 | POST    | `/admin/generate`          | Bearer token  | Mint a hand-issued license (evaluation, partner, thank-you, support recovery); writes the ledger   |
@@ -91,14 +92,18 @@ Read this before any non-trivial work here: editing, planning, reorganizing, or 
 | POST    | `/error-report`            | IP rate-limit | Multipart upload (zip + meta) → R2, Discord notify. Also gated by the global intake budget         |
 | POST    | `/error-report/:id/amend`  | amend key     | Add a note or reply-to address to a report already in R2 (`.amend.json` sidecar + email)           |
 | POST    | `/beta-signup`             | IP rate-limit | Subscribe a contact email to the Listmonk beta list (NO install id)                                |
+| POST    | `/newsletter-signup`       | IP rate-limit | getcmdr.com's newsletter form → the Listmonk newsletter list (CORS: getcmdr.com)                   |
 | POST    | `/feedback`                | IP rate-limit | Ingest in-app feedback to D1, Discord notify                                                       |
 | GET     | `/update-check/:version`   | none          | Log update check to D1 (deduped), 302 → latest.json                                                |
 | GET     | `/likes/:slug`             | none          | Blog-post like count + whether this caller already liked it                                        |
 | POST    | `/likes/:slug`             | IP rate-limit | Like a blog post (idempotent per caller pseudonym)                                                 |
 | DELETE  | `/likes/:slug`             | IP rate-limit | Unlike a blog post                                                                                 |
 | OPTIONS | `/likes/:slug`             | none          | CORS preflight (204), getcmdr.com origins only                                                     |
+| POST    | `/csp-report`              | IP rate-limit | getcmdr.com CSP violation reports; our own breakage alerts Discord once a day per origin           |
+| OPTIONS | `/csp-report`              | none          | CORS preflight (204) for Reporting API batches, getcmdr.com origins only                           |
 | GET     | `/r-codes.json`            | none          | Public `?r=<code>` → UTM map (note stripped), edge-cached 5 min, `Access-Control-Allow-Origin: *`  |
 | OPTIONS | `/r-codes.json`            | none          | CORS preflight (204)                                                                               |
+| GET     | `/s3-prices/v1`            | none          | The app's S3 list-price table (JSON), `max-age=3600` + `ETag`; byte-identical to the crate's copy  |
 | GET     | `/admin/r-codes`           | Bearer token  | Full code map including admin `note`                                                               |
 | PUT     | `/admin/r-codes/:code`     | Bearer token  | Upsert a code: `{ utm_source, utm_medium?, note? }` (utm values sanitized; code charset validated) |
 | DELETE  | `/admin/r-codes/:code`     | Bearer token  | Remove a code from the map                                                                         |
@@ -127,14 +132,14 @@ Decisions.
 | `CRASH_NOTIFICATION_EMAIL`         | `david@getcmdr.com`              | Recipient email for crash alerts   |
 | `FEEDBACK_NOTIFICATION_EMAIL`      | unset (falls back)               | Optional feedback digest recipient |
 | `DISCORD_WEBHOOK_URL`              | Same webhook URL                 | Discord webhook for error reports  |
-| `DISCORD_BETA_SIGNUP_WEBHOOK_URL`  | Optional (falls back)            | Optional `#beta-signups` webhook   |
+| `DISCORD_BETA_SIGNUP_WEBHOOK_URL`  | Optional (falls back)            | Optional signups webhook (both)    |
 | `R2_ACCOUNT_ID`                    | Same account ID                  | For minting presigned R2 URLs      |
 | `R2_ACCESS_KEY_ID`                 | Same access key                  | R2 S3-compat access key (read OK)  |
 | `R2_SECRET_ACCESS_KEY`             | Same secret                      | Paired secret for R2 access key    |
 | `LISTMONK_API_URL`                 | `https://mail.getcmdr.com`       | Same base URL                      |
-| `LISTMONK_API_USER`                | Listmonk API user                | Same (least-privilege at deploy)   |
-| `LISTMONK_API_TOKEN`               | Listmonk API token               | Same (least-privilege at deploy)   |
-| `LISTMONK_BETA_LIST_ID`            | Beta-list numeric id             | Same id                            |
+| `LISTMONK_API_USER`                | Listmonk API user                | Funnel only (signups need none)    |
+| `LISTMONK_API_TOKEN`               | Listmonk API token               | Funnel only (signups need none)    |
+| `LISTMONK_*_LIST_ID` / `_UUID`     | Beta + newsletter list ids/UUIDs | Same ([vars], not secrets)         |
 | `IP_HASH_PEPPER`                   | Any random string                | Makes every stored IP hash one-way |
 | `HEALTHCHECKS_PING_URL`            | unset (skips the ping)           | healthchecks.io cron ping URL      |
 | `POSTHOG_PROJECT_KEY`              | unset (skips the forward)        | PostHog `phc_` key for the relay   |
@@ -146,19 +151,23 @@ verifies against whichever public key matches its build mode. Full rationale and
 
 **R2/KV bindings** (declared in `wrangler.toml`, provisioned via `./scripts/setup-cf-infra.sh`):
 
-| Binding                      | Type         | Purpose                                                                                |
-| ---------------------------- | ------------ | -------------------------------------------------------------------------------------- |
-| `ERROR_REPORTS_BUCKET`       | R2 bucket    | Stores error report zip bundles (`cmdr-error-reports`, 90-day TTL)                     |
-| `ERROR_REPORT_META`          | KV namespace | Eviction bookkeeping + intake admission counters (key list below)                      |
-| `LINK_CODES`                 | KV namespace | One key (`codes`) holds the whole `?r=<code>` → UTM map (see the note below)           |
-| `HEARTBEAT_LIMITER`          | Rate limit   | Gates `POST /heartbeat` at 12 req/min/IP (`[[ratelimits]]`, type `RateLimit`)          |
-| `BETA_SIGNUP_LIMITER`        | Rate limit   | Gates `POST /beta-signup` at 5 req/min/IP (signups are rare; tighter than heartbeat)   |
-| `FEEDBACK_LIMITER`           | Rate limit   | Gates `POST /feedback` at 5 req/min/IP (real feedback is rare; spam loops aren't)      |
-| `ERROR_REPORT_LIMITER`       | Rate limit   | Gates `POST /error-report` at 3 req/min/IP (tightest: each request stores up to 10 MB) |
-| `ERROR_REPORT_AMEND_LIMITER` | Rate limit   | Gates `POST /error-report/:id/amend` at 10 req/min/IP (a note, not a bundle)           |
-| `CRASH_REPORT_LIMITER`       | Rate limit   | Gates `POST /crash-report` at 10 req/min/IP (a crashing app flushes a small burst)     |
-| `LIKES_LIMITER`              | Rate limit   | Gates `POST`/`DELETE /likes/:slug` at 20 req/min/IP (bounds unauthenticated KV growth) |
-| `BLOG_LIKES`                 | KV namespace | One key per post (`likes:<slug>`) holding the count and the caller pseudonyms          |
+| Binding                      | Type         | Purpose                                                                                   |
+| ---------------------------- | ------------ | ----------------------------------------------------------------------------------------- |
+| `ERROR_REPORTS_BUCKET`       | R2 bucket    | Stores error report zip bundles (`cmdr-error-reports`, 90-day TTL)                        |
+| `ERROR_REPORT_META`          | KV namespace | Eviction bookkeeping + intake admission counters (key list below)                         |
+| `LINK_CODES`                 | KV namespace | One key (`codes`) holds the whole `?r=<code>` → UTM map (see the note below)              |
+| `HEARTBEAT_LIMITER`          | Rate limit   | Gates `POST /heartbeat` at 12 req/min/IP (`[[ratelimits]]`, type `RateLimit`)             |
+| `SIGNUP_LIMITER`             | Rate limit   | Gates both signup routes at 5 req/min/IP, one shared window (signups are rare)            |
+| `FEEDBACK_LIMITER`           | Rate limit   | Gates `POST /feedback` at 5 req/min/IP (real feedback is rare; spam loops aren't)         |
+| `ERROR_REPORT_LIMITER`       | Rate limit   | Gates `POST /error-report` at 3 req/min/IP (tightest: each request stores up to 10 MB)    |
+| `ERROR_REPORT_AMEND_LIMITER` | Rate limit   | Gates `POST /error-report/:id/amend` at 10 req/min/IP (a note, not a bundle)              |
+| `CRASH_REPORT_LIMITER`       | Rate limit   | Gates `POST /crash-report` at 10 req/min/IP (a crashing app flushes a small burst)        |
+| `LIKES_LIMITER`              | Rate limit   | Gates `POST`/`DELETE /likes/:slug` at 20 req/min/IP (bounds unauthenticated KV growth)    |
+| `BLOG_LIKES`                 | KV namespace | One key per post (`likes:<slug>`) holding the count and the caller pseudonyms             |
+| `CSP_REPORT_LIMITER`         | Rate limit   | Gates `POST /csp-report` at 30 req/min/IP (a violating page load sends a handful)         |
+| `ACTIVATE_LIMITER`           | Rate limit   | Gates `POST /activate` at 10 req/min/IP (keeps license-code guessing slow)                |
+| `VALIDATE_LIMITER`           | Rate limit   | Gates `POST /validate` at 60 req/min/IP (loose for company NATs; a 429 keeps the cache)   |
+| `CSP_ALERTS`                 | KV namespace | CSP alert dedupe: `csp:<directive>:<blocked origin>`, 24 h TTL, nothing about the visitor |
 
 **Rate limits are per data center, not global.** Cloudflare's rate-limit bindings count per colo
 ([docs](https://developers.cloudflare.com/workers/runtime-apis/bindings/rate-limit/)), so each one bounds a single
@@ -191,6 +200,12 @@ other namespaces).
 `DISCORD_WEBHOOK_URL` posts notifications to the `#error-reports` channel of the **Cmdr** Discord server. The URL is the
 secret (anyone holding it can post to that channel), so it lives only as a wrangler secret, never in the repo.
 
+**No email address ever goes to Discord** (the privacy policy and `/trust` promise it). The notification types in
+`discord.ts` have no email field: feedback sends only `hasReplyTo` (the address stays in D1 and the reports-repo
+comment), and a signup sends the list, the time, and the Listmonk link. Pinned by `feedback.test.ts` and
+`listmonk-signup.test.ts` on the outbound webhook body. The error-report embed carries the user's free-text note and a
+24-hour bundle link, and the bundle's manifest can hold a reply-to, so that link is personal data while it lives.
+
 **To create or rotate the webhook:**
 
 1. Open the Cmdr Discord server → right-click `#error-reports` → **Edit Channel** → **Integrations** → **Webhooks**.
@@ -209,10 +224,10 @@ secret (anyone holding it can post to that channel), so it lives only as a wrang
 Rate limit: 30 messages/min per webhook. The Worker should retry once on `Retry-After`, then drop with a `console.error`
 We don't run our own queue infra for an internal channel.
 
-**Optional dedicated webhooks (`#beta-signups`, `#feedback`):** `POST /beta-signup` posts to
+**Optional dedicated webhooks (`#beta-signups`, `#feedback`):** both signup routes post to
 `DISCORD_BETA_SIGNUP_WEBHOOK_URL` and `POST /feedback` to `DISCORD_FEEDBACK_WEBHOOK_URL`. Both fall back to
 `DISCORD_WEBHOOK_URL` when unset, so the feature works before the dedicated channel exists (pings just land in
-`#error-reports`). To split beta-signup pings into their own channel:
+`#error-reports`). To split signup pings into their own channel:
 
 1. Create the channel `#beta-signups` in the Cmdr Discord server.
 2. Right-click `#beta-signups` → **Edit Channel** → **Integrations** → **Webhooks** → **New Webhook**. Name it "Cmdr
@@ -267,13 +282,14 @@ back to the OAuth login).
 
 **D1 for telemetry and fulfillment:** crash reports, downloads, update checks, heartbeats, relayed feature events,
 feedback, and the `license_issuance` record all live in D1 (binding `TELEMETRY_DB`, database `cmdr-telemetry`).
-Migrations live in `migrations/` (latest: `0020_heartbeat_uptime_and_events.sql`, `heartbeat.uptime_seconds` and the
-`analytics_event` table `/heartbeat` relays feature events into; `0017_manual_licenses.sql` is the `source` /
-`organization_name` / `expires_at` / `revoked_at` / `note` columns that turn `license_issuance` into the ledger for
-hand-issued licenses as well as purchases; `0016_feedback_notified_at.sql` is the `feedback.notified_at` column the
-feedback digest reads, which also stamps the pre-existing rows so the first tick doesn't mail the backlog;
-`0015_crash_app_fate.sql` adds the nullable `app_fate` column the crash email ranks rows by;
-`0014_downloads_daily_unique.sql` is the distinct-downloader rollup the retention sweep writes;
+Migrations live in `migrations/` (latest: `0021_license_adjustments.sql`, the refund and chargeback record
+`/webhook/paddle` keeps beside the ledger (`src/licensing/DETAILS.md` § Refunds); `0020_heartbeat_uptime_and_events.sql`
+is `heartbeat.uptime_seconds` and the `analytics_event` table `/heartbeat` relays feature events into;
+`0017_manual_licenses.sql` is the `source` / `organization_name` / `expires_at` / `revoked_at` / `note` columns that
+turn `license_issuance` into the ledger for hand-issued licenses as well as purchases; `0016_feedback_notified_at.sql`
+is the `feedback.notified_at` column the feedback digest reads, which also stamps the pre-existing rows so the first
+tick doesn't mail the backlog; `0015_crash_app_fate.sql` adds the nullable `app_fate` column the crash email ranks rows
+by; `0014_downloads_daily_unique.sql` is the distinct-downloader rollup the retention sweep writes;
 `0013_minimize_stored_identifiers.sql` adds `downloads.ua_family` and erases the crash-table IP hashes;
 `0012_license_issuance.sql` is the fulfillment record; `0011_crash_panic_message.sql` adds the nullable `panic_message`
 column; `0007_feedback.sql` adds the `feedback` table; `0006_crash_diag_email.sql` adds the nullable `diag_id` + `email`
@@ -437,12 +453,15 @@ triage value live in the other columns, and there's no privacy reason to lose th
   of licenses, and a manual row IS the license, so deleting it would revoke one by accident. It holds the buyer's or
   recipient's email and, for a hand-issued license, a free-text `note` naming who it's for; the privacy policy covers
   both under the license sections.
+- **`license_adjustments`**: never swept, for the same audit reason; it's how we know a license was revoked by a refund.
+  It holds no personal data (ids, amount, Paddle's reason), only purchase details the policy already covers.
 - **`heartbeat`**: rows DELETED after two years. Two years covers every window the dashboard computes (DAU, new
   installs, D7 retention) with room to spare.
 - **`analytics_event`**: rows DELETED after two years, the same "desktop usage stats" promise as `heartbeat`. Aged by
   `received_at` (our clock), never `occurred_at`: that's the client's clock, and a wrong one would keep a row forever.
   The copy forwarded to PostHog is under PostHog's own retention, which the privacy policy names separately.
-- **Error report bundles**: 90-day R2 lifecycle, plus capacity-driven eviction that never touches anything under 60 days
+- **Error report bundles**: 90-day R2 lifecycle (`error-reports/` prefix only, rule details in
+  `src/telemetry/DETAILS.md` § Eviction), plus capacity-driven eviction that never touches anything under 60 days
   (`src/telemetry/DETAILS.md` § Eviction). Not part of this sweep. The same 90 days covers every reply-to address an
   error report can carry (`meta.email` inside the bundle zip, and any address in the `.amend.json` sidecar) and the
   `report:{id}` KV index entry, whose TTL is set to match. That is the same window `crash_reports.email` gets, reached

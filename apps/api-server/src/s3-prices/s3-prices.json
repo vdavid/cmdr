@@ -1,0 +1,254 @@
+{
+  "schemaVersion": 1,
+  "providers": {
+    "aws": {
+      "label": "AWS",
+      "currency": "USD",
+      "asOf": "2026-09-25",
+      "source": "https://aws.amazon.com/s3/pricing/",
+      "scope": "S3 Standard in US East (N. Virginia)",
+      "requestClasses": [
+        {
+          "name": "PUT, COPY, POST, LIST",
+          "perMillion": 5.0,
+          "operations": [
+            "PutObject",
+            "CopyObject",
+            "CreateMultipartUpload",
+            "UploadPart",
+            "UploadPartCopy",
+            "CompleteMultipartUpload",
+            "ListObjectsV2"
+          ]
+        },
+        { "name": "GET and all other requests", "perMillion": 0.4, "operations": ["GetObject", "HeadObject"] },
+        {
+          "name": "DELETE and CANCEL",
+          "perMillion": 0,
+          "operations": ["DeleteObject", "DeleteObjects", "AbortMultipartUpload"]
+        }
+      ],
+      "egressPerGb": 0.09,
+      "storagePerGbMonth": 0.023,
+      "minimumStorageDays": 0,
+      "minimumBillableObjectBytes": 0,
+      "notes": [
+        "The first 100 GB of downloads a month are free, across all AWS services and regions.",
+        "Other regions and storage classes cost differently."
+      ]
+    },
+    "r2": {
+      "label": "Cloudflare R2",
+      "currency": "USD",
+      "asOf": "2026-10-01",
+      "source": "https://developers.cloudflare.com/r2/pricing/",
+      "scope": "Standard storage",
+      "requestClasses": [
+        {
+          "name": "Class A",
+          "perMillion": 4.5,
+          "operations": [
+            "PutObject",
+            "CopyObject",
+            "CreateMultipartUpload",
+            "UploadPart",
+            "UploadPartCopy",
+            "CompleteMultipartUpload",
+            "ListObjectsV2"
+          ]
+        },
+        { "name": "Class B", "perMillion": 0.36, "operations": ["GetObject", "HeadObject"] },
+        {
+          "name": "Free operations",
+          "perMillion": 0,
+          "operations": ["DeleteObject", "DeleteObjects", "AbortMultipartUpload"]
+        }
+      ],
+      "egressPerGb": 0,
+      "storagePerGbMonth": 0.015,
+      "minimumStorageDays": 0,
+      "minimumBillableObjectBytes": 0,
+      "notes": [
+        "Free each month: 10 GB-month of storage, 1 million Class A and 10 million Class B requests.",
+        "R2 doesn't list DeleteObjects; it's priced like DeleteObject here."
+      ]
+    },
+    "b2": {
+      "label": "Backblaze B2",
+      "currency": "USD",
+      "asOf": "2026-10-01",
+      "source": "https://www.backblaze.com/cloud-storage/transaction-pricing",
+      "scope": "Pay-as-you-go",
+      "requestClasses": [
+        {
+          "name": "Class A, B, and C",
+          "perMillion": 0,
+          "operations": [
+            "PutObject",
+            "CopyObject",
+            "CreateMultipartUpload",
+            "UploadPart",
+            "UploadPartCopy",
+            "CompleteMultipartUpload",
+            "ListObjectsV2",
+            "GetObject",
+            "HeadObject",
+            "DeleteObject",
+            "DeleteObjects",
+            "AbortMultipartUpload"
+          ]
+        }
+      ],
+      "egressPerGb": 0,
+      "storagePerGbMonth": 0.00695,
+      "minimumStorageDays": 0,
+      "minimumBillableObjectBytes": 0,
+      "notes": [
+        "Downloads are free up to 3x your average monthly storage, then $0.01/GB.",
+        "The first 10 GB of storage are free."
+      ]
+    },
+    "wasabi": {
+      "label": "Wasabi",
+      "currency": "USD",
+      "asOf": "2026-10-01",
+      "source": "https://wasabi.com/pricing/faq",
+      "scope": "Pay as You Go, US and Europe",
+      "requestClasses": [
+        {
+          "name": "API requests",
+          "perMillion": 0,
+          "operations": [
+            "PutObject",
+            "CopyObject",
+            "CreateMultipartUpload",
+            "UploadPart",
+            "UploadPartCopy",
+            "CompleteMultipartUpload",
+            "ListObjectsV2",
+            "GetObject",
+            "HeadObject",
+            "DeleteObject",
+            "DeleteObjects",
+            "AbortMultipartUpload"
+          ]
+        }
+      ],
+      "egressPerGb": 0,
+      "storagePerGbMonth": 0.00780273,
+      "minimumStorageDays": 90,
+      "minimumBillableObjectBytes": 4096,
+      "notes": [
+        "$7.99/TB-month, billed per GB-day ($7.99 / 1,024 GB / 30 days).",
+        "Deleting or overwriting an object younger than 90 days bills its remaining days as deleted storage.",
+        "Free downloads and requests while monthly downloads stay under your active storage.",
+        "The monthly minimum is 1 TB of active storage."
+      ]
+    },
+    "hetzner": {
+      "label": "Hetzner",
+      "currency": "EUR",
+      "asOf": "2026-10-01",
+      "source": "https://www.hetzner.com/storage/object-storage/",
+      "scope": "Object Storage, excluding VAT",
+      "requestClasses": [
+        {
+          "name": "S3 API calls",
+          "perMillion": 0,
+          "operations": [
+            "PutObject",
+            "CopyObject",
+            "CreateMultipartUpload",
+            "UploadPart",
+            "UploadPartCopy",
+            "CompleteMultipartUpload",
+            "ListObjectsV2",
+            "GetObject",
+            "HeadObject",
+            "DeleteObject",
+            "DeleteObjects",
+            "AbortMultipartUpload"
+          ]
+        }
+      ],
+      "egressPerGb": 0,
+      "storagePerGbMonth": 0,
+      "minimumStorageDays": 0,
+      "minimumBillableObjectBytes": 65536,
+      "notes": [
+        "The €6.49 monthly base price includes 1 TB of storage and 1 TB of downloads.",
+        "Past that: €0.0087 per TB-hour of storage and €1.00 per TB of downloads.",
+        "Objects under 64 KB are billed as 64 KB."
+      ]
+    },
+    "gcs": {
+      "label": "Google Cloud Storage",
+      "currency": "USD",
+      "asOf": "2026-10-02",
+      "source": "https://cloud.google.com/storage/pricing",
+      "scope": "Standard storage in one region (us-central1), flat namespace",
+      "requestClasses": [
+        {
+          "name": "Class A",
+          "perMillion": 5.0,
+          "operations": [
+            "PutObject",
+            "CopyObject",
+            "CreateMultipartUpload",
+            "UploadPart",
+            "UploadPartCopy",
+            "CompleteMultipartUpload",
+            "ListObjectsV2",
+            "DeleteObjects"
+          ]
+        },
+        { "name": "Class B", "perMillion": 0.4, "operations": ["GetObject", "HeadObject"] },
+        { "name": "Free operations", "perMillion": 0, "operations": ["DeleteObject", "AbortMultipartUpload"] }
+      ],
+      "egressPerGb": 0.12,
+      "storagePerGbMonth": 0.02,
+      "minimumStorageDays": 0,
+      "minimumBillableObjectBytes": 0,
+      "notes": [
+        "Free each month in US regions: 5 GB-month of storage, 5,000 Class A and 50,000 Class B operations, and 100 GB of downloads from North America.",
+        "A batch delete is an XML POST, so GCS bills it as Class A; deleting one object is free.",
+        "Soft delete keeps deleted objects (7 days by default) and bills their storage meanwhile."
+      ]
+    },
+    "digitalocean": {
+      "label": "DigitalOcean Spaces",
+      "currency": "USD",
+      "asOf": "2026-10-02",
+      "source": "https://docs.digitalocean.com/products/spaces/details/pricing/",
+      "scope": "Spaces Standard Storage subscription",
+      "requestClasses": [
+        {
+          "name": "S3 API requests",
+          "perMillion": 0,
+          "operations": [
+            "PutObject",
+            "CopyObject",
+            "CreateMultipartUpload",
+            "UploadPart",
+            "UploadPartCopy",
+            "CompleteMultipartUpload",
+            "ListObjectsV2",
+            "GetObject",
+            "HeadObject",
+            "DeleteObject",
+            "DeleteObjects",
+            "AbortMultipartUpload"
+          ]
+        }
+      ],
+      "egressPerGb": 0,
+      "storagePerGbMonth": 0,
+      "minimumStorageDays": 0,
+      "minimumBillableObjectBytes": 0,
+      "notes": [
+        "The $5.00 monthly base price includes 250 GiB of storage and 1,024 GiB of downloads, shared by every bucket.",
+        "Past that: $0.02 per GiB-month of storage and $0.01 per GiB of downloads."
+      ]
+    }
+  }
+}

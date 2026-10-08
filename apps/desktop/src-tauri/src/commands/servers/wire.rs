@@ -6,6 +6,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::commands::sftp::SftpHostKeyIdentity;
+use crate::network::s3_known_places::S3ProviderChoice;
 use crate::network::saved_server_fields;
 use cmdr_sftp::transport::HostKeyPrompt;
 
@@ -13,12 +14,15 @@ use cmdr_sftp::transport::HostKeyPrompt;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "snake_case")]
 pub enum ServerProtocol {
-    /// An SMB host. ❗ Listed, never pinned in this effort; see [`SavedServer`].
+    /// An SMB host. ❗ The host row is never pinned; its saved shares are, see [`SavedServer`].
     Smb,
     /// An SFTP server, one account per entry.
     Sftp,
     /// A WebDAV server, one account per entry.
     Webdav,
+    /// An S3 account (an endpoint plus an access key id), whose places are its
+    /// saved buckets and, when saved, its root.
+    S3,
 }
 
 /// Whether a person NAMED this server, or the label is a stand-in.
@@ -81,9 +85,14 @@ pub struct SavedPlace {
     /// `smb://<host>/<share>` for one no mount went through yet, which has no
     /// place in the volume list to land on.
     pub app_root: String,
-    /// The account this place is opened as: the SFTP or WebDAV account, or the one
-    /// an SMB share was last mounted with (`None` for guest).
+    /// The account this place is opened as: the SFTP or WebDAV account, the S3
+    /// access key id, or the account an SMB share was last mounted with (`None`
+    /// for guest).
     pub username: Option<String>,
+    /// This place's own "Reconnect automatically" switch. `None` for an SMB
+    /// share, which has none. ❗ Per PLACE: an S3 account's buckets each carry
+    /// their own, so a row menu reads it here rather than off the account.
+    pub auto_reconnect: Option<bool>,
 }
 
 /// An endpoint plus an identity, as the hub lists it.
@@ -182,6 +191,21 @@ pub enum ServerTarget {
         /// Whether Cmdr may re-probe unattended when a request finds it gone.
         auto_reconnect: bool,
     },
+    /// One S3 place: display name, provider (which fixes the endpoint), access
+    /// key id, an optional bucket, and the auto-reconnect switch.
+    S3 {
+        /// What to call it in the UI.
+        display_name: String,
+        /// The provider preset, and with it the endpoint.
+        provider: S3ProviderChoice,
+        /// The account's key. ❗ Part of the identity.
+        access_key_id: String,
+        /// The bucket this place is, or `None` for the account root, which lists
+        /// the buckets. ❗ Part of the identity: each bucket is its own place.
+        bucket: Option<String>,
+        /// Whether Cmdr may re-probe unattended when a request finds it gone.
+        auto_reconnect: bool,
+    },
 }
 
 /// What a connect attempt produced, across every protocol this family speaks.
@@ -222,8 +246,28 @@ pub enum ServerConnectOutcome {
     CertificateUntrusted,
     /// WebDAV only: the URL answers HTTP but not WebDAV.
     NotAWebdavServer,
-    /// WebDAV only: the address the user typed isn't a `http`/`https` URL.
+    /// WebDAV and S3: the address the user typed isn't a usable `http`/`https`
+    /// URL (for S3, also a region, location, or account ID a host name can't
+    /// carry).
     InvalidUrl,
+    /// S3 only: the bucket refused this key, which is a wrong key or one without
+    /// rights here (a bodyless 403 can't say which).
+    AccessDenied,
+    /// S3 only: the account root needs `ListBuckets` and this key may not (or,
+    /// on some servers, its secret is wrong). A bucket name is the way in.
+    BucketListRefused,
+    /// S3 only: no bucket by that name on this endpoint.
+    BucketNotFound,
+    /// S3 only: the bucket lives in another region than the one chosen.
+    RegionMismatch {
+        /// The bucket's region, when the server named it.
+        region: Option<String>,
+    },
+    /// S3 only: this Mac's clock is too far off for the server to accept a
+    /// signature.
+    ClockSkewed,
+    /// S3 only: the address answers, but not as S3.
+    NotAnS3Endpoint,
     /// The start folder isn't the root or under it. ❗ Refused before dialing,
     /// so nothing was registered or saved.
     StartFolderOutsideRoot,

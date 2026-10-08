@@ -24,9 +24,9 @@
 
 use log::{debug, info, warn};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
-use std::sync::{Mutex, OnceLock};
+use std::sync::{LazyLock, Mutex, OnceLock};
 use std::time::Duration;
 use tauri::AppHandle;
 use tauri_specta::Event;
@@ -57,8 +57,9 @@ static LAST_SPACE: OnceLock<Mutex<HashMap<String, SpaceInfo>>> = OnceLock::new()
 static LAST_EMITTED: OnceLock<Mutex<HashMap<String, SpaceInfo>>> = OnceLock::new();
 
 /// `appearance.fileSizeFormat` is SI. The readout's digits roll over at different byte counts per
-/// base, so the emit gate has to know which one the frontend draws in.
-static SIZE_FORMAT_SI: AtomicBool = AtomicBool::new(false);
+/// base, so the emit gate has to know which one the frontend draws in. Starts at the setting's
+/// default (SI) for the stretch before `apply_saved_settings` runs.
+static SIZE_FORMAT_SI: AtomicBool = AtomicBool::new(true);
 
 /// Rate limit for the per-emission debug line (the events themselves are never
 /// throttled; only the logging is). Per volume, so a churning boot disk can't
@@ -66,7 +67,7 @@ static SIZE_FORMAT_SI: AtomicBool = AtomicBool::new(false);
 static SPACE_EMIT_LOG: cmdr_fs::log_rollup::LogRollup = cmdr_fs::log_rollup::LogRollup::new(Duration::from_secs(60));
 
 /// Change threshold in bytes. Updated at runtime from settings.
-static THRESHOLD_BYTES: AtomicU64 = AtomicU64::new(1_048_576); // 1 MB default
+static THRESHOLD_BYTES: AtomicU64 = AtomicU64::new(1_000_000); // 1 MB default
 
 /// Whether the low-disk-space warning is on. Mirrors the
 /// `behavior.fileSystemWatching.lowDiskSpaceNotifications` setting
@@ -81,6 +82,9 @@ static LOW_SPACE_THRESHOLD_PERCENT: AtomicU64 = AtomicU64::new(5);
 /// below the threshold. Disarmed after firing; re-armed once free space climbs
 /// back above threshold + [`LOW_SPACE_REARM_MARGIN_PERCENT`].
 static LOW_SPACE_ARMED: AtomicBool = AtomicBool::new(true);
+
+/// Volumes a reader just started watching, polled on the next tick whatever their cadence.
+static DUE_NOW: LazyLock<Mutex<HashSet<String>>> = LazyLock::new(|| Mutex::new(HashSet::new()));
 
 /// Re-arm margin in percentage points. Without it, free space oscillating
 /// around the exact threshold (a download writing and deleting temp files)
@@ -192,9 +196,10 @@ pub fn apply_saved_settings(settings: &crate::settings::loader::Settings) {
     );
 }
 
-/// Updates the threshold from the Settings UI (value in megabytes).
+/// Updates the threshold from the Settings UI (value in decimal megabytes, 1 MB = 1,000,000 bytes, as its
+/// "(MB)" label says).
 pub fn set_threshold_mb(mb: u64) {
-    THRESHOLD_BYTES.store(mb.saturating_mul(1_048_576), Ordering::Relaxed);
+    THRESHOLD_BYTES.store(mb.saturating_mul(1_000_000), Ordering::Relaxed);
 }
 
 /// Applies the low-disk-space warning config (at startup and live from Settings).
@@ -222,7 +227,19 @@ pub fn configure_low_disk_space(enabled: bool, threshold_percent: u64) {
 ///
 /// `watcher_id` is typically a pane ID ("left"/"right"). Multiple watchers
 /// can watch the same volume without interfering with each other.
+///
+/// ❗ A new watcher has seen no figure yet, and the poller emits only on CHANGE.
+/// So the volume is polled on the next tick, whatever its cadence, and its last
+/// emission is forgotten so that reading goes out even if it hasn't moved. A
+/// remote volume has no other route to a pane: `get_volume_space` reads the
+/// mount table, which an `sftp://` or `webdav://` path isn't in, so a second
+/// pane on a volume the first one already showed stayed blank until the free
+/// space moved.
 pub fn watch(watcher_id: String, volume_id: String, path: String) {
+    if let Some(map) = LAST_EMITTED.get() {
+        map.lock_ignore_poison().remove(&volume_id);
+    }
+    DUE_NOW.lock_ignore_poison().insert(volume_id.clone());
     if let Some(w) = WATCHED.get() {
         w.lock_ignore_poison()
             .insert(watcher_id, WatchEntry { volume_id, path });
@@ -337,7 +354,8 @@ async fn poll_loop() {
                 .unwrap_or(DEFAULT_POLL_INTERVAL);
 
             let interval_secs = interval.as_secs().max(1);
-            if !catching_up && !tick.is_multiple_of(interval_secs) {
+            let due_now = take_due_now(&volume_id);
+            if !catching_up && !due_now && !tick.is_multiple_of(interval_secs) {
                 continue;
             }
 
@@ -555,6 +573,11 @@ fn last_emitted(volume_id: &str) -> Option<SpaceInfo> {
     LAST_EMITTED.get()?.lock_ignore_poison().get(volume_id).copied()
 }
 
+/// Whether a reader is waiting on `volume_id`'s first figure, answered once.
+fn take_due_now(volume_id: &str) -> bool {
+    DUE_NOW.lock_ignore_poison().remove(volume_id)
+}
+
 fn record_emitted(volume_id: &str, space: &SpaceInfo) {
     if let Some(map) = LAST_EMITTED.get() {
         map.lock_ignore_poison().insert(volume_id.to_string(), *space);
@@ -601,6 +624,11 @@ fn emit(volume_id: &str, space: &SpaceInfo) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_emit_gate_rounds_in_si_until_settings_load() {
+        assert_eq!(size_format(), FileSizeFormat::Si);
+    }
 
     #[test]
     fn fires_once_when_crossing_below_threshold() {
@@ -689,10 +717,33 @@ mod emit_tests {
 
     const GIB: u64 = 1024 * 1024 * 1024;
     const MIB: u64 = 1024 * 1024;
-    const ONE_MB_THRESHOLD: u64 = 1_048_576;
+    const ONE_MB_THRESHOLD: u64 = 1_000_000;
 
     fn free(available: u64) -> SpaceInfo {
         SpaceInfo::bounded(926 * GIB, available)
+    }
+
+    #[test]
+    fn a_new_watcher_gets_its_volume_polled_on_the_next_tick_once() {
+        let volume = "test:a-new-watcher-is-due";
+        assert!(!take_due_now(volume));
+        watch("test:pane".to_string(), volume.to_string(), "/x".to_string());
+        assert!(
+            take_due_now(volume),
+            "a 60 s cadence would leave the new pane blank for a minute"
+        );
+        assert!(!take_due_now(volume), "once: after that the volume's own cadence");
+    }
+
+    #[test]
+    fn a_new_watcher_gets_the_figure_even_when_it_has_not_moved() {
+        // ❗ The poller emits on CHANGE, and a second pane on a volume the first one
+        // already showed would otherwise wait until the free space moves.
+        LAST_EMITTED.get_or_init(|| Mutex::new(HashMap::new()));
+        let volume = "test:a-new-watcher-forgets-the-last-emission";
+        record_emitted(volume, &free(100 * GIB));
+        watch("test:other-pane".to_string(), volume.to_string(), "/x".to_string());
+        assert_eq!(last_emitted(volume), None);
     }
 
     fn emits(last: Option<&SpaceInfo>, new: &SpaceInfo, threshold: u64) -> bool {

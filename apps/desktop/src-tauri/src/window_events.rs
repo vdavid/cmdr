@@ -56,10 +56,6 @@ pub struct OpenFileViewer {
     pub path: Option<String>,
 }
 
-/// `focus-settings`: bring the settings window forward (MCP `dialog focus`).
-#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
-pub struct FocusSettings;
-
 /// `focus-file-viewer`: focus a viewer. `path` present → that file's viewer;
 /// absent → the most recently opened viewer (MCP `dialog focus`).
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
@@ -136,6 +132,18 @@ pub enum ViewerEditActionKind {
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
 #[serde(rename_all = "camelCase")]
 pub struct ViewerEditAction {
+    pub action: ViewerEditActionKind,
+}
+
+/// `viewer-context-menu-action`: Copy or Select all was picked from the viewer's right-click menu
+/// over the file text. Emitted to that viewer's label.
+///
+/// Its own event rather than a `ViewerEditAction`: the bar's pair hands both actions to the
+/// search box while it has focus, and a right-click on the text leaves focus where it was, so
+/// this pair always acts on the file.
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
+#[serde(rename_all = "camelCase")]
+pub struct ViewerContextMenuAction {
     pub action: ViewerEditActionKind,
 }
 

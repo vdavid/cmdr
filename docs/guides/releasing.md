@@ -8,12 +8,132 @@ Related guides for the signing and distribution steps: `apple-signing-and-notari
 
 ## Prerequisites
 
-- `TAURI_SIGNING_PRIVATE_KEY` and `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` in GitHub secrets
+- The signing secrets in the `release` GitHub environment (next section).
+- Where the update archives get signed, set by the `RELEASE_UPDATE_SIGNING` variable: in `ci` mode the updater key is
+  among those secrets, in `local` mode it's in this laptop's sops store (§ Who signs the update archives).
+
+## Signing secrets
+
+The secrets that sign, notarize, and updater-sign a build live in the `release` environment on `vdavid/cmdr`, and only
+the `build` job declares `environment: release`. The environment's deployment policy admits `v*` tags only, with no
+required reviewers (releases run unattended), so once the repo-level copies are gone (below), a workflow on a branch
+can't reach them. Where each value comes from: the vault note `projects/Cmdr/workflow/Cmdr signing keys.md`.
+
+- **In the environment** (set 2026-10-05): `TAURI_SIGNING_PRIVATE_KEY`, `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`,
+  `APPLE_API_KEY`, `APPLE_API_KEY_BASE64`, `APPLE_API_ISSUER`, `APPLE_SIGNING_IDENTITY`. The updater key was checked
+  against the app's key ID `A2601F36BB168C0A` and the notarization trio against Apple's notary API before setting.
+- **Still repo-level only**: `APPLE_CERTIFICATE` and `APPLE_CERTIFICATE_PASSWORD`. Their only copy outside GitHub is in
+  Bitwarden, which agents can't reach. Set them from there:
+  `gh secret set APPLE_CERTIFICATE --env release -R vdavid/cmdr` (it prompts for the value), same for the password.
+- **Not set yet**: `APPLE_INSTALLER_CERTIFICATE` and `APPLE_INSTALLER_CERTIFICATE_PASSWORD`, the Developer ID Installer
+  certificate that signs the `.pkg`. Environment-only from the start (no repo-level copy). Until they exist the `pkg`
+  job skips (§ The installer package).
+- **Repo-level copies still exist** for all eight. A job in an environment sees both, and the environment value wins on
+  a name clash, so nothing breaks while the move is partial.
+
+**Follow-up once the first release through the environment succeeds** (with all eight in the environment): delete the
+repo-level copies, `gh secret delete <NAME> -R vdavid/cmdr` for each of the eight, then confirm the next release still
+signs and notarizes. The updater pair (`TAURI_SIGNING_*`) leaves GitHub entirely once a `local` release has shipped: §
+Who signs the update archives.
+
+## Who signs the update archives
+
+The updater key (minisign, key ID `A2601F36BB168C0A`) is the one release secret that can't be rotated: its public half
+is compiled into every installed copy, so whoever holds the private half can ship an update to every Mac, for good. The
+repository variable `RELEASE_UPDATE_SIGNING` picks where it signs, read by the `guard` job of each tag push:
+
+- **`ci`, or unset**: the tag push does everything, and the `build` job signs each archive with `TAURI_SIGNING_*` from
+  the `release` environment.
+- **`local`**: the key never leaves this laptop. Decided 2026-10-06; the threat-model discussion is private issue
+  `vdavid/cmdr-reports#39`.
+
+Read it with `gh variable get RELEASE_UPDATE_SIGNING -R vdavid/cmdr` (an error means unset, so `ci`). Any other value
+fails the guard. Both modes stay implemented in the same files (`release-pipeline.yml`, `release.yml`), so switching is
+the variable alone.
+
+### How a `local` release runs
+
+1. `release.sh` and the tag push are unchanged.
+2. **The tag push's run** builds without publishing: `guard`, `ci-gate`, then `draft`, which creates the draft release
+   up front (three parallel builds each looking for a draft by tag could each create one; drafts can't be fetched by
+   tag). The three `build` jobs upload the DMGs and `.app.tar.gz` archives into it with no `.sig` files, `sbom` runs
+   beside them, and `attest` attests the draft's assets. `publish` and `bump-tap` skip, so `latest.json` doesn't move
+   and nothing is public.
+   - The Tauri CLI won't bundle without an updater key once the config has a pubkey, and the archive must still come out
+     of the bundler in the shape `ci` mode ships. So each build job makes a throwaway key (a mismatch the bundler only
+     warns about) and keeps its signatures on the runner (`uploadUpdaterSignatures: false`).
+3. **On the laptop, `./scripts/release-finish.sh X.Y.Z`** (the `/release` skill starts it right after the push). It
+   waits for that run to go green, downloads the three archives, and runs `gh attestation verify` on each, pinned to
+   `release-pipeline.yml` at the tag's commit (`--signer-digest`, `--source-digest`, `--source-ref`) on a GitHub-hosted
+   runner. It refuses to sign anything that doesn't verify. Then it signs with `tauri signer sign`, the key and password
+   read from sops (`CMDR_TAURI_SIGNING_PRIVATE_KEY`, `CMDR_TAURI_SIGNING_PRIVATE_KEY_PASSWORD`) into the signer's
+   environment only, verifies each new signature against the pubkey in `tauri.conf.json` with its own minisign verifier
+   (the check the app runs), uploads the `.sig` files, reads them back, and dispatches `release.yml` on the tag.
+4. **The dispatched run** finishes it: `guard` (it also refuses a dispatch on a branch), then `publish`, which verifies
+   every archive's `.sig` against the app's public key, publishes the draft, and then runs exactly the `ci` mode steps
+   (`latest.json` from the `.sig` assets, checksums, release notes, the commit to `main`, the website deploy), then
+   `attest` and `bump-tap`. `ci-gate`, `build`, and `sbom` skip.
+
+`release-finish.sh` is resumable: re-run it after anything (a closed laptop, a red job). It holds no state of its own
+and reads where the release stands on GitHub. A build still running gets waited for, a draft gets signed (re-signing a
+draft is harmless, since nothing reads its signatures yet), a published release skips to the finishing run, a red
+finishing run gets its failed jobs re-run once (a fresh dispatch would meet the guard, since `publish` may have moved
+the manifest already), and a green one ends it. It doesn't read the variable: a release finishes in the mode its tag
+push ran in.
+
+**Dry run**: `./scripts/release-finish.sh -dry-run -out <dir> X.Y.Z` stops after verifying the new signatures and
+touches nothing on GitHub; it works on a published release too. `-signer-workflow` (dry runs only) checks a release from
+before the reusable workflow, which `release.yml` signed. (Verified on v0.50.0, 2026-10-06: provenance verified with
+`-signer-workflow vdavid/cmdr/.github/workflows/release.yml`, the sops key signed all three archives and each signature
+verified against the app's pubkey; the default pin refused the same archives; the verifier accepted v0.50.0's CI-made
+signatures and rejected one swapped across arches.)
+
+### What `local` mode protects, and what it doesn't
+
+- **Protects against the key leaking from GitHub**: an exfiltrated secret, a workflow on a branch, or a compromised
+  action step reading its environment. Once the GitHub copies are deleted, there's no key on GitHub to take.
+- **Protects against an archive swapped on the release**: one that wasn't built by the pipeline at the signed tag has no
+  matching provenance, so the laptop refuses it, and one swapped after signing fails the app's signature check.
+- **Doesn't protect against a malicious build from inside the pipeline**: a compromised third-party action or dependency
+  in the `build` job produces an archive with valid provenance, and the laptop signs it. Provenance proves where an
+  archive was built, not what went into it.
+- **Moves the key's risk to the laptop**, which holds it in sops (the age key in its Keychain) either way.
+
+### Attestations in `local` mode
+
+`attest` runs twice. The tag push attests the draft's assets (DMGs, archives, SBOMs) before anything is signed, which is
+what the laptop verifies; the draft's bytes are final, so "attest as published" still holds. The dispatch attests the
+published release again, which adds `latest.json` and `checksums.txt` (and repeats the rest, which is harmless). It
+skips the `.sig` files: the laptop made them, so provenance naming the workflow would be false, and a minisign signature
+is its own proof of origin.
+
+### Switching modes
+
+- **To `local`**: `gh variable set RELEASE_UPDATE_SIGNING -R vdavid/cmdr --body local`, before pushing the tag.
+- **Back to `ci`** (the revert):
+  1. `gh variable set RELEASE_UPDATE_SIGNING -R vdavid/cmdr --body ci` (or `gh variable delete`).
+  2. If the GitHub copies of the key were already deleted, put them back in the `release` environment from sops, piped
+     so the values never reach the shell history or the screen:
+     `secret CMDR_TAURI_SIGNING_PRIVATE_KEY | gh secret set TAURI_SIGNING_PRIVATE_KEY --env release -R vdavid/cmdr`,
+     then the same for `CMDR_TAURI_SIGNING_PRIVATE_KEY_PASSWORD` into `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`.
+  3. Release as usual. The `/release` skill reads the variable and skips `release-finish.sh` in `ci` mode.
+
+### After the first `local` release ships
+
+The `TAURI_SIGNING_*` secrets stay in the `release` environment (and at repo level) until then, so `ci` mode keeps
+working while the new flow proves itself. Until they're gone, `local` mode protects nothing against a leak from GitHub.
+Once the first `local` release has passed the `/release` skill's checks (the manifest, the three archive URLs, the
+attestations) and an installed copy has updated to it:
+
+1. Delete the updater pair from GitHub: `gh secret delete TAURI_SIGNING_PRIVATE_KEY --env release -R vdavid/cmdr`, the
+   same for `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`, and both repo-level copies (`gh secret delete <NAME> -R vdavid/cmdr`).
+   From then on, going back to `ci` takes step 2 of the revert.
+2. Update § Signing secrets and the release-chain bullets in `docs/threat-model.md`, which are phrased for this point.
 
 ## Which runner builds the release
 
-**GitHub-hosted (`macos-26`) builds every release**, set in one line in `release.yml` (`build.runs-on`). This repo is
-public, so hosted macOS minutes are free. No self-hosted runner is registered, and nothing needs one.
+**GitHub-hosted (`macos-26`) builds every release**, set in one line in `release-pipeline.yml` (`build.runs-on`). This
+repo is public, so hosted macOS minutes are free. No self-hosted runner is registered, and nothing needs one.
 
 - **Why the image and not `macos-latest`**: an image carries exactly one Xcode major, so that line picks the macOS SDK
   the bundle links against, and Apple gates behavior changes on it. A build step asserts the SDK major and fails before
@@ -57,9 +177,22 @@ tagged. Beyond the version/CHANGELOG checks and `oxfmt --ci`, four are worth kno
   `run_all`. ❗ A push run doesn't count: CI's change detection skips unchanged lanes, so a docs-only HEAD reads green
   while the commit before it broke Rust. The gate reuses a full run already on the commit, starts one otherwise, and
   waits (~25 min), so `/release` pushes and starts it early to overlap it with changelog drafting. A flaky red run:
-  `gh run rerun <id> --failed`, then re-run the release. Emergency bypass for a hotfix while CI is red for reasons
-  outside the repo: `RELEASE_SKIP_CI_GATE=1`. The release commit itself (version bumps, CHANGELOG) lands after the gate;
-  the `oxfmt --ci` gate and the post-tag CI run cover it.
+  `gh run rerun <id> --failed`, then re-run the release. The release commit itself (version bumps, CHANGELOG) lands
+  after the gate; the `oxfmt --ci` gate and the post-tag CI run cover it.
+  - **How a run proves it was full:** the runs API carries no inputs, so `ci.yml` has a `Full run (run_all)` job that
+    runs only with `run_all` on (`if: inputs.run_all`, no needs). Both gates count a run only when that job succeeded,
+    so a dispatch with `run_all` off never passes. They match the job by name: renaming it means updating both.
+  - **The release workflow enforces it again server-side** (the `ci-gate` job, which `build` and `sbom` wait on), so a
+    tag pushed by hand can't skip it. It looks for a successful full run of `ci.yml` on the tagged commit, or on its
+    parent when the tagged commit is the `chore(release): vX.Y.Z` commit `release.sh` makes after the local gate. It
+    doesn't wait: the local gate already did. If it fails because the run was still going, wait for it, then "Re-run
+    failed jobs".
+  - **CodeQL gates the release too**, in both places: a green `codeql.yml` run on the commit, and no open high or
+    critical CodeQL alert on `main` (`scripts/release-codeql-gate.sh`, `docs/tooling/ci.md` § CodeQL). The bypass below
+    skips it as well.
+  - **Emergency bypass** for a hotfix while CI is red for reasons outside the repo: `RELEASE_SKIP_CI_GATE=1` locally,
+    AND the repository variable `RELEASE_SKIP_CI_GATE_TAG` set to the exact tag (like `v0.51.1`) before pushing it. Same
+    shape as `RELEASE_REPUBLISH_TAG`: it unblocks only the tag written in it. Clear it once the run finishes.
 
 - **Changelog refs must survive the script's own rebase.** The script's `git pull --rebase` rewrites every unpushed hash
   whenever `origin/main` moved, so right after it, `pnpm check changelog-links --fresh` fails the release on any ref no
@@ -206,24 +339,27 @@ One GitHub release per tag, carrying these assets for each of the three arches (
 - `Cmdr_<version>_<arch>.dmg`: what people download. `getcmdr.com/download/latest/<arch>`, the website's download
   buttons, and the Homebrew cask each rebuild this name from the version, so it's the one asset name the rest of the
   repo hard-codes.
-- `Cmdr_<version>_<arch>.app.tar.gz` plus its `.sig`: the updater payload and its minisign signature.
+- `Cmdr_<version>_<arch>.app.tar.gz` plus its `.sig`: the updater payload and its minisign signature, made in CI or on
+  the laptop (§ Who signs the update archives).
 - `latest.json`, whose copy in `apps/website/public/latest.json` (committed by the publish job) is what
   `getcmdr.com/latest.json` serves.
-- `checksums.txt`: one `shasum -a 256` line per DMG, the only way a person who downloaded from the website (or from an
-  aggregator listing) can check what they got. The Homebrew cask carries its own `sha256` and the updater verifies a
-  minisign signature, so this covers the one install route that had nothing. The publish job builds it by downloading
-  the DMGs back FROM the release, ❌ never from the runner's `target/`, so it describes what users actually receive, and
-  it fails the job unless all three lines are there. First published with v0.46.0 (uploaded by hand after the fact;
-  every release from v0.47.0 on gets it from the workflow). The website links it as `SHA-256 checksums` in the download
-  card through `getcmdr.com/download/latest/checksums`, an api-server redirect beside the per-arch DMG ones that
-  resolves `latest` the same way; ❌ it writes no `downloads` row, since a checksum fetch is not an app download and
-  would inflate the per-version counts.
+- `checksums.txt`: one `shasum -a 256` line per DMG (plus the pkg when there is one), the only way a person who
+  downloaded from the website (or from an aggregator listing) can check what they got. The Homebrew cask carries its own
+  `sha256` and the updater verifies a minisign signature, so this covers the one install route that had nothing. The
+  publish job builds it by downloading the DMGs back FROM the release, ❌ never from the runner's `target/`, so it
+  describes what users actually receive, and it fails the job unless all three lines are there. First published with
+  v0.46.0 (uploaded by hand after the fact; every release from v0.47.0 on gets it from the workflow). The website links
+  it as `SHA-256 checksums` in the download card through `getcmdr.com/download/latest/checksums`, an api-server redirect
+  beside the per-arch DMG ones that resolves `latest` the same way; ❌ it writes no `downloads` row, since a checksum
+  fetch is not an app download and would inflate the per-version counts.
+- `Cmdr_<version>_universal.pkg`: the signed, notarized installer package for MDM deployment, once the installer
+  certificate is set up (§ The installer package). Universal only: an MDM pushes one package to every Mac.
 - Three CycloneDX SBOMs, uploaded by the `attest` job: `Cmdr_<version>_aarch64.rust.cdx.json` and
   `Cmdr_<version>_x64.rust.cdx.json` (the Rust crate graph per target triple) and `Cmdr_<version>_frontend.cdx.json`
   (the npm packages whose code is in the built frontend). Details in § Provenance and SBOM attestations.
 
-Every asset also carries a signed SLSA build provenance attestation, stored on the repo rather than on the release (same
-section).
+Every asset also carries a signed SLSA build provenance attestation, stored on the repo, and the same provenance is on
+the release as `Cmdr_<version>.intoto.jsonl` (same section).
 
 Two naming details are load-bearing:
 
@@ -245,45 +381,151 @@ in the field, with no fallback in the app to recover.
 
 ## Provenance and SBOM attestations
 
-Two jobs in `release.yml`, beside the build-and-publish chain:
+Two jobs in `release-pipeline.yml`, beside the build-and-publish chain:
 
-- **`sbom`** (`needs: guard`, read-only token, no OIDC) runs beside the macOS builds. It generates the three SBOMs:
-  `cargo cyclonedx` (version pinned in the workflow, CycloneDX 1.5) on `apps/desktop/src-tauri/Cargo.toml` with default
-  features, once per target triple, and a frontend build with `CMDR_FRONTEND_SBOM=1` for the npm side, which lists the
-  packages the bundler actually put in the app (`apps/desktop/scripts/vite-frontend-sbom.ts`; `package.json` can't say,
-  since Svelte ships from devDependencies). It fails if a lockfile moved while resolving, or if an SBOM isn't CycloneDX,
-  doesn't name this version as its root, or lists too few components (100 for Rust, 30 for the frontend). It hands them
-  on as the `sboms` workflow artifact.
+- **`sbom`** (`needs: [guard, ci-gate]`, read-only token, no OIDC) runs beside the macOS builds. It generates the three
+  SBOMs: `cargo cyclonedx` (version pinned in the workflow, CycloneDX 1.5) on `apps/desktop/src-tauri/Cargo.toml` with
+  default features, once per target triple, and a frontend build with `CMDR_FRONTEND_SBOM=1` for the npm side, which
+  lists the packages the bundler actually put in the app (`apps/desktop/scripts/vite-frontend-sbom.ts`; `package.json`
+  can't say, since Svelte ships from devDependencies). It fails if a lockfile moved while resolving, or if an SBOM isn't
+  CycloneDX, doesn't name this version as its root, or lists too few components (100 for Rust, 30 for the frontend). It
+  hands them on as the `sboms` workflow artifact.
 - **`attest`** (`needs: [publish, sbom]`, holds `id-token: write` and `attestations: write`) downloads every asset back
   from the published release, uploads the SBOMs to it, and runs `actions/attest`: one SLSA provenance attestation
   covering every asset (SBOMs included), then one SBOM attestation per SBOM, bound to the builds it describes (each Rust
-  SBOM to its arch's DMG and tarball plus the universal ones; the frontend SBOM to all six).
+  SBOM to its arch's DMG and tarball plus the universal ones and the pkg; the frontend SBOM to all of them). It also
+  uploads the provenance's Sigstore bundle as `Cmdr_<version>.intoto.jsonl`: one file whose subjects are all the assets,
+  for offline verification and for OpenSSF Scorecard's Signed-Releases check, which scores 10/10 only with an
+  `*.intoto.jsonl` asset. A later run of the job replaces it (in `local` mode the dispatch's bundle, which adds
+  `latest.json` and `checksums.txt`, wins). The repo-stored attestation stays what `gh attestation verify` reads.
 
 Why it's shaped this way:
 
 - **Attest the bytes as published.** Same rule as `checksums.txt`: the digests come from the release, ❌ never from
   `target/`, so they're what users get after signing, notarization, stapling, and the upload.
-- **Nothing waits on `attest`.** It runs after `publish` has already shipped `latest.json`, so a Sigstore or
-  attestation-API outage leaves the release exactly as it was before these jobs existed. `attest` also runs when `sbom`
-  failed (its SBOM steps skip), so provenance never waits on SBOM tooling.
+- **In `ci` mode nothing waits on `attest`.** It runs after `publish` has already shipped `latest.json`, so a Sigstore
+  or attestation-API outage leaves the release exactly as it was before these jobs existed. `attest` also runs when
+  `sbom` failed (its SBOM steps skip), so provenance never waits on SBOM tooling. In `local` mode the laptop waits on
+  the tag push's `attest`, since it signs only what that provenance covers (§ Attestations in `local` mode).
 - **The job that can sign runs no third-party code.** `cargo install` and `pnpm install` live in `sbom`, which has no
   OIDC grant; `attest` only downloads and calls `actions/attest`.
-- **The frontend SBOM includes dev dependencies**, marked `scope: excluded`. `--prod` would drop `svelte` and
-  `@sveltejs/kit`, which are devDependencies whose runtime the bundler compiles into the app. It's generated on the
-  Linux runner, so platform-specific optional packages (bundler binaries) show their Linux variants.
-- **SLSA Build Level 2, not 3**: the attestation is signed by `release.yml` itself, not by an isolated reusable
-  workflow. Don't claim L3 anywhere.
+- **Every job lives in a reusable workflow.** `release.yml` is only the `v*` tag trigger: one job that calls
+  `release-pipeline.yml` with the union of the jobs' permissions and `secrets: inherit`. So the attestation's signing
+  certificate names `release-pipeline.yml` as the signer workflow, which is GitHub's recipe for SLSA Build Level 3
+  (verified against GitHub's "Using artifact attestations and reusable workflows to achieve SLSA v1 Build Level 3",
+  2026-10-05). ❌ Don't move jobs back into `release.yml`. Inside the call, `github.*` and `vars.*` are the caller's
+  (the tag, this repo's variables), and job names show as `Release / <job>`.
+- **The public claim is still Level 2** until a real release passes the `--signer-workflow` check below. The first
+  release built through `release-pipeline.yml` hasn't happened yet.
 
 Checking a release (the `/release` command does this after the run):
 
 ```bash
 gh attestation verify Cmdr_X.Y.Z_aarch64.dmg --repo vdavid/cmdr \
-  --signer-workflow vdavid/cmdr/.github/workflows/release.yml
+  --signer-workflow vdavid/cmdr/.github/workflows/release-pipeline.yml
 gh attestation verify Cmdr_X.Y.Z_aarch64.dmg --repo vdavid/cmdr --predicate-type https://cyclonedx.org/bom
 ```
 
-The first checks provenance, the second the SBOM binding. The public instruction on `/trust` is the shorter
-`gh attestation verify <file> --repo vdavid/cmdr`.
+The first checks provenance and that the reusable workflow signed it, the second the SBOM binding. Earlier releases were
+signed by `release.yml` itself, so check those with `--signer-workflow` pointing at `release.yml`. The public
+instruction on `/trust` is the shorter `gh attestation verify <file> --repo vdavid/cmdr`.
+
+**Once the first check passes on a real release**, move the public claim to Level 3: the SLSA mentions on `/trust`
+(`apps/website/src/pages/trust.astro`, linking `slsa.dev/spec/v1.0/levels#build-l2`) and `/trust/development`
+(`apps/website/src/pages/trust/development.astro`), then this paragraph and the bullet above.
+
+## The installer package
+
+MDMs deploy software as flat, signed, notarized `.pkg` installers, so each release can carry
+`Cmdr_<version>_universal.pkg` beside the DMGs. The `pkg` job in `release-pipeline.yml` builds it; the packaging itself
+lives in `scripts/build-pkg.sh`, which also runs locally. Admin-facing side (deploying it, the Full Disk Access
+profile): `/trust#mdm-deploy`.
+
+**How it's built.** The job downloads the universal DMG from the release, as uploaded, takes `Cmdr.app` out of it, and
+checks it's stapled and Gatekeeper-accepted. So the pkg wraps exactly the app people download. `build-pkg.sh` then:
+
+- runs `pkgbuild` with a component plist: **not relocatable** (otherwise Installer "upgrades" whatever copy with the
+  same bundle id it finds, in Downloads or a dev build, instead of installing to `/Applications`), **not
+  version-checked** (an admin can roll back by pushing an older pkg), upgrade in place, strict bundle id;
+- installs to `/Applications`, owned `root:wheel` (`--ownership recommended`), with **no scripts**;
+- wraps it with `productbuild` in a distribution that allows the system domain only, the app's own architectures, and
+  macOS 10.15 and up; signs it with `Developer ID Installer: Rymdskottkarra AB (83H6YAQMNP)` (the application identity
+  in `tauri.conf.json` with the kind swapped, so the team has one source);
+- notarizes it (`notarytool`, the same API key as the DMGs), staples it, and checks it: `pkgutil --check-signature`,
+  `spctl --assess --type install`, and the expanded package (install location, `relocatable="false"`, every Bom entry
+  `0/0`, the binary in the payload).
+
+Apple's guidance (Xcode docs, "Packaging Mac software for distribution", read 2026-10-07): sign with a Developer ID
+Installer identity, notarize the outermost container, staple it. The app inside is already notarized from the DMG build,
+which does no harm.
+
+**Skips until the certificate exists.** Without `APPLE_INSTALLER_CERTIFICATE` in the `release` environment, the job logs
+a notice and ends green, and the release ships without a pkg. `publish` and `attest` wait for the job (so
+`checksums.txt` and the provenance cover the pkg) but don't need it to succeed: in `ci` mode a red `pkg` job never holds
+up the release. In `local` mode it does, since `release-finish.sh` waits for a fully green tag-push run: re-run the
+failed job, or, if the pkg can't be fixed now, delete `APPLE_INSTALLER_CERTIFICATE` from the environment and re-run it,
+which makes it skip.
+
+**Signed in CI in both modes.** `RELEASE_UPDATE_SIGNING=local` keeps the updater key off GitHub because whoever holds it
+can ship an update to every installed Cmdr, for good. The installer certificate can't: a pkg reaches a Mac only when an
+admin or a user runs it, and the certificate is revocable like the application one that already signs in CI. Moving it
+to the laptop would add a second signing round trip to every release for no reduction in reach.
+
+**The updater on a pkg install.** The app lands in `/Applications` owned by root, so the in-app updater can't write it
+and asks for an administrator password (`apps/desktop/src-tauri/src/updater/DETAILS.md`, the `osascript` escalation).
+Decided 2026-10-07: keep `root:wheel` and no postinstall script. That's the norm for `/Applications` and what a security
+review expects, and a `chown` to the console user would let any process running as that user rewrite an app that may
+hold Full Disk Access. Managed Macs whose users aren't admins should set `DisableUpdates` (`/trust#mdm`) and push each
+new pkg from the MDM; the trust page says so.
+
+**Testing the packaging locally**: `./scripts/build-pkg.sh` packages `/Applications/Cmdr.app` unsigned into a temp dir
+(or `--app <path> --out <dir>`). It never installs: `installer` needs root, and a test install would replace the real
+`/Applications/Cmdr.app`. So it reads the package instead (above). Expect `write: Permission denied` lines from
+`pkgbuild` and a warning about `._` entries when an agent runs it: the agent's process stamps `com.apple.provenance` on
+every file it copies, which nothing can strip (verified on macOS 27.0, 2026-10-07, building from 0.50.0).
+
+**Not verified yet**: a signed, notarized build (no certificate), and an install through a real MDM. Both are open on
+`vdavid/cmdr#118`.
+
+### Setting up the installer certificate
+
+1. In Keychain Access, select the "Developer ID Installer: Rymdskottkarra AB (83H6YAQMNP)" certificate with its private
+   key (My Certificates), then File › Export Items… as `developer-id-installer.p12` with a new password. Same steps as
+   the application certificate: `docs/guides/apple-signing-and-notarization.md` § 1.5.
+2. Add both to the `release` environment, with the values never on screen or in shell history:
+   `base64 -i developer-id-installer.p12 | gh secret set APPLE_INSTALLER_CERTIFICATE --env release -R vdavid/cmdr`, then
+   `gh secret set APPLE_INSTALLER_CERTIFICATE_PASSWORD --env release -R vdavid/cmdr` (it prompts).
+3. Back up the `.p12` and its password where the other signing keys live (vault note
+   `projects/Cmdr/workflow/Cmdr signing keys.md`), then delete the file.
+4. Optional local proof before a release:
+   `./scripts/build-pkg.sh --sign "Developer ID Installer: Rymdskottkarra AB (83H6YAQMNP)"` signs from the login
+   keychain and runs `pkgutil --check-signature`.
+5. The next release attaches the pkg. Then update `/trust` (the `DevTodo` under "Deploying Cmdr") and this section's
+   "Not verified yet".
+
+### Renewing the Developer ID Installer certificate
+
+David's calendar reminds him every 10 months. Steps 1–3 and 5–6 are his (portal and Bitwarden), step 4 is an agent's.
+
+1. Keychain Access › Certificate Assistant › Request a Certificate From a Certificate Authority: his email, a common
+   name, "Saved to disk".
+2. At `developer.apple.com/account/resources/certificates/add`, choose **Developer ID Installer** and the **G2 Sub-CA**,
+   upload the CSR, download the `.cer`, and double-click it to install.
+3. ❗ The G1 trap: always pick G2 in the portal. A certificate made through Xcode on 2026-10-07 chained to the old
+   "Developer ID Certification Authority" (G1) and expires 2027-02-01.
+4. Export and set the secrets, keeping the password out of shell history (hand it to David once, for step 5):
+   - `security export -k login.keychain-db -t identities -f pkcs12 -P "$PW" -o all.p12` exports every identity (with
+     `PW=$(openssl rand -base64 24)` in the same shell).
+   - Pull out the one identity: `openssl pkcs12 -in all.p12 -passin env:PW -nodes`, keep the "Developer ID Installer"
+     certificate and the key whose `localKeyID` matches it, then `openssl pkcs12 -export -legacy` them into
+     `developer-id-installer.p12` with `-passout env:PW` (without `-legacy`, macOS `security import` in CI may reject an
+     OpenSSL 3 file). Check with `openssl pkcs12 -in developer-id-installer.p12 -passin env:PW -info -noout -legacy`.
+   - Set both:
+     `base64 -i developer-id-installer.p12 | gh secret set APPLE_INSTALLER_CERTIFICATE --env release -R vdavid/cmdr`,
+     then `printf %s "$PW" | gh secret set APPLE_INSTALLER_CERTIFICATE_PASSWORD --env release -R vdavid/cmdr`. Delete
+     `all.p12` and the PEM files.
+5. David stores the `.p12` and its password in Bitwarden, then deletes the file.
+6. Revoke the previous certificate in the portal.
 
 ## How updates work
 
@@ -296,10 +538,12 @@ The first checks provenance, the second the SBOM binding. The public instruction
 Pushing a `v*` tag runs the whole Release workflow, and `publish` rewrites `latest.json` for whatever tag fired it. It
 has no idea which version that is, so re-pushing an old tag points the entire install base at an old build. The `guard`
 job first verifies the annotated tag's SSH signature against `.github/release-signers`, then requires the tag's version
-to be strictly greater than the version `apps/website/public/latest.json` currently advertises. The release script
-creates that signed tag with the configured Git signing key. A missing key or declined passphrase aborts locally, and an
-unsigned or differently signed tag aborts in CI. The guard runs in seconds and blocks `build`, so a bad push never
-reaches the three 90-minute macOS jobs and never overwrites assets on an old release.
+to be strictly greater than the version `apps/website/public/latest.json` currently advertises on `main`. ❗ On `main`,
+never in the checkout: the tagged commit always predates its own `publish` commit, so its copy names the previous
+release and lets an old tag through. The release script creates that signed tag with the configured Git signing key. A
+missing key or declined passphrase aborts locally, and an unsigned or differently signed tag aborts in CI. The guard
+runs in seconds and blocks `build`, so a bad push never reaches the three 90-minute macOS jobs and never overwrites
+assets on an old release.
 
 The signing key is replaceable. To rotate it, commit the new public key in `.github/release-signers` before cutting the
 first release signed by its private half. An older tag keeps the signer file from its own tagged commit, so replacing
@@ -344,7 +588,27 @@ which point the retry would be a rebuild of something users have.
 
 ### Draft release left on GitHub after failed build
 
-Go to GitHub → Releases → delete the draft manually before retrying.
+In `ci` mode, go to GitHub → Releases → delete the draft manually before retrying. In `local` mode the draft is the
+point: a retry of the same tag reuses it (the `draft` job finds it, and the builds replace same-named assets). Only
+delete one when the `draft` job reports more than one release on the tag.
+
+### `release-finish.sh` stopped
+
+Fix the cause, then run it again; it picks up where the release stands.
+
+- **"refusing to sign … its build provenance didn't verify"**: the tag push's `attest` job failed or didn't run, or the
+  archive on the draft isn't the one the pipeline built at the tag. Check the `attest` job first (re-run failed jobs if
+  it was an outage). ❌ Never sign around it, and never pass `-signer-workflow` outside a dry run (the tool refuses):
+  that check is the whole point of signing locally.
+- **"the build run ended failure"**: re-run its failed jobs, `gh run rerun <id> --failed`, then run this again.
+- **"has N releases on GitHub"**: duplicate drafts on one tag. Keep the one with the assets, delete the rest.
+- **"the signature for … doesn't verify against the app's public key"**: the key in sops isn't the app's (key ID
+  `A2601F36BB168C0A`). Compare with the Bitwarden copy (vault note `projects/Cmdr/workflow/Cmdr signing keys.md`). The
+  finishing run's `publish` job runs the same check (`release-finish.sh -verify-dir`) before it publishes the draft, so
+  a dispatch with missing, empty, or foreign signatures fails there and nothing goes public.
+- **"the finishing run failed again"**: it already re-ran the failed jobs once. Read the run; § Publish job failed but
+  builds succeeded applies, as does § The attest or sbom job failed. ❌ Don't dispatch a fresh run by hand once
+  `publish` has committed the manifest: the guard refuses it. Re-run the failed jobs instead.
 
 ### Apple notarization is slow (builds time out at 30 min)
 
@@ -383,9 +647,9 @@ re-extracts the CHANGELOG section, regenerates `latest.json`, and re-commits the
 The publish job downloads signatures from the release, generates `latest.json`, updates the release body, commits to
 main, and triggers a website deploy. If it fails:
 
-- **Missing signatures**: check that all 3 build jobs uploaded their `.sig` files. The publish job validates this
-  upfront and fails fast with a clear message. It looks for `Cmdr_<version>_<arch>.app.tar.gz.sig`, so a `tauri-action`
-  bump that changes bundle naming lands here first.
+- **Missing signatures**: check that all 3 build jobs (in `local` mode, `release-finish.sh`) uploaded their `.sig`
+  files. The publish job validates this upfront and fails fast with a clear message. It looks for
+  `Cmdr_<version>_<arch>.app.tar.gz.sig`, so a `tauri-action` bump that changes bundle naming lands here first.
 - **`latest.json` points at an asset that isn't on the release**: same cause, caught by the assertion the job runs
   before uploading the manifest. Compare `gh release view <tag> --json assets` against the names the workflow builds,
   and fix the workflow rather than the release.
@@ -423,12 +687,12 @@ happened on the self-hosted runner:
   bundled dylibs before that. The runner's launchd service runs with `SessionCreate=true` (GitHub's `svc.sh` plist), so
   its jobs live in their own security session where the login keychain's private key isn't usable (the exact same
   `codesign` command works from a GUI shell), and every matrix job failed ~30 s in. A runner-service restart doesn't
-  help. The fix in `release.yml` ("Set up llama-server signing keychain") imports the cert into a dedicated keychain
-  that the Go script targets explicitly via `codesign --keychain` (`LLAMA_SIGN_KEYCHAIN`). The keychain must ALSO be in
-  the user keychain search list: `--keychain` alone fails with the same `errSecInternalComponent` for a keychain outside
-  the search list (verified empirically on this runner). The explicit `--keychain` is what keeps the login keychain's
-  copy of the identity from making resolution ambiguous; the "Restore keychain search list" cleanup step resets the list
-  afterwards.
+  help. The fix in `release-pipeline.yml` ("Set up llama-server signing keychain") imports the cert into a dedicated
+  keychain that the Go script targets explicitly via `codesign --keychain` (`LLAMA_SIGN_KEYCHAIN`). The keychain must
+  ALSO be in the user keychain search list: `--keychain` alone fails with the same `errSecInternalComponent` for a
+  keychain outside the search list (verified empirically on this runner). The explicit `--keychain` is what keeps the
+  login keychain's copy of the identity from making resolution ambiguous; the "Restore keychain search list" cleanup
+  step resets the list afterwards.
 
 The other two are about the **same Developer ID identity being reachable from more than one keychain in the search
 list** (ambiguous resolution):

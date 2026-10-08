@@ -77,8 +77,9 @@
     // so we infer one from the id. Keyed on the stable id, never a user-facing string.
     function numberUnitLabel(id: SettingId): string {
         if (id === 'advanced.dragThreshold') return 'px'
-        if (id.includes('Buffer')) return 'items'
-        if (id.endsWith('Mb') || id.includes('DiskSpace')) return 'MB'
+        if (id.includes('Buffer')) return tString('settings.control.unitItems')
+        // Both are decimal megabytes (the backend multiplies by 1,000,000), so the SI symbol.
+        if (id.endsWith('Mb') || id.includes('DiskSpace')) return tString('common.sizeUnit.megabyte')
         if (id === 'fileExplorer.typeToJump.resetDelay') return 'ms'
         return ''
     }

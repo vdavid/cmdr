@@ -165,6 +165,14 @@ pub struct WriteOperationState {
     /// state and not the volume ids, exactly like `journal_volumes` above.
     /// `super::transfer_sides` says why the names can't be looked up later.
     pub(crate) sides: Option<super::transfer_sides::TransferSides>,
+    /// The NAME a top-level source takes at the destination when it isn't its
+    /// own, keyed by source path: a rename that runs as a move (a folder on an
+    /// object store, `Volume::rename_work`). Empty for every ordinary
+    /// transfer. Read by the async transfer driver, the one place a
+    /// destination path is built; set through
+    /// [`with_target_names`](Self::with_target_names). Carried here for the
+    /// same reason as `journal_volumes`.
+    pub(crate) target_names: super::target_names::TargetNames,
     /// Destination `.cmdr-tmp-*` paths this operation is CURRENTLY streaming
     /// bytes into, so an abandoned transfer's litter can be found and removed.
     ///
@@ -186,6 +194,13 @@ pub struct WriteOperationState {
     /// [`super::in_flight_temps`], which also keeps the persisted half that
     /// outlives the process.
     pub in_flight_temps: std::sync::Mutex<Vec<PathBuf>>,
+    /// A test's own persisted ledger, which the in-flight temps above are also
+    /// recorded in (`with_in_flight_ledger`, test builds only). `None`, always so
+    /// in the app, means the process's one; `in_flight_temps` resolves it.
+    /// ❌ Don't default it to `Ledger::process()` here: a call from this module
+    /// into `in_flight_temps` welds the two and `transfer_sides` into one module
+    /// cycle.
+    pub(super) in_flight_ledger: Option<super::in_flight_temps::Ledger>,
     /// The newest `write-progress` this operation emitted, kept so whoever has
     /// to speak for it while it stands still can re-send it
     /// ([`announce_human_wait`](Self::announce_human_wait), and the transfer
@@ -231,7 +246,9 @@ impl WriteOperationState {
             human_wait,
             journal_volumes: None,
             sides: None,
+            target_names: super::target_names::TargetNames::default(),
             in_flight_temps: std::sync::Mutex::new(Vec::new()),
+            in_flight_ledger: None,
             last_progress: std::sync::Mutex::new(None),
             liveness: std::sync::Mutex::new(Some(Arc::new(()))),
             claimed_names: super::unique_name::ClaimedNames::default(),
@@ -321,11 +338,27 @@ impl WriteOperationState {
         self
     }
 
+    /// Set the names top-level sources take at the destination (see
+    /// [`target_names`](Self::target_names)). Chained before wrapping the
+    /// state in an `Arc`.
+    pub(crate) fn with_target_names(mut self, target_names: super::target_names::TargetNames) -> Self {
+        self.target_names = target_names;
+        self
+    }
+
     /// Set the transfer's two volumes (see [`sides`](Self::sides)). Chained
     /// before wrapping the state in an `Arc`, from the one place that resolves
     /// both of them.
     pub(crate) fn with_sides(mut self, sides: Option<super::transfer_sides::TransferSides>) -> Self {
         self.sides = sides;
+        self
+    }
+
+    /// Records this operation's leftovers into a test's own ledger rather than
+    /// the process's, so a test that sweeps its log meets only its own records.
+    #[cfg(test)]
+    pub(super) fn with_in_flight_ledger(mut self, ledger: super::in_flight_temps::Ledger) -> Self {
+        self.in_flight_ledger = Some(ledger);
         self
     }
 
@@ -724,9 +757,7 @@ pub(super) fn forget_operation(operation_id: &str) {
 // `state::register_operation_status`, `state::busy_volume_ids`, etc. paths keep
 // resolving for every caller, the same way `operation_intent` and `scan_cache`
 // are surfaced above.
-pub use super::status_cache::{
-    VolumesBusyChanged, busy_volume_ids, get_operation_status, init_busy_volume_emitter, list_active_operations,
-};
+pub use super::status_cache::{VolumesBusyChanged, busy_volume_ids, get_operation_status, init_busy_volume_emitter};
 #[cfg(target_os = "macos")]
 pub(crate) use super::status_cache::{register_external_volume_op, release_external_volume_op};
 pub(super) use super::status_cache::{register_operation_status, unregister_operation_status, update_operation_status};

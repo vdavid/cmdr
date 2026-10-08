@@ -53,7 +53,7 @@ fn a_walk_leaves_the_ground_it_covered_watched_and_written_down() {
     reason = "the fixture holds the process-wide seams for the whole test; holding it across the await IS the point"
 )]
 async fn a_change_inside_a_walked_branch_reaches_the_index_and_one_beside_it_does_not() {
-    let drive = ColdDrive::new("cover-branch-live-test");
+    let drive = ColdDrive::watched_for_real("cover-branch-live-test");
     std::fs::create_dir_all(drive.tree.path().join("walked")).expect("dirs");
     std::fs::create_dir_all(drive.tree.path().join("beside")).expect("dirs");
     std::fs::write(drive.tree.path().join("walked/already-there.txt"), "x").expect("file");
@@ -67,19 +67,20 @@ async fn a_change_inside_a_walked_branch_reaches_the_index_and_one_beside_it_doe
         "precondition: the walk left a branch to watch"
     );
 
-    // Both drives created AFTER the walk, so neither is in the index yet. The
-    // watcher is the only thing that can put either one there.
-    std::fs::write(drive.tree.path().join("walked/appeared.txt"), "new").expect("file");
+    // Both created AFTER the walk, so neither is in the index yet. The watcher is
+    // the only thing that can put either one there. The one beside goes first, so
+    // by the time a change inside has landed, the stream has had every chance to
+    // deliver it too.
     std::fs::write(drive.tree.path().join("beside/appeared.txt"), "new").expect("file");
-
-    let inside = drive.path("walked/appeared.txt");
     let outside = drive.path("beside/appeared.txt");
-    cmdr_fs::testing::wait_until_async(
-        std::time::Duration::from_secs(30),
-        "the watcher to index the change inside the walked branch",
-        || drive.is_indexed(&inside),
-    )
-    .await;
+    tokio::task::block_in_place(|| {
+        until_the_watcher_delivers(
+            &drive.tree.path().join("walked"),
+            "appeared",
+            std::time::Duration::from_secs(30),
+            |name| drive.is_indexed(&drive.path(&format!("walked/{name}"))),
+        )
+    });
     assert!(
         !drive.is_indexed(&outside),
         "and the folder beside it stays this index's business only once a search walks it"

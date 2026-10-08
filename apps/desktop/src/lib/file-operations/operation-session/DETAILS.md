@@ -317,9 +317,9 @@ Rollback is refused once a cancel is on its way (there is nothing left to put ba
 refused during a rollback: "stop undoing and keep what's left" is a real thing to want, and this is the only way to ask.
 
 **`togglePause` reads the registry snapshot's lifecycle status**, which the session already holds, and the commands
-module takes it as a PREDICATE rather than querying for it. `operation-session-commands.svelte.test.ts` pins that by
-asserting `getOperationStatus` is never called at all: a toggle that asked the backend which way to go would spend a
-round trip on an answer already on screen, and act on a state that may have changed while the answer was in flight.
+module takes it as a PREDICATE rather than querying for it (there is no per-operation status query to call): a toggle
+that asked the backend which way to go would spend a round trip on an answer already on screen, and act on a state that
+may have changed while the answer was in flight.
 
 ### Answering a clash is a delegation
 

@@ -6,16 +6,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 vi.mock('$lib/ipc/bindings', () => ({
   commands: {
-    cancelSftpConnect: vi.fn(),
-    disconnectSftpVolume: vi.fn(),
     approveSftpHostKey: vi.fn(),
     forgetSftpHostKey: vi.fn(),
     listTrustedSftpHostKeys: vi.fn(),
     saveSftpCredentials: vi.fn(),
-    hasSftpCredentials: vi.fn(),
-    deleteSftpCredentials: vi.fn(),
     getKnownSftpServers: vi.fn(),
-    forgetKnownSftpServer: vi.fn(),
     getSftpUnattendedReconnect: vi.fn(),
   },
 }))
@@ -23,14 +18,9 @@ vi.mock('$lib/ipc/bindings', () => ({
 import { commands } from '$lib/ipc/bindings'
 import {
   approveSftpHostKey,
-  cancelSftpConnect,
-  deleteSftpCredentials,
-  disconnectSftpVolume,
-  forgetKnownSftpServer,
   forgetSftpHostKey,
   getKnownSftpServers,
   getSftpUnattendedReconnect,
-  hasSftpCredentials,
   listTrustedSftpHostKeys,
   saveSftpCredentials,
 } from './sftp'
@@ -40,20 +30,6 @@ const err = { status: 'error' as const, error: { type: 'access_denied' as const,
 
 beforeEach(() => {
   vi.clearAllMocks()
-})
-
-describe('connecting', () => {
-  it('cancelSftpConnect forwards the attempt id, so a dialog can call its own dial off', async () => {
-    vi.mocked(commands.cancelSftpConnect).mockResolvedValueOnce(true)
-    expect(await cancelSftpConnect('attempt-1')).toBe(true)
-    expect(commands.cancelSftpConnect).toHaveBeenCalledWith('attempt-1')
-  })
-
-  it('disconnectSftpVolume forwards the volume id', async () => {
-    vi.mocked(commands.disconnectSftpVolume).mockResolvedValueOnce(true)
-    expect(await disconnectSftpVolume('sftp-naspolya-abc')).toBe(true)
-    expect(commands.disconnectSftpVolume).toHaveBeenCalledWith('sftp-naspolya-abc')
-  })
 })
 
 describe('host-key trust', () => {
@@ -90,17 +66,6 @@ describe('credentials', () => {
   it('a refusing store throws rather than reporting success', async () => {
     vi.mocked(commands.saveSftpCredentials).mockResolvedValueOnce(err)
     await expect(saveSftpCredentials('naspolya.local', 2222, 'ada', 'pa55')).rejects.toThrow('nope')
-  })
-
-  it('deleting throws on refusal too', async () => {
-    vi.mocked(commands.deleteSftpCredentials).mockResolvedValueOnce(err)
-    await expect(deleteSftpCredentials('naspolya.local', 2222, 'ada')).rejects.toThrow('nope')
-  })
-
-  it('asking whether one is stored is keyed per account', async () => {
-    vi.mocked(commands.hasSftpCredentials).mockResolvedValueOnce(true)
-    expect(await hasSftpCredentials('naspolya.local', 2222, 'ada')).toBe(true)
-    expect(commands.hasSftpCredentials).toHaveBeenCalledWith('naspolya.local', 2222, 'ada')
   })
 })
 
@@ -154,11 +119,5 @@ describe('the saved-server list', () => {
     vi.mocked(commands.getSftpUnattendedReconnect).mockResolvedValueOnce('needs_stored_secret')
     expect(await getSftpUnattendedReconnect('sftp-naspolya-abc')).toBe('needs_stored_secret')
     expect(commands.getSftpUnattendedReconnect).toHaveBeenCalledWith('sftp-naspolya-abc')
-  })
-
-  it('forget is keyed by the same triple the volume id is', async () => {
-    vi.mocked(commands.forgetKnownSftpServer).mockResolvedValueOnce(true)
-    await forgetKnownSftpServer('naspolya.local', 2222, 'ada')
-    expect(commands.forgetKnownSftpServer).toHaveBeenCalledWith('naspolya.local', 2222, 'ada')
   })
 })

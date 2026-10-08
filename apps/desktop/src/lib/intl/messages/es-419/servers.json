@@ -27,6 +27,10 @@
   "@servers.refusal.unreachable": {
     "sourceHash": "50b8e0a"
   },
+  "servers.paneState.unreachable": "Cmdr no pudo acceder a {name}.",
+  "@servers.paneState.unreachable": {
+    "sourceHash": "58c13ab"
+  },
   "servers.refusal.hostKeyRevoked": "Tu configuración de SSH en este Mac marca la clave de {host} como comprometida. Cmdr no se conectará a ese servidor.",
   "@servers.refusal.hostKeyRevoked": {
     "sourceHash": "ac070e7"
@@ -43,6 +47,30 @@
   "@servers.refusal.savedSecretNotUpdated": {
     "sourceHash": "292d105"
   },
+  "servers.refusal.s3AuthenticationRejected": "Esa clave de acceso secreta no funcionó.",
+  "@servers.refusal.s3AuthenticationRejected": {
+    "sourceHash": "5c7986a"
+  },
+  "servers.refusal.s3SecretMissing": "Ingresa la clave de acceso secreta.",
+  "@servers.refusal.s3SecretMissing": {
+    "sourceHash": "74b9cd7"
+  },
+  "servers.refusal.s3SecretNotStored": "Cmdr no pudo guardar esta clave de acceso secreta en el Llavero. Inténtalo de nuevo o desactiva “Recordar en el Llavero” para iniciar sesión sin guardarla.",
+  "@servers.refusal.s3SecretNotStored": {
+    "sourceHash": "82b563d"
+  },
+  "servers.refusal.s3SavedSecretNotUpdated": "Cmdr guardó tus cambios, pero no pudo actualizar la clave de acceso secreta en el Llavero. Vuelve a guardar para intentarlo otra vez.",
+  "@servers.refusal.s3SavedSecretNotUpdated": {
+    "sourceHash": "30a82df"
+  },
+  "servers.refusal.clockSkewed": "El reloj de este Mac va desfasado más de 15 minutos, así que el servidor no acepta las solicitudes de Cmdr. Haz que la fecha y la hora se ajusten automáticamente en Configuración del Sistema y vuelve a intentarlo.",
+  "@servers.refusal.clockSkewed": {
+    "sourceHash": "9950afd"
+  },
+  "servers.refusal.endpointMalformed": "Ingresa el punto de conexión como http:// o https:// seguido de un nombre de host, por ejemplo https://s3.example.com.",
+  "@servers.refusal.endpointMalformed": {
+    "sourceHash": "22f82ad"
+  },
   "servers.sheet.addTitle": "Agregar servidor",
   "@servers.sheet.addTitle": {
     "sourceHash": "edc745a"
@@ -50,6 +78,14 @@
   "servers.sheet.identityLocked": "La dirección y la cuenta son las que identifican este servidor. Para cambiarlas, olvida el servidor y vuelve a agregarlo.",
   "@servers.sheet.identityLocked": {
     "sourceHash": "c3f5837"
+  },
+  "servers.sheet.identityLockedS3": "El proveedor, el ID de clave de acceso y el bucket son los que identifican este lugar. Para cambiarlos, olvida este lugar y vuelve a agregarlo.",
+  "@servers.sheet.identityLockedS3": {
+    "sourceHash": "2982c52"
+  },
+  "servers.sheet.identityLockedS3Account": "El proveedor y el ID de clave de acceso son los que identifican esta cuenta. Para cambiarlos, olvida esta cuenta y vuelve a agregarla.",
+  "@servers.sheet.identityLockedS3Account": {
+    "sourceHash": "8a89a31"
   },
   "servers.hostKey.changedTitle": "La clave de {host} cambió",
   "@servers.hostKey.changedTitle": {
@@ -63,9 +99,9 @@
   "@servers.hostKey.changedDisclosure": {
     "sourceHash": "14de108"
   },
-  "servers.paneState.hostKeyChangedHint": "Su clave cambió. Esto puede significar que el servidor se reinstaló, o que hay algo entre tú y él. Desconecta y vuelve a abrirlo para comprobar la huella digital.",
+  "servers.paneState.hostKeyChangedHint": "Su clave cambió. Esto puede significar que el servidor se reinstaló, o que hay algo entre tú y él. Comprueba la nueva clave antes de volver a conectarte.",
   "@servers.paneState.hostKeyChangedHint": {
-    "sourceHash": "5b20396"
+    "sourceHash": "b750bb6"
   },
   "servers.hub.editNearbyHint": "{name} se detectó cerca y sigue sin guardar, así que no hay nada que editar.",
   "@servers.hub.editNearbyHint": {

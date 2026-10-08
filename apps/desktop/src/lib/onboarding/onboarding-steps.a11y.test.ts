@@ -67,7 +67,6 @@ vi.mock('$lib/tauri-commands', async (importOriginal) => ({
       modelInstalled: false,
       modelName: 'Ministral 3B',
       modelSizeBytes: 0,
-      modelSizeFormatted: '0 B',
       downloadInProgress: false,
       localAiSupported: true,
       kvBytesPerToken: 0,

@@ -98,10 +98,11 @@ export async function selectVolumeForMcp(args: {
     landed: decided,
     hasBackendListing: capabilitiesFor(decided.volumeId).hasBackendListing,
   })
-  const quiet = await waitForPaneToGoQuiet(
+  const rest = await waitForPaneToGoQuiet(
     {
       getListingId: () => explorer.getPaneListingId(pane),
       isLoading: () => explorer.isPaneLoading(pane),
+      isStalled: () => explorer.isPaneStalled(pane),
       now: () => Date.now(),
       sleep: (ms) => new Promise<void>((resolve) => setTimeout(resolve, ms)),
     },
@@ -112,7 +113,7 @@ export async function selectVolumeForMcp(args: {
   const landing = classifyVolumeLanding({
     targetVolumeId: selection.volumeId,
     landed: { volumeId: landed.volumeId, path: landed.path },
-    quiet,
+    rest,
   })
   // The pane's own push can trail its listing, so flush it: a `cmdr://state` read right
   // after the reply then shows the landing.

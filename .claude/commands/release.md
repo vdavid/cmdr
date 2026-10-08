@@ -1,7 +1,13 @@
 Prepare a release based on docs/guides/releasing.md.
 
-1. Prerequisite: Run `gh secret list` and verify that `TAURI_SIGNING_PRIVATE_KEY` and
-   `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` both exist. If either is missing, warn the user and stop.
+1. Prerequisite: find out who signs the update archives, `gh variable get RELEASE_UPDATE_SIGNING -R vdavid/cmdr` (an
+   error means unset, which is `ci`). Details: `docs/guides/releasing.md` § Who signs the update archives.
+   - **`ci`**: run `gh secret list --env release` and verify that `TAURI_SIGNING_PRIVATE_KEY` and
+     `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` both exist. If either is missing, warn the user and stop (the revert steps in
+     that section put them back).
+   - **`local`**: verify the key is readable from sops without printing it:
+     `secret CMDR_TAURI_SIGNING_PRIVATE_KEY > /dev/null && secret CMDR_TAURI_SIGNING_PRIVATE_KEY_PASSWORD > /dev/null`.
+     If it fails, warn the user and stop.
 2. **Push `main` and start the CI gate now**: `git pull --rebase origin main && git push origin main`, then run
    `./scripts/release-ci-gate.sh` in the background. It starts a full (`run_all`) CI run on the pushed commit and waits
    for it (~25 min), overlapping it with the drafting below; `release.sh` re-runs it before tagging and aborts unless
@@ -148,11 +154,11 @@ Prepare a release based on docs/guides/releasing.md.
      draft had a Fixed entry whose SHAs were a strict subset of an Added entry's.)
    - Strip internal symbol names, file paths, and enum variants that survived the first pass.
 
-4. **Only if `release.yml`'s `build.runs-on` is the self-hosted runner** (it is `macos-latest` today, so normally SKIP
-   this step): check the runner's Finder Automation permission so `bundle_dmg.sh` doesn't hang for ~2 minutes per matrix
-   job. Run it AFTER presenting the CHANGELOG draft for review (the user is at the keyboard anyway). See
-   `docs/guides/releasing.md` § "Which runner builds the release" and § "`bundle_dmg.sh` hangs ~2 minutes then fails on
-   every matrix job" for why this is needed, the `auth_value` codes, and how to recover.
+4. **Only if `release-pipeline.yml`'s `build.runs-on` is the self-hosted runner** (it is GitHub-hosted `macos-26` today,
+   so normally SKIP this step): check the runner's Finder Automation permission so `bundle_dmg.sh` doesn't hang for ~2
+   minutes per matrix job. Run it AFTER presenting the CHANGELOG draft for review (the user is at the keyboard anyway).
+   See `docs/guides/releasing.md` § "Which runner builds the release" and § "`bundle_dmg.sh` hangs ~2 minutes then fails
+   on every matrix job" for why this is needed, the `auth_value` codes, and how to recover.
 
    ❌ **Resolve the REAL path, never `externals/`.** That's a symlink into `externals.<version>/`, tccd keys its rows on
    the resolved path, and the symlink path carries a stale `2` row of its own from earlier grants. Checking the symlink
@@ -177,10 +183,11 @@ Prepare a release based on docs/guides/releasing.md.
    nothing useful. Only the runner's own launchd session (`SessionCreate=true`) makes node the responsible process.
 
 5. Apply the roadmap and feature-status updates (edit the files, don't just advise; the user reviews before committing).
-   - **Roadmap** (@apps/website/src/pages/roadmap.astro): add a dated milestone (with a date!) for each major
-     development this release, and tick off / remove any "coming soon" item that just shipped. Match the existing
-     curation: milestones only, not every release. Group under the right month heading (add a new `<h3>` when the month
-     rolls over) and not the release date but the actual main development date based on the commits.
+   - **Roadmap** (@apps/website/src/lib/roadmap.ts, the milestones; `roadmap.astro` is only the layout): add a dated
+     milestone (with a date!) for each major development this release, and tick off / remove any "coming soon" item that
+     just shipped. Match the existing curation: milestones only, not every release. Group under the right month heading
+     (add a new `<h3>` when the month rolls over) and not the release date but the actual main development date based on
+     the commits.
    - **Feature status** (`feature-status.json` at the repo root, the single source of truth behind the `/features` page
      and the in-app badges): review every feature against what shipped. Flip `planned` → `alpha` for a feature that just
      launched, graduate `alpha` → `beta` → `stable` as one matures, and refresh any note the release made stale. Keep
@@ -191,6 +198,12 @@ Prepare a release based on docs/guides/releasing.md.
    launches), and give the user the `./scripts/release.sh x.x.x` command to run.
 7. **Offer to run the release script** for the user. Wait for confirmation before running.
 8. **Push immediately** with `git push origin main --tags` IFF the release script completed cleanly. Else: stop and ask.
+   - **`local` mode: start `./scripts/release-finish.sh X.Y.Z` right after the push**, as a Bash `run_in_background`
+     call. It waits for the build run (about an hour), verifies each update archive's provenance, signs on this laptop,
+     uploads the signatures, and dispatches the finishing run that publishes, then waits for that too. It's resumable:
+     if it stops (a red job, a closed laptop), fix the cause and run it again; never sign or publish by hand. Its
+     failure messages map to `docs/guides/releasing.md` § `release-finish.sh` stopped. The laptop has to stay on until
+     it ends, so tell the user that instead of the "laptop is free" note in step 11.
 9. **After pushing**, confirm the build started. Wait ~30 seconds, then run `gh run view <release-run-id> --json jobs`
    and check the `Build (...)` jobs. On GitHub-hosted runners (the current setup) all three should be `in_progress`
    together, because they run in parallel.
@@ -228,22 +241,29 @@ Prepare a release based on docs/guides/releasing.md.
       at the release commit itself (version bumps, CHANGELOG, visual baselines). It doesn't block the shipped release:
       fix it in the background while the release builds.
     - Surface the failure to the user when convenient; don't interrupt release-build progress reporting for it.
-13. **After the release run succeeds, verify the public surface**:
+13. **After the release run succeeds (in `local` mode: after `release-finish.sh` reports the finishing run green),
+    verify the public surface**:
     - `gh release view vX.Y.Z --json assets,tagName,publishedAt`: confirm the expected DMGs are attached
-      (`Cmdr_X.Y.Z_aarch64.dmg`, `_x64.dmg`, `_universal.dmg`) and sizes look reasonable.
+      (`Cmdr_X.Y.Z_aarch64.dmg`, `_x64.dmg`, `_universal.dmg`) and sizes look reasonable. Once the installer certificate
+      is set up, `Cmdr_X.Y.Z_universal.pkg` too; until then the `pkg` job skips with a notice
+      (`docs/guides/releasing.md` § The installer package).
     - Wait ~30 seconds for the website auto-deploy (the release workflow commits an updated `latest.json` and fires a
       webhook), then `curl -s https://getcmdr.com/latest.json | jq -r .version` and confirm it matches `X.Y.Z`.
     - Confirm the updater payload behind that manifest actually resolves, for each of the three platform keys:
       `curl -s https://getcmdr.com/latest.json | jq -r '.platforms[].url' | sort -u | xargs -I{} curl -sIL -o /dev/null -w '%{http_code} {}\n' {}`
       should print `200` for all three. The workflow spells these `.app.tar.gz` names out by hand, so a naming change in
       `tauri-action` surfaces here and nowhere else until installs stop updating.
-    - Confirm the `attest` job went green and the three `.cdx.json` SBOMs are among the assets, then download one DMG
-      and run both `gh attestation verify` commands in `docs/guides/releasing.md` § "Provenance and SBOM attestations".
-      A red `attest` or `sbom` job doesn't block release success (the release already shipped): follow that guide's "The
-      attest or sbom job failed" troubleshooting entry.
+    - Confirm the `attest` job went green (in `local` mode, in both the tag push's run and the finishing run) and the
+      three `.cdx.json` SBOMs are among the assets, then download one DMG and run both `gh attestation verify` commands
+      in `docs/guides/releasing.md` § "Provenance and SBOM attestations". A red `attest` or `sbom` job doesn't block
+      release success (the release already shipped): follow that guide's "The attest or sbom job failed" troubleshooting
+      entry.
     - If `latest.json` still shows the old version after ~2 minutes, the deploy webhook may have failed silently. Tell
       the user; the manual fix is to re-trigger the website-deploy workflow via `workflow_dispatch` from the Actions
       tab. Don't block release success on this. The GitHub Release is what users actually download.
+    - **First `local` release only**: once the checks above pass and an installed copy has updated to it, hand David the
+      post-release step in `docs/guides/releasing.md` § After the first `local` release ships (deleting the updater key
+      from GitHub). Don't delete secrets without David's go-ahead.
 
 14. **Minor or major release? Offer to refresh the app-directory listings** (skip entirely for patches). Update
     @brand/listings/macupdate.md in place: the version number, the "Version changes" HTML rewritten from the new

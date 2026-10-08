@@ -30,7 +30,7 @@ use super::super::types::{ConflictResolution, VolumeCopyConfig, WriteOperationCo
 use super::network_gated_source_test_support::{CANCEL_PAYLOAD_BYTES, gated_reads, gated_upload};
 use super::network_semantics_test_support::{local_volume, names_in, seed, try_read};
 use super::network_transfer_test_support::{
-    assert_no_staging_litter, clean_deep, self_describing_bytes, sha256, start_copy,
+    assert_no_staging_litter, budget, clean_deep, self_describing_bytes, sha256, start_copy,
 };
 use crate::file_system::volume::LocalPosixVolume;
 use crate::file_system::volume::manager::get_volume_manager;
@@ -393,7 +393,7 @@ pub(super) async fn a_cancelled_download_leaves_nothing_behind(remote: Arc<dyn V
     // incomplete staging sibling. ❗ TWO, so the first is known to have been
     // taken by the destination rather than merely offered.
     source.gate.add_permits(2);
-    crate::test_support::wait_until_async(Duration::from_secs(6), "two chunks to leave the server", || {
+    crate::test_support::wait_until_async(budget(Duration::from_secs(6)), "two chunks to leave the server", || {
         source.handed_out.load(std::sync::atomic::Ordering::SeqCst) >= 2
     })
     .await;
@@ -477,9 +477,11 @@ pub(super) async fn a_name_taken_mid_upload_is_never_replaced(
     // Two chunks in, so the upload is provably on the wire to its staging
     // sibling while the user's filename is still free.
     source.gate.add_permits(2);
-    crate::test_support::wait_until_async(Duration::from_secs(6), "the upload to get two chunks in", || {
-        source.handed_out.load(std::sync::atomic::Ordering::SeqCst) >= 2
-    })
+    crate::test_support::wait_until_async(
+        budget(Duration::from_secs(6)),
+        "the upload to get two chunks in",
+        || source.handed_out.load(std::sync::atomic::Ordering::SeqCst) >= 2,
+    )
     .await;
     remote
         .create_file(&dir.join("big.bin"), &theirs)

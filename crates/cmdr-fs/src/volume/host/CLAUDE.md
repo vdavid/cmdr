@@ -35,14 +35,13 @@ where credentials live, which runtime to spawn on, who to tell when a watch brea
 
 ## Module map
 
-- `mod.rs`: `VolumeHost` (the bundle), its builder, and `detached()`.
+- `mod.rs`: `VolumeHost`, its builder, `detached()`, and `state_dir` (a path: a backend's durable private state).
 - `listings.rs`: `ListingHost`, the busiest seam. Report a change, ask the fresh-listing oracle, refresh archive panes.
 - One seam per file: `runtime.rs` (the injected `tokio::runtime::Handle`, not a trait), `events.rs` (`VolumeEventSink` +
   `VolumeConnection`), `credentials.rs` (`CredentialStore`), `host_keys.rs` (`HostKeys`), `indexing.rs`
   (`IndexNotifier` + `WatchGap`), `settings.rs` (`BackendSettings`), `activity.rs` (`UserActivity`), `analytics.rs`
   (`AnalyticsSink`). What each one replaces: `DETAILS.md` § "Seam by seam".
-- Each carries a recording or scripted fake under the `testing` feature, for tests that assert on what a backend told
-  its host.
+- Each carries a recording or scripted fake under the `testing` feature.
 
 The other end is `apps/desktop/src-tauri/src/volume_host.rs`, where Cmdr builds its host, each answer an adapter next to
 the subsystem that gives it.

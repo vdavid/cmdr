@@ -221,6 +221,10 @@
   "@askCmdr.error.noCloudConsent": {
     "sourceHash": "cd2af1d"
   },
+  "askCmdr.error.managedByOrganization": "Je organisatie staat deze AI-service niet toe. Je IT-team kan je vertellen welke je mag gebruiken.",
+  "@askCmdr.error.managedByOrganization": {
+    "sourceHash": "845a19f"
+  },
   "askCmdr.error.localWindowTooSmall": "Cmdr heeft een groter contextvenster nodig dan je lokale model heeft. Kies 32.768 tokens of meer in instellingen, onder AI.",
   "@askCmdr.error.localWindowTooSmall": {
     "sourceHash": "8ac7452"
@@ -579,6 +583,10 @@
   "askCmdr.renameUndo.applied": "{count, plural, one {Naam van {countText} bestand gewijzigd} other {Namen van {countText} bestanden gewijzigd}}.",
   "@askCmdr.renameUndo.applied": {
     "sourceHash": "b06c599"
+  },
+  "askCmdr.renameUndo.swapsSkipped": "Overgeslagen: {countText} {count, plural, one {naamwijziging} other {naamwijzigingen}} waarbij bestanden van naam wisselen. Wijzig de namen van die bestanden één voor één.",
+  "@askCmdr.renameUndo.swapsSkipped": {
+    "sourceHash": "90e8dfc"
   },
   "askCmdr.renameUndo.undo": "Ongedaan maken",
   "@askCmdr.renameUndo.undo": {

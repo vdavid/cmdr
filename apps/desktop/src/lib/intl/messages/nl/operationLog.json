@@ -39,6 +39,18 @@
   "@operationLog.dialog.finishRollBack": {
     "sourceHash": "dbe3771"
   },
+  "operationLog.dialog.rollbackOf": "Terugdraaibewerking voor ‘<operationLink>{operation}</operationLink>’ van {time}",
+  "@operationLog.dialog.rollbackOf": {
+    "sourceHash": "4885c73"
+  },
+  "operationLog.dialog.rollbackOfUnlisted": "Terugdraaibewerking voor een eerdere bewerking",
+  "@operationLog.dialog.rollbackOfUnlisted": {
+    "sourceHash": "50d060d"
+  },
+  "operationLog.dialog.latestRollback": "Laatste terugdraaibewerking: ‘<operationLink>{operation}</operationLink>’ van {time}",
+  "@operationLog.dialog.latestRollback": {
+    "sourceHash": "a8275f9"
+  },
   "operationLog.dialog.close": "Sluit",
   "@operationLog.dialog.close": {
     "sourceHash": "7d9eb7a"

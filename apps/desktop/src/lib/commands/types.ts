@@ -44,8 +44,23 @@ export type SortColumn = 'name' | 'extension' | 'size' | 'modified' | 'created'
 /** Selection mode for the MCP `select` tool. */
 export type McpSelectMode = 'replace' | 'add' | 'subtract'
 
-/** Tab action for the MCP `tab` tool. */
+/** Fire-and-forget tab action for the MCP `tab` tool. `move` is separate: see `McpTabMoveArgs`. */
 export type McpTabAction = 'new' | 'close' | 'close_others' | 'activate' | 'reopen' | 'set_pinned'
+
+/**
+ * The MCP `tab` tool's `move`: `tabId` leaves `pane` for index `toIndex` of `toPane` (the
+ * end when omitted; the same pane for a reorder). It rides `tab.mcpAction` like the other
+ * actions but carries the round-trip id, because a move can be refused and the reply
+ * names the outcome (`routes/(main)/mcp-tab-move.ts`).
+ */
+export interface McpTabMoveArgs {
+  pane: PaneId
+  action: 'move'
+  tabId: string
+  toPane: PaneId
+  toIndex?: number
+  mcpRequestId?: string
+}
 
 /**
  * Dialog kind an MCP tool can confirm. The first two come from `dialog confirm`;
@@ -77,7 +92,7 @@ export interface CommandArgsOverrides {
   'cursor.moveTo': { pane: PaneId; to: number | string }
   'cursor.scrollTo': { pane: PaneId; index: number }
   'volume.selectByName': { pane: PaneId; name?: string; volumeId?: string; mcpRequestId?: string }
-  'tab.mcpAction': { pane: PaneId; action: McpTabAction; tabId?: string; pinned?: boolean }
+  'tab.mcpAction': { pane: PaneId; action: McpTabAction; tabId?: string; pinned?: boolean } | McpTabMoveArgs
   'dialog.confirm': { type: ConfirmDialogType; onConflict?: string }
 }
 
@@ -197,7 +212,18 @@ export interface Command {
    * highlights: matches landing in keyword text are dropped (see `fuzzy-search.ts`).
    */
   keywords?: string[]
+  /**
+   * A condition the palette shows this command under, for one that only means
+   * something somewhere (`'focusedPaneSharesLinks'`: the focused pane is on a
+   * volume that can mint share links). The palette asks the condition when it
+   * opens (`getPaletteCommands(holds)`); every other surface lists the command
+   * regardless. Omitted: always shown.
+   */
+  paletteCondition?: PaletteCondition
 }
+
+/** What a palette row's `paletteCondition` can ask. One member per question. */
+export type PaletteCondition = 'focusedPaneSharesLinks'
 
 /**
  * Authored form of a command, as written in `command-registry.ts`. Holds i18n

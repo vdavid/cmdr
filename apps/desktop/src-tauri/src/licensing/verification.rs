@@ -90,6 +90,8 @@ pub struct LicenseInfo {
     pub license_type: Option<String>,
     /// The short code used to activate (if available)
     pub short_code: Option<String>,
+    /// The end date signed into the key (RFC 3339), only on a dated license.
+    pub expires_at: Option<String>,
 }
 
 /// Result of verifying a license key without persisting it.
@@ -126,6 +128,7 @@ pub async fn verify_license_async(input: &str) -> Result<VerifyResult, LicenseAc
         organization_name: data.organization_name,
         license_type: data.license_type,
         short_code: resolved_short_code.clone(),
+        expires_at: data.expires_at,
     };
     Ok(VerifyResult {
         info,
@@ -171,7 +174,7 @@ pub fn commit_license(
         "active",
         license_type,
         data.organization_name.clone(),
-        None,
+        data.expires_at.clone(),
     );
 
     let info = LicenseInfo {
@@ -181,6 +184,7 @@ pub fn commit_license(
         organization_name: data.organization_name,
         license_type: data.license_type,
         short_code: resolved_short_code,
+        expires_at: data.expires_at,
     };
 
     // Update the in-memory cache with the newly committed license
@@ -189,29 +193,6 @@ pub fn commit_license(
     }
 
     Ok(info)
-}
-
-/// Activate a license key (full key, not short code). Verifies + commits in one call.
-/// Kept for backward compatibility with periodic validation and internal callers.
-pub fn activate_license(app: &tauri::AppHandle, license_key: &str) -> Result<LicenseInfo, LicenseActivationError> {
-    commit_license(app, license_key, None)
-}
-
-/// Activate a license key or short code (async version). Verifies + commits in one call.
-/// If the input is a short code (CMDR-XXXX-XXXX-XXXX), it first exchanges it for the full key.
-/// Kept for backward compatibility.
-pub async fn activate_license_async(
-    app: &tauri::AppHandle,
-    input: &str,
-) -> Result<LicenseInfo, LicenseActivationError> {
-    let (full_key, short_code) = if is_short_code(input) {
-        let key = activate_short_code(input).await?;
-        (key, Some(input))
-    } else {
-        (input.to_string(), None)
-    };
-
-    commit_license(app, &full_key, short_code)
 }
 
 /// Get stored license info, if any. Returns a cached result after the first successful
@@ -241,6 +222,7 @@ pub fn get_license_info(app: &tauri::AppHandle) -> Option<LicenseInfo> {
             organization_name: data.organization_name,
             license_type: data.license_type,
             short_code: resolved_short_code,
+            expires_at: data.expires_at,
         }
     })?;
 
@@ -283,14 +265,7 @@ fn validate_license_key_with_public_key(
         .map_err(|_| LicenseActivationError::BadEncoding)?;
 
     // Parse public key (internal error: should never happen with a valid compiled-in key)
-    let public_key_bytes = hex_decode(public_key_hex).map_err(|_| LicenseActivationError::BadPayload)?;
-
-    let public_key = VerifyingKey::from_bytes(
-        &public_key_bytes
-            .try_into()
-            .map_err(|_| LicenseActivationError::BadPayload)?,
-    )
-    .map_err(|_| LicenseActivationError::BadPayload)?;
+    let public_key = verifying_key_from_hex(public_key_hex)?;
 
     // Parse signature
     let signature = Signature::from_slice(&signature_bytes).map_err(|_| LicenseActivationError::BadSignature)?;
@@ -309,6 +284,89 @@ fn validate_license_key_with_public_key(
     log::debug!("License validated successfully for: {}", redact_email(&data.email));
 
     Ok(data)
+}
+
+/// Signed before the payload of a `/validate` answer. Must match `validationAnswerSignaturePrefix` in
+/// `apps/api-server/src/licensing/license.ts`. A license key's signature covers the bare payload,
+/// so neither kind of signature can pass for the other.
+const VALIDATION_ANSWER_SIGNATURE_PREFIX: &[u8] = b"cmdr-validation-answer-v1\n";
+
+/// The server's signed verdict on one license, bound to the nonce of the request that asked.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SignedValidationAnswer {
+    pub transaction_id: String,
+    pub nonce: String,
+    /// `active`, `expired`, or `invalid`.
+    pub status: String,
+    #[serde(rename = "type")]
+    pub license_type: Option<String>,
+    pub organization_name: Option<String>,
+    pub expires_at: Option<String>,
+    /// The server's clock when it signed, RFC 3339.
+    pub signed_at: String,
+}
+
+/// Why a `/validate` answer wasn't trusted. For the log only: every variant is treated like an
+/// unreachable server, which keeps the cached status.
+#[derive(Debug)]
+pub enum AnswerRejection {
+    Unsigned,
+    BadEncoding,
+    BadSignature,
+    BadPayload,
+    WrongTransaction,
+    WrongNonce,
+}
+
+/// Verify a signed `/validate` answer against the compiled-in key, for this license and request.
+pub fn verify_validation_answer(
+    payload_b64: &str,
+    signature_b64: &str,
+    transaction_id: &str,
+    nonce: &str,
+) -> Result<SignedValidationAnswer, AnswerRejection> {
+    verify_validation_answer_with_public_key(payload_b64, signature_b64, transaction_id, nonce, PUBLIC_KEY_HEX)
+}
+
+fn verify_validation_answer_with_public_key(
+    payload_b64: &str,
+    signature_b64: &str,
+    transaction_id: &str,
+    nonce: &str,
+    public_key_hex: &str,
+) -> Result<SignedValidationAnswer, AnswerRejection> {
+    let payload = BASE64.decode(payload_b64).map_err(|_| AnswerRejection::BadEncoding)?;
+    let signature_bytes = BASE64.decode(signature_b64).map_err(|_| AnswerRejection::BadEncoding)?;
+    let signature = Signature::from_slice(&signature_bytes).map_err(|_| AnswerRejection::BadSignature)?;
+    let public_key = verifying_key_from_hex(public_key_hex).map_err(|_| AnswerRejection::BadSignature)?;
+
+    let mut message = VALIDATION_ANSWER_SIGNATURE_PREFIX.to_vec();
+    message.extend_from_slice(&payload);
+    public_key
+        .verify(&message, &signature)
+        .map_err(|_| AnswerRejection::BadSignature)?;
+
+    let answer: SignedValidationAnswer = serde_json::from_slice(&payload).map_err(|_| AnswerRejection::BadPayload)?;
+    if answer.transaction_id != transaction_id {
+        return Err(AnswerRejection::WrongTransaction);
+    }
+    if answer.nonce != nonce {
+        return Err(AnswerRejection::WrongNonce);
+    }
+    Ok(answer)
+}
+
+/// The compiled-in public key as a verifying key. Failing here means a malformed constant, which
+/// `compiled_in_public_key_is_a_well_formed_ed25519_key` catches at build time.
+fn verifying_key_from_hex(public_key_hex: &str) -> Result<VerifyingKey, LicenseActivationError> {
+    let public_key_bytes = hex_decode(public_key_hex).map_err(|_| LicenseActivationError::BadPayload)?;
+    VerifyingKey::from_bytes(
+        &public_key_bytes
+            .try_into()
+            .map_err(|_| LicenseActivationError::BadPayload)?,
+    )
+    .map_err(|_| LicenseActivationError::BadPayload)
 }
 
 fn hex_decode(hex: &str) -> Result<Vec<u8>, ()> {
@@ -433,6 +491,7 @@ mod tests {
             license_type: None,
             organization_name: Some("Test Corp".to_string()),
             short_code: None,
+            expires_at: None,
         };
 
         // Serialize payload (same as server)
@@ -476,6 +535,7 @@ mod tests {
             license_type: None,
             organization_name: Some("Original Corp".to_string()),
             short_code: None,
+            expires_at: None,
         };
         let original_json = serde_json::to_string(&original_data).unwrap();
         let signature = signing_key.sign(original_json.as_bytes());
@@ -489,6 +549,7 @@ mod tests {
             license_type: None,
             organization_name: Some("Original Corp".to_string()),
             short_code: None,
+            expires_at: None,
         };
         let tampered_json = serde_json::to_string(&tampered_data).unwrap();
         let tampered_payload_base64 = BASE64.encode(tampered_json.as_bytes());
@@ -524,6 +585,7 @@ mod tests {
             license_type: None,
             organization_name: None,
             short_code: None,
+            expires_at: None,
         };
         let payload_json = serde_json::to_string(&license_data).unwrap();
         let signature = signing_key.sign(payload_json.as_bytes());
@@ -536,6 +598,117 @@ mod tests {
         // Try to validate with wrong public key
         let result = validate_license_key_with_public_key(&license_key, &wrong_public_hex);
         assert!(matches!(result, Err(LicenseActivationError::BadSignature)));
+    }
+
+    // Signed validation answers
+
+    const NONCE: &str = "0123456789abcdef0123456789abcdef";
+
+    fn test_signer() -> (ed25519_dalek::SigningKey, String) {
+        use getrandom::{SysRng, rand_core::UnwrapErr};
+        let signing_key = ed25519_dalek::SigningKey::generate(&mut UnwrapErr(SysRng));
+        let public_key_hex: String = signing_key
+            .verifying_key()
+            .as_bytes()
+            .iter()
+            .map(|b| format!("{:02x}", b))
+            .collect();
+        (signing_key, public_key_hex)
+    }
+
+    fn answer_json(transaction_id: &str, nonce: &str, status: &str) -> String {
+        format!(
+            r#"{{"transactionId":"{transaction_id}","nonce":"{nonce}","status":"{status}","type":null,"organizationName":null,"expiresAt":null,"signedAt":"2026-10-05T12:00:00.000Z"}}"#
+        )
+    }
+
+    /// Signs the way the server does: the prefix, then the payload bytes.
+    fn sign_answer(signing_key: &ed25519_dalek::SigningKey, payload: &str) -> (String, String) {
+        use ed25519_dalek::Signer;
+        let mut message = VALIDATION_ANSWER_SIGNATURE_PREFIX.to_vec();
+        message.extend_from_slice(payload.as_bytes());
+        let signature = signing_key.sign(&message);
+        (BASE64.encode(payload), BASE64.encode(signature.to_bytes()))
+    }
+
+    #[test]
+    fn accepts_a_signed_answer_for_this_request() {
+        let (signing_key, public_key_hex) = test_signer();
+        let (payload, signature) = sign_answer(&signing_key, &answer_json("txn_1", NONCE, "invalid"));
+
+        let answer = verify_validation_answer_with_public_key(&payload, &signature, "txn_1", NONCE, &public_key_hex)
+            .expect("a correctly signed answer verifies");
+
+        assert_eq!(answer.status, "invalid");
+        assert_eq!(answer.signed_at, "2026-10-05T12:00:00.000Z");
+    }
+
+    #[test]
+    fn refuses_an_answer_replayed_from_another_request() {
+        let (signing_key, public_key_hex) = test_signer();
+        let (payload, signature) = sign_answer(&signing_key, &answer_json("txn_1", NONCE, "invalid"));
+
+        let result = verify_validation_answer_with_public_key(
+            &payload,
+            &signature,
+            "txn_1",
+            "ffffffffffffffffffffffffffffffff",
+            &public_key_hex,
+        );
+
+        assert!(matches!(result, Err(AnswerRejection::WrongNonce)));
+    }
+
+    #[test]
+    fn refuses_an_answer_about_another_license() {
+        let (signing_key, public_key_hex) = test_signer();
+        let (payload, signature) = sign_answer(&signing_key, &answer_json("txn_someone_else", NONCE, "invalid"));
+
+        let result = verify_validation_answer_with_public_key(&payload, &signature, "txn_1", NONCE, &public_key_hex);
+
+        assert!(matches!(result, Err(AnswerRejection::WrongTransaction)));
+    }
+
+    #[test]
+    fn refuses_an_answer_signed_by_anyone_else() {
+        // A squatter on a lapsed domain, or a TLS-intercepting proxy, holds some key, never ours.
+        let (impostor, _) = test_signer();
+        let (_, public_key_hex) = test_signer();
+        let (payload, signature) = sign_answer(&impostor, &answer_json("txn_1", NONCE, "invalid"));
+
+        let result = verify_validation_answer_with_public_key(&payload, &signature, "txn_1", NONCE, &public_key_hex);
+
+        assert!(matches!(result, Err(AnswerRejection::BadSignature)));
+    }
+
+    #[test]
+    fn refuses_a_signature_made_without_the_answer_prefix() {
+        // What a license key's signature looks like: over the bare payload.
+        use ed25519_dalek::Signer;
+        let (signing_key, public_key_hex) = test_signer();
+        let payload = answer_json("txn_1", NONCE, "invalid");
+        let signature = BASE64.encode(signing_key.sign(payload.as_bytes()).to_bytes());
+
+        let result = verify_validation_answer_with_public_key(
+            &BASE64.encode(&payload),
+            &signature,
+            "txn_1",
+            NONCE,
+            &public_key_hex,
+        );
+
+        assert!(matches!(result, Err(AnswerRejection::BadSignature)));
+    }
+
+    #[test]
+    fn refuses_a_tampered_verdict() {
+        let (signing_key, public_key_hex) = test_signer();
+        let (_, signature) = sign_answer(&signing_key, &answer_json("txn_1", NONCE, "active"));
+        let tampered = BASE64.encode(answer_json("txn_1", NONCE, "invalid"));
+
+        let result = verify_validation_answer_with_public_key(&tampered, &signature, "txn_1", NONCE, &public_key_hex);
+
+        assert!(matches!(result, Err(AnswerRejection::BadSignature)));
     }
 
     #[test]

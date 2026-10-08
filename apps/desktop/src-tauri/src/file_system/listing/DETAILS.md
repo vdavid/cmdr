@@ -14,6 +14,7 @@ Frontend                          Backend
    |                                   |
    |                            [background task spawns]
    |<--- listing-opening event --------| (just before read_dir)
+   |<--- listing-stalled event --------| (only if the read goes quiet for 8 s; the listing keeps going)
    |<--- listing-progress event -------| (every 200ms, { listingId, loadedCount })
    |<--- listing-read-complete event --| (when read_dir finishes, { listingId, totalCount })
    |                            [overlay rows folded in; sorting + caching; watcher arm dispatched, not awaited]
@@ -119,12 +120,27 @@ idle/backstop timers and the file viewer's window-`Destroyed` net.
 It keys on `last_accessed_ms`, NOT `created_at`. `created_at` is stamped once and never refreshed, so an age-based reaper
 keyed on it would evict a pane open all session. `last_accessed_ms` (an `AtomicU64` of ms-since-a-process-epoch) is
 bumped by every operation that proves the listing still backs a live pane: the read accessors (`get_file_range`,
-`get_total_count`, `get_file_at`, `get_file_beside`, `get_listing_stats`, the index/path/batch lookups), `resort_listing`, and every
+`get_file_at`, `get_file_beside`, `get_listing_stats`, the index/path/batch lookups), `resort_listing`, and every
 watcher/notify cache patch (`insert_entry_sorted` / `remove_entries_by_paths` / `remove_entry_by_name` /
 `update_entry_sorted` / `update_listing_entries`). `AtomicU64` so read accessors stamp it lock-free under a shared `LISTING_CACHE.read()`. The
 6 h window is deliberately generous: we'd rather never evict a live listing than aggressively reclaim.
 `refresh_listing_index_sizes` intentionally does NOT touch it: it's driven by background indexing, not user/FS activity,
 so touching there could keep a truly-orphaned listing alive indefinitely.
+
+**The pane heartbeat is what proves a listing live**, not access. A pane left on a quiet folder overnight makes no reads
+and gets no FS events, so access alone let the reaper take an on-screen `~/Downloads` listing after six idle hours: the
+pane kept stale rows, its watcher was gone (new downloads never appeared), and every F3–F6 failed on the missing listing.
+Every 30 min the frontend's `file-explorer/pane/listing-liveness.ts` names each LANDED listing through
+`keep_listings_alive`, which touches the ones cached and returns the ones it no longer holds. A leaked listing stops
+being named and is reaped as before.
+
+**A lookup on a missing listing is a typed `ListingLookupError::Gone { listing_id }`** (every accessor in
+`operations.rs`, and their commands). It's the accessors' only failure: they take the cache lock with
+`*_ignore_poison`. The frontend funnels every such refusal (`$lib/tauri-commands` `listing-gone.ts`), and every id the
+heartbeat returns, to the liveness registry, and the owning pane re-lists the same folder with the cursor on the same entry. A pane registers its
+listing only once it has landed, so a read racing a navigation (which also answers `Gone`) never triggers a re-list. The
+clipboard and drag commands still flatten it into their `String` errors; the pane recovers through its next read or
+heartbeat.
 
 #### Test isolation for `LISTING_CACHE`
 
@@ -167,9 +183,10 @@ evaluations per index event on the main thread — IPC stopped being answered at
 
 **Decision: materialize the row map once per `(listing, include_hidden)`, and split it in two.** `settled` is a
 `Vec<u32>` of entry indices nothing can hide any more; `candidates` holds the scratch-NAMED entries with the count of
-settled rows ahead of each. A read re-asks `is_hidden_from_listings` about the candidates only — a handful, usually
-none — and merges them back by row number, so a lookup is an array index plus a binary search over a list that is
-almost always empty.
+settled rows ahead of each. Rows merge candidates using the listing's committed exact-path `ScratchProjection`,
+never live settings or ownership. A lookup is an array index plus a binary search over a list that is almost always
+empty. Reads check only those candidates for drift before using the map; publication is described in § "Diff event
+coalescing".
 
 **Why the split rather than an invalidation hook.** The `is_hidden` half is stable, but the scratch half is not: an
 operation settling un-hides its leftover with no change to the listing and nothing to notify anyone, because the
@@ -195,7 +212,7 @@ themselves ~15 MB.
 
 **The one case that got slower**, said plainly: reading row 0 right after a mutation used to short-circuit after one
 entry and now rebuilds the whole map. It doesn't matter in practice, because the reads that accompany it
-(`get_total_count`, `get_listing_stats`) were already walking the listing and now share that one pass — but a future
+(`get_listing_stats` and mutation publication counts) share that one pass — but a future
 caller that reads a single shallow row per mutation and nothing else is the shape to watch.
 
 **What is still O(rows), and can still be re-multiplied by a caller that loops it**: `find_file_index`,
@@ -203,11 +220,78 @@ caller that reads a single shallow row per mutation and nothing else is the shap
 accident. `find_file_indices` is the batch form of the first, and `get_file_beside` exists so a caller wanting a
 neighbour doesn't compose two calls; reach for those instead of a loop.
 
+## Compare directories (compare.rs)
+
+Total Commander's ⇧F2: each pane marks the files the other pane lacks plus, per `CompareDirectoriesMode`, the newer
+copies (`newerAndMissing`, TC's default), nothing more (`missing`), or both copies of a file whose size differs
+(`sizeAndMissing`). Folders are left alone, and a folder never counts as a file's counterpart.
+
+- **Read off both cached listings under ONE lock, in each pane's row space** (`CachedListing::rows`), so the answer is a
+  ready selection and a row the pane doesn't show is never marked.
+- **The answer names the committed visible revision**, read under that same lock. `settled` requires both requested
+  `includeHidden` values to match the committed settings. Scratch drift is reconciled before taking that read lock,
+  so stable shown scratch and stable owned hidden temps are valid settled states.
+  The frontend also requires its applied revisions to match; a queued event is safe because its revision was already
+  committed. See § "Diff event coalescing" for publication and guarded consumption.
+- **Names match as the Mac does**: the exact spelling first, else a name that folds to the same key
+  (`cmdr_fs::name_fold`, case and Unicode form). A folded match counts only when the key is unique on BOTH sides, so
+  the two directions always agree: `Report` and `report` (a case-sensitive volume) against `REPORT` pair nothing.
+- **Runs off the IPC thread with a 10 s deadline** (`blocking_typed_result_with_timeout`), answering a typed
+  `CompareDirectoriesError` (`gone` / `timedOut` / `internal`).
+- **Two seconds apart is the same time** (`SAME_TIME_TOLERANCE_SECS`): FAT and many shares store time in 2 s steps. An
+  unknown time or size never marks a copy; only a difference we can see does.
+- No content comparison: like TC's ⇧F2, it reads metadata only. Byte comparison belongs to Synchronize directories.
+## Quick filter (name_filter.rs)
+
+The pane's "type to narrow" mode (Total Commander's quick filter). The pattern lives on the `CachedListing`
+(`set_name_filter`) and is one more input to the row predicate (`visible_rows::shows`), so it is NOT a second filter
+point: counts, ranges, selection, type-to-jump, and `directory-diff` rows all speak the filtered row space.
+
+- **Decision: the filter is the listing's, not a per-call argument like `include_hidden`.** Why: every pane-index IPC
+  already carries `include_hidden`; threading a pattern through all of them would touch every caller for no gain, since
+  only the pane showing the listing ever filters it. The cost: the filter is not a slot key of `VisibleRowsCache`, so a
+  change drops both slots.
+- **`set_listing_name_filter` swaps the row space under ONE write lock** and answers with the new count plus where the
+  cursor's file and the selected files landed (the `resort_listing` shape). A selected file the filter hides drops out
+  of the selection, so no operation acts on a row the user can't see. A change drops the queued diffs, like a hidden
+  toggle, and answers the diff `sequence` the new row space starts at (bumped under the same lock).
+- **Matching cost**: the wildcard-free path folds each name once (`fold_name` allocates only when folding changes it)
+  and does one `contains`; a wildcard pattern walks chars with backtracking only to the last `*`, so no recursion
+  and no blowup on `*a*a*a*`. Measured by the review on a 50k-name folder: fast enough to type into.
+- **Typing narrows down to the last match, never past it.** A growing pattern is sent with `refuse_empty`; one that
+  matches no entry is refused under the same lock (`accepted: false`, old filter kept) and the frontend drops the
+  keystroke. The check walks every entry, not the current rows: an edited pattern needn't narrow the old one.
+- Matching: substring anywhere in the name, folded by `cmdr_fs::name_fold` (case and Unicode form), `*` / `?` as
+  wildcards with an implied `*` on both ends. A new listing starts unfiltered; the frontend side is
+  `apps/desktop/src/lib/file-explorer/pane/DETAILS.md` § Quick filter.
+
+### The quick filter and in-flight diffs
+
+A filter change is a committed visible revision, using the same `sequence` identity as sort, hidden visibility,
+scratch reconciliation, selection snapshots, and comparison. There is no independent filter epoch.
+
+- The guarded setter reconciles scratch drift, then checks the caller's expected revision and hidden setting BEFORE
+  interpreting selection indices. A typed `Changed` refusal leaves the filter untouched; the pane drains buffered
+  transitions and retries with fresh indices.
+- A successful change advances the revision and drops superseded queued transitions under the cache write lock
+  (cache then queue). A new-space watcher mutation cannot enqueue until that lock is released, so the drop cannot
+  erase it. An already-drained old batch is harmless: its revision precedes the response barrier.
+- Watcher and overlay replacements sort, compare committed projected rows, replace, and publish under that same
+  write lock. An async directory read crossing a filter change therefore derives its diff in the current row space,
+  without an externally computed diff or an enqueue after unlocking.
+- Filter requests use the pane's `pane-row-state.ts` reconfiguration gate. Pending diffs wait for the response;
+  synchronous installation establishes the response revision before buffered batches drain. Reconfiguration also
+  invalidates old async selection continuations and gates compare and destructive-operation snapshots.
+
+`name_filter_test.rs` covers old-space pending drops, fresh publication after the setter unlocks, replacements
+crossing a filter change, guarded selection refusal, and scratch drift before filtering. The post-unlock test injects
+a real watcher mutation and holds the flush timer; no sleeps or scheduler timing are needed.
+
 ## Diffs speak the pane's rows
 
 A `directory-diff` index is a row of the pane showing the listing, the same space `get_file_range` reads, ❌ never an
 index into `entries`. The pane's rows are `CachedListing::pane_rows()`: the row map at the listing's own
-`include_hidden`, recorded at `list_directory_start` and updated by `set_listing_include_hidden`, which the pane calls
+`include_hidden`, recorded at `list_directory_start_streaming` and updated by `set_listing_include_hidden`, which the pane calls
 first thing in `hidden-files-resync.ts` (after every load and every toggle). It's per listing, and each pane holds its
 own listing, so two panes on one folder each get their own rows.
 
@@ -230,10 +314,10 @@ for row 1).
   `update_entry_sorted`) return `PaneRows { before, after }`, read off the row map as it stood BEFORE their own patch and
   under the same write lock (`VisibleRows::rows_before` / `row_of_entry`, two binary searches). ❗ Reading after the patch
   would rebuild the map per patch, once per add in a burst. `DiffChange::for_pane` turns the pair into a change or none.
-- The batch re-reads (`publish_replacement`, the watcher's `handle_directory_change`) diff the SHOWN rows of old and new
-  with `compute_diff(old, new, include_hidden)`, so moves are judged among the pane's rows alone, and decide the cache
-  write separately with `listing_changed`: an empty pane diff can still owe the cache a hidden entry's news.
-- `visible_rows::shows` is the one predicate, the same one the row map is built from. ❌ No name test anywhere.
+- Batch re-reads (`publish_replacement`, the watcher's `handle_directory_change`) call `update_listing_entries`,
+  which diffs committed projected rows through `CachedListing::replace_entries` under the cache write lock.
+  `compute_diff(old, new, include_hidden, name_filter)` is a test-only helper.
+- `CachedListing::shows` combines the filter with captured scratch decisions and hidden visibility, matching its row map.
 - `is_entry_modified` counts `is_hidden`: with hidden files shown the row dims, and a `chflags hidden` reaching a full
   re-read would otherwise leave the cache holding the old flag.
 - A toggle drops what's queued for the listing: it's numbered in the old row space, the pane re-reads its count and
@@ -337,6 +421,15 @@ to the name, and under Size the directories are all unknown and sort by name amo
 mapping from "a row" to "what orders it" is decided, and that mapping is the thing that must not drift. The trait makes
 the shared fields the contract and the generic monomorphizes, so the listing's hot path pays nothing.
 
+**`DirectorySortMode` decides whether directories lead.** `LikeFiles` and `AlwaysByName` put them first (by the column,
+or A→Z by name whatever the direction, except on the Name column itself), and `MixedWithFiles` ("Show folders first" off, #291) drops that step: `compare_mixed` ranks a directory
+among the files by the same column. Size is the one column where the two kinds read different fields (a directory's
+`known_dir_size`, a file's `size`), so the mixed sort uses one rule for both, an unknown size LAST whatever the order,
+to stay transitive: per-kind rules (a file's unknown first, a directory's last) would cycle once mixed. The mode
+arrives per listing from the frontend, which folds its two settings into it (`apps/desktop/src/lib/file-explorer/DETAILS.md`
+§ Sorting), and every sort path reads it off the `CachedListing`, so the watcher's re-sorts, archive panes, and every
+volume follow it.
+
 `sort_search_results` (`commands/search.rs`) is the frontend's way in: it answers with the input indices in sorted
 order, and the caller re-orders the rows it already holds. The frontend deliberately has NO comparator of its own; the
 snapshot store's sort round-trips through this command. `apps/desktop/src/lib/search/DETAILS.md` § "The snapshot pane's
@@ -434,10 +527,8 @@ loudly, so `sorting::tests::apply_permutation_moves_each_row_to_its_destination`
   hash lookups in the cached `.bin` table. `calculate_max_width_with_suffixes()` is the entry point, used by
   `brief_columns::compute_brief_column_text_widths` to size each Brief column to its widest filename (plus a per-row
   trailing suffix that reserves room for the Finder tag-dot cluster).
-- **Sequence counter on `CachedListing`, not `WatchedDirectory`**: SMB and MTP volumes don't use FSEvents
-  (`can_watch_listings() == false`), so they have no `WatchedDirectory`. With the sequence on the watcher,
-  `increment_sequence` returned `None` and `directory-diff` events never fired for those volumes. The `AtomicU64` on
-  `CachedListing` works for all volume types; the FSEvents path uses the same counter.
+- **Revision on `CachedListing`, not `WatchedDirectory`**: it describes the committed pane view on every volume,
+  including SMB and MTP, which have no FSEvents `WatchedDirectory`. See § "Diff event coalescing".
 - **`ListingEventSink` trait decouples streaming from Tauri** (same pattern as `OperationEventSink`):
   `read_directory_with_progress` emits events, but `tauri::AppHandle` can't be created in tests.
   `CollectorListingEventSink` captures events for assertions. `Arc<dyn ListingEventSink>` (not `&dyn`) because the sink
@@ -461,7 +552,8 @@ Used by the watcher's incremental path and synthetic mkdir to patch listings wit
   same directory).
 - `find_listings_for_path_on_volume(volume_id, path)`: same, also filtered by volume ID. Prevents false matches when two
   volumes serve overlapping paths.
-- `try_get_authoritative_listing(volume_id, path)`: the fresh-listing oracle for write-op pre-flight scans. Returns
+- `try_get_authoritative_listing(volume_id, path)`: the fresh-listing oracle for write-op pre-flight scans and the
+  look-alike check before a new name (`write_operations/look_alike.rs`). Returns
   `Some(entries)` when a cached listing exists for `(volume_id, path)` and `listing_watch_coverage(path) == WatchCoverage::EveryWriter`
   (delegated to the backend via the `Volume` trait), else `None`. When multiple listings exist for the same pair (two
   panes), picks the most-recently-updated one deterministically: highest `sequence` (an `AtomicU64`), ties broken by
@@ -599,26 +691,49 @@ is the one at stake, and it takes its fixture from `write_operations::backend_su
 
 ## Diff event coalescing (diff_emitter.rs)
 
-All `directory-diff` emit paths funnel through `diff_emitter::enqueue_diff(listing_id, changes)` instead of calling
-`app.emit` directly. The module buffers changes per listing and flushes one combined event after a 50 ms trailing
-window. Producers: `caching::notify_added` / `notify_removed` / `notify_modified`; `caching::notify_full_refresh`
-(SMB `STATUS_NOTIFY_ENUM_DIR` re-reads); `watcher::handle_directory_change_incremental`;
-`watcher::handle_directory_change` (full re-read fallback); `commands::file_system::write_ops::emit_synthetic_entry_diff`
-(`create_file` / `create_directory`); `caching::publish_replacement`, which every `Replaced` and `FullRefresh` ends in.
+Mutation owners (`caching.rs` patch helpers and tag writes, `operations.rs` full replacements) allocate the listing's
+visible `sequence` and enqueue under ONE cache write lock. Initial revision is zero; hidden-only patches do not
+advance it. Full replacements enrich and sort first, then `diff_rows` compares the committed old projection with the
+pinned replacement projection and stores the final replacement under that lock. An identical raw replacement still
+reconciles visibility drift. Callers never enqueue the same patch again. Lock order is cache then queue; the emitter
+never reads the cache to stamp a batch.
 
-**Why**: a 5k-file bulk delete used to fire one `directory-diff` per file. The frontend handler in `FilePane.svelte`
-runs ~5 IPC calls per event (`getTotalCount`, `refetchColumnWidths`, `fetchEntryUnderCursor`, `fetchListingStats`, plus
-a virtual-list re-fetch), so the source pane flickered heavily (the brief view's columns collapsed to width-of-name on
-every recompute). Coalescing into one event per 50 ms caps the FE work at ≤ 20 emits/sec/listing and the flicker goes
-away.
+**Scratch visibility belongs to the revision.** `CachedListing` captures exact path-keyed decisions at construction,
+so revision zero's count and later rows agree. Ordinary directories have an empty projection. Read boundaries keep
+the shared-lock fast path when there is no drift; otherwise they reacquire the write lock, capture and recheck live
+decisions once, diff old/new projected rows, commit the projection, and publish its revision and pinned count before
+consuming indices. Stable scratch does not block guarded sorting, hidden toggles, selection snapshots, or comparison.
+If ownership or either advanced scratch setting changed, an old guarded revision returns `Changed`; applying the
+transition and retrying succeeds. A flip after validation cannot change rows at that revision: rows never resample.
+An unobserved ABA exposes no intermediate rows; an observed flip and flip back allocate separate revisions.
 
-**Why it's safe**: only the IPC emit is deferred. Cache mutations stay synchronous and inline at the call site, so
-`get_file_range` always sees the latest entries. Per-change `index` values stay correct because each producer computes
-them against the pane's rows at the moment it mutates.
+Entry mutations reconcile and publish scratch drift FIRST, then derive their own old/new coordinates using that
+pinned projection. For `[b,c]` with hidden `a.cmdr-tmp-*`, ownership expiry plus removal of `b` publishes an add at
+zero, count three (`r0→r1`), then a remove at one, count two (`r1→r2`). New scratch paths are sampled once when admitted;
+the same decision supplies their diff and count. Removed candidates are forgotten. A projection-only change affecting
+no currently shown rows still publishes an empty batch linking revisions (for example, a scratch dotfile with hidden
+files off). Reconciliation has no ownership notifications and does not clone the whole listing on ordinary reads;
+both visible-row caches remain valid across projection changes.
 
-**Cleanup**: `list_directory_end` calls `diff_emitter::drop_pending(listing_id)` so an in-flight buffer for a closed
-listing doesn't fire a trailing event. The E2E `flush_all_watchers` helper (`#[cfg(feature = "playwright-e2e")]`) also
-calls `flush_all_pending()` so tests don't have to wait out the 50 ms window.
+Wire payload: `{ listingId, batches: [{ fromSequence, sequence, totalCount, changes }] }`. Each batch is one old/new
+row space; one multi-path removal is one batch, successive mutations are separate batches. `totalCount` is the final
+visible count for that transition. A 50 ms window coalesces transport without flattening coordinate spaces. Events may
+arrive out of order; clients chain batches by revision rather than treating an event's changes as one transition.
+
+`resort_listing` accepts a final `expected_sequence: Option<u64>` and returns `ResortResult` with `sequence`,
+`totalCount`, `newCursorIndex`, and `newSelectedIndices`. It refuses stale revisions before interpreting selected rows,
+commits a revision even for identical ordering, and discards queued old-space batches under the cache write lock.
+Already drained batches retain their older stamps, so the client can discard them. `set_listing_include_hidden` takes
+the expected revision plus optional cursor and selection, remaps exact surviving identities from the OLD visibility
+to the NEW visibility, and returns the same result. An unchanged setting does not allocate a revision.
+
+`get_selection_snapshot(listing_id, include_hidden, selected_indices, expected_sequence)` consumes backend-space rows
+under one reconciled read lock, returning `{ paths, fileCount, folderCount }`. Revision or visibility mismatch and
+invalid rows return typed `ListingLookupError::Changed` (`type: "changed"`); a missing listing remains `Gone`.
+This guards row-to-path consumption, not subsequent filesystem operations.
+
+Ending a listing drops the queue under the cache write lock. The E2E `flush_all_watchers` helper also drains queues
+through `flush_all_pending()` without waiting for the transport window.
 
 ## File metadata tiers
 
@@ -664,6 +779,15 @@ unconditional replace.
 encode↔decode round-trip is verified **semantically** (re-`read_tags` equals the input), not byte-for-byte against a
 Finder reference — valid bplists differ in object-table ordering/dedup.
 
+**Where the menu offers tags.** Only on rows that are real OS paths (`PaneContextMenuFacts.can_tag`, the frontend's
+`rowIsOsVisible`, the same reading `Share…` takes). Decision/Why: hiding an action that can't work beats explaining
+after the click, and the write is an `xattr::set` through the path, so a phone, an ADB device, an SFTP or WebDAV server,
+an archive's insides, or a `.git`-portal row takes the click and stores nothing. Keyed on the capability, ❌ never a
+list of backends, so a new protocol-only backend (S3) hides them for free. A share Cmdr talks to directly over smb2
+keeps them: its share stays mounted by macOS, its rows are `/Volumes/…` paths, and the xattr goes through that mount.
+A macOS-mounted filesystem that can't store xattrs still shows them; only trying can tell. Reading tags
+(`enrich_tags`) still runs everywhere, since an empty read is harmless.
+
 `tags.rs::toggle_color(paths, color)` is the higher-level op behind both triggers: it reads each path's current tags,
 applies Finder's multi-file rule (if EVERY path already carries the color, remove it from all; otherwise add the
 canonical system tag — `Red\n6`, …, `Gray\n1` — to every path that lacks it), preserves all other tags, skips rewriting
@@ -707,16 +831,17 @@ two_concurrent_listings_on_one_volume_both_have_to_finish, dropping_the_listing_
 ## Cancelling a listing detaches, never aborts
 
 `StreamingListingState.cancel` is ONE `CancellationToken` serving three roles: the sync cancellation checks, the
-`select!` arm that races the read, and the backend's cooperative cancel token via `Volume::list_directory_with_cancel`.
-It used to be a flag plus a `Notify`; one token means the "is it cancelled?" checks and the "wake up" signal can't
-disagree, and `cancel_listing()` is one call. By the time `read_directory_with_progress`'s `select!` cancel arm runs,
-the backend has necessarily already been told to stop — the same cancellation woke it.
+`select!` arm in `stall::read_until_answered` that races the reads, and (as a child token) the backend's cooperative
+cancel token via `Volume::list_directory_with_cancel`. One token means the "is it cancelled?" checks and the "wake up"
+signal can't disagree, and `cancel_listing()` is one call. By the time the cancel arm runs, the backend has necessarily
+already been told to stop: the same cancellation woke it.
 
-That arm then emits `listing-cancelled` and RETURNS, dropping the listing task's `JoinHandle`. Dropping a `JoinHandle`
+The listing then emits `listing-cancelled` and RETURNS, dropping each read's `JoinHandle`. Dropping a `JoinHandle`
 detaches the task; it does not cancel it. So the backend keeps running for exactly as long as it needs to reach its own
-safe boundary, while the user sees an instant cancel.
+safe boundary, while the user sees an instant cancel. A stalled listing whose retry wins detaches its other read the
+same way, after cancelling its child token so a backend that listens unwinds.
 
-❌ Never `listing_task.abort()` there. Abort drops the listing future at whatever await point it's sitting on. For MTP
+❌ Never `abort()` a read's task there. Abort drops the listing future at whatever await point it's sitting on. For MTP
 that's mid-PTP-transaction: the device is left expecting bytes nobody will send, and it wedges until the user replugs
 the phone; the guardrail is in `crates/cmdr-mtp/src/connection/CLAUDE.md`. MTP bails between per-handle `GetObjectInfo`
 round trips, so cooperative cancel costs at most one round trip of latency.
@@ -726,6 +851,91 @@ That's not a regression: local listings run inside `spawn_blocking`, which `abor
 
 Pinned by `streaming_test::test_cancel_unwinds_the_listing_instead_of_aborting_it`, which drives a fake volume that
 only ends when its token flips and fails if its future is dropped first.
+
+## Stalled listings (`stall.rs`)
+
+**The failure.** A pane navigating into an OS-mounted share whose server stopped answering (NFS or `smbfs`) showed a
+spinner for as long as the kernel held the read, and `cmdr://state` showed the pane on the new path with
+`totalFiles: 0`, no rows, and no error: indistinguishable from an empty folder. `LocalPosixVolume` reads inside
+`spawn_blocking`, and `read_dir` on a silent mount blocks in the kernel with no timeout of ours anywhere above it. What
+the stuck call answers when the server comes back differs by filesystem, so recovery can't count on either:
+
+- **`smbfs`**: blocks for as long as the server is silent (116 s observed, with no sign of ending), then answers
+  `ENOTCONN` the instant the server is back, and the kernel drops the mount (macOS 27.0, `docker pause` on a Samba
+  fixture mounted with `mount_smbfs`, `ls` timed from a second shell, 2026-10-02).
+- **NFS (hard mount)**: blocks until the server answers, then completes, or refuses with `EPERM` if it comes back
+  with stricter exports (the NAS in the issue rewrote its exports as `secure` on restart). Reasoned from GitHub issue #305, not reproduced here.
+
+**The watch.** `read_until_answered` races each read against `StallPolicy::stall_after` (8 s) of silence: no entry
+count growth, since a local read stuck on one `stat` repeats the same number every progress tick. 8 s clears the
+0.3–6 s a busy NAS holds a single request for (`listing_done_level`), so a slow answer never reads as a dead server. On
+a stall the listing emits `listing-stalled` and keeps waiting; the frontend swaps the spinner for the "still waiting"
+screen, and any later progress, complete, error, or cancelled event for the same listing replaces it. A read that
+resumes producing entries clears the stall, and a later silence reports it again.
+
+**After a stall, the listing answers for itself** until the volume does, so the pane recovers with no help:
+
+- A STUCK read's refusal is stale (it spent the outage in the kernel, and the `ENOTCONN` above is exactly that), so the
+  listing asks again at once.
+- A PROMPT transient refusal (`ErrorCategory::Transient`, the same classification the error screen renders from) is
+  retried after a backoff: 2 s doubling to 30 s.
+- A PROMPT lasting refusal is the answer and ends the listing (a folder gone once the server is back walks the pane up
+  as before). So does any refusal from a listing that never stalled: nothing changed for a healthy volume.
+- On a `BackendKind::Local` volume (where reads block in the kernel), one fresh probe runs beside the stuck read once
+  the first backoff passes, since a stuck read can stay stuck after the server is back, and the probe answers the
+  moment it is. Connecting backends (SMB direct, SFTP, WebDAV, MTP, ADB) get no probe: their own session timeouts and
+  the reconnect manager already turn silence into a typed answer, and the frontend's `live-retry` re-lists once the
+  volume is live again.
+
+The retries stop with the listing: cancel (the user navigating away, Esc, or Go back) wins every `select!`, and the
+function's drop guard cancels the child token every read carries, so a read still waiting at the gate never starts.
+
+**The thread bound.** Every read on a hung mount pins a blocking-pool thread until the kernel lets go, and the pool is
+finite (`deadline::BlockingBudget`'s doc has the incident where it ran out). One listing holds at most two reads (the
+stuck one and the probe). Across listings, `HungReads` keeps every volume's reads: once one is hung, at most
+`MAX_READS_ON_A_HUNG_VOLUME` (4) may be in flight on that volume, and any further read waits at the gate as a future,
+never a thread. That leaves a stalled listing's two reads plus a user's Retry room to land the moment the server is
+back, and caps what mashing Retry or opening one folder after another can pin. A read's slot lives in its own task,
+so it frees when the KERNEL lets go, however long after its listing moved on.
+
+**What it's stalled on (`stalled_on.rs`).** The event carries `stalled_on: StalledOn` (`server` / `drive` /
+`unknown`), which picks the screen's wording, so it says "server" or "drive" only when the mount proves it and keeps the
+combined line otherwise. Classified once per listing, at its first stall:
+
+- **Direct backends name themselves**: SMB direct, SFTP, and WebDAV are `server`; MTP and ADB are `unknown` (a USB
+  cable for one, a cable or Wi-Fi for the other, so neither word fits both).
+- **A filesystem path** (`Local`, and an archive or `.git` portal inside one) reads the mount it lies on off the kernel's
+  table, ❌ never a `statfs` on the path, which blocks on the very mount that just stalled. macOS uses the
+  `getfsstat(MNT_NOWAIT)` snapshot (`volumes::mount_type_and_source_for`), Linux `/proc/mounts`
+  (`linux_mounts::mount_entry_for_path`). Network types on an explicit allowlist (`smbfs`, `nfs`, `afpfs`, `webdav`,
+  `ftp`; `cifs`, `smb3`, `nfs4`, `fuse.sshfs`, `fuse.rclone`, `fuse.s3fs`, …) are `server`; a known local disk
+  (`index_provider::mount_is_local_disk`) is `drive`; anything else (GVFS's `fuse.gvfsd-fuse`, which holds phones and
+  shares alike, macFUSE, cloud clients' mounts, autofs, `9p`) is `unknown`.
+- **The table lookup is lexical**, so a path that reads as a local disk is resolved through its symlinks first
+  (`~/nas` → `/Volumes/nas`) on a blocking thread, bounded at 500 ms. A timeout means the probe hit the hung mount,
+  which reads as `unknown`. That probe can pin one blocking thread per stalled listing for as long as the kernel holds
+  it, outside the `HungReads` gate below; it only runs when the lexical answer was `drive`.
+- Not followed: a symlink INSIDE a network share pointing back onto a local disk (still reads `server`).
+
+**Decision: a gate that closes only on a hung volume, not a `BlockingBudget`.** A budget caps a family's reads always,
+which would throttle the healthy concurrent listings of a busy pane pair, two tabs, and a refresh on the boot disk. The
+gate costs nothing until a read on that volume has actually gone quiet. The bound is loose for the first 8 s (nobody
+knows the volume is hung yet), which only a human mashing Escape and Enter can exploit.
+
+**Decision: never a deadline that ENDS the listing.** Ending it would hand the pane an error while the server may be
+seconds from answering, and the stuck read would keep its thread anyway. Waiting costs the same thread and lands on
+its own.
+
+Pinned by `stall_test` (a read that never answers stalls within the deadline; recovery from a stale `ENOTCONN`;
+transient retries; a lasting refusal ends it; cancel stops retries; the per-volume bound, mutation-checked; a steady
+read never stalls). The frontend half: `apps/desktop/src/lib/file-explorer/pane/DETAILS.md` § "A folder that stops
+answering".
+
+**Manual repro**, no NAS needed: run a private copy of the guest SMB fixture image
+(`docker run -d --rm -p 127.0.0.1:<port>:445 smb-consumer-smb-consumer-guest`), `mount_smbfs -N
+//guest@127.0.0.1:<port>/public <dir>`, open `<dir>` in a pane, `docker pause` the container, and open a subfolder:
+the "still waiting" screen appears after 8 s. `docker unpause` and the pane lands, or walks up if the kernel dropped the
+mount. Don't pause the shared fixture containers: other sessions' E2E runs use them.
 
 ## Serializing full refreshes
 

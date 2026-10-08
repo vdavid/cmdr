@@ -2,7 +2,7 @@
 
 **What this settles:** why a long-running Cmdr held SMB sockets it no longer used (two in `CLOSE_WAIT`, and 78
 ESTABLISHED to the Docker test fixtures), and that both were `smb2` defects Cmdr needed only a version bump for. Cmdr
-ships `smb2` 0.25.0 now, which carries the fix. The memory cost was negligible; the real costs were file descriptors,
+ships `smb2` 0.27.0 now, which carries the fix. The memory cost was negligible; the real costs were file descriptors,
 server-side sessions, and about 86 timer wakeups a second from the tasks that stayed alive.
 
 Found while checking the MCP "leak" (`mcp-connection-leak-2026-09-22.md`, which is not one). The ownership rules that
@@ -43,8 +43,24 @@ now prevent both bugs live in the `smb2` repo's client module doc, § "Socket li
 Verified against the published crate with a standalone repro (an in-process `TcpListener`, no containers), 2026-09-23:
 dropping 200 connections, the server saw EOF on 200 of 200 (0 before), no client sockets left (200 before), and 296 B of
 residual heap per connection (7,753 before); a server hang-up left no `CLOSE_WAIT`, immediately or 5 s later. `smb2`'s
-own gates and Docker suite passed, and so did Cmdr's SMB fixture lane. Not run: `smb2`'s consumer suite, and a
-dev-instance mount/unmount acceptance check in Cmdr (both are follow-ups in `README.md`).
+own gates and Docker suite passed, and so did Cmdr's SMB fixture lane. Not run: `smb2`'s consumer suite for 0.24.1.
+
+## The fix holds in Cmdr (acceptance check, now a lasting test)
+
+`smb_integration_mount_unmount_cycles_leave_no_sockets_behind`
+(`crates/cmdr-smb/src/volume/session_integration_test.rs`, in the `desktop-rust-integration-tests` lane) runs 10
+mount/unmount cycles against the Docker `smb-consumer-guest` fixture. Each cycle connects the share the way a mount
+does, lists its root, opens a scan session, then runs `on_unmount` and drops the volume. The cell reads the process's
+own sockets with `getpeername` over every fd, keeping only peers on the fixture's port, so every socket it counts is one
+Cmdr opened to that server.
+
+- Result (`smb2` 0.27.0, macOS 27.0, nextest, 2026-10-01): each mount held 6 sockets while scanning (the main session,
+  the watcher's, and four scan-pool members), never more, so no cycle inherited a socket from the one before. After the
+  last unmount, 0 were left. 60 opened, 60 closed, and the whole run took about 1.3 s.
+- The cell catches the regression: leaking the volume instead of unmounting it (`mem::forget`) left the sockets open,
+  and the cell timed out waiting for them to close.
+- Not a dev-instance run with `lsof`. The cell drives the same `connect_smb_volume` / `on_unmount` pair the app's mount
+  and unmount paths call, minus the app's `VolumeManager` registry around them.
 
 ## Left out on purpose
 

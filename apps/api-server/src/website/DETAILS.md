@@ -7,43 +7,56 @@ Read this before any non-trivial work here: editing, planning, reorganizing, or 
 
 ## Files
 
-- **`beta-signup.ts`**: `POST /beta-signup` — email-only Listmonk double-opt-in subscribe, NO install id.
+- **`listmonk-signup.ts`**: `handleListSignup`, the whole signup flow both routes below share.
+- **`beta-signup.ts`**: `POST /beta-signup` — the app's email-only beta-list subscribe, NO install id.
+- **`newsletter-signup.ts`**: `POST /newsletter-signup` (plus its `OPTIONS` preflight) — getcmdr.com's newsletter form,
+  CORS for getcmdr.com origins only.
 - **`likes.ts`**: `/likes/:slug` (GET, POST, DELETE, OPTIONS) — blog-post hearts keyed by a per-post IP pseudonym.
 - **`link-codes.ts`**: `GET /r-codes.json` (public, edge-cached) plus `/admin/r-codes` CRUD. The pure `sanitizeUtmValue`
   and `isValidCode` are unit-tested.
-- Tests: `beta-signup.test.ts` (the Listmonk call, the no-install-id invariant, soft failure, rate limit),
-  `likes.test.ts` (the slug gate, the rate limit, the salt requirement, and the pseudonym's per-salt/per-slug/per-IP
-  separation), `link-codes.test.ts` (the public map, CORS, cache, admin CRUD auth, and the validators).
+- **`csp-report.ts`**: `POST /csp-report` (plus its `OPTIONS` preflight) — getcmdr.com's CSP violation reports, our own
+  breakage alerted to Discord.
+- Tests: `csp-report.test.ts` (both report formats, the noise filter, the daily dedupe, query stripping, the size cap,
+  the rate limit, CORS), `listmonk-signup.test.ts` (both signup routes: the Listmonk call, the failed-send 502, no
+  enumeration, the no-install-id invariant, rate limit, Discord, the newsletter CORS), `likes.test.ts` (the slug gate,
+  the rate limit, the salt requirement, and the pseudonym's per-salt/per-slug/per-IP separation), `link-codes.test.ts`
+  (the public map, CORS, cache, admin CRUD auth, and the validators).
 
-## Beta signup (decoupled, contact-only)
+## Signups (beta and newsletter)
 
-`POST /beta-signup` is the contact channel for early testers. It reads ONLY the `email` from the body and subscribes it
-to the double-opt-in Listmonk list `LISTMONK_BETA_LIST_ID` (`POST https://mail.getcmdr.com/api/subscribers`,
-`Authorization: token <LISTMONK_API_USER>:<LISTMONK_API_TOKEN>`, subscriber `status: "enabled"` — the subscriber-status
-enum only accepts enabled/disabled/blocklisted, while `"unconfirmed"` is the per-LIST subscription status — and
-deliberately NO `preconfirm_subscriptions`, so Listmonk sends its own confirmation email). The privacy invariant is the
-whole point: the request carries NO install id of any kind, so the email and the analytics ids never co-occur on our
-servers (guarded by `beta-signup.test.ts`, including the outbound Discord payload).
+Two routes, one flow (`listmonk-signup.ts::handleListSignup`): `POST /beta-signup` is the desktop app's contact channel
+for early testers, and `POST /newsletter-signup` is getcmdr.com's newsletter form. Each reads ONLY the `email` from a 1
+KB-capped body and subscribes it to its double-opt-in Listmonk list by UUID (`LISTMONK_BETA_LIST_UUID`,
+`LISTMONK_NEWSLETTER_LIST_UUID`, wrangler `[vars]`), gated by the shared `SIGNUP_LIMITER` (5/min/IP).
 
-On a Listmonk network/5xx failure it returns a soft 502 the desktop app surfaces as a gentle "try again" (NOT
-fire-and-forget: we want the user to know it didn't land). Missing Listmonk config returns 500. The list id is a
-wrangler `[var]`, not a secret; see `docs/tooling/listmonk.md`.
+**Decision: Listmonk's public endpoint, not the admin API.** The call is
+`POST <LISTMONK_API_URL>/api/public/subscription` with `{email, list_uuids: [uuid]}` and no credentials. Why (verified
+by reading listmonk v6.2.0's `CreateSubscriber`, `processSubForm`, and `InsertSubscriber` handlers, 2026-10-05):
 
-**409 add-to-list recovery:** a 409 ("subscriber already exists" — for example they're on the newsletter list) used to
-map straight to 204, which left that person OFF the beta list. Now a 409 triggers a lookup
-(`GET /api/subscribers?query=subscribers.email='<addr>'`); if they're not yet on the beta list, the route adds it
-(`PUT /api/subscribers/lists`, `action: "add"`, `status: "unconfirmed"`) and then explicitly sends the opt-in mail
-(`POST /api/subscribers/{id}/optin`). The optin call is REQUIRED: the list-add endpoint does NOT send the confirmation
-email on its own (verified against Listmonk's `ManageSubscriberLists` handler), so without it consent would be silently
-implied. A subscriber already on the beta list is a quiet re-signup: no list change, no mail, no ping. Every outcome
-returns the identical empty 204, so the response never reveals whether the address existed.
+- The admin `POST /api/subscribers` inserts with `assertOptin=false`: when the opt-in mail fails to send, it logs and
+  still answers 200. From 2026-06 to 2026-10, Listmonk's Resend SMTP key was invalid, so every beta signup got a 204 and
+  a Discord ping saying the confirmation went out, while nothing was sent. The public endpoint asserts the send and
+  answers 500, which we turn into a soft 502.
+- On an existing address, the public endpoint adds the list itself and mails a confirmation for every still-unconfirmed
+  double-opt-in list (`UpdateSubscriberWithLists`). That covers what a hand-rolled 409 lookup + list-add + `optin` call
+  used to do, and also re-sends to someone stuck as unconfirmed, whom the old "already on the list" branch silenced.
+- It has no `preconfirm` field, so a prank signup can't subscribe someone else's address, and it needs no API token.
+- It refuses `private` lists, so both lists must stay `public` in Listmonk (they are double opt-in either way).
 
-**Discord ping:** a successful signup pings Discord (`DISCORD_BETA_SIGNUP_WEBHOOK_URL`, falling back to
-`DISCORD_WEBHOOK_URL` so it works before the `#beta-signups` channel exists) in `waitUntil` after the 204 ships,
-drop-on-failure. It fires ONLY when a beta subscription was newly established (a fresh 2xx, or the 409 add-to-list
-path), NEVER on a Listmonk failure and NEVER on a plain already-on-list 409. The embed carries the email (full, same
-precedent as the feedback reply-to) and the signup time, and states the honest consent status ("unconfirmed — Listmonk
-sent the confirmation email" for both paths). It carries no install id, by construction.
+**Outcomes.** `{data: {has_optin: true}}` means Listmonk mailed a confirmation: 204 plus a Discord ping.
+`has_optin: false` means there was nothing to confirm (already confirmed): the same empty 204, no ping. A Listmonk 400
+(its email check is stricter than ours) is a 400. A 5xx or a network failure is a soft 502, which the app and the
+website form both show as a gentle "try again". A missing URL or list UUID is a 500. Every success looks identical, so
+the response never reveals whether an address existed.
+
+**The beta privacy invariant:** `/beta-signup` carries NO install id of any kind, so the email and the analytics ids
+never co-occur on our servers (guarded by `listmonk-signup.test.ts`, including the outbound Discord payload).
+
+**Discord ping:** sent only when Listmonk mailed a confirmation, to `DISCORD_BETA_SIGNUP_WEBHOOK_URL` (both lists; the
+name predates the newsletter route), falling back to `DISCORD_WEBHOOK_URL`, in `waitUntil` after the 204 ships,
+drop-on-failure. The embed names the list, the signup time, and a Listmonk admin link. It carries no email and no
+install id, by construction: `ListSignupNotification` has no field for either (`apps/api-server/DETAILS.md` § Discord
+webhooks).
 
 ## Blog likes
 
@@ -71,6 +84,31 @@ the rate limiter is the bound.
 **Pepper caveat:** KV has no retention sweep, so `likes:<slug>` values written while `IP_HASH_PEPPER` was missing stay
 weakly hashed until the keys are deleted. Recovery: `wrangler kv key list --binding BLOG_LIKES`, delete, let the counts
 rebuild. (Telemetry rows self-heal through the retention sweep instead; `../../DETAILS.md` § Deployment.)
+
+## CSP reports
+
+getcmdr.com's CSP (`apps/website/nginx-security-headers.conf`) names `/csp-report` as both its `report-uri` (Firefox,
+Safari: one `{"csp-report": {…}}` per violation) and its `report-to` endpoint (Chromium: a Reporting API batch,
+`[{type: "csp-violation", body: {…}}]`). `parseCspReports` normalizes both and drops anything else.
+
+**Decision: alert only on violations that look like our own breakage.** Every visitor's browser reports, and most raw
+volume is extensions injecting scripts and styles. `isActionableViolation` keeps a report only when the page is
+getcmdr.com (`https`), the blocked value is an `http(s)` URL (not `inline`, `eval`, `data`, `blob`, or an extension
+resource), and the source file, when given, is an `http(s)` URL (not extension code). `font-src` never alerts: every
+font is self-hosted, so a blocked one is always an extension's or a browser's (Perplexity's, scite's, Google Fonts), and
+some arrive attributed to our own PostHog recorder, which re-applies injected styles. Paddle Retain's `profitwell.js`
+never alerts either (only that script URL, only under `script-src*`): Paddle.js loads it on every live checkout page
+with no setting to stop it, we pass no `pwCustomer` so Retain has no work there, and allowing it would add a tracker the
+privacy policy doesn't cover. The Discord alert then fires once per `(directive, blocked origin)` a day, deduped in
+`CSP_ALERTS`. Every actionable report also goes to the Workers log (`console.warn`), so the count is there even when
+Discord stays quiet.
+
+**Privacy:** nothing about the visitor is stored. The KV key holds a directive and an origin, the IP only feeds the rate
+limiter, and page and blocked URLs lose their query strings before they reach the log or Discord.
+
+The route always answers 204 (a malformed body too: a browser never sends one and there's nothing to tell the sender),
+except 413 over the 32 KB cap and 429 from `CSP_REPORT_LIMITER`. `OPTIONS` answers the Reporting API's CORS preflight
+for getcmdr.com origins only; the legacy `report-uri` POST needs none.
 
 ## Link codes (`?r=` tracking links)
 

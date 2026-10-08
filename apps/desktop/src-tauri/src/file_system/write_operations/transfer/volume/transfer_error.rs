@@ -210,9 +210,10 @@ pub(super) fn write_error_event_from(
 ///
 /// A listed phone or a saved server nothing has connected is
 /// `SourceNotConnected` / `DestinationNotConnected`, so the user hears that opening
-/// it is the way through. Any other id is a volume that left the registry (an
-/// unmount race), an `IoError` naming the id. The classification itself:
-/// `crate::unregistered_volumes`.
+/// it is the way through. Any other id is a volume that left the registry: as a
+/// source, `SourceNoLongerConnected` (a phone unplugged under a search-results
+/// pane is how a person gets here); as a destination, an unmount race, an
+/// `IoError` naming the id. The classification itself: `crate::unregistered_volumes`.
 pub(in crate::file_system::write_operations) async fn unregistered_volume_error(
     volume_id: &str,
     path: &str,
@@ -220,21 +221,24 @@ pub(in crate::file_system::write_operations) async fn unregistered_volume_error(
 ) -> WriteOperationError {
     use crate::unregistered_volumes::{Unregistered, why_unregistered};
 
-    match why_unregistered(volume_id).await {
-        Unregistered::NotConnected => not_connected(path, role),
+    match (why_unregistered(volume_id).await, role) {
+        (Unregistered::NotConnected, role) => not_connected(path, role),
+        (Unregistered::Gone, PathRole::Source) => {
+            WriteOperationError::SourceNoLongerConnected { path: path.to_string() }
+        }
         // (Log and technical-details text, not rendered prose.)
-        Unregistered::Gone => WriteOperationError::IoError {
+        (Unregistered::Gone, PathRole::Destination) => WriteOperationError::IoError {
             path: volume_id.to_string(),
-            message: format!(
-                "{} volume '{}' not found",
-                match role {
-                    PathRole::Source => "Source",
-                    PathRole::Destination => "Destination",
-                },
-                volume_id
-            ),
+            message: format!("Destination volume '{volume_id}' not found"),
         },
     }
+}
+
+/// [`unregistered_volume_error`] for a SOURCE, for a caller outside the engine that checks the
+/// volume before it hands anything over (Ask Cmdr's approval bridge, a reviewed rename batch),
+/// so its refusal is worded exactly as a clicked copy's would be.
+pub(crate) async fn unregistered_source_error(volume_id: &str, path: &str) -> WriteOperationError {
+    unregistered_volume_error(volume_id, path, PathRole::Source).await
 }
 
 /// A move whose copy LANDED at `landed_at` but whose source `refused` to go. ❗ Not a failed
@@ -290,16 +294,20 @@ pub(in crate::file_system::write_operations) fn map_volume_error(
                 None if path != context_path => path,
                 None => "Permission denied".to_string(),
             };
-            WriteOperationError::permission_denied(
-                context_path.to_string(),
-                message,
-                raw_os_error,
-                None,
-                Some(match role {
-                    PathRole::Source => PermissionSide::Source,
-                    PathRole::Destination => PermissionSide::Destination,
-                }),
-            )
+            let side = Some(match role {
+                PathRole::Source => PermissionSide::Source,
+                PathRole::Destination => PermissionSide::Destination,
+            });
+            // An S3 refusal is the account's (its keys, or a provider that paused
+            // it over a usage cap or billing), read off the app path's own
+            // scheme, ❌ never the message.
+            if raw_os_error.is_none()
+                && cmdr_fs::volume::server_of_path(context_path)
+                    .is_some_and(|server| server.kind == cmdr_fs::volume::BackendKind::S3)
+            {
+                return WriteOperationError::object_store_refused(context_path.to_string(), message, side);
+            }
+            WriteOperationError::permission_denied(context_path.to_string(), message, raw_os_error, None, side)
         }
         VolumeError::AlreadyExists(path) => WriteOperationError::DestinationExists { path },
         // ❗ Name the ROLE. The bare wording said only "this volume type", so a
@@ -376,6 +384,11 @@ pub(in crate::file_system::write_operations) fn map_volume_error(
             path,
             message: "Is a directory".to_string(),
         },
+        // A file where the destination folder, or one above it, should be. The
+        // volume names the thing in the way, and that path is the one fact the
+        // user can act on, so it rides through typed: as an `IoError` the dialog
+        // offered a Retry that could only meet the same file again.
+        VolumeError::NotADirectory(path) => WriteOperationError::DestinationNotAFolder { path },
         // The destination refused the name itself, so the transfer can only
         // succeed under a different one. It must stay typed all the way to the
         // dialog: as an `IoError` the user gets "couldn't copy the file" plus a
@@ -387,6 +400,17 @@ pub(in crate::file_system::write_operations) fn map_volume_error(
             message,
         },
         VolumeError::DeletePending(_) => WriteOperationError::DeletePending {
+            path: context_path.to_string(),
+        },
+        // Only a source can be archived: nothing writes into cold storage. Typed
+        // to the dialog, because the fix is a restore and a Retry can't be one.
+        VolumeError::ColdStorage(_) => WriteOperationError::SourceInColdStorage {
+            path: context_path.to_string(),
+        },
+        // A server-side copy saw its source replaced mid-copy and published
+        // nothing. Named plainly: the user decides whether the new version is
+        // the one to copy.
+        VolumeError::SourceChanged(_) => WriteOperationError::SourceChanged {
             path: context_path.to_string(),
         },
         // A transfer raises it for the DESTINATION only (`landing.rs`): the folder
@@ -406,6 +430,17 @@ pub(in crate::file_system::write_operations) fn map_volume_error(
                 .to_string(),
         },
     }
+}
+
+/// What tier 2 reports when it ends a wait.
+///
+/// A `Cancelled`, deliberately, and it decides three things at once: `retry.rs`
+/// never re-runs a cancel, the post-loop keys `write-cancelled` off a
+/// `Cancelled`-shaped error (so an abort closes the dialog instead of logging a
+/// failed transfer), and no caller mistakes it for a transport fault worth
+/// reporting to the user.
+pub(super) fn hard_abort_error(path: &Path) -> VolumeError {
+    VolumeError::Cancelled(format!("stopped waiting for {} so the app can quit", path.display()))
 }
 
 #[cfg(test)]

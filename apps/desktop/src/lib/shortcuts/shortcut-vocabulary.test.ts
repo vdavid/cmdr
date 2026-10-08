@@ -8,8 +8,10 @@
  * string and demands `formatKeyCombo` reproduce it byte for byte.
  *
  * This is what catches the whole family of silent breakage: a word-vs-symbol split
- * (`'Enter'` vs `'↩'`), an abbreviation (`'PageUp'` vs `'PgUp'`), or Apple's display
- * modifier order (`'⌥⌘A'` vs the emitted `'⌘⌥A'`).
+ * (`'Enter'` vs `'↩'`), an abbreviation (`'PageUp'` vs `'PgUp'`), Apple's display
+ * modifier order (`'⌥⌘A'` vs the emitted `'⌘⌥A'`), or a symbol spelled as Shift plus
+ * a US key (`'⇧8'` or `'⇧*'` for `'*'`): a typed symbol is named by its character, so
+ * that default would only work on some layouts.
  */
 
 import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest'

@@ -24,7 +24,8 @@
 
 use super::cache::{Cache, Ttls};
 use super::{SyncKnowledge, SyncStatus};
-use crate::file_system::framework_pool::{Pool, PoolConfig};
+use crate::file_system::cloud_provider;
+use crate::file_system::framework_pool::{Pool, PoolConfig, WedgedWorker};
 use cmdr_fs::ignore_poison::IgnorePoison;
 use cmdr_fs::log_rollup::LogRollup;
 use std::collections::{HashMap, HashSet};
@@ -294,6 +295,11 @@ impl Service {
                 self.pool.worker_count()
             );
         }
+        // Once per wedge: which call, on which path, under which provider.
+        let home = dirs::home_dir();
+        for stuck in self.pool.newly_wedged() {
+            log::warn!(target: "sync_status", "{}", wedge_report(&stuck, home.as_deref()));
+        }
         log::debug!(
             target: "sync_status",
             "starting a batch of {} paths ({} pool threads, {} queued)",
@@ -319,6 +325,33 @@ impl Service {
         *inflight = Some(Arc::clone(&batch));
         batch
     }
+}
+
+/// The log line for one wedged worker: the thread, the call it's stuck in, for how long,
+/// the path, and the provider that path belongs to.
+///
+/// The provider comes from the path's shape (`cloud_provider::locate`, no syscall). The
+/// domain id would be exact, but reading it is an xattr walk that can block on a dead
+/// mount, and the tokio thread logging this must not. A path reached through a symlink
+/// or a mirror-mode Drive folder logs "provider unknown"; the path itself still says
+/// where it is.
+fn wedge_report(stuck: &WedgedWorker, home: Option<&Path>) -> String {
+    let Some(activity) = &stuck.activity else {
+        return format!(
+            "{} has been inside a probe for {:?} before it named its call",
+            stuck.thread, stuck.busy_for
+        );
+    };
+    let provider = home
+        .and_then(|home| cloud_provider::locate(home, Path::new(&activity.subject)))
+        .map_or_else(
+            || "unknown".to_string(),
+            |found| found.provider.display_name().to_string(),
+        );
+    format!(
+        "{} has been inside {} for {:?}, on {} (provider {provider})",
+        stuck.thread, activity.call, stuck.busy_for, activity.subject
+    )
 }
 
 impl Shared {
@@ -680,5 +713,46 @@ mod tests {
         service.invalidate_path(Path::new("/plain/file1.txt"));
         service.statuses_within(requested, WAIT).await;
         assert_eq!(probed_count(&probed), 7, "only the invalidated path was re-probed");
+    }
+
+    fn wedged_on(subject: &str) -> WedgedWorker {
+        WedgedWorker {
+            thread: "cmdr-sync-status-2".to_string(),
+            busy_for: Duration::from_secs(31),
+            activity: Some(crate::file_system::framework_pool::Activity {
+                call: "NSURL getResourceValue(NSURLUbiquitousItemIsUploadingKey)",
+                subject: subject.to_string(),
+            }),
+        }
+    }
+
+    /// A wedge names the provider it's stuck in, so a hang in the log points at Dropbox or
+    /// iCloud Drive without decoding the path by hand.
+    #[test]
+    fn a_wedge_report_names_the_call_the_path_and_the_provider() {
+        let home = Path::new("/Users/test");
+        let path = "/Users/test/Library/CloudStorage/Dropbox/Work/report.pdf";
+        let report = wedge_report(&wedged_on(path), Some(home));
+
+        assert!(
+            report.starts_with("cmdr-sync-status-2 has been inside NSURL getResourceValue"),
+            "{report}"
+        );
+        assert!(report.contains(path), "{report}");
+        assert!(report.contains("provider Dropbox"), "{report}");
+
+        let icloud = "/Users/test/Library/Mobile Documents/com~apple~CloudDocs/notes.md";
+        assert!(
+            wedge_report(&wedged_on(icloud), Some(home)).contains("provider iCloud Drive"),
+            "iCloud Drive lives outside CloudStorage and is named too"
+        );
+    }
+
+    /// A path no known root covers (a symlink into a domain, a mirror-mode Drive folder)
+    /// still logs, saying so rather than guessing.
+    #[test]
+    fn a_wedge_outside_every_known_root_says_its_provider_is_unknown() {
+        let report = wedge_report(&wedged_on("/Users/test/My Drive/a.txt"), Some(Path::new("/Users/test")));
+        assert!(report.contains("provider unknown"), "{report}");
     }
 }

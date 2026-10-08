@@ -1,12 +1,9 @@
 /**
  * Tests for `path-sync.ts`, the two decisions a pane makes when its props move
  * under it. They pin the truth table that used to live inside two `$effect`s:
- * - an MTP device finishing its connection (device-only id → storage id) always
- *   loads, and wins over the `initialPath` branch,
- * - a changed `initialPath` loads on a normal pane, syncs the path only on a
- *   device-only MTP pane and on a search-results pane (whose data comes from the
- *   snapshot store, not a listing), and does nothing on the network view,
- *   which owns its own data,
+ * - a changed `initialPath` loads on a normal pane, and only syncs the path on a
+ *   search-results pane (whose data comes from the snapshot store, not a listing),
+ *   on a phone being opened, and on the network view, which owns its own data,
  * - an unchanged `initialPath` does nothing at all,
  * - a tab that just became reachable reloads only when the path stayed put (the
  *   "Open home folder" recovery changes the path, so the path branch takes it).
@@ -17,11 +14,8 @@ import { resolveInitialPathAction, shouldReloadAfterReachable } from './path-syn
 const base = {
   initialPath: '/dir',
   currentPath: '/dir',
-  prevVolumeId: 'root',
-  volumeId: 'root',
   isSearchResultsView: false,
   isNetworkView: false,
-  isMtpDeviceOnly: false,
   deviceIsConnecting: false,
 }
 
@@ -37,24 +31,6 @@ describe('resolveInitialPathAction', () => {
     })
   })
 
-  it('loads when an MTP device finishes connecting, even at the same path', () => {
-    expect(resolveInitialPathAction({ ...base, prevVolumeId: 'mtp-2097152', volumeId: 'mtp-2097152:65537' })).toEqual({
-      kind: 'mtp-connected',
-      path: '/dir',
-    })
-  })
-
-  it('lets the MTP connection win over a simultaneous path change', () => {
-    expect(
-      resolveInitialPathAction({
-        ...base,
-        initialPath: '/DCIM',
-        prevVolumeId: 'mtp-2097152',
-        volumeId: 'mtp-2097152:65537',
-      }),
-    ).toEqual({ kind: 'mtp-connected', path: '/DCIM' })
-  })
-
   it('only syncs the path on a search-results pane, which has no listing to load', () => {
     expect(
       resolveInitialPathAction({ ...base, isSearchResultsView: true, initialPath: 'search-results://sr-2' }),
@@ -65,12 +41,6 @@ describe('resolveInitialPathAction', () => {
     expect(resolveInitialPathAction({ ...base, isSearchResultsView: true })).toEqual({ kind: 'none' })
   })
 
-  it('only syncs the path on a device-only MTP pane, which needs connecting first', () => {
-    expect(
-      resolveInitialPathAction({ ...base, isMtpDeviceOnly: true, volumeId: 'mtp-2097152', initialPath: '/DCIM' }),
-    ).toEqual({ kind: 'sync-path', path: '/DCIM' })
-  })
-
   it('only syncs the path while a phone is being opened, so the dial is not doubled', () => {
     // ❗ A `loadDirectory` here reaches `resolve_path_to_volume`, which dials the
     // same phone again under the backend's own attempt id — and the pane's Cancel
@@ -79,7 +49,6 @@ describe('resolveInitialPathAction', () => {
       resolveInitialPathAction({
         ...base,
         deviceIsConnecting: true,
-        volumeId: 'adb-pixel-7-a1b2c3d',
         initialPath: 'adb://R58M12345/sdcard',
       }),
     ).toEqual({ kind: 'sync-path', path: 'adb://R58M12345/sdcard' })
@@ -96,24 +65,10 @@ describe('resolveInitialPathAction', () => {
       resolveInitialPathAction({
         ...base,
         isNetworkView: true,
-        prevVolumeId: 'smb-localhost-11482-public',
-        volumeId: 'network',
         currentPath: '/Volumes/public',
         initialPath: 'smb://',
       }),
     ).toEqual({ kind: 'sync-path', path: 'smb://' })
-  })
-
-  it('treats a plain volume switch as an ordinary path change', () => {
-    expect(
-      resolveInitialPathAction({ ...base, prevVolumeId: 'root', volumeId: 'ext', initialPath: '/Volumes/Ext' }),
-    ).toEqual({ kind: 'load', path: '/Volumes/Ext' })
-  })
-
-  it('ignores an MTP id that was already connected', () => {
-    expect(resolveInitialPathAction({ ...base, prevVolumeId: 'mtp-1:5', volumeId: 'mtp-1:5' })).toEqual({
-      kind: 'none',
-    })
   })
 })
 

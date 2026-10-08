@@ -86,6 +86,16 @@ fn only_a_single_shot_write_onto_a_name_expected_free_must_create_new() {
 
     assert_eq!(mode_for(WriteStaging::Stage, true), WriteMode::CreateNew);
     assert_eq!(
+        mode_for(WriteStaging::StageInFreshFolder, true),
+        WriteMode::CreateNewInFreshFolder,
+        "a name in a folder this operation made carries that fact to the destination"
+    );
+    assert_eq!(
+        mode_for(WriteStaging::StageInFreshFolder, false),
+        WriteMode::CreateOrReplace,
+        "staged, it writes its own temp, as `Stage` does"
+    );
+    assert_eq!(
         mode_for(WriteStaging::StageOntoClaimedName, true),
         WriteMode::CreateOrReplace,
         "a claimed name holds the caller's own placeholder, which the write must replace"

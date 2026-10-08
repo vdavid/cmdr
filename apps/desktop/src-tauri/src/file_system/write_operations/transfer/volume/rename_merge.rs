@@ -55,7 +55,6 @@
 //! child finalizes its stored decision instead of re-prompting.
 
 use std::collections::HashMap;
-use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::Mutex;
@@ -67,9 +66,10 @@ use super::super::super::types::{RecoveredOriginal, VolumeCopyConfig, WriteOpera
 use super::super::dest_name_index::{DestLookup, DestNameIndex};
 use super::conflict::{ResolvedConflict, resolve_volume_conflict};
 use super::displaced_destination::{DisplacedDestination, displace_destination};
+use super::strategy::Replaces;
 use super::transfer_error::{PathRole, map_volume_error};
 use crate::file_system::listing::FileEntry;
-use crate::file_system::volume::{Volume, VolumeError};
+use crate::file_system::volume::{ChildName, EntryKind, Volume, VolumeError};
 use crate::ignore_poison::IgnorePoison;
 
 /// Context threaded through the recursive rename-merge so each level can resolve
@@ -118,12 +118,10 @@ pub(super) fn merges_as_a_directory(entry: &FileEntry) -> bool {
 enum MergeChildResolution {
     /// The resolver said Skip — leave both sides untouched.
     Skip,
-    /// The resolver said Proceed. `replace` is `Some(orig)` for a file→file
-    /// safe-replace (delete the original, then rename onto it).
-    Proceed {
-        write_path: PathBuf,
-        replace: Option<PathBuf>,
-    },
+    /// The resolver said Proceed. `replace` names the file a file→file
+    /// Overwrite replaces (set it aside, then rename onto its name): a
+    /// safe-replace's `orig`, or `write_path` itself for an in-place one.
+    Proceed { write_path: PathBuf, replace: Replaces },
 }
 
 /// Recursively merges `source_dir` into the existing `dest_dir` on the same
@@ -177,18 +175,24 @@ pub(super) async fn rename_merge_directory(
         }
 
         let child_source = PathBuf::from(&entry.path);
+        // ❗ Listed names are the server's word: ❌ never join one raw, or `../x`
+        // renames the entry out of the folder being merged.
+        let name = ChildName::new(&entry.name).map_err(|e| map_rename_error(&child_source, e.into()))?;
         // A look-alike is a hit on the entry that's there, addressed by ITS
         // name from here on. A move keeps the name it moves, so a free name is
         // never respelled.
-        let (child_dest, dest_hit) = match dest_index.lookup(Some(OsStr::new(&entry.name))) {
-            DestLookup::Present(hit) => (dest_dir.join(&entry.name), Some(*hit)),
-            DestLookup::LookAlike(hit) => (dest_dir.join(&hit.name), Some(*hit)),
+        let (child_dest, dest_hit) = match dest_index.lookup(Some(name.as_os_str())) {
+            DestLookup::Present(hit) => (name.under(dest_dir), Some(*hit)),
+            DestLookup::LookAlike(hit) => {
+                let stored = ChildName::new(&hit.name).map_err(|e| map_rename_error(&child_source, e.into()))?;
+                (stored.under(dest_dir), Some(*hit))
+            }
             DestLookup::Ambiguous => {
                 return Err(WriteOperationError::DestinationExists {
-                    path: dest_dir.join(&entry.name).display().to_string(),
+                    path: name.under(dest_dir).display().to_string(),
                 });
             }
-            DestLookup::Absent | DestLookup::Unknown => (dest_dir.join(&entry.name), None),
+            DestLookup::Absent | DestLookup::Unknown => (name.under(dest_dir), None),
         };
         let dest_hit = dest_hit.as_ref();
 
@@ -352,7 +356,7 @@ async fn resolve_child(
         None => Ok((MergeChildResolution::Skip, None)),
         Some(ResolvedConflict {
             write_path,
-            replace_after_write,
+            replaces,
             // A same-volume move clears whatever sits at the resolved name below
             // (its rename can't replace), so the reservation needs no separate
             // answer here.
@@ -361,7 +365,7 @@ async fn resolve_child(
         }) => Ok((
             MergeChildResolution::Proceed {
                 write_path,
-                replace: replace_after_write,
+                replace: replaces,
             },
             displaced,
         )),
@@ -387,7 +391,10 @@ async fn apply_child_decision(
 ) -> Result<(), WriteOperationError> {
     let (write_path, replace) = match decision {
         MergeChildResolution::Skip => return Ok(()),
-        MergeChildResolution::Proceed { write_path, replace } => (write_path, replace),
+        MergeChildResolution::Proceed { write_path, replace } => {
+            let replace = replace.replaced_file(&write_path);
+            (write_path, replace)
+        }
     };
 
     if merges_as_a_directory(entry) {
@@ -406,8 +413,14 @@ async fn apply_child_decision(
         // dest usually fails before reaching here. This is the transient-fault
         // residue, and defense in depth on the last destructive branch of the
         // family.)
-        let write_path_is_dir = match ctx.volume.is_directory(&write_path).await {
-            Ok(is_dir) => is_dir,
+        //
+        // `entry_kind`, ❌ never `is_directory`: a LINK that took the name since
+        // the resolver freed it is not a directory to merge into, and a
+        // following backend's `is_directory` says it is. Merging renames the
+        // source's files into the link's target. The rename below refuses the
+        // taken name instead.
+        let write_path_is_dir = match ctx.volume.entry_kind(&write_path).await {
+            Ok(kind) => kind == EntryKind::Directory,
             Err(VolumeError::NotFound(_)) => false,
             Err(e) => return Err(map_rename_error(&write_path, e)),
         };

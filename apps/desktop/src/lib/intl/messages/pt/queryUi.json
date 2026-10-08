@@ -393,7 +393,7 @@
   },
   "queryUi.recent.systemDirsIncluded": "pastas de sistema incluídas",
   "@queryUi.recent.systemDirsIncluded": {
-    "sourceHash": "b7996cc"
+    "sourceHash": "c928638"
   },
   "queryUi.recent.resultCount": "{countText} {count, plural, one {resultado} many {resultados} other {resultados}} da última vez",
   "@queryUi.recent.resultCount": {
@@ -526,16 +526,6 @@
   "queryUi.size.comparator.between": "entre",
   "@queryUi.size.comparator.between": {
     "sourceHash": "fbb27fb"
-  },
-  "queryUi.size.unit.byte": "byte",
-  "@queryUi.size.unit.byte": {
-    "sourceHash": "1c31626",
-    "sameAsSourceJustification": "'byte' is identical in pt-BR. Microsoft pt-BR terminology maps en-US 'byte' to pt-BR 'byte' (TBX); the unit word is unchanged in pt-BR file managers (gnome-nautilus, total-commander)."
-  },
-  "queryUi.size.unit.bytes": "bytes",
-  "@queryUi.size.unit.bytes": {
-    "sourceHash": "277089d",
-    "sameAsSourceJustification": "'bytes' is identical in pt-BR. The plural unit word is unchanged in pt-BR (Microsoft pt-BR terminology 'byte' to 'byte'; double-commander/total-commander pt-BR keep 'bytes'/'Bytes')."
   },
   "queryUi.size.customCell": "personalizado…",
   "@queryUi.size.customCell": {

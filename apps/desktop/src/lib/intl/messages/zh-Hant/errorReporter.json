@@ -80,6 +80,14 @@
   "@errorReporter.dialog.saveToDisk": {
     "sourceHash": "36d6589"
   },
+  "errorReporter.dialog.managedOff": "你的組織已關閉報告傳送功能。你還是可以把報告儲存到磁碟，再自己分享出去。",
+  "@errorReporter.dialog.managedOff": {
+    "sourceHash": "9309a39"
+  },
+  "errorReporter.dialog.saveToDiskManaged": "儲存到磁碟",
+  "@errorReporter.dialog.saveToDiskManaged": {
+    "sourceHash": "5a5d775"
+  },
   "errorReporter.dialog.cancel": "取消",
   "@errorReporter.dialog.cancel": {
     "sourceHash": "19766ed"
@@ -126,7 +134,7 @@
   },
   "errorReporter.amend.unavailable": "那份報告已經沒辦法再加東西了。想把你的備註送到團隊那裡，請從「輔助說明」選單傳送一份新的報告。",
   "@errorReporter.amend.unavailable": {
-    "sourceHash": "b96b48a"
+    "sourceHash": "08ab034"
   },
   "errorReporter.amend.close": "關閉",
   "@errorReporter.amend.close": {

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { runViewerEditAction, type ViewerEditActionDeps } from './viewer-menu-actions'
+import { runViewerContextMenuAction, runViewerEditAction, type ViewerEditActionDeps } from './viewer-menu-actions'
 
 /** A stand-in for the search `<input>`: only the four fields the dispatcher reads plus `select()`. */
 function fakeInput(value: string, selectionStart: number | null = null, selectionEnd: number | null = null) {
@@ -79,5 +79,29 @@ describe('runViewerEditAction', () => {
       expect(deps.copyContent).toHaveBeenCalledOnce()
       expect(deps.writeClipboardText).not.toHaveBeenCalled()
     })
+  })
+})
+
+describe('runViewerContextMenuAction', () => {
+  // The right-click lands on the text without moving focus, so the search box can still hold
+  // it. The menu was opened over the file, so both actions act on the file regardless.
+  it('copies the file selection even while the search box holds a selected query', () => {
+    const { input } = fakeInput('needle', 0, 6)
+    const deps = makeDeps({ search: focusedSearch(input) })
+
+    runViewerContextMenuAction('copy', deps)
+
+    expect(deps.copyContent).toHaveBeenCalledOnce()
+    expect(deps.writeClipboardText).not.toHaveBeenCalled()
+  })
+
+  it('selects the whole file even while the search box has focus', () => {
+    const { input, select } = fakeInput('needle')
+    const deps = makeDeps({ search: focusedSearch(input) })
+
+    runViewerContextMenuAction('selectAll', deps)
+
+    expect(deps.selectAllContent).toHaveBeenCalledOnce()
+    expect(select).not.toHaveBeenCalled()
   })
 })

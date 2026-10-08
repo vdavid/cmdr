@@ -3,15 +3,14 @@
     import {
         createDirectory,
         getAiStatus,
-        refreshListing,
         streamFolderSuggestions,
         type FolderSuggestionsStream,
         type Initiator,
     } from '$lib/tauri-commands'
-    import { asMutationError } from '$lib/file-operations/mutation-error'
-    import { renderMutationError } from '$lib/file-operations/mutation-error-messages'
+    import { CreateSubmission } from '$lib/file-operations/create-submission.svelte'
     import { NewEntryNameCheck } from '$lib/file-operations/new-entry-name-check.svelte'
     import NewEntryNameField from '$lib/file-operations/NewEntryNameField.svelte'
+    import StillCreatingNotice from '$lib/file-operations/StillCreatingNotice.svelte'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import Button from '$lib/ui/Button.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
@@ -40,11 +39,20 @@
         $props()
 
     let folderName = $state(initialName)
-    let timeoutError = $state(false)
     let nameInputRef: HTMLInputElement | undefined = $state()
 
     // Name validation + clash lookup; `NewEntryNameField` runs its lifecycle.
     const check = new NewEntryNameCheck({ currentPath, listingId, showHiddenFiles, getName: () => folderName })
+
+    // OK to how the create really ended, slow volumes included.
+    const submission = new CreateSubmission({
+        kind: 'folder',
+        create: (name, wait) => createDirectory(currentPath, name, volumeId, initiator, wait),
+        onCreated,
+        onRefused: (message) => {
+            check.errorMessage = message
+        },
+    })
 
     // AI suggestions - start with null to indicate "checking", then true/false once known
     let aiAvailable = $state<boolean | null>(null)
@@ -52,7 +60,7 @@
     let aiStreaming = $state(false)
     let suggestionsStream: FolderSuggestionsStream | undefined
 
-    const isValid = $derived(folderName.trim().length > 0 && !check.errorMessage && !timeoutError)
+    const isValid = $derived(folderName.trim().length > 0 && !check.errorMessage)
 
     onMount(() => {
         // Fetch AI suggestions if AI is available
@@ -60,6 +68,8 @@
     })
 
     onDestroy(() => {
+        // A create still running carries on; its end no longer steers this dialog.
+        submission.close()
         // Cancel the in-flight stream. Tauri 2's `Channel::send` is fire-and-forget;
         // without this explicit signal the backend would keep streaming after the dialog
         // closes, billing cloud providers and pegging local-LLM compute.
@@ -120,30 +130,8 @@
 
     async function handleConfirm() {
         const trimmed = folderName.trim()
-        if (!trimmed || check.errorMessage || timeoutError) return
-        try {
-            await createDirectory(currentPath, trimmed, volumeId, initiator)
-            onCreated(trimmed)
-        } catch (e) {
-            const failure = asMutationError(e)
-            if (failure?.type === 'timedOut') {
-                timeoutError = true
-                check.errorMessage = ''
-            } else {
-                check.errorMessage = failure ? renderMutationError(failure, 'folder') : String(e)
-            }
-        }
-    }
-
-    function handleRefreshListing() {
-        // Unforced: a top-up after mkdir, not a user asking for a re-read. On a
-        // watcher-backed volume the mutation already patched the cache.
-        void refreshListing(listingId, false)
-        onCancel()
-    }
-
-    function handleTimeoutDismiss() {
-        timeoutError = false
+        if (!trimmed || check.errorMessage) return
+        await submission.submit(trimmed)
     }
 
     function handleKeydown(event: KeyboardEvent) {
@@ -175,20 +163,8 @@
             onSubmit={() => void handleConfirm()}
         />
 
-        {#if timeoutError}
-            <div class="timeout-warning" role="alert">
-                <p class="timeout-message">
-                    {tString('fileOperations.mkdir.timeoutMessage')}
-                </p>
-                <div class="timeout-actions">
-                    <Button size="mini" onclick={handleRefreshListing}
-                        >{tString('fileOperations.mkdir.timeoutRefresh')}</Button
-                    >
-                    <Button size="mini" onclick={handleTimeoutDismiss}
-                        >{tString('fileOperations.mkdir.timeoutDismiss')}</Button
-                    >
-                </div>
-            </div>
+        {#if submission.phase === 'stillCreating'}
+            <StillCreatingNotice name={submission.submittedName} />
         {/if}
 
         {#if aiAvailable !== false}
@@ -228,34 +204,18 @@
     </div>
 
     {#snippet footer()}
-        <Button variant="secondary" onclick={onCancel}>{tString('fileOperations.button.cancel')}</Button>
-        <Button variant="primary" onclick={() => void handleConfirm()} disabled={!isValid || check.isChecking}
-            >{tString('fileOperations.button.ok')}</Button
+        <Button variant="secondary" onclick={onCancel}
+            >{tString(submission.phase === 'stillCreating' ? 'fileOperations.button.close' : 'fileOperations.button.cancel')}</Button
+        >
+        <Button
+            variant="primary"
+            onclick={() => void handleConfirm()}
+            disabled={!isValid || check.isChecking || submission.busy}>{tString('fileOperations.button.ok')}</Button
         >
     {/snippet}
 </ModalDialog>
 
 <style>
-    .timeout-warning {
-        margin-bottom: var(--spacing-lg);
-        padding: var(--spacing-sm) var(--spacing-md);
-        background: var(--color-warning-bg);
-        border: 1px solid var(--color-warning);
-        border-radius: var(--radius-sm);
-    }
-
-    .timeout-message {
-        margin: 0 0 var(--spacing-sm);
-        font-size: var(--font-size-sm);
-        color: var(--color-warning);
-    }
-
-    .timeout-actions {
-        display: flex;
-        gap: var(--spacing-sm);
-        justify-content: flex-end;
-    }
-
     .ai-suggestions {
         margin-bottom: var(--spacing-lg);
         min-height: 52px;

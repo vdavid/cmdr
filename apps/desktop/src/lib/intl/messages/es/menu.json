@@ -203,6 +203,10 @@
   "@menu.select.sameKind": {
     "sourceHash": "9933028"
   },
+  "menu.select.compareDirectories": "Comparar carpetas",
+  "@menu.select.compareDirectories": {
+    "sourceHash": "5cf3985"
+  },
   "menu.select.allFolders": "Seleccionar todas las carpetas",
   "@menu.select.allFolders": {
     "sourceHash": "5351f8b"
@@ -263,6 +267,14 @@
   "menu.view.swapPanes": "Intercambiar paneles",
   "@menu.view.swapPanes": {
     "sourceHash": "cc29396"
+  },
+  "menu.view.clonePane": "Clonar panel",
+  "@menu.view.clonePane": {
+    "sourceHash": "74b2c7f"
+  },
+  "menu.view.calculateFolderSizes": "Calcular tamaños de carpetas",
+  "@menu.view.calculateFolderSizes": {
+    "sourceHash": "d2a83da"
   },
   "menu.view.commandPalette": "Paleta de comandos…",
   "@menu.view.commandPalette": {
@@ -353,13 +365,17 @@
   "@menu.go.parentFolder": {
     "sourceHash": "158f5a0"
   },
+  "menu.go.rootFolder": "Carpeta raíz",
+  "@menu.go.rootFolder": {
+    "sourceHash": "6d92528"
+  },
   "menu.go.home": "Inicio",
   "@menu.go.home": {
     "sourceHash": "3a78695"
   },
-  "menu.go.goToPath": "Ir a la ruta…",
+  "menu.go.goToPath": "Ir a la carpeta…",
   "@menu.go.goToPath": {
-    "sourceHash": "936edc5"
+    "sourceHash": "33de610"
   },
   "menu.go.goToLatestDownload": "Ir a la última descarga",
   "@menu.go.goToLatestDownload": {
@@ -477,6 +493,22 @@
   "menu.context.copyGoogleDriveLink": "Copiar enlace de Google Drive",
   "@menu.context.copyGoogleDriveLink": {
     "sourceHash": "070b383"
+  },
+  "menu.context.copyShareLink": "Copiar enlace para compartir",
+  "@menu.context.copyShareLink": {
+    "sourceHash": "d31483e"
+  },
+  "menu.context.shareLinkSevenDays": "Caduca en siete días",
+  "@menu.context.shareLinkSevenDays": {
+    "sourceHash": "06949d8"
+  },
+  "menu.context.shareLinkOneDay": "Caduca en un día",
+  "@menu.context.shareLinkOneDay": {
+    "sourceHash": "5ff3dbc"
+  },
+  "menu.context.shareLinkOneHour": "Caduca en una hora",
+  "@menu.context.shareLinkOneHour": {
+    "sourceHash": "faf9c50"
   },
   "menu.context.askGemini": "Preguntar a Gemini",
   "@menu.context.askGemini": {
@@ -658,10 +690,6 @@
   "@menu.dock.searchFiles": {
     "sourceHash": "149a9d1"
   },
-  "menu.dock.goToFolder": "Ir a la carpeta…",
-  "@menu.dock.goToFolder": {
-    "sourceHash": "33de610"
-  },
   "menu.dock.connectToServer": "Conectarse a un servidor…",
   "@menu.dock.connectToServer": {
     "sourceHash": "6188f47"
@@ -670,5 +698,9 @@
   "@menu.dock.locationInParent": {
     "sourceHash": "0bf83e2",
     "sameAsSourceJustification": "Pure punctuation around two literal folder names: Spanish qualifies with the same trailing parenthesis and the same order, and macOS Spanish ships the pattern unchanged (AppKit Common/InfoPanel translate \"%@ (%@)\" as \"%1$@ (%2$@)\"). Nothing here is a word, so there is nothing to translate."
+  },
+  "menu.help.viewDebugLog": "Ver registro de depuración",
+  "@menu.help.viewDebugLog": {
+    "sourceHash": "007c98d"
   }
 }

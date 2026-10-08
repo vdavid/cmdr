@@ -10,9 +10,10 @@ what the exact resident-f16 scan can serve. Engine chosen by a measured spike
 (`docs/notes/ann-vector-search-spike-2026-07-24.md`): at 200k vectors usearch answers in 0.30 ms p50 at 0.994 recall@10
 from an mmap-backed view, where `sqlite-vec` 0.1.9 turned out to be an exact linear scan (141 ms p50, not ANN at all).
 Files: `media-{id}.clip.usearch` beside the media DB, plus a JSON sidecar (`….usearch.meta`: format version, model id,
-dims, rows, SHA-256 of the index file) and a transient dirty marker (`….usearch.dirty`). The module is
-dimension-generic: `AnnSpace` names the space (table + file suffix + model identity), so the 768-d Vision feature print
-(similar-images/dedup) adopts ANN later by adding a variant — deliberately NOT wired now.
+dims, rows, SHA-256 of the index file) and a transient dirty marker (`….usearch.dirty`). The names come from
+`crate::volume_files`, so removing a volume's media store takes them along. The module is dimension-generic: `AnnSpace`
+names the space (table + file suffix + model identity), so the 768-d Vision feature print (similar-images/dedup) adopts
+ANN later by adding a variant — deliberately NOT wired now.
 
 ## Decisions
 

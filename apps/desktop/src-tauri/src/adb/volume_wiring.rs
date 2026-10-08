@@ -51,7 +51,14 @@ pub fn set_adb_binary_path(configured: Option<String>) {
 /// Turning it on (or changing the path) clears the crate's start-attempt memory
 /// first, because a newly named binary deserves the one attempt an existing one
 /// already spent.
+///
+/// An automated run only records the path: it never follows the real server
+/// (see [`start_adb_tracker`]), so there's no tracker to stop and no list to empty.
 pub async fn set_adb_settings(enabled: bool, binary_path: Option<String>) {
+    if !crate::test_mode::may_discover_real_devices() {
+        set_adb_binary_path(binary_path);
+        return;
+    }
     apply_settings_at(AdbEndpoint::default_local(), enabled, binary_path).await;
 }
 
@@ -82,7 +89,15 @@ fn stop_adb_tracker() {
 /// installed the tracker stops itself and says so at debug, so nothing reaches
 /// the user at startup and nothing retries for the rest of the session;
 /// [`recheck_adb_install`] is how it comes back.
+///
+/// A no-op in an automated run (`test_mode::may_discover_real_devices`): the real
+/// server lists whatever phone sits on the developer's desk, which would land in
+/// the switcher mid-spec. The ADB specs publish synthetic rows instead.
 pub fn start_adb_tracker() {
+    if !crate::test_mode::may_discover_real_devices() {
+        log::debug!(target: "volume", "Not following the adb server: automated runs never see real devices");
+        return;
+    }
     start_tracker_at(AdbEndpoint::default_local());
 }
 

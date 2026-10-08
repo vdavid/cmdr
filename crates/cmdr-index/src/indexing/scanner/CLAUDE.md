@@ -31,6 +31,8 @@ verification, and the verifier.
 - **`WalkPolicy` = what a walk won't descend into**: that scope, applied by EVERY walk, plus the device `Virgin` pins.
   Either cut writes NO ROW, and an unlisted row sits in the frontier forever. ⚠️ Pin = the WALK root's device; ❌ File
   Provider domains are NOT a boundary (Decision 16).
+- **The boot disk stops at EVERY filesystem mounted inside its tree** (`boot_tree_mounts.rs`, read off the mount table,
+  cached 1 s), inside `should_exclude`'s `BootDisk` tier, so every gate gets it. ❌ Never let `/System/Volumes/Data` in.
 - **The pseudo-fs trio (`proc`, `sys`, `dev`) is skipped only at a corroborated volume root** (root POSITION and all
   three as siblings): a name-only rule would drop a user's `.../Dropbox/dev`.
 

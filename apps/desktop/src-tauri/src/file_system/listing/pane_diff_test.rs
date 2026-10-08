@@ -308,7 +308,7 @@ fn toggling_hidden_files_switches_the_row_space_and_drops_what_was_queued() {
     notify_added(listing.id(), entry("bravo.txt", 2));
     assert_eq!(queued(&listing).len(), 1);
 
-    set_listing_include_hidden(listing.id(), true).expect("listing is cached");
+    set_listing_include_hidden(listing.id(), true, None, None, None, false).expect("listing is cached");
     assert_eq!(queued(&listing), vec![], "the old row space's change is dropped");
 
     hold_for_test(listing.id());

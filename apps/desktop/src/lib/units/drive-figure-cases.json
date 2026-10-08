@@ -1,22 +1,28 @@
 {
   "about": "How a free-space figure reads on drives of every size. `formatDriveFigure` (byte-size.test.ts) must produce `text`, and the backend's emit gate (`src-tauri/src/space_poller/readout.rs`) must round to the same figure, so the two can't drift. en-US digits.",
   "cases": [
-    { "name": "8 MB SD card, free", "bytes": 3355443, "driveBytes": 7864320, "format": "binary", "text": "3.20 MB" },
-    { "name": "8 MB SD card, total", "bytes": 7864320, "driveBytes": 7864320, "format": "binary", "text": "7.50 MB" },
-    { "name": "8 MB SD card, nearly full", "bytes": 81920, "driveBytes": 7864320, "format": "binary", "text": "80 KB" },
+    { "name": "8 MB SD card, free", "bytes": 3355443, "driveBytes": 7864320, "format": "binary", "text": "3.20 MiB" },
+    { "name": "8 MB SD card, total", "bytes": 7864320, "driveBytes": 7864320, "format": "binary", "text": "7.50 MiB" },
+    {
+      "name": "8 MB SD card, nearly full",
+      "bytes": 81920,
+      "driveBytes": 7864320,
+      "format": "binary",
+      "text": "80 KiB"
+    },
     {
       "name": "16 GB USB stick, free",
       "bytes": 5000000000,
       "driveBytes": 16000000000,
       "format": "binary",
-      "text": "4.7 GB"
+      "text": "4.7 GiB"
     },
     {
       "name": "16 GB USB stick, total",
       "bytes": 16000000000,
       "driveBytes": 16000000000,
       "format": "binary",
-      "text": "14.9 GB"
+      "text": "14.9 GiB"
     },
     { "name": "16 GB USB stick, SI", "bytes": 5000000000, "driveBytes": 16000000000, "format": "si", "text": "5.0 GB" },
     {
@@ -24,14 +30,14 @@
       "bytes": 280660262912,
       "driveBytes": 994286378496,
       "format": "binary",
-      "text": "261 GB"
+      "text": "261 GiB"
     },
     {
       "name": "1 TB SSD, total",
       "bytes": 994286378496,
       "driveBytes": 994286378496,
       "format": "binary",
-      "text": "926 GB"
+      "text": "926 GiB"
     },
     {
       "name": "1 TB SSD, free, SI",
@@ -52,42 +58,42 @@
       "bytes": 2469606195,
       "driveBytes": 994286378496,
       "format": "binary",
-      "text": "2.3 GB"
+      "text": "2.3 GiB"
     },
     {
       "name": "1 TB SSD, under a gigabyte free",
       "bytes": 838860800,
       "driveBytes": 994286378496,
       "format": "binary",
-      "text": "800 MB"
+      "text": "800 MiB"
     },
     {
       "name": "1 TB SSD, a tenth rounds to ten",
       "bytes": 10694468403,
       "driveBytes": 994286378496,
       "format": "binary",
-      "text": "10 GB"
+      "text": "10 GiB"
     },
     {
       "name": "4 TB drive, free",
       "bytes": 1350000000000,
       "driveBytes": 4000000000000,
       "format": "binary",
-      "text": "1.23 TB"
+      "text": "1.23 TiB"
     },
     {
       "name": "4 TB drive, total",
       "bytes": 4000000000000,
       "driveBytes": 4000000000000,
       "format": "binary",
-      "text": "3.64 TB"
+      "text": "3.64 TiB"
     },
     {
       "name": "4 TB drive, under a terabyte free",
       "bytes": 400000000000,
       "driveBytes": 4000000000000,
       "format": "binary",
-      "text": "373 GB"
+      "text": "373 GiB"
     },
     {
       "name": "A tiny figure stays in bytes",

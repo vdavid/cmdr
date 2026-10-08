@@ -20,6 +20,7 @@ use super::error::ArchiveError;
 use super::index::RawEntry;
 use super::reader::{ArchiveEntryReader, CHUNK_SIZE, ChunkTx};
 use super::source::{ArchiveByteSource, SourceReader};
+use super::zip_times;
 
 /// General-purpose bit flag 0: the entry is encrypted (traditional PKWARE
 /// ZipCrypto or WinZip AES). rc-zip parses the entry but does NOT decrypt, so an
@@ -70,11 +71,32 @@ fn recorded_permission_bits(entry: &Entry) -> Option<u32> {
 /// builder consumes, each paired with its [`ZipHandle`] (the read handle a later
 /// [`open_read`] uses). This is the only I/O in the zip parse path.
 pub(super) fn parse(source: &dyn ArchiveByteSource) -> Result<Vec<(RawEntry, ZipHandle)>, ArchiveError> {
+    parse_in(source, &chrono::Local)
+}
+
+/// [`parse`] with the zone that stands for "local" spelled out, so a test
+/// doesn't depend on the machine's.
+fn parse_in<Tz: chrono::TimeZone>(
+    source: &dyn ArchiveByteSource,
+    local_zone: &Tz,
+) -> Result<Vec<(RawEntry, ZipHandle)>, ArchiveError> {
     let entries = parse_central_directory(source)?;
+    // rc-zip reads a DOS-only entry's time as UTC; it's the writer's wall clock.
+    let dos_only = zip_times::dos_only_wall_clocks(source, &entries);
+    if dos_only.is_none() {
+        log::debug!(
+            target: "archive",
+            "Couldn't cross-check the zip's entry times; DOS-only times stay read as UTC"
+        );
+    }
     Ok(entries
         .into_iter()
         .enumerate()
         .map(|(ordinal, entry)| {
+            let modified = match dos_only.as_ref().and_then(|walls| walls[ordinal]) {
+                Some(wall) => zip_times::wall_clock_to_unix(wall, local_zone),
+                None => entry.modified.timestamp(),
+            };
             let encrypted = is_encrypted(&entry);
             let is_symlink = entry.kind() == EntryKind::Symlink;
             // A directory is signalled either by the mode bits or (very commonly)
@@ -86,7 +108,7 @@ pub(super) fn parse(source: &dyn ArchiveByteSource) -> Result<Vec<(RawEntry, Zip
                 is_symlink,
                 size: entry.uncompressed_size,
                 compressed_size: entry.compressed_size,
-                modified: Some(entry.modified.timestamp()),
+                modified: Some(modified),
                 encrypted,
                 mode: recorded_permission_bits(&entry),
             };
@@ -281,3 +303,7 @@ fn map_zip_err(err: ZipError) -> ArchiveError {
         other => ArchiveError::Corrupt(other.to_string()),
     }
 }
+
+#[cfg(test)]
+#[path = "zip_times_test.rs"]
+mod zip_times_test;

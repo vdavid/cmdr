@@ -83,6 +83,22 @@
   "@servers.hub.editNearbyHint": {
     "sourceHash": "64653de"
   },
+  "servers.hub.s3AllBuckets": "Az összes bucket",
+  "@servers.hub.s3AllBuckets": {
+    "sourceHash": "2a5828a"
+  },
+  "servers.hub.openAccountHint": "Ez a fiók nem nyitható meg: {name}. Nyisd meg valamelyik bucketet a fiók alatt.",
+  "@servers.hub.openAccountHint": {
+    "sourceHash": "c52ee6f"
+  },
+  "servers.hub.forgetAccountConfirm": "Elfelejted ezt a fiókot: „{name}”, az alatta mentett összes buckettel együtt? A Cmdr bontja a kapcsolatukat, és leveszi őket a listáról. A fájljaid a bucketekben maradnak.",
+  "@servers.hub.forgetAccountConfirm": {
+    "sourceHash": "e1c636e"
+  },
+  "servers.hub.forgetSecretKeyToo": "A fiók titkos hozzáférési kulcsának elfelejtése is",
+  "@servers.hub.forgetSecretKeyToo": {
+    "sourceHash": "4f3ac6d"
+  },
   "servers.hub.forgetShare": "Megosztás elfelejtése",
   "@servers.hub.forgetShare": {
     "sourceHash": "8888a9d"
@@ -94,6 +110,10 @@
   "servers.hub.forgetShareConfirm": "Elfelejted ezt a megosztást: „{name}”? A Cmdr leveszi a listáról. Ha csatolva van, csatolva is marad, és a fájljaid a szerveren maradnak.",
   "@servers.hub.forgetShareConfirm": {
     "sourceHash": "8c14aaa"
+  },
+  "servers.hub.nearbyGroup": "{count, plural, one {A közelben felfedezve: {countText} szerver} other {A közelben felfedezve: {countText} szerver}}",
+  "@servers.hub.nearbyGroup": {
+    "sourceHash": "cd7a44d"
   },
   "servers.hub.discoveryOff": "A helyi hálózati felderítés ki van kapcsolva.",
   "@servers.hub.discoveryOff": {
@@ -171,6 +191,10 @@
   "@servers.refusal.unreachable": {
     "sourceHash": "6fcba90"
   },
+  "servers.refusal.localNetworkHint": "Ha a szerver be van kapcsolva, ellenőrizd, hogy a Cmdr engedélyezve van-e itt: {localNetwork}.",
+  "@servers.refusal.localNetworkHint": {
+    "sourceHash": "baa1753"
+  },
   "servers.refusal.hostKeyUntrusted": "A Cmdr még nem tekinti megbízhatónak {host} kulcsát.",
   "@servers.refusal.hostKeyUntrusted": {
     "sourceHash": "83dc719"
@@ -206,6 +230,62 @@
   "servers.refusal.savedSecretNotUpdated": "A Cmdr mentette a módosításaidat, de a jelszót nem tudta frissíteni a kulcskarikában. Ments újra, és a Cmdr újra megpróbálja.",
   "@servers.refusal.savedSecretNotUpdated": {
     "sourceHash": "2ae1e2b"
+  },
+  "servers.refusal.s3AuthenticationRejected": "Ez a titkos hozzáférési kulcs nem jó.",
+  "@servers.refusal.s3AuthenticationRejected": {
+    "sourceHash": "14f90c8"
+  },
+  "servers.refusal.s3NeedsCredentials": "Ez a fiók titkos hozzáférési kulcsot kér.",
+  "@servers.refusal.s3NeedsCredentials": {
+    "sourceHash": "23695df"
+  },
+  "servers.refusal.s3SecretMissing": "Add meg a titkos hozzáférési kulcsot.",
+  "@servers.refusal.s3SecretMissing": {
+    "sourceHash": "f1f32f2"
+  },
+  "servers.refusal.s3SecretNotStored": "A Cmdr nem tudta menteni ezt a titkos hozzáférési kulcsot a kulcskarikába. Próbáld újra, vagy kapcsold ki a „Megjegyzés a kulcskarikában” beállítást, hogy mentés nélkül jelentkezz be.",
+  "@servers.refusal.s3SecretNotStored": {
+    "sourceHash": "f7a9fb0"
+  },
+  "servers.refusal.s3SavedSecretNotUpdated": "A Cmdr mentette a módosításaidat, de a titkos hozzáférési kulcsot nem tudta frissíteni a kulcskarikában. Ments újra, és a Cmdr újra megpróbálja.",
+  "@servers.refusal.s3SavedSecretNotUpdated": {
+    "sourceHash": "1d2889d"
+  },
+  "servers.refusal.accessDenied": "Ez a kulcs nem éri el ezt a bucketet. Ellenőrizd a bucket nevét és a titkos hozzáférési kulcsot, és azt, hogy a kulcs olvashatja-e a bucketet.",
+  "@servers.refusal.accessDenied": {
+    "sourceHash": "8372e73"
+  },
+  "servers.refusal.bucketListRefused": "Ez a kulcs nem tudja felsorolni a fiók bucketjeit. Írd be egy bucket nevét a megnyitásához, vagy ellenőrizd a titkos hozzáférési kulcsot.",
+  "@servers.refusal.bucketListRefused": {
+    "sourceHash": "1b9ebf5"
+  },
+  "servers.refusal.bucketNotFound": "Nincs ilyen nevű bucket itt: {host}.",
+  "@servers.refusal.bucketNotFound": {
+    "sourceHash": "0f5a04d"
+  },
+  "servers.refusal.regionMismatch": "Ez a bucket egy másik régióban van. Válaszd ki a régióját, és próbáld újra.",
+  "@servers.refusal.regionMismatch": {
+    "sourceHash": "27a37f8"
+  },
+  "servers.refusal.regionMismatchNamed": "Ez a bucket ebben a régióban van: {region}. Válaszd ki ezt a régiót, és próbáld újra.",
+  "@servers.refusal.regionMismatchNamed": {
+    "sourceHash": "30abb0d"
+  },
+  "servers.refusal.clockSkewed": "Ezen a Macen több mint 15 percet téved az óra, ezért a szerver nem fogadja el a Cmdr kéréseit. Kapcsold be az „Idő és dátum automatikus beállítása” lehetőséget a Rendszerbeállításokban, majd próbáld újra.",
+  "@servers.refusal.clockSkewed": {
+    "sourceHash": "cdee0ef"
+  },
+  "servers.refusal.notAnS3Endpoint": "Ezen a címen semmi nem válaszol S3-tárhelyként.",
+  "@servers.refusal.notAnS3Endpoint": {
+    "sourceHash": "78557ec"
+  },
+  "servers.refusal.s3FieldMalformed": "Ide csak kisbetűket, számjegyeket és kötőjeleket írj.",
+  "@servers.refusal.s3FieldMalformed": {
+    "sourceHash": "ac8fbea"
+  },
+  "servers.refusal.endpointMalformed": "A végpontot http:// vagy https:// előtaggal és egy gépnévvel add meg, például https://s3.example.com.",
+  "@servers.refusal.endpointMalformed": {
+    "sourceHash": "beb63dd"
   },
   "servers.sheet.addTitle": "Szerver hozzáadása",
   "@servers.sheet.addTitle": {
@@ -323,6 +403,10 @@
   "@servers.sheet.password": {
     "sourceHash": "e7cf3ef"
   },
+  "servers.sheet.secretKeptPlaceholder": "Mentve a kulcskarikában. Ha üresen hagyod, megmarad.",
+  "@servers.sheet.secretKeptPlaceholder": {
+    "sourceHash": "8711f6c"
+  },
   "servers.sheet.smbUsernamePlaceholder": "Nem kötelező",
   "@servers.sheet.smbUsernamePlaceholder": {
     "sourceHash": "59be713"
@@ -358,6 +442,123 @@
   "servers.sheet.name": "Név",
   "@servers.sheet.name": {
     "sourceHash": "dcd1d52"
+  },
+  "servers.sheet.protocolS3": "S3",
+  "@servers.sheet.protocolS3": {
+    "sourceHash": "44d6a8a",
+    "sameAsSourceJustification": "Protokollnév, nem fordítjuk, ahogy a testvérkulcsokat sem (`servers.sheet.protocolSmb` = „SMB”, `servers.sheet.protocolWebdav` = „WebDAV”)."
+  },
+  "servers.sheet.s3Provider": "Szolgáltató",
+  "@servers.sheet.s3Provider": {
+    "sourceHash": "472590a"
+  },
+  "servers.sheet.s3ProviderAws": "Amazon S3",
+  "@servers.sheet.s3ProviderAws": {
+    "sourceHash": "a4f6352",
+    "sameAsSourceJustification": "Terméknév (Amazon S3); az AWS konzolja nem jelenik meg magyarul, a magyar szakmai szöveg is így írja."
+  },
+  "servers.sheet.s3ProviderR2": "Cloudflare R2",
+  "@servers.sheet.s3ProviderR2": {
+    "sourceHash": "9f2f1ed",
+    "sameAsSourceJustification": "Terméknév (Cloudflare R2); a Cloudflare irányítópultja nem jelenik meg magyarul."
+  },
+  "servers.sheet.s3ProviderB2": "Backblaze B2",
+  "@servers.sheet.s3ProviderB2": {
+    "sourceHash": "ed40187",
+    "sameAsSourceJustification": "Terméknév (Backblaze B2); a Backblaze felülete nem jelenik meg magyarul."
+  },
+  "servers.sheet.s3ProviderWasabi": "Wasabi",
+  "@servers.sheet.s3ProviderWasabi": {
+    "sourceHash": "493861e",
+    "sameAsSourceJustification": "Terméknév (Wasabi), márkanévként változatlan."
+  },
+  "servers.sheet.s3ProviderHetzner": "Hetzner Object Storage",
+  "@servers.sheet.s3ProviderHetzner": {
+    "sourceHash": "a339b4f",
+    "sameAsSourceJustification": "Terméknév (Hetzner Object Storage): a Hetzner így nevezi a terméket, a konzolja nem jelenik meg magyarul."
+  },
+  "servers.sheet.s3ProviderGcs": "Google Cloud Storage",
+  "@servers.sheet.s3ProviderGcs": {
+    "sourceHash": "53fa0ba",
+    "sameAsSourceJustification": "Terméknév (Google Cloud Storage): a Google magyar súgója is lefordítatlanul hozza („a Google Cloud Storage szolgáltatás”, support.google.com/manufacturers/answer/10400400?hl=hu)."
+  },
+  "servers.sheet.s3ProviderDigitalOcean": "DigitalOcean Spaces",
+  "@servers.sheet.s3ProviderDigitalOcean": {
+    "sourceHash": "c3f48e3",
+    "sameAsSourceJustification": "Terméknév (DigitalOcean Spaces); a DigitalOcean felülete nem jelenik meg magyarul."
+  },
+  "servers.sheet.s3GcsKeyHelp": "Jelentkezz be egy HMAC-kulccsal, amelyet a Cloud Storage beállításainak „Interoperability” lapján találsz.",
+  "@servers.sheet.s3GcsKeyHelp": {
+    "sourceHash": "acb72a4"
+  },
+  "servers.sheet.s3ProviderOther": "Egyéb S3-kompatibilis",
+  "@servers.sheet.s3ProviderOther": {
+    "sourceHash": "13d2bdc"
+  },
+  "servers.sheet.s3Region": "Régió",
+  "@servers.sheet.s3Region": {
+    "sourceHash": "d3a008e"
+  },
+  "servers.sheet.s3RegionOptionalPlaceholder": "Nem kötelező. Ha üresen hagyod: us-east-1",
+  "@servers.sheet.s3RegionOptionalPlaceholder": {
+    "sourceHash": "12dd731"
+  },
+  "servers.sheet.s3AccountId": "Fiókazonosító",
+  "@servers.sheet.s3AccountId": {
+    "sourceHash": "919bb4c"
+  },
+  "servers.sheet.s3AccountIdHelp": "A fiókazonosítót a Cloudflare R2 áttekintő oldalán találod.",
+  "@servers.sheet.s3AccountIdHelp": {
+    "sourceHash": "963d1f5"
+  },
+  "servers.sheet.s3Location": "Hely",
+  "@servers.sheet.s3Location": {
+    "sourceHash": "15b6197"
+  },
+  "servers.sheet.s3Endpoint": "Végpont",
+  "@servers.sheet.s3Endpoint": {
+    "sourceHash": "3df9726"
+  },
+  "servers.sheet.s3PathStyle": "Útvonalstílusú (path-style) címzés használata",
+  "@servers.sheet.s3PathStyle": {
+    "sourceHash": "627c522"
+  },
+  "servers.sheet.s3PathStyleHelp": "Erre a legtöbb saját üzemeltetésű szervernek szüksége van (például MinIO, Garage).",
+  "@servers.sheet.s3PathStyleHelp": {
+    "sourceHash": "bc6e240"
+  },
+  "servers.sheet.s3Bucket": "Bucket",
+  "@servers.sheet.s3Bucket": {
+    "sourceHash": "c83b657",
+    "sameAsSourceJustification": "A „bucket” az S3 szakszava, és a magyar szakmai szöveg is így használja, elöl képzett ragokkal (`S3 bucketbe`, `bucketben`, `bucketekkel`: cheppers.hu, aws.hu, cloudmentor.hu). A szolgáltatók konzoljai nem jelennek meg magyarul; a Microsoft `gyűjtő` szava más értelem, a Google gépi fordítású súgójának `csoport` szava ütközik a group szóval. Döntés: `docs/i18n/hu/decisions.md` § S3."
+  },
+  "servers.sheet.s3BucketHelp": "Hagyd üresen, hogy lásd az összes bucketet. Ha a kulcsod csak egy buckethez fér hozzá, írd be a nevét.",
+  "@servers.sheet.s3BucketHelp": {
+    "sourceHash": "8d380d9"
+  },
+  "servers.sheet.s3UseRegion": "{region} használata",
+  "@servers.sheet.s3UseRegion": {
+    "sourceHash": "5734184"
+  },
+  "servers.sheet.accessKeyId": "Hozzáférési kulcs azonosítója",
+  "@servers.sheet.accessKeyId": {
+    "sourceHash": "14eb0f9"
+  },
+  "servers.sheet.secretAccessKey": "Titkos hozzáférési kulcs",
+  "@servers.sheet.secretAccessKey": {
+    "sourceHash": "3de6b75"
+  },
+  "servers.sheet.examplePlaceholder": "Példa: {example}",
+  "@servers.sheet.examplePlaceholder": {
+    "sourceHash": "9c7df45"
+  },
+  "servers.sheet.identityLockedS3": "A szolgáltató, a hozzáférési kulcs azonosítója és a bucket azonosítja ezt a helyet. A módosításukhoz felejtsd el ezt a helyet, és add hozzá újra.",
+  "@servers.sheet.identityLockedS3": {
+    "sourceHash": "fe4d469"
+  },
+  "servers.sheet.identityLockedS3Account": "A szolgáltató és a hozzáférési kulcs azonosítója azonosítja ezt a fiókot. A módosításukhoz felejtsd el ezt a fiókot, és add hozzá újra.",
+  "@servers.sheet.identityLockedS3Account": {
+    "sourceHash": "e03a769"
   },
   "servers.sheet.namePlaceholder": "Ha üresen hagyod: {label}",
   "@servers.sheet.namePlaceholder": {
@@ -451,6 +652,10 @@
   "@servers.paneState.notConnected": {
     "sourceHash": "5020fac"
   },
+  "servers.paneState.unreachable": "A Cmdr nem érte el ezt: {name}.",
+  "@servers.paneState.unreachable": {
+    "sourceHash": "a7bc9bc"
+  },
   "servers.paneState.goBack": "Vissza",
   "@servers.paneState.goBack": {
     "sourceHash": "6aadac2"
@@ -463,9 +668,13 @@
   "@servers.paneState.hostKeyChanged": {
     "sourceHash": "c73ddf3"
   },
-  "servers.paneState.hostKeyChangedHint": "A kulcsa megváltozott. Ez jelentheti azt, hogy a szervert újratelepítették, de azt is, hogy valami beékelődött közéd és a szerver közé. Válaszd le, majd nyisd meg újra az ujjlenyomat ellenőrzéséhez.",
+  "servers.paneState.hostKeyChangedHint": "A kulcsa megváltozott. Ez jelentheti azt, hogy a szervert újratelepítették, de azt is, hogy valami beékelődött közéd és a szerver közé. Ellenőrizd az új kulcsot, mielőtt újra kapcsolódnál.",
   "@servers.paneState.hostKeyChangedHint": {
-    "sourceHash": "923de62"
+    "sourceHash": "866b619"
+  },
+  "servers.paneState.checkHostKey": "Kulcs ellenőrzése",
+  "@servers.paneState.checkHostKey": {
+    "sourceHash": "fefa256"
   },
   "servers.paneState.reconnecting": "Újracsatlakozás ide: {name}…",
   "@servers.paneState.reconnecting": {

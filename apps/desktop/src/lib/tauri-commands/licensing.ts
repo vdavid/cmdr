@@ -20,6 +20,8 @@ export interface LicenseInfo {
   organizationName: string | null
   licenseType: string | null
   shortCode: string | null
+  // The end date signed into the key (RFC 3339), only on a dated license
+  expiresAt: string | null
 }
 
 /** Result of verifying a license key without persisting it. */
@@ -94,16 +96,6 @@ export function parseActivationError(e: unknown): LicenseActivationError | null 
  */
 export async function getLicenseStatus(): Promise<LicenseStatus> {
   return commands.getLicenseStatus()
-}
-
-/**
- * Activates a license key (verify + commit in one call).
- * Kept for backward compatibility. New code should use verifyLicense + commitLicense.
- */
-export async function activateLicense(licenseKey: string): Promise<LicenseInfo> {
-  const res = await commands.activateLicense(licenseKey)
-  if (res.status === 'error') throwIpcError(res.error)
-  return res.data
 }
 
 /** Verifies a license key offline without writing anything to disk. */

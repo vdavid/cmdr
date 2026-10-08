@@ -20,6 +20,11 @@
     "forms": "exclusive access → exklusiver Zugriff; file access in prose → Zugriff auf Dateien, as a switch label → Dateizugriff (settings.fileOperations.adbEnabled.label)",
     "sources": "macOS TCC ( … möchte Zugriff auf Dateien auf einem Wechselmedium); MS terminology"
   },
+  "access-key-id": {
+    "chosen": "Zugriffsschlüssel-ID",
+    "confidence": "high",
+    "sources": "catalog servers.sheet.accessKeyId and servers.sheet.identityLockedS3; AWS console and docs in this language (outside the pile, not verified live) (Zugriffsschlüssel-ID); MS access key → Zugriffsschlüssel"
+  },
   "account": {
     "accept": ["Konten"],
     "avoid": [
@@ -112,6 +117,19 @@
     "forms": "existence is the catalog's gibt es idiom (In diesem Ordner gibt es bereits …, Unter „{path}“ gibt es bereits etwas.); Diesen Ordner gibt es noch nicht",
     "sources": "catalog (conflictExistsFolder, errors.write.destinationExists.message)"
   },
+  "android-platform-tools": {
+    "accept": ["Platform Tools"],
+    "chosen": "Android Platform Tools",
+    "confidence": "high",
+    "forms": "the product name stays English and capitalized, never Plattformtools; after the first mention the short die Platform Tools",
+    "sources": "Google's German Android docs keep the English name (developer.android.com/tools/releases/platform-tools?hl=de: „Versionshinweise zu SDK Platform Tools“, checked 2026-10-01); catalog (adb.connect.adbNotInstalled, settings.fileOperations.adbBinaryPath.description)"
+  },
+  "android-tools": {
+    "chosen": "Android-Tools",
+    "confidence": "high",
+    "forms": "the generic group, coupled with a hyphen: die Android-Tools auf diesem Mac",
+    "sources": "catalog (adb.connect.serverUnreachable, settings.fileOperations.adbEnabled.description); ai-tool ruling reserves Tools for generic tooling"
+  },
   "answer": {
     "accept": ["antwortest", "antworten"],
     "avoid": [
@@ -193,7 +211,7 @@
     "sources": "macOS AppKit (NSFontOptionsPanel 100411.title, NSPreferences 7TY-1Z-cs2.title = Anwenden)"
   },
   "approve": {
-    "accept": ["zugestimmt", "Zustimmung", "stimmst", "genehmig"],
+    "accept": ["zugestimmt", "Zustimmung", "stimmst", "stimme", "genehmig"],
     "chosen": "zustimmen",
     "confidence": "high",
     "sources": "catalog (askCmdr.decision.approved, ai.cloudConsent.askCmdr.contentsRule bevor du zustimmst)"
@@ -242,6 +260,56 @@
     "chosen": "Attribut",
     "confidence": "high",
     "sources": "MS terminology; standard German"
+  },
+  "automation": {
+    "chosen": "Automation",
+    "confidence": "high",
+    "sources": "macOS 27.0 (26A428) SecurityPrivacyExtension.appex Localizable.loctable, key AUTOMATION, 2026-10-08"
+  },
+  "bucket": {
+    "chosen": "Bucket",
+    "accept": ["Buckets"],
+    "forms": "der Bucket, pl. die Buckets; All buckets → Alle Buckets",
+    "confidence": "high",
+    "sources": "AWS console and docs in this language (outside the pile, not verified live) keep Bucket (der Bucket); catalog servers.sheet.s3Bucket; MS has no S3 sense (its bucket entries are a field or a generic container)"
+  },
+  "calculate": {
+    "accept": ["berechne", "Berechnung", "rechnet"],
+    "chosen": "berechnen",
+    "confidence": "high",
+    "forms": "Calculate folder sizes → Ordnergrößen berechnen; the running work → die Berechnung; adding a folder's contents up in prose → rechnet … zusammen",
+    "sources": "macOS Finder ViewOptionsWindow 65.title (Calculate all sizes → Alle Größen berechnen); Double Commander (Belegten Speicherplatz berechnen); TC says Speicherbedarf ermitteln (503, 5138), same feature, other verb"
+  },
+  "camera": {
+    "accept": ["Kameras"],
+    "chosen": "Kamera",
+    "confidence": "high",
+    "sources": "macOS AppKit NSStillCameraTemplate „Kamera“; catalog (settings.fileOperations.mtpEnabled.label)"
+  },
+  "column": {
+    "chosen": "Spalte",
+    "confidence": "high",
+    "forms": "pl. Spalten; the Name column → die Spalte Name / Namensspalte; sort column → Sortierspalte; column width → Spaltenbreite",
+    "sources": "macOS Finder (FI43 Spalten, SV1 die Spalte „Name“, Spaltendarstellung), AppKit Browser (Breite dieser Spalte anpassen); catalog"
+  },
+  "damaged": {
+    "chosen": "beschädigt",
+    "confidence": "high",
+    "avoid": [
+      {
+        "form": "defekt",
+        "why": "Finder uses it once (NE59) against beschädigt in LA33 / LA34 and every catalog key"
+      }
+    ],
+    "sources": "macOS Finder (LA33 / LA34 möglicherweise beschädigt); catalog"
+  },
+  "debugging": {
+    "chosen": "Debug",
+    "accept": ["Debugging"],
+    "confidence": "high",
+    "forms": "debug level → Debug-Stufe; debug log → Debug-Protokoll; saving diagnostic logs for debugging in prose → zur Fehlerbehebung",
+    "sources": "ConsoleKit.framework Localizable (Debug Type, value_debug); catalog settings.developer.verboseLogging.description (macOS 26.6.2 build 25G83, live loctable key cross-reference, 2026-10-02); Apple Podcasts support, Informationen zur Fehlerbehebung sammeln (https://podcasters.apple.com/de-de/support/5438-reporting-issues-in-apple-podcast-connect, checked 2026-10-02)",
+    "proseAccept": ["Fehlerbehebung"]
   },
   "deployment": {
     "accept": ["Ressource"],
@@ -474,6 +542,18 @@
     "forms": "Cmdr clearing its own leftovers → räumt … weg; clears away what it leaves half-written → entfernt, was dabei halb geschrieben zurückbleibt",
     "sources": "catalog (fileOperations.cancelRollback.stagedLeftover.*, main.quit.body)"
   },
+  "clear": {
+    "accept": ["lösch", "gelöscht"],
+    "chosen": "löschen",
+    "confidence": "high",
+    "exceptions": {
+      "fileExplorer.navigation.favoriteShortcutAriaLabel": "Delete removes the shortcut assignment, so entfernen, like the sibling remove actions.",
+      "fileExplorer.searchResults.unavailableBody": "Cmdr threw the result set away, it didn't empty a field: verworfen."
+    },
+    "forms": "Clear search → Suche löschen; Clear index → Index löschen; Clear filter → Filter löschen",
+    "note": "Shares its verb with delete; the object (Suche, Filter, Index) keeps it from reading as deleting files.",
+    "sources": "macOS live (Clear → Löschen 91×; Clear Filter → Filter löschen); catalog (settings.sidebar.clearSearch, settings.fileSystemWatching.clearIndex, shortcuts.section.pressEscToClear)"
+  },
   "click": {
     "accept": ["klicke", "klickst", "geklickt", "Klick", "Klicken"],
     "chosen": "klicken",
@@ -486,6 +566,17 @@
     "confidence": "high",
     "forms": "copy to clipboard → In die Zwischenablage kopieren; no possessive (in der Zwischenablage, never in deiner)",
     "sources": "macOS Finder/AppKit (Zwischenablage)"
+  },
+  "clone-pane": {
+    "avoid": [
+      {
+        "form": "duplizieren",
+        "why": "Finder's Duplicate makes a file copy"
+      }
+    ],
+    "chosen": "Bereich klonen",
+    "confidence": "high",
+    "sources": "MS terminology (clone → klonen) + the pane ruling (Bereich). TC (532 Fenster angleichen) and DC (Ziel = Quelle) name the same command differently; Finder has none"
   },
   "close": {
     "accept": ["schließ", "geschlossen"],
@@ -542,6 +633,19 @@
     "confidence": "high",
     "sources": "MS terminology"
   },
+  "compare-folders": {
+    "chosen": "Ordner vergleichen",
+    "accept": ["vergleich"],
+    "forms": "the menu item and command Ordner vergleichen; the act → Vergleich (während des Vergleichs, Ordnervergleich)",
+    "avoid": [
+      {
+        "form": "Verzeichnisse vergleichen",
+        "why": "TC's wording; Cmdr follows Finder's Ordner"
+      }
+    ],
+    "confidence": "high",
+    "sources": "TC 11.58 (Markieren menu, ⇧F2), DC and MC all say Verzeichnisse vergleichen; Cmdr follows the folder ruling (Finder Ordner, Unterordner). TC's compare by content → Vergleich nach Inhalt"
+  },
   "complete": {
     "accept": ["abschließen", "abgeschlossen", "unvollständig", "abschluss", "abzuschließen"],
     "avoid": [
@@ -586,9 +690,8 @@
     ],
     "chosen": "bestätigen",
     "confidence": "high",
-    "decision": "Unconfirmed rename + the catch-all name rejection",
     "forms": "Couldn't confirm X → Es ließ sich nicht bestätigen, dass … / Die Bewegung ließ sich nicht bestätigen",
-    "sources": "catalog (fileExplorer.pane.trashUnconfirmedToast, fileOperations.mkdir.timeoutMessage)"
+    "sources": "catalog (fileExplorer.pane.trashUnconfirmedToast)"
   },
   "conflict": {
     "accept": ["Konflikte"],
@@ -606,6 +709,12 @@
     },
     "forms": "button Verbinden; Connect to server → Mit Server verbinden( …); Connecting … → Verbindung wird hergestellt …; Connecting to {name} … → Verbindung zu {name} wird hergestellt …; Connected → Verbunden; Connect as guest → Als Gast verbinden; reflexive with du: wenn du dich … verbindest",
     "sources": "macOS Finder (Mit Server verbinden, Verbinden, Serveradresse); NetAuthAgent (CONNECT)"
+  },
+  "provider-console": {
+    "chosen": "Konsole",
+    "confidence": "high",
+    "forms": "a storage provider’s console → die Konsole deines Speicheranbieters, after a first mention die Konsole deines Anbieters",
+    "sources": "MS terminology (console → Konsole); catalog errors.listing.coldStorage.suggestion"
   },
   "context-menu": {
     "accept": ["rechten Maustaste", "Rechtsklick"],
@@ -634,6 +743,14 @@
     "confidence": "high",
     "forms": "button Kopieren; progress Wird kopiert; result {phrase} kopiert; unfinished copy → unvollständige Kopie",
     "sources": "macOS (Copy → Kopieren)"
+  },
+  "cost": {
+    "accept": ["kostet", "Kosten"],
+    "proseAccept": ["Preis", "Haken"],
+    "chosen": "kosten",
+    "confidence": "high",
+    "forms": "costs nothing → kostet nichts (resources as much as money)",
+    "sources": "standard German; catalog (settings.fileOperations.adbEnabled.description)"
   },
   "crash-report": {
     "accept": ["Absturz", "abgestürzt", "abstürz", "unerwartet beendet", "Bericht"],
@@ -700,6 +817,14 @@
     "confidence": "high",
     "sources": "macOS (Delete → Löschen, Erase → Löschen)"
   },
+  "delete-key": {
+    "accept": ["Lösch"],
+    "chosen": "Löschtaste",
+    "confidence": "high",
+    "forms": "with the glyph → die Löschtaste (⌫); mit der Löschtaste (⌫)",
+    "note": "Pile mined 2026-10-07 (macOS 27.0.1 live bundles): VoiceOver SCRWorkspace.loctable deleteKey, Terminal keyDescriptions.loctable 007F, AccessibilitySharedSupport symbol names delete.backward.",
+    "sources": "macOS VoiceOver (Presses the delete key → Drückt die Löschentaste; Delete Key → Taste löschen), Terminal key descriptions (⌫ Delete → ⌫ Löschen); the symbol names say Rückschritt, the Windows word"
+  },
   "delete-permanently": {
     "accept": ["dauerhaft"],
     "avoid": [
@@ -753,6 +878,13 @@
     "forms": "USB device → USB-Gerät; the device holding {path} → das Gerät mit {path}",
     "note": "device and phone follow the English key by key: Gerät where it says device, Telefon where it says phone.",
     "sources": "standard German; catalog"
+  },
+  "dialog": {
+    "accept": ["Dialogs", "Fenster"],
+    "chosen": "Dialog",
+    "confidence": "high",
+    "forms": "a named Cmdr dialog → den Dialog „Dateien auswählen“ (title quoted); closing it in prose → diesen Dialog schließen",
+    "sources": "catalog (commands.selectionSelectFiles.description: den Dialog „Dateien auswählen“); MS terminology (dialog box → Dialogfeld, too technical for prose); macOS Finder/AppKit/System Settings bundles never name the concept"
   },
   "disable": {
     "accept": ["deaktiviert", "ausschalten", "ausgeschaltet", "aus", "deaktivier"],
@@ -883,7 +1015,7 @@
     "chosen": "auswerfen",
     "confidence": "high",
     "decision": "Auswerfen und Trennen: die neun Absagen",
-    "forms": "button Auswerfen; {name} auswerfen; Eject that image first → Wirf erst das Image aus, dann das Laufwerk.",
+    "forms": "button Auswerfen; {name} auswerfen; Eject that image first → Wirf erst das Image aus, dann versuche es erneut.",
     "sources": "macOS Finder (Auswerfen), AppKit (NSNavEjectButton)"
   },
   "email": {
@@ -1099,6 +1231,13 @@
     "forms": "file system watching → Dateisystemüberwachung; format names stay verbatim (FAT32, exFAT)",
     "sources": "macOS AppKit (Read-only file system → Dateisystem ist schreibgeschützt); Finder NE29, verified 2026-09-06"
   },
+  "filter": {
+    "accept": ["filter"],
+    "chosen": "filtern",
+    "confidence": "high",
+    "forms": "noun Filter (Filter löschen, Schnellfilter); the typing-mode name and badge Filtern (Filtern: …), beside Springen",
+    "sources": "macOS live (Filter → Filter 59×, Filtern 4×; Clear Filter → Filter löschen); DC, MC (Filter); catalog (selection.runHint, Größenfilter)"
+  },
   "finder": {
     "chosen": "Finder",
     "confidence": "high",
@@ -1183,6 +1322,42 @@
     "confidence": "high",
     "sources": "macOS Finder („Informationen“)"
   },
+  "overall": {
+    "chosen": "Insgesamt",
+    "confidence": "high",
+    "forms": "the whole-run time-left label → Insgesamt: {eta}",
+    "sources": "GN insgesamt; DC Gesamt: (the label form, read stiffer before a time phrase)"
+  },
+  "size-unit-gibibyte": {
+    "chosen": "GiB",
+    "confidence": "high",
+    "sources": "catalog common.sizeUnit.gibibyte; IEC 80000-13 (binary) / SI (decimal)"
+  },
+  "size-unit-kibibyte": {
+    "chosen": "KiB",
+    "confidence": "high",
+    "sources": "catalog common.sizeUnit.kibibyte; IEC 80000-13 (binary) / SI (decimal)"
+  },
+  "size-unit-kilobyte": {
+    "chosen": "kB",
+    "confidence": "high",
+    "sources": "catalog common.sizeUnit.kilobyte; IEC 80000-13 (binary) / SI (decimal)"
+  },
+  "size-unit-mebibyte": {
+    "chosen": "MiB",
+    "confidence": "high",
+    "sources": "catalog common.sizeUnit.mebibyte; IEC 80000-13 (binary) / SI (decimal)"
+  },
+  "size-unit-pebibyte": {
+    "chosen": "PiB",
+    "confidence": "high",
+    "sources": "catalog common.sizeUnit.pebibyte; IEC 80000-13 (binary) / SI (decimal)"
+  },
+  "size-unit-tebibyte": {
+    "chosen": "TiB",
+    "confidence": "high",
+    "sources": "catalog common.sizeUnit.tebibyte; IEC 80000-13 (binary) / SI (decimal)"
+  },
   "step": {
     "chosen": "Schritt",
     "confidence": "high",
@@ -1211,14 +1386,17 @@
     "sources": "standard German"
   },
   "go-to-path": {
-    "chosen": "Zu Pfad gehen",
+    "avoid": [
+      {
+        "form": "Zu Pfad gehen",
+        "why": "the old path wording; the English now names Finder's Go to Folder, so every surface takes Finder's words"
+      }
+    ],
+    "chosen": "Gehe zu Ordner",
     "confidence": "high",
-    "decision": "Das Dock-Menü von Cmdr",
-    "exceptions": {
-      "menu.dock.goToFolder": "Cmdr’s Dock menu names Finder’s own command: Gehe zu Ordner …"
-    },
-    "forms": "the dialog, its menu item, and the palette command; Cmdr's Dock menu names Finder's command instead: Gehe zu Ordner …",
-    "sources": "derived from macOS (Gehe zu …, Gehe zu Ordner)"
+    "decision": "Gehe zu Ordner: Finders Wortlaut auf jeder Fläche",
+    "forms": "the dialog title and its button → Gehe zu Ordner; the menu item and the palette command → Gehe zu Ordner … (no-break space before the ellipsis)",
+    "sources": "macOS Finder (GotoWindow 1.title Gehe zu Ordner, MenuBar 261.title Gehe zu Ordner …)"
   },
   "go-to-trash": {
     "chosen": "Zum Papierkorb gehen",
@@ -1236,6 +1414,12 @@
     "chosen": "Alles klar",
     "confidence": "high",
     "sources": "macOS de (Got It → Alles klar), verified on macOS 26.6.2, 2026-08-30"
+  },
+  "group": {
+    "chosen": "Gruppe",
+    "confidence": "high",
+    "forms": "a named group takes the name quoted after it (die Gruppe „Netzwerk“); the servers found nearby → Gruppe der Server in der Nähe",
+    "sources": "macOS Finder MenuBar (Use Groups → Gruppen verwenden), verified on macOS 27.0 (26A428), live bundle, 2026-09-30; catalog (servers.pinHint.title)"
   },
   "guest": {
     "accept": ["Gäste", "Gastzugriff"],
@@ -1348,7 +1532,7 @@
   "idle": {
     "chosen": "nicht mehr beschäftigt",
     "confidence": "high",
-    "sources": "catalog (indexing.enrich.pausedIdle, fileExplorer.mtp.deviceBusy)"
+    "sources": "catalog (indexing.enrich.pausedIdle)"
   },
   "image": {
     "accept": ["Bilder"],
@@ -1428,6 +1612,13 @@
     "confidence": "high",
     "forms": "input source switching → Wechsel der Eingabequelle",
     "sources": "macOS (Eingabequelle)"
+  },
+  "install": {
+    "accept": ["Installiere", "installiert", "Installieren"],
+    "chosen": "installieren",
+    "confidence": "high",
+    "forms": "button Installieren; an instruction → Installiere …",
+    "sources": "macOS AppKit/SystemSettings (Install → Installieren, 100288.title); MS terminology"
   },
   "item": {
     "accept": ["Objekte"],
@@ -1734,6 +1925,9 @@
     "accept": ["Freigaben", "freigegeben"],
     "chosen": "Freigabe",
     "confidence": "high",
+    "exceptions": {
+      "errorReporter.dialog.managedOff": "„share it yourself“ is the verb (pass the saved report on), not an SMB share → selbst weitergeben"
+    },
     "forms": "network share → Netzwerkfreigabe; SMB share → SMB-Freigabe; Connect directly → Direkt verbinden",
     "sources": "macOS (Freigabe, Bildschirmfreigabe); NetAuthAgent EINFO_NO_SHARE"
   },
@@ -1891,6 +2085,13 @@
     "chosen": "Organisation",
     "confidence": "high",
     "sources": "MS terminology"
+  },
+  "original": {
+    "accept": ["Originale"],
+    "chosen": "Original",
+    "confidence": "high",
+    "forms": "the originals → die Originale",
+    "sources": "macOS Finder PE117 (…the original could not be deleted): das Original; catalog (errors.write.destinationNotFound.message.copy, errors.write.deviceDisconnected.sided.destination.copy)"
   },
   "outdated": {
     "accept": ["nicht mehr aktuell", "aktuell"],
@@ -2136,6 +2337,11 @@
     "forms": "the verb → abfragen",
     "sources": "MS terminology"
   },
+  "quick-filter": {
+    "chosen": "Schnellfilter",
+    "confidence": "high",
+    "sources": "TC 3018/3019 (… Schnellfilter aus/ein); DC actQuickFilter (Schneller Filter)"
+  },
   "quick-look": {
     "avoid": [
       {
@@ -2355,11 +2561,12 @@
     "sources": "MS terminology"
   },
   "restore": {
-    "accept": ["wiederhergestellt"],
+    "accept": ["wiederhergestellt", "wieder her", "Wiederherstellung"],
     "chosen": "wiederherstellen",
     "confidence": "high",
     "note": "Put back from the trash stays zurücklegen.",
-    "sources": "macOS AppKit Revisions/Document (Restore → Wiederherstellen, Restore a Copy → Eine Kopie wiederherstellen)"
+    "sources": "macOS AppKit Revisions/Document (Restore → Wiederherstellen, Restore a Copy → Eine Kopie wiederherstellen)",
+    "forms": "separable in prose: Stelle die Datei … wieder her; the act → Wiederherstellung (a cold-storage restore)"
   },
   "resume": {
     "accept": ["fortgesetzt", "Fortsetzen"],
@@ -2705,6 +2912,11 @@
     "forms": "streaming mode → Streaming-Modus",
     "sources": "MS terminology (Streaming)"
   },
+  "subfolder": {
+    "chosen": "Unterordner",
+    "confidence": "high",
+    "sources": "macOS Finder (PE26.1 … in einen seiner Unterordner bewegt); Nautilus, Thunar, Dolphin (Unterordner erstellen) agree; TC/DC/MC say Unterverzeichnis (directory wording, avoided)"
+  },
   "subscription": {
     "accept": ["Abos", "Abonnement"],
     "chosen": "Abo",
@@ -2998,6 +3210,12 @@
     "confidence": "high",
     "sources": "catalog"
   },
+  "untouched": {
+    "chosen": "unberührt",
+    "confidence": "high",
+    "forms": "the originals are untouched → die Originale sind unberührt",
+    "sources": "catalog (errors.write.destinationNotFound.message.copy, errors.write.deviceDisconnected.sided.destination.copy); macOS AppKit Document (To keep the file unchanged…): unverändert lassen, the verb-side form"
+  },
   "update": {
     "accept": ["Updates", "aktualisier", "Aktualisierung", "Softwareupdate"],
     "chosen": "Update",
@@ -3209,6 +3427,12 @@
     "confidence": "high",
     "sources": "macOS de app names; macOS pile (Spotlight/Mission Control/Spaces kept), 2026-06-21"
   },
+  "space-key": {
+    "chosen": "Leertaste",
+    "confidence": "high",
+    "forms": "⇧Leertaste for the chord; prose → die Leertaste; compounds Leertasten-Hinweis",
+    "sources": "macOS AppKit FunctionKeyNames (Space), SystemSettings Siri/Spotlight SPACEBAR_KEY → Leertaste; AppKit Date Picker help (die Leertaste); TC 5139 (beim Markieren mit der Leertaste); Double Commander [Leertaste]"
+  },
   "spaces": {
     "chosen": "Spaces",
     "confidence": "high",
@@ -3259,10 +3483,55 @@
       "errors.write.originalsKeptAside.message.many": "verb sense (the details list every one) → führt … auf, not the noun Liste"
     }
   },
+  "byte": {
+    "accept": ["Bytes"],
+    "chosen": "Byte",
+    "confidence": "high",
+    "forms": "unit word after a count → {count, plural, one {Byte} other {Bytes}}; unit symbols stay as in English: binary (IEC) KiB / MiB / GiB / TiB / PiB, decimal (SI) kB / MB / GB / TB / PB with the lowercase k",
+    "sources": "macOS Finder (SP27 Byte / SP28 Bytes); GNOME Nautilus (%s Byte); Xfce Thunar (Größe in Bytes); Double Commander (KB); KDE Dolphin ( MiB); Microsoft Terminology (MiB, GiB); GNOME Nautilus (4 kB / 4 MB); catalog (settings.listing.sizeUnit.opt.bytes Bytes)"
+  },
   "local": {
     "accept": ["lokale", "lokalen", "lokaler", "lokales"],
     "chosen": "lokal",
     "confidence": "high",
     "sources": "MS terminology (local → lokal); catalog (ai.*, settings.*)"
+  },
+  "example": {
+    "accept": ["etwa", "zum Beispiel", "z. B."],
+    "chosen": "Beispiel",
+    "confidence": "high",
+    "forms": "placeholder prefix → Beispiel: {example}; inline in prose → etwa",
+    "sources": "catalog (servers.sheet.usernamePlaceholder Beispiel: barry, onboarding.cloudSetup.step.endpointPlaceholder); MS terminology (example → Beispiel)"
+  },
+  "expired": {
+    "accept": ["läuft", "ab", "Ablauf"],
+    "chosen": "abgelaufen",
+    "confidence": "high",
+    "forms": "expires in seven days → Läuft in sieben Tagen ab (menu.context.shareLink*)",
+    "sources": "MS terminology (expire → ablaufen); catalog (Diese Prüfung ist abgelaufen.)"
+  },
+  "storage": {
+    "accept": [
+      "Speicherplatz",
+      "Speicheranbieter",
+      "Cloud-Speicher",
+      "S3-Speicher",
+      "Cold Storage",
+      "Object Storage",
+      "Cloud Storage",
+      "Cloud-Storage",
+      "Speicherung"
+    ],
+    "chosen": "Speicher",
+    "confidence": "high",
+    "forms": "cloud storage → Cloud-Speicher; S3 storage → S3-Speicher; storage provider → Speicheranbieter; cold storage → Cold Storage (MS terminology); product names (Hetzner Object Storage, Google Cloud Storage) verbatim; storing logs → Protokollspeicherung (catalog settings.applier.logStorageRestart)",
+    "sources": "MS terminology (storage provider → Speicheranbieter, cold storage → Cold Storage); catalog (iCloud-Speicher, freier Speicher)"
+  },
+  "store": {
+    "accept": ["gespeichert", "sichern", "liegt"],
+    "chosen": "speichern",
+    "confidence": "high",
+    "forms": "a destination that can’t store a name → … lässt sich hier nicht speichern / kann … nicht speichern",
+    "sources": "catalog errors.volume.invalidName, errors.write.invalidName.message (gespeichert per the save trap: storing data); a secret in the keychain → sichern (servers.refusal.secretNotStored, the save button’s verb); a disk image sitting there → liegt"
   }
 }

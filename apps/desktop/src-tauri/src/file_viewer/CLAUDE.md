@@ -15,10 +15,10 @@ Frontend counterparts: [route shell](../../../src/routes/viewer/CLAUDE.md) and
   `encoding.rs` (`FileEncoding` + detection), `full_load.rs` / `byte_seek.rs` / `line_index.rs` (the three backends),
   `search_matcher.rs`, `watcher.rs` (tail-mode watcher).
 - Backend selection: `< 1MB` → `FullLoad`; else instant `ByteSeek` + background `LineIndex`.
-- Media (Image/PDF): `content_kind.rs` plus the four `media*.rs` (`media.rs` holds the `cmdr-media://` token map).
+- Media (Image/PDF): `content_kind.rs` plus `media*.rs` (`media.rs` holds the `cmdr-media://` token map).
   `DETAILS.md` § "Media rendering".
 - `materialize.rs` + `pending_open.rs`: pulling a file the OS can't open (routed, or on a phone) into a bounded temp,
-  with progress and cancel. `DETAILS.md` § "Preview of a routed file", § "Watching a pull".
+  with progress and cancel, reused by "Open with" (`open_with_extract.rs`). `DETAILS.md` § "Preview of a routed file".
 - `headless.rs`: the backend picks with no session around them, for `inspect_file`; `content_kind::looks_binary` is
   its text-vs-binary call. `DETAILS.md` § "Headless reads".
 - `analytics.rs`: `viewer_opened`; ❌ never a file name or extension.

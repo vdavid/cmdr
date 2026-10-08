@@ -9,6 +9,17 @@ import { availableLocales, tString } from '$lib/intl/messages.svelte'
 import { localeDisplayName } from '$lib/intl/locale-display-names'
 import { pickUiLocale } from '$lib/intl/os-locales'
 import type { MessageKey } from '$lib/intl/keys.gen'
+import { unitLabel } from '$lib/units/byte-size'
+
+/** A fixed size-unit option, labelled with the unit symbol `$lib/units` renders. */
+function sizeUnitOption(unit: 'kB' | 'MB' | 'GB'): EnumOption {
+  return {
+    value: unit,
+    get label() {
+      return unitLabel(unit, 'si')
+    },
+  }
+}
 
 /**
  * The `'system'` option's label, naming what "System default" resolves to right
@@ -258,6 +269,7 @@ export const appearanceSettings: SettingDefinitionSource[] = [
       'smb',
       'sftp',
       'webdav',
+      's3',
       'server',
       'network',
       'background',
@@ -273,7 +285,21 @@ export const appearanceSettings: SettingDefinitionSource[] = [
     labelKey: 'settings.appearance.tintMtp.label',
     descriptionKey: 'settings.appearance.tintMtp.description',
     cardKey: 'settings.appearance.card.paneTints',
-    keywords: ['tint', 'pane', 'color', 'volume', 'mtp', 'android', 'kindle', 'camera', 'background', 'highlight'],
+    keywords: [
+      'tint',
+      'pane',
+      'color',
+      'volume',
+      'mtp',
+      'adb',
+      'android',
+      'phone',
+      'device',
+      'kindle',
+      'camera',
+      'background',
+      'highlight',
+    ],
     type: 'enum',
     default: 'none',
     constraints: { options: TINT_COLOR_OPTIONS },
@@ -349,9 +375,11 @@ export const appearanceSettings: SettingDefinitionSource[] = [
       options: [
         { value: 'dynamic', labelKey: 'settings.listing.sizeUnit.opt.dynamic' },
         { value: 'bytes', labelKey: 'settings.listing.sizeUnit.opt.bytes' },
-        { value: 'kB', labelKey: 'settings.listing.sizeUnit.opt.kB' },
-        { value: 'MB', labelKey: 'settings.listing.sizeUnit.opt.mB' },
-        { value: 'GB', labelKey: 'settings.listing.sizeUnit.opt.gB' },
+        // The fixed units read as the sizes they produce ($lib/units, UI language). The live IEC/SI symbol follows
+        // `appearance.fileSizeFormat` through `AppearanceSizesSection`'s override; the SI symbol stands in here.
+        sizeUnitOption('kB'),
+        sizeUnitOption('MB'),
+        sizeUnitOption('GB'),
       ],
     },
   },
@@ -362,12 +390,12 @@ export const appearanceSettings: SettingDefinitionSource[] = [
     descriptionKey: 'settings.appearance.fileSizeFormat.description',
     keywords: ['size', 'bytes', 'binary', 'decimal', 'kb', 'mb', 'kib', 'mib'],
     type: 'enum',
-    default: 'binary',
+    default: 'si',
     component: 'toggle-group',
     constraints: {
       options: [
-        { value: 'binary', labelKey: 'settings.appearance.fileSizeFormat.opt.binary' },
         { value: 'si', labelKey: 'settings.appearance.fileSizeFormat.opt.si' },
+        { value: 'binary', labelKey: 'settings.appearance.fileSizeFormat.opt.binary' },
       ],
     },
   },
@@ -444,12 +472,36 @@ export const appearanceSettings: SettingDefinitionSource[] = [
     component: 'switch',
   },
   {
+    id: 'listing.foldersFirst',
+    section: ['Appearance', 'Listing'],
+    labelKey: 'settings.listing.foldersFirst.label',
+    descriptionKey: 'settings.listing.foldersFirst.description',
+    cardKey: 'settings.appearance.card.namesAndIcons',
+    keywords: ['sort', 'directory', 'directories', 'folder', 'folders', 'first', 'top', 'mixed', 'order', 'listing'],
+    type: 'boolean',
+    default: true,
+    component: 'switch',
+  },
+  {
+    // Total Commander's "Calculate space occupied by subdirectories when selecting
+    // with the space bar". `file-explorer/pane/folder-size-count.ts` owns it.
+    id: 'listing.spaceCalculatesFolderSize',
+    section: ['Appearance', 'Listing'],
+    labelKey: 'settings.listing.spaceCalculatesFolderSize.label',
+    descriptionKey: 'settings.listing.spaceCalculatesFolderSize.description',
+    cardKey: 'settings.appearance.card.namesAndIcons',
+    keywords: ['space', 'size', 'folder', 'folders', 'directory', 'calculate', 'count', 'select', 'total commander'],
+    type: 'boolean',
+    default: true,
+    component: 'switch',
+  },
+  {
     id: 'listing.directorySortMode',
     section: ['Appearance', 'Listing'],
     labelKey: 'settings.listing.directorySortMode.label',
     descriptionKey: 'settings.listing.directorySortMode.description',
     cardKey: 'settings.appearance.card.namesAndIcons',
-    keywords: ['sort', 'directory', 'folder', 'order', 'listing', 'name', 'size'],
+    keywords: ['sort', 'directory', 'directories', 'folder', 'folders', 'order', 'listing', 'name', 'size'],
     type: 'enum',
     default: 'likeFiles',
     component: 'toggle-group',
@@ -459,6 +511,41 @@ export const appearanceSettings: SettingDefinitionSource[] = [
         { value: 'alwaysByName', labelKey: 'settings.listing.directorySortMode.opt.alwaysByName' },
       ],
     },
+  },
+  {
+    // What typing a letter in a pane does. `filter` is Total Commander's quick
+    // filter (`file-explorer/pane/quick-filter-controller.svelte.ts`).
+    id: 'fileExplorer.typeToJump.mode',
+    section: ['Appearance', 'Listing'],
+    cardKey: 'settings.appearance.card.namesAndIcons',
+    labelKey: 'settings.fileExplorer.typeToJump.mode.label',
+    descriptionKey: 'settings.fileExplorer.typeToJump.mode.description',
+    keywords: ['type', 'jump', 'filter', 'quick filter', 'quick search', 'narrow', 'total commander', 'keystroke'],
+    type: 'enum',
+    // Filter, Total Commander's habit; the first filtered pane explains it once
+    // and offers Jump (`file-explorer/pane/quick-filter-intro.ts`).
+    default: 'filter',
+    component: 'toggle-group',
+    constraints: {
+      options: [
+        { value: 'jump', labelKey: 'settings.fileExplorer.typeToJump.mode.opt.jump' },
+        { value: 'filter', labelKey: 'settings.fileExplorer.typeToJump.mode.opt.filter' },
+      ],
+    },
+  },
+  {
+    // Internal (FE-owned): whether the once-ever "What just happened?" toast the
+    // first quick filter raises has been shown. ❌ Not a nudge: it explains what
+    // the user just did, so it takes no part in the nudge cooldown.
+    id: 'fileExplorer.quickFilterIntroSeen',
+    section: ['Appearance', 'Listing'],
+    labelKey: 'settings.fileExplorer.quickFilterIntroSeen.label',
+    descriptionKey: 'settings.fileExplorer.quickFilterIntroSeen.description',
+    keywords: [],
+    type: 'boolean',
+    default: false,
+    component: 'switch',
+    hidden: true,
   },
   {
     id: 'listing.briefColumnWidthMode',

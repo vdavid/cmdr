@@ -15,7 +15,7 @@
  * `messages/en/commands.json`. The command IDS stay untouched.
  */
 
-import type { Command, CommandSource } from './types'
+import type { Command, CommandSource, PaletteCondition } from './types'
 import type { CommandId } from './command-ids'
 import { BLOCKED_BY_DIALOGS, type WhileDialogOpen } from './while-dialog-open'
 import { tString } from '$lib/intl/messages.svelte'
@@ -144,9 +144,15 @@ function resolveCommand(src: CommandSource): Command {
  */
 export const commands: Command[] = commandSources.map(resolveCommand)
 
-/** Get all commands that should appear in the command palette */
-export function getPaletteCommands(): Command[] {
-  return commands.filter((c) => c.showInPalette)
+/**
+ * The commands the palette lists. `holds` answers each `paletteCondition`;
+ * without it, a conditional command counts as shown, which is what a caller
+ * asking about the palette's whole vocabulary (pruning stale recents) wants.
+ */
+export function getPaletteCommands(holds?: (condition: PaletteCondition) => boolean): Command[] {
+  return commands.filter(
+    (c) => c.showInPalette && (c.paletteCondition === undefined || holds === undefined || holds(c.paletteCondition)),
+  )
 }
 
 // Re-exported from `sources/app.ts`, where the flag it flips lives beside the

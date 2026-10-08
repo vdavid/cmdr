@@ -257,11 +257,15 @@ Three pieces stacked top to bottom:
    in the background; switching away cancels (HTTP-Range resume picks up on switch-back). A start that ends without
    finishing is typed per attempt (`LocalDownloadEnd`): `cancelledByChoice` when the person switched away (logged at
    info, even if they already picked Local again by the time the rejection lands) and `failed` for everything else
-   (logged at warn). Nothing in the wizard says a genuine failure yet, and nothing else listens (`initAiState` skipped
-   its listeners at launch because the provider wasn't local); whether it should is an open product call. Intel Macs get
-   the local option disabled, with the reason ("Local LLM requires Apple silicon. Cloud works on Intel.",
-   `getAiRuntimeStatus().localAiSupported`) in VISIBLE text beside it: why an option is greyed out is the one thing the
-   user most needs to read, and a tooltip on a control they can't reach is the worst place to put it.
+   (logged at warn). A genuine failure is also SAID (David, 2026-09-25, #155): nothing else would, since `initAiState`
+   skipped its listeners at launch because the provider wasn't local, and the only clue was the Download button
+   reappearing in Settings. `local-download-notice.ts` raises a warning toast with a button to Settings › AI › Provider
+   (`LocalDownloadFailedToastContent.svelte`), but only once the wizard has closed, since a toast under the sheet goes
+   unseen; a failure while it's up is held until `setOnboardingVisible(false)`. Any new pick on the step clears a held
+   failure, which then no longer describes what the user ends up with. Intel Macs get the local option disabled, with
+   the reason ("Local LLM requires Apple silicon. Cloud works on Intel.", `getAiRuntimeStatus().localAiSupported`) in
+   VISIBLE text beside it: why an option is greyed out is the one thing the user most needs to read, and a tooltip on a
+   control they can't reach is the worst place to put it.
 
    They render through the house `RadioGroup`, not the bordered, tinted radio CARDS they used to be: on a page that
    already carries a banner and a comparison table, three filled blocks made the actual question the heaviest thing on
@@ -284,6 +288,24 @@ Three pieces stacked top to bottom:
    A test drives an option by clicking its `<label class="radio-item">`, found through the visually-hidden
    `input[value=…]` inside it. Ark fires no `change` event to dispatch, its generated ids are an implementation detail,
    and matching on the label text breaks on the next copy edit.
+
+### Under the organization's AI policy
+
+- **Skipped when nothing but "no AI" is left**: `aiStepSkippedFor({ lock, localAiSupported })` over the `ai.provider`
+  lock (AI off, or on-device only on a Mac that can't run local AI). The wizard sets it on mount from the lock and
+  `getAiRuntimeStatus` (support counts as yes until it answers); `nextStep` / `previousStep` then walk 1 → 3 and back,
+  Linux's first step becomes 3, and a skip landing while step 2 is up moves on at once. Nothing is persisted: the
+  overlay already reads `ai.provider` as `off`.
+- **Never skipped without a lock**: an Intel Mac with no policy still has cloud AI to pick.
+- **On-device only (Apple Silicon)**: Cloud stays listed but disabled, the reason (`ai.managed.cloudAiOff`) as its help
+  text in place of the Recommended badge, the same visible-reason rule as the Intel local option.
+- **A preselect the policy made isn't an answer**: a stored `cloud` under on-device only reads (and preselects) as
+  `off`. When `isOverriddenByPolicy('ai.provider')` held on mount and the person never picked anything, Next writes
+  nothing (no `ai.provider`, no Ask Cmdr switches, no consent decline), so removing the profile brings their cloud AI
+  back. A reopened wizard (FDA revoked later, a crash-resume) hits exactly this. A pick of their own persists as usual.
+- **A host list**: `CloudProviderPicker` disables refused services (`isRefused`, from `followPresetHostVerdicts`), and
+  the shared controller says a refused endpoint is refused (`$lib/ai-provider-setup/DETAILS.md` § The organization's
+  policy).
 
 ### Forward footer (single "Next" button)
 
@@ -388,11 +410,16 @@ on the same edges however far any of them wraps.
 
 - **Send usage stats** — the tick IS `analytics.enabled` (via `useBooleanSetting`, the wiring `<SettingSwitch>` uses),
   so unticking it opts out exactly as the Settings switch does. Its info tip carries the whole disclosure in four
-  paragraphs: what the stats are, the registry description, the on-by-default note, and the crash-report note.
+  paragraphs: what the stats are, the registry description, the on-by-default note, and the crash-report note. Under an
+  organization's policy (`isSettingLocked`, `apps/desktop/src/lib/managed-policy/CLAUDE.md`): a pinned
+  `analytics.enabled` replaces the tick and title with `onboarding.stepBeta.analyticsManaged` (the tip keeps only
+  `crashReportsNoteAlone`), and a pinned `updates.crashReports` drops the crash-report sentence, since those reports
+  aren't on.
 - **Star the repo on GitHub** / **Like Cmdr on AlternativeTo** — the app can't see what happened in a browser, so the
-  row ticks itself `CHECKLIST_TICK_DELAY_MS` (3 s) after the click: long enough not to land while the page is still
-  opening. Both are real checkboxes too, so someone who starred it last week can just say so. The ticks live in
-  `onboarding-state`'s `betaChecklist`, ❌ not in the step, or a Back into step 2 would forget them.
+  row ticks itself `CHECKLIST_TICK_DELAY_MS` (3 s) after the page opened: long enough not to land while it's still
+  loading. The timer starts only once `openExternalUrl` resolves, so a link that never opened never ticks. Both are real
+  checkboxes too, so someone who starred it last week can just say so. The ticks live in `onboarding-state`'s
+  `betaChecklist`, ❌ not in the step, or a Back into step 2 would forget them.
 - **Email address** — an inline field plus a Save button.
 
 Each `<li>` carries `data-checklist-item="analytics" | "star" | "alternativeTo" | "email"`, the way

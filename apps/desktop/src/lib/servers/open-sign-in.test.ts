@@ -495,6 +495,58 @@ describe('the Remember box in sign-in mode', () => {
     await seam
   })
 
+  it('files an S3 place’s secret as its ACCOUNT’s, under the provider its saved entry knows', async () => {
+    // ❗ The listing carries neither the preset nor its fields, so the writer reads the
+    // saved place (`get_known_s3_places`), matched to this volume by the id it publishes.
+    const s3Id = 's3-s3-eu-west-1-amazonaws-com-443-akia-photos'
+    const provider = { kind: 'aws', region: 'eu-west-1' }
+    ipc.mock('list_saved_servers', () => [
+      {
+        ...SAVED_SERVER,
+        id: 's3-root',
+        protocol: 's3',
+        address: 's3.eu-west-1.amazonaws.com',
+        username: 'AKIA',
+        places: [
+          {
+            ...SAVED_SERVER.places[0],
+            volumeId: s3Id,
+            name: 'photos',
+            appRoot: 's3://AKIA@s3.eu-west-1.amazonaws.com:443/photos',
+          },
+        ],
+      },
+    ])
+    ipc.mock('get_known_s3_places', () => [
+      {
+        volumeId: s3Id,
+        provider,
+        accessKeyId: 'AKIA',
+        bucket: 'photos',
+        displayName: '',
+        autoReconnect: true,
+        pinned: true,
+      },
+    ])
+    ipc.mock('save_s3_credentials', () => null)
+    ipc.mock('reconnect_volume_with_credentials', () => null)
+    const seam = openSignInForPlace({ volumeId: s3Id, registered: true })
+    const request = await parkedRequest()
+    if (request.mode !== 'sign-in') throw new Error('unreachable')
+    expect(request.endpoint).toMatchObject({ address: 's3.eu-west-1.amazonaws.com/photos', username: 'AKIA' })
+
+    await attemptOf(request)({ mode: 'sign-in', secret: { secret: 's3cr3t', remember: true }, username: null })
+    expect(ipc.lastCall('save_s3_credentials')?.payload).toMatchObject({
+      provider,
+      accessKeyId: 'AKIA',
+      secret: 's3cr3t',
+    })
+    expect(firstRan('save_s3_credentials')).toBeLessThan(firstRan('reconnect_volume_with_credentials'))
+
+    closeSignInSheet({ kind: 'connected', volumeId: s3Id })
+    await seam
+  })
+
   it('files the secret for an SFTP account whose username is an email address', async () => {
     // ❗ The account is read off the place's `appRoot`, which Rust mints with the
     // username raw. A path that doesn't parse leaves SFTP without a port, so such
@@ -727,6 +779,17 @@ describe('add mode: Add, Add and open, and Add anyway', () => {
       throw { type: 'unreachable', message: "Couldn't reach nas:445" }
     })
     expect(await attemptOf(request)(smb)).toEqual({ kind: 'refused', refusal: 'unreachable' })
+
+    // ERR-XGS9X: this Mac refused the route to a LAN address, which a stuck Local
+    // Network permission does too. Still `unreachable` (Add anyway stays), plus the hint.
+    ipc.mock('connect_to_server', () => {
+      throw { type: 'unreachable', message: "Couldn't reach nas:445", hint: 'local_network_permission' }
+    })
+    expect(await attemptOf(request)(smb)).toEqual({
+      kind: 'refused',
+      refusal: 'unreachable',
+      hint: 'local_network_permission',
+    })
 
     ipc.mock('connect_to_server', () => {
       throw { type: 'invalid_address', message: 'Enter a server address' }

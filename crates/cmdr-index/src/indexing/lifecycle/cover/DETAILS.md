@@ -220,6 +220,14 @@ maintenance timer can't drift between the two. What that start does differently:
   `user_disabled` veto gates it: both stop work the app does uninvited, and a search is a read the user just asked for.
   The carve-out is one condition in `start_indexing_for` (`activation == IndexTheVolume`), so `WriterOnly` is the only
   start that passes a closed gate — and it starts nothing autonomous, which is what makes that safe.
+- **Only for a walk somebody waits on** (`WalkFor::TheUser`). A background walk (`TheIndex`) that finds no running index
+  gets `NoCoverContext::NotIndexing` and doesn't run. Gotcha/Why: the phase machine asks `may_run` and then resolves its
+  context with no lock between them, and nothing joins its driver thread, so a Stop lands in that gap. When the
+  bootstrap was open to it, that late walk stood a `WriterOnly` index up for the drive the user had just stopped
+  (registered for the rest of the session, past both switches), and one landing in the stop's drain rode the drain as a
+  recorded restart, which also skips the veto (issue #375, seen once in 220 stress runs as "scanning" after Stop
+  returned). Pinned deterministically by `phases::walk_gate`, which parks the driver in exactly that gap
+  (`../phases/tests/menu_actions.rs`).
 
 **Active is not indexed.** A writer-only instance makes a volume `is_active` while nothing has ever scanned it, so
 `Index::start_volume` asks `awaits_its_first_scan` (Running, not scanning, no `scan_completed_at`) and force-scans

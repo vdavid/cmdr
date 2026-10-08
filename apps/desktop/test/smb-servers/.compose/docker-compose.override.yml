@@ -16,6 +16,12 @@
 #     headroom (an Alpine + single smbd serving a handful of files sits at tens of MB),
 #     not a squeeze. Top-level form (not `deploy.resources`) so plain `compose up`
 #     outside swarm honors it.
+#   cpus: "1.0" on `smb-consumer-guest` alone: its `public` share is the one every
+#     `cmdr-smb` suite writes to and watches, so its Samba `notifyd` fans each write out
+#     to every watch on the share, including the ones a killed test client leaks for the
+#     container's lifetime. At 0.5 it fell seconds behind when several worktrees' lanes
+#     shared the stack. Measurements: the `.config/nextest.toml` override for
+#     `an_outside_change_in_an_accented_directory_names_the_path_the_pane_opened`.
 #
 # `smb-consumer-flaky` is intentionally excluded: it cycles up and down by design
 # (cycle.sh, no healthcheck), so a restart policy would fight the test it exists to serve.
@@ -28,7 +34,7 @@ services:
   smb-consumer-guest:
     restart: unless-stopped
     mem_limit: 256m
-    cpus: "0.5"
+    cpus: "1.0"
 
   smb-consumer-auth:
     restart: unless-stopped

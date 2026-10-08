@@ -9,12 +9,15 @@ commands, and notable non-obvious placements.
   own typed enum, and a refusal a person reads crosses the throw as a `TypedFailure` (`$lib/ipc/typed-failure.ts`).
 - **`index.ts`**: barrel re-export of everything below.
 - **`file-listing.ts`**: virtual-scroll listing API, batch accessors (`getPathsAtIndices`, `getFilesAtIndices`),
-  `getFileBeside` (the row next to a named one, resolved and read under one backend lock), drag-and-drop, `pathExists`,
-  `createDirectory`, `createFile`, sync status, font metrics, `getBriefColumnTextWidths` (Brief-view column
-  measurement), `setListingIncludeHidden` (the pane's hidden-files setting, which picks its `directory-diff` rows).
+  revision-checked `getSelectionSnapshot` (atomic selected paths and counts; pane protocol in
+  `../file-explorer/pane/DETAILS.md` § Compare directories), `getFileBeside` (the row next to a named one, resolved and
+  read under one backend lock), drag-and-drop, `pathExists`, `createDirectory`, `createFile`, sync status, font metrics,
+  `getBriefColumnTextWidths` (Brief-view column measurement), `setListingIncludeHidden` (the pane's hidden-files
+  setting, which picks its `directory-diff` rows).
 - **`file-viewer.ts`**: viewer session only: open, seek, search (with `useRegex` / `caseSensitive` modes), close, word
   wrap menu, `viewerSetSearchInputFocused` (the search box's claim on the viewer bar's Edit > Cut / Paste), encoding
-  pickers (`viewerSetEncoding` / `viewerGetEncodingOptions`), tail mode (`viewerSetTailMode`), `viewerReload`.
+  pickers (`viewerSetEncoding` / `viewerGetEncodingOptions`), tail mode (`viewerSetTailMode`), `viewerReload`, and
+  `showViewerContextMenu` (the native right-click menu).
 - **`file-actions.ts`**: open file/URL, Finder reveal, Quick Look, Get Info, context menu (file / breadcrumb /
   volume-selector-row / parent-row), clipboard, the text editor pair, cloud actions (`cloudMakeAvailableOffline` /
   `cloudRemoveDownload`, iCloud Drive only), `googleDriveLinks` (a Drive item's `viewUrl` plus its `geminiUrl`, or
@@ -54,6 +57,12 @@ commands, and notable non-obvious placements.
 - **`write-operations.ts`**: copy/move/delete, conflict resolution, scan preview. (Size/duration formatting moved to
   `$lib/units`.)
 - **`rename.ts`**: `checkRenamePermission`, `checkRenameValidity`, `renameFile`, `moveToTrash`.
+- **`mutation-reply.ts`**: `awaitMutation` (behind `renameFile`, `createDirectory`, `createFile`) and
+  `awaitClipboardPaste` (behind `pasteClipboardAsFile`, which also carries the created file). Those commands answer
+  `stillRunning` past their deadline, and this waits for the matching `mutation-settled` event, so the promise resolves
+  or throws with the real end, and `onStillRunning` tells the caller when to say the volume is slow. It listens BEFORE
+  invoking, since the event can overtake the reply. Backend: `write_operations/DETAILS.md` § "A slow instant mutation
+  says it is still running".
 - **`operations.ts`**: the operation manager (queue window): `listOperations`, `cancelOperation(s)`, `pauseOperation` /
   `resumeOperation`, `pauseAll` / `resumeAll`, `dismissFailedOperation` / `dismissAllFailedOperations`, and the
   `onOperationsChanged` membership/status event.
@@ -86,8 +95,17 @@ commands, and notable non-obvious placements.
 - **`webdav.ts`**: WebDAV servers minus connecting: cancel, disconnect, the saved-server list, the password store, and
   the unattended-reconnect query. No host-key step. The contract: `crates/cmdr-webdav/DETAILS.md` § "Connecting from the
   frontend". Reconnect and sign-in use the same three backend-neutral `networking.ts` commands SFTP does.
+- **`s3.ts`**: S3 accounts minus everything the servers family already speaks (connect, cancel, disconnect, pin, forget
+  all take S3 places): the ACCOUNT's secret trio, keyed on the provider choice plus the access key id, so every bucket
+  under one key shares it, and the unattended-reconnect query. The model and every connect outcome:
+  `crates/cmdr-s3/DETAILS.md`. Also `estimateOperationCost`, the list-price estimate the Copy, Move, and Delete dialogs
+  ask once their scan preview settles (`apps/desktop/src-tauri/src/s3_costs/DETAILS.md`).
 - **`licensing.ts`**: license status, activation, expiry, server validation.
 - **`settings.ts`**: port checking, file watcher debounce, indexing toggle, MCP server control, AI subsystem commands.
+  `cloudAiHostVerdicts(baseUrls)` answers each URL with the policy's own `ManagedAiRefusal | null` (local, no request).
+  `startAiServer` and `startAiDownload` are raw invokes (generic commands specta skips), so their typed `LocalAiError`
+  rejection arrives as `unknown`: `$lib/ai/local-ai-error.ts` restores it.
+- **`logging.ts`**: `getDebugLogPath`, the log file this session writes (Help > View debug log).
 - **`tab.ts`**: tab context menu: `showTabContextMenu`, `onTabContextAction`.
 - **`function-key-bar.ts`**: the function key bar's one-item context menu: `showFunctionKeyBarContextMenu`,
   `onFunctionKeyBarHideRequested` (payload-less; the frontend owns the setting write and the toast).
@@ -108,6 +126,8 @@ commands, and notable non-obvious placements.
 - **`menu-events.ts`**: `onViewModeChanged` / `onMenuSort` / `onMediaIndexFolderExclusion` / `onMediaIndexFolderChoice`
   over the direct (non-`execute-command`) native-menu events. The two media-index ones carry the right-clicked folder
   plus its target state; `listener-setup.ts` routes each into the ONE FE helper that also backs the Settings list.
+  `onOpenWithCopyRefused` carries an "Open with" launch that couldn’t copy its file out of an archive or a repo’s
+  history, for `../file-explorer/open-with-refused-bridge.ts`.
 - **`directory-watcher.ts`**: `onDirectoryDiff` / `onDirectoryDeleted` over the file-watcher events (`onDirectoryDiff`
   casts the generated payload to the FE `DirectoryDiff` whose `entry` is the FE `FileEntry`).
 - **`native-drag.ts`**: `onDragImageSize` / `onDragModifiers` (macOS drag overlay) + `onDragOutSessionStarted` /
@@ -127,6 +147,7 @@ commands, and notable non-obvious placements.
   `…Confirmation`, `onCloseAllFileViewers`, `onMcpSettingsClose`), `requestOpenSettings` (emit `open-settings` so the
   main window opens Settings on behalf of a window without window-creation perms), `onViewerWordWrapToggled`,
   `onViewerEditAction` (the viewer bar's Edit > Copy / Select all, which the viewer runs itself),
+  `onViewerContextMenuAction` (the same pair from its right-click menu, always over the file),
   `onPersistRestrictedSetting`, and `requestForegroundOperation` / `onForegroundOperationRequested` (the queue window
   asking the main window to show one operation in its progress dialog; the payload is the id alone, because the registry
   snapshot both windows receive is the truth about everything else), and `onMouseNav` (macOS reads the mouse's back /
@@ -138,8 +159,10 @@ commands, and notable non-obvious placements.
   `addRecentPath`, `removeRecentPath`).
 - **`tags.ts`**: macOS Finder color tags: `toggleTags` (toggle a color across paths) and `enrichTags` (patch fresh tag
   data into a cached listing).
-- **`updates.ts`**: macOS custom updater: `checkForUpdate` / `updateWriteBlocker` / `downloadUpdate` / `installUpdate`
-  (see `$lib/updates/updater.svelte.ts` for the full flow and the non-macOS Tauri-plugin fallback).
+- **`updates.ts`**: macOS custom updater: `checkForUpdate(trigger)` (a typed `UpdateCheckOutcome`, managed policy
+  applied) / `updateWriteBlocker` / `downloadUpdate()` (no URL: the backend fetches what it offered) / `installUpdate`
+  (throws `UpdateInstallFailure`) (see `$lib/updates/updater.svelte.ts` for the full flow and the non-macOS Tauri-plugin
+  fallback).
 - **`debug.ts`**: dev/benchmark IPC: `benchmarkLog` (join a frontend timing into the Rust benchmark timeline).
 - **`usage.ts`**: `getLaunchDayCount`, the gate for usage-gated hints ("you've used Cmdr for a few days now"). Reads the
   on-device launch-day ledger Rust appends at startup; answers 0 when it can't, so a hint stays silent rather than
@@ -149,8 +172,16 @@ commands, and notable non-obvious placements.
   `addCmdrToDock`. Both turn an unreachable backend into a typed answer rather than a throw — `preferencesUnreadable`
   and `timedOut` — because their callers are a startup gate and a toast button, neither of which can hold an exception.
   `../../../src-tauri/src/dock/CLAUDE.md`.
+- **`notifications.ts`**: `getNotificationPermission` (whether macOS will show Cmdr's banners; an unreachable backend
+  reads as `unknown`) and `showNotification` (passes the typed `Result` through). Feature code calls
+  `sendMacosNotification` in `$lib/notifications/` instead, which combines the two and never throws. Why the permission
+  goes to `UNUserNotificationCenter`: the module doc of `../../../src-tauri/src/notifications.rs`.
 - **`crash-reporter.ts`**: next-launch crash preview, dismiss, and send. Send crosses IPC with the preview's report id
   and separately consented optional email only; the backend-owned pending file remains the payload authority.
+- **`error-reporter.ts`**: the error-report preview, send, and `saveErrorReportToDisk` (a command in every build: it's
+  the only action when the organization turned reports off, `../error-reporter/DETAILS.md`).
+- **`managed-policy.ts`**: the organization's MDM policy for the UI: `getManagedPolicy` and `onManagedPolicyChanged`,
+  both carrying `ManagedPolicyView`. Its one caller loads the barrel lazily (`../managed-policy/CLAUDE.md`).
 
 ## Where to put new commands
 
@@ -166,18 +197,38 @@ commands, and notable non-obvious placements.
 - MTP/Android → `mtp.ts`.
 - SFTP servers → `sftp.ts`.
 - WebDAV servers → `webdav.ts`.
+- S3 accounts → `s3.ts`.
 - Licensing → `licensing.ts`.
 - Settings/AI → `settings.ts`.
 - Clipboard file operations (copy/cut/paste files via system clipboard) → `clipboard-files.ts`.
 - Drive indexing (status, enable/disable/rescan) → `indexing.ts`.
 - Git browser (repo info, live state subscription, per-path status) → `git.ts`.
 - Downloads watcher (status, go-to-latest, global hotkey) → `downloads.ts`.
+- Native system notifications (send, macOS permission) → `notifications.ts`.
 - "Reveal in Cmdr" (`NSFileViewer` registration, the cold-start drain) → `reveal.ts`.
 - ⌘G path resolution and recent paths → `go-to-path.ts`.
 - macOS Finder color tags → `tags.ts`.
 - App updater → `updates.ts`.
 - OS appearance/environment reads → `appearance.ts`.
 - Dev/benchmark IPC → `debug.ts`.
+
+## Unused wrappers and commands
+
+Every exported function or const in a sub-file needs a production caller outside this folder, and every `commands.*`
+entry in `$lib/ipc/bindings` needs a live caller; otherwise it's deleted, wired up, or allowlisted with a reason in
+`scripts/check/checks/desktop-ipc-unused-allowlist.json`. The `desktop-ipc-unused` check (fast lane) enforces both,
+because nothing else can: knip counts the barrel's re-exports as uses, and rustc never calls a registered command
+unused. Before it existed, 37 dead commands and 28 dead wrappers piled up (`docs/notes/ipc-dead-code-audit.md`).
+
+- **Counts as a caller**: an import from `$lib/tauri-commands` (static, `await import(…)` with destructuring, or a
+  re-export) in a non-test file; `commands.<name>` outside this folder or inside a live wrapper; a raw `invoke('name')`
+  in production code or E2E (`test/e2e-*`). An export a sibling sub-file imports (`throwIpcError`) is folder plumbing
+  and counts too.
+- **Doesn't count**: test files, `test-*` harnesses, `vi.fn()` mocks, comments, and a wrapper calling a command when
+  that wrapper is itself unused (both get reported).
+- **Allowlisting**: an allowlisted wrapper covers the commands it calls. A surface shipped ahead of its UI, or a feature
+  missing its UI, gets an entry naming why; the check drops entries that gained a caller. Mechanics:
+  `scripts/check/checks/DETAILS.md` § "IPC dead code".
 
 ## Notable non-obvious placements
 

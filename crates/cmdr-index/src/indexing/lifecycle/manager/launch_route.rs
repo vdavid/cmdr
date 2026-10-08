@@ -54,6 +54,10 @@ pub(super) struct IndexOnDisk {
     /// from (`store::INDEX_NEEDS_REBUILD_KEY`), so nothing else it says about
     /// itself can be trusted.
     pub needs_rebuild: bool,
+    /// The index's rows were written under an exclusion policy this build no
+    /// longer applies (`scanner::index_predates_exclusion_policy`). Nothing in it
+    /// counts as covered, and rows the current policy cuts may still sit in it.
+    pub predates_exclusion_policy: bool,
 }
 
 /// Route one launch. The table, top to bottom:
@@ -64,6 +68,10 @@ pub(super) struct IndexOnDisk {
 ///   or reconciling in place over it would carry the holes forward. With the
 ///   phased switch off there is no machine to rebuild into, so it walks whole,
 ///   which is the same repair by the other path;
+/// - a populated index built under an older exclusion policy ⇒ the same rebuild,
+///   for the same reason: it can look finished while holding rows the current
+///   policy cuts, and only a truncating walk re-stamps the policy, so replaying
+///   or reconciling would leave its coverage distrusted for good;
 /// - a replayable journal with too wide a gap ⇒ walk it whole (today's behavior,
 ///   and reachable only on a volume that already completed a scan);
 /// - a replayable journal ⇒ replay;
@@ -79,7 +87,7 @@ pub(super) struct IndexOnDisk {
 /// - anything else ⇒ cover in phases. That is every never-completed index: a
 ///   fresh install, a phased partial, and a volume a search walked.
 pub(super) fn launch_route(index: &IndexOnDisk) -> LaunchRoute {
-    if index.needs_rebuild {
+    if index.needs_rebuild || (index.has_rows && index.predates_exclusion_policy) {
         return if index.phased_first_index {
             LaunchRoute::RebuildThenCoverInPhases
         } else {
@@ -116,6 +124,7 @@ mod tests {
         journal_gap_too_wide: false,
         phased_first_index: true,
         needs_rebuild: false,
+        predates_exclusion_policy: false,
     };
 
     /// A volume the phase machine covered part of and never finished: rows, no
@@ -283,6 +292,52 @@ mod tests {
                 ..COMPLETED_JOURNALED
             }),
             LaunchRoute::ScanTheVolume
+        );
+    }
+
+    /// ❗ An index built under an older exclusion policy is rebuilt, however
+    /// finished it looks. A journal replay would keep every row the current policy
+    /// cuts (a mount the boot index now stops at, say) and leave coverage
+    /// distrusted for good, because only a truncating walk re-stamps the policy.
+    #[test]
+    fn an_index_built_under_an_older_exclusion_policy_is_rebuilt() {
+        for (finished, what) in [
+            (
+                COMPLETED_JOURNALED,
+                "a journal replay keeps the rows the new policy cuts",
+            ),
+            (COMPLETED_UNJOURNALED, "a reconcile in place never re-stamps the policy"),
+        ] {
+            assert_eq!(
+                launch_route(&IndexOnDisk {
+                    predates_exclusion_policy: true,
+                    ..finished
+                }),
+                LaunchRoute::RebuildThenCoverInPhases,
+                "{what}"
+            );
+        }
+        assert_eq!(
+            launch_route(&IndexOnDisk {
+                predates_exclusion_policy: true,
+                phased_first_index: false,
+                ..COMPLETED_JOURNALED
+            }),
+            LaunchRoute::ScanTheVolume,
+            "with the phases off it walks whole, and `start_scan` truncates an index that predates the policy"
+        );
+    }
+
+    /// An empty index has nothing an older policy could have let in, so a stale
+    /// or absent stamp on it changes nothing: the walk about to run stamps it.
+    #[test]
+    fn an_empty_index_with_an_old_stamp_routes_as_usual() {
+        assert_eq!(
+            launch_route(&IndexOnDisk {
+                predates_exclusion_policy: true,
+                ..FRESH
+            }),
+            LaunchRoute::CoverInPhases
         );
     }
 }

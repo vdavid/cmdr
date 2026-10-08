@@ -42,6 +42,12 @@ When Finder accepts a promise drop, it calls the delegate per item:
 mkdir → per-file stream), because the cross-volume copy engine derives landed names from source basenames and can't
 target a Finder-renamed root.
 
+**Listed names are untrusted**: the folder walk joins each listed child name under the destination only as a
+`ChildName`, so a hostile server or device listing `../x` fails the fulfillment (the cleanup contract below removes what
+it created) instead of writing outside the Finder-chosen folder. The mechanism and why:
+`apps/desktop/src-tauri/src/file_system/write_operations/transfer/volume/DETAILS.md` § "Listed names are untrusted".
+Pinned by `folder_with_a_listed_name_that_climbs_out_is_refused`. The tests live in `fulfillment_test.rs`.
+
 **Cleanup contract (load-bearing)**: on ANY `Err`, the destination this fulfillment created is removed before
 returning. `LocalPosixVolume::write_from_stream` self-cleans its partial ONLY on the cancel branch, NOT on a propagated
 source-read error (device unplugged mid-stream), exactly the promise failure mode. So the service removes the partial

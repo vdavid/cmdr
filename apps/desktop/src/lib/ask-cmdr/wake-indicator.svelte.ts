@@ -68,6 +68,8 @@ export function wakeIndicatorMode(state: WakeIndicatorState): WakeIndicatorMode 
 
 let unlisten: UnlistenFn | null = null
 let unsubscribeSetting: (() => void) | null = null
+/** Bumped per event, so the seed can tell an event arrived while its read was in flight. */
+let eventsSeen = 0
 
 /** Seed the indicator and subscribe. Call once at app init, from the main window only. */
 export async function startWakeIndicator(): Promise<void> {
@@ -77,16 +79,24 @@ export async function startWakeIndicator(): Promise<void> {
     wakeIndicator.proactive = value
   })
   unlisten = await onAgentWakeStatus((status) => {
+    eventsSeen++
     wakeIndicator.thinkingIn = status.phase.phase === 'thinking' ? status.phase.conversationId : null
     wakeIndicator.readiness = status.readiness
   })
   await seedFromBackend()
 }
 
-/** Read the current status once, for the moves no event will announce to this window. */
+/**
+ * Read the current status once, for the moves no event will announce to this window.
+ *
+ * Any event that lands while the read is in flight is newer than it, so the seed loses to it:
+ * otherwise a wake starting during startup would be overwritten by the idle state read before it.
+ */
 async function seedFromBackend(): Promise<void> {
+  const eventsBefore = eventsSeen
   try {
     const status = await agentWakeStatus()
+    if (eventsSeen !== eventsBefore) return
     wakeIndicator.thinkingIn = status.phase.phase === 'thinking' ? status.phase.conversationId : null
     wakeIndicator.readiness = status.readiness
   } catch (e) {

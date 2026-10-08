@@ -66,6 +66,10 @@ impl VolumeReadStream for GatedChunkStream {
     fn bytes_read(&self) -> u64 {
         self.emitted
     }
+
+    fn modified_at(&self) -> Option<std::time::SystemTime> {
+        None
+    }
 }
 
 /// Source volume: metadata / listing / scan delegate to an `InMemoryVolume`, but

@@ -530,6 +530,21 @@ describe('Select a11y', () => {
     await tick()
     await expectNoA11yViolations(target)
   })
+
+  it('a disabled item stays listed but disabled, with no a11y violations', async () => {
+    const target = container()
+    const items: SelectItem[] = [
+      { value: 'auto', label: 'Auto' },
+      { value: 'binary', label: 'Binary (KiB, MiB)', description: 'not available here', disabled: true },
+    ]
+    mount(Select, { target, props: { items, value: 'auto', onChange: () => {}, ariaLabel: 'File size format' } })
+    await tick()
+    const option = target.querySelector<HTMLOptionElement>('select option[value="binary"]')
+    expect(option).not.toBeNull()
+    expect(option?.disabled).toBe(true)
+    expect(target.querySelector<HTMLOptionElement>('select option[value="auto"]')?.disabled).toBe(false)
+    await expectNoA11yViolations(target)
+  })
 })
 
 /**

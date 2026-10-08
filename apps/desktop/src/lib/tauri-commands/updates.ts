@@ -3,18 +3,13 @@
 // `$lib/updates/updater.svelte.ts` for the full flow, including the non-macOS
 // Tauri-plugin fallback). Plus the cross-platform background-check schedule.
 
-import { commands, type BundleWriteBlocker } from '$lib/ipc/bindings'
+import { commands, type BundleWriteBlocker, type UpdateCheckOutcome, type UpdateCheckTrigger } from '$lib/ipc/bindings'
 import { throwServerRequestError } from '$lib/error-messages/server-request'
+import { UpdateDownloadFailure } from '$lib/updates/update-download-failure'
+import { UpdateInstallFailure } from '$lib/updates/update-install-failure'
 import { throwIpcError } from './ipc-types'
 
-export type { BundleWriteBlocker }
-
-/** Metadata for an available update. */
-export interface UpdateCheckResult {
-  version: string
-  url: string
-  signature: string
-}
+export type { BundleWriteBlocker, UpdateCheckOutcome, UpdateCheckTrigger }
 
 /**
  * Whether the running bundle sits somewhere an update can be written into, or `null` when nothing
@@ -28,25 +23,32 @@ export async function updateWriteBlocker(): Promise<BundleWriteBlocker | null> {
 }
 
 /**
- * Fetches `latest.json` and returns update info if a newer version is available, else `null`. A check that doesn't
- * land throws a `ServerRequestFailure`, which the updater words and logs at the level it earns.
+ * Fetches `latest.json` and answers what it found, with the organization's policy applied (the backend decides; a
+ * managed outcome is an answer, not a failure). `trigger` tells the backend whether this is a background check. A check
+ * that doesn't land throws a `ServerRequestFailure`, which the updater words and logs at the level it earns.
  */
-export async function checkForUpdate(): Promise<UpdateCheckResult | null> {
-  const res = await commands.checkForUpdate()
+export async function checkForUpdate(trigger: UpdateCheckTrigger): Promise<UpdateCheckOutcome> {
+  const res = await commands.checkForUpdate(trigger)
   if (res.status === 'error') throwServerRequestError(res.error)
   return res.data
 }
 
-/** Downloads the update tarball and verifies its minisign signature. */
-export async function downloadUpdate(url: string, signature: string): Promise<void> {
-  const res = await commands.downloadUpdate(url, signature)
-  if (res.status === 'error') throwIpcError(res.error)
+/**
+ * Downloads the update the last check offered and verifies its minisign signature. A download that doesn't land throws
+ * an `UpdateDownloadFailure`, which the updater logs at the level it earns.
+ */
+export async function downloadUpdate(): Promise<void> {
+  const res = await commands.downloadUpdate()
+  if (res.status === 'error') throw new UpdateDownloadFailure(res.error)
 }
 
-/** Installs a previously downloaded update by syncing files into the running `.app` bundle. */
+/**
+ * Installs the downloaded update by syncing files into the running `.app` bundle. A refusal or failure throws an
+ * `UpdateInstallFailure`.
+ */
 export async function installUpdate(): Promise<void> {
   const res = await commands.installUpdate()
-  if (res.status === 'error') throwIpcError(res.error)
+  if (res.status === 'error') throw new UpdateInstallFailure(res.error)
 }
 
 /**

@@ -10,8 +10,10 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   command module".
 - **`file_system/`**: directory module split by operation type. `mod.rs` has `expand_tilde()`, re-exports, tests.
   `listing.rs`: streaming + virtual-scroll listing, path queries, `find_first_fuzzy_match` (type-to-jump),
-  benchmarking, `get_brief_column_text_widths` (per-column widest-filename text widths for Brief mode). `refresh_listing`
-  takes a `force` flag. Unforced (the post-write top-ups: transfer, rename, mkdir) it short-circuits on fully-covered
+  benchmarking, `get_brief_column_text_widths` (per-column widest-filename text widths for Brief mode). The guarded
+  row commands (`resort_listing`, `set_listing_include_hidden`, `get_selection_snapshot`) delegate to the
+  listing subsystem; their committed-revision contract is `../file_system/listing/DETAILS.md` § "Diff event coalescing".
+  `refresh_listing` takes a `force` flag. Unforced (the post-write top-ups: transfer, rename, mkdir) it short-circuits on fully-covered
   listings (`Volume::listing_watch_coverage(path) == WatchCoverage::EveryWriter`), because the cache is kept fresh by
   `notify_mutation` and a redundant full re-read after every transfer (the FE's `refreshPanesAfterTransfer`) wedges slow
   volumes (MTP 17 s + USB session collision). Forced (⌘R and the MCP `refresh` tool) it always re-reads: `EveryWriter`
@@ -52,12 +54,15 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   `resolve_path_volume_fast` alone would return `None` for `smb://` / `mtp://` paths, so don't bypass the shared body.
 - **`volumes_linux.rs`** (Linux): same interface as `volumes.rs` (including `resolve_location`), delegates to the
   `volumes_linux` module.
-- **`mtp.rs`**: full MTP command surface (connect, disconnect, list, download, upload, delete, rename, move, scan).
+- **`mtp.rs`**: the MTP on/off switch, the dial (`connect_mtp_device`), and the ptpcamerad workaround text. Browsing
+  and file operations go through `MtpVolume`, and the device list reaches the frontend as volumes.
 - **`sftp.rs`**: the SFTP surface minus connecting (that's `servers.rs`, below) and minus editing a saved entry
   without connecting (`servers.rs`'s `update_saved_server` calls `sftp_volume_wiring::save_without_connecting`
-  directly now): `cancel_sftp_connect`, `disconnect_sftp_volume`, `approve_sftp_host_key` / `forget_sftp_host_key` /
-  `list_trusted_sftp_host_keys`, the credential trio (`save` / `has` / `delete`, keyed `host:port` + username, each on
-  a blocking task because the Keychain can prompt), and the known-servers pair (`get` / `forget`). ❗ There is
+  directly now): `approve_sftp_host_key` / `forget_sftp_host_key` / `list_trusted_sftp_host_keys`,
+  `save_sftp_credentials` (keyed `host:port` + username, on a blocking task because the Keychain can prompt; its
+  `has` / `delete` siblings are crate-internal, reached through `servers.rs`'s `has_server_secret` /
+  `forget_server_secret`), and `get_known_sftp_servers`. Cancelling, disconnecting, and forgetting are `servers.rs`'s
+  protocol-agnostic `cancel_server_connect` / `disconnect_place` / `forget_server`. ❗ There is
   deliberately no command that returns a stored secret. The flow behind the commands is `network::sftp_volume_wiring`;
   the frontend contract is `crates/cmdr-sftp/DETAILS.md` § "Connecting from the frontend".
   - ❗ **Reconnecting an SFTP volume, and asking what a sign-in would want, both go through `network.rs`**:
@@ -66,15 +71,18 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   - ❗ **The connect outcome (`ServerConnectOutcome`, below) carries no rung**, and nothing about a later sign-in: the
     rung is a fact about that dial, and what a sign-in would ask for is decided per dial too, so it is a query
     (`get_sftp_unattended_reconnect`), not a payload.
-  - ❗ **`cancel_sftp_connect` takes the CALLER's own `attempt_id`, made before the connect call.** The connect command
+  - ❗ **`cancel_server_connect` takes the CALLER's own `attempt_id`, made before the connect call.** The connect command
     doesn't answer for up to 30 s, so an id it returned would be useless for arming a cancel button. The table behind
     it: `network/DETAILS.md` § "The attempt table, and why the id is the caller's".
 - **`webdav.rs`**: the WebDAV surface minus connecting and minus editing without connecting, shaped like `sftp.rs`
-  minus host keys: `cancel_webdav_connect`, `disconnect_webdav_volume`, the credential trio (`save` / `has` /
-  `delete`, keyed `scheme://host:port` + username), the known-servers pair (`get` / `forget`), and
-  `get_webdav_unattended_reconnect`. Same rules as SFTP: the `attempt_id` is the caller's, reconnect and sign-in go
+  minus host keys: `save_webdav_credentials` (keyed `scheme://host:port` + username; `has` / `delete` are
+  crate-internal, like SFTP's), `get_known_webdav_servers`, and `get_webdav_unattended_reconnect`. Same rules as SFTP: the `attempt_id` is the caller's, reconnect and sign-in go
   through `network.rs`, and no command returns a stored secret. The flow is `network::webdav_volume_wiring`; the
   contract is `crates/cmdr-webdav/DETAILS.md` § "Connecting from the frontend".
+- **`s3.rs`**: the S3 surface the facade has no reason to widen: the ACCOUNT's secret (`save` / `has` / `delete`, keyed
+  `s3+<scheme>://<host>:<port>` + the access key id, shared by every bucket under the key), `get_known_s3_places` (each
+  saved place with its provider, which an edit sheet resends), and `get_s3_unattended_reconnect`. Connecting, saving,
+  pinning, and forgetting all go through `servers.rs`. The flow is `network::s3_volume_wiring`.
 - **`servers.rs`**: the protocol-agnostic server family, a FACADE over the three above. The hub, the switcher, the
   sign-in sheet, and the pane banner speak about servers rather than about SFTP, WebDAV, and SMB, so this is the
   surface they call: `list_saved_servers` (the union of the two saved-server stores plus SMB hosts from
@@ -140,9 +148,11 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   - **This family is where a NEW backend plugs in**, and that is why it exists as a facade over correct, tested
     per-protocol enums rather than as a rewrite of them: one more `ServerTarget` arm, one more saved-server store, and
     whatever outcomes the protocol adds to the superset. The frontend then branches once, in a `switch` it already has.
-    S3 is the shape this was sized against: its account is an endpoint plus an access key, its places are buckets, and
-    its sign-in is the reserved `SignInShape::AccessKeys` variant (`crates/cmdr-fs/src/volume/connection.rs`, and
-    `apps/desktop/src/lib/servers/DETAILS.md` § "The renderer table").
+    S3 plugged in that way: its account is an endpoint plus an access key, its places are buckets (plus the account root),
+    and its sign-in is `SignInShape::AccessKeys`. The listing groups an account's places under ONE `SavedServer` whose
+    id is the account root's place id, the SMB host → shares shape (`servers/s3_accounts.rs`); every per-place command
+    takes the place's own volume id. Its outcomes add `access_denied`, `bucket_list_refused`, `bucket_not_found`,
+    `region_mismatch`, `clock_skewed`, and `not_an_s3_endpoint`, with a wrong secret reusing `authentication_rejected`.
 - **`network.rs`**: SMB/network shares: discovery, share listing, keychain, mounting, direct-connection upgrade,
   in-place reconnect (`reconnect_volume`: backend single-flighted via `Volume::attempt_reconnect`;
   `reconnect_volume_with_credentials`: the "Sign in" path after an auth-failure reconnect give-up, via
@@ -172,16 +182,18 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   `smb2::Diagnostics` & friends with `specta::Type` derives (so `smb2` needn't depend on specta), one `impl From` per
   type.
 - **`memory_diagnostics.rs`** (macOS only): `get_memory_diagnostics(sizes_per_tag)`, one payload answering "what is
-  Cmdr holding right now, and what shape is it in?". Folds `cmdr_fs::process_memory`'s four readers together: the
-  footprint, mimalloc's own accounting, the registered malloc zones, and the kernel's VM map by tag with a per-tag
+  Cmdr holding right now, and what shape is it in?". Folds `cmdr_fs::process_memory`'s readers together: the
+  footprint, the Rust heap from whichever allocator is global, the malloc zones beyond it, and the kernel's VM map by tag with a per-tag
   region-size histogram. That last field is why it exists: a repeated exact region size is a fingerprint of whatever
   asked for those bytes, and it is what produced the first real candidate for a 643 MB block three investigations had
   left anonymous (`../../../../../docs/notes/performance/idle-malloc-large-clip-towers-2026-08-21.md`). `sqlitePageCache` adds the
   fifth accountant, `cmdr_fs::sqlite_util::query_page_cache_usage` plus `live_read_connections`: SQLite's page slab is a
-  leaked Rust allocation, so it's a fixed 64 MiB inside the mimalloc total that no other field names, and the whole
-  point of one payload is that nobody has to know to go ask SQLite separately. `rustHeapCensus` splits the Rust heap
-  into live data and allocator slack (`cmdr_fs::process_memory::query_heap_census` read against the VM map's tag-100
-  bytes), the only way to tell "the program holds this" from "mimalloc holds this". Deliberately NOT
+  leaked Rust allocation, so it's a fixed 64 MiB inside the Rust heap total that no other field names, and the whole
+  point of one payload is that nobody has to know to go ask SQLite separately. `rustHeap` is tagged by `allocator`,
+  because the two allocators' numbers mean different things: the mimalloc variant carries a page census split into
+  live data and slack, the system one the default zone's live and reserved bytes plus a malloc-wide resident/slack
+  split (`cmdr_fs::process_memory::query_rust_heap_snapshot`; `crates/cmdr-fs/DETAILS.md` § "Which global
+  allocator"). Deliberately NOT
   `debug_assertions`-gated:
   the readings that matter come from a shipped build under a real workload, which is the one condition a debug-only
   command can't reach. Carries no paths or names, only counts. Runs off the IPC thread (one syscall per map entry) with
@@ -208,11 +220,13 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   to update the listing cache (both local and volume-aware paths). ❗ `check_rename_validity` and
   `check_rename_permission` stay UNMANAGED: they answer while someone is typing, so they take the snappy read-only path
   instead of `manager::run_instant`, which busy-marks the volume for a mutation that isn't happening yet.
-  Both `check_rename_validity` and `rename_file` size their wait with `deadline::io_budget_for_volume`: on a live
-  session a stalled `stat` or rename once failed the user's rename with `TimedOut` (validity) or reported a rename that
-  landed as failed.
+  `check_rename_validity` sizes its wait with `deadline::io_budget_for_volume`: on a live session a stalled `stat` once
+  failed the user's rename with `TimedOut`. `rename_file` has no timeout answer at all: see the next bullet.
 - **`volume_id` on the write commands.** `create_directory` / `create_file` / `rename_file` only expand tilde (root),
-  resolve the `volume_id`, and apply the 5 s write timeout, shipping the typed `MutationError` unchanged; the logic and the managed instant op live
+  resolve the `volume_id`, and answer within `MUTATION_REPLY_DEADLINE` (2 s) through `write_operations::reply_within`:
+  `Done`, the typed `MutationError`, or `StillRunning { pendingId }` with the real end following on `mutation-settled`
+  (`../file_system/write_operations/mutation_reply.rs`). Each has a `*_replying` twin taking the settle delivery, which the tests and
+  the MCP rename tool call; the logic and the managed instant op live
   in `file_system::write_operations::{create,rename}`. For a non-root `volume_id`, `delete_files` uses the volume-aware
   delete and skips local `validate_sources` (MTP virtual paths fail `symlink_metadata`), and `rename_file` passes the id
   through. The local rename notifies the listing cache via `notify_rename_in_listing`, the volume one via its own
@@ -231,6 +245,8 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
 - **`file_viewer.rs`**: session lifecycle, regex/literal search with mode flags, word wrap, menu state (including
   `viewer_set_search_input_focused`, which greys the viewer bar's Edit > Cut / Paste with its search box), encoding
   pickers (`viewer_set_encoding` / `viewer_get_encoding_options`), tail mode (`viewer_set_tail_mode`), `viewer_reload`.
+  `viewer_get_lines` runs through `get_lines_within`, which flips the fetch's cancel flag when its deadline fires
+  (`file_viewer/DETAILS.md` § Tauri commands).
 - **`menu.rs`**: the context-menu popups (file / breadcrumb / parent row / tab / network host / function key bar),
   plus `update_menu_context`.
 - **`menu_state.rs`**: the pushes that keep the menu BAR in step with the frontend: the view-mode + hidden-files +
@@ -309,7 +325,7 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
 - **`licensing.rs`**: status query, activation, expiry, reminder, key validation.
 - **`whats_new.rs`**: `get_whats_new(since_version, max)` (release entries for the What's New dialog) and
   `whats_new_dev_override` (dev-only).
-- **`indexing.rs`**: `start_drive_index`, `stop_drive_index`, `get_index_status`, `get_dir_stats`,
+- **`indexing.rs`**: `start_drive_index`, `get_index_status`, `get_dir_stats`,
   `get_dir_stats_batch`, `clear_drive_index`, `set_indexing_enabled`, `get_index_debug_status` (dev-only). Uses
   `State<IndexManagerState>`. Two of these carry the MASTER drive-indexing switch (the model lives in
   `indexing/lifecycle/DETAILS.md` § The two indexing switches): `set_indexing_enabled` moves the gate first, then stops
@@ -355,7 +371,9 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   report and so takes no id (it resolves the target from the stash, then supplies
   `error_report_amend_url(id)` the way the send path supplies its own URL). `flow_a_request` is the single place note validation, id reuse, and wrapping an address in
   `AttachedEmail` happen. Uploads use localhost in debug builds and skip network only in CI and E2E builds. The two preview commands are dispatch-only (a `BundleManifest`
-  holds a `serde_json::Value`, which specta can't describe), so the frontend reaches them by raw invoke.
+  holds a `serde_json::Value`, which specta can't describe), so the frontend reaches them by raw invoke. Every upload
+  (send, amend, `send_crash_log_report`) asks `server_request::check_policy` first, so a managed
+  `DisableCrashAndErrorReports` refuses it typed: `../managed_policy/DETAILS.md` § "Where the gates live".
 - **`analytics.rs`**: `track_event(name, props_json)`, a thin pass-through to `events::capture` for the open set of
   frontend feature events. No capability entry; the PII-free prop contract lives in `analytics/CLAUDE.md`.
 - **`usage.rs`**: `get_launch_day_count()`, the read seam over the on-device launch-day ledger, so the frontend can gate
@@ -369,7 +387,8 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
 - **`selection.rs`**: Selection-dialog backend (parallel to `search.rs`), thin wrappers over `crate::selection`:
   `translate_selection_query` (AI translation via `crate::ai` + `crate::selection::ai`) plus the recent-selections
   history (`get_recent_selections`, `add_recent_selection`, `remove_recent_selection`, `clear_recent_selections`,
-  `apply_recent_selections_max_count`).
+  `apply_recent_selections_max_count`). The request's words never reach the log, only its length
+  (`selection_request_for_log`): the file log is always debug, and an error report carries it.
 - **`go_to_path.rs`**: the "Go to path" quick-nav surface: `resolve_go_to_path(input, base_dir)` plus recent-paths
   history (`get_recent_paths`, `add_recent_path`, `remove_recent_path`, `clear_recent_paths`).
 - **`sync_status.rs`**: `get_sync_status`: macOS delegates to `file_system::sync_status`; non-macOS returns an empty map
@@ -475,7 +494,7 @@ An IPC deadline is a promise about the REPLY, not permission to abandon half-wri
 fut)` breaks that: when the deadline fires it drops `fut` wherever it happens to be.
 
 For anything that can reach a device backend (any command taking a `volume_id`: `rename_file`,
-`check_rename_validity`, `scan_for_volume_copy`, `scan_volume_for_conflicts`), dropping mid-flight means dropping a PTP
+`check_rename_validity`, `scan_volume_for_conflicts`), dropping mid-flight means dropping a PTP
 transaction mid-data-phase on MTP, which leaves the phone expecting bytes nobody will send and wedges it until replug.
 See `crates/cmdr-mtp/src/connection/DETAILS.md` § "No dropping timeouts".
 
@@ -485,6 +504,11 @@ its own `TimedOut` variant on schedule and the transaction finishes safely behin
 actually stopped, which is the right trade for a device op (the alternative is a bricked device) and harmless for a
 local one (the deadline only ever fires on a hung mount, where dropping the future wouldn't unblock the syscall
 either).
+
+For a WRITE that detached work will still land, a `TimedOut` answer is a lie the user sees disproven seconds later (a
+new folder that "timed out" and then appeared, ERR-AREUV). Those commands use `deadline::race_detached` through
+`write_operations::reply_within` instead, which keeps the join handle and reports the real end
+(`../file_system/write_operations/mutation_reply.rs`).
 
 The `blocking_*` helpers already have this property for free: they wrap `spawn_blocking`, so their timeout races a join
 handle too, and the blocking closure is never interrupted.

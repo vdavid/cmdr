@@ -16,15 +16,47 @@
 
 use std::path::{Path, PathBuf};
 
-use crate::clipboard::{ClipboardPayload, PastedClipboardFile, payload_to_content};
+use crate::clipboard::{
+    ClipboardPasteOutcome, ClipboardPasteSettled, ClipboardPayload, PasteClipboardReply, PastedClipboardFile,
+    payload_to_content,
+};
 use crate::file_system::VolumeError;
 use crate::file_system::volume::manager::get_volume_manager;
 use crate::operation_log::types::{EntryType, Initiator, OpKind};
 
 use super::manager;
 use super::mutation_error::MutationError;
+use super::mutation_reply::{MUTATION_REPLY_DEADLINE, Replied, reply_or_hand_off};
 use super::types::WriteOperationType;
 use super::unique_name::numbered_name;
+
+/// [`write_payload_to_dir`] under the instant-mutation reply deadline: the
+/// created file (or `None`) if the write ended in time, else `StillRunning`,
+/// with the real end handed to `on_settled` as a `ClipboardPasteSettled`. The
+/// write is never dropped mid-flight (`mutation_reply.rs`).
+pub(crate) async fn write_payload_replying(
+    volume_id: Option<String>,
+    dir: PathBuf,
+    payload: ClipboardPayload,
+    on_settled: impl FnOnce(ClipboardPasteSettled) + Send + 'static,
+) -> Result<PasteClipboardReply, MutationError> {
+    let replied = reply_or_hand_off(
+        MUTATION_REPLY_DEADLINE,
+        async move { write_payload_to_dir(volume_id, &dir, payload).await },
+        move |pending_id, result| {
+            let outcome = match result {
+                Ok(file) => ClipboardPasteOutcome::Landed { file },
+                Err(error) => ClipboardPasteOutcome::Refused { error },
+            };
+            on_settled(ClipboardPasteSettled { pending_id, outcome });
+        },
+    )
+    .await?;
+    Ok(match replied {
+        Replied::Done(file) => PasteClipboardReply::Done { file },
+        Replied::StillRunning { pending_id } => PasteClipboardReply::StillRunning { pending_id },
+    })
+}
 
 /// Writes the clipboard `payload` into `dir` as `pasted.<ext>` (unique-named on
 /// collision), returning the created file's name + kind. `payload` resolving to

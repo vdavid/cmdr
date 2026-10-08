@@ -18,6 +18,7 @@ fn one_file(bytes: u64) -> CopyScanResult {
         total_bytes: bytes,
         dedup_bytes: bytes,
         top_level_is_directory: false,
+        top_level_modified_at: None,
     }
 }
 
@@ -211,4 +212,94 @@ fn from_volume_batch_carries_no_file_list_and_no_estimate() {
     assert!(cached.dirs.is_empty());
     assert!(cached.estimated_compressed_bytes.is_none());
     assert_eq!(cached.file_count, 4);
+}
+
+// ============================================================================
+// What a cost estimate reads off a settled preview
+// ============================================================================
+
+fn folder(files: usize, dirs: usize, bytes: u64) -> CopyScanResult {
+    CopyScanResult {
+        file_count: files,
+        dir_count: dirs,
+        total_bytes: bytes,
+        dedup_bytes: bytes,
+        top_level_is_directory: true,
+        top_level_modified_at: None,
+    }
+}
+
+#[test]
+fn cost_facts_carry_a_volume_scans_kept_files_and_its_folder_count() {
+    let preview_id = unique_preview("cost-volume");
+    let kept = vec![
+        ScannedFile {
+            size: 30,
+            modified_at: Some(1_000),
+        },
+        ScannedFile {
+            size: 10,
+            modified_at: None,
+        },
+    ];
+    let cached =
+        CachedScanResult::from_volume_batch(paths(&["/a"]), 2, 40, 40, vec![(PathBuf::from("/a"), folder(2, 3, 40))])
+            .keeping_files(Some(kept.clone()));
+    insert_scan_result(preview_id.clone(), cached);
+
+    let facts = cached_cost_facts(&preview_id).expect("a settled preview");
+
+    assert_eq!(facts.files, 2);
+    assert_eq!(facts.dirs, 3);
+    assert_eq!(facts.bytes, 40);
+    assert_eq!(facts.per_file, Some(kept));
+}
+
+#[test]
+fn cost_facts_of_a_volume_scan_that_kept_nothing_have_no_per_file_list() {
+    let preview_id = unique_preview("cost-volume-bare");
+    insert_scan_result(preview_id.clone(), cached_for(&["/a"]));
+
+    let facts = cached_cost_facts(&preview_id).expect("a settled preview");
+
+    assert_eq!(facts.files, 1);
+    assert_eq!(facts.per_file, None);
+}
+
+#[test]
+fn cost_facts_of_a_local_walk_list_every_files_size_undated() {
+    let preview_id = unique_preview("cost-local");
+    let file = |size: u64| FileInfo {
+        path: PathBuf::from(format!("/src/{size}.bin")),
+        source_root: PathBuf::from("/src"),
+        size,
+        progress_bytes: size,
+        modified: 0,
+        created: 0,
+        is_symlink: false,
+    };
+    let cached = CachedScanResult::from_local_walk(
+        paths(&["/src"]),
+        vec![file(5), file(7)],
+        paths(&["/src"]),
+        12,
+        12,
+        vec![(PathBuf::from("/src"), folder(2, 1, 12))],
+        None,
+    );
+    insert_scan_result(preview_id.clone(), cached);
+
+    let facts = cached_cost_facts(&preview_id).expect("a settled preview");
+
+    let undated = |size: u64| ScannedFile {
+        size,
+        modified_at: None,
+    };
+    assert_eq!(facts.per_file, Some(vec![undated(5), undated(7)]));
+    assert_eq!(facts.dirs, 1);
+}
+
+#[test]
+fn cost_facts_of_an_unknown_preview_are_none() {
+    assert!(cached_cost_facts("no-such-preview").is_none());
 }

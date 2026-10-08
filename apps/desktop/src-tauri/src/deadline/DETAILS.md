@@ -12,6 +12,10 @@ must-knows.
   caller's own typed error.
 - **`timeout_detached_typed`**: runs a FUTURE in its own task and races that task's join handle, so expiry detaches the
   work rather than dropping it.
+- **`race_detached`** (`Raced::Answered` / `Raced::StillRunning(handle)`): the same race, but expiry hands the caller
+  the running task, for a write whose real end must still be reported (a `TimedOut` there is disproven seconds later).
+  Its caller is `write_operations::reply_within` (`write_operations/DETAILS.md` § "A slow instant mutation says it is
+  still running").
 - **`Deadline`** (`elapsed` / `remaining` / `total` / `fraction`) + **`timeout_detached_within`**: one wall-clock
   budget across a command's legs. A leg that starts with nothing left doesn't start.
 - **`io_budget`** / **`io_budget_for_volume`** + **`SESSION_IO_TIMEOUT`**: stretch a tier to at least 10 s on a volume

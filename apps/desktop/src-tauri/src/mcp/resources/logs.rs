@@ -82,9 +82,9 @@ pub fn read_log_tail(opts: &LogOptions) -> Result<String, String> {
 /// (we read mid-file, so the leading line may be truncated).
 ///
 /// **Redaction is mandatory.** A loopback caller without filesystem read shouldn't be able
-/// to exfiltrate the home paths, SMB URIs, emails, or device names the compatibility policy
-/// has always removed through `cmdr://logs`. Ordinary MCP deliberately uses unsalted
-/// `redact_line`, not the stricter report-local policy. Pure (no I/O), so it's unit-testable.
+/// to exfiltrate home paths, remote references, emails, or device names through `cmdr://logs`.
+/// Unsalted `redact_line` runs the report policy with bare tokens. Pure (no I/O), so it's
+/// unit-testable.
 pub fn select_log_lines(text: &str, skip_partial_first: bool, opts: &LogOptions) -> String {
     let mut lines: Vec<&str> = if skip_partial_first {
         text.lines().skip(1).collect()

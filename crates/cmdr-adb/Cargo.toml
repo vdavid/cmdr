@@ -20,6 +20,10 @@ workspace = true
 #
 # Never enable in a production build.
 testing = ["cmdr-fs/testing"]
+# Exposes `fuzzing`, the entry points the fuzz targets in `fuzz/` (repo root)
+# drive: the sync and shell v2 readers fed from an in-memory script instead of
+# a socket. Never enable in a production build.
+fuzzing = []
 
 [dependencies]
 # The `Volume` trait, every type it exchanges, and the host seams this backend
@@ -48,8 +52,8 @@ tokio-util = { version = "0.7.18", default-features = false }
 [dev-dependencies]
 # Depending on ourselves turns the `testing` feature on for every DEV target and
 # leaves it off for the lib, so a shipped build carries no fixtures. Same shape
-# as `cmdr-sftp`'s and the app's own self dev-dependency.
-cmdr-adb = { path = ".", features = ["testing"] }
+# as `cmdr-sftp`'s.
+cmdr-adb = { path = ".", features = ["testing", "fuzzing"] }
 # `InMemoryVolume` and the recording / scripted host-seam fakes this crate's
 # tests assert against.
 cmdr-fs = { path = "../cmdr-fs", features = ["testing"] }

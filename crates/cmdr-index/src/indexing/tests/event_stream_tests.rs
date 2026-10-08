@@ -21,8 +21,13 @@ use cmdr_fs::testing::wait_until_async;
 
 /// A temp volume root with a couple of files and a subdirectory, plus the temp
 /// dir the index DB lives in. Both are returned so the caller keeps them alive.
-fn fixture_volume(tag: &str) -> (tempfile::TempDir, tempfile::TempDir) {
-    let root = tempfile::tempdir().expect("volume root");
+///
+/// The root is on a fake FSEvents journal for as long as it lives: these tests
+/// assert on what the SCAN reports, ❌ never on a delivery, and the stream a scan
+/// starts would otherwise queue on the one `fseventsd` the whole machine shares
+/// (`watch/watcher/fake_journal.rs`).
+fn fixture_volume(tag: &str) -> (Root, tempfile::TempDir) {
+    let root = Root::new();
     let data = tempfile::tempdir().expect("index data dir");
     std::fs::write(root.path().join("a.txt"), format!("{tag} a")).expect("write a");
     std::fs::write(root.path().join("b.txt"), format!("{tag} b")).expect("write b");
@@ -30,6 +35,28 @@ fn fixture_volume(tag: &str) -> (tempfile::TempDir, tempfile::TempDir) {
     std::fs::create_dir(&sub).expect("mkdir sub");
     std::fs::write(sub.join("c.txt"), format!("{tag} c")).expect("write c");
     (root, data)
+}
+
+/// A fixture volume's root, on a fake journal until it drops.
+struct Root {
+    #[cfg(target_os = "macos")]
+    _journal: crate::indexing::watch::watcher::fake_journal::Guard,
+    dir: tempfile::TempDir,
+}
+
+impl Root {
+    fn new() -> Self {
+        let dir = tempfile::tempdir().expect("volume root");
+        Self {
+            #[cfg(target_os = "macos")]
+            _journal: crate::indexing::watch::watcher::fake_journal::fake_for(dir.path()),
+            dir,
+        }
+    }
+
+    fn path(&self) -> &std::path::Path {
+        self.dir.path()
+    }
 }
 
 /// Build a manager for `volume_id` over `root`, reporting into `events`.

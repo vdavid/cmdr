@@ -21,6 +21,5 @@ Flow and design rationale. The must-knows are in `CLAUDE.md`.
 ## Why simpler than `NewFolderDialog`
 
 - **No AI suggestions.** Users always know the filename they want; an AI panel would be noise.
-- **No timeout warning banner.** File creation is near-instant on every supported backend.
 - **Extension preserved on pre-fill.** A cursor item named `report.pdf` opens with `report.pdf` selected (the folder
   dialog strips `.pdf`). The user can keep or change the extension.

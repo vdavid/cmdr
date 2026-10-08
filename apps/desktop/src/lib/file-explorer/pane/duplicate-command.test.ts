@@ -45,6 +45,8 @@ type Dialogs = Parameters<typeof duplicateInPlace>[1]
 function paneRef(overrides: { listingId?: string | null; selectedIndices?: number[]; cursorIndex?: number } = {}) {
   return {
     getListingId: () => ('listingId' in overrides ? overrides.listingId : 'lst-1'),
+    getLastSequence: () => 0,
+    isRowStateReady: () => true,
     hasParentEntry: () => false,
     getSelectedIndices: () => overrides.selectedIndices ?? [],
     getCursorIndex: () => overrides.cursorIndex ?? 0,

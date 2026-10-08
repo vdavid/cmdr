@@ -27,6 +27,16 @@ Cmdr is free for personal use and requires a license for commercial use. That is
 So model compliance above the rate an unenforced honour system would get, and ❌ never as if the app detected anything
 about the user. What that rate is assumed to be, and what could move it, is in David's vault.
 
+## A paid license doesn't depend on our server
+
+A perpetual license verifies offline forever: the app drops it to Personal only on a signed revocation from
+`api.getcmdr.com`, never because the server is unreachable or gone. The license email carries the full signed key, so a
+new Mac activates with no server either. So "what if the company stops?" has a code answer, not only a legal one, and an
+air-gapped install works with a pasted key. The flip side: a revoked or refunded license on a Mac that never reaches the
+server keeps saying Commercial. Online, a full refund or chargeback revokes it at the next weekly check; a partial
+refund doesn't (`apps/api-server/src/licensing/DETAILS.md` § Refunds). Mechanics:
+`apps/desktop/src-tauri/src/licensing/DETAILS.md` § Offline policy.
+
 ## Onboarding exists and is decent
 
 There is a real first-run flow, including an optional "Stay in touch" email field that feeds Listmonk. Do not describe

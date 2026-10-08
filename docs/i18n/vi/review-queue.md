@@ -49,7 +49,20 @@ wording into `terms.json` (and `decisions.md` when the reason is worth keeping).
   `.useGuest`): natural with `khách`, slightly formal after a person's name; alternative `dưới tên`. And
   `Không bắt buộc` for the Optional placeholder against the catalog's parenthesized `(tùy chọn)`.
 - **Spaces** (`shortcuts.system.spaces`): kept English, unverified whether macOS vi localizes it.
+- **`bộ phận IT`** for "your IT team" (`ai.translateError.managed.body`, `ai.managed.hostNotAllowed`,
+  `askCmdr.error.managedByOrganization`): no Tier 1 source (macOS says `quản trị viên`, "administrator"); confirm it
+  reads everyday over `đội IT` / `bộ phận CNTT`.
 - **List commas**: newer keys drop the comma before `và` / `hoặc`, older ones keep it. Decide a convention and sweep.
+- **S3 wording** (`servers.sheet.s3*`, `*coldStorage*`): `bộ chứa` (bucket, MS + Google vi) against the English `bucket`
+  many Vietnamese devs say; `Lưu trữ lạnh` / `kho lưu trữ lạnh` for "Archived"; `tự triển khai` for self-hosted.
+  `servers.sheet.s3GcsKeyHelp` keeps Google's `Interoperability` tab name English: the vi Google Cloud console's own
+  label is unverified.
+- **Rollback captions** (`operationLog.dialog.rollbackOf`, `.rollbackOfUnlisted`, `.latestRollback`):
+  `Hoàn tác cho thao tác “…” lúc {time}` puts `thao tác` before the quote so `lúc {time}` binds to the undone operation,
+  not the rollback row. Confirm it reads as a caption, not a command.
+- **`Khung đích = khung nguồn`** (`commands.paneClone.label`, `menu.view.clonePane`, tentative): Total Commander’s name
+  for Clone pane, because `nhân bản` is Duplicate and `sao chép` is Copy. Only TC has it (no Double Commander vi);
+  confirm a Vietnamese reader takes it as "show the same folder in the other pane".
 
 ## Layout
 

@@ -13,7 +13,7 @@
   },
   "adb.connect.deviceGone": "你的手機已經中斷連線了。",
   "@adb.connect.deviceGone": {
-    "sourceHash": "e2766e6"
+    "sourceHash": "00d5254"
   },
   "adb.connect.unauthorized": "請查看你的手機，然後輕觸「允許」。",
   "@adb.connect.unauthorized": {
@@ -67,9 +67,9 @@
   "@adb.disconnectDeviceAriaLabel": {
     "sourceHash": "8f755cb"
   },
-  "adb.disconnectBusyTooltip": "這個裝置上有操作正在進行，無法中斷連線",
+  "adb.disconnectBusyTooltip": "Cmdr 還在處理這個裝置上的檔案。完成後再中斷連線。",
   "@adb.disconnectBusyTooltip": {
-    "sourceHash": "a425d4b"
+    "sourceHash": "73c355e"
   },
   "adb.disconnectingDeviceAriaLabel": "正在中斷連線：{name}⋯",
   "@adb.disconnectingDeviceAriaLabel": {

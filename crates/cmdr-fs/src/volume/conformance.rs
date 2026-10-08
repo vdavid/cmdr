@@ -19,8 +19,20 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 
 use super::scan_stop::TestScanStop;
 use super::{
-    DirectoryCreation, InMemoryVolume, ScanBoundary, ScanStop, ScanStopSignal, SourceItemInfo, StreamLength, Volume,
-    VolumeError, WriteMode,
+    InMemoryVolume, ScanBoundary, ScanStop, ScanStopSignal, SourceItemInfo, StreamLength, Volume, VolumeError,
+    WriteMode,
+};
+
+mod directory_creation;
+mod modification_date;
+
+pub use directory_creation::{
+    assert_create_directory_all_goes_through_a_link_to_a_folder, assert_create_directory_all_refuses_a_file_in_the_way,
+    assert_create_directory_all_reports_an_existing_dir_honestly,
+};
+pub use modification_date::{
+    SOURCE_DATE_NANOS, SOURCE_DATE_SECS, assert_read_stream_reports_the_listed_date,
+    assert_set_modified_dates_a_folder, assert_write_from_stream_keeps_the_source_date,
 };
 
 /// The size `path` reports right now, for a fixture precondition or an
@@ -80,6 +92,44 @@ pub async fn assert_delete_leaves_a_non_empty_dir_intact(volume: &dyn Volume, di
         "a refused delete must destroy nothing, but {child_name} is gone from {}; found {:?}",
         dir.display(),
         after.iter().map(|e| &e.name).collect::<Vec<_>>()
+    );
+}
+
+/// [`Volume::delete_files`] removes exactly the files it was handed, answers
+/// one result per path in order, and calls a path that was already gone done.
+///
+/// `doomed` must be two files in the same folder as `kept`, a third file that
+/// stays. The assertion checks all three exist first.
+///
+/// **Why this one is worth a shared assertion.** A move's source sweep hands a
+/// whole folder level to it at once, and a backend may delete by key with no
+/// folder check (S3's `DeleteObjects`): one that answered for the wrong path, or
+/// took a neighbour along, would report a source deleted that's still there, or
+/// delete one the move never carried.
+pub async fn assert_delete_files_removes_exactly_what_it_names(volume: &dyn Volume, doomed: [&Path; 2], kept: &Path) {
+    for path in doomed.iter().chain([&kept]) {
+        assert!(
+            volume.exists(path).await,
+            "fixture precondition: {} must exist",
+            path.display()
+        );
+    }
+    let gone = kept.with_file_name("never-there-for-the-batch.txt");
+    let paths = vec![doomed[0].to_path_buf(), gone, doomed[1].to_path_buf()];
+
+    let results = volume.delete_files(&paths).await;
+
+    assert_eq!(results.len(), paths.len(), "one result per path, in order");
+    for (path, result) in paths.iter().zip(&results) {
+        assert!(result.is_ok(), "{} must answer Ok, got {result:?}", path.display());
+    }
+    for path in doomed {
+        assert!(!volume.exists(path).await, "{} must be deleted", path.display());
+    }
+    assert!(
+        volume.exists(kept).await,
+        "a batch delete must take nothing it wasn't handed, but {} is gone",
+        kept.display()
     );
 }
 
@@ -275,6 +325,10 @@ impl super::VolumeReadStream for PollCountingUnknownStream {
     fn bytes_read(&self) -> u64 {
         0
     }
+
+    fn modified_at(&self) -> Option<std::time::SystemTime> {
+        None
+    }
 }
 
 async fn read_all(volume: &dyn Volume, path: &Path) -> Vec<u8> {
@@ -335,36 +389,6 @@ pub async fn assert_unknown_write_is_refused_before_io(volume: &dyn Volume, path
         expected,
         "the refused write changed {}",
         path.display()
-    );
-}
-
-/// [`Volume::create_directory_all`]
-/// reports a directory that was ALREADY there as
-/// [`DirectoryCreation::AlreadyExisted`], never as `Created`.
-///
-/// `dir` must already exist on `volume`; the assertion checks that first.
-///
-/// **Why this one is worth a shared assertion.** `Created` is a promise that the
-/// directory was empty at that instant, and the transfer driver spends it: on a
-/// `Created` answer it skips the per-file destination conflict probe for
-/// everything it then writes inside. So a backend that answered `Created` for a
-/// directory it merely found turns "would have prompted" into "overwrote", for
-/// every file in the copy. Only the dangerous direction is pinned here — a
-/// backend that answers `AlreadyExisted` when it did create the leaf is merely
-/// slower, which is why the trait says "when in doubt, answer `AlreadyExisted`".
-pub async fn assert_create_directory_all_reports_an_existing_dir_honestly(volume: &dyn Volume, dir: &Path) {
-    assert!(
-        volume.exists(dir).await,
-        "fixture precondition: {} must already exist",
-        dir.display()
-    );
-
-    let outcome = volume.create_directory_all(dir).await;
-    assert!(
-        matches!(outcome, Ok(DirectoryCreation::AlreadyExisted)),
-        "create_directory_all over the existing {} must answer AlreadyExisted; \
-         a Created answer tells the transfer driver it may skip every destination conflict probe inside. Got {outcome:?}",
-        dir.display(),
     );
 }
 

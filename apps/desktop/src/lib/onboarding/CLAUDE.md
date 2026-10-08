@@ -7,8 +7,8 @@ analytics disclosure and the terms (3) → Optional settings (4). Linux starts a
 
 `OnboardingWizard` (shell) + `OnboardingStepShell` (per-step frame), `StepFda` / `StepAi` / `StepBeta` / `StepOptional`,
 `CloudProviderPicker` / `CloudProviderSetup`, `OnboardingLanguagePicker`, `onboarding-state.svelte.ts` (state machine),
-`fda-status.svelte.ts` (the reactive "does this Mac grant FDA" fact) + `FdaBadge.svelte` (rendered by
-`$lib/status-corner/`).
+`fda-status.svelte.ts` (the reactive FDA fact) + `FdaBadge.svelte` (rendered by `$lib/status-corner/`),
+`local-download-notice.ts` (failed model download → post-wizard toast).
 
 ## Must-knows
 
@@ -24,20 +24,20 @@ analytics disclosure and the terms (3) → Optional settings (4). Linux starts a
   `blockedReason`, ❌ not `disabled`, so a press still reveals the box, focused with `preventScroll: true`.
 - **"No AI" turns off FOUR things**: `ai.provider`, cloud consent (`main.db`), `askCmdr.proactive`, `askCmdr.enabled`.
   ❌ Cloud or local NEVER grants cloud consent. DETAILS § "What 'off' turns off".
+- **A preselect the MDM policy made is ❌ never an answer**: unless the person picked, `StepAi` writes none of the four,
+  or the policy's `off` erases their own choice. DETAILS § "Under the organization's AI policy".
 - **Step 2's footer notes confirm once, ❌ never block**: Cloud with Allow cloud AI off (setup locked), else Cloud with
   no stored key, warns on the first Next and passes on the second. ❌ Its clearing listeners must keep exempting the
   wizard FOOTER, or that second press disarms the gate.
 - **Steps 3 and 4 ARE Settings surfaces**: `<SectionCard>` + `<SettingRow>` + `<SettingSwitch>`, plus `UpdatesSection`'s
   email path (which POSTs only the email, ❌ never an install id). ❌ Never hand-roll a frame here.
 - **Long copy hides behind an `<InfoTip>` or a fold, ❌ never in the body.**
-- **Step 2's options are plain `RadioGroup` rows**: helper text and the Recommended badge go in `itemInline`, the
-  `<InfoTip align="radio-row">` in `itemTrailing`, ❌ never inside the `role="radio"`.
+- **Step 2's `RadioGroup` keeps every interactive bit in `itemTrailing`**, ❌ never inside the `role="radio"`.
 - **A closed FDA gate means step 1 is on screen, nothing less**: a launch skipping the wizard opens it
   (`startup-gates.ts`), or launch work defers unexplained. ❌ Allow still needs a restart before step 1 advances
-  (`FDA_PENDING` is set once at boot; clearing it at runtime races the TCC popups it suppresses, 5-10 stacked once).
-  Deny advances normally.
-- **Step 1's live-grant poller calls `checkFullDiskAccessQuiet`, ❌ never `checkFullDiskAccess`**, a TCC registration
-  storm per denial. It runs only while Allow/Deny is open, and stops on grant.
+  (`FDA_PENDING` is boot-only: clearing it at runtime stacks TCC popups). Deny advances normally.
+- **Step 1's live-grant poller calls `checkFullDiskAccessQuiet`, ❌ never `checkFullDiskAccess`** (a TCC registration
+  storm per denial).
 - **Search's coverage note routes INTO step 1** (`coverage-note.ts::offersFullDiskAccess`): ❌ no second FDA prompt, ❌
   never over a snapshot folder.
 - **Ask `fda-status.svelte.ts`, ❌ never probe FDA yourself.** One reactive answer, so the badge and an error message
@@ -45,5 +45,5 @@ analytics disclosure and the terms (3) → Optional settings (4). Linux starts a
   failed probe KEEPS the last one. The badge hides on step 1, its own destination (`isWizardOnFdaStep()`). DETAILS §§
   "Making a missing grant visible", "What an error message may add about it".
 
-`DETAILS.md` owns the rest: the language escape hatch, the FDA boot gate and its three-state setting, no Escape handler,
-the step-2 banners, and the `CMDR_FORCE_ONBOARDING` / `CMDR_MOCK_FDA` overrides. Read it first.
+The language escape hatch, the FDA boot gate, the organization's AI policy, and the dev overrides: `DETAILS.md`. Read it
+before any non-trivial work here: editing, planning, reorganizing, or advising.

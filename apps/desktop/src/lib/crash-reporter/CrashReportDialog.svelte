@@ -67,10 +67,13 @@
             // just didn't answer. A refusal from Cmdr's own server means the contract broke.
             const failure = serverRequestFailureOf(e)
             const detail = { error: String(e) }
-            if (serverRequestLogLevel(failure) === 'error') {
+            const level = serverRequestLogLevel(failure)
+            if (level === 'error') {
                 log.error('Crash report send attempt returned an error: {error}', detail)
-            } else {
+            } else if (level === 'warn') {
                 log.warn('Crash report send attempt returned an error: {error}', detail)
+            } else {
+                log.info('Crash report not sent: {error}', detail)
             }
             notSentReason = describeServerRequestFailure(failure)
             sending = false

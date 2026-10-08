@@ -29,7 +29,13 @@ import (
 //     can be exfiltrated. Job-scoping isolates the privilege to the single
 //     publishing step.
 //
-// All three classes are silent in normal review: tag pins look identical to
+//  4. Every workflow declares a workflow-level `permissions:` block that grants
+//     no `write`; jobs that need write ask for it in their own block. A
+//     missing block inherits the repo default, which a settings change can
+//     widen to write-all without touching the repo. This is also exactly what
+//     OpenSSF Scorecard's Token-Permissions check scores (`scorecard.yml`).
+//
+// All four classes are silent in normal review: tag pins look identical to
 // SHA pins, `pull_request_target` looks like a typo of `pull_request`, and
 // permissions blocks are usually skimmed. The check makes them loud.
 func RunWorkflowsHardening(ctx *CheckContext) (CheckResult, error) {
@@ -62,6 +68,12 @@ func RunWorkflowsHardening(ctx *CheckContext) (CheckResult, error) {
 			return CheckResult{}, err
 		}
 		violations = append(violations, v...)
+		content, err := os.ReadFile(f)
+		if err != nil {
+			return CheckResult{}, fmt.Errorf("failed to read workflow: %w", err)
+		}
+		rel, _ := filepath.Rel(ctx.RootDir, f)
+		violations = append(violations, checkWorkflowPermissions(strings.Split(string(content), "\n"), rel)...)
 		scanned++
 	}
 
@@ -158,6 +170,49 @@ func checkIdTokenLine(line string, lineNum int, rel string) string {
 		return ""
 	}
 	return fmt.Sprintf("%s:%d: workflow-scoped 'id-token: write' (must be job-scoped)", rel, lineNum)
+}
+
+var (
+	// Workflow-level `permissions:`, either a block introducer or an inline
+	// scalar/map (`permissions: read-all`, `permissions: {}`).
+	topPermissionsRE = regexp.MustCompile(`^permissions:\s*([^#\s]*)`)
+	// A grant inside the workflow-level block (2-space indent).
+	topGrantRE = regexp.MustCompile(`^  ([a-z-]+):\s*([a-z-]+)`)
+)
+
+// checkWorkflowPermissions enforces invariant 4: a workflow-level
+// `permissions:` exists and grants no write. `id-token: write` is skipped here
+// because `checkIdTokenLine` already reports it with its own message.
+func checkWorkflowPermissions(lines []string, rel string) []string {
+	var violations []string
+	found, inBlock := false, false
+	for i, line := range lines {
+		if m := topPermissionsRE.FindStringSubmatch(line); m != nil {
+			found = true
+			inBlock = m[1] == ""
+			if m[1] == "write-all" {
+				violations = append(violations,
+					fmt.Sprintf("%s:%d: workflow-scoped 'permissions: write-all' (use read, grant write per job)", rel, i+1))
+			}
+			continue
+		}
+		if !inBlock {
+			continue
+		}
+		if line != "" && !strings.HasPrefix(line, " ") && !strings.HasPrefix(line, "#") {
+			inBlock = false
+			continue
+		}
+		if m := topGrantRE.FindStringSubmatch(line); m != nil && m[2] == "write" && m[1] != "id-token" {
+			violations = append(violations,
+				fmt.Sprintf("%s:%d: workflow-scoped '%s: write' (move it to the jobs that need it)", rel, i+1, m[1]))
+		}
+	}
+	if !found {
+		violations = append(violations,
+			fmt.Sprintf("%s: no workflow-level 'permissions:' (add 'permissions:\\n  contents: read')", rel))
+	}
+	return violations
 }
 
 // onBlockTracker walks the top-level `on:` block to flag pull_request_target

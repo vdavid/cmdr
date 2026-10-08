@@ -10,6 +10,8 @@ use cmdr_index::media_index::clip;
 use cmdr_index::media_index::gate;
 use cmdr_index::media_index::scheduler::MediaScheduler;
 
+use super::reclaim::ReclaimError;
+
 /// The CLIP model's install state, for the settings download affordance. Crosses the IPC
 /// boundary, so it derives `Serialize` + `specta::Type` (camelCase).
 #[derive(Debug, Clone, serde::Serialize, specta::Type)]
@@ -88,19 +90,31 @@ pub async fn media_index_download_clip_model(app: AppHandle) -> Result<(), Strin
 /// (installed → false) while keeping keyword + tag search working. Runs OFF the IPC
 /// thread (it blocks on each volume's writer). Idempotent: with nothing installed and
 /// nothing enriched it removes any stray artifacts and returns.
+///
+/// [`ReclaimError::NotDeleted`] when some of it is still on disk (a volume's prune didn't
+/// land, or the artifacts wouldn't go), so the panel never says the data is gone when it isn't.
 #[tauri::command]
 #[specta::specta]
-pub async fn media_index_delete_clip_model(app: AppHandle) -> Result<(), String> {
+pub async fn media_index_delete_clip_model(app: AppHandle) -> Result<(), ReclaimError> {
     // No scheduler yet (nothing enriched) ⇒ just remove any on-disk artifacts.
     let Some(scheduler) = app.try_state::<Arc<MediaScheduler>>() else {
-        let data_dir = crate::config::resolved_app_data_dir(&app)?;
-        clip::install::remove(&data_dir).map_err(|e| format!("delete clip model: {e}"))?;
-        return Ok(());
+        let data_dir = crate::config::resolved_app_data_dir(&app).map_err(|e| {
+            log::warn!(target: "media_index", "delete clip model: no data dir: {e}");
+            ReclaimError::NotDeleted
+        })?;
+        return clip::install::remove(&data_dir).map_err(|e| {
+            log::warn!(target: "media_index", "delete clip model: {e}");
+            ReclaimError::NotDeleted
+        });
     };
     let scheduler = Arc::clone(scheduler.inner());
-    tauri::async_runtime::spawn_blocking(move || {
-        scheduler.delete_clip_model();
-    })
-    .await
-    .map_err(|e| format!("delete-clip-model task panicked: {e}"))
+    tauri::async_runtime::spawn_blocking(move || scheduler.delete_clip_model())
+        .await
+        .map_err(|e| {
+            log::warn!(target: "media_index", "delete-clip-model task panicked: {e}");
+            ReclaimError::NotDeleted
+        })?
+        // The scheduler already logged which volume's prune didn't land.
+        .map(|_removed| ())
+        .map_err(|_failure| ReclaimError::NotDeleted)
 }

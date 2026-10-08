@@ -6,16 +6,21 @@ export {
   listDirectoryStart,
   cancelListing,
   resortListing,
+  setListingNameFilter,
   getFileRange,
-  getTotalCount,
   findFileIndex,
+  compareDirectories,
+  countFolderSizes,
+  cancelFolderSizeCount,
   findFileIndices,
   findFirstFuzzyMatch,
   getFileAt,
   getFileBeside,
   getPathsAtIndices,
+  getSelectionSnapshot,
   getFilesAtIndices,
   listDirectoryEnd,
+  keepListingsAlive,
   setListingIncludeHidden,
   refreshListing,
   getListingStats,
@@ -38,6 +43,7 @@ export {
   extendFontMetrics,
   hasFontMetrics,
   onListingOpening,
+  onListingStalled,
   onListingProgress,
   onListingReadComplete,
   onListingComplete,
@@ -47,8 +53,10 @@ export {
   getBriefColumnTextWidths,
 } from './file-listing'
 // Streaming-listing event payload types, from the typed-events bindings via `file-listing.ts`.
+export type { CompareDirectoriesMode, CompareDirectoriesResult } from './file-listing'
 export type {
   ListingOpeningEvent,
+  ListingStalledEvent,
   ListingProgressEvent,
   ListingReadCompleteEvent,
   ListingCompleteEvent,
@@ -56,6 +64,10 @@ export type {
   ListingErrorEvent,
   ListingCancelledEvent,
 } from './file-listing'
+// A listing read that found its listing gone, for the pane that shows it to re-list.
+export { onListingGone } from './listing-gone'
+
+export { getDebugLogPath } from './logging'
 
 // File viewer (session management, search, seeking)
 export {
@@ -72,6 +84,7 @@ export {
   viewerSetupMenu,
   viewerSetWordWrap,
   viewerSetSearchInputFocused,
+  showViewerContextMenu,
   viewerReadRange,
   viewerCancelRead,
   viewerWriteRangeToFile,
@@ -113,6 +126,8 @@ export {
   quickLookSetPath,
   quickLookClose,
   getInfo,
+  GetInfoFailure,
+  asGetInfoError,
   openInEditor,
   OpenInEditorFailure,
   asOpenInEditorError,
@@ -125,15 +140,18 @@ export {
   cloudMakeAvailableOffline,
   cloudRemoveDownload,
   googleDriveLinks,
+  copyShareLink,
 } from './file-actions'
 export type {
   DriveItemLinks,
   EditorOpenOutcome,
   EditorOpenReport,
+  GetInfoError,
   MenuAnchor,
   OpenInEditorError,
   OpenTerminalError,
   OpenTerminalOutcome,
+  PaneContextMenuFacts,
   TerminalApp,
   TerminalAppList,
   TextEditorApp,
@@ -192,7 +210,6 @@ export type { PaneFileEntry, PaneState, McpTabInfo, SelectedRows, ServicesSelect
 
 // Shared IPC types (timeout-aware wrappers)
 export type { TimedOut } from './ipc-types'
-export { throwIpcError } from './ipc-types'
 
 // Storage (volumes, space, permissions)
 export {
@@ -226,6 +243,8 @@ export {
   getMacosMajorVersion,
   openPrivacySettings,
   openSystemSettingsUrl,
+  openLocalNetworkSettings,
+  openAutomationSettings,
   openAppearanceSettings,
 } from './storage'
 export type { Location, PathVolumeResolution, ResolveLocationResult, SpaceInfo, VolumeContextAction } from './storage'
@@ -261,7 +280,6 @@ export {
   type SignInShape,
   type UpgradeResult,
   connectToServer,
-  removeManualServer,
   setSmbAccountPreference,
   showNetworkHostContextMenu,
   onNetworkHostContextAction,
@@ -290,7 +308,6 @@ export {
   onScanPreviewComplete,
   onScanPreviewError,
   onScanPreviewCancelled,
-  copyFiles,
   moveFiles,
   deleteFiles,
   trashFiles,
@@ -359,10 +376,10 @@ export type {
   ConflictResolutionOutcome,
   DryRunResult,
   Initiator,
-  OperationStatus,
-  OperationSummary,
   ScanProgressEvent,
   ScanPreviewStartResult,
+  ScanPreviewStart,
+  ScanPreviewRefusal,
   ScanPreviewProgressEvent,
   ScanPreviewCompleteEvent,
   ScanPreviewErrorEvent,
@@ -480,6 +497,9 @@ export type {
 export { checkPendingCrashReport, dismissCrashReport, sendCrashReport } from './crash-reporter'
 export type { CrashReport } from './crash-reporter'
 
+// Managed policy (MDM): what the organization locks, for the UI
+export { getManagedPolicy, onManagedPolicyChanged } from './managed-policy'
+
 // Error reporter (Flow A: user-initiated; Flow B: auto-send event)
 export {
   prepareErrorReportPreview,
@@ -506,10 +526,12 @@ export {
 } from './ai'
 export type { CloudAiConsentStatus } from './ai'
 
-// Appearance / system-environment (accent color, reduce-transparency, text-size, localized strings)
+// Appearance / system-environment (accent color, reduce-transparency, Liquid Glass tint, text-size, localized strings)
 export {
   getAccentColor,
   getShouldReduceTransparency,
+  getGlassTintAmount,
+  onGlassTintChanged,
   getSystemTextSizeMultiplier,
   getLocalizedSystemStrings,
   getOsLocales,
@@ -527,6 +549,7 @@ export {
   onMediaIndexFolderExclusion,
   onMediaIndexFolderChoice,
   onMenuBarRebuilt,
+  onOpenWithCopyRefused,
 } from './menu-events'
 
 // Directory-watcher events
@@ -548,6 +571,9 @@ export {
   onGlobalShortcutFired,
 } from './downloads'
 
+// Native system notifications
+export { getNotificationPermission, showNotification } from './notifications'
+
 // "Reveal in Cmdr" (macOS)
 export { drainPendingReveals, getRevealHandlerState, onRevealDelivered, setRevealHandlerEnabled } from './reveal'
 
@@ -562,7 +588,6 @@ export {
   onOpenSettings,
   requestOpenSettings,
   onOpenFileViewer,
-  onFocusSettings,
   onFocusFileViewer,
   onFocusAbout,
   onFocusConfirmation,
@@ -573,6 +598,7 @@ export {
   onMcpSettingsClose,
   onViewerWordWrapToggled,
   onViewerEditAction,
+  onViewerContextMenuAction,
   onPersistRestrictedSetting,
   requestRevealPath,
   onRevealPath,
@@ -584,7 +610,6 @@ export {
 // Licensing
 export {
   getLicenseStatus,
-  activateLicense,
   verifyLicense,
   commitLicense,
   getLicenseInfo,
@@ -608,35 +633,23 @@ export type {
 // MTP (Android device support)
 export {
   setMtpEnabled,
-  getMtpDeviceDisplayName,
-  listMtpDevices,
-  isMtpConnectionError,
   connectMtpDevice,
-  disconnectMtpDevice,
-  getMtpDeviceInfo,
   getPtpcameradWorkaroundCommand,
-  getMtpStorages,
   onMtpExclusiveAccessError,
   onMtpPermissionError,
   onMtpDeviceConnected,
   onMtpDeviceDisconnected,
-  listMtpDirectory,
-  deleteMtpObject,
-  createMtpFolder,
-  renameMtpObject,
-  moveMtpObject,
-  scanMtpForCopy,
   copyBetweenVolumes,
   moveBetweenVolumes,
+  renameByMove,
   compressFiles,
-  scanVolumeForCopy,
   scanVolumeForConflicts,
   destinationWriteAccess,
+  destinationRootEcho,
 } from './mtp'
 // Android devices over ADB (device list, connect, cancel, settings)
 export {
   setAdbSettings,
-  listAdbDevices,
   connectAdbDevice,
   cancelAdbConnect,
   newAdbAttemptId,
@@ -645,7 +658,7 @@ export {
   AdbConnectFailure,
   asAdbConnectError,
 } from './adb'
-export type { AdbDevice, AdbDeviceState, AdbConnectOutcomeError, AdbInstallStatus } from './adb'
+export type { AdbConnectOutcomeError, AdbInstallStatus } from './adb'
 
 // Archive-password commands (encrypted-archive unlock)
 export {
@@ -664,10 +677,7 @@ export type {
   MtpPermissionErrorEvent,
   MtpDeviceConnectedEvent,
   MtpDeviceDisconnectedEvent,
-  MtpObjectInfo,
-  MtpScanResult,
   VolumeConflictInfo,
-  VolumeCopyScanResult,
   VolumeCopyConfig,
   SourceItemInput,
 } from './mtp'
@@ -675,6 +685,7 @@ export type {
 // Rename
 export { checkRenamePermission, checkRenameValidity, getTrashDir, moveToTrash, renameFile } from './rename'
 export type { RenameConflictFileInfo, RenameValidityResult } from './rename'
+export type { MutationWaitOptions } from './mutation-reply'
 
 // Settings and AI
 export {
@@ -707,13 +718,13 @@ export {
   startAiDownload,
   cancelAiDownload,
   uninstallAi,
-  getFolderSuggestions,
   streamFolderSuggestions,
   getAiRuntimeStatus,
   configureAi,
   stopAiServer,
   startAiServer,
   checkAiConnection,
+  cloudAiHostVerdicts,
   saveAiApiKey,
   getAiApiKeyStatus,
   deleteAiApiKey,
@@ -912,7 +923,7 @@ export {
   updateCheckDueIn,
   updateWriteBlocker,
 } from './updates'
-export type { BundleWriteBlocker, UpdateCheckResult } from './updates'
+export type { BundleWriteBlocker, UpdateCheckOutcome, UpdateCheckTrigger } from './updates'
 
 // Dev/benchmark IPC
 export { benchmarkLog } from './debug'
@@ -920,16 +931,11 @@ export { benchmarkLog } from './debug'
 // SFTP servers: host-key trust, secrets, and the saved-server list. Connecting
 // goes through the protocol-agnostic servers family below.
 export {
-  cancelSftpConnect,
-  disconnectSftpVolume,
   approveSftpHostKey,
   forgetSftpHostKey,
   listTrustedSftpHostKeys,
   saveSftpCredentials,
-  hasSftpCredentials,
-  deleteSftpCredentials,
   getKnownSftpServers,
-  forgetKnownSftpServer,
   getSftpUnattendedReconnect,
 } from './sftp'
 export type {
@@ -959,6 +965,7 @@ export {
   updateSavedServer,
   savedServerId,
   updateSavedSmbHost,
+  updateSavedS3Account,
   forgetSavedSmbHost,
   forgetSavedSmbHostPassword,
 } from './servers'
@@ -974,16 +981,20 @@ export type {
 
 // WebDAV servers: secrets and the saved-server list. Connecting goes through
 // the protocol-agnostic servers family above.
-export {
-  cancelWebdavConnect,
-  disconnectWebdavVolume,
-  saveWebdavCredentials,
-  hasWebdavCredentials,
-  deleteWebdavCredentials,
-  getKnownWebdavServers,
-  forgetKnownWebdavServer,
-  getWebdavUnattendedReconnect,
-} from './webdav'
+export { saveWebdavCredentials, getKnownWebdavServers, getWebdavUnattendedReconnect } from './webdav'
 export type { KnownWebdavServer, SavedWebdavServer, WebdavUnattendedReconnect } from './webdav'
+
+// S3 accounts: the account's secret, the unattended-reconnect query, and the
+// list-price cost estimate for a planned operation. Everything else goes through the protocol-agnostic servers family above.
+export { saveS3Credentials, getS3UnattendedReconnect, knownS3PlaceOf, estimateOperationCost } from './s3'
+export type {
+  ClashPlan,
+  CostEstimate,
+  CostEstimateRequest,
+  KnownClash,
+  S3ProviderChoice,
+  S3UnattendedReconnect,
+  SavedS3Place,
+} from './s3'
 
 export { confirmWithCheckbox } from './confirm-dialog'

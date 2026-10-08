@@ -1,0 +1,55 @@
+{
+  "feedback.dialog.title": "Отправить отзыв",
+  "@feedback.dialog.title": {
+    "sourceHash": "8235980"
+  },
+  "feedback.dialog.description": "Что работает хорошо? Чего не хватает? Ваш отзыв получит сам создатель Cmdr.",
+  "@feedback.dialog.description": {
+    "sourceHash": "a0dc540"
+  },
+  "feedback.dialog.label": "Ваш отзыв",
+  "@feedback.dialog.label": {
+    "sourceHash": "cdb1c0a"
+  },
+  "feedback.dialog.placeholder": "Например: хотелось бы сочетание клавиш для перехода между вкладками.",
+  "@feedback.dialog.placeholder": {
+    "sourceHash": "a2c4d22"
+  },
+  "feedback.dialog.counter": "{currentText} / {maxText}",
+  "@feedback.dialog.counter": {
+    "sourceHash": "36ca789",
+    "sameAsSourceJustification": "Название бренда, стандартное обозначение или строка из подстановок; сохраняется без перевода."
+  },
+  "feedback.dialog.tooLong": "Извините, текст слишком длинный. Максимум: {maxText} {max, plural, one {символ} few {символа} many {символов} other {символа}}.",
+  "@feedback.dialog.tooLong": {
+    "sourceHash": "b6e0abf"
+  },
+  "feedback.dialog.moreWays": "Также можно <github>посмотреть предложения на GitHub и проголосовать</github> или <call>записаться на звонок</call> с Дэвидом.",
+  "@feedback.dialog.moreWays": {
+    "sourceHash": "5a26a7c"
+  },
+  "feedback.dialog.invalid": "Отзыв не отправился. Может, сократить текст и попробовать еще раз?",
+  "@feedback.dialog.invalid": {
+    "sourceHash": "a997cb3"
+  },
+  "feedback.dialog.softFailure": "Извините, сейчас не получилось отправить отзыв. Попробовать еще раз?",
+  "@feedback.dialog.softFailure": {
+    "sourceHash": "603c329"
+  },
+  "feedback.dialog.cancel": "Отменить",
+  "@feedback.dialog.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "feedback.dialog.send": "Отправить отзыв",
+  "@feedback.dialog.send": {
+    "sourceHash": "8235980"
+  },
+  "feedback.dialog.sending": "Отправка…",
+  "@feedback.dialog.sending": {
+    "sourceHash": "b8ed527"
+  },
+  "feedback.sentToast": "Спасибо за отзыв! Мы читаем каждое сообщение.",
+  "@feedback.sentToast": {
+    "sourceHash": "6092c03"
+  }
+}

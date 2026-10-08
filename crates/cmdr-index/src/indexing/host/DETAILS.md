@@ -125,9 +125,9 @@ behind it, so it moved to `cmdr-fs` beside `smb_volume_id` rather than becoming 
 you could compute the answer from a `&str`.
 
 **`MountFacts` is two decisions, not a `FilesystemKind`.** The index acts on exactly two things — may the local walker
-touch this mount, and may the rename pre-pass trust its inodes — and both are host judgments: the kind → network mapping
-is per-platform, and the probe itself can block for minutes on a wedged mount. Returning the two flags moved the whole
-macOS/Linux fork out of `transports/local_external`.
+touch this mount, and may the rename pre-pass trust its inodes — and both are host judgments: the mount probe is
+per-platform (the app answers "network" for anything that isn't a known local disk), and the probe itself can block for
+minutes on a wedged mount. Returning the two flags moved the whole macOS/Linux fork out of `transports/local_external`.
 
 **Presence is by filesystem identity, and it reads the mount table, never the mount.** `mount_identity(root)` names the
 filesystem mounted exactly at a root (a `MountIdentity`, opaque to the index), and `is_mounted(identity)` says whether
@@ -145,6 +145,13 @@ unmount under it), so a start without a host captures nothing to ask about. `Fak
 unmounts roots with `mount`, `rename_mount`, and `mark_unmounted`. `stop_removable_volume` asks
 (`../lifecycle/DETAILS.md` § "When a volume has been let go"), and so does every delete and completion gate, through
 `VolumeHold::drive_is_listed` (`../reconcile/DETAILS.md` § "The delete gates").
+
+**`mount_points()` is the whole table, as it spells itself**, from the same non-blocking read (`volumes::mount_roots` /
+`volumes_linux::mount_roots` app-side), `None` when it couldn't be read. The index filters it into the mounts inside the
+boot tree and caches that for a second (`../scanner/boot_tree_mounts.rs`). `FakeVolumeProvider::mount` lists a root
+there too, so a test that mounts a fake drive at a temp path inside the boot tree has made it a boot-tree mount, which
+boot-space walks then stop at; list a gate-only drive under `/Volumes/` instead (`reconciler/tests/delete_gates.rs`).
+Installing a provider, and every fake table change, bumps `table_generation`, so the cache re-reads at once.
 
 **Why the provider slot is an `RwLock`, unlike the runtime and the policy.** Tests swap it. Three tests used to register
 real `LocalPosixVolume`s into the process-wide `VolumeManager`, which is exactly the coupling the extraction removes;
@@ -175,8 +182,8 @@ it down.
 ## Cancellation
 
 One primitive, `tokio_util::sync::CancellationToken`, from the `Volume` trait in `cmdr-fs` up through every long walk
-`indexing/` and `media_index/` run. It replaced five kinds of `Arc<AtomicBool>` plus a `Notify`, none of which could
-compose. `importance/` is the gap, not a third topology (below).
+`indexing/`, `media_index/`, and `importance/` run. It replaced five kinds of `Arc<AtomicBool>` plus a `Notify`, none of
+which could compose.
 
 **The topology is a tree, rooted per volume.** The reservation mints the volume's root `VolumeWork` (`../hold.rs`: a
 stop signal paired with a share of the volume's hold), held by BOTH the registry `IndexInstance` (`work`) and its
@@ -207,14 +214,16 @@ volume behind it takes `VolumeWork::for_test`, a generation of its own that noth
 **`media_index` shares the primitive but not the tree.** Its emergency stop (`gate::stop_token`) is process-wide, and
 re-enabling installs a FRESH token rather than un-cancelling — a token is one-shot by design, and a pass the user
 stopped must not quietly resume. Per-volume media cancellation would be a new feature, not a rewiring: nothing today
-scopes an enrichment pass to a volume's token.
+scopes an enrichment pass to a volume's token. Its per-volume LISTENERS are in the tree, though: `wire_volume` takes the
+same child token importance does and ends them with the volume (`media_index/scheduler/DETAILS.md` § The lifecycle bus).
 
-**`importance` has no cancellation at all**: the honest exception, and a gap rather than a decision. Nothing under
-`importance/` holds a token, and its scheduler registers no `register_subsystem_stop_hook`, so `stop_all_indexing`
-(watchdog stop, shutdown) doesn't reach a running recompute: it walks the whole index to the end. Tolerable because that
-walk is 5.5–6.4 s over real 391k / 611k-folder indexes (measured 2026-07-29), not because anything stops it. The
-`TODO(importance)` on `importance/scheduler/recompute.rs`'s `recompute_folders` is the entry point for closing it; the
-fix is a child of the volume token, threaded in from whoever starts the pass, plus a stop hook — not a new primitive.
+**`importance` is in the tree, holding a bare token.** A volume reaches the importance scheduler with a child of its
+root token already attached (`lifecycle_bus::RegisteredVolume.stop`, minted at the registration funnel and, for the
+startup sweep, under the registry lock in `state::ready_volumes_to_wire`), so it is handed down like every other child.
+It is deliberately NOT a `VolumeWork`: a pass reads the local index database and never the drive, so it must not hold
+the volume against an eject. The scheduler also registers a `register_subsystem_stop_hook`, so `stop_all_indexing`
+reaches every pass at once. How a pass polls, and what a stopped one leaves behind: `importance/scheduler/DETAILS.md` §
+"How a pass stops".
 
 ## Cancellation is observable, as a typed error
 

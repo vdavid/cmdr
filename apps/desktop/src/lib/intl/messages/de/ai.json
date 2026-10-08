@@ -227,6 +227,14 @@
   "@ai.translateError.unknownProvider.body": {
     "sourceHash": "7042a75"
   },
+  "ai.translateError.managed.title": "Deine Organisation verwaltet die KI in Cmdr",
+  "@ai.translateError.managed.title": {
+    "sourceHash": "12f8233"
+  },
+  "ai.translateError.managed.body": "Dein IT-Team kann dir sagen, welche KI-Dienste du nutzen kannst.",
+  "@ai.translateError.managed.body": {
+    "sourceHash": "cb7e811"
+  },
   "ai.cloud.serviceAria": "Cloud-KI-Dienst",
   "@ai.cloud.serviceAria": {
     "sourceHash": "7dec1e0"
@@ -458,5 +466,33 @@
   "ai.secretError.genericBody": "Prüfe, ob dein System-Schlüsselbund verfügbar ist, und versuche es erneut. Wenn es weiterhin auftritt, starte die App neu.",
   "@ai.secretError.genericBody": {
     "sourceHash": "2ee417d"
+  },
+  "ai.secretError.removeTitle": "Dein gespeicherter API-Schlüssel ließ sich nicht entfernen.",
+  "@ai.secretError.removeTitle": {
+    "sourceHash": "5986628"
+  },
+  "ai.secretError.removeKeychainBody": "Öffne die Schlüsselbundverwaltung, suche den Eintrag „Cmdr“ und lösche ihn dort.",
+  "@ai.secretError.removeKeychainBody": {
+    "sourceHash": "4e3abe7"
+  },
+  "ai.managed.aiOff": "Deine Organisation hat die KI in Cmdr ausgeschaltet.",
+  "@ai.managed.aiOff": {
+    "sourceHash": "25b7aef"
+  },
+  "ai.managed.cloudAiOff": "Deine Organisation erlaubt nur lokale KI.",
+  "@ai.managed.cloudAiOff": {
+    "sourceHash": "894c53d"
+  },
+  "ai.managed.hostNotAllowed": "Deine Organisation erlaubt diesen KI-Dienst nicht. Dein IT-Team kann dir sagen, welche Dienste du nutzen kannst.",
+  "@ai.managed.hostNotAllowed": {
+    "sourceHash": "845a19f"
+  },
+  "ai.managed.localOnlyUnsupported": "Deine Organisation erlaubt nur lokale KI, und dieser Mac kann sie nicht ausführen.",
+  "@ai.managed.localOnlyUnsupported": {
+    "sourceHash": "b760ca4"
+  },
+  "ai.managed.serviceNotAllowed": "von deiner Organisation nicht erlaubt",
+  "@ai.managed.serviceNotAllowed": {
+    "sourceHash": "026e7e3"
   }
 }

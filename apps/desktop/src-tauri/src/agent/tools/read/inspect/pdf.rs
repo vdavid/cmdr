@@ -8,11 +8,12 @@
 //! `warn` line and an `unparseable` mark, never a crash report. The closures wrap the
 //! foreign calls only; the shapers around them are ours and keep reporting.
 
+use std::collections::{BTreeMap, HashSet};
 use std::ops::ControlFlow;
 use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
 
-use pdf_extract::Document;
+use pdf_extract::{Document, Object, ObjectId};
 use serde::Serialize;
 
 use super::find::{FIND_SNIPPET_CHARS, FindHits, FindLine, MAX_FIND_LINES, snippet_around_byte};
@@ -174,9 +175,10 @@ pub(super) fn read_pdf_with_cap(
     let version = Some(doc.version.clone()).filter(|v| !v.is_empty()).or(header_version);
     // The page tree is what every later step walks; a tree that panics the parser is a
     // file it can't serve, whatever the header says.
-    let Some(page_count) = contain_panics(|| doc.get_pages().len()) else {
+    let Some(page_ids) = contain_panics(|| doc.get_pages()) else {
         return Ok(PdfContent::without_text(version, PdfTextUnavailable::Unparseable));
     };
+    let page_count = page_ids.len();
     if contain_panics(|| doc.is_encrypted()).unwrap_or(true) {
         // Strings and streams are ciphertext; the Info dictionary is not read either, so
         // an undecodable title is never guessed at.
@@ -186,7 +188,7 @@ pub(super) fn read_pdf_with_cap(
         });
     }
 
-    let extract = |page: usize| extract_page(&doc, page);
+    let extract = |page: usize| extract_page(&doc, &page_ids, page);
     let (pages, find, has_text_layer) = match ask {
         TextAsk::Window(opts) => {
             let (window, has_text) =
@@ -246,11 +248,18 @@ pub(crate) enum PageText {
 
 /// The text of one page (1-based) through `pdf-extract`'s plain-text device, contained: a
 /// page the parser refuses, or panics on, is `Unparseable`, and the rest of the document
-/// still reads.
-fn extract_page(doc: &Document, page: usize) -> PageText {
+/// still reads. So is a page whose `Parent` chain loops, which the parser would follow
+/// forever (see [`parent_chain_ends`]).
+fn extract_page(doc: &Document, page_ids: &BTreeMap<u32, ObjectId>, page: usize) -> PageText {
     let Ok(page_num) = u32::try_from(page) else {
         return PageText::Unparseable;
     };
+    let Some(&page_id) = page_ids.get(&page_num) else {
+        return PageText::Unparseable;
+    };
+    if !contain_panics(|| parent_chain_ends(doc, page_id)).unwrap_or(false) {
+        return PageText::Unparseable;
+    }
     let mut text = String::new();
     let outcome = contain_panics(|| {
         let mut output = pdf_extract::PlainTextOutput::new(&mut text);
@@ -261,6 +270,28 @@ fn extract_page(doc: &Document, page: usize) -> PageText {
         // A refusal or a contained panic; the buffer may hold a partial page, which would
         // read as the page's text and isn't.
         Some(Err(_)) | None => PageText::Unparseable,
+    }
+}
+
+/// Whether following `Parent` up from the page `id` reaches a node without one. ❗ The
+/// parser resolves an inherited key (`Resources`, `MediaBox`) by recursing up `Parent`
+/// with no visited set, so a cycle there is a stack overflow (an abort `catch_unwind`
+/// can't contain) or, where the recursion compiles to a loop, a thread spinning forever.
+/// Found by the `pdf` fuzz target (`fuzz/DETAILS.md`).
+fn parent_chain_ends(doc: &Document, id: ObjectId) -> bool {
+    let mut seen = HashSet::new();
+    let mut current = id;
+    loop {
+        if !seen.insert(current) {
+            return false;
+        }
+        let Ok(dict) = doc.get_dictionary(current) else {
+            return true;
+        };
+        match dict.get(b"Parent").and_then(Object::as_reference) {
+            Ok(parent) => current = parent,
+            Err(_) => return true,
+        }
     }
 }
 

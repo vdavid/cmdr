@@ -10,6 +10,7 @@ import { mount, tick } from 'svelte'
 import DeleteDialog from './DeleteDialog.svelte'
 
 vi.mock('$lib/tauri-commands', () => ({
+  estimateOperationCost: vi.fn(() => Promise.resolve([])),
   notifyDialogOpened: vi.fn(() => Promise.resolve()),
   notifyDialogClosed: vi.fn(() => Promise.resolve()),
   startScanPreview: vi.fn(() => Promise.resolve({ previewId: 'preview-1' })),

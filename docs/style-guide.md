@@ -31,6 +31,9 @@ Writing, code, and design styles.
     catalog is the base the British and Australian overlays fork from, so the register is load-bearing there; the
     decision, the Apple precedent behind it, and the "don't “fix” a US spelling back to British" guardrail live in
     `docs/i18n/en/style.md`. The website and the docs follow the same spelling so one voice reads across all of them.
+  - **"anymore" is one word when it means "no longer"** ("isn’t connected anymore"); "any more" stays two words only for
+    quantity ("any more files"). A new no-longer string also needs `en-GB` and `en-AU` overrides spelled "any more":
+    `docs/i18n/en-GB/style.md` § `any more` for "no longer".
   - **The disk picker is the "volume switcher", in every user-facing string.** It once answered to both "volume chooser"
     and "volume switcher", which sent readers and translators looking for two surfaces. The message keys and command ids
     keep `Chooser` (`shortcuts.scope.volumeChooser`, `pane.leftVolumeChooser`), because those are persisted in

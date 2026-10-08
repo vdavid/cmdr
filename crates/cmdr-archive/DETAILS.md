@@ -53,10 +53,14 @@ specific to retrofitting an existing backend:
 
 ## The `ArchiveVolume` layer (`src/volume.rs`)
 
-`src/volume.rs` is the one file in this backend that touches the `Volume` trait. It maps the archive-native core
-(`ArchiveIndex` / `ArchiveNode` / `ArchiveEntryReader` / `ArchiveError`) onto `FileEntry` / `VolumeReadStream` /
-`VolumeError`, and holds an `Arc<dyn Volume>` **parent** (the volume physically storing the `.zip`), the archive path,
-the display name, and an `Arc<ArchiveIndexCache>`.
+`src/volume.rs` is the one file in this backend that touches the `Volume` trait, with its stream adapters in the private
+child `src/volume_streams.rs` (`ArchiveVolumeReadStream`, the sequential extract's `MemberStream`, and
+`VolumeByteSource`, none of which touches `ArchiveVolume`'s fields). Every read stream reports its entry's date from the
+parsed index, so an extract keeps it (contract:
+`apps/desktop/src-tauri/src/file_system/write_operations/transfer/volume/DETAILS.md` § "Copies keep the source's date").
+It maps the archive-native core (`ArchiveIndex` / `ArchiveNode` / `ArchiveEntryReader` / `ArchiveError`) onto
+`FileEntry` / `VolumeReadStream` / `VolumeError`, and holds an `Arc<dyn Volume>` **parent** (the volume physically
+storing the `.zip`), the archive path, the display name, and an `Arc<ArchiveIndexCache>`.
 
 **The parent seam.** Two answers a read-only archive can't give itself come from the parent:
 
@@ -169,9 +173,9 @@ locally": a direct-SMB volume keeps its `/Volumes/...` mount point, so the `.zip
 mount — but reading it that way defeats the direct connection and can block on a hung mount. Keying on the capability
 forces the read through the parent volume.
 
-**The bridge (`VolumeByteSource`, `src/volume.rs`).** The core's `ArchiveByteSource::read_at` is blocking (the parse and
-every decompress run on `spawn_blocking`), but `Volume::read_range` is async. `VolumeByteSource` captures the tokio
-runtime handle at construction (on the async executor, in `open_remote_source`) and `block_on`s the parent's
+**The bridge (`VolumeByteSource`, `src/volume_streams.rs`).** The core's `ArchiveByteSource::read_at` is blocking (the
+parse and every decompress run on `spawn_blocking`), but `Volume::read_range` is async. `VolumeByteSource` captures the
+tokio runtime handle at construction (on the async executor, in `open_remote_source`) and `block_on`s the parent's
 `read_range` inside the blocking read. Sound because `read_at` only ever runs on a `spawn_blocking` thread (never a
 runtime worker), so `block_on` doesn't reenter the executor — the same bridge the viewer's archive extractor uses. It
 clamps requests to the known size so rc-zip's read-ahead past EOF doesn't ask the backend for absent bytes.
@@ -337,17 +341,13 @@ double-extension split. The reading-core, mutation, and watch tests live with th
 
 `ArchiveVolume` (browse + extract + `scan_for_copy`) and backend routing (§ "Routing and lifecycle") are landed:
 `VolumeManager::resolve`, the shared `src/boundary.rs` detector, the archive LRU, the read-only write guards, the live
-content watch, and zip mutation (browse + extract + edit, local and remote-hosted). What's still ahead (each gap is its
-own GitHub issue: [#258](https://github.com/vdavid/cmdr/issues/258), [#259](https://github.com/vdavid/cmdr/issues/259),
-and [#260](https://github.com/vdavid/cmdr/issues/260); the settled design for the fast zip tail-add in #258 is
-`docs/notes/m-append-spike.md`):
+content watch, and zip mutation (browse + extract + edit, local and remote-hosted). What's still ahead is tracked in
+GitHub issues [#258](https://github.com/vdavid/cmdr/issues/258) and [#260](https://github.com/vdavid/cmdr/issues/260);
+the settled design for the fast zip tail-add in #258 is `docs/notes/m-append-spike.md`.
 
-- **Open-with-external-app for a file INSIDE an archive (deferred).** Enter on a file inside a `.zip` still opens the
-  VIEWER (bounded temp-extract), not the OS default app. Extract-then-launch isn't a clean reuse of
-  `apps/desktop/src-tauri/src/file_viewer/materialize.rs`: that extractor is viewer-`pub(super)`-scoped and its temp is
-  reaped on VIEWER SESSION close, whereas a detached launched app holds the file for an unknown lifetime and has no
-  close event to hook — it needs its own extract-and-persist-until-startup-reaper lifecycle. Deferred deliberately; the
-  viewer interim stands.
+"Open with" on a file inside an archive launches the app on a fresh read-only copy, with its own
+persist-until-next-launch lifecycle: `apps/desktop/src-tauri/src/file_viewer/DETAILS.md` § "Open with on a routed file".
+Enter still opens the viewer.
 
 A REMOTE source copied INTO a zip (an MTP/SMB file dropped onto an archive) now works: the source subtree is pulled to a
 local scratch dir first, then the ordinary local ingest runs against the pulled bytes (source-side pull in

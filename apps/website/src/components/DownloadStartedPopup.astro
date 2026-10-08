@@ -1,0 +1,473 @@
+---
+// One-time, post-download popup. Shows the first time a visitor starts a download (any architecture,
+// any download button), then never again (localStorage flag). Mounted globally in Layout.astro; it
+// listens for clicks on any [data-umami-event="download"] anchor.
+//
+// It asks for the two things that help Cmdr most at this moment: a GitHub star (225 stars unlock a
+// self-submitted cask in Homebrew's main catalog) and a release-email signup (the one way back to
+// someone who tries Cmdr once and drifts off). Discord stays as a quiet link: this audience mostly
+// isn't on Discord, and a Discord-first version of this popup converted at about 5%.
+//
+// The email block has three states, read from the newsletter's own localStorage flags: the form, a
+// "you're already on the list" thank-you for subscribers, and nothing at all for someone who clicked
+// "Not interested" on a newsletter prompt elsewhere.
+import Icon from './icons/Icon.astro'
+import NewsletterForm from './NewsletterForm.astro'
+import { GITHUB_REPO_URL, HOMEBREW_STAR_GOAL, getGithubStarCount } from '../build/github-stars'
+
+const DISCORD_INVITE_URL = 'https://discord.gg/4BVafBneKJ'
+const stars = await getGithubStarCount()
+const starsToGo = stars === null ? null : Math.max(0, HOMEBREW_STAR_GOAL - stars)
+const progressPercent = stars === null ? 0 : Math.min(100, Math.round((stars / HOMEBREW_STAR_GOAL) * 100))
+---
+
+<div class="download-popup" data-download-popup hidden>
+    <div class="download-popup__backdrop" data-download-popup-backdrop></div>
+    <div
+        class="download-popup__dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="download-popup-title"
+        aria-describedby="download-popup-body"
+    >
+        <button type="button" class="download-popup__close" aria-label="Close" data-download-popup-close>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 6l12 12M18 6L6 18"></path>
+            </svg>
+        </button>
+
+        <Icon name="party-popper" size={40} class="download-popup__logo" />
+
+        <h2 id="download-popup-title" class="download-popup__title">Your download has started</h2>
+        <p id="download-popup-body" class="download-popup__body">
+            Thanks for giving Cmdr a try! Open the file, drag Cmdr to Applications, and start it from there.
+        </p>
+
+        <section class="download-popup__ask">
+            <p class="download-popup__ask-text">
+                {
+                    stars !== null && starsToGo !== null && starsToGo > 0 ? (
+                        <>
+                            Cmdr has {stars.toLocaleString('en-US')} GitHub stars. At {HOMEBREW_STAR_GOAL}, it can join
+                            Homebrew's main catalog, so anyone can install it with one short command. Your star gets it
+                            closer.
+                        </>
+                    ) : (
+                        <>
+                            Stars on GitHub help people find Cmdr, and they get it into Homebrew's main catalog, so
+                            anyone can install it with one short command.
+                        </>
+                    )
+                }
+            </p>
+            {
+                stars !== null && starsToGo !== null && starsToGo > 0 && (
+                    <div class="download-popup__progress">
+                        <div
+                            class="download-popup__progress-track"
+                            role="progressbar"
+                            aria-label="GitHub stars toward the Homebrew goal"
+                            aria-valuemin={0}
+                            aria-valuemax={HOMEBREW_STAR_GOAL}
+                            aria-valuenow={stars}
+                        >
+                            <div class="download-popup__progress-fill" style={`width: ${progressPercent}%`} />
+                        </div>
+                        <p class="download-popup__progress-label">
+                            {stars.toLocaleString('en-US')} of {HOMEBREW_STAR_GOAL} stars
+                        </p>
+                    </div>
+                )
+            }
+            <a
+                class="download-popup__star"
+                href={GITHUB_REPO_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                data-umami-event="download-popup-star"
+            >
+                <Icon name="star" size={18} />
+                Star Cmdr on GitHub
+            </a>
+        </section>
+
+        <section class="download-popup__email" data-download-popup-email>
+            <div data-download-popup-email-form>
+                <p class="download-popup__email-label">Want an email when a new version comes out? About once a month.</p>
+                <NewsletterForm variant="inline" />
+            </div>
+            <p class="download-popup__subscribed" data-download-popup-email-subscribed hidden>
+                &#10003; You're already on the release email list. Thanks!
+            </p>
+        </section>
+
+        <p class="download-popup__footer">
+            Prefer chatting? Say hi on <a
+                href={DISCORD_INVITE_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                data-umami-event="download-popup-discord">Discord</a
+            >.
+        </p>
+
+        <button type="button" class="download-popup__done" data-download-popup-close>Close</button>
+    </div>
+</div>
+
+<style>
+    .download-popup[hidden] {
+        display: none;
+    }
+
+    .download-popup {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1.5rem;
+        overflow-y: auto;
+    }
+
+    .download-popup__backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.6);
+        animation: download-popup-fade 200ms ease-out;
+    }
+
+    .download-popup__dialog {
+        position: relative;
+        width: 100%;
+        max-width: 28rem;
+        margin: auto;
+        padding: 2rem 1.75rem 1.25rem;
+        text-align: center;
+        background: var(--color-surface-elevated);
+        border: 1px solid var(--color-border);
+        border-radius: 1rem;
+        box-shadow:
+            0 24px 60px rgba(0, 0, 0, 0.45),
+            0 0 60px var(--color-accent-glow);
+        animation: download-popup-pop 200ms ease-out;
+    }
+
+    .download-popup__close {
+        position: absolute;
+        top: 0.75rem;
+        right: 0.75rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 2rem;
+        height: 2rem;
+        padding: 0;
+        color: var(--color-text-tertiary);
+        background: transparent;
+        border: none;
+        border-radius: 0.5rem;
+        cursor: pointer;
+        transition:
+            color 150ms,
+            background-color 150ms;
+    }
+
+    .download-popup__close svg {
+        width: 1.125rem;
+        height: 1.125rem;
+    }
+
+    .download-popup__close:hover {
+        color: var(--color-text-primary);
+        background: var(--color-surface);
+    }
+
+    .download-popup__close:focus-visible,
+    .download-popup__done:focus-visible,
+    .download-popup__footer a:focus-visible {
+        outline: 2px solid var(--color-accent);
+        outline-offset: 2px;
+    }
+
+    .download-popup :global(.download-popup__logo) {
+        margin: 0 auto 0.75rem;
+    }
+
+    .download-popup__title {
+        margin: 0 0 0.5rem;
+        font-size: 1.375rem;
+        font-weight: 600;
+        color: var(--color-text-primary);
+    }
+
+    .download-popup__body {
+        margin: 0 0 1.5rem;
+        color: var(--color-text-secondary);
+        font-size: 0.9375rem;
+        line-height: 1.55;
+    }
+
+    .download-popup__ask,
+    .download-popup__email {
+        padding: 1.25rem 0 0;
+        border-top: 1px solid var(--color-border);
+    }
+
+    .download-popup__ask {
+        margin-bottom: 1.25rem;
+    }
+
+    .download-popup__ask-text,
+    .download-popup__email-label {
+        margin: 0 0 0.875rem;
+        color: var(--color-text-secondary);
+        font-size: 0.875rem;
+        line-height: 1.55;
+    }
+
+    .download-popup__progress {
+        margin: 0 auto 1rem;
+        max-width: 18rem;
+    }
+
+    .download-popup__progress-track {
+        height: 0.375rem;
+        overflow: hidden;
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: 999px;
+    }
+
+    .download-popup__progress-fill {
+        height: 100%;
+        background: var(--color-accent);
+        border-radius: 999px;
+    }
+
+    .download-popup__progress-label {
+        margin: 0.375rem 0 0;
+        font-size: 0.75rem;
+        color: var(--color-text-tertiary);
+        font-variant-numeric: tabular-nums;
+    }
+
+    .download-popup__star {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1.5rem;
+        font-size: 0.9375rem;
+        font-weight: 600;
+        text-decoration: none;
+        color: var(--color-accent-contrast);
+        background: var(--color-accent);
+        border-radius: 0.625rem;
+        transition: background-color var(--duration-normal);
+    }
+
+    /* The icon is gold by default, which would vanish on the gold button. */
+    .download-popup__star :global(.icon) {
+        color: currentColor;
+    }
+
+    .download-popup__star:hover {
+        background: var(--color-accent-hover);
+    }
+
+    .download-popup__star:focus-visible {
+        outline: 2px solid var(--color-text-primary);
+        outline-offset: 2px;
+    }
+
+    /* The star is the primary ask, so the email form's button steps back to a secondary style. */
+    .download-popup__email :global(.newsletter-form__button) {
+        color: var(--color-text-primary);
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+    }
+
+    .download-popup__email :global(.newsletter-form__button:hover) {
+        background: var(--color-surface-elevated);
+        border-color: var(--color-accent);
+    }
+
+    .download-popup__subscribed {
+        margin: 0;
+        font-size: 0.875rem;
+        color: var(--color-accent-text);
+    }
+
+    .download-popup__subscribed[hidden],
+    [data-download-popup-email][hidden],
+    [data-download-popup-email-form][hidden] {
+        display: none;
+    }
+
+    .download-popup__footer {
+        margin: 1.25rem 0 0.5rem;
+        font-size: 0.8125rem;
+        color: var(--color-text-tertiary);
+    }
+
+    .download-popup__footer a {
+        color: var(--color-accent-text);
+        text-decoration: underline;
+        text-underline-offset: 2px;
+    }
+
+    .download-popup__footer a:hover {
+        color: var(--color-accent-hover);
+    }
+
+    .download-popup__done {
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+        color: var(--color-text-secondary);
+        background: transparent;
+        border: none;
+        border-radius: 0.5rem;
+        cursor: pointer;
+        transition: color 150ms;
+    }
+
+    .download-popup__done:hover {
+        color: var(--color-text-primary);
+    }
+
+    @keyframes download-popup-fade {
+        from {
+            opacity: 0;
+        }
+        to {
+            opacity: 1;
+        }
+    }
+
+    @keyframes download-popup-pop {
+        from {
+            opacity: 0;
+            transform: translateY(8px) scale(0.98);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .download-popup__backdrop,
+        .download-popup__dialog {
+            animation: none;
+        }
+    }
+</style>
+
+<script>
+    const STORAGE_KEY = 'cmdr-download-popup-shown'
+
+    // Module-scoped: the bundled script runs once; `astro:page-load` re-points these at the
+    // current page's freshly-swapped overlay, while the document listeners bind only once.
+    let documentBound = false
+    let currentOpen: (() => void) | null = null
+    let currentKeydown: ((e: KeyboardEvent) => void) | null = null
+
+    const readFlag = (key: string) => {
+        try {
+            return localStorage.getItem(key) === 'true'
+        } catch {
+            return false
+        }
+    }
+
+    const markShown = () => {
+        try {
+            localStorage.setItem(STORAGE_KEY, 'true')
+        } catch {
+            /* localStorage unavailable: it reappears next visit, acceptable */
+        }
+    }
+
+    /** Pick the email block's state from the newsletter's own flags, read at open time so a signup
+     * made elsewhere on the page since load counts. */
+    const syncEmailBlock = (overlay: HTMLElement) => {
+        const block = overlay.querySelector<HTMLElement>('[data-download-popup-email]')
+        const form = overlay.querySelector<HTMLElement>('[data-download-popup-email-form]')
+        const subscribed = overlay.querySelector<HTMLElement>('[data-download-popup-email-subscribed]')
+        if (!block || !form || !subscribed) return
+
+        const isSubscribed = readFlag('newsletter-subscribed')
+        const isDismissed = readFlag('newsletter-dismissed') || readFlag('newsletter-cta-dismissed')
+        block.hidden = !isSubscribed && isDismissed
+        form.hidden = isSubscribed
+        subscribed.hidden = !isSubscribed
+    }
+
+    document.addEventListener('astro:page-load', () => {
+        const overlay = document.querySelector<HTMLElement>('[data-download-popup]')
+        if (!overlay) return
+
+        const dialog = overlay.querySelector<HTMLElement>('.download-popup__dialog')
+        const closers = overlay.querySelectorAll<HTMLElement>('[data-download-popup-close]')
+        const backdrop = overlay.querySelector<HTMLElement>('[data-download-popup-backdrop]')
+
+        let lastFocused: HTMLElement | null = null
+
+        const open = () => {
+            syncEmailBlock(overlay)
+            lastFocused = document.activeElement as HTMLElement
+            overlay.hidden = false
+            overlay.querySelector<HTMLElement>('.download-popup__close')?.focus()
+        }
+
+        const close = () => {
+            overlay.hidden = true
+            lastFocused?.focus()
+        }
+
+        // Trap Tab focus within the dialog while open, close on Escape.
+        const onKeydown = (e: KeyboardEvent) => {
+            if (overlay.hidden) return
+            if (e.key === 'Escape') {
+                e.preventDefault()
+                close()
+                return
+            }
+            if (e.key !== 'Tab' || !dialog) return
+            const focusables = Array.from(
+                dialog.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), input:not([tabindex="-1"]), [tabindex]:not([tabindex="-1"])'),
+            ).filter((el) => el.offsetParent !== null)
+            if (focusables.length === 0) return
+            const first = focusables[0]
+            const last = focusables[focusables.length - 1]
+            if (e.shiftKey && document.activeElement === first) {
+                e.preventDefault()
+                last.focus()
+            } else if (!e.shiftKey && document.activeElement === last) {
+                e.preventDefault()
+                first.focus()
+            }
+        }
+
+        currentOpen = open
+        currentKeydown = onKeydown
+
+        closers.forEach((el) => el.addEventListener('click', close))
+        backdrop?.addEventListener('click', close)
+
+        if (!documentBound) {
+            documentBound = true
+
+            document.addEventListener('click', (e) => {
+                const trigger = (e.target as HTMLElement)?.closest('[data-umami-event="download"]')
+                if (!trigger || readFlag(STORAGE_KEY)) return
+                markShown()
+                // Defer so the browser's own download starts first, unimpeded.
+                setTimeout(() => currentOpen?.(), 0)
+            })
+
+            document.addEventListener('keydown', (e) => currentKeydown?.(e))
+        }
+    })
+</script>

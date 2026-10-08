@@ -18,23 +18,6 @@ export function toFrontendIndices(backendIndices: number[], hasParent: boolean):
   return backendIndices.map((i) => i + 1)
 }
 
-/** Applies re-sort results (new cursor + selection positions) to a pane, adjusting for ".." offset. */
-export function applySortResult(
-  paneRef: FilePaneAPI | undefined,
-  result: { newCursorIndex: number | null; newSelectedIndices: number[] | null },
-  hasParent: boolean,
-) {
-  if (result.newCursorIndex != null) {
-    const frontendIndex = hasParent ? result.newCursorIndex + 1 : result.newCursorIndex
-    void paneRef?.setCursorIndex(frontendIndex)
-  }
-  if (result.newSelectedIndices != null) {
-    const frontendIndices = toFrontendIndices(result.newSelectedIndices, hasParent)
-    paneRef?.setSelectedIndices(frontendIndices)
-  }
-  paneRef?.refreshView()
-}
-
 /** Collects current sort-relevant state from a pane ref, with selection indices converted to backend space. */
 export function collectSortState(paneRef: FilePaneAPI | undefined): {
   cursorFilename: string | undefined

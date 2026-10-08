@@ -56,7 +56,7 @@ impl From<UnattendedReconnect> for WebdavUnattendedReconnect {
 }
 
 // ============================================================================
-// Connecting
+// The server address
 // ============================================================================
 
 /// Parses what a sign-in form typed into the URL the backend dials.
@@ -66,32 +66,6 @@ impl From<UnattendedReconnect> for WebdavUnattendedReconnect {
 fn parse_base_url(url: &str) -> Option<url::Url> {
     let parsed = url::Url::parse(url.trim()).ok()?;
     matches!(parsed.scheme(), "http" | "https").then_some(parsed)
-}
-
-/// Calls off the connect running under `attempt_id`, answering whether one was.
-///
-/// ❗ The way out of a connect that is going nowhere. The probe stops where it
-/// stands, and the connect command (`connectServer` / `connectSavedPlace`)
-/// answers `cancelled`.
-///
-/// ❗ A cancelled connect leaves ❌ no volume registered, ❌ no server remembered,
-/// and ❌ no secret written.
-///
-/// An id nobody is connecting under answers `false`: a cancel racing a connect
-/// that just finished is ordinary, and there is nothing wrong to report.
-#[tauri::command]
-#[specta::specta]
-pub async fn cancel_webdav_connect(attempt_id: String) -> bool {
-    webdav_volume_wiring::cancel_connect(&attempt_id)
-}
-
-/// Drops a WebDAV volume's client and takes it out of the volume registry.
-///
-/// Answers whether there was a WebDAV volume under that id.
-#[tauri::command]
-#[specta::specta]
-pub async fn disconnect_webdav_volume(volume_id: String) -> bool {
-    webdav_volume_wiring::disconnect(&volume_id).await
 }
 
 // ============================================================================
@@ -122,7 +96,8 @@ fn not_a_server_url() -> KeychainError {
 ///
 /// ❗ **This command IS the "remember the secret" switch.** Its meaning is exactly
 /// "put this in the Keychain" and ❌ nothing else: `has_webdav_credentials` reads
-/// the switch back and `delete_webdav_credentials` turns it off, so there is no
+/// the switch back and `delete_webdav_credentials` turns it off (the frontend
+/// reaches both through `servers.rs`), so there is no
 /// second flag anywhere that could disagree with the store.
 ///
 /// ❗ Remembering a secret is what makes unattended reconnects POSSIBLE; it
@@ -155,9 +130,7 @@ pub async fn save_webdav_credentials(url: String, username: String, secret: Stri
 /// A store that didn't answer in time reads as `false`, which is the one place
 /// collapsing a timeout into its fallback is harmless: both answers send the
 /// frontend to the same place, which is to ask.
-#[tauri::command]
-#[specta::specta]
-pub async fn has_webdav_credentials(url: String, username: String) -> bool {
+pub(crate) async fn has_webdav_credentials(url: String, username: String) -> bool {
     let Some(service) = credential_key(&url, &username) else {
         return false;
     };
@@ -168,9 +141,7 @@ pub async fn has_webdav_credentials(url: String, username: String) -> bool {
 }
 
 /// Forgets the stored secret for one account on one server.
-#[tauri::command]
-#[specta::specta]
-pub async fn delete_webdav_credentials(url: String, username: String) -> Result<(), KeychainError> {
+pub(crate) async fn delete_webdav_credentials(url: String, username: String) -> Result<(), KeychainError> {
     let Some(service) = credential_key(&url, &username) else {
         return Err(not_a_server_url());
     };
@@ -217,16 +188,6 @@ pub async fn get_webdav_unattended_reconnect(volume_id: String) -> Option<Webdav
     webdav_volume_wiring::unattended_reconnect(&volume_id)
         .await
         .map(WebdavUnattendedReconnect::from)
-}
-
-/// Drops a server from the list, answering whether one was there.
-///
-/// ❌ Leaves the stored secret alone: forgetting a server from a list isn't the
-/// same request as revoking its credential. `delete_webdav_credentials` is that.
-#[tauri::command]
-#[specta::specta]
-pub fn forget_known_webdav_server(url: String, username: String) -> bool {
-    webdav_known_servers::forget(&url, &username)
 }
 
 #[cfg(test)]

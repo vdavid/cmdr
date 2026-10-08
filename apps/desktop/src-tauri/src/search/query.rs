@@ -164,12 +164,14 @@ fn keyed_list(key: &str, values: &[String]) -> String {
     format!("[{}]", items.join(", "))
 }
 
+/// A byte count for a model or a log to read ("1.5 KiB", "214.3 GiB"). Base 1024, so the symbols are IEC
+/// binary (KiB, MiB, GiB, TiB): a symbol always names the base its number was divided by.
 pub(crate) fn format_size(bytes: u64) -> String {
-    const KB: u64 = 1_024;
-    const MB: u64 = 1_024 * KB;
-    const GB: u64 = 1_024 * MB;
-    const TB: u64 = 1_024 * GB;
-    const UNITS: &[(u64, &str)] = &[(TB, "TB"), (GB, "GB"), (MB, "MB"), (KB, "KB")];
+    const KIB: u64 = 1_024;
+    const MIB: u64 = 1_024 * KIB;
+    const GIB: u64 = 1_024 * MIB;
+    const TIB: u64 = 1_024 * GIB;
+    const UNITS: &[(u64, &str)] = &[(TIB, "TiB"), (GIB, "GiB"), (MIB, "MiB"), (KIB, "KiB")];
 
     for &(threshold, unit) in UNITS {
         if bytes >= threshold {
@@ -182,6 +184,34 @@ pub(crate) fn format_size(bytes: u64) -> String {
         }
     }
     format!("{bytes} B")
+}
+
+/// Parse a size a person or a model wrote ("50 MB", "1.5GiB", "500kb", "4096") into bytes, case-insensitively.
+/// The symbol decides the base, matching what Cmdr's own sizes mean: IEC `KiB`/`MiB`/`GiB`/`TiB` are base 1024,
+/// SI `kB`/`MB`/`GB`/`TB` base 1000. Uppercase `KB` is read leniently as the SI kilobyte. A bare number is bytes.
+pub(crate) fn parse_size(text: &str) -> Option<u64> {
+    const KIB: u64 = 1_024;
+    // IEC suffixes first, so "mib" isn't read as a "b" suffix after "mi".
+    const UNITS: &[(&str, u64)] = &[
+        ("tib", KIB * KIB * KIB * KIB),
+        ("gib", KIB * KIB * KIB),
+        ("mib", KIB * KIB),
+        ("kib", KIB),
+        ("tb", 1_000_000_000_000),
+        ("gb", 1_000_000_000),
+        ("mb", 1_000_000),
+        ("kb", 1_000),
+        ("b", 1),
+    ];
+    let lower = text.trim().to_lowercase();
+    let Some((number, multiplier)) = UNITS
+        .iter()
+        .find_map(|&(suffix, multiplier)| lower.strip_suffix(suffix).map(|number| (number, multiplier)))
+    else {
+        return lower.parse().ok();
+    };
+    let value: f64 = number.trim().parse().ok()?;
+    (value.is_finite() && value >= 0.0).then_some((value * multiplier as f64) as u64)
 }
 
 pub(crate) fn format_timestamp(ts: u64) -> String {

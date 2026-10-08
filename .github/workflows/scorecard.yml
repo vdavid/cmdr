@@ -1,0 +1,56 @@
+name: Scorecard
+
+# OpenSSF Scorecard: grades the repo's supply-chain hygiene (pinned actions, token permissions,
+# branch protection, signed releases, and more) and publishes the result to the public Scorecard
+# API, which backs the README badge and https://scorecard.dev/viewer/?uri=github.com/vdavid/cmdr.
+# The SARIF also lands in the repo's code-scanning tab, one alert per failing check.
+#
+# ❗ `publish_results: true` makes the API verify this workflow before accepting a result: no
+# top-level `env` or `defaults`, no workflow-level write permission, `ubuntu-latest`, and only
+# allowlisted actions in the job (checkout, upload-artifact, codeql upload-sarif, the scorecard
+# action itself). Keep it minimal; anything else makes the publish step fail.
+on:
+  push:
+    branches:
+      - main
+  # Re-scores Branch-Protection as soon as a rule changes.
+  branch_protection_rule:
+  schedule:
+    - cron: '23 5 * * 1' # weekly, Monday 5:23 AM UTC
+  workflow_dispatch:
+
+permissions: read-all
+
+jobs:
+  analysis:
+    name: Scorecard analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      security-events: write # upload the SARIF to code scanning
+      id-token: write # sign the published result, so the API can trust it came from this workflow
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Run analysis
+        uses: ossf/scorecard-action@2d1146689b8cda280b9bc96326124645441f03bc # v2.4.4
+        with:
+          results_file: results.sarif
+          results_format: sarif
+          publish_results: true
+
+      - name: Upload SARIF as an artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: scorecard-sarif
+          path: results.sarif
+          retention-days: 5
+
+      - name: Upload to code scanning
+        uses: github/codeql-action/upload-sarif@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v4.38.2
+        with:
+          sarif_file: results.sarif

@@ -127,11 +127,20 @@ fn a_selector_freezes_at_creation_and_is_never_resolved_again() {
 
 /// A group with a real sweep behind it, and a memory store to learn into.
 fn a_trashable_group(conn: &Connection) -> i64 {
+    a_trashable_group_from(conn, None)
+}
+
+/// A group whose sweep came out of `conversation_id`, or out of no thread at all.
+fn a_trashable_group_from(conn: &Connection, conversation_id: Option<i64>) -> i64 {
     let index = FakeIndex::holding(&["/Users/someone/Downloads/one.dmg"]);
     let selector = downloads_dmgs();
     let ops = resolve_selector_ops(&index, &selector).expect("resolve");
     let group = selector_group(&selector, GroupIntent::Trash { sources: ops }, None).expect("build group");
-    propose(conn, &NewSweep::default(), std::slice::from_ref(&group), 100)
+    let sweep = NewSweep {
+        conversation_id,
+        ..NewSweep::default()
+    };
+    propose(conn, &sweep, std::slice::from_ref(&group), 100)
         .expect("propose")
         .group_ids[0]
 }
@@ -197,17 +206,7 @@ fn closing_a_dialog_teaches_the_agent_nothing() {
 fn a_decision_shows_up_in_the_thread_that_suggested_it() {
     let conn = migrated_conn();
     let conversation_id = crate::agent::store::create_conversation(&conn, "Downloads", 50, None).expect("thread");
-    let index = FakeIndex::holding(&["/Users/someone/Downloads/one.dmg"]);
-    let selector = downloads_dmgs();
-    let ops = resolve_selector_ops(&index, &selector).expect("resolve");
-    let group = selector_group(&selector, GroupIntent::Trash { sources: ops }, None).expect("build group");
-    let sweep = NewSweep {
-        conversation_id: Some(conversation_id),
-        ..NewSweep::default()
-    };
-    let group_id = propose(&conn, &sweep, std::slice::from_ref(&group), 100)
-        .expect("propose")
-        .group_ids[0];
+    let group_id = a_trashable_group_from(&conn, Some(conversation_id));
 
     reject(&conn, group_id, 200, RejectSource::Review, None).expect("reject");
 
@@ -221,6 +220,129 @@ fn a_decision_shows_up_in_the_thread_that_suggested_it() {
     let decided = decided.expect("the thread says what the user answered");
     assert_eq!(decided.verb, crate::agent::types::ProposalVerb::Trash);
     assert_eq!(decided.ops, 1);
+}
+
+// ── What an open thread hears, live ───────────────────────────────────────────
+
+/// One decision as it was announced: the thread it was for, its timeline row, and the answer.
+type Announced = (i64, i64, crate::agent::types::ProposalDecision);
+
+/// The decisions this test's thread has announced to the windows since the last call.
+/// Everything else on the turn transport is dropped, so a test reads only what it asks about.
+fn announced_decisions() -> Vec<Announced> {
+    use crate::agent::chat::stream::{AskCmdrStreamEvent, take_emitted_turns};
+    take_emitted_turns()
+        .into_iter()
+        .filter_map(|turn| match turn.event {
+            AskCmdrStreamEvent::ProposalDecided {
+                message_id, decision, ..
+            } => Some((turn.conversation_id, message_id, decision)),
+            _ => None,
+        })
+        .collect()
+}
+
+/// The id of the one decision row a thread's timeline holds.
+fn decision_row_id(conn: &Connection, conversation_id: i64) -> i64 {
+    crate::agent::store::list_messages(conn, conversation_id, 100, 0)
+        .expect("messages")
+        .into_iter()
+        .find(|message| {
+            matches!(
+                message.content,
+                crate::agent::store::StoredContent::Event(
+                    crate::agent::store::ConversationEvent::ProposalDecided { .. }
+                )
+            )
+        })
+        .expect("the thread says what the user answered")
+        .id
+}
+
+/// A thread the user has open must show the answer they gave, and the row is persisted with
+/// nothing streaming it. So the write announces itself, to the conversation it landed in and
+/// carrying the row's own id: a rail showing another thread drops it, and one that also
+/// loaded the row shows it once.
+#[test]
+fn a_rejection_is_announced_to_the_thread_that_suggested_it() {
+    let conn = migrated_conn();
+    let conversation_id = crate::agent::store::create_conversation(&conn, "Downloads", 50, None).expect("thread");
+    let group_id = a_trashable_group_from(&conn, Some(conversation_id));
+    announced_decisions();
+
+    reject(&conn, group_id, 200, RejectSource::Review, None).expect("reject");
+
+    let announced = announced_decisions();
+    assert_eq!(announced.len(), 1, "{announced:?}");
+    let (to_thread, row_id, decision) = &announced[0];
+    assert_eq!(*to_thread, conversation_id);
+    assert_eq!(*row_id, decision_row_id(&conn, conversation_id));
+    assert_eq!(decision.outcome, crate::agent::types::ProposalOutcomeKind::Rejected);
+}
+
+/// ⚠️ **An approval's line is written at SETTLE, so that is when it is announced.** The claim
+/// is when `suggestions-changed` says `approved`, and the thread has nothing new to show yet:
+/// a rail that re-read its thread on that signal would find the rows it already had.
+#[test]
+fn an_approval_is_announced_when_it_settles_and_not_when_it_is_claimed() {
+    let conn = migrated_conn();
+    let conversation_id = crate::agent::store::create_conversation(&conn, "Downloads", 50, None).expect("thread");
+    let group_id = a_trashable_group_from(&conn, Some(conversation_id));
+    record_acceptance(&conn, group_id, &[], 150).expect("preflight");
+    announced_decisions();
+
+    let claim = approve(&conn, group_id, 200).expect("approve");
+    assert!(matches!(claim, ClaimOutcome::Claimed(_)), "{claim:?}");
+    assert_eq!(
+        announced_decisions(),
+        Vec::<Announced>::new(),
+        "a claim has put nothing in the thread yet"
+    );
+
+    outcomes::record_completion(&conn, None, group_id, 300);
+
+    let announced = announced_decisions();
+    assert_eq!(announced.len(), 1, "{announced:?}");
+    let (to_thread, row_id, decision) = &announced[0];
+    assert_eq!(*to_thread, conversation_id);
+    assert_eq!(*row_id, decision_row_id(&conn, conversation_id));
+    assert!(
+        matches!(decision.outcome, crate::agent::types::ProposalOutcomeKind::Ran { .. }),
+        "{decision:?}"
+    );
+}
+
+/// A sweep can have no thread behind it, and a thread can be deleted from under its sweep
+/// (the column is NULLed). Either way there is no timeline for a line to land in, so nothing
+/// is announced, and an event that doesn't exist can't match whatever thread happens to be
+/// open.
+#[test]
+fn a_decision_with_no_thread_to_land_in_is_announced_to_nobody() {
+    let conn = migrated_conn();
+    let never_had_one = a_trashable_group_from(&conn, None);
+    let conversation_id = crate::agent::store::create_conversation(&conn, "Downloads", 50, None).expect("thread");
+    let thread_deleted = a_trashable_group_from(&conn, Some(conversation_id));
+    crate::agent::store::delete_conversation(&conn, conversation_id).expect("delete the thread");
+    announced_decisions();
+
+    reject(&conn, never_had_one, 200, RejectSource::Review, None).expect("reject");
+    reject(&conn, thread_deleted, 200, RejectSource::Review, None).expect("reject");
+
+    assert_eq!(announced_decisions(), Vec::<Announced>::new());
+}
+
+/// A dismissed dialog writes no line (it is not an answer), so it announces none either. Its
+/// sweep's thread is the one the user has OPEN, which is exactly where a stray line would show.
+#[test]
+fn closing_a_dialog_announces_nothing_to_the_open_thread() {
+    let conn = migrated_conn();
+    let conversation_id = crate::agent::store::create_conversation(&conn, "Downloads", 50, None).expect("thread");
+    let group_id = a_trashable_group_from(&conn, Some(conversation_id));
+    announced_decisions();
+
+    reject(&conn, group_id, 200, RejectSource::DialogDismissed, None).expect("reject");
+
+    assert_eq!(announced_decisions(), Vec::<Announced>::new());
 }
 
 /// The transition is conditional, so the hook fires once per group however many times the

@@ -11,6 +11,17 @@ is watcher-fresh in `LISTING_CACHE`, and otherwise the walker resolves it. Both 
 `with_scan_meta(current_dir, dirs_done, None)` so the scanning UI shows the dir count and the directory the walker is
 currently in. The per-entry callback is throttled so the FE tally climbs mid-listing on slow MTP roundtrips.
 
+**Files go in the backend's batches where it has them.** A backend that answers `Volume::delete_batch_size` (S3:
+`DeleteObjects`, 1,000 keys a request) gets the scanned files in chunks of that size through `delete_files`, with the
+pause and Cancel point between chunks; everyone else gets one `delete_with_cancel` per file, as before. Decision/Why:
+`delete` on an object store re-proves each path is a file (a capped listing, then a HEAD) before deleting it, so a
+1,005-object folder cost 3,021 requests and minutes on R2 and GCS; the scan already listed these as files, which is the
+`delete_files` contract. Every file a batch removed is journaled and counted even when another in it failed; the first
+failure ends the delete, reported against its own path (S3 reads each key's failure out of the answer body). A throttled
+or cut-off batch is the backend's to send again (`cmdr-s3`'s `batch.rs`). Pinned by
+`backend_suites/s3_engine_integration_test.rs::a_folder_of_1005_objects_deletes` (two `DeleteObjects`, no per-object
+request).
+
 ## The volume delete's own lifecycle
 
 `volume_start.rs::start_volume_delete` registers the op with the manager and hands it a deferred async start; `drive_volume_delete` is that start. A local delete rides `start_write_operation`'s generic spawn, but the `Volume` trait's I/O is `async`, so a volume delete owns its own: the settle guard, `await_claimed_preview`, `open_volume_op` under the REAL volume id (never the `"root"` the local helpers bake in), the source binding, the walk, the terminal event, and `on_settled`.

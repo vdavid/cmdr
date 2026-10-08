@@ -4,12 +4,19 @@
     import { homeDir } from '@tauri-apps/api/path'
     import { getVolumeSpace, DEFAULT_VOLUME_ID, type SpaceInfo } from '$lib/tauri-commands'
     import type { SortColumn, SortOrder, ConflictResolution, TransferOperationType } from '$lib/file-explorer/types'
-    import type { TransferConfirmPayload } from '$lib/file-explorer/pane/dialog-props'
-    import { validateDirectoryPath, validateNotEmpty } from '$lib/utils/filename-validation'
+    import type { TransferConfirmPayload, TransferConfirmer } from '$lib/file-explorer/pane/dialog-props'
+    import {
+        validateDirectoryPath,
+        validateDisallowedChars,
+        validateNameLength,
+        validateNotEmpty,
+    } from '$lib/utils/filename-validation'
     import { createTransferDestExistsCheck } from './transfer-dest-exists.svelte'
     import { conflictPolicyFromMcpName } from './conflict-policy'
     import CompressLevelControl from './CompressLevelControl.svelte'
     import CompressEstimateLine from './CompressEstimateLine.svelte'
+    import S3CostLine from '../S3CostLine.svelte'
+    import { costRequestFor } from '../s3-cost-line'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import TextInput from '$lib/ui/TextInput.svelte'
     import Button from '$lib/ui/Button.svelte'
@@ -22,12 +29,16 @@
         generateTitle,
         initialEditedPath,
         editedPathAfterOperationChange,
+        joinPathLeaf,
         shouldShowHardlinkNote,
+        splitPathLeaf,
+        toVolumeRelativePath,
     } from './transfer-dialog-utils'
     import { getPathValidationError, formatSpaceInfo } from './transfer-dialog-logic'
     import { createTransferScanState } from './transfer-scan-state.svelte'
     import { createTransferConflictCheck } from './transfer-conflict-check.svelte'
     import { getVolumes } from '$lib/stores/volume-store.svelte'
+    import { capabilitiesFor } from '$lib/file-explorer/pane/volume-capabilities'
     import { formatNumber } from '$lib/file-explorer/selection/selection-info-utils'
     import Size from '$lib/ui/Size.svelte'
     import { formatByteSize } from '$lib/units'
@@ -68,7 +79,17 @@
          *  open): the FE then acks the round-trip WITHOUT an operationId, since no
          *  op spawned. The normal spawn reply happens in the progress state. */
         mcpRequestId?: string
+        /**
+         * Rename mode: the ONE source moves to this name in place (F2 on a big S3
+         * folder, `pane/rename-as-move.ts`). The path box holds folder + name, the
+         * Copy/Move/Compress toggle is gone, and confirm splits the box back.
+         */
+        newName?: string
         onConfirm: (payload: TransferConfirmPayload) => void
+        /** Takes this dialog's own confirm for as long as it's mounted, so an MCP
+         *  `dialog confirm` presses the same button a person does. Returns the
+         *  unregister. */
+        registerConfirmer?: (confirm: TransferConfirmer) => () => void
         onCancel: () => void
     }
 
@@ -90,9 +111,13 @@
         autoConfirm = false,
         autoConfirmOnConflict,
         mcpRequestId,
+        newName,
         onConfirm,
+        registerConfirmer,
         onCancel,
     }: Props = $props()
+
+    const isRenameMode = newName !== undefined
 
     let activeOperationType = $state<TransferOperationType>(initialOperationType)
 
@@ -129,10 +154,27 @@
     // Compute initial volume-relative path. Can't use $derived selectedVolume here (not yet available),
     // so look up the volume path directly from the props.
     const initialVolumePath = volumes.find((v) => v.id === currentVolumeId)?.path ?? '/'
-    let editedPath = $state(
-        initialEditedPath(initialOperationType, destinationPath, initialVolumePath, sourcePaths, sourceFolderPath),
+    const initialFolderOrTarget = initialEditedPath(
+        initialOperationType,
+        destinationPath,
+        initialVolumePath,
+        sourcePaths,
+        sourceFolderPath,
     )
-    log.debug('Initial target: path={editedPath}, volume={currentVolumeId}', { editedPath, currentVolumeId })
+    let editedPath = $state(
+        newName === undefined ? initialFolderOrTarget : joinPathLeaf(toVolumeRelativePath(destinationPath, initialVolumePath), newName),
+    )
+    /** Rename mode's path box, split back into the folder it lands in and the new name. */
+    const renameTarget = $derived(splitPathLeaf(editedPath))
+    log.debug(
+        'Initial path resolution: destinationPath={destinationPath}, currentVolumeId={currentVolumeId}, initialVolumePath={initialVolumePath}, editedPath={editedPath}',
+        {
+            destinationPath,
+            currentVolumeId,
+            initialVolumePath,
+            editedPath,
+        },
+    )
     let selectedVolumeId = $state(currentVolumeId)
     let pathInputRef: HTMLInputElement | undefined = $state()
 
@@ -164,13 +206,13 @@
 
     const volumeItems = $derived<SelectItem[]>(actualVolumes.map((v) => ({ value: v.id, label: v.name })))
 
-    const singleTransfer = $derived(activeOperationType !== 'compress' && sourcePaths.length === 1)
+    const singleTransfer = $derived(!isRenameMode && activeOperationType !== 'compress' && sourcePaths.length === 1)
     const namedTarget = $derived(singleTransfer ? resolveTransferTarget({
         enteredPath: editedPath, sourceFolderPath, sourcePath: sourcePaths[0], sourceVolumeId, selectedVolumeId, volumes, homePath: userHomePath,
     }) : null)
     const targetVolumeId = $derived(namedTarget?.volumeId ?? selectedVolumeId)
     const selectedVolume = $derived(actualVolumes.find((v) => v.id === targetVolumeId))
-    const targetPath = $derived(namedTarget?.path ?? editedPath)
+    const targetPath = $derived(isRenameMode ? renameTarget.folder : (namedTarget?.path ?? editedPath))
 
     /** A same-volume move: the source and destination are the SAME NON-DEFAULT
      *  volume (one smb2 share / one MTP device) and the active operation is Move.
@@ -187,8 +229,18 @@
      *  re-scan. So local→local must keep the deep preview running, matching the
      *  same guard in `TransferProgressDialog`'s `isSameVolumeMove`. Derived from
      *  what the dialog already knows (no extra prop). */
+    //  Rename mode is never this fast path: its move copies every object (that's
+    //  why the editor sent it here), and the backend consumes the preview the
+    //  dialog's counts come from. Nor is a volume whose renames copy (S3,
+    //  `renamesCanCopy`): its move is billed server-side copying, so it scans for
+    //  the counts and the cost line, and hands that preview to the backend the
+    //  same way rename mode does.
     const isSameVolumeMove = $derived(
-        activeOperationType === 'move' && sourceVolumeId !== DEFAULT_VOLUME_ID && sourceVolumeId === targetVolumeId,
+        !isRenameMode &&
+            activeOperationType === 'move' &&
+            sourceVolumeId !== DEFAULT_VOLUME_ID &&
+            sourceVolumeId === targetVolumeId &&
+            !capabilitiesFor(sourceVolumeId).renamesCanCopy,
     )
 
     function changeOperation(next: string) {
@@ -275,6 +327,24 @@
     )
 
     const confirmLabel = $derived(tString(confirmLabelKey(activeOperationType)))
+    // A same-volume move that renames in one call never scans, so it never asks.
+    // The overwrites the policy makes are priced from the conflict check's
+    // clashes, once it has answered (rename mode's new name is never taken).
+    const costClashes = $derived(
+        conflicts.conflictCheckComplete && !isRenameMode
+            ? { resolution: conflictPolicy, clashes: conflicts.fileClashes }
+            : null,
+    )
+    const costRequest = $derived(
+        costRequestFor({
+            operation: activeOperationType,
+            scanComplete,
+            previewId: scan.previewId,
+            sourceVolumeId,
+            destinationVolumeId: targetVolumeId,
+            clashes: costClashes,
+        }),
+    )
 
     /** Counting state for the tallies element, exposed as `data-scan-state` so
      *  E2E tests can wait race-free for the scan to settle before asserting the
@@ -286,10 +356,11 @@
      *                  nothing to count.
      *   - `counting` → a scan is in flight (or about to start on mount).
      *   - `unavailable` → the scan stopped without an answer; the tallies are a
-     *                  floor, and the notice under them says so.
+     *                  floor, and the notice under them says so. Also a preview
+     *                  that refused to start (the source isn't connected).
      *  `done` wins over `skipped`: a same-volume COPY still scans and completes. */
     const scanState = $derived<'counting' | 'done' | 'skipped' | 'unavailable'>(
-        scanComplete ? 'done' : scan.scanFailure ? 'unavailable' : isSameVolumeMove ? 'skipped' : 'counting',
+        scanComplete ? 'done' : scan.scanFailure || scan.sourceRefusal ? 'unavailable' : isSameVolumeMove ? 'skipped' : 'counting',
     )
 
     /** Settle state of the top-level conflict check, exposed as `data-conflict-state`
@@ -310,22 +381,37 @@
             ? 'done'
             : conflicts.conflictCheckUnknown
               ? 'unknown'
-              : activeOperationType === 'compress'
+              : activeOperationType === 'compress' || isRenameMode
                 ? 'skipped'
                 : 'checking',
     )
 
     const pathError = $derived.by(() => {
+        if (isRenameMode) return renamePathError()
         if (singleTransfer && !namedTarget) return validateNotEmpty('').message
         const structural = validateDirectoryPath(namedTarget ? `${namedTarget.parent}/${namedTarget.name}` : editedPath)
         if (structural.severity === 'error') return structural.message
         return getPathValidationError(sourcePaths, namedTarget?.fullPath ?? targetPath, activeOperationType, !!namedTarget)
     })
 
+    /** Rename mode validates the folder's shape and the NEW NAME as a name.
+     *  `getPathValidationError` would call the source's own folder "already there". */
+    function renamePathError(): string | null {
+        const structural = validateDirectoryPath(renameTarget.folder)
+        if (structural.severity === 'error') return structural.message
+        const isDir = folderCount > 0
+        for (const check of [validateNotEmpty, validateDisallowedChars, validateNameLength]) {
+            const result = check(renameTarget.leaf, isDir)
+            if (result.severity === 'error') return result.message
+        }
+        return null
+    }
+
     // Destination-existence check (debounced, async) behind the yellow "will be
     // created" warning. Created synchronously here (component init) so its internal
     // `$effect` lands in the effect-tracking context, matching the scan/conflict
     // factories above.
+    // Rename mode asks about the FOLDER the source lands in, not the new name.
     const destExists = createTransferDestExistsCheck({
         getEditedPath: () => targetPath,
         getSelectedVolumeId: () => targetVolumeId,
@@ -334,9 +420,12 @@
     })
 
     // The destination folder takes no writes, said before confirm (red, beneath the
-    // path box, after a structural error). Confirm stays enabled: the transfer asks
-    // again before it writes and refuses with its own typed error, which is also
-    // what an MCP auto-confirm meets.
+    // path box, after a structural error). Confirm is disabled while it shows, the
+    // same way a path error disables it, with the notice as the reason: the transfer
+    // asks the same question before it writes and refuses anyway, so an enabled button
+    // only led to that refusal in an extra dialog. A notice gone stale (the folder
+    // became writable while the dialog was open) clears on the next edit of the path.
+    // MCP auto-confirm skips the button and meets the backend's typed refusal instead.
     const REFUSAL_KEY = {
         readOnlyFilesystem: 'fileOperations.transferDialog.destinationReadOnly',
         noPermission: 'fileOperations.transferDialog.destinationNoPermission',
@@ -360,6 +449,18 @@
                 : 'fileOperations.transferDialog.targetWillBeCreatedMove',
         )
     })
+
+    // The path starts with the place's own root folder (`/srv/data/photos` on a
+    // place rooted at `/srv/data`), so it can be read two ways (#164). The transfer
+    // goes where the box says; this names that and offers the other reading, and
+    // nothing rewrites the box unless the button is pressed. Outranks "will be
+    // created", which is usually true of the doubled folder too.
+    const rootEcho = $derived(pathError || targetRefusal ? null : destExists.rootEcho)
+
+    function useStrippedPath() {
+        if (rootEcho) editedPath = namedTarget ? joinPathLeaf(rootEcho.stripped, namedTarget.name) : rootEcho.stripped
+        pathInputRef?.focus()
+    }
 
     // Free-space text is intentionally uncolored: red GB would falsely signal "low space".
     const spaceInfoText = $derived(
@@ -398,7 +499,7 @@
         checkedTarget = key
         conflicts.reset()
         conflictCheckPromise = null
-        if (activeOperationType === 'compress' || pathError) return
+        if (activeOperationType === 'compress' || isRenameMode || pathError) return
         const timer = setTimeout(() => {
             conflictCheckPromise ??= conflicts.check()
         }, 300)
@@ -450,7 +551,9 @@
         // auto-confirm branch so the fast path's `handleConfirm` await guard sees a
         // real promise. Compress makes ONE new file, so multi-file dest conflicts
         // are meaningless — it skips the check and uses the dest-exists affordance.
-        if (activeOperationType !== 'compress' && !pathError) conflictCheckPromise ??= conflicts.check()
+        if (activeOperationType !== 'compress' && !isRenameMode && !pathError) {
+            conflictCheckPromise ??= conflicts.check()
+        }
 
         // Auto-confirm if MCP requested it (after a tick so the dialog is fully initialized)
         if (autoConfirm) {
@@ -461,6 +564,7 @@
 
     onDestroy(() => {
         destroyed = true
+        unregisterConfirmer?.()
         destExists.cancel()
         // Free the scan preview unless the user confirmed (then the
         // TransferProgressDialog / the started op takes over the same scan and
@@ -486,16 +590,21 @@
      * `config_resolution == Skip`). Under `stop` the backend prompts per clash at
      * runtime, so dispatching with `conflicts: []` costs information, never safety.
      *
-     * A human can't reach `skip` while the check is running — the policy radios only
-     * render once it's done — so this await belongs to the MCP auto-confirm path,
-     * where the names are a real win and nobody is watching the button.
+     * Only the auto-confirm waits for them: it fires on mount, before the check
+     * can have answered, and nobody is watching the button. A person can't reach
+     * `skip` while the check is running (the policy radios only render once it's
+     * done), and an MCP `dialog confirm` answers within its ack budget, so both
+     * dispatch with whatever names the check has by then. A dest listing can take
+     * minutes on a big remote folder.
      */
-    function needsConflictNames(): boolean {
-        return conflictPolicy === 'skip'
+    function needsConflictNames(isAuto: boolean): boolean {
+        return isAuto && conflictPolicy === 'skip'
     }
 
     async function handleConfirm(isAuto = false) {
-        if (pathError || confirmed) return
+        // A refused source can't be read, so there's nothing to confirm. A confirm that
+        // beats the refusal (MCP auto-confirm) reaches the backend, which refuses it typed.
+        if (pathError || scan.sourceRefusal || confirmed) return
         confirmed = true
         confirmPending = true
         // Compress auto-confirm must not silently overwrite an existing archive:
@@ -518,7 +627,7 @@
         // check only gates `skip`.
         if (isSameVolumeMove) {
             scan.cancelPreview()
-            if (needsConflictNames()) await (conflictCheckPromise ??= conflicts.check())
+            if (needsConflictNames(isAuto)) await (conflictCheckPromise ??= conflicts.check())
             onConfirm({
                 destination: targetPath,
                 destinationName: namedTarget?.name,
@@ -544,7 +653,7 @@
         // can take minutes on a big remote dir, and only `skip` consumes its
         // names.
         await scan.scanStarted
-        if (needsConflictNames()) await (conflictCheckPromise ??= conflicts.check())
+        if (needsConflictNames(isAuto) && !isRenameMode) await (conflictCheckPromise ??= conflicts.check())
         onConfirm({
             destination: targetPath,
             destinationName: namedTarget?.name,
@@ -553,8 +662,17 @@
             conflictResolution: conflictPolicy,
             operationType: activeOperationType,
             preKnownConflicts: conflicts.conflictNames,
+            ...(isRenameMode ? { newName: renameTarget.leaf } : {}),
         })
     }
+
+    // An MCP `dialog confirm` is the Confirm button under a policy the agent named:
+    // same path, same box contents, same preview. Registered during init, so a
+    // confirm that lands while the mount is still resolving the home dir finds it.
+    const unregisterConfirmer = registerConfirmer?.((policy) => {
+        conflictPolicy = policy
+        void handleConfirm()
+    })
 
     function handleCancel() {
         // A confirm already committed and is only waiting to dispatch: the pending
@@ -569,9 +687,19 @@
         onCancel()
     }
 
+    /**
+     * A person's confirm: the button or Enter. Refused while the destination
+     * refuses writes, where the button reads disabled. ❌ Not in `handleConfirm`:
+     * an MCP confirm goes through that, and it meets the backend's typed refusal.
+     */
+    function confirmFromUser() {
+        if (targetRefusal) return
+        void handleConfirm()
+    }
+
     function handleKeydown(event: KeyboardEvent) {
         if (event.key === 'Enter') {
-            void handleConfirm()
+            confirmFromUser()
         }
     }
 
@@ -579,7 +707,7 @@
         if (event.key === 'Enter') {
             event.preventDefault()
             event.stopPropagation()
-            void handleConfirm()
+            confirmFromUser()
         }
     }
 </script>
@@ -597,15 +725,20 @@
 
     <div class="dialog-body" data-conflict-state={conflictState}>
         <!-- Copy / Move / Compress. `fullWidth` so the segmented control spans the
-             same column as the fields below it. -->
-        <ToggleGroup
-            semantics="toggles"
-            value={activeOperationType}
-            options={operationOptions}
-            onChange={changeOperation}
-            ariaLabel={tString('fileOperations.transferDialog.operationAria')}
-            fullWidth
-        />
+             same column as the fields below it. Rename mode is a move and nothing
+             else, so it shows why instead. -->
+        {#if isRenameMode}
+            <p class="rename-hint">{tString('fileOperations.transferDialog.renameByMoveHint')}</p>
+        {:else}
+            <ToggleGroup
+                semantics="toggles"
+                value={activeOperationType}
+                options={operationOptions}
+                onChange={changeOperation}
+                ariaLabel={tString('fileOperations.transferDialog.operationAria')}
+                fullWidth
+            />
+        {/if}
 
         <!-- Where the items come from: the full source path, middle-shortened when
              it's too long for the row (the tail carries the meaning). -->
@@ -623,6 +756,7 @@
                             items={volumeItems}
                             value={targetVolumeId}
                             ariaLabel={tString('fileOperations.transferDialog.destVolumeAria')}
+                            disabled={isRenameMode}
                             onChange={(id: string) => {
                                 selectedVolumeId = id
                                 const root = volumes.find((v) => v.id === id)?.path ?? '/'
@@ -646,15 +780,17 @@
                         bind:inputElement={pathInputRef}
                         bind:value={editedPath}
                         invalid={!!pathError || !!targetRefusal}
-                        warning={!!targetWarning}
+                        warning={!!rootEcho || !!targetWarning}
                         ariaLabel={tString('fileOperations.transferDialog.destPathAria')}
                         aria-describedby={pathError
                             ? 'transfer-path-error'
                             : targetRefusal
                               ? 'transfer-path-refusal'
-                              : targetWarning
-                                ? 'transfer-path-warning'
-                                : undefined}
+                              : rootEcho
+                                ? 'transfer-path-root-echo'
+                                : targetWarning
+                                  ? 'transfer-path-warning'
+                                  : undefined}
                         spellcheck={false}
                         autocomplete="off"
                         onkeydown={handleInputKeydown}
@@ -663,6 +799,19 @@
                         <p id="transfer-path-error" class="path-error" role="alert">{pathError}</p>
                     {:else if targetRefusal}
                         <p id="transfer-path-refusal" class="path-error" role="alert">{targetRefusal}</p>
+                    {:else if rootEcho}
+                        <div class="path-warning root-echo">
+                            <p id="transfer-path-root-echo">
+                                {tString('fileOperations.transferDialog.rootEchoWarning', {
+                                    rootFolder: rootEcho.rootFolder,
+                                    resolvedPath: rootEcho.resolved,
+                                    strippedPath: rootEcho.stripped,
+                                })}
+                            </p>
+                            <Button variant="secondary" size="mini" onclick={useStrippedPath}>
+                                {tString('fileOperations.transferDialog.rootEchoUseStripped')}
+                            </Button>
+                        </div>
                     {:else if targetWarning}
                         <p id="transfer-path-warning" class="path-warning">{targetWarning}</p>
                     {/if}
@@ -701,13 +850,24 @@
                 </span>
             {/if}
         </div>
+        <S3CostLine request={costRequest} />
 
         <!-- The size scan couldn't finish. Said plainly, because the tallies
              above are now a floor rather than a total, and a dialog that goes
              quiet here is one the user reads as "nothing to copy". The transfer
              can still start: the operation counts as it goes, and the scan
              preview only feeds this Size line and a cache it can rebuild. -->
-        {#if scan.scanFailure}
+        {#if scan.sourceRefusal}
+            <!-- The preview refused before walking anything: no volume answers
+                 for the source (a phone unplugged under a search-results pane).
+                 No Retry and no Confirm, since neither can work until it's back. -->
+            <p class="scan-unavailable" role="status">
+                <span class="scan-unavailable-icon" aria-hidden="true">
+                    <Icon name="triangle-alert" size={16} />
+                </span>
+                <span>{tString('fileOperations.transferDialog.sourceNoLongerConnected')}</span>
+            </p>
+        {:else if scan.scanFailure}
             <p class="scan-unavailable" role="status">
                 <span class="scan-unavailable-icon" aria-hidden="true">
                     <Icon name="triangle-alert" size={16} />
@@ -820,7 +980,7 @@
              button has to look busy rather than inviting a second click. The spinner
              is decorative (no `label`, so `aria-hidden`), which keeps the button's
              accessible name exactly `confirmLabel` and needs no new catalog string. -->
-        <Button variant="primary" onclick={() => handleConfirm()} disabled={!!pathError || confirmPending}>
+        <Button variant="primary" onclick={confirmFromUser} disabled={!!pathError || !!targetRefusal || !!scan.sourceRefusal || confirmPending}>
             <span class="confirm-content">
                 {#if confirmPending}
                     <Spinner size="sm" />
@@ -911,6 +1071,18 @@
         color: var(--color-warning-text);
     }
 
+    /* The two-readings warning: the sentence, then its one button under it. */
+    .root-echo {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--spacing-xs);
+    }
+
+    .root-echo p {
+        margin: 0;
+    }
+
     .smb-native-note {
         margin: 0;
         padding: var(--spacing-xs) var(--spacing-sm);
@@ -945,6 +1117,12 @@
 
     .scan-label {
         color: var(--color-text-tertiary);
+    }
+
+    .rename-hint {
+        margin: 0;
+        font-size: var(--font-size-sm);
+        color: var(--color-text-secondary);
     }
 
     .hardlink-note {

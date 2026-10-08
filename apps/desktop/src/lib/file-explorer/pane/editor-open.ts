@@ -2,7 +2,7 @@
  * F4: hand a file to the text editor, or say plainly why not.
  *
  * Every editor launch takes a path the Mac's own filesystem knows. A row on a phone
- * (MTP, ADB), on a server (SFTP, WebDAV), inside an archive, or in the virtual `.git`
+ * (MTP, ADB), on a server (SFTP, WebDAV, S3), inside an archive, or in the virtual `.git`
  * portal has none, and handing its `adb://` or archive-inner path over does nothing
  * at all: no editor, no message. So every F4 goes through here, and a row with no
  * real file behind it gets a toast pointing at F3, which can read it.

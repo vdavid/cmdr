@@ -33,6 +33,11 @@ docker compose build --no-cache && docker compose down && docker compose up -d
 docker ps
 docker logs getcmdr-static
 
+# Access logs (one file per UTC day, no client IPs, kept 30 days; survive container recreates).
+# Find where a traffic spike came from: link-preview bots, referrers, user agents, languages.
+ls /var/log/cmdr/website/
+grep -hE "TelegramBot|Twitterbot|Discordbot|Slackbot|WhatsApp|vkShare|facebookexternalhit" /var/log/cmdr/website/access-YYYY-MM-DD.log
+
 # Pull latest code
 cd /opt/cmdr && git fetch origin main && git reset --hard origin/main
 ```

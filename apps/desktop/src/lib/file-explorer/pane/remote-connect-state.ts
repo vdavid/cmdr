@@ -84,13 +84,14 @@ export type RemoteConnectState =
    * SFTP only: the server presents a different host key than the one this Mac
    * trusts, so the backend stopped.
    *
-   * ❗ It offers Disconnect, ❌ not "Trust it": the fingerprint has to be SHOWN
-   * before anyone can answer for it, and nothing here has it — the backend keeps
-   * no pending prompt for a registered volume. Disconnecting drops the dead
-   * session, and reopening the place dials afresh, which is what produces the
-   * prompt the sheet's key step renders.
+   * ❗ It offers "Check the key" and Disconnect, ❌ never "Trust it": the
+   * fingerprint has to be SHOWN before anyone can answer for it, and nothing here
+   * has it (the backend keeps no pending prompt for a registered volume).
+   * `checkKey` drops the dead session and dials the saved place afresh, and that
+   * dial's prompt is what the sheet's key step shows, with the sheet's own
+   * choices. `disconnect` drops the session and leaves.
    */
-  | { kind: 'host_key_changed'; disconnect: () => void }
+  | { kind: 'host_key_changed'; checkKey: () => void; disconnect: () => void }
 
 /**
  * A backoff loop's own face, inside the `connecting` state.

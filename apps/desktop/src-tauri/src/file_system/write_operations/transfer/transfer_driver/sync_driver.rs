@@ -2,6 +2,8 @@
 
 use std::collections::HashSet;
 use std::path::PathBuf;
+
+use super::super::staged_write::Replaces;
 use std::sync::Arc;
 
 use crate::file_system::write_operations::event_sinks::OperationEventSink;
@@ -142,7 +144,7 @@ where
             operation_type: config.operation_type,
             source_path,
             dest_path: None,
-            replace_after_write: None,
+            replaces: &Replaces::Nothing,
             dest_name_claimed: false,
             files_done_so_far: files_done,
             bytes_done_so_far: bytes_done,

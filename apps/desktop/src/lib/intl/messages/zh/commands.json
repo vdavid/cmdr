@@ -116,9 +116,9 @@
   "@commands.searchOpen.label": {
     "sourceHash": "179fed8"
   },
-  "commands.navGoToPath.label": "前往路径…",
+  "commands.navGoToPath.label": "前往文件夹…",
   "@commands.navGoToPath.label": {
-    "sourceHash": "936edc5"
+    "sourceHash": "33de610"
   },
   "commands.navGoToPath.description": "让焦点窗格跳转到你输入、粘贴或最近用过的路径。",
   "@commands.navGoToPath.description": {
@@ -155,6 +155,14 @@
   "commands.viewShowHidden.label": "切换隐藏文件",
   "@commands.viewShowHidden.label": {
     "sourceHash": "6aa9b55"
+  },
+  "commands.viewCalculateFolderSizes.label": "计算文件夹大小",
+  "@commands.viewCalculateFolderSizes.label": {
+    "sourceHash": "d2a83da"
+  },
+  "commands.viewCalculateFolderSizes.description": "为这个窗格中还没有大小的文件夹显示大小。按 Esc 键可停止计算。",
+  "@commands.viewCalculateFolderSizes.description": {
+    "sourceHash": "2a7568d"
   },
   "commands.viewBriefMode.label": "切换到简洁视图",
   "@commands.viewBriefMode.label": {
@@ -235,6 +243,14 @@
   "commands.paneSwap.label": "交换窗格",
   "@commands.paneSwap.label": {
     "sourceHash": "cc29396"
+  },
+  "commands.paneClone.label": "克隆窗格",
+  "@commands.paneClone.label": {
+    "sourceHash": "74b2c7f"
+  },
+  "commands.paneClone.description": "在另一个窗格中也打开这个窗格的文件夹。",
+  "@commands.paneClone.description": {
+    "sourceHash": "8a13dc9"
   },
   "commands.paneLeftVolumeChooser.label": "打开左侧宗卷选择器",
   "@commands.paneLeftVolumeChooser.label": {
@@ -335,6 +351,10 @@
   "commands.navForward.label": "前进",
   "@commands.navForward.label": {
     "sourceHash": "8121136"
+  },
+  "commands.navGoToRoot.label": "前往根文件夹",
+  "@commands.navGoToRoot.label": {
+    "sourceHash": "3822d7b"
   },
   "commands.navGoHome.label": "前往个人文件夹",
   "@commands.navGoHome.label": {
@@ -484,9 +504,9 @@
   "@commands.fileCopyPath.label": {
     "sourceHash": "333608a"
   },
-  "commands.fileCopyCurrentDirectoryPath.label": "拷贝当前目录路径",
+  "commands.fileCopyCurrentDirectoryPath.label": "拷贝当前文件夹路径",
   "@commands.fileCopyCurrentDirectoryPath.label": {
-    "sourceHash": "ae360d1"
+    "sourceHash": "5ec6586"
   },
   "commands.fileCopyFilename.label": "拷贝文件名",
   "@commands.fileCopyFilename.label": {
@@ -555,6 +575,30 @@
   "commands.cloudAskGemini.description": "打开 Google Drive 的 Gemini 助手，以所选文件为主题",
   "@commands.cloudAskGemini.description": {
     "sourceHash": "37d4e7c"
+  },
+  "commands.fileCopyShareLink.label": "拷贝共享链接（7 天）",
+  "@commands.fileCopyShareLink.label": {
+    "sourceHash": "314bee8"
+  },
+  "commands.fileCopyShareLink.description": "拷贝一个链接，任何人都能在接下来的 7 天内打开它，下载这个文件",
+  "@commands.fileCopyShareLink.description": {
+    "sourceHash": "99e912e"
+  },
+  "commands.fileCopyShareLinkOneDay.label": "拷贝共享链接（1 天）",
+  "@commands.fileCopyShareLinkOneDay.label": {
+    "sourceHash": "468010c"
+  },
+  "commands.fileCopyShareLinkOneDay.description": "拷贝一个链接，任何人都能在接下来的 1 天内打开它，下载这个文件",
+  "@commands.fileCopyShareLinkOneDay.description": {
+    "sourceHash": "c2a30be"
+  },
+  "commands.fileCopyShareLinkOneHour.label": "拷贝共享链接（1 小时）",
+  "@commands.fileCopyShareLinkOneHour.label": {
+    "sourceHash": "ffea990"
+  },
+  "commands.fileCopyShareLinkOneHour.description": "拷贝一个链接，任何人都能在接下来的 1 小时内打开它，下载这个文件",
+  "@commands.fileCopyShareLinkOneHour.description": {
+    "sourceHash": "c334535"
   },
   "commands.tagsToggleGrey.label": "切换灰色标签",
   "@commands.tagsToggleGrey.label": {
@@ -647,6 +691,30 @@
   "commands.selectionSelectSameKind.description": "将与光标所在项目种类相同的所有项目加入选择，不清空已有的选择",
   "@commands.selectionSelectSameKind.description": {
     "sourceHash": "9a95212"
+  },
+  "commands.selectionCompareDirectories.label": "比较文件夹",
+  "@commands.selectionCompareDirectories.label": {
+    "sourceHash": "5cf3985"
+  },
+  "commands.selectionCompareDirectories.description": "在每个窗格中选择另一个窗格没有的文件，以及其余文件的较新副本",
+  "@commands.selectionCompareDirectories.description": {
+    "sourceHash": "190d99f"
+  },
+  "commands.selectionCompareDirectoriesMissing.label": "比较文件夹：仅缺少的文件",
+  "@commands.selectionCompareDirectoriesMissing.label": {
+    "sourceHash": "d03d3c1"
+  },
+  "commands.selectionCompareDirectoriesMissing.description": "在每个窗格中只选择另一个窗格没有的文件",
+  "@commands.selectionCompareDirectoriesMissing.description": {
+    "sourceHash": "e61c71b"
+  },
+  "commands.selectionCompareDirectoriesSize.label": "比较文件夹：大小不同",
+  "@commands.selectionCompareDirectoriesSize.label": {
+    "sourceHash": "6c8fd21"
+  },
+  "commands.selectionCompareDirectoriesSize.description": "在每个窗格中选择另一个窗格没有的文件，以及大小不同的文件的两个副本",
+  "@commands.selectionCompareDirectoriesSize.description": {
+    "sourceHash": "ac31996"
   },
   "commands.selectionSelectSameKind.allFolders": "选择所有文件夹",
   "@commands.selectionSelectSameKind.allFolders": {
@@ -804,6 +872,26 @@
   "@commands.handler.googleDriveCopyFailed": {
     "sourceHash": "0af1fd3"
   },
+  "commands.handler.shareLinkCopied.sevenDays": "已拷贝共享链接，有效期 7 天。",
+  "@commands.handler.shareLinkCopied.sevenDays": {
+    "sourceHash": "6f4055b"
+  },
+  "commands.handler.shareLinkCopied.oneDay": "已拷贝共享链接，有效期 1 天。",
+  "@commands.handler.shareLinkCopied.oneDay": {
+    "sourceHash": "ca08c52"
+  },
+  "commands.handler.shareLinkCopied.oneHour": "已拷贝共享链接，有效期 1 小时。",
+  "@commands.handler.shareLinkCopied.oneHour": {
+    "sourceHash": "8b9f0cc"
+  },
+  "commands.handler.shareLinkUnavailable": "要拷贝共享链接，请把光标移到 S3 存储桶里的一个文件上。",
+  "@commands.handler.shareLinkUnavailable": {
+    "sourceHash": "c4ea112"
+  },
+  "commands.handler.shareLinkFailed": "没能生成共享链接。{detail}",
+  "@commands.handler.shareLinkFailed": {
+    "sourceHash": "5ff44b7"
+  },
   "commands.handler.openTerminalHere.hint": "已在你的终端 App 中打开这个文件夹。想让 Cmdr 下次打开别的 App？在“设置”的“导航与文件操作”里选一个。",
   "@commands.handler.openTerminalHere.hint": {
     "sourceHash": "b29b744"
@@ -836,6 +924,18 @@
   "@commands.handler.openTerminalHere.timedOut": {
     "sourceHash": "ed36313"
   },
+  "commands.handler.getInfo.automationOff": "“显示简介”需要 Cmdr 能控制 Finder，但这项权限已关闭。去“系统设置 > 隐私与安全性 > 自动化”里打开 Cmdr 下面的 Finder。",
+  "@commands.handler.getInfo.automationOff": {
+    "sourceHash": "7e831ef"
+  },
+  "commands.handler.getInfo.openAutomationSettings": "打开“自动化”设置",
+  "@commands.handler.getInfo.openAutomationSettings": {
+    "sourceHash": "f04940d"
+  },
+  "commands.handler.getInfo.notReached": "Cmdr 连不上 Finder，没能打开“显示简介”。再试一次。",
+  "@commands.handler.getInfo.notReached": {
+    "sourceHash": "9cbc272"
+  },
   "commands.handler.zoomResetHintShortcut": "你可以按 {shortcut} 把缩放级别重置为 100%。",
   "@commands.handler.zoomResetHintShortcut": {
     "sourceHash": "efdd715"
@@ -863,5 +963,21 @@
   "commands.suggestedOpsShow.description": "复查 AI 建议的文件操作，并决定执行哪些",
   "@commands.suggestedOpsShow.description": {
     "sourceHash": "7efe8c9"
+  },
+  "commands.helpViewDebugLog.label": "查看调试日志",
+  "@commands.helpViewDebugLog.label": {
+    "sourceHash": "007c98d"
+  },
+  "commands.helpViewDebugLog.description": "在文件查看器中实时查看 Cmdr 的调试日志",
+  "@commands.helpViewDebugLog.description": {
+    "sourceHash": "a937e6e"
+  },
+  "commands.handler.viewDebugLog.disabled": "日志存储已关闭。在“设置 > 高级”中把磁盘空间上限设为大于 0，然后重启 Cmdr 来查看调试日志。",
+  "@commands.handler.viewDebugLog.disabled": {
+    "sourceHash": "96f16fc"
+  },
+  "commands.handler.viewDebugLog.unavailable": "无法打开调试日志。再试一次。",
+  "@commands.handler.viewDebugLog.unavailable": {
+    "sourceHash": "794a5b3"
   }
 }

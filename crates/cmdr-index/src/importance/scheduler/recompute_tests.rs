@@ -31,7 +31,7 @@ fn full_recompute_ranks_meaningful_folders_above_machine_output() {
     // the test env) or visits (none) — the redistribution keeps the listing
     // signals summing to the full weight.
     let mut folders = pool
-        .with_conn(|conn| walk_index_folders(conn, &home.home))
+        .with_conn(|conn| walk_index_folders(conn, &home.home, &NEVER_STOPPED))
         .expect("pool")
         .expect("walk");
     let writer = ImportanceWriter::spawn(&importance_db_path(dir.path(), ROOT_VOLUME_ID)).expect("writer");
@@ -45,6 +45,7 @@ fn full_recompute_ranks_meaningful_folders_above_machine_output() {
             available: SignalSet::listing_only(),
             visits: &HashMap::new(),
             last_used: &HashMap::new(),
+            stop: &NEVER_STOPPED,
         },
         &mut folders,
     )
@@ -133,7 +134,7 @@ fn odirs_walk_aggregates_children_like_a_whole_tree_walk() {
     let pool = crate::ReadPool::new(index_path).expect("read pool");
 
     let mut folders = pool
-        .with_conn(|conn| walk_index_folders(conn, &home.home))
+        .with_conn(|conn| walk_index_folders(conn, &home.home, &NEVER_STOPPED))
         .expect("pool")
         .expect("walk");
     assert!(!folders.is_empty(), "the walk found folders");
@@ -273,7 +274,7 @@ fn descendants_of_a_floored_folder_floor_too() {
 
     let pool = crate::ReadPool::new(index_path).expect("read pool");
     let mut folders = pool
-        .with_conn(|conn| walk_index_folders(conn, home))
+        .with_conn(|conn| walk_index_folders(conn, home, &NEVER_STOPPED))
         .expect("pool")
         .expect("walk");
 
@@ -316,6 +317,7 @@ fn descendants_of_a_floored_folder_floor_too() {
             available: SignalSet::listing_only(),
             visits: &HashMap::new(),
             last_used: &HashMap::new(),
+            stop: &NEVER_STOPPED,
         },
         &mut folders,
     )

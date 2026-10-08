@@ -22,6 +22,12 @@
     "notMatch": ["keychain access"],
     "sense": "Being able to reach or open something (macOS privacy access, a server granting access, a device held with exclusive access)."
   },
+  "access-key-id": {
+    "distinct": ["secret-access-key"],
+    "en": "access key ID",
+    "match": ["access key id", "access key ids"],
+    "sense": "The public half of an S3 key pair, typed in the S3 form (like AKIAIOSFODNN7EXAMPLE)."
+  },
   "accessibility": {
     "distinct": ["system-settings-pane"],
     "en": "Accessibility",
@@ -56,7 +62,7 @@
     "distinct": ["create"],
     "en": "add",
     "match": ["add", "adds", "adding", "added"],
-    "notMatch": ["add up", "adds a row", "add iso date prefix"],
+    "notMatch": ["add up", "adds up", "adding up", "added up", "adds a row", "add iso date prefix"],
     "sense": "Putting something into an existing list or report (a folder, a server, a favorite, a note)."
   },
   "advanced": {
@@ -91,7 +97,7 @@
     "distinct": ["cloud-provider", "service"],
     "en": "provider",
     "match": ["provider", "providers", "ai provider"],
-    "notMatch": ["=your cloud provider", "managed by a cloud provider", "payment provider"],
+    "notMatch": ["=your cloud provider", "managed by a cloud provider", "payment provider", "storage provider"],
     "sense": "The company or service that runs the AI model Cmdr talks to (OpenAI, Anthropic, a local server)."
   },
   "ai-reply": {
@@ -230,7 +236,8 @@
     "distinct": ["archive"],
     "en": "archive (a chat)",
     "match": ["=archive", "archive chat", "archived", "unarchive"],
-    "sense": "Hiding an Ask Cmdr chat from the active list, or restoring it (Gmail-style), with no compression involved."
+    "sense": "Hiding an Ask Cmdr chat from the active list, or restoring it (Gmail-style), with no compression involved.",
+    "notMatch": ["is archived", "archived in cold storage"]
   },
   "ask": {
     "en": "Ask",
@@ -245,7 +252,11 @@
       "ask the owner",
       "ask your",
       "ask anything",
-      "ask macos for"
+      "ask macos for",
+      "ask the ai to",
+      "ask it to",
+      "ask you to",
+      "asks you to"
     ],
     "sense": "A setting option meaning \"ask me every time\"."
   },
@@ -284,6 +295,12 @@
     "en": "authentication",
     "match": ["authentication", "authenticate", "authenticated"],
     "sense": "A server or volume checking the user's identity: the technical act behind signing in (authentication required, rejected)."
+  },
+  "automation": {
+    "distinct": ["privacy-and-security"],
+    "en": "Automation",
+    "match": ["automation"],
+    "sense": "The macOS Privacy & Security > Automation pane, where the user lets one app control another (Cmdr controlling Finder)."
   },
   "available-offline": {
     "distinct": ["online-only"],
@@ -357,6 +374,11 @@
     "match": ["browse…", "browse..."],
     "sense": "The button that opens the system file picker to choose a file or folder."
   },
+  "bucket": {
+    "en": "bucket",
+    "match": ["bucket", "buckets"],
+    "sense": "An S3 top-level storage container that a saved S3 place opens."
+  },
   "buffer": {
     "distinct": ["watcher"],
     "en": "buffer",
@@ -404,6 +426,12 @@
     "match": ["cache", "caches", "cached"],
     "sense": "Locally stored data kept to speed things up."
   },
+  "calculate": {
+    "distinct": ["size"],
+    "en": "calculate",
+    "match": ["calculate", "calculates", "calculated", "calculating"],
+    "sense": "Working out a folder's total size on demand (Calculate folder sizes, Space on a folder), Total Commander's Calculate occupied space and Finder's Calculate all sizes."
+  },
   "camera": {
     "distinct": ["camera-details", "device"],
     "en": "camera",
@@ -434,7 +462,8 @@
       "uppercase",
       "lowercase"
     ],
-    "sense": "Whether upper- and lowercase letters count as different."
+    "sense": "Whether upper- and lowercase letters count as different.",
+    "notMatch": ["only lowercase letters"]
   },
   "certificate": {
     "distinct": ["trust"],
@@ -504,7 +533,7 @@
     "distinct": ["delete"],
     "en": "clean up",
     "match": ["clean up", "cleans up", "clears away", "clears it", "clear away"],
-    "notMatch": ["clears it up", "usually clears it"],
+    "notMatch": ["clears it up", "esc clears it", "usually clears it"],
     "note": "Deliberately not the delete verb: it sits next to queue rows that literally say deleting.",
     "sense": "Cmdr tidying away its own half-written or leftover files so nothing looks complete that isn't."
   },
@@ -543,6 +572,13 @@
     "match": ["clipboard"],
     "sense": "The system pasteboard that cut, copy, and paste use."
   },
+  "clone-pane": {
+    "distinct": ["pane", "duplicate"],
+    "en": "clone pane",
+    "match": ["clone pane"],
+    "note": "Where the language's clone verb is also its Copy or Duplicate command (zh-Hant 複製, vi nhân bản / sao chép), use Total Commander's name for the command (Target = Source) with the pane ruling's words instead.",
+    "sense": "The command that opens the focused pane's folder in the other pane too, so both panes show the same folder (Total Commander's Target = Source)."
+  },
   "close": {
     "distinct": ["dismiss", "cancel", "quit"],
     "en": "Close",
@@ -570,7 +606,15 @@
       "managed by a cloud provider",
       "sync app"
     ],
-    "sense": "A file-sync service (iCloud Drive, Dropbox, Google Drive) whose folders Cmdr shows."
+    "sense": "A file-sync service (iCloud Drive, Dropbox, Google Drive) whose folders Cmdr shows.",
+    "notMatch": ["google cloud storage", "cloud storage settings"]
+  },
+  "cold-storage": {
+    "distinct": ["archive", "archive-chat", "restore"],
+    "en": "cold storage",
+    "match": ["cold storage"],
+    "note": "A file in cold storage reads as \"archived\" in the copy (\"This file is archived\"), and getting it back is a restore; neither is the Ask Cmdr chat archive (archive-chat) nor a zip.",
+    "sense": "A cloud provider's archive tier (for example S3 Glacier) whose files must be restored before they can be read. Not a zip or other archive file."
   },
   "column": {
     "distinct": ["row", "brief-view"],
@@ -800,8 +844,15 @@
     "distinct": ["delete-permanently", "move-to-trash", "remove", "clean-up"],
     "en": "delete",
     "match": ["delete", "deletes", "deleting", "deleted", "deletion"],
-    "notMatch": ["or delete to clear", "=a–z or delete"],
+    "notMatch": ["or delete to clear", "=a–z or delete", "delete (⌫)"],
     "sense": "Removing files, either to the trash or permanently; also removing a model or other stored data."
+  },
+  "delete-key": {
+    "distinct": ["delete", "escape-key"],
+    "en": "Delete (⌫)",
+    "match": ["delete (⌫)", "delete key"],
+    "note": "A Mac key name, not the delete action: use the name macOS gives the ⌫ key in your language (VoiceOver's key names and Terminal's key descriptions), keeping the ⌫ glyph.",
+    "sense": "The Mac ⌫ key, which erases the character before the cursor (Backspace on a PC keyboard)."
   },
   "delete-permanently": {
     "distinct": ["delete", "move-to-trash"],
@@ -1003,6 +1054,7 @@
     "distinct": ["rename", "text-editor"],
     "en": "edit",
     "match": ["edit", "edits", "editing", "edited"],
+    "notMatch": ["(⌫) edits it"],
     "note": "Three senses share this English word: edit a file in an editor, edit an archive, and edit a saved server's settings (a form). Many locales split them, and the menu bar's Edit menu is Apple's own word.",
     "sense": "Opening a file in a text editor (F4), changing a zip's entries, or opening a form to change a saved item."
   },
@@ -1047,7 +1099,7 @@
   "endpoint": {
     "en": "endpoint",
     "match": ["endpoint", "endpoints"],
-    "sense": "The URL of an AI provider's API."
+    "sense": "The URL of an AI provider's API, or the address of an S3-compatible storage server."
   },
   "enter-key": {
     "en": "Enter",
@@ -1093,7 +1145,7 @@
   "expired": {
     "en": "expired",
     "match": ["expired", "expires", "expiry"],
-    "sense": "A license that is no longer valid."
+    "sense": "A license that is no longer valid, or a share link past the time it works for."
   },
   "exposure": {
     "distinct": ["camera-details"],
@@ -1345,9 +1397,9 @@
   },
   "go-to-path": {
     "distinct": ["path", "navigate"],
-    "en": "Go to path",
+    "en": "Go to folder",
     "match": ["go to path", "go to folder"],
-    "sense": "The dialog and command for typing a path to navigate to."
+    "sense": "The dialog and command for typing a path to navigate to. Named after Finder's Go to Folder, so a locale uses Finder's wording."
   },
   "go-to-trash": {
     "distinct": ["move-to-trash"],
@@ -1584,7 +1636,7 @@
     "en": "Invert selection",
     "match": ["invert selection", "inverts the selection"],
     "note": "Total Commander and Double Commander have this exact item; the menu item and the palette command share one English string.",
-    "sense": "The command that flips the selection in the active pane (⇧8): selected files become unselected and the rest selected."
+    "sense": "The command that flips the selection in the active pane (the `*` key): selected files become unselected and the rest selected."
   },
   "ip-address": {
     "distinct": ["hostname", "server-address"],
@@ -1717,7 +1769,7 @@
     "distinct": ["character", "row"],
     "en": "line",
     "match": ["line", "lines"],
-    "notMatch": ["one-time line"],
+    "notMatch": ["one-time line", "line break*"],
     "sense": "A line of text in the viewer, or a line in a config file."
   },
   "linux-distribution": {
@@ -1729,7 +1781,16 @@
     "distinct": ["file-list"],
     "en": "list",
     "match": ["list", "lists"],
-    "notMatch": ["mailing list", "mailing lists", "on the list", "checklist", "file list", "remove from list"],
+    "notMatch": [
+      "mailing list",
+      "mailing lists",
+      "on the list",
+      "checklist",
+      "file list",
+      "remove from list",
+      "list price",
+      "list prices"
+    ],
     "sense": "A generic UI list (a server list, the list of apps, a list of results)."
   },
   "load": {
@@ -1899,7 +1960,10 @@
       "out of the way",
       "stopped moving",
       "moving it to the trash",
-      "moving those to the trash"
+      "moving those to the trash",
+      "move the cursor",
+      "moves the cursor",
+      "moving the cursor"
     ],
     "sense": "Relocating files to another folder (F6)."
   },
@@ -1920,7 +1984,7 @@
     "distinct": ["rename"],
     "en": "Name",
     "match": ["name", "names", "filename", "filenames"],
-    "notMatch": ["what name this server", "your name or email"],
+    "notMatch": ["your name or email", "what name this", "host name"],
     "sense": "A file's name; also the Name column header and a saved server's name field."
   },
   "nas": {
@@ -1965,7 +2029,7 @@
     "distinct": ["share-menu", "network-drive", "server"],
     "en": "share",
     "match": ["share", "shares", "network share", "network shares", "smb share", "shared folder"],
-    "notMatch": ["=share", "share options", "share one name"],
+    "notMatch": ["=share", "share options", "share one name", "share link", "share links"],
     "sense": "An SMB shared folder offered by a server or NAS."
   },
   "new-file": {
@@ -2010,7 +2074,7 @@
     "distinct": ["warning"],
     "en": "notification",
     "match": ["notification", "notifications", "notice", "toast"],
-    "notMatch": ["notice cmdr"],
+    "notMatch": ["notice cmdr", "billing notice"],
     "sense": "A toast or system notification Cmdr shows."
   },
   "offline": {
@@ -2115,6 +2179,12 @@
     "notMatch": ["stale connection"],
     "sense": "An index that may no longer match what's on the drive."
   },
+  "overall": {
+    "en": "Overall",
+    "match": ["overall"],
+    "notMatch": ["overall solid"],
+    "sense": "The label for the whole drive-indexing run's time left, across every step still to go (vs one step's own time left)."
+  },
   "overwrite": {
     "distinct": ["replace", "skip", "merge"],
     "en": "overwrite",
@@ -2187,6 +2257,7 @@
     "distinct": ["resume", "stop"],
     "en": "pause",
     "match": ["pause", "pauses", "paused", "pausing"],
+    "notMatch": ["paused access"],
     "sense": "Temporarily halting a running operation or indexing pass."
   },
   "percent": {
@@ -2311,6 +2382,12 @@
     "notMatch": ["model context protocol"],
     "sense": "A network protocol (SMB, SFTP, WebDAV, MTP)."
   },
+  "provider-console": {
+    "distinct": ["cold-storage"],
+    "en": "console",
+    "match": ["provider's console"],
+    "sense": "A storage provider's website or admin tool (the AWS console), where a user restores an archived file. Not a developer log console."
+  },
   "put-back": {
     "distinct": ["undo", "rollback"],
     "en": "Put back",
@@ -2322,6 +2399,12 @@
     "en": "query",
     "match": ["query", "queries", "search query"],
     "sense": "What the user typed into search or selection."
+  },
+  "quick-filter": {
+    "distinct": ["filter", "search"],
+    "en": "quick filter",
+    "match": ["quick filter", "quick filters"],
+    "sense": "Total Commander's type-to-narrow feature, Cmdr's Filter typing mode: typing in a pane shows only the files whose names contain the typed letters."
   },
   "quick-look": {
     "distinct": ["preview", "viewer"],
@@ -2424,6 +2507,12 @@
     "en": "regex",
     "match": ["regex", "regexes", "regular expression", "regular expressions"],
     "sense": "A regular expression: the Regex mode of the search and selection bars, and a pattern written in it."
+  },
+  "region": {
+    "distinct": ["endpoint"],
+    "en": "region",
+    "match": ["region", "regions"],
+    "sense": "The S3 storage region a bucket lives in, a code like eu-west-1."
   },
   "register-shortcut": {
     "distinct": ["shortcut", "global"],
@@ -2650,7 +2739,7 @@
     "distinct": ["parent-folder", "current-folder"],
     "en": "root folder",
     "match": ["root folder", "top folder", "start folder", "starting folder"],
-    "sense": "The ceiling folder of a saved server, a volume's top folder, and the folder a pane opens in."
+    "sense": "The ceiling folder of a saved server, the top folder of a volume, phone, or archive (Go > Root folder), and the folder a pane opens in."
   },
   "rotate": {
     "en": "rotate",
@@ -2739,6 +2828,12 @@
     "note": "Several languages name it apart from the drive index's scan (a walk or pass vs an analysis).",
     "sense": "A search reading folders live, one by one, where the drive index can't answer (folders scanned so far, another scan of these folders), and the viewer's text search running through a file."
   },
+  "secret-access-key": {
+    "distinct": ["access-key-id"],
+    "en": "secret access key",
+    "match": ["secret access key", "secret access keys"],
+    "sense": "The private half of an S3 key pair; it works like a password."
+  },
   "see": {
     "distinct": ["show", "review", "viewer", "preview"],
     "en": "See",
@@ -2785,6 +2880,12 @@
     "match": ["settings", "setting"],
     "notMatch": ["higher settings", "setting up", "setting it up"],
     "sense": "Cmdr's Settings window and its sections."
+  },
+  "share-link": {
+    "distinct": ["network-share", "share-menu"],
+    "en": "share link",
+    "match": ["share link", "share links"],
+    "sense": "A web address anyone can open to download one file from an S3 bucket until it expires. Hands a file to others, unlike an SMB network share."
   },
   "share-menu": {
     "distinct": ["network-share"],
@@ -2872,6 +2973,39 @@
     "match": ["size", "sizes", "folder size", "folder sizes"],
     "sense": "A file's or folder's size (the column header, folder-size calculation)."
   },
+  "size-unit-gibibyte": {
+    "en": "GiB",
+    "match": ["gib"],
+    "sense": "The binary (IEC, base 1024) size symbol: 1 GiB = 1,024^3 bytes. Every size Cmdr shows in its default binary format, and fixed copy naming a binary amount."
+  },
+  "size-unit-kibibyte": {
+    "distinct": ["size-unit-kilobyte"],
+    "en": "KiB",
+    "match": ["kib"],
+    "sense": "The binary (IEC, base 1024) size symbol: 1 KiB = 1,024^1 bytes. Every size Cmdr shows in its default binary format, and fixed copy naming a binary amount."
+  },
+  "size-unit-kilobyte": {
+    "distinct": ["size-unit-kibibyte"],
+    "en": "kB",
+    "match": ["kb"],
+    "sense": "The decimal (SI, base 1000) kilobyte symbol: 1 kB = 1,000 bytes. Sizes in the SI format, and fixed copy naming a decimal amount.",
+    "note": "The lowercase k is the SI prefix; it must stay distinct from the binary KiB. An uppercase \"KB\" in English copy means the same decimal kilobyte."
+  },
+  "size-unit-mebibyte": {
+    "en": "MiB",
+    "match": ["mib"],
+    "sense": "The binary (IEC, base 1024) size symbol: 1 MiB = 1,024^2 bytes. Every size Cmdr shows in its default binary format, and fixed copy naming a binary amount."
+  },
+  "size-unit-pebibyte": {
+    "en": "PiB",
+    "match": ["pib"],
+    "sense": "The binary (IEC, base 1024) size symbol: 1 PiB = 1,024^5 bytes. Every size Cmdr shows in its default binary format, and fixed copy naming a binary amount."
+  },
+  "size-unit-tebibyte": {
+    "en": "TiB",
+    "match": ["tib"],
+    "sense": "The binary (IEC, base 1024) size symbol: 1 TiB = 1,024^4 bytes. Every size Cmdr shows in its default binary format, and fixed copy naming a binary amount."
+  },
   "skip": {
     "distinct": ["leave-alone", "overwrite"],
     "en": "skip",
@@ -2920,6 +3054,24 @@
     "match": ["source-available", "source available"],
     "note": "Never translate as \"open source\": that claim is false for Cmdr.",
     "sense": "Cmdr's license model: the code is public to read under the BSL, which isn't an open-source license."
+  },
+  "space-key": {
+    "distinct": ["free-space", "spaces"],
+    "en": "Space",
+    "match": [
+      "=space",
+      "(space)",
+      "with space",
+      "when space",
+      "uses space",
+      "plain space",
+      "press space",
+      "space key",
+      "space-key",
+      "⇧space"
+    ],
+    "note": "Matches only the key: disk space, free space, and empty space around the list are other senses, so no bare `space` form.",
+    "sense": "The Space bar as a key (Space selects, ⇧Space for Quick Look, Calculate folder size with Space)."
   },
   "spaces": {
     "en": "Spaces",
@@ -3000,7 +3152,8 @@
     "distinct": ["free-space"],
     "en": "storage",
     "match": ["storage"],
-    "sense": "Space to store data (a phone's storage, cloud storage, the Storage pane)."
+    "sense": "Space to store data (a phone's storage, cloud storage, the Storage pane).",
+    "notMatch": ["google cloud storage", "cloud storage settings", "hetzner object storage"]
   },
   "store": {
     "distinct": ["save", "write"],
@@ -3081,6 +3234,7 @@
     "distinct": ["tag"],
     "en": "tab",
     "match": ["tab", "tabs"],
+    "notMatch": ["tabs or line break*"],
     "sense": "A tab in a pane (several folders per pane)."
   },
   "tag": {
@@ -3290,7 +3444,7 @@
   "unreachable": {
     "en": "unreachable",
     "match": ["unreachable", "can't reach", "couldn't reach"],
-    "notMatch": ["reach the actual"],
+    "notMatch": ["reach the actual", "can't reach this bucket"],
     "sense": "A host or share Cmdr can't get to over the network."
   },
   "untouched": {

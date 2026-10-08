@@ -20,6 +20,8 @@ import type { SignInShape } from '$lib/ipc/bindings'
 const { ipc, manager, resolveValidPathSpy, addToastSpy } = vi.hoisted(() => ({
   ipc: {
     disconnectSmbVolume: vi.fn().mockResolvedValue(undefined),
+    disconnectPlace: vi.fn().mockResolvedValue(true),
+    connectSavedPlace: vi.fn(),
   },
   manager: {
     getState: vi.fn(),
@@ -35,7 +37,11 @@ const { ipc, manager, resolveValidPathSpy, addToastSpy } = vi.hoisted(() => ({
 
 vi.mock('$lib/tauri-commands', () => ({
   disconnectSmbVolume: ipc.disconnectSmbVolume,
-  disconnectPlace: vi.fn().mockResolvedValue(undefined),
+  disconnectPlace: ipc.disconnectPlace,
+  connectSavedPlace: ipc.connectSavedPlace,
+  newServerAttemptId: () => 'attempt-1',
+  asSavedPlaceRefusal: () => null,
+  cancelServerConnect: vi.fn(),
 }))
 vi.mock('../navigation/path-resolution', () => ({ resolveValidPath: resolveValidPathSpy }))
 vi.mock('$lib/servers/open-sign-in', () => ({ openSignInForPlace: vi.fn().mockResolvedValue({ signedIn: false }) }))
@@ -57,6 +63,7 @@ describe('createSmbViewState', () => {
   function create(opts: { volumeInfo?: VolumeInfo | null; loadDirectory?: Mock; navigateToFallback?: Mock } = {}) {
     const loadDirectory = opts.loadDirectory ?? vi.fn()
     const navigateToFallback = opts.navigateToFallback ?? vi.fn()
+    const enter = vi.fn()
     const deps: SmbViewStateDeps = {
       getVolumeId: () => 'smb-vol',
       getCurrentPath: () => '/smb-vol/dir',
@@ -64,13 +71,14 @@ describe('createSmbViewState', () => {
       getCurrentVolumeInfo: () => opts.volumeInfo ?? null,
       loadDirectory,
       navigateToFallback,
+      enter,
     }
     let sub!: ReturnType<typeof createSmbViewState>
     dispose = $effect.root(() => {
       sub = createSmbViewState(deps)
     })
     flushSync()
-    return { sub, loadDirectory, navigateToFallback }
+    return { sub, loadDirectory, navigateToFallback, enter }
   }
 
   beforeEach(() => {
@@ -170,6 +178,65 @@ describe('createSmbViewState', () => {
     expect(state?.kind).toBe('host_key_changed')
     if (state?.kind !== 'host_key_changed') throw new Error('unreachable')
     expect(state.disconnect).toBeTypeOf('function')
+  })
+
+  it('opens the host-key sheet from the changed-key banner, showing the key the server presents now', async () => {
+    // ❗ The backend keeps no pending prompt for a registered volume, so the
+    // button drops the dead session and dials the saved place afresh: that dial's
+    // `needs_host_key_approval` is what the sheet's key step shows. It trusts
+    // nothing itself; the sheet's own choices do.
+    manager.getState.mockReturnValue({ status: 'needs-host-key', attemptIndex: 0, currentDelayMs: 0, waitStartedAt: 0 })
+    const presented = {
+      outcome: 'needs_host_key_approval' as const,
+      host: 'nas.local',
+      port: 22,
+      algorithm: 'ssh-ed25519',
+      fingerprint: 'SHA256:changedkey',
+      kind: 'changed' as const,
+    }
+    ipc.connectSavedPlace.mockResolvedValue(presented)
+    const { openSignInForPlace } = await import('$lib/servers/open-sign-in')
+    const state = create().sub.remoteConnectState
+    if (state?.kind !== 'host_key_changed') throw new Error('expected the changed-key banner')
+
+    state.checkKey()
+
+    await vi.waitFor(() => {
+      expect(vi.mocked(openSignInForPlace)).toHaveBeenCalledWith({
+        volumeId: 'smb-vol',
+        // The dead session is gone by then, so the sheet dials rather than mends.
+        registered: false,
+        firstOutcome: presented,
+      })
+    })
+    expect(manager.cancel).toHaveBeenCalledWith('smb-vol')
+    expect(ipc.disconnectPlace).toHaveBeenCalledWith('smb-vol')
+    expect(ipc.disconnectPlace.mock.invocationCallOrder[0]).toBeLessThan(
+      ipc.connectSavedPlace.mock.invocationCallOrder[0] ?? 0,
+    )
+  })
+
+  it('puts the pane back on the place once the sheet connects', async () => {
+    manager.getState.mockReturnValue({ status: 'needs-host-key', attemptIndex: 0, currentDelayMs: 0, waitStartedAt: 0 })
+    ipc.connectSavedPlace.mockResolvedValue({
+      outcome: 'needs_host_key_approval',
+      host: 'nas.local',
+      port: 22,
+      algorithm: 'ssh-ed25519',
+      fingerprint: 'SHA256:changedkey',
+      kind: 'changed',
+    })
+    const { openSignInForPlace } = await import('$lib/servers/open-sign-in')
+    vi.mocked(openSignInForPlace).mockResolvedValueOnce({ signedIn: true, volumeId: 'smb-vol' })
+    const { sub, enter } = create()
+    const state = sub.remoteConnectState
+    if (state?.kind !== 'host_key_changed') throw new Error('expected the changed-key banner')
+
+    state.checkKey()
+
+    await vi.waitFor(() => {
+      expect(enter).toHaveBeenCalledWith({ volumeId: 'smb-vol', volumePath: '/smb-vol', targetPath: '/smb-vol/dir' })
+    })
   })
 
   it('renders nothing when no cycle is running', () => {

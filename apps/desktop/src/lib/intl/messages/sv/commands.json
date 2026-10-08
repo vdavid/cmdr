@@ -116,9 +116,9 @@
   "@commands.searchOpen.label": {
     "sourceHash": "179fed8"
   },
-  "commands.navGoToPath.label": "Gå till sökväg…",
+  "commands.navGoToPath.label": "Gå till mapp…",
   "@commands.navGoToPath.label": {
-    "sourceHash": "936edc5"
+    "sourceHash": "33de610"
   },
   "commands.navGoToPath.description": "Hoppa med den fokuserade panelen till en inskriven, inklistrad eller nyligen använd sökväg.",
   "@commands.navGoToPath.description": {
@@ -155,6 +155,14 @@
   "commands.viewShowHidden.label": "Visa eller göm dolda filer",
   "@commands.viewShowHidden.label": {
     "sourceHash": "6aa9b55"
+  },
+  "commands.viewCalculateFolderSizes.label": "Beräkna mappstorlekar",
+  "@commands.viewCalculateFolderSizes.label": {
+    "sourceHash": "d2a83da"
+  },
+  "commands.viewCalculateFolderSizes.description": "Visar storleken på varje mapp i den här panelen som inte har någon ännu. Escape stoppar beräkningen.",
+  "@commands.viewCalculateFolderSizes.description": {
+    "sourceHash": "2a7568d"
   },
   "commands.viewBriefMode.label": "Byt till Kortfattad vy",
   "@commands.viewBriefMode.label": {
@@ -235,6 +243,14 @@
   "commands.paneSwap.label": "Byt plats på panelerna",
   "@commands.paneSwap.label": {
     "sourceHash": "cc29396"
+  },
+  "commands.paneClone.label": "Klona panel",
+  "@commands.paneClone.label": {
+    "sourceHash": "74b2c7f"
+  },
+  "commands.paneClone.description": "Öppna den här panelens mapp i den andra panelen också.",
+  "@commands.paneClone.description": {
+    "sourceHash": "8a13dc9"
   },
   "commands.paneLeftVolumeChooser.label": "Öppna vänster volymväljare",
   "@commands.paneLeftVolumeChooser.label": {
@@ -335,6 +351,10 @@
   "commands.navForward.label": "Gå framåt",
   "@commands.navForward.label": {
     "sourceHash": "8121136"
+  },
+  "commands.navGoToRoot.label": "Gå till rotmappen",
+  "@commands.navGoToRoot.label": {
+    "sourceHash": "3822d7b"
   },
   "commands.navGoHome.label": "Gå till hemmappen",
   "@commands.navGoHome.label": {
@@ -484,9 +504,9 @@
   "@commands.fileCopyPath.label": {
     "sourceHash": "333608a"
   },
-  "commands.fileCopyCurrentDirectoryPath.label": "Kopiera aktuell katalogsökväg",
+  "commands.fileCopyCurrentDirectoryPath.label": "Kopiera aktuell mappsökväg",
   "@commands.fileCopyCurrentDirectoryPath.label": {
-    "sourceHash": "ae360d1"
+    "sourceHash": "5ec6586"
   },
   "commands.fileCopyFilename.label": "Kopiera filnamn",
   "@commands.fileCopyFilename.label": {
@@ -555,6 +575,30 @@
   "commands.cloudAskGemini.description": "Öppnar Google Drives Gemini-assistent med den markerade filen som ämne",
   "@commands.cloudAskGemini.description": {
     "sourceHash": "37d4e7c"
+  },
+  "commands.fileCopyShareLink.label": "Kopiera delningslänk (sju dagar)",
+  "@commands.fileCopyShareLink.label": {
+    "sourceHash": "314bee8"
+  },
+  "commands.fileCopyShareLink.description": "Kopierar en länk som vem som helst kan öppna för att hämta filen de kommande sju dagarna",
+  "@commands.fileCopyShareLink.description": {
+    "sourceHash": "99e912e"
+  },
+  "commands.fileCopyShareLinkOneDay.label": "Kopiera delningslänk (en dag)",
+  "@commands.fileCopyShareLinkOneDay.label": {
+    "sourceHash": "468010c"
+  },
+  "commands.fileCopyShareLinkOneDay.description": "Kopierar en länk som vem som helst kan öppna för att hämta filen det kommande dygnet",
+  "@commands.fileCopyShareLinkOneDay.description": {
+    "sourceHash": "c2a30be"
+  },
+  "commands.fileCopyShareLinkOneHour.label": "Kopiera delningslänk (en timme)",
+  "@commands.fileCopyShareLinkOneHour.label": {
+    "sourceHash": "ffea990"
+  },
+  "commands.fileCopyShareLinkOneHour.description": "Kopierar en länk som vem som helst kan öppna för att hämta filen den kommande timmen",
+  "@commands.fileCopyShareLinkOneHour.description": {
+    "sourceHash": "c334535"
   },
   "commands.tagsToggleGrey.label": "Växla taggen Grå",
   "@commands.tagsToggleGrey.label": {
@@ -647,6 +691,30 @@
   "commands.selectionSelectSameKind.description": "Lägger till varje objekt av samma typ som det under markören i markeringen, utan att tömma den",
   "@commands.selectionSelectSameKind.description": {
     "sourceHash": "9a95212"
+  },
+  "commands.selectionCompareDirectories.label": "Jämför mappar",
+  "@commands.selectionCompareDirectories.label": {
+    "sourceHash": "5cf3985"
+  },
+  "commands.selectionCompareDirectories.description": "Markerar i varje panel de filer som saknas i den andra panelen och de nyare kopiorna av resten",
+  "@commands.selectionCompareDirectories.description": {
+    "sourceHash": "190d99f"
+  },
+  "commands.selectionCompareDirectoriesMissing.label": "Jämför mappar: bara saknade filer",
+  "@commands.selectionCompareDirectoriesMissing.label": {
+    "sourceHash": "d03d3c1"
+  },
+  "commands.selectionCompareDirectoriesMissing.description": "Markerar i varje panel bara de filer som saknas i den andra panelen",
+  "@commands.selectionCompareDirectoriesMissing.description": {
+    "sourceHash": "e61c71b"
+  },
+  "commands.selectionCompareDirectoriesSize.label": "Jämför mappar: olika storlek",
+  "@commands.selectionCompareDirectoriesSize.label": {
+    "sourceHash": "6c8fd21"
+  },
+  "commands.selectionCompareDirectoriesSize.description": "Markerar i varje panel de filer som saknas i den andra panelen och båda kopiorna av filer vars storlek skiljer sig åt",
+  "@commands.selectionCompareDirectoriesSize.description": {
+    "sourceHash": "ac31996"
   },
   "commands.selectionSelectSameKind.allFolders": "Markera alla mappar",
   "@commands.selectionSelectSameKind.allFolders": {
@@ -804,6 +872,26 @@
   "@commands.handler.googleDriveCopyFailed": {
     "sourceHash": "0af1fd3"
   },
+  "commands.handler.shareLinkCopied.sevenDays": "Kopierade en delningslänk. Den fungerar i sju dagar.",
+  "@commands.handler.shareLinkCopied.sevenDays": {
+    "sourceHash": "6f4055b"
+  },
+  "commands.handler.shareLinkCopied.oneDay": "Kopierade en delningslänk. Den fungerar i en dag.",
+  "@commands.handler.shareLinkCopied.oneDay": {
+    "sourceHash": "ca08c52"
+  },
+  "commands.handler.shareLinkCopied.oneHour": "Kopierade en delningslänk. Den fungerar i en timme.",
+  "@commands.handler.shareLinkCopied.oneHour": {
+    "sourceHash": "8b9f0cc"
+  },
+  "commands.handler.shareLinkUnavailable": "Flytta markören till en fil i en S3-bucket för att kopiera en delningslänk.",
+  "@commands.handler.shareLinkUnavailable": {
+    "sourceHash": "c4ea112"
+  },
+  "commands.handler.shareLinkFailed": "Det gick inte att skapa en delningslänk. {detail}",
+  "@commands.handler.shareLinkFailed": {
+    "sourceHash": "5ff44b7"
+  },
   "commands.handler.openTerminalHere.hint": "Mappen öppnades i din terminalapp. Vill du att Cmdr öppnar en annan app nästa gång? Välj den i Inställningar, under ”Navigering och filåtgärder”.",
   "@commands.handler.openTerminalHere.hint": {
     "sourceHash": "b29b744"
@@ -836,6 +924,18 @@
   "@commands.handler.openTerminalHere.timedOut": {
     "sourceHash": "ed36313"
   },
+  "commands.handler.getInfo.automationOff": "För Visa info behöver Cmdr få styra Finder, och det är avstängt. Slå på Finder under Cmdr i Systeminställningar > Integritet och säkerhet > Automatisering.",
+  "@commands.handler.getInfo.automationOff": {
+    "sourceHash": "7e831ef"
+  },
+  "commands.handler.getInfo.openAutomationSettings": "Öppna inställningar för Automatisering",
+  "@commands.handler.getInfo.openAutomationSettings": {
+    "sourceHash": "f04940d"
+  },
+  "commands.handler.getInfo.notReached": "Cmdr kunde inte nå Finder för att öppna Visa info. Försök igen.",
+  "@commands.handler.getInfo.notReached": {
+    "sourceHash": "9cbc272"
+  },
   "commands.handler.zoomResetHintShortcut": "Du kan återställa zoomnivån till 100 % med {shortcut}.",
   "@commands.handler.zoomResetHintShortcut": {
     "sourceHash": "efdd715"
@@ -863,5 +963,21 @@
   "commands.suggestedOpsShow.description": "Granska filåtgärderna som AI:n föreslog och bestäm vad som körs",
   "@commands.suggestedOpsShow.description": {
     "sourceHash": "7efe8c9"
+  },
+  "commands.helpViewDebugLog.label": "Visa felsökningslogg",
+  "@commands.helpViewDebugLog.label": {
+    "sourceHash": "007c98d"
+  },
+  "commands.helpViewDebugLog.description": "Följ Cmdrs felsökningslogg i realtid i filförhandsvisningen",
+  "@commands.helpViewDebugLog.description": {
+    "sourceHash": "a937e6e"
+  },
+  "commands.handler.viewDebugLog.disabled": "Logglagringen är avstängd. Ställ in en diskutrymmesgräns över 0 i Inställningar > Avancerat och starta sedan om Cmdr för att visa felsökningsloggen.",
+  "@commands.handler.viewDebugLog.disabled": {
+    "sourceHash": "96f16fc"
+  },
+  "commands.handler.viewDebugLog.unavailable": "Det gick inte att öppna felsökningsloggen. Försök igen.",
+  "@commands.handler.viewDebugLog.unavailable": {
+    "sourceHash": "794a5b3"
   }
 }

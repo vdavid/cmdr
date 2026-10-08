@@ -52,6 +52,17 @@ settled wording into `terms.json` (and `decisions.md` when the reason is worth k
 - **`Distribution`** (Linux, `errors.mount.gvfsMissing`): no source in the Linux sense.
 - **`Gastzugriff verwenden`** (`fileExplorer.network.share.useGuest`): no Apple string for switching a listing back to
   guest; `Als Gast verbinden` (the catalog's Connect as guest) is the alternative if the button reconnects.
+- **S3 terms** (`servers.sheet.s3*`, `servers.refusal.s3*`/`.bucket*`/`.region*`): `Zugriffsschlüssel-ID`,
+  `Geheimer Zugriffsschlüssel`, `der Bucket`, `Region`, `Konto-ID`, `Standort` (Hetzner), `Adressierung im Pfadstil`
+  follow the AWS/Cloudflare German consoles from memory plus MS terminology (access key → Zugriffsschlüssel, secret key
+  → geheimer Schlüssel, bucket → Bucket, account ID → Konto-ID); the pile has no cloud console. Confirm against the live
+  consoles.
+- **`Freigabelink`** (`commands.*ShareLink*`, `menu.context.copyShareLink`): OneDrive's word, built like Finder's
+  `iCloud-Link kopieren`; `Freigabe` is otherwise the SMB share, but the two never meet on a bucket. Runner-up
+  `Download-Link`.
+- **`Interoperabilität`** (`servers.sheet.s3GcsKeyHelp`): assumed to be the Google Cloud console's German tab name.
+- **`Im Cold Storage archiviert`** (`fileExplorer.archivedFile.tooltip`): MS keeps `Cold Storage`; `Archivspeicher` is
+  the native alternative.
 
 ## Overflow checks
 
@@ -72,3 +83,8 @@ German runs 20–35% longer than English. Look at these against the pseudolocale
 - `settings.indexing.overriddenBadge` (`Mit der Laufwerksindizierung aus`) and `menu.network.pinToSwitcher`
   (`In der Volume-Auswahl fixieren`), both much longer than the English; `menu.network.unpin`
   (`Aus der Volume-Auswahl lösen`, 28 vs 19) in the same narrow dropdown.
+- `settings.managed.summary.upToManualChecksOnly` (`Bis {ceiling}, nur manuelle Update-Suche`, 39 vs 37) in the
+  managed-policy card's value column.
+
+- `ai.translateError.managed.body`, `ai.managed.hostNotAllowed`: `dein IT-Team` follows the English „IT team“; a native
+  reviewer may prefer the more common `deine IT-Abteilung`.

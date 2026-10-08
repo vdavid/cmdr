@@ -143,9 +143,15 @@ fn interrupted_arm(dirs: usize, quit_at: u64) -> Arm {
 fn frontier_off_the_database(drive: &Drive) -> Vec<String> {
     let conn = IndexStore::open_read_connection(&drive.db_path()).expect("read connection");
     let root = drive.path("");
-    coverage_for_scope(&conn, "/", &root, CoverageDimension::Listing)
-        .expect("coverage")
-        .frontier
+    coverage_for_scope(
+        &conn,
+        "/",
+        &root,
+        crate::indexing::scanner::ExclusionTier::MountRooted,
+        CoverageDimension::Listing,
+    )
+    .expect("coverage")
+    .frontier
 }
 
 /// Wait for the machine to report it has nothing left to do, with a benchmark's

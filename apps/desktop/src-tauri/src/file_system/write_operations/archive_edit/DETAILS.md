@@ -115,6 +115,11 @@ fresh spared, other-archive ignored, delete-failure doesn't fail the edit).
   `write-error`; other mutator faults map to typed `WriteOperationError`. **The terminal `files_processed` is
   `MutationProgress::entries_changed`** (entries the edit adds / deletes / renames), NOT `entries_total` (the
   retained-rewrite count) — deleting one file from a 3-entry zip reports 1, not 2.
+- **Every `write-progress` is mirrored into the status cache.** `MutatorHooks::emit` is the one emit site (scan ticks,
+  mutator ticks, the remote upload axis), and it pairs the event with `update_operation_status`, as the transfer
+  driver's `emit_progress_and_status` does. The cache is all a query API reads (the MCP `cmdr://state` resource): an
+  op that only emitted showed there as `scanning` with no bytes from start to finish, paused or not. ❌ Don't call `emit_progress_via_sink` directly from an archive route. Pinned by
+  `every_emitted_phase_of_a_compress_reaches_the_status_cache`.
 - **E2E pacing.** Under `set_test_throttle` / `CMDR_E2E_COPY_THROTTLE_MS`, `MutatorHooks::on_progress` sleeps once per
   finished entry for the copy throttle's value, in 10 ms slices that return the moment the op is cancelled. It sleeps
   only while an entry remains: the mutator checks cancel before every entry, so a click inside the sleep always stops
@@ -173,6 +178,14 @@ fresh spared, other-archive ignored, delete-failure doesn't fail the edit).
   writes concurrently over the one volume's connection, which both multiplex (SFTP on one channel, SMB on one session);
   pinned live by `a_compress_of_server_files_onto_the_same_server_lands_a_valid_zip` in both Docker suites.
 
+  **A dev build compresses about nine times slower than a release one, and that is the whole gap.** Deflate runs at
+  opt-level 0 under `pnpm dev` (`[profile.dev]` optimizes no dependency, `zlib-rs` included): 319 MB of mixed data
+  (random, text, binary) took 34.4 s through the bare `zip` writer in dev (9.3 MB/s of source) against 4.1 s in release
+  (78.5 MB/s). In the dev app the same data took 36.7 s onto the local disk and 35.6 s onto a phone over ADB, so the
+  destination isn't the limit there; `adb push` of the finished 154 MB ZIP ran at 35 MB/s. ❌ Don't read a dev-build
+  compress rate as the product's. (Measured on an M3 MacBook Pro, `zip` 8.6.0 + `zlib-rs` 0.6.5, level 6, Pixel 9 Pro
+  XL over USB, 2026-09-30.) In a release build the phone's link is the likelier limit on incompressible data.
+
   `fresh_zip.rs` drives `zip` 8.6 `ZipWriter::new_stream` on one OS worker. Local files are read directly; one remote
   feeder is live at a time. Remote input and generated output cross separate four-chunk Tokio channels (the worker
   parks in `blocking_recv` / `blocking_send`), split into 128 KiB payloads, so queued bytes are bounded independently of
@@ -196,8 +209,9 @@ fresh spared, other-archive ignored, delete-failure doesn't fail the edit).
   in flight. Tier 2 (`backend_abort`) isn't raced here. Pinned by the `cancel_reaches_*` tests in
   `fresh_compress_tests.rs` (a hung remote source and a destination holding a write in flight).
 
-  The producer emits empty directories/files, clamps deflate level to 1–9, and carries characterized DOS timestamps
-  and Unix modes. It sets `large_file(true)` when zlib's conservative deflate bound for the planned size
+  The producer emits empty directories/files, clamps deflate level to 1–9, and carries Unix modes and each source's
+  mtime (a source with none is dated now) through `cmdr_archive::mutator::with_entry_mtime`: local DOS time plus the
+  exact UTC second, the convention `crates/cmdr-archive/src/mutation/DETAILS.md` owns. It sets `large_file(true)` when zlib's conservative deflate bound for the planned size
   (`n + n/8 + n/64 + 5`) reaches `zip::ZIP64_BYTES_THR`: `zip` refuses a non-ZIP64 data descriptor once the COMPRESSED
   size passes 4 GiB, and incompressible input really grows by up to an eighth at level 1, so the input size alone
   failed near-4 GiB videos. Entries from about 3.76 GiB up pay a 20-byte ZIP64 extra. Stream local headers cannot be

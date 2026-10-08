@@ -22,5 +22,60 @@
   "common.downloadsFdaHint": "Cmdr heeft volledige schijftoegang nodig om je map Downloads te volgen. <settingsLink>Open Systeeminstellingen</settingsLink>",
   "@common.downloadsFdaHint": {
     "sourceHash": "315e1d8"
+  },
+  "common.sizeUnit.byte": "{count, plural, one {byte} other {bytes}}",
+  "@common.sizeUnit.byte": {
+    "sourceHash": "ee1f643",
+    "sameAsSourceJustification": "Dutch uses the same word and plural: macOS Finder nl SP27/SP28 render byte / bytes."
+  },
+  "common.sizeUnit.kibibyte": "KiB",
+  "@common.sizeUnit.kibibyte": {
+    "sourceHash": "97ee1b8",
+    "sameAsSourceJustification": "Dutch keeps the IEC binary symbols as written (KiB, MiB, GiB, TiB, PiB): KDE Dolphin nl renders the MiB suffix as MiB (dolphin.po), and IEC 80000-13 symbols are international."
+  },
+  "common.sizeUnit.mebibyte": "MiB",
+  "@common.sizeUnit.mebibyte": {
+    "sourceHash": "dea6cb8",
+    "sameAsSourceJustification": "Dutch keeps the IEC binary symbols as written (KiB, MiB, GiB, TiB, PiB): KDE Dolphin nl renders the MiB suffix as MiB (dolphin.po), and IEC 80000-13 symbols are international."
+  },
+  "common.sizeUnit.gibibyte": "GiB",
+  "@common.sizeUnit.gibibyte": {
+    "sourceHash": "66a1561",
+    "sameAsSourceJustification": "Dutch keeps the IEC binary symbols as written (KiB, MiB, GiB, TiB, PiB): KDE Dolphin nl renders the MiB suffix as MiB (dolphin.po), and IEC 80000-13 symbols are international."
+  },
+  "common.sizeUnit.tebibyte": "TiB",
+  "@common.sizeUnit.tebibyte": {
+    "sourceHash": "15c1ec4",
+    "sameAsSourceJustification": "Dutch keeps the IEC binary symbols as written (KiB, MiB, GiB, TiB, PiB): KDE Dolphin nl renders the MiB suffix as MiB (dolphin.po), and IEC 80000-13 symbols are international."
+  },
+  "common.sizeUnit.pebibyte": "PiB",
+  "@common.sizeUnit.pebibyte": {
+    "sourceHash": "38ca5a1",
+    "sameAsSourceJustification": "Dutch keeps the IEC binary symbols as written (KiB, MiB, GiB, TiB, PiB): KDE Dolphin nl renders the MiB suffix as MiB (dolphin.po), and IEC 80000-13 symbols are international."
+  },
+  "common.sizeUnit.kilobyte": "kB",
+  "@common.sizeUnit.kilobyte": {
+    "sourceHash": "591e59c",
+    "sameAsSourceJustification": "Dutch writes the SI symbol kB as English does (lowercase k is the SI prefix): GNOME/KDE nl write kB (4 kB/s), and macOS Finder nl keeps the decimal MB/GB symbols unchanged."
+  },
+  "common.sizeUnit.megabyte": "MB",
+  "@common.sizeUnit.megabyte": {
+    "sourceHash": "1d09f6f",
+    "sameAsSourceJustification": "Dutch macOS Finder writes the same unit symbols (nl Finder SP24–SP26: GB, MB, KB); SI symbols are international, so Dutch keeps them as English does."
+  },
+  "common.sizeUnit.gigabyte": "GB",
+  "@common.sizeUnit.gigabyte": {
+    "sourceHash": "b4043b0",
+    "sameAsSourceJustification": "Dutch macOS Finder writes the same unit symbols (nl Finder SP24–SP26: GB, MB, KB); SI symbols are international, so Dutch keeps them as English does."
+  },
+  "common.sizeUnit.terabyte": "TB",
+  "@common.sizeUnit.terabyte": {
+    "sourceHash": "791b0ac",
+    "sameAsSourceJustification": "Dutch macOS Finder writes the same unit symbols (nl Finder SP24–SP26: GB, MB, KB); SI symbols are international, so Dutch keeps them as English does."
+  },
+  "common.sizeUnit.petabyte": "PB",
+  "@common.sizeUnit.petabyte": {
+    "sourceHash": "f9085bf",
+    "sameAsSourceJustification": "Dutch macOS Finder writes the same unit symbols (nl Finder SP24–SP26: GB, MB, KB); SI symbols are international, so Dutch keeps them as English does."
   }
 }

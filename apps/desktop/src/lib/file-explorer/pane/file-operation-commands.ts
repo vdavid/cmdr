@@ -32,6 +32,8 @@ import { paneOffersTrash } from './trash-availability'
 import { checkTransferDestinationGuard } from './transfer-entry'
 import { operationStartIsBlocked } from './operation-start-gate'
 import { duplicateInPlace } from './duplicate-command'
+import { openRenameAsMove } from './rename-as-move'
+import type { RenameAsMoveRequest } from './rename-flow.svelte'
 import type { MessageKey } from '$lib/intl/keys.gen'
 import type { DuplicateFollowUp } from './duplicate-rename'
 import type { FilePaneAPI, OpenDeleteDialogArgs, OpenTransferDialogArgs, StartRenameOptions } from './types'
@@ -391,6 +393,19 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
     )
   }
 
+  function transferSourceIsCurrent(source: {
+    ref: FilePaneAPI
+    pane: 'left' | 'right'
+    listingId: string
+    generation: number
+  }): boolean {
+    return (
+      access.getPaneRef(source.pane) === source.ref &&
+      source.ref.getListingId() === source.listingId &&
+      source.ref.getViewGeneration() === source.generation
+    )
+  }
+
   /** Opens the unified transfer dialog for all volume types (local, MTP, search-results, etc.). */
   async function openUnifiedTransferDialog(
     operationType: TransferOperationType,
@@ -428,27 +443,30 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
     }
 
     const listingId = sourcePaneRef?.getListingId()
-    if (!listingId) return
+    if (!listingId || !sourcePaneRef) return
 
-    const hasParent = sourcePaneRef?.hasParentEntry()
-    const selectedIndices = sourcePaneRef?.getSelectedIndices()
-    const hasSelection = selectedIndices && selectedIndices.length > 0
+    const hasParent = sourcePaneRef.hasParentEntry()
+    const selectedIndices = sourcePaneRef.getSelectedIndices()
+    const hasSelection = selectedIndices.length > 0
 
     const context = buildTransferContext(pane)
     const isLeft = pane === 'left'
+    if (hasSelection && !sourcePaneRef.isRowStateReady()) return
+    const viewGeneration = sourcePaneRef.getViewGeneration()
 
     const props = hasSelection
       ? await buildTransferPropsFromSelection(
           operationType,
           listingId,
           selectedIndices,
-          hasParent ?? false,
+          hasParent,
           isLeft,
           context,
+          sourcePaneRef.getLastSequence(),
         )
-      : await buildTransferPropsFromCursor(operationType, listingId, sourcePaneRef, hasParent ?? false, isLeft, context)
+      : await buildTransferPropsFromCursor(operationType, listingId, sourcePaneRef, hasParent, isLeft, context)
 
-    if (props) {
+    if (props && transferSourceIsCurrent({ ref: sourcePaneRef, pane, listingId, generation: viewGeneration })) {
       if (autoConfirm) {
         props.autoConfirm = true
         props.autoConfirmOnConflict = onConflict
@@ -750,6 +768,9 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
     openTransferDialog,
     openCopyDialog,
     duplicateInPlace: () => duplicateInPlace(access, dialogs),
+    confirmRenameAsMove: (pane: 'left' | 'right', request: RenameAsMoveRequest) => {
+      openRenameAsMove(access, dialogs, pane, request)
+    },
     openMoveDialog,
     openCompressDialog,
     openDeleteDialog,

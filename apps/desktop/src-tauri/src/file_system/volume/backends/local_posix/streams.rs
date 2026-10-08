@@ -25,6 +25,8 @@ struct LocalPosixReadStream {
     file: Option<std::fs::File>,
     total_size: u64,
     bytes_read: u64,
+    /// From the `stat` the open already takes, so it costs nothing.
+    modified_at: Option<std::time::SystemTime>,
 }
 
 /// 1 MiB chunks, matching `chunked_copy.rs`'s constant.
@@ -76,6 +78,10 @@ impl VolumeReadStream for LocalPosixReadStream {
     fn bytes_read(&self) -> u64 {
         self.bytes_read
     }
+
+    fn modified_at(&self) -> Option<std::time::SystemTime> {
+        self.modified_at
+    }
 }
 
 impl LocalPosixVolume {
@@ -104,6 +110,7 @@ impl LocalPosixVolume {
                     file: Some(file),
                     total_size,
                     bytes_read: 0,
+                    modified_at: metadata.modified().ok(),
                 }) as Box<dyn VolumeReadStream>)
             })
             .await
@@ -174,7 +181,7 @@ impl LocalPosixVolume {
                 let mut options = std::fs::OpenOptions::new();
                 options.write(true);
                 match mode {
-                    WriteMode::CreateNew => options.create_new(true),
+                    WriteMode::CreateNew | WriteMode::CreateNewInFreshFolder => options.create_new(true),
                     WriteMode::CreateOrReplace => options.create(true).truncate(true),
                 };
                 options.open(&dest_for_open)
@@ -235,12 +242,26 @@ impl LocalPosixVolume {
             // completed multi-GB transfer at the final fsync is worse UX than
             // accepting a small durability-window risk on a filesystem that
             // can't sync.
+            //
+            // The source's date goes on the open handle first, after the last
+            // byte (a later write would bump it again), so the sync covers it
+            // too. Best effort: the bytes are the copy, the date is courtesy.
+            let modified_at = stream.modified_at();
             let dest_for_sync = dest_abs.clone();
             file = spawn_blocking(move || {
                 use std::io::Write;
                 // Userspace flush first (harmless no-op on a raw File, but
                 // correct if the writer is ever wrapped in a BufWriter).
                 let _ = file.flush();
+                if let Some(date) = modified_at
+                    && let Err(e) = file.set_modified(date)
+                {
+                    log::warn!(
+                        target: "local_posix",
+                        "write_from_stream: couldn't keep the source's date on {}: {e}",
+                        dest_for_sync.display()
+                    );
+                }
                 if let Err(e) = file.sync_data() {
                     log::warn!(
                         target: "write_durability",

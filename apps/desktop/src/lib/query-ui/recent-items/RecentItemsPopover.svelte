@@ -30,6 +30,7 @@
      *   - Esc closes, via the `Popover` wrapper.
      */
     import uFuzzy from '@leeoniya/ufuzzy'
+    import { INTRA_MODE_SINGLE_ERROR } from '$lib/utils/ufuzzy-modes'
     import { tString } from '$lib/intl/messages.svelte'
     import Trans from '$lib/intl/Trans.svelte'
     import Popover from '$lib/ui/Popover.svelte'
@@ -77,7 +78,7 @@
     }: Props = $props()
 
     // Tuned the same way as the command palette's fuzzy search.
-    const fuzzy = new uFuzzy({ intraMode: 1, interIns: 3 })
+    const fuzzy = new uFuzzy({ intraMode: INTRA_MODE_SINGLE_ERROR, interIns: 3 })
 
     let query = $state('')
     let cursor = $state(0)

@@ -128,7 +128,7 @@ fn open_media_session(
         file_name,
         total_bytes: file_size,
         total_lines: Some(0),
-        estimated_total_lines: 0,
+        estimated_total_rows: 0,
         backend_type: BackendType::FullLoad,
         capabilities,
         initial_lines: empty_initial,

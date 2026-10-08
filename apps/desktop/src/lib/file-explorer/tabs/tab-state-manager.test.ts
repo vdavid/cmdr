@@ -23,6 +23,7 @@ import {
   pushHistoryEntry,
   retainSnapshotRefs,
   transferSnapshotRefs,
+  moveTab,
 } from './tab-state-manager.svelte'
 import {
   _resetForTesting as resetSnapshotStore,
@@ -795,6 +796,17 @@ describe('tab-state-manager', () => {
       expect(getSnapshot('sr-1')).toBeUndefined()
     })
 
+    it('moveTab keeps the refs with the tab: no retain, no release', () => {
+      const left = createTabManager(makeTab({ id: 'a' }))
+      const right = createTabManager(makeTab({ id: 'x' }))
+      left.tabs.push(makeTabWithSnapshotRef('snap', 'sr-move'))
+
+      expect(moveTab(left, right, 'snap')).toMatchObject({ moved: true })
+
+      expect(getRefCount('sr-move')).toBe(1)
+      expect(getSnapshot('sr-move')).toBeDefined()
+    })
+
     it('non-recording closeOtherTabs releases refs immediately for closed tabs', () => {
       const tab1 = makeTab({ id: 'tab-1' })
       const mgr = createTabManager(tab1)
@@ -805,6 +817,175 @@ describe('tab-state-manager', () => {
 
       expect(getRefCount('sr-a')).toBe(0)
       expect(getRefCount('sr-b')).toBe(0)
+    })
+  })
+
+  describe('moveTab', () => {
+    /** A manager holding tabs with the given ids, in order; the first is active unless `active` says otherwise. */
+    function managerOf(ids: string[], active: string = ids[0], pinned: string[] = []) {
+      const mgr = createTabManager(makeTab({ id: ids[0], pinned: pinned.includes(ids[0]) }))
+      for (const id of ids.slice(1)) mgr.tabs.push(makeTab({ id, pinned: pinned.includes(id) }))
+      mgr.activeTabId = active
+      return mgr
+    }
+
+    const idsOf = (mgr: { tabs: TabState[] }) => mgr.tabs.map((t) => t.id)
+
+    describe('within one pane', () => {
+      it('moves a tab to the right, landing on the index it was asked for', () => {
+        const mgr = managerOf(['a', 'b', 'c', 'd'])
+        expect(moveTab(mgr, mgr, 'a', 2)).toEqual({ moved: true, toIndex: 2, wasActive: true })
+        expect(idsOf(mgr)).toEqual(['b', 'c', 'a', 'd'])
+      })
+
+      it('moves a tab to the left', () => {
+        const mgr = managerOf(['a', 'b', 'c', 'd'])
+        moveTab(mgr, mgr, 'd', 0)
+        expect(idsOf(mgr)).toEqual(['d', 'a', 'b', 'c'])
+      })
+
+      it('appends when no index is given', () => {
+        const mgr = managerOf(['a', 'b', 'c'])
+        expect(moveTab(mgr, mgr, 'a')).toMatchObject({ moved: true, toIndex: 2 })
+        expect(idsOf(mgr)).toEqual(['b', 'c', 'a'])
+      })
+
+      it('clamps an index past the end to the last slot', () => {
+        const mgr = managerOf(['a', 'b', 'c'])
+        expect(moveTab(mgr, mgr, 'a', 99)).toMatchObject({ moved: true, toIndex: 2 })
+        expect(idsOf(mgr)).toEqual(['b', 'c', 'a'])
+      })
+
+      it('changes nothing when the tab is already there', () => {
+        const mgr = managerOf(['a', 'b', 'c'])
+        expect(moveTab(mgr, mgr, 'b', 1)).toEqual({ moved: false, reason: 'unchanged' })
+        expect(moveTab(mgr, mgr, 'c')).toEqual({ moved: false, reason: 'unchanged' })
+        expect(idsOf(mgr)).toEqual(['a', 'b', 'c'])
+      })
+
+      it("reports a pane's only tab as unchanged, since it has nowhere to go", () => {
+        const mgr = managerOf(['a'])
+        expect(moveTab(mgr, mgr, 'a', 0)).toEqual({ moved: false, reason: 'unchanged' })
+      })
+
+      it('keeps the moved tab active when it was active', () => {
+        const mgr = managerOf(['a', 'b', 'c'], 'b')
+        moveTab(mgr, mgr, 'b', 0)
+        expect(mgr.activeTabId).toBe('b')
+      })
+
+      it('never activates an inactive tab, and leaves the active one alone', () => {
+        const mgr = managerOf(['a', 'b', 'c'], 'a')
+        expect(moveTab(mgr, mgr, 'c', 0)).toMatchObject({ moved: true, wasActive: false })
+        expect(mgr.activeTabId).toBe('a')
+      })
+
+      it('lets an unpinned tab land between and before pinned ones', () => {
+        const mgr = managerOf(['p1', 'p2', 'c'], 'p1', ['p1', 'p2'])
+        moveTab(mgr, mgr, 'c', 1)
+        expect(idsOf(mgr)).toEqual(['p1', 'c', 'p2'])
+        moveTab(mgr, mgr, 'c', 0)
+        expect(idsOf(mgr)).toEqual(['c', 'p1', 'p2'])
+      })
+
+      it('refuses a pinned tab', () => {
+        const mgr = managerOf(['a', 'b', 'c'], 'a', ['b'])
+        expect(moveTab(mgr, mgr, 'b', 0)).toEqual({ moved: false, reason: 'pinned' })
+        expect(idsOf(mgr)).toEqual(['a', 'b', 'c'])
+      })
+
+      it('refuses an id the pane does not hold', () => {
+        const mgr = managerOf(['a', 'b'])
+        expect(moveTab(mgr, mgr, 'nope', 0)).toEqual({ moved: false, reason: 'notFound' })
+      })
+    })
+
+    describe('to the other pane', () => {
+      it('takes the tab out of one pane and puts it at the asked index in the other', () => {
+        const left = managerOf(['a', 'b', 'c'])
+        const right = managerOf(['x', 'y'])
+        expect(moveTab(left, right, 'b', 1)).toEqual({ moved: true, toIndex: 1, wasActive: false })
+        expect(idsOf(left)).toEqual(['a', 'c'])
+        expect(idsOf(right)).toEqual(['x', 'b', 'y'])
+      })
+
+      it('appends when no index is given, and clamps one past the end', () => {
+        const left = managerOf(['a', 'b', 'c'])
+        const right = managerOf(['x', 'y'])
+        expect(moveTab(left, right, 'a')).toMatchObject({ moved: true, toIndex: 2 })
+        expect(moveTab(left, right, 'b', 99)).toMatchObject({ moved: true, toIndex: 3 })
+        expect(idsOf(right)).toEqual(['x', 'y', 'a', 'b'])
+      })
+
+      it('carries the tab itself across: same id, history, and unreachable state', () => {
+        const left = managerOf(['a', 'b'])
+        const right = managerOf(['x'])
+        left.tabs[1].unreachable = { originalPath: '/Volumes/gone', retrying: false }
+        left.tabs[1].cursorFilename = 'notes.txt'
+
+        moveTab(left, right, 'b')
+
+        expect(right.tabs[1]).toMatchObject({
+          id: 'b',
+          cursorFilename: 'notes.txt',
+          unreachable: { originalPath: '/Volumes/gone', retrying: false },
+        })
+        expect(right.tabs[1].history).toEqual(createHistory('root', '/Users/test'))
+      })
+
+      it('never activates the tab in the pane it lands in', () => {
+        const left = managerOf(['a', 'b'], 'a')
+        const right = managerOf(['x', 'y'], 'y')
+        moveTab(left, right, 'a', 0)
+        expect(right.activeTabId).toBe('y')
+      })
+
+      it('leaves the source pane active tab alone when an inactive tab leaves', () => {
+        const left = managerOf(['a', 'b', 'c'], 'a')
+        moveTab(left, managerOf(['x']), 'c')
+        expect(left.activeTabId).toBe('a')
+      })
+
+      it('activates the tab to the right when the active tab leaves', () => {
+        const left = managerOf(['a', 'b', 'c'], 'b')
+        expect(moveTab(left, managerOf(['x']), 'b')).toMatchObject({ moved: true, wasActive: true })
+        expect(left.activeTabId).toBe('c')
+      })
+
+      it('activates the tab to the left when the active tab was last', () => {
+        const left = managerOf(['a', 'b', 'c'], 'c')
+        moveTab(left, managerOf(['x']), 'c')
+        expect(left.activeTabId).toBe('b')
+      })
+
+      it("refuses to take a pane's only tab", () => {
+        const left = managerOf(['a'])
+        const right = managerOf(['x'])
+        expect(moveTab(left, right, 'a')).toEqual({ moved: false, reason: 'onlyTab' })
+        expect(idsOf(left)).toEqual(['a'])
+        expect(idsOf(right)).toEqual(['x'])
+      })
+
+      it('refuses when the other pane is at the cap', () => {
+        const left = managerOf(['a', 'b'])
+        const right = managerOf(Array.from({ length: MAX_TABS_PER_PANE }, (_, i) => `x${String(i)}`))
+        expect(moveTab(left, right, 'a')).toEqual({ moved: false, reason: 'targetFull' })
+        expect(idsOf(left)).toEqual(['a', 'b'])
+        expect(getTabCount(right)).toBe(MAX_TABS_PER_PANE)
+      })
+
+      it('refuses a pinned tab', () => {
+        const left = managerOf(['a', 'b'], 'a', ['b'])
+        const right = managerOf(['x'])
+        expect(moveTab(left, right, 'b')).toEqual({ moved: false, reason: 'pinned' })
+        expect(idsOf(right)).toEqual(['x'])
+      })
+
+      it('puts nothing on the closed-tab stack: a move is not a close', () => {
+        const left = managerOf(['a', 'b'])
+        moveTab(left, managerOf(['x']), 'b')
+        expect(getClosedStackSize(left)).toBe(0)
+      })
     })
   })
 })

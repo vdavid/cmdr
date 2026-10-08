@@ -81,9 +81,16 @@ describe('a finished batch', () => {
         fileCount: 23,
         jobOperationIds: [],
         jobFileCount: 0,
+        swapsSkipped: 0,
         undo: { status: 'undoable' },
       },
     ])
+  })
+
+  it('counts only what was renamed, and keeps the swaps a move left out for its own line', () => {
+    noteRenameApplied('op-1', 3, 2)
+
+    expect(lines()[0]).toMatchObject({ fileCount: 3, swapsSkipped: 2 })
   })
 
   it('offers no job-wide undo for a single batch', () => {
@@ -220,7 +227,7 @@ function openReview(...proposals: ReturnType<typeof batch>[]): void {
 
 describe('applying a review', () => {
   it('records the started batch, so the result carries an undo', async () => {
-    applyRenameMock.mockResolvedValue({ operationId: 'op-42', operationType: 'rename' })
+    applyRenameMock.mockResolvedValue({ operationId: 'op-42', swapsLeftOut: 0 })
     openReview(
       batch('p-1', [
         { rowId: 'r-1', allowed: true },
@@ -238,6 +245,22 @@ describe('applying a review', () => {
     expect(lines()[0].fileCount).toBe(2)
   })
 
+  it('reports the swaps a move left out apart from what it renamed', async () => {
+    applyRenameMock.mockResolvedValue({ operationId: 'op-42', swapsLeftOut: 2 })
+    openReview(
+      batch('p-1', [
+        { rowId: 'r-1', allowed: true },
+        { rowId: 'r-2', allowed: true },
+        { rowId: 'r-3', allowed: true },
+      ]),
+    )
+    const { applyRenameReview } = await import('./ask-cmdr-trigger.svelte')
+
+    await applyRenameReview()
+
+    expect(lines()[0]).toMatchObject({ fileCount: 1, swapsSkipped: 2 })
+  })
+
   /**
    * A job's batches now land from ONE Apply rather than one per dialog, so the ids arrive
    * together. The rule they have to keep obeying: "undo everything" appears once, on the newest
@@ -245,9 +268,9 @@ describe('applying a review', () => {
    */
   it('leaves the job-wide undo on the newest line only, when the ids arrive together', async () => {
     applyRenameMock
-      .mockResolvedValueOnce({ operationId: 'op-1', operationType: 'rename' })
-      .mockResolvedValueOnce({ operationId: 'op-2', operationType: 'rename' })
-      .mockResolvedValueOnce({ operationId: 'op-3', operationType: 'rename' })
+      .mockResolvedValueOnce({ operationId: 'op-1', swapsLeftOut: 0 })
+      .mockResolvedValueOnce({ operationId: 'op-2', swapsLeftOut: 0 })
+      .mockResolvedValueOnce({ operationId: 'op-3', swapsLeftOut: 0 })
     openReview(
       batch('p-1', [{ rowId: 'r-1', allowed: true }]),
       batch('p-2', [

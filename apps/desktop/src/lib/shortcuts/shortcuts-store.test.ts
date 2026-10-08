@@ -425,6 +425,15 @@ describe('shortcuts-store loading heals leaked empty-string entries', () => {
     await store.initializeShortcuts()
     expect(store.getEffectiveShortcuts('file.copy')).toEqual(['⌘X', '⌘Y'])
   })
+
+  it('heals a stored Shift-only key position to its character, folding the duplicate it makes', async () => {
+    // A customized invert saved the old default `⇧8` beside its numpad `*`. No
+    // keypress produces `⇧8` any more; on the US keycap it named, it typed `*`.
+    disk.set('shortcut:selection.invert', ['⇧8', '*', '⌘I'])
+    const store = await loadStore()
+    await store.initializeShortcuts()
+    expect(store.getEffectiveShortcuts('selection.invert')).toEqual(['*', '⌘I'])
+  })
 })
 
 describe('shortcuts-store refuses to customize macOS-native commands', () => {

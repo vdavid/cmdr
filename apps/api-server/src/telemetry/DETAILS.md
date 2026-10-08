@@ -38,7 +38,7 @@ Error report amendment: POST /error-report/:id/amend → rate-limit by IP (ERROR
 
 Heartbeat: POST /heartbeat → rate-limit by IP (HEARTBEAT_LIMITER, 429 if over) → read the body under 256 KB (400) → validate the beat (required fields + analId/version shape + config-size cap + uptimeSeconds + events is an array; 400) → keep the first 500 events, drop malformed ones (counted, logged) → AWAITED: ONE D1 batch writing the heartbeat row + the events (failure → soft 502), no IP stored → in waitUntil: forward the events to PostHog (skipped without POSTHOG_PROJECT_KEY; failure logged, never surfaced) → 204
 
-Feedback: POST /feedback → rate-limit by IP (FEEDBACK_LIMITER, 429 if over) → validate shape (required feedback text ≤ 100k code points + appVersion/osVersion, optional email/buildMode) → AWAITED D1 write to `feedback` (failure → soft 502 so the app offers a retry) → Discord ping in waitUntil (DISCORD_FEEDBACK_WEBHOOK_URL, falls back to DISCORD_WEBHOOK_URL) → 204 → the 3-hourly cron mails the row in the feedback digest (`../../DETAILS.md` § Cron handler)
+Feedback: POST /feedback → rate-limit by IP (FEEDBACK_LIMITER, 429 if over) → validate shape (required feedback text ≤ 100k code points + appVersion/osVersion, optional email/buildMode) → AWAITED D1 write to `feedback` (failure → soft 502 so the app offers a retry) → Discord ping in waitUntil (DISCORD_FEEDBACK_WEBHOOK_URL, falls back to DISCORD_WEBHOOK_URL; never the email, only `hasReplyTo`: `../../DETAILS.md` § Discord webhooks) → 204 → the 3-hourly cron mails the row in the feedback digest (`../../DETAILS.md` § Cron handler)
 
 Download redirect: GET /download/:version/:arch → write to D1 (fire-and-forget) → 302 to GitHub Releases
 
@@ -358,7 +358,11 @@ Three layers keep the bucket bounded:
    deletes until ≤ 6 GB, then resets the counter to the recomputed ground truth.
 2. **Daily cron sweep**: corrects KV drift by recomputing from R2, lifts an intake pause once the bucket is back under
    the LOW watermark, and re-runs `tryEvict`.
-3. **R2 lifecycle rule**: 90-day expiration applied at provisioning time via `../../scripts/setup-cf-infra.sh`.
+3. **R2 lifecycle rule**: `expire-error-reports-90-days` expires objects under the `error-reports/` prefix after 90
+   days, applied by `../../scripts/setup-cf-infra.sh` (live since 2026-10-05; verified with
+   `wrangler r2 bucket lifecycle list cmdr-error-reports`). ❗ It's prefix-scoped on purpose: the same bucket holds the
+   license backups under `backups/licenses/`, which an unscoped rule would delete. The bucket's other rule is
+   Cloudflare's default 7-day abort of incomplete multipart uploads.
 
 **Amendment sidecars are never candidates in their own right.** `tryEvict` filters `.amend.json` objects out of the
 candidate list and deletes each one with its bundle instead, counting both toward what that bundle frees. A sidecar is
@@ -428,7 +432,7 @@ Frontend counterpart: `apps/desktop/src/lib/feedback/CLAUDE.md`.
 - **The `/download/:version/:arch` redirect maps `x86_64` → `x64` in the filename.** `tauri-action` names the Intel DMG
   `Cmdr_<ver>_x64.dmg`, but the rest of the codebase (URL path, D1 telemetry, website data attrs, Rust target triple,
   `uname -m`) consistently uses `x86_64`. Mapping at the boundary keeps everything else canonical; the same convention
-  is in `.github/workflows/release.yml` when reading DMG sizes for `latest.json`.
+  is in `.github/workflows/release-pipeline.yml` when reading DMG sizes for `latest.json`.
 - **Validators for optional fields must tolerate both `null` and `undefined`.** serde `Option::None` serializes as JSON
   `null`, not as an absent key, and `#[serde(skip_serializing_if)]` is rejected by `specta`'s unified mode (the struct
   is part of a Tauri command surface). An old crash file read by a new client surfaces missing fields as `None`, the

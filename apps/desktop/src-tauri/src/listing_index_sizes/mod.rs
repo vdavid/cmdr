@@ -24,6 +24,9 @@
 //! The work runs on its own task, fed through a channel: the batch arrives on the index writer's
 //! thread, which must not wait on anything here.
 
+pub(crate) mod count;
+#[cfg(test)]
+mod count_test;
 mod refresh;
 mod schedule;
 mod touched;
@@ -122,6 +125,8 @@ impl ListingLifecycle for IndexSizeListings {
 
     fn listing_closed(&self, listing_id: &str) {
         OPEN.lock_ignore_poison().remove(listing_id);
+        // A folder-size count for a listing nobody shows any more is wasted I/O.
+        count::cancel(listing_id);
     }
 }
 

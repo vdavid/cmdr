@@ -7,9 +7,9 @@ The family-grouped handler modules behind the dispatch core (`../command-dispatc
 
 - `types.ts`: the seam, including `DispatchExemptId` and its runtime `DISPATCH_EXEMPT_IDS` tuple. Read it before
   touching exemptions.
-- One module per family (`app-dialog`, `view`, `pane`, `tab`, `nav`, `sort`, `file`, `clipboard`, `selection`, `tag`,
-  `servers`, `misc`), spread by `index.ts` into `commandHandlers: CommandHandlerRecord`. That annotation is the
-  completeness guard: a missing or exempt-id handler fails to compile.
+- One module per family (`app-dialog`, `view`, `pane`, `tab`, `nav`, `sort`, `file`, `share-link`, `clipboard`,
+  `selection`, `tag`, `servers`, `misc`), spread by `index.ts` into `commandHandlers: CommandHandlerRecord`. That
+  annotation is the completeness guard: a missing or exempt-id handler fails to compile.
 
 ## Rules
 
@@ -17,8 +17,11 @@ The family-grouped handler modules behind the dispatch core (`../command-dispatc
   re-reading would re-evaluate mid-dispatch (HMR-fragile). Grep `getExplorer(` here must stay zero.
 - **Preserve each arm's `await` vs `void` exactly.** The five MCP round-trip ids (`nav.openUnderCursor`,
   `cursor.moveTo`, `selection.mcpSelect`, `selection.mcpSelectByNames`, `pane.refresh`) are `async` + `await` so the
-  adapter acks on real completion; every other explorer-driving arm `void`s its promise. Swapping one breaks behavior
+  adapter acks on real completion; every other explorer-driving arm fires and forgets it. Swapping one breaks behavior
   silently, with no compile error (`command-dispatch.characterization.test.ts` pins it).
+- **Fire and forget through `detached(...)`, ❌ never a bare `void promise`.** A voided promise's rejection escapes the
+  gesture dispatcher's `catch` and lands as an unhandled rejection (F3–F6 on a pane whose listing was gone did, on every
+  press). `detached.ts` absorbs it into a debug line; `file-handlers.detached.test.ts` pins it.
 - **Grouped ids share ONE body, no copy-paste** (`applyZoomPreset`, `withEntryUnderCursor`, `copyPathAndAnnounce`).
 - **The `servers.*` row actions (pin, disconnect, forget, edit) go through `runServerRowAction`**, the native row menu's
   own path, so menu and palette can't drift on a confirmation or a toast. Which server they act on is

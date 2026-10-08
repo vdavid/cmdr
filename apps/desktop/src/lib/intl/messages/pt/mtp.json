@@ -79,13 +79,5 @@
   "mtp.deviceFallbackName": "Dispositivo MTP",
   "@mtp.deviceFallbackName": {
     "sourceHash": "8ba7a69"
-  },
-  "mtp.error.exclusiveAccess": "Outro processo tem acesso exclusivo{blocking, select, none {} other { (bloqueado por {blocking})}}",
-  "@mtp.error.exclusiveAccess": {
-    "sourceHash": "a81f306"
-  },
-  "mtp.error.permissionDenied": "Permissão de USB negada. Instale as regras udev e reconecte",
-  "@mtp.error.permissionDenied": {
-    "sourceHash": "3362501"
   }
 }

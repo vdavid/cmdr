@@ -140,6 +140,81 @@ pub enum UpgradeFailure {
     ShareNotOnServer,
     /// It answered and then something we can't act on went wrong.
     Unexpected,
+    /// Something on this Mac refused Cmdr's own route to a server the Mac itself
+    /// can reach: the macOS Local Network permission (stuck on in ERR-XGS9X, fixed
+    /// by switching it off and on), or a firewall app. Read by [`Self::of_dial`],
+    /// ❌ never from the errno alone.
+    BlockedByThisMac,
+}
+
+/// The longest one dial attempt may take to fail and still count as this Mac
+/// refusing the route.
+///
+/// A refusal inside this Mac never leaves it: ERR-XGS9X's came back in 1–3 ms,
+/// every attempt. An `EHOSTUNREACH` from the network takes a round trip at least,
+/// and usually seconds (a router answers only once its own ARP gives up). 250 ms
+/// sits two orders of magnitude above the first, for a CPU-starved tokio worker,
+/// and well below the second.
+pub(crate) const BLOCKED_DIAL_CEILING: std::time::Duration = std::time::Duration::from_millis(250);
+
+/// What the share's kernel mount said when the upgrade read it right before dialing.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum MountEvidence {
+    /// Its `statfs` answered as an SMB mount under `MOUNT_READ_LIMIT`: the server
+    /// is reachable from this Mac, over the kernel's own connection.
+    Answered,
+    /// Nothing vouches for the server: no SMB mount answered there.
+    NoAnswer,
+}
+
+/// A direct connect that didn't get in, after `connect_with_retry` spent its
+/// retries.
+#[derive(Debug)]
+pub(crate) struct FailedDial {
+    /// What the last attempt failed with.
+    pub(crate) error: smb2::Error,
+    /// The longest any one attempt took to fail, checked against
+    /// [`BLOCKED_DIAL_CEILING`].
+    pub(crate) slowest_attempt: std::time::Duration,
+}
+
+/// Whether `err` is the kernel refusing a route: every address answered
+/// `EHOSTUNREACH` or `ENETUNREACH`, read by io kind.
+fn is_refused_route(err: &smb2::Error) -> bool {
+    use std::io::ErrorKind as Io;
+    let refused = |kind: Io| matches!(kind, Io::HostUnreachable | Io::NetworkUnreachable);
+    match err {
+        smb2::Error::Io(io_err) => refused(io_err.kind()),
+        smb2::Error::ConnectFailed { attempts, .. } => {
+            !attempts.is_empty() && attempts.iter().all(|a| a.error_kind.is_some_and(refused))
+        }
+        _ => false,
+    }
+}
+
+/// The io side of a failed dial for its log line: the kind per address, and the
+/// raw errno where the error still carries one.
+///
+/// smb2's per-address `ConnectAttempt` keeps the io kind but not the errno, so a
+/// `ConnectFailed` line names kinds only (`HostUnreachable` is `EHOSTUNREACH`).
+pub(crate) fn dial_detail(err: &smb2::Error) -> String {
+    match err {
+        smb2::Error::Io(io_err) => match io_err.raw_os_error() {
+            Some(errno) => format!("io_kind={:?}, errno={errno}", io_err.kind()),
+            None => format!("io_kind={:?}", io_err.kind()),
+        },
+        smb2::Error::ConnectFailed { attempts, .. } => {
+            let kinds: Vec<String> = attempts
+                .iter()
+                .map(|a| {
+                    a.error_kind
+                        .map_or_else(|| "no answer".to_string(), |kind| format!("{kind:?}"))
+                })
+                .collect();
+            format!("io_kind=[{}]", kinds.join(", "))
+        }
+        _ => "io_kind=none".to_string(),
+    }
 }
 
 impl UpgradeFailure {
@@ -184,6 +259,25 @@ impl UpgradeFailure {
             _ => Self::Unexpected,
         }
     }
+
+    /// Classifies a dial whose retries are spent, with what the share's kernel
+    /// mount said just before it.
+    ///
+    /// [`Self::BlockedByThisMac`] when ALL three hold, else [`Self::from_smb_error`]:
+    /// every address refused the route (`EHOSTUNREACH` / `ENETUNREACH`), every
+    /// attempt failed within [`BLOCKED_DIAL_CEILING`], and the mount answered. The
+    /// errno alone can't say it: a server that's off, or a router giving up on it,
+    /// answers `EHOSTUNREACH` too. The mount answering is what says the server is
+    /// there, and the speed says the refusal never left this Mac.
+    pub(crate) fn of_dial(dial: &FailedDial, mount: MountEvidence) -> Self {
+        if mount == MountEvidence::Answered
+            && dial.slowest_attempt <= BLOCKED_DIAL_CEILING
+            && is_refused_route(&dial.error)
+        {
+            return Self::BlockedByThisMac;
+        }
+        Self::from_smb_error(&dial.error)
+    }
 }
 
 /// Why `try_smb_upgrade` didn't install a session.
@@ -200,13 +294,18 @@ pub(crate) enum UpgradeError {
 }
 
 impl UpgradeError {
-    /// Reads a failed connect for an attempt that went out as `username` (`None`
-    /// is a guest).
-    pub(crate) fn from_connect_error(err: &smb2::Error, username: Option<&str>, display_name: String) -> Self {
-        match Refusal::of(err, SignInIdentity::from_username(username)) {
+    /// Reads a failed dial for an attempt that went out as `username` (`None` is a
+    /// guest), with what the share's kernel mount said before it.
+    pub(crate) fn from_failed_dial(
+        dial: &FailedDial,
+        mount: MountEvidence,
+        username: Option<&str>,
+        display_name: String,
+    ) -> Self {
+        match Refusal::of(&dial.error, SignInIdentity::from_username(username)) {
             Some(refusal) => Self::Refused(refusal),
             None => Self::Network {
-                reason: UpgradeFailure::from_smb_error(err),
+                reason: UpgradeFailure::of_dial(dial, mount),
                 display_name,
             },
         }
@@ -239,24 +338,35 @@ pub(crate) enum DirectConnectOutcome {
 /// kernel mount at a fraction of the speed.
 ///
 /// `username` is who the attempt went out as (`None` is a guest), which is what
-/// separates the four refusals: see [`Refusal::advice`].
+/// separates the four refusals: see [`Refusal::advice`]. `reason` is the caller's
+/// [`UpgradeFailure::of_dial`] reading, the same one it acts on, so the log can't
+/// name a different one.
 pub(crate) fn log_direct_connect_failure(
     server: &str,
     share: &str,
-    err: &smb2::Error,
+    dial: &FailedDial,
+    reason: UpgradeFailure,
     outcome: DirectConnectOutcome,
     username: Option<&str>,
 ) {
+    let err = &dial.error;
     let Some(refusal) = Refusal::of(err, SignInIdentity::from_username(username)) else {
-        let reason = UpgradeFailure::from_smb_error(err);
+        let io = dial_detail(err);
+        let slowest = dial.slowest_attempt;
+        let why = match reason {
+            UpgradeFailure::BlockedByThisMac => {
+                " The share's kernel mount answered, so the server is reachable from this Mac: something on it (the Local Network permission, a firewall app) refused Cmdr's own connection."
+            }
+            _ => "",
+        };
         match outcome {
             DirectConnectOutcome::StaysOnKernelMount => log::warn!(
                 target: "smb_fallback",
-                "Couldn't establish an smb2 connection for server={server:?}, share={share:?} ({reason:?}): {err}. Staying on the macOS kernel mount."
+                "Couldn't establish an smb2 connection for server={server:?}, share={share:?} ({reason:?}, {io}, slowest_attempt={slowest:?}): {err}. Staying on the macOS kernel mount.{why}"
             ),
             DirectConnectOutcome::SurfacedToCaller => log::warn!(
                 target: "smb_fallback",
-                "Couldn't establish an smb2 connection for server={server:?}, share={share:?} ({reason:?}): {err}"
+                "Couldn't establish an smb2 connection for server={server:?}, share={share:?} ({reason:?}, {io}, slowest_attempt={slowest:?}): {err}.{why}"
             ),
         }
         return;

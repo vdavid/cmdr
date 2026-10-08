@@ -14,7 +14,7 @@
 use std::path::Path;
 use std::pin::Pin;
 
-use crate::connection::MtpConnectionError;
+use crate::connection::{MtpConnectionError, UploadedFile};
 use crate::testing::{connect_virtual_device, device_lock, test_connection_manager};
 use crate::virtual_device::VIRTUAL_DEVICE_SERIAL;
 
@@ -56,7 +56,17 @@ async fn upload_failure_deletes_partial_object_on_device() {
     let stream = Box::pin(ErroringStream { emitted: false });
 
     let result = test_connection_manager()
-        .upload_from_stream(&device.id, device.storage_id, "Documents", filename, size, stream)
+        .upload_from_stream(
+            &device.id,
+            device.storage_id,
+            "Documents",
+            UploadedFile {
+                name: filename,
+                size,
+                modified: None,
+            },
+            stream,
+        )
         .await;
 
     assert!(result.is_err(), "upload with a mid-stream source error must fail");
@@ -114,7 +124,17 @@ async fn upload_cancel_deletes_partial_and_surfaces_cancelled() {
     let stream = Box::pin(CancellingStream { emitted: false });
 
     let result = test_connection_manager()
-        .upload_from_stream(&device.id, device.storage_id, "Documents", filename, size, stream)
+        .upload_from_stream(
+            &device.id,
+            device.storage_id,
+            "Documents",
+            UploadedFile {
+                name: filename,
+                size,
+                modified: None,
+            },
+            stream,
+        )
         .await;
 
     // Cancel classification preserved: the error must be Cancelled, not a
@@ -187,8 +207,11 @@ async fn upload_into_stale_parent_handle_heals_and_retry_succeeds() {
             &device.id,
             device.storage_id,
             "Documents",
-            filename,
-            size,
+            UploadedFile {
+                name: filename,
+                size,
+                modified: None,
+            },
             Box::pin(OneShotStream {
                 chunk: Some(payload.clone()),
             }),
@@ -206,8 +229,11 @@ async fn upload_into_stale_parent_handle_heals_and_retry_succeeds() {
             &device.id,
             device.storage_id,
             "Documents",
-            filename,
-            size,
+            UploadedFile {
+                name: filename,
+                size,
+                modified: None,
+            },
             Box::pin(OneShotStream { chunk: Some(payload) }),
         )
         .await;

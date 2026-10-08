@@ -304,3 +304,212 @@ async fn route_archive_rename_onto_an_existing_name_errors_without_building_a_te
     );
     let _ = fs::remove_dir_all(&tmp);
 }
+
+// ============================================================================
+// Renames that copy (an object store's folders): routed, never `rename`
+// ============================================================================
+
+/// An object store's double, registered under a fresh id, holding `/a/foo`
+/// with `files` files in it.
+async fn copying_store(label: &str, files: usize) -> (String, Arc<crate::file_system::volume::InMemoryVolume>) {
+    let volume_id = unique(label);
+    let volume = Arc::new(
+        crate::file_system::volume::InMemoryVolume::new(&volume_id)
+            .with_whole_publish()
+            .with_renames_by_copy()
+            .with_space_info(10_000_000, 10_000_000),
+    );
+    volume.create_directory(Path::new("/a")).await.unwrap();
+    volume.create_directory(Path::new("/a/foo")).await.unwrap();
+    for n in 0..files {
+        volume
+            .create_file(&PathBuf::from(format!("/a/foo/f{n:03}.txt")), b"xy")
+            .await
+            .unwrap();
+    }
+    get_volume_manager().register(&volume_id, Arc::clone(&volume) as Arc<dyn Volume>);
+    (volume_id, volume)
+}
+
+/// ❗ A rename that copies never reaches `Volume::rename` (the double refuses
+/// it, which would come back as a `Volume` refusal): it starts a move, which a
+/// unit test, with no app to emit through, can't, and says so.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_rename_that_copies_starts_a_move_instead_of_calling_rename() {
+    let (volume_id, volume) = copying_store("copy-rename", 2).await;
+
+    let result = rename_managed(
+        PathBuf::from("/a/foo"),
+        PathBuf::from("/a/bar"),
+        false,
+        volume_id,
+        Initiator::User,
+    )
+    .await;
+
+    assert!(
+        matches!(result, Err(MutationError::Unexpected { .. })),
+        "routed to the move starter, never to `rename`: {result:?}"
+    );
+    assert!(volume.exists(Path::new("/a/foo/f000.txt")).await, "nothing moved");
+}
+
+/// F2 hears what a copying rename carries, and whether to confirm it first.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn the_validity_check_reports_the_move_a_copying_rename_runs_as() {
+    let (small_id, _small) = copying_store("copy-validity-small", 3).await;
+    let small = check_rename_validity_impl("/a".into(), "foo".into(), "bar".into(), small_id, None).await;
+    assert_eq!(
+        small.by_move,
+        Some(RenameByMove {
+            files: 3,
+            bytes: 6,
+            counted_all: true,
+            confirm_first: false,
+        })
+    );
+
+    let (big_id, _big) = copying_store("copy-validity-big", 101).await;
+    let big = check_rename_validity_impl("/a".into(), "foo".into(), "bar".into(), big_id, None).await;
+    let by_move = big.by_move.expect("a copying rename reports its move");
+    assert!(by_move.confirm_first, "past 100 files it asks first: {by_move:?}");
+    assert!(!by_move.counted_all, "and the count stopped at its cap: {by_move:?}");
+
+    let plain_id = unique("plain-validity");
+    let plain = Arc::new(crate::file_system::volume::InMemoryVolume::new(&plain_id));
+    plain.create_directory(Path::new("/a/foo")).await.unwrap();
+    get_volume_manager().register(&plain_id, plain as Arc<dyn Volume>);
+    let one_call = check_rename_validity_impl("/a".into(), "foo".into(), "bar".into(), plain_id, None).await;
+    assert_eq!(one_call.by_move, None, "a one-call rename carries nothing");
+}
+
+/// A few files that cost something to move (young objects on Wasabi) ask
+/// first too: only a free, small, fully counted rename starts unasked.
+#[test]
+fn a_small_rename_that_costs_money_asks_first() {
+    let small = crate::file_system::volume::SubtreeTally {
+        files: 3,
+        bytes: 6,
+        folders: 1,
+        per_file: Vec::new(),
+        complete: true,
+    };
+    assert!(!RenameByMove::from_tally(Some(small.clone()), false).confirm_first);
+    assert!(RenameByMove::from_tally(Some(small), true).confirm_first);
+}
+
+/// A reviewed batch where a rename copies runs as ONE move with the new
+/// names, and lands every one of them.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_batch_where_a_rename_copies_runs_as_one_move() {
+    use crate::file_system::write_operations::event_sinks::CollectorEventSink;
+    use crate::ignore_poison::IgnorePoison;
+
+    let (volume_id, volume) = copying_store("copy-batch", 2).await;
+    volume.create_file(Path::new("/a/note.txt"), b"n").await.unwrap();
+    let mut rows = Vec::new();
+    for (id, from, to) in [("1", "/a/foo", "/a/bar"), ("2", "/a/note.txt", "/a/memo.txt")] {
+        rows.push(BulkRenameRow {
+            row_id: id.to_string(),
+            source: PathBuf::from(from),
+            destination: PathBuf::from(to),
+            expected_fingerprint: crate::file_system::write_operations::SourceFingerprint::capture_remote(
+                volume.as_ref(),
+                Path::new(from),
+            )
+            .await
+            .expect("a fingerprint"),
+        });
+    }
+    let events = Arc::new(CollectorEventSink::new());
+
+    let started = start_renames(events.clone(), volume_id, rows, Initiator::Agent)
+        .await
+        .expect("the batch starts");
+
+    assert_eq!(
+        started.operation.operation_type,
+        WriteOperationType::Move,
+        "one move, not a rename batch"
+    );
+    assert_eq!(started.swaps_left_out, 0);
+    crate::test_support::wait_until_async(std::time::Duration::from_secs(10), "the move to settle", || {
+        !events.settled.lock_ignore_poison().is_empty()
+    })
+    .await;
+    assert!(
+        events.errors.lock_ignore_poison().is_empty(),
+        "{:?}",
+        events.errors.lock_ignore_poison()
+    );
+    assert!(volume.exists(Path::new("/a/bar/f001.txt")).await);
+    assert!(volume.exists(Path::new("/a/memo.txt")).await);
+    assert!(!volume.exists(Path::new("/a/foo")).await);
+    assert!(!volume.exists(Path::new("/a/note.txt")).await);
+}
+
+/// A swap in a batch that runs as a move stays where it is, and the start
+/// result says how many renames that left out, for the batch's result line.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_batch_as_a_move_reports_the_swaps_it_left_out() {
+    use crate::file_system::write_operations::event_sinks::CollectorEventSink;
+
+    let (volume_id, volume) = copying_store("copy-batch-swap", 1).await;
+    volume.create_directory(Path::new("/a/bar")).await.unwrap();
+    volume.create_file(Path::new("/a/note.txt"), b"n").await.unwrap();
+    let mut rows = Vec::new();
+    for (id, from, to) in [
+        ("1", "/a/foo", "/a/bar"),
+        ("2", "/a/bar", "/a/foo"),
+        ("3", "/a/note.txt", "/a/memo.txt"),
+    ] {
+        rows.push(BulkRenameRow {
+            row_id: id.to_string(),
+            source: PathBuf::from(from),
+            destination: PathBuf::from(to),
+            expected_fingerprint: crate::file_system::write_operations::SourceFingerprint::capture_remote(
+                volume.as_ref(),
+                Path::new(from),
+            )
+            .await
+            .expect("a fingerprint"),
+        });
+    }
+
+    let started = start_renames(Arc::new(CollectorEventSink::new()), volume_id, rows, Initiator::Agent)
+        .await
+        .expect("the batch starts");
+
+    assert_eq!(started.swaps_left_out, 2, "both renames of the swap");
+}
+
+#[tokio::test]
+async fn a_batch_the_executor_runs_leaves_no_swap_out() {
+    use crate::file_system::write_operations::event_sinks::CollectorEventSink;
+
+    let tmp = TestDir::new("bulk-swap-local");
+    fs::write(tmp.join("x.txt"), "x").unwrap();
+    fs::write(tmp.join("y.txt"), "y").unwrap();
+    let mut rows = Vec::new();
+    for (id, from, to) in [("1", "x.txt", "y.txt"), ("2", "y.txt", "x.txt")] {
+        let source = tmp.join(from);
+        rows.push(BulkRenameRow {
+            row_id: id.to_string(),
+            expected_fingerprint: crate::file_system::write_operations::SourceFingerprint::capture_local(&source)
+                .expect("a fingerprint"),
+            source,
+            destination: tmp.join(to),
+        });
+    }
+
+    let started = start_renames(
+        Arc::new(CollectorEventSink::new()),
+        "root".to_string(),
+        rows,
+        Initiator::Agent,
+    )
+    .await
+    .expect("the batch starts");
+
+    assert_eq!(started.swaps_left_out, 0, "the executor swaps through a temporary name");
+}

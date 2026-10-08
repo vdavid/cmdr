@@ -22,6 +22,13 @@
       "mtp.permissionDialog.title": "Can't access USB device → Az USB-eszköz nem érhető el: the house form for an unreachable device."
     }
   },
+  "access-key-id": {
+    "chosen": "hozzáférési kulcs azonosítója",
+    "accept": ["hozzáférési kulcs azonosító"],
+    "forms": "the S3 form label → Hozzáférési kulcs azonosítója",
+    "confidence": "tentative",
+    "sources": "catalog servers.sheet.accessKeyId and servers.sheet.identityLockedS3; MS access key → hozzáférési kulcs; no AWS console ships Hungarian"
+  },
   "account": {
     "chosen": "fiók",
     "forms": "the account you sign in with → a fiók; your account → a fiókod; Apple Account → Apple-fiók",
@@ -58,6 +65,12 @@
       "commands.selectionSelectFiles.description": "add to the selection → kijelöl: Hungarian names the act of selecting, not adding.",
       "settings.appearance.tintGroupDescription": "adds a tint → háttérszínezést ad: the natural verb for giving a visual effect."
     }
+  },
+  "advanced": {
+    "chosen": "Speciális",
+    "confidence": "high",
+    "forms": "Cmdr Settings section → Speciális; quote settings.section.advanced exactly in navigation paths; the shipped section name stays distinct from Apple’s generic Advanced label",
+    "sources": "Network.appex Localizable (ADVANCED); catalog settings.section.advanced (macOS 26.6.2 build 25G83, live loctable key cross-reference, 2026-10-02)"
   },
   "ai-agent": {
     "chosen": "ágens",
@@ -254,7 +267,7 @@
   },
   "ask": {
     "chosen": "Rákérdezés",
-    "accept": ["rákérdez", "kérd", "kérés", "kérdez", "kérj", "kéri"],
+    "accept": ["rákérdez", "kérdez", "kéri"],
     "forms": "segmented cell Rákérdezés; or ask each time → vagy rákérdezés minden alkalommal",
     "confidence": "tentative",
     "sources": "descriptive; nominal form fits a one-cell control"
@@ -273,6 +286,11 @@
     "confidence": "high",
     "sources": "ms (attach, file sense → csatol; attachment → Melléklet); Double Commander (Húzd és ejtsd)",
     "note": "csatol is also mount's verb (csatolt kötet); context separates them. The consent copy's connected drives says csatlakoztatott to stay clear."
+  },
+  "automation": {
+    "chosen": "Automatizálás",
+    "confidence": "high",
+    "sources": "macOS 27.0 (26A428) SecurityPrivacyExtension.appex Localizable.loctable, key AUTOMATION, 2026-10-08"
   },
   "available-offline": {
     "chosen": "Elérhetővé tétel offline",
@@ -365,6 +383,19 @@
     "confidence": "high",
     "sources": "macOS AppleAccountUI (PROFILE_BROWSE_PHOTO Browse... = Böngészés…)"
   },
+  "bucket": {
+    "chosen": "bucket",
+    "accept": ["bucketet", "bucketben", "buckethez"],
+    "forms": "front-vowel suffixes (bucketet, bucketben, buckethez); All buckets → Az összes bucket",
+    "avoid": [
+      {
+        "form": "gyűjtő",
+        "why": "MS term for another sense"
+      }
+    ],
+    "confidence": "tentative",
+    "sources": "decisions.md \"S3\" (no console ships Hungarian, tech prose writes S3 bucketbe); catalog servers.sheet.s3Bucket"
+  },
   "busy": {
     "chosen": "foglalt",
     "accept": ["elfoglalt"],
@@ -372,6 +403,22 @@
     "confidence": "high",
     "sources": "ms (foglalt, the line-busy sense); catalog (menu.volume.*Busy)",
     "decision": "busy: a kiszürkített menüpontok jelölője"
+  },
+  "byte": {
+    "chosen": "bájt",
+    "forms": "the size unit after a number → bájt in both plural branches (512 bájt); unit symbols stay Latin: binary (IEC, base 1024) KiB, MiB, GiB, TiB, PiB; decimal (SI, base 1000) kB, MB, GB, TB, PB; a suffix never hangs on a symbol (4 GiB vagy annál nagyobb méretű, {maxSize} méretnél)",
+    "avoid": [
+      {
+        "form": "byte",
+        "why": "the English spelling; macOS Finder, Nautilus, and Total Commander’s own Hungarian text all write bájt"
+      },
+      {
+        "form": "KB",
+        "why": "capital K is neither the SI kilo (kB) nor the binary KiB, so it blurs the two size formats the app keeps apart"
+      }
+    ],
+    "confidence": "high",
+    "sources": "macOS Finder (SP27/SP28 bájt, SP22–SP26 PB/TB/GB/MB/KB); GNOME Nautilus (%s bájt in both plural slots, 4 kB / 4 MB); Total Commander (bájt fájlonként, kB/mp); Xfce Thunar (512 KiB, 1 MiB, 1 GiB); KDE Dolphin ( MiB); Microsoft Terminology (MiB, GiB)"
   },
   "button": {
     "chosen": "gomb",
@@ -384,6 +431,20 @@
     "forms": "share cache → megosztásgyorsítótár; system caches → rendszer-gyorsítótárak",
     "confidence": "high",
     "sources": "ms (cache → gyorsítótár); catalog"
+  },
+  "calculate": {
+    "accept": ["kiszámít", "számol", "számít"],
+    "chosen": "kiszámítás",
+    "confidence": "high",
+    "forms": "Calculate folder sizes → Mappaméretek kiszámítása; the running work → a számítás; adding up in prose → összeadja",
+    "sources": "macOS Finder ViewOptionsWindow 65.title (Minden méret kiszámítása); TC 503, 5138 (Elfoglalt terület számítása); Double Commander Foglalt terület számítása"
+  },
+  "camera": {
+    "accept": ["kamerák", "kamerát", "kameraeszköz"],
+    "chosen": "kamera",
+    "confidence": "tentative",
+    "note": "macOS says fényképezőgép for a still camera; the catalog settled on the shorter everyday kamera, which also covers phones-as-cameras. A native reviewer may revisit (review-queue).",
+    "sources": "catalog (~10 uses: mtpEnabled, MTP section, camera details); macOS AppKit NSStillCameraTemplate and the Photos EXIF fields say „fényképezőgép”"
   },
   "camera-details": {
     "chosen": "kameraadatok",
@@ -552,6 +613,12 @@
     "confidence": "high",
     "sources": "macOS (Vágólap)"
   },
+  "clone-pane": {
+    "accept": ["klónoz"],
+    "chosen": "Panel klónozása",
+    "confidence": "high",
+    "sources": "MS terminology (clone → klónoz) + the pane ruling (panel). TC 532 and DC name the same command Cél = Forrás; Finder has none"
+  },
   "close": {
     "chosen": "Bezárás",
     "accept": ["bezár", "zárd be", "zárj be", "lezár", "zárul", "zárja", "zárva"],
@@ -574,6 +641,12 @@
     "forms": "your cloud provider → a felhőszolgáltatód; cloud service → felhőszolgáltatás; cloud folders → felhős mappák; cloud mount → Felhőcsatolás (tentative)",
     "confidence": "high",
     "sources": "descriptive; catalog"
+  },
+  "column": {
+    "chosen": "oszlop",
+    "confidence": "high",
+    "forms": "the Name column → a Név oszlop; sort column → rendezőoszlop; column width → oszlopszélesség; by the chosen column → a választott oszlop szerint",
+    "sources": "macOS Finder (SV2 Valamely oszlop szerinti rendezéshez); catalog"
   },
   "coming-soon": {
     "chosen": "Hamarosan",
@@ -599,6 +672,19 @@
     "chosen": "összehasonlító",
     "confidence": "tentative",
     "sources": "catalog (queryUi.*.aria.comparator)"
+  },
+  "compare-folders": {
+    "chosen": "Mappák összehasonlítása",
+    "accept": ["összehasonlít"],
+    "forms": "label Mappák összehasonlítása; the act → a mappák összehasonlítása",
+    "avoid": [
+      {
+        "form": "Könyvtárak összehasonlítása",
+        "why": "DC's and MC's wording; TC hu and Finder say mappa"
+      }
+    ],
+    "confidence": "high",
+    "sources": "TC 11.58 hu menu Mappák összehasonlítása (exact match, ⇧F2); DC and MC say Könyvtárak összehasonlítása; Finder mappa"
   },
   "complete": {
     "chosen": "befejezés",
@@ -648,7 +734,7 @@
       }
     ],
     "confidence": "high",
-    "sources": "catalog (fileExplorer.pane.trashUnconfirmedToast, fileOperations.mkdir.timeoutMessage); macOS AppKit (Confirm = Megerősítés, the approval sense)",
+    "sources": "catalog (fileExplorer.pane.trashUnconfirmedToast); macOS AppKit (Confirm = Megerősítés, the approval sense)",
     "decision": "A move that could not be confirmed"
   },
   "conflict": {
@@ -676,6 +762,12 @@
     "sources": "macOS Finder (N84 Kapcsolódás szerverre…, MN1 Kapcsolódás ide: ^0…); AppKit SavePanel (Connected = Kapcsolódva); Home (Csatlakozás…)",
     "note": "The two stems are a deliberate split: the pane title keeps Apple's kapcsolód-, the sheet's button and its siblings keep csatlakoz- because Connect is shared with fileExplorer.network.connect.",
     "decision": "A szerverlap, az SSH-kulcs jóváhagyása és a Go-to-path előnézete"
+  },
+  "provider-console": {
+    "chosen": "konzol",
+    "confidence": "high",
+    "forms": "a storage provider’s console → a tárhelyszolgáltatód konzolja, after a first mention a szolgáltatód konzolja; on it → konzolján",
+    "sources": "MS terminology (console → konzol, management console → kezelőkonzol); catalog errors.listing.coldStorage.suggestion"
   },
   "context-menu": {
     "chosen": "helyi menü",
@@ -723,6 +815,13 @@
     "confidence": "high",
     "sources": "macOS (Másolás); ms; GNOME; Xfce"
   },
+  "cost": {
+    "chosen": "költség",
+    "accept": ["kerül", "ára", "olcsó"],
+    "forms": "the noun → költség (becsült költség); costs nothing (a verb) → nem kerül semmibe; the price of a feature in prose → az ára",
+    "confidence": "high",
+    "sources": "ms (cost → költség); catalog (askCmdr.cost.unknown, settings.askCmdr.spend.empty, settings.fileOperations.adbEnabled.description)"
+  },
   "crash-report": {
     "chosen": "összeomlási jelentés",
     "accept": ["összeoml", "jelentés"],
@@ -754,6 +853,11 @@
     "forms": "Aktuális mappa hozzáadása a kedvencekhez; a fókuszált panel aktuális mappája",
     "confidence": "high",
     "sources": "catalog (commands.editPaste.description, commands.favoritesAdd.description)"
+  },
+  "cursor": {
+    "chosen": "kurzor",
+    "confidence": "high",
+    "sources": "ms (cursor → kurzor); catalog (kurzor 9×, Panelkurzor)"
   },
   "custom": {
     "chosen": "egyéni",
@@ -789,6 +893,13 @@
     "confidence": "tentative",
     "sources": "descriptive; advanced settings only"
   },
+  "debugging": {
+    "chosen": "hibakeresés",
+    "accept": ["hibakeres", "debug"],
+    "confidence": "high",
+    "forms": "debug log → hibakeresési napló; the technical log level stays debug",
+    "sources": "ConsoleKit.framework Localizable (Debug Type, value_debug); catalog settings.developer.verboseLogging.description (macOS 26.6.2 build 25G83, live loctable key cross-reference, 2026-10-02)"
+  },
   "default": {
     "chosen": "alapértelmezett",
     "accept": ["alapérték", "rendszer szerinti", "alapból"],
@@ -802,6 +913,13 @@
     "forms": "label Törlés; possessive … törlése; question Törlöd …?; progress Törlés…",
     "confidence": "high",
     "sources": "macOS; ms; GNOME; Xfce"
+  },
+  "delete-key": {
+    "chosen": "Delete",
+    "confidence": "high",
+    "forms": "with a base word, like the Escape ruling → a Delete (⌫) billentyűvel",
+    "note": "Pile mined 2026-10-07 (macOS 27.0.1 live bundles): VoiceOver SCRWorkspace.loctable deleteKey, Terminal keyDescriptions.loctable 007F, AccessibilitySharedSupport symbol names delete.backward.",
+    "sources": "macOS VoiceOver (Delete Key → Delete billentyű); Terminal key descriptions and the symbol names say Törlés, a description rather than the keycap"
   },
   "delete-permanently": {
     "chosen": "végleges törlés",
@@ -868,6 +986,13 @@
     "confidence": "high",
     "sources": "macOS Finder (PE5.1 mert az eszköz eltűnt); Double Commander (külső eszközök (például okostelefonok))",
     "note": "A phone specifically is telefon; eszköz covers cameras and Kindles too."
+  },
+  "dialog": {
+    "chosen": "párbeszédablak",
+    "accept": ["párbeszéd", "ablak"],
+    "forms": "a named Cmdr dialog → a Fájlok kijelölése párbeszédablak; telling the user to close it in prose → zárd be ezt az ablakot / nyugodtan bezárhatod ezt az ablakot",
+    "confidence": "high",
+    "sources": "catalog (fileExplorer.pane.dialogRenderFailedToast: Ez a párbeszédablak; zárd be ezt az ablakot ×4); MS terminology (dialog box → párbeszédpanel, the Windows form); macOS Finder/AppKit/System Settings bundles never name the concept"
   },
   "disable": {
     "chosen": "kikapcsolás",
@@ -937,8 +1062,8 @@
   },
   "done": {
     "chosen": "Kész",
-    "accept": ["végez"],
-    "forms": "status Kész; Almost done → Mindjárt kész; Whatever's finished stays done → Ami elkészült, az kész marad",
+    "accept": ["végez", "befejeződ"],
+    "forms": "status Kész; Almost done → Mindjárt kész; Whatever's finished stays done → Ami elkészült, az kész marad; once that's done (a busy tooltip) → amint ez befejeződik (errors.eject.busy)",
     "confidence": "high",
     "sources": "macOS (PW23 Kész)"
   },
@@ -1076,6 +1201,19 @@
     "confidence": "tentative",
     "sources": "descriptive"
   },
+  "example": {
+    "chosen": "Példa:",
+    "accept": ["Példa", "például", "pl."],
+    "forms": "Example: {x} → Példa: {x}; \"like …\" inside a sentence → például",
+    "avoid": [
+      {
+        "form": "Például: (as the prefix)",
+        "why": "the catalog’s placeholders all say Példa:"
+      }
+    ],
+    "confidence": "high",
+    "sources": "catalog (servers.sheet.usernamePlaceholder, ai.cloud.modelPlaceholderExample, onboarding.cloudSetup.step.endpointPlaceholder)"
+  },
   "exclude": {
     "chosen": "kizár",
     "accept": ["kizárva", "kizárt", "kizárás"],
@@ -1210,6 +1348,13 @@
     "confidence": "high",
     "sources": "ms"
   },
+  "filter": {
+    "accept": ["szűr"],
+    "chosen": "szűrés",
+    "confidence": "high",
+    "forms": "noun szűrő (Szűrő törlése, gyorsszűrő); the typing-mode name and badge Szűrés (Szűrés: …), beside Ugrás",
+    "sources": "macOS live (Filter → Szűrő 37×, Szűrés 26×; Clear Filter → Szűrő törlése); DC, MC (Szűrő); catalog (Szűrés típus szerint, Méretszűrő aktív)"
+  },
   "finder": {
     "chosen": "Finder",
     "forms": "suffixes attach without a hyphen: a Finderben, a Finder mellé; compounds take one: Finder-ablak, Finder-címke",
@@ -1335,11 +1480,85 @@
     "confidence": "tentative",
     "sources": "literal"
   },
+  "overall": {
+    "chosen": "Összesen",
+    "confidence": "high",
+    "forms": "the whole-run time-left label → Összesen: {eta}",
+    "sources": "GN összesen, DC Összesen:; catalog servers.paneState.retryKeepsTrying"
+  },
+  "restore": {
+    "chosen": "visszaállítás",
+    "accept": ["visszaállít", "állítsd vissza"],
+    "forms": "restore it (a cold-storage file) → állítsd vissza; until it’s restored → a visszaállításáig; A restore → A visszaállítás",
+    "confidence": "high",
+    "sources": "macOS AppKit Revisions (Restore → Visszaállítás); ms (restore → visszaállítás); catalog (Visszaállítás 3×)",
+    "decision": "S3"
+  },
+  "size-unit-gibibyte": {
+    "chosen": "GiB",
+    "confidence": "high",
+    "sources": "catalog common.sizeUnit.gibibyte; IEC 80000-13 (binary) / SI (decimal)"
+  },
+  "size-unit-kibibyte": {
+    "chosen": "KiB",
+    "confidence": "high",
+    "sources": "catalog common.sizeUnit.kibibyte; IEC 80000-13 (binary) / SI (decimal)"
+  },
+  "size-unit-kilobyte": {
+    "chosen": "kB",
+    "confidence": "high",
+    "sources": "catalog common.sizeUnit.kilobyte; IEC 80000-13 (binary) / SI (decimal)"
+  },
+  "size-unit-mebibyte": {
+    "chosen": "MiB",
+    "confidence": "high",
+    "sources": "catalog common.sizeUnit.mebibyte; IEC 80000-13 (binary) / SI (decimal)"
+  },
+  "size-unit-pebibyte": {
+    "chosen": "PiB",
+    "confidence": "high",
+    "sources": "catalog common.sizeUnit.pebibyte; IEC 80000-13 (binary) / SI (decimal)"
+  },
+  "size-unit-tebibyte": {
+    "chosen": "TiB",
+    "confidence": "high",
+    "sources": "catalog common.sizeUnit.tebibyte; IEC 80000-13 (binary) / SI (decimal)"
+  },
   "step": {
     "chosen": "lépés",
     "confidence": "high",
     "forms": "Step 1 of 2: X → 1/2. lépés: X (the AI install steps); the onboarding counter reads Lépés: 1/2",
     "sources": "MS terminology (step → lépés); shipped catalog (onboarding.wizard.stepProgress, ai.local.installStepExtracting)"
+  },
+  "storage": {
+    "chosen": "tárhely",
+    "accept": ["tárhely", "tárolás"],
+    "forms": "S3 storage → S3-tárhely; storage provider → tárhelyszolgáltató; cold storage → offline tárolás (ms); storing logs → naplótárolás",
+    "confidence": "high",
+    "sources": "catalog (fileExplorer.mtp.noStorage, fileExplorer.diskSpace.noLimitNote, telefontárhely); ms (storage → tár / tárterület; cold storage → offline tárolás)"
+  },
+  "store": {
+    "accept": ["tárolható", "tárolni", "ment"],
+    "chosen": "tárol",
+    "confidence": "high",
+    "forms": "a destination that can’t store a name → nem tárolható itt / nem tudja tárolni; stored credentials or a secret in the keychain → mentett / menteni (the save verb, as macOS hu says for passwords)",
+    "sources": "catalog errors.write.invalidName.message, errors.write.* FAT32 family (7 hits)",
+    "exceptions": {
+      "errors.eject.unmountRefusedByDiskImage": "a disk image stored there → Ott még nyitva van egy lemezkép: Hungarian says the image is there, no storing verb."
+    }
+  },
+  "tint": {
+    "chosen": "színezés",
+    "accept": ["színez"],
+    "forms": "Tint X panes → X-panelek színezése; Background tint → Háttérszínezés",
+    "avoid": [
+      {
+        "form": "tónus",
+        "why": "Microsoft’s color-mixing sense, not a pane background"
+      }
+    ],
+    "confidence": "high",
+    "sources": "catalog (… színezése 6×, Háttérszínezés 3×); ms tint → tónus (other sense)"
   },
   "worktree": {
     "chosen": "worktree",
@@ -1376,11 +1595,17 @@
     "sources": "macOS (Vissza, Előre)"
   },
   "go-to-path": {
-    "chosen": "Ugrás útvonalra",
-    "accept": ["ugrás mappához", "útvonal"],
-    "forms": "Go to path… → Ugrás útvonalra…; Go to folder… (the Dock menu, Finder's own) → Ugrás mappához…",
+    "chosen": "Ugrás mappához",
+    "accept": ["útvonal"],
+    "forms": "menu item and command Go to folder… → Ugrás mappához…; dialog title and its button → Ugrás mappához",
+    "avoid": [
+      {
+        "form": "Ugrás útvonalra",
+        "why": "the old Go to path wording; English now matches Finder's Go to Folder"
+      }
+    ],
     "confidence": "high",
-    "sources": "catalog; macOS Finder (MenuBar 261.title Ugrás mappához…)"
+    "sources": "macOS Finder (MenuBar 261.title and LocalizableMerged N83 Ugrás mappához…, GT8 dialog title Ugrás mappához)"
   },
   "go-to-trash": {
     "chosen": "Ugrás a Kukába",
@@ -1393,6 +1618,12 @@
     "accept": ["rendben"],
     "confidence": "high",
     "sources": "catalog (ai.toast.gotIt, updates.moveToApplicationsDialog.gotIt, main.oldMacos.gotIt)"
+  },
+  "group": {
+    "chosen": "csoport",
+    "confidence": "high",
+    "forms": "a named group takes the name bare before it (a Hálózat csoport); the servers found nearby → A közelben felfedezett szerverek csoportja",
+    "sources": "macOS Finder MenuBar (Use Groups → Csoportok használata), verified on macOS 27.0 (26A428), live bundle, 2026-09-30; catalog (servers.pinHint.title)"
   },
   "guest": {
     "chosen": "vendég",
@@ -1975,7 +2206,10 @@
     "accept": ["megoszt"],
     "forms": "network share → hálózati megosztás; SMB/Network shares → SMB-/hálózati megosztások; a runtime share name → ezt a megosztást: „{share}”, or Nincs „{share}” nevű megosztás",
     "confidence": "high",
-    "sources": "ms (network share → hálózati megosztás); macOS NetAuthAgent (EINFO_NO_SHARE)"
+    "sources": "ms (network share → hálózati megosztás); macOS NetAuthAgent (EINFO_NO_SHARE)",
+    "exceptions": {
+      "errorReporter.dialog.managedOff": "share it yourself is the verb, not an SMB share: magad oszthatod meg (the preverb splits off, so megoszt doesn't match)."
+    }
   },
   "new-file": {
     "chosen": "Új fájl",
@@ -2032,6 +2266,13 @@
     "forms": "user-facing → értesítés; toast as an internal or settings label → buborék",
     "confidence": "high",
     "sources": "descriptive; catalog (ui.toast.dismissAria = Értesítés elvetése)"
+  },
+  "on-device": {
+    "chosen": "helyi",
+    "accept": ["eszközön", "Macen"],
+    "forms": "on-device AI → helyi AI (accusative a helyi AI-t); On-device only (a card value) → Csak helyi; free, on-device → ingyenes, az eszközön",
+    "confidence": "high",
+    "sources": "catalog (helyi AI / helyi modell in 8 keys across ai, askCmdr, onboarding, settings; askCmdr.cost.free); concept local → helyi (ms, Total Commander Csak helyi fájlok); the hu pile has no Apple or ms on-device entry"
   },
   "onboarding": {
     "chosen": "bevezető",
@@ -2394,6 +2635,13 @@
     "confidence": "high",
     "sources": "catalog (queryUi.results.criteria.query)"
   },
+  "quick-filter": {
+    "accept": ["gyorsszűr"],
+    "chosen": "gyorsszűrő",
+    "confidence": "high",
+    "forms": "gyorsszűrő; the act → gyorsszűrés",
+    "sources": "DC actQuickFilter (Gyorsszűrő); TC 3018/3019 (gyorsszuro, accents dropped in TC’s file)"
+  },
   "quick-look": {
     "chosen": "Gyorsnézet",
     "forms": "accusative Gyorsnézetet; non-Mac Preview → Előnézet",
@@ -2508,7 +2756,7 @@
   },
   "reject": {
     "chosen": "Elutasítás",
-    "accept": ["elutasít"],
+    "accept": ["elutasít", "utasítsd el"],
     "confidence": "high",
     "sources": "macOS Finder AirDrop panel"
   },
@@ -2561,7 +2809,7 @@
   "rename": {
     "chosen": "átnevezés",
     "accept": ["átnevez", "átneveződ", "nevezhető át", "nevezd át", "nevez"],
-    "forms": "label Átnevezés; can’t be renamed → nem nevezhető át; the unconfirmed rename (no agent) → hogy „{name}” átneveződött; rename cycle → átnevezési ciklus",
+    "forms": "label Átnevezés; can’t be renamed → nem nevezhető át; a rename still running → „{name}” átnevezése még folyamatban van; rename cycle → átnevezési ciklus",
     "avoid": [
       {
         "form": "átnevezték (for Cmdr's own rename)",
@@ -2821,7 +3069,7 @@
   },
   "select": {
     "chosen": "kijelölés",
-    "accept": ["kijelöl", "kiválaszt", "válassz", "kijeloles", "jelöld ki", "jelölj ki"],
+    "accept": ["kijelöl", "kiválaszt", "válassz", "kijeloles", "jelöld ki", "jelölj ki", "jelöli ki"],
     "forms": "the menu and the action → Kijelölés; Select all → Összes kijelölése; Select files → Fájlok kijelölése; the dropdown placeholder (the user picks an option) → Válassz",
     "confidence": "high",
     "sources": "macOS Finder (172.title Összes kijelölése); Nautilus (Kijelölés)"
@@ -3291,6 +3539,13 @@
     "confidence": "high",
     "sources": "macOS Finder (NE7 nem érhető el többé)"
   },
+  "untouched": {
+    "accept": ["érintetlenek", "érintetlenül"],
+    "chosen": "érintetlen",
+    "confidence": "high",
+    "forms": "the originals are untouched → az eredetiek érintetlenek",
+    "sources": "catalog (errors.write.destinationNotFound.message.copy, errors.write.deviceDisconnected.sided.destination.copy); macOS AppKit Document (To keep the file unchanged…): nem szeretné módosítani, the verb-side form"
+  },
   "update": {
     "chosen": "frissítés",
     "accept": ["frissít", "frissül"],
@@ -3490,6 +3745,19 @@
     "chosen": "Mission Control",
     "confidence": "high",
     "sources": "macOS 27.0 (26A428) Disk Utility.app InfoPlist.loctable (Lemezkezelő) and Localizable.loctable (Elsősegély), Activity Monitor.app InfoPlist.loctable (Tevékenységfigyelő), Mission Control.app (Mission Control), 2026-09-24"
+  },
+  "space-key": {
+    "accept": ["szóközbillentyű"],
+    "avoid": [
+      {
+        "form": "Space",
+        "why": "macOS hu names the key Szóköz (FunctionKeyNames, Siri, Spotlight), as do TC 5139 and Midnight Commander"
+      }
+    ],
+    "chosen": "Szóköz",
+    "confidence": "high",
+    "forms": "instrumental Szóközzel, accusative a Szóközt, chord ⇧Szóköz; adjective szóközbillentyűs",
+    "sources": "macOS AppKit FunctionKeyNames (Space), SystemSettings Siri/Spotlight SPACEBAR_KEY → Szóköz (Space bar → Szóközbillentyű); AppKit Date Picker help (a szóközbillentyűvel); TC 5139 (Szóközzel kijelöléskor); Midnight Commander Szóköz"
   },
   "spaces": {
     "chosen": "Spaces",

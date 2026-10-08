@@ -26,9 +26,9 @@ keeping the tap's `version` and `sha256`. Skipping that once left the tap on a M
 
 ## Release automation: the tap bump
 
-The `bump-tap` job in `.github/workflows/release.yml` runs after the release is published. It downloads the universal
-DMG release asset, computes its sha256, clones the tap, rewrites only the `version` + `sha256` lines in `Casks/cmdr.rb`,
-and pushes a `cmdr <version>` commit. Releases need zero extra work for brew.
+The `bump-tap` job in `.github/workflows/release-pipeline.yml` runs after the release is published. It downloads the
+universal DMG release asset, computes its sha256, clones the tap, rewrites only the `version` + `sha256` lines in
+`Casks/cmdr.rb`, and pushes a `cmdr <version>` commit. Releases need zero extra work for brew.
 
 ### `HOMEBREW_TAP_TOKEN` setup
 

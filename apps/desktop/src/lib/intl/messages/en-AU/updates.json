@@ -1,0 +1,10 @@
+{
+  "updates.status.managedOff": "Your organisation manages updates for Cmdr.",
+  "@updates.status.managedOff": {
+    "sourceHash": "aa342dc"
+  },
+  "updates.status.heldByPolicy": "Cmdr {available} is out, but your organisation keeps this Mac on {ceiling} or earlier.",
+  "@updates.status.heldByPolicy": {
+    "sourceHash": "5c9b196"
+  }
+}

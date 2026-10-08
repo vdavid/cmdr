@@ -73,6 +73,11 @@ impl ReadPool {
         self.generation.fetch_add(1, Ordering::Release);
     }
 
+    /// The index database this pool reads.
+    pub(crate) fn db_path(&self) -> &std::path::Path {
+        &self.db_path
+    }
+
     /// Run `f` with a thread-local read connection.
     ///
     /// Thread-local safety: the `&Connection` can't escape the closure because

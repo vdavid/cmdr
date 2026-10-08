@@ -1,3 +1,4 @@
+import { tick } from 'svelte'
 import { SvelteMap } from 'svelte/reactivity'
 import { type ViewerRow } from '$lib/tauri-commands'
 import { getAppLogger } from '$lib/logging/logger'
@@ -9,6 +10,7 @@ import { dependOn } from '$lib/utils/reactivity'
 import { ensureVisibleOffset, recenterOffset } from './viewer-search-scroll'
 import { caretRectFor, measureColumnWidth } from './viewer-pointer'
 import { EOF_ROW, type RowOffset } from './selection.svelte'
+import { isScrolledToEnd } from './viewer-tail-follow'
 
 const log = getAppLogger('viewer')
 
@@ -364,11 +366,35 @@ export function createViewerScroll(deps: ScrollDeps) {
     },
   })
 
+  /**
+   * Whether tail mode should keep the viewport on the last row as the file grows. Only a
+   * scroll event moves it, so the user's own scrolling decides: up releases it, back down to
+   * the end re-pins. Growth fires no scroll event (`scrollTop` stays put), so it survives that.
+   */
+  let followsEnd = false
+
   function handleScroll() {
     if (contentRef) {
       scrollTop = contentRef.scrollTop
       viewportHeight = contentRef.clientHeight
+      followsEnd = isAtEnd()
     }
+  }
+
+  /** Jump to the end and keep following it, for a viewer that opens tailed. */
+  function pinToEnd() {
+    followsEnd = true
+    scrollToEnd()
+  }
+
+  /**
+   * Tail follow: re-run on every row-count change (the indexing poll reports growth), and
+   * scroll to the new end when tail mode is on and the viewport was following it.
+   */
+  function runTailFollowEffect(tailMode: boolean) {
+    dependOn(estimatedTotalRows())
+    if (!tailMode || !followsEnd) return
+    void tick().then(scrollToEnd)
   }
 
   function scrollByRows(rows: number) {
@@ -409,6 +435,11 @@ export function createViewerScroll(deps: ScrollDeps) {
     if (contentRef) {
       contentRef.scrollTop = contentRef.scrollHeight - contentRef.clientHeight
     }
+  }
+
+  /** Whether the viewport shows the end of the file, give or take one row. */
+  function isAtEnd(): boolean {
+    return contentRef ? isScrolledToEnd(contentRef, scrollLineHeight) : false
   }
 
   /**
@@ -676,6 +707,9 @@ export function createViewerScroll(deps: ScrollDeps) {
     get scrollLineHeight() {
       return scrollLineHeight
     },
+    get scrollScale() {
+      return scrollScale
+    },
     get visibleFrom() {
       return visibleFrom
     },
@@ -704,6 +738,8 @@ export function createViewerScroll(deps: ScrollDeps) {
     scrollByPages,
     scrollToStart,
     scrollToEnd,
+    pinToEnd,
+    runTailFollowEffect,
     scrollByColumns,
     ensureRowVisible,
     ensureColumnVisible,

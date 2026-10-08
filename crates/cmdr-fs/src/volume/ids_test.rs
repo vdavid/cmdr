@@ -325,32 +325,6 @@ fn a_phone_is_recognizable_from_its_id_alone() {
 }
 
 #[test]
-fn an_adb_prefix_keeps_the_serial_exactly_as_the_server_names_it() {
-    // The ADB server keys on the exact serial, so a folded prefix would dial a
-    // device nobody listed. The id folds its slug; the prefix never does.
-    assert_eq!(adb_app_root("46061FDAS000A4"), "adb://46061FDAS000A4");
-    assert_eq!(adb_app_root("192.168.1.5:5555"), "adb://192.168.1.5:5555");
-    assert_ne!(adb_app_root("R58M1"), adb_app_root("r58m1"));
-}
-
-#[test]
-fn a_phone_path_names_its_serial_exactly_as_the_prefix_spelled_it() {
-    // The index routes a pane's `adb://…` path to its phone by this serial, so
-    // it must read back exactly what `adb_app_root` wrote, port and case included.
-    assert_eq!(adb_serial_of_path(&adb_app_root("ZY22ABC")), Some("ZY22ABC"));
-    assert_eq!(adb_serial_of_path("adb://ZY22ABC/sdcard/DCIM"), Some("ZY22ABC"));
-    assert_eq!(
-        adb_serial_of_path("adb://192.168.1.5:5555/sdcard"),
-        Some("192.168.1.5:5555")
-    );
-    assert_eq!(adb_serial_of_path("adb://"), None);
-    assert_eq!(adb_serial_of_path("adb:///sdcard"), None);
-    assert_eq!(adb_serial_of_path("mtp://dev/1"), None);
-    // A bare device path is the Mac's boot disk in the app's vocabulary.
-    assert_eq!(adb_serial_of_path("/sdcard/DCIM"), None);
-}
-
-#[test]
 fn ids_from_different_schemes_never_collide() {
     // The scheme prefix is the contract every consumer's classification relies
     // on (`is_mtp_volume_id`, the index's root check, the legacy sweep).
@@ -484,4 +458,55 @@ fn a_digest_shaped_tail_is_not_enough_on_its_own() {
     assert!(!is_legacy_volume_id("path-x-abcdef0123456789"));
     // An empty slug is legitimate (`{scheme}-{digest}`), so this one is current.
     assert!(!is_legacy_volume_id("path-abcdef0123456789"));
+}
+
+// ── S3: an account's places, one id each ──────────────────────────────
+
+#[test]
+fn every_s3_place_under_one_account_has_its_own_id() {
+    // A bucket is a place, and a place is what a pin, a tab, and a switcher row
+    // key on, so two buckets (and the account root, which lists them) can't
+    // share one.
+    let root = s3_volume_id("s3.eu-west-1.amazonaws.com", 443, "AKIAEXAMPLE", None);
+    let photos = s3_volume_id("s3.eu-west-1.amazonaws.com", 443, "AKIAEXAMPLE", Some("photos"));
+    let backups = s3_volume_id("s3.eu-west-1.amazonaws.com", 443, "AKIAEXAMPLE", Some("backups"));
+    assert_ne!(root, photos);
+    assert_ne!(photos, backups);
+    assert!(root.starts_with("s3-"), "got: {root}");
+}
+
+#[test]
+fn two_keys_on_one_s3_endpoint_never_share_an_id() {
+    // Two keys may see different buckets, or the same bucket with different
+    // rights.
+    assert_ne!(
+        s3_volume_id("s3.eu-west-1.amazonaws.com", 443, "AKIAONE", Some("photos")),
+        s3_volume_id("s3.eu-west-1.amazonaws.com", 443, "AKIATWO", Some("photos"))
+    );
+}
+
+#[test]
+fn s3_volume_id_folds_the_host_but_not_the_key_or_the_bucket() {
+    assert_eq!(
+        s3_volume_id("S3.EU-WEST-1.amazonaws.com", 443, "AKIAEXAMPLE", Some("photos")),
+        s3_volume_id("s3.eu-west-1.amazonaws.com", 443, "AKIAEXAMPLE", Some("photos"))
+    );
+    assert_ne!(
+        s3_volume_id("s3.eu-west-1.amazonaws.com", 443, "akiaexample", Some("photos")),
+        s3_volume_id("s3.eu-west-1.amazonaws.com", 443, "AKIAEXAMPLE", Some("photos"))
+    );
+    // Legacy us-east-1 buckets may carry capitals, and they're a different bucket.
+    assert_ne!(
+        s3_volume_id("s3.us-east-1.amazonaws.com", 443, "AKIAEXAMPLE", Some("Photos")),
+        s3_volume_id("s3.us-east-1.amazonaws.com", 443, "AKIAEXAMPLE", Some("photos"))
+    );
+}
+
+#[test]
+fn an_s3_id_keeps_the_access_key_out_of_its_readable_half() {
+    // The slug lands in logs and data-dir names; the key id has no business
+    // there, and the digest already carries it.
+    let id = s3_volume_id("127.0.0.1", 14480, "GK00000000000000000000c0de", Some("cmdr-test"));
+    assert!(!id.to_lowercase().contains("gk0000"), "got: {id}");
+    assert!(id.contains("cmdr-test"), "the bucket still reads in it; got: {id}");
 }

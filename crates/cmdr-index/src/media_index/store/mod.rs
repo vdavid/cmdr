@@ -256,7 +256,7 @@ pub(crate) fn needs_clip(stored: Option<&MediaStatusRow>, clip_stamp: Option<&st
 /// Resolve the `media.db` path for a volume, beside the index's `index-{id}.db` and
 /// `importance-{id}.db` in the app data dir.
 pub fn media_db_path(data_dir: &Path, volume_id: &str) -> PathBuf {
-    data_dir.join(format!("media-{volume_id}.db"))
+    crate::volume_files::VolumeStore::Media.db_path(data_dir, volume_id)
 }
 
 /// Errors from the media store. Mirrors the index/importance store shape (a schema
@@ -349,14 +349,7 @@ impl MediaStore {
     }
 
     fn delete_and_recreate(db_path: &Path) -> Result<Self, MediaStoreError> {
-        if db_path.exists() {
-            std::fs::remove_file(db_path)?;
-        }
-        for sidecar in [db_path.with_extension("db-wal"), db_path.with_extension("db-shm")] {
-            if sidecar.exists() {
-                let _ = std::fs::remove_file(&sidecar);
-            }
-        }
+        cmdr_fs::sqlite_util::delete_database(db_path)?;
         // The ANN index is a derivative of this DB's rows, so a schema wipe takes it
         // (and its sidecars) along — a fresh DB must never be searched through an
         // index built from the old rows (plan M6).

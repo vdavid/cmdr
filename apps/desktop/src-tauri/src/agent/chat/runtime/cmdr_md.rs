@@ -19,7 +19,7 @@ const MAX_CMDR_MD_BYTES: usize = 64 * 1024;
 ///
 /// Cutting silently would leave the model reading a sentence that stops mid-thought and treating
 /// it as the whole of what the user asked for.
-const TRUNCATION_NOTE: &str = "\n\n[Cut off here: CMDR.md is larger than the 64 KB Cmdr reads.]";
+const TRUNCATION_NOTE: &str = "\n\n[Cut off here: CMDR.md is larger than the 64 KiB Cmdr reads.]";
 
 /// Read the user's `CMDR.md` for the stable prefix. Absent, empty, unreadable, or not text →
 /// `None`, and the prefix is then just the system prompt.

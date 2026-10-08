@@ -2,18 +2,24 @@
 //!
 //! Duplicating a file inside one remote volume otherwise pulls every byte down
 //! the link and pushes it straight back up. A backend whose protocol can copy
-//! for itself (SFTP's `copy-data@openssh.com`) answers `Volume::copy_within`,
-//! and `stream_pipe_file` asks it before reaching for a stream.
+//! for itself (SFTP's `copy-data@openssh.com`, S3's `CopyObject`) answers
+//! `Volume::copy_on_server`, and `stream_pipe_file` asks it before reaching for
+//! a stream.
 //!
-//! Three things the cells hold it to, and each one is a way to lose data or time
-//! if it drifts:
+//! What the cells hold it to, and each one is a way to lose data or time if it
+//! drifts:
 //!
-//! - It is asked **only when both sides are the same volume instance**. A
-//!   `copy_within` across two servers would copy inside the wrong one.
+//! - **Which sources it copies from is the backend's call**: the default (and
+//!   SFTP, through `copy_within`) answers only for the same volume instance,
+//!   while an object store copies across the places of one account. A copy
+//!   across two servers would copy inside the wrong one.
 //! - A backend that answers `NotSupported` — including one whose SERVER simply
 //!   lacks the extension — falls back to streaming, with the same bytes landing.
 //! - The bytes are staged exactly as a streamed write is, so a destination that
-//!   already existed is never left holding a partial.
+//!   already existed is never left holding a partial, except on a
+//!   whole-publishing destination, which publishes the copy whole and takes it
+//!   at the final name.
+//! - A pause lands at the backend's checkpoint.
 
 use std::ops::ControlFlow;
 use std::path::Path;
@@ -28,7 +34,8 @@ use super::*;
 use crate::file_system::listing::FileEntry;
 use crate::file_system::volume::WriteMode;
 use crate::file_system::volume::{
-    InMemoryVolume, ListingProgress, StreamLength, StreamWriteProgress, Volume, VolumeError, VolumeReadStream,
+    InMemoryVolume, ListingProgress, ServerCopyProgress, StreamLength, StreamWriteProgress, Volume, VolumeError,
+    VolumeReadStream,
 };
 use crate::file_system::write_operations::state::OperationIntent;
 
@@ -308,6 +315,207 @@ async fn a_cancelled_server_side_copy_leaves_no_destination_behind() {
         !volume.inner.exists(Path::new("big copy.bin")).await,
         "and nothing wearing the user's chosen name survives it"
     );
+}
+
+/// An object store's place: it publishes every write whole, and it copies on
+/// the server from any place of its own account, not only from itself (two S3
+/// buckets under one key). Records each copy it was handed, and parks at the
+/// progress hook's checkpoint the way a multipart copy does between parts.
+struct StorePlace {
+    inner: Arc<InMemoryVolume>,
+    account: &'static str,
+    /// `(to, mode)` for every `copy_on_server` that reached this place.
+    copies: std::sync::Mutex<Vec<(std::path::PathBuf, WriteMode)>>,
+    streamed: AtomicUsize,
+    /// Set once the copy has passed its first checkpoint.
+    checkpointed: std::sync::atomic::AtomicBool,
+}
+
+impl StorePlace {
+    fn new(name: &str, account: &'static str) -> Arc<Self> {
+        Arc::new(Self {
+            inner: Arc::new(InMemoryVolume::new(name).with_whole_publish()),
+            account,
+            copies: std::sync::Mutex::new(Vec::new()),
+            streamed: AtomicUsize::new(0),
+            checkpointed: std::sync::atomic::AtomicBool::new(false),
+        })
+    }
+
+    fn copies(&self) -> Vec<(std::path::PathBuf, WriteMode)> {
+        self.copies.lock().expect("test lock").clone()
+    }
+}
+
+impl Volume for StorePlace {
+    forward_volume_methods!(
+        inner => name,
+        root,
+        lane_key,
+        exists,
+        get_space_info,
+        local_path,
+        supports_streaming,
+        supports_export,
+        supports_local_fs_access,
+        operations_are_local,
+        max_concurrent_ops,
+        create_directory_errors_on_existing_dir,
+        scan_for_copy,
+        scan_for_copy_batch,
+        scan_for_conflicts,
+        supports_unknown_length_writes, write_is_single_shot, publishes_writes_whole,
+        list_directory,
+        get_metadata,
+        is_directory,
+        create_file,
+        create_directory,
+        delete,
+        rename,
+        open_read_stream,
+    );
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+
+    fn is_writable(&self) -> bool {
+        true
+    }
+
+    fn write_from_stream<'a>(
+        &'a self,
+        dest: &'a Path,
+        mode: WriteMode,
+        length: StreamLength,
+        stream: Box<dyn VolumeReadStream>,
+        on_progress: &'a (dyn Fn(StreamWriteProgress) -> ControlFlow<()> + Sync),
+    ) -> Pin<Box<dyn Future<Output = Result<u64, VolumeError>> + Send + 'a>> {
+        self.streamed.fetch_add(1, Ordering::SeqCst);
+        self.inner.write_from_stream(dest, mode, length, stream, on_progress)
+    }
+
+    fn copy_on_server<'a>(
+        &'a self,
+        source: &'a dyn Volume,
+        from: &'a Path,
+        to: &'a Path,
+        mode: WriteMode,
+        progress: &'a dyn ServerCopyProgress,
+    ) -> Pin<Box<dyn Future<Output = Result<u64, VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            let Some(peer) = source.as_any().downcast_ref::<StorePlace>() else {
+                return Err(VolumeError::NotSupported);
+            };
+            if peer.account != self.account {
+                return Err(VolumeError::NotSupported);
+            }
+            self.copies.lock().expect("test lock").push((to.to_path_buf(), mode));
+            if progress.checkpoint().await.is_break() {
+                return Err(VolumeError::Cancelled(to.display().to_string()));
+            }
+            self.checkpointed.store(true, Ordering::SeqCst);
+            let stream = peer.inner.open_read_stream(from).await?;
+            let size = stream.total_size().known().expect("stored files have a known length");
+            self.inner
+                .write_from_stream(to, mode, StreamLength::Known(size), stream, &|written| {
+                    progress.advanced(written.bytes_written, size)
+                })
+                .await
+        })
+    }
+}
+
+/// ❗ Two places of one account are two volume instances, and the server can
+/// still copy between them: the destination decides from the source's
+/// identity, so no byte crosses the Mac.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_copy_between_two_places_of_one_account_lets_the_server_do_it() {
+    let source = StorePlace::new("photos", "acct-1");
+    let dest = StorePlace::new("archive", "acct-1");
+    source
+        .inner
+        .create_file(Path::new("a.jpg"), b"jpeg bytes")
+        .await
+        .unwrap();
+    let source_volume: Arc<dyn Volume> = source.clone();
+    let dest_volume: Arc<dyn Volume> = dest.clone();
+    let state = make_state();
+
+    let bytes = pipe(&source_volume, &dest_volume, &state, "a.jpg", "a.jpg")
+        .await
+        .unwrap();
+
+    assert_eq!(bytes, 10);
+    assert_eq!(dest.copies().len(), 1, "the server was asked");
+    assert_eq!(dest.streamed.load(Ordering::SeqCst), 0, "and nothing streamed");
+    assert!(dest.inner.exists(Path::new("a.jpg")).await);
+}
+
+/// Another account's place is another server's namespace: streamed.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_copy_from_another_account_streams() {
+    let source = StorePlace::new("theirs", "acct-1");
+    let dest = StorePlace::new("ours", "acct-2");
+    source.inner.create_file(Path::new("a.jpg"), b"jpeg").await.unwrap();
+    let source_volume: Arc<dyn Volume> = source.clone();
+    let dest_volume: Arc<dyn Volume> = dest.clone();
+    let state = make_state();
+
+    pipe(&source_volume, &dest_volume, &state, "a.jpg", "a.jpg")
+        .await
+        .unwrap();
+
+    assert!(dest.copies().is_empty());
+    assert_eq!(dest.streamed.load(Ordering::SeqCst), 1);
+}
+
+/// ❗ A whole-publishing destination's server-side copy goes straight to the
+/// final name, refusing a taken one (`CreateNew`): a temp would cost a landing
+/// rename, which on an object store is a second full copy.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_whole_publishing_destination_copies_straight_to_the_final_name() {
+    let place = StorePlace::new("bucket", "acct-1");
+    place.inner.create_file(Path::new("a.txt"), b"fresh").await.unwrap();
+    let as_volume: Arc<dyn Volume> = place.clone();
+    let state = make_state();
+
+    pipe(&as_volume, &as_volume, &state, "a.txt", "b.txt").await.unwrap();
+
+    assert_eq!(
+        place.copies(),
+        vec![(std::path::PathBuf::from("b.txt"), WriteMode::CreateNew)],
+        "the final name, never a .cmdr-tmp, and no-overwrite"
+    );
+}
+
+/// ❗ A pause lands inside a server-side copy, at the checkpoint the backend
+/// asks before each piece, and the copy goes on once resumed.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_paused_server_side_copy_parks_at_its_checkpoint() {
+    let place = StorePlace::new("bucket", "acct-1");
+    place.inner.create_file(Path::new("a.bin"), b"0123").await.unwrap();
+    let as_volume: Arc<dyn Volume> = place.clone();
+    let state = make_state();
+    state.pause_gate.pause();
+
+    let task = {
+        let as_volume = Arc::clone(&as_volume);
+        let state = Arc::clone(&state);
+        tokio::spawn(async move { pipe(&as_volume, &as_volume, &state, "a.bin", "b.bin").await })
+    };
+    crate::test_support::wait_until_async(Duration::from_secs(5), "the copy to reach its checkpoint", || {
+        !place.copies().is_empty()
+    })
+    .await;
+    assert!(
+        !place.checkpointed.load(Ordering::SeqCst),
+        "a paused copy waits at its checkpoint"
+    );
+
+    state.pause_gate.resume();
+    task.await.unwrap().unwrap();
+    assert!(place.inner.exists(Path::new("b.bin")).await);
 }
 
 /// A `ListingProgress` import keeps the forwarding macro's signatures nameable.

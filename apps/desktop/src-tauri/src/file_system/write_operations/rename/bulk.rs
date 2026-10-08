@@ -13,6 +13,7 @@ use std::sync::Arc;
 use std::sync::atomic::AtomicU8;
 use std::time::Duration;
 
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use super::super::event_sinks::OperationEventSink;
@@ -20,13 +21,16 @@ use super::super::manager::{self, OperationDescriptor, OperationSummaryText};
 use super::super::source_binding::SourceFingerprint;
 use super::super::state::{WriteOperationState, WriteSettledGuard, is_cancelled, update_operation_status};
 use super::super::types::{
-    CancelRollback, SourceItemOutcome, WriteCancelledEvent, WriteCompleteEvent, WriteOperationStartResult,
-    WriteOperationType, WriteProgressEvent, WriteSourceItemDoneEvent,
+    CancelRollback, SourceItemOutcome, WriteCancelledEvent, WriteCompleteEvent, WriteOperationError,
+    WriteOperationStartResult, WriteOperationType, WriteProgressEvent, WriteSourceItemDoneEvent,
 };
 use crate::file_system::volume::{LaneKey, Volume, rename_local_exclusive};
 use crate::operation_log::types::{EntryType, ExecutionStatus, Initiator, ItemOutcome, OpKind};
 
+mod by_move;
 mod plan;
+
+pub(crate) use by_move::start_renames;
 
 use plan::{
     RenamePlanStep, build_execution_plan, settle_local_conflicts, settle_remote_conflicts, spelled_destinations,
@@ -39,6 +43,35 @@ pub(crate) struct BulkRenameRow {
     pub source: PathBuf,
     pub destination: PathBuf,
     pub expected_fingerprint: SourceFingerprint,
+}
+
+/// Why a reviewed batch of renames wouldn't start. Nothing was renamed.
+///
+/// ❌ Not prose: each surface words its own variant, and a volume refusal rides as the
+/// `WriteOperationError` the transfer dialogs already word.
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
+#[serde(tag = "type", rename_all = "camelCase", rename_all_fields = "camelCase")]
+pub enum RenameStartError {
+    /// No row is left to run: every source was dropped before the batch got here (unreadable
+    /// at preflight, or turned off in the review).
+    NothingToRename,
+    /// A row would move its file to another folder. Unreachable through a rename group, which
+    /// binds one shared parent, and refused rather than run as a move.
+    NotInOneFolder,
+    /// The engine refused before anything ran: the volume isn't connected, or the batch's
+    /// move couldn't start.
+    Engine { error: WriteOperationError },
+}
+
+impl std::fmt::Display for RenameStartError {
+    /// ❗ For logs and debugging only.
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::NothingToRename => f.write_str("no rename left to run"),
+            Self::NotInOneFolder => f.write_str("a row would change folders"),
+            Self::Engine { error } => write!(f, "the engine refused: {error:?}"),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -63,12 +96,12 @@ pub(crate) fn start_bulk_rename(
     volume_id: String,
     rows: Vec<BulkRenameRow>,
     initiator: Initiator,
-) -> Result<WriteOperationStartResult, String> {
+) -> Result<WriteOperationStartResult, RenameStartError> {
     if rows.is_empty() {
-        return Err("Choose at least one rename to apply.".to_string());
+        return Err(RenameStartError::NothingToRename);
     }
     if rows.iter().any(|row| row.source.parent() != row.destination.parent()) {
-        return Err("A rename plan can only change names in the same folder.".to_string());
+        return Err(RenameStartError::NotInOneFolder);
     }
 
     // `root` is the only backend that owns raw local paths here. Every mounted
@@ -78,9 +111,15 @@ pub(crate) fn start_bulk_rename(
     let (lanes, volume_ids, settled_volume, rows) = if uses_local_paths {
         (vec![LaneKey::new("root")], Vec::new(), None, rows)
     } else {
+        // `start_renames` classified an unregistered id before this; one missing NOW left the
+        // registry in between (an unmount race).
         let volume = crate::file_system::volume::manager::get_volume_manager()
             .get(&volume_id)
-            .ok_or_else(|| "The rename volume is no longer available.".to_string())?;
+            .ok_or_else(|| RenameStartError::Engine {
+                error: WriteOperationError::SourceNoLongerConnected {
+                    path: rows[0].source.display().to_string(),
+                },
+            })?;
         let rows = spelled_destinations(volume.as_ref(), rows);
         (
             vec![volume.lane_key()],
@@ -273,7 +312,7 @@ async fn bulk_rename_remote(
     for row in rows {
         active.push(remote_fingerprint_matches(volume.as_ref(), &row.source, &row.expected_fingerprint).await);
     }
-    settle_remote_conflicts(rows, &mut active, &mut outcomes, volume.as_ref()).await;
+    settle_remote_conflicts(rows, &mut active, &mut outcomes, volume.as_ref(), volume_id).await;
     complete_noop_rows(rows, &active, &mut outcomes, recorder);
     for step in build_execution_plan(rows, &active) {
         if is_cancelled(intent) {

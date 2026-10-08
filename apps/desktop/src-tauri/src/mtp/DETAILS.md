@@ -90,8 +90,9 @@ gets `STATUS_DIRECTORY_NOT_EMPTY` from the server, but MTP has to choose.
   `MtpConnectionError::DirectoryNotEmpty` and deletes nothing — not the object, and not its path-cache bookkeeping,
   which still describes a live object. `MtpVolume::delete` / `delete_with_cancel` pass this, because `Volume::delete`
   means one node on every backend (`crates/cmdr-fs/src/volume/mod.rs`).
-- **`Tree`**: the whole subtree, children first, with the cancel token checked between children.
-  `commands::mtp::delete_mtp_object` is the ONLY caller in the repo, and says so in its own doc comment.
+- **`Tree`**: the whole subtree, children first, with the cancel token checked between children. Nothing in the app
+  calls it today: every delete goes through `MtpVolume`, which walks the tree itself so each node gets its own error
+  attribution.
 
 **The enum is fieldless with no `Default` and no `From<bool>`**, so a new caller has to decide rather than inherit.
 Both entry points (`delete_object` and `delete_object_with_cancel`) take it, or the split would have a hole in it.
@@ -179,8 +180,14 @@ without the `virtual-mtp` feature. **Why:** a virtual device is backed by local 
 so nothing about it needs the daemon out of the way, and an E2E run enumerates only virtual devices — which is how a
 test run used to `launchctl disable com.apple.ptpcamerad` on the developer's machine and raise the "Cmdr paused the
 macOS camera daemon" notice mid-suite (`docs/testing.md` § "The host machine is not a fixture"). Keying on the device
-rather than `CMDR_E2E_MODE` also covers a `CMDR_VIRTUAL_MTP=1` dev session, and leaves a real phone plugged in during a
-test run with the workaround it genuinely needs.
+rather than `CMDR_E2E_MODE` also covers a `CMDR_VIRTUAL_MTP=1` dev session.
+
+**Decision: an automated run sees only its own virtual device.** `get_current_mtp_devices` passes every enumeration
+through `claimable_device_ids`, which drops all non-virtual ids when `test_mode::may_discover_real_devices()` is false
+(E2E and capture runs). **Why:** a phone plugged into the developer's Mac was auto-connected mid-suite, and its
+`ptpcamerad` exclusive-access dialog failed four unrelated specs (`background-while-scanning`, `dialog-inset`,
+`managed-policy`, `settings`). Filtering the enumeration, rather than the dialog, keeps the real device out of
+auto-connect, suppression, and the restore check in one place, since every reconciliation reads that set.
 
 ## Backends never register themselves
 

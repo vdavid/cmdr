@@ -33,7 +33,7 @@ vi.mock('$lib/settings/settings-store', () => ({
 
 vi.mock('$lib/tauri-commands', () => ({
   invoke: vi.fn(() => Promise.resolve()),
-  openSystemSettingsUrl: vi.fn(() => Promise.resolve()),
+  openLocalNetworkSettings: vi.fn(() => Promise.resolve()),
 }))
 
 async function mountSection(searchQuery = ''): Promise<HTMLDivElement> {

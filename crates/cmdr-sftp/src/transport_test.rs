@@ -54,6 +54,20 @@ fn an_unparseable_stored_algorithm_narrows_nothing() {
 }
 
 #[test]
+fn no_host_certificate_algorithm_is_advertised() {
+    // ❗ `presented` judges a host certificate by the key inside it, which is
+    // only sound while we never ask for certificates: we hold no certificate
+    // authorities, so a certificate can't earn more trust than its bare key.
+    assert!(build_config(&[]).preferred.host_key_certificates.is_empty());
+    assert!(
+        build_config(&["ssh-ed25519".to_string()])
+            .preferred
+            .host_key_certificates
+            .is_empty()
+    );
+}
+
+#[test]
 fn the_channel_window_is_raised_well_past_the_library_default() {
     // At the 2 MiB default the request window buys nothing: eight 255 KiB reads
     // already fill the channel, so depth 8 and depth 32 measure the same.

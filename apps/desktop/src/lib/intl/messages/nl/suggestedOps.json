@@ -127,6 +127,26 @@
   "@suggestedOps.approvalUnsure": {
     "sourceHash": "fba515a"
   },
+  "suggestedOps.refusal.label": "Waarom dit niet is gestart",
+  "@suggestedOps.refusal.label": {
+    "sourceHash": "e176570"
+  },
+  "suggestedOps.refusal.nothingToRun.message": "Cmdr kon bij het goedkeuren geen van deze bestanden lezen, dus er is niets uitgevoerd.",
+  "@suggestedOps.refusal.nothingToRun.message": {
+    "sourceHash": "3018819"
+  },
+  "suggestedOps.refusal.nothingToRun.suggestion": "Controleer of ze er nog zijn en keur het daarna opnieuw goed, of weiger het.",
+  "@suggestedOps.refusal.nothingToRun.suggestion": {
+    "sourceHash": "f4cfc9e"
+  },
+  "suggestedOps.refusal.couldNotStart.message": "Cmdr kon van deze suggestie geen bewerking maken, dus er is niets uitgevoerd.",
+  "@suggestedOps.refusal.couldNotStart.message": {
+    "sourceHash": "77ef48b"
+  },
+  "suggestedOps.refusal.couldNotStart.suggestion": "Weiger het en vraag de AI om het opnieuw voor te stellen.",
+  "@suggestedOps.refusal.couldNotStart.suggestion": {
+    "sourceHash": "5b5b779"
+  },
   "suggestedOps.indicatorTooltip": "Er staan AI-suggesties klaar. Klik om ze te bekijken.",
   "@suggestedOps.indicatorTooltip": {
     "sourceHash": "4508b0b"

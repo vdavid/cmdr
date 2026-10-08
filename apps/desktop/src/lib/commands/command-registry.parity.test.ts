@@ -33,6 +33,7 @@ const EXPECTED_NAMES: Record<string, string> = {
   'app.checkForUpdates': 'Check for updates…',
   'cmdr.openOnboarding': 'Onboarding…',
   'help.openShortcuts': 'Keyboard shortcuts',
+  'help.viewDebugLog': 'View debug log',
   'queue.show': 'Operation queue',
   'help.sendErrorReport': 'Send error report…',
   'help.whatsNew': 'What’s new',
@@ -41,7 +42,7 @@ const EXPECTED_NAMES: Record<string, string> = {
   'suggestedOps.show': 'Suggested ops',
   'askCmdr.toggle': 'Ask Cmdr',
   'search.open': 'Search files',
-  'nav.goToPath': 'Go to path…',
+  'nav.goToPath': 'Go to folder…',
   'favorites.add': 'Add to favorites',
   'favorites.open': 'Show favorites',
   'favorites.openByNumber': 'Open the favorite with that number',
@@ -49,6 +50,7 @@ const EXPECTED_NAMES: Record<string, string> = {
   'favorites.addFromMenu': 'Add current folder to favorites',
   'downloads.goToLatest': 'Go to latest download',
   'view.showHidden': 'Toggle hidden files',
+  'view.calculateFolderSizes': 'Calculate folder sizes',
   'view.briefMode': 'Switch to Brief view',
   'view.fullMode': 'Switch to Full view',
   'view.setMode': 'Set pane view mode',
@@ -69,6 +71,7 @@ const EXPECTED_NAMES: Record<string, string> = {
   'sort.set': 'Set pane sort',
   'pane.switch': 'Switch pane',
   'pane.swap': 'Swap panes',
+  'pane.clone': 'Clone pane',
   'pane.leftVolumeChooser': 'Open left volume switcher',
   'pane.rightVolumeChooser': 'Open right volume switcher',
   'pane.copyPathLeftToRight': 'Copy path from left to right pane',
@@ -92,6 +95,7 @@ const EXPECTED_NAMES: Record<string, string> = {
   'nav.pageDown': 'Page down',
   'nav.back': 'Go back',
   'nav.forward': 'Go forward',
+  'nav.goToRoot': 'Go to root folder',
   'nav.goHome': 'Go to home folder',
   'errorPane.toggleTechnicalDetails': 'Show technical details',
   'nav.openUnderCursor': 'Open item under cursor',
@@ -122,8 +126,11 @@ const EXPECTED_NAMES: Record<string, string> = {
   'file.showInFinder': 'Show in file manager',
   'file.openTerminalHere': 'Open terminal here',
   'file.copyPath': 'Copy path to clipboard',
-  'file.copyCurrentDirectoryPath': 'Copy current directory path',
+  'file.copyCurrentDirectoryPath': 'Copy current folder path',
   'file.copyFilename': 'Copy filename',
+  'file.copyShareLink': 'Copy share link (seven days)',
+  'file.copyShareLinkOneDay': 'Copy share link (one day)',
+  'file.copyShareLinkOneHour': 'Copy share link (one hour)',
   'file.getInfo': 'File properties',
   'file.quickLook': 'Preview',
   'file.contextMenu': 'Open context menu',
@@ -145,6 +152,9 @@ const EXPECTED_NAMES: Record<string, string> = {
   'selection.deselectAll': 'Deselect all',
   'selection.invert': 'Invert selection',
   'selection.selectSameKind': 'Select all of the same kind',
+  'selection.compareDirectories': 'Compare folders',
+  'selection.compareDirectoriesMissing': 'Compare folders: missing files only',
+  'selection.compareDirectoriesSize': 'Compare folders: different size',
   'selection.selectFiles': 'Select files…',
   'selection.deselectFiles': 'Deselect files…',
   'selection.mcpSelect': 'Select range in pane',
@@ -173,11 +183,14 @@ const EXPECTED_NAMES: Record<string, string> = {
 
 /** id → exact pre-migration English `description` (only commands that had one). */
 const EXPECTED_DESCRIPTIONS: Record<string, string | undefined> = {
+  'view.calculateFolderSizes':
+    'Shows the size of every folder in this pane that doesn’t have one yet. Esc stops the calculation.',
   'app.checkForUpdates': 'Check whether a newer version of Cmdr is available, and download it if so',
   'cmdr.openOnboarding': 'Reopen the onboarding wizard to review or change first-launch setup options',
   'help.openShortcuts': 'Open a read-only window listing every keyboard shortcut, live-synced with your customizations',
   'queue.show':
     'Open a window listing every running and waiting operation, where you can pause, resume, or cancel them',
+  'help.viewDebugLog': 'Watch Cmdr’s debug log live in the file viewer',
   'help.sendErrorReport': 'Send Cmdr logs to the team to help fix something that went wrong',
   'help.whatsNew': 'See what changed in the latest releases of Cmdr',
   'feedback.send': 'Tell the maker of Cmdr what you think: ideas, wishes, anything',
@@ -191,6 +204,7 @@ const EXPECTED_DESCRIPTIONS: Record<string, string | undefined> = {
     'Add the focused pane’s current folder to your favorites, so the favorites menu can take you back to it.',
   'favorites.open': 'Open the favorites menu on the focused pane, and press a number to jump to that favorite.',
   'downloads.goToLatest': 'Open ~/Downloads and select the most recent file.',
+  'pane.clone': 'Open this pane’s folder in the other pane too.',
   'pane.copyPathLeftToRight':
     'Open the left pane’s location on the right. When the left pane is focused and the cursor is on a folder, that folder opens on the right instead.',
   'pane.copyPathRightToLeft':
@@ -206,6 +220,9 @@ const EXPECTED_DESCRIPTIONS: Record<string, string | undefined> = {
   'cloud.openInGoogleDrive': 'Opens the selected item on the Google Drive website, where sharing lives',
   'cloud.copyGoogleDriveLink': 'Copies the web address of the selected item, ready to paste into a message',
   'cloud.askGemini': 'Opens Google Drive’s Gemini assistant with the selected file as its subject',
+  'file.copyShareLink': 'Copies a link anyone can open to download the file for seven days',
+  'file.copyShareLinkOneDay': 'Copies a link anyone can open to download the file for one day',
+  'file.copyShareLinkOneHour': 'Copies a link anyone can open to download the file for one hour',
   'tags.toggleGrey': 'Adds or removes the gray Finder tag on the selected files',
   'tags.toggleGreen': 'Adds or removes the green Finder tag on the selected files',
   'tags.togglePurple': 'Adds or removes the purple Finder tag on the selected files',
@@ -216,6 +233,11 @@ const EXPECTED_DESCRIPTIONS: Record<string, string | undefined> = {
   'selection.toggleAndDown': 'Selects or deselects the file under the cursor, then moves down (Total Commander style)',
   'selection.invert': 'Selects every unselected file and deselects every selected one',
   'selection.selectSameKind': 'Adds every entry like the one under the cursor to the selection, without clearing it',
+  'selection.compareDirectories':
+    'Selects, in each pane, the files the other pane lacks and the newer copies of the rest',
+  'selection.compareDirectoriesMissing': 'Selects, in each pane, only the files the other pane lacks',
+  'selection.compareDirectoriesSize':
+    'Selects, in each pane, the files the other pane lacks and both copies of files whose size differs',
   'selection.selectFiles': 'Opens the Select files dialog to add matching files to the selection',
   'selection.deselectFiles': 'Opens the Deselect files dialog to remove matching files from the selection',
 }

@@ -22,6 +22,11 @@ mod roots;
 /// Swapping an id's volume across a root change a person asked for.
 mod root_replace;
 
+/// Following a mount root that moved while its filesystem stayed mounted (a rename).
+mod root_move;
+
+#[cfg(target_os = "macos")]
+pub use root_move::RootMove;
 pub use root_replace::RootReplacement;
 use roots::Registration;
 pub use roots::{RootRemoval, StaleRootOutcome, is_stale_mount_errno};

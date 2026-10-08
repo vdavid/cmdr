@@ -1,23 +1,10 @@
 //! Tauri commands for MTP (Android device) operations.
+//!
+//! Browsing and file operations on a phone go through `MtpVolume` like any other
+//! volume, and the device list reaches the frontend as volumes; these commands
+//! only switch the backend on and off and dial a device.
 
-use log::debug;
-use serde::{Deserialize, Serialize};
-
-use crate::file_system::FileEntry;
-use crate::mtp::MtpDeleteScope;
-use crate::mtp::{self, ConnectedDeviceInfo, MtpConnectionError, MtpDeviceInfo, MtpObjectInfo, MtpStorageInfo};
-
-/// Result of scanning an MTP path for copy operation.
-#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct MtpScanResult {
-    /// Number of files found.
-    pub file_count: usize,
-    /// Number of directories found.
-    pub dir_count: usize,
-    /// Total bytes of all files.
-    pub total_bytes: u64,
-}
+use crate::mtp::{self, ConnectedDeviceInfo, MtpConnectionError};
 
 /// Enables or disables MTP support at runtime.
 ///
@@ -30,20 +17,6 @@ pub async fn set_mtp_enabled(enabled: bool) {
     mtp::set_mtp_enabled(enabled).await;
 }
 
-/// Lists all connected MTP devices.
-///
-/// This returns devices detected via USB that support MTP protocol.
-/// Use this to populate the "Mobile" section in the volume picker.
-///
-/// # Returns
-///
-/// A vector of device info structs. Empty if no devices are connected.
-#[tauri::command]
-#[specta::specta]
-pub fn list_mtp_devices() -> Vec<MtpDeviceInfo> {
-    mtp::list_mtp_devices()
-}
-
 /// Connects to an MTP device by ID.
 ///
 /// Opens an MTP session to the device and retrieves storage information.
@@ -52,7 +25,7 @@ pub fn list_mtp_devices() -> Vec<MtpDeviceInfo> {
 ///
 /// # Arguments
 ///
-/// * `device_id` - The device ID from `list_mtp_devices` (format: "mtp-{bus}-{address}")
+/// * `device_id` - The device ID (format: "mtp-{bus}-{address}")
 ///
 /// # Returns
 ///
@@ -65,36 +38,6 @@ pub async fn connect_mtp_device(device_id: String) -> Result<ConnectedDeviceInfo
         .await
 }
 
-/// Disconnects from an MTP device.
-///
-/// Closes the MTP session gracefully. The device remains available in
-/// `list_mtp_devices` for reconnection.
-///
-/// # Arguments
-///
-/// * `device_id` - The device ID to disconnect from
-#[tauri::command]
-#[specta::specta]
-pub async fn disconnect_mtp_device(device_id: String) -> Result<(), MtpConnectionError> {
-    mtp::connection_manager()
-        .disconnect(&device_id, mtp::MtpDisconnectReason::User)
-        .await
-}
-
-/// Gets information about a connected MTP device.
-///
-/// Returns device metadata and storage information for a currently connected device.
-/// Returns `None` if the device is not connected.
-///
-/// # Arguments
-///
-/// * `device_id` - The device ID to query
-#[tauri::command]
-#[specta::specta]
-pub async fn get_mtp_device_info(device_id: String) -> Option<ConnectedDeviceInfo> {
-    mtp::connection_manager().get_device_info(&device_id).await
-}
-
 /// Gets the ptpcamerad workaround command for macOS.
 ///
 /// Returns the Terminal command that users can run to work around
@@ -103,195 +46,6 @@ pub async fn get_mtp_device_info(device_id: String) -> Option<ConnectedDeviceInf
 #[specta::specta]
 pub fn get_ptpcamerad_workaround_command() -> String {
     mtp::PTPCAMERAD_WORKAROUND_COMMAND.to_string()
-}
-
-/// Gets storage information for all storages on a connected device.
-///
-/// # Arguments
-///
-/// * `device_id` - The connected device ID
-///
-/// # Returns
-///
-/// A vector of storage info, or empty if device is not connected.
-#[tauri::command]
-#[specta::specta]
-pub async fn get_mtp_storages(device_id: String) -> Vec<MtpStorageInfo> {
-    mtp::connection_manager()
-        .get_device_info(&device_id)
-        .await
-        .map(|info| info.storages)
-        .unwrap_or_default()
-}
-
-/// Lists the contents of a directory on a connected MTP device.
-///
-/// Returns file entries in the same format as local directory listings,
-/// allowing the frontend to use the same file list components.
-///
-/// # Arguments
-///
-/// * `device_id` - The connected device ID
-/// * `storage_id` - The storage ID within the device
-/// * `path` - Virtual path to list (for example, "/" or "/DCIM")
-///
-/// # Returns
-///
-/// A vector of FileEntry objects, sorted with directories first.
-#[tauri::command]
-#[specta::specta]
-pub async fn list_mtp_directory(
-    device_id: String,
-    storage_id: u32,
-    path: String,
-) -> Result<Vec<FileEntry>, MtpConnectionError> {
-    debug!(
-        "list_mtp_directory: ENTERED - device={}, storage={}, path={}",
-        device_id, storage_id, path
-    );
-    let result = mtp::connection_manager()
-        .list_directory(&device_id, storage_id, &path)
-        .await;
-    match &result {
-        Ok(entries) => debug!("list_mtp_directory: SUCCESS - {} entries for {}", entries.len(), path),
-        Err(e) => debug!("list_mtp_directory: ERROR - {:?}", e),
-    }
-    result
-}
-
-// ============================================================================
-// File operations
-// ============================================================================
-
-/// Deletes an object (file or folder) from an MTP device.
-///
-/// For folders, this recursively deletes all contents first since MTP requires
-/// folders to be empty before deletion.
-///
-/// **The only `MtpDeleteScope::Tree` caller in the repo.** Every other delete
-/// goes through `MtpVolume::delete`, which is bound by `Volume::delete`'s
-/// "one file or one EMPTY directory" contract and passes `SingleNode`; the
-/// tree-shaped deletes (the delete walker, the transfer engine's cleanup) walk
-/// the tree themselves so each node gets its own error attribution and its own
-/// chance to be preserved. This command exists as a direct recursive-delete
-/// entry point, so it names that intent explicitly rather than inheriting it.
-///
-/// # Arguments
-///
-/// * `device_id` - The connected device ID
-/// * `storage_id` - The storage ID within the device
-/// * `object_path` - Virtual path on the device
-#[tauri::command]
-#[specta::specta]
-pub async fn delete_mtp_object(
-    device_id: String,
-    storage_id: u32,
-    object_path: String,
-) -> Result<(), MtpConnectionError> {
-    mtp::connection_manager()
-        .delete_object(&device_id, storage_id, &object_path, MtpDeleteScope::Tree)
-        .await
-}
-
-/// Creates a new folder on an MTP device.
-///
-/// # Arguments
-///
-/// * `device_id` - The connected device ID
-/// * `storage_id` - The storage ID within the device
-/// * `parent_path` - Parent folder path (for example, "/DCIM")
-/// * `folder_name` - Name of the new folder
-#[tauri::command]
-#[specta::specta]
-pub async fn create_mtp_folder(
-    device_id: String,
-    storage_id: u32,
-    parent_path: String,
-    folder_name: String,
-) -> Result<MtpObjectInfo, MtpConnectionError> {
-    mtp::connection_manager()
-        .create_folder(&device_id, storage_id, &parent_path, &folder_name)
-        .await
-}
-
-/// Renames an object on an MTP device.
-///
-/// # Arguments
-///
-/// * `device_id` - The connected device ID
-/// * `storage_id` - The storage ID within the device
-/// * `object_path` - Current path of the object
-/// * `new_name` - New name for the object
-#[tauri::command]
-#[specta::specta]
-pub async fn rename_mtp_object(
-    device_id: String,
-    storage_id: u32,
-    object_path: String,
-    new_name: String,
-) -> Result<MtpObjectInfo, MtpConnectionError> {
-    mtp::connection_manager()
-        .rename_object(&device_id, storage_id, &object_path, &new_name)
-        .await
-}
-
-/// Moves an object to a new parent folder on an MTP device.
-///
-/// May fail if the device doesn't support MoveObject operation.
-///
-/// # Arguments
-///
-/// * `device_id` - The connected device ID
-/// * `storage_id` - The storage ID within the device
-/// * `object_path` - Current path of the object
-/// * `new_parent_path` - New parent folder path
-#[tauri::command]
-#[specta::specta]
-pub async fn move_mtp_object(
-    device_id: String,
-    storage_id: u32,
-    object_path: String,
-    new_parent_path: String,
-) -> Result<MtpObjectInfo, MtpConnectionError> {
-    mtp::connection_manager()
-        .move_object(&device_id, storage_id, &object_path, &new_parent_path)
-        .await
-}
-
-// ============================================================================
-// Copy and export operations
-// ============================================================================
-
-/// Scans an MTP path for copy statistics.
-///
-/// Recursively scans the specified path to get file count, directory count,
-/// and total bytes. Useful for showing progress during copy operations.
-///
-/// # Arguments
-///
-/// * `device_id` - The connected device ID
-/// * `storage_id` - The storage ID within the device
-/// * `path` - Virtual path on the device to scan
-#[tauri::command]
-#[specta::specta]
-pub async fn scan_mtp_for_copy(
-    device_id: String,
-    storage_id: u32,
-    path: String,
-) -> Result<MtpScanResult, MtpConnectionError> {
-    debug!(
-        "scan_mtp_for_copy: device={}, storage={}, path={}",
-        device_id, storage_id, path
-    );
-    let result = mtp::connection_manager()
-        .scan_for_copy(&device_id, storage_id, &path)
-        .await?;
-
-    Ok(MtpScanResult {
-        file_count: result.file_count,
-        dir_count: result.dir_count,
-        total_bytes: result.total_bytes,
-    })
 }
 
 /// Forces the virtual MTP device to rescan its backing directories, syncing

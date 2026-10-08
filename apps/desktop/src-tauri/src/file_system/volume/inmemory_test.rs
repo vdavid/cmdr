@@ -210,9 +210,7 @@ fn test_streaming_state_lifecycle() {
 
     // Create and register a streaming state
     let listing_id = "integration-test-lifecycle";
-    let state = Arc::new(StreamingListingState {
-        cancel: tokio_util::sync::CancellationToken::new(),
-    });
+    let state = Arc::new(StreamingListingState::new());
 
     // Insert into cache
     {
@@ -251,14 +249,7 @@ fn test_multiple_concurrent_streaming_states() {
 
     // Create multiple streaming states
     let ids = ["stream-1", "stream-2", "stream-3"];
-    let states: Vec<Arc<StreamingListingState>> = ids
-        .iter()
-        .map(|_| {
-            Arc::new(StreamingListingState {
-                cancel: tokio_util::sync::CancellationToken::new(),
-            })
-        })
-        .collect();
+    let states: Vec<Arc<StreamingListingState>> = ids.iter().map(|_| Arc::new(StreamingListingState::new())).collect();
 
     // Insert all into cache
     {

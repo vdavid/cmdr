@@ -112,6 +112,12 @@ var surfaceGuardedCrates = []struct {
 		// `bool` nor a new `IndexError` variant every other method would then have
 		// to match says it. Why, in the audit doc below under "A seventeenth".
 		//
+		// Raised on 2026-10-06, `HandleMethods` 40 -> 41, for ONE method and no root promise:
+		// `Index::follow_volume_move`, the host telling the index a mounted drive was
+		// renamed (#157). Nothing on the handle carried "the host moved this volume", and
+		// folding it into `resume_after_reconnect` would make one call mean two things by
+		// volume kind. Why, in the audit doc below under "A drive whose mount point moved".
+		//
 		// ⚠️ WHICH BUCKET a grant lands in is not a choice, so read the right counter
 		// before assuming you have headroom. A value an event carries always spends a
 		// ROOT PROMISE, never `SubsystemItems`. Why, in the audit doc below, under
@@ -119,7 +125,7 @@ var surfaceGuardedCrates = []struct {
 		HandleType: "Index",
 		Ceilings: surfaceCeilings{
 			RootPromises:   53,
-			HandleMethods:  40,
+			HandleMethods:  41,
 			PublicModules:  17,
 			SubsystemItems: 156,
 		},
@@ -196,6 +202,29 @@ var surfaceGuardedCrates = []struct {
 			RootPromises:   6,
 			PublicModules:  1,
 			SubsystemItems: 10,
+		},
+	},
+	{
+		// Measured 2026-10-01, when the crate first exposed a volume (connect
+		// and browse), and set to exactly that. `cmdr-webdav`'s shape plus two:
+		// `S3Provider` (the connect form's preset, which the host maps its saved
+		// entry onto) and `InvalidProvider` (a preset that can't make an
+		// endpoint, refused before anything is dialed). `volume` is the only
+		// public module; `volume::testing` exists only behind the `testing`
+		// feature. Item-by-item: `crates/cmdr-s3/DETAILS.md` § "The public
+		// surface is capped".
+		//
+		// RAISED 8/1/8 -> 9/2/15 for cost estimates: `pub mod cost` (the price
+		// table, `Workload`, `Estimate`, `LineItem`, `PriceTableError`) plus
+		// `S3Volume::cost_workload` and `copies_on_server_from`. Wider is the
+		// better design here: how many requests a write sends is this crate's
+		// knowledge, so counting them beside the write paths keeps the two from
+		// drifting apart, which an app-side copy of the counts would invite.
+		Name: "cmdr-s3",
+		Ceilings: surfaceCeilings{
+			RootPromises:   9,
+			PublicModules:  2,
+			SubsystemItems: 15,
 		},
 	},
 	{

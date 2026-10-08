@@ -614,8 +614,8 @@ async fn a_file_overwrite_is_prepared_as_a_staged_write_plus_a_swap() {
         task.dest_path.display()
     );
     assert_eq!(
-        task.replace_after_write,
-        Some(PathBuf::from("/a.txt")),
+        task.replaces,
+        super::super::strategy::Replaces::ViaTemp(PathBuf::from("/a.txt")),
         "the swap has to name the original, or the new data never takes its place"
     );
     assert_eq!(

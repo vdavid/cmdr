@@ -35,6 +35,13 @@ vi.mock('$lib/shortcuts', () => ({
   isShortcutModified: () => false,
 }))
 vi.mock('$lib/commands/command-registry', () => ({ commands: [] }))
+
+// The organization's policy, as `locked_settings` would name it.
+const managedLocks = vi.hoisted(() => new Map<string, unknown>())
+vi.mock('$lib/managed-policy/managed-policy.svelte', () => ({
+  getSettingLock: (id: string) => managedLocks.get(id),
+  isSettingManaged: (id: string) => managedLocks.has(id),
+}))
 vi.mock('$lib/logging/logger', () => ({
   getAppLogger: () => ({ warn: vi.fn(), info: vi.fn(), debug: vi.fn(), error: vi.fn() }),
 }))
@@ -68,6 +75,7 @@ async function setOverMcp(settingId: string, value: unknown): Promise<unknown> {
 }
 
 beforeEach(async () => {
+  managedLocks.clear()
   handlers.clear()
   emitMock.mockClear()
   setSettingMock.mockClear()
@@ -105,5 +113,42 @@ describe('MCP set_setting', () => {
       expect(response, id).toMatchObject({ ok: true })
       expect(setSettingMock).toHaveBeenCalledWith(id, value)
     }
+  })
+
+  it('refuses a value the organization rules out, as the backstop to the backend’s own refusal', async () => {
+    managedLocks.set('ai.provider', { kind: 'disallowedValues', values: ['cloud'], fallback: 'off' })
+
+    expect(await setOverMcp('ai.provider', 'cloud')).toMatchObject({ ok: false, refusal: 'managedByOrganization' })
+    expect(setSettingMock).not.toHaveBeenCalled()
+    emitMock.mockClear() // the next call reuses the request id
+    expect(await setOverMcp('ai.provider', 'local')).toMatchObject({ ok: true })
+  })
+})
+
+describe('MCP settings resource', () => {
+  async function readAllSettings(): Promise<string> {
+    const handler = handlers.get('mcp-get-all-settings')
+    if (!handler) throw new Error('mcp-get-all-settings has no listener')
+    handler({ payload: { requestId: 'req-all' } })
+    await vi.waitFor(() => {
+      expect(emitMock).toHaveBeenCalledWith('mcp-response', expect.objectContaining({ requestId: 'req-all' }))
+    })
+    const response = emitMock.mock.calls.find(([, p]) => (p as { requestId: string }).requestId === 'req-all')?.[1]
+    return (response as { data: string }).data
+  }
+
+  /** The YAML block for one setting, from its `- id:` line to the next one. */
+  function block(yaml: string, id: string): string {
+    const start = yaml.indexOf(`  - id: ${id}\n`)
+    const end = yaml.indexOf('  - id: ', start + 1)
+    return yaml.slice(start, end === -1 ? undefined : end)
+  }
+
+  it('marks a setting the organization manages, and only that one', async () => {
+    managedLocks.set('analytics.enabled', { kind: 'fixed', value: false })
+    const yaml = await readAllSettings()
+
+    expect(block(yaml, 'analytics.enabled')).toContain('    managed: true\n')
+    expect(block(yaml, 'updates.autoCheck')).not.toContain('managed:')
   })
 })

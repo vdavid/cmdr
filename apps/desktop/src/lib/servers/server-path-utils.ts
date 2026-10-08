@@ -7,6 +7,8 @@
  *   - `sftp://ada@nas.local:22` (the volume's root)
  *   - `sftp://ada@nas.local:22/srv/data/photos` (a folder on the server)
  *   - `webdav://ada@nas.local:5006/remote.php/dav/files/ada`
+ *   - `s3://AKIAEXAMPLE@s3.eu-west-1.amazonaws.com:443/photos/2026` (the account is
+ *     the access key id; the first segment is the bucket)
  *
  * ❗ **The prefix is what makes a remote path self-describing.** Rust's mount
  * table answers the LOCAL root for any absolute path it doesn't recognize, on
@@ -15,14 +17,14 @@
  * `adb://` already carry.
  *
  * ❗ **The prefix is spelled exactly as Rust mints it**
- * (`cmdr_fs::volume::ids::sftp_app_root` / `webdav_app_root`): the host folded to
+ * (`cmdr_fs::volume::ids::sftp_app_root` / `webdav_app_root` / `s3_app_root`): the host folded to
  * lowercase, the account left alone, the port literal. A path that folds more or
  * less than that misses the volume its own id names. The translation between
  * this spelling and the server's own is `cmdr_fs::volume::remote_paths`.
  */
 
-/** The two protocols that address a place by a scheme path. */
-export type ServerPathProtocol = 'sftp' | 'webdav'
+/** The protocols that address a place by a scheme path. */
+export type ServerPathProtocol = 'sftp' | 'webdav' | 's3'
 
 /** The account half of a server path: everything up to the port. */
 export interface ServerAccount {
@@ -40,7 +42,7 @@ export interface ParsedServerPath extends ServerAccount {
   path: string
 }
 
-const SERVER_SCHEMES: ServerPathProtocol[] = ['sftp', 'webdav']
+const SERVER_SCHEMES: ServerPathProtocol[] = ['sftp', 'webdav', 's3']
 
 /**
  * `<protocol>://<user>@<host>:<port>`, with the path left to the caller.
@@ -58,15 +60,15 @@ const SERVER_SCHEMES: ServerPathProtocol[] = ['sftp', 'webdav']
  * one, since the host can't hold an `@`; the host takes `:`, so an IPv6 literal
  * (`sftp://ada@::1:22`) still splits.
  */
-const SERVER_PATH_RE = /^(sftp|webdav):\/\/([^/]+)@([^@/]+):(\d{1,5})(?=\/|$)/
+const SERVER_PATH_RE = /^(sftp|webdav|s3):\/\/([^/]+)@([^@/]+):(\d{1,5})(?=\/|$)/
 
-/** Whether a path is on one of the server schemes (`sftp://` or `webdav://`). */
+/** Whether a path is on one of the server schemes (`sftp://`, `webdav://`, or `s3://`). */
 export function isServerPath(path: string): boolean {
   return SERVER_SCHEMES.some((scheme) => path.startsWith(`${scheme}://`))
 }
 
 /**
- * Whether a volume id names a server place (`sftp-…` / `webdav-…`, from
+ * Whether a volume id names a server place (`sftp-…` / `webdav-…` / `s3-…`, from
  * `cmdr_fs::volume::ids`).
  *
  * ❗ An id, not a path: the switcher holds rows whose id is all it has, and a
@@ -84,6 +86,14 @@ export function isServerVolumeId(volumeId: string): boolean {
  */
 export function isSmbVolumeId(volumeId: string): boolean {
   return volumeId.startsWith('smb-')
+}
+
+/**
+ * Whether `path` is `root` or a folder inside it, by whole components: a share's
+ * mount at `/Volumes/naspi` doesn't hold `/Volumes/naspi-1`.
+ */
+export function isAtOrUnder(path: string, root: string): boolean {
+  return path === root || path.startsWith(root.endsWith('/') ? root : `${root}/`)
 }
 
 /**
@@ -165,6 +175,19 @@ export function getServerDisplayPath(path: string): string {
   const parsed = parseServerPath(path)
   if (!parsed) return path
   return parsed.path ? `/${parsed.path}` : '/'
+}
+
+/**
+ * Whether `path` is `root` or sits under it, by whole `/`-separated components.
+ *
+ * ❗ The twin of Rust's `server_volumes::path_is_under`, trailing-slash trim
+ * included: an S3 account root's app root is `s3://<key>@<host>:<port>/`, and a
+ * naive `${root}/` prefix would refuse every bucket under it. ❌ Never a raw
+ * string prefix: `/srv/data-1` is a legal sibling of `/srv/data`.
+ */
+export function isUnderServerRoot(root: string, path: string): boolean {
+  const trimmed = root.replace(/\/+$/, '')
+  return path === trimmed || path.startsWith(`${trimmed}/`)
 }
 
 /** Strips leading and trailing slashes, so every caller holds one spelling. */

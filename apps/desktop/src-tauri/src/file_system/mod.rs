@@ -10,6 +10,8 @@ pub mod filesystem_kind;
 /// A bounded pool of 8 MB-stack OS threads for synchronous macOS framework calls.
 #[cfg(target_os = "macos")]
 pub(crate) mod framework_pool;
+// Ungated: `get_info` answers with its error type on every platform.
+pub mod get_info;
 pub mod git;
 pub mod google_drive;
 /// The app's `VolumeProvider`: what the index asks about mounted volumes.
@@ -51,12 +53,11 @@ use volume::manager::get_volume_manager;
 #[allow(unused_imports, reason = "Public API re-exports for future use")]
 pub use listing::ExtendedMetadata;
 pub use listing::{
-    BriefColumnWidths, BriefColumnsIpcError, DirectorySortMode, FileEntry, ListingStartResult, ListingStats,
-    ResortResult, RowBeside, SortColumn, SortOrder, StreamingListingStartResult, cancel_listing,
+    BriefColumnWidths, BriefColumnsIpcError, DirectorySortMode, FileEntry, ListingLookupError, ListingStats,
+    NameFilterResult, ResortResult, RowBeside, SortColumn, SortOrder, StreamingListingStartResult, cancel_listing,
     compute_brief_column_text_widths, find_file_index, find_file_indices, fuzzy_find_first_match_in_listing,
-    get_file_at, get_file_beside, get_file_range, get_listing_stats, get_total_count, list_directory_end,
-    list_directory_start_streaming, list_directory_start_with_volume, refresh_listing_index_sizes, resort_listing,
-    set_listing_include_hidden,
+    get_file_at, get_file_beside, get_file_range, get_listing_stats, keep_listings_alive, list_directory_end,
+    list_directory_start_streaming, refresh_listing_index_sizes, resort_listing, set_listing_include_hidden,
 };
 // Batch accessors (used by drag, clipboard, and transfer dialogs)
 pub use listing::{get_files_at_indices, get_paths_at_indices};
@@ -79,10 +80,9 @@ pub use watcher::flush_all_watchers;
 pub use watcher::{init_watcher_manager, update_debounce_ms};
 // Re-export write operation types
 pub use write_operations::{
-    OperationEventSink, OperationStatus, OperationSummary, ReadOnlySide, TauriEventSink, WriteOperationConfig,
-    WriteOperationError, WriteOperationStartResult, busy_volume_ids, cancel_all_write_operations,
-    cancel_write_operation, copy_files_start, delete_files_start, get_operation_status, init_busy_volume_emitter,
-    list_active_operations, move_files_start, trash_files_start,
+    OperationEventSink, ReadOnlySide, TauriEventSink, WriteOperationConfig, WriteOperationError,
+    WriteOperationStartResult, busy_volume_ids, cancel_write_operation, delete_files_start, init_busy_volume_emitter,
+    move_files_start, trash_files_start,
 };
 // Re-export the operation manager surface (queue + lifecycle). `LifecycleStatus`
 // and `OperationsChanged` are reached directly via `write_operations::` (the IPC
@@ -96,9 +96,9 @@ pub use write_operations::{
 // and destination-path resolution and every archive fork (extract out, copy/move
 // into a zip); the IPC commands and any backend caller both go through them, so
 // there is one routing to keep right. `write_operations/routing.rs`.
-pub use write_operations::{VolumeCopyConfig, VolumeCopyScanResult, scan_for_volume_copy};
+pub use write_operations::VolumeCopyConfig;
 pub(crate) use write_operations::{
-    resolve_dest_path, resolve_source_volume, start_volume_compress, start_volume_copy, start_volume_move,
+    resolve_dest_path, start_rename_by_move, start_volume_compress, start_volume_copy, start_volume_move,
 };
 // The transfer dialog's pre-flight conflict check (`write_operations::
 // conflict_preflight`), reached by the thin `#[tauri::command]` wrapper in

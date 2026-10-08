@@ -86,6 +86,8 @@ manualLicenses.post('/admin/generate', async (c) => {
       type: request.licenseType,
       organizationName: request.organizationName ?? undefined,
       shortCode,
+      // Signed in, so the app holds the license to this date with no server to ask.
+      expiresAt: request.expiresAt ?? undefined,
     },
     c.env.ED25519_PRIVATE_KEY,
   )
@@ -108,6 +110,8 @@ manualLicenses.post('/admin/generate', async (c) => {
 
   const minted = {
     code: shortCode,
+    // The key itself, for a reply written by hand: it activates without our server.
+    fullKey,
     transactionId,
     type: request.licenseType,
     organizationName: request.organizationName,
@@ -121,7 +125,7 @@ manualLicenses.post('/admin/generate', async (c) => {
     await sendLicenseEmail({
       to: request.email,
       customerName: request.customerName,
-      licenseKeys: [shortCode],
+      licenses: [{ shortCode, fullKey }],
       productName: c.env.PRODUCT_NAME,
       supportEmail: c.env.SUPPORT_EMAIL,
       resendApiKey: c.env.RESEND_API_KEY,

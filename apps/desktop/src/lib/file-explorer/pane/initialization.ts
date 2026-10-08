@@ -2,6 +2,7 @@ import {
   loadAppStatus,
   loadPaneTabs,
   hasPersistedPaneState,
+  resolvePersistedPath,
   saveAppStatusNow,
   savePaneTabs,
 } from '$lib/app-status-store'
@@ -13,7 +14,9 @@ import {
   resolvePathVolume,
   getE2eStartPath,
   checkFullDiskAccessQuiet,
+  listSavedServers,
 } from '$lib/tauri-commands'
+import { isAtOrUnder, isSmbVolumeId } from '$lib/servers/server-path-utils'
 import { getAppLogger } from '$lib/logging/logger'
 import { applyFirstRunLayout, resolveFirstRunLayout } from './first-run-layout'
 import { createTabManagerFromPersisted } from './tab-operations'
@@ -88,27 +91,23 @@ export async function loadPersistedState(): Promise<InitializedState> {
     return { volumeId: defaultId, timedOut: false }
   }
 
+  const shareRoots = await unmountedShareRoots([...leftPaneTabs.tabs, ...rightPaneTabs.tabs])
+
+  async function restoreTab(tab: PersistedTab) {
+    const share = await restoreShareTab(tab, shareRoots)
+    if (share.kept) return { ...tab, unreachablePath: null }
+    const resolution = await resolveVolumeId(tab.volumeId, share.path, !!e2eStartPath)
+    return {
+      ...tab,
+      path: share.path,
+      volumeId: resolution.volumeId,
+      unreachablePath: resolution.timedOut ? share.path : null,
+    }
+  }
+
   // Resolve volume IDs for all tabs in parallel, tracking timeouts
-  const resolvedLeftTabs = await Promise.all(
-    leftPaneTabs.tabs.map(async (tab) => {
-      const resolution = await resolveVolumeId(tab.volumeId, tab.path, !!e2eStartPath)
-      return {
-        ...tab,
-        volumeId: resolution.volumeId,
-        unreachablePath: resolution.timedOut ? tab.path : null,
-      }
-    }),
-  )
-  const resolvedRightTabs = await Promise.all(
-    rightPaneTabs.tabs.map(async (tab) => {
-      const resolution = await resolveVolumeId(tab.volumeId, tab.path, !!e2eStartPath)
-      return {
-        ...tab,
-        volumeId: resolution.volumeId,
-        unreachablePath: resolution.timedOut ? tab.path : null,
-      }
-    }),
-  )
+  const resolvedLeftTabs = await Promise.all(leftPaneTabs.tabs.map(restoreTab))
+  const resolvedRightTabs = await Promise.all(rightPaneTabs.tabs.map(restoreTab))
 
   // Collect unreachable paths by tab ID before stripping extra fields
   const unreachableByTabId: Record<string, string> = {}
@@ -192,4 +191,46 @@ export async function loadPersistedState(): Promise<InitializedState> {
     focusedPane: status.focusedPane,
     leftPaneWidthPercent: status.leftPaneWidthPercent,
   }
+}
+
+/**
+ * Where each SMB share a restored tab stands on last mounted, for the shares that are
+ * saved places and aren't mounted now. Asks for the saved list only when some tab is
+ * on a share: it's cached state, but a launch with no share tab has no use for it.
+ */
+async function unmountedShareRoots(tabs: PersistedTab[]): Promise<Map<string, string>> {
+  const roots = new Map<string, string>()
+  if (!tabs.some((tab) => isSmbVolumeId(tab.volumeId))) return roots
+  try {
+    for (const server of await listSavedServers()) {
+      for (const place of server.places) {
+        // A share no mount went through has an `smb://` root and no folder to land in.
+        if (isSmbVolumeId(place.volumeId) && !place.connected && place.appRoot.startsWith('/')) {
+          roots.set(place.volumeId, place.appRoot)
+        }
+      }
+    }
+  } catch (error) {
+    log.warn('Could not read the saved servers, so share tabs walk up as plain folders: {error}', { error })
+  }
+  return roots
+}
+
+/**
+ * A restored tab on an SMB share, which `loadPaneTabs` hands back unprobed.
+ *
+ * ❗ On an unmounted SAVED share it keeps its id and the folder it stood on (`kept`):
+ * the pane's `place-connect` dials the share's `saved` row and enters that folder, or
+ * the nearest one that still exists. Probing it here would walk to `/Volumes`, and the
+ * volume lookup would then file the tab under the boot disk. Any other share's tab
+ * (mounted, or nobody saved it) walks up like a plain folder.
+ */
+async function restoreShareTab(
+  tab: PersistedTab,
+  shareRoots: Map<string, string>,
+): Promise<{ kept: boolean; path: string }> {
+  if (!isSmbVolumeId(tab.volumeId)) return { kept: false, path: tab.path }
+  const root = shareRoots.get(tab.volumeId)
+  if (root && isAtOrUnder(tab.path, root)) return { kept: true, path: tab.path }
+  return { kept: false, path: await resolvePersistedPath(tab.path, pathExists) }
 }

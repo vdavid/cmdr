@@ -27,13 +27,13 @@ Full lifecycle, scope rationale, and v1 limits: `DETAILS.md`.
 - **FDA gating contract: the watcher is alive iff `fda_gate::is_fda_pending_runtime() == false`.** `lib.rs` calls
   `runtime::refresh_runtime(&app)` at startup (after `set_fda_pending`), on every main-window `Focused(true)` (the
   "toggled FDA in System Settings, came back" path), and the Settings pane mount calls `recheck_downloads_watcher_gate`
-  (recovers from a stale focus-event read). The watcher holds no FDA-protected state, so the closed-gate side is a pure
-  no-op.
+  (recovers from a stale focus-event read). The closed-gate side is a pure no-op.
 - **Cmdr-own-write hook: call `crate::downloads::note_pending_write_for_cmdr(&dest_path)` immediately before each write
   syscall**, unconditionally: `IgnoreSet::note_pending` no-ops outside the watched root, and moving that filter to the
-  call sites is how one forgets it. Register the **final** path; Cmdr never writes `.crdownload`. ❌ Don't reduce the
-  root check to one `starts_with`: it matches the declared AND symlink-resolved spellings, because events name
-  canonical paths and call sites don't. § "Cmdr-own-write hook contract".
+  call sites is how one forgets it. Register the **final** path. ❌ Don't reduce the root check to one `starts_with`: it
+  matches the declared AND symlink-resolved spellings, since events name canonical paths. ❌ Never `canonicalize` a
+  registered path: share targets register too, and a network `realpath` stalls the write. § "Cmdr-own-write hook
+  contract".
 - **A macOS rename usually arrives as TWO direction-less halves, not `RenameMode::Both`.** So `RenameAny` is a normal
   path, not an edge case: dropping it means a real download produces no toast. Eligibility (it stats the path) tells the
   halves apart; ❌ don't add an `exists()` probe. § "Reading a rename on macOS".
@@ -48,9 +48,9 @@ Full lifecycle, scope rationale, and v1 limits: `DETAILS.md`.
   `global-shortcut-fired`. The user fires it from another app, so without the raise the result stays hidden behind the
   active app. Don't drop the raise. `lib.rs` calls `refresh_global_go_to_latest_shortcut(app)` at the same three points
   as the watcher, plus the `set_global_go_to_latest_shortcut` IPC.
-- **`GlobalShortcutManager` register/unregister is idempotent**: re-registering the same binding is a no-op, swapping
-  unregisters the previous first, and a `Conflict` stays remembered until the next successful register so the Settings
-  row can surface "in use by another app" without re-attempting.
+- **`GlobalShortcutManager` register/unregister is idempotent**: re-registering the same binding is a no-op, and a swap
+  unregisters the previous first. A refused swap puts the previous binding back, so the user keeps a hotkey. Refusals
+  are typed by the plugin's error ARM (`Unavailable`), never its message.
 - **No `println!` / `eprintln!` / `dbg!`** (clippy denies crate-wide). Use `log::debug!(target: "downloads::watcher", …)`
   so `RUST_LOG=cmdr_lib::downloads=debug` filters this subsystem. See `logging/CLAUDE.md`.
 - **Tests run against a tempdir, not `~/Downloads`.** `DownloadsWatcher::start_at(path, sink)` is the test entry point;

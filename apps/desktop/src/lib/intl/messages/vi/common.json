@@ -22,5 +22,60 @@
   "common.downloadsFdaHint": "Cmdr cần quyền truy cập đầy đủ vào ổ đĩa để theo dõi thư mục Tải về của bạn. <settingsLink>Mở Cài đặt hệ thống</settingsLink>",
   "@common.downloadsFdaHint": {
     "sourceHash": "315e1d8"
+  },
+  "common.sizeUnit.byte": "{count, plural, other {byte}}",
+  "@common.sizeUnit.byte": {
+    "sourceHash": "ee1f643",
+    "sameAsSourceJustification": "Vietnamese nouns don't inflect, so one `other` arm with the loanword `byte`, exactly as macOS vi Foundation `FileSizeFormatting.loctable` writes it (`bytes` → `byte`, `Zero bytes` → `0 byte`; verified on macOS 26, plutil, 2026-10-06) and as the shipped `settings.listing.sizeUnit.opt.bytes` (`Byte`)."
+  },
+  "common.sizeUnit.kibibyte": "KiB",
+  "@common.sizeUnit.kibibyte": {
+    "sourceHash": "97ee1b8",
+    "sameAsSourceJustification": "IEC binary unit symbol: Vietnamese keeps the Latin IEC symbols, as KDE Dolphin vi (` MiB` → ` MiB`) and Xfce Thunar vi write them; vi has no localized binary prefix, and Latin keeps it distinct from the decimal symbols (MB, GB)."
+  },
+  "common.sizeUnit.mebibyte": "MiB",
+  "@common.sizeUnit.mebibyte": {
+    "sourceHash": "dea6cb8",
+    "sameAsSourceJustification": "IEC binary unit symbol: Vietnamese keeps the Latin IEC symbols, as KDE Dolphin vi (` MiB` → ` MiB`) and Xfce Thunar vi write them; vi has no localized binary prefix, and Latin keeps it distinct from the decimal symbols (MB, GB)."
+  },
+  "common.sizeUnit.gibibyte": "GiB",
+  "@common.sizeUnit.gibibyte": {
+    "sourceHash": "66a1561",
+    "sameAsSourceJustification": "IEC binary unit symbol: Vietnamese keeps the Latin IEC symbols, as KDE Dolphin vi (` MiB` → ` MiB`) and Xfce Thunar vi write them; vi has no localized binary prefix, and Latin keeps it distinct from the decimal symbols (MB, GB)."
+  },
+  "common.sizeUnit.tebibyte": "TiB",
+  "@common.sizeUnit.tebibyte": {
+    "sourceHash": "15c1ec4",
+    "sameAsSourceJustification": "IEC binary unit symbol: Vietnamese keeps the Latin IEC symbols, as KDE Dolphin vi (` MiB` → ` MiB`) and Xfce Thunar vi write them; vi has no localized binary prefix, and Latin keeps it distinct from the decimal symbols (MB, GB)."
+  },
+  "common.sizeUnit.pebibyte": "PiB",
+  "@common.sizeUnit.pebibyte": {
+    "sourceHash": "38ca5a1",
+    "sameAsSourceJustification": "IEC binary unit symbol: Vietnamese keeps the Latin IEC symbols, as KDE Dolphin vi (` MiB` → ` MiB`) and Xfce Thunar vi write them; vi has no localized binary prefix, and Latin keeps it distinct from the decimal symbols (MB, GB)."
+  },
+  "common.sizeUnit.kilobyte": "kB",
+  "@common.sizeUnit.kilobyte": {
+    "sourceHash": "591e59c",
+    "sameAsSourceJustification": "SI unit symbol: vi keeps Latin size symbols, as macOS vi Foundation `FileSizeFormatting.loctable` does for MB/GB/TB/PB (verified on macOS 26, plutil, 2026-10-06); the lowercase SI k (macOS writes KB) keeps it distinct from the binary KiB, matching the English source."
+  },
+  "common.sizeUnit.megabyte": "MB",
+  "@common.sizeUnit.megabyte": {
+    "sourceHash": "1d09f6f",
+    "sameAsSourceJustification": "Unit symbol: macOS vi Foundation `FileSizeFormatting.loctable` keeps KB/MB/GB/TB/PB as Latin symbols (verified on macOS 26, plutil, 2026-10-06), and Finder vi (`SP24`–`SP26`) agrees."
+  },
+  "common.sizeUnit.gigabyte": "GB",
+  "@common.sizeUnit.gigabyte": {
+    "sourceHash": "b4043b0",
+    "sameAsSourceJustification": "Unit symbol: macOS vi Foundation `FileSizeFormatting.loctable` keeps KB/MB/GB/TB/PB as Latin symbols (verified on macOS 26, plutil, 2026-10-06), and Finder vi (`SP24`–`SP26`) agrees."
+  },
+  "common.sizeUnit.terabyte": "TB",
+  "@common.sizeUnit.terabyte": {
+    "sourceHash": "791b0ac",
+    "sameAsSourceJustification": "Unit symbol: macOS vi Foundation `FileSizeFormatting.loctable` keeps KB/MB/GB/TB/PB as Latin symbols (verified on macOS 26, plutil, 2026-10-06), and Finder vi (`SP24`–`SP26`) agrees."
+  },
+  "common.sizeUnit.petabyte": "PB",
+  "@common.sizeUnit.petabyte": {
+    "sourceHash": "f9085bf",
+    "sameAsSourceJustification": "Unit symbol: macOS vi Foundation `FileSizeFormatting.loctable` keeps KB/MB/GB/TB/PB as Latin symbols (verified on macOS 26, plutil, 2026-10-06), and Finder vi (`SP24`–`SP26`) agrees."
   }
 }

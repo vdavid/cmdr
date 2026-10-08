@@ -44,7 +44,7 @@ describe('settings registry label/description parity (en)', () => {
     const def = getSettingDefinition('listing.sizeUnit')
     expect(def?.label).toBe('Size unit')
     expect(def?.description).toBe(
-      'Dynamic picks the friendliest unit per file (1.02 MB). Fixed units make sizes apples-to-apples across the list. Bytes shows the exact count for precise comparison.',
+      'Dynamic picks the friendliest unit per file. Fixed units make sizes apples-to-apples across the list. Bytes shows the exact count for precise comparison.',
     )
   })
 

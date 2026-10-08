@@ -350,7 +350,7 @@ describe('computeFullListColumnWidths', () => {
       entries: [big],
       sizeFormatOpts: { unit: 'dynamic' as const, format: 'binary' as const },
     })
-    // "123 456 789" (with thin spaces) is 11 visible chars; "117.74 MB" is 9.
+    // "123 456 789" (with thin spaces) is 11 visible chars; "117.74 MiB" is 10.
     // With our deterministic length*7 measurer the human-friendly cell is narrower.
     expect(human.size).toBeLessThan(raw.size)
   })
@@ -380,7 +380,7 @@ describe('computeFullListColumnWidths', () => {
       const cell = formatSizeForDisplay(1_073_208, opts)
         .map((t) => t.value)
         .join('')
-      expect(cell).toBe('1,02 MB') // comma decimal, ASCII space before the unit
+      expect(cell).toBe('1,02 MiB') // comma decimal, ASCII space before the unit
 
       const w = computeFullListColumnWidths({ ...baseArgs, entries: [big], sizeFormatOpts: opts })
       // 7 chars × 7 px + 2 px MEASUREMENT_SAFETY_PAD. No clip (we measured the

@@ -319,6 +319,18 @@
   "@onboarding.stepAi.off.help": {
     "sourceHash": "3f261be"
   },
+  "onboarding.localDownloadFailed.title": "Le téléchargement du modèle d’IA local n’a pas pu se terminer",
+  "@onboarding.localDownloadFailed.title": {
+    "sourceHash": "9612750"
+  },
+  "onboarding.localDownloadFailed.body": "Relancez-le dans Réglages › IA.",
+  "@onboarding.localDownloadFailed.body": {
+    "sourceHash": "6601872"
+  },
+  "onboarding.localDownloadFailed.openSettings": "Ouvrir les réglages",
+  "@onboarding.localDownloadFailed.openSettings": {
+    "sourceHash": "3f94010"
+  },
   "onboarding.stepBeta.footer.start": "Commencer à utiliser Cmdr !",
   "@onboarding.stepBeta.footer.start": {
     "sourceHash": "e29bbc7"
@@ -386,6 +398,14 @@
   "onboarding.stepBeta.crashReportsNote": "Les rapports d’incident sont eux aussi activés : si Cmdr s’arrête brutalement, il envoie la version de l’app, votre version de macOS et l’endroit où le code s’est arrêté.\nJamais vos fichiers.\nVous pouvez désactiver les deux dans les réglages quand vous voulez.",
   "@onboarding.stepBeta.crashReportsNote": {
     "sourceHash": "9be0be1"
+  },
+  "onboarding.stepBeta.analyticsManaged": "Votre organisation a désactivé les statistiques d’usage.",
+  "@onboarding.stepBeta.analyticsManaged": {
+    "sourceHash": "49484ee"
+  },
+  "onboarding.stepBeta.crashReportsNoteAlone": "Les rapports d’incident sont activés : si Cmdr s’arrête brutalement, il envoie la version de l’app, votre version de macOS et l’endroit où le code s’est arrêté.\nJamais vos fichiers.\nVous pouvez désactiver les rapports d’incident dans les réglages quand vous voulez.",
+  "@onboarding.stepBeta.crashReportsNoteAlone": {
+    "sourceHash": "5084dd0"
   },
   "onboarding.stepBeta.emailTitle": "Restons en contact (facultatif)",
   "@onboarding.stepBeta.emailTitle": {
@@ -562,6 +582,10 @@
   "onboarding.cloudSetup.apiKeyAria": "Clé d’API",
   "@onboarding.cloudSetup.apiKeyAria": {
     "sourceHash": "16f0ee4"
+  },
+  "onboarding.cloudSetup.removeKey": "Retirer la clé",
+  "@onboarding.cloudSetup.removeKey": {
+    "sourceHash": "81c45fd"
   },
   "onboarding.cloudSetup.apiKeyPlaceholder.openai": "Exemple : sk-abc123…",
   "@onboarding.cloudSetup.apiKeyPlaceholder.openai": {

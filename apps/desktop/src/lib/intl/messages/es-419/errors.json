@@ -295,9 +295,17 @@
   "@errors.write.sourceNotFound.message.trash": {
     "sourceHash": "e52396a"
   },
+  "errors.write.noLongerConnected.message": "El teléfono o servidor que contiene estos archivos ya no está conectado, así que no cambió nada.",
+  "@errors.write.noLongerConnected.message": {
+    "sourceHash": "61e1555"
+  },
   "errors.write.destinationNotFound.title": "No se pudo encontrar la carpeta de destino",
   "@errors.write.destinationNotFound.title": {
     "sourceHash": "e7b89c1"
+  },
+  "errors.write.destinationNotAFolder.message": "Cmdr no pudo crear la carpeta de destino porque hay un archivo en {path}, donde tiene que haber una carpeta. No se escribió nada y los originales están intactos.",
+  "@errors.write.destinationNotAFolder.message": {
+    "sourceHash": "cf862c6"
   },
   "errors.write.symlinkLoop.title": "Se detectó un bucle de enlaces",
   "@errors.write.symlinkLoop.title": {
@@ -515,6 +523,14 @@
   "@errors.write.deletePending.message": {
     "sourceHash": "5ff91b5"
   },
+  "errors.write.sourceChanged.title": "Este archivo cambió durante la copia",
+  "@errors.write.sourceChanged.title": {
+    "sourceHash": "fb20395"
+  },
+  "errors.write.sourceChanged.message": "El archivo {path} cambió mientras Cmdr hacía la copia, así que Cmdr no guardó nada. El archivo sigue donde estaba.",
+  "@errors.write.sourceChanged.message": {
+    "sourceHash": "6751aad"
+  },
   "errors.write.newDataKeptAt.title": "Tu archivo nuevo quedó con otro nombre",
   "@errors.write.newDataKeptAt.title": {
     "sourceHash": "1c51b7d"
@@ -603,6 +619,10 @@
   "@errors.volume.cancelled": {
     "sourceHash": "09a878e"
   },
+  "errors.volume.sourceChanged": "El archivo “{path}” cambió mientras Cmdr hacía la copia, así que Cmdr no guardó nada. Vuelve a intentarlo para copiar la versión nueva.",
+  "@errors.volume.sourceChanged": {
+    "sourceHash": "899c296"
+  },
   "errors.volume.ambiguousName": "Más de un elemento del servidor coincide con “{path}”, así que Cmdr no eligió ninguno. Elígelo desde su carpeta.",
   "@errors.volume.ambiguousName": {
     "sourceHash": "a91758d"
@@ -647,9 +667,9 @@
   "@errors.eject.deviceDisconnectRefused": {
     "sourceHash": "89559ef"
   },
-  "errors.eject.unmountRefusedByCmdr": "El propio Cmdr todavía está usando este disco. Espera un momento y vuelve a expulsarlo. Si sigue pasando, envía un reporte.",
+  "errors.eject.unmountRefusedByCmdr": "El propio Cmdr todavía tiene archivos abiertos ahí. Espera un momento y vuelve a intentarlo. Si sigue pasando, envía un reporte.",
   "@errors.eject.unmountRefusedByCmdr": {
-    "sourceHash": "b6c70d2"
+    "sourceHash": "ea88792"
   },
   "errors.eject.unexpected": "Algo salió mal y Cmdr no pudo saber qué.",
   "@errors.eject.unexpected": {
@@ -714,5 +734,9 @@
   "errors.write.duplicateSourceNames.message": "Elegiste dos elementos llamados {name}, así que los dos acabarían en el mismo lugar: {first} y {second}.",
   "@errors.write.duplicateSourceNames.message": {
     "sourceHash": "38e20fc"
+  },
+  "errors.serverRequest.blockedByPolicy": "Tu organización desactivó esto para Cmdr.",
+  "@errors.serverRequest.blockedByPolicy": {
+    "sourceHash": "4ef1553"
   }
 }

@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { onDestroy, onMount } from 'svelte'
+    import { onDestroy, onMount, untrack } from 'svelte'
     import type { ToastContent, ToastLevel, ToastDismissal } from './toast-store.svelte'
     import { HOVER_LEAVE_GRACE_MS } from './toast-store.svelte'
     import { formatToastAge, msUntilToastAgeChanges } from './toast-age'
@@ -167,16 +167,52 @@
         }, ms)
     }
 
+    // Countdown ring around the X: it empties exactly when the dismiss timer fires. Under the
+    // pointer it freezes where it is (the toast won't go while hovered), and on leave it drains
+    // what's left over whatever time the timer was re-armed for, so a ring frozen at 75% still
+    // reaches zero right as the toast goes, even when the one-second grace tail decides that.
+    // CSS does the drawing: the dash offset starts at the emptied share (`1 - ringFrom`) and a
+    // keyframe drains it to the full circumference over `ringMs`; `ringRun` restarts the animation.
+    const RING_RADIUS = 10
+    const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS
+    let ringFrom = $state(1)
+    let ringMs = $state(0)
+    let ringRunning = $state(false)
+    let ringRun = $state(0)
+    let ringStartedAt = 0
+
+    function ringFraction(): number {
+        if (!ringRunning) return ringFrom
+        if (ringMs <= 0) return 0
+        return ringFrom * Math.max(0, 1 - (Date.now() - ringStartedAt) / ringMs)
+    }
+
+    function startRing(from: number, ms: number) {
+        ringFrom = from
+        ringMs = ms
+        ringStartedAt = Date.now()
+        ringRunning = true
+        ringRun++
+    }
+
+    function pauseRing() {
+        ringFrom = ringFraction()
+        ringRunning = false
+    }
+
     function handlePointerEnter() {
         hovered = true
         if (dismissal !== 'transient') return
         clearTimer()
+        pauseRing()
     }
 
     function handlePointerLeave() {
         hovered = false
         if (dismissal !== 'transient') return
-        armTimer(Math.max(naturalDeadline - Date.now(), HOVER_LEAVE_GRACE_MS))
+        const ms = Math.max(naturalDeadline - Date.now(), HOVER_LEAVE_GRACE_MS)
+        armTimer(ms)
+        startRing(ringFraction(), ms)
     }
 
     $effect(() => {
@@ -184,7 +220,17 @@
         // Reading `postedAt` is also what restarts the clock on a same-id re-raise
         // that leaves dismissal and timeout unchanged.
         naturalDeadline = Math.max(mountedAt, postedAt) + timeoutMs
-        if (!hovered) armTimer(Math.max(naturalDeadline - Date.now(), 0))
+        const ms = Math.max(naturalDeadline - Date.now(), 0)
+        const from = timeoutMs > 0 ? Math.min(1, ms / timeoutMs) : 0
+        untrack(() => {
+            if (hovered) {
+                ringFrom = from
+                ringRunning = false
+            } else {
+                armTimer(ms)
+                startRing(from, ms)
+            }
+        })
         return clearTimer
     })
 </script>
@@ -243,6 +289,25 @@
         use:tooltip={closeTooltip}
         aria-label={tString('ui.toast.dismissAria')}
     >
+        {#if dismissal === 'transient'}
+            {#key ringRun}
+                <svg
+                    class="toast-timer"
+                    data-state={ringRunning ? 'running' : 'paused'}
+                    viewBox="0 0 22 22"
+                    aria-hidden="true"
+                >
+                    <circle
+                        cx="11"
+                        cy="11"
+                        r={RING_RADIUS}
+                        style:stroke-dasharray="{RING_CIRCUMFERENCE}px"
+                        style:stroke-dashoffset="{RING_CIRCUMFERENCE * (1 - ringFrom)}px"
+                        style:animation-duration="{ringMs}ms"
+                    />
+                </svg>
+            {/key}
+        {/if}
         <Icon name="x" size={10} />
     </button>
 </div>
@@ -256,30 +321,40 @@
         gap: var(--spacing-md);
         max-width: 360px;
         padding: var(--spacing-toast);
-        background: var(--color-toast-default-bg);
+        /* Glass: the level's tint, partly see-through and blurred (`app.css` § Toasts). Each
+           level only swaps `--color-toast-bg`. */
+        --color-toast-bg: var(--color-toast-default-bg);
+
+        background: color-mix(in srgb, var(--color-toast-bg) var(--glass-toast-opacity), transparent);
+        -webkit-backdrop-filter: var(--glass-backdrop);
+        backdrop-filter: var(--glass-backdrop);
         border: 1px solid var(--color-toast-default-border);
         border-radius: var(--radius-toast);
-        box-shadow: var(--shadow-toast);
+        box-shadow: var(--shadow-toast), var(--shadow-glass-rim);
         font-size: var(--font-size-sm);
     }
 
     .toast.info {
-        background: var(--color-toast-info-bg);
+        --color-toast-bg: var(--color-toast-info-bg);
+
         border-color: var(--color-toast-info-border);
     }
 
     .toast.success {
-        background: var(--color-toast-success-bg);
+        --color-toast-bg: var(--color-toast-success-bg);
+
         border-color: var(--color-toast-success-border);
     }
 
     .toast.warn {
-        background: var(--color-toast-warn-bg);
+        --color-toast-bg: var(--color-toast-warn-bg);
+
         border-color: var(--color-toast-warn-border);
     }
 
     .toast.error {
-        background: var(--color-toast-error-bg);
+        --color-toast-bg: var(--color-toast-error-bg);
+
         border-color: var(--color-toast-error-border);
     }
 
@@ -292,6 +367,13 @@
         display: flex;
         flex-direction: column;
         justify-content: center;
+    }
+
+    /* A long unbroken run (an S3 access key ID, a path, a URL) breaks inside the toast rather
+       than running out past its edge. Inherited, so component bodies get it too. Words still
+       break at spaces first. */
+    .toast-content {
+        overflow-wrap: anywhere;
     }
 
     /* The close button is pinned over the content box's top-right corner, reaching 19px into it
@@ -362,6 +444,38 @@
     .toast-close:hover {
         background: var(--color-tint-hover);
         color: var(--color-text-primary);
+    }
+
+    /* The countdown ring hugs the X button's round edge, starting at 12 o'clock. The circle's inline
+       dash array and offset come from `RING_CIRCUMFERENCE`; the keyframe's empty offset repeats
+       that number (2π·10) because a dash-offset percentage measures the viewport, not the dash. */
+    .toast-timer {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        transform: rotate(-90deg);
+        pointer-events: none;
+    }
+
+    .toast-timer circle {
+        fill: none;
+        stroke: currentcolor;
+        stroke-width: 1.5;
+        opacity: 0.6;
+    }
+
+    /* The duration is inline (`animation-duration`): the time the dismiss timer was armed for. */
+    .toast-timer[data-state='running'] circle {
+        animation-name: toast-timer-drain;
+        animation-timing-function: linear;
+        animation-fill-mode: forwards;
+    }
+
+    @keyframes toast-timer-drain {
+        to {
+            stroke-dashoffset: 62.8319px;
+        }
     }
 
     @media (prefers-reduced-motion: no-preference) {

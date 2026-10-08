@@ -34,6 +34,7 @@ use openssh_sftp_client::file::File;
 use tokio::io::AsyncSeek;
 
 use super::SftpVolume;
+use super::writes::keep_source_date;
 use crate::errors::map_sftp_error;
 
 /// How much of a file one `copy-data` request asks the server to copy.
@@ -73,12 +74,8 @@ impl SftpVolume {
         // The length is what the source says NOW, and it is not chased. A file
         // that grew under the copy is the same call as one that grew under a
         // streamed read, and both report the tree they started from.
-        let total = source
-            .metadata()
-            .await
-            .map_err(|e| map_sftp_error(&e, &remote_from))?
-            .len()
-            .unwrap_or(0);
+        let source_meta = source.metadata().await.map_err(|e| map_sftp_error(&e, &remote_from))?;
+        let total = source_meta.len().unwrap_or(0);
 
         let mut dest = session
             .sftp()
@@ -110,6 +107,14 @@ impl SftpVolume {
         // `SSH_FXP_CLOSE` on a detached task and throws away the one report a
         // server gives of bytes it accepted but could not commit.
         dest.close().await.map_err(|e| map_sftp_error(&e, &remote_to))?;
+        // `copy-data` moves bytes only; the date is ours to carry, as on a copy
+        // through the stream.
+        keep_source_date(
+            &session,
+            &remote_to,
+            source_meta.modified().map(|stamp| stamp.as_system_time()),
+        )
+        .await;
         Ok(total)
     }
 

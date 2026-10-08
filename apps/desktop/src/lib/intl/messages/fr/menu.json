@@ -204,6 +204,10 @@
   "@menu.select.sameKind": {
     "sourceHash": "9933028"
   },
+  "menu.select.compareDirectories": "Comparer les dossiers",
+  "@menu.select.compareDirectories": {
+    "sourceHash": "5cf3985"
+  },
   "menu.select.allFolders": "Sélectionner tous les dossiers",
   "@menu.select.allFolders": {
     "sourceHash": "5351f8b"
@@ -264,6 +268,14 @@
   "menu.view.swapPanes": "Permuter les panneaux",
   "@menu.view.swapPanes": {
     "sourceHash": "cc29396"
+  },
+  "menu.view.clonePane": "Cloner le panneau",
+  "@menu.view.clonePane": {
+    "sourceHash": "74b2c7f"
+  },
+  "menu.view.calculateFolderSizes": "Calculer la taille des dossiers",
+  "@menu.view.calculateFolderSizes": {
+    "sourceHash": "d2a83da"
   },
   "menu.view.commandPalette": "Palette de commandes…",
   "@menu.view.commandPalette": {
@@ -351,13 +363,17 @@
   "@menu.go.parentFolder": {
     "sourceHash": "158f5a0"
   },
+  "menu.go.rootFolder": "Dossier racine",
+  "@menu.go.rootFolder": {
+    "sourceHash": "6d92528"
+  },
   "menu.go.home": "Départ",
   "@menu.go.home": {
     "sourceHash": "3a78695"
   },
-  "menu.go.goToPath": "Aller au chemin…",
+  "menu.go.goToPath": "Aller au dossier…",
   "@menu.go.goToPath": {
-    "sourceHash": "936edc5"
+    "sourceHash": "33de610"
   },
   "menu.go.goToLatestDownload": "Aller au dernier téléchargement",
   "@menu.go.goToLatestDownload": {
@@ -474,6 +490,22 @@
   "menu.context.copyGoogleDriveLink": "Copier le lien Google Drive",
   "@menu.context.copyGoogleDriveLink": {
     "sourceHash": "070b383"
+  },
+  "menu.context.copyShareLink": "Copier un lien de partage",
+  "@menu.context.copyShareLink": {
+    "sourceHash": "d31483e"
+  },
+  "menu.context.shareLinkSevenDays": "Expire dans sept jours",
+  "@menu.context.shareLinkSevenDays": {
+    "sourceHash": "06949d8"
+  },
+  "menu.context.shareLinkOneDay": "Expire dans un jour",
+  "@menu.context.shareLinkOneDay": {
+    "sourceHash": "5ff3dbc"
+  },
+  "menu.context.shareLinkOneHour": "Expire dans une heure",
+  "@menu.context.shareLinkOneHour": {
+    "sourceHash": "faf9c50"
   },
   "menu.context.askGemini": "Demander à Gemini",
   "@menu.context.askGemini": {
@@ -657,10 +689,6 @@
   "@menu.dock.searchFiles": {
     "sourceHash": "149a9d1"
   },
-  "menu.dock.goToFolder": "Aller au dossier…",
-  "@menu.dock.goToFolder": {
-    "sourceHash": "33de610"
-  },
   "menu.dock.connectToServer": "Se connecter au serveur…",
   "@menu.dock.connectToServer": {
     "sourceHash": "6188f47"
@@ -669,5 +697,9 @@
   "@menu.dock.locationInParent": {
     "sourceHash": "0bf83e2",
     "sameAsSourceJustification": "Placeholder-only layout string ('{name} ({parent})'); both tokens are folder names from the user's disk and there is no literal text to translate. French keeps the same order and punctuation for a name-plus-qualifier row: macOS Finder's own disambiguating detail line is 'SB_iCloudDetail' = '^0 (^1)' (reference pile, fr/macOS/Finder/LocalizableMerged.json), and the catalog already ships the same shape at 'fileExplorer.functionKeyBar.actionWithShortcut'."
+  },
+  "menu.help.viewDebugLog": "Visualiser le journal de débogage",
+  "@menu.help.viewDebugLog": {
+    "sourceHash": "007c98d"
   }
 }

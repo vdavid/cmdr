@@ -24,6 +24,7 @@ vi.mock('$lib/tauri-commands', () => ({
 function mountDialog(props: {
   error: WriteOperationError
   onRetry?: () => void
+  onCopyAnyway?: () => void
   operationType?: 'copy' | 'move' | 'delete' | 'trash'
 }) {
   const target = document.createElement('div')
@@ -35,6 +36,7 @@ function mountDialog(props: {
       error: props.error,
       onClose: () => {},
       ...(props.onRetry ? { onRetry: props.onRetry } : {}),
+      ...(props.onCopyAnyway ? { onCopyAnyway: props.onCopyAnyway } : {}),
     },
   })
   return target
@@ -101,6 +103,45 @@ describe('TransferErrorDialog: typed-error rendering', () => {
     await tick()
     const buttons = Array.from(target.querySelectorAll('button')).map((b) => b.textContent.trim())
     expect(buttons).not.toContain('Retry')
+  })
+
+  describe('a space shortfall (#351)', () => {
+    const shortfall: WriteOperationError = {
+      type: 'insufficient_space',
+      required: 2_000_000_000,
+      available: 500_000_000,
+      volumeName: 'Backup',
+    }
+
+    function buttonLabels(target: HTMLElement): string[] {
+      return Array.from(target.querySelectorAll('button')).map((b) => b.textContent.trim())
+    }
+
+    it('offers Copy anyway on a copy, which starts it again', async () => {
+      const onCopyAnyway = vi.fn()
+      const target = mountDialog({ error: shortfall, operationType: 'copy', onCopyAnyway })
+      await tick()
+      const button = Array.from(target.querySelectorAll('button')).find((b) => b.textContent.trim() === 'Copy anyway')
+      expect(button).toBeDefined()
+      button?.click()
+      expect(onCopyAnyway).toHaveBeenCalledTimes(1)
+    })
+
+    it('offers no Copy anyway when nothing can start the copy again', async () => {
+      const target = mountDialog({ error: shortfall, operationType: 'copy' })
+      await tick()
+      expect(buttonLabels(target)).not.toContain('Copy anyway')
+    })
+
+    it('offers no Copy anyway for another error', async () => {
+      const target = mountDialog({
+        error: { type: 'read_only_device', path: '/p', deviceName: null, side: 'destination' },
+        operationType: 'copy',
+        onCopyAnyway: () => {},
+      })
+      await tick()
+      expect(buttonLabels(target)).not.toContain('Copy anyway')
+    })
   })
 
   it('shows the typed error in the technical-details textarea', async () => {

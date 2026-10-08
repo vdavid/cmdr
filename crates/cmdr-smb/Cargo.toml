@@ -38,7 +38,7 @@ cmdr-fs = { path = "../cmdr-fs" }
 # 0.20.1 is a floor, not a preference: it is the first version where each
 # connection carries its own `ClientGuid`, which is what lets the scan pool open
 # its sessions simultaneously. See `volume/scan_pool.rs::open_slots`.
-smb2 = { version = "0.27.0", features = ["serde"] }
+smb2 = { version = "0.27.2", features = ["serde"] }
 serde = { version = "1", features = ["derive"] }
 # Type export for the Rust↔TS bindings: `ShareListResult` and friends cross IPC.
 # Pinned to the EXACT same version the app uses, for the reason `cmdr-fs` gives:
@@ -71,7 +71,7 @@ blake3 = { version = "1.8.3", optional = true }
 [dev-dependencies]
 # Depending on ourselves turns the `testing` feature on for every DEV target and
 # leaves it off for the lib, so a shipped build carries no fixtures and no
-# `blake3`. Same shape as the app's own self dev-dependency.
+# `blake3`.
 cmdr-smb = { path = ".", features = ["testing"] }
 # `InMemoryVolume` and the recording / scripted host-seam fakes this crate's
 # tests assert against.
@@ -81,3 +81,9 @@ cmdr-fs = { path = "../cmdr-fs", features = ["testing"] }
 # `io-util` are the credit-cap proxy's (`volume/credit_cap_proxy.rs`). `test-util`
 # pauses the clock for the watcher's slow-server tests.
 tokio = { version = "1", features = ["rt-multi-thread", "net", "io-util", "test-util"] }
+
+[target.'cfg(unix)'.dev-dependencies]
+# `getpeername` over the process's fds, for the mount/unmount socket-lifetime cell
+# (`volume/session_integration_test.rs`). No new package: the graph already
+# carries `libc`.
+libc = "0.2"

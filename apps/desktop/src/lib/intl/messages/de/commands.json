@@ -116,9 +116,9 @@
   "@commands.searchOpen.label": {
     "sourceHash": "179fed8"
   },
-  "commands.navGoToPath.label": "Zu Pfad gehen …",
+  "commands.navGoToPath.label": "Gehe zu Ordner …",
   "@commands.navGoToPath.label": {
-    "sourceHash": "936edc5"
+    "sourceHash": "33de610"
   },
   "commands.navGoToPath.description": "Den fokussierten Bereich zu einem getippten, eingesetzten oder zuletzt verwendeten Pfad springen lassen.",
   "@commands.navGoToPath.description": {
@@ -155,6 +155,14 @@
   "commands.viewShowHidden.label": "Verborgene Dateien ein-/ausblenden",
   "@commands.viewShowHidden.label": {
     "sourceHash": "6aa9b55"
+  },
+  "commands.viewCalculateFolderSizes.label": "Ordnergrößen berechnen",
+  "@commands.viewCalculateFolderSizes.label": {
+    "sourceHash": "d2a83da"
+  },
+  "commands.viewCalculateFolderSizes.description": "Zeigt die Größe aller Ordner in diesem Bereich an, die noch keine haben. Die esc-Taste stoppt die Berechnung.",
+  "@commands.viewCalculateFolderSizes.description": {
+    "sourceHash": "2a7568d"
   },
   "commands.viewBriefMode.label": "Zu Kompaktansicht wechseln",
   "@commands.viewBriefMode.label": {
@@ -235,6 +243,14 @@
   "commands.paneSwap.label": "Bereiche tauschen",
   "@commands.paneSwap.label": {
     "sourceHash": "cc29396"
+  },
+  "commands.paneClone.label": "Bereich klonen",
+  "@commands.paneClone.label": {
+    "sourceHash": "74b2c7f"
+  },
+  "commands.paneClone.description": "Den Ordner dieses Bereichs auch im anderen Bereich öffnen.",
+  "@commands.paneClone.description": {
+    "sourceHash": "8a13dc9"
   },
   "commands.paneLeftVolumeChooser.label": "Linke Volume-Auswahl öffnen",
   "@commands.paneLeftVolumeChooser.label": {
@@ -335,6 +351,10 @@
   "commands.navForward.label": "Vor",
   "@commands.navForward.label": {
     "sourceHash": "8121136"
+  },
+  "commands.navGoToRoot.label": "Zum Stammordner gehen",
+  "@commands.navGoToRoot.label": {
+    "sourceHash": "3822d7b"
   },
   "commands.navGoHome.label": "Zum persönlichen Ordner gehen",
   "@commands.navGoHome.label": {
@@ -486,7 +506,7 @@
   },
   "commands.fileCopyCurrentDirectoryPath.label": "Pfad des aktuellen Ordners kopieren",
   "@commands.fileCopyCurrentDirectoryPath.label": {
-    "sourceHash": "ae360d1"
+    "sourceHash": "5ec6586"
   },
   "commands.fileCopyFilename.label": "Dateinamen kopieren",
   "@commands.fileCopyFilename.label": {
@@ -555,6 +575,30 @@
   "commands.cloudAskGemini.description": "Öffnet den Gemini-Assistenten von Google Drive mit der ausgewählten Datei als Thema",
   "@commands.cloudAskGemini.description": {
     "sourceHash": "37d4e7c"
+  },
+  "commands.fileCopyShareLink.label": "Freigabelink kopieren (sieben Tage)",
+  "@commands.fileCopyShareLink.label": {
+    "sourceHash": "314bee8"
+  },
+  "commands.fileCopyShareLink.description": "Kopiert einen Link, den alle sieben Tage lang öffnen können, um die Datei herunterzuladen",
+  "@commands.fileCopyShareLink.description": {
+    "sourceHash": "99e912e"
+  },
+  "commands.fileCopyShareLinkOneDay.label": "Freigabelink kopieren (ein Tag)",
+  "@commands.fileCopyShareLinkOneDay.label": {
+    "sourceHash": "468010c"
+  },
+  "commands.fileCopyShareLinkOneDay.description": "Kopiert einen Link, den alle einen Tag lang öffnen können, um die Datei herunterzuladen",
+  "@commands.fileCopyShareLinkOneDay.description": {
+    "sourceHash": "c2a30be"
+  },
+  "commands.fileCopyShareLinkOneHour.label": "Freigabelink kopieren (eine Stunde)",
+  "@commands.fileCopyShareLinkOneHour.label": {
+    "sourceHash": "ffea990"
+  },
+  "commands.fileCopyShareLinkOneHour.description": "Kopiert einen Link, den alle eine Stunde lang öffnen können, um die Datei herunterzuladen",
+  "@commands.fileCopyShareLinkOneHour.description": {
+    "sourceHash": "c334535"
   },
   "commands.tagsToggleGrey.label": "Tag „Grau“ umschalten",
   "@commands.tagsToggleGrey.label": {
@@ -647,6 +691,30 @@
   "commands.selectionSelectSameKind.description": "Fügt jeden Eintrag gleicher Art wie den unter dem Cursor zur Auswahl hinzu, ohne sie vorher aufzuheben",
   "@commands.selectionSelectSameKind.description": {
     "sourceHash": "9a95212"
+  },
+  "commands.selectionCompareDirectories.label": "Ordner vergleichen",
+  "@commands.selectionCompareDirectories.label": {
+    "sourceHash": "5cf3985"
+  },
+  "commands.selectionCompareDirectories.description": "Wählt in jedem Bereich die Dateien aus, die im anderen Bereich fehlen, sowie von den übrigen die neueren Kopien",
+  "@commands.selectionCompareDirectories.description": {
+    "sourceHash": "190d99f"
+  },
+  "commands.selectionCompareDirectoriesMissing.label": "Ordner vergleichen: nur fehlende Dateien",
+  "@commands.selectionCompareDirectoriesMissing.label": {
+    "sourceHash": "d03d3c1"
+  },
+  "commands.selectionCompareDirectoriesMissing.description": "Wählt in jedem Bereich nur die Dateien aus, die im anderen Bereich fehlen",
+  "@commands.selectionCompareDirectoriesMissing.description": {
+    "sourceHash": "e61c71b"
+  },
+  "commands.selectionCompareDirectoriesSize.label": "Ordner vergleichen: abweichende Größe",
+  "@commands.selectionCompareDirectoriesSize.label": {
+    "sourceHash": "6c8fd21"
+  },
+  "commands.selectionCompareDirectoriesSize.description": "Wählt in jedem Bereich die Dateien aus, die im anderen Bereich fehlen, sowie beide Kopien von Dateien mit abweichender Größe",
+  "@commands.selectionCompareDirectoriesSize.description": {
+    "sourceHash": "ac31996"
   },
   "commands.selectionSelectSameKind.allFolders": "Alle Ordner auswählen",
   "@commands.selectionSelectSameKind.allFolders": {
@@ -804,6 +872,26 @@
   "@commands.handler.googleDriveCopyFailed": {
     "sourceHash": "0af1fd3"
   },
+  "commands.handler.shareLinkCopied.sevenDays": "Freigabelink kopiert. Er gilt sieben Tage lang.",
+  "@commands.handler.shareLinkCopied.sevenDays": {
+    "sourceHash": "6f4055b"
+  },
+  "commands.handler.shareLinkCopied.oneDay": "Freigabelink kopiert. Er gilt einen Tag lang.",
+  "@commands.handler.shareLinkCopied.oneDay": {
+    "sourceHash": "ca08c52"
+  },
+  "commands.handler.shareLinkCopied.oneHour": "Freigabelink kopiert. Er gilt eine Stunde lang.",
+  "@commands.handler.shareLinkCopied.oneHour": {
+    "sourceHash": "8b9f0cc"
+  },
+  "commands.handler.shareLinkUnavailable": "Bewege den Cursor auf eine Datei in einem S3-Bucket, um einen Freigabelink zu kopieren.",
+  "@commands.handler.shareLinkUnavailable": {
+    "sourceHash": "c4ea112"
+  },
+  "commands.handler.shareLinkFailed": "Erstellen des Freigabelinks nicht möglich. {detail}",
+  "@commands.handler.shareLinkFailed": {
+    "sourceHash": "5ff44b7"
+  },
   "commands.handler.openTerminalHere.hint": "Ordner in deiner Terminal-App geöffnet. Soll Cmdr beim nächsten Mal eine andere App öffnen? Wähle sie in den Einstellungen unter „Navigation & Dateioperationen“.",
   "@commands.handler.openTerminalHere.hint": {
     "sourceHash": "b29b744"
@@ -836,6 +924,18 @@
   "@commands.handler.openTerminalHere.timedOut": {
     "sourceHash": "ed36313"
   },
+  "commands.handler.getInfo.automationOff": "Für „Informationen“ muss Cmdr den Finder steuern dürfen, und das ist ausgeschaltet. Schalte in Systemeinstellungen > Datenschutz & Sicherheit > Automation unter Cmdr den Finder ein.",
+  "@commands.handler.getInfo.automationOff": {
+    "sourceHash": "7e831ef"
+  },
+  "commands.handler.getInfo.openAutomationSettings": "Einstellungen für Automation öffnen",
+  "@commands.handler.getInfo.openAutomationSettings": {
+    "sourceHash": "f04940d"
+  },
+  "commands.handler.getInfo.notReached": "Cmdr konnte den Finder nicht erreichen, um „Informationen“ zu öffnen. Versuche es noch einmal.",
+  "@commands.handler.getInfo.notReached": {
+    "sourceHash": "9cbc272"
+  },
   "commands.handler.zoomResetHintShortcut": "Du kannst die Zoomstufe mit {shortcut} auf 100 % zurücksetzen.",
   "@commands.handler.zoomResetHintShortcut": {
     "sourceHash": "efdd715"
@@ -863,5 +963,21 @@
   "commands.suggestedOpsShow.description": "Sieh dir die von der KI vorgeschlagenen Dateivorgänge an und entscheide, was läuft",
   "@commands.suggestedOpsShow.description": {
     "sourceHash": "7efe8c9"
+  },
+  "commands.helpViewDebugLog.label": "Debug-Protokoll ansehen",
+  "@commands.helpViewDebugLog.label": {
+    "sourceHash": "007c98d"
+  },
+  "commands.helpViewDebugLog.description": "Das Debug-Protokoll von Cmdr live in der Dateivorschau verfolgen",
+  "@commands.helpViewDebugLog.description": {
+    "sourceHash": "a937e6e"
+  },
+  "commands.handler.viewDebugLog.disabled": "Die Protokollspeicherung ist deaktiviert. Setze das Speicherplatz-Limit unter Einstellungen > Erweitert auf mehr als 0 und starte Cmdr neu, um das Debug-Protokoll anzusehen.",
+  "@commands.handler.viewDebugLog.disabled": {
+    "sourceHash": "96f16fc"
+  },
+  "commands.handler.viewDebugLog.unavailable": "Das Debug-Protokoll ließ sich nicht öffnen. Versuche es noch einmal.",
+  "@commands.handler.viewDebugLog.unavailable": {
+    "sourceHash": "794a5b3"
   }
 }

@@ -56,3 +56,8 @@ settled wording into `terms.json` (and `decisions.md` when the reason is worth k
 - **`Não conectado a {name}`** (`servers.paneState.notConnected`): a pane heading after the person cancelled a sign-in.
   `{name} não está conectado` would agree with the name, and `Sem conexão com` reads as a network fault; confirm this
   status-style heading doesn't sound like a failure either.
+- **S3 terms, drafted without human review** (`servers.sheet.s3*`, `servers.refusal.s3*`/`bucket*`/`region*`): `bucket`,
+  `região`, `ID da chave de acesso`, and `chave de acesso secreta` follow the AWS pt-BR console; the endpoint field
+  keeps the catalog's `ponto de extremidade`, though AWS pt-BR docs say `endpoint`. Confirm both.
+- **`Este arquivo está arquivado`** (`*.coldStorage*`, `fileExplorer.archivedFile.*`): cold storage → `arquivado` /
+  `armazenamento frio` (MS terminology). `arquivo arquivado` is a known cacophony; confirm it reads fine to a Brazilian.

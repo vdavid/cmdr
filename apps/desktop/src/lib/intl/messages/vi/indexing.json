@@ -14,7 +14,7 @@
   },
   "indexing.scan.counters": "{entriesText} {entries, plural, other {mục}}, {dirsText} {dirs, plural, other {thư mục}}",
   "@indexing.scan.counters": {
-    "sourceHash": "f635790"
+    "sourceHash": "ecf47f2"
   },
   "indexing.scan.countersElapsed": "{counters} · {elapsed}",
   "@indexing.scan.countersElapsed": {
@@ -134,9 +134,21 @@
     "sourceHash": "26b29da",
     "sameAsSourceJustification": "Pure format string ({percent}%, {eta}) — a number, a percent sign, a comma separator, and an already-formatted phrase. This locale uses the same percent spacing and comma as English, so the format is genuinely identical; nothing here is translatable prose."
   },
+  "indexing.overall.eta": "Tổng thể: {eta}",
+  "@indexing.overall.eta": {
+    "sourceHash": "a9a2ffc"
+  },
+  "indexing.overall.estimating": "Tổng thể: đang ước tính…",
+  "@indexing.overall.estimating": {
+    "sourceHash": "9dac967"
+  },
   "indexing.eta.almostDone": "Sắp xong",
   "@indexing.eta.almostDone": {
     "sourceHash": "506f162"
+  },
+  "indexing.eta.almostDoneMidSentence": "sắp xong",
+  "@indexing.eta.almostDoneMidSentence": {
+    "sourceHash": "1d2fb48"
   },
   "indexing.eta.secondsLeft": "còn {secondsText}s",
   "@indexing.eta.secondsLeft": {
@@ -189,6 +201,10 @@
   "indexing.needsFreshScan.afterDisconnect": "{name} bị ngắt kết nối khi Cmdr đang cập nhật chỉ mục. Lần quét tiếp theo của ổ đĩa này sẽ bắt đầu lại từ đầu, nên kích cỡ thư mục sẽ chính xác trở lại.",
   "@indexing.needsFreshScan.afterDisconnect": {
     "sourceHash": "a90dbdf"
+  },
+  "indexing.memoryStop.paused": "Cmdr đã tạm dừng lập chỉ mục ổ đĩa vì đang dùng quá nhiều bộ nhớ. Kích cỡ thư mục có thể đã lỗi thời cho đến khi bạn khởi động lại Cmdr.",
+  "@indexing.memoryStop.paused": {
+    "sourceHash": "32d225a"
   },
   "indexing.firstConnect.title": "Lập chỉ mục {name}?",
   "@indexing.firstConnect.title": {

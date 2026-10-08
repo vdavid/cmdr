@@ -323,7 +323,7 @@ fn a_child_rows_qualifier_follows_the_same_rule() {
             is_updating: true,
         },
     );
-    assert_eq!(moving.size_human.as_deref(), Some("~ 1 KB"));
+    assert_eq!(moving.size_human.as_deref(), Some("~ 1 KiB"));
     assert!(moving.size_is_updating);
 
     let settled_floor = folder(
@@ -334,10 +334,10 @@ fn a_child_rows_qualifier_follows_the_same_rule() {
             is_updating: false,
         },
     );
-    assert_eq!(settled_floor.size_human.as_deref(), Some("≥ 1 KB"));
+    assert_eq!(settled_floor.size_human.as_deref(), Some("≥ 1 KiB"));
 
     let exact = folder("c", SizeClaim::exact(Some(1_024)));
-    assert_eq!(exact.size_human.as_deref(), Some("1 KB"));
+    assert_eq!(exact.size_human.as_deref(), Some("1 KiB"));
 }
 
 #[test]
@@ -387,8 +387,8 @@ fn an_exact_size_carries_no_symbol() {
         &ListOptions::default(),
     );
     let rows = result.children.as_ref().expect("an indexed listing");
-    assert_eq!(rows[0].size_human.as_deref(), Some("1 KB"));
-    assert_eq!(result.size.unwrap().recursive_size_human, "1 KB");
+    assert_eq!(rows[0].size_human.as_deref(), Some("1 KiB"));
+    assert_eq!(result.size.unwrap().recursive_size_human, "1 KiB");
 }
 
 #[test]
@@ -610,11 +610,11 @@ fn the_wire_shape_carries_every_spoken_field_in_camel_case() {
         &opts,
     );
     let json = serde_json::to_value(&result).unwrap();
-    assert_eq!(json["size"]["recursiveSizeHuman"], "≥ 1.8 TB");
-    assert_eq!(json["volume"]["totalHuman"], "1.8 TB");
-    assert_eq!(json["volume"]["availableHuman"], "199.6 GB");
-    assert_eq!(json["children"][0]["sizeHuman"], "≥ 1.7 TB");
-    assert_eq!(json["children"][1]["sizeHuman"], "4.2 GB");
+    assert_eq!(json["size"]["recursiveSizeHuman"], "≥ 1.8 TiB");
+    assert_eq!(json["volume"]["totalHuman"], "1.8 TiB");
+    assert_eq!(json["volume"]["availableHuman"], "199.6 GiB");
+    assert_eq!(json["children"][0]["sizeHuman"], "≥ 1.7 TiB");
+    assert_eq!(json["children"][1]["sizeHuman"], "4.2 GiB");
     assert_eq!(json["remainder"]["count"], 1);
     assert_eq!(json["remainder"]["isApproximate"], true);
     // A row with no mtime carries no `modifiedHuman` key at all.

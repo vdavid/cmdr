@@ -36,8 +36,8 @@ use tokio_util::sync::CancellationToken;
 
 use super::WebdavVolume;
 use crate::errors::Attempted;
-use crate::liveness::Liveness;
 use crate::transport::{MUTATION_BUDGET, WebdavClient, method};
+use cmdr_fs::volume::liveness::Liveness;
 
 /// How often the upload reports progress while the body is on its way.
 const PROGRESS_TICK: Duration = Duration::from_millis(200);
@@ -135,6 +135,31 @@ impl BodySource {
     }
 }
 
+/// The ownCloud/Nextcloud request header that sets an uploaded file's
+/// modification date, in Unix seconds. Not a standard: Nextcloud, ownCloud,
+/// and rclone honor it, plain Apache `mod_dav` ignores it, and WebDAV offers
+/// nothing standard instead (`getlastmodified` is a protected property no
+/// PROPPATCH may set). `DETAILS.md` § "Dates".
+const X_OC_MTIME: &str = "X-OC-Mtime";
+
+/// `X-OC-Mtime`'s value for `modified_at`: whole Unix seconds, truncated.
+/// `None` before 1970, which the header can't say.
+fn mtime_header_value(modified_at: std::time::SystemTime) -> Option<u64> {
+    modified_at
+        .duration_since(std::time::UNIX_EPOCH)
+        .ok()
+        .map(|d| d.as_secs())
+}
+
+/// Whether the server says it stored the date: Nextcloud answers a PUT that
+/// carried `X-OC-Mtime` with `X-OC-MTime: accepted`.
+fn mtime_accepted(response: &reqwest::Response) -> bool {
+    response
+        .headers()
+        .get(X_OC_MTIME)
+        .is_some_and(|value| value.as_bytes().eq_ignore_ascii_case(b"accepted"))
+}
+
 /// The source yielded a different byte count than `size` promised.
 fn size_mismatch(remote: &str, got: u64, size: u64) -> VolumeError {
     VolumeError::IoError {
@@ -182,7 +207,7 @@ impl WebdavVolume {
                 debug!("WebdavVolume::write_from_stream: {remote}");
                 self.put_streaming(&client, &remote, size, stream, on_progress).await
             }
-            WriteMode::CreateNew => {
+            WriteMode::CreateNew | WriteMode::CreateNewInFreshFolder => {
                 let temp = staging_sibling(&remote);
                 debug!("WebdavVolume::write_from_stream: {remote} via {temp}");
                 let total = self.put_streaming(&client, &temp, size, stream, on_progress).await?;
@@ -212,6 +237,9 @@ impl WebdavVolume {
         stream: Box<dyn VolumeReadStream>,
         on_progress: &(dyn Fn(u64, u64) -> ControlFlow<()> + Sync),
     ) -> Result<u64, VolumeError> {
+        // Read before the stream moves into the body. A source knows its date
+        // from its open, so nothing is lost by asking before the first byte.
+        let modified_at = stream.modified_at();
         let counts = BodyCounts::new();
         let stop = CancellationToken::new();
         let source_error: Arc<std::sync::Mutex<Option<VolumeError>>> = Arc::new(std::sync::Mutex::new(None));
@@ -254,11 +282,14 @@ impl WebdavVolume {
                 Some((Ok(Bytes::from(chunk)), source))
             },
         ));
-        let request = client
+        let mut request = client
             .request(Method::PUT, client.url_for(target, false))
             .header(CONTENT_LENGTH, size)
-            .header(CONTENT_TYPE, "application/octet-stream")
-            .body(body);
+            .header(CONTENT_TYPE, "application/octet-stream");
+        if let Some(secs) = modified_at.and_then(mtime_header_value) {
+            request = request.header(X_OC_MTIME, secs);
+        }
+        let request = request.body(body);
 
         // The block scopes the in-flight request: leaving it drops the
         // request, which is what aborts a cancelled upload on the wire.
@@ -290,6 +321,13 @@ impl WebdavVolume {
         // ❗ What came OUT of the source, never what hyper asked for. The two
         // differ by exactly the case this guard exists for.
         let total = counts.fetched.load(Ordering::Relaxed);
+        let outcome = outcome.map(|response| {
+            if modified_at.is_some() && !mtime_accepted(&response) {
+                // Not a failure: a server without the ownCloud extension (plain
+                // `mod_dav`) has no way to store a date, and keeps its own.
+                debug!("WebdavVolume::write_from_stream: {target}: the server didn't take X-OC-Mtime, so it keeps its own date");
+            }
+        });
         if let Err(e) = outcome {
             self.remove_best_effort(target).await;
             if stop.is_cancelled() {

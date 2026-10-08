@@ -78,5 +78,9 @@
   "errorReporter.autoSentToast.viewOrAddNotes": "Ver o agregar notas al reporte",
   "@errorReporter.autoSentToast.viewOrAddNotes": {
     "sourceHash": "9b2702f"
+  },
+  "errorReporter.dialog.managedOff": "Tu organización desactivó el envío de reportes. Aun así, puedes guardar el reporte en el disco y compartirlo tú.",
+  "@errorReporter.dialog.managedOff": {
+    "sourceHash": "25ef604"
   }
 }

@@ -42,7 +42,10 @@ type Catalog = Record<string, string>
  * Drops ARB-style `@key` metadata entries (object values), keeping only the
  * renderable string messages. The raw JSON's inferred type mixes string
  * messages and metadata objects, so we narrow per-entry. The `@key` metadata is
- * thus never seen by the runtime (Decision 4).
+ * thus never seen by the runtime (Decision 4). In Vite builds the
+ * `stripCatalogMetadata` plugin has already removed it before bundling, so
+ * this only does real work under Vitest (which skips the plugin); see
+ * `scripts/vite-strip-catalog-metadata.ts` before deleting it.
  */
 function stripMetadata(raw: Record<string, unknown>): Catalog {
   const out: Catalog = {}

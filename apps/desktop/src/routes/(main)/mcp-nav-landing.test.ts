@@ -3,6 +3,7 @@ import {
   classifyLanding,
   classifyVolumeLanding,
   expectsNewListing,
+  waitForListingOrStall,
   waitForPaneToGoQuiet,
   type PaneQuietProbe,
 } from './mcp-nav-landing'
@@ -12,7 +13,9 @@ import {
  * virtual clock, so the wait's timing rules are exercised without a real clock.
  * The last step repeats forever, which is what "the pane came to rest here" means.
  */
-function scriptedProbe(steps: Array<{ listingId: string | null; loading: boolean }>): PaneQuietProbe & {
+function scriptedProbe(
+  steps: Array<{ listingId: string | null; loading: boolean; stalled?: boolean }>,
+): PaneQuietProbe & {
   elapsed: () => number
 } {
   let index = 0
@@ -21,6 +24,7 @@ function scriptedProbe(steps: Array<{ listingId: string | null; loading: boolean
   return {
     getListingId: () => at().listingId,
     isLoading: () => at().loading,
+    isStalled: () => at().stalled ?? false,
     now: () => clock,
     sleep: (ms: number) => {
       clock += ms
@@ -43,7 +47,7 @@ describe('waitForPaneToGoQuiet', () => {
       { listingId: 'after', loading: false },
     ])
 
-    await expect(waitForPaneToGoQuiet(probe, WAIT)).resolves.toBe(true)
+    await expect(waitForPaneToGoQuiet(probe, WAIT)).resolves.toBe('quiet')
   })
 
   it('does NOT call it quiet while the switch is still listing', async () => {
@@ -58,7 +62,7 @@ describe('waitForPaneToGoQuiet', () => {
       { listingId: 'after', loading: false },
     ])
 
-    await expect(waitForPaneToGoQuiet(probe, WAIT)).resolves.toBe(true)
+    await expect(waitForPaneToGoQuiet(probe, WAIT)).resolves.toBe('quiet')
     // Quiet is only declared after the new listing settles, not on the idle
     // observations that precede it.
     expect(probe.elapsed()).toBeGreaterThanOrEqual(400)
@@ -77,14 +81,14 @@ describe('waitForPaneToGoQuiet', () => {
       { listingId: 'fallback', loading: false },
     ])
 
-    await expect(waitForPaneToGoQuiet(probe, WAIT)).resolves.toBe(true)
+    await expect(waitForPaneToGoQuiet(probe, WAIT)).resolves.toBe('quiet')
     expect(probe.elapsed()).toBeGreaterThanOrEqual(600)
   })
 
   it('gives up when no listing ever starts within the budget', async () => {
     const probe = scriptedProbe([{ listingId: 'before', loading: false }])
 
-    await expect(waitForPaneToGoQuiet(probe, WAIT)).resolves.toBe(false)
+    await expect(waitForPaneToGoQuiet(probe, WAIT)).resolves.toBe('restless')
     expect(probe.elapsed()).toBeGreaterThanOrEqual(WAIT.budgetMs)
   })
 
@@ -96,7 +100,7 @@ describe('waitForPaneToGoQuiet', () => {
       { listingId: 'first', loading: false },
     ])
 
-    await expect(waitForPaneToGoQuiet(probe, { ...WAIT, listingIdBefore: null })).resolves.toBe(true)
+    await expect(waitForPaneToGoQuiet(probe, { ...WAIT, listingIdBefore: null })).resolves.toBe('quiet')
   })
 
   it('without a new listing to wait for, calls a pane idle on the listing it already had quiet', async () => {
@@ -104,7 +108,7 @@ describe('waitForPaneToGoQuiet', () => {
     // nothing new: waiting for a new listing there would burn the whole budget.
     const probe = scriptedProbe([{ listingId: 'before', loading: false }])
 
-    await expect(waitForPaneToGoQuiet(probe, { ...WAIT, requireNewListing: false })).resolves.toBe(true)
+    await expect(waitForPaneToGoQuiet(probe, { ...WAIT, requireNewListing: false })).resolves.toBe('quiet')
     expect(probe.elapsed()).toBeLessThan(WAIT.budgetMs)
   })
 
@@ -117,8 +121,82 @@ describe('waitForPaneToGoQuiet', () => {
       { listingId: 'before', loading: false },
     ])
 
-    await expect(waitForPaneToGoQuiet(probe, { ...WAIT, requireNewListing: false })).resolves.toBe(true)
+    await expect(waitForPaneToGoQuiet(probe, { ...WAIT, requireNewListing: false })).resolves.toBe('quiet')
     expect(probe.elapsed()).toBeGreaterThanOrEqual(400)
+  })
+})
+
+describe('waitForPaneToGoQuiet on a folder that stops answering', () => {
+  it('reports stalled the moment the new listing stalls, without waiting out the budget', async () => {
+    // A stalled listing stays in flight and retries until the server answers, so the
+    // pane never goes quiet: waiting for it is what held `nav_to_path` for 30 s.
+    const probe = scriptedProbe([
+      { listingId: 'before', loading: true },
+      { listingId: 'after', loading: true },
+      { listingId: 'after', loading: true, stalled: true },
+    ])
+
+    await expect(waitForPaneToGoQuiet(probe, WAIT)).resolves.toBe('stalled')
+    expect(probe.elapsed()).toBeLessThan(WAIT.budgetMs)
+  })
+
+  it('ignores a stall on the listing the pane had before', async () => {
+    const probe = scriptedProbe([
+      { listingId: 'before', loading: true, stalled: true },
+      { listingId: 'after', loading: false },
+      { listingId: 'after', loading: false },
+      { listingId: 'after', loading: false },
+      { listingId: 'after', loading: false },
+    ])
+
+    await expect(waitForPaneToGoQuiet(probe, WAIT)).resolves.toBe('quiet')
+  })
+})
+
+describe('waitForListingOrStall', () => {
+  const STALL_WAIT = { listingIdBefore: 'before', pollMs: 100 }
+
+  it('reports quiet when the listing lands', async () => {
+    const probe = scriptedProbe([{ listingId: 'after', loading: true }])
+
+    await expect(waitForListingOrStall(Promise.resolve(), probe, STALL_WAIT)).resolves.toBe('quiet')
+  })
+
+  it('reports stalled while the listing is still in flight', async () => {
+    const probe = scriptedProbe([
+      { listingId: 'after', loading: true },
+      { listingId: 'after', loading: true, stalled: true },
+    ])
+    const neverLands = new Promise<void>(() => {})
+
+    await expect(waitForListingOrStall(neverLands, probe, STALL_WAIT)).resolves.toBe('stalled')
+  })
+
+  it('ignores a stall on the listing the pane had before', async () => {
+    let land = () => {}
+    const lands = new Promise<void>((resolve) => {
+      land = resolve
+    })
+    let looks = 0
+    const probe: PaneQuietProbe = {
+      getListingId: () => 'before',
+      isLoading: () => true,
+      isStalled: () => true,
+      now: () => 0,
+      sleep: () => {
+        looks += 1
+        if (looks === 3) land()
+        return Promise.resolve()
+      },
+    }
+
+    await expect(waitForListingOrStall(lands, probe, STALL_WAIT)).resolves.toBe('quiet')
+  })
+
+  it('passes a failed listing on to the caller', async () => {
+    const probe = scriptedProbe([{ listingId: 'after', loading: true }])
+
+    await expect(waitForListingOrStall(Promise.reject(new Error('gone')), probe, STALL_WAIT)).rejects.toThrow('gone')
   })
 })
 
@@ -152,7 +230,7 @@ describe('classifyVolumeLanding', () => {
       classifyVolumeLanding({
         targetVolumeId: 'mtp-1',
         landed: { volumeId: 'mtp-1', path: 'mtp://1/Documents' },
-        quiet: true,
+        rest: 'quiet',
       }),
     ).toEqual({ outcome: 'navigated', volumeId: 'mtp-1', path: 'mtp://1/Documents' })
   })
@@ -162,14 +240,28 @@ describe('classifyVolumeLanding', () => {
       classifyVolumeLanding({
         targetVolumeId: 'mtp-1',
         landed: { volumeId: 'root', path: '/Users/david' },
-        quiet: true,
+        rest: 'quiet',
       }),
     ).toEqual({ outcome: 'fell-back', volumeId: 'root', path: '/Users/david' })
   })
 
+  it('says so when the pane’s folder stalled', () => {
+    expect(
+      classifyVolumeLanding({
+        targetVolumeId: 'nas',
+        landed: { volumeId: 'nas', path: '/Volumes/nas' },
+        rest: 'stalled',
+      }),
+    ).toEqual({ outcome: 'stalled', volumeId: 'nas', path: '/Volumes/nas' })
+  })
+
   it('says so when the pane never settled', () => {
     expect(
-      classifyVolumeLanding({ targetVolumeId: 'mtp-1', landed: { volumeId: 'mtp-1', path: 'mtp://1' }, quiet: false }),
+      classifyVolumeLanding({
+        targetVolumeId: 'mtp-1',
+        landed: { volumeId: 'mtp-1', path: 'mtp://1' },
+        rest: 'restless',
+      }),
     ).toEqual({ outcome: 'did-not-settle', volumeId: 'mtp-1', path: 'mtp://1' })
   })
 })
@@ -178,15 +270,19 @@ describe('classifyLanding', () => {
   const target = { volumeId: 'root', path: '/Users/david/code' }
 
   it('calls it navigated when the pane came to rest on the target', () => {
-    expect(classifyLanding({ target, landed: { volumeId: 'root', path: '/Users/david/code' }, quiet: true })).toEqual({
-      outcome: 'navigated',
-      volumeId: 'root',
-      path: '/Users/david/code',
-    })
+    expect(classifyLanding({ target, landed: { volumeId: 'root', path: '/Users/david/code' }, rest: 'quiet' })).toEqual(
+      {
+        outcome: 'navigated',
+        volumeId: 'root',
+        path: '/Users/david/code',
+      },
+    )
   })
 
   it('ignores a trailing slash on either side', () => {
-    expect(classifyLanding({ target, landed: { volumeId: 'root', path: '/Users/david/code/' }, quiet: true })).toEqual({
+    expect(
+      classifyLanding({ target, landed: { volumeId: 'root', path: '/Users/david/code/' }, rest: 'quiet' }),
+    ).toEqual({
       outcome: 'navigated',
       volumeId: 'root',
       path: '/Users/david/code/',
@@ -194,7 +290,7 @@ describe('classifyLanding', () => {
   })
 
   it('calls it a fallback when the pane came to rest somewhere else', () => {
-    expect(classifyLanding({ target, landed: { volumeId: 'root', path: '/Users/david' }, quiet: true })).toEqual({
+    expect(classifyLanding({ target, landed: { volumeId: 'root', path: '/Users/david' }, rest: 'quiet' })).toEqual({
       outcome: 'fell-back',
       volumeId: 'root',
       path: '/Users/david',
@@ -202,15 +298,29 @@ describe('classifyLanding', () => {
   })
 
   it('calls it a fallback when the pane is on another volume, same-looking path or not', () => {
-    expect(classifyLanding({ target, landed: { volumeId: 'mtp-1', path: '/Users/david/code' }, quiet: true })).toEqual({
+    expect(
+      classifyLanding({ target, landed: { volumeId: 'mtp-1', path: '/Users/david/code' }, rest: 'quiet' }),
+    ).toEqual({
       outcome: 'fell-back',
       volumeId: 'mtp-1',
       path: '/Users/david/code',
     })
   })
 
+  it('says so when the folder stalled', () => {
+    expect(
+      classifyLanding({ target, landed: { volumeId: 'root', path: '/Users/david/code' }, rest: 'stalled' }),
+    ).toEqual({
+      outcome: 'stalled',
+      volumeId: 'root',
+      path: '/Users/david/code',
+    })
+  })
+
   it('says so when the pane never settled, even though it holds the target optimistically', () => {
-    expect(classifyLanding({ target, landed: { volumeId: 'root', path: '/Users/david/code' }, quiet: false })).toEqual({
+    expect(
+      classifyLanding({ target, landed: { volumeId: 'root', path: '/Users/david/code' }, rest: 'restless' }),
+    ).toEqual({
       outcome: 'did-not-settle',
       volumeId: 'root',
       path: '/Users/david/code',

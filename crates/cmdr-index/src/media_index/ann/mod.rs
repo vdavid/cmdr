@@ -107,7 +107,7 @@ impl AnnSpace {
     /// The file-name suffix distinguishing this space's index beside the media DB.
     fn suffix(self) -> &'static str {
         match self {
-            AnnSpace::Clip => "clip",
+            AnnSpace::Clip => crate::volume_files::ANN_SPACE_CLIP,
         }
     }
 
@@ -192,23 +192,24 @@ pub(crate) fn engine_err(e: impl std::fmt::Display) -> AnnError {
 /// The index file for a volume's space, beside its `media-{id}.db`:
 /// `media-{id}.clip.usearch`.
 pub(crate) fn index_path(db_path: &Path, space: AnnSpace) -> PathBuf {
-    sibling(db_path, space, "usearch")
+    sibling(db_path, space, crate::volume_files::ANN_INDEX_EXTENSION)
 }
 
 /// The JSON sidecar pinning format/model/dims/rows: `media-{id}.clip.usearch.meta`.
 pub(crate) fn meta_path(db_path: &Path, space: AnnSpace) -> PathBuf {
-    sibling(db_path, space, "usearch.meta")
+    sibling(db_path, space, crate::volume_files::ANN_META_EXTENSION)
 }
 
 /// The crash-detection marker: present while the writer holds unflushed ops, so a
 /// session that dies mid-pass leaves it behind: `media-{id}.clip.usearch.dirty`.
 pub(crate) fn dirty_path(db_path: &Path, space: AnnSpace) -> PathBuf {
-    sibling(db_path, space, "usearch.dirty")
+    sibling(db_path, space, crate::volume_files::ANN_DIRTY_EXTENSION)
 }
 
+/// Named by `volume_files`, the one place that knows every file a volume keeps,
+/// so a removal of the media store takes these along.
 fn sibling(db_path: &Path, space: AnnSpace, ext: &str) -> PathBuf {
-    let stem = db_path.file_stem().and_then(|s| s.to_str()).unwrap_or("media");
-    db_path.with_file_name(format!("{stem}.{}.{ext}", space.suffix()))
+    crate::volume_files::ann_file(db_path, space.suffix(), ext)
 }
 
 /// Delete a volume's index, sidecar, and dirty marker for one space. Used by the

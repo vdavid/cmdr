@@ -62,7 +62,7 @@ use crate::file_system::volume::manager::{RoutedKind, get_volume_manager, path_r
 /// 256 MiB comfortably covers real preview content (documents, images, PDFs, most
 /// media) while bounding the temp write, extraction time, and decompression
 /// amplification. Chosen independently of the FE copy-selection ceiling
-/// (`COPY_REFUSE_BYTES`, 100 MiB) — that caps a *selection*, this caps a whole-entry
+/// (`COPY_REFUSE_BYTES`, 100 MB) — that caps a *selection*, this caps a whole-entry
 /// materialization.
 pub(crate) const PREVIEW_CAP_BYTES: u64 = 256 * 1024 * 1024;
 
@@ -152,17 +152,24 @@ fn materialize_dir() -> PathBuf {
 /// Best-effort: an unreadable dir or a failed remove is logged-then-ignored, never
 /// fatal. The prefix guard means it can only ever touch our own extraction subdirs.
 pub(super) fn reap_orphan_temps(dir: &Path) {
+    reap_temps_with_prefix(dir, TEMP_SUBDIR_PREFIX);
+}
+
+/// Removes every subdir of `dir` whose name starts with `prefix`. The one reaper body,
+/// shared with the open-with temps (`open_with_extract.rs`), which keep their own dir
+/// and prefix.
+pub(super) fn reap_temps_with_prefix(dir: &Path, prefix: &str) {
     let Ok(entries) = std::fs::read_dir(dir) else {
         return; // dir doesn't exist yet (first run) — nothing to reap.
     };
     for entry in entries.flatten() {
         let name = entry.file_name();
-        if is_orphan_temp_name(&name.to_string_lossy())
+        if name.to_string_lossy().starts_with(prefix)
             && let Err(e) = std::fs::remove_dir_all(entry.path())
         {
             log::debug!(
                 target: "cmdr_lib::file_viewer",
-                "reap_orphan_temps: could not remove {}: {e}",
+                "reap_temps_with_prefix: could not remove {}: {e}",
                 entry.path().display()
             );
         }
@@ -170,8 +177,62 @@ pub(super) fn reap_orphan_temps(dir: &Path) {
 }
 
 /// Whether `name` is one of our extraction subdirs (the reaper's match predicate).
+#[cfg(test)]
 pub(super) fn is_orphan_temp_name(name: &str) -> bool {
     name.starts_with(TEMP_SUBDIR_PREFIX)
+}
+
+/// Where a pull writes its temp: the dir, and the prefix its per-pull subdir takes,
+/// which is what that family's reaper matches on.
+#[derive(Clone, Copy)]
+pub(super) struct TempSpot<'a> {
+    pub(super) dir: &'a Path,
+    pub(super) prefix: &'a str,
+}
+
+impl<'a> TempSpot<'a> {
+    /// The viewer's own family in `dir`.
+    fn viewer(dir: &'a Path) -> Self {
+        Self {
+            dir,
+            prefix: TEMP_SUBDIR_PREFIX,
+        }
+    }
+}
+
+/// A routed pull that couldn't be made, and which route served the path, so open-with's
+/// toast can say where the file came from.
+#[cfg(any(target_os = "macos", test))]
+#[derive(Debug)]
+pub(super) struct RoutedPullFailure {
+    pub(super) routed: RoutedKind,
+    pub(super) error: ViewerError,
+}
+
+/// [`extract_routed`] into another temp family's spot, unwatched: open-with's pull
+/// (`open_with_extract.rs`), which has no window to close and no deadline to honor.
+#[cfg(any(target_os = "macos", test))]
+pub(super) fn extract_routed_into(
+    requested: &Path,
+    volume_id: &str,
+    spot: TempSpot<'_>,
+    cap: u64,
+) -> Result<Option<MaterializedFile>, RoutedPullFailure> {
+    let Some(route) = resolve_route(requested, volume_id) else {
+        return Ok(None);
+    };
+    let routed = route.kind;
+    tauri::async_runtime::block_on(pull_to_temp(
+        route.volume,
+        route.entry_path,
+        spot,
+        cap,
+        Some(routed),
+        &PendingOpen::new(),
+        None,
+    ))
+    .map(Some)
+    .map_err(|error| RoutedPullFailure { routed, error })
 }
 
 /// What the viewer opens for `requested`: a bounded temp copy when the OS can't open
@@ -241,7 +302,7 @@ fn materialize_with(
     open: &PendingOpen,
     cancel: Option<&AtomicBool>,
 ) -> Result<Option<MaterializedFile>, ViewerError> {
-    if let Some(entry) = extract_routed(requested, volume_id, dir, cap, open, cancel)? {
+    if let Some(entry) = extract_routed(requested, volume_id, TempSpot::viewer(dir), cap, open, cancel)? {
         return Ok(Some(entry));
     }
     // Locality is `paths_are_os_visible`, ❌ never `supports_local_fs_access`: a
@@ -255,7 +316,16 @@ fn materialize_with(
     if resolved.routed.is_some() || volume.paths_are_os_visible() {
         return Ok(None);
     }
-    tauri::async_runtime::block_on(pull_to_temp(volume, resolved.path, dir, cap, None, open, cancel)).map(Some)
+    tauri::async_runtime::block_on(pull_to_temp(
+        volume,
+        resolved.path,
+        TempSpot::viewer(dir),
+        cap,
+        None,
+        open,
+        cancel,
+    ))
+    .map(Some)
 }
 
 /// The route-only materializer for `inspect_file`, with its per-path cancellation.
@@ -268,7 +338,7 @@ pub(crate) fn extract_if_routed_for_inspect(
     extract_routed(
         requested,
         volume_id,
-        &materialize_dir(),
+        TempSpot::viewer(&materialize_dir()),
         PREVIEW_CAP_BYTES,
         &PendingOpen::new(),
         Some(cancel),
@@ -283,18 +353,50 @@ pub(crate) fn extract_if_routed_with(
     dir: &Path,
     cap: u64,
 ) -> Result<Option<MaterializedFile>, ViewerError> {
-    extract_routed(requested, volume_id, dir, cap, &PendingOpen::new(), None)
+    extract_routed(
+        requested,
+        volume_id,
+        TempSpot::viewer(dir),
+        cap,
+        &PendingOpen::new(),
+        None,
+    )
 }
 
 /// The route half of [`materialize_for_viewer_with`], watched by `open`.
 fn extract_routed(
     requested: &Path,
     volume_id: &str,
-    dir: &Path,
+    spot: TempSpot<'_>,
     cap: u64,
     open: &PendingOpen,
     cancel: Option<&AtomicBool>,
 ) -> Result<Option<MaterializedFile>, ViewerError> {
+    let Some(route) = resolve_route(requested, volume_id) else {
+        return Ok(None);
+    };
+    tauri::async_runtime::block_on(pull_to_temp(
+        route.volume,
+        route.entry_path,
+        spot,
+        cap,
+        Some(route.kind),
+        open,
+        cancel,
+    ))
+    .map(Some)
+}
+
+/// A path a route serves: the volume the route minted, the path to read on it, and
+/// which route it was.
+struct Route {
+    volume: std::sync::Arc<dyn Volume>,
+    entry_path: PathBuf,
+    kind: RoutedKind,
+}
+
+/// The route serving `requested`, or `None` when it has a file of its own.
+fn resolve_route(requested: &Path, volume_id: &str) -> Option<Route> {
     // Only a path with no file of its own is materialized. The `.zip` file ITSELF
     // is a regular file: viewing it shows its raw bytes like any binary file
     // (extracting inner "" would address the archive ROOT — a directory — and
@@ -302,28 +404,27 @@ fn extract_routed(
     // parent-aware confirm, so a mislabeled `.zip`, a remote-only archive, and a
     // `.git` that isn't a repository are all handled there.
     if !path_routes_over_its_parent(requested) {
-        return Ok(None);
+        return None;
     }
     let resolved = tauri::async_runtime::block_on(get_volume_manager().resolve(volume_id, requested));
-    let Some(routed) = resolved.routed else {
-        return Ok(None);
-    };
-    let Some(volume) = resolved.volume else {
-        // The route confirmed but the volume vanished (unmount / evict race). Treat
-        // as unrouted; the caller's existence check surfaces NotFound.
-        return Ok(None);
-    };
-    let entry_path = resolved.path;
-    tauri::async_runtime::block_on(pull_to_temp(volume, entry_path, dir, cap, Some(routed), open, cancel)).map(Some)
+    let kind = resolved.routed?;
+    // `None`: the route confirmed but the volume vanished (unmount / evict race). Treat
+    // as unrouted; the caller's existence check surfaces NotFound.
+    let volume = resolved.volume?;
+    Some(Route {
+        volume,
+        entry_path: resolved.path,
+        kind,
+    })
 }
 
-/// Streams one file to a fresh temp subdir under `dir`, refusing an oversize file
+/// Streams one file to a fresh temp subdir in `spot`, refusing an oversize file
 /// before writing anything. `routed` is the route that minted `volume`, or `None`
 /// for a volume the OS can't open.
 async fn pull_to_temp(
     volume: std::sync::Arc<dyn Volume>,
     entry_path: PathBuf,
-    dir: &Path,
+    spot: TempSpot<'_>,
     cap: u64,
     routed: Option<RoutedKind>,
     open: &PendingOpen,
@@ -350,7 +451,7 @@ async fn pull_to_temp(
         return Err(ViewerError::TooLargeToPreview { size: declared, cap });
     }
 
-    let cleanup_dir = dir.join(format!("{TEMP_SUBDIR_PREFIX}{}", uuid::Uuid::new_v4()));
+    let cleanup_dir = spot.dir.join(format!("{}{}", spot.prefix, uuid::Uuid::new_v4()));
     std::fs::create_dir_all(&cleanup_dir)?;
     let temp_file = cleanup_dir.join(temp_basename(&meta.name));
 
@@ -452,16 +553,19 @@ fn temp_basename(entry_name: &str) -> String {
 /// failure preserves `NotSupported` for non-UI consumers. A portal read and a plain
 /// pull have no such family — a repository that can't be opened or a phone that
 /// dropped mid-read is a fault, not a kind of file — so they stay a plain `Io`.
-fn map_volume_error(err: VolumeError, routed: Option<RoutedKind>) -> ViewerError {
+pub(super) fn map_volume_error(err: VolumeError, routed: Option<RoutedKind>) -> ViewerError {
     match err {
         VolumeError::NotFound(path) => ViewerError::NotFound { path },
         VolumeError::IsADirectory(_) => ViewerError::IsDirectory,
+        // Whichever route read it: a zip in cold storage is as unreadable as a
+        // file there, and the fix is the same restore.
+        VolumeError::ColdStorage(_) => ViewerError::ColdStorage,
         other => match routed {
             Some(RoutedKind::Archive) => ViewerError::Archive {
-                failure: if matches!(other, VolumeError::NotSupported) {
-                    ArchiveFailureKind::Unsupported
-                } else {
-                    ArchiveFailureKind::Unreadable
+                failure: match other {
+                    VolumeError::NotSupported => ArchiveFailureKind::Unsupported,
+                    VolumeError::NeedsPassword { .. } => ArchiveFailureKind::NeedsPassword,
+                    _ => ArchiveFailureKind::Unreadable,
                 },
                 message: other.to_string(),
             },

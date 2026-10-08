@@ -9,7 +9,7 @@
 use super::download::{cleanup_partial, download_file};
 use super::extract::{LLAMA_SERVER_BINARY, extract_bundled_llama_server};
 use super::process::kill_and_reap_in_background;
-use super::server::{StartupOutcome, spawn_and_track_server, wait_for_server_health};
+use super::server::{LocalAiError, StartupOutcome, spawn_and_track_server, wait_for_server_health};
 use super::state::{MANAGER, ManagerState, get_ai_dir, get_current_model, save_state};
 use super::{
     AiExtracting, AiInstallComplete, AiInstalling, AiVerifying, get_default_model, get_model_by_id,
@@ -82,9 +82,14 @@ fn finish_download(m: &mut ManagerState) {
 /// Starts the AI download (binary + model).
 #[tauri::command]
 #[specta::specta]
-pub async fn start_ai_download<R: Runtime>(app: AppHandle<R>) -> Result<(), String> {
+pub async fn start_ai_download<R: Runtime>(app: AppHandle<R>) -> Result<(), LocalAiError> {
+    // The model download is egress, so it reads the policy fresh.
+    if let Err(refusal) = super::managed::local_ai_allowed(&*crate::managed_policy::for_egress().await) {
+        log::info!("AI download: the organization's policy refuses local AI ({refusal:?}), not downloading");
+        return Err(LocalAiError::Managed { refusal });
+    }
     if !is_local_ai_supported() {
-        return Err(String::from("Local AI not supported on this hardware"));
+        return Err(LocalAiError::Unsupported);
     }
 
     let cancels_seen = MANAGER.lock_ignore_poison().as_ref().map_or(0, |m| m.download_cancels);
@@ -110,7 +115,7 @@ pub async fn start_ai_download<R: Runtime>(app: AppHandle<R>) -> Result<(), Stri
                 );
                 wound_down.await;
             }
-            StartDecision::CancelledWhileWaiting => return Err(String::from("Download cancelled")),
+            StartDecision::CancelledWhileWaiting => return Err(LocalAiError::Cancelled),
         }
     }
 
@@ -199,7 +204,7 @@ pub(super) fn cleanup_stale_partial_download(m: &mut ManagerState) {
     }
 }
 
-async fn do_download<R: Runtime>(app: &AppHandle<R>) -> Result<(), String> {
+async fn do_download<R: Runtime>(app: &AppHandle<R>) -> Result<(), LocalAiError> {
     let ai_dir = get_ai_dir(app);
     fs::create_dir_all(&ai_dir).map_err(|e| format!("Failed to create AI directory: {e}"))?;
 
@@ -227,7 +232,7 @@ async fn do_download<R: Runtime>(app: &AppHandle<R>) -> Result<(), String> {
     // Check if cancelled before starting big download
     if is_cancel_requested() {
         cleanup_partial(&ai_dir, model);
-        return Err(String::from("Download cancelled"));
+        return Err(LocalAiError::Cancelled);
     }
 
     // Step 2: Download GGUF model - this is the only network download
@@ -246,7 +251,14 @@ async fn do_download<R: Runtime>(app: &AppHandle<R>) -> Result<(), String> {
         }
     }
 
-    download_file(app, model.url, &model_path, is_cancel_requested).await?;
+    // A cancel ends the transfer with an error too; the flag, not the error's wording, says which.
+    if let Err(detail) = download_file(app, model.url, &model_path, is_cancel_requested).await {
+        return Err(if is_cancel_requested() {
+            LocalAiError::Cancelled
+        } else {
+            LocalAiError::Failed { detail }
+        });
+    }
 
     // Step 3: Verify download integrity by checking file size
     let _ = AiVerifying.emit(app);
@@ -263,7 +275,8 @@ async fn do_download<R: Runtime>(app: &AppHandle<R>) -> Result<(), String> {
         return Err(format!(
             "Download incomplete: expected {} bytes, got {} bytes",
             model.size_bytes, actual_size
-        ));
+        )
+        .into());
     }
 
     log::debug!("AI download: model verified, {} bytes", actual_size);
@@ -283,11 +296,19 @@ async fn do_download<R: Runtime>(app: &AppHandle<R>) -> Result<(), String> {
     let _ = AiInstalling.emit(app);
 
     // Start the server FIRST, then emit install complete.
-    // Spawn synchronously so PID is tracked immediately, then health-check async.
+    // Spawn synchronously so PID is tracked immediately, then health-check async. The transfer took
+    // minutes, so ask the policy fresh first; `spawn_and_track_server` asks again under the lock, on
+    // the cache this read just refreshed. The model stays installed either way.
+    if let Err(refusal) = super::managed::local_ai_allowed(&*crate::managed_policy::for_egress().await) {
+        log::info!(
+            "AI download: the organization's policy now refuses local AI ({refusal:?}), not starting the server"
+        );
+        return Err(LocalAiError::Managed { refusal });
+    }
     let (pid, port, cancel) = {
         let mut manager = MANAGER.lock_ignore_poison();
         let Some(ref mut m) = *manager else {
-            return Err(String::from("AI manager not initialized"));
+            return Err(String::from("AI manager not initialized").into());
         };
         spawn_and_track_server(m)?
     };
@@ -296,7 +317,7 @@ async fn do_download<R: Runtime>(app: &AppHandle<R>) -> Result<(), String> {
         // The user switched away mid-install. The model is installed and state saved;
         // the server start was deliberately abandoned, so this isn't an install failure.
         StartupOutcome::Cancelled => return Ok(()),
-        StartupOutcome::Failed(e) => return Err(e),
+        StartupOutcome::Failed(e) => return Err(e.into()),
     }
 
     // Emit install complete only after server is healthy
@@ -319,6 +340,21 @@ mod tests {
 
     fn manager() -> ManagerState {
         new_manager_state(PathBuf::from("/nonexistent/ai"), AiState::default())
+    }
+
+    /// The organization's "no" is typed, never a sentence: the frontend logs it at info.
+    #[tokio::test]
+    async fn under_ai_off_the_download_refuses_typed() {
+        use crate::managed_policy::ManagedAiRefusal;
+        use crate::managed_policy::testing::{self, DISABLE_AI};
+        let _policy = testing::override_for_test(testing::forcing(&[DISABLE_AI]));
+        let app = tauri::test::mock_app();
+        assert_eq!(
+            start_ai_download(app.handle().clone()).await,
+            Err(LocalAiError::Managed {
+                refusal: ManagedAiRefusal::AiOff
+            })
+        );
     }
 
     #[test]

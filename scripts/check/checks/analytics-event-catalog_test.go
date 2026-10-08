@@ -38,11 +38,15 @@ func TestRunAnalyticsEventCatalog_EverySentEventIsDocumented(t *testing.T) {
 		`void trackEvent('pane_navigated', { volume_kind: kind })`)
 	writeEventCatalogFile(t, tmp, "crates/cmdr-smb/src/volume/mod.rs",
 		`vol.inner.host.analytics().record("smb_connected", &[]);`)
+	// rustfmt breaks a long chain before `.record`.
+	writeEventCatalogFile(t, tmp, "crates/cmdr-s3/src/volume/mod.rs",
+		"host.analytics()\n        .record(\"s3_connected\", &[(\"provider\", kind)]);")
 	writeCatalog(t,
 		tmp,
 		"`app_launched` (backend, `lib.rs`): no props.",
 		"`pane_navigated` (frontend): `volume_kind`.",
 		"`smb_connected` (backend): no host props.",
+		"`s3_connected` (backend): `provider`.",
 	)
 
 	result, err := RunAnalyticsEventCatalog(&CheckContext{RootDir: tmp})
@@ -52,8 +56,8 @@ func TestRunAnalyticsEventCatalog_EverySentEventIsDocumented(t *testing.T) {
 	if result.Code != ResultSuccess {
 		t.Errorf("expected success, got code %d: %s", result.Code, result.Message)
 	}
-	if !strings.Contains(result.Message, "3 PostHog events") {
-		t.Errorf("expected all three events counted, got: %s", result.Message)
+	if !strings.Contains(result.Message, "4 PostHog events") {
+		t.Errorf("expected all four events counted, got: %s", result.Message)
 	}
 }
 

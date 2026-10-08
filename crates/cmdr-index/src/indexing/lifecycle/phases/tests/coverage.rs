@@ -132,12 +132,65 @@ fn a_changed_exclusion_fingerprint_rebuilds_a_phased_index() {
 
     assert_eq!(
         drive.meta(crate::indexing::store::EXCLUSION_POLICY_KEY).as_deref(),
-        Some(crate::indexing::scanner::exclusion_policy_fingerprint().as_str()),
+        Some(
+            crate::indexing::scanner::exclusion_policy_fingerprint(
+                crate::indexing::scanner::ExclusionTier::MountRooted
+            )
+            .as_str()
+        ),
         "the rebuild re-stamps, so coverage answers mean something again"
     );
     assert!(
         drive.frontier(&drive.path("")).is_empty(),
         "and the rebuilt index converges"
+    );
+}
+
+/// ❗ A COMPLETED index built under an older policy is rebuilt, and the rebuild
+/// re-stamps, so the next launch reads the index as current and resumes
+/// it. A rebuild that didn't re-stamp would throw the index away on every launch.
+///
+/// The stamp and the launch's check both take the tier from the volume's own path
+/// space, so this drive's mount-rooted run and the boot disk's run the same code.
+#[test]
+fn a_completed_index_under_an_older_policy_is_rebuilt_and_re_stamped() {
+    let drive = Drive::new(
+        "phased-fingerprint-once",
+        |root| {
+            std::fs::create_dir_all(root.join("kept")).expect("dirs");
+        },
+        &[],
+    );
+    drive.start();
+    drive.wait_for_the_machine();
+    assert!(drive.meta("scan_completed_at").is_some(), "precondition: it completed");
+
+    drive.stop();
+    drive.plant_a_ghost("kept", "before-the-rebuild.txt");
+    {
+        let conn = IndexStore::open_write_connection(&drive.db_path()).expect("write connection");
+        IndexStore::update_meta(&conn, crate::indexing::store::EXCLUSION_POLICY_KEY, "some-older-policy")
+            .expect("stamp an older policy");
+    }
+    drive.start();
+    drive.wait_for_the_machine();
+
+    assert!(
+        !drive.ghost_survived("kept", "before-the-rebuild.txt"),
+        "a completed index with a stale stamp is thrown away and rebuilt"
+    );
+    let tier = crate::indexing::scanner::ExclusionTier::MountRooted;
+    assert_eq!(
+        drive.meta(crate::indexing::store::EXCLUSION_POLICY_KEY).as_deref(),
+        Some(crate::indexing::scanner::exclusion_policy_fingerprint(tier).as_str()),
+        "the rebuild re-stamps"
+    );
+    assert!(drive.meta("scan_completed_at").is_some(), "and completes");
+    let conn = IndexStore::open_read_connection(&drive.db_path()).expect("read connection");
+    assert!(
+        !crate::indexing::scanner::index_predates_exclusion_policy(&conn, tier),
+        "❌ so the next launch's check reads it as current and doesn't rebuild again \
+         (`launch_route`'s own tests pin that a current stamp takes the normal route)"
     );
 }
 

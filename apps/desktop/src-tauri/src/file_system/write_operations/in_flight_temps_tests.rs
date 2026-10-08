@@ -1,11 +1,12 @@
 //! Tests for the persisted in-flight temp ledger: what a launch sweeps, what it
 //! defers, and what it refuses.
 //!
-//! Every cell holds a [`test_support`] store guard for its WHOLE body — the
-//! ledger is one process-wide singleton, and the guard is what keeps two cells
-//! from writing into each other's log. Volume-borne cells also use a unique
-//! volume ID for the same reason: the arrival listener is installed once per
-//! process and stays for the rest of the test binary.
+//! Every cell records into a [`Ledger`] of its own, so its log and its tally
+//! hold its own records and nothing else. A crash is the recording ledger being
+//! dropped, and the next launch is a fresh ledger replaying the same data dir.
+//! Volume-borne cells still use a unique volume ID: the volume registry is one
+//! per process, and a shared ID would let one cell's registration wake another
+//! cell's arrival listener.
 
 use super::*;
 use crate::file_system::volume::manager::get_volume_manager;
@@ -22,17 +23,18 @@ use std::time::Duration;
 /// Generous: it's a panic-on-timeout ceiling, not a delay anything pays.
 const ARRIVAL_WAIT: Duration = Duration::from_secs(5);
 
-fn state() -> Arc<WriteOperationState> {
-    Arc::new(WriteOperationState::new(Duration::from_millis(50)))
+fn state(ledger: &Ledger) -> Arc<WriteOperationState> {
+    Arc::new(WriteOperationState::new(Duration::from_millis(50)).with_in_flight_ledger(ledger.clone()))
 }
 
 /// A state that names `volume_id` as its destination, which is what a real
 /// volume copy or move builds and what tells the ledger where a staged partial
 /// lives.
-fn state_writing_to(volume_id: &str) -> Arc<WriteOperationState> {
+fn state_writing_to(ledger: &Ledger, volume_id: &str) -> Arc<WriteOperationState> {
     Arc::new(
         WriteOperationState::new(Duration::from_millis(50))
-            .with_journal_volumes("some-source".to_string(), volume_id.to_string()),
+            .with_journal_volumes("some-source".to_string(), volume_id.to_string())
+            .with_in_flight_ledger(ledger.clone()),
     )
 }
 
@@ -46,22 +48,23 @@ fn a_recorded_orphan_is_swept_at_startup_however_fresh_it_is() {
     let dir = TestDir::new("in_flight_temps_startup_sweep");
     let data_dir = dir.join("data");
     std::fs::create_dir_all(&data_dir).unwrap();
-    let store = test_support::use_store_in(&data_dir);
+    let previous_run = Ledger::recording_in(&data_dir);
 
     // A previous run: it registered a partial and then died.
-    let state = state();
+    let state = state(&previous_run);
     let temp = StagingTemp::mint(&dir.join("holiday.raw"), None);
     std::fs::write(temp.path(), b"half a photo").unwrap();
     register(&state, temp.path(), Some(TempHome::LocalFs));
     let orphan = temp.path().to_path_buf();
     assert!(orphan.exists(), "the fixture partial must be on disk");
     // The process is gone: only the file in the data dir remembers it.
-    store.simulate_process_exit();
+    drop(previous_run);
 
     // Joining the sweep is what keeps this honest. It runs off the startup
     // thread (a partial can live on a dead mount), and a deadline racing it
     // would fail on load rather than on a real break.
-    let tally = init_and_sweep(&data_dir).wait();
+    let next_run = Ledger::for_test();
+    let tally = next_run.launch_in(&data_dir).wait();
 
     assert!(
         !orphan.exists(),
@@ -69,7 +72,7 @@ fn a_recorded_orphan_is_swept_at_startup_however_fresh_it_is() {
     );
     assert_eq!(tally.swept, 1, "and the sweep must say so: {tally:?}");
     assert!(
-        !test_support::live_paths().contains(&orphan),
+        !next_run.live_paths().contains(&orphan),
         "and the new session must not start with the swept path in flight"
     );
     assert!(
@@ -87,7 +90,7 @@ async fn a_recorded_partial_on_a_volume_is_swept_through_that_volume() {
     let dir = TestDir::new("in_flight_temps_volume_sweep");
     let data_dir = dir.join("data");
     std::fs::create_dir_all(&data_dir).unwrap();
-    let store = test_support::use_store_in(&data_dir);
+    let previous_run = Ledger::recording_in(&data_dir);
 
     let volume_id = "in-flight-temps-test-nas-swept";
     let volume = Arc::new(InMemoryVolume::new("nas"));
@@ -95,11 +98,12 @@ async fn a_recorded_partial_on_a_volume_is_swept_through_that_volume() {
     volume.create_file(&orphan, b"half a photo").await.unwrap();
     let _registration = TestVolumeRegistration::install(volume_id, Arc::clone(&volume) as Arc<dyn Volume>);
 
-    let state = state_writing_to(volume_id);
+    let state = state_writing_to(&previous_run, volume_id);
     register(&state, &orphan, Some(TempHome::Volume(volume_id)));
-    store.simulate_process_exit();
+    drop(previous_run);
 
-    let tally = init_and_sweep(&data_dir).wait();
+    let next_run = Ledger::for_test();
+    let tally = next_run.launch_in(&data_dir).wait();
 
     assert!(
         !volume.exists(&orphan).await,
@@ -117,15 +121,16 @@ fn a_record_whose_volume_isnt_reachable_survives_for_the_next_launch() {
     let dir = TestDir::new("in_flight_temps_deferred");
     let data_dir = dir.join("data");
     std::fs::create_dir_all(&data_dir).unwrap();
-    let store = test_support::use_store_in(&data_dir);
+    let previous_run = Ledger::recording_in(&data_dir);
 
     let volume_id = "in-flight-temps-test-nas-unplugged";
     let orphan = PathBuf::from("/photos/holiday.raw.cmdr-tmp-7777");
-    let state = state_writing_to(volume_id);
+    let state = state_writing_to(&previous_run, volume_id);
     register(&state, &orphan, Some(TempHome::Volume(volume_id)));
-    store.simulate_process_exit();
+    drop(previous_run);
 
-    let tally = init_and_sweep(&data_dir).wait();
+    let next_run = Ledger::for_test();
+    let tally = next_run.launch_in(&data_dir).wait();
 
     assert_eq!(
         tally,
@@ -153,16 +158,17 @@ async fn a_deferred_record_is_swept_the_moment_its_volume_arrives() {
     let dir = TestDir::new("in_flight_temps_arrival");
     let data_dir = dir.join("data");
     std::fs::create_dir_all(&data_dir).unwrap();
-    let store = test_support::use_store_in(&data_dir);
+    let previous_run = Ledger::recording_in(&data_dir);
 
     let volume_id = "in-flight-temps-test-nas-late";
     let orphan = PathBuf::from("/photos/holiday.raw.cmdr-tmp-8888");
-    let state = state_writing_to(volume_id);
+    let state = state_writing_to(&previous_run, volume_id);
     register(&state, &orphan, Some(TempHome::Volume(volume_id)));
-    store.simulate_process_exit();
+    drop(previous_run);
 
     // Launch with the share still away: the record is held, not acted on.
-    let tally = init_and_sweep(&data_dir).wait();
+    let next_run = Ledger::for_test();
+    let tally = next_run.launch_in(&data_dir).wait();
     assert_eq!(tally.deferred, 1, "the fixture must actually defer: {tally:?}");
 
     // The user connects it.
@@ -171,7 +177,7 @@ async fn a_deferred_record_is_swept_the_moment_its_volume_arrives() {
     let _registration = TestVolumeRegistration::install(volume_id, Arc::clone(&volume) as Arc<dyn Volume>);
 
     wait_until_async(ARRIVAL_WAIT, "the arrived volume's partial to be swept", || {
-        !test_support::live_paths().contains(&orphan)
+        !next_run.live_paths().contains(&orphan)
     })
     .await;
     assert!(
@@ -188,7 +194,7 @@ async fn a_delete_the_volume_refuses_leaves_the_record_to_retry() {
     let dir = TestDir::new("in_flight_temps_refused_delete");
     let data_dir = dir.join("data");
     std::fs::create_dir_all(&data_dir).unwrap();
-    let store = test_support::use_store_in(&data_dir);
+    let previous_run = Ledger::recording_in(&data_dir);
 
     let volume_id = "in-flight-temps-test-nas-blip";
     let orphan = PathBuf::from("/photos/holiday.raw.cmdr-tmp-9999");
@@ -196,11 +202,12 @@ async fn a_delete_the_volume_refuses_leaves_the_record_to_retry() {
     volume.create_file(&orphan, b"half a photo").await.unwrap();
     let _registration = TestVolumeRegistration::install(volume_id, Arc::clone(&volume) as Arc<dyn Volume>);
 
-    let state = state_writing_to(volume_id);
+    let state = state_writing_to(&previous_run, volume_id);
     register(&state, &orphan, Some(TempHome::Volume(volume_id)));
-    store.simulate_process_exit();
+    drop(previous_run);
 
-    let tally = init_and_sweep(&data_dir).wait();
+    let next_run = Ledger::for_test();
+    let tally = next_run.launch_in(&data_dir).wait();
 
     assert_eq!(tally.swept, 0, "nothing was removed: {tally:?}");
     assert_eq!(tally.deferred, 1, "so the record has to be waiting again: {tally:?}");
@@ -230,9 +237,9 @@ fn a_bare_path_line_from_an_older_build_still_sweeps_the_local_file() {
         format!("+{}\n", serde_json::to_string(&orphan).unwrap()),
     )
     .unwrap();
-    let _store = test_support::take_store();
+    let next_run = Ledger::for_test();
 
-    let tally = init_and_sweep(&data_dir).wait();
+    let tally = next_run.launch_in(&data_dir).wait();
 
     assert!(!orphan.exists(), "an old bare-path record must still be swept");
     assert_eq!(tally.swept, 1, "{tally:?}");
@@ -245,19 +252,17 @@ fn a_local_record_stays_a_bare_path_on_disk() {
     let dir = TestDir::new("in_flight_temps_local_shape");
     let data_dir = dir.join("data");
     std::fs::create_dir_all(&data_dir).unwrap();
-    let _store = test_support::use_store_in(&data_dir);
+    let ledger = Ledger::recording_in(&data_dir);
 
-    let state = state();
+    let state = state(&ledger);
     let temp = dir.join("holiday.raw.cmdr-tmp-2222");
     register(&state, &temp, Some(TempHome::LocalFs));
 
-    // The LINE, ❌ not the whole file: a concurrent transfer test staging a
-    // write records into this same log, so an equality check here is an
-    // assertion about the rest of the suite.
     let written = std::fs::read_to_string(data_dir.join(STORE_FILENAME)).unwrap();
-    assert!(
-        written.contains(&format!("+{}\n", serde_json::to_string(&temp).unwrap())),
-        "a local record has to stay the bare path an older build wrote; got {written}"
+    assert_eq!(
+        written,
+        format!("+{}\n", serde_json::to_string(&temp).unwrap()),
+        "a local record has to stay the bare path an older build wrote"
     );
 }
 
@@ -271,9 +276,9 @@ fn a_partial_with_no_named_path_space_is_kept_in_memory_but_not_persisted() {
     let dir = TestDir::new("in_flight_temps_unnamed_home");
     let data_dir = dir.join("data");
     std::fs::create_dir_all(&data_dir).unwrap();
-    let _store = test_support::use_store_in(&data_dir);
+    let ledger = Ledger::recording_in(&data_dir);
 
-    let state = state();
+    let state = state(&ledger);
     let temp = PathBuf::from("/photos/holiday.raw.cmdr-tmp-3333");
     register(&state, &temp, None);
 
@@ -282,16 +287,12 @@ fn a_partial_with_no_named_path_space_is_kept_in_memory_but_not_persisted() {
         "the operation's own ledger still has to find it"
     );
     assert!(
-        !test_support::live_paths().contains(&temp),
+        ledger.live_paths().is_empty(),
         "but nothing may be persisted about a path whose space we can't name"
     );
-    // About THIS path, ❌ never about the whole log: the store is process-wide,
-    // and any concurrent transfer test that stages a write records into it. An
-    // emptiness check here is an assertion about the rest of the suite.
-    assert!(
-        !std::fs::read_to_string(data_dir.join(STORE_FILENAME))
-            .unwrap()
-            .contains("holiday.raw.cmdr-tmp-3333"),
+    assert_eq!(
+        std::fs::read_to_string(data_dir.join(STORE_FILENAME)).unwrap(),
+        "",
         "and nothing about it may reach the log"
     );
 }
@@ -304,9 +305,9 @@ fn a_landed_temp_is_retired_from_the_log() {
     let dir = TestDir::new("in_flight_temps_retired");
     let data_dir = dir.join("data");
     std::fs::create_dir_all(&data_dir).unwrap();
-    let _store = test_support::use_store_in(&data_dir);
+    let ledger = Ledger::recording_in(&data_dir);
 
-    let state = state();
+    let state = state(&ledger);
     let temp = dir.join("holiday.raw.cmdr-tmp-1234");
     register(&state, &temp, Some(TempHome::LocalFs));
     deregister(&state, &temp, Some(TempHome::LocalFs));
@@ -328,9 +329,9 @@ fn compaction_shrinks_the_log_without_forgetting_what_is_still_in_flight() {
     let data_dir = dir.join("data");
     std::fs::create_dir_all(&data_dir).unwrap();
     let log_path = data_dir.join(STORE_FILENAME);
-    let _store = test_support::use_store_in(&data_dir);
+    let ledger = Ledger::recording_in(&data_dir);
 
-    let state = state();
+    let state = state(&ledger);
     let long_lived = dir.join("a-big-download.iso.cmdr-tmp-0000");
     register(&state, &long_lived, Some(TempHome::LocalFs));
 
@@ -369,20 +370,21 @@ fn compaction_keeps_the_records_waiting_for_a_volume() {
     let data_dir = dir.join("data");
     std::fs::create_dir_all(&data_dir).unwrap();
     let log_path = data_dir.join(STORE_FILENAME);
-    let store = test_support::use_store_in(&data_dir);
+    let previous_run = Ledger::recording_in(&data_dir);
 
     let volume_id = "in-flight-temps-test-nas-compacted";
     let waiting = PathBuf::from("/photos/holiday.raw.cmdr-tmp-5555");
     register(
-        &state_writing_to(volume_id),
+        &state_writing_to(&previous_run, volume_id),
         &waiting,
         Some(TempHome::Volume(volume_id)),
     );
-    store.simulate_process_exit();
-    init_and_sweep(&data_dir).wait();
+    drop(previous_run);
+    let next_run = Ledger::for_test();
+    next_run.launch_in(&data_dir).wait();
 
     // A local copy in the new session churns the log past compaction.
-    let state = state();
+    let state = state(&next_run);
     for i in 0..400 {
         let churn = dir.join(format!("small-file-{i:04}.txt.cmdr-tmp-{i:04}"));
         register(&state, &churn, Some(TempHome::LocalFs));
@@ -428,11 +430,11 @@ fn a_recorded_path_that_is_already_gone_is_counted_not_swallowed() {
         format!("+{}\n", serde_json::to_string(&gone).unwrap()),
     )
     .unwrap();
-    let _store = test_support::take_store();
+    let next_run = Ledger::for_test();
 
     // Joining also keeps the sweep from outliving `dir`, which would leave
     // it walking a directory `TestDir` is deleting.
-    let tally = init_and_sweep(&data_dir).wait();
+    let tally = next_run.launch_in(&data_dir).wait();
 
     assert_eq!(
         tally,
@@ -443,7 +445,7 @@ fn a_recorded_path_that_is_already_gone_is_counted_not_swallowed() {
         "the record has to land in exactly one counter: {tally:?}"
     );
     assert!(
-        !test_support::live_paths().contains(&gone),
+        !next_run.live_paths().contains(&gone),
         "a record whose file is already gone must not come back as in flight"
     );
 }
@@ -455,7 +457,7 @@ async fn a_volume_path_that_is_already_gone_is_counted_not_swallowed() {
     let dir = TestDir::new("in_flight_temps_volume_already_gone");
     let data_dir = dir.join("data");
     std::fs::create_dir_all(&data_dir).unwrap();
-    let store = test_support::use_store_in(&data_dir);
+    let previous_run = Ledger::recording_in(&data_dir);
 
     let volume_id = "in-flight-temps-test-nas-landed";
     let volume = Arc::new(InMemoryVolume::new("nas"));
@@ -464,10 +466,15 @@ async fn a_volume_path_that_is_already_gone_is_counted_not_swallowed() {
 
     // Recorded, then it landed under its real name: the file was never there
     // by the time the next launch looked.
-    register(&state_writing_to(volume_id), &landed, Some(TempHome::Volume(volume_id)));
-    store.simulate_process_exit();
+    register(
+        &state_writing_to(&previous_run, volume_id),
+        &landed,
+        Some(TempHome::Volume(volume_id)),
+    );
+    drop(previous_run);
 
-    let tally = init_and_sweep(&data_dir).wait();
+    let next_run = Ledger::for_test();
+    let tally = next_run.launch_in(&data_dir).wait();
 
     assert_eq!(
         tally,
@@ -505,9 +512,9 @@ fn the_sweep_refuses_a_recorded_path_that_isnt_one_of_our_scratch_files() {
         ),
     )
     .unwrap();
-    let _store = test_support::take_store();
+    let next_run = Ledger::for_test();
 
-    let tally = init_and_sweep(&data_dir).wait();
+    let tally = next_run.launch_in(&data_dir).wait();
 
     assert!(
         !real_temp.exists(),
@@ -517,18 +524,21 @@ fn the_sweep_refuses_a_recorded_path_that_isnt_one_of_our_scratch_files() {
         precious.exists(),
         "the sweep must only ever remove files carrying our scratch marker"
     );
-    // Both records retired says the sweep VISITED each one and decided, which is
-    // what separates "it refused `taxes.pdf`" from "it never got that far".
-    // ❌ Not the tally's counts: the store is process-wide, so `tally.swept` is
-    // an assertion about every other test staging a write at the same moment.
-    let replayed = read_recorded(&data_dir.join(STORE_FILENAME));
-    assert!(
-        !replayed.iter().any(|record| record.path() == precious),
-        "the refused record is settled, not left to be retried forever: {tally:?}"
+    // Both counted, and both retired, says the sweep VISITED each one and
+    // decided, which is what separates "it refused `taxes.pdf`" from "it never
+    // got that far".
+    assert_eq!(
+        tally,
+        SweepTally {
+            swept: 1,
+            left_alone: 1,
+            ..SweepTally::default()
+        },
+        "one removed, one refused"
     );
     assert!(
-        !replayed.iter().any(|record| record.path() == real_temp),
-        "and so is the one it removed: {tally:?}"
+        read_recorded(&data_dir.join(STORE_FILENAME)).is_empty(),
+        "and neither is left to be retried forever"
     );
 }
 
@@ -539,7 +549,7 @@ async fn the_sweep_refuses_a_volume_path_that_isnt_one_of_our_scratch_files() {
     let dir = TestDir::new("in_flight_temps_volume_not_ours");
     let data_dir = dir.join("data");
     std::fs::create_dir_all(&data_dir).unwrap();
-    let store = test_support::use_store_in(&data_dir);
+    let previous_run = Ledger::recording_in(&data_dir);
 
     let volume_id = "in-flight-temps-test-nas-tampered";
     let volume = Arc::new(InMemoryVolume::new("nas"));
@@ -548,26 +558,32 @@ async fn the_sweep_refuses_a_volume_path_that_isnt_one_of_our_scratch_files() {
     let _registration = TestVolumeRegistration::install(volume_id, Arc::clone(&volume) as Arc<dyn Volume>);
 
     register(
-        &state_writing_to(volume_id),
+        &state_writing_to(&previous_run, volume_id),
         &precious,
         Some(TempHome::Volume(volume_id)),
     );
-    store.simulate_process_exit();
+    drop(previous_run);
 
-    let tally = init_and_sweep(&data_dir).wait();
+    let next_run = Ledger::for_test();
+    let tally = next_run.launch_in(&data_dir).wait();
 
     assert!(
         volume.exists(&precious).await,
         "the sweep must only ever remove files carrying our scratch marker"
     );
-    // The record retired says the sweep reached it and refused, rather than
-    // never arriving. ❌ Not `tally.left_alone`, which counts every other
-    // concurrent test's records too (the store is one process-wide singleton).
+    // Counted and retired says the sweep reached it and refused, rather than
+    // never arriving.
+    assert_eq!(
+        tally,
+        SweepTally {
+            left_alone: 1,
+            ..SweepTally::default()
+        },
+        "the refusal is counted"
+    );
     assert!(
-        !read_recorded(&data_dir.join(STORE_FILENAME))
-            .iter()
-            .any(|record| record.path() == precious),
-        "the refused record is settled, not left to be retried forever: {tally:?}"
+        read_recorded(&data_dir.join(STORE_FILENAME)).is_empty(),
+        "and the refused record is settled, not left to be retried forever"
     );
 }
 
@@ -578,17 +594,17 @@ fn deregistering_clears_both_ledgers() {
     let dir = TestDir::new("in_flight_temps_both_ledgers");
     let data_dir = dir.join("data");
     std::fs::create_dir_all(&data_dir).unwrap();
-    let _store = test_support::use_store_in(&data_dir);
+    let ledger = Ledger::recording_in(&data_dir);
 
-    let state = state();
+    let state = state(&ledger);
     let temp = dir.join("notes.txt.cmdr-tmp-1234");
     register(&state, &temp, Some(TempHome::LocalFs));
     assert_eq!(state.in_flight_temps.lock_ignore_poison().len(), 1);
-    assert!(test_support::live_paths().contains(&temp));
+    assert_eq!(ledger.live_paths(), vec![temp.clone()]);
 
     deregister(&state, &temp, Some(TempHome::LocalFs));
     assert!(state.in_flight_temps.lock_ignore_poison().is_empty());
-    assert!(!test_support::live_paths().contains(&temp));
+    assert!(ledger.live_paths().is_empty());
     assert!(
         !read_recorded(&data_dir.join(STORE_FILENAME)).contains(&Record::Legacy(RecordedTemp::Local(temp))),
         "the log must replay as nothing in flight"
@@ -597,13 +613,15 @@ fn deregistering_clears_both_ledgers() {
 
 /// A state whose destination side is a removable drive rooted at `root`, the
 /// way every transfer the dialog starts onto a USB stick is built.
-fn state_writing_to_drive(volume_id: &str, root: &Path) -> Arc<WriteOperationState> {
+fn state_writing_to_drive(ledger: &Ledger, volume_id: &str, root: &Path) -> Arc<WriteOperationState> {
     use crate::file_system::write_operations::transfer_sides::{TransferSide, TransferSides};
     Arc::new(
-        WriteOperationState::new(Duration::from_millis(50)).with_sides(Some(TransferSides::new(
-            TransferSide::new("root".to_string(), "Macintosh HD".to_string(), PathBuf::from("/")),
-            TransferSide::new(volume_id.to_string(), "Fältkamera".to_string(), root.to_path_buf()),
-        ))),
+        WriteOperationState::new(Duration::from_millis(50))
+            .with_sides(Some(TransferSides::new(
+                TransferSide::new("root".to_string(), "Macintosh HD".to_string(), PathBuf::from("/")),
+                TransferSide::new(volume_id.to_string(), "Fältkamera".to_string(), root.to_path_buf()),
+            )))
+            .with_in_flight_ledger(ledger.clone()),
     )
 }
 
@@ -619,9 +637,9 @@ fn a_build_without_kinded_records_skips_them_rather_than_acting_on_them() {
     let dir = TestDir::new("in_flight_temps_old_reader");
     let data_dir = dir.join("data");
     std::fs::create_dir_all(&data_dir).unwrap();
-    let _store = test_support::use_store_in(&data_dir);
+    let ledger = Ledger::recording_in(&data_dir);
 
-    let state = state();
+    let state = state(&ledger);
     let aside = dir.join("notes.txt.cmdr-temp-1234");
     let survivor = dir.join("holiday.raw.cmdr-tmp-5678");
     track(
@@ -665,31 +683,32 @@ fn a_leftover_on_a_removable_drive_waits_for_that_drive_rather_than_being_forgot
     let dir = TestDir::new("in_flight_temps_drive_homed");
     let data_dir = dir.join("data");
     std::fs::create_dir_all(&data_dir).unwrap();
-    let store = test_support::use_store_in(&data_dir);
+    let previous_run = Ledger::recording_in(&data_dir);
 
     let volume_id = "in-flight-temps-test-stick-away";
     let drive_root = dir.join("Volumes").join("Faltkamera");
-    let state = state_writing_to_drive(volume_id, &drive_root);
+    let state = state_writing_to_drive(&previous_run, volume_id, &drive_root);
     let temp = drive_root.join("footage.mov.cmdr-tmp-2468");
     track(&state, ItemKind::Temp, &temp);
-    store.simulate_process_exit();
+    drop(previous_run);
 
     // The drive isn't plugged in, so nothing is registered for it.
-    let tally = init_and_sweep(&data_dir).wait();
+    let next_run = Ledger::for_test();
+    let tally = next_run.launch_in(&data_dir).wait();
 
-    // About THIS record, ❌ never the whole tally or the whole log: the store is
-    // one process-wide singleton and any concurrent transfer test records into
-    // it, so `tally.deferred` and `replayed.len()` are assertions about the rest
-    // of the suite.
-    assert!(
-        tally.swept == 0 && tally.already_gone == 0,
-        "a drive that isn't here decides nothing, rather than resolving against an empty mount point: {tally:?}"
+    assert_eq!(
+        tally,
+        SweepTally {
+            deferred: 1,
+            ..SweepTally::default()
+        },
+        "a drive that isn't here decides nothing, rather than resolving against an empty mount point"
     );
     let replayed = read_recorded(&data_dir.join(STORE_FILENAME));
-    let kept = replayed
-        .iter()
-        .find(|record| record.path() == Path::new("footage.mov.cmdr-tmp-2468"))
-        .unwrap_or_else(|| panic!("the record survives the launch: {replayed:?}"));
+    let [kept] = replayed.as_slice() else {
+        panic!("the record survives the launch, alone: {replayed:?}");
+    };
+    assert_eq!(kept.path(), Path::new("footage.mov.cmdr-tmp-2468"));
     assert_eq!(
         kept.volume_id(),
         Some(volume_id),
@@ -706,20 +725,19 @@ fn a_leftover_on_the_mac_stays_local_homed() {
     let dir = TestDir::new("in_flight_temps_mac_homed");
     let data_dir = dir.join("data");
     std::fs::create_dir_all(&data_dir).unwrap();
-    let _store = test_support::use_store_in(&data_dir);
+    let ledger = Ledger::recording_in(&data_dir);
 
     // The destination side is the boot volume, which is what a Mac-to-Mac copy
     // and a drive-to-Mac move both carry.
-    let state = state_writing_to_drive("root", Path::new("/"));
+    let state = state_writing_to_drive(&ledger, "root", Path::new("/"));
     let temp = dir.join("notes.txt.cmdr-tmp-1357");
     track(&state, ItemKind::Temp, &temp);
 
-    // By path, ❌ not by index into a log the rest of the suite also writes to.
     let replayed = read_recorded(&data_dir.join(STORE_FILENAME));
-    let recorded = replayed
-        .iter()
-        .find(|record| record.path() == temp)
-        .unwrap_or_else(|| panic!("the temp is recorded under its whole path: {replayed:?}"));
+    let [recorded] = replayed.as_slice() else {
+        panic!("the temp is recorded, alone: {replayed:?}");
+    };
+    assert_eq!(recorded.path(), temp, "under its whole path");
     assert_eq!(recorded.volume_id(), None, "nothing to wait for");
 }
 

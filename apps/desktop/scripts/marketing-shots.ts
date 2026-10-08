@@ -63,6 +63,13 @@ const outDir = outIdx >= 0 ? (process.argv.at(outIdx + 1) ?? '') : join(repoRoot
  */
 const dataDir = join(homedir(), 'Library', 'Application Support', 'com.veszelovszki.cmdr-shots')
 
+/**
+ * The shots instance's cache dir, passed as `CMDR_CACHE_DIR`. Its `drive-index/` holds the
+ * warm file index, out of Time Machine like production's (`config.rs` `drive_index_dir`).
+ */
+const cacheDir = join(homedir(), 'Library', 'Caches', 'com.veszelovszki.cmdr-shots')
+const driveIndexDir = join(cacheDir, 'drive-index')
+
 let appProc: ChildProcess | null = null
 
 function run(cmd: string, args: string[], opts: SpawnSyncOptions = {}) {
@@ -156,8 +163,10 @@ function pinRunSettings(): void {
   writeFileSync(settingsPath, `${JSON.stringify(settings, null, 2)}\n`)
 }
 
-/** The installed production app's data dir, which is where a warm index already exists. */
-const PROD_DATA_DIR = join(homedir(), 'Library', 'Application Support', 'com.veszelovszki.cmdr')
+/** Where the installed production app keeps its warm drive index. */
+const PROD_DRIVE_INDEX_DIR = join(homedir(), 'Library', 'Caches', 'com.veszelovszki.cmdr', 'drive-index')
+/** Where a production build older than the move to the cache dir still keeps it. */
+const PROD_LEGACY_INDEX_DIR = join(homedir(), 'Library', 'Application Support', 'com.veszelovszki.cmdr')
 
 /**
  * The boot disk's index file. `root` is the literal volume id the boot volume always
@@ -210,8 +219,12 @@ function lastScanAt(db: string): number {
  * fall through to a normal scan with a line saying so.
  */
 function cloneProdIndex(): void {
-  const source = join(PROD_DATA_DIR, ROOT_INDEX_DB)
-  const target = join(dataDir, ROOT_INDEX_DB)
+  const source =
+    [PROD_DRIVE_INDEX_DIR, PROD_LEGACY_INDEX_DIR]
+      .map((dir) => join(dir, ROOT_INDEX_DB))
+      .find((path) => existsSync(path)) ?? join(PROD_DRIVE_INDEX_DIR, ROOT_INDEX_DB)
+  const target = join(driveIndexDir, ROOT_INDEX_DB)
+  mkdirSync(driveIndexDir, { recursive: true })
   if (!existsSync(source)) {
     console.log(`${LOG} no production index at ${source}; the instance will scan the drive itself (~1 min).`)
     return
@@ -316,6 +329,7 @@ async function main(): Promise<void> {
       ...process.env,
       ...sharedEnv,
       CMDR_DATA_DIR: dataDir,
+      CMDR_CACHE_DIR: cacheDir,
       // Keeps a Keychain approval dialog from landing over a shot. Without E2E mode
       // the app would otherwise talk to the REAL macOS Keychain
       // (`secrets/mod.rs:103-120`), and this override is checked before that branch.

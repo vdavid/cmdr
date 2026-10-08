@@ -80,6 +80,14 @@
   "@updates.status.installing": {
     "sourceHash": "214ef12"
   },
+  "updates.status.managedOff": "A Cmdr frissítéseit a szervezeted kezeli.",
+  "@updates.status.managedOff": {
+    "sourceHash": "aa342dc"
+  },
+  "updates.status.heldByPolicy": "Megjelent a Cmdr {available}, de a szervezeted ezen a Macen legfeljebb ezt a verziót engedi: {ceiling}.",
+  "@updates.status.heldByPolicy": {
+    "sourceHash": "5c9b196"
+  },
   "updates.status.ready": "A v{next} frissítés kész. Az életbe léptetéshez indítsd újra.",
   "@updates.status.ready": {
     "sourceHash": "2c226ff"

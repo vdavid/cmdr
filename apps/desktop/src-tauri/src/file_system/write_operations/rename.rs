@@ -5,14 +5,17 @@
 //! timeout tiers (2 s validity/permission, 5 s rename). All the business logic
 //! lives here per "smart backend / thin frontend".
 //!
-//! - **Validation** (`check_rename_permission_for_volume`, `check_rename_validity_impl`)
-//!   is the snappy, UNMANAGED path: read-only, runs per-keystroke / on-commit,
-//!   never touches the operation manager.
+//! - **Validation** (`check_rename_permission_for_volume` here, and
+//!   `check_rename_validity_impl` in `rename/validity.rs`) is the snappy,
+//!   UNMANAGED path: read-only, runs per-keystroke / on-commit, never touches
+//!   the operation manager.
 //! - **The mutation** (`rename_managed`) is a managed instant op: it runs the
 //!   actual rename inside `manager::run_instant`, so it registers a `Running`
 //!   record + marks its volume busy (eject guard) for its sub-second duration,
 //!   yet still runs inline and returns its `Result` to the caller. It does NOT
-//!   reserve a lane or queue behind transfers (see `manager::run_instant`).
+//!   reserve a lane or queue behind transfers (see `manager::run_instant`). An
+//!   entry whose rename copies (`Volume::rename_work`) starts a background move
+//!   instead (`start_rename_as_move`).
 
 use std::path::{Path, PathBuf};
 
@@ -21,41 +24,19 @@ use super::look_alike::{NewEntry, place_new_entry};
 use super::manager::{self, OperationDescriptor, OperationSummaryText};
 use super::mutation_error::MutationError;
 use super::types::WriteOperationType;
-use crate::file_system::volume::Volume;
+use crate::file_system::volume::{RenameWork, Volume};
 use crate::operation_log::types::{Initiator, OpKind};
 use cmdr_archive::mutator::Changeset;
 
 mod bulk;
+mod validity;
 
-pub(crate) use bulk::{BulkRenameRow, start_bulk_rename};
-
-/// Result of a rename validity check.
-#[derive(Debug, Clone, serde::Serialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub(crate) struct RenameValidityResult {
-    /// Whether the new name is valid (passes filename validation).
-    pub valid: bool,
-    /// Validation error message, if any.
-    pub error: Option<crate::file_system::validation::ValidationError>,
-    /// Whether a conflict exists (a sibling with the same name).
-    pub has_conflict: bool,
-    /// If there's a conflict, whether it's a case-only rename of the same file (same inode).
-    pub is_case_only_rename: bool,
-    /// Conflicting file info, if any.
-    pub conflict: Option<ConflictFileInfo>,
-}
-
-/// Metadata about a conflicting sibling file.
-#[derive(Debug, Clone, serde::Serialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub(crate) struct ConflictFileInfo {
-    pub name: String,
-    /// In bytes.
-    pub size: u64,
-    /// Unix timestamp in seconds.
-    pub modified: Option<i64>,
-    pub is_directory: bool,
-}
+#[cfg(test)]
+pub(crate) use bulk::start_bulk_rename;
+pub(crate) use bulk::{BulkRenameRow, RenameStartError, start_renames};
+#[cfg(test)]
+pub(crate) use validity::RenameByMove;
+pub(crate) use validity::{RenameValidityResult, check_rename_validity_impl, same_local_file};
 
 /// Renames a file or directory as a managed instant op. When `force` is true,
 /// proceeds even if the destination exists.
@@ -174,7 +155,7 @@ async fn rename_managed_inner(
         to
     } else {
         match manager.get(&volume_id) {
-            Some(volume) => match rename_target(volume.as_ref(), &from, to, force).await {
+            Some(volume) => match rename_target(volume.as_ref(), &volume_id, &from, to, force).await {
                 Ok(target) => target,
                 Err(refusal) => return (Err(refusal), super::analytics::InstantTarget::Volume),
             },
@@ -182,6 +163,27 @@ async fn rename_managed_inner(
             None => to,
         }
     };
+    // ❗ An entry whose rename isn't one call here (an object store's folder or
+    // big file) never reaches `Volume::rename`: it starts a background move,
+    // with progress and cancel, and this answers once that has started, the
+    // way an in-zip rename does.
+    if !is_root && let Some(volume) = manager.get(&volume_id) {
+        match volume.rename_work(&from).await {
+            Ok(RenameWork::OneCall) => {}
+            Ok(RenameWork::CopyThenDelete) => {
+                return (
+                    start_rename_as_move(&from, &to, force, &volume_id, initiator).await,
+                    super::analytics::InstantTarget::Volume,
+                );
+            }
+            Err(error) => {
+                return (
+                    Err(MutationError::Volume { error }),
+                    super::analytics::InstantTarget::Volume,
+                );
+            }
+        }
+    }
     let descriptor = rename_descriptor(&from, &to, &volume_id);
     // Journal the rename as a single-item op under the REAL volume id. Snapshot the
     // source kind BEFORE the closure moves `from`/`to` and the rename fires: local
@@ -319,14 +321,67 @@ async fn rename_managed_inner(
     (result, super::analytics::InstantTarget::Volume)
 }
 
+/// Starts the background move a rename that copies runs as
+/// (`routing::start_rename_by_move`): `from` moves into `to`'s folder under
+/// `to`'s name. A confirmed replace (`force`) runs under Overwrite; anything
+/// else asks on a clash, which only a race can bring, since the name was
+/// checked free just above.
+async fn start_rename_as_move(
+    from: &Path,
+    to: &Path,
+    force: bool,
+    volume_id: &str,
+    initiator: Initiator,
+) -> Result<(), MutationError> {
+    let events = archive_edit::global_tauri_sink().ok_or_else(|| MutationError::Unexpected {
+        detail: "the operation manager isn't ready to start a move".to_string(),
+    })?;
+    let parent = to.parent().ok_or(MutationError::CantRenameVolumeRoot)?;
+    let config = super::types::VolumeCopyConfig {
+        conflict_resolution: if force {
+            super::types::ConflictResolution::Overwrite
+        } else {
+            super::types::ConflictResolution::Stop
+        },
+        ..super::types::VolumeCopyConfig::default()
+    };
+    super::routing::start_rename_by_move(
+        events,
+        volume_id.to_string(),
+        vec![(from.to_path_buf(), name_of(to))],
+        parent.display().to_string(),
+        config,
+        initiator,
+        None,
+    )
+    .await
+    .map(|started| {
+        log::info!(
+            target: "volume",
+            "rename of {} runs as move {} on '{volume_id}'",
+            from.display(),
+            started.operation_id
+        );
+    })
+    .map_err(|e| MutationError::Unexpected {
+        detail: format!("the move a rename runs as couldn't start: {e:?}"),
+    })
+}
+
 /// Where a volume rename of `from` to `to` really lands (`look_alike.rs`).
 ///
 /// A look-alike of `to` refuses a plain rename as the taken name it is. A
 /// rename the user confirmed (`force`) replaces the look-alike under ITS
 /// spelling, so the folder ends with one entry. `from` itself as the look-alike
 /// is a respell, which is free.
-async fn rename_target(volume: &dyn Volume, from: &Path, to: PathBuf, force: bool) -> Result<PathBuf, MutationError> {
-    match place_new_entry(volume, &to, Some(from)).await {
+async fn rename_target(
+    volume: &dyn Volume,
+    volume_id: &str,
+    from: &Path,
+    to: PathBuf,
+    force: bool,
+) -> Result<PathBuf, MutationError> {
+    match place_new_entry(volume, volume_id, &to, Some(from)).await {
         Ok(NewEntry::Free(target)) => Ok(target),
         Ok(NewEntry::Taken(entry)) if force => Ok(to.with_file_name(&entry.name)),
         Ok(NewEntry::Taken(_) | NewEntry::Ambiguous) => Err(MutationError::AlreadyExists { name: name_of(&to) }),
@@ -621,162 +676,6 @@ fn check_macos_flags(path: &Path) -> Result<(), MutationError> {
     }
 
     Ok(())
-}
-
-/// Validates a new filename and checks for conflicts in the same directory.
-/// Uses inode comparison to detect case-only renames (valid on case-insensitive
-/// APFS). When `volume_id` is not `"root"`, uses the Volume trait for conflict
-/// detection (needed for MTP and other non-local volumes).
-pub(crate) async fn check_rename_validity_impl(
-    dir: String,
-    old_name: String,
-    new_name: String,
-    volume_id: String,
-) -> RenameValidityResult {
-    use crate::file_system::validation::{validate_filename, validate_path_length};
-
-    let trimmed = new_name.trim();
-
-    // Validate filename
-    if let Err(error) = validate_filename(trimmed) {
-        return RenameValidityResult {
-            valid: false,
-            error: Some(error),
-            has_conflict: false,
-            is_case_only_rename: false,
-            conflict: None,
-        };
-    }
-
-    // Validate resulting path length
-    let new_path = PathBuf::from(&dir).join(trimmed);
-    if let Err(error) = validate_path_length(&new_path) {
-        return RenameValidityResult {
-            valid: false,
-            error: Some(error),
-            has_conflict: false,
-            is_case_only_rename: false,
-            conflict: None,
-        };
-    }
-
-    // Check for conflict: does a sibling with this name already exist?
-    let old_path = PathBuf::from(&dir).join(&old_name);
-
-    if volume_id != "root" {
-        // Non-local volume: use Volume trait for conflict detection
-        let conflict_info = check_sibling_conflict_via_volume(&volume_id, &old_path, &new_path).await;
-        RenameValidityResult {
-            valid: true,
-            error: None,
-            has_conflict: conflict_info.0,
-            // MTP is case-sensitive, no case-only rename ambiguity
-            is_case_only_rename: false,
-            conflict: conflict_info.1,
-        }
-    } else {
-        // Local filesystem: use symlink_metadata with inode comparison
-        let conflict_info = check_sibling_conflict(&old_path, &new_path);
-        RenameValidityResult {
-            valid: true,
-            error: None,
-            has_conflict: conflict_info.0,
-            is_case_only_rename: conflict_info.1,
-            conflict: conflict_info.2,
-        }
-    }
-}
-
-/// Checks if a file with `new_path` exists and whether it's the same inode as `old_path`
-/// (case-only rename on case-insensitive FS).
-fn check_sibling_conflict(old_path: &Path, new_path: &Path) -> (bool, bool, Option<ConflictFileInfo>) {
-    let new_meta = match std::fs::symlink_metadata(new_path) {
-        Ok(m) => m,
-        Err(_) => return (false, false, None), // No conflict
-    };
-
-    // Check if it's the same inode (case-only rename)
-    let is_same_inode = std::fs::symlink_metadata(old_path).is_ok_and(|old_meta| same_local_file(&old_meta, &new_meta));
-
-    let modified = new_meta
-        .modified()
-        .ok()
-        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
-        .map(|d| d.as_secs() as i64);
-
-    let conflict = ConflictFileInfo {
-        name: new_path
-            .file_name()
-            .map(|n| n.to_string_lossy().to_string())
-            .unwrap_or_default(),
-        size: new_meta.len(),
-        modified,
-        is_directory: new_meta.is_dir(),
-    };
-
-    (true, is_same_inode, Some(conflict))
-}
-
-/// Whether two `symlink_metadata` results name one local file (same device and
-/// inode), which is how a case-only rename on a case-insensitive volume shows up.
-#[cfg(unix)]
-pub(crate) fn same_local_file(left: &std::fs::Metadata, right: &std::fs::Metadata) -> bool {
-    use std::os::unix::fs::MetadataExt;
-    left.dev() == right.dev() && left.ino() == right.ino()
-}
-
-/// Without an inode to compare, two paths never count as one file, so a case-only
-/// rename is indistinguishable from a conflict here.
-#[cfg(not(unix))]
-pub(crate) fn same_local_file(_left: &std::fs::Metadata, _right: &std::fs::Metadata) -> bool {
-    false
-}
-
-/// Checks if a file with `new_path` exists on a non-local volume using the Volume trait's
-/// `get_metadata`, or under another Unicode spelling of its name (`look_alike.rs`), which
-/// the rename itself would refuse too. `old_path` as that look-alike is a respell, not a clash.
-async fn check_sibling_conflict_via_volume(
-    volume_id: &str,
-    old_path: &Path,
-    new_path: &Path,
-) -> (bool, Option<ConflictFileInfo>) {
-    // Plain `get`, not `resolve`: renaming INTO an archive is rejected upstream, so
-    // the target is always a normal sibling (incl. a `.zip` file), checked on its
-    // own volume — routing to the ArchiveVolume would mis-consult the zip's index.
-    let volume = match crate::file_system::volume::manager::get_volume_manager().get(volume_id) {
-        Some(v) => v,
-        None => return (false, None),
-    };
-
-    let entry = match volume.get_metadata(new_path).await {
-        Ok(e) => e,
-        Err(crate::file_system::VolumeError::NotFound(_)) => {
-            match place_new_entry(volume.as_ref(), new_path, Some(old_path)).await {
-                Ok(NewEntry::Taken(look_alike)) => *look_alike,
-                // Respelled onto a name the folder holds exactly, which the rename
-                // itself refuses (or, confirmed, replaces).
-                Ok(NewEntry::Free(spelled)) if spelled != new_path && spelled != old_path => {
-                    match volume.get_metadata(&spelled).await {
-                        Ok(entry) => entry,
-                        Err(_) => return (false, None),
-                    }
-                }
-                // No conflict: nothing holds the name in any spelling. Several
-                // look-alikes leave the rename itself to refuse, by name.
-                _ => return (false, None),
-            }
-        }
-        Err(_) => return (false, None), // Couldn't tell; the rename answers for itself
-    };
-
-    let conflict = ConflictFileInfo {
-        name: entry.name,
-        size: entry.size.unwrap_or(0),
-        modified: entry.modified_at.map(|t| t as i64),
-        is_directory: entry.is_directory,
-    };
-
-    (true, Some(conflict))
 }
 
 #[cfg(test)]

@@ -3,7 +3,7 @@
 //! `resource_tests.rs`.
 
 use crate::mcp::listing_errors::RecentListingError;
-use crate::mcp::pane_state::{MountErrorInfo, PaneFileEntry, PaneState, TabInfo};
+use crate::mcp::pane_state::{MountErrorInfo, PaneFileEntry, PaneListing, PaneState, TabInfo};
 use crate::mcp::resources::panes::{
     build_pane_yaml_with_options, format_file_compact, format_tab_compact, tags_marker,
 };
@@ -53,7 +53,7 @@ fn split_uri_with_query() {
 }
 
 #[test]
-fn recent_listing_errors_keep_pre_report_remote_identity_and_id_policy() {
+fn recent_listing_errors_redact_remote_references_and_identities_with_bare_tokens() {
     let errors = [
         RecentListingError {
             at_unix_ms: 1_789_000_000_001,
@@ -82,13 +82,13 @@ fn recent_listing_errors_keep_pre_report_remote_identity_and_id_policy() {
             "  - atUnixMs: 1789000000001\n",
             "    listingId: listing-private-server\n",
             "    volumeId: smb-nas-private-445-client-0123456789abcdef\n",
-            "    path: \"sftp://<userinfo>@files.example.test:2222/home/ada/report.pdf?token=secret#customer\"\n",
-            "    message: \"host=\\\"Client Nimbus\\\" share=\\\"Private Vault\\\" source=https://<ipv4>/acme?owner=<email>#customer\"\n",
+            "    path: \"sftp://<user>:<credential>@<host>:2222/<dir>/<dir>/<file>.pdf?<query>=<query>#<fragment>\"\n",
+            "    message: \"host=\\\"<host>\\\" share=\\\"<share>\\\" source=https://<ipv4-private>/<dir>?<query>=<query>#<fragment>\"\n",
             "  - atUnixMs: 1789000000002\n",
             "    listingId: listing-webdav\n",
             "    volumeId: manual-192-168-40-9-1445\n",
-            "    path: \"webdav://<host>.local/dav/ada/report.json?owner=<email>#customer\"\n",
-            "    message: \"Could not list \\\\\\\\<host>\\\\<share>\\\\Downloads\\\\<file>.pdf\"\n",
+            "    path: \"webdav://<host>.local/<dir>/<dir>/<file>.json?<query>=<query>#<fragment>\"\n",
+            "    message: \"Could not list \\\\\\\\<host>.local\\\\<share>\\\\<dir>\\\\<file>.pdf\"\n",
         )
     );
 }
@@ -96,10 +96,10 @@ fn recent_listing_errors_keep_pre_report_remote_identity_and_id_policy() {
 #[test]
 fn test_format_size() {
     assert_eq!(format_size(500), "500 B");
-    assert_eq!(format_size(1024), "1 KB");
-    assert_eq!(format_size(1536), "1.5 KB");
-    assert_eq!(format_size(1048576), "1 MB");
-    assert_eq!(format_size(1073741824), "1 GB");
+    assert_eq!(format_size(1024), "1 KiB");
+    assert_eq!(format_size(1536), "1.5 KiB");
+    assert_eq!(format_size(1048576), "1 MiB");
+    assert_eq!(format_size(1073741824), "1 GiB");
 }
 
 #[test]
@@ -130,7 +130,7 @@ fn test_format_file_compact() {
 
     // With details
     let formatted = format_file_compact(&file, 0, true, true, true);
-    assert_eq!(formatted, "i:0 f test.txt 1 KB 2024-01-15 [cur] [sel]");
+    assert_eq!(formatted, "i:0 f test.txt 1 KiB 2024-01-15 [cur] [sel]");
 
     // Directory
     let dir = PaneFileEntry {
@@ -177,7 +177,7 @@ fn test_format_file_compact() {
         ..Default::default()
     };
     let formatted = format_file_compact(&moving_dir, 2, false, false, true);
-    assert_eq!(formatted, "i:2 d target ~4 KB [size-unsettled]");
+    assert_eq!(formatted, "i:2 d target ~4 KiB [size-unsettled]");
     // The marker shows even without details (it's a status, not a detail).
     let formatted = format_file_compact(&moving_dir, 2, false, false, false);
     assert_eq!(formatted, "i:2 d target [size-unsettled]");
@@ -287,7 +287,9 @@ fn test_build_pane_yaml() {
             },
         ],
         type_to_jump: None,
+        quick_filter: None,
         mount_error: None,
+        listing: Default::default(),
     };
 
     let yaml = build_pane_yaml_with_options(&state, "  ", &StateOptions::default());
@@ -352,7 +354,9 @@ fn test_brief_cursor_detail_respects_loaded_window() {
         show_hidden: false,
         tabs: vec![],
         type_to_jump: None,
+        quick_filter: None,
         mount_error: None,
+        listing: Default::default(),
     };
 
     let yaml = build_pane_yaml_with_options(&state, "  ", &StateOptions::default());
@@ -466,21 +470,27 @@ fn incomplete_recursive_size_renders_as_a_lower_bound() {
         recursive_size_complete: Some(false),
         ..Default::default()
     };
-    assert_eq!(format_file_compact(&partial, 2, false, false, true), "i:2 d deps ≥4 KB");
+    assert_eq!(
+        format_file_compact(&partial, 2, false, false, true),
+        "i:2 d deps ≥4 KiB"
+    );
 
     // A covered subtree is an exact total, so it renders bare.
     let complete = PaneFileEntry {
         recursive_size_complete: Some(true),
         ..partial.clone()
     };
-    assert_eq!(format_file_compact(&complete, 2, false, false, true), "i:2 d deps 4 KB");
+    assert_eq!(
+        format_file_compact(&complete, 2, false, false, true),
+        "i:2 d deps 4 KiB"
+    );
 
     // Absent flag ⇒ treat as exact (fixtures, and volumes with no index).
     let unknown = PaneFileEntry {
         recursive_size_complete: None,
         ..partial.clone()
     };
-    assert_eq!(format_file_compact(&unknown, 2, false, false, true), "i:2 d deps 4 KB");
+    assert_eq!(format_file_compact(&unknown, 2, false, false, true), "i:2 d deps 4 KiB");
 }
 
 /// While a total is still moving it reads `~`, never `≥`.
@@ -503,7 +513,7 @@ fn a_moving_total_reads_approximate_rather_than_claiming_a_floor() {
     };
     assert_eq!(
         format_file_compact(&moving, 2, false, false, true),
-        "i:2 d deps ~4 KB [size-unsettled]"
+        "i:2 d deps ~4 KiB [size-unsettled]"
     );
 
     // Exact AND moving is still approximate: `~` is about motion, not coverage.
@@ -513,7 +523,7 @@ fn a_moving_total_reads_approximate_rather_than_claiming_a_floor() {
     };
     assert_eq!(
         format_file_compact(&moving_exact, 2, false, false, true),
-        "i:2 d deps ~4 KB [size-unsettled]"
+        "i:2 d deps ~4 KiB [size-unsettled]"
     );
 
     // Settled again: the floor is a claim we can stand behind, so it comes back.
@@ -521,7 +531,10 @@ fn a_moving_total_reads_approximate_rather_than_claiming_a_floor() {
         recursive_size_updating: None,
         ..moving.clone()
     };
-    assert_eq!(format_file_compact(&settled, 2, false, false, true), "i:2 d deps ≥4 KB");
+    assert_eq!(
+        format_file_compact(&settled, 2, false, false, true),
+        "i:2 d deps ≥4 KiB"
+    );
 }
 
 /// Incomplete AND nothing known below yet: `≥0 B` would be worse than silence,
@@ -557,7 +570,7 @@ fn a_stale_recursive_size_is_marked() {
     };
     assert_eq!(
         format_file_compact(&stale, 4, false, false, true),
-        "i:4 d old 2 KB [size-stale]"
+        "i:4 d old 2 KiB [size-stale]"
     );
     assert_eq!(
         format_file_compact(&stale, 4, false, false, false),
@@ -582,7 +595,7 @@ fn on_disk_size_shows_only_when_it_diverges_enough_to_matter() {
     };
     assert_eq!(
         format_file_compact(&sparse, 5, false, false, true),
-        "i:5 d sparse 4 GB (1 GB on disk)"
+        "i:5 d sparse 4 GiB (1 GiB on disk)"
     );
 
     // Same relative gap, but too small in absolute terms to be worth a word.
@@ -604,7 +617,7 @@ fn on_disk_size_shows_only_when_it_diverges_enough_to_matter() {
     };
     assert_eq!(
         format_file_compact(&small_relative_gap, 5, false, false, true),
-        "i:5 d sparse 10 GB"
+        "i:5 d sparse 10 GiB"
     );
 
     // A lower-bound total keeps its `≥`, and the on-disk figure follows it.
@@ -614,7 +627,7 @@ fn on_disk_size_shows_only_when_it_diverges_enough_to_matter() {
     };
     assert_eq!(
         format_file_compact(&partial_sparse, 5, false, false, true),
-        "i:5 d sparse ≥4 GB (1 GB on disk)"
+        "i:5 d sparse ≥4 GiB (1 GiB on disk)"
     );
 
     // Details off ⇒ no sizes at all, on-disk included.
@@ -666,6 +679,45 @@ fn a_pane_showing_a_mount_failure_reports_it() {
     assert!(!build_pane_yaml_with_options(&ok, "  ", &StateOptions::default()).contains("mountError"));
 }
 
+/// A pane whose folder's server stopped answering used to read as an empty
+/// folder: `totalFiles: 0`, no rows, no error. The `listing:` line tells an
+/// agent "stuck" (and "loading", and "error screen") from "empty", and stays out
+/// of the YAML when the listing is settled.
+#[test]
+fn a_pane_reports_a_stalled_listing_and_stays_quiet_when_settled() {
+    let stalled = PaneState {
+        path: "/Volumes/nas".to_string(),
+        view_mode: "brief".to_string(),
+        listing: PaneListing::Stalled,
+        ..Default::default()
+    };
+    let yaml = build_pane_yaml_with_options(&stalled, "  ", &StateOptions::default());
+    assert!(
+        yaml.contains("  listing: stalled"),
+        "expected a stalled listing line:\n{yaml}"
+    );
+
+    let error = PaneState {
+        listing: PaneListing::Error,
+        ..stalled.clone()
+    };
+    let yaml = build_pane_yaml_with_options(&error, "  ", &StateOptions::default());
+    assert!(
+        yaml.contains("  listing: error"),
+        "expected an error listing line:\n{yaml}"
+    );
+
+    let settled = PaneState {
+        listing: PaneListing::Settled,
+        ..stalled
+    };
+    let yaml = build_pane_yaml_with_options(&settled, "  ", &StateOptions::default());
+    assert!(
+        !yaml.contains("listing:"),
+        "a settled pane carries no listing line:\n{yaml}"
+    );
+}
+
 /// A search-results pane in the engine's ranked order reports `relevance:desc`,
 /// the vocabulary a result set ranked best-match-first is sorted by.
 ///
@@ -715,4 +767,24 @@ fn plain_pane_yaml_keeps_names() {
     };
     let yaml = build_pane_yaml_with_options(&state, "  ", &parse_state_options(None));
     assert!(yaml.contains("kapu méretek.jpg"), "{yaml}");
+}
+
+/// A filtered pane says so: its files and counts are the FILTERED rows, and an
+/// agent that doesn't know would read a hidden file as gone.
+#[test]
+fn a_filtered_pane_names_its_quick_filter() {
+    let filtered = PaneState {
+        path: "/tmp".to_string(),
+        quick_filter: Some("rep".to_string()),
+        ..PaneState::default()
+    };
+    let yaml = build_pane_yaml_with_options(&filtered, "  ", &StateOptions::default());
+    assert!(yaml.contains("quickFilter: \"rep\""), "{yaml}");
+
+    let plain = PaneState {
+        path: "/tmp".to_string(),
+        ..PaneState::default()
+    };
+    let yaml = build_pane_yaml_with_options(&plain, "  ", &StateOptions::default());
+    assert!(!yaml.contains("quickFilter"));
 }

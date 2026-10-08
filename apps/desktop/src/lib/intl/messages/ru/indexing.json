@@ -1,0 +1,290 @@
+{
+  "indexing.status.ariaLabel": "Состояние индексации диска",
+  "@indexing.status.ariaLabel": {
+    "sourceHash": "49edebb"
+  },
+  "indexing.drive.heading": "{name}",
+  "@indexing.drive.heading": {
+    "sourceHash": "5e291d7",
+    "sameAsSourceJustification": "Название бренда, стандартное обозначение или строка из подстановок; сохраняется без перевода."
+  },
+  "indexing.scan.label": "Индексация диска…",
+  "@indexing.scan.label": {
+    "sourceHash": "5b0433c"
+  },
+  "indexing.scan.counters": "{entriesText} {entries, plural, one {объект} few {объекта} many {объектов} other {объекта}}, {dirsText} {dirs, plural, one {папка} few {папки} many {папок} other {папки}}",
+  "@indexing.scan.counters": {
+    "sourceHash": "ecf47f2"
+  },
+  "indexing.scan.countersElapsed": "{counters} · {elapsed}",
+  "@indexing.scan.countersElapsed": {
+    "sourceHash": "aeb0b57",
+    "sameAsSourceJustification": "Название бренда, стандартное обозначение или строка из подстановок; сохраняется без перевода."
+  },
+  "indexing.scan.etaRough": "{eta} (примерно)",
+  "@indexing.scan.etaRough": {
+    "sourceHash": "6f92820"
+  },
+  "indexing.phase.priorityFolders": "Индексация часто используемых папок",
+  "@indexing.phase.priorityFolders": {
+    "sourceHash": "09dd19d"
+  },
+  "indexing.phase.home": "Индексация остального содержимого папки пользователя",
+  "@indexing.phase.home": {
+    "sourceHash": "8c31671"
+  },
+  "indexing.phase.wholeDrive": "Индексация остальной части диска",
+  "@indexing.phase.wholeDrive": {
+    "sourceHash": "1e1d606"
+  },
+  "indexing.run.firstIndex": "Первичная индексация",
+  "@indexing.run.firstIndex": {
+    "sourceHash": "4de62ce"
+  },
+  "indexing.run.firstScan": "Первое полное сканирование",
+  "@indexing.run.firstScan": {
+    "sourceHash": "bb804db"
+  },
+  "indexing.run.rescan": "Полное повторное сканирование",
+  "@indexing.run.rescan": {
+    "sourceHash": "f8cd103"
+  },
+  "indexing.run.changeCheck": "Проверка изменений",
+  "@indexing.run.changeCheck": {
+    "sourceHash": "9b43638"
+  },
+  "indexing.run.update": "Быстрое обновление",
+  "@indexing.run.update": {
+    "sourceHash": "97ac3e3"
+  },
+  "indexing.step.findFiles": "Найти файлы",
+  "@indexing.step.findFiles": {
+    "sourceHash": "15d12bc"
+  },
+  "indexing.step.saveFileList": "Сохранить список файлов",
+  "@indexing.step.saveFileList": {
+    "sourceHash": "92af072"
+  },
+  "indexing.step.updateFileList": "Обновить список файлов",
+  "@indexing.step.updateFileList": {
+    "sourceHash": "ef0a3d2"
+  },
+  "indexing.step.computeFolderSizes": "Вычислить размеры папок",
+  "@indexing.step.computeFolderSizes": {
+    "sourceHash": "65c86f6"
+  },
+  "indexing.step.catchUp": "Учесть недавние изменения",
+  "@indexing.step.catchUp": {
+    "sourceHash": "ef74b56"
+  },
+  "indexing.step.updateIndex": "Обновить индекс",
+  "@indexing.step.updateIndex": {
+    "sourceHash": "494e5b8"
+  },
+  "indexing.summary.found": "Найдено: {countText}",
+  "@indexing.summary.found": {
+    "sourceHash": "fe3038e"
+  },
+  "indexing.step.findFilesPhased": "Это первый проход, поэтому он займет время. Папки становятся доступны для поиска, как только Cmdr до них доберется.",
+  "@indexing.step.findFilesPhased": {
+    "sourceHash": "dbeb379"
+  },
+  "indexing.step.findFilesFirstScan": "Это первое сканирование, поэтому оно может занять время",
+  "@indexing.step.findFilesFirstScan": {
+    "sourceHash": "5e9ea25"
+  },
+  "indexing.step.findFilesChangeCheck": "Каждая папка сверяется с индексом. Размеры папок остаются видимыми во время проверки.",
+  "@indexing.step.findFilesChangeCheck": {
+    "sourceHash": "8c23f1f"
+  },
+  "indexing.step.statusDone": "Готово",
+  "@indexing.step.statusDone": {
+    "sourceHash": "11a6767"
+  },
+  "indexing.step.statusActive": "Выполняется",
+  "@indexing.step.statusActive": {
+    "sourceHash": "c1f88e9"
+  },
+  "indexing.step.statusPending": "Не начато",
+  "@indexing.step.statusPending": {
+    "sourceHash": "ba35f0c"
+  },
+  "indexing.aggregation.loading": "Загрузка папок…",
+  "@indexing.aggregation.loading": {
+    "sourceHash": "d0aa0da"
+  },
+  "indexing.aggregation.sorting": "Сортировка папок…",
+  "@indexing.aggregation.sorting": {
+    "sourceHash": "5c5a247"
+  },
+  "indexing.aggregation.computing": "Вычисление размеров папок…",
+  "@indexing.aggregation.computing": {
+    "sourceHash": "d693bcf"
+  },
+  "indexing.aggregation.writing": "Сохранение размеров папок…",
+  "@indexing.aggregation.writing": {
+    "sourceHash": "4cec9d8"
+  },
+  "indexing.replay.detail": "Обработано {eventsText} {events, plural, one {событие} few {события} many {событий} other {события}}",
+  "@indexing.replay.detail": {
+    "sourceHash": "1c2a534"
+  },
+  "indexing.progress.percentEta": "{percent} %, {eta}",
+  "@indexing.progress.percentEta": {
+    "sourceHash": "26b29da",
+    "sameAsSourceJustification": "Название бренда, стандартное обозначение или строка из подстановок; сохраняется без перевода."
+  },
+  "indexing.overall.eta": "Всего: {eta}",
+  "@indexing.overall.eta": {
+    "sourceHash": "a9a2ffc"
+  },
+  "indexing.overall.estimating": "Всего: оценка времени…",
+  "@indexing.overall.estimating": {
+    "sourceHash": "9dac967"
+  },
+  "indexing.eta.almostDone": "Почти готово",
+  "@indexing.eta.almostDone": {
+    "sourceHash": "506f162"
+  },
+  "indexing.eta.almostDoneMidSentence": "почти готово",
+  "@indexing.eta.almostDoneMidSentence": {
+    "sourceHash": "1d2fb48"
+  },
+  "indexing.eta.secondsLeft": "осталось {secondsText} с",
+  "@indexing.eta.secondsLeft": {
+    "sourceHash": "3a67288"
+  },
+  "indexing.eta.minutesLeft": "осталось {minutesText} мин",
+  "@indexing.eta.minutesLeft": {
+    "sourceHash": "bcb3615"
+  },
+  "indexing.eta.hoursMinutesLeft": "осталось {hours, plural, one {{hoursText} час} few {{hoursText} часа} many {{hoursText} часов} other {{hoursText} часа}} {minutes, plural, one {{minutesText} минута} few {{minutesText} минуты} many {{minutesText} минут} other {{minutesText} минуты}}",
+  "@indexing.eta.hoursMinutesLeft": {
+    "sourceHash": "8b2b4c0"
+  },
+  "indexing.eta.hoursLeft": "осталось {hours, plural, one {{hoursText} час} few {{hoursText} часа} many {{hoursText} часов} other {{hoursText} часа}}",
+  "@indexing.eta.hoursLeft": {
+    "sourceHash": "1d50900"
+  },
+  "indexing.rescan.staleIndex": "Индекс диска устарел: похоже, приложение давно не запускалось. Cmdr заново сканирует диск, чтобы учесть все изменения.",
+  "@indexing.rescan.staleIndex": {
+    "sourceHash": "cce4c74"
+  },
+  "indexing.rescan.journalGap": "Системный журнал изменений файлов не охватывает весь нужный период. Cmdr заново сканирует диск, чтобы восстановить индекс.",
+  "@indexing.rescan.journalGap": {
+    "sourceHash": "a697c86"
+  },
+  "indexing.rescan.replayOverflow": "С прошлого запуска изменилось очень много файлов. Cmdr заново сканирует диск, вместо того чтобы обрабатывать изменения по одному.",
+  "@indexing.rescan.replayOverflow": {
+    "sourceHash": "70c7481"
+  },
+  "indexing.rescan.watcherStartFailed": "Не удалось запустить наблюдение за изменениями файлов. Cmdr заново сканирует диск, чтобы индекс снова был актуальным.",
+  "@indexing.rescan.watcherStartFailed": {
+    "sourceHash": "07fb462"
+  },
+  "indexing.rescan.reconcilerBufferOverflow": "Из-за бурной активности файловой системы переполнился буфер событий. Cmdr заново сканирует диск, чтобы индекс оставался точным.",
+  "@indexing.rescan.reconcilerBufferOverflow": {
+    "sourceHash": "d6000e4"
+  },
+  "indexing.rescan.incompletePreviousScan": "Предыдущее сканирование не завершено (возможно, приложение было закрыто). Cmdr начинает сканирование заново.",
+  "@indexing.rescan.incompletePreviousScan": {
+    "sourceHash": "804084a"
+  },
+  "indexing.rescan.watcherChannelOverflow": "Всплеск активности файловой системы переполнил канал наблюдения за изменениями. Cmdr заново сканирует диск, чтобы индекс оставался точным.",
+  "@indexing.rescan.watcherChannelOverflow": {
+    "sourceHash": "b7ce086"
+  },
+  "indexing.rescan.fallback": "Cmdr заново сканирует диск, чтобы индекс оставался точным.",
+  "@indexing.rescan.fallback": {
+    "sourceHash": "cd99826"
+  },
+  "indexing.needsFreshScan.afterDisconnect": "Во время обновления индекса Cmdr диск {name} был отключен. Следующее сканирование начнется заново, чтобы размеры папок снова были точными.",
+  "@indexing.needsFreshScan.afterDisconnect": {
+    "sourceHash": "a90dbdf"
+  },
+  "indexing.memoryStop.paused": "Индексация дисков приостановлена: Cmdr использовал слишком много памяти. Размеры папок могут быть неактуальны до перезапуска Cmdr.",
+  "@indexing.memoryStop.paused": {
+    "sourceHash": "32d225a"
+  },
+  "indexing.firstConnect.title": "Индексировать {name}?",
+  "@indexing.firstConnect.title": {
+    "sourceHash": "0734a24"
+  },
+  "indexing.firstConnect.body": "Cmdr может индексировать этот диск в фоне, чтобы здесь работали размеры папок и поиск. Индексация выполняется только при подключенном диске.",
+  "@indexing.firstConnect.body": {
+    "sourceHash": "56ec1e5"
+  },
+  "indexing.firstConnect.enable": "Включить индексацию",
+  "@indexing.firstConnect.enable": {
+    "sourceHash": "3dc7ddf"
+  },
+  "indexing.firstConnect.silenceDrive": "Больше не спрашивать для этого диска",
+  "@indexing.firstConnect.silenceDrive": {
+    "sourceHash": "8d7a674"
+  },
+  "indexing.firstConnect.silenceAll": "Больше не спрашивать ни про какие диски",
+  "@indexing.firstConnect.silenceAll": {
+    "sourceHash": "0e10003"
+  },
+  "indexing.staleDialog.title": "Индекс этого диска может быть устаревшим",
+  "@indexing.staleDialog.title": {
+    "sourceHash": "7de163b"
+  },
+  "indexing.staleDialog.body": "Пока диск {name} был отключен, файлы на нем могли измениться. Размеры папок и результаты поиска могут быть немного неточными до повторного сканирования. Желтый индикатор рядом с диском всегда показывает такие случаи, а повторное сканирование все обновляет.",
+  "@indexing.staleDialog.body": {
+    "sourceHash": "c04519a"
+  },
+  "indexing.staleDialog.titlePhone": "Индекс этого телефона может быть устаревшим",
+  "@indexing.staleDialog.titlePhone": {
+    "sourceHash": "1f41e08"
+  },
+  "indexing.staleDialog.bodyPhone": "Устройство {name} не сообщает Cmdr об изменениях файлов, поэтому индекс обновляется только с учетом изменений, сделанных самим Cmdr. Изменения на телефоне, например новые фотографии, появятся в размерах папок и поиске после повторного сканирования. Желтый индикатор рядом с телефоном остается напоминанием.",
+  "@indexing.staleDialog.bodyPhone": {
+    "sourceHash": "2751fdf"
+  },
+  "indexing.staleDialog.neverShowAgain": "Больше не показывать",
+  "@indexing.staleDialog.neverShowAgain": {
+    "sourceHash": "f2d1044"
+  },
+  "indexing.staleDialog.close": "Закрыть",
+  "@indexing.staleDialog.close": {
+    "sourceHash": "7d9eb7a"
+  },
+  "indexing.enrich.label": "Индексация изображений",
+  "@indexing.enrich.label": {
+    "sourceHash": "442068b"
+  },
+  "indexing.enrich.progress": "{done, plural, one {Изображений обработано: {doneText} из {totalText}} few {Изображений обработано: {doneText} из {totalText}} many {Изображений обработано: {doneText} из {totalText}} other {Изображений обработано: {doneText} из {totalText}}}",
+  "@indexing.enrich.progress": {
+    "sourceHash": "b307416"
+  },
+  "indexing.enrich.rate": "{rateText}/мин",
+  "@indexing.enrich.rate": {
+    "sourceHash": "255f3b4"
+  },
+  "indexing.enrich.rateEta": "{rate} · {eta}",
+  "@indexing.enrich.rateEta": {
+    "sourceHash": "ac6a373",
+    "sameAsSourceJustification": "Название бренда, стандартное обозначение или строка из подстановок; сохраняется без перевода."
+  },
+  "indexing.enrich.pausedIdle": "Ждет паузы в вашей активности",
+  "@indexing.enrich.pausedIdle": {
+    "sourceHash": "ee9b2e9"
+  },
+  "indexing.enrich.pausedDisconnected": "Приостановлено, продолжится после повторного подключения",
+  "@indexing.enrich.pausedDisconnected": {
+    "sourceHash": "1483989"
+  },
+  "indexing.enrich.queued": "Индексация изображений начнется после сканирования диска",
+  "@indexing.enrich.queued": {
+    "sourceHash": "09e94f5"
+  },
+  "indexing.enrich.imagesBarLabel": "Проиндексировано изображений",
+  "@indexing.enrich.imagesBarLabel": {
+    "sourceHash": "f4b2ca5"
+  },
+  "indexing.enrich.bytesBarLabel": "Обработано данных изображений",
+  "@indexing.enrich.bytesBarLabel": {
+    "sourceHash": "58952a9"
+  }
+}

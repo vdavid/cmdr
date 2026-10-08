@@ -9,6 +9,7 @@
 import type { SizeFilter, SizeUnit, DateFilter } from '../query-filter-state.svelte'
 import type { FileSizeFormat } from '$lib/settings/types'
 import { tString } from '$lib/intl/messages.svelte'
+import { bytesLabel, unitLabel } from '$lib/units/byte-size'
 
 /** Display state of a single filter chip. */
 export interface FilterChipState {
@@ -18,21 +19,20 @@ export interface FilterChipState {
 }
 
 /**
- * Renders a `SizeUnit` for display, respecting the user's
- * `appearance.fileSizeFormat` setting. R3 B3: only the kilobyte cell varies
- * (SI = `kB`, binary = `KB`); bytes / megabytes / gigabytes are constant.
- * Default is `'binary'` so legacy callers that don't pass a format stay on the
- * raw enum-name rendering.
+ * Renders a `SizeUnit` for display: the kilobyte, megabyte, and gigabyte go
+ * through `$lib/units` (the UI language's symbols, IEC `KiB` or SI `kB` by the
+ * user's `appearance.fileSizeFormat`), so the chip and the popover can't
+ * disagree. The byte word takes the plural form for `count` ("> 500 bytes").
  */
-function renderUnit(unit: SizeUnit, format: FileSizeFormat = 'binary'): string {
-  if (unit === 'KB') return format === 'si' ? 'kB' : 'KB'
-  return unit
+function renderUnit(unit: SizeUnit, format: FileSizeFormat, count: number): string {
+  if (unit === 'B') return bytesLabel(count)
+  return unitLabel(unit === 'KB' ? 'kB' : unit, format)
 }
 
 /**
  * Returns the chip state for the Size filter. R3 B3: pipes the user's
  * `appearance.fileSizeFormat` through so the chip reads "100 kB" with SI
- * selected (matching the popover) instead of always showing "100 KB".
+ * selected (matching the popover) instead of always showing "100 KiB".
  */
 export function deriveSizeChip(
   sizeFilter: SizeFilter,
@@ -44,15 +44,15 @@ export function deriveSizeChip(
 ): FilterChipState {
   if (sizeFilter === 'any') return { configured: false, summary: '' }
 
-  const unitLabel = renderUnit(sizeUnit, format)
-  const unitMaxLabel = renderUnit(sizeUnitMax, format)
-
   // A configured filter requires at least the first value (or both, for "between"). The chip
   // stays unconfigured if the user changed the comparator to "gte" but hasn't typed a number yet.
   // `0` is a real bound (find empty files), so we accept `>= 0`; an empty input is `NaN` and
   // stays unconfigured.
   const minNumeric = parseFloat(sizeValue)
   const minOk = !isNaN(minNumeric) && minNumeric >= 0
+  const maxNumeric = parseFloat(sizeValueMax)
+  const minUnitLabel = renderUnit(sizeUnit, format, minNumeric)
+  const unitMaxLabel = renderUnit(sizeUnitMax, format, maxNumeric)
 
   // The three single-bound comparators differ only by their prefix glyph.
   const singleBoundPrefix: Partial<Record<SizeFilter, string>> = { gte: '>', lte: '<', eq: '=' }
@@ -61,12 +61,15 @@ export function deriveSizeChip(
     if (!minOk) return { configured: false, summary: '' }
     return {
       configured: true,
-      summary: tString('queryUi.filters.size.summary.single', { prefix, valueText: sizeValue.trim(), unit: unitLabel }),
+      summary: tString('queryUi.filters.size.summary.single', {
+        prefix,
+        valueText: sizeValue.trim(),
+        unit: minUnitLabel,
+      }),
     }
   }
 
   // between
-  const maxNumeric = parseFloat(sizeValueMax)
   const maxOk = !isNaN(maxNumeric) && maxNumeric >= 0
   if (!minOk && !maxOk) return { configured: false, summary: '' }
   if (minOk && !maxOk)
@@ -75,7 +78,7 @@ export function deriveSizeChip(
       summary: tString('queryUi.filters.size.summary.single', {
         prefix: '>',
         valueText: sizeValue.trim(),
-        unit: unitLabel,
+        unit: minUnitLabel,
       }),
     }
   if (!minOk && maxOk)
@@ -92,7 +95,7 @@ export function deriveSizeChip(
     configured: true,
     summary: tString('queryUi.filters.size.summary.range', {
       minText: sizeValue.trim(),
-      minUnit: unitLabel,
+      minUnit: minUnitLabel,
       maxText: sizeValueMax.trim(),
       maxUnit: unitMaxLabel,
     }),

@@ -127,6 +127,26 @@
   "@suggestedOps.approvalUnsure": {
     "sourceHash": "fba515a"
   },
+  "suggestedOps.refusal.label": "Varför det här inte startade",
+  "@suggestedOps.refusal.label": {
+    "sourceHash": "e176570"
+  },
+  "suggestedOps.refusal.nothingToRun.message": "Cmdr kunde inte läsa någon av de här filerna när du godkände, så inget kördes.",
+  "@suggestedOps.refusal.nothingToRun.message": {
+    "sourceHash": "3018819"
+  },
+  "suggestedOps.refusal.nothingToRun.suggestion": "Kontrollera att filerna finns kvar och godkänn det sedan igen, eller avböj det.",
+  "@suggestedOps.refusal.nothingToRun.suggestion": {
+    "sourceHash": "f4cfc9e"
+  },
+  "suggestedOps.refusal.couldNotStart.message": "Cmdr kunde inte göra om det här förslaget till en åtgärd, så inget kördes.",
+  "@suggestedOps.refusal.couldNotStart.message": {
+    "sourceHash": "77ef48b"
+  },
+  "suggestedOps.refusal.couldNotStart.suggestion": "Avböj det och be AI:n att föreslå det igen.",
+  "@suggestedOps.refusal.couldNotStart.suggestion": {
+    "sourceHash": "5b5b779"
+  },
   "suggestedOps.indicatorTooltip": "AI-förslag väntar. Klicka för att granska dem.",
   "@suggestedOps.indicatorTooltip": {
     "sourceHash": "4508b0b"

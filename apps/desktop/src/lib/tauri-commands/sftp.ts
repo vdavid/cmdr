@@ -19,30 +19,6 @@ export type { HostKeyPrompt, KnownSftpServer, SftpHostKeyApprovalResult, Trusted
 export type { SftpHostKeyIdentity, SftpUnattendedReconnect } from '$lib/ipc/bindings'
 
 /**
- * Calls off the connect running under `attemptId`, and returns whether one was.
- *
- * This is what a dialog's cancel button calls. The key exchange and the auth ladder
- * stop where they stand; a cancel landing in the SFTP hello ends the wait just the
- * same and lets the protocol engine finish quietly on its own. Either way the
- * connect promise (`connectServer` / `connectSavedPlace`) settles with `cancelled`,
- * and no volume, saved server, or secret is left behind.
- *
- * `false` means nobody was connecting under that id, which is what a click landing
- * a moment after the connect finished looks like. Nothing is wrong with it.
- */
-export async function cancelSftpConnect(attemptId: string): Promise<boolean> {
-  return await commands.cancelSftpConnect(attemptId)
-}
-
-/**
- * Drops an SFTP volume's session and takes it out of the volume registry.
- * Returns whether there was an SFTP volume under that id.
- */
-export async function disconnectSftpVolume(volumeId: string): Promise<boolean> {
-  return await commands.disconnectSftpVolume(volumeId)
-}
-
-/**
  * Records a host key the user approved, and only if the server still presents it.
  *
  * Returns `recorded` when the key is now trusted (dial again for a fresh
@@ -76,8 +52,9 @@ export async function listTrustedSftpHostKeys(): Promise<TrustedHostKey[]> {
  * Saves the secret for one account on one server, so the next connection is silent.
  *
  * This call is the "remember the secret" switch: its meaning is exactly "put this in
- * the Keychain". `hasSftpCredentials` reads the switch back, `deleteSftpCredentials`
- * turns it off, and there's no second flag that could disagree with the store.
+ * the Keychain". `hasServerSecret` reads the switch back, `forgetServerSecret` turns
+ * it off (both in `servers.ts`), and there's no second flag that could disagree with
+ * the store.
  *
  * One entry per account, whatever the rung uses it for: the backend offers it as the
  * password on the password and keyboard-interactive rungs, and as the key file's
@@ -88,22 +65,6 @@ export async function listTrustedSftpHostKeys(): Promise<TrustedHostKey[]> {
  */
 export async function saveSftpCredentials(host: string, port: number, username: string, secret: string): Promise<void> {
   const res = await commands.saveSftpCredentials(host, port, username, secret)
-  if (res.status === 'error') throwKeychainError(res.error)
-}
-
-/**
- * Whether a password is stored for one account on one server.
- *
- * There's deliberately no command that returns the secret itself: the backend
- * reads the store when it builds a session.
- */
-export async function hasSftpCredentials(host: string, port: number, username: string): Promise<boolean> {
-  return await commands.hasSftpCredentials(host, port, username)
-}
-
-/** Forgets the stored password for one account on one server. Throws a `KeychainFailure` if the store refused. */
-export async function deleteSftpCredentials(host: string, port: number, username: string): Promise<void> {
-  const res = await commands.deleteSftpCredentials(host, port, username)
   if (res.status === 'error') throwKeychainError(res.error)
 }
 
@@ -129,16 +90,6 @@ export async function getKnownSftpServers(): Promise<SavedSftpServer[]> {
     autoReconnect: server.autoReconnect ?? true,
     pinned: server.pinned ?? false,
   }))
-}
-
-/**
- * Drops a server from the saved list, returning whether one was there.
- *
- * Leaves the stored password and the trusted host key alone: `deleteSftpCredentials`
- * and `forgetSftpHostKey` are those.
- */
-export async function forgetKnownSftpServer(host: string, port: number, username: string): Promise<boolean> {
-  return await commands.forgetKnownSftpServer(host, port, username)
 }
 
 /**

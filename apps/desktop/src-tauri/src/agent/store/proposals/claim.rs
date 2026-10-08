@@ -164,6 +164,36 @@ pub fn claim_group_for_execution(conn: &Connection, group_id: i64, now: i64) -> 
     Ok(ClaimOutcome::Claimed(ClaimedGroup { group, binding: live }))
 }
 
+/// Give a claimed group back to the user: `approved` → `pending`, for an approval the write
+/// engine refused to start.
+///
+/// The claim has to come before the engine is asked (it is what makes a group un-replayable),
+/// so an engine refusal lands AFTER it. Nothing ran, and leaving the group `approved` would
+/// drop it off the review list with no operation behind it. Answers whether it moved.
+///
+/// Conditional twice over: only an `approved` group moves, and only one whose ops carry no
+/// outcome yet. ❌ A group any op of which reported done, skipped, or failed never goes back:
+/// something ran, and offering it again is how the same files get acted on twice.
+pub fn release_claim(conn: &Connection, group_id: i64) -> Result<bool, AgentStoreError> {
+    let updated = conn
+        .prepare_cached(
+            "UPDATE proposals SET status = ?2, decided_at = NULL
+             WHERE id = ?1 AND status = ?3
+               AND NOT EXISTS (
+                   SELECT 1 FROM proposal_ops WHERE group_id = ?1 AND status IN (?4, ?5, ?6)
+               )",
+        )?
+        .execute(params![
+            group_id,
+            ProposalStatus::Pending.as_token(),
+            ProposalStatus::Approved.as_token(),
+            OpStatus::Done.as_token(),
+            OpStatus::Skipped.as_token(),
+            OpStatus::Failed.as_token(),
+        ])?;
+    Ok(updated == 1)
+}
+
 /// Reject a group. The same conditional shape as the claim: only a `pending` group moves, so
 /// a rejection can never overwrite an answer already given.
 pub fn reject_group(conn: &Connection, group_id: i64, now: i64) -> Result<RejectOutcome, AgentStoreError> {

@@ -260,22 +260,22 @@ describe('toRangeEnds', () => {
   it('emits both ends as concrete lines for an ordinary selection', () => {
     const sel: Selection = { anchor: { row: 2, offset: 3 }, focus: { row: 7, offset: 1 } }
     expect(toRangeEnds(sel)).toEqual({
-      anchor: { kind: 'line', line: 2, offset: 3 },
-      focus: { kind: 'line', line: 7, offset: 1 },
+      anchor: { kind: 'row', row: 2, offset: 3 },
+      focus: { kind: 'row', row: 7, offset: 1 },
     })
   })
 
   it('puts a reversed drag back in document order', () => {
     const sel: Selection = { anchor: { row: 7, offset: 1 }, focus: { row: 2, offset: 3 } }
     expect(toRangeEnds(sel)).toEqual({
-      anchor: { kind: 'line', line: 2, offset: 3 },
-      focus: { kind: 'line', line: 7, offset: 1 },
+      anchor: { kind: 'row', row: 2, offset: 3 },
+      focus: { kind: 'row', row: 7, offset: 1 },
     })
   })
 
   it('maps the end-of-file selection to RangeEnd::Eof', () => {
     expect(toRangeEnds(makeSelectToEof())).toEqual({
-      anchor: { kind: 'line', line: 0, offset: 0 },
+      anchor: { kind: 'row', row: 0, offset: 0 },
       focus: { kind: 'eof' },
     })
   })
@@ -547,6 +547,18 @@ describe('describeSelectionForAt', () => {
     const sel: Selection = { anchor: { row: 40, offset: 0 }, focus: { row: 41, offset: 3 } }
     expect(describeSelectionForAt(sel, empty)).toBe('Selected 3 characters')
   })
+
+  it('uses the singular for one character', () => {
+    const sel: Selection = { anchor: { row: 40, offset: 0 }, focus: { row: 40, offset: 1 } }
+    expect(describeSelectionForAt(sel, empty)).toBe('Selected 1 character')
+    expect(describeSelectionForAt(sel, allOnes)).toBe('Selected 1 character on line 41')
+  })
+
+  it('groups large character counts the way the locale does', () => {
+    const wide = (row: number): AnnouncedRow | null => ({ utf16Length: 20_000, lineNumber: row })
+    const sel: Selection = { anchor: { row: 0, offset: 0 }, focus: { row: 1, offset: 12_345 } }
+    expect(describeSelectionForAt(sel, wide)).toBe('Selected lines 1 to 2, 32,345 characters')
+  })
 })
 
 describe('describeSelectionForAt on a wrapped line', () => {
@@ -568,7 +580,7 @@ describe('describeSelectionForAt on a wrapped line', () => {
     // them and "1" above. Announcing "lines 2 to 3" names a coordinate the file does not
     // have and the screen does not show.
     const sel: Selection = { anchor: { row: 1, offset: 0 }, focus: { row: 2, offset: 5 } }
-    expect(describeSelectionForAt(sel, wrapped)).toBe('Selected 20005 characters on line 1')
+    expect(describeSelectionForAt(sel, wrapped)).toBe('Selected 20,005 characters on line 1')
   })
 
   it('names the physical line range when the selection really does cross lines', () => {

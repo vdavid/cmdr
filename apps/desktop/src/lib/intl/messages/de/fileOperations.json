@@ -3,6 +3,10 @@
   "@fileOperations.button.cancel": {
     "sourceHash": "19766ed"
   },
+  "fileOperations.button.close": "Schließen",
+  "@fileOperations.button.close": {
+    "sourceHash": "7d9eb7a"
+  },
   "fileOperations.button.ok": "OK",
   "@fileOperations.button.ok": {
     "sourceHash": "565339b",
@@ -82,7 +86,7 @@
   },
   "fileOperations.delete.scanDir": "{count, plural, one {Ordner} other {Ordner}}",
   "@fileOperations.delete.scanDir": {
-    "sourceHash": "1c5273d"
+    "sourceHash": "46b23b5"
   },
   "fileOperations.delete.confirmDelete": "Löschen",
   "@fileOperations.delete.confirmDelete": {
@@ -124,6 +128,14 @@
   "@fileOperations.delete.symlinkNoticeMany": {
     "sourceHash": "56b3f52"
   },
+  "fileOperations.mkfile.notCreatedToast": "Cmdr konnte die Datei „{name}“ nicht erstellen. {reason}",
+  "@fileOperations.mkfile.notCreatedToast": {
+    "sourceHash": "4f30e62"
+  },
+  "fileOperations.newEntry.stillCreating": "„{name}“ wird noch erstellt. Das Volume antwortet langsam. Du kannst diesen Dialog ruhig schließen, die Erstellung läuft weiter, und abbrechen lässt sie sich jetzt nicht mehr.",
+  "@fileOperations.newEntry.stillCreating": {
+    "sourceHash": "74e376f"
+  },
   "fileOperations.mkfile.title": "Neue Datei",
   "@fileOperations.mkfile.title": {
     "sourceHash": "44dedd0"
@@ -156,17 +168,9 @@
   "@fileOperations.mkdir.placeholder": {
     "sourceHash": "7612b56"
   },
-  "fileOperations.mkdir.timeoutMessage": "Die Erstellung des Ordners ließ sich nicht bestätigen. Das Volume ist vielleicht langsam, der Ordner wurde also womöglich trotzdem erstellt.",
-  "@fileOperations.mkdir.timeoutMessage": {
-    "sourceHash": "8bc758a"
-  },
-  "fileOperations.mkdir.timeoutRefresh": "Dateiliste aktualisieren",
-  "@fileOperations.mkdir.timeoutRefresh": {
-    "sourceHash": "b0e5436"
-  },
-  "fileOperations.mkdir.timeoutDismiss": "Schließen",
-  "@fileOperations.mkdir.timeoutDismiss": {
-    "sourceHash": "48845bf"
+  "fileOperations.mkdir.notCreatedToast": "Cmdr konnte den Ordner „{name}“ nicht erstellen. {reason}",
+  "@fileOperations.mkdir.notCreatedToast": {
+    "sourceHash": "517ef4b"
   },
   "fileOperations.mkdir.aiSuggestionsAria": "KI-Vorschläge",
   "@fileOperations.mkdir.aiSuggestionsAria": {
@@ -249,9 +253,21 @@
   "@fileOperations.transferDialog.targetWillBeCreatedCopy": {
     "sourceHash": "4e8d166"
   },
+  "fileOperations.transferDialog.renameByMoveHint": "Das Umbenennen kopiert alles darin auf dem Server, deshalb läuft es als Bewegung, die du anhalten oder abbrechen kannst.",
+  "@fileOperations.transferDialog.renameByMoveHint": {
+    "sourceHash": "31987cc"
+  },
   "fileOperations.transferDialog.targetWillBeCreatedMove": "Diesen Ordner gibt es noch nicht. Cmdr erstellt ihn beim Bewegen.",
   "@fileOperations.transferDialog.targetWillBeCreatedMove": {
     "sourceHash": "1246331"
+  },
+  "fileOperations.transferDialog.rootEchoWarning": "Dieser Ort beginnt schon in {rootFolder}, also führt dieser Pfad zu {resolvedPath}. Meintest du {strippedPath}?",
+  "@fileOperations.transferDialog.rootEchoWarning": {
+    "sourceHash": "b692d10"
+  },
+  "fileOperations.transferDialog.rootEchoUseStripped": "Kürzeren Pfad verwenden",
+  "@fileOperations.transferDialog.rootEchoUseStripped": {
+    "sourceHash": "66972e3"
   },
   "fileOperations.transferDialog.destinationReadOnly": "Dieser Ordner ist schreibgeschützt, hier kann nichts abgelegt werden.",
   "@fileOperations.transferDialog.destinationReadOnly": {
@@ -275,7 +291,7 @@
   },
   "fileOperations.transferDialog.scanDir": "{count, plural, one {Ordner} other {Ordner}}",
   "@fileOperations.transferDialog.scanDir": {
-    "sourceHash": "1c5273d"
+    "sourceHash": "46b23b5"
   },
   "fileOperations.transferDialog.hardlinkNote": "<written></written> werden geschrieben. Die Quelle ist <ondisk></ondisk> auf dem Datenträger – die Differenz sind Hardlink-Dateien, die über Laufwerke hinweg nicht verknüpft bleiben können.",
   "@fileOperations.transferDialog.hardlinkNote": {
@@ -293,6 +309,18 @@
   "@fileOperations.transferDialog.estimatedSizeTooltip": {
     "sourceHash": "2e8ba70"
   },
+  "fileOperations.s3Cost.line": "Etwa {amount} zu den Listenpreisen von {provider}",
+  "@fileOperations.s3Cost.line": {
+    "sourceHash": "e8db02b"
+  },
+  "fileOperations.s3Cost.infoLabel": "Infos zu dieser Schätzung",
+  "@fileOperations.s3Cost.infoLabel": {
+    "sourceHash": "19637c5"
+  },
+  "fileOperations.s3Cost.infoText": "Grundlage sind die öffentlichen Listenpreise des Anbieters. Kostenlose Kontingente, Rabatte, Inklusivvolumen und Mindestgebühren können deine Rechnung niedriger oder höher ausfallen lassen.",
+  "@fileOperations.s3Cost.infoText": {
+    "sourceHash": "379665c"
+  },
   "fileOperations.transferDialog.scanUnresponsive": "Die Quelle antwortet nicht, mehr konnten wir nicht zählen.",
   "@fileOperations.transferDialog.scanUnresponsive": {
     "sourceHash": "ec3beb2"
@@ -304,6 +332,10 @@
   "fileOperations.transferDialog.scanRetry": "Erneut versuchen",
   "@fileOperations.transferDialog.scanRetry": {
     "sourceHash": "d8b8392"
+  },
+  "fileOperations.transferDialog.sourceNoLongerConnected": "Das Telefon oder der Server, auf dem diese Dateien liegen, ist nicht mehr verbunden, daher kann Cmdr nichts davon kopieren.",
+  "@fileOperations.transferDialog.sourceNoLongerConnected": {
+    "sourceHash": "4741405"
   },
   "fileOperations.transferDialog.conflictsUnknown": "Wir konnten nicht prüfen, was am Ziel schon liegt. Bei jeder Überschneidung fragen wir nach.",
   "@fileOperations.transferDialog.conflictsUnknown": {
@@ -399,7 +431,7 @@
   },
   "fileOperations.scanPhase.scanDir": "{count, plural, one {Ordner} other {Ordner}}",
   "@fileOperations.scanPhase.scanDir": {
-    "sourceHash": "1c5273d"
+    "sourceHash": "46b23b5"
   },
   "fileOperations.transferProgress.scanTitleCopy": "Prüfung vor dem Kopieren …",
   "@fileOperations.transferProgress.scanTitleCopy": {
@@ -537,9 +569,13 @@
   "@fileOperations.transferProgress.stageFinishingTransferStep": {
     "sourceHash": "1f28724"
   },
-  "fileOperations.transferProgress.warningFileOverFolder": "Das Ziel existiert und ist ein <strong>Ordner</strong>. Du bist dabei, es mit einer <strong>Datei</strong> desselben Namens zu überschreiben. Der gesamte Inhalt des Zielordners würde gelöscht und durch die Datei ersetzt. Was möchtest du tun?",
+  "fileOperations.transferProgress.warningFileOverFolder": "Das Ziel existiert und ist ein <strong>Ordner</strong>. Du bist dabei, es durch eine <strong>Datei</strong> desselben Namens zu ersetzen. Alles, was im Ordner liegt, wäre weg. Was möchtest du tun?",
   "@fileOperations.transferProgress.warningFileOverFolder": {
-    "sourceHash": "6dce75c"
+    "sourceHash": "bacab9d"
+  },
+  "fileOperations.transferProgress.warningFolderOverFile": "Das Ziel existiert und ist eine <strong>Datei</strong>. Du bist dabei, es durch einen <strong>Ordner</strong> desselben Namens zu ersetzen. Die Datei wäre weg, sobald der Ordner ihren Platz einnimmt. Was möchtest du tun?",
+  "@fileOperations.transferProgress.warningFolderOverFile": {
+    "sourceHash": "b681083"
   },
   "fileOperations.transferProgress.lookAlikeHint": "Diese Namen sehen gleich aus, aber der Server schreibt sie unterschiedlich. „Überschreiben“ ersetzt das Objekt, das schon da ist.",
   "@fileOperations.transferProgress.lookAlikeHint": {
@@ -887,6 +923,10 @@
   "fileOperations.errorDialog.retry": "Erneut versuchen",
   "@fileOperations.errorDialog.retry": {
     "sourceHash": "942087c"
+  },
+  "fileOperations.errorDialog.copyAnyway": "Trotzdem kopieren",
+  "@fileOperations.errorDialog.copyAnyway": {
+    "sourceHash": "f794181"
   },
   "fileOperations.errorDialog.close": "Schließen",
   "@fileOperations.errorDialog.close": {

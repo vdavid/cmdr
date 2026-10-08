@@ -343,7 +343,8 @@ class SmbReconnectManager {
         try {
           cb()
         } catch (e) {
-          log.warn('Reconnect success callback threw: {error}', { error: String(e) })
+          // Our own subscriber's bug, so it earns an error report.
+          log.error('Reconnect success callback threw: {error}', { error: String(e) })
         }
       }
     })

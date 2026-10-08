@@ -13,7 +13,19 @@
  */
 
 import type { PaneFileEntry, PaneState } from '$lib/tauri-commands'
+import { parseServerPath, serverAppRoot } from '$lib/servers/server-path-utils'
 import type { HubRow } from './servers-hub-rows'
+import { fullIndexOf, type HubItem } from './servers-hub-items'
+
+/**
+ * The nearby group's header, as an agent sees it: English whatever the locale,
+ * like the status tokens. `move_cursor` finds it by this name, and
+ * `open_under_cursor` on it opens or collapses the group.
+ */
+export const NEARBY_GROUP_MCP_NAME = 'Found nearby'
+
+/** Where the group's header points. A sentinel: it leads nowhere. */
+export const NEARBY_GROUP_MCP_PATH = 'smb://nearby'
 
 /** The add row's name, as an agent sees it. */
 export const ADD_SERVER_MCP_NAME = '+ Add server…'
@@ -35,10 +47,17 @@ export interface HubMcpLookups {
   shareCountOf?: (row: HubRow) => number | undefined
 }
 
-/** The hub as the pane state MCP mirrors: its rows, then the add row, and the cursor. */
+/**
+ * The hub as the pane state MCP mirrors: every item, then the add row, and the cursor.
+ *
+ * ❗ `items` is the FULL list and `visibleCursorIndex` counts what is on screen:
+ * the servers a collapsed group hides are still listed (an agent asking which
+ * servers exist gets the truth, and the group's `state=` says they're folded
+ * away), so the cursor is re-counted over the list the agent indexes into.
+ */
 export function hubPaneState(
-  rows: HubRow[],
-  cursorIndex: number,
+  items: HubItem[],
+  visibleCursorIndex: number,
   volumeName: string,
   lookups: HubMcpLookups,
 ): PaneState {
@@ -46,30 +65,36 @@ export function hubPaneState(
     path: 'smb://',
     volumeId: 'network',
     volumeName,
-    files: hubMcpEntries(rows, lookups),
-    cursorIndex,
+    files: hubMcpEntries(items, lookups),
+    cursorIndex: fullIndexOf(items, visibleCursorIndex),
     viewMode: 'full',
     selectedIndices: [],
-    totalFiles: rows.length,
+    totalFiles: items.length,
     loadedStart: 0,
-    loadedEnd: rows.length,
+    loadedEnd: items.length,
   }
 }
 
-/** One entry per row, then the add row. */
-export function hubMcpEntries(rows: HubRow[], lookups: HubMcpLookups): PaneFileEntry[] {
-  const entries = rows.map((row) => entryFor(row, lookups))
+/** One entry per item, then the add row. */
+export function hubMcpEntries(items: HubItem[], lookups: HubMcpLookups): PaneFileEntry[] {
+  const entries = items.map((item) => (item.kind === 'row' ? entryFor(item.row, lookups) : groupEntry(item)))
   entries.push(emptyEntry(ADD_SERVER_MCP_NAME, ADD_SERVER_MCP_PATH, false))
   return entries
+}
+
+/** The nearby group's header: whether it's open, and how many servers it holds. */
+function groupEntry(group: Extract<HubItem, { kind: 'nearby_group' }>): PaneFileEntry {
+  const tokens = ['kind=group', `state=${group.expanded ? 'expanded' : 'collapsed'}`, `servers=${String(group.count)}`]
+  return emptyEntry(`${NEARBY_GROUP_MCP_NAME}  ${tokens.join('  ')}`, NEARBY_GROUP_MCP_PATH, false)
 }
 
 function entryFor(row: HubRow, lookups: HubMcpLookups): PaneFileEntry {
   const tokens = [`protocol=${row.protocol}`, `status="${row.status}"`, `address=${row.address}`]
   // The account it's signed in as (a share: opens as); `(guest)` can't be an account's name.
   if (row.account !== null) tokens.push(`account=${row.account.kind === 'guest' ? '(guest)' : row.account.username}`)
-  if (row.kind === 'share') {
-    // A saved share under the row above it.
-    tokens.push('kind=share')
+  if (row.kind === 'place') {
+    // A saved place under the row above it: an SMB share, or an S3 bucket or account root.
+    tokens.push(row.protocol === 'smb' ? 'kind=share' : 'kind=place')
   } else {
     const shares = lookups.shareCountOf?.(row)
     if (shares !== undefined) tokens.push(`shares=${String(shares)}`)
@@ -86,8 +111,13 @@ function entryFor(row: HubRow, lookups: HubMcpLookups): PaneFileEntry {
  */
 function pathFor(row: HubRow, lookups: HubMcpLookups): string {
   // A share's place: its last mount path, or `smb://<host>/<share>` before one.
-  if (row.kind === 'share' && row.place) return row.place.appRoot
+  if (row.kind === 'place' && row.place) return row.place.appRoot
   if (row.protocol === 'smb') return `smb://${row.address}`
+  // An S3 account: the account's own prefix, which every one of its places hangs under.
+  if (row.protocol === 's3') {
+    const parsed = parseServerPath(row.saved?.places[0]?.appRoot ?? '')
+    if (parsed) return serverAppRoot(parsed)
+  }
   return lookups.appRootOf(row) ?? `${row.protocol}://${row.address}`
 }
 

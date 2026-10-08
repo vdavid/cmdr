@@ -17,8 +17,8 @@ App-side backend, registry, and eject wiring. Every operation goes through a `Vo
   `.zip`-crossing and `.git/<category>/` paths to their backends, path UNCHANGED, and answers `is_routed()`. The sync
   `resolve_local_only` serves the ONE caller that can't `.await`.
 - **❗ Registration must never be cleverer than resolution.** A mount is registered through `mount_registration`, ❌
-  never a caller's own `LocalPosixVolume::new` + `register`: resolution mints an ID for any mount-table row, so the
-  sweep takes that table unfiltered (switcher rows are a separate, stricter question). Its net, adoption, takes a live
+  never a caller's own `LocalPosixVolume::new` + `register`: resolution mints an ID for any mount this account can reach,
+  so the sweep takes all of those (switcher rows are a separate, stricter question). Its net, adoption, takes a live
   mount ONLY when that mount derives exactly the requested ID, ❌ never on a prefix or path-shape test.
 - **Watcher-pre-registered volumes use `register_if_absent`** (else FSEvents overwrites an `SmbVolume`). `register`
   replaces only at the SAME root; an edited root uses `replace_root_in_place`.

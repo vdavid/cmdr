@@ -304,6 +304,123 @@ async fn an_abort_shortens_the_drain_window_a_cancel_already_armed() {
     );
 }
 
+/// Refusing a conflict prompt mid-copy stops the operation, sweeps what its
+/// in-flight tasks were still writing, and reports it cancelled.
+///
+/// The refusal comes back from conflict resolution, which runs on the driver
+/// (`copy_concurrent.rs::spawn_ready_tasks`), not from a task, so it reaches the
+/// post-loop through `ConcurrentOutcome` like any task failure would. Seven sources
+/// wedge mid-write and one lands at once, which frees the slot the clashing source
+/// is prepared in: the prompt goes up while the wedged tasks hold partials, and the
+/// test checks that they did before it trusts the sweep afterwards.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn refusing_a_conflict_prompt_mid_copy_sweeps_the_partials_and_reports_cancelled() {
+    use super::super::super::conflict_responder_test_support::ConflictResponderSink;
+    use futures_util::FutureExt;
+
+    let _drain = CancelDrainGuard::set(TEST_DRAIN);
+    let fx = fixture(CHUNK as u64 * 16);
+    let mut sources = Vec::new();
+    for n in 0..7 {
+        let name = format!("/wedge-{n}.bin");
+        fx.source_inner
+            .create_file(Path::new(&name), &vec![0xAB; CHUNK * 16])
+            .await
+            .unwrap();
+        sources.push(PathBuf::from(name));
+    }
+    // Empty ⇒ lands without a permit, freeing the eighth slot for the clash.
+    fx.source_inner
+        .create_file(Path::new("/landed.txt"), b"")
+        .await
+        .unwrap();
+    sources.push(PathBuf::from("/landed.txt"));
+    fx.source_inner
+        .create_file(Path::new("/clash.bin"), &vec![0xAB; CHUNK * 16])
+        .await
+        .unwrap();
+    sources.push(PathBuf::from("/clash.bin"));
+    fx.dest_inner
+        .create_file(Path::new("/clash.bin"), b"the user's own file")
+        .await
+        .unwrap();
+    // A few chunks' worth, so some partial holds real bytes rather than only the
+    // empty file a write opens with.
+    fx.gate.add_permits(3);
+
+    let op = TestOperationGuard::register_state("refuse-conflict-mid-copy", make_state());
+    let dest_at_prompt = Arc::new(std::sync::Mutex::new(Vec::<String>::new()));
+    let events = Arc::new({
+        let dest_inner = Arc::clone(&fx.dest_inner);
+        let dest_at_prompt = Arc::clone(&dest_at_prompt);
+        ConflictResponderSink::cancelling(op.state(), op.id()).on_prompt(move || {
+            // The in-memory volume answers without awaiting anything.
+            let names = dest_inner
+                .list_directory(Path::new("/"), None)
+                .now_or_never()
+                .expect("an in-memory listing never waits")
+                .expect("list the destination");
+            *dest_at_prompt.lock().unwrap() = names.into_iter().map(|e| e.name).collect();
+        })
+    });
+    let config = VolumeCopyConfig::default();
+
+    let result = tokio::time::timeout(
+        RETURN_WITHIN,
+        copy_volumes_with_progress(
+            events.clone(),
+            op.id(),
+            op.state(),
+            Arc::clone(&fx.source),
+            &sources,
+            Arc::clone(&fx.dest),
+            Path::new("/"),
+            &config,
+        ),
+    )
+    .await
+    .expect("a refused prompt must end the copy, wedged tasks and all");
+
+    let at_prompt = dest_at_prompt.lock().unwrap().clone();
+    assert_eq!(
+        events.inner.conflicts.lock().unwrap().len(),
+        1,
+        "exactly one prompt went up"
+    );
+    assert!(
+        at_prompt.len() > 2,
+        "the wedged tasks must hold partials while the prompt is up, or the sweep below proves nothing; dest held {at_prompt:?}"
+    );
+    assert!(
+        matches!(
+            result.as_ref().err().map(|f| &f.error),
+            Some(WriteOperationError::Cancelled { .. })
+        ),
+        "a refused prompt ends the operation as cancelled, got {result:?}"
+    );
+    {
+        let cancelled = events.inner.cancelled.lock().unwrap();
+        assert_eq!(
+            cancelled.len(),
+            1,
+            "the FE needs exactly one write-cancelled to close on"
+        );
+        assert_eq!(cancelled[0].rollback.outcome, CancelRollbackOutcome::NotRolledBack);
+    }
+    let mut names = dest_names(&fx.dest_inner).await;
+    names.sort();
+    assert_eq!(
+        names,
+        vec!["clash.bin".to_string(), "landed.txt".to_string()],
+        "a cancel keeps what landed and the user's own file, and sweeps every partial"
+    );
+    assert_eq!(
+        read_dest(&fx.dest_inner, "/clash.bin").await.as_deref(),
+        Some(&b"the user's own file"[..]),
+        "the refused clash left the destination file alone"
+    );
+}
+
 /// A FOLDER source whose task is abandoned at the drain deadline still owes the
 /// rollback what it already landed.
 ///

@@ -78,11 +78,12 @@ async fn smb_integration_a_hinted_read_leaves_as_one_compound_frame() {
     // the mistake this comment exists to head off.
     // Asserting the PAIR is what gives the cell its teeth: a 3-RTT streaming
     // open reads as `(0, 3)`, and a loose round trip alongside the compound as
-    // `(1, 4)`. Same shape as the write cell below.
+    // `(1, 4)`. Same shape as the write cell below. The read's date rides on
+    // its own CREATE response, so a stat for it would show here as `(2, 7)`.
     assert_eq!(
         (compounds_after - compounds_before, requests_after - requests_before),
         (1, 3),
-        "a hinted small read must leave as ONE compound frame carrying CREATE+READ+CLOSE; a 3-RTT streaming open is what this prevents"
+        "a hinted small read must leave as ONE compound frame carrying CREATE+READ+CLOSE, its date included; a 3-RTT streaming open is what this prevents"
     );
 
     ensure_clean(&vol, &dir).await;
@@ -286,7 +287,7 @@ async fn smb_integration_a_single_shot_write_leaves_as_one_compound_frame() {
             Path::new(&smb_path),
             WriteMode::CreateOrReplace,
             StreamLength::Known(size),
-            Box::new(InlineReadStream::new(data.clone())),
+            Box::new(InlineReadStream::new(data.clone(), None)),
             &|_| std::ops::ControlFlow::Continue(()),
         )
         .await
@@ -322,6 +323,50 @@ async fn smb_integration_a_single_shot_write_leaves_as_one_compound_frame() {
         .map(|e| e.name)
         .collect();
     assert_eq!(names, vec!["one-shot.bin".to_string()], "no leftovers; got {names:?}");
+
+    ensure_clean(&vol, &dir).await;
+}
+
+/// A dated source costs a one-shot write ONE more compound frame: the write's
+/// CLOSE stamps the server's own date, so the source's goes on by path after it
+/// (CREATE+SET_INFO+CLOSE). Still nothing loose, and the stamp lands.
+#[tokio::test]
+#[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+async fn smb_integration_a_dated_single_shot_write_adds_one_frame_for_its_date() {
+    let vol = make_docker_volume().await;
+    let dir = test_dir_name();
+    ensure_clean(&vol, &dir).await;
+    vol.create_directory(Path::new(&dir)).await.unwrap();
+
+    let data = vec![0xABu8; 4096];
+    let size = data.len() as u64;
+    let date_secs = cmdr_fs::volume::conformance::SOURCE_DATE_SECS;
+    let date = std::time::UNIX_EPOCH + Duration::from_secs(date_secs);
+    let smb_path = format!("{}/one-shot-dated.bin", dir);
+    let (requests_before, compounds_before) = request_counts(&vol).await;
+    vol.write_from_stream(
+        Path::new(&smb_path),
+        WriteMode::CreateOrReplace,
+        StreamLength::Known(size),
+        Box::new(InlineReadStream::new(data, Some(date))),
+        &|_| std::ops::ControlFlow::Continue(()),
+    )
+    .await
+    .unwrap();
+    let (requests_after, compounds_after) = request_counts(&vol).await;
+
+    // The write's four ops, the date's three, the post-write stat's four.
+    assert_eq!(
+        (compounds_after - compounds_before, requests_after - requests_before),
+        (3, 11),
+        "a dated one-shot write must add exactly one compound frame for its date, with no loose round trips"
+    );
+    let listed = vol.get_metadata(Path::new(&smb_path)).await.unwrap().modified_at;
+    assert_eq!(
+        listed,
+        Some(date_secs),
+        "the one-shot write must keep the source's date"
+    );
 
     ensure_clean(&vol, &dir).await;
 }
@@ -398,7 +443,7 @@ async fn smb_integration_a_staged_write_over_the_quick_write_limit_streams() {
             Path::new(&temp),
             WriteMode::CreateOrReplace,
             StreamLength::Known(size),
-            Box::new(InlineReadStream::new(data.clone())),
+            Box::new(InlineReadStream::new(data.clone(), None)),
             &|_| std::ops::ControlFlow::Continue(()),
         )
         .await
@@ -440,7 +485,7 @@ async fn smb_integration_a_warm_uplink_lifts_the_promise_and_the_promised_write_
         Path::new(&temp),
         WriteMode::CreateOrReplace,
         StreamLength::Known(warm.len() as u64),
-        Box::new(InlineReadStream::new(warm)),
+        Box::new(InlineReadStream::new(warm, None)),
         &|_| std::ops::ControlFlow::Continue(()),
     )
     .await
@@ -460,7 +505,7 @@ async fn smb_integration_a_warm_uplink_lifts_the_promise_and_the_promised_write_
             Path::new(&path),
             WriteMode::CreateOrReplace,
             StreamLength::Known(size),
-            Box::new(InlineReadStream::new(data.clone())),
+            Box::new(InlineReadStream::new(data.clone(), None)),
             &|_| std::ops::ControlFlow::Continue(()),
         )
         .await
@@ -637,7 +682,7 @@ async fn smb_integration_a_write_the_credit_window_cant_fund_is_staged_and_strea
             Path::new(&temp),
             WriteMode::CreateOrReplace,
             StreamLength::Known(size),
-            Box::new(InlineReadStream::new(data.clone())),
+            Box::new(InlineReadStream::new(data.clone(), None)),
             &|_| std::ops::ControlFlow::Continue(()),
         )
         .await
@@ -677,7 +722,7 @@ async fn smb_integration_a_refused_frame_to_a_final_name_writes_nothing_there() 
                 Path::new(&final_name),
                 mode,
                 StreamLength::Known(data.len() as u64),
-                Box::new(InlineReadStream::new(data)),
+                Box::new(InlineReadStream::new(data, None)),
                 &|_| std::ops::ControlFlow::Continue(()),
             )
             .await;
@@ -731,7 +776,7 @@ async fn smb_integration_a_refused_frame_to_a_taken_final_name_leaves_the_file_t
                 Path::new(&final_name),
                 mode,
                 StreamLength::Known(data.len() as u64),
-                Box::new(InlineReadStream::new(data)),
+                Box::new(InlineReadStream::new(data, None)),
                 &|_| std::ops::ControlFlow::Continue(()),
             )
             .await;

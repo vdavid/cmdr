@@ -102,8 +102,11 @@ pub(super) fn is_retryable(err: &VolumeError) -> bool {
         | VolumeError::ReadOnly(_)
         | VolumeError::StorageFull { .. }
         | VolumeError::IsADirectory(_)
+        | VolumeError::NotADirectory(_) // a file is in the way; it stays there until someone moves it
         | VolumeError::InvalidName(_) // the destination can't hold this name; a rename is the only fix
         | VolumeError::DeletePending(_)
+        | VolumeError::ColdStorage(_) // archived until someone restores it; asking again changes nothing
+        | VolumeError::SourceChanged(_) // a new version is there; whether to copy it is the user's call
         | VolumeError::AmbiguousName(_) // two stored names fit; asking again asks the same question
         | VolumeError::IoError { raw_os_error: None, .. }
         | VolumeError::NeedsPassword { .. }
@@ -200,7 +203,10 @@ mod tests {
         }));
         assert!(!is_retryable(&VolumeError::NotSupported));
         assert!(!is_retryable(&VolumeError::IsADirectory("/x".into())));
+        assert!(!is_retryable(&VolumeError::NotADirectory("/x".into())));
         assert!(!is_retryable(&VolumeError::DeletePending("/x".into())));
+        assert!(!is_retryable(&VolumeError::ColdStorage("/x".into())));
+        assert!(!is_retryable(&VolumeError::SourceChanged("/x".into())));
         assert!(!is_retryable(&VolumeError::NeedsPassword { wrong_attempt: true }));
         // An IoError with no errno carries nothing to classify on, so it is a
         // report, not a blip.

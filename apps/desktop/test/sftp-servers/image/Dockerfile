@@ -11,7 +11,7 @@
 #     with no `posix-rename`, one that short-reads, and one with small `limits`
 #     without swapping in a different SFTP implementation and testing something
 #     other than what users run.
-FROM alpine:3.21
+FROM alpine:3.21@sha256:ce64758a109eb420d874a118f87920e625e12d3634e03b4a5573fd9f6e5d3507
 
 # BOTH sshd variants. Alpine ships the PAM build as a separate `sshd.pam`
 # binary, and keyboard-interactive needs PAM on Linux — that rung is one of the

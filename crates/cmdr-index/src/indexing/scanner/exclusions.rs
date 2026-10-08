@@ -109,7 +109,7 @@ pub(crate) enum ExclusionTier {
 /// string alone. Every caller has to supply one, so no path can be gated without
 /// saying which volume it's being gated for.
 ///
-/// Mirrors [`IndexPathSpace`](crate::indexing::paths::routing::IndexPathSpace)'s
+/// Mirrors [`IndexPathSpace`](crate::indexing::paths::path_space::IndexPathSpace)'s
 /// `mount_root`, which is where it's built from for the scan / reconcile / live
 /// pipeline; the boot-disk-only callers (the verifier, event-loop verification)
 /// use [`ExclusionScope::boot_disk`].
@@ -340,26 +340,36 @@ pub(in crate::indexing) const FIRMLINKED_SYSTEM_PREFIXES: &[&str] = &[
 /// coverage: permanently invisible to search, with nothing to trigger a re-walk.
 /// A mismatch answers "yes", and so does an absent stamp or a read failure — a
 /// redundant walk costs time, a skipped one loses files.
-pub(in crate::indexing) fn index_predates_exclusion_policy(conn: &rusqlite::Connection) -> bool {
+///
+/// `tier` is the index's own volume's ([`ExclusionScope::tier`]): the two tiers
+/// run different policies, so each has its own fingerprint.
+pub(in crate::indexing) fn index_predates_exclusion_policy(conn: &rusqlite::Connection, tier: ExclusionTier) -> bool {
     let stored = IndexStore::get_meta(conn, crate::indexing::store::EXCLUSION_POLICY_KEY);
-    !matches!(stored, Ok(Some(ref v)) if *v == exclusion_policy_fingerprint())
+    !matches!(stored, Ok(Some(ref v)) if *v == exclusion_policy_fingerprint(tier))
 }
 
-/// The message that stamps an index as built against the current exclusion policy.
+/// The message that stamps an index as built against the current exclusion policy
+/// for its volume's `tier`.
 ///
 /// ❌ Send it ONLY right after a `TruncateData`. That's the one moment the DB
 /// provably holds no row beneath a directory today's scanner refuses to walk; a
 /// reconcile or a scoped fill never re-lists the rest of the volume, so it can't
 /// clear what an older policy let in.
-pub(in crate::indexing) fn exclusion_policy_stamp_message() -> WriteMessage {
+pub(in crate::indexing) fn exclusion_policy_stamp_message(tier: ExclusionTier) -> WriteMessage {
     WriteMessage::UpdateMeta {
         key: crate::indexing::store::EXCLUSION_POLICY_KEY.to_string(),
-        value: exclusion_policy_fingerprint(),
+        value: exclusion_policy_fingerprint(tier),
     }
 }
 
-/// A stable fingerprint of the compile-time exclusion constants, persisted per
-/// index under `store::EXCLUSION_POLICY_KEY`.
+/// A stable fingerprint of the exclusion rules a `tier` runs, persisted per index
+/// under `store::EXCLUSION_POLICY_KEY`.
+///
+/// `BootDisk` adds the rule that stops the boot disk at every filesystem mounted
+/// inside its tree ([`super::boot_tree_mounts`]), which a mount-rooted walk
+/// doesn't run. So adding that rule rebuilt the boot index and left every external
+/// drive's alone; the `MountRooted` fingerprint is exactly what both tiers shared
+/// before.
 ///
 /// Content-derived, so editing any of the lists re-arms every existing index with
 /// no version constant for anyone to forget to bump. The mixing is
@@ -370,7 +380,7 @@ pub(in crate::indexing) fn exclusion_policy_stamp_message() -> WriteMessage {
 /// `CMDR_E2E_START_PATH` is deliberately NOT folded in. It narrows the effective
 /// policy at runtime, but it's a per-run fixture path rather than a shipped rule,
 /// and folding it in would write a machine-specific value into every E2E index.
-pub(in crate::indexing) fn exclusion_policy_fingerprint() -> String {
+pub(in crate::indexing) fn exclusion_policy_fingerprint(tier: ExclusionTier) -> String {
     // Each list is preceded by its own name, so moving a name from one list to
     // another changes the fingerprint even though the flat set of names didn't.
     let mut parts: Vec<&str> = vec!["prefixes"];
@@ -383,6 +393,9 @@ pub(in crate::indexing) fn exclusion_policy_fingerprint() -> String {
     {
         parts.push("firmlinked");
         parts.extend_from_slice(FIRMLINKED_SYSTEM_PREFIXES);
+    }
+    if tier == ExclusionTier::BootDisk && super::boot_tree_mounts::CUTS_AT_BOOT_TREE_MOUNTS {
+        parts.push("cut_at_boot_tree_mounts");
     }
     crate::fingerprint::fingerprint_of(&parts)
 }
@@ -528,7 +541,19 @@ pub(in crate::indexing) fn should_exclude(path_str: &str, scope: &ExclusionScope
     if scope.tier() == ExclusionTier::MountRooted {
         return false;
     }
+    // A filesystem mounted inside the boot tree is its own drive, so the boot disk
+    // stops at it the way it stops at `/Volumes/`, only found in the mount table
+    // rather than by prefix (`boot_tree_mounts`).
+    excluded_by_boot_prefixes(path_str) || super::boot_tree_mounts::is_inside_a_mount(path_str)
+}
 
+/// Tier (a) alone: the boot disk's absolute prefixes and the `/System/` firmlink
+/// allowlist. Pure string work.
+///
+/// Split out because [`super::boot_tree_mounts`] asks it which mount points the
+/// prefixes already handle, and asking the whole [`should_exclude`] there would
+/// recurse into the set being built.
+pub(super) fn excluded_by_boot_prefixes(path_str: &str) -> bool {
     // Check explicit exclusion prefixes
     for prefix in EXCLUDED_PREFIXES {
         if path_str.starts_with(prefix) {

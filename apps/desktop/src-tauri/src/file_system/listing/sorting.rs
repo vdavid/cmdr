@@ -42,8 +42,12 @@ pub enum DirectorySortMode {
     /// Directories sort by the same column as files (using recursive_size for Size column).
     #[default]
     LikeFiles,
-    /// Directories always sort by name, regardless of the active sort column.
+    /// Directories always sort by name, A→Z, regardless of the active sort column
+    /// and its direction. Only the Name column's arrow reverses them.
     AlwaysByName,
+    /// Directories don't lead: they sort among the files by the same column ("Show
+    /// folders first" off). Size ranks a directory by its `recursive_size`.
+    MixedWithFiles,
 }
 
 // ============================================================================
@@ -192,7 +196,8 @@ fn known_dir_size<E: SortableEntry + ?Sized>(e: &E) -> Option<u64> {
 
 /// Returns a comparator that orders `FileEntry` values according to the given sort params.
 ///
-/// Directories always come first, then files. Within each group the comparator
+/// Directories come first, then files, unless `dir_sort_mode` is
+/// [`DirectorySortMode::MixedWithFiles`] ([`compare_mixed`]). Within each group the comparator
 /// applies the requested column, order, and directory sort mode (including the
 /// `recursive_size: None` sorts-last rule for Size).
 ///
@@ -210,6 +215,10 @@ pub fn entry_comparator<E: SortableEntry + ?Sized>(
     let collator: Arc<NameCollator> = active_collator();
 
     move |a, b| {
+        if dir_sort_mode == DirectorySortMode::MixedWithFiles {
+            return compare_mixed(a, b, sort_by, sort_order, &collator);
+        }
+
         // Directories always come first
         match (a.is_directory(), b.is_directory()) {
             (true, false) => return std::cmp::Ordering::Less,
@@ -217,13 +226,16 @@ pub fn entry_comparator<E: SortableEntry + ?Sized>(
             _ => {}
         }
 
-        // For directories in AlwaysByName mode, sort by name regardless of column
-        if a.is_directory() && b.is_directory() && dir_sort_mode == DirectorySortMode::AlwaysByName {
-            let name_cmp = a.compare_name(b, &collator);
-            return match sort_order {
-                SortOrder::Ascending => name_cmp,
-                SortOrder::Descending => name_cmp.reverse(),
-            };
+        // AlwaysByName keeps directories A→Z under every other column, whatever
+        // the arrow says: Size, Modified, and Created default to descending, so
+        // following it showed Z→A folders, which reads as random (ERR-MJFJG). On
+        // the Name column the arrow IS the name order, so they follow it there.
+        if a.is_directory()
+            && b.is_directory()
+            && dir_sort_mode == DirectorySortMode::AlwaysByName
+            && sort_by != SortColumn::Name
+        {
+            return a.compare_name(b, &collator);
         }
 
         // For directories in LikeFiles mode sorting by Size, use recursive_size.
@@ -267,69 +279,113 @@ pub fn entry_comparator<E: SortableEntry + ?Sized>(
             };
         }
 
-        // Compare by the active sorting column
-        let primary = match sort_by {
-            SortColumn::Name => a.compare_name(b, &collator),
-            SortColumn::Extension => {
-                let (a_dotfile, a_has_ext, a_ext) = extract_extension_for_sort(a.name());
-                let (b_dotfile, b_has_ext, b_ext) = extract_extension_for_sort(b.name());
+        apply_order(compare_by_column(a, b, sort_by, &collator), sort_order)
+    }
+}
 
-                // Dotfiles first, then no extension, then by extension alphabetically
-                match (a_dotfile, b_dotfile) {
-                    (true, false) => std::cmp::Ordering::Less,
-                    (false, true) => std::cmp::Ordering::Greater,
-                    (true, true) => a.compare_name(b, &collator),
-                    (false, false) => match (a_has_ext, b_has_ext) {
-                        (false, true) => std::cmp::Ordering::Less,
-                        (true, false) => std::cmp::Ordering::Greater,
-                        (false, false) => a.compare_name(b, &collator),
-                        (true, true) => {
-                            let ext_cmp = collator.compare(&a_ext, &b_ext);
-                            if ext_cmp == std::cmp::Ordering::Equal {
-                                a.compare_name(b, &collator)
-                            } else {
-                                ext_cmp
-                            }
+/// Flips an ascending comparison for a descending sort.
+fn apply_order(cmp: std::cmp::Ordering, sort_order: SortOrder) -> std::cmp::Ordering {
+    match sort_order {
+        SortOrder::Ascending => cmp,
+        SortOrder::Descending => cmp.reverse(),
+    }
+}
+
+/// The [`DirectorySortMode::MixedWithFiles`] comparison: no folders-first step, so
+/// a folder ranks among the files by the same column.
+///
+/// Size is the one column where a folder and a file read different fields: a
+/// folder's key is its [`known_dir_size`], a file's its `size`. One rule covers
+/// both so the order stays transitive: an unknown size sorts LAST whatever the
+/// order (by name among themselves), the same promise the folders-first sort
+/// makes for folders, so nothing unknown masquerades as the smallest or biggest.
+fn compare_mixed<E: SortableEntry + ?Sized>(
+    a: &E,
+    b: &E,
+    sort_by: SortColumn,
+    sort_order: SortOrder,
+    collator: &NameCollator,
+) -> std::cmp::Ordering {
+    if sort_by != SortColumn::Size {
+        return apply_order(compare_by_column(a, b, sort_by, collator), sort_order);
+    }
+    let size_key = |e: &E| {
+        if e.is_directory() { known_dir_size(e) } else { e.size() }
+    };
+    match (size_key(a), size_key(b)) {
+        (None, None) => apply_order(a.compare_name(b, collator), sort_order),
+        (None, Some(_)) => std::cmp::Ordering::Greater,
+        (Some(_), None) => std::cmp::Ordering::Less,
+        (Some(a_size), Some(b_size)) => apply_order(
+            a_size.cmp(&b_size).then_with(|| a.compare_name(b, collator)),
+            sort_order,
+        ),
+    }
+}
+
+/// How two rows rank under `sort_by`, ascending, before the sort order applies.
+fn compare_by_column<E: SortableEntry + ?Sized>(
+    a: &E,
+    b: &E,
+    sort_by: SortColumn,
+    collator: &NameCollator,
+) -> std::cmp::Ordering {
+    match sort_by {
+        SortColumn::Name => a.compare_name(b, collator),
+        SortColumn::Extension => {
+            let (a_dotfile, a_has_ext, a_ext) = extract_extension_for_sort(a.name());
+            let (b_dotfile, b_has_ext, b_ext) = extract_extension_for_sort(b.name());
+
+            // Dotfiles first, then no extension, then by extension alphabetically
+            match (a_dotfile, b_dotfile) {
+                (true, false) => std::cmp::Ordering::Less,
+                (false, true) => std::cmp::Ordering::Greater,
+                (true, true) => a.compare_name(b, collator),
+                (false, false) => match (a_has_ext, b_has_ext) {
+                    (false, true) => std::cmp::Ordering::Less,
+                    (true, false) => std::cmp::Ordering::Greater,
+                    (false, false) => a.compare_name(b, collator),
+                    (true, true) => {
+                        let ext_cmp = collator.compare(&a_ext, &b_ext);
+                        if ext_cmp == std::cmp::Ordering::Equal {
+                            a.compare_name(b, collator)
+                        } else {
+                            ext_cmp
                         }
-                    },
-                }
+                    }
+                },
             }
-            SortColumn::Size => match (a.size(), b.size()) {
-                (None, None) => a.compare_name(b, &collator),
-                (None, Some(_)) => std::cmp::Ordering::Less,
-                (Some(_), None) => std::cmp::Ordering::Greater,
-                (Some(a_size), Some(b_size)) => a_size.cmp(&b_size),
-            },
-            SortColumn::Modified => match (a.modified_at(), b.modified_at()) {
-                (None, None) => a.compare_name(b, &collator),
-                (None, Some(_)) => std::cmp::Ordering::Less,
-                (Some(_), None) => std::cmp::Ordering::Greater,
-                (Some(a_time), Some(b_time)) => a_time.cmp(&b_time),
-            },
-            SortColumn::Created => match (a.created_at(), b.created_at()) {
-                (None, None) => a.compare_name(b, &collator),
-                (None, Some(_)) => std::cmp::Ordering::Less,
-                (Some(_), None) => std::cmp::Ordering::Greater,
-                (Some(a_time), Some(b_time)) => a_time.cmp(&b_time),
-            },
-        };
-
-        // Apply sort order
-        match sort_order {
-            SortOrder::Ascending => primary,
-            SortOrder::Descending => primary.reverse(),
         }
+        SortColumn::Size => match (a.size(), b.size()) {
+            (None, None) => a.compare_name(b, collator),
+            (None, Some(_)) => std::cmp::Ordering::Less,
+            (Some(_), None) => std::cmp::Ordering::Greater,
+            (Some(a_size), Some(b_size)) => a_size.cmp(&b_size),
+        },
+        SortColumn::Modified => match (a.modified_at(), b.modified_at()) {
+            (None, None) => a.compare_name(b, collator),
+            (None, Some(_)) => std::cmp::Ordering::Less,
+            (Some(_), None) => std::cmp::Ordering::Greater,
+            (Some(a_time), Some(b_time)) => a_time.cmp(&b_time),
+        },
+        SortColumn::Created => match (a.created_at(), b.created_at()) {
+            (None, None) => a.compare_name(b, collator),
+            (None, Some(_)) => std::cmp::Ordering::Less,
+            (Some(_), None) => std::cmp::Ordering::Greater,
+            (Some(a_time), Some(b_time)) => a_time.cmp(&b_time),
+        },
     }
 }
 
 /// Sorts file entries by the specified column and order.
-/// Directories always come first, then files.
 /// Names order by Unicode collation, so digit runs compare numerically ("img_2"
 /// before "img_10") and an accent's spelling doesn't decide anything.
 ///
-/// `dir_sort_mode` controls how directories are sorted among themselves:
-/// - `LikeFiles`: directories sort by the same column as files (using `recursive_size` for Size)
-/// - `AlwaysByName`: directories always sort by name, regardless of the active sort column
+/// `dir_sort_mode` controls where directories go:
+/// - `LikeFiles`: first, sorted by the same column as files (using `recursive_size` for Size)
+/// - `AlwaysByName`: first, A→Z by name, regardless of the active sort column (the
+///   Name column's arrow still reverses them)
+/// - `MixedWithFiles`: among the files, by the same column
 ///
 /// Collates each name ONCE into a [`NameKey`] and sorts on those, rather than
 /// collating a pair per comparison: a 100k listing does 100k collations instead

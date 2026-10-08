@@ -24,23 +24,30 @@ mod mounts;
 mod nsurl;
 mod smb;
 
+mod rename;
+#[cfg(all(test, target_os = "macos"))]
+mod rename_real_image;
+
+use cmdr_fs::volume::published_locations::{PublishedLocation, dedupe_locations};
 use serde::{Deserialize, Serialize};
-use std::collections::HashSet;
 use std::path::Path;
 
 pub use crate::file_system::volume::ConnectionState;
 
 pub use cloud::get_cloud_drives;
 pub(crate) use cloud::resolve_cloud_drive_for_path;
-pub(crate) use fs_type::{get_fs_type, get_mount_point, read_only_from_statfs};
+pub(crate) use fs_type::{get_fs_type, get_mount_info, get_mount_point, read_only_from_statfs};
 pub use fs_type::{is_network_fs_type, is_smb_fs_type, supports_trash_for_fs_type};
 pub(crate) use ids::{volume_id_for, volume_id_for_mount};
 pub use live_space::{expect_space_change, live_volume_space};
 pub use mounts::get_attached_volumes;
-pub(crate) use mounts::{has_mount_identity, is_mount_point, mount_identity_at, mount_roots, smb_mounts};
+pub(crate) use mounts::{
+    has_mount_identity, is_mount_point, is_private_to_another_user, mount_identity_at, mount_roots,
+    mount_type_and_source_for, registrable_mount_roots, smb_mounts,
+};
 pub use nsurl::get_volume_space;
 pub(crate) use nsurl::{
-    get_bool_resource, get_icon_for_path, get_volume_name, get_volume_uuid, get_volume_uuid_for_path,
+    get_icon_for_path, get_volume_name, get_volume_uuid, get_volume_uuid_for_path, is_volume_ejectable,
     volume_name_from_path,
 };
 pub(crate) use smb::parse_smb_mount_source;
@@ -178,6 +185,20 @@ impl cmdr_fs::volume::canonical_root::MountRootCandidate for LocationInfo {
     }
 }
 
+impl PublishedLocation for LocationInfo {
+    fn location_id(&self) -> &str {
+        &self.id
+    }
+
+    fn location_path(&self) -> &str {
+        &self.path
+    }
+
+    fn is_favorite(&self) -> bool {
+        self.category == LocationCategory::Favorite
+    }
+}
+
 /// Whether a MOUNT ROOT is served by a cloud provider's own filesystem, so its
 /// entries cost a round trip to that provider's daemon rather than a disk read.
 ///
@@ -234,7 +255,9 @@ pub fn resolve_path_volume_fast(path: &str) -> Option<VolumeInfo> {
         let url = NSURL::fileURLWithPath(&NSString::from_str(&mount_point));
 
         let name = get_volume_name(&url, &mount_point);
-        let is_ejectable = get_bool_resource(&url, "NSURLVolumeIsEjectableKey").unwrap_or(false);
+        // Local mounts only, as `get_attached_volumes` answers it: a network mount ends through
+        // its session, and the lookup can hang on a dead one.
+        let is_ejectable = !is_network_fs_type(Some(&fs_type)) && is_volume_ejectable(&url, &mount_point);
         let supports_trash = supports_trash_for_fs_type(Some(&fs_type));
         // Same two answers `get_attached_volumes` gives this mount, from the same
         // predicate: a switcher whose checkmark lands on a CLOUD row while the pane
@@ -287,46 +310,16 @@ pub fn resolve_path_volume_fast(path: &str) -> Option<VolumeInfo> {
 
 /// Get all locations organized by category, deduplicated.
 ///
-/// Deduplicates on BOTH path and ID. Path alone isn't enough: one filesystem can
-/// be mounted at two paths (macOS suffixes the second `-1`) and both derive the
-/// same volume ID, which every downstream consumer keys on. `get_attached_volumes`
-/// already collapses those, so the ID set here is the second line of defense
-/// against another source (a favorite, a cloud drive) reintroducing one.
+/// Gathers favorites, the main volume, attached volumes, and cloud drives in
+/// that order, then dedupes through `cmdr_fs::volume::published_locations`
+/// (shared with `volumes_linux/`), whose header says which row wins a clash.
 pub fn list_locations() -> Vec<LocationInfo> {
-    let mut locations = Vec::new();
-    let mut seen_paths: HashSet<String> = HashSet::new();
-    let mut seen_ids: HashSet<String> = HashSet::new();
-
-    let mut push_unique = |locations: &mut Vec<LocationInfo>, loc: LocationInfo| {
-        // Both inserts must run, so the sets can't drift apart on a partial hit.
-        let new_path = seen_paths.insert(loc.path.clone());
-        let new_id = seen_ids.insert(loc.id.clone());
-        if new_path && new_id {
-            locations.push(loc);
-        }
-    };
-
-    // 1. Favorites
-    for loc in get_favorites() {
-        push_unique(&mut locations, loc);
-    }
-
-    // 2. Main volume
-    if let Some(loc) = get_main_volume() {
-        push_unique(&mut locations, loc);
-    }
-
-    // 3. Attached volumes
-    for loc in get_attached_volumes() {
-        push_unique(&mut locations, loc);
-    }
-
-    // 4. Cloud drives (skip if already in favorites)
-    for loc in get_cloud_drives() {
-        push_unique(&mut locations, loc);
-    }
-
-    locations
+    let locations = get_favorites()
+        .into_iter()
+        .chain(get_main_volume())
+        .chain(get_attached_volumes())
+        .chain(get_cloud_drives());
+    dedupe_locations(locations)
 }
 
 /// Get the user's favorites from the editable store (`favorites.json`).
@@ -430,6 +423,7 @@ pub use LocationInfo as VolumeInfo;
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::collections::HashSet;
 
     #[test]
     fn test_list_locations_includes_root() {
@@ -447,12 +441,15 @@ mod tests {
         // IDs matter more than paths: an ID is identity (index DB, saved paths,
         // registry routing, and the frontend's keyed lists), and a doubly-mounted
         // share has two distinct paths under one ID, so a path-only assertion
-        // passes on exactly the case that breaks the app.
+        // passes on exactly the case that breaks the app. Favorites are exempt
+        // from the path half: one may point at a volume's own root.
         let locations = list_locations();
         let mut seen_paths = HashSet::new();
         let mut seen_ids = HashSet::new();
         for loc in &locations {
-            assert!(seen_paths.insert(&loc.path), "Duplicate path found: {}", loc.path);
+            if loc.category != LocationCategory::Favorite {
+                assert!(seen_paths.insert(&loc.path), "Duplicate path found: {}", loc.path);
+            }
             assert!(
                 seen_ids.insert(&loc.id),
                 "Duplicate volume ID found: {} (at {})",

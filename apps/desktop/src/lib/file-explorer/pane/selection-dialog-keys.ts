@@ -3,30 +3,21 @@
  * `+` / `-` shortcuts inside a file pane.
  *
  * Total Commander parity: `+` opens "Select files…", `-` opens "Deselect
- * files…". Both require NO command-style modifier (`metaKey`, `altKey`,
- * `ctrlKey`). We INTENTIONALLY don't test `shiftKey` because on US QWERTY
- * layouts, `Shift+=` is the only way to produce `event.key === '+'`. On layouts
- * where `+` is unshifted, plain `+` fires the same event. Either way, the dialog
- * opens.
- *
- * Deselect also fires on the physical Minus key regardless of Shift
- * (`event.code === 'Minus'`), so `⇧-` (which is `event.key === '_'` on US QWERTY)
- * deselects too — symmetry with the shifted `+`, and layout-independent.
- *
- * This one deliberately stays hand-rolled rather than resolving through the command
- * registry (as its sibling `selection-keys.ts` does): the physical-key test is the
- * whole point, and it's already exact where it counts — it rejects every command
- * modifier, so `⌘-` or `⌥-` can't open the dialog on their way elsewhere.
+ * files…". Resolved through the command registry like its sibling
+ * `selection-keys.ts`, so both keys follow a rebind, and layout independence
+ * comes from the shared vocabulary: `formatKeyCombo` names a typed symbol by its
+ * character, so US ⇧=, Hungarian ⇧3, and the numpad all mean `+`.
  *
  * Tested separately in `selection-dialog-keys.test.ts` so the contract is
  * pinned without spinning up `FilePane`.
  */
 
+import { eventMatchesCommand } from '$lib/shortcuts'
+
 export type SelectionDialogAction = 'open-add' | 'open-remove' | null
 
 export function classifySelectionDialogKey(e: KeyboardEvent): SelectionDialogAction {
-  if (e.metaKey || e.altKey || e.ctrlKey) return null
-  if (e.key === '+') return 'open-add'
-  if (e.key === '-' || e.code === 'Minus') return 'open-remove'
+  if (eventMatchesCommand(e, 'selection.selectFiles')) return 'open-add'
+  if (eventMatchesCommand(e, 'selection.deselectFiles')) return 'open-remove'
   return null
 }

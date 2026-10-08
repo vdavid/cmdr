@@ -16,9 +16,19 @@ import {
   unpinTab,
   MAX_TABS_PER_PANE,
   retainSnapshotRefs,
+  moveTab,
+  type MoveTabRefusal,
+  type MoveTabResult,
   type TabManager,
 } from '../tabs/tab-state-manager.svelte'
-import { reportTabClosed, reportTabOpened, reportTabPinToggled, reportTabSwitched } from '../tabs/tab-analytics'
+import {
+  reportTabClosed,
+  reportTabMoved,
+  reportTabOpened,
+  reportTabPinToggled,
+  reportTabSwitched,
+  type TabMoveOutcome,
+} from '../tabs/tab-analytics'
 import type { TabState, TabId, PersistedTab, PersistedPaneTabs } from '../tabs/tab-types'
 import { createHistory } from '../navigation/navigation-history'
 import { isSnapshotPath, latestRealFolder } from '../navigation/real-folder-history'
@@ -421,4 +431,80 @@ export function handleNewTab(
     addToast(tString('fileExplorer.tabs.limitReached'), { level: 'warn' })
   }
   setFocusedPane(focusedPane === pane ? pane : focusedPane)
+}
+
+// --- Moving a tab (drag to reorder, MCP `tab move`) ---
+
+/** One tab move: a reorder when `toPane` is `fromPane`, a move to the other pane otherwise. */
+export interface TabMoveRequest {
+  fromPane: 'left' | 'right'
+  tabId: TabId
+  toPane: 'left' | 'right'
+  /** Index the tab holds once moved. Omitted: the end. */
+  toIndex?: number
+}
+
+export interface TabMoveDeps {
+  getTabMgr: (pane: 'left' | 'right') => TabManager
+  getPaneRef: (pane: 'left' | 'right') => FilePaneAPI | undefined
+  getFocusedPane: () => 'left' | 'right'
+}
+
+/** The refusals analytics counts. `notFound` is a race (the tab closed mid-gesture), so it has no entry. */
+const moveRefusalOutcomes: Record<Exclude<MoveTabRefusal, 'notFound'>, TabMoveOutcome> = {
+  pinned: 'pinned',
+  onlyTab: 'onlyTab',
+  targetFull: 'atCap',
+}
+
+/**
+ * Moves a tab and does everything a move owes the rest of the app: persists the pane(s)
+ * it touched, reports it, and re-syncs the Pin tab menu if the focused pane's active tab
+ * changed. The rules live in `moveTab`; the mouse (`handleTabDrop`) and the MCP `tab`
+ * tool both come through here. Pane focus is never touched.
+ */
+export function moveTabToPane(request: TabMoveRequest, deps: TabMoveDeps): MoveTabResult {
+  const { fromPane, tabId, toPane, toIndex } = request
+  const source = deps.getTabMgr(fromPane)
+  const target = deps.getTabMgr(toPane)
+  const crossPane = fromPane !== toPane
+
+  // An active tab that leaves its pane takes its cursor along, read while its FilePane
+  // is still mounted, the way a tab switch saves it on the tab being left.
+  const leavingCursor =
+    crossPane && source.activeTabId === tabId
+      ? (deps.getPaneRef(fromPane)?.getFilenameUnderCursor() ?? null)
+      : undefined
+
+  const result = moveTab(source, target, tabId, toIndex)
+  const scope = crossPane ? 'otherPane' : 'samePane'
+  if (!result.moved) {
+    if (result.reason !== 'unchanged' && result.reason !== 'notFound') {
+      reportTabMoved(scope, moveRefusalOutcomes[result.reason], getTabCount(target))
+    }
+    return result
+  }
+
+  if (leavingCursor !== undefined) target.tabs[result.toIndex].cursorFilename = leavingCursor
+  reportTabMoved(scope, 'moved', getTabCount(target))
+  saveTabsForPane(fromPane, deps.getTabMgr)
+  if (crossPane) saveTabsForPane(toPane, deps.getTabMgr)
+  // Only the active tab crossing over changes which tab is active anywhere.
+  if (crossPane && result.wasActive && fromPane === deps.getFocusedPane()) {
+    syncPinTabMenuForPane(fromPane, deps.getTabMgr)
+  }
+  return result
+}
+
+/**
+ * A tab dropped on a tab bar. A full pane is the one refusal a drag can reach (a pinned tab
+ * and a pane's only tab never start one): the "not allowed" cursor already showed during
+ * the drag, and the toast says why. The MCP tool skips this: its caller gets the refusal as
+ * a typed error.
+ */
+export function handleTabDrop(request: TabMoveRequest, deps: TabMoveDeps): void {
+  const result = moveTabToPane(request, deps)
+  if (!result.moved && result.reason === 'targetFull') {
+    addToast(tString('fileExplorer.tabs.limitReached'), { level: 'warn' })
+  }
 }

@@ -32,7 +32,7 @@ The route itself lives with the registry that owns it: `file_system/volume/manag
 `listing/streaming.rs` arms a `notify` watch on any listing whose volume says it can carry one. A virtual path
 has nothing on disk, so `notify` answers "No path was found" and spams the warn log; the portal volume returns
 `can_watch_listings() == false`, which keeps every one of them out with no path check anywhere. Invalidation arrives
-from the per-repo watcher's four `.git` directory watches instead (`crates/cmdr-git/DETAILS.md` § "Watcher path set").
+from the per-repo watcher's recursive gitdir watch instead (`crates/cmdr-git/DETAILS.md` § "Watcher path set").
 `.git/` itself is a real directory on the local volume, so it IS watched, which is what makes an open `.git/` pane
 notice a new `MERGE_HEAD`. Two things ride on that and are tested: a `FullRefresh` re-runs the overlays (else the six
 rows vanish from the pane), and the fresh-listing oracle declines any overlay-decorated listing (else a delete walker
@@ -64,8 +64,7 @@ pane, a pane the MCP server drove, and any window with both git features off. Ba
 whatever asks next.
 
 **The arm is detached, and the reconcile is not optional.** `arm_detached` hands the subscribe to
-`tauri::async_runtime::spawn_blocking`, because arming is a repository open plus one FSEvents stream per watched
-`.git/*` path and a listing open must not sit on a runtime worker for it. `list_directory_end` then runs the release
+`tauri::async_runtime::spawn_blocking`, because arming is a repository open plus an FSEvents stream start on the gitdir, and a listing open must not sit on a runtime worker for it. `list_directory_end` then runs the release
 against a map the arm may not have written yet, so the arm re-checks listing-cache membership afterwards and gives the
 subscriber straight back if the listing ended meanwhile. Same shape, same reason, as `watcher::start_watching_detached`.
 ❗ `list_directory_end` calls the observer AFTER removing the cache entry, which is what makes that membership check

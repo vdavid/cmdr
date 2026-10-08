@@ -5,7 +5,8 @@
 //!
 //! - **The user's timeline** is a typed [`ConversationEvent`]. ⚠️ Those never enter the LLM
 //!   transcript by design (`../store/events.rs`), so an outcome recorded only there teaches the
-//!   agent nothing.
+//!   agent nothing. Writing the row also announces it on the turn transport, which is how a
+//!   rail with that thread open shows the line without re-reading the thread.
 //! - **The agent's lesson** is a line in the memory ring (`../memory/outcomes.rs`), written on
 //!   the ALWAYS-path with no model call. That is what covers approvals, which get no follow-up
 //!   turn at all. Without it, rejections would produce every lesson and approvals none, and
@@ -24,6 +25,7 @@
 
 use rusqlite::Connection;
 
+use super::chat::stream::{AskCmdrStreamEvent, emit_turn_event};
 use super::memory::MemoryStore;
 use super::store::proposals::{ProposalGroup, count_ops, get_group, get_sweep};
 use super::store::{AgentStoreError, ConversationEvent, append_event};
@@ -138,15 +140,8 @@ fn record(
     // teaches the agent; it just has no timeline to say so on.
     match get_sweep(conn, set_id) {
         Ok(Some(sweep)) => {
-            if let Some(conversation_id) = sweep.conversation_id
-                && let Err(e) = append_event(
-                    conn,
-                    conversation_id,
-                    &ConversationEvent::ProposalDecided { decision },
-                    now,
-                )
-            {
-                log::warn!(target: LOG_TARGET, "a decision left no line in its thread: {e}");
+            if let Some(conversation_id) = sweep.conversation_id {
+                record_in_thread(conn, conversation_id, decision, now);
             }
         }
         Ok(None) => {}
@@ -156,6 +151,31 @@ fn record(
         // ⚠️ A CONTROL message, so it can never be dropped for the rollup bound. The wake loop
         // coalesces per sweep and owns every gate; nothing here decides whether a turn runs.
         send_control(WakeControl::SweepRejected { set_id });
+    }
+}
+
+/// Write the decision's line into its thread, and tell whoever has that thread open.
+///
+/// ⚠️ **The announcement is made HERE, where the row is written, and only once it is.** The
+/// rail shows a decision by hearing about this row, so the two have to be one fact: a line
+/// that failed to land announces nothing, a dismissal or a sweep with no thread never gets
+/// this far, and an approval is announced when it settles because that is when its line
+/// exists. ❌ Don't hang this on `suggestions-changed` instead: that one says `approved` at
+/// the CLAIM, before there is anything in the thread to show.
+fn record_in_thread(conn: &Connection, conversation_id: i64, decision: ProposalDecision, now: i64) {
+    let event = ConversationEvent::ProposalDecided {
+        decision: decision.clone(),
+    };
+    match append_event(conn, conversation_id, &event, now) {
+        Ok((message_id, seq)) => emit_turn_event(
+            conversation_id,
+            AskCmdrStreamEvent::ProposalDecided {
+                message_id,
+                seq,
+                decision,
+            },
+        ),
+        Err(e) => log::warn!(target: LOG_TARGET, "a decision left no line in its thread: {e}"),
     }
 }
 

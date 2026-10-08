@@ -594,6 +594,10 @@ impl VolumeReadStream for ScriptedSource {
     fn bytes_read(&self) -> u64 {
         self.at as u64
     }
+
+    fn modified_at(&self) -> Option<std::time::SystemTime> {
+        None
+    }
 }
 
 fn source(bytes: Vec<u8>) -> Box<dyn VolumeReadStream> {

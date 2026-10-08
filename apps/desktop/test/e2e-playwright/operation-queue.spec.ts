@@ -154,6 +154,82 @@ async function clickRowButton(queuePage: TauriPage, operationId: string, ariaLab
   })()`)
 }
 
+// ── Show's crossing, observed from both ends ────────────────────────────────
+// The Show test once failed on Linux CI (both attempts, two runs) with the main
+// window never even logging that the request arrived, and it never reproduced
+// locally. These probes make the next failure name its hop instead: each window
+// gets its own throwaway `foreground-operation` listener (the emit goes to every
+// target, so the QUEUE window hears its own request too), and the main window's
+// app listener is read straight out of Tauri's listener table, so a lost one is
+// told apart from a request that never left.
+//
+// ⚠️ `__internal_unstable_listeners_object_id__` and `__TAURI_INTERNALS__.callbacks`
+// are Tauri internals (`tauri/src/event/listener.rs`, `scripts/core.js`). Every
+// read is guarded: they only feed a failure message, never an assertion.
+
+const SHOW_EVENT = 'foreground-operation'
+
+/** Registers a counting `foreground-operation` listener in `page`'s webview and
+ *  returns its Tauri event id, for `removeShowProbe`. */
+async function installShowProbe(page: TauriPage): Promise<number> {
+  const id = await page.evaluate(`(async function() {
+    window.__showProbeHits = 0;
+    var handler = window.__TAURI_INTERNALS__.transformCallback(function() { window.__showProbeHits++; });
+    window.__showProbeHandler = handler;
+    return await window.__TAURI_INTERNALS__.invoke('plugin:event|listen', {
+      event: ${JSON.stringify(SHOW_EVENT)}, target: { kind: 'Any' }, handler: handler
+    });
+  })()`)
+  return id as number
+}
+
+async function removeShowProbe(page: TauriPage, eventId: number): Promise<void> {
+  await page.evaluate(`(async function() {
+    var event = ${JSON.stringify(SHOW_EVENT)};
+    try { window.__TAURI_EVENT_PLUGIN_INTERNALS__.unregisterListener(event, ${String(eventId)}); } catch (e) {}
+    await window.__TAURI_INTERNALS__.invoke('plugin:event|unlisten', { event: event, eventId: ${String(eventId)} });
+  })()`)
+}
+
+/** One line per window saying how far Show's request got. */
+async function describeShowCrossing(main: TauriPage, queuePage: TauriPage, operationId: string): Promise<string> {
+  const queueHits = await queuePage
+    .evaluate(`String(window.__showProbeHits)`)
+    .catch((e: unknown) => `unreadable (${String(e)})`)
+  const mainState = await main
+    .evaluate(
+      `(function() {
+        var table = window.__internal_unstable_listeners_object_id__;
+        var entries = table && table[${JSON.stringify(SHOW_EVENT)}];
+        var callbacks = window.__TAURI_INTERNALS__.callbacks;
+        var probe = window.__showProbeHandler;
+        var app = [];
+        if (entries) {
+          Object.getOwnPropertyNames(entries).forEach(function(id) {
+            var handlerId = entries[id].handlerId;
+            if (handlerId === probe) return;
+            app.push(id + (callbacks && callbacks.has(handlerId) ? ':live' : ':no-callback'));
+          });
+        }
+        var rows = document.querySelectorAll('[data-dialog-id]');
+        return 'probe hits ' + String(window.__showProbeHits) +
+          ', app listeners [' + (entries ? app.join(' ') : 'no table') + ']' +
+          ', open dialogs [' + Array.prototype.map.call(rows, function(d) { return d.getAttribute('data-dialog-id'); }).join(' ') + ']';
+      })()`,
+    )
+    .catch((e: unknown) => `unreadable (${String(e)})`)
+  const backend = await main
+    .evaluate(
+      `(async function() {
+        var ops = await window.__TAURI_INTERNALS__.invoke('list_operations');
+        var op = ops.find(function(o) { return o.operationId === ${JSON.stringify(operationId)}; });
+        return op ? op.status : 'gone';
+      })()`,
+    )
+    .catch((e: unknown) => `unreadable (${String(e)})`)
+  return `Show's crossing for op ${operationId} (backend status: ${String(backend)}): queue window heard its own request ${String(queueHits)} time(s); main window: ${String(mainState)}`
+}
+
 test.beforeEach(async ({ tauriPage }) => {
   const fixtureRoot = getFixtureRoot()
   recreateFixtures(fixtureRoot)
@@ -419,21 +495,35 @@ test.describe('Operation queue window', () => {
     expect(runningId, 'a running row exists').toBeTruthy()
     if (!runningId) throw new Error('no running row')
 
-    await clickRowButton(queuePage, runningId, 'Show this operation in the main window')
+    const mainProbe = await installShowProbe(main)
+    const queueProbe = await installShowProbe(queuePage)
+    try {
+      await clickRowButton(queuePage, runningId, 'Show this operation in the main window')
 
-    // The main window shows it, with its live readout rather than an empty
-    // frame: the window's fan-out hands a late session the last tick it saw.
-    await expect
-      .poll(
-        async () =>
-          await main.evaluate(`(function() {
-            var dialog = document.querySelector('[data-dialog-id="transfer-progress"]');
-            if (!dialog) return 'no dialog';
-            return dialog.querySelector('.progress-readout') ? 'readout' : 'no readout';
-          })()`),
-        { timeout: waitBudget(15000) },
-      )
-      .toBe('readout')
+      // The main window shows it, with its live readout rather than an empty
+      // frame: the window's fan-out hands a late session the last tick it saw.
+      await expect
+        .poll(
+          async () =>
+            await main.evaluate(`(function() {
+              var dialog = document.querySelector('[data-dialog-id="transfer-progress"]');
+              if (!dialog) return 'no dialog';
+              return dialog.querySelector('.progress-readout') ? 'readout' : 'no readout';
+            })()`),
+          { timeout: waitBudget(15000) },
+        )
+        .toBe('readout')
+    } catch (error) {
+      const crossing = await describeShowCrossing(main, queuePage, runningId)
+      if (error instanceof Error) {
+        error.message = `${crossing}\n${error.message}`
+        throw error
+      }
+      throw new Error(`${crossing}\n${String(error)}`, { cause: error })
+    } finally {
+      await removeShowProbe(main, mainProbe).catch(() => undefined)
+      await removeShowProbe(queuePage, queueProbe).catch(() => undefined)
+    }
 
     // Background it again: the dialog goes, the operation doesn't.
     await main.evaluate(`(function() {

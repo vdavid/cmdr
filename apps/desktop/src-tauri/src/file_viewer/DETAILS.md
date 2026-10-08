@@ -191,7 +191,7 @@ receives a `MaterializedFile` owns removing `cleanup_dir` (the reaper only cover
 
 **The cap is 256 MiB** (`PREVIEW_CAP_BYTES`), chosen to comfortably cover real preview content (documents, images, PDFs,
 most media) while bounding the temp write, extraction time, and decompression amplification. It's independent of the FE
-copy-selection ceiling (`COPY_REFUSE_BYTES`, 100 MiB): that caps a *selection*, this caps a whole-entry materialization.
+copy-selection ceiling (`COPY_REFUSE_BYTES`, 100 MB): that caps a *selection*, this caps a whole-entry materialization.
 A viewer pull has no total time budget, only a stall rule, and its window shows progress; an `inspect_file` pull obeys
 that tool's five-second per-path budget: § "Watching a pull" below.
 
@@ -222,6 +222,48 @@ did. A local disk and an OS-mounted share are unchanged.
 **The temp is a snapshot, like a routed temp.** No watcher is spawned for it, so tail mode never extends it and
 `viewer_reload` re-reads the temp, not the phone. The toolbar's tail toggle stays available and does nothing visible,
 exactly as for a file inside a `.zip`. To see a newer copy, close and reopen the viewer.
+
+### Open with on a routed file
+
+`open_with_extract.rs` serves the file context menu's "Open with" (a listed app or "Other…") for a row only a route
+serves: a file inside an archive, or a blob in a `.git` snapshot. It reuses this pull (`extract_routed_into`, the same
+`pull_to_temp` behind a `TempSpot` naming its own dir and prefix) and owns everything after it. The module doc carries
+the reasons; the shape:
+
+- **A fresh copy per launch, `0o444`, under `<app_data_dir>/open-with-extract/.cmdr-open-with-<uuid>/`**, reaped by
+  `init_open_with_extract_dir` at startup and never earlier: a launched app has no close event, so the process boundary
+  is the only signal a copy is done with. ❌ No refcount, dedup cache, TTL reaper, shared dir with the viewer, or
+  write-back (edits an app saves stay in the copy).
+- **Each family's reaper sees only its own prefix in its own dir** (`reap_temps_with_prefix`), so the viewer's reaper
+  can never take a copy an app has open, and the reverse.
+- **The cap is `OPEN_WITH_CAP_BYTES` (2 GiB)**, refused from the declared size before a byte is written, like the
+  viewer's 256 MiB preview cap: what people open in a real app (a video, a big PDF) runs bigger than what they preview.
+- **The launch path.** `../menu/open_with.rs::launch_with` keeps an ordinary launch synchronous on the main thread. When
+  any row routes, it pulls on the blocking pool and hops back to the main thread for `open_paths_with`. The volume
+  under the path is `mount_id_for_path` (else the default volume), since the menu carries paths only and a route rides
+  on its parent drive's volume.
+- **A pull that can't finish launches nothing and says why.** `launch_paths` answers a `RefusedCopy` (the row, plus a
+  typed `OpenWithCopyRefusal`: `tooLarge { cap }`, `needsPassword`, `archiveUnreadable`, `unreadable`, mapped from the
+  `ViewerError` variant, ❌ never its message), and an `OpenWithCopySource` (`archive` / `repoHistory`) taken from the
+  resolved `RoutedKind`, which `extract_routed_into` hands back with its failure (`RoutedPullFailure`) so the too-big
+  toast can name where the file sits. The archive reasons only ever come from an archive: a portal read that breaks
+  off maps to `Io` (`map_volume_error`), so a snapshot lands on `unreadable`. `launch_with` logs it and emits `OpenWithCopyRefused`, which the main
+  window's `../../../src/lib/file-explorer/open-with-refused-bridge.ts` shows as a warning toast: the click lands on the native
+  menu, so the frontend hears of it no other way. A locked archive is `ArchiveFailureKind::NeedsPassword`
+  (`map_volume_error`), because copying the file out (F5) asks for the password and fixes it. There's no "preparing"
+  cue while a big pull runs: nothing on the main window fits one without a new progress surface. A failed LAUNCH
+  (`open_paths_with`) is still log-only, ordinary rows included.
+- **The app list asks about a stand-in.** `URLsForApplicationsToOpenURL:` answers no apps for a path with nothing at it
+  (verified on macOS 27.0 via `osascript`, 2026-10-01), and the menu is built before anything is pulled. So
+  `../menu/context_menu_facts.rs` asks about `listing_path`: for a routed row, an empty `stand-in.<ext>` in
+  `.cmdr-open-with-types/`, which LaunchServices types by extension exactly as it would the real entry, with the same
+  ranking and the same per-extension cache. ❌ Not `URLsForApplicationsToOpenContentType:`: it needs
+  `UniformTypeIdentifiers.framework`, which dyld refuses on the 10.15 floor (the reasoning F4's editor list follows,
+  `../file_system/DETAILS.md` § "Text editor").
+- Out of scope: a file on a volume the OS can't open (a phone, SFTP). The menu context carries no volume id to pull
+  through, so those still launch on the raw path and fail as before.
+
+Covered by `open_with_extract_test.rs`.
 
 ### Watching a pull
 
@@ -302,6 +344,10 @@ this row at a segment boundary, not at a newline the file holds), and `line_numb
 line, `None` on a continuation, so the gutter prints a number once per line). The chunk also carries
 `end_byte_offset`, the TRUE source offset just past the last row, and `ChunkEnd`, which says whether it ran out of
 rows, out of `CHUNK_BUDGET_BYTES` (2 MiB), or out of file.
+
+**The wire counts rows too.** `SeekTarget::Row` / `SeekTargetKind::Row`, `RangeEnd::Row { row, offset }`, and
+`SearchMatch.row` all carry the row index, and the frontend uses them as-is. A real line number only ever travels as
+`ViewerRow.line_number` (the gutter) or `totalLines` (the status bar).
 
 **Three things a caller gets wrong without thinking about it:**
 
@@ -397,11 +443,14 @@ that the scan opener finds a line exactly with no index).
 
 - `viewer_open(path)` → `ViewerOpenResult` (session ID, metadata, initial lines, backend type)
 - `viewer_get_lines(session_id, target_type, target_value, count)` → `Result<LineChunk, ViewerError>`. `target_type` is
-  the typed `SeekTargetKind` (`line` / `byte` / `fraction`), which pairs with the numeric `target_value`; a typed
+  the typed `SeekTargetKind` (`row` / `byte` / `fraction`), which pairs with the numeric `target_value`; a typed
   parameter is what keeps the backend from re-parsing a free-form string and needing an error arm for a case no caller
-  can reach
+  can reach. Runs under the 2 s `VIEWER_TIMEOUT` with a cancel flag of its own (`get_lines_within` in
+  `commands/file_viewer.rs`): the deadline flips it, and the backend's per-row check (`collect_rows`, and the
+  `FullLoad` loop) stops the orphaned read at its next row. A fetch is bounded (`CHUNK_BUDGET_BYTES`), so this only
+  matters on a slow or stuck network mount, where each orphan would otherwise hold a blocking thread to the end
 - `viewer_read_range(session_id, read_id, anchor, focus)` → `Result<String, ViewerError>`: reads a logical
-  `(line, offset)` range as one UTF-8 string. Endpoints are `RangeEnd::Line { line, offset }` (UTF-16 code unit offset)
+  `(row, offset)` range as one UTF-8 string. Endpoints are `RangeEnd::Row { row, offset }` (UTF-16 code unit offset)
   or `RangeEnd::Eof`, which ⌘A emits in ByteSeek-no-index mode (`makeSelectToEof` / `toRangeEnds` in the frontend's
   `routes/viewer/selection.svelte.ts`). `read_id` is FE-allocated so cancel can land without an
   extra round-trip. The function holds the SESSIONS lock only long enough to clone the backend `Arc` and register the
@@ -475,8 +524,11 @@ Per-session, a manager thread (`spawn_watcher_manager`) does the FSEvents subscr
 - `LineIndexBackend::extend_to(new_size, cancel)` opens the file, seeks to `self.total_bytes`, drives a
   `NewlineScanner` started at that offset over the new range, clones the checkpoint vec and appends new entries.
 - `ByteSeekBackend::extend_to` returns a fresh `ByteSeekBackend` with the updated size field.
-- `FullLoadBackend::extend_to_boxed` returns `ViewerError::Io` — the session is responsible for escalating FullLoad →
-  ByteSeek before any append crosses `FULL_LOAD_THRESHOLD`.
+- `FullLoadBackend::extend_to_boxed` returns `ViewerError::Io`: it can't extend in place. So `apply_tail_extend`
+  never calls it on a FullLoad session; it reopens through `reopen_backend` instead (FullLoad while the file still
+  fits under `FULL_LOAD_THRESHOLD`, ByteSeek once it crosses), under the same snapshot-and-`Arc::ptr_eq` swap, and
+  updates `backend_type` with it. A small, fresh log (`cmdr.log` after a rotation) is the common case. Pinned by
+  `tail_mode_on_a_full_load_file_reopens_it_to_take_in_the_append`.
 
 ## Gotchas (tail mode)
 
@@ -654,7 +706,7 @@ same mutex: if it sees `Cancelled`, it leaves it. Tests `test_worker_done_after_
 `test_watchdog_forces_cancel_when_worker_ignores_flag` pin this contract.
 
 **Decision**: `SearchMatch.byte_offset` stores the byte offset of the line start for each match.
-**Why**: In ByteSeek mode (when line indexing timed out), search returns exact line numbers but the virtual scroll uses estimated line counts for fraction-based seeking. The byte offset lets the frontend convert to scroll position via `(byteOffset / totalBytes) * estimatedTotalLines`, which is the same fraction the virtual scroll uses for fetching. Without this, navigating to a search match scrolls to the wrong part of the file.
+**Why**: In ByteSeek mode (when line indexing timed out), search returns exact line numbers but the virtual scroll uses estimated line counts for fraction-based seeking. The byte offset lets the frontend convert to scroll position via `(byteOffset / totalBytes) * estimatedTotalRows`, which is the same fraction the virtual scroll uses for fetching. Without this, navigating to a search match scrolls to the wrong part of the file.
 
 **Decision**: Sparse checkpoints every 256 lines instead of indexing every line.
 **Why**: Indexing every line in a 100M-line file would need ~800 MB of offset data (8 bytes each). At 256-line intervals, the same file needs ~3 MB. The trade-off is that seeking to a specific line requires reading forward up to 255 lines from the nearest checkpoint, which takes <1ms on any modern disk, well within the 16ms frame budget for 60fps scrolling.
@@ -693,13 +745,17 @@ timeout shape. Why every family owns its error type: `docs/guides/error-handling
 - **`read_range` cancellation is per-read, not session-wide**: each `read_range` call inserts an `Arc<AtomicBool>` into
   `session.active_reads` keyed by the FE-allocated `read_id`. `cancel_read(session_id, read_id)` flips that one flag.
   Per-read (not session-wide) for the same reason as `search_cancel`: a session-wide flag would race against concurrent
-  reads and against reads that complete just as the user starts a new one.
-- **`read_range` advances by byte offset after the first chunk, not by line number**: ByteSeek's `SeekTarget::Line(N)`
-  resolves to `N * 80` bytes (no line index), so a multi-chunk read keyed by line number would misalign as soon as line
-  lengths drift from the 80-byte estimate. `range_read.rs` keys the first chunk by line, then by `byte_offset = chunk
+  reads and against reads that complete just as the user starts a new one. The same flag rides into each chunk's
+  `get_lines`, so Escape also stops a chunk mid-walk. Every `get_lines` takes a flag (`FileViewerBackend::get_lines`);
+  a caller with nothing to cancel passes a fresh `false` one: the open's initial rows, and `inspect_file`'s window and
+  per-hit line reads, whose own flag a deadline has often already set (it stopped the line index or the scan, and the
+  bounded read after it is the point).
+- **`read_range` advances by byte offset after the first chunk, not by row number**: ByteSeek's `SeekTarget::Row(N)`
+  resolves through its bytes-per-row estimate (no line index), so a multi-chunk read keyed by row number would misalign
+  as soon as row lengths drift from the estimate. `range_read.rs` keys the first chunk by row, then by `byte_offset = chunk
   end` for every subsequent chunk. All three backends honour byte-offset seeks exactly.
 - **The save is the escape hatch from the clipboard's memory refusal, so it must never buffer the range.** The copy
-  dialog refuses a clipboard copy past `COPY_REFUSE_BYTES` (100 MiB) and points the user at "Save as", so
+  dialog refuses a clipboard copy past `COPY_REFUSE_BYTES` (100 MB) and points the user at "Save as", so
   `write_range_to_file` walks the range through `read_range_streamed` in `STREAM_CHUNK_BYTES` (1 MiB) pieces and writes
   each one to the temp. Chunks break on line boundaries, never inside a character, and each is decoded first, so a
   UTF-16 source saves as UTF-8 text (a raw byte copy would silently change every non-UTF-8 file). The cancel flag is

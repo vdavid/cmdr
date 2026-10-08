@@ -69,9 +69,10 @@ impl std::fmt::Debug for SecretOffer {
 ///
 /// Forwards everything else, so a dial that reads a second entry (another
 /// account, a wide server-level one) still sees what the user has actually
-/// saved. ❗ It never writes: a `remember: false` dial exists so nothing is
-/// persisted, and a backend that saved what it authenticated with would defeat
-/// exactly that.
+/// saved. ❗ It never writes while the offer is live: a `remember: false` dial
+/// exists so nothing is persisted, and a backend that saved what it
+/// authenticated with would defeat exactly that. After [`forget`](Self::forget)
+/// it forwards writes too.
 pub struct OneShotCredentials {
     inner: Arc<dyn CredentialStore>,
     /// `None` once the attempt is over. Read on every lookup, so disarming takes
@@ -128,14 +129,19 @@ impl CredentialStore for OneShotCredentials {
 
     fn save_credentials(
         &self,
-        _service: &str,
-        _scope: Option<&str>,
-        _credentials: &StoredCredentials,
+        service: &str,
+        scope: Option<&str>,
+        credentials: &StoredCredentials,
     ) -> Result<(), CredentialsNotStored> {
-        // The documented "the store said no" answer, which every backend already
-        // logs and carries on from. ❌ Not a forward: this dial's whole point is
-        // that nothing is written.
-        Err(CredentialsNotStored)
+        // While the offer is live: the documented "the store said no" answer,
+        // which every backend already logs and carries on from. ❌ Not a forward:
+        // this dial's whole point is that nothing is written.
+        if self.offer.lock_ignore_poison().is_some() {
+            return Err(CredentialsNotStored);
+        }
+        // Once it's over, the wrapper is the real store again, so a later "sign
+        // in and remember" on this volume isn't refused for how it was opened.
+        self.inner.save_credentials(service, scope, credentials)
     }
 }
 

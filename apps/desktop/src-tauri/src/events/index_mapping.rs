@@ -70,6 +70,28 @@ pub struct IndexScanStartedEvent {
     /// walk puts every folder on the drive in flux for the run's whole length,
     /// while a phased run puts only the ground the branch events name in flux.
     pub covered_in_phases: bool,
+    /// What the steps after each one took on the last completed run of this kind:
+    /// the remembered half of the overall "~X left".
+    pub steps_ahead_ms: StepsAheadMs,
+}
+
+/// The remembered time left after each checklist step finishes, keyed by the
+/// frontend's step kinds. The frontend adds its live estimate for the active
+/// step to the entry for that step, and shows no overall figure where the entry
+/// is `None` (no history for a step still ahead, or a step this run doesn't
+/// have). The sum and its honesty gate are the index crate's
+/// (`lifecycle/steps_ahead.rs`); this only renames the keys for the wire.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct StepsAheadMs {
+    /// Left once the walk (find files) is done.
+    pub find_files: Option<u64>,
+    /// Left once the file list is saved (or updated, on a change check).
+    pub save_file_list: Option<u64>,
+    /// Left once folder sizes are computed.
+    pub compute_folder_sizes: Option<u64>,
+    /// Left once the catch-up step is done.
+    pub catch_up: Option<u64>,
 }
 
 /// A drive's first index moved on to its next phase.
@@ -269,10 +291,14 @@ pub struct IndexMemoryWarningEvent {
     /// Resident set size (RSS) at the time, in bytes. Counts graphics and shared
     /// mappings `phys_footprint` excludes, so it's context, not the trigger.
     pub resident_bytes: u64,
-    /// Bytes mimalloc (our global allocator, so all Rust allocation including
-    /// indexing) has committed.
+    /// The global allocator the two figures below come from. Their meaning
+    /// depends on it, so a report carries it rather than leaving a reader to guess.
+    pub global_allocator: cmdr_fs::process_memory::GlobalAllocator,
+    /// Bytes the global allocator holds for the Rust heap (all Rust allocation,
+    /// indexing included): mimalloc's committed bytes, or the default malloc
+    /// zone's reserved bytes, which it shares with Objective-C and C code.
     pub rust_heap_bytes: u64,
-    /// Bytes the system malloc zones hold: WebKit, Objective-C, and C libraries.
+    /// Bytes the other malloc zones hold: WebKit, Objective-C, and C libraries.
     /// Does NOT include the Rust heap above.
     pub system_malloc_bytes: u64,
     /// `phys_footprint` minus both allocators: graphics surfaces, mapped files,
@@ -426,6 +452,10 @@ pub(crate) fn route(event: IndexEvent, app: Option<&AppHandle>) -> Destination {
             prior_scan_duration_ms,
             volume_used_bytes,
             covered_in_phases,
+            left_after_find_files_ms,
+            left_after_save_ms,
+            left_after_compute_ms,
+            left_after_catch_up_ms,
         } => to_frontend(
             app,
             IndexScanStartedEvent {
@@ -435,6 +465,12 @@ pub(crate) fn route(event: IndexEvent, app: Option<&AppHandle>) -> Destination {
                 prior_scan_duration_ms,
                 volume_used_bytes,
                 covered_in_phases,
+                steps_ahead_ms: StepsAheadMs {
+                    find_files: left_after_find_files_ms,
+                    save_file_list: left_after_save_ms,
+                    compute_folder_sizes: left_after_compute_ms,
+                    catch_up: left_after_catch_up_ms,
+                },
             },
         ),
         IndexEvent::CoverageBranchStarted { volume_id, roots } => {
@@ -532,6 +568,7 @@ pub(crate) fn route(event: IndexEvent, app: Option<&AppHandle>) -> Destination {
         IndexEvent::MemoryWarning {
             phys_footprint_bytes,
             resident_bytes,
+            global_allocator,
             rust_heap_bytes,
             system_malloc_bytes,
             untracked_bytes,
@@ -541,6 +578,7 @@ pub(crate) fn route(event: IndexEvent, app: Option<&AppHandle>) -> Destination {
             IndexMemoryWarningEvent {
                 phys_footprint_bytes,
                 resident_bytes,
+                global_allocator,
                 rust_heap_bytes,
                 system_malloc_bytes,
                 untracked_bytes,

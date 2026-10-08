@@ -59,13 +59,19 @@ vi.mock('$lib/tauri-commands', () => ({
       modelInstalled: false,
       modelName: 'Ministral 3B',
       modelSizeBytes: 0,
-      modelSizeFormatted: '0 B',
       downloadInProgress: false,
       localAiSupported: true,
       kvBytesPerToken: 0,
       baseOverheadBytes: 0,
     }),
   ),
+}))
+
+// The organization's lock on `ai.provider`, as the backend's `locked_settings` would name it.
+const policyLocks = vi.hoisted(() => new Map<string, unknown>())
+vi.mock('$lib/managed-policy/managed-policy.svelte', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  getSettingLock: (id: string) => policyLocks.get(id),
 }))
 
 vi.mock('$lib/settings/ai-config', () => ({
@@ -146,6 +152,7 @@ describe('OnboardingWizard', () => {
     closeWizard()
     resetForTesting()
     _resetOpenDialogsForTesting()
+    policyLocks.clear()
   })
 
   afterEach(async () => {
@@ -313,6 +320,20 @@ describe('OnboardingWizard', () => {
     await tick()
     expect(getOnboardingState().currentStep).toBe(1)
     expect(getOnboardingState().step1FooterMode).toBe('decide')
+  })
+
+  it('walks past the AI step when the organization turned AI off, both ways', async () => {
+    policyLocks.set('ai.provider', { kind: 'fixed', value: 'off' })
+    openWizard('first-launch')
+    setCurrentStep(2)
+    mounted = mountWizard()
+    await tick()
+    flushSync()
+    expect(getOnboardingState().currentStep).toBe(3)
+    backButton(mounted.target)?.click()
+    flushSync()
+    await tick()
+    expect(getOnboardingState().currentStep).toBe(1)
   })
 
   it('swallows Escape: pressing it does not change the step or unmount', async () => {

@@ -24,6 +24,7 @@ use std::io::SeekFrom;
 use std::path::Path;
 use std::pin::Pin;
 use std::sync::Arc;
+use std::time::SystemTime;
 
 use cmdr_fs::volume::{ChannelReadStream, StreamLength, VolumeError};
 use futures_util::StreamExt;
@@ -97,18 +98,30 @@ impl RemoteFile {
         Self { file, remote }
     }
 
-    /// The file's size, from an `fstat` on the handle already open.
+    /// The file's size and modification date, from an `fstat` on the handle
+    /// already open.
     ///
     /// The handle rather than the path, so the answer describes the bytes this
-    /// stream is about to read even if the name is replaced under it.
-    async fn len(&mut self) -> Result<u64, VolumeError> {
+    /// stream is about to read even if the name is replaced under it. The date
+    /// rides the same answer, so reporting it costs no round trip.
+    async fn stat(&mut self) -> Result<OpenedFile, VolumeError> {
         let meta = self
             .file
             .metadata()
             .await
             .map_err(|e| map_sftp_error(&e, &self.remote))?;
-        Ok(meta.len().unwrap_or(0))
+        Ok(OpenedFile {
+            size: meta.len().unwrap_or(0),
+            modified_at: meta.modified().map(|stamp| stamp.as_system_time()),
+        })
     }
+}
+
+/// What the open learns about a file before its first byte is handed over.
+struct OpenedFile {
+    size: u64,
+    /// `None` when the server's `fstat` answer carries no times.
+    modified_at: Option<SystemTime>,
 }
 
 impl PositionedRead for RemoteFile {
@@ -220,7 +233,7 @@ impl SftpVolume {
         // would serialize every other operation on the one channel.
         let session = self.clone_session().await?;
 
-        let (size_tx, size_rx) = tokio::sync::oneshot::channel::<Result<u64, VolumeError>>();
+        let (size_tx, size_rx) = tokio::sync::oneshot::channel::<Result<OpenedFile, VolumeError>>();
         let (chunk_tx, chunk_rx) = tokio::sync::mpsc::channel::<Result<Vec<u8>, VolumeError>>(STREAM_CHANNEL_CAPACITY);
         let (cancel_tx, cancel_rx) = tokio::sync::oneshot::channel::<()>();
 
@@ -231,19 +244,18 @@ impl SftpVolume {
             .runtime()
             .spawn(produce_stream(session, remote, depth, size_tx, chunk_tx, cancel_rx));
 
-        let total_size = match size_rx.await {
-            Ok(Ok(size)) => size,
+        let opened = match size_rx.await {
+            Ok(Ok(opened)) => opened,
             Ok(Err(e)) => return Err(e),
             // The producer's task went away without answering, which only a
             // runtime shutdown does.
             Err(_) => return Err(VolumeError::DeviceDisconnected(self.inner.volume_id.clone())),
         };
 
-        Ok(ChannelReadStream::new(
-            chunk_rx,
-            cancel_tx,
-            StreamLength::Known(total_size),
-        ))
+        Ok(
+            ChannelReadStream::new(chunk_rx, cancel_tx, StreamLength::Known(opened.size))
+                .with_modified_at(opened.modified_at),
+        )
     }
 
     /// Exactly `[offset, offset + len)`, filled from as few round trips as the
@@ -285,7 +297,7 @@ async fn produce_stream(
     session: Arc<SshConnection>,
     remote: String,
     depth: usize,
-    size_tx: tokio::sync::oneshot::Sender<Result<u64, VolumeError>>,
+    size_tx: tokio::sync::oneshot::Sender<Result<OpenedFile, VolumeError>>,
     chunk_tx: tokio::sync::mpsc::Sender<Result<Vec<u8>, VolumeError>>,
     mut cancel_rx: tokio::sync::oneshot::Receiver<()>,
 ) {
@@ -303,10 +315,10 @@ async fn produce_stream(
     // a file answers with fewer bytes, never with an error.
     let mut sizing = RemoteFile::new(file, Arc::from(remote.as_str()));
     let mut head = sizing.clone();
-    let (size, first) = tokio::join!(sizing.len(), head.read_at(0, CHUNK_BYTES));
+    let (opened, first) = tokio::join!(sizing.stat(), head.read_at(0, CHUNK_BYTES));
 
-    let size = match size {
-        Ok(size) => size,
+    let opened = match opened {
+        Ok(opened) => opened,
         Err(e) => {
             let _ = size_tx.send(Err(e));
             return;
@@ -319,7 +331,8 @@ async fn produce_stream(
             return;
         }
     };
-    if size_tx.send(Ok(size)).is_err() {
+    let size = opened.size;
+    if size_tx.send(Ok(opened)).is_err() {
         // The caller gave up before the size landed. Nothing to stream to.
         return;
     }

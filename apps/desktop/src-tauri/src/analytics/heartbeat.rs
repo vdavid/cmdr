@@ -13,7 +13,9 @@
 
 use super::spool::{Spool, SpooledEvent};
 use super::{SendPermission, config_shape};
+use crate::managed_policy::{Egress, ManagedPolicy};
 use crate::send_schedule::{SendCadence, SendRecord, now_unix_ms};
+use crate::server_request::ServerRequestError;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
@@ -89,6 +91,9 @@ enum BeatOutcome {
     Refused,
     /// Anything else: no answer, a timeout, a 5xx, a 429. Worth retrying unchanged.
     Failed,
+    /// The organization's policy turned usage stats off since the permission check, so nothing
+    /// went out. Cleans up like an opt-out.
+    BlockedByPolicy,
 }
 
 impl BeatOutcome {
@@ -122,7 +127,20 @@ fn settle(state: &mut HeartbeatState, outcome: BeatOutcome, sent_uptime: u64, no
             state.schedule.record_failure(now_ms);
             false
         }
+        BeatOutcome::BlockedByPolicy => false,
     }
+}
+
+/// Drops everything collected but not yet sent: the spooled events and the unreported uptime. An
+/// opt-out (the user's or the organization's) is fully silent, and nothing collected before it is
+/// sent later either. Returns whether `state` changed and needs saving.
+fn forget_unsent(state: &mut HeartbeatState, spool: Option<&Spool>) -> bool {
+    if let Some(spool) = spool {
+        spool.clear();
+    }
+    let had_uptime = state.unreported_uptime_seconds > 0;
+    state.unreported_uptime_seconds = 0;
+    had_uptime
 }
 
 /// Adds `elapsed` to the unreported uptime in whole seconds, keeping the sub-second remainder in
@@ -161,22 +179,17 @@ async fn run(state_path: PathBuf) {
                 }
             }
             SendPermission::OptedOut => {
-                // Fully silent, and nothing collected while opted in is sent later either.
-                if state.unreported_uptime_seconds > 0 {
-                    state.unreported_uptime_seconds = 0;
+                if forget_unsent(&mut state, super::spool()) {
                     save_state(&state_path, &state);
                 }
                 carry = Duration::ZERO;
-                if let Some(spool) = super::spool() {
-                    spool.clear();
-                }
             }
             SendPermission::Granted => {
                 add_uptime(&mut state, &mut carry, elapsed);
                 if state.schedule.due_in(now_unix_ms(), CADENCE).is_zero()
                     && let Some(spool) = super::spool()
                 {
-                    beat(&mut state, spool).await;
+                    let _ = beat(&mut state, spool).await;
                 }
                 save_state(&state_path, &state);
             }
@@ -186,7 +199,7 @@ async fn run(state_path: PathBuf) {
     }
 }
 
-async fn beat(state: &mut HeartbeatState, spool: &Spool) {
+async fn beat(state: &mut HeartbeatState, spool: &Spool) -> BeatOutcome {
     let mut batch = spool.take_batch(MAX_EVENTS_PER_BEAT, EVENT_BYTES_PER_BEAT);
     let sent_uptime = state.unreported_uptime_seconds;
     let events = crate::pluralize::pluralize(batch.events.len() as u64, "event");
@@ -195,6 +208,9 @@ async fn beat(state: &mut HeartbeatState, spool: &Spool) {
     let outcome = send_payload(&payload).await;
     if settle(state, outcome, sent_uptime, now_unix_ms()) {
         spool.acknowledge(&batch);
+    }
+    if outcome == BeatOutcome::BlockedByPolicy {
+        forget_unsent(state, Some(spool));
     }
     match outcome {
         BeatOutcome::Acknowledged => {
@@ -206,13 +222,18 @@ async fn beat(state: &mut HeartbeatState, spool: &Spool) {
                 "Heartbeat refused; dropped the {events} it carried. Check the Worker's heartbeat validator"
             );
         }
-        BeatOutcome::Failed => {}
+        BeatOutcome::Failed | BeatOutcome::BlockedByPolicy => {}
     }
+    outcome
 }
 
 fn build_payload(uptime_seconds: u64, events: Vec<SpooledEvent>) -> HeartbeatPayload {
     let fda_granted = !crate::fda_gate::is_fda_pending_runtime();
-    let config = config_shape::build_config_shape(&super::read_raw_settings(), fda_granted);
+    let config = config_for(
+        &crate::managed_policy::current(),
+        super::read_raw_settings(),
+        fda_granted,
+    );
 
     HeartbeatPayload {
         anal_id: crate::install_id::analytics_id(),
@@ -226,12 +247,29 @@ fn build_payload(uptime_seconds: u64, events: Vec<SpooledEvent>) -> HeartbeatPay
     }
 }
 
+/// The config shape of the EFFECTIVE settings: the organization's locks over the stored ones, plus
+/// whether any policy is in force (one coarse bool, never which keys).
+fn config_for(policy: &ManagedPolicy, mut settings: serde_json::Value, fda_granted: bool) -> serde_json::Value {
+    crate::managed_policy::overlay(policy, &mut settings);
+    config_shape::build_config_shape(
+        &settings,
+        config_shape::RuntimeState {
+            fda_granted,
+            managed_by_organization: policy.is_managed(),
+        },
+    )
+}
+
 fn current_build_mode() -> &'static str {
     if cfg!(debug_assertions) { "debug" } else { "release" }
 }
 
 async fn send_payload(payload: &HeartbeatPayload) -> BeatOutcome {
-    let client = match reqwest::Client::builder().timeout(HEARTBEAT_TIMEOUT).build() {
+    send_payload_to(HEARTBEAT_URL, payload).await
+}
+
+async fn send_payload_to(url: &str, payload: &HeartbeatPayload) -> BeatOutcome {
+    let client = match cmdr_http::client_builder().timeout(HEARTBEAT_TIMEOUT).build() {
         Ok(c) => c,
         Err(e) => {
             log::warn!(target: "analytics", "Couldn't build heartbeat HTTP client: {e}");
@@ -239,14 +277,16 @@ async fn send_payload(payload: &HeartbeatPayload) -> BeatOutcome {
         }
     };
 
-    match client.post(HEARTBEAT_URL).json(payload).send().await {
-        Ok(response) => {
-            let outcome = BeatOutcome::from_status(response.status().as_u16());
+    match crate::server_request::send(Egress::Heartbeat, client.post(url).json(payload)).await {
+        Ok(_) => BeatOutcome::Acknowledged,
+        Err(ServerRequestError::Refused { status, .. }) => {
+            let outcome = BeatOutcome::from_status(status);
             if outcome == BeatOutcome::Failed {
-                log::debug!(target: "analytics", "Heartbeat server returned {}", response.status());
+                log::debug!(target: "analytics", "Heartbeat server returned {status}");
             }
             outcome
         }
+        Err(ServerRequestError::BlockedByPolicy) => BeatOutcome::BlockedByPolicy,
         Err(e) => {
             // A beat that didn't land is fine: the next one after the retry floor carries it all.
             log::debug!(target: "analytics", "Heartbeat send failed: {e}");
@@ -275,6 +315,7 @@ fn save_state(path: &Path, state: &HeartbeatState) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::managed_policy::testing;
     use serde_json::json;
 
     fn payload(events: Vec<SpooledEvent>) -> HeartbeatPayload {
@@ -370,6 +411,103 @@ mod tests {
         assert_eq!(BeatOutcome::from_status(429), BeatOutcome::Failed);
         assert_eq!(BeatOutcome::from_status(500), BeatOutcome::Failed);
         assert_eq!(BeatOutcome::from_status(503), BeatOutcome::Failed);
+    }
+
+    async fn server_answering(status: u16) -> wiremock::MockServer {
+        let server = wiremock::MockServer::start().await;
+        wiremock::Mock::given(wiremock::matchers::method("POST"))
+            .respond_with(wiremock::ResponseTemplate::new(status))
+            .mount(&server)
+            .await;
+        server
+    }
+
+    /// The beat rides `server_request::send`; its statuses still land on the same outcomes.
+    #[tokio::test]
+    async fn a_sent_beat_maps_the_servers_answer_as_before() {
+        for (status, expected) in [
+            (200, BeatOutcome::Acknowledged),
+            (422, BeatOutcome::Refused),
+            (413, BeatOutcome::Refused),
+            (429, BeatOutcome::Failed),
+            (503, BeatOutcome::Failed),
+        ] {
+            let server = server_answering(status).await;
+            assert_eq!(
+                send_payload_to(&server.uri(), &payload(vec![])).await,
+                expected,
+                "{status}"
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn a_beat_that_gets_no_answer_failed() {
+        let port = std::net::TcpListener::bind("127.0.0.1:0")
+            .expect("bind loopback")
+            .local_addr()
+            .expect("a bound socket has an address")
+            .port();
+        let outcome = send_payload_to(&format!("http://127.0.0.1:{port}/heartbeat"), &payload(vec![])).await;
+        assert_eq!(outcome, BeatOutcome::Failed);
+    }
+
+    #[tokio::test]
+    async fn a_managed_off_beat_sends_nothing() {
+        let server = server_answering(200).await;
+        let _policy = testing::override_for_test(testing::forcing(&[testing::DISABLE_USAGE_STATS]));
+
+        let outcome = send_payload_to(&server.uri(), &payload(vec![event()])).await;
+
+        assert_eq!(outcome, BeatOutcome::BlockedByPolicy);
+        assert_eq!(server.received_requests().await.map_or(0, |r| r.len()), 0);
+    }
+
+    /// A policy that arrives between the permission check and the send cleans up exactly like an
+    /// opt-out: nothing collected while it was on goes out later.
+    #[tokio::test]
+    async fn a_beat_the_policy_blocks_forgets_the_spool_and_the_uptime() {
+        let dir = crate::test_support::TestDir::new("heartbeat-blocked-by-policy");
+        let spool = Spool::new(dir.join("events.jsonl"));
+        spool.append(&event());
+        let mut s = state(600);
+        let _policy = testing::override_for_test(testing::forcing(&[testing::DISABLE_USAGE_STATS]));
+
+        let outcome = beat(&mut s, &spool).await;
+
+        assert_eq!(outcome, BeatOutcome::BlockedByPolicy);
+        assert_eq!(s.unreported_uptime_seconds, 0);
+        assert!(
+            spool
+                .take_batch(MAX_EVENTS_PER_BEAT, EVENT_BYTES_PER_BEAT)
+                .events
+                .is_empty()
+        );
+        assert_eq!(s.schedule, SendRecord::default(), "a blocked beat isn't a failed send");
+    }
+
+    /// The heartbeat reports what's in force, so a stored `true` under a managed off reads `false`.
+    #[test]
+    fn the_config_shape_reports_effective_values_and_the_managed_flag() {
+        let stored = json!({
+            "analytics.enabled": true,
+            "updates.crashReports": true,
+            "updates.errorReports": true,
+            "theme.mode": "dark",
+        });
+        let policy = testing::forcing(&[testing::DISABLE_USAGE_STATS, testing::DISABLE_CRASH_AND_ERROR_REPORTS]);
+
+        let config = config_for(&policy, stored.clone(), true);
+
+        assert_eq!(config["analytics.enabled"], json!(false));
+        assert_eq!(config["updates.crashReports"], json!(false));
+        assert_eq!(config["updates.errorReports"], json!(false));
+        assert_eq!(config["theme.mode"], json!("dark"));
+        assert_eq!(config["managedByOrganization"], json!(true));
+
+        let unmanaged = config_for(&ManagedPolicy::default(), stored, true);
+        assert_eq!(unmanaged["analytics.enabled"], json!(true));
+        assert_eq!(unmanaged["managedByOrganization"], json!(false));
     }
 
     fn state(unreported: u64) -> HeartbeatState {

@@ -92,10 +92,10 @@ describe('GoToPathDialog', () => {
     resolveGoToPathMock.mockReset().mockResolvedValue({ status: 'ok', data: { kind: 'invalid', reason: 'empty' } })
   })
 
-  it('disables "Go to path" when the box is empty, enables it once typed', async () => {
+  it('disables "Go" when the box is empty, enables it once typed', async () => {
     const { target, cleanup } = setup()
     await tick()
-    const goButton = [...target.querySelectorAll('button')].find((b) => b.textContent.trim() === 'Go to path')
+    const goButton = [...target.querySelectorAll('button')].find((b) => b.textContent.trim() === 'Go')
     expect(goButton?.disabled).toBe(true)
 
     const input = target.querySelector('input') as HTMLInputElement

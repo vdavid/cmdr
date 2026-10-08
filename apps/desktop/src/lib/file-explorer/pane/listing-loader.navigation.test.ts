@@ -21,6 +21,8 @@ const h = vi.hoisted(() => ({
   pathExistsChecked: vi.fn(),
   resolvePathVolume: vi.fn(),
   trackEvent: vi.fn(),
+  trackLiveListing: vi.fn(),
+  untrackLiveListing: vi.fn(),
   resolveValidPath: vi.fn(),
   getSetting: vi.fn(),
 }))
@@ -34,6 +36,7 @@ function register(bucket: ((p: unknown) => void)[]) {
 
 vi.mock('$lib/tauri-commands', () => ({
   onListingOpening: register(h.listeners.opening),
+  onListingStalled: register([]),
   onListingProgress: register(h.listeners.progress),
   onListingReadComplete: register(h.listeners.readComplete),
   onListingComplete: register(h.listeners.complete),
@@ -46,6 +49,10 @@ vi.mock('$lib/tauri-commands', () => ({
   pathExistsChecked: h.pathExistsChecked,
   resolvePathVolume: h.resolvePathVolume,
   trackEvent: h.trackEvent,
+}))
+vi.mock('./listing-liveness', () => ({
+  trackLiveListing: h.trackLiveListing,
+  untrackLiveListing: h.untrackLiveListing,
 }))
 vi.mock('./tag-sweep', () => ({ sweepListingTags: vi.fn() }))
 vi.mock('../navigation/path-resolution', () => ({ resolveValidPath: h.resolveValidPath }))
@@ -274,5 +281,60 @@ describe('createListingLoader — navigateToFallback / handleCancelLoading / nav
     await expect(loader.navigateToParent()).resolves.toBe(true)
     expect(state.currentPath).toBe('/a')
     expect(h.listDirectoryStart).toHaveBeenCalled()
+  })
+})
+
+describe("createListingLoader — a Back / Forward landing restores its entry's cursor", () => {
+  async function land(over: Parameters<typeof makeHarness>[0], totalCount: number) {
+    const harness = makeHarness(over)
+    await harness.loader.loadDirectory({ path: '/b' })
+    completeCb(0)({ listingId: harness.state.listingId, totalCount, volumeRoot: '/' })
+    await vi.waitFor(() => {
+      expect(harness.state.loading).toBe(false)
+    })
+    return harness
+  }
+
+  it('lands on the remembered row where it is now, past the `..` row', async () => {
+    h.findFileIndex.mockResolvedValue(7)
+    const { state } = await land(
+      { hasParent: true, historyCursor: { path: '/b', cursor: { index: 3, rowPath: '/b/x.txt' } } },
+      20,
+    )
+    expect(h.findFileIndex).toHaveBeenCalledWith(state.listingId, 'x.txt', false)
+    expect(state.cursorIndex).toBe(8)
+  })
+
+  it('falls back to the remembered index, clamped, when the row is gone', async () => {
+    h.findFileIndex.mockResolvedValue(null)
+    const { state } = await land(
+      { hasParent: true, historyCursor: { path: '/b', cursor: { index: 30, rowPath: '/b/gone.txt' } } },
+      9,
+    )
+    // Nine entries plus `..`: the last row is 9.
+    expect(state.cursorIndex).toBe(9)
+  })
+
+  it('uses the index alone when no row was confirmed', async () => {
+    const { state } = await land({ historyCursor: { path: '/b', cursor: { index: 4 } } }, 20)
+    expect(h.findFileIndex).not.toHaveBeenCalled()
+    expect(state.cursorIndex).toBe(4)
+  })
+
+  it('ignores a pending restore meant for another path, and drops it', async () => {
+    const { state } = await land({ cursorIndex: 6, historyCursor: { path: '/elsewhere', cursor: { index: 4 } } }, 20)
+    expect(state.cursorIndex).toBe(0)
+    expect(state.historyCursor).toBeNull()
+  })
+
+  it('lets an explicit selectName win over the remembered cursor', async () => {
+    h.findFileIndex.mockResolvedValue(2)
+    const { loader, state } = makeHarness({ historyCursor: { path: '/b', cursor: { index: 9 } } })
+    await loader.loadDirectory({ path: '/b', selectName: 'pick.txt' })
+    completeCb(0)({ listingId: state.listingId, totalCount: 20, volumeRoot: '/' })
+    await vi.waitFor(() => {
+      expect(state.loading).toBe(false)
+    })
+    expect(state.cursorIndex).toBe(2)
   })
 })

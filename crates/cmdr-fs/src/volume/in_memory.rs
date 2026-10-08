@@ -111,6 +111,20 @@ pub struct InMemoryVolume {
     /// What [`Volume::composes_new_names`] reports. Default `false`; set via
     /// [`Self::with_composed_new_names`] to stand in for a share.
     composes_new_names: bool,
+    /// What [`Volume::publishes_writes_whole`] reports, and whether
+    /// `write_from_stream` honours [`WriteMode`](super::WriteMode) the way an
+    /// object store does (`CreateOrReplace` replaces at the end, the old bytes
+    /// readable until then). Default `false`, where a write onto an existing
+    /// name refuses whatever the mode. Set via [`Self::with_whole_publish`].
+    publishes_writes_whole: bool,
+    /// Whether this volume renames like an object store: [`Volume::rename_work`]
+    /// answers `CopyThenDelete` for every entry, and [`Volume::rename`] refuses
+    /// with `NotSupported`, so a caller that forgot to ask gets caught. Default
+    /// `false`. Set via [`Self::with_renames_by_copy`].
+    renames_by_copy: bool,
+    /// Every batch [`Volume::delete_files`] was handed, in order, so a test can
+    /// see the sweep batched.
+    delete_batches: std::sync::Mutex<Vec<usize>>,
     /// Paths whose [`Volume::is_directory`] and [`Volume::get_metadata`] fail with
     /// an `IoError` instead of answering, modeling a stat that couldn't complete
     /// (a dropped MTP session, a hung mount) rather than a path that isn't there.
@@ -158,6 +172,9 @@ impl InMemoryVolume {
             rename_to_failing: RwLock::new(HashSet::new()),
             create_directory_not_found: false,
             composes_new_names: false,
+            publishes_writes_whole: false,
+            renames_by_copy: false,
+            delete_batches: std::sync::Mutex::new(Vec::new()),
             stat_failing: RwLock::new(HashSet::new()),
             connection_state: None,
             backend_kind: BackendKind::Local,
@@ -252,6 +269,29 @@ impl InMemoryVolume {
     pub fn with_composed_new_names(mut self) -> Self {
         self.composes_new_names = true;
         self
+    }
+
+    /// Makes this volume an object store's double: [`Volume::publishes_writes_whole`]
+    /// answers `true`, and `write_from_stream` lands its bytes only once the
+    /// stream ends, replacing an existing file under `CreateOrReplace` and
+    /// refusing one under `CreateNew`. A write that fails or is cancelled leaves
+    /// the name exactly as it was.
+    pub fn with_whole_publish(mut self) -> Self {
+        self.publishes_writes_whole = true;
+        self
+    }
+
+    /// Makes this volume rename like an object store: every entry's
+    /// [`Volume::rename_work`] is `CopyThenDelete`, and `rename` itself refuses
+    /// with `NotSupported`.
+    pub fn with_renames_by_copy(mut self) -> Self {
+        self.renames_by_copy = true;
+        self
+    }
+
+    /// How many paths each [`Volume::delete_files`] call carried, in order.
+    pub fn delete_batches(&self) -> Vec<usize> {
+        self.delete_batches.lock_ignore_poison().clone()
     }
 
     /// Test helper: fails any `rename` whose DESTINATION is `to`, AFTER the
@@ -428,6 +468,19 @@ impl InMemoryVolume {
         }
     }
 
+    /// Overrides the NAME an existing entry is listed under, while it stays
+    /// stored (and readable) at its real path: a hostile server or device that
+    /// lists `../x` or `/x` for a file. Whatever joins a listed name onto a
+    /// destination path has to refuse it rather than write outside the folder it
+    /// was given (`ChildName`). Test-only.
+    pub fn set_reported_name(&self, path: &Path, reported_name: &str) {
+        let normalized = self.normalize(path);
+        let mut entries = self.entries.write_ignore_poison();
+        if let Some(entry) = entries.get_mut(&normalized) {
+            entry.metadata.name = reported_name.to_string();
+        }
+    }
+
     /// Creates an in-memory volume pre-populated with entries.
     pub fn with_entries(name: impl Into<String>, entries: Vec<FileEntry>) -> Self {
         let volume = Self::new(name);
@@ -494,6 +547,60 @@ impl InMemoryVolume {
         path.parent()
             .map(|p| p.to_path_buf())
             .unwrap_or_else(|| PathBuf::from("/"))
+    }
+
+    /// Puts `data` at `path` in one step, replacing a FILE that's there: the
+    /// landing of a [`with_whole_publish`](Self::with_whole_publish) write.
+    /// A folder at the name is refused, as an object store's would be.
+    fn replace_whole(&self, path: &Path, data: Vec<u8>) -> Result<(), VolumeError> {
+        let normalized = self.normalize(path);
+        let mut entries = self.entries.write_ignore_poison();
+        if entries
+            .get(&normalized)
+            .is_some_and(|entry| entry.metadata.is_directory)
+        {
+            return Err(VolumeError::IsADirectory(normalized.display().to_string()));
+        }
+        Self::insert_file(&mut entries, normalized, data);
+        Ok(())
+    }
+
+    /// Puts a fresh file holding `data` at `normalized`, dated now, replacing
+    /// whatever entry is there. The caller has already decided it may.
+    fn insert_file(entries: &mut HashMap<PathBuf, InMemoryEntry>, normalized: PathBuf, data: Vec<u8>) {
+        let name = normalized
+            .file_name()
+            .map(|s| s.to_string_lossy().to_string())
+            .unwrap_or_default();
+        let metadata = FileEntry {
+            size: Some(data.len() as u64),
+            modified_at: Some(Self::now_secs()),
+            created_at: Some(Self::now_secs()),
+            permissions: 0o644,
+            owner: "testuser".to_string(),
+            group: "staff".to_string(),
+            extended_metadata_loaded: true,
+            ..FileEntry::new(name, normalized.display().to_string(), false, false)
+        };
+        Self::touch_parent_of(entries, &normalized);
+        entries.insert(
+            normalized,
+            InMemoryEntry {
+                metadata,
+                content: Some(data),
+            },
+        );
+    }
+
+    /// Moves a folder's date to now when an entry lands in it or leaves it, as on
+    /// every real store, so an engine test can tell a folder dated after its
+    /// contents landed from one dated before them.
+    fn touch_parent_of(entries: &mut HashMap<PathBuf, InMemoryEntry>, child: &Path) {
+        if let Some(parent) = child.parent().and_then(|parent| entries.get_mut(parent))
+            && parent.metadata.is_directory
+        {
+            parent.metadata.modified_at = Some(Self::now_secs());
+        }
     }
 
     /// Gets current timestamp as seconds since Unix epoch.

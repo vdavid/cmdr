@@ -28,21 +28,6 @@ use proptest as _;
 // ad-hoc debug-logging in tests. Harmless otherwise.
 #[cfg(test)]
 use env_logger as _;
-//noinspection RsUnusedImport
-// We dev-depend on ourselves so the `testing` feature is on for dev targets and
-// off for the shipped binary (see `Cargo.toml`). That makes `cmdr_lib` an extern
-// crate of its own test target, which `unused_crate_dependencies` then reports.
-#[cfg(test)]
-use cmdr_lib as _;
-//noinspection RsUnusedImport
-// Scratch dirs for tests and fixtures, an optional dependency the `testing`
-// feature turns on. Its only LIB use is the virtual-MTP fixture, which also
-// needs `virtual-mtp`, so a `testing`-without-`virtual-mtp` build has the crate
-// and no use for it.
-#[cfg(feature = "testing")]
-use tempfile as _;
-//noinspection RsUnusedImport
-use mimalloc as _;
 //noinspection ALL
 // smb2 crate is used in network/smb_client module (macOS + Linux)
 #[cfg(any(target_os = "macos", target_os = "linux"))]

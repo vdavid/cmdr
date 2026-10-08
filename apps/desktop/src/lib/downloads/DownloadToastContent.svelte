@@ -18,6 +18,7 @@
     import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
     import Button from '$lib/ui/Button.svelte'
     import { dismissToast } from '$lib/ui/toast'
+    import { getAppLogger } from '$lib/logging/logger'
     import { tooltip } from '$lib/tooltip/tooltip'
     import Icon from '$lib/ui/Icon.svelte'
     import { goToDownload } from './go-to-latest'
@@ -86,6 +87,8 @@
 
     const { toastId, explorer, event, shortcutHint, globalBinding, initialCollapsed }: Props = $props()
 
+    const log = getAppLogger('downloads')
+
     /**
      * Local collapse state. Seeded from `initialCollapsed` but deliberately NOT
      * prop-driven afterward: the user toggles it on this very toast, so it carries
@@ -136,8 +139,14 @@
         // to the file before the Settings window comes up).
         e.stopPropagation()
         setDownloadsNotificationsMode('neither')
-        await openSettingsToDownloadsNotifications()
+        // Dismiss before the deep-link: a Settings window that fails to open must
+        // not leave the toast stuck on screen (same order as the low-disk toast).
         dismissToast(toastId)
+        try {
+            await openSettingsToDownloadsNotifications()
+        } catch (err) {
+            log.warn('Failed to open Settings from the download toast: {err}', { err: String(err) })
+        }
     }
 
     async function handleJumpButton(e: MouseEvent) {

@@ -1,0 +1,166 @@
+{
+  "main.instanceLock.alertTitle": "Cmdr уже запущен",
+  "@main.instanceLock.alertTitle": {
+    "sourceHash": "7c8f09d"
+  },
+  "main.instanceLock.alertBody": "Другая копия Cmdr использует эту папку данных. Переключитесь на запущенное приложение или завершите его и попробуйте еще раз.",
+  "@main.instanceLock.alertBody": {
+    "sourceHash": "140c57d"
+  },
+  "main.upgradeNudge.mac": "Добавлены новые варианты начальной настройки. Откройте «Cmdr > Знакомство с приложением…», чтобы посмотреть их.",
+  "@main.upgradeNudge.mac": {
+    "sourceHash": "439adfd"
+  },
+  "main.upgradeNudge.other": "Добавлены новые варианты начальной настройки. Откройте палитру команд и выполните «Знакомство с приложением…», чтобы посмотреть их.",
+  "@main.upgradeNudge.other": {
+    "sourceHash": "5afe1d2"
+  },
+  "main.dockPinNudge.title": "Оставить Cmdr в Dock?",
+  "@main.dockPinNudge.title": {
+    "sourceHash": "3a6ce9f"
+  },
+  "main.dockPinNudge.body": "Вы пользуетесь Cmdr уже несколько дней, и, похоже, он вам подходит. Закрепить его значок в Dock рядом с Finder?",
+  "@main.dockPinNudge.body": {
+    "sourceHash": "7f4265e"
+  },
+  "main.dockPinNudge.unpinNote": "Если передумаете, значок можно открепить в любой момент.",
+  "@main.dockPinNudge.unpinNote": {
+    "sourceHash": "28748d3"
+  },
+  "main.dockPinNudge.decline": "Нет, спасибо",
+  "@main.dockPinNudge.decline": {
+    "sourceHash": "e1a0936"
+  },
+  "main.dockPinNudge.accept": "Да, добавить в Dock",
+  "@main.dockPinNudge.accept": {
+    "sourceHash": "8fbdc76"
+  },
+  "main.dockPinNudge.added": "Cmdr теперь в Dock.",
+  "@main.dockPinNudge.added": {
+    "sourceHash": "61bec58"
+  },
+  "main.dockPinNudge.addedButDockDidNotRestart": "Значок Cmdr на месте, но Dock не перезагрузился. Значок появится, когда вы в следующий раз войдете в систему.",
+  "@main.dockPinNudge.addedButDockDidNotRestart": {
+    "sourceHash": "7a4e3bb"
+  },
+  "main.dockPinNudge.managedDock": "Dock управляется профилем конфигурации, поэтому Cmdr не может добавить свой значок. Это может изменить администратор этого Mac.",
+  "@main.dockPinNudge.managedDock": {
+    "sourceHash": "4781787"
+  },
+  "main.dockPinNudge.notAdded": "На этот раз Cmdr не получилось добавить в Dock. Его можно в любой момент перетащить в Dock из папки «Программы».",
+  "@main.dockPinNudge.notAdded": {
+    "sourceHash": "0b863ad"
+  },
+  "main.revealNudge.title": "Открывать «Показать в Finder» в Cmdr?",
+  "@main.revealNudge.title": {
+    "sourceHash": "45a5b47"
+  },
+  "main.revealNudge.body": "Вы уже некоторое время используете Cmdr. Когда другое приложение выполняет команду «Показать в Finder», Cmdr может открыть папку вместо Finder, сразу установив курсор на файл.",
+  "@main.revealNudge.body": {
+    "sourceHash": "1934a04"
+  },
+  "main.revealNudge.switchBackNote": "Это можно изменить в настройках в любое время.",
+  "@main.revealNudge.switchBackNote": {
+    "sourceHash": "48c2bca"
+  },
+  "main.revealNudge.decline": "Нет, спасибо",
+  "@main.revealNudge.decline": {
+    "sourceHash": "e1a0936"
+  },
+  "main.revealNudge.accept": "Да, открывать в Cmdr",
+  "@main.revealNudge.accept": {
+    "sourceHash": "3291bb4"
+  },
+  "main.revealNudge.turnedOn": "Cmdr теперь открывает «Показать в Finder» из других приложений.",
+  "@main.revealNudge.turnedOn": {
+    "sourceHash": "27c0ea2"
+  },
+  "main.revealNudge.heldByOtherApp": "Команду «Показать в Finder» сейчас обрабатывает приложение {app}. Передать ее Cmdr можно в настройках в любой момент.",
+  "@main.revealNudge.heldByOtherApp": {
+    "sourceHash": "0893821"
+  },
+  "main.revealNudge.notTurnedOn": "На этот раз Cmdr не удалось перехватить «Показать в Finder». Если захотите попробовать еще раз, переключатель есть в настройках.",
+  "@main.revealNudge.notTurnedOn": {
+    "sourceHash": "0f572c0"
+  },
+  "main.revealActivation.title": "Команда «Показать в Finder» открыла папку здесь",
+  "@main.revealActivation.title": {
+    "sourceHash": "6bb18bb"
+  },
+  "main.revealActivation.body": "Cmdr настроен перехватывать такие команды, поэтому файл открылся в панели, а не в Finder. Все остальное открывается как раньше.",
+  "@main.revealActivation.body": {
+    "sourceHash": "19ea7d6"
+  },
+  "main.revealActivation.openSettings": "Изменить в настройках",
+  "@main.revealActivation.openSettings": {
+    "sourceHash": "673f711"
+  },
+  "main.quit.title": "{count, plural, =1 {Завершить работу, пока выполняется операция?} one {Завершить работу, пока выполняется {countText} операция?} few {Завершить работу, пока выполняются {countText} операции?} many {Завершить работу, пока выполняется {countText} операций?} other {Завершить работу, пока выполняется {countText} операции?}}",
+  "@main.quit.title": {
+    "sourceHash": "2671a89"
+  },
+  "main.quit.body": "Все, что уже готово, сохранится. Незавершенная запись остановится, а Cmdr уберет недописанные файлы.",
+  "@main.quit.body": {
+    "sourceHash": "79a69f9"
+  },
+  "main.quit.countdown": "{seconds, plural, one {Cmdr завершит работу через {secondsText} секунду, чтобы не задерживать перезагрузку или выход из системы.} few {Cmdr завершит работу через {secondsText} секунды, чтобы не задерживать перезагрузку или выход из системы.} many {Cmdr завершит работу через {secondsText} секунд, чтобы не задерживать перезагрузку или выход из системы.} other {Cmdr завершит работу через {secondsText} секунды, чтобы не задерживать перезагрузку или выход из системы.}}",
+  "@main.quit.countdown": {
+    "sourceHash": "a389e0c"
+  },
+  "main.quit.countdownAria": "Время до автоматического завершения работы Cmdr",
+  "@main.quit.countdownAria": {
+    "sourceHash": "6b0b5c2"
+  },
+  "main.quit.keepWorking": "Продолжить работу",
+  "@main.quit.keepWorking": {
+    "sourceHash": "5ed03f2"
+  },
+  "main.quit.quitNow": "Завершить сейчас",
+  "@main.quit.quitNow": {
+    "sourceHash": "c96bcc8"
+  },
+  "main.quit.operationsHeading": "Еще выполняется",
+  "@main.quit.operationsHeading": {
+    "sourceHash": "89acce5"
+  },
+  "main.oldWebkit.title": "Cmdr нужна более новая версия Safari",
+  "@main.oldWebkit.title": {
+    "sourceHash": "03e502b"
+  },
+  "main.oldWebkit.body": "Для интерфейса Cmdr требуется Safari 15.4 или новее, а на этом Mac установлена более старая версия. Откройте «Обновление ПО» и установите все доступные обновления. Это должно решить проблему.",
+  "@main.oldWebkit.body": {
+    "sourceHash": "a7112ec"
+  },
+  "main.oldMacos.title": "Cmdr в macOS {version}",
+  "@main.oldMacos.title": {
+    "sourceHash": "e75f925"
+  },
+  "main.oldMacos.body": "Cmdr официально поддерживает macOS 12 и новее, так что здесь он работает без гарантий. Почти все работает, но некоторые цвета и мелкие детали интерфейса могут выглядеть странно, а исправления для старых систем идут в последнюю очередь. Если что-то сломается, мне все равно будет интересно об этом узнать.",
+  "@main.oldMacos.body": {
+    "sourceHash": "f9b4185"
+  },
+  "main.oldMacos.gotIt": "Понятно",
+  "@main.oldMacos.gotIt": {
+    "sourceHash": "5ad3dbd"
+  },
+  "main.oldWebkit.quit": "Завершить",
+  "@main.oldWebkit.quit": {
+    "sourceHash": "b3eb37a"
+  },
+  "main.escapeFullScreenHint.message": "Клавиша Escape вывела Cmdr из полноэкранного режима.",
+  "@main.escapeFullScreenHint.message": {
+    "sourceHash": "f7b4c55"
+  },
+  "main.escapeFullScreenHint.switchLabel": "Выходить из полноэкранного режима по Escape",
+  "@main.escapeFullScreenHint.switchLabel": {
+    "sourceHash": "f98be5e"
+  },
+  "main.escapeFullScreenHint.settingsLine": "Это также можно изменить в разделе <settingsLink>Настройки > Дополнения</settingsLink>.",
+  "@main.escapeFullScreenHint.settingsLine": {
+    "sourceHash": "a7fc48a"
+  },
+  "main.escapeFullScreenHint.onceNote": "Это сообщение вы увидите только один раз.",
+  "@main.escapeFullScreenHint.onceNote": {
+    "sourceHash": "210b892"
+  }
+}

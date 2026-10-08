@@ -4,24 +4,29 @@ pub(crate) mod brief_columns;
 pub(crate) mod cached_listing;
 pub(crate) mod caching;
 pub(crate) mod collation;
+pub(crate) mod compare;
 pub(crate) mod diff;
 pub(crate) mod diff_emitter;
 pub(crate) mod foreign_path;
 pub(crate) mod fuzzy_jump;
 pub(crate) mod listing_host;
 pub(crate) mod mutation;
+pub(crate) mod name_filter;
+pub use name_filter::NameFilterResult;
 pub(crate) mod operations;
 pub(crate) mod orphan_reaper;
 pub(crate) mod path_index;
 pub(crate) mod reading;
 pub(crate) mod sorting;
+pub(crate) mod stall;
+pub(crate) mod stalled_on;
 pub(crate) mod streaming;
 pub(crate) mod visible_rows;
 
 // Re-export types so they're available both externally and locally in this module
 // (call sites import them from `crate::file_system::listing` directly).
 pub use brief_columns::{BriefColumnWidths, BriefColumnsIpcError, compute_brief_column_text_widths};
-pub use diff::{DiffChange, DirectoryDiff, compute_diff};
+pub use diff::DirectoryDiff;
 pub use fuzzy_jump::fuzzy_find_first_match_in_listing;
 // `FileEntry` and its siblings moved to `cmdr-fs` (the `Volume` trait exchanges
 // them, and that trait is the crate's centrepiece). Aliased, not just
@@ -29,9 +34,9 @@ pub use fuzzy_jump::fuzzy_find_first_match_in_listing;
 pub(crate) use cmdr_fs::entry as metadata;
 pub use metadata::{ExtendedMetadata, FileEntry};
 pub use operations::{
-    ListingStartResult, ListingStats, ResortResult, RowBeside, find_file_index, find_file_indices, get_file_at,
-    get_file_beside, get_file_range, get_listing_stats, get_total_count, list_directory_end,
-    list_directory_start_with_volume, refresh_listing_index_sizes, resort_listing, set_listing_include_hidden,
+    ListingLookupError, ListingStats, ResortResult, RowBeside, find_file_index, find_file_indices, get_file_at,
+    get_file_beside, get_file_range, get_listing_stats, keep_listings_alive, list_directory_end,
+    refresh_listing_index_sizes, resort_listing, set_listing_include_hidden,
 };
 pub use reading::{ListingTally, get_single_entry, list_directory_core, list_directory_core_with_tally};
 pub use sorting::{DirectorySortMode, SortColumn, SortOrder};
@@ -42,10 +47,9 @@ pub use operations::{get_files_at_indices, get_paths_at_indices};
 
 // Internal re-exports for file_system module internals (pub(crate) for crate-internal use)
 pub(crate) use caching::{
-    find_listings_for_path, get_cached_listing, get_listing_volume_id_and_path, has_entry, increment_sequence,
-    insert_entry_sorted, remove_entries_by_paths, update_entry_sorted,
+    find_listings_for_path, get_cached_listing, get_listing_volume_id_and_path, has_entry, insert_entry_sorted,
+    remove_entries_by_paths, update_entry_sorted,
 };
-pub(crate) use diff::listing_changed;
 pub(crate) use orphan_reaper::start_orphan_listing_reaper;
 // Notification API for volume mutations
 pub(crate) use cached_listing::OverlayRows;
@@ -74,6 +78,8 @@ pub(crate) mod caching_test_support;
 #[cfg(test)]
 mod collation_test;
 #[cfg(test)]
+mod compare_test;
+#[cfg(test)]
 mod diff_emitter_test;
 #[cfg(test)]
 mod diff_test;
@@ -83,6 +89,8 @@ mod find_file_index_test;
 mod hidden_files_test;
 #[cfg(all(test, feature = "virtual-mtp"))]
 mod mtp_listing_path_test;
+#[cfg(test)]
+mod name_filter_test;
 #[cfg(test)]
 mod operations_test;
 #[cfg(test)]
@@ -106,6 +114,8 @@ mod sorting_test;
 mod sorting_test_support;
 #[cfg(test)]
 mod staging_temps_test;
+#[cfg(test)]
+mod stall_test;
 #[cfg(test)]
 mod stats_test;
 #[cfg(test)]

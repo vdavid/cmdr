@@ -70,6 +70,35 @@ overrides:
   # `^0.6.0`; only raise the ceiling once Kit's runtime uses the 2.x names.
   cookie: '>=0.7.0 <2'
   tmp: '>=0.2.4'
+  # Dependabot fixes for transitive deps whose parents still request the vulnerable
+  # version. All are dev/build-time only (lint, test, Lighthouse CI, wrangler,
+  # Astro's static build); none reach a shipped bundle. Each key is scoped to one
+  # major (`name@N`) so a parent that later moves to the next major isn't dragged
+  # back. Drop an entry once `pnpm why <name>` shows every parent past the fix.
+  brace-expansion@1: ^1.1.21
+  brace-expansion@5: ^5.0.12
+  compression@1: ^1.8.2
+  fast-uri@3: ^3.1.8
+  # `satori` pins `fflate` to exactly 0.7.3, even in its latest release.
+  fflate@0.7: ^0.7.5
+  http-cache-semantics@4: ^4.3.0
+  ip-address@10: ^10.7.1
+  js-yaml@3: ^3.15.2
+  postcss-selector-parser@7: ^7.1.6
+  proxy-addr@2: ^2.0.8
+  qs@6: ^6.16.0
+  # `@cloudflare/vitest-pool-workers` pins an older `miniflare`, which pins these exactly.
+  sharp@0.35: ^0.35.4
+  undici@7: ^7.29.1
+  undici@8: ^8.10.2
+  smol-toml@1: ^1.9.0
+  source-map-js@1: ^1.2.2
+  # Cross-major, both only under `@lhci/cli` (Lighthouse CI, whose latest release
+  # still asks for the old majors). `uuid` 11 keeps the CJS `require('uuid').v4`
+  # that lhci calls; `basic-ftp` 6's only break is refusing a separate FTP
+  # transfer host, and lhci never fetches over FTP.
+  basic-ftp@5: ^6.2.1
+  uuid@8: ^11.1.1
 
 # pnpm 11 requires explicit per-package build-script approval. The legacy
 # `pnpm.onlyBuiltDependencies` field in package.json is ignored.

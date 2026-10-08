@@ -5,8 +5,8 @@
 //! § "Which mounts get a row".
 
 use super::{
-    LocationCategory, LocationInfo, SmbMountInfo, disk_image, get_bool_resource, get_icon_for_path, get_volume_name,
-    get_volume_uuid, is_network_fs_type, is_smb_fs_type, parse_smb_mount_source, supports_trash_for_fs_type,
+    LocationCategory, LocationInfo, SmbMountInfo, disk_image, get_icon_for_path, get_volume_name, get_volume_uuid,
+    is_network_fs_type, is_smb_fs_type, is_volume_ejectable, parse_smb_mount_source, supports_trash_for_fs_type,
     volume_id_for, volume_name_from_path,
 };
 use cmdr_fs::volume::canonical_root::collapse_by_volume_id;
@@ -37,6 +37,57 @@ struct MountEntry {
     /// The mounted filesystem's identity (`f_fsid`, its two words packed high then
     /// low). Renaming a mounted volume moves the mount point and keeps this.
     fsid: u64,
+    /// Who mounted it (`f_owner`).
+    mounted_by: MountedBy,
+}
+
+/// Who mounted a filesystem: the mount-table row's `f_owner`, which `mount` prints
+/// as "mounted by `<name>`" for every row whose owner isn't root.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum MountedBy {
+    /// `f_owner` 0: the system's own mounts, and anything mounted as root.
+    Root,
+    /// The account Cmdr runs as.
+    ThisUser,
+    /// Another account on this Mac, for example one still logged in behind fast
+    /// user switching.
+    AnotherUser,
+}
+
+impl MountedBy {
+    /// Pure, so the three answers are testable without a second account.
+    fn from_owner(owner: libc::uid_t, this_user: libc::uid_t) -> Self {
+        if owner == this_user {
+            Self::ThisUser
+        } else if owner == 0 {
+            Self::Root
+        } else {
+            Self::AnotherUser
+        }
+    }
+}
+
+impl MountEntry {
+    /// Whether this is another account's own mount, which this account can't open:
+    /// a cloud client's or FUSE layer's drive that someone else on this Mac mounted.
+    ///
+    /// Two exceptions keep everything a second account CAN use:
+    ///
+    /// - **A disk** (mounted from `/dev/…`): a drive plugged in while someone else
+    ///   was logged in is "mounted by" them, and it's still everyone's.
+    /// - **A network mount** (`is_network_fs_type`): whether another account's SMB,
+    ///   NFS, WebDAV, or AFP mount is usable from this one is unverified, so those
+    ///   stay as they were. `DETAILS.md` § "Another account's mounts" says what
+    ///   would widen the rule.
+    ///
+    /// ❗ Read off the snapshot row, ❌ never an access probe: that's a syscall per
+    /// mount that can hang on a dead share, and the drive this rule exists for
+    /// answered an ambiguous "No such file or directory".
+    fn is_private_to_another_user(&self) -> bool {
+        self.mounted_by == MountedBy::AnotherUser
+            && !self.mount_from.starts_with("/dev/")
+            && !is_network_fs_type(Some(&self.fs_type))
+    }
 }
 
 /// Snapshot the kernel mount table without blocking on any mount.
@@ -75,6 +126,9 @@ fn enumerate_mounts() -> Option<Vec<MountEntry>> {
     // case the mount table grew past the slack between the two calls.
     unsafe { buf.set_len((filled as usize).min(capacity)) };
 
+    // SAFETY: `getuid` takes no arguments, touches no memory, and can't fail.
+    let this_user = unsafe { libc::getuid() };
+
     Some(
         buf.iter()
             .map(|s| MountEntry {
@@ -84,6 +138,7 @@ fn enumerate_mounts() -> Option<Vec<MountEntry>> {
                 is_read_only: (s.f_flags & libc::MNT_RDONLY as u32) != 0,
                 is_browsable: (s.f_flags & libc::MNT_DONTBROWSE as u32) == 0,
                 fsid: packed_fsid(s),
+                mounted_by: MountedBy::from_owner(s.f_owner, this_user),
             })
             .collect(),
     )
@@ -126,14 +181,70 @@ pub(crate) fn mount_identity_at(path: &str) -> Option<u64> {
         .map(|m| m.fsid)
 }
 
+/// The filesystem type and source of the mount `path` lies on: the deepest mount
+/// point that's a whole-component prefix of it, from the same non-blocking table, so
+/// a hung mount can't stall it. Lexical: a symlink on the way isn't followed. `None`
+/// when the table couldn't be read. With mounts stacked on one path, the last one
+/// listed is the one a lookup reaches.
+pub(crate) fn mount_type_and_source_for(path: &Path) -> Option<(String, String)> {
+    mount_under(&enumerate_mounts()?, path).map(|m| (m.fs_type.clone(), m.mount_from.clone()))
+}
+
+/// [`mount_type_and_source_for`] over a table already read.
+fn mount_under<'a>(mounts: &'a [MountEntry], path: &Path) -> Option<&'a MountEntry> {
+    // `max_by_key` keeps the LAST of equal keys, so a stacked mount wins.
+    mounts
+        .iter()
+        .filter(|m| path.starts_with(&m.mount_point))
+        .max_by_key(|m| m.mount_point.len())
+}
+
 /// Every mount point the kernel currently lists, from the same non-blocking snapshot.
 ///
-/// What the volume REGISTRY sweeps (`file_system::volume::mount_registration`), which is a
-/// different question from what the switcher shows: resolution can mint an ID for any of these,
-/// so registration has to cover all of them. ❗ `None` when the table couldn't be read, ❌ never an
-/// empty list, or the sweep would read a machine with no mounts and register nothing.
+/// What the INDEX cuts its boot-tree scan at, so it's every row, another account's
+/// mounts included: a scan has to stop at a mount it can't enter too. ❗ `None` when
+/// the table couldn't be read, ❌ never an empty list.
 pub(crate) fn mount_roots() -> Option<Vec<String>> {
     Some(enumerate_mounts()?.into_iter().map(|mount| mount.mount_point).collect())
+}
+
+/// The mount points the volume REGISTRY sweeps (`file_system::volume::mount_registration`):
+/// every row except another account's own mounts.
+///
+/// A different question from what the switcher shows: resolution can mint an ID for any mount
+/// this account can reach, so registration has to cover all of those, browsable or not. ❗ `None`
+/// when the table couldn't be read, ❌ never an empty list, or the sweep would read a machine with
+/// no mounts and register nothing.
+pub(crate) fn registrable_mount_roots() -> Option<Vec<String>> {
+    Some(registrable_roots(enumerate_mounts()?))
+}
+
+/// [`registrable_mount_roots`] over a table already read.
+fn registrable_roots(mounts: Vec<MountEntry>) -> Vec<String> {
+    mounts
+        .into_iter()
+        .filter(|mount| !mount.is_private_to_another_user())
+        .map(|mount| mount.mount_point)
+        .collect()
+}
+
+/// Whether the mount at `path` is another account's own
+/// ([`MountEntry::is_private_to_another_user`]), from the same non-blocking table. `false` when
+/// nothing is mounted there or the table couldn't be read: the mount watcher asks this to decide
+/// whether to stay quiet about a mount, and an unknown one is announced as it always was.
+pub(crate) fn is_private_to_another_user(path: &str) -> bool {
+    enumerate_mounts().is_some_and(|mounts| private_to_another_user_at(&mounts, path))
+}
+
+/// [`is_private_to_another_user`] over a table already read. With mounts stacked on one path,
+/// the last one listed is the one a lookup reaches.
+fn private_to_another_user_at(mounts: &[MountEntry], path: &str) -> bool {
+    let path = Path::new(path);
+    mounts
+        .iter()
+        .rev()
+        .find(|mount| Path::new(&mount.mount_point) == path)
+        .is_some_and(MountEntry::is_private_to_another_user)
 }
 
 /// A mount's point and the source it was mounted from (`f_mntfromname`), for code that maps
@@ -214,24 +325,29 @@ pub(crate) fn has_mount_identity(fsid: u64) -> Option<bool> {
 /// the separate CLOUD-or-VOLUMES question, and a FUSE container is a drive we
 /// recognize that isn't cloud storage.
 ///
-/// Never the boot volume (it has its own row), never a dot-prefixed mount, and
-/// never a `~/Library/CloudStorage` path, which the cloud-drive arm publishes and
-/// would otherwise appear twice. Pure, so it's unit-testable.
-fn is_user_facing_mount(path: &str, is_browsable: bool, provider: Option<Provider>) -> bool {
-    let mount = Path::new(path);
-    if mount == Path::new("/") {
+/// Never the boot volume (it has its own row), never a dot-prefixed mount, never
+/// a `~/Library/CloudStorage` path, which the cloud-drive arm publishes and would
+/// otherwise appear twice, and never another account's own mount
+/// ([`MountEntry::is_private_to_another_user`]), recognized provider or not: a row
+/// for it is a drive this account can't open. Pure, so it's unit-testable.
+fn is_user_facing_mount(mount: &MountEntry, provider: Option<Provider>) -> bool {
+    let path = Path::new(&mount.mount_point);
+    if path == Path::new("/") {
         return false;
     }
-    if path.contains("/Library/CloudStorage") {
+    if mount.mount_point.contains("/Library/CloudStorage") {
         return false;
     }
     // Hidden mount (leading dot on the last component), e.g. `/Volumes/.timemachine`.
-    if let Some(name) = mount.file_name().and_then(|n| n.to_str())
+    if let Some(name) = path.file_name().and_then(|n| n.to_str())
         && name.starts_with('.')
     {
         return false;
     }
-    is_browsable || provider.is_some()
+    if mount.is_private_to_another_user() {
+        return false;
+    }
+    mount.is_browsable || provider.is_some()
 }
 
 /// Metadata for a LOCAL mount, resolved via blocking macOS APIs (NSURL +
@@ -288,7 +404,7 @@ fn build_attached_location(
     let path = mount.mount_point.as_str();
     let fs_type = mount.fs_type.clone();
     let provider = super::mount_provider(path, &fs_type);
-    if !is_user_facing_mount(path, mount.is_browsable, provider) {
+    if !is_user_facing_mount(mount, provider) {
         return None;
     }
     let supports_trash = supports_trash_for_fs_type(Some(&fs_type));
@@ -372,7 +488,7 @@ pub fn get_attached_volumes() -> Vec<LocationInfo> {
                     let url = NSURL::fileURLWithPath(&NSString::from_str(path));
                     LocalVolumeMeta {
                         name: get_volume_name(&url, path),
-                        is_ejectable: get_bool_resource(&url, "NSURLVolumeIsEjectableKey").unwrap_or(false),
+                        is_ejectable: is_volume_ejectable(&url, path),
                         icon: get_icon_for_path(path),
                         is_disk_image: disk_image::is_disk_image_mount(path),
                         uuid: get_volume_uuid(&url),
@@ -389,284 +505,5 @@ pub fn get_attached_volumes() -> Vec<LocationInfo> {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    // ========================================================================
-    // Hung-mount guard: getfsstat-based discovery (Bug: dead mount froze launch)
-    // ========================================================================
-
-    /// A browsable mount, which is what every drive a user sees is. The
-    /// unbrowsable case has its own helper, since it's the interesting one.
-    fn mount(mount_point: &str, fs_type: &str, mount_from: &str, is_read_only: bool) -> MountEntry {
-        MountEntry {
-            mount_point: mount_point.to_string(),
-            fs_type: fs_type.to_string(),
-            mount_from: mount_from.to_string(),
-            is_read_only,
-            is_browsable: true,
-            fsid: 0,
-        }
-    }
-
-    /// ❗ A live SMB mount off port 445 is named with its port, as its saved row is:
-    /// two servers on one machine each exporting `private` read identically as
-    /// "private on localhost" (QA round 2).
-    #[test]
-    fn a_live_smb_mount_off_445_names_its_port() {
-        assert_eq!(
-            network_name(&mount("/Volumes/private", "smbfs", "//localhost:11482/private", false)),
-            "private on localhost:11482"
-        );
-        assert_eq!(
-            network_name(&mount("/Volumes/naspi", "smbfs", "//david@192.0.2.9/naspi", false)),
-            "naspi on 192.0.2.9"
-        );
-    }
-
-    /// A mount macOS marks `MNT_DONTBROWSE`: the plumbing, Xcode's `DeviceFS`,
-    /// and possibly a cloud client's drive that hides itself from Finder's sidebar.
-    fn unbrowsable(mount_point: &str, fs_type: &str) -> MountEntry {
-        MountEntry {
-            is_browsable: false,
-            ..mount(mount_point, fs_type, "x", false)
-        }
-    }
-
-    /// A `resolve_local` for local mounts whose enrichment the test doesn't care about.
-    fn plain_resolver(path: &str) -> LocalVolumeMeta {
-        LocalVolumeMeta {
-            name: volume_name_from_path(path),
-            is_ejectable: false,
-            icon: None,
-            is_disk_image: false,
-            uuid: None,
-        }
-    }
-
-    /// A `resolve_local` that fails the test if invoked. Used to prove a network
-    /// mount is classified WITHOUT any blocking NSURL/DiskArbitration/NSWorkspace
-    /// call — the guarantee that a hung mount can't stall discovery.
-    fn forbidden_resolver(_path: &str) -> LocalVolumeMeta {
-        panic!("resolve_local must NOT run for a network mount");
-    }
-
-    /// The OS's own sidebar rule decides, so the plumbing stays out without this
-    /// module naming a single system path.
-    #[test]
-    fn the_browsable_flag_is_what_separates_drives_from_plumbing() {
-        let browsable = |path: &str| is_user_facing_mount(path, true, None);
-        let hidden = |path: &str| is_user_facing_mount(path, false, None);
-
-        assert!(browsable("/Volumes/MyDrive"));
-        assert!(browsable("/Volumes/naspi"));
-        // Everything macOS marks `MNT_DONTBROWSE`: `/System/Volumes/*`, `devfs`,
-        // the Recovery volume, autofs triggers. The old prefix filter needed a
-        // name check for Recovery and missed the rest.
-        assert!(!hidden("/System/Volumes/Data"));
-        assert!(!hidden("/Volumes/Recovery"));
-        assert!(!hidden("/dev"));
-        // The boot volume has its own row, browsable or not.
-        assert!(!browsable("/"));
-        // A `~/Library/CloudStorage` folder is published by the cloud arm.
-        assert!(!browsable("/Volumes/Foo/Library/CloudStorage/Dropbox"));
-        // Hidden by name (NSFileManager's old SkipHiddenVolumes).
-        assert!(!browsable("/Volumes/.timemachine"));
-    }
-
-    /// An unbrowsable mount gets a row only when we recognize who serves it,
-    /// wherever it's mounted. Where it sits proves nothing: Xcode puts a system
-    /// mount inside the home folder.
-    #[test]
-    fn an_unbrowsable_mount_shows_only_when_its_provider_is_recognized() {
-        let row = |path: &str, fs_type: &str| build_attached_location(&unbrowsable(path, fs_type), plain_resolver);
-
-        let pcloud = row("/Users/sven/pCloud Drive", "pcloudfs").expect("a recognized provider's mount gets a row");
-        assert_eq!(pcloud.category, LocationCategory::CloudDrive);
-        assert!(
-            row("/Volumes/pCloudDrive", "pcloudfs").is_some(),
-            "outside the home folder too"
-        );
-        assert!(row("/Users/sven/.CMVolumes/S3", "macfuse").is_some());
-
-        assert!(
-            row("/Users/sven/vaults/work", "apfs").is_none(),
-            "an unrecognized mount stays out"
-        );
-        assert!(
-            row("/Users/sven", "nfs").is_none(),
-            "a network-mounted home folder is not a drive"
-        );
-        assert!(
-            row("/Users/sven/.hidden-vault", "macfuse").is_none(),
-            "a name-hidden mount stays hidden"
-        );
-    }
-
-    /// Regression anchor: Xcode's CoreDevice `DeviceFS` is an unbrowsable FSKit
-    /// mount inside the home folder, and showed up as a phantom "Devices" drive.
-    #[test]
-    fn xcodes_device_fs_mount_gets_no_row() {
-        let device_fs = unbrowsable("/Users/sven/Library/Developer/CoreDevice/DeviceFS", "devicefs");
-        assert!(build_attached_location(&device_fs, plain_resolver).is_none());
-    }
-
-    /// Admission asks "do we recognize the provider at all", categorization asks
-    /// "is it cloud storage": two questions from one detection. A VeraCrypt
-    /// container is a `macfuse` mount we recognize and aren't told to hide, and
-    /// it's a disk, not a cloud drive. Merging the two predicates loses it one
-    /// way or the other.
-    #[test]
-    fn an_unbrowsable_fuse_container_gets_a_row_as_an_ordinary_volume() {
-        let vault = unbrowsable("/Users/sven/vaults/work", "macfuse");
-        let loc = build_attached_location(&vault, plain_resolver).expect("a recognized FUSE mount gets a row");
-        assert_eq!(loc.category, LocationCategory::AttachedVolume);
-        assert!(!loc.is_cloud_mount, "a FUSE container keeps its index affordances");
-    }
-
-    /// The one path family where this arm could overlap the cloud arm: iCloud
-    /// Drive's folder. Nothing mounts there today. If something did, this arm's
-    /// row sits at the same path as the cloud arm's `cloud-icloud` row, so
-    /// `list_locations`'s path set keeps one of them, and it's in CLOUD either way.
-    /// Needs the real home folder, since provider detection reads it.
-    #[test]
-    fn a_mount_on_icloud_drive_lands_on_the_cloud_arms_path() {
-        let home = dirs::home_dir().expect("a home folder");
-        let icloud = home.join(crate::file_system::cloud_provider::ICLOUD_DRIVE_SUBPATH);
-        let icloud = icloud.to_str().expect("a UTF-8 home folder");
-        let loc = build_attached_location(&unbrowsable(icloud, "apfs"), plain_resolver)
-            .expect("iCloud Drive's folder is a recognized provider");
-        assert_eq!(loc.path, icloud, "the path `list_locations` dedupes on");
-        assert_eq!(loc.category, LocationCategory::CloudDrive);
-    }
-
-    #[test]
-    fn smb_mount_classifies_without_blocking_enrichment() {
-        // A wedged SMB mount must be classified purely from getfsstat data; the
-        // blocking resolver must never run, so a dead NAS can't stall discovery.
-        let m = mount("/Volumes/naspi", "smbfs", "//david@192.168.1.111/naspi", false);
-        let loc = build_attached_location(&m, forbidden_resolver).expect("SMB mount is an attached volume");
-
-        assert_eq!(
-            loc.id,
-            crate::file_system::volume::smb_volume_id("192.168.1.111", 445, "naspi")
-        );
-        assert!(loc.name.contains("naspi"), "name shows the share: {}", loc.name);
-        assert!(loc.name.contains(" on "), "name shows 'share on server': {}", loc.name);
-        // ❗ A disambiguated mount (`/Volumes/naspi-1`) named its tab after the mount dir.
-        assert_eq!(
-            loc.root_label.as_deref(),
-            Some("naspi"),
-            "a tab at its root says the share"
-        );
-        // ❗ The account the mount signed in as, which the hub shows while it's connected.
-        assert_eq!(loc.mount_account.as_deref(), Some("david"));
-        assert_eq!(loc.fs_type.as_deref(), Some("smbfs"));
-        assert_eq!(loc.category, LocationCategory::AttachedVolume);
-        assert!(!loc.is_ejectable, "network mounts take the safe non-blocking default");
-        assert!(loc.icon.is_none());
-        assert!(!loc.is_disk_image);
-    }
-
-    #[test]
-    fn nfs_mount_classifies_without_blocking_enrichment() {
-        let m = mount("/Volumes/export", "nfs", "server:/export", true);
-        let loc = build_attached_location(&m, forbidden_resolver).expect("NFS mount is an attached volume");
-        assert_eq!(loc.id, crate::file_system::volume::path_volume_id("/Volumes/export"));
-        assert_eq!(loc.name, "export");
-        assert!(loc.mount_is_read_only, "MNT_RDONLY flag propagates from getfsstat");
-        assert_eq!(loc.fs_type.as_deref(), Some("nfs"));
-    }
-
-    #[test]
-    fn local_mount_runs_the_enrichment_closure() {
-        // Local mounts DO get the (safe) blocking enrichment; here we inject a
-        // fake so the test stays hermetic and asserts the values flow through.
-        // The UUID coming back through this closure is what the ID keys on, so
-        // the same disk keeps its ID when macOS remounts it as `/Volumes/USB 1`.
-        let m = mount("/Volumes/USB", "exfat", "/dev/disk4s1", false);
-        let resolve = |path: &str| {
-            assert!(path.starts_with("/Volumes/USB"));
-            LocalVolumeMeta {
-                name: "My USB".to_string(),
-                is_ejectable: true,
-                icon: Some("icon-data".to_string()),
-                is_disk_image: false,
-                uuid: Some("A1B2-C3D4".to_string()),
-            }
-        };
-        let loc = build_attached_location(&m, resolve).expect("local mount is an attached volume");
-
-        assert_eq!(
-            loc.id,
-            crate::file_system::volume::local_volume_id(Some("A1B2-C3D4"), "/Volumes/USB")
-        );
-        let remounted = mount("/Volumes/USB 1", "exfat", "/dev/disk4s1", false);
-        let remounted_loc = build_attached_location(&remounted, resolve).expect("local mount is an attached volume");
-        assert_eq!(
-            loc.id, remounted_loc.id,
-            "the same disk keeps its ID at a new mount point"
-        );
-
-        assert_eq!(loc.name, "My USB");
-        assert!(loc.is_ejectable);
-        assert_eq!(loc.icon.as_deref(), Some("icon-data"));
-        assert_eq!(loc.fs_type.as_deref(), Some("exfat"));
-    }
-
-    #[test]
-    fn filtered_mount_yields_no_location() {
-        // The boot volume and system mounts are dropped before any enrichment.
-        assert!(build_attached_location(&mount("/", "apfs", "/dev/disk3s1", false), forbidden_resolver).is_none());
-        assert!(build_attached_location(&unbrowsable("/System/Volumes/Data", "apfs"), forbidden_resolver).is_none());
-    }
-
-    // ========================================================================
-    // One volume ID means one published mount root
-    // ========================================================================
-
-    #[test]
-    fn two_mount_roots_for_one_share_collapse_to_the_shortest_path() {
-        // What this covers is the WIRING: a real pair of mount-table entries for
-        // one share derives one volume ID (a share keys on `(server, port,
-        // share)`), and `get_attached_volumes`'s collapse turns that into one
-        // published location at the original path, while a different volume stays
-        // its own row. The collapse rule itself is proved on a toy struct in
-        // `cmdr_fs::volume::canonical_root`.
-        let first = mount("/Volumes/naspi", "smbfs", "//david@192.168.1.111/naspi", false);
-        let second = mount("/Volumes/naspi-1", "smbfs", "//david@192.168.1.111/naspi", false);
-        let nfs = mount("/Volumes/export", "nfs", "server:/export", true);
-        let locations: Vec<LocationInfo> = [&second, &first, &nfs]
-            .iter()
-            .filter_map(|m| build_attached_location(m, forbidden_resolver))
-            .collect();
-        assert_eq!(locations.len(), 3, "every mount starts out as its own location");
-
-        let collapsed = collapse_by_volume_id(locations);
-        assert_eq!(collapsed.len(), 2, "one volume ID publishes one location");
-        assert_eq!(
-            collapsed[0].path, "/Volumes/naspi",
-            "the canonical root is the original mount, whatever order they arrive in"
-        );
-        assert_eq!(
-            collapsed[1].path, "/Volumes/export",
-            "a different volume stays separate"
-        );
-    }
-
-    #[test]
-    fn enumerate_mounts_finds_the_boot_volume() {
-        // getfsstat should always return at least the root mount on a live system,
-        // and it must never block (this test would hang if it did).
-        let mounts = enumerate_mounts().expect("getfsstat answers on a live system");
-        assert!(!mounts.is_empty(), "getfsstat returned no mounts");
-        assert!(mounts.iter().any(|m| m.mount_point == "/"), "root mount missing");
-    }
-
-    #[test]
-    fn is_mount_point_answers_from_the_mount_table() {
-        assert_eq!(is_mount_point("/"), Some(true), "the boot volume is a mount point");
-        // A folder ON a mount is not one: an eject can't mistake it for a live mount.
-        assert_eq!(is_mount_point("/usr/bin"), Some(false));
-    }
-}
+#[path = "mounts_tests.rs"]
+mod tests;

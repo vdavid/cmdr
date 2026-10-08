@@ -1,7 +1,8 @@
 # Go to path (frontend)
 
 The ⌘G modal that jumps the focused pane to a typed, pasted, or recent path. A thin presenter: the backend's
-`resolve_go_to_path` (`apps/desktop/src-tauri/src/go_to_path/CLAUDE.md`) owns all path reasoning.
+`resolve_go_to_path` (`apps/desktop/src-tauri/src/go_to_path/CLAUDE.md`) owns all path reasoning. The UI calls it "Go to
+folder…" (Finder's name); internals stay `goToPath`, and ❌ never rename `nav.goToPath`: custom shortcuts key on it.
 
 ## Module map
 
@@ -26,12 +27,13 @@ The ⌘G modal that jumps the focused pane to a typed, pasted, or recent path. A
   copy: that wording is user-facing only.
 - **`file` selects, never opens**: navigate to the parent, then move the cursor onto the file.
 - **Recents hold the RESOLVED target, written only by manual jumps in this dialog** (not `nav_to_path` MCP calls, not
-  app-wide navigation). The backend owns dedup, order, and the cap of 10; the `$state` mirror re-reads the authoritative
-  list after each write rather than guessing the new order.
+  app-wide navigation), and only once the pane ACCEPTED the navigation: a refused one records nothing. The backend owns
+  dedup, order, and the cap of 10; the `$state` mirror re-reads the authoritative list after each write rather than
+  guessing the new order.
 - **The digit→recent jump is guarded by the EMPTY box, not a modifier.** No valid path starts with a digit, so digits
   are ordinary input once anything is typed. Confirmed with David; don't switch it to a modifier.
-- **Keep the `if (show && showGoToPathDialog) return` guard in `routes/(main)/+page.svelte`.** The native `Go to path…`
-  menu item carries ⌘G as an accelerator AND `command-registry` binds ⌘G, so both fire on macOS.
+- **Keep the `if (show && showGoToPathDialog) return` guard in `routes/(main)/+page.svelte`.** The native
+  `Go to folder…` menu item carries ⌘G as an accelerator AND `command-registry` binds ⌘G, so both fire on macOS.
 - **The ancestor toast's back-shortcut is snapshotted at toast creation** and rendered as a literal-mode `ShortcutChip`.
   A `commandId`-mode chip re-renders live, and a later rebind shouldn't rewrite a visible toast.
 - **Anything that isn't a scheme input is local**, so a relative input on a non-local pane falls back to

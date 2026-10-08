@@ -1,15 +1,6 @@
-//! Per-listing `directory-diff` event coalescer.
-//!
-//! Bulk operations (large delete, copy into a watched dir, MTP event burst) used
-//! to emit one `directory-diff` per file. The frontend handler runs ~5 IPC calls
-//! per event (`getTotalCount`, `refetchColumnWidths`, `fetchEntryUnderCursor`,
-//! `fetchListingStats`, plus a virtual-list re-fetch), so a 5k-file delete drove
-//! ~25k IPC calls and made the source pane flicker. This module accumulates
-//! changes per listing and flushes one batched event after a short window.
-//!
-//! Producers call `enqueue_diff(listing_id, changes)`. The cache mutation must
-//! still happen synchronously at the call site so `get_file_range` sees the
-//! latest state; only the IPC emit is deferred.
+//! Coalesces transport, never coordinate spaces or committed revisions.
+//! Producers stamp and enqueue each transition under the listing-cache write lock.
+//! Lock order is cache then queue; draining the queue never reads the cache.
 
 use std::collections::HashMap;
 use std::sync::{LazyLock, Mutex};
@@ -17,42 +8,31 @@ use std::time::Duration;
 
 use tauri_specta::Event as _;
 
-use crate::file_system::listing::diff::{DiffChange, DirectoryDiff};
-use crate::file_system::listing::increment_sequence;
+#[cfg(test)]
+use crate::file_system::listing::diff::DiffChange;
+use crate::file_system::listing::diff::{DirectoryDiff, DirectoryDiffBatch};
 use crate::file_system::watcher::WATCHER_MANAGER;
+use crate::ignore_poison::{IgnorePoison, RwLockIgnorePoison};
 
-/// Trailing flush window. Below human perception for single events; at high
-/// event rates collapses bursts into at most 1000 / `FLUSH_WINDOW_MS` emits per
-/// listing per second.
 const FLUSH_WINDOW_MS: u64 = 50;
 
-// DEFAULT-OK: an empty change list with no flush scheduled is the honest state of a
-// listing nobody has queued anything for.
+// DEFAULT-OK: an empty queue has no flush scheduled.
 #[derive(Default)]
 struct PendingDiff {
-    changes: Vec<DiffChange>,
+    batches: Vec<DirectoryDiffBatch>,
     flush_scheduled: bool,
 }
 
 static PENDING_DIFFS: LazyLock<Mutex<HashMap<String, PendingDiff>>> = LazyLock::new(|| Mutex::new(HashMap::new()));
 
-/// Queues `changes` for `listing_id`. If no flush is pending for this listing,
-/// schedules one after `FLUSH_WINDOW_MS`. No-op when `changes` is empty.
-///
-/// Safe to call from any thread, including the FSEvents debouncer callback
-/// (uses `tauri::async_runtime::spawn` for the timer task).
-pub(crate) fn enqueue_diff(listing_id: &str, changes: Vec<DiffChange>) {
-    if changes.is_empty() {
-        return;
-    }
-
+/// Takes an already stamped transition while its producer holds the cache write lock.
+pub(crate) fn enqueue_diff(listing_id: &str, batch: DirectoryDiffBatch) {
+    // Projection changes can advance a revision with no rows affected (a scratch
+    // dotfile while hidden files are off). Clients still need that revision link.
     let needs_schedule = {
-        let mut pending = match PENDING_DIFFS.lock() {
-            Ok(p) => p,
-            Err(_) => return,
-        };
+        let mut pending = PENDING_DIFFS.lock_ignore_poison();
         let entry = pending.entry(listing_id.to_string()).or_default();
-        entry.changes.extend(changes);
+        entry.batches.push(batch);
         if entry.flush_scheduled {
             false
         } else {
@@ -60,7 +40,6 @@ pub(crate) fn enqueue_diff(listing_id: &str, changes: Vec<DiffChange>) {
             true
         }
     };
-
     if needs_schedule {
         let lid = listing_id.to_string();
         tauri::async_runtime::spawn(async move {
@@ -70,61 +49,39 @@ pub(crate) fn enqueue_diff(listing_id: &str, changes: Vec<DiffChange>) {
     }
 }
 
-/// Drops any pending changes for `listing_id` without emitting. Called when a
-/// listing ends (`list_directory_end`) so a no-longer-watched listing doesn't
-/// fire a trailing event.
+/// Call under the cache write lock when replacing a row space or ending a listing.
 pub(crate) fn drop_pending(listing_id: &str) {
-    if let Ok(mut pending) = PENDING_DIFFS.lock() {
-        pending.remove(listing_id);
-    }
+    PENDING_DIFFS.lock_ignore_poison().remove(listing_id);
+}
+
+fn take_pending(listing_id: &str) -> Vec<DirectoryDiffBatch> {
+    let mut pending = PENDING_DIFFS.lock_ignore_poison();
+    let Some(entry) = pending.get_mut(listing_id) else {
+        return Vec::new();
+    };
+    entry.flush_scheduled = false;
+    std::mem::take(&mut entry.batches)
 }
 
 fn flush(listing_id: &str) {
-    let changes = {
-        let mut pending = match PENDING_DIFFS.lock() {
-            Ok(p) => p,
-            Err(_) => return,
-        };
-        let Some(entry) = pending.get_mut(listing_id) else {
-            return;
-        };
-        entry.flush_scheduled = false;
-        std::mem::take(&mut entry.changes)
-    };
-
-    if changes.is_empty() {
+    let batches = take_pending(listing_id);
+    if batches.is_empty() {
         return;
     }
-
-    let Some(sequence) = increment_sequence(listing_id) else {
-        return; // listing gone
-    };
-
-    let app_handle = match WATCHER_MANAGER.read() {
-        Ok(m) => m.app_handle.clone(),
-        Err(_) => return,
-    };
+    let app_handle = WATCHER_MANAGER.read_ignore_poison().app_handle.clone();
     let Some(app) = app_handle else { return };
-
     let diff = DirectoryDiff {
         listing_id: listing_id.to_string(),
-        sequence,
-        changes,
+        batches,
     };
     if let Err(e) = diff.emit(&app) {
         log::warn!("diff_emitter: couldn't emit batched event: {}", e);
     }
 }
 
-/// Synchronously flush every pending diff. Used by the E2E `flush_all_watchers`
-/// helper so tests don't have to wait out the trailing window. Production code
-/// must never call this.
 #[cfg(feature = "playwright-e2e")]
 pub(crate) fn flush_all_pending() {
-    let ids: Vec<String> = match PENDING_DIFFS.lock() {
-        Ok(p) => p.keys().cloned().collect(),
-        Err(_) => return,
-    };
+    let ids: Vec<String> = PENDING_DIFFS.lock_ignore_poison().keys().cloned().collect();
     for id in ids {
         flush(&id);
     }
@@ -132,11 +89,7 @@ pub(crate) fn flush_all_pending() {
 
 #[cfg(test)]
 pub(crate) fn pending_count(listing_id: &str) -> usize {
-    PENDING_DIFFS
-        .lock()
-        .ok()
-        .and_then(|p| p.get(listing_id).map(|e| e.changes.len()))
-        .unwrap_or(0)
+    pending_changes_for_test(listing_id).len()
 }
 
 #[cfg(test)]
@@ -144,23 +97,33 @@ pub(crate) fn flush_now_for_test(listing_id: &str) {
     flush(listing_id);
 }
 
-/// Keeps `listing_id`'s changes in the buffer until the test reads them, so an
-/// assertion on WHAT was queued can't lose a race against the 50 ms flush timer.
-/// Marking a flush as already scheduled is what stops `enqueue_diff` arming one.
-/// The listing's teardown (`drop_pending`) releases the hold.
+#[cfg(test)]
+pub(crate) fn take_batches_for_test(listing_id: &str) -> Vec<DirectoryDiffBatch> {
+    take_pending(listing_id)
+}
+
 #[cfg(test)]
 pub(crate) fn hold_for_test(listing_id: &str) {
     PENDING_DIFFS
-        .lock()
-        .expect("diff buffer poisoned by a panicking test")
+        .lock_ignore_poison()
         .entry(listing_id.to_string())
         .or_default()
         .flush_scheduled = true;
 }
 
-/// The changes queued for `listing_id`, oldest first. Pair with [`hold_for_test`].
+#[cfg(test)]
+pub(crate) fn pending_batches_for_test(listing_id: &str) -> Vec<DirectoryDiffBatch> {
+    PENDING_DIFFS
+        .lock_ignore_poison()
+        .get(listing_id)
+        .map(|e| e.batches.clone())
+        .unwrap_or_default()
+}
+
 #[cfg(test)]
 pub(crate) fn pending_changes_for_test(listing_id: &str) -> Vec<DiffChange> {
-    let pending = PENDING_DIFFS.lock().expect("diff buffer poisoned by a panicking test");
-    pending.get(listing_id).map(|e| e.changes.clone()).unwrap_or_default()
+    pending_batches_for_test(listing_id)
+        .into_iter()
+        .flat_map(|b| b.changes)
+        .collect()
 }

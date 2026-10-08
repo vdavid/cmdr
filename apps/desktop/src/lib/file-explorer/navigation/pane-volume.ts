@@ -34,6 +34,12 @@ export function paneVolumeOf(
   return volumes.find((v) => v.id === containingVolumeId)
 }
 
+/** The volume mounted at exactly `path`, for events that name a mount only by path. */
+export function volumeMountedAt(volumes: readonly VolumeInfo[], path: string): VolumeInfo | undefined {
+  // ❗ A favorite may point at a mount root, and favorites list first.
+  return volumes.find((v) => v.category !== 'favorite' && v.path === path)
+}
+
 /** A phone or a saved server place has no mount the path could be checked against. */
 function ownsById(volume: VolumeInfo): boolean {
   return volume.category === 'mobile_device' || volume.category === 'network'

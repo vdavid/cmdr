@@ -116,6 +116,28 @@ describe('initTabMcpSync', () => {
     expect(callArgsFor('right')).toEqual([{ id: rightTab.id, path: '/right/only', pinned: false, active: true }])
   })
 
+  it('syncTabsNow pushes both panes at once and resolves when the backend has them', async () => {
+    const left = managerWith([makeTab({ path: '/left' })])
+    const right = managerWith([makeTab({ path: '/right' })])
+    const { sync } = setup({ left, right })
+
+    await sync.syncTabsNow()
+
+    // No timer advanced: the push didn't wait out the debounce.
+    expect(callArgsFor('left')).toMatchObject([{ path: '/left', active: true }])
+    expect(callArgsFor('right')).toMatchObject([{ path: '/right', active: true }])
+  })
+
+  it('syncTabsNow takes over a pending debounced push, so the panes are pushed once', async () => {
+    const { sync } = setup({ left: managerWith([makeTab()]), right: managerWith([makeTab()]) })
+
+    sync.syncTabsToBackend()
+    await sync.syncTabsNow()
+    vi.advanceTimersByTime(100)
+
+    expect(updatePaneTabs).toHaveBeenCalledTimes(2)
+  })
+
   it('coalesces repeated calls inside the window into a single push per pane', () => {
     const { sync } = setup({ left: managerWith([makeTab()]), right: managerWith([makeTab()]) })
 

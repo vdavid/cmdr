@@ -63,6 +63,24 @@ impl RowSizes {
         self.pending
     }
 
+    /// What the row shows now, with the hourglass lit: a folder waiting its turn in
+    /// an on-demand count (`count/`). An unknown size reads as an incomplete zero,
+    /// which the pane draws as `<dir>` plus the hourglass.
+    pub(super) fn waiting(self, path: &str) -> DirStats {
+        DirStats {
+            path: path.to_string(),
+            recursive_size: self.recursive_size.unwrap_or(0),
+            recursive_physical_size: self.recursive_physical_size.unwrap_or(0),
+            recursive_file_count: self.recursive_file_count.unwrap_or(0),
+            recursive_dir_count: self.recursive_dir_count.unwrap_or(0),
+            recursive_has_symlinks: self.recursive_has_symlinks.unwrap_or(false),
+            recursive_size_pending: true,
+            recursive_size_pending_changes_in: None,
+            recursive_size_complete: false,
+            recursive_size_stale: false,
+        }
+    }
+
     /// Writes the index fields onto the cached entry (the hourglass isn't an entry field).
     pub(super) fn apply_to(self, entry: &mut FileEntry) {
         entry.recursive_size = self.recursive_size;

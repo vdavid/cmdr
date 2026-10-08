@@ -94,9 +94,9 @@ fn group_by_line(matches: &[SearchMatch]) -> Vec<LineGroup> {
     let mut groups: Vec<LineGroup> = Vec::new();
     for m in matches {
         match groups.last_mut() {
-            Some(group) if group.line == m.line => group.matches += 1,
+            Some(group) if group.line == m.row => group.matches += 1,
             _ => groups.push(LineGroup {
-                line: m.line,
+                line: m.row,
                 byte_offset: m.byte_offset,
                 first_column: m.column,
                 matches: 1,
@@ -129,8 +129,11 @@ pub(crate) fn find_hits(
 
     let groups = group_by_line(&found);
     let mut lines = Vec::with_capacity(groups.len().min(MAX_FIND_LINES));
+    // Not `cancel`: a deadline-stopped scan has already set it, and its hits still get
+    // their lines. Each fetch is one row.
+    let one_row = AtomicBool::new(false);
     for group in groups.iter().take(MAX_FIND_LINES) {
-        let chunk = backend.get_lines(&SeekTarget::ByteOffset(group.byte_offset), 1)?;
+        let chunk = backend.get_lines(&SeekTarget::ByteOffset(group.byte_offset), 1, &one_row)?;
         let raw = chunk.rows.first().map(|row| row.text.as_str()).unwrap_or_default();
         // The backends keep `\r` on CRLF files; the model gains nothing from it.
         let line = raw.strip_suffix('\r').unwrap_or(raw);

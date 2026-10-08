@@ -37,6 +37,16 @@ describe('renderListingError', () => {
     expect(rendered.rawDetail).toBe('EACCES (os error 13)')
   })
 
+  // The key's permissions or a provider that paused the account (a usage cap, a
+  // billing hold): one S3 answer for both, so the words name both.
+  it('names both causes when an object store account refuses', () => {
+    const message = getListingErrorMessage({ reason: 'objectStoreRefused', path: '/photos' })
+    expect(message.title).not.toMatch(/^errors\./)
+    expect(message.message).toContain('/photos')
+    expect(message.suggestion).toContain('permissions')
+    expect(message.suggestion).toContain('usage cap')
+  })
+
   it('renders the git reason from the git factory', () => {
     const error: ListingError = {
       category: 'needs_action',

@@ -197,7 +197,10 @@ test.describe('Duplicate in place', () => {
     await tauriPage.keyboard.press('F5')
     await tauriPage.waitForSelector(TRANSFER_DIALOG, 5000)
 
-    await waitForConflictCheck(tauriPage)
+    // An invalid source-identical target never starts a conflict check.
+    await expect
+      .poll(async () => tauriPage.isVisible(`${TRANSFER_DIALOG} .path-error`), { timeout: waitBudget(5000) })
+      .toBeTruthy()
     expect(await tauriPage.isVisible(`${TRANSFER_DIALOG} .conflicts-summary`)).toBe(false)
     expect(await tauriPage.isVisible(`${TRANSFER_DIALOG} .conflict-policy`)).toBe(false)
     expect(await tauriPage.isVisible(`${TRANSFER_DIALOG} .path-error`)).toBe(true)

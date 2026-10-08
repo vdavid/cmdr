@@ -128,9 +128,9 @@
   "@downloads.shortcutRow.invalidCombo": {
     "sourceHash": "d2601f3"
   },
-  "downloads.shortcutRow.registerFailed": "Det gick inte att registrera: {reason}",
-  "@downloads.shortcutRow.registerFailed": {
-    "sourceHash": "3b0841e"
+  "downloads.shortcutRow.unavailable": "En annan app kanske använder den kombinationen",
+  "@downloads.shortcutRow.unavailable": {
+    "sourceHash": "8882532"
   },
   "downloads.shortcutRow.addModifier": "Lägg till en modifierare (⌘, ⌃, ⌥ eller ⇧)",
   "@downloads.shortcutRow.addModifier": {

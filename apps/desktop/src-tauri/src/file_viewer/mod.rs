@@ -17,6 +17,7 @@ pub mod media;
 mod media_backend;
 pub mod media_protocol;
 mod media_session;
+pub(crate) mod open_with_extract;
 pub mod pending_open;
 pub(crate) mod range_read;
 mod row_walk;
@@ -46,6 +47,8 @@ mod media_protocol_test;
 #[cfg(test)]
 mod media_session_test;
 #[cfg(test)]
+mod open_with_extract_test;
+#[cfg(test)]
 mod row_characterization_test;
 #[cfg(test)]
 mod rows_test;
@@ -62,6 +65,7 @@ pub use content_kind::{ViewerContentKind, classify_viewer_content};
 pub use encoding::FileEncoding;
 pub use materialize::init_materialize_dir;
 pub use media_session::MediaDimensions;
+pub use open_with_extract::init_open_with_extract_dir;
 pub use pending_open::{AbandonReason, PendingOpen, ViewerPullProgress, begin_pending_open, end_pending_open};
 pub use range_read::RangeEnd;
 pub use row_walk::{CHUNK_BUDGET_BYTES, ChunkEnd, TotalRows, ViewerRow};
@@ -101,8 +105,8 @@ pub(crate) const MAX_SEARCH_MATCHES: usize = 10_000;
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub enum SeekTargetKind {
-    /// `target_value` is a 0-based line number.
-    Line,
+    /// `target_value` is a 0-based row index.
+    Row,
     /// `target_value` is a byte offset.
     Byte,
     /// `target_value` is a fraction of the file (0.0 = start, 1.0 = end).
@@ -110,14 +114,11 @@ pub enum SeekTargetKind {
 }
 
 /// Where to seek in the file.
-///
-/// The numeric coordinate is a ROW index, not a physical line; renaming the variant
-/// to match is open (GitHub #263).
 #[derive(Debug, Clone)]
 pub enum SeekTarget {
-    /// Jump to a specific row (0-based). Exact on `FullLoadBackend` and
-    /// `LineIndexBackend`; `ByteSeekBackend` maps it through its bytes-per-row sample.
-    Line(usize),
+    /// Jump to a specific row (0-based), not a physical line. Exact on `FullLoadBackend`
+    /// and `LineIndexBackend`; `ByteSeekBackend` maps it through its bytes-per-row sample.
+    Row(usize),
     /// Jump to a byte offset and find the row containing it.
     ByteOffset(u64),
     /// Jump to a fraction of the file (0.0 = start, 1.0 = end).
@@ -167,10 +168,9 @@ impl LineChunk {
 #[derive(Debug, Clone, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct SearchMatch {
-    /// 0-based ROW index (the coordinate is already a row; the field rename is open,
-    /// GitHub #263). Search scans rows, so a match inside a 300 MB line comes back with a
-    /// column that fits on screen instead of one 2.5 million units wide.
-    pub line: usize,
+    /// 0-based ROW index. Search scans rows, so a match inside a 300 MB line comes back
+    /// with a column that fits on screen instead of one 2.5 million units wide.
+    pub row: usize,
     /// UTF-16 code unit offset within the ROW (matches JS string indexing). Bounded by
     /// the row's length, which is bounded by two segments.
     pub column: usize,
@@ -200,6 +200,9 @@ pub enum ArchiveFailureKind {
     Unsupported,
     /// The archive entry could not be read for another archive-specific reason.
     Unreadable,
+    /// The entry is encrypted and the archive hasn't been given its password yet (or
+    /// was given a wrong one).
+    NeedsPassword,
 }
 
 /// Errors from the viewer backends.
@@ -252,6 +255,10 @@ pub enum ViewerError {
         failure: ArchiveFailureKind,
         message: String,
     },
+    /// The file is archived in cold storage (S3 Glacier Flexible Retrieval or
+    /// Deep Archive) and can't be read until someone restores it, so there's
+    /// nothing to preview yet and a Retry can't help.
+    ColdStorage,
 }
 
 impl std::fmt::Display for ViewerError {
@@ -280,6 +287,7 @@ impl std::fmt::Display for ViewerError {
             // both a `.zip` and a `.git` snapshot reach it.
             Self::DestinationIsReadOnly => write!(f, "Can't save into a read-only location"),
             Self::Archive { message, .. } => write!(f, "{message}"),
+            Self::ColdStorage => write!(f, "The file is archived and needs a restore before it can be read"),
         }
     }
 }
@@ -293,7 +301,16 @@ impl From<std::io::Error> for ViewerError {
 /// The interface all viewer backends implement.
 pub trait FileViewerBackend: Send + Sync {
     /// Fetch a range of lines starting from the given target.
-    fn get_lines(&self, target: &SeekTarget, count: usize) -> Result<LineChunk, ViewerError>;
+    ///
+    /// `cancel` is this fetch's own flag, checked once per row: flipped, the fetch
+    /// stops and returns `Cancelled`. The IPC command flips it when its deadline
+    /// fires, so a timed-out fetch stops reading instead of finishing for nobody.
+    fn get_lines(
+        &self,
+        target: &SeekTarget,
+        count: usize,
+        cancel: &std::sync::atomic::AtomicBool,
+    ) -> Result<LineChunk, ViewerError>;
 
     /// Returns a fresh boxed backend whose internal state covers bytes up to
     /// `new_size`. Cancellable. Default is `Err(ViewerError::Cancelled)` so

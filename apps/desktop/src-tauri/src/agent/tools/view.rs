@@ -171,6 +171,11 @@ async fn route_call<R: Runtime>(app: &AppHandle<R>, scope: EvidenceScope, call: 
     if call.tool == ToolId::ImageFacts {
         crate::agent::tools::propose::rename::note_image_facts_delivered(app, scope, &result);
     }
+    // A later rename plan is compared against the listing the model last saw, to count plans
+    // built from a cut one (`propose/rename/cut_listing.rs`).
+    if call.tool == ToolId::ListPaneFiles {
+        crate::agent::tools::propose::rename::note_pane_listing(app, scope, &result);
+    }
     DispatchOutcome { result, proposal: None }
 }
 

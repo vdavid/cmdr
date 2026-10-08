@@ -207,14 +207,14 @@ fn entry_matches(name: &str, target: &str) -> bool {
 }
 
 /// One-pass subtree extract: decode the 7z stream ONCE and stream every file in
-/// `wanted` (sanitized inner path → uncompressed size) in archive order. 7z is
+/// `wanted` (sanitized inner path → its member) in archive order. 7z is
 /// natively single-pass via `for_each_entries`; a member not in `wanted` is still
 /// read to a sink so the SOLID-block decoder advances to the next member (skipping
 /// without reading desyncs it). Stops once every wanted file is delivered, so a
 /// subtree near the front doesn't decode trailing blocks.
 pub(super) fn stream_subtree(
     source: Arc<dyn ArchiveByteSource>,
-    mut wanted: HashMap<String, u64>,
+    mut wanted: HashMap<String, SubtreeMember>,
     password: Option<&str>,
     tx: &SubtreeTx,
 ) {
@@ -244,11 +244,8 @@ pub(super) fn stream_subtree(
                 }
             };
             match wanted.remove(&sanitized) {
-                Some(size) => {
-                    if !tx.send_member(SubtreeMember {
-                        inner_path: sanitized,
-                        size,
-                    }) {
+                Some(member) => {
+                    if !tx.send_member(member) {
                         aborted = true;
                         return Ok(false); // consumer gone: stop decoding
                     }

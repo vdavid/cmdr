@@ -38,10 +38,10 @@ Quick Look's opening and Escape handling are documented in `src-tauri/src/quick_
   model is intentionally asymmetric: Shift+Down 3× then Shift+Up 3× does NOT restore the start state — each press
   independently toggles the cursor's item.
 - **Cmd+A / Cmd+Shift+A**: select all / deselect all
-- **`+` / `-`**: open the Selection dialog ("Select files…" / "Deselect files…", Total Commander parity). Bare keys, no
-  modifier required. On US QWERTY, `Shift+=` IS the `event.key === '+'` event so `Shift` is intentionally NOT filtered.
-  See [`$lib/selection-dialog/CLAUDE.md`](../selection-dialog/CLAUDE.md) for the dialog itself; the pane-side classifier
-  lives in `pane/selection-dialog-keys.ts`.
+- **`+` / `-`**: open the Selection dialog ("Select files…" / "Deselect files…", Total Commander parity). Whichever key
+  types the character on the user's layout, main row or numpad: a Shift-typed symbol is named by its character
+  (`$lib/shortcuts/DETAILS.md` § Key capture). See [`$lib/selection-dialog/CLAUDE.md`](../selection-dialog/CLAUDE.md)
+  for the dialog itself; the pane-side classifier lives in `pane/selection-dialog-keys.ts`.
 - **".." entry can't be selected**: keyboard fills from `..` default to "select" (so Shift+End from `..` selects).
 - **Cleared on navigation**: selection is per-directory
 
@@ -86,8 +86,8 @@ fallback contract, and the snapshot-pane note.
 
 - **Snapshot**: when an operation is confirmed, FilePane snapshots selected file names into `operationSelectedNames` (or
   `'all'` sentinel if all selected)
-- **Diff-driven adjustment**: on each `directory-diff` during an operation, selection is re-resolved via
-  `findFileIndices` batch IPC. A `diffGeneration` counter discards stale async results.
+- **Diff-driven adjustment**: synchronous row remapping plus guarded operation-name resolution. The applied-row protocol
+  and async tokens live in `pane/DETAILS.md` § Compare directories.
 - **Cursor adjustment**: cursor index is also adjusted on structural diffs using the same `adjustSelectionIndices`
   mechanism (treating cursor as a single-element selection). A row the backend reports as `move`d takes its cursor and
   its selection with it, so a pane sorted by date doesn't leave the cursor behind when a folder bumps its own mtime. A
@@ -134,14 +134,22 @@ Full history-stack contract and the volume-breadcrumb detail live in `navigation
 
 ### Behavior
 
-- **Directories first**: always
+- **Directories first**: by default. The `listing.foldersFirst` setting ("Show folders first", on by default) turns it
+  off, and dirs then sort among the files by the active column (#291).
 - **Natural sorting**: `file10.txt` after `file2.txt`
 - **Extension grouping**: dotfiles → no-extension → by extension alphabetically
 - **Per-tab sort**: each tab owns its `sortBy` + `sortOrder` (no global per-column memory)
-- **Directory sort mode**: setting `listing.directorySortMode` controls how dirs sort among themselves:
+- **Directory sort mode**: setting `listing.directorySortMode` controls how dirs sort among themselves while they lead:
   - `likeFiles` (default): dirs sort by the active column (uses `recursive_size` for Size). Dirs with unknown size sort
     last.
-  - `alwaysByName`: dirs always sort by name, ignoring the active sort column.
+  - `alwaysByName`: dirs always sort A→Z by name, ignoring the active sort column and its direction (only the Name
+    column's arrow reverses them; Size, Modified, and Created default to descending, so following the arrow showed Z→A
+    folders, ERR-MJFJG).
+- **The wire mode folds both settings**: `reactive-settings.svelte.ts::getDirectorySortMode()` answers the Rust
+  `DirectorySortMode` (`ListingDirectorySortMode` here): the "Sort directories" choice, or `mixedWithFiles` while "Show
+  folders first" is off. The settings page greys "Sort directories" out then. Every listing, re-sort, and search-results
+  sort reads that one getter, and the explorer's sort-mode `$effect` re-sorts both panes when either setting flips. The
+  mixed comparison (Size included): `src-tauri/src/file_system/listing/sorting.rs::compare_mixed`.
 - **Name ASC tiebreaker**: when primary sort values are equal, entries fall back to name ascending
 
 ### Implementation
@@ -308,6 +316,16 @@ For the dialog-side wiring see `../search/CLAUDE.md`.
   the cursor, feeding each `move` in as a removal from where the row left plus an insertion where it arrived, and
   landing the row's own tracker on the new position by identity.
 
+## "Open with" refusal notice (`open-with-refused-bridge.ts`)
+
+"Open with" on a file inside an archive or a `.git` snapshot runs entirely in Rust (the native context menu), and it has
+to copy the file out before an app can open it. When that copy can't be made, Rust emits `open-with-copy-refused` with a
+typed reason, and this bridge (mounted in `routes/(main)/window-services.ts`) words it as a warning toast, keyed per
+file name. One message per reason (`fileExplorer.openWith.copyRefused.*`), chosen by an exhaustive switch on
+`reason.kind`, ❌ never by the backend's message. `tooLarge` alone also reads the typed `source`: a file in a repo's
+history gets `tooLargeInRepoHistory`, since "from inside the archive" would be wrong there. Backend side:
+`src-tauri/src/file_viewer/DETAILS.md` § "Open with on a routed file".
+
 ## TCC-restricted treatment
 
 Sidebar entries (`VolumeBreadcrumb.svelte`) AND file-list rows (`views/FullList.svelte`, `views/BriefList.svelte`) flag
@@ -389,9 +407,14 @@ share's figure on every folder after. It listens for `volume-space-changed` even
 is the pane ID, so two panes on the same volume have independent registrations (one pane navigating away doesn't affect
 the other). The backend deduplicates by volume_id, polls each volume at its own cadence
 (`Volume::space_poll_interval()`: 2 s local, 5 s network/MTP), and emits only when the readout would draw a different
-figure AND the change passes the Settings > Advanced threshold (`space_poller/readout.rs`). While the main window is
-hidden it polls only the boot volume's low-space check, then catches up the moment the window shows. The volume dropdown
-(`volume-space-manager.svelte.ts`) uses a separate on-demand fetch and is unaffected.
+figure AND the change passes the Settings > Advanced threshold (`space_poller/readout.rs`). ❗ A new watch counts as a
+reader that has seen nothing: the poller polls that volume on the next one-second tick and sends the reading even if it
+hasn't moved (`space_poller::watch`). A remote volume (`sftp://`, `webdav://`) has no other route to the pane, because
+the on-demand `getVolumeSpace` reads the mount table and answers `null`, so a second pane on a volume the first one
+already showed stayed blank until the free space moved. For the same reason a `null` fetch never overwrites a figure: it
+means "this route can't tell". While the main window is hidden it polls only the boot volume's low-space check, then
+catches up the moment the window shows. The volume dropdown (`volume-space-manager.svelte.ts`) uses a separate on-demand
+fetch and is unaffected.
 
 The wording lives in `disk-space-utils.ts`, catalog-backed functions over one `SpaceInfo` plus the user's binary/SI
 format.
@@ -431,9 +454,8 @@ and actionable error experience.
 ### How it works
 
 1. `listing-error` Tauri event arrives with `{ message, friendly?: ListingError }`
-2. `FilePane` checks: is this an MTP volume? → short-circuit to `MtpConnectionView` (MTP has its own UX)
-3. Does the path still exist? → if gone, auto-navigate to nearest valid parent (not an error state)
-4. Path exists but listing failed → render `ErrorPane` (if `friendly` is present) or raw error div (if not)
+2. Does the path still exist? → if gone, auto-navigate to nearest valid parent (not an error state)
+3. Path exists but listing failed → render `ErrorPane` (if `friendly` is present) or raw error div (if not)
 
 ### `ErrorPane.svelte`
 

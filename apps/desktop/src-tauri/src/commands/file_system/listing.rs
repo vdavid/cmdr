@@ -2,16 +2,16 @@
 
 use crate::file_system::get_files_at_indices as ops_get_files_at_indices;
 use crate::file_system::get_paths_at_indices as ops_get_paths_at_indices;
+use crate::file_system::listing::name_filter::set_listing_name_filter_guarded as ops_set_listing_name_filter;
 use crate::file_system::{
-    BriefColumnWidths, BriefColumnsIpcError, DirectorySortMode, FileEntry, ListingStartResult, ListingStats,
-    ResortResult, RowBeside, SortColumn, SortOrder, StreamingListingStartResult, cancel_listing as ops_cancel_listing,
-    compute_brief_column_text_widths as ops_compute_brief_column_text_widths, find_file_index as ops_find_file_index,
-    find_file_indices as ops_find_file_indices,
+    BriefColumnWidths, BriefColumnsIpcError, DirectorySortMode, FileEntry, ListingLookupError, ListingStats,
+    NameFilterResult, ResortResult, RowBeside, SortColumn, SortOrder, StreamingListingStartResult,
+    cancel_listing as ops_cancel_listing, compute_brief_column_text_widths as ops_compute_brief_column_text_widths,
+    find_file_index as ops_find_file_index, find_file_indices as ops_find_file_indices,
     fuzzy_find_first_match_in_listing as ops_fuzzy_find_first_match_in_listing, get_file_at as ops_get_file_at,
     get_file_beside as ops_get_file_beside, get_file_range as ops_get_file_range,
-    get_listing_stats as ops_get_listing_stats, get_total_count as ops_get_total_count,
+    get_listing_stats as ops_get_listing_stats, keep_listings_alive as ops_keep_listings_alive,
     list_directory_end as ops_list_directory_end, list_directory_start_streaming as ops_list_directory_start_streaming,
-    list_directory_start_with_volume as ops_list_directory_start_with_volume,
     refresh_listing_index_sizes as ops_refresh_listing_index_sizes, resort_listing as ops_resort_listing,
     set_listing_include_hidden as ops_set_listing_include_hidden,
 };
@@ -22,10 +22,12 @@ use crate::deadline::{
     TimedOut, blocking_typed_result_with_timeout, blocking_with_timeout_flag, timeout_detached_typed,
 };
 use crate::file_system::listing::brief_columns::BriefColumnsError;
+use crate::file_system::listing::compare::{CompareDirectoriesError, CompareDirectoriesMode, CompareDirectoriesResult};
 use crate::file_system::listing::fuzzy_jump::FuzzyJumpError;
 use crate::file_system::validation::{MAX_NAME_BYTES, MAX_PATH_BYTES};
 use crate::file_system::volume::manager::get_volume_manager;
 use crate::file_system::write_operations::held_in_another_spelling;
+use crate::listing_index_sizes::count::{CountFolderSizesError, FolderSizeCountOutcome};
 use cmdr_fs::volume::WatchCoverage;
 
 use super::expand_tilde;
@@ -272,58 +274,6 @@ async fn exists_on_volume(volume_id: Option<String>, path: String, spelling: Spe
 // On-demand virtual scrolling API
 // ============================================================================
 
-/// Synchronous version. Prefer `list_directory_start_streaming` for non-blocking operation.
-#[tauri::command]
-#[specta::specta]
-pub async fn list_directory_start(
-    path: String,
-    include_hidden: bool,
-    sort_by: SortColumn,
-    sort_order: SortOrder,
-    directory_sort_mode: Option<DirectorySortMode>,
-) -> Result<ListingStartResult, ListingStartError> {
-    // Foreground activity: the user navigated. This command is the local-volume
-    // path, so attribute it to "root" — the same volume id the FE uses for local.
-    // Background work yields to this: media enrichment (app-wide), and the local
-    // volume's own index scan and transfers (per-volume).
-    crate::priority::foreground::note_foreground_activity_on("root");
-    let expanded_path = expand_tilde(&path);
-    let path_buf = PathBuf::from(&expanded_path);
-    let dir_sort_mode = directory_sort_mode.unwrap_or_default();
-    match tokio::time::timeout(
-        Duration::from_secs(2),
-        ops_list_directory_start_with_volume("root", &path_buf, include_hidden, sort_by, sort_order, dir_sort_mode),
-    )
-    .await
-    {
-        Ok(Ok(result)) => Ok(result),
-        // `VolumeError` carries the errno AND the path, which is what the
-        // frontend's listing-error factory renders from; a formatted sentence
-        // would throw both away.
-        Ok(Err(e)) => Err(ListingStartError::Volume {
-            error: cmdr_fs::volume::VolumeError::from_io_at(&e, &path_buf),
-        }),
-        Err(_) => Err(ListingStartError::TimedOut),
-    }
-}
-
-/// Why a synchronous listing start didn't produce a listing.
-///
-/// ❌ Not prose: `VolumeError` is the wire type the frontend's listing-error
-/// factory already words, in every locale.
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, specta::Type)]
-#[serde(tag = "type", rename_all = "camelCase", rename_all_fields = "camelCase")]
-pub enum ListingStartError {
-    /// The volume refused, and said why in its own vocabulary.
-    Volume {
-        /// The backend's typed answer, errno and path intact.
-        error: cmdr_fs::volume::VolumeError,
-    },
-    /// The read didn't finish inside the command's wait. ❗ It was NOT
-    /// cancelled.
-    TimedOut,
-}
-
 /// Returns immediately; reads in background.
 /// Emits listing-progress, listing-complete, listing-error, listing-cancelled.
 #[tauri::command]
@@ -386,7 +336,8 @@ pub async fn resort_listing(
     include_hidden: bool,
     selected_indices: Option<Vec<usize>>,
     all_selected: Option<bool>,
-) -> Result<ResortResult, String> {
+    expected_sequence: Option<u64>,
+) -> Result<ResortResult, ListingLookupError> {
     ops_resort_listing(
         &listing_id,
         sort_by,
@@ -396,6 +347,7 @@ pub async fn resort_listing(
         include_hidden,
         selected_indices.as_deref(),
         all_selected.unwrap_or(false),
+        expected_sequence,
     )
 }
 
@@ -406,14 +358,8 @@ pub async fn get_file_range(
     start: usize,
     count: usize,
     include_hidden: bool,
-) -> Result<Vec<FileEntry>, String> {
+) -> Result<Vec<FileEntry>, ListingLookupError> {
     ops_get_file_range(&listing_id, start, count, include_hidden)
-}
-
-#[tauri::command]
-#[specta::specta]
-pub async fn get_total_count(listing_id: String, include_hidden: bool) -> Result<usize, String> {
-    ops_get_total_count(&listing_id, include_hidden)
 }
 
 /// Returns the widest filename's text-only width (in px) per Brief-mode column.
@@ -452,9 +398,70 @@ pub async fn get_brief_column_text_widths(
     .await
 }
 
+/// Compare directories (⇧F2): which rows each pane should mark against the
+/// other. A pure read of the two cached listings; see `listing/compare.rs`.
 #[tauri::command]
 #[specta::specta]
-pub async fn find_file_index(listing_id: String, name: String, include_hidden: bool) -> Result<Option<usize>, String> {
+pub async fn compare_directories(
+    left_listing_id: String,
+    left_include_hidden: bool,
+    right_listing_id: String,
+    right_include_hidden: bool,
+    mode: CompareDirectoriesMode,
+) -> Result<CompareDirectoriesResult, CompareDirectoriesError> {
+    // Off the IPC thread: two large listings mean two O(n) passes with a fold per name.
+    blocking_typed_result_with_timeout(
+        Duration::from_secs(10),
+        || CompareDirectoriesError::TimedOut,
+        |detail| CompareDirectoriesError::Internal { detail },
+        move || {
+            crate::file_system::listing::compare::compare_directories(
+                &left_listing_id,
+                left_include_hidden,
+                &right_listing_id,
+                right_include_hidden,
+                mode,
+            )
+            .map_err(CompareDirectoriesError::from)
+        },
+    )
+    .await
+}
+
+/// Calculates the sizes of folders the pane shows (⌥⇧⏎; `paths` for Space on a
+/// folder), sending each reading as `listing-index-sizes-changed`. A request
+/// while a count of the same listing runs joins its queue. Resolves when the
+/// count ends: done, or stopped by [`cancel_folder_size_count`]. See
+/// `listing_index_sizes/count/`.
+#[tauri::command]
+#[specta::specta]
+pub async fn count_folder_sizes(
+    app: tauri::AppHandle,
+    listing_id: String,
+    include_hidden: bool,
+    paths: Option<Vec<String>>,
+) -> Result<FolderSizeCountOutcome, CountFolderSizesError> {
+    use tauri_specta::Event;
+    let sink = move |event: crate::listing_index_sizes::ListingIndexSizesChanged| {
+        let _ = event.emit(&app);
+    };
+    crate::listing_index_sizes::count::count(&listing_id, include_hidden, paths.as_deref(), &sink).await
+}
+
+/// Stops the folder-size count running for `listing_id` (Esc). Reports whether one was running.
+#[tauri::command]
+#[specta::specta]
+pub async fn cancel_folder_size_count(listing_id: String) -> bool {
+    crate::listing_index_sizes::count::cancel(&listing_id)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn find_file_index(
+    listing_id: String,
+    name: String,
+    include_hidden: bool,
+) -> Result<Option<usize>, ListingLookupError> {
     ops_find_file_index(&listing_id, &name, include_hidden)
 }
 
@@ -464,7 +471,7 @@ pub async fn find_file_indices(
     listing_id: String,
     names: Vec<String>,
     include_hidden: bool,
-) -> Result<std::collections::HashMap<String, usize>, String> {
+) -> Result<std::collections::HashMap<String, usize>, ListingLookupError> {
     ops_find_file_indices(&listing_id, &names, include_hidden)
 }
 
@@ -485,7 +492,11 @@ pub async fn find_first_fuzzy_match(
 
 #[tauri::command]
 #[specta::specta]
-pub async fn get_file_at(listing_id: String, index: usize, include_hidden: bool) -> Result<Option<FileEntry>, String> {
+pub async fn get_file_at(
+    listing_id: String,
+    index: usize,
+    include_hidden: bool,
+) -> Result<Option<FileEntry>, ListingLookupError> {
     ops_get_file_at(&listing_id, index, include_hidden)
 }
 
@@ -501,7 +512,7 @@ pub async fn get_file_beside(
     name: String,
     side: RowBeside,
     include_hidden: bool,
-) -> Result<Option<FileEntry>, String> {
+) -> Result<Option<FileEntry>, ListingLookupError> {
     ops_get_file_beside(&listing_id, &name, side, include_hidden)
 }
 
@@ -514,7 +525,7 @@ pub async fn get_paths_at_indices(
     selected_indices: Vec<usize>,
     include_hidden: bool,
     has_parent: bool,
-) -> Result<Vec<String>, String> {
+) -> Result<Vec<String>, ListingLookupError> {
     ops_get_paths_at_indices(&listing_id, &selected_indices, include_hidden, has_parent)
         .map(|paths| paths.into_iter().map(|p| p.to_string_lossy().into_owned()).collect())
 }
@@ -527,7 +538,7 @@ pub async fn get_files_at_indices(
     listing_id: String,
     selected_indices: Vec<usize>,
     include_hidden: bool,
-) -> Result<Vec<FileEntry>, String> {
+) -> Result<Vec<FileEntry>, ListingLookupError> {
     ops_get_files_at_indices(&listing_id, &selected_indices, include_hidden)
 }
 
@@ -537,14 +548,81 @@ pub async fn list_directory_end(listing_id: String) {
     ops_list_directory_end(&listing_id);
 }
 
+/// The panes' heartbeat: keeps the named listings safe from the orphan reaper and
+/// returns the ids no longer cached, which the frontend re-lists.
+/// See `file_system::listing::operations::keep_listings_alive`.
+#[tauri::command]
+#[specta::specta]
+pub async fn keep_listings_alive(listing_ids: Vec<String>) -> Vec<String> {
+    ops_keep_listings_alive(&listing_ids)
+}
+
 /// Tells the backend the pane showing `listing_id` now shows (or hides) hidden
 /// files. Its `directory-diff` events speak that pane's rows, and skip changes
 /// to rows it doesn't show, so the pane calls this before re-reading its rows
 /// after the hidden-files toggle.
 #[tauri::command]
 #[specta::specta]
-pub async fn set_listing_include_hidden(listing_id: String, include_hidden: bool) -> Result<(), String> {
-    ops_set_listing_include_hidden(&listing_id, include_hidden)
+pub async fn set_listing_include_hidden(
+    listing_id: String,
+    include_hidden: bool,
+    expected_sequence: Option<u64>,
+    cursor_filename: Option<String>,
+    selected_indices: Option<Vec<usize>>,
+    all_selected: Option<bool>,
+) -> Result<ResortResult, ListingLookupError> {
+    ops_set_listing_include_hidden(
+        &listing_id,
+        include_hidden,
+        expected_sequence,
+        cursor_filename.as_deref(),
+        selected_indices.as_deref(),
+        all_selected.unwrap_or(false),
+    )
+}
+
+/// Consume a selection only while it still names the committed backend rows.
+#[tauri::command]
+#[specta::specta]
+pub async fn get_selection_snapshot(
+    listing_id: String,
+    include_hidden: bool,
+    selected_indices: Vec<usize>,
+    expected_sequence: u64,
+) -> Result<crate::file_system::listing::operations::SelectionSnapshot, ListingLookupError> {
+    crate::file_system::listing::operations::get_selection_snapshot(
+        &listing_id,
+        include_hidden,
+        &selected_indices,
+        expected_sequence,
+    )
+}
+
+/// Sets the quick filter of the pane showing `listing_id` (an empty or `null`
+/// pattern clears it), and returns the new row count plus where the cursor's
+/// file and the selected files landed in the filtered rows. With
+/// `refuse_empty`, a pattern that matches nothing is refused (`accepted: false`).
+#[tauri::command]
+#[specta::specta]
+#[allow(clippy::too_many_arguments, reason = "Tauri commands require top-level arguments")]
+pub async fn set_listing_name_filter(
+    listing_id: String,
+    pattern: Option<String>,
+    include_hidden: bool,
+    cursor_filename: Option<String>,
+    selected_indices: Vec<usize>,
+    refuse_empty: bool,
+    expected_sequence: Option<u64>,
+) -> Result<NameFilterResult, ListingLookupError> {
+    ops_set_listing_name_filter(
+        &listing_id,
+        pattern.as_deref(),
+        include_hidden,
+        cursor_filename.as_deref(),
+        &selected_indices,
+        refuse_empty,
+        expected_sequence,
+    )
 }
 
 /// The listing's path when a non-local volume's own watcher claims to see every
@@ -642,7 +720,7 @@ pub async fn get_listing_stats(
     listing_id: String,
     include_hidden: bool,
     selected_indices: Option<Vec<usize>>,
-) -> Result<ListingStats, String> {
+) -> Result<ListingStats, ListingLookupError> {
     ops_get_listing_stats(&listing_id, include_hidden, selected_indices.as_deref())
 }
 

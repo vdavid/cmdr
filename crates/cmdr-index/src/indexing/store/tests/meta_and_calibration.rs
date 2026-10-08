@@ -266,3 +266,52 @@ fn calibration_for_kind_is_empty_when_nothing_is_recorded() {
     assert!(set.for_kind(ScanCalibrationKind::FullWalk).is_empty());
     assert!(set.for_kind(ScanCalibrationKind::ChangeCheck).is_empty());
 }
+
+/// The steps after the walk (save, compute, catch up) are remembered per walk
+/// kind, like the walk itself: a change check writes only what changed and
+/// aggregates from SQL, so its save and compute take a different time from a
+/// full walk's on the same drive.
+#[test]
+fn read_step_durations_reads_each_walk_kinds_own_bucket() {
+    let (store, _dir) = open_temp_store();
+    let conn = IndexStore::open_write_connection(store.db_path()).unwrap();
+
+    IndexStore::update_meta(&conn, "save_duration_ms_full_walk", "41000").unwrap();
+    IndexStore::update_meta(&conn, "compute_duration_ms_full_walk", "18800").unwrap();
+    IndexStore::update_meta(&conn, "catch_up_duration_ms_full_walk", "2100").unwrap();
+    IndexStore::update_meta(&conn, "compute_duration_ms_change_check", "25000").unwrap();
+
+    let full_walk = IndexStore::read_step_durations(&conn, ScanCalibrationKind::FullWalk).unwrap();
+    assert_eq!(
+        full_walk,
+        StepDurations {
+            save_ms: Some(41_000),
+            compute_ms: Some(18_800),
+            catch_up_ms: Some(2_100),
+        }
+    );
+
+    // ❌ No fallback to the other kind: a step with no history of its own kind
+    // has none, so the overall figure stays hidden rather than borrowing a
+    // timing from a different walk.
+    let change_check = IndexStore::read_step_durations(&conn, ScanCalibrationKind::ChangeCheck).unwrap();
+    assert_eq!(
+        change_check,
+        StepDurations {
+            save_ms: None,
+            compute_ms: Some(25_000),
+            catch_up_ms: None,
+        }
+    );
+}
+
+/// A fresh DB remembers no step at all.
+#[test]
+fn read_step_durations_is_empty_on_a_fresh_db() {
+    let (store, _dir) = open_temp_store();
+    let conn = IndexStore::open_write_connection(store.db_path()).unwrap();
+    assert_eq!(
+        IndexStore::read_step_durations(&conn, ScanCalibrationKind::FullWalk).unwrap(),
+        StepDurations::default()
+    );
+}

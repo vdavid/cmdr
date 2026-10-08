@@ -315,13 +315,13 @@ inside `media_index` because the writer thread mutates it directly.
 
 ### The importance score cache
 
-`ImportanceIndex::above_threshold(0.0)` is an ordered read of EVERY scored folder, which SQLite runs as an external
-merge sort (a measured 368,043 scored folders on one root), and it then rebuilds a map that size. Ruinous per UI query:
-the per-file badge asks per visible range, per pane, on every listing swap and enrichment tick, and uncached those
-queries piled up on the tokio blocking pool until it hit its 512-thread cap, at which point every other `spawn_blocking`
-in the app starved — directory listings never completed and the volume list timed out into an empty picker. Ruinous on a
-timer too: it was 45.8 ms of every 60-second media live tick at 90,308 folders (release build, M1 Max,
-`scheduler/live_bench.rs`, 2026-08-21 — `docs/notes/performance/live-tick-cost-2026-08-21.md`).
+`ImportanceIndex::above_threshold(0.0)` reads EVERY scored folder (a measured 368,043 on one root), and it then builds a
+map that size. Ruinous per UI query: the per-file badge asks per visible range, per pane, on every listing swap and
+enrichment tick, and uncached those queries piled up on the tokio blocking pool until it hit its 512-thread cap, at
+which point every other `spawn_blocking` in the app starved — directory listings never completed and the volume list
+timed out into an empty picker. Ruinous on a timer too: it was 45.8 ms of every 60-second media live tick at 90,308
+folders (release build, M1 Max, `scheduler/live_bench.rs`, 2026-08-21 —
+`docs/notes/performance/live-tick-cost-2026-08-21.md`).
 
 `coverage::importance_scores(data_dir, volume_id, at_least)` therefore serves a `FolderScores`: a cheap handle onto a
 per-volume cached table. `at_least: None` is every scored folder, so a slider drag gets one read serving every position;
@@ -539,9 +539,11 @@ OCR text stops being searchable at once (privacy is a hard requirement, not "eve
 - **The trigger** is a folder context-menu item ("Don't index images in this folder" / "Index images here again", shown
   only while image indexing is on, exactly one keyed on the current state). It's a NATIVE (Rust) menu, so the click
   emits a `MediaIndexFolderExclusion` event to the FE, which persists `mediaIndex.excludedFolders` and calls
-  `media_index_set_excluded_folder` (the native menu can't write the FE settings store) — the persist + live-apply
-  pattern from `network-volume-prefs.ts` minus its rollback (the owed-purge bullet above says why), in
-  `src/lib/media-index/excluded-folders.ts`, wired in the main route's `setupMenuListeners`.
+  `media_index_set_excluded_folder` (the native menu can't write the FE settings store) — the shared `persistThenApply`
+  helper from `network-volume-prefs.ts` with `rollback: false` (the owed-purge bullet above says why), in
+  `src/lib/media-index/excluded-folders.ts`, wired in the main route's `setupMenuListeners`. The other three media-index
+  prefs roll back on a failed apply, and only their own item: the helper re-reads the array and restores that one id's
+  membership, so a toggle that landed while the failing call was in flight survives.
 
 ## WAL checkpoint at pass completion (`writer/maintenance.rs`, plan M9)
 

@@ -32,14 +32,18 @@ paths (`crate::file_system::volume::VolumeError`); other crates use `cmdr_fs::�
 - **❌ Never build a volume ID by hand, or by stripping characters.** `volume::ids` is the one funnel; an ID keys the
   index DB, `lastUsedPaths`, tab state, and routing, so a lossy one hands two disks one identity and sends deletes to
   the wrong one.
-- **❌ Never open SQLite outside `sqlite_util`'s factories.** They install the process-wide page-cache slab, which can
-  only be installed before the process's first connection (`desktop-rust-sqlite-open-direct` enforces it).
+- **❌ Never open SQLite outside `sqlite_util`'s factories.** They install the process-wide page-cache slab, installable
+  only before the process's first connection (`desktop-rust-sqlite-open-direct` enforces it). ❌ Nor unlink a database
+  by hand: `delete_database` retires threads' cached connections.
 - **Nothing here produces user-facing prose**: errors carry typed reasons and structured params, the frontend renders
   every word, and `FileEntry.git_meta` states a FACT, ❌ never a sentence. DETAILS § The one place prose is produced
   here.
 - **A test needing a real removable volume uses `testing::disk_images` (macOS), ❌ never its own `hdiutil` or `diskutil`
   call.** Its runner holds the machine-wide lock, SIGKILLs a stuck tool, and proves a disk is the test's own before
   touching it. ❌ Never a physical disk or a new FAT/exFAT image. DETAILS § "`testing::disk_images`".
+- **The global allocator is decided here** (`process_memory/allocator.rs`: system on macOS, mimalloc on Linux or with
+  the `mimalloc` feature). Gate allocator code on the `cmdr_mimalloc` cfg, ❌ never `feature = "mimalloc"` (false on
+  Linux). DETAILS § Which global allocator.
 - **A stat-and-listing backend implements three small traits, ❌ never its own copy of the walk**: `ScanSource`,
   `MakesDirectories`, `PatchSource` (DETAILS § Bodies a backend gets for free). `secret_store.rs` is a backend's only
   door to the credential store.

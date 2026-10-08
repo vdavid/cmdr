@@ -126,26 +126,53 @@ func namedCheckIDs(names []string) map[string]bool {
 // its fingerprint, any other outcome (warn, skip, fail, block) drops a stale
 // entry so it can't mask a later regression. Cache-hit entries carry forward
 // untouched. Writing is skipped entirely when the cache is disabled (--ci).
+//
+// Two guards keep a recorded pass honest:
+//   - A pass is recorded only if the check's inputs still fingerprint the same
+//     at the end of the run. A file edited mid-run means the pass belongs to
+//     content nobody fingerprinted; recording it under the plan-time key would
+//     let an A→B→A edit hit the cache on content that never ran.
+//   - The cache file is reloaded just before saving and this run's verdicts are
+//     merged into it per check ID, so concurrent runs in one worktree neither
+//     overwrite each other's passes nor resurrect an entry the other dropped.
 func (plan *cachePlan) recordRun(rootDir string, states []*CheckState) {
 	if plan.writeDisabled || plan.cache == nil {
 		return // writes disabled (--ci) or planning bailed
 	}
+	// One more git pass, only when there's a pass to verify. If git fails now,
+	// endData stays nil and every pass is treated as unverified (dropped).
+	var endData *checks.RepoFingerprintData
+	for _, st := range states {
+		if isCacheablePass(st) {
+			endData, _ = checks.CollectRepoFingerprintData(rootDir)
+			break
+		}
+	}
+
+	cache := checks.LoadCheckCache(rootDir)
 	for _, st := range states {
 		id := st.Definition.ID
 		fp, hasFp := plan.fingerprints[id]
-		if st.Status == StatusCompleted && st.Result.Code == checks.ResultSuccess && hasFp {
-			plan.cache.Entries[id] = checks.CacheEntry{
+		if isCacheablePass(st) && hasFp && endData != nil && endData.FingerprintFor(st.Definition) == fp {
+			cache.Entries[id] = checks.CacheEntry{
 				Fingerprint: fp,
 				Message:     st.Result.Message,
 				PassedAt:    time.Now(),
 			}
 		} else {
-			// Warn/skip/fail/block: never cache. Drop any stale pass entry.
-			delete(plan.cache.Entries, id)
+			// Warn/skip/fail/block, or inputs changed mid-run: never cache. Drop any
+			// stale pass entry.
+			delete(cache.Entries, id)
 		}
 	}
-	if err := plan.cache.Save(rootDir); err != nil {
+	plan.cache = cache
+	if err := cache.Save(rootDir); err != nil {
 		// Non-fatal: a failed write just means the next run re-checks.
 		fmt.Fprintf(os.Stderr, "%swarning: couldn't write check cache: %v%s\n", colorDim, err, colorReset)
 	}
+}
+
+// isCacheablePass reports whether a check's outcome is one the cache records.
+func isCacheablePass(st *CheckState) bool {
+	return st.Status == StatusCompleted && st.Result.Code == checks.ResultSuccess
 }

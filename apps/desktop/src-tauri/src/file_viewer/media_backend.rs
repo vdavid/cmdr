@@ -27,7 +27,7 @@ impl MediaBackend {
 }
 
 impl FileViewerBackend for MediaBackend {
-    fn get_lines(&self, _target: &SeekTarget, _count: usize) -> Result<LineChunk, ViewerError> {
+    fn get_lines(&self, _target: &SeekTarget, _count: usize, _cancel: &AtomicBool) -> Result<LineChunk, ViewerError> {
         // Media sessions have no text lines; the FE never calls `viewer_get_lines` in
         // media mode, but return an empty, internally-consistent chunk defensively.
         Ok(LineChunk {

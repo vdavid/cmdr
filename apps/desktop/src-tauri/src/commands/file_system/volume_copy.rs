@@ -7,9 +7,9 @@
 
 use crate::file_system::{
     CONFLICT_CHECK_BUDGET, OperationEventSink, ScanConflict, SourceItemInput, TauriEventSink, VolumeCopyConfig,
-    VolumeCopyScanResult, VolumeScanError, WriteOperationError, WriteOperationStartResult, resolve_dest_path,
-    resolve_source_volume, scan_for_volume_copy as ops_scan_for_volume_copy, scan_volume_for_conflicts_within,
-    start_volume_compress, start_volume_copy, start_volume_move,
+    VolumeScanError, WriteOperationError, WriteOperationStartResult, resolve_dest_path,
+    scan_volume_for_conflicts_within, start_rename_by_move, start_volume_compress, start_volume_copy,
+    start_volume_move,
 };
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -20,7 +20,7 @@ use crate::file_system::volume::manager::get_volume_manager;
 use crate::operation_log::types::Initiator;
 
 /// Unified copy across volume types (local, MTP, extract out of a `.zip`).
-/// Same events as `copy_files`.
+/// Emits write-progress, write-complete, write-error, write-cancelled.
 #[tauri::command]
 #[specta::specta]
 pub async fn copy_between_volumes(
@@ -76,6 +76,35 @@ pub async fn move_between_volumes(
     .await
 }
 
+/// A rename that runs as a move on one volume: `source_path` moves into
+/// `dest_path` under `new_name`. What the Move dialog confirms when F2 opens
+/// it for a rename that copies (an S3 folder past the small-rename count,
+/// `RenameValidityResult::by_move`). Same events as `move_between_volumes`.
+#[tauri::command]
+#[specta::specta]
+pub async fn rename_by_move(
+    app: tauri::AppHandle,
+    volume_id: String,
+    source_path: String,
+    dest_path: String,
+    new_name: String,
+    config: Option<VolumeCopyConfig>,
+    initiator: Option<Initiator>,
+) -> Result<WriteOperationStartResult, WriteOperationError> {
+    let events: Arc<dyn OperationEventSink> = Arc::new(TauriEventSink::new(app));
+    start_rename_by_move(
+        events,
+        volume_id,
+        vec![(PathBuf::from(source_path), new_name)],
+        dest_path,
+        config.unwrap_or_default(),
+        initiator.unwrap_or(Initiator::User),
+        // No source binding: the user picked it in the pane they are looking at.
+        None,
+    )
+    .await
+}
+
 /// Compresses `source_paths` into a NEW zip at `dest_zip_path` on `dest_volume_id`.
 /// Same events as `copy_between_volumes`. The destination may be LOCAL or REMOTE
 /// (SMB/MTP).
@@ -99,50 +128,6 @@ pub async fn compress_files(
         dest_zip_path,
         config.unwrap_or_default(),
         initiator.unwrap_or(Initiator::User),
-    )
-    .await
-}
-
-/// Pre-flight scan: total count/bytes, available space, conflicts. Doesn't copy anything.
-#[tauri::command]
-#[specta::specta]
-pub async fn scan_volume_for_copy(
-    source_volume_id: String,
-    source_paths: Vec<String>,
-    dest_volume_id: String,
-    dest_path: String,
-    max_conflicts: Option<usize>,
-) -> Result<VolumeCopyScanResult, VolumeScanError> {
-    let source_paths: Vec<PathBuf> = source_paths.iter().map(PathBuf::from).collect();
-    let dest_path = PathBuf::from(dest_path);
-
-    // Resolve both so an archive-inner source scans through its ArchiveVolume
-    // (sizing an extract-out) and the dest routes consistently with the copy op.
-    let Some((source_volume, _)) = resolve_source_volume(&source_volume_id, source_paths.first()).await else {
-        return Err(VolumeScanError::source_missing(source_volume_id).await);
-    };
-
-    let Some(dest_volume) = get_volume_manager().resolve(&dest_volume_id, &dest_path).await.volume else {
-        return Err(VolumeScanError::destination_missing(dest_volume_id).await);
-    };
-
-    let max_conflicts = max_conflicts.unwrap_or(100);
-    // Same anchoring the copy op applies, so the scan sizes and counts conflicts
-    // at the folder the copy will actually write to.
-    let dest_path = resolve_dest_path(&dest_volume, dest_path.to_string_lossy().into_owned());
-
-    // Run scan (now async). Detached: a copy scan of an MTP source is a recursive
-    // listing that outlives 30 s on any photo-heavy folder, and dropping it
-    // mid-`GetObjectInfo` wedges the phone.
-    timeout_detached_typed(
-        Duration::from_secs(30),
-        || VolumeScanError::TimedOut,
-        |detail| VolumeScanError::Unexpected { detail },
-        async move {
-            ops_scan_for_volume_copy(&*source_volume, &source_paths, &*dest_volume, &dest_path, max_conflicts)
-                .await
-                .map_err(|error| VolumeScanError::Volume { error })
-        },
     )
     .await
 }
@@ -177,6 +162,40 @@ pub async fn destination_write_access(dest_volume_id: String, dest_path: String)
     .unwrap_or_else(|unknown| unknown)
 }
 
+/// The transfer dialog's destination when it starts with the place's own root
+/// folder: both readings, for the warning under the path box. Paths are
+/// server-side (`resolved`, `rootFolder`) or volume-relative (`stripped`, what
+/// the box would hold instead). The rule: `cmdr_fs::volume::root_echo`.
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct DestinationRootEcho {
+    /// The server-side folder the place is rooted at (`/srv/data`).
+    pub root_folder: String,
+    /// Where the transfer goes as typed (`/srv/data/srv/data/photos`).
+    pub resolved: String,
+    /// The box's text with the repeated root folder taken off (`/photos`).
+    pub stripped: String,
+}
+
+/// Whether the destination box's path repeats the place's own root folder, so
+/// the dialog can warn. ❌ Never rewrites anything: the transfer still anchors
+/// the path as typed (`resolve_dest_path`), because the doubled folder can be
+/// real. `None` for an unregistered volume and for any path that reads one way.
+#[tauri::command]
+#[specta::specta]
+pub async fn destination_root_echo(dest_volume_id: String, dest_path: String) -> Option<DestinationRootEcho> {
+    let dest_volume = get_volume_manager()
+        .resolve(&dest_volume_id, Path::new(&dest_path))
+        .await
+        .volume?;
+    let echo = cmdr_fs::volume::root_echo(dest_volume.root(), Path::new(&dest_path))?;
+    Some(DestinationRootEcho {
+        root_folder: echo.root_folder.to_string_lossy().into_owned(),
+        resolved: echo.resolved.to_string_lossy().into_owned(),
+        stripped: echo.stripped.to_string_lossy().into_owned(),
+    })
+}
+
 /// Checks which source items already exist at the destination. Returns conflict details for UI.
 ///
 /// When `source_volume_id` and `source_paths` are both provided, each item's
@@ -209,3 +228,7 @@ pub async fn scan_volume_for_conflicts(
     )
     .await
 }
+
+#[cfg(test)]
+#[path = "destination_root_echo_test.rs"]
+mod destination_root_echo_test;

@@ -153,7 +153,6 @@ Set the following (get values from the relevant dashboards):
   one per tier: the old `_SUBSCRIPTION` and `_PERPETUAL` vars are gone, and leaving the new one unset renders the buy
   button disabled rather than charging the wrong amount. Every price ID is in `docs/business/pricing.md`.
 - **`PUBLIC_PADDLE_ENVIRONMENT`**: `live` in production (`sandbox` only for a staging build)
-- **`PUBLIC_LISTMONK_LIST_UUID`**: Listmonk admin > Lists > your list > Settings
 - **`PUBLIC_UMAMI_HOST`**: `/u` (proxied through Caddy to avoid adblockers)
 - **`PUBLIC_UMAMI_WEBSITE_ID`**: Umami > Settings > Websites > getcmdr.com > ID
 - **`PUBLIC_DOWNLOAD_BASE_URL`**: `https://api.getcmdr.com` (routes downloads through the API server for analytics).

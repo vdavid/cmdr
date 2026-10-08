@@ -165,13 +165,13 @@ fn summarize_regex_pattern() {
 #[test]
 fn summarize_size_min() {
     let q = make_query(None, PatternType::Glob, Some(2 * 1024 * 1024), None, None, None, None);
-    assert_eq!(summarize_query(&q), "size >= 2 MB");
+    assert_eq!(summarize_query(&q), "size >= 2 MiB");
 }
 
 #[test]
 fn summarize_size_max() {
     let q = make_query(None, PatternType::Glob, None, Some(500 * 1024), None, None, None);
-    assert_eq!(summarize_query(&q), "size <= 500 KB");
+    assert_eq!(summarize_query(&q), "size <= 500 KiB");
 }
 
 #[test]
@@ -185,7 +185,7 @@ fn summarize_size_range() {
         None,
         None,
     );
-    assert_eq!(summarize_query(&q), "size 1 MB\u{2013}5 GB");
+    assert_eq!(summarize_query(&q), "size 1 MiB\u{2013}5 GiB");
 }
 
 #[test]
@@ -239,7 +239,10 @@ fn summarize_combined() {
         Some(1_772_323_200),
         None,
     );
-    assert_eq!(summarize_query(&q), "\"tes\", size >= 2 MB, last mod before 2026-03-01");
+    assert_eq!(
+        summarize_query(&q),
+        "\"tes\", size >= 2 MiB, last mod before 2026-03-01"
+    );
 }
 
 #[test]
@@ -259,7 +262,7 @@ fn summarize_size_gb() {
         None,
         None,
     );
-    assert_eq!(summarize_query(&q), "size >= 1 GB");
+    assert_eq!(summarize_query(&q), "size >= 1 GiB");
 }
 
 #[test]

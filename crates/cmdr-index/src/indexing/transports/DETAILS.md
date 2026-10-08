@@ -244,11 +244,12 @@ connection gate (a local mount is already directly readable) and NO typed refusa
 **Classification (`classify`)** decides local-external vs fall-through from TYPED facts, never a volume-id/path
 substring: resolve the volume through `host::volumes`, read its mount root, and check two things — the BACKEND
 (`backend_kind()`, and only `Local` may run the local guarded walker) and whether the mount's filesystem is a network
-type (`is_network_fs_type` over the fs-type from `detect_filesystem_for_path`). Either ⇒ fall through to the SMB gate.
-Both halves are load-bearing: a network mount is served by a `LocalPosixVolume` and so answers `Local`, while a server's
-root is `sftp://ada@nas:22/srv`, which is not a mount point at all and therefore probes as NON-network. ❗ Reading only
-the network flag is what let `enable_drive_index` on an SFTP or WebDAV id start a walker plus a watcher on a scheme
-root, cover zero entries, persist the user-enabled marker, and report the volume as indexed, so folder sizes and search
+type (`MountFacts::is_network`, which the app answers as "not a known local disk": FUSE and cloud mounts count, see
+`apps/desktop/src-tauri/src/file_system/DETAILS.md` § "Local disk or not"). Either ⇒ fall through to the SMB gate. Both
+halves are load-bearing: a network mount is served by a `LocalPosixVolume` and so answers `Local`, while a server's root
+is `sftp://ada@nas:22/srv`, which is not a mount point at all and therefore probes as NON-network. ❗ Reading only the
+network flag is what let `enable_drive_index` on an SFTP or WebDAV id start a walker plus a watcher on a scheme root,
+cover zero entries, persist the user-enabled marker, and report the volume as indexed, so folder sizes and search
 answered "nothing here" for a server full of files. Neither ⇒ `LocalExternal`, indexed via
 `start_indexing_for_local_external_inner` → `start_indexing_for(.., LocalExternal, inodes_trustworthy)`, then
 `enforce_external_index_cap` (retention, owned by `../resources/DETAILS.md`). The pure routing decision

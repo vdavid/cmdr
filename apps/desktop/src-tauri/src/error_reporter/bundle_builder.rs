@@ -117,7 +117,7 @@ pub async fn build_bundle<R: tauri::Runtime>(
         app_version: env!("CARGO_PKG_VERSION").to_string(),
         os_version: crate::platform::os_version(),
         arch: std::env::consts::ARCH.to_string(),
-        active_settings: cached_active_settings(app).clone(),
+        active_settings: cached_active_settings(app),
         log_levels: build_log_level_snapshot(),
         breadcrumbs: breadcrumbs::snapshot(),
         state_history: super::state_history::for_report(&redaction),
@@ -128,7 +128,8 @@ pub async fn build_bundle<R: tauri::Runtime>(
         // auto-send can never ship an address the user didn't consent to per report.
         email: email_for_kind(kind, email).map(AttachedEmail::into_inner),
         // Full machine snapshot incl. live state: error reports run in a healthy context. The data
-        // dir is where the drive-index DBs live; the snapshot reads only their sizes, never contents.
+        // dir names the disk to measure and, through it, the drive-index dir; the snapshot reads
+        // only the index DBs' sizes, never contents.
         system: match crate::config::resolved_app_data_dir(app) {
             Ok(dir) => crate::diagnostics_snapshot::SystemSnapshot::collect_full(&dir),
             Err(_) => crate::diagnostics_snapshot::SystemSnapshot::collect_full(Path::new("")),

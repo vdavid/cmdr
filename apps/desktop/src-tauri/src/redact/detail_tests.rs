@@ -115,16 +115,17 @@ fn detail_tokens_correlate_with_the_rest_of_the_report() {
 }
 
 #[test]
-fn unsalted_mode_keeps_legacy_redaction_and_full_length() {
-    let text = format!("{} /Users/alice/secret.txt", "q".repeat(300));
+fn unsalted_mode_redacts_and_caps_like_a_report() {
+    let text = format!("/Users/alice/secret.txt {}", "q".repeat(300));
     let line = format!("x detail={text:?}");
     let redacted = redact_line(&line).into_owned();
     assert!(!redacted.contains("alice"), "{redacted}");
     assert!(redacted.contains("$HOME/<file>.txt"), "{redacted}");
     assert!(
-        redacted.contains(&"q".repeat(300)),
-        "compat mode must not cap: {redacted}"
+        !redacted.contains(&"q".repeat(300)),
+        "the cap applies to bare tokens too: {redacted}"
     );
+    assert!(redacted.ends_with("…\""), "{redacted}");
 }
 
 #[test]

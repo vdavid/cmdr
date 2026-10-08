@@ -15,8 +15,8 @@ use reqwest::{Method, RequestBuilder, Response, StatusCode};
 use url::Url;
 
 use crate::errors::{WebdavConnectError, classify_connect_error};
-use crate::liveness::Liveness;
 use crate::propfind::{PropfindEntry, parse_multistatus};
+use cmdr_fs::volume::liveness::Liveness;
 
 /// The connect budget, per request: the PROBE's total budget and the idle
 /// budget between body chunks on a download (`streams.rs`). A transfer as a
@@ -33,6 +33,16 @@ pub(crate) const REQUEST_BUDGET: Duration = Duration::from_secs(10);
 /// A PROPFIND's total budget: bounded work, but a listing on a slow NAS may
 /// legitimately take a while.
 const PROPFIND_BUDGET: Duration = Duration::from_secs(60);
+
+/// The most a PROPFIND answer may hold. A `Depth: 1` response carries roughly
+/// 500–700 bytes per child, so this is about 200 000 entries in one folder;
+/// past it the server is hostile or broken, and reading on would hold the whole
+/// body in memory.
+pub(crate) const MAX_LISTING_BODY: usize = 128 * 1024 * 1024;
+
+/// The most the connect probe's `Depth: 0` answer may hold: one resource's
+/// properties fit in a few KiB.
+const MAX_PROBE_BODY: usize = 1024 * 1024;
 
 /// The total budget of one non-streaming verb (MOVE, COPY, DELETE, MKCOL, and
 /// `create_file`'s small in-memory PUT): a server that accepted the connection
@@ -90,7 +100,7 @@ pub(crate) struct WebdavClient {
     base: Url,
     username: String,
     password: String,
-    /// What the server has said lately (`crate::liveness`). Dies with this
+    /// What the server has said lately (`cmdr_fs::volume::liveness`). Dies with this
     /// client: a reconnect builds a new one.
     liveness: Arc<Liveness>,
 }
@@ -105,10 +115,19 @@ impl WebdavClient {
     /// reaped by the OS rather than handed to the next request.
     pub(crate) fn new(base: Url, username: &str, password: &str) -> Result<Self, WebdavConnectError> {
         let builder = || {
-            reqwest::Client::builder()
+            cmdr_http::client_builder()
                 .user_agent("Cmdr")
                 .connect_timeout(REQUEST_BUDGET)
                 .redirect(reqwest::redirect::Policy::none())
+                // ❗ Bytes as served, never decoded: a file sent with a
+                // `Content-Encoding` must copy as itself, at the length its
+                // `Content-Length` says. Whatever decoders other crates unify
+                // into the app's reqwest (`genai` brings `gzip`), each is off
+                // here (`transport_test.rs`).
+                .no_gzip()
+                .no_brotli()
+                .no_deflate()
+                .no_zstd()
         };
         let build_failed = |e: reqwest::Error| WebdavConnectError::Transport(e.to_string());
         Ok(Self {
@@ -186,6 +205,16 @@ impl WebdavClient {
     /// once WITH it: nginx and some NAS firmware answer 301 there rather than
     /// serving the listing.
     pub(crate) async fn propfind(&self, url: Url, depth: Depth) -> Result<PropfindOutcome, reqwest::Error> {
+        self.propfind_within(url, depth, MAX_LISTING_BODY).await
+    }
+
+    /// [`propfind`](Self::propfind) with the body capped at `limit` bytes.
+    pub(crate) async fn propfind_within(
+        &self,
+        url: Url,
+        depth: Depth,
+        limit: usize,
+    ) -> Result<PropfindOutcome, reqwest::Error> {
         let response = self.send_propfind(url.clone(), depth).await?;
         let response = if response.status().is_redirection() && !url.path().ends_with('/') {
             let mut with_slash = url;
@@ -199,7 +228,9 @@ impl WebdavClient {
         if status != StatusCode::MULTI_STATUS {
             return Ok(PropfindOutcome::Status(status));
         }
-        let body = self.read_body(response).await?;
+        let Some(body) = self.read_body(response, limit).await? else {
+            return Ok(PropfindOutcome::TooLarge { limit });
+        };
         Ok(match parse_multistatus(&String::from_utf8_lossy(&body)) {
             Ok(entries) => PropfindOutcome::Entries(entries),
             Err(_) => PropfindOutcome::NotMultistatus,
@@ -209,13 +240,25 @@ impl WebdavClient {
     /// A whole response body, noting every chunk as the server being there:
     /// ❗ a big listing on a slow server trickles in for a long time, and that
     /// is exactly the wait that must never read as silence.
-    async fn read_body(&self, mut response: Response) -> Result<Vec<u8>, reqwest::Error> {
+    ///
+    /// `None` once the body runs past `limit` bytes (or announces it will),
+    /// with the rest left unread.
+    async fn read_body(&self, mut response: Response, limit: usize) -> Result<Option<Vec<u8>>, reqwest::Error> {
+        if response
+            .content_length()
+            .is_some_and(|announced| announced > limit as u64)
+        {
+            return Ok(None);
+        }
         let mut body = Vec::new();
         while let Some(chunk) = response.chunk().await? {
             self.liveness.heard();
+            if body.len() + chunk.len() > limit {
+                return Ok(None);
+            }
             body.extend_from_slice(&chunk);
         }
-        Ok(body)
+        Ok(Some(body))
     }
 
     async fn send_propfind(&self, url: Url, depth: Depth) -> Result<Response, reqwest::Error> {
@@ -243,11 +286,14 @@ impl WebdavClient {
         let status = response.status();
         match status {
             StatusCode::MULTI_STATUS => {
-                let body = response
-                    .text()
+                // A `Depth: 0` answer describes one resource; a body past the
+                // cap isn't a WebDAV server answering it.
+                let body = self
+                    .read_body(response, MAX_PROBE_BODY)
                     .await
-                    .map_err(|e| WebdavConnectError::Transport(e.to_string()))?;
-                parse_multistatus(&body).map_err(|_| WebdavConnectError::NotAWebdavServer)
+                    .map_err(|e| WebdavConnectError::Transport(e.to_string()))?
+                    .ok_or(WebdavConnectError::NotAWebdavServer)?;
+                parse_multistatus(&String::from_utf8_lossy(&body)).map_err(|_| WebdavConnectError::NotAWebdavServer)
             }
             StatusCode::UNAUTHORIZED => {
                 if offers_basic(response.headers().get_all(WWW_AUTHENTICATE).iter()) {
@@ -271,6 +317,8 @@ pub(crate) enum PropfindOutcome {
     Entries(Vec<PropfindEntry>),
     /// A 207 whose body wasn't a `multistatus`.
     NotMultistatus,
+    /// A 207 whose body ran past `limit` bytes; the rest was never read.
+    TooLarge { limit: usize },
     /// Anything but a 207.
     Status(StatusCode),
 }
@@ -287,3 +335,7 @@ pub(crate) fn offers_basic<'a>(mut challenges: impl Iterator<Item = &'a HeaderVa
         })
     })
 }
+
+#[cfg(test)]
+#[path = "transport_test.rs"]
+mod transport_test;

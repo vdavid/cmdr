@@ -4,12 +4,11 @@
 
 use super::{InMemoryEntry, InMemoryVolume};
 use crate::entry::FileEntry;
-#[cfg(feature = "playwright-e2e")]
 use crate::ignore_poison::IgnorePoison;
 use crate::ignore_poison::RwLockIgnorePoison;
 use crate::volume::{
-    BackendKind, ConnectionState, CopyScanResult, IndexWalk, LaneKey, ScanConflict, SourceItemInfo, SpaceInfo,
-    StreamLength, StreamWriteProgress, Volume, VolumeError, VolumeReadStream, WriteAccess, WriteMode,
+    BackendKind, ConnectionState, CopyScanResult, IndexWalk, LaneKey, RenameWork, ScanConflict, SourceItemInfo,
+    SpaceInfo, StreamLength, StreamWriteProgress, Volume, VolumeError, VolumeReadStream, WriteAccess, WriteMode,
 };
 use std::future::Future;
 use std::path::{Path, PathBuf};
@@ -23,6 +22,8 @@ const IN_MEMORY_STREAM_CHUNK_SIZE: usize = 64 * 1024;
 struct InMemoryReadStream {
     data: Vec<u8>,
     offset: usize,
+    /// The entry's `modified_at`, as the stream reports it.
+    modified_at: Option<std::time::SystemTime>,
     /// See [`InMemoryVolume::with_read_chunk_delay`]. `None` ⇒ no await ever pends.
     chunk_delay: Option<std::time::Duration>,
 }
@@ -49,6 +50,10 @@ impl VolumeReadStream for InMemoryReadStream {
 
     fn bytes_read(&self) -> u64 {
         self.offset as u64
+    }
+
+    fn modified_at(&self) -> Option<std::time::SystemTime> {
+        self.modified_at
     }
 }
 
@@ -171,30 +176,7 @@ impl Volume for InMemoryVolume {
                 return Err(VolumeError::AlreadyExists(normalized.display().to_string()));
             }
 
-            let name = normalized
-                .file_name()
-                .map(|s| s.to_string_lossy().to_string())
-                .unwrap_or_default();
-
-            let metadata = FileEntry {
-                size: Some(content.len() as u64),
-                modified_at: Some(Self::now_secs()),
-                created_at: Some(Self::now_secs()),
-                permissions: 0o644,
-                owner: "testuser".to_string(),
-                group: "staff".to_string(),
-                extended_metadata_loaded: true,
-                ..FileEntry::new(name, normalized.display().to_string(), false, false)
-            };
-
-            entries.insert(
-                normalized,
-                InMemoryEntry {
-                    metadata,
-                    content: Some(content.to_vec()),
-                },
-            );
-
+            Self::insert_file(&mut entries, normalized, content.to_vec());
             Ok(())
         })
     }
@@ -238,6 +220,7 @@ impl Volume for InMemoryVolume {
                 ..FileEntry::new(name, normalized.display().to_string(), true, false)
             };
 
+            Self::touch_parent_of(&mut entries, &normalized);
             entries.insert(
                 normalized,
                 InMemoryEntry {
@@ -246,6 +229,27 @@ impl Volume for InMemoryVolume {
                 },
             );
 
+            Ok(())
+        })
+    }
+
+    fn set_modified<'a>(
+        &'a self,
+        path: &'a Path,
+        modified: std::time::SystemTime,
+    ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            // Whole seconds, like the listing it shows up in.
+            let secs = modified
+                .duration_since(std::time::UNIX_EPOCH)
+                .map_err(|_| VolumeError::NotSupported)?
+                .as_secs();
+            let normalized = self.normalize(path);
+            let mut entries = self.entries.write_ignore_poison();
+            let entry = entries
+                .get_mut(&normalized)
+                .ok_or_else(|| VolumeError::NotFound(normalized.display().to_string()))?;
+            entry.metadata.modified_at = Some(secs);
             Ok(())
         })
     }
@@ -285,8 +289,47 @@ impl Volume for InMemoryVolume {
 
             entries
                 .remove(&normalized)
-                .map(|_| ())
-                .ok_or_else(|| VolumeError::NotFound(normalized.display().to_string()))
+                .ok_or_else(|| VolumeError::NotFound(normalized.display().to_string()))?;
+            Self::touch_parent_of(&mut entries, &normalized);
+            Ok(())
+        })
+    }
+
+    fn rename_work<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<RenameWork, VolumeError>> + Send + 'a>> {
+        let _ = path;
+        let work = if self.renames_by_copy {
+            RenameWork::CopyThenDelete
+        } else {
+            RenameWork::OneCall
+        };
+        Box::pin(async move { Ok(work) })
+    }
+
+    fn renames_can_copy(&self) -> bool {
+        self.renames_by_copy
+    }
+
+    #[allow(
+        clippy::type_complexity,
+        reason = "async trait method returns a pinned boxed future by design"
+    )]
+    fn delete_files<'a>(
+        &'a self,
+        paths: &'a [PathBuf],
+    ) -> Pin<Box<dyn Future<Output = Vec<Result<(), VolumeError>>> + Send + 'a>> {
+        self.delete_batches.lock_ignore_poison().push(paths.len());
+        Box::pin(async move {
+            let mut results = Vec::with_capacity(paths.len());
+            for path in paths {
+                results.push(match self.delete(path).await {
+                    Err(VolumeError::NotFound(_)) => Ok(()),
+                    other => other,
+                });
+            }
+            results
         })
     }
 
@@ -297,6 +340,9 @@ impl Volume for InMemoryVolume {
         force: bool,
     ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
         Box::pin(async move {
+            if self.renames_by_copy {
+                return Err(VolumeError::NotSupported);
+            }
             if let Some(failure) = &self.rename_failure {
                 return Err(failure.clone());
             }
@@ -331,6 +377,8 @@ impl Volume for InMemoryVolume {
             entry.metadata.path = to_normalized.display().to_string();
             let was_directory = entry.metadata.is_directory;
 
+            Self::touch_parent_of(&mut entries, &from_normalized);
+            Self::touch_parent_of(&mut entries, &to_normalized);
             entries.insert(to_normalized.clone(), entry);
 
             // Renaming a DIRECTORY carries its whole subtree along — that's the
@@ -394,6 +442,7 @@ impl Volume for InMemoryVolume {
                     // In-memory volume has no hardlinks: footprints are equal.
                     dedup_bytes: entry.metadata.size.unwrap_or(0),
                     top_level_is_directory: false,
+                    top_level_modified_at: entry.metadata.modified_at,
                 });
             }
 
@@ -431,6 +480,7 @@ impl Volume for InMemoryVolume {
                 // behave like empty directories, which is the existing
                 // contract on this backend.
                 top_level_is_directory: true,
+                top_level_modified_at: entries.get(&normalized).and_then(|entry| entry.metadata.modified_at),
             })
         })
     }
@@ -473,9 +523,14 @@ impl Volume for InMemoryVolume {
             }
 
             let data = entry.content.clone().unwrap_or_default();
+            let modified_at = entry
+                .metadata
+                .modified_at
+                .map(|secs| std::time::UNIX_EPOCH + std::time::Duration::from_secs(secs));
             Ok(Box::new(InMemoryReadStream {
                 data,
                 offset: 0,
+                modified_at,
                 chunk_delay: self.read_chunk_delay,
             }) as Box<dyn VolumeReadStream>)
         })
@@ -517,7 +572,7 @@ impl Volume for InMemoryVolume {
     fn write_from_stream<'a>(
         &'a self,
         dest: &'a Path,
-        _mode: WriteMode,
+        mode: WriteMode,
         length: StreamLength,
         mut stream: Box<dyn VolumeReadStream>,
         on_progress: &'a (dyn Fn(StreamWriteProgress) -> std::ops::ControlFlow<()> + Sync),
@@ -546,7 +601,19 @@ impl Volume for InMemoryVolume {
                 }
             }
 
-            self.create_file(dest, &data).await?;
+            if self.publishes_writes_whole && mode == WriteMode::CreateOrReplace {
+                self.replace_whole(dest, data)?;
+            } else {
+                self.create_file(dest, &data).await?;
+            }
+            // Keeps the source's date the way a real destination does, so an
+            // engine test copying onto the double sees the same answer.
+            if let Some(secs) = stream
+                .modified_at()
+                .and_then(|date| date.duration_since(std::time::UNIX_EPOCH).ok())
+            {
+                self.set_modified_at(dest, Some(secs.as_secs()));
+            }
             Ok(bytes_written)
         })
     }
@@ -605,6 +672,10 @@ impl Volume for InMemoryVolume {
 
     fn composes_new_names(&self) -> bool {
         self.composes_new_names
+    }
+
+    fn publishes_writes_whole(&self) -> bool {
+        self.publishes_writes_whole
     }
 
     fn space_poll_interval(&self) -> Option<std::time::Duration> {

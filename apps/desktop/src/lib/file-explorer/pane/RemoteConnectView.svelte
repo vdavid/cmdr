@@ -24,8 +24,8 @@
      *
      * ❌ No inert buttons. A refusal offers Try again (which really re-dials),
      * "Signed out" offers Sign in… (which opens the sheet), and a changed host
-     * key offers Disconnect (which is what lets the next open show the
-     * fingerprint). Every one of them does the thing it says — which is also why
+     * key offers Check the key (which opens the sheet on the key the server
+     * presents now) beside Disconnect. Every one of them does the thing it says — which is also why
      * a refusal with no move left (an unplugged phone) renders no action row at
      * all, and why `waiting_for_device` offers only Cancel: the pane learns the
      * phone was tapped from the volume list, not from a button.
@@ -176,6 +176,9 @@
             <h2 class="title">{tString('servers.paneState.hostKeyChanged', { name })}</h2>
             <p class="hint">{tString('servers.paneState.hostKeyChangedHint')}</p>
             <div class="actions">
+                <Button variant="primary" size="mini" onclick={connectState.checkKey}>
+                    {tString('servers.paneState.checkHostKey')}
+                </Button>
                 <Button variant="secondary" size="mini" onclick={connectState.disconnect}>
                     {tString('servers.paneState.disconnect')}
                 </Button>

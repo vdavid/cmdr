@@ -159,6 +159,10 @@
   "@askCmdr.renameUndo.applied": {
     "sourceHash": "7093b77"
   },
+  "askCmdr.renameUndo.swapsSkipped": "Se {count, plural, one {omitió {countText} cambio de nombre que intercambia nombres} many {omitieron {countText} cambios de nombre que intercambian nombres} other {omitieron {countText} cambios de nombre que intercambian nombres}}. Renombra esos archivos de uno en uno.",
+  "@askCmdr.renameUndo.swapsSkipped": {
+    "sourceHash": "6cd7a7d"
+  },
   "askCmdr.renameUndo.undone": "Se {count, plural, one {restauró el nombre anterior} many {restauraron los nombres anteriores} other {restauraron los nombres anteriores}} de {countText} {count, plural, one {archivo} many {archivos} other {archivos}}.",
   "@askCmdr.renameUndo.undone": {
     "sourceHash": "11fdbdd"

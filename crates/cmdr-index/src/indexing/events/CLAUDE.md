@@ -43,7 +43,7 @@ the phase-transition emitter.
   `RescanReason`, `ActivityPhase`, `MemoryWatchdogAction`, and `FolderChangeRollup` (the only one with no `serde` /
   `specta::Type`, since it rides into host machinery rather than onto a wire). The bottom of the subtree.
 - `sink.rs` — `IndexEvent` + `IndexEventKind`, the `EventSink` trait, `NoopEventSink`, `Diagnostic`, `IndexErrorReport`,
-  `MediaEnrichTerminalReason`, and the test `RecordingSink`.
+  `MediaEnrichTerminalReason`. Test doubles: `test_sinks.rs`.
 - `mod.rs` — the IPC response types, `PhaseRecord`, `DebugStats`, `set_phase_for`, `emit_rescan_notification`, and
   `emit_dir_updated`.
 

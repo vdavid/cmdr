@@ -33,6 +33,11 @@ impl WebdavVolume {
                 message: "the server answered 207 without a multistatus body".to_string(),
                 raw_os_error: None,
             }),
+            PropfindOutcome::TooLarge { limit } => Err(VolumeError::IoError {
+                // allowed-pluralize-noun: `limit` is a cap in mebibytes, never 1.
+                message: format!("the server's listing ran past {limit} bytes"),
+                raw_os_error: None,
+            }),
             PropfindOutcome::Status(status) => Err(map_status(status, remote, Attempted::Reaching)),
         }
     }
@@ -69,11 +74,12 @@ impl WebdavVolume {
             if name.is_empty() {
                 continue;
             }
-            let built = propfind_to_file_entry(
-                name,
-                &self.root.to_app_path(&child_of(&remote, name)).to_string_lossy(),
-                prop,
-            );
+            // An entry a misbehaving server names off the root (`..`, say) is
+            // dropped, ❌ never listed under a path this volume would refuse.
+            let Some(app_path) = self.root.to_app_path(&child_of(&remote, name)) else {
+                continue;
+            };
+            let built = propfind_to_file_entry(name, &app_path.to_string_lossy(), prop);
             if built.is_directory {
                 tally.dirs += 1;
             } else {
@@ -98,11 +104,11 @@ impl WebdavVolume {
             .file_name()
             .map(|n| n.to_string_lossy().into_owned())
             .unwrap_or_else(|| self.name.clone());
-        Ok(propfind_to_file_entry(
-            &name,
-            &self.root.to_app_path(&remote).to_string_lossy(),
-            &prop,
-        ))
+        let app_path = self
+            .root
+            .to_app_path(&remote)
+            .ok_or_else(|| VolumeError::NotFound(path.to_string_lossy().into_owned()))?;
+        Ok(propfind_to_file_entry(&name, &app_path.to_string_lossy(), &prop))
     }
 
     /// The one entry a `Depth: 0` PROPFIND answers with.

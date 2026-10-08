@@ -1,7 +1,7 @@
 {
-  "goToPath.dialog.title": "Ga naar pad",
+  "goToPath.dialog.title": "Ga naar map",
   "@goToPath.dialog.title": {
-    "sourceHash": "fb65702"
+    "sourceHash": "26fc1cf"
   },
   "goToPath.dialog.inputAriaLabel": "Pad om naartoe te gaan",
   "@goToPath.dialog.inputAriaLabel": {
@@ -23,9 +23,9 @@
   "@goToPath.dialog.cancel": {
     "sourceHash": "19766ed"
   },
-  "goToPath.dialog.confirm": "Ga naar pad",
+  "goToPath.dialog.confirm": "Ga",
   "@goToPath.dialog.confirm": {
-    "sourceHash": "fb65702"
+    "sourceHash": "6cc8519"
   },
   "goToPath.dialog.ancestorHint": "Dit pad bestaat niet. De dichtstbijzijnde plek om naartoe te gaan is {dir}.",
   "@goToPath.dialog.ancestorHint": {

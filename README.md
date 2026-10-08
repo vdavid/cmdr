@@ -1,6 +1,7 @@
 # Cmdr
 
 ![License](https://img.shields.io/badge/license-BSL--1.1-blue)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/vdavid/cmdr/badge)](https://scorecard.dev/viewer/?uri=github.com/vdavid/cmdr)
 
 An extremely fast, keyboard-driven two-pane file manager for macOS, written in Rust. Source-available, free for personal
 use. With fully optional, privacy-first AI features.

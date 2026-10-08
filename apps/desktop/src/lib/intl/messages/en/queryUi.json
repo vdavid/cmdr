@@ -643,9 +643,9 @@
     "screenshot": "search-dialog.png",
     "screenshotNote": "Cmdr’s search, select, and filter surfaces are one shared dialog: a mode row at the top, the query bar, the scope and filter controls under it, and results below. This shows that dialog; your string is one of those controls, one of the filter or date options, or a line in the results area."
   },
-  "queryUi.recent.systemDirsIncluded": "system dirs included",
+  "queryUi.recent.systemDirsIncluded": "system folders included",
   "@queryUi.recent.systemDirsIncluded": {
-    "description": "Part of a recent-search chip's hover tooltip. Notes that the past search did NOT hide the usual system and build folders. Lowercase because it joins a comma-separated list of filter facts. 'dirs' is short for directories (folders).",
+    "description": "Part of a recent-search chip's hover tooltip. Notes that the past search did NOT hide the usual system and build folders. Lowercase because it joins a comma-separated list of filter facts.",
     "screenshot": "search-dialog.png",
     "screenshotNote": "Cmdr’s search, select, and filter surfaces are one shared dialog: a mode row at the top, the query bar, the scope and filter controls under it, and results below. This shows that dialog; your string is one of those controls, one of the filter or date options, or a line in the results area."
   },
@@ -828,7 +828,7 @@
     "placeholders": {
       "prefix": "the comparison glyph: '>', '<', or '=', not translated",
       "valueText": "the size number the user entered, shown verbatim (for example 100)",
-      "unit": "the size unit, already formatted (for example MB, kB), not translated"
+      "unit": "the size unit symbol, already in your language (for example MB, kB, or bytes)"
     },
     "screenshot": "search-dialog.png",
     "screenshotNote": "Cmdr’s search, select, and filter surfaces are one shared dialog: a mode row at the top, the query bar, the scope and filter controls under it, and results below. This shows that dialog; your string is one of those controls, one of the filter or date options, or a line in the results area."
@@ -838,9 +838,9 @@
     "description": "Summary shown on the Size chip for a between-two-sizes filter. The dash is an en dash for the range.",
     "placeholders": {
       "minText": "the lower size number, shown verbatim",
-      "minUnit": "the lower-bound unit, already formatted (for example MB), not translated",
+      "minUnit": "the lower-bound unit symbol, already in your language (for example MB)",
       "maxText": "the upper size number, shown verbatim",
-      "maxUnit": "the upper-bound unit, already formatted (for example GB), not translated"
+      "maxUnit": "the upper-bound unit symbol, already in your language (for example GB)"
     },
     "screenshot": "search-dialog.png",
     "screenshotNote": "Cmdr’s search, select, and filter surfaces are one shared dialog: a mode row at the top, the query bar, the scope and filter controls under it, and results below. This shows that dialog; your string is one of those controls, one of the filter or date options, or a line in the results area."
@@ -881,17 +881,6 @@
   "queryUi.size.comparator.between": "between",
   "@queryUi.size.comparator.between": {
     "description": "Option in the Size popover's comparator column: size is between a lower and an upper bound. Lowercase; reads as a cell in a list of choices. (The other comparators are math glyphs and aren't translated.)",
-    "screenshot": "filter-popover.png"
-  },
-  "queryUi.size.unit.byte": "byte",
-  "@queryUi.size.unit.byte": {
-    "description": "Singular byte unit label in the Size popover's unit column, shown when the chosen value is exactly 1. The full word, not the 'B' abbreviation.",
-    "screenshot": "search-dialog.png",
-    "screenshotNote": "Cmdr’s search, select, and filter surfaces are one shared dialog: a mode row at the top, the query bar, the scope and filter controls under it, and results below. This shows that dialog; your string is one of those controls, one of the filter or date options, or a line in the results area."
-  },
-  "queryUi.size.unit.bytes": "bytes",
-  "@queryUi.size.unit.bytes": {
-    "description": "Plural byte unit label in the Size popover's unit column, shown for any value other than 1. The full word, not the 'B' abbreviation.",
     "screenshot": "filter-popover.png"
   },
   "queryUi.size.customCell": "custom…",

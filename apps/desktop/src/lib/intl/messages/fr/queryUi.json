@@ -394,7 +394,7 @@
   },
   "queryUi.recent.systemDirsIncluded": "dossiers système inclus",
   "@queryUi.recent.systemDirsIncluded": {
-    "sourceHash": "b7996cc"
+    "sourceHash": "c928638"
   },
   "queryUi.recent.resultCount": "{countText} {count, plural, one {résultat} many {résultats} other {résultats}} la dernière fois",
   "@queryUi.recent.resultCount": {
@@ -527,14 +527,6 @@
   "queryUi.size.comparator.between": "entre",
   "@queryUi.size.comparator.between": {
     "sourceHash": "fbb27fb"
-  },
-  "queryUi.size.unit.byte": "octet",
-  "@queryUi.size.unit.byte": {
-    "sourceHash": "1c31626"
-  },
-  "queryUi.size.unit.bytes": "octets",
-  "@queryUi.size.unit.bytes": {
-    "sourceHash": "277089d"
   },
   "queryUi.size.customCell": "personnalisé…",
   "@queryUi.size.customCell": {

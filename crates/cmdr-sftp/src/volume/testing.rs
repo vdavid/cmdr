@@ -10,14 +10,17 @@
 //! shipped build. The stack itself: `apps/desktop/test/sftp-servers/README.md`.
 
 use std::sync::Arc;
-use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU8, AtomicUsize, Ordering};
 
+use cmdr_fs::volume::Retirement;
 use cmdr_fs::volume::host::VolumeHost;
 use cmdr_fs::volume::host::credentials::InMemoryCredentials;
 use cmdr_fs::volume::host::host_keys::InMemoryHostKeys;
+use cmdr_fs::volume::remote_paths::RemoteRoot;
 use tokio_util::sync::CancellationToken;
 
-use super::{SftpConnectOutcome, SftpVolume, connect_sftp_volume};
+use super::state::ConnectionState;
+use super::{AuthRungUsed, SftpConnectOutcome, SftpVolume, SftpVolumeInner, connect_sftp_volume};
 use crate::params::SftpConnectionParams;
 use crate::transport::HostKeyPromptKind;
 
@@ -46,6 +49,41 @@ pub fn count_panics() -> PanicCount {
         previous(info);
     }));
     PanicCount(&PANICS)
+}
+
+/// A real `SftpVolume` with NO session behind it, dialed nowhere.
+///
+/// For a cell that needs the concrete type without a server: this crate's pure
+/// path and reconnect suites, and an app-side cell whose code downcasts to
+/// `SftpVolume` (the disconnect wiring). Every operation that would touch the
+/// wire answers `DeviceDisconnected`. Its id and app root come from `params`, the
+/// way a dial's would.
+pub fn offline_volume(name: &str, params: SftpConnectionParams, rung: AuthRungUsed, host: VolumeHost) -> SftpVolume {
+    SftpVolume {
+        name: name.to_string(),
+        root: RemoteRoot::new(
+            cmdr_fs::volume::sftp_app_root(&params.host, params.port, &params.username),
+            &params.remote_root,
+        ),
+        inner: Arc::new_cyclic(|me| SftpVolumeInner {
+            volume_id: cmdr_fs::volume::sftp_volume_id(&params.host, params.port, &params.username),
+            params: std::sync::RwLock::new(params),
+            rung: std::sync::Mutex::new(rung),
+            session: tokio::sync::RwLock::new(None),
+            // A volume with no session behind it is one whose session went away,
+            // which is what the reconnect cells are about.
+            state: AtomicU8::new(ConnectionState::Connected as u8),
+            retirement: Retirement::new(),
+            me: me.clone(),
+            reconnect_lock: tokio::sync::Mutex::new(()),
+            unmounted: AtomicBool::new(false),
+            // On, the way every saved server is: a cell that wants the switch off
+            // moves it the way the app does, through `set_auto_reconnect`.
+            auto_reconnect: AtomicBool::new(true),
+            auth_attempt_spent: AtomicBool::new(false),
+            host,
+        }),
+    }
 }
 
 /// The remote directory every fixture server exports.

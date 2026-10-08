@@ -9,7 +9,7 @@
  * (one source of truth), so an append can't desync from what's shown.
  */
 
-import { getRecentOperationLogEntries, type OperationRow } from '$lib/tauri-commands'
+import { getOperationLogDetail, getRecentOperationLogEntries, type OperationRow } from '$lib/tauri-commands'
 import { getAppLogger } from '$lib/logging/logger'
 
 const log = getAppLogger('operationLog')
@@ -110,4 +110,28 @@ export function markOperationRollingBack(opId: string, inverseOpId: string): voi
   operationLogState.entries = operationLogState.entries.map((entry) =>
     entry.opId === opId ? { ...entry, rollbackState: 'rollingBack', inverseOpId } : entry,
   )
+}
+
+/**
+ * Re-read ONE row's header from the journal and swap it in place. Called when the
+ * live session a row's controls follow says its reversal has ended, so the badge
+ * stops saying "Rolling back" without the dialog polling anything.
+ *
+ * Safe to fire on that signal: the engine writes the final `rollback_state` (over the
+ * writer's synchronous reply channel) before the reversal leaves the registry. A row
+ * that's no longer listed, or that the journal no longer has, is left alone.
+ */
+export async function refreshOperation(opId: string): Promise<void> {
+  if (!operationLogState.entries.some((entry) => entry.opId === opId)) return
+  try {
+    // Zero items: only the header drifts; a finished operation's items don't.
+    const detail = await getOperationLogDetail(opId, 0, 0)
+    if (detail === null) return
+    operationLogState.entries = operationLogState.entries.map((entry) =>
+      entry.opId === opId ? detail.operation : entry,
+    )
+  } catch (e) {
+    // The row keeps what it showed; reopening the dialog reads it fresh.
+    log.warn("Couldn't refresh operation {opId}: {error}", { opId, error: String(e) })
+  }
 }

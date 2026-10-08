@@ -20,8 +20,6 @@ interface DownloadDetectedPayload {
 const {
   listenMock,
   getDownloadsNotificationsModeMock,
-  isPermissionGrantedMock,
-  requestPermissionMock,
   sendNotificationMock,
   addToastMock,
   getEffectiveShortcutsMock,
@@ -32,9 +30,7 @@ const {
 } = vi.hoisted(() => ({
   listenMock: vi.fn(),
   getDownloadsNotificationsModeMock: vi.fn<() => 'in-app' | 'macos' | 'both' | 'neither'>(),
-  isPermissionGrantedMock: vi.fn<() => Promise<boolean>>(),
-  requestPermissionMock: vi.fn<() => Promise<'granted' | 'denied' | 'default'>>(),
-  sendNotificationMock: vi.fn(),
+  sendNotificationMock: vi.fn<(notification: { title: string; body: string }) => Promise<void>>(),
   addToastMock: vi.fn(() => 'toast-id'),
   getEffectiveShortcutsMock: vi.fn<(id: string) => string[]>(),
   getGlobalGoToLatestEnabledMock: vi.fn<() => boolean>(),
@@ -47,10 +43,10 @@ vi.mock('@tauri-apps/api/event', () => ({
   listen: listenMock,
 }))
 
-vi.mock('@tauri-apps/plugin-notification', () => ({
-  isPermissionGranted: isPermissionGrantedMock,
-  requestPermission: requestPermissionMock,
-  sendNotification: sendNotificationMock,
+// Permission, the send itself, and its failure handling are `sendMacosNotification`'s
+// (tested in `$lib/notifications`); the bridge only decides when and what to send.
+vi.mock('$lib/notifications/send-macos-notification', () => ({
+  sendMacosNotification: sendNotificationMock,
 }))
 
 vi.mock('./notifications-mode', () => ({
@@ -94,7 +90,6 @@ vi.mock('$lib/ipc/bindings', () => ({
 }))
 
 import { startDownloadsEventBridge } from './event-bridge.svelte'
-import { __resetPermissionCacheForTests } from '$lib/notifications/macos-notification-permission'
 
 /**
  * Wait until every queued microtask + promise chain has settled. Each
@@ -151,9 +146,7 @@ describe('startDownloadsEventBridge', () => {
   beforeEach(() => {
     listenMock.mockReset()
     getDownloadsNotificationsModeMock.mockReset().mockReturnValue('in-app')
-    isPermissionGrantedMock.mockReset().mockResolvedValue(true)
-    requestPermissionMock.mockReset().mockResolvedValue('granted')
-    sendNotificationMock.mockReset()
+    sendNotificationMock.mockReset().mockResolvedValue(undefined)
     addToastMock.mockReset().mockReturnValue('toast-id')
     getEffectiveShortcutsMock.mockReset().mockReturnValue(['⌘J'])
     getGlobalGoToLatestEnabledMock.mockReset().mockReturnValue(true)
@@ -163,7 +156,6 @@ describe('startDownloadsEventBridge', () => {
       status: 'ok',
       data: { running: true, downloadsDir: '/Users/me/Downloads', fdaPending: false },
     })
-    __resetPermissionCacheForTests()
   })
 
   it('mode "in-app" dispatches an in-app toast only', async () => {
@@ -383,53 +375,5 @@ describe('startDownloadsEventBridge', () => {
 
     expect(addToastMock).not.toHaveBeenCalled()
     expect(sendNotificationMock).not.toHaveBeenCalled()
-  })
-})
-
-describe('startDownloadsEventBridge — permission flow', () => {
-  beforeEach(() => {
-    listenMock.mockReset()
-    getDownloadsNotificationsModeMock.mockReset().mockReturnValue('macos')
-    isPermissionGrantedMock.mockReset()
-    requestPermissionMock.mockReset()
-    sendNotificationMock.mockReset()
-    addToastMock.mockReset().mockReturnValue('toast-id')
-    getEffectiveShortcutsMock.mockReset().mockReturnValue(['⌘J'])
-    getGlobalGoToLatestEnabledMock.mockReset().mockReturnValue(true)
-    getGlobalGoToLatestBindingMock.mockReset().mockReturnValue('⌃⌥⌘J')
-    getDownloadsToastCollapsedMock.mockReset().mockReturnValue(false)
-    downloadsWatcherStatusMock.mockReset().mockResolvedValue({
-      status: 'ok',
-      data: { running: true, downloadsDir: '/Users/me/Downloads', fdaPending: false },
-    })
-    __resetPermissionCacheForTests()
-  })
-
-  it("asks for OS permission once when it isn't already granted, then fires the notification", async () => {
-    isPermissionGrantedMock.mockResolvedValue(false)
-    requestPermissionMock.mockResolvedValue('granted')
-
-    const listener = await startBridgeAndCaptureListener()
-    listener({ payload: { ...payload() } })
-    await flushMacosBurst()
-
-    expect(requestPermissionMock).toHaveBeenCalledTimes(1)
-    expect(sendNotificationMock).toHaveBeenCalledTimes(1)
-  })
-
-  it('shows an INFO toast and does not fire when the user denies the OS prompt', async () => {
-    isPermissionGrantedMock.mockResolvedValue(false)
-    requestPermissionMock.mockResolvedValue('denied')
-
-    const listener = await startBridgeAndCaptureListener()
-    listener({ payload: { ...payload() } })
-    await flushMacosBurst()
-
-    expect(sendNotificationMock).not.toHaveBeenCalled()
-    // One INFO toast surfaces with the dedup id.
-    expect(addToastMock).toHaveBeenCalled()
-    const calls = addToastMock.mock.calls as unknown as [unknown, Record<string, unknown>][]
-    const hasInfoToast = calls.some(([, options]) => options.level === 'info')
-    expect(hasInfoToast).toBe(true)
   })
 })

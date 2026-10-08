@@ -39,11 +39,13 @@ badges). `resolve-location.ts` and `breadcrumb-navigation.ts` are documented whe
 
 ## `navigation-history.ts`
 
-Purely functional: all operations return new objects, never mutate.
+Purely functional: all operations return new objects, never mutate. The one in-place write is an entry's `cursor`
+(`history-cursor.ts`, below), which isn't navigation state.
 
 ```
 NavigationHistory = { stack: HistoryEntry[], currentIndex: number }
-HistoryEntry = { volumeId: string, path: string, networkHost?: NetworkHost }
+HistoryEntry = { volumeId: string, path: string, networkHost?: NetworkHost, cursor?: HistoryCursor }
+HistoryCursor = { index: number, rowPath?: string }
 PushResult = { history: NavigationHistory, droppedEntries: HistoryEntry[] }
 ```
 
@@ -82,6 +84,28 @@ two steps because the current pane state isn't in the stack. The `listing-error`
 deleted → navigate to parent) doesn't push via this callback; it relies on the fallback navigation's own
 `commitPathFromListing` push (the in-place `history: 'push-path'` commit in `pane/navigate.ts`).
 
+### Cursor memory per entry (`history-cursor.ts`)
+
+Back and Forward put the cursor where it last sat in the destination ENTRY, ❌ never a per-path map: two visits to one
+folder are two history positions, each with its own cursor. Session-only, like the history itself. Cursor only:
+selection and pixel scroll stay out.
+
+- **Recording.** The pane reports every cursor move synchronously as a `CursorReading` tagged with the listing on screen
+  (`../pane/history-cursor-sync.svelte.ts`), and `DualPaneExplorer`'s `onCursorReading` writes it into the active tab's
+  current entry through `recordCursor`, which drops a reading from any other listing. That gate is what stops the leak:
+  a history walk moves `currentIndex` at once while the old rows stay up until the new listing lands, and an unguarded
+  write in between would stamp the old listing's index on the destination. The row's path arrives later from the
+  selection-info feed's read, and `recordCursor` takes it only for the index it was read at.
+- **In place, on purpose.** A reading fires per keystroke; a new history object each time would re-run every reader of
+  the tab's history. The cursor isn't part of an entry's identity (`entriesEqual` skips it), and a cloned tab's history
+  is a `$state.snapshot` copy, so tabs never share one.
+- **Restoring.** `navigate.ts::commitHistoryWalk` hands the pane a COPY of the destination entry's cursor
+  (`FilePaneAPI.restoreHistoryCursor`; none for the servers hub). A listing takes it when its load starts and lands on
+  it before the rows paint (`listing-loader.ts`, `takeHistoryCursor`); a snapshot has no load, so the sync factory
+  applies it once the snapshot's rows are mounted at that path. `restoredCursorIndex` picks the row where it is now,
+  else the saved index clamped into the rows, else 0. Any load takes and clears the parked cursor, so it can't land on a
+  later, unrelated visit.
+
 ## `path-navigation.ts`
 
 `determineNavigationPath({ volumeId, volumePath, targetPath, otherPane, landingPath })`: picks best initial path when
@@ -113,11 +137,30 @@ restored tab, a favorite, go-to-path, history) never comes through it, so it kee
   as arm 4. ❌ Passing the landing as the target instead reads as arm 1 (a favorite) and skips the other pane and the
   remembered path.
 
-### Following an edited place (`root-change-follow.ts`)
+### Go > Root folder (`root-folder.ts`)
 
-`pathAfterRootChange(path, change)` is where a path on a connected place goes after `volume-root-changed`, by whole
-components (❌ never a string prefix: `/srv/data-1` is a sibling of `/srv/data`):
+`nav.goToRoot` (⌘/) opens the root of what the pane SHOWS, which is where a pane picking its volume never goes on its
+own: picking it lands on the other pane's folder or the remembered one, as in Total Commander, Double Commander, and
+Commander One (verified by hand, 2026-10-06). This command is the one-keystroke way to `/`, from issue #366.
 
+- **Inside an archive, the archive's root** (`archiveRootOf`, leftmost archive wins). The pane keeps the drive's
+  `volumeId` there, so the volume root would leave the archive.
+- **Otherwise the root of `paneVolumeOf`'s answer**, the volume the header names, so a boot-disk pane inside
+  `/Volumes/USB` goes to `/Volumes/USB`. A phone goes to its true root, ❌ never its `/sdcard` landing.
+- **❗ The target stays on the pane's own volume, opened in place** (`{ goTo }` with the pane's own `volumeId`). Another
+  volume's id would take the switch arm, whose best-path correction swaps a root for the remembered folder, and a path
+  off the pane's volume is dropped as a foreign listing. A share pane wandered off its mount gets the share's root.
+- The servers hub and a search snapshot have no root: a no-op, as is a pane already there, or one that moved while
+  `resolvePathVolume` answered.
+
+### Following an edited place or a renamed drive (`root-change-follow.ts`)
+
+`pathAfterRootChange(path, change)` is where a path on a volume goes after `volume-root-changed`, by whole components
+(❌ never a string prefix: `/srv/data-1` is a sibling of `/srv/data`):
+
+0. A `moved` root (a renamed drive, `/Volumes/Old` → `/Volumes/New`) and a path at or under the old root → the same
+   place under the new root: it's the same tree at a new name. Only `edited` roots take the rules below, because an
+   edited root is a different folder with no counterpart for a path inside the old one.
 1. On the old root or the old landing → the new landing.
 2. Inside the new root → unchanged, so a pane that went deeper keeps its place.
 3. Anywhere else → the new landing, since the new root refuses it.
@@ -186,8 +229,11 @@ The restore path has a second rule, PATH-shaped rather than state-shaped, in
 `app-status-store.ts::resolvePersistedPath`: a `<scheme>://` path is returned UNPROBED. Launch must not dial a server to
 find out whether it is reachable: four saved servers waking a Mac would be four Keychain reads and four network waits
 nobody asked for. The tab comes back on its subpath, greyed as `saved`, and dials when the user activates it, which is
-what `../pane/place-connect.svelte.ts` watches for. The four `volumeId === 'network'` exemptions at that function's call
-sites are the same idea, one fixed volume id at a time.
+what `../pane/place-connect.svelte.ts` watches for. The `volumeId === 'network'` exemptions at that function's call
+sites are the same idea, one fixed volume id at a time. A TAB on an SMB share is also handed back unprobed
+(`resolveTabPath`): its path is a plain `/Volumes/…` one that an unmounted share leaves missing, so
+`../pane/initialization.ts::restoreShareTab` decides with the saved list in hand, keeping it on an unmounted saved share
+and walking it like a plain folder otherwise.
 
 ### Non-blocking navigation pattern
 
@@ -324,7 +370,12 @@ so ❗ a variant with no `.smb-indicator-<state>` rule in THAT file renders as a
 session, amber = the OS-mount fallback or a waiting sign-in, red = a changed host key, hollow = `saved`. Each state gets
 its OWN tooltip sentence (`getConnectionTooltip`, a `Record` over the union, so a new state is a compile error);
 `connection-tooltips.test.ts` also catches a BORROWED one, since five states once shared two sentences and a signed-out
-SFTP server hovered as "Using system connection".
+SFTP server hovered as "Using system connection". `direct` has two sentences: "Connected directly…" only when the
+volume's `capabilities.hasOsMountFallback` says the OS mount is the other way in (SMB), plain "Connected" everywhere
+else (SFTP, WebDAV, S3, ADB), where no other way exists. The CHIP renders a dot only for a live session (`direct`, or
+SMB's amber `os_mount` trigger; the pane's connect views own every other state), so it shows the green one only where
+`hasOsMountFallback` is set: on any other server it could only say "connected" about what the pane is browsing. The
+switcher rows keep every state's dot, since there grey, amber, red, and hollow are all reachable.
 
 ❌ Never read `connectionState` with `!= null` — `connection-state.ts` holds the named predicates (`hasReconnectLoop`,
 `isLiveSession`, `showsDisconnect`), and `eject-predicate.ts` composes two of them. On the chip, yellow state is a
@@ -499,17 +550,26 @@ runs most-actionable first over `holders.named`:
    name) is deliberately unused: the approved copy names no image.
 3. **`Cmdr`** → we own it and invite a report.
 4. **`System`** → nothing to close, so the advice is to wait.
-5. Otherwise the unnamed `errors.eject.unmountRefused` line.
+5. **`Unclassified` holders** → their bare process names, deduped and capped like the apps (three, then
+   `errors.eject.otherProcesses`): `errors.eject.unmountRefusedByProcess` (`{process}`) for one,
+   `errors.eject.unmountRefusedByProcesses` (`{countText}`, `{processes}`) for more, where the count is distinct names.
+6. Otherwise the unnamed `errors.eject.unmountRefused` line.
 
-❗ **`Unclassified` has no sentence of its own** and falls through to that last fallback, exactly like an empty list. It
-means "named, but nothing said what kind" (the budget ran out, or a signature wouldn't read), so wording it as an app or
-a tool would be a guess about what a person should go and close.
+❗ **`Unclassified` is worded as a PROCESS, ❌ never an app or a tool.** It means "named, but nothing said what kind"
+(the budget ran out, or a signature wouldn't read), so the name is an executable's; calling it an app would be a guess
+about what a person should go and close. The sentence says outright that it's only the process name. It ranks below
+`System`, `Cmdr`, and `DiskImage` because each of those carries more advice than a cryptic name does. These are RAW
+`errors.*` values (no ICU), so singular and plural are two keys, like the app pair.
+
+❗ **Every refusal sentence names neither the volume kind nor the verb** ("…still has files open there. Close them, then
+try again."). The same sentence follows both `fileExplorer.pane.ejectFailedToast` ("Couldn't eject {volumeName}: …", any
+detachable kind, shares and phones included) and `disconnectFailedToast` ("Couldn't disconnect: …", the SMB reconnect
+view, whose holder scan runs on the share's mount path), and the prefix already says both. "This drive" or "eject again"
+would read wrong after a share's disconnect.
 
 ❗ **The two `HolderScan` arms word the SAME**, and neither ever says the drive is free. `Incomplete` means the scan
 couldn't cover every mount, so its names are worth saying while its emptiness says nothing; only `complete` with an
-empty `named` would license "nothing is using this drive", and no copy says that today. A refusal whose holders are all
-`Unclassified` therefore reads identically to one that named nobody, which is a known copy-quality gap awaiting a
-product decision (GitHub [#247](https://github.com/vdavid/cmdr/issues/247)).
+empty `named` would license "nothing is using this drive", and no copy says that today.
 
 `wordEjectRefusal` adds one `warn` line whenever a `Cmdr` holder is in `named` AT ALL, ❌ not only when it wins the
 precedence: an app beside it rightly gets the sentence, but Cmdr holding a drive it's trying to let go of is a bug worth

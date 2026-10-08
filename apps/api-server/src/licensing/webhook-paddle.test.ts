@@ -50,6 +50,7 @@ interface IssuanceRow {
   claimed_at: string
   issued_at: string | null
   emailed_at: string | null
+  revoked_at: string | null
 }
 
 /**
@@ -73,6 +74,7 @@ function createIssuanceD1(): D1Database & { rows: Map<string, IssuanceRow> } {
       claimed_at: claimedAt,
       issued_at: null,
       emailed_at: null,
+      revoked_at: null,
     })
     return { transaction_id: id }
   }
@@ -161,7 +163,7 @@ function webhookBody(quantity = 1): string {
   })
 }
 
-async function sign(body: string, timestamp = '1704700000'): Promise<string> {
+async function sign(body: string, timestamp = String(Math.floor(Date.now() / 1000))): Promise<string> {
   const encoder = new TextEncoder()
   const key = await crypto.subtle.importKey(
     'raw',
@@ -198,6 +200,12 @@ function emailedKeys(): string[] {
   )
 }
 
+function storedFullKey(bindings: Bindings, code: string): string {
+  const stored = JSON.parse(bindings.LICENSE_CODES.store.get(code) ?? '{}') as { fullKey?: string }
+  if (!stored.fullKey) throw new Error(`No full key stored under ${code}`)
+  return stored.fullKey
+}
+
 beforeEach(() => {
   mockSend.mockClear()
   mockSend.mockImplementation(() => Promise.resolve(emailAccepted))
@@ -221,6 +229,10 @@ describe('POST /webhook/paddle idempotency', () => {
     expect(mintedCodes(bindings)).toHaveLength(3)
     expect(mockSend).toHaveBeenCalledTimes(1)
     expect(emailedKeys()).toEqual(mintedCodes(bindings))
+    // Each seat's full signed key travels too: the short code alone needs `/activate` to work.
+    for (const code of mintedCodes(bindings)) {
+      expect(mockSend.mock.lastCall?.[0].html).toContain(storedFullKey(bindings, code))
+    }
     const row = bindings.TELEMETRY_DB.rows.get(transactionId)
     expect(row?.emailed_at).toBeTruthy()
     expect(JSON.parse(row?.short_codes ?? '[]')).toEqual(mintedCodes(bindings))
@@ -260,6 +272,8 @@ describe('POST /webhook/paddle idempotency', () => {
     expect(retried.status).toBe(200)
     expect(mintedCodes(bindings)).toEqual(codesAfterFailure)
     expect(emailedKeys()).toEqual(codesAfterFailure)
+    // The resend reads the full key back from KV, so it still activates without our server.
+    expect(mockSend.mock.lastCall?.[0].html).toContain(storedFullKey(bindings, codesAfterFailure[0]))
     expect(bindings.TELEMETRY_DB.rows.get(transactionId)?.emailed_at).toBeTruthy()
   })
 
@@ -301,6 +315,60 @@ describe('POST /webhook/paddle idempotency', () => {
 
     releaseEmail()
     expect((await first).status).toBe(200)
+  })
+
+  it('mints nothing for a transaction Paddle created from an existing subscription, like a renewal', async () => {
+    const bindings = createBindings()
+    // Paddle completes a NEW transaction on every renewal, with its own `txn_` id. The buyer's key
+    // points at the first one and keeps validating through the subscription, so a renewal needs nothing.
+    for (const origin of [
+      'subscription_recurring',
+      'subscription_charge',
+      'subscription_update',
+      'subscription_payment_method_change',
+    ]) {
+      const body = JSON.stringify({
+        event_id: `evt_${origin}`,
+        event_type: 'transaction.completed',
+        data: {
+          id: `txn_${origin}`,
+          origin,
+          customer_id: customerId,
+          subscription_id: 'sub_01hv8x',
+          items: [{ price: { id: 'pri_subscription' }, quantity: 1 }],
+        },
+      })
+
+      const res = await app.request(
+        '/webhook/paddle',
+        { method: 'POST', headers: { 'Paddle-Signature': await sign(body) }, body },
+        bindings,
+      )
+
+      expect(res.status, origin).toBe(200)
+      expect(await res.json(), origin).toMatchObject({ status: 'ignored' })
+    }
+    expect(bindings.TELEMETRY_DB.rows.size).toBe(0)
+    expect(mintedCodes(bindings)).toHaveLength(0)
+    expect(mockSend).not.toHaveBeenCalled()
+  })
+
+  it('fulfills a checkout purchase that says where it came from', async () => {
+    const bindings = createBindings()
+    const body = JSON.stringify({
+      event_id: 'evt_web',
+      event_type: 'transaction.completed',
+      data: { id: transactionId, origin: 'web', customer_id: customerId, items: [{ price: { id: 'pri_perpetual' } }] },
+    })
+
+    const res = await app.request(
+      '/webhook/paddle',
+      { method: 'POST', headers: { 'Paddle-Signature': await sign(body) }, body },
+      bindings,
+    )
+
+    expect(res.status).toBe(200)
+    expect(mintedCodes(bindings)).toHaveLength(1)
   })
 
   it('ignores events that are not transaction.completed', async () => {

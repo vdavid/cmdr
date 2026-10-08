@@ -198,30 +198,50 @@ describe('setOnboardingShowing', () => {
 
 describe('formatUpdateStatus', () => {
   it('returns checking… string while checking', () => {
-    expect(formatUpdateStatus({ status: 'checking', failure: null, previousVersion: '1.2.3', nextVersion: null })).toBe(
-      'Checking…',
-    )
+    expect(
+      formatUpdateStatus({
+        status: 'checking',
+        failure: null,
+        managed: null,
+        previousVersion: '1.2.3',
+        nextVersion: null,
+      }),
+    ).toBe('Checking…')
   })
 
   it('returns no-updates string for idle after a successful check', () => {
-    expect(formatUpdateStatus({ status: 'idle', failure: null, previousVersion: '1.2.3', nextVersion: null })).toBe(
-      'No updates found. Current version: v1.2.3',
-    )
+    expect(
+      formatUpdateStatus({ status: 'idle', failure: null, managed: null, previousVersion: '1.2.3', nextVersion: null }),
+    ).toBe('No updates found. Current version: v1.2.3')
   })
 
   it('returns empty string for idle before any check has run', () => {
-    expect(formatUpdateStatus({ status: 'idle', failure: null, previousVersion: null, nextVersion: null })).toBe('')
+    expect(
+      formatUpdateStatus({ status: 'idle', failure: null, managed: null, previousVersion: null, nextVersion: null }),
+    ).toBe('')
   })
 
   it('returns downloading string with both versions', () => {
     expect(
-      formatUpdateStatus({ status: 'downloading', failure: null, previousVersion: '1.2.3', nextVersion: '1.3.0' }),
+      formatUpdateStatus({
+        status: 'downloading',
+        failure: null,
+        managed: null,
+        previousVersion: '1.2.3',
+        nextVersion: '1.3.0',
+      }),
     ).toBe('Update found, downloading v1.3.0 (current: v1.2.3)…')
   })
 
   it('returns installing string with both versions', () => {
     expect(
-      formatUpdateStatus({ status: 'installing', failure: null, previousVersion: '1.2.3', nextVersion: '1.3.0' }),
+      formatUpdateStatus({
+        status: 'installing',
+        failure: null,
+        managed: null,
+        previousVersion: '1.2.3',
+        nextVersion: '1.3.0',
+      }),
     ).toBe('Installing v1.3.0 (current: v1.2.3)…')
   })
 
@@ -230,6 +250,7 @@ describe('formatUpdateStatus', () => {
       formatUpdateStatus({
         status: 'idle',
         failure: { phase: 'install' },
+        managed: null,
         previousVersion: '1.2.3',
         nextVersion: null,
       }),

@@ -24,7 +24,7 @@ use crate::file_system::volume::Volume;
 use crate::file_system::volume::backends::LocalPosixVolume;
 use crate::file_system::volume::manager::test_support::TestVolumeRegistration;
 use crate::file_system::write_operations::event_sinks::CollectorEventSink;
-use crate::file_system::write_operations::in_flight_temps::test_support as in_flight_temps_test_support;
+use crate::file_system::write_operations::in_flight_temps::Ledger;
 use crate::file_system::write_operations::overwrite::aside_park;
 use crate::file_system::write_operations::state::{
     WriteOperationState, register_operation_status, unregister_operation_status,
@@ -54,16 +54,23 @@ fn mac_source(name: &str) -> (TestDir, std::path::PathBuf) {
     (dir, file)
 }
 
-fn state_onto(image_root: &std::path::Path, image_name: &str, mac_root: &std::path::Path) -> Arc<WriteOperationState> {
+fn state_onto(
+    ledger: &Ledger,
+    image_root: &std::path::Path,
+    image_name: &str,
+    mac_root: &std::path::Path,
+) -> Arc<WriteOperationState> {
     Arc::new(
-        WriteOperationState::new(Duration::from_millis(50)).with_sides(Some(TransferSides::new(
-            TransferSide::new("root".to_string(), "Macintosh HD".to_string(), mac_root.to_path_buf()),
-            TransferSide::new(
-                "vol-image".to_string(),
-                image_name.to_string(),
-                image_root.to_path_buf(),
-            ),
-        ))),
+        WriteOperationState::new(Duration::from_millis(50))
+            .with_sides(Some(TransferSides::new(
+                TransferSide::new("root".to_string(), "Macintosh HD".to_string(), mac_root.to_path_buf()),
+                TransferSide::new(
+                    "vol-image".to_string(),
+                    image_name.to_string(),
+                    image_root.to_path_buf(),
+                ),
+            )))
+            .with_in_flight_ledger(ledger.clone()),
     )
 }
 
@@ -94,13 +101,14 @@ fn detach_mid_transfer(
 /// Copies `source` onto the image's volume, parks mid-file, pulls the drive, and
 /// answers what the engine ended with: the opening move of every copy cell here.
 fn copy_until_the_drive_is_pulled(
+    ledger: &Ledger,
     image: &DiskImage,
     volume: &MountedVolume,
     op_id: &'static str,
     source: &std::path::Path,
     events: &Arc<CollectorEventSink>,
 ) -> Result<(), WriteOperationError> {
-    let state = state_onto(&volume.mount_point, &volume.name, std::path::Path::new("/"));
+    let state = state_onto(ledger, &volume.mount_point, &volume.name, std::path::Path::new("/"));
     register_operation_status(op_id, WriteOperationType::Copy, Vec::new());
     let sources = vec![source.to_path_buf()];
     let destination = volume.mount_point.clone();
@@ -128,7 +136,7 @@ async fn a_copy_onto_a_drive_that_is_pulled_mid_file_names_the_drive_and_keeps_t
 
     let events = Arc::new(CollectorEventSink::new());
     let op_id = "op-real-image-copy";
-    let result = copy_until_the_drive_is_pulled(&image, &volume, op_id, &source, &events);
+    let result = copy_until_the_drive_is_pulled(&Ledger::for_test(), &image, &volume, op_id, &source, &events);
 
     match &result {
         Err(WriteOperationError::DeviceDisconnected { side, .. }) => {
@@ -176,8 +184,9 @@ fn scratch_in(dir: &std::path::Path) -> Vec<String> {
 /// separates "the sweep put the original back" from "the detach rolled the
 /// aside rename back in the journal and the sweep never ran": a rollback leaves
 /// the record DEFERRED, because the aside it names isn't on disk to rename.
-fn aside_records() -> Vec<std::path::PathBuf> {
-    in_flight_temps_test_support::live_paths()
+fn aside_records(ledger: &Ledger) -> Vec<std::path::PathBuf> {
+    ledger
+        .live_paths()
         .into_iter()
         .filter(|path| {
             path.file_name()
@@ -212,18 +221,19 @@ async fn a_partial_left_on_a_pulled_drive_is_settled_when_that_drive_comes_back(
     let volume = image.volumes()[0].clone();
     let (mac_dir, source) = mac_source("real-image-arrival-copy");
     let ledger_dir = TestDir::new("real-image-arrival-ledger");
-    let store = in_flight_temps_test_support::use_store_in(&ledger_dir);
+    let ledger = Ledger::recording_in(&ledger_dir);
 
     let events = Arc::new(CollectorEventSink::new());
     let op_id = "op-real-image-arrival";
-    let result = copy_until_the_drive_is_pulled(&image, &volume, op_id, &source, &events);
+    let result = copy_until_the_drive_is_pulled(&ledger, &image, &volume, op_id, &source, &events);
     assert!(result.is_err(), "a copy onto a pulled drive can't succeed");
 
     // The engine has unwound. Its partial could not be removed — the drive was
     // gone — so the record has to have survived rather than being read as
     // "already gone" and dropped.
     assert!(
-        in_flight_temps_test_support::live_paths()
+        ledger
+            .live_paths()
             .iter()
             .any(|path| path.to_string_lossy().contains(".cmdr-tmp-")),
         "the ledger must still be holding the partial the pulled drive kept"
@@ -245,7 +255,7 @@ async fn a_partial_left_on_a_pulled_drive_is_settled_when_that_drive_comes_back(
         SOURCE_SIZE as u64,
         "and the Mac side is whole, since a copy never touches it"
     );
-    drop(store);
+    drop(ledger);
     drop(mac_dir);
     unregister_operation_status(op_id);
 }
@@ -262,14 +272,14 @@ async fn an_original_set_aside_when_the_drive_was_pulled_is_still_there_when_it_
     let volume = image.volumes()[0].clone();
     let (mac_dir, source) = mac_source("real-image-aside");
     let ledger_dir = TestDir::new("real-image-aside-ledger");
-    let store = in_flight_temps_test_support::use_store_in(&ledger_dir);
+    let ledger = Ledger::recording_in(&ledger_dir);
 
     // The file the user already has on the drive, which the copy will replace.
     let original = volume.mount_point.join("footage.mov");
     std::fs::write(&original, ORIGINAL_BYTES).expect("the user's file is on the drive");
 
     let events = Arc::new(CollectorEventSink::new());
-    let state = state_onto(&volume.mount_point, &volume.name, std::path::Path::new("/"));
+    let state = state_onto(&ledger, &volume.mount_point, &volume.name, std::path::Path::new("/"));
     let op_id = "op-real-image-aside";
     register_operation_status(op_id, WriteOperationType::Copy, Vec::new());
 
@@ -307,7 +317,7 @@ async fn an_original_set_aside_when_the_drive_was_pulled_is_still_there_when_it_
     // replacement hadn't landed, so nothing could put it back. The record is the
     // only thing that still knows where the user's file is.
     assert_eq!(
-        aside_records().len(),
+        aside_records(&ledger).len(),
         1,
         "the pulled drive left the original set aside, and the ledger has to be holding it"
     );
@@ -322,7 +332,7 @@ async fn an_original_set_aside_when_the_drive_was_pulled_is_still_there_when_it_
     // nothing. The record only retires once the sweep reached the aside and
     // acted on it; a rollback leaves it deferred and this wait fails loudly.
     wait_until_async(Duration::from_secs(20), "the sweep to settle the aside", || {
-        aside_records().is_empty()
+        aside_records(&ledger).is_empty()
     })
     .await;
     assert!(
@@ -347,7 +357,7 @@ async fn an_original_set_aside_when_the_drive_was_pulled_is_still_there_when_it_
             .map(|entries| entries.flatten().map(|e| e.file_name()).collect::<Vec<_>>())
             .unwrap_or_default()
     );
-    drop(store);
+    drop(ledger);
     drop(mac_dir);
     unregister_operation_status(op_id);
 }
@@ -363,7 +373,12 @@ async fn a_move_onto_a_drive_that_is_pulled_mid_file_keeps_every_mac_source() {
     let (mac_dir, source) = mac_source("real-image-move");
 
     let events = Arc::new(CollectorEventSink::new());
-    let state = state_onto(&volume.mount_point, &volume.name, std::path::Path::new("/"));
+    let state = state_onto(
+        &Ledger::for_test(),
+        &volume.mount_point,
+        &volume.name,
+        std::path::Path::new("/"),
+    );
     let op_id = "op-real-image-move";
     register_operation_status(op_id, WriteOperationType::Move, Vec::new());
 

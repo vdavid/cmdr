@@ -9,9 +9,12 @@ here.
 - `tab-state-manager.svelte.ts`: reactive state manager (`$state()`); all tab operations + the closed-tab stack. Max 10
   tabs per pane
 - `TabBar.svelte`: tab bar UI (always visible, Chrome-style shrinking tabs, pin icons, close buttons, context menu)
+- `tab-drag-controller.svelte.ts`, `tab-drop-slot.ts`, `TabDragOverlay.svelte`: dragging a tab (§ Moving a tab)
 - `tab-label.ts`: `deriveTabLabel(path, volume)` (see `tab-label.test.ts`). At a volume root carrying a `rootLabel` (an
   SMB share, whose mount dir may be a disambiguated `/Volumes/public-1`) the label is that name, the one the header
-  shows
+  shows. It special-cases only the MTP scheme: an `mtp://…` path derives from the within-storage path
+  (`getMtpDisplayPath`), so the storage root shows "/" instead of the raw storage id (`65537`); normal paths and mounted
+  volume roots (`/Volumes/USB`) keep their basename
 - `tab-state-manager.test.ts`: unit tests for the state manager
 
 ## Key decisions
@@ -73,9 +76,6 @@ The tab context menu (pin/unpin, close, close others) uses a native Tauri popup 
 - **Gotcha: `getActiveTab` silently fixes stale `activeTabId` by falling back to the first tab.** After closing or
   restoring, `activeTabId` may reference a gone tab; throwing would crash the UI, so auto-correcting keeps the pane
   usable.
-- **Gotcha: the tab-bar close button is hidden via a CSS container query at `max-width: 80px`.** Chrome-style shrinking
-  tabs can get very narrow; a close button on a 40px tab leaves no room for the label. The container query hides it
-  without JS measurement. Middle-click close still works at any width.
 
 ## Persistence
 
@@ -113,10 +113,82 @@ Search-results snapshot refs follow "transfer on close, release on eviction":
 Bookkeeping is concentrated in `transferSnapshotRefs(closedTab, 'transfer' | 'release')`, called once at each
 transition. See `lib/search/DETAILS.md` § "Snapshot store" for the broader picture.
 
+Two neighbors of that rule. A history that's COPIED claims its own refs: `newTab` clones the active tab's stack, so it
+runs `retainSnapshotRefs` on the clone ("Open in pane" clones on every promotion, so this path is ordinary). A tab that
+MOVES takes its history, and so its refs, along untouched.
+
 The Tab menu's "Reopen closed tab" item enables/disables based on the focused pane's stack via the
 `set_reopen_closed_tab_enabled` Tauri command (mirrors `update_pin_tab_menu`). Frontend pushes the state after every
 close, reopen, and focus change. Empty-stack reopen toasts "No recently closed tabs in this pane."; reopen at the cap
 toasts "Tab limit reached" and leaves the stack untouched.
+
+## Moving a tab
+
+Drag a tab to reorder it, or drop it on the other pane's bar to move it there. The MCP `tab` tool's `move` action does
+the same thing for an agent. There's no keyboard shortcut, menu item, or palette entry for it.
+
+**One rule-owner.** `moveTab(source, target, tabId, toIndex?)` in `tab-state-manager.svelte.ts` decides everything, so
+the two entry points can't drift:
+
+- A pinned tab doesn't move, on its own side either. An unpinned tab lands anywhere, including between or before pinned
+  tabs (pins aren't grouped to the left).
+- A pane's only tab can't leave it, and a pane at `MAX_TABS_PER_PANE` takes no more. A reorder ignores the cap: it adds
+  no tab.
+- The tab is never activated where it lands, and a drag never activates an inactive tab. Within its own pane a tab stays
+  active only if it already was (`activeTabId` is an id, so this is free).
+- The ACTIVE tab leaving its pane hands the active slot on through `spliceTabOut`, the same code a close runs: the tab
+  to its right, or the one to its left when it was last.
+- A move isn't a close. Nothing goes on the closed-tab stack, and the `TabState` object itself crosses over, so its id,
+  history, snapshot refs, and `unreachable` state all travel with it.
+
+`toIndex` is the index the tab holds AFTER the move (the end when omitted, clamped to it). For a same-pane move that's
+counted with the tab already taken out, which is why the drag needs the conversion below.
+
+**Around the state change** (`../pane/tab-operations.ts::moveTabToPane`, the one layer both entry points share): persist
+both panes on a cross-pane move and one on a reorder, report `tab_moved`, and re-sync the Pin tab menu when the focused
+pane's active tab left. An active tab that leaves takes its cursor filename along, read from its `FilePane` before the
+move, so it shows the same row when it's next opened. Pane focus is never touched. `handleTabDrop` is the mouse's
+wrapper: it toasts a drop on a full pane, the one refusal a drag can reach; the MCP path returns every refusal instead.
+
+**The drag** (`tab-drag-controller.svelte.ts`):
+
+- ONE controller sits above both bars, owned by `DualPaneExplorer`, because each `TabBar` sees only its own pane. A bar
+  gets a `forPane()` face as its `drag` prop: `attach` (the drop zone, and where its tabs are measured), `press`,
+  `draggedTabId`, `isDragging`.
+- **Decision**: pointer events on `window`. **Why**: HTML5 drag and drop belongs to Tauri's native file-drop handler
+  (`../pane/drag-drop-controller.svelte.ts`, which is for FILE drags and holds no tab logic).
+- A press becomes a drag after 5px of travel on the primary button; below that it's a plain click. A pinned tab, a
+  pane's only tab (it has nowhere to go), and the close button never start one.
+- The pointer picks a SLOT: a bar with `n` tabs has `n + 1`, and everything past the last tab's middle (the empty strip,
+  the "+" button) is the append slot. `tab-drop-slot.ts` is that arithmetic, pure: `dropSlotAt`, `slotLineX`, and
+  `resolveDrop`, which turns a slot into `moveTab`'s index. The two same-pane slots touching the dragged tab both mean
+  "stay", since taking the tab out shifts every later slot down by one.
+- Nothing changes until the drop. A release off the bars cancels, and so do Esc, the window losing focus, and
+  `pointercancel`. The controller reads the tab lists only to draw an honest preview (no line on a no-op slot, a refusal
+  over a bar that would refuse); `moveTab` re-decides on the drop.
+- **Gotcha**: a drag must swallow the `click` that follows the release, or dragging an inactive tab would switch to it
+  and focus its pane. One capture-phase listener eats it, and a zero-delay timer takes the listener down when no click
+  comes. The same goes for a drag cancelled with the button still down (Esc): the release that follows is still owed.
+- **Gotcha**: a release the window never saw (the user switched apps mid-drag and let go there) would leave that wait
+  armed and eat the next real click. Two things disarm it: a `pointermove` with no button down, and any fresh
+  `pointerdown`.
+
+`TabDragOverlay.svelte` draws the drag from the controller's `view`: a see-through ghost copy of the tab that follows
+the pointer (locked to a bar's row while over one, free and fainter off the bars; it's never opaque, because it sits on
+the landing line and would hide it), a 2px accent line on the landing slot, and the cursor. Its layer covers the whole
+window for the length of the drag, which is what keeps hover states and tooltips asleep and gives the "not allowed"
+cursor one owner. The dragged tab itself stays in its slot, dimmed; `TabBar` also nulls its tooltips while `isDragging`,
+so a tooltip whose delay started before the press can't fire mid-drag. The `is-dragging` / `cannot-drop` class names are
+the ones the contrast checker exempts as drag feedback.
+
+**MCP** (`tab` with `action: move`): `pane` is where the tab is now, `tabId` defaults to that pane's active tab,
+`toPane` defaults to `pane` (a reorder), and `toIndex` defaults to the end; at least one of `toPane` / `toIndex` is
+required. It's the one `tab` action that is a round-trip. The others wait on a generation ack, but a move can be
+refused, and the rules live here in the frontend, so `apps/desktop/src/routes/(main)/mcp-tab-move.ts` replies on the
+request id with a typed `outcome` (`moved` + `toIndex`, `unchanged`, `pinned`, `onlyTab`, `targetFull`, `notFound`)
+after flushing both panes' tab lists past the mirror's debounce (`tab-mcp-sync`'s `syncTabsNow`). The backend words it
+(`apps/desktop/src-tauri/src/mcp/executor/app.rs`): a refusal is an error whose `data.reason` is `tabPinned` / `onlyTab`
+/ `tabLimitReached` / `tabNotFound`.
 
 ## Double-click empty tab bar to open a new tab
 

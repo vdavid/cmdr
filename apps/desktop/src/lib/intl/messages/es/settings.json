@@ -150,21 +150,21 @@
   "@settings.appearance.tintLocal.description": {
     "sourceHash": "3c86b48"
   },
-  "settings.appearance.tintSmb.label": "Teñir paneles de servidor (SMB, SFTP, WebDAV)",
+  "settings.appearance.tintSmb.label": "Teñir paneles de servidor (SMB, SFTP, WebDAV, S3)",
   "@settings.appearance.tintSmb.label": {
-    "sourceHash": "d801804"
+    "sourceHash": "d912bcf"
   },
-  "settings.appearance.tintSmb.description": "Tinte de fondo aplicado a los paneles que muestran un recurso compartido SMB, un servidor SFTP o un servidor WebDAV.",
+  "settings.appearance.tintSmb.description": "Tinte de fondo aplicado a los paneles que muestran un recurso compartido SMB, un servidor SFTP, un servidor WebDAV o almacenamiento S3.",
   "@settings.appearance.tintSmb.description": {
-    "sourceHash": "2e071d3"
+    "sourceHash": "bddee40"
   },
-  "settings.appearance.tintMtp.label": "Teñir paneles MTP",
+  "settings.appearance.tintMtp.label": "Teñir paneles de dispositivo (MTP, ADB)",
   "@settings.appearance.tintMtp.label": {
-    "sourceHash": "2054351"
+    "sourceHash": "c50c536"
   },
-  "settings.appearance.tintMtp.description": "Tinte de fondo aplicado a los paneles que muestran un dispositivo Android, Kindle o cámara.",
+  "settings.appearance.tintMtp.description": "Tinte de fondo aplicado a los paneles que muestran un teléfono, un Kindle o una cámara, tanto si se conecta por MTP como por ADB.",
   "@settings.appearance.tintMtp.description": {
-    "sourceHash": "a09d99a"
+    "sourceHash": "d70512d"
   },
   "settings.appearance.textSize.label": "Tamaño del texto",
   "@settings.appearance.textSize.label": {
@@ -218,9 +218,9 @@
   "@settings.listing.sizeUnit.label": {
     "sourceHash": "2a817d3"
   },
-  "settings.listing.sizeUnit.description": "Dinámica elige la unidad más legible para cada archivo (1.02 MB). Las unidades fijas permiten comparar tamaños de igual a igual en toda la lista. Bytes muestra el recuento exacto para una comparación precisa.",
+  "settings.listing.sizeUnit.description": "Dinámica elige la unidad más legible para cada archivo. Las unidades fijas permiten comparar tamaños de igual a igual en toda la lista. Bytes muestra el recuento exacto para una comparación precisa.",
   "@settings.listing.sizeUnit.description": {
-    "sourceHash": "702a201"
+    "sourceHash": "fae7a91"
   },
   "settings.listing.sizeUnit.opt.dynamic": "Dinámica",
   "@settings.listing.sizeUnit.opt.dynamic": {
@@ -231,36 +231,21 @@
     "sourceHash": "4d80003",
     "sameAsSourceJustification": "'Bytes' stays 'Bytes' in Spanish: 'byte'/'bytes' are kept verbatim in macOS es (glossary), and the capitalized toggle label mirrors the unit name unchanged."
   },
-  "settings.listing.sizeUnit.opt.kB": "kB",
-  "@settings.listing.sizeUnit.opt.kB": {
-    "sourceHash": "591e59c",
-    "sameAsSourceJustification": "'kB' is a unit symbol; kept as-is."
-  },
-  "settings.listing.sizeUnit.opt.mB": "MB",
-  "@settings.listing.sizeUnit.opt.mB": {
-    "sourceHash": "1d09f6f",
-    "sameAsSourceJustification": "'MB' is a unit symbol; kept as-is."
-  },
-  "settings.listing.sizeUnit.opt.gB": "GB",
-  "@settings.listing.sizeUnit.opt.gB": {
-    "sourceHash": "b4043b0",
-    "sameAsSourceJustification": "'GB' is a unit symbol; kept as-is (unit symbols are not translated)."
-  },
   "settings.appearance.fileSizeFormat.label": "Formato del tamaño de archivo",
   "@settings.appearance.fileSizeFormat.label": {
     "sourceHash": "355c89b"
   },
-  "settings.appearance.fileSizeFormat.description": "Cómo se muestran los tamaños de archivo en la lista: binario (KiB, MiB, donde 1 KiB = 1024 bytes) o decimal SI (KB, MB, donde 1 KB = 1000 bytes).",
+  "settings.appearance.fileSizeFormat.description": "Cómo se muestran los tamaños en todas partes: binario (KiB, MiB, donde 1 KiB = 1024 bytes) o decimal SI (kB, MB, donde 1 kB = 1000 bytes).",
   "@settings.appearance.fileSizeFormat.description": {
-    "sourceHash": "8219704"
+    "sourceHash": "db264e2"
   },
   "settings.appearance.fileSizeFormat.opt.binary": "Binario (KiB, MiB, GiB)",
   "@settings.appearance.fileSizeFormat.opt.binary": {
     "sourceHash": "0a4ce4e"
   },
-  "settings.appearance.fileSizeFormat.opt.si": "Decimal SI (KB, MB, GB)",
+  "settings.appearance.fileSizeFormat.opt.si": "Decimal SI (kB, MB, GB)",
   "@settings.appearance.fileSizeFormat.opt.si": {
-    "sourceHash": "8984a13"
+    "sourceHash": "4dcc22e"
   },
   "settings.listing.sizeMismatchWarning.label": "Aviso de discrepancia de tamaño",
   "@settings.listing.sizeMismatchWarning.label": {
@@ -310,13 +295,33 @@
   "@settings.listing.showTags.description": {
     "sourceHash": "005f3b0"
   },
+  "settings.listing.foldersFirst.label": "Mostrar carpetas primero",
+  "@settings.listing.foldersFirst.label": {
+    "sourceHash": "a61d73e"
+  },
+  "settings.listing.foldersFirst.description": "Muestra las carpetas encima de los archivos en la lista. Si lo desactivas, carpetas y archivos se mezclan.",
+  "@settings.listing.foldersFirst.description": {
+    "sourceHash": "8505ff3"
+  },
+  "settings.listing.spaceCalculatesFolderSize.label": "Calcular el tamaño de una carpeta con Espacio",
+  "@settings.listing.spaceCalculatesFolderSize.label": {
+    "sourceHash": "1a403eb"
+  },
+  "settings.listing.spaceCalculatesFolderSize.description": "Cuando seleccionas con Espacio una carpeta cuyo tamaño aún no se conoce, Cmdr suma su contenido y muestra el total. La tecla Esc detiene el cálculo.",
+  "@settings.listing.spaceCalculatesFolderSize.description": {
+    "sourceHash": "38d64c1"
+  },
   "settings.listing.directorySortMode.label": "Ordenar carpetas",
   "@settings.listing.directorySortMode.label": {
-    "sourceHash": "7f0a1e4"
+    "sourceHash": "7d0b088"
   },
   "settings.listing.directorySortMode.description": "Cómo se ordenan las carpetas al cambiar la columna de ordenación.",
   "@settings.listing.directorySortMode.description": {
-    "sourceHash": "fe5f12a"
+    "sourceHash": "797d93b"
+  },
+  "settings.listing.directorySortMode.disabledReason": "Desactivado por ahora, porque las carpetas se mezclan con los archivos. Activa “Mostrar carpetas primero” para usar este ajuste.",
+  "@settings.listing.directorySortMode.disabledReason": {
+    "sourceHash": "f17416c"
   },
   "settings.listing.directorySortMode.opt.likeFiles": "Como los archivos",
   "@settings.listing.directorySortMode.opt.likeFiles": {
@@ -964,6 +969,10 @@
   "@settings.network.firstTriggerDone.description": {
     "sourceHash": "7982e11"
   },
+  "settings.network.nearbyServersGroup.label": "Grupo de servidores encontrados cerca",
+  "@settings.network.nearbyServersGroup.label": {
+    "sourceHash": "cfa28b1"
+  },
   "settings.network.directSmbConnection.label": "Conectar directamente a recursos compartidos SMB",
   "@settings.network.directSmbConnection.label": {
     "sourceHash": "407c4f1"
@@ -1059,7 +1068,7 @@
   },
   "settings.fileOperations.adbEnabled.description": "Accede a todo el sistema de archivos de un teléfono Android que tenga activada la depuración por USB, algo que MTP no puede mostrarte. Necesita las herramientas de plataforma de Android (el comando “adb”) en este Mac. Dejar esto activado no cuesta nada si no tienes herramientas de Android instaladas.",
   "@settings.fileOperations.adbEnabled.description": {
-    "sourceHash": "9a22518"
+    "sourceHash": "a89c957"
   },
   "settings.fileOperations.adbBinaryPath.label": "Ubicación de adb",
   "@settings.fileOperations.adbBinaryPath.label": {
@@ -1300,6 +1309,22 @@
   "settings.fileExplorer.typeToJump.resetDelay.description": "Cuánto tiempo sigue activo el búfer de escribir para saltar tras la última pulsación. Los valores más bajos lo reinician más rápido entre búsquedas; los más altos son más indulgentes para quien escribe despacio.",
   "@settings.fileExplorer.typeToJump.resetDelay.description": {
     "sourceHash": "ff59a6a"
+  },
+  "settings.fileExplorer.typeToJump.mode.label": "Al escribir en un panel",
+  "@settings.fileExplorer.typeToJump.mode.label": {
+    "sourceHash": "4ee8ef5"
+  },
+  "settings.fileExplorer.typeToJump.mode.description": "“Saltar” mueve el cursor a la mejor coincidencia. “Filtrar” muestra solo los archivos y carpetas cuyo nombre contiene lo que escribes, como el filtro rápido de Total Commander; la tecla Suprimir (⌫) lo edita y Esc lo borra.",
+  "@settings.fileExplorer.typeToJump.mode.description": {
+    "sourceHash": "e142e97"
+  },
+  "settings.fileExplorer.typeToJump.mode.opt.jump": "Saltar",
+  "@settings.fileExplorer.typeToJump.mode.opt.jump": {
+    "sourceHash": "9ee0ca3"
+  },
+  "settings.fileExplorer.typeToJump.mode.opt.filter": "Filtrar",
+  "@settings.fileExplorer.typeToJump.mode.opt.filter": {
+    "sourceHash": "638e249"
   },
   "settings.fileOperations.maxConflictsToShow.label": "Máximo de conflictos a mostrar",
   "@settings.fileOperations.maxConflictsToShow.label": {
@@ -1638,9 +1663,9 @@
   "@settings.behavior.doubleClickOnPaneNotificationSeen.description": {
     "sourceHash": "56238d4"
   },
-  "settings.behavior.serversPinHintSeen.label": "Aviso de grupo Red largo mostrado",
+  "settings.behavior.serversPinHintSeen.label": "Aviso de “Desfijar del selector” mostrado",
   "@settings.behavior.serversPinHintSeen.label": {
-    "sourceHash": "8d632ca"
+    "sourceHash": "8513a3c"
   },
   "settings.behavior.serversPinHintSeen.description": "Si ya se ha mostrado el aviso único sobre desfijar servidores.",
   "@settings.behavior.serversPinHintSeen.description": {
@@ -1906,36 +1931,6 @@
   "@settings.operationLog.maxSize.description": {
     "sourceHash": "ad5152a"
   },
-  "settings.operationLog.maxSize.opt.mb100": "100 MB",
-  "@settings.operationLog.maxSize.opt.mb100": {
-    "sourceHash": "991d5de",
-    "sameAsSourceJustification": "Byte-unit label kept verbatim (numeral literal, MB/GB not localized), matching the app's size-unit setting."
-  },
-  "settings.operationLog.maxSize.opt.mb250": "250 MB",
-  "@settings.operationLog.maxSize.opt.mb250": {
-    "sourceHash": "028b133",
-    "sameAsSourceJustification": "Byte-unit label kept verbatim (numeral literal, MB/GB not localized), matching the app's size-unit setting."
-  },
-  "settings.operationLog.maxSize.opt.gb1": "1 GB",
-  "@settings.operationLog.maxSize.opt.gb1": {
-    "sourceHash": "6c31b63",
-    "sameAsSourceJustification": "Byte-unit label kept verbatim (numeral literal, MB/GB not localized), matching the app's size-unit setting."
-  },
-  "settings.operationLog.maxSize.opt.gb2": "2 GB",
-  "@settings.operationLog.maxSize.opt.gb2": {
-    "sourceHash": "b2dd624",
-    "sameAsSourceJustification": "Byte-unit label kept verbatim (numeral literal, MB/GB not localized), matching the app's size-unit setting."
-  },
-  "settings.operationLog.maxSize.opt.gb3": "3 GB",
-  "@settings.operationLog.maxSize.opt.gb3": {
-    "sourceHash": "485f66b",
-    "sameAsSourceJustification": "Byte-unit label kept verbatim (numeral literal, MB/GB not localized), matching the app's size-unit setting."
-  },
-  "settings.operationLog.maxSize.opt.gb5": "5 GB",
-  "@settings.operationLog.maxSize.opt.gb5": {
-    "sourceHash": "43644bc",
-    "sameAsSourceJustification": "Byte-unit label kept verbatim (numeral literal, MB/GB not localized), matching the app's size-unit setting."
-  },
   "settings.section.mcpServer": "Servidor MCP",
   "@settings.section.mcpServer": {
     "sourceHash": "d938c81"
@@ -1970,7 +1965,7 @@
   },
   "settings.summary.listing": "Iconos de documentos, ordenación de carpetas y ancho de columna en la vista breve.",
   "@settings.summary.listing": {
-    "sourceHash": "7756e95"
+    "sourceHash": "ebed448"
   },
   "settings.summary.navigationAndFileOps": "Navegación con doble clic a la carpeta superior y comportamiento al renombrar archivos.",
   "@settings.summary.navigationAndFileOps": {
@@ -1994,7 +1989,7 @@
   },
   "settings.summary.servers": "Las claves de host SSH en las que has confiado.",
   "@settings.summary.servers": {
-    "sourceHash": "40940fa"
+    "sourceHash": "3335380"
   },
   "settings.summary.adb": "Explora un teléfono Android que tenga activada la depuración por USB.",
   "@settings.summary.adb": {
@@ -2055,6 +2050,74 @@
   "settings.control.backToPresetsAriaLabel": "Volver a los preajustes",
   "@settings.control.backToPresetsAriaLabel": {
     "sourceHash": "1579f3f"
+  },
+  "settings.control.unitItems": "elementos",
+  "@settings.control.unitItems": {
+    "sourceHash": "5f3c4f8"
+  },
+  "settings.managed.rowNote": "Tu organización gestiona este ajuste.",
+  "@settings.managed.rowNote": {
+    "sourceHash": "891206b"
+  },
+  "settings.managed.sectionNote": "Tu organización gestiona algunos de estos ajustes.",
+  "@settings.managed.sectionNote": {
+    "sourceHash": "ab52c49"
+  },
+  "settings.managed.summary.title": "Lo que gestiona tu organización",
+  "@settings.managed.summary.title": {
+    "sourceHash": "5450801"
+  },
+  "settings.managed.summary.usageStats": "Estadísticas de uso",
+  "@settings.managed.summary.usageStats": {
+    "sourceHash": "4e0483c"
+  },
+  "settings.managed.summary.usageStatsOff": "Desactivadas",
+  "@settings.managed.summary.usageStatsOff": {
+    "sourceHash": "ca7981b"
+  },
+  "settings.managed.summary.reports": "Informes de fallos y de error",
+  "@settings.managed.summary.reports": {
+    "sourceHash": "ef409c3"
+  },
+  "settings.managed.summary.reportsOff": "Desactivados",
+  "@settings.managed.summary.reportsOff": {
+    "sourceHash": "ca7981b"
+  },
+  "settings.managed.summary.updates": "Actualizaciones",
+  "@settings.managed.summary.updates": {
+    "sourceHash": "22e2bad"
+  },
+  "settings.managed.summary.updatesOff": "Desactivadas",
+  "@settings.managed.summary.updatesOff": {
+    "sourceHash": "ca7981b"
+  },
+  "settings.managed.summary.ai": "IA",
+  "@settings.managed.summary.ai": {
+    "sourceHash": "11fb682"
+  },
+  "settings.managed.summary.aiOff": "Desactivada",
+  "@settings.managed.summary.aiOff": {
+    "sourceHash": "ca7981b"
+  },
+  "settings.managed.summary.upTo": "Hasta la versión {ceiling}",
+  "@settings.managed.summary.upTo": {
+    "sourceHash": "8989a97"
+  },
+  "settings.managed.summary.manualChecksOnly": "Solo se buscan a mano",
+  "@settings.managed.summary.manualChecksOnly": {
+    "sourceHash": "1969d26"
+  },
+  "settings.managed.summary.upToManualChecksOnly": "Hasta la versión {ceiling} y solo se buscan a mano",
+  "@settings.managed.summary.upToManualChecksOnly": {
+    "sourceHash": "c769ffd"
+  },
+  "settings.managed.summary.onDeviceOnly": "Solo en el dispositivo",
+  "@settings.managed.summary.onDeviceOnly": {
+    "sourceHash": "d4f8552"
+  },
+  "settings.managed.summary.cloudHostsOnly": "IA en la nube solo a través de {hosts}",
+  "@settings.managed.summary.cloudHostsOnly": {
+    "sourceHash": "00f1237"
   },
   "settings.sidebar.searchPlaceholder": "Buscar en los ajustes…",
   "@settings.sidebar.searchPlaceholder": {
@@ -2522,13 +2585,13 @@
   "@settings.adb.recheck": {
     "sourceHash": "24fcca0"
   },
-  "settings.adb.install.intro": "Instala las herramientas de plataforma de Android y después pulsa Comprobar de nuevo:",
+  "settings.adb.install.intro": "Instala las herramientas de plataforma de Android y después selecciona Comprobar de nuevo:",
   "@settings.adb.install.intro": {
-    "sourceHash": "5a82ea4"
+    "sourceHash": "9f7a0f4"
   },
-  "settings.adb.pathPlaceholder": "Buscar adb en los sitios habituales",
+  "settings.adb.pathPlaceholder": "Cmdr busca adb en los sitios habituales",
   "@settings.adb.pathPlaceholder": {
-    "sourceHash": "e236ef2"
+    "sourceHash": "538b307"
   },
   "settings.adb.browse": "Explorar…",
   "@settings.adb.browse": {
@@ -2537,5 +2600,13 @@
   "settings.adb.pickerTitle": "Seleccionar el comando adb",
   "@settings.adb.pickerTitle": {
     "sourceHash": "d6fc142"
+  },
+  "settings.fileExplorer.quickFilterIntroSeen.label": "Filtro rápido explicado",
+  "@settings.fileExplorer.quickFilterIntroSeen.label": {
+    "sourceHash": "5d124bb"
+  },
+  "settings.fileExplorer.quickFilterIntroSeen.description": "Si ya se ha mostrado el aviso que explica el primer filtro rápido.",
+  "@settings.fileExplorer.quickFilterIntroSeen.description": {
+    "sourceHash": "855c661"
   }
 }

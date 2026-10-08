@@ -34,13 +34,15 @@ function makePaneRefStub(): {
   setNetworkHost: ReturnType<typeof vi.fn>
   navigateToParent: ReturnType<typeof vi.fn>
   setCursorIndex: ReturnType<typeof vi.fn>
+  restoreHistoryCursor: ReturnType<typeof vi.fn>
 } {
   const navigateToPath = vi.fn().mockResolvedValue(undefined)
   const navigateToParent = vi.fn().mockResolvedValue(true)
   const setNetworkHost = vi.fn()
   const setCursorIndex = vi.fn().mockResolvedValue(undefined)
+  const restoreHistoryCursor = vi.fn()
   const ref = new Proxy(
-    { navigateToPath, navigateToParent, setNetworkHost, setCursorIndex },
+    { navigateToPath, navigateToParent, setNetworkHost, setCursorIndex, restoreHistoryCursor },
     {
       get(target, prop) {
         if (prop in target) return (target as Record<string | symbol, unknown>)[prop]
@@ -48,7 +50,7 @@ function makePaneRefStub(): {
       },
     },
   ) as unknown as FilePaneAPI
-  return { ref, navigateToPath, navigateToParent, setNetworkHost, setCursorIndex }
+  return { ref, navigateToPath, navigateToParent, setNetworkHost, setCursorIndex, restoreHistoryCursor }
 }
 
 export interface Harness {

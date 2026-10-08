@@ -134,7 +134,8 @@ pub(crate) use menu_items::DetachWord;
 pub use menu_items::{SameKindTarget, pin_tab_label, same_kind_menu_label};
 pub use menu_structure::{
     ContextMenuShortcuts, build_breadcrumb_context_menu, build_function_key_bar_context_menu,
-    build_network_host_context_menu, build_parent_row_context_menu, build_tab_context_menu, build_viewer_menu,
+    build_network_host_context_menu, build_parent_row_context_menu, build_tab_context_menu, build_viewer_context_menu,
+    build_viewer_menu,
 };
 pub use rebuild::rebuild_menu_bar;
 #[cfg(target_os = "macos")]

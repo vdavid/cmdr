@@ -13,7 +13,7 @@
   },
   "adb.connect.deviceGone": "Din telefon är inte ansluten längre.",
   "@adb.connect.deviceGone": {
-    "sourceHash": "e2766e6"
+    "sourceHash": "00d5254"
   },
   "adb.connect.unauthorized": "Titta på din telefon och tryck på Tillåt.",
   "@adb.connect.unauthorized": {
@@ -67,9 +67,9 @@
   "@adb.disconnectDeviceAriaLabel": {
     "sourceHash": "8f755cb"
   },
-  "adb.disconnectBusyTooltip": "Det går inte att koppla från medan åtgärder pågår på den här enheten",
+  "adb.disconnectBusyTooltip": "Cmdr arbetar fortfarande med filer på den här enheten. Koppla från när det är klart.",
   "@adb.disconnectBusyTooltip": {
-    "sourceHash": "a425d4b"
+    "sourceHash": "73c355e"
   },
   "adb.disconnectingDeviceAriaLabel": "Kopplar från {name}…",
   "@adb.disconnectingDeviceAriaLabel": {

@@ -53,10 +53,11 @@ finish, cleared when a check starts), `previousVersion` (snapshot of `getVersion
 singleton and format via `formatUpdateStatus()`, or `describeUpdateFailure()` while a failure stands.
 
 The macOS path runs `download_update` and `install_update` as two commands (distinct `downloading` / `installing`
-phases); the non-macOS path uses the plugin's fused `downloadAndInstall()` (stays in `downloading`, and the plugin is
-dynamically imported so the bundle doesn't carry it on macOS). The Rust backend at `src-tauri/src/updater/` syncs files
-into the existing `.app` bundle, preserving the inode and TCC/Full Disk Access permissions, and isn't compiled off
-macOS.
+phases). `download_update` takes no URL: the backend fetches the build its own last check offered, so nothing the
+frontend holds picks what gets installed. The non-macOS path uses the plugin's fused `downloadAndInstall()` (stays in
+`downloading`, and the plugin is dynamically imported so the bundle doesn't carry it on macOS). The Rust backend at
+`src-tauri/src/updater/` syncs files into the existing `.app` bundle, preserving the inode and TCC/Full Disk Access
+permissions, and isn't compiled off macOS.
 
 The branch is `isMacOS()` from `$lib/shortcuts/key-capture`, ❌ never `navigator.platform`, which is deprecated and lies
 under WKWebView. Both UIs treat `downloading` and `installing` identically, so the split costs the frontend nothing.
@@ -127,6 +128,9 @@ here is where each one is raised:
 - `finishCheckWithStagedUpdate` → `staged`, carrying the version just written
 - `finishCheckWithUnwritableBundle` → `blocked`, with the arrangement as `failure`
 - `finishCheckWithFailure` → `failed`, with the phase as `failure`
+- `finishCheckWithManagedOutcome` → `updates_disabled_by_policy` or `held_by_policy` (no versions ride)
+- `finishRefusedAutomaticCheck` → `automatic_checks_disabled_by_policy`
+- `finishDownloadInstallRefusedByPolicy` → `blocked_by_policy`, with `download` or `install` as `failure`
 
 `trigger` names the entry point instead, and comes in as `checkForUpdates()`'s required first parameter so the finishers
 never have to guess:
@@ -143,6 +147,26 @@ anywhere (`error-string-match`).
 
 The event rides the analytics consent (`analytics.enabled`, default-on), NOT the crash/error-report consent. It carries
 no URL, no bundle path, and no failure text.
+
+## Managed policy (MDM)
+
+The backend applies the organization's update keys and answers typed outcomes (`src-tauri/src/updater/DETAILS.md` §
+Managed policy); this module only renders them. `checkForUpdate(trigger)` passes the analytics trigger through, which is
+how the backend tells a background check from a person asking.
+
+- **`updatesDisabledByPolicy` / `heldByPolicy`** → `finishCheckWithManagedOutcome`: status `idle`, `updateState.managed`
+  holds the outcome, and `formatUpdateStatus` words it (`updates.status.managedOff` / `updates.status.heldByPolicy`) in
+  Settings and in the menu check's toast. No failure, no report link, nothing above info in the log. A background check
+  raises no toast for it (the person can't act on a held release, and it would return every poll). A build already
+  staged stays `ready`: it's in the bundle and the restart applies it. `managed` clears when the next check starts.
+- **`automaticChecksDisabledByPolicy`** → `finishRefusedAutomaticCheck`: stops the poll loop and shows nothing. It's the
+  backstop: `locked_settings` pins `updates.autoCheck` off under `DisableAutomaticUpdateChecks`, and where the frontend
+  settings overlay applies that lock the loop never starts.
+- **A download or install refused with `blockedByPolicy`** (a profile arrived after the check) →
+  `finishDownloadInstallRefusedByPolicy`: quiet, back to `idle` (or `ready` on a staged build); the next check gets the
+  organization's answer. Read off the typed `UpdateDownloadFailure` / `UpdateInstallFailure`, ❌ never the message.
+- A managed answer still calls `recordUpdateCheck(true)`, so the schedule asks once per interval instead of every wake.
+- The Linux plugin path is out of scope: the policy source is macOS-only.
 
 ## When the bundle can't be written
 
@@ -239,6 +263,13 @@ When a gate opens, the helper re-attempts the toast; if the download finished du
   gets an answer, so an offline laptop writes one line, not one per tick, and a broken manifest can't auto-report every
   hour. `updater.check-failure.test.ts` pins both. Settings and the toast read the failure from `updateState.failure`.
   The convention itself is documented in `src-tauri/src/error_reporter/DETAILS.md` § convention.
+- **A failed download or install follows the same rule where it's typed.** The macOS download throws an
+  `UpdateDownloadFailure` (`update-download-failure.ts`, outside the `$lib/tauri-commands` barrel so tests that mock the
+  barrel still get the real class). Its `request` variant goes through `serverRequestLogLevel`, so a download the
+  network or the host's 5xx stopped stays at `warn`; a 404 for the tarball, a signature mismatch, a disk failure, any
+  install failure, and the plugin's untyped `downloadAndInstall` failures stay at `error`, since they mean something is
+  wrong with the release or this machine. `downloadInstallLogLevel` holds the rule; `updater.check-failure.test.ts` pins
+  it.
 - `_resetUpdaterStateForTest` / `_setUpdateStatusForTest` exist for `updater.test.ts` and the toast tests. Don't reach
   for them from app code: they write the singleton without going through the state machine.
 - `startUpdateChecker()` returns a teardown fn that `+layout.svelte` must call in `onDestroy`, or the poll loop leaks

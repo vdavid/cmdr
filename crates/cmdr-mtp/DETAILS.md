@@ -78,11 +78,17 @@ every other backend does, and each deviation is load-bearing.
 **A copy scan groups by parent.** `scan_for_copy_batch_with_boundary` is overridden because MTP has no single-file stat:
 `get_metadata(path)` lists the parent and searches by name. A naive scan calling it per path would re-list
 `/DCIM/Camera` (15k entries, ~17 s over USB) for every selected photo. The override groups the input paths by parent,
-calls `list_directory(parent, on_progress)` once per unique parent, and indexes the entries by name for O(1) lookups.
-**The fresh-listing oracle layers on top**: before listing a parent it asks `ListingHost::authoritative_listing`, and a
-hit replaces the listing call entirely, so no USB I/O is paid for that parent. A miss falls through to the
+calls `list_directory(parent, None)` once per unique parent, and indexes the entries by name for O(1) lookups. **The
+fresh-listing oracle layers on top**: before listing a parent it asks `ListingHost::authoritative_listing`, and a hit
+replaces the listing call entirely, so no USB I/O is paid for that parent. A miss falls through to the
 one-listing-per-parent path, so a cold cache is no slower. The decision is per parent, and one batch can mix
 watcher-fresh and cold ones.
+
+**Scan progress counts selected sources only.** Parent listings resolve names, not progress: their unselected siblings
+never enter the totals. Selected files report through `ScanBoundary::file`; selected directories reuse the connection
+walk with the same boundary, reporting each descendant incrementally. Counts are cumulative across sources and include
+each selected directory itself, empty or non-empty. The boundary checks cancellation between entries and listings;
+in-flight USB calls always finish before cancellation returns.
 
 **❗ `get_metadata` is expensive, always.** It lists the entire parent directory and searches by name, because MTP has
 no stat. `notify_mutation` pays it after each self-mutation (create, delete, rename), which is fine because those are
@@ -119,6 +125,31 @@ protocol also permits two siblings with the same name, so a device asked to coll
 user ends up with a duplicate. ❌ Don't reach for a lock or a retry loop here. Cmdr isn't the only writer — the phone's
 own apps and MTP's other clients mutate the same storage — so a lock this side would buy nothing and read like a
 guarantee.
+
+## Dates on copies
+
+Both halves keep the date. (The contract:
+`apps/desktop/src-tauri/src/file_system/write_operations/transfer/volume/DETAILS.md` § "Copies keep the source's date".)
+
+- **Upload**: `write_from_stream` passes `stream.modified_at()` to `upload_from_stream`, which sets it as the
+  `SendObjectInfo` `DateModified` (`NewObjectInfo::with_modified`), in UTC with a `Z` suffix. Android's MTP server
+  applies it to the file after the data phase (`MtpServer::doSendObject`'s `futimens`) and reads the `Z` as UTC
+  (verified by the mtp-rs maintainer in AOSP, mtp-rs 0.33.0, 2026-10-07).
+- **Read**: `MtpReadStream::modified_at` reports `WindowedDownload::modified()`, from the `ObjectInfo` the open already
+  fetched for the size, so it costs no round trip.
+- **Zones**: a date's own offset wins. A zoneless one (what Android sends: the phone's local wall clock) reads as the
+  Mac's local time, in ONE place, `convert_mtp_datetime_in` in `src/connection/dates.rs`. **Decision/Why**: phone and
+  Mac almost always share a zone, so this lists a photo at the time the phone showed; UTC put every date one or two
+  hours off. The offset is the one THAT date had in the Mac's zone (jiff's `TimeZone::system()`, DST rules included), ❌
+  never today's. A fall-back hour reads as the earlier instant and a spring-forward gap shifts forward (jiff's
+  `compatible`). The cost: a phone set to another zone than the Mac lists off by the difference, and listing, copying
+  off, and copying back still agree, since an upload sends UTC. Pinned by `connection/dates_test.rs` with the zone
+  passed in (Stockholm summer, winter, fold, and gap), so it holds on any machine.
+- **The virtual device reports dates WITH their offset** (`dates_include_offset: true` in `virtual_device.rs`), unlike
+  Android: it can only write a fixed offset, so a zoneless fixture would list dates shifted by the machine's
+  DST-dependent one.
+- **Pinned by** `a_copy_keeps_the_source_date_per_the_shared_contract` on the virtual device, which stamps a received
+  `DateModified` onto the backing file and reports each file's mtime back.
 
 ## Two features, two different axes
 

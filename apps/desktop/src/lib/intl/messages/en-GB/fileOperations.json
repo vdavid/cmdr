@@ -35,6 +35,10 @@
   "@fileOperations.delete.confirmMoveToTrash": {
     "sourceHash": "b250a45"
   },
+  "fileOperations.transferDialog.sourceNoLongerConnected": "The phone or server holding these files isn’t connected any more, so Cmdr can’t copy from it.",
+  "@fileOperations.transferDialog.sourceNoLongerConnected": {
+    "sourceHash": "4741405"
+  },
   "fileOperations.transferDialog.titleVerbOnly": "{verb, select, copy {Copy} move {Move} compress {Compress} delete {Delete} other {Move to Bin}}",
   "@fileOperations.transferDialog.titleVerbOnly": {
     "sourceHash": "b18b6e3"

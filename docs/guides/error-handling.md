@@ -68,8 +68,8 @@ The rule that replaced it:
   `ViewerError`, anything volume-shaped nests `VolumeError` (already the wire type). A new vocabulary is the last
   resort, not the first move.
 - **A small enum beside the family** when none fits: `EjectError`, `ReconnectError`, `GitSubscribeError`,
-  `VolumeScanError`, `FontMetricsError`, `SuggestedOpsError`, `BulkRenameError`, `FuzzyJumpError`, `ListingStartError`.
-  Each is `specta::Type`, internally tagged
+  `VolumeScanError`, `FontMetricsError`, `SuggestedOpsError`, `BulkRenameError`, `FuzzyJumpError`. Each is
+  `specta::Type`, internally tagged
   (`#[serde(tag = "type", rename_all = "camelCase", rename_all_fields = "camelCase")]`), and carries the fields a caller
   acts on.
 - **Two types are shared, each because it exhausts the failure modes of what it wraps.** `DeadlineError` only where the
@@ -143,7 +143,9 @@ These sit between the layers, so neither side's doc owns them alone.
   `blocking_typed_result_with_timeout` mint the caller's own error type on the deadline, so the frontend matches ONE
   exhaustive union instead of a typed error plus a stringly-typed timeout beside it. A `MutationError::TimedOut` or an
   `EjectError::TimedOut` also means the work may STILL LAND (the deadline detaches, it doesn't cancel), and the copy
-  says so.
+  says so. Where the work's end is worth waiting for (rename, new folder, new file), the deadline answers "still
+  running" instead and the real end follows on an event (`write_operations/DETAILS.md` § "A slow instant mutation says
+  it is still running").
 - **`category` picks the icon and severity color; it does NOT gate the buttons.** `retryHint` alone decides "Try again",
   and it's deliberately set under all three categories. `actionKind` alone decides "Open System Settings".
 - **Every interpolated runtime value passes through `esc(...)`.** The composed explanation and suggestion are

@@ -186,7 +186,30 @@ pub struct ListingProgress {}
 	}
 }
 
-// Outside the two filesystem trees a `Default` carries no filesystem fact.
+// `PaneFileEntry`, the IPC twin of `cmdr-fs`'s `FileEntry`, carries the same
+// size, date, and is-a-directory facts, so its file is in scope too.
+func TestDeriveDefault_CoversTheFileEntryIpcTwin(t *testing.T) {
+	root := t.TempDir()
+	seedAppFixtureWorkspace(t, root)
+	writeFixtureFiles(t, filepath.Join(root, "apps", "desktop", "src-tauri", "src"), map[string]string{
+		"mcp/pane_state.rs": `
+#[derive(Debug, Clone, Default)]
+pub struct PaneFileEntry {
+    pub is_directory: bool,
+}
+`,
+	})
+	_, err := RunDeriveDefaultJustified(&CheckContext{RootDir: root})
+	if err == nil {
+		t.Fatal("expected a violation in mcp/pane_state.rs, got success")
+	}
+	if !strings.Contains(err.Error(), "pane_state.rs:2") {
+		t.Errorf("expected pane_state.rs:2, got: %s", err.Error())
+	}
+}
+
+// Outside the filesystem trees and the file-fact twins, a `Default` carries no
+// filesystem fact.
 func TestDeriveDefault_IgnoresTreesOutsideTheFilesystemOnes(t *testing.T) {
 	root := t.TempDir()
 	seedAppFixtureWorkspace(t, root)
@@ -194,6 +217,10 @@ func TestDeriveDefault_IgnoresTreesOutsideTheFilesystemOnes(t *testing.T) {
 		"settings/mod.rs": `
 #[derive(Default)]
 pub struct Prefs {}
+`,
+		"mcp/executor.rs": `
+#[derive(Default)]
+pub struct Plan {}
 `,
 	})
 	if _, err := RunDeriveDefaultJustified(&CheckContext{RootDir: root}); err != nil {

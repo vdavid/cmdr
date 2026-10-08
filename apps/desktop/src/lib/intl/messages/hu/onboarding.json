@@ -319,6 +319,18 @@
   "@onboarding.stepAi.off.help": {
     "sourceHash": "3f261be"
   },
+  "onboarding.localDownloadFailed.title": "Nem sikerült befejezni a helyi AI-modell letöltését",
+  "@onboarding.localDownloadFailed.title": {
+    "sourceHash": "9612750"
+  },
+  "onboarding.localDownloadFailed.body": "Indítsd újra a letöltést itt: Beállítások › AI.",
+  "@onboarding.localDownloadFailed.body": {
+    "sourceHash": "6601872"
+  },
+  "onboarding.localDownloadFailed.openSettings": "Beállítások megnyitása",
+  "@onboarding.localDownloadFailed.openSettings": {
+    "sourceHash": "3f94010"
+  },
   "onboarding.stepBeta.footer.start": "Kezdd el használni a Cmdrt!",
   "@onboarding.stepBeta.footer.start": {
     "sourceHash": "e29bbc7"
@@ -386,6 +398,14 @@
   "onboarding.stepBeta.crashReportsNote": "Az összeomlás-jelentések is be vannak kapcsolva: ha a Cmdr összeomlik, elküldi az app verzióját, a macOS-verziódat és azt a pontot a kódban, ahol megállt.\nA fájljaidat soha.\nMindkettőt kikapcsolhatod a Beállításokban, amikor csak akarod.",
   "@onboarding.stepBeta.crashReportsNote": {
     "sourceHash": "9be0be1"
+  },
+  "onboarding.stepBeta.analyticsManaged": "A szervezeted kikapcsolta a használati statisztikát.",
+  "@onboarding.stepBeta.analyticsManaged": {
+    "sourceHash": "49484ee"
+  },
+  "onboarding.stepBeta.crashReportsNoteAlone": "Az összeomlás-jelentések be vannak kapcsolva: ha a Cmdr összeomlik, elküldi az app verzióját, a macOS-verziódat és azt a pontot a kódban, ahol megállt.\nA fájljaidat soha.\nKikapcsolhatod őket a Beállításokban, amikor csak akarod.",
+  "@onboarding.stepBeta.crashReportsNoteAlone": {
+    "sourceHash": "5084dd0"
   },
   "onboarding.stepBeta.emailTitle": "Maradjunk kapcsolatban (választható)",
   "@onboarding.stepBeta.emailTitle": {
@@ -562,6 +582,10 @@
   "onboarding.cloudSetup.apiKeyAria": "API-kulcs",
   "@onboarding.cloudSetup.apiKeyAria": {
     "sourceHash": "16f0ee4"
+  },
+  "onboarding.cloudSetup.removeKey": "Kulcs eltávolítása",
+  "@onboarding.cloudSetup.removeKey": {
+    "sourceHash": "81c45fd"
   },
   "onboarding.cloudSetup.apiKeyPlaceholder.openai": "Példa: sk-abc123…",
   "@onboarding.cloudSetup.apiKeyPlaceholder.openai": {

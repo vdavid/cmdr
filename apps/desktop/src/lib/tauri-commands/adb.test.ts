@@ -1,13 +1,12 @@
 /**
- * The ADB wrappers: the device list passes through, and a connect refusal keeps
- * its typed reason instead of collapsing into a stringified blob.
+ * The ADB wrappers: a connect refusal keeps its typed reason instead of
+ * collapsing into a stringified blob.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 vi.mock('$lib/ipc/bindings', () => ({
   commands: {
-    listAdbDevices: vi.fn(),
     cancelAdbConnect: vi.fn(),
     connectAdbDevice: vi.fn(),
     setAdbSettings: vi.fn(),
@@ -23,15 +22,12 @@ import {
   cancelAdbConnect,
   connectAdbDevice,
   getAdbInstallStatus,
-  listAdbDevices,
   recheckAdbInstall,
   setAdbSettings,
-  type AdbDevice,
 } from './adb'
 
-// The shim casts `commands`; the mock carries the two ADB commands.
+// The shim casts `commands`; the mock carries the ADB commands.
 const mocked = commands as unknown as {
-  listAdbDevices: ReturnType<typeof vi.fn>
   cancelAdbConnect: ReturnType<typeof vi.fn>
   connectAdbDevice: ReturnType<typeof vi.fn>
   setAdbSettings: ReturnType<typeof vi.fn>
@@ -41,25 +37,6 @@ const mocked = commands as unknown as {
 
 beforeEach(() => {
   vi.clearAllMocks()
-})
-
-describe('listAdbDevices', () => {
-  it('passes the device list straight through, whatever the states', async () => {
-    const devices: AdbDevice[] = [
-      { serial: 'R58M12345', state: 'ready', product: null, model: 'Pixel_7', device: null, transportId: 1 },
-      {
-        serial: '192.168.1.5:5555',
-        state: 'unauthorized',
-        product: null,
-        model: null,
-        device: null,
-        transportId: null,
-      },
-    ]
-    mocked.listAdbDevices.mockResolvedValueOnce(devices)
-    expect(await listAdbDevices()).toEqual(devices)
-    expect(mocked.listAdbDevices).toHaveBeenCalledTimes(1)
-  })
 })
 
 describe('connectAdbDevice', () => {

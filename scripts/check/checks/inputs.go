@@ -62,8 +62,8 @@ var agentDocExclusions = []string{
 //     blocks, `fingerprint.go` + `cache.go` + `runner-sources.go` the cache
 //     itself, `common.go` the context and process handling every check runs
 //     through, and `test-log.go` the per-test record every lane records into.
-//     `fixture-stacks.go`, `smb_ports.go`, `sftp_ports.go`, and `webdav_ports.go` are the fixture
-//     vocabulary and the port env the orchestrator applies before any lane runs.
+//     `fixture-stacks.go`, `smb_ports.go`, `sftp_ports.go`, `webdav_ports.go`, and `s3_ports.go`
+//     are the fixture vocabulary and the port env the orchestrator applies before any lane runs.
 //   - `go.mod` / `go.sum` and `check.sh` build and start the runner itself.
 //
 // `TestGlobalInputsCoverWhatNoCheckCanReach` and
@@ -84,6 +84,7 @@ var GlobalInputs = []string{
 	"scripts/check/checks/inputs.go",
 	"scripts/check/checks/registry.go",
 	"scripts/check/checks/runner-sources.go",
+	"scripts/check/checks/s3_ports.go",
 	"scripts/check/checks/sftp_ports.go",
 	"scripts/check/checks/smb_ports.go",
 	"scripts/check/checks/test-log.go",
@@ -110,8 +111,10 @@ var rustMemberTrees = []rustMemberTree{
 	{Pkg: "cmdr-fs", Kind: KindApp, Glob: "crates/cmdr-fs/**"},
 	{Pkg: "cmdr-fsevent-stream", Kind: KindVendored, Glob: "crates/fsevent-stream/**"},
 	{Pkg: "cmdr-git", Kind: KindApp, Glob: "crates/cmdr-git/**"},
+	{Pkg: "cmdr-http", Kind: KindApp, Glob: "crates/cmdr-http/**"},
 	{Pkg: "cmdr-index", Kind: KindApp, Glob: "crates/cmdr-index/**"},
 	{Pkg: "cmdr-mtp", Kind: KindApp, Glob: "crates/cmdr-mtp/**"},
+	{Pkg: "cmdr-s3", Kind: KindApp, Glob: "crates/cmdr-s3/**"},
 	{Pkg: "cmdr-sftp", Kind: KindApp, Glob: "crates/cmdr-sftp/**"},
 	{Pkg: "cmdr-smb", Kind: KindApp, Glob: "crates/cmdr-smb/**"},
 	{Pkg: "cmdr-webdav", Kind: KindApp, Glob: "crates/cmdr-webdav/**"},
@@ -155,7 +158,9 @@ var rustWorkspaceConfigInputs = []string{
 // The disk-space emit gate's test reads the drive-figure table it shares with the
 // frontend (`space_poller/readout.rs`). The breadcrumb validator's generated
 // vocabulary and drift test read the frontend command-id tuple, so a registry edit
-// must invalidate every Rust lane that compiles or scans the app crate.
+// must invalidate every Rust lane that compiles or scans the app crate. The managed-policy
+// drift guard reads the public MDM files and the `/trust` key list
+// (`managed_policy/public_docs_test.rs`).
 //
 // A lane carries this whenever its own set covers the tree that does the
 // embedding, which is what `TestRustInputsCoverEveryEmbeddedFile` walks the whole
@@ -167,6 +172,9 @@ var rustEmbeddedInputs = []string{
 	"CHANGELOG.md",
 	"apps/desktop/src/lib/commands/command-ids.ts",
 	"apps/desktop/src/lib/units/drive-figure-cases.json",
+	"apps/desktop/src-tauri/tauri.conf.json",
+	"apps/website/public/mdm/**",
+	"apps/website/src/lib/trust.ts",
 }
 
 // rustScanInputs is what a Rust source scanner of the given jurisdiction reads:
@@ -214,7 +222,7 @@ var macOSFrameworkFloorInputs = inputs(
 // lane fingerprinting it would miss on every rebuild while answering the same.
 // Neither is the SDK, for the same reason in the other direction: an Xcode update
 // can move a symbol's recorded availability under a cached pass. Both are why the
-// gate that decides a release reads the signed binary in `release.yml` rather than
+// gate that decides a release reads the signed binary in `release-pipeline.yml` rather than
 // trusting a local run.
 var macOSSymbolFloorInputs = inputs(
 	rustWorkspaceConfigInputs,
@@ -246,6 +254,7 @@ var rustCompileInputs = inputs(
 // read them: a change to one changes what it tests, and changes nothing any
 // other Rust lane compiles or scans.
 var rustFixtureServerInputs = []string{
+	"apps/desktop/test/s3-servers/**",
 	"apps/desktop/test/sftp-servers/**",
 	"apps/desktop/test/smb-servers/**",
 	"apps/desktop/test/webdav-servers/**",
@@ -372,6 +381,14 @@ const (
 	webdavStartRel   = "apps/desktop/test/webdav-servers/start.sh"
 )
 
+// The S3 fixture stack, the same arrangement as WebDAV's:
+// `TestS3FixturePortsMatchComposeDefaults` / `TestS3ModeServicesAgree` keep the
+// Go tables, the compose defaults, and `start.sh`'s mode table equal.
+const (
+	s3ComposeRel = "apps/desktop/test/s3-servers/docker-compose.yml"
+	s3StartRel   = "apps/desktop/test/s3-servers/start.sh"
+)
+
 // The SMB fixture's vendored compose, whose `${SMB_CONSUMER_*_PORT:-…}` defaults
 // are smb2's range. `TestSmbPinnedPortsCoverEveryVendoredService` checks that
 // `stacklease.SMB` pins a cmdr port for every one of them.
@@ -408,7 +425,7 @@ var goTestsInputs = inputs(
 	rustWorkspaceConfigInputs,
 	rustEmbeddedInputs,
 	treeGlobs(frontendSourceRoots...),
-	[]string{"apps/desktop/package.json", sftpComposeRel, sftpStartRel, sftpTestingRel, sftpEntrypointRel, webdavComposeRel, webdavStartRel, smbComposeRel},
+	[]string{"apps/desktop/package.json", sftpComposeRel, sftpStartRel, sftpTestingRel, sftpEntrypointRel, webdavComposeRel, webdavStartRel, s3ComposeRel, s3StartRel, smbComposeRel},
 )
 
 // workflowsInputs covers the GitHub workflow files the workflow-scanning checks

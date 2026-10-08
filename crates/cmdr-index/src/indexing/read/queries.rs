@@ -169,6 +169,10 @@ fn disabled_status_response() -> IndexStatusResponse {
         scan_run_kind: None,
         prior_total_entries: None,
         prior_scan_duration_ms: None,
+        left_after_find_files_ms: None,
+        left_after_save_ms: None,
+        left_after_compute_ms: None,
+        left_after_catch_up_ms: None,
     }
 }
 
@@ -211,6 +215,7 @@ pub fn get_status(volume_id: &str) -> Result<IndexStatusResponse, String> {
                 scan_run_kind: None,
                 prior_total_entries: None,
                 prior_scan_duration_ms: None,
+                ..disabled_status_response()
             })
         }
         Some(IndexPhase::Running(mgr)) => mgr.get_status(),
@@ -278,6 +283,7 @@ pub fn get_debug_status(volume_id: &str) -> Result<IndexDebugStatusResponse, Str
                 scan_run_kind: None,
                 prior_total_entries: None,
                 prior_scan_duration_ms: None,
+                ..disabled_status_response()
             };
             let (activity_phase, phase_started_at, phase_duration_ms, phase_history) =
                 IndexManager::read_phase_timeline();
@@ -591,12 +597,12 @@ mod tests {
 
     /// A filesystem mounted OUTSIDE the external-mount prefixes (an rclone or sshfs
     /// mount in the home folder, a hand-mounted NFS share, pCloud's `~/pCloud Drive`)
-    /// is registered as its own volume, but it stays on `root`: the full boot scan
-    /// bounds itself by path prefix, not by device, so it walks into such a mount and
-    /// `root`'s index owns the rows (`scanner/DETAILS.md` § "The volume boundary").
-    /// Routing it to the mount's own, index-less id would drop those sizes.
+    /// is its own drive: the boot scan stops at it (`scanner/boot_tree_mounts.rs`),
+    /// so its status and sizes come from its own volume id, which reads "not indexed"
+    /// honestly instead of `root`'s `fresh` over rows `root` doesn't hold.
     #[test]
-    fn a_mount_inside_the_boot_tree_stays_on_root() {
+    #[cfg(target_os = "macos")]
+    fn a_mount_inside_the_boot_tree_routes_to_its_own_volume() {
         let mount_root = "/Users/statustest/mnt/share";
         let provider = FakeVolumeProvider::shared();
         provider
@@ -604,13 +610,69 @@ mod tests {
                 "path-users-statustest-mnt-share",
                 Arc::new(InMemoryVolume::new("share").with_root(mount_root)),
             )
+            .mount("/", volumes::MountIdentity::from_raw(1))
             .mount(mount_root, volumes::MountIdentity::from_raw(7));
 
         let _serialized = crate::indexing::handle::test_lock();
         let _installed = volumes::install_for_test(provider);
 
-        let status = get_volume_index_status_for_path(&format!("{mount_root}/docs"));
-        assert_eq!(status.volume_id, ROOT_VOLUME_ID);
+        for path in [mount_root.to_string(), format!("{mount_root}/docs")] {
+            let status = get_volume_index_status_for_path(&path);
+            assert_eq!(status.volume_id, "path-users-statustest-mnt-share", "{path}");
+            assert!(!status.enabled, "nothing indexes the mount, and the status says so");
+        }
+        assert_eq!(
+            get_volume_index_status_for_path("/Users/statustest/mnt").volume_id,
+            ROOT_VOLUME_ID,
+            "the mount point's parent is still the boot disk's"
+        );
+    }
+
+    /// The mount table can spell a home-folder mount through the Data volume, and
+    /// the registry then knows it by that spelling. A pane's path is the normalized
+    /// one, and it still reaches the mount's id.
+    #[test]
+    #[cfg(target_os = "macos")]
+    fn a_mount_listed_through_the_data_volume_routes_to_its_own_volume() {
+        let raw_root = "/System/Volumes/Data/Users/statustest/mnt/nfs";
+        let provider = FakeVolumeProvider::shared();
+        provider
+            .register("vol-nfs", Arc::new(InMemoryVolume::new("nfs").with_root(raw_root)))
+            .mount("/", volumes::MountIdentity::from_raw(1))
+            .mount(raw_root, volumes::MountIdentity::from_raw(8));
+
+        let _serialized = crate::indexing::handle::test_lock();
+        let _installed = volumes::install_for_test(provider);
+
+        let status = get_volume_index_status_for_path("/Users/statustest/mnt/nfs/docs");
+        assert_eq!(status.volume_id, "vol-nfs");
+    }
+
+    /// ❗ The boot disk's own Data volume is a mount in the table too, and it is
+    /// `root`: `/System/Volumes/Data/...` and its firmlinked `/Users/...` both stay
+    /// on `root`'s index.
+    #[test]
+    #[cfg(target_os = "macos")]
+    fn the_data_volume_stays_on_root() {
+        let provider = FakeVolumeProvider::shared();
+        provider
+            .register(
+                "vol-data",
+                Arc::new(InMemoryVolume::new("Data").with_root("/System/Volumes/Data")),
+            )
+            .mount("/", volumes::MountIdentity::from_raw(1))
+            .mount("/System/Volumes/Data", volumes::MountIdentity::from_raw(2));
+
+        let _serialized = crate::indexing::handle::test_lock();
+        let _installed = volumes::install_for_test(provider);
+
+        for path in ["/System/Volumes/Data/Users/statustest/docs", "/Users/statustest/docs"] {
+            assert_eq!(
+                get_volume_index_status_for_path(path).volume_id,
+                ROOT_VOLUME_ID,
+                "{path}"
+            );
+        }
     }
 
     /// A registered cloud-drive folder is NOT a mount point: it's a folder on the boot

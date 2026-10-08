@@ -15,10 +15,11 @@ use cmdr_sftp::volume::testing::{FIXTURE_PASSWORD, connect_fixture, fixture_host
 /// A fixture server the app cells dial, named the way the compose file names it.
 #[derive(Clone, Copy)]
 pub(super) enum SftpFixture {
-    /// Stock OpenSSH: has `posix-rename@openssh.com` and `copy-data`.
+    /// Stock OpenSSH: has `posix-rename@openssh.com`, `copy-data`, and
+    /// `statvfs@openssh.com`.
     Stock,
-    /// Neither extension, so a same-server copy streams and a forced rename
-    /// takes the non-atomic path.
+    /// None of the three, so a same-server copy streams, a forced rename takes
+    /// the non-atomic path, and free space is unknown.
     NoPosixRename,
 }
 

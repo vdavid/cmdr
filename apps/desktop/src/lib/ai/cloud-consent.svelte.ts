@@ -21,6 +21,7 @@
  */
 
 import { getAppLogger } from '$lib/logging/logger'
+import type { ManagedAiRefusal } from '$lib/ipc/bindings'
 import { forceSave, getSetting, setSetting, type AiProvider } from '$lib/settings'
 import { openSettingsWindow, type SettingsSurface } from '$lib/settings/settings-window'
 import {
@@ -42,6 +43,11 @@ interface CloudConsentState {
   accepted: boolean | null
   /** Unix secs the user last allowed cloud AI under the current copy, or `null`. */
   acceptedAt: number | null
+  /**
+   * Set when the organization's policy rules out every cloud host: the switch is locked off for
+   * this reason, whatever the record says. The backend decides it (`CloudAiConsentStatus.managed`).
+   */
+  managed: ManagedAiRefusal | null
 }
 
 /**
@@ -51,7 +57,7 @@ interface CloudConsentState {
  */
 export type ConsentOutcome = 'done' | 'notSaved'
 
-export const cloudConsentState = $state<CloudConsentState>({ accepted: null, acceptedAt: null })
+export const cloudConsentState = $state<CloudConsentState>({ accepted: null, acceptedAt: null, managed: null })
 
 /** The DOM id the switch carries in Settings, so "Open AI settings" lands right on it. */
 export const CLOUD_CONSENT_ANCHOR = 'settings-ai-cloud-consent'
@@ -100,6 +106,7 @@ function ensureListening(): void {
 function apply(status: CloudAiConsentStatus): void {
   cloudConsentState.accepted = status.accepted
   cloudConsentState.acceptedAt = status.accepted ? status.acceptedAt : null
+  cloudConsentState.managed = status.managed
 }
 
 /**
@@ -206,5 +213,6 @@ export async function declineCloudConsent(): Promise<ConsentOutcome> {
 export function _resetCloudConsentForTests(): void {
   cloudConsentState.accepted = null
   cloudConsentState.acceptedAt = null
+  cloudConsentState.managed = null
   listening = false
 }

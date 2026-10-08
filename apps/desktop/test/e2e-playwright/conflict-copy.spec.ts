@@ -295,7 +295,7 @@ test.describe('Rename conflict resolution', () => {
     await waitForConflictPolicy(tauriPage)
 
     // Single cursored 1 KB file (file-a.txt), no dirs.
-    await expectDialogCounters(tauriPage, { bytes: '1.00 KB', files: 1, dirs: 0 })
+    await expectDialogCounters(tauriPage, { bytes: '1.02 kB', files: 1, dirs: 0 })
 
     // Use "Ask for each" (default=stop) to get the inline conflict dialog
     await clickTransferStart(tauriPage)

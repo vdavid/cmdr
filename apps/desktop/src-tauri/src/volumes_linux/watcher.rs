@@ -263,9 +263,14 @@ fn real_mounts(entries: Vec<MountEntry>) -> HashMap<String, String> {
         "bpf",
     ];
 
+    // Another account's own FUSE mount is never news here: discovery and the
+    // registry sweep skip the same rows (`mounts::is_private_to_another_user`).
+    let this_user = super::mounts::this_user();
+
     entries
         .into_iter()
         .filter(|e| !virtual_types.contains(&e.fstype.as_str()))
+        .filter(|e| !super::mounts::is_private_to_another_user(e, this_user))
         .map(|e| (e.mountpoint, e.fstype))
         .collect()
 }
@@ -504,6 +509,24 @@ mod tests {
             assert_ne!(fstype, "sysfs", "Should filter sysfs at {}", path);
             assert_ne!(fstype, "tmpfs", "Should filter tmpfs at {}", path);
         }
+    }
+
+    /// Another account's FUSE mount coming or going changes nothing this account
+    /// can use, so the diff never sees it and no event fires.
+    #[test]
+    fn another_accounts_fuse_mount_is_no_mount_change() {
+        let me = super::super::mounts::this_user();
+        let someone_else = me.wrapping_add(1);
+        let table = linux_mounts::parse_proc_mounts_from_content(&format!(
+            "\
+/dev/sda1 / ext4 rw,relatime 0 0
+pcloud /home/sven/pCloudDrive fuse.pcloud rw,relatime,user_id={me},group_id={me} 0 0
+pcloud /home/rin/pCloudDrive fuse.pcloud rw,relatime,user_id={someone_else},group_id={someone_else} 0 0
+"
+        ));
+        let mut watched: Vec<String> = real_mounts(table).into_keys().collect();
+        watched.sort();
+        assert_eq!(watched, ["/", "/home/sven/pCloudDrive"]);
     }
 
     /// Regression anchor for the self-feeding watch: an inotify watch on

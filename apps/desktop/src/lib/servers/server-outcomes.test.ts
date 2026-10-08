@@ -9,7 +9,7 @@
 import { describe, expect, it } from 'vitest'
 import type { SavedServerOutcome } from '$lib/ipc/bindings'
 import type { ConnectRefusalKind } from './connect-refusals'
-import { readConnectOutcome, readSavedServerOutcome } from './server-outcomes'
+import { needsAHuman, readConnectOutcome, readSavedServerOutcome } from './server-outcomes'
 
 describe('readSavedServerOutcome', () => {
   it('reads a save that landed as saved', () => {
@@ -37,5 +37,40 @@ describe('readConnectOutcome', () => {
       kind: 'refused',
       refusal: 'start_folder_outside_root',
     })
+  })
+
+  it('gives every S3 refusal its own kind', () => {
+    const kinds = [
+      'access_denied',
+      'bucket_list_refused',
+      'bucket_not_found',
+      'clock_skewed',
+      'not_an_s3_endpoint',
+    ] as const
+    for (const kind of kinds) {
+      expect(readConnectOutcome({ outcome: kind })).toEqual({ kind: 'refused', refusal: kind })
+    }
+  })
+
+  it('carries the region a bucket lives in, and leaves it out when the server named none', () => {
+    expect(readConnectOutcome({ outcome: 'region_mismatch', region: 'us-east-2' })).toEqual({
+      kind: 'refused',
+      refusal: 'region_mismatch',
+      region: 'us-east-2',
+    })
+    expect(readConnectOutcome({ outcome: 'region_mismatch', region: null })).toEqual({
+      kind: 'refused',
+      refusal: 'region_mismatch',
+    })
+  })
+})
+
+describe('needsAHuman', () => {
+  it('sends an S3 bucket that turned the key away to the sheet, since a wrong secret is one thing it means', () => {
+    expect(needsAHuman({ kind: 'refused', refusal: 'access_denied' })).toBe(true)
+  })
+
+  it('keeps a key that can’t list buckets in the pane: no secret typed into a sheet opens the account root', () => {
+    expect(needsAHuman({ kind: 'refused', refusal: 'bucket_list_refused' })).toBe(false)
   })
 })

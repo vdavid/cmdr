@@ -414,9 +414,10 @@ path is broken" all read as the same empty chart. With it they are three differe
 no `ask_cmdr_turn` at all, `ask_cmdr_turn` with `proposals: "0"`, or `proposals` above zero
 with no `suggestion_group_proposed` behind it (that last one is the only one that is a bug).
 
-**The funnel's top is a second reporter.** Four gates in `../../commands/agent/chat.rs` refuse a
+**The funnel's top is a second reporter.** The gates in `../../commands/agent/chat.rs` refuse a
 send BEFORE `run_turn` exists: no agent store, Ask Cmdr off (`askCmdrOff`), cloud AI not allowed
-(`noCloudConsent`, from the slot's `SlotRefusal`), no resolvable provider, and
+(`noCloudConsent`, from the slot's `SlotRefusal`), the organization's managed policy refusing the provider
+(`managedByOrganization`, `SlotRefusal::Managed`), no resolvable provider, and
 a local window under the one-turn floor. None of them reach `drive`, so `AskCmdrSendRefusal`'s
 two constructors report the same event with `outcome: "refused"` and the gate as `failure`.
 Without that half, "AI is off" and "nobody opened the rail" are both no events at all, which is
@@ -425,13 +426,15 @@ never as a struct literal, or that gate goes unreported.
 
 Both enums that can land in `failure` (`AgentErrorKind` here, `AgentErrorKindView` in
 `stream.rs`) tokenize the shared variants identically, pinned by a test. One gate reporting
-under two names would make the funnel's top and middle unaddable.
+under two names would make the funnel's top and middle unaddable. `ManagedByOrganization` is in both: the slot
+refuses with it before a turn, and the LLM client's per-request policy backstop ends a running turn with it
+(`AgentLlmError::Managed`; `../../ai/DETAILS.md` § Managed policy). A wake logs that end at info.
 
 `origin` splits the surfaces: `text` (the rail), `wake` (the proactive loop), `outcomes` (the
 follow-up turn a rejection opens), `resume` (a post-crash replay, which has no opener and
 would otherwise inflate whichever it was folded into). A refusal is always `text`; a wake never
-reaches that path. `provider` reads `unresolved` on a refusal, since three of the four gates
-fire before the slot resolves and naming the settings value would claim a provider was chosen
+reaches that path. `provider` reads `unresolved` on a refusal, since every gate but the local
+window fires before the slot resolves and naming the settings value would claim a provider was chosen
 for a send that never chose one. ⚠️ **`origin: "wake"` is not the same
 population as `agent_wake`** (`../wake/runner.rs`): that event counts every wake OUTCOME,
 including the ones that never reached a turn. Comparing the two is the point; merging them
@@ -619,6 +622,14 @@ Two variants map from no runtime event, because the runtime neither creates nor 
 `Started` (a thread exists and is being worked on — how the session list hears about a wake's) and
 `Discarded` (a quiet wake deleted its thread; the one thing a subscriber can't recover from by
 re-reading, since there is nothing to read).
+
+A third, `ProposalDecided`, is not part of a turn at all. `agent/outcomes.rs` emits it as it writes
+a decision's timeline row, usually with no turn running, and it rides here because this is the
+transport keyed by conversation (`../suggested_ops/DETAILS.md` § What the user's answer teaches the
+agent). ⚠️ A subscriber must not read it as proof a turn is live.
+
+Unit tests have no app to emit into, so `emit_turn_event` also records each event in a test-only
+thread-local, and `take_emitted_turns` is how a test asks what would have reached the windows.
 
 A refusal decided BEFORE the turn exists is the command's `Err` (`AskCmdrSendRefusal`), not an
 event: half of them happen before there is a conversation to key one on.

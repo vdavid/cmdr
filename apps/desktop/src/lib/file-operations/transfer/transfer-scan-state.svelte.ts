@@ -37,6 +37,7 @@ import {
   onScanPreviewCancelled,
   type UnlistenFn,
   type CompressedSizeEstimate,
+  type ScanPreviewRefusal,
 } from '$lib/tauri-commands'
 import type { SortColumn, SortOrder } from '$lib/file-explorer/types'
 import { getSetting } from '$lib/settings'
@@ -94,6 +95,11 @@ export function createTransferScanState(deps: TransferScanStateDeps) {
   // for a minute); it's the one case worth naming to the user, and the one
   // where retrying is a sensible thing to offer.
   let scanFailure = $state<{ timedOut: boolean } | null>(null)
+  // Why the preview wouldn't even start, or `null`. Unlike `scanFailure` this
+  // is no partial count and no retry: no volume answers for the source (a phone
+  // unplugged under a search-results pane), so walking again can't help, and
+  // the dialog refuses to confirm.
+  let sourceRefusal = $state<ScanPreviewRefusal | null>(null)
   let unlisteners: UnlistenFn[] = []
 
   // Promise that resolves once startScanPreview IPC has returned and previewId is set.
@@ -190,6 +196,7 @@ export function createTransferScanState(deps: TransferScanStateDeps) {
     // Start the scan
     isScanning = true
     scanFailure = null
+    sourceRefusal = null
     const progressIntervalMs = getSetting('fileOperations.progressUpdateInterval')
     const result = await startScanPreview(
       sourcePaths,
@@ -199,6 +206,14 @@ export function createTransferScanState(deps: TransferScanStateDeps) {
       sourceVolumeId,
       sampleForEstimate,
     )
+    if ('refusal' in result) {
+      // Nothing started, so there's nothing to free and no event to wait for.
+      if (!isOvertaken()) {
+        isScanning = false
+        sourceRefusal = result.refusal
+      }
+      return
+    }
     if (isOvertaken()) {
       // The backend leaves a preview an operation already claimed alone, so this frees only an orphan.
       void cancelScanPreview(result.previewId)
@@ -246,6 +261,7 @@ export function createTransferScanState(deps: TransferScanStateDeps) {
     dedupBytesFound = 0
     estimatedBytes = null
     scanFailure = null
+    sourceRefusal = null
     scanStarted = Promise.resolve()
   }
 
@@ -343,6 +359,10 @@ export function createTransferScanState(deps: TransferScanStateDeps) {
     /** Why the scan stopped without an answer, or `null`. */
     get scanFailure() {
       return scanFailure
+    },
+    /** Why the preview refused to start (the source isn't connected), or `null`. */
+    get sourceRefusal() {
+      return sourceRefusal
     },
     get scanComplete() {
       return scanComplete

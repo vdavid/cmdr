@@ -1,0 +1,59 @@
+# The S3 fixture stack: VersityGW (primary; AWS-like, conditional writes work)
+# and Garage (no conditional writes, its own implementation lineage). Why these
+# two: `docs/notes/s3/library-and-fixture-audit.md` § Docker S3 test servers.
+#
+# ❗ The project is `s3-fixture` and every service name carries that prefix, the
+# same convention as `webdav-fixture-*`, so a fixture guard can identify a cell
+# by naming the prefix.
+#
+# Host ports are pinned to 14480+, a range of this stack's own: WebDAV owns
+# 13480+, SFTP 12480+, SMB's vendored consumer stack 11480+, and smb2's own
+# harness 10480+. The check runner exports every `S3_FIXTURE_*_PORT` before
+# bring-up (`ApplyS3PortEnv`).
+#
+# ❗ Every port publishes to 127.0.0.1 via the `${S3_BIND_ADDR:-127.0.0.1}`
+# prefix. ❌ Never a bare `port:port` mapping: Docker then binds all interfaces,
+# and a writable bucket whose credentials this repo documents in public lands on
+# the LAN and the tailnet of whoever runs the suite. These containers routinely
+# outlive the run that started them. `TestS3FixturePortsBindToLoopback` fails the
+# run if a mapping loses it.
+#
+# One credential pair for both servers, so a cell switches server by port alone.
+# It's in Garage's own key format (`GK` + 24 hex, 64-hex secret), which
+# VersityGW accepts as any other string.
+
+x-fixture: &fixture
+  restart: unless-stopped
+  # Principle 5 applies to CI too: two idle gateways should cost next to nothing.
+  mem_limit: 256m
+  cpus: 1
+  environment:
+    S3_ACCESS_KEY: GK00000000000000000000c0de
+    S3_SECRET_KEY: c0dec0dec0dec0dec0dec0dec0dec0dec0dec0dec0dec0dec0dec0dec0dec0de
+    # Two buckets, so cross-bucket copy has somewhere to go.
+    S3_BUCKETS: cmdr-test cmdr-test-2
+
+services:
+  # VersityGW over its POSIX backend: a bucket is a directory, an object a file.
+  s3-fixture-versitygw:
+    <<: *fixture
+    build: ./image-versitygw
+    image: cmdr-s3-fixture-versitygw:latest
+    ports: ['${S3_BIND_ADDR:-127.0.0.1}:${S3_FIXTURE_VERSITYGW_PORT:-14480}:7070']
+    # ❗ A named volume, ❌ never a macOS bind mount: the POSIX backend keeps
+    # object metadata (ETag, content type, ownership) in xattrs, which a Docker
+    # Desktop bind mount may not carry. Named also means no anonymous volume per
+    # recreation (the WebDAV stack once leaked 41 GB that way).
+    volumes: ['s3-fixture-versitygw-data:/data']
+
+  # Garage, single node. Its entrypoint does the layout / key / bucket bootstrap.
+  s3-fixture-garage:
+    <<: *fixture
+    build: ./image-garage
+    image: cmdr-s3-fixture-garage:latest
+    ports: ['${S3_BIND_ADDR:-127.0.0.1}:${S3_FIXTURE_GARAGE_PORT:-14481}:3900']
+    volumes: ['s3-fixture-garage-data:/var/lib/garage']
+
+volumes:
+  s3-fixture-versitygw-data:
+  s3-fixture-garage-data:

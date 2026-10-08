@@ -22,11 +22,11 @@ condition that re-arms the detector emits the dismiss.
 - `'in-app'`: `isLow: true` → `addToast(LowDiskSpaceToastContent, ...)`, level `warn`, `dismissal: 'persistent'`, dedup
   id `low-disk-space:<volumeId>`. `isLow: false` → `dismissToast(low-disk-space:<volumeId>)` (a no-op if the user
   already closed it).
-- `'macos'`: `isLow: true` → `sendNotification(...)` via the shared permission flow in
-  `$lib/notifications/macos-notification-permission.ts` (one INFO toast on denial, no retries, setting stays put). The
-  native notification is text-only: the plugin can't carry custom action buttons on desktop, so the disable affordance
-  lives only on the in-app toast and in Settings. `isLow: false` → no-op: a delivered notification can't be recalled or
-  live-updated, which is why live-follow and auto-dismiss are in-app-only.
+- `'macos'`: `isLow: true` → `sendMacosNotification(...)` from `$lib/notifications/` (asks macOS per send whether Cmdr's
+  notifications are on, one INFO toast when they're off, setting stays put, never throws). The native notification is
+  text-only: the plugin can't carry custom action buttons on desktop, so the disable affordance lives only on the in-app
+  toast and in Settings. `isLow: false` → no-op: a delivered notification can't be recalled or live-updated, which is
+  why live-follow and auto-dismiss are in-app-only.
 - `'off'`: no-op.
 
 ## The two settings

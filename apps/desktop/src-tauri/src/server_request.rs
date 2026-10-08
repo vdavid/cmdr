@@ -10,6 +10,13 @@
 //!
 //! ❌ `detail` is for logs only: reqwest's cause chain or the server's own explanation, never a
 //! sentence a person reads.
+//!
+//! [`send`] is also the managed-policy gate for all of them (the heartbeat, both report pipelines,
+//! the amend, the update check and download, the S3 price list): each caller names its
+//! [`Egress`], and a pipeline the organization turned off ends as
+//! [`ServerRequestError::BlockedByPolicy`] before any byte leaves. That's the guarantee; the
+//! commands above refuse earlier only to skip building a bundle. License validation, feedback, and
+//! beta signup use their own clients because no key covers them (`managed_policy/DETAILS.md`).
 #![cfg_attr(
     feature = "playwright-e2e",
     allow(
@@ -20,6 +27,8 @@
 
 use serde::Serialize;
 use serde::de::DeserializeOwned;
+
+use crate::managed_policy::Egress;
 
 /// Cap on the server's own explanation carried in [`ServerRequestError::Refused`], so a stray HTML
 /// error page can't flood a log line.
@@ -39,6 +48,9 @@ pub enum ServerRequestError {
     BadResponse { detail: String },
     /// Cmdr couldn't put the request together (building the HTTP client, encoding the payload).
     Unexpected { detail: String },
+    /// The organization's managed policy turns this pipeline off, so nothing was sent. Not a
+    /// failure: ❌ never log it at warn or error.
+    BlockedByPolicy,
 }
 
 impl std::fmt::Display for ServerRequestError {
@@ -50,6 +62,7 @@ impl std::fmt::Display for ServerRequestError {
             Self::Refused { status, detail } => write!(f, "the server answered {status}: {detail}"),
             Self::BadResponse { detail } => write!(f, "couldn't read the server's answer: {detail}"),
             Self::Unexpected { detail } => write!(f, "couldn't build the request: {detail}"),
+            Self::BlockedByPolicy => f.write_str("the organization's policy turns this off"),
         }
     }
 }
@@ -87,10 +100,15 @@ pub(crate) fn describe_error_chain(err: &(dyn std::error::Error + 'static)) -> S
     out
 }
 
-/// Sends `request` and passes a 2xx response through. Anything else becomes a
-/// [`ServerRequestError`]: a transport failure, or [`ServerRequestError::Refused`] carrying the
-/// server's own explanation.
-pub async fn send(request: reqwest::RequestBuilder) -> Result<reqwest::Response, ServerRequestError> {
+/// Sends `request` for the `egress` pipeline and passes a 2xx response through. Anything else
+/// becomes a [`ServerRequestError`]: [`ServerRequestError::BlockedByPolicy`] before anything leaves
+/// when the managed policy (read fresh) turns the pipeline off, a transport failure, or
+/// [`ServerRequestError::Refused`] carrying the server's own explanation.
+///
+/// ❗ This is the one gate for every api-server pipeline: a sender names its [`Egress`] here and
+/// can't skip the check.
+pub async fn send(egress: Egress, request: reqwest::RequestBuilder) -> Result<reqwest::Response, ServerRequestError> {
+    check_policy(egress).await?;
     let response = request
         .send()
         .await
@@ -106,6 +124,16 @@ pub async fn send(request: reqwest::RequestBuilder) -> Result<reqwest::Response,
         status: status.as_u16(),
         detail: body.trim().chars().take(MAX_SERVER_DETAIL_CHARS).collect(),
     })
+}
+
+/// [`ServerRequestError::BlockedByPolicy`] when the managed policy, read fresh, turns `egress` off.
+/// [`send`] always asks; a command asks too before it builds a bundle nobody may send.
+pub async fn check_policy(egress: Egress) -> Result<(), ServerRequestError> {
+    if crate::managed_policy::for_egress().await.allows(egress) {
+        return Ok(());
+    }
+    log::info!(target: "managed_policy", "Not sending {egress:?}: the organization's policy turns it off");
+    Err(ServerRequestError::BlockedByPolicy)
 }
 
 /// Reads a 2xx body as JSON.
@@ -124,6 +152,7 @@ pub async fn read_json<T: DeserializeOwned>(response: reqwest::Response) -> Resu
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::managed_policy::testing;
     use serde_json::json;
     use std::error::Error;
     use std::fmt;
@@ -132,14 +161,14 @@ mod tests {
     use wiremock::{Mock, MockServer, ResponseTemplate};
 
     fn client(timeout: Duration) -> reqwest::Client {
-        reqwest::Client::builder()
+        cmdr_http::client_builder()
             .timeout(timeout)
             .build()
             .expect("a plain client builds")
     }
 
     async fn get_json(url: &str, timeout: Duration) -> Result<serde_json::Value, ServerRequestError> {
-        let response = send(client(timeout).get(url)).await?;
+        let response = send(Egress::UpdateCheck, client(timeout).get(url)).await?;
         read_json(response).await
     }
 
@@ -226,6 +255,82 @@ mod tests {
         );
     }
 
+    /// Every gated pipeline, with the managed key that turns it off.
+    const GATED: [(Egress, &str); 6] = [
+        (Egress::Heartbeat, testing::DISABLE_USAGE_STATS),
+        (Egress::CrashReport, testing::DISABLE_CRASH_AND_ERROR_REPORTS),
+        (Egress::ErrorReport, testing::DISABLE_CRASH_AND_ERROR_REPORTS),
+        (Egress::ErrorReportAmend, testing::DISABLE_CRASH_AND_ERROR_REPORTS),
+        (Egress::UpdateCheck, testing::DISABLE_UPDATES),
+        (Egress::UpdateDownload, testing::DISABLE_UPDATES),
+    ];
+
+    async fn requests_reaching(server: &MockServer) -> usize {
+        server.received_requests().await.map_or(0, |requests| requests.len())
+    }
+
+    #[tokio::test]
+    async fn a_pipeline_the_policy_turns_off_sends_nothing() {
+        for (egress, key) in GATED {
+            let server = server_answering(ResponseTemplate::new(200)).await;
+            let _policy = testing::override_for_test(testing::forcing(&[key]));
+
+            let result = send(egress, client(Duration::from_secs(5)).get(server.uri())).await;
+
+            assert_eq!(
+                result.map(|_| ()),
+                Err(ServerRequestError::BlockedByPolicy),
+                "{egress:?} under {key}"
+            );
+            assert_eq!(
+                requests_reaching(&server).await,
+                0,
+                "{egress:?} under {key} reached the server"
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn a_pipeline_is_untouched_by_the_keys_that_dont_cover_it() {
+        for (egress, key) in GATED {
+            let others: Vec<&str> = testing::ALL_KEYS.into_iter().filter(|k| *k != key).collect();
+            // `DisableUpdates` and `MaxUpdateVersion` (unparseable, so updates off) cover the
+            // same pipelines; leave both out for an update pipeline.
+            let others: Vec<&str> = if matches!(egress, Egress::UpdateCheck | Egress::UpdateDownload) {
+                others
+                    .into_iter()
+                    .filter(|k| *k != testing::MAX_UPDATE_VERSION)
+                    .collect()
+            } else {
+                others
+            };
+            let server = server_answering(ResponseTemplate::new(200)).await;
+            let _policy = testing::override_for_test(testing::forcing(&others));
+
+            send(egress, client(Duration::from_secs(5)).get(server.uri()))
+                .await
+                .unwrap_or_else(|e| panic!("{egress:?} should send under {others:?}: {e:?}"));
+            assert_eq!(requests_reaching(&server).await, 1, "{egress:?}");
+        }
+    }
+
+    #[tokio::test]
+    async fn the_s3_price_list_sends_under_every_key() {
+        let server = server_answering(ResponseTemplate::new(200)).await;
+        let _policy = testing::override_for_test(testing::forcing(&testing::ALL_KEYS));
+
+        send(Egress::S3PriceList, client(Duration::from_secs(5)).get(server.uri()))
+            .await
+            .expect("no key turns the price list off");
+        assert_eq!(requests_reaching(&server).await, 1);
+    }
+
+    #[test]
+    fn a_policy_refusal_has_no_detail_on_the_wire() {
+        let value = serde_json::to_value(ServerRequestError::BlockedByPolicy).expect("serializes");
+        assert_eq!(value, json!({ "type": "blockedByPolicy" }));
+    }
+
     /// The frontend switches on `type` and reads `status` as a number; the shape is the contract.
     #[test]
     fn the_wire_shape_is_internally_tagged_camel_case() {
@@ -303,7 +408,7 @@ mod tests {
     #[ignore = "network-dependent; run manually to verify reqwest chain content"]
     #[allow(clippy::print_stderr, reason = "verification harness; see fn doc")]
     async fn describe_error_chain_unwraps_reqwest_dns_failure() {
-        let err = reqwest::Client::builder()
+        let err = cmdr_http::client_builder()
             .connect_timeout(Duration::from_secs(2))
             .timeout(Duration::from_secs(5))
             .build()
@@ -323,7 +428,7 @@ mod tests {
     #[ignore = "network-dependent; run manually to verify reqwest chain content"]
     #[allow(clippy::print_stderr, reason = "verification harness; see fn doc")]
     async fn describe_error_chain_unwraps_reqwest_connect_timeout() {
-        let err = reqwest::Client::builder()
+        let err = cmdr_http::client_builder()
             .connect_timeout(Duration::from_millis(500))
             .build()
             .unwrap()

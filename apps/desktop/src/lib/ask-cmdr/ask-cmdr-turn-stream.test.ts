@@ -7,11 +7,21 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import type { AskCmdrSendOutcome, AskCmdrStreamEvent, AskCmdrTurn, ConversationRow } from '$lib/tauri-commands'
+import type {
+  AskCmdrSendOutcome,
+  AskCmdrStreamEvent,
+  AskCmdrTurn,
+  ConversationDetailView,
+  ConversationRow,
+  MessageView,
+  ProposalDecision,
+} from '$lib/tauri-commands'
 
 const sendMock = vi.fn<(c: number | null, t: string, a: unknown[], d: string[]) => Promise<AskCmdrSendOutcome>>()
 const listMock =
   vi.fn<(payload: { limit: number; offset: number; includeArchived: boolean }) => Promise<ConversationRow[]>>()
+/** Reads a thread. Only which thread matters here, so the page arguments are dropped. */
+const getMock = vi.fn<(id: number) => Promise<ConversationDetailView | null>>()
 const unlistenMock = vi.fn()
 const listenMock = vi.fn<(cb: (payload: AskCmdrTurn) => void) => Promise<() => void>>()
 
@@ -20,7 +30,7 @@ vi.mock('$lib/tauri-commands', () => ({
   onAskCmdrTurn: (cb: (payload: AskCmdrTurn) => void) => listenMock(cb),
   cancelAskCmdr: vi.fn(() => Promise.resolve()),
   listAskCmdrConversations: (l: number, o: number, a: boolean) => listMock({ limit: l, offset: o, includeArchived: a }),
-  getAskCmdrConversation: vi.fn(() => Promise.resolve(null)),
+  getAskCmdrConversation: (id: number) => getMock(id),
   searchAskCmdrConversations: vi.fn(() => Promise.resolve([])),
   renameAskCmdrConversation: vi.fn(() => Promise.resolve()),
   archiveAskCmdrConversation: vi.fn(() => Promise.resolve()),
@@ -45,7 +55,7 @@ vi.mock('./ask-cmdr-gate.svelte', () => ({
   refreshRailGate: vi.fn(() => Promise.resolve('chat')),
 }))
 
-import { askCmdrState, newChat, sendMessage, type RailMessage } from './ask-cmdr-trigger.svelte'
+import { askCmdrState, newChat, sendMessage, switchToThread, type RailMessage } from './ask-cmdr-trigger.svelte'
 import { resetStoppedTurns } from './ask-cmdr-stream.svelte'
 import { sessionsState } from './ask-cmdr-sessions.svelte'
 import { routeTurnEvent, startAskCmdrTurnStream, stopAskCmdrTurnStream } from './ask-cmdr-turn-stream.svelte'
@@ -75,6 +85,8 @@ beforeEach(() => {
   sendMock.mockImplementation((c) => Promise.resolve({ accepted: true, conversationId: c ?? OPEN_THREAD }))
   listMock.mockReset()
   listMock.mockResolvedValue([])
+  getMock.mockReset()
+  getMock.mockResolvedValue(null)
   unlistenMock.mockReset()
   listenMock.mockReset()
   listenMock.mockResolvedValue(unlistenMock)
@@ -207,6 +219,180 @@ describe('a thread that disappears mid-subscription', () => {
     fire(OTHER_THREAD, { type: 'discarded' })
 
     expect(askCmdrState.conversationId).toBe(OPEN_THREAD)
+  })
+})
+
+describe('an answer to a suggestion', () => {
+  const turnedDown: ProposalDecision = {
+    verb: 'trash',
+    what: '/Users/dana/Downloads/*.dmg',
+    ops: 3,
+    outcome: { kind: 'rejected' },
+  }
+
+  /** The event the backend emits as it writes the decision's timeline row `messageId`. */
+  function decided(messageId: number, decision: ProposalDecision = turnedDown): AskCmdrStreamEvent {
+    return { type: 'proposalDecided', messageId, seq: messageId, decision }
+  }
+
+  /** The same row as a thread load returns it. */
+  function decisionRow(messageId: number, decision: ProposalDecision = turnedDown): MessageView {
+    return {
+      id: messageId,
+      seq: messageId,
+      role: 'event',
+      blocks: [{ type: 'proposalDecisions', decisions: [decision] }],
+      promptTokens: null,
+      completionTokens: null,
+      createdAt: 0,
+    }
+  }
+
+  function thread(id: number, messages: MessageView[]): ConversationDetailView {
+    return { conversation: row(id), messages, totalMessages: messages.length, lastContextUsage: null }
+  }
+
+  function decisionLine(messageId: number, decision: ProposalDecision = turnedDown): RailMessage {
+    return { kind: 'proposalDecisions', id: messageId, decisions: [decision] }
+  }
+
+  /** The point of the event carrying its conversation: the thread on screen shows the answer
+   *  the moment it is given, and a decision about another thread's suggestion changes nothing
+   *  here. Nothing is re-read either way; the line is the event's own payload. */
+  it('shows in the thread that made the suggestion, and in no other', () => {
+    askCmdrState.conversationId = OPEN_THREAD
+
+    fire(OTHER_THREAD, decided(31))
+    expect(askCmdrState.messages).toEqual([])
+
+    fire(OPEN_THREAD, decided(32))
+    expect(askCmdrState.messages).toEqual([decisionLine(32)])
+    expect(getMock).not.toHaveBeenCalled()
+  })
+
+  /** "Reject all" over a sweep is one decision per group, and each writes its own row. */
+  it('shows every answer of a sweep turned down at once, without re-reading the thread', () => {
+    askCmdrState.conversationId = OPEN_THREAD
+
+    fire(OPEN_THREAD, decided(40))
+    fire(OTHER_THREAD, decided(41))
+    fire(OPEN_THREAD, decided(42))
+
+    expect(askCmdrState.messages).toEqual([decisionLine(40), decisionLine(42)])
+    expect(getMock).not.toHaveBeenCalled()
+  })
+
+  /** ⚠️ The one event on this transport that is not part of a turn. Read as a live event it
+   *  would put the rail into "working…" with nothing coming to end it. */
+  it('starts nothing working', () => {
+    askCmdrState.conversationId = OPEN_THREAD
+
+    fire(OPEN_THREAD, decided(32))
+
+    expect(askCmdrState.streaming).toBe(false)
+  })
+
+  /** A fresh chat has no thread, so no suggestion was ever made in it. It adopts an id from
+   *  `started` alone: a decision must not hand it one, or paint into it. */
+  it('never lands in a chat that has no thread yet', () => {
+    sendMessage('first message in a fresh chat')
+
+    fire(OPEN_THREAD, decided(32))
+
+    expect(askCmdrState.conversationId).toBeNull()
+    expect(askCmdrState.messages.map((m) => m.kind)).toEqual(['user'])
+  })
+
+  /** An approved operation settles whenever it settles, which can be mid-answer. The bubble
+   *  being written must stay the last thing in the thread, or the next chunk would open a
+   *  second bubble and split the answer in two. */
+  it('goes above an answer that is still streaming, which keeps its own bubble', () => {
+    const ran: ProposalDecision = { ...turnedDown, outcome: { kind: 'ran', done: 2, skipped: 1, failed: 0 } }
+    askCmdrState.conversationId = OPEN_THREAD
+    fire(OPEN_THREAD, { type: 'assistantStarted' })
+    fire(OPEN_THREAD, { type: 'textDelta', text: 'the first half ' })
+
+    fire(OPEN_THREAD, decided(32, ran))
+    fire(OPEN_THREAD, { type: 'textDelta', text: 'and the second' })
+
+    expect(askCmdrState.messages.map((m) => m.kind)).toEqual(['proposalDecisions', 'assistant'])
+    expect(askCmdrState.messages[0]).toEqual(decisionLine(32, ran))
+    expect(assistantAt(1).text).toBe('the first half and the second')
+  })
+
+  /** A stopped thread drops late chunks so they can't restart the turn. A decision is not a
+   *  chunk of that turn, and the user stopping an answer is no reason to hide what they chose. */
+  it('still shows on a thread whose turn the user stopped', async () => {
+    sendMessage('long one')
+    fire(OPEN_THREAD, { type: 'started' })
+    fire(OPEN_THREAD, { type: 'assistantStarted' })
+    fire(OPEN_THREAD, { type: 'textDelta', text: 'partial' })
+    const { stopStreaming } = await import('./ask-cmdr-trigger.svelte')
+    stopStreaming()
+
+    fire(OPEN_THREAD, decided(32))
+
+    expect(askCmdrState.messages.at(-1)).toEqual(decisionLine(32))
+    expect(askCmdrState.streaming).toBe(false)
+  })
+
+  /** The row is written before the event is emitted, so a load racing the event can return
+   *  the row and still be followed by the event for it. The row's id is what makes that one
+   *  line instead of two. */
+  it('shows once when the thread was loaded with the line already in it', async () => {
+    getMock.mockResolvedValue(thread(OPEN_THREAD, [decisionRow(32)]))
+    await switchToThread(OPEN_THREAD)
+
+    fire(OPEN_THREAD, decided(32))
+
+    expect(askCmdrState.messages).toEqual([decisionLine(32)])
+  })
+
+  /** The other order of the same race: the thread was read a moment BEFORE the row landed,
+   *  and the event arrives while that read is still on its way back. The rail isn't on the
+   *  thread yet, so without holding the event the line would be lost until the next load. */
+  it('is kept when it lands while its thread is still loading', async () => {
+    let finishLoad: (detail: ConversationDetailView) => void = () => {}
+    getMock.mockReturnValue(new Promise((resolve) => (finishLoad = resolve)))
+    const loading = switchToThread(OPEN_THREAD)
+
+    fire(OPEN_THREAD, decided(32))
+    fire(OTHER_THREAD, decided(33))
+    finishLoad(thread(OPEN_THREAD, []))
+    await loading
+
+    expect(askCmdrState.messages).toEqual([decisionLine(32)])
+  })
+
+  /** Held and loaded are the same row, so holding the event must not double it either. */
+  it('is not doubled when the load that was in flight already carried it', async () => {
+    let finishLoad: (detail: ConversationDetailView) => void = () => {}
+    getMock.mockReturnValue(new Promise((resolve) => (finishLoad = resolve)))
+    const loading = switchToThread(OPEN_THREAD)
+
+    fire(OPEN_THREAD, decided(32))
+    finishLoad(thread(OPEN_THREAD, [decisionRow(32)]))
+    await loading
+
+    expect(askCmdrState.messages).toEqual([decisionLine(32)])
+  })
+
+  /** Re-opening the thread already on screen replaces its lines with what the read returned.
+   *  A decision shown a moment earlier, which that read was too early to include, must
+   *  survive the replacement. */
+  it('survives a reload of the thread it is already showing in', async () => {
+    getMock.mockResolvedValue(thread(OPEN_THREAD, []))
+    await switchToThread(OPEN_THREAD)
+    let finishLoad: (detail: ConversationDetailView) => void = () => {}
+    getMock.mockReturnValue(new Promise((resolve) => (finishLoad = resolve)))
+    const reloading = switchToThread(OPEN_THREAD)
+
+    fire(OPEN_THREAD, decided(32))
+    expect(askCmdrState.messages).toEqual([decisionLine(32)])
+    finishLoad(thread(OPEN_THREAD, []))
+    await reloading
+
+    expect(askCmdrState.messages).toEqual([decisionLine(32)])
   })
 })
 

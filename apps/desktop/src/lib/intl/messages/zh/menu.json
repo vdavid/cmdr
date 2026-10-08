@@ -203,6 +203,10 @@
   "@menu.select.sameKind": {
     "sourceHash": "9933028"
   },
+  "menu.select.compareDirectories": "比较文件夹",
+  "@menu.select.compareDirectories": {
+    "sourceHash": "5cf3985"
+  },
   "menu.select.allFolders": "选择所有文件夹",
   "@menu.select.allFolders": {
     "sourceHash": "5351f8b"
@@ -262,6 +266,14 @@
   "menu.view.swapPanes": "交换窗格",
   "@menu.view.swapPanes": {
     "sourceHash": "cc29396"
+  },
+  "menu.view.clonePane": "克隆窗格",
+  "@menu.view.clonePane": {
+    "sourceHash": "74b2c7f"
+  },
+  "menu.view.calculateFolderSizes": "计算文件夹大小",
+  "@menu.view.calculateFolderSizes": {
+    "sourceHash": "d2a83da"
   },
   "menu.view.commandPalette": "命令面板…",
   "@menu.view.commandPalette": {
@@ -352,13 +364,17 @@
   "@menu.go.parentFolder": {
     "sourceHash": "158f5a0"
   },
+  "menu.go.rootFolder": "根文件夹",
+  "@menu.go.rootFolder": {
+    "sourceHash": "6d92528"
+  },
   "menu.go.home": "个人",
   "@menu.go.home": {
     "sourceHash": "3a78695"
   },
-  "menu.go.goToPath": "前往路径…",
+  "menu.go.goToPath": "前往文件夹…",
   "@menu.go.goToPath": {
-    "sourceHash": "936edc5"
+    "sourceHash": "33de610"
   },
   "menu.go.goToLatestDownload": "前往最新下载",
   "@menu.go.goToLatestDownload": {
@@ -475,6 +491,22 @@
   "menu.context.copyGoogleDriveLink": "拷贝 Google Drive 链接",
   "@menu.context.copyGoogleDriveLink": {
     "sourceHash": "070b383"
+  },
+  "menu.context.copyShareLink": "拷贝共享链接",
+  "@menu.context.copyShareLink": {
+    "sourceHash": "d31483e"
+  },
+  "menu.context.shareLinkSevenDays": "7 天后过期",
+  "@menu.context.shareLinkSevenDays": {
+    "sourceHash": "06949d8"
+  },
+  "menu.context.shareLinkOneDay": "1 天后过期",
+  "@menu.context.shareLinkOneDay": {
+    "sourceHash": "5ff3dbc"
+  },
+  "menu.context.shareLinkOneHour": "1 小时后过期",
+  "@menu.context.shareLinkOneHour": {
+    "sourceHash": "faf9c50"
   },
   "menu.context.askGemini": "询问 Gemini",
   "@menu.context.askGemini": {
@@ -656,10 +688,6 @@
   "@menu.dock.searchFiles": {
     "sourceHash": "149a9d1"
   },
-  "menu.dock.goToFolder": "前往文件夹…",
-  "@menu.dock.goToFolder": {
-    "sourceHash": "33de610"
-  },
   "menu.dock.connectToServer": "连接服务器…",
   "@menu.dock.connectToServer": {
     "sourceHash": "6188f47"
@@ -667,5 +695,9 @@
   "menu.dock.locationInParent": "{name}（{parent}）",
   "@menu.dock.locationInParent": {
     "sourceHash": "0bf83e2"
+  },
+  "menu.help.viewDebugLog": "查看调试日志",
+  "@menu.help.viewDebugLog": {
+    "sourceHash": "007c98d"
   }
 }

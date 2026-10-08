@@ -8,6 +8,7 @@
  */
 import { describe, it, expect } from 'vitest'
 import {
+  agreementProblems,
   findDivergences,
   normalizeForComparison,
   isAllowed,
@@ -100,6 +101,85 @@ describe('findDivergences: overlay', () => {
 
   it('is clean when the overlay forks neither (both fall through to the same base value)', () => {
     expect(findDivergences(source, cat({}), true)).toEqual([])
+  })
+})
+
+describe('findDivergences: a value that agrees with its label (`@key.agreesWith`)', () => {
+  // The managed card's per-row "Off": each agrees with its own row label, so es writes
+  // `Desactivadas` beside `Estadísticas de uso` while the plain switch option stays
+  // `Desactivado`. Same English, deliberately different words.
+  const source: Catalog = {
+    messages: {
+      'opt.off': 'Off',
+      'row.stats': 'Usage stats',
+      'row.statsOff': 'Off',
+      'row.ai': 'AI',
+      'row.aiOff': 'Off',
+      'row.aiOffAgain': 'Off',
+    },
+    metadata: {
+      'row.statsOff': { agreesWith: 'row.stats' },
+      'row.aiOff': { agreesWith: 'row.ai' },
+      'row.aiOffAgain': { agreesWith: 'row.ai' },
+    },
+  }
+
+  it('keeps a key that agrees with a label out of the plain same-English group', () => {
+    const out = findDivergences(
+      source,
+      cat({
+        'opt.off': 'Desactivado',
+        'row.stats': 'Estadísticas de uso',
+        'row.statsOff': 'Desactivadas',
+        'row.ai': 'IA',
+        'row.aiOff': 'Desactivada',
+        'row.aiOffAgain': 'Desactivada',
+      }),
+      false,
+    )
+    expect(out).toEqual([])
+  })
+
+  it('still compares two keys that agree with the SAME label', () => {
+    const out = findDivergences(
+      source,
+      cat({
+        'opt.off': 'Desactivado',
+        'row.stats': 'Estadísticas de uso',
+        'row.statsOff': 'Desactivadas',
+        'row.ai': 'IA',
+        'row.aiOff': 'Desactivada',
+        'row.aiOffAgain': 'Apagada',
+      }),
+      false,
+    )
+    expect(out).toHaveLength(1)
+    expect(out[0].source).toBe('Off')
+    expect(out[0].renderings.flatMap((r) => r.keys).sort()).toEqual(['row.aiOff', 'row.aiOffAgain'])
+  })
+})
+
+describe('agreementProblems', () => {
+  const withMeta = (metadata: Catalog['metadata']): Catalog => ({
+    messages: { 'row.stats': 'Usage stats', 'row.statsOff': 'Off' },
+    metadata,
+  })
+
+  it('accepts an `agreesWith` that names a real key', () => {
+    expect(agreementProblems(withMeta({ 'row.statsOff': { agreesWith: 'row.stats' } }))).toEqual([])
+  })
+
+  it('rejects one naming a key the catalog lacks, so a rename can’t silently re-group it', () => {
+    const problems = agreementProblems(withMeta({ 'row.statsOff': { agreesWith: 'row.gone' } }))
+    expect(problems).toHaveLength(1)
+    expect(problems[0]).toContain('row.statsOff')
+    expect(problems[0]).toContain('row.gone')
+  })
+
+  it('rejects one that is empty, not a string, or names the key itself', () => {
+    expect(agreementProblems(withMeta({ 'row.statsOff': { agreesWith: '' } }))).toHaveLength(1)
+    expect(agreementProblems(withMeta({ 'row.statsOff': { agreesWith: 42 } }))).toHaveLength(1)
+    expect(agreementProblems(withMeta({ 'row.statsOff': { agreesWith: 'row.statsOff' } }))).toHaveLength(1)
   })
 })
 

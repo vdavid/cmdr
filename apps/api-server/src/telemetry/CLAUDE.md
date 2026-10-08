@@ -42,5 +42,5 @@ event relay), the `error-report*` quartet, and `feedback.ts`. File map: DETAILS 
 - **`sanitizeRef` (`[a-z0-9._:-]`) is a cross-repo contract** with the website's normalizer, and `sanitizeRefererHost`
   keeps the HOST only, so a referring page's query string can't leak.
 
-Payloads, columns, the R2 key shape, eviction, intake, email, and the UA-family model: `DETAILS.md`. Read it before any
-non-trivial work here.
+Payloads, columns, R2 keys, eviction, intake, and email: `DETAILS.md`. Read it before any non-trivial work here:
+editing, planning, reorganizing, or advising.

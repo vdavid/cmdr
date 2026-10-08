@@ -85,6 +85,22 @@
   "@servers.hub.editNearbyHint": {
     "sourceHash": "64653de"
   },
+  "servers.hub.s3AllBuckets": "Alle buckets",
+  "@servers.hub.s3AllBuckets": {
+    "sourceHash": "2a5828a"
+  },
+  "servers.hub.openAccountHint": "{name} is geen plek om te openen. Open een van de buckets eronder.",
+  "@servers.hub.openAccountHint": {
+    "sourceHash": "c52ee6f"
+  },
+  "servers.hub.forgetAccountConfirm": "{name} en elke bucket die daaronder is opgeslagen vergeten? Cmdr verbreekt de verbindingen en haalt de buckets uit de lijst. Je bestanden blijven in de buckets staan.",
+  "@servers.hub.forgetAccountConfirm": {
+    "sourceHash": "e1c636e"
+  },
+  "servers.hub.forgetSecretKeyToo": "Ook de geheime toegangssleutel van het account vergeten",
+  "@servers.hub.forgetSecretKeyToo": {
+    "sourceHash": "4f3ac6d"
+  },
   "servers.hub.forgetShare": "Vergeet gedeelde map",
   "@servers.hub.forgetShare": {
     "sourceHash": "8888a9d"
@@ -96,6 +112,10 @@
   "servers.hub.forgetShareConfirm": "{name} vergeten? Cmdr haalt de gedeelde map uit de lijst. Is de gedeelde map aangekoppeld, dan blijft dat zo, en je bestanden blijven op de server staan.",
   "@servers.hub.forgetShareConfirm": {
     "sourceHash": "8c14aaa"
+  },
+  "servers.hub.nearbyGroup": "{count, plural, one {{countText} server gevonden in de buurt} other {{countText} servers gevonden in de buurt}}",
+  "@servers.hub.nearbyGroup": {
+    "sourceHash": "cd7a44d"
   },
   "servers.hub.discoveryOff": "Lokale netwerkdetectie staat uit.",
   "@servers.hub.discoveryOff": {
@@ -174,6 +194,10 @@
   "@servers.refusal.unreachable": {
     "sourceHash": "6fcba90"
   },
+  "servers.refusal.localNetworkHint": "Als de server aanstaat, controleer dan of Cmdr onder {localNetwork} is toegestaan.",
+  "@servers.refusal.localNetworkHint": {
+    "sourceHash": "baa1753"
+  },
   "servers.refusal.hostKeyUntrusted": "Cmdr vertrouwt de sleutel van {host} nog niet.",
   "@servers.refusal.hostKeyUntrusted": {
     "sourceHash": "83dc719"
@@ -209,6 +233,62 @@
   "servers.refusal.savedSecretNotUpdated": "Cmdr heeft je wijzigingen bewaard, maar kon het wachtwoord in Sleutelhanger niet bijwerken. Bewaar opnieuw om het nog eens te proberen.",
   "@servers.refusal.savedSecretNotUpdated": {
     "sourceHash": "2ae1e2b"
+  },
+  "servers.refusal.s3AuthenticationRejected": "Die geheime toegangssleutel werkte niet.",
+  "@servers.refusal.s3AuthenticationRejected": {
+    "sourceHash": "14f90c8"
+  },
+  "servers.refusal.s3NeedsCredentials": "Dit account vraagt om een geheime toegangssleutel.",
+  "@servers.refusal.s3NeedsCredentials": {
+    "sourceHash": "23695df"
+  },
+  "servers.refusal.s3SecretMissing": "Voer de geheime toegangssleutel in.",
+  "@servers.refusal.s3SecretMissing": {
+    "sourceHash": "f1f32f2"
+  },
+  "servers.refusal.s3SecretNotStored": "Cmdr kon deze geheime toegangssleutel niet bewaren in Sleutelhanger. Probeer het opnieuw of zet ‘Onthoud in Sleutelhanger’ uit om in te loggen zonder de sleutel te bewaren.",
+  "@servers.refusal.s3SecretNotStored": {
+    "sourceHash": "f7a9fb0"
+  },
+  "servers.refusal.s3SavedSecretNotUpdated": "Cmdr heeft je wijzigingen bewaard, maar kon de geheime toegangssleutel in Sleutelhanger niet bijwerken. Bewaar opnieuw om het nog eens te proberen.",
+  "@servers.refusal.s3SavedSecretNotUpdated": {
+    "sourceHash": "1d2889d"
+  },
+  "servers.refusal.accessDenied": "Deze sleutel kan deze bucket niet bereiken. Controleer de bucketnaam en de geheime toegangssleutel, en of de sleutel de bucket mag lezen.",
+  "@servers.refusal.accessDenied": {
+    "sourceHash": "8372e73"
+  },
+  "servers.refusal.bucketListRefused": "Deze sleutel mag de buckets van dit account niet opsommen. Typ een bucketnaam om die bucket te openen, of controleer de geheime toegangssleutel.",
+  "@servers.refusal.bucketListRefused": {
+    "sourceHash": "1b9ebf5"
+  },
+  "servers.refusal.bucketNotFound": "Er is geen bucket met die naam op {host}.",
+  "@servers.refusal.bucketNotFound": {
+    "sourceHash": "0f5a04d"
+  },
+  "servers.refusal.regionMismatch": "Deze bucket staat in een andere regio. Kies de regio van de bucket en probeer het opnieuw.",
+  "@servers.refusal.regionMismatch": {
+    "sourceHash": "27a37f8"
+  },
+  "servers.refusal.regionMismatchNamed": "Deze bucket staat in {region}. Kies die regio en probeer het opnieuw.",
+  "@servers.refusal.regionMismatchNamed": {
+    "sourceHash": "30abb0d"
+  },
+  "servers.refusal.clockSkewed": "De klok van deze Mac loopt meer dan 15 minuten verkeerd, dus de server accepteert de verzoeken van Cmdr niet. Stel datum en tijd automatisch in via Systeeminstellingen en probeer het dan opnieuw.",
+  "@servers.refusal.clockSkewed": {
+    "sourceHash": "cdee0ef"
+  },
+  "servers.refusal.notAnS3Endpoint": "Op dit adres reageert niets als S3-opslag.",
+  "@servers.refusal.notAnS3Endpoint": {
+    "sourceHash": "78557ec"
+  },
+  "servers.refusal.s3FieldMalformed": "Gebruik hier alleen kleine letters, cijfers en streepjes.",
+  "@servers.refusal.s3FieldMalformed": {
+    "sourceHash": "ac8fbea"
+  },
+  "servers.refusal.endpointMalformed": "Voer het eindpunt in als http:// of https:// plus een hostnaam, zoals https://s3.example.com.",
+  "@servers.refusal.endpointMalformed": {
+    "sourceHash": "beb63dd"
   },
   "servers.sheet.addTitle": "Voeg server toe",
   "@servers.sheet.addTitle": {
@@ -327,6 +407,10 @@
   "@servers.sheet.password": {
     "sourceHash": "e7cf3ef"
   },
+  "servers.sheet.secretKeptPlaceholder": "Opgeslagen in Sleutelhanger. Laat leeg om te behouden.",
+  "@servers.sheet.secretKeptPlaceholder": {
+    "sourceHash": "8711f6c"
+  },
   "servers.sheet.smbUsernamePlaceholder": "Optioneel",
   "@servers.sheet.smbUsernamePlaceholder": {
     "sourceHash": "59be713"
@@ -362,6 +446,123 @@
   "servers.sheet.name": "Naam",
   "@servers.sheet.name": {
     "sourceHash": "dcd1d52"
+  },
+  "servers.sheet.protocolS3": "S3",
+  "@servers.sheet.protocolS3": {
+    "sourceHash": "44d6a8a",
+    "sameAsSourceJustification": "S3 is a protocol name, kept verbatim like SMB, SFTP, and WebDAV in the same picker."
+  },
+  "servers.sheet.s3Provider": "Aanbieder",
+  "@servers.sheet.s3Provider": {
+    "sourceHash": "472590a"
+  },
+  "servers.sheet.s3ProviderAws": "Amazon S3",
+  "@servers.sheet.s3ProviderAws": {
+    "sourceHash": "a4f6352",
+    "sameAsSourceJustification": "Amazon S3 is the provider's product name, kept verbatim in every language as the @key description asks; no Dutch form exists."
+  },
+  "servers.sheet.s3ProviderR2": "Cloudflare R2",
+  "@servers.sheet.s3ProviderR2": {
+    "sourceHash": "9f2f1ed",
+    "sameAsSourceJustification": "Cloudflare R2 is the provider's product name, kept verbatim in every language as the @key description asks; no Dutch form exists."
+  },
+  "servers.sheet.s3ProviderB2": "Backblaze B2",
+  "@servers.sheet.s3ProviderB2": {
+    "sourceHash": "ed40187",
+    "sameAsSourceJustification": "Backblaze B2 is the provider's product name, kept verbatim in every language as the @key description asks; no Dutch form exists."
+  },
+  "servers.sheet.s3ProviderWasabi": "Wasabi",
+  "@servers.sheet.s3ProviderWasabi": {
+    "sourceHash": "493861e",
+    "sameAsSourceJustification": "Wasabi is the provider's product name, kept verbatim in every language as the @key description asks; no Dutch form exists."
+  },
+  "servers.sheet.s3ProviderHetzner": "Hetzner Object Storage",
+  "@servers.sheet.s3ProviderHetzner": {
+    "sourceHash": "a339b4f",
+    "sameAsSourceJustification": "Hetzner Object Storage is the provider's product name, kept verbatim in every language as the @key description asks; no Dutch form exists."
+  },
+  "servers.sheet.s3ProviderGcs": "Google Cloud Storage",
+  "@servers.sheet.s3ProviderGcs": {
+    "sourceHash": "53fa0ba",
+    "sameAsSourceJustification": "Google Cloud Storage is the provider's product name, kept verbatim in every language as the @key description asks; no Dutch form exists."
+  },
+  "servers.sheet.s3ProviderDigitalOcean": "DigitalOcean Spaces",
+  "@servers.sheet.s3ProviderDigitalOcean": {
+    "sourceHash": "c3f48e3",
+    "sameAsSourceJustification": "DigitalOcean Spaces is the provider's product name, kept verbatim in every language as the @key description asks; no Dutch form exists."
+  },
+  "servers.sheet.s3GcsKeyHelp": "Log in met een HMAC-sleutel van het tabblad Interoperabiliteit in je Cloud Storage-instellingen.",
+  "@servers.sheet.s3GcsKeyHelp": {
+    "sourceHash": "acb72a4"
+  },
+  "servers.sheet.s3ProviderOther": "Andere S3-compatibele opslag",
+  "@servers.sheet.s3ProviderOther": {
+    "sourceHash": "13d2bdc"
+  },
+  "servers.sheet.s3Region": "Regio",
+  "@servers.sheet.s3Region": {
+    "sourceHash": "d3a008e"
+  },
+  "servers.sheet.s3RegionOptionalPlaceholder": "Optioneel. Laat leeg om us-east-1 te gebruiken",
+  "@servers.sheet.s3RegionOptionalPlaceholder": {
+    "sourceHash": "12dd731"
+  },
+  "servers.sheet.s3AccountId": "Account-ID",
+  "@servers.sheet.s3AccountId": {
+    "sourceHash": "919bb4c"
+  },
+  "servers.sheet.s3AccountIdHelp": "Het account-ID op de overzichtspagina van je Cloudflare R2.",
+  "@servers.sheet.s3AccountIdHelp": {
+    "sourceHash": "963d1f5"
+  },
+  "servers.sheet.s3Location": "Locatie",
+  "@servers.sheet.s3Location": {
+    "sourceHash": "15b6197"
+  },
+  "servers.sheet.s3Endpoint": "Eindpunt",
+  "@servers.sheet.s3Endpoint": {
+    "sourceHash": "3df9726"
+  },
+  "servers.sheet.s3PathStyle": "Adressering in padstijl (path-style) gebruiken",
+  "@servers.sheet.s3PathStyle": {
+    "sourceHash": "627c522"
+  },
+  "servers.sheet.s3PathStyleHelp": "De meeste zelfgehoste servers, zoals MinIO en Garage, hebben dit nodig.",
+  "@servers.sheet.s3PathStyleHelp": {
+    "sourceHash": "bc6e240"
+  },
+  "servers.sheet.s3Bucket": "Bucket",
+  "@servers.sheet.s3Bucket": {
+    "sourceHash": "c83b657",
+    "sameAsSourceJustification": "Dutch for an S3 bucket is \"bucket\": Microsoft terminology renders \"bucket\" (a virtual container) as \"bucket\" (DUTCH.tbx in the reference pile, 2026-10-02)."
+  },
+  "servers.sheet.s3BucketHelp": "Laat dit leeg om alle buckets te zien. Is je sleutel beperkt tot één bucket, typ dan de naam ervan.",
+  "@servers.sheet.s3BucketHelp": {
+    "sourceHash": "8d380d9"
+  },
+  "servers.sheet.s3UseRegion": "Gebruik {region}",
+  "@servers.sheet.s3UseRegion": {
+    "sourceHash": "5734184"
+  },
+  "servers.sheet.accessKeyId": "Toegangssleutel-ID",
+  "@servers.sheet.accessKeyId": {
+    "sourceHash": "14eb0f9"
+  },
+  "servers.sheet.secretAccessKey": "Geheime toegangssleutel",
+  "@servers.sheet.secretAccessKey": {
+    "sourceHash": "3de6b75"
+  },
+  "servers.sheet.examplePlaceholder": "Voorbeeld: {example}",
+  "@servers.sheet.examplePlaceholder": {
+    "sourceHash": "9c7df45"
+  },
+  "servers.sheet.identityLockedS3": "De aanbieder, de toegangssleutel-ID en de bucket bepalen welke plek dit is. Vergeet deze plek en voeg hem opnieuw toe om ze te wijzigen.",
+  "@servers.sheet.identityLockedS3": {
+    "sourceHash": "fe4d469"
+  },
+  "servers.sheet.identityLockedS3Account": "De aanbieder en de toegangssleutel-ID bepalen welk account dit is. Vergeet dit account en voeg het opnieuw toe om ze te wijzigen.",
+  "@servers.sheet.identityLockedS3Account": {
+    "sourceHash": "e03a769"
   },
   "servers.sheet.namePlaceholder": "Laat leeg om {label} te gebruiken",
   "@servers.sheet.namePlaceholder": {
@@ -455,6 +656,10 @@
   "@servers.paneState.notConnected": {
     "sourceHash": "5020fac"
   },
+  "servers.paneState.unreachable": "Cmdr kon {name} niet bereiken.",
+  "@servers.paneState.unreachable": {
+    "sourceHash": "a7bc9bc"
+  },
   "servers.paneState.goBack": "Ga terug",
   "@servers.paneState.goBack": {
     "sourceHash": "6aadac2"
@@ -467,9 +672,13 @@
   "@servers.paneState.hostKeyChanged": {
     "sourceHash": "c73ddf3"
   },
-  "servers.paneState.hostKeyChangedHint": "De sleutel is gewijzigd. Dat kan betekenen dat de server opnieuw is geïnstalleerd, of dat er iets tussen jou en de server zit. Verbreek de verbinding en open de server opnieuw om de vingerafdruk te controleren.",
+  "servers.paneState.hostKeyChangedHint": "De sleutel is gewijzigd. Dat kan betekenen dat de server opnieuw is geïnstalleerd, of dat er iets tussen jou en de server zit. Controleer de nieuwe sleutel voordat je opnieuw verbinding maakt.",
   "@servers.paneState.hostKeyChangedHint": {
-    "sourceHash": "923de62"
+    "sourceHash": "866b619"
+  },
+  "servers.paneState.checkHostKey": "Controleer de sleutel",
+  "@servers.paneState.checkHostKey": {
+    "sourceHash": "fefa256"
   },
   "servers.paneState.reconnecting": "Opnieuw verbinden met {name}…",
   "@servers.paneState.reconnecting": {

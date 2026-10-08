@@ -23,7 +23,7 @@ use super::{FULL_LOAD_THRESHOLD, FileViewerBackend, ViewerError};
 /// reports are exact.
 pub(crate) struct HeadlessBackend {
     pub backend: Box<dyn FileViewerBackend>,
-    /// `false` only on the ByteSeek fallback, where `SeekTarget::Line(n)` resolves by an
+    /// `false` only on the ByteSeek fallback, where `SeekTarget::Row(n)` resolves by an
     /// 80-bytes-a-line estimate and `total_lines` is unknown.
     pub line_numbers_exact: bool,
 }

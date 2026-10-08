@@ -3,6 +3,10 @@
   "@fileOperations.button.cancel": {
     "sourceHash": "19766ed"
   },
+  "fileOperations.button.close": "Sluit",
+  "@fileOperations.button.close": {
+    "sourceHash": "7d9eb7a"
+  },
   "fileOperations.button.ok": "OK",
   "@fileOperations.button.ok": {
     "sourceHash": "565339b",
@@ -82,7 +86,7 @@
   },
   "fileOperations.delete.scanDir": "{count, plural, one {map} other {mappen}}",
   "@fileOperations.delete.scanDir": {
-    "sourceHash": "1c5273d"
+    "sourceHash": "46b23b5"
   },
   "fileOperations.delete.confirmDelete": "Verwijder",
   "@fileOperations.delete.confirmDelete": {
@@ -124,6 +128,14 @@
   "@fileOperations.delete.symlinkNoticeMany": {
     "sourceHash": "56b3f52"
   },
+  "fileOperations.mkfile.notCreatedToast": "Cmdr kon het bestand ‘{name}’ niet aanmaken. {reason}",
+  "@fileOperations.mkfile.notCreatedToast": {
+    "sourceHash": "4f30e62"
+  },
+  "fileOperations.newEntry.stillCreating": "‘{name}’ wordt nog aangemaakt. Het volume reageert traag. Je kunt dit venster gerust sluiten: het aanmaken gaat gewoon door en annuleren kan nu niet meer.",
+  "@fileOperations.newEntry.stillCreating": {
+    "sourceHash": "74e376f"
+  },
   "fileOperations.mkfile.title": "Nieuw bestand",
   "@fileOperations.mkfile.title": {
     "sourceHash": "44dedd0"
@@ -156,17 +168,9 @@
   "@fileOperations.mkdir.placeholder": {
     "sourceHash": "7612b56"
   },
-  "fileOperations.mkdir.timeoutMessage": "We konden niet bevestigen dat de map is aangemaakt. Het volume is mogelijk traag, dus de map is misschien toch aangemaakt.",
-  "@fileOperations.mkdir.timeoutMessage": {
-    "sourceHash": "8bc758a"
-  },
-  "fileOperations.mkdir.timeoutRefresh": "Ververs lijst",
-  "@fileOperations.mkdir.timeoutRefresh": {
-    "sourceHash": "b0e5436"
-  },
-  "fileOperations.mkdir.timeoutDismiss": "Sluit",
-  "@fileOperations.mkdir.timeoutDismiss": {
-    "sourceHash": "48845bf"
+  "fileOperations.mkdir.notCreatedToast": "Cmdr kon de map ‘{name}’ niet aanmaken. {reason}",
+  "@fileOperations.mkdir.notCreatedToast": {
+    "sourceHash": "517ef4b"
   },
   "fileOperations.mkdir.aiSuggestionsAria": "AI-suggesties",
   "@fileOperations.mkdir.aiSuggestionsAria": {
@@ -249,9 +253,21 @@
   "@fileOperations.transferDialog.targetWillBeCreatedCopy": {
     "sourceHash": "4e8d166"
   },
+  "fileOperations.transferDialog.renameByMoveHint": "Om de naam te wijzigen, kopieert Cmdr alles hierin op de server. Daarom gaat dit als verplaatsen, en dat kun je pauzeren of annuleren.",
+  "@fileOperations.transferDialog.renameByMoveHint": {
+    "sourceHash": "31987cc"
+  },
   "fileOperations.transferDialog.targetWillBeCreatedMove": "Deze map bestaat nog niet. Cmdr maakt hem aan tijdens het verplaatsen.",
   "@fileOperations.transferDialog.targetWillBeCreatedMove": {
     "sourceHash": "1246331"
+  },
+  "fileOperations.transferDialog.rootEchoWarning": "Deze locatie begint al in {rootFolder}, dus dit pad leidt naar {resolvedPath}. Bedoelde je {strippedPath}?",
+  "@fileOperations.transferDialog.rootEchoWarning": {
+    "sourceHash": "b692d10"
+  },
+  "fileOperations.transferDialog.rootEchoUseStripped": "Gebruik korter pad",
+  "@fileOperations.transferDialog.rootEchoUseStripped": {
+    "sourceHash": "66972e3"
   },
   "fileOperations.transferDialog.destinationReadOnly": "Deze map is alleen-lezen, dus hier kan niets heen.",
   "@fileOperations.transferDialog.destinationReadOnly": {
@@ -275,7 +291,7 @@
   },
   "fileOperations.transferDialog.scanDir": "{count, plural, one {map} other {mappen}}",
   "@fileOperations.transferDialog.scanDir": {
-    "sourceHash": "1c5273d"
+    "sourceHash": "46b23b5"
   },
   "fileOperations.transferDialog.hardlinkNote": "<written></written> wordt geschreven. De bron is <ondisk></ondisk> op schijf – het verschil zijn hardlink-bestanden, die niet gekoppeld kunnen blijven tussen schijven.",
   "@fileOperations.transferDialog.hardlinkNote": {
@@ -293,6 +309,18 @@
   "@fileOperations.transferDialog.estimatedSizeTooltip": {
     "sourceHash": "2e8ba70"
   },
+  "fileOperations.s3Cost.line": "Ongeveer {amount} volgens de catalogusprijzen van {provider}",
+  "@fileOperations.s3Cost.line": {
+    "sourceHash": "e8db02b"
+  },
+  "fileOperations.s3Cost.infoLabel": "Over deze schatting",
+  "@fileOperations.s3Cost.infoLabel": {
+    "sourceHash": "19637c5"
+  },
+  "fileOperations.s3Cost.infoText": "Dit gebruikt de openbare catalogusprijzen van de aanbieder. Gratis gebruik, kortingen, inbegrepen tegoeden en minimumtarieven kunnen je rekening lager of hoger maken.",
+  "@fileOperations.s3Cost.infoText": {
+    "sourceHash": "379665c"
+  },
   "fileOperations.transferDialog.scanUnresponsive": "De bron reageert niet, dus meer konden we niet tellen.",
   "@fileOperations.transferDialog.scanUnresponsive": {
     "sourceHash": "ec3beb2"
@@ -304,6 +332,10 @@
   "fileOperations.transferDialog.scanRetry": "Probeer opnieuw",
   "@fileOperations.transferDialog.scanRetry": {
     "sourceHash": "d8b8392"
+  },
+  "fileOperations.transferDialog.sourceNoLongerConnected": "De telefoon of server met deze bestanden is niet meer verbonden, dus Cmdr kan daar niets van kopiëren.",
+  "@fileOperations.transferDialog.sourceNoLongerConnected": {
+    "sourceHash": "4741405"
   },
   "fileOperations.transferDialog.conflictsUnknown": "We konden niet controleren wat er al op de bestemming staat. We vragen het je bij elke botsing.",
   "@fileOperations.transferDialog.conflictsUnknown": {
@@ -399,7 +431,7 @@
   },
   "fileOperations.scanPhase.scanDir": "{count, plural, one {map} other {mappen}}",
   "@fileOperations.scanPhase.scanDir": {
-    "sourceHash": "1c5273d"
+    "sourceHash": "46b23b5"
   },
   "fileOperations.transferProgress.scanTitleCopy": "Controleren voor het kopiëren…",
   "@fileOperations.transferProgress.scanTitleCopy": {
@@ -537,9 +569,13 @@
   "@fileOperations.transferProgress.stageFinishingTransferStep": {
     "sourceHash": "1f28724"
   },
-  "fileOperations.transferProgress.warningFileOverFolder": "Het doel bestaat en is een <strong>map</strong>. Je staat op het punt het te overschrijven met een <strong>bestand</strong> met dezelfde naam. De volledige inhoud van de doelmap zou worden verwijderd en vervangen door het bestand. Wat wil je doen?",
+  "fileOperations.transferProgress.warningFileOverFolder": "Het doel bestaat en is een <strong>map</strong>. Je staat op het punt het te vervangen door een <strong>bestand</strong> met dezelfde naam. Alles in de map zou weg zijn. Wat wil je doen?",
   "@fileOperations.transferProgress.warningFileOverFolder": {
-    "sourceHash": "6dce75c"
+    "sourceHash": "bacab9d"
+  },
+  "fileOperations.transferProgress.warningFolderOverFile": "Het doel bestaat en is een <strong>bestand</strong>. Je staat op het punt het te vervangen door een <strong>map</strong> met dezelfde naam. Het bestand zou weg zijn zodra de map zijn plaats inneemt. Wat wil je doen?",
+  "@fileOperations.transferProgress.warningFolderOverFile": {
+    "sourceHash": "b681083"
   },
   "fileOperations.transferProgress.lookAlikeHint": "Deze namen zien er hetzelfde uit, maar de server slaat ze anders op. Met ‘Overschrijf’ vervang je het onderdeel dat er al staat.",
   "@fileOperations.transferProgress.lookAlikeHint": {
@@ -885,6 +921,10 @@
   "fileOperations.errorDialog.retry": "Probeer opnieuw",
   "@fileOperations.errorDialog.retry": {
     "sourceHash": "942087c"
+  },
+  "fileOperations.errorDialog.copyAnyway": "Kopieer toch",
+  "@fileOperations.errorDialog.copyAnyway": {
+    "sourceHash": "f794181"
   },
   "fileOperations.errorDialog.close": "Sluit",
   "@fileOperations.errorDialog.close": {

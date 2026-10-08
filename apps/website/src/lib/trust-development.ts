@@ -18,7 +18,7 @@ export const window = { from: '2026-06-23', to: '2026-09-23', days: 92, weeks: 1
  * Releases published in the window, from GitHub's release dates (the moment users can get them):
  * `gh release list --limit 100 --json tagName,publishedAt`, keep `publishedAt >= window.from`,
  * sort, and take the gaps between neighbors (21 gaps for 22 releases). Tag dates are commit dates
- * (the tags are lightweight), so don't use `git tag` for this.
+ * (older tags are lightweight), so don't use `git tag` for this.
  */
 export const releaseCadence = {
   releases: 22,

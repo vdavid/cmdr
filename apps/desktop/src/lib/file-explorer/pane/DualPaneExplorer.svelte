@@ -1,4 +1,7 @@
 <script lang="ts">
+    import { compareDirectories as runCompareDirectories } from './compare-directories'
+    import type { CompareDirectoriesMode } from '$lib/tauri-commands'
+    import { countFoldersInPane } from './folder-size-count'
     import { onMount, onDestroy, untrack } from 'svelte'
     import FilePane from './FilePane.svelte'
     import type {
@@ -30,9 +33,20 @@
     import { determineNavigationPath } from '../navigation/path-navigation'
     import { createVolumeRootFollow } from './volume-root-follow'
 
-    import { canGoBack } from '../navigation/navigation-history'
+    import { canGoBack, getCurrentEntry } from '../navigation/navigation-history'
+    import { recordCursor, type CursorReading } from '../navigation/history-cursor'
+    import { volumeMountedAt } from '../navigation/pane-volume'
     import TabBar from '../tabs/TabBar.svelte'
-    import { getActiveTab, getAllTabs, pushHistoryEntry, trimClosedStack, MAX_TABS_PER_PANE } from '../tabs/tab-state-manager.svelte'
+    import TabDragOverlay from '../tabs/TabDragOverlay.svelte'
+    import { createTabDragController } from '../tabs/tab-drag-controller.svelte'
+    import {
+        getActiveTab,
+        getAllTabs,
+        pushHistoryEntry,
+        trimClosedStack,
+        MAX_TABS_PER_PANE,
+        type MoveTabResult,
+    } from '../tabs/tab-state-manager.svelte'
     import type { TabId } from '../tabs/tab-types'
     import {
         saveTabsForPane,
@@ -48,6 +62,10 @@
         syncPinTabMenuForPane,
         cycleTab as tabOpsCycleTab,
         switchToTab as tabOpsSwitchToTab,
+        handleTabDrop as tabOpsHandleTabDrop,
+        moveTabToPane as tabOpsMoveTabToPane,
+        type TabMoveDeps,
+        type TabMoveRequest,
     } from './tab-operations'
     import { initNetworkDiscovery, cleanupNetworkDiscovery } from '../network/network-store.svelte'
     import type { HubRow } from '../network/servers-hub-rows'
@@ -55,7 +73,6 @@
     import { initVolumeBusyStore, cleanupVolumeBusyStore } from '$lib/stores/volume-busy-store.svelte'
     import { initRestrictedPathsStore } from '$lib/stores/restricted-paths-store.svelte'
     import { initSystemStrings } from '$lib/system-strings.svelte'
-    import { initialize as initMtpStore } from '$lib/mtp'
     import { smbReconnectManager } from '../network/smb-reconnect-manager.svelte'
     import type { TransferOperationType } from '../types'
     import type { Initiator, ProgressAtStop } from '$lib/tauri-commands'
@@ -64,16 +81,20 @@
         AdoptedOperationData,
         ForegroundOperationVerdict,
         TransferConfirmPayload,
+        TransferConfirmer,
+        DeleteConfirmer,
         TransferCompletePayload,
     } from './dialog-props'
     import { explorerState } from './explorer-state.svelte'
     import type { PaneAccess } from './pane-access'
+    import type { RenameAsMoveRequest } from './rename-flow.svelte'
     import { createClipboardOperations } from './clipboard-operations'
     import { createFileOperationCommands } from './file-operation-commands'
     import { createPaneCommands } from './pane-commands'
     import { createSortOperations } from './sort-operations'
     import { createSwapPanes } from './swap-panes'
     import { createVolumeSelection, type VolumeSelectOutcome } from './volume-selection'
+    import { goToRootFolder } from '../navigation/root-folder'
     import { createEdgeFlowHandlers } from './edge-flow-handlers'
     import { createPaneMirror } from './pane-mirror'
     import type { SmbHandOff } from '$lib/servers/open-sign-in'
@@ -375,6 +396,18 @@
     // Panes and tabs on a connected place follow an edit that moved its root or start folder.
     const volumeRootFollow = createVolumeRootFollow({ getTabMgr, navigate: navigateIntent, saveTabs: saveTabsForPaneSide })
 
+    // Dragging a TAB to reorder it or move it to the other pane's bar. One controller
+    // above both bars, since each `TabBar` sees only its own pane; pointer events, so
+    // it never meets the native file-drop band below.
+    const tabMoveDeps: TabMoveDeps = { getTabMgr, getPaneRef, getFocusedPane: () => focusedPane }
+    const tabDrag = createTabDragController({
+        getTabs: (pane) => getAllTabs(getTabMgr(pane)),
+        maxTabs: MAX_TABS_PER_PANE,
+        onDrop: (drop) => {
+            tabOpsHandleTabDrop(drop, tabMoveDeps)
+        },
+    })
+
     // Native drag-and-drop band: drop-target highlight state, the drag handlers,
     // the three Tauri drag listeners, and the folder-highlight effect. The effect
     // is created synchronously inside the factory (L3); `init()`/`cleanup()` run
@@ -530,14 +563,12 @@
         // Start network discovery in background (non-blocking)
         void initNetworkDiscovery()
 
-        // Initialize volume store (subscribes to backend-pushed volume list)
-        // and MTP store (subscribes to device connection events). Also wire up
-        // the SMB reconnect manager; it listens for `volume-connection-changed`
+        // Initialize volume store (subscribes to backend-pushed volume list). Also
+        // wire up the SMB reconnect manager; it listens for `volume-connection-changed`
         // and runs the per-volume backoff cycle the pane's `RemoteConnectView` renders.
         await Promise.all([
             initVolumeStore(),
             initVolumeBusyStore(),
-            initMtpStore(),
             smbReconnectManager.init(),
             initRestrictedPathsStore(),
             initSystemStrings(),
@@ -571,7 +602,7 @@
         // won the race. The mount watchers still speak in paths, which is the
         // fallback.
         unlistenVolumeUnmount = await onVolumeUnmounted((payload) => {
-            const volumeId = payload.volumeId ?? volumes.find((v) => v.path === payload.volumePath)?.id
+            const volumeId = payload.volumeId ?? volumeMountedAt(volumes, payload.volumePath)?.id
             if (volumeId) {
                 void edgeFlow.handleVolumeUnmount(volumeId)
             }
@@ -636,6 +667,7 @@
         cleanupVolumeBusyStore()
         cleanupNetworkDiscovery()
         dragDrop.cleanup()
+        tabDrag.destroy()
         window.removeEventListener('resize', handleResizeForDevTools) // No-op in non-dev, safe to always call
     })
 
@@ -827,6 +859,21 @@
         swapper.swapPanes()
     }
 
+    /** Compare directories (⇧F2), `compare-directories.ts`. */
+    export function compareDirectories(mode: CompareDirectoriesMode): Promise<void> {
+        return runCompareDirectories({ getPaneRef, getShowHiddenFiles: () => showHiddenFiles }, mode)
+    }
+
+    /** Calculate folder sizes in the focused pane (⌥⇧⏎), then re-sort a size-sorted pane. */
+    export async function calculateFolderSizes(): Promise<void> {
+        const pane = focusedPane
+        const listingId = getPaneRef(pane)?.getListingId() ?? ''
+        const outcome = await countFoldersInPane(listingId, showHiddenFiles)
+        if (outcome && outcome.counted > 0 && getPaneSort(pane).sortBy === 'size') {
+            await sortOps.resortPaneWithCurrentSort(pane)
+        }
+    }
+
     export function toggleVolumeChooser(pane: 'left' | 'right') {
         paneCommands.toggleVolumeChooser(pane)
     }
@@ -883,6 +930,11 @@
 
     export function goHome(pane?: 'left' | 'right'): Promise<void> {
         return edgeFlow.handleOpenHome(pane ?? focusedPane)
+    }
+
+    export function goToRoot(pane?: 'left' | 'right'): Promise<void> {
+        const deps = { getVolumes: () => volumes, getPaneVolumeId, getPanePath, navigate: navigateIntent }
+        return goToRootFolder(deps, pane ?? focusedPane)
     }
 
     export function getFileAndPathUnderCursor(): { path: string; filename: string } | null {
@@ -962,6 +1014,11 @@
     /** Whether the pane's listing is mid-load. `false` for a pane that isn't mounted. */
     export function isPaneLoading(pane: 'left' | 'right'): boolean {
         return getPaneRef(pane)?.isLoading() ?? false
+    }
+
+    /** Whether the pane's folder stopped answering mid-read. `false` for a pane that isn't mounted. */
+    export function isPaneStalled(pane: 'left' | 'right'): boolean {
+        return getPaneRef(pane)?.isStalled() ?? false
     }
 
     // noinspection JSUnusedGlobalSymbols -- consumed by quick-look-state
@@ -1234,6 +1291,16 @@
         mcpTab.handleMcpTabAction(pane, action, tabId, pinned)
     }
 
+    /** A tab move from the MCP `tab` tool: the same operation a tab drag ends in, minus the toast. */
+    export function moveTab(request: TabMoveRequest): MoveTabResult {
+        return tabOpsMoveTabToPane(request, tabMoveDeps)
+    }
+
+    /** Pushes both panes' tab lists to the MCP backend now, so a reply that follows reads fresh. */
+    export async function syncTabsToMcp(): Promise<void> {
+        await tabMcpSync.syncTabsNow()
+    }
+
     function syncPinTabMenu() {
         syncPinTabMenuForPane(focusedPane, getTabMgr)
     }
@@ -1260,6 +1327,7 @@
             activeTabId={tabMgr.activeTabId}
             {paneId}
             maxTabs={MAX_TABS_PER_PANE}
+            drag={tabDrag.forPane(paneId)}
             onTabSwitch={(tabId: TabId) => {
                 switchToTab(paneId, tabId)
             }}
@@ -1299,6 +1367,9 @@
                 }}
                 onStoredSpelling={(spelling: { from: string; to: string }) => {
                     adoptStoredSpelling(navigateDeps, paneId, spelling)
+                }}
+                onCursorReading={(reading: CursorReading) => {
+                    recordCursor(getCurrentEntry(getPaneHistory(paneId)), reading)
                 }}
                 onVolumeChange={({ volumeId, targetPath }: VolumeChangePayload) => {
                     navigateIntent({
@@ -1341,6 +1412,7 @@
                     wrongAttempt: boolean
                     retry: () => void
                 }) => { dialogs.showArchivePasswordForBrowse(info); }}
+                onConfirmRenameAsMove={(request: RenameAsMoveRequest) => { fileOps.confirmRenameAsMove(paneId, request); }}
                 unreachable={getActiveTab(tabMgr).unreachable}
                 onRetryUnreachable={() => edgeFlow.handleRetryUnreachable(paneId)}
                 onOpenHome={() => edgeFlow.handleOpenHome(paneId)}
@@ -1378,6 +1450,7 @@
 </div>
 
 <DragOverlay />
+<TabDragOverlay view={tabDrag.view} />
 
 <DialogManager
     onDialogRenderError={(error: unknown) => {
@@ -1401,6 +1474,8 @@
     onTransferConfirm={(payload: TransferConfirmPayload) => {
         dialogs.handleTransferConfirm(payload)
     }}
+    registerTransferConfirmer={(confirm: TransferConfirmer) => dialogs.registerTransferConfirmer(confirm)}
+    registerDeleteConfirmer={(confirm: DeleteConfirmer) => dialogs.registerDeleteConfirmer(confirm)}
     onTransferCancel={() => {
         dialogs.handleTransferCancel()
     }}
@@ -1434,6 +1509,7 @@
     onTransferErrorRetry={() => {
         dialogs.handleTransferErrorRetry()
     }}
+    onTransferErrorCopyAnyway={() => { dialogs.handleTransferErrorCopyAnyway(); }}
     onArchivePasswordSubmit={(password: string) => {
         dialogs.handleArchivePasswordSubmit(password)
     }}

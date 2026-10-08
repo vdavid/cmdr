@@ -5,6 +5,8 @@ export type Bindings = {
   BLOG_LIKES: KVNamespace
   // KV namespace for tracking-link short codes (the `?r=<code>` -> UTM map served at /r-codes.json)
   LINK_CODES: KVNamespace
+  // KV namespace for CSP-violation alert dedupe (`csp:<directive>:<blocked origin>`, 24 h TTL)
+  CSP_ALERTS: KVNamespace
   // Analytics Engine for device count tracking (fair use monitoring)
   DEVICE_COUNTS: AnalyticsEngineDataset
   // D1 database for telemetry persistence (crash reports, downloads, update checks, heartbeats)
@@ -12,9 +14,10 @@ export type Bindings = {
   // Workers rate-limit binding gating POST /heartbeat, keyed by the caller IP (never stored).
   // Optional so tests and incomplete envs can omit it; the route skips the gate when absent.
   HEARTBEAT_LIMITER?: RateLimit
-  // Workers rate-limit binding gating POST /beta-signup, keyed by the caller IP (never stored).
-  // Tighter than the heartbeat (signups are rare). Optional; the route skips the gate when absent.
-  BETA_SIGNUP_LIMITER?: RateLimit
+  // Workers rate-limit binding gating POST /beta-signup and /newsletter-signup (one shared window),
+  // keyed by the caller IP (never stored). Tighter than the heartbeat (signups are rare). Optional;
+  // the routes skip the gate when absent.
+  SIGNUP_LIMITER?: RateLimit
   // Workers rate-limit binding gating POST /feedback, keyed by the caller IP (never stored).
   // Optional; the route skips the gate when absent.
   FEEDBACK_LIMITER?: RateLimit
@@ -34,6 +37,18 @@ export type Bindings = {
   // Workers rate-limit binding gating POST and DELETE /likes/:slug, keyed by the caller IP (never
   // stored). Optional; the route skips the gate when absent.
   LIKES_LIMITER?: RateLimit
+  // Workers rate-limit binding gating POST /csp-report, keyed by the caller IP (never stored).
+  // Optional; the route skips the gate when absent.
+  CSP_REPORT_LIMITER?: RateLimit
+  // Workers rate-limit binding gating POST /activate, keyed by the caller IP (never stored). A short
+  // code is all it takes to fetch a full license key, so this is what makes guessing codes slow.
+  // Optional; the route skips the gate when absent.
+  ACTIVATE_LIMITER?: RateLimit
+  // Workers rate-limit binding gating POST /validate, keyed by the caller IP (never stored). Each
+  // request costs a Paddle API call. Loose, because a company's Macs share one NAT address, and a
+  // 429 only keeps a Mac on its cached status until its next try. Optional; the route skips the
+  // gate when absent.
+  VALIDATE_LIMITER?: RateLimit
   // Paddle webhook secrets (both optional to support gradual rollout)
   PADDLE_WEBHOOK_SECRET_LIVE?: string
   PADDLE_WEBHOOK_SECRET_SANDBOX?: string
@@ -78,9 +93,8 @@ export type Bindings = {
   // when unset the cron runs exactly as before, minus the ping. A capability URL, so it's a secret
   // rather than a var. See `cron-health.ts` for why this exists alongside the Discord alert.
   HEALTHCHECKS_PING_URL?: string
-  // Optional dedicated Discord webhook for beta-tester signup notifications. When unset,
-  // POST /beta-signup falls back to DISCORD_WEBHOOK_URL (so pings land in #error-reports until
-  // the #beta-signups channel and its webhook exist).
+  // Optional dedicated Discord webhook for signup notifications (beta and newsletter both; the name
+  // predates the newsletter route). When unset, the signup routes fall back to DISCORD_WEBHOOK_URL.
   DISCORD_BETA_SIGNUP_WEBHOOK_URL?: string
   // The PRIVATE GitHub repo error reports and feedback are filed into, as `owner/name`, plus its
   // fine-grained token (Issues: read and write on that one repo). Both optional: with either unset
@@ -112,18 +126,19 @@ export type Bindings = {
   R2_SECRET_ACCESS_KEY?: string
   // R2 bucket name (used in presigned URL host/path). Defaults to "cmdr-error-reports".
   R2_ERROR_REPORTS_BUCKET_NAME?: string
-  // Listmonk (the beta-tester mailing list). The base URL (for example https://mail.getcmdr.com),
-  // the API user and token (sent as `Authorization: token <user>:<token>`), and the numeric id of
-  // the double-opt-in "Cmdr beta testers" list. All optional so tests and incomplete envs omit
-  // them; POST /beta-signup returns a soft failure when they're absent. The email NEVER co-occurs
-  // with any analytics/diagnostics install id, by construction (see /beta-signup).
+  // Listmonk (the beta-tester and newsletter lists), at its base URL (for example
+  // https://mail.getcmdr.com). The signup routes subscribe by list UUID through the public endpoint,
+  // which needs no credentials; the API user and token (sent as `Authorization: token <user>:<token>`)
+  // are only for GET /admin/funnel. The numeric ids feed the funnel's per-day signups column and the
+  // Discord deep links. All optional so tests and incomplete envs omit them; a signup route answers
+  // 500 when its list UUID is absent, and the funnel defaults the newsletter id to 3.
   LISTMONK_API_URL?: string
   LISTMONK_API_USER?: string
   LISTMONK_API_TOKEN?: string
   LISTMONK_BETA_LIST_ID?: number
-  // Numeric id of the "Cmdr newsletter" Listmonk list, read by the funnel endpoint's per-day signups
-  // column (it sums this list plus the beta list). Optional; defaults to 3 (the live newsletter list).
+  LISTMONK_BETA_LIST_UUID?: string
   LISTMONK_NEWSLETTER_LIST_ID?: number
+  LISTMONK_NEWSLETTER_LIST_UUID?: string
 }
 
 export interface PaddleWebhookPayload {
@@ -134,6 +149,9 @@ export interface PaddleWebhookPayload {
   event_id?: string
   data?: {
     id?: string
+    // How Paddle created the transaction: `web` (checkout), `api`, or one of the `subscription_*`
+    // origins for a transaction it generated from an existing subscription (`isSubscriptionFollowUp`).
+    origin?: string
     customer_id?: string
     items?: Array<{
       price?: {

@@ -1,6 +1,6 @@
 # Go to path (backend)
 
-Backend for the "Go to path" dialog (⌘G): the user types a path and jumps to it in the focused pane. Owns all path
+Backend for the "Go to folder" dialog (⌘G): the user types a path and jumps to it in the focused pane. Owns all path
 reasoning plus the recent-paths store; the IPC layer (`commands/go_to_path.rs`) is a thin pass-through.
 
 ## Module map

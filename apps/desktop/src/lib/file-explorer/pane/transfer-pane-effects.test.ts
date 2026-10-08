@@ -107,6 +107,31 @@ describe('the source pane has navigated since', () => {
 })
 
 describe('refreshing panes after a transfer', () => {
+  it.each([true, false])(
+    'refreshes the source of a copy only when it also receives the duplicate: %s',
+    (sameFolder) => {
+      const right = makePaneRef(BIRTH_FOLDER, 'source-listing')
+      const destination = sameFolder ? BIRTH_FOLDER : '/Users/me/backup'
+      const left = makePaneRef(destination, 'destination-listing')
+      const props = { ...moveProps(), operationType: 'copy' as const, destinationPath: destination }
+      const effects = createTransferPaneEffects(
+        { getLeftPaneRef: () => left.ref, getRightPaneRef: () => right.ref },
+        () => props,
+      )
+
+      effects.refreshPanesAfterTransfer()
+
+      expect(vi.mocked(refreshListing).mock.calls).toEqual(
+        sameFolder
+          ? [
+              ['destination-listing', false],
+              ['source-listing', false],
+            ]
+          : [['destination-listing', false]],
+      )
+    },
+  )
+
   it('re-reads both listings for a move, since the source lost rows too', () => {
     const { effects } = makeEffects(BIRTH_FOLDER)
 

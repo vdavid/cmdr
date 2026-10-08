@@ -5,8 +5,10 @@ members = [
   "crates/cmdr-archive",
   "crates/cmdr-fs",
   "crates/cmdr-git",
+  "crates/cmdr-http",
   "crates/cmdr-index",
   "crates/cmdr-mtp",
+  "crates/cmdr-s3",
   "crates/cmdr-sftp",
   "crates/cmdr-smb",
   "crates/cmdr-webdav",
@@ -14,22 +16,8 @@ members = [
   "crates/index-query",
   "crates/operation-log-dump",
 ]
-exclude = ["benchmarks/smb", "vendor/mdns-sd"]
+exclude = ["benchmarks/smb"]
 resolver = "2"
-
-# `vendor/mdns-sd` is upstream's published 0.20.3 source plus one behavioural fix,
-# swapped in for the crates.io release below. Upstream's `add_interface` drops an
-# interface whose multicast join fails instead of recording it, so `check_ip_changes`
-# rediscovers it every 5 s and retries forever: 9,322 retries and 29 MB of logs from
-# one macOS `bridge102` in a 39-hour run. Why the fork exists, what the fix is, and
-# when to drop it: `docs/notes/mdns-sd-multicast-join-retry-loop.md`.
-#
-# It is NOT a workspace member, on purpose. Membership would put upstream's network
-# test suite (real mDNS traffic, minutes per run) into `--workspace` test lanes and
-# every house scanner onto code whose value is that it still matches upstream. It
-# still compiles on every build of `cmdr`, because that's where the dependency is.
-[patch.crates-io]
-mdns-sd = { path = "vendor/mdns-sd" }
 
 # Optimized builds cross crate boundaries. Cargo's default (`lto = false`,
 # `codegen-units = 16`) inlines only `#[inline]` and generic functions between

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import type { VolumeInfo } from '../types'
-import { paneVolumeOf } from './pane-volume'
+import { paneVolumeOf, volumeMountedAt } from './pane-volume'
 
 const root: VolumeInfo = { id: 'root', name: 'Macintosh HD', path: '/', category: 'main_volume', isEjectable: false }
 const share: VolumeInfo = {
@@ -31,5 +31,24 @@ describe('paneVolumeOf', () => {
       isEjectable: true,
     }
     expect(paneVolumeOf([root, usb], 'root', '/Volumes/USB/a', 'usb')?.id).toBe('usb')
+  })
+})
+
+describe('volumeMountedAt', () => {
+  it('skips a favorite pointing at the same mount root', () => {
+    // Favorites list first, so a plain path lookup answers with the favorite
+    // and an eject never moves the pane off the drive.
+    const favorite: VolumeInfo = {
+      id: 'fav-1',
+      name: 'public',
+      path: '/Volumes/public-1',
+      category: 'favorite',
+      isEjectable: false,
+    }
+    expect(volumeMountedAt([favorite, root, share], '/Volumes/public-1')?.id).toBe('smb-p')
+  })
+
+  it('answers nothing for a path no volume is mounted at', () => {
+    expect(volumeMountedAt([root, share], '/Volumes/gone')).toBeUndefined()
   })
 })

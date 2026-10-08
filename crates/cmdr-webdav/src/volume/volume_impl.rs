@@ -27,7 +27,7 @@ impl WebdavVolume {
     /// this: with no watcher, the operations ARE the detector (`reconnect.rs`).
     ///
     /// It also counts `work` as waiting on the server, which is what the
-    /// silence watch looks after (`crate::liveness`), and cuts it with
+    /// silence watch looks after (`cmdr_fs::volume::liveness`), and cuts it with
     /// `DeviceDisconnected` the moment the client is found gone, by the watch
     /// or by another operation: a silent server closes nothing, so nothing
     /// else would ever end the wait.

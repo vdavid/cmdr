@@ -41,4 +41,7 @@ an interest score, scores deadlines, and a wake turns what waits into one budget
   ceiling, a backoff on a typed auth or quota refusal. ⚠️ Spacing is NOT the cadence slider. ❌ Nothing the user types
   is capped.
 
-Depth: `DETAILS.md`. What it produces: `../suggested_ops/CLAUDE.md`. The store: `../store/proposals/CLAUDE.md`.
+What it produces: `../suggested_ops/CLAUDE.md`. The store: `../store/proposals/CLAUDE.md`.
+
+The schedule, the readiness gate, the backoffs, and the channel: `DETAILS.md`. Read it before any non-trivial work here:
+editing, planning, reorganizing, or advising.

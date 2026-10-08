@@ -1,6 +1,7 @@
 //! Tests for the `cmdr://indexing` builder: pure formatting helpers plus the
 //! per-volume text builders over injected snapshots (no live index needed).
 
+use crate::events::index_mapping::StepsAheadMs;
 use crate::mcp::resources::indexing::{
     VolumeIndexingDebug, VolumeIndexingSnapshot, build_indexing_text, build_volume_debug_text, format_duration_human,
     format_number, freshness_token,
@@ -57,8 +58,81 @@ fn base_snapshot(volume_id: &str, kind: &'static str) -> VolumeIndexingSnapshot 
         db_file_size: Some(47_400_000),
         scan_completed_at: None,
         scan_duration_ms: None,
+        prior_total_entries: None,
+        steps_ahead: StepsAheadMs::default(),
         debug: None,
     }
+}
+
+/// A local volume a quarter of the way through a calibrated change check, with
+/// the steps after the walk remembered from the last one.
+fn walking_with_history() -> VolumeIndexingSnapshot {
+    let mut root = base_snapshot("root", "local");
+    root.freshness = Some(Freshness::Scanning);
+    root.activity_phase = ActivityPhase::Scanning;
+    root.scanning = true;
+    root.phase_duration_ms = 60_000; // 1 min in, 25% done ⇒ 3 min left on the walk
+    root.entries_scanned = 25_000;
+    root.prior_total_entries = Some(100_000);
+    root.steps_ahead = StepsAheadMs {
+        find_files: Some(60_000),
+        save_file_list: Some(21_000),
+        compute_folder_sizes: Some(2_000),
+        catch_up: Some(0),
+    };
+    root
+}
+
+/// The overall figure an agent reads is the one a person reads: this step's
+/// estimate plus what the steps after it took last time.
+#[test]
+fn a_walk_with_history_reports_the_overall_figure() {
+    let text = build_indexing_text(&[walking_with_history()], 1_000_000);
+    assert!(
+        text.contains("overall: 4m left (this step 3m, then 1m for the steps after it, as they took last time)"),
+        "got: {text}"
+    );
+}
+
+/// No history for a step still ahead: say there's no overall figure, and why,
+/// rather than presenting this step's estimate as the whole wait.
+#[test]
+fn a_walk_without_history_says_there_is_no_overall_figure() {
+    let mut root = walking_with_history();
+    root.steps_ahead.find_files = None;
+    let text = build_indexing_text(&[root], 1_000_000);
+    assert!(
+        text.contains("overall: no estimate (a step after this one has no history on this kind of run)"),
+        "got: {text}"
+    );
+}
+
+/// Past the walk, the resource can't time the active step itself (the aggregate's
+/// progress isn't in the status), so it reports the remembered remainder alone.
+#[test]
+fn past_the_walk_the_remembered_remainder_is_reported_alone() {
+    let mut root = walking_with_history();
+    root.activity_phase = ActivityPhase::Aggregating;
+    root.scanning = false;
+    let text = build_indexing_text(&[root], 1_000_000);
+    assert!(
+        text.contains("overall: the steps after this one took 2.0s last time"),
+        "got: {text}"
+    );
+}
+
+/// A phased first index has no history and one step, so it gets no overall line,
+/// and neither does a volume that isn't indexing.
+#[test]
+fn no_overall_line_for_a_first_index_or_an_idle_volume() {
+    let mut phased = walking_with_history();
+    phased.covered_in_phases = true;
+    let text = build_indexing_text(&[phased], 1_000_000);
+    assert!(!text.contains("overall:"), "got: {text}");
+
+    let idle = base_snapshot("root", "local");
+    let text = build_indexing_text(&[idle], 1_000_000);
+    assert!(!text.contains("overall:"), "got: {text}");
 }
 
 /// A drive being covered in phases answers a different question than one being

@@ -199,6 +199,37 @@ describe('createVolumeSpace', () => {
     expect(ctl.volumeSpace).toEqual(fresher)
   })
 
+  /**
+   * ❗ A remote volume's path (`sftp://…`) isn't in the mount table, so the fetch
+   * answers `null`, and its figure comes only from the poller. A slow `null`
+   * landing after that figure blanked the readout again.
+   */
+  it('keeps a live figure when the fetch for the same volume can’t tell', async () => {
+    let cb: ((p: VolumeSpaceChanged) => void) | undefined
+    ipc.onVolumeSpaceChanged.mockImplementation((fn: typeof cb) => {
+      cb = fn
+      return Promise.resolve(vi.fn())
+    })
+    let answerNull!: (value: { data: null }) => void
+    ipc.getVolumeSpace.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          answerNull = resolve
+        }),
+    )
+    volume = { id: 'sftp-nas', path: 'sftp://ada@nas:22/srv', isDiskImage: false, isLive: true }
+    const ctl = setup()
+    ctl.startListening()
+    await vi.waitFor(() => {
+      expect(cb).toBeDefined()
+    })
+    cb?.({ volumeId: 'sftp-nas', space: share })
+    answerNull({ data: null })
+    await Promise.resolve()
+    await Promise.resolve()
+    expect(ctl.volumeSpace).toEqual(share)
+  })
+
   it('cleanup drops the listener and unwatches this pane', async () => {
     const unlisten = vi.fn()
     ipc.onVolumeSpaceChanged.mockResolvedValue(unlisten)

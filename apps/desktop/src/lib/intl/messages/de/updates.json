@@ -80,6 +80,14 @@
   "@updates.status.installing": {
     "sourceHash": "214ef12"
   },
+  "updates.status.managedOff": "Deine Organisation verwaltet die Updates für Cmdr.",
+  "@updates.status.managedOff": {
+    "sourceHash": "aa342dc"
+  },
+  "updates.status.heldByPolicy": "Cmdr {available} ist erschienen, aber deine Organisation hält diesen Mac bei {ceiling} oder einer früheren Version.",
+  "@updates.status.heldByPolicy": {
+    "sourceHash": "5c9b196"
+  },
   "updates.status.ready": "Update v{next} bereit. Zum Anwenden neu starten.",
   "@updates.status.ready": {
     "sourceHash": "2c226ff"

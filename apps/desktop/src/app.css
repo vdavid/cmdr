@@ -59,21 +59,38 @@
   --color-sidebar-border: rgba(255, 255, 255, 0.95);
   --shadow-sidebar: 6px 0 18px rgba(0, 0, 0, 0.04), 0 2px 8px rgba(0, 0, 0, 0.03);
 
-  /* === Frosted-glass material (tooltips, filter-chip popovers, the volume selector) ===
+  /* === Frosted-glass material (menus, selects, popovers, toasts, tooltips) ===
      Shared values so every glass surface in the app reads as one material.
-     `--color-bg-glass` is the translucent fill (pre-blur); `--color-border-glass`
-     is the hairline that defines the surface against any wallpaper underneath.
-     The blur itself is applied per-component via `backdrop-filter: saturate(180%) blur(20px)`.
-     When reduce-transparency is active both tokens flip to opaque in one place (see the
+     `--glass-tint` mirrors the macOS 27 Appearance > Liquid Glass slider, 0 clearest to
+     1 most tinted, set on `<html>` by `$lib/glass-material` (0.5, the slider's middle
+     notch, when macOS reports none). The fill's opacity and the blur both grow with it,
+     matching how native menus change along the slider. Endpoints tuned by eye against a
+     native (muda) context menu over the file list.
+     `--color-bg-glass` is the translucent fill (pre-blur), `--glass-backdrop` the
+     `backdrop-filter` every glass rule uses, `--color-border-glass` the hairline that
+     defines the surface against anything underneath, and `--shadow-glass-rim` the faint
+     specular top edge Liquid Glass has.
+     When reduce-transparency is active the tokens flip to opaque in one place (see the
      `html.reduce-transparency` block near the end of this file), and each glass rule drops its own blur. */
-  --color-bg-glass: rgba(245, 245, 245, 0.72);
+  --glass-tint: 0.5;
+  --glass-rgb: 245 245 245;
+  --color-bg-glass: rgb(var(--glass-rgb) / calc(0.45 + 0.47 * var(--glass-tint)));
+  --glass-backdrop: saturate(180%) blur(calc(16px + 16px * var(--glass-tint)));
   --color-border-glass: rgba(0, 0, 0, 0.12);
-  /* Tooltips only: the shared glass fill nudged 10% toward black (light) / white
-     (dark), so a tooltip separates from whatever surface it floats over instead of
-     melting into it. Derived from `--color-bg-glass` rather than hardcoded, so it
-     follows the reduce-transparency flip to an opaque fill for free. Filter-chip
-     popovers and the volume dropdown keep the untinted glass. */
-  --color-bg-tooltip: color-mix(in srgb, var(--color-bg-glass), black 10%);
+  --shadow-glass-rim: inset 0 0.5px 0 rgba(255, 255, 255, 0.7);
+  /* A floating glass surface (menu, select list): a wide soft fall plus a tight contact
+     shadow, like a native menu. */
+  --shadow-glass: 0 12px 32px rgba(0, 0, 0, 0.16), 0 2px 8px rgba(0, 0, 0, 0.1);
+  /* Tooltips keep the fixed fill they always had rather than following the slider: short
+     text over anything needs the steadier backing. Nudged 10% toward black (light) / white
+     (dark), so a tooltip separates from whatever surface it floats over instead of melting
+     into it. `--color-bg-glass-steady` flips opaque under reduce-transparency, so the
+     tooltip does too. */
+  --color-bg-glass-steady: rgb(var(--glass-rgb) / 0.72);
+  --color-bg-tooltip: color-mix(in srgb, var(--color-bg-glass-steady), black 10%);
+  /* Tooltips sit on a strong, tight shadow like native macOS ones, so the small surface
+     lifts clearly off busy content. */
+  --shadow-tooltip: 0 4px 12px rgba(0, 0, 0, 0.22), 0 1px 3px rgba(0, 0, 0, 0.18);
 
   /* === Borders === */
   --color-border-strong: #bbb;
@@ -220,6 +237,11 @@
      which is what keeps the X equidistant from the top and right edges. */
   --radius-toast: 12px;
   --spacing-toast: 14px;
+  /* Toasts are glass too (the `--color-toast-*-bg` tints mixed toward transparent, then
+     blurred), but with a higher floor than a menu: a toast holds a paragraph of text over a
+     busy file list, and native notifications stay fairly opaque even on the clearest
+     setting. Goes to 100% under reduce-transparency. */
+  --glass-toast-opacity: calc(62% + 33% * var(--glass-tint));
   /* A step above `--shadow-md`: a toast floats over busy file lists, not a calm canvas. */
   --shadow-toast: 0 12px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08);
   /* The "done" green the license, updates, and onboarding screens use for success text. */
@@ -447,6 +469,9 @@
   /* Mid-large radius — used for "card" elements inside translucent windows
      (e.g., the settings-window sidebar). */
   --radius-xl: 20px;
+  /* Menu surfaces (context menus, the volume selector, select lists): the rounder corner of
+     a macOS 26+ menu, measured off a native context menu. */
+  --radius-menu: 12px;
   /* Window-level radius. Mirrors the `windowEffects.radius` set in
      `settings-window.ts` so the webview's content clips at the same curve
      the NSWindow does (no square-corner vibrancy leak). Matches Apple's
@@ -731,10 +756,13 @@
     --shadow-sidebar: none;
 
     /* Frosted-glass material (dark). Pair with the light-mode defaults above. */
-    --color-bg-glass: rgba(42, 42, 42, 0.72);
-    --color-border-glass: rgba(255, 255, 255, 0.1);
+    --glass-rgb: 46 46 46;
+    --color-border-glass: rgba(255, 255, 255, 0.14);
+    --shadow-glass-rim: inset 0 0.5px 0 rgba(255, 255, 255, 0.12);
+    --shadow-glass: 0 12px 32px rgba(0, 0, 0, 0.45), 0 2px 8px rgba(0, 0, 0, 0.3);
     /* Tooltip tint lifts instead of deepens on a dark canvas (see the light twin). */
-    --color-bg-tooltip: color-mix(in srgb, var(--color-bg-glass), white 10%);
+    --color-bg-tooltip: color-mix(in srgb, var(--color-bg-glass-steady), white 10%);
+    --shadow-tooltip: 0 4px 14px rgba(0, 0, 0, 0.55), 0 1px 3px rgba(0, 0, 0, 0.45);
 
     /* === Borders === */
     --color-border-strong: #555555;
@@ -992,8 +1020,8 @@
 /* === Reduced transparency ===
    When macOS "Reduce transparency" is on, flip every translucent material to a plain opaque
    fill. Redefines the shared tokens to their nearest opaque, theme-aware equivalents (so it's
-   correct in light, dark, and high-contrast without per-theme duplication); each glass surface
-   separately drops its own `backdrop-filter` in a matching media block at its rule site. Placed
+   correct in light, dark, and high-contrast without per-theme duplication), and turns the shared
+   `--glass-backdrop` blur off, so a surface using the tokens needs no rule of its own. Placed
    after every theme block above so it wins the cascade whenever reduced-transparency is active.
    The Settings / Debug windows ALSO drop their native `NSVisualEffectView` material and open
    opaque — that half lives in `settings-window.ts` / `debug-window.ts` (CSS can't reach the
@@ -1002,6 +1030,9 @@
    and the floating sidebar card becomes a flat `--color-bg-secondary`. */
 html.reduce-transparency {
   --color-bg-glass: var(--color-bg-secondary);
+  --color-bg-glass-steady: var(--color-bg-secondary);
+  --glass-backdrop: none;
+  --glass-toast-opacity: 100%;
   --color-border-glass: var(--color-border);
   --color-bg-settings-primary: var(--color-bg-primary);
   --color-bg-sidebar-from: var(--color-bg-secondary);

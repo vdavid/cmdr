@@ -45,6 +45,19 @@ describe('pingCronHealth', () => {
     expect(calls[0]?.url).toBe('https://hc-ping.com/abc/fail')
   })
 
+  // Regression anchor: CodeQL `js/polynomial-redos`. `/\/+$/` retries from every slash, so a long
+  // run of slashes that doesn't end the string took quadratic time.
+  it('trims trailing slashes in linear time, even on a long run of inner slashes', async () => {
+    const calls = stubFetch()
+    const url = `https://hc-ping.com/${'/'.repeat(200_000)}abc//`
+
+    const start = performance.now()
+    await pingCronHealth(url, [])
+
+    expect(performance.now() - start).toBeLessThan(500)
+    expect(calls[0]?.url).toBe(url.slice(0, -2))
+  })
+
   it('stays quiet when the ping itself throws, so it can never take the cron down', async () => {
     stubFetch(() => Promise.reject(new Error('network is down')))
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined)

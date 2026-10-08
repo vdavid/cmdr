@@ -6,7 +6,7 @@ import { load, type Store } from '@tauri-apps/plugin-store'
 import { emit, listen, type UnlistenFn } from '@tauri-apps/api/event'
 import type { SettingId, SettingsValues } from './types'
 import { SettingValidationError } from './types'
-import { getDefaultValue, settingsRegistry, validateSettingValue } from './settings-registry'
+import { getDefaultValue, getSettingDefinition, settingsRegistry, validateSettingValue } from './settings-registry'
 import { resolveStorePath } from './store-path'
 import { SCHEMA_VERSION, migrateSettings } from './settings-migrations'
 import { getAppLogger } from '$lib/logging/logger'
@@ -22,6 +22,13 @@ import {
   persistRestrictedWindowSetting,
   recordSettingsDefaults,
 } from '$lib/tauri-commands/settings'
+import {
+  getSettingLock,
+  initManagedPolicy,
+  settingLockIn,
+  type ManagedPolicyChange,
+} from '$lib/managed-policy/managed-policy.svelte'
+import { lockAllowsWrite, lockedValue } from '$lib/managed-policy/overlay'
 
 const log = getAppLogger('settings')
 
@@ -189,6 +196,10 @@ export async function initializeSettings(options?: { restrictedWindow?: boolean 
     // Listen for cross-window setting changes
     await setupCrossWindowListener()
 
+    // The organization's policy, BEFORE `initialized`: no reader ever sees a value the policy
+    // overrides. Never throws (a failed fetch shows nothing as managed; the backend still refuses).
+    await initManagedPolicy(applyPolicyChange)
+
     // Push the registry's default map to the backend so error-report manifests can
     // resolve `null`-shaped settings against the live registry instead of duplicating
     // defaults in Rust. Best-effort: a failure here only affects manifest resolution,
@@ -293,6 +304,7 @@ async function setupCrossWindowListener(): Promise<void> {
     // value so this window also resolves to the registry default, and drop it from
     // the ledger so our own next save doesn't re-persist it. Any other shape (an
     // explicit set, or a legacy payload without the flag) marks it explicit.
+    const before = effectiveValue(id as SettingId)
     if (!explicit) {
       settingsCache.delete(id)
       explicitlySet.delete(id as SettingId)
@@ -301,8 +313,11 @@ async function setupCrossWindowListener(): Promise<void> {
       explicitlySet.add(id as SettingId)
     }
 
-    // Notify local listeners
-    notifyListeners(id as SettingId, value as SettingsValues[SettingId])
+    // Notify local listeners with what the setting now READS as. Under a managed lock that can
+    // be unchanged whatever the other window stored, and then there's nothing to tell.
+    const after = effectiveValue(id as SettingId)
+    if (getSettingLock(id) !== undefined && isUnchanged(before, after)) return
+    notifyListeners(id as SettingId, after)
   })
 
   log.debug('Cross-window settings listener ready')
@@ -336,12 +351,51 @@ export function getSetting<K extends SettingId>(id: K): SettingsValues[K] {
     return getDefaultValue(id)
   }
 
-  const cached = settingsCache.get(id)
-  if (cached !== undefined) {
-    return cached as SettingsValues[K]
-  }
+  return effectiveValue(id)
+}
 
-  return getDefaultValue(id)
+/**
+ * What `id` reads as: the organization's policy over what the store holds. The policy overlays, it
+ * never replaces (nothing here writes), so removing the profile brings the person's value back.
+ */
+function effectiveValue<K extends SettingId>(id: K): SettingsValues[K] {
+  return lockedValue(getSettingLock(id), storedValue(id)) as SettingsValues[K]
+}
+
+/**
+ * Whether the organization's policy changed what `id` reads: `getSetting` returns a value the person
+ * (or the default) doesn't hold. A flow that preselects from a read and writes the answer back must
+ * not write such a value unless the person picked it, or the policy's display becomes their choice.
+ */
+export function isOverriddenByPolicy(id: SettingId): boolean {
+  return !isUnchanged(effectiveValue(id), storedValue(id))
+}
+
+/** What the store holds for `id`, or its registry default: the value before any managed lock. */
+function storedValue<K extends SettingId>(id: K): SettingsValues[K] {
+  const cached = settingsCache.get(id)
+  return cached !== undefined ? (cached as SettingsValues[K]) : getDefaultValue(id)
+}
+
+/**
+ * A policy change: tell each listener whose setting now READS differently, once, with the new
+ * value, so hot-apply (`settings-applier.ts`) re-pushes it. Nothing is persisted, and nothing goes
+ * cross-window: every window gets the same backend event and applies it itself.
+ */
+function applyPolicyChange({ previous, next }: ManagedPolicyChange): void {
+  const ids = new Set([...previous.lockedSettings, ...next.lockedSettings].map((locked) => locked.id))
+  for (const id of ids) {
+    if (getSettingDefinition(id) === undefined) {
+      log.warn('The managed policy locks {id}, which this build has no setting for', { id })
+      continue
+    }
+    const stored = storedValue(id as SettingId)
+    const before = lockedValue(settingLockIn(previous, id), stored)
+    const after = lockedValue(settingLockIn(next, id), stored)
+    if (!isUnchanged(before, after)) {
+      notifyListeners(id as SettingId, after as SettingsValues[SettingId])
+    }
+  }
 }
 
 /**
@@ -380,6 +434,13 @@ export function setSetting<K extends SettingId>(id: K, value: SettingsValues[K])
 
   // Validate the value
   validateSettingValue(id, value)
+
+  // The organization's policy rules this value out. Its row is disabled and MCP refuses before
+  // getting here (`managed_policy::refuses_write`), so this is the backstop, not the gate.
+  if (!lockAllowsWrite(getSettingLock(id), value)) {
+    log.info('setSetting({id}): refused, the organization manages this setting', { id })
+    return
+  }
 
   // Idempotency: skip the cascade when nothing actually changed.
   if (isUnchanged(settingsCache.get(id), value)) {
@@ -471,6 +532,12 @@ export function seedSettingForE2E<K extends SettingId>(id: K, value: SettingsVal
  * other windows revert), tagged `explicit: false` so receivers unset it too.
  */
 export function resetSetting(id: SettingId): void {
+  // A pinned setting keeps the person's own stored choice for when the policy goes away.
+  if (getSettingLock(id)?.kind === 'fixed') {
+    log.info('resetSetting({id}): refused, the organization manages this setting', { id })
+    return
+  }
+
   const wasExplicit = explicitlySet.delete(id)
   const hadCachedValue = settingsCache.has(id)
   if (!wasExplicit && !hadCachedValue) {
@@ -479,7 +546,9 @@ export function resetSetting(id: SettingId): void {
   }
 
   settingsCache.delete(id)
-  const defaultValue = getDefaultValue(id)
+  // What the setting now reads as: the default, or a narrowed setting's fallback if the default
+  // is a value the policy rules out.
+  const defaultValue = effectiveValue(id)
 
   if (restrictedWindowMode) {
     // The viewer has no reset affordance; keep the unset session-only rather than
@@ -503,12 +572,11 @@ export function isExplicitlySet(id: SettingId): boolean {
 }
 
 /**
- * Check if a setting has been modified from its default value.
+ * Check if a setting has been modified from its default value. Compares what the STORE holds, so a
+ * managed lock never makes a setting look modified (nobody changed it).
  */
 export function isModified(id: SettingId): boolean {
-  const current = getSetting(id)
-  const defaultVal = getDefaultValue(id)
-  return current !== defaultVal
+  return storedValue(id) !== getDefaultValue(id)
 }
 
 // ============================================================================

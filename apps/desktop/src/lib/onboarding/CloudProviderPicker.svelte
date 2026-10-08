@@ -21,14 +21,20 @@
      * Earlier this list used a roving `tabindex` and moved real focus onto each option,
      * which made Tab feel like it was "captured" inside the list and coupled selection to
      * focus. The activedescendant pattern fixes both.
+     *
+     * A service the organization's policy refuses (`isRefused`, from `followPresetHostVerdicts`)
+     * stays listed with the reason beside its name, `aria-disabled`, and out of reach: a click,
+     * the arrow keys, and type-to-jump all step over it.
      */
 
     interface Props {
         value: string
         onChange: (providerId: string) => void
+        /** Whether the organization's policy refuses this service. Nothing is refused by default. */
+        isRefused?: (providerId: string) => boolean
     }
 
-    const { value, onChange }: Props = $props()
+    const { value, onChange, isRefused = () => false }: Props = $props()
 
     const TYPE_TO_JUMP_RESET_MS = 700
 
@@ -62,6 +68,14 @@
         return cloudProviderPresets.findIndex((p) => p.id === providerId)
     }
 
+    /** The nearest service the person may pick, walking from `from` by `step`; `-1` when none. */
+    function pickableFrom(from: number, step: 1 | -1): number {
+        for (let i = from; i >= 0 && i < cloudProviderPresets.length; i += step) {
+            if (!isRefused(cloudProviderPresets[i].id)) return i
+        }
+        return -1
+    }
+
     async function selectByIndex(index: number): Promise<void> {
         if (index < 0 || index >= cloudProviderPresets.length) return
         const preset = cloudProviderPresets[index]
@@ -78,28 +92,28 @@
         if (event.key === 'ArrowDown') {
             event.preventDefault()
             event.stopPropagation()
-            void selectByIndex(Math.min(current + 1, cloudProviderPresets.length - 1))
+            void selectByIndex(pickableFrom(current + 1, 1))
             clearTypeBuffer()
             return
         }
         if (event.key === 'ArrowUp') {
             event.preventDefault()
             event.stopPropagation()
-            void selectByIndex(Math.max(current - 1, 0))
+            void selectByIndex(pickableFrom(current - 1, -1))
             clearTypeBuffer()
             return
         }
         if (event.key === 'Home') {
             event.preventDefault()
             event.stopPropagation()
-            void selectByIndex(0)
+            void selectByIndex(pickableFrom(0, 1))
             clearTypeBuffer()
             return
         }
         if (event.key === 'End') {
             event.preventDefault()
             event.stopPropagation()
-            void selectByIndex(cloudProviderPresets.length - 1)
+            void selectByIndex(pickableFrom(cloudProviderPresets.length - 1, -1))
             clearTypeBuffer()
             return
         }
@@ -111,7 +125,9 @@
             if (ch === ' ' || ch === '\t') return
             typeBuffer += ch
             bumpTypeBufferTimer()
-            const hitIndex = cloudProviderPresets.findIndex((p) => p.name.toLowerCase().startsWith(typeBuffer))
+            const hitIndex = cloudProviderPresets.findIndex(
+                (p) => p.name.toLowerCase().startsWith(typeBuffer) && !isRefused(p.id),
+            )
             if (hitIndex >= 0) {
                 event.preventDefault()
                 event.stopPropagation()
@@ -121,6 +137,7 @@
     }
 
     function handleClick(providerId: string): void {
+        if (isRefused(providerId)) return
         if (providerId !== value) onChange(providerId)
     }
 </script>
@@ -139,14 +156,20 @@
             id={optionId(preset.id)}
             class="provider-option"
             class:active={preset.id === value}
+            class:refused={isRefused(preset.id)}
             role="option"
             aria-selected={preset.id === value}
+            aria-disabled={isRefused(preset.id) ? 'true' : undefined}
             data-provider-id={preset.id}
             onclick={() => {
                 handleClick(preset.id)
             }}
         >
-            <span class="provider-name">{preset.name}</span>
+            <span class="provider-name"
+                >{preset.name}{#if isRefused(preset.id)}<span class="provider-note">
+                        — {tString('ai.managed.serviceNotAllowed')}</span
+                    >{/if}</span
+            >
         </li>
     {/each}
 </ul>
@@ -199,5 +222,17 @@
 
     .provider-name {
         display: block;
+    }
+
+    .provider-option.refused {
+        color: var(--color-text-tertiary);
+    }
+
+    .provider-option.refused:hover {
+        background: transparent;
+    }
+
+    .provider-note {
+        font-size: var(--font-size-xs);
     }
 </style>

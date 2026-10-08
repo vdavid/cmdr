@@ -5,7 +5,7 @@ filtering**: the file is locked at Debug, the terminal defaults to Info.
 
 ## Module map
 
-- **`mod.rs`**: log-dir and keep-count state, log-file listing and pruning (DETAILS § "What lives in `mod.rs`")
+- **`mod.rs`**: log-dir and keep-count state, debug-log path, log-file listing and pruning (DETAILS § "What lives in `mod.rs`")
 - **`startup.rs`**: `init`, the one call `lib.rs` makes at startup (DETAILS § "Startup sequence")
 - **`dispatch.rs`**: `init` (builds + installs the fern tree), `set_stdout_threshold` / `stdout_threshold`, and
   `write_terminal_line` (the terminal line format)
@@ -45,8 +45,8 @@ Dispatch-tree shape, why fern + file-rotate, timestamp formats, and decisions: `
   ever-changing number lands in the file dedup key, so floods coalesce less: accepted debug-mode tradeoff.
 - **Cap = 0 disables the file chain entirely** (`init` skips it). The terminal and the verbose toggle still work; the
   error bundle ships an empty `logs/`.
-- **`file-rotate` bakes keep-N at startup; it can't be reconfigured live.** `set_keep_count` / `eager_prune` update the
-  in-RAM count and delete excess files now, but restart-to-apply stands (DETAILS § "Cap changes at runtime").
+- **`file-rotate` bakes keep-N at startup.** `set_keep_count` / `eager_prune` act now; restart-to-apply stands (DETAILS §
+  "Cap changes at runtime"). ❌ So `keep_count()` never means "this session writes a file": `debug_log_path()` does.
 - **Trust mtime, not the filename, for log ordering**: `file-rotate` uses `.1`, `.2`, … suffixes, not timestamps.
   Anything off the active-file pattern, legacy `Cmdr_<timestamp>.log` included, is swept at startup (DETAILS § "What
   lives in `mod.rs`").

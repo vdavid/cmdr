@@ -558,11 +558,6 @@ export async function setSmbAccountPreference(serverName: string, username: stri
   return await commands.setSmbAccountPreference(serverName, username)
 }
 
-export async function removeManualServer(serverId: string): Promise<void> {
-  const res = await commands.removeManualServer(serverId)
-  if (res.status === 'error') throwIpcError(res.error)
-}
-
 /**
  * Tells the backend the user took a network action: opening the Servers view,
  * "Connect to server…", or upgrading a mounted share to direct smb2. It brings back

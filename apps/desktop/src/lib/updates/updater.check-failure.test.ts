@@ -10,16 +10,19 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ServerRequestError } from '$lib/ipc/bindings'
 import { ServerRequestFailure } from '$lib/error-messages/server-request'
+import { UpdateDownloadFailure } from './update-download-failure'
 
-const { checkForUpdateMock, logger } = vi.hoisted(() => ({
+const { checkForUpdateMock, downloadUpdateMock, installUpdateMock, logger } = vi.hoisted(() => ({
   checkForUpdateMock: vi.fn(),
+  downloadUpdateMock: vi.fn(() => Promise.resolve()),
+  installUpdateMock: vi.fn(() => Promise.resolve()),
   logger: { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() },
 }))
 
 vi.mock('$lib/tauri-commands', () => ({
   checkForUpdate: checkForUpdateMock,
-  downloadUpdate: vi.fn(() => Promise.resolve()),
-  installUpdate: vi.fn(() => Promise.resolve()),
+  downloadUpdate: downloadUpdateMock,
+  installUpdate: installUpdateMock,
   updateWriteBlocker: vi.fn(() => Promise.resolve(null)),
   updateCheckDueIn: vi.fn(() => Promise.resolve(0)),
   recordUpdateCheck: vi.fn(() => Promise.resolve()),
@@ -74,7 +77,7 @@ describe('a failed update check', () => {
     await checkForUpdates('poll')
     expect(logger.warn).toHaveBeenCalledOnce()
 
-    checkForUpdateMock.mockResolvedValueOnce(null)
+    checkForUpdateMock.mockResolvedValueOnce({ kind: 'upToDate' })
     await checkForUpdates('poll')
     expect(updateState.failure).toBeNull()
 
@@ -92,5 +95,64 @@ describe('a failed update check', () => {
 
     expect(logger.error).toHaveBeenCalledOnce()
     expect(logger.warn).not.toHaveBeenCalled()
+  })
+})
+
+/**
+ * Download and install failures go through the same level rule as the check: a download the network or the host's
+ * bad moment stopped stays at warn, so it never auto-sends an error report, while a signature mismatch, a disk
+ * failure, or an install that broke stays at error.
+ */
+describe('a failed update download or install', () => {
+  const anUpdate = { kind: 'available', version: '0.29.0' } as const
+
+  beforeEach(() => {
+    _resetUpdaterStateForTest()
+    vi.clearAllMocks()
+    checkForUpdateMock.mockResolvedValue(anUpdate)
+  })
+
+  afterEach(() => {
+    _resetUpdaterStateForTest()
+  })
+
+  it('logs a download the network stopped at warn', async () => {
+    downloadUpdateMock.mockRejectedValueOnce(new UpdateDownloadFailure({ type: 'request', failure: offline }))
+
+    await checkForUpdates('poll')
+
+    expect(logger.warn).toHaveBeenCalledOnce()
+    expect(logger.error).not.toHaveBeenCalled()
+    expect(updateState.failure).toEqual({ phase: 'download' })
+  })
+
+  it('logs a download the host turned down with a 404 at error, since the release is missing', async () => {
+    downloadUpdateMock.mockRejectedValueOnce(
+      new UpdateDownloadFailure({ type: 'request', failure: { type: 'refused', status: 404, detail: '' } }),
+    )
+
+    await checkForUpdates('poll')
+
+    expect(logger.error).toHaveBeenCalledOnce()
+  })
+
+  it('logs a signature mismatch at error', async () => {
+    downloadUpdateMock.mockRejectedValueOnce(
+      new UpdateDownloadFailure({ type: 'signatureMismatch', detail: 'Signature verification didn’t pass' }),
+    )
+
+    await checkForUpdates('poll')
+
+    expect(logger.error).toHaveBeenCalledOnce()
+    expect(logger.warn).not.toHaveBeenCalled()
+  })
+
+  it('logs a failed install at error', async () => {
+    installUpdateMock.mockRejectedValueOnce(new Error('rename into the bundle: permission denied'))
+
+    await checkForUpdates('poll')
+
+    expect(logger.error).toHaveBeenCalledOnce()
+    expect(updateState.failure).toEqual({ phase: 'install' })
   })
 })

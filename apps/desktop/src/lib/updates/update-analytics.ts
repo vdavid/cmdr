@@ -13,7 +13,7 @@
  */
 
 import { trackEvent } from '$lib/tauri-commands'
-import type { BundleWriteBlocker } from '$lib/tauri-commands'
+import type { BundleWriteBlocker, UpdateCheckTrigger } from '$lib/tauri-commands'
 
 /**
  * What became of one check.
@@ -33,6 +33,14 @@ export type UpdateCheckOutcome =
   | 'blocked'
   /** The check, the download, or the install didn't get there. */
   | 'failed'
+  /** The organization's `DisableUpdates`: the backend made no request. */
+  | 'updates_disabled_by_policy'
+  /** A newer release is out, but the organization's `MaxUpdateVersion` holds this install back. No versions ride. */
+  | 'held_by_policy'
+  /** The organization's `DisableAutomaticUpdateChecks` refused a background check. */
+  | 'automatic_checks_disabled_by_policy'
+  /** A policy that arrived after the check refused the download or install (`failure` says which). */
+  | 'blocked_by_policy'
 
 /** The typed reason behind a non-happy outcome, or `none`. ❌ Never a message. */
 export type UpdateCheckFailure =
@@ -49,24 +57,17 @@ export type UpdateCheckFailure =
   | 'read_only_volume'
 
 /**
- * What set this check going.
+ * What set this check going: `startup`, `poll`, `auto_check_on` (the `updates.autoCheck` switch or the onboarding
+ * wizard's step 3), `command` (menu, palette, shortcut), or `settings` (the Settings > Updates button). Defined in Rust
+ * (`updater::UpdateCheckTrigger`), since the backend also reads it to refuse a background check under the
+ * organization's `DisableAutomaticUpdateChecks`.
  *
  * Without it a burst of manual "Check for updates…" clicks and ordinary poll activity are the same
  * number, so "people are hunting for a fix" and "the loop is ticking" read alike. It's
  * `checkForUpdates()`'s first parameter and has no default, so a sixth entry point has to name
  * itself rather than quietly joining someone else's bucket.
  */
-export type UpdateCheckTrigger =
-  /** The one check `startUpdateChecker()` fires as the app comes up. */
-  | 'startup'
-  /** A background tick of the poll loop. */
-  | 'poll'
-  /** `updates.autoCheck` going from off to on (Settings switch, or the onboarding wizard's step 3). */
-  | 'auto_check_on'
-  /** The `app.checkForUpdates` command (menu, command palette, keyboard shortcut). */
-  | 'command'
-  /** The "Check for updates" button on Settings > Updates. */
-  | 'settings'
+export type { UpdateCheckTrigger }
 
 export interface UpdateCheckReport {
   trigger: UpdateCheckTrigger

@@ -143,7 +143,7 @@ impl Registration {
     /// by anything outside Cmdr, and only the registry has that evidence — nothing
     /// may probe a mount. Cheap and idempotent by contract, and it runs under the
     /// registry write lock, so an implementation must not reach back in here.
-    fn tell_volume_if_its_root_is_dead(&self) {
+    pub(super) fn tell_volume_if_its_root_is_dead(&self) {
         if self.active_root_is_dead() {
             self.volume.note_root_mount_gone();
         }

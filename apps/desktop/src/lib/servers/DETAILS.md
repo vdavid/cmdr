@@ -7,13 +7,14 @@ Depth for `CLAUDE.md`; read this before any non-trivial work here. Backend contr
 
 Three levels. Every rule in this file is a consequence of them.
 
-1. **Account**: an endpoint plus an identity. An SMB host, an SFTP `user@host:port`, a WebDAV URL plus a username, later
-   an S3 endpoint plus an access key or a Google account. It owns the credential, the trust (host keys, certificates,
+1. **Account**: an endpoint plus an identity. An SMB host, an SFTP `user@host:port`, a WebDAV URL plus a username, an S3
+   endpoint plus an access key ID, later a Google account. It owns the credential, the trust (host keys, certificates,
    refresh tokens), and the auto-reconnect switch. Saved, and never itself navigable.
-2. **Place**: the mountable thing under an account. An SMB share, an SFTP or WebDAV root, later an S3 bucket or a shared
-   drive. A place becomes a `VolumeInfo`, and it is what tabs, favorites, and paths point at. SFTP and WebDAV have
-   exactly one place per account; SMB and S3 have many, which is why the SMB host → shares step is the general shape
-   rather than an oddity.
+2. **Place**: the mountable thing under an account. An SMB share, an SFTP or WebDAV root, an S3 bucket or the account
+   root that lists the buckets, later a shared drive. A place becomes a `VolumeInfo`, and it is what tabs, favorites,
+   and paths point at. SFTP and WebDAV have exactly one place per account; SMB and S3 have many, which is why the SMB
+   host → shares step is the general shape rather than an oddity (`../file-explorer/network/DETAILS.md` § "The pure
+   modules beside it" has the hub's account → places rows).
 3. **Pin**: whether a place shows in the volume switcher.
 
 ❗ **Why three levels and not "a server is a volume".** A server is not plugged in, and nothing else reminds a person it
@@ -43,9 +44,12 @@ scrolls past their own disks. The pin IS the cap, and the user holds it.
 ## The path grammar
 
 An SFTP place's app-facing paths are `sftp://<user>@<host>:<port>/<server path>`; a WebDAV place's are
-`webdav://<user>@<host>:<port>/<remote path>`. `server-path-utils.ts` is the frontend's reader and writer; the Rust twin
-is `cmdr_fs::volume::remote_paths::RemoteRoot` (translation both ways) over the prefix
-`cmdr_fs::volume::ids::sftp_app_root` / `webdav_app_root` mints.
+`webdav://<user>@<host>:<port>/<remote path>`; an S3 place's are the ACCOUNT's,
+`s3://<access key id>@<host>:<port>/ <bucket>/<key>`, with a bucket place rooted at `…/<bucket>` and the account root at
+`…/`. `server-path-utils.ts` is the frontend's reader and writer; the Rust twin is
+`cmdr_fs::volume::remote_paths::RemoteRoot` (translation both ways) over the prefix `sftp_app_root` / `webdav_app_root`
+/ `s3_app_root` mints. ❗ The account root's trailing `/` is why containment goes through `isUnderServerRoot`, the twin
+of Rust's `server_volumes::path_is_under` (root trimmed first): a bare `${root}/` prefix refused every bucket under it.
 
 **Why a scheme and not a hint.** `commands/volumes.rs::resolve_path_to_volume` falls through to the mount table, which
 on both platforms walks up to `/` and answers the LOCAL root for any absolute path it doesn't recognize. So a
@@ -158,36 +162,54 @@ caller opens the host's places list.
 
 **Remember, and who decides where it starts.** `add`: on, because someone typing a password into a new server means to
 come back to it. `edit`: from `hasServerSecret`. `sign-in`: from the request's `remembered`, which the ❗ OPENER
-decides, ❌ never the sheet: whether the answer is worth what it costs is the protocol's business. SFTP and WebDAV ask
-`hasServerSecret`, because an attended sign-in REFRESHES a remembered secret and ❌ never seeds one, so a default-on box
-there would seed one the user already declined; the sheet is a moment a person is already waiting through, so the read
-is affordable there. SMB passes `true` unasked, because nothing is written until a sign-in works and its caller writes
-it, so a checked box promises nothing that hasn't been shown.
+decides, ❌ never the sheet: whether the answer is worth what it costs is the protocol's business. SFTP, WebDAV, and S3
+ask `hasServerSecret`, because an attended sign-in REFRESHES a remembered secret and ❌ never seeds one, so a default-on
+box there would seed one the user already declined; the sheet is a moment a person is already waiting through, so the
+read is affordable there. SMB passes `true` unasked, because nothing is written until a sign-in works and its caller
+writes it, so a checked box promises nothing that hasn't been shown.
 
 ❗ **The read is not cheaper for SFTP, and ❌ don't reason as if it were.** `has_sftp_credentials` is
 `network::keychain::has_credentials`, which is literally `get_credentials(server, share).is_ok()` — the same call
-`has_smb_credentials` makes. So the cost argument is about WHEN it is worth paying, ❌ never about which protocol. On a
-right-click it is not worth paying: `../file-explorer/navigation/server-row-actions.ts` offers "Forget saved password"
-on every server row and lets `forgetServerSecret`'s own answer word the empty case, rather than reading the Keychain to
-decide whether to draw a menu item.
+`has_server_secret` makes for an SMB host. So the cost argument is about WHEN it is worth paying, ❌ never about which
+protocol. On a right-click it is not worth paying: `../file-explorer/navigation/server-row-actions.ts` offers "Forget
+saved password" on every server row and lets `forgetServerSecret`'s own answer word the empty case, rather than reading
+the Keychain to decide whether to draw a menu item.
 
 **A flip is WRITTEN, before the round it belongs to.** `open-sign-in.ts`'s `withRememberFlip` wraps whichever attempt
 the standing picked, compares the box against what `hasServerSecret` answered, and writes once per flip: OFF →
 `forgetServerSecret` NOW, because `refresh_remembered_secret` writes wherever the store already holds something, so a
 mend over a live entry would put the just-declined password straight back; ON over an empty store →
-`saveSftpCredentials` / `saveWebdavCredentials` NOW, because an attended sign-in refreshes a remembered secret and never
-seeds one, so a box flipped on with nothing written would promise a thing that never happens. ❌ Neither ever happens as
-a side effect of a dial. ❗ A save the Keychain refuses (Deny on the prompt, a locked keychain, no secret service)
-answers `secret_not_stored` under the password field and runs no round: nothing was filed, so the local reading stays
-where it was and the next press writes again.
+`saveSftpCredentials` / `saveWebdavCredentials` / `saveS3Credentials` NOW, because an attended sign-in refreshes a
+remembered secret and never seeds one, so a box flipped on with nothing written would promise a thing that never
+happens. ❌ Neither ever happens as a side effect of a dial. ❗ A save the Keychain refuses (Deny on the prompt, a
+locked keychain, no secret service) answers `secret_not_stored` under the password field and runs no round: nothing was
+filed, so the local reading stays where it was and the next press writes again.
 
 ❗ **The writer takes the whole tuple the volume id is minted from** (`(host, port, username)` for SFTP, the base URL
 and the account for WebDAV), read off the place's `appRoot` rather than rebuilt from a host plus a default port: an
 entry written under a different key is one the dial never finds, and the box would be lying in the other direction. A
-place no saved server claims has no key to write under, so it has no writer.
+place no saved server claims has no key to write under, so it has no writer. S3's key is the ACCOUNT's (the provider
+choice plus the access key id, shared by every bucket under the key), which the listing doesn't carry: the writer reads
+the saved place (`knownS3PlaceOf`, matched by the `volumeId` the backend publishes, ❌ never a frontend hash).
 
 In EDIT mode there is nothing typed to save, so the box only ever forgets (`SignInSheet.svelte`'s `writeRememberFlip`);
 turning it on there rides the next successful sign-in's offer.
+
+**An S3 edit is the ACCOUNT's or a PLACE's** (`SignInSheet.svelte`'s `s3EditScope`). ❗ The account carries the name and
+the secret; a bucket reads as its own name and keeps only its "Reconnect automatically" switch
+(`src-tauri/src/network/DETAILS.md` § "The S3 twin, a place per entry").
+
+- **The account** (Edit on the account's hub row: `openEditServerSheet(server)`, no `placeVolumeId`): the Name field,
+  the provider and the key locked (`servers.sheet.identityLockedS3Account`), ❌ no Bucket field and ❌ no Advanced. It
+  reads the store and the Keychain through one of the account's places (`storeId`: they share the secret, and each
+  `SavedS3Place` carries the account's raw name), and Save renames through `updateSavedS3Account` (blank unnames it), ❌
+  never `updateSavedServer`, whose bucket-less target would save the account ROOT as a new place.
+- **A place** (Edit on a bucket or root row, the switcher's menu included:
+  `openEditServerSheet(server, placeVolumeId)`): the provider, the key, and the bucket locked
+  (`servers.sheet.identityLockedS3`), ❌ no Name field, Advanced with the place's own switch. Save sends the target with
+  a blank name, which leaves the account's name alone. The title is the place's listing name.
+
+A typed secret is the account's either way (`saveS3Credentials`).
 
 **Edit mode changes SETTINGS, ❌ never identity.** The address, the protocol toggle, and the username are locked, and
 `servers.sheet.identityLocked` sits under them saying to Forget and Add instead. Rust mints the volume id from
@@ -199,9 +221,12 @@ about sign-in mode, where username editability is the SHAPE VARIANT's property (
 **Edit mode's password field writes what it shows.** A non-empty value on Save goes through `saveSftpCredentials` /
 `saveWebdavCredentials` keyed on the target's tuple, and the Remember box then reports on, because the store holds one.
 An EMPTY field means "I didn't come here to change the password", ❌ never "store an empty one": the field opens empty
-every time, since a stored secret is never read back out of the Keychain to prefill it. The typed password is written
-LAST, after the Remember flip, so it wins over a box the same visit turned off: a password field with text in it and
-Save pressed stores that password. A flip or a write that breaks down after the edit saved answers
+every time, since a stored secret is never read back out of the Keychain to prefill it. ❗ So over a stored secret
+(`hasServerSecret` at open) it carries `servers.sheet.secretKeptPlaceholder` ("Saved in Keychain. Leave empty to keep
+it."), dropped while Remember is off, since Save then forgets it: a bare empty box read as "no password saved". One
+field serves SFTP, WebDAV, and S3 (`ServerFormFields`); an SMB host's edit has no password field. The typed password is
+written LAST, after the Remember flip, so it wins over a box the same visit turned off: a password field with text in it
+and Save pressed stores that password. A flip or a write that breaks down after the edit saved answers
 `saved_secret_not_updated` under the password field, ❌ never the dial's `unreachable`: the edit landed and no server
 was contacted, and Save again re-saves the same edit and retries the write.
 
@@ -230,11 +255,12 @@ hub and the switcher learn it (`apps/desktop/src-tauri/src/commands/DETAILS.md` 
 connected place's root moved: `../file-explorer/pane/DETAILS.md` § "A place whose root moved under the pane".
 
 **Edit mode's "this can't reconnect on its own" warning is the BACKEND's answer, ❌ never a derivation.**
-`getSftpUnattendedReconnect` / `getWebdavUnattendedReconnect` say whether an unattended reconnect can work as things
-stand, and the sheet asks when it RENDERS. ❌ Don't rebuild it from "auto-reconnect is on AND no secret is stored": the
-rung a remote volume comes back on is decided per dial, so a derivation goes stale the moment one lands elsewhere, and
-the two backends spell the same answer differently (`needs_stored_secret` vs `no_stored_secret`). The state worth
-warning about is the silent one: auto-reconnect on, nothing stored, so nothing can ever happen.
+`getSftpUnattendedReconnect` / `getWebdavUnattendedReconnect` / `getS3UnattendedReconnect` say whether an unattended
+reconnect can work as things stand, and the sheet asks when it RENDERS. ❌ Don't rebuild it from "auto-reconnect is on
+AND no secret is stored": the rung a remote volume comes back on is decided per dial, so a derivation goes stale the
+moment one lands elsewhere, and the two backends spell the same answer differently (`needs_stored_secret` vs
+`no_stored_secret`). The state worth warning about is the silent one: auto-reconnect on, nothing stored, so nothing can
+ever happen.
 
 **"Reconnect automatically" carries an `InfoTip` saying what it does NOT do** (`servers.sheet.autoReconnectHelp`). The
 switch only redials a session that DROPPED (`crates/cmdr-sftp/DETAILS.md` § "The two switches"); a saved place is dialed
@@ -250,9 +276,9 @@ and puts its trust button behind a disclosure. A `superseded` approval starts th
 presents rather than silently trusting the one on screen; an `unreachable` one records nothing, because approving is a
 live question and an unanswered one is not a yes.
 
-❗ **A changed host key on a REGISTERED volume shows no fingerprint.** No backend command hands the PENDING host-key
-prompt back for one, so the banner offers Disconnect and the fingerprint appears on the next open's dial
-(`../file-explorer/pane/DETAILS.md` § "The connect views").
+❗ **A changed host key on a REGISTERED volume has no fingerprint to show.** No backend command hands the PENDING
+host-key prompt back for one, so the banner's "Check the key" drops the session and redials, and the sheet shows that
+dial's prompt (`../file-explorer/pane/DETAILS.md` § "The connect views").
 
 ## The renderer table
 
@@ -269,13 +295,15 @@ SFTP.
   refuse a changed username, because the volume id IS the account.
 - `key_passphrase`: the same, with the field labelled for a key file's passphrase and `autocomplete="off"`, because a
   passphrase is not the account's password and autofill must not offer one.
+- `access_keys` (S3): the access key ID as the read-only header (labelled "Access key ID"), one "Secret access key"
+  field with `autocomplete="off"`. S3's `reconnect_with_credentials` refuses another key id: another key is another
+  account. No session token: temporary credentials are out of scope (`docs/specs/s3-support-plan.md`).
 - `username_password { guestAllowed }`: username editable, plus a guest `RadioGroup` where the share allows one. SMB's
   reconnect accepts a new username and rewrites its params, which is how re-auth-as-someone-else works. The field
   carries the "Example: barry" placeholder, so an empty box says what kind of thing goes in it; the remembered username
   (`../file-explorer/network/smb-sign-in.ts`) fills the VALUE when there is one, and the placeholder steps aside.
 
 **Reserved, ❌ not added until a producer exists** (`crates/cmdr-fs/src/volume/connection.rs` carries the same list):
-`access_keys { sessionToken }` for S3 (access key id, secret access key, optional session token) and
 `oauth { provider }` (a "Continue in your browser" button and a waiting state; "remember" is implicit, since the refresh
 token is the only sane state, and a revoked token surfaces as `needs_sign_in` behind the same banner).
 
@@ -295,7 +323,12 @@ token is the only sane state, and a revoked token surfaces as `needs_sign_in` be
   backend work (GitHub [#173](https://github.com/vdavid/cmdr/issues/173)).
 - `not_a_webdav_server`: the address answers HTTP but not WebDAV. The one refusal with a remedy button.
 - `invalid_url`: the saved address isn't a usable web address.
-- `timed_out` and `unreachable`: about the SERVER, so they name the host rather than the account.
+- `timed_out` and `unreachable`: about the SERVER, so they name the host rather than the account. An `unreachable` from
+  the Add probe may carry a `RefusalHint` (`local_network_permission`: this Mac refused the route to a LAN address,
+  which is also how a stuck Local Network permission shows, ERR-XGS9X). The sheet renders it as a softer second line
+  (`#server-address-hint`, `wordRefusalHint`) under the same sentence, only while the refusal it came with is on screen,
+  and Add anyway stays: a server that's off looks the same to the probe. Backend rule:
+  `src-tauri/src/network/DETAILS.md` § "This Mac refusing the route".
 - `host_key_untrusted` (from `needs_host_key_approval`): the sheet's key step is where the fingerprint is shown and
   approved.
 - `host_key_revoked`: deliberately final. No button can safely undo a revocation the user's own `known_hosts` records.
@@ -309,6 +342,24 @@ token is the only sane state, and a revoked token surfaces as `needs_sign_in` be
   Says how to sign in without storing it. ❌ Not `authentication_rejected`: no server was asked anything.
 - `saved_secret_not_updated`: edit mode, the settings saved and the password write didn't. Says the changes are saved,
   so nobody re-saves an edit that landed.
+- `access_denied` (S3): the bucket refused the key, which a bodyless 403 can't split into a wrong secret and a key with
+  no rights here (Garage answers a wrong secret this way too), so it asks about both. Under `secret`, and it opens the
+  sheet (`needsAHuman`), since a wrong secret is one thing it means.
+- `bucket_list_refused` (S3): the account root needs `ListBuckets` and this key may not (on some servers, a wrong secret
+  answers the same). Under `bucket`: typing a bucket is the way in. Stays in the pane, ❌ no sheet: no secret typed
+  there creates a bucket place.
+- `bucket_not_found` (S3): under `bucket`, naming the endpoint host.
+- `region_mismatch` (S3): under `region`, naming the bucket's region when the server did (the refused outcome's `region`
+  rides through `connect-flow` and the sheet to `RefusalSubject.region`). Add mode then offers "Use <region>", which
+  switches the field and retries; R2 and Hetzner have no region field, so they get the sentence only.
+- `clock_skewed` (S3): this Mac's clock is more than 15 minutes off. Under `form`: no field fixes it.
+- `not_an_s3_endpoint` (S3): under `address`, which for S3 is the field that makes the endpoint.
+- `s3_field_malformed` and `endpoint_malformed`: add mode's own checks before any round trip
+  (`s3-form.ts::s3FieldProblem`, the mirror of the backend's `invalid_url` for S3): a region, location, or account ID
+  outside `a–z 0–9 -`, and an Other endpoint that isn't `http(s)://host[:port]`.
+- **An S3 subject says "secret access key" where the others say "password"**: `RefusalSubject.protocol === 's3'` swaps
+  the five password sentences for their `servers.refusal.s3*` twins (`S3_REFUSAL_KEYS`), since an S3 account has no
+  password.
 
 **Whose name a refusal says.** In sign-in mode the sentence names the account the refused ROUND sent
 (`SignInSheet.svelte`'s `roundUsername`), and only the refusal the sheet opened with names `endpoint.username`. Where
@@ -316,26 +367,33 @@ the shape lets the username be edited, the account the sheet opened with may not
 "ada doesn't have access here" after `bob` was refused blames an account nobody tried. Add mode has the same rule for
 the host: an edit retires the refusal, since its sentence reads the live form.
 
+**A pane names a saved place by the name the user gave it.** `place-connect.svelte.ts` words its refusal through
+`wordPaneRefusal`, which says `unreachable` as `servers.paneState.unreachable` ("Cmdr couldn't reach Naspolya."),
+falling back to the host when the name is empty. Every other kind reads as in the sheet. The sheet and the Add form keep
+`servers.refusal.unreachable` with the host, since there the address is what the person typed and can fix.
+
 Keys live in `$lib/intl/messages/en/servers.json` under `servers.refusal.*`, reached through a `Record` in
 `connect-refusals.ts` rather than a built string, which is what keeps `desktop-message-keys-unused` honest without a
 dynamic-prefix entry. `$lib/error-messages/friendly-error-style.test.ts` renders all of them and holds them to the same
 writing rules the friendly-error copy obeys: they are error copy however they are filed.
 
-**A second `Record` says WHICH FIELD each sentence goes under** (`refusalField`): the secret for the four that are about
-a credential or storing it, the address for the four that are about the endpoint, the root folder or the start folder
-for the three that are about a folder, and the form for the six no field can fix. ❗ A refusal floating above a form
-reads as being about the whole form: "That password didn't work" under the password field is an instruction, and the
-same words above the address are a puzzle. ❗ Sign-in mode renders only the password field, so there every refusal that
-isn't `secret` reads in the form slot, ❌ never under a field that isn't on screen: a sign-in round refused as
-`unreachable` once showed no word at all.
+**A second `Record` says WHICH FIELD each sentence goes under** (`refusalField`): the secret for the ones about a
+credential or storing it, the address for the ones about the endpoint, the root folder or the start folder for the ones
+about a folder, S3's `region` and `bucket` for theirs, and the form for the ones no field can fix. For S3, whose form
+has no address, `address` is the field that makes the endpoint: Other's URL, else the preset's own field, which is also
+where a preset's `region` sentence lands (`S3EndpointFields.svelte`). ❗ A refusal floating above a form reads as being
+about the whole form: "That password didn't work" under the password field is an instruction, and the same words above
+the address are a puzzle. ❗ Sign-in mode renders only the password field, so there every refusal that isn't `secret`
+reads in the form slot, ❌ never under a field that isn't on screen: a sign-in round refused as `unreachable` once
+showed no word at all.
 
 ## Add mode, protocol first
 
-The form reads top to bottom: the SMB / SFTP / WebDAV toggle, the address, the name, then the protocol's own fields and
-Advanced. ❗ **Only the person moves the toggle, and it alone decides what gets dialed** (`serverTargetFrom` for SFTP
-and WebDAV, `smbAddressFrom` for SMB's hand-off). Typing into the address used to flip it: `sven@192.168.0.153`, typed
-for an SMB NAS, read as SFTP and dialed SSH on port 22 without anyone clicking SFTP, and the host key the Mac already
-trusted turned that into a quiet SSH session the user objected to (cmdr-reports#8).
+The form reads top to bottom: the SMB / SFTP / WebDAV / S3 toggle, the address (S3: § "S3 in add mode"), the name, then
+the protocol's own fields and Advanced. ❗ **Only the person moves the toggle, and it alone decides what gets dialed**
+(`serverTargetFrom` for SFTP, WebDAV, and S3, `smbAddressFrom` for SMB's hand-off). Typing into the address used to flip
+it: `sven@192.168.0.153`, typed for an SMB NAS, read as SFTP and dialed SSH on port 22 without anyone clicking SFTP, and
+the host key the Mac already trusted turned that into a quiet SSH session the user objected to (cmdr-reports#8).
 
 What the address says still earns a sentence: `addressLooksLike` answers which protocol it looks like when that isn't
 the selected one, and the sheet shows it under the field (`servers.sheet.addressLooksLike*`, `role="status"`). Two
@@ -410,6 +468,35 @@ a certificate happens in Keychain Access.
 
 There is no property-testing library on the frontend, so `address-parser.test.ts`'s example table IS the contract: a
 shape that reaches the field and isn't in it is a shape nobody decided.
+
+### S3 in add mode
+
+❗ **S3 has no address: the preset decides the endpoint.** With S3 selected, `S3EndpointFields.svelte` stands where the
+address was: a Provider select (Amazon S3, Cloudflare R2, Backblaze B2, Wasabi, Hetzner Object Storage, Other
+S3-compatible), then the one field that preset takes (AWS, B2, and Wasabi a region; R2 an account ID; Hetzner a location
+picked from fsn1 / nbg1 / hel1; Other an endpoint, an optional region, and "Use path-style addressing", on by default),
+then an optional Bucket. Its model is `s3-form.ts`, held under `ServerForm.s3`; `serverTargetFrom` builds the
+`S3ProviderChoice` from it, each preset carrying only its own field.
+
+- **Empty bucket = the account root**, which lists every bucket the key may see. A key that can't list buckets (one
+  scoped to a single bucket, common on R2) answers `bucket_list_refused` under the Bucket field, and typing a bucket is
+  the way in. ❗ So the field is optional only for an account-wide key, which is why it carries ❌ no "Optional"
+  placeholder: the help line says both cases, in every preset, and stays beside a refusal (hidden in edit mode, where
+  the bucket is locked).
+- **The access key ID is `username` and the secret access key is `secret`**, relabelled, both `autocomplete="off"`. So
+  the identity lock, Remember, and the Keychain plumbing are the ones every account uses, and a username an address
+  filled can't leak in: `applyParsedAddress` fills nothing while S3 is selected.
+- **The order is endpoint, then name, then credentials**, like the other protocols: Provider, its field, Bucket, Name
+  (the ACCOUNT's name, so its placeholder mirrors the backend's `<key>@<host>` stand-in through `s3HostOf`, whatever the
+  bucket; a typed name renames the account, a blank one leaves an already-named account alone), Access key ID, Secret
+  access key, Remember, and Advanced holding only "Reconnect automatically" (no root or start folder: the bucket is the
+  place).
+- **Checked before any round trip**: `s3FieldProblem` (§ "The refusal table"). Submit stays disabled until the key and
+  the preset's own field are typed.
+- **A pasted `s3://` app path is a prefill** (`s3FieldsFromAppPath`): Go to path on an S3 place nothing has saved opens
+  the sheet on S3 with the key, the preset its host names (else Other on `https://host[:port]`), and the bucket filled.
+- **Add anyway** saves through `updateSavedServer`, plus `saveS3Credentials` (the ACCOUNT's secret, shared by every
+  bucket under the key) when Remember is on.
 
 ## Saved SMB shares
 
@@ -490,9 +577,8 @@ whichever doc owns the item now; ❌ nothing here restates a mechanism.
   with no button that could work: GitHub [#173](https://github.com/vdavid/cmdr/issues/173), backend work.
 - **A property-testing library on the frontend.** `proptest` stays Rust-only, and `address-parser.test.ts`'s example
   table is the contract instead (§ "Add mode, protocol first").
-- **A fourth pane tint for the two new protocols.** `appearance.tintSmb` covers all three ("Tint server panes (SMB,
-  SFTP, WebDAV)"). A separate setting would be three definition sites, a section row, and two parity tests for a color
+- **A separate pane tint per server protocol.** `appearance.tintSmb` covers all four ("Tint server panes (SMB, SFTP,
+  WebDAV, S3)"). A separate setting would be three definition sites, a section row, and two parity tests for a color
   nobody asked to set apart.
-- **S3 and OAuth**, whose contracts shaped types that shipped and so are written beside those types: one more
-  `ServerTarget` arm (`apps/desktop/src-tauri/src/commands/DETAILS.md` § `servers.rs`), one more renderer (§ "The
-  renderer table"), and the two reserved `SignInShape` variants (`crates/cmdr-fs/src/volume/connection.rs`).
+- **OAuth**, whose contract shaped types that shipped and so is written beside those types: one more renderer (§ "The
+  renderer table") and the reserved `SignInShape` variant (`crates/cmdr-fs/src/volume/connection.rs`).

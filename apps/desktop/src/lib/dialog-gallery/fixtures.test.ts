@@ -63,7 +63,9 @@ describe('the sign-in sheet fixtures answer what their rows advertise', () => {
   const cases: [string, string][] = [
     ['add', 'refused'],
     ['add-prefilled', 'refused'],
+    ['add-s3', 'refused'],
     ['sign-in', 'refused'],
+    ['sign-in-s3', 'refused'],
     ['sign-in-guest', 'refused'],
     ['host-key-first-contact', 'connected'],
     ['host-key-changed', 'connected'],

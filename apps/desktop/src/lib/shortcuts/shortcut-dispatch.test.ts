@@ -60,14 +60,13 @@ vi.mock('$lib/commands/command-registry', () => ({
       showInPalette: false,
       shortcuts: ['⌘A'],
     },
-    // A Shift+digit default: `⇧8` is never what a layout types, so the matcher's
-    // physical-key fallback is what makes it bindable at all.
+    // A bare symbol default: `*` means the `*` key, however the layout types it.
     {
       id: 'selection.invert',
       name: 'Invert selection',
       scope: 'Main window/File list',
       showInPalette: true,
-      shortcuts: ['⇧8'],
+      shortcuts: ['*'],
     },
   ],
 }))
@@ -250,23 +249,36 @@ describe('shortcut-dispatch', () => {
       expect(eventMatchesCommand(optCmdA, 'selection.selectAll')).toBe(false)
     })
 
-    it('matches a ⇧<digit> default by the physical key, whatever the layout types', () => {
-      const usStar = new KeyboardEvent('keydown', { key: '*', code: 'Digit8', shiftKey: true })
+    it.each([
+      ['US ⇧8', { key: '*', code: 'Digit8', shiftKey: true }],
+      ["Swedish ⇧'", { key: '*', code: 'Backslash', shiftKey: true }],
+      ['the numpad', { key: '*', code: 'NumpadMultiply' }],
+      ['an AltGr-style ⌥ layout', { key: '*', code: 'Slash', altKey: true }],
+    ])('matches a bare * default typed on %s', (_layout, init) => {
+      expect(eventMatchesCommand(new KeyboardEvent('keydown', init), 'selection.invert')).toBe(true)
+    })
+
+    it('matches the key that types *, not a key position: Hungarian ⇧8 types ( and is no *', () => {
       const huParen = new KeyboardEvent('keydown', { key: '(', code: 'Digit8', shiftKey: true })
-      expect(eventMatchesCommand(usStar, 'selection.invert')).toBe(true)
-      expect(eventMatchesCommand(huParen, 'selection.invert')).toBe(true)
-    })
-
-    it('keeps the fallback exact: no Shift, another digit, or an extra modifier is not ⇧8', () => {
       const plainEight = new KeyboardEvent('keydown', { key: '8', code: 'Digit8' })
-      const shiftSeven = new KeyboardEvent('keydown', { key: '&', code: 'Digit7', shiftKey: true })
       const cmdShiftEight = new KeyboardEvent('keydown', { key: '*', code: 'Digit8', shiftKey: true, metaKey: true })
+      const cmdOptStar = new KeyboardEvent('keydown', { key: '*', code: 'Slash', altKey: true, metaKey: true })
+      expect(eventMatchesCommand(huParen, 'selection.invert')).toBe(false)
       expect(eventMatchesCommand(plainEight, 'selection.invert')).toBe(false)
-      expect(eventMatchesCommand(shiftSeven, 'selection.invert')).toBe(false)
       expect(eventMatchesCommand(cmdShiftEight, 'selection.invert')).toBe(false)
+      expect(eventMatchesCommand(cmdOptStar, 'selection.invert')).toBe(false)
     })
 
-    // The ⌥-modified punctuation family, one physical key over from ⇧8: macOS
+    it('never lets a fallback steal a combo another command binds exactly', () => {
+      // The numpad ⌥+ shape: `⌥*` belongs to one command, so it can't ALSO reach the
+      // bare `*` through the typed-character fallback.
+      customOverrides.set('selection.selectAll', ['⌥*'])
+      const optStar = new KeyboardEvent('keydown', { key: '*', code: 'NumpadMultiply', altKey: true })
+      expect(eventMatchesCommand(optStar, 'selection.selectAll')).toBe(true)
+      expect(eventMatchesCommand(optStar, 'selection.invert')).toBe(false)
+    })
+
+    // The ⌥-modified punctuation family: macOS
     // reports `±` for ⌥⇧=, and other layouts report their own character, so the
     // canonical `⌥⇧=` is only reachable through the physical-key fallback.
     // `['⌥⇧=', '⌥+']` is the select-same-kind spelling: main row plus numpad.

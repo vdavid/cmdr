@@ -33,11 +33,11 @@ cmdr-fs = { path = "../cmdr-fs" }
 # crate shipped eight breaking minors in eight months, so a bump has to be one
 # file's problem. `aws-lc-rs` is russh's default crypto backend and is already in
 # `Cargo.lock` through `rustls`.
-russh = "0.62.7"
+russh = "0.63.0"
 # The SFTP protocol engine over russh's channel stream. Modeled on
 # openssh-portable's own `sftp-client.c`, and the only candidate that both
 # negotiates `limits@openssh.com` and exposes per-extension predicates.
-openssh-sftp-client = "0.15.8"
+openssh-sftp-client = "0.15.10"
 serde = { version = "1", features = ["derive"] }
 # Type export for the Rust↔TS bindings: `SftpHostKey` and the connection outcome
 # cross IPC. Pinned to the EXACT same version the app uses, for the reason
@@ -67,7 +67,7 @@ futures-util = "0.3"
 [dev-dependencies]
 # Depending on ourselves turns the `testing` feature on for every DEV target and
 # leaves it off for the lib, so a shipped build carries no fixtures. Same shape
-# as `cmdr-smb`'s and the app's own self dev-dependency.
+# as `cmdr-smb`'s.
 cmdr-sftp = { path = ".", features = ["testing"] }
 # `InMemoryVolume` and the recording / scripted host-seam fakes this crate's
 # tests assert against.

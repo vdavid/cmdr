@@ -7,6 +7,7 @@ use std::time::Duration;
 
 use super::phases;
 use super::state::{self, Handover};
+use super::steps_ahead::StepsAhead;
 use crate::indexing::IndexPathSpace;
 use crate::indexing::deletes;
 use crate::indexing::events::{
@@ -66,10 +67,15 @@ pub(crate) struct IndexManager {
     /// Whether the watcher above covers only what a search walk covered, rather
     /// than the whole volume.
     ///
-    /// The two are mutually exclusive by construction — `ensure_branch_watch`
+    /// The two are mutually exclusive by construction — `plan_branch_watch`
     /// declines when a watcher is already running, and `start_scan` retires the
     /// branch set — so this says which of them is up, never both.
     pub(super) branch_watched: bool,
+    /// Whether a branch watch start is in flight off the registry lock
+    /// (`manager/branch_watch.rs`), so a second caller doesn't start another.
+    /// Shared with the start, which clears it however it ends, and compared by
+    /// pointer at install, which is what tells this manager from a successor.
+    branch_watch_starting: Arc<AtomicBool>,
     /// Live event processing task (runs after reconciliation completes).
     /// Shared with spawned async tasks so they can store the handle.
     live_event_task: Arc<std::sync::Mutex<Option<tokio::task::JoinHandle<()>>>>,
@@ -126,6 +132,10 @@ pub(super) struct ScanCalibration {
     /// What kind of run this is. Rides the started event so the frontend states
     /// it, and picks the calibration bucket the completion handler writes into.
     pub(super) run_kind: ScanRunKind,
+    /// What the steps after each one took last time on this kind of run, the
+    /// remembered half of the overall "~X left". All `None` for a run with no
+    /// plan to remember (a phased first index).
+    pub(super) steps_ahead: StepsAhead,
 }
 
 /// The live scan-progress fields `get_status` surfaces on `IndexStatusResponse`.
@@ -138,6 +148,7 @@ struct LiveScanCounters {
     scan_run_kind: Option<ScanRunKind>,
     prior_total_entries: Option<u64>,
     prior_scan_duration_ms: Option<u64>,
+    steps_ahead: StepsAhead,
 }
 
 /// Derive the live scan counters for `get_status` from the active scan's progress
@@ -159,6 +170,7 @@ fn live_scan_counters(
         scan_run_kind: calibration.map(|c| c.run_kind),
         prior_total_entries: calibration.and_then(|c| c.prior.total_entries),
         prior_scan_duration_ms: calibration.and_then(|c| c.prior.scan_duration_ms),
+        steps_ahead: calibration.map(|c| c.steps_ahead).unwrap_or_default(),
     }
 }
 
@@ -211,9 +223,15 @@ fn rescan_scanner_for_kind(kind: IndexVolumeKind) -> RescanScanner {
 /// predicate stays unchanged — a NAS rescan is slow, so keeping the partial visible
 /// is worth more there, and network partials are small.)
 ///
+/// `predates_policy`: rows written under an older exclusion policy
+/// (`scanner::index_predates_exclusion_policy`) are never reconciled over. A
+/// reconcile doesn't re-stamp the policy (it can't clear what an older one let
+/// in), so the index would stay distrusted, and every launch would route it back
+/// here. Only the truncating rebuild re-stamps it.
+///
 /// Pure so the boundary is unit-testable without an `AppHandle`.
-fn local_rescan_reconciles(entry_count: u64, prior_scan_completed: bool) -> bool {
-    entry_count > 1 && prior_scan_completed
+fn local_rescan_reconciles(entry_count: u64, prior_scan_completed: bool, predates_policy: bool) -> bool {
+    entry_count > 1 && prior_scan_completed && !predates_policy
 }
 
 /// Whether `resume_or_scan`'s local branch should replay the FSEvents journal on
@@ -259,30 +277,19 @@ fn should_replay_journal(
 /// now fired through the manager's own `Arc`). Mirrors `state::force_scan`'s
 /// extract-drop-run-reinsert flow.
 pub(in crate::indexing) async fn perform_registry_rescan(volume_id: &str, trigger: &str) {
-    let handover = state::off_the_registry(
-        volume_id,
-        |mgr| {
-            // Stop the current watcher + live loop (the fresh scan starts its own)
-            // while still under the lock — these are non-blocking.
-            if let Some(ref mut watcher) = mgr.drive_watcher {
-                watcher.stop();
-            }
-            mgr.drive_watcher = None;
-            mgr.branch_watched = false;
-            let mut task_guard = mgr.live_event_task.lock_ignore_poison();
-            if let Some(task) = task_guard.take() {
-                task.abort();
-            }
-        },
-        |mgr| {
-            // Off the lock: run the blocking-prelude scan start. The same door
-            // "Rescan now" goes through, so a volume the machine is still building
-            // has its phases restarted rather than its half-built index truncated.
-            if let Err(ref e) = mgr.cover_or_scan(trigger) {
-                log::warn!("Scanner rescan for '{volume_id}' failed to start: {e}");
-            }
-        },
-    );
+    let handover = state::off_the_registry(volume_id, |mgr| {
+        // Retire the current watcher and live loop (the fresh scan starts its own).
+        // Off the lock with the rest: stopping a watcher joins its run-loop thread.
+        if let Some(mut watcher) = mgr.retire_the_watcher() {
+            watcher.stop();
+        }
+        // The blocking-prelude scan start. The same door "Rescan now" goes
+        // through, so a volume the machine is still building has its phases
+        // restarted rather than its half-built index truncated.
+        if let Err(ref e) = mgr.cover_or_scan(trigger) {
+            log::warn!("Scanner rescan for '{volume_id}' failed to start: {e}");
+        }
+    });
     match handover {
         Err(e) => log::debug!("Scanner rescan for '{volume_id}' found nothing running: {e}"),
         Ok(Handover::Restored(())) => {}
@@ -338,6 +345,7 @@ impl IndexManager {
             work,
             drive_watcher: None,
             branch_watched: false,
+            branch_watch_starting: Arc::new(AtomicBool::new(false)),
             live_event_task: Arc::new(std::sync::Mutex::new(None)),
             events,
             ground_in_flux: Arc::new(AtomicBool::new(false)),
@@ -447,15 +455,16 @@ impl IndexManager {
             stored_event_id,
         );
         let current_id = if journal_replayable {
-            watcher::current_event_id()
+            watcher::current_event_id(&self.volume_root)
         } else {
             0
         };
         let journal_gap_too_wide = current_id > 0 && current_id > last_event_id + JOURNAL_GAP_THRESHOLD;
 
+        let has_rows = IndexStore::get_entry_count(read_conn).is_ok_and(|count| count > 1);
         let route = launch_route::launch_route(&launch_route::IndexOnDisk {
             scan_completed: status.scan_completed_at.is_some(),
-            has_rows: IndexStore::get_entry_count(read_conn).is_ok_and(|count| count > 1),
+            has_rows,
             has_covered_branches: branches::any_persisted(read_conn),
             journal_replayable,
             journal_gap_too_wide,
@@ -464,6 +473,8 @@ impl IndexManager {
             // deleted from can look perfectly finished. ❗ A read that FAILED counts as
             // set: `deletes::marker_reads_as_set` owns that call and says why.
             needs_rebuild: deletes::marker_reads_as_set(IndexStore::index_needs_rebuild(read_conn), &self.volume_id),
+            predates_exclusion_policy: has_rows
+                && scanner::index_predates_exclusion_policy(read_conn, self.path_space().exclusion_scope().tier()),
         });
 
         match route {
@@ -551,7 +562,24 @@ impl IndexManager {
     /// here: cancelling is a request, and the walk thread keeps writing until it
     /// notices. A scan started in that window would truncate under rows still
     /// being inserted, which is the one thing the claim exists to prevent.
+    #[cfg(test)]
     pub fn stop_scan(&mut self) {
+        if let Some(mut watcher) = self.end_the_scan() {
+            watcher.stop();
+        }
+        // Stopping a SCAN must not silently retire a branch watch that was never
+        // part of it. A volume with walk-covered branches gets its watcher back
+        // here; one whose scan just stopped has no branches (the scan retired
+        // them), so this is a no-op there.
+        self.ensure_branch_watch(false);
+    }
+
+    /// The part of stopping a scan that's safe under the registry lock (the
+    /// test-only `stop_scan` runs all of it, on a manager a test owns). Hands back the watcher it took down, because STOPPING one blocks: it
+    /// joins the FSEvents run-loop thread, which unregisters with `fseventsd`.
+    /// `state::stop_scan` stops it and restarts the branch watch off the lock.
+    #[must_use = "the watcher is still running until somebody stops it"]
+    pub(in crate::indexing::lifecycle) fn end_the_scan(&mut self) -> Option<DriveWatcher> {
         set_phase_for(self.events.as_ref(), &self.volume_id, ActivityPhase::Idle, "stopped");
 
         // A volume covered in phases has no `ScanHandle` to cancel; stopping it is
@@ -563,29 +591,19 @@ impl IndexManager {
         }
         self.scan_handle = None;
         self.ground_in_flux.store(false, Ordering::Relaxed);
-
-        // Stop the FSEvents watcher
-        if let Some(ref mut watcher) = self.drive_watcher {
-            watcher.stop();
-        }
-        self.drive_watcher = None;
-        self.branch_watched = false;
-
         DEBUG_STATS.reset();
+        self.retire_the_watcher()
+    }
 
-        // Abort the live event processing task
-        {
-            let mut guard = self.live_event_task.lock_ignore_poison();
-            if let Some(task) = guard.take() {
-                task.abort();
-            }
+    /// Take this volume's watcher and live loop down, handing the watcher back to
+    /// be stopped off the lock. The loop's abort is immediate.
+    #[must_use = "the watcher is still running until somebody stops it"]
+    fn retire_the_watcher(&mut self) -> Option<DriveWatcher> {
+        self.branch_watched = false;
+        if let Some(task) = self.live_event_task.lock_ignore_poison().take() {
+            task.abort();
         }
-
-        // Stopping a SCAN must not silently retire a branch watch that was never
-        // part of it. A volume with walk-covered branches gets its watcher back
-        // here; one whose scan just stopped has no branches (the scan retired
-        // them), so this is a no-op there.
-        self.ensure_branch_watch(false);
+        self.drive_watcher.take()
     }
 
     /// Get the current index status.
@@ -641,6 +659,10 @@ impl IndexManager {
             scan_run_kind: counters.scan_run_kind,
             prior_total_entries: counters.prior_total_entries,
             prior_scan_duration_ms: counters.prior_scan_duration_ms,
+            left_after_find_files_ms: counters.steps_ahead.after_find_files_ms,
+            left_after_save_ms: counters.steps_ahead.after_save_ms,
+            left_after_compute_ms: counters.steps_ahead.after_compute_ms,
+            left_after_catch_up_ms: counters.steps_ahead.after_catch_up_ms,
         })
     }
 
@@ -763,9 +785,12 @@ impl IndexManager {
     }
 }
 
+mod branch_watch;
 mod launch_route;
 mod phased;
 mod start;
+
+pub(in crate::indexing) use branch_watch::BranchWatchStart;
 
 pub(in crate::indexing::lifecycle) use phased::{PendingPhases, PhaseResume, PhasedStart};
 

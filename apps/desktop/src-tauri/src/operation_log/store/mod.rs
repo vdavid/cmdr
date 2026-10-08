@@ -246,6 +246,10 @@ impl OperationLogStore {
 /// forever), then returns the leaf's id. A volume root (empty path) interns a
 /// single row with name `""` and NULL parent.
 ///
+/// A remote volume's path is rooted at `scheme://authority` (`adb://serial/…`,
+/// `sftp://ada@nas:22/…`), and that root is ONE name in the chain, see
+/// [`split_scheme_root`].
+///
 /// Runs on a write-capable connection — inside the writer thread's transaction
 /// in production, or directly in tests. Idempotent: the same `(volume_id, path)`
 /// always returns the same id.
@@ -253,10 +257,41 @@ pub fn intern_dir(conn: &Connection, volume_id: &str, path: &str) -> Result<i64,
     // The volume root anchors the chain (name ""), so a file directly at the
     // volume root still has a dir to reference.
     let mut parent = intern_one(conn, volume_id, None, "")?;
-    for component in path.split('/').filter(|c| !c.is_empty()) {
+    let (scheme_root, rest) = split_scheme_root(path);
+    let names = scheme_root.into_iter().chain(rest.split('/').filter(|c| !c.is_empty()));
+    for component in names {
         parent = intern_one(conn, volume_id, Some(parent), component)?;
     }
     Ok(parent)
+}
+
+/// The separator that marks a path as rooted at a URL-style volume root.
+const SCHEME_SEPARATOR: &str = "://";
+
+/// Splits `scheme://authority` off the head of a remote volume's path, returning
+/// it and what follows. A path with no such head comes back whole.
+///
+/// The root has to stay one name: splitting it on `/` like the rest drops the
+/// empty segment inside `://`, and [`reconstruct_dir_path`] then rebuilds
+/// `adb://serial/x` as `/adb:/serial/x`, a path no volume answers to, which the
+/// rollback would hand to one. No real folder name can contain `://` (a name
+/// holds no `/`), so a name that does is always this root.
+fn split_scheme_root(path: &str) -> (Option<&str>, &str) {
+    let Some(scheme_len) = path.find(SCHEME_SEPARATOR) else {
+        return (None, path);
+    };
+    let is_scheme = scheme_len > 0
+        && path[..scheme_len]
+            .bytes()
+            .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'+' | b'-' | b'.'));
+    if !is_scheme {
+        return (None, path);
+    }
+    let authority_start = scheme_len + SCHEME_SEPARATOR.len();
+    let root_len = path[authority_start..]
+        .find('/')
+        .map_or(path.len(), |slash| authority_start + slash);
+    (Some(&path[..root_len]), &path[root_len..])
 }
 
 /// Intern one `(volume_id, parent, name)` dir row, returning its id. Insert-or-
@@ -290,7 +325,8 @@ fn intern_one(
 }
 
 /// Reconstruct a dir's full path by walking `parent_dir_id` to the volume root.
-/// The root (name `""`) contributes nothing, so a path renders as `/a/b/c`.
+/// The root (name `""`) contributes nothing, so a path renders as `/a/b/c`, and a
+/// remote one led by its `scheme://authority` name as `scheme://authority/a/b`.
 pub fn reconstruct_dir_path(conn: &Connection, dir_id: i64) -> Result<String, OperationLogStoreError> {
     let mut names = Vec::new();
     let mut current = Some(dir_id);
@@ -304,7 +340,12 @@ pub fn reconstruct_dir_path(conn: &Connection, dir_id: i64) -> Result<String, Op
         current = parent;
     }
     names.reverse();
-    Ok(format!("/{}", names.join("/")))
+    let joined = names.join("/");
+    if names.first().is_some_and(|root| root.contains(SCHEME_SEPARATOR)) {
+        Ok(joined)
+    } else {
+        Ok(format!("/{joined}"))
+    }
 }
 
 // ── Reads (used by the dump bin; the query API adds paged/filtered reads) ──

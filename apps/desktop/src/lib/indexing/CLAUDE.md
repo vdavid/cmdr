@@ -3,11 +3,11 @@
 Frontend bridge to the Rust drive indexer: reactive scan state, Tauri event listeners, and the drive-indexing status
 indicator. Rust counterpart: `crates/cmdr-index/src/indexing/`.
 
-`index-state.svelte.ts` is the reactive core (per-volume `SvelteMap`s fed by the thirteen index events);
-`media-enrich-state.svelte.ts` is the second publisher. Pure helpers: `eta.ts`, `indexing-steps.ts`, `elapsed.ts`,
-`media-enrich-queued.ts`, `walked-ground.ts`. The status surface is `IndexingStatusIndicator` → `IndexingDriveRow` →
-presentational `IndexingStatusBody` + `IndexingDriveSummary`, placed by `$lib/status-corner/`. Public API barrel:
-`index.ts`.
+`index-state.svelte.ts` is the reactive core (per-volume `SvelteMap`s fed by the fourteen index events);
+`media-enrich-state.svelte.ts` is the second publisher. Pure helpers: `eta.ts`, `indexing-steps.ts`, `overall-eta.ts`,
+`elapsed.ts`, `media-enrich-queued.ts`, `walked-ground.ts`. The status surface is `IndexingStatusIndicator` →
+`IndexingDriveRow` → presentational `IndexingStatusBody` + `IndexingDriveSummary`, placed by `$lib/status-corner/`.
+Public API barrel: `index.ts`.
 
 ## Must-knows
 
@@ -25,9 +25,10 @@ presentational `IndexingStatusBody` + `IndexingDriveSummary`, placed by `$lib/st
 - **Image indexing is a SECOND publisher** (`media-enrich-state.svelte.ts`) on the same discipline, and the corner gate
   ORs `isAnyVolumeEnriching()`.
 - **Checklist STEPS are composed from the events that fire for THIS volume** (`deriveSteps`), ❌ never a fixed list, and
-  branch on typed discriminants only. Per-step ETA only; no overall ETA by design. A `phase`-only volume still counts
-  (`getActivePhaseVolumeIds`), or the surface vanishes the moment aggregation completes, and a phased run's checklist is
-  ONE step.
+  branch on typed discriminants only. A `phase`-only volume still counts (`getActivePhaseVolumeIds`), or the surface
+  vanishes the moment aggregation completes, and a phased run's checklist is ONE step.
+- **The overall "~X left" is the active step's own ETA + the backend's `StepsAheadMs`** (`overall-eta.ts`). A `null`
+  entry means no history for a step ahead: show nothing, ❌ never fill it in. The sum lives in the index crate.
 - **The run kind is the BACKEND's answer** (`ScanRunKind` off `index-scan-started`), ❌ never guessed from the
   calibration numbers: they disagree on a populated index whose last scan never finished.
 - **Scan progress has two tiers** (`computeScanProgress`), each using one counter as BOTH numerator and ETA window
@@ -40,5 +41,5 @@ presentational `IndexingStatusBody` + `IndexingDriveSummary`, placed by `$lib/st
   (`getWalkedGround` + `isPathAffectedByWalk`), ❌ never "the volume is scanning", tested BOTH ways since the roll-up
   repairs ancestors. Every run announces its own ground, so nothing here seeds that map or branches on the kind of run.
 
-Full public API, the thirteen-event table, the step model, tooltip content, ETA blending, honest-size rendering, and
+Full public API, the fourteen-event table, the step model, tooltip content, ETA blending, honest-size rendering, and
 tests: `DETAILS.md`. Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

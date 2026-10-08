@@ -20,16 +20,21 @@
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
+use std::time::Duration;
 
 use cmdr_fs::volume::Volume;
 
+use super::network_dates_test_support::{
+    a_copy_off_the_server_keeps_the_source_date, a_copy_onto_the_server_keeps_the_source_date,
+    copied_folders_off_the_server_keep_their_dates, copied_folders_onto_the_server_keep_their_dates,
+};
 use super::network_transfer_test_support::{
     a_cancelled_upload_leaves_nothing_behind, a_directory_tree_lands_intact_off_the_server,
     a_directory_tree_lands_intact_on_the_server, a_pre_existing_destination_still_probes_each_name,
     an_overwrite_answer_replaces_the_destination_bytes, awkward_names_survive_a_round_trip, clean_deep, read_all,
     run_copy, self_describing_bytes, sha256,
 };
-use super::sftp_test_support::fixture;
+use super::sftp_test_support::{SftpFixture, fixture, fixture_on};
 use crate::file_system::volume::LocalPosixVolume;
 use crate::test_support::TestDir;
 
@@ -81,16 +86,17 @@ async fn sftp_integration_copying_off_a_server_lands_every_byte() {
     clean_deep(remote.as_ref(), &dir).await;
 }
 
-/// Copy ONTO the server: the direction the free-space pre-flight killed.
+/// Copy ONTO a server that can't report free space: the direction the
+/// free-space pre-flight killed.
 ///
-/// SFTP answers `get_space_info` with `NotSupported` on purpose, and the
-/// pre-flight used to propagate that as a failure, so every copy in died after
-/// roughly half a second with a message that named neither the check nor the
-/// reason.
+/// A server without `statvfs@openssh.com` answers `get_space_info` with
+/// `NotSupported`, and the pre-flight used to propagate that as a failure, so
+/// every copy in died after roughly half a second with a message that named
+/// neither the check nor the reason. The sparse fixture is that server.
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 #[ignore = "needs the SFTP fixture stack: sftp-servers/start.sh (sftp-fixture)"]
 async fn sftp_integration_copying_onto_a_server_lands_every_byte() {
-    let (remote, dir) = fixture("app-copy-to").await;
+    let (remote, dir) = fixture_on(SftpFixture::NoPosixRename, "app-copy-to").await;
 
     // ❗ The destination really can't answer the space question, which is the
     // whole point of this cell.
@@ -173,4 +179,32 @@ async fn sftp_integration_a_pre_existing_destination_still_probes_each_name() {
 async fn sftp_integration_awkward_names_survive_a_round_trip() {
     let (remote, dir) = fixture("app-awkward-names").await;
     awkward_names_survive_a_round_trip(remote, dir).await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[ignore = "needs the SFTP fixture stack: sftp-servers/start.sh (sftp-fixture)"]
+async fn sftp_integration_a_copy_onto_a_server_keeps_the_source_date() {
+    let (remote, dir) = fixture("app-dated-onto").await;
+    a_copy_onto_the_server_keeps_the_source_date(remote, dir, Duration::ZERO).await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[ignore = "needs the SFTP fixture stack: sftp-servers/start.sh (sftp-fixture)"]
+async fn sftp_integration_a_copy_off_a_server_keeps_the_source_date() {
+    let (remote, dir) = fixture("app-dated-off").await;
+    a_copy_off_the_server_keeps_the_source_date(remote, dir, Duration::ZERO).await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[ignore = "needs the SFTP fixture stack: sftp-servers/start.sh (sftp-fixture)"]
+async fn sftp_integration_folders_copied_onto_a_server_keep_their_dates() {
+    let (remote, dir) = fixture("app-dated-folders-onto").await;
+    copied_folders_onto_the_server_keep_their_dates(remote, dir, Duration::ZERO).await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[ignore = "needs the SFTP fixture stack: sftp-servers/start.sh (sftp-fixture)"]
+async fn sftp_integration_folders_copied_off_a_server_keep_their_dates() {
+    let (remote, dir) = fixture("app-dated-folders-off").await;
+    copied_folders_off_the_server_keep_their_dates(remote, dir).await;
 }

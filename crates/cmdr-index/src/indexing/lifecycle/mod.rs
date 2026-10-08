@@ -44,3 +44,4 @@ pub(crate) mod progress_reporter;
 pub(crate) mod rescan_request;
 pub(crate) mod scan_completion;
 pub(crate) mod state;
+pub(crate) mod steps_ahead;

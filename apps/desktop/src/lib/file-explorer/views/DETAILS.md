@@ -70,17 +70,25 @@ volume is the user: it feeds full paths as the entries' `name` field, so the nam
 `useShortenMiddle` (snapping to `/` when the name carries one, `.` otherwise). Unset, FullList renders identically: same
 grid template, same fetch loop, same DOM.
 
+**Both views take a `loadingOverlay?: Snippet` for a slow load.** The pane passes its `LoadingIcon` once a load outlasts
+the grace period, and the view lays it over a `.row-area` wrapper around the scroller, so the header above stays. While
+it's up the scroller is `visibility: hidden` (`is-covered`): the retained rows keep their layout, so scroll and
+measurements hold, but neither paint nor reach the a11y tree, and the pane's own background shows through. The "empty
+folder" text stays hidden too. ❌ Don't render the loading view in place of the list: unmounting the list is what
+blinked the column header out on every slow navigation (`../pane/DETAILS.md` has the pane side).
+
 ### FullList's siblings
 
 `FullList.svelte` keeps what needs the component (the props contract, the reactive readers, the `$effect`s, the DOM
 refs, and the row template). Four siblings hold the rest, each with its own suite:
 
-- **`full-list-cache.svelte.ts`** — the prefetch buffer plus the reset / soft-refresh / static-entries policy.
+- **`full-list-cache.svelte.ts`** — the prefetch buffer plus the hard-refresh / soft-refresh / static-entries policy.
   `syncToProps(ready)` returns `'reset' | 'refresh' | 'none' | 'idle'`; the component reacts to `'reset'` only, by
-  suppressing the width transition for one paint. **Each dep is its own getter, deliberately.** Collapsing them into one
-  `props()` bag read whole makes every method subscribe to every prop, and the host's `$effect`s inherit that: the
-  `..`-row stats would refetch on every `directory-diff` tick and the static-entries mirror would rewrite on any prop
-  change at all.
+  suppressing the width transition for one paint. A reset preserves the rendered window until its forced fetch lands,
+  then swaps atomically; its epoch drops an older listing's late answer, and a forced fetch that arrives while another
+  is running queues behind it. **Each dep is its own getter, deliberately.** Collapsing them into one `props()` bag read
+  whole makes every method subscribe to every prop, and the host's `$effect`s inherit that: the `..`-row stats would
+  refetch on every `directory-diff` tick and the static-entries mirror would rewrite on any prop change at all.
 - **`full-list-git-column.svelte.ts`** — the repo-relative status map and its watcher subscription. `watch()` returns a
   teardown, so the host's `$effect` cancels an in-flight load when the directory changes.
 - **`full-list-mouse.ts`** — the pure mousedown plan (ignore / select / drag) and the drag payload, including the
@@ -189,6 +197,11 @@ FilePane (parent)
 
 `BriefList` holds those three inline; `FullList` holds the same shape in `full-list-cache.svelte.ts` (`cache.entries` /
 `cache.range` / `cache.windowRows()`).
+
+Brief's manual double-click detector keys its previous click by both `listingId` and row index. A navigation can keep
+the component and its old rows mounted until the replacement range lands, so an index alone is not a row identity: row
+zero from the old listing followed quickly by row zero from the new one must remain two single clicks. Otherwise the
+second click can open the new listing's `..` row and immediately navigate back to its parent.
 
 **Key**: Data lives in Rust `LISTING_CACHE`. Frontend fetches visible ranges on-demand via
 `getFileRange(listingId, start, count, includeHidden)`.
@@ -327,7 +340,16 @@ every row, defeating performance gains. Uniform height allows pure math: `scroll
 Buffer balances memory (small) vs. IPC latency (reduces fetches).
 
 **Decision**: Cache invalidation via `cacheGeneration` prop **Why**: Changing sort, toggling hidden files, or resizing
-window requires fresh data. Parent bumps `cacheGeneration`, triggering re-fetch. Uses `$effect()` to react.
+window requires fresh data. Parent bumps `cacheGeneration`, triggering a forced re-fetch. Both views keep the current
+window until that fetch lands, then replace it atomically; clearing first creates an empty paint between directories.
+Uses `$effect()` to react. The retained rows are paint-only: each cache records the epoch its rows were fetched in, and
+`getEntryAt` / `indexOfEntry` see no rows while that lags the current epoch (the `..` row still resolves). **Why**: once
+the pane stops loading, keys and commands act again, but until the forced fetch lands, index N in the old rows is a
+different file than index N in the new listing, so a fast Backspace-then-Enter or a rename would hit the old folder.
+Retained rows also paint under the `..` row they were fetched with (each cache records the listing id and parent row of
+its rows), never the new listing's: the new `..` can be one of the old rows (`/a` → `/a/b/c` makes it `/a/b`), which
+repeats a key in the keyed `#each` and shifts the old rows by one. Pinned in `full-list-cache.test.ts` and
+`BriefList.retained-rows.svelte.test.ts`.
 
 **Decision**: Icon prefetching only for visible entries **Why**: With 50k files, prefetching all icons = 50k IPC calls.
 Virtual scrolling renders only ~50 items, so prefetch only visible. Re-fetch on scroll. The same visible-range pass in

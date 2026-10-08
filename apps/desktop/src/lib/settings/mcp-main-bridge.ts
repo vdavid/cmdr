@@ -16,6 +16,8 @@ import type { SettingDefinition, SettingId, SettingsValues } from './types'
 import { getEffectiveShortcuts, getDefaultShortcuts, isShortcutModified } from '$lib/shortcuts'
 import { commands } from '$lib/commands/command-registry'
 import { getAppLogger } from '$lib/logging/logger'
+import { getSettingLock, isSettingManaged } from '$lib/managed-policy/managed-policy.svelte'
+import { lockAllowsWrite } from '$lib/managed-policy/overlay'
 
 const log = getAppLogger('mcp-main-bridge')
 
@@ -80,6 +82,10 @@ function buildAllSettingsYaml(): string {
       if (def.mcpSettable === false) {
         lines.push('    mcpSettable: false')
       }
+      // `value` above is already what the setting READS as under the policy; this says why.
+      if (isSettingManaged(id)) {
+        lines.push('    managed: true')
+      }
     }
   }
 
@@ -133,7 +139,7 @@ interface SetSettingPayload {
 }
 
 /** Why `set_setting` refused a write, carried in the response beside the sentence. */
-type SetSettingRefusal = 'notSettableOverMcp'
+type SetSettingRefusal = 'notSettableOverMcp' | 'managedByOrganization'
 
 async function handleSetSetting(event: { payload: SetSettingPayload }): Promise<void> {
   const { requestId, settingId, value } = event.payload
@@ -149,6 +155,20 @@ async function handleSetSetting(event: { payload: SetSettingPayload }): Promise<
       ok: false,
       refusal,
       error: `'${settingId}' records a person's consent answer, so it can't be set over MCP. Only the person can change it, in Cmdr itself.`,
+    })
+    return
+  }
+
+  // The organization's policy. The backend refuses first (`managed_policy::refuses_write`), so
+  // this only catches a policy change racing the round trip; `setSetting` would refuse silently.
+  if (!lockAllowsWrite(getSettingLock(settingId), value)) {
+    const refusal: SetSettingRefusal = 'managedByOrganization'
+    log.info('Refused an MCP write to {settingId}: the organization manages it', { settingId })
+    await emit('mcp-response', {
+      requestId,
+      ok: false,
+      refusal,
+      error: `'${settingId}' is managed by the organization's policy on this Mac, so it can't be changed here.`,
     })
     return
   }

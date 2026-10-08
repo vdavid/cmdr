@@ -4,7 +4,7 @@
  * The dialog reuses one shape (filename, Existing/New rows, 4×2 button grid,
  * Rollback row) across every clash type. The four variants differ in:
  *   - Row labels (the type tag inside the "Existing:" / "New:" prefix)
- *   - A red warning block above the filename (file → folder only)
+ *   - A red warning block above the filename (file ↔ folder, worded per direction)
  *   - The "Overwrite" / "Overwrite all" button copy (file → folder only)
  *   - Whether the destination size is known (renders normally or "(unknown)")
  *   - Whether "Overwrite all smaller" is enabled (depends on destination size)
@@ -202,7 +202,8 @@ interface VariantCase {
   destinationIsDirectory: boolean
   existingLabel: string
   newLabel: string
-  hasWarning: boolean
+  /** The red warning's bolded words, in order; null when there's no warning. */
+  warningStrongs: string[] | null
   overwriteLabel: string
   overwriteAllLabel: string
 }
@@ -214,7 +215,7 @@ const variants: VariantCase[] = [
     destinationIsDirectory: false,
     existingLabel: 'Existing:',
     newLabel: 'Incoming:',
-    hasWarning: false,
+    warningStrongs: null,
     overwriteLabel: 'Overwrite',
     overwriteAllLabel: 'Overwrite all',
   },
@@ -229,7 +230,7 @@ const variants: VariantCase[] = [
     destinationIsDirectory: false,
     existingLabel: 'Existing file:',
     newLabel: 'Incoming folder:',
-    hasWarning: false,
+    warningStrongs: ['file', 'folder'],
     overwriteLabel: 'Overwrite',
     overwriteAllLabel: 'Overwrite all',
   },
@@ -239,7 +240,7 @@ const variants: VariantCase[] = [
     destinationIsDirectory: true,
     existingLabel: 'Existing folder:',
     newLabel: 'Incoming file:',
-    hasWarning: true,
+    warningStrongs: ['folder', 'file'],
     overwriteLabel: 'Overwrite folder with file',
     overwriteAllLabel: 'Overwrite folders with files',
   },
@@ -268,7 +269,7 @@ describe.each(variants)('TransferProgressDialog conflict — $name', (variant) =
     expect(labels).toEqual([variant.existingLabel, variant.newLabel])
   })
 
-  it(`${variant.hasWarning ? 'shows' : 'omits'} the red warning block`, async () => {
+  it(`${variant.warningStrongs ? 'shows' : 'omits'} the red warning block`, async () => {
     const target = await mountDialogWithConflict(
       makeEvent({
         sourceIsDirectory: variant.sourceIsDirectory,
@@ -276,14 +277,12 @@ describe.each(variants)('TransferProgressDialog conflict — $name', (variant) =
       }),
     )
     const warning = target.querySelector('.conflict-warning')
-    if (variant.hasWarning) {
+    if (variant.warningStrongs) {
       expect(warning, 'red warning block present').not.toBeNull()
-      // Both bold spans render as real <strong> elements with the right text.
+      // Both bold spans render as real <strong> elements, existing type first.
       const strongs = Array.from(warning?.querySelectorAll('strong') ?? []).map((s) => s.textContent.trim())
-      expect(strongs).toEqual(['folder', 'file'])
-      // Role + content sanity-check matches the spec verbiage.
+      expect(strongs).toEqual(variant.warningStrongs)
       expect(warning?.getAttribute('role')).toBe('alert')
-      expect(warning?.textContent).toContain('overwrite it with a')
       expect(warning?.textContent).toContain('What to do?')
     } else {
       expect(warning, 'no red warning block').toBeNull()
@@ -363,7 +362,7 @@ describe('TransferProgressDialog conflict — file → folder, destinationSize k
   it('renders the destination size in the Existing slot (not "(unknown)")', async () => {
     const target = await mountDialogWithConflict(event)
     const existingSize = target.querySelector('.conflict-file .conflict-file-size')
-    expect(existingSize?.textContent.trim()).toBe('4.00 KB')
+    expect(existingSize?.textContent.trim()).toBe('4.00 KiB')
     expect(existingSize?.classList.contains('unknown')).toBe(false)
   })
 
@@ -446,7 +445,7 @@ describe('TransferProgressDialog conflict — folder → file, sourceSize null',
   it('still renders the known destination size in the Existing slot', async () => {
     const target = await mountDialogWithConflict(event)
     const existingSize = target.querySelector('.conflict-file .conflict-file-size')
-    expect(existingSize?.textContent.trim()).toBe('1.00 KB')
+    expect(existingSize?.textContent.trim()).toBe('1.00 KiB')
     expect(existingSize?.classList.contains('unknown')).toBe(false)
   })
 

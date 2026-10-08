@@ -75,7 +75,7 @@ fn build_portal(sink: Arc<dyn GitStateSink>) -> Arc<GitPortal> {
 ///
 /// Every cell that reaches [`portal`] gets this one, which is what makes an
 /// arming assertion cost a repository open rather than a real FSEvents stream
-/// over ~10 `.git/*` paths. A cell that wants the real thing builds its own
+/// on the gitdir. A cell that wants the real thing builds its own
 /// portal with `GitPortal::new`, and exactly one does (`wiring_tests`, for the
 /// debounce).
 #[cfg(test)]

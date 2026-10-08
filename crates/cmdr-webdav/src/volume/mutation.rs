@@ -9,7 +9,7 @@ use std::path::{Path, PathBuf};
 use cmdr_fs::entry::FileEntry;
 use cmdr_fs::pluralize::pluralize_with;
 use cmdr_fs::volume::host::listings::ListingHost;
-use cmdr_fs::volume::mkdir_all::{self, MakesDirectories};
+use cmdr_fs::volume::mkdir_all::{self, LeadsTo, MakesDirectories};
 use cmdr_fs::volume::patching::{PatchSource, patch_created, patch_deleted, patch_renamed};
 use cmdr_fs::volume::scan_walk::Walking;
 use cmdr_fs::volume::{DirectoryCreation, VolumeError};
@@ -138,6 +138,22 @@ impl MakesDirectories for WebdavVolume {
         Box::pin(async move {
             let client = self.clone_client().await?;
             self.mkcol(&client, remote).await
+        })
+    }
+
+    /// One `Depth: 0` PROPFIND. ❗ MKCOL's own answer can't say this: a taken
+    /// name is 405 whether a file or a collection holds it. The protocol has no
+    /// links of its own, and a server that follows one on its disk reports what
+    /// it leads to.
+    fn leads_to<'a>(&'a self, remote: &'a str) -> Walking<'a, LeadsTo> {
+        Box::pin(async move {
+            let client = self.clone_client().await?;
+            match self.stat(&client, remote).await {
+                Ok(entry) if entry.is_collection => Ok(LeadsTo::Directory),
+                Ok(_) => Ok(LeadsTo::NotADirectory),
+                Err(VolumeError::NotFound(_)) => Ok(LeadsTo::Nothing),
+                Err(e) => Err(e),
+            }
         })
     }
 }

@@ -19,8 +19,3 @@ export function throwMutationError(failure: MutationError): never {
 export function asMutationError(error: unknown): MutationError | null {
   return failureOf(MutationFailure, error)
 }
-
-/** Whether a caught value is the backend saying "I haven't answered yet". */
-export function isMutationTimeout(error: unknown): boolean {
-  return asMutationError(error)?.type === 'timedOut'
-}

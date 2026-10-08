@@ -8,7 +8,7 @@
 use crate::indexing::IndexPathSpace;
 use crate::indexing::reconcile::reconciler;
 use crate::indexing::scanner::ScanSummary;
-use crate::indexing::store::ScanCalibrationKind;
+use crate::indexing::store::{ScanCalibrationKind, StepDurations};
 use crate::indexing::writer::{IndexWriter, WriteMessage};
 
 /// Stamp the completion marker, restart the shallow-`MustScanSubDirs` sweep window,
@@ -48,6 +48,50 @@ pub(super) fn stamp_a_completed_walk(
         key: reconciler::SHALLOW_COALESCED_KEY.to_string(),
         value: "0".to_string(),
     });
+}
+
+/// Record how long the steps after a completed walk took, in this walk kind's own
+/// bucket, for the next run's overall "~X left". Writes only the steps that were
+/// measured, so a caller can record each one as it ends.
+///
+/// ⚠️ **Only for a walk that ran to the end**, like everything in this file: a
+/// cancelled walk's save and compute covered a partial tree, so their timings
+/// would undersell the next full run.
+pub(in crate::indexing::lifecycle) fn stamp_step_durations(
+    durations: StepDurations,
+    calibration_kind: ScanCalibrationKind,
+    writer: &IndexWriter,
+) {
+    for (key, value) in [
+        (StepDurations::SAVE_KEY, durations.save_ms),
+        (StepDurations::COMPUTE_KEY, durations.compute_ms),
+        (StepDurations::CATCH_UP_KEY, durations.catch_up_ms),
+    ] {
+        if let Some(ms) = value {
+            let _ = writer.send(WriteMessage::UpdateMeta {
+                key: calibration_kind.meta_key(key),
+                value: ms.to_string(),
+            });
+        }
+    }
+}
+
+/// Split the wait between the walk ending and the index being written into its
+/// two steps: saving the file list (the insert backlog), then computing folder
+/// sizes (the full aggregate the writer timed itself). Both `None` when the
+/// aggregate's timing is missing, since then there's nothing to split by.
+pub(in crate::indexing::lifecycle) fn split_save_and_compute(
+    flush_ms: u64,
+    full_aggregate_ms: Option<u64>,
+) -> StepDurations {
+    match full_aggregate_ms {
+        Some(compute_ms) => StepDurations {
+            save_ms: Some(flush_ms.saturating_sub(compute_ms)),
+            compute_ms: Some(compute_ms),
+            catch_up_ms: None,
+        },
+        None => StepDurations::default(),
+    }
 }
 
 /// The three facts EVERY completed walk records, local or trait-scanned: when it

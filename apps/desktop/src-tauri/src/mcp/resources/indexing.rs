@@ -16,6 +16,7 @@
 //! live index. `snapshot_indexing` / `snapshot_volume_indexing` do the global
 //! reads.
 
+use crate::events::index_mapping::StepsAheadMs;
 use crate::index_host::index;
 use crate::search::format_size;
 use cmdr_index::Freshness;
@@ -58,6 +59,12 @@ pub(crate) struct VolumeIndexingSnapshot {
     pub scan_completed_at: Option<u64>,
     /// The last completed scan's wall-clock duration.
     pub scan_duration_ms: Option<u64>,
+    /// The running walk's tier-1 denominator: the last completed walk of this
+    /// kind's entry count. Times the walk step for the overall line.
+    pub prior_total_entries: Option<u64>,
+    /// What the steps after each one took on the last completed run of this kind
+    /// (the crate's honest sum; `None` where there's no history).
+    pub steps_ahead: StepsAheadMs,
     /// Deep debug detail, present only for the `?volume=<id>` view.
     pub debug: Option<VolumeIndexingDebug>,
 }
@@ -217,6 +224,53 @@ fn scan_progress_line(snap: &VolumeIndexingSnapshot) -> Option<String> {
     Some(line)
 }
 
+/// The `overall: …` line while a volume is walked whole: what's left of the whole
+/// run, the figure a person reads on the drive row.
+///
+/// During the walk it's this step's estimate (elapsed extrapolation over the
+/// calibrated entry count) plus what the steps after it took last time. Past the
+/// walk the status carries no live progress for the active step, so only the
+/// remembered remainder is reported. `None` when there's no whole-volume run in
+/// flight, or on the last step (nothing comes after it).
+///
+/// The person's figure blends a five-second window into this step's estimate,
+/// so the two agree on the remainder and stay close on the active step.
+fn overall_line(snap: &VolumeIndexingSnapshot) -> Option<String> {
+    if snap.freshness != Some(Freshness::Scanning) || snap.covered_in_phases {
+        return None;
+    }
+    let ahead = &snap.steps_ahead;
+    match snap.activity_phase {
+        ActivityPhase::Scanning if snap.scanning => {
+            let Some(after_walk) = ahead.find_files else {
+                return Some("no estimate (a step after this one has no history on this kind of run)".to_string());
+            };
+            let total = snap.prior_total_entries?;
+            let done = snap.entries_scanned;
+            if done == 0 || done >= total || snap.phase_duration_ms == 0 {
+                return None;
+            }
+            let this_step = snap.phase_duration_ms.saturating_mul(total - done) / done;
+            Some(format!(
+                "{} left (this step {}, then {} for the steps after it, as they took last time)",
+                format_duration_human(this_step.saturating_add(after_walk)),
+                format_duration_human(this_step),
+                format_duration_human(after_walk),
+            ))
+        }
+        // The resource's "Aggregate sizes" step is the save and compute steps
+        // together, so what follows it is what follows compute.
+        ActivityPhase::Aggregating => {
+            let after = ahead.compute_folder_sizes.filter(|ms| *ms > 0)?;
+            Some(format!(
+                "the steps after this one took {} last time",
+                format_duration_human(after)
+            ))
+        }
+        _ => None,
+    }
+}
+
 /// What a phased run has covered so far, in the terms an agent asking "can I
 /// trust search on this volume?" needs: the index answers for the ground already
 /// walked and keeps growing, which is a different answer from "no scan has
@@ -268,6 +322,10 @@ fn push_volume_summary(lines: &mut Vec<String>, snap: &VolumeIndexingSnapshot, n
 
     if let Some(progress) = scan_progress_line(snap) {
         lines.push(format!("  scan progress: {progress}"));
+    }
+
+    if let Some(overall) = overall_line(snap) {
+        lines.push(format!("  overall: {overall}"));
     }
 
     if let Some(coverage) = coverage_line(snap) {
@@ -441,6 +499,8 @@ fn collect_volume_snapshot(volume_id: &str, with_debug: bool) -> VolumeIndexingS
         db_entry_count,
         db_dir_count,
         db_file_size,
+        prior_total_entries,
+        steps_ahead,
     ) = match &debug_status {
         Some(d) => (
             d.activity_phase.clone(),
@@ -454,8 +514,29 @@ fn collect_volume_snapshot(volume_id: &str, with_debug: bool) -> VolumeIndexingS
             d.live_entry_count,
             d.live_dir_count,
             d.base.db_file_size,
+            d.base.prior_total_entries,
+            StepsAheadMs {
+                find_files: d.base.left_after_find_files_ms,
+                save_file_list: d.base.left_after_save_ms,
+                compute_folder_sizes: d.base.left_after_compute_ms,
+                catch_up: d.base.left_after_catch_up_ms,
+            },
         ),
-        None => (ActivityPhase::Idle, 0, false, false, 0, 0, 0, None, None, None, None),
+        None => (
+            ActivityPhase::Idle,
+            0,
+            false,
+            false,
+            0,
+            0,
+            0,
+            None,
+            None,
+            None,
+            None,
+            None,
+            StepsAheadMs::default(),
+        ),
     };
 
     let debug = if with_debug {
@@ -497,6 +578,8 @@ fn collect_volume_snapshot(volume_id: &str, with_debug: bool) -> VolumeIndexingS
         db_file_size,
         scan_completed_at: status.scan_completed_at,
         scan_duration_ms: status.scan_duration_ms,
+        prior_total_entries,
+        steps_ahead,
         debug,
     }
 }

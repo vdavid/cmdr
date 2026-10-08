@@ -79,7 +79,11 @@ export function createVolumeSpace(deps: VolumeSpaceDeps): VolumeSpace {
     // filesystem path at all (inside an archive). One fetch for a dead path left the
     // readout blank on every folder after.
     const answer = (await getVolumeSpace(volume.path)).data
-    if (asked === generation) volumeSpace = answer
+    // ❗ `null` is "this route can't tell", ❌ never "no space": a remote volume's path
+    // (`sftp://`, `webdav://`) isn't in the mount table, so its figure comes only from the
+    // poller, and a slow `null` here must not blank one that already arrived. A volume
+    // change clears the readout in the effect below, so a stale figure can't survive this.
+    if (asked === generation && answer !== null) volumeSpace = answer
   }
 
   $effect(() => {

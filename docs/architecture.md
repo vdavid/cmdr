@@ -22,8 +22,8 @@ All under `apps/desktop/src/lib/`.
   and MCP encoding in `servers-hub-*.ts`), the places under one account (`PlacesBrowser.svelte`), SMB's side of the
   sign-in sheet (`smb-sign-in.ts`), the "Connect directly" upgrade, the per-volume reconnect cycle, and the mDNS
   discovery store
-- `servers/`: Remote places the app dials (SFTP, WebDAV): the `sftp://user@host:port/path` spelling, the connect flow
-  that picks its move by the volume's standing, the ONE sign-in sheet every credential ask in the app opens
+- `servers/`: Remote places the app dials (SFTP, WebDAV, S3): the `sftp://user@host:port/path` spelling, the connect
+  flow that picks its move by the volume's standing, the ONE sign-in sheet every credential ask in the app opens
   (`SignInSheet.svelte`, add / sign-in / edit), the address parser behind add mode, the words for a connect that
   stopped, and which server the palette's server commands act on. See `apps/desktop/src/lib/servers/CLAUDE.md`
 - `file-explorer/git/`: Git browser frontend: breadcrumb chip, status columns, reactive `RepoInfo` store, git portal
@@ -93,7 +93,7 @@ All under `apps/desktop/src/lib/`.
 - `text-editor/`: which app F4 opens files in: reads the stored choice, launches through `openInEditor`, falls back to
   the system default with a toast when that app is gone, and points at the setting once with a hint. The Settings row is
   `apps/desktop/src/lib/settings/sections/TextEditorSelect.svelte`. See `apps/desktop/src/lib/text-editor/CLAUDE.md`
-- `go-to-path/`: "Go to path" (⌘G) dialog + handler: thin presenter over backend `resolve_go_to_path`, recents mirror
+- `go-to-path/`: "Go to folder" (⌘G) dialog + handler: thin presenter over backend `resolve_go_to_path`, recents mirror
 - `query-ui/`: Shared filter-and-act-on primitives for Search and Selection: `QueryBar`, `ModeChips`, `QueryResults`,
   recent-items, `createQueryFilterState()`
 - `query-ui/filter-chips/`: Filter chip popover subsystem (size/modified/scope/pattern)
@@ -172,9 +172,9 @@ All under `apps/desktop/src-tauri/src/`.
   bounded scan and classification behind "which app is still using this drive" (`file_system/volume/DETAILS.md` §
   "Eject")
 - `file_system/volume/backends/`: the one `Volume` impl that still lives in the app, `LocalPosixVolume`. Every crate
-  backend (`cmdr-archive`, `cmdr-smb`, `cmdr-sftp`, `cmdr-webdav`, `cmdr-adb`, `cmdr-mtp`, `cmdr-git`) is imported by
-  crate name at its call sites, and each one's app-side tests sit beside the app code they assert on. What stays
-  app-side is what needs the app: archive routing and the archive LRU, SMB's mount and upgrade passes, and edit /
+  backend (`cmdr-archive`, `cmdr-smb`, `cmdr-sftp`, `cmdr-webdav`, `cmdr-s3`, `cmdr-adb`, `cmdr-mtp`, `cmdr-git`) is
+  imported by crate name at its call sites, and each one's app-side tests sit beside the app code they assert on. What
+  stays app-side is what needs the app: archive routing and the archive LRU, SMB's mount and upgrade passes, and edit /
   transfer driving
 - `file_system/git/`: the app's two git seams, the `.git/` listing overlay and the wiring (the parked portal, the
   toggle, `volume_holds_real_repos`, and the `git-state-changed` event). The route itself sits with the registry in
@@ -223,6 +223,9 @@ All under `apps/desktop/src-tauri/src/`.
   See `apps/desktop/src-tauri/src/analytics/CLAUDE.md`
 - `send_schedule.rs`: the persisted throttle the heartbeat and the update check share (one success per interval, a retry
   floor after a failure)
+- `server_request.rs`: the one way a request reaches Cmdr's own api server (heartbeat, crash and error reports, the
+  update check and download, the S3 price list). Each caller names its `Egress`, which is also the managed-policy gate,
+  and gets a typed `ServerRequestError` back. Contract in the module doc
 - `update_schedule.rs`: when the frontend's background update check is due, persisted across relaunches. See
   `apps/desktop/src/lib/updates/DETAILS.md` § The schedule
 - `install_id.rs`: Two Rust-owned per-install random ids (`anal_` for analytics, `diag_` for diagnostics) that never
@@ -261,7 +264,7 @@ All under `apps/desktop/src-tauri/src/`.
 - `search/`: In-memory search index (lazy load, rayon parallel scan, glob/regex) + AI query translation (`search/ai/`)
 - `selection/`: Selection dialog backend: recent-selections store + cloud AI translation (`selection/ai/`); the matcher
   itself runs in JS
-- `go_to_path/`: "Go to path" backend: pure path resolution + fixed-cap recent-paths store. IPC in
+- `go_to_path/`: "Go to folder" backend: pure path resolution + fixed-cap recent-paths store. IPC in
   `commands/go_to_path.rs`
 - `recents/`: The persisted recents list all three of those keep (dedupe, cap, durable JSON file, quarantine). A
   consumer supplies the entry type and its dedupe key. See `apps/desktop/src-tauri/src/recents/CLAUDE.md`
@@ -272,6 +275,8 @@ All under `apps/desktop/src-tauri/src/`.
   WebKit that can't run the bundle, a startup that never finishes). Off in E2E
 - `text_size.rs`: macOS Accessibility text-size watcher (undocumented Apple APIs, risk notes in source). Emits
   `system-text-size-changed`
+- `glass_tint.rs`: macOS 27 Liquid Glass slider reader (undocumented `NSGlassTintAmount`, re-read on app activation;
+  risk notes in source). Emits `glass-tint-changed`; the frontend side is `$lib/glass-material`
 - `system_strings.rs`: Localized macOS pane labels from `.loctable` system bundles (loctable catalog + risks in source).
   Also the ordered `AppleLanguages` read that `intl/` walks
 - `intl/`: What the OS says about language and region. Walks the user's ordered macOS language preferences against the
@@ -337,6 +342,11 @@ All under `apps/desktop/src-tauri/src/`.
   media index, importance). See `events/CLAUDE.md`
 - `updater/`: macOS custom updater: syncs files into the running `.app` in place so FDA survives updates. Other
   platforms use stock Tauri
+- `managed_policy/`: What an organization's MDM profile restricts (telemetry, updates, AI), read from the forced layer
+  of the app's preferences domain, cached, refreshed at egress, and shown as one `ManagedPolicyView`. Holds the
+  canonical key catalog. See `apps/desktop/src-tauri/src/managed_policy/CLAUDE.md`; the frontend half (the settings
+  overlay and the locked rows) is `apps/desktop/src/lib/managed-policy/CLAUDE.md`
+- `cf_plist.rs`: macOS-only. Core Foundation property lists as `plist::Value`, shared by every CFPreferences reader
 - `redact/`: Shared PII redactor (path-shape preserving). Used by both crash and error reporters
 - `logging/`: Log directory resolver, `KeepSome(N)` post-rotation pruner, `list_recent_log_files`
 - `commands/`: Tauri command definitions (IPC entry points)
@@ -349,20 +359,26 @@ All under `apps/desktop/src-tauri/src/`.
 ## Workspace crates
 
 All under `crates/`, alongside the four apps. `cmdr-fs`, `cmdr-index`, `cmdr-archive`, `cmdr-smb`, `cmdr-sftp`,
-`cmdr-webdav`, `cmdr-adb`, `cmdr-mtp`, and `cmdr-git` carry no `tauri` dependency and no reach into the app;
-`index-crate-isolation` enforces that against the `cargo metadata` graph, and caps the public surface of `cmdr-index`,
-`cmdr-archive`, `cmdr-smb`, `cmdr-sftp`, `cmdr-webdav`, `cmdr-mtp`, and `cmdr-git` at the numbers their audits landed
-on. The two dev CLIs and the vendored fork are ordinary members.
+`cmdr-webdav`, `cmdr-s3`, `cmdr-adb`, `cmdr-mtp`, `cmdr-git`, and `cmdr-http` carry no `tauri` dependency and no reach
+into the app; `index-crate-isolation` enforces that against the `cargo metadata` graph, and caps the public surface of
+`cmdr-index`, `cmdr-archive`, `cmdr-smb`, `cmdr-sftp`, `cmdr-webdav`, `cmdr-s3`, `cmdr-mtp`, and `cmdr-git` at the
+numbers their audits landed on. The two dev CLIs and the vendored fork are ordinary members.
 
 - `crates/cmdr-fs/`: the filesystem vocabulary and host primitives every layer speaks in — the `Volume` trait and its
   data types, `FileEntry`, typed error classification (`ListingError` / `ListingErrorReason` / `ErrorCategory`, errno →
   reason mapping, provider detection over 18 providers), `InMemoryVolume`, File Provider domain detection (the index
   scanner's "is this a domain root?" and the sync badge's "is any ancestor one?"), thread QoS, process-memory readers,
-  poison-free locking. The app re-exports all of it from the original paths. See `crates/cmdr-fs/CLAUDE.md`
+  poison-free locking, and `ChildName`, the proof that a name a backend listed is one plain path component, which every
+  cross-volume join takes (`apps/desktop/src-tauri/src/file_system/write_operations/transfer/volume/DETAILS.md` §
+  "Listed names are untrusted"). The app re-exports all of it from the original paths. See `crates/cmdr-fs/CLAUDE.md`
   - `src/volume/host/`: the seams a storage backend reaches its host through — pane listings, the runtime handle, typed
     connection events, credentials, index notification, settings, user activity, analytics. What a backend crate is
     written against; the app answers them from `apps/desktop/src-tauri/src/volume_host.rs`. See
     `crates/cmdr-fs/src/volume/host/CLAUDE.md`
+- `crates/cmdr-http/`: the one door every HTTP client is built through (`client_builder()`), and the proxy routing
+  behind it: loopback and link-local always direct, then the `*_PROXY` variables, then macOS's own verdict per URL
+  (manual proxy, bypass list, PAC, WPAD). The app, `cmdr-webdav`, and `cmdr-s3` all build on it, and `clippy.toml`
+  refuses a bare reqwest client. See `crates/cmdr-http/CLAUDE.md`
 - `crates/cmdr-archive/`: the archive backend — a `Volume` over a zip / tar / 7z file that physically lives on another
   volume. Browse + extract for every format, plus temp+rename WRITES for zip, over a decoupled `Volume`-free reading
   core (central-directory parse, synthetic tree, streaming decompress, Zip Slip defense) and the shared boundary
@@ -388,6 +404,20 @@ on. The two dev CLIs and the vendored fork are ordinary members.
   guardrails and which side a test lives on: `crates/cmdr-webdav/CLAUDE.md`. Its Docker servers:
   `apps/desktop/test/webdav-servers/README.md`. What it still owes: GitHub issues
   [#173](https://github.com/vdavid/cmdr/issues/173)–[#178](https://github.com/vdavid/cmdr/issues/178).
+- `crates/cmdr-s3/`: everything Cmdr says to an S3-compatible object store (AWS, Cloudflare R2, Backblaze B2, Wasabi,
+  Hetzner, Google Cloud Storage, DigitalOcean Spaces, any other). Our own SigV4 signer, one request builder per S3 call,
+  `quick-xml` parsers and typed `S3Error`s, the provider profiles, a `reqwest` transport, and an `S3Volume` per place (a
+  bucket, or the account root that lists them): connect, list, stat, ranged reads, writes to the final key (one PUT or a
+  multipart upload, with the unfinished-upload record under the host's state directory), server-side copy within an
+  account, folders, delete (one node or a `DeleteObjects` batch), share links, reconnect. A folder or big object renames
+  by copy (`Volume::rename_work`), which the app runs as a move
+  (`apps/desktop/src-tauri/src/file_system/write_operations/DETAILS.md` § "Renames that run as moves"). The app keeps
+  the place list and the connect wiring (`apps/desktop/src-tauri/src/network/s3_*.rs`), the IPC surface
+  (`commands/s3.rs` plus the S3 arm of `commands/servers.rs`), and `s3://` redaction. Cost estimates: the price table
+  and estimator in `cost/` (its server copy at `apps/api-server/src/s3-prices/`), wired to the dialogs by
+  `apps/desktop/src-tauri/src/s3_costs/CLAUDE.md`. The plan: `docs/specs/s3-support-plan.md`. Decisions:
+  `crates/cmdr-s3/DETAILS.md`; guardrails: `crates/cmdr-s3/CLAUDE.md`. Its Docker servers:
+  `apps/desktop/test/s3-servers/README.md`.
 - `crates/cmdr-adb/`: everything Cmdr says to an Android device over ADB. `AdbVolume` per attached device, rooted at the
   device's real `/`, spoken to the ADB server on loopback (the sync service for stat, list, and transfers, `shell,v2`
   for the verbs it lacks, `host:track-devices` for hotplug), with a typed errno-based error policy and a fake ADB server
@@ -453,6 +483,9 @@ on. The two dev CLIs and the vendored fork are ordinary members.
   own crate because `operation_log` is an app module, so this is the one dev tool that depends on `cmdr`
 - `crates/fsevent-stream/`: vendored fork of the FSEvents stream crate (published as `cmdr-fsevent-stream`), giving the
   drive watcher event IDs and `sinceWhen` replay. macOS-only
+- `fuzz/` (repo root, outside the workspace): libFuzzer targets for the parsers that read bytes someone else chose (ADB,
+  WebDAV, S3, archives, PDF, image headers), reached through each crate's `fuzzing` feature. Run by `pnpm check fuzz`
+  and the slow CI lane. See `fuzz/CLAUDE.md`
 
 ## Other apps
 
@@ -465,7 +498,9 @@ on. The two dev CLIs and the vendored fork are ordinary members.
   for drafting posts
 - `apps/website/public/hero/`: Hero illustration assets (frame + pane cutouts, dark/light)
 - `apps/desktop/packaging/homebrew/`: Homebrew cask shape source-of-truth and tap-bump flow
-- `scripts/check/`: Go unified check runner (~40 checks, parallel with dependency graph)
+- `scripts/check/`: Go unified check runner (~140 checks, parallel with dependency graph)
+- `.github/workflows/`: CI, plus the release: `release.yml` takes the `v*` tag and calls the reusable
+  `release-pipeline.yml`, which builds, signs, and publishes. See `tooling/ci.md` and `guides/releasing.md`
 
 ## Search
 
@@ -557,6 +592,12 @@ runs, so downloads attribute to a channel without a consent banner:
 or a stored value and a pass-through value diverge and attribution corrupts. The api-server is the source of truth and
 re-sanitizes; clients sanitize to reject bad input before a round-trip.
 
+## Security
+
+- `threat-model.md`: the whole-app view: assets, actors, trust boundaries with their mitigations, and the ranked
+  residual risks
+- `security.md`: the per-area mechanisms the threat model points to (entitlements, redaction, cloud AI egress, keys)
+
 ## Tooling and infrastructure
 
 Dev workflow docs and external service references. All in `docs/tooling/`.
@@ -568,6 +609,7 @@ Dev workflow docs and external service references. All in `docs/tooling/`.
 - `tooling/mcp.md`: MCP servers (`cmdr`, `tauri`) for agent-driven app testing
 - `tooling/instance-isolation.md`: `CMDR_INSTANCE_ID` primer: per-resource isolation for parallel dev / E2E
 - `tooling/css-health-checks.md`: Stylelint + Go-based unused CSS checker
+- `tooling/git-hooks.md`: the `pre-commit` and `pre-push` hooks that apply `oxfmt`, `rustfmt`, and `gofmt` automatically
 - `tooling/index-query.md`: `index_query`: query index DB with `platform_case` collation (`sqlite3` can't)
 
 The check runner and E2E testing docs live colocated with their code:

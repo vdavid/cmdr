@@ -110,6 +110,39 @@ describe('GlobalShortcutRow', () => {
     target.remove()
   })
 
+  it('a combo another app holds keeps the old one: nothing saved, old combo shown, reason in plain words', async () => {
+    setGlobalGoToLatestShortcutMock.mockResolvedValue({
+      status: 'error',
+      error: { kind: 'unavailable', message: 'RegisterEventHotKey failed for KeyK' },
+    })
+    const target = mountRow()
+    const pill = target.querySelector<HTMLButtonElement>('.shortcut-pill')
+    if (!pill) throw new Error('shortcut pill not found')
+    pill.click()
+    await tick()
+
+    document.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'k',
+        code: 'KeyK',
+        ctrlKey: true,
+        altKey: true,
+        metaKey: true,
+        bubbles: true,
+      }),
+    )
+    await tick()
+    await Promise.resolve()
+    await tick()
+
+    // The backend kept the old combo registered, so the saved binding must stay
+    // the old one too, or the row and the next startup would disagree with it.
+    expect(setSettingMock).not.toHaveBeenCalledWith(BINDING_KEY, expect.anything())
+    expect(pill.textContent).toContain('\u{2303}\u{2325}\u{2318}J')
+    expect(target.querySelector('.shortcut-status.warn')?.textContent).toBe('Another app may be using that combo')
+    target.remove()
+  })
+
   it('ignores a modifier-only combo (no binding write)', async () => {
     const target = mountRow()
     const pill = target.querySelector<HTMLButtonElement>('.shortcut-pill')

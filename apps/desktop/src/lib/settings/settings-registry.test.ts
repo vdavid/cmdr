@@ -48,6 +48,16 @@ describe('report consent defaults', () => {
   })
 })
 
+/**
+ * Sizes default to SI (kB, MB, GB): a Mac user checks a size against Finder and Get Info, and a
+ * drive's capacity on the box, all decimal. Binary (KiB, MiB, GiB) stays one click away.
+ */
+describe('size format default', () => {
+  it('shows decimal sizes until someone picks binary', () => {
+    expect(getDefaultValue('appearance.fileSizeFormat')).toBe('si')
+  })
+})
+
 describe('getSettingDefinition', () => {
   it('should return definition for existing setting', () => {
     const def = getSettingDefinition('appearance.uiDensity')

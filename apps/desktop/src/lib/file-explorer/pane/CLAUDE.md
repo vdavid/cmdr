@@ -11,6 +11,9 @@ their helper siblings are listed in `DETAILS.md` § File map.
 
 ## Must-knows
 
+- **Row indices belong to `pane-row-state.ts`'s applied revision.** Sort/visibility/filter changes use its serialized
+  gate; compare and F5 require ready rows. Transition batches stay separate. Protocol: `DETAILS.md` § Compare
+  directories.
 - **Only `setFocusedPane` mutates the focused pane**, and startup must call `updateFocusedPane`, or Rust's left default
   misdirects Ask Cmdr and MCP.
 - **Guard on `capabilitiesForPane(volumeId, path)`, ❌ never a volume-id string or a backend-sourced KIND**: an
@@ -31,6 +34,9 @@ their helper siblings are listed in `DETAILS.md` § File map.
   listing.
 - **`DualPaneExplorer.svelte` / `FilePane.svelte` are at their size cap**: cross-cutting state → a `*.svelte.ts`
   factory, pure logic → a `*.ts` helper, ❌ never a child component.
+- **A sub-100 ms navigation keeps the last settled rows visible** (`listing-presentation.svelte.ts`), and the list
+  caches replace them only after the new visible range lands. ❌ Don't clear rows at navigation start. A longer load
+  lays `LoadingIcon` over the rows (`loadingOverlay`); ❌ never swap the list out for it, or the column header blinks.
 - **Five behaviors each carry a guardrail that reads like a tidy-up, so read the `DETAILS.md` section before touching
   one**: birth context (a read-only `hasBirthContext()` for flow modules, ❌ never a writer), first-run pane layout,
   Escape during a load (return to what the pane last SHOWED, ❌ never a guess from history), select-same-kind (`⌥⇧=`,

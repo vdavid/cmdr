@@ -177,9 +177,18 @@ declares, `shortcuts.json` persists, `shortcut-dispatch` keys its map by, `confl
 `frontend_shortcut_to_accelerator` (Rust) parses.
 
 - Modifiers, always in this order: `⌘⌃⌥⇧` on macOS, `Ctrl+Alt+Shift+Super` elsewhere.
-- Key names are platform-neutral WORDS: `Enter`, `Backspace`, `Delete`, `Escape`, `PageUp`, `PageDown`, `Space`, `Tab`,
-  `Home`, `End`. Arrows stay symbols (`↑ ↓ ← →`) on every platform.
-- Example: `⌘⇧P`, `⌘Backspace`, `Ctrl+Shift+P`.
+- Key names are platform-neutral WORDS: `Enter`, `Backspace`, `Delete`, `Insert`, `Escape`, `PageUp`, `PageDown`,
+  `Space`, `Tab`, `Home`, `End`. Arrows stay symbols (`↑ ↓ ← →`) on every platform. macOS reports a PC keyboard's Insert
+  key as `Help` (both `key` and `code`; verified on macOS 27 with a Genius PC keyboard, Safari key log, 2026-10-05), so
+  `Help` canonicalizes to `Insert`.
+- **A symbol typed with Shift alone is named by its CHARACTER, without the ⇧**: US ⇧8, Swedish ⇧', and the numpad all
+  give `*`; Hungarian ⇧3 and US ⇧= give `+`; French ⇧1 gives `1`. "Symbol" means a one-character key with no case
+  (`isTypedSymbol`), so letters keep their Shift (`⇧H`), and so do Space (`⇧Space` is Quick Look) and named keys (`⇧F8`,
+  `⇧Tab`). Shift always changes what a symbol key types, so dropping it loses nothing, and it's what lets a `*` binding
+  mean "the `*` key" on every layout (David's call, 2026-10-05: serve the key the user READS over the key position).
+  With ⌘ / ⌃ / ⌥ held, Shift stays: those combos are commands, named by position (`physicalKeyCombo`). Consequence:
+  Hungarian ⇧8 types `(`, so it is that user's `(` key and doesn't invert; the key showing `*` does.
+- Example: `⌘⇧P`, `⌘Backspace`, `Ctrl+Shift+P`, `*`.
 
 `toDisplayShortcut(combo)` is the display layer, applied at render time only: `⌘Backspace` → `⌘⌫`, `Enter` → `↩`,
 `Escape` → `⎋` / `Esc`, `PageUp` → `PgUp`. It's idempotent, so wrapping an already-displayed value is safe. Its
@@ -187,14 +196,24 @@ consumers are the reactive readers (`reactive-shortcuts.svelte.ts` returns displ
 renders to a user), `ShortcutChip`, `ShortcutsList`, the Settings editor's pills and conflict banner, the F-key bar, and
 the shortcut-carrying toasts. Anything that COMPARES or DISPATCHES a combo reads `getEffectiveShortcuts` instead.
 
-`physicalKeyCombo(event)` is the layout escape hatch beside it: the combo the keypress WOULD have formatted as if the
-layout had typed the key's own character, or `null` when `event.key` already is that character. It exists because Shift
-and Option retype a key (`⇧8` → `*`, `⌥⇧=` → `±`), which would otherwise make those combos unbindable. Both the matchers
-and the Settings capture field read it; the rules and the deliberate narrowness are under "Centralized dispatch" below.
+A keypress can mean more than one combo, and `keyComboCandidates(event)` lists them, most specific first:
 
-`toCanonicalShortcut(combo)` is the inverse, and only three places call it: `initializeShortcuts` (healing a
-`shortcuts.json` written before the vocabulary was unified) and `setShortcut` / `addShortcut` (canonicalizing at the
-store boundary, so MCP writes land in the same vocabulary as a Settings capture).
+1. `formatKeyCombo(event)`, the exact combo.
+2. `physicalKeyCombo(event)`: the combo as if the layout had typed the key's own character, for a COMMAND combo whose
+   modifiers retyped the key (`⌥⇧=` reports `±`, `⌘⇧.` reports `>`). Only with ⌥ held, or ⇧ beside ⌘ / ⌃; Shift alone is
+   the character rule above. Only the digit row and the punctuation `codeToKey` names.
+3. `typedCharacterCombo(event)`: the bare character an ⌥ keypress typed, with no ⌘ / ⌃. On a Mac, Option is the PC's
+   AltGr, and plenty of layouts type `*` or `-` with it, so a `*` binding reaches those users too.
+
+`capturedKeyCombo(event)` (physical, else exact) is what the Settings capture field and its key-filter box record. It's
+always candidate 1 or 2, so whatever a user records also dispatches. How dispatch picks among the candidates is under
+"Local handlers" below (`resolveKeyCombo`).
+
+`toCanonicalShortcut(combo)` is the inverse of `toDisplayShortcut`, and only three places call it: `initializeShortcuts`
+(healing a `shortcuts.json` written before the vocabulary was unified) and `setShortcut` / `addShortcut` (canonicalizing
+at the store boundary, so MCP writes land in the same vocabulary as a Settings capture). It also heals a Shift-only key
+POSITION (`⇧8`, the old `selection.invert` default, which no keypress produces any more) to the character the US keycap
+it was named after types (`*`); the load dedupes what that folds together.
 
 **Why the split matters.** With glyphs in the canonical form, three things break silently and independently: central
 dispatch can never fire a word-form binding (`lookupCommand('↩')` misses `'Enter'`), conflict detection and the
@@ -219,11 +238,11 @@ customize shortcuts on the fly.
 
 Builds a reverse lookup `Map<shortcutString, commandId>` for Tier 1 commands (those with `showInPalette: true` plus
 `app.commandPalette`). On every keypress, `handleGlobalKeyDown()` in `+page.svelte` asks `resolveGlobalKeyAction`
-(`routes/(main)/global-keydown.ts`), which finds the command through `formatKeyCombo(e)` and `lookupCommand()` and
-claims the key only when the dispatch core's dialog gate would run it. The claimed command goes down the keyboard's road
-into `handleCommandExecute()`, the same core the palette, the native menu, and MCP events reach
-(`routes/(main)/DETAILS.md` § The dialog gate). Rebuilds automatically when custom shortcuts change via
-`onShortcutChange`.
+(`routes/(main)/global-keydown.ts`), which finds the command through `resolveKeyCombo(e)` and `lookupCommand()` (only
+the exact `formatKeyCombo(e)` while a text input has focus: a retyped key typed a character there) and claims the key
+only when the dispatch core's dialog gate would run it. The claimed command goes down the keyboard's road into
+`handleCommandExecute()`, the same core the palette, the native menu, and MCP events reach (`routes/(main)/DETAILS.md` §
+The dialog gate). Rebuilds automatically when custom shortcuts change via `onShortcutChange`.
 
 Tier 2 commands (the per-keystroke cursor ids: arrows, Home/End, PageUp/PageDown) are not in the dispatch map. Unmatched
 keypresses propagate normally to component-level handlers in DualPaneExplorer and FilePane.
@@ -264,8 +283,10 @@ So local handlers don't test raw key flags; they ask the registry:
 - `eventMatchesCommand(event, commandId, { allowShift? })` — does this keypress match THIS command exactly? Right for a
   handler that knows its own scope, which is most of them: `Enter` is claimed by five different scopes, so the global
   winner-takes-all `lookupCommand` would hand a pane the volume chooser's command.
-- `comboMatchesCommand(combo, commandId, …)` — the same test for an already-formatted combo, so a handler checking one
-  keypress against several commands (the file list's ten cursor commands) formats it once.
+- `comboMatchesCommand(combo, commandId, …)` — the same test for an already-resolved combo, so a handler checking one
+  keypress against several commands (the file list's ten cursor commands) resolves it once. ❗ Feed it
+  `resolveKeyCombo(event)`, never a bare `formatKeyCombo(event)`: that skips the layout fallbacks below, so a `*`
+  binding would go dead for AltGr users in that one handler.
 - `allowShift` accepts the combo with Shift held. Only the file list needs it: Shift there means "extend the selection
   while the cursor moves", so `⇧↓` is still `nav.down`, while `⌘↓` (open) and `⌥↓` (go to end) stay separate commands.
   The strip (`withoutShift`) is deliberately NOT anchored at the start of the string: `formatKeyCombo` emits modifiers
@@ -273,34 +294,28 @@ So local handlers don't test raw key flags; they ask the registry:
   — handing the caller a false "no match", the exact silent-mismatch class the option exists to prevent. Unanchored
   removal is safe because no key NAME contains `⇧` or `Shift+`. Pinned by the `comboMatchesCommand` cases in
   `shortcut-dispatch.test.ts`.
-- A binding whose key a modifier RETYPES is ALSO matched by physical key, via `physicalKeyCombo` (in `key-capture.ts`).
-  No layout types a bare digit with Shift held (`⇧8` is `*` on US and `(` on Hungarian), and macOS types `±` for `⌥⇧=`,
-  so `formatKeyCombo` can never yield `⇧8` or `⌥⇧=` from a real keypress and those combos would be unreachable.
-  `eventMatchesCommand` therefore retries with the character `event.code` names (`Digit8` → `8`, `Equal` → `=`), which
-  makes the default layout-independent. The retry is narrow on purpose: Shift or Option must be held, the code must be a
-  `Digit<n>` or one of the punctuation codes in `codeToKey`, and every other modifier still has to match, so `⌘8`, `⇧7`,
-  and `⌘⌥⇧=` stay misses. Letters are deliberately out of scope — the `Dead` branch of `normalizeKeyName` already covers
-  the layouts that matter there, and nothing binds a bare `⌥<letter>`. `selection.invert` (`⇧8`, Total Commander's `*`)
-  is the user today. Such a binding pairs with a numpad spelling as a SECOND default (`*` for `⇧8`, `⌥+` for `⌥⇧=`)
-  which the retry can't reach and doesn't need: `NumpadMultiply` / `NumpadAdd` are not codes `codeToKey` names, and they
-  report `*` / `+` unchanged on every layout, so `formatKeyCombo` matches them directly. Pinned by the
-  `eventMatchesCommand` cases in `shortcut-dispatch.test.ts` and the `physicalKeyCombo` cases in `key-capture.test.ts`.
-- **The Settings capture field and key-filter box run the same helper**
-  (`physicalKeyCombo(event) ?? formatKeyCombo(event)` in `KeyboardShortcutsSection.controller.svelte.ts`), so a rebind
-  persists `⌥⇧=` rather than the `⌥⇧±` macOS reports, and pressing the combo in the filter box finds the binding stored
-  under it. ❌ `resolveGlobalKeyAction` stays out of this: keeping the fallback off the global path is what stops `⇧8`
-  firing outside the file pane.
+- **Every matcher resolves a keypress to ONE combo, `resolveKeyCombo(event)`: the first of `keyComboCandidates` (§ Key
+  capture) that ANY command binds, else the exact combo.** The document dispatcher reads it too, so a binding can't be
+  live in the pane and dead globally (the physical-key fallback used to be local-only, so a rebind of a Tier 1 command
+  to `⌥⇧=` was dead everywhere but the pane). Resolving once, across all commands, is the load-bearing part: the
+  numpad's `⌥+` is `selection.selectSameKind`'s exact combo, and testing candidates per command would let it ALSO reach
+  `selection.selectFiles` through the typed `+` whenever a handler asked about Select files first. The one place the
+  AltGr fallback therefore yields: a layout that types `+` with ⌥ reports exactly `⌥+`, which is Select same kind.
+  Pinned by the `eventMatchesCommand` cases in `shortcut-dispatch.test.ts`, the candidate cases in
+  `key-capture.test.ts`, and the "keys from any keyboard and layout" cases in `routes/(main)/global-keydown.test.ts`.
+- **The Settings capture field and key-filter box record `capturedKeyCombo(event)`**, so a rebind persists `⌥⇧=` rather
+  than the `⌥⇧±` macOS reports, a typed symbol by its character, and pressing the combo in the filter box finds the
+  binding stored under it. ⌫ and ⌦ capture like any other key (they're real bindings); removing one is the pill's ×.
 
-Callers today: `../file-explorer/pane/selection-keys.ts` (`Space` / `Insert` / `⌘A` / `⌘⇧A` / `⇧8` / `*`),
-`FilePane.handleOpenOrParentKey` (`nav.open` / `nav.parent` — and `⌘Backspace` falls through to `file.delete` for free,
-since it isn't `nav.parent`'s combo), `../file-explorer/pane/cursor-nav-keys.ts` (the ten cursor commands, as one gate
-in front of the per-view math), and `../file-explorer/network/PlacesBrowser.svelte` (`share.back` /
-`share.selectShare`).
+Callers today: `../file-explorer/pane/selection-keys.ts` (`Space` / `Insert` / `⌘A` / `⌘⇧A` / `*` / `⌥⇧=`),
+`../file-explorer/pane/selection-dialog-keys.ts` (`+` / `-`), `FilePane.handleOpenOrParentKey` (`nav.open` /
+`nav.parent` — and `⌘Backspace` falls through to `file.delete` for free, since it isn't `nav.parent`'s combo),
+`../file-explorer/pane/cursor-nav-keys.ts` (the ten cursor commands, as one gate in front of the per-view math), and
+`../file-explorer/network/PlacesBrowser.svelte` (`share.back` / `share.selectShare`).
 
-Two file-list matchers stay hand-rolled ON PURPOSE, because they match a CLASS of keys rather than a combo:
-`../file-explorer/pane/type-to-jump-keys.ts` (any printable character) and
-`../file-explorer/pane/selection-dialog-keys.ts` (the physical Minus key, so `⇧-` works on any layout). Both already
-reject every command modifier, which is the property that matters.
+One file-list matcher stays hand-rolled ON PURPOSE, because it matches a CLASS of keys rather than a combo:
+`../file-explorer/pane/type-to-jump-keys.ts` (any printable character). It rejects every command modifier, which is the
+property that matters.
 
 ### The `cmdr/no-raw-key-match` lint rule
 
@@ -319,7 +334,7 @@ isn't a bug:
   tradeoff, but they can't fire on the wrong keypress.
 - Rejecting modifiers is the safe direction, so negated reads never count as "required".
 - A bail-out guard (`if (e.metaKey || e.ctrlKey || e.altKey) return null` ahead of the key tests) leaves no key test in
-  the guarded body, which is what keeps `type-to-jump-keys.ts` and `selection-dialog-keys.ts` clean without an opt-out.
+  the guarded body, which is what keeps `type-to-jump-keys.ts` clean without an opt-out.
 - Mouse, click, and drag handlers read modifier flags with no key comparison anywhere near them — the biggest
   false-positive source, and the reason the pairing is required.
 - `key-capture.ts`, `modifier-key-tracker.svelte.ts`, and `KeyboardShortcutsSection.controller.svelte.ts` BUILD or TRACK

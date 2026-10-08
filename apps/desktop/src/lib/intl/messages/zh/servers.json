@@ -83,6 +83,22 @@
   "@servers.hub.editNearbyHint": {
     "sourceHash": "64653de"
   },
+  "servers.hub.s3AllBuckets": "所有存储桶",
+  "@servers.hub.s3AllBuckets": {
+    "sourceHash": "2a5828a"
+  },
+  "servers.hub.openAccountHint": "{name} 不是可以打开的位置。请打开这个账户下方的某个存储桶。",
+  "@servers.hub.openAccountHint": {
+    "sourceHash": "c52ee6f"
+  },
+  "servers.hub.forgetAccountConfirm": "要忘记 {name} 以及保存在这个账户下的所有存储桶吗？Cmdr 会断开它们的连接，并且不再列出它们。你的文件会留在存储桶里。",
+  "@servers.hub.forgetAccountConfirm": {
+    "sourceHash": "e1c636e"
+  },
+  "servers.hub.forgetSecretKeyToo": "同时清除这个账户的秘密访问密钥",
+  "@servers.hub.forgetSecretKeyToo": {
+    "sourceHash": "4f3ac6d"
+  },
   "servers.hub.forgetShare": "忘记共享",
   "@servers.hub.forgetShare": {
     "sourceHash": "8888a9d"
@@ -94,6 +110,10 @@
   "servers.hub.forgetShareConfirm": "要忘记 {name} 吗？Cmdr 不会再列出它。如果它已装载，会保持装载，你的文件也会留在服务器上。",
   "@servers.hub.forgetShareConfirm": {
     "sourceHash": "8c14aaa"
+  },
+  "servers.hub.nearbyGroup": "{count, plural, other {在附近发现 {countText} 台服务器}}",
+  "@servers.hub.nearbyGroup": {
+    "sourceHash": "cd7a44d"
   },
   "servers.hub.discoveryOff": "本地网络发现已关闭。",
   "@servers.hub.discoveryOff": {
@@ -171,6 +191,10 @@
   "@servers.refusal.unreachable": {
     "sourceHash": "6fcba90"
   },
+  "servers.refusal.localNetworkHint": "如果服务器开着，请确认已在“{localNetwork}”里允许 Cmdr。",
+  "@servers.refusal.localNetworkHint": {
+    "sourceHash": "baa1753"
+  },
   "servers.refusal.hostKeyUntrusted": "Cmdr 还没有信任 {host} 的主机密钥。",
   "@servers.refusal.hostKeyUntrusted": {
     "sourceHash": "83dc719"
@@ -206,6 +230,62 @@
   "servers.refusal.savedSecretNotUpdated": "Cmdr 已保存你的更改，但没能更新钥匙串里的密码。再保存一次即可重试。",
   "@servers.refusal.savedSecretNotUpdated": {
     "sourceHash": "2ae1e2b"
+  },
+  "servers.refusal.s3AuthenticationRejected": "那个秘密访问密钥不起作用。",
+  "@servers.refusal.s3AuthenticationRejected": {
+    "sourceHash": "14f90c8"
+  },
+  "servers.refusal.s3NeedsCredentials": "这个账户需要秘密访问密钥。",
+  "@servers.refusal.s3NeedsCredentials": {
+    "sourceHash": "23695df"
+  },
+  "servers.refusal.s3SecretMissing": "输入秘密访问密钥。",
+  "@servers.refusal.s3SecretMissing": {
+    "sourceHash": "f1f32f2"
+  },
+  "servers.refusal.s3SecretNotStored": "Cmdr 没能把这个秘密访问密钥存到钥匙串。请再试一次，或者关闭“记住到钥匙串”，不存密钥直接登录。",
+  "@servers.refusal.s3SecretNotStored": {
+    "sourceHash": "f7a9fb0"
+  },
+  "servers.refusal.s3SavedSecretNotUpdated": "Cmdr 已保存你的更改，但没能更新钥匙串里的秘密访问密钥。再保存一次即可重试。",
+  "@servers.refusal.s3SavedSecretNotUpdated": {
+    "sourceHash": "1d2889d"
+  },
+  "servers.refusal.accessDenied": "这个密钥无法访问这个存储桶。请检查存储桶名称和秘密访问密钥，并确认这个密钥有权读取这个存储桶。",
+  "@servers.refusal.accessDenied": {
+    "sourceHash": "8372e73"
+  },
+  "servers.refusal.bucketListRefused": "这个密钥无权列出这个账户里的存储桶。输入存储桶名称即可打开那个存储桶，或者检查秘密访问密钥。",
+  "@servers.refusal.bucketListRefused": {
+    "sourceHash": "1b9ebf5"
+  },
+  "servers.refusal.bucketNotFound": "{host} 上没有叫这个名字的存储桶。",
+  "@servers.refusal.bucketNotFound": {
+    "sourceHash": "0f5a04d"
+  },
+  "servers.refusal.regionMismatch": "这个存储桶在另一个区域。请选择它所在的区域，然后重试。",
+  "@servers.refusal.regionMismatch": {
+    "sourceHash": "27a37f8"
+  },
+  "servers.refusal.regionMismatchNamed": "这个存储桶在 {region}。请选择那个区域，然后重试。",
+  "@servers.refusal.regionMismatchNamed": {
+    "sourceHash": "30abb0d"
+  },
+  "servers.refusal.clockSkewed": "这台 Mac 的时钟偏差超过 15 分钟，所以服务器不接受 Cmdr 的请求。请在“系统设置”中开启自动设置日期与时间，然后重试。",
+  "@servers.refusal.clockSkewed": {
+    "sourceHash": "cdee0ef"
+  },
+  "servers.refusal.notAnS3Endpoint": "这个地址上没有任何东西作为 S3 存储来响应。",
+  "@servers.refusal.notAnS3Endpoint": {
+    "sourceHash": "78557ec"
+  },
+  "servers.refusal.s3FieldMalformed": "这里只能用小写字母、数字和短横线。",
+  "@servers.refusal.s3FieldMalformed": {
+    "sourceHash": "ac8fbea"
+  },
+  "servers.refusal.endpointMalformed": "请按 http:// 或 https:// 加主机名的格式输入端点，比如 https://s3.example.com。",
+  "@servers.refusal.endpointMalformed": {
+    "sourceHash": "beb63dd"
   },
   "servers.sheet.addTitle": "添加服务器",
   "@servers.sheet.addTitle": {
@@ -323,6 +403,10 @@
   "@servers.sheet.password": {
     "sourceHash": "e7cf3ef"
   },
+  "servers.sheet.secretKeptPlaceholder": "已保存在钥匙串中。留空则保持不变。",
+  "@servers.sheet.secretKeptPlaceholder": {
+    "sourceHash": "8711f6c"
+  },
   "servers.sheet.smbUsernamePlaceholder": "可选",
   "@servers.sheet.smbUsernamePlaceholder": {
     "sourceHash": "59be713"
@@ -358,6 +442,122 @@
   "servers.sheet.name": "名称",
   "@servers.sheet.name": {
     "sourceHash": "dcd1d52"
+  },
+  "servers.sheet.protocolS3": "S3",
+  "@servers.sheet.protocolS3": {
+    "sourceHash": "44d6a8a",
+    "sameAsSourceJustification": "Protocol name kept verbatim, like its picker siblings `SMB`, `SFTP`, and `WebDAV`; AWS zh-CN docs write Amazon S3 and S3 存储桶 with S3 Latin (checked 2026-10-02)."
+  },
+  "servers.sheet.s3Provider": "提供方",
+  "@servers.sheet.s3Provider": {
+    "sourceHash": "472590a"
+  },
+  "servers.sheet.s3ProviderAws": "Amazon S3",
+  "@servers.sheet.s3ProviderAws": {
+    "sourceHash": "a4f6352",
+    "sameAsSourceJustification": "Product name kept verbatim: AWS zh-CN docs title the service Amazon Simple Storage Service / Amazon S3 in Latin (checked 2026-10-02)."
+  },
+  "servers.sheet.s3ProviderR2": "Cloudflare R2",
+  "@servers.sheet.s3ProviderR2": {
+    "sourceHash": "9f2f1ed",
+    "sameAsSourceJustification": "Product name kept verbatim: Cloudflare R2 has no Chinese product name; its zh-CN pages keep it Latin."
+  },
+  "servers.sheet.s3ProviderB2": "Backblaze B2",
+  "@servers.sheet.s3ProviderB2": {
+    "sourceHash": "ed40187",
+    "sameAsSourceJustification": "Product name kept verbatim: Backblaze B2 ships no Chinese localization."
+  },
+  "servers.sheet.s3ProviderWasabi": "Wasabi",
+  "@servers.sheet.s3ProviderWasabi": {
+    "sourceHash": "493861e",
+    "sameAsSourceJustification": "Brand name kept verbatim: Wasabi ships no Chinese localization."
+  },
+  "servers.sheet.s3ProviderHetzner": "Hetzner Object Storage",
+  "@servers.sheet.s3ProviderHetzner": {
+    "sourceHash": "a339b4f",
+    "sameAsSourceJustification": "Product name kept verbatim: Hetzner Object Storage ships no Chinese localization, so the name the user meets in its console is the English one."
+  },
+  "servers.sheet.s3ProviderGcs": "Google Cloud Storage",
+  "@servers.sheet.s3ProviderGcs": {
+    "sourceHash": "53fa0ba",
+    "sameAsSourceJustification": "Product name kept verbatim: Google Cloud zh-CN keeps Cloud Storage as a Latin product name."
+  },
+  "servers.sheet.s3ProviderDigitalOcean": "DigitalOcean Spaces",
+  "@servers.sheet.s3ProviderDigitalOcean": {
+    "sourceHash": "c3f48e3",
+    "sameAsSourceJustification": "Product name kept verbatim: DigitalOcean Spaces ships no Chinese localization."
+  },
+  "servers.sheet.s3GcsKeyHelp": "用 Cloud Storage 设置里“互操作性”标签页中的 HMAC 密钥登录。",
+  "@servers.sheet.s3GcsKeyHelp": {
+    "sourceHash": "acb72a4"
+  },
+  "servers.sheet.s3ProviderOther": "其他 S3 兼容服务",
+  "@servers.sheet.s3ProviderOther": {
+    "sourceHash": "13d2bdc"
+  },
+  "servers.sheet.s3Region": "区域",
+  "@servers.sheet.s3Region": {
+    "sourceHash": "d3a008e"
+  },
+  "servers.sheet.s3RegionOptionalPlaceholder": "可选。留空则使用 us-east-1",
+  "@servers.sheet.s3RegionOptionalPlaceholder": {
+    "sourceHash": "12dd731"
+  },
+  "servers.sheet.s3AccountId": "账户 ID",
+  "@servers.sheet.s3AccountId": {
+    "sourceHash": "919bb4c"
+  },
+  "servers.sheet.s3AccountIdHelp": "Cloudflare R2 概览页上的账户 ID。",
+  "@servers.sheet.s3AccountIdHelp": {
+    "sourceHash": "963d1f5"
+  },
+  "servers.sheet.s3Location": "位置",
+  "@servers.sheet.s3Location": {
+    "sourceHash": "15b6197"
+  },
+  "servers.sheet.s3Endpoint": "端点",
+  "@servers.sheet.s3Endpoint": {
+    "sourceHash": "3df9726"
+  },
+  "servers.sheet.s3PathStyle": "使用路径类型（path-style）寻址",
+  "@servers.sheet.s3PathStyle": {
+    "sourceHash": "627c522"
+  },
+  "servers.sheet.s3PathStyleHelp": "大多数自托管服务器（比如 MinIO 和 Garage）都需要这一项。",
+  "@servers.sheet.s3PathStyleHelp": {
+    "sourceHash": "bc6e240"
+  },
+  "servers.sheet.s3Bucket": "存储桶",
+  "@servers.sheet.s3Bucket": {
+    "sourceHash": "c83b657"
+  },
+  "servers.sheet.s3BucketHelp": "留空则显示所有存储桶。如果你的密钥只能访问一个存储桶，就输入它的名称。",
+  "@servers.sheet.s3BucketHelp": {
+    "sourceHash": "8d380d9"
+  },
+  "servers.sheet.s3UseRegion": "使用 {region}",
+  "@servers.sheet.s3UseRegion": {
+    "sourceHash": "5734184"
+  },
+  "servers.sheet.accessKeyId": "访问密钥 ID",
+  "@servers.sheet.accessKeyId": {
+    "sourceHash": "14eb0f9"
+  },
+  "servers.sheet.secretAccessKey": "秘密访问密钥",
+  "@servers.sheet.secretAccessKey": {
+    "sourceHash": "3de6b75"
+  },
+  "servers.sheet.examplePlaceholder": "示例：{example}",
+  "@servers.sheet.examplePlaceholder": {
+    "sourceHash": "9c7df45"
+  },
+  "servers.sheet.identityLockedS3": "提供方、访问密钥 ID 和存储桶决定了这是哪个位置。要改这几项，先忘记它，再重新添加。",
+  "@servers.sheet.identityLockedS3": {
+    "sourceHash": "fe4d469"
+  },
+  "servers.sheet.identityLockedS3Account": "提供方和访问密钥 ID 决定了这是哪个账户。要改这两项，先忘记这个账户，再重新添加。",
+  "@servers.sheet.identityLockedS3Account": {
+    "sourceHash": "e03a769"
   },
   "servers.sheet.namePlaceholder": "留空则使用 {label}",
   "@servers.sheet.namePlaceholder": {
@@ -451,6 +651,10 @@
   "@servers.paneState.notConnected": {
     "sourceHash": "5020fac"
   },
+  "servers.paneState.unreachable": "Cmdr 连不上 {name}。",
+  "@servers.paneState.unreachable": {
+    "sourceHash": "a7bc9bc"
+  },
   "servers.paneState.goBack": "返回",
   "@servers.paneState.goBack": {
     "sourceHash": "6aadac2"
@@ -463,9 +667,13 @@
   "@servers.paneState.hostKeyChanged": {
     "sourceHash": "c73ddf3"
   },
-  "servers.paneState.hostKeyChangedHint": "它的主机密钥变了。可能是服务器重装过，也可能是有东西夹在你和它之间。请先断开连接，然后再打开它来核对指纹。",
+  "servers.paneState.hostKeyChangedHint": "它的主机密钥变了。可能是服务器重装过，也可能是有东西夹在你和它之间。重新连接之前，请先核对新的密钥。",
   "@servers.paneState.hostKeyChangedHint": {
-    "sourceHash": "923de62"
+    "sourceHash": "866b619"
+  },
+  "servers.paneState.checkHostKey": "核对主机密钥",
+  "@servers.paneState.checkHostKey": {
+    "sourceHash": "fefa256"
   },
   "servers.paneState.reconnecting": "正在重新连接到 {name}…",
   "@servers.paneState.reconnecting": {

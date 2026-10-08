@@ -31,7 +31,11 @@ export default defineConfig({
     // container, 2026-09-24). The shim `exec`s node, so `serve` stays the process Playwright started.
     command: './node_modules/.bin/serve dist -l 18473',
     url: 'http://localhost:18473',
-    reuseExistingServer: !process.env.CI,
+    // ❗ Never reuse a server already on the port: anything listening there (a stray `astro dev`, a
+    // desktop E2E app) would get tested in place of `dist`, and the run fails on a dozen unrelated
+    // assertions. With this off, a taken port stops the run at startup and names the port. `serve`
+    // starts in under a second, so reuse saves nothing.
+    reuseExistingServer: false,
     timeout: 120000,
   },
 })

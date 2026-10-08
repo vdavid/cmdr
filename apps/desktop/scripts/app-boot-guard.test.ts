@@ -22,7 +22,7 @@ const SHELL = join(import.meta.dirname, '..', 'src', 'app.html')
 /** The guard's JavaScript, exactly as it ships. */
 function guardSource(): string {
   const html = readFileSync(SHELL, 'utf8')
-  const match = /<script>([\s\S]*?)<\/script>/.exec(html)
+  const match = /<script>([\s\S]*?)<\/script>/i.exec(html)
   if (!match) throw new Error('`src/app.html` no longer carries the boot-guard <script>')
   return match[1]
 }

@@ -198,7 +198,7 @@ test.describe('MTP cross-volume move conflicts', () => {
     await waitForConflictPolicy(tauriPage)
     // Field-bug-4 regression pin, opposite direction: a local→MTP move resolves
     // the local source so the deep scan reports the 1 KB file-a.txt, not 0.
-    await expectDialogCounters(tauriPage, { bytes: '1.00 KB', files: 1, dirs: 0 })
+    await expectDialogCounters(tauriPage, { bytes: '1.02 kB', files: 1, dirs: 0 })
     await selectConflictPolicy(tauriPage, 'overwrite')
     await clickTransferStart(tauriPage)
     await waitForDialogsToClose(tauriPage, 30000)

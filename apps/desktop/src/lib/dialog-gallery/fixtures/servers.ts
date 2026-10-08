@@ -39,6 +39,28 @@ export const serverSignInFixtures: Record<string, SignInSheetFixture | undefined
       attempt: answering({ kind: 'refused', refusal: 'not_a_webdav_server' }),
     },
   },
+  'add-s3': {
+    request: {
+      mode: 'add',
+      prefill: 's3://AKIAIOSFODNN7EXAMPLE@s3.eu-west-1.amazonaws.com:443/photos',
+      attempt: answering({ kind: 'refused', refusal: 'region_mismatch', region: 'us-east-2' }),
+    },
+  },
+  'sign-in-s3': {
+    request: {
+      mode: 'sign-in',
+      remembered: false,
+      endpoint: {
+        protocol: 's3',
+        displayName: 'photos',
+        address: 's3.eu-west-1.amazonaws.com/photos',
+        host: 's3.eu-west-1.amazonaws.com',
+        username: 'AKIAIOSFODNN7EXAMPLE',
+      },
+      shape: { kind: 'access_keys' },
+      attempt: answering({ kind: 'refused', refusal: 'access_denied' }),
+    },
+  },
   'sign-in': {
     request: {
       mode: 'sign-in',

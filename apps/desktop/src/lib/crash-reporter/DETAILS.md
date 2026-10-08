@@ -9,6 +9,8 @@ Everything starts in `pending-crash-report.ts`, which `routes/(main)/+layout.sve
 load (the auto-send branch reads `updates.crashReports`, so running earlier would read the registry default):
 
 1. `checkPendingCrashReport()` over IPC. It returns `null` on the normal path, so a clean launch does nothing further.
+   Under the organization's `DisableCrashAndErrorReports` it returns `null` too: the backend discards the pending file
+   (`src-tauri/src/crash_reporter/DETAILS.md`), so no dialog or toast ever offers a send that can't go out.
 2. A report came back. With `updates.crashReports` on AND `possibleCrashLoop` false, `sendCrashReport(report.shortId)`
    fires and `CrashReportToastContent` goes up as a persistent info toast. The user is told, not asked. Only the id
    crosses back; Rust reloads the backend-owned pending report.
@@ -18,7 +20,8 @@ load (the auto-send branch reads `updates.crashReports`, so running earlier woul
 
 A failed auto-send never adds a second error surface on top of the crash the user already lived through, and the crash
 file stays until a send lands, so the report comes back next launch. It logs at warn for network trouble, a timeout, or
-a server having a bad moment, and at error for a refusal from Cmdr's own server, which means the contract broke
+a server having a bad moment, at info for `blockedByPolicy` (the organization's policy turned reports off, so nothing
+left the Mac), and at error for a refusal from Cmdr's own server, which means the contract broke
 (`$lib/error-messages/server-request.ts`). A check that breaks logs at error too: `check_pending_crash_report` can't
 refuse, so only a broken IPC bridge lands there. `pending-crash-report.test.ts` pins both.
 

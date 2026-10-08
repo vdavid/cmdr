@@ -29,6 +29,7 @@
         type CostSummary,
     } from '$lib/tauri-commands'
     import { cloudAiBlocked, openCloudConsentSettings, refreshCloudConsent } from '$lib/ai/cloud-consent.svelte'
+    import { getManagedPolicyView } from '$lib/managed-policy/managed-policy.svelte'
     import { formatUsdMicros } from '$lib/ask-cmdr/ask-cmdr-cost'
     import ForgetMemoryDialog from './ForgetMemoryDialog.svelte'
     import type { MessageKey } from '$lib/intl/keys.gen'
@@ -204,7 +205,10 @@
 
     <!-- Provider + model (the interactive slot over the shared ai/ config) -->
     <h3 class="group-title">{tString('settings.askCmdr.provider.title')}</h3>
-    {#if provider === 'off'}
+    <!-- Under the organization's "no AI", the way back isn't in AI settings, so say who decided. -->
+    {#if getManagedPolicyView().ai.mode === 'off'}
+        <p class="provider-hint">{tString('ai.managed.aiOff')}</p>
+    {:else if provider === 'off'}
         <p class="provider-hint">{tString('settings.askCmdr.provider.off')}</p>
     {:else}
         <p class="provider-hint">

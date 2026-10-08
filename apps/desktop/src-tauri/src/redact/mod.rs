@@ -1,9 +1,9 @@
 //! Shared, path-shape-preserving redactor for log lines, panic messages, and error bundles.
 //!
 //! The hot path is [`RedactionContext::redact_line`], called once per log line by the error
-//! reporter's bundle pass with that report's context. Unsalted [`redact_line`] is the MCP
-//! resources' compatibility policy, and the crash hook's local sanitizer uses
-//! [`redact_panic_message`] (the same policy over each line of a multi-line message).
+//! reporter's bundle pass with that report's context. Unsalted [`redact_line`] runs the same
+//! policy with bare tokens for the MCP resources, and the crash hook's local sanitizer uses
+//! [`redact_panic_message`] (the same over each line of a multi-line message).
 //!
 //! # Design
 //!
@@ -47,6 +47,8 @@ mod names;
 mod path_end;
 mod paths;
 #[cfg(test)]
+mod prose_tests;
+#[cfg(test)]
 mod reference_tests;
 mod references;
 #[cfg(test)]
@@ -54,7 +56,7 @@ mod tests;
 
 pub use context::RedactionContext;
 use context::TokenDomain;
-use detail::{EchoedIdentity, echoed_identities, redact_detail_field};
+use detail::{EchoedIdentity, echoed_identities, redact_detail_field, scrub_leaf_echoes};
 use fields::*;
 use names::*;
 use path_end::*;
@@ -81,13 +83,14 @@ const SAFE_PARENT_DIR_NAMES: &[&str] = &[
     "Application Support",
 ];
 
-/// Redact one line with the stable unsalted compatibility policy used by ordinary MCP.
+/// Redact one line with bare, uncorrelated tokens (`<dir>`, `<file>.pdf`, `<host>`), for
+/// ordinary MCP resources and the crash hook.
 ///
 /// Returns a [`Cow::Borrowed`] when no redaction was needed so we don't allocate
 /// on lines like `"Reconciler: switched to live mode"` that have no PII at all.
 ///
-/// Produces bare `<dir>` / `<file>` tokens. Report builders use
-/// [`RedactionContext::redact_line`] for stricter coverage and report-local correlation.
+/// Same policy as [`RedactionContext::redact_line`]; only the tokens differ. Report builders
+/// use the context for report-local correlation.
 pub fn redact_line(line: &str) -> Cow<'_, str> {
     redact_with(line, None)
 }
@@ -139,8 +142,9 @@ fn redact_with<'a>(line: &'a str, context: Option<&RedactionContext>) -> Cow<'a,
     let re = redactor_regex();
     let mut out: Option<String> = None;
     let mut pos = 0usize;
-    // Collected on the first external-text field only: the whole line's keyed identities,
-    // which that field's prose may repeat bare.
+    // Collected on the first match: the identities and path leaves the whole line names,
+    // which its external-text fields and (for leaves) its plain prose may repeat bare. A line
+    // with no match names nothing, so it never pays for this.
     let mut echoed: Option<Vec<EchoedIdentity>> = None;
 
     while pos <= line.len() {
@@ -148,16 +152,15 @@ fn redact_with<'a>(line: &'a str, context: Option<&RedactionContext>) -> Cow<'a,
         // "start of line" rather than "start of the remaining slice".
         let Some(caps) = re.captures_at(line, pos) else { break };
         let Some(whole) = caps.get(0) else { break };
-        let (replacement, consumed) = match context {
-            Some(context) if caps.name("detail_field").is_some() => {
-                let echoed = echoed.get_or_insert_with(|| echoed_identities(line, context));
-                redact_detail_field(&caps, context, echoed)
-            }
-            _ => dispatch(&caps, context),
+        let echoed = echoed.get_or_insert_with(|| echoed_identities(line, context));
+        let (replacement, consumed) = if caps.name("detail_field").is_some() {
+            redact_detail_field(&caps, context, echoed)
+        } else {
+            dispatch(&caps, context)
         };
 
         let buf = out.get_or_insert_with(|| String::with_capacity(line.len()));
-        buf.push_str(&line[pos..whole.start()]);
+        buf.push_str(&scrub_leaf_echoes(&line[pos..whole.start()], echoed));
         buf.push_str(&replacement);
 
         // A rewriter that consumed nothing would spin forever on the same offset; fall
@@ -172,7 +175,10 @@ fn redact_with<'a>(line: &'a str, context: Option<&RedactionContext>) -> Cow<'a,
 
     match out {
         Some(mut buf) => {
-            buf.push_str(&line[pos.min(line.len())..]);
+            buf.push_str(&scrub_leaf_echoes(
+                &line[pos.min(line.len())..],
+                echoed.as_deref().unwrap_or_default(),
+            ));
             Cow::Owned(buf)
         }
         None => Cow::Borrowed(line),
@@ -246,7 +252,15 @@ fn redactor_regex() -> &'static Regex {
             | (?P<media>          / media / [^/\s"'<>|`]+ (?: \x20 [^/\s"'<>|`]+ )*
                                   (?: / [^/\s"'<>|`]+ (?: \x20 [^/\s"'<>|`]+ )* )*
             )
-            | (?P<remote_url>     (?i: sftp | ssh | webdav | http | https | smb ) ://
+            # An absolute path under any other prefix: `/srv/…`, `/mnt/…`, a phone's `/DCIM/…`,
+            # `/Applications/…`. Hundreds of sites log `path.display()` in prose, so no prefix
+            # list can keep up. `\B` stands in for the missing lookbehind: the slash must not
+            # follow a word character, which keeps `MB/s`, `and/or`, `3/4`, and `$HOME/…` out.
+            # Two segments at least, so a lone `/` or `/foo` stays prose.
+            | (?P<abs_path>       \B / [^/\s"'<>|`()]+
+                                  (?: / [^/\s"'<>|`]+ (?: \x20 [^/\s"'<>|`(][^/\s"'<>|`]* )* )+
+            )
+            | (?P<remote_url>     (?i: sftp | ssh | webdav | s3 | http | https | smb ) ://
                                   [^\s"'<>|`]+ (?: \x20 [^\s"'<>|`]+ )*
             )
             | (?P<unc>            \\\\ [^\\\s"'<>|`]+ (?: \\ [^\\\s"'<>|`]+ (?: \x20 [^\\\s"'<>|`]+ )* )* )
@@ -312,7 +326,7 @@ fn redactor_regex() -> &'static Regex {
             # append its numeric storage ID.
             | (?P<derived_id>
                 \b (?:
-                    (?: smb | sftp | webdav | adb | vol | path ) -
+                    (?: smb | sftp | webdav | s3 | adb | vol | path ) -
                     (?: [\p{L}\p{N}] (?: [\p{L}\p{N}-]{0,22} [\p{L}\p{N}] )? - )?
                     [0-9a-f]{16}
                   | mtp -
@@ -427,90 +441,52 @@ fn dispatch(caps: &Captures<'_>, context: Option<&RedactionContext>) -> (String,
         let (path, _) = split_trailing_noise(m.as_str());
         return (redact_media(path, context), path.len());
     }
-    if let Some(m) = caps.name("remote_url") {
-        if context.is_none() && !m.as_str().starts_with("smb://") {
-            if remote_authority_has_userinfo(m.as_str()) {
-                // `remote_url` allows spaces for report-mode URL paths, but legacy
-                // `url_userinfo` ended at the first whitespace. Consume only that original
-                // span so the compatibility scanner can redact anything after it.
-                let reference = legacy_url_span(m.as_str());
-                return (redact_legacy_url_userinfo(reference), reference.len());
-            }
-            return rescan_inside(m.as_str());
+    if let Some(m) = caps.name("abs_path") {
+        let (path, _) = split_trailing_noise(m.as_str());
+        if path.is_empty() {
+            // Can't happen (a path starts with its slash), but consuming nothing would skip
+            // the whole match unredacted. Hand back everything after the slash instead.
+            return ("/".to_string(), 1);
         }
+        // A leading `/` makes the relative walker keep a system root (`/Applications`) and
+        // tokenize everything else; existing tokens stay, so a second pass is a no-op.
+        return (redact_relative_path(path, context, true), path.len());
+    }
+    if let Some(m) = caps.name("remote_url") {
         let (path, _) = split_trailing_noise(m.as_str());
         let reference = trim_reference_end(path);
-        if context.is_none() {
-            return (redact_legacy_smb_url(reference), reference.len());
-        }
         return (redact_remote_url(reference, context), reference.len());
     }
     if let Some(m) = caps.name("unc") {
         let (path, _) = split_trailing_noise(m.as_str());
-        if context.is_none() {
-            let host = path
-                .strip_prefix(r"\\")
-                .unwrap_or(path)
-                .split('\\')
-                .next()
-                .unwrap_or_default();
-            if !host
-                .chars()
-                .all(|c| c.is_ascii_alphanumeric() || matches!(c, '_' | '.' | '-'))
-            {
-                return rescan_inside(m.as_str());
-            }
-            return (redact_legacy_unc(path), path.len());
-        }
         return (redact_remote_unc(path, context), path.len());
     }
     if caps.name("url_userinfo").is_some() {
-        if context.is_none() {
-            let scheme = caps.name("scheme").map_or("", |m| m.as_str());
-            let host_rest = caps.name("host_rest").map_or("", |m| m.as_str());
-            return (format!("{scheme}://<userinfo>@{host_rest}"), whole_len(caps));
-        }
         let reference = caps.get(0).map_or("", |m| m.as_str());
         return (redact_remote_url(reference, context), whole_len(caps));
     }
     if let Some(m) = caps.name("bare_userinfo") {
         let lead = caps.name("bare_lead").map(|m| m.as_str()).unwrap_or("");
-        if context.is_none() {
-            let host_rest = caps.name("bare_host_rest").map_or("", |m| m.as_str());
-            return (format!("{lead}//<userinfo>@{host_rest}"), whole_len(caps));
-        }
         return (
             format!("{lead}{}", redact_scheme_less(m.as_str(), context)),
             whole_len(caps),
         );
     }
-    if let Some(m) = caps.name("detail_field") {
-        // Report mode never reaches here: `redact_with` owns that branch, since it needs the
-        // whole line's identities. The compatibility policy scans the prose like any text.
-        return match context {
-            Some(context) => redact_detail_field(caps, context, &[]),
-            None => rescan_inside(m.as_str()),
-        };
+    if caps.name("detail_field").is_some() {
+        // Unreachable from `redact_with`, which owns this branch because it needs the whole
+        // line's identities. Anything else gets the field without the echo scrub.
+        return redact_detail_field(caps, context, &[]);
     }
     if caps.name("path_field").is_some() {
         return redact_path_field(caps, context);
     }
-    if let Some(m) = caps.name("identity_field") {
-        if context.is_none() {
-            return rescan_inside(m.as_str());
-        }
+    if caps.name("identity_field").is_some() {
         return redact_identity_field(caps, context);
     }
     if let Some(m) = caps.name("derived_id") {
-        if context.is_none() {
-            return rescan_inside(m.as_str());
-        }
         return (redact_derived_id(m.as_str(), context), whole_len(caps));
     }
     if let Some(m) = caps.name("manual_server_id") {
-        if context.is_none() {
-            return rescan_inside(m.as_str());
-        }
         return (redact_manual_server_id(m.as_str(), context), whole_len(caps));
     }
     if caps.name("email").is_some() {
@@ -529,45 +505,18 @@ fn dispatch(caps: &Captures<'_>, context: Option<&RedactionContext>) -> (String,
         );
     }
     if let Some(m) = caps.name("bonjour_instance") {
-        if context.is_none() {
-            return rescan_inside(m.as_str());
-        }
         return (redact_host(m.as_str(), context), whole_len(caps));
     }
     if let Some(m) = caps.name("bonjour_service") {
-        if context.is_none() {
-            return rescan_inside(m.as_str());
-        }
         return (m.as_str().to_string(), whole_len(caps));
     }
     if let Some(m) = caps.name("mdns") {
-        // The compatibility policy only ever claimed the last label; stepping past a
-        // multi-label start lets the scanner reach it, as before.
-        let multi_label = m.as_str().trim_end_matches(".local").contains('.');
-        if context.is_none() && (!m.as_str().is_ascii() || multi_label) {
-            return rescan_inside(m.as_str());
-        }
         return (redact_mdns_host(m.as_str(), context), whole_len(caps));
     }
-    // Report mode labels a bare address by its class, as a keyed `host=` does (`redact_host`),
-    // so one address reads the same in every field. The unsalted policy keeps `<ipv4>`.
-    if let Some(m) = caps.name("ipv6") {
-        if context.is_some() {
-            return (redact_host(m.as_str(), context), whole_len(caps));
-        }
-        return (
-            identity_token("ipv6", TokenDomain::Host, m.as_str(), context),
-            whole_len(caps),
-        );
-    }
-    if let Some(m) = caps.name("ipv4") {
-        if context.is_some() {
-            return (redact_host(m.as_str(), context), whole_len(caps));
-        }
-        return (
-            identity_token("ipv4", TokenDomain::Host, m.as_str(), context),
-            whole_len(caps),
-        );
+    // A bare address is labeled by its class, as a keyed `host=` is (`redact_host`), so one
+    // address reads the same in every field.
+    if let Some(m) = caps.name("ipv6").or_else(|| caps.name("ipv4")) {
+        return (redact_host(m.as_str(), context), whole_len(caps));
     }
     if let Some(m) = caps.name("mtp_owner") {
         return (redact_mtp_owner(m.as_str(), context), whole_len(caps));
@@ -582,45 +531,6 @@ fn dispatch(caps: &Captures<'_>, context: Option<&RedactionContext>) -> (String,
 /// Byte length of the whole match, for the branches that consume all of it.
 fn whole_len(caps: &Captures<'_>) -> usize {
     caps.get(0).map_or(0, |m| m.len())
-}
-
-/// Leave a report-only outer match in front of the compatibility scanner one character at
-/// a time. This preserves legacy nested matches instead of either applying the new policy or
-/// returning the whole reference raw (for example, `.local`, IP, and email inside WebDAV).
-fn rescan_inside(value: &str) -> (String, usize) {
-    value
-        .chars()
-        .next()
-        .map_or_else(|| (String::new(), 0), |first| (first.to_string(), first.len_utf8()))
-}
-
-fn redact_legacy_url_userinfo(reference: &str) -> String {
-    let Some((scheme, remainder)) = reference.split_once("://") else {
-        return reference.to_string();
-    };
-    let Some((_, host_rest)) = remainder.split_once('@') else {
-        return reference.to_string();
-    };
-    format!("{scheme}://<userinfo>@{host_rest}")
-}
-
-fn legacy_url_span(reference: &str) -> &str {
-    reference
-        .find(char::is_whitespace)
-        .map_or(reference, |end| &reference[..end])
-}
-
-fn remote_authority_has_userinfo(reference: &str) -> bool {
-    reference
-        .split_once("://")
-        .map(|(_, remainder)| {
-            remainder
-                .split(['/', '?', '#'])
-                .next()
-                .unwrap_or_default()
-                .contains('@')
-        })
-        .unwrap_or(false)
 }
 
 fn identity_token(kind: &str, domain: TokenDomain, value: &str, context: Option<&RedactionContext>) -> String {

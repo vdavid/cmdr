@@ -179,6 +179,78 @@ jobs:
 	}
 }
 
+func TestCheckWorkflowPermissions(t *testing.T) {
+	cases := []struct {
+		name    string
+		content string
+		want    []string // substrings expected in each violation
+	}{
+		{
+			name: "read-only block accepted, job-level write allowed",
+			content: `name: x
+permissions:
+  contents: read
+jobs:
+  release:
+    permissions:
+      contents: write
+`,
+			want: nil,
+		},
+		{
+			name:    "read-all accepted",
+			content: "name: x\npermissions: read-all\njobs: {}\n",
+			want:    nil,
+		},
+		{
+			name:    "empty map accepted",
+			content: "name: x\npermissions: {}\njobs: {}\n",
+			want:    nil,
+		},
+		{
+			name: "missing block flagged",
+			content: `name: x
+jobs:
+  build:
+    permissions:
+      contents: read
+`,
+			want: []string{"no workflow-level 'permissions:'"},
+		},
+		{
+			name:    "write-all flagged",
+			content: "name: x\npermissions: write-all\njobs: {}\n",
+			want:    []string{"workflow-scoped 'permissions: write-all'"},
+		},
+		{
+			name: "workflow-scoped write flagged, id-token left to its own check",
+			content: `name: x
+permissions:
+  contents: write # comment
+  id-token: write
+  actions: read
+jobs: {}
+`,
+			want: []string{"workflow-scoped 'contents: write'"},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := checkWorkflowPermissions(strings.Split(tc.content, "\n"), "test.yml")
+			if len(got) != len(tc.want) {
+				t.Errorf("got %d violations, want %d:\n  got: %v\n  want: %v", len(got), len(tc.want), got, tc.want)
+				return
+			}
+			for i, w := range tc.want {
+				if !strings.Contains(got[i], w) {
+					t.Errorf("violation %d: got %q, want substring %q", i, got[i], w)
+				}
+			}
+		})
+	}
+}
+
 func TestIsExemptUsesRef(t *testing.T) {
 	cases := []struct {
 		ref  string

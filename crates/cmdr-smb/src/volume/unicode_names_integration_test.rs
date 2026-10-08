@@ -321,8 +321,14 @@ async fn an_outside_change_in_an_accented_directory_names_the_path_the_pane_open
     // written before it's armed is never sent. Keep writing fresh files until one
     // is heard, and identify ours by this cell's unique name: the watch covers
     // the whole share, which other suites (and other runs of this one) are busy on.
+    //
+    // 20 s, though delivery takes ~0.3 s on a quiet stack: Samba's `notifyd` in the
+    // CPU-capped fixture container fans every write on the share out to every
+    // recursive watch on it, and with several worktrees' lanes on one stack it falls
+    // seconds behind and keeps draining after they stop. A 6 s budget failed there
+    // with nothing heard at all. The cap above it is in `.config/nextest.toml`.
     let ours = format!("outside-{top}-");
-    let deadline = std::time::Instant::now() + Duration::from_secs(6);
+    let deadline = std::time::Instant::now() + Duration::from_secs(20);
     let mut heard = None;
     let mut n = 0;
     while heard.is_none() && std::time::Instant::now() < deadline {
@@ -346,7 +352,7 @@ async fn an_outside_change_in_an_accented_directory_names_the_path_the_pane_open
     }
     remove_album(&vol, &top).await;
 
-    let heard = heard.expect("the watcher must report an outside file creation within 6 s, inside nextest's 8 s cap");
+    let heard = heard.expect("the watcher must report an outside file creation within 20 s, inside nextest's 30 s cap");
     assert_eq!(
         heard.as_os_str().as_encoded_bytes(),
         pane_path.as_os_str().as_encoded_bytes(),

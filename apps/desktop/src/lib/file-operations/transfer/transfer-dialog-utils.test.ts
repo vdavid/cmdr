@@ -9,6 +9,8 @@ import {
   deriveTransferLabel,
   generateTitle,
   getFolderName,
+  joinPathLeaf,
+  splitPathLeaf,
   shouldShowHardlinkNote,
   toBackendIndices,
   toBackendCursorIndex,
@@ -424,4 +426,37 @@ it('keeps the complete phone target when switching Copy to Move', () => {
       sourceFolderPath: '/mtp-20-5/65538/DCIM',
     }),
   ).toBe('/DCIM/backup.jpg')
+})
+describe('rename mode: the path box holds folder + new name', () => {
+  it('joins the new name onto the folder', () => {
+    expect(joinPathLeaf('/bucket/photos', 'pictures')).toBe('/bucket/photos/pictures')
+  })
+
+  it('joins onto the volume root without doubling the slash', () => {
+    expect(joinPathLeaf('/', 'pictures')).toBe('/pictures')
+  })
+
+  it('ignores a trailing slash on the folder', () => {
+    expect(joinPathLeaf('/bucket/', 'pictures')).toBe('/bucket/pictures')
+  })
+
+  it('splits the edited path back into folder and new name', () => {
+    expect(splitPathLeaf('/bucket/photos/pictures')).toEqual({ folder: '/bucket/photos', leaf: 'pictures' })
+  })
+
+  it('splits a name at the volume root into the root and the name', () => {
+    expect(splitPathLeaf('/pictures')).toEqual({ folder: '/', leaf: 'pictures' })
+  })
+
+  it('reads a trailing slash as an empty name, so a deleted name is refused rather than shifted up a level', () => {
+    expect(splitPathLeaf('/bucket/pictures/')).toEqual({ folder: '/bucket/pictures', leaf: '' })
+  })
+
+  it('round-trips what the dialog prefilled', () => {
+    expect(splitPathLeaf(joinPathLeaf('/a/b', 'c d.txt'))).toEqual({ folder: '/a/b', leaf: 'c d.txt' })
+  })
+
+  it('hands back an empty name for a bare root, so validation can say so', () => {
+    expect(splitPathLeaf('/')).toEqual({ folder: '/', leaf: '' })
+  })
 })

@@ -1,0 +1,415 @@
+{
+  "viewer.window.fallbackTitle": "Просмотр",
+  "@viewer.window.fallbackTitle": {
+    "sourceHash": "678bfa6"
+  },
+  "viewer.window.titleSuffix": "{fileName} | Просмотр",
+  "@viewer.window.titleSuffix": {
+    "sourceHash": "5ebd7f4"
+  },
+  "viewer.srHeading": "Просмотр файла",
+  "@viewer.srHeading": {
+    "sourceHash": "b32f632"
+  },
+  "viewer.loading": "Загрузка…",
+  "@viewer.loading": {
+    "sourceHash": "ba3bbbe"
+  },
+  "viewer.error.noPath": "Путь к файлу не указан",
+  "@viewer.error.noPath": {
+    "sourceHash": "2b069fc"
+  },
+  "viewer.error.readFailed": "Не удалось прочитать этот файл. Попробовать еще раз?",
+  "@viewer.error.readFailed": {
+    "sourceHash": "8c420fd"
+  },
+  "viewer.error.notFound": "Не удалось найти этот файл. Возможно, его переместили, переименовали или удалили.",
+  "@viewer.error.notFound": {
+    "sourceHash": "9257fab"
+  },
+  "viewer.error.isDirectory": "Это папка, поэтому здесь нечего просматривать. Откройте папку в главном окне, чтобы увидеть содержимое.",
+  "@viewer.error.isDirectory": {
+    "sourceHash": "5abb771"
+  },
+  "viewer.error.timeout": "Не удалось загрузить файл. Возможно, том работает медленно или не отвечает.",
+  "@viewer.error.timeout": {
+    "sourceHash": "74b9656"
+  },
+  "viewer.error.tooLargeToPreview": "Этот файл слишком большой, чтобы просмотреть его отсюда. Сначала скопируйте его в обычную папку, затем откройте.",
+  "@viewer.error.tooLargeToPreview": {
+    "sourceHash": "8696039"
+  },
+  "viewer.error.archiveUnreadable": "Не удалось открыть файл из архива. Возможно, файл зашифрован, поврежден или имеет формат, который Cmdr не может прочитать.",
+  "@viewer.error.archiveUnreadable": {
+    "sourceHash": "e0b8f4e"
+  },
+  "viewer.error.coldStorage": "Этот файл находится в архивном хранилище, поэтому показать его можно будет только после восстановления. Восстановите файл в консоли поставщика хранилища и откройте его снова.",
+  "@viewer.error.coldStorage": {
+    "sourceHash": "236cd1b"
+  },
+  "viewer.error.retry": "Повторить",
+  "@viewer.error.retry": {
+    "sourceHash": "942087c"
+  },
+  "viewer.error.cancel": "Отменить",
+  "@viewer.error.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "viewer.error.stoppedResponding": "Передача файла замерла. Проверьте, что телефон или сервер все еще подключен, и попробуйте еще раз.",
+  "@viewer.error.stoppedResponding": {
+    "sourceHash": "f88b690"
+  },
+  "viewer.pull.title": "Получение файла {fileName} для просмотра",
+  "@viewer.pull.title": {
+    "sourceHash": "3a02768"
+  },
+  "viewer.pull.progress": "{doneText} из {totalText}",
+  "@viewer.pull.progress": {
+    "sourceHash": "edce3be"
+  },
+  "viewer.pull.progressUnknownTotal": "Получено: {doneText}",
+  "@viewer.pull.progressUnknownTotal": {
+    "sourceHash": "548095e"
+  },
+  "viewer.content.ariaLabel": "Содержимое файла: {fileName}",
+  "@viewer.content.ariaLabel": {
+    "sourceHash": "57b8613"
+  },
+  "viewer.binaryWarning.body": "Здесь показаны необработанные данные файла. Возможно, вы хотите посмотреть <kindName>{category, select, image {изображение} document {документ} other {файл {ext}}}</kindName>. Для этого закройте окно и нажмите <quickLookKey></quickLookKey>, чтобы открыть Быстрый просмотр, или нажмите <openKey></openKey> (либо дважды нажмите на файл), чтобы открыть файл в связанном приложении.",
+  "@viewer.binaryWarning.body": {
+    "sourceHash": "fd5cfb7"
+  },
+  "viewer.binaryWarning.dismiss": "Закрыть",
+  "@viewer.binaryWarning.dismiss": {
+    "sourceHash": "7d9eb7a"
+  },
+  "viewer.binaryWarning.suppressForever": "Больше не показывать это предупреждение",
+  "@viewer.binaryWarning.suppressForever": {
+    "sourceHash": "b85b92b"
+  },
+  "viewer.search.placeholder": "Найти в файле…",
+  "@viewer.search.placeholder": {
+    "sourceHash": "a3268b3"
+  },
+  "viewer.search.ariaLabel": "Поиск текста",
+  "@viewer.search.ariaLabel": {
+    "sourceHash": "38d268a"
+  },
+  "viewer.search.caseSensitive": "С учетом регистра",
+  "@viewer.search.caseSensitive": {
+    "sourceHash": "e124ba4"
+  },
+  "viewer.search.regex": "Regex",
+  "@viewer.search.regex": {
+    "sourceHash": "0f27125",
+    "sameAsSourceJustification": "«Regex» is the developer term Russian tools keep in tight chips and toggles (JetBrains ru, VS Code ru tooltips); the full «Регулярное выражение» stays in prose and placeholders."
+  },
+  "viewer.search.matchPosition": "{current} из {total}{more, select, yes {+} other {}}",
+  "@viewer.search.matchPosition": {
+    "sourceHash": "ec24db4"
+  },
+  "viewer.search.searching": "Поиск…",
+  "@viewer.search.searching": {
+    "sourceHash": "c31723a"
+  },
+  "viewer.search.partial": "(частично)",
+  "@viewer.search.partial": {
+    "sourceHash": "d0ffde3"
+  },
+  "viewer.search.noMatches": "Совпадений нет",
+  "@viewer.search.noMatches": {
+    "sourceHash": "2df01a0"
+  },
+  "viewer.search.stop": "Остановить поиск",
+  "@viewer.search.stop": {
+    "sourceHash": "c48cf72"
+  },
+  "viewer.search.stopTooltip": "Остановить поиск и сохранить результаты",
+  "@viewer.search.stopTooltip": {
+    "sourceHash": "b86629c"
+  },
+  "viewer.search.previous": "Предыдущее совпадение",
+  "@viewer.search.previous": {
+    "sourceHash": "daa2f8c"
+  },
+  "viewer.search.next": "Следующее совпадение",
+  "@viewer.search.next": {
+    "sourceHash": "825e5ab"
+  },
+  "viewer.search.close": "Закрыть поиск",
+  "@viewer.search.close": {
+    "sourceHash": "55656b5"
+  },
+  "viewer.search.closeTooltip": "Закрыть",
+  "@viewer.search.closeTooltip": {
+    "sourceHash": "7d9eb7a"
+  },
+  "viewer.toolbar.viewMode.ariaLabel": "Режим просмотра",
+  "@viewer.toolbar.viewMode.ariaLabel": {
+    "sourceHash": "18997f2"
+  },
+  "viewer.toolbar.viewMode.text": "Текст",
+  "@viewer.toolbar.viewMode.text": {
+    "sourceHash": "71988c4"
+  },
+  "viewer.toolbar.viewMode.binary": "Двоичный",
+  "@viewer.toolbar.viewMode.binary": {
+    "sourceHash": "ee1c827"
+  },
+  "viewer.toolbar.viewMode.hex": "Hex",
+  "@viewer.toolbar.viewMode.hex": {
+    "sourceHash": "69493e6",
+    "sameAsSourceJustification": "«Hex» is the termbase-accepted form (concept hex) and what Russian hex viewers label the mode; a segmented option has no room for «Шестнадцатеричный»."
+  },
+  "viewer.toolbar.viewMode.viewAsText": "Показать как текст",
+  "@viewer.toolbar.viewMode.viewAsText": {
+    "sourceHash": "a0059b8"
+  },
+  "viewer.toolbar.viewMode.viewAsImage": "Показать как изображение",
+  "@viewer.toolbar.viewMode.viewAsImage": {
+    "sourceHash": "ae04259"
+  },
+  "viewer.toolbar.viewMode.viewAsPdf": "Показать как PDF",
+  "@viewer.toolbar.viewMode.viewAsPdf": {
+    "sourceHash": "ee89800"
+  },
+  "viewer.kind.image": "Изображение",
+  "@viewer.kind.image": {
+    "sourceHash": "1aa4cb0"
+  },
+  "viewer.kind.pdf": "PDF",
+  "@viewer.kind.pdf": {
+    "sourceHash": "1d393b0",
+    "sameAsSourceJustification": "Название бренда, стандартное обозначение или строка из подстановок; сохраняется без перевода."
+  },
+  "viewer.kind.text": "Текст",
+  "@viewer.kind.text": {
+    "sourceHash": "71988c4"
+  },
+  "viewer.toolbar.encoding.placeholder": "Кодировка",
+  "@viewer.toolbar.encoding.placeholder": {
+    "sourceHash": "4d25a47"
+  },
+  "viewer.toolbar.encoding.group.unicode": "Unicode",
+  "@viewer.toolbar.encoding.group.unicode": {
+    "sourceHash": "f922e0d",
+    "sameAsSourceJustification": "Название бренда, стандартное обозначение или строка из подстановок; сохраняется без перевода."
+  },
+  "viewer.toolbar.encoding.group.western": "Западные",
+  "@viewer.toolbar.encoding.group.western": {
+    "sourceHash": "d7d2f0f"
+  },
+  "viewer.toolbar.encoding.detectedSuffix": "{label} (определена)",
+  "@viewer.toolbar.encoding.detectedSuffix": {
+    "sourceHash": "2096536"
+  },
+  "viewer.toolbar.tail.label": "Следить",
+  "@viewer.toolbar.tail.label": {
+    "sourceHash": "ae9c3bd"
+  },
+  "viewer.toolbar.tail.ariaLabel": "Следить: отслеживать изменения файла",
+  "@viewer.toolbar.tail.ariaLabel": {
+    "sourceHash": "af0477f"
+  },
+  "viewer.toolbar.tail.tooltip": "Автоматически отслеживать изменения файла",
+  "@viewer.toolbar.tail.tooltip": {
+    "sourceHash": "733e57f"
+  },
+  "viewer.toolbar.reindexing": "Повторная индексация…",
+  "@viewer.toolbar.reindexing": {
+    "sourceHash": "f668818"
+  },
+  "viewer.statusBar.ariaLabel": "Информация о файле",
+  "@viewer.statusBar.ariaLabel": {
+    "sourceHash": "375b97d"
+  },
+  "viewer.statusBar.lineCount": "{count} {count, plural, one {строка} few {строки} many {строк} other {строки}}",
+  "@viewer.statusBar.lineCount": {
+    "sourceHash": "1af08ec"
+  },
+  "viewer.statusBar.badge.inMemory": "в памяти",
+  "@viewer.statusBar.badge.inMemory": {
+    "sourceHash": "d9b8483"
+  },
+  "viewer.statusBar.badge.inMemoryTooltip": "Файл полностью находится в памяти. Можно быстро перейти к любой строке.",
+  "@viewer.statusBar.badge.inMemoryTooltip": {
+    "sourceHash": "4eb50b8"
+  },
+  "viewer.statusBar.badge.indexed": "проиндексирован",
+  "@viewer.statusBar.badge.indexed": {
+    "sourceHash": "658a3e8"
+  },
+  "viewer.statusBar.badge.indexedTooltip": "Файл проиндексирован: номера строк точны, и можно быстро перейти в любую часть файла.",
+  "@viewer.statusBar.badge.indexedTooltip": {
+    "sourceHash": "2604f1a"
+  },
+  "viewer.statusBar.badge.streamingIndexing": "поток, индексация…",
+  "@viewer.statusBar.badge.streamingIndexing": {
+    "sourceHash": "db1718e"
+  },
+  "viewer.statusBar.badge.streamingIndexingTooltip": "Большой файл открыт в потоковом режиме. Индекс создается в фоне (не более {seconds} с)… Сейчас номера строк приблизительны.",
+  "@viewer.statusBar.badge.streamingIndexingTooltip": {
+    "sourceHash": "60095b8"
+  },
+  "viewer.statusBar.badge.streaming": "поток",
+  "@viewer.statusBar.badge.streaming": {
+    "sourceHash": "b304adc"
+  },
+  "viewer.statusBar.badge.streamingTooltip": "Большой файл открыт в потоковом режиме. Индексация заняла бы больше {seconds} с, поэтому она пропущена. Номера строк приблизительны.",
+  "@viewer.statusBar.badge.streamingTooltip": {
+    "sourceHash": "b1a14ac"
+  },
+  "viewer.statusBar.badge.wrap": "перенос",
+  "@viewer.statusBar.badge.wrap": {
+    "sourceHash": "f0a2899"
+  },
+  "viewer.statusBar.badge.wrapTooltip": "Строки переносятся у края окна",
+  "@viewer.statusBar.badge.wrapTooltip": {
+    "sourceHash": "af2ca76"
+  },
+  "viewer.statusBar.hint.image": "Нажатие: 100 % / вписать · Прокрутка: масштаб · Перетаскивание: сдвиг",
+  "@viewer.statusBar.hint.image": {
+    "sourceHash": "bca0205"
+  },
+  "viewer.statusBar.hint.text": "W: перенос · F: слежение · ⌘F: поиск",
+  "@viewer.statusBar.hint.text": {
+    "sourceHash": "3ecf215"
+  },
+  "viewer.media.dimensions": "{width} × {height}",
+  "@viewer.media.dimensions": {
+    "sourceHash": "ece2cad",
+    "sameAsSourceJustification": "Название бренда, стандартное обозначение или строка из подстановок; сохраняется без перевода."
+  },
+  "viewer.image.loading": "Загрузка изображения",
+  "@viewer.image.loading": {
+    "sourceHash": "65999b8"
+  },
+  "viewer.image.error": "Извините, не удалось показать это изображение. Возможно, файл поврежден или его формат не поддерживается.",
+  "@viewer.image.error": {
+    "sourceHash": "1e8c6d9"
+  },
+  "viewer.pdf.loading": "Загрузка PDF",
+  "@viewer.pdf.loading": {
+    "sourceHash": "7f9acf3"
+  },
+  "viewer.copyDialog.confirmTitleKnown": "Скопировать {size} в буфер обмена?",
+  "@viewer.copyDialog.confirmTitleKnown": {
+    "sourceHash": "7f97ebf"
+  },
+  "viewer.copyDialog.confirmTitleUnknown": "Скопировать выделение в буфер обмена?",
+  "@viewer.copyDialog.confirmTitleUnknown": {
+    "sourceHash": "0956c8b"
+  },
+  "viewer.copyDialog.confirmBody": "Вставка большого объема данных может замедлить другие приложения. Попробуйте поиск (⌘F), чтобы сузить выделение.",
+  "@viewer.copyDialog.confirmBody": {
+    "sourceHash": "c1f2927"
+  },
+  "viewer.copyDialog.cancel": "Отменить",
+  "@viewer.copyDialog.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "viewer.copyDialog.saveAsFile": "Сохранить как файл…",
+  "@viewer.copyDialog.saveAsFile": {
+    "sourceHash": "7b9b279"
+  },
+  "viewer.copyDialog.copy": "Скопировать",
+  "@viewer.copyDialog.copy": {
+    "sourceHash": "e21f935"
+  },
+  "viewer.copyDialog.refuseBody": "Это больше лимита буфера обмена в 100 МБ. Попробуйте найти нужное поиском (⌘F) или сохраните выделение как файл.",
+  "@viewer.copyDialog.refuseBody": {
+    "sourceHash": "3eaf921"
+  },
+  "viewer.reloadToast.grew": "Файл изменен на диске. Перезагрузить?",
+  "@viewer.reloadToast.grew": {
+    "sourceHash": "d66b013"
+  },
+  "viewer.reloadToast.rotated": "Файл заменен на диске. Перезагрузите, чтобы увидеть новое содержимое.",
+  "@viewer.reloadToast.rotated": {
+    "sourceHash": "50804c2"
+  },
+  "viewer.reloadToast.reload": "Перезагрузить",
+  "@viewer.reloadToast.reload": {
+    "sourceHash": "bdc090e"
+  },
+  "viewer.reloadToast.dismissTooltip": "Скрыть без перезагрузки",
+  "@viewer.reloadToast.dismissTooltip": {
+    "sourceHash": "7f829ed"
+  },
+  "viewer.copy.onClipboard": "{size} в буфере обмена",
+  "@viewer.copy.onClipboard": {
+    "sourceHash": "45934ed"
+  },
+  "viewer.copy.clipboardUnreachable": "Не удалось получить доступ к буферу обмена. Попробуйте еще раз.",
+  "@viewer.copy.clipboardUnreachable": {
+    "sourceHash": "3c8ddb8"
+  },
+  "viewer.copy.readTooLong": "Чтение заняло слишком много времени. Попробуйте выделить меньше.",
+  "@viewer.copy.readTooLong": {
+    "sourceHash": "2275e83"
+  },
+  "viewer.copy.copyFailed": "Не удалось скопировать выделение. Попробуйте еще раз.",
+  "@viewer.copy.copyFailed": {
+    "sourceHash": "b08416d"
+  },
+  "viewer.copy.readFailed": "Не удалось прочитать выделение. Попробуйте еще раз.",
+  "@viewer.copy.readFailed": {
+    "sourceHash": "24ea14a"
+  },
+  "viewer.saveAs.title": "Сохранить выделение",
+  "@viewer.saveAs.title": {
+    "sourceHash": "dd183ea"
+  },
+  "viewer.saveAs.defaultName": "выделение",
+  "@viewer.saveAs.defaultName": {
+    "sourceHash": "6504513"
+  },
+  "viewer.saveAs.panelFailed": "Не удалось открыть окно сохранения. Попробуйте еще раз.",
+  "@viewer.saveAs.panelFailed": {
+    "sourceHash": "ade021c"
+  },
+  "viewer.saveAs.saved": "Выделение сохранено: {name}",
+  "@viewer.saveAs.saved": {
+    "sourceHash": "5083c12"
+  },
+  "viewer.saveAs.tooLong": "Сохранение заняло слишком много времени. Попробуйте выделить меньше.",
+  "@viewer.saveAs.tooLong": {
+    "sourceHash": "f31d7f4"
+  },
+  "viewer.saveAs.saveFailed": "Не удалось сохранить выделение. Попробуйте еще раз.",
+  "@viewer.saveAs.saveFailed": {
+    "sourceHash": "ca5709f"
+  },
+  "viewer.saveAs.destinationReadOnly": "Это место доступно только для чтения. Выберите другую папку для сохранения.",
+  "@viewer.saveAs.destinationReadOnly": {
+    "sourceHash": "8d627aa"
+  },
+  "viewer.row.continuesTooltip": "Cmdr разделил эту строку, так как она очень длинная. В самом файле здесь нет перевода строки.",
+  "@viewer.row.continuesTooltip": {
+    "sourceHash": "7df69ed"
+  },
+  "viewer.row.continuesLabel": "Cmdr разделил эту строку, так как она очень длинная. В самом файле здесь нет перевода строки.",
+  "@viewer.row.continuesLabel": {
+    "sourceHash": "7df69ed"
+  },
+  "viewer.selection.toEndOfFile": "Выделено от строки {line} до конца файла",
+  "@viewer.selection.toEndOfFile": {
+    "sourceHash": "62d95be"
+  },
+  "viewer.selection.singleLine": "{chars, plural, one {Выделен # символ} few {Выделено # символа} many {Выделено # символов} other {Выделено # символа}} в строке {line}",
+  "@viewer.selection.singleLine": {
+    "sourceHash": "eb11697"
+  },
+  "viewer.selection.multiLine": "Выделены строки с {startLine} по {endLine}, {chars, plural, one {# символ} few {# символа} many {# символов} other {# символа}}",
+  "@viewer.selection.multiLine": {
+    "sourceHash": "5ba7791"
+  },
+  "viewer.selection.charsOnly": "{chars, plural, one {Выделен # символ} few {Выделено # символа} many {Выделено # символов} other {Выделено # символа}}",
+  "@viewer.selection.charsOnly": {
+    "sourceHash": "3db2c4e"
+  },
+  "viewer.selection.toEndOfFileNoLine": "Выделено до конца файла",
+  "@viewer.selection.toEndOfFileNoLine": {
+    "sourceHash": "e7e0442"
+  }
+}

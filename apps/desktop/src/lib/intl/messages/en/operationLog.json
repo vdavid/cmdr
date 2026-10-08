@@ -54,6 +54,32 @@
     "description": "Button on a row of the Operation log whose rollback stopped partway, so some of that operation came back and some of it didn't. It replaces the \"Roll back\" button on that row, sits next to the \"Partly rolled back\" badge, and asks for confirmation before anything happens. Pressing it carries on from where the rollback stopped rather than starting a fresh one, so the wording says finish rather than start. Match the wording of the \"Finish rolling back\" button in the confirmation that follows it. Keep it short: it sits inside a list row.",
     "screenshot": "operation-log-more-pages.png"
   },
+  "operationLog.dialog.rollbackOf": "Rollback of “<operationLink>{operation}</operationLink>” from {time}",
+  "@operationLog.dialog.rollbackOf": {
+    "description": "A quiet line under a row of the Operation log that is itself a rollback, naming the operation it undid. operation is that operation's one-line summary, already translated (for example \"Copied 3 items\"); time is when it ran, already formatted. The <operationLink> part is a link that scrolls to and highlights that operation's row in the same list; keep the tags around the summary. The quotation marks set the summary off as a name; use your language's quotation marks.",
+    "placeholders": {
+      "operation": "the undone operation's one-line summary, already translated, for example Copied 3 items",
+      "time": "when that operation ran, already formatted as a date and time in the format the person picked in Settings > Appearance (by default 2026-10-06 14:32; it can also be 10/06 14:32 or the system locale style). Never relative, so \"from\" reads as \"dated\", not \"ago\""
+    },
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string is the quiet second line under one of those rows, shown only when that operation is a rollback or has been rolled back, so this screenshot may not show it."
+  },
+  "operationLog.dialog.rollbackOfUnlisted": "Rollback of an earlier operation",
+  "@operationLog.dialog.rollbackOfUnlisted": {
+    "description": "A quiet line under a row of the Operation log that is itself a rollback, when the operation it undid isn't in the loaded part of the list (it's further back in the history, or no longer kept). Same meaning as \"Rollback of “Copied 3 items” from …\", without naming the operation.",
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string is the quiet second line under one of those rows, shown only when that operation is a rollback or has been rolled back, so this screenshot may not show it."
+  },
+  "operationLog.dialog.latestRollback": "Latest rollback: “<operationLink>{operation}</operationLink>” from {time}",
+  "@operationLog.dialog.latestRollback": {
+    "description": "A quiet line under a row of the Operation log that has been rolled back (or is being rolled back), pointing at the newest rollback of it. operation is that rollback's one-line summary, already translated (for example \"Deleted 3 items\", since rolling back a copy deletes what it copied); time is when the rollback ran, already formatted. The <operationLink> part is a link that scrolls to and highlights the rollback's row in the same list; keep the tags around the summary. \"Latest\" because an operation rolled back partway and then finished has more than one. Use your language's quotation marks.",
+    "placeholders": {
+      "operation": "the rollback's one-line summary, already translated, for example Deleted 3 items",
+      "time": "when the rollback ran, already formatted as a date and time in the format the person picked in Settings > Appearance (by default 2026-10-06 14:32; it can also be 10/06 14:32 or the system locale style). Never relative, so \"from\" reads as \"dated\", not \"ago\""
+    },
+    "screenshot": "operation-log-more-pages.png",
+    "screenshotNote": "The operation log dialog, pictured here with entries in it. Your string is the quiet second line under one of those rows, shown only when that operation is a rollback or has been rolled back, so this screenshot may not show it."
+  },
   "operationLog.dialog.close": "Close",
   "@operationLog.dialog.close": {
     "description": "Button that closes the Operation log dialog.",

@@ -50,8 +50,8 @@
 
     // The same shape — filename, "Existing:" / "New:" rows, the 4×2 button grid,
     // the Rollback row — serves every clash type. Variants differ only in the row
-    // labels, the red warning block above the filename for file→folder, and the
-    // "Overwrite" button copy in that one case.
+    // labels, the red warning block above the filename for a file↔folder swap
+    // (worded per direction), and the "Overwrite" button copy for file→folder.
     const fileName = $derived(conflictEvent.destinationPath.split('/').pop() ?? '')
     /** Which `f001` this is. A copy of a deep tree raises one prompt per clash,
      *  and a QA pass over 1,600 folders that each held an `f001` got 1,600
@@ -110,16 +110,25 @@
 </script>
 
 <div class="conflict-section">
-    {#if isFileOverFolder}
+    {#if isTypeMismatch}
         <!-- Red warning sits below the title and above the filename.
-             The "boring" title is `File already exists`; the destructive
-             swap gets called out here so the user can't miss it. -->
-        <p class="conflict-warning" role="alert">
+             The "boring" title is `File already exists`; the type swap gets
+             called out here, in both directions, so the user can't miss it. -->
+        <p
+            class="conflict-warning"
+            role="alert"
+            data-clash={isFileOverFolder ? 'file-over-folder' : 'folder-over-file'}
+        >
             <span class="conflict-warning-icon" aria-hidden="true">
                 <Icon name="triangle-alert" size={16} />
             </span>
             <span>
-                <Trans key="fileOperations.transferProgress.warningFileOverFolder" snippets={{ strong }} />
+                <Trans
+                    key={isFileOverFolder
+                        ? 'fileOperations.transferProgress.warningFileOverFolder'
+                        : 'fileOperations.transferProgress.warningFolderOverFile'}
+                    snippets={{ strong }}
+                />
             </span>
         </p>
     {/if}
@@ -356,7 +365,7 @@
         font-size: var(--font-size-sm);
     }
 
-    /* Red warning block for file→folder clashes. Sits below the title and
+    /* Red warning block for file↔folder clashes. Sits below the title and
        above the filename so the user sees the destructive nature before any
        button. Mirrors the warning-callout visual vocabulary used elsewhere
        (icon + sentence in a tinted block) but in red, not yellow, to mark

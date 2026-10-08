@@ -62,8 +62,9 @@ pub struct IndexBuilder {
 }
 
 impl IndexBuilder {
-    /// Where every index database lives. One directory for the drive index, the
-    /// media index, and the importance index.
+    /// Where every index database lives: one directory for the drive index, the
+    /// media index, and the importance index. A host that keeps the drive index
+    /// apart hands over a full [`config`](Self::config) instead.
     #[must_use]
     pub fn data_dir(mut self, dir: impl Into<PathBuf>) -> Self {
         self.data_dir = Some(dir.into());
@@ -129,7 +130,9 @@ impl IndexBuilder {
         if BUILT.swap(true, Ordering::SeqCst) {
             return Err(IndexBuildError::AlreadyBuilt);
         }
+        let config = self.effective_config();
         let index = self.install();
+        adopt_a_drive_index_left_in_the_data_dir(&config);
         crate::indexing::lifecycle::state::init();
         Ok(index)
     }
@@ -146,9 +149,13 @@ impl IndexBuilder {
     /// restore guards are taken against exactly what [`install`](Self::install) is
     /// about to push.
     fn effective_config(&self) -> IndexConfig {
-        self.config.clone().unwrap_or_else(|| IndexConfig {
-            data_dir: self.data_dir.clone().unwrap_or_default(),
-            ..IndexConfig::default()
+        self.config.clone().unwrap_or_else(|| {
+            let data_dir = self.data_dir.clone().unwrap_or_default();
+            IndexConfig {
+                drive_index_dir: data_dir.clone(),
+                data_dir,
+                ..IndexConfig::default()
+            }
         })
     }
 
@@ -276,5 +283,35 @@ pub(crate) struct BuildClaimGuard {
 impl Drop for BuildClaimGuard {
     fn drop(&mut self) {
         BUILT.store(self.previous, Ordering::SeqCst);
+    }
+}
+
+/// Move a drive index an older build kept in the data dir to where this one keeps
+/// it, before anything can open either copy.
+///
+/// In `build` rather than `install` so a test's handle never runs it, and a no-op
+/// for the lazy no-host fallback (no dirs) and for a host keeping every store in
+/// one folder. ⚠️ Safe only because the host builds the index after it holds the
+/// data dir's instance lock: a second process with these files open would have
+/// them renamed and deleted under it.
+fn adopt_a_drive_index_left_in_the_data_dir(config: &IndexConfig) {
+    if config.data_dir.as_os_str().is_empty()
+        || config.drive_index_dir.as_os_str().is_empty()
+        || config.data_dir == config.drive_index_dir
+    {
+        return;
+    }
+    let report = crate::drive_index_relocation::relocate_drive_index(&config.data_dir, &config.drive_index_dir);
+    if !report.moved.is_empty() || !report.discarded.is_empty() {
+        log::info!(
+            target: "indexing",
+            "moved the drive index to {}: {} moved, {} discarded",
+            config.drive_index_dir.display(),
+            report.moved.len(),
+            report.discarded.len()
+        );
+    }
+    for (volume_id, why) in &report.left {
+        log::warn!(target: "indexing", "the drive index of '{volume_id}' stays in the data dir until the next launch: {why}");
     }
 }

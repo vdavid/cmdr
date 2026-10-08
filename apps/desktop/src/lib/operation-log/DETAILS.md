@@ -8,8 +8,8 @@ Depth behind `CLAUDE.md`. The durable journal, its schema, and the rollback engi
 - `operation-log-trigger.svelte.ts`: the reactive state and the open/close seam, modeled on the What's-new trigger
   (`$state` needs a `.svelte.ts` file, and `routes/(main)/+page.svelte` mounts the dialog against
   `operationLogState.open`). Reads the newest 50 on open, appends 50 per "Load more", and exposes
-  `markOperationRollingBack`. A failed append keeps `hasMore`, so Load more stays up as the retry rather than making the
-  list read as the whole history.
+  `markOperationRollingBack` and `refreshOperation` (one header, re-read in place). A failed append keeps `hasMore`, so
+  Load more stays up as the retry rather than making the list read as the whole history.
 - `OperationLogDialog.svelte`: the dialog. Lazily fetches an operation's item rows on first expand and caches them for
   the dialog's lifetime (except a read that threw, which the next expand retries), holds the pending rollback question,
   and renders per-row refusal notices.
@@ -18,7 +18,7 @@ Depth behind `CLAUDE.md`. The durable journal, its schema, and the rollback engi
   `$lib/file-operations/reversal-wording.ts` with the type it returns, so `queue/` and `$lib/status-corner/` (which name
   the running reversal off the same variant) can reach it without depending on this module, which depends on that one.
 - `RollbackControls.svelte`: the Pause / Resume and Cancel a row carries while its reversal runs. One per rolling-back
-  row, binding a session to the ROW'S `inverseOpId`.
+  row, binding a session to the ROW'S `inverseOpId`, and reporting the reversal's end (`onEnded`) so the row re-reads.
 - `rollback-refusal.ts`: `RollbackRefusalFailure` / `throwRollbackRefusal` / `asRollbackRefusal`, the three-line
   `TypedFailure` family (`$lib/ipc/typed-failure.ts` is the pattern).
 - `operation-log-shortcut.test.ts` pins the ⌥⌘L route; `operation-log-trigger.test.ts` owns the paging assertions, so
@@ -53,9 +53,9 @@ rather than optimistic: `dispatch_rollback` gates and writes `rolling_back` to t
 returns, so an `Ok` means the state is already durable. Re-reading the row to learn what we already know would cost a
 round trip and a spinner for nothing.
 
-**The consequence to keep in mind.** The dialog never learns how the reversal ENDED. Reopening the log (or reading the
-queue) is how a user sees `rolledBack` versus `partiallyRolledBack`. If that ever needs to be live, subscribe to the
-operation's settle event rather than polling.
+**How the end arrives.** Not from the dispatch: the row's controls follow the reversal's live session, and when it ends
+the dialog re-reads that one row, so `rolledBack` versus `partiallyRolledBack` shows up in place ("Caching and
+staleness" below).
 
 ### Decision: the row commands the reversal, and the id for it is journal truth
 
@@ -98,8 +98,8 @@ surfaces can't word one park differently.
 
 **Cancel lands on wording that already exists.** Stopping midway leaves the operation `partiallyRolledBack`, which the
 row already badges and already explains through `partiallyRolledBackNotice`, and already offers to finish (next
-section). ❌ No second sentence here saying it differently. The row won't SHOW that state until the dialog is reopened,
-per the staleness note below; that's the same accepted limit as every other header field.
+section). ❌ No second sentence here saying it differently. The row picks that state up when the reversal leaves the
+registry, through the re-read in "Caching and staleness".
 
 ### Decision: a partly-reversed operation offers to finish, and the engine is what makes that safe
 
@@ -208,11 +208,33 @@ Two copy constraints that outlive any wording pass:
 ## Caching and staleness
 
 Item rows are fetched once per operation on first expand and kept for the dialog's lifetime; they describe a finished
-operation, so they don't drift. The operation HEADERS do drift (a rollback anywhere changes `rollbackState`), and
-nothing refreshes them while the dialog is open beyond the local flip in step 4. So a reversal that ends while the
-dialog is open leaves the row badged "Rolling back" until it's reopened; its controls go on their own, off the live
-session. Reopening the dialog re-reads page one. That's the alpha's accepted limit; a live feed would subscribe rather
-than poll.
+operation, so they don't drift. The operation HEADERS do drift (a rollback anywhere changes `rollbackState`). Two things
+keep them honest while the dialog is open, and nothing polls:
+
+- **The local flip in step 4**, when this dialog starts a reversal.
+- **A re-read when a row's reversal ends.** `RollbackControls` fires `onEnded` once, off the same session readings that
+  take its buttons away (`settled`, `leftRegistry`, or a `done` status; a session seeded as gone counts, since the
+  journal read on open is then behind). The dialog calls `refreshOperation` for that row, and for its rollback's own row
+  when that's listed, which reads the header alone (`getOperationLogDetail(id, 0, 0)`) and swaps it in. That's safe on
+  the signal because `execute_rollback` writes the final `rollback_state` over the writer's synchronous reply channel
+  before `on_settled` drops the reversal from the registry.
+
+What still drifts until reopen: a reversal started ELSEWHERE while the dialog is open (no row here follows a session for
+it), and the new rollback row a reversal from this dialog creates (it lands at the top of the journal, outside the list
+read on open). A subscription to every header change would close both; it was judged not worth a feed on a rarely open
+dialog. Reopening re-reads page one.
+
+## Rollback links
+
+The journal links both ways: a rollback's `rollsBackOpId` names the operation it undid, and an undone operation's
+`inverseOpId` names its newest rollback. A rollback row reads "Rollback of “Copied 3 items” from …", and the undone row
+reads "Latest rollback: “Deleted 3 items” from …" (latest, because a partial rollback finished later has two). The
+quoted summary is a `LinkButton` that scrolls the other row into view, moves focus to its head (so keyboard and
+screen-reader users land where a sighted one looks), and tints it for two seconds.
+
+A link only ever points at a LISTED row (`entriesById`). An original outside the loaded pages (or pruned) reads
+"Rollback of an earlier operation" with no link, and an undone row whose rollback isn't listed says nothing, since the
+badge already carries the state.
 
 ## Where the copy lives
 

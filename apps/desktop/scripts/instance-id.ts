@@ -137,6 +137,32 @@ export function computeAppDataDir({
 }
 
 /**
+ * Compute the Tauri-equivalent app_cache_dir for an identifier on this OS: where the drive
+ * index lives (in its `drive-index/` subfolder). Mirrors `drive_index_dir` in `config.rs`.
+ * macOS keeps Time Machine out of `~/Library/Caches`, which is the point.
+ */
+export function computeAppCacheDir({
+  identifier,
+  platform,
+  home,
+  xdgCacheHome,
+}: {
+  /** e.g. com.veszelovszki.cmdr-dev */
+  identifier: string
+  platform: NodeJS.Platform
+  /** homedir() */
+  home: string
+  /** process.env.XDG_CACHE_HOME */
+  xdgCacheHome: string | undefined
+}): string {
+  if (platform === 'darwin') {
+    return join(home, 'Library', 'Caches', identifier)
+  }
+  const base = xdgCacheHome && xdgCacheHome.length > 0 ? xdgCacheHome : join(home, '.cache')
+  return join(base, identifier)
+}
+
+/**
  * Compose the bundle identifier from an instance ID. Unset → prod default.
  */
 export function bundleIdentifier(instanceId: string | null): string {
@@ -243,27 +269,30 @@ export function buildInstanceConfig(
 }
 
 /**
- * Convenience for tests + the wrapper: from an instance ID, compute the (identifier, data dir,
- * config payload) triple in one place so the precedence rules can't drift.
+ * Convenience for tests + the wrapper: from an instance ID, compute the identifier, data dir,
+ * cache dir, and config payload in one place so the precedence rules can't drift.
  */
 export function deriveInstance({
   instanceId,
   platform,
   home,
   xdgDataHome,
+  xdgCacheHome,
   vitePort,
 }: {
   instanceId: string | null
   platform: NodeJS.Platform
   home: string
   xdgDataHome: string | undefined
+  xdgCacheHome?: string
   /** threaded into `build.devUrl` (dev only) */
   vitePort?: number
-}): { identifier: string; dataDir: string; config: InstanceConfig | null } {
+}): { identifier: string; dataDir: string; cacheDir: string; config: InstanceConfig | null } {
   const identifier = bundleIdentifier(instanceId)
   const dataDir = computeAppDataDir({ identifier, platform, home, xdgDataHome })
+  const cacheDir = computeAppCacheDir({ identifier, platform, home, xdgCacheHome })
   const config = buildInstanceConfig(instanceId, typeof vitePort === 'number' ? { vitePort } : {})
-  return { identifier, dataDir, config }
+  return { identifier, dataDir, cacheDir, config }
 }
 
 /**

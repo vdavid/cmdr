@@ -59,10 +59,10 @@ export async function duplicateInPlace(access: PaneAccess, dialogs: DialogState)
   }
 
   const listingId = paneRef?.getListingId()
-  if (!listingId) return
+  if (!listingId || !paneRef) return
 
-  const hasParent = paneRef?.hasParentEntry() ?? false
-  const selectedIndices = paneRef?.getSelectedIndices() ?? []
+  const hasParent = paneRef.hasParentEntry()
+  const selectedIndices = paneRef.getSelectedIndices()
   const { sortBy, sortOrder } = access.getPaneSort(pane)
   // One folder plays both parts. That is the whole operation, and it's what lets
   // the same builders F5 uses describe it.
@@ -77,9 +77,18 @@ export async function duplicateInPlace(access: PaneAccess, dialogs: DialogState)
   }
 
   const isLeft = pane === 'left'
+  if (selectedIndices.length > 0 && !paneRef.isRowStateReady()) return
   const props =
     selectedIndices.length > 0
-      ? await buildTransferPropsFromSelection('copy', listingId, selectedIndices, hasParent, isLeft, context)
+      ? await buildTransferPropsFromSelection(
+          'copy',
+          listingId,
+          selectedIndices,
+          hasParent,
+          isLeft,
+          context,
+          paneRef.getLastSequence(),
+        )
       : await buildTransferPropsFromCursor('copy', listingId, paneRef, hasParent, isLeft, context)
   // Nothing under the cursor (a `..` row, an empty listing) is nothing to duplicate.
   if (!props) return

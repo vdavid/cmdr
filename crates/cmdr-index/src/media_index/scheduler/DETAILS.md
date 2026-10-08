@@ -22,11 +22,22 @@ than passing it back into a module.
 ## The lifecycle bus
 
 `media_index`'s scheduler subscribes to `indexing/lifecycle/lifecycle_bus.rs` exactly as `importance`'s does — its OWN
-`start()` mirrors the ordering (subscribe to registrations → sweep `ready_volumes_with_kind()` → wire per-volume
+`start()` mirrors the ordering (subscribe to registrations → sweep `ready_volumes_to_wire()` → wire per-volume
 subscriptions). It can't piggyback `importance`'s subscription; because `app.manage` is keyed by type, an
 `Arc<MediaScheduler>` coexists fine alongside `importance`'s scheduler. The bus mechanism (watch vs broadcast,
 late-subscriber replay, the registration bus, why the sender outlives the registry) is documented once in
 `../../indexing/DETAILS.md` — not re-documented here (single-source).
+
+**A wiring lasts one life of its volume.** `wire_volume` spawns three listeners (scan completion plus home coverage, the
+live follow on dir-changed, and the importance bridge), all waiting on process-global channels that never close. Every
+start of a volume publishes a registration, so every start wires it again: a share reconnecting, a drive turned off and
+on, a search walking a cold drive. Each listener is therefore spawned through `host::runtime::spawn_until_stopped` under
+the child of the volume's root token that arrives with the registration, and ends when the volume stops. Without that
+they piled up one set per start. The passes coalesce, so the cost was tasks and wake-ups (each dir-changed batch cloned
+and re-requested once per set) and not repeated enrichment, but it grew for as long as the app ran.
+`a_volumes_listeners_end_when_the_volume_stops` pins it through the channels' receiver counts. ⚠️ The token scopes the
+LISTENERS only: a pass still stops on the process-wide `gate::should_stop` (`../../indexing/host/DETAILS.md` §
+Cancellation).
 
 `wire_volume` routes by typed kind: LOCAL enriches by default (when the master toggle is on); an opted-in SMB volume
 runs the conservative network pass (`../network/DETAILS.md`); MTP is NEVER background-swept. Both local and SMB
@@ -114,7 +125,7 @@ full-row shape.
 ## Importance-prioritized scheduling
 
 The local `run_pass_blocking` and the network `should_enrich` read `importance/`'s `ImportanceIndex`
-(`MediaScheduler::folder_scores` → `above_threshold(threshold)`), the SAME signal the importance slider sets. The
+(`MediaScheduler::folder_scores` → `coverage::importance_scores`), the SAME signal the importance slider sets. The
 scheduler:
 
 - **orders** the walk by folder importance descending (`enrich::prioritized`), so high-importance folders enrich first;
@@ -274,12 +285,18 @@ derives ONLY from settings state, so it needs no `Completed` edge.
   sums the content bytes of the doomed paths (a set membership test, so no giant `IN (…)` for a 200k doomed set). It's a
   content estimate (excludes FTS-index + page overhead), so it's an honest "about" and a `VACUUM` reclaims at least it.
   The preview's "free about X" and the prune's "Freed X" use the SAME method, so the two numbers agree.
-- **A prune that didn't land says so.** A writer that won't start, or a delete SQLite refuses (a full disk, a locked
-  database), is a typed `PruneFailure`, never zero rows: zero rows is what the settings toast voices as "already
-  cleared". `media_index_prune_below_threshold` turns any volume's failure into `ReclaimError::NotDeleted` (still
-  pruning the other volumes), and the panel toasts "couldn't delete" and re-reads the preview. A `VACUUM` that fails
-  after the delete landed reports `freed_bytes: None`, because the file is exactly as large as before, and owes the
-  volume a `VACUUM` its next pass runs (`purge.rs`). The panel then says the space frees up later instead of "Freed X".
+- **A prune that didn't land says so.** A `media.db` that won't read, a writer that won't start, or a delete SQLite
+  refuses (a full disk, a locked database), is a typed `PruneFailure`, never zero rows: zero rows is what the settings
+  toast voices as "already cleared". `media_index_prune_below_threshold` turns any volume's failure into
+  `ReclaimError::NotDeleted` (still pruning the other volumes), and the panel toasts "couldn't delete" and re-reads the
+  preview. A `VACUUM` that fails after the delete landed reports `freed_bytes: None`, because the file is exactly as
+  large as before, and owes the volume a `VACUUM` its next pass runs (`purge.rs`). The panel then says the space frees
+  up later instead of "Freed X".
+
+- **An unreadable store is not an empty one.** `stored_coverage` answers `Err(StoreUnreadable)` when the volume's
+  `media.db` exists but won't read (corrupt, or locked past the busy timeout), and an empty partition only when there's
+  no file (never enriched). The prune maps it to `PruneFailure::StoreUnreadable` (the panel's "couldn't delete" toast),
+  the preview to `pending` (the line hides), and the counts poll to `None` (unknown, never `0`).
 
 The two commands (`media_index_reclaim_preview`, `media_index_prune_below_threshold`) are in `../DETAILS.md` § The IPC
 surface, and the FE surface in its § The frontend surface.
@@ -301,6 +318,6 @@ defer, exclusion veto, index-confirmed GC, the two coverage-filter data-safety a
 folder into the volume's index space). `reclaim_tests.rs` covers the partition + prune arithmetic; `pool/tests.rs` the
 live width changes; `enrich_memory_tests.rs` the walk's allocation guards.
 
-The async wire-up (`ready_volumes_with_kind` sweep → `wire_volume` → `run_pass_blocking`) is covered indirectly by the
+The async wire-up (`ready_volumes_to_wire` sweep → `wire_volume` → `run_pass_blocking`) is covered indirectly by the
 reactive pieces (bus-edge consumption + coalescer + the enrich core); a full end-to-end async test needs the
 process-global index registry and is deferred to the E2E slice.

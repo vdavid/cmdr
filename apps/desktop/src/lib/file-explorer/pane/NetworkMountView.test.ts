@@ -43,7 +43,6 @@ vi.mock('$lib/tauri-commands', () => ({
   getKnownShareByName: vi.fn(() => Promise.resolve(null)),
   updateLeftPaneState: h.updateLeftPaneState,
   updateRightPaneState: vi.fn(() => Promise.resolve()),
-  removeManualServer: vi.fn(() => Promise.resolve()),
   showNetworkHostContextMenu: vi.fn(() => Promise.resolve()),
   onNetworkHostContextAction: vi.fn(() => Promise.resolve(() => {})),
   disconnectNetworkHost: vi.fn(() => Promise.resolve()),

@@ -39,8 +39,8 @@ use super::memory::MemoryStore;
 use super::outcomes::{self, RejectSource};
 use super::store::AgentStoreError;
 use super::store::proposals::{
-    ClaimOutcome, GroupIntent, NewGroup, NewOp, NewSweep, OpSnapshot, RejectOutcome, ReproposeOutcome,
-    claim_group_for_execution, count_ops, create_group, create_sweep, get_group, repropose_group,
+    ClaimOutcome, ClaimedGroup, GroupIntent, NewGroup, NewOp, NewSweep, OpSnapshot, RejectOutcome, ReproposeOutcome,
+    claim_group_for_execution, count_ops, create_group, create_sweep, get_group, release_claim, repropose_group,
 };
 
 /// A sweep as created: its id and the ids of the groups inside it, in order.
@@ -112,18 +112,41 @@ pub fn repropose(
     Ok(outcome)
 }
 
-/// Claim a group for execution on the user's say-so, and report an approval.
+/// Claim a group for execution on the user's say-so, and announce that it left the pending set.
 ///
 /// A thin wrapper on the store's claim: the transaction, and every refusal it can produce,
-/// belongs there. This adds only the metric, and only when a claim actually went through — a
-/// refused claim is not an approval.
+/// belongs there. ❌ It doesn't count an approval: the engine can still refuse to start, and
+/// the group then goes back ([`give_back`]). The caller reports [`started`] once it runs.
 pub fn approve(conn: &Connection, group_id: i64, now: i64) -> Result<ClaimOutcome, AgentStoreError> {
     let outcome = claim_group_for_execution(conn, group_id, now)?;
-    if let ClaimOutcome::Claimed(claimed) = &outcome {
-        analytics::group_approved(claimed.group.verb, claimed.binding.op_count);
+    if matches!(outcome, ClaimOutcome::Claimed(_)) {
         changed::announce(conn, SuggestionChange::Approved, Some(group_id));
     }
     Ok(outcome)
+}
+
+/// Report an approval: the claimed group's operation is running.
+///
+/// ⚠️ **Counted at START, never at the claim.** A claim the engine refuses goes back to
+/// pending, so counting it would report an approval nothing came of, and count the same group
+/// again when the user re-approves it. A started group never returns to pending, so this fires
+/// exactly once per group that ran.
+pub fn started(claimed: &ClaimedGroup) {
+    analytics::group_approved(claimed.group.verb, claimed.binding.op_count);
+}
+
+/// Give a claimed group back to the user after the write engine refused to start it, and
+/// announce it so the badge and an open review see it pending again.
+///
+/// Nothing was counted ([`started`] never ran), so re-approving it later counts once. Nothing
+/// reaches the agent either, since nothing settled ([`crate::agent::outcomes`] hears an
+/// approval at SETTLE only).
+pub fn give_back(conn: &Connection, group_id: i64) -> Result<bool, AgentStoreError> {
+    let released = release_claim(conn, group_id)?;
+    if released {
+        changed::announce(conn, SuggestionChange::GivenBack, Some(group_id));
+    }
+    Ok(released)
 }
 
 /// Reject a group on the user's say-so, and report the rejection.

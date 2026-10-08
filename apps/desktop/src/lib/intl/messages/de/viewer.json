@@ -19,9 +19,9 @@
   "@viewer.error.noPath": {
     "sourceHash": "2b069fc"
   },
-  "viewer.error.readFailed": "Die Datei konnte nicht gelesen werden",
+  "viewer.error.readFailed": "Diese Datei ließ sich nicht lesen. Erneut versuchen?",
   "@viewer.error.readFailed": {
-    "sourceHash": "ea7d976"
+    "sourceHash": "8c420fd"
   },
   "viewer.error.notFound": "Diese Datei konnte nicht gefunden werden. Sie wurde vielleicht bewegt, umbenannt oder gelöscht.",
   "@viewer.error.notFound": {
@@ -42,6 +42,10 @@
   "viewer.error.archiveUnreadable": "Diese Datei ließ sich nicht aus dem Archiv öffnen. Vielleicht ist sie verschlüsselt, beschädigt oder verwendet ein Format, das Cmdr nicht lesen kann.",
   "@viewer.error.archiveUnreadable": {
     "sourceHash": "e0b8f4e"
+  },
+  "viewer.error.coldStorage": "Diese Datei ist archiviert, deshalb gibt es nichts anzuzeigen, bis sie wiederhergestellt ist. Stelle die Datei in der Konsole deines Speicheranbieters wieder her und öffne sie dann erneut.",
+  "@viewer.error.coldStorage": {
+    "sourceHash": "236cd1b"
   },
   "viewer.error.retry": "Erneut versuchen",
   "@viewer.error.retry": {
@@ -290,18 +294,6 @@
   "@viewer.pdf.loading": {
     "sourceHash": "7f9acf3"
   },
-  "viewer.contextMenu.ariaLabel": "Vorschau-Aktionen",
-  "@viewer.contextMenu.ariaLabel": {
-    "sourceHash": "4cf8e51"
-  },
-  "viewer.contextMenu.copy": "Kopieren",
-  "@viewer.contextMenu.copy": {
-    "sourceHash": "e21f935"
-  },
-  "viewer.contextMenu.selectAll": "Alles auswählen",
-  "@viewer.contextMenu.selectAll": {
-    "sourceHash": "1fc9a38"
-  },
   "viewer.copyDialog.confirmTitleKnown": "{size} in die Zwischenablage kopieren?",
   "@viewer.copyDialog.confirmTitleKnown": {
     "sourceHash": "7f97ebf"
@@ -406,17 +398,17 @@
   "@viewer.selection.toEndOfFile": {
     "sourceHash": "62d95be"
   },
-  "viewer.selection.singleLine": "{chars} Zeichen in Zeile {line} ausgewählt",
+  "viewer.selection.singleLine": "{chars, plural, one {# Zeichen} other {# Zeichen}} in Zeile {line} ausgewählt",
   "@viewer.selection.singleLine": {
-    "sourceHash": "bb320d5"
+    "sourceHash": "eb11697"
   },
-  "viewer.selection.multiLine": "Zeilen {startLine} bis {endLine} ausgewählt, {chars} Zeichen",
+  "viewer.selection.multiLine": "Zeilen {startLine} bis {endLine} ausgewählt, {chars, plural, one {# Zeichen} other {# Zeichen}}",
   "@viewer.selection.multiLine": {
-    "sourceHash": "074c687"
+    "sourceHash": "5ba7791"
   },
-  "viewer.selection.charsOnly": "{chars} Zeichen ausgewählt",
+  "viewer.selection.charsOnly": "{chars, plural, one {# Zeichen} other {# Zeichen}} ausgewählt",
   "@viewer.selection.charsOnly": {
-    "sourceHash": "b772db6"
+    "sourceHash": "3db2c4e"
   },
   "viewer.selection.toEndOfFileNoLine": "Bis zum Ende der Datei ausgewählt",
   "@viewer.selection.toEndOfFileNoLine": {

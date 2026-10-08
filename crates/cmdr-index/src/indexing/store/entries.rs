@@ -4,6 +4,7 @@
 
 use super::{EntryRow, IndexStore, IndexStoreError, normalize_for_comparison, reconstruct_path, with_savepoint};
 use rusqlite::{Connection, OptionalExtension, params};
+use std::ops::ControlFlow;
 
 #[cfg(test)]
 use super::ROOT_ID;
@@ -93,10 +94,10 @@ fn entry_row_from(row: &rusqlite::Row<'_>) -> rusqlite::Result<EntryRow> {
 
 /// Feed each `(id, parent_id, name, modified_at)` row of a directory `SELECT`
 /// through `f`, borrowing the name off SQLite's own row buffer so the loop
-/// allocates nothing per row.
+/// allocates nothing per row. Stops fetching at the first row `f` breaks on.
 fn for_each_directory_row(
     mut rows: rusqlite::Rows<'_>,
-    mut f: impl FnMut(i64, i64, &str, Option<u64>),
+    mut f: impl FnMut(i64, i64, &str, Option<u64>) -> ControlFlow<()>,
 ) -> Result<(), IndexStoreError> {
     while let Some(row) = rows.next()? {
         let id: i64 = row.get(0)?;
@@ -104,7 +105,9 @@ fn for_each_directory_row(
         // `get_ref` borrows SQLite's own buffer, so no `String` is allocated per row.
         let name = row.get_ref(2)?.as_str().map_err(rusqlite::Error::from)?;
         let modified_at: Option<u64> = row.get(3)?;
-        f(id, parent_id, name, modified_at);
+        if f(id, parent_id, name, modified_at).is_break() {
+            break;
+        }
     }
     Ok(())
 }
@@ -207,9 +210,12 @@ impl IndexStore {
     /// Prefer this over [`all_directories`](IndexStore::all_directories) whenever the consumer
     /// wants paths rather than metadata. The `ORDER BY id` is what makes the result binary-
     /// searchable, so don't drop it.
+    ///
+    /// `f` breaks to stop the read early (a full name arena, a cancelled pass); no row after
+    /// that one is fetched.
     pub fn for_each_directory(
         conn: &Connection,
-        f: impl FnMut(i64, i64, &str, Option<u64>),
+        f: impl FnMut(i64, i64, &str, Option<u64>) -> ControlFlow<()>,
     ) -> Result<(), IndexStoreError> {
         let mut stmt = conn.prepare_cached(
             "SELECT id, parent_id, name, modified_at FROM entries WHERE is_directory = 1 ORDER BY id",
@@ -234,9 +240,12 @@ impl IndexStore {
     /// scanning the table in storage order: roughly 3× the query time (1.5 s → 4.7 s over 7.4M
     /// file rows on a real root index, measured 2026-07-27). ❌ Don't drop the `ORDER BY` to win
     /// that back without giving the caller another way to close a group.
+    ///
+    /// `f` breaks to stop the read early. This stream is most of a full importance pass's wall
+    /// clock, so it's where a cancelled pass has to be able to leave.
     pub fn for_each_file_child_by_parent(
         conn: &Connection,
-        mut f: impl FnMut(i64, &str),
+        mut f: impl FnMut(i64, &str) -> ControlFlow<()>,
     ) -> Result<(), IndexStoreError> {
         let mut stmt =
             conn.prepare_cached("SELECT parent_id, name FROM entries WHERE is_directory = 0 ORDER BY parent_id")?;
@@ -245,7 +254,9 @@ impl IndexStore {
             let parent_id: i64 = row.get(0)?;
             // `get_ref` borrows SQLite's own buffer, so no `String` is allocated per row.
             let name = row.get_ref(1)?.as_str().map_err(rusqlite::Error::from)?;
-            f(parent_id, name);
+            if f(parent_id, name).is_break() {
+                break;
+            }
         }
         Ok(())
     }
@@ -261,11 +272,11 @@ impl IndexStore {
     ///
     /// The caller chunks `parent_ids` to stay under SQLite's bound-parameter limit.
     /// Rows arrive in no guaranteed order — a directory has no per-parent
-    /// accumulator to close, unlike the file side.
+    /// accumulator to close, unlike the file side. `f` breaks to stop the read early.
     pub fn for_each_child_directory_of(
         conn: &Connection,
         parent_ids: &[i64],
-        f: impl FnMut(i64, i64, &str, Option<u64>),
+        f: impl FnMut(i64, i64, &str, Option<u64>) -> ControlFlow<()>,
     ) -> Result<(), IndexStoreError> {
         if parent_ids.is_empty() {
             return Ok(());

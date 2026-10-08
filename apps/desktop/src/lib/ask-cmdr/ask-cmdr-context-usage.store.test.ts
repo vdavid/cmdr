@@ -20,7 +20,7 @@ vi.mock('$lib/tauri-commands', () => ({
   recordAskCmdrSlotChange: vi.fn(() => Promise.resolve([])),
   preflightBulkRename: vi.fn(() => Promise.resolve({ status: 'ready', rows: [] })),
   cancelBulkRenameProposal: vi.fn(() => Promise.resolve()),
-  applyBulkRename: vi.fn(() => Promise.resolve({ operationId: 'op-1' })),
+  applyBulkRename: vi.fn(() => Promise.resolve({ operationId: 'op-1', swapsLeftOut: 0 })),
   reviseBulkRenameRow: vi.fn(() => Promise.resolve()),
 }))
 vi.mock('$lib/app-status-store', () => ({ saveAppStatus: vi.fn() }))

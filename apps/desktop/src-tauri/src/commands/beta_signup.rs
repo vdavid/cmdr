@@ -58,7 +58,7 @@ pub async fn beta_signup(email: String) -> BetaSignupResult {
         return BetaSignupResult::Subscribed;
     }
 
-    let client = match reqwest::Client::builder().timeout(BETA_SIGNUP_TIMEOUT).build() {
+    let client = match cmdr_http::client_builder().timeout(BETA_SIGNUP_TIMEOUT).build() {
         Ok(c) => c,
         Err(e) => {
             log::warn!(target: "beta_signup", "Couldn't build HTTP client: {e}");

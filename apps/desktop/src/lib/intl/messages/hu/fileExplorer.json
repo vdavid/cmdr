@@ -55,6 +55,14 @@
   "@fileExplorer.restrictedFolder.label": {
     "sourceHash": "bbcf72f"
   },
+  "fileExplorer.archivedFile.label": "Archivált",
+  "@fileExplorer.archivedFile.label": {
+    "sourceHash": "bdb8650"
+  },
+  "fileExplorer.archivedFile.tooltip": "Archiválva, offline tárolásban. Állítsd vissza a tárhelyszolgáltatód konzolján, mielőtt megnyitod vagy átmásolod.",
+  "@fileExplorer.archivedFile.tooltip": {
+    "sourceHash": "8897d71"
+  },
   "fileExplorer.diskSpace.free": "Szabad: {freeText} / {totalText} ({percentText}%)",
   "@fileExplorer.diskSpace.free": {
     "sourceHash": "97781f4"
@@ -103,6 +111,14 @@
   "fileExplorer.pane.directConnectionUnreachableToast": "{server} most nem érhető el, ezért ez a megosztás a rendszerkapcsolaton marad.",
   "@fileExplorer.pane.directConnectionUnreachableToast": {
     "sourceHash": "4a5ca66"
+  },
+  "fileExplorer.pane.directConnectionBlockedByThisMacToast": "Valami ezen a Macen megakadályozza, hogy a Cmdr közvetlenül kapcsolódjon ehhez: {server}, ezért ez a megosztás a rendszerkapcsolaton marad. Próbáld ki- és bekapcsolni a Cmdrt itt: {localNetwork}, vagy nézd meg a tűzfal-alkalmazásodat.",
+  "@fileExplorer.pane.directConnectionBlockedByThisMacToast": {
+    "sourceHash": "74f758e"
+  },
+  "fileExplorer.pane.openLocalNetworkSettings": "Beállítások megnyitása: {localNetwork}",
+  "@fileExplorer.pane.openLocalNetworkSettings": {
+    "sourceHash": "c3931df"
   },
   "fileExplorer.pane.directConnectionTooSlowToast": "{server} túl sokáig nem válaszolt, ezért ez a megosztás a rendszerkapcsolaton marad.",
   "@fileExplorer.pane.directConnectionTooSlowToast": {
@@ -288,6 +304,14 @@
   "fileExplorer.typeToJump.prefix": "Ugrás: ",
   "@fileExplorer.typeToJump.prefix": {
     "sourceHash": "e9e3412"
+  },
+  "fileExplorer.quickFilter.prefix": "Szűrés: ",
+  "@fileExplorer.quickFilter.prefix": {
+    "sourceHash": "b549365"
+  },
+  "fileExplorer.quickFilter.ariaLabel": "Ezt tartalmazó nevek megjelenítése: „{pattern}”",
+  "@fileExplorer.quickFilter.ariaLabel": {
+    "sourceHash": "9b223b0"
   },
   "fileExplorer.searchResults.unavailableTitle": "A keresési találatok már nem érhetők el",
   "@fileExplorer.searchResults.unavailableTitle": {
@@ -537,38 +561,6 @@
   "@fileExplorer.network.reconnect.willTryMore": {
     "sourceHash": "a7d887a"
   },
-  "fileExplorer.mtp.connectTimedOut": "A kapcsolat időtúllépés miatt megszakadt. Lehet, hogy az eszköz lassú, vagy nem válaszol.",
-  "@fileExplorer.mtp.connectTimedOut": {
-    "sourceHash": "cc01ae7"
-  },
-  "fileExplorer.mtp.exclusiveAccess": "Egy másik app használja ezt az eszközt. Futtasd a ptpcamerad megoldást.",
-  "@fileExplorer.mtp.exclusiveAccess": {
-    "sourceHash": "1fac18c"
-  },
-  "fileExplorer.mtp.deviceNotFound": "Az eszköz nem található. Lehet, hogy kihúzták.",
-  "@fileExplorer.mtp.deviceNotFound": {
-    "sourceHash": "15d2382"
-  },
-  "fileExplorer.mtp.disconnected": "Az eszköz leválasztódott.",
-  "@fileExplorer.mtp.disconnected": {
-    "sourceHash": "57e823a"
-  },
-  "fileExplorer.mtp.deviceBusy": "Az eszköz foglalt. Próbáld újra.",
-  "@fileExplorer.mtp.deviceBusy": {
-    "sourceHash": "7199b1d"
-  },
-  "fileExplorer.mtp.noStorage": "Az eszközön nincs elérhető tárhely",
-  "@fileExplorer.mtp.noStorage": {
-    "sourceHash": "ff30402"
-  },
-  "fileExplorer.mtp.connecting": "Csatlakozás az eszközhöz…",
-  "@fileExplorer.mtp.connecting": {
-    "sourceHash": "860bb9b"
-  },
-  "fileExplorer.mtp.tryAgain": "Próbáld újra",
-  "@fileExplorer.mtp.tryAgain": {
-    "sourceHash": "d8b8392"
-  },
   "fileExplorer.networkMount.mounting": "Csatolás: {target}…",
   "@fileExplorer.networkMount.mounting": {
     "sourceHash": "7b7368d"
@@ -625,9 +617,65 @@
   "@fileExplorer.unreachable.openHome": {
     "sourceHash": "a178b4d"
   },
+  "fileExplorer.listingStalled.title": "A Cmdr még mindig vár erre a mappára",
+  "@fileExplorer.listingStalled.title": {
+    "sourceHash": "2c288e7"
+  },
+  "fileExplorer.listingStalled.detail": "Nem válaszol a szerver vagy a meghajtó, amelyen ez a mappa van. A Cmdr a háttérben tovább próbálkozik, és megnyitja a mappát, amint válasz érkezik.",
+  "@fileExplorer.listingStalled.detail": {
+    "sourceHash": "3d5ca69"
+  },
+  "fileExplorer.listingStalled.detailServer": "Nem válaszol a szerver, amelyen ez a mappa van. A Cmdr a háttérben tovább próbálkozik, és megnyitja a mappát, amint válasz érkezik.",
+  "@fileExplorer.listingStalled.detailServer": {
+    "sourceHash": "f8f8837"
+  },
+  "fileExplorer.listingStalled.detailDrive": "Nem válaszol a meghajtó, amelyen ez a mappa van. A Cmdr a háttérben tovább próbálkozik, és megnyitja a mappát, amint válasz érkezik.",
+  "@fileExplorer.listingStalled.detailDrive": {
+    "sourceHash": "e2f3046"
+  },
+  "fileExplorer.listingStalled.tryAgain": "Próbáld újra",
+  "@fileExplorer.listingStalled.tryAgain": {
+    "sourceHash": "d8b8392"
+  },
+  "fileExplorer.listingStalled.goBack": "Vissza",
+  "@fileExplorer.listingStalled.goBack": {
+    "sourceHash": "6aadac2"
+  },
   "fileExplorer.clipboard.copied": "{countText} {count, plural, one {elem} other {elem}} másolva",
   "@fileExplorer.clipboard.copied": {
     "sourceHash": "1c25075"
+  },
+  "fileExplorer.compareDirectories.marked": "Eltérő fájlok kijelölve: {leftCountText} {leftCount, plural, one {fájl} other {fájl}} a bal oldalon és {rightCountText} {rightCount, plural, one {fájl} other {fájl}} a jobb oldalon.",
+  "@fileExplorer.compareDirectories.marked": {
+    "sourceHash": "73e3ccf"
+  },
+  "fileExplorer.compareDirectories.noDifferences.newerAndMissing": "Nincs mit kijelölni: minden fájl megvan mindkét mappában, és egyik másolat sem újabb. Az almappákat a Cmdr nem hasonlítja össze.",
+  "@fileExplorer.compareDirectories.noDifferences.newerAndMissing": {
+    "sourceHash": "c2960d8"
+  },
+  "fileExplorer.compareDirectories.noDifferences.missing": "Nincs mit kijelölni: minden fájl megvan mindkét mappában. Az almappákat a Cmdr nem hasonlítja össze.",
+  "@fileExplorer.compareDirectories.noDifferences.missing": {
+    "sourceHash": "ed2e696"
+  },
+  "fileExplorer.compareDirectories.noDifferences.sizeAndMissing": "Nincs mit kijelölni: minden fájl megvan mindkét mappában, azonos mérettel. Az almappákat a Cmdr nem hasonlítja össze.",
+  "@fileExplorer.compareDirectories.noDifferences.sizeAndMissing": {
+    "sourceHash": "5f7b808"
+  },
+  "fileExplorer.compareDirectories.keptChanging": "A mappák az összehasonlítás közben folyamatosan változtak. Próbáld újra, ha már nem változnak.",
+  "@fileExplorer.compareDirectories.keptChanging": {
+    "sourceHash": "3051074"
+  },
+  "fileExplorer.compareDirectories.needsTwoFolders": "Nyiss meg egy-egy mappát mindkét panelen az összehasonlításhoz",
+  "@fileExplorer.compareDirectories.needsTwoFolders": {
+    "sourceHash": "c04ef80"
+  },
+  "fileExplorer.compareDirectories.couldNotFinish": "Nem sikerült befejezni a mappák összehasonlítását. Próbáld újra egy pillanat múlva.",
+  "@fileExplorer.compareDirectories.couldNotFinish": {
+    "sourceHash": "0900bc9"
+  },
+  "fileExplorer.folderSizes.notConnected": "Itt nem lehet kiszámítani a mappaméreteket: ez a hely most nincs csatlakoztatva.",
+  "@fileExplorer.folderSizes.notConnected": {
+    "sourceHash": "8b51988"
   },
   "fileExplorer.clipboard.cutReady": "{countText} {count, plural, one {elem} other {elem}} áthelyezésre kész. Illeszd be a befejezéshez.",
   "@fileExplorer.clipboard.cutReady": {
@@ -705,6 +753,14 @@
   "@fileExplorer.clipboard.empty": {
     "sourceHash": "0cbe304"
   },
+  "fileExplorer.clipboard.stillPasting": "Egy fájl létrehozása a vágólap tartalmából még folyamatban van. A kötet lassan válaszol.",
+  "@fileExplorer.clipboard.stillPasting": {
+    "sourceHash": "0e98ca7"
+  },
+  "fileExplorer.clipboard.notPasted": "A Cmdr nem tudott fájlt létrehozni a vágólap tartalmából. {reason}",
+  "@fileExplorer.clipboard.notPasted": {
+    "sourceHash": "a6e63c7"
+  },
   "fileExplorer.clipboard.pastedAsFile": "A vágólap {kind, select, image {képe} pdf {PDF-je} other {szövege}} fájlként beillesztve: {filename}",
   "@fileExplorer.clipboard.pastedAsFile": {
     "sourceHash": "d61d4b5"
@@ -781,6 +837,26 @@
   "@fileExplorer.git.useTransferToCopyOut": {
     "sourceHash": "a0d65fe"
   },
+  "fileExplorer.openWith.copyRefused.tooLarge": "„{fileName}” nagyobb {limit} méretnél, ezért a Cmdr nem tudja megnyitni az archívumból ezzel: {appName}.",
+  "@fileExplorer.openWith.copyRefused.tooLarge": {
+    "sourceHash": "43399e6"
+  },
+  "fileExplorer.openWith.copyRefused.tooLargeInRepoHistory": "„{fileName}” nagyobb {limit} méretnél, ezért a Cmdr nem tudja megnyitni a repó előzményeiből ezzel: {appName}.",
+  "@fileExplorer.openWith.copyRefused.tooLargeInRepoHistory": {
+    "sourceHash": "aab64d0"
+  },
+  "fileExplorer.openWith.copyRefused.needsPassword": "„{fileName}” egy jelszóval védett archívumban van. Előbb másold egy mappába (a Cmdr majd elkéri a jelszót), aztán nyisd meg ezzel: {appName}.",
+  "@fileExplorer.openWith.copyRefused.needsPassword": {
+    "sourceHash": "882a23f"
+  },
+  "fileExplorer.openWith.copyRefused.archiveUnreadable": "„{fileName}” kicsomagolása az archívumból nem sikerült, így nem nyitható meg ezzel: {appName}. Lehet, hogy az archívum sérült, vagy olyan formátumú, amelyet a Cmdr nem tud elolvasni.",
+  "@fileExplorer.openWith.copyRefused.archiveUnreadable": {
+    "sourceHash": "4ff2573"
+  },
+  "fileExplorer.openWith.copyRefused.unreadable": "„{fileName}” beolvasása nem sikerült, így nem nyitható meg ezzel: {appName}. Ellenőrizd, hogy a fájlt tároló meghajtó még csatlakozik, aztán próbáld újra.",
+  "@fileExplorer.openWith.copyRefused.unreadable": {
+    "sourceHash": "8af2399"
+  },
   "fileExplorer.rename.hiddenAfterRename": "A fájl eltűnt a nézetből, mert a rejtett fájlok nem jelennek meg.",
   "@fileExplorer.rename.hiddenAfterRename": {
     "sourceHash": "6258274"
@@ -797,13 +873,17 @@
   "@fileExplorer.rename.chainKeptOriginalNameAndOthers": {
     "sourceHash": "016797b"
   },
-  "fileExplorer.rename.unconfirmed": "Nem sikerült megerősíteni, hogy „{name}” átneveződött. Lehet, hogy a kötet lassú, így az átnevezés attól még sikerülhetett.",
-  "@fileExplorer.rename.unconfirmed": {
-    "sourceHash": "059ac81"
+  "fileExplorer.rename.needsOwnMoveDialog": "Az átnevezése a szerveren másolással jár, ezért külön Áthelyezés párbeszédablak kell hozzá. Nevezd át újra, egymagában.",
+  "@fileExplorer.rename.needsOwnMoveDialog": {
+    "sourceHash": "87110e0"
   },
-  "fileExplorer.rename.unconfirmedAndOthers": "Nem sikerült megerősíteni, hogy „{name}” és még {others, plural, one {egy másik fájl} other {{othersText} másik fájl}} átneveződött. Lehet, hogy a kötet lassú, így az átnevezések attól még sikerülhettek.",
-  "@fileExplorer.rename.unconfirmedAndOthers": {
-    "sourceHash": "f16b15d"
+  "fileExplorer.rename.stillRenaming": "„{name}” átnevezése még folyamatban van. A kötet lassan válaszol.",
+  "@fileExplorer.rename.stillRenaming": {
+    "sourceHash": "a05cca5"
+  },
+  "fileExplorer.rename.stillRenamingAndOthers": "„{name}” és {kind, select, folders {{others, plural, one {egy másik mappa} other {{othersText} másik mappa}}} files {{others, plural, one {egy másik fájl} other {{othersText} másik fájl}}} other {{others, plural, one {{othersText} másik fájl és mappa} other {{othersText} másik fájl és mappa}}}} átnevezése még folyamatban van. A kötet lassan válaszol.",
+  "@fileExplorer.rename.stillRenamingAndOthers": {
+    "sourceHash": "933be25"
   },
   "fileExplorer.columns.name": "Név",
   "@fileExplorer.columns.name": {
@@ -1336,6 +1416,10 @@
   "@fileExplorer.navigation.connectionTooltipDirect": {
     "sourceHash": "a69a3ad"
   },
+  "fileExplorer.navigation.connectionTooltipConnected": "Kapcsolódva",
+  "@fileExplorer.navigation.connectionTooltipConnected": {
+    "sourceHash": "2296556"
+  },
   "fileExplorer.navigation.connectionTooltipSystem": "Rendszerkapcsolat használatban. A gyorsabb hozzáférésért használd a „Közvetlen kapcsolat a gyorsabb hozzáférésért” menüpontot.",
   "@fileExplorer.navigation.connectionTooltipSystem": {
     "sourceHash": "e4ac697"
@@ -1408,9 +1492,9 @@
   "@fileExplorer.navigation.disconnectPlaceAriaLabel": {
     "sourceHash": "8f755cb"
   },
-  "fileExplorer.navigation.disconnectBusyTooltip": "Nem választható le, amíg ezen a szerveren műveletek vannak folyamatban",
+  "fileExplorer.navigation.disconnectBusyTooltip": "A Cmdr még fájlokkal dolgozik ezen a szerveren. Válaszd le, amint ez befejeződik.",
   "@fileExplorer.navigation.disconnectBusyTooltip": {
-    "sourceHash": "a659820"
+    "sourceHash": "bd52d60"
   },
   "fileExplorer.navigation.serverPinnedToast": "{name} mostantól ott van a kötetválasztódban.",
   "@fileExplorer.navigation.serverPinnedToast": {
@@ -1422,7 +1506,7 @@
   },
   "fileExplorer.navigation.pinRefusedToast": "A Cmdr nem tudta megváltoztatni, hogy {name} hol jelenjen meg.",
   "@fileExplorer.navigation.pinRefusedToast": {
-    "sourceHash": "3ed5f60"
+    "sourceHash": "59f1f8b"
   },
   "fileExplorer.navigation.disconnectRefusedToast": "A Cmdr nem tudta leválasztani ezt: {name}.",
   "@fileExplorer.navigation.disconnectRefusedToast": {
@@ -1468,9 +1552,9 @@
   "@fileExplorer.navigation.ejectVolumeAriaLabel": {
     "sourceHash": "61db18b"
   },
-  "fileExplorer.navigation.ejectBusyTooltip": "Nem adható ki, amíg ezen az eszközön műveletek vannak folyamatban",
+  "fileExplorer.navigation.ejectBusyTooltip": "A Cmdr még fájlokkal dolgozik ezen az eszközön. Add ki, amint ez befejeződik.",
   "@fileExplorer.navigation.ejectBusyTooltip": {
-    "sourceHash": "eafd9bd"
+    "sourceHash": "3da6312"
   },
   "fileExplorer.navigation.ejectingVolumeAriaLabel": "{name} kiadása folyamatban…",
   "@fileExplorer.navigation.ejectingVolumeAriaLabel": {
@@ -1655,5 +1739,41 @@
   "fileExplorer.dragOut.partial": "{summary} {count, plural, =1 {Nem sikerült átmásolni: „{name}”.} one {Nem sikerült átmásolni {countText} elemet.} other {Nem sikerült átmásolni {countText} elemet.}}",
   "@fileExplorer.dragOut.partial": {
     "sourceHash": "9215226"
+  },
+  "fileExplorer.folderSizes.unreadable": "{count, plural, one {Nem sikerült teljesen beolvasni # mappát, ezért lehet, hogy a mérete hiányos.} other {Nem sikerült teljesen beolvasni # mappát, ezért lehet, hogy a méretük hiányos.}}",
+  "@fileExplorer.folderSizes.unreadable": {
+    "sourceHash": "ad31a56"
+  },
+  "fileExplorer.quickFilter.clear": "Szűrő törlése",
+  "@fileExplorer.quickFilter.clear": {
+    "sourceHash": "ba59e2d"
+  },
+  "fileExplorer.quickFilter.intro.title": "Gépeléssel szűrted ezt a panelt",
+  "@fileExplorer.quickFilter.intro.title": {
+    "sourceHash": "eef3e92"
+  },
+  "fileExplorer.quickFilter.intro.body": "Beírtál néhány betűt, ezért a panel most csak azokat a fájlokat és mappákat mutatja, amelyek nevében ezek szerepelnek.",
+  "@fileExplorer.quickFilter.intro.body": {
+    "sourceHash": "e406349"
+  },
+  "fileExplorer.quickFilter.intro.escape": "Nyomd meg az Escape billentyűt, és újra látod az összes fájlodat.",
+  "@fileExplorer.quickFilter.intro.escape": {
+    "sourceHash": "af749ad"
+  },
+  "fileExplorer.quickFilter.intro.jumpNote": "Inkább a kurzort vinnéd egy egyező névre, anélkül hogy bármit elrejtenél? Válts Ugrás módra itt vagy a Beállításokban.",
+  "@fileExplorer.quickFilter.intro.jumpNote": {
+    "sourceHash": "ac6d3c8"
+  },
+  "fileExplorer.quickFilter.intro.switchToJump": "Váltás Ugrás módra",
+  "@fileExplorer.quickFilter.intro.switchToJump": {
+    "sourceHash": "38642f9"
+  },
+  "fileExplorer.quickFilter.intro.openSettings": "Beállítások…",
+  "@fileExplorer.quickFilter.intro.openSettings": {
+    "sourceHash": "7a04083"
+  },
+  "fileExplorer.quickFilter.intro.gotIt": "Értem",
+  "@fileExplorer.quickFilter.intro.gotIt": {
+    "sourceHash": "5ad3dbd"
   }
 }

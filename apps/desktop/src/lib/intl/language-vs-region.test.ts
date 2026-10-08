@@ -42,7 +42,7 @@ describe('a Hungarian speaker on a Swedish Mac', () => {
     // Swedish and Hungarian agree on the decimal comma, so the counts below are
     // what tells them apart: sv-SE groups with a no-break space, hu with a
     // period.
-    expect(formatFileSizeWithFormat(1536, 'binary')).toBe('1,50 KB')
+    expect(formatFileSizeWithFormat(1536, 'binary')).toBe('1,50 KiB')
     expect(formatNumber(1234567)).toBe('1 234 567')
     expect(formatNumber(1234567)).not.toBe('1.234.567')
   })

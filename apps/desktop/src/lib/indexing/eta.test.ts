@@ -18,6 +18,13 @@ describe('formatEta', () => {
     expect(formatEta(1.9)).toBe('Almost done')
   })
 
+  it('reads a lowercase "almost done" when it lands mid-sentence', () => {
+    expect(formatEta(0, 'midSentence')).toBe('almost done')
+    expect(formatEta(Number.NaN, 'midSentence')).toBe('almost done')
+    // Every other phrase reads the same in both placements.
+    expect(formatEta(125, 'midSentence')).toBe('2m left')
+  })
+
   it('counts down in whole seconds under a minute', () => {
     expect(formatEta(2)).toBe('2s left')
     expect(formatEta(12.4)).toBe('12s left')

@@ -32,7 +32,15 @@ struct ColdDrive {
     tree: tempfile::TempDir,
     index: crate::indexing::handle::Index,
     events: Arc<crate::indexing::events::RecordingSink>,
+    /// The host the drive is registered with, so a test can move it.
+    volumes: Arc<crate::indexing::host::volumes::FakeVolumeProvider>,
     volume_id: &'static str,
+    /// No real FSEvents for this tree unless the test asks for them: most of these
+    /// tests wait on what the database says, ❌ never on a delivery, and every real
+    /// call queues on the one `fseventsd` the whole machine shares
+    /// (`watch/watcher/fake_journal.rs`). `None` for [`ColdDrive::watched_for_real`].
+    #[cfg(target_os = "macos")]
+    _journal: Option<crate::indexing::watch::watcher::fake_journal::Guard>,
     _serialized: std::sync::MutexGuard<'static, ()>,
 }
 
@@ -49,6 +57,21 @@ impl ColdDrive {
     /// atomic back when the fixture drops.
     fn with_indexing_disabled(volume_id: &'static str) -> Self {
         Self::build(volume_id, |volume| volume.with_local_fs_access(), Some(false))
+    }
+
+    /// The same drive with the REAL FSEvents journal, for a test that asserts on a
+    /// change the OS has to deliver. Each such test is in the `real-notify` nextest
+    /// group, so the live streams don't multiply each other's starvation.
+    fn watched_for_real(volume_id: &'static str) -> Self {
+        #[cfg(target_os = "macos")]
+        {
+            let mut drive = Self::new(volume_id);
+            drive._journal = None;
+            drive
+        }
+        // No fake journal to drop: off macOS the watcher is the real one already.
+        #[cfg(not(target_os = "macos"))]
+        Self::new(volume_id)
     }
 
     /// The same, with the registered volume shaped by `describe` — a share, a
@@ -72,6 +95,8 @@ impl ColdDrive {
             .prefix("cmdr-cold-cover-")
             .tempdir_in(std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".")))
             .expect("temp tree");
+        #[cfg(target_os = "macos")]
+        let journal = Some(crate::indexing::watch::watcher::fake_journal::fake_for(tree.path()));
 
         let volumes = crate::indexing::host::volumes::FakeVolumeProvider::shared();
         volumes.register(
@@ -96,7 +121,10 @@ impl ColdDrive {
             tree,
             index,
             events,
+            volumes,
             volume_id,
+            #[cfg(target_os = "macos")]
+            _journal: journal,
             _serialized: serialized,
         }
     }
@@ -191,6 +219,43 @@ impl ColdDrive {
     }
 }
 
+/// Create files named `{stem}-{n}.txt` in `dir` until `landed` says one of them
+/// (by file name) reached the index through the watcher, and return its name.
+///
+/// ⚠️ **Why redo rather than wait longer**: a stream that was JUST started drops a
+/// change landing in its arming window outright, and a saturated `fseventsd` can
+/// coalesce or drop a lone event once it's live. Either way that event is gone, so
+/// no wait recovers it; a fresh change on a fresh name does. Any attempt landing
+/// counts, so a merely slow delivery isn't thrown away. One budget for all of it.
+fn until_the_watcher_delivers(
+    dir: &Path,
+    stem: &str,
+    budget: std::time::Duration,
+    landed: impl Fn(&str) -> bool,
+) -> String {
+    let deadline = std::time::Instant::now() + budget;
+    let mut written: Vec<String> = Vec::new();
+    loop {
+        let name = format!("{stem}-{}.txt", written.len());
+        std::fs::write(dir.join(&name), "w").expect("a change for the watcher to deliver");
+        written.push(name);
+        let next_attempt = std::time::Instant::now() + std::time::Duration::from_millis(750);
+        while std::time::Instant::now() < next_attempt {
+            if let Some(name) = written.iter().find(|name| landed(name)) {
+                return name.clone();
+            }
+            assert!(
+                std::time::Instant::now() < deadline,
+                "timed out after {budget:?}: none of {} changes in {} reached the index through the watcher",
+                written.len(),
+                dir.display(),
+            );
+            // allowed-test-sleep: polls a real OS watcher's delivery, which has no event to await.
+            std::thread::sleep(std::time::Duration::from_millis(25));
+        }
+    }
+}
+
 impl Drop for ColdDrive {
     fn drop(&mut self) {
         let _ = self.index.forget_volume(self.volume_id);
@@ -224,3 +289,6 @@ mod toggles;
 
 /// Stopping a removable drive's index for an eject, whatever window it lands in.
 mod removals;
+
+/// A drive renamed while it indexes, which moves its mount point under the index.
+mod moves;

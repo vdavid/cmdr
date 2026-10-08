@@ -48,7 +48,12 @@ fixture and cut that (`crates/cmdr-webdav/src/volume/connection_drop_test.rs`).
 
 The three httpd servers run as `ada` / `openthedoor` and export `/srv/data` at the URL path `/dav/`. They carry the same
 landmarks (`hello.txt`, `docs/` holding a `readme.md`, `nested/deep/file.txt`, `many/` with 300 entries, `empty/`,
-`naïve name.txt`, `photos/2024 summer/`, `large.bin`), so a cell can assert on them whichever server it's pointed at.
+`naïve name.txt`, `photos/2024 summer/`, `large.bin`, `dated.txt`), so a cell can assert on them whichever server it's
+pointed at.
+
+`dated.txt` is dated 2021-01-29 08:30:15 UTC by `seed.sh`'s `touch -d`: `mod_dav` can't set a date over the wire, so
+this is how the date cells get a file whose date can't be mistaken for "now" (`crates/cmdr-webdav/DETAILS.md` §
+"Dates").
 
 `large.bin` is the byte path's file: 4 MiB by default (`LARGE_MB`), and every 16-byte line in it holds its own line
 number, so each position says where it belongs. That's what lets a cell assert byte-exactness without shipping a copy of
@@ -160,6 +165,8 @@ watch them go by. They need something only the seeded fixture has:
 - `a_whole_file_stream_is_byte_exact_and_knows_its_size_up_front` and
   `a_bounded_range_comes_back_exactly_and_never_over_long` — the seeded `large.bin` and its 4 MiB size.
 - `a_reconnect_against_a_live_server_succeeds_and_keeps_listing` — `hello.txt` and `docs/`.
+- `a_read_stream_reports_the_listed_date` and `apache_stores_no_date_so_a_copy_onto_it_carries_its_own` — the seeded
+  `dated.txt`, and (the second) a server that stores no date.
 - `a_digest_only_server_is_a_typed_refusal` — a server that offers no Basic scheme, which is `webdav-fixture-digest` and
   nothing else.
 - The three cells in `connection_drop_test.rs` — a plain-HTTP fixture to put a proxy in front of; a TLS server's

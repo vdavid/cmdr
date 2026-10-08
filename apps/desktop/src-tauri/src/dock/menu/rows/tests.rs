@@ -388,7 +388,14 @@ fn every_command_carries_a_menu_key_and_a_symbol() {
         // would then fail to find it in the catalog. That scanner reads comments too.
         let mut segments = command.label_key().split('.');
         assert_eq!(segments.next(), Some("menu"), "{command:?} isn't a native-menu key");
-        assert_eq!(segments.next(), Some("dock"), "{command:?} belongs to the Dock family");
+        // Go to folder borrows the Go menu's own string, so the Dock and the bar can't name
+        // one command two ways; every other row is the Dock's own.
+        let family = if command == DockCommand::GoToFolder {
+            "go"
+        } else {
+            "dock"
+        };
+        assert_eq!(segments.next(), Some(family), "{command:?} is in the wrong key family");
         assert!(
             segments.next().is_some_and(|leaf| !leaf.is_empty()),
             "{command:?} has no leaf segment"

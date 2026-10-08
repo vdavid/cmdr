@@ -34,15 +34,23 @@ pub(super) const REMOVAL_STORM_THRESHOLD: usize = 200;
 /// over-scope the cap was meant to prevent.
 pub(super) const STORM_GROUP_PREFIX_DEPTH: usize = 8;
 
+/// One subtree rescan a removal storm escalates to.
+#[derive(Debug, PartialEq, Eq)]
+pub(super) struct StormAnchor {
+    /// Where the rescan walks.
+    pub(super) path: PathBuf,
+    /// How many of the batch's removals fall under it, for the log line.
+    pub(super) removals: usize,
+}
+
 /// Given the batch's removal event paths (absolute, canonical), return the
-/// anchors whose removal count under a depth-capped grouping prefix EXCEEDS
-/// [`REMOVAL_STORM_THRESHOLD`]. Each anchor is that group's deepest common
-/// ancestor — the tightest scope that still covers every removal in the group.
+/// rescans the batch's storms escalate to. A storm is a depth-capped grouping
+/// prefix with more than [`REMOVAL_STORM_THRESHOLD`] removals under it, and
+/// [`cluster_anchors`] decides how tightly each one anchors.
 ///
-/// The result is deterministic-in-content but unordered (grouped via a
-/// `HashMap`); callers queue every anchor, and `queue_must_scan_sub_dirs`
-/// dedups + ancestor-collapses, so order doesn't matter.
-pub(super) fn detect_storm_anchors(removal_paths: &[&str]) -> Vec<PathBuf> {
+/// Sorted by path, so the log reads the same for the same batch; callers queue
+/// every anchor, and `queue_must_scan_sub_dirs` dedups + ancestor-collapses.
+pub(super) fn detect_storm_anchors(removal_paths: &[&str]) -> Vec<StormAnchor> {
     let mut groups: HashMap<String, Vec<&str>> = HashMap::new();
     for &p in removal_paths {
         let key = path_prefix::capped_prefix(p, STORM_GROUP_PREFIX_DEPTH);
@@ -51,13 +59,66 @@ pub(super) fn detect_storm_anchors(removal_paths: &[&str]) -> Vec<PathBuf> {
 
     let mut anchors = Vec::new();
     for members in groups.into_values() {
-        if members.len() > REMOVAL_STORM_THRESHOLD
-            && let Some(anchor) = path_prefix::deepest_common_ancestor(members.iter().copied())
-        {
-            anchors.push(PathBuf::from(anchor));
+        if members.len() > REMOVAL_STORM_THRESHOLD {
+            cluster_anchors(&members, &mut anchors);
         }
     }
+    anchors.sort_by(|a, b| a.path.cmp(&b.path));
     anchors
+}
+
+/// Anchor one storm (`members.len() > REMOVAL_STORM_THRESHOLD`) as tightly as
+/// it allows.
+///
+/// The members' deepest common ancestor covers them all, but one stray delete
+/// elsewhere in the same batch can stretch it from `target/debug` to the whole
+/// worktree, and the rescan then re-lists everything beneath (measured
+/// 2026-10-05: a 225 s walk of a worktree root that changed 781 rows). So the
+/// members split by the child of that ancestor they fall under. Every child
+/// that's a storm on its own anchors separately, recursively, and the rest go
+/// per-file, as long as they're no more than a threshold's worth. Past that,
+/// the leftovers would be a storm of per-file deletes themselves, so the whole
+/// storm keeps the common ancestor. Each split level lets at most
+/// [`REMOVAL_STORM_THRESHOLD`] removals through to the per-file path.
+fn cluster_anchors(members: &[&str], out: &mut Vec<StormAnchor>) {
+    let Some(common) = path_prefix::deepest_common_ancestor(members.iter().copied()) else {
+        return;
+    };
+    let mut by_child: HashMap<&str, Vec<&str>> = HashMap::new();
+    // The ancestor's own removal (its `rmdir`) has no child to fall under.
+    let mut per_file = 0;
+    for &path in members {
+        match child_under(path, &common) {
+            Some(child) => by_child.entry(child).or_default().push(path),
+            None => per_file += 1,
+        }
+    }
+    let (storms, quiet): (Vec<_>, Vec<_>) = by_child
+        .into_values()
+        .partition(|children| children.len() > REMOVAL_STORM_THRESHOLD);
+    per_file += quiet.iter().map(Vec::len).sum::<usize>();
+
+    if storms.is_empty() || per_file > REMOVAL_STORM_THRESHOLD {
+        out.push(StormAnchor {
+            path: PathBuf::from(common),
+            removals: members.len(),
+        });
+        return;
+    }
+    for storm in storms {
+        cluster_anchors(&storm, out);
+    }
+}
+
+/// The first component of `path` below `ancestor`, or `None` when `path` is
+/// `ancestor` itself (or not under it).
+fn child_under<'a>(path: &'a str, ancestor: &str) -> Option<&'a str> {
+    let rest = if ancestor == "/" {
+        path.strip_prefix('/')?
+    } else {
+        path.strip_prefix(ancestor)?.strip_prefix('/')?
+    };
+    rest.split('/').next().filter(|child| !child.is_empty())
 }
 
 /// The rescan scope to re-queue when a removal event should be DROPPED (skipped
@@ -77,6 +138,23 @@ pub(super) fn scope_to_requeue<'a>(removal_path: &str, scopes: &'a [PathBuf]) ->
 mod tests {
     use super::*;
 
+    /// A git worktree at the depth David's live in, so the grouping cap lands on
+    /// the worktree root exactly as it does in the field.
+    const WORKTREE: &str = "/Users/me/projects-git/me/cmdr/.claude/worktrees/wt";
+
+    fn anchor_paths(removals: &[&str]) -> Vec<String> {
+        detect_storm_anchors(removals)
+            .into_iter()
+            .map(|a| a.path.to_string_lossy().into_owned())
+            .collect()
+    }
+
+    /// `count` removals spread over `count / 10` subfolders of `dir`, the way a
+    /// compiler clears its fingerprint and incremental dirs.
+    fn removals_under(dir: &str, count: usize) -> Vec<String> {
+        (0..count).map(|i| format!("{dir}/unit-{}/file{i}.o", i / 10)).collect()
+    }
+
     #[test]
     fn detects_a_group_over_threshold_and_anchors_at_dca() {
         // A deep tree with THRESHOLD+1 files sharing a common ancestor deeper
@@ -87,8 +165,7 @@ mod tests {
             .collect();
         let refs: Vec<&str> = owned.iter().map(String::as_str).collect();
 
-        let anchors = detect_storm_anchors(&refs);
-        assert_eq!(anchors, vec![PathBuf::from(base)]);
+        assert_eq!(anchor_paths(&refs), vec![base.to_string()]);
     }
 
     #[test]
@@ -109,6 +186,99 @@ mod tests {
             .collect();
         let refs: Vec<&str> = owned.iter().map(String::as_str).collect();
         assert!(detect_storm_anchors(&refs).is_empty());
+    }
+
+    /// The field case behind a 225-second walk (2026-10-05): cargo clears
+    /// thousands of files under `target/debug` while something else deletes a few
+    /// dozen elsewhere in the worktree in the SAME batch. One deepest common
+    /// ancestor over both is the worktree root, so the rescan re-listed the whole
+    /// worktree (`node_modules` and all) for a delete that lived in `target/debug`.
+    /// The stray few go per-file, and the storm anchors at its own cluster.
+    #[test]
+    fn a_few_stray_removals_dont_widen_the_anchor_to_the_worktree() {
+        let target = format!("{WORKTREE}/target/debug");
+        let mut owned = removals_under(&target, 1_400);
+        owned.extend(removals_under(
+            &format!("{WORKTREE}/apps/desktop/.svelte-kit/output"),
+            60,
+        ));
+        let refs: Vec<&str> = owned.iter().map(String::as_str).collect();
+
+        assert_eq!(
+            detect_storm_anchors(&refs),
+            vec![StormAnchor {
+                path: PathBuf::from(&target),
+                removals: 1_400,
+            }]
+        );
+    }
+
+    /// Two storms in one worktree in one batch are two anchors, each tight.
+    #[test]
+    fn two_storms_in_one_worktree_anchor_separately() {
+        let target = format!("{WORKTREE}/target/debug");
+        let modules = format!("{WORKTREE}/node_modules/.pnpm");
+        let mut owned = removals_under(&target, 500);
+        owned.extend(removals_under(&modules, 300));
+        let refs: Vec<&str> = owned.iter().map(String::as_str).collect();
+
+        assert_eq!(anchor_paths(&refs), vec![modules, target]);
+    }
+
+    /// A delete spread thin over many folders, none of them a storm alone, still
+    /// coalesces at their common ancestor. Splitting it would send every removal
+    /// down the per-file path this module exists to avoid.
+    #[test]
+    fn a_storm_spread_thin_keeps_its_common_ancestor() {
+        let mut owned = Vec::new();
+        for child in 0..10 {
+            owned.extend(removals_under(
+                &format!("{WORKTREE}/target/debug/build/crate-{child}"),
+                150,
+            ));
+        }
+        let refs: Vec<&str> = owned.iter().map(String::as_str).collect();
+
+        assert_eq!(anchor_paths(&refs), vec![format!("{WORKTREE}/target/debug/build")]);
+    }
+
+    /// The split never lets more than a threshold's worth of removals out of a
+    /// storm to the per-file path. A big cluster beside a big scatter keeps the
+    /// wide anchor, because the scatter alone is a storm's worth of per-file
+    /// deletes.
+    #[test]
+    fn a_split_never_leaks_more_than_a_threshold_to_the_per_file_path() {
+        let mut owned = removals_under(&format!("{WORKTREE}/target/debug"), 1_000);
+        for child in 0..30 {
+            owned.extend(removals_under(&format!("{WORKTREE}/scattered-{child}"), 10));
+        }
+        let refs: Vec<&str> = owned.iter().map(String::as_str).collect();
+
+        assert_eq!(anchor_paths(&refs), vec![WORKTREE.to_string()]);
+    }
+
+    /// The tightening recurses: a storm inside `target/` that is really a storm
+    /// inside `target/debug/incremental` anchors there.
+    #[test]
+    fn the_split_tightens_level_by_level() {
+        let incremental = format!("{WORKTREE}/target/debug/incremental");
+        let mut owned = removals_under(&incremental, 900);
+        owned.extend(removals_under(&format!("{WORKTREE}/target/debug/deps"), 40));
+        owned.extend(removals_under(&format!("{WORKTREE}/target/rustdoc"), 40));
+        owned.extend(removals_under(&format!("{WORKTREE}/apps"), 40));
+        let refs: Vec<&str> = owned.iter().map(String::as_str).collect();
+
+        assert_eq!(anchor_paths(&refs), vec![incremental]);
+    }
+
+    #[test]
+    fn child_under_names_the_next_component() {
+        assert_eq!(child_under("/a/b/c/d", "/a/b"), Some("c"));
+        assert_eq!(child_under("/a/b/c", "/a/b"), Some("c"));
+        assert_eq!(child_under("/a/x", "/"), Some("a"));
+        // The ancestor itself, and a sibling sharing a name prefix, have no child.
+        assert_eq!(child_under("/a/b", "/a/b"), None);
+        assert_eq!(child_under("/a/bc/d", "/a/b"), None);
     }
 
     #[test]

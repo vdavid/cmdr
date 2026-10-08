@@ -1,7 +1,8 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount, tick } from 'svelte'
 import TabBar from './TabBar.svelte'
 import { installLayoutMock } from '$lib/test-layout'
+import { createTabDragController, type TabDragController } from './tab-drag-controller.svelte'
 import type { TabState } from './tab-types'
 
 /**
@@ -14,7 +15,7 @@ import type { TabState } from './tab-types'
 
 const noop = () => {}
 
-function makeTab(id: string, path: string): TabState {
+function makeTab(id: string, path: string, pinned = false): TabState {
   return {
     id,
     path,
@@ -23,26 +24,39 @@ function makeTab(id: string, path: string): TabState {
     sortBy: 'name',
     sortOrder: 'ascending',
     viewMode: 'full',
-    pinned: false,
+    pinned,
     cursorFilename: null,
     unreachable: null,
   }
 }
 
-function mountTabBar(target: HTMLElement) {
+function dragControllerFor(tabs: TabState[]): TabDragController {
+  return createTabDragController({ getTabs: () => tabs, maxTabs: 10, onDrop: noop })
+}
+
+interface MountOptions {
+  tabs?: TabState[]
+  controller?: TabDragController
+  onTabSwitch?: (tabId: string) => void
+  onPaneFocus?: () => void
+}
+
+function mountTabBar(target: HTMLElement, opts: MountOptions = {}) {
+  const tabs = opts.tabs ?? [makeTab('t1', '/Users/test/one'), makeTab('t2', '/Users/test/two')]
   mount(TabBar, {
     target,
     props: {
-      tabs: [makeTab('t1', '/Users/test/one'), makeTab('t2', '/Users/test/two')],
+      tabs,
       activeTabId: 't1',
       paneId: 'left',
       maxTabs: 10,
-      onTabSwitch: noop,
+      drag: (opts.controller ?? dragControllerFor(tabs)).forPane('left'),
+      onTabSwitch: opts.onTabSwitch ?? noop,
       onTabClose: noop,
       onTabMiddleClick: noop,
       onNewTab: noop,
       onContextMenu: noop,
-      onPaneFocus: noop,
+      onPaneFocus: opts.onPaneFocus ?? noop,
     },
   })
 }
@@ -96,5 +110,142 @@ describe('TabBar narrow tabs', () => {
 
     expect(target.querySelectorAll('.tab')).toHaveLength(2)
     expect(target.querySelectorAll('.tab.narrow')).toHaveLength(0)
+  })
+})
+
+/**
+ * What the bar itself owes a tab drag: it hands presses to the controller, dims the tab
+ * in flight, and stays quiet. The drag's own lifecycle is pinned in
+ * `tab-drag-controller.svelte.test.ts`.
+ */
+describe('TabBar tab drag', () => {
+  let target: HTMLElement
+  let controller: TabDragController
+  let tabs: TabState[]
+
+  beforeEach(() => {
+    vi.useFakeTimers()
+    document.body.innerHTML = ''
+    // Clear any hover suppression a previous test's keypress left on the tooltip module.
+    document.dispatchEvent(new MouseEvent('mousemove'))
+    target = document.createElement('div')
+    document.body.appendChild(target)
+    tabs = [makeTab('t1', '/Users/test/one'), makeTab('t2', '/Users/test/two'), makeTab('t3', '/Users/test/pin', true)]
+    controller = dragControllerFor(tabs)
+  })
+
+  afterEach(() => {
+    controller.destroy()
+    vi.useRealTimers()
+  })
+
+  const tabEl = (index: number) => target.querySelectorAll<HTMLElement>('.tab')[index]
+
+  function press(el: HTMLElement): void {
+    el.dispatchEvent(
+      new PointerEvent('pointerdown', {
+        bubbles: true,
+        button: 0,
+        isPrimary: true,
+        pointerId: 1,
+        clientX: 10,
+        clientY: 10,
+      }),
+    )
+  }
+
+  function moveTo(clientX: number): void {
+    window.dispatchEvent(new PointerEvent('pointermove', { pointerId: 1, buttons: 1, clientX, clientY: 10 }))
+  }
+
+  function release(clientX: number): void {
+    window.dispatchEvent(new PointerEvent('pointerup', { pointerId: 1, clientX, clientY: 10 }))
+  }
+
+  it('dims the tab being dragged, and only that one', async () => {
+    mountTabBar(target, { tabs, controller })
+    await tick()
+
+    press(tabEl(1))
+    moveTo(60)
+    await tick()
+
+    expect(tabEl(1).classList.contains('is-dragging')).toBe(true)
+    expect(target.querySelectorAll('.tab.is-dragging')).toHaveLength(1)
+    expect(controller.view).toMatchObject({ tabId: 't2', label: 'two' })
+  })
+
+  it('leaves a pressed tab alone until the pointer has travelled', async () => {
+    mountTabBar(target, { tabs, controller })
+    await tick()
+
+    press(tabEl(1))
+    moveTo(12)
+    await tick()
+
+    expect(target.querySelectorAll('.tab.is-dragging')).toHaveLength(0)
+  })
+
+  it('never drags a pinned tab', async () => {
+    mountTabBar(target, { tabs, controller })
+    await tick()
+
+    press(tabEl(2))
+    moveTo(60)
+    await tick()
+
+    expect(controller.view).toBeNull()
+    expect(target.querySelectorAll('.tab.is-dragging')).toHaveLength(0)
+  })
+
+  it('switches tab on a plain click', async () => {
+    const onTabSwitch = vi.fn()
+    mountTabBar(target, { tabs, controller, onTabSwitch })
+    await tick()
+
+    press(tabEl(1))
+    release(10)
+    tabEl(1).click()
+
+    expect(onTabSwitch).toHaveBeenCalledExactlyOnceWith('t2')
+  })
+
+  it('neither switches tab nor focuses the pane when the press was a drag', async () => {
+    const onTabSwitch = vi.fn()
+    const onPaneFocus = vi.fn()
+    mountTabBar(target, { tabs, controller, onTabSwitch, onPaneFocus })
+    await tick()
+
+    press(tabEl(1))
+    moveTo(60)
+    release(60)
+    tabEl(1).click()
+
+    expect(onTabSwitch).not.toHaveBeenCalled()
+    expect(onPaneFocus).not.toHaveBeenCalled()
+  })
+
+  it('shows a tab tooltip on hover when nothing is being dragged', async () => {
+    mountTabBar(target, { tabs, controller })
+    await tick()
+
+    tabEl(0).dispatchEvent(new MouseEvent('mouseenter'))
+    vi.advanceTimersByTime(500)
+
+    expect(document.querySelector('.cmdr-tooltip.visible')?.textContent).toContain('/Users/test/one')
+  })
+
+  it('keeps tooltips quiet during a drag, even one whose delay had already started', async () => {
+    mountTabBar(target, { tabs, controller })
+    await tick()
+
+    tabEl(1).dispatchEvent(new MouseEvent('mouseenter'))
+    press(tabEl(1))
+    moveTo(60)
+    await tick()
+    tabEl(0).dispatchEvent(new MouseEvent('mouseenter'))
+    vi.advanceTimersByTime(500)
+
+    expect(document.querySelector('.cmdr-tooltip.visible')).toBeNull()
   })
 })

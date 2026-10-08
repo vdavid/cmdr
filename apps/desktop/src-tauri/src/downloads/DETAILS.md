@@ -30,7 +30,11 @@ path it's about to write, and those differ whenever the root is reached through 
 folder, or macOS's `/var` → `/private/var` under `$TMPDIR`). Matching only one spelling means no registration ever
 matches an event and Cmdr toasts its own writes. A prefix swap settles it without a `realpath` per registration, which
 matters because a large copy registers every file it writes; a symlink DEEPER than the root is not covered, and paying
-a syscall per write to cover it isn't worth it. The end-to-end safety net is
+a syscall per write to cover it isn't worth it. It's also a hang, not only a cost: registration runs inline on the
+write op's async worker, under the `RUNTIME` mutex, for EVERY target (the root filter comes after), so a `realpath`
+under `/Volumes/<share>` goes to the kernel SMB mount even for a direct-SMB volume. It's the likeliest filler of the
+untimed 7–12 s gaps before direct-SMB New Folders on a busy NAS (ERR-AREUV, 0.50.0; inferred from the log, not
+reproduced). `downloads::watcher_test::note_pending_write_never_resolves_the_path` guards it. The end-to-end safety net is
 `downloads::runtime::tests::note_pending_write_for_cmdr_suppresses_watcher_event_end_to_end`. Call sites live across
 `file_system/write_operations/` (copy, move, delete walker, trash, volume strategy); renames register BOTH halves. See
 `file_system/write_operations/DETAILS.md` for the write-side contract.
@@ -52,17 +56,29 @@ subscribes and routes through `goToLatestDownload`. The first-trigger warn toast
 The plugin uses Carbon's `RegisterEventHotKey` on macOS, so no Accessibility / Input Monitoring TCC grant is needed; the
 user sees no extra prompt.
 
+**Decision: an automated run never registers the hotkey** (`runtime::should_register_shortcut`, gated on
+`test_mode::may_register_global_hotkeys`). **Why:** the hotkey is system-wide, so an E2E app holding it caught the
+developer's own `⌃⌥⌘J` mid-suite, jumped a pane to Downloads, and raised the first-trigger warn toast, which the leak
+guard charged to `mcp-archive-password.spec.ts`. The setting is untouched; only the OS registration is skipped, so the
+row reads "not registered" in a test run.
+
 **Gotcha: ⌘ maps to `Super`, not `Meta`, in the accelerator string.** `binding_to_accelerator` (and its FE mirror
 `global-shortcut-binding.ts`) translate `⌘` to `Super`. The `global-hotkey` crate's parser accepts `COMMAND` / `CMD` /
 `SUPER` for the Cmd key but rejects `META` (it falls through to the key-code parser and errors with `UnsupportedKey`); a
 `Meta` mapping makes the default `⌃⌥⌘J` fail to register at startup. Keep both adapters on `Super`.
 
 The `register`/`unregister` state machine in `GlobalShortcutManager` is idempotent: re-registering the same binding is a
-no-op, swapping to a new binding unregisters the previous first, and a `Conflict` error stays remembered until the next
-successful register so the Settings row can surface "Couldn't register: in use by another app." without re-attempting.
-`global_shortcut.rs` carries typed `RegistrationError` (`Conflict | InvalidBinding | PluginError`) and
-`RegistrationStatus` (`Registered | NotRegistered | Conflict`); production uses `TauriRegistrar` (owned `AppHandle`),
-tests use an in-memory `FakeRegistrar`.
+no-op, and swapping to a new binding unregisters the previous first. When the OS then refuses the new one, `register`
+re-registers the previous binding before returning the error, so a rebind onto a taken combo keeps the old hotkey
+working instead of leaving none. The Settings row saves the new binding only after the backend accepts it, so the saved
+binding and the registered one never disagree.
+
+`global_shortcut.rs` carries typed `RegistrationError` (`InvalidBinding | Unavailable | PluginError`) and
+`RegistrationStatus` (`Registered | NotRegistered`); production uses `TauriRegistrar` (owned `AppHandle`), tests use an
+in-memory `FakeRegistrar`. `Unavailable` is the plugin's `Error::GlobalHotkey` arm: `tauri-plugin-global-shortcut`
+2.3.2 flattens `global_hotkey`'s typed `AlreadyRegistered` / `FailedToRegister` into that one string-carrying arm, so
+the arm is the only typed signal and the row hedges ("Another app may be using that combo"). The message is for the log
+only. `register` warns once per refusal; the focus-driven refresh logs its copy at debug.
 
 ## Reading a rename on macOS
 

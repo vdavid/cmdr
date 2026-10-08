@@ -57,9 +57,19 @@ export interface MountBriefListOptions {
   /** The scroll surface's measured box. Height ÷ row height sets what renders. */
   viewport?: LayoutBox
   props?: Partial<BriefListProps>
+  /**
+   * A `$state` object to mount with, so the spec can change props after mount
+   * (a navigation, a sort). The defaults and `props` are written into it.
+   */
+  liveProps?: Partial<BriefListProps>
 }
 
 export interface MountedBriefList {
+  /** The component's lookup exports, the ones the pane acts through. */
+  component: {
+    getEntryAt: (globalIndex: number) => FileEntry | undefined
+    indexOfEntry: (path: string) => number | undefined
+  }
   target: HTMLElement
   layout: LayoutMock
   rows: () => HTMLElement[]
@@ -93,25 +103,23 @@ export async function mountBriefList(options: MountBriefListOptions = {}): Promi
 
   const target = document.createElement('div')
   document.body.appendChild(target)
-  mount(BriefList, {
-    target,
-    props: {
-      listingId: 'listing-1',
-      volumeId: 'root',
-      totalCount: entries.length,
-      includeHidden: false,
-      cursorIndex: 0,
-      isFocused: true,
-      hasParent: false,
-      parentPath: '',
-      currentPath: '/root',
-      sortBy: 'name',
-      sortOrder: 'ascending',
-      onSelect: () => {},
-      onNavigate: () => {},
-      ...options.props,
-    },
-  })
+  const props = Object.assign(options.liveProps ?? {}, {
+    listingId: 'listing-1',
+    volumeId: 'root',
+    totalCount: entries.length,
+    includeHidden: false,
+    cursorIndex: 0,
+    isFocused: true,
+    hasParent: false,
+    parentPath: '',
+    currentPath: '/root',
+    sortBy: 'name',
+    sortOrder: 'ascending',
+    onSelect: () => {},
+    onNavigate: () => {},
+    ...options.props,
+  }) as BriefListProps
+  const component = mount(BriefList, { target, props }) as MountedBriefList['component']
 
   const rows = () => [...target.querySelectorAll<HTMLElement>('.file-entry')]
   const rowNames = () => rows().map((row) => row.dataset.filename ?? '')
@@ -126,5 +134,5 @@ export async function mountBriefList(options: MountBriefListOptions = {}): Promi
     await flush()
   }
 
-  return { target, layout, rows, rowNames, settle: settleUntil }
+  return { component, target, layout, rows, rowNames, settle: settleUntil }
 }

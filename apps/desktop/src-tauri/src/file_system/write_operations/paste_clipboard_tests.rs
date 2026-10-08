@@ -7,8 +7,8 @@
 //! `numbered_name` convention), byte-verbatim writes for the passthrough flavors,
 //! the `Nothing` → `Ok(None)` no-op, and a read-only dir failing closed.
 
-use super::write_payload_to_dir;
-use crate::clipboard::{ClipboardPayload, PastedKind};
+use super::{write_payload_replying, write_payload_to_dir};
+use crate::clipboard::{ClipboardPasteOutcome, ClipboardPayload, PasteClipboardReply, PastedKind};
 
 use std::fs;
 use std::path::Path;
@@ -192,5 +192,68 @@ async fn read_only_directory_fails_closed_without_writing() {
         fs::read_dir(tmp.path()).unwrap().count(),
         0,
         "no partial file left behind on failure"
+    );
+}
+
+/// A share that holds new files for `delay`, with an empty `/docs`, registered
+/// under `volume_id`.
+async fn register_slowly_creating_volume(volume_id: &str, delay: std::time::Duration) {
+    use crate::file_system::volume::manager::get_volume_manager;
+    use crate::file_system::volume::{InMemoryVolume, Volume};
+    use crate::test_support::SlowVolume;
+    use std::sync::Arc;
+
+    let inner = InMemoryVolume::new("Slow NAS");
+    inner.create_directory(Path::new("/docs")).await.unwrap();
+    get_volume_manager().register_if_absent(volume_id, Arc::new(SlowVolume::creating_slowly(inner, delay)));
+}
+
+/// A paste onto a busy share sat under a bare timeout that DROPPED the write
+/// mid-flight and answered `TimedOut`. Past the reply deadline it's "still
+/// running", and the settle names the file it made.
+#[tokio::test(start_paused = true)]
+async fn a_slow_paste_replies_still_running_then_settles_with_the_file() {
+    let volume_id = "smb-slow-paste-test";
+    register_slowly_creating_volume(volume_id, std::time::Duration::from_secs(40)).await;
+    let (tx, rx) = tokio::sync::oneshot::channel();
+
+    let reply = write_payload_replying(
+        Some(volume_id.to_string()),
+        "/docs".into(),
+        ClipboardPayload::Text("hello".to_string()),
+        move |settled| {
+            let _ = tx.send(settled);
+        },
+    )
+    .await;
+
+    let Ok(PasteClipboardReply::StillRunning { pending_id }) = reply else {
+        panic!("a 40 s paste is still running at the deadline, not refused: {reply:?}");
+    };
+    let settled = rx.await.expect("the paste settles");
+    assert_eq!(settled.pending_id, pending_id);
+    assert!(
+        matches!(&settled.outcome, ClipboardPasteOutcome::Landed { file: Some(file) } if file.name == "pasted.txt"),
+        "{settled:?}"
+    );
+}
+
+/// A paste that ends in time is the reply itself, file and all.
+#[tokio::test(start_paused = true)]
+async fn a_quick_paste_replies_done_with_the_file() {
+    let volume_id = "smb-quick-paste-test";
+    register_slowly_creating_volume(volume_id, std::time::Duration::from_millis(200)).await;
+
+    let reply = write_payload_replying(
+        Some(volume_id.to_string()),
+        "/docs".into(),
+        ClipboardPayload::Text("hi".to_string()),
+        |_| {},
+    )
+    .await;
+
+    assert!(
+        matches!(&reply, Ok(PasteClipboardReply::Done { file: Some(file) }) if file.name == "pasted.txt"),
+        "{reply:?}"
     );
 }

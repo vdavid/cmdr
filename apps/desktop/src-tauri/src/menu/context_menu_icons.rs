@@ -2,6 +2,11 @@
 //! Provider's logo on its actions, the app icons in "Open with", each service's own icon in
 //! "Share", and the tag items' fallback circles.
 //!
+//! It also dims the words that mark the OS default in "Open with" (" (default)"), the way
+//! Finder does. That rides the app icons' run because it needs the same live `NSMenuItem`,
+//! found the same way; neither muda nor Tauri can style a title (muda 0.21 dropped its
+//! `set_styled_text` for an `NSAttributedString` setter that Tauri doesn't wrap).
+//!
 //! The menu BAR gets its icons at build time (`macos_appkit.rs`'s `MENU_BAR_ICONS`),
 //! because Tauri hands out the installed bar's `NSMenu`. A context menu's it does not
 //! (muda's `ns_menu()` sits behind Tauri's sealed `ContextMenuBase`), so this reaches
@@ -35,9 +40,14 @@
 use std::cell::{Cell, RefCell};
 
 use objc2::rc::Retained;
+use objc2::runtime::AnyObject;
 use objc2::{AnyThread, MainThreadMarker};
-use objc2_app_kit::{NSImage, NSMenu, NSMenuItem};
-use objc2_foundation::{NSCopying, NSData, NSNotification, NSSize};
+use objc2_app_kit::{
+    NSColor, NSFont, NSFontAttributeName, NSForegroundColorAttributeName, NSImage, NSMenu, NSMenuItem,
+};
+use objc2_foundation::{
+    NSAttributedString, NSCopying, NSData, NSDictionary, NSMutableAttributedString, NSNotification, NSSize, NSString,
+};
 use tauri::Runtime;
 use tauri::menu::{Menu, MenuItem, MenuItemKind, Submenu};
 
@@ -47,7 +57,7 @@ use super::macos_appkit::{
     find_ns_submenu, menu_item_text, observe_menu_tracking, plain_title, set_menu_item_image, sf_symbol_image,
     tracking_menu,
 };
-use super::open_with::{OPEN_WITH_ID_PREFIX, OPEN_WITH_SUBMENU_ID};
+use super::open_with::{LabelPart, OPEN_WITH_ID_PREFIX, OPEN_WITH_SUBMENU_ID, default_label};
 use super::provider_logos::{ProviderLogo, logo_for_provider};
 use super::share_submenu::{SHARE_SUBMENU_ID, share_service_id};
 use super::tag_row::SWATCHES;
@@ -119,6 +129,8 @@ struct ImageRun {
     host: RunHost,
     /// `(menu item ID, what it shows)`, in menu order.
     items: Vec<(String, Option<ItemImage>)>,
+    /// The first item's title in parts, where some of it draws dimmed ("Open with"'s default).
+    first_label: Option<Vec<LabelPart>>,
 }
 
 /// Every image the file context menu for `info` can carry, grouped into runs.
@@ -135,6 +147,7 @@ fn image_runs(info: &FileContextInfo) -> Vec<ImageRun> {
     let symbols = FILE_CONTEXT_ICONS.iter().map(|&(id, symbol)| ImageRun {
         host: RunHost::Menu,
         items: vec![(id.to_string(), Some(ItemImage::Symbol(symbol)))],
+        first_label: None,
     });
     let logos = info
         .file_provider_offer
@@ -163,6 +176,7 @@ fn logo_run(offer: &ProviderOffer) -> Option<ImageRun> {
         items: (0..offer.actions.len())
             .map(|index| (file_provider_action_id(index), Some(ItemImage::Logo(logo))))
             .collect(),
+        first_label: None,
     })
 }
 
@@ -181,12 +195,15 @@ fn tag_run(applied_tag_colors: &[bool; 8]) -> ImageRun {
                 (format!("{TAG_COLOR_ID_PREFIX}{}", swatch.color), Some(circle))
             })
             .collect(),
+        first_label: None,
     }
 }
 
-/// Each candidate app's own icon in "Open with".
+/// Each candidate app's own icon in "Open with", and the OS default's label (the first item,
+/// per `open_with.rs`) with its " (default)" dimmed.
 fn open_with_run(choices: &OpenWithChoices) -> Option<ImageRun> {
-    (!choices.candidates.is_empty()).then(|| ImageRun {
+    let default = choices.candidates.first()?;
+    Some(ImageRun {
         host: RunHost::Submenu(OPEN_WITH_SUBMENU_ID),
         items: choices
             .candidates
@@ -196,6 +213,7 @@ fn open_with_run(choices: &OpenWithChoices) -> Option<ImageRun> {
                 (id, app.icon.clone().map(ItemImage::AppIcon))
             })
             .collect(),
+        first_label: Some(default_label(&default.display_name)),
     })
 }
 
@@ -206,6 +224,7 @@ fn share_run(count: usize) -> Option<ImageRun> {
         items: (0..count)
             .map(|index| (share_service_id(index), Some(ItemImage::ShareService(index))))
             .collect(),
+        first_label: None,
     })
 }
 
@@ -233,6 +252,8 @@ struct ArmedRun {
     submenu_title: Option<String>,
     titles: Vec<String>,
     images: Vec<Option<Retained<NSImage>>>,
+    /// The first item's styled title, when part of it draws dimmed.
+    first_title: Option<Retained<NSAttributedString>>,
 }
 
 /// Images armed for the next context menu to open.
@@ -311,6 +332,7 @@ fn armed(mtm: MainThreadMarker, run: &ImageRun, submenu_title: Option<String>, t
         submenu_title,
         titles,
         images,
+        first_title: run.first_label.as_deref().and_then(dimmed_title),
     }
 }
 
@@ -459,6 +481,52 @@ fn apply(menu: &NSMenu, run: &ArmedRun) {
         }
         set_menu_item_image(item, image);
     }
+    // The same text the item already carries, so the `title` it rewrites still matches this run
+    // next time.
+    if let Some(title) = &run.first_title {
+        items[start].setAttributedTitle(Some(title));
+    }
+}
+
+/// `parts` as one title in the menu font, the dim parts in `secondaryLabelColor`, or `None`
+/// when nothing in it dims and the plain title already draws it.
+///
+/// The font attribute is load-bearing: without it, an attributed title draws in the system
+/// default face, not the menu's (`display_accelerators.rs` says the same).
+fn dimmed_title(parts: &[LabelPart]) -> Option<Retained<NSAttributedString>> {
+    if !parts.iter().any(|part| part.dim) {
+        return None;
+    }
+    let font = NSFont::menuFontOfSize(0.0);
+    let dim = NSColor::secondaryLabelColor();
+    // SAFETY: both are AppKit's own attribute-name constants, immortal statics read through the
+    // bindings' declared type.
+    let (font_key, color_key) = unsafe { (NSFontAttributeName, NSForegroundColorAttributeName) };
+    let plain_keys: [&NSString; 1] = [font_key];
+    let plain_values: [&AnyObject; 1] = [font.as_ref()];
+    let plain = NSDictionary::from_slices(&plain_keys, &plain_values);
+    let dim_keys: [&NSString; 2] = [font_key, color_key];
+    let dim_values: [&AnyObject; 2] = [font.as_ref(), dim.as_ref()];
+    let dimmed = NSDictionary::from_slices(&dim_keys, &dim_values);
+
+    // One run per part rather than one string plus ranges, so no UTF-16 offset can drift.
+    let title = NSMutableAttributedString::new();
+    for part in parts {
+        let attributes = if part.dim { &dimmed } else { &plain };
+        // SAFETY: `initWithString_attributes:` is unsafe only because it takes an uninitialized
+        // allocation and an untyped attribute dictionary. The allocation is this call's own, and
+        // `attributes` maps real `NSAttributedStringKey`s to the classes they require (`NSFont`,
+        // and `NSColor` for the dim one).
+        let run = unsafe {
+            NSAttributedString::initWithString_attributes(
+                NSAttributedString::alloc(),
+                &NSString::from_str(&part.text),
+                Some(attributes),
+            )
+        };
+        title.appendAttributedString(&run);
+    }
+    Some(Retained::into_super(title))
 }
 
 /// Makes the `NSImage` an item shows. `None` costs that item its image and nothing else.

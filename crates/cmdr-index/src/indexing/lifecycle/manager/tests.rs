@@ -22,6 +22,7 @@ fn calibration(used_bytes: Option<u64>) -> ScanCalibration {
         prior: crate::indexing::store::ScanCalibration::default(),
         volume_used_bytes: used_bytes,
         run_kind: ScanRunKind::FirstScan,
+        steps_ahead: StepsAhead::default(),
     }
 }
 
@@ -56,6 +57,21 @@ fn live_counters_carry_the_running_scans_per_kind_calibration() {
     let counters = live_scan_counters(Some(snapshot(42_000, 1_200, 905_000_000)), Some(cal));
     assert_eq!(counters.prior_total_entries, Some(5_100_000));
     assert_eq!(counters.prior_scan_duration_ms, Some(1_180_696));
+}
+
+#[test]
+fn live_counters_carry_the_running_scans_remembered_steps_ahead() {
+    // A window reload mid-scan misses `index-scan-started`, so the overall
+    // figure's remembered half has to come back through `get_status` too.
+    let mut cal = calibration(Some(746_000_000));
+    cal.steps_ahead = StepsAhead {
+        after_find_files_ms: Some(61_000),
+        after_save_ms: Some(21_000),
+        after_compute_ms: Some(2_000),
+        after_catch_up_ms: Some(0),
+    };
+    let counters = live_scan_counters(Some(snapshot(42_000, 1_200, 905_000_000)), Some(cal));
+    assert_eq!(counters.steps_ahead, cal.steps_ahead);
 }
 
 #[test]
@@ -107,18 +123,25 @@ fn live_counters_omit_used_bytes_when_space_info_failed() {
 fn local_rescan_reconciles_only_beyond_the_root_sentinel() {
     // Completeness gate: even a populated DB does NOT reconcile if the prior scan
     // never completed.
-    assert!(!local_rescan_reconciles(0, true), "empty DB ⇒ fresh/truncate path");
     assert!(
-        !local_rescan_reconciles(1, true),
+        !local_rescan_reconciles(0, true, false),
+        "empty DB ⇒ fresh/truncate path"
+    );
+    assert!(
+        !local_rescan_reconciles(1, true, false),
         "sentinel-only DB (never scanned) ⇒ fresh/truncate path, NOT reconcile"
     );
     assert!(
-        local_rescan_reconciles(2, true),
+        local_rescan_reconciles(2, true, false),
         "populated AND prior-completed ⇒ reconcile path"
     );
     assert!(
-        !local_rescan_reconciles(2, false),
+        !local_rescan_reconciles(2, false, false),
         "populated but never-completed partial ⇒ fast guarded-walker rebuild, NOT reconcile"
+    );
+    assert!(
+        !local_rescan_reconciles(2, true, true),
+        "a completed index built under an older exclusion policy ⇒ truncate, since only that re-stamps it"
     );
 
     // A fresh store has exactly the ROOT sentinel, so its entry_count is 1 and
@@ -129,7 +152,7 @@ fn local_rescan_reconciles_only_beyond_the_root_sentinel() {
     let count = IndexStore::get_entry_count(store.read_conn()).expect("count");
     assert_eq!(count, 1, "a fresh DB holds only the ROOT sentinel");
     assert!(
-        !local_rescan_reconciles(count, true),
+        !local_rescan_reconciles(count, true, false),
         "so a fresh DB takes the truncate path"
     );
 }

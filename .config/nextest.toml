@@ -83,6 +83,14 @@ sftp-bench = { max-threads = 1 }
 # load and ALL of them blow their cap together, which is what a cold `pnpm check`
 # looked like. Serialized, one test pays and the rest are free.
 vision-model = { max-threads = 1 }
+# Every S3 fixture cell (the app crate's `s3_integration_` ones and `cmdr-s3`'s own).
+# They all talk to the one shared VersityGW + Garage stack, many move tens of MiB
+# (a 140 MiB multipart upload, a 1,005-object rename, a 70 MiB upload copied and
+# moved), and each lands in 1–5 s alone. Ninety-odd of them at full parallelism on a
+# loaded machine all hit the 8 s cap together (measured 2026-10-02, load average 9:
+# every one killed; at four at a time, every one green). Four at a time keeps the
+# stack busy without starving it; the 30 s cap below is the hang backstop.
+s3-fixture = { max-threads = 4 }
 
 [[profile.default.overrides]]
 # Disk-image fixtures: hdiutil create+attach+detach plus, for the FSEvents
@@ -164,6 +172,15 @@ filter = 'test(volumes::unmount_approver::real_image::)'
 test-group = 'disk-image'
 slow-timeout = { period = "90s", terminate-after = 1 }
 
+[[profile.default.overrides]]
+# The rename handler's pins on real APFS/HFS+ images (`volumes::rename_real_image`, macOS-only,
+# `#[ignore]`d): a real `diskutil rename` moves the mount point, and the handler keeps the volume's
+# id at the new root. Same group and 30 s cap as the harness tests above.
+# allowed-unmatched-nextest-filter: macos-only, hdiutil and diskutil have no Linux counterpart
+filter = 'test(volumes::rename_real_image::)'
+test-group = 'disk-image'
+slow-timeout = { period = "30s", terminate-after = 1 }
+
 # SMB stress tests serialize on the shared server (see `smb-stress` group above).
 # The concurrent-streaming one additionally wraps its copy in a 120 s internal
 # `tokio::time::timeout` whose expiry dumps the last 30 `client-mutex:`/`recv:`
@@ -237,6 +254,37 @@ filter = 'test(smb_integration_)'
 slow-timeout = { period = "30s", terminate-after = 1 }
 
 [[profile.default.overrides]]
+# The one `cmdr-smb` cell that blocks on the fixture Samba DELIVERING a change
+# notification (CHANGE_NOTIFY) to the share watcher. It re-seeds a fresh file each
+# second until one is heard, inside a 20 s budget; 30 s keeps that budget the
+# authority and the cap a hang-catcher.
+#
+# Delivery is ~0.3 s on a quiet stack, but it rides Samba's `notifyd`, one process in
+# the `guest` container (`cpus: 1.0`) that fans every write on `public` out to every
+# recursive watch on it (one per connected test volume), logging each failed send to
+# a closing one. With several worktrees' lanes on one stack it falls behind and keeps
+# draining after they stop: caught 2026-10-06 pinned at a 0.5 cap at ~7,000 failed
+# sends/s with no client connected, while this cell heard nothing for its whole old
+# 6 s budget, even re-run alone. A fresh stack under three concurrent `cmdr-smb`
+# suites still delivered within 1.3 s. No group: the load is the rest of the lane,
+# not this cell.
+#
+# Why it degrades over a stack's life: a test process killed mid-run (a nextest
+# timeout, a cancelled lane) leaks its watches in `notifyd` until something restarts
+# it. Its dead-peer cleanup, `notifyd_send_delete`, addresses the delete to the dead
+# process instead of itself, so it fails `NT_STATUS_OBJECT_NAME_NOT_FOUND` on every
+# write (Samba 4.23.8; 4.17 sent it to itself via `messaging_send_iov_from`). A clean
+# run leaks nothing. A lease that starts with no other holder restarts `notifyd`
+# (`scripts/check/stacklease/soloreset.go`), so leaks no longer pile up ACROSS runs,
+# but within a busy stretch of shared lanes nobody is ever alone: under load, timeouts
+# kill tests, which leak, which slows delivery further. Measured
+# 2026-10-06, four concurrent `cmdr-smb` suites on a probe container: 10–14.5 s at
+# `cpus: 0.5` with ~110 leaked watches; 3.5–5.3 s at 1.0, then 11–13.7 s on the next
+# round once that round's timeouts had leaked theirs. So 20 s stays.
+filter = 'test(an_outside_change_in_an_accented_directory_names_the_path_the_pane_opened)'
+slow-timeout = { period = "30s", terminate-after = 1 }
+
+[[profile.default.overrides]]
 # `cmdr-git`'s virtual-category tests, which build their fixtures by shelling out to
 # real `git` (stash create, worktree add, submodule add — `test_fixtures::git_cli`,
 # because gix exposes no public API for those three). Each test pays a handful of
@@ -304,21 +352,48 @@ test-group = 'real-notify'
 slow-timeout = { period = "40s", terminate-after = 1 }
 
 [[profile.default.overrides]]
-# `a_change_inside_a_walked_branch_reaches_the_index_and_one_beside_it_does_not`
-# starts a real `DriveWatcher` and waits 30 s for the change to reach the index —
-# the one cold-drive test that proves `ensure_branch_watch` starts something that
-# actually works. Same unreachable-deadline shape as the watch-root test above:
-# 40 s puts the cap over its own wait. Precedes the general cold-drive override
-# below so it wins (first matching override per setting).
-filter = 'test(indexing::lifecycle::cover::cold_drive_tests::branches::a_change_inside_a_walked_branch)'
+# The cold-drive tests that block on a REAL FSEvents delivery, so they run on the
+# real journal (`ColdDrive::watched_for_real`); every other cold-drive test is on
+# the fake one (`watch/watcher/fake_journal.rs`) and needs no override.
+# `a_change_inside_a_walked_branch_...` proves `ensure_branch_watch` starts a
+# watcher that actually delivers; the three `moves::` tests prove the index is live
+# at a renamed drive's new mount point by a file landing through the watcher. All
+# four are SELF-HEALING (`until_the_watcher_delivers` redoes the change on a fresh
+# name, defeating the arming window and a dropped event), so no retries. 70 s puts
+# the cap over the worst in-test budgets (20 s first index + 30 s restart catch-up
+# + 15 s delivery, for the rename test) so their panics name the stage that starved.
+filter = '''
+    test(indexing::lifecycle::cover::cold_drive_tests::branches::a_change_inside_a_walked_branch)
+  + test(a_drive_renamed_while_it_indexes_keeps_indexing_at_its_new_mount_point)
+  + test(a_rename_inside_a_drain_window_moves_the_start_that_window_carries)
+  + test(a_rename_while_a_scan_starts_restarts_the_drive_at_the_handback)
+'''
 test-group = 'real-notify'
-slow-timeout = { period = "40s", terminate-after = 1 }
+slow-timeout = { period = "70s", terminate-after = 1 }
+
+[[profile.default.overrides]]
+# Tests that move a REAL file to the macOS Trash (`trashItemAtURL`). Not an `fseventsd` case:
+# no watcher is involved. The call serializes on a shared OS path, so each takes ~0.2 s alone
+# but ~1.2 s when the 29 trash-adjacent tests run together (3.1 s for all of them serially,
+# 2026-10-08), and under a saturated full suite they timed out together at 8 s on four days
+# (2026-08-13, 08-23, 09-07, 09-09; check-runner `test-log.csv`). There's nothing in-process to
+# fake without dropping what they prove, the OS's own trash move, so they get headroom, not a group.
+# allowed-unmatched-nextest-filter: macos-only, the real-Trash tests only compile on macOS
+filter = '''
+    test(test_move_to_trash_sync_)
+  + test(trash_dir_for_path_matches_where_the_item_actually_landed)
+  + test(failed_trash_item_records_no_search_leaves_but_a_sibling_keeps_its_own)
+  + test(over_cap_trash_is_top_level_only_capped_but_still_rollbackable)
+  + test(trashed_dir_records_search_leaves_and_stays_full)
+  + test(commands::rename::tests::test_move_to_trash_success)
+'''
+slow-timeout = { period = "20s", terminate-after = 1 }
 
 [[profile.default.overrides]]
 # Tests that ARM a real OS watch (or real drive/disk I/O behind one) without
 # blocking on a specific delivery: the reaper dropping a watcher with its listing,
 # an LRU eviction releasing one, the coverage answer flipping with the watcher
-# lifecycle, a cold-drive walk standing a branch watch up. There's no event to
+# lifecycle. There's no event to
 # wait for, so they need neither retries nor the group — ❌ don't add them to
 # `real-notify`, which is for delivery-blocking tests and would serialize a pile of
 # fast ones for nothing. What they DO need is headroom over the global 8 s cap,
@@ -335,25 +410,34 @@ filter = '''
   + test(file_system::volume::backends::local_posix_test::test_listing_watch_coverage_flips_with_watcher_lifecycle)
   + test(downloads::commands::tests::go_to_latest_)
   + test(downloads::runtime::tests::note_pending_write_for_cmdr_)
-  + test(indexing::lifecycle::cover::cold_drive_tests::)
+  + test(downloads::watcher_test::note_pending_write_never_resolves_the_path)
 '''
 slow-timeout = { period = "20s", terminate-after = 1 }
 
 [[profile.default.overrides]]
-# The git portal's ONE real-`.git/*` watcher cell. It arms a real `notify` debouncer over a
-# repository's four watched `.git` directories, writes two bursts of five commits plus a
+# The git portal's ONE real-`.git/*` watcher cell. It arms a real `notify` debouncer on a
+# repository's gitdir (one recursive watch), writes two bursts of five commits plus a
 # branch switch, and blocks on each debounced delivery — so it is squarely the
 # delivery-blocking class this group exists for. Measured on an M1 Max: 1.8 s idle with both
 # bursts (2026-09-06), against the global 8 s cap. 20 s puts the cap above its own two 10 s
 # settle waits' worst case so the assertion (which names the reports it got) decides, and the
 # group keeps its live streams from multiplying the other watcher tests' starvation.
 #
-# ❗ It is the only cell anywhere that arms a real git watcher, and it has to stay that way:
+# ❗ It is one of only TWO cells that arm a real git watcher, and it has to stay that way:
 # every other subscription cell takes `GitPortal::with_scripted_watcher` and runs in ~0.05 s.
 # The second burst lives inside THIS cell for that reason; it proves the watch survives git's
 # rename over `HEAD`, which is what broke on Linux and what no scripted backend can stand in
 # for. `crates/cmdr-git/DETAILS.md` § "The watcher splits into bookkeeping and a backend".
-filter = 'test(a_debounced_burst_reports_once_and_the_watch_survives_for_the_next_one)'
+#
+# The other is `cmdr-git`'s `a_deleted_repository_stops_reporting_...`: what deleting a
+# repository does to its OWN watch is the operating system's to answer, so a scripted
+# backend could only assert the fake. It waits for quiet rather than a delivery, but arming
+# the stream is itself a slow `fseventsd` round trip under load (it starved past 8 s on
+# 2026-10-07), and the group keeps its stream from adding to the others' starvation.
+filter = '''
+    test(a_burst_reports_its_end_state_and_the_watch_survives_for_the_next_one)
+  + test(a_deleted_repository_stops_reporting_and_still_gives_its_hold_back)
+'''
 test-group = 'real-notify'
 slow-timeout = { period = "20s", terminate-after = 1 }
 
@@ -434,6 +518,19 @@ filter = 'test(file_viewer::watcher_test::)'
 test-group = 'real-notify'
 slow-timeout = { period = "20s", terminate-after = 1 }
 retries = 2
+
+[[profile.default.overrides]]
+# Every S3 fixture cell, the app crate's (`s3_integration_`) and `cmdr-s3`'s own
+# (named `…_on_versitygw` / `…_on_garage`, plus the connection-drop and reconnect
+# cells): queued four at a time on the `s3-fixture` group (see its note above),
+# with the `smb_integration_` block's 30 s hang backstop. The slowest by design:
+# the 140 MiB multipart copy onto a bucket (7.2 s alone on Garage under a load
+# average of 10, 2026-10-01) and the 1,005-object rename. ❌ Don't read 30 s as a
+# runtime, and ❌ don't raise the global cap for these: the queue is what keeps
+# them under it. A new `cmdr-s3` fixture cell keeps the `_on_<fixture>` suffix.
+filter = 'test(s3_integration_) | (package(cmdr-s3) & (test(_on_versitygw) | test(_on_garage) | test(connection_drop_test::) | test(reconnect_test::)))'
+test-group = 's3-fixture'
+slow-timeout = { period = "30s", terminate-after = 1 }
 
 [[profile.default.overrides]]
 # The sabre/dav cells (`crates/cmdr-webdav/src/volume/nextcloud_test.rs`), which

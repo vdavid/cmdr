@@ -19,9 +19,9 @@
   "@viewer.error.noPath": {
     "sourceHash": "2b069fc"
   },
-  "viewer.error.readFailed": "Không thể đọc tệp",
+  "viewer.error.readFailed": "Không thể đọc tệp này. Thử lại?",
   "@viewer.error.readFailed": {
-    "sourceHash": "ea7d976"
+    "sourceHash": "8c420fd"
   },
   "viewer.error.notFound": "Không tìm thấy tệp này. Có thể nó đã được di chuyển, đổi tên, hoặc xóa.",
   "@viewer.error.notFound": {
@@ -42,6 +42,10 @@
   "viewer.error.archiveUnreadable": "Không thể mở tệp này từ tệp nén. Có thể tệp bị mã hóa, hỏng, hoặc dùng định dạng mà Cmdr không đọc được.",
   "@viewer.error.archiveUnreadable": {
     "sourceHash": "e0b8f4e"
+  },
+  "viewer.error.coldStorage": "Tệp này đang ở kho lưu trữ lạnh, nên chưa có gì để hiển thị cho đến khi tệp được khôi phục. Hãy khôi phục tệp trong bảng điều khiển của nhà cung cấp dịch vụ lưu trữ, rồi mở lại.",
+  "@viewer.error.coldStorage": {
+    "sourceHash": "236cd1b"
   },
   "viewer.error.retry": "Thử lại",
   "@viewer.error.retry": {
@@ -287,18 +291,6 @@
   "@viewer.pdf.loading": {
     "sourceHash": "7f9acf3"
   },
-  "viewer.contextMenu.ariaLabel": "Thao tác trình xem",
-  "@viewer.contextMenu.ariaLabel": {
-    "sourceHash": "4cf8e51"
-  },
-  "viewer.contextMenu.copy": "Sao chép",
-  "@viewer.contextMenu.copy": {
-    "sourceHash": "e21f935"
-  },
-  "viewer.contextMenu.selectAll": "Chọn tất cả",
-  "@viewer.contextMenu.selectAll": {
-    "sourceHash": "1fc9a38"
-  },
   "viewer.copyDialog.confirmTitleKnown": "Sao chép {size} vào bảng nhớ tạm?",
   "@viewer.copyDialog.confirmTitleKnown": {
     "sourceHash": "7f97ebf"
@@ -403,17 +395,17 @@
   "@viewer.selection.toEndOfFile": {
     "sourceHash": "62d95be"
   },
-  "viewer.selection.singleLine": "Đã chọn {chars} ký tự trên dòng {line}",
+  "viewer.selection.singleLine": "Đã chọn {chars, plural, other {# ký tự}} trên dòng {line}",
   "@viewer.selection.singleLine": {
-    "sourceHash": "bb320d5"
+    "sourceHash": "eb11697"
   },
-  "viewer.selection.multiLine": "Đã chọn dòng {startLine} đến {endLine}, {chars} ký tự",
+  "viewer.selection.multiLine": "Đã chọn dòng {startLine} đến {endLine}, {chars, plural, other {# ký tự}}",
   "@viewer.selection.multiLine": {
-    "sourceHash": "074c687"
+    "sourceHash": "5ba7791"
   },
-  "viewer.selection.charsOnly": "Đã chọn {chars} ký tự",
+  "viewer.selection.charsOnly": "Đã chọn {chars, plural, other {# ký tự}}",
   "@viewer.selection.charsOnly": {
-    "sourceHash": "b772db6"
+    "sourceHash": "3db2c4e"
   },
   "viewer.selection.toEndOfFileNoLine": "Đã chọn đến cuối tệp",
   "@viewer.selection.toEndOfFileNoLine": {

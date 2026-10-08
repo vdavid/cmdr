@@ -20,6 +20,7 @@ pub mod read;
 pub mod scheduler;
 pub(crate) mod scorer;
 pub(crate) mod signals;
+pub(crate) mod stop;
 pub(crate) mod store;
 pub(crate) mod writer;
 pub(crate) mod writer_registry;

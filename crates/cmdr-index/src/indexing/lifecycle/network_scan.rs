@@ -15,13 +15,14 @@ use std::sync::Arc;
 use std::sync::atomic::Ordering;
 
 use super::manager::{IndexManager, ScanCalibration};
+use super::steps_ahead::{RunShape, StepsAhead};
 use crate::indexing::events::{
     ActivityPhase, DEBUG_STATS, IndexEvent, ScanRunKind, announce_whole_volume_walk, set_phase_for,
 };
 use crate::indexing::lifecycle::progress_reporter::ScanProgressReporter;
 use crate::indexing::lifecycle::rescan_request::ScanStartError;
 use crate::indexing::network_scanner::VolumeScanError;
-use crate::indexing::store::IndexStore;
+use crate::indexing::store::{IndexStore, StepDurations};
 use crate::indexing::volume::IndexVolumeKind;
 use crate::indexing::writer::{AggSource, WriteMessage};
 
@@ -269,10 +270,17 @@ impl IndexManager {
         let run_kind = ScanRunKind::classify(reconcile, calibration_set.any.total_entries);
         let prior = calibration_set.for_kind(run_kind.calibration_kind());
         let calibration_kind = run_kind.calibration_kind();
+        // What the compute step took on the last trait walk of this kind, for the
+        // overall "~X left". A trait walk has no separate save and no catch-up.
+        let steps_ahead = StepsAhead::remembered(
+            RunShape::Network,
+            IndexStore::read_step_durations(self.store.read_conn(), calibration_kind).unwrap_or_default(),
+        );
         self.scan_calibration = Some(ScanCalibration {
             prior,
             volume_used_bytes,
             run_kind,
+            steps_ahead,
         });
 
         // Clear the prior completion marker (so an interrupted rescan heals — no
@@ -308,7 +316,9 @@ impl IndexManager {
             // over this volume are worthless — see `store::EXCLUSION_POLICY_KEY`.
             let _ = self
                 .writer
-                .send(crate::indexing::scanner::exclusion_policy_stamp_message());
+                .send(crate::indexing::scanner::exclusion_policy_stamp_message(
+                    self.path_space().exclusion_scope().tier(),
+                ));
         }
         if let Err(e) = tokio::task::block_in_place(|| self.writer.flush_blocking()) {
             log::warn!("network scan: flush after scan-start meta/truncate failed: {e}");
@@ -343,6 +353,10 @@ impl IndexManager {
             // A trait scan takes the share whole, so the checklist shows the
             // network family of steps rather than the phased one.
             covered_in_phases: false,
+            left_after_find_files_ms: steps_ahead.after_find_files_ms,
+            left_after_save_ms: steps_ahead.after_save_ms,
+            left_after_compute_ms: steps_ahead.after_compute_ms,
+            left_after_catch_up_ms: steps_ahead.after_catch_up_ms,
         });
         // The ground: the whole share, reported the same way a phase reports its
         // branch.
@@ -480,6 +494,18 @@ impl IndexManager {
                         &writer,
                     );
                     let _ = writer.flush().await;
+                    // The walk queued its full aggregate on the way out, and the flush
+                    // above waited it out: that's the compute step, remembered for the
+                    // next trait walk of this kind. There's no separate save step here
+                    // (entries land inline) and no catch-up pass.
+                    crate::indexing::lifecycle::scan_completion::stamps::stamp_step_durations(
+                        StepDurations {
+                            compute_ms: writer.take_last_full_aggregate_ms(),
+                            ..StepDurations::default()
+                        },
+                        calibration_kind,
+                        &writer,
+                    );
 
                     events.emit(IndexEvent::ScanComplete {
                         volume_id: volume_id.clone(),

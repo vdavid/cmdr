@@ -50,9 +50,7 @@ fn cleanup(volume_id: &str) {
 }
 
 fn new_state() -> Arc<StreamingListingState> {
-    Arc::new(StreamingListingState {
-        cancel: CancellationToken::new(),
-    })
+    Arc::new(StreamingListingState::new())
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
@@ -217,11 +215,8 @@ async fn test_streaming_list_volume_not_found() {
     )
     .await;
 
-    assert!(result.is_err());
     match result {
-        Err(VolumeError::NotFound(msg)) => {
-            assert!(msg.contains("Volume not found"), "Unexpected message: {}", msg);
-        }
+        Err(VolumeError::NotFound(path)) => assert_eq!(path, "/", "NotFound carries the listed path"),
         other => panic!("Expected VolumeError::NotFound, got {:?}", other),
     }
 }

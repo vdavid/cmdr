@@ -14,6 +14,7 @@
 
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::time::Instant;
 
 use crate::indexing::IndexPathSpace;
 use crate::indexing::events::emit_dir_updated;
@@ -23,7 +24,7 @@ use crate::indexing::events::{
 use crate::indexing::lifecycle::cover;
 use crate::indexing::reconcile::reconciler::EventReconciler;
 use crate::indexing::scanner::{ScanError, ScanSummary};
-use crate::indexing::store::{IndexStore, ScanCalibrationKind};
+use crate::indexing::store::{IndexStore, ScanCalibrationKind, StepDurations};
 use crate::indexing::watch::branches::{self, WatchScope};
 use crate::indexing::watch::event_loop::{LiveConfig, run_live_event_loop};
 use crate::indexing::watch::watcher::FsChangeEvent;
@@ -36,7 +37,7 @@ use crate::indexing::hold::{HoldKind, VolumeWork};
 pub(in crate::indexing::lifecycle) mod stamps;
 mod unfinished;
 
-use stamps::stamp_a_completed_walk;
+use stamps::{split_save_and_compute, stamp_a_completed_walk, stamp_step_durations};
 use unfinished::{report_a_vanished_drive, report_unfinished_scan};
 
 /// Everything the post-scan completion task takes ownership of from
@@ -289,9 +290,14 @@ async fn finish_the_scan(params: ScanCompletion) {
     // before opening the read connection. Without this, the WAL
     // snapshot may not include the latest InsertEntriesV2 batches,
     // causing resolve_path to fail for recently-scanned parents.
+    //
+    // This wait IS the save and compute steps, so it's timed: the writer
+    // timed the aggregate itself, and the rest of the wait is the save.
+    let flush_started = Instant::now();
     if let Err(e) = writer.flush().await {
         log::warn!("Reconciler: writer flush before replay failed: {e}");
     }
+    let save_and_compute = split_save_and_compute(elapsed_ms(flush_started), writer.take_last_full_aggregate_ms());
 
     // Signal that aggregation (and entry flushing) is complete.
     // The flush above drains all queued writes including
@@ -303,6 +309,7 @@ async fn finish_the_scan(params: ScanCompletion) {
 
     DEBUG_STATS.close_phase_with_stats(vec![]);
     set_phase_for(events.as_ref(), &volume_id, ActivityPhase::Reconciling, "post-scan");
+    let catch_up_started = Instant::now();
 
     // Tell the frontend to refresh all visible listings. Directory
     // sizes are now available for the first time after a full scan.
@@ -320,6 +327,7 @@ async fn finish_the_scan(params: ScanCompletion) {
     // intentionally NOT gated; only the meta writes are.
     if was_completed {
         stamp_a_completed_walk(&volume_id, &summary, &space, calibration_kind, &writer);
+        stamp_step_durations(save_and_compute, calibration_kind, &writer);
     }
 
     // A volume stopped while its scan was finishing gets no replay: the replay reads
@@ -378,6 +386,15 @@ async fn finish_the_scan(params: ScanCompletion) {
         );
     }
 
+    // The catch-up step ends here, so a completed walk remembers how long it took.
+    if was_completed {
+        let catch_up = StepDurations {
+            catch_up_ms: Some(elapsed_ms(catch_up_started)),
+            ..StepDurations::default()
+        };
+        stamp_step_durations(catch_up, calibration_kind, &writer);
+    }
+
     DEBUG_STATS.close_phase_with_stats(vec![("buffered_events", buffered_count.to_string())]);
     set_phase_for(
         events.as_ref(),
@@ -418,6 +435,11 @@ async fn finish_the_scan(params: ScanCompletion) {
 
     // Store the handle so shutdown() can wait for it to drain
     *slot = Some(handle);
+}
+
+/// Whole milliseconds since `started`, saturating rather than truncating.
+fn elapsed_ms(started: Instant) -> u64 {
+    u64::try_from(started.elapsed().as_millis()).unwrap_or(u64::MAX)
 }
 
 #[cfg(test)]

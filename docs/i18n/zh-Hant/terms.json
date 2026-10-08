@@ -36,6 +36,11 @@
     "forms": "a filesystem or device → 存取 (無法存取 USB 裝置); Apple's privacy-pane verb → 取用 (完全取用磁碟); write access → 寫入權 / 可寫入; give an account access → 有權限",
     "sources": "catalog mtp.json throughout; AP-TW privacy pane (取用)"
   },
+  "access-key-id": {
+    "chosen": "存取金鑰 ID",
+    "confidence": "high",
+    "sources": "AWS zh-TW docs (存取金鑰 ID 和私密存取金鑰, MakingRequests, checked 2026-10-02); MS access key → 存取金鑰"
+  },
   "accessibility": {
     "avoid": [
       {
@@ -50,6 +55,10 @@
   "account": {
     "chosen": "帳號",
     "confidence": "high",
+    "exceptions": {
+      "servers.sheet.s3AccountId": "Quotes Cloudflare's own zh-TW label 帳戶 ID (cloudflare.com/zh-tw, checked 2026-10-02), a third-party UI the user must find.",
+      "servers.sheet.s3AccountIdHelp": "Same label as servers.sheet.s3AccountId: Cloudflare's 帳戶 ID."
+    },
     "sources": "catalog (errors.json six times, onboarding.json); matches Apple 帳號"
   },
   "action": {
@@ -273,6 +282,13 @@
     "forms": "same word as the archive-file noun, unambiguous in context",
     "sources": "AP-TW = AP-HK (Archive → 封存)"
   },
+  "ask": {
+    "accept": ["問"],
+    "chosen": "詢問",
+    "confidence": "high",
+    "forms": "the option label → 詢問; Don’t ask again → 別再詢問",
+    "sources": "AP-TW (詢問, 2) + MS zh-Hant (詢問, 7) + TC; catalog settings.archives.opt.ask, search.coverage.dontAskAgain"
+  },
   "ask-cmdr": {
     "chosen": "Ask Cmdr",
     "confidence": "confirmed",
@@ -295,6 +311,11 @@
     "chosen": "屬性",
     "confidence": "high",
     "sources": "DC; catalog errors.listing.attributeNotFound.*"
+  },
+  "automation": {
+    "chosen": "自動化",
+    "confidence": "high",
+    "sources": "macOS 27.0 (26A428) SecurityPrivacyExtension.appex Localizable.loctable, zh_TW and zh_HK agree, key AUTOMATION, 2026-10-08"
   },
   "available-offline": {
     "chosen": "離線可用",
@@ -365,6 +386,18 @@
     "confidence": "confirmed",
     "sources": "AP Finder ConnectToWindow.strings 48.title Browse → 瀏覽 (TW = HK)"
   },
+  "bucket": {
+    "avoid": [
+      {
+        "form": "值區",
+        "why": "Google Cloud's zh-TW word; AWS is the S3 reference and MS agrees on 貯體"
+      }
+    ],
+    "chosen": "儲存貯體",
+    "confidence": "high",
+    "forms": "S3 bucket → S3 儲存貯體; bucket name → 儲存貯體名稱",
+    "sources": "AWS zh-TW docs (docs.aws.amazon.com/zh_tw, 儲存貯體政策, checked 2026-10-02); MS bucket → 貯體"
+  },
   "bug": {
     "avoid": [
       {
@@ -416,6 +449,12 @@
     "confidence": "high",
     "sources": "MS"
   },
+  "calculate": {
+    "chosen": "計算",
+    "confidence": "high",
+    "forms": "Calculate folder sizes → 計算資料夾大小; stop the work → 停止計算",
+    "sources": "macOS Finder ViewOptionsWindow 65.title (計算所有大小); TC zh-TW 503 計算佔用空間; Double Commander 計算佔用空間"
+  },
   "camera": {
     "chosen": "相機",
     "confidence": "high",
@@ -440,6 +479,13 @@
     "chosen": "取消",
     "confidence": "confirmed",
     "sources": "AP-TW = AP-HK = AP-CN, MS"
+  },
+  "case-sensitive": {
+    "accept": ["大小寫", "大寫", "小寫"],
+    "chosen": "區分大小寫",
+    "confidence": "high",
+    "forms": "case-sensitive → 區分大小寫; lowercase letters → 小寫字母; uppercase → 大寫",
+    "sources": "AP-TW Finder (區分大小寫, 小寫, 不區分…大寫和小寫字母); MS lowercase → 小寫; catalog queryUi.scope.toggle.caseSensitive"
   },
   "certificate": {
     "avoid": [
@@ -496,6 +542,12 @@
     "forms": "choose one thing → 選擇 (選擇 App⋯, 選擇 adb 指令); casual pick → 選一個 / 挑一個; pick a different X → 換一個 X / 換個 X; picking items out of a list is select → 選取",
     "sources": "AP-TW (選擇啟動磁碟; Choose Application… → 選擇應用程式⋯)"
   },
+  "clear": {
+    "chosen": "清除",
+    "confidence": "high",
+    "forms": "Clear search → 清除搜尋; Clear index → 清除索引; Clear filter → 清除篩選",
+    "sources": "macOS live zh_TW (Clear → 清除 101×); catalog (settings.sidebar.clearSearch, settings.fileSystemWatching.clearIndex, shortcuts.section.pressEscToClear)"
+  },
   "click": {
     "accept": ["按", "點擊"],
     "avoid": [
@@ -528,6 +580,22 @@
     "confidence": "high",
     "sources": "AP-TW (8), AP-HK (8)"
   },
+  "clone-pane": {
+    "avoid": [
+      {
+        "form": "複製窗格",
+        "why": "複製 is this catalog’s Copy (F5) and macOS zh-TW’s Duplicate, so it reads as copying the pane"
+      },
+      {
+        "form": "克隆",
+        "why": "mainland word for clone"
+      }
+    ],
+    "chosen": "目標窗格 = 來源窗格",
+    "confidence": "high",
+    "note": "The clone verb (MS zh-TW 複製) collides with Copy, so this follows Total Commander’s name for the command with the pane ruling’s target/source compounds.",
+    "sources": "TC zh-TW 532 (目標視窗 = 來源視窗), DC zh-TW (目標面板 = 來源面板); pane ruling (目標窗格 / 來源窗格)"
+  },
   "close": {
     "accept": ["關掉", "關著"],
     "chosen": "關閉",
@@ -547,6 +615,13 @@
     "confidence": "high",
     "forms": "cloud service → 雲端服務; the company behind it → 雲端服務供應商; cloud folder → 雲端資料夾; online-only → 僅存在雲端",
     "sources": "AP-TW Finder (Choose a cloud service → 選擇雲端服務), MS (HKG, TWN)"
+  },
+  "cold-storage": {
+    "chosen": "冷儲存空間",
+    "confidence": "tentative",
+    "forms": "archived (the file's state) → 已封存 (archive-chat's word, AWS zh-TW 封存); restore it → 回復 (restore ruling)",
+    "note": "AWS zh-TW restores archived objects with 還原, but the catalog spends 還原 on undo, so restore stays 回復.",
+    "sources": "MS cold storage → 冷儲存體, archive tier → 封存層; storage ruling 儲存空間"
   },
   "column": {
     "accept": ["欄"],
@@ -669,6 +744,12 @@
     "forms": "a button or status → 連線 (已連線, 正在連線⋯); the verb in a sentence or command name → 連接 (連接伺服器⋯); casual → 連上 / 連著 / 連不上; a network connection → 網路連線",
     "sources": "AP-TW = AP-HK (Connect → 連線; Connect to Server… → 連接伺服器⋯), MS"
   },
+  "provider-console": {
+    "chosen": "主控台",
+    "confidence": "high",
+    "forms": "a storage provider's console → 儲存服務提供者的主控台",
+    "sources": "AWS zh-TW (AWS 管理主控台); MS console → 主控台; catalog settings.developer.verboseLogging.*"
+  },
   "context-menu": {
     "accept": ["右鍵"],
     "avoid": [
@@ -706,6 +787,19 @@
     "confidence": "high",
     "forms": "the noun (one more instance) → 副本; in progress → 正在複製…",
     "sources": "AP-HK, MS, all five file managers"
+  },
+  "cost": {
+    "accept": ["費用"],
+    "avoid": [
+      {
+        "form": "成本",
+        "why": "MS's accounting word; reads as a business ledger in a settings line"
+      }
+    ],
+    "chosen": "代價",
+    "confidence": "high",
+    "forms": "costs nothing (leaving a toggle on) → 不會有任何代價; money (AI usage) → 費用",
+    "sources": "catalog 代價 (7, settings.fileOperations.adbEnabled.description, onboarding.stepOptional.mtp.desc), 費用 (3); MS 成本"
   },
   "crash-report": {
     "accept": ["當掉"],
@@ -760,6 +854,14 @@
     "confidence": "confirmed",
     "sources": "AP-TW = AP-HK, MS"
   },
+  "damaged": {
+    "accept": ["損毀"],
+    "chosen": "損壞",
+    "confidence": "high",
+    "forms": "may be damaged → 可能已損壞; looks damaged → 看起來損壞了",
+    "note": "Apple zh-TW writes both: 損毀 for apps (LA33, LA34, AppKit) and 損壞 for a file (NE59). Cmdr's damaged things are files and archives, and the catalog says 損壞 in every key.",
+    "sources": "macOS Finder zh-TW (NE59 該檔案已損壞; LA33 已損毀); catalog"
+  },
   "dark-mode": {
     "accept": ["淺色模式", "深色", "淺色"],
     "chosen": "深色模式",
@@ -794,6 +896,14 @@
     "confidence": "confirmed",
     "forms": "button and formal line → 刪除; casual advice → 刪掉; the Delete key keeps its Latin name",
     "sources": "AP-TW = AP-HK, MS"
+  },
+  "delete-key": {
+    "accept": ["Delete"],
+    "chosen": "Delete 鍵",
+    "confidence": "high",
+    "forms": "按 Delete（⌫）鍵 + verb",
+    "note": "Pile mined 2026-10-07 (macOS 27.0.1 live bundles): VoiceOver SCRWorkspace.loctable deleteKey, Terminal keyDescriptions.loctable 007F, AccessibilitySharedSupport symbol names delete.backward.",
+    "sources": "macOS VoiceOver zh_TW (Delete Key → Delete鍵), Terminal key descriptions (⌫ Delete → ⌫ Delete); the symbol names say 退格"
   },
   "delete-permanently": {
     "accept": ["永久"],
@@ -1086,6 +1196,24 @@
     "forms": "a note after a number → （估算）; an estimated cost or size → 預估費用 / 預估大小",
     "sources": "AP-TW = AP-HK (Estimating time remaining… → 正在估計剩餘時間⋯); catalog askCmdr.context.tooltip, viewer.statusBar.badge.*"
   },
+  "example": {
+    "avoid": [
+      {
+        "form": "範例",
+        "why": "a gallery of samples (範例檔案), not the Example: prefix; servers.sheet.usernamePlaceholder was the lone 範例： and is realigned"
+      }
+    ],
+    "chosen": "例如",
+    "confidence": "high",
+    "forms": "placeholder prefix Example: X → 例如：X (full-width colon, no space before a Latin sample)",
+    "sources": "catalog (例如： in 10 placeholders, onboarding.cloudSetup.*, ai.cloud.modelPlaceholderExample, fileOperations.mkdir.placeholder)"
+  },
+  "expired": {
+    "chosen": "過期",
+    "confidence": "high",
+    "forms": "expired (state) → 已過期; expires in N → N 天後過期 / N 小時後過期",
+    "sources": "MS expire → 過期; catalog (12 values, askCmdr.renameReview.expired, errors.listing.authRequiredEauth.*); AP-TW 項目可能已過期"
+  },
   "exposure": {
     "accept": ["ISO 感光度", "光圈值"],
     "chosen": "曝光",
@@ -1274,6 +1402,12 @@
     "confidence": "high",
     "sources": "AP live TW 30 / HK 32 (Forget This Network… → 忘記此網路設定⋯)"
   },
+  "format": {
+    "chosen": "格式",
+    "confidence": "high",
+    "forms": "an archive's compression format → 壓縮格式; FAT32 format → FAT32 格式; date and time format → 日期和時間格式",
+    "sources": "macOS Finder zh-TW (Format 格式, Compression format to use 要使用的壓縮格式), AppKit (「%2$@」格式的檔案); catalog"
+  },
   "frame": {
     "chosen": "影格",
     "confidence": "high",
@@ -1353,12 +1487,20 @@
       {
         "form": "跳到",
         "why": "Apple's older media-seek form"
+      },
+      {
+        "form": "前往路徑",
+        "why": "the old English Go to path; the command now matches Finder's Go to Folder"
+      },
+      {
+        "form": "前往檔案夾",
+        "why": "AP-TW outlier for folder (style.md § The Apple-zh-TW outlier rule)"
       }
     ],
     "chosen": "前往",
     "confidence": "high",
-    "forms": "Go to path… → 前往路徑⋯; the Dock's Go to folder… → 前往資料夾⋯ (keep the two apart)",
-    "sources": "AP Finder Go menu (前往檔案夾, 前往位置)"
+    "forms": "menu item and palette command Go to folder… → 前往資料夾⋯; dialog title and button → 前往資料夾",
+    "sources": "AP Finder Go To Folder: AP-HK 前往資料夾, AP-TW 前往檔案夾"
   },
   "got-it": {
     "avoid": [
@@ -1370,6 +1512,19 @@
     "chosen": "知道了",
     "confidence": "high",
     "sources": "catalog ai.toast.gotIt, main.oldMacos.gotIt, updates.moveToApplicationsDialog.gotIt"
+  },
+  "grant": {
+    "accept": ["給", "拿到"],
+    "avoid": [
+      {
+        "form": "授與",
+        "why": "MS's variant, zero in the catalog"
+      }
+    ],
+    "chosen": "授予",
+    "confidence": "high",
+    "forms": "grant Cmdr access → 授予 Cmdr 存取權; macOS hasn't granted → 還沒授予…存取權; casual onboarding prose → 給 (只有在你信任 Cmdr 的時候才給); from Cmdr's side, hasn't been granted → 還沒拿到…權限",
+    "sources": "catalog (授予 in 14 values, errors.listing.*.suggestion); MS 授與 is a rarer variant with zero catalog use"
   },
   "group": {
     "chosen": "群組",
@@ -1421,6 +1576,12 @@
     },
     "forms": "Hide others → 隱藏其他; Hide Cmdr → 隱藏 Cmdr",
     "sources": "AP Finder MenuBar 300729.title, TextEdit, Preview"
+  },
+  "hint": {
+    "chosen": "提示",
+    "confidence": "high",
+    "forms": "an internal seen-flag → 已顯示「X」提示 (settings.behavior.*HintSeen.label)",
+    "sources": "MS (hint → 提示), catalog settings.behavior.*Seen.label"
   },
   "history": {
     "accept": ["記錄", "歷史"],
@@ -1551,6 +1712,11 @@
     "confidence": "high",
     "sources": "AP Preview (AP-HK glyph variant 檢閲器)"
   },
+  "install": {
+    "chosen": "安裝",
+    "confidence": "high",
+    "sources": "AP-TW SystemSettings (Install → 安裝), MS (3 entries)"
+  },
   "internet": {
     "avoid": [
       {
@@ -1593,6 +1759,14 @@
     "confidence": "high",
     "forms": "kept its name → 保留了原本的名稱",
     "sources": "AP-TW = AP-HK (Would you like to keep it? → 你要保留它嗎？); catalog fileExplorer.rename.keptOriginalName"
+  },
+  "key-combination": {
+    "accept": ["組合鍵"],
+    "chosen": "按鍵組合",
+    "confidence": "high",
+    "forms": "English combo → 按鍵組合 too (無法註冊：按鍵組合無效; 可能有其他 App 正在使用這個按鍵組合)",
+    "note": "The catalog is split 3 按鍵組合 (the downloads shortcut row and its settings label) vs 3 組合鍵 (that label's description, shortcuts.conflict.*); 按鍵組合 wins as MS's term and the label's own word, 組合鍵 stays accepted in prose. Unifying is in review-queue.md.",
+    "sources": "MS zh-Hant TBX (key combination → 按鍵組合, 5); Apple silent; catalog downloads.shortcutRow.invalidCombo, settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.label"
   },
   "key-file": {
     "accept": ["密語"],
@@ -1721,6 +1895,13 @@
     },
     "forms": "line number → 行號; line count → 行數 / 總行數; on line N → 第 N 行",
     "sources": "MS (line number → 行號)"
+  },
+  "limit": {
+    "accept": ["限制", "預算"],
+    "chosen": "上限",
+    "confidence": "high",
+    "forms": "a cap (tab limit, a usage cap) → 上限 (已達分頁數量上限, 用量上限); a restriction → 限制; an AI step or time budget → 預算",
+    "sources": "catalog (上限 ×9, settings and errors families); MS terminology"
   },
   "list": {
     "accept": ["列出"],
@@ -1983,6 +2164,19 @@
     "confidence": "high",
     "sources": "catalog (servers.hub.emptyMessage, onboarding.stepOptional.networking.desc, settings.network.smbConcurrency.description, errors.listing.hostDown.suggestion all keep Latin NAS, spaced)"
   },
+  "native": {
+    "accept": ["系統連線"],
+    "avoid": [
+      {
+        "form": "原生",
+        "why": "0 hits in macOS zh-TW, which writes 內建 (內建顯示器); zh converged on 内建 the same way"
+      }
+    ],
+    "chosen": "內建",
+    "confidence": "high",
+    "forms": "first mention macOS 內建的 SMB 網路連線 (fileExplorer.network.osMountFallback.*); later the short 系統連線 (the directConnection*Toast family, smbNativeNote)",
+    "sources": "AP-TW 內建顯示器 (3 hits, 0 for 原生); catalog: 系統連線 in 11 keys"
+  },
   "navigate": {
     "accept": ["跳至", "跳到", "前往", "回到", "瀏覽", "進入", "離開"],
     "avoid": [
@@ -2013,6 +2207,9 @@
     "chosen": "共享資料夾",
     "confidence": "tentative",
     "decision": "Mount and share-list sentences",
+    "exceptions": {
+      "errorReporter.dialog.managedOff": "English \"share it yourself\" is the verb (pass the saved report on), not an SMB share: 分享出去."
+    },
     "forms": "mounted share → 已裝載的共享資料夾; a share named X → 名為「X」的共享資料夾",
     "sources": "derived from Apple Shared → 已共享 + folder; NetAuthAgent EINFO_NO_SHARE says bare 共享"
   },
@@ -2116,6 +2313,39 @@
     "forms": "the window → 操作佇列; the send-to-queue button → 加入佇列 (must stay a substring of queueAria); status Queued → 等待中",
     "sources": "MS, DC"
   },
+  "organization": {
+    "avoid": [
+      {
+        "form": "機構",
+        "why": "Apple zh-HK's form; Apple zh-TW and the shipped licensing keys say 組織, and Taiwan's norm wins"
+      }
+    ],
+    "chosen": "組織",
+    "confidence": "high",
+    "forms": "managed by your organization → 由你的組織管理; your organization turned off X → 你的組織已關閉 X",
+    "note": "Covers the licensee AND the MDM-managing employer or school; Apple zh-TW uses 組織 for the MDM sense too.",
+    "sources": "AP-TW live SoftwareUpdateSettings/SecurityImprovements/WritingTools (This setting is currently managed by your organization → 此設定目前由你的組織管理; HK 機構), macOS 27, 2026-10-05; catalog licensing.* 組織"
+  },
+  "original": {
+    "accept": ["原本", "原始", "原項目", "原檔案"],
+    "chosen": "原本的檔案",
+    "confidence": "high",
+    "forms": "the originals → 原本的檔案; Finder’s own item wording → 原項目",
+    "sources": "macOS Finder PE117 (…the original could not be deleted): 原項目; catalog (errors.write.destinationNotFound.message.copy, errors.write.deviceDisconnected.sided.destination.copy)"
+  },
+  "outdated": {
+    "accept": ["過期"],
+    "chosen": "過時",
+    "confidence": "tentative",
+    "forms": "may be out of date → 可能過時了 / 可能已經過時",
+    "sources": "catalog (the stale-index title 這個磁碟機的索引可能過時了, the size note 可能已經過時; the stale-drive setting says 過期); the pile (AP-TW, AP-HK, MS TBX, Thunar, TC) has no hit for the sense"
+  },
+  "overall": {
+    "chosen": "整體",
+    "confidence": "tentative",
+    "forms": "the whole-run time-left label → 整體：{eta}",
+    "sources": "GN 總計 (a summed quantity, odd before 剩餘 time); 整體 is the Taiwan gloss for overall"
+  },
   "overwrite": {
     "avoid": [
       {
@@ -2188,6 +2418,19 @@
     "chosen": "密碼",
     "confidence": "high",
     "sources": "AP-TW = AP-HK (pile 48/48, live 1,187/1,139), MS, TC"
+  },
+  "password-protected": {
+    "accept": ["受密碼保護"],
+    "chosen": "有密碼保護",
+    "confidence": "high",
+    "forms": "This archive is password-protected → 這個壓縮檔有密碼保護; a password-protected archive → 有密碼保護的封存檔",
+    "avoid": [
+      {
+        "form": "已被密碼保護",
+        "why": "GNOME's passive; reads stiff next to the catalog's 有密碼保護"
+      }
+    ],
+    "sources": "GNOME Nautilus zh-TW (受密碼保護的封存檔); catalog (errors.volume.needsPassword, the archive-password prompt)"
   },
   "paste": {
     "accept": ["貼到"],
@@ -2322,6 +2565,11 @@
     "forms": "trashed files → 已把 … 放回原處; old names → 把原本的名稱改回去",
     "sources": "catalog fileOperations.trash.undone, queue.row.reversalMovingBack"
   },
+  "quick-filter": {
+    "chosen": "快速篩選",
+    "confidence": "high",
+    "sources": "DC zh-TW actQuickFilter (快速篩選); TC zh-TW 3018/3019 (關閉/開啟篩選); the filter ruling 篩選"
+  },
   "quick-look": {
     "chosen": "快速查看",
     "confidence": "confirmed",
@@ -2388,6 +2636,13 @@
     "forms": "a prefix → 最近; a standalone heading → 最近使用; the most recent file → 最新的檔案",
     "sources": "AP-TW = AP-HK Finder (Recents → 最近使用)"
   },
+  "reclaim": {
+    "accept": ["騰出", "釋放"],
+    "chosen": "釋出",
+    "confidence": "high",
+    "forms": "Cmdr frees what it stored → 釋出 (刪除模型（釋出 {size}）, 已釋出約 {size}); the user clearing room on a drive → 騰出空間",
+    "sources": "catalog (settings.mediaIndex.clip.deleteButton, reclaim.button, reclaim.freed: 釋出 ×8; errors.write.*.suggestion: 騰出空間 ×4); AP-TW 清空垃圾桶可釋放…的空間 (one hit, zh-HK none)"
+  },
   "reconnect": {
     "accept": ["重新連接", "重新接上", "重新連上"],
     "avoid": [
@@ -2436,6 +2691,11 @@
     "confidence": "high",
     "forms": "tight chip → 正規式; aria labels and tooltips → 正規表示式",
     "sources": "TC (WCMD.LNG 5616 正規表示式, 5615 正規式)"
+  },
+  "region": {
+    "chosen": "區域",
+    "confidence": "high",
+    "sources": "AWS zh-TW docs and console; MS region → 區域"
   },
   "reject": {
     "chosen": "拒絕",
@@ -2713,6 +2973,12 @@
     "forms": "search results → 搜尋結果; a path matches N items → 符合",
     "sources": "AP-TW = AP-HK (Search Results → 搜尋結果; 337/339 live), MS, TC, DOL, NAU"
   },
+  "secret-access-key": {
+    "chosen": "私密存取金鑰",
+    "confidence": "high",
+    "forms": "short mentions after the label → 金鑰 (不儲存金鑰直接登入); a key as a pair-noun takes 組 (那組私密存取金鑰, onboarding.cloudSetup.status.authError 那組金鑰)",
+    "sources": "AWS zh-TW docs (MakingRequests, checked 2026-10-02); MS secret key → 祕密金鑰 loses to the provider console"
+  },
   "see": {
     "accept": ["檢視", "看看", "看一下", "看到"],
     "chosen": "查看",
@@ -2771,6 +3037,12 @@
     "forms": "server address → 伺服器位址; the AI endpoint URL field → 網址",
     "sources": "catalog servers.refusal.invalidUrl; AP-TW address → 位址"
   },
+  "service": {
+    "chosen": "服務",
+    "confidence": "high",
+    "forms": "AI service → AI 服務; cloud AI service → 雲端 AI 服務",
+    "sources": "catalog menu.app.services, settings.ai.cloudProvider.label, settings.ai.cloudProvider.description; AP-TW = AP-HK Services menu 服務"
+  },
   "settings": {
     "avoid": [
       {
@@ -2782,6 +3054,12 @@
     "confidence": "confirmed",
     "forms": "Cmdr's own Settings in prose → 「設定」; a path → 「設定 › AI」",
     "sources": "AP-TW (160), AP-HK (160), MS"
+  },
+  "share-link": {
+    "chosen": "分享連結",
+    "confidence": "high",
+    "forms": "Copy share link → 複製分享連結; expires in N days → N 天後過期; works for N days → N 天內有效",
+    "sources": "share-menu ruling 分享 + catalog 連結 (commands.cloudCopyGoogleDriveLink 複製 Google Drive 連結)"
   },
   "share-menu": {
     "chosen": "分享",
@@ -2856,6 +3134,22 @@
     "forms": "an image's own dimensions → 影像大小; folder sizes → 資料夾大小",
     "sources": "AP-TW = AP-HK = AP-CN, MS"
   },
+  "on-device": {
+    "avoid": [
+      {
+        "form": "本機",
+        "why": "the catalog's word for the local provider (本機 LLM, 本機模型); Apple's on-device is a distinct word"
+      }
+    ],
+    "chosen": "裝置端",
+    "confidence": "high",
+    "exceptions": {
+      "askCmdr.cost.free": "A casual cost readout (free, on-device): 在裝置上跑 says where it ran in spoken words, no name to match."
+    },
+    "forms": "on-device AI → 裝置端 AI; On-device only (status value) → 只限裝置端",
+    "proseAccept": ["裝置本機"],
+    "sources": "AP-TW = AP-HK live SiriPreferenceExtension (On-device voice processing → 裝置端語音處理), macOS 27, 2026-10-05"
+  },
   "on-disk-size": {
     "avoid": [
       {
@@ -2871,6 +3165,36 @@
     "confidence": "high",
     "forms": "pairs with 內容 (Content) as English pairs On disk with Content",
     "sources": "AP-TW/HK IN_G1 (^1（磁碟上^0）), 9/9 pile, 7/7 live"
+  },
+  "size-unit-gibibyte": {
+    "chosen": "GiB",
+    "confidence": "high",
+    "sources": "catalog common.sizeUnit.gibibyte; IEC 80000-13 (binary) / SI (decimal)"
+  },
+  "size-unit-kibibyte": {
+    "chosen": "KiB",
+    "confidence": "high",
+    "sources": "catalog common.sizeUnit.kibibyte; IEC 80000-13 (binary) / SI (decimal)"
+  },
+  "size-unit-kilobyte": {
+    "chosen": "kB",
+    "confidence": "high",
+    "sources": "catalog common.sizeUnit.kilobyte; IEC 80000-13 (binary) / SI (decimal)"
+  },
+  "size-unit-mebibyte": {
+    "chosen": "MiB",
+    "confidence": "high",
+    "sources": "catalog common.sizeUnit.mebibyte; IEC 80000-13 (binary) / SI (decimal)"
+  },
+  "size-unit-pebibyte": {
+    "chosen": "PiB",
+    "confidence": "high",
+    "sources": "catalog common.sizeUnit.pebibyte; IEC 80000-13 (binary) / SI (decimal)"
+  },
+  "size-unit-tebibyte": {
+    "chosen": "TiB",
+    "confidence": "high",
+    "sources": "catalog common.sizeUnit.tebibyte; IEC 80000-13 (binary) / SI (decimal)"
   },
   "skip": {
     "avoid": [
@@ -2893,6 +3217,12 @@
     "chosen": "幻燈片秀",
     "confidence": "high",
     "sources": "AP-TW (AP-HK 幻燈片)"
+  },
+  "slow": {
+    "chosen": "慢",
+    "forms": "a volume or server slow to answer → 回應很慢 / 回應太慢",
+    "confidence": "high",
+    "sources": "AP-TW (較慢), DOL (很慢); catalog (fileExplorer.pane.directConnectionTooSlowToast, fileExplorer.pane.trashUnconfirmedToast)"
   },
   "software": {
     "accept": ["硬體"],
@@ -2980,17 +3310,35 @@
     "forms": "Manage Storage… → 管理儲存空間⋯; cloud storage → 雲端儲存空間; storing logs (log storage) → 記錄檔儲存",
     "sources": "AP-TW = AP-HK, MS"
   },
+  "store": {
+    "accept": ["存", "留"],
+    "chosen": "儲存",
+    "confidence": "high",
+    "forms": "store a secret in the Keychain → 存進鑰匙圈 (servers.refusal.secretNotStored); a stored password → 已儲存的密碼; a destination can't store a name → 存不下這個名稱",
+    "sources": "catalog (servers.refusal.secretNotStored, errors.volume.invalidName); AP-TW = AP-HK 儲存"
+  },
   "streaming": {
     "chosen": "串流",
     "confidence": "high",
     "forms": "the viewer's streaming mode → 串流模式; an AI response streaming in → 串流",
     "sources": "MS streaming → 串流 (HKG, TWN); catalog viewer.statusBar.badge.streaming"
   },
+  "subfolder": {
+    "chosen": "子資料夾",
+    "confidence": "high",
+    "sources": "TC zh-TW (子資料夾), DC, Nautilus, Thunar, Dolphin (建立子資料夾) agree; Finder zh-TW says 子檔案夾, the AP-TW outlier the folder ruling avoids (style.md § The Apple-zh-TW outlier rule)"
+  },
   "subscription": {
     "chosen": "訂閱",
     "confidence": "high",
     "forms": "a subscription as an item → 訂閱項目",
     "sources": "AP-TW App Store, AppStoreKit"
+  },
+  "suggestion": {
+    "chosen": "建議",
+    "confidence": "high",
+    "forms": "one AI-suggested group → 這項建議; suggest again → 再建議一次; Suggested operations → 建議的操作",
+    "sources": "AP-TW (12) = AP-HK (11) + MS zh-Hant (101); catalog suggestedOps.title, askCmdr.wakeToast.title"
   },
   "supported": {
     "chosen": "支援",
@@ -3129,6 +3477,18 @@
     "confidence": "high",
     "sources": "AP-TW = AP-HK (Notes), MS (HKG, TWN)"
   },
+  "tint": {
+    "avoid": [
+      {
+        "form": "濃淡",
+        "why": "MS's tint is a colour-shade property, not a tinted pane"
+      }
+    ],
+    "chosen": "著色",
+    "confidence": "high",
+    "forms": "Tint X panes → 為 X 窗格著色; background tint → 背景著色; no tint → 不著色; pane tints card → 窗格著色",
+    "sources": "catalog (settings.appearance.tint*, settings.tint.none, settings.appearance.card.paneTints: 10 values); AP-TW colour-adjust 著色; MS 濃淡 (a shade value, not an overlay) loses"
+  },
   "title-bar": {
     "chosen": "標題列",
     "confidence": "high",
@@ -3242,6 +3602,23 @@
     "forms": "reseat the cable → 把連接線拔掉再插上; a drive pulled mid-transfer → 斷線了",
     "sources": "catalog errors.provider.macDroid.transient, errors.write.deviceDisconnected.*"
   },
+  "unreachable": {
+    "accept": ["連不到", "無法連線", "連到", "連上"],
+    "chosen": "連不上",
+    "confidence": "high",
+    "exceptions": {
+      "viewer.copy.clipboardUnreachable": "a clipboard isn't a network target; Cmdr can't access it (無法存取)"
+    },
+    "forms": "Cmdr couldn't reach X → Cmdr 連不上 X。; a path title → 無法連到 {path}",
+    "sources": "catalog 連不上 (12, servers.refusal.unreachable, servers.paneState.unreachable), 無法連到 (2), 無法連線到 (2)"
+  },
+  "untouched": {
+    "accept": ["沒有被動過", "沒動過"],
+    "chosen": "完全沒有被動過",
+    "confidence": "high",
+    "forms": "the originals are untouched → 原本的檔案完全沒有被動過",
+    "sources": "catalog (errors.write.destinationNotFound.message.copy, errors.write.deviceDisconnected.sided.destination.copy); macOS AppKit Document (To keep the file unchanged…): 保留原檔案"
+  },
   "up-to-date": {
     "accept": ["跟上"],
     "chosen": "最新",
@@ -3353,6 +3730,13 @@
     "confidence": "high",
     "sources": "AP-TW live (BatteryUI Start up or wake → 開機或喚醒)"
   },
+  "waiting": {
+    "accept": ["等"],
+    "chosen": "等待",
+    "confidence": "high",
+    "forms": "queued status 等待中; progress 正在等待⋯; still waiting → 還在等待; running prose may say the spoken 等 (等你確認, 等一下, 要等多久)",
+    "sources": "AP-TW 等待 17 vs 等候 0, AP-HK 18 vs 0; catalog operationLog.status.queued 等待中"
+  },
   "warning": {
     "chosen": "警告",
     "confidence": "confirmed",
@@ -3447,6 +3831,22 @@
     "confidence": "high",
     "sources": "AP-TW = AP-HK (NSTouchBarControlStripSpotlightTemplate = Spotlight); catalog"
   },
+  "space-key": {
+    "avoid": [
+      {
+        "form": "Space 鍵",
+        "why": "unlike Esc and Enter, macOS zh-TW localizes this key name (空白鍵); DC and MC agree"
+      },
+      {
+        "form": "空格鍵",
+        "why": "TC zh-TW only; macOS zh-TW, DC and MC say 空白鍵"
+      }
+    ],
+    "chosen": "空白鍵",
+    "confidence": "high",
+    "forms": "按空白鍵 + verb; chord ⇧空白鍵 (macOS: Command + 空白鍵)",
+    "sources": "macOS AppKit FunctionKeyNames (Space), SystemSettings Siri/Spotlight SPACEBAR_KEY → 空白鍵; AppKit Date Picker help (空白鍵); Double Commander <空白鍵>; Midnight Commander 空白鍵; TC zh-TW 5139 says 空格鍵"
+  },
   "spaces": {
     "chosen": "空間",
     "confidence": "high",
@@ -3467,5 +3867,12 @@
     "chosen": "原始碼是公開的",
     "confidence": "tentative",
     "sources": "Cmdr's license is the BSL (docs/business/README.md); catalog (onboarding.stepFda.con.body)"
+  },
+  "usage": {
+    "accept": ["使用量", "使用統計", "花費"],
+    "chosen": "用量",
+    "confidence": "high",
+    "forms": "a chat’s token usage → 這次對話的用量; memory usage → 記憶體用量; a usage cap → 用量上限; app usage stats → 使用統計; the spending section → 花費",
+    "sources": "catalog askCmdr and settings families; MS terminology’s 使用方式 is the how-it’s-used sense, not the amount"
   }
 }

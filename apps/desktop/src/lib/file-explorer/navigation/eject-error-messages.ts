@@ -20,6 +20,7 @@
 import type { EjectError, HolderScan, VolumeHolder } from '$lib/ipc/bindings'
 import { getMessage } from '$lib/intl/messages.svelte'
 import { formatConjunctionList } from '$lib/intl/list-format'
+import { formatInteger } from '$lib/intl/number-format'
 import type { MessageKey } from '$lib/intl/keys.gen'
 import { getAppLogger } from '$lib/logging/logger'
 import { asEjectError } from './eject-error'
@@ -38,7 +39,7 @@ function interpolate(template: string, params: Record<string, string>): string {
   return out
 }
 
-/** How many holder names a refusal spells out before it says "other apps". */
+/** How many holder names a refusal spells out before it says "other apps" (or "others", for processes). */
 const NAMES_SPELLED_OUT = 3
 
 /**
@@ -51,11 +52,38 @@ const NAMES_SPELLED_OUT = 3
  * toast with itself.
  */
 function actionableNames(named: readonly VolumeHolder[]): string[] {
+  return namesOf(named, (kind) => kind === 'app' || kind === 'tool')
+}
+
+/** The deduped names of the holders whose kind `keep` accepts, in the order the scan saw them. */
+function namesOf(named: readonly VolumeHolder[], keep: (kind: VolumeHolder['kind']) => boolean): string[] {
   const seen = new Set<string>()
   for (const holder of named) {
-    if (holder.kind === 'app' || holder.kind === 'tool') seen.add(holder.name)
+    if (keep(holder.kind)) seen.add(holder.name)
   }
   return [...seen]
+}
+
+/**
+ * `names` capped at {@link NAMES_SPELLED_OUT}, with `rest` standing in for the
+ * others, joined by the UI language's own list rules.
+ */
+function spellOut(names: readonly string[], rest: MessageKey): string {
+  const listed = names.length > NAMES_SPELLED_OUT ? [...names.slice(0, NAMES_SPELLED_OUT), raw(rest)] : names
+  return formatConjunctionList(listed)
+}
+
+/**
+ * The sentence for holders that were named but never classified. ❗ Worded as
+ * PROCESSES, ❌ never as apps or tools: the name is an executable's, which is all
+ * the scan could read.
+ */
+function wordUnclassified(names: readonly string[]): string {
+  if (names.length === 1) return interpolate(raw('errors.eject.unmountRefusedByProcess'), { process: names[0] })
+  return interpolate(raw('errors.eject.unmountRefusedByProcesses'), {
+    countText: formatInteger(names.length),
+    processes: spellOut(names, 'errors.eject.otherProcesses'),
+  })
 }
 
 /**
@@ -64,12 +92,12 @@ function actionableNames(named: readonly VolumeHolder[]): string[] {
  *
  * Precedence, most actionable first: a named app or tool (something the person
  * can go and close), then a disk image (which has to be ejected first), then
- * Cmdr itself (a bug), then macOS (nothing to do but wait), then the unnamed
- * fallback.
+ * Cmdr itself (a bug), then macOS (nothing to do but wait), then the bare
+ * process names of `Unclassified` holders, then the unnamed fallback.
  *
- * ❗ The fallback is also where an `Unclassified` holder lands: it's a real
- * answer meaning "named, but nothing said what kind", so it is ❌ never worded as
- * an app or a tool.
+ * ❗ An `Unclassified` holder is a real answer meaning "named, but nothing said
+ * what kind" (the scan's time budget ran out, or a code signature wouldn't read),
+ * so it is worded as a process and ❌ never as an app or a tool.
  *
  * ❗ The two `HolderScan` arms word the SAME. `Incomplete` means the scan
  * couldn't cover every mount, so its names are worth saying but its emptiness
@@ -81,13 +109,13 @@ export function wordUnmountRefusal(holders: HolderScan): string {
   const names = actionableNames(named)
   if (names.length === 1) return interpolate(raw('errors.eject.unmountRefusedByApp'), { app: names[0] })
   if (names.length > 1) {
-    const listed =
-      names.length > NAMES_SPELLED_OUT ? [...names.slice(0, NAMES_SPELLED_OUT), raw('errors.eject.otherApps')] : names
-    return interpolate(raw('errors.eject.unmountRefusedByApps'), { apps: formatConjunctionList(listed) })
+    return interpolate(raw('errors.eject.unmountRefusedByApps'), { apps: spellOut(names, 'errors.eject.otherApps') })
   }
   if (named.some((h) => h.kind === 'diskImage')) return raw('errors.eject.unmountRefusedByDiskImage')
   if (named.some((h) => h.kind === 'cmdr')) return raw('errors.eject.unmountRefusedByCmdr')
   if (named.some((h) => h.kind === 'system')) return raw('errors.eject.unmountRefusedBySystem')
+  const unclassified = namesOf(named, (kind) => kind === 'unclassified')
+  if (unclassified.length > 0) return wordUnclassified(unclassified)
   return raw('errors.eject.unmountRefused')
 }
 

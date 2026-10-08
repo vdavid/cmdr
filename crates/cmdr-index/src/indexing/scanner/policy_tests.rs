@@ -271,11 +271,71 @@ fn a_file_provider_domain_is_walked_into_rather_than_cut_at() {
     );
 }
 
+// ── Filesystems mounted inside the boot tree ─────────────────────────
+
+/// Lists `tree/<relative>` in the host's mount table for the rest of the test.
+#[cfg(target_os = "macos")]
+fn mount_inside_the_tree(tree: &Tree, relative: &str) -> crate::indexing::host::volumes::TestProviderGuard {
+    use crate::indexing::host::volumes::{self, FakeVolumeProvider, MountIdentity};
+    let provider = FakeVolumeProvider::shared();
+    provider
+        .mount("/", MountIdentity::from_raw(1))
+        .mount(tree.path(relative), MountIdentity::from_raw(2));
+    volumes::install_for_test(provider)
+}
+
+/// ❗ Every boot-disk walk stops at a filesystem mounted inside the boot tree, and
+/// writes no row for the mount point: it's its own drive, so its bytes belong to
+/// its own index, not `root`'s folder sizes or search.
+///
+/// A rebuild is the walk FSEvents verification and the per-navigation verifier
+/// hand a new directory to, and a full scan runs the same visitor.
+#[test]
+#[cfg(target_os = "macos")]
+fn a_boot_disk_walk_stops_at_a_mount_inside_the_boot_tree() {
+    let _serialized = crate::indexing::handle::test_lock();
+    let tree = Tree::new();
+    std::fs::create_dir_all(tree.path("scope/pCloud Drive/deep")).expect("dirs");
+    std::fs::write(tree.path("scope/pCloud Drive/deep/theirs.txt"), "x").expect("file");
+    std::fs::write(tree.path("scope/ours.txt"), "x").expect("file");
+    let _mounted = mount_inside_the_tree(&tree, "scope/pCloud Drive");
+    ensure_path_in_db(&tree.db_path, &tree.path("scope"), &tree.writer);
+
+    scan_subtree(
+        &tree.path("scope"),
+        &IndexPathSpace::root(),
+        &tree.writer,
+        &VolumeWork::for_test("policy-test"),
+    )
+    .expect("the rebuild runs");
+    tree.writer.flush_blocking().expect("flush");
+
+    assert_eq!(tree.rows(), vec!["scope".to_string(), "scope/ours.txt".to_string()]);
+}
+
+/// The search walk too, whatever device the mount reports: the mount table says
+/// it's a mount, and that's the whole question.
+#[test]
+#[cfg(target_os = "macos")]
+fn a_search_walk_stops_at_a_mount_inside_the_boot_tree() {
+    let _serialized = crate::indexing::handle::test_lock();
+    let tree = Tree::new();
+    std::fs::create_dir_all(tree.path("scope/mnt/nfs/deep")).expect("dirs");
+    std::fs::write(tree.path("scope/mnt/nfs/deep/theirs.txt"), "x").expect("file");
+    let _mounted = mount_inside_the_tree(&tree, "scope/mnt/nfs");
+
+    let summary = tree.cover("scope");
+
+    assert_eq!(tree.rows(), vec!["scope".to_string(), "scope/mnt".to_string()]);
+    assert_eq!(summary.total_entries, 1, "only the mount point's parent");
+}
+
 // ── Which walk gets which rules ──────────────────────────────────────
 
-/// A full scan pins no device, deliberately: it bounds itself by path prefix
-/// (`/Volumes/` on the boot disk) and pinning it would silently change what a
-/// boot index contains. Only the search walk pays the per-directory probe.
+/// A full scan pins no device, deliberately: the boot disk's own firmlinked
+/// directories sit on another device than `/`, so it stops at other filesystems
+/// by prefix and by the mount table instead (the two tests above). Only the search
+/// walk pays the per-directory probe.
 #[test]
 fn only_the_search_walk_pins_a_device() {
     let tree = Tree::new();

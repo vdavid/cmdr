@@ -213,7 +213,7 @@ async fn store_password(host_name: &str, username: &str, password: &str) {
     })
     .await;
     if !stored {
-        log::warn!("The share mounted, but the Keychain didn't store its password for {host_name}");
+        log::warn!("The share mounted, but the Keychain didn't store its password for host={host_name:?}");
     }
 }
 

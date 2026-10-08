@@ -22,7 +22,8 @@ use crate::agent::types::ProposalDecision;
 /// carries the same typed kinds a mid-turn failure does, so the rail renders one set of
 /// honest copy either way.
 ///
-/// **Build one through [`AskCmdrSendRefusal::of`] or [`AskCmdrSendRefusal::detailed`], never
+/// **Build one through [`AskCmdrSendRefusal::of`], [`AskCmdrSendRefusal::gated`], or
+/// [`AskCmdrSendRefusal::detailed`], never
 /// as a struct literal.** Both constructors report the anonymous `ask_cmdr_turn` refusal, and
 /// these gates are the only account of the funnel's top: a send refused here never reaches
 /// `run_turn`, so a literal that skipped the report would make "AI is off" and "nobody opened
@@ -34,13 +35,30 @@ pub struct AskCmdrSendRefusal {
     /// The source problem's own wording, when there is one worth showing (a store that
     /// wouldn't open). Display only: the frontend branches on `kind`, never on this.
     pub detail: Option<String>,
+    /// Which rule of the organization's policy refused, exactly when `kind` is
+    /// `managedByOrganization`, so the rail words that rule.
+    pub managed: Option<crate::managed_policy::ManagedAiRefusal>,
 }
 
 impl AskCmdrSendRefusal {
     /// A refusal the kind says everything about.
     pub(super) fn of(kind: AgentErrorKindView) -> Self {
         crate::agent::chat::runtime::send_refused(kind);
-        Self { kind, detail: None }
+        Self {
+            kind,
+            detail: None,
+            managed: None,
+        }
+    }
+
+    /// The send gate's refusal, carrying the organization's reason when the policy refused.
+    pub(super) fn gated(gate: crate::agent::chat::session::SendGateRefusal) -> Self {
+        crate::agent::chat::runtime::send_refused(gate.view());
+        Self {
+            kind: gate.view(),
+            detail: None,
+            managed: gate.managed(),
+        }
     }
 
     /// A refusal carrying the source problem's own wording for display.
@@ -49,6 +67,7 @@ impl AskCmdrSendRefusal {
         Self {
             kind,
             detail: Some(detail),
+            managed: None,
         }
     }
 }

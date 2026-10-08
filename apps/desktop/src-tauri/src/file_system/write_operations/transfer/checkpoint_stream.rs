@@ -16,7 +16,7 @@ use std::time::Duration;
 
 use super::super::state::WriteOperationState;
 use super::transfer_probe::{TaskPhase, set_task_bytes, set_task_phase};
-use crate::file_system::volume::{Volume, VolumeError, VolumeReadStream};
+use crate::file_system::volume::{ScanStop, ScanStopSignal, Volume, VolumeError, VolumeReadStream};
 
 /// Wraps a source read stream so a between-chunk cooperative checkpoint runs once
 /// per chunk for the cross-volume streaming path, where the per-chunk progress
@@ -141,6 +141,50 @@ impl VolumeReadStream for CheckpointStream {
 
     fn bytes_read(&self) -> u64 {
         self.bytes_yielded
+    }
+
+    /// The source's own date, so a destination that stores one keeps it.
+    fn modified_at(&self) -> Option<std::time::SystemTime> {
+        self.inner.modified_at()
+    }
+
+    /// The operation's Cancel and pause, for a destination that buffers ahead
+    /// of this stream: S3 drains a local source into part buffers in
+    /// milliseconds, so the park in [`Self::checkpoint`] never reaches the
+    /// bytes it sends. Not the inner stream's: this wrapper IS the operation's
+    /// checkpoint.
+    fn stop_signal(&self) -> ScanStop {
+        ScanStop::new(Arc::new(UploadPark(Arc::clone(&self.state))) as Arc<dyn ScanStopSignal>)
+    }
+}
+
+/// The operation's stop and pause as a destination's upload parks on them,
+/// announcing the park to the transfer probe the way [`CheckpointStream::checkpoint`]
+/// does, so a paused upload reads `parked(pause)` in a dump rather than a
+/// stream that stopped moving.
+struct UploadPark(Arc<WriteOperationState>);
+
+impl ScanStopSignal for UploadPark {
+    fn is_stopping_or_paused(&self) -> bool {
+        self.0.is_stopping_or_paused()
+    }
+
+    fn stop_or_park<'a>(&'a self) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
+        Box::pin(async move {
+            let parking = self.0.pause_gate.is_paused();
+            if parking {
+                set_task_phase(TaskPhase::ParkedPause);
+            }
+            let stop = self.0.stop_or_park_async().await;
+            if parking {
+                set_task_phase(TaskPhase::Streaming);
+            }
+            stop
+        })
+    }
+
+    fn stop_or_park_blocking(&self) -> bool {
+        self.0.stop_or_park_sync()
     }
 }
 

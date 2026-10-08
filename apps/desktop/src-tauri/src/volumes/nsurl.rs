@@ -1,4 +1,4 @@
-//! NSURL resource lookups (volume name, ejectable flag, capacities), the
+//! NSURL resource lookups (volume name, ejectability, capacities), the
 //! path-derived volume-name fallback, per-path icon fetching, and volume-space
 //! reporting. The blocking macOS enrichment layer, only run for local mounts.
 
@@ -54,6 +54,43 @@ pub(crate) fn get_volume_uuid_for_path(path: &str) -> Option<String> {
     autoreleasepool(|_| get_volume_uuid(&NSURL::fileURLWithPath(&NSString::from_str(path))))
 }
 
+/// What macOS reports about the disk behind a local volume, each `None` when it gave no answer.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct MediaFacts {
+    /// `NSURLVolumeIsEjectableKey`: the MEDIA ejects from its drive under software control. True
+    /// for a disk image and most USB sticks; false for an external disk macOS sees as fixed (a
+    /// Thunderbolt NVMe SSD, some USB bridges).
+    pub(crate) ejectable: Option<bool>,
+    /// `NSURLVolumeIsInternalKey`: the disk sits on an internal bus.
+    pub(crate) internal: Option<bool>,
+}
+
+/// Whether a local volume with these `facts` is one a person can eject. Pure.
+///
+/// Ejectable media, or a disk macOS places on an external bus. ❗ Only an explicit "not
+/// internal" counts: an internal volume stays without a button (Cmdr has no way to mount it
+/// back), and so does a disk macOS wouldn't place.
+pub(crate) fn offers_eject(facts: MediaFacts) -> bool {
+    facts.ejectable == Some(true) || facts.internal == Some(false)
+}
+
+/// Whether the local volume mounted at `mount_point` is one a person can eject. The one answer
+/// both `get_attached_volumes` and `resolve_path_volume_fast` give, so the switcher's button and
+/// the eject command's own check can't disagree.
+///
+/// ❌ Never call this for a network mount: NSURL resource lookups can hang for minutes on a dead
+/// one (`DETAILS.md` § "Hung mounts").
+pub(crate) fn is_volume_ejectable(url: &objc2_foundation::NSURL, mount_point: &str) -> bool {
+    // The boot volume never ejects, whatever disk the Mac booted from.
+    if mount_point == "/" {
+        return false;
+    }
+    offers_eject(MediaFacts {
+        ejectable: get_bool_resource(url, "NSURLVolumeIsEjectableKey"),
+        internal: get_bool_resource(url, "NSURLVolumeIsInternalKey"),
+    })
+}
+
 /// Get icon for a path as base64-encoded WebP.
 ///
 /// Returns `None` while the FDA decision is pending. NSWorkspace icon
@@ -95,7 +132,7 @@ fn get_nsurl_resource<T>(
 }
 
 /// Get a boolean resource value from an NSURL.
-pub(crate) fn get_bool_resource(url: &objc2_foundation::NSURL, key: &str) -> Option<bool> {
+fn get_bool_resource(url: &objc2_foundation::NSURL, key: &str) -> Option<bool> {
     use objc2_foundation::NSNumber;
     get_nsurl_resource(url, key, |obj| obj.downcast::<NSNumber>().ok().map(|n| n.boolValue()))
 }
@@ -185,6 +222,50 @@ mod tests {
         // Nonexistent paths return None - the NSURL resource API doesn't resolve to ancestor volumes
         let space = get_volume_space("/nonexistent/path/that/does/not/exist");
         assert!(space.is_none(), "Nonexistent paths should return None");
+    }
+
+    fn facts(ejectable: Option<bool>, internal: Option<bool>) -> MediaFacts {
+        MediaFacts { ejectable, internal }
+    }
+
+    /// The drive that had no eject button: a Thunderbolt SSD is fixed media on an
+    /// external bus, so its media flag says no while the disk unplugs like any other.
+    #[test]
+    fn an_external_disk_with_fixed_media_offers_eject() {
+        assert!(offers_eject(facts(Some(false), Some(false))));
+    }
+
+    #[test]
+    fn ejectable_media_offers_eject_wherever_it_sits() {
+        // A USB stick, and a disk image or the built-in SD reader (both internal).
+        assert!(offers_eject(facts(Some(true), Some(false))));
+        assert!(offers_eject(facts(Some(true), Some(true))));
+        assert!(offers_eject(facts(Some(true), None)));
+    }
+
+    #[test]
+    fn an_internal_disk_with_fixed_media_offers_none() {
+        assert!(!offers_eject(facts(Some(false), Some(true))));
+    }
+
+    /// Only an explicit "not internal" counts: a disk macOS wouldn't place must not
+    /// grow a button that unmounts something nobody can plug back in.
+    #[test]
+    fn a_disk_macos_would_not_place_offers_none() {
+        assert!(!offers_eject(facts(Some(false), None)));
+        assert!(!offers_eject(facts(None, None)));
+    }
+
+    #[test]
+    fn the_boot_volume_answers_both_media_keys_and_never_ejects() {
+        use objc2_foundation::{NSString, NSURL};
+
+        // Both keys are stringly typed: a typo answers `None` forever, which would
+        // read as "no button" on every external fixed disk.
+        let url = NSURL::fileURLWithPath(&NSString::from_str("/"));
+        assert!(get_bool_resource(&url, "NSURLVolumeIsEjectableKey").is_some());
+        assert!(get_bool_resource(&url, "NSURLVolumeIsInternalKey").is_some());
+        assert!(!is_volume_ejectable(&url, "/"));
     }
 
     #[test]

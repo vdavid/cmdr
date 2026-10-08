@@ -23,10 +23,9 @@
  */
 
 import { type UnlistenFn } from '@tauri-apps/api/event'
-import { sendNotification } from '@tauri-apps/plugin-notification'
 import { addToast, dismissToast } from '$lib/ui/toast'
 import { getAppLogger } from '$lib/logging/logger'
-import { ensureMacosNotificationPermission } from '$lib/notifications/macos-notification-permission'
+import { sendMacosNotification } from '$lib/notifications/send-macos-notification'
 import { lowSpaceFigures } from './figures'
 import { onLowDiskSpace } from '$lib/tauri-commands'
 import { tString } from '$lib/intl/messages.svelte'
@@ -94,16 +93,9 @@ function dispatchToast(payload: LowDiskSpacePayload): void {
 }
 
 async function dispatchMacosNotification(payload: LowDiskSpacePayload): Promise<void> {
-  const ok = await ensureMacosNotificationPermission()
-  if (!ok) return
-
   const figures = lowSpaceFigures(payload.availableBytes, payload.totalBytes)
-  try {
-    sendNotification({
-      title: tString('lowDiskSpace.notification.title'),
-      body: tString('lowDiskSpace.notification.body', figures),
-    })
-  } catch (err) {
-    log.warn('Failed to send macOS notification: {err}', { err: String(err) })
-  }
+  await sendMacosNotification({
+    title: tString('lowDiskSpace.notification.title'),
+    body: tString('lowDiskSpace.notification.body', figures),
+  })
 }

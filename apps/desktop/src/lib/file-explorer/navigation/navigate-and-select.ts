@@ -123,14 +123,15 @@ export async function navigateToDirInPane(explorer: PaneRevealAPI, pane: Pane, l
 
 /**
  * Navigate `pane` to a parent-dir `Location`, then move the cursor onto
- * `fileName` so the file is revealed/selected (we do NOT open it).
+ * `fileName` so the file is revealed/selected (we do NOT open it). Returns
+ * `false` when the pane refused the navigation.
  */
 export async function navigateToFileInPane(
   explorer: PaneRevealAPI,
   pane: Pane,
   location: Location,
   fileName: string,
-): Promise<void> {
+): Promise<boolean> {
   const result = explorer.navigate({ pane, to: { goTo: location }, source: 'user' })
   if (result.status === 'refused') {
     log.warn('navigateToFileInPane: navigate refused {pane} {parentDir}: {reason}', {
@@ -138,10 +139,11 @@ export async function navigateToFileInPane(
       parentDir: location.path,
       reason: result.reason.message,
     })
-    return
+    return false
   }
   await result.settled
   await explorer.moveCursor(pane, fileName)
+  return true
 }
 
 /**

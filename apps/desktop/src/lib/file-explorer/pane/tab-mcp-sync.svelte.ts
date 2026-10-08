@@ -35,6 +35,12 @@ export interface TabMcpSync {
   /** Schedules a debounced push of both panes' tab sets to the MCP backend. Also
    *  called once from `onMount` for the initial sync after persisted state loads. */
   syncTabsToBackend: () => void
+  /**
+   * Pushes both panes' tab sets now and resolves once the backend has them, dropping any
+   * pending debounced push. For a caller about to tell an agent the tabs changed (the MCP
+   * `tab move` reply): the agent's next state read must not land inside the debounce.
+   */
+  syncTabsNow: () => Promise<void>
   /** Clears any pending debounce timer. Call from `onDestroy`. */
   cleanup: () => void
 }
@@ -42,26 +48,38 @@ export interface TabMcpSync {
 export function initTabMcpSync(deps: TabMcpSyncDeps): TabMcpSync {
   let tabSyncTimer: ReturnType<typeof setTimeout> | null = null
 
-  function syncTabsToBackend(): void {
+  function tabsOf(mgr: TabManager) {
+    return getAllTabs(mgr).map((t) => ({
+      id: t.id,
+      path: t.path,
+      pinned: t.pinned,
+      active: t.id === mgr.activeTabId,
+    }))
+  }
+
+  async function pushTabs(): Promise<void> {
+    await Promise.all([
+      updatePaneTabs('left', tabsOf(deps.getLeftTabMgr())),
+      updatePaneTabs('right', tabsOf(deps.getRightTabMgr())),
+    ])
+  }
+
+  function clearTimer(): void {
     if (tabSyncTimer) clearTimeout(tabSyncTimer)
+    tabSyncTimer = null
+  }
+
+  function syncTabsToBackend(): void {
+    clearTimer()
     tabSyncTimer = setTimeout(() => {
-      const leftTabMgr = deps.getLeftTabMgr()
-      const rightTabMgr = deps.getRightTabMgr()
-      const leftTabs = getAllTabs(leftTabMgr).map((t) => ({
-        id: t.id,
-        path: t.path,
-        pinned: t.pinned,
-        active: t.id === leftTabMgr.activeTabId,
-      }))
-      const rightTabs = getAllTabs(rightTabMgr).map((t) => ({
-        id: t.id,
-        path: t.path,
-        pinned: t.pinned,
-        active: t.id === rightTabMgr.activeTabId,
-      }))
-      void updatePaneTabs('left', leftTabs)
-      void updatePaneTabs('right', rightTabs)
+      tabSyncTimer = null
+      void pushTabs()
     }, TAB_SYNC_DEBOUNCE_MS)
+  }
+
+  async function syncTabsNow(): Promise<void> {
+    clearTimer()
+    await pushTabs()
   }
 
   // Reactive effect: sync tab structural changes to the MCP backend
@@ -86,8 +104,7 @@ export function initTabMcpSync(deps: TabMcpSyncDeps): TabMcpSync {
 
   return {
     syncTabsToBackend,
-    cleanup: () => {
-      if (tabSyncTimer) clearTimeout(tabSyncTimer)
-    },
+    syncTabsNow,
+    cleanup: clearTimer,
   }
 }

@@ -86,7 +86,7 @@ export function cleanupVolumeTints(): void {
   initialized = false
 }
 
-export type VolumeKind = 'local' | 'smb' | 'sftp' | 'webdav' | 'mtp' | 'adb' | 'other'
+export type VolumeKind = 'local' | 'smb' | 'sftp' | 'webdav' | 's3' | 'mtp' | 'adb' | 'other'
 
 /**
  * Pure classifier: pick the tint bucket for a volume.
@@ -100,10 +100,10 @@ export type VolumeKind = 'local' | 'smb' | 'sftp' | 'webdav' | 'mtp' | 'adb' | '
  * `tintMtp` setting (one "mobile device" tint), so the split only matters to
  * callers that key behavior on the transport.
  *
- * ❗ `sftp` and `webdav` are checked BEFORE the `category === 'network'` arm,
+ * ❗ `sftp`, `webdav`, and `s3` are checked BEFORE the `category === 'network'` arm,
  * which every server row also carries. Without that a server pane would be an SMB
  * pane: the SMB capability row, the system-clipboard gate open, and Open terminal
- * firing with an `sftp://` path. All three share the `tintSmb` setting (one
+ * firing with an `sftp://` path. All four share the `tintSmb` setting (one
  * "Servers" tint), so the split only matters to behavior.
  */
 export function volumeKindFor(
@@ -115,6 +115,7 @@ export function volumeKindFor(
   if (isMtpVolumeId(volumeId) || category === 'mobile_device') return 'mtp'
   if (fsType === 'sftp') return 'sftp'
   if (fsType === 'webdav') return 'webdav'
+  if (fsType === 's3') return 's3'
   if (category === 'network' || fsType === 'smbfs') return 'smb'
   if (
     volumeId === 'root' ||
@@ -130,10 +131,10 @@ export function volumeKindFor(
 /** Returns the selected tint for a given volume kind (reactive). */
 function tintForKind(kind: VolumeKind): VolumeTintColor {
   if (kind === 'local') return tintLocal
-  // One "Servers" tint across SMB, SFTP, and WebDAV. ❌ No fourth setting: three
+  // One "Servers" tint across SMB, SFTP, WebDAV, and S3. ❌ No fourth setting: three
   // definition sites, a section row, and two parity tests for a color nobody
   // asked to set separately.
-  if (kind === 'smb' || kind === 'sftp' || kind === 'webdav') return tintSmb
+  if (kind === 'smb' || kind === 'sftp' || kind === 'webdav' || kind === 's3') return tintSmb
   if (kind === 'mtp' || kind === 'adb') return tintMtp
   return 'none'
 }

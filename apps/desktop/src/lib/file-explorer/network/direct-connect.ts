@@ -39,6 +39,7 @@ import {
   mountNotRespondingMessage,
   nothingToUpgradeMessage,
 } from './upgrade-messages'
+import LocalNetworkBlockedToastContent from './LocalNetworkBlockedToastContent.svelte'
 
 const log = getAppLogger('fileExplorer')
 
@@ -244,7 +245,12 @@ async function upgradeWithCredentials(
  */
 function announceNoUpgrade(result: NoUpgrade, shareName: string): DirectConnectOutcome {
   if (result.status === 'networkError') {
-    addToast(directConnectionUnavailableMessage(result.reason, result.displayName), { level: 'error' })
+    if (result.reason === 'blockedByThisMac') {
+      // The fix is a switch in System Settings, so this answer carries the button to it.
+      addToast(LocalNetworkBlockedToastContent, { level: 'error', props: { server: result.displayName } })
+    } else {
+      addToast(directConnectionUnavailableMessage(result.reason, result.displayName), { level: 'error' })
+    }
     return 'stillOnOsMount'
   }
   if (result.status === 'mountNotResponding') {

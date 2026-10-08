@@ -254,6 +254,14 @@ impl Volume for SftpVolume {
         true
     }
 
+    fn set_modified<'a>(
+        &'a self,
+        path: &'a Path,
+        modified: std::time::SystemTime,
+    ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+        Box::pin(self.noting(self.set_modified_impl(path, modified)))
+    }
+
     fn delete<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
         Box::pin(self.noting(self.delete_impl(path)))
     }
@@ -472,16 +480,23 @@ impl Volume for SftpVolume {
         WatchCoverage::None
     }
 
-    /// `statvfs@openssh.com` is not reachable from this crate stack: the
-    /// low-level crate has no request for it and the protocol crate carries only
-    /// the extension NAME so the server hello parses. So free space is honestly
-    /// unavailable rather than guessed at, and ❗ the poll interval below has to
-    /// agree or a pane would poll something that always refuses.
+    /// The volume root's filesystem, or `NotSupported` from a server without
+    /// `statvfs@openssh.com` (`DETAILS.md` § "The `Volume` answers").
     fn get_space_info<'a>(&'a self) -> Pin<Box<dyn Future<Output = Result<SpaceInfo, VolumeError>> + Send + 'a>> {
-        Box::pin(async { Err(VolumeError::NotSupported) })
+        Box::pin(self.noting(self.space_info_impl(Path::new("/"))))
     }
 
+    /// The filesystem the destination folder is on, which on a server with
+    /// several mounts isn't the root's.
+    fn get_space_info_at<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<SpaceInfo, VolumeError>> + Send + 'a>> {
+        Box::pin(self.noting(self.space_info_impl(path)))
+    }
+
+    /// One small round trip per poll, the same cadence as SMB.
     fn space_poll_interval(&self) -> Option<std::time::Duration> {
-        None
+        Some(std::time::Duration::from_secs(5))
     }
 }

@@ -11,11 +11,17 @@
 use crate::errors::AdbError;
 use crate::features::connect_as_transport;
 use crate::server::AdbEndpoint;
+use crate::transport::AdbConnection;
 
 /// Frame ids of the shell v2 protocol.
 const ID_STDOUT: u8 = 1;
 const ID_STDERR: u8 = 2;
 const ID_EXIT: u8 = 3;
+
+/// The largest frame payload `adbd` sends: its shell buffer is `MAX_PAYLOAD`,
+/// 1 MiB (`kBufferSize` in `shell_protocol.h`, `MAX_PAYLOAD` in `adb.h`;
+/// verified on AOSP `packages/modules/adb` main, 2026-10-05).
+pub(crate) const MAX_FRAME_PAYLOAD: usize = 1024 * 1024;
 
 /// What one shell command produced.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -91,6 +97,13 @@ async fn run_inner(
     let mut conn = endpoint.connect().await.map_err(connect_as_transport)?;
     conn.bind_device(serial).await?;
     conn.request(&format!("shell,v2,raw:{}", command_line(argv))).await?;
+    read_frames(&mut conn, max_stdout).await
+}
+
+/// Reads shell v2 frames (`[id: u8][len: u32 LE][payload]`) until the exit
+/// frame. A frame longer than [`MAX_FRAME_PAYLOAD`] is refused before its
+/// buffer exists: the length word is the device's to choose.
+pub(crate) async fn read_frames(conn: &mut AdbConnection, max_stdout: Option<usize>) -> Result<ShellOutcome, AdbError> {
     let mut outcome = ShellOutcome {
         exit_code: 0,
         stdout: Vec::new(),
@@ -100,6 +113,12 @@ async fn run_inner(
         let mut id = [0u8; 1];
         conn.read_exact(&mut id).await?;
         let len = conn.read_u32_le().await? as usize;
+        if len > MAX_FRAME_PAYLOAD {
+            return Err(AdbError::Protocol(format!(
+                // allowed-pluralize-noun: `len` is past the cap here, so never 1.
+                "shell frame of {len} bytes exceeds the {MAX_FRAME_PAYLOAD}-byte maximum"
+            )));
+        }
         if let Some(limit) = max_stdout
             && id[0] == ID_STDOUT
             && len > limit.saturating_sub(outcome.stdout.len())

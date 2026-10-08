@@ -6,10 +6,69 @@ Depth and rationale. `CLAUDE.md` holds the must-knows; the flows, decisions, and
 
 1. In-memory `LICENSE_CACHE: Mutex<Option<LicenseInfo>>`: avoids re-parsing/verifying the Ed25519 signature on every
    call.
-2. `license.json` via `tauri-plugin-store`: persists server validation across sessions. Keys: `cached_license_status`,
-   `last_validation_timestamp`, `expiration_modal_shown`, `commercial_reminder_last_dismissed`.
+2. `license.json` via `tauri-plugin-store`: persists the last verified server answer across sessions. Keys:
+   `license_key`, `license_short_code`, `cached_license_status`, `last_validation_timestamp`, `expiration_modal_shown`,
+   `commercial_reminder_last_dismissed`, `license_clock_high_water`.
 
-Offline grace period: 30 days. After that, status reverts to Personal until the next successful server validation.
+What the cached answer is worth as it ages: § Offline policy.
+
+## Offline policy
+
+`offline_policy::resolve_license_state` decides, from the signed key (`KeyTerms`), the cached answer, and the
+clock-guarded time. The principle (David, 2026-10-05): **unreachability alone never downgrades a valid signed license.**
+
+- **A cached server status wins first.** `invalid` → Personal (a revocation, or a key the server never knew). `expired`
+  → Expired. Any status the app doesn't recognize → Personal. `active` or no answer yet → decide by type below.
+- **Perpetual** → Commercial, forever. No age limit on the cached answer, no clock read.
+- **Dated key** (`expiresAt` signed into the payload, which hand-issued dated licenses carry) → Commercial until that
+  date, then Expired, even if a fresh answer said `active`.
+- **Renewing subscription** (no date in the key) → Commercial until the later of (last reported period end + 30 days,
+  `RENEWAL_GRACE_SECS`) and (last verified `active` + 30 days, `UNCONFIRMED_TERM_GRACE_SECS`), then Expired. The
+  second term covers Paddle's `past_due` (reported `active` with a period end already behind it).
+- **Time-limited with no known end** (a subscription key activated offline and never confirmed, or a dated key whose
+  date doesn't parse) → Commercial for 30 days from activation, then Personal. The one case that needs the server, and
+  only subscriptions (no longer sold) reach it.
+
+The server is still asked every seven days (`VALIDATION_INTERVAL_SECS`), and that's how a revocation, expiry, or
+renewal arrives.
+
+Hostile cases, each deliberate:
+
+- **Revoked license on a Mac offline for months**: stays Commercial until it next reaches the server, then drops. The
+  price of never downgrading on unreachability. The license gates no feature, only the title and the reminder.
+- **Firewalling `api.getcmdr.com`** keeps a revoked perpetual key Commercial forever. Same trade, same bound.
+- **Clock set backwards**: time-limited licenses compare against `effective_now`, the later of the system clock and
+  `license_clock_high_water` (bumped at most hourly, so a status check doesn't write the store every time). A verified
+  answer resets it to the server's `signedAt`, which is also how a clock that ran ahead (expiring a license early)
+  recovers once the clock is fixed. Perpetual licenses don't care.
+- **Forged "revoked"** (a TLS-intercepting proxy, a squatter on a lapsed domain): can't be signed without the production
+  key, so it's `Unverified` and changes nothing. § Signed validation answers.
+- **Replayed answer**: bound to a fresh nonce and the transaction id, so it fails `WrongNonce` / `WrongTransaction`.
+- **Leaked key**: works offline anywhere until revoked, and the revocation reaches only Macs that can reach the server.
+  The fair-use device alert (`apps/api-server/src/licensing/DETAILS.md` § Device tracking) is how a leak gets noticed.
+- **Refund, then offline**: the Mac keeps Commercial until it reaches the server. Online, a full refund or chargeback
+  comes back as a signed `invalid` at the next check, every seat of the purchase at once
+  (`apps/api-server/src/licensing/DETAILS.md` § Refunds).
+- **Local tampering with `license.json`**: out of scope. The user owns the machine, and the license gates nothing
+  (`docs/threat-model.md` § 7). The cache isn't re-verified on read for that reason.
+
+## Signed validation answers
+
+`/validate` answers with `signedAnswer: { payload, signature }` beside the legacy plain fields when the request carries
+a `nonce` (32 lowercase hex, fresh per request, `new_nonce`). `payload` is base64 JSON with `transactionId`, `nonce`,
+`status`, `type`, `organizationName`, `expiresAt`, and `signedAt`; `signature` is Ed25519 by the license signing key
+over `cmdr-validation-answer-v1\n` + the payload bytes. `verify_validation_answer` checks the signature against
+`PUBLIC_KEY_HEX`, then the transaction id, then the nonce. The app reads only the signed fields.
+
+**Why the prefix**: a license key's signature covers the bare payload JSON (which starts with `{`), so with the prefix
+neither signature can pass for the other, whatever a caller puts in the transaction id.
+
+**Why sign at all when it's HTTPS**: the threats that matter for a "revoked" answer are the ones TLS doesn't stop: a
+corporate TLS-inspection proxy with its own root CA, and, if the company ever stops, whoever registers the lapsed domain
+next and gets a valid certificate for it.
+
+**Deploy order**: the server change has to be live before an app that requires signatures ships. Against an older
+server every answer is `Unsigned`, which keeps the cached status (and leaves new activations "pending").
 
 ## Activation flow (verify/commit split)
 
@@ -31,17 +90,18 @@ Frontend: validateLicenseWithServer(transactionId)
 Server says active            → commitLicense(fullKey, shortCode) → persist + onSuccess
 Server says expired          → commitLicense(fullKey, shortCode) → persist + show error
 Server says invalid          → DON'T commit. Show error. Nothing stored.
-Network error                → commitLicense(fullKey, shortCode) → persist + fallback
+Network error / unverified   → commitLicense(fullKey, shortCode) → persist + fallback
 ```
+
+Pasting the full key (from the license email) skips `/activate`, so with no server at all the key verifies, commits on
+the network-error path, and the offline policy carries it from there.
 
 `commit_license` does: store to `license.json`, write initial `cached_license_status`, update `LICENSE_CACHE`.
 
 - `VerifyResult` fields: `info` (LicenseInfo), `full_key`, `short_code`.
-- `LicenseInfo` fields: `email`, `transaction_id`, `issued_at`, `organization_name`, `license_type`, `short_code`.
+- `LicenseInfo` fields: `email`, `transaction_id`, `issued_at`, `organization_name`, `license_type`, `short_code`,
+  `expires_at` (signed into a dated key; `commit_license` seeds the initial cache with it).
 - The frontend uses `license_type` to construct a fallback `LicenseStatus` when the server is unavailable.
-
-Legacy `activate_license` / `activate_license_async` wrappers still exist for backward compatibility; they call
-`commit_license` internally (verify + commit in one call).
 
 ## Key patterns
 
@@ -82,27 +142,29 @@ license works on unlimited personal machines.
 
 **Decision**: Ed25519 offline verification with the public key compiled in, rather than server-side-only validation.
 **Why**: A file manager must work offline. Network-required checks would degrade or nag on a plane or behind a
-restrictive firewall. Offline crypto verification works instantly and permanently; server calls are only for
-subscription expiry.
+restrictive firewall. Offline crypto verification works instantly and permanently; server calls only learn a revocation,
+an expiry, or a renewal.
 
 **Decision**: Two-layer caching (in-memory `Mutex<Option<LicenseInfo>>` + on-disk `license.json`).
 **Why**: Ed25519 verification is fast (~microseconds) but the call chain involves store I/O and JSON parsing.
 `get_license_info` runs on every `get_app_status` check (window title, menu state, frontend polling). The in-memory
 cache avoids repeated store reads; the on-disk cache persists server results so the app doesn't re-validate every launch.
 
-**Decision**: 30-day offline grace period, then revert to Personal.
-**Why**: Balances trust vs. revenue protection. Shorter annoys legitimate users on extended trips; longer lets cancelled
-subscriptions keep working. 30 days matches typical billing cycles.
+**Decision** (David, 2026-10-05): a perpetual license verifies offline forever and drops to Personal only on a verified
+revocation; a time-limited one expires by a date, never by silence. **Why**: a paying customer's license must not
+depend on our server being up, or on the company existing (the continuity question every corporate buyer asks). The
+old rule (30 days without a successful check → Personal, for every type) turned any outage into a downgrade. Full rules:
+§ Offline policy.
 
 **Decision**: 7-day server re-validation interval instead of checking every launch.
-**Why**: Server calls are cheap but not free (network + startup latency). 7 days catches cancellations promptly while
-avoiding a call on every launch.
+**Why**: Server calls are cheap but not free (network + startup latency). 7 days carries a revocation or a cancellation
+promptly while avoiding a call on every launch.
 
-**Decision**: Short codes (`CMDR-XXXX-XXXX-XXXX`) exchanged server-side for full crypto keys, rather than directly
-verifiable.
-**Why**: Short codes are human-friendly to type and share but too short to embed a full Ed25519 signature. The server
-maps short codes to full keys, so users get a nice entry experience while the app gets a cryptographically verifiable
-key for offline use.
+**Decision**: Short codes (`CMDR-XXXX-XXXX-XXXX`) exchanged server-side for full crypto keys, AND the full key in the
+license email. **Why**: short codes are human-friendly to type but too short to carry an Ed25519 signature, so they need
+`/activate`. The email carries each seat's full key too ("Offline key"), so a new Mac can be activated with no server.
+Text in the email beat a license-file attachment: the existing key field already accepts it (whitespace from line
+wrapping is stripped), it survives forwarding and attachment-stripping mail filters, and it needs no new UI.
 
 **Decision**: `LicenseActivationError` typed enum instead of `Result<_, String>` for activation errors.
 **Why**: The frontend was pattern-matching English substrings to pick an error message. A tagged enum
@@ -159,16 +221,17 @@ forget it; `setup` calls the same function, so there's one way to set this title
 **Why**: On first launch the user hasn't evaluated the app. Showing "get a commercial license" immediately is a hostile
 first impression. The 30-day timer starts silently so the reminder appears after a month of use.
 
-**Gotcha**: `ValidationResponse` uses manual `#[serde(rename)]` per field, not `#[serde(rename_all)]`.
-**Why**: The API server returns mixed conventions: `status` is lowercase, `organizationName`/`expiresAt` are camelCase,
-`type` is a Rust keyword needing rename. The struct matches the API as-is.
+**Gotcha**: `ValidationResponse` reads only `signedAnswer`; the plain `status` / `type` / ... beside it are for older
+app versions. **Why**: trusting them would let anyone who can answer the request (§ Signed validation answers) revoke a
+license.
 
-**Gotcha**: `validate_with_server` returns `ValidationOutcome` (`Success`/`UpstreamError`/`NetworkError`), not
-`Option<ValidationResponse>`.
+**Gotcha**: `validate_with_server` returns `ValidationOutcome` (`Success` / `UpstreamError` / `NetworkError` /
+`Unverified`), not `Option`.
 **Why**: The API server returns HTTP 502 when it can't reach Paddle (upstream error) vs HTTP 200 with `status: "invalid"`
 when Paddle actively says the transaction is unknown. Collapsing both into `None` made `validate_license_async` trust a
-stale "invalid" from a transient Paddle outage and overwrite cached "active". Now `UpstreamError` and `NetworkError`
-fall back to cached status without overwriting, while `Success` (even `status: "invalid"`) is definitive and cached.
+stale "invalid" from a transient Paddle outage and overwrite cached "active". Now `UpstreamError`, `NetworkError`, and
+`Unverified` fall back to cached status without overwriting, while `Success` (a verified answer, even `invalid`) is
+definitive and cached.
 
 **Gotcha**: `validate_license_async` returns `Result<AppStatus, String>`, not bare `AppStatus`.
 **Why**: The Tauri command must propagate network/upstream errors so the frontend distinguishes "server rejected the key"
@@ -177,5 +240,6 @@ fall back to cached status without overwriting, while `Success` (even `status: "
 
 ## Dependencies
 
-- External: `ed25519-dalek`, `base64`, `reqwest`, `tauri_plugin_store`, `sha2`, `core-foundation` (macOS).
+- External: `ed25519-dalek`, `base64`, `reqwest`, `tauri_plugin_store`, `sha2`, `chrono` (date parsing), `rand`
+  (nonces), `core-foundation` (macOS).
 - Internal: none.

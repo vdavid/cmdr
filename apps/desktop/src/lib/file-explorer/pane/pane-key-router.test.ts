@@ -217,7 +217,8 @@ describe('createPaneKeyRouter', () => {
   })
 
   describe('the Selection dialog keys', () => {
-    it('bubbles `selection.selectFiles` for a bare `+`', () => {
+    it('bubbles `selection.selectFiles` for its key', () => {
+      onlyCommand('selection.selectFiles')
       const e = keyEvent({ key: '+' })
       router().handleKeyDown(e)
       expect(deps.onCommand).toHaveBeenCalledWith('selection.selectFiles')
@@ -226,12 +227,13 @@ describe('createPaneKeyRouter', () => {
       expect(deps.handleFullModeKeys).not.toHaveBeenCalled()
     })
 
-    it('bubbles `selection.deselectFiles` for a bare `-`', () => {
+    it('bubbles `selection.deselectFiles` for its key', () => {
+      onlyCommand('selection.deselectFiles')
       router().handleKeyDown(keyEvent({ key: '-' }))
       expect(deps.onCommand).toHaveBeenCalledWith('selection.deselectFiles')
     })
 
-    it('ignores `+` carrying a modifier', () => {
+    it('leaves a key neither command binds to the view', () => {
       router().handleKeyDown(keyEvent({ key: '+', metaKey: true }))
       expect(deps.onCommand).not.toHaveBeenCalled()
       expect(deps.handleFullModeKeys).toHaveBeenCalled()
@@ -268,7 +270,7 @@ describe('createPaneKeyRouter', () => {
       expect(deps.deselectAll).toHaveBeenCalledTimes(1)
     })
 
-    it('inverts the selection on ⇧8', () => {
+    it('inverts the selection on *', () => {
       onlyCommand('selection.invert')
       router().handleKeyDown(keyEvent())
       expect(deps.invertSelection).toHaveBeenCalledTimes(1)

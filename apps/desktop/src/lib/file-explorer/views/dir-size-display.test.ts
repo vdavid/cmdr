@@ -5,6 +5,7 @@
  */
 import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest'
 import { _setLocaleForTests } from '$lib/intl/locale'
+import type { TieredSize } from '$lib/units'
 import {
   getDirSizeDisplayState,
   isDirSizeUpdating,
@@ -29,7 +30,7 @@ afterAll(() => {
 })
 
 // Test helpers
-const formatSize = (bytes: number): string => `${String(bytes)} bytes`
+const formatSize = (bytes: number): TieredSize => ({ text: `${String(bytes)} bytes`, tier: 0 })
 const formatNum = (n: number): string => String(n)
 
 /** Extracts the html from a tooltip result, or returns the string as-is */
@@ -191,7 +192,7 @@ describe('buildDirSizeTooltip', () => {
   })
 
   it('uses provided formatSize function', () => {
-    const customFormat = (bytes: number): string => `${(bytes / 1024).toFixed(1)} KB`
+    const customFormat = (bytes: number): TieredSize => ({ text: `${(bytes / 1024).toFixed(1)} KB`, tier: 1 })
     const html = tooltipHtml(buildDirSizeTooltip(2048, undefined, 3, 1, false, customFormat, formatNum))
     expect(html).toContain('2.0 KB')
   })

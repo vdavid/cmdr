@@ -10,14 +10,12 @@ use std::path::Path;
 #[derive(Debug, Clone)]
 pub struct MountEntry {
     /// The device (for example, `/dev/sda1` or `server:/share`)
-    #[allow(dead_code, reason = "Structural field from /proc/mounts, used in tests")]
     pub device: String,
     /// The mount point path
     pub mountpoint: String,
     /// The filesystem type (for example, `ext4`, `nfs`, `cifs`)
     pub fstype: String,
-    /// Mount options (for example, `rw,relatime`)
-    #[allow(dead_code, reason = "Structural field from /proc/mounts")]
+    /// Mount options (for example, `rw,relatime`, or a FUSE mount's `user_id=1000,allow_other`)
     pub options: String,
 }
 
@@ -92,6 +90,17 @@ pub fn fs_type_for_path(path: &Path) -> Option<String> {
 
 /// Looks up filesystem type from a pre-parsed mount list (avoids repeated I/O).
 pub fn fs_type_for_path_from_entries(path: &Path, mounts: &[MountEntry]) -> Option<String> {
+    mount_entry_for_path_from_entries(path, mounts).map(|entry| entry.fstype.clone())
+}
+
+/// The mount `path` lives on (the longest matching mountpoint prefix), read from
+/// `/proc/mounts`.
+pub fn mount_entry_for_path(path: &Path) -> Option<MountEntry> {
+    mount_entry_for_path_from_entries(path, &parse_proc_mounts()?).cloned()
+}
+
+/// The mount `path` lives on, from a pre-parsed mount list.
+pub fn mount_entry_for_path_from_entries<'a>(path: &Path, mounts: &'a [MountEntry]) -> Option<&'a MountEntry> {
     let path_str = path.to_string_lossy();
     mounts
         .iter()
@@ -101,7 +110,6 @@ pub fn fs_type_for_path_from_entries(path: &Path, mounts: &[MountEntry]) -> Opti
                 || entry.mountpoint == "/"
         })
         .max_by_key(|entry| entry.mountpoint.len())
-        .map(|entry| entry.fstype.clone())
 }
 
 /// Returns true if the path is on a network filesystem (nfs, cifs, smbfs,

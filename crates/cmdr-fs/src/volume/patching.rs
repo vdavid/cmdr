@@ -80,6 +80,14 @@ pub async fn patch_created(source: &dyn PatchSource, path: &Path) {
     patch_mutation(source, &parent, MutationEvent::Created(name)).await;
 }
 
+/// Patches for a `path` whose metadata just changed (a date set on it).
+pub async fn patch_modified(source: &dyn PatchSource, path: &Path) {
+    let Some((parent, name)) = parent_and_name(source, path) else {
+        return;
+    };
+    patch_mutation(source, &parent, MutationEvent::Modified(name)).await;
+}
+
 /// Patches for a `path` that has just gone.
 pub async fn patch_deleted(source: &dyn PatchSource, path: &Path) {
     let Some((parent, name)) = parent_and_name(source, path) else {

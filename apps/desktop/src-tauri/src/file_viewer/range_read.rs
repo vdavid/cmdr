@@ -27,13 +27,13 @@ use serde::Deserialize;
 
 use super::{ChunkEnd, FileViewerBackend, SeekTarget, ViewerError};
 
-/// One endpoint of a selection. Frontend uses `Line { line, offset }`; for the
-/// "select all" path in ByteSeek-no-index mode (where `totalLines` is unknown),
-/// it uses `Eof` so the backend can resolve the end without a fake line number.
+/// One endpoint of a selection: a ROW index plus a UTF-16 offset into that row. For the
+/// "select all" path in ByteSeek-no-index mode (where the row count is unknown), the
+/// frontend sends `Eof` so the backend can resolve the end without a fake row number.
 #[derive(Debug, Clone, Deserialize, specta::Type)]
 #[serde(tag = "kind", rename_all = "camelCase", rename_all_fields = "camelCase")]
 pub enum RangeEnd {
-    Line { line: u64, offset: u32 },
+    Row { row: u64, offset: u32 },
     Eof,
 }
 
@@ -45,14 +45,14 @@ impl RangeEnd {
 }
 
 /// Compares two endpoints under the assumption that `Eof` is greater than every
-/// `Line { ... }`. Returns `std::cmp::Ordering`.
+/// `Row { ... }`. Returns `std::cmp::Ordering`.
 fn compare_ends(a: &RangeEnd, b: &RangeEnd) -> std::cmp::Ordering {
     use std::cmp::Ordering as O;
     match (a, b) {
         (RangeEnd::Eof, RangeEnd::Eof) => O::Equal,
         (RangeEnd::Eof, _) => O::Greater,
         (_, RangeEnd::Eof) => O::Less,
-        (RangeEnd::Line { line: la, offset: oa }, RangeEnd::Line { line: lb, offset: ob }) => {
+        (RangeEnd::Row { row: la, offset: oa }, RangeEnd::Row { row: lb, offset: ob }) => {
             la.cmp(lb).then_with(|| oa.cmp(ob))
         }
     }
@@ -185,7 +185,7 @@ pub fn read_range(
 ///
 /// Streaming: after the initial seek by line number, the function advances by **byte
 /// offset** rather than line number. This is mandatory for the ByteSeek backend, which
-/// only estimates line numbers (`SeekTarget::Line(N)` resolves to `N * 80` bytes); for
+/// only estimates line numbers (`SeekTarget::Row(N)` resolves to `N * 80` bytes); for
 /// FullLoad and LineIndex backends, byte-offset seeking is equally well-supported and
 /// gives a single code path.
 pub fn read_range_streamed<S: FnMut(&str) -> Result<(), ViewerError>>(
@@ -202,33 +202,33 @@ pub fn read_range_streamed<S: FnMut(&str) -> Result<(), ViewerError>>(
         (focus, anchor)
     };
 
-    // Resolve start line + offset. `Eof` as the start is unusual but well-defined:
+    // Resolve start row + offset. `Eof` as the start is unusual but well-defined:
     // empty selection at end of file.
-    let (start_line, start_offset_utf16) = match start {
-        RangeEnd::Line { line, offset } => (line as usize, offset),
+    let (start_row, start_offset_utf16) = match start {
+        RangeEnd::Row { row, offset } => (row as usize, offset),
         RangeEnd::Eof => return Ok(()),
     };
 
     // Validate the start row against the backend's row count. Only an EXACT count can
     // refuse a read: `ByteSeekBackend` estimates, and refusing on an estimate would
     // turn a copy into an error on a file it could have served.
-    if backend.total_rows().is_exact() && start_line >= backend.total_rows().rows() {
+    if backend.total_rows().is_exact() && start_row >= backend.total_rows().rows() {
         return Err(ViewerError::OutOfRange);
     }
 
     // Resolve end. `Eof` means "to the last line, all of it"; otherwise we have an
-    // explicit `Line { line, offset }`.
+    // explicit `Row { row, offset }`.
     let end_is_eof = end.is_eof();
-    let (end_line, end_offset_utf16) = match end {
-        RangeEnd::Line { line, offset } => (line as usize, offset),
+    let (end_row, end_offset_utf16) = match end {
+        RangeEnd::Row { row, offset } => (row as usize, offset),
         RangeEnd::Eof => (usize::MAX, 0),
     };
 
     let mut emit = ChunkedSink::new(sink, chunk_bytes);
 
-    if start_line == end_line && !end_is_eof {
+    if start_row == end_row && !end_is_eof {
         // Single-row read: fetch the one row, clamp both offsets, slice between them.
-        let chunk = backend.get_lines(&SeekTarget::Line(start_line), 1)?;
+        let chunk = backend.get_lines(&SeekTarget::Row(start_row), 1, cancel)?;
         let line = chunk.rows.first().map(|row| &row.text).ok_or(ViewerError::OutOfRange)?;
         let start_byte = clamp_utf16_offset_to_byte(line, start_offset_utf16);
         let end_byte = clamp_utf16_offset_to_byte(line, end_offset_utf16);
@@ -241,10 +241,10 @@ pub fn read_range_streamed<S: FnMut(&str) -> Result<(), ViewerError>>(
         return emit.finish(/*keep_trailing_newline=*/ false);
     }
 
-    // Multi-line streaming read. First chunk is keyed by start line (only call that
-    // uses `SeekTarget::Line` so we land on the right starting line). Subsequent chunks
+    // Multi-row streaming read. First chunk is keyed by start row (only call that
+    // uses `SeekTarget::Row` so we land on the right starting row). Subsequent chunks
     // are keyed by **byte offset** of the end of the last chunk, which is exact for all
-    // three backends (ByteSeek's `Line(N)` is approximate; its byte-offset seeks are
+    // three backends (ByteSeek's `Row(N)` is approximate; its byte-offset seeks are
     // exact, just back-scan for the surrounding newline).
     const FETCH_CHUNK: usize = 4096;
     // Cancellation budget inside the per-line loop. The plan's "every 64 KB" was the
@@ -255,10 +255,10 @@ pub fn read_range_streamed<S: FnMut(&str) -> Result<(), ViewerError>>(
     // `Cancelled` returning is well under the 100 ms threshold for "feels responsive."
     const CANCEL_CHECK_LINES: usize = 256;
     const CANCEL_CHECK_BYTES: usize = 64 * 1024;
-    let mut next_target = SeekTarget::Line(start_line);
+    let mut next_target = SeekTarget::Row(start_row);
     let mut first_chunk = true;
     // The row the walk is about to emit, counted forward from the first chunk.
-    let mut row_number = start_line;
+    let mut row_number = start_row;
     let mut emitted_none_yet = true;
     let mut lines_since_cancel_check: usize = 0;
     let mut bytes_since_cancel_check: usize = 0;
@@ -268,7 +268,7 @@ pub fn read_range_streamed<S: FnMut(&str) -> Result<(), ViewerError>>(
             return Err(ViewerError::Cancelled);
         }
 
-        let chunk = backend.get_lines(&next_target, FETCH_CHUNK)?;
+        let chunk = backend.get_lines(&next_target, FETCH_CHUNK, cancel)?;
         if chunk.rows.is_empty() {
             break;
         }
@@ -315,14 +315,14 @@ pub fn read_range_streamed<S: FnMut(&str) -> Result<(), ViewerError>>(
 
             // For explicit-end ranges, stop past the end line. The newline owed to the
             // last line emitted is part of the range here, so it's paid out.
-            if !end_is_eof && line_number > end_line {
+            if !end_is_eof && line_number > end_row {
                 return emit.finish(/*keep_trailing_newline=*/ true);
             }
 
             let text = if is_first_overall {
                 // First line of the whole selection: take from start_offset to end of line.
                 &line[clamp_utf16_offset_to_byte(line, start_offset_utf16)..]
-            } else if !end_is_eof && line_number == end_line {
+            } else if !end_is_eof && line_number == end_row {
                 // Last line of an explicit range: take from offset 0 up to end_offset, and
                 // no trailing delimiter (the range is half-open). Exits the walk here, so
                 // it never reaches the `end_line()` below.
@@ -421,7 +421,7 @@ mod tests {
         };
         read_range_streamed(
             &backend,
-            RangeEnd::Line { line: 0, offset: 0 },
+            RangeEnd::Row { row: 0, offset: 0 },
             RangeEnd::Eof,
             &AtomicBool::new(false),
             chunk_bytes,
@@ -440,8 +440,8 @@ mod tests {
 
     #[test]
     fn compare_ends_orders_eof_greatest() {
-        let a = RangeEnd::Line { line: 5, offset: 3 };
-        let b = RangeEnd::Line { line: 5, offset: 7 };
+        let a = RangeEnd::Row { row: 5, offset: 3 };
+        let b = RangeEnd::Row { row: 5, offset: 7 };
         let c = RangeEnd::Eof;
         assert!(compare_ends(&a, &b).is_lt());
         assert!(compare_ends(&b, &a).is_gt());

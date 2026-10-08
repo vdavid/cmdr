@@ -38,6 +38,15 @@ vi.mock('$lib/ai/cloud-consent.svelte', () => ({
   openCloudConsentSettings: vi.fn(),
 }))
 
+const { aiPolicy } = vi.hoisted(() => ({ aiPolicy: { mode: 'allowed' } }))
+vi.mock('$lib/managed-policy/managed-policy.svelte', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('$lib/managed-policy/managed-policy.svelte')>()
+  return {
+    ...actual,
+    getManagedPolicyView: () => ({ ...actual.UNMANAGED, ai: { mode: aiPolicy.mode, allowedCloudHosts: null } }),
+  }
+})
+
 const { modelWindow } = vi.hoisted(() => ({
   modelWindow: { model: 'gpt-4o', knownWindowTokens: null as number | null },
 }))
@@ -160,6 +169,20 @@ describe('AskCmdrSection on/off', () => {
     target.querySelector<HTMLButtonElement>('.cloud-off-hint button')?.click()
     expect(openCloudConsentSettings).toHaveBeenCalledWith('ask-cmdr-settings-hint')
     target.remove()
+  })
+
+  it("says the organization turned AI off, rather than sending the person to a setting they can't change", async () => {
+    aiPolicy.mode = 'off'
+    settings['ai.provider'] = 'off'
+    try {
+      const target = await mountSection()
+      const hints = Array.from(target.querySelectorAll('.provider-hint')).map((el) => el.textContent.trim())
+      expect(hints).toContain('Your organization turned off AI in Cmdr.')
+      expect(hints).not.toContain('Turn on an AI provider in Settings › AI to start chatting.')
+      target.remove()
+    } finally {
+      aiPolicy.mode = 'allowed'
+    }
   })
 
   it('stays quiet when cloud AI is allowed, on Local, or with Ask Cmdr off', async () => {

@@ -259,58 +259,6 @@ fn update_unknown_id_is_a_silent_noop() {
 }
 
 #[test]
-fn list_active_operations_percent_uses_bytes_when_available() {
-    // bytes_total > 0 → percent comes from bytes axis, not files.
-    let id = unique_id("list-bytes");
-    register_operation_status(&id, WriteOperationType::Copy, vec![]);
-    update_operation_status(
-        &id,
-        WriteOperationPhase::Copying,
-        None,
-        1,    // files_done
-        100,  // files_total (would give 1% if used)
-        500,  // bytes_done
-        1000, // bytes_total → 50%
-    );
-    let summary = list_active_operations()
-        .into_iter()
-        .find(|s| s.operation_id == id)
-        .expect("operation present in summary");
-    assert_eq!(
-        summary.percent_complete, 50,
-        "percent must be derived from bytes axis when bytes_total > 0"
-    );
-    unregister_operation_status(&id);
-}
-
-#[test]
-fn list_active_operations_percent_falls_back_to_files() {
-    // bytes_total == 0, files_total > 0 → use files axis.
-    let id = unique_id("list-files");
-    register_operation_status(&id, WriteOperationType::Delete, vec![]);
-    update_operation_status(&id, WriteOperationPhase::Deleting, None, 3, 4, 0, 0);
-    let summary = list_active_operations()
-        .into_iter()
-        .find(|s| s.operation_id == id)
-        .unwrap();
-    assert_eq!(summary.percent_complete, 75);
-    unregister_operation_status(&id);
-}
-
-#[test]
-fn list_active_operations_percent_is_zero_when_nothing_known() {
-    // Both totals == 0 → percent_complete == 0 (not the files-axis path).
-    let id = unique_id("list-zero");
-    register_operation_status(&id, WriteOperationType::Copy, vec![]);
-    let summary = list_active_operations()
-        .into_iter()
-        .find(|s| s.operation_id == id)
-        .unwrap();
-    assert_eq!(summary.percent_complete, 0);
-    unregister_operation_status(&id);
-}
-
-#[test]
 fn indeterminate_compress_phases_clear_both_percent_fallback_axes() {
     let id = unique_id("compress-finishing");
     register_operation_status(&id, WriteOperationType::Compress, vec![]);
@@ -322,29 +270,6 @@ fn indeterminate_compress_phases_clear_both_percent_fallback_axes() {
         let status = get_operation_status(&id).expect("operation status");
         assert_eq!((status.files_done, status.files_total), (0, 0));
         assert_eq!((status.bytes_done, status.bytes_total), (0, 0));
-        let summary = list_active_operations()
-            .into_iter()
-            .find(|summary| summary.operation_id == id)
-            .expect("operation summary");
-        assert_eq!(
-            summary.percent_complete, 0,
-            "{phase:?} must not fall back to a completed file axis"
-        );
     }
-    unregister_operation_status(&id);
-}
-
-#[test]
-fn list_active_operations_percent_clamps_to_100() {
-    // Pin the `.min(100.0)` clamp. If bytes_done > bytes_total (which can
-    // happen in flight due to over-counting), the UI must never see > 100.
-    let id = unique_id("list-clamp");
-    register_operation_status(&id, WriteOperationType::Copy, vec![]);
-    update_operation_status(&id, WriteOperationPhase::Copying, None, 0, 0, 1500, 1000);
-    let summary = list_active_operations()
-        .into_iter()
-        .find(|s| s.operation_id == id)
-        .unwrap();
-    assert_eq!(summary.percent_complete, 100);
     unregister_operation_status(&id);
 }

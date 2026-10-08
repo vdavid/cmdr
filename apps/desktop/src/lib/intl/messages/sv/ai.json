@@ -227,6 +227,14 @@
   "@ai.translateError.unknownProvider.body": {
     "sourceHash": "7042a75"
   },
+  "ai.translateError.managed.title": "Din organisation hanterar AI i Cmdr",
+  "@ai.translateError.managed.title": {
+    "sourceHash": "12f8233"
+  },
+  "ai.translateError.managed.body": "Din IT-avdelning kan berätta vilka AI-tjänster du får använda.",
+  "@ai.translateError.managed.body": {
+    "sourceHash": "cb7e811"
+  },
   "ai.cloud.serviceAria": "Moln-AI-tjänst",
   "@ai.cloud.serviceAria": {
     "sourceHash": "7dec1e0"
@@ -458,5 +466,33 @@
   "ai.secretError.genericBody": "Kontrollera att systemets nyckelring är tillgänglig och försök igen. Om det kvarstår, starta om appen.",
   "@ai.secretError.genericBody": {
     "sourceHash": "2ee417d"
+  },
+  "ai.secretError.removeTitle": "Det gick inte att ta bort din sparade API-nyckel.",
+  "@ai.secretError.removeTitle": {
+    "sourceHash": "5986628"
+  },
+  "ai.secretError.removeKeychainBody": "Öppna Nyckelhanterare, leta upp posten ”Cmdr” och radera den där.",
+  "@ai.secretError.removeKeychainBody": {
+    "sourceHash": "4e3abe7"
+  },
+  "ai.managed.aiOff": "Din organisation har stängt av AI i Cmdr.",
+  "@ai.managed.aiOff": {
+    "sourceHash": "25b7aef"
+  },
+  "ai.managed.cloudAiOff": "Din organisation tillåter bara lokal AI.",
+  "@ai.managed.cloudAiOff": {
+    "sourceHash": "894c53d"
+  },
+  "ai.managed.hostNotAllowed": "Din organisation tillåter inte den här AI-tjänsten. Din IT-avdelning kan berätta vilka AI-tjänster du får använda.",
+  "@ai.managed.hostNotAllowed": {
+    "sourceHash": "845a19f"
+  },
+  "ai.managed.localOnlyUnsupported": "Din organisation tillåter bara lokal AI, som den här Macen inte kan köra.",
+  "@ai.managed.localOnlyUnsupported": {
+    "sourceHash": "b760ca4"
+  },
+  "ai.managed.serviceNotAllowed": "tillåts inte av din organisation",
+  "@ai.managed.serviceNotAllowed": {
+    "sourceHash": "026e7e3"
   }
 }

@@ -1,0 +1,495 @@
+{
+  "ai.toast.downloadingTitle": "Загрузка модели ИИ…",
+  "@ai.toast.downloadingTitle": {
+    "sourceHash": "85d48ae"
+  },
+  "ai.toast.startingDownload": "Начало загрузки…",
+  "@ai.toast.startingDownload": {
+    "sourceHash": "22309b1"
+  },
+  "ai.toast.progress": "{percentText} · {downloaded} / {total} · {speed}/с{eta, select, none {} other { · осталось {eta}}}",
+  "@ai.toast.progress": {
+    "sourceHash": "93d798b"
+  },
+  "ai.toast.cancel": "Отменить",
+  "@ai.toast.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "ai.toast.installingTitle": "Настройка ИИ…",
+  "@ai.toast.installingTitle": {
+    "sourceHash": "85f7001"
+  },
+  "ai.toast.installingDescription": "Запуск сервера",
+  "@ai.toast.installingDescription": {
+    "sourceHash": "8a0f9d9"
+  },
+  "ai.toast.readyTitle": "ИИ готов",
+  "@ai.toast.readyTitle": {
+    "sourceHash": "276c384"
+  },
+  "ai.toast.readyDescription": "Создайте новую папку (F7), чтобы увидеть предложения имен от ИИ.",
+  "@ai.toast.readyDescription": {
+    "sourceHash": "b3ae1b2"
+  },
+  "ai.toast.gotIt": "Понятно",
+  "@ai.toast.gotIt": {
+    "sourceHash": "5ad3dbd"
+  },
+  "ai.toast.startingTitle": "Запуск ИИ…",
+  "@ai.toast.startingTitle": {
+    "sourceHash": "d0a6a15"
+  },
+  "ai.toast.startingDescription": "Загрузка модели займет несколько секунд",
+  "@ai.toast.startingDescription": {
+    "sourceHash": "94ecf6d"
+  },
+  "ai.toast.downloadCloseTooltip": "Закрыть это уведомление; загрузка продолжится в фоне",
+  "@ai.toast.downloadCloseTooltip": {
+    "sourceHash": "16db2bd"
+  },
+  "ai.translateError.off.title": "ИИ выключен",
+  "@ai.translateError.off.title": {
+    "sourceHash": "99ce709"
+  },
+  "ai.translateError.off.body": "Включите поставщика ИИ в разделе «Настройки > ИИ», чтобы пользоваться поиском с ИИ.",
+  "@ai.translateError.off.body": {
+    "sourceHash": "d8d6368"
+  },
+  "ai.cloudConsent.label": "Разрешить облачный ИИ",
+  "@ai.cloudConsent.label": {
+    "sourceHash": "9947821"
+  },
+  "ai.cloudConsent.description": "Cmdr ничего не отправляет в облачный сервис ИИ, пока вы не включите этот параметр.",
+  "@ai.cloudConsent.description": {
+    "sourceHash": "2f568e5"
+  },
+  "ai.cloudConsent.disclosureTitle": "Что отправляет Cmdr",
+  "@ai.cloudConsent.disclosureTitle": {
+    "sourceHash": "6907e64"
+  },
+  "ai.cloudConsent.intro": "Когда этот параметр включен, Cmdr отправляет в настроенный ниже сервис ИИ:",
+  "@ai.cloudConsent.intro": {
+    "sourceHash": "9462a5a"
+  },
+  "ai.cloudConsent.whereItGoes": "Куда попадут ваши данные и что с ними произойдет, зависит от выбранного сервиса и вашего соглашения с ним. Это касается и Ollama, и LM Studio, и пользовательских адресов: данные попадают туда, где работает соответствующий сервер. Серверы Cmdr никогда их не получают.",
+  "@ai.cloudConsent.whereItGoes": {
+    "sourceHash": "44dd8ba"
+  },
+  "ai.cloudConsent.folderSuggestions": "<b>Предложения имен новых папок</b>: путь текущей папки и до 100 имен в ней",
+  "@ai.cloudConsent.folderSuggestions": {
+    "sourceHash": "e2c592a"
+  },
+  "ai.cloudConsent.search": "<b>Поиск обычными словами</b>: введенный вами текст",
+  "@ai.cloudConsent.search": {
+    "sourceHash": "e6d4ef9"
+  },
+  "ai.cloudConsent.selection": "<b>Выделение по описанию</b>: введенный вами текст и до 240 имен из текущей папки",
+  "@ai.cloudConsent.selection": {
+    "sourceHash": "1e1c3c3"
+  },
+  "ai.cloudConsent.askCmdr.title": "<b>Ask Cmdr</b>, когда вы общаетесь в чате или Cmdr начинает разговор самостоятельно:",
+  "@ai.cloudConsent.askCmdr.title": {
+    "sourceHash": "26e139c"
+  },
+  "ai.cloudConsent.askCmdr.item.messages": "Ваши сообщения",
+  "@ai.cloudConsent.askCmdr.item.messages": {
+    "sourceHash": "befc6e9"
+  },
+  "ai.cloudConsent.askCmdr.item.names": "Имена и пути файлов и папок, которые Cmdr просматривает для ответа",
+  "@ai.cloudConsent.askCmdr.item.names": {
+    "sourceHash": "ce3259d"
+  },
+  "ai.cloudConsent.askCmdr.item.sizes": "Размеры и даты этих файлов и папок",
+  "@ai.cloudConsent.askCmdr.item.sizes": {
+    "sourceHash": "2484530"
+  },
+  "ai.cloudConsent.askCmdr.item.contents": "Части файлов, которые Cmdr открывает для ответа: текст, страницы PDF, содержимое архива, сведения о камере и месте съемки фотографии",
+  "@ai.cloudConsent.askCmdr.item.contents": {
+    "sourceHash": "fcd0b73"
+  },
+  "ai.cloudConsent.askCmdr.item.envelope": "Что вы сейчас просматриваете: текущая папка, курсор, выделенные объекты и подключенные диски",
+  "@ai.cloudConsent.askCmdr.item.envelope": {
+    "sourceHash": "2e5a0ef"
+  },
+  "ai.cloudConsent.askCmdr.item.attachments": "Имя и путь каждого файла или папки, прикрепленных к вопросу",
+  "@ai.cloudConsent.askCmdr.item.attachments": {
+    "sourceHash": "b9ad2af"
+  },
+  "ai.cloudConsent.askCmdr.item.memory": "Заметки Cmdr о вас, отправляемые повторно с каждым сообщением",
+  "@ai.cloudConsent.askCmdr.item.memory": {
+    "sourceHash": "7779513"
+  },
+  "ai.cloudConsent.askCmdr.contentsRule": "Cmdr никогда не отправляет файлы целиком, фотографии или миниатюры. Когда вы спрашиваете о файле, Cmdr может прочитать ограниченную часть: строки текста, несколько страниц PDF вместе с названием и автором, список файлов в архиве или сведения о камере и месте съемки фотографии. Поиск фотографий работает так же: распознанный текст в подходящих фотографиях и их теги отправляются вашему поставщику ИИ, чтобы он мог их найти. Cmdr может предложить переименование, перемещение и наведение порядка, но файлы не меняются без вашего согласия.",
+  "@ai.cloudConsent.askCmdr.contentsRule": {
+    "sourceHash": "5a378c1"
+  },
+  "ai.cloudConsent.askCmdr.memory": "Cmdr записывает заметки о вас: как вы предпочитаете организовывать файлы, какие предложения отклонили и что просите запомнить. Эти заметки отправляются с каждым вашим сообщением, пока существуют, и могут включать текст, распознанный на фотографиях. Их можно прочитать или удалить в любой момент в настройках Ask Cmdr.",
+  "@ai.cloudConsent.askCmdr.memory": {
+    "sourceHash": "496c78d"
+  },
+  "ai.cloudConsent.askCmdr.proactive": "Cmdr также следит за папками, с которыми вы работаете, и начинает разговор, когда есть что предложить, поэтому сообщения могут уходить вашему поставщику ИИ без вашего запроса. Это можно отключить в настройках Ask Cmdr, в группе «По своей инициативе».",
+  "@ai.cloudConsent.askCmdr.proactive": {
+    "sourceHash": "abfa80b"
+  },
+  "ai.cloudConsent.askCmdr.chatsStayLocal": "Ваши чаты Ask Cmdr остаются на вашем Mac, в локальной базе данных, которую можно открыть и прочитать.",
+  "@ai.cloudConsent.askCmdr.chatsStayLocal": {
+    "sourceHash": "283cdd7"
+  },
+  "ai.cloudConsent.logsNote": "Если включить запись вызовов моделей ИИ в дополнительных настройках, Cmdr будет также сохранять каждый запрос и ответ в папку на вашем Mac. Эти журналы тоже остаются локальными и никуда не отправляются.",
+  "@ai.cloudConsent.logsNote": {
+    "sourceHash": "7e211fc"
+  },
+  "ai.cloudConsent.turnOffAnyTime": "Выключите этот параметр в любой момент, и Cmdr сразу перестанет отправлять данные. Сервис, ключ и чаты сохранятся.",
+  "@ai.cloudConsent.turnOffAnyTime": {
+    "sourceHash": "464c39f"
+  },
+  "ai.cloudConsent.notSaved": "Cmdr не удалось сохранить ваш выбор. Повторить попытку?",
+  "@ai.cloudConsent.notSaved": {
+    "sourceHash": "6bd80e9"
+  },
+  "ai.translateError.notConfigured.title": "ИИ нужно настроить",
+  "@ai.translateError.notConfigured.title": {
+    "sourceHash": "bf5688a"
+  },
+  "ai.translateError.notConfigured.body": "Завершите настройку поставщика ИИ в разделе «Настройки > ИИ» и попробуйте еще раз.",
+  "@ai.translateError.notConfigured.body": {
+    "sourceHash": "65133a8"
+  },
+  "ai.translateError.noCloudConsent.title": "Облачный ИИ выключен",
+  "@ai.translateError.noCloudConsent.title": {
+    "sourceHash": "2e56781"
+  },
+  "ai.translateError.noCloudConsent.body": "Разрешите его в разделе «Настройки > ИИ» и повторите попытку.",
+  "@ai.translateError.noCloudConsent.body": {
+    "sourceHash": "fde3eb5"
+  },
+  "ai.translateError.authFailed.title": "Этот API-ключ не приняли",
+  "@ai.translateError.authFailed.title": {
+    "sourceHash": "93e6261"
+  },
+  "ai.translateError.authFailed.body": "Проверьте ключ в разделе «Настройки > ИИ» — возможно, он неверен или отозван.",
+  "@ai.translateError.authFailed.body": {
+    "sourceHash": "2159d5e"
+  },
+  "ai.translateError.rateLimited.title": "Поставщик ИИ достиг лимита",
+  "@ai.translateError.rateLimited.title": {
+    "sourceHash": "26e286e"
+  },
+  "ai.translateError.rateLimited.body": "Поставщик ограничивает частоту запросов, или квота вашего тарифа исчерпана. Проверьте тариф и оплату, затем попробуйте еще раз.",
+  "@ai.translateError.rateLimited.body": {
+    "sourceHash": "ca3616b"
+  },
+  "ai.translateError.timeout.title": "ИИ не успел ответить",
+  "@ai.translateError.timeout.title": {
+    "sourceHash": "d684e3f"
+  },
+  "ai.translateError.timeout.body": "Время ожидания запроса истекло. Попробуйте еще раз чуть позже.",
+  "@ai.translateError.timeout.body": {
+    "sourceHash": "249b720"
+  },
+  "ai.translateError.unavailable.title": "Не удается связаться с поставщиком ИИ",
+  "@ai.translateError.unavailable.title": {
+    "sourceHash": "74e6ba8"
+  },
+  "ai.translateError.unavailable.body": "Проверьте подключение к интернету или состояние сервиса поставщика и попробуйте еще раз.",
+  "@ai.translateError.unavailable.body": {
+    "sourceHash": "c44a8ed"
+  },
+  "ai.translateError.emptyResponse.title": "ИИ вернул пустой ответ",
+  "@ai.translateError.emptyResponse.title": {
+    "sourceHash": "61afc33"
+  },
+  "ai.translateError.emptyResponse.body": "Возможно, модели нужен больший лимит для этого запроса. Попробуйте более быструю модель, например gpt-4.1-mini, в разделе «Настройки > ИИ».",
+  "@ai.translateError.emptyResponse.body": {
+    "sourceHash": "f1704cc"
+  },
+  "ai.translateError.serverError.title": "У поставщика ИИ что-то пошло не так",
+  "@ai.translateError.serverError.title": {
+    "sourceHash": "1b98f6a"
+  },
+  "ai.translateError.serverError.body": "Поставщик вернул неожиданный ответ. Попробуйте еще раз чуть позже.",
+  "@ai.translateError.serverError.body": {
+    "sourceHash": "3f4af5c"
+  },
+  "ai.translateError.parseError.title": "Не удалось прочитать ответ ИИ",
+  "@ai.translateError.parseError.title": {
+    "sourceHash": "02af146"
+  },
+  "ai.translateError.parseError.body": "Попробуйте еще раз или выберите другую модель в разделе «Настройки > ИИ».",
+  "@ai.translateError.parseError.body": {
+    "sourceHash": "c299ec6"
+  },
+  "ai.translateError.unknownProvider.title": "Cmdr не знает такого поставщика ИИ",
+  "@ai.translateError.unknownProvider.title": {
+    "sourceHash": "794a4c7"
+  },
+  "ai.translateError.unknownProvider.body": "Выберите поставщика ИИ в разделе «Настройки > ИИ».",
+  "@ai.translateError.unknownProvider.body": {
+    "sourceHash": "7042a75"
+  },
+  "ai.translateError.managed.title": "Функциями ИИ в Cmdr управляет ваша организация",
+  "@ai.translateError.managed.title": {
+    "sourceHash": "12f8233"
+  },
+  "ai.translateError.managed.body": "В вашем ИТ-отделе подскажут, какими сервисами ИИ можно пользоваться.",
+  "@ai.translateError.managed.body": {
+    "sourceHash": "cb7e811"
+  },
+  "ai.cloud.serviceAria": "Облачный сервис ИИ",
+  "@ai.cloud.serviceAria": {
+    "sourceHash": "7dec1e0"
+  },
+  "ai.cloud.apiKeyPlaceholderAnthropic": "Пример: sk-ant-abc123…",
+  "@ai.cloud.apiKeyPlaceholderAnthropic": {
+    "sourceHash": "89347d5"
+  },
+  "ai.cloud.askCmdrOverrideHint": "Чат использует собственную модель ({model}) вместо этой. Изменить ее можно в настройках Ask Cmdr.",
+  "@ai.cloud.askCmdrOverrideHint": {
+    "sourceHash": "5a5539a"
+  },
+  "ai.cloud.modelPlaceholderExample": "Пример: {model}",
+  "@ai.cloud.modelPlaceholderExample": {
+    "sourceHash": "2287b9f"
+  },
+  "ai.cloud.checking": "Проверка…",
+  "@ai.cloud.checking": {
+    "sourceHash": "ec963ff"
+  },
+  "ai.cloud.connected": "Подключено",
+  "@ai.cloud.connected": {
+    "sourceHash": "2296556"
+  },
+  "ai.cloud.connectedNoModels": "Подключено (список моделей недоступен)",
+  "@ai.cloud.connectedNoModels": {
+    "sourceHash": "54f2b6f"
+  },
+  "ai.cloud.recheck": "Проверить снова",
+  "@ai.cloud.recheck": {
+    "sourceHash": "1f47d83"
+  },
+  "ai.cloud.authError": "API-ключ недействителен",
+  "@ai.cloud.authError": {
+    "sourceHash": "74a88e4"
+  },
+  "ai.cloud.connectionError": "Не удается связаться с сервером",
+  "@ai.cloud.connectionError": {
+    "sourceHash": "79d79fb"
+  },
+  "ai.cloud.genericError": "Что-то пошло не так",
+  "@ai.cloud.genericError": {
+    "sourceHash": "ab827e3"
+  },
+  "ai.cloud.testConnection": "Проверить подключение",
+  "@ai.cloud.testConnection": {
+    "sourceHash": "5bcf311"
+  },
+  "ai.local.memoryWarningAria": "Предупреждение о памяти",
+  "@ai.local.memoryWarningAria": {
+    "sourceHash": "7688d6a"
+  },
+  "ai.local.warningDanger": "Требуется больше памяти, чем доступно. Система может значительно замедлиться.",
+  "@ai.local.warningDanger": {
+    "sourceHash": "dd5c518"
+  },
+  "ai.local.warningCaution": "Будет использована почти вся доступная память. Другие приложения могут замедлиться.",
+  "@ai.local.warningCaution": {
+    "sourceHash": "f8070e9"
+  },
+  "ai.local.statusRestarting": "Перезапуск…",
+  "@ai.local.statusRestarting": {
+    "sourceHash": "75d0f14"
+  },
+  "ai.local.statusStarting": "Запуск…",
+  "@ai.local.statusStarting": {
+    "sourceHash": "bbe5fc3"
+  },
+  "ai.local.statusRunning": "Работает",
+  "@ai.local.statusRunning": {
+    "sourceHash": "f4ccae2"
+  },
+  "ai.local.statusStopped": "Остановлен",
+  "@ai.local.statusStopped": {
+    "sourceHash": "1a4f630"
+  },
+  "ai.local.installStepExtracting": "Шаг 1 из 4: распаковка среды выполнения…",
+  "@ai.local.installStepExtracting": {
+    "sourceHash": "44fc84b"
+  },
+  "ai.local.installStepDownloading": "Шаг 2 из 4: загрузка модели…",
+  "@ai.local.installStepDownloading": {
+    "sourceHash": "99d712f"
+  },
+  "ai.local.installStepVerifying": "Шаг 3 из 4: проверка загрузки…",
+  "@ai.local.installStepVerifying": {
+    "sourceHash": "302f79a"
+  },
+  "ai.local.installStepStarting": "Шаг 4 из 4: запуск сервера…",
+  "@ai.local.installStepStarting": {
+    "sourceHash": "696bd5e"
+  },
+  "ai.local.startingDownload": "Начало загрузки…",
+  "@ai.local.startingDownload": {
+    "sourceHash": "22309b1"
+  },
+  "ai.local.etaSeconds": "Осталось ~{value} с",
+  "@ai.local.etaSeconds": {
+    "sourceHash": "045b712"
+  },
+  "ai.local.etaMinutes": "Осталось ~{value} мин",
+  "@ai.local.etaMinutes": {
+    "sourceHash": "978afd8"
+  },
+  "ai.local.etaHours": "Осталось ~{value} ч",
+  "@ai.local.etaHours": {
+    "sourceHash": "b1944ec"
+  },
+  "ai.local.modelLabel": "Модель",
+  "@ai.local.modelLabel": {
+    "sourceHash": "5e2c614"
+  },
+  "ai.local.serverLabel": "Сервер",
+  "@ai.local.serverLabel": {
+    "sourceHash": "aef7de2"
+  },
+  "ai.local.modelUnknown": "Неизвестно",
+  "@ai.local.modelUnknown": {
+    "sourceHash": "b764cdc"
+  },
+  "ai.local.modelSizeUnknown": "?",
+  "@ai.local.modelSizeUnknown": {
+    "sourceHash": "8a8de82",
+    "sameAsSourceJustification": "Product name, author attribution, copyright or universal symbol is kept verbatim per docs/i18n/translation-principles.md and the Russian style guide."
+  },
+  "ai.local.notInstalled": "Не установлена. Локальная модель ({modelName}, {modelSize}) работает полностью на вашем устройстве, поэтому ваши данные никуда не уходят. Нужен Mac с чипом Apple.",
+  "@ai.local.notInstalled": {
+    "sourceHash": "c865b94"
+  },
+  "ai.local.applyContextSize": "Применить",
+  "@ai.local.applyContextSize": {
+    "sourceHash": "31e392d"
+  },
+  "ai.local.ramGaugeAria": "Индикатор использования памяти",
+  "@ai.local.ramGaugeAria": {
+    "sourceHash": "d6d09e9"
+  },
+  "ai.local.ramLegendSystem": "Система {size}",
+  "@ai.local.ramLegendSystem": {
+    "sourceHash": "1497c04"
+  },
+  "ai.local.ramLegendApps": "Приложения {size}",
+  "@ai.local.ramLegendApps": {
+    "sourceHash": "d02b14c"
+  },
+  "ai.local.ramLegendCmdrAi": "ИИ Cmdr {size}",
+  "@ai.local.ramLegendCmdrAi": {
+    "sourceHash": "93e2741"
+  },
+  "ai.local.ramLegendProjected": "Прогноз",
+  "@ai.local.ramLegendProjected": {
+    "sourceHash": "e394afa"
+  },
+  "ai.local.ramLegendFreed": "Освобождено",
+  "@ai.local.ramLegendFreed": {
+    "sourceHash": "c8affca"
+  },
+  "ai.local.ramLegendFree": "Свободно {size}",
+  "@ai.local.ramLegendFree": {
+    "sourceHash": "afe9c0d"
+  },
+  "ai.local.cancel": "Отменить",
+  "@ai.local.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "ai.local.stopServer": "Остановить сервер",
+  "@ai.local.stopServer": {
+    "sourceHash": "a21bf60"
+  },
+  "ai.local.startServer": "Запустить сервер",
+  "@ai.local.startServer": {
+    "sourceHash": "7b7da6f"
+  },
+  "ai.local.deleteModel": "Удалить модель",
+  "@ai.local.deleteModel": {
+    "sourceHash": "b7828ba"
+  },
+  "ai.local.downloadModel": "Загрузить модель",
+  "@ai.local.downloadModel": {
+    "sourceHash": "9979bea"
+  },
+  "ai.local.deleteDialogTitleDeleting": "Удаление модели…",
+  "@ai.local.deleteDialogTitleDeleting": {
+    "sourceHash": "d3a7e58"
+  },
+  "ai.local.deleteDialogTitle": "Удалить модель ИИ?",
+  "@ai.local.deleteDialogTitle": {
+    "sourceHash": "c486f0c"
+  },
+  "ai.local.deletingStatus": "Остановка сервера и удаление файлов…",
+  "@ai.local.deletingStatus": {
+    "sourceHash": "e9de1ca"
+  },
+  "ai.local.deleteConfirmMessage": "Это освободит {modelSize} на диске. Для использования локального ИИ модель потребуется загрузить снова.",
+  "@ai.local.deleteConfirmMessage": {
+    "sourceHash": "b295742"
+  },
+  "ai.local.deleteButtonDeleting": "Удаление…",
+  "@ai.local.deleteButtonDeleting": {
+    "sourceHash": "43b5894"
+  },
+  "ai.local.deleteButton": "Удалить",
+  "@ai.local.deleteButton": {
+    "sourceHash": "e2d0a54"
+  },
+  "ai.secretError.keychainTitle": "{op, select, save {Не удалось сохранить API-ключ: Связка ключей macOS отказала в доступе} other {Не удалось прочитать сохраненный API-ключ: Связка ключей macOS отказала в доступе}}",
+  "@ai.secretError.keychainTitle": {
+    "sourceHash": "2b2ef89"
+  },
+  "ai.secretError.keychainBody": "{op, select, save {Откройте приложение «Связка ключей», проверьте запись «Cmdr» или удалите ее и попробуйте сохранить ключ снова.} other {Откройте приложение «Связка ключей», найдите запись «Cmdr» и разрешите доступ или удалите запись и введите ключ снова.}}",
+  "@ai.secretError.keychainBody": {
+    "sourceHash": "8f1380e"
+  },
+  "ai.secretError.keyringTitle": "{op, select, save {Не удалось сохранить API-ключ: системное хранилище ключей отказало в доступе} other {Не удалось прочитать сохраненный API-ключ: системное хранилище ключей отказало в доступе}}",
+  "@ai.secretError.keyringTitle": {
+    "sourceHash": "60f5401"
+  },
+  "ai.secretError.keyringBody": "Разблокируйте хранилище ключей (например, в приложении «Пароли и ключи») и попробуйте еще раз.",
+  "@ai.secretError.keyringBody": {
+    "sourceHash": "023bde3"
+  },
+  "ai.secretError.genericTitle": "{op, select, save {Не удалось сохранить API-ключ.} other {Не удалось прочитать сохраненный API-ключ.}}",
+  "@ai.secretError.genericTitle": {
+    "sourceHash": "c343e42"
+  },
+  "ai.secretError.genericBody": "Убедитесь, что системное хранилище ключей доступно, и повторите попытку. Если проблема останется, перезапустите приложение.",
+  "@ai.secretError.genericBody": {
+    "sourceHash": "2ee417d"
+  },
+  "ai.secretError.removeTitle": "Не удалось удалить сохраненный API-ключ.",
+  "@ai.secretError.removeTitle": {
+    "sourceHash": "5986628"
+  },
+  "ai.secretError.removeKeychainBody": "Откройте приложение «Связка ключей», найдите запись «Cmdr» и удалите ее там.",
+  "@ai.secretError.removeKeychainBody": {
+    "sourceHash": "4e3abe7"
+  },
+  "ai.managed.aiOff": "Ваша организация выключила ИИ в Cmdr.",
+  "@ai.managed.aiOff": {
+    "sourceHash": "25b7aef"
+  },
+  "ai.managed.cloudAiOff": "Ваша организация разрешает только ИИ на устройстве.",
+  "@ai.managed.cloudAiOff": {
+    "sourceHash": "894c53d"
+  },
+  "ai.managed.hostNotAllowed": "Ваша организация не разрешает этот сервис ИИ. В вашем ИТ-отделе подскажут, какими сервисами можно пользоваться.",
+  "@ai.managed.hostNotAllowed": {
+    "sourceHash": "845a19f"
+  },
+  "ai.managed.localOnlyUnsupported": "Ваша организация разрешает только ИИ на устройстве, а на этом Mac такой ИИ работать не может.",
+  "@ai.managed.localOnlyUnsupported": {
+    "sourceHash": "b760ca4"
+  },
+  "ai.managed.serviceNotAllowed": "не разрешено вашей организацией",
+  "@ai.managed.serviceNotAllowed": {
+    "sourceHash": "026e7e3"
+  }
+}

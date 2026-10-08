@@ -1,0 +1,34 @@
+{
+  "whatsNew.dialog.title": "Что нового в Cmdr",
+  "@whatsNew.dialog.title": {
+    "sourceHash": "12b2a68"
+  },
+  "whatsNew.dialog.empty": "Здесь пока ничего нет. Изменения появятся после обновления.",
+  "@whatsNew.dialog.empty": {
+    "sourceHash": "31a5a2e"
+  },
+  "whatsNew.dialog.showMore": "Показать больше",
+  "@whatsNew.dialog.showMore": {
+    "sourceHash": "f5c9bd1"
+  },
+  "whatsNew.dialog.showLess": "Показать меньше",
+  "@whatsNew.dialog.showLess": {
+    "sourceHash": "94ea9b1"
+  },
+  "whatsNew.dialog.seeFullChangelog": "Открыть полный журнал изменений",
+  "@whatsNew.dialog.seeFullChangelog": {
+    "sourceHash": "66a59ed"
+  },
+  "whatsNew.dialog.optOut": "Не показывать журнал изменений",
+  "@whatsNew.dialog.optOut": {
+    "sourceHash": "f1259e9"
+  },
+  "whatsNew.dialog.close": "Закрыть",
+  "@whatsNew.dialog.close": {
+    "sourceHash": "7d9eb7a"
+  },
+  "whatsNew.optOutToast": "Понятно, списки изменений больше не будут показываться. Их можно снова включить в разделе «Настройки > Обновления и конфиденциальность».",
+  "@whatsNew.optOutToast": {
+    "sourceHash": "368591b"
+  }
+}

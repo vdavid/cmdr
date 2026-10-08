@@ -18,6 +18,7 @@
 //! by construction, and a transient provider hang doesn't disable the feature.
 
 use cmdr_fs::ignore_poison::IgnorePoison;
+use std::cell::RefCell;
 use std::collections::VecDeque;
 use std::sync::{Arc, Condvar, Mutex};
 use std::time::{Duration, Instant};
@@ -55,9 +56,26 @@ struct Inner {
 
 struct State {
     jobs: VecDeque<Job>,
-    /// One slot per spawned worker: when its current job started, `None` when idle.
-    /// Length is the number of threads ever spawned; workers never exit.
-    busy_since: Vec<Option<Instant>>,
+    /// One slot per spawned worker. Length is the number of threads ever spawned;
+    /// workers never exit.
+    workers: Vec<Worker>,
+}
+
+struct Worker {
+    /// When its current job started, `None` when idle.
+    busy_since: Option<Instant>,
+    /// What the current job last said it's doing. Shared with the worker thread, which
+    /// writes it through [`note_activity`] without taking the pool's lock.
+    activity: ActivityCell,
+    /// Whether [`Pool::newly_wedged`] already reported the current job.
+    wedge_reported: bool,
+}
+
+type ActivityCell = Arc<Mutex<Option<Activity>>>;
+
+thread_local! {
+    /// The running pool worker's [`Worker::activity`], `None` on any other thread.
+    static CURRENT_ACTIVITY: RefCell<Option<ActivityCell>> = const { RefCell::new(None) };
 }
 
 impl Pool {
@@ -67,7 +85,7 @@ impl Pool {
                 config,
                 state: Mutex::new(State {
                     jobs: VecDeque::new(),
-                    busy_since: Vec::new(),
+                    workers: Vec::new(),
                 }),
                 work_ready: Condvar::new(),
             }),
@@ -81,8 +99,12 @@ impl Pool {
             let mut state = self.inner.state.lock_ignore_poison();
             state.jobs.push_back(job);
             self.inner.needs_worker(&state).then(|| {
-                state.busy_since.push(None);
-                state.busy_since.len() - 1
+                state.workers.push(Worker {
+                    busy_since: None,
+                    activity: Arc::new(Mutex::new(None)),
+                    wedge_reported: false,
+                });
+                state.workers.len() - 1
             })
         };
         self.inner.work_ready.notify_one();
@@ -94,7 +116,7 @@ impl Pool {
     /// Threads this pool has ever spawned. They never exit, so this is also the
     /// live count.
     pub(crate) fn worker_count(&self) -> usize {
-        self.inner.state.lock_ignore_poison().busy_since.len()
+        self.inner.state.lock_ignore_poison().workers.len()
     }
 
     /// Workers currently inside a job.
@@ -103,9 +125,9 @@ impl Pool {
         self.inner
             .state
             .lock_ignore_poison()
-            .busy_since
+            .workers
             .iter()
-            .filter(|slot| slot.is_some())
+            .filter(|worker| worker.busy_since.is_some())
             .count()
     }
 
@@ -120,29 +142,96 @@ impl Pool {
     pub(crate) fn queue_len(&self) -> usize {
         self.inner.state.lock_ignore_poison().jobs.len()
     }
+
+    /// Workers that crossed `wedged_after` since the last call, each reported once per job.
+    pub(crate) fn newly_wedged(&self) -> Vec<WedgedWorker> {
+        let wedged_after = self.inner.config.wedged_after;
+        let mut state = self.inner.state.lock_ignore_poison();
+        state
+            .workers
+            .iter_mut()
+            .enumerate()
+            .filter_map(|(index, worker)| {
+                let busy_for = worker.busy_since?.elapsed();
+                if busy_for < wedged_after || worker.wedge_reported {
+                    return None;
+                }
+                worker.wedge_reported = true;
+                Some(WedgedWorker {
+                    thread: format!("{}-{index}", self.inner.config.name),
+                    busy_for,
+                    activity: worker.activity.lock_ignore_poison().clone(),
+                })
+            })
+            .collect()
+    }
+}
+
+/// What a pool job is doing right now, as it last said through [`note_activity`].
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct Activity {
+    /// The call in progress, like `"NSURL getResourceValue(NSURLUbiquitousItemIsUploadingKey)"`.
+    pub call: &'static str,
+    /// What the call is about, usually a path.
+    pub subject: String,
+}
+
+/// A worker presumed lost, and what it was doing when it stopped answering.
+#[derive(Debug)]
+pub(crate) struct WedgedWorker {
+    /// The thread's name, which is also what `sample` and Instruments show.
+    pub thread: String,
+    pub busy_for: Duration,
+    /// `None` when the job never called [`note_activity`].
+    pub activity: Option<Activity>,
+}
+
+/// Records what the job running on this pool thread is doing, so a wedge can name it. A
+/// no-op off a pool thread, so the same code runs unchanged in a direct test call.
+pub(crate) fn note_activity(call: &'static str, subject: &str) {
+    CURRENT_ACTIVITY.with(|current| {
+        let Some(cell) = current.borrow().as_ref().map(Arc::clone) else {
+            return;
+        };
+        let mut activity = cell.lock_ignore_poison();
+        match activity.as_mut() {
+            // The common case, one job stepping through its calls: no allocation.
+            Some(noted) if noted.subject == subject => noted.call = call,
+            _ => {
+                *activity = Some(Activity {
+                    call,
+                    subject: subject.to_string(),
+                });
+            }
+        }
+    });
 }
 
 impl Inner {
     fn wedged_count(&self, state: &State) -> usize {
         state
-            .busy_since
+            .workers
             .iter()
-            .filter(|slot| slot.is_some_and(|started| started.elapsed() >= self.config.wedged_after))
+            .filter(|worker| {
+                worker
+                    .busy_since
+                    .is_some_and(|started| started.elapsed() >= self.config.wedged_after)
+            })
             .count()
     }
 
     /// True when the queued job has nobody to run it soon and the ceiling allows
     /// one more thread.
     fn needs_worker(&self, state: &State) -> bool {
-        if state.busy_since.len() >= self.config.max_workers {
+        if state.workers.len() >= self.config.max_workers {
             return false;
         }
         // An idle worker will pick the job up on the `notify_one` below; growing
         // past what the load needs is exactly the waste we're removing.
-        if state.busy_since.iter().any(Option::is_none) {
+        if state.workers.iter().any(|worker| worker.busy_since.is_none()) {
             return false;
         }
-        let healthy = state.busy_since.len() - self.wedged_count(state);
+        let healthy = state.workers.len() - self.wedged_count(state);
         healthy < self.config.target_workers
     }
 
@@ -157,12 +246,14 @@ impl Inner {
             // Losing the slot would permanently over-count workers and starve the
             // pool, so hand it back and let the next submit try again.
             let mut state = self.state.lock_ignore_poison();
-            state.busy_since.truncate(index);
+            state.workers.truncate(index);
             log::warn!(target: "framework_pool", "could not spawn worker {name}: {err}");
         }
     }
 
     fn work_loop(&self, index: usize) {
+        let activity = Arc::clone(&self.state.lock_ignore_poison().workers[index].activity);
+        CURRENT_ACTIVITY.with(|current| *current.borrow_mut() = Some(Arc::clone(&activity)));
         loop {
             let job = {
                 let mut state = self.state.lock_ignore_poison();
@@ -175,11 +266,14 @@ impl Inner {
                         .wait(state)
                         .unwrap_or_else(|poisoned| poisoned.into_inner());
                 };
-                state.busy_since[index] = Some(Instant::now());
+                let worker = &mut state.workers[index];
+                worker.busy_since = Some(Instant::now());
+                worker.wedge_reported = false;
+                *activity.lock_ignore_poison() = None;
                 job
             };
             job();
-            self.state.lock_ignore_poison().busy_since[index] = None;
+            self.state.lock_ignore_poison().workers[index].busy_since = None;
         }
     }
 }
@@ -300,6 +394,43 @@ mod tests {
         assert_eq!(pool.worker_count(), 2, "the lost worker was replaced, not duplicated");
 
         drop(release_tx);
+    }
+
+    /// A wedge names the call it's stuck in, once per job, so the log says which provider
+    /// call hangs without repeating itself on every batch.
+    #[test]
+    fn a_wedged_worker_reports_its_last_activity_once() {
+        let pool = Pool::new(config(1, 4));
+        let (release_tx, release_rx) = mpsc::channel::<()>();
+        pool.submit(Box::new(move || {
+            note_activity("the domain check", "/cloud/a.txt");
+            note_activity("NSURL getResourceValue", "/cloud/a.txt");
+            let _ = release_rx.recv();
+        }));
+        wait_until(WAIT, "the only worker is presumed lost", || pool.wedged_count() == 1);
+
+        let wedged = pool.newly_wedged();
+        assert_eq!(wedged.len(), 1);
+        assert_eq!(wedged[0].thread, "test-pool-0");
+        assert!(wedged[0].busy_for >= Duration::from_millis(50));
+        assert_eq!(
+            wedged[0].activity,
+            Some(Activity {
+                call: "NSURL getResourceValue",
+                subject: "/cloud/a.txt".to_string(),
+            })
+        );
+        assert!(pool.newly_wedged().is_empty(), "the same wedge is reported once");
+
+        drop(release_tx);
+        wait_until(WAIT, "the wedged job was released", || pool.busy_count() == 0);
+        assert!(pool.newly_wedged().is_empty(), "a worker that came back isn't wedged");
+    }
+
+    /// Off a pool thread, noting an activity is harmless and goes nowhere.
+    #[test]
+    fn noting_an_activity_off_the_pool_is_a_no_op() {
+        note_activity("stat", "/somewhere");
     }
 
     /// One job at a time needs one thread, not `available_parallelism()` of them.

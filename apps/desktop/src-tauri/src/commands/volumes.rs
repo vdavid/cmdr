@@ -137,13 +137,13 @@ async fn resolve_path_to_volume(path: String, fs_timeout: Duration) -> (Option<V
         return (crate::device_volumes::device_volume_for_path(&path).await, false);
     }
 
-    // SFTP and WebDAV paths → the registered volume, or the saved server whose
+    // SFTP, WebDAV, and S3 paths → the registered volume, or the saved place whose
     // prefix they carry. ❗ This arm NEVER dials either: a restored tab resolves
     // at launch, and four servers connecting there is
     // four Keychain reads and four network waits nobody asked for. Activating
     // the row is what brings it to life.
     #[cfg(any(target_os = "macos", target_os = "linux"))]
-    if path.starts_with("sftp://") || path.starts_with("webdav://") {
+    if path.starts_with("sftp://") || path.starts_with("webdav://") || path.starts_with("s3://") {
         return (crate::server_volumes::server_volume_for_path(&path), false);
     }
 

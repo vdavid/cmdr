@@ -10,5 +10,9 @@
   "onboarding.stepOptional.updates.desc": "If you enable this, Cmdr makes a tiny network request to a central licence server at each app start plus once every 24 hours, and you always get the latest updates.\nIf you disable it, you keep your current version, and Cmdr makes zero automated network requests (except for periodic licence checks, if you have a commercial licence).",
   "@onboarding.stepOptional.updates.desc": {
     "sourceHash": "e1a0582"
+  },
+  "onboarding.stepBeta.analyticsManaged": "Your organisation turned off usage stats.",
+  "@onboarding.stepBeta.analyticsManaged": {
+    "sourceHash": "49484ee"
   }
 }

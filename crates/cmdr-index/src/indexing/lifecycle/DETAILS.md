@@ -24,10 +24,13 @@ concurrently without corrupting each other. Every invariant below holds independ
     `disable_drive_index_persist_intent`, `remove_instance_and_handles`, and `stop_all_indexing`, all sharing the
     withdraw-then-publish-`ShuttingDown`-then-drop-the-guard-then-drain ordering. Plus `stop_removable_volume`, the one
     stop that waits for the volume to be let go.
+  - `relocation.rs` — `follow_the_move`, restarting a renamed drive at its new mount point (§ "A drive whose mount point
+    moved").
   - `scan_control.rs` — `force_scan`, `stop_scan`, `trigger_verification`, plus `off_the_registry` and the
     `DetachedManager` guard behind it: the ONE place a live volume's manager comes out for blocking work.
   - `queries.rs` — the read-only surface: `is_active`, `is_failed`, `index_failure`, `awaits_its_first_scan`,
-    `ready_volumes_with_kind`, `all_registered_volume_ids`, `volume_kind`, `registered_mtp_volume_ids_for_device`.
+    `ready_volumes_with_kind`, `ready_volumes_to_wire`, `all_registered_volume_ids`, `volume_kind`,
+    `registered_mtp_volume_ids_for_device`.
   - `freshness_bridge.rs` — the registry ↔ `freshness.rs` wiring (`apply_freshness_event` vs `..._on`, which is LOCK
     DISCIPLINE, not style) plus `bump_current_epoch_for` / `get_freshness`.
   - `supervisor.rs` — `spawn_failure_supervisor` + `fail_index`, the `Failed`-phase transition (the signal itself is
@@ -83,6 +86,16 @@ concurrently without corrupting each other. Every invariant below holds independ
   is the ONE place the `scan_completed_at` marker, the two-bucket calibration keys, and `volume_path` are written:
   `network_scan.rs` calls it too, so a trait-scanned volume's completion can't drift from a local one's. Only the
   shallow-sweep-window reset stays local-walk-only, since a trait-scanned volume has no FSEvents stream.
+  `stamp_step_durations` beside it records how long the save, compute, and catch-up steps took, per walk kind
+  (`../store/DETAILS.md` § "The steps after the walk").
+- **steps_ahead.rs** — the remembered half of a host's overall "~X left": `StepsAhead::remembered(shape, durations)`
+  sums, for each step, what every step AFTER it took on the last completed run of this kind. `RunShape::Local` is find
+  files → save → compute → catch up; `RunShape::Network` is find files → compute (entries land inline, and no catch-up
+  pass follows). The honesty gate is here: one step ahead without history makes that remainder `None`, and the host
+  shows no overall figure. Computed at both whole-volume scan-start funnels, stashed on `ScanCalibration`, and carried
+  as the flat `left_after_*_ms` fields of `IndexEvent::ScanStarted` and `IndexStatusResponse` (flat because the root
+  surface is capped, and a new root type would be a new promise; `crates/cmdr-index/CLAUDE.md`). A phased first index
+  and a roll-on carry no plan.
 - **freshness.rs** — the `Fresh`/`Stale`/`Scanning`/`Failed` transition table (`Freshness::on`) +
   `initial_freshness_on_launch`.
 - **failure.rs** — `IndexFailureSignal`, the one-shot per-volume fatal-storage-error signal.
@@ -191,10 +204,12 @@ uses: `start_pending_phases` can't start one in that window, so the answer can't
 refusal reschedules rather than spending the attempt, and the claim moves the window before the attempt runs, so retries
 can't stack either. Anchored by `phases/tests/retry.rs`, which fires a retry from inside a live walk.
 
-📌 **Follow-up, not yet done:** `resume_branch_watch` (`state/startup.rs`) bends the same contract, running
-`IndexStore::open_read_connection` plus `branches::resumed_for` inside its `with_running_manager` window. It's far
-lighter than the phase start was (one read connection, one persisted branch set) and nothing has been observed waiting
-on it, so it's a cleanup rather than a bug: move the read outside the window the way `PhaseStart::run` does.
+📌 **Follow-up, not yet done:** `resume_branch_watch` (`state/startup.rs`) still bends the same contract, running
+`IndexStore::open_read_connection` plus `branches::resumed_for` inside its `with_running_manager` window (its watcher
+start moved off the lock, § "Every `fseventsd` call runs off the registry"). It's far lighter than the phase start was
+(one read connection, one persisted branch set) and nothing has been observed waiting on it, so it's a cleanup rather
+than a bug. Moving it needs care: a teardown landing between the read and `resumed_for` would leave a branch set behind
+for a volume that `withdraw_from_the_read_path` already forgot.
 
 ⚠️ **A master off→on only brings back drives `drives_to_resume` names**, which is why per-drive intent is recorded from
 the user's ENABLE (`user_enabled`) and never inferred from a completed scan: a drive part way through its first index —
@@ -271,6 +286,13 @@ pool BEFORE the drain and before any DB file is deleted. Withdrawal is what make
 volume routes `None`, so no reader can still be holding — or can still open — a connection to a file that's about to go.
 This is also why the `Failed` phase needs no read-path special case: a `Failed` instance stays registered for the badge,
 but `fail_index` withdrew its handles before flipping the phase, so reads already skip.
+
+The withdrawal also retires the connections threads have already cached to the volume's databases
+(`volume_files::retire_read_connections`), so a stopped share stops being held open by every blocking thread that read
+it. And `clear_index(vid, why)` deletes nothing itself: the files go through `volume_files::remove`, where `why` (a
+forget or an index rebuild) decides which stores go with the index. A clear that lands on a `Detached` volume carries
+its reason in `TeardownClaim::Cleared`, so the handback takes exactly what an immediate clear would have. Both
+mechanisms: `crates/cmdr-index/DETAILS.md` § "A volume's files, and the one door they leave by".
 
 **Freeing a slot and withdrawing its handles is ONE critical section** (`remove_instance_and_handles`, the start-up
 failure path). The two orders are not equivalent: withdraw-then-free is safe because the key still exists while the
@@ -530,6 +552,45 @@ search's walk and the phase machine, each still reading after the drain),
 `state::tests::a_removable_stop_never_waits_on_a_drive_that_already_left`, and `hold::tests` (the wake, the per-kind
 counts, generations, and the linked cancel).
 
+## A drive whose mount point moved (`state/relocation.rs`)
+
+Renaming a mounted drive moves its mount point (`/Volumes/Old` → `/Volumes/New`) and nothing else: same filesystem, same
+volume id (it keys on the UUID), no unmount. macOS reports it as ONE `NSWorkspaceDidRenameVolumeNotification` carrying
+both URLs, with no unmount or mount around it (verified on macOS 27.0, APFS and FAT32 disk images observed from a Swift
+`NSWorkspace` observer while `diskutil rename` ran, 2026-10-05). The host re-roots its registry and calls
+`Index::follow_volume_move`, and `state::follow_the_move` restarts the volume at the root the host now serves.
+
+**Decision: restart, ❌ not re-root the running manager.** Rows are mount-relative, so the database carries over as is,
+and a start rebuilds every piece that captured the root (the walker, the FSEvents stream, the live loop's
+`IndexPathSpace`, the phase machine's frontier) from one `StartRequest`. Re-rooting in place means finding each of
+those, and the one that's missed keeps reading a path that no longer exists. The instance keeps the request it was
+started with (`IndexInstance::started_as`), so the restart has the same kind, inode fact, and `Activation`: a
+search-walked drive comes back writer-only, ❌ never promoted to a full index.
+
+**What it costs, and why that's the honest cost.** The restart routes like any start (§ "What a launch does with the
+index it finds"): a completed drive reconciles in place (no truncation, sizes stay visible, loads Stale until the walk
+lands) and a partial one resumes its phases. The walk is not waste: the old FSEvents stream stopped hearing the drive
+when its path moved, and an external drive has no journal to replay that gap from, so anything changed between the
+rename and the restart is only found by listing.
+`moves::a_drive_renamed_while_it_indexes_keeps_indexing_at_its_new_mount_point` writes a file into exactly that gap.
+
+**The restart is RECORDED in the critical section that takes the volume down, ❌ never a stop followed by a start.** A
+stop frees the slot, a user's disable landing in the gap finds nothing to veto, and the start after it would bring back
+a drive the user just turned off. So a `Running` volume publishes `ShuttingDown { restart: Some(at the new root) }` and
+drains through the same `finish_stopping` a toggle does, where a later teardown's fresh `ShuttingDown` drops it. Per
+phase:
+
+- `Running` ⇒ that drain. `Initializing` ⇒ the stop's own arm (cancel the reservation, remove the instance), then a
+  start at the new root.
+- `ShuttingDown` / a claimed `Detached` carrying a restart ⇒ the restart is retargeted to the new root. Carrying none ⇒
+  nothing: the user's last word is off, and a move is no reason to bring a drive back.
+- An unclaimed `Detached` (a scan start has the manager out) ⇒ claims `Stopped` with the restart riding it, so the
+  handback drains the manager it brings back at the old root.
+- `Failed` ⇒ nothing; the rebuild asks the host for the root afresh.
+
+Only a local-scanner volume follows (`uses_local_scanner()`): a share or a phone reads through the host's `Volume`,
+which the host re-roots itself. Anchors: `cover::cold_drive_tests::moves`.
+
 ## Capability axes (`IndexVolumeKind`)
 
 `IndexVolumeKind` (defined in the leaf `../volume.rs`) has four variants (`Local`, `LocalExternal`, `Smb`, `Mtp`) and
@@ -578,6 +639,24 @@ real hardware (QA). The fix is two-pronged and both halves are load-bearing: (1)
 manager's own freshness `Arc` (no registry re-lock); (2) `force_scan`/fallback drop the guard before the blocking
 prelude. Regression-guarded by `state::tests::scan_start_freshness_firing_does_not_relock_the_registry` (a
 watchdog-timeout test: fire scan-start while holding the registry lock; pre-fix it deadlocks and the watchdog trips).
+
+**Every `fseventsd` call runs off the registry, a watcher's STOP included.** Gotcha/Why: a stream start, an
+`FSEventsGetCurrentEventId`, and a watcher stop (`abort` joins the run-loop thread, which unregisters the stream) are
+each a round trip to the one `fseventsd` every process shares. Under load one branch-watch start held `INDEX_REGISTRY`
+for 5.8 s in the live app (2026-10-06, measured while profiling the lock), because `ensure_branch_watch` ran inside
+`with_running_manager` from `begin_branch_coverage` (every walk), `resume_branch_watch`, and `stop_scan`; it stalled
+`get_status` and every other registry user, for every volume. A branch watch now starts in three steps
+(`manager/branch_watch.rs`): `plan_branch_watch` under the lock (in-memory checks, marks the start in flight),
+`BranchWatchStart::start` with no lock (the veto read, the replay id, the stream), `install_branch_watch` under the
+lock, which hands the watcher back to be stopped when the volume moved on (stopped, restarted, detached, or watched by a
+scan meanwhile). The registry door is `state::ensure_branch_watch`; the case list is on `start_the_branch_watch`. A
+stopped scan's watcher comes OUT under the lock (`end_the_scan`) and stops after, and a rescan retires the old watcher
+inside `off_the_registry`'s work, which is why `DetachedManager::take` runs nothing against the manager. A detach's
+hand-back calls `state::ensure_branch_watch`, so a start that found the manager out and stopped its watcher isn't the
+last word. ❌ Never call `IndexManager::ensure_branch_watch` (plan, start, and install in one go) from a
+`with_running_manager` closure: it's for a caller that holds the manager off the registry. Pinned by
+`phases/tests/lock_discipline.rs`, which parks the fake stream start at a gate (`watch/watcher/fake_journal.rs`) and
+asks `get_status` meanwhile.
 
 **A manual rescan routes by the TYPED volume kind.** `state::force_scan(vid)` calls `mgr.force_rescan(...)`, NOT
 `mgr.start_scan(...)`. `force_rescan` dispatches on `rescan_scanner_for_kind(self.kind)`: a trait-scanned kind (SMB/MTP)
@@ -978,6 +1057,10 @@ from files the user really removed — so the index records that it may be short
   SET** (`deletes::marker_reads_as_set`): a marker nobody could read is ❌ never "no marker", because this one row
   outranks every other cell and no other cell can see the holes. A spurious rebuild costs one rescan; a skipped one
   carries the holes for the life of the index.
+- **A stale exclusion-policy stamp takes the same row** (`IndexOnDisk::predates_exclusion_policy`, populated indexes
+  only). An index built under an older policy looks finished while holding rows today's policy cuts, and only a
+  truncating walk re-stamps the policy: a journal replay or an in-place reconcile would keep the rows and leave coverage
+  distrusted for good. With the phases off, `start_scan` truncates it (`local_rescan_reconciles`' `predates_policy`).
 - **Cleared where the index it condemns is replaced**: the phased `RebuildFirst` truncate (in the same writer batch, so
   a death in between leaves the marker standing) and `start_scan`, beside `scan_completed_at`. ❌ Never `clear_index`,
   which deletes the database and the per-drive intent markers in it.
@@ -1001,11 +1084,14 @@ direction). This is the single canonical home for the mechanism; consumer docs p
   `generation` so a consumer can coalesce a repeat.
 - **The startup sweep is the bus's companion, not part of it.** A volume already Fresh at launch never re-fires
   `ScanCompleted`, so `state::ready_volumes_with_kind()` snapshots the volumes that are `Fresh` right now (with each
-  volume's typed `IndexVolumeKind`) for the scheduler to enqueue once at startup.
+  volume's typed `IndexVolumeKind`) for the scheduler to enqueue once at startup. `ready_volumes_to_wire()` is the same
+  snapshot in the registration bus's shape, stop signal included.
 - **A registration `broadcast`** (`publish_volume_registered` / `subscribe_registrations`) carries late-registering
   volumes (a share mounted AFTER startup), published from `start_indexing_for` right after a volume wins its
-  `Initializing` reservation, carrying the id AND its typed kind. A lagged receiver only misses a registration the next
-  `ScanCompleted` still covers, so a miss self-heals.
+  `Initializing` reservation, carrying the id, its typed kind, AND a child of the volume's root stop signal
+  (`RegisteredVolume`), so per-volume work a subscriber starts ends with that life of the volume (`../host/DETAILS.md` §
+  Cancellation). A lagged receiver only misses a registration the next `ScanCompleted` still covers, so a miss
+  self-heals.
 - **A `dir-changed` channel** (`publish_dirs_changed` / `subscribe_dirs_changed`, a per-volume `watch<DirsChanged>` in a
   separate `DIR_BUS` map) carries live listing changes from the live event loop and the per-navigation verifier — the
   importance scheduler's incremental-recompute trigger and the media index's live-tick trigger. Being a `watch`, a burst
@@ -1030,8 +1116,7 @@ The per-drive freshness UX drives any drive through three thin `commands/indexin
 `disable_drive_index`, `rescan_drive_index`. For root they map to `start_indexing`/`stop_indexing`/`force_scan`;
 SMB/MTP/ local-external routing lives in `../transports/CLAUDE.md`. `enable`/`rescan` return `EnableIndexingOutcome`
 (`{ status: "started" }` or, for SMB, `{ status: "refused", reason: SmbIndexGateReason }`). The per-volume status IPC
-(`get_volume_index_status(path)` for the active-drive badge, `get_volume_index_status_by_id` for the dropdown rows)
-builds
+(`get_volume_index_status_by_id`, for the dropdown rows) builds
 `VolumeIndexStatus { volume_id, enabled, freshness, scan_completed_at, scan_duration_ms, coalesced_signals_since_sweep, next_sweep_due_at, live_watch }`:
 freshness from the registry, the scan facts from the persisted `meta`. `enabled: false` + `freshness: None` is gray. The
 path→volume resolution feeding these lives in `../paths/CLAUDE.md`.

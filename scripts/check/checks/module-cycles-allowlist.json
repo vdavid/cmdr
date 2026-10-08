@@ -6,7 +6,6 @@
     "cmdr-archive::read": [4],
     "cmdr-fs::volume": [2],
     "cmdr-index::importance::scheduler": [2],
-    "cmdr-index::indexing::lifecycle": [5],
     "cmdr-index::indexing::writer": [2],
     "cmdr::file_system": [2],
     "cmdr::file_system::write_operations::transfer::volume": [2],

@@ -14,6 +14,7 @@
     import { tooltip } from '$lib/tooltip/tooltip'
     import { onMount } from 'svelte'
     import { tString } from '$lib/intl/messages.svelte'
+    import { useSettingLock } from './setting-lock.svelte'
 
     interface Props {
         id: SettingId
@@ -27,7 +28,9 @@
         onPicked?: (value: string) => void
     }
 
-    const { id, disabled = false, onPicked }: Props = $props()
+    const { id, disabled: ownDisabled = false, onPicked }: Props = $props()
+    const lock = useSettingLock(id)
+    const disabled = $derived(ownDisabled || lock.locked)
 
     const definition = getSettingDefinition(id)
     const label = definition?.label ?? id
@@ -191,6 +194,7 @@
             onHighlightChange={handleHighlightChange}
             contentClass={customHighlighted ? 'custom-highlighted' : ''}
             ariaLabel={label}
+            ariaDescribedBy={lock.describedBy()}
             {disabled}
         />
     {/if}

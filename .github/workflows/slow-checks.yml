@@ -17,6 +17,9 @@ on:
     - cron: '0 3 */6 * *' # every 6 days, 4 AM CET = 3 AM UTC (≤6-day gap < 7-day cache eviction)
   workflow_dispatch: # Allow manual trigger
 
+permissions:
+  contents: read
+
 jobs:
   # ===========================================
   # Rust dependency and security checks
@@ -118,6 +121,63 @@ jobs:
         run: ./scripts/check/check --check desktop-rust-gemini-smoke --ci
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+
+  # ===========================================
+  # Fuzz smoke (the parsers that read attacker-chosen bytes)
+  # ===========================================
+  # Every target in `fuzz/` for two minutes on the pinned nightly, over its committed
+  # seeds plus the corpus the previous run grew (cached). A finding fails the job and
+  # uploads the crashing input; `fuzz/DETAILS.md` has the reproduce-and-fix loop.
+  fuzz:
+    name: Fuzz smoke
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Install mise
+        uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4
+
+      - name: Install tools with mise
+        run: mise install
+
+      # Keyed on the fuzz lockfile; `fuzz/target/` (the instrumented build) and the
+      # cargo registry. Separate from the other Rust caches: different toolchain, flags,
+      # and target dir.
+      - name: Cache fuzz build
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          workspaces: fuzz
+
+      # The grown corpus is what makes each run start where the last one stopped.
+      - name: Cache fuzz corpus
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: fuzz/corpus
+          key: fuzz-corpus-${{ github.run_id }}
+          restore-keys: |
+            fuzz-corpus-
+
+      - name: Build check tool
+        run: go build -o check .
+        working-directory: ./scripts/check
+
+      - name: Install nightly toolchain (for cargo-fuzz)
+        run: rustup toolchain install "$(./scripts/check/check --print-nightly)" --profile minimal
+
+      - name: Run fuzz smoke
+        run: ./scripts/check/check --check desktop-rust-fuzz --ci
+        env:
+          CMDR_FUZZ_SECONDS: '120'
+
+      - name: Upload fuzz findings
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: fuzz-artifacts
+          path: fuzz/artifacts/
+          if-no-files-found: ignore
 
   # ===========================================
   # Type-aware ESLint (too slow for per-push CI)

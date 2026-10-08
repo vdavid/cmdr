@@ -12,6 +12,11 @@ services:
       dockerfile: apps/website/Dockerfile
     container_name: getcmdr-static
     restart: unless-stopped
+    # Daily access logs (no client IPs) outlive the container this way. The host dir is created,
+    # owned by nginx's uid 101, and pruned after 30 days by the infra repo's Hetzner Ansible
+    # (`docker` role). See `nginx.conf` for what the log holds and why.
+    volumes:
+      - /var/log/cmdr/website:/var/log/nginx/site
     networks:
       - proxy-net
 
@@ -22,7 +27,7 @@ services:
     # extractor. Deploy deliberately; the open-redirect fix wires
     # `AllowedRedirectHosts`, so verify Google/GitHub sign-in still completes
     # after the first deploy.
-    image: umputun/remark42:v1.17.1
+    image: umputun/remark42:v1.17.1@sha256:8da1a3b77846f4b1ab9cb20b1faf5069f7f03c5081c3269fee2801f53e77bde1
     container_name: remark42
     restart: unless-stopped
     volumes:

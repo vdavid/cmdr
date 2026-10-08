@@ -32,6 +32,9 @@
      * ❌ dropping it from the liveness test leaves the buttons lit over a finished
      * reversal — Cancel disabling itself forever, Pause staying live.
      *
+     * The same end is what `onEnded` reports, once, so the dialog re-reads the
+     * row and its badge stops saying "Rolling back". No polling anywhere.
+     *
      * ## The words are the queue's, on purpose
      *
      * `queue.row.*` for all four ("Pause", "Resume", "Cancel", and the "Paused"
@@ -41,6 +44,7 @@
      * `aria-describedby` naming the row, the way the row's Roll back button
      * already works.
      */
+    import { untrack } from 'svelte'
     import Button from '$lib/ui/Button.svelte'
     import Icon from '$lib/ui/Icon.svelte'
     import { tString } from '$lib/intl/messages.svelte'
@@ -54,9 +58,12 @@
          *  reader. Same shape the row's Roll back button uses, so a press is never
          *  announced as a bare "Pause". */
         describedBy: string
+        /** Fired once, when the session reports the reversal over. The row's badge
+         *  is a read-on-open journal fact, so this is the dialog's cue to re-read it. */
+        onEnded?: () => void
     }
 
-    const { inverseOpId, describedBy }: Props = $props()
+    const { inverseOpId, describedBy, onEnded }: Props = $props()
 
     const session = bindOperationSession(() => inverseOpId)
 
@@ -87,6 +94,19 @@
     const isLive = $derived(
         op !== null && !op.settled && !op.leftRegistry && (isRunning || isPaused || isQueued),
     )
+
+    /** The same three readings, as "it's over" rather than "nothing to press". A
+     *  reversal the registry no longer knows seeds its session as gone, which
+     *  counts: the journal read on open is then behind the registry. The `null`
+     *  frame before binding doesn't. */
+    const hasEnded = $derived(op !== null && (op.settled || op.leftRegistry || status === 'done'))
+
+    let endReported = false
+    $effect(() => {
+        if (!hasEnded || endReported) return
+        endReported = true
+        untrack(() => onEnded?.())
+    })
 </script>
 
 {#if isLive && op !== null}

@@ -1,7 +1,7 @@
 {
-  "goToPath.dialog.title": "前往路徑",
+  "goToPath.dialog.title": "前往資料夾",
   "@goToPath.dialog.title": {
-    "sourceHash": "fb65702"
+    "sourceHash": "26fc1cf"
   },
   "goToPath.dialog.inputAriaLabel": "要前往的路徑",
   "@goToPath.dialog.inputAriaLabel": {
@@ -23,9 +23,9 @@
   "@goToPath.dialog.cancel": {
     "sourceHash": "19766ed"
   },
-  "goToPath.dialog.confirm": "前往路徑",
+  "goToPath.dialog.confirm": "前往",
   "@goToPath.dialog.confirm": {
-    "sourceHash": "fb65702"
+    "sourceHash": "6cc8519"
   },
   "goToPath.dialog.ancestorHint": "這個路徑不存在。最接近的位置是 {dir}。",
   "@goToPath.dialog.ancestorHint": {

@@ -38,7 +38,7 @@ use std::time::Instant;
 #[cfg(test)]
 use crate::server_request::ServerRequestError;
 #[cfg(test)]
-use pending_delivery::{pending_report_id, post_crash_report, send_pending_crash_report_from_path};
+use pending_delivery::{claimed_crash_path, pending_report_id, post_crash_report, send_pending_crash_report_from_path};
 
 const CRASH_FILE_NAME: &str = "crash-report.json";
 const RAW_CRASH_FILE_NAME: &str = "crash-report.raw";
@@ -361,8 +361,20 @@ pub fn init<R: tauri::Runtime>(app: &tauri::AppHandle<R>) {
 /// Used by milestone 2 (crash report dialog) to check for pending reports.
 pub fn take_pending_crash_report<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> Option<CrashReport> {
     let data_dir = config::resolved_app_data_dir(app).ok()?;
-    let crash_path = data_dir.join(CRASH_FILE_NAME);
-    let mut report = read_crash_report(&crash_path)?;
+    take_pending_crash_report_at(&data_dir.join(CRASH_FILE_NAME))
+}
+
+/// Under a managed `DisableCrashAndErrorReports` the pending report is discarded unoffered: it can
+/// never be sent, and an offer the person can't act on would come back every launch.
+fn take_pending_crash_report_at(crash_path: &Path) -> Option<CrashReport> {
+    if !crate::managed_policy::current().allows(crate::managed_policy::Egress::CrashReport) {
+        if crash_path.exists() {
+            log::info!("Crash reporter: discarding the pending crash report, the organization turned reports off");
+            pending_delivery::discard_pending_at(crash_path);
+        }
+        return None;
+    }
+    let mut report = read_crash_report(crash_path)?;
     // Defense in depth if the next-launch rewrite couldn't persist (for example, permissions
     // changed after the file was created): no preview can bypass the delivery transform.
     report.prepare_for_delivery();
@@ -707,14 +719,33 @@ fn read_crash_report(path: &Path) -> Option<CrashReport> {
 /// the frontend registry owns the defaults. We pass through `None` as-is; the crash
 /// report consumer can interpret null as "default."
 fn cache_active_settings<R: tauri::Runtime>(app: &tauri::AppHandle<R>) {
-    let s = settings::load_settings(app);
-    let settings = ActiveSettings {
+    // Read here, at startup, never in the hook or the handler (they must not touch the policy).
+    let settings = active_settings_from(&settings::load_settings(app), &crate::managed_policy::current());
+    let _ = CACHED_SETTINGS.set(settings);
+}
+
+/// The snapshot a crash report carries: the organization's locks over the stored values (through
+/// the one `overlay`), so the report says what Cmdr ran with, as the heartbeat's config shape does.
+/// A value nobody stored stays `None` ("default").
+fn active_settings_from(
+    s: &settings::loader::Settings,
+    policy: &crate::managed_policy::ManagedPolicy,
+) -> ActiveSettings {
+    let mut map = serde_json::Map::new();
+    if let Some(provider) = &s.ai_provider {
+        map.insert("ai.provider".to_string(), serde_json::Value::from(provider.as_str()));
+    }
+    let mut map = serde_json::Value::Object(map);
+    crate::managed_policy::overlay(policy, &mut map);
+    ActiveSettings {
         indexing_enabled: s.indexing_enabled,
-        ai_provider: s.ai_provider,
+        ai_provider: map
+            .get("ai.provider")
+            .and_then(serde_json::Value::as_str)
+            .map(str::to_string),
         mcp_enabled: s.developer_mcp_enabled,
         verbose_logging: s.verbose_logging,
-    };
-    let _ = CACHED_SETTINGS.set(settings);
+    }
 }
 
 // --- Helpers ---

@@ -32,16 +32,16 @@
         refusalField,
         refusalShownOnOpen,
         wordConnectRefusal,
+        wordRefusalHint,
         type ConnectRefusalKind,
         type RefusalField,
+        type RefusalHint,
     } from './connect-refusals'
     import {
         applyParsedAddress,
         emptyServerForm,
         formFromPrefill,
-        formFromSftpServer,
         formFromSmbHost,
-        formFromWebdavServer,
         isStartFolderUnderRoot,
         nameFallbackOf,
         withSavedAccount,
@@ -52,6 +52,8 @@
         hostWithPort,
     } from './server-form'
     import { readSavedServerOutcome, type SaveOutcome } from './server-outcomes'
+    import { s3FieldProblem, s3HostOf, s3RequiredFieldOf } from './s3-form'
+    import { saveTargetSecret, savedEditForm, unattendedReconnectWarning } from './saved-server-io'
     import type {
         AddIntent,
         SignInAttemptOutcome,
@@ -62,18 +64,14 @@
     import {
         approveSftpHostKey,
         forgetServerSecret,
-        getKnownSftpServers,
-        getKnownWebdavServers,
-        getSftpUnattendedReconnect,
-        getWebdavUnattendedReconnect,
         hasServerSecret,
         listSavedServers,
-        saveSftpCredentials,
-        saveWebdavCredentials,
+        updateSavedS3Account,
         updateSavedServer,
         updateSavedSmbHost,
     } from '$lib/tauri-commands'
     import { tString } from '$lib/intl/messages.svelte'
+    import type { MessageKey } from '$lib/intl/keys.gen'
     import { getAppLogger } from '$lib/logging/logger'
     import type { HostKeyPrompt, SavedServer, ServerTarget } from '$lib/ipc/bindings'
 
@@ -95,6 +93,10 @@
     let refusal = $state<ConnectRefusalKind | null>(
         request.mode === 'sign-in' ? refusalShownOnOpen(request.refusal) : null,
     )
+    /** The hint the last refused round came with, and the refusal it belongs under. */
+    let hinted = $state<{ refusal: ConnectRefusalKind; hint: RefusalHint } | null>(null)
+    /** S3's `region_mismatch`: the region the server says the bucket lives in, when it said. */
+    let refusalRegion = $state<string | null>(null)
     let form = $state<ServerForm>(emptyServerForm())
     /**
      * Sign-in mode's own fields; the add form holds its own.
@@ -114,6 +116,8 @@
     let storedSecretWarning = $state<string | null>(null)
     /** What Remember said when the sheet opened, so a flip can be written once, deliberately. */
     let rememberWhenOpened = false
+    /** Edit mode: whether the store held a secret when the sheet opened, for the password field's placeholder. */
+    let secretStoredWhenOpened = $state(false)
     /** The submission to repeat once a host key is trusted. */
     let pendingSubmission: SignInSubmission | null = null
     /**
@@ -135,6 +139,8 @@
     let secretInput = $state<HTMLInputElement | undefined>()
     let rootInput = $state<HTMLInputElement | undefined>()
     let startFolderInput = $state<HTMLInputElement | undefined>()
+    let regionInput = $state<HTMLInputElement | undefined>()
+    let bucketInput = $state<HTMLInputElement | undefined>()
 
     const isEdit = $derived(request.mode === 'edit')
     /** `nothing` never opens the sheet, so a shape that reaches here always asks something. */
@@ -142,6 +148,43 @@
     /** Edit mode has nothing to try: Save writes and closes. */
     const attempt = $derived(request.mode === 'edit' ? null : request.attempt)
     const editedServer = $derived(request.mode === 'edit' ? request.server : null)
+    /**
+     * The saved entry an edit reads and writes, by id: the place it was raised on
+     * where a server keeps several (an S3 account's buckets, each saved on its own),
+     * else the server's own id, which for a one-place server IS its place's.
+     */
+    const editedId = $derived(request.mode === 'edit' ? (request.placeVolumeId ?? request.server.id) : null)
+    /** The edited place's listing entry, for its label: an S3 bucket's own, not its account's. */
+    const editedPlace = $derived(
+        request.mode === 'edit' ? request.server.places.find((p) => p.volumeId === request.placeVolumeId) : undefined,
+    )
+    /**
+     * What an S3 edit edits. ❗ The ACCOUNT carries the name and the secret, so Edit on
+     * its row (no `placeVolumeId`) renames it and hides the bucket and the per-place
+     * switch; a PLACE (a bucket, or the root) keeps its switch and has no name of its
+     * own, since a bucket reads as itself. `null` for every other protocol.
+     */
+    const s3EditScope = $derived.by((): 'account' | 'place' | null => {
+        if (request.mode !== 'edit' || request.server.protocol !== 's3') return null
+        return request.placeVolumeId === undefined ? 'account' : 'place'
+    })
+    /**
+     * The saved entry an edit reads the Keychain and the store row through. An S3
+     * account has no entry of its own (its id is its root's, saved or not), so it
+     * reads through one of its places: they share the account's secret, and each
+     * carries the account's provider, key, and name.
+     */
+    /** The two lines under an edit's locked identity fields: what names the thing, and how to change it. */
+    const identityHintKey = $derived.by((): MessageKey => {
+        if (s3EditScope === 'account') return 'servers.sheet.identityLockedS3Account'
+        if (s3EditScope === 'place') return 'servers.sheet.identityLockedS3'
+        return 'servers.sheet.identityLocked'
+    })
+    const storeId = $derived.by(() => {
+        if (request.mode !== 'edit') return null
+        if (s3EditScope === 'account') return request.server.places[0]?.volumeId ?? request.server.id
+        return editedId
+    })
 
     /**
      * ❗ The listing's `displayName` IS the label already: a name a person typed,
@@ -150,7 +193,10 @@
      */
     const sheetTitle = $derived.by(() => {
         if (request.mode === 'add') return tString('servers.sheet.addTitle')
-        if (request.mode === 'edit') return tString('servers.sheet.editTitle', { name: request.server.displayName })
+        if (request.mode === 'edit') {
+            const name = s3EditScope === 'place' && editedPlace ? editedPlace.name : request.server.displayName
+            return tString('servers.sheet.editTitle', { name })
+        }
         return tString('servers.sheet.signInTitle', { name: request.endpoint.displayName })
     })
 
@@ -166,6 +212,17 @@
         const fallback = nameFallbackOf(form, savedServers)
         return fallback === null ? undefined : tString('servers.sheet.namePlaceholder', { label: fallback })
     })
+
+    /**
+     * Edit mode's password placeholder over a stored secret. ❗ The field opens
+     * empty every time (a secret is never read back out of the Keychain), and a
+     * bare empty box read as "no password saved". It says what an empty field
+     * does on Save, which is keep it (`writeTypedSecret`), and goes once Remember
+     * is off, since Save then forgets it.
+     */
+    const secretPlaceholder = $derived(
+        isEdit && secretStoredWhenOpened && form.remember ? tString('servers.sheet.secretKeptPlaceholder') : undefined,
+    )
 
     const submitLabel = $derived.by(() => {
         if (request.mode === 'edit') return tString('servers.sheet.save')
@@ -187,11 +244,17 @@
             // username is editable, the account the sheet opened with may not be
             // the one that was turned away.
             const username = roundUsername || (request.endpoint.username ?? request.endpoint.displayName)
-            return { host: request.endpoint.host, username }
+            return { host: request.endpoint.host, username, protocol: request.endpoint.protocol, region: refusalRegion }
         }
+        // S3 has no address: the preset's endpoint host is the server it names.
         const parsed = parseServerAddress(form.address)
-        const host = parsed.kind === 'parsed' ? hostWithPort(parsed.host, parsed.port, form.protocol) : form.address
-        return { host, username: form.username || host }
+        const host =
+            form.protocol === 's3'
+                ? (s3HostOf(form.s3) ?? '')
+                : parsed.kind === 'parsed'
+                  ? hostWithPort(parsed.host, parsed.port, form.protocol)
+                  : form.address
+        return { host, username: form.username || host, protocol: form.protocol, region: refusalRegion }
     })
 
     /**
@@ -211,6 +274,10 @@
 
     const refusalText = $derived(refusal ? wordConnectRefusal(refusal, refusalSubject) : undefined)
     const refusalWhere = $derived(refusal ? refusalField(refusal) : null)
+    /** The softer line under the refusal, only while the refusal it came with is still on screen. */
+    const refusalHintText = $derived(
+        hinted && refusal === hinted.refusal ? wordRefusalHint(hinted.hint) : undefined,
+    )
 
     /**
      * Whether the form's start folder sits outside its root: the backend's rule
@@ -243,8 +310,29 @@
     const canSubmit = $derived.by(() => {
         if (busy) return false
         if (request.mode === 'sign-in') return credentials.guest || credentials.secret !== ''
+        // S3 can't dial without a key and the one field its preset makes the endpoint from
+        // (GCS needs none: one global endpoint).
+        if (form.protocol === 's3') {
+            const required = s3RequiredFieldOf(form.s3)
+            return form.username.trim() !== '' && (required === null || required.trim() !== '')
+        }
         return form.address.trim() !== ''
     })
+
+    /**
+     * "Use us-east-2", offered once a bucket turned out to live in a region the server
+     * named, on a preset that takes a TYPED region. One press switches and tries again.
+     */
+    const offersUseRegion = $derived(
+        request.mode === 'add' &&
+            refusal === 'region_mismatch' &&
+            refusalRegion !== null &&
+            form.protocol === 's3' &&
+            (form.s3.provider === 'aws' ||
+                form.s3.provider === 'b2' ||
+                form.s3.provider === 'wasabi' ||
+                form.s3.provider === 'other'),
+    )
 
     onMount(() => {
         void seed()
@@ -303,20 +391,14 @@
             focusFirstEditableField()
             return
         }
-        if (server.protocol === 'sftp') {
-            const saved = (await getKnownSftpServers()).find(
-                (s) => `${s.host}:${String(s.port)}` === server.address && s.username === server.username,
-            )
-            if (saved) form = formFromSftpServer(saved)
-        } else {
-            const saved = (await getKnownWebdavServers()).find(
-                (s) => s.url === server.address && s.username === server.username,
-            )
-            if (saved) form = formFromWebdavServer(saved)
-        }
-        form.remember = await hasServerSecret(server.id)
+        // An S3 account's buckets are each saved on their own, so a PLACE is what's read.
+        const id = storeId ?? server.id
+        form = (await savedEditForm(server, id)) ?? form
+        form.remember = await hasServerSecret(id)
         rememberWhenOpened = form.remember
-        storedSecretWarning = await readStoredSecretWarning(server.id, server.protocol)
+        secretStoredWhenOpened = form.remember
+        // The warning is about "Reconnect automatically", a per-place switch an account edit doesn't show.
+        storedSecretWarning = s3EditScope === 'account' ? null : await unattendedReconnectWarning(id, server.protocol)
         await tick()
         focusFirstEditableField()
     }
@@ -329,25 +411,6 @@
      */
     function focusFirstEditableField() {
         if (sheetBody) focusFirstField(sheetBody)
-    }
-
-    /**
-     * The backend's own answer to "auto-reconnect is on and nothing happens".
-     *
-     * ❗ Asked when the sheet RENDERS, ❌ never derived from a rung plus a
-     * credential check: the rung is decided per dial, and a derivation goes stale
-     * the moment one lands elsewhere.
-     */
-    async function readStoredSecretWarning(id: string, protocol: SavedServer['protocol']): Promise<string | null> {
-        if (protocol === 'sftp') {
-            const state = await getSftpUnattendedReconnect(id)
-            return state === 'needs_stored_secret' ? tString('servers.sheet.needsStoredSecret') : null
-        }
-        if (protocol === 'webdav') {
-            const state = await getWebdavUnattendedReconnect(id)
-            return state === 'no_stored_secret' ? tString('servers.sheet.needsStoredSecret') : null
-        }
-        return null
     }
 
     function close(result: SignInSheetResult) {
@@ -365,6 +428,12 @@
             // can't be told right now.
             startFolderTouched = true
             await refuse('start_folder_outside_root')
+            return
+        }
+        // A region or an endpoint no host name can carry is a typo, and says so before anything dials.
+        const s3Problem = request.mode !== 'sign-in' && form.protocol === 's3' ? s3FieldProblem(form.s3) : null
+        if (s3Problem) {
+            await refuse(s3Problem)
             return
         }
         if (request.mode === 'edit') {
@@ -425,6 +494,8 @@
         roundUsername = submission.mode === 'sign-in' ? submission.username : null
         busy = true
         refusal = null
+        hinted = null
+        refusalRegion = null
         let outcome: SignInAttemptOutcome = { kind: 'refused', refusal: 'unreachable' }
         try {
             outcome = await attempt(submission)
@@ -463,6 +534,8 @@
                 step = 'revoked'
                 return
             case 'refused':
+                hinted = outcome.hint ? { refusal: outcome.refusal, hint: outcome.hint } : null
+                refusalRegion = outcome.region ?? null
                 await refuse(outcome.refusal)
                 return
         }
@@ -489,6 +562,9 @@
         else if (where === 'address') addressInput?.focus()
         else if (where === 'root') rootInput?.focus()
         else if (where === 'start_folder') startFolderInput?.focus()
+        // A preset's region IS the input that makes its endpoint; only Other has a separate one.
+        else if (where === 'region') (regionInput ?? addressInput)?.focus()
+        else if (where === 'bucket') bucketInput?.focus()
     }
 
     /**
@@ -554,21 +630,14 @@
         }
         busy = true
         refusal = null
-        let answer: SaveOutcome
-        try {
-            answer = readSavedServerOutcome(await updateSavedServer(target))
-        } catch (e) {
-            // Nothing confirmed the edit, which is exactly what this refusal says.
-            log.warn('Saving the edited server broke down: {error}', { error: String(e) })
-            answer = { kind: 'refused', refusal: 'save_unconfirmed' }
-        }
+        const answer = s3EditScope === 'account' ? await saveS3Account(editedServer.id) : await saveTarget(target)
         if (answer.kind === 'refused') {
             busy = false
             await refuse(answer.refusal)
             return
         }
         try {
-            await writeRememberFlip(editedServer.id)
+            await writeRememberFlip(storeId ?? editedServer.id)
             await writeTypedSecret(target)
             close({ kind: 'saved' })
         } catch (e) {
@@ -582,6 +651,33 @@
         } finally {
             busy = false
         }
+    }
+
+    /** Edit mode's store write for a server with a place: the target, as the backend answered it. */
+    async function saveTarget(target: ServerTarget): Promise<SaveOutcome> {
+        try {
+            return readSavedServerOutcome(await updateSavedServer(target))
+        } catch (e) {
+            // Nothing confirmed the edit, which is exactly what this refusal says.
+            log.warn('Saving the edited server broke down: {error}', { error: String(e) })
+            return { kind: 'refused', refusal: 'save_unconfirmed' }
+        }
+    }
+
+    /**
+     * Edit mode on an S3 account: its name, by the row's id. ❗ Never through
+     * `updateSavedServer`: a target with no bucket would save the account ROOT as a
+     * new place. An account whose places all went away meanwhile (a Forget in
+     * another pane) reads as the save nobody could confirm. The secret is written
+     * after, like any edit's.
+     */
+    async function saveS3Account(id: string): Promise<SaveOutcome> {
+        try {
+            if (await updateSavedS3Account(id, form.displayName.trim())) return { kind: 'saved' }
+        } catch (e) {
+            log.warn('Saving the edited S3 account broke down: {error}', { error: String(e) })
+        }
+        return { kind: 'refused', refusal: 'save_unconfirmed' }
     }
 
     /**
@@ -630,11 +726,7 @@
      */
     async function writeTypedSecret(target: ServerTarget) {
         if (form.secret === '') return
-        if (target.protocol === 'sftp') {
-            await saveSftpCredentials(target.host, target.port, target.username, form.secret)
-        } else {
-            await saveWebdavCredentials(target.url, target.username, form.secret)
-        }
+        await saveTargetSecret(target, form.secret)
         // The store holds one now, which is exactly what the box means.
         form.remember = true
         rememberWhenOpened = true
@@ -692,8 +784,22 @@
                 disabled={busy}
                 protocolEditable={!isEdit}
                 identityEditable={!isEdit}
-                identityHint={isEdit ? tString('servers.sheet.identityLocked') : undefined}
+                identityHint={isEdit ? tString(identityHintKey) : undefined}
+                s3EditScope={s3EditScope ?? undefined}
                 addressRefusal={refusalWhere === 'address' ? refusalText : undefined}
+                regionRefusal={refusalWhere === 'region' ? refusalText : undefined}
+                bucketRefusal={refusalWhere === 'bucket' ? refusalText : undefined}
+                suggestedRegion={refusalRegion ?? undefined}
+                onUseRegion={offersUseRegion
+                    ? () => {
+                          form = { ...form, s3: { ...form.s3, region: refusalRegion ?? form.s3.region } }
+                          refusal = null
+                          void submit()
+                      }
+                    : undefined}
+                bind:regionInput
+                bind:bucketInput
+                addressRefusalHint={refusalWhere === 'address' ? refusalHintText : undefined}
                 {addressWarning}
                 onAddAnyway={offersAddAnyway ? () => void submit('save_unchecked') : undefined}
                 onTryNextcloudAddress={offersNextcloudRemedy
@@ -704,6 +810,7 @@
                       }
                     : undefined}
                 secretRefusal={refusalWhere === 'secret' ? refusalText : undefined}
+                {secretPlaceholder}
                 rootRefusal={refusalWhere === 'root' ? refusalText : undefined}
                 startFolderRefusal={startFolderRefusalText}
                 storedSecretWarning={storedSecretWarning ?? undefined}

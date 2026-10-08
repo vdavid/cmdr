@@ -3,9 +3,12 @@
 # is one command per sample instead of a remembered `vmmap` incantation.
 #
 # The numbers that matter and the traps around them: `docs/tooling/memory-debugging.md`.
-# The short version: mimalloc tags its arenas with VM tag 100, which `vmmap` prints as
-# `IOAccelerator`, so the `rustHeap*` columns below ARE the Rust heap and the `MALLOC_*`
-# columns are NOT. Footprint counts swapped pages, so dirty + swapped is what a user feels.
+# The short version: the `rustHeap*` columns read VM tag 100, which `vmmap` prints as
+# `IOAccelerator`. In a mimalloc build (Linux, or macOS with `--features mimalloc`) that's
+# where mimalloc's arenas are, so those columns ARE the Rust heap and the `MALLOC_*` ones
+# are NOT. A default macOS build runs on the system allocator, which flips it: the Rust
+# heap is in the `MALLOC_*` columns and `rustHeap*` reads ~0. Footprint counts swapped
+# pages, so dirty + swapped is what a user feels.
 #
 # Usage:
 #   mem-sample.sh <condition-label>        one sample, appended to the CSV

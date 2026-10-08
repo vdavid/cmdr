@@ -111,6 +111,7 @@ fn copy_batch_whose_second_item_fails(preview_id: &str) -> (tempfile::TempDir, P
                     total_bytes: fs::symlink_metadata(path).unwrap().len(),
                     dedup_bytes: fs::symlink_metadata(path).unwrap().len(),
                     top_level_is_directory: false,
+                    top_level_modified_at: None,
                 },
             )
         })
@@ -234,6 +235,7 @@ fn folder_over_file_copy_whose_second_leaf_fails(
                     total_bytes,
                     dedup_bytes: total_bytes,
                     top_level_is_directory: true,
+                    top_level_modified_at: None,
                 },
             )],
             None,

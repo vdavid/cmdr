@@ -14,13 +14,14 @@ The local-AI lifecycle is split by concern around ONE shared singleton: `state.r
 state. `download.rs` / `extract.rs` / `process.rs` are its stateless leaves.
 
 Cloud-side: `client.rs` is the `genai` chat client (`AiBackend`), tapped for logging into `llm_log/CLAUDE.md`;
-`cloud_consent.rs` ("Allow cloud AI"), `api_keys.rs`, `suggestions.rs`, `translate_error.rs`, and the test-only
-`smoke_providers.rs` sit beside it. Per-file detail: DETAILS.md.
+`cloud_consent.rs` ("Allow cloud AI"), `managed.rs` (the MDM policy's AI side), `api_keys.rs`, `suggestions.rs`,
+`translate_error.rs`, and the test-only `smoke_providers.rs` sit beside it. Per-file detail: DETAILS.md.
 
 ## Must-knows
 
-- **Every LLM backend comes from `resolve_backend(app)`, which enforces cloud consent**; `AiBackend::remote` stays
-  `pub(in crate::ai)`. Bump `CLOUD_AI_CONSENT_VERSION` on a material copy change. DETAILS.md § Cloud AI consent.
+- **Every LLM backend comes from `resolve_backend(app)` (managed policy, then cloud consent)**, and every request
+  re-asks the policy (`check_managed_policy`): a backend outlives its resolution. `AiBackend::remote` stays
+  `pub(in crate::ai)`. Bump `CLOUD_AI_CONSENT_VERSION` on a material copy change. DETAILS.md § Managed policy.
 - **Only local AI requires Apple Silicon.** Cloud AI (BYOK) works on Intel too, so gate only local-specific paths
   (`start_ai_server`, `start_ai_download`, `compute_ai_status`'s `Offer` branch) on `is_local_ai_supported()`. Gating
   `Offer` wrong offers Intel users a model they can't run.
@@ -32,10 +33,10 @@ Cloud-side: `client.rs` is the `genai` chat client (`AiBackend`), tapped for log
 - **Don't relax the `http://` base-URL gate.** `validate_ai_base_url` rejects plaintext `http://` to a non-loopback
   host when a key is set, blocking exfil to a malicious "free proxy". Loopback keeps `http://` (Ollama/LM Studio), and
   an empty key is allowed. The rejection IS the gate, not a warning.
-- **A model id lives in `smoke_providers.rs` only.** Groq's 2026-08 retirement cost three edits because the id sat in a
-  doc comment and a unit assertion too. Refresh pins there; the header has the recipe (ask the live model list).
-- **A red `gemini-smoke` means the model is gone; its WARN means Google was flaky.** That tier answers 200, 503, and a
-  bodyless 404 to one request within minutes, so the lane retries, then warns. ❌ Never quiet a warn by loosening it.
+- **A model id lives in `smoke_providers.rs` only** (a copy in a doc comment or assertion cost three edits once).
+  Refresh pins there; the header has the recipe.
+- **A red `gemini-smoke` means the model is gone; its WARN means Google was flaky** (it flaps 200/503/bodyless 404).
+  ❌ Never quiet a warn by loosening it.
 - **Classify a provider failure by HTTP status, never its sentence.** `map_genai_error` must reach
   `ai_error_for_status` from BOTH `genai` shapes: `Web{Adapter,Model}Call`, AND the `WebStream` wrapping a boxed
   `HttpError`. Missing the stream one degrades every streaming failure to `ServerError` — the agent's own path.
@@ -51,7 +52,7 @@ Cloud-side: `client.rs` is the `genai` chat client (`AiBackend`), tapped for log
 - **Cancellation needs the explicit `cancel_folder_suggestions` command** + `CancellationToken`, never `Channel::send`
   failure: `send` succeeds silently after the JS handler is GC'd, so the backend streams on (billing cloud, pegging
   local compute) past dialog close.
-- **`get_folder_suggestions` returns `Ok(Vec::new())` on AI errors** (folder suggestions are nice-to-have).
+- **A failed suggestion stream ends in `Failed`**, never `Err` (suggestions are optional).
 
 Architecture, flows, and decision detail: `DETAILS.md`. Read it before any non-trivial work here: editing,
 planning, reorganizing, or advising.

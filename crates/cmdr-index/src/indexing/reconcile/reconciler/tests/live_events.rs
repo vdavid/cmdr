@@ -34,6 +34,33 @@ fn system_paths_without_firmlink_are_skipped() {
     writer.shutdown();
 }
 
+/// A change under a filesystem mounted inside the boot tree is the mount's, not
+/// the boot disk's: the live loop drops it rather than writing a row, or climbing
+/// to the nearest indexed ancestor and rebuilding into the mount from there.
+#[test]
+#[cfg(target_os = "macos")]
+fn events_under_a_mount_inside_the_boot_tree_are_skipped() {
+    use crate::indexing::host::volumes::{self, FakeVolumeProvider, MountIdentity};
+    let _serialized = crate::indexing::handle::test_lock();
+    let test_dir = non_excluded_tempdir();
+    let mount = test_dir.path().join("mnt/share");
+    std::fs::create_dir_all(&mount).unwrap();
+    std::fs::write(mount.join("theirs.txt"), "x").unwrap();
+    let provider = FakeVolumeProvider::shared();
+    provider
+        .mount("/", MountIdentity::from_raw(1))
+        .mount(&mount, MountIdentity::from_raw(2));
+    let _installed = volumes::install_for_test(provider);
+
+    let (writer, _dir, conn) = setup_test_writer();
+    for path in [mount.clone(), mount.join("theirs.txt")] {
+        let event = make_event(&path.to_string_lossy(), 1, created_file_flags());
+        let result = process_fs_event(&event, &IndexPathSpace::root(), &conn, &writer, None, &mut None);
+        assert!(result.is_none(), "{} is on the mount", path.display());
+    }
+    writer.shutdown();
+}
+
 #[test]
 fn history_done_events_are_skipped() {
     let event = make_event("/test/file.txt", 1, history_done_flags());

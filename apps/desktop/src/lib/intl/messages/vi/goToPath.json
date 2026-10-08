@@ -1,7 +1,7 @@
 {
-  "goToPath.dialog.title": "Đi tới đường dẫn",
+  "goToPath.dialog.title": "Đi tới thư mục",
   "@goToPath.dialog.title": {
-    "sourceHash": "fb65702"
+    "sourceHash": "26fc1cf"
   },
   "goToPath.dialog.inputAriaLabel": "Đường dẫn cần đi tới",
   "@goToPath.dialog.inputAriaLabel": {
@@ -23,9 +23,9 @@
   "@goToPath.dialog.cancel": {
     "sourceHash": "19766ed"
   },
-  "goToPath.dialog.confirm": "Đi tới đường dẫn",
+  "goToPath.dialog.confirm": "Đi",
   "@goToPath.dialog.confirm": {
-    "sourceHash": "fb65702"
+    "sourceHash": "6cc8519"
   },
   "goToPath.dialog.ancestorHint": "Đường dẫn này không tồn tại. Nơi gần nhất có thể đến là {dir}.",
   "@goToPath.dialog.ancestorHint": {

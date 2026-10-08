@@ -4,8 +4,9 @@ Back/forward history, path resolution, paged keyboard shortcuts, and the pane's 
 
 ## Module map
 
-- Paths and history: `navigation-history.ts` (immutable stack), `real-folder-history.ts` (the newest non-snapshot entry
-  in one), `path-navigation.ts`, `path-resolution.ts`, `keyboard-shortcuts.ts`.
+- History: `navigation-history.ts` (immutable stack), `history-cursor.ts` (each entry's cursor),
+  `real-folder-history.ts` (newest non-snapshot entry). Paths: `path-navigation.ts`, `path-resolution.ts`,
+  `root-folder.ts`, `keyboard-shortcuts.ts`.
 - `VolumeBreadcrumb.svelte` is the CHIP, hosting `VolumeChooserMenu.svelte` (the switcher) and `FavoritesMenu.svelte` +
   `favorites-menu.svelte.ts` (⌃D). Plus a helper per concern (grouping, disk space, connection state, eject, labels,
   badges) and the shared dots (`ConnectionDot`, `UsbSpeedDot`, `DetachButton`).
@@ -31,8 +32,8 @@ Back/forward history, path resolution, paged keyboard shortcuts, and the pane's 
   `category === 'network'`: a mounted SMB share is one) and a PHONE by `deviceReadiness`, ❌ never `isEjectable` or
   `connectionState`, carried unconditionally and not at all, else a greyed `unavailable` phone offers a live Disconnect.
 - **`wordEjectRefusal(e)` words every eject refusal** from `errors.eject.*`; ❌ never `String(e)` or `diskutil` stderr.
-  `wordUnmountRefusal` names the holders; ❗ `Unclassified` and BOTH empty `HolderScan` arms take the unnamed fallback,
-  ❌ never "nothing is using this drive". Precedence: `DETAILS.md`.
+  `wordUnmountRefusal` names holders (`Unclassified` as processes, ❌ never apps); an empty scan takes the unnamed
+  fallback, ❌ never "nothing is using this drive". Precedence: `DETAILS.md`.
 - **The Network group's rows are the LISTING's**, filtered by `belongsInSwitcher`, plus the hub this dir synthesizes. ❗
   No `listSavedServers()` fetch in `volume-grouping.ts`; the row carries `pinned` already.
 - **Favorites live in their OWN menu (⌃D), ❌ never in the switcher.** `volume-grouping.ts` groups the `favorite`

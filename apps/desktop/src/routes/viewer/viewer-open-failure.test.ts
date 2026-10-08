@@ -64,7 +64,7 @@ describe('handleOpenFailure log level', () => {
 
     const failure = handleOpenFailure(asLogger, 'Open', new TypeError('undefined is not an object'))
 
-    expect(failure).toEqual({ message: tString('viewer.error.readFailed'), canRetry: false })
+    expect(failure).toEqual({ message: tString('viewer.error.readFailed'), canRetry: true })
     expect(log.error).toHaveBeenCalledTimes(1)
     expect(log.warn).not.toHaveBeenCalled()
   })

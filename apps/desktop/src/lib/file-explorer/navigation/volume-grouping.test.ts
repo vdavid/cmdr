@@ -62,6 +62,34 @@ describe('groupByCategory: the Network group', () => {
     expect(items[1].connectionState).toBe('saved')
   })
 
+  it('shows a pinned SMB share that is not mounted, as its `saved` row', () => {
+    // A saved share's row carries the volume id its last mount had, so the pin
+    // and the mounted share are one id and never two rows.
+    const share = serverRow({
+      id: 'smb-naspi-media',
+      name: 'media',
+      path: '/Volumes/media',
+      fsType: 'smbfs',
+      connectionState: 'saved',
+      pinned: true,
+    })
+    const items = networkItems([share])
+    expect(items.map((v) => v.id)).toEqual(['network', 'smb-naspi-media'])
+    expect(items[1].connectionState).toBe('saved')
+  })
+
+  it('hides an unmounted SMB share nobody pinned', () => {
+    const share = serverRow({
+      id: 'smb-naspi-media',
+      name: 'media',
+      path: '/Volumes/media',
+      fsType: 'smbfs',
+      connectionState: 'saved',
+      pinned: false,
+    })
+    expect(networkItems([share]).map((v) => v.id)).toEqual(['network'])
+  })
+
   it('hides a saved place nobody pinned', () => {
     // The cap the user holds: 12 saved buckets must not push their own disks off
     // the switcher. The row is still in the LISTING, so Enter in the hub and a

@@ -37,7 +37,10 @@ import { getSetting, onSpecificSettingChange } from '$lib/settings'
 import { ensureFontMetricsLoaded, setMeasuresFontMetrics } from '$lib/font-metrics'
 
 const log = getAppLogger('text-size')
-/** A listener that throws does so on every scale change: logged once until a pass runs clean. */
+/**
+ * A listener that throws does so on every scale change: logged once until a pass runs clean. At error, since every
+ * listener is Cmdr's own code.
+ */
 const listenerFailures = new LogOnceGate()
 
 const REMEASURE_DEBOUNCE_MS = 1000
@@ -137,7 +140,7 @@ function computeAndApply(triggerRemeasure: boolean): number {
             cb(effective)
           } catch (e) {
             anyThrew = true
-            if (listenerFailures.shouldLog(String(e))) log.warn('Scale-change listener threw: {error}', { error: e })
+            if (listenerFailures.shouldLog(String(e))) log.error('Scale-change listener threw: {error}', { error: e })
           }
         }
         if (!anyThrew) listenerFailures.clear()

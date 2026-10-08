@@ -235,7 +235,7 @@
   },
   "errors.listing.notPermitted.title": "Not permitted",
   "errors.listing.notPermitted.explanation": "macOS blocked Cmdr from accessing `{path}`. This usually means the folder is protected by macOS security policies, or Cmdr hasn’t been granted the right permissions yet.",
-  "errors.listing.notPermitted.suggestion": "Here’s what to try:\n- Open **{system_settings} > {privacy_and_security} > {files_and_folders}** and grant Cmdr access\n- If this is a system-protected folder (like system directories), you may need to grant Cmdr **{full_disk_access}** under {privacy_and_security}\n- In Terminal, run `ls -la` on this path to check ownership and permissions",
+  "errors.listing.notPermitted.suggestion": "Here’s what to try:\n- Open **{system_settings} > {privacy_and_security} > {files_and_folders}** and grant Cmdr access\n- If this is a system-protected folder, you may need to grant Cmdr **{full_disk_access}** under {privacy_and_security}\n- In Terminal, run `ls -la` on this path to check ownership and permissions",
   "@errors.listing.notPermitted.title": {
     "description": "Title of the listing error panel when macOS blocked access to a folder (operation not permitted). Plain text.",
     "screenshot": "error-message-example.png",
@@ -394,7 +394,7 @@
   },
   "errors.listing.notSupportedErrno.title": "Not supported",
   "errors.listing.notSupportedErrno.explanation": "This operation isn’t supported on this file system. Different file systems (like FAT32, NTFS, or network shares) support different features, and this one doesn’t support what Cmdr is trying to do.",
-  "errors.listing.notSupportedErrno.suggestion": "Try a different approach, or use Finder for this operation. If you’re working with an external drive, it might be formatted with a file system that has limitations (for example, FAT32 can’t store files larger than 4 GB).",
+  "errors.listing.notSupportedErrno.suggestion": "Try a different approach, or use Finder for this operation. If you’re working with an external drive, it might be formatted with a file system that has limitations (for example, FAT32 can’t store files of 4 GiB or more).",
   "@errors.listing.notSupportedErrno.title": {
     "description": "Title of the listing error panel when the operation isn't supported by the file system (errno path). Plain text.",
     "screenshot": "error-message-example.png",
@@ -406,7 +406,7 @@
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
   "@errors.listing.notSupportedErrno.suggestion": {
-    "description": "Recovery suggestion for an unsupported operation (errno path). Markdown. \"Finder\", \"FAT32\", and the size \"4 GB\" are literal; do NOT translate.",
+    "description": "Recovery suggestion for an unsupported operation (errno path). Markdown. \"Finder\" and \"FAT32\" are literal; do NOT translate. \"4 GiB\" is FAT32's real limit (4 × 1,024³ bytes, the IEC binary gibibyte): keep the number and write the symbol as your translation of common.sizeUnit.gibibyte.",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
@@ -734,6 +734,29 @@
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
+  "errors.listing.objectStoreRefused.title": "Your storage provider refused access",
+  "errors.listing.objectStoreRefused.explanation": "`{path}` is in cloud storage, and the provider turned the request down. Either the access key doesn’t have permission here, or the provider has paused access to the account, for example after a usage cap or a billing issue.",
+  "errors.listing.objectStoreRefused.suggestion": "Check the access key’s permissions, or your provider’s console for a usage cap or a billing notice.",
+  "@errors.listing.objectStoreRefused.title": {
+    "description": "Title of the listing error panel when cloud object storage (Amazon S3, Cloudflare R2, Backblaze B2, Wasabi, and similar) refuses a folder or file. The refusal can mean either missing permissions or a paused account, and Cmdr can't tell which. Plain text.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "@errors.listing.objectStoreRefused.explanation": {
+    "description": "Body of the listing error panel when cloud object storage refuses a path. Markdown. Names both possible causes because the provider's answer is the same for both: the access key lacks permission, or the provider paused the account (a usage cap or a billing problem). \"Access key\" is the credential the user entered when connecting.",
+    "placeholders": {
+      "path": {
+        "description": "The path that was refused, inserted verbatim inside backticks. Do not translate or reformat it."
+      }
+    },
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "@errors.listing.objectStoreRefused.suggestion": {
+    "description": "Recovery suggestion when cloud object storage refuses a path. Plain text, one sentence. \"Console\" is the provider's web dashboard where usage caps and billing live.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
   "errors.listing.remotePermissionDenied.title": "The server won’t open this folder",
   "errors.listing.remotePermissionDenied.explanation": "`{path}` lives on a network share, and the account you connected with doesn’t have permission to open it. The server turns the request down before macOS is involved, so this isn’t a privacy setting on your Mac.",
   "errors.listing.remotePermissionDenied.suggestion": "Here’s what to try:\n- Check the folder’s permissions on the server, and which account you mounted the share with\n- Some folders belong to the server’s own system account (`lost+found` on a Linux share, for example) and stay closed to everyone else\n- To connect as someone else, eject the share and mount it again with those credentials",
@@ -934,6 +957,24 @@
   },
   "@errors.listing.deletePending.suggestion": {
     "description": "Recovery suggestion for a delete-pending file. Markdown bullet list. \"Cmdr\" is the app name; the en-dash → is part of the copy; do NOT translate \"Cmdr\".",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "errors.listing.coldStorage.title": "This file is archived",
+  "errors.listing.coldStorage.explanation": "`{path}` is archived, so its contents can’t be read until it’s restored.",
+  "errors.listing.coldStorage.suggestion": "Here’s what to try:\n- Restore it in your storage provider’s console, then open it again\n- A restore can take anywhere from minutes to two days",
+  "@errors.listing.coldStorage.title": {
+    "description": "Title of the listing error panel when browsing into a file (usually a zip) that sits in cloud cold storage and can't be read until it's restored. Plain text. \"Archived\" here means the file's bytes sit in a cloud provider's cold storage tier (for example S3 Glacier) and must be restored before they can be read. It does NOT mean a zip or other archive file.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "@errors.listing.coldStorage.explanation": {
+    "description": "Body of the listing error panel for an archived file. Markdown. The literal `{path}` is a do-not-translate placeholder replaced at runtime with the path; here it leads the sentence inside backticks. \"Archived\" here means the file's bytes sit in a cloud provider's cold storage tier (for example S3 Glacier) and must be restored before they can be read. It does NOT mean a zip or other archive file.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "@errors.listing.coldStorage.suggestion": {
+    "description": "Recovery suggestion for an archived file. Markdown bullet list. \"Storage provider’s console\" means the provider's website or admin tool (for example the AWS console), where a restore is started. \"Archived\" here means the file's bytes sit in a cloud provider's cold storage tier (for example S3 Glacier) and must be restored before they can be read. It does NOT mean a zip or other archive file.",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
@@ -1601,8 +1642,8 @@
     "screenshot": "transfer-error-source_not_found.png"
   },
   "errors.write.destinationNotFound.title": "Couldn’t find the destination folder",
-  "errors.write.destinationNotFound.message.copy": "The folder you’re copying into isn’t there any more, so there was nowhere to put your files. The originals are untouched.",
-  "errors.write.destinationNotFound.message.move": "The folder you’re moving into isn’t there any more, so there was nowhere to put your files. The originals are untouched.",
+  "errors.write.destinationNotFound.message.copy": "The folder you’re copying into isn’t there anymore, so there was nowhere to put your files. The originals are untouched.",
+  "errors.write.destinationNotFound.message.move": "The folder you’re moving into isn’t there anymore, so there was nowhere to put your files. The originals are untouched.",
   "errors.write.destinationNotFound.suggestion": "It may have been renamed or removed, or the drive may have disconnected. Pick another destination, or open the folder again and retry.",
   "@errors.write.destinationNotFound.title": {
     "description": "Title of the copy/move error dialog when the DESTINATION folder is missing (or the drive can't address it), so nothing could be written. Plain text. Uses a contraction (\"Couldn't\"). Keep it clearly distinct from errors.write.sourceNotFound.title, which is about the file being copied: confusing the two sends someone hunting for data loss that didn't happen. Only copy and move reach this error (delete and trash have no destination).",
@@ -1620,6 +1661,29 @@
   "@errors.write.destinationNotFound.suggestion": {
     "description": "Recovery suggestion when the destination folder is missing, shown in the copy/move error dialog. Plain text. Names the three things that actually cause it (renamed, removed, drive disconnected) and the two ways out.",
     "screenshot": "transfer-error-destination_not_found.png"
+  },
+  "errors.write.destinationNotAFolder.title": "A file is in the way",
+  "errors.write.destinationNotAFolder.message": "Cmdr couldn’t create the destination folder, because there’s a file at {path}, where a folder needs to be. Nothing was written, and the originals are untouched.",
+  "errors.write.destinationNotAFolder.suggestion": "Pick another destination, or rename or move that file and try again.",
+  "@errors.write.destinationNotAFolder.title": {
+    "description": "Title of the copy/move error dialog when the destination folder couldn't be created because a file sits where that folder, or one of the folders above it, has to be. Plain text. Nothing was copied or moved.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "@errors.write.destinationNotAFolder.message": {
+    "description": "Body of the copy/move error dialog when a file sits where the destination folder, or a folder above it, has to be, so Cmdr stopped before writing anything. Plain text, a raw errors.* string (no ICU). The same sentence serves copy and move, so keep it neutral about which one it was. The last sentence is load-bearing reassurance: nothing was changed, so keep that promise explicit.",
+    "placeholders": {
+      "path": {
+        "description": "The full path of the file that is in the way, inserted verbatim. It can be a level or more above the folder the person picked. Do not translate or reformat it."
+      }
+    },
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "@errors.write.destinationNotAFolder.suggestion": {
+    "description": "Recovery suggestion when a file is in the way of the destination folder, shown in the copy/move error dialog. Plain text. \"That file\" is the one the explanation above names. The two ways out: a different destination, or getting the file out of the way first.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
   "errors.write.notConnected.title": "Not connected yet",
   "errors.write.notConnected.message.source": "Cmdr hasn’t connected to the phone or server holding these files yet, so nothing has changed.",
@@ -1640,6 +1704,24 @@
   "@errors.write.notConnected.suggestion": {
     "description": "Recovery suggestion when a phone or server isn't connected yet, shown in the copy, move, or delete error dialog. Plain text. \"It\" is the phone or server the message above names. \"Volume switcher\" is the dropdown at the top of each pane where a person picks a drive, phone, or server; use the same term as the commands.paneLeftVolumeChooser.label key. Choosing the phone or server there is what connects it.",
     "screenshot": "transfer-error-source_not_connected.png"
+  },
+  "errors.write.noLongerConnected.title": "Not connected anymore",
+  "errors.write.noLongerConnected.message": "The phone or server holding these files isn’t connected anymore, so nothing has changed.",
+  "errors.write.noLongerConnected.suggestion": "Plug the phone back in, or open the server from the volume switcher, then try again.",
+  "@errors.write.noLongerConnected.title": {
+    "description": "Title of the copy, move, or delete error dialog when the phone or server holding the selected files was connected earlier but isn't any more (a phone unplugged while its search results were still on screen), so the operation didn't start. Distinct from errors.write.notConnected.title (\"Not connected yet\", for one Cmdr never connected) and from \"Device disconnected\" (a connection that dropped mid-operation). Plain text.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "@errors.write.noLongerConnected.message": {
+    "description": "Body of the copy, move, or delete error dialog when the phone or server that holds the selected files is no longer connected. Cmdr refused before reading or changing anything, and the end of the sentence promises that. Plain text, a raw errors.* string (no ICU). It has to read right for copy, move, and delete alike, so don't name one action.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "@errors.write.noLongerConnected.suggestion": {
+    "description": "Recovery suggestion in the same dialog. A phone comes back by plugging its cable in again; a server by choosing it in the \"volume switcher\", the dropdown at the top of each pane where a person picks a drive, phone, or server (use the same term as the commands.paneLeftVolumeChooser.label key). Plain text.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
   "errors.write.destinationExists.title": "File already exists",
   "errors.write.destinationExists.message": "There’s already a file with this name at the destination.",
@@ -2023,7 +2105,7 @@
   },
   "errors.write.invalidName.title": "Invalid file name",
   "errors.write.invalidName.message": "{path} has a name the destination can’t store.",
-  "errors.write.invalidName.suggestion": "Rename it to something shorter and plainer, then try again. Some destinations also refuse reserved names like CON, NUL, or LPT1.",
+  "errors.write.invalidName.suggestion": "Rename it to something shorter and plainer, then try again. Some destinations refuse tabs or line breaks in a name, and some refuse reserved names like CON, NUL, or LPT1.",
   "@errors.write.invalidName.title": {
     "description": "Title of the copy/move error dialog when the destination can't store the file's name: too long for it, or characters or a reserved name it rejects. Plain text.",
     "screenshot": "transfer-error-invalid_name.png"
@@ -2038,7 +2120,7 @@
     "screenshot": "transfer-error-invalid_name.png"
   },
   "@errors.write.invalidName.suggestion": {
-    "description": "Recovery suggestion when the destination can't store the file's name. Plain text. \"Some destinations\" covers disks, phones, and servers alike. CON, NUL, and LPT1 are reserved Windows device names; keep them as-is, do NOT translate them.",
+    "description": "Recovery suggestion when the destination can't store the file's name. Plain text. \"Some destinations\" covers disks, phones, servers, and cloud storage alike: cloud storage such as Google Cloud Storage or Backblaze B2 refuses tabs and line breaks inside a file name. CON, NUL, and LPT1 are reserved Windows device names; keep them as-is, do NOT translate them.",
     "screenshot": "transfer-error-invalid_name.png"
   },
   "errors.write.trashRefused.title": "Couldn’t move to trash",
@@ -2155,6 +2237,12 @@
   "errors.write.permissionDenied.suggestion.deleteOther": "Check that you have write access to the parent folder. The file may be protected. Check its permissions (e.g. via chmod or your file manager) and try again.",
   "errors.write.permissionDenied.suggestion.default": "Check that you have write access to the destination folder. You may need to unlock the device or change folder permissions.",
   "errors.write.permissionDenied.message.named": "Your macOS user can’t change {folder}.",
+  "errors.write.permissionDenied.suggestion.objectStoreAccount": "The provider refused, and that can mean two things. Check the access key’s permissions, or your provider’s console for a usage cap or a billing notice.",
+  "@errors.write.permissionDenied.suggestion.objectStoreAccount": {
+    "description": "Recovery suggestion in the copy/move/delete dialog when cloud object storage (Amazon S3, Cloudflare R2, Backblaze B2, Wasabi, and similar) refuses. The provider gives the same answer for missing permissions and for a paused account (a usage cap or a billing problem), so the sentence names both. Plain text. \"Access key\" is the credential the user entered when connecting; \"console\" is the provider's web dashboard.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
   "errors.write.permissionDenied.suggestion.needsAdminMac": "Changing it needs administrator rights. To give your own account access, select the folder in Finder, choose Get Info, and look under Sharing & Permissions.",
   "errors.write.permissionDenied.suggestion.needsAdminOther": "Changing it needs administrator rights. To give your own account access, adjust the folder’s permissions (for example with chmod) and try again.",
   "errors.write.permissionDenied.suggestion.systemProtectedMac": "macOS protects this one itself, so administrator rights won’t change it. The item may be locked: select it in Finder, choose Get Info, and uncheck Locked.",
@@ -2237,23 +2325,23 @@
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
-  "errors.write.insufficientSpace.title": "Not enough space",
-  "errors.write.insufficientSpace.message": "The destination needs {required} but only has {available} available.",
-  "errors.write.insufficientSpace.suggestion": "Free up some space on the destination by deleting unnecessary files, or choose a different location.",
+  "errors.write.insufficientSpace.title": "The destination may not have enough space",
+  "errors.write.insufficientSpace.message": "This needs up to {required}, and the destination has {available} free.",
+  "errors.write.insufficientSpace.suggestion": "Files already at the destination may mean the copy needs less space. If the destination fills up, Cmdr stops and tells you. To be safe, free up some space or choose a different location.",
   "@errors.write.insufficientSpace.title": {
-    "description": "Title of the copy/move error dialog when the destination volume is out of space. Plain text.",
+    "description": "Title of the copy dialog shown BEFORE anything is copied, when the destination might be too full for the copy. It's an estimate, not a certainty, so keep the hedge (\"may\"). Plain text.",
     "screenshot": "transfer-error-insufficient_space.png"
   },
   "@errors.write.insufficientSpace.message": {
-    "description": "Body of the copy/move error dialog when the destination is out of space. Plain text.",
+    "description": "Body of the copy dialog when the destination might be too full: the most the copy can need, and what is free now. Plain text.",
     "placeholders": {
-      "required": "the formatted size needed, colorized HTML markup (e.g. a span wrapping \"1.0 GB\"); do NOT translate the markup or the size",
+      "required": "the formatted upper-bound size the copy can need, colorized HTML markup (e.g. a span wrapping \"1.0 GB\"); do NOT translate the markup or the size",
       "available": "the formatted size currently free, colorized HTML markup (e.g. a span wrapping \"512.0 MB\"); do NOT translate the markup or the size"
     },
     "screenshot": "transfer-error-insufficient_space.png"
   },
   "@errors.write.insufficientSpace.suggestion": {
-    "description": "Recovery suggestion when the destination is out of space. Plain text.",
+    "description": "Advice under the \"destination may not have enough space\" copy dialog: the estimate can be too high (files already there can make the copy smaller), the copy stops safely if the destination does fill up, and the safe options. Shown beside a \"Copy anyway\" button, but also where no button is, so don't mention the button. Plain text.",
     "screenshot": "transfer-error-insufficient_space.png"
   },
   "errors.write.destinationFull.title": "Destination is full",
@@ -2421,6 +2509,52 @@
     "description": "Recovery suggestion when a file is marked for deletion but still held open. Plain text.",
     "screenshot": "transfer-error-delete_pending.png"
   },
+  "errors.write.sourceInColdStorage.title": "This file is archived",
+  "errors.write.sourceInColdStorage.message": "The file at {path} is archived, so it can’t be read until it’s restored.",
+  "errors.write.sourceInColdStorage.suggestion": "Restore it in your storage provider’s console, then try again. A restore can take anywhere from minutes to two days.",
+  "@errors.write.sourceInColdStorage.title": {
+    "description": "Title of the copy/move error dialog when a source file sits in cloud cold storage and can't be read until it's restored. Plain text. \"Archived\" here means the file's bytes sit in a cloud provider's cold storage tier (for example S3 Glacier) and must be restored before they can be read. It does NOT mean a zip or other archive file.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "@errors.write.sourceInColdStorage.message": {
+    "description": "Body of the copy/move error dialog for an archived source file. Plain text. Names the file, because one archived file deep in a copied folder is the whole problem. \"Archived\" here means the file's bytes sit in a cloud provider's cold storage tier (for example S3 Glacier) and must be restored before they can be read. It does NOT mean a zip or other archive file.",
+    "placeholders": {
+      "path": {
+        "description": "The full path of the archived file, inserted verbatim. Do not translate or reformat it."
+      }
+    },
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "@errors.write.sourceInColdStorage.suggestion": {
+    "description": "Recovery suggestion for an archived source file. Plain text. \"Storage provider’s console\" means the provider's website or admin tool (for example the AWS console), where a restore is started. A restore takes minutes to about two days depending on the tier.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "errors.write.sourceChanged.title": "This file changed during the copy",
+  "errors.write.sourceChanged.message": "The file at {path} changed while Cmdr was copying it, so Cmdr saved nothing. The file stays where it was.",
+  "errors.write.sourceChanged.suggestion": "Try again to copy the version that’s there now.",
+  "@errors.write.sourceChanged.title": {
+    "description": "Title of the copy/move error dialog when another app or person replaced the source file in cloud storage while Cmdr was copying it there on the server. Plain text.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "@errors.write.sourceChanged.message": {
+    "description": "Body of the copy/move error dialog when the source file was replaced mid-copy. Cmdr stopped before saving a copy that could mix the old and the new version, so nothing appeared at the destination. \"The file stays where it was\" matters for a move: the source was NOT deleted. \"Cmdr\" is the product name. Plain text.",
+    "placeholders": {
+      "path": {
+        "description": "The full path of the source file, inserted verbatim. Do not translate or reformat it."
+      }
+    },
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "@errors.write.sourceChanged.suggestion": {
+    "description": "Recovery suggestion when the source file was replaced mid-copy: running the copy again copies the new version that is there now. Plain text.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
   "errors.write.newDataKeptAt.title": "Your new file is under a different name",
   "errors.write.newDataKeptAt.message": "The new {path} is written and complete, but the destination wouldn’t let it take that name, and the file it was replacing is already gone. The new one is at {keptAt}.",
   "errors.write.newDataKeptAt.suggestion": "Open {keptAt} to check it, then rename it. If the destination is a network share or a phone, reconnect it first and the rename will go through.",
@@ -2568,7 +2702,7 @@
     "description": "Recovery suggestion for an unrecognized failure. Plain text. \"technical details below\" refers to an expandable section in the same dialog.",
     "screenshot": "transfer-error-archive_needs_password.png"
   },
-  "errors.mutation.notFound": "There’s nothing at “{path}” any more.",
+  "errors.mutation.notFound": "There’s nothing at “{path}” anymore.",
   "@errors.mutation.notFound": {
     "description": "Shown when the item the person asked to rename isn't on disk any more (something else moved or deleted it since the list was drawn). Inline one-line message under the name field in Cmdr's Rename / New folder / New file flow, or in a brief toast. Plain text, one sentence, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
     "placeholders": {
@@ -2604,7 +2738,7 @@
     "screenshot": "mkdir-confirmation-too-long.png",
     "screenshotNote": "This one is NOT the error panel. Your string is the single red line under the name field in the Rename / New folder / New file box, exactly where the validation message sits in this screenshot (which shows a DIFFERENT message). One sentence, plain text, no markdown, and it has to fit a narrow dialog."
   },
-  "errors.mutation.volumeGone": "That volume isn’t available any more, so nothing changed.",
+  "errors.mutation.volumeGone": "That volume isn’t available anymore, so nothing changed.",
   "@errors.mutation.volumeGone": {
     "description": "Shown when the drive or share was disconnected in the moment between the person asking and Cmdr writing. \"Volume\" means a drive, disk, or network share. Inline one-line message under the name field in Cmdr's Rename / New folder / New file flow, or in a brief toast. Plain text, one sentence, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
     "screenshot": "mkdir-confirmation-too-long.png",
@@ -2658,7 +2792,7 @@
     "screenshot": "mkdir-confirmation-too-long.png",
     "screenshotNote": "This one is NOT the error panel. Your string is the single red line under the name field in the Rename / New folder / New file box, exactly where the validation message sits in this screenshot (which shows a DIFFERENT message). One sentence, plain text, no markdown, and it has to fit a narrow dialog."
   },
-  "errors.volume.notFound": "There’s nothing at “{path}” any more.",
+  "errors.volume.notFound": "There’s nothing at “{path}” anymore.",
   "@errors.volume.notFound": {
     "description": "Shown when the drive or share reports that a path isn't there. Inline one-line message under the name field in Cmdr's Rename / New folder / New file flow, or in a brief toast. Plain text, one sentence, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
     "placeholders": {
@@ -2742,6 +2876,24 @@
     "screenshot": "mkdir-confirmation-too-long.png",
     "screenshotNote": "This one is NOT the error panel. Your string is the single red line under the name field in the Rename / New folder / New file box, exactly where the validation message sits in this screenshot (which shows a DIFFERENT message). One sentence, plain text, no markdown, and it has to fit a narrow dialog."
   },
+  "errors.volume.notADirectory": "There’s a file at “{path}”, where a folder needs to be.",
+  "@errors.volume.notADirectory": {
+    "description": "Shown when Cmdr needs a folder at a path (to create it, or to create something inside it) and finds a file there instead, so it stopped without changing anything. The file can sit one or more levels above the folder the person asked for, which is why the path is spelled out. Inline one-line message under the name field in Cmdr's Rename / New folder / New file flow, or in a brief toast. Plain text, one sentence, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
+    "placeholders": {
+      "path": "the full path of the file that is in the way (uncontrolled user text; keep it verbatim in quotes)"
+    },
+    "screenshot": "mkdir-confirmation-too-long.png",
+    "screenshotNote": "This one is NOT the error panel. Your string is the single red line under the name field in the Rename / New folder / New file box, exactly where the validation message sits in this screenshot (which shows a DIFFERENT message). One sentence, plain text, no markdown, and it has to fit a narrow dialog."
+  },
+  "errors.volume.invalidNameNamed": "“{name}” can’t be stored here. Pick a different name.",
+  "@errors.volume.invalidNameNamed": {
+    "description": "Shown when the drive, server, or cloud storage rejects the name the user typed in Rename, New folder, or New file (a character it can't store, like a tab or a line break, a reserved name, or a name that's too long). The fix is always a different name, never a retry, so keep that clear. Inline under the name field or in a brief toast after a rename, which is why it repeats the name. Plain text, one sentence, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
+    "placeholders": {
+      "name": "the name the user typed (uncontrolled user text, may hold a tab; keep it verbatim in quotes)"
+    },
+    "screenshot": "mkdir-confirmation-too-long.png",
+    "screenshotNote": "This one is NOT the error panel. Your string is the single red line under the name field in the Rename / New folder / New file box, exactly where the validation message sits in this screenshot (which shows a DIFFERENT message). One sentence, plain text, no markdown, and it has to fit a narrow dialog."
+  },
   "errors.volume.invalidName": "The destination can’t hold that name. Pick a different one.",
   "@errors.volume.invalidName": {
     "description": "Shown when a file server or filesystem rejects the name itself (a reserved name, a name that's too long, or a character it can't store). The fix is always a different name, never a retry, so keep that clear. Inline one-line message under the name field in Cmdr's Rename / New folder / New file flow, or in a brief toast. Plain text, one sentence, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
@@ -2751,6 +2903,18 @@
   "errors.volume.deletePending": "That file is on its way out, and something still has it open. Try again in a moment.",
   "@errors.volume.deletePending": {
     "description": "Shown for a file on a network share whose deletion was requested but that an open handle is keeping alive. It clears on its own, so word it as temporary. Inline one-line message under the name field in Cmdr's Rename / New folder / New file flow, or in a brief toast. Plain text, one sentence, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
+    "screenshot": "mkdir-confirmation-too-long.png",
+    "screenshotNote": "This one is NOT the error panel. Your string is the single red line under the name field in the Rename / New folder / New file box, exactly where the validation message sits in this screenshot (which shows a DIFFERENT message). One sentence, plain text, no markdown, and it has to fit a narrow dialog."
+  },
+  "errors.volume.coldStorage": "“{path}” is archived. Restore it in your storage provider’s console first.",
+  "@errors.volume.coldStorage": {
+    "description": "Shown when an action needs to read a file that sits in cloud cold storage (for example S3 Glacier) and hasn't been restored. The literal `{path}` is a do-not-translate placeholder replaced at runtime with the path. Inline one-line message in a brief toast or under a name field. Plain text, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read. \"Archived\" here means the file's bytes sit in a cloud provider's cold storage tier (for example S3 Glacier) and must be restored before they can be read. It does NOT mean a zip or other archive file.",
+    "screenshot": "mkdir-confirmation-too-long.png",
+    "screenshotNote": "This one is NOT the error panel. Your string is the single red line under the name field in the Rename / New folder / New file box, exactly where the validation message sits in this screenshot (which shows a DIFFERENT message). One sentence, plain text, no markdown, and it has to fit a narrow dialog."
+  },
+  "errors.volume.sourceChanged": "“{path}” changed while Cmdr was copying it, so Cmdr saved nothing. Try again to copy the new version.",
+  "@errors.volume.sourceChanged": {
+    "description": "Shown when another app or person replaced a file in cloud storage while Cmdr was copying it there on the server, so Cmdr stopped and saved nothing (the copy could have mixed the old and the new version). The original file stays where it was. The literal `{path}` is a do-not-translate placeholder replaced at runtime with the path. Inline one-line message in a brief toast or under a name field. Plain text, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
     "screenshot": "mkdir-confirmation-too-long.png",
     "screenshotNote": "This one is NOT the error panel. Your string is the single red line under the name field in the Rename / New folder / New file box, exactly where the validation message sits in this screenshot (which shows a DIFFERENT message). One sentence, plain text, no markdown, and it has to fit a narrow dialog."
   },
@@ -2826,13 +2990,19 @@
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
-  "errors.eject.busy": "Cmdr is still moving files on this drive. Eject it once that finishes.",
+  "errors.serverRequest.blockedByPolicy": "Your organization turned this off for Cmdr.",
+  "@errors.serverRequest.blockedByPolicy": {
+    "description": "Shown when the person's organization (their employer's IT team, through a device management profile) switched off this kind of request, for example sending crash or error reports, so Cmdr sent nothing. Nothing is broken and trying again won't change it. Surface: follows a short lead sentence that names what didn't happen (\"The report didn't go out.\", \"Couldn't send the error report.\", \"Cmdr couldn't check for updates.\"), in the crash report dialog, a toast, or Settings > Updates. Plain text, one short sentence, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "errors.eject.busy": "Cmdr is still moving files there. Try again once that finishes.",
   "@errors.eject.busy": {
     "description": "Shown when a copy, move, or delete is still reading from or writing to the drive, so ejecting now could truncate a file. Tell the person to wait rather than to force it. Surface: a brief error toast in the top-right of Cmdr's main window, shown after someone asks to eject a drive or disconnect a network share. Your string is dropped into \"Couldn't eject {volumeName}: …\" or \"Couldn't disconnect: …\", so it reads as the sentence AFTER a colon. Plain text, one or two short sentences, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
-  "errors.eject.volumeNotFound": "That drive isn’t connected any more, so there’s nothing to eject.",
+  "errors.eject.volumeNotFound": "That drive isn’t connected anymore, so there’s nothing to eject.",
   "@errors.eject.volumeNotFound": {
     "description": "Shown when the drive vanished in the moment between the person clicking Eject and Cmdr acting on it. Nothing went wrong; the outcome they wanted already happened. Surface: a brief error toast in the top-right of Cmdr's main window, shown after someone asks to eject a drive or disconnect a network share. Your string is dropped into \"Couldn't eject {volumeName}: …\" or \"Couldn't disconnect: …\", so it reads as the sentence AFTER a colon. Plain text, one or two short sentences, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
     "screenshot": "error-message-example.png",
@@ -2850,7 +3020,7 @@
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
-  "errors.eject.remoteNotConnected": "This server isn’t connected any more, so there’s nothing left to close.",
+  "errors.eject.remoteNotConnected": "This server isn’t connected anymore, so there’s nothing left to close.",
   "@errors.eject.remoteNotConnected": {
     "description": "Shown when Disconnect reaches a server (SFTP or WebDAV) whose connection has already closed, so there's nothing left to do. It usually reaches an automated caller rather than a person: the Disconnect button only appears while a connection is live. Surface: a brief error toast in the top-right of Cmdr's main window, shown after someone asks to eject a drive or disconnect a network share. Your string is dropped into \"Couldn't eject {volumeName}: …\" or \"Couldn't disconnect: …\", so it reads as the sentence AFTER a colon. Plain text, one or two short sentences, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
     "screenshot": "error-message-example.png",
@@ -2862,15 +3032,15 @@
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
-  "errors.eject.unmountRefused": "Something is still using this drive. Close any open files and apps, then eject again.",
+  "errors.eject.unmountRefused": "Something still has files open there. Close any open files and apps, then try again.",
   "@errors.eject.unmountRefused": {
-    "description": "Shown when the operating system turns the eject down, almost always because another app still holds a file open. The technical reason is written to the log, not shown here. Surface: a brief error toast in the top-right of Cmdr's main window, shown after someone asks to eject a drive or disconnect a network share. Your string is dropped into \"Couldn't eject {volumeName}: …\" or \"Couldn't disconnect: …\", so it reads as the sentence AFTER a colon. Plain text, one or two short sentences, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
+    "description": "Shown when the operating system turns the eject down, almost always because another app still holds a file open. The technical reason is written to the log, not shown here. Surface: a brief error toast in the top-right of Cmdr's main window, shown after someone asks to eject a drive or disconnect a network share. Your string is dropped into \"Couldn't eject {volumeName}: …\" or \"Couldn't disconnect: …\", so it reads as the sentence AFTER a colon. The same sentence follows both, and the lead-in already says which action it was and what it was done to, so name neither: no \"drive\", no \"share\", no \"eject\" or \"disconnect\". Point at the place with a plain \"there\" and ask to \"try again\". Plain text, one or two short sentences, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
-  "errors.eject.unmountRefusedByApp": "{app} is still using this drive. Close anything it has open there, then eject again.",
+  "errors.eject.unmountRefusedByApp": "{app} still has files open there. Close them, then try again.",
   "@errors.eject.unmountRefusedByApp": {
-    "description": "Shown when the operating system turns the eject down and Cmdr could name exactly ONE app or command-line tool still holding the drive. Naming it is the whole point: the person now knows what to close. Surface: a brief error toast in the top-right of Cmdr's main window, shown after someone asks to eject a drive or disconnect a network share. Your string is dropped into \"Couldn't eject {volumeName}: …\" or \"Couldn't disconnect: …\", so it reads as the sentence AFTER a colon. Plain text, one or two short sentences, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
+    "description": "Shown when the operating system turns the eject down and Cmdr could name exactly ONE app or command-line tool still holding the drive. Naming it is the whole point: the person now knows what to close. Surface: a brief error toast in the top-right of Cmdr's main window, shown after someone asks to eject a drive or disconnect a network share. Your string is dropped into \"Couldn't eject {volumeName}: …\" or \"Couldn't disconnect: …\", so it reads as the sentence AFTER a colon. The same sentence follows both, and the lead-in already says which action it was and what it was done to, so name neither: no \"drive\", no \"share\", no \"eject\" or \"disconnect\". Point at the place with a plain \"there\" and ask to \"try again\". Plain text, one or two short sentences, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
     "placeholders": {
       "app": {
         "description": "The name of the one app or tool holding the drive, for example \"Preview\", \"Warp\", or \"mds_stores\". Cmdr reads it from the running process, so it's a real name: never translate it, and don't wrap it in quotation marks. It can start the sentence, so write the sentence to read naturally with a name dropped straight in."
@@ -2879,9 +3049,9 @@
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
-  "errors.eject.unmountRefusedByApps": "{apps} are still using this drive. Close anything they have open there, then eject again.",
+  "errors.eject.unmountRefusedByApps": "{apps} still have files open there. Close them, then try again.",
   "@errors.eject.unmountRefusedByApps": {
-    "description": "The same message as the one-app version, for TWO OR MORE apps or tools holding the drive. Surface: a brief error toast in the top-right of Cmdr's main window, shown after someone asks to eject a drive or disconnect a network share. Your string is dropped into \"Couldn't eject {volumeName}: …\" or \"Couldn't disconnect: …\", so it reads as the sentence AFTER a colon. Plain text, one or two short sentences, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
+    "description": "The same message as the one-app version, for TWO OR MORE apps or tools holding the drive. Surface: a brief error toast in the top-right of Cmdr's main window, shown after someone asks to eject a drive or disconnect a network share. Your string is dropped into \"Couldn't eject {volumeName}: …\" or \"Couldn't disconnect: …\", so it reads as the sentence AFTER a colon. The same sentence follows both, and the lead-in already says which action it was and what it was done to, so name neither: no \"drive\", no \"share\", no \"eject\" or \"disconnect\". Point at the place with a plain \"there\" and ask to \"try again\". Plain text, one or two short sentences, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
     "placeholders": {
       "apps": {
         "description": "Two or more names, already joined into one phrase by your language's own list rules, for example \"Preview and Warp\" or \"Preview, Warp, and other apps\". The names are real app and tool names Cmdr read from the running processes: never translate them, and don't add quotation marks. Because it's always more than one, the verbs and pronouns around it stay plural."
@@ -2896,21 +3066,52 @@
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
-  "errors.eject.unmountRefusedByDiskImage": "A disk image stored on this drive is still open. Eject that image first, then eject this drive.",
+  "errors.eject.unmountRefusedByProcess": "A process called {process} still has files open there. (Cmdr doesn’t have an app name, only the process name.)",
+  "@errors.eject.unmountRefusedByProcess": {
+    "description": "Shown when the operating system turns the eject down and Cmdr found exactly ONE running program holding the drive, but couldn't tell which app it belongs to, so all it has is the program's technical process name. The sentence must call it a process, never an app or a tool, and the parenthetical tells the reader why the name may look cryptic. Cmdr speaks of itself by name there, never as \"we\". Surface: a brief error toast in the top-right of Cmdr's main window, shown after someone asks to eject a drive or disconnect a network share. Your string is dropped into \"Couldn't eject {volumeName}: …\" or \"Couldn't disconnect: …\", so it reads as the sentence AFTER a colon. The same sentence follows both, and the lead-in already says which action it was and what it was done to, so name neither: no \"drive\", no \"share\", no \"eject\" or \"disconnect\". Point at the place with a plain \"there\" and ask to \"try again\". Plain text, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
+    "placeholders": {
+      "process": {
+        "description": "The technical name of the running process, for example \"mdworker_shared\" or \"backupd\". Cmdr reads it from the operating system: never translate it, and don't wrap it in quotation marks."
+      }
+    },
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "errors.eject.unmountRefusedByProcesses": "{countText} processes called {processes} still have files open there. (Cmdr doesn’t have app names, only the process names.)",
+  "@errors.eject.unmountRefusedByProcesses": {
+    "description": "The same message as the one-process version, for TWO OR MORE running programs that Cmdr couldn't match to an app, so all it has is their technical process names. The sentence must call them processes, never apps or tools. Cmdr speaks of itself by name in the parenthetical, never as \"we\". Restructure the sentence freely to whatever reads and works best in your language, for example naming the processes after the count. Surface: a brief error toast in the top-right of Cmdr's main window, shown after someone asks to eject a drive or disconnect a network share. Your string is dropped into \"Couldn't eject {volumeName}: …\" or \"Couldn't disconnect: …\", so it reads as the sentence AFTER a colon. The same sentence follows both, and the lead-in already says which action it was and what it was done to, so name neither: no \"drive\", no \"share\", no \"eject\" or \"disconnect\". Point at the place with a plain \"there\" and ask to \"try again\". Plain text, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
+    "placeholders": {
+      "countText": {
+        "description": "How many different processes, already formatted as a number, always 2 or more, so the noun and verbs around it stay plural."
+      },
+      "processes": {
+        "description": "Two or more process names, already joined into one phrase by your language's own list rules, for example \"mdworker and backupd\" or \"mdworker, backupd, cfprefsd, and others\". Past three names, the last item is the errors.eject.otherProcesses string (\"others\"). Never translate the names, and don't add quotation marks."
+      }
+    },
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "errors.eject.otherProcesses": "others",
+  "@errors.eject.otherProcesses": {
+    "description": "The LAST item in the list of process names that {processes} carries, standing in for everything past the first three: \"mdworker, backupd, cfprefsd, and others\". The sentence around it already says \"processes\", so this is a plain plural pronoun or noun phrase meaning \"other processes\". Your language's list rules join it, so translate it as something that can sit at the end of a list, never as a sentence, and leave it lowercase unless your language requires otherwise. Surface: a brief error toast in the top-right of Cmdr's main window, shown after someone asks to eject a drive.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "errors.eject.unmountRefusedByDiskImage": "A disk image stored there is still open. Eject that image first, then try again.",
   "@errors.eject.unmountRefusedByDiskImage": {
-    "description": "Shown when what holds the drive is a mounted disk image whose file lives ON this drive, so the drive can't go anywhere until the image is ejected. A \"disk image\" is a file (usually .dmg) that mounts and behaves like its own drive; use the term macOS itself uses in your language. Surface: a brief error toast in the top-right of Cmdr's main window, shown after someone asks to eject a drive. Your string is dropped into \"Couldn't eject {volumeName}: …\", so it reads as the sentence AFTER a colon. Plain text, one or two short sentences, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
+    "description": "Shown when what holds the drive is a mounted disk image whose file lives ON this drive, so the drive can't go anywhere until the image is ejected. A \"disk image\" is a file (usually .dmg) that mounts and behaves like its own drive; use the term macOS itself uses in your language. Surface: a brief error toast in the top-right of Cmdr's main window, shown after someone asks to eject a drive or disconnect a network share. Your string is dropped into \"Couldn't eject {volumeName}: …\" or \"Couldn't disconnect: …\", so it reads as the sentence AFTER a colon. The same sentence follows both, and the lead-in already says which action it was and what it was done to, so name neither: no \"drive\", no \"share\", no \"eject\" or \"disconnect\". Point at the place with a plain \"there\" and ask to \"try again\". Plain text, one or two short sentences, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
-  "errors.eject.unmountRefusedBySystem": "macOS is still working with this drive. Wait a minute, then eject again.",
+  "errors.eject.unmountRefusedBySystem": "macOS still has files open there. Wait a minute, then try again.",
   "@errors.eject.unmountRefusedBySystem": {
-    "description": "Shown when the only thing holding the drive is macOS itself (Spotlight indexing it, Time Machine, and so on). There's nothing for the person to close, so the advice is to wait rather than to hunt for an app. \"macOS\" is Apple's product name: keep it exactly as written, and don't translate it. Surface: a brief error toast in the top-right of Cmdr's main window, shown after someone asks to eject a drive. Your string is dropped into \"Couldn't eject {volumeName}: …\", so it reads as the sentence AFTER a colon. Plain text, one or two short sentences, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
+    "description": "Shown when the only thing holding the drive is macOS itself (Spotlight indexing it, Time Machine, and so on). There's nothing for the person to close, so the advice is to wait rather than to hunt for an app. \"macOS\" is Apple's product name: keep it exactly as written, and don't translate it. Surface: a brief error toast in the top-right of Cmdr's main window, shown after someone asks to eject a drive or disconnect a network share. Your string is dropped into \"Couldn't eject {volumeName}: …\" or \"Couldn't disconnect: …\", so it reads as the sentence AFTER a colon. The same sentence follows both, and the lead-in already says which action it was and what it was done to, so name neither: no \"drive\", no \"share\", no \"eject\" or \"disconnect\". Point at the place with a plain \"there\" and ask to \"try again\". Plain text, one or two short sentences, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
-  "errors.eject.unmountRefusedByCmdr": "Cmdr itself is still using this drive. Wait a moment and eject again, or send a report if it keeps happening.",
+  "errors.eject.unmountRefusedByCmdr": "Cmdr itself still has files open there. Wait a moment and try again, or send a report if it keeps happening.",
   "@errors.eject.unmountRefusedByCmdr": {
-    "description": "Shown when Cmdr is the one holding the drive it was asked to eject. That's a bug in Cmdr rather than anything the person did, so the message owns it and points at Cmdr's own feedback feature (\"send a report\"). \"Cmdr\" is this app's name: keep it as-is, never translate it. Surface: a brief error toast in the top-right of Cmdr's main window, shown after someone asks to eject a drive or disconnect a network share. Your string is dropped into \"Couldn't eject {volumeName}: …\" or \"Couldn't disconnect: …\", so it reads as the sentence AFTER a colon. Plain text, one or two short sentences, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
+    "description": "Shown when Cmdr is the one holding the drive it was asked to eject. That's a bug in Cmdr rather than anything the person did, so the message owns it and points at Cmdr's own feedback feature (\"send a report\"). \"Cmdr\" is this app's name: keep it as-is, never translate it. Surface: a brief error toast in the top-right of Cmdr's main window, shown after someone asks to eject a drive or disconnect a network share. Your string is dropped into \"Couldn't eject {volumeName}: …\" or \"Couldn't disconnect: …\", so it reads as the sentence AFTER a colon. The same sentence follows both, and the lead-in already says which action it was and what it was done to, so name neither: no \"drive\", no \"share\", no \"eject\" or \"disconnect\". Point at the place with a plain \"there\" and ask to \"try again\". Plain text, one or two short sentences, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },

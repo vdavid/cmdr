@@ -13,11 +13,11 @@ import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest'
 import { toCanonical, type CanonicalPath } from '$lib/path/canonical'
 import type { SearchSnapshot } from '$lib/search/snapshot-store.svelte'
 
-const { ipc } = vi.hoisted<{ ipc: { getFileRange: Mock; getFileAt: Mock } }>(() => ({
-  ipc: { getFileRange: vi.fn(), getFileAt: vi.fn() },
+const { ipc } = vi.hoisted<{ ipc: { getFileRange: Mock; getFileAt: Mock; getSelectionSnapshot: Mock } }>(() => ({
+  ipc: { getFileRange: vi.fn(), getFileAt: vi.fn(), getSelectionSnapshot: vi.fn() },
 }))
 
-vi.mock('$lib/tauri-commands', () => ({ getFileRange: ipc.getFileRange, getFileAt: ipc.getFileAt }))
+vi.mock('$lib/tauri-commands', () => ipc)
 
 import { fetchEntriesSnapshot, fetchSelectedNames } from './entries-snapshot'
 
@@ -138,15 +138,37 @@ describe('fetchEntriesSnapshot', () => {
 
 describe('fetchSelectedNames', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
+    vi.resetAllMocks()
     ipc.getFileAt.mockImplementation((_id: string, index: number) =>
       Promise.resolve(backendEntry(`file-${String(index)}`)),
     )
+    ipc.getSelectionSnapshot.mockImplementation((_id: string, _hidden: boolean, indices: number[]) =>
+      Promise.resolve({
+        paths: indices.map((i) => `/dir/file-${String(i)}`),
+        fileCount: indices.length,
+        folderCount: 0,
+      }),
+    )
+  })
+
+  it('never tracks neighbor names from a changed row revision', async () => {
+    ipc.getSelectionSnapshot.mockRejectedValueOnce({ type: 'changed', listingId: 'listing-1' })
+    const names = await fetchSelectedNames({
+      listingId: 'listing-1',
+      includeHidden: true,
+      hasParent: false,
+      isAllSelected: false,
+      selectedIndices: [2],
+      expectedSequence: 7,
+    })
+    expect(names).toEqual([])
+    expect(ipc.getSelectionSnapshot).toHaveBeenCalledWith('listing-1', true, [2], 7)
   })
 
   it('short-circuits to `all` when everything is selected', async () => {
     const names = await fetchSelectedNames({
       listingId: 'listing-1',
+      expectedSequence: 0,
       includeHidden: true,
       hasParent: false,
       isAllSelected: true,
@@ -159,6 +181,7 @@ describe('fetchSelectedNames', () => {
   it('resolves each selected index to its name', async () => {
     const names = await fetchSelectedNames({
       listingId: 'listing-1',
+      expectedSequence: 0,
       includeHidden: true,
       hasParent: false,
       isAllSelected: false,
@@ -170,12 +193,13 @@ describe('fetchSelectedNames', () => {
   it('converts to backend indices across the `..` row and skips the row itself', async () => {
     const names = await fetchSelectedNames({
       listingId: 'listing-1',
+      expectedSequence: 0,
       includeHidden: true,
       hasParent: true,
       isAllSelected: false,
       selectedIndices: [0, 1, 3],
     })
-    expect(ipc.getFileAt).toHaveBeenCalledTimes(2)
+    expect(ipc.getSelectionSnapshot).toHaveBeenCalledExactlyOnceWith('listing-1', true, [0, 2], 0)
     expect(names).toEqual(['file-0', 'file-2'])
   })
 
@@ -186,6 +210,7 @@ describe('fetchSelectedNames', () => {
     // F6 / F8 started from a snapshot pane with a partial selection.
     const names = await fetchSelectedNames({
       listingId: '',
+      expectedSequence: 0,
       includeHidden: true,
       hasParent: false,
       isAllSelected: false,
@@ -202,6 +227,7 @@ describe('fetchSelectedNames', () => {
     // (its birth-folder gate can't match a `search-results://<id>` path).
     const names = await fetchSelectedNames({
       listingId: '',
+      expectedSequence: 0,
       includeHidden: true,
       hasParent: false,
       isAllSelected: true,
@@ -212,9 +238,10 @@ describe('fetchSelectedNames', () => {
   })
 
   it('drops entries the backend no longer has', async () => {
-    ipc.getFileAt.mockResolvedValue(null)
+    ipc.getSelectionSnapshot.mockResolvedValue({ paths: [], fileCount: 0, folderCount: 0 })
     const names = await fetchSelectedNames({
       listingId: 'listing-1',
+      expectedSequence: 0,
       includeHidden: true,
       hasParent: false,
       isAllSelected: false,
@@ -230,9 +257,10 @@ describe('fetchSelectedNames', () => {
     // unhandled promise rejection (seen in an E2E lane right after a paste
     // re-listed the pane). A dead listing has nothing to snapshot, which is the
     // same answer the listing-less pane above gets.
-    ipc.getFileAt.mockRejectedValue(new Error('Listing not found: 5a9b554e-1d42-405c-8634-c46e3cfb59f2'))
+    ipc.getSelectionSnapshot.mockRejectedValue({ type: 'gone', listingId: 'listing-gone' })
     const names = await fetchSelectedNames({
       listingId: 'listing-gone',
+      expectedSequence: 0,
       includeHidden: true,
       hasParent: false,
       isAllSelected: false,
@@ -244,11 +272,10 @@ describe('fetchSelectedNames', () => {
   it('reports no snapshot rather than a partial one when the listing dies mid-read', async () => {
     // A partial list is worse than none: the listing diff would read the missing
     // names as rows the user deselected.
-    ipc.getFileAt
-      .mockResolvedValueOnce(backendEntry('file-0'))
-      .mockRejectedValueOnce(new Error('Listing not found: listing-half'))
+    ipc.getSelectionSnapshot.mockRejectedValue({ type: 'changed', listingId: 'listing-half' })
     const names = await fetchSelectedNames({
       listingId: 'listing-half',
+      expectedSequence: 0,
       includeHidden: true,
       hasParent: false,
       isAllSelected: false,

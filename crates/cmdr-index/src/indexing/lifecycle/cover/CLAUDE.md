@@ -10,7 +10,8 @@ every holder arbitrates through. The registry and phase machine are `../CLAUDE.m
 ## Must-knows
 
 - **A walk reuses the RUNNING writer or stands one up** (`Activation::WriterOnly`, ❌ no scan or watcher), and EVICTS an
-  index this build's coverage rules refuse. ⚠️ A volume mid-SCAN isn't walked.
+  index this build's coverage rules refuse. ⚠️ A volume mid-SCAN isn't walked. ❌ Never stand one up for `TheIndex`:
+  none means its drive stopped (#375).
 - **A walk stops through a CHILD of the caller's token and flushes before reporting**, cancel included. The child lets
   one walk be stopped without stopping the volume; ⚠️ a stopped walk flushes whatever `FlushOnFinish` its caller chose,
   because its ground changes hands the moment it lets go and the next holder reads the DATABASE to decide what is
@@ -24,8 +25,8 @@ every holder arbitrates through. The registry and phase machine are `../CLAUDE.m
   forever.
 - **Bootstrap creates the rows a walk needs to START, each at `listed_epoch = 0`; ❌ nothing here claims coverage** —
   the walk earns it, or an ancestor marks a whole tree covered off one walked folder.
-- **A missing `entries` row is NOT only a cold-drive case**: a folder created since its parent was listed has none on a
-  drive indexed yesterday. ❌ Don't gate bootstrap on "never indexed".
+- **A missing `entries` row is NOT only a cold-drive case**: a folder newer than its parent's listing has none. ❌ Don't
+  gate bootstrap on "never indexed".
 - **Every primitive REPORTS the rows it CREATED and PULSES per directory**, the repair included (`LiveWalk` + a
   `ScanSummary`, ❌ never `(None, Covered)`): a search reads the rest off an arena predating the walk, and reads
   `foldersFound` off the pulse, so a silent one answers short and calls itself complete. ⚠️ Created rows only;

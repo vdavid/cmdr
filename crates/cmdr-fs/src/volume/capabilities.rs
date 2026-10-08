@@ -43,8 +43,22 @@ pub struct VolumeCapabilities {
     /// Files can be read out of here, so this volume can be the SOURCE of a copy
     /// or a move.
     pub can_export: bool,
+    /// "Copy share link" can mint a link to a file here, which anyone can open
+    /// to download it for a while (S3's presigned GET).
+    pub can_share_links: bool,
     /// A drive index can be turned on for this volume, because the index has a
     /// transport that walks and watches this backend. `BackendKind::can_be_indexed`
     /// is the one decider.
     pub can_be_indexed: bool,
+    /// Some entries here rename by copying their bytes on the server and
+    /// deleting the source (`Volume::rename_work` can answer
+    /// `CopyThenDelete`), so a move within this volume is billed work with a
+    /// scan, not one cheap rename. The Move dialog scans such a move (for its
+    /// counts and the S3 cost line) where it would skip the scan elsewhere.
+    pub renames_can_copy: bool,
+    /// The same place can also be reached through the OS's own mount (SMB), so
+    /// a live session here is the "direct" one of two ways in, and the
+    /// connection dot may say so. `BackendKind::has_os_mount_fallback` is the
+    /// one decider.
+    pub has_os_mount_fallback: bool,
 }

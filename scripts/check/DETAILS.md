@@ -223,13 +223,17 @@ pnpm check [flags]
 - **`stack_orchestrator.go`**: Runner-level Docker fixture lifecycle: acquires a machine-wide lease per stack (via
   `stacklease`) at init, releases each at exit
 - **`stacklease/`**: Library: the machine-wide flock + holder-id refcount that makes a shared fixture stack safe across
-  worktrees. `registry.go` holds the registered stacks (`smb`, `sftp`, `webdav`); `stack.go` the `Stack` value itself.
-  `stacklease.go` keeps the core (`Acquire`, `decideAction`, `Reconcile`, `Release`, `PrintStatus`, service resolution);
-  `log.go` the two log sinks and the `OnReconcileStart`/`OnTeardown` hooks; `confighash.go` the config-hash stamp and
-  compare; `leases.go` the per-holder lease files and the dead-PID sweep; `keymaterial.go` the host-key-material
-  heal/wait pair; `lock.go` the flock, `compose.go` the real `Composer`
+  worktrees. `registry.go` holds the registered stacks (`smb`, `sftp`, `webdav`, `s3`); `stack.go` the `Stack` value
+  itself. `stacklease.go` keeps the core (`Acquire`, `decideAction`, `Reconcile`, `Release`, `PrintStatus`, service
+  resolution); `log.go` the two log sinks and the `OnReconcileStart`/`OnTeardown` hooks; `confighash.go` the config-hash
+  stamp and compare; `leases.go` the per-holder lease files and the dead-PID sweep; `keymaterial.go` the
+  host-key-material heal/wait pair; `soloreset.go` the resets a lease runs when it starts alone; `lock.go` the flock,
+  `compose.go` the real `Composer`
 - **`stack-lease/`**: Thin `package main` CLI onto `stacklease` (`acquire`/`release`/`reconcile`/`status`, each taking
   the stack name first) that the bash scripts shell out to
+- **`linux-cache/`**: `package main` CLI (`seed` / `promote`) that `scripts/worktree-hooks/` shells out to, handing the
+  Linux lanes' target volume between the main clone and a worktree with the lanes' own names and labels from `checks`.
+  Outside `checks/` because no check reaches it, so the cache has nothing to fingerprint it for
 - **`checks/`**: One file per check, plus `common.go` (shared utils) and `registry.go` (the `AllChecks` ordered list)
 
 ## Runner-level patterns
@@ -309,12 +313,14 @@ takes an exclusive lock on its build directory for a whole command, so those lan
 loser sat on `Blocking waiting for file lock on build directory` while still holding 6-8 weight, so a quiet run looked
 hung and the reserved cores went unused. Declaring it costs no wall clock and hands that weight back. Metadata-only
 commands (`cargo metadata`, `about`, `deny`, `machete`) take the package-cache lock instead and stay undeclared;
-`rust-tests-linux` builds in its container's own `CARGO_TARGET_DIR`, and `rustdoc` owns a private one. Measurements:
-`docs/notes/check-cpu-contention.md` § "Cargo's build-directory lock".
+`clippy-linux` and `rust-tests-linux` build on their per-worktree Docker volume (one `DependsOn` the other, so they
+never overlap), and `rustdoc` owns a private target dir. Measurements: `docs/notes/check-cpu-contention.md` § "Cargo's
+build-directory lock".
 
-**Slow checks:** `IsSlow: true` marks checks excluded by default (currently: `rust-tests-linux`, `desktop-e2e-linux`,
-`desktop-e2e-playwright`, `desktop-rust-webdav-nextcloud`, `desktop-rust-disk-images`). Naming a check (positionally or
-via `--check`) implicitly includes slow checks (`includeSlow = len(checkNames) > 0`); group/app selectors don't.
+**Slow checks:** `IsSlow: true` marks checks excluded by default (currently: `clippy-linux`, `rust-tests-linux`,
+`desktop-e2e-linux`, `desktop-e2e-playwright`, `desktop-rust-webdav-nextcloud`, `desktop-rust-disk-images`). Naming a
+check (positionally or via `--check`) implicitly includes slow checks (`includeSlow = len(checkNames) > 0`); group/app
+selectors don't.
 
 **Fast lane (`--fast`):** `IsFast: true` marks the curated pre-commit check set: ~28 checks that finish in roughly 10s
 on a warm cache, intended to run before every commit. It's an editorial pick, not a timing-derived list (see Key
@@ -529,6 +535,11 @@ touched.
 - The fingerprint of a passing run is stored per check in `node_modules/.cache/cmdr-check-cache.json` (shares
   node_modules' fate, like the pnpm-install marker; atomic temp+rename write). A later run with the same fingerprint is
   a cache hit: reported as `OK (cached)` at ~0s, the pass's own message replayed for context.
+- `recordRun` re-fingerprints at the end of the run (one more git pass, only when something passed) and records a pass
+  only if its inputs are unchanged since planning. Otherwise a file edited mid-run would store its pass under the OLD
+  content's key, and an A→B→A edit would later hit the cache on content that never ran.
+- `recordRun` reloads the cache file just before saving and merges this run's verdicts per check ID, so two concurrent
+  unnamed runs in one worktree neither clobber each other's passes nor resurrect an entry the other dropped.
 
 **Invalidation:** any content change, add, or removal within a check's input set changes its fingerprint (the sorted
 path list is hashed too, so adds/removes shift it). A formatter's auto-fix changes file contents, which changes OTHER
@@ -897,9 +908,9 @@ adopt-or-reconcile policy, the dead-PID sweep, and the down-at-zero teardown are
   holders are invisible to the other and downing one at zero can never touch the other's containers. The runner uses the
   same holder-id (its `check.sh` PID) in each, which counts once per stack.
 - **SMB's `/tmp` paths are frozen** at `cmdr-smb.lock` and `cmdr-smb-leases`, pinned by a test. SFTP and WebDAV follow
-  the pattern (`cmdr-sftp.lock` + `cmdr-sftp-leases` on 12480+, `cmdr-webdav.lock` + `cmdr-webdav-leases` on 13480+). A
-  sibling worktree on older code holds its lease at those exact paths; moving them would make a live holder invisible
-  and re-open the teardown race the library exists to close.
+  the pattern (`cmdr-sftp.lock` + `cmdr-sftp-leases` on 12480+, `cmdr-webdav.lock` + `cmdr-webdav-leases` on 13480+,
+  `cmdr-s3.lock` + `cmdr-s3-leases` on 14480+). A sibling worktree on older code holds its lease at those exact paths;
+  moving them would make a live holder invisible and re-open the teardown race the library exists to close.
 - **A stack's HOST state is machine-wide too, all of it.** SMB mounts nothing from the host; SFTP's two key-auth
   services bind-mount `/tmp/cmdr-sftp-keys/<service>`, a third machine-wide path beside the lock and the lease dir. ❌
   Never a path relative to the compose file: compose resolves a relative bind source against the compose file's own
@@ -915,11 +926,18 @@ adopt-or-reconcile policy, the dead-PID sweep, and the down-at-zero teardown are
   So `Acquire` and `Reconcile` stat each leaf's private key before handing the stack over, restart exactly the services
   whose leaf is empty (re-running an entrypoint is the only thing that can put the two halves back in agreement), and
   wait for the pair to reappear. It reports rather than returning to a caller whose key-auth cells would all fail.
+- **A killed client can leave state in a container that outlives it**, and `soloResets` (`stacklease/soloreset.go`)
+  clears it: a script per service that `Acquire` execs when, after the dead-PID sweep, no other lease remains. ❌ Never
+  under another holder, since the reset may cut what a live suite relies on. Best-effort: a failed reset warns and the
+  run goes on. SMB's one entry restarts the guest's Samba `notifyd` when it holds leaked change-notify watches (Samba
+  4.23.8 never drops a watch whose smbd child was killed, and each one turns every later write on `public` into three
+  failed sends); smbd respawns `notifyd` without closing port 445. A forgotten `manual` lease means the reset never
+  fires, the benign direction. Measurements: the `soloreset.go` comment.
 - **A stack with FIRST-PARTY images declares `buildContextsRel`**, which folds every context's contents into the config
   hash and puts `--build` on `up`. ❗ Both, or an edited entrypoint never reaches a running container: `up -d` neither
-  rebuilds nor recreates a healthy one. SFTP declares one context, WebDAV two (its httpd image and its Nextcloud one);
-  SMB's images are vendored and it declares none. The hash carries each context's own name beside each file's, so two
-  contexts holding a `Dockerfile` can't cancel each other out.
+  rebuilds nor recreates a healthy one. SFTP declares one context, WebDAV two (its httpd image and its Nextcloud one),
+  S3 two (its VersityGW and Garage wrappers); SMB's images are vendored and it declares none. The hash carries each
+  context's own name beside each file's, so two contexts holding a `Dockerfile` can't cancel each other out.
 - **Both Playwright lanes lease the SFTP and WebDAV stacks in `e2e` mode**, one server each (`sftp-fixture-openssh`,
   `webdav-fixture-apache`), for the `server-ops-*` specs. The Linux lane also lists `SmbE2E`; the macOS lane doesn't,
   since `smb.spec.ts` is skipped there. CI runs `e2e-linux.sh` directly, so that script takes its own lease on all three

@@ -39,6 +39,18 @@
   "@operationLog.dialog.finishRollBack": {
     "sourceHash": "dbe3771"
   },
+  "operationLog.dialog.rollbackOf": "回滚的是 {time} 的“<operationLink>{operation}</operationLink>”",
+  "@operationLog.dialog.rollbackOf": {
+    "sourceHash": "4885c73"
+  },
+  "operationLog.dialog.rollbackOfUnlisted": "回滚的是更早的一项操作",
+  "@operationLog.dialog.rollbackOfUnlisted": {
+    "sourceHash": "50d060d"
+  },
+  "operationLog.dialog.latestRollback": "最近一次回滚：{time} 的“<operationLink>{operation}</operationLink>”",
+  "@operationLog.dialog.latestRollback": {
+    "sourceHash": "a8275f9"
+  },
   "operationLog.dialog.close": "关闭",
   "@operationLog.dialog.close": {
     "sourceHash": "7d9eb7a"

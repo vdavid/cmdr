@@ -14,7 +14,7 @@
   },
   "indexing.scan.counters": "{entriesText} {entries, plural, one {entrada} many {entradas} other {entradas}}, {dirsText} {dirs, plural, one {carpeta} many {carpetas} other {carpetas}}",
   "@indexing.scan.counters": {
-    "sourceHash": "f635790"
+    "sourceHash": "ecf47f2"
   },
   "indexing.scan.countersElapsed": "{counters} · {elapsed}",
   "@indexing.scan.countersElapsed": {
@@ -134,9 +134,21 @@
     "sourceHash": "26b29da",
     "sameAsSourceJustification": "Pure format string ({percent}%, {eta}) — a number, a percent sign, a comma separator, and an already-formatted phrase. This locale uses the same percent spacing and comma as English, so the format is genuinely identical; nothing here is translatable prose."
   },
+  "indexing.overall.eta": "En total: {eta}",
+  "@indexing.overall.eta": {
+    "sourceHash": "a9a2ffc"
+  },
+  "indexing.overall.estimating": "En total: calculando…",
+  "@indexing.overall.estimating": {
+    "sourceHash": "9dac967"
+  },
   "indexing.eta.almostDone": "Casi listo",
   "@indexing.eta.almostDone": {
     "sourceHash": "506f162"
+  },
+  "indexing.eta.almostDoneMidSentence": "casi listo",
+  "@indexing.eta.almostDoneMidSentence": {
+    "sourceHash": "1d2fb48"
   },
   "indexing.eta.secondsLeft": "{secondsText}s restantes",
   "@indexing.eta.secondsLeft": {
@@ -189,6 +201,10 @@
   "indexing.needsFreshScan.afterDisconnect": "{name} se desconectó mientras Cmdr actualizaba su índice. El próximo análisis de esta unidad empieza desde cero, así que sus tamaños de carpetas vuelven a ser correctos.",
   "@indexing.needsFreshScan.afterDisconnect": {
     "sourceHash": "a90dbdf"
+  },
+  "indexing.memoryStop.paused": "Cmdr ha pausado la indexación de unidades porque estaba usando demasiada memoria. Los tamaños de carpeta pueden estar desactualizados hasta que reinicies Cmdr.",
+  "@indexing.memoryStop.paused": {
+    "sourceHash": "32d225a"
   },
   "indexing.firstConnect.title": "¿Indexar {name}?",
   "@indexing.firstConnect.title": {

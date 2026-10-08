@@ -113,8 +113,8 @@ test.describe('File viewer', () => {
 
   test('shows file size in status bar', async () => {
     const statusText = await viewer.textContent('.status-bar')
-    // file-a.txt is 1024 bytes = 1 KB
-    expect(statusText).toContain('KB')
+    // file-a.txt is 1024 bytes = 1.02 kB (SI, the default)
+    expect(statusText).toContain('1.02 kB')
   })
 
   test('shows backend mode badge', async () => {
@@ -273,59 +273,9 @@ test.describe('File viewer selection and copy', () => {
     expect(clip.startsWith('AAAA')).toBe(true)
   })
 
-  test('right-click opens the viewer context menu, Copy copies the selection', async () => {
-    // Select everything first.
-    await viewer.evaluate(`
-            window.dispatchEvent(new KeyboardEvent('keydown', { key: 'a', metaKey: true }))
-        `)
-
-    // Right-click in the content. The viewer suppresses the OS menu and shows its own.
-    await viewer.evaluate(`
-            (function() {
-                const target = document.querySelector('.file-content')
-                if (!target) throw new Error('file-content not found')
-                const rect = target.getBoundingClientRect()
-                target.dispatchEvent(new MouseEvent('contextmenu', {
-                    bubbles: true, cancelable: true,
-                    clientX: rect.left + 20, clientY: rect.top + 20,
-                    button: 2,
-                }))
-            })()
-        `)
-
-    await viewer.waitForSelector('.viewer-context-menu', 3000)
-    expect(await viewer.isVisible('.viewer-context-menu')).toBe(true)
-
-    // Click the first menu item (Copy). textContent-based dispatch keeps the test
-    // resilient to DOM reshuffles.
-    await viewer.evaluate(`
-            (function() {
-                const buttons = document.querySelectorAll('.viewer-context-menu .menu-item')
-                for (const btn of buttons) {
-                    if (btn.textContent && btn.textContent.includes('Copy')) {
-                        btn.click()
-                        return
-                    }
-                }
-                throw new Error('Copy item not found in viewer context menu')
-            })()
-        `)
-
-    await expect
-      .poll(
-        async () => {
-          const text = (await viewer.textContent('.toast')) ?? ''
-          return text.includes('on your clipboard')
-        },
-        { timeout: waitBudget(5000) },
-      )
-      .toBeTruthy()
-
-    const clip = await viewer.evaluate<string>(
-      `(async () => { try { return await navigator.clipboard.readText() } catch { return '' } })()`,
-    )
-    expect(clip.length).toBeGreaterThanOrEqual(1024)
-  })
+  // No right-click test here: the viewer's context menu is a native OS menu, which this
+  // webview-driven suite can neither see nor click. Its Copy lands on the same `handleCopy`
+  // the ⌘C test above drives; the dispatch is unit-tested in `viewer-menu-actions.test.ts`.
 
   test('drag past the bottom edge does not throw', async () => {
     // Smoke test: a drag where the pointer leaves the viewport via the bottom should

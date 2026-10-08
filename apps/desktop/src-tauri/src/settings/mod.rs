@@ -3,7 +3,9 @@
 mod ai_gates;
 pub mod loader;
 
-pub use ai_gates::{load_ask_cmdr_consent_revoke_pending, load_ask_cmdr_enabled, load_cloud_consent_revoke_pending};
+pub use ai_gates::{
+    AskCmdrSwitch, load_ask_cmdr_consent_revoke_pending, load_ask_cmdr_switch, load_cloud_consent_revoke_pending,
+};
 pub use loader::{
     FullDiskAccessChoice, RestrictedWindowSettings, early_load_global_go_to_latest_shortcut,
     early_load_max_log_storage_mb, early_load_verbose_logging, load_ask_cmdr_chat_memory_size,

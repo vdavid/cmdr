@@ -166,3 +166,21 @@ fn is_legacy_log_file_predicate() {
     assert!(!is_legacy_log_file("Cmdr_.log"));
     assert!(!is_legacy_log_file("notes.log"));
 }
+
+#[test]
+fn debug_log_path_points_at_the_live_file_when_this_session_writes_one() {
+    let dir = Path::new("/tmp/cmdr-worktree/logs");
+    assert_eq!(debug_log_path_for(Some(dir), true), Some(dir.join("cmdr.log")));
+}
+
+#[test]
+fn debug_log_path_is_none_when_this_session_writes_no_file() {
+    // Storage was off at startup and turned on later: the live keep-count says yes, but no
+    // file chain exists until a restart, so whatever `cmdr.log` sits there is an older session's.
+    assert_eq!(debug_log_path_for(Some(Path::new("/tmp/logs")), false), None);
+}
+
+#[test]
+fn debug_log_path_is_none_before_the_directory_is_resolved() {
+    assert_eq!(debug_log_path_for(None, true), None);
+}

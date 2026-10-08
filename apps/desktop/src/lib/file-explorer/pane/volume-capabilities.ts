@@ -48,7 +48,7 @@
  * ## One classifier, not two
  *
  * `volume-tint.svelte.ts::volumeKindFor` classifies into
- * `'local' | 'smb' | 'sftp' | 'webdav' | 'mtp' | 'adb' | 'other'` for tinting, collapsing the two virtual
+ * `'local' | 'smb' | 'sftp' | 'webdav' | 's3' | 'mtp' | 'adb' | 'other'` for tinting, collapsing the two virtual
  * kinds + favorites into the untinted `'other'`. `volumeKindOf` here is the
  * SUPERSET: it adds the two virtual kinds as first-class, then DELEGATES to
  * `volumeKindFor` for the real kinds, overriding only its `'other'` fall-through
@@ -92,6 +92,7 @@ export type VolumeKind =
   | 'smb' // mounted SMB share (real backend listing, smb path scheme on the share)
   | 'sftp' // an SFTP server (real backend listing, sftp:// scheme, no system clipboard, no terminal)
   | 'webdav' // a WebDAV server (real backend listing, webdav:// scheme, no system clipboard, no terminal)
+  | 's3' // an S3 bucket or account root (real backend listing, s3:// scheme, no system clipboard, no terminal)
   | 'mtp' // connected MTP storage (real backend listing, mtp:// scheme, no system clipboard)
   | 'adb' // an Android device over ADB (real backend listing, adb:// scheme, no system clipboard)
   | 'network' // the synthetic SMB browser virtual volume (host/share list, smb:// namespace)
@@ -154,6 +155,18 @@ export interface VolumeCapabilities {
    * Read it through `paneFolderIsPolledForDeletion`, which adds the path half.
    */
   pollsForDeletedFolder: boolean
+  /**
+   * "Copy share link" can mint a link to a file here (S3's presigned GET). The
+   * backend's `canShareLinks`, folded like the other three.
+   */
+  canShareLinks: boolean
+  /**
+   * Some entries here rename by copying on the server (S3's folders and big
+   * objects), so a move within this volume is billed work: the Move dialog
+   * scans it for its counts and the cost line where it skips the scan for a
+   * one-call rename. The backend's `renamesCanCopy`, folded like the others.
+   */
+  renamesCanCopy: boolean
 }
 
 /**
@@ -174,6 +187,8 @@ const CAPABILITY_TABLE: Readonly<Record<VolumeKind, VolumeCapabilities>> = Objec
     syncsToMcp: true,
     canBeIndexed: true,
     pollsForDeletedFolder: true,
+    canShareLinks: false,
+    renamesCanCopy: false,
   }),
   smb: Object.freeze({
     kind: 'smb',
@@ -186,6 +201,8 @@ const CAPABILITY_TABLE: Readonly<Record<VolumeKind, VolumeCapabilities>> = Objec
     canBeIndexed: true,
     // The share stays OS-mounted at `/Volumes/…`, so the Mac's own stat answers.
     pollsForDeletedFolder: true,
+    canShareLinks: false,
+    renamesCanCopy: false,
   }),
   sftp: Object.freeze({
     // A server: a real backend listing over a session Cmdr owns, with `..` and a
@@ -204,6 +221,8 @@ const CAPABILITY_TABLE: Readonly<Record<VolumeKind, VolumeCapabilities>> = Objec
     // No OS mount, so no FSEvents blind spot to cover. Whether a server pane should
     // notice its folder deleted on the server is a separate question nobody polls for.
     pollsForDeletedFolder: false,
+    canShareLinks: false,
+    renamesCanCopy: false,
   }),
   webdav: Object.freeze({
     // The `sftp` row, for the same reasons: a session-backed listing with no OS
@@ -216,6 +235,23 @@ const CAPABILITY_TABLE: Readonly<Record<VolumeKind, VolumeCapabilities>> = Objec
     syncsToMcp: true,
     canBeIndexed: false,
     pollsForDeletedFolder: false,
+    canShareLinks: false,
+    renamesCanCopy: false,
+  }),
+  s3: Object.freeze({
+    // The `webdav` row's shape, plus share links. The backend's published answer
+    // replaces these whenever it exists. No drive index on purpose: every request
+    // costs the user money.
+    kind: 's3',
+    hasBackendListing: true,
+    canWrite: true,
+    canBeSource: true,
+    hasParentRow: true,
+    syncsToMcp: true,
+    canBeIndexed: false,
+    pollsForDeletedFolder: false,
+    canShareLinks: true,
+    renamesCanCopy: true,
   }),
   mtp: Object.freeze({
     kind: 'mtp',
@@ -227,6 +263,8 @@ const CAPABILITY_TABLE: Readonly<Record<VolumeKind, VolumeCapabilities>> = Objec
     canBeIndexed: true,
     // A device path the Mac can't stat. An unplugged phone is `mtp-disconnect-watch`'s.
     pollsForDeletedFolder: false,
+    canShareLinks: false,
+    renamesCanCopy: false,
   }),
   adb: Object.freeze({
     // Same shape as `mtp`: a device-anchored real listing. The transport differs
@@ -241,6 +279,8 @@ const CAPABILITY_TABLE: Readonly<Record<VolumeKind, VolumeCapabilities>> = Objec
     // BEFORE it's dialed, which is when the first-connect prompt fires.
     canBeIndexed: true,
     pollsForDeletedFolder: false,
+    canShareLinks: false,
+    renamesCanCopy: false,
   }),
   network: Object.freeze({
     kind: 'network',
@@ -255,6 +295,8 @@ const CAPABILITY_TABLE: Readonly<Record<VolumeKind, VolumeCapabilities>> = Objec
     syncsToMcp: false,
     canBeIndexed: false,
     pollsForDeletedFolder: false,
+    canShareLinks: false,
+    renamesCanCopy: false,
   }),
   'search-results': Object.freeze({
     kind: 'search-results',
@@ -271,6 +313,8 @@ const CAPABILITY_TABLE: Readonly<Record<VolumeKind, VolumeCapabilities>> = Objec
     canBeIndexed: false,
     // No folder behind the namespace, so nothing to poll.
     pollsForDeletedFolder: false,
+    canShareLinks: false,
+    renamesCanCopy: false,
   }),
   archive: Object.freeze({
     kind: 'archive',
@@ -296,6 +340,8 @@ const CAPABILITY_TABLE: Readonly<Record<VolumeKind, VolumeCapabilities>> = Objec
     syncsToMcp: true,
     canBeIndexed: false,
     pollsForDeletedFolder: true,
+    canShareLinks: false,
+    renamesCanCopy: false,
   }),
   'git-portal': Object.freeze({
     kind: 'git-portal',
@@ -319,6 +365,8 @@ const CAPABILITY_TABLE: Readonly<Record<VolumeKind, VolumeCapabilities>> = Objec
     syncsToMcp: true,
     canBeIndexed: false,
     pollsForDeletedFolder: false,
+    canShareLinks: false,
+    renamesCanCopy: false,
   }),
 })
 
@@ -342,8 +390,8 @@ export function volumeKindOf(
   if (volumeId === 'network') return 'network'
   if (volumeId === 'search-results') return 'search-results'
   const tintKind = volumeKindFor(volumeId, fsType, category)
-  // `volumeKindFor` returns 'local' | 'smb' | 'sftp' | 'webdav' | 'mtp' | 'adb' |
-  // 'other'. The first six are real kinds in our union; 'other' (favorites +
+  // `volumeKindFor` returns 'local' | 'smb' | 'sftp' | 'webdav' | 's3' | 'mtp' |
+  // 'adb' | 'other'. The first seven are real kinds in our union; 'other' (favorites +
   // real-but-unclassified) defaults to 'local' — the only sane capability set for
   // a listable volume.
   return tintKind === 'other' ? 'local' : tintKind
@@ -383,7 +431,7 @@ export function paneRowsAreOsVisible(kind: VolumeKind): boolean {
  * mounts, so `resolve_path_to_volume` answers from the mount table. Every other
  * kind fails one half:
  *
- * - `sftp` / `webdav` / `mtp` / `adb` carry a scheme path that resolves only
+ * - `sftp` / `webdav` / `s3` / `mtp` / `adb` carry a scheme path that resolves only
  *   while that server or device is live, and the volume list filters a favorite
  *   whose path doesn't exist on disk — so one of these stores fine and then
  *   never shows up again, with no row and no word about why.
@@ -409,6 +457,7 @@ export function kindCanBeFavorited(kind: VolumeKind): boolean {
       return true
     case 'sftp':
     case 'webdav':
+    case 's3':
     case 'mtp':
     case 'adb':
     case 'network':
@@ -446,7 +495,9 @@ export function withBackendCapabilities(
   if (
     published.backendCanWrite === row.canWrite &&
     published.canExport === row.canBeSource &&
-    published.canBeIndexed === row.canBeIndexed
+    published.canBeIndexed === row.canBeIndexed &&
+    published.canShareLinks === row.canShareLinks &&
+    published.renamesCanCopy === row.renamesCanCopy
   ) {
     return row
   }
@@ -455,6 +506,8 @@ export function withBackendCapabilities(
     canWrite: published.backendCanWrite,
     canBeSource: published.canExport,
     canBeIndexed: published.canBeIndexed,
+    canShareLinks: published.canShareLinks,
+    renamesCanCopy: published.renamesCanCopy,
   })
 }
 
@@ -499,6 +552,18 @@ export function rowIsOsVisible(volumeId: string, rowPath: string): boolean {
   if (!paneRowsAreOsVisible(capabilitiesFor(volumeId).kind)) return false
   if (pathInsideArchive(rowPath)) return false
   return !(getShowVirtualGitPortal() && isVirtualGitPath(rowPath))
+}
+
+/**
+ * Whether "Copy share link" applies to a row: a FILE (a link names one object),
+ * on a volume that mints links, and not inside an archive (an entry in a zip on a
+ * bucket isn't an object of its own). The narrow archive check, for the reason
+ * `rowIsOsVisible` gives: the `.zip` file itself is an object and shares fine.
+ */
+export function rowCanShareLink(volumeId: string, row: { path: string; isDirectory: boolean }): boolean {
+  if (row.isDirectory) return false
+  if (!capabilitiesFor(volumeId).canShareLinks) return false
+  return !pathInsideArchive(row.path)
 }
 
 /**

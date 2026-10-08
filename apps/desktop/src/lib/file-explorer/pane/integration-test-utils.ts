@@ -85,6 +85,7 @@ export interface ListenRecorder {
    */
   listingWrappers: {
     onListingOpening: (cb: (payload: unknown) => void) => Promise<() => void>
+    onListingStalled: (cb: (payload: unknown) => void) => Promise<() => void>
     onListingProgress: (cb: (payload: unknown) => void) => Promise<() => void>
     onListingReadComplete: (cb: (payload: unknown) => void) => Promise<() => void>
     onListingComplete: (cb: (payload: unknown) => void) => Promise<() => void>
@@ -141,6 +142,7 @@ export function createListenRecorder(): ListenRecorder {
 
   const listingWrappers = {
     onListingOpening: makeListingWrapper('listing-opening'),
+    onListingStalled: makeListingWrapper('listing-stalled'),
     onListingProgress: makeListingWrapper('listing-progress'),
     onListingReadComplete: makeListingWrapper('listing-read-complete'),
     onListingComplete: makeListingWrapper('listing-complete'),

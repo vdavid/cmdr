@@ -38,7 +38,7 @@
         isIndexing: boolean
         /**
          * Whether a drive index can serve the drive the gap belongs to. `false` for a
-         * server over SFTP or WebDAV: an uncovered gap there reads as "search isn't
+         * server over SFTP, WebDAV, or S3: an uncovered gap there reads as "search isn't
          * available here yet", and the "press Enter" line goes, since Enter doesn't
          * reach it either. `coverage-cta.svelte.ts` withholds the offer alongside.
          */

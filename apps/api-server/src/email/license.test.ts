@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { getIntroText, getLicenseDescription } from './license'
+import { getIntroText, getLicenseDescription, renderLicenseEmail } from './license'
 
 /**
  * The copy in the one email a customer receives. It gets forwarded to purchasing departments and
@@ -37,6 +37,51 @@ describe('getLicenseDescription', () => {
     expect(getLicenseDescription('commercial_perpetual')).toBe(
       'Your perpetual commercial license is valid forever, with no renewal and no expiry.',
     )
+  })
+})
+
+/**
+ * The short code needs our server to turn into a key; the full key doesn't. Carrying both means a
+ * buyer can set up a new Mac even when `api.getcmdr.com` is unreachable or gone.
+ */
+describe('renderLicenseEmail', () => {
+  const base = {
+    customerName: 'Dana',
+    productName: 'Cmdr',
+    supportEmail: 'hello@getcmdr.com',
+    licenseType: 'commercial_perpetual' as const,
+  }
+
+  it('carries the full offline key beside the short code, in HTML and in plain text', () => {
+    const email = renderLicenseEmail({
+      ...base,
+      licenses: [{ shortCode: 'CMDR-ABCD-EFGH-2345', fullKey: 'eyJwYXlsb2FkIjp0cnVlfQ==.c2lnbmF0dXJl' }],
+    })
+
+    for (const body of [email.html, email.text]) {
+      expect(body).toContain('CMDR-ABCD-EFGH-2345')
+      expect(body).toContain('eyJwYXlsb2FkIjp0cnVlfQ==.c2lnbmF0dXJl')
+    }
+  })
+
+  it('pairs each seat’s full key with its own code', () => {
+    const email = renderLicenseEmail({
+      ...base,
+      licenses: [
+        { shortCode: 'CMDR-AAAA-AAAA-AAAA', fullKey: 'first.key' },
+        { shortCode: 'CMDR-BBBB-BBBB-BBBB', fullKey: 'second.key' },
+      ],
+    })
+
+    expect(email.text.indexOf('first.key')).toBeLessThan(email.text.indexOf('CMDR-BBBB-BBBB-BBBB'))
+    expect(email.text.indexOf('second.key')).toBeGreaterThan(email.text.indexOf('CMDR-BBBB-BBBB-BBBB'))
+  })
+
+  it('still sends the code alone when a seat’s full key is missing', () => {
+    const email = renderLicenseEmail({ ...base, licenses: [{ shortCode: 'CMDR-ABCD-EFGH-2345' }] })
+
+    expect(email.text).toContain('CMDR-ABCD-EFGH-2345')
+    expect(email.text).not.toContain('Offline key')
   })
 })
 

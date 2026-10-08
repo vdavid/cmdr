@@ -196,11 +196,8 @@ over a pile-ideal form that would fork a term mid-catalog.
 - "and so did …" → `“{name}” cũng vậy: {reason}` over merging the subjects: `{reason}` describes ONE file, and a merge
   would spread it across all of them. "N other files" → `{othersText} tệp khác` (Finder), no `các`.
 
-## Đổi tên không xác nhận được + tên không dùng được (`fileExplorer.rename.unconfirmed`/`.unconfirmedAndOthers`, `fileOperations.validation.nameNotUsable`)
+## Tên không dùng được (`fileOperations.validation.nameNotUsable`)
 
-- `unconfirmed*` says Cmdr doesn't know, so it takes the `Chưa xác nhận được … vẫn có thể đã hoàn tất` frame of
-  `fileOperations.mkdir.timeoutMessage`; ❌ never `vẫn giữ nguyên tên` (that's `chainKept*`, a certainty).
-- The renames (plural) → `các lần đổi tên`, over `các việc đổi tên` (`việc` doesn't count that way).
 - `nameNotUsable` → `Không thể dùng tên … đó`, no final period (it's joined into a longer toast), and no guessed reason
   like `không hợp lệ`.
 
@@ -265,10 +262,8 @@ over a pile-ideal form that would fork a term mid-catalog.
 
 ## Lỗi khi tháo ổ đĩa / ngắt kết nối (`errors.eject.*`)
 
-- The values land after the colon of `Không thể tháo {volumeName}: …` / `Không thể ngắt kết nối: …`, so they state only
-  the reason and the next step, never the refusal again.
-- in use → `đang dùng` in these sentences: the everyday form of Finder's `đang được sử dụng` (`NE66`), which the voice
-  rule prefers in prose.
+- Values land after `Không thể tháo {volumeName}: …` / `Không thể ngắt kết nối: …`: reason and next step only.
+- in use → `đang dùng` here, the everyday form of Finder's `đang được sử dụng` (`NE66`).
 - "not removable" → the TYPE frame `Ổ đĩa này không phải loại có thể tháo` (Finder "Removable" → `Có thể tháo`) over
   `không tháo được`, which sounds like a one-time refusal.
 - loose "moving files" (copy, move, or delete) → `chuyển tệp`, over `di chuyển tệp`, which narrows to the Move
@@ -444,7 +439,7 @@ source is Apple's own Connect to Server dialog (`NetAuthAgent.app`).
 - `adb.hint.text` capitalizes `Gỡ lỗi qua USB` because it tells the reader to find that exact switch; running prose
   keeps it lowercase, as AOSP does.
 - "You stopped opening your phone" → `dừng`, ❌ not `hủy`: `Hủy` is the Cancel button's label.
-- The busy tooltips share one frame (`Không thể … khi còn thao tác đang chạy trên …`); the two disconnect arias match.
+- The busy tooltips share one frame (`Cmdr vẫn đang làm việc với tệp trên … này. Hãy … khi việc đó xong.`).
 
 ## Toast khi vốn không có mật khẩu nào được lưu (`fileExplorer.navigation.forgetSecretNoneToast`)
 
@@ -567,18 +562,19 @@ source is Apple's own Connect to Server dialog (`NetAuthAgent.app`).
 - Row `0` quotes `favoritesAddCurrent`; keep it apart from `commands.favoritesAdd.label`, which names no folder.
 - `favoritesCantAddHere` opens like `favoritesAlreadyAdded` and says `hoạt động trên`, never naming a protocol.
 
-## macOS từ chối tháo ổ đĩa, và Cmdr nói rõ ai đang giữ (`errors.eject.unmountRefusedBy*`, `errors.eject.otherApps`)
+## macOS từ chối tháo ổ đĩa, và Cmdr nói rõ ai đang giữ (`errors.eject.unmountRefusedBy*`, `errors.eject.otherApps`, `errors.eject.otherProcesses`)
 
-- The family shares `… vẫn đang dùng ổ đĩa này. Hãy …, rồi tháo lại.` in the ACTIVE voice (siblings already are), over
-  AppKit's passive `đang được “%@” sử dụng`, which needs a quoted name; `{app}` goes bare.
-- `…ByApp` and `…ByApps` differ only by `nó` / `chúng`: the list just before already says the number, so ❌ no invented
-  number marker. The list's last item `errors.eject.otherApps` MUST be `các ứng dụng khác`: without `các`,
-  `… và ứng dụng khác` reads "and one more app".
-- disk image → `ảnh đĩa` (Disk Utility, `DiskImages.framework`, live sweep 2026-09-16; the pile has none), ❌ never
-  shortened to `ảnh` (a photo). "stored on this drive" → `nằm trên`, over `lưu trữ` (reads as backup).
-- "macOS is still working with" → `vẫn đang làm việc với` (macOS `Đang làm việc với %@`): English changes the verb
-  because nothing can be closed. "Wait a minute" (macOS, long) vs "Wait a moment" (Cmdr, short) keep `một phút` /
-  `một chút`.
+- The family shares `… vẫn đang mở tệp ở đó. Hãy …, rồi thử lại.` in the ACTIVE voice, over AppKit's passive
+  `đang được “%@” sử dụng`, which needs a quoted name; `{app}` goes bare. Either wrapper may concern a share or a phone,
+  so `ở đó`, never `ổ đĩa này` or `tháo lại`.
+- `…ByApp` and `…ByApps` share `Hãy đóng các tệp đó`: no pronoun, and ❌ no invented number marker. The list's last item
+  `errors.eject.otherApps` MUST be `các ứng dụng khác`: without `các`, `… và ứng dụng khác` reads "and one more app";
+  likewise `otherProcesses` → `các tiến trình khác`.
+- called → `có tên` (Finder `có tên là`); the "(We don’t have …)" aside is identical in `…ByProcess(es)`.
+- disk image → `ảnh đĩa` (Disk Utility, `DiskImages.framework`, sweep 2026-09-16), ❌ never `ảnh` (a photo). "stored
+  there" → `nằm ở đó`, over `lưu trữ` (reads as backup).
+- The busy tooltips keep `vẫn đang làm việc với` (macOS `Đang làm việc với %@`). "Wait a minute" vs "Wait a moment" keep
+  `một phút` / `một chút`.
 - "send a report" → a bare `gửi báo cáo`, the button's own label.
 
 ## Select all of the same kind (`menu.select.sameKind`/`.allFolders`/`.sameExtension`/`.noExtension`, `commands.selectionSelectSameKind.*`, `menu.context.selection`)

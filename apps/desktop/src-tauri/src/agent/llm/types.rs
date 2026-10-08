@@ -557,6 +557,9 @@ pub enum AgentLlmError {
     BudgetExhausted,
     /// Any other provider-side failure; the string is for display only.
     Provider(String),
+    /// The organization's managed policy refused the request: the LLM client's per-request
+    /// backstop, when a policy arrives after the slot resolved. Not a provider failure.
+    Managed(crate::managed_policy::ManagedAiRefusal),
 }
 
 impl AgentLlmError {
@@ -582,6 +585,7 @@ impl std::fmt::Display for AgentLlmError {
             Self::RateLimited(detail) => write!(f, "the AI provider is rate-limiting or out of quota: {detail}"),
             Self::BudgetExhausted => write!(f, "the message budget was exhausted"),
             Self::Provider(detail) => write!(f, "the AI provider returned a problem: {detail}"),
+            Self::Managed(refusal) => write!(f, "the organization's policy refuses this AI request ({refusal:?})"),
         }
     }
 }

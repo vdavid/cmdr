@@ -67,5 +67,5 @@ pub(crate) use tests::stress_test_helpers;
 
 pub(crate) use events::DEBUG_STATS;
 pub(crate) use lifecycle::failure::IndexFailureSignal;
-pub(crate) use paths::routing::IndexPathSpace;
+pub(crate) use paths::path_space::IndexPathSpace;
 pub(crate) use read::enrichment::get_read_pool_for;

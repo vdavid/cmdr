@@ -1,7 +1,8 @@
 //! Manual server storage and injection.
 //!
-//! Handles user-added SMB servers: address parsing, TCP reachability checks,
-//! persistence to `manual-servers.json`, and injection into the discovery state.
+//! Handles user-added SMB servers: address parsing, TCP reachability checks
+//! (`manual_servers_reachability.rs`), persistence to `manual-servers.json`, and
+//! injection into the discovery state.
 
 use crate::network::server_identity::SmbServer;
 use crate::network::{HostSource, NetworkHost, on_host_found, on_host_lost};
@@ -14,7 +15,6 @@ use std::sync::{Mutex, OnceLock};
 use tauri::{AppHandle, Runtime};
 
 const DEFAULT_SMB_PORT: u16 = 445;
-const REACHABILITY_TIMEOUT_SECS: u64 = 5;
 const MANUAL_SERVERS_FILENAME: &str = "manual-servers.json";
 
 /// Protects the read-modify-write cycle on `manual-servers.json`.
@@ -143,13 +143,18 @@ pub enum AddServerError {
     /// The address isn't one this reads (`ParseError`), with why, for the log.
     InvalidAddress { message: String },
     /// Nothing answered on the address's SMB port within the probe's budget.
-    Unreachable { message: String },
+    Unreachable {
+        message: String,
+        /// Something besides the server worth checking, when the way the probe
+        /// failed points at one.
+        hint: Option<UnreachableHint>,
+    },
 }
 
 impl std::fmt::Display for AddServerError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::InvalidAddress { message } | Self::Unreachable { message } => f.write_str(message),
+            Self::InvalidAddress { message } | Self::Unreachable { message, .. } => f.write_str(message),
         }
     }
 }
@@ -404,51 +409,6 @@ pub fn create_network_host(address: &str, port: u16) -> NetworkHost {
         ip_address: if is_ip { Some(address.to_string()) } else { None },
         port,
         source: HostSource::Manual,
-    }
-}
-
-// ---------------------------------------------------------------------------
-// TCP reachability
-// ---------------------------------------------------------------------------
-
-/// Checks that the host:port is reachable via TCP with a timeout.
-pub async fn check_reachability(host: &str, port: u16) -> Result<(), String> {
-    use tokio::net::TcpStream;
-    use tokio::time::{Duration, timeout};
-
-    let addr = format!("{}:{}", host, port);
-    debug!("Checking TCP reachability: host={host:?}, port={port}");
-
-    // Try to resolve + connect. For hostnames, tokio::net::TcpStream::connect
-    // does DNS resolution internally.
-    match timeout(
-        Duration::from_secs(REACHABILITY_TIMEOUT_SECS),
-        TcpStream::connect(&addr),
-    )
-    .await
-    {
-        Ok(Ok(_stream)) => {
-            debug!("Reachable: host={host:?}, port={port}");
-            Ok(())
-        }
-        Ok(Err(e)) => {
-            debug!(
-                "Unreachable: host={:?}, port={}, source=os, error_kind={:?}, code={:?}, detail={:?}",
-                host,
-                port,
-                e.kind(),
-                e.raw_os_error(),
-                cmdr_fs::log_detail::LogDetail(&e.to_string())
-            );
-            Err(format!("Couldn't reach {}: {}", addr, e))
-        }
-        Err(_) => {
-            debug!("Timed out connecting to host={host:?}, port={port}");
-            Err(format!(
-                "Couldn't reach {}: connection timed out after {}s",
-                addr, REACHABILITY_TIMEOUT_SECS
-            ))
-        }
     }
 }
 
@@ -717,9 +677,7 @@ pub fn name_manual_server<R: Runtime>(
 async fn checked_parse(input: &str, reachability: Reachability) -> Result<ParsedAddress, AddServerError> {
     let parsed = parse_server_address(input).map_err(|e| AddServerError::InvalidAddress { message: e.to_string() })?;
     if reachability == Reachability::Check {
-        check_reachability(&parsed.host, parsed.port)
-            .await
-            .map_err(|message| AddServerError::Unreachable { message })?;
+        check_reachability(&parsed.host, parsed.port).await?;
     }
     Ok(parsed)
 }
@@ -780,6 +738,12 @@ pub fn load_manual_servers<R: Runtime>(app_handle: &AppHandle<R>) {
 #[path = "manual_servers_account.rs"]
 mod account;
 pub use account::set_account;
+
+#[path = "manual_servers_reachability.rs"]
+mod reachability;
+#[cfg(test)]
+use reachability::unreachable_hint;
+pub use reachability::{UnreachableHint, check_reachability};
 
 #[cfg(test)]
 #[path = "manual_servers_test.rs"]

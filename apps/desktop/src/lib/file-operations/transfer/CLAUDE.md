@@ -23,8 +23,8 @@ Backend: `apps/desktop/src-tauri/src/file_system/write_operations/CLAUDE.md`.
   goes stale, which is how a just-queued transfer once got cancelled.
 - **One transfer entry seam**: F5/F6, drag-and-drop, and paste all prepare through `pane/transfer-entry.ts`. The paste
   path's scheme-path refusal stays SEPARATE and BEFORE the shared guard.
-- **Single Copy/Move includes its leaf**; relative paths use the source folder and volume. Keep `destinationName`
-  through the birth context. DETAILS § "Single-item destinations".
+- **Single Copy/Move includes its leaf**; relative paths use the source folder/volume. Forward `destinationName`.
+  DETAILS § "Single-item destinations".
 - **Batch IPC for selection lookups** (`get_paths_at_indices` / `get_files_at_indices`), ❌ never a per-index loop: 50k
   files costs 5-10 s vs ~1 ms.
 - **Speed, ETA, and bars are backend-owned and SHARED with the queue window** (`../TransferProgressReadout.svelte`): ❌
@@ -45,7 +45,8 @@ Backend: `apps/desktop/src-tauri/src/file_system/write_operations/CLAUDE.md`.
   confirm ALWAYS awaits `scan.scanStarted`. DETAILS § Scan.
 - **Compress swaps the conflict-policy UI for a dest-exists overwrite check**; its auto-confirm (MCP) path ❌ never
   silently overwrites.
-- **ONE map from an MCP `onConflict` name to a policy** (`conflict-policy.ts`), shared with `dialog confirm`. ❌ Never a
-  second copy: an unmapped name silently becomes `skip`, turning "ask about each file" into "skip every file".
+- **ONE map from an MCP `onConflict` name to a policy** (`conflict-policy.ts`), and ONE confirm path: `dialog confirm`
+  presses `handleConfirm` via `registerConfirmer`. ❌ Never a second map (an unmapped name silently becomes `skip`) or a
+  payload built from the opening props (no edited path, volume, or preview).
 
 Read `DETAILS.md` before non-trivial work: file map, rollback, passwords, E2E markers, phases, flows, and decisions.

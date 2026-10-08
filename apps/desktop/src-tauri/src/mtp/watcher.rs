@@ -78,10 +78,25 @@ pub async fn set_mtp_enabled(enabled: bool) {
     }
 }
 
-/// Gets the current set of MTP devices using mtp-rs discovery.
+/// Gets the current set of MTP devices this run may claim, using mtp-rs discovery.
 fn get_current_mtp_devices() -> HashSet<String> {
-    let devices = super::list_mtp_devices();
-    devices.into_iter().map(|d| d.id).collect()
+    let devices = super::list_mtp_devices().into_iter().map(|d| d.id).collect();
+    claimable_device_ids(devices, crate::test_mode::may_discover_real_devices())
+}
+
+/// The discovered devices this process may see at all: every one of them, or, in an
+/// automated run, only its own virtual device.
+///
+/// An E2E run that saw a phone the developer had plugged in would auto-connect it, and
+/// the `ptpcamerad` exclusive-access dialog (or the suppression notice) would land on
+/// top of whatever spec was running. Filtering HERE, where every reconciliation reads
+/// the device set, keeps a real device out of auto-connect, the ptpcamerad calls, and
+/// the restore check alike. `docs/testing.md` § "The host machine is not a fixture".
+fn claimable_device_ids(discovered: HashSet<String>, may_discover_real: bool) -> HashSet<String> {
+    if may_discover_real {
+        return discovered;
+    }
+    discovered.into_iter().filter(|id| is_virtual_device_id(id)).collect()
 }
 
 /// Checks for MTP device changes by comparing current state with known state.
@@ -276,12 +291,12 @@ async fn run_hotplug_watcher(_app: AppHandle) {
 
 /// Whether `device_id` names a virtual (fixture-backed) MTP device. Always false in a
 /// production build, where the virtual device isn't compiled in.
-#[cfg(all(target_os = "macos", feature = "virtual-mtp"))]
+#[cfg(feature = "virtual-mtp")]
 fn is_virtual_device_id(device_id: &str) -> bool {
     device_id == super::virtual_device::virtual_device_id()
 }
 
-#[cfg(all(target_os = "macos", not(feature = "virtual-mtp")))]
+#[cfg(not(feature = "virtual-mtp"))]
 fn is_virtual_device_id(_device_id: &str) -> bool {
     false
 }
@@ -293,8 +308,8 @@ fn is_virtual_device_id(_device_id: &str) -> bool {
 /// the developer's machine (and raise the "Cmdr paused the macOS camera daemon" notice)
 /// for a fixture. An E2E run enumerates nothing but virtual devices, which is how a test
 /// run used to `launchctl disable com.apple.ptpcamerad` mid-suite. The rule is about the
-/// DEVICE rather than the run, so a `CMDR_VIRTUAL_MTP=1` dev session is covered too, and
-/// a real phone plugged in during a test run still gets the workaround it needs.
+/// DEVICE rather than the run, so a `CMDR_VIRTUAL_MTP=1` dev session is covered too. (A
+/// real phone never reaches here in a test run: [`claimable_device_ids`] drops it.)
 ///
 /// See `docs/testing.md` § "The host machine is not a fixture".
 #[cfg(target_os = "macos")]
@@ -419,6 +434,29 @@ mod tests {
     fn real_hardware_alongside_a_virtual_device_still_needs_suppression() {
         let virtual_id = cmdr_mtp::virtual_device::virtual_device_id();
         assert!(needs_ptpcamerad_suppression([virtual_id.as_str(), "mtp-real-phone"]));
+    }
+
+    /// A phone plugged into the developer's Mac must not exist for an E2E run: pre-fix the
+    /// run auto-connected it, and its ptpcamerad dialog failed whichever spec was driving
+    /// the UI. The run's own virtual device has to survive the same filter.
+    #[cfg(feature = "virtual-mtp")]
+    #[test]
+    fn an_automated_run_claims_only_its_virtual_device() {
+        let virtual_id = cmdr_mtp::virtual_device::virtual_device_id();
+        let discovered = HashSet::from([virtual_id.clone(), "mtp-real-phone".to_string()]);
+        assert_eq!(claimable_device_ids(discovered, false), HashSet::from([virtual_id]));
+    }
+
+    #[test]
+    fn an_automated_run_claims_no_real_hardware() {
+        let discovered = HashSet::from(["mtp-real-phone".to_string()]);
+        assert!(claimable_device_ids(discovered, false).is_empty());
+    }
+
+    #[test]
+    fn a_normal_launch_claims_every_discovered_device() {
+        let discovered = HashSet::from(["mtp-A".to_string(), "mtp-B".to_string()]);
+        assert_eq!(claimable_device_ids(discovered.clone(), true), discovered);
     }
 
     #[cfg(target_os = "macos")]

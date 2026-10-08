@@ -32,14 +32,13 @@ use super::super::super::state::{
     OperationIntent, WriteOperationState, is_cancelled, load_intent, update_operation_status,
 };
 use super::super::super::types::{
-    CancelRollback, VolumeCopyConfig, VolumeCopyScanResult, WriteCancelledEvent, WriteCompleteEvent,
-    WriteOperationConfig, WriteOperationError, WriteOperationPhase, WriteOperationStartResult, WriteOperationType,
-    WriteProgressEvent,
+    CancelRollback, SpaceShortfall, VolumeCopyConfig, WriteCancelledEvent, WriteCompleteEvent, WriteOperationConfig,
+    WriteOperationError, WriteOperationPhase, WriteOperationStartResult, WriteOperationType, WriteProgressEvent,
 };
 use super::super::dest_name_index::DestNameIndex;
 use super::super::transfer_driver::{LeafProgressLedger, build_pre_skip_set};
 use super::preflight::scan_volume_sources;
-use crate::file_system::volume::{DirectoryCreation, SourceItemInfo, SpaceInfo, Volume, VolumeError};
+use crate::file_system::volume::{DirectoryCreation, SpaceInfo, Volume, VolumeError};
 use crate::ignore_poison::IgnorePoison;
 use crate::operation_log::types::OpKind;
 
@@ -172,6 +171,7 @@ pub async fn copy_between_volumes(
             preview_id: config.preview_id,
             pre_known_conflicts: config.pre_known_conflicts,
             destination_name: config.destination_name,
+            space_shortfall: config.space_shortfall,
             ..Default::default()
         };
 
@@ -395,10 +395,10 @@ pub async fn copy_between_volumes(
 /// `copy_space_tests.rs::a_copy_is_judged_by_the_filesystem_its_destination_folder_is_on`.
 ///
 /// ❗ **`NotSupported` means "can't tell", ❌ never "no room".** `get_space_info`
-/// is explicitly allowed to refuse: SFTP is the live case, because
-/// `statvfs@openssh.com` isn't reachable from its crate stack, so the honest
-/// answer is no answer. Reading that refusal as a failure made every copy INTO an
-/// SFTP server die in pre-flight, with a message that named neither the check nor
+/// is explicitly allowed to refuse: an SFTP server without
+/// `statvfs@openssh.com` is the live case, so the honest answer is no answer.
+/// Reading that refusal as a failure made every copy INTO an SFTP server die in
+/// pre-flight, with a message that named neither the check nor
 /// the reason — two correct decisions (an honest backend, a real check) colliding.
 ///
 /// Any OTHER error still propagates: a destination that answered with a dead
@@ -456,106 +456,6 @@ pub(super) async fn destination_refusal(dest_volume: &dyn Volume, dest_path: &Pa
     }
 }
 
-/// Performs a pre-flight scan for volume copy without executing.
-///
-/// This scans the source files and checks destination for conflicts and space.
-/// Use this to show the user what will happen before starting the copy.
-///
-/// # Arguments
-///
-/// * `source_volume` - The source volume to scan
-/// * `source_paths` - Paths of files/directories to copy
-/// * `dest_volume` - The destination volume
-/// * `dest_path` - Destination directory path
-/// * `max_conflicts` - Maximum number of conflicts to return
-pub async fn scan_for_volume_copy(
-    source_volume: &dyn Volume,
-    source_paths: &[PathBuf],
-    dest_volume: &dyn Volume,
-    dest_path: &Path,
-    max_conflicts: usize,
-) -> Result<VolumeCopyScanResult, VolumeError> {
-    // Scan source for total bytes and file count
-    let mut total_files = 0;
-    let mut total_dirs = 0;
-    let mut total_bytes = 0u64;
-    let mut source_items: Vec<SourceItemInfo> = Vec::new();
-
-    for source_path in source_paths {
-        let scan = source_volume.scan_for_copy(source_path).await?;
-        total_files += scan.file_count;
-        total_dirs += scan.dir_count;
-        total_bytes += scan.total_bytes;
-
-        // Collect source item info for conflict detection
-        // For now, we just use the top-level item name
-        if let Some(name) = source_path.file_name() {
-            let metadata = source_volume.get_metadata(source_path).await.ok();
-            source_items.push(SourceItemInfo {
-                name: name.to_string_lossy().to_string(),
-                size: metadata.as_ref().and_then(|m| m.size).unwrap_or(0),
-                modified: metadata
-                    .as_ref()
-                    .and_then(|m| m.modified_at.map(|ms| (ms / 1000) as i64)),
-                is_directory: metadata.as_ref().map(|m| m.is_directory).unwrap_or(false),
-            });
-        }
-    }
-
-    // Whether the destination takes writes at all, asked BEFORE its space: an
-    // unwritable folder is reported as such, ❌ never as a space shortfall (a
-    // phone's `/` reports 0 free and takes nothing at any size).
-    let dest_write_access = dest_volume.write_access_at(dest_path).await;
-    let dest_takes_writes = !matches!(
-        dest_write_access,
-        crate::file_system::volume::WriteAccess::Unwritable { .. }
-    );
-
-    // What the destination has room for, or `None` when it genuinely can't tell.
-    // A folder that takes no writes has nothing to measure for, so its space
-    // failing to answer doesn't refuse the preview either.
-    let dest_space = match dest_space_if_known(dest_volume, dest_path).await {
-        Ok(space) => space,
-        Err(_) if !dest_takes_writes => None,
-        Err(e) => return Err(e),
-    };
-
-    // ❗ Only a volume that answered with a CEILING gets checked. See
-    // `room_to_check`: a silent backend and a bottomless one both mean "don't
-    // compare", and a preview the user can't even open is the wrong way to say so.
-    if dest_takes_writes
-        && let Some(available) = room_to_check(dest_space)
-        && available < total_bytes
-    {
-        return Err(VolumeError::IoError {
-            message: format!(
-                "Not enough space: need {}, only {available} available",
-                cmdr_fs::pluralize::pluralize(total_bytes, "byte")
-            ),
-            raw_os_error: None,
-        });
-    }
-
-    // Scan for conflicts at destination
-    let all_conflicts = dest_volume.scan_for_conflicts(&source_items, dest_path).await?;
-
-    // Limit the number of conflicts returned
-    let conflicts = if all_conflicts.len() > max_conflicts {
-        all_conflicts.into_iter().take(max_conflicts).collect()
-    } else {
-        all_conflicts
-    };
-
-    Ok(VolumeCopyScanResult {
-        file_count: total_files,
-        dir_count: total_dirs,
-        total_bytes,
-        dest_space,
-        dest_write_access,
-        conflicts,
-    })
-}
-
 /// Hard ceiling on the concurrent driver's sliding window, matching smb2's
 /// `MAX_PIPELINE_WINDOW`. Measured against a QNAP over gigabit, both corpus
 /// shapes plateau at a window of 12, so this is nowhere near binding on the
@@ -605,7 +505,7 @@ pub(super) fn transfer_concurrency(source: &dyn Volume, dest: &dyn Volume) -> us
 /// Formats the trailing "(of which skipped N file(s), X)" annotation for
 /// the completion log. Returns an empty string when nothing was skipped, so
 /// the log stays terse on the happy path. Byte counts go through
-/// `search::query::format_size` so a 35 GB skip doesn't read as
+/// `search::query::format_size` so a 35 GiB skip doesn't read as
 /// `37656214069 bytes`.
 fn format_skipped_suffix(files_skipped: usize, bytes_skipped: u64) -> String {
     if files_skipped == 0 {
@@ -779,11 +679,13 @@ pub(crate) async fn copy_volumes_with_progress(
     let known_directory_paths = preflight.known_directory_paths();
     let mut source_hints = preflight.source_hints;
 
-    // Phase 2: Check destination space, where the destination can report it.
+    // Phase 2: Check destination space, where the destination can report it,
+    // unless the person chose to copy anyway (`SpaceShortfall`).
     let dest_space = dest_space_if_known(&*dest_volume, dest_path)
         .await
         .map_err(|e| WriteFailure::from_volume(dest_path, PathRole::Destination, e))?;
-    if let Some(available) = room_to_check(dest_space)
+    if config.space_shortfall == SpaceShortfall::Refuse
+        && let Some(available) = room_to_check(dest_space)
         && available < total_bytes
     {
         return Err(WriteFailure::synthetic(WriteOperationError::InsufficientSpace {

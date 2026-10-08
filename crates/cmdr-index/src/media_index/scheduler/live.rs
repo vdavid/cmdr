@@ -310,9 +310,16 @@ impl MediaScheduler {
 /// batch of listing changes. Coalesces overlapping batches per volume
 /// (accumulating their touched dirs) so a burst of FSEvents collapses to one tick plus at
 /// most one re-run, never a tick per event — mirroring importance's `start_incremental`.
-pub(crate) fn start_live_follow(scheduler: Arc<MediaScheduler>, volume_id: String) {
+///
+/// The listener ends when `stop` fires, so it lasts one life of the volume
+/// (`lifecycle::wire_volume`).
+pub(crate) fn start_live_follow(
+    scheduler: Arc<MediaScheduler>,
+    volume_id: String,
+    stop: &tokio_util::sync::CancellationToken,
+) {
     let mut rx = lifecycle_bus::subscribe_dirs_changed(&volume_id);
-    crate::indexing::host::runtime::spawn(async move {
+    crate::indexing::host::runtime::spawn_until_stopped(stop, async move {
         // The retained initial value is the empty batch; `borrow_and_update` marks it seen
         // so only a real later change triggers.
         rx.borrow_and_update();

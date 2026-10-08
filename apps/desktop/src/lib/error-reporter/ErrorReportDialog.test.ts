@@ -11,6 +11,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount, tick, unmount } from 'svelte'
 import { tString } from '$lib/intl/messages.svelte'
+import { expectNoA11yViolations } from '$lib/test-a11y'
 import ErrorReportDialog from './ErrorReportDialog.svelte'
 import {
   closeErrorReportDialog,
@@ -50,6 +51,16 @@ vi.mock('$lib/settings', () => ({
 }))
 
 vi.mock('$lib/logging/logger', () => ({ getAppLogger: () => logger }))
+
+// Only `reportsDisabled` matters to the dialog; a test flips it before mounting.
+const managedPolicy = vi.hoisted(() => ({ reportsDisabled: false }))
+vi.mock('$lib/managed-policy/managed-policy.svelte', async (importOriginal) => {
+  const real = await importOriginal<typeof import('$lib/managed-policy/managed-policy.svelte')>()
+  return {
+    ...real,
+    getManagedPolicyView: () => ({ ...real.UNMANAGED, reportsDisabled: managedPolicy.reportsDisabled }),
+  }
+})
 
 const preview = {
   id: 'ERR-AB23X',
@@ -164,5 +175,64 @@ describe('ErrorReportDialog failures', () => {
     expect(api.prepareErrorReportPreview).toHaveBeenCalledTimes(2)
     expect(target.textContent).toContain('ERR-AB23X')
     expect(button(target, tString('errorReporter.dialog.send'))?.disabled).toBe(false)
+  })
+})
+
+describe('ErrorReportDialog when the organization turned reports off', () => {
+  const MANAGED_LINE =
+    'Your organization turned off sending reports. You can still save one to disk and share it yourself.'
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    api.prepareErrorReportPreview.mockResolvedValue(preview)
+    api.getAutoSentReportPreview.mockResolvedValue({ ...preview, canAmend: true })
+    api.saveErrorReportToDisk.mockResolvedValue('/tmp/bundle.zip')
+    managedPolicy.reportsDisabled = true
+  })
+
+  afterEach(async () => {
+    managedPolicy.reportsDisabled = false
+    if (mounted) {
+      await unmount(mounted.instance)
+      mounted.target.remove()
+      mounted = undefined
+    }
+    closeErrorReportDialog()
+  })
+
+  it('says so, offers no Send, and keeps Save to disk with the note the person typed', async () => {
+    openErrorReportDialog('It froze')
+    const target = await mountDialog()
+
+    expect(target.textContent).toContain(MANAGED_LINE)
+    expect(button(target, tString('errorReporter.dialog.send'))).toBeUndefined()
+    const save = button(target, tString('errorReporter.dialog.saveToDiskManaged'))
+    expect(save).toBeDefined()
+
+    save?.click()
+    await settle()
+    expect(api.saveErrorReportToDisk).toHaveBeenCalledWith('It froze', undefined, 'ERR-AB23X')
+    expect(api.sendErrorReport).not.toHaveBeenCalled()
+    await expectNoA11yViolations(target)
+  })
+
+  it('doesn’t send on ⌘Enter', async () => {
+    openErrorReportDialog('It froze')
+    const target = await mountDialog()
+
+    const textarea = target.querySelector('textarea')
+    textarea?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', metaKey: true, bubbles: true }))
+    await settle()
+    expect(api.sendErrorReport).not.toHaveBeenCalled()
+  })
+
+  it('offers only Close in amend mode, with the same line', async () => {
+    openErrorReportDialogForAutoSentReport()
+    const target = await mountDialog()
+
+    expect(target.textContent).toContain(MANAGED_LINE)
+    expect(button(target, tString('errorReporter.amend.submit'))).toBeUndefined()
+    expect(button(target, tString('errorReporter.amend.close'))).toBeDefined()
+    expect(api.amendErrorReport).not.toHaveBeenCalled()
   })
 })

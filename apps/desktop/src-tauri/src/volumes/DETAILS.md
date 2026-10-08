@@ -26,8 +26,9 @@ DO (`supports_eviction`), which is why the enum sits in `file_system/` rather th
 
 **Decision**: `is_user_facing_mount` admits a mount when the OS doesn't mark it `MNT_DONTBROWSE`, or when
 `provider_for_mount` recognizes who serves it (path pattern or fs type: `pcloudfs`, `macfuse` / `osxfuse`,
-`/Volumes/pCloudDrive`, `/Volumes/veracrypt*`, `~/.CMVolumes`), wherever it's mounted. It still drops the boot volume (which has its own row), a dot-prefixed mount, and anything
-under `~/Library/CloudStorage` (the cloud arm publishes those, and a second row would be a duplicate).
+`/Volumes/pCloudDrive`, `/Volumes/veracrypt*`, `~/.CMVolumes`), wherever it's mounted. It still drops the boot volume (which has its own row), a dot-prefixed mount, anything
+under `~/Library/CloudStorage` (the cloud arm publishes those, and a second row would be a duplicate), and another
+account's own mount, recognized provider or not (§ "Another account's mounts").
 
 **Why the flag**: `MNT_DONTBROWSE` is the same bit Finder reads to decide what belongs in its sidebar, so it separates
 drives from plumbing without this module naming a single system path. Measured on a stock macOS 27 machine: `/dev`,
@@ -53,9 +54,57 @@ cloud storage, so it gets a row in VOLUMES. Gating admission on `is_cloud_storag
 split. The one family where this arm could overlap the cloud arm is iCloud Drive's folder: a mount exactly there shares
 the cloud arm's path, and `list_locations` dedupes on path.
 
-**What this does NOT decide**: whether a path can be OPENED. The volume registry sweeps the whole mount table regardless
-(`file_system/volume/DETAILS.md` § "Registration covers the whole mount table"); a mount dropped here is still
-navigable, it just has no row of its own.
+**What this does NOT decide**: whether a path can be OPENED. The volume registry sweeps every mount this account can
+reach regardless (`file_system/volume/DETAILS.md` § "Registration covers the whole mount table"); a mount dropped here
+is still navigable, it just has no row of its own. The one mount the registry skips too is another account's own, next.
+
+## Another account's mounts
+
+**Decision**: a mount is another account's own, and hidden, when its mount-table row says someone else mounted it
+(`f_owner` is neither this process's uid nor 0), it isn't a disk (`f_mntfromname` doesn't start with `/dev/`), and it
+isn't a network filesystem (`is_network_fs_type`). `MountEntry::is_private_to_another_user` in `mounts.rs` is the one
+rule; `MountedBy` is the owner as a type.
+
+**Why**: on a Mac with two accounts that both run pCloud, the kernel table lists both `pCloud Drive` mounts, one per
+home folder, and Cmdr gave each a row. The other account's drive can't be opened from this one: its icon lookups
+answered `No such file or directory`, the row showed as unavailable, and picking it dropped the pane in the home
+folder (reported against 0.48.0). Nothing in discovery looked at who owned a mount.
+
+**What each consumer of the mount table does with such a mount**:
+
+- **The switcher** (`get_attached_volumes`, through `is_user_facing_mount`): no row, so also no local enrichment (NSURL,
+  icon, DiskArbitration) against it, and no space poll, since the poller only watches what a pane shows.
+- **The registry sweep** (`registrable_mount_roots`): not registered.
+- **The mount watcher** (`handle_volume_mounted`, asking `is_private_to_another_user`): no registration, no
+  `volume-mounted`, no refresh. An unmount can't be asked about (the row is gone), and finds nothing to remove.
+- **The index** (`mount_roots`): STILL listed. The boot scan cuts at every mount inside the boot tree, and it has to
+  stop at one it can't enter as well. ❌ Never point the index at `registrable_mount_roots`.
+- **Table facts** (`is_mount_point`, `mount_identity_at`, `has_mount_identity`, `mount_sources`, `smb_mounts`):
+  unfiltered. They answer what the kernel lists, and the rule excludes disks and network mounts anyway.
+- **Adoption** (`mount_registration::adopt_mount_serving`): untouched, so a path inside such a mount that `statfs` does
+  answer for still gets its volume on first listing, and the pane shows the real refusal.
+
+**Why the disk exception**: a drive plugged in, or an image attached, while someone else was logged in is "mounted by"
+them, and every account can still use it. `/Volumes/Amp`, mounted from `/dev/disk5s1`, carries the mounting user's uid
+with a `drwxr-xr-x` root (verified on macOS 27.0 26A428, a C probe printing `f_owner` per `getmntinfo` row, 2026-09-30).
+
+**Why root's mounts stay**: `f_owner` 0 is every system mount, and a FUSE daemon running as root mounts for everyone.
+
+**Why the row and no access probe**: a probe is a syscall per mount that can hang on a dead share (§ "Hung mounts"),
+and the drive this rule exists for answered an ambiguous "not there" instead of a refusal. `f_owner` rides in the same
+`getfsstat(MNT_NOWAIT)` snapshot as everything else, at no syscall. It's what `mount` prints as "mounted by <name>",
+for exactly the rows whose owner isn't 0 (verified with the same probe beside `mount`'s output, 2026-09-30).
+
+**Why network mounts are left alone**: whether another account's SMB, NFS, WebDAV, or AFP mount is usable from this one
+is unverified, and hiding a share someone can reach is worse than showing one they can't. The test Mac has one account,
+so nothing could be tried from a second. What's known: an SMB mount's root is `drwx------` and owned by the mounting
+user (`/Volumes/naspi`, macOS 27.0, `stat`, 2026-09-30), which suggests another account can't enter it. To widen the
+rule, mount a share as one account, fast-user-switch, and list it from the other; if it refuses, drop the
+`is_network_fs_type` clause and its test. ❗ `is_network_fs_type` also picks the volume-ID derivation and which mounts
+skip blocking enrichment: this rule only reads it.
+
+Linux has the same rule for FUSE, read off the mount options: `volumes_linux/DETAILS.md` § "Another account's FUSE
+mounts".
 
 ## Location IDs (two cross-file sync points)
 
@@ -70,7 +119,17 @@ Every other ID is minted by `cmdr_fs::volume::ids` (below).
 
 ## `list_locations()`
 
-Aggregates all `LocationCategory` entries in order and deduplicates by path AND by volume ID, two `HashSet<String>`s.
+Aggregates all `LocationCategory` entries in order (favorites first) and deduplicates through
+`cmdr_fs::volume::published_locations::dedupe_locations`, shared with `volumes_linux/`: the first row per ID, and the
+first volume row per path.
+
+**Decision: a favorite never claims its path.** A favorite is a `fav-<uuid>` shortcut into a volume, not a volume, so
+it dedupes on ID only. **Why**: favorites are gathered first, so a favorite at `/` used to take the path slot and drop
+the "Macintosh HD" row. The pane's chip then read "Volume", and every favorite on the boot disk resolved to `root`, a
+volume missing from the list, so none of them opened (#349). The same held for a favorite at a drive's mount root or a
+cloud drive's folder. The consequence: a favorite and a volume can share a path, so a frontend lookup by path must skip
+favorites (`pane-volume.ts::volumeMountedAt`).
+
 Inside this listing, `LocationCategory::Network` comes only from the servers arm below: an OS-mounted SMB share is an
 `AttachedVolume` under `/Volumes/`, and the OS-level `/Network` browseable location has no sidebar entry.
 
@@ -114,7 +173,7 @@ with a registered SFTP volume greying out under Linux while it stayed live on a 
 
 **Decision**: `get_attached_volumes` collapses mounts that share a volume ID
 (`cmdr_fs::volume::canonical_root::collapse_by_volume_id`), keeping the SHORTEST path and breaking ties
-lexicographically. `list_locations` then dedupes on ID as well as path.
+lexicographically. `list_locations` then dedupes on ID as well as path (favorites on ID only; see above).
 
 The collapse lives in `cmdr-fs` rather than here because it's a pure list transform over `(volume id, mount root)`
 pairs, and Linux needs the identical rule (`volumes_linux/DETAILS.md`): bind mounts and container mounts make "one ID,
@@ -194,6 +253,9 @@ flat ~30s (one smbfs kernel timeout). (Incident: live NAS QA, 2026-07-13.)
    older snapshot never lands after a newer one. Consumers treat `discovery_pending` like `timed_out` for
    retire-by-absence, and the volume store settles a retry only on a non-pending event. `apps/desktop/src-tauri/src/volume_broadcast/round.rs` §
    `Broadcaster::round`.
+
+A pane LISTING a folder on a hung mount is the other half: it says the volume isn't answering after 8 s, keeps waiting
+and retrying, and caps the threads the mount can pin. `apps/desktop/src-tauri/src/file_system/listing/DETAILS.md` § "Stalled listings".
 
 Note that the 2s deadline fires for reasons other than a hung mount: `list_locations` runs on the shared blocking pool,
 so a subsystem that saturates the pool starves it just as effectively (`commands/CLAUDE.md` § `BlockingBudget`).
@@ -363,6 +425,22 @@ are independent. `fs_type`/`f_mntfromname` don't disambiguate either (a `.dmg` c
 resolves the volume path, so callers gate it to local (non-SMB) mounts to keep a hung network mount from stalling it.
 Both `get_attached_volumes` (the switcher list) and `resolve_path_volume_fast` (highlight + transfer-source) set the flag
 so they can't drift.
+
+**Decision**: A local volume is ejectable when its media is ejectable (`NSURLVolumeIsEjectableKey`) OR macOS places its
+disk on an external bus (`NSURLVolumeIsInternalKey == false`). One rule, `nsurl::offers_eject`, reached by both
+`get_attached_volumes` and `resolve_path_volume_fast` through `nsurl::is_volume_ejectable`.
+**Why**: the media flag alone means "this media ejects from its drive under software control", which a disk image and
+most USB drives answer yes and an external disk macOS sees as FIXED answers no: a user's Thunderbolt/USB SSD (a SanDisk
+PRO-G40) showed no eject button in v0.48.0 while a mounted `.dmg` beside it did (reported 2026-09-29; the per-key
+values for that drive are inferred, not read off it). The two callers must agree because the switcher's button reads
+the first and the eject command re-checks through the second, so a drift shows a button the command then refuses.
+Three limits are deliberate:
+
+- ❗ Only an explicit "not internal" counts. A disk macOS gives no answer for stays without a button.
+- An internal volume with fixed media (a second APFS volume, an internal data disk) offers none, although Finder does:
+  Cmdr can't mount it back, and its eject takes the whole physical disk, which there is the boot disk.
+- The boot volume never ejects, even on a Mac booted from an external disk. Network mounts are never asked: they end
+  through their session, and the lookup can hang on a dead one (§ "Hung mounts").
 
 **Decision**: Populate `mount_is_read_only` for attached volumes from the `statfs` `MNT_RDONLY` flag (`read_only_from_statfs`).
 **Why**: It powers the 🔒 indicator and the copy/move write guard for ANY read-only mount (a read-only `.dmg`, a locked
@@ -538,10 +616,13 @@ objects accumulate in a default pool that's never drained, leaking memory over h
 **Why**: With `queue: nil`, AppKit dispatches the block on the thread that posted the notification, and
 `diskarbitrationd` posts on the main thread. Keep the body cheap: `register_volume_with_manager` is microseconds,
 `try_upgrade_smb_mount` and `emit_volumes_changed` both `tauri::async_runtime::spawn`, and `app.emit` is non-blocking.
-Don't add blocking I/O here without moving it onto a background task.
+Don't add blocking I/O here without moving it onto a background task. The rename block does exactly that: following a
+rename derives an id (an NSURL read) and restarts the drive's index (a drain of up to seconds), so it hands
+`handle_volume_renamed` a thread of its own (`file_system/volume/DETAILS.md` § "A renamed drive").
 
 **Gotcha**: `userInfo` is downcast with `Retained::cast_unchecked` to `NSDictionary<NSString, NSURL>`.
-**Why**: AppKit documents the value under `NSWorkspaceVolumeURLKey` as an `NSURL`. The unchecked cast trades a runtime
+**Why**: AppKit documents the values under `NSWorkspaceVolumeURLKey` and, on a rename, `NSWorkspaceVolumeOldURLKey` as
+`NSURL`s, and those are the only keys read through the cast (the dictionary also carries localized-name `NSString`s). The unchecked cast trades a runtime
 type check for a hard contract on Apple's side. A safer alternative (`cast::<NSDictionary>` plus a per-value
 `downcast::<NSURL>`) costs an `isKindOfClass:` call per notification. We lean on the documented contract; revisit if a
 future macOS version breaks it.

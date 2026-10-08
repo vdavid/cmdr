@@ -19,9 +19,9 @@
   "@viewer.error.noPath": {
     "sourceHash": "2b069fc"
   },
-  "viewer.error.readFailed": "No se ha podido leer el archivo",
+  "viewer.error.readFailed": "No se ha podido leer este archivo. ¿Reintentar?",
   "@viewer.error.readFailed": {
-    "sourceHash": "ea7d976"
+    "sourceHash": "8c420fd"
   },
   "viewer.error.notFound": "No se ha podido encontrar este archivo. Puede que se haya movido, renombrado o eliminado.",
   "@viewer.error.notFound": {
@@ -42,6 +42,10 @@
   "viewer.error.archiveUnreadable": "No se ha podido abrir este archivo desde el archivo comprimido. Puede que esté cifrado, dañado o use un formato que Cmdr no puede leer.",
   "@viewer.error.archiveUnreadable": {
     "sourceHash": "e0b8f4e"
+  },
+  "viewer.error.coldStorage": "Este archivo está archivado, así que no hay nada que mostrar hasta que se restaure. Restáuralo en la consola de tu proveedor de almacenamiento y vuelve a abrirlo.",
+  "@viewer.error.coldStorage": {
+    "sourceHash": "236cd1b"
   },
   "viewer.error.retry": "Reintentar",
   "@viewer.error.retry": {
@@ -287,18 +291,6 @@
   "@viewer.pdf.loading": {
     "sourceHash": "7f9acf3"
   },
-  "viewer.contextMenu.ariaLabel": "Acciones del visor",
-  "@viewer.contextMenu.ariaLabel": {
-    "sourceHash": "4cf8e51"
-  },
-  "viewer.contextMenu.copy": "Copiar",
-  "@viewer.contextMenu.copy": {
-    "sourceHash": "e21f935"
-  },
-  "viewer.contextMenu.selectAll": "Seleccionar todo",
-  "@viewer.contextMenu.selectAll": {
-    "sourceHash": "1fc9a38"
-  },
   "viewer.copyDialog.confirmTitleKnown": "¿Copiar {size} al portapapeles?",
   "@viewer.copyDialog.confirmTitleKnown": {
     "sourceHash": "7f97ebf"
@@ -403,17 +395,17 @@
   "@viewer.selection.toEndOfFile": {
     "sourceHash": "62d95be"
   },
-  "viewer.selection.singleLine": "Seleccionados {chars} caracteres en la línea {line}",
+  "viewer.selection.singleLine": "{chars, plural, one {Seleccionado # carácter} many {Seleccionados # caracteres} other {Seleccionados # caracteres}} en la línea {line}",
   "@viewer.selection.singleLine": {
-    "sourceHash": "bb320d5"
+    "sourceHash": "eb11697"
   },
-  "viewer.selection.multiLine": "Seleccionadas las líneas {startLine} a {endLine}, {chars} caracteres",
+  "viewer.selection.multiLine": "Seleccionadas las líneas {startLine} a {endLine}, {chars, plural, one {# carácter} many {# caracteres} other {# caracteres}}",
   "@viewer.selection.multiLine": {
-    "sourceHash": "074c687"
+    "sourceHash": "5ba7791"
   },
-  "viewer.selection.charsOnly": "Seleccionados {chars} caracteres",
+  "viewer.selection.charsOnly": "{chars, plural, one {Seleccionado # carácter} many {Seleccionados # caracteres} other {Seleccionados # caracteres}}",
   "@viewer.selection.charsOnly": {
-    "sourceHash": "b772db6"
+    "sourceHash": "3db2c4e"
   },
   "viewer.selection.toEndOfFileNoLine": "Seleccionado hasta el final del archivo",
   "@viewer.selection.toEndOfFileNoLine": {

@@ -54,7 +54,7 @@ export interface CoverageCtaView {
   /** Whether that drive's first index is running right now, which the note speaks to. */
   readonly isIndexing: boolean
   /**
-   * Whether a drive index can serve that drive at all. A server's can't (SFTP, WebDAV),
+   * Whether a drive index can serve that drive at all. A server's can't (SFTP, WebDAV, S3),
    * so the note says search isn't available there and nothing is offered: there's no
    * index to turn on, and Enter doesn't reach it either.
    */

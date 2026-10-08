@@ -175,7 +175,9 @@ describe('createPanePointer', () => {
           listingId: 'listing-1',
           canOpenTerminalHere: true,
           canShare: true,
+          canTag: true,
           canFavorite: true,
+          canShareLink: false,
         },
         { countText: '2 items', sizeText: undefined },
         boundCombos,
@@ -197,7 +199,9 @@ describe('createPanePointer', () => {
           listingId: 'listing-1',
           canOpenTerminalHere: true,
           canShare: true,
+          canTag: true,
           canFavorite: true,
+          canShareLink: false,
         },
         { countText: undefined, sizeText: undefined },
         boundCombos,
@@ -219,7 +223,9 @@ describe('createPanePointer', () => {
           listingId: 'listing-1',
           canOpenTerminalHere: true,
           canShare: true,
+          canTag: true,
           canFavorite: true,
+          canShareLink: false,
         },
         { countText: undefined, sizeText: undefined },
         boundCombos,
@@ -241,7 +247,9 @@ describe('createPanePointer', () => {
           listingId: 'listing-1',
           canOpenTerminalHere: false,
           canShare: false,
+          canTag: false,
           canFavorite: false,
+          canShareLink: false,
         },
         { countText: undefined, sizeText: undefined },
         boundCombos,
@@ -264,9 +272,11 @@ describe('createPanePointer', () => {
           listingId: 'listing-1',
           canOpenTerminalHere: false,
           canShare: true,
+          canTag: true,
           // The third fact parts company with the other two: a snapshot row is a real
           // file, so it shares, but it isn't a folder that will still be there next launch.
           canFavorite: false,
+          canShareLink: false,
         },
         { countText: undefined, sizeText: undefined },
         boundCombos,
@@ -284,12 +294,25 @@ describe('createPanePointer', () => {
         'a.txt',
         false,
         ['/dir/trip.zip/IMG_0001.jpg'],
-        { listingId: 'listing-1', canOpenTerminalHere: true, canShare: false, canFavorite: false },
+        {
+          listingId: 'listing-1',
+          canOpenTerminalHere: true,
+          canShare: false,
+          canTag: false,
+          canFavorite: false,
+          canShareLink: false,
+        },
         { countText: undefined, sizeText: undefined },
         boundCombos,
         null,
         sameKindOfEntry,
       )
+    })
+
+    it('hides the tag colors on a phone, where a tag has nowhere to be stored', async () => {
+      state.volumeId = 'mtp-1'
+      await createPanePointer(deps).handleContextMenu(entryOf())
+      expect(ipc.showFileContextMenu.mock.calls[0][4]).toMatchObject({ canTag: false })
     })
 
     it('labels the Selection submenu from the ROW the menu opens over, not the pane-wide state', async () => {
@@ -337,7 +360,9 @@ describe('createPanePointer', () => {
         listingId: 'listing-1',
         canOpenTerminalHere: true,
         canShare: true,
+        canTag: true,
         canFavorite: true,
+        canShareLink: false,
       })
       expect(ipc.showFileContextMenu.mock.calls[0][3]).toEqual(['/dir/a.txt', '/dir/b.txt'])
       expect(ipc.showFileContextMenu.mock.calls[0][7]).toEqual({ x: 116, y: 240 })
@@ -360,7 +385,7 @@ describe('createPanePointer', () => {
 
     it("sends the one row's own size when the click landed outside the selection", async () => {
       await createPanePointer(deps).handleContextMenu(entryOf({ size: 2_100_000 }))
-      expect(targetArg()).toEqual({ countText: undefined, sizeText: '2.00 MB' })
+      expect(targetArg()).toEqual({ countText: undefined, sizeText: '2.10 MB' })
     })
 
     it('sends the selection total when the click landed inside the selection', async () => {
@@ -369,7 +394,7 @@ describe('createPanePointer', () => {
       ipc.getPathsAtIndices.mockResolvedValue(['/dir/a.txt', '/dir/b.txt'])
       await createPanePointer(deps).handleContextMenu(entryOf({ size: 2_100_000 }))
       // The total, never the clicked row's own size: the menu acts on all of them.
-      expect(targetArg()).toEqual({ countText: '2 items', sizeText: '3.20 MB' })
+      expect(targetArg()).toEqual({ countText: '2 items', sizeText: '3.36 MB' })
     })
 
     it('sends no size for a folder, whose size is its subtree and may still be settling', async () => {

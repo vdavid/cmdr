@@ -1,5 +1,11 @@
 use serde::Deserialize;
 
+#[tauri::command]
+#[specta::specta]
+pub fn get_debug_log_path() -> Option<String> {
+    crate::logging::debug_log_path().map(|path| path.to_string_lossy().into_owned())
+}
+
 #[derive(Deserialize, specta::Type)]
 #[serde(rename_all = "lowercase")]
 pub enum LogLevel {

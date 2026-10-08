@@ -427,7 +427,12 @@ impl MediaScheduler {
     /// disk, and drops the resident CLIP vector cache. Vision data (OCR/tags/feature
     /// print) is untouched — semantic search and Vision are independent halves. Returns
     /// the total embedding rows removed. Runs off the IPC thread (it blocks on writers).
-    pub fn delete_clip_model(&self) -> usize {
+    ///
+    /// A volume whose writer won't start or whose prune SQLite refuses is a
+    /// [`PruneFailure`](reclaim::PruneFailure), never zero rows: the other volumes are still
+    /// pruned, and the caller reports that the delete didn't fully land rather than claiming
+    /// the embeddings are gone.
+    pub fn delete_clip_model(&self) -> Result<usize, reclaim::PruneFailure> {
         // Remove the shared model artifacts (both towers) from disk first.
         let model_dir = crate::media_index::clip::install::clip_model_dir(&self.data_dir);
         if model_dir.exists()
@@ -437,16 +442,25 @@ impl MediaScheduler {
         }
         // Prune CLIP rows from every enriched volume's `media.db`.
         let mut total = 0usize;
+        let mut failure = None;
         for volume_id in media_volume_ids(&self.data_dir) {
             let db_path = super::store::media_db_path(&self.data_dir, &volume_id);
             let writer = match self.writers.writer_for(&self.data_dir, &volume_id) {
                 Ok(w) => w,
                 Err(e) => {
                     log::warn!(target: "media_index", "delete-clip-model: writer for '{volume_id}' failed: {e}");
+                    failure = Some(reclaim::PruneFailure::WriterUnavailable);
                     continue;
                 }
             };
-            let removed = writer.prune_all_clip().unwrap_or(0);
+            let removed = match writer.prune_all_clip() {
+                Ok(removed) => removed,
+                Err(e) => {
+                    log::warn!(target: "media_index", "delete-clip-model: prune on '{volume_id}' didn't land: {e}");
+                    failure = Some(reclaim::PruneFailure::DeleteFailed);
+                    continue;
+                }
+            };
             if removed > 0 {
                 let _ = writer.vacuum();
                 super::vector::cache::invalidate(&db_path);
@@ -460,7 +474,7 @@ impl MediaScheduler {
                 cmdr_fs::pluralize::pluralize(total as u64, "embedding")
             );
         }
-        total
+        failure.map_or(Ok(total), Err)
     }
 
     /// Run one CONSERVATIVE network enrichment pass for an opted-in SMB volume

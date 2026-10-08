@@ -25,7 +25,8 @@ per-item rows, and each reversible one carrying a Roll back button. Reads the jo
 - **A rolling-back row commands the REVERSAL, on `inverseOpId`, ❌ never its own `opId`** (a finished operation). The id
   is journal truth on every read AND on the dispatch's answer, so a reversal someone else started gets the same buttons.
   Which control shows follows the SESSION, ❌ not the read-on-open journal row. A reversal emits NO terminal event, so
-  liveness also reads `session.leftRegistry`, or the buttons outlive it and every press reaches nothing.
+  liveness also reads `session.leftRegistry`, or the buttons outlive it. That end (`onEnded`) re-reads the row; ❌ no
+  polling.
 - **The badge flip to "Rolling back" is journal truth, not optimism.** The backend gate writes `rolling_back`
   synchronously before the dispatch returns, so `markOperationRollingBack` repeats what the journal already says. ❌
   Don't turn it into a re-read.
@@ -43,7 +44,7 @@ per-item rows, and each reversible one carrying a Roll back button. Reads the jo
   pass reversed reads as gone and is credited without touching a thing; `DETAILS.md` has the full argument.
 - **Both states whose badge leaves a person guessing explain themselves on sight** (`rowStandingNotice`, exhaustive over
   `RollbackState`): a `notRollbackable` row carries its stored reason, a partly-reversed one says what became of the
-  files. Pinned by the component, a11y, and E2E suites.
+  files.
 - **`entries.length` is the paging offset**, one source of truth, so an append can't desync from what's shown.
 
 Flows, the routing decision, the copy contract, and the caching rules: `DETAILS.md`.

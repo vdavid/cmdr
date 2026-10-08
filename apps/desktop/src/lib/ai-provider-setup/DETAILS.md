@@ -47,6 +47,22 @@ one file. What the two actually share is the state machine and the numbered list
 locales' translations plus stored `@key.sourceHash` values; renaming them would be pure churn for a nicer prefix. A
 later i18n pass is welcome to rename them across all catalogs at once.
 
+## The organization's policy
+
+- **Asked, never derived.** `cloud_ai_host_verdicts` judges each URL as the backend would send to it; nothing here reads
+  `AllowedCloudAIHosts`.
+- **The pickers**: `PresetHostVerdicts` (`preset-hosts.svelte.ts`) asks about every fixed-endpoint preset and re-asks
+  whenever the policy view changes (`followPresetHostVerdicts`). Settings' dropdown and the onboarding list keep a
+  refused service visible, disabled, with "not allowed by your organization" beside its name. Custom and Azure aren't
+  judged by their placeholder (Azure's doesn't parse as a host).
+- **The controller asks before every connection check** (`#refusedByPolicy`): on open, so a refused preset says so with
+  no key, and before each debounced check, so a typed custom or Azure URL is judged once entered and never probed. A
+  check the backend refused anyway (`result.managed`) lands the same way. Either sets `status: 'managed'` plus
+  `managedRefusal`; each surface words it through `managedAiRefusalMessage`.
+- **Decision / the backend names the reason.** The batch command answers each URL with the policy's own
+  `ManagedAiRefusal` (`null` when allowed), so a policy that flips to on-device only while the picker is open shows
+  `cloudAiOff`, not a guessed `hostNotAllowed`. A failed ask reads as allowed: the backend still refuses the request.
+
 ## What each surface kept
 
 The merge had to preserve behaviour that existed in only one of the two. Where each landed:
@@ -55,12 +71,19 @@ The merge had to preserve behaviour that existed in only one of the two. Where e
   change): moved into the controller, so the wizard now gets it too. The digest is guarded: a runtime without Web Crypto
   degrades to "always refetch", never to "never check".
 - **Secret errors as a persistent toast**: an `onSecretErrorChange` option. Settings passes it; the wizard doesn't, so
-  it stays at the inline message. Both render `controller.secretError` inline.
+  it stays at the inline message. Both render `controller.secretError` inline. A save or removal that fails for a
+  provider the user already switched away from (the switch flushes pending typing) is logged and dropped, so it never
+  shows under the new provider's field.
 - **`isE2eRun()` suppression of the auto-check on open**: in the controller, so it now covers the wizard as well. An
   automated run has no real provider to answer, and a cache hit still serves everywhere. Unit tests mock `$lib/app-mode`
   to pin the answer either way, since the real `isE2eRun()` reads a mode resolved over IPC.
-- **`pushConfigToBackend()` after a key persist**: an `onKeyPersisted` option. Settings passes it; the wizard pushes
-  once from `StepAi.persist()` instead, so it doesn't push a provider the user hasn't confirmed yet.
+- **"Remove key" (`removeApiKey`)** shows under the field only while a key is saved. It drops a key still in the save
+  debounce first (saving it afterwards would undo the removal), then clears the connection state, since the models and
+  the tick came from the key that's gone. A refusal keeps the key and words itself through
+  `describeSecretError(…, 'remove')`, which has its own keys: removing needs "delete the entry by hand", not just
+  another verb.
+- **`pushConfigToBackend()` after a key persist or removal**: an `onKeyChanged` option. Settings passes it; the wizard
+  pushes once from `StepAi.persist()` instead, so it doesn't push a provider the user hasn't confirmed yet.
 - **The `ai.cloud.askCmdrOverrideHint` note** and the settings-search `shouldShow` gating: stayed in
   `AiCloudSection.svelte`.
 - **The immediate (no-debounce) check when a stored key is found on open**: in the controller, for both. Settings used

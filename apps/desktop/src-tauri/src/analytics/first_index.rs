@@ -130,6 +130,10 @@ mod tests {
             prior_scan_duration_ms: None,
             volume_used_bytes: None,
             covered_in_phases: phased,
+            left_after_find_files_ms: None,
+            left_after_save_ms: None,
+            left_after_compute_ms: None,
+            left_after_catch_up_ms: None,
         }
     }
 

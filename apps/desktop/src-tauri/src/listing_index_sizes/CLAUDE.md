@@ -11,6 +11,9 @@ when its size, counts, or hourglass actually move.
 - `touched.rs`: the pure rule for what one batch touched in one listing (nothing, some rows, or all of them).
 - `refresh.rs`: `RowSizes`, the pure "does this reading change what the row shows" comparison.
 - `schedule.rs`: one listing's timing: batches wait out the 2 s cooldown, hourglass rechecks run on the dot.
+- `count/`: sizes ON DEMAND (⌥⇧⏎, Space on a folder) for folders the index can't answer: a queue per listing, a local
+  walk with running totals (the copy scan elsewhere), published as the same event. `DETAILS.md` § "Calculating sizes
+  on demand".
 
 ## Must-knows
 
@@ -29,5 +32,7 @@ when its size, counts, or hourglass actually move.
 - **While the main window is hidden, nothing runs** (`main_window_visibility`); batches merge into one refresh per
   listing on show. ❌ Don't let a due deadline arm while hidden: the loop would spin.
 - **The batch arrives on the index writer's thread**: `dirs_updated` only hands it to the worker. ❌ Don't do work there.
+- **On-demand cancellation ends the UI wait, not in-flight backend I/O.** Owned measurement workers never publish;
+  the listing's job retains publication ownership until its final partial/restored rows land. Details below.
 
 Flow, the batch shapes it reads, and decisions: `DETAILS.md`.

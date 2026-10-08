@@ -64,8 +64,11 @@ const VOLUME_MESSAGE: { [K in VolumeError['type']]: (error: Extract<VolumeError,
   connectionTimeout: () => raw('errors.volume.connectionTimeout'),
   cancelled: () => raw('errors.volume.cancelled'),
   isADirectory: (e) => raw('errors.volume.isADirectory', { path: e.data }),
+  notADirectory: (e) => raw('errors.volume.notADirectory', { path: e.data }),
   invalidName: () => raw('errors.volume.invalidName'),
   deletePending: () => raw('errors.volume.deletePending'),
+  coldStorage: (e) => raw('errors.volume.coldStorage', { path: e.data }),
+  sourceChanged: (e) => raw('errors.volume.sourceChanged', { path: e.data }),
   ambiguousName: (e) => raw('errors.volume.ambiguousName', { path: e.data }),
   staleDestinationHandle: () => raw('errors.volume.staleDestinationHandle'),
   ioError: () => raw('errors.volume.ioError'),
@@ -78,7 +81,7 @@ const VOLUME_MESSAGE: { [K in VolumeError['type']]: (error: Extract<VolumeError,
 
 /** One renderer per `MutationError` variant. Same shape and reasoning as `VOLUME_MESSAGE`. */
 const MUTATION_MESSAGE: {
-  [K in MutationError['type']]: (error: Extract<MutationError, { type: K }>, kind: NamedKind) => string
+  [K in MutationError['type']]: (error: Extract<MutationError, { type: K }>, kind: NamedKind, name?: string) => string
 } = {
   // The three the live validation already words. Reused so a name the backend
   // turns down reads the way the red border read a moment earlier.
@@ -102,7 +105,12 @@ const MUTATION_MESSAGE: {
   archiveEditNotReady: () => raw('errors.mutation.archiveEditNotReady'),
   archiveEditCouldntStart: () => raw('errors.mutation.archiveEditCouldntStart'),
   timedOut: () => raw('errors.mutation.timedOut'),
-  volume: (e) => renderVolumeError(e.error),
+  // A name the volume can't store reads with that name when the caller knows
+  // it: the rename toast has no field beside it to say which name.
+  volume: (e, _kind, name) =>
+    e.error.type === 'invalidName' && name !== undefined
+      ? raw('errors.volume.invalidNameNamed', { name })
+      : renderVolumeError(e.error),
   // The single honest fallback. ❌ `detail` is never the message; it goes to
   // `technicalDetail()`.
   unexpected: () => raw('errors.mutation.unexpected'),
@@ -121,10 +129,13 @@ export function renderVolumeError(error: VolumeError): string {
   return render(error)
 }
 
-/** The one sentence a `MutationError` says. `kind` shapes the reused validation copy. */
-export function renderMutationError(error: MutationError, kind: NamedKind = 'file'): string {
-  const render = MUTATION_MESSAGE[error.type] as (error: MutationError, kind: NamedKind) => string
-  return render(error, kind)
+/**
+ * The one sentence a `MutationError` says. `kind` shapes the reused validation
+ * copy; `name`, the name the user asked for, lets a refusal of that name say it.
+ */
+export function renderMutationError(error: MutationError, kind: NamedKind = 'file', name?: string): string {
+  const render = MUTATION_MESSAGE[error.type] as (error: MutationError, kind: NamedKind, name?: string) => string
+  return render(error, kind, name)
 }
 
 /**

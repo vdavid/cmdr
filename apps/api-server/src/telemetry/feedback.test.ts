@@ -252,6 +252,21 @@ describe('POST /feedback', () => {
     expect(init.body).toContain(validBody.feedback)
   })
 
+  it('keeps the reply-to address out of the Discord ping, saying only that one was attached', async () => {
+    const { db } = createRecordingD1()
+    const bindings = createBindings({
+      TELEMETRY_DB: db,
+      DISCORD_WEBHOOK_URL: 'https://discord.example/webhook',
+    })
+
+    await postFeedback({ ...validBody, email: 'reply-me@example.com' }, bindings)
+
+    expect(fetchMock).toHaveBeenCalledOnce()
+    const [, init] = fetchMock.mock.calls[0] as [string, { body: string }]
+    expect(init.body).not.toContain('reply-me@example.com')
+    expect(init.body).toContain('Reply-to attached')
+  })
+
   it('prefers the dedicated feedback webhook over the error-report one', async () => {
     const { db } = createRecordingD1()
     const bindings = createBindings({

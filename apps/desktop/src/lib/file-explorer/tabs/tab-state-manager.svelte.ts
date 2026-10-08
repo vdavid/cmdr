@@ -215,6 +215,68 @@ export function closeOtherTabs(mgr: TabManager, tabId: TabId): void {
   for (const tab of removed) releaseSnapshotRefs(tab.history.stack)
 }
 
+// --- Moving a tab (drag to reorder, MCP `tab move`) -------------------------------
+
+/** Why a move was refused. `notFound` covers a tab that closed between the gesture and the drop. */
+export type MoveTabRefusal = 'notFound' | 'pinned' | 'onlyTab' | 'targetFull'
+
+/**
+ * Result of `moveTab`. `toIndex` is where the tab ended up; `wasActive` is whether it
+ * was its source pane's active tab (so the caller knows the source pane remounted).
+ * `unchanged` is a drop back on the tab's own slot: not a refusal, nothing to report.
+ */
+export type MoveTabResult =
+  | { moved: true; toIndex: number; wasActive: boolean }
+  | { moved: false; reason: MoveTabRefusal | 'unchanged' }
+
+/**
+ * Moves a tab to `toIndex` in `target`, which is `source` itself for a reorder or the
+ * other pane's manager. `toIndex` is the index the tab HOLDS once the move is done (so
+ * it's counted with the tab already taken out of a same-pane list), defaults to the
+ * end, and clamps to it.
+ *
+ * The rules, for the mouse and the MCP tool alike:
+ * - A pinned tab doesn't move. An unpinned one lands anywhere, pinned neighbors included.
+ * - A pane's only tab can't leave it, and a pane at the cap takes no more.
+ * - The tab is never activated where it lands. Within its own pane it stays active if it
+ *   was; leaving its pane, it hands the active slot on exactly as a close does.
+ *
+ * A move isn't a close: nothing goes on the closed-tab stack, and the tab's history
+ * (with any `search-results://` refs it holds) travels with it untouched, so there's
+ * no retain or release to do.
+ */
+export function moveTab(source: TabManager, target: TabManager, tabId: TabId, toIndex?: number): MoveTabResult {
+  const fromIndex = source.tabs.findIndex((t) => t.id === tabId)
+  if (fromIndex === -1) return { moved: false, reason: 'notFound' }
+  const tab = source.tabs[fromIndex]
+  if (tab.pinned) return { moved: false, reason: 'pinned' }
+  const wasActive = source.activeTabId === tabId
+
+  if (source === target) {
+    const lastIndex = source.tabs.length - 1
+    const index = clampIndex(toIndex, lastIndex)
+    if (index === fromIndex) return { moved: false, reason: 'unchanged' }
+    // `activeTabId` is an id, so the active tab stays active wherever it sits.
+    source.tabs.splice(fromIndex, 1)
+    source.tabs.splice(index, 0, tab)
+    return { moved: true, toIndex: index, wasActive }
+  }
+
+  if (source.tabs.length <= 1) return { moved: false, reason: 'onlyTab' }
+  if (target.tabs.length >= MAX_TABS_PER_PANE) return { moved: false, reason: 'targetFull' }
+  const spliced = spliceTabOut(source, tabId)
+  if (!spliced) return { moved: false, reason: 'notFound' }
+  const index = clampIndex(toIndex, target.tabs.length)
+  target.tabs.splice(index, 0, spliced.closing)
+  return { moved: true, toIndex: index, wasActive }
+}
+
+/** `index` held to `0..=max`, where a missing one means the end. */
+function clampIndex(index: number | undefined, max: number): number {
+  if (index === undefined) return max
+  return Math.min(Math.max(Math.trunc(index), 0), max)
+}
+
 // --- Closed-tab history (Cmd+Shift+T) ----------------------------------------------
 
 /**

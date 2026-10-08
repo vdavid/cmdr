@@ -105,11 +105,11 @@ describe('select-all, as it behaves today', () => {
 
   it('reaches the backend as two line endpoints, or as `eof` when the count is unknown', () => {
     expect(toRangeEnds(makeSelectAll(3, 5))).toEqual({
-      anchor: { kind: 'line', line: 0, offset: 0 },
-      focus: { kind: 'line', line: 2, offset: 5 },
+      anchor: { kind: 'row', row: 0, offset: 0 },
+      focus: { kind: 'row', row: 2, offset: 5 },
     })
     expect(toRangeEnds(makeSelectToEof())).toEqual({
-      anchor: { kind: 'line', line: 0, offset: 0 },
+      anchor: { kind: 'row', row: 0, offset: 0 },
       focus: { kind: 'eof' },
     })
   })
@@ -202,8 +202,8 @@ describe('copy size arithmetic, as it behaves today', () => {
   it('is an approximation on a partial selection of a non-ASCII line, by design', () => {
     // "héllo" is 5 UTF-16 units and 6 UTF-8 bytes; the estimator prorates bytes by the
     // UTF-16 fraction rather than measuring, so "hé" (3 bytes) comes out as 2. The
-    // comment in `selection.svelte.ts` calls this out: the number feeds the 10 MiB
-    // confirm and 100 MiB refuse tiers, which need order-of-magnitude, not exactness.
+    // comment in `selection.svelte.ts` calls this out: the number feeds the 10 MB
+    // confirm and 100 MB refuse tiers, which need order-of-magnitude, not exactness.
     expect(estimate({ anchor: { row: 0, offset: 0 }, focus: { row: 0, offset: 2 } }, ['héllo'])).toBe(2)
   })
 
@@ -233,8 +233,8 @@ describe('a file whose rows Cmdr made, not the file', () => {
 
   it('sizes the whole thing as the 15 bytes it is, inventing no newline per row', () => {
     // 16 or 17 here would mean a delimiter was assumed between rows: on a real 300 MB
-    // line that is an invented byte every 20 000, and the number feeds the 10 MiB confirm
-    // and the 100 MiB refusal (I3).
+    // line that is an invented byte every 20 000, and the number feeds the 10 MB confirm
+    // and the 100 MB refusal (I3).
     expect(estimateSelectionBytes(wholeFile, rowLookup(minified, cmdrBroke))).toBe(15)
   })
 

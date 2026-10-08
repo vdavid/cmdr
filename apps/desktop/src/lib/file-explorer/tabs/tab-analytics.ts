@@ -37,6 +37,15 @@ export type TabCloseOutcome = 'closed' | 'cancelled' | 'lastTab'
 /** Which gesture moved the active tab. */
 export type TabSwitchMethod = 'cycle' | 'pick'
 
+/** Where a moved tab was headed, relative to the pane it started in. */
+export type TabMoveScope = 'samePane' | 'otherPane'
+
+/**
+ * How a move ended. The refusals are counted for the same reason an open's are: a low
+ * cross-pane count can't otherwise tell "nobody wants it" from "everybody hits the cap".
+ */
+export type TabMoveOutcome = 'moved' | 'pinned' | 'onlyTab' | 'atCap'
+
 /**
  * Reports a tab open attempt.
  *
@@ -67,4 +76,9 @@ export function reportTabSwitched(method: TabSwitchMethod): void {
 /** Reports a pin toggle. `pinned` is the state the tab ends in. */
 export function reportTabPinToggled(pinned: boolean): void {
   void trackEvent('tab_pin_toggled', { pinned })
+}
+
+/** Reports a tab move (a drag, or the MCP `tab` tool). `openTabs` counts the pane the tab was headed for. */
+export function reportTabMoved(scope: TabMoveScope, outcome: TabMoveOutcome, openTabs: number): void {
+  void trackEvent('tab_moved', { scope, outcome, open_tabs: openTabs })
 }

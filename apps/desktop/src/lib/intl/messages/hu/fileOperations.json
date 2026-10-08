@@ -3,6 +3,10 @@
   "@fileOperations.button.cancel": {
     "sourceHash": "19766ed"
   },
+  "fileOperations.button.close": "Bezárás",
+  "@fileOperations.button.close": {
+    "sourceHash": "7d9eb7a"
+  },
   "fileOperations.button.ok": "OK",
   "@fileOperations.button.ok": {
     "sourceHash": "565339b",
@@ -82,7 +86,7 @@
   },
   "fileOperations.delete.scanDir": "{count, plural, one {mappa} other {mappa}}",
   "@fileOperations.delete.scanDir": {
-    "sourceHash": "1c5273d"
+    "sourceHash": "46b23b5"
   },
   "fileOperations.delete.confirmDelete": "Törlés",
   "@fileOperations.delete.confirmDelete": {
@@ -124,6 +128,14 @@
   "@fileOperations.delete.symlinkNoticeMany": {
     "sourceHash": "56b3f52"
   },
+  "fileOperations.mkfile.notCreatedToast": "A Cmdr nem tudta létrehozni ezt a fájlt: „{name}”. {reason}",
+  "@fileOperations.mkfile.notCreatedToast": {
+    "sourceHash": "4f30e62"
+  },
+  "fileOperations.newEntry.stillCreating": "„{name}” létrehozása még folyamatban van. A kötet lassan válaszol. Nyugodtan bezárhatod ezt az ablakot, a létrehozás folytatódik, és megszakítani már nem lehet.",
+  "@fileOperations.newEntry.stillCreating": {
+    "sourceHash": "74e376f"
+  },
   "fileOperations.mkfile.title": "Új fájl",
   "@fileOperations.mkfile.title": {
     "sourceHash": "44dedd0"
@@ -156,17 +168,9 @@
   "@fileOperations.mkdir.placeholder": {
     "sourceHash": "7612b56"
   },
-  "fileOperations.mkdir.timeoutMessage": "Nem sikerült megerősíteni, hogy a mappa létrejött. Lehet, hogy a kötet lassú, így a mappa attól még létrejöhetett.",
-  "@fileOperations.mkdir.timeoutMessage": {
-    "sourceHash": "8bc758a"
-  },
-  "fileOperations.mkdir.timeoutRefresh": "Fájllista frissítése",
-  "@fileOperations.mkdir.timeoutRefresh": {
-    "sourceHash": "b0e5436"
-  },
-  "fileOperations.mkdir.timeoutDismiss": "Elvetés",
-  "@fileOperations.mkdir.timeoutDismiss": {
-    "sourceHash": "48845bf"
+  "fileOperations.mkdir.notCreatedToast": "A Cmdr nem tudta létrehozni ezt a mappát: „{name}”. {reason}",
+  "@fileOperations.mkdir.notCreatedToast": {
+    "sourceHash": "517ef4b"
   },
   "fileOperations.mkdir.aiSuggestionsAria": "AI-javaslatok",
   "@fileOperations.mkdir.aiSuggestionsAria": {
@@ -249,9 +253,21 @@
   "@fileOperations.transferDialog.targetWillBeCreatedCopy": {
     "sourceHash": "4e8d166"
   },
+  "fileOperations.transferDialog.renameByMoveHint": "Ennek az átnevezése a szerveren a teljes tartalmát átmásolja, ezért áthelyezésként fut: szüneteltetheted vagy megszakíthatod.",
+  "@fileOperations.transferDialog.renameByMoveHint": {
+    "sourceHash": "31987cc"
+  },
   "fileOperations.transferDialog.targetWillBeCreatedMove": "Ez a mappa még nem létezik. A Cmdr létrehozza az áthelyezés során.",
   "@fileOperations.transferDialog.targetWillBeCreatedMove": {
     "sourceHash": "1246331"
+  },
+  "fileOperations.transferDialog.rootEchoWarning": "Ez a hely már ebben a mappában kezdődik: {rootFolder}. Így ez az útvonal ide vezet: {resolvedPath}. Erre gondoltál: {strippedPath}?",
+  "@fileOperations.transferDialog.rootEchoWarning": {
+    "sourceHash": "b692d10"
+  },
+  "fileOperations.transferDialog.rootEchoUseStripped": "Rövidebb útvonal használata",
+  "@fileOperations.transferDialog.rootEchoUseStripped": {
+    "sourceHash": "66972e3"
   },
   "fileOperations.transferDialog.destinationReadOnly": "Ez a mappa csak olvasható, ide semmit nem lehet tenni.",
   "@fileOperations.transferDialog.destinationReadOnly": {
@@ -275,7 +291,7 @@
   },
   "fileOperations.transferDialog.scanDir": "{count, plural, one {mappa} other {mappa}}",
   "@fileOperations.transferDialog.scanDir": {
-    "sourceHash": "1c5273d"
+    "sourceHash": "46b23b5"
   },
   "fileOperations.transferDialog.hardlinkNote": "A Cmdr <written></written> adatot ír ki. A forrás <ondisk></ondisk> a lemezen – a többlet hardlinkelt fájlokból adódik, amelyek nem maradhatnak összelinkelve a meghajtók között.",
   "@fileOperations.transferDialog.hardlinkNote": {
@@ -293,6 +309,18 @@
   "@fileOperations.transferDialog.estimatedSizeTooltip": {
     "sourceHash": "2e8ba70"
   },
+  "fileOperations.s3Cost.line": "Kb. {amount}, {provider} listaárai alapján",
+  "@fileOperations.s3Cost.line": {
+    "sourceHash": "e8db02b"
+  },
+  "fileOperations.s3Cost.infoLabel": "Tudnivalók a becslésről",
+  "@fileOperations.s3Cost.infoLabel": {
+    "sourceHash": "19637c5"
+  },
+  "fileOperations.s3Cost.infoText": "A becslés a szolgáltató nyilvános listaárain alapul. Az ingyenes szintek, a kedvezmények, a díjban foglalt keretek és a minimális díjak miatt a számlád alacsonyabb vagy magasabb is lehet.",
+  "@fileOperations.s3Cost.infoText": {
+    "sourceHash": "379665c"
+  },
   "fileOperations.transferDialog.scanUnresponsive": "A forrás nem válaszol, ennél többet nem tudtunk megszámolni.",
   "@fileOperations.transferDialog.scanUnresponsive": {
     "sourceHash": "ec3beb2"
@@ -304,6 +332,10 @@
   "fileOperations.transferDialog.scanRetry": "Próbáld újra",
   "@fileOperations.transferDialog.scanRetry": {
     "sourceHash": "d8b8392"
+  },
+  "fileOperations.transferDialog.sourceNoLongerConnected": "A telefon vagy szerver, amelyen ezek a fájlok vannak, már nincs csatlakoztatva, ezért a Cmdr nem tud róla másolni.",
+  "@fileOperations.transferDialog.sourceNoLongerConnected": {
+    "sourceHash": "4741405"
   },
   "fileOperations.transferDialog.conflictsUnknown": "Nem tudtuk megnézni, mi van már a célhelyen. Minden ütközésnél rákérdezünk.",
   "@fileOperations.transferDialog.conflictsUnknown": {
@@ -399,7 +431,7 @@
   },
   "fileOperations.scanPhase.scanDir": "{count, plural, one {mappa} other {mappa}}",
   "@fileOperations.scanPhase.scanDir": {
-    "sourceHash": "1c5273d"
+    "sourceHash": "46b23b5"
   },
   "fileOperations.transferProgress.scanTitleCopy": "Ellenőrzés a másolás előtt…",
   "@fileOperations.transferProgress.scanTitleCopy": {
@@ -537,9 +569,13 @@
   "@fileOperations.transferProgress.stageFinishingTransferStep": {
     "sourceHash": "1f28724"
   },
-  "fileOperations.transferProgress.warningFileOverFolder": "A cél létezik, és egy <strong>mappa</strong>. Egy azonos nevű <strong>fájllal</strong> készülsz felülírni. A célmappa teljes tartalma törlődne, és a fájl lépne a helyébe. Mi legyen?",
+  "fileOperations.transferProgress.warningFileOverFolder": "A cél létezik, és egy <strong>mappa</strong>. Egy azonos nevű <strong>fájlra</strong> készülsz lecserélni. Minden, ami a mappában van, eltűnne. Mi legyen?",
   "@fileOperations.transferProgress.warningFileOverFolder": {
-    "sourceHash": "6dce75c"
+    "sourceHash": "bacab9d"
+  },
+  "fileOperations.transferProgress.warningFolderOverFile": "A cél létezik, és egy <strong>fájl</strong>. Egy azonos nevű <strong>mappára</strong> készülsz lecserélni. A fájl eltűnne, amint a mappa a helyébe lép. Mi legyen?",
+  "@fileOperations.transferProgress.warningFolderOverFile": {
+    "sourceHash": "b681083"
   },
   "fileOperations.transferProgress.lookAlikeHint": "A két név ugyanúgy néz ki, de a szerver eltérő írásmóddal tárolja őket. A „Felülírás” gomb a meglévő elemet cseréli le.",
   "@fileOperations.transferProgress.lookAlikeHint": {
@@ -884,6 +920,10 @@
   "fileOperations.errorDialog.retry": "Újra",
   "@fileOperations.errorDialog.retry": {
     "sourceHash": "942087c"
+  },
+  "fileOperations.errorDialog.copyAnyway": "Másolás mindenképp",
+  "@fileOperations.errorDialog.copyAnyway": {
+    "sourceHash": "f794181"
   },
   "fileOperations.errorDialog.close": "Bezárás",
   "@fileOperations.errorDialog.close": {

@@ -31,7 +31,7 @@ describe('viewer error + load states (en)', () => {
   it('matches the pre-migration error strings', () => {
     expect(tString('viewer.error.timeout')).toBe('Couldn’t load the file. The volume may be slow or unresponsive.')
     expect(tString('viewer.error.noPath')).toBe('No file path specified')
-    expect(tString('viewer.error.readFailed')).toBe('Failed to read file')
+    expect(tString('viewer.error.readFailed')).toBe('Couldn’t read this file. Try again?')
     expect(tString('viewer.error.retry')).toBe('Retry')
     expect(tString('viewer.error.cancel')).toBe('Cancel')
     expect(tString('viewer.loading')).toBe('Loading…')
@@ -165,13 +165,7 @@ describe('viewer media labels (en)', () => {
   })
 })
 
-describe('viewer context menu + copy dialogs (en)', () => {
-  it('matches the context-menu strings', () => {
-    expect(tString('viewer.contextMenu.ariaLabel')).toBe('Viewer actions')
-    expect(tString('viewer.contextMenu.copy')).toBe('Copy')
-    expect(tString('viewer.contextMenu.selectAll')).toBe('Select all')
-  })
-
+describe('viewer copy dialogs (en)', () => {
   it('matches the copy-dialog strings', () => {
     expect(tString('viewer.copyDialog.confirmTitleUnknown')).toBe('Copy this selection to the clipboard?')
     expect(tString('viewer.copyDialog.confirmTitleKnown', { size: '24 MB' })).toBe('Copy 24 MB to the clipboard?')
@@ -242,11 +236,17 @@ describe('viewer binary-warning banner (en)', () => {
 describe('viewer selection announcements (en)', () => {
   it('matches the screen-reader announcement strings', () => {
     expect(tString('viewer.selection.toEndOfFile', { line: '12' })).toBe('Selected from line 12 to the end of the file')
-    expect(tString('viewer.selection.singleLine', { chars: '5', line: '5' })).toBe('Selected 5 characters on line 5')
-    expect(tString('viewer.selection.multiLine', { startLine: '1', endLine: '4', chars: '16' })).toBe(
+    expect(tString('viewer.selection.singleLine', { chars: 5, line: '5' })).toBe('Selected 5 characters on line 5')
+    expect(tString('viewer.selection.singleLine', { chars: 1, line: '5' })).toBe('Selected 1 character on line 5')
+    expect(tString('viewer.selection.multiLine', { startLine: '1', endLine: '4', chars: 16 })).toBe(
       'Selected lines 1 to 4, 16 characters',
     )
-    expect(tString('viewer.selection.charsOnly', { chars: '16' })).toBe('Selected 16 characters')
+    expect(tString('viewer.selection.multiLine', { startLine: '1', endLine: '4', chars: 1 })).toBe(
+      'Selected lines 1 to 4, 1 character',
+    )
+    expect(tString('viewer.selection.charsOnly', { chars: 16 })).toBe('Selected 16 characters')
+    expect(tString('viewer.selection.charsOnly', { chars: 1 })).toBe('Selected 1 character')
+    expect(tString('viewer.selection.charsOnly', { chars: 12_345 })).toBe('Selected 12,345 characters')
     expect(tString('viewer.selection.toEndOfFileNoLine')).toBe('Selected to the end of the file')
   })
 })

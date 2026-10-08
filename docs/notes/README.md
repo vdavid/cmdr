@@ -18,12 +18,27 @@ Some notes here are load-bearing rather than historical. Those are grouped below
 
 **Load-bearing for a decision that hasn't been made yet:**
 
+- `ipc-dead-code-audit.md`: every frontend wrapper and Tauri command nothing called, as of 2026-10-03, with why. **Three
+  are missing features, not leftovers** (no way to remove a saved AI key, MCP's "focus settings" does nothing, and
+  indexing stops for memory without telling anyone), and three more are product calls. Read it before deleting an unused
+  IPC entry point: some of them are the only trace of a feature that lost its UI.
 - `self-move-to-applications-2026-08-25.md` — whether Cmdr could move itself to Applications instead of only telling the
   user to, measured on macOS 26.5.2 rather than reasoned. **The FDA worry is answered: nothing in TCC records a path**,
   so a moved bundle keeps its grant, and the note carries the four measurements plus the one 30-second check that closes
   the last gap. It also carries the verified move recipe and the step everyone gets wrong (a copied bundle keeps its
   quarantine xattr and is translocated again **even from `/Applications`** until the xattr is stripped). Read it before
   anyone reopens the auto-move question, or repeats the claim that changing the `.app` inode costs FDA.
+- `ci-health-2026-10.md` — `main` was red on 44% of pushes from July to October 2026 and on 15% in early October, and
+  which fixes drove it down; then the history, classified from every failed run's log. **Infra caused none and flakes
+  about 4%; the rest was real breakage a Mac-only `pnpm check` can't see**, led by Linux-only Rust (79 runs) and
+  formatting (63, fixed by the git hooks). It records the calls made on it (Linux lanes stay opt-in; the pre-push hook
+  took on notices and size limits; the macOS CI job turns required after two clean weeks). Read it before changing what
+  CI or the hooks run.
+- `proxy-and-tls-inspection-2026-10.md` — how every outbound connection behaves behind a corporate proxy, measured on
+  the 0.50.0 release, then re-measured after the fixes it led to (`crates/cmdr-http`). **0.50.0 honored the manual proxy
+  and a keychain-trusted inspection CA, but ignored PAC and the bypass list and proxied loopback; the fixes verify all
+  three on the real system settings.** Read it before changing how HTTP clients are built, or before answering a
+  reviewer's proxy question on `/trust`.
 - `rust-test-flake-analysis-2026-08-23.md` — what actually makes the Rust lanes go red, measured rather than assumed.
   **What predicts a starvation kill is a test's MARGIN (per-test cap ÷ idle runtime), not its duration**: every test two
   saturated full-suite runs killed sits at the thin end of that ratio, while three of the four causes found have no
@@ -228,16 +243,6 @@ Some notes here are load-bearing rather than historical. Those are grouped below
   unreadable directory aborts the recursive watch, the `Cmd+` menu accelerators that bind to Super rather than Ctrl, and
   the 504 macOS-specific strings in the English catalog. Contributed alongside the Linux `.deb` bundling, and kept
   because Linux isn't advertised, so nothing here has an issue behind it.
-
-**Load-bearing for a fork we carry, and for the day we can drop it:**
-
-- `mdns-sd-multicast-join-retry-loop.md` — why `vendor/mdns-sd` exists: upstream's `add_interface` drops an interface
-  whose multicast join fails instead of recording it, so `check_ip_changes` rediscovers it every 5 s and retries forever
-  (9,322 retries and 29 MB of logs from one macOS `bridge102` in a 39-hour run). Read it before touching the patch,
-  changing how `vendor/` is treated by the checks, or upgrading `mdns-sd`. It carries the one-line fix and why that
-  shape beats a failed-interface set, the one recovery case it does NOT cover, and the exact steps to delete the fork
-  once upstream ships. The unsent upstream PR text is `mdns-sd-upstream-pr/pr-draft.md`, with the patch against
-  `v0.21.4` beside it.
 
 **An incident diagnosis kept for the lever it rules out:**
 

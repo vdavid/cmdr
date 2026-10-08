@@ -24,11 +24,6 @@ use cmdr_index::ROOT_VOLUME_ID;
 use crate::ignore_poison::IgnorePoison;
 use crate::restricted_paths::tcc_paths;
 
-/// Bundle id from `tauri.conf.json`. Mirrored here so the data dir resolves without an
-/// `AppHandle` (same reason as `favorites/store.rs` and `install_id.rs`). Keep in sync if
-/// it ever changes.
-const BUNDLE_ID: &str = "com.veszelovszki.cmdr";
-
 /// Filename inside `{app_data_dir}/`, written by the frontend's pane persistence.
 const APP_STATUS_FILE_NAME: &str = "app-status.json";
 
@@ -160,11 +155,7 @@ fn last_session_tab_paths(home: &Path) -> Vec<PathBuf> {
 /// method, so there is none to pass): `CMDR_DATA_DIR` when an isolated instance set it,
 /// else the OS default for the bundle id. Mirrors `favorites/store.rs`.
 fn app_status_path() -> Option<PathBuf> {
-    let data_dir = match std::env::var("CMDR_DATA_DIR") {
-        Ok(custom) if !custom.is_empty() => PathBuf::from(custom),
-        _ => dirs::data_dir()?.join(BUNDLE_ID),
-    };
-    Some(data_dir.join(APP_STATUS_FILE_NAME))
+    Some(crate::config::standalone_app_data_dir()?.join(APP_STATUS_FILE_NAME))
 }
 
 /// What the ranking works from, so the ranking itself can be exercised over a

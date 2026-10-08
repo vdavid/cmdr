@@ -789,7 +789,10 @@ fn a_walk_somebody_waits_on_takes_ground_off_a_background_walk() {
     // big folder and somebody opens something under it.
     let wanted = share.path("scope/a");
 
-    // A background walk, holding `scope` and parked inside it.
+    // A background walk, holding `scope` and parked inside it. It only ever runs on
+    // a volume that is already indexing (it never stands an index up itself), so a
+    // first context somebody asked for stands this one up the way a search would.
+    drop(context_for_walk(volume_id, &CancellationToken::new(), WalkFor::TheUser).expect("the share is walkable"));
     let context =
         context_for_walk(volume_id, &CancellationToken::new(), WalkFor::TheIndex).expect("the share is walkable");
     let background = start(context, vec![scope.clone()], CoverageDimension::Listing);

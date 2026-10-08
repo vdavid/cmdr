@@ -705,7 +705,7 @@ fn guard_unregisters_its_state_even_when_the_test_body_panics() {
     // Pins the panic-safety the guard exists for: a hand-rolled `remove` placed
     // after the assertions leaked the entry whenever an assertion failed first,
     // and the corpse then showed up in the next test's
-    // `cancel_all_write_operations` / `list_active_operations`.
+    // `cancel_all_write_operations` / `get_operation_status`.
     let payload = std::panic::catch_unwind(|| {
         let op = TestOperationGuard::register("guard-panic-safety");
         let id = op.id().to_string();

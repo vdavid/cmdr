@@ -1,0 +1,13 @@
+{
+  "$comment": "IPC wrappers (tauri-commands/*.ts exports, by name) and commands (bindings.ts, by snake_case name) kept with no caller, each mapped to its reason. An allowlisted wrapper also covers the commands it calls. The desktop-ipc-unused check shrink-wraps stale entries on local runs; adding one needs David's explicit consent (see .claude/rules/file-length-allowlist.md).",
+  "wrappers": {
+    "clearRecentSearches": "UI tracked in #359: a 'Clear history' row in the Search recents popover, or delete it with its command; see docs/notes/ipc-dead-code-audit.md",
+    "clearRecentSelections": "UI tracked in #359: a 'Clear history' row in the Selection recents popover, or delete it with its command; see docs/notes/ipc-dead-code-audit.md"
+  },
+  "commands": {
+    "clear_recent_paths": "UI tracked in #359: a 'Clear history' row in the Go to folder recents popover, or delete it; see docs/notes/ipc-dead-code-audit.md",
+    "get_memory_diagnostics": "agent tooling: called over IPC by hand when debugging memory, see docs/tooling/memory-debugging.md",
+    "media_index_dedup_clusters": "UI tracked in #360: near-duplicate photo grouping with no surface yet, see docs/notes/ipc-dead-code-audit.md",
+    "media_index_search_tag": "UI tracked in #361: tag-score photo filter with no surface yet (MCP reaches the crate directly), see docs/notes/ipc-dead-code-audit.md"
+  }
+}

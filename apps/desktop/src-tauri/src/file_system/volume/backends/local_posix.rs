@@ -461,6 +461,23 @@ impl Volume for LocalPosixVolume {
         })
     }
 
+    fn set_modified<'a>(
+        &'a self,
+        path: &'a Path,
+        modified: std::time::SystemTime,
+    ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+        let abs_path = self.resolve(path);
+        Box::pin(async move {
+            spawn_blocking(move || {
+                // mtime alone: the access time stays the store's own.
+                filetime::set_file_mtime(&abs_path, filetime::FileTime::from_system_time(modified))
+                    .map_err(|e| VolumeError::from_io_at(&e, &abs_path))
+            })
+            .await
+            .expect("spawn_blocking set_file_mtime closure doesn't panic and the task is uncancelable")
+        })
+    }
+
     fn delete<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
         let abs_path = self.resolve(path);
         Box::pin(async move {

@@ -55,6 +55,14 @@
   "@fileExplorer.restrictedFolder.label": {
     "sourceHash": "bbcf72f"
   },
+  "fileExplorer.archivedFile.label": "Archivé",
+  "@fileExplorer.archivedFile.label": {
+    "sourceHash": "bdb8650"
+  },
+  "fileExplorer.archivedFile.tooltip": "Archivé en stockage froid. Restaurez le fichier dans la console de votre fournisseur de stockage avant de l’ouvrir ou de le copier.",
+  "@fileExplorer.archivedFile.tooltip": {
+    "sourceHash": "8897d71"
+  },
   "fileExplorer.diskSpace.free": "{freeText} libres sur {totalText} ({percentText} %)",
   "@fileExplorer.diskSpace.free": {
     "sourceHash": "97781f4"
@@ -103,6 +111,14 @@
   "fileExplorer.pane.directConnectionUnreachableToast": "{server} est injoignable pour le moment, ce partage reste donc sur la connexion système.",
   "@fileExplorer.pane.directConnectionUnreachableToast": {
     "sourceHash": "4a5ca66"
+  },
+  "fileExplorer.pane.directConnectionBlockedByThisMacToast": "Quelque chose sur ce Mac empêche Cmdr de se connecter directement à {server}, ce partage reste donc sur la connexion système. Essayez de désactiver puis de réactiver Cmdr dans {localNetwork}, ou vérifiez votre app de pare-feu.",
+  "@fileExplorer.pane.directConnectionBlockedByThisMacToast": {
+    "sourceHash": "74f758e"
+  },
+  "fileExplorer.pane.openLocalNetworkSettings": "Ouvrir les réglages {localNetwork}",
+  "@fileExplorer.pane.openLocalNetworkSettings": {
+    "sourceHash": "c3931df"
   },
   "fileExplorer.pane.directConnectionTooSlowToast": "{server} a mis trop de temps à répondre, ce partage reste donc sur la connexion système.",
   "@fileExplorer.pane.directConnectionTooSlowToast": {
@@ -288,6 +304,14 @@
   "fileExplorer.typeToJump.prefix": "Aller à : ",
   "@fileExplorer.typeToJump.prefix": {
     "sourceHash": "e9e3412"
+  },
+  "fileExplorer.quickFilter.prefix": "Filtrer : ",
+  "@fileExplorer.quickFilter.prefix": {
+    "sourceHash": "b549365"
+  },
+  "fileExplorer.quickFilter.ariaLabel": "Affichage des noms contenant « {pattern} »",
+  "@fileExplorer.quickFilter.ariaLabel": {
+    "sourceHash": "9b223b0"
   },
   "fileExplorer.searchResults.unavailableTitle": "Résultats de recherche indisponibles",
   "@fileExplorer.searchResults.unavailableTitle": {
@@ -537,38 +561,6 @@
   "@fileExplorer.network.reconnect.willTryMore": {
     "sourceHash": "a7d887a"
   },
-  "fileExplorer.mtp.connectTimedOut": "Délai de connexion dépassé. L’appareil est peut-être lent ou ne répond pas.",
-  "@fileExplorer.mtp.connectTimedOut": {
-    "sourceHash": "cc01ae7"
-  },
-  "fileExplorer.mtp.exclusiveAccess": "Une autre app utilise cet appareil. Lancez le contournement ptpcamerad.",
-  "@fileExplorer.mtp.exclusiveAccess": {
-    "sourceHash": "1fac18c"
-  },
-  "fileExplorer.mtp.deviceNotFound": "Appareil introuvable. Il a peut-être été débranché.",
-  "@fileExplorer.mtp.deviceNotFound": {
-    "sourceHash": "15d2382"
-  },
-  "fileExplorer.mtp.disconnected": "L’appareil a été déconnecté.",
-  "@fileExplorer.mtp.disconnected": {
-    "sourceHash": "57e823a"
-  },
-  "fileExplorer.mtp.deviceBusy": "L’appareil est occupé. Réessayez.",
-  "@fileExplorer.mtp.deviceBusy": {
-    "sourceHash": "7199b1d"
-  },
-  "fileExplorer.mtp.noStorage": "L’appareil n’a aucun stockage accessible",
-  "@fileExplorer.mtp.noStorage": {
-    "sourceHash": "ff30402"
-  },
-  "fileExplorer.mtp.connecting": "Connexion à l’appareil…",
-  "@fileExplorer.mtp.connecting": {
-    "sourceHash": "860bb9b"
-  },
-  "fileExplorer.mtp.tryAgain": "Réessayer",
-  "@fileExplorer.mtp.tryAgain": {
-    "sourceHash": "d8b8392"
-  },
   "fileExplorer.networkMount.mounting": "Montage de {target}…",
   "@fileExplorer.networkMount.mounting": {
     "sourceHash": "7b7368d"
@@ -625,9 +617,65 @@
   "@fileExplorer.unreachable.openHome": {
     "sourceHash": "a178b4d"
   },
+  "fileExplorer.listingStalled.title": "Toujours en attente de ce dossier",
+  "@fileExplorer.listingStalled.title": {
+    "sourceHash": "2c288e7"
+  },
+  "fileExplorer.listingStalled.detail": "Le serveur ou le disque qui contient ce dossier ne répond pas. Cmdr continue d’essayer en arrière-plan et ouvre le dossier dès qu’une réponse arrive.",
+  "@fileExplorer.listingStalled.detail": {
+    "sourceHash": "3d5ca69"
+  },
+  "fileExplorer.listingStalled.detailServer": "Le serveur qui contient ce dossier ne répond pas. Cmdr continue d’essayer en arrière-plan et ouvre le dossier dès qu’une réponse arrive.",
+  "@fileExplorer.listingStalled.detailServer": {
+    "sourceHash": "f8f8837"
+  },
+  "fileExplorer.listingStalled.detailDrive": "Le disque qui contient ce dossier ne répond pas. Cmdr continue d’essayer en arrière-plan et ouvre le dossier dès qu’une réponse arrive.",
+  "@fileExplorer.listingStalled.detailDrive": {
+    "sourceHash": "e2f3046"
+  },
+  "fileExplorer.listingStalled.tryAgain": "Réessayer",
+  "@fileExplorer.listingStalled.tryAgain": {
+    "sourceHash": "d8b8392"
+  },
+  "fileExplorer.listingStalled.goBack": "Revenir",
+  "@fileExplorer.listingStalled.goBack": {
+    "sourceHash": "6aadac2"
+  },
   "fileExplorer.clipboard.copied": "{countText} {count, plural, one {élément copié} many {éléments copiés} other {éléments copiés}}",
   "@fileExplorer.clipboard.copied": {
     "sourceHash": "1c25075"
+  },
+  "fileExplorer.compareDirectories.marked": "Fichiers différents sélectionnés : {leftCountText} {leftCount, plural, one {fichier} many {fichiers} other {fichiers}} à gauche et {rightCountText} {rightCount, plural, one {fichier} many {fichiers} other {fichiers}} à droite.",
+  "@fileExplorer.compareDirectories.marked": {
+    "sourceHash": "73e3ccf"
+  },
+  "fileExplorer.compareDirectories.noDifferences.newerAndMissing": "Rien à sélectionner : chaque fichier se trouve dans les deux dossiers, et aucune copie n’est plus récente. Les sous-dossiers ne sont pas comparés.",
+  "@fileExplorer.compareDirectories.noDifferences.newerAndMissing": {
+    "sourceHash": "c2960d8"
+  },
+  "fileExplorer.compareDirectories.noDifferences.missing": "Rien à sélectionner : chaque fichier se trouve dans les deux dossiers. Les sous-dossiers ne sont pas comparés.",
+  "@fileExplorer.compareDirectories.noDifferences.missing": {
+    "sourceHash": "ed2e696"
+  },
+  "fileExplorer.compareDirectories.noDifferences.sizeAndMissing": "Rien à sélectionner : chaque fichier se trouve dans les deux dossiers, avec la même taille. Les sous-dossiers ne sont pas comparés.",
+  "@fileExplorer.compareDirectories.noDifferences.sizeAndMissing": {
+    "sourceHash": "5f7b808"
+  },
+  "fileExplorer.compareDirectories.keptChanging": "Les dossiers n’ont pas cessé de changer pendant la comparaison. Réessayez une fois qu’ils ne changent plus.",
+  "@fileExplorer.compareDirectories.keptChanging": {
+    "sourceHash": "3051074"
+  },
+  "fileExplorer.compareDirectories.needsTwoFolders": "Ouvrez un dossier dans chaque panneau pour les comparer",
+  "@fileExplorer.compareDirectories.needsTwoFolders": {
+    "sourceHash": "c04ef80"
+  },
+  "fileExplorer.compareDirectories.couldNotFinish": "La comparaison des dossiers n’a pas pu se terminer. Réessayez dans un instant.",
+  "@fileExplorer.compareDirectories.couldNotFinish": {
+    "sourceHash": "0900bc9"
+  },
+  "fileExplorer.folderSizes.notConnected": "Calcul de la taille des dossiers impossible ici : cet emplacement n’est pas connecté pour le moment.",
+  "@fileExplorer.folderSizes.notConnected": {
+    "sourceHash": "8b51988"
   },
   "fileExplorer.clipboard.cutReady": "{countText} {count, plural, one {élément prêt} many {éléments prêts} other {éléments prêts}} à déplacer. Collez pour terminer.",
   "@fileExplorer.clipboard.cutReady": {
@@ -705,6 +753,14 @@
   "@fileExplorer.clipboard.empty": {
     "sourceHash": "0cbe304"
   },
+  "fileExplorer.clipboard.stillPasting": "Création d’un fichier à partir du presse-papiers toujours en cours. Le volume met du temps à répondre.",
+  "@fileExplorer.clipboard.stillPasting": {
+    "sourceHash": "0e98ca7"
+  },
+  "fileExplorer.clipboard.notPasted": "Cmdr n’a pas pu créer de fichier à partir du presse-papiers. {reason}",
+  "@fileExplorer.clipboard.notPasted": {
+    "sourceHash": "a6e63c7"
+  },
   "fileExplorer.clipboard.pastedAsFile": "Contenu du presse-papiers collé dans {filename} ({kind, select, image {image} pdf {PDF} other {texte}})",
   "@fileExplorer.clipboard.pastedAsFile": {
     "sourceHash": "d61d4b5"
@@ -781,6 +837,26 @@
   "@fileExplorer.git.useTransferToCopyOut": {
     "sourceHash": "a0d65fe"
   },
+  "fileExplorer.openWith.copyRefused.tooLarge": "« {fileName} » dépasse {limit}, donc Cmdr ne peut pas ouvrir le fichier dans {appName} depuis l’archive.",
+  "@fileExplorer.openWith.copyRefused.tooLarge": {
+    "sourceHash": "43399e6"
+  },
+  "fileExplorer.openWith.copyRefused.tooLargeInRepoHistory": "« {fileName} » dépasse {limit}, donc Cmdr ne peut pas ouvrir le fichier dans {appName} depuis l’historique du dépôt.",
+  "@fileExplorer.openWith.copyRefused.tooLargeInRepoHistory": {
+    "sourceHash": "aab64d0"
+  },
+  "fileExplorer.openWith.copyRefused.needsPassword": "« {fileName} » se trouve dans une archive protégée par un mot de passe. Copiez d’abord le fichier dans un dossier (Cmdr vous demandera le mot de passe), puis ouvrez-le dans {appName}.",
+  "@fileExplorer.openWith.copyRefused.needsPassword": {
+    "sourceHash": "882a23f"
+  },
+  "fileExplorer.openWith.copyRefused.archiveUnreadable": "Impossible d’extraire « {fileName} » de son archive pour l’ouvrir dans {appName}. L’archive est peut-être endommagée ou utilise un format que Cmdr ne sait pas lire.",
+  "@fileExplorer.openWith.copyRefused.archiveUnreadable": {
+    "sourceHash": "4ff2573"
+  },
+  "fileExplorer.openWith.copyRefused.unreadable": "Impossible de lire « {fileName} » pour l’ouvrir dans {appName}. Vérifiez que le disque est toujours connecté, puis réessayez.",
+  "@fileExplorer.openWith.copyRefused.unreadable": {
+    "sourceHash": "8af2399"
+  },
   "fileExplorer.rename.hiddenAfterRename": "Votre fichier a disparu de la vue, car les fichiers cachés ne sont pas affichés.",
   "@fileExplorer.rename.hiddenAfterRename": {
     "sourceHash": "6258274"
@@ -797,13 +873,17 @@
   "@fileExplorer.rename.chainKeptOriginalNameAndOthers": {
     "sourceHash": "016797b"
   },
-  "fileExplorer.rename.unconfirmed": "Impossible de confirmer le renommage de « {name} ». Le volume est peut-être lent, donc le fichier a peut-être quand même été renommé.",
-  "@fileExplorer.rename.unconfirmed": {
-    "sourceHash": "059ac81"
+  "fileExplorer.rename.needsOwnMoveDialog": "Ce renommage copie les données sur le serveur et doit passer par sa propre boîte de dialogue Déplacer. Renommez cet élément à nouveau, séparément.",
+  "@fileExplorer.rename.needsOwnMoveDialog": {
+    "sourceHash": "87110e0"
   },
-  "fileExplorer.rename.unconfirmedAndOthers": "Impossible de confirmer les renommages de « {name} » et {others, plural, one {d’un autre fichier} many {de {othersText} autres fichiers} other {de {othersText} autres fichiers}}. Le volume est peut-être lent, donc les fichiers ont peut-être quand même été renommés.",
-  "@fileExplorer.rename.unconfirmedAndOthers": {
-    "sourceHash": "f16b15d"
+  "fileExplorer.rename.stillRenaming": "Renommage de « {name} » toujours en cours. Le volume met du temps à répondre.",
+  "@fileExplorer.rename.stillRenaming": {
+    "sourceHash": "a05cca5"
+  },
+  "fileExplorer.rename.stillRenamingAndOthers": "Renommage de « {name} » et {kind, select, folders {{others, plural, one {d’un autre dossier} many {de {othersText} autres dossiers} other {de {othersText} autres dossiers}}} files {{others, plural, one {d’un autre fichier} many {de {othersText} autres fichiers} other {de {othersText} autres fichiers}}} other {{others, plural, one {de {othersText} autres fichiers et dossiers} many {de {othersText} autres fichiers et dossiers} other {de {othersText} autres fichiers et dossiers}}}} toujours en cours. Le volume met du temps à répondre.",
+  "@fileExplorer.rename.stillRenamingAndOthers": {
+    "sourceHash": "933be25"
   },
   "fileExplorer.columns.name": "Nom",
   "@fileExplorer.columns.name": {
@@ -1342,6 +1422,10 @@
   "@fileExplorer.navigation.connectionTooltipDirect": {
     "sourceHash": "a69a3ad"
   },
+  "fileExplorer.navigation.connectionTooltipConnected": "Connecté",
+  "@fileExplorer.navigation.connectionTooltipConnected": {
+    "sourceHash": "2296556"
+  },
   "fileExplorer.navigation.connectionTooltipSystem": "Connexion via le système. Utilisez l’élément de menu « Se connecter directement pour un accès plus rapide » pour un accès plus rapide.",
   "@fileExplorer.navigation.connectionTooltipSystem": {
     "sourceHash": "e4ac697"
@@ -1414,9 +1498,9 @@
   "@fileExplorer.navigation.disconnectPlaceAriaLabel": {
     "sourceHash": "8f755cb"
   },
-  "fileExplorer.navigation.disconnectBusyTooltip": "Impossible de se déconnecter tant que des opérations sont en cours sur ce serveur",
+  "fileExplorer.navigation.disconnectBusyTooltip": "Cmdr travaille encore sur des fichiers de ce serveur. Déconnectez-vous une fois l’opération terminée.",
   "@fileExplorer.navigation.disconnectBusyTooltip": {
-    "sourceHash": "a659820"
+    "sourceHash": "bd52d60"
   },
   "fileExplorer.navigation.serverPinnedToast": "{name} est maintenant dans votre sélecteur de volume.",
   "@fileExplorer.navigation.serverPinnedToast": {
@@ -1426,9 +1510,9 @@
   "@fileExplorer.navigation.serverUnpinnedToast": {
     "sourceHash": "7fa97b2"
   },
-  "fileExplorer.navigation.pinRefusedToast": "Cmdr n’a pas pu changer l’endroit où {name} s’affiche.",
+  "fileExplorer.navigation.pinRefusedToast": "Cmdr n’a pas pu changer l’endroit où {name} apparaît.",
   "@fileExplorer.navigation.pinRefusedToast": {
-    "sourceHash": "3ed5f60"
+    "sourceHash": "59f1f8b"
   },
   "fileExplorer.navigation.disconnectRefusedToast": "Cmdr n’a pas pu se déconnecter de {name}.",
   "@fileExplorer.navigation.disconnectRefusedToast": {
@@ -1474,9 +1558,9 @@
   "@fileExplorer.navigation.ejectVolumeAriaLabel": {
     "sourceHash": "61db18b"
   },
-  "fileExplorer.navigation.ejectBusyTooltip": "Impossible d’éjecter tant que des opérations sont en cours sur cet appareil",
+  "fileExplorer.navigation.ejectBusyTooltip": "Cmdr travaille encore sur des fichiers de cet appareil. Éjectez-le une fois l’opération terminée.",
   "@fileExplorer.navigation.ejectBusyTooltip": {
-    "sourceHash": "eafd9bd"
+    "sourceHash": "3da6312"
   },
   "fileExplorer.navigation.ejectingVolumeAriaLabel": "Éjection de {name}…",
   "@fileExplorer.navigation.ejectingVolumeAriaLabel": {
@@ -1663,5 +1747,41 @@
   "fileExplorer.dragOut.partial": "{summary} {count, plural, =1 {Copie de « {name} » impossible.} one {Copie de {countText} élément impossible.} many {Copie de {countText} éléments impossible.} other {Copie de {countText} éléments impossible.}}",
   "@fileExplorer.dragOut.partial": {
     "sourceHash": "9215226"
+  },
+  "fileExplorer.folderSizes.unreadable": "{count, plural, one {Lecture complète impossible pour # dossier : sa taille est donc peut-être incomplète.} many {Lecture complète impossible pour # dossiers : leurs tailles sont donc peut-être incomplètes.} other {Lecture complète impossible pour # dossiers : leurs tailles sont donc peut-être incomplètes.}}",
+  "@fileExplorer.folderSizes.unreadable": {
+    "sourceHash": "ad31a56"
+  },
+  "fileExplorer.quickFilter.clear": "Effacer le filtre",
+  "@fileExplorer.quickFilter.clear": {
+    "sourceHash": "ba59e2d"
+  },
+  "fileExplorer.quickFilter.intro.title": "La saisie a filtré ce panneau",
+  "@fileExplorer.quickFilter.intro.title": {
+    "sourceHash": "eef3e92"
+  },
+  "fileExplorer.quickFilter.intro.body": "Vous avez tapé quelques lettres, donc le panneau n’affiche plus que les fichiers et dossiers dont le nom les contient.",
+  "@fileExplorer.quickFilter.intro.body": {
+    "sourceHash": "e406349"
+  },
+  "fileExplorer.quickFilter.intro.escape": "Appuyez sur la touche Échap pour revoir tous vos fichiers.",
+  "@fileExplorer.quickFilter.intro.escape": {
+    "sourceHash": "af749ad"
+  },
+  "fileExplorer.quickFilter.intro.jumpNote": "Vous préférez placer le curseur sur un nom correspondant sans rien masquer ? Passez à « Aller à », ici ou dans les Réglages.",
+  "@fileExplorer.quickFilter.intro.jumpNote": {
+    "sourceHash": "ac6d3c8"
+  },
+  "fileExplorer.quickFilter.intro.switchToJump": "Passer à « Aller à »",
+  "@fileExplorer.quickFilter.intro.switchToJump": {
+    "sourceHash": "38642f9"
+  },
+  "fileExplorer.quickFilter.intro.openSettings": "Réglages…",
+  "@fileExplorer.quickFilter.intro.openSettings": {
+    "sourceHash": "7a04083"
+  },
+  "fileExplorer.quickFilter.intro.gotIt": "D’accord",
+  "@fileExplorer.quickFilter.intro.gotIt": {
+    "sourceHash": "5ad3dbd"
   }
 }

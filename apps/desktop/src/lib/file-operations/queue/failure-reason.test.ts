@@ -49,14 +49,14 @@ describe('failureReasonFor', () => {
   it('carries the variant’s own facts, not a generic sentence', () => {
     const error: WriteOperationError = {
       type: 'insufficient_space',
-      required: 1073741824,
-      available: 536870912,
+      required: 1_000_000_000,
+      available: 500_000_000,
       volumeName: 'Backup',
     }
     const reason = failureReasonFor(snapshot(error))
-    expect(reason?.title).toBe('Not enough space')
+    expect(reason?.title).toBe('The destination may not have enough space')
     expect(reason?.message).toContain('1.00 GB')
-    expect(reason?.message).toContain('512.00 MB')
+    expect(reason?.message).toContain('500.00 MB')
   })
 
   it('borrows the copy wording for the operation types the catalog has no arm for', () => {

@@ -126,6 +126,16 @@ in `public/fonts/`.
   post from the `[download](cmdr:download)` marker. That plugin must run after `rehype-external-links` (so its GitHub
   links don't get `target="_blank"`) and reads `public/latest.json` directly, mirroring `src/lib/release.ts`'s
   GitHub-fallback URL/size logic.
+- **Security headers**: every `nginx.conf` location that serves content includes `nginx-security-headers.conf` (copied
+  to `/etc/nginx/snippets/` by the Dockerfile), because nginx drops server-level `add_header`s in any location that sets
+  its own. It carries the only copy of the CSP. `connect-src` has to list every origin the site's JS fetches
+  (`api.getcmdr.com` for likes and `?r=` codes, remark42, Paddle): the browser blocks the rest before the request
+  leaves, and nothing in dev shows it, since Astro's dev server and the Playwright E2E serve no CSP. The blog's like
+  button shipped that way and never worked until the origin was added. Two guards: the `website-csp-connect-src` check
+  matches every fetch in `src/` and `public/` against `connect-src` (`scripts/check/checks/DETAILS.md` § Website CSP
+  connect-src), skipping `src/dev/` and `src/build/` (build-time-only modules, imported from component frontmatter and
+  ❌ never from a client `<script>`), and the CSP's `report-uri` / `report-to` send production violations to the API
+  server, which alerts Discord (`apps/api-server/src/website/DETAILS.md` § CSP reports).
 - **Always-latest download links**: `getcmdr.com/download/latest/<arch>` (and bare `/download/latest`, which hands out
   the universal build) is an nginx `return 302` to the API server's `/download/latest/<arch>`, query string preserved so
   `?ref=` and `?src=` survive. It lives in `nginx.conf`, not Astro, because a static build can only emit a meta-refresh
@@ -147,6 +157,11 @@ in `public/fonts/`.
   agents; each blog post also has a Markdown mirror at `/blog/{slug}/index.md`. Keep the llms files in sync when product
   facts (pricing, features, system requirements) change. nginx serves `.md` as `text/markdown` via a dedicated location
   block in `nginx.conf`.
+- **Sample MDM files**: `public/mdm/` holds the sample `.mobileconfig` profile and the bare `.plist` linked from
+  `/trust#mdm`. nginx's `/mdm/` location gives them `application/x-apple-aspen-config` and `application/x-plist` (the
+  default mime table knows neither). The page's key list renders from `managedPreferenceKeys` in `src/lib/trust.ts`. A
+  Rust test guards all three key sets against the app's (`apps/desktop/src-tauri/src/managed_policy/DETAILS.md` § The
+  public mirror), so a key edit here needs the app's key list to match.
 
 ## Icons
 
@@ -274,6 +289,15 @@ hygiene before it: IntelliSense's editor nudges never reached `pnpm check` or CI
 - **Editor**: set `"tailwindCSS.lint.suggestCanonicalClasses": "ignore"` in your `.vscode/settings.json` (gitignored) so
   IntelliSense stops reporting what ESLint now owns.
 - **Cost**: the canonical rule boots Tailwind, about one second per lint run.
+- **`rootFontSize: 16`** in the plugin settings lets the rule turn pixel values that land on the spacing scale into
+  their rem forms (`p-[2px]` to `p-0.5`). It doesn't catch every one (`min-w-[320px]` stayed put; it's `min-w-80` by
+  hand), so prefer the scale name when writing new classes.
+- **Colors inside arbitrary values are invisible to every rule.** A gradient stop takes
+  `color-mix(in_srgb,var(--color-accent)_15%,transparent)`, never a literal `rgba(…)`, so the light theme's accent
+  applies (see `Hero.astro`).
+- **Only utility-worthy colors go in `@theme`.** A token there becomes a utility the canonicalizer may suggest, so an
+  alias like `--color-icon-no: var(--color-warning)` made it propose `text-icon-no` for `text-warning`. CSS-only
+  variables (the inline markdown icon colors) live in a plain `:root` block.
 
 The analytics dashboard runs the same rule set from its `eslint.config.js` with `src/app.css` as the entry point; its
 sweep was class order plus a few collapses (`h-2 w-2` to `size-2`, `text-xs leading-relaxed` to `text-xs/relaxed`). The
@@ -295,6 +319,22 @@ and stripped of file names, paths, queries, and prompts by allowlist. See
 - **D1** (API server): Download redirect endpoint logs version, arch, country, source, a first-touch `ref` channel, and
   a daily-hashed IP (bot hits dropped). The download button carries `?src=website` so the endpoint can tag it as a
   website download (vs Homebrew or direct links). The `heartbeat` table holds the desktop DAU beats.
+
+### Post-download popup
+
+`DownloadStartedPopup.astro` (mounted in `Layout.astro`) opens once per visitor, on their first click of any
+`[data-umami-event="download"]` link, and asks for a GitHub star plus a release-email signup, with Discord as a footer
+link. Decision/why: the Discord-first version converted at about 5% (21 joins out of about 430 people who interacted
+with it, PostHog autocapture, 2026-07-03 to 2026-09-30), and this audience mostly isn't on Discord. A star moves Cmdr
+toward the 225 that a self-submitted cask needs for Homebrew's main catalog, and an email is the one way back to someone
+who tries Cmdr once and drifts off.
+
+- The star count comes from `src/build/github-stars.ts` at build time, so visitors never call GitHub. When the fetch
+  fails, the popup drops the number and the progress bar instead of showing a stale one.
+- The email block reads the newsletter's localStorage flags when the popup opens: subscribers see a thank-you line,
+  visitors who clicked "Not interested" anywhere see no email block, and everyone else sees the form.
+- Clicks carry Umami events `download-popup-star` and `download-popup-discord`; the form's signups show in the
+  dashboard's Listmonk column and in PostHog autocapture under `.download-popup`.
 
 ### First-touch attribution (`ref`), storage-free
 

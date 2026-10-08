@@ -23,5 +23,59 @@
   "common.downloadsFdaHint": "Cmdr 需要「完全取用磁碟」權限才能監視你的「下載項目」資料夾。<settingsLink>開啟「系統設定」</settingsLink>",
   "@common.downloadsFdaHint": {
     "sourceHash": "315e1d8"
+  },
+  "common.sizeUnit.byte": "{count, plural, other {位元組}}",
+  "@common.sizeUnit.byte": {
+    "sourceHash": "ee1f643"
+  },
+  "common.sizeUnit.kibibyte": "KiB",
+  "@common.sizeUnit.kibibyte": {
+    "sourceHash": "97ee1b8",
+    "sameAsSourceJustification": "Traditional Chinese keeps the IEC binary symbols in Latin: KDE Dolphin zh-TW writes ` MiB` untranslated, and the Microsoft zh-Hant terminology keeps `GiB` as is. There is no Han symbol to localize; only the bare byte word is translated (`common.sizeUnit.byte` = `位元組`)."
+  },
+  "common.sizeUnit.mebibyte": "MiB",
+  "@common.sizeUnit.mebibyte": {
+    "sourceHash": "dea6cb8",
+    "sameAsSourceJustification": "Traditional Chinese keeps the IEC binary symbols in Latin: KDE Dolphin zh-TW writes ` MiB` untranslated, and the Microsoft zh-Hant terminology keeps `GiB` as is. There is no Han symbol to localize; only the bare byte word is translated (`common.sizeUnit.byte` = `位元組`)."
+  },
+  "common.sizeUnit.gibibyte": "GiB",
+  "@common.sizeUnit.gibibyte": {
+    "sourceHash": "66a1561",
+    "sameAsSourceJustification": "Traditional Chinese keeps the IEC binary symbols in Latin: KDE Dolphin zh-TW writes ` MiB` untranslated, and the Microsoft zh-Hant terminology keeps `GiB` as is. There is no Han symbol to localize; only the bare byte word is translated (`common.sizeUnit.byte` = `位元組`)."
+  },
+  "common.sizeUnit.tebibyte": "TiB",
+  "@common.sizeUnit.tebibyte": {
+    "sourceHash": "15c1ec4",
+    "sameAsSourceJustification": "Traditional Chinese keeps the IEC binary symbols in Latin: KDE Dolphin zh-TW writes ` MiB` untranslated, and the Microsoft zh-Hant terminology keeps `GiB` as is. There is no Han symbol to localize; only the bare byte word is translated (`common.sizeUnit.byte` = `位元組`)."
+  },
+  "common.sizeUnit.pebibyte": "PiB",
+  "@common.sizeUnit.pebibyte": {
+    "sourceHash": "38ca5a1",
+    "sameAsSourceJustification": "Traditional Chinese keeps the IEC binary symbols in Latin: KDE Dolphin zh-TW writes ` MiB` untranslated, and the Microsoft zh-Hant terminology keeps `GiB` as is. There is no Han symbol to localize; only the bare byte word is translated (`common.sizeUnit.byte` = `位元組`)."
+  },
+  "common.sizeUnit.kilobyte": "kB",
+  "@common.sizeUnit.kilobyte": {
+    "sourceHash": "591e59c",
+    "sameAsSourceJustification": "Traditional Chinese writes byte-multiple unit symbols in Latin (macOS zh-TW and zh-HK, Microsoft zh-Hant, TC zh-TW). The SI lowercase k is kept so the decimal kilobyte stays distinct from the binary `KiB`; macOS and Microsoft write the decimal unit as `KB`, which here would blur with the old binary meaning."
+  },
+  "common.sizeUnit.megabyte": "MB",
+  "@common.sizeUnit.megabyte": {
+    "sourceHash": "1d09f6f",
+    "sameAsSourceJustification": "Traditional Chinese writes byte-multiple unit symbols in Latin, as macOS zh-TW and zh-HK Finder do (pile: `KB`, `MB`, `GB`, `TB`, `PB` beside the translated `位元組`; TC zh-TW `位元組|KB|MB|GB`). Microsoft zh-Hant does the same. There is no Han symbol to localize; only the bare byte word is translated (`common.sizeUnit.byte` = `位元組`)."
+  },
+  "common.sizeUnit.gigabyte": "GB",
+  "@common.sizeUnit.gigabyte": {
+    "sourceHash": "b4043b0",
+    "sameAsSourceJustification": "Traditional Chinese writes byte-multiple unit symbols in Latin, as macOS zh-TW and zh-HK Finder do (pile: `KB`, `MB`, `GB`, `TB`, `PB` beside the translated `位元組`; TC zh-TW `位元組|KB|MB|GB`). Microsoft zh-Hant does the same. There is no Han symbol to localize; only the bare byte word is translated (`common.sizeUnit.byte` = `位元組`)."
+  },
+  "common.sizeUnit.terabyte": "TB",
+  "@common.sizeUnit.terabyte": {
+    "sourceHash": "791b0ac",
+    "sameAsSourceJustification": "Traditional Chinese writes byte-multiple unit symbols in Latin, as macOS zh-TW and zh-HK Finder do (pile: `KB`, `MB`, `GB`, `TB`, `PB` beside the translated `位元組`; TC zh-TW `位元組|KB|MB|GB`). Microsoft zh-Hant does the same. There is no Han symbol to localize; only the bare byte word is translated (`common.sizeUnit.byte` = `位元組`)."
+  },
+  "common.sizeUnit.petabyte": "PB",
+  "@common.sizeUnit.petabyte": {
+    "sourceHash": "f9085bf",
+    "sameAsSourceJustification": "Traditional Chinese writes byte-multiple unit symbols in Latin, as macOS zh-TW and zh-HK Finder do (pile: `KB`, `MB`, `GB`, `TB`, `PB` beside the translated `位元組`; TC zh-TW `位元組|KB|MB|GB`). Microsoft zh-Hant does the same. There is no Han symbol to localize; only the bare byte word is translated (`common.sizeUnit.byte` = `位元組`)."
   }
 }

@@ -30,7 +30,13 @@ type fakeComposer struct {
 	// what republishes a container's key pair, and a fake that only records the
 	// call would let a broken wait pass.
 	restartWrites func(services []string)
+
+	execCalls []execCall
+	execErr   error
 }
+
+// execCall is one script the fake was asked to run inside a service.
+type execCall struct{ service, script string }
 
 func newFakeComposer() *fakeComposer {
 	return &fakeComposer{running: map[string]bool{}, healthy: map[string]bool{}}
@@ -77,6 +83,13 @@ func (f *fakeComposer) Restart(services []string) error {
 		f.restartWrites(services)
 	}
 	return nil
+}
+
+func (f *fakeComposer) Exec(service, script string) (string, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.execCalls = append(f.execCalls, execCall{service, script})
+	return "", f.execErr
 }
 
 func (f *fakeComposer) Down() error {

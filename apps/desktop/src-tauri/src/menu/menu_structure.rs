@@ -1,5 +1,5 @@
 //! The smaller context menus (breadcrumb, parent row, function key bar, tab,
-//! network host) and the viewer-window menu,
+//! network host, the viewer's right-click menu) and the viewer-window menu,
 //! plus the `ContextMenuShortcuts` / `context_item` vocabulary every popup here
 //! shares. The file context menu is `file_context_menu.rs`; the main menu bar is
 //! `menu_bar.rs`.
@@ -21,8 +21,8 @@ use super::menu_items::{DetachWord, detach_label, pin_tab_label};
 use super::{
     COPY_CURRENT_DIR_PATH_ID, EDIT_MENU_ID, EJECT_VOLUME_ID, FAVORITES_ADD_CONTEXT_ID, FUNCTION_KEY_BAR_HIDE_ID,
     NETWORK_HOST_DISCONNECT_ID, NETWORK_HOST_EDIT_ID, NETWORK_HOST_FORGET_SECRET_ID, NETWORK_HOST_FORGET_SERVER_ID,
-    TAB_CLOSE_ID, TAB_CLOSE_OTHERS_ID, TAB_PIN_ID, VIEWER_EDIT_COPY_ID, VIEWER_SELECT_ALL_ID, VIEWER_WORD_WRAP_ID,
-    ViewerMenuItems,
+    TAB_CLOSE_ID, TAB_CLOSE_OTHERS_ID, TAB_PIN_ID, VIEWER_CONTEXT_COPY_ID, VIEWER_CONTEXT_SELECT_ALL_ID,
+    VIEWER_EDIT_COPY_ID, VIEWER_SELECT_ALL_ID, VIEWER_WORD_WRAP_ID, ViewerMenuItems,
 };
 #[cfg(target_os = "macos")]
 use super::{VIEWER_EDIT_CUT_ID, VIEWER_EDIT_PASTE_ID};
@@ -332,6 +332,33 @@ pub fn build_viewer_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Viewer
         #[cfg(target_os = "macos")]
         edit_paste,
     })
+}
+
+/// Builds the viewer's right-click menu over the file text: Copy, enabled only while there's a
+/// selection, and Select all. The frontend reads its own selection model at open time and passes
+/// `has_selection`, so the native menu never needs to see it.
+///
+/// Labels and printed chords are the viewer bar's own, so the two menus read alike. The chords
+/// are display text here: a popup's key equivalents are never registered.
+pub fn build_viewer_context_menu<R: Runtime>(app: &AppHandle<R>, has_selection: bool) -> tauri::Result<Menu<R>> {
+    let menu = Menu::new(app)?;
+    let copy_item = MenuItem::with_id(
+        app,
+        VIEWER_CONTEXT_COPY_ID,
+        menu_t("menu.edit.copy"),
+        has_selection,
+        Some(VIEWER_COPY_ACCELERATOR),
+    )?;
+    let select_all_item = MenuItem::with_id(
+        app,
+        VIEWER_CONTEXT_SELECT_ALL_ID,
+        menu_t("menu.select.all"),
+        true,
+        Some(VIEWER_SELECT_ALL_ACCELERATOR),
+    )?;
+    menu.append(&copy_item)?;
+    menu.append(&select_all_item)?;
+    Ok(menu)
 }
 
 /// Builds a context menu for a tab.

@@ -204,7 +204,9 @@ pub fn snapshot_index_to_scenario(
 
     let conn = crate::indexing::store::IndexStore::open_read_connection(index_db_path)
         .map_err(|e| format!("couldn't open index DB read-only: {e}"))?;
-    let mut folders = walk_index_folders(&conn, home)?;
+    // A snapshot of a database file has no volume behind it, so no stop signal.
+    let never = tokio_util::sync::CancellationToken::new();
+    let mut folders = walk_index_folders(&conn, home, &never).map_err(|e| e.to_string())?;
 
     let synthetic_root = synthetic_root_for(&availability);
     let mut scenario_folders = Vec::with_capacity(folders.len());

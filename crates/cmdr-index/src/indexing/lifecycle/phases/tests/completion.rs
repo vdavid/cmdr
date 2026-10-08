@@ -305,11 +305,19 @@ fn home_coverage_fires_the_early_media_signal_without_claiming_fresh() {
     let mut signal = crate::indexing::lifecycle::lifecycle_bus::subscribe_home_covered(drive.volume_id);
 
     drive.start();
-    cmdr_fs::testing::wait_until(std::time::Duration::from_secs(30), "home to read as covered", || {
-        drive.meta(HOME_COVERED_AT_KEY).is_some()
-    });
+    // ⚠️ Wait on the SIGNAL, ❌ not the stamp: the stamp is committed first and the
+    // signal published after, so a test that saw the stamp and then asserted the
+    // signal lost that race about one run in 30.
+    cmdr_fs::testing::wait_until(
+        std::time::Duration::from_secs(30),
+        "the one subscriber to hear about home",
+        || *signal.borrow_and_update(),
+    );
 
-    assert!(*signal.borrow_and_update(), "the one subscriber hears about it");
+    assert!(
+        drive.meta(HOME_COVERED_AT_KEY).is_some(),
+        "and what it heard is already on disk: the stamp lands before the signal"
+    );
     drive.wait_for_the_machine();
     assert!(
         drive.meta("scan_completed_at").is_some(),

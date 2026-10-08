@@ -714,7 +714,7 @@ describe('ErrorReportDialog in amend mode', () => {
   it('offers no submit at all when nothing was auto-sent this run', async () => {
     autoSentStash = null
     const target = await mountAmend()
-    expect(target.textContent).toContain('That report can’t take a note any more')
+    expect(target.textContent).toContain('That report can’t take a note anymore')
     expect(findButton(target, 'Add to report')).toBeUndefined()
     expect(target.querySelector('textarea')).toBeNull()
     expect(vi.mocked(sendErrorReport)).not.toHaveBeenCalled()
@@ -723,7 +723,7 @@ describe('ErrorReportDialog in amend mode', () => {
   it('offers no submit at all when the report can no longer be added to', async () => {
     autoSentCanAmend = false
     const target = await mountAmend()
-    expect(target.textContent).toContain('That report can’t take a note any more')
+    expect(target.textContent).toContain('That report can’t take a note anymore')
     expect(findButton(target, 'Add to report')).toBeUndefined()
     expect(vi.mocked(sendErrorReport)).not.toHaveBeenCalled()
   })
@@ -731,7 +731,7 @@ describe('ErrorReportDialog in amend mode', () => {
   it('lands on the same dead end when the stash lookup throws', async () => {
     autoSentThrows = true
     const target = await mountAmend()
-    expect(target.textContent).toContain('That report can’t take a note any more')
+    expect(target.textContent).toContain('That report can’t take a note anymore')
     expect(vi.mocked(sendErrorReport)).not.toHaveBeenCalled()
   })
 

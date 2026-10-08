@@ -26,6 +26,7 @@
     import { formatInteger } from '$lib/intl/number-format'
     import { nearestStopIndex, stopAt } from './slider-stops'
     import { onMount } from 'svelte'
+    import { useSettingLock } from './setting-lock.svelte'
 
     interface Props {
         id: SettingId
@@ -51,6 +52,12 @@
     }
 
     const { id, disabled = false, unit = '', formatValue, maxOverride, endLabels }: Props = $props()
+    const lock = useSettingLock(id)
+    // The thumb is the focusable part, so the managed note's id lands there.
+    const thumbProps = $derived.by((): Record<string, string> => {
+        const describedBy = lock.describedBy()
+        return describedBy === undefined ? {} : { 'aria-describedby': describedBy }
+    })
 
     const definition = getSettingDefinition(id)
     const label = definition?.label ?? id
@@ -115,7 +122,8 @@
     min={trackMin}
     max={trackMax}
     step={trackStep}
-    {disabled}
+    disabled={disabled || lock.locked}
+    {thumbProps}
     ariaLabel={label}
     ariaValueText={spokenValue ? readout : undefined}
     ticks={trackStops}

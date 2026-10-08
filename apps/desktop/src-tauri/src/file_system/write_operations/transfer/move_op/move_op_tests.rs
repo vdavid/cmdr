@@ -285,6 +285,40 @@ fn cross_fs_move_preserves_empty_directories() {
     assert!(!source.exists(), "the source tree should be removed after the move");
 }
 
+/// A cross-FS move keeps each moved folder's date: the staging pass dates what
+/// it created, and Phase 3's rename carries the date along.
+#[test]
+fn cross_fs_move_keeps_folder_dates() {
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let src_dir = tmp.path().join("src");
+    let dst_dir = tmp.path().join("dst");
+    fs::create_dir_all(src_dir.join("tree/populated")).unwrap();
+    fs::write(src_dir.join("tree/populated/file.txt"), b"content").unwrap();
+    fs::create_dir_all(&dst_dir).unwrap();
+    let at = |secs| filetime::FileTime::from_unix_time(secs, 0);
+    filetime::set_file_mtime(src_dir.join("tree/populated"), at(1_577_836_800)).unwrap();
+    filetime::set_file_mtime(src_dir.join("tree"), at(1_611_909_015)).unwrap();
+
+    let events = Arc::new(CollectorEventSink::new());
+    let source = src_dir.join("tree");
+    let result = move_with_staging(
+        &*events,
+        "op-cross-fs-move-folder-dates",
+        &make_state(200),
+        std::slice::from_ref(&source),
+        &dst_dir,
+        &WriteOperationConfig::default(),
+        0,
+    );
+    assert!(result.is_ok(), "expected Ok, got {:?}", result);
+
+    let mtime = |path: &Path| {
+        filetime::FileTime::from_last_modification_time(&fs::metadata(path).expect("stat")).unix_seconds()
+    };
+    assert_eq!(mtime(&dst_dir.join("tree")), 1_611_909_015);
+    assert_eq!(mtime(&dst_dir.join("tree/populated")), 1_577_836_800);
+}
+
 // ============================================================================
 // The preview cache is bound to the operation's own sources
 // ============================================================================
@@ -333,6 +367,7 @@ fn a_local_move_never_acts_on_a_preview_of_a_different_selection() {
                     total_bytes: other_metadata.len(),
                     dedup_bytes: other_metadata.len(),
                     top_level_is_directory: false,
+                    top_level_modified_at: None,
                 },
             )],
             None,

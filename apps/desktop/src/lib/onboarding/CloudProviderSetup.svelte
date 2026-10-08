@@ -4,6 +4,7 @@
     import { ProviderSetupController } from '$lib/ai-provider-setup/provider-setup.svelte'
     import { tString } from '$lib/intl/messages.svelte'
     import { getCloudProvider } from '$lib/settings'
+    import { managedAiRefusalMessage } from '$lib/managed-policy/ai-refusal'
 
     /**
      * Per-provider tutorial in the onboarding wizard's step 2 right column: a provider
@@ -65,6 +66,8 @@
 
         {#if controller.secretError}
             <p class="status status-error" role="alert">{controller.secretError.title}</p>
+        {:else if controller.status === 'managed' && controller.managedRefusal}
+            <p class="status status-managed" role="status">{managedAiRefusalMessage(controller.managedRefusal)}</p>
         {:else if controller.status === 'checking'}
             <p class="status status-checking">{tString('onboarding.cloudSetup.status.checking')}</p>
         {:else if controller.status === 'auth-error'}
@@ -128,6 +131,10 @@
     .status {
         margin: 0;
         font-size: var(--font-size-sm);
+    }
+
+    .status-managed {
+        color: var(--color-text-secondary);
     }
 
     .status-checking {

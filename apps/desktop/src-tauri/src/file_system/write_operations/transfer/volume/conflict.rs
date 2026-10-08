@@ -5,7 +5,11 @@
 //! - Skip: Return None to skip this file
 //! - Overwrite (file→file): safe-replace — write into a temp sibling, then
 //!   delete the original and rename the temp in (`finalize_safe_replace`), so a
-//!   mid-stream failure can't lose both the old and the new copy
+//!   mid-stream failure can't lose both the old and the new copy. On a
+//!   destination that publishes every write whole (an object store), the write
+//!   replaces the original in place instead: the protocol keeps it readable
+//!   until the new bytes are complete, which is the same guarantee for one
+//!   request instead of a copy plus a delete
 //! - Overwrite (dir→dir): merge into the existing tree (no delete)
 //! - Overwrite (cross-type): only ever from a plain Overwrite a person answered
 //!   on a prompt for that SHAPE, carry included — rename the dest ASIDE, then
@@ -29,6 +33,7 @@ use super::super::super::state::WriteOperationState;
 use super::super::super::types::{
     ConflictResolution, VolumeCopyConfig, WriteConflictEvent, WriteConflictResolvedEvent, WriteOperationError,
 };
+use super::super::staged_write::Replaces;
 use super::displaced_destination::{DisplacedDestination, displace_destination};
 use super::finalize::temp_sibling_path;
 use super::item_identity::is_the_same_item;
@@ -38,12 +43,13 @@ use crate::file_system::volume::{EntryKind, Volume, VolumeError};
 
 /// Outcome of resolving a volume conflict.
 ///
-/// The caller writes streaming bytes to `write_path`. When `replace_after_write`
-/// is `Some(orig)`, `write_path` is a temp sibling on the destination volume:
-/// after the streaming write fully succeeds, the caller must call
-/// [`super::finalize::finalize_safe_replace`] to delete `orig` (which survived the whole write)
-/// and rename `write_path` → `orig`. When `replace_after_write` is `None`,
-/// `write_path` is the final destination and the caller writes directly.
+/// The caller writes streaming bytes to `write_path`. `replaces` says what that
+/// does to a file already at the name: under [`Replaces::ViaTemp`]`(orig)`,
+/// `write_path` is a temp sibling on the destination volume, and after the
+/// streaming write fully succeeds the caller must call
+/// [`super::finalize::finalize_safe_replace`] to delete `orig` (which survived
+/// the whole write) and rename `write_path` → `orig`. Otherwise `write_path` is
+/// the final destination and the caller writes directly.
 #[derive(Debug)]
 pub(super) struct ResolvedConflict {
     /// Where the streaming writer should land bytes.
@@ -54,10 +60,10 @@ pub(super) struct ResolvedConflict {
     /// placeholder is indistinguishable from an empty file the copy produced.
     /// `naming.rs::ClaimedName` is where the answer comes from.
     pub reserved_placeholder: bool,
-    /// `Some(orig)` ⇒ `write_path` is a temp sibling; after a successful write the
-    /// caller must delete `orig` (it survived the full write) then rename
-    /// `write_path` → `orig`. `None` ⇒ `write_path` is final, write directly.
-    pub replace_after_write: Option<PathBuf>,
+    /// What the write does to a file at the destination name
+    /// ([`Replaces`]). Drives the finalize, the failed-write cleanup, and the
+    /// journal's "this overwrote" at every write site.
+    pub replaces: Replaces,
     /// `Some` ⇒ a cross-type Overwrite renamed the entry at `write_path` aside
     /// to free the name. The caller owns it from here: dropped once what
     /// replaces it has landed, put back when it doesn't
@@ -132,7 +138,7 @@ pub(super) async fn resolve_volume_conflict(
         return Ok(Some(ResolvedConflict {
             write_path: unique.path,
             reserved_placeholder: unique.reserved_on_disk,
-            replace_after_write: None,
+            replaces: Replaces::Nothing,
             displaced: None,
         }));
     }
@@ -152,7 +158,7 @@ pub(super) async fn resolve_volume_conflict(
         return Ok(Some(ResolvedConflict {
             write_path: dest_path.to_path_buf(),
             reserved_placeholder: false,
-            replace_after_write: None,
+            replaces: Replaces::Nothing,
             displaced: None,
         }));
     }
@@ -529,11 +535,15 @@ async fn apply_volume_conflict_resolution(
             // Cmdr's UX promise is "Overwrite means merge for dirs, replace for files":
             //
             // - For files (file→file): SAFE-REPLACE. Stream into a temp sibling on the dest volume
-            //   and return `replace_after_write: Some(dest_path)`. The original survives the entire
+            //   and return `Replaces::ViaTemp(dest_path)`. The original survives the entire
             //   write; only after the temp is fully written does the caller delete the original and
             //   rename the temp into place (see `finalize_safe_replace`). A mid-stream failure
             //   (network drop, USB yank, cancel) leaves the original intact — we never lose both the
-            //   old and the new copy. DO NOT delete the dest here.
+            //   old and the new copy. DO NOT delete the dest here. A destination that
+            //   publishes every write whole (`Volume::publishes_writes_whole`, an
+            //   object store) gives that guarantee by protocol, so the write goes to
+            //   the original's own name (`Replaces::InPlace`): a temp there would be
+            //   a server-side copy plus a delete to land.
             // - For directories (same type): SKIP the delete entirely. The recursive copy merges into
             //   the existing tree; same-named files inside get overwritten by the streaming writers,
             //   files in dest that aren't in source are preserved.
@@ -562,12 +572,21 @@ async fn apply_volume_conflict_resolution(
             let dest_is_dir = resolve_dest_is_directory(dest_volume, dest_path).await?;
 
             if !dest_is_dir && !source_is_directory {
-                // file→file: safe-replace via a temp sibling. No delete here.
+                // file→file: in place where the destination publishes whole,
+                // else safe-replace via a temp sibling. No delete here.
+                if dest_volume.publishes_writes_whole() {
+                    return Ok(Some(ResolvedConflict {
+                        write_path: dest_path.to_path_buf(),
+                        reserved_placeholder: false,
+                        replaces: Replaces::InPlace,
+                        displaced: None,
+                    }));
+                }
                 let temp = temp_sibling_path(dest_path);
                 return Ok(Some(ResolvedConflict {
                     write_path: temp,
                     reserved_placeholder: false,
-                    replace_after_write: Some(dest_path.to_path_buf()),
+                    replaces: Replaces::ViaTemp(dest_path.to_path_buf()),
                     displaced: None,
                 }));
             }
@@ -583,7 +602,7 @@ async fn apply_volume_conflict_resolution(
             Ok(Some(ResolvedConflict {
                 write_path: dest_path.to_path_buf(),
                 reserved_placeholder: false,
-                replace_after_write: None,
+                replaces: Replaces::Nothing,
                 displaced,
             }))
         }
@@ -594,7 +613,7 @@ async fn apply_volume_conflict_resolution(
             Ok(Some(ResolvedConflict {
                 write_path: unique.path,
                 reserved_placeholder: unique.reserved_on_disk,
-                replace_after_write: None,
+                replaces: Replaces::Nothing,
                 displaced: None,
             }))
         }

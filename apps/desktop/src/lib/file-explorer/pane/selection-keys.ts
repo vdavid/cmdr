@@ -1,7 +1,7 @@
 /**
  * Pure helper: classifies a `keydown` in a file pane against the six selection
- * commands (`Space`, `Insert`, `⌘A`, `⌘⇧A`, `⇧8` / numpad `*`, and `⌥⇧=` /
- * numpad `⌥+` by default).
+ * commands (`Space`, `Insert`, `⌘A`, `⌘⇧A`, `*`, and `⌥⇧=` / numpad `⌥+` by
+ * default).
  *
  * Resolved through the command registry rather than hand-rolled key predicates, so
  * the keys stay customizable AND the match is exact: `⌥⌘A` (Ask Cmdr) is not `⌘A`,

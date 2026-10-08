@@ -1,0 +1,83 @@
+{
+  "adb.connect.adbNotInstalled": "Cmdr не удалось найти пакет Android platform tools.",
+  "@adb.connect.adbNotInstalled": {
+    "sourceHash": "a842454"
+  },
+  "adb.connect.openSettings": "Открыть настройки",
+  "@adb.connect.openSettings": {
+    "sourceHash": "3f94010"
+  },
+  "adb.connect.serverUnreachable": "Инструменты Android на этом Mac не ответили.",
+  "@adb.connect.serverUnreachable": {
+    "sourceHash": "b53716b"
+  },
+  "adb.connect.deviceGone": "Ваш телефон больше не подключен.",
+  "@adb.connect.deviceGone": {
+    "sourceHash": "00d5254"
+  },
+  "adb.connect.unauthorized": "Посмотрите на экран телефона и нажмите «Разрешить».",
+  "@adb.connect.unauthorized": {
+    "sourceHash": "6c2cf77"
+  },
+  "adb.connect.deviceTooOld": "Версия Android на этом телефоне слишком старая для просмотра в Cmdr.",
+  "@adb.connect.deviceTooOld": {
+    "sourceHash": "9ce52c1"
+  },
+  "adb.connect.timedOut": "Ваш телефон не ответил вовремя.",
+  "@adb.connect.timedOut": {
+    "sourceHash": "20ddfdc"
+  },
+  "adb.connect.transport": "Cmdr потерял соединение с вашим телефоном.",
+  "@adb.connect.transport": {
+    "sourceHash": "d90c37c"
+  },
+  "adb.connect.cancelled": "Вы отменили открытие телефона.",
+  "@adb.connect.cancelled": {
+    "sourceHash": "bc525aa"
+  },
+  "adb.connect.waitingHint": "Cmdr откроет телефон, как только вы разрешите доступ.",
+  "@adb.connect.waitingHint": {
+    "sourceHash": "d1df048"
+  },
+  "adb.readiness.waitingForAuthorization": "Ожидание нажатия «Разрешить» на телефоне",
+  "@adb.readiness.waitingForAuthorization": {
+    "sourceHash": "679558e"
+  },
+  "adb.readiness.offline": "Ваш телефон не отвечает. Включите экран или переподключите кабель.",
+  "@adb.readiness.offline": {
+    "sourceHash": "6061885"
+  },
+  "adb.readiness.noPermissions": "Этот Mac не может подключиться к телефону по USB. Попробуйте другой кабель или порт.",
+  "@adb.readiness.noPermissions": {
+    "sourceHash": "265d7ed"
+  },
+  "adb.hint.text": "Нужен доступ ко всей файловой системе? Включите отладку по USB.",
+  "@adb.hint.text": {
+    "sourceHash": "51bd05a"
+  },
+  "adb.hint.how": "Как это сделать",
+  "@adb.hint.how": {
+    "sourceHash": "7470bd3"
+  },
+  "adb.hint.dismiss": "Скрыть",
+  "@adb.hint.dismiss": {
+    "sourceHash": "48845bf"
+  },
+  "adb.disconnectDeviceAriaLabel": "Отключить {name}",
+  "@adb.disconnectDeviceAriaLabel": {
+    "sourceHash": "8f755cb"
+  },
+  "adb.disconnectBusyTooltip": "Cmdr еще работает с файлами на этом устройстве. Отключите его, когда работа завершится.",
+  "@adb.disconnectBusyTooltip": {
+    "sourceHash": "73c355e"
+  },
+  "adb.disconnectingDeviceAriaLabel": "Отключение: {name}…",
+  "@adb.disconnectingDeviceAriaLabel": {
+    "sourceHash": "50be3d4"
+  },
+  "adb.volumeLabelWithSuffix": "{deviceName} (ADB)",
+  "@adb.volumeLabelWithSuffix": {
+    "sourceHash": "98d6c20",
+    "sameAsSourceJustification": "Название бренда, стандартное обозначение или строка из подстановок; сохраняется без перевода."
+  }
+}

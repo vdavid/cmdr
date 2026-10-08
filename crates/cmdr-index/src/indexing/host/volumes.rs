@@ -25,6 +25,7 @@
 use std::future::Future;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, OnceLock, RwLock};
 
 use cmdr_fs::ignore_poison::RwLockIgnorePoison;
@@ -158,6 +159,16 @@ pub trait VolumeProvider: Send + Sync {
     /// mounted.
     fn is_mounted(&self, identity: MountIdentity) -> Option<bool>;
 
+    /// Every mount point in the host's mount table right now, as the table spells
+    /// it (the boot disk's `/` included), or `None` when the table couldn't be read.
+    ///
+    /// **Non-blocking**, like [`mount_identity`](Self::mount_identity): the table,
+    /// ❌ never the mounts. The boot-disk index stops at every filesystem mounted
+    /// inside its tree (`scanner::boot_tree_mounts`), and re-reads this at most
+    /// once a second while something asks. ❌ A caller never reads `None` as
+    /// "nothing is mounted".
+    fn mount_points(&self) -> Option<Vec<PathBuf>>;
+
     /// The SMB volume id for `path` when it resolves to an `smbfs`/`cifs` mount.
     ///
     /// It's the SAME id the host registers the share under, so a listing beneath
@@ -195,6 +206,21 @@ pub trait VolumeProvider: Send + Sync {
 /// swap it (see [`install_for_test`]); production writes it exactly once.
 static INSTALLED: RwLock<Option<Arc<dyn VolumeProvider>>> = RwLock::new(None);
 
+/// Bumped whenever the installed provider changes, and whenever a test fake's mount
+/// table does, so a cache of [`VolumeProvider::mount_points`] re-reads at once
+/// instead of serving the previous host's table until its refresh interval runs out.
+static TABLE_GENERATION: AtomicU64 = AtomicU64::new(0);
+
+/// Which generation of the mount table the installed provider is on. Only ever
+/// compared for equality.
+pub(crate) fn table_generation() -> u64 {
+    TABLE_GENERATION.load(Ordering::Acquire)
+}
+
+fn table_changed() {
+    TABLE_GENERATION.fetch_add(1, Ordering::AcqRel);
+}
+
 /// A [`set_volume_provider`] call that arrived after one was already installed.
 #[derive(Debug)]
 pub struct VolumeProviderAlreadySet;
@@ -208,6 +234,8 @@ pub(crate) fn set_volume_provider(provider: Arc<dyn VolumeProvider>) -> Result<(
         return Err(VolumeProviderAlreadySet);
     }
     *slot = Some(provider);
+    drop(slot);
+    table_changed();
     Ok(())
 }
 
@@ -230,6 +258,7 @@ pub(crate) fn current() -> Arc<dyn VolumeProvider> {
 #[must_use = "the provider is restored when the guard drops"]
 pub fn install_for_test(provider: Arc<dyn VolumeProvider>) -> TestProviderGuard {
     let previous = INSTALLED.write_ignore_poison().replace(provider);
+    table_changed();
     TestProviderGuard { previous }
 }
 
@@ -244,6 +273,7 @@ pub struct TestProviderGuard {
 impl Drop for TestProviderGuard {
     fn drop(&mut self) {
         *INSTALLED.write_ignore_poison() = self.previous.take();
+        table_changed();
     }
 }
 
@@ -279,6 +309,10 @@ impl VolumeProvider for NoVolumes {
     /// Nothing can unmount under a host that mounts nothing.
     fn is_mounted(&self, _identity: MountIdentity) -> Option<bool> {
         Some(true)
+    }
+    /// A host that mounts nothing has nothing mounted inside the boot tree.
+    fn mount_points(&self) -> Option<Vec<PathBuf>> {
+        Some(Vec::new())
     }
     fn smb_volume_id_for_path(&self, _path: &str) -> Option<String> {
         None
@@ -343,6 +377,7 @@ impl FakeVolumeProvider {
     /// drive reads. A root nothing was mounted at has no identity.
     pub fn mount(&self, root: impl Into<PathBuf>, identity: MountIdentity) -> &Self {
         self.mounts.write_ignore_poison().insert(root.into(), identity);
+        table_changed();
         self
     }
 
@@ -353,6 +388,7 @@ impl FakeVolumeProvider {
             mounts.insert(to.into(), identity);
         }
         drop(mounts);
+        table_changed();
         self
     }
 
@@ -360,6 +396,7 @@ impl FakeVolumeProvider {
     /// drive or a finished unmount reads.
     pub fn mark_unmounted(&self, root: impl AsRef<Path>) -> &Self {
         self.mounts.write_ignore_poison().remove(root.as_ref());
+        table_changed();
         self
     }
 
@@ -368,6 +405,7 @@ impl FakeVolumeProvider {
     /// delete, and must never flag a generation vanished.
     pub fn mark_table_unreadable(&self) -> &Self {
         *self.table_unreadable.write_ignore_poison() = true;
+        table_changed();
         self
     }
 }
@@ -417,6 +455,13 @@ impl VolumeProvider for FakeVolumeProvider {
                 .values()
                 .any(|mounted| *mounted == identity),
         )
+    }
+
+    fn mount_points(&self) -> Option<Vec<PathBuf>> {
+        if *self.table_unreadable.read_ignore_poison() {
+            return None;
+        }
+        Some(self.mounts.read_ignore_poison().keys().cloned().collect())
     }
 
     fn smb_volume_id_for_path(&self, _path: &str) -> Option<String> {

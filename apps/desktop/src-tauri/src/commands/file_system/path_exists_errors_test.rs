@@ -40,6 +40,12 @@ fn only_not_found_and_not_a_folder_are_a_definite_miss() {
 /// answers EACCES, which says nothing about whether the child is there.
 #[tokio::test]
 async fn a_stat_the_os_refuses_is_couldnt_tell() {
+    // Root bypasses the search bit (CAP_DAC_OVERRIDE), so EACCES can't be produced
+    // there, and the local Linux test lane runs in Docker as root.
+    // SAFETY: geteuid takes no arguments, touches no memory, and cannot fail.
+    if unsafe { libc::geteuid() } == 0 {
+        return;
+    }
     let dir = TestDir::new("path-exists-refused");
     let locked = dir.join("locked");
     std::fs::create_dir(&locked).unwrap();

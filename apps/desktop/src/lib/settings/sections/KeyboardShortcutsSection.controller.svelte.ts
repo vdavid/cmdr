@@ -30,8 +30,7 @@ import {
   removeShortcut,
   resetShortcut,
   resetAllShortcuts,
-  formatKeyCombo,
-  physicalKeyCombo,
+  capturedKeyCombo,
   isModifierKey,
   isMacOS,
   findConflictsForShortcut,
@@ -170,10 +169,9 @@ export function createKeyboardShortcutsController(getSearchQuery: () => string) 
     // Ignore pure modifier key presses
     if (isModifierKey(event.key)) return
 
-    // Format the key combo. `physicalKeyCombo` wins where a modifier changed what
-    // the layout typed, so a rebind persists `⌥⇧=` rather than the `⌥⇧±` macOS
-    // reports — which would be dead on every keyboard including this one.
-    const combo = physicalKeyCombo(event) ?? formatKeyCombo(event)
+    // A rebind persists `⌥⇧=` rather than the `⌥⇧±` macOS reports (dead on every
+    // keyboard), and a typed symbol by its character (`*`, on any layout).
+    const combo = capturedKeyCombo(event)
     pendingKey = combo
 
     // Clear any existing timeout
@@ -272,20 +270,8 @@ export function createKeyboardShortcutsController(getSearchQuery: () => string) 
       return
     }
 
-    // Backspace/Delete on an empty capture removes the shortcut being edited.
-    // On the add slot there's no real entry to remove, so it just cancels.
-    if (event.key === 'Backspace' || event.key === 'Delete') {
-      if (!pendingKey) {
-        event.preventDefault()
-        event.stopPropagation()
-        if (!isAddingNewShortcut) {
-          removeShortcut(editingShortcut.commandId, editingShortcut.index)
-        }
-        cancelEdit()
-        return
-      }
-    }
-
+    // ⌫ and ⌦ capture like any other key: they're real bindings (`nav.parent`,
+    // `file.delete`). Removing a binding is the pill's × button.
     handleKeyCapture(event)
   }
 
@@ -402,7 +388,7 @@ export function createKeyboardShortcutsController(getSearchQuery: () => string) 
 
     // It's a complete combo - format and keep it. Same physical-key rule as
     // capture, so pressing ⌥⇧= finds the binding stored under that spelling.
-    keySearchQuery = physicalKeyCombo(event) ?? formatKeyCombo(event)
+    keySearchQuery = capturedKeyCombo(event)
   }
 
   function handleKeyFilterKeyUp(event: KeyboardEvent) {

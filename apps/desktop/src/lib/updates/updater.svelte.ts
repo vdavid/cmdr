@@ -7,7 +7,10 @@ import {
   updateWriteBlocker,
 } from '$lib/tauri-commands'
 import type { BundleWriteBlocker } from '$lib/tauri-commands'
-import type { ServerRequestError } from '$lib/ipc/bindings'
+import { failureOf } from '$lib/ipc/typed-failure'
+import { UpdateDownloadFailure } from './update-download-failure'
+import { UpdateInstallFailure } from './update-install-failure'
+import type { ServerRequestError, UpdateCheckOutcome } from '$lib/ipc/bindings'
 import { getVersion } from '@tauri-apps/api/app'
 import { forceSave, getSetting, setSetting } from '$lib/settings/settings-store'
 import { getAppLogger } from '$lib/logging/logger'
@@ -25,6 +28,7 @@ import { isMacOS } from '$lib/shortcuts/key-capture'
 import {
   updateBlockerNotice,
   updateState,
+  type ManagedUpdateOutcome,
   type UpdateFailure,
   type UpdateInfo,
   type UpdateState,
@@ -222,6 +226,7 @@ export async function checkForUpdates(trigger: UpdateCheckTrigger): Promise<void
     updateState.nextVersion = null
     updateState.status = 'checking'
     updateState.failure = null
+    updateState.managed = null
   }
 
   log.debug('Checking for updates (current: v{version})...', { version: currentVersion })
@@ -246,22 +251,35 @@ async function runMacUpdateFlow(
   currentVersion: string,
   staged: string | null,
 ): Promise<void> {
-  let update: UpdateInfo | null
+  let outcome: UpdateCheckOutcome
   try {
-    update = await checkForUpdate()
+    outcome = await checkForUpdate(trigger)
   } catch (error) {
     void recordUpdateCheck(false)
     finishCheckWithFailure(trigger, error, 'check', staged)
     return
   }
+  // A managed answer counts as an answer too: the schedule then asks the backend once per interval rather than on every
+  // wake, each of which would log the same refusal.
   void recordUpdateCheck(true)
   // The check got an answer, so the next breakage speaks.
   checkFailureLog.clear()
 
-  if (update === null) {
-    finishCheckWithNoUpdate(trigger, currentVersion, staged)
-    return
+  switch (outcome.kind) {
+    case 'upToDate':
+      finishCheckWithNoUpdate(trigger, currentVersion, staged)
+      return
+    case 'updatesDisabledByPolicy':
+    case 'heldByPolicy':
+      finishCheckWithManagedOutcome(trigger, outcome, staged)
+      return
+    case 'automaticChecksDisabledByPolicy':
+      finishRefusedAutomaticCheck(trigger, staged)
+      return
+    case 'available':
+      break
   }
+  const update: UpdateInfo = { version: outcome.version }
 
   if (!supersedesStagedUpdate(update.version, staged)) {
     keepStagedUpdate(trigger, update.version)
@@ -279,15 +297,87 @@ async function runMacUpdateFlow(
   updateState.status = 'downloading'
 
   try {
-    await downloadUpdate(update.url, update.signature)
+    await downloadUpdate()
     updateState.status = 'installing'
     await installUpdate()
   } catch (error) {
+    if (refusedByPolicy(error)) {
+      finishDownloadInstallRefusedByPolicy(trigger, staged)
+      return
+    }
     finishCheckWithFailure(trigger, error, 'download-install', staged)
     return
   }
 
   finishCheckWithStagedUpdate(trigger, update)
+}
+
+/** Whether the backend refused the download or the install because a policy arrived after the check. */
+function refusedByPolicy(error: unknown): boolean {
+  return (
+    failureOf(UpdateDownloadFailure, error)?.type === 'blockedByPolicy' ||
+    failureOf(UpdateInstallFailure, error)?.type === 'blockedByPolicy'
+  )
+}
+
+/**
+ * The organization's policy answered the check: updates are off, or the newest release is past its ceiling. A terminal
+ * phase, not a failure: nothing to log above info, no failure copy, and no toast of its own (a background check that
+ * finds only a held release stays silent; Settings and a manual check's toast read the sentence off `managed`).
+ *
+ * A build already staged keeps its state: it's in the bundle and the next restart applies it whatever the policy says now.
+ */
+function finishCheckWithManagedOutcome(
+  trigger: UpdateCheckTrigger,
+  outcome: ManagedUpdateOutcome,
+  staged: string | null,
+): void {
+  log.info('The organization’s policy answered the update check: {kind}', { kind: outcome.kind })
+  reportUpdateCheck({
+    trigger,
+    outcome: outcome.kind === 'heldByPolicy' ? 'held_by_policy' : 'updates_disabled_by_policy',
+    stagedVersion: staged,
+  })
+  if (staged !== null) {
+    renudgeRestartIfDue()
+    return
+  }
+  updateState.status = 'idle'
+  updateState.nextVersion = null
+  updateState.managed = outcome
+}
+
+/**
+ * The backend refused a background check under the organization's `DisableAutomaticUpdateChecks`. That key locks
+ * `updates.autoCheck` off, so the settings overlay keeps the loop from starting; this is the backstop for a loop that
+ * started anyway (say, before the policy arrived), so it stops the loop. A check the person asks for still runs. Leaves
+ * nothing on screen: nobody asked.
+ */
+function finishRefusedAutomaticCheck(trigger: UpdateCheckTrigger, staged: string | null): void {
+  log.info('The organization turned automatic update checks off; stopping the background loop')
+  reportUpdateCheck({ trigger, outcome: 'automatic_checks_disabled_by_policy', stagedVersion: staged })
+  stopPollLoop()
+  if (staged !== null) return
+  updateState.status = 'idle'
+  updateState.previousVersion = null
+  updateState.nextVersion = null
+}
+
+/**
+ * A policy that arrived between the check and the download (or the install) refused the version. Quiet: the next check
+ * gets the organization's answer and says it. A staged build stays staged.
+ */
+function finishDownloadInstallRefusedByPolicy(trigger: UpdateCheckTrigger, staged: string | null): void {
+  const failure: UpdateCheckFailure = updateState.status === 'installing' ? 'install' : 'download'
+  log.info('The organization’s policy refused the update {phase}', { phase: failure })
+  reportUpdateCheck({ trigger, outcome: 'blocked_by_policy', failure, stagedVersion: staged })
+  if (staged !== null) {
+    updateState.status = 'ready'
+    updateState.nextVersion = staged
+    return
+  }
+  updateState.status = 'idle'
+  updateState.nextVersion = null
 }
 
 /**
@@ -333,7 +423,7 @@ async function runPluginUpdateFlow(
     return
   }
 
-  finishCheckWithStagedUpdate(trigger, { version: update.version, url: '', signature: '' })
+  finishCheckWithStagedUpdate(trigger, { version: update.version })
 }
 
 /**
@@ -428,8 +518,10 @@ function finishCheckWithNoUpdate(trigger: UpdateCheckTrigger, currentVersion: st
  *   warn, so a background tick on a flaky network doesn't trip the auto error reporter, and only a manifest Cmdr's own
  *   server refused or served unreadable logs at error. The plugin's check elsewhere isn't typed, and its failures are
  *   the network's as often as not, so it stays at warn.
- * - `'download-install'` failures (signature mismatch, FS errors, partial writes) reach a code
- *   path the user already opted into, so log at error so they DO trip auto-report.
+ * - `'download-install'` failures follow the same rule where they're typed (`downloadInstallLogLevel`): a macOS
+ *   download that the network or the host's bad moment stopped logs at warn. A signature mismatch, a disk failure, a
+ *   404 for the tarball, an install that broke, and the plugin's untyped failures log at error, so they DO trip
+ *   auto-report: they mean something is wrong with the release or this machine.
  *
  * Both reach the UI as `updateState.failure`, a typed value the toast and Settings word from the catalog. See
  * `apps/desktop/src-tauri/src/error_reporter/CLAUDE.md` § convention.
@@ -461,7 +553,14 @@ function finishCheckWithFailure(
     logCheckFailure(request, message)
   } else {
     standing = { phase: failure === 'install' ? 'install' : 'download' }
-    log.error('Download/install failed: {error}', { error: message })
+    const level = downloadInstallLogLevel(error)
+    if (level === 'error') {
+      log.error('Download/install failed: {error}', { error: message })
+    } else if (level === 'warn') {
+      log.warn('Download/install failed: {error}', { error: message })
+    } else {
+      log.info('Download/install not run: {error}', { error: message })
+    }
   }
 
   if (staged !== null) {
@@ -476,15 +575,27 @@ function finishCheckWithFailure(
   updateState.failure = standing
 }
 
+/**
+ * A download the network or the tarball host's bad moment stopped follows the check's rule (`serverRequestLogLevel`).
+ * Everything else stays at error: a signature mismatch, a disk failure, an install, and the plugin's untyped failures.
+ */
+function downloadInstallLogLevel(error: unknown): 'info' | 'warn' | 'error' {
+  const download = failureOf(UpdateDownloadFailure, error)
+  return download?.type === 'request' ? serverRequestLogLevel(download.failure) : 'error'
+}
+
 /** One line per failing condition until a check gets an answer, at the level the failure earns. */
 function logCheckFailure(request: ServerRequestError | null, message: string): void {
   const condition =
     request === null ? 'untyped' : request.type === 'refused' ? `refused ${String(request.status)}` : request.type
   if (!checkFailureLog.shouldLog(condition)) return
-  if (request !== null && serverRequestLogLevel(request) === 'error') {
+  const level = request === null ? 'warn' : serverRequestLogLevel(request)
+  if (level === 'error') {
     log.error('Check failed: {error}', { error: message })
-  } else {
+  } else if (level === 'warn') {
     log.warn('Check failed: {error}', { error: message })
+  } else {
+    log.info('Check not run: {error}', { error: message })
   }
 }
 
@@ -624,6 +735,7 @@ export function _resetUpdaterStateForTest(): void {
   updateState.status = 'idle'
   updateState.update = null
   updateState.failure = null
+  updateState.managed = null
   updateState.previousVersion = null
   updateState.nextVersion = null
 }

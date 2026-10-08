@@ -8,6 +8,8 @@
 import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest'
 import { mount, tick } from 'svelte'
 import type { BetaSignupResult } from '$lib/tauri-commands'
+import type { ManagedPolicyView } from '$lib/ipc/bindings'
+import { expectNoA11yViolations } from '$lib/test-a11y'
 
 const { openErrorReportDialogMock, checkForUpdatesMock, betaSignupMock } = vi.hoisted(() => ({
   openErrorReportDialogMock: vi.fn(),
@@ -36,6 +38,23 @@ vi.mock('$lib/updates/updater.svelte', async () => {
   return {
     ...real,
     checkForUpdates: checkForUpdatesMock,
+  }
+})
+
+// The organization's policy as this window shows it. Starts unmanaged; a test swaps in a view before mounting.
+const managedPolicy = vi.hoisted(() => ({ view: null as ManagedPolicyView | null }))
+
+vi.mock('$lib/managed-policy/managed-policy.svelte', async () => {
+  const real = await vi.importActual<typeof import('$lib/managed-policy/managed-policy.svelte')>(
+    '$lib/managed-policy/managed-policy.svelte',
+  )
+  const view = () => managedPolicy.view ?? real.UNMANAGED
+  const lockOf = (id: string) => real.settingLockIn(view(), id)
+  return {
+    ...real,
+    getManagedPolicyView: view,
+    isSettingLocked: (id: string) => lockOf(id)?.kind === 'fixed',
+    isSettingManaged: (id: string) => lockOf(id) !== undefined,
   }
 })
 
@@ -272,5 +291,73 @@ describe('UpdatesSection card groups', () => {
     await tick()
 
     expect(getEmailInput(target).value).toBe('tester@example.com')
+  })
+})
+
+describe('UpdatesSection under an organization’s policy', () => {
+  const managedView = (overrides: Partial<ManagedPolicyView>): ManagedPolicyView => ({
+    managed: true,
+    usageStatsDisabled: false,
+    reportsDisabled: false,
+    updates: { kind: 'enabled', automaticChecks: true, ceiling: null },
+    ai: { mode: 'allowed', allowedCloudHosts: null },
+    lockedSettings: [],
+    ...overrides,
+  })
+
+  beforeEach(() => {
+    _resetUpdaterStateForTest()
+    checkForUpdatesMock.mockClear()
+  })
+
+  afterEach(() => {
+    managedPolicy.view = null
+    _resetUpdaterStateForTest()
+    document.body.innerHTML = ''
+  })
+
+  it('turns the check button off and says why when the organization turns updates off', async () => {
+    managedPolicy.view = managedView({ updates: { kind: 'disabled' } })
+    const target = render()
+    await tick()
+
+    const button = getCheckButton(target)
+    expect(button.disabled).toBe(true)
+    expect(target.querySelector('.status-text')?.textContent).toBe('Your organization manages updates for Cmdr.')
+    expect(button.getAttribute('aria-describedby')).toBe(target.querySelector('.status')?.id)
+    await expectNoA11yViolations(target)
+  })
+
+  it('shows the ceiling sentence a check held back, with the button still live', async () => {
+    managedPolicy.view = managedView({ updates: { kind: 'enabled', automaticChecks: true, ceiling: '0.52' } })
+    realUpdateState.managed = { kind: 'heldByPolicy', available: '0.53.0', ceiling: '0.52' }
+    const target = render()
+    await tick()
+
+    expect(getCheckButton(target).disabled).toBe(false)
+    expect(target.textContent).toContain('Cmdr 0.53.0 is out, but your organization keeps this Mac on 0.52 or earlier.')
+  })
+
+  it('lists what the organization manages, first thing on the page', async () => {
+    managedPolicy.view = managedView({
+      usageStatsDisabled: true,
+      updates: { kind: 'enabled', automaticChecks: false, ceiling: '0.52' },
+    })
+    const target = render()
+    await tick()
+
+    const card = target.querySelector('.section-card-wrap')
+    expect(card?.querySelector('.section-card-label')?.textContent.trim()).toBe('Managed by your organization')
+    const lines = Array.from(card?.querySelectorAll('dt') ?? []).map(
+      (dt) => `${dt.textContent.trim()}: ${dt.nextElementSibling?.textContent.trim() ?? ''}`,
+    )
+    expect(lines).toEqual(['Usage stats: Off', 'Updates: Up to 0.52, checked by hand only'])
+    await expectNoA11yViolations(target)
+  })
+
+  it('shows no summary when nothing is managed', async () => {
+    const target = render()
+    await tick()
+    expect(target.textContent).not.toContain('Managed by your organization')
   })
 })

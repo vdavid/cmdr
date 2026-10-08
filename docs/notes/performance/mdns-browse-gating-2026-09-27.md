@@ -56,4 +56,6 @@ Checked on the after build over MCP, with a probe service registered by `dns-sd 
 - **Wakeups**: `top`'s `IDLEW` is unreliable on macOS 27 (hub rule), and the per-process wakeup counters are too noisy
   to isolate two threads on a loaded machine. The daemon's periodic interface check and query schedule are gone with it,
   so the wakeups go the same way as the CPU.
-- **The launch cost**: each launch now browses for about 20 s (warm-up plus linger) instead of forever.
+- **The launch cost**: each launch now browses for about 20 s (warm-up plus linger) instead of forever. The hosts it
+  finds get no SMB connection from that: share lists are read only once a Servers view opens (saved servers) or a host
+  is opened (found ones), per #324. The rule: `apps/desktop/src/lib/file-explorer/network/DETAILS.md`.

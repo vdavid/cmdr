@@ -44,6 +44,10 @@ async fn volume_read_stream_to_chunk_stream_calls_on_progress_per_chunk() {
         fn bytes_read(&self) -> u64 {
             self.read
         }
+
+        fn modified_at(&self) -> Option<std::time::SystemTime> {
+            None
+        }
     }
 
     let chunks = vec![vec![0u8; 64], vec![0u8; 64], vec![0u8; 64], vec![0u8; 64]];
@@ -98,6 +102,10 @@ async fn volume_read_stream_to_chunk_stream_surfaces_cancellation() {
         }
         fn bytes_read(&self) -> u64 {
             self.read
+        }
+
+        fn modified_at(&self) -> Option<std::time::SystemTime> {
+            None
         }
     }
 

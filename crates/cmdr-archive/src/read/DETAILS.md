@@ -97,7 +97,8 @@ maps it onto `FileEntry`. Inner paths are `/`-separated, no leading/trailing sla
 ## Resource caps (memory-amplification defense)
 
 The synthetic tree materializes one node (with a path string) per ancestor prefix of every entry, so a small central
-directory can expand into a huge tree — a browse-time DoS. Two caps bound it on both axes:
+directory can expand into a huge tree — a browse-time DoS. Two caps bound the tree on both axes, and a third bounds a
+decoder:
 
 - **Per-entry depth** (`name::MAX_COMPONENT_DEPTH`, 256): an entry named `a/a/…` with N components costs O(N) nodes
   whose path strings sum to O(N²) bytes; a `u16` name field allows N ≈ 32k (≈1 GB from one entry). Over-deep entries are
@@ -109,6 +110,13 @@ directory can expand into a huge tree — a browse-time DoS. Two caps bound it o
   Chromium ~400k); per-node path length is separately bounded by the 64 KB name field, so worst-case memory is bounded
   too. Tested via `build_tree`'s injectable cap (`tree_building_fails_when_node_count_exceeds_the_cap`) rather than a
   multi-million-node fixture.
+
+A third cap sits in a decoder, not the tree: **an xz block's LZMA2 dictionary** (`format::XZ_MEMORY_LIMIT_KIB`, 256 MiB
+plus 1 MiB). The block header names the dictionary and `lzma-rust2` allocates and zeroes it up front, so 40 hostile
+bytes asked for 4 GiB of real memory. `XzReader::new_mem_limit` refuses before allocating with
+`io::ErrorKind::OutOfMemory`, which `From<io::Error>` types as `TooLarge`. The constant's doc carries why 256 MiB (4×
+the largest preset). 7z has no equivalent knob: `sevenz-rust2` hardcodes an unlimited decoder memory limit (verified on
+0.23.0, 2026-10-05).
 
 ## Zip Slip guarantee (`sanitize_entry_name`)
 
@@ -193,6 +201,28 @@ heuristic + a CP437 suspicious-byte check) and decodes names into UTF-8 `String`
 directly. `non_utf8_name_is_decoded_best_effort` pins that a high-byte, non-UTF-8-flagged name decodes without erroring
 and preserves its ASCII parts.
 
+## Entry times (zip): a DOS-only time is the writer's wall clock (`zip_times.rs`)
+
+A zip entry's MS-DOS date-and-time field has no zone, and every tool that writes one alone (Windows Explorer, macOS
+Archive Utility, most DOS-era zippers) writes the local wall clock; `unzip -l` and Finder show it that way. So a
+DOS-only entry lists as that wall clock in the READER's local zone. An entry with a timestamp extra field (Info-ZIP `UT`
+`0x5455`, NTFS `0x000a`, PKWARE Unix `0x000d`) records the exact UTC second, and we take rc-zip's reading of it
+unchanged. Cmdr's own writer writes both (`../mutation/DETAILS.md`), so its archives list the same in any zone.
+
+- **Why a second walk**: rc-zip reads a DOS-only entry as UTC and its `Entry` doesn't say which source a time came from
+  (verified on `rc-zip` 5.4.1, `Entry::set_extra_field`, 2026-10-01). `zip_times::dos_only_wall_clocks` re-reads the
+  central directory by hand for each record's DOS field and extra-field tags. The `zip` crate can't stand in: its
+  per-entry accessors seek each local header. rc-zip's own parsers would need `winnow` 0.5 as a direct dependency.
+- **It's a cross-check, never a second authority**: it finds the directory the way rc-zip does (EOCD, then the zip64
+  record its locator points at), and it must agree with rc-zip's parse record for record (signature and CRC-32 in
+  order). Any surprise answers `None` and every entry keeps rc-zip's time, logged at debug.
+- **Cost**: one more pass over the directory bytes. On a remote source the `TailCachedSource` window usually holds the
+  whole directory, so it's no extra round trip; a directory bigger than the window is read twice.
+- **Accepted shift**: an archive an older Cmdr wrote (UTC DOS field, no `UT`) now lists hours off by the reader's
+  offset. David's call (#340): correct for every other tool's archives beats compatible with a short-lived writer bug.
+- **DST edges**: an ambiguous wall clock takes the earlier instant; a skipped one takes the offset just before the jump.
+- Tests: `zip_times_test.rs` reads with a fixed UTC+2 zone (`zip::parse_in`), so they don't depend on the machine's.
+
 ## Index cache (`ArchiveIndexCache`)
 
 A plain content cache keyed by `(path, size, mtime)`; hits are a cheap `Arc` clone. Any external edit changes size or
@@ -261,10 +291,11 @@ each wanted FILE member in ARCHIVE order, emits a header frame then its data chu
 consumer (`SubtreeExtractReader`) pulls members with `next_member()` and drains each with `next_chunk()`. Details that
 make it correct and bounded:
 
-- **Files only, never directories.** The wanted set is computed from the parsed tree (files under `inner_root`, with
-  their tree sizes so they match `scan_for_copy` totals). Directories — synthetic ones with no archive entry, and empty
-  explicit ones — carry no bytes, so the copy engine creates the destination folders from the tree and reserves the one
-  decode pass for byte-carrying entries (see the copy planner in
+- **Files only, never directories.** The wanted set is computed from the parsed tree (files under `inner_root`, each as
+  the `SubtreeMember` the producer sends: its tree size, so it matches `scan_for_copy` totals, and its tree date, so an
+  extracted file keeps it). Directories — synthetic ones with no archive entry, and empty explicit ones — carry no
+  bytes, so the copy engine creates the destination folders from the tree and reserves the one decode pass for
+  byte-carrying entries (see the copy planner in
   `apps/desktop/src-tauri/src/file_system/write_operations/transfer/volume/DETAILS.md` § "One-pass sequential extract").
 - **Early stop.** `stream_subtree` removes each delivered path from `wanted` and returns the moment it empties, so a
   subtree near the front of a large archive doesn't decode the tail. A not-wanted entry is still skipped through the one

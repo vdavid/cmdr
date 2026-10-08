@@ -227,6 +227,14 @@
   "@ai.translateError.unknownProvider.body": {
     "sourceHash": "7042a75"
   },
+  "ai.translateError.managed.title": "Cmdr 的 AI 由你的組織管理",
+  "@ai.translateError.managed.title": {
+    "sourceHash": "12f8233"
+  },
+  "ai.translateError.managed.body": "IT 人員可以告訴你能用哪些 AI 服務。",
+  "@ai.translateError.managed.body": {
+    "sourceHash": "cb7e811"
+  },
   "ai.cloud.serviceAria": "雲端 AI 服務",
   "@ai.cloud.serviceAria": {
     "sourceHash": "7dec1e0"
@@ -456,5 +464,33 @@
   "ai.secretError.genericBody": "請確認你的系統鑰匙圈可以使用，然後再試一次。如果還是這樣，請重新啟動 App。",
   "@ai.secretError.genericBody": {
     "sourceHash": "2ee417d"
+  },
+  "ai.secretError.removeTitle": "無法移除你已儲存的 API 金鑰。",
+  "@ai.secretError.removeTitle": {
+    "sourceHash": "5986628"
+  },
+  "ai.secretError.removeKeychainBody": "請開啟「鑰匙圈存取」，找到「Cmdr」項目，然後在那裡把它刪掉。",
+  "@ai.secretError.removeKeychainBody": {
+    "sourceHash": "4e3abe7"
+  },
+  "ai.managed.aiOff": "你的組織已關閉 Cmdr 的 AI。",
+  "@ai.managed.aiOff": {
+    "sourceHash": "25b7aef"
+  },
+  "ai.managed.cloudAiOff": "你的組織只允許使用裝置端 AI。",
+  "@ai.managed.cloudAiOff": {
+    "sourceHash": "894c53d"
+  },
+  "ai.managed.hostNotAllowed": "你的組織不允許使用這個 AI 服務。IT 人員可以告訴你能用哪些服務。",
+  "@ai.managed.hostNotAllowed": {
+    "sourceHash": "845a19f"
+  },
+  "ai.managed.localOnlyUnsupported": "你的組織只允許使用裝置端 AI，但這部 Mac 無法執行。",
+  "@ai.managed.localOnlyUnsupported": {
+    "sourceHash": "b760ca4"
+  },
+  "ai.managed.serviceNotAllowed": "你的組織不允許",
+  "@ai.managed.serviceNotAllowed": {
+    "sourceHash": "026e7e3"
   }
 }

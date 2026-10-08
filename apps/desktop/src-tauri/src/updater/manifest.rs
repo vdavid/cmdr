@@ -1,6 +1,6 @@
 //! Parses `latest.json` from the update server and determines whether an update is available.
 
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use std::collections::HashMap;
 
 /// The full `latest.json` manifest served by the update server.
@@ -17,10 +17,11 @@ pub struct PlatformEntry {
     pub signature: String,
 }
 
-/// Update metadata returned to the frontend when a newer version is available.
-#[derive(Debug, Clone, Serialize, specta::Type)]
+/// A newer release for this platform: what a check offers and `download_update` fetches. Stays in
+/// the backend; the frontend only ever sees the version.
+#[derive(Debug, Clone)]
 pub struct UpdateInfo {
-    pub version: String,
+    pub version: semver::Version,
     pub url: String,
     pub signature: String,
 }
@@ -80,7 +81,7 @@ pub fn check_manifest(manifest: &UpdateManifest, current_version: &str) -> Optio
 
     log::info!("Update available: {current} -> {remote} (platform={key})");
     Some(UpdateInfo {
-        version: manifest.version.clone(),
+        version: remote,
         url: entry.url.clone(),
         signature: entry.signature.clone(),
     })
@@ -112,7 +113,7 @@ mod tests {
     fn newer_version_with_this_platform_is_an_update() {
         let m = manifest("0.41.0", &["darwin-aarch64", "darwin-x86_64", "darwin-universal"]);
         let info = check_manifest(&m, "0.40.0").expect("0.41.0 is newer than 0.40.0");
-        assert_eq!(info.version, "0.41.0");
+        assert_eq!(info.version.to_string(), "0.41.0");
         assert_eq!(info.url, format!("https://example.invalid/{}.tar.gz", platform_key()));
         assert_eq!(info.signature, format!("sig-{}", platform_key()));
     }

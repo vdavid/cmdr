@@ -99,4 +99,8 @@ impl VolumeReadStream for MtpReadStream {
     // nothing between reads, so there's no in-flight transaction to abort. A
     // window read in flight when the stream is dropped self-heals via mtp-rs's
     // `TransactionScope` (see the connection layer's `read_next_window`).
+
+    fn modified_at(&self) -> Option<std::time::SystemTime> {
+        self.session.modified_at()
+    }
 }

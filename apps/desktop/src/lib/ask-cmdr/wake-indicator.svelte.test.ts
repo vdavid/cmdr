@@ -149,6 +149,32 @@ describe('the subscription', () => {
     expect(wakeIndicator.thinkingIn).toBeNull()
   })
 
+  it('lets an event that lands while the seed read is in flight win over the older seed', async () => {
+    let emit: ((payload: unknown) => void) | undefined
+    let releaseSeed: ((status: unknown) => void) | undefined
+    commands.onAgentWakeStatus.mockImplementation((cb: (payload: unknown) => void) => {
+      emit = cb
+      return Promise.resolve(() => {})
+    })
+    // The seed was read while the agent was still idle, but answers only after a wake started.
+    commands.agentWakeStatus.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          releaseSeed = resolve
+        }),
+    )
+
+    const started = startWakeIndicator()
+    for (let i = 0; i < 5; i++) await Promise.resolve()
+    expect(releaseSeed).toBeDefined()
+    emit?.({ phase: { phase: 'thinking', conversationId: 8 }, readiness: 'ready' })
+    releaseSeed?.({ phase: { phase: 'idle' }, readiness: 'needsApiKey' })
+    await started
+
+    expect(wakeIndicator.thinkingIn).toBe(8)
+    expect(wakeIndicator.readiness).toBe('ready')
+  })
+
   it('stays silent rather than guessing when the seed read throws', async () => {
     commands.agentWakeStatus.mockRejectedValue(new Error('no store'))
     commands.onAgentWakeStatus.mockResolvedValue(() => {})

@@ -19,7 +19,6 @@
 use std::collections::BTreeSet;
 use std::time::Instant;
 
-use crate::file_system::listing::cached_listing::LISTING_CACHE;
 use crate::file_system::listing::metadata::FileEntry;
 
 /// Per-column widths plus the code points that had to be estimated.
@@ -199,9 +198,7 @@ pub fn compute_brief_column_text_widths(
 
     let start = Instant::now();
 
-    let cache = LISTING_CACHE
-        .read()
-        .map_err(|e| BriefColumnsError::Other(format!("Failed to acquire cache lock: {}", e)))?;
+    let cache = super::operations::reconciled_cache(&[listing_id]);
 
     let listing = cache
         .get(listing_id)

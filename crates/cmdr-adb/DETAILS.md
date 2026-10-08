@@ -79,6 +79,12 @@ only the low nine bits anyway.
   len + message. `SND2` (feature `sendrecv_v2`) sends `SND2` + len + path then `SND2` + mode(u32) + flags(u32), then the
   same data stream. `SEND` truncates on open, which is why every write here stages (§ "The `Volume` answers").
 
+**Every length word is the device's to choose, so each is bounded before its buffer exists.** A sync payload (name,
+`DATA`, `FAIL` message) past `MAX_DATA_CHUNK` (64 KiB) and a shell frame past `shell::MAX_FRAME_PAYLOAD` (1 MiB, adbd's
+own buffer) are `AdbError::Protocol`. Before the caps, one hostile `DNT2` or stderr frame allocated 4 GiB; the
+`adb_sync` and `adb_shell` fuzz targets (`fuzz/DETAILS.md`) found both within a few hundred runs, and `sync_test.rs` /
+`shell_test.rs` pin them.
+
 **Shell** (`shell.rs`): `shell,v2,raw:<cmd>` (feature `shell_v2`) frames stdout, stderr, and the exit code as packets
 `[id: u8][len: u32 LE][payload]` with ids `0` stdin, `1` stdout, `2` stderr, `3` exit (payload one byte). A device
 without `shell_v2` (pre-Android 7, 2016) is refused with `AdbConnectError::DeviceTooOld` rather than guessed at: the
@@ -112,6 +118,13 @@ The volume is device-anchored, the same shape MTP has, and every answer below fo
   first and refuses `adb://<serial>/sdcard/../../etc`. Internally the device path is what the wire, the shell, and an
   error from the device carry; ❗ `probe` and `follow` take it directly, since handing one back through
   `get_metadata_impl` would be a bare path that the translation refuses.
+- **Copies keep the source's date** (the contract:
+  `apps/desktop/src-tauri/src/file_system/write_operations/transfer/volume/DETAILS.md` § "Copies keep the source's
+  date"). A read stream reports the mtime of the `STAT`/`STA2` its open already does (`SyncStat::modified_at`, `None`
+  before 1970 to match the listing); a push hands the stream's date to `DONE`, which must carry one, so a dateless
+  source lands dated now, as `adb push` does. ❗ `DONE`'s mtime is a u32 on both verb sets (`SND2` only adds flags), so
+  `done_mtime_word` clamps past 2106-02-07 and drops sub-seconds; the staging `mv -f` keeps the date. Both verb sets
+  have a cell (`a_copy_keeps_the_source_date[_over_the_v1_verbs]`).
 - **`rerooted` → `None`.** One volume per device; the pane's path is inside it. A device has no second root to offer.
 - **`lane_key` → the serial.** Two panes on one phone contend on one `adbd`, so they share a lane and the operation
   manager serializes their writes.
@@ -222,6 +235,14 @@ may be localized. So a non-zero exit is read through what the sync service says 
 panel. The probe classifies, ❌ never guards: asked before, it is a TOCTOU window (the two the backend accepts on
 purpose are listed under the `Volume` answers).
 
+**`create_directory_all` names a file in the way** as `NotADirectory(device_path)`, the contract every backend keeps
+(`conformance::assert_create_directory_all_refuses_a_file_in_the_way`). `mkdir -p` says "File exists" or "Not a
+directory" only on stderr, so both halves are the probe's: the leaf stat that already decides `AlreadyExisted` refuses a
+leaf that isn't a folder, and an ancestor is looked for only after the verb has refused, walking up to the nearest thing
+that exists (`file_above`). The probe follows links, so a path through a link to a folder is created into, which on a
+phone is most paths: `/sdcard` is one. The fake's `mkdir -p` resolves links and refuses a file the way a kernel does
+(`testing/tree.rs`), or neither cell would mean anything.
+
 **What a variant carries.** `VolumeError::NotFound` and `PermissionDenied` are defined to carry the PATH
 (`crates/cmdr-fs/src/volume/types.rs`), and the transfer layer forwards it straight into what the frontend renders as
 the missing file's name. The mapper takes the path it is mapping a failure for, so a pathless `NotFound` is not
@@ -255,6 +276,9 @@ A cell lives with whatever it **asserts**, never with whatever it connects to.
 - **`#[cfg(any(test, feature = "testing"))]`** widens `testing` and `volume::testing` to `pub` for the app's suites; the
   crate's own `dev-dependencies` self-entry turns the feature on for every dev target and leaves it off for the lib, so
   a shipped build carries no fixture. ❌ Never gate a fixture on `cfg(test)` alone.
+- **Codec cells that need exact bytes, not a conversation**, script the peer: `AdbConnection::scripted` plays a fixed
+  byte string and discards what we write (`AdbConnection` holds any `AsyncRead + AsyncWrite` stream for this). The
+  `fuzzing` feature's `fuzzing` module drives the sync and shell readers the same way for the fuzz targets.
 - **A real-device pass is pending** (§ "Known gaps"). The fake server implements what the AOSP docs say; the documented
   differences between the docs and a phone's `adbd` are what that pass is for.
 
@@ -265,6 +289,18 @@ A cell lives with whatever it **asserts**, never with whatever it connects to.
   matters, route resumable streams through the bounded `read_range` primitive instead.
 - **`sendrecv_v2` compression flags** (brotli, lz4, zstd) are off on purpose; measure before enabling, since the device
   does the compressing.
+- **Bulk writes run at `adb push` speed; small files pay about 260 ms EACH.** `SEND` frames at the protocol's 64 KiB
+  maximum with no per-chunk round trip, so one large file lands as fast as the CLI does (about 28 MB/s through Cmdr
+  against 31 to 35 MB/s for `adb push`, same cable, same minute). A copy of many small files is another story: 200 files
+  of 20 KB took 52 s where `adb push` of the folder took under 10 s for those plus 300 MB. The cost is round trips, not
+  bytes: each file is staged TWICE and moved twice. The transfer engine streams into its own `<name>.cmdr-tmp-<uuid>`;
+  `write_from_stream` stages that AGAIN as `<name>.cmdr-tmp-<uuid>.cmdr-tmp-<pid>-<n>`, stats the target, and `mv -f`s
+  it onto the engine's temp (about 135 ms); then the engine's landing rename stats and `mv`s once more (about 125 ms). A
+  device shell round trip is about 60 ms, and every stat opens its own sync socket. (Measured on a Pixel 9 Pro XL over
+  USB, dev build, 2026-09-30.) The inner stage is redundant when the caller is already writing to a staging name, which
+  would save one `mv` and one stat per file. It stays for now because telling "the caller staged this" from the NAME is
+  the inference `cmdr_fs::staging` warns against; the clean fix is for the caller to say so (a write mode, or a
+  capability the engine reads), which touches the `Volume` trait.
 - **Wireless debugging** (`adb pair`) is out of scope: the server owns pairing, and a paired device appears in
   `track-devices` like any other.
 - **Real-device pass pending**: the authorize prompt, an `unauthorized` → `device` transition mid-session, a 2 GB `RECV`

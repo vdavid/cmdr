@@ -20,6 +20,7 @@ import { getVolumes } from '$lib/stores/volume-store.svelte'
 import { listSavedServers } from '$lib/tauri-commands'
 import { getAppLogger } from '$lib/logging/logger'
 import type { ExplorerAPI } from '../explorer-api'
+import { detached } from './detached'
 import type { CommandHandlerRecord } from './types'
 
 const log = getAppLogger('servers')
@@ -88,38 +89,42 @@ export const serversHandlers = {
     // at a host, which has no place for the other commands to act on but does have a
     // name to edit.
     if (explorerRef && getFocusedPaneVolumeId() === 'network') {
-      void editServerInView({
-        row: explorerRef.getFocusedPaneHubRow(),
-        host: explorerRef.getFocusedPaneNetworkHost(),
-      })
+      detached(
+        editServerInView({
+          row: explorerRef.getFocusedPaneHubRow(),
+          host: explorerRef.getFocusedPaneNetworkHost(),
+        }),
+      )
       return
     }
     const server = target(explorerRef)
     if (!server) return
-    void runServerRowAction({ action: 'edit', volumeId: server.volumeId, volumeName: server.name })
+    detached(runServerRowAction({ action: 'edit', volumeId: server.volumeId, volumeName: server.name }))
   },
 
   'servers.connect': ({ explorerRef }) => {
     // ⌘K, Finder's binding for the same thing. ❗ It opens the sheet directly
     // rather than through `serverCommandTarget`: adding a server is about no
     // server in particular, so what the pane is pointing at is irrelevant.
-    void openAddServerSheet({
-      // An SMB address opens the host it saved, as its share list, mounting the
-      // share the address named: its connect is a share MOUNT, not a session.
-      onSmbHandOff: (handOff) => {
-        explorerRef?.openSmbHandOffInFocusedPane(handOff)
-      },
-      // An SFTP or WebDAV server is a place, so the focused pane goes there: a sheet
-      // that closed on a live server with every pane where it was reads as a Connect
-      // that did nothing. The root lands on the place's start folder.
-      onConnected: ({ volumeId, root }) => {
-        if (!explorerRef) return
-        explorerRef.navigate({
-          pane: explorerRef.getFocusedPane(),
-          to: { selectVolume: { volumeId, path: root } },
-          source: 'user',
-        })
-      },
-    })
+    detached(
+      openAddServerSheet({
+        // An SMB address opens the host it saved, as its share list, mounting the
+        // share the address named: its connect is a share MOUNT, not a session.
+        onSmbHandOff: (handOff) => {
+          explorerRef?.openSmbHandOffInFocusedPane(handOff)
+        },
+        // An SFTP, WebDAV, or S3 server is a place, so the focused pane goes there: a sheet
+        // that closed on a live server with every pane where it was reads as a Connect
+        // that did nothing. The root lands on the place's start folder.
+        onConnected: ({ volumeId, root }) => {
+          if (!explorerRef) return
+          explorerRef.navigate({
+            pane: explorerRef.getFocusedPane(),
+            to: { selectVolume: { volumeId, path: root } },
+            source: 'user',
+          })
+        },
+      }),
+    )
   },
 } satisfies Partial<CommandHandlerRecord>

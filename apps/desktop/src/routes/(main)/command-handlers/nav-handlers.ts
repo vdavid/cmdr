@@ -5,6 +5,7 @@
  * the adapter acks on real completion (the ack-timing contract).
  */
 import type { CommandArgs } from '$lib/commands'
+import { detached } from './detached'
 import type { CommandHandlerRecord } from './types'
 
 export const navHandlers = {
@@ -24,10 +25,16 @@ export const navHandlers = {
     explorerRef?.navigate({ pane: explorerRef.getFocusedPane(), to: { history: 'forward' }, source: 'user' })
   },
 
+  'nav.goToRoot': ({ explorerRef }) => {
+    // Fire-and-forget: `goToRoot` asks the backend which volume holds the path
+    // first, and nothing here awaits the landing (no MCP round-trip on this id).
+    detached(explorerRef?.goToRoot())
+  },
+
   'nav.goHome': ({ explorerRef }) => {
     // Fire-and-forget: `goHome` resolves the default volume before committing, but
     // nothing here awaits the landing (no MCP round-trip on this id).
-    void explorerRef?.goHome()
+    detached(explorerRef?.goHome())
   },
 
   'nav.home': ({ explorerRef }) => {

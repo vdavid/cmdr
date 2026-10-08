@@ -6,7 +6,8 @@
 import { getSetting } from '$lib/settings/settings-store'
 import { getEffectiveScale, onDebouncedScaleChange } from '$lib/text-size.svelte'
 import type { FileEntry } from '../types'
-import { colorizeSizeString, formatNumber, formatSizeTriads } from '../selection/selection-info-utils'
+import { colorizeSize, formatNumber, formatSizeTriads } from '../selection/selection-info-utils'
+import { bytesLabel, type TieredSize } from '$lib/units/byte-size'
 import { tString } from '$lib/intl/messages.svelte'
 import type { MessageKey } from '$lib/intl/keys.gen'
 import type { GitCountKind, GitEntryMeta } from '$lib/ipc/bindings'
@@ -381,8 +382,8 @@ function formatBytesHtml(bytes: number): string {
 }
 
 /** Formats a single size line: "Label: 1.23 GB (1 234 567 890 bytes)" with colored triads and a colored unit-tagged value. */
-function sizeLineHtml(label: string, bytes: number, formatSize: (b: number) => string): string {
-  return `${label}: ${colorizeSizeString(formatSize(bytes))} (${formatBytesHtml(bytes)} bytes)`
+function sizeLineHtml(label: string, bytes: number, formatSize: (b: number) => TieredSize): string {
+  return `${label}: ${colorizeSize(formatSize(bytes))} (${formatBytesHtml(bytes)} ${bytesLabel(bytes)})`
 }
 
 /**
@@ -392,7 +393,7 @@ function sizeLineHtml(label: string, bytes: number, formatSize: (b: number) => s
 export function buildFileSizeTooltip(
   logical: number | null | undefined,
   physical: number | null | undefined,
-  formatSize: (bytes: number) => string,
+  formatSize: (bytes: number) => TieredSize,
 ): string | { html: string } {
   // Group A wire-format: IPC sends `null`, not `undefined`. Use `!= null` to handle both.
   if (logical == null && physical == null) return ''
@@ -403,7 +404,7 @@ export function buildFileSizeTooltip(
   }
   const size = logical ?? physical
   if (size == null) return ''
-  return { html: `${colorizeSizeString(formatSize(size))} (${formatBytesHtml(size)} bytes)` }
+  return { html: `${colorizeSize(formatSize(size))} (${formatBytesHtml(size)} ${bytesLabel(size)})` }
 }
 
 /**
@@ -415,12 +416,12 @@ export function buildSelectionSizeTooltip(
   selectedPhysical: number,
   totalLogical: number,
   totalPhysical: number,
-  formatSize: (bytes: number) => string,
+  formatSize: (bytes: number) => TieredSize,
 ): { html: string } | undefined {
   if (totalLogical <= 0) return undefined
 
   const selLine = (label: string, bytes: number) =>
-    `${label}: ${colorizeSizeString(formatSize(bytes))} (${formatBytesHtml(bytes)} bytes)`
+    `${label}: ${colorizeSize(formatSize(bytes))} (${formatBytesHtml(bytes)} ${bytesLabel(bytes)})`
   const selectedLabel = tString('fileExplorer.selectionTooltip.selected')
   const ofTotalLabel = tString('fileExplorer.selectionTooltip.ofTotal')
   const lines: string[] = [selLine(selectedLabel, selectedLogical), selLine(ofTotalLabel, totalLogical)]
@@ -554,7 +555,7 @@ export function buildDirSizeTooltip(
   recursiveFileCount: number,
   recursiveDirCount: number,
   scanning: boolean,
-  formatSize: (bytes: number) => string,
+  formatSize: (bytes: number) => TieredSize,
   formatNum: (n: number) => string,
   complete?: boolean | null,
   stale?: boolean | null,
@@ -573,7 +574,9 @@ export function buildDirSizeTooltip(
       lines.push(sizeLineHtml(tString('fileExplorer.dirSize.contentLabel'), recursiveSize, formatSize))
       lines.push(sizeLineHtml(tString('fileExplorer.dirSize.onDiskLabel'), recursivePhysicalSize, formatSize))
     } else {
-      lines.push(`${colorizeSizeString(formatSize(recursiveSize))} (${formatBytesHtml(recursiveSize)} bytes)`)
+      lines.push(
+        `${colorizeSize(formatSize(recursiveSize))} (${formatBytesHtml(recursiveSize)} ${bytesLabel(recursiveSize)})`,
+      )
     }
 
     // File/folder counts with "no" for zero

@@ -411,6 +411,93 @@ describe('OperationLogDialog partly rolled back', () => {
   })
 })
 
+/**
+ * Which rows are undos of which. The journal links every rollback to the operation it
+ * reversed (`rollsBackOpId`) and every reversed operation to its newest rollback
+ * (`inverseOpId`); without these lines a rollback reads as an unrelated delete or move.
+ */
+describe('OperationLogDialog rollback links', () => {
+  beforeEach(() => {
+    closeOperationLog()
+    document.body.innerHTML = ''
+    rollbackOperationMock.mockReset()
+  })
+
+  /** The undo row (a copy's reversal is journaled as a delete) and the copy it undid. */
+  function linkedPair(): OperationRow[] {
+    return [
+      opRow({
+        opId: 'op-undo',
+        kind: 'delete',
+        rollbackState: 'notRollbackable',
+        notRollbackableReason: 'permanentDelete',
+        rollsBackOpId: 'op-orig',
+      }),
+      opRow({ opId: 'op-orig', kind: 'copy', itemCount: 3, rollbackState: 'rolledBack', inverseOpId: 'op-undo' }),
+    ]
+  }
+
+  function relationLine(target: HTMLElement, opId: string): HTMLElement | null {
+    return target.querySelector<HTMLElement>(`#op-relation-${opId}`)
+  }
+
+  it('marks a rollback row with the operation it undid', async () => {
+    setEntries(linkedPair())
+    const target = await mountDialog()
+
+    expect(relationLine(target, 'op-undo')?.textContent.trim()).toBe(
+      'Rollback of “Copied 3 items” from 2026-07-09 12:00',
+    )
+  })
+
+  it('points the undone row at its latest rollback', async () => {
+    setEntries(linkedPair())
+    const target = await mountDialog()
+
+    expect(relationLine(target, 'op-orig')?.textContent.trim()).toBe(
+      'Latest rollback: “Deleted 3 items” from 2026-07-09 12:00',
+    )
+  })
+
+  it('takes the user to the original row, focused and highlighted, from the rollback row', async () => {
+    setEntries(linkedPair())
+    const target = await mountDialog()
+
+    const link = relationLine(target, 'op-undo')?.querySelector<HTMLButtonElement>('button')
+    if (!link) throw new Error('the rollback row has no link to its original')
+    expect(link.textContent.trim()).toBe('Copied 3 items')
+    link.click()
+    await tick()
+
+    // Focus moves, so a keyboard or screen-reader user lands where a sighted one looks.
+    expect(document.activeElement?.id).toBe('op-head-op-orig')
+    expect(target.querySelector('.op-highlighted')?.querySelector('#op-head-op-orig')).not.toBeNull()
+  })
+
+  it('names an original that isn’t loaded without offering a link to nowhere', async () => {
+    setEntries([opRow({ opId: 'op-undo', kind: 'delete', rollsBackOpId: 'op-far-away' })])
+    const target = await mountDialog()
+
+    expect(relationLine(target, 'op-undo')?.textContent.trim()).toBe('Rollback of an earlier operation')
+    expect(relationLine(target, 'op-undo')?.querySelector('button')).toBeNull()
+  })
+
+  it('says nothing on an undone row whose rollback isn’t in the list', async () => {
+    // A rollback this dialog just started: the row knows its id, but the new
+    // operation's own row arrives only with the next read.
+    setEntries([opRow({ opId: 'op-orig', rollbackState: 'rollingBack', inverseOpId: 'op-new' })])
+    const target = await mountDialog()
+
+    expect(relationLine(target, 'op-orig')).toBeNull()
+  })
+
+  it('has no a11y violations with linked rows rendered', async () => {
+    setEntries(linkedPair())
+    const target = await mountDialog()
+    await expectNoA11yViolations(target)
+  })
+})
+
 describe('OperationLogDialog not-rollbackable reasons', () => {
   beforeEach(() => {
     closeOperationLog()

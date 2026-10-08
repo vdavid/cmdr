@@ -26,8 +26,8 @@ use super::{
     SORT_BY_EXTENSION_ID, SORT_BY_MODIFIED_ID, SORT_BY_NAME_ID, SORT_BY_SIZE_ID, SORT_DESCENDING_ID, SettingsChanged,
     TAB_CLOSE_ID, TAB_CLOSE_OTHERS_ID, TAB_PIN_ID, VIEW_MODE_BRIEF_LEFT_ID, VIEW_MODE_BRIEF_RIGHT_ID,
     VIEW_MODE_FULL_LEFT_ID, VIEW_MODE_FULL_RIGHT_ID, VIEW_SET_MODE_COMMAND_ID, VIEW_SHOW_HIDDEN_COMMAND_ID,
-    VIEWER_EDIT_COPY_ID, VIEWER_EDIT_CUT_ID, VIEWER_EDIT_PASTE_ID, VIEWER_SELECT_ALL_ID, VIEWER_WORD_WRAP_ID, ViewMode,
-    ViewModeChanged, menu_id_to_command,
+    VIEWER_CONTEXT_COPY_ID, VIEWER_CONTEXT_SELECT_ALL_ID, VIEWER_EDIT_COPY_ID, VIEWER_EDIT_CUT_ID,
+    VIEWER_EDIT_PASTE_ID, VIEWER_SELECT_ALL_ID, VIEWER_WORD_WRAP_ID, ViewMode, ViewModeChanged, menu_id_to_command,
 };
 
 /// Removes macOS system-injected items from the Edit menu and registers the Help menu.
@@ -197,6 +197,16 @@ fn viewer_edit_action_for(menu_id: &str) -> Option<ViewerEditActionKind> {
     match menu_id {
         VIEWER_EDIT_COPY_ID => Some(ViewerEditActionKind::Copy),
         VIEWER_SELECT_ALL_ID => Some(ViewerEditActionKind::SelectAll),
+        _ => None,
+    }
+}
+
+/// The viewer right-click menu's action a clicked item id names, or `None` when the id isn't one
+/// of them.
+fn viewer_context_action_for(menu_id: &str) -> Option<ViewerEditActionKind> {
+    match menu_id {
+        VIEWER_CONTEXT_COPY_ID => Some(ViewerEditActionKind::Copy),
+        VIEWER_CONTEXT_SELECT_ALL_ID => Some(ViewerEditActionKind::SelectAll),
         _ => None,
     }
 }
@@ -397,6 +407,18 @@ pub fn handle_menu_event(app: &AppHandle<tauri::Wry>, event: tauri::menu::MenuEv
         return;
     }
 
+    // === The viewer's right-click menu: emit to the viewer it was popped over ===
+    // `show_viewer_context_menu` focused that window before the popup, so the focused one is it.
+    if let Some(action) = viewer_context_action_for(id) {
+        let Some(label) = focused_viewer_label(app) else {
+            log::warn!(target: "menu", "Viewer context item {id} clicked with no viewer focused, ignoring");
+            return;
+        };
+        use tauri_specta::Event as _;
+        let _ = crate::window_events::ViewerContextMenuAction { action }.emit_to(app, &label);
+        return;
+    }
+
     // === Viewer Edit > Cut / Paste: forward the native selector to the focused text field ===
     // The viewer's search box, the only editable thing in that window, which is also why
     // `apply_menu_item_states` greys these two out while it doesn't have focus. ❗ Never the
@@ -543,7 +565,6 @@ pub fn handle_menu_event(app: &AppHandle<tauri::Wry>, event: tauri::menu::MenuEv
     // `MenuState.context.open_with_apps` and call the launch helper directly.
     #[cfg(target_os = "macos")]
     if let Some(bundle_id) = id.strip_prefix(super::open_with::OPEN_WITH_ID_PREFIX) {
-        use crate::file_system::open_with::open_paths_with;
         use std::path::PathBuf;
 
         let menu_state = app.state::<MenuState<tauri::Wry>>();
@@ -555,9 +576,7 @@ pub fn handle_menu_event(app: &AppHandle<tauri::Wry>, event: tauri::menu::MenuEv
         if let Some(app_path) = app_path
             && !paths.is_empty()
         {
-            if let Err(e) = open_paths_with(&paths, &app_path) {
-                log::warn!("Open with failed for {bundle_id}: {e}");
-            }
+            super::open_with::launch_with(app, paths, app_path);
         } else {
             log::warn!("Open with: missing app or paths for {bundle_id}");
         }
@@ -567,7 +586,7 @@ pub fn handle_menu_event(app: &AppHandle<tauri::Wry>, event: tauri::menu::MenuEv
     // === Open with → Other… : show NSOpenPanel, then launch ===
     #[cfg(target_os = "macos")]
     if id == super::open_with::OPEN_WITH_OTHER_ID {
-        use crate::file_system::open_with::{open_paths_with, pick_app_via_open_panel};
+        use crate::file_system::open_with::pick_app_via_open_panel;
         use std::path::PathBuf;
 
         let menu_state = app.state::<MenuState<tauri::Wry>>();
@@ -583,9 +602,8 @@ pub fn handle_menu_event(app: &AppHandle<tauri::Wry>, event: tauri::menu::MenuEv
         // the main thread by Tauri/muda, so this is safe.
         if let Some(app_path) = pick_app_via_open_panel()
             && !paths.is_empty()
-            && let Err(e) = open_paths_with(&paths, &app_path)
         {
-            log::warn!("Open with (Other…) failed: {e}");
+            super::open_with::launch_with(app, paths, app_path);
         }
         return;
     }
@@ -787,6 +805,29 @@ mod viewer_edit_action_tests {
         assert_eq!(viewer_edit_action_for(SELECT_ALL_ID), None);
         assert_eq!(viewer_edit_action_for(VIEWER_WORD_WRAP_ID), None);
         assert_eq!(viewer_edit_action_for("unknown_id"), None);
+    }
+
+    #[test]
+    fn the_viewer_context_menus_items_name_their_action() {
+        assert_eq!(
+            viewer_context_action_for(VIEWER_CONTEXT_COPY_ID),
+            Some(ViewerEditActionKind::Copy)
+        );
+        assert_eq!(
+            viewer_context_action_for(VIEWER_CONTEXT_SELECT_ALL_ID),
+            Some(ViewerEditActionKind::SelectAll)
+        );
+    }
+
+    /// ❗ The bar's pair defers to the search box when it has focus; the right-click pair
+    /// always acts on the file. Crossing the two would copy the query from a menu opened over
+    /// the text, or the reverse.
+    #[test]
+    fn the_bar_and_the_context_menu_never_share_an_item() {
+        assert_eq!(viewer_context_action_for(VIEWER_EDIT_COPY_ID), None);
+        assert_eq!(viewer_context_action_for(VIEWER_SELECT_ALL_ID), None);
+        assert_eq!(viewer_edit_action_for(VIEWER_CONTEXT_COPY_ID), None);
+        assert_eq!(viewer_edit_action_for(VIEWER_CONTEXT_SELECT_ALL_ID), None);
     }
 }
 

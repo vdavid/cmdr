@@ -22,7 +22,8 @@ static INDEX: OnceLock<Index> = OnceLock::new();
 /// Wire the index subsystems to this app and keep the handle: runtime, event
 /// sink, config, volumes, priority policy, and the master switch.
 ///
-/// Call once, at the very top of `setup()`. Every seam is best-effort and logs
+/// Call once, early in `setup()`: right after the instance lock, before anything
+/// can start background work. Every seam is best-effort and logs
 /// rather than failing the launch: a missing data dir leaves the index
 /// unconfigured rather than pointing it at a relative path.
 pub fn install(app: &AppHandle) {
@@ -51,9 +52,18 @@ pub fn install(app: &AppHandle) {
     // resolves the data dir for itself: policy belongs to the product, and this is
     // the one place that turns stored settings into what the index acts on. The
     // media-policy IPC setters re-apply their own fields as the user changes them.
+    //
+    // The drive index goes to the cache dir, which backups skip; building the index moves
+    // one an older build left in the data dir (`cmdr_index`'s `drive_index_relocation.rs`).
+    // That move is why `lib.rs` claims the instance lock BEFORE calling this.
     match crate::config::resolved_app_data_dir(app) {
         Ok(data_dir) => {
-            builder = builder.config(crate::commands::media_index::index_config_from(data_dir, &settings));
+            let drive_index_dir = drive_index_dir(&data_dir);
+            builder = builder.config(crate::commands::media_index::index_config_from(
+                data_dir,
+                drive_index_dir,
+                &settings,
+            ));
         }
         Err(e) => log::warn!(target: "indexing", "index not configured (no data dir): {e}"),
     }
@@ -69,6 +79,17 @@ pub fn install(app: &AppHandle) {
         }
         Err(e) => crate::log_error!(target: "indexing", "the index was built before install(): {e}"),
     }
+}
+
+/// Where the drive index lives, given the data dir: the cache dir's `drive-index/`
+/// (`crate::config::drive_index_dir`), or the data dir itself on a system with no
+/// cache dir. The index and search's direct reads both take it from here, so they
+/// can't disagree.
+pub fn drive_index_dir(data_dir: &std::path::Path) -> std::path::PathBuf {
+    crate::config::drive_index_dir().unwrap_or_else(|| {
+        log::warn!(target: "indexing", "no cache dir on this system; the drive index stays in the data dir");
+        data_dir.to_path_buf()
+    })
 }
 
 /// The user default that turns the phased first index off, read once per launch.

@@ -6,7 +6,6 @@ import {
   formatSizeTriads,
   formatSizeForDisplay,
   formatSizeText,
-  tierClassForUnit,
   formatDate,
   buildDateTooltip,
   getSizeDisplay,
@@ -14,10 +13,11 @@ import {
   sizeTierClasses,
   formatNumber,
   calculatePercentage,
-  colorizeSizeString,
+  colorizeSize,
 } from './selection-info-utils'
 import { formatDateForDisplay } from '$lib/settings/format-utils'
 import { _setLocaleForTests } from '$lib/intl/locale'
+import { _setCatalogForTests } from '$lib/intl/messages.svelte'
 import type { FileEntry } from '../types'
 
 // Helper to create a basic file entry
@@ -285,41 +285,31 @@ describe('sizeTierClasses', () => {
   })
 })
 
-describe('tierClassForUnit', () => {
-  it('maps bytes to size-bytes', () => {
-    expect(tierClassForUnit('bytes')).toBe('size-bytes')
-  })
-
-  it('maps KB and kB to size-kb', () => {
-    expect(tierClassForUnit('KB')).toBe('size-kb')
-    expect(tierClassForUnit('kB')).toBe('size-kb')
-  })
-
-  it('maps MB to size-mb', () => {
-    expect(tierClassForUnit('MB')).toBe('size-mb')
-  })
-
-  it('maps GB to size-gb', () => {
-    expect(tierClassForUnit('GB')).toBe('size-gb')
-  })
-
-  it('maps TB and PB to size-tb (capped)', () => {
-    expect(tierClassForUnit('TB')).toBe('size-tb')
-    expect(tierClassForUnit('PB')).toBe('size-tb')
+describe('colorizeSize', () => {
+  it('tiers a size by the tier it carries', () => {
+    expect(colorizeSize({ text: '1.02 MB', tier: 2 })).toBe('<span class="size-mb">1.02 MB</span>')
+    expect(colorizeSize({ text: '512 bytes', tier: 0 })).toBe('<span class="size-bytes">512 bytes</span>')
   })
 })
 
-describe('colorizeSizeString', () => {
-  it('tiers a plain en-US value by its unit suffix', () => {
-    expect(colorizeSizeString('1.02 MB')).toBe('<span class="size-mb">1.02 MB</span>')
-    expect(colorizeSizeString('512 bytes')).toBe('<span class="size-bytes">512 bytes</span>')
+describe('size-tier coloring in another language', () => {
+  // The tier rides beside the text, so a translated unit ("Mo") colors the
+  // same as "MB". Parsing the unit word back out of the text broke the moment
+  // a translator touched it.
+  afterEach(() => {
+    _setCatalogForTests('fr', null)
+    _setLocaleForTests(null)
   })
 
-  it('still tiers a localized (comma-decimal) value correctly', () => {
-    // The last-space parse must survive a German decimal comma in the value:
-    // the unit is still the last ASCII-space-separated token.
-    expect(colorizeSizeString('1,02 MB')).toBe('<span class="size-mb">1,02 MB</span>')
-    expect(colorizeSizeString('1.234,56 GB')).toBe('<span class="size-gb">1.234,56 GB</span>')
+  it('colors a French dynamic size by its magnitude', () => {
+    _setCatalogForTests('fr', { 'common.sizeUnit.mebibyte': 'Mio', 'common.sizeUnit.gibibyte': 'Gio' })
+    _setLocaleForTests('fr-FR')
+    expect(formatSizeForDisplay(3 * 1024 ** 2, { unit: 'dynamic', format: 'binary' })).toEqual([
+      { value: '3,00 Mio', tierClass: 'size-mb' },
+    ])
+    expect(formatSizeForDisplay(3 * 1024 ** 3, { unit: 'dynamic', format: 'binary' })).toEqual([
+      { value: '3,00 Gio', tierClass: 'size-gb' },
+    ])
   })
 })
 
@@ -362,17 +352,17 @@ describe('formatSizeForDisplay', () => {
 
     it('returns size-kb for binary 1024', () => {
       const result = formatSizeForDisplay(1024, { unit: 'dynamic', format: 'binary' })
-      expect(result).toEqual([{ value: '1.00 KB', tierClass: 'size-kb' }])
+      expect(result).toEqual([{ value: '1.00 KiB', tierClass: 'size-kb' }])
     })
 
     it('returns size-mb for ~1 MB (matches feature spec example "1.02 MB")', () => {
       const result = formatSizeForDisplay(1_073_208, { unit: 'dynamic', format: 'binary' })
-      expect(result).toEqual([{ value: '1.02 MB', tierClass: 'size-mb' }])
+      expect(result).toEqual([{ value: '1.02 MiB', tierClass: 'size-mb' }])
     })
 
     it('returns size-gb for ~1 GB binary', () => {
       const result = formatSizeForDisplay(1024 ** 3, { unit: 'dynamic', format: 'binary' })
-      expect(result).toEqual([{ value: '1.00 GB', tierClass: 'size-gb' }])
+      expect(result).toEqual([{ value: '1.00 GiB', tierClass: 'size-gb' }])
     })
 
     it('returns size-tb for TB and beyond', () => {
@@ -399,9 +389,9 @@ describe('formatSizeForDisplay', () => {
   })
 
   describe('forced unit modes (kB / MB / GB)', () => {
-    it("forces kB even for sub-KB values, but tier stays size-bytes (binary → 'KB')", () => {
+    it("forces kB even for sub-KB values, but tier stays size-bytes (binary → 'KiB')", () => {
       const result = formatSizeForDisplay(512, { unit: 'kB', format: 'binary' })
-      expect(result).toEqual([{ value: '0.50 KB', tierClass: 'size-bytes' }])
+      expect(result).toEqual([{ value: '0.50 KiB', tierClass: 'size-bytes' }])
     })
 
     it("forces kB with SI casing ('kB') and 1000-based math; tier matches magnitude", () => {
@@ -417,13 +407,13 @@ describe('formatSizeForDisplay', () => {
 
     it('forces GB even for very small values; tier still reflects bytes-magnitude', () => {
       const result = formatSizeForDisplay(512, { unit: 'GB', format: 'binary' })
-      expect(result[0].value).toBe('0.00 GB')
+      expect(result[0].value).toBe('0.00 GiB')
       expect(result[0].tierClass).toBe('size-bytes')
     })
 
-    it('binary MB on 1 MiB returns exactly 1.00 MB with size-mb tier', () => {
+    it('binary MB on 1 MiB returns exactly 1.00 MiB with size-mb tier', () => {
       const result = formatSizeForDisplay(1024 ** 2, { unit: 'MB', format: 'binary' })
-      expect(result).toEqual([{ value: '1.00 MB', tierClass: 'size-mb' }])
+      expect(result).toEqual([{ value: '1.00 MiB', tierClass: 'size-mb' }])
     })
 
     it('SI MB on 1 MB (10^6) returns exactly 1.00 MB with size-mb tier', () => {
@@ -433,22 +423,22 @@ describe('formatSizeForDisplay', () => {
 
     it('zero bytes in any forced unit keeps the bytes-tier color', () => {
       const result = formatSizeForDisplay(0, { unit: 'kB', format: 'binary' })
-      expect(result).toEqual([{ value: '0.00 KB', tierClass: 'size-bytes' }])
+      expect(result).toEqual([{ value: '0.00 KiB', tierClass: 'size-bytes' }])
     })
 
-    it('binary kB on exactly 1 KiB returns 1.00 KB with size-kb tier', () => {
+    it('binary kB on exactly 1 KiB returns 1.00 KiB with size-kb tier', () => {
       const result = formatSizeForDisplay(1024, { unit: 'kB', format: 'binary' })
-      expect(result).toEqual([{ value: '1.00 KB', tierClass: 'size-kb' }])
+      expect(result).toEqual([{ value: '1.00 KiB', tierClass: 'size-kb' }])
     })
 
-    it("binary 1 GiB forced as 'GB' is 1.00 GB with size-gb tier", () => {
+    it("binary 1 GiB forced as 'GB' is 1.00 GiB with size-gb tier", () => {
       const result = formatSizeForDisplay(1024 ** 3, { unit: 'GB', format: 'binary' })
-      expect(result).toEqual([{ value: '1.00 GB', tierClass: 'size-gb' }])
+      expect(result).toEqual([{ value: '1.00 GiB', tierClass: 'size-gb' }])
     })
 
-    it('forced MB on a sub-KB file: shows as 0.00 MB but tiers as size-bytes', () => {
+    it('forced MB on a sub-KiB file: shows as 0.00 MiB but tiers as size-bytes', () => {
       const result = formatSizeForDisplay(349, { unit: 'MB', format: 'binary' })
-      expect(result).toEqual([{ value: '0.00 MB', tierClass: 'size-bytes' }])
+      expect(result).toEqual([{ value: '0.00 MiB', tierClass: 'size-bytes' }])
     })
 
     it('forced kB on a TB-sized file: tier caps at size-tb', () => {
@@ -482,7 +472,7 @@ describe('formatSizeText', () => {
   })
 
   it('renders a friendly unit in dynamic mode', () => {
-    expect(formatSizeText(1_073_208, { unit: 'dynamic', format: 'binary' })).toBe('1.02 MB')
+    expect(formatSizeText(1_073_208, { unit: 'dynamic', format: 'binary' })).toBe('1.02 MiB')
   })
 
   it('renders grouped digits and no unit word in bytes mode, like the column', () => {

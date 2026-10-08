@@ -420,7 +420,9 @@ impl Bench {
         // `index_predates_exclusion_policy` answers yes and every coverage query
         // short-circuits to "walk the whole scope", so the frontier never shrinks.
         writer.send(WriteMessage::BumpCurrentEpoch).expect("seed the epoch");
-        writer.send(exclusion_policy_stamp_message()).expect("stamp the policy");
+        writer
+            .send(exclusion_policy_stamp_message(space.exclusion_scope().tier()))
+            .expect("stamp the policy");
         writer.flush_blocking().expect("flush the preparation");
 
         let bench = Self {
@@ -456,7 +458,7 @@ impl Bench {
     /// claim that an unstamped index makes the frontier permanent.
     fn coverage_short_circuits(&self) -> bool {
         let conn = self.read_conn();
-        crate::indexing::scanner::index_predates_exclusion_policy(&conn)
+        crate::indexing::scanner::index_predates_exclusion_policy(&conn, self.space.exclusion_scope().tier())
     }
 
     // ── The stitch ───────────────────────────────────────────────────
@@ -664,9 +666,15 @@ impl Bench {
         let Some(index_path) = self.space.index_relative(&display) else {
             return Vec::new();
         };
-        let frontier = coverage_for_scope(&conn, &index_path, &display, CoverageDimension::Listing)
-            .map(|map| map.frontier)
-            .unwrap_or_default();
+        let frontier = coverage_for_scope(
+            &conn,
+            &index_path,
+            &display,
+            self.space.exclusion_scope().tier(),
+            CoverageDimension::Listing,
+        )
+        .map(|map| map.frontier)
+        .unwrap_or_default();
         self.frontier_query_nanos
             .fetch_add(started.elapsed().as_nanos() as u64, Ordering::Relaxed);
         frontier

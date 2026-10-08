@@ -24,7 +24,7 @@ pub fn search_schema() -> Value {
             },
             "sizeMin": {
                 "type": "string",
-                "description": "Minimum file size, human-readable (for example, \"1 MB\", \"500 KB\")"
+                "description": "Minimum file size, human-readable (for example, \"1 MB\", \"500 KiB\")"
             },
             "sizeMax": {
                 "type": "string",

@@ -11,7 +11,7 @@
 
 export interface DeleteAiModelFixture {
   /** The installed model's size, as the settings section formats it. `null` renders the fallback. */
-  modelSizeFormatted: string | null
+  modelSizeFormatted: string
   /** Mid-delete: the title, body, and both buttons all change. */
   isDeleting: boolean
 }

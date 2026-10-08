@@ -16,6 +16,8 @@
         onViewerPullProgress,
         onViewerWordWrapToggled,
         onViewerEditAction,
+        onViewerContextMenuAction,
+        showViewerContextMenu,
         activateWindowMenu,
     } from '$lib/tauri-commands'
     import { createViewerPull } from './viewer-pull.svelte'
@@ -25,7 +27,7 @@
     import { getSetting, setSetting } from '$lib/settings'
     import { initWindowSettings, initWindowLanguageSync } from '$lib/settings/window-settings'
     import { initAccentColor, cleanupAccentColor } from '$lib/accent-color'
-    import { initReduceTransparency, cleanupReduceTransparency } from '$lib/reduce-transparency'
+    import { initGlassMaterial, cleanupGlassMaterial } from '$lib/glass-material'
     import { initTextSize, cleanupTextSize } from '$lib/text-size.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
     import { getAppLogger } from '$lib/logging/logger'
@@ -37,7 +39,7 @@
     import { createIndexingPoll } from './viewer-indexing-poll'
     import { handleOpenFailure } from './viewer-open-failure'
     import { createViewerKeyboard, isSearchInputFocused } from './viewer-keyboard'
-    import { runViewerEditAction } from './viewer-menu-actions'
+    import { runViewerContextMenuAction, runViewerEditAction } from './viewer-menu-actions'
     import { createViewerTail } from './viewer-tail.svelte'
     import {
         createViewerSelection,
@@ -54,7 +56,6 @@
     import ViewerTextCursor from './ViewerTextCursor.svelte'
     import { getViewerShowTextCursor } from '$lib/settings/reactive-settings.svelte'
     import TextInput from '$lib/ui/TextInput.svelte'
-    import ViewerContextMenu from './ViewerContextMenu.svelte'
     import ViewerToolbar from './ViewerToolbar.svelte'
     import ViewerStatusBar from './ViewerStatusBar.svelte'
     import ViewerRow from './ViewerRow.svelte'
@@ -172,14 +173,13 @@
     })
 
     /**
-     * Flip the tail-mode flag and push the new value down to the backend. Tail
-     * mode is per-session only: it defaults off on every viewer open and isn't
-     * persisted across sessions. Calling without a sessionId (during startup)
-     * is a no-op.
+     * Set the tail-mode flag and push the new value down to the backend. Tail
+     * mode is per-session only: it starts off on every viewer open unless the
+     * opener asked for `tail=1`, and isn't persisted across sessions. Calling
+     * without a sessionId (during startup) is a no-op.
      */
-    async function toggleTailMode(): Promise<void> {
+    async function setTailMode(next: boolean): Promise<void> {
         if (!sessionId) return
-        const next = !tailMode
         tailMode = next
         try {
             const res = await viewerSetTailMode(sessionId, next)
@@ -278,6 +278,7 @@
     let unlistenMcpFocus: UnlistenFn | undefined
     let unlistenWordWrap: UnlistenFn | undefined
     let unlistenEditAction: UnlistenFn | undefined
+    let unlistenContextMenuAction: UnlistenFn | undefined
     let unlistenWindowFocus: UnlistenFn | undefined
 
     const textWidthTracker = createTextWidthTracker({
@@ -394,6 +395,7 @@
     // earlier run was heading. `keyboard` is defined below and read lazily here.
     const pointerDrag = createViewerPointerDrag({
         getContentRef: () => scroll.contentRef,
+        getScrollScale: () => scroll.scrollScale,
         getRowText: (row) => scroll.rowCache.get(row)?.text,
         hasSelection: () => selection.selection !== null,
         setAnchor: (point) => {
@@ -409,6 +411,11 @@
             selection.setRange(range)
         },
         takeFocus: () => scroll.containerRef?.focus({ preventScroll: true }),
+        showContextMenu: () => {
+            showViewerContextMenu(selection.selection !== null).catch((e: unknown) => {
+                log.warn("Couldn't open the viewer's context menu: {error}", { error: String(e) })
+            })
+        },
     })
 
     // Every effect below drives the text / virtual-scroll pipeline. In media mode the
@@ -473,6 +480,12 @@
     $effect(() => {
         if (!isTextView) return
         textCursor.runMeasureEffect()
+    })
+
+    // Tail follow: a viewport parked at the end stays there as the file grows
+    $effect(() => {
+        if (!isTextView) return
+        scroll.runTailFollowEffect(tailMode)
     })
 
     function closeWindow() {
@@ -547,10 +560,8 @@
         },
         isCopyConfirmOpen: () => copyFlow.isConfirmOpen,
         isCopyRefuseOpen: () => copyFlow.isRefuseOpen,
-        isContextMenuOpen: () => pointerDrag.contextMenuPos !== null,
         cancelCopyConfirm: copyFlow.cancelConfirm,
         dismissCopyRefuse: copyFlow.dismissRefuse,
-        closeContextMenu: pointerDrag.closeContextMenu,
         logEscape: () => {
             log.debug('ESC pressed, searchVisible={searchVisible}, windowReady={windowReady}', {
                 searchVisible: search.searchVisible,
@@ -561,7 +572,7 @@
             void copyFlow.handleCopy()
         },
         toggleTailMode: () => {
-            void toggleTailMode()
+            void setTailMode(!tailMode)
         },
         toggleWordWrap,
         closeWindow,
@@ -613,7 +624,6 @@
         if (loading || !sessionId || next === viewMode) return
         if (next === 'media' && availableMediaKind(media.kind, media.lastMediaKind) === null) return
         if (next !== 'text') search.closeSearch()
-        pointerDrag.closeContextMenu()
         if (next === 'text' && media.kind !== 'text') {
             await media.viewAsText()
         } else if (next === 'media' && media.kind === 'text') {
@@ -695,8 +705,6 @@
         totalBytes = result.totalBytes
         // `initialLines.totalRows` is the row total and says whether it's counted or
         // sampled; `result.totalLines` is the PHYSICAL line count, for the status bar.
-        // (`result.estimatedTotalLines` carries the same row number as `totalRows.rows`;
-        // the wire keeps its old spelling until the IPC rename lands.)
         totalRows = result.initialLines.totalRows.kind === 'exact' ? result.initialLines.totalRows.rows : null
         estimatedRows = result.initialLines.totalRows.rows
         totalLines = result.totalLines
@@ -768,7 +776,7 @@
                 const remaining = fullLoadRows.rows - result.initialLines.rows.length
                 const startRow = result.initialLines.firstRowNumber + result.initialLines.rows.length
                 const tFetch = performance.now()
-                viewerGetLines(result.sessionId, 'line', startRow, remaining)
+                viewerGetLines(result.sessionId, 'row', startRow, remaining)
                     .then((chunk) => {
                         log.debug('FullLoad fetch remaining {count} {rowsNoun} took {ms}ms', {
                             count: chunk.rows.length,
@@ -810,6 +818,12 @@
             }
             if (!isTextView) return
             runViewerEditAction(action, viewerEditActionDeps)
+        })
+
+        // Copy / Select all from the native right-click menu over the text, always the file's.
+        unlistenContextMenuAction = await onViewerContextMenuAction(({ action }) => {
+            if (!isTextView) return
+            runViewerContextMenuAction(action, viewerEditActionDeps)
         })
 
         // On macOS the app-level menu bar is shared across windows, so each window swaps in its
@@ -859,6 +873,7 @@
         unlistenMcpFocus?.()
         unlistenWordWrap?.()
         unlistenEditAction?.()
+        unlistenContextMenuAction?.()
         unlistenWindowFocus?.()
     }
 
@@ -923,7 +938,7 @@
 
         await initAccentColor()
 
-        await initReduceTransparency()
+        await initGlassMaterial()
 
         // Seeds the store AND the reactive layer that `<Size>` and friends read.
         // `window-settings.ts` knows the viewer has no store capability (see
@@ -959,8 +974,12 @@
             pull.report(progress)
         })
 
+        // `tail=1`: the opener wants a live view (Help > View debug log), so the
+        // viewer starts tailed and parked at the end of the file.
+        const openTailed = params.get('tail') === '1'
         try {
             await openViewerSession(pathParam)
+            if (openTailed && viewMode === 'text') await setTailMode(true)
         } catch (e) {
             const failure = handleOpenFailure(log, 'Open', e)
             error = failure.message
@@ -969,6 +988,7 @@
             loading = false
             await tick()
             scroll.containerRef?.focus()
+            if (tailMode) scroll.pinToEnd()
 
             // `setTimeout(0)`, NOT `requestAnimationFrame`: macOS WKWebView
             // throttles (or fully starves) rAF in windows that opened without
@@ -988,7 +1008,7 @@
     onDestroy(() => {
         unsubscribeLanguage?.()
         cleanupAccentColor()
-        cleanupReduceTransparency()
+        cleanupGlassMaterial()
         cleanupTextSize()
         cleanupListeners()
         search.destroy()
@@ -1037,7 +1057,7 @@
         onModeChange={(mode: ViewerDisplayMode) => { void switchViewMode(mode) }}
         onEncodingChange={(enc: FileEncoding) => void handleEncodingChange(enc)}
         onToggleTail={() => {
-            void toggleTailMode()
+            void setTailMode(!tailMode)
         }}
     />
     <!--
@@ -1297,18 +1317,6 @@
     />
 </main>
 
-{#if pointerDrag.contextMenuPos !== null}
-    <ViewerContextMenu
-        x={pointerDrag.contextMenuPos.x}
-        y={pointerDrag.contextMenuPos.y}
-        hasSelection={selection.selection !== null}
-        onCopy={() => {
-            void copyFlow.handleCopy()
-        }}
-        onSelectAll={keyboard.handleSelectAllShortcut}
-        onClose={pointerDrag.closeContextMenu}
-    />
-{/if}
 
 <ViewerCopyDialogs
     confirmBytes={copyFlow.confirmBytes}

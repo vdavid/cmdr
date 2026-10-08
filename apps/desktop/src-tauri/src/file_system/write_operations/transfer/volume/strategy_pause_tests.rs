@@ -31,7 +31,11 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex as StdMutex};
 use std::time::Duration;
 
-use crate::file_system::volume::{InMemoryVolume, LocalPosixVolume, Volume, VolumeError};
+use super::super::faulty_volume::forward_volume_methods;
+use crate::file_system::volume::{
+    InMemoryVolume, LocalPosixVolume, StreamLength, StreamWriteProgress, Volume, VolumeError, VolumeReadStream,
+    WriteMode,
+};
 use crate::test_support::TestDir;
 
 /// Waits until the copy has reported at least `target` bytes. Progress is the
@@ -435,4 +439,111 @@ async fn unpaused_mtp_copy_streams_straight_through() {
     let l = log.lock().unwrap();
     assert_eq!(l.releases, 0, "no pause ⇒ no release");
     assert_eq!(l.opens, vec![0], "no pause ⇒ a single open at offset 0");
+}
+
+/// A destination that buffers ahead of the wire, the way S3 fills a part: it
+/// drains the whole source the moment the write starts, lets the test pause
+/// the operation (`drained` / `go`), and only then "sends", parking first on
+/// the stream's `stop_signal`.
+struct BufferingDest {
+    inner: Arc<InMemoryVolume>,
+    drained: Arc<tokio::sync::Notify>,
+    go: Arc<tokio::sync::Semaphore>,
+}
+
+impl Volume for BufferingDest {
+    forward_volume_methods!(inner => name, root, list_directory, get_metadata, exists, is_directory, delete, rename);
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+    fn supports_streaming(&self) -> bool {
+        true
+    }
+    fn write_from_stream<'a>(
+        &'a self,
+        dest: &'a Path,
+        _mode: WriteMode,
+        length: StreamLength,
+        mut stream: Box<dyn VolumeReadStream>,
+        on_progress: &'a (dyn Fn(StreamWriteProgress) -> ControlFlow<()> + Sync),
+    ) -> std::pin::Pin<Box<dyn Future<Output = Result<u64, VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            let stop = stream.stop_signal();
+            let mut bytes = Vec::new();
+            while let Some(chunk) = stream.next_chunk().await {
+                bytes.extend(chunk?);
+            }
+            self.drained.notify_one();
+            let _permit = self.go.acquire().await;
+            if stop.should_stop().await {
+                return Err(VolumeError::Cancelled("stopped while paused".to_string()));
+            }
+            self.inner.create_file(dest, &bytes).await?;
+            let written = bytes.len() as u64;
+            let _ = on_progress(StreamWriteProgress {
+                bytes_written: written,
+                expected_length: length,
+            });
+            Ok(written)
+        })
+    }
+}
+
+/// ❗ The S3 case: a destination that drained the source before the pause
+/// still parks its sending on the operation's pause, through the `stop_signal`
+/// the engine's checkpoint stream hands it, and finishes on resume. Pre-fix
+/// the stream answered no signal, so the "upload" ran to its end while paused.
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn a_destination_that_buffers_ahead_parks_on_the_operation_pause() {
+    let source = Arc::new(InMemoryVolume::new("Source"));
+    source
+        .create_file(Path::new("/big.bin"), &vec![9u8; 3 * 1024 * 1024])
+        .await
+        .expect("the source file is seeded");
+    let source: Arc<dyn Volume> = source;
+    let drained = Arc::new(tokio::sync::Notify::new());
+    let go = Arc::new(tokio::sync::Semaphore::new(0));
+    let dest: Arc<dyn Volume> = Arc::new(BufferingDest {
+        inner: Arc::new(InMemoryVolume::new("Dest")),
+        drained: Arc::clone(&drained),
+        go: Arc::clone(&go),
+    });
+    let state = make_state();
+    let progress = ObservedProgress::new(&state, "buffering-copy");
+
+    let state_drv = Arc::clone(&state);
+    let progress_drv = Arc::clone(&progress.source);
+    let op = tokio::spawn(async move {
+        copy_single_path(
+            &source,
+            Path::new("/big.bin"),
+            Some(false),
+            SourceFileFacts::default(),
+            &dest,
+            Path::new("/big.bin"),
+            &state_drv,
+            &CreatedPaths::default(),
+            &progress_drv,
+            None,
+            WriteStaging::Stage,
+        )
+        .await
+    });
+
+    drained.notified().await;
+    state.pause_gate.pause();
+    go.add_permits(1);
+    // allowed-test-sleep: "the paused upload doesn't finish" is the subject; a
+    // thing that must NOT happen has no event to wait on.
+    tokio::time::sleep(test_support::PARK_WINDOW).await;
+    assert!(!op.is_finished(), "the buffered upload ran to its end while paused");
+
+    state.pause_gate.resume();
+    let bytes = tokio::time::timeout(Duration::from_secs(10), op)
+        .await
+        .expect("the resumed copy completes")
+        .expect("the copy task doesn't panic")
+        .expect("the resumed copy succeeds");
+    assert_eq!(bytes, 3 * 1024 * 1024);
 }

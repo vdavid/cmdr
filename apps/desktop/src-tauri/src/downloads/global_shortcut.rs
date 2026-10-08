@@ -43,15 +43,6 @@ pub struct GlobalShortcutFired;
 
 /// Typed errors from a registration attempt. The FE branches on `kind`;
 /// never match on the message string.
-///
-/// Two variants is deliberately the whole surface. `InvalidBinding` is the
-/// only failure we can disambiguate cheaply (via `Shortcut::from_str` BEFORE
-/// the plugin call). Every other plugin failure — including the "another app
-/// holds it" case — lands in `PluginError` carrying the underlying message.
-/// The Settings row renders the message tail when one is present; there's no
-/// user action that depends on distinguishing "in use by another app" from
-/// "allocation failure" (both mean "pick a different combo or move on"), so a
-/// single bucket keeps us off the brittle string-match path.
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(tag = "kind", rename_all = "camelCase", rename_all_fields = "camelCase")]
 pub enum RegistrationError {
@@ -64,9 +55,14 @@ pub enum RegistrationError {
         /// the row already shows the binding the user picked).
         binding: String,
     },
-    /// Any plugin failure: conflict with another app, allocation, OS IO, etc.
-    /// Carries the underlying message for both the log line and the Settings
-    /// row's "Couldn't register: …" tail.
+    /// The OS refused the hotkey, most likely because another app holds the
+    /// combo. The plugin's `Error::GlobalHotkey` arm: it flattens
+    /// `global_hotkey`'s typed `AlreadyRegistered` / `FailedToRegister` into a
+    /// string, so the arm is the typed signal and the reason isn't knowable.
+    /// The row says "Another app may be using that combo".
+    Unavailable { message: String },
+    /// Any other plugin failure (its internal channel, the Tauri runtime).
+    /// Nothing the user can act on; the message is for the log only.
     PluginError { message: String },
 }
 
@@ -74,7 +70,19 @@ impl std::fmt::Display for RegistrationError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::InvalidBinding { binding } => write!(f, "Invalid global shortcut binding: {binding}"),
+            Self::Unavailable { message } => write!(f, "The OS refused the global shortcut: {message}"),
             Self::PluginError { message } => write!(f, "Global shortcut plugin error: {message}"),
+        }
+    }
+}
+
+impl From<tauri_plugin_global_shortcut::Error> for RegistrationError {
+    fn from(err: tauri_plugin_global_shortcut::Error) -> Self {
+        match err {
+            tauri_plugin_global_shortcut::Error::GlobalHotkey(message) => Self::Unavailable { message },
+            other => Self::PluginError {
+                message: other.to_string(),
+            },
         }
     }
 }
@@ -94,10 +102,9 @@ pub enum RegistrationStatus {
 /// `AppHandle`. Production uses [`TauriRegistrar`]; tests use an in-memory
 /// fake.
 pub trait Registrar {
-    /// Register the binding. Returns `Err(Conflict)` when the plugin reports
-    /// "already registered to another listener" and the caller has not
-    /// previously registered this binding through us; other plugin errors
-    /// land in `PluginError`.
+    /// Register the binding. A combo the OS refuses (another app holds it)
+    /// lands in `Unavailable`, an unparsable one in `InvalidBinding`, anything
+    /// else in `PluginError`.
     fn plugin_register(&self, binding: &str) -> Result<(), RegistrationError>;
     /// Unregister the binding. Idempotent; missing-binding errors are
     /// swallowed because the caller's mental model is "make sure it's gone."
@@ -121,10 +128,9 @@ impl Registrar for TauriRegistrar {
     fn plugin_register(&self, binding: &str) -> Result<(), RegistrationError> {
         // Pre-parse via `Shortcut::from_str` so the one user-actionable
         // failure mode (typo in the combo) is detected cheaply before we
-        // touch the plugin. Everything that survives the parse but fails to
-        // register lands in `PluginError` carrying the plugin's own message,
-        // which the Settings row renders verbatim under "Couldn't register".
-        // No substring branching, no locale-dependent string match.
+        // touch the plugin. What survives the parse but fails to register is
+        // classified by the plugin's error arm (`From` above), never by its
+        // message.
         if Shortcut::from_str(binding).is_err() {
             return Err(RegistrationError::InvalidBinding {
                 binding: binding.to_string(),
@@ -133,9 +139,7 @@ impl Registrar for TauriRegistrar {
         self.app
             .global_shortcut()
             .register(binding)
-            .map_err(|err| RegistrationError::PluginError {
-                message: err.to_string(),
-            })
+            .map_err(RegistrationError::from)
     }
 
     fn plugin_unregister(&self, binding: &str) {
@@ -174,7 +178,8 @@ impl<R: Registrar> GlobalShortcutManager<R> {
     }
 
     /// Register `binding`. Idempotent for the currently active binding;
-    /// swaps cleanly when a different binding arrives.
+    /// swaps cleanly when a different binding arrives, and when the new one
+    /// is refused, puts the previous one back so the user keeps a hotkey.
     pub fn register(&self, binding: &str) -> Result<(), RegistrationError> {
         let mut state = self.state.lock().expect("global_shortcut state poisoned");
 
@@ -186,8 +191,9 @@ impl<R: Registrar> GlobalShortcutManager<R> {
 
         // Swap: drop the previous binding (if any) before attaching the new one
         // so the OS doesn't briefly hold two registrations.
-        if let Some(prev) = state.active.take() {
-            self.registrar.plugin_unregister(&prev);
+        let prev = state.active.take();
+        if let Some(prev) = &prev {
+            self.registrar.plugin_unregister(prev);
         }
 
         match self.registrar.plugin_register(binding) {
@@ -204,7 +210,31 @@ impl<R: Registrar> GlobalShortcutManager<R> {
                     target: "downloads::global_shortcut",
                     "Global shortcut register({binding}) failed: {err}",
                 );
+                if let Some(prev) = prev {
+                    self.restore(&mut state, prev);
+                }
                 Err(err)
+            }
+        }
+    }
+
+    /// Re-register the binding a refused swap just dropped. We released it
+    /// ourselves a moment ago, so this normally succeeds; if it doesn't, the
+    /// user is left without a hotkey and the log says why.
+    fn restore(&self, state: &mut ManagerState, prev: String) {
+        match self.registrar.plugin_register(&prev) {
+            Ok(()) => {
+                log::info!(
+                    target: "downloads::global_shortcut",
+                    "Kept the previous global shortcut: {prev}",
+                );
+                state.active = Some(prev);
+            }
+            Err(err) => {
+                log::warn!(
+                    target: "downloads::global_shortcut",
+                    "Couldn't restore the previous global shortcut {prev}: {err}",
+                );
             }
         }
     }
@@ -405,10 +435,9 @@ mod tests {
 
     #[test]
     fn plugin_error_does_not_promote_to_registered() {
-        // Any plugin failure (conflict, allocation, OS IO) lands in
-        // `PluginError`; the Settings row renders the message tail under
-        // "Couldn't register". Status stays `NotRegistered` so a re-attempt
-        // happens cleanly on the next user flip.
+        // With no previous binding to fall back to, a refused first
+        // registration stays `NotRegistered`, so a re-attempt happens cleanly
+        // on the next user flip.
         let registrar = FakeRegistrar::new();
         registrar.set_next_error(RegistrationError::PluginError {
             message: "HotKey already registered".to_string(),
@@ -420,6 +449,43 @@ mod tests {
         assert!(matches!(
             mgr.registration_status("Control+Alt+Super+J"),
             RegistrationStatus::NotRegistered
+        ));
+    }
+
+    #[test]
+    fn a_refused_rebind_keeps_the_previous_binding_working() {
+        // The swap drops the old combo before asking for the new one, so a
+        // refusal would otherwise leave the user with no hotkey at all.
+        let (shared, mgr) = shared_registrar();
+        mgr.register("Control+Alt+Super+J").expect("first");
+        shared.set_next_error(RegistrationError::PluginError {
+            message: "RegisterEventHotKey failed for KeyK".to_string(),
+        });
+
+        let result = mgr.register("Control+Alt+Super+K");
+
+        assert!(result.is_err());
+        assert_eq!(shared.active().as_deref(), Some("Control+Alt+Super+J"));
+        assert!(matches!(
+            mgr.registration_status("Control+Alt+Super+J"),
+            RegistrationStatus::Registered
+        ));
+    }
+
+    #[test]
+    fn the_os_refusing_a_combo_reads_as_unavailable_and_nothing_else_does() {
+        // The plugin flattens `global_hotkey`'s typed errors into a string, so
+        // its enum arm is the only typed signal; the message is never read.
+        let refused = tauri_plugin_global_shortcut::Error::GlobalHotkey("RegisterEventHotKey failed for KeyK".into());
+        assert!(matches!(
+            RegistrationError::from(refused),
+            RegistrationError::Unavailable { .. }
+        ));
+
+        let internal = tauri_plugin_global_shortcut::Error::RecvError(std::sync::mpsc::RecvError);
+        assert!(matches!(
+            RegistrationError::from(internal),
+            RegistrationError::PluginError { .. }
         ));
     }
 

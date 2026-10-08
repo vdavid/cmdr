@@ -84,6 +84,8 @@ pub fn init() {
     if std::env::var("RUST_LOG").is_err() && verbose_default {
         logging::dispatch::set_stdout_threshold(log::LevelFilter::Debug);
     }
+    // A logger collision installs nothing, file chain included.
+    logging::set_file_logging_active(file_logging_enabled && init_result.is_ok());
     if let Err(err) = init_result {
         // Don't panic. A logger collision (rare; tests, double-init) is recoverable.
         // The `log` macros become no-ops, which is exactly the behavior callers expect

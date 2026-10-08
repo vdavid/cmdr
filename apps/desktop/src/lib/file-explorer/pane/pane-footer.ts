@@ -11,8 +11,8 @@
  *   sitting IN that volume, so a free-space figure there would answer a question
  *   nobody asked and would follow the user around as they walk history.
  *
- * The connection views (`network`, `mtp-connect`) have no listing to count, and an
- * error state replaces the list entirely, so both lose the footer completely.
+ * The network view has no listing to count, and an error state replaces the list
+ * entirely, so both lose the footer completely.
  */
 
 import type { PaneViewKind } from './types'

@@ -184,3 +184,37 @@ async fn a_copy_onto_an_id_nothing_knows_still_reads_as_a_missing_volume() {
         "an unknown id is a missing volume; got {refused:?}"
     );
 }
+
+/// A copy FROM an id that left the registry and nothing lists any more (a phone
+/// unplugged under a search-results pane) says the source isn't connected any
+/// more, ❌ never "not connected yet" (there's no row to open) and ❌ never a bare
+/// "volume not found" naming an internal id.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_copy_from_an_id_nothing_knows_reads_as_a_source_no_longer_connected() {
+    use crate::file_system::volume::manager::get_volume_manager;
+    use crate::file_system::write_operations::event_sinks::CollectorEventSink;
+    use crate::file_system::write_operations::{VolumeCopyConfig, WriteOperationError, start_volume_copy};
+    use crate::operation_log::types::Initiator;
+
+    let dest_id = format!("routing-dest-{}", uuid::Uuid::new_v4());
+    get_volume_manager().register(&dest_id, Arc::new(InMemoryVolume::new("Dest")));
+
+    let refused = start_volume_copy(
+        Arc::new(CollectorEventSink::new()),
+        "an-unplugged-phone-nothing-lists".to_string(),
+        vec![Path::new("/sdcard/DCIM/a.jpg").to_path_buf()],
+        dest_id.clone(),
+        "/".to_string(),
+        VolumeCopyConfig::default(),
+        Initiator::User,
+        None,
+    )
+    .await
+    .expect_err("a copy from an unknown volume is refused");
+    get_volume_manager().unregister(&dest_id);
+
+    assert!(
+        matches!(&refused, WriteOperationError::SourceNoLongerConnected { path } if path == "/sdcard/DCIM/a.jpg"),
+        "an unknown source id is a source no longer connected; got {refused:?}"
+    );
+}

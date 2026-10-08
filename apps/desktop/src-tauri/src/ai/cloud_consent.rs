@@ -19,6 +19,7 @@ use tauri_specta::Event as _;
 
 use crate::agent::AgentDb;
 use crate::agent::store::{self, AgentStoreError, ConsentRecord};
+use crate::managed_policy::{ManagedAiRefusal, ManagedPolicy};
 
 const LOG_TARGET: &str = "ai::cloud_consent";
 
@@ -60,10 +61,13 @@ impl RevokePending {
 /// record, a stale version, an unreadable store, or a "no" still held for the store all read as
 /// "not allowed".
 ///
-/// This is the single predicate every gate calls. A future managed (MDM) preference becomes one
-/// more input here, the way [`RevokePending`] is.
-pub fn has_current_cloud_consent(conn: &Connection, revoke: RevokePending) -> bool {
-    revoke == RevokePending::No
+/// This is the single predicate every gate calls. The organization's managed policy is one more
+/// input, the way [`RevokePending`] is: when it rules out every cloud host, the answer is "not
+/// allowed" whatever the record says, and the record stays untouched for when the profile goes.
+/// A host list doesn't count here; it narrows where cloud AI goes, not whether the user agreed.
+pub fn has_current_cloud_consent(conn: &Connection, revoke: RevokePending, policy: &ManagedPolicy) -> bool {
+    policy.any_cloud_refusal().is_none()
+        && revoke == RevokePending::No
         && matches!(
             store::get_consent(conn, ConsentRecord::CloudAi),
             Ok(Some(consent)) if consent.version == CLOUD_AI_CONSENT_VERSION
@@ -78,7 +82,7 @@ pub(crate) fn cloud_consent_from_app<R: Runtime>(app: &AppHandle<R>) -> bool {
         return false;
     };
     match db.open_read_connection() {
-        Ok(conn) => has_current_cloud_consent(&conn, RevokePending::load(app)),
+        Ok(conn) => has_current_cloud_consent(&conn, RevokePending::load(app), &crate::managed_policy::current()),
         Err(e) => {
             log::warn!(target: LOG_TARGET, "reading cloud AI consent failed, refusing: {e}");
             false
@@ -101,6 +105,9 @@ pub struct CloudAiConsentStatus {
     pub accepted_version: Option<u32>,
     /// When the user last accepted (unix secs), or `None` if never.
     pub accepted_at: Option<i64>,
+    /// Set when the organization's policy rules out every cloud host: the switch is locked off
+    /// for this reason, whatever the record says.
+    pub managed: Option<ManagedAiRefusal>,
 }
 
 /// Why a consent write didn't land. The frontend re-reads the status either way; this tells it
@@ -136,14 +143,16 @@ pub async fn cloud_ai_consent_status(app: AppHandle) -> CloudAiConsentStatus {
         current_version: CLOUD_AI_CONSENT_VERSION,
         accepted_version: None,
         accepted_at: None,
+        managed: crate::managed_policy::current().any_cloud_refusal(),
     };
     let revoke = RevokePending::load(&app);
+    let policy = crate::managed_policy::current();
     let Some(db_path) = app.try_state::<AgentDb>().map(|db| db.db_path().to_path_buf()) else {
         return not_accepted;
     };
     let read = tauri::async_runtime::spawn_blocking(move || -> Result<CloudAiConsentStatus, AgentStoreError> {
         let conn = store::open_read_connection(&db_path)?;
-        status_from(&conn, revoke)
+        status_from(&conn, revoke, &policy)
     })
     .await;
     match read {
@@ -160,13 +169,18 @@ pub async fn cloud_ai_consent_status(app: AppHandle) -> CloudAiConsentStatus {
 }
 
 /// The status as the store and the held "no" see it. Pure over a connection, so it's testable.
-fn status_from(conn: &Connection, revoke: RevokePending) -> Result<CloudAiConsentStatus, AgentStoreError> {
+fn status_from(
+    conn: &Connection,
+    revoke: RevokePending,
+    policy: &ManagedPolicy,
+) -> Result<CloudAiConsentStatus, AgentStoreError> {
     let stored = store::get_consent(conn, ConsentRecord::CloudAi)?;
     Ok(CloudAiConsentStatus {
-        accepted: has_current_cloud_consent(conn, revoke),
+        accepted: has_current_cloud_consent(conn, revoke, policy),
         current_version: CLOUD_AI_CONSENT_VERSION,
         accepted_version: stored.map(|c| c.version),
         accepted_at: stored.map(|c| c.at),
+        managed: policy.any_cloud_refusal(),
     })
 }
 
@@ -192,7 +206,7 @@ pub async fn accept_cloud_ai_consent(app: AppHandle) -> Result<(), CloudAiConsen
 #[specta::specta]
 pub async fn revoke_cloud_ai_consent(app: AppHandle) -> Result<(), CloudAiConsentWriteError> {
     let cleared = write(&app, store::clear_cloud_ai_consent).await;
-    stop_in_flight_cloud_calls();
+    stop_in_flight_calls("cloud AI turned off");
     announce_change(&app);
     cleared
 }
@@ -204,20 +218,21 @@ pub async fn revoke_cloud_ai_consent(app: AppHandle) -> Result<(), CloudAiConsen
 #[specta::specta]
 pub async fn cloud_ai_consent_revoke_pending_changed(app: AppHandle) {
     if RevokePending::load(&app) == RevokePending::Yes {
-        stop_in_flight_cloud_calls();
+        stop_in_flight_calls("cloud AI turned off");
     }
     announce_change(&app);
 }
 
-/// Cancel every in-flight cloud call. Translate calls are one-shot requests of a few seconds and
-/// aren't tracked: they finish, and the next one refuses.
-fn stop_in_flight_cloud_calls() {
+/// Cancel every in-flight AI call: running Ask Cmdr turns and suggestion streams. `reason` labels
+/// the log line. Translate calls are one-shot requests of a few seconds and aren't tracked: they
+/// finish, and the next one refuses. Also what a narrowing managed policy runs (`super::managed`).
+pub(super) fn stop_in_flight_calls(reason: &str) {
     let turns = crate::agent::chat::cancel::cancel_all();
     let streams = super::stream_registry::cancel_all();
     if turns + streams > 0 {
         log::info!(
             target: LOG_TARGET,
-            "cloud AI turned off: stopped {turns} Ask Cmdr turn(s) and {streams} suggestion stream(s)"
+            "{reason}: stopped {turns} Ask Cmdr turn(s) and {streams} suggestion stream(s)"
         );
     }
 }
@@ -258,6 +273,51 @@ fn now_secs() -> i64 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::managed_policy::testing::{self, ALLOWED_CLOUD_AI_HOSTS, DISABLE_AI, DISABLE_CLOUD_AI};
+    use crate::managed_policy::{ManagedAiRefusal, ManagedPolicy};
+
+    fn no_policy() -> ManagedPolicy {
+        ManagedPolicy::default()
+    }
+
+    /// A policy that rules out every cloud host closes the gate over a consent the store still
+    /// records, without touching the record: remove the profile and the user's own answer is back.
+    #[test]
+    fn a_policy_without_cloud_ai_closes_the_gate_over_a_recorded_consent() {
+        let conn = migrated_conn();
+        store::set_cloud_ai_consent(&conn, CLOUD_AI_CONSENT_VERSION, 1_780_000_000).expect("set");
+        for (policy, refusal) in [
+            (testing::forcing(&[DISABLE_CLOUD_AI]), ManagedAiRefusal::CloudAiOff),
+            (testing::forcing(&[DISABLE_AI]), ManagedAiRefusal::AiOff),
+        ] {
+            assert!(!has_current_cloud_consent(&conn, RevokePending::No, &policy));
+            let status = status_from(&conn, RevokePending::No, &policy).expect("status");
+            assert!(!status.accepted);
+            assert_eq!(status.managed, Some(refusal));
+            assert_eq!(
+                status.accepted_version,
+                Some(CLOUD_AI_CONSENT_VERSION),
+                "the record stays"
+            );
+        }
+        assert!(has_current_cloud_consent(&conn, RevokePending::No, &no_policy()));
+    }
+
+    /// A host list narrows WHERE cloud AI goes, not whether the user agreed to it.
+    #[test]
+    fn a_host_list_leaves_consent_to_the_user() {
+        let conn = migrated_conn();
+        store::set_cloud_ai_consent(&conn, CLOUD_AI_CONSENT_VERSION, 1_780_000_000).expect("set");
+        let listed = testing::from_values(&[(
+            ALLOWED_CLOUD_AI_HOSTS,
+            plist::Value::Array(vec![plist::Value::String("api.openai.com".into())]),
+        )]);
+        assert!(has_current_cloud_consent(&conn, RevokePending::No, &listed));
+        assert_eq!(
+            status_from(&conn, RevokePending::No, &listed).expect("status").managed,
+            None
+        );
+    }
 
     fn migrated_conn() -> Connection {
         let conn = crate::sqlite_util::open_in_memory().expect("in-memory db");
@@ -269,7 +329,7 @@ mod tests {
     fn no_record_is_not_allowed() {
         let conn = migrated_conn();
         assert!(
-            !has_current_cloud_consent(&conn, RevokePending::No),
+            !has_current_cloud_consent(&conn, RevokePending::No, &no_policy()),
             "a fresh DB with no consent record ⇒ gate closed"
         );
     }
@@ -280,7 +340,7 @@ mod tests {
         // An older accepted version no longer counts once the copy (and the constant) moved on.
         store::set_cloud_ai_consent(&conn, CLOUD_AI_CONSENT_VERSION.wrapping_sub(1), 1_780_000_000).expect("set");
         assert!(
-            !has_current_cloud_consent(&conn, RevokePending::No),
+            !has_current_cloud_consent(&conn, RevokePending::No, &no_policy()),
             "a stale copy version ⇒ gate closed"
         );
     }
@@ -290,7 +350,7 @@ mod tests {
         let conn = migrated_conn();
         store::set_cloud_ai_consent(&conn, CLOUD_AI_CONSENT_VERSION, 1_780_000_000).expect("set");
         assert!(
-            has_current_cloud_consent(&conn, RevokePending::No),
+            has_current_cloud_consent(&conn, RevokePending::No, &no_policy()),
             "accepting the current copy ⇒ gate open"
         );
     }
@@ -301,7 +361,7 @@ mod tests {
         let conn = migrated_conn();
         store::set_cloud_ai_consent(&conn, CLOUD_AI_CONSENT_VERSION, 1_780_000_000).expect("set");
         assert!(
-            !has_current_cloud_consent(&conn, RevokePending::Yes),
+            !has_current_cloud_consent(&conn, RevokePending::Yes, &no_policy()),
             "a revoke held for the store ⇒ gate closed, whatever the store still says"
         );
     }
@@ -312,14 +372,14 @@ mod tests {
         let conn = migrated_conn();
         store::set_legacy_ask_cmdr_consent_for_tests(&conn, CLOUD_AI_CONSENT_VERSION, 1_780_000_000);
         store::set_legacy_ask_cmdr_consent_for_tests(&conn, 4, 1_780_000_000);
-        assert!(!has_current_cloud_consent(&conn, RevokePending::No));
+        assert!(!has_current_cloud_consent(&conn, RevokePending::No, &no_policy()));
     }
 
     #[test]
     fn the_status_reports_the_audit_and_the_same_answer_as_the_gate() {
         let conn = migrated_conn();
         store::set_cloud_ai_consent(&conn, CLOUD_AI_CONSENT_VERSION, 1_780_000_000).expect("set");
-        let open = status_from(&conn, RevokePending::No).expect("status");
+        let open = status_from(&conn, RevokePending::No, &no_policy()).expect("status");
         assert_eq!(
             open,
             CloudAiConsentStatus {
@@ -327,10 +387,11 @@ mod tests {
                 current_version: CLOUD_AI_CONSENT_VERSION,
                 accepted_version: Some(CLOUD_AI_CONSENT_VERSION),
                 accepted_at: Some(1_780_000_000),
+                managed: None,
             }
         );
         // A held "no" closes it while the audit still says what the store holds.
-        let held = status_from(&conn, RevokePending::Yes).expect("status");
+        let held = status_from(&conn, RevokePending::Yes, &no_policy()).expect("status");
         assert!(!held.accepted);
         assert_eq!(held.accepted_version, Some(CLOUD_AI_CONSENT_VERSION));
     }

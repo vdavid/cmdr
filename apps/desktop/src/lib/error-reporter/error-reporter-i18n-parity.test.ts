@@ -117,7 +117,7 @@ describe('error-reporter amend-mode copy (en)', () => {
     expect(tString('errorReporter.amend.submitting')).toBe('Adding…')
     expect(tString('errorReporter.amend.close')).toBe('Close')
     expect(tString('errorReporter.amend.unavailable')).toBe(
-      'That report can’t take a note any more. To get your notes to the team, send a new report from the Help menu.',
+      'That report can’t take a note anymore. To get your notes to the team, send a new report from the Help menu.',
     )
   })
 

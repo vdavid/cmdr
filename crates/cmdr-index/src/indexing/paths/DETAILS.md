@@ -8,7 +8,12 @@ This area is pure path arithmetic, deliberately separate from the lifecycle/regi
 the component-aware prefix test. The read query surface (`../read/DETAILS.md`) and the progress reporter
 (`../events/DETAILS.md`) both depend on these.
 
-## `IndexPathSpace` — the mount-relative local pipeline (`routing.rs`)
+**Decision/Why `IndexPathSpace` has its own file, apart from `routing.rs`:** the two have different callers and
+different inputs. The scan / reconcile / live pipeline HOLDS a space (built once per scan or loop, threaded through the
+scanner, reconciler, watcher, and scan completion); the read side has only a volume id and ASKS `routing.rs`. Neither
+calls the other: they meet only at the shared `transports::smb::watch::index_relative_path` strip.
+
+## `IndexPathSpace` — the mount-relative local pipeline (`path_space.rs`)
 
 The LOCAL scan/reconcile/live-event pipeline (the guarded walker + FSEvents) had only ever run on `root`, where an
 absolute FS path already equals the index-relative path (`ROOT_ID` = `/`). A `LocalExternal` drive is the first
@@ -98,7 +103,7 @@ into index-relative space before the partial-aggregate send, so the same transfo
 
 ## Path → volume routing (`routing.rs`)
 
-`volume_id_for_local_path(path)` resolves which index volume owns a path, six tiers in order, each mapping to the SAME
+`volume_id_for_local_path(path)` resolves which index volume owns a path, seven tiers in order, each mapping to the SAME
 id its volume and index register under:
 
 1. **SMB** — `transports::smb::index::smb_volume_id_for_path` (probes the mount, keys by `(server, port, share)`).
@@ -112,18 +117,24 @@ id its volume and index register under:
    index serves a server, so the id owns none and a read skips; the tier exists to keep a server's path off `root`,
    where a search from a server pane used to answer with the Mac's boot disk. A path missing its user, host, or port
    falls through.
-5. **Local external mount** — `external_mount_volume_id_for_path`: fast-reject with
+5. **Mount inside the boot tree** — `boot_tree_mount_volume_id_for_path`: a filesystem mounted OUTSIDE the external
+   prefixes (an rclone or sshfs mount in the home folder, pCloud's `~/pCloud Drive`, a disk image or NFS share mounted
+   anywhere) routes to its own registered id. The boot scan stops at every such mount (`../scanner/DETAILS.md` §
+   "Filesystems mounted inside the boot tree"), and both read the SAME cached mount table
+   (`scanner::boot_tree_mounts::current`), so routing can't send a path away from rows `root` really holds. The path is
+   firmlink-normalized for the lookup, and the registry is asked with the mount point as the TABLE spells it, since
+   that's how the host registered it (a table can list a home mount through `/System/Volumes/Data/...`). The boot disk's
+   own Data volume never enters the set. A mount the registry hasn't adopted yet stays on `root` until a pane lists it.
+   Pinned by `a_mount_inside_the_boot_tree_routes_to_its_own_volume`, `the_data_volume_stays_on_root`, and
+   `a_mount_listed_through_the_data_volume_routes_to_its_own_volume` (`../read/queries.rs`).
+6. **Local external mount** — `external_mount_volume_id_for_path`: fast-reject with
    `scanner::is_on_mounted_external_volume` (a pure prefix check, no registry lock) so ONLY a path under an excluded
    mount prefix (`/Volumes`, `/mnt`, `/media`) can leave `root`, then route by the host's volume registry
    (`mount_id_for_path`, the longest non-root ancestor mount). The fast-reject is the load-bearing trap-guard: a
    registered cloud-drive folder in the home dir (`~/Library/CloudStorage/…`) is a non-root registered volume too, but
    `root`'s index owns it — a naive "any registered non-root volume" prefix match would divert it to an index-less id
-   and drop its sizes. A real filesystem mounted OUTSIDE those prefixes (an rclone or sshfs mount in the home folder,
-   pCloud's `~/pCloud Drive`) stays on `root` too, by design: the full boot scan bounds itself by path prefix, not
-   device, so it walks into such a mount and `root`'s index owns the rows (`../scanner/DETAILS.md` § "The volume
-   boundary"). ❌ Don't route it to the mount's own id without also cutting the boot scan there, or its sizes vanish.
-   Pinned by `a_mount_inside_the_boot_tree_stays_on_root`.
-6. **Everything else** → `root` (the boot disk, plus cloud-drive folders root's index owns).
+   and drop its sizes. Pinned by `a_registered_folder_that_is_not_a_mount_point_stays_on_root`.
+7. **Everything else** → `root` (the boot disk, plus cloud-drive folders root's index owns).
 
 `exclusion_scope_for_volume(volume_id)` derives the read-side scope (root ⇒ boot disk; every other registered volume ⇒
 mount-rooted at its registered root). An UNREGISTERED non-root id yields an empty mount root — still mount-rooted, but

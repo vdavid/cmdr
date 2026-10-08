@@ -110,7 +110,9 @@ thinking on, so "just disable it" won't hold long-term.
 
 Provider transport errors are classified by HTTP status once, upstream, in `crate::ai` (`ai_error_for_status`:
 401/403 → auth, 429 → rate-limited). `genai_impl` maps that `AiError` to the seam's `AgentLlmError` variant-to-variant
-(`impl From<AiError>`), so there is no message-string matching anywhere. `AgentLlmError::NoKey` /
+(`impl From<AiError>`), so there is no message-string matching anywhere. `AiError::Managed` stays typed as
+`AgentLlmError::Managed(refusal)` (the runtime's `ManagedByOrganization`), never a `Provider` string
+(`../../ai/DETAILS.md` § Managed policy). `AgentLlmError::NoKey` /
 `NotConfigured` / `BudgetExhausted` are pre-flight/runtime states the runtime raises, not transport errors.
 
 ## `ToolId` and the read-only gate

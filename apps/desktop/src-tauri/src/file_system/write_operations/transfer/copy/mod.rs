@@ -11,10 +11,10 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Duration;
 
-use super::super::cancellable::run_cancellable;
 use super::super::conflict::ApplyToAll;
 use super::super::durability::flush_created_destinations;
 use super::super::event_sinks::OperationEventSink;
+use super::super::free_space::check_local_copy_space;
 use super::super::ledger::CopyTransaction;
 use super::super::scan::scan_sources;
 use super::super::scan_cache::take_cached_scan_result;
@@ -28,37 +28,17 @@ use super::super::types::{
     WriteSourceItemDoneEvent,
 };
 use super::super::unique_name::{create_unique_dir, next_available_name};
-use super::super::validation::{is_same_file, validate_disk_space, validate_file_sizes_for_filesystem};
+use super::super::validation::{is_same_file, validate_file_sizes_for_filesystem};
 use super::transfer_driver::{DriverConfig, PostLoopIntent, TransferOutcome, drive_transfer_serial_sync};
 
+mod dest_chain;
 mod rollback;
 mod scanned_dirs;
 mod single_item;
 
 use rollback::rollback_with_progress;
-pub(super) use scanned_dirs::create_scanned_dirs_at_destination;
+pub(super) use scanned_dirs::{create_scanned_dirs_at_destination, date_created_dirs_like_their_sources};
 pub(super) use single_item::{JournalDestUnder, copy_single_item};
-
-// ============================================================================
-// Cancellation-aware helpers
-// ============================================================================
-
-/// Runs `validate_disk_space` with polling-based cancellation.
-/// This ensures we respond quickly to cancellation even if `statvfs` blocks on slow network drives.
-fn validate_disk_space_cancellable(
-    destination: &Path,
-    required_bytes: u64,
-    state: &Arc<WriteOperationState>,
-    operation_id: &str,
-) -> Result<(), WriteOperationError> {
-    let destination = destination.to_path_buf();
-    run_cancellable(
-        move || validate_disk_space(&destination, required_bytes),
-        state,
-        "disk_space_check",
-        operation_id,
-    )
-}
 
 /// Rewrites `dest` by replacing the longest ancestor that appears as a key in
 /// `dir_remap` with its mapped value. Used to follow a folder→file Rename
@@ -256,13 +236,12 @@ pub(in crate::file_system::write_operations) fn copy_files_with_progress_inner(
         scan_result.total_bytes
     );
 
-    // Pre-flight disk space check: verify destination has enough free space
-    // Use polling-based cancellation to remain responsive on slow network drives
+    // Pre-flight free-space check, before anything is written.
     log::debug!(
         "copy_files_with_progress: starting disk space check for operation_id={}",
         operation_id
     );
-    validate_disk_space_cancellable(destination, scan_result.total_bytes, state, operation_id)?;
+    check_local_copy_space(destination, sources, &scan_result, config, state, operation_id)?;
     log::debug!(
         "copy_files_with_progress: disk space check complete for operation_id={}",
         operation_id
@@ -509,6 +488,7 @@ pub(in crate::file_system::write_operations) fn copy_files_with_progress_inner(
             let landed = copy_single_item(
                 &file_info.path,
                 file_info.dest_path(destination),
+                destination,
                 // A plain copy writes where it records.
                 None,
                 file_info.is_symlink,
@@ -651,6 +631,17 @@ pub(in crate::file_system::write_operations) fn copy_files_with_progress_inner(
                 return Err(e);
             }
 
+            // Every file and folder has landed, so the folders this copy created
+            // can take their source dates without a later write bumping them.
+            date_created_dirs_like_their_sources(
+                &scan_result.dirs,
+                sources,
+                destination,
+                state,
+                &transaction.created_dirs,
+                &dir_remap,
+            );
+
             // Flush every created file and every directory that gained an entry
             // before reporting complete, so "complete" means durable. Reuses the
             // transaction's own ledgers; skips data the strategy already synced.
@@ -788,3 +779,11 @@ mod copy_failure_tests;
 
 #[cfg(test)]
 mod named_copy_tests;
+
+#[cfg(test)]
+#[path = "copy_dest_link_tests.rs"]
+mod copy_dest_link_tests;
+
+#[cfg(test)]
+#[path = "folder_dates_tests.rs"]
+mod folder_dates_tests;

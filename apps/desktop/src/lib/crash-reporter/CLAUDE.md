@@ -47,4 +47,5 @@ and collects the user's choices.
   reloads and transforms the file rather than trusting this copy. Don't add fields or re-sanitize it here:
   `src-tauri/src/crash_reporter/` is the single place that decides what a crash report contains.
 
-Flows, the dialog's states, and the dialog-gallery fixture: `DETAILS.md`.
+Flows, the dialog's states, and the gallery fixture: `DETAILS.md`. Read it before any non-trivial work here: editing,
+planning, reorganizing, or advising.

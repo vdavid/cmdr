@@ -74,6 +74,7 @@ describe('QueryDialog a11y', () => {
     // default so the assembled config matches QueryDialog's `<unknown>` parameter
     // (Svelte's `mount()` pins the generic to its default at the call site).
     const historyStore = createRecentItemsState<HistoryEntry>({
+      logCategory: 'search',
       getRecent: () => Promise.resolve([]),
     }) as unknown as QueryDialogConfig['historyStore']
     return {

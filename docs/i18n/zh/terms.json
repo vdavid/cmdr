@@ -22,6 +22,11 @@
     "note": "Name the macOS permission as Apple does (完全磁盘访问权限, 文件和文件夹); a bare 访问 is the verb.",
     "sources": "macOS; MS terminology"
   },
+  "access-key-id": {
+    "chosen": "访问密钥 ID",
+    "confidence": "high",
+    "sources": "AWS zh-CN docs (访问密钥 ID 和秘密访问密钥, IAM id_credentials_access-keys, checked 2026-10-02); MS access key → 访问密钥"
+  },
   "account": {
     "chosen": "账户",
     "confidence": "high",
@@ -48,6 +53,12 @@
     "decision": "给已发送的错误报告补充备注",
     "forms": "button 添加到… (添加到报告, 添加到程序坞); favorites and the queue take 加入 (加入个人收藏, 加入队列); \"we've added\" → 新增",
     "sources": "macOS Finder (Add to Dock → 添加到程序坞)"
+  },
+  "advanced": {
+    "chosen": "高级",
+    "confidence": "high",
+    "forms": "Cmdr Settings section → 高级; quote settings.section.advanced exactly in navigation paths",
+    "sources": "Network.appex Localizable (ADVANCED); catalog settings.section.advanced (macOS 26.6.2 build 25G83, live loctable key cross-reference, 2026-10-02)"
   },
   "ai-agent": {
     "avoid": [
@@ -105,6 +116,18 @@
     "confidence": "high",
     "forms": "conflict title 文件已存在 / 已存在同名文件; prose 已经有… / 已经在…了",
     "sources": "macOS Finder"
+  },
+  "android-platform-tools": {
+    "chosen": "平台工具",
+    "confidence": "high",
+    "forms": "Android 平台工具 (the download's name, Google zh-CN docs: SDK 平台工具); a later mention in the same text 平台工具",
+    "sources": "Google zh-CN developer docs (SDK 平台工具); catalog adb.connect.adbNotInstalled"
+  },
+  "android-tools": {
+    "chosen": "Android 工具",
+    "confidence": "high",
+    "forms": "这台 Mac 上的 Android 工具; installed 没装任何 Android 工具",
+    "sources": "catalog adb.connect.serverUnreachable; Google zh-CN docs (工具)"
   },
   "answer": {
     "accept": ["做出选择", "答复"],
@@ -228,10 +251,8 @@
   "ask": {
     "chosen": "询问",
     "confidence": "tentative",
-    "exceptions": {
-      "settings.servers.trustedHostKeys.confirm": "\"ask whether to trust it\" (问你) is the verb, not the \"Ask each time\" setting option."
-    },
-    "forms": "setting option 询问 / 每次询问; don't-ask-again 不再询问",
+    "proseAccept": ["问你"],
+    "forms": "setting option 询问 / 每次询问; don't-ask-again 不再询问; prose asking the user (问你要不要信任它, 问你要密码) → 问你",
     "sources": "catalog"
   },
   "ask-cmdr": {
@@ -247,6 +268,11 @@
     "confidence": "confirmed",
     "forms": "noun 附件; verb 附加; attaching an email or logs to a report → 附上 (附上我的邮箱, 附上日志)",
     "sources": "MS terminology"
+  },
+  "automation": {
+    "chosen": "自动化",
+    "confidence": "high",
+    "sources": "macOS 27.0 (26A428) SecurityPrivacyExtension.appex Localizable.loctable, key AUTOMATION, 2026-10-08"
   },
   "available-offline": {
     "avoid": [
@@ -322,16 +348,40 @@
     "note": "Ellipsis is the single U+2026 character.",
     "sources": "AppleAccountUI PROFILE_BROWSE_PHOTO"
   },
+  "bucket": {
+    "chosen": "存储桶",
+    "confidence": "high",
+    "forms": "S3 bucket → S3 存储桶; bucket name → 存储桶名称",
+    "sources": "AWS zh-CN docs (访问 Amazon S3 通用存储桶, checked 2026-10-02); MS bucket → 桶 / Bucket"
+  },
   "button": {
     "chosen": "按钮",
     "confidence": "high",
     "forms": "a quoted button in prose: 点按“+”按钮 / 点按下面的按钮",
     "sources": "macOS Finder + AppKit; MS TBX; Nautilus, Thunar, Dolphin, Total/Double Commander; 8 catalog keys"
   },
+  "byte": {
+    "chosen": "字节",
+    "confidence": "high",
+    "forms": "after a count {count} 字节 (no measure word in a size readout, like Finder's Get Info); unit symbols stay Latin: binary KiB / MiB / GiB / TiB / PiB, decimal kB / MB / GB / TB / PB (never KB)",
+    "note": "Nautilus writes %s 个字节, but a size column is a readout, not a count of things; Finder and the catalog's own 字节 option drop 个.",
+    "sources": "macOS Finder LocalizableMerged SP27/SP28 字节, ProgressStatusView 64.0 MB/1.33 GB; Double Commander 字节; catalog settings.listing.sizeUnit.opt.bytes, fileOperations.transferProgress.progressBytes"
+  },
   "cache": {
     "chosen": "缓存",
     "confidence": "confirmed",
     "sources": "MS terminology"
+  },
+  "calculate": {
+    "chosen": "计算",
+    "confidence": "high",
+    "forms": "Calculate folder sizes → 计算文件夹大小; stop the work → 停止计算",
+    "sources": "macOS Finder ViewOptionsWindow 65.title (计算所有大小); TC zh-CN 503 计算占用空间, 5138 计算文件夹大小; Double Commander 计算占用空间"
+  },
+  "camera": {
+    "chosen": "相机",
+    "confidence": "high",
+    "sources": "macOS AppKit NSStillCameraTemplate“相机”; catalog (mtpEnabled, MTP section 相机)"
   },
   "camera-details": {
     "avoid": [
@@ -352,9 +402,10 @@
     "sources": "macOS AppKit"
   },
   "case-sensitive": {
+    "accept": ["小写", "大写"],
     "chosen": "大小写",
     "confidence": "confirmed",
-    "forms": "区分大小写; upper and lower case → 大小写",
+    "forms": "区分大小写; upper and lower case → 大小写; lowercase letters → 小写字母; uppercase → 大写",
     "sources": "macOS/MS"
   },
   "certificate": {
@@ -453,6 +504,17 @@
     "confidence": "confirmed",
     "sources": "macOS/MS"
   },
+  "clone-pane": {
+    "avoid": [
+      {
+        "form": "复制窗格",
+        "why": "复制 is Duplicate in this catalog"
+      }
+    ],
+    "chosen": "克隆窗格",
+    "confidence": "high",
+    "sources": "MS zh-CN clone → 克隆 + the pane ruling (窗格); no collision (copy 拷贝, duplicate 复制). TC zh-CN 532 (目标面板 = 源面板) and DC (目标 = 来源) name the same command differently; Finder has none"
+  },
   "close": {
     "accept": ["关掉"],
     "chosen": "关闭",
@@ -468,11 +530,30 @@
     "sources": "catalog (settings.ai.provider.opt.cloud)"
   },
   "cloud-provider": {
-    "accept": ["云挂载", "云端", "云服务"],
+    "accept": ["云挂载", "云端", "云服务", "云存储"],
     "chosen": "云服务商",
     "confidence": "high",
-    "forms": "云服务商; a cloud mount 云挂载; cloud folders 云端文件夹; cloud services 云服务",
+    "forms": "云服务商; a cloud mount 云挂载; cloud folders 云端文件夹; cloud services 云服务; object storage in the cloud (S3 and similar) 云存储, per the storage ruling",
     "sources": "catalog"
+  },
+  "cold-storage": {
+    "chosen": "冷存储",
+    "confidence": "tentative",
+    "forms": "archived (the file's state) → 已存档 (archive-chat's word); restore it → 恢复 (restore ruling)",
+    "note": "AWS zh-CN calls the archive tier 归档, but one English \"Archived\" must keep one word (desktop-i18n-term-consistency pairs fileExplorer.archivedFile.label with askCmdr.sessions.archivedBadge), and MS backs 存档 for the tier.",
+    "sources": "MS cold storage → 冷存储, archive tier → 存档 / 存档访问层; storage ruling 存储"
+  },
+  "column": {
+    "chosen": "列",
+    "confidence": "high",
+    "forms": "the Name column → 名称列; sort column → 排序列; column width → 列宽; by the chosen column → 按所选的列",
+    "avoid": [
+      {
+        "form": "栏",
+        "why": "Finder's list-view word (SV2 排序栏), but AppKit says 列 (调整该列到恰当的大小) and the catalog is 列 in every key"
+      }
+    ],
+    "sources": "macOS AppKit Browser (该列), Double Commander (列); catalog"
   },
   "coming-soon": {
     "chosen": "即将推出",
@@ -499,6 +580,18 @@
     "chosen": "比较符",
     "confidence": "high",
     "sources": "descriptive"
+  },
+  "compare-folders": {
+    "chosen": "比较文件夹",
+    "accept": ["比较"],
+    "avoid": [
+      {
+        "form": "比较目录",
+        "why": "MC's wording; TC zh-CN, DC and Finder say 文件夹"
+      }
+    ],
+    "confidence": "high",
+    "sources": "TC 11.58 zh-CN menu 比较文件夹 (exact match, ⇧F2) and DC 比较文件夹; MC says 比较目录; Finder 文件夹"
   },
   "complete": {
     "accept": ["完整"],
@@ -528,7 +621,7 @@
   "confirm": {
     "chosen": "确认",
     "confidence": "confirmed",
-    "decision": "无法确认的重命名 + 名称不可用",
+    "decision": "名称不可用 + 重命名链计数",
     "forms": "\"couldn't confirm X\" → 无法确认 X 是否已… (a hedge, never a failure)",
     "sources": "MS terminology"
   },
@@ -548,6 +641,12 @@
     },
     "forms": "Connecting to X… → 正在连接到 {name}…; Connect to server… → 连接服务器…; Connect as guest → 以来宾身份连接; internet connection → 联网 / 互联网连接",
     "sources": "macOS Finder, NetAuthAgent"
+  },
+  "provider-console": {
+    "chosen": "控制台",
+    "confidence": "high",
+    "forms": "a storage provider's console → 存储提供方的控制台",
+    "sources": "AWS zh-CN (AWS 管理控制台, Amazon VPC 控制台); catalog settings.developer.verboseLogging.label"
   },
   "context-menu": {
     "accept": ["右键"],
@@ -592,6 +691,19 @@
     "forms": "F5 and the clipboard: 拷贝 (已拷贝, 拷贝到剪贴板); a noun copy (a duplicate file) → 副本",
     "sources": "macOS Finder"
   },
+  "cost": {
+    "accept": ["费用", "花费", "代价"],
+    "avoid": [
+      {
+        "form": "成本",
+        "why": "Microsoft's business-accounting word; reads as a balance sheet, not a user's bill or a machine's load"
+      }
+    ],
+    "chosen": "开销",
+    "confidence": "high",
+    "forms": "resources (CPU, disk, a background process) 开销 (不会有任何开销, 这点开销很划算); money (AI usage) 费用 (预计费用, 费用未知); the spend column 花费; a tradeoff (the cost is that…) 代价",
+    "sources": "catalog usage (3 开销 / 3 费用); Microsoft terminology (cost → 成本, business sense)"
+  },
   "crash-report": {
     "accept": ["崩溃"],
     "chosen": "崩溃报告",
@@ -627,6 +739,12 @@
     "note": "The pane's current folder, not the row under the cursor (光标所在的).",
     "sources": "catalog"
   },
+  "cursor": {
+    "chosen": "光标",
+    "confidence": "high",
+    "forms": "under the cursor → 光标所在的; move the cursor to X → 把光标移到 X 上",
+    "sources": "catalog (光标 in 15 values, commands.navOpenUnderCursor.label)"
+  },
   "custom": {
     "chosen": "自定义",
     "confidence": "confirmed",
@@ -648,6 +766,13 @@
     "confidence": "high",
     "sources": "MS terminology"
   },
+  "debugging": {
+    "chosen": "调试",
+    "accept": ["debug"],
+    "confidence": "high",
+    "forms": "debug log → 调试日志; the technical level stays debug",
+    "sources": "ConsoleKit.framework Localizable (Debug Type, value_debug); catalog settings.developer.verboseLogging.description (macOS 26.6.2 build 25G83, live loctable key cross-reference, 2026-10-02)"
+  },
   "default": {
     "accept": ["跟随系统"],
     "chosen": "默认",
@@ -663,6 +788,14 @@
     "decision": "回滚结束后的提示条",
     "forms": "button 删除; spoken prose 删掉; the Delete key stays Latin; rollback and leftovers delete (删除), never 移除",
     "sources": "macOS"
+  },
+  "delete-key": {
+    "accept": ["Delete"],
+    "chosen": "Delete 键",
+    "confidence": "high",
+    "forms": "按 Delete（⌫）键 + verb",
+    "note": "Pile mined 2026-10-07 (macOS 27.0.1 live bundles): VoiceOver SCRWorkspace.loctable deleteKey, Terminal keyDescriptions.loctable 007F, AccessibilitySharedSupport symbol names delete.backward.",
+    "sources": "macOS VoiceOver zh_CN (Delete Key → delete键; Presses the delete key → 按下delete键); Terminal says ⌫删除, the symbol names 退格"
   },
   "delete-permanently": {
     "accept": ["彻底", "永久"],
@@ -709,8 +842,14 @@
   "device": {
     "chosen": "设备",
     "confidence": "confirmed",
-    "forms": "MTP 设备, USB 设备; the terse busy tooltip keeps 此设备",
+    "forms": "MTP 设备, USB 设备; prose 这个设备 (the busy tooltips: Cmdr 还在处理这个设备上的文件。)",
     "sources": "macOS/MS"
+  },
+  "dialog": {
+    "chosen": "对话框",
+    "confidence": "high",
+    "forms": "the Move dialog → “移动”对话框 (the command name quoted)",
+    "sources": "catalog (对话框 in 13 values); macOS zh-CN AppKit"
   },
   "disable": {
     "accept": ["停用", "禁用"],
@@ -943,7 +1082,7 @@
   "expired": {
     "chosen": "过期",
     "confidence": "high",
-    "forms": "valid until 有效期至",
+    "forms": "valid until 有效期至; expires in N → N 天后过期 / N 小时后过期 (Arabic numerals, like the settings duration options)",
     "sources": "standard"
   },
   "extension": {
@@ -1072,14 +1211,20 @@
   },
   "folder": {
     "accept": ["目录"],
+    "avoid": [
+      {
+        "form": "目录大小",
+        "why": "user-facing help text says 文件夹大小; 目录 stays only for the status-bar dir abbreviation"
+      }
+    ],
     "chosen": "文件夹",
     "confidence": "high",
     "exceptions": {
       "settings.mediaIndex.progress.coveredDone": "\"your covered folders\" collapses to 覆盖范围内 (within the covered scope).",
       "settings.mediaIndex.progress.coveredOfTotal": "\"your covered folders\" collapses to 覆盖范围内 (within the covered scope)."
     },
-    "forms": "user-facing 文件夹; the status-bar dir abbreviation and technical aggregation 目录 (counted 个目录)",
-    "note": "User-facing help text says 文件夹 even where older strings said 目录 (目录大小 → 文件夹大小).",
+    "forms": "user-facing 文件夹, scan tallies included (counted 个文件夹); the status-bar dir abbreviation and the selection line's dir count → 目录 (counted 个目录)",
+    "note": "User-facing help text says 文件夹, so folder size is always 文件夹大小.",
     "sources": "macOS"
   },
   "force-quit": {
@@ -1097,7 +1242,7 @@
     ],
     "chosen": "忘记",
     "confidence": "high",
-    "forms": "Forget server 忘记服务器; Forget (a trusted key) 忘记; Forget saved password → 清除保存的密码 (and its dialog 要清除 {name} 保存的密码吗？, the checkbox 同时清除保存的密码); Forget share 忘记共享; the one confirm button every Forget alert shares 忘记; toasts 已忘记 / 无法忘记 {hostName}; Ask Cmdr's notes 忘掉",
+    "forms": "Forget server 忘记服务器; Forget (a trusted key) 忘记; Forget saved password → 清除保存的密码 (and its dialog 要清除 {name} 保存的密码吗？, the checkbox 同时清除保存的密码; its S3 twin 同时清除这个账户的秘密访问密钥); Forget share 忘记共享; the one confirm button every Forget alert shares 忘记; toasts 已忘记 / 无法忘记 {hostName}; Ask Cmdr's notes 忘掉",
     "sources": "catalog"
   },
   "format": {
@@ -1185,12 +1330,17 @@
     "sources": "macOS Finder (Back/Forward → 返回/前进)"
   },
   "go-to-path": {
-    "accept": ["前往文件夹"],
-    "chosen": "前往路径",
-    "confidence": "high",
-    "forms": "Go to path… 前往路径…; Finder's Go to Folder… 前往文件夹… (a different command)",
-    "note": "前往 must take an object in Chinese; a bare 按数字键前往 dangles.",
-    "sources": "macOS Finder (Go to Folder → 前往文件夹)"
+    "avoid": [
+      {
+        "form": "前往路径",
+        "why": "the old Go to path wording; the English now names Finder's Go to Folder, so the command, menu item, dialog title, and button use Finder's words"
+      }
+    ],
+    "chosen": "前往文件夹",
+    "confidence": "confirmed",
+    "forms": "menu item and command 前往文件夹…; dialog title and its confirm button 前往文件夹 (one control, one name, though Finder's own button is a bare 前往)",
+    "note": "前往 must take an object in Chinese; a bare 按数字键前往 dangles. The typed thing stays a path (前往的路径, 输入或粘贴路径).",
+    "sources": "macOS Finder zh_CN (MenuBar.strings 261.title 前往文件夹…, LocalizableMerged GT8 前往文件夹, FR24 前往; macOS 27.0, 26A428, plutil, 2026-10-01)"
   },
   "go-to-trash": {
     "chosen": "前往废纸篓",
@@ -1203,6 +1353,18 @@
     "confidence": "confirmed",
     "forms": "知道了",
     "sources": "catalog"
+  },
+  "group": {
+    "avoid": [
+      {
+        "form": "群组",
+        "why": "Finder has both (使用群组, 分组方式); the catalog settled on 分组 for a group of rows"
+      }
+    ],
+    "chosen": "分组",
+    "confidence": "tentative",
+    "forms": "a named group takes the quoted name before it (“网络”分组); the servers found nearby → 附近服务器分组",
+    "sources": "catalog (servers.pinHint.title); macOS Finder zh-CN MenuBar (Group By → 分组方式, Use Groups → 使用群组), verified on macOS 27.0 (26A428), live bundle, 2026-09-30"
   },
   "guest": {
     "avoid": [
@@ -1248,6 +1410,13 @@
     "confidence": "high",
     "forms": "one-time hint 一次性…提示; internal flags 已显示…提示",
     "sources": "descriptive"
+  },
+  "history": {
+    "accept": ["历史"],
+    "chosen": "历史记录",
+    "confidence": "high",
+    "forms": "operation history and the generic noun → 历史记录; git and repo history → git 历史 / 仓库历史; file history (Ask Cmdr) → 文件历史",
+    "sources": "macOS AppKit (NSToolbarHistoryTemplate 历史记录; 版本历史记录); MS terminology zh-Hans (历史记录); catalog (errors.git.blobTooLarge.title, fileExplorer.readOnly.gitPortalMessage)"
   },
   "host": {
     "chosen": "主机",
@@ -1384,6 +1553,19 @@
     "confidence": "high",
     "forms": "Keep them (the safe rollback answer) → 保留文件 (a bare 保留 beside 回滚 could mean keeping the operation); kept its name → 保留了原来的名称",
     "sources": "macOS (Keep → 保留)"
+  },
+  "key-combination": {
+    "accept": ["组合键"],
+    "avoid": [
+      {
+        "form": "快捷键",
+        "why": "that's the shortcut concept; the keys a shortcut is bound to are a different noun"
+      }
+    ],
+    "chosen": "按键组合",
+    "confidence": "high",
+    "forms": "that combo → 这个按键组合; invalid combo → 按键组合无效",
+    "sources": "catalog (shortcuts.conflict.reservedByMacOs, shortcuts.conflict.fixedKey, downloads.shortcutRow.invalidCombo, and the shortcut ruling's forms); MS TBX key combination → 快捷键 rejected as it collides with shortcut"
   },
   "key-file": {
     "accept": ["密码短语"],
@@ -1611,7 +1793,7 @@
     "confidence": "high",
     "decision": "Standalone conflict prompt",
     "exceptions": {
-      "errors.eject.busy": "\"still moving files on this drive\" is rendered 读写 (reading and writing), the busy-drive family's wording."
+      "errors.eject.busy": "\"still moving files there\" is rendered 读写 (reading and writing), the busy-drive family's wording."
     },
     "forms": "F6 移动; in a sentence with a destination 移动到“{destination}”; out of / into an archive 移出 / 移入",
     "note": "A progress line or conflict prompt naming the operation writes 移动到 so it matches the queue row's 正在移动; everyday prose may use Finder's contraction 移到 (移到废纸篓, 把 Cmdr 移到“应用程序”文件夹).",
@@ -1696,6 +1878,9 @@
     "chosen": "共享",
     "confidence": "confirmed",
     "decision": "服务器明确说没有这个共享",
+    "exceptions": {
+      "errorReporter.dialog.managedOff": "\"share it yourself\" is the verb (pass the saved report on), not an SMB share: 自己发给别人."
+    },
     "forms": "共享; network shares 网络共享; mounted shares 已装载的共享; SMB/Network shares section SMB/网络共享",
     "sources": "macOS Finder"
   },
@@ -1745,6 +1930,13 @@
     "confidence": "confirmed",
     "forms": "a toast or hint banner 提示; a system notification 通知",
     "sources": "macOS/MS"
+  },
+  "on-device": {
+    "chosen": "本地",
+    "confidence": "tentative",
+    "forms": "on-device AI 本地 AI (只允许使用本地 AI); the terse card value On-device only → 只限本地; free, on-device → 免费，本地运行",
+    "note": "Same word as the local provider's 本地 AI / 本地模型, so the managed copy names the AI the person sees in the provider choice. Apple Intelligence's 设备端 is a candidate a native reviewer may prefer (review-queue.md).",
+    "sources": "catalog (askCmdr.cost.free 本地运行; local: 本地 AI / 本地模型, 31 uses); MS terminology zh-Hans has no on-device entry"
   },
   "on-disk-size": {
     "avoid": [
@@ -1840,12 +2032,32 @@
     "confidence": "high",
     "sources": "macOS"
   },
+  "organization": {
+    "chosen": "组织",
+    "confidence": "high",
+    "forms": "the licensee 组织; the MDM-managing employer or school 你的组织, with managed → 由你的组织管理 (这项设置由你的组织管理)",
+    "note": "One word for both senses: Apple's own MDM enrollment copy says 你的组织 / 组织将能够远程管理此Mac, and the licensing labels already say 组织.",
+    "sources": "macOS 26 ConfigurationProfilesUI zh_CN (str_ADxE_MgmtWarningDeviceEnrollment, str_DEP_MIGRATION_DESCRIPTION, live loctable, 2026-10-05); MS terminology zh-Hans; catalog (licensing.*)"
+  },
+  "original": {
+    "accept": ["原始", "原来", "原件"],
+    "chosen": "原文件",
+    "confidence": "high",
+    "forms": "the originals → 原文件; Finder’s own item wording → 原始项目",
+    "sources": "macOS Finder PE117 (…the original could not be deleted): 原始项目; catalog (errors.write.destinationNotFound.message.copy, errors.write.deviceDisconnected.sided.destination.copy)"
+  },
   "outdated": {
     "accept": ["过时"],
     "chosen": "过期",
     "confidence": "high",
     "forms": "an index that may be stale 可能已过期 / 已过时",
     "sources": "catalog"
+  },
+  "overall": {
+    "chosen": "总体",
+    "confidence": "tentative",
+    "forms": "the whole-run time-left label → 总体：{eta}",
+    "sources": "GN 总计, DC 合计 (both a summed quantity, odd before 剩余 time); 总体 is the standard gloss for overall"
   },
   "overwrite": {
     "chosen": "覆盖",
@@ -2081,6 +2293,11 @@
     },
     "sources": "standard"
   },
+  "quick-filter": {
+    "chosen": "快速筛选",
+    "confidence": "high",
+    "sources": "TC zh-CN 3018/3019 (关闭/开启筛选) + the filter ruling 筛选; DC zh-CN says 快速过滤器, macOS mostly 过滤"
+  },
   "quick-look": {
     "avoid": [
       {
@@ -2168,6 +2385,17 @@
     "decision": "故意保留的分界（英文一词多义，中文必须分开）",
     "forms": "tight mode chips 正则; tooltips and accessible names spell out 正则表达式",
     "sources": "KDE; Double Commander"
+  },
+  "region": {
+    "avoid": [
+      {
+        "form": "地域",
+        "why": "Alibaba Cloud's word; AWS, the S3 reference, says 区域"
+      }
+    ],
+    "chosen": "区域",
+    "confidence": "high",
+    "sources": "AWS zh-CN docs (区域, checked 2026-10-02)"
   },
   "reject": {
     "chosen": "拒绝",
@@ -2278,6 +2506,18 @@
     "forms": "buttons and status lines take Apple's 重新启动 (立即重新启动, 重新启动 Cmdr); running prose may say the spoken 重启",
     "note": "A device's connection restarting is 连接已重启, never the device itself.",
     "sources": "macOS"
+  },
+  "restore": {
+    "avoid": [
+      {
+        "form": "还原",
+        "why": "AWS console's word for a Glacier restore, but the catalog spends 还原 on putting old names back (fileOperations.transferProgress.titleReversalRenamingBack)"
+      }
+    ],
+    "chosen": "恢复",
+    "confidence": "high",
+    "forms": "restore an archived file → 恢复这个文件; a restore (noun) → 恢复",
+    "sources": "macOS zh-CN AppKit Revisions (Restore → 恢复); catalog (恢复 in 14 values)"
   },
   "resume": {
     "avoid": [
@@ -2426,6 +2666,11 @@
     "forms": "previous / next result 上一个 / 下一个结果",
     "sources": "standard"
   },
+  "secret-access-key": {
+    "chosen": "秘密访问密钥",
+    "confidence": "high",
+    "sources": "AWS zh-CN docs (访问密钥 ID 和秘密访问密钥, IAM and S3 access-management, checked 2026-10-02)"
+  },
   "see": {
     "chosen": "查看",
     "confidence": "high",
@@ -2482,6 +2727,13 @@
     "confidence": "confirmed",
     "forms": "a path in a sentence: “设置 > AI” (whole path in full-width quotes, separator mirrors the English)",
     "sources": "macOS"
+  },
+  "share-link": {
+    "chosen": "共享链接",
+    "confidence": "high",
+    "forms": "Copy share link → 拷贝共享链接; with a duration → 拷贝共享链接（7 天）; the copied toast → 已拷贝共享链接，有效期 7 天。",
+    "note": "共享 is also macOS zh-CN's Share menu, so the SMB network-share word and the hand-to-others sense coincide here; no exception needed.",
+    "sources": "catalog (链接 in 18 values, commands.cloudCopyGoogleDriveLink.label); macOS zh-CN 共享"
   },
   "share-menu": {
     "chosen": "共享",
@@ -2556,6 +2808,36 @@
     },
     "sources": "macOS"
   },
+  "size-unit-gibibyte": {
+    "chosen": "GiB",
+    "confidence": "high",
+    "sources": "catalog common.sizeUnit.gibibyte; IEC 80000-13 (binary) / SI (decimal)"
+  },
+  "size-unit-kibibyte": {
+    "chosen": "KiB",
+    "confidence": "high",
+    "sources": "catalog common.sizeUnit.kibibyte; IEC 80000-13 (binary) / SI (decimal)"
+  },
+  "size-unit-kilobyte": {
+    "chosen": "kB",
+    "confidence": "high",
+    "sources": "catalog common.sizeUnit.kilobyte; IEC 80000-13 (binary) / SI (decimal)"
+  },
+  "size-unit-mebibyte": {
+    "chosen": "MiB",
+    "confidence": "high",
+    "sources": "catalog common.sizeUnit.mebibyte; IEC 80000-13 (binary) / SI (decimal)"
+  },
+  "size-unit-pebibyte": {
+    "chosen": "PiB",
+    "confidence": "high",
+    "sources": "catalog common.sizeUnit.pebibyte; IEC 80000-13 (binary) / SI (decimal)"
+  },
+  "size-unit-tebibyte": {
+    "chosen": "TiB",
+    "confidence": "high",
+    "sources": "catalog common.sizeUnit.tebibyte; IEC 80000-13 (binary) / SI (decimal)"
+  },
   "skip": {
     "chosen": "跳过",
     "confidence": "confirmed",
@@ -2614,11 +2896,30 @@
     "forms": "the rollback tooltip's stop 停止 (never 取消); you stopped opening your phone 你停止了打开手机",
     "sources": "macOS AppKit"
   },
+  "storage": {
+    "accept": ["储存空间"],
+    "chosen": "存储",
+    "confidence": "high",
+    "forms": "cloud / object / cold storage → 云存储 / 对象存储 / 冷存储; S3 storage → S3 存储; Apple's Storage pane and iCloud storage → 储存空间 (Apple's spelling); storing logs → 日志存储",
+    "sources": "catalog (存储 in 12 values, fileExplorer.mtp.noStorage); macOS zh-CN 储存空间"
+  },
+  "store": {
+    "accept": ["存储", "存入"],
+    "chosen": "存",
+    "confidence": "high",
+    "forms": "store X in the Keychain → 存到钥匙串; sign in without storing it → 不存…直接登录; a file system that can't store X → 无法存储",
+    "sources": "catalog (servers.refusal.secretNotStored 存到钥匙串, errors.write.filesTooLargeForFilesystem.message.one 无法存储)"
+  },
   "streaming": {
     "chosen": "流式",
     "confidence": "high",
     "forms": "the viewer badge 流式读取",
     "sources": "MS terminology"
+  },
+  "subfolder": {
+    "chosen": "子文件夹",
+    "confidence": "high",
+    "sources": "macOS Finder (PE26.1 移到其任一个子文件夹中); TC zh-CN, DC, Nautilus, Thunar, Dolphin agree; MC says 子目录"
   },
   "subscription": {
     "chosen": "订阅",
@@ -2749,6 +3050,18 @@
     "confidence": "confirmed",
     "sources": "MS terminology"
   },
+  "tint": {
+    "avoid": [
+      {
+        "form": "淡色",
+        "why": "Microsoft's word for the other sense (a pale colour variant)"
+      }
+    ],
+    "chosen": "着色",
+    "confidence": "high",
+    "forms": "Tint X panes → 为 X 窗格着色; background tint → 背景着色",
+    "sources": "macOS zh-CN; catalog (着色 in 15 values, settings.appearance.tint*)"
+  },
   "title-bar": {
     "chosen": "标题栏",
     "confidence": "high",
@@ -2856,6 +3169,13 @@
     },
     "forms": "a host 无法连接 / 连不上 (servers.refusal.unreachable: Cmdr 连不上 {host}); a path or volume 无法访问; error prose 无法连到",
     "sources": "catalog"
+  },
+  "untouched": {
+    "accept": ["没动过", "不变"],
+    "chosen": "没有被动过",
+    "confidence": "high",
+    "forms": "the originals are untouched → 原文件没有被动过",
+    "sources": "catalog (errors.write.destinationNotFound.message.copy, errors.write.deviceDisconnected.sided.destination.copy); macOS AppKit Document (To keep the file unchanged…): 保持文件不变"
   },
   "update": {
     "chosen": "更新",
@@ -3053,6 +3373,18 @@
     "chosen": "调度中心",
     "confidence": "high",
     "sources": "macOS"
+  },
+  "space-key": {
+    "avoid": [
+      {
+        "form": "Space 键",
+        "why": "unlike Esc and Enter, macOS zh-CN localizes this key name (空格键) in FunctionKeyNames, Siri and Spotlight; TC, DC and MC agree"
+      }
+    ],
+    "chosen": "空格键",
+    "confidence": "high",
+    "forms": "按空格键 + verb; chord ⇧空格键 (macOS: Command-空格键)",
+    "sources": "macOS AppKit FunctionKeyNames (Space), SystemSettings Siri/Spotlight SPACEBAR_KEY → 空格键; TC zh-CN 1644, 5139 (用空格键选择时); Double Commander 空格键; Midnight Commander 空格键"
   },
   "spaces": {
     "chosen": "空间",

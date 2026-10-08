@@ -247,7 +247,7 @@ impl Index {
         // Ordered before the record below, because the rebuild deletes the database
         // the marker lives in.
         if state::is_failed(volume_id) {
-            self.forget_volume(volume_id)?;
+            state::clear_index(volume_id, crate::volume_files::Removal::IndexRebuild)?;
         }
         // ⚠️ **Before the transport dispatch below, deliberately.** A share that's
         // asleep, off the network, or wanting credentials refuses at its own gate,
@@ -319,8 +319,12 @@ impl Index {
 
     /// Forget a volume's index entirely: stop it and delete its database, so the
     /// disk comes back and a future start does a clean first walk.
+    ///
+    /// The folder-importance database goes with it, since it scores the folders of
+    /// the index being forgotten. The media index stays: what it holds is hours of
+    /// work, and turning the drive's indexing back on picks it up again.
     pub fn forget_volume(&self, volume_id: &str) -> Result<(), IndexError> {
-        state::clear_index(volume_id).map_err(Into::into)
+        state::clear_index(volume_id, crate::volume_files::Removal::Forgotten).map_err(Into::into)
     }
 
     /// Forget every volume's index: stop whatever is running and delete every
@@ -355,6 +359,29 @@ impl Index {
     /// thread the interface is waiting on.
     pub fn stop_removable_volume(&self, volume_id: &str, wait_at_most: std::time::Duration) -> crate::RemovableStop {
         state::stop_removable_volume(volume_id, wait_at_most)
+    }
+
+    /// A volume's mount point moved while it stayed mounted (the user renamed a
+    /// drive), and the host already serves it at its new root. Follow it there,
+    /// answering whether its index did.
+    ///
+    /// The index restarts at the new root and keeps its database: rows are
+    /// mount-relative, so nothing in it changes, and nothing is deleted on the
+    /// move's account. What a start always costs follows (a completed drive
+    /// reconciles in place), which is also what catches up on the changes nobody
+    /// heard while the old path stood empty.
+    ///
+    /// `false` when there's nothing to follow: the volume isn't indexing, already
+    /// sits at that root, or reads through the host's `Volume` (a share or a
+    /// phone), which the host re-roots on its own.
+    ///
+    /// **Blocking**: draining the running index can take seconds. Never call it on
+    /// a thread the interface is waiting on.
+    pub fn follow_volume_move(&self, volume_id: &str) -> bool {
+        let Some(volume) = crate::indexing::host::volumes::current().get(volume_id) else {
+            return false;
+        };
+        state::follow_the_move(volume_id, volume.root().to_path_buf())
     }
 
     /// Apply the master drive-indexing switch. Off stops every volume that's
@@ -397,7 +424,9 @@ impl Index {
     }
 
     /// How many bytes every index database occupies on disk right now, across all
-    /// volumes and including WAL sidecars.
+    /// volumes and including WAL sidecars, along with the folder-importance
+    /// databases that [`forget_all_volumes`](Self::forget_all_volumes) removes with
+    /// them. It is exactly what that call gives back.
     ///
     /// Reads the files, not the pool, because that's the only honest answer: a
     /// database a search's walk built is on disk with nothing registered for it

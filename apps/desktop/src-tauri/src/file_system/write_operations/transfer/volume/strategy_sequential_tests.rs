@@ -240,6 +240,52 @@ async fn sequential_extract_materializes_a_nested_subtree() {
     );
 }
 
+/// The extracted folders keep the archive's dates, set only once the data pass
+/// landed every member: the planning pass creates the folders and writes
+/// nothing, so dating them there would lose to the members landing after.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn sequential_extract_keeps_the_folders_dates() {
+    let fixture = TarGzFixture::from_items(&[
+        Item::Dir("docs/"),
+        Item::Dir("docs/sub/"),
+        Item::File("docs/a.txt", b"alpha"),
+        Item::File("docs/sub/b.txt", b"bravo"),
+    ]);
+    let source = fixture.volume();
+    let dest: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("dest"));
+    let state = make_state();
+    // The top-level folder's date arrives the way a copy's does: from the scan.
+    let scan = source.scan_for_copy(&fixture.inner("docs")).await.expect("scan");
+
+    copy_single_path(
+        &source,
+        &fixture.inner("docs"),
+        Some(true),
+        SourceFileFacts {
+            modified_at: scan.top_level_modified_at,
+            ..SourceFileFacts::default()
+        },
+        &dest,
+        Path::new("/out"),
+        &state,
+        &CreatedPaths::default(),
+        &LeafProgressLedger::silent_source(Arc::clone(&state)),
+        None,
+        WriteStaging::Stage,
+    )
+    .await
+    .expect("sequential extract");
+
+    for folder in ["/out", "/out/sub"] {
+        let listed = dest.get_metadata(Path::new(folder)).await.unwrap().modified_at;
+        assert_eq!(
+            listed,
+            Some(1_700_000_000),
+            "{folder}: the tar header's date must survive"
+        );
+    }
+}
+
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn compressed_tar_is_sequential_but_zip_is_random() {
     // The routing gate: `copy_single_path` sends a directory source to the

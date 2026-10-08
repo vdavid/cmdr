@@ -79,13 +79,5 @@
   "mtp.deviceFallbackName": "MTP-enhet",
   "@mtp.deviceFallbackName": {
     "sourceHash": "8ba7a69"
-  },
-  "mtp.error.exclusiveAccess": "En annan process har exklusiv åtkomst{blocking, select, none {} other { (blockeras av {blocking})}}",
-  "@mtp.error.exclusiveAccess": {
-    "sourceHash": "a81f306"
-  },
-  "mtp.error.permissionDenied": "USB-åtkomst nekad. Installera udev-regler och anslut igen",
-  "@mtp.error.permissionDenied": {
-    "sourceHash": "3362501"
   }
 }

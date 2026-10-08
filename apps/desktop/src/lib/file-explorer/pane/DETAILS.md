@@ -8,8 +8,8 @@ lifecycle, drag handling, volume tinting, and navigation primitives.
 
 `DualPaneExplorer.svelte` is the root: it owns both panes, the unified key/command dispatch, the dialog manager, and the
 MCP-exposed surface. `FilePane.svelte` is one pane: it owns its listing, cursor, selection, view mode, type-to-jump
-buffer, rename flow, breadcrumb, and the alt-view rendering ({#if/elseif} between `MtpConnectionView`,
-`NetworkMountView`, `RemoteConnectView`, `SearchResultsView`, `ErrorPane`, `VolumeUnreachableBanner`, and the regular
+buffer, rename flow, breadcrumb, and the alt-view rendering ({#if/elseif} between `NetworkMountView`,
+`RemoteConnectView`, `SearchResultsView`, `ListingStalledView`, `ErrorPane`, `VolumeUnreachableBanner`, and the regular
 list).
 
 ## File map
@@ -27,19 +27,24 @@ carry live here:
   inset. See `views/DETAILS.md`.
 - **`listing-diff-sync.svelte.ts` runs the `directory-diff` handler at two rates.** Cursor/selection reconciliation
   fires IMMEDIATELY (it has to stay exact; it also follows `move`d rows by identity, see `../DETAILS.md` § Operation
-  lifecycle), while the visible-listing refetch (soft-refresh tick, `totalCount`, stats, brief column widths) is
-  coalesced by a leading + trailing `createThrottle` at `INDEX_LISTING_UPDATE_MIN_INTERVAL_MS` (250 ms, ≤4/sec). Under
-  heavy churn the backend `diff_emitter` only collapses to ~50 ms (~20/sec), and each unthrottled refetch re-renders the
-  range into fresh WebKit compositor surfaces (1+ GB GPU under a storm), so the throttle is the demand-side cap. The
-  index-SIZE path (`listing-index-sizes-changed` → `FilePane.applyIndexSizes`) is a separate source, paced by the
-  backend (`src-tauri/src/listing_index_sizes/`: only rows whose shown values moved, at most one per listing per 2 s,
-  none while the window is hidden), and applied with no IPC but the status-bar totals.
+  lifecycle), as does the event's snapshot `totalCount`, while the visible-listing refetch (soft-refresh tick, stats,
+  brief column widths) is coalesced by a leading + trailing `createThrottle` at `INDEX_LISTING_UPDATE_MIN_INTERVAL_MS`
+  (250 ms, ≤4/sec). Under heavy churn the backend `diff_emitter` only collapses to ~50 ms (~20/sec), and each
+  unthrottled refetch re-renders the range into fresh WebKit compositor surfaces (1+ GB GPU under a storm), so the
+  throttle is the demand-side cap. The index-SIZE path (`listing-index-sizes-changed` → `FilePane.applyIndexSizes`) is a
+  separate source, paced by the backend (`src-tauri/src/listing_index_sizes/`: only rows whose shown values moved, at
+  most one per listing per 2 s, none while the window is hidden), and applied with no IPC but the status-bar totals.
 - **`git-browser-sync.svelte.ts::cleanup()` has to drop the SETTING listeners too**, not just the repo subscription, or
   they leak per pane.
 - **Two independent MCP mirrors, so a change to one doesn't cover the other**: `pane-mcp-sync.svelte.ts` mirrors pane
   state and deliberately skips network + search-results panes (`ServersHub` owns the MCP push for the network view and
   would get clobbered; a snapshot is local dialog state, not a directory agents query), while `tab-mcp-sync.svelte.ts`
   debounce-mirrors each pane's tab structure via `updatePaneTabs`.
+- **Two drags, two controllers, and they never meet**: `drag-drop-controller.svelte.ts` is the native FILE drag (Tauri's
+  drop events), while a TAB drag is `../tabs/tab-drag-controller.svelte.ts` on plain pointer events. `DualPaneExplorer`
+  creates both, hands each `TabBar` its `forPane()` face, and mounts `TabDragOverlay`; a tab drop lands in
+  `tab-operations.ts::handleTabDrop`. ❌ Don't grow tab logic into the file controller. Detail: `../tabs/DETAILS.md` §
+  Moving a tab.
 - **The pane mirror fetches its visible range in ONE `getFileRange`**, capped at `MAX_MIRRORED_ROWS`. A row at a time
   was ~100 IPC round trips per sync, and the app stopped answering IPC on a big directory
   (`docs/notes/listing-row-fetch-quadratic-2026-08-22.md`). ⚠️ The gate is `syncsToMcp`, a pane-KIND capability, so this
@@ -89,12 +94,22 @@ suite:
   this pane started, and the array also shrinks when another window deletes the same file, when a move purges its
   sources, and when a result is trashed from a normal pane. It needs `FilePane`'s `searchSnapshot` to read the store's
   mutation tick, which also keeps `effectiveTotalCount` (Cmd+A, cursor clamping) honest after a purge.
+- `history-cursor-sync.svelte.ts`: the pane's half of per-history-entry cursor memory, reporting each cursor move with
+  the listing it happened in and parking a Back / Forward destination's cursor until its rows land. Created AFTER
+  `snapshot-selection-sync`, so a snapshot restore runs after that remap in the same flush. The model and the leak it
+  guards against: `../navigation/DETAILS.md` § "Cursor memory per entry".
 - `path-sync.ts` / `hidden-files-resync.ts`: the prop-driven reload truth table, and the cursor follow after the
-  hidden-files toggle. ❗ A pane view with no listing (search results, a device-only phone, the network view) still
+  hidden-files toggle. ❗ A pane view with no listing (search results, a phone being opened, the network view) still
   COMMITS the new path (`sync-path`): skipping it on the network view left a pane that came from a share on that share's
   path, and its header read "Servers ▸ /Volumes/public". The resync first tells the backend the setting
   (`setListingIncludeHidden`), which picks the row space of the pane's `directory-diff`s and which changes reach it at
-  all (`src-tauri/src/file_system/listing/DETAILS.md` § "Diffs speak the pane's rows").
+  all (`src-tauri/src/file_system/listing/DETAILS.md` § "Diffs speak the pane's rows"). It runs whenever a listing
+  lands, not only on a toggle, and spans three IPC round trips, so it can be OVERTAKEN: by a navigation (which ends the
+  old listing in the same tick it clears the pane's id) or by a newer resync. An overtaken run stops at its next await
+  and writes nothing, and a read that rejects once overtaken is the expected gone-listing refusal
+  (`ListingLookupError::Gone`), swallowed. ❗ Overtaken is read off the pane's current listing id plus a per-pane run
+  counter (`createHiddenFilesResync`), ❌ never off the rejection's message; a failure on the listing the pane still
+  shows keeps rejecting.
 - `entries-snapshot.ts`: the Selection dialog's entry list and the operation's selected-names snapshot. Both adapt a
   search snapshot's rows; the Selection list keeps the search engine's BASENAME in `name` (a mask like `*.txt` has to
   mean the filename), unlike `SearchResultsView`'s own adapter, which synthesizes the `~`-shortened full path for the
@@ -108,6 +123,8 @@ suite:
 - `network-host-state.svelte.ts`: the open Network host and its queued auto-mount share.
 - `context-menu-anchor.ts`: where a keyboard-opened context menu pops (cursor row, else the scroll surface), as a pure
   rect → point function plus a DOM reader over it. § Keyboard context menu.
+- `rename-move-dialog.ts`: a rename chain's one Move dialog for a rename that copies on S3, held until the editor closes
+  (`../rename/DETAILS.md`, "In a chain, the Move dialog waits").
 - `rename-flow.svelte.ts`: the whole inline-rename flow (activation, save, the dialogs, the arrow-key chain). It lives
   here because it hangs off the pane, but everything it does is documented next to the rest of rename in
   `../rename/DETAILS.md`, whose `CLAUDE.md` you won't get autoloaded while editing this directory.
@@ -226,6 +243,33 @@ Page/Home/End, Enter, Tab, Backspace, rename entry, context menu, drag start, pa
 re-sort, listing replace) all call the factory's `clearJumpState()`. The generation counter discards stale async match
 responses. Backend match runs in `apps/desktop/src-tauri/src/file_system/listing/fuzzy_jump.rs`.
 
+**Quick filter (Filter typing mode, the default).** `fileExplorer.typeToJump.mode` picks what typing does: `filter`
+(Total Commander's quick filter) or `jump`. `routeTypingKey` (`type-to-jump-keys.ts`) is the one intercept for both, and
+in Filter mode `routeFilterKey` sends letters and digits (any printable once a pattern is on) to
+`quick-filter-controller.svelte.ts`; Backspace edits and Esc clears while a pattern is on; arrows and Enter fall
+through, so you navigate the filtered list. The filtering is the backend's
+(`apps/desktop/src-tauri/src/file_system/listing/ DETAILS.md` § Quick filter), and everything the pane reads (count,
+rows, selection, diffs) is the filtered row space.
+
+- **One call in flight, latest pattern wins**: keystrokes that land mid-call only move `pattern`, and the loop sends
+  whatever stands when the call returns. Successful bursts stay batched; refused growth is replayed one character at a
+  time so only unmatched characters disappear, not the valid prefix. Esc, Backspace, and reset cancel replay; appended
+  characters follow it. A navigation invalidates old responses even if its listing ID is reused.
+- **The answer starts a diff sequence** (`QuickFilterApplied.sequence`); the pane's row-state gate installs it, so a
+  late diff numbered before the switch, which speaks the old rows, is skipped (the backend half: § The quick filter and
+  in-flight diffs, in the listing `DETAILS.md`).
+- **Filter requests share `pane-row-state.ts` with sort, hidden visibility, and watcher reconciliation.** The gate
+  captures the applied revision for guarded backend selection remapping, retries typed `Changed` refusals after draining
+  batches, and installs the response before new-space batches drain. Generation changes invalidate async selection
+  reads; compare and operation snapshots require settled rows. Counts come from committed batches, so a trailing UI
+  refresh never restores an old count. `listing-filter-sync.svelte.test.ts` pins both delivery orders.
+- **The pattern belongs to its listing and its mode**: a new listing starts unfiltered (`reset()`, no IPC), and leaving
+  Filter mode clears it, since in Jump mode nothing could.
+- **Seen from outside**: the "Filter: …" badge (`TypeToJumpIndicator kind="filter"`) carries a × that clears by mouse
+  without taking focus; MCP's pane state carries `quickFilter` while one is on; the first filter ever shown raises a
+  once-ever toast (`quick-filter-intro.ts`, stamped on the way up) saying what happened, that Esc brings every file
+  back, and offering Jump or the Settings row.
+
 **Active-jump key widening.** `isTypeToJumpChar` (letters/digits) STARTS a jump. Once one is active (`isJumpActive()` —
 buffer non-empty, before the reset-timeout empties it), the intercept widens to `isPrintableJumpContinuation` (any
 single printable key, Shift allowed), so `-`, Space, etc. extend the buffer instead of firing their own single-char
@@ -299,11 +343,14 @@ folder” footer hint, so a shortcut rebind updates the clue without remounting 
 **Volume capabilities (`volume-capabilities.ts`).** Guard logic branches on a `VolumeCapabilities` record, ❌ never on a
 volume-id string. The record has two halves, and which half answers is the whole design:
 
-- **Rust answers "what can it do."** `Volume::capabilities()` publishes `backendCanWrite`, `canExport`, and
-  `canBeIndexed` per volume; they ride on `VolumeInfo.capabilities` and land on the record as `canWrite` / `canBeSource`
-  / `canBeIndexed` via `withBackendCapabilities`. `canBeIndexed` gates the switcher's index affordances
-  (`navigation/drive-index-manager.svelte.ts::isDriveRow`), and its per-kind default carries real weight for a phone,
-  whose row is clicked before it's dialed and so before any backend has published. Canonical:
+- **Rust answers "what can it do."** `Volume::capabilities()` publishes `backendCanWrite`, `canExport`, `canShareLinks`,
+  `canBeIndexed`, and `renamesCanCopy` per volume; they ride on `VolumeInfo.capabilities` and land on the record as
+  `canWrite` / `canBeSource` / `canShareLinks` / `canBeIndexed` / `renamesCanCopy` via `withBackendCapabilities`.
+  `renamesCanCopy` (S3) makes the Move dialog scan a same-volume move (`file-operations/transfer/DETAILS.md`).
+  `canShareLinks` gates "Copy share link" (S3): the context menu asks `rowCanShareLink` (a file, not inside an archive),
+  the palette asks it through `capabilitiesForPane` for the focused pane. `canBeIndexed` gates the switcher's index
+  affordances (`navigation/drive-index-manager.svelte.ts::isDriveRow`), and its per-kind default carries real weight for
+  a phone, whose row is clicked before it's dialed and so before any backend has published. Canonical:
   `apps/desktop/src-tauri/src/file_system/volume/DETAILS.md` § "Trait capability model".
 - **This module classifies "what is it."** `volumeKindOf` picks a closed `VolumeKind` (`local` / `smb` / `sftp` /
   `webdav` / `mtp` / `adb` / `network` / `search-results`), which keys a frozen, by-reference table of per-kind defaults
@@ -453,17 +500,14 @@ There's no Search-specific capabilities shim — `lib/search/capabilities.ts` ke
 - **`has-parent.ts`**: `computeHasParent` folds ONLY the snapshot rule via `hasParentRow`; the two PATH comparisons
   (`=== '/'`, `=== root`) stay.
 - **FilePane alt-view chain** (`FilePane.svelte`): the kind-structural view selection resolves through a `paneViewKind`
-  derived discriminant (`'network' | 'search-results' | 'mtp-connect' | 'normal'`) off `caps.kind` (+ the MTP
-  device-only connection sub-state, which the table doesn't carry — it's a runtime connection state, not a kind). The
-  `{#if}` chain branches on `paneViewKind` for the three alt-views (NetworkMountView / SearchResultsView /
-  MtpConnectionView) and the SelectionInfo footer (`paneViewKind === 'normal'`). The RUNTIME-state branches
-  (`unreachable`, the SAVED-place dial, the reconnect cycle's `RemoteConnectState`, the gave-up banner, `loading` /
-  `friendlyError` / `error`) stay per-feature and gate IN FRONT of the descriptor, byte-identical precedence. This is a
-  derived discriminant, NOT a new component. The git lookup and the type-to-jump keystroke read
-  `!caps.hasBackendListing` for the "is there a real directory" half; their MTP-path-specific checks
-  (`isMtpVolumeId(volumeId)` for git-skip, `isMtpDeviceOnly` for the jump) STAY — MTP has a backend listing but git
-  can't run on it, and the not-yet-connected sub-state isn't a kind capability. The dir-exists poll reads its own
-  capability instead, `paneFolderIsPolledForDeletion` (§ "Volume capabilities"). `caps` is derived once per pane
+  derived discriminant (`'network' | 'search-results' | 'normal'`) off `caps.kind`. The `{#if}` chain branches on
+  `paneViewKind` for the two alt-views (NetworkMountView / SearchResultsView) and the SelectionInfo footer
+  (`paneViewKind === 'normal'`). The RUNTIME-state branches (`unreachable`, the SAVED-place dial, the reconnect cycle's
+  `RemoteConnectState`, the gave-up banner, `loading` / `friendlyError` / `error`) stay per-feature and gate IN FRONT of
+  the descriptor, byte-identical precedence. This is a derived discriminant, NOT a new component. The git lookup and the
+  type-to-jump keystroke read `!caps.hasBackendListing` for the "is there a real directory" half; the git lookup's
+  `isMtpVolumeId(volumeId)` skip STAYS — MTP has a backend listing but git can't run on it. The dir-exists poll reads
+  its own capability instead, `paneFolderIsPolledForDeletion` (§ "Volume capabilities"). `caps` is derived once per pane
   (`caps = $derived(capabilitiesForPane(volumeId, currentPath))`); the named `isNetworkView` / `isSearchResultsView`
   deriveds re-source off `caps.kind`.
 
@@ -484,6 +528,9 @@ no session behind it, so every listing on it would refuse until something dials.
   rather than waiting for the row to flip to `direct` on the next broadcast, which is what makes the place feel like it
   opened rather than waited. ❗ Entering, ❌ not reloading the listing: the root, the path, the listing, and the disk
   space have to move together.
+- **A share that just went live is entered at the deepest folder that still exists** (`folderThatExists`, inside the
+  share, else its root). A restored tab keeps the folder it stood on in an unmounted share (`initialization.ts`), and
+  that folder may be gone by the time the mount lands; ❌ don't drop the walk and leave an error over a missing folder.
 - **A live SMB share is followed to where its mount IS**, whenever the pane's root differs from it OR the folder the
   pane stands in is outside it, and `connected` / `already_live` land at the LIVE path before the saved row's remembered
   one. ❗ A kernel mount can finish after a Cancel without updating the saved row: the pane then sat at the stale path
@@ -509,7 +556,8 @@ no session behind it, so every listing on it would refuse until something dials.
 ### A place whose root moved under the pane
 
 `volume-root-follow.ts` answers `volume-root-changed`: saving an edit to a CONNECTED place moved its root, its start
-folder, or both (`apps/desktop/src-tauri/src/network/DETAILS.md` § "Editing a connected place"). Where each path goes is
+folder, or both (`apps/desktop/src-tauri/src/network/DETAILS.md` § "Editing a connected place"), or a mounted drive was
+renamed (`apps/desktop/src-tauri/src/file_system/volume/DETAILS.md` § "A renamed drive"). Where each path goes is
 `../navigation/root-change-follow.ts`; this module applies that rule, in one order:
 
 1. ❗ **The volume store's row moves first** (`applyVolumeRootChanged`). The event arrives before the debounced
@@ -543,8 +591,8 @@ questions").
 - **❗ It is the ONE dialer, and it HOLDS the pane's listing** (`holdsListing`). Path resolution never dials, and a
   phone nobody has dialed has no registered volume, so a listing there can only come back refused (`NotConnected`, never
   `NotFound`: `src-tauri/src/adb/DETAILS.md`) and would put an error over the connecting state. The reload on connect is
-  what lists the phone. The hold is threaded through `path-sync.ts`'s `deviceIsConnecting` input (a `sync-path` arm,
-  like device-only MTP's) and the mount-time load's own branch.
+  what lists the phone. The hold is threaded through `path-sync.ts`'s `deviceIsConnecting` input (a `sync-path` arm) and
+  the mount-time load's own branch.
 - **❗ While the hold is on, a `null` state renders NOTHING**, so every way a dial can end has to leave a non-`null`
   one: a `refused` with the reason and, where a second try could work, a Try again. That covers both cancels (the button
   on `connecting` and the one on `waiting_for_device`), the backend's own `cancelled` answer, a failure with no typed
@@ -561,8 +609,8 @@ questions").
   readiness). A row SEEN with `capabilities` since the dial that comes back without them resets the factory's record,
   which re-holds the listing and dials again. ❌ A missing `capabilities` right after a dial is NOT an eject: the dial's
   own broadcast can land after `connectAdbDevice` answers, so the baseline is what the row says when the dial lands.
-- **MTP is deliberately NOT folded in.** Its volume id CHANGES on connect (device-only → storage), which is a different
-  pane transition with its own `path-sync.ts` arm, and it keeps `MtpConnectionView.svelte`.
+- **MTP needs no dialer.** The backend auto-connects a phone on hotplug and lists only its storages, so a pane only ever
+  stands on a storage that's already open.
 
 **The volume-id string compares that REMAIN are not guards — don't "finish the sweep".** A grep for
 `=== 'search-results'` / `=== 'network'` / `startsWith('mtp-')` (and the `!==` forms) across `apps/desktop/src/` returns
@@ -580,8 +628,7 @@ capability record is the "differently complicated" failure mode to avoid:
   network-mirror / copy-path-between-panes identity branches).
 - **Display / view selection.** `VolumeBreadcrumb.svelte` (the "Network" / "Search results" labels + the
   network-disabled gate), `FilePane.svelte` (`paneViewKind` in the `{#if}` chain, sourced off `caps.kind`; the
-  `isNetworkView` / `isSearchResultsView` named deriveds; the MTP device-only sub-state + the `loadDirectory` skip for
-  network/device-only panes), `MtpConnectionView.svelte` (device-only sub-state).
+  `isNetworkView` / `isSearchResultsView` named deriveds; the `loadDirectory` skip for network / search-results panes).
 - **Persistence / init mechanics.** `app-status-store.ts` (skip filesystem path-resolution for the virtual `network`
   volume on persist, and swap a stored `search-results://` path for a real folder at load — § "A snapshot never comes
   back"), `initialization.ts` (trust the stored `network` id at startup, no `resolvePathVolume`).
@@ -611,6 +658,9 @@ on MTP and a lie on SMB (another machine's writes never reached the watcher). Th
 (`transfer-pane-effects.ts`, the rename flows, `NewFolderDialog`) stay unforced on purpose: they fire after every
 transfer, and a forced re-read of a 1k-entry MTP folder costs ~17 s. Rationale lives with `refresh_listing` in
 `src-tauri/src/commands/file_system/listing.rs`.
+
+Same-folder copies top up both pane listings: the focused source pane needs the duplicate's row for inline rename, even
+when its watcher has not delivered the write. Cross-folder copies top up only the destination.
 
 **Explorer store (`explorer-state.svelte.ts`).** Module store owning the dual-pane navigation + UI-chrome state that
 `DualPaneExplorer` used to trap in component closures: `focusedPane`, `leftPaneWidthPercent`, `railFocused`, and the two
@@ -708,11 +758,10 @@ or doubles a real shortcut. Every handler here therefore resolves through `event
 
 - `selection-keys.ts` — the pure `classifySelectionKey`, mapping a keypress to `selection.toggle` / `toggleAndDown` /
   `selectAll` / `deselectAll` / `invert`. Its arms all `stopPropagation()`, so each command runs exactly once (`⌘A` used
-  to run twice, locally and centrally; invisible only because both did the same thing). `invert` defaults to `⇧8` plus a
-  bare `*`. No layout types `⇧8` as `8` (`*` on US, `(` on Hungarian), so `eventMatchesCommand` also tries the physical
-  `Digit<n>` key for a Shift+digit press and the binding stays layout-independent; the bare `*` is the numpad key, which
-  that retry can't reach (`NumpadMultiply` is not a `Digit<n>` code). The menu item carries no accelerator for the same
-  reason `+` / `-` don't: a bare `Shift+8` accelerator would eat `*` in every text field.
+  to run twice, locally and centrally; invisible only because both did the same thing). `invert` defaults to `*`, which
+  is whichever key types `*` on the user's layout, main row or numpad. The menu item carries no accelerator for the same
+  reason `+` / `-` don't: a bare-key accelerator would eat `*` in every text field.
+- `selection-dialog-keys.ts` — `+` / `-` → `selection.selectFiles` / `deselectFiles`, the same registry match.
 - `handleOpenOrParentKey` — `nav.open` (`Enter` / `⌘↓`) and `nav.parent` (`Backspace` / `⌘↑`). The `⌘Backspace`
   carve-out is now structural rather than a hand-written `!e.metaKey`: it's `file.delete`'s combo, not `nav.parent`'s,
   so it falls through to the dispatcher and deletes.
@@ -720,9 +769,9 @@ or doubles a real shortcut. Every handler here therefore resolves through `event
   fixed six plus Home/End/PageUp/PageDown), with `allowShift` for the extend-selection gesture. It replaced a partial
   `⌘←`/`⌘→` bail, so no modifier superset moves the cursor any more.
 
-`type-to-jump-keys.ts` and `selection-dialog-keys.ts` deliberately stay hand-rolled: they match a key CLASS (any
-printable character; the physical Minus key) rather than a combo. Both already reject ⌘/⌃/⌥, which is the property that
-matters. Full contract and the why: `$lib/shortcuts/DETAILS.md` § "Local handlers resolve through the registry too".
+`type-to-jump-keys.ts` deliberately stays hand-rolled: it matches a key CLASS (any printable character) rather than a
+combo, and rejects ⌘/⌃/⌥, which is the property that matters. Full contract and the why: `$lib/shortcuts/DETAILS.md` §
+"Local handlers resolve through the registry too".
 
 **Selection-dialog keys dispatch onto the bus.** The `+` / `-` keypresses are classified by `selection-dialog-keys.ts`
 and reach the bus through a typed `onCommand?: (commandId: CommandId) => void` prop chain: `FilePane` (the classifier at
@@ -785,7 +834,7 @@ architecture in `../drag/DETAILS.md` § "Self-drag identity".
 renders the copy on the FE from that typed error (`transfer-error-messages.ts`). The factory pattern keeps the giant
 component testable: pass deps in, get back a struct of state + handlers.
 
-That factory is a composition root over four siblings, and the split carries the safety argument of § "Birth context"
+That factory is a composition root over its siblings, and the split carries the safety argument of § "Birth context"
 below rather than merely spreading lines:
 
 - `dialog-props.ts`: the prop shape of every dialog plus `DialogStateDeps`. Types only, so the runtime modules can name
@@ -795,9 +844,23 @@ below rather than merely spreading lines:
 - `adopted-operation.svelte.ts`: the progress dialog's adopted arm, owning that slot and its four outcomes.
 - `archive-password-flow.svelte.ts`: the password prompt and its `transfer` / `browse` modes.
 - `transfer-op-label.ts`: the log-line label for an operation type, shared by the two families.
+- `programmatic-confirm.ts`: the MCP `dialog confirm`, owning the transfer and delete dialogs' registered confirms.
 
 `dialog-state.svelte.ts` keeps birth context, the confirmation / alert / error dialogs, and the cross-cutting queries
-(`anyDialogOpen`, `isConfirmationDialogOpen`, `dismissAllAfterRenderFailure`, the MCP `confirmOpenDialog`).
+(`anyDialogOpen`, `isConfirmationDialogOpen`, `dismissAllAfterRenderFailure`).
+
+**An MCP `dialog confirm` on the transfer or delete dialog presses the dialog's own confirm**, ❌ never a payload built
+from `transferDialogProps` / `deleteDialogProps`. The mounted `TransferDialog` registers its `handleConfirm` through
+`registerTransferConfirmer`, and `confirmOpenDialog` calls it with the mapped conflict policy; `DeleteDialog` does the
+same through `registerDeleteConfirmer`, so the press carries the scan preview and the mode the trash switch shows now,
+and a trash the walk just turned into a delete is handed back as it is for a person (all in `programmatic-confirm.ts`,
+pinned by `programmatic-confirm.test.ts` and
+`../../file-operations/delete/DeleteDialog.programmatic-confirm.svelte.test.ts`). The props hold what the dialog OPENED
+with; the dialog holds what it will actually send (the edited path, the picked volume, the scan preview). For a compress
+the two differ from the first frame: the box names `<folder>/<name>.zip` and the props only the folder, which the
+backend's `ensure_zip_writable` refuses as a read-only destination. A confirm that lands mid-startup waits for the scan
+start like a person's fast Enter does; it does not wait for the conflict-name listing (only the auto-confirm does), so
+it stays inside the MCP ack budget. Pinned by `dialog-state.transfer-confirm.svelte.test.ts`.
 
 `handleTransferConfirm` takes no scan flag: the progress dialog doesn't wait for a `TransferDialog` preview, because the
 backend registers the operation at confirm and its own task waits for the preview it claimed
@@ -1081,6 +1144,31 @@ injected accessors (the `type-to-jump-controller` idiom, not a state-owning `.sv
 `adoptListing` share `loadGeneration`, so they live in the loader too. `cleanup()` (called from FilePane's `onDestroy`)
 owns the full listing teardown (`cancelListing` + `listDirectoryEnd` + `evictPerPathIconsForDir` + the six `unlisten*`).
 
+**A landed listing is tracked as live (`listing-liveness.ts`), and a lost one is re-listed.** `handleListingComplete`
+and `adoptListing` register the pane's listing; `abandonListing` and `cleanup` drop it. The registry heartbeats every
+tracked listing through `keepListingsAlive` every 30 min, so the backend's six-hour orphan reaper never takes a pane
+left idle on a quiet folder. When the heartbeat or any listing read (`onListingGone`) finds a tracked listing gone,
+`relistLostListing` re-lists `loadedPath` with the cursor on the same entry (the selection doesn't survive). Gotcha/Why:
+❌ don't track at `listDirectoryStart`. A read racing the backend's cache insert also answers `Gone`, which would make a
+loading pane re-list itself in a loop. Backend half: `src-tauri/src/file_system/listing/DETAILS.md` § "Backstop reaper".
+
+**Fast navigation never paints an empty loading frame.** `listing-presentation.svelte.ts` keeps the last settled
+`listingId`, row count, and `..` row (`parentRow`) for 100 ms after the next load starts. The `..` row belongs to the
+listing it heads: the lists once got the new path's `..` over the old rows, and a jump from `/a` to `/a/b/c` made it
+`/a/b`, a row `/a` also lists, which threw Svelte's `each_key_duplicate`. ❌ Don't feed the lists the live `hasParent` /
+`parentPath`. If that load settles inside the grace period, the loading screen never mounts; if it outlasts the
+threshold, the cancellable `LoadingIcon` covers the ROW AREA through the list's `loadingOverlay` snippet. ❗ The list
+itself stays mounted through every load, so its column header never blinks out on a slow volume (a GCS bucket, a busy
+share); swapping the whole list for `LoadingIcon` is what made it vanish. The old rows and the header are presentation
+only: a transparent `.loading-shield` (rendered in the list branches so it never covers a connect view or an error)
+blocks pointer input for the whole load, while `FilePane.isLoading()` keeps keyboard and command paths blocked. Once the
+listing lands, Brief and Full fetch the new visible range and atomically replace the old rows rather than clearing
+first. Startup shows the loading view immediately because there is no settled listing to preserve, header included; the
+list hides its "empty folder" text while the overlay is up. An error or a stalled listing still takes the whole content
+area. Pinned in `file-pane-loading-header.svelte.test.ts`. The timer and snapshot contract are pinned in
+`listing-presentation.svelte.test.ts`; the atomic swap and a late old-range response are pinned in
+`../views/full-list-cache.test.ts`.
+
 **No pane hosts a credential form.** Every credential ask in the app is the one modal sign-in sheet
 (`$lib/servers/sign-in-sheet-state.svelte.ts`), raised for SMB through `../network/smb-sign-in.ts`. A pane that could
 render one made "which pane hosts it right now" a question the app had to answer for anything app-global (the OS-mount
@@ -1112,8 +1200,8 @@ all.
 
 _Decision / why:_ assuming the pane's volume still owns the fallback target strands the pane. An SMB share unmounts, its
 volume id is unregistered, the walk-up climbs from `/Volumes/<share>/sub` out to `/Volumes` (owned by the ROOT volume),
-and the listing goes out under the share's dead id → `Path not found: Volume not found`. It's PERMANENT, not transient:
-the landed path exists, so the poll's miss counter resets and nothing retries. Note the walk-up gets there only because
+and the listing goes out under the share's dead id → `VolumeError::NotFound`. It's PERMANENT, not transient: the landed
+path exists, so the poll's miss counter resets and nothing retries. Note the walk-up gets there only because
 `getVolumePath()` reports `/` for an unregistered volume (`DualPaneExplorer`'s `volumes.find(…)?.path ?? '/'`), which
 also disarms the "volume root is gone, skip" guard in `deleted-dir-poll.ts`. That masking is deliberate cover, not a
 second bug to fix: nothing else moves a pane off a vanished volume, so the poll is the only rescue, and walking up to a
@@ -1146,7 +1234,8 @@ single module — A5 is per concern, not per call shape):
   That's tab CRUD — a separate surface. The subscriber owns active-tab NAV-state + focus; `tab-operations` owns tab
   structure. Both write `app-status.json` tab keys through `savePaneTabs`, but a nav change and a tab-bar action are
   distinct triggers. The same split applies to the MCP `tab` tool's CRUD branches in `handleMcpTabAction` (close /
-  close_others / set_pinned), which keep their own `saveTabsForPaneSide`.
+  close_others / set_pinned), which keep their own `saveTabsForPaneSide`. A tab MOVE (a drag, or MCP `tab move`)
+  persists from `moveTabToPane`: both panes when the tab crossed over, one for a reorder.
 - **The MCP backend mirror** (`syncTabsToBackend` / `updatePaneTabs` / `updateFocusedPane`, L8): the Rust state store
   for MCP, a different target and debounce (100 ms), NOT disk persistence. Untouched.
 - **Dotfile visibility**: the `listing.showHiddenFiles` SETTING, not pane state and not `app-status`. Both panes read
@@ -1273,6 +1362,25 @@ subscriber. Two behaviors the fold preserves byte-for-byte:
   navigated pane focused. `shiftsFocus(source)` in `navigate.ts` is the single source of that rule. The `'fallback'` and
   `'cancel'` sources are also `terminal`: a fixed recovery target, so no old-path pre-save and no background
   `determineNavigationPath` correction.
+
+### A folder that stops answering
+
+When a listing's volume goes quiet mid-read (a NAS whose server stopped answering), the backend emits `listing-stalled`
+after 8 s and keeps the listing alive, retrying on its own (`apps/desktop/src-tauri/src/file_system/listing/DETAILS.md`
+§ "Stalled listings"). `listing-loader.ts` turns that into the pane's `stalled` state (the event's `stalledOn`, `null`
+when not stalled), and `FilePane` renders `ListingStalledView` in place of the spinner: the folder, a sentence saying
+the server isn't answering, the drive isn't, or (for `unknown`) "the server or drive", Try again (a fresh
+`navigateToPath` of the same folder), and Go back (the same step as Esc, so § "Escape during a load" decides where). The
+load stays in flight underneath: the listing lands through the ordinary handlers, and any progress, read-complete,
+complete, error, or cancel for that load clears it, as does the next `loadDirectory`.
+
+- **A load that ends never renders as an empty list.** An error event shows the error screen (`showListingError`); a
+  cancel goes back. Both push to MCP, and `cmdr://state` carries `listing: loading | stalled | error` (from
+  `paneListingOf`) beside `totalFiles`, so an agent can tell a stuck or failed folder from an empty one.
+- **The MCP push happens at the stall and at the error, ❌ not at every load's start.** A push bumps the pane-state
+  `generation` that `await` waits on, and a push mid-navigation would satisfy a waiter before the listing landed.
+- Pinned by `listing-loader.stalled.test.ts`, `ListingStalledView.svelte.test.ts`, and the `paneListingOf` cases in
+  `pane-mcp-sync.svelte.test.ts`.
 
 ### Escape during a load
 
@@ -1418,8 +1526,8 @@ survive the rebuild on the Rust side, so they aren't in that list.
 - **A listing lookup can outlive its listing.** `abandonListing` ends the backend listing the moment the pane walks
   away, so a `findFileIndex` still in flight answers refused, and one that succeeded names rows no longer on screen. A
   caller that fires and forgets compares the pane's listing id before and after, ❌ never the refusal's message:
-  `pane-commands.ts::moveCursorByNameInFileListing` answers "not found". The `directory-diff` and
-  `write-source-item-done` chains in `listing-diff-sync.svelte.ts` don't guard this yet.
+  `pane-commands.ts::moveCursorByNameInFileListing` answers "not found". The diff and source-item continuations use
+  `pane-row-state.ts` tokens plus backend revision validation (see Compare directories below).
 - **Parent offset.** When `hasParent`, frontend cursor index = backend index + 1. `toFrontendIndices` applies this; the
   type-to-jump match callback applies it manually. Forgetting it lands the cursor one row off on every match.
 - **Selection's `SvelteSet` requires mutations, not reassignment.** `selectionState.selectedIndices.add(i)` works;
@@ -1594,6 +1702,40 @@ open in the default app, or ask. The decision is a pure function; the UI is a sm
   Installs from before the split are carried over by settings migration 5 (`settings/settings-store.ts`), which unpacks
   the old `behavior.archiveEnterBehavior` JSON blob into the three keys and deletes it.
 
+## Compare directories (⇧F2)
+
+`selection.compareDirectories*` (⇧F2 and two variants) is Total Commander's "Compare directories":
+`compare-directories.ts` asks the backend (`src-tauri/src/file_system/listing/compare.rs`, where the matching rules
+live) which rows each pane should select, replaces both selections with the answer (plus each pane's own `..` offset),
+and says what happened in a toast. What the user should know, and the copy says: it compares only the files directly in
+the two folders, by name and the listed modification time or size, never contents and never subfolders, so "nothing to
+select" is worded per mode and promises no more than that.
+
+- **`pane-row-state.ts` owns each pane's applied row revision and view gate.** Initial rows have sequence zero; loading
+  buffers transitions until the initial cursor and selection are installed. `DirectoryDiff.batches` preserves each
+  `{fromSequence, sequence, totalCount, changes}` transition. Apply only a batch whose predecessor is the applied
+  revision, synchronously install its count/cursor/selection, then advance the revision. Buffer out-of-order successors,
+  ignore already-applied endpoints, and never flatten changes from different row spaces or treat a gap as applied.
+  Scrolling, fetching, and throttled rendering are effects after the logical installation, not prerequisites.
+- **Sorting and hidden visibility share one serialized gate.** Gate before requesting IPC. Each request supplies the
+  exact applied sequence and freshly captured selection. Both commands return an atomic `ResortResult` with sequence,
+  count, cursor, and selection. Install the response synchronously, then drain buffered successors. A typed `changed`
+  refusal drains applicable diffs and recaptures the selection before a bounded retry; it never relabels stale indices
+  with a newer revision. Navigation, replacement, and disposal invalidate the response.
+- **Comparison needs two ready, identical pane objects.** Backend `settled` means the cached visibility matches the
+  request; it does not assert that frontend rows have caught up. Both applied sequences must match the result. Readiness
+  excludes loading, view changes, gaps, operation tracking, and async row work. Apply both selections in one synchronous
+  turn. Retry unsettled revisions using `COMPARE_RETRY_DELAY_MS` / `COMPARE_ATTEMPTS`, then warn. A local view
+  generation drops answers overtaken by reconfiguration, including hidden off/on ABA; per-pane request tokens make the
+  latest comparison mode win. A `gone` listing stays quiet; `timedOut` / `internal` toast.
+- **Async continuations are not row installations.** Operation name and pending rename lookups hold async-work leases,
+  capture listing/generation/revision/work tokens, and validate the backend revision before writing. Compare selections,
+  clearing an operation snapshot, reconfiguration, and disposal invalidate old work. Pending rename still allows the
+  synchronous selection remap; reconfiguration clears its cursor intention.
+- **F5 resolves selected paths and counts under one lock.** `transfer-operations.ts` calls `getSelectionSnapshot` with
+  backend-space indices and the exact applied revision. A typed `changed` / `gone` refusal warns and opens no transfer,
+  rather than resolving those same old indices in a newer cache. The caller also rejects replaced/navigated panes.
+
 ## Select all of the same kind
 
 `selection.selectSameKind` (`⌥⇧=`, or the numpad `⌥+`) adds every row of the cursor row's kind to the selection, the way
@@ -1719,6 +1861,8 @@ directory owns is whether the item MAY appear, pushed as `PaneContextMenuFacts.c
 `pane-pointer.ts::handleContextMenu`. Rust adds one more condition of its own: macOS has to actually offer a service.
 The same flag gates the context menu's `Services` submenu, which asks the same question for the same reason (a macOS
 service takes file URLs too): `src-tauri/src/menu/DETAILS.md` § "Services in the right-click menu".
+`PaneContextMenuFacts.canTag`, the Finder tag colors, carries the same `rowIsOsVisible` answer as its own flag (a tag is
+an xattr written through the row's path). Why: `src-tauri/src/file_system/listing/DETAILS.md` § "Finder tags".
 
 A share service takes file URLs, so the question is whether the right-clicked ROW has a real file behind it, and it
 needs three inputs rather than one kind lookup (`rowIsOsVisible` in `volume-capabilities.ts`):
@@ -1734,9 +1878,10 @@ about the pane's own FOLDER, so a search-results snapshot answers no while every
 archive-inner pane answers yes (the terminal opens the folder holding the `.zip`) while its rows have nothing behind
 them. Folding them into one flag would be wrong for both panes.
 
-Surfaces other than the two file panes leave `canShare` at its `false` default, so the Search dialog's row menu carries
-no `Share` today. Not a considered no: it's the "a surface that can't answer says nothing" default the whole
-`PaneContextMenuFacts` object takes.
+The two surfaces that show search hits, the snapshot pane and the Search dialog, pass `canShare` and `canTag` as `true`
+from one place, `$lib/search/search-hit-menu.ts`: every hit is a real file the index walked, so there's no per-row
+question to ask. Any other surface leaves both at their `false` default, the "a surface that can't answer says nothing"
+default the whole `PaneContextMenuFacts` object takes.
 
 ## Feeding the macOS Services menu
 
@@ -1773,7 +1918,7 @@ pushed for it (`src-tauri/src/services_menu/DETAILS.md` § "The right-click menu
 Two of this directory's modules are analytics chokepoints, and they're chokepoints on purpose — a per-call-site event
 drifts the moment a fourth trigger appears. A third module reaches one that lives elsewhere.
 
-- `tab-operations.ts` emits the four `tab_*` events. It's the layer every trigger funnels through (the tab bar, the File
+- `tab-operations.ts` emits the five `tab_*` events. It's the layer every trigger funnels through (the tab bar, the File
   menu, the keyboard, the palette, the MCP `tab` tool), and the pure `tabs/tab-state-manager.svelte.ts` beneath it is
   deliberately left alone: unit tests drive it directly, so emitting there would fire events from the test suite.
 - `drag-drop-controller.svelte.ts::handleDrop` emits `drop_received` on EVERY arm, refusals included.
@@ -1848,11 +1993,14 @@ refusals only Settings can clear and never appears beside `retry`.
 would ask for at the moment it flipped (`getSignInShape`), and a `nothing` shape means no secret a person could type
 would bring the session back. The banner then says so instead of offering a button that cannot work.
 
-❗ **A changed host key offers Disconnect, ❌ not "Trust it".** Nobody can answer for a fingerprint they haven't been
-shown, and nothing on this side holds one: the backend keeps no pending prompt for a REGISTERED volume. Disconnecting
-drops the dead session and leaves the place a `saved` row, so opening it dials afresh — and THAT dial's
-`needs_host_key_approval` outcome is what the sheet's key step renders. The path works today; a backend command handing
-back the pending prompt would make it one click instead of two.
+❗ **A changed host key offers "Check the key" and Disconnect, ❌ never "Trust it".** Nobody can answer for a
+fingerprint they haven't been shown, and nothing on this side holds one: the backend keeps no pending prompt for a
+REGISTERED volume. So "Check the key" (`smb-view-state.svelte.ts::handleCheckHostKey`) drops the dead session FIRST (a
+dial while it's registered answers `already_connected`), then dials the saved place through `connectPlace`'s arm 3,
+whose `needs_host_key_approval` outcome is what the sheet's key step renders, with the sheet's own choices. The dial
+stops at the host key, before any secret is offered. Dropping the session sends the pane home (`volume-unmounted`), so a
+sheet that connects puts the pane back on the place (`enter`); a cancelled one leaves it home, where Disconnect leaves
+it too. A backend command handing back the pending prompt would skip the redial.
 
 ❗ **A state lands only once something can act on it.** Adding one before its handler puts a button on screen that does
 nothing, which is the one thing this view refuses to do (`../../servers/DETAILS.md` § "The sheet contract").

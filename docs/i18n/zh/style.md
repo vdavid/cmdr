@@ -24,8 +24,8 @@ The must-know rules; the rest of this file elaborates them.
   operation → `无法完成`, "Something went wrong" → `出了点问题`. `错误` survives only in the feature name `错误报告`. No
   apology in a notice that reports a deliberate choice.
 - **Demonstratives**: the spoken `这个` / `这项` / `这次` / `这台` over the written `此` / `该`; `此` only where a terse
-  label already settled it (`此驱动器` in the drive-index family, `此设备` / `此服务器` busy tooltips). Prose likewise
-  takes `只` over `仅` and `还没` over `尚未`.
+  label already settled it (`此驱动器` in the drive-index family). Prose likewise takes `只` over `仅` and `还没` over
+  `尚未`.
 - **Buttons and menu items**: a bare verb, no politener (`拷贝`, `移动`, `打开`, `删除`, `取消`). Progress lines `正在…`
   (`正在扫描…`, `正在连接到 {name}…`); results and state badges the perfective `已…` (`已拷贝`, `已存档`, `已暂停`),
   except a state the user didn't cause (`在附近发现`). A tool line pairs `正在…` / `已…` on one verb phrase.

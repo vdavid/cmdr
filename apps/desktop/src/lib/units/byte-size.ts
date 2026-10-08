@@ -2,13 +2,20 @@
  * Byte-size and byte-rate formatting: the unit math, with the binary/SI base
  * passed in explicitly.
  *
- * Pure and settings-free, so it stays testable and importable from anywhere.
- * The reactive wrappers that read the user's `appearance.fileSizeFormat` live
- * in `index.ts`; prefer those in UI code.
+ * Settings-free, so it stays testable and importable from anywhere. The
+ * reactive wrappers that read the user's `appearance.fileSizeFormat` live in
+ * `index.ts`; prefer those in UI code.
+ *
+ * The unit words ("MiB", "MB", "Mo", "bytes") are catalog copy in the UI
+ * language (`common.sizeUnit.*`), so a translator owns them; the digits follow
+ * the formatting locale like every other number. Each base has its own symbols:
+ * base 1024 is IEC binary (KiB, MiB, GiB, TiB, PiB), base 1000 is SI decimal
+ * (kB, MB, GB, TB, PB), so the symbol always names the divisor behind the digits.
  */
 
 import type { FileSizeFormat, FileSizeUnit } from '$lib/settings/types'
 import { getNumberFormatter } from '$lib/intl/number-format'
+import { tString } from '$lib/intl/messages.svelte'
 
 /**
  * A count of bytes, distinct from any other number.
@@ -46,11 +53,26 @@ export function bytesPerSecond(rate: number): BytesPerSecond {
   return rate as BytesPerSecond
 }
 
-/** Binary units (base 1024), the traditional computing ones. */
-const binaryUnits = ['bytes', 'KB', 'MB', 'GB', 'TB', 'PB']
+/** The index of the top unit (PiB / PB); larger values stay there. */
+const TOP_UNIT_INDEX = 5
 
-/** SI units (base 1000), the International System of Units. */
-const siUnits = ['bytes', 'kB', 'MB', 'GB', 'TB', 'PB']
+/** The catalog symbol per unit index 1–5 (KiB … PiB), base 1024. */
+const BINARY_UNIT_KEYS = [
+  'common.sizeUnit.kibibyte',
+  'common.sizeUnit.mebibyte',
+  'common.sizeUnit.gibibyte',
+  'common.sizeUnit.tebibyte',
+  'common.sizeUnit.pebibyte',
+] as const
+
+/** The catalog symbol per unit index 1–5 (kB … PB), base 1000. */
+const SI_UNIT_KEYS = [
+  'common.sizeUnit.kilobyte',
+  'common.sizeUnit.megabyte',
+  'common.sizeUnit.gigabyte',
+  'common.sizeUnit.terabyte',
+  'common.sizeUnit.petabyte',
+] as const
 
 /** The divisor between adjacent units under the chosen base. */
 export function baseFor(format: FileSizeFormat): number {
@@ -58,14 +80,50 @@ export function baseFor(format: FileSizeFormat): number {
 }
 
 /**
- * The user-facing label for `kB`/`MB`/`GB` under the current binary/SI base.
- * Binary mode shows `KB` (uppercase), SI shows `kB`. `MB` and `GB` are the same
- * in both, but we route them through one helper so callers never hand-pick the
- * casing.
+ * The unit word for a unit index (0 = bytes … 5 = PiB / PB), in the UI language.
+ * Every tier above bytes has a binary and an SI symbol (`MiB` / `MB` in English),
+ * and the byte word takes the plural form for `count`.
+ */
+function unitWord(unitIndex: number, format: FileSizeFormat, count: number): string {
+  if (unitIndex === 0) return bytesLabel(count)
+  const keys = format === 'binary' ? BINARY_UNIT_KEYS : SI_UNIT_KEYS
+  return tString(keys[Math.min(unitIndex, TOP_UNIT_INDEX) - 1])
+}
+
+/**
+ * The byte unit word for `count` bytes, in the UI language and its plural
+ * rules ("1 byte", "2 bytes", French "0 octet"). For a raw byte count shown
+ * beside its digits, like the "(1,234,567 bytes)" line in a size tooltip.
+ */
+export function bytesLabel(count: number): string {
+  return tString('common.sizeUnit.byte', { count })
+}
+
+/**
+ * The user-facing label for `kB`/`MB`/`GB` under the current binary/SI base,
+ * in the UI language: English binary shows `KiB` / `MiB` / `GiB`, SI shows
+ * `kB` / `MB` / `GB`. The tokens are the stable unit IDs, not the labels.
+ * Every unit label goes through here (or the formatters below) so no caller
+ * hand-picks the symbol or the language.
  */
 export function unitLabel(unit: 'kB' | 'MB' | 'GB', format: FileSizeFormat): string {
-  if (unit === 'kB') return format === 'binary' ? 'KB' : 'kB'
-  return unit
+  return unitWord(unitPower(unit), format, 0)
+}
+
+/** The power of the base a forced unit stands for. */
+function unitPower(unit: 'kB' | 'MB' | 'GB'): number {
+  return unit === 'kB' ? 1 : unit === 'MB' ? 2 : 3
+}
+
+/**
+ * A formatted size plus its size tier, so a caller can color it without
+ * reading the unit back out of the text (which is translated copy).
+ */
+export interface TieredSize {
+  /** The size as shown, like "1.02 MiB" or "1,02 Mo". */
+  text: string
+  /** The magnitude tier, as {@link dynamicTierIndex} gives it (0 = bytes … 4 = TB and up). */
+  tier: number
 }
 
 /**
@@ -74,7 +132,7 @@ export function unitLabel(unit: 'kB' | 'MB' | 'GB', format: FileSizeFormat): str
  * Without `forceUnit`, picks the friendliest unit per value (the "dynamic"
  * behavior). With `forceUnit` (`'kB'`/`'MB'`/`'GB'`), always renders in that
  * unit so sizes are apples-to-apples across a directory. The base (1024 vs
- * 1000) and the kilobyte label casing both come from `format`.
+ * 1000) and the unit symbols (IEC vs SI) both come from `format`.
  *
  * `bytes` mode is not handled here — callers route raw-byte rendering through
  * `formatSizeTriads` for the colored triad treatment.
@@ -86,7 +144,7 @@ export function unitLabel(unit: 'kB' | 'MB' | 'GB', format: FileSizeFormat): str
  * A size someone compares or copies keeps its two decimals.
  *
  * @param byteCount Number of bytes
- * @param format 'binary' uses 1024-based (KB/MB/GB), 'si' uses 1000-based (kB/MB/GB)
+ * @param format 'binary' uses 1024-based (KiB/MiB/GiB), 'si' uses 1000-based (kB/MB/GB)
  * @param forceUnit Optional fixed unit to render in
  * @param rounded Render the live form (a tenth below ten, whole units above)
  */
@@ -96,27 +154,46 @@ export function formatFileSizeWithFormat(
   forceUnit?: 'kB' | 'MB' | 'GB',
   rounded = false,
 ): string {
+  return formatTieredSize(byteCount, format, forceUnit, rounded).text
+}
+
+/**
+ * {@link formatFileSizeWithFormat}, plus the size tier to color it by. Under a
+ * forced unit the tier still follows the magnitude, so a 349-byte file shown as
+ * "0.00 MiB" keeps the bytes tier.
+ */
+export function formatTieredSize(
+  byteCount: number,
+  format: FileSizeFormat,
+  forceUnit?: 'kB' | 'MB' | 'GB',
+  rounded = false,
+): TieredSize {
   const base = baseFor(format)
-  const units = format === 'binary' ? binaryUnits : siUnits
   const formatScaled = rounded ? formatSizeLive : formatSizeDecimal
+  const tier = dynamicTierIndex(byteCount, format)
 
   if (forceUnit) {
-    const power = forceUnit === 'kB' ? 1 : forceUnit === 'MB' ? 2 : 3
+    const power = unitPower(forceUnit)
     const value = byteCount / base ** power
-    return `${formatScaled(value)} ${unitLabel(forceUnit, format)}`
+    return { text: `${formatScaled(value)} ${unitWord(power, format, value)}`, tier }
   }
 
-  let value = byteCount
-  let unitIndex = 0
-  while (value >= base && unitIndex < units.length - 1) {
-    value /= base
-    unitIndex++
-  }
-
+  const { value, unitIndex } = scaleToFriendliestUnit(byteCount, base)
   // Sub-base values render as a bare integer (matching the old `String(value)`);
   // anything scaled into kB+ shows two fraction digits unless `rounded`.
   const valueStr = unitIndex === 0 ? formatSizeInteger(value) : formatScaled(value)
-  return `${valueStr} ${units[unitIndex]}`
+  return { text: `${valueStr} ${unitWord(unitIndex, format, value)}`, tier }
+}
+
+/** Divide down to the largest unit the value reaches, capped at PB. */
+function scaleToFriendliestUnit(byteCount: number, base: number): { value: number; unitIndex: number } {
+  let value = byteCount
+  let unitIndex = 0
+  while (value >= base && unitIndex < TOP_UNIT_INDEX) {
+    value /= base
+    unitIndex++
+  }
+  return { value, unitIndex }
 }
 
 /**
@@ -167,6 +244,19 @@ function formatSizeLive(value: number): string {
 }
 
 /**
+ * A preset size, like a setting's option, in its friendliest unit with only the
+ * fraction digits it has: "100 MiB", "3 GiB", "1.5 GiB". For fixed amounts a
+ * person picks from, where "100.00 MiB" would be noise. The base and symbols come
+ * from `format`, so a binary-valued preset passes `'binary'` whatever the user's
+ * display setting is: the label has to name the base the value was built in.
+ */
+export function formatRoundSize(byteCount: number, format: FileSizeFormat): string {
+  const { value, unitIndex } = scaleToFriendliestUnit(byteCount, baseFor(format))
+  const text = getNumberFormatter({ maximumFractionDigits: 2, useGrouping: false }).format(value)
+  return `${text} ${unitWord(unitIndex, format, value)}`
+}
+
+/**
  * Resolve a `FileSizeUnit` to the fixed unit token (or `null` for the dynamic
  * mode). Bytes mode also returns `null` here because the raw-byte path is not
  * a "human-friendly with forced unit" case; it goes through `formatSizeTriads`
@@ -180,7 +270,7 @@ export function fixedUnitFor(unit: FileSizeUnit): 'kB' | 'MB' | 'GB' | null {
 /**
  * Magnitude tier of `byteCount` under the chosen base — the tier dynamic mode
  * would settle on for this value. Returns an index into the canonical tier
- * order: 0=bytes, 1=kB/KB, 2=MB, 3=GB, 4=TB+ (TB and PB share the top tier).
+ * order: 0=bytes, 1=KiB/kB, 2=MiB/MB, 3=GiB/GB, 4=TiB+/TB+ (the top two units share a tier).
  *
  * Forced-unit display modes use this so the tier color still tracks the
  * file's real size, even though the rendered label is fixed (a 349-byte file
@@ -219,14 +309,8 @@ const DRIVE_STEPS = 1000
  */
 export function formatDriveFigure(byteCount: number, driveBytes: number, format: FileSizeFormat): string {
   const base = baseFor(format)
-  const units = format === 'binary' ? binaryUnits : siUnits
-  let value = byteCount
-  let unitIndex = 0
-  while (value >= base && unitIndex < units.length - 1) {
-    value /= base
-    unitIndex++
-  }
-  if (unitIndex === 0) return `${formatSizeInteger(value)} ${units[0]}`
+  const { value, unitIndex } = scaleToFriendliestUnit(byteCount, base)
+  if (unitIndex === 0) return `${formatSizeInteger(value)} ${unitWord(0, format, value)}`
 
   const unitBytes = base ** unitIndex
   const pixelBytes = driveBytes / DRIVE_STEPS
@@ -245,5 +329,5 @@ export function formatDriveFigure(byteCount: number, driveBytes: number, format:
     maximumFractionDigits: fractionDigits,
     useGrouping: false,
   }).format(value)
-  return `${text} ${units[unitIndex]}`
+  return `${text} ${unitWord(unitIndex, format, value)}`
 }

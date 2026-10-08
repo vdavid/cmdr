@@ -16,9 +16,9 @@ Local: `copy/`, `move_op/`, `copy_strategy.rs`. Cross-volume facade: `transfer::
   DETAILS § "Named destinations".
 - **A source that would land on ITSELF is a duplicate, ❌ never a conflict**: settled by `dev+ino` per TOP-LEVEL source
   before either engine's loop. DETAILS § "Self-collision".
-- **A symlink is a LEAF to every move engine**: ask `validation::is_real_directory` / `Volume::entry_kind`, ❌ never
-  `Path::is_dir` / `Volume::is_directory` (they may follow links, emptying the TARGET). DETAILS § "Symlinks are opaque
-  to a move".
+- **A symlink is a LEAF to every move, and a DESTINATION one to every copy**: ask `validation::is_real_directory` /
+  `Volume::entry_kind`, ❌ never `Path::is_dir` / `Volume::is_directory` (both walk into the TARGET). DETAILS §
+  "Symlinks are opaque to a move".
 - **A ledger entry carries the identity it landed with, ❌ never an mtime** (`../ledger.rs`): local = size +
   `(dev,ino)`, volume = size, a partial marked as ITS OWN. Ledgers POP as they reverse. DETAILS § "What the in-flight
   ledgers record".

@@ -13,14 +13,37 @@ use std::sync::{LazyLock, RwLock};
 use std::time::Instant;
 
 use crate::file_system::listing::metadata::{FileEntry, TagRef};
+use crate::file_system::listing::name_filter::NameFilter;
 use crate::file_system::listing::path_index::PathIndexCache;
 use crate::file_system::listing::sorting::{DirectorySortMode, SortColumn, SortOrder};
-use crate::file_system::listing::visible_rows::{VisibleRows, VisibleRowsCache};
+use crate::file_system::listing::visible_rows::{ScratchProjection, VisibleRows, VisibleRowsCache};
+use crate::ignore_poison::RwLockIgnorePoison;
 
 /// Cache for directory listings (on-demand virtual scrolling).
 /// Key: listing_id, Value: cached listing with all entries.
 pub(crate) static LISTING_CACHE: LazyLock<RwLock<HashMap<String, CachedListing>>> =
     LazyLock::new(|| RwLock::new(HashMap::new()));
+
+/// Normal directories keep the shared-lock path and do not scan or clone entries.
+/// A drifted projection is rechecked and published under the mutation lock.
+pub(crate) fn reconciled_cache(ids: &[&str]) -> std::sync::RwLockReadGuard<'static, HashMap<String, CachedListing>> {
+    loop {
+        let cache = LISTING_CACHE.read_ignore_poison();
+        if !ids
+            .iter()
+            .any(|id| cache.get(*id).is_some_and(CachedListing::scratch_has_drift))
+        {
+            return cache;
+        }
+        drop(cache);
+        let mut cache = LISTING_CACHE.write_ignore_poison();
+        for id in ids {
+            if let Some(listing) = cache.get_mut(*id) {
+                listing.reconcile_scratch(id);
+            }
+        }
+    }
+}
 
 /// Process-start reference point for the `last_accessed_ms` field on `CachedListing`.
 ///
@@ -79,6 +102,11 @@ pub(crate) struct CachedListing {
     /// row space every `directory-diff` for this listing speaks, and so which
     /// changes reach the pane at all. See [`Self::pane_rows`].
     include_hidden: bool,
+    scratch_projection: ScratchProjection,
+    /// The pane's quick filter, if the user is typing one. Like
+    /// `include_hidden`, it picks the row space every reader and every
+    /// `directory-diff` speaks. See `name_filter.rs`.
+    name_filter: Option<NameFilter>,
     /// Row numbers over the visible subset of `entries`, per `include_hidden`.
     /// Rebuilt lazily after any mutation; see `visible_rows.rs`.
     visible_rows: VisibleRowsCache,
@@ -91,8 +119,8 @@ pub(crate) struct CachedListing {
     pub sort_order: SortOrder,
     /// How directories are sorted relative to the current sort column
     pub directory_sort_mode: DirectorySortMode,
-    /// Monotonic sequence number for `directory-diff` events. Incremented each time
-    /// the cache is patched (by watcher, notify_mutation, or manual refresh).
+    /// Committed visible revision. Allocated under the cache write lock for a
+    /// visible patch, sort, or visibility change, never by the transport emitter.
     /// Lives on the listing so it works for all volume types, including SMB/MTP
     /// which don't use the FSEvents-based `WatchedDirectory`.
     pub sequence: AtomicU64,
@@ -151,11 +179,14 @@ impl CachedListing {
         sort_order: SortOrder,
         directory_sort_mode: DirectorySortMode,
     ) -> Self {
+        let scratch_projection = ScratchProjection::for_entries(&entries, &ScratchProjection::default());
         Self {
             path: ListingPath::on_volume(&volume_id, &path),
             volume_id,
             entries,
             include_hidden,
+            scratch_projection,
+            name_filter: None,
             visible_rows: VisibleRowsCache::new(),
             path_index: PathIndexCache::new(),
             sort_by,
@@ -177,7 +208,7 @@ impl CachedListing {
 
     /// Replaces the overlay-row count, for a re-read that ran the overlays
     /// again. Written in the same lock acquisition as
-    /// [`set_entries`](Self::set_entries), which
+    /// [`replace_entries`](Self::replace_entries), which
     /// [`OverlayRows`] makes every
     /// caller decide about: a listing that gained contributed rows while this
     /// still said zero would be handed to a walker as if it were a picture of
@@ -277,17 +308,33 @@ impl CachedListing {
         }
     }
 
-    /// Replaces the entries wholesale (a re-read, a re-sort).
-    pub(crate) fn set_entries(&mut self, entries: Vec<FileEntry>) {
-        *self.entries_mut() = entries;
-    }
-
     /// The rows a pane with this `include_hidden` is showing, indexed in constant
     /// time. THE single filter point every read accessor goes through, so counts,
     /// ranges, stats, selection indices, and type-to-jump can never disagree
     /// about what the pane is showing.
     pub(crate) fn rows(&self, include_hidden: bool) -> VisibleRows<'_> {
-        self.visible_rows.rows(&self.entries, include_hidden)
+        self.visible_rows.rows(
+            &self.entries,
+            include_hidden,
+            self.name_filter.as_ref(),
+            &self.scratch_projection,
+        )
+    }
+
+    /// The pane's quick filter, if any.
+    pub(crate) fn name_filter(&self) -> Option<&NameFilter> {
+        self.name_filter.as_ref()
+    }
+
+    /// Records the pane's quick filter. Reports whether it changed. A change
+    /// drops the row map: unlike `include_hidden`, the filter isn't a slot key.
+    pub(crate) fn set_name_filter(&mut self, name_filter: Option<NameFilter>) -> bool {
+        let changed = self.name_filter != name_filter;
+        if changed {
+            self.name_filter = name_filter;
+            self.visible_rows.invalidate();
+        }
+        changed
     }
 
     /// Whether the pane showing this listing shows hidden entries.
@@ -306,5 +353,102 @@ impl CachedListing {
     /// own setting. What a `directory-diff` index means.
     pub(crate) fn pane_rows(&self) -> VisibleRows<'_> {
         self.rows(self.include_hidden)
+    }
+
+    pub(crate) fn scratch_has_drift(&self) -> bool {
+        self.scratch_projection.has_drift()
+    }
+
+    /// Pin a newly admitted entry before deriving its row or publication count.
+    pub(crate) fn admit_entry(&mut self, entry: &FileEntry) {
+        self.scratch_projection.admit(entry);
+    }
+
+    pub(crate) fn forget_entry(&mut self, entry: &FileEntry) {
+        self.scratch_projection.remove(&entry.path);
+    }
+
+    pub(crate) fn shows(&self, entry: &FileEntry) -> bool {
+        self.shows_with_filter(entry, self.include_hidden, self.name_filter.as_ref())
+    }
+
+    pub(crate) fn shows_with_filter(
+        &self,
+        entry: &FileEntry,
+        include_hidden: bool,
+        filter: Option<&NameFilter>,
+    ) -> bool {
+        self.scratch_projection.shows(entry, include_hidden) && filter.is_none_or(|filter| filter.matches(&entry.name))
+    }
+
+    /// Commit projection drift BEFORE any consumer interprets old row indices.
+    /// Both sides come from captured decisions, never a second ownership sample.
+    pub(crate) fn reconcile_scratch(&mut self, listing_id: &str) {
+        let next = self.scratch_projection.live();
+        if next == self.scratch_projection {
+            return;
+        }
+        let changes = {
+            let old: Vec<_> = self.pane_rows().iter().collect();
+            let new: Vec<_> = self
+                .entries
+                .iter()
+                .filter(|e| {
+                    next.shows(e, self.include_hidden)
+                        && self.name_filter.as_ref().is_none_or(|filter| filter.matches(&e.name))
+                })
+                .collect();
+            super::diff::diff_rows(&old, &new)
+        };
+        self.scratch_projection = next;
+        self.publish_transition(listing_id, changes);
+    }
+
+    /// Replacement diffs compare projected rows, including newly admitted paths.
+    pub(crate) fn replace_entries(&mut self, entries: Vec<FileEntry>) -> Vec<super::diff::DiffChange> {
+        let next = ScratchProjection::for_entries(&entries, &self.scratch_projection);
+        let changes = {
+            let old: Vec<_> = self.pane_rows().iter().collect();
+            let new: Vec<_> = entries
+                .iter()
+                .filter(|e| {
+                    next.shows(e, self.include_hidden)
+                        && self.name_filter.as_ref().is_none_or(|filter| filter.matches(&e.name))
+                })
+                .collect();
+            super::diff::diff_rows(&old, &new)
+        };
+        self.scratch_projection = next;
+        *self.entries_mut() = entries;
+        changes
+    }
+
+    /// Allocate only while the cache write lock protects the committed transition.
+    pub(crate) fn advance_sequence(&mut self) -> u64 {
+        let next = self.sequence.load(Ordering::Relaxed) + 1;
+        self.sequence.store(next, Ordering::Release);
+        next
+    }
+
+    /// Publication is part of the mutation, under the same cache write lock.
+    pub(crate) fn publish_changes(&mut self, listing_id: &str, changes: Vec<super::diff::DiffChange>) {
+        if changes.is_empty() {
+            return;
+        }
+        self.publish_transition(listing_id, changes);
+    }
+
+    fn publish_transition(&mut self, listing_id: &str, changes: Vec<super::diff::DiffChange>) {
+        let from_sequence = self.sequence.load(Ordering::Relaxed);
+        let sequence = self.advance_sequence();
+        super::diff_emitter::enqueue_diff(
+            listing_id,
+            super::diff::DirectoryDiffBatch {
+                from_sequence,
+                sequence,
+                total_count: self.pane_rows().len(),
+                changes,
+            },
+        );
     }
 }

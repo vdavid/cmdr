@@ -8,10 +8,18 @@ vi.mock('$lib/tauri-commands', () => ({
 }))
 
 import type { LicenseStatus } from '$lib/tauri-commands'
-import { getLicenseStatus, needsLicenseValidation, validateLicenseWithServer } from '$lib/tauri-commands'
+import {
+  getLicenseStatus,
+  hasLicenseBeenValidated,
+  needsLicenseValidation,
+  validateLicenseWithServer,
+} from '$lib/tauri-commands'
 import {
   getCachedStatus,
+  isPendingVerification,
   loadLicenseStatus,
+  setCachedStatus,
+  setPendingVerification,
   triggerValidationIfNeeded,
   resetForTesting,
 } from './licensing-store.svelte'
@@ -50,6 +58,32 @@ describe('licensing-store', () => {
 
       expect(result).toEqual(personalStatus)
       expect(getCachedStatus()).toEqual(personalStatus)
+    })
+
+    it('marks a never-confirmed subscription as pending verification', async () => {
+      vi.mocked(getLicenseStatus).mockResolvedValue(commercialStatus)
+      vi.mocked(hasLicenseBeenValidated).mockResolvedValue(false)
+
+      await loadLicenseStatus()
+
+      expect(isPendingVerification()).toBe(true)
+    })
+
+    it('never calls a perpetual license pending: its signature is the whole proof', async () => {
+      vi.mocked(getLicenseStatus).mockResolvedValue({ ...commercialStatus, licenseType: 'commercial_perpetual' })
+      vi.mocked(hasLicenseBeenValidated).mockResolvedValue(false)
+
+      await loadLicenseStatus()
+
+      expect(isPendingVerification()).toBe(false)
+    })
+
+    it('keeps a perpetual license out of pending even after an offline activation sets the flag', () => {
+      setCachedStatus({ ...commercialStatus, licenseType: 'commercial_perpetual' })
+
+      setPendingVerification(true)
+
+      expect(isPendingVerification()).toBe(false)
     })
   })
 

@@ -1,0 +1,43 @@
+[package]
+name = "cmdr-http"
+version = "0.0.0"
+edition = "2024"
+license = "LicenseRef-BSL-1.1"
+publish = false
+
+# The house lint set lives in the workspace root's `[workspace.lints]`, so this
+# crate can't quietly become a lint-free zone. `unused_crate_dependencies` is the
+# one lint that stays at the crate root instead (it's judged per compilation unit).
+[lints]
+workspace = true
+
+[dependencies]
+# The client this crate configures. A subset of the app's features, so no second
+# reqwest configuration enters the graph; `rustls` is what makes it a TLS client
+# that checks certificates with the macOS trust store (`rustls-platform-verifier`).
+# `socks` lets the routing hand reqwest a `socks5h://` proxy; it adds no crate (the
+# SOCKS client is hyper-util's, already in the graph).
+reqwest = { version = "0.13", default-features = false, features = ["rustls", "socks"] }
+# `Url::host()` hands back a `url::Host`, which the loopback and NO_PROXY checks match on.
+url = "2"
+log = "0.4"
+
+[target.'cfg(target_os = "macos")'.dependencies]
+# What macOS itself decides for a URL: the proxy settings, the bypass list, and the
+# PAC verdict, all from CFNetwork (`system.rs`). Same objc2 release train as every
+# other objc2 crate in the graph.
+objc2-core-foundation = { version = "0.3.2", default-features = false, features = [
+  "std",
+  "CFArray",
+  "CFDate",
+  "CFDictionary",
+  "CFError",
+  "CFNumber",
+  "CFRunLoop",
+  "CFString",
+  "CFURL",
+] }
+objc2-cf-network = { version = "0.3.2", default-features = false, features = ["std", "CFProxySupport"] }
+
+[dev-dependencies]
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "net", "io-util"] }

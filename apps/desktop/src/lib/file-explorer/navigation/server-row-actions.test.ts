@@ -80,6 +80,7 @@ describe('isServerPlaceRow', () => {
   it('claims SFTP and WebDAV places', () => {
     expect(isServerPlaceRow(place)).toBe(true)
     expect(isServerPlaceRow({ ...place, id: 'webdav-nas-local-5006-ada' })).toBe(true)
+    expect(isServerPlaceRow({ ...place, id: 's3-host-443-akia-photos', fsType: 's3' })).toBe(true)
   })
 
   it('❌ leaves a mounted SMB share alone: its session is an OS mount', () => {
@@ -168,6 +169,16 @@ describe('runServerRowAction', () => {
       expect.objectContaining({ checkboxLabel: 'Also forget the saved password', checked: true }),
     )
     expect(order).toEqual(['password', 'server'])
+  })
+
+  it('offers an S3 place’s secret UNCHECKED, worded as the account’s: its other places sign in with it', async () => {
+    confirmWithCheckbox.mockResolvedValueOnce({ confirmed: true, checked: false })
+    await runServerRowAction({ ...payload('forget-server'), volumeId: 's3-host-443-akia-photos', volumeName: 'photos' })
+    expect(confirmWithCheckbox).toHaveBeenCalledWith(
+      expect.objectContaining({ checkboxLabel: 'Also forget the account’s secret access key', checked: false }),
+    )
+    expect(forgetServerSecret).not.toHaveBeenCalled()
+    expect(forgetServer).toHaveBeenCalledWith('s3-host-443-akia-photos')
   })
 
   it('keeps the saved password when the box was unchecked', async () => {
@@ -260,11 +271,15 @@ describe('runServerRowAction', () => {
     // ❗ From the store: a `VolumeInfo` carries no key file, no remote folder,
     // and no auto-reconnect switch, so a form seeded from the row would save the
     // other half away.
-    expect(openEditServerSheet).toHaveBeenCalledWith({
-      id: 'sftp-nas-local-22-ada',
-      autoReconnect: false,
-      places: [{ volumeId: 'sftp-nas-local-22-ada' }],
-    })
+    // The place rides along: an S3 account's buckets are each edited on their own.
+    expect(openEditServerSheet).toHaveBeenCalledWith(
+      {
+        id: 'sftp-nas-local-22-ada',
+        autoReconnect: false,
+        places: [{ volumeId: 'sftp-nas-local-22-ada' }],
+      },
+      'sftp-nas-local-22-ada',
+    )
   })
 
   it('Edit on a server a forget already took says nothing', async () => {

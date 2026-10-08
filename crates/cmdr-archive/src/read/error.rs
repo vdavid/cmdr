@@ -39,10 +39,11 @@ pub enum ArchiveError {
     /// variant.
     Unsupported(String),
 
-    /// The archive's synthesized directory tree exceeds our node-count cap. This
-    /// is the backstop against a small central directory that expands into a
-    /// huge in-memory tree (a browse-time memory-amplification DoS). Browsing is
-    /// refused rather than risking an out-of-memory abort.
+    /// The archive asks for more memory than we grant: its synthesized directory
+    /// tree exceeds our node-count cap (a small central directory that expands
+    /// into a huge in-memory tree), or a decoder would need more than its limit
+    /// (an xz block naming a dictionary past `format::XZ_MEMORY_LIMIT_KIB`).
+    /// Browsing is refused rather than risking an out-of-memory abort.
     TooLarge(String),
 
     /// No entry exists at the requested inner path.
@@ -78,8 +79,12 @@ impl From<std::io::Error> for ArchiveError {
         // A short read at the end of the file surfaces as UnexpectedEof; that
         // means a truncated archive, not a live I/O fault, so classify it as
         // Corrupt rather than Io.
+        // A decoder refusing a memory limit before allocating (the xz reader's
+        // `new_mem_limit`) says so with `OutOfMemory`.
         if err.kind() == std::io::ErrorKind::UnexpectedEof {
             Self::Corrupt(err.to_string())
+        } else if err.kind() == std::io::ErrorKind::OutOfMemory {
+            Self::TooLarge(err.to_string())
         } else {
             Self::Io(err.to_string())
         }

@@ -13,7 +13,7 @@
   },
   "adb.connect.deviceGone": "A telefonod már nincs csatlakoztatva.",
   "@adb.connect.deviceGone": {
-    "sourceHash": "e2766e6"
+    "sourceHash": "00d5254"
   },
   "adb.connect.unauthorized": "Nézd meg a telefonodat, és koppints az „Engedélyezés” gombra.",
   "@adb.connect.unauthorized": {
@@ -67,9 +67,9 @@
   "@adb.disconnectDeviceAriaLabel": {
     "sourceHash": "8f755cb"
   },
-  "adb.disconnectBusyTooltip": "Nem választható le, amíg ezen az eszközön műveletek vannak folyamatban",
+  "adb.disconnectBusyTooltip": "A Cmdr még fájlokkal dolgozik ezen az eszközön. Válaszd le, amint ez befejeződik.",
   "@adb.disconnectBusyTooltip": {
-    "sourceHash": "a425d4b"
+    "sourceHash": "73c355e"
   },
   "adb.disconnectingDeviceAriaLabel": "{name} leválasztása folyamatban…",
   "@adb.disconnectingDeviceAriaLabel": {

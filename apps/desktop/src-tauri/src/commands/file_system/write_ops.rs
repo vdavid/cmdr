@@ -2,21 +2,20 @@
 
 use crate::file_system::write_operations::TrashRoutingAnswer;
 use crate::file_system::write_operations::{
-    ConflictId, ConflictResolution, ConflictResolutionOutcome, MutationError, ScanPreviewStartResult,
+    ConflictId, ConflictResolution, ConflictResolutionOutcome, MUTATION_REPLY_DEADLINE, MutationError, MutationReply,
+    MutationSettled, ScanPreviewRefusal, ScanPreviewStartResult, broadcast_settled,
     cancel_scan_preview as ops_cancel_scan_preview, create_directory_managed as ops_create_directory_managed,
     create_file_managed as ops_create_file_managed, get_scan_preview_totals as ops_get_scan_preview_totals,
-    resolve_write_conflict as ops_resolve_write_conflict, start_scan_preview as ops_start_scan_preview,
+    reply_within, resolve_write_conflict as ops_resolve_write_conflict, start_scan_preview as ops_start_scan_preview,
     trash_routing_for_selection as ops_trash_routing_for_selection,
 };
 use crate::file_system::{
-    OperationEventSink, OperationSnapshot, OperationStatus, OperationSummary, PauseAllOutcome, PauseOutcome,
-    ReadOnlySide, SortColumn, SortOrder, TauriEventSink, WriteOperationConfig, WriteOperationError,
-    WriteOperationStartResult, cancel_all_write_operations as ops_cancel_all_write_operations,
+    OperationEventSink, OperationSnapshot, PauseAllOutcome, PauseOutcome, ReadOnlySide, SortColumn, SortOrder,
+    TauriEventSink, WriteOperationConfig, WriteOperationError, WriteOperationStartResult,
     cancel_operation as ops_cancel_operation, cancel_operations as ops_cancel_operations,
-    cancel_write_operation as ops_cancel_write_operation, copy_files_start as ops_copy_files_start,
-    delete_files_start as ops_delete_files_start, dismiss_all_failed_operations as ops_dismiss_all_failed_operations,
-    dismiss_failed_operation as ops_dismiss_failed_operation, get_operation_status as ops_get_operation_status,
-    list_active_operations as ops_list_active_operations, list_operations as ops_list_operations,
+    cancel_write_operation as ops_cancel_write_operation, delete_files_start as ops_delete_files_start,
+    dismiss_all_failed_operations as ops_dismiss_all_failed_operations,
+    dismiss_failed_operation as ops_dismiss_failed_operation, list_operations as ops_list_operations,
     move_files_start as ops_move_files_start, pause_all as ops_pause_all, pause_operation as ops_pause_operation,
     resume_all as ops_resume_all, resume_operation as ops_resume_operation, trash_files_start as ops_trash_files_start,
 };
@@ -45,8 +44,13 @@ use crate::file_system::volume::manager::path_routes_over_its_parent;
 /// scans pay nothing.
 ///
 /// `None` means "scan the local filesystem directly" (the `std::fs` fast path);
-/// `Some` means scan through the `Volume` trait.
-async fn scan_preview_source_volume(volume_id: &str, first_source: Option<&PathBuf>) -> Option<Arc<dyn Volume>> {
+/// `Some` means scan through the `Volume` trait. A non-local id no volume answers
+/// for is refused: ❌ never fall back to `std::fs` for it, which walks an
+/// `adb://…` path on the Mac and fails behind a Retry that can't help.
+async fn scan_preview_source_volume(
+    volume_id: &str,
+    first_source: Option<&PathBuf>,
+) -> Result<Option<Arc<dyn Volume>>, ScanPreviewRefusal> {
     // The `.zip` file itself is scanned as a plain file (one entry), never its
     // contents, which is why the gate asks about a path INSIDE a route rather
     // than about a `.zip` component.
@@ -75,11 +79,16 @@ async fn scan_preview_source_volume(volume_id: &str, first_source: Option<&PathB
         None
     };
     if routed_source.is_some() {
-        routed_source
+        Ok(routed_source)
     } else if volume_id == "root" {
-        None
+        Ok(None)
     } else {
-        get_volume_manager().get(volume_id)
+        get_volume_manager()
+            .get(volume_id)
+            .map(Some)
+            .ok_or_else(|| ScanPreviewRefusal::SourceNotConnected {
+                volume_id: volume_id.to_string(),
+            })
     }
 }
 
@@ -121,44 +130,67 @@ fn reject_if_routed_over_a_parent<'a>(
     Ok(())
 }
 
-/// Creates a folder and returns its new path. Thin pass-through to the managed
-/// create op (`write_operations::create`): expand tilde (root only), wrap in the
-/// 5 s write timeout, and ship the typed `MutationError` the frontend renders
-/// its words from.
+/// Creates a folder. Thin pass-through to the managed create op
+/// (`write_operations::create`): expand tilde (root only), answer within
+/// `MUTATION_REPLY_DEADLINE`, and ship the typed `MutationError` the frontend
+/// renders its words from. A create still running at the deadline answers
+/// `StillRunning` and reports its end on `mutation-settled`
+/// (`write_operations/mutation_reply.rs`).
 #[tauri::command]
 #[specta::specta]
 pub async fn create_directory(
+    app: tauri::AppHandle,
     volume_id: Option<String>,
     parent_path: String,
     name: String,
     initiator: Option<Initiator>,
-) -> Result<String, MutationError> {
+) -> Result<MutationReply, MutationError> {
+    create_directory_replying(volume_id, parent_path, name, initiator, broadcast_settled(app)).await
+}
+
+/// [`create_directory`] with the settle delivery passed in.
+async fn create_directory_replying(
+    volume_id: Option<String>,
+    parent_path: String,
+    name: String,
+    initiator: Option<Initiator>,
+    on_settled: impl FnOnce(MutationSettled) + Send + 'static,
+) -> Result<MutationReply, MutationError> {
     let expanded_parent = expand_parent(volume_id.as_deref(), &parent_path);
-    timeout_detached_typed(
-        Duration::from_secs(5),
-        || MutationError::TimedOut,
-        |detail| MutationError::Unexpected { detail },
+    reply_within(
+        MUTATION_REPLY_DEADLINE,
         ops_create_directory_managed(volume_id, expanded_parent, name, initiator.unwrap_or(Initiator::User)),
+        on_settled,
     )
     .await
 }
 
-/// Creates an empty file and returns its new path. Same shape as
-/// [`create_directory`].
+/// Creates an empty file. Same shape as [`create_directory`].
 #[tauri::command]
 #[specta::specta]
 pub async fn create_file(
+    app: tauri::AppHandle,
     volume_id: Option<String>,
     parent_path: String,
     name: String,
     initiator: Option<Initiator>,
-) -> Result<String, MutationError> {
+) -> Result<MutationReply, MutationError> {
+    create_file_replying(volume_id, parent_path, name, initiator, broadcast_settled(app)).await
+}
+
+/// [`create_file`] with the settle delivery passed in.
+async fn create_file_replying(
+    volume_id: Option<String>,
+    parent_path: String,
+    name: String,
+    initiator: Option<Initiator>,
+    on_settled: impl FnOnce(MutationSettled) + Send + 'static,
+) -> Result<MutationReply, MutationError> {
     let expanded_parent = expand_parent(volume_id.as_deref(), &parent_path);
-    timeout_detached_typed(
-        Duration::from_secs(5),
-        || MutationError::TimedOut,
-        |detail| MutationError::Unexpected { detail },
+    reply_within(
+        MUTATION_REPLY_DEADLINE,
         ops_create_file_managed(volume_id, expanded_parent, name, initiator.unwrap_or(Initiator::User)),
+        on_settled,
     )
     .await
 }
@@ -177,7 +209,7 @@ fn expand_parent(volume_id: Option<&str>, parent_path: &str) -> String {
 // Write operations (copy, move, delete)
 // ============================================================================
 
-/// Turns a same-`root` copy or move request into backend arguments: tilde-expanded
+/// Turns a same-`root` move request into backend arguments: tilde-expanded
 /// paths and the default config. A transfer that touches a routed namespace on
 /// either end doesn't belong on the local fast path (a copy out of a zip or a
 /// snapshot routes through `copy_between_volumes`; writing INTO either is
@@ -196,41 +228,8 @@ fn local_transfer_request(
     Ok((sources, destination, config.unwrap_or_default()))
 }
 
-/// Emits write-progress, write-complete, write-error, write-cancelled.
-#[tauri::command]
-#[specta::specta]
-pub async fn copy_files(
-    app: tauri::AppHandle,
-    sources: Vec<String>,
-    destination: String,
-    config: Option<WriteOperationConfig>,
-    initiator: Option<Initiator>,
-) -> Result<WriteOperationStartResult, WriteOperationError> {
-    let (sources, destination, config) = local_transfer_request(&sources, &destination, config)?;
-
-    // The unified transfer dialog routes every cross-device copy through
-    // `copy_between_volumes`; this plain command is the same-`root` local path,
-    // so no ejectable volume is involved (empty busy set).
-    let events: Arc<dyn OperationEventSink> = Arc::new(TauriEventSink::new(app));
-    ops_copy_files_start(
-        events,
-        sources,
-        destination,
-        config,
-        vec![],
-        None,
-        initiator.unwrap_or(Initiator::User),
-        // No source binding: the user picked these in the pane they are looking at.
-        None,
-        // No typed sides: this is the same-`root` path, where both ends are the
-        // boot volume and no drive can leave under it.
-        None,
-    )
-    .await
-}
-
 /// Uses rename() for same-filesystem (instant), copy+delete for cross-filesystem.
-/// Same events as `copy_files`.
+/// Emits write-progress, write-complete, write-error, write-cancelled.
 #[tauri::command]
 #[specta::specta]
 pub async fn move_files(
@@ -262,7 +261,7 @@ pub async fn move_files(
     .await
 }
 
-/// Recursively deletes files and directories. Same events as `copy_files`.
+/// Recursively deletes files and directories. Same events as `move_files`.
 /// When `volume_id` is provided and is not "root", routes through the Volume trait.
 #[tauri::command]
 #[specta::specta]
@@ -296,7 +295,7 @@ pub async fn delete_files(
     .await
 }
 
-/// Moves files to macOS Trash. Same events as `copy_files` but with `operationType: trash`.
+/// Moves files to macOS Trash. Same events as `move_files` but with `operationType: trash`.
 #[tauri::command]
 #[specta::specta]
 pub async fn trash_files(
@@ -356,12 +355,6 @@ pub fn cancel_write_operation(operation_id: String, rollback: bool) {
     ops_cancel_write_operation(&operation_id, rollback);
 }
 
-#[tauri::command]
-#[specta::specta]
-pub fn cancel_all_write_operations() {
-    ops_cancel_all_write_operations();
-}
-
 // ============================================================================
 // Scan preview (for Copy dialog live stats)
 // ============================================================================
@@ -383,7 +376,7 @@ pub async fn start_scan_preview(
     // Compress-mode scans set this so the local walk samples a compressed-size
     // estimate. Ignored for remote sources (never sampled). `None` == false.
     sample_for_estimate: Option<bool>,
-) -> ScanPreviewStartResult {
+) -> Result<ScanPreviewStartResult, ScanPreviewRefusal> {
     let volume_id = source_volume_id.unwrap_or_else(|| "root".to_string());
     let is_local = volume_id == "root";
 
@@ -394,10 +387,10 @@ pub async fn start_scan_preview(
         sources.iter().map(PathBuf::from).collect()
     };
 
-    let source_volume = scan_preview_source_volume(&volume_id, sources.first()).await;
+    let source_volume = scan_preview_source_volume(&volume_id, sources.first()).await?;
 
     let progress_interval = progress_interval_ms.unwrap_or(500);
-    ops_start_scan_preview(
+    Ok(ops_start_scan_preview(
         app,
         sources,
         source_volume,
@@ -406,7 +399,7 @@ pub async fn start_scan_preview(
         sort_order,
         progress_interval,
         sample_for_estimate.unwrap_or(false),
-    )
+    ))
 }
 
 #[tauri::command]
@@ -446,18 +439,6 @@ pub fn resolve_write_conflict(
     apply_to_all: bool,
 ) -> ConflictResolutionOutcome {
     ops_resolve_write_conflict(&operation_id, conflict_id, resolution, apply_to_all)
-}
-
-#[tauri::command]
-#[specta::specta]
-pub fn list_active_operations() -> Vec<OperationSummary> {
-    ops_list_active_operations()
-}
-
-#[tauri::command]
-#[specta::specta]
-pub fn get_operation_status(operation_id: String) -> Option<OperationStatus> {
-    ops_get_operation_status(&operation_id)
 }
 
 // ============================================================================
@@ -639,11 +620,139 @@ mod tests {
         let inner = zip.join("inner.txt");
         let source = scan_preview_source_volume("root", Some(&inner))
             .await
+            .expect("an archive source is never refused")
             .expect("archive source volume");
         assert_eq!(source.root(), zip);
 
         // A plain local source stays `None` — the `std::fs` fast path.
         let plain = dir.path().join("plain.txt");
-        assert!(scan_preview_source_volume("root", Some(&plain)).await.is_none());
+        assert!(matches!(
+            scan_preview_source_volume("root", Some(&plain)).await,
+            Ok(None)
+        ));
+    }
+
+    /// A share that holds new folders and files for `delay`, with `/docs/taken`
+    /// already there, registered under `volume_id`.
+    async fn register_slowly_creating_volume(volume_id: &str, delay: Duration) {
+        use crate::file_system::volume::InMemoryVolume;
+        use crate::test_support::SlowVolume;
+        use std::path::Path;
+
+        let inner = InMemoryVolume::new("Slow NAS");
+        inner.create_directory(Path::new("/docs")).await.unwrap();
+        inner.create_directory(Path::new("/docs/taken")).await.unwrap();
+        get_volume_manager().register_if_absent(volume_id, Arc::new(SlowVolume::creating_slowly(inner, delay)));
+    }
+
+    /// An `on_settled` that hands the event to the test, and its receiver.
+    fn settle_channel() -> (
+        impl FnOnce(MutationSettled) + Send + 'static,
+        tokio::sync::oneshot::Receiver<MutationSettled>,
+    ) {
+        let (tx, rx) = tokio::sync::oneshot::channel();
+        (
+            move |settled| {
+                let _ = tx.send(settled);
+            },
+            rx,
+        )
+    }
+
+    /// ERR-AREUV: a new folder on a busy share took 7–12 s, the dialog said it
+    /// timed out, and then the folder appeared. Past the deadline the reply is
+    /// "still running" and the settle says it landed.
+    #[tokio::test(start_paused = true)]
+    async fn a_slow_new_folder_replies_still_running_then_settles_landed() {
+        use crate::file_system::write_operations::MutationSettledOutcome;
+
+        let volume_id = "smb-slow-mkdir-test";
+        register_slowly_creating_volume(volume_id, Duration::from_secs(7)).await;
+        let (on_settled, rx) = settle_channel();
+
+        let reply = create_directory_replying(
+            Some(volume_id.to_string()),
+            "/docs".to_string(),
+            "photos".to_string(),
+            None,
+            on_settled,
+        )
+        .await;
+
+        let Ok(MutationReply::StillRunning { pending_id }) = reply else {
+            panic!("a 7 s create is still running at the deadline, not refused: {reply:?}");
+        };
+        let settled = rx.await.expect("the create settles");
+        assert_eq!(settled.pending_id, pending_id);
+        assert!(matches!(settled.outcome, MutationSettledOutcome::Landed), "{settled:?}");
+        let volume = get_volume_manager().get(volume_id).expect("registered");
+        assert!(volume.exists(std::path::Path::new("/docs/photos")).await);
+    }
+
+    /// The other end a slow create can reach: the volume refuses once it answers,
+    /// and the settle carries that refusal typed, as an in-time reply would.
+    #[tokio::test(start_paused = true)]
+    async fn a_slow_new_file_the_volume_refuses_settles_with_the_typed_reason() {
+        use crate::file_system::write_operations::MutationSettledOutcome;
+
+        let volume_id = "smb-slow-mkfile-refused-test";
+        register_slowly_creating_volume(volume_id, Duration::from_secs(7)).await;
+        let (on_settled, rx) = settle_channel();
+
+        let reply = create_file_replying(
+            Some(volume_id.to_string()),
+            "/docs".to_string(),
+            "taken".to_string(),
+            None,
+            on_settled,
+        )
+        .await;
+
+        assert!(matches!(reply, Ok(MutationReply::StillRunning { .. })), "{reply:?}");
+        let settled = rx.await.expect("the create settles");
+        assert!(
+            matches!(
+                &settled.outcome,
+                MutationSettledOutcome::Refused {
+                    error: MutationError::AlreadyExists { name }
+                } if name == "taken"
+            ),
+            "{settled:?}"
+        );
+    }
+
+    /// A healthy create answers inside the deadline, and nothing settles later.
+    #[tokio::test(start_paused = true)]
+    async fn a_quick_new_folder_replies_done() {
+        let volume_id = "smb-quick-mkdir-test";
+        register_slowly_creating_volume(volume_id, Duration::from_millis(200)).await;
+        let (on_settled, rx) = settle_channel();
+
+        let reply = create_directory_replying(
+            Some(volume_id.to_string()),
+            "/docs".to_string(),
+            "quick".to_string(),
+            None,
+            on_settled,
+        )
+        .await;
+
+        assert_eq!(reply.ok(), Some(MutationReply::Done));
+        assert!(rx.await.is_err(), "an in-time reply never settles");
+    }
+
+    /// A phone unplugged under a search-results pane leaves an id no volume
+    /// answers for. The preview refuses it with a typed reason, ❌ never falls
+    /// back to walking `adb://…` on the Mac: that walk can only fail, and the
+    /// dialog would offer a Retry that never works.
+    #[tokio::test]
+    async fn scan_preview_refuses_a_source_volume_nothing_answers_for() {
+        let source = PathBuf::from("/sdcard/DCIM/Camera/a.jpg");
+        let refused = scan_preview_source_volume("an-unplugged-phone", Some(&source)).await;
+        assert!(
+            matches!(&refused, Err(ScanPreviewRefusal::SourceNotConnected { volume_id }) if volume_id == "an-unplugged-phone"),
+            "an unknown source volume is refused, not walked locally; got {:?}",
+            refused.as_ref().map(Option::is_some)
+        );
     }
 }

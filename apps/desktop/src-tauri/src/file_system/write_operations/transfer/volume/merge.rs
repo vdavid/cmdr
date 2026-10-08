@@ -23,7 +23,6 @@
 //! `safety_oracle.rs`, never fresh inline asserts. See `CLAUDE.md` § Merge and
 //! conflicts, and `DETAILS.md` § "Scan-as-you-merge".
 
-use std::ffi::OsStr;
 use std::future::Future;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
@@ -38,14 +37,17 @@ use super::super::dest_name_index::DestNameIndex;
 use super::super::transfer_driver::SourceProgress;
 use super::super::transfer_probe::{CURRENT_TASK_PROBE, TaskPhase, TaskProbeHandle, TaskRole, set_task_phase};
 use super::conflict::{ResolvedConflict, resolve_volume_conflict};
+use super::folder_dates::FolderDates;
 use super::landing::{DestFolder, NewName, where_it_lands};
 use super::merge_ctx::{CreatedPaths, FileWindow, MergeCtx, MergeProbe};
 use super::naming::take_back_reservation;
 use super::preflight::SourceFileFacts;
+use super::rename_merge::merges_as_a_directory;
+use super::strategy::Replaces;
 use super::strategy::{LandingName, WriteStaging, note_pending_for_local_dest, staging_for, stream_pipe_file};
 use super::transfer_error::{AtPath, PathedVolumeError};
 use crate::file_system::listing::FileEntry;
-use crate::file_system::volume::{Volume, VolumeError};
+use crate::file_system::volume::{ChildName, DirectoryCreation, Volume, VolumeError};
 use crate::ignore_poison::IgnorePoison;
 
 /// What one leaf file's copy reports back to the walker.
@@ -60,7 +62,7 @@ struct LeafRow {
 }
 
 /// The leaves this operation currently has in flight, plus the running totals
-/// the walker reads once the tree is walked.
+/// and the created folders the walker reads once the tree is walked.
 ///
 /// The `FuturesUnordered` is LOCAL to one top-level source's walk (it lives on
 /// that walker's task, so nothing here needs `'static` or a spawn), while the
@@ -81,6 +83,9 @@ struct LeafPool<'a> {
     /// file that actually broke, and a second error piled on top of it says
     /// nothing the user can act on (same rule `cleanup.rs::remove_tree` follows).
     first_error: Option<PathedVolumeError>,
+    /// Every folder below the root this walk created, noted as the walk leaves
+    /// it, so the subtree can date them once its leaves have drained.
+    folders: FolderDates,
 }
 
 impl<'a> LeafPool<'a> {
@@ -92,6 +97,7 @@ impl<'a> LeafPool<'a> {
             in_flight: FuturesUnordered::new(),
             bytes: 0,
             first_error: None,
+            folders: FolderDates::default(),
         }
     }
 
@@ -227,7 +233,7 @@ async fn copy_leaf<'a>(
     source_facts: SourceFileFacts,
     dest_volume: &'a Arc<dyn Volume>,
     write_dest: PathBuf,
-    replace_after_write: Option<PathBuf>,
+    replaces: Replaces,
     reserved_placeholder: bool,
     staging: WriteStaging,
     state: &'a Arc<WriteOperationState>,
@@ -265,18 +271,18 @@ async fn copy_leaf<'a>(
     // Safe-replace finalize for a file→file Overwrite: the temp now holds the
     // complete new bytes; swap it over the original. On finalize error the temp
     // is preserved as committed data (see `finalize_safe_replace`).
-    let recorded = match replace_after_write {
-        Some(orig) => {
+    // An overwrite (safe-replace or in place) makes the op not rollbackable.
+    if replaces.overwrites() {
+        created.record_overwrite();
+    }
+    let recorded = match replaces {
+        Replaces::ViaTemp(orig) => {
             super::finalize::finalize_safe_replace(dest_volume, &write_dest, &orig)
                 .await
                 .map_err(|e| PathedVolumeError::at_destination(e, &orig))?;
-            // A deep-merge child that replaced an existing dest file: record the
-            // overwrite so the operation-log eligibility is honest (a copy / move
-            // that overwrote isn't rollbackable — the original is gone).
-            created.record_overwrite();
             orig
         }
-        None => write_dest,
+        Replaces::InPlace | Replaces::Nothing => write_dest,
     };
     created.record_file(recorded, bytes);
     leaf.complete(bytes);
@@ -348,6 +354,10 @@ pub(super) async fn copy_directory_streaming(
     // in the plan and leave the byte write to the caller's single decode pass.
     // `None` ⇒ normal streaming copy.
     plan: Option<&super::sequential_extract::ExtractPlan>,
+    // The source folder's own date, from the scan's stat of it
+    // (`SourceHint::modified_at`): the one date no listing in the walk carries.
+    // Dates `dest_path` once the subtree landed, if the walk created it.
+    source_modified_at: Option<u64>,
 ) -> Result<u64, PathedVolumeError> {
     // ONE pool for this whole subtree, so a file at depth 5 shares the window
     // with a file at depth 1 instead of opening one of its own per level.
@@ -371,20 +381,37 @@ pub(super) async fn copy_directory_streaming(
     // Unconditional: nothing may still be writing to the destination when this
     // returns, whether the walk finished, failed, or hit a cancel.
     pool.drain().await;
-    match walked {
+    let root = match walked {
         // The walk's own error is the FIRST failure by construction (it stops
         // the moment a leaf reports one), so it outranks anything the drain
         // then collected from leaves that were already in flight.
-        Err(e) => Err(e),
-        Ok(()) => match pool.first_error.take() {
-            Some(e) => Err(e),
-            None => Ok(pool.bytes),
-        },
+        Err(e) => return Err(e),
+        Ok(root) => root,
+    };
+    if let Some(e) = pool.first_error.take() {
+        return Err(e);
     }
+
+    // Every leaf landed, so no write can bump a folder's date after this. A
+    // failed or cancelled subtree returned above and dates nothing.
+    let mut folders = std::mem::take(&mut pool.folders);
+    if root == DirectoryCreation::Created {
+        folders.note_filled(dest_path.to_path_buf(), source_modified_at);
+    }
+    match plan {
+        // PLAN MODE wrote no file yet: the data pass dates the folders once its
+        // decode lands every member.
+        Some(plan) => plan.hold_folder_dates(folders),
+        None => folders.stamp(dest_volume, state).await,
+    }
+    Ok(pool.bytes)
 }
 
 /// One level of the merge walk. Recurses into directory children and submits
 /// file children to `pool`; see [`copy_directory_streaming`] for the semantics.
+///
+/// Answers whether THIS walk created the level (`Created`), which is what
+/// earns a folder its source's date; `AlreadyExisted` when in doubt.
 #[allow(
     clippy::too_many_arguments,
     reason = "Mirrors copy_single_path's argument list plus the rollback ledger, merge context, the sequential-extract plan sink, and the leaf pool."
@@ -400,7 +427,7 @@ async fn merge_level<'a>(
     merge: Option<&MergeCtx<'_>>,
     plan: Option<&super::sequential_extract::ExtractPlan>,
     pool: &mut LeafPool<'a>,
-) -> Result<(), PathedVolumeError> {
+) -> Result<DirectoryCreation, PathedVolumeError> {
     note_pending_for_local_dest(dest_volume, dest_path);
     // Say what this task is doing before the first `.await` of the level. A
     // walk parks on listings, so a stack sample sees nothing and the dump would
@@ -443,10 +470,14 @@ async fn merge_level<'a>(
     // can't be trusted to error on collision) we pre-check existence with the
     // one listing the merge level pays anyway, and skip the create when present.
     let dest_prepare = async {
+        // THIS walk's `create_directory` made the level (proof it was empty),
+        // ❌ never the `NotSupported` "treat as fresh" case below.
+        let mut made_here = false;
         let level_pre_existed = if backend_create_directory_detects_collisions(dest_volume) {
             match dest_volume.create_directory(dest_path).await {
                 Ok(()) => {
                     created.record_dir(dest_path.to_path_buf());
+                    made_here = true;
                     false
                 }
                 Err(VolumeError::AlreadyExists(_)) => true,
@@ -466,6 +497,7 @@ async fn merge_level<'a>(
                 match dest_volume.create_directory(dest_path).await {
                     Ok(()) => {
                         created.record_dir(dest_path.to_path_buf());
+                        made_here = true;
                         false
                     }
                     // A race created it between the check and the create; merge.
@@ -483,7 +515,7 @@ async fn merge_level<'a>(
         } else {
             None
         };
-        Ok(dest_index)
+        Ok((dest_index, made_here))
     };
 
     let (dest_index, entries) = if legs_may_overlap {
@@ -494,7 +526,7 @@ async fn merge_level<'a>(
             source_volume.list_directory(source_path, None).await,
         )
     };
-    let dest_index = dest_index.at(source_path)?;
+    let (dest_index, level_made_here) = dest_index.at(source_path)?;
     let entries = entries.at(source_path)?;
     // A move sweeps exactly the folders this walk listed; anything else it
     // finds in the source afterwards arrived later and stays.
@@ -517,25 +549,30 @@ async fn merge_level<'a>(
             Some(index) => DestFolder::Listed(index),
             None => DestFolder::CreatedByUs,
         };
-        let (child_dest, dest_hit) = where_it_lands(
-            dest_volume,
-            dest_path,
-            OsStr::new(&entry.name),
-            folder,
-            NewName::Respell,
-        )
-        .await
-        .at(&child_source)?
-        .into_parts();
+        // ❗ The source's listing named this child, and a hostile server or
+        // device can name it `../x` or `/x`: ❌ never join it raw.
+        let name = ChildName::new(&entry.name)
+            .map_err(VolumeError::from)
+            .at(&child_source)?;
+        let (child_dest, dest_hit) = where_it_lands(dest_volume, dest_path, name, folder, NewName::Respell)
+            .await
+            .at(&child_source)?
+            .into_parts();
         let dest_hit = dest_hit.as_ref();
 
         if entry.is_directory {
             // Dir-vs-dir (and dir-into-nothing) always recurses to merge — no
             // resolver call for the folder itself. A dir landing on a same-named
-            // FILE is a type mismatch, which the resolver (below) handles.
-            let dir_clashes_with_file = dest_hit.is_some_and(|d| !d.is_directory);
-            if !dir_clashes_with_file {
-                Box::pin(merge_level(
+            // LEAF is a type mismatch, which the resolver (below) handles.
+            //
+            // ❗ A LINK is a leaf, whatever it points at. The listing reports a
+            // link to a folder as `is_directory`, and recursing on that alone
+            // walks THROUGH it: the incoming files land in its target, a folder
+            // the user never picked, and an Overwrite replaces files there. The
+            // entry in hand answers it, so a real folder costs no probe.
+            let dir_clashes_with_leaf = dest_hit.is_some_and(|d| !merges_as_a_directory(d));
+            if !dir_clashes_with_leaf {
+                let level = Box::pin(merge_level(
                     source_volume,
                     &child_source,
                     dest_volume,
@@ -548,19 +585,24 @@ async fn merge_level<'a>(
                     pool,
                 ))
                 .await?;
+                if level == DirectoryCreation::Created {
+                    pool.folders.note_filled(child_dest, entry.modified_at);
+                }
                 continue;
             }
         }
 
         // At this point the child is either a FILE, or a directory clashing with
-        // a same-named dest FILE (type mismatch). If there's a dest hit and we
-        // have merge context, route it through the file-policy resolver.
+        // a same-named dest LEAF (a file or a link: a type mismatch). If there's
+        // a dest hit and we have merge context, route it through the file-policy
+        // resolver.
         let mut write_dest = child_dest.clone();
-        let mut replace_after_write: Option<PathBuf> = None;
+        let mut replaces = Replaces::Nothing;
         // Nothing has resolved a conflict for this child yet, so the name it is
-        // about to take is one we believe FREE. A resolver decision below is
-        // what turns that into a claim (`staged_write.rs::LandingName`).
-        let mut landing = LandingName::ExpectedFree;
+        // about to take is one we believe FREE, and ❗ in a level this walk made,
+        // free by proof (`LandingName::free`). A resolver decision below is what
+        // turns that into a claim (`staged_write.rs::LandingName`).
+        let mut landing = LandingName::free(level_made_here);
         // Nothing has reserved anything for this child either, until a `Rename`
         // resolution below says otherwise.
         let mut reserved_placeholder = false;
@@ -588,7 +630,7 @@ async fn merge_level<'a>(
                     reserved_placeholder: reserved,
                 } => {
                     write_dest = write_path;
-                    replace_after_write = replace;
+                    replaces = replace;
                     reserved_placeholder = reserved;
                     // The resolver picked this name: a `Rename` reserved it with
                     // a placeholder, an Overwrite across types already cleared
@@ -599,10 +641,16 @@ async fn merge_level<'a>(
         }
 
         if entry.is_directory {
+            // Only a resolver decision sends a folder on from here. With no
+            // merge context nobody freed the name, and recursing would merge
+            // into the leaf that holds it (THROUGH it, for a link): refuse.
+            if dest_hit.is_some() && merge.is_none() {
+                return Err(VolumeError::AlreadyExists(child_dest.display().to_string())).at(&child_source);
+            }
             // Type-mismatch Overwrite/Rename that resolved to Proceed: the
-            // resolver already cleared/relocated the dest file, so recurse into
-            // `write_dest` as a fresh (or renamed) directory root.
-            Box::pin(merge_level(
+            // resolver already set aside/relocated the dest leaf, so recurse
+            // into `write_dest` as a fresh (or renamed) directory root.
+            let level = Box::pin(merge_level(
                 source_volume,
                 &child_source,
                 dest_volume,
@@ -615,6 +663,9 @@ async fn merge_level<'a>(
                 pool,
             ))
             .await?;
+            if level == DirectoryCreation::Created {
+                pool.folders.note_filled(write_dest, entry.modified_at);
+            }
             continue;
         }
 
@@ -633,7 +684,7 @@ async fn merge_level<'a>(
                 child_source,
                 super::sequential_extract::PlannedWrite {
                     dest_path: write_dest,
-                    replace_after_write,
+                    replaces,
                     landing,
                     // The plan pass is the only one that lists the source, so
                     // the mode has to be recorded here or the data pass has
@@ -647,7 +698,7 @@ async fn merge_level<'a>(
         // Conflict resolution for this child is DONE, on the walker, in listing
         // order — the same rule the top-level concurrent driver follows. Only the
         // bytes go wide.
-        let staging = staging_for(&replace_after_write, landing);
+        let staging = staging_for(&replaces, landing);
         let row = LeafRow {
             source: child_source.clone(),
             dest: write_dest.clone(),
@@ -663,7 +714,7 @@ async fn merge_level<'a>(
                 SourceFileFacts::from_entry(entry),
                 dest_volume,
                 write_dest,
-                replace_after_write,
+                replaces,
                 reserved_placeholder,
                 staging,
                 state,
@@ -674,7 +725,11 @@ async fn merge_level<'a>(
         .await?;
     }
 
-    Ok(())
+    Ok(if level_made_here {
+        DirectoryCreation::Created
+    } else {
+        DirectoryCreation::AlreadyExisted
+    })
 }
 
 /// Whether this backend's `create_directory` reliably returns
@@ -693,14 +748,14 @@ fn backend_create_directory_detects_collisions(volume: &Arc<dyn Volume>) -> bool
 enum MergeChildDecision {
     /// Honor a Skip: do NOT touch the dest child at all.
     Skip,
-    /// Proceed writing to `write_path`; `replace` is `Some(orig)` for a
-    /// file→file safe-replace (write to a temp sibling, finalize after).
+    /// Proceed writing to `write_path`; `replace` says what that does to a file
+    /// at the name (`ViaTemp(orig)`: write to a temp sibling, finalize after).
     /// `reserved_placeholder` says the resolver put a zero-byte `O_EXCL` file at
     /// `write_path` to hold the name, which the leaf owes taking back if its
     /// write never happens (`naming.rs::ClaimedName`).
     Proceed {
         write_path: PathBuf,
-        replace: Option<PathBuf>,
+        replace: Replaces,
         reserved_placeholder: bool,
     },
 }
@@ -757,7 +812,7 @@ async fn resolve_merge_child(
         Ok(None) => Ok(MergeChildDecision::Skip),
         Ok(Some(ResolvedConflict {
             write_path,
-            replace_after_write,
+            replaces,
             reserved_placeholder,
             displaced,
         })) => {
@@ -768,7 +823,7 @@ async fn resolve_merge_child(
             }
             Ok(MergeChildDecision::Proceed {
                 write_path,
-                replace: replace_after_write,
+                replace: replaces,
                 reserved_placeholder,
             })
         }

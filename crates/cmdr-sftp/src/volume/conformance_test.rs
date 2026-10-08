@@ -117,6 +117,60 @@ async fn create_directory_all_reports_an_existing_directory_honestly() {
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 #[ignore = "needs the SFTP fixture stack: sftp-servers/start.sh (sftp-fixture)"]
+async fn create_directory_all_refuses_a_file_in_the_way() {
+    // A mkdir over a FILE answers the same `SSH_FX_FAILURE` as one over a
+    // directory, and a mkdir under a file answers `SSH_FX_NO_SUCH_FILE` (OpenSSH
+    // folds `ENOTDIR` into it). Read as "already there" and "parent missing",
+    // those walk straight past the file and report the folder the user asked
+    // Cmdr to create as not found.
+    let (volume, dir) = stock_server_with_scratch("mkdir-p-file-in-the-way").await;
+    let notes = format!("{dir}/notes");
+    volume
+        .create_file(Path::new(&notes), b"the user's notes")
+        .await
+        .expect(FIXTURE);
+
+    conformance::assert_create_directory_all_refuses_a_file_in_the_way(&volume, Path::new(&notes)).await;
+
+    clean_scratch(&volume, &dir).await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[ignore = "needs the SFTP fixture stack: sftp-servers/start.sh (sftp-fixture)"]
+async fn create_directory_all_goes_through_a_link_to_a_folder() {
+    // ❗ The cell that keeps the refusal above from overreaching: what the walk
+    // asks about an occupied name has to FOLLOW a link, or every destination
+    // reached through one (`/home` on a NAS) is refused as "not a folder".
+    let (volume, dir) = stock_server_with_scratch("mkdir-p-through-a-link").await;
+    let real = format!("{dir}/real");
+    let link = format!("{dir}/link");
+    volume.create_directory(Path::new(&real)).await.expect(FIXTURE);
+    let session = volume.clone_session().await.expect(FIXTURE);
+    session
+        .sftp()
+        .fs()
+        .symlink(
+            volume.to_remote_path(Path::new(&real)).expect(FIXTURE),
+            volume.to_remote_path(Path::new(&link)).expect(FIXTURE),
+        )
+        .await
+        .expect(FIXTURE);
+
+    conformance::assert_create_directory_all_goes_through_a_link_to_a_folder(
+        &volume,
+        Path::new(&link),
+        Path::new(&real),
+    )
+    .await;
+
+    // The link first: it's a leaf to `delete`, and what was made through it
+    // lives in `real`.
+    volume.delete(Path::new(&link)).await.expect(FIXTURE);
+    clean_scratch_deep(&volume, &dir).await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[ignore = "needs the SFTP fixture stack: sftp-servers/start.sh (sftp-fixture)"]
 async fn delete_leaves_a_non_empty_directory_intact() {
     let (volume, dir) = stock_server_with_scratch("delete-non-recursive").await;
     let album = format!("{dir}/album");
@@ -162,6 +216,34 @@ async fn export_matches_the_bytes_offered() {
     volume.create_file(Path::new(&file), content).await.expect(FIXTURE);
 
     conformance::assert_export_matches_the_bytes_offered(&volume, Path::new(&file), content).await;
+
+    clean_scratch(&volume, &dir).await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[ignore = "needs the SFTP fixture stack: sftp-servers/start.sh (sftp-fixture)"]
+async fn a_copy_keeps_the_source_date() {
+    let (volume, dir) = stock_server_with_scratch("dated-copy").await;
+    let dated = format!("{dir}/dated.txt");
+
+    conformance::assert_write_from_stream_keeps_the_source_date(&volume, Path::new(&dated), std::time::Duration::ZERO)
+        .await;
+    conformance::assert_read_stream_reports_the_listed_date(&volume, Path::new(&dated)).await;
+
+    clean_scratch(&volume, &dir).await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[ignore = "needs the SFTP fixture stack: sftp-servers/start.sh (sftp-fixture)"]
+async fn set_modified_dates_a_folder() {
+    let (volume, dir) = stock_server_with_scratch("dated-folder").await;
+
+    conformance::assert_set_modified_dates_a_folder(
+        &volume,
+        Path::new(&format!("{dir}/dated")),
+        std::time::Duration::ZERO,
+    )
+    .await;
 
     clean_scratch(&volume, &dir).await;
 }

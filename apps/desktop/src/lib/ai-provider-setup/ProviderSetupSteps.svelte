@@ -1,5 +1,6 @@
 <script lang="ts">
     import type { Snippet } from 'svelte'
+    import Button from '$lib/ui/Button.svelte'
     import Icon from '$lib/ui/Icon.svelte'
     import LinkButton from '$lib/ui/LinkButton.svelte'
     import TextInput from '$lib/ui/TextInput.svelte'
@@ -148,6 +149,16 @@
                         value={controller.apiKey}
                         onchange={(value: string) => { controller.handleApiKeyChange(value); }}
                     />
+                    {#if controller.keyIsSet}
+                        <div class="step-actions">
+                            <Button
+                                size="mini"
+                                onclick={() => {
+                                    void controller.removeApiKey()
+                                }}>{tString('onboarding.cloudSetup.removeKey')}</Button
+                            >
+                        </div>
+                    {/if}
                 {:else if step.kind === 'model'}
                     <span class="step-label">{tString('onboarding.cloudSetup.step.pickModel')}</span>
                     <Combobox
@@ -228,6 +239,10 @@
     .step-label {
         font-size: var(--font-size-md);
         color: var(--color-text-primary);
+    }
+
+    .step-actions {
+        display: flex;
     }
 
     .step-hint {

@@ -13,7 +13,7 @@
  * pins behavior whether dispatch routes through a switch or the flat handler
  * record it uses today.
  *
- * The dispatchable-89 / exempt-20 sets are DERIVED from `COMMAND_IDS` minus a
+ * The dispatchable / exempt sets are DERIVED from `COMMAND_IDS` minus a
  * local exempt list, so the suite self-checks the counts (a new command, or a
  * miscounted exemption, fails the set tests below).
  */
@@ -38,6 +38,7 @@ const m = vi.hoisted(() => ({
   getEffectiveShortcuts: vi.fn<(id: string) => string[]>(() => []),
   openSettingsWindow: vi.fn(() => Promise.resolve()),
   openShortcutsWindow: vi.fn(() => Promise.resolve()),
+  openDebugLog: vi.fn(() => Promise.resolve()),
   openErrorReportDialog: vi.fn<() => void>(),
   openFeedbackDialog: vi.fn<() => void>(),
   runMenuTriggeredCheck: vi.fn(() => Promise.resolve()),
@@ -74,6 +75,7 @@ const {
   getEffectiveShortcuts,
   openSettingsWindow,
   openShortcutsWindow,
+  openDebugLog,
   openErrorReportDialog,
   openFeedbackDialog,
   runMenuTriggeredCheck,
@@ -136,6 +138,8 @@ vi.mock('$lib/shortcuts', async () => ({
 vi.mock('$lib/settings/settings-window', () => ({
   openSettingsWindow: () => m.openSettingsWindow(),
 }))
+
+vi.mock('$lib/logging/open-debug-log', () => ({ openDebugLog: m.openDebugLog }))
 
 vi.mock('$lib/shortcuts/shortcuts-window', () => ({
   openShortcutsWindow: () => m.openShortcutsWindow(),
@@ -228,8 +232,8 @@ describe('characterization — id partition self-check', () => {
     for (const id of EXEMPT_IDS) expect(COMMAND_IDS).toContain(id)
   })
 
-  it('dispatchable set is exactly 124 ids', () => {
-    expect(DISPATCHABLE_IDS).toHaveLength(124)
+  it('dispatchable set is exactly 134 ids', () => {
+    expect(DISPATCHABLE_IDS).toHaveLength(134)
   })
 
   it('dispatchable ∪ exempt = COMMAND_IDS, disjoint', () => {
@@ -246,6 +250,11 @@ describe('characterization — module-delegate arms', () => {
   it('app.settings → openSettingsWindow()', async () => {
     await handleCommandExecute('app.settings', makeCtx({}))
     expect(openSettingsWindow).toHaveBeenCalledOnce()
+  })
+
+  it('help.viewDebugLog → openDebugLog()', async () => {
+    await handleCommandExecute('help.viewDebugLog', makeCtx({}))
+    expect(openDebugLog).toHaveBeenCalledOnce()
   })
 
   it('help.openShortcuts → openShortcutsWindow()', async () => {

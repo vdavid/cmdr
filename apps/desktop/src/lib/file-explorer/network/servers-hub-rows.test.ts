@@ -7,7 +7,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { buildHubRows, openMoveFor } from './servers-hub-rows'
+import { buildHubRows, isNearbyOnly, openMoveFor, savedSmbHostIds } from './servers-hub-rows'
 import type { SavedServer } from '$lib/tauri-commands'
 import type { NetworkHost, VolumeInfo } from '../types'
 import type { SignedInAs } from './signed-in-as'
@@ -32,6 +32,7 @@ function sftpServer(overrides: Partial<SavedServer> = {}): SavedServer {
         connected: false,
         appRoot: `sftp://ada@nas.local:22`,
         username: 'ada',
+        autoReconnect: true,
       },
     ],
     ...overrides,
@@ -285,6 +286,7 @@ describe('buildHubRows: status', () => {
           pinned: true,
           connected: true,
           username: 'ada',
+          autoReconnect: true,
           appRoot: 'sftp://ada@nas.local:22',
         },
       ],
@@ -322,6 +324,38 @@ describe('buildHubRows: order', () => {
       volumes: [],
     })
     expect(rows.map((r) => r.name)).toEqual(['Alpha', 'zeta'])
+  })
+
+  /**
+   * The hub folds the hosts nobody saved into one group at the end
+   * (`servers-hub-items.ts`), so they have to be contiguous there. Both rows
+   * below read "Found nearby" and neither was ever used, so the status rank and
+   * the recency tie, and the name alone would put the unsaved one first.
+   */
+  it('puts a host nobody saved after every saved server, even one mDNS also sees', () => {
+    const rows = buildHubRows({
+      saved: [smbServer({ id: 'manual-zed', displayName: 'Zed', address: 'zed.local' })],
+      hosts: [host({ id: 'h-alpha', name: 'Alpha' }), host({ id: 'h-zed', name: 'Zed', hostname: 'zed.local' })],
+      volumes: [],
+    })
+    expect(rows.map((r) => r.name)).toEqual(['Zed', 'Alpha'])
+    expect(rows.map(isNearbyOnly)).toEqual([false, true])
+  })
+})
+
+describe('savedSmbHostIds', () => {
+  it('names every discovered host a saved SMB server claims, and no other', () => {
+    const ids = savedSmbHostIds(
+      [smbServer({ id: 'manual-10-0-0-4-445', displayName: 'Attic NAS', address: '10.0.0.4' }), sftpServer()],
+      [
+        host({ id: 'manual-10-0-0-4-445', name: '10.0.0.4', source: 'manual' }),
+        host({ id: 'bonjour-attic', name: 'Attic NAS' }),
+        host({ id: 'bonjour-printer', name: 'Printer' }),
+        // Same name as the SFTP server, which claims no SMB host.
+        host({ id: 'bonjour-naspolya', name: 'Naspolya' }),
+      ],
+    )
+    expect([...ids].sort()).toEqual(['bonjour-attic', 'manual-10-0-0-4-445'])
   })
 })
 
@@ -381,6 +415,7 @@ describe('saved SMB shares', () => {
         connected: false,
         appRoot: 'smb://10.0.0.4/Scans',
         username: null,
+        autoReconnect: null,
       },
       {
         volumeId: 'smb-container',
@@ -389,6 +424,7 @@ describe('saved SMB shares', () => {
         connected: false,
         appRoot: '/Volumes/Container',
         username: 'sven',
+        autoReconnect: null,
       },
     ],
   })
@@ -398,8 +434,8 @@ describe('saved SMB shares', () => {
 
     expect(rows.map((row) => [row.kind, row.name, row.account])).toEqual([
       ['server', "Sven's NAS", null],
-      ['share', 'Container', { kind: 'user', username: 'sven' }],
-      ['share', 'Scans', null],
+      ['place', 'Container', { kind: 'user', username: 'sven' }],
+      ['place', 'Scans', null],
     ])
     const container = rows[1]
     expect(container.volumeId).toBe('smb-container')
@@ -539,6 +575,7 @@ describe('openMoveFor', () => {
         connected: false,
         appRoot: 'smb://10.0.0.4/Scans',
         username: null,
+        autoReconnect: null,
       },
       {
         volumeId: 'smb-container',
@@ -547,6 +584,7 @@ describe('openMoveFor', () => {
         connected: false,
         appRoot: '/Volumes/Container',
         username: 'sven',
+        autoReconnect: null,
       },
     ],
   })

@@ -416,9 +416,11 @@ var realTreeReadingTests = map[string][]string{
 	"TestGoTestsInputsCoverTheRealTreeItsTestsRead":            {"scripts/check/checks"},
 	// `.mise.toml` is the single source for the Go toolchain version; these three
 	// assert that whatever needs a Go version reads it from there.
-	"TestLinuxContainerProvisionsTheMisePinnedGo":              {".mise.toml"},
+	"TestLinuxContainerProvisionsTheMisePinnedGo":              {".mise.toml", "rust-toolchain.toml"},
 	"TestMiseGoVersionReadsThePin":                             {".mise.toml"},
-	"TestProvisionScriptStopsBeforeRunningTests":               {".mise.toml"},
+	"TestLinuxImageProvisionsThePinnedTools":                   {".mise.toml", "rust-toolchain.toml"},
+	"TestLinuxRustdocAsksCIsQuestion":                          {"Cargo.toml", "crates/fsevent-stream/Cargo.toml", "apps/desktop/src-tauri/Cargo.toml"},
+	"TestCheckoutCacheKeyMatchesTheE2ELinuxScript":             {"apps/desktop/scripts/e2e-linux.sh"},
 	"TestModuleCyclesAllowlistMatchesPinnedVersion":            {"scripts/check/checks/module-cycles-allowlist.json"},
 	"TestModuleCyclesPackagesAreTheLibraryMembers":             {"Cargo.toml", "crates/cmdr-fs/Cargo.toml"},
 	"TestNoFrontendSourceLoadsAgentDocs":                       {"apps/desktop/src", "apps/desktop/test", "apps/desktop/scripts", "apps/desktop/eslint-plugins", "eslint-plugins"},
@@ -434,6 +436,9 @@ var realTreeReadingTests = map[string][]string{
 	"TestWebdavFixturePortsBindToLoopback":                     {webdavComposeRel},
 	"TestWebdavFixturePortsMatchComposeDefaults":               {webdavComposeRel},
 	"TestWebdavModeServicesAgree":                              {webdavStartRel},
+	"TestS3FixturePortsBindToLoopback":                         {s3ComposeRel},
+	"TestS3FixturePortsMatchComposeDefaults":                   {s3ComposeRel},
+	"TestS3ModeServicesAgree":                                  {s3StartRel},
 	"TestSmbPinnedPortsCoverEveryVendoredService":              {smbComposeRel},
 	// Reads only the crate directories `fixtureIntegrationFilter` stats to
 	// decide whether a `package(…)` clause parses.

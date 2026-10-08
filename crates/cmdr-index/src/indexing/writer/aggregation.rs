@@ -196,6 +196,7 @@ pub(super) fn handle_compute_all_aggregates(
     events: &dyn EventSink,
     volume_id: &str,
     expected_total_entries: &AtomicU64,
+    last_full_aggregate_ms: &AtomicU64,
     source: AggSource,
     heal_latch: &mut bool,
     signal: &IndexFailureSignal,
@@ -257,8 +258,14 @@ pub(super) fn handle_compute_all_aggregates(
                 pluralize_with(*count, "directory", "directories"),
                 t.elapsed().as_secs_f64(),
             );
+            // At least 1, since 0 means "nothing to take".
+            let ms = u64::try_from(t.elapsed().as_millis()).unwrap_or(u64::MAX).max(1);
+            last_full_aggregate_ms.store(ms, Ordering::Relaxed);
         }
         Err(e) => {
+            // A failed aggregate is no timing for the compute step, and it mustn't
+            // leave an earlier one standing in for it.
+            last_full_aggregate_ms.store(0, Ordering::Relaxed);
             signal.note(e, "compute_all_aggregates");
         }
     }

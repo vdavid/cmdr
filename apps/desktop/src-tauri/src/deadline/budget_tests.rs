@@ -176,13 +176,13 @@ mod wire_shape_tests {
     }
 
     #[test]
-    fn a_scan_refusal_names_which_side_went_missing() {
+    fn a_scan_refusal_says_whether_the_destination_is_gone_or_not_connected() {
         assert_eq!(
-            serde_json::to_value(VolumeScanError::SourceVolumeNotFound {
+            serde_json::to_value(VolumeScanError::DestinationVolumeNotConnected {
                 volume_id: "mtp-1:65537".to_string()
             })
             .unwrap(),
-            json!({ "type": "sourceVolumeNotFound", "volumeId": "mtp-1:65537" })
+            json!({ "type": "destinationVolumeNotConnected", "volumeId": "mtp-1:65537" })
         );
         assert_eq!(
             serde_json::to_value(VolumeScanError::DestinationVolumeNotFound {

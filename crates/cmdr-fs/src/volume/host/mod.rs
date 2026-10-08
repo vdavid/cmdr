@@ -57,6 +57,9 @@
 //! - [`settings`]: the live, user-tunable knobs a backend reads per dispatch.
 //! - [`activity`]: whether the user is busy on a volume, so bulk work stands aside.
 //! - [`analytics`]: PII-free product counters.
+//! - [`VolumeHost::state_dir`]: a directory of the backend's own for durable
+//!   private state. NOT a trait — the host injects a path, the way it injects
+//!   the runtime.
 //!
 //! Rationale, what deliberately ISN'T a seam, and the sites each one covers:
 //! `DETAILS.md`.
@@ -71,6 +74,7 @@ pub mod listings;
 pub mod runtime;
 pub mod settings;
 
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use tokio::runtime::Handle;
@@ -82,7 +86,7 @@ use events::VolumeEventSink;
 use host_keys::HostKeys;
 use indexing::IndexNotifier;
 use listings::ListingHost;
-use settings::BackendSettings;
+use settings::{BackendName, BackendSettings};
 
 /// Everything a storage backend asks its host, in one cheaply-cloned value.
 ///
@@ -100,6 +104,9 @@ pub struct VolumeHost {
     activity: Arc<dyn UserActivity>,
     analytics: Arc<dyn AnalyticsSink>,
     settings: Arc<dyn BackendSettings>,
+    /// Where backends keep durable private state, one subdirectory each.
+    /// `None` keeps everything in memory for the process's life.
+    state_root: Option<PathBuf>,
 }
 
 impl VolumeHost {
@@ -128,6 +135,7 @@ impl VolumeHost {
             activity: Arc::new(activity::AlwaysIdle),
             analytics: Arc::new(analytics::NoAnalytics),
             settings: Arc::new(settings::DefaultBackendSettings),
+            state_root: None,
         }
     }
 
@@ -193,6 +201,18 @@ impl VolumeHost {
     /// The live, user-tunable knobs a backend reads per dispatch.
     pub fn settings(&self) -> &dyn BackendSettings {
         self.settings.as_ref()
+    }
+
+    /// A directory this backend may keep durable private state in (S3's record
+    /// of the uploads it started), `<root>/<backend>`. It may not exist yet; the
+    /// backend creates it on first write.
+    ///
+    /// `None` when the host has no data directory (a test, a bench, a tool):
+    /// the backend keeps that state in memory for the process's life. ❌ Never
+    /// fall back to a path of the backend's own choosing: state no later launch
+    /// looks for is worse than none.
+    pub fn state_dir(&self, backend: BackendName) -> Option<PathBuf> {
+        self.state_root.as_ref().map(|root| root.join(backend))
     }
 }
 
@@ -266,6 +286,14 @@ impl VolumeHostBuilder {
     #[must_use]
     pub fn settings(mut self, settings: Arc<dyn BackendSettings>) -> Self {
         self.host.settings = settings;
+        self
+    }
+
+    /// The directory each backend's [`VolumeHost::state_dir`] hangs under.
+    /// Without it, backends keep their durable state in memory only.
+    #[must_use]
+    pub fn state_root(mut self, root: &Path) -> Self {
+        self.host.state_root = Some(root.to_path_buf());
         self
     }
 

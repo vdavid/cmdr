@@ -7,10 +7,13 @@
 
 use std::collections::HashMap;
 
+use tokio_util::sync::CancellationToken;
+
 use super::recompute::{RescoreScope, ScoringInputs, rescore_rows, rescore_subset, sanitize_incremental_batch};
 use super::scoped_walk::plan_incremental_batch;
-use super::walk::walk_index_folders;
+use super::walk::{WalkedFolders, walk_index_folders};
 use crate::importance::scorer::{SignalSet, Weights};
+use crate::importance::stop::PassError;
 use crate::importance::writer::WeightRow;
 use crate::indexing::store::IndexStore;
 
@@ -69,7 +72,10 @@ pub fn compare_walks_for_incremental(
     now_secs: u64,
 ) -> Result<Vec<OriginComparison>, String> {
     let conn = IndexStore::open_read_connection(index_db).map_err(|e| e.to_string())?;
-    let mut full = walk_index_folders(&conn, home)?;
+    // A dev tool comparing walks over a database file has no volume to stop it.
+    let never = CancellationToken::new();
+    let unstopped = |e: PassError| e.to_string();
+    let mut full = walk_index_folders(&conn, home, &never).map_err(unstopped)?;
 
     // Each origin's marker presence AS THE FULL WALK SEES IT, so the guard never
     // fires on a difference the comparison is meant to expose.
@@ -102,7 +108,8 @@ pub fn compare_walks_for_incremental(
         // What the pass will act on: an over-budget origin is rescored alone, so both
         // sides of the comparison have to be narrowed to that one folder.
         let (cleared, demoted) = plan.lists_for(RescoreScope::ChangedSubtreesOnly);
-        let outcome = crate::importance::scheduler::scoped_walk::try_scoped_walk(&conn, home, &plan, &markers)?;
+        let outcome = crate::importance::scheduler::scoped_walk::try_scoped_walk(&conn, home, &plan, &markers, &never)
+            .map_err(unstopped)?;
         let scoped_walk = started.elapsed();
         let mut scoped = match outcome {
             crate::importance::scheduler::scoped_walk::ScopedWalkOutcome::Scoped(folders) => folders,
@@ -123,16 +130,12 @@ pub fn compare_walks_for_incremental(
         };
 
         let scoped_folders = scoped.len();
-        let scoped_rows = rescore_rows(
-            &inputs,
-            &rescore_subset(&mut scoped, &cleared, RescoreScope::ChangedSubtreesOnly, &demoted),
-            &HashMap::new(),
-        );
-        let oracle_rows = rescore_rows(
-            &inputs,
-            &rescore_subset(&mut full, &cleared, RescoreScope::ChangedSubtreesOnly, &demoted),
-            &HashMap::new(),
-        );
+        let rows_of = |folders: &mut WalkedFolders| {
+            let subset = rescore_subset(folders, &cleared, RescoreScope::ChangedSubtreesOnly, &demoted, &never)?;
+            rescore_rows(&inputs, &subset, &HashMap::new(), &never)
+        };
+        let scoped_rows = rows_of(&mut scoped).map_err(unstopped)?;
+        let oracle_rows = rows_of(&mut full).map_err(unstopped)?;
         let mut comparison = diff_rows(scoped_folders, scoped_rows, oracle_rows, scoped_walk);
         comparison.demoted = !demoted.is_empty();
         out.push(comparison);

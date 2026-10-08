@@ -179,7 +179,7 @@ impl TestVolume {
     /// Run a FULL pass, the way `ScanCompleted` does: walk the whole index, score
     /// every folder, replace the table at a fresh generation.
     fn full_pass(&self) {
-        let mut folders = walk_index_folders(self.index.read_conn(), HOME).expect("full walk");
+        let mut folders = walk_index_folders(self.index.read_conn(), HOME, &NEVER_STOPPED).expect("full walk");
         recompute_folders(
             &RecomputeInputs {
                 writer: &self.writer,
@@ -189,6 +189,7 @@ impl TestVolume {
                 available: SignalSet::listing_only(),
                 visits: &HashMap::new(),
                 last_used: &HashMap::new(),
+                stop: &NEVER_STOPPED,
             },
             &mut folders,
         )
@@ -210,9 +211,11 @@ impl TestVolume {
         let previous = load_previous_markers(self.dir.path(), ROOT_VOLUME_ID, &sanitized);
         let conn = self.index.read_conn();
         let (mut folders, scope, plan) = match self.strategy {
-            WalkStrategy::Scoped => walk_for_incremental(conn, HOME, &sanitized, &previous).expect("scoped walk"),
+            WalkStrategy::Scoped => {
+                walk_for_incremental(conn, HOME, &sanitized, &previous, &NEVER_STOPPED).expect("scoped walk")
+            }
             WalkStrategy::FullOnly => (
-                walk_index_folders(conn, HOME).expect("full walk"),
+                walk_index_folders(conn, HOME, &NEVER_STOPPED).expect("full walk"),
                 RescoreScope::WithAncestors,
                 plan_incremental_batch(conn, &sanitized).expect("plan"),
             ),
@@ -223,12 +226,14 @@ impl TestVolume {
         let (cleared, demoted) = plan.lists_for(scope);
         self.last_report = incremental_rescore(
             &IncrementalInputs {
+                volume_id: ROOT_VOLUME_ID,
                 writer: &self.writer,
                 weights: &Weights::default(),
                 home: HOME,
                 now_secs: NOW_SECS,
                 available: SignalSet::listing_only(),
                 visits: &HashMap::new(),
+                stop: &NEVER_STOPPED,
             },
             &mut folders,
             &cleared,

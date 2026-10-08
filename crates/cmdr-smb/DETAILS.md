@@ -555,6 +555,34 @@ notifications carry decide which cached listing they patch. So `SmbVolumeInner::
 `RwLock<PathBuf>`, shared with the watcher task and re-read once per event batch) is updated by a reroot; a watcher
 pinned to the old root would keep feeding paths that no longer name anything.
 
+## Dates on copies
+
+The contract: `apps/desktop/src-tauri/src/file_system/write_operations/transfer/volume/DETAILS.md` § "Copies keep the
+source's date".
+
+- **Source half: both foreground read paths report the server's `LastWriteTime`** (the streamed download and the hinted
+  one-frame compound read), from the read's own CREATE response: `FileDownload::info()` on the streamed path,
+  `read_file_compound_sized_with_info` on the compound one. No extra frame; the wire-shape cells pin a hinted read at
+  `(1, 3)`, so a stat creeping back in shows there as `(2, 7)`.
+- **The scan pool's prefetch stays dateless**: enrichment never copies those bytes.
+- **Destination half: `write_from_stream_impl` stamps `LastWriteTime` only** (`smb2::FileTimes::set_modified`; every
+  other time goes as 0, "don't change"), best effort: a refused stamp is a `warn!` and the copy succeeds. Gotcha/Why:
+  the server rewrites a file's date when the handle that WROTE it closes, so the moment matters. The streaming writer
+  stamps its own handle before `finish()` (`stamp_writer`, which `FileWriter::set_times` orders after the pending
+  writes); the one-frame compound write has already closed its handle, so it stamps by path right after, one more
+  compound frame (CREATE+SET_INFO+CLOSE). ❌ Never stamp by path while a writer is still open: its close wins. A
+  one-shot write to the user's real name (unstaged, `write_is_single_shot`) shows the server's date for that one frame.
+- **Pinned by** `conformance_test.rs`: `smb_integration_a_copy_keeps_the_source_date_per_the_shared_contract` (the
+  shared assertions, compound path), `smb_integration_a_streamed_write_keeps_the_source_date` (the writer path), and
+  `smb_integration_a_read_stream_reports_the_listed_date_on_both_read_paths` (the read half on a file aged inside the
+  fixture container with `touch -d`);
+  `wire_shape_integration_test.rs::smb_integration_a_dated_single_shot_write_adds_one_frame_for_its_date` counts the
+  stamp's frame.
+- **Folders: `set_modified` stamps `LastWriteTime` by path** (`mutation.rs`, `Tree::set_times`, which opens with no
+  create options so a directory opens like a file; one frame), then patches the parent listing with a `Modified`. The
+  copy engine calls it on each folder it created once the contents landed. Pinned by
+  `smb_integration_set_modified_dates_a_folder` and the engine's `smb_integration_folders_copied_*` cells.
+
 ## Copy concurrency and the credit window
 
 Every SMB2 request spends credits from a budget the server grants (smb2 steers toward a ~512-credit window), and the
@@ -974,9 +1002,10 @@ Which side each one lives on, and why: § "Which side a test lives on" above.
 - `unicode_names_integration_test.rs` — names in both Unicode forms, seeded through a raw smb2 session so they sit on
   disk exactly as spelled: every operation on a listed NFD name inside an NFC directory (read, hinted read, scan, copy
   off and within the share, rename, delete, open), and the watcher reporting an outside change under the pane's own
-  spelling of an accented directory. Then the foreign-path resolve: an all-NFD path to an NFC file and to ERR-VETBX's
-  mixed shape, a case-and-form-differing directory, look-alike twins refusing, a pane path carried over from the kernel
-  mount, and a stale remembered correction healing (§ "Resolving a foreign path").
+  spelling of an accented directory (a 20 s delivery budget, because the fixture's `notifyd` lags under a shared lane:
+  `docs/testing.md` § "Sanctioned slow-test exceptions"). Then the foreign-path resolve: an all-NFD path to an NFC file
+  and to ERR-VETBX's mixed shape, a case-and-form-differing directory, look-alike twins refusing, a pane path carried
+  over from the kernel mount, and a stale remembered correction healing (§ "Resolving a foreign path").
 - `forbidden_chars_integration_test.rs` — names carrying the characters SMB2 forbids (`?`, `*`, `:`, `\`, trailing space
   or period, and so on), which the `unicode` fixture container seeds in the private-use bytes macOS smbfs writes: they
   list as the characters themselves with no private-use code point left, open and read (also through a directory whose

@@ -33,6 +33,7 @@ function line(undo: RenameUndoState, overrides: Partial<Extract<RailMessage, { k
     fileCount: 1234,
     jobOperationIds: [],
     jobFileCount: 0,
+    swapsSkipped: 0,
     undo,
     ...overrides,
   }
@@ -56,6 +57,19 @@ describe('a completed batch', () => {
 
     expect(target.textContent).toContain('Renamed 1,234 files.')
     expect(buttons(target).map((b) => b.textContent.trim())).toEqual(['Undo'])
+  })
+
+  it('says which renames it skipped because they swap names', () => {
+    const target = render(line({ status: 'undoable' }, { fileCount: 3, swapsSkipped: 2 }))
+
+    expect(target.textContent).toContain('Renamed 3 files.')
+    expect(target.textContent).toContain('Skipped 2 renames that swap names. Rename them one at a time.')
+  })
+
+  it('says nothing about swaps when there were none', () => {
+    const target = render(line({ status: 'undoable' }))
+
+    expect(target.textContent).not.toContain('swap')
   })
 
   it('names what Undo would reverse, so it is not a bare "Undo" to a screen reader', () => {

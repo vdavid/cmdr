@@ -82,6 +82,11 @@ function buildPaneRef(
     handleJumpKeystroke: vi.fn(),
     isJumpActive: () => overrides.isJumpActive ?? false,
     clearJumpState: vi.fn(),
+    isQuickFilterMode: vi.fn(() => false),
+    isQuickFilterActive: vi.fn(() => false),
+    appendQuickFilter: vi.fn(),
+    backspaceQuickFilter: vi.fn(),
+    clearQuickFilter: vi.fn(),
     // Delegate spies
     toggleVolumeChooser: vi.fn(),
     openVolumeChooser: vi.fn(),

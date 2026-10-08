@@ -16,6 +16,8 @@
 //! Depth, measurements, and the alternatives weighed: `media_index/scheduler/DETAILS.md` § The
 //! walk and its memory floor.
 
+use std::ops::ControlFlow;
+
 use crate::indexing::store::{IndexStore, ROOT_ID};
 
 /// One directory: its id, its parent's id, and the slice of [`DirTree::names`] holding its
@@ -78,7 +80,9 @@ impl DirTree {
         IndexStore::for_each_directory(conn, |id, parent_id, name, _modified_at| {
             if !tree.push(id, parent_id, name) {
                 arena_full = true;
+                return ControlFlow::Break(());
             }
+            ControlFlow::Continue(())
         })
         .map_err(|e| e.to_string())?;
         if arena_full {

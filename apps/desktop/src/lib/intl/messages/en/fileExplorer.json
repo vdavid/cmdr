@@ -70,6 +70,14 @@
   "@fileExplorer.restrictedFolder.label": {
     "description": "Accessible name for the small info glyph marking a folder macOS won't let Cmdr read fully (a TCC-protected one like Desktop or Documents). A screen reader reads it on every restricted row in the file list and on the breadcrumb, so keep it to a couple of words; the full instruction is the separate tooltip on the same glyph. Reads as a noun phrase naming the condition, not a sentence."
   },
+  "fileExplorer.archivedFile.label": "Archived",
+  "@fileExplorer.archivedFile.label": {
+    "description": "Accessible name for the small archive glyph beside a file whose bytes sit in a cloud provider's cold storage tier (for example S3 Glacier), so it can't be opened or copied until it's restored. A screen reader reads it on every such row in the file list, so keep it to one or two words; the explanation is the separate tooltip. NOT about zip or other archive files."
+  },
+  "fileExplorer.archivedFile.tooltip": "Archived in cold storage. Restore it in your storage provider’s console before opening or copying it.",
+  "@fileExplorer.archivedFile.tooltip": {
+    "description": "Hover tooltip on the archive glyph beside a file in cold storage (for example S3 Glacier). \"Storage provider’s console\" means the provider's website or admin tool (for example the AWS console), where a restore is started. NOT about zip or other archive files."
+  },
   "fileExplorer.diskSpace.free": "{freeText} of {totalText} free ({percentText}%)",
   "@fileExplorer.diskSpace.free": {
     "description": "How much room is left on the drive the pane is showing. Appears in the status bar under a pane and as the first line of the disk-usage bar's hover tooltip. Reads as a statement of fact, not an instruction: of a 926 GB drive, 91 GB are still free, which is 10% of it. Both sizes arrive already formatted with the user's unit choice (GB/GiB) and the OS's decimal separator, so don't add units. The percent sign is separate from {percentText}: put a space before it, drop it, or move it in front of the number as your language writes percentages.",
@@ -146,6 +154,21 @@
     "description": "Toast shown when connecting a network share directly for faster access couldn't reach the server at all. {server} is the server's friendly name or IP address. Reassures the user that the share still works, just not at the faster speed.",
     "placeholders": {
       "server": "the server's friendly name or IP address, for example Naspolya or 192.168.1.111"
+    }
+  },
+  "fileExplorer.pane.directConnectionBlockedByThisMacToast": "Something on this Mac is keeping Cmdr from connecting to {server} directly, so this share stays on the system connection. Try switching Cmdr off and on under {localNetwork}, or check your firewall app.",
+  "@fileExplorer.pane.directConnectionBlockedByThisMacToast": {
+    "description": "Toast and notification body shown when Cmdr's own faster connection to a network share was refused by something on the user's Mac, while macOS's own connection to the same server works. The usual cause is the macOS Local Network privacy permission for Cmdr being stuck (it shows as on, and switching it off and on fixes it), or a firewall app. Reassures the user that the share still works, just not at the faster speed. A button below it opens that permission's page in System Settings (\"openLocalNetworkSettings\"). \"Cmdr\" is the product name; \"firewall app\" means third-party firewall software such as Little Snitch or LuLu.",
+    "placeholders": {
+      "server": "the server's friendly name or IP address, for example Naspolya or 192.168.1.111",
+      "localNetwork": "the OS-localized macOS \"Local Network\" permission name, as System Settings shows it under Privacy & Security, injected at runtime (it follows the Mac’s system language, which can differ from Cmdr’s, so it may arrive in English)"
+    }
+  },
+  "fileExplorer.pane.openLocalNetworkSettings": "Open {localNetwork} settings",
+  "@fileExplorer.pane.openLocalNetworkSettings": {
+    "description": "Button in the toast about something on this Mac keeping Cmdr from connecting to a server (\"directConnectionBlockedByThisMacToast\"). Pressing it opens macOS System Settings at Privacy & Security > Local Network, where the user can switch Cmdr's permission off and on.",
+    "placeholders": {
+      "localNetwork": "the OS-localized macOS \"Local Network\" permission name, as System Settings shows it, injected at runtime (it follows the Mac’s system language, which can differ from Cmdr’s, so it may arrive in English)"
     }
   },
   "fileExplorer.pane.directConnectionTooSlowToast": "{server} took too long to answer, so this share stays on the system connection.",
@@ -409,6 +432,17 @@
   "fileExplorer.typeToJump.prefix": "Jump: ",
   "@fileExplorer.typeToJump.prefix": {
     "description": "Visible label before the typed characters in the type-to-jump indicator (the typed text follows in its own styled span). Keep the trailing space."
+  },
+  "fileExplorer.quickFilter.prefix": "Filter: ",
+  "@fileExplorer.quickFilter.prefix": {
+    "description": "Visible label before the typed characters in the quick-filter indicator, shown while typing narrows the file list to matching names (the typed text follows in its own styled span). Keep the gap before the typed text (a trailing space, or nothing after a full-width colon). It's the same word as the Filter option in Settings (settings.fileExplorer.typeToJump.mode.opt.filter)."
+  },
+  "fileExplorer.quickFilter.ariaLabel": "Showing names that contain {pattern}",
+  "@fileExplorer.quickFilter.ariaLabel": {
+    "description": "Accessibility label for the quick-filter indicator. {pattern} is the text the user typed; the file list now shows only names containing it.",
+    "placeholders": {
+      "pattern": "the characters the user typed to filter the file list"
+    }
   },
   "fileExplorer.searchResults.unavailableTitle": "Search results no longer available",
   "@fileExplorer.searchResults.unavailableTitle": {
@@ -829,54 +863,6 @@
     "screenshot": "servers-hub.png",
     "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
-  "fileExplorer.mtp.connectTimedOut": "Connection timed out. The device may be slow or unresponsive.",
-  "@fileExplorer.mtp.connectTimedOut": {
-    "description": "Message shown when connecting to a phone or camera (an MTP device) timed out. MTP is the protocol used to browse phones/cameras over USB.",
-    "screenshot": "mtp-browse.png",
-    "screenshotNote": "MTP (phone/camera) connection status shown in the device pane. This shows the MTP browse surface; your string appears as a status message in this same device context (connecting, busy, disconnected, etc.)."
-  },
-  "fileExplorer.mtp.exclusiveAccess": "Another app is using this device. Run the ptpcamerad workaround.",
-  "@fileExplorer.mtp.exclusiveAccess": {
-    "description": "Message when another app holds the phone/camera so Cmdr can’t connect. \"ptpcamerad\" is a macOS process name; keep it as-is (it points to a known fix).",
-    "screenshot": "mtp-browse.png",
-    "screenshotNote": "MTP (phone/camera) connection status shown in the device pane. This shows the MTP browse surface; your string appears as a status message in this same device context (connecting, busy, disconnected, etc.)."
-  },
-  "fileExplorer.mtp.deviceNotFound": "Device not found. It may have been unplugged.",
-  "@fileExplorer.mtp.deviceNotFound": {
-    "description": "Message when the connected phone/camera can no longer be found (likely unplugged).",
-    "screenshot": "mtp-browse.png",
-    "screenshotNote": "MTP (phone/camera) connection status shown in the device pane. This shows the MTP browse surface; your string appears as a status message in this same device context (connecting, busy, disconnected, etc.)."
-  },
-  "fileExplorer.mtp.disconnected": "Device was disconnected.",
-  "@fileExplorer.mtp.disconnected": {
-    "description": "Message when the phone/camera was disconnected during use.",
-    "screenshot": "mtp-browse.png",
-    "screenshotNote": "MTP (phone/camera) connection status shown in the device pane. This shows the MTP browse surface; your string appears as a status message in this same device context (connecting, busy, disconnected, etc.)."
-  },
-  "fileExplorer.mtp.deviceBusy": "Device is busy. Please try again.",
-  "@fileExplorer.mtp.deviceBusy": {
-    "description": "Message when the phone/camera is busy and the connection should be retried.",
-    "screenshot": "mtp-browse.png",
-    "screenshotNote": "MTP (phone/camera) connection status shown in the device pane. This shows the MTP browse surface; your string appears as a status message in this same device context (connecting, busy, disconnected, etc.)."
-  },
-  "fileExplorer.mtp.noStorage": "Device has no accessible storage",
-  "@fileExplorer.mtp.noStorage": {
-    "description": "Message when a phone/camera connected but exposes no storage Cmdr can browse.",
-    "screenshot": "mtp-browse.png",
-    "screenshotNote": "MTP (phone/camera) connection status shown in the device pane. This shows the MTP browse surface; your string appears as a status message in this same device context (connecting, busy, disconnected, etc.)."
-  },
-  "fileExplorer.mtp.connecting": "Connecting to device…",
-  "@fileExplorer.mtp.connecting": {
-    "description": "Loading text shown while Cmdr connects to a phone or camera (an MTP device).",
-    "screenshot": "mtp-browse.png",
-    "screenshotNote": "MTP (phone/camera) connection status shown in the device pane. This shows the MTP browse surface; your string appears as a status message in this same device context (connecting, busy, disconnected, etc.)."
-  },
-  "fileExplorer.mtp.tryAgain": "Try again",
-  "@fileExplorer.mtp.tryAgain": {
-    "description": "Button to retry connecting to the phone/camera after a connection problem.",
-    "screenshot": "mtp-browse.png",
-    "screenshotNote": "MTP (phone/camera) connection status shown in the device pane. This shows the MTP browse surface; your string appears as a status message in this same device context (connecting, busy, disconnected, etc.)."
-  },
   "fileExplorer.networkMount.mounting": "Mounting {target}…",
   "@fileExplorer.networkMount.mounting": {
     "description": "Loading text while a network share is being mounted. {target} is the host or share name, or the word \"share\" when the name is unknown.",
@@ -959,6 +945,30 @@
   "@fileExplorer.unreachable.openHome": {
     "description": "Button on the unreachable banner that navigates to the user’s home folder instead."
   },
+  "fileExplorer.listingStalled.title": "Still waiting for this folder",
+  "@fileExplorer.listingStalled.title": {
+    "description": "Heading shown in place of a file list when a folder has stopped answering for several seconds while opening, usually because the network server it lives on went silent. Cmdr keeps waiting and retrying in the background. Calm, not alarming."
+  },
+  "fileExplorer.listingStalled.detail": "The server or drive it’s on isn’t answering. Cmdr keeps trying in the background and opens the folder as soon as it answers.",
+  "@fileExplorer.listingStalled.detail": {
+    "description": "Explanation under the “Still waiting for this folder” heading, shown when Cmdr can’t tell whether the folder is on a network server or a local drive (for example a phone, or a cloud or other add-on mount). “it” is the folder. The server is usually a NAS or file server; the drive is a disk. Promises that the folder opens by itself once the server or drive responds again, with no action needed. Sibling lines name only the server (fileExplorer.listingStalled.detailServer) or only the drive (fileExplorer.listingStalled.detailDrive); keep the three worded alike."
+  },
+  "fileExplorer.listingStalled.detailServer": "The server it’s on isn’t answering. Cmdr keeps trying in the background and opens the folder as soon as it answers.",
+  "@fileExplorer.listingStalled.detailServer": {
+    "description": "Explanation under the “Still waiting for this folder” heading, shown when the folder is on a network server: a NAS or file server reached over SMB, NFS, AFP, WebDAV, SFTP, and so on. “it” is the folder; the second “it” is the server. Promises that the folder opens by itself once the server responds again, with no action needed. Word it like fileExplorer.listingStalled.detail, naming only the server."
+  },
+  "fileExplorer.listingStalled.detailDrive": "The drive it’s on isn’t answering. Cmdr keeps trying in the background and opens the folder as soon as it answers.",
+  "@fileExplorer.listingStalled.detailDrive": {
+    "description": "Explanation under the “Still waiting for this folder” heading, shown when the folder is on a local drive: the Mac’s own disk or one plugged into it (USB, Thunderbolt, an SD card). “it” is the folder; the second “it” is the drive. Promises that the folder opens by itself once the drive responds again, with no action needed. Word it like fileExplorer.listingStalled.detail, naming only the drive."
+  },
+  "fileExplorer.listingStalled.tryAgain": "Try again",
+  "@fileExplorer.listingStalled.tryAgain": {
+    "description": "Button on the “Still waiting for this folder” screen. Starts opening the folder again right away instead of waiting for the next automatic attempt."
+  },
+  "fileExplorer.listingStalled.goBack": "Go back",
+  "@fileExplorer.listingStalled.goBack": {
+    "description": "Button on the “Still waiting for this folder” screen. Stops waiting and returns the pane to the folder it showed before. Shown with the Esc key, which does the same."
+  },
   "fileExplorer.clipboard.copied": "Copied {countText} {count, plural, one {item} other {items}}",
   "@fileExplorer.clipboard.copied": {
     "description": "Toast confirming files were copied to the system clipboard, e.g. \"Copied 3 items\".",
@@ -966,6 +976,44 @@
       "countText": "how many items, already formatted for display",
       "count": "the same number of items (drives the singular/plural form)"
     }
+  },
+  "fileExplorer.compareDirectories.marked": "Selected {leftCountText} {leftCount, plural, one {file} other {files}} on the left and {rightCountText} {rightCount, plural, one {file} other {files}} on the right that differ.",
+  "@fileExplorer.compareDirectories.marked": {
+    "description": "Toast after Compare directories (Shift+F2) selected the files that differ between the two side-by-side panes, e.g. \"Selected 3 files on the left and 5 files on the right that differ.\".",
+    "placeholders": {
+      "leftCountText": "how many files were selected in the left pane, already formatted for display",
+      "leftCount": "the same number (drives the singular/plural form)",
+      "rightCountText": "how many files were selected in the right pane, already formatted for display",
+      "rightCount": "the same number, for the right pane"
+    }
+  },
+  "fileExplorer.compareDirectories.noDifferences.newerAndMissing": "Nothing to select: every file is in both folders, and neither copy is newer. Subfolders aren’t compared.",
+  "@fileExplorer.compareDirectories.noDifferences.newerAndMissing": {
+    "description": "Toast after Compare directories (⇧F2) in its default mode found nothing to select: no file is missing on either side and no copy has a newer modification time. Folders and their contents aren't compared, only the files directly in each folder, by name and the listed modification time or size, so the copy must not promise the files are identical."
+  },
+  "fileExplorer.compareDirectories.noDifferences.missing": "Nothing to select: every file is in both folders. Subfolders aren’t compared.",
+  "@fileExplorer.compareDirectories.noDifferences.missing": {
+    "description": "Toast after Compare directories in its \"only missing files\" mode found nothing to select: no file is missing on either side. Folders and their contents aren't compared, only the files directly in each folder, by name and the listed modification time or size, so the copy must not promise the files are identical."
+  },
+  "fileExplorer.compareDirectories.noDifferences.sizeAndMissing": "Nothing to select: every file is in both folders, at the same size. Subfolders aren’t compared.",
+  "@fileExplorer.compareDirectories.noDifferences.sizeAndMissing": {
+    "description": "Toast after Compare directories in its \"missing or different size\" mode found nothing to select: no file is missing on either side and each pair has the same size. Folders and their contents aren't compared, only the files directly in each folder, by name and the listed modification time or size, so the copy must not promise the files are identical."
+  },
+  "fileExplorer.compareDirectories.keptChanging": "The folders kept changing while they were being compared. Try again once they settle.",
+  "@fileExplorer.compareDirectories.keptChanging": {
+    "description": "Warning toast when Compare directories (⇧F2) gave up because files kept appearing or disappearing in one of the two folders, so it couldn't select the right files safely."
+  },
+  "fileExplorer.compareDirectories.needsTwoFolders": "Open a folder in both panes to compare them",
+  "@fileExplorer.compareDirectories.needsTwoFolders": {
+    "description": "Toast when Compare directories (Shift+F2) can't run because one pane shows something other than a folder, such as the server list or search results."
+  },
+  "fileExplorer.compareDirectories.couldNotFinish": "Couldn’t finish comparing the folders. Try again in a moment.",
+  "@fileExplorer.compareDirectories.couldNotFinish": {
+    "description": "Toast when Compare directories (Shift+F2) ran out of time or stopped unexpectedly, so nothing was selected."
+  },
+  "fileExplorer.folderSizes.notConnected": "Can’t calculate folder sizes here: this location isn’t connected right now.",
+  "@fileExplorer.folderSizes.notConnected": {
+    "description": "Toast when Calculate folder sizes (Alt+Shift+Enter) can't start because the pane's drive or server is no longer connected."
   },
   "fileExplorer.clipboard.cutReady": "{countText} {count, plural, one {item} other {items}} ready to move. Paste to complete.",
   "@fileExplorer.clipboard.cutReady": {
@@ -1077,6 +1125,17 @@
   "@fileExplorer.clipboard.empty": {
     "description": "Warning toast when the user pastes but the clipboard has no files. \"⌘C\" is the copy shortcut glyph; keep it."
   },
+  "fileExplorer.clipboard.stillPasting": "Still creating a file from the clipboard. The volume is slow to answer.",
+  "@fileExplorer.clipboard.stillPasting": {
+    "description": "Toast shown when pasting clipboard content (text, an image, a PDF) as a new file takes more than a couple of seconds on a slow volume (a network share or phone). The file is still being written and will most likely appear; this toast goes away by itself when it does, and another toast then names the file."
+  },
+  "fileExplorer.clipboard.notPasted": "Cmdr couldn’t create a file from the clipboard. {reason}",
+  "@fileExplorer.clipboard.notPasted": {
+    "description": "Toast shown when the volume refuses to save the clipboard content (text, an image, a PDF) as a new file, for example a read-only folder. It can arrive a while after the paste on a slow volume.",
+    "placeholders": {
+      "reason": "a full sentence saying why, already translated, e.g. 'You don’t have permission to write in this folder.'"
+    }
+  },
   "fileExplorer.clipboard.pastedAsFile": "Pasted clipboard {kind, select, image {image} pdf {PDF} other {text}} as {filename}",
   "@fileExplorer.clipboard.pastedAsFile": {
     "description": "Info toast confirming that non-file clipboard content was saved into the current folder as a new file, e.g. \"Pasted clipboard text as pasted.txt\" or \"Pasted clipboard image as pasted.png\". The toast also carries a Settings button (labeled elsewhere).",
@@ -1160,6 +1219,48 @@
   "@fileExplorer.git.useTransferToCopyOut": {
     "description": "Info toast when the user presses the system-clipboard copy or cut shortcut (Cmd+C / Cmd+X) inside the virtual `.git` portal, where Cmdr shows a repository’s branches, tags, and commits as browsable folders. Those entries are reconstructed from git history and have no path the system clipboard can carry, so it points the user at the F5 (copy) and F6 (move) transfer keys instead. F5 and F6 are keyboard key names; keep them as-is. \"git\" is the version-control tool name; keep it."
   },
+  "fileExplorer.openWith.copyRefused.tooLarge": "{fileName} is bigger than {limit}, so Cmdr can’t open it in {appName} from inside the archive.",
+  "@fileExplorer.openWith.copyRefused.tooLarge": {
+    "description": "Toast shown after the user right-clicked a file inside an archive (a zip Cmdr browses like a folder), picked an app under \"Open with\", and nothing opened. To open such a file, Cmdr first copies it into a temporary file on this Mac, and that copy has a size limit, which this file is over. \"The archive\" is the place the file sits in, so keep it generic.",
+    "placeholders": {
+      "fileName": "the file’s name, e.g. holiday.mov. Never translate it",
+      "limit": "the size limit, already formatted with its unit, e.g. 2 GB",
+      "appName": "the app the user picked, e.g. Preview or QuickTime Player. Never translate it"
+    }
+  },
+  "fileExplorer.openWith.copyRefused.tooLargeInRepoHistory": "{fileName} is bigger than {limit}, so Cmdr can’t open it in {appName} from the repo’s history.",
+  "@fileExplorer.openWith.copyRefused.tooLargeInRepoHistory": {
+    "description": "Toast shown after the user right-clicked a file inside a Git repository’s history (Cmdr shows a repo’s branches, tags, and commits as read-only folders inside its `.git` folder, each holding the files as they were at that point), picked an app under \"Open with\", and nothing opened. To open such a file, Cmdr first copies it into a temporary file on this Mac, and that copy has a size limit, which this file is over. The sibling of fileExplorer.openWith.copyRefused.tooLarge, which says \"from inside the archive\" instead; keep the two parallel. \"Repo\" is short for a Git repository; use the word developers in your language use for one.",
+    "placeholders": {
+      "fileName": "the file’s name, e.g. holiday.mov. Never translate it",
+      "limit": "the size limit, already formatted with its unit, e.g. 2 GB",
+      "appName": "the app the user picked, e.g. Preview or QuickTime Player. Never translate it"
+    }
+  },
+  "fileExplorer.openWith.copyRefused.needsPassword": "{fileName} is in a password-protected archive. Copy it to a folder first (Cmdr will ask for the password), then open it in {appName}.",
+  "@fileExplorer.openWith.copyRefused.needsPassword": {
+    "description": "Toast shown after the user right-clicked a file inside an encrypted archive (a zip or 7z Cmdr browses like a folder), picked an app under \"Open with\", and nothing opened, because Cmdr doesn’t have the archive’s password yet. Copying the file out (F5) shows a password prompt; after that, the file can be opened. \"Archive\" means a zip/7z file.",
+    "placeholders": {
+      "fileName": "the file’s name, e.g. contract.pdf. Never translate it",
+      "appName": "the app the user picked, e.g. Preview. Never translate it"
+    }
+  },
+  "fileExplorer.openWith.copyRefused.archiveUnreadable": "Couldn’t get {fileName} out of its archive to open it in {appName}. The archive may be damaged or use a format Cmdr can’t read.",
+  "@fileExplorer.openWith.copyRefused.archiveUnreadable": {
+    "description": "Toast shown after the user right-clicked a file inside an archive (a zip, tar, or 7z Cmdr browses like a folder), picked an app under \"Open with\", and nothing opened, because Cmdr couldn’t read that file out of the archive: the archive is corrupt or uses a compression method Cmdr doesn’t support. \"Archive\" means the zip/tar/7z file. Never use the words \"error\" or \"failed\".",
+    "placeholders": {
+      "fileName": "the file’s name, e.g. report.pdf. Never translate it",
+      "appName": "the app the user picked, e.g. Preview. Never translate it"
+    }
+  },
+  "fileExplorer.openWith.copyRefused.unreadable": "Couldn’t read {fileName} to open it in {appName}. Check that its drive is still connected, then try again.",
+  "@fileExplorer.openWith.copyRefused.unreadable": {
+    "description": "Toast shown after the user right-clicked a file inside an archive or a repository’s virtual `.git` snapshot, picked an app under \"Open with\", and nothing opened, because reading the file broke off for a reason other than the archive itself (the drive holding it went away, a disk read problem). Suggests checking the drive and trying again. Never use the words \"error\" or \"failed\".",
+    "placeholders": {
+      "fileName": "the file’s name, e.g. report.pdf. Never translate it",
+      "appName": "the app the user picked, e.g. Preview. Never translate it"
+    }
+  },
   "fileExplorer.rename.hiddenAfterRename": "Your file disappeared from view because hidden files aren’t shown.",
   "@fileExplorer.rename.hiddenAfterRename": {
     "description": "Info toast after renaming a file to a name starting with a dot, which hides it because hidden files aren’t currently shown. Reassures the user the file still exists."
@@ -1189,19 +1290,24 @@
       "others": "the same number of other files (drives the singular/plural form)"
     }
   },
-  "fileExplorer.rename.unconfirmed": "Couldn’t confirm the rename of “{name}”. The volume may be slow, so the rename may still have gone through.",
-  "@fileExplorer.rename.unconfirmed": {
-    "description": "Warning toast shown when a rename gets no answer from the volume in time (a slow network share or phone). The rename may well have succeeded on disk, so the message must never say the file kept its name; it says Cmdr couldn’t tell. Cmdr re-reads the folder right after, so the user will see which it was. {name} is the name the file had before the rename, shown in quotes. As soon as a second rename goes unanswered, this same toast is rewritten with fileExplorer.rename.unconfirmedAndOthers, so the two read as one message that grows.",
+  "fileExplorer.rename.needsOwnMoveDialog": "Renaming it copies on the server, which needs its own Move dialog. Rename it again by itself.",
+  "@fileExplorer.rename.needsOwnMoveDialog": {
+    "description": "Reason shown inside fileExplorer.rename.chainKeptOriginalName (after the colon) when the user renames a run of files with the up/down arrows and more than one of them is a big folder or file on cloud storage (S3). There, a rename copies every file inside on the server and deletes the originals, so it has to be confirmed in the Move dialog first. The first such item in the run gets that dialog; this message is for the others, which kept their names. It asks the user to rename that item again on its own. Two sentences that land after the colon in fileExplorer.rename.chainKeptOriginalName, so start the first one the way your language starts text after a colon (English capitalizes it), like the other reasons that fill that slot."
+  },
+  "fileExplorer.rename.stillRenaming": "Still renaming “{name}”. The volume is slow to answer.",
+  "@fileExplorer.rename.stillRenaming": {
+    "description": "Toast shown when a rename takes more than a couple of seconds on a slow volume (a network share or phone). The rename is still running and will most likely finish; the toast goes away by itself when it does, and if the volume refuses, another toast says why. {name} is the name the file had before the rename, shown in quotes. As soon as a second rename is still running, this same toast is rewritten with fileExplorer.rename.stillRenamingAndOthers, so the two read as one message.",
     "placeholders": {
       "name": "the name the file had before the rename"
     }
   },
-  "fileExplorer.rename.unconfirmedAndOthers": "Couldn’t confirm the rename of “{name}” and {others, plural, one {one other file} other {{othersText} other files}}. The volume may be slow, so the renames may still have gone through.",
-  "@fileExplorer.rename.unconfirmedAndOthers": {
-    "description": "Warning toast shown when SEVERAL renames get no answer from the volume in time, which happens when the user renames a run of files by pressing the up/down arrow inside the inline rename editor and each rename is still waiting on a slow network share or phone. It is the same single toast as fileExplorer.rename.unconfirmed, rewritten each time another rename goes unanswered, so a long run can’t bury the user in toasts. The renames may well have succeeded on disk, so the message must never say the files kept their names. {name} is the name the most recent file had before its rename, shown in quotes. {othersText} is how many OTHER renames went unanswered, already formatted for display; it is always 1 or more.",
+  "fileExplorer.rename.stillRenamingAndOthers": "Still renaming “{name}” and {kind, select, folders {{others, plural, one {one other folder} other {{othersText} other folders}}} files {{others, plural, one {one other file} other {{othersText} other files}}} other {{others, plural, other {{othersText} other files and folders}}}}. The volume is slow to answer.",
+  "@fileExplorer.rename.stillRenamingAndOthers": {
+    "description": "Toast shown when SEVERAL renames are still running on a slow volume (a network share or phone), which happens when the user renames a run of files or folders by pressing the up/down arrow inside the inline rename editor. It is the same single toast as fileExplorer.rename.stillRenaming, rewritten as renames start and finish, so a long run can’t bury the user in toasts; it goes away once they've all finished. {name} is the name the most recent file or folder had before its rename, shown in quotes. {othersText} is how many OTHER renames are still running, already formatted for display; it is always 1 or more. {kind} says what those other renames are: 'folders' when they're all folders, 'files' when they're all files, and anything else (the third branch) when they're a mix of files and folders, which always means two or more.",
     "placeholders": {
-      "name": "the name the most recent file had before its rename",
-      "othersText": "how many other renames went unanswered, already formatted for display",
+      "name": "the name the most recent file or folder had before its rename",
+      "kind": "what the other renames are: folders, files, or a mix (the last branch)",
+      "othersText": "how many other renames are still running, already formatted for display",
       "others": "the same number of other renames (drives the singular/plural form)"
     }
   },
@@ -1319,7 +1425,7 @@
   },
   "fileExplorer.dirSize.dirPlaceholder": "'<'dir>",
   "@fileExplorer.dirSize.dirPlaceholder": {
-    "description": "Placeholder shown in the Size column for a folder whose recursive size is not computed yet. Rendered literally as <dir> (with the angle brackets). The leading apostrophe-quote ICU-escapes the < so it is not parsed as a markup tag; keep the literal text <dir> intact.",
+    "description": "Placeholder shown in the Size column for a folder whose recursive size is not computed yet. Rendered literally as <dir> (with the angle brackets). The leading apostrophe-quote ICU-escapes the < so it is not parsed as a markup tag; keep the literal text <dir> intact. The short \"dir\" is deliberate: the Size column is narrow, so don’t expand it to \"folder\".",
     "screenshot": "conflict-dialog.png"
   },
   "fileExplorer.dirSize.mismatchTooltipPrefix": "Content and on-disk sizes differ significantly.",
@@ -1599,7 +1705,7 @@
   },
   "fileExplorer.selectionInfo.dir": "DIR",
   "@fileExplorer.selectionInfo.dir": {
-    "description": "Status-bar marker shown in place of a size for a folder whose recursive size is not computed. Short for \"directory\"; rendered in capitals."
+    "description": "Status-bar marker shown in place of a size for a folder whose recursive size is not computed. Short for \"directory\"; rendered in capitals. \"DIR\" is a deliberate short form because the status bar has little room, so keep it short and don’t expand it to \"folder\"."
   },
   "fileExplorer.selectionInfo.sizeNotReadyAriaLabel": "Size not ready yet",
   "@fileExplorer.selectionInfo.sizeNotReadyAriaLabel": {
@@ -1628,7 +1734,7 @@
   },
   "fileExplorer.selectionInfo.noSelectionDirs": " and {count, plural, one {{countText} dir} other {{countText} dirs}}",
   "@fileExplorer.selectionInfo.noSelectionDirs": {
-    "description": "Folder-count fragment appended to the no-selection status summary when folders exist, e.g. \" and 12 dirs\". \"dir\" is short for directory/folder. Includes a leading space and the word \"and\".",
+    "description": "Folder-count fragment appended to the no-selection status summary when folders exist, e.g. \" and 12 dirs\". Includes a leading space and the word \"and\". \"dir\" is a deliberate short form here because the status bar has little room, so keep it short and don’t expand it to \"folder\".",
     "placeholders": {
       "countText": "the number of folders, already formatted for display",
       "count": "the same number of folders (drives the singular/plural form)"
@@ -1637,7 +1743,7 @@
   },
   "fileExplorer.selectionInfo.noSelection": "No selection, {files}{dirs}.",
   "@fileExplorer.selectionInfo.noSelection": {
-    "description": "Status-bar summary when nothing is selected, e.g. \"No selection, 1,234 files and 12 dirs.\" {files} is the file-count fragment; {dirs} is the optional folder-count fragment (empty when there are no folders).",
+    "description": "Status-bar summary when nothing is selected, e.g. \"No selection, 1,234 files and 12 dirs.\" {files} is the file-count fragment; {dirs} is the optional folder-count fragment (empty when there are no folders). \"dir\" is a deliberate short form here because the status bar has little room, so keep it short and don’t expand it to \"folder\".",
     "placeholders": {
       "files": "the file-count phrase, e.g. \"1,234 files\"",
       "dirs": "the folder-count phrase including its leading \" and \", or empty when there are no folders"
@@ -1694,7 +1800,7 @@
   },
   "fileExplorer.summary.dirNoun": "{count, plural, one {dir} other {dirs}}",
   "@fileExplorer.summary.dirNoun": {
-    "description": "The noun \"dir(s)\" (short for folder) used in the status-bar selection summary, e.g. \"2 of 5 dirs\". A separate count precedes it in styled markup; this key supplies only the singular/plural noun.",
+    "description": "The noun \"dir(s)\" (short for folder) used in the status-bar selection summary, e.g. \"2 of 5 dirs\". A separate count precedes it in styled markup; this key supplies only the singular/plural noun. \"dir\" is a deliberate short form here because the status bar has little room, so keep it short and don’t expand it to \"folder\".",
     "placeholders": {
       "count": "the number the noun agrees with (drives singular vs plural)"
     },
@@ -1981,6 +2087,10 @@
   "@fileExplorer.navigation.connectionTooltipDirect": {
     "description": "Hover tooltip on the connection indicator of a network volume that is connected directly (the fast path)."
   },
+  "fileExplorer.navigation.connectionTooltipConnected": "Connected",
+  "@fileExplorer.navigation.connectionTooltipConnected": {
+    "description": "Hover tooltip on the green connection indicator of a server or device that has only one way to connect (SFTP, WebDAV, S3 storage, an Android phone), saying its connection is live and working."
+  },
   "fileExplorer.navigation.connectionTooltipSystem": "Using system connection. Use the “Connect directly for faster access” menu item for faster access.",
   "@fileExplorer.navigation.connectionTooltipSystem": {
     "description": "Hover tooltip on the connection indicator of a network volume mounted via the OS (slower path), pointing the user at the menu item that upgrades to a direct connection. The quoted menu item label must match the menu item exactly.",
@@ -2064,9 +2174,9 @@
       "name": "the server's display name, like \"Naspolya\""
     }
   },
-  "fileExplorer.navigation.disconnectBusyTooltip": "Can’t disconnect while operations are in progress on this server",
+  "fileExplorer.navigation.disconnectBusyTooltip": "Cmdr is still working with files on this server. Disconnect once that’s done.",
   "@fileExplorer.navigation.disconnectBusyTooltip": {
-    "description": "Accessibility label and tooltip on a disconnect control that is disabled because a file operation is still running against the server."
+    "description": "Accessibility label and tooltip on a disconnect control that is disabled because a file operation (a copy, move, or delete) is still running against the server. Says why and when the button comes back, never blames the user. Keep it in step with fileExplorer.navigation.ejectBusyTooltip and adb.disconnectBusyTooltip."
   },
   "fileExplorer.navigation.serverPinnedToast": "{name} is in your volume switcher now.",
   "@fileExplorer.navigation.serverPinnedToast": {
@@ -2082,7 +2192,7 @@
       "name": "the server’s display name, like \"Naspolya\""
     }
   },
-  "fileExplorer.navigation.pinRefusedToast": "Cmdr couldn’t change where {name} shows.",
+  "fileExplorer.navigation.pinRefusedToast": "Cmdr couldn’t change where {name} appears.",
   "@fileExplorer.navigation.pinRefusedToast": {
     "description": "Toast shown when moving a server in or out of the volume switcher didn’t go through.",
     "placeholders": {
@@ -2155,9 +2265,9 @@
     },
     "screenshot": "pane-volume-chooser.png"
   },
-  "fileExplorer.navigation.ejectBusyTooltip": "Can’t eject while operations are in progress on this device",
+  "fileExplorer.navigation.ejectBusyTooltip": "Cmdr is still working with files on this device. Eject once that’s done.",
   "@fileExplorer.navigation.ejectBusyTooltip": {
-    "description": "Accessibility label and tooltip on a disabled eject button, explaining the volume can’t be ejected because a file operation is running on it."
+    "description": "Accessibility label and tooltip on a disabled eject button, explaining the volume (a drive, a disk image, or a phone) can’t be ejected yet because a file operation is running on it. Says when the button comes back. Keep it in step with fileExplorer.navigation.disconnectBusyTooltip and adb.disconnectBusyTooltip."
   },
   "fileExplorer.navigation.ejectingVolumeAriaLabel": "Ejecting {name}…",
   "@fileExplorer.navigation.ejectingVolumeAriaLabel": {
@@ -2433,5 +2543,44 @@
       "countText": "the same number, formatted for display (for example 1,234)",
       "name": "the one item’s file or folder name, uncontrolled (any length, any language); only used when exactly one item didn’t arrive"
     }
+  },
+  "fileExplorer.folderSizes.unreadable": "{count, plural, one {Couldn’t fully read # folder, so its size may be incomplete.} other {Couldn’t fully read # folders, so their sizes may be incomplete.}}",
+  "@fileExplorer.folderSizes.unreadable": {
+    "description": "Info toast after Calculate folder sizes (⌥⇧⏎, or Space on a folder) when some folders, or parts of them, couldn't be read (no permission, or gone). A partly read folder shows a lower bound (≥); a wholly unreadable one keeps whatever it showed before (an older size, or no size). Either way its size may be incomplete, so don't say it's missing. {count} is how many folders. The singular branch is for exactly one folder: in a language whose `one` category also covers 21, 31, …, use an `=1` arm for the singular wording.",
+    "placeholders": {
+      "count": "how many folders couldn't be read, wholly or in part"
+    }
+  },
+  "fileExplorer.quickFilter.clear": "Clear filter",
+  "@fileExplorer.quickFilter.clear": {
+    "description": "Accessible name and tooltip-less label of the small × on the \"Filter: …\" badge in a pane's corner. Clicking it shows every file again (same as Esc)."
+  },
+  "fileExplorer.quickFilter.intro.title": "Typing filtered this pane",
+  "@fileExplorer.quickFilter.intro.title": {
+    "description": "Title of an info toast. Shown once, the first time typing in a pane filters it (Filter is the default typing mode). The pane now hides the files whose names don't contain the typed letters."
+  },
+  "fileExplorer.quickFilter.intro.body": "You typed some letters, so the pane now shows only the files and folders whose names contain them.",
+  "@fileExplorer.quickFilter.intro.body": {
+    "description": "Body line of the same toast. Shown once, the first time typing in a pane filters it (Filter is the default typing mode)."
+  },
+  "fileExplorer.quickFilter.intro.escape": "Press Esc to see all your files again.",
+  "@fileExplorer.quickFilter.intro.escape": {
+    "description": "Emphasized line of the same toast: how to undo the filter. \"Esc\" is the Escape key; use the key name your macOS keyboard shows. Shown once, the first time typing in a pane filters it (Filter is the default typing mode)."
+  },
+  "fileExplorer.quickFilter.intro.jumpNote": "Prefer moving the cursor to a matching name without hiding anything? Switch to Jump, here or in Settings.",
+  "@fileExplorer.quickFilter.intro.jumpNote": {
+    "description": "Last line of the same toast, before its buttons. \"Jump\" is the other typing mode's name, the same word as the Jump option in Settings (settings.fileExplorer.typeToJump.mode.opt.jump). Shown once, the first time typing in a pane filters it (Filter is the default typing mode)."
+  },
+  "fileExplorer.quickFilter.intro.switchToJump": "Switch to Jump",
+  "@fileExplorer.quickFilter.intro.switchToJump": {
+    "description": "Button in the same toast: from now on typing in a pane moves the cursor to the best match instead of filtering. \"Jump\" is the mode's name, as in Settings. Shown once, the first time typing in a pane filters it (Filter is the default typing mode)."
+  },
+  "fileExplorer.quickFilter.intro.openSettings": "Settings…",
+  "@fileExplorer.quickFilter.intro.openSettings": {
+    "description": "Button in the same toast: opens Settings at the \"When you type in a pane\" option. Shown once, the first time typing in a pane filters it (Filter is the default typing mode)."
+  },
+  "fileExplorer.quickFilter.intro.gotIt": "Got it",
+  "@fileExplorer.quickFilter.intro.gotIt": {
+    "description": "Primary button in the same toast: closes it and keeps Filter mode. Shown once, the first time typing in a pane filters it (Filter is the default typing mode)."
   }
 }

@@ -6,6 +6,7 @@
  */
 
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
+import type { ManagedAiRefusal } from '$lib/ipc/bindings'
 import { ProviderSetupController } from './provider-setup.svelte'
 import { clearModelCache } from '$lib/settings/ai-model-cache'
 
@@ -15,6 +16,7 @@ interface CheckResult {
   models: string[]
   error: string | null
   cloudConsentMissing?: boolean
+  managed?: 'aiOff' | 'cloudAiOff' | 'hostNotAllowed' | null
 }
 
 // One object payload per spy, so the assertions name the argument they mean and the
@@ -22,11 +24,15 @@ interface CheckResult {
 const checkAiConnection = vi.fn<(payload: { baseUrl: string; providerId: string }) => Promise<CheckResult>>()
 const saveAiApiKey = vi.fn<(payload: { providerId: string; apiKey: string }) => Promise<null>>()
 const getAiApiKeyStatus = vi.fn<(id: string) => Promise<{ isSet: boolean; fingerprint: string }>>()
+const deleteAiApiKey = vi.fn<(id: string) => Promise<void>>()
+const cloudAiHostVerdicts = vi.fn<(baseUrls: string[]) => Promise<(ManagedAiRefusal | null)[]>>()
 
 vi.mock('$lib/tauri-commands', () => ({
   checkAiConnection: (baseUrl: string, providerId: string) => checkAiConnection({ baseUrl, providerId }),
   saveAiApiKey: (providerId: string, apiKey: string) => saveAiApiKey({ providerId, apiKey }),
   getAiApiKeyStatus: (id: string) => getAiApiKeyStatus(id),
+  deleteAiApiKey: (id: string) => deleteAiApiKey(id),
+  cloudAiHostVerdicts: (baseUrls: string[]) => cloudAiHostVerdicts(baseUrls),
 }))
 
 const settingsMap: Record<string, unknown> = {}
@@ -81,6 +87,10 @@ describe('ProviderSetupController', () => {
     saveAiApiKey.mockResolvedValue(null)
     getAiApiKeyStatus.mockReset()
     getAiApiKeyStatus.mockResolvedValue({ isSet: false, fingerprint: '' })
+    deleteAiApiKey.mockReset()
+    deleteAiApiKey.mockResolvedValue(undefined)
+    cloudAiHostVerdicts.mockReset()
+    cloudAiHostVerdicts.mockImplementation((urls) => Promise.resolve(urls.map(() => null)))
     controller = new ProviderSetupController({ logScope: 'test' })
   })
 
@@ -173,6 +183,47 @@ describe('ProviderSetupController', () => {
     expect(saveAiApiKey).toHaveBeenCalledWith({ providerId: 'openai', apiKey: 'sk-typed-for-openai' })
   })
 
+  it("keeps the previous provider's key-save failure off the provider the user switched to", async () => {
+    controller.setProvider('openai')
+    await settle()
+    let rejectSave: ((error: Error) => void) | undefined
+    saveAiApiKey.mockImplementationOnce(
+      () =>
+        new Promise<null>((_resolve, reject) => {
+          rejectSave = reject
+        }),
+    )
+    controller.handleApiKeyChange('sk-typed-for-openai')
+    // The switch flushes the pending save against openai; it fails only after anthropic is up.
+    controller.setProvider('anthropic')
+    await settle()
+    rejectSave?.(new Error('keyring locked'))
+    await settle()
+
+    expect(controller.providerId).toBe('anthropic')
+    expect(controller.secretError).toBeNull()
+  })
+
+  it("keeps the previous provider's key-removal failure off the provider the user switched to", async () => {
+    getAiApiKeyStatus.mockResolvedValue({ isSet: true, fingerprint: 'fp' })
+    controller.setProvider('openai')
+    await settle()
+    let rejectDelete: ((error: Error) => void) | undefined
+    deleteAiApiKey.mockImplementationOnce(
+      () =>
+        new Promise<void>((_resolve, reject) => {
+          rejectDelete = reject
+        }),
+    )
+    const removal = controller.removeApiKey()
+    controller.setProvider('anthropic')
+    await settle()
+    rejectDelete?.(new Error('keyring locked'))
+    await removal
+
+    expect(controller.secretError).toBeNull()
+  })
+
   it('treats an auth failure as an auth failure, not a generic one', async () => {
     checkAiConnection.mockResolvedValue({ connected: false, authError: true, models: [], error: 'Invalid key' })
     getAiApiKeyStatus.mockResolvedValue({ isSet: true, fingerprint: 'fp' })
@@ -197,6 +248,84 @@ describe('ProviderSetupController', () => {
     await settle()
     expect(controller.status).toBe('idle')
     expect(controller.error).toBeNull()
+  })
+
+  describe("the organization's policy", () => {
+    it('reads a check the policy refused as managed, with the rule, not as a connection problem', async () => {
+      checkAiConnection.mockResolvedValue({
+        connected: false,
+        authError: false,
+        models: [],
+        error: null,
+        managed: 'hostNotAllowed',
+      })
+      getAiApiKeyStatus.mockResolvedValue({ isSet: true, fingerprint: 'fp' })
+      controller.setProvider('openai')
+      await settle()
+      expect(controller.status).toBe('managed')
+      expect(controller.managedRefusal).toBe('hostNotAllowed')
+      expect(controller.error).toBeNull()
+    })
+
+    it('says a refused preset is refused on open, without a key and without probing it', async () => {
+      cloudAiHostVerdicts.mockResolvedValue(['hostNotAllowed'])
+      controller.setProvider('openai')
+      await settle()
+      expect(cloudAiHostVerdicts).toHaveBeenCalledWith(['https://api.openai.com/v1'])
+      expect(controller.status).toBe('managed')
+      expect(controller.managedRefusal).toBe('hostNotAllowed')
+      expect(checkAiConnection).not.toHaveBeenCalled()
+    })
+
+    it('shows the reason the backend gave, never one it works out itself', async () => {
+      // The policy flipped to on-device only while the picker was open: the reason is cloud off.
+      cloudAiHostVerdicts.mockResolvedValue(['cloudAiOff'])
+      controller.setProvider('openai')
+      await settle()
+      expect(controller.status).toBe('managed')
+      expect(controller.managedRefusal).toBe('cloudAiOff')
+    })
+
+    it('checks a typed endpoint once it is entered, even before there is a key', async () => {
+      vi.useFakeTimers()
+      try {
+        controller.setProvider('azure-openai')
+        await vi.runAllTimersAsync()
+        cloudAiHostVerdicts.mockResolvedValue(['hostNotAllowed'])
+        controller.saveBaseUrl('https://elsewhere.example/v1')
+        await vi.runAllTimersAsync()
+        expect(cloudAiHostVerdicts).toHaveBeenLastCalledWith(['https://elsewhere.example/v1'])
+        expect(controller.status).toBe('managed')
+        expect(checkAiConnection).not.toHaveBeenCalled()
+
+        // Moving to a host the policy allows lifts it again.
+        cloudAiHostVerdicts.mockResolvedValue([null])
+        controller.saveBaseUrl('https://tenant.openai.azure.com/openai/v1')
+        await vi.runAllTimersAsync()
+        expect(controller.status).toBe('idle')
+        expect(controller.managedRefusal).toBeNull()
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it('drops a refusal for a provider the user already left', async () => {
+      let releaseFirst: ((verdicts: (ManagedAiRefusal | null)[]) => void) | undefined
+      cloudAiHostVerdicts.mockImplementationOnce(
+        () =>
+          new Promise<(ManagedAiRefusal | null)[]>((resolve) => {
+            releaseFirst = resolve
+          }),
+      )
+      controller.setProvider('openai')
+      await settle()
+      controller.setProvider('anthropic')
+      await settle()
+      releaseFirst?.(['hostNotAllowed'])
+      await settle()
+      expect(controller.providerId).toBe('anthropic')
+      expect(controller.status).not.toBe('managed')
+    })
   })
 
   it('reports a secret-store read failure to its owner as well as its own state', async () => {
@@ -237,5 +366,51 @@ describe('ProviderSetupController', () => {
     controller.setProvider('ollama')
     await settle()
     expect(controller.hasCheckableConfig).toBe(true)
+  })
+
+  describe('removing a saved key', () => {
+    it('takes the key out of the store and forgets everything it unlocked', async () => {
+      const changes: string[] = []
+      controller = new ProviderSetupController({ logScope: 'test', onKeyChanged: () => changes.push('changed') })
+      getAiApiKeyStatus.mockResolvedValue({ isSet: true, fingerprint: 'fp' })
+      controller.setProvider('openai')
+      await settle()
+      expect(controller.isConnected).toBe(true)
+
+      await controller.removeApiKey()
+
+      expect(deleteAiApiKey).toHaveBeenCalledWith('openai')
+      expect(controller.keyIsSet).toBe(false)
+      expect(controller.status).toBe('idle')
+      expect(controller.models).toEqual([])
+      expect(controller.hasCheckableConfig).toBe(false)
+      // So Settings re-pushes the AI config and the backend stops using the old key.
+      expect(changes).toEqual(['changed'])
+    })
+
+    it('drops a key still in the save debounce instead of saving it after the removal', async () => {
+      getAiApiKeyStatus.mockResolvedValue({ isSet: true, fingerprint: 'fp' })
+      controller.setProvider('openai')
+      await settle()
+      controller.handleApiKeyChange('sk-half-typed')
+
+      await controller.removeApiKey()
+      await new Promise((resolve) => setTimeout(resolve, 400))
+
+      expect(saveAiApiKey).not.toHaveBeenCalled()
+      expect(controller.apiKey).toBe('')
+    })
+
+    it('keeps the key on screen and says why when the store refuses', async () => {
+      getAiApiKeyStatus.mockResolvedValue({ isSet: true, fingerprint: 'fp' })
+      deleteAiApiKey.mockRejectedValue(new Error('keyring locked'))
+      controller.setProvider('openai')
+      await settle()
+
+      await controller.removeApiKey()
+
+      expect(controller.keyIsSet).toBe(true)
+      expect(controller.secretError?.title).toContain('remove your saved API key')
+    })
   })
 })

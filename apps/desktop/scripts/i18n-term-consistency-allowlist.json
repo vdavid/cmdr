@@ -68,6 +68,10 @@
     ],
     "fr": [
       {
+        "source": "Archived",
+        "reason": "Two senses of one English word. `askCmdr.sessions.archivedBadge` marks an archived chat (une conversation, feminine: `Archivée`); `fileExplorer.archivedFile.label` marks a file in an S3 cold-storage class (un fichier, masculine: `Archivé`). The badge agrees with its noun, so one form can't serve both."
+      },
+      {
         "source": "App",
         "reason": "The color options name the app as the SOURCE of a tint in a very short button (`App`); the shortcut scope covers the whole application (`Application`)."
       },
@@ -290,6 +294,10 @@
     ],
     "vi": [
       {
+        "source": "Archived",
+        "reason": "Two senses of one English word. `askCmdr.sessions.archivedBadge` marks a chat the user put away (`Đã lưu trữ`, stored away); `fileExplorer.archivedFile.label` marks a file in an S3 cold-storage class that must be restored before it can be read (`Lưu trữ lạnh`, cold storage). Using the chat's word on the file hides why it won't open."
+      },
+      {
         "source": "Back",
         "reason": "macOS vi draws this line: going back in the folder HISTORY is `Trở lại` (Finder Go > Back, `menu.go.back`), returning to the previous SCREEN or step inside a flow is `Quay lại` (Setup Assistant, the Apple ID sheets; the network browser and the onboarding wizard). See `docs/i18n/vi/terms.json` `back`."
       },
@@ -390,12 +398,82 @@
         "reason": "The canonical split. `檢視` is the verb: open the file viewer (F3), which is `commands.fileView` and `menu.file.view`. `menu.bar.view` is the View MENU, which macOS Traditional calls `顯示方式` (display mode) because it holds the view-mode choices. Merging them would rename either the F3 command or the menu."
       },
       {
-        "source": "{count, plural, one {dir} other {dirs}}",
-        "reason": "The status-bar selection summary drops the measure word (`{目錄}`) because it composes as `3 / 10 目錄` with a `/` connector already separating the numbers; the scan stats render a bare tally (`4 個目錄`) and need it. Same word, two grammatical frames."
+        "source": "{count, plural, one {file} other {files}}",
+        "reason": "The status-bar selection summary drops the measure word (`{檔案}`) because it composes as `3 / 10 檔案` with a `/` connector already separating the numbers; the delete and transfer scan stats render a bare tally and need it (`{個檔案}`). Same word, two grammatical frames."
+      }
+    ],
+    "ru": [
+      {
+        "source": "Archived",
+        "reason": "Two senses of one English word. `askCmdr.sessions.archivedBadge` marks a chat the user put away (`В архиве`); `fileExplorer.archivedFile.label` marks a file in an S3 cold-storage class (`В архивном хранилище`). In a file list `В архиве` reads as inside a zip, which hides why the file won't open. See `docs/i18n/ru/terms.json` `cold-storage`."
+      },
+      {
+        "source": "Both",
+        "reason": "Оба типа covers files and folders in the type filter; Оба варианта covers notification choices."
+      },
+      {
+        "source": "Browse",
+        "reason": "Обзор opens a file picker; Просмотреть содержимое navigates inside an archive rather than choosing a file."
+      },
+      {
+        "source": "Dismiss",
+        "reason": "Скрыть removes a hint, toast, or queue row; Закрыть closes a dialog or editing surface."
+      },
+      {
+        "source": "Edit",
+        "reason": "Правка is the macOS Edit menu title; Редактировать is the file editing action."
+      },
+      {
+        "source": "Go",
+        "reason": "Переход is the macOS Go menu title; Перейти executes path navigation."
+      },
+      {
+        "source": "Modified",
+        "reason": "Дата изменения names file timestamps; Измененные filters customized keyboard shortcuts, not dates."
+      },
+      {
+        "source": "Rolling back",
+        "reason": "Откат is the operation-progress window title; Откат выполняется is a running status in the operation log."
+      },
+      {
+        "source": "Select",
+        "reason": "Выбор names a menu or AI capability; Выбрать is an action in a selection control."
+      },
+      {
+        "source": "Show hidden files",
+        "reason": "Показать скрытые файлы is the menu command; Показывать скрытые файлы names a persistent setting."
+      },
+      {
+        "source": "View",
+        "reason": "Вид is the native menu containing display options; Просмотр opens the file viewer."
+      },
+      {
+        "source": "Zoom",
+        "reason": "Масштаб names the text-size submenu; Изменить масштаб is the native macOS window resizing command."
+      },
+      {
+        "source": "any",
+        "reason": "Size agrees with masculine размер (любой); date agrees with feminine дата (любая)."
       },
       {
         "source": "{count, plural, one {file} other {files}}",
-        "reason": "Same frame split as the `dirs` noun above: `{檔案}` in the `/`-connected status-bar summary, `{個檔案}` after a bare tally in the delete and transfer scan stats."
+        "reason": "The selection summary follows «из» (3 из 21 файла), so fileExplorer.summary.fileNoun requires the genitive; scan counters stand alone and require nominative/number-governed forms (21 файл)."
+      },
+      {
+        "source": "custom",
+        "reason": "The «настроить…» cell opens a free-form input; the input's placeholder names what to type («значение»), since a bare «пользовательский» there would be an orphan adjective."
+      },
+      {
+        "source": "Open",
+        "reason": "«Открыть» is the menu command; «Открывать» is one of three habitual-behavior options for archives («Просматривать / Открывать / Спрашивать»), which need the imperfective."
+      },
+      {
+        "source": "Preview",
+        "reason": "«Просмотр» is the preview feature; settings.appearance.datePreviewLabel labels a sample of the chosen date format, so «Пример:»."
+      },
+      {
+        "source": "Running",
+        "reason": "A local AI server that is up «Работает»; an operation in progress «Выполняется». Different senses of the same English word."
       }
     ]
   },

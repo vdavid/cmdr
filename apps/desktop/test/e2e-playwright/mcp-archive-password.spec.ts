@@ -74,9 +74,19 @@ test.beforeEach(async ({ tauriPage }) => {
 })
 
 test.afterEach(async ({ tauriPage }) => {
-  // A prompt left up would block every later spec's file operations, and the
-  // stored password would outlive the test. Cancelling does both.
+  // A prompt left up would block every later spec's file operations. Cancelling
+  // closes it, but a password that UNLOCKED an archive stays stored, so a retry
+  // or a re-run against the same app would step straight in and never see the
+  // prompt the test waits for. Forget both explicitly.
   await mcpCallRaw('dialog', { action: 'close', type: 'archive-password' })
+  const archivePaths = [ENCRYPTED_ZIP, LOCKED_7Z].map((name) => path.join(getFixtureRoot(), 'left', name))
+  await tauriPage.evaluate(`(async function() {
+    for (const archivePath of ${JSON.stringify(archivePaths)}) {
+      try {
+        await window.__TAURI_INTERNALS__.invoke('clear_archive_password', { parentVolumeId: 'root', archivePath });
+      } catch (e) {}
+    }
+  })()`)
   await tauriPage.evaluate(`(async function() {
     try {
       var ops = await window.__TAURI_INTERNALS__.invoke('list_operations');

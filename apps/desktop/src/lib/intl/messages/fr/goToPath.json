@@ -1,7 +1,7 @@
 {
-  "goToPath.dialog.title": "Aller au chemin",
+  "goToPath.dialog.title": "Aller au dossier",
   "@goToPath.dialog.title": {
-    "sourceHash": "fb65702"
+    "sourceHash": "26fc1cf"
   },
   "goToPath.dialog.inputAriaLabel": "Chemin où aller",
   "@goToPath.dialog.inputAriaLabel": {
@@ -23,9 +23,9 @@
   "@goToPath.dialog.cancel": {
     "sourceHash": "19766ed"
   },
-  "goToPath.dialog.confirm": "Aller au chemin",
+  "goToPath.dialog.confirm": "Aller",
   "@goToPath.dialog.confirm": {
-    "sourceHash": "fb65702"
+    "sourceHash": "6cc8519"
   },
   "goToPath.dialog.ancestorHint": "Ce chemin n’existe pas. L’emplacement le plus proche où aller est {dir}.",
   "@goToPath.dialog.ancestorHint": {

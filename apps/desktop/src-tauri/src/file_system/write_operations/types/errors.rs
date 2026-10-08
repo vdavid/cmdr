@@ -104,6 +104,10 @@ pub enum PermissionRefusal {
     /// No errno to classify: a backend that words its own refusals (MTP, SMB), or
     /// an errno outside the two above.
     Unclassified,
+    /// An object store account (S3) refused: its keys may lack the permission, or
+    /// the provider may have paused the account (a usage cap, a billing hold).
+    /// One answer covers both, so the advice names both.
+    ObjectStoreAccount,
 }
 
 impl PermissionRefusal {
@@ -149,6 +153,20 @@ pub enum WriteOperationError {
     DestinationNotFound {
         path: String,
     },
+    /// The destination folder couldn't be created because something that isn't
+    /// a folder sits where it, or one of the folders above it, has to be.
+    /// Refused before anything is written, by the volume engines
+    /// (`VolumeError::NotADirectory` out of `create_directory_all`) and the
+    /// local one (`ensure_destination_dir`) alike.
+    ///
+    /// ❗ `path` is the thing IN THE WAY, which is often an ancestor of the
+    /// folder the user typed. It is the whole point of the variant: as a
+    /// `DestinationNotFound` or a generic `IoError` the dialog named the folder
+    /// Cmdr was asked to create, or nothing, and the file to move aside was
+    /// never mentioned.
+    DestinationNotAFolder {
+        path: String,
+    },
     /// The volume holding the sources is a phone its provider lists, or a saved
     /// server, that nothing has connected yet, so no volume answers for it.
     /// Refused before anything is read. `path` is the first source as the
@@ -165,6 +183,18 @@ pub enum WriteOperationError {
     /// wording rules as `SourceNotConnected`; the two stay separate for the same
     /// reason `SourceNotFound` and `DestinationNotFound` do.
     DestinationNotConnected {
+        path: String,
+    },
+    /// The volume holding the sources left the registry, and nothing lists or
+    /// saves it any more: a phone that was unplugged, or a server that went
+    /// away, typically under a search-results pane still showing its files.
+    /// Refused before anything is read. `path` is the first source as the
+    /// caller sent it.
+    ///
+    /// ❌ Never `SourceNotConnected`: there's no row to open, so "open it from
+    /// the volume switcher" would send the user looking for one. ❌ Never a bare
+    /// "volume not found" either, which names an internal id.
+    SourceNoLongerConnected {
         path: String,
     },
     /// Overwrite not enabled.
@@ -342,6 +372,19 @@ pub enum WriteOperationError {
     DeletePending {
         path: String,
     },
+    /// The source file is archived in cold storage (S3 Glacier Flexible
+    /// Retrieval or Deep Archive) and can't be read until someone restores it.
+    /// Not transient: a retry meets the same archived object.
+    SourceInColdStorage {
+        path: String,
+    },
+    /// The source changed while a server-side copy read it, so the copy
+    /// published nothing (it could have mixed two versions). The source is the
+    /// new version now, and a move left it in place. A retry copies the new
+    /// version. S3-only today.
+    SourceChanged {
+        path: String,
+    },
     /// One or more files exceed the destination filesystem's per-file size
     /// limit (FAT32's 4 GiB cap). Detected during the pre-copy scan, before any
     /// bytes are written, so the whole operation is blocked all-or-nothing
@@ -467,6 +510,20 @@ impl WriteOperationError {
             errno,
             refusal: PermissionRefusal::from_errno(errno),
             refused_folder,
+            side,
+        }
+    }
+
+    /// [`PermissionDenied`](Self::PermissionDenied) from an object store
+    /// account (S3), which carries no errno: the refusal names the account, so
+    /// the advice covers both of its causes (`PermissionRefusal::ObjectStoreAccount`).
+    pub fn object_store_refused(path: String, message: String, side: Option<PermissionSide>) -> Self {
+        Self::PermissionDenied {
+            path,
+            message,
+            errno: None,
+            refusal: PermissionRefusal::ObjectStoreAccount,
+            refused_folder: None,
             side,
         }
     }

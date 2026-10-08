@@ -99,9 +99,15 @@ export function setCachedStatus(status: LicenseStatus): void {
   licenseState.cachedStatus = status
 }
 
-/** True when license was activated locally but server verification hasn't completed yet. */
+/**
+ * True when a time-limited license was activated locally but the server hasn't confirmed it yet.
+ * Never true for a perpetual license: its signature is the whole proof, and no server answer is
+ * needed to keep it (`src-tauri/src/licensing/offline_policy.rs`).
+ */
 export function isPendingVerification(): boolean {
-  return licenseState.pendingVerification
+  const status = licenseState.cachedStatus
+  const isPerpetual = status?.type === 'commercial' && status.licenseType === 'commercial_perpetual'
+  return licenseState.pendingVerification && !isPerpetual
 }
 
 /** Mark that activation succeeded locally but server verification is still pending (network error during activation). */

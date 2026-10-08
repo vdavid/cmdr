@@ -6,28 +6,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 vi.mock('$lib/ipc/bindings', () => ({
   commands: {
-    cancelWebdavConnect: vi.fn(),
-    disconnectWebdavVolume: vi.fn(),
     saveWebdavCredentials: vi.fn(),
-    hasWebdavCredentials: vi.fn(),
-    deleteWebdavCredentials: vi.fn(),
     getKnownWebdavServers: vi.fn(),
-    forgetKnownWebdavServer: vi.fn(),
     getWebdavUnattendedReconnect: vi.fn(),
   },
 }))
 
 import { commands } from '$lib/ipc/bindings'
-import {
-  cancelWebdavConnect,
-  deleteWebdavCredentials,
-  disconnectWebdavVolume,
-  forgetKnownWebdavServer,
-  getKnownWebdavServers,
-  getWebdavUnattendedReconnect,
-  hasWebdavCredentials,
-  saveWebdavCredentials,
-} from './webdav'
+import { getKnownWebdavServers, getWebdavUnattendedReconnect, saveWebdavCredentials } from './webdav'
 
 const URL = 'https://dav.example.test/remote.php/dav/'
 
@@ -36,20 +22,6 @@ const err = { status: 'error' as const, error: { type: 'access_denied' as const,
 
 beforeEach(() => {
   vi.clearAllMocks()
-})
-
-describe('connecting', () => {
-  it('cancelWebdavConnect forwards the attempt id, so a dialog can call its own dial off', async () => {
-    vi.mocked(commands.cancelWebdavConnect).mockResolvedValueOnce(true)
-    expect(await cancelWebdavConnect('attempt-1')).toBe(true)
-    expect(commands.cancelWebdavConnect).toHaveBeenCalledWith('attempt-1')
-  })
-
-  it('disconnectWebdavVolume forwards the volume id', async () => {
-    vi.mocked(commands.disconnectWebdavVolume).mockResolvedValueOnce(true)
-    expect(await disconnectWebdavVolume('webdav-dav-example-test-abc')).toBe(true)
-    expect(commands.disconnectWebdavVolume).toHaveBeenCalledWith('webdav-dav-example-test-abc')
-  })
 })
 
 describe('credentials', () => {
@@ -62,17 +34,6 @@ describe('credentials', () => {
   it('a refusing store throws rather than reporting success', async () => {
     vi.mocked(commands.saveWebdavCredentials).mockResolvedValueOnce(err)
     await expect(saveWebdavCredentials(URL, 'ada', 'pa55')).rejects.toThrow('nope')
-  })
-
-  it('deleting throws on refusal too', async () => {
-    vi.mocked(commands.deleteWebdavCredentials).mockResolvedValueOnce(err)
-    await expect(deleteWebdavCredentials(URL, 'ada')).rejects.toThrow('nope')
-  })
-
-  it('asking whether one is stored is keyed per account', async () => {
-    vi.mocked(commands.hasWebdavCredentials).mockResolvedValueOnce(true)
-    expect(await hasWebdavCredentials(URL, 'ada')).toBe(true)
-    expect(commands.hasWebdavCredentials).toHaveBeenCalledWith(URL, 'ada')
   })
 })
 
@@ -117,11 +78,5 @@ describe('the saved-server list', () => {
     vi.mocked(commands.getWebdavUnattendedReconnect).mockResolvedValueOnce('no_stored_secret')
     expect(await getWebdavUnattendedReconnect('webdav-dav-example-test-abc')).toBe('no_stored_secret')
     expect(commands.getWebdavUnattendedReconnect).toHaveBeenCalledWith('webdav-dav-example-test-abc')
-  })
-
-  it('forget is keyed by the same pair the store is', async () => {
-    vi.mocked(commands.forgetKnownWebdavServer).mockResolvedValueOnce(true)
-    await forgetKnownWebdavServer(URL, 'ada')
-    expect(commands.forgetKnownWebdavServer).toHaveBeenCalledWith(URL, 'ada')
   })
 })

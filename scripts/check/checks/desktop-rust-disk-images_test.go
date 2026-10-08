@@ -33,6 +33,7 @@ func TestDiskImageLaneRunsTheRealImagePaths(t *testing.T) {
 		"file_system::write_operations::transfer::real_image::",
 		"indexing::tests::vanish_tests::",
 		"volumes::unmount_approver::real_image::",
+		"volumes::rename_real_image::",
 	}
 	if !reflect.DeepEqual(diskImageLaneTestAtoms, want) {
 		t.Errorf("diskImageLaneTestAtoms = %q, want %q", diskImageLaneTestAtoms, want)

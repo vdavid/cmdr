@@ -37,48 +37,15 @@ const FALLBACK_FLOOR: Duration = Duration::from_secs(2);
 const DEFAULT_LIMIT: u32 = 30;
 const MAX_LIMIT: u32 = 200;
 
-/// Parse a human-readable size string into bytes.
-/// Supports B, KB, MB, GB, TB (case-insensitive, with or without space).
+/// Parse a human-readable size string into bytes: SI `kB`/`MB`/`GB`/`TB` are base 1000, IEC
+/// `KiB`/`MiB`/`GiB`/`TiB` base 1024 (`search::parse_size`), case-insensitive, with or without space.
 pub fn parse_human_size(s: &str) -> Result<u64, ToolError> {
-    let s = s.trim();
-    // Find where the numeric part ends and the unit begins
-    let s_upper = s.to_uppercase();
-    let (num_str, unit) = if let Some(pos) = s_upper.find("TB") {
-        (&s[..pos], "TB")
-    } else if let Some(pos) = s_upper.find("GB") {
-        (&s[..pos], "GB")
-    } else if let Some(pos) = s_upper.find("MB") {
-        (&s[..pos], "MB")
-    } else if let Some(pos) = s_upper.find("KB") {
-        (&s[..pos], "KB")
-    } else if let Some(pos) = s_upper.find('B') {
-        (&s[..pos], "B")
-    } else {
-        // Try parsing as pure number (bytes)
-        let n: u64 = s.trim().parse().map_err(|_| {
-            ToolError::invalid_params(format!(
-                "Couldn't parse size: \"{s}\". Use a format like \"1 MB\" or \"500 KB\"."
-            ))
-        })?;
-        return Ok(n);
-    };
-
-    let num: f64 = num_str.trim().parse().map_err(|_| {
+    search::parse_size(s).ok_or_else(|| {
         ToolError::invalid_params(format!(
-            "Couldn't parse size: \"{s}\". Use a format like \"1 MB\" or \"500 KB\"."
+            "Couldn't parse size: \"{}\". Use a format like \"1 MB\" (1,000,000 bytes) or \"500 KiB\" (512,000 bytes).",
+            s.trim()
         ))
-    })?;
-
-    let multiplier: u64 = match unit {
-        "B" => 1,
-        "KB" => 1_024,
-        "MB" => 1_024 * 1_024,
-        "GB" => 1_024 * 1_024 * 1_024,
-        "TB" => 1_024 * 1_024 * 1_024 * 1_024,
-        _ => unreachable!(),
-    };
-
-    Ok((num * multiplier as f64) as u64)
+    })
 }
 
 /// Run a search over its one target volume and wait for the answer.
@@ -294,6 +261,10 @@ fn translate_refusal(e: &crate::ai::AiTranslateError) -> ToolError {
         // Only the user can allow it, in the app: an MCP client can't flip this switch.
         K::NoCloudConsent => ToolError::invalid_params("Cloud AI isn't allowed in Cmdr's settings.")
             .with_data(serde_json::json!({ "reason": "cloudAiNotAllowed" })),
+        // The organization's policy: nobody in the app can change it, so the client gets the
+        // rule's own name to tell the user.
+        K::Managed => ToolError::invalid_params("Your organization's policy doesn't allow this AI request.")
+            .with_data(serde_json::json!({ "reason": e.managed })),
         _ => ToolError::internal(format!("AI search couldn't run: {}", e.message)),
     }
 }
@@ -456,6 +427,23 @@ mod tests {
         let err = translate_refusal(&AiTranslateError::new(AiTranslateErrorKind::NoCloudConsent, "detail"));
         assert_eq!(err.code, ToolError::invalid_params("").code);
         assert_eq!(err.data, Some(json!({ "reason": "cloudAiNotAllowed" })));
+    }
+
+    /// The organization's policy reaches an MCP client as the refusal's own name, so a client can
+    /// tell the user why, and that nobody in the app can change it.
+    #[test]
+    fn a_managed_refusal_is_typed_by_its_rule() {
+        use crate::ai::AiTranslateError;
+        use crate::managed_policy::ManagedAiRefusal;
+        for (refusal, reason) in [
+            (ManagedAiRefusal::AiOff, "aiOff"),
+            (ManagedAiRefusal::CloudAiOff, "cloudAiOff"),
+            (ManagedAiRefusal::HostNotAllowed, "hostNotAllowed"),
+        ] {
+            let err = translate_refusal(&AiTranslateError::from_refusal(refusal));
+            assert_eq!(err.code, ToolError::invalid_params("").code);
+            assert_eq!(err.data, Some(json!({ "reason": reason })));
+        }
     }
 
     #[test]

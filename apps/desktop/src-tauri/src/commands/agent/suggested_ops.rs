@@ -29,6 +29,7 @@ use crate::agent::store::proposals::{
 };
 use crate::agent::suggested_ops::bridge::{ApprovalOutcome, ApprovalRefusal};
 use crate::agent::types::{OpStatus, ProposalStatus, ProposalVerb, Reversibility};
+use crate::file_system::write_operations::{RenameStartError, WriteOperationError};
 /// Why a suggested-ops read or answer didn't happen.
 ///
 /// ❌ Not prose: the review dialog shows its own translated notice
@@ -382,46 +383,74 @@ mod tests {
     /// dialog say the wrong thing in one of the cases.
     #[test]
     fn each_refusal_keeps_the_recovery_it_implies() {
-        assert_eq!(
+        assert!(matches!(
             refusal_view(ApprovalRefusal::NotAccepted(AcceptanceOutcome::NotPending {
                 found: ProposalStatus::Approved
             })),
             ApprovalResultView::AlreadyAnswered
-        );
-        assert_eq!(
+        ));
+        assert!(matches!(
             refusal_view(ApprovalRefusal::Claim(ClaimRefusal::StaleStatus {
                 found: ProposalStatus::Rejected
             })),
             ApprovalResultView::AlreadyAnswered
-        );
-        assert_eq!(
-            refusal_view(ApprovalRefusal::Claim(ClaimRefusal::BindingMismatch {
-                accepted: None,
-                live: crate::agent::store::proposals::OpBinding {
-                    op_count: 3,
-                    digest: "abc".into()
-                }
-            })),
-            ApprovalResultView::ListChanged,
+        ));
+        assert!(
+            matches!(
+                refusal_view(ApprovalRefusal::Claim(ClaimRefusal::BindingMismatch {
+                    accepted: None,
+                    live: crate::agent::store::proposals::OpBinding {
+                        op_count: 3,
+                        digest: "abc".into()
+                    }
+                })),
+                ApprovalResultView::ListChanged
+            ),
             "a changed op set is re-readable, never an already-answered group"
         );
-        assert_eq!(
+        assert!(matches!(
             refusal_view(ApprovalRefusal::NotAccepted(AcceptanceOutcome::Unknown)),
             ApprovalResultView::Unknown
-        );
-        assert_eq!(
+        ));
+        assert!(matches!(
             refusal_view(ApprovalRefusal::Claim(ClaimRefusal::Unknown)),
             ApprovalResultView::Unknown
-        );
-        assert_eq!(
-            refusal_view(ApprovalRefusal::SourceVolumeGone {
-                volume_id: "smb-nas".into()
+        ));
+    }
+
+    /// Every refusal to START reaches the dialog as a reason it can word, ❌ never a sentence
+    /// it can only log (#184). An unconnected phone keeps the transfer dialogs' own variant, so
+    /// the suggestion reads exactly as a clicked copy off that phone would.
+    #[test]
+    fn a_refusal_to_start_carries_a_reason_the_dialog_can_word() {
+        assert!(matches!(
+            refusal_view(ApprovalRefusal::SourceUnavailable(
+                WriteOperationError::SourceNotConnected {
+                    path: "/DCIM/one.jpg".into()
+                }
+            )),
+            ApprovalResultView::Refused {
+                error: WriteOperationError::SourceNotConnected { .. }
+            }
+        ));
+        assert!(matches!(
+            refusal_view(ApprovalRefusal::Rename(RenameStartError::Engine {
+                error: WriteOperationError::SourceNoLongerConnected { path: "/a.png".into() }
+            })),
+            ApprovalResultView::Refused {
+                error: WriteOperationError::SourceNoLongerConnected { .. }
+            }
+        ));
+        assert!(matches!(
+            refusal_view(ApprovalRefusal::Rename(RenameStartError::NothingToRename)),
+            ApprovalResultView::NothingToRun
+        ));
+        assert!(matches!(
+            refusal_view(ApprovalRefusal::TargetMissing {
+                verb: ProposalVerb::Move
             }),
-            ApprovalResultView::SourceVolumeGone {
-                volume_id: "smb-nas".into()
-            },
-            "the drive is named, because that is what the user has to reconnect"
-        );
+            ApprovalResultView::CouldNotStart
+        ));
     }
 
     fn group(id: i64, set_id: i64, verb: ProposalVerb) -> GroupSummary {
@@ -586,8 +615,11 @@ mod tests {
 ///
 /// Every refusal is a typed variant rather than a sentence, because the recoveries genuinely
 /// differ: "somebody already answered this" closes the group, "the list changed" sends the user
-/// back to re-read it, and a missing drive is neither.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, specta::Type)]
+/// back to re-read it, and a refusal to START gives the group back with its reason under it.
+///
+/// The last three are that give-back: nothing ran, and the group is `pending` again (refused
+/// before the claim, or released after it by the bridge), so the dialog keeps it on the list.
+#[derive(Debug, Clone, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase", rename_all_fields = "camelCase", tag = "kind")]
 pub enum ApprovalResultView {
     /// The ops are queued and running. The dialog closes and the queue takes over.
@@ -598,10 +630,17 @@ pub enum ApprovalResultView {
     ListChanged,
     /// No group with that id.
     Unknown,
-    /// The drive the sources live on isn't mounted any more.
-    SourceVolumeGone { volume_id: String },
-    /// The group claimed, but the write engine wouldn't start it.
-    CouldNotStart { detail: String },
+    /// The write engine, or the volume check in front of it, refused. The error is the one a
+    /// clicked operation would have shown, so the dialog words it with the same copy: a phone
+    /// or server nobody connected is `source_not_connected`, a drive that left is
+    /// `source_no_longer_connected`.
+    Refused { error: WriteOperationError },
+    /// Every file was gone or unreadable by the time the user approved, so there was nothing
+    /// to run.
+    NothingToRun,
+    /// The stored group can't become an operation (a target its verb needs is missing). Not
+    /// reachable through `GroupIntent`; the detail goes to the log, never to the dialog.
+    CouldNotStart,
 }
 
 /// Approve a group: claim it and hand its ops to the queue.
@@ -685,14 +724,22 @@ fn refusal_view(refusal: ApprovalRefusal) -> ApprovalResultView {
             ApprovalResultView::AlreadyAnswered
         }
         ApprovalRefusal::Claim(ClaimRefusal::BindingMismatch { .. }) => ApprovalResultView::ListChanged,
-        ApprovalRefusal::SourceVolumeGone { volume_id } => ApprovalResultView::SourceVolumeGone { volume_id },
-        ApprovalRefusal::EngineRefused { detail } => ApprovalResultView::CouldNotStart { detail },
-        ApprovalRefusal::Engine(error) => ApprovalResultView::CouldNotStart {
-            detail: format!("{error:?}"),
-        },
-        ApprovalRefusal::TargetMissing { verb } => ApprovalResultView::CouldNotStart {
-            detail: format!("the stored group has no target for {}", verb.as_token()),
-        },
+        ApprovalRefusal::SourceUnavailable(error)
+        | ApprovalRefusal::Engine(error)
+        | ApprovalRefusal::Rename(RenameStartError::Engine { error }) => ApprovalResultView::Refused { error },
+        ApprovalRefusal::Rename(RenameStartError::NothingToRename) => ApprovalResultView::NothingToRun,
+        ApprovalRefusal::Rename(RenameStartError::NotInOneFolder) => {
+            log::warn!(target: "agent::suggested_ops", "a stored rename group spans folders, so it can't start");
+            ApprovalResultView::CouldNotStart
+        }
+        ApprovalRefusal::TargetMissing { verb } => {
+            log::warn!(
+                target: "agent::suggested_ops",
+                "the stored group has no target for {}, so it can't start",
+                verb.as_token()
+            );
+            ApprovalResultView::CouldNotStart
+        }
     }
 }
 

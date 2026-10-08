@@ -59,7 +59,7 @@ impl TestInstanceGuard {
             volume_id.clone(),
             IndexInstance {
                 phase: IndexPhase::ShuttingDown { restart: None },
-                kind,
+                started_as: crate::indexing::lifecycle::state::StartRequest::for_test(kind),
                 signals: VolumeSignals::new(Arc::new(std::sync::Mutex::new(None)), crate::NoopEventSink::shared()),
                 work: crate::indexing::hold::VolumeWork::for_test(&volume_id),
             },

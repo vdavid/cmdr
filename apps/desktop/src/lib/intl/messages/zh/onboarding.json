@@ -319,6 +319,18 @@
   "@onboarding.stepAi.off.help": {
     "sourceHash": "3f261be"
   },
+  "onboarding.localDownloadFailed.title": "本地 AI 模型没能完成下载",
+  "@onboarding.localDownloadFailed.title": {
+    "sourceHash": "9612750"
+  },
+  "onboarding.localDownloadFailed.body": "在“设置 › AI”中重新开始下载。",
+  "@onboarding.localDownloadFailed.body": {
+    "sourceHash": "6601872"
+  },
+  "onboarding.localDownloadFailed.openSettings": "打开设置",
+  "@onboarding.localDownloadFailed.openSettings": {
+    "sourceHash": "3f94010"
+  },
   "onboarding.stepBeta.footer.start": "开始使用 Cmdr！",
   "@onboarding.stepBeta.footer.start": {
     "sourceHash": "e29bbc7"
@@ -386,6 +398,14 @@
   "onboarding.stepBeta.crashReportsNote": "崩溃报告同样已开启：如果 Cmdr 意外退出，它会发送应用版本、你的 macOS 版本，以及代码停下的位置。\n绝不包含你的文件。\n这两项你随时可以在设置中关闭。",
   "@onboarding.stepBeta.crashReportsNote": {
     "sourceHash": "9be0be1"
+  },
+  "onboarding.stepBeta.analyticsManaged": "你的组织关闭了使用统计。",
+  "@onboarding.stepBeta.analyticsManaged": {
+    "sourceHash": "49484ee"
+  },
+  "onboarding.stepBeta.crashReportsNoteAlone": "崩溃报告已开启：如果 Cmdr 意外退出，它会发送应用版本、你的 macOS 版本，以及代码停下的位置。\n绝不包含你的文件。\n这一项你随时可以在设置中关闭。",
+  "@onboarding.stepBeta.crashReportsNoteAlone": {
+    "sourceHash": "5084dd0"
   },
   "onboarding.stepBeta.emailTitle": "保持联系（可选）",
   "@onboarding.stepBeta.emailTitle": {
@@ -563,6 +583,10 @@
   "onboarding.cloudSetup.apiKeyAria": "API 密钥",
   "@onboarding.cloudSetup.apiKeyAria": {
     "sourceHash": "16f0ee4"
+  },
+  "onboarding.cloudSetup.removeKey": "移除密钥",
+  "@onboarding.cloudSetup.removeKey": {
+    "sourceHash": "81c45fd"
   },
   "onboarding.cloudSetup.apiKeyPlaceholder.openai": "示例：sk-abc123…",
   "@onboarding.cloudSetup.apiKeyPlaceholder.openai": {

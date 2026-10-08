@@ -4,8 +4,8 @@ The on-disk contract for a volume's folder weights and its navigation-visit coun
 work here: editing, planning, reorganizing, or advising. The writer thread and its transactions live one level up
 (`../DETAILS.md` § The writer).
 
-Per-volume `importance-{volume_id}.db`, a sibling of the drive index's `index-{volume_id}.db` in the app data dir
-(`importance_db_path`). It carries the index's disposable-cache discipline verbatim: the shared `platform_case`
+Per-volume `importance-{volume_id}.db` in the app data dir (the drive index's `index-{volume_id}.db` is in the cache
+dir) (`importance_db_path`). It carries the index's disposable-cache discipline verbatim: the shared `platform_case`
 collation (reused from `indexing::store`, the SAME filesystem case/normalization rule) registered on every connection,
 delete-and-recreate on a `SCHEMA_VERSION` mismatch (no migrations, weights are regenerable), and ONE writer thread per
 DB.

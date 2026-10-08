@@ -32,6 +32,9 @@
 //! Depth and the accepted lossiness: `DETAILS.md` § The scoped walk.
 
 use std::collections::{HashMap, HashSet};
+use std::ops::ControlFlow;
+
+use tokio_util::sync::CancellationToken;
 
 use super::recompute::{RescoreScope, dedupe_nested_origins};
 use super::walk::{
@@ -40,6 +43,7 @@ use super::walk::{
 };
 use crate::importance::classify::under_floored_ancestor;
 use crate::importance::signals::ChildAggregate;
+use crate::importance::stop::{PassError, check};
 use crate::indexing::store::{ARENA_FULL, DirTree, IndexStore, ROOT_ID};
 
 /// The most (de-duplicated) origins a batch may carry and still be worth scoping.
@@ -222,13 +226,17 @@ pub(super) fn try_scoped_walk(
     home: &str,
     plan: &BatchPlan,
     previous_markers: &HashMap<String, bool>,
-) -> Result<ScopedWalkOutcome, String> {
+    stop: &CancellationToken,
+) -> Result<ScopedWalkOutcome, PassError> {
     if plan.origins.len() > SCOPED_WALK_MAX_ORIGINS {
         return Ok(ScopedWalkOutcome::FullWalkNeeded(FullWalkReason::TooManyOrigins));
     }
 
     let mut rows = ScopedRows::default();
     for origin in &plan.origins {
+        // Once per origin is enough here: the whole batch reads at most
+        // `SCOPED_WALK_MAX_DIRS` directories, which is what bounds the gap.
+        check(stop)?;
         let Some(id) = origin.id else { continue };
         collect_ancestor_chain(conn, id, &mut rows)?;
         if origin.demoted {
@@ -249,7 +257,7 @@ pub(super) fn try_scoped_walk(
     folders.for_each_mut(|folder, path| {
         folder.under_floored_ancestor = under_floored_ancestor(path, home);
     });
-    propagate_marker_to_ancestors(&mut folders);
+    propagate_marker_to_ancestors(&mut folders, stop)?;
     carry_marker_below_for_demoted(&mut folders, plan, previous_markers);
 
     // The guard: an ancestor outside every subtree can only have moved if some
@@ -528,6 +536,7 @@ fn read_origin_alone(conn: &rusqlite::Connection, root_id: i64, rows: &mut Scope
     rows.scored_dirs += 1;
     IndexStore::for_each_child_directory_of(conn, &[root_id], |id, parent_id, name, modified_at| {
         rows.insert(id, parent_id, name, modified_at, false);
+        ControlFlow::Continue(())
     })
     .map_err(|e| e.to_string())
 }
@@ -559,9 +568,10 @@ fn descend_subtree(conn: &rusqlite::Connection, root_id: i64, rows: &mut ScopedR
                 rows.scored_dirs += 1;
                 if rows.scored_dirs > SCOPED_WALK_MAX_DIRS {
                     over_budget = true;
-                    return;
+                    return ControlFlow::Break(());
                 }
                 next.push(id);
+                ControlFlow::Continue(())
             })
             .map_err(|e| e.to_string())?;
             if over_budget {

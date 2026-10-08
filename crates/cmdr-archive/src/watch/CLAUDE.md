@@ -4,9 +4,6 @@ Refreshes any open listing inside an archive when the backing `.zip` changes on 
 over it, the host's own mutation's final rename). The watch handle lives on the [`ArchiveVolume`](../volume.rs); this
 module is the OS watch + event filter behind it.
 
-Depth, the remote-no-watch decision, and the test list: `DETAILS.md`. Read it before any non-trivial work here: editing,
-planning, reorganizing, or advising.
-
 ## Must-knows
 
 - **Watch the parent DIRECTORY, not the file.** A safe-overwrite (editor, `cp`, or this crate's own temp+rename)
@@ -20,3 +17,6 @@ planning, reorganizing, or advising.
 - **Local only**: a REMOTE parent has no local path for `notify`, so `start_content_watch` returns before arming one and
   `listing_watch_coverage` stays `None` — freshness is "as of last read". ❌ Don't drop that early return to "let
   `notify` decide": it refuses an `sftp://…` directory with a warning, one per archive registration. See `DETAILS.md`.
+
+Depth, the remote-no-watch decision, and the test list: `DETAILS.md`. Read it before any non-trivial work here: editing,
+planning, reorganizing, or advising.

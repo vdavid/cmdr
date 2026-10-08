@@ -227,6 +227,13 @@ fn register_virtual_mtp_device_at(root: &Path, watch_backing_dirs: bool) -> u64 
         // 32-bit GetPartialObject fallback instead (cameras like the Lumix TZ61).
         event_poll_interval: Duration::from_millis(100),
         watch_backing_dirs,
+        // Dates carry their offset (`Z`), unlike a real Android phone's. A
+        // zoneless one reads in the Mac's own zone (`connection/dates.rs`), and
+        // the device can only write a FIXED offset, so a zoneless fixture would
+        // list every date shifted by the machine's DST-dependent offset. What a
+        // zoneless date reads as is pinned by `connection/dates_test.rs`, with
+        // the zone passed in.
+        dates_include_offset: true,
         ..Default::default()
     };
 
@@ -250,12 +257,8 @@ pub const VIRTUAL_DEVICE_SERIAL: &str = "cmdr-e2e-virtual";
 /// (a serial always wins over the location id, so the `0` never reaches the result),
 /// which lets a caller pick the fixture out of a plain device-id list without holding
 /// a registration handle. Used to keep host-level workarounds (`macos_workaround`)
-/// off a device that doesn't need them.
-///
-/// macOS-only because that is the only place those workarounds exist: on Linux every
-/// caller is `cfg`-ed out, and an ungated definition is dead code the E2E build (the one
-/// configuration that is both Linux and `virtual-mtp`) compiles with `-D unused`.
-#[cfg(target_os = "macos")]
+/// off a device that doesn't need them, and, on every platform, to let an automated
+/// run claim only its own virtual device (the app's `mtp/watcher.rs`).
 pub fn virtual_device_id() -> String {
     cmdr_fs::volume::mtp_ids::device_id_for(Some(VIRTUAL_DEVICE_SERIAL), 0)
 }

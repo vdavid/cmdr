@@ -28,6 +28,7 @@ import { tString } from '$lib/intl/messages.svelte'
 import { getAppLogger } from '$lib/logging/logger'
 import type { VolumeInfo } from '../types'
 import type { RemoteConnectState } from './remote-connect-state'
+import type { VolumeChangePayload } from './types'
 
 const log = getAppLogger('fileExplorer')
 
@@ -41,6 +42,11 @@ export interface SmbViewStateDeps {
   loadDirectory: (path: string) => void
   /** Walk up to the nearest reachable folder (or switch to root) after leaving a broken share. */
   navigateToFallback: (validPath: string | null) => void
+  /**
+   * Enters a volume the way a switcher pick does. Puts the pane back on a place
+   * once the host-key sheet connects it: dropping the session sent the pane home.
+   */
+  enter: (change: VolumeChangePayload) => void
 }
 
 export interface SmbViewState {
@@ -67,6 +73,8 @@ export interface SmbViewState {
   handleSignIn: () => void
   /** Drop a server place's dead session and leave, so the next open dials afresh. */
   handleDisconnectPlace: () => void
+  /** Show the changed host key on the sheet, from the changed-key banner. */
+  handleCheckHostKey: () => void
   /** Cancel the reconnect cycle and walk up to the nearest reachable folder. */
   handleSmbReconnectCancel: () => void
   /** Cancel the cycle, OS-unmount the share, and navigate away immediately. */
@@ -119,7 +127,7 @@ export function createSmbViewState(deps: SmbViewStateDeps): SmbViewState {
           signIn: smbReconnectManager.getSignInShape(deps.getVolumeId())?.kind === 'nothing' ? null : handleSignIn,
         }
       case 'needs-host-key':
-        return { kind: 'host_key_changed', disconnect: handleDisconnectPlace }
+        return { kind: 'host_key_changed', checkKey: handleCheckHostKey, disconnect: handleDisconnectPlace }
       case 'gave-up':
         return null
     }
@@ -181,12 +189,11 @@ export function createSmbViewState(deps: SmbViewStateDeps): SmbViewState {
   }
 
   /**
-   * The changed-key banner's button: drop the dead session and leave.
+   * The changed-key banner's Disconnect: drop the dead session and leave.
    *
-   * ❗ This is also the way OUT of a changed key. Nothing here holds the
-   * fingerprint (the backend keeps no pending prompt for a registered volume),
-   * and after this the place is a `saved` row again, so opening it dials afresh
-   * and the dial's host-key outcome is what the sheet's key step renders.
+   * ❗ The way OUT of a changed key, for someone who doesn't want to look at it
+   * now. After this the place is a `saved` row again, so opening it later dials
+   * afresh and shows the key; `handleCheckHostKey` is the same two steps at once.
    */
   function handleDisconnectPlace(): void {
     const targetVolumeId = deps.getVolumeId()
@@ -197,6 +204,42 @@ export function createSmbViewState(deps: SmbViewStateDeps): SmbViewState {
     void resolveValidPath(deps.getCurrentPath(), { volumeRoot: deps.getVolumePath() }).then((validPath) => {
       deps.navigateToFallback(validPath)
     })
+  }
+
+  /**
+   * The changed-key banner's "Check the key": the two manual steps (Disconnect,
+   * then open the place again) as one, ending on the sheet's key step.
+   *
+   * ❗ The backend keeps no pending prompt for a REGISTERED volume, so this drops
+   * the dead session first, and only then dials the saved place through
+   * `connectPlace`'s arm 3: that dial's `needs_host_key_approval` carries the key
+   * the server presents NOW, and the sheet shows it with its own choices. ❌ It
+   * trusts nothing itself. The dial stops at the host key, before any secret is
+   * offered, and dialing while the volume is still registered would answer
+   * `already_connected` instead of a prompt.
+   *
+   * Dropping the session sends the pane home (`volume-unmounted`), so a sheet
+   * that connects puts it back where it was; a cancelled one leaves it home, the
+   * same place Disconnect does.
+   */
+  function handleCheckHostKey(): void {
+    void checkHostKey()
+  }
+
+  async function checkHostKey(): Promise<void> {
+    const volumeId = deps.getVolumeId()
+    const volumePath = deps.getVolumePath()
+    const targetPath = deps.getCurrentPath()
+    smbReconnectManager.cancel(volumeId)
+    try {
+      await disconnectPlace(volumeId)
+    } catch (e) {
+      log.warn('Disconnecting the place {volumeId} broke down: {error}', { volumeId, error: String(e) })
+    }
+    const result = await connectPlace({ volumeId, connectionState: 'saved', openSignIn: openSignInForPlace })
+    if (result.kind === 'connected' || result.kind === 'already_live') {
+      deps.enter({ volumeId, volumePath, targetPath })
+    }
   }
 
   /** Skips the current wait and attempts now. Also the gave-up banner's Retry. */
@@ -241,6 +284,7 @@ export function createSmbViewState(deps: SmbViewStateDeps): SmbViewState {
     handleRetryNow,
     handleSignIn,
     handleDisconnectPlace,
+    handleCheckHostKey,
     handleSmbReconnectCancel,
     handleSmbReconnectDisconnect,
   }

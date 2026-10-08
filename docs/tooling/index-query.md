@@ -9,22 +9,23 @@ cargo run -p index-query -- <db_path> "<sql>"
 
 DB paths:
 
-- **Dev**: `~/Library/Application Support/com.veszelovszki.cmdr-dev/index-root.db`
-- **Prod**: `~/Library/Application Support/com.veszelovszki.cmdr/index-root.db`
+- **Dev**: `~/Library/Caches/com.veszelovszki.cmdr-dev/drive-index/index-root.db` (a `--worktree` slug's:
+  `com.veszelovszki.cmdr-dev-<slug>`)
+- **Prod**: `~/Library/Caches/com.veszelovszki.cmdr/drive-index/index-root.db`
 
 Examples:
 
 ```sh
 # List top-level directories
-cargo run -p index-query -- ~/Library/Application\ Support/com.veszelovszki.cmdr-dev/index-root.db \
+cargo run -p index-query -- ~/Library/Caches/com.veszelovszki.cmdr-dev/drive-index/index-root.db \
   "SELECT e.id, e.name, ds.recursive_size FROM entries e LEFT JOIN dir_stats ds ON ds.entry_id = e.id WHERE e.parent_id = 1 AND e.is_directory = 1 ORDER BY e.name"
 
 # Check dir_stats coverage
-cargo run -p index-query -- ~/Library/Application\ Support/com.veszelovszki.cmdr-dev/index-root.db \
+cargo run -p index-query -- ~/Library/Caches/com.veszelovszki.cmdr-dev/drive-index/index-root.db \
   "SELECT (SELECT count(*) FROM dir_stats) as has_stats, (SELECT count(*) FROM entries WHERE is_directory = 1) as total_dirs"
 
 # Walk a specific path (resolve component by component)
-cargo run -p index-query -- ~/Library/Application\ Support/com.veszelovszki.cmdr-dev/index-root.db \
+cargo run -p index-query -- ~/Library/Caches/com.veszelovszki.cmdr-dev/drive-index/index-root.db \
   "SELECT id, name FROM entries WHERE parent_id = 1 AND name = 'Users'"
 ```
 

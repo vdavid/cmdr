@@ -2,5 +2,9 @@
   "askCmdr.decision.verbTrash": "binning",
   "@askCmdr.decision.verbTrash": {
     "sourceHash": "ea05c85"
+  },
+  "askCmdr.error.managedByOrganization": "Your organisation doesn’t allow this AI service. Your IT team can tell you which ones you can use.",
+  "@askCmdr.error.managedByOrganization": {
+    "sourceHash": "845a19f"
   }
 }

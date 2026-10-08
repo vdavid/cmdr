@@ -134,14 +134,21 @@ budget on timeout.
 `AckSignal` variants, when they fire, and who uses them:
 
 - **`GenerationAdvanced`**: fires when `PaneStateStore.generation` is strictly greater than the captured value. Used by
-  pane mutators: `set_view_mode`, `sort`, `toggle_hidden`, `tab`, `nav_*`, auto-confirmed `copy`/`move`/`delete`, and
-  `dialog confirm`. NOT `select`/`refresh` (both round-trips).
+  pane mutators: `set_view_mode`, `sort`, `toggle_hidden`, `tab`, `nav_*`, and auto-confirmed `copy`/`move`/`delete`.
+  NOT `select`/`refresh` (both round-trips), and NOT `dialog confirm` (below).
 - **`SoftDialogAppeared(id)`**: fires when a soft dialog with that id is in `SoftDialogTracker`. Used by confirmation
   dialogs from `copy`/`move`/`delete` (`autoConfirm: false`), `mkdir`, `mkfile`, and `dialog open about`.
 - **`SoftDialogDisappeared(id)`**: fires when a soft dialog with that id is no longer tracked. Used by
-  `dialog close <confirmation>` (the FE `ModalDialog` fires `notifyDialogClosed` on unmount).
+  `dialog close <confirmation>` (the FE `ModalDialog` fires `notifyDialogClosed` on unmount), and by
+  `dialog confirm <transfer|delete>`: a confirm the FE acted on takes the dialog down in the same tick it starts the
+  operation. ❌ Don't ack a confirm on `GenerationAdvanced`: a compress, or a copy onto a slow volume, changes nothing
+  in either pane until its first file lands, so the tool answered "not acknowledged" about an operation that had
+  started (a 300 MB compress onto a phone, 2026-09-30). ❗ This signal is also true of a dialog that was never open, so
+  `confirm_open_dialog` checks the tracker FIRST and refuses a confirm of nothing with `invalid_params`. A confirm the
+  dialog declines (an invalid path in its box) leaves the dialog up and times out, which is the honest answer.
 - **`WindowAppeared(label)`**: fires when a `webview_windows()` entry matches (exact, or `viewer-*`). Used by
-  `dialog open settings|file-viewer` and `dialog focus`.
+  `dialog open settings|file-viewer` and `dialog focus file-viewer`. `dialog focus settings` needs no ack: the backend
+  raises that window itself (`set_focus`), and a closed one is `invalid_params`.
 - **`WindowDisappeared(label)`**: fires when the matching `webview_windows()` entry is gone. Used by
   `dialog close settings` (single-window family).
 - **`WindowCountBelow {prefix, threshold}`**: fires when the matching window count is `< threshold`. Used by
@@ -161,8 +168,8 @@ react faster than a full pane state push).
 When the backend can't fully validate preconditions (or has to wait on the OS), the tool emits an event with a
 `requestId` and waits for the FE to reply via `mcp-response` carrying `{ requestId, ok, error? }`. One helper,
 `mcp_round_trip_parsed`, owns the id + listener + timeout for all of them; each caller brings the parser that says what
-its reply is allowed to mean (`parse_mcp_response`, `parse_operation_start_response`, `parse_nav_response` — all pure
-and unit-tested in `mod.rs`). Per-tool:
+its reply is allowed to mean (`parse_mcp_response`, `parse_operation_start_response`, `parse_nav_response` in `mod.rs`,
+`parse_tab_move_response` in `app.rs`, all pure and unit-tested). Per-tool:
 
 - `move_cursor`, `set_setting` (5 s). The FE verifies the cursor actually landed (filename found, index in range), then
   (move_cursor) flushes the MCP state push (`syncStateToMcpNow`) before replying, so a follow-up `copy`/`move`/`delete`
@@ -171,23 +178,39 @@ and unit-tested in `mod.rs`). Per-tool:
 - `select` (5 s, all modes): the FE applies the selection (names mode maps names → indices via the `findFileIndices`
   batch IPC first), then flushes the state push before replying, so a follow-up `copy` reads fresh selection state.
   Missing names come back as the round-trip error.
+- **A stalled folder answers early, wherever a tool waits on a LISTING.** `nav_to_path` and `select_volume` (above), and
+  `await`'s row conditions (`has_item`, `not_has_item`, `item_count_*`), which answer `folderStalled` the moment the
+  pane pushes `listing: stalled`: a stalled pane holds no rows, so "not there" would be a lie and "there" would wait out
+  the timeout. Its path conditions still read the path, which stays true. `nav_to_parent` / `nav_back` / `nav_forward`
+  ack on the first state push and `open_under_cursor` on its own 5 s round trip, neither on the listing, and both
+  budgets end before `StallPolicy::stall_after` (8 s) could report a stall, so they have nothing to answer early.
 - `refresh` (5 s): the FE forces a backend re-read via `refreshListing(listingId, true)`, which bypasses the
   watcher-backed short-circuit, so `OK` means the directory was actually re-read on every volume. In the network
   browser the same command re-scans hosts instead.
 - `nav_to_path` (30 s, `mcp_nav_round_trip`): the reply carries a typed `outcome` plus the pane's resting location, and
   `nav_result` (in `nav.rs`) words the tool result from that discriminant — `navigated` is the only `OK`; `fell-back`
-  and `did-not-settle` are errors naming both the request and where the pane actually is. The FE holds the response
+  and `did-not-settle` are errors naming both the request and where the pane actually is, and `stalled` (the folder's
+  server or drive stopped answering, reported the moment the pane shows it rather than after the budget) is an error
+  carrying `data: { reason: "folderStalled", path }` so an agent can branch on it. The FE holds the response
   until the pane comes to rest, which for a cross-volume switch is well past `settled` (that arm resolves it on the
-  optimistic commit, before the new volume lists anything — the last false-positive `OK`). `go_to_latest_download`
+  optimistic commit, before the new volume lists anything — the last false-positive `OK`), then flushes the state push,
+  so `cmdr://state` read right after shows the landing. `go_to_latest_download`
   rides the same helper for its navigation leg, so it can't move a cursor in a directory the pane never reached.
 - `select_volume` (30 s, the same helper on `mcp-volume-select`): the FE holds its reply until the switch's
-  remembered-folder correction has landed and the pane has come to rest, and `select_volume_result` words the same
-  three outcomes, its `OK` naming the folder the pane opened. Resolve the completed volume rows by stable `volumeId`;
+  remembered-folder correction has landed and the pane has come to rest (or stalled), and `select_volume_result` words
+  the same four outcomes, its `OK` naming the folder the pane opened. Resolve the completed volume rows by stable `volumeId`;
   a legacy name is accepted only when unique. A `navigated` reply is followed by a short `volume_name` poll so
   `cmdr://state` agrees. The request id reaches the FE through the command bus (`volume.selectByName`'s
   `mcpRequestId`). The bus lets MCP through behind an open dialog, so the select runs there; only the tools that start
   a file operation refuse (`refuse_while_dialog_blocks`). Why: `apps/desktop/src/routes/(main)/DETAILS.md` § The
   dialog gate.
+- `tab` with `action: move` (5 s, on `mcp-tab` like the other tab actions, which stay on the generation ack): a move
+  can be refused, and the frontend owns the rules, so the reply carries a typed `outcome` that `parse_tab_move_response`
+  reads into `TabMoveAck` and `tab_move_result` words (both in `app.rs`). A refusal is an `invalid_params` error whose
+  `data.reason` is `tabPinned` / `onlyTab` / `tabLimitReached` / `tabNotFound`; `unchanged` is an `OK`. The FE flushes
+  both panes' tab lists before replying, so `cmdr://state` is current when the tool returns. The backend checks only
+  what it can see without the rules (the tab exists in `pane`, and at least one of `toPane` / `toIndex` was given).
+  Rules: `apps/desktop/src/lib/file-explorer/tabs/DETAILS.md` § Moving a tab.
 - `open_under_cursor`: 5 s via `mcp_round_trip_with_timeout`; opening a file delegates to the OS default app, so neither
   `GenerationAdvanced` nor `WindowAppeared` would fire.
 - Resources that need FE data use `resource_round_trip` (same pattern, returns the `data` field). Used by

@@ -3,9 +3,8 @@
 use crate::file_system::volume::reconnect_error::ReconnectError;
 use crate::network::smb_sign_in_diagnostics::{CredentialSource, log_sign_in_refusal};
 use crate::network::{
-    AuthMode, DiscoveryState, NetworkHost, ShareListError, ShareListResult, cached_discovered_hosts,
-    get_discovery_state_value, get_host_for_resolution, resolve_host_ip, service_name_to_hostname, smb_client,
-    update_host_resolution,
+    DiscoveryState, NetworkHost, ShareListError, ShareListResult, cached_discovered_hosts, get_discovery_state_value,
+    get_host_for_resolution, resolve_host_ip, service_name_to_hostname, smb_client, update_host_resolution,
 };
 
 use crate::network::os_mount_notice::FallbackNotice;
@@ -154,9 +153,13 @@ fn guest_attempt_for(
     }
 }
 
-/// Prefetches shares for a host (for example, on hover).
+/// Prefetches shares for a host, so its share list is cached by the time someone opens it.
 /// Same as list_shares_on_host but designed for prefetching - errors are silently ignored.
 /// Returns immediately if shares are already cached.
+///
+/// Listing signs in to the host (as a guest, where it lets one in), so the frontend calls
+/// this for servers the user saved, only while a Servers view is on screen, and never for
+/// one that was only discovered.
 #[tauri::command]
 #[specta::specta]
 #[allow(
@@ -187,30 +190,11 @@ pub async fn prefetch_shares(
     .await;
 }
 
-/// Gets auth mode detected for a host (from cached share list if available).
-#[tauri::command]
-#[specta::specta]
-pub fn get_host_auth_mode(host_id: String) -> AuthMode {
-    // Try to get from cache
-    if let Some(cached) = smb_client::get_cached_shares_auth_mode(&host_id) {
-        return cached;
-    }
-    AuthMode::Unknown
-}
-
 // --- Known Shares Commands ---
 
 use crate::network::known_shares::{
-    self, AuthOptions, ConnectionMode, KnownNetworkShare, get_all_known_shares,
-    get_known_share as get_known_share_inner,
+    self, AuthOptions, ConnectionMode, KnownNetworkShare, get_known_share as get_known_share_inner,
 };
-
-/// Gets all known network shares (previously connected).
-#[tauri::command]
-#[specta::specta]
-pub fn get_known_shares() -> Vec<KnownNetworkShare> {
-    get_all_known_shares()
-}
 
 /// Gets a specific known share by server and share name.
 #[tauri::command]
@@ -287,13 +271,6 @@ pub fn save_smb_credentials(
 #[specta::specta]
 pub fn get_smb_credentials(server: String, share: Option<String>) -> Result<SmbCredentials, KeychainError> {
     keychain::get_credentials(&server, share.as_deref())
-}
-
-/// Checks if credentials exist in the Keychain for a server/share.
-#[tauri::command]
-#[specta::specta]
-pub fn has_smb_credentials(server: String, share: Option<String>) -> bool {
-    keychain::has_credentials(&server, share.as_deref())
 }
 
 /// Whether a server-level password was already read this session, from the
@@ -734,13 +711,6 @@ pub fn set_smb_account_preference(server_name: String, username: Option<String>,
         crate::volume_broadcast::emit_volumes_changed();
     }
     set
-}
-
-/// Removes a manually-added server by ID.
-#[tauri::command]
-#[specta::specta]
-pub fn remove_manual_server(server_id: String, app_handle: tauri::AppHandle) -> Result<(), String> {
-    manual_servers::remove_manual_server(&server_id, &app_handle)
 }
 
 /// The user took a network action: opened the Servers view, "Connect to server…", or

@@ -3,9 +3,9 @@
   "@viewer.error.noPath": {
     "sourceHash": "7f96d25"
   },
-  "viewer.error.readFailed": "No se pudo leer el archivo",
+  "viewer.error.readFailed": "No se pudo leer este archivo. ¿Reintentar?",
   "@viewer.error.readFailed": {
-    "sourceHash": "ae5b0c2"
+    "sourceHash": "6ed51f7"
   },
   "viewer.error.notFound": "No se pudo encontrar este archivo. Puede que se haya movido, renombrado o eliminado.",
   "@viewer.error.notFound": {

@@ -15,6 +15,7 @@ import { addFavoriteFolder } from '$lib/file-explorer/navigation/add-favorite-fo
 import { getFocusedPanePath } from '$lib/file-explorer/pane/focused-pane-reads'
 import type { CommandArgs } from '$lib/commands'
 import { selectVolumeForMcp } from '../mcp-volume-select'
+import { detached } from './detached'
 import type { CommandHandlerRecord } from './types'
 
 export const miscHandlers = {
@@ -48,6 +49,6 @@ export const miscHandlers = {
     // request id reply once the pane has come to rest. Voided on purpose: the landing
     // wait can run for seconds, and nothing downstream of the dispatch reads it.
     const { pane, name, volumeId, mcpRequestId } = dispatchArgs as CommandArgs['volume.selectByName']
-    void selectVolumeForMcp({ explorer: explorerRef, pane, name, volumeId, requestId: mcpRequestId })
+    detached(selectVolumeForMcp({ explorer: explorerRef, pane, name, volumeId, requestId: mcpRequestId }))
   },
 } satisfies Partial<CommandHandlerRecord>

@@ -41,7 +41,7 @@ interface CommandArgsOverrides {
   'cursor.moveTo': { pane: PaneId; to: number | string }
   'cursor.scrollTo': { pane: PaneId; index: number }
   'volume.selectByName': { pane: PaneId; name?: string; volumeId?: string; mcpRequestId?: string } // id wins; the MCP reply's round-trip id
-  'tab.mcpAction': { pane: PaneId; action: McpTabAction; tabId?: string; pinned?: boolean }
+  'tab.mcpAction': { pane: PaneId; action: McpTabAction; tabId?: string; pinned?: boolean } | McpTabMoveArgs // `move` carries toPane / toIndex + the reply's round-trip id
   'dialog.confirm': { type: ConfirmDialogType; onConflict?: string }
 }
 interface CommandArgsOptionalOverrides {
@@ -90,8 +90,15 @@ The registry data is split by top-level scope into `sources/*.ts` (`app`, `main-
 authoring order into `commandSources` (order is load-bearing: it drives palette listing and shortcut conflict
 resolution) and holds all the logic. Most commands are palette-visible; the rest are `showInPalette: false`: low-level
 navigation and MCP-only per-pane commands. `app.commandPalette` is `showInPalette: false` (opening the palette from
-inside itself makes no sense). `getPaletteCommands()` is the only filter exported; `commands` (the full array) is
+inside itself makes no sense). `getPaletteCommands(holds?)` is the only filter exported; `commands` (the full array) is
 exported too, for shortcut documentation and Settings panes.
+
+**Conditional palette rows.** A source may carry a `paletteCondition` (a `PaletteCondition` member, today only
+`focusedPaneSharesLinks`), and the palette shows it only while that holds. `CommandPalette.svelte` answers each one
+through its `PALETTE_CONDITIONS` record when it searches, so a new member doesn't compile until it's answered there.
+Without `holds`, `getPaletteCommands` counts every conditional row as shown, which is what pruning stale recents wants.
+Every other surface (Settings, help, MCP) lists the command regardless, and its handler still checks: the palette knows
+the pane, not the cursor row.
 
 `command-ids.ts::COMMAND_IDS` is also the backend's command-breadcrumb vocabulary. `src-tauri/build.rs` parses the tuple
 into an `OUT_DIR` Rust slice, and `error_reporter/breadcrumbs.rs` retains a command event only when its id is in that

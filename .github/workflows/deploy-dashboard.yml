@@ -8,6 +8,9 @@ on:
       - 'apps/analytics-dashboard/**'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   deploy:
     name: Deploy analytics dashboard

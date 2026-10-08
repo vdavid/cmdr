@@ -11,6 +11,7 @@
 //!   through, plus the per-transport entry points. [`walk_database`]: what a
 //!   `WriterOnly` start does to the database a search walk will fill.
 //! - [`teardown`]: stop / forget / reset, and the sweep over every volume.
+//! - [`relocation`]: following a renamed drive to its new mount point.
 //! - [`scan_control`]: force a rescan, stop one, trigger verification.
 //! - [`queries`]: the read-only question surface.
 //! - [`freshness_bridge`]: registry ↔ `lifecycle/freshness.rs` wiring + epoch bumps.
@@ -40,7 +41,7 @@ use std::sync::LazyLock;
 use std::sync::atomic::Ordering;
 
 use super::freshness::Freshness;
-use super::manager::IndexManager;
+use super::manager::{BranchWatchStart, IndexManager};
 use crate::indexing::hold::VolumeWork;
 use crate::indexing::store::{IndexFailure, IndexStore};
 use crate::indexing::volume::{IndexVolumeKind, VolumeId};
@@ -49,6 +50,7 @@ use crate::indexing::watch::branches::{self, AfterWalk};
 mod auto_start;
 mod freshness_bridge;
 mod queries;
+mod relocation;
 mod reservation;
 mod scan_control;
 mod startup;
@@ -66,9 +68,10 @@ pub(crate) use queries::is_watching_for_test;
 pub(crate) use queries::registered_mtp_volume_ids_for_device;
 pub(crate) use queries::{
     all_registered_volume_ids, awaits_its_first_scan, index_failure, is_active_and_staying, is_being_torn_down,
-    ready_volumes_with_kind, volume_kind,
+    ready_volumes_to_wire, ready_volumes_with_kind, volume_kind,
 };
 pub use queries::{is_active, is_failed};
+pub(crate) use relocation::follow_the_move;
 #[cfg(any(test, feature = "testing"))]
 pub use reservation::reserve_initializing_index_for_test;
 pub(crate) use reservation::{is_initializing_phase, try_reserve_initializing_phase};
@@ -89,8 +92,8 @@ pub(crate) use startup::{
 pub(crate) use supervisor::fail_index_for_test;
 pub(crate) use supervisor::spawn_failure_supervisor;
 pub(crate) use teardown::reset_to_not_indexed;
-pub use teardown::{RemovableStop, clear_every_index, clear_index, disable_drive_index_persist_intent};
-pub(crate) use teardown::{stop_all_indexing, stop_removable_volume};
+pub use teardown::{RemovableStop, clear_every_index, disable_drive_index_persist_intent};
+pub(crate) use teardown::{clear_index, stop_all_indexing, stop_removable_volume};
 #[cfg(test)]
 pub(crate) use teardown::{stop_indexing, while_stopping_for_test};
 
@@ -182,8 +185,10 @@ pub(crate) enum TeardownClaim {
     /// the user asked for the sticky "keep this drive off" veto, so the veto is
     /// written on the far side of the drain like it is on every other path.
     Stopped(PersistDisable),
-    /// Stop indexing it and delete its database.
-    Cleared,
+    /// Stop indexing it and delete its files: which ones is the removal's reason
+    /// to say, carried here so a clear that lands at the handback takes exactly
+    /// what an immediate one would have.
+    Cleared(crate::volume_files::Removal),
 }
 
 impl TeardownClaim {
@@ -194,12 +199,16 @@ impl TeardownClaim {
     /// A user asking to stop or clear outranks a storage failure: they asked for
     /// the drive to go quiet, and a red "indexing stopped" badge on a drive
     /// somebody just turned off is a worse answer than a gray one. Clearing
-    /// outranks stopping because it IS stopping, plus the database.
+    /// outranks stopping because it IS stopping, plus the database, and a clear
+    /// that forgets the volume outranks one that only rebuilds its index, because
+    /// it takes that database and more.
     fn reach(self) -> u8 {
+        use crate::volume_files::Removal;
         match self {
             TeardownClaim::Failed(_) => 0,
             TeardownClaim::Stopped(_) => 1,
-            TeardownClaim::Cleared => 2,
+            TeardownClaim::Cleared(Removal::IndexRebuild) => 2,
+            TeardownClaim::Cleared(Removal::Forgotten | Removal::Unreachable) => 3,
         }
     }
 }
@@ -328,11 +337,11 @@ impl VolumeSignals {
 /// § "Where a volume's read handles live".
 pub(crate) struct IndexInstance {
     pub(crate) phase: IndexPhase,
-    /// This volume's scan kind (Local / SMB / MTP). Retained so a consumer of the
-    /// registry (the importance scheduler's startup sweep) can branch typed on the
-    /// kind — score Local + SMB, exclude MTP — instead of re-deriving it from the
-    /// volume-id string.
-    pub(crate) kind: IndexVolumeKind,
+    /// The start that reserved this instance: where the volume is mounted, what kind
+    /// of storage it is, its inode fact, and what the start was for. Kept whole so
+    /// following a renamed drive (`relocation.rs`) restarts it exactly as it was
+    /// started, at its new root, ❌ never re-derived from a manager being drained.
+    pub(crate) started_as: StartRequest,
     /// The handles this volume shares with its `IndexManager`.
     pub(crate) signals: VolumeSignals,
     /// The volume's root work, minted by its reservation: its stop signal, the ROOT
@@ -349,6 +358,16 @@ pub(crate) struct IndexInstance {
     /// would answer `None` for a volume that just went away and hand the walk a
     /// token that never fires — precisely the walk that needs to stop.
     pub(crate) work: VolumeWork,
+}
+
+impl IndexInstance {
+    /// This volume's scan kind (Local / SMB / MTP), so a consumer of the registry
+    /// (the importance scheduler's startup sweep) can branch typed on the kind —
+    /// score Local + SMB, exclude MTP — instead of re-deriving it from the
+    /// volume-id string.
+    pub(crate) fn kind(&self) -> IndexVolumeKind {
+        self.started_as.kind()
+    }
 }
 
 /// The registry as the jobs take it: a mutex over the per-volume map.
@@ -391,11 +410,11 @@ pub fn init() {
 }
 
 /// The on-disk path of a volume's index DB (`index-<volume_id>.db` under the
-/// resolved app data dir). Single-sources the filename format shared by the
+/// configured drive-index dir). Single-sources the filename format shared by the
 /// indexer's open path and the on-connect resume probe.
 pub(crate) fn resolved_index_db_path(volume_id: &str) -> Result<PathBuf, String> {
-    let data_dir = crate::indexing::host::config::data_dir().map_err(|e| e.to_string())?;
-    Ok(data_dir.join(format!("index-{volume_id}.db")))
+    let dirs = crate::volume_files::StoreDirs::configured().map_err(|e| e.to_string())?;
+    Ok(dirs.db_path(crate::volume_files::VolumeStore::Index, volume_id))
 }
 
 // ── Registry helpers ─────────────────────────────────────────────────
@@ -490,7 +509,53 @@ pub(crate) fn cover_context_for(
 /// it. A volume with no live index (a vetoed drive, a share) has nothing to tell,
 /// and the walk runs exactly as it did.
 pub(crate) fn begin_branch_coverage(volume_id: &str, paths: &[String]) {
-    with_running_manager(volume_id, |mgr| mgr.begin_branch_coverage(paths));
+    let mut planned = None;
+    with_running_manager(volume_id, |mgr| planned = mgr.begin_branch_coverage(paths));
+    start_the_branch_watch(volume_id, planned);
+}
+
+/// Bring a volume's walk-covered branches under a watcher if they aren't yet,
+/// through the registry.
+pub(in crate::indexing::lifecycle) fn ensure_branch_watch(volume_id: &str, resuming: bool) {
+    let mut planned = None;
+    with_running_manager(volume_id, |mgr| planned = mgr.plan_branch_watch(resuming));
+    start_the_branch_watch(volume_id, planned);
+}
+
+/// Start a planned branch watch with the registry lock RELEASED, then install it
+/// under a second short one.
+///
+/// ⚠️ **The start blocks on `fseventsd`** (a stream start and an event-id query,
+/// 5.8 s for one start under load in the live app), so holding the registry across
+/// it stalled `get_status` and every other registry user, for every volume
+/// (`manager/branch_watch.rs`). Anything can happen in the gap, and each case
+/// ends with nothing running that nobody holds:
+///
+/// - **a second caller** finds the start in flight and leaves it to this one;
+/// - **the volume stops, or stops and starts again**: there is no running manager,
+///   or one whose in-flight mark isn't this start's, so the watcher comes back and
+///   is stopped here;
+/// - **a scan start takes the manager out** (`Detached`): the same, and the scan
+///   brings its own watcher, or the hand-back starts the branch watch again
+///   (`scan_control::hand_the_manager_back`);
+/// - **a watcher came up meanwhile**: the install declines, and this one stops;
+/// - **indexing turned off for the drive**: a teardown, which is the first case.
+fn start_the_branch_watch(volume_id: &str, planned: Option<BranchWatchStart>) {
+    let Some(started) = planned.and_then(BranchWatchStart::start) else {
+        return;
+    };
+    let mut started = Some(started);
+    let mut stray = None;
+    with_running_manager(volume_id, |mgr| {
+        stray = mgr.install_branch_watch(started.take().expect("a started watch to install"));
+    });
+    // Still holding it means no running manager took it: the volume went away or
+    // is detached. Dropping its in-flight mark lets the next plan start afresh.
+    let stray = stray.or_else(|| started.map(|started| started.into_watcher()));
+    if let Some(mut stray) = stray {
+        log::info!("Branch watch: '{volume_id}' moved on while its watcher started; stopping that watcher");
+        stray.stop();
+    }
 }
 
 /// Tell it the walk ended, so what it held is released and what it covered
@@ -528,7 +593,9 @@ pub(crate) fn branch_coverage_buffered_events(volume_id: &str, paths: &[String])
 }
 
 /// Run something against a volume's `Running` manager, or nothing if it has
-/// none. Non-blocking work only — the registry lock is held throughout.
+/// none. Non-blocking work only — the registry lock is held throughout. ❌ That
+/// rules out every `fseventsd` call, a watcher's stop included (DETAILS § "Every
+/// `fseventsd` call runs off the registry").
 fn with_running_manager(volume_id: &str, f: impl FnOnce(&mut IndexManager)) {
     let mut reg = INDEX_REGISTRY.lock_ignore_poison();
     if let Some(IndexPhase::Running(mgr)) = reg.get_mut(volume_id).map(|i| &mut i.phase) {

@@ -127,9 +127,9 @@
   "@downloads.shortcutRow.invalidCombo": {
     "sourceHash": "d2601f3"
   },
-  "downloads.shortcutRow.registerFailed": "无法注册：{reason}",
-  "@downloads.shortcutRow.registerFailed": {
-    "sourceHash": "3b0841e"
+  "downloads.shortcutRow.unavailable": "可能有其他 App 正在使用这个按键组合",
+  "@downloads.shortcutRow.unavailable": {
+    "sourceHash": "8882532"
   },
   "downloads.shortcutRow.addModifier": "请添加一个修饰键（⌘、⌃、⌥ 或 ⇧）",
   "@downloads.shortcutRow.addModifier": {

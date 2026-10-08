@@ -21,8 +21,9 @@ pub enum MtpDeleteScope {
     /// children is refused with [`MtpConnectionError::DirectoryNotEmpty`] and
     /// nothing is deleted.
     SingleNode,
-    /// The whole subtree, children first. ❌ The only caller is
-    /// `commands::mtp::delete_mtp_object`; see its doc comment.
+    /// The whole subtree, children first. Nothing in the app calls it: every
+    /// delete goes through `MtpVolume`, which walks the tree itself so each
+    /// node gets its own error attribution.
     Tree,
 }
 

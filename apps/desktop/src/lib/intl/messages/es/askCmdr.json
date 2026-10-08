@@ -220,6 +220,10 @@
   "@askCmdr.error.noCloudConsent": {
     "sourceHash": "cd2af1d"
   },
+  "askCmdr.error.managedByOrganization": "Tu organización no permite este servicio de IA. Tu equipo de informática puede decirte cuáles puedes usar.",
+  "@askCmdr.error.managedByOrganization": {
+    "sourceHash": "845a19f"
+  },
   "askCmdr.error.localWindowTooSmall": "Cmdr necesita una ventana de contexto más grande que la de tu modelo local. Elige 32 768 tokens o más en Ajustes, en IA.",
   "@askCmdr.error.localWindowTooSmall": {
     "sourceHash": "8ac7452"
@@ -578,6 +582,10 @@
   "askCmdr.renameUndo.applied": "Se {count, plural, one {ha renombrado} many {han renombrado} other {han renombrado}} {countText} {count, plural, one {archivo} many {archivos} other {archivos}}.",
   "@askCmdr.renameUndo.applied": {
     "sourceHash": "b06c599"
+  },
+  "askCmdr.renameUndo.swapsSkipped": "Se {count, plural, one {ha omitido {countText} cambio de nombre que intercambia nombres} many {han omitido {countText} cambios de nombre que intercambian nombres} other {han omitido {countText} cambios de nombre que intercambian nombres}}. Renombra esos archivos de uno en uno.",
+  "@askCmdr.renameUndo.swapsSkipped": {
+    "sourceHash": "90e8dfc"
   },
   "askCmdr.renameUndo.undo": "Deshacer",
   "@askCmdr.renameUndo.undo": {

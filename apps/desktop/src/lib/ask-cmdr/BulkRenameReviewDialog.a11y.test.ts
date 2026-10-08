@@ -23,7 +23,7 @@ const { actions, watcher, media, viewer } = vi.hoisted(() => ({
     revise: vi.fn<(payload: { proposalId: string; rowId: string; destinationName: string }) => Promise<void>>(),
   },
   watcher: {
-    handler: null as ((diff: { changes: unknown[] }) => void) | null,
+    handler: null as ((diff: { batches: { changes: unknown[] }[] }) => void) | null,
   },
   media: {
     /** Which paths get a thumbnail token; anything else falls back to the placeholder. */
@@ -69,7 +69,7 @@ vi.mock('./ask-cmdr-trigger.svelte', async () => {
 vi.mock('$lib/tauri-commands', () => ({
   notifyDialogOpened: vi.fn(() => Promise.resolve()),
   notifyDialogClosed: vi.fn(() => Promise.resolve()),
-  onDirectoryDiff: vi.fn((handler: (diff: { changes: unknown[] }) => void) => {
+  onDirectoryDiff: vi.fn((handler: (diff: { batches: { changes: unknown[] }[] }) => void) => {
     watcher.handler = handler
     return Promise.resolve(vi.fn())
   }),
@@ -503,7 +503,7 @@ describe('BulkRenameReviewDialog', () => {
     await tick()
     const changes = [{ type: 'add', entry: { name: 'after-three.png' } }]
 
-    watcher.handler?.({ changes })
+    watcher.handler?.({ batches: [{ changes }] })
 
     expect(actions.listingChanged).toHaveBeenCalledWith(changes)
   })

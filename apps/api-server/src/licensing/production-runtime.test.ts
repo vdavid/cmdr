@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { createTestHarness } from 'wrangler'
 import * as ed from '@noble/ed25519'
-import { isValidShortCode, type LicenseData } from './license'
+import { isValidShortCode, validationAnswerSignaturePrefix, type LicenseData } from './license'
 import type { ValidationResponse } from './paddle-api'
 
 /**
@@ -75,13 +75,16 @@ async function applyLicenseIssuanceSchema(): Promise<void> {
   }
 }
 
-type ValidateBody = Partial<ValidationResponse> & { error?: string }
+type ValidateBody = Partial<ValidationResponse> & {
+  error?: string
+  signedAnswer?: { payload: string; signature: string }
+}
 
-async function validate(transactionId: string): Promise<{ status: number; body: ValidateBody }> {
+async function validate(transactionId: string, nonce?: string): Promise<{ status: number; body: ValidateBody }> {
   const response = await server.fetch('http://api.getcmdr.com/validate', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ transactionId }),
+    body: JSON.stringify({ transactionId, nonce }),
   })
   const text = await response.text()
   return { status: response.status, body: JSON.parse(text) as ValidateBody }
@@ -119,6 +122,7 @@ function base64ToBytes(base64: string): Uint8Array {
 
 interface MintedLicense {
   code: string
+  fullKey?: string
   transactionId: string
   type: string
   organizationName: string | null
@@ -258,6 +262,17 @@ describe('minting a license in the Worker runtime', () => {
     expect((await validate(minted.transactionId)).body.status).toBe('active')
   })
 
+  it('signs the end date into a dated key, and hands the full key back for offline activation', async () => {
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+
+    const { minted } = await generate({ email: 'dated@example.com', note: 'dated', expiresAt })
+
+    const [payloadBase64] = (minted.fullKey ?? '').split('.')
+    const payload = JSON.parse(new TextDecoder().decode(base64ToBytes(payloadBase64))) as LicenseData
+    expect(payload.expiresAt).toBe(expiresAt)
+    expect(payload.shortCode).toBe(minted.code)
+  })
+
   it('refuses to mint without a note, so no license is untraceable', async () => {
     expect((await generate({ email: 'anonymous@example.com' })).status).toBe(400)
   })
@@ -389,6 +404,32 @@ describe('validating a manual license', () => {
 
     expect(status).toBe(200)
     expect(body.status).toBe('invalid')
+  })
+
+  it('signs its verdict over the app’s nonce, so a revocation can’t be forged or replayed', async () => {
+    await insertManualLicense({ transactionId: 'manual-SIGNEDRV', revokedAt: '2026-09-01T00:00:00.000Z' })
+    const nonce = 'aaaabbbbccccdddd0000111122223333'
+
+    const { body } = await validate('manual-SIGNEDRV', nonce)
+
+    const payloadBytes = base64ToBytes(body.signedAnswer?.payload ?? '')
+    const prefixed = new Uint8Array([...new TextEncoder().encode(validationAnswerSignaturePrefix), ...payloadBytes])
+    const publicKey = await ed.getPublicKeyAsync(privateKey)
+    expect(await ed.verifyAsync(base64ToBytes(body.signedAnswer?.signature ?? ''), prefixed, publicKey)).toBe(true)
+    expect(JSON.parse(new TextDecoder().decode(payloadBytes))).toMatchObject({
+      transactionId: 'manual-SIGNEDRV',
+      nonce,
+      status: 'invalid',
+    })
+  })
+
+  it('signs nothing for a caller that sent no nonce, since that answer could be replayed', async () => {
+    await insertManualLicense({ transactionId: 'manual-NONONCE1' })
+
+    const { body } = await validate('manual-NONONCE1')
+
+    expect(body.status).toBe('active')
+    expect(body.signedAnswer).toBeUndefined()
   })
 
   it('still resolves a Paddle transaction id against Paddle', async () => {

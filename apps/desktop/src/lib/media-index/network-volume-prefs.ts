@@ -18,13 +18,48 @@ import { getAppLogger } from '$lib/logging/logger'
 const log = getAppLogger('media-index')
 
 /** Toggle `id` within a JSON-array setting, always replacing by reference so the
- *  store's `===` idempotency guard sees a change and persists. Shared with the
- *  excluded-folder prefs (`excluded-folders.ts`). */
-export function toggleInArray(current: readonly string[], id: string, on: boolean): string[] {
+ *  store's `===` idempotency guard sees a change and persists. */
+function toggleInArray(current: readonly string[], id: string, on: boolean): string[] {
   const has = current.includes(id)
   if (on && !has) return [...current, id]
   if (!on && has) return current.filter((v) => v !== id)
   return [...current]
+}
+
+/** The media-index settings that hold a JSON array of ids or folder paths. */
+type ArraySettingId =
+  | 'mediaIndex.networkVolumes'
+  | 'mediaIndex.alwaysIndexVolumes'
+  | 'mediaIndex.alwaysIndexFolders'
+  | 'mediaIndex.excludedFolders'
+
+/** One per-item change to an array setting, and what a failed apply does to it. */
+interface ArrayDelta {
+  setting: ArraySettingId
+  id: string
+  on: boolean
+  /**
+   * Whether a failed apply takes the persisted change back. False only for a change the backend may already be
+   * acting on when the call rejects (the exclusion veto), where the saved value has to keep matching it.
+   */
+  rollback: boolean
+}
+
+/**
+ * Persists one per-item change, then live-applies it through `apply`. A failed apply with `rollback` reverts only
+ * `id`'s own membership, read against the array as it is NOW: restoring a snapshot taken before the await would also
+ * undo any toggle that landed meanwhile. Rethrows, so the caller keeps its own log line.
+ */
+export async function persistThenApply(delta: ArrayDelta, apply: () => Promise<void>): Promise<void> {
+  const { setting, id, on, rollback } = delta
+  const wasOn = getSetting(setting).includes(id)
+  setSetting(setting, toggleInArray(getSetting(setting), id, on))
+  try {
+    await apply()
+  } catch (err) {
+    if (rollback && wasOn !== on) setSetting(setting, toggleInArray(getSetting(setting), id, wasOn))
+    throw err
+  }
 }
 
 // ── Per-volume network (SMB) opt-in ────────────────────────────────────────
@@ -41,16 +76,15 @@ export function isNetworkVolumeOptedIn(volumeId: string): boolean {
 
 /**
  * Opt a network volume in or out. Persists the array AND live-applies via IPC
- * (enabling kicks an immediate pass backend-side). On IPC failure the persisted
- * choice is rolled back so the UI and backend stay in agreement.
+ * (enabling kicks an immediate pass backend-side). On IPC failure this volume's
+ * persisted choice is rolled back so the UI and backend stay in agreement.
  */
 export async function setNetworkVolumeOptedIn(volumeId: string, enabled: boolean): Promise<void> {
-  const previous = getNetworkOptInVolumes()
-  setSetting('mediaIndex.networkVolumes', toggleInArray(previous, volumeId, enabled))
   try {
-    await mediaIndexSetNetworkVolumeEnabled(volumeId, enabled)
+    await persistThenApply({ setting: 'mediaIndex.networkVolumes', id: volumeId, on: enabled, rollback: true }, () =>
+      mediaIndexSetNetworkVolumeEnabled(volumeId, enabled),
+    )
   } catch (err) {
-    setSetting('mediaIndex.networkVolumes', previous)
     log.warn('Failed to apply network opt-in for {volumeId}: {err}', { volumeId, err: String(err) })
     throw err
   }
@@ -70,19 +104,14 @@ export function isVolumeAlwaysIndexed(volumeId: string): boolean {
 
 /** Set (or clear) a whole-volume "always index" override. Persists + live-applies. */
 export async function setVolumeAlwaysIndexed(volumeId: string, always: boolean): Promise<void> {
-  const previous = getAlwaysIndexVolumes()
-  setSetting('mediaIndex.alwaysIndexVolumes', toggleInArray(previous, volumeId, always))
   try {
-    await mediaIndexSetAlwaysIndexVolume(volumeId, always)
+    await persistThenApply({ setting: 'mediaIndex.alwaysIndexVolumes', id: volumeId, on: always, rollback: true }, () =>
+      mediaIndexSetAlwaysIndexVolume(volumeId, always),
+    )
   } catch (err) {
-    setSetting('mediaIndex.alwaysIndexVolumes', previous)
     log.warn('Failed to apply always-index for volume {volumeId}: {err}', { volumeId, err: String(err) })
     throw err
   }
 }
 
-// The per-folder "always index" override (setting `mediaIndex.alwaysIndexFolders`,
-// backend command `media_index_set_always_index_folder`) is intentionally NOT wired
-// on the FE this slice: its natural trigger is a folder right-click action, and the
-// file context menu is a native (Rust) menu, so the item + menu-event handler is a
-// small backend follow-up. The backend command + the sparse setting are ready.
+// The per-folder "always index" override lives in `always-index-folders.ts`.

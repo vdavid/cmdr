@@ -51,3 +51,68 @@ export function isTypeToJumpResetKey(e: KeyboardEvent): boolean {
       return false
   }
 }
+
+/** The slice of a pane the typing intercept drives. `FilePaneAPI` satisfies it. */
+export interface TypingKeyTarget {
+  isRenaming(): boolean
+  isJumpActive(): boolean
+  handleJumpKeystroke(char: string): void
+  clearJumpState(): void
+  /** True when typing in this pane narrows the list (the `filter` mode) instead of jumping. */
+  isQuickFilterMode(): boolean
+  /** True while the quick filter holds a pattern. */
+  isQuickFilterActive(): boolean
+  appendQuickFilter(char: string): void
+  /** Drops the last character of the pattern (clearing it when that was the last one). */
+  backspaceQuickFilter(): void
+  clearQuickFilter(): void
+}
+
+/**
+ * THE typing intercept, shared by `key-dispatch.ts` (the DOM keydown path) and
+ * `pane-commands.ts` `routePanelKey` (the Quick Look panel path), so the two
+ * can't drift (landmine L9). Returns true when it consumed the key; on false the
+ * caller hands the key to the pane's own handler.
+ *
+ * Jump mode: letters/digits (and, mid-jump, any printable) feed the buffer;
+ * reset keys clear it and fall through.
+ *
+ * Filter mode (Total Commander's quick filter): letters/digits start the
+ * pattern and, once it's active, any printable extends it. Backspace edits it
+ * and Esc clears it, both consumed while a pattern is active, so Backspace only
+ * goes to the parent folder once the filter is empty. Arrows, Enter, and the rest
+ * fall through and leave the filter alone: you navigate within the filtered list.
+ */
+export function routeTypingKey(pane: TypingKeyTarget, e: KeyboardEvent): boolean {
+  if (pane.isRenaming()) return false
+  if (pane.isQuickFilterMode()) return routeFilterKey(pane, e)
+
+  if (isTypeToJumpChar(e) || (pane.isJumpActive() && isPrintableJumpContinuation(e))) {
+    pane.handleJumpKeystroke(e.key)
+    return true
+  }
+  if (isTypeToJumpResetKey(e)) {
+    pane.clearJumpState()
+    // Fall through; Enter/arrows/Backspace/ESC keep their existing meaning.
+  }
+  return false
+}
+
+/** `routeTypingKey` in Filter mode: what extends, edits, or clears the pattern. */
+function routeFilterKey(pane: TypingKeyTarget, e: KeyboardEvent): boolean {
+  const active = pane.isQuickFilterActive()
+  if (isTypeToJumpChar(e) || (active && isPrintableJumpContinuation(e))) {
+    pane.appendQuickFilter(e.key)
+    return true
+  }
+  if (!active || e.metaKey || e.ctrlKey || e.altKey) return false
+  if (e.key === 'Backspace') {
+    pane.backspaceQuickFilter()
+    return true
+  }
+  if (e.key === 'Escape') {
+    pane.clearQuickFilter()
+    return true
+  }
+  return false
+}

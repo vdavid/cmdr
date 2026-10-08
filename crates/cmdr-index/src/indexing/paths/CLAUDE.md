@@ -26,12 +26,15 @@ is the canonical owner of `IndexPathSpace` and the read-side path transforms.
   never reach the index and drive the local rename pre-pass into a false `MoveEntryV2`. See `../transports/CLAUDE.md`
   for where the flag is resolved.
 - **Route by what's REGISTERED, never a path/id substring.** `volume_id_for_local_path` fast-rejects with
-  `is_on_mounted_external_volume` so a cloud-drive folder in the home dir stays on `root` and keeps its sizes.
+  `is_on_mounted_external_volume` so a cloud-drive folder in the home dir stays on `root` and keeps its sizes. A mount
+  INSIDE the boot tree routes to its own id off the same `scanner::boot_tree_mounts` set the boot scan cuts at: ❌ never
+  route one away without the scan cutting it too, or its sizes vanish.
 
 ## Module map
 
-- `routing.rs` — `volume_id_for_local_path` (path → owning volume), `IndexPathSpace`, `index_read_path[_pure]` +
-  `mtp_index_relative_path`, `exclusion_scope_for_volume`.
+- `routing.rs` — asked by volume id (the read side): `volume_id_for_local_path` (path → owning volume),
+  `index_read_path[_pure]` + `mtp_index_relative_path`, `exclusion_scope_for_volume`.
+- `path_space.rs` — `IndexPathSpace`, the space the local scan / reconcile / live pipeline holds.
 - `path_prefix.rs` — component-aware absolute-path prefix tests (`/a/bc` is never a child of `/a/b`): the predicates
   (`is_strict_descendant`, `is_at_or_under`) and their lookup forms for a keyed collection (`self_and_ancestors`,
   `descendant_range_prefix`), plus `compute_parent_path`, `collect_ancestor_paths`, and `with_ancestor_closure` (origins

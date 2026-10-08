@@ -1,0 +1,54 @@
+{
+  "goToPath.dialog.title": "Переход к папке",
+  "@goToPath.dialog.title": {
+    "sourceHash": "26fc1cf"
+  },
+  "goToPath.dialog.inputAriaLabel": "Путь для перехода",
+  "@goToPath.dialog.inputAriaLabel": {
+    "sourceHash": "ac4d152"
+  },
+  "goToPath.dialog.inputPlaceholder": "Введите или вставьте путь, например ~/Documents",
+  "@goToPath.dialog.inputPlaceholder": {
+    "sourceHash": "d84d343"
+  },
+  "goToPath.dialog.recentsAriaLabel": "Недавние пути",
+  "@goToPath.dialog.recentsAriaLabel": {
+    "sourceHash": "b698143"
+  },
+  "goToPath.dialog.removeFromList": "Удалить из списка",
+  "@goToPath.dialog.removeFromList": {
+    "sourceHash": "82963c7"
+  },
+  "goToPath.dialog.cancel": "Отменить",
+  "@goToPath.dialog.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "goToPath.dialog.confirm": "Перейти",
+  "@goToPath.dialog.confirm": {
+    "sourceHash": "6cc8519"
+  },
+  "goToPath.dialog.ancestorHint": "Такого пути нет. Ближайшая папка, куда можно перейти: {dir}.",
+  "@goToPath.dialog.ancestorHint": {
+    "sourceHash": "e6eefca"
+  },
+  "goToPath.toast.landedOnAncestor": "Путь <req>{requested}</req> не существует, поэтому открыта папка <land>{landed}</land>.",
+  "@goToPath.toast.landedOnAncestor": {
+    "sourceHash": "9af3d3a"
+  },
+  "goToPath.toast.pressToGoBack": "Нажмите <chip></chip>, чтобы вернуться.",
+  "@goToPath.toast.pressToGoBack": {
+    "sourceHash": "ee851b2"
+  },
+  "goToPath.dialog.opensServer": "Открывает {name}",
+  "@goToPath.dialog.opensServer": {
+    "sourceHash": "e3fb00e"
+  },
+  "goToPath.dialog.addsServer": "Добавляет сервер",
+  "@goToPath.dialog.addsServer": {
+    "sourceHash": "8e73f74"
+  },
+  "goToPath.dialog.snapshotNotAPath": "К результатам поиска нельзя перейти по пути.",
+  "@goToPath.dialog.snapshotNotAPath": {
+    "sourceHash": "1332610"
+  }
+}

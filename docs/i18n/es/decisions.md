@@ -23,9 +23,9 @@ Small, local, binding (tentative unless sourced).
 - **Search**: ámbito; patrón; comodín; Glob / Regex; personalizado; carpetas aburridas (the playful voice is
   deliberate); Pregunta lo que sea.
 - **Misc**: vacío (AppKit); por ADB / por USB in a label, `a través de un cable USB` for the physical cable; en los
-  sitios habituales; marcador de posición (MS); implementación (an Azure deployment, MS); OK → Aceptar; under cursor →
-  bajo el cursor; umbral; ajuste de línea; píxeles; identificador (a file handle); enlace simbólico (roto); enlace
-  físico; siendo usado por; a toggle in a description is the action itself (activar / desactivar), never a noun.
+  sitios habituales; marcador de posición (MS); implementación (an Azure deployment, MS); OK → Aceptar; umbral; ajuste
+  de línea; píxeles; identificador (a file handle); enlace simbólico (roto); enlace físico; siendo usado por; a toggle
+  in a description is the action itself (activar / desactivar), never a noun.
 - **Verbatim**: git, worktree, repo (inflects: los repos), blob, commit, clone, byte(s), FAT32, exFAT, daemon, udev,
   ptpcamerad, Terminal, Ctrl+C, PTP.
 
@@ -205,11 +205,9 @@ The stats carry a stable random id, so ❌ never `anónimas`, and ❌ never the 
 
 `mantener`, not `conservar` (a choice). `Se ha mantenido el nombre “{name}”`: `su nombre` would point at the insert.
 
-## El renombrado sin confirmar y el nombre que el sistema rechaza (`fileExplorer.rename.unconfirmed*`, `fileOperations.validation.nameNotUsable`)
+## El nombre que el sistema rechaza (`fileOperations.validation.nameNotUsable`)
 
-Nobody knows whether the rename happened, so nothing may imply it didn't:
-`es posible que el cambio sí se haya aplicado`, all arms plural (even `one` covers two renames), `ni el de` for the
-others. `Ese nombre de archivo no puede usarse`: `Ese` is "that name you typed"; no full stop, it composes into
+`Ese nombre de archivo no puede usarse`: `Ese` is "that name you typed"; no full stop, it composes into
 `chainKeptOriginalName`.
 
 ## Operaciones sugeridas: el diálogo de lo que propone Ask Cmdr (`suggestedOps.*`, `commands.suggestedOpsShow.*`)
@@ -397,9 +395,7 @@ The row covers Office documents AND app packages, so bare `paquetes`, broader th
 - key (SSH) → `clave`, ❌ not `llave` (macOS keeps it for passkeys and `llavero`).
 - compromised → `comprometida`: Apple's `filtrada` names a concrete leak, a `@revoked` mark isn't one.
 - trust → `confiar en`, with macOS and Cmdr as active subjects.
-- Try again as a BUTTON → `Reintentar`; in prose `inténtalo de nuevo` / `vuelve a intentarlo`.
 - Busy tooltips copy `ejectBusyTooltip` word for word; `…Busy` menu items add ` (ocupado)`.
-- Participles and clitics agree only with fixed nouns (`Sesión cerrada`, `Ábrelo` → el servidor), never `{name}`.
 - A forget confirmation names the type first (`¿Olvidar el recurso compartido {name}?`), so `lo` and `montado` agree
   with the noun. Forgetting a host is `olvidar` in the toasts too (`Cmdr ha olvidado {hostName}`), ❌ not the old
   `quitar`.
@@ -487,8 +483,8 @@ Both equal their palette twins byte for byte (checked by `i18n-terms`).
 
 ## El menú del icono en el Dock (`menu.dock.*`)
 
-The Dock's `DockMenus.strings` forms "verb + app name" with no article (`Abrir Cmdr`). `Ir a la carpeta…` (the item says
-folder) stays apart from Cmdr's `Ir a la ruta` dialog (it says path). `{name} ({parent})` is identical to English.
+The Dock's `DockMenus.strings` forms "verb + app name" with no article (`Abrir Cmdr`). `Ir a la carpeta…` is Finder's
+item. `{name} ({parent})` is identical to English.
 
 ## La oferta de «Mostrar en el Finder» y el aviso de la primera vez (`main.revealNudge.*`, `main.revealActivation.*`, `settings.behavior.reveal*`)
 
@@ -566,12 +562,14 @@ agrees with `carpeta`.
   `Añadir a favoritos`.
 - press a number → `pulsa un número` (keys `pulsar`, mouse `hacer clic`).
 
-## Quién retiene el disco cuando la expulsión se rechaza (`errors.eject.unmountRefusedBy*`, `errors.eject.otherApps`)
+## Quién retiene el disco cuando la expulsión se rechaza (`errors.eject.unmountRefusedBy*`, `errors.eject.otherApps`, `errors.eject.otherProcesses`)
 
-- `{app}` opens the sentence with no article (a process name is a proper name).
-- `Cierra lo que tenga abierto ahí`: `lo que` + subjunctive and `ahí` agree with nothing.
-- `otras apps` joins through `Intl.ListFormat('es')` (`… y otras apps`).
-- macOS itself → `macOS sigue trabajando con este disco`, kept apart from the apps' `sigue usando`.
+- The refusals follow either `No se ha podido expulsar {volumeName}:` or `No se ha podido desconectar:` and may concern
+  a share or a phone: one skeleton, `X todavía tiene archivos abiertos ahí.` + `… y vuelve a intentarlo.`, never
+  `este disco` or `vuelve a expulsarlo`.
+- `{app}` opens the sentence with no article (a process name is a proper name); `Ciérralos` points at `archivos`.
+- `otras apps` / `otros` (processes) join through `Intl.ListFormat('es')` (`… y otras apps`).
+- The aside keeps Cmdr as subject (`Cmdr no tiene el nombre de la app`), never `No tenemos`.
 
 ## Seleccionar todo lo de la misma clase (`menu.select.sameKind`/`.allFolders`/`.sameExtension`/`.noExtension`, `commands.selectionSelectSameKind.*`, `menu.context.selection`)
 
@@ -623,15 +621,22 @@ in labels. `Solo verás este aviso una vez.`: names the notice, no gendered adje
 
 ## Coherencia del termbase (`goToPath.dialog.removeFromList`, `askCmdr.wakeDigest.removed`, `errors.write.fallback.message.*`, `onboarding.stepFda.con.body`, `indexing.staleDialog.body`, `indexing.rescan.*`)
 
-- `Algo ha ido mal` everywhere; `errors.write.fallback.message.*` → `Algo ha ido mal al copiar.` (no `error`).
+- `errors.write.fallback.message.*` → `Algo ha ido mal al copiar.` (no `error`).
 - `askCmdr.wakeDigest.removed` → `elementos que ya no están`: they may be trashed, deleted, or moved out.
 - Cmdr is BSL: `su código fuente es público`, ❌ never `de código abierto`.
-- Preview is `Vista Previa` on a Spanish Mac.
-- The rescan lines are subjectless gerunds, like `Reiniciando el análisis desde cero`.
-- watcher → `vigilancia`; view modes lowercase in prose (`la vista breve`).
 - `indexing.staleDialog.body` → `estuvo sin conectar`, `la unidad`: nothing agrees with `{name}`.
+
+## S3 (`servers.sheet.s3*`, `*coldStorage*`, `*ShareLink*`)
+
+- `el bucket` (AWS es; ❌ MS `cubo`); `ID de clave de acceso`, `clave de acceso secreta`.
+- cold storage → `archivado`, `restaurar`; write `el archivo {path}`.
+- share link → `enlace para compartir`.
 
 ## El original se quedó (`errors.write.sourceNotRemoved.*`, `errors.write.permissionDenied.*.source*`, `errors.write.deletePending.message`)
 
-- `en las dos ubicaciones`: `ubicación` doesn't agree with the item's gender. `elimina tú el original` avoids a gendered
-  `tú mismo`.
+- `en las dos ubicaciones` (agrees with nothing); `elimina tú el original` (❌ gendered `tú mismo`).
+
+## Lo que gestiona tu organización (MDM) (`*.managed.*`)
+
+- Nothing agrees with the reader (`Lo que gestiona…`); `*Off` agrees with its row (`Desactivadas`), as System Settings
+  does.

@@ -11,7 +11,7 @@
  * surfaces.
  */
 
-import { formatNarrowDuration, type DurationPart } from '$lib/intl/duration-format'
+import { formatNarrowDuration, formatNarrowMeasure, type DurationPart } from '$lib/intl/duration-format'
 import { formatInteger, getNumberFormatter } from '$lib/intl/number-format'
 
 /**
@@ -103,13 +103,14 @@ export function formatFilesPerSecond(rate: number): FileRateReadout | null {
 }
 
 /**
- * Format a millisecond duration where sub-second precision matters ("847 ms",
- * "1.4 s", then handing off to {@link formatDuration}'s minute/hour shape).
+ * Format a millisecond duration where sub-second precision matters ("847ms",
+ * "1.4s", then handing off to {@link formatDuration}'s minute/hour shape),
+ * in the UI language's narrow units like `formatDuration` ("1,4 Sek." in German).
  * For timings and diagnostics; user-facing ETAs use `formatDuration`.
  */
 export function formatMilliseconds(ms: number): string {
-  if (ms < 1000) return `${formatInteger(Math.round(ms))} ms`
-  if (ms < 60_000) return `${formatTenth(ms / 1000)} s`
+  if (ms < 1000) return formatNarrowMeasure('millisecond', Math.round(ms), 0)
+  if (ms < 60_000) return formatNarrowMeasure('second', ms / 1000, 1)
   return formatDuration(seconds(ms / 1000))
 }
 

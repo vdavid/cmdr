@@ -42,7 +42,7 @@ pub async fn translate_once(
         response.len(),
         t0.elapsed().as_secs_f64()
     );
-    log::debug!(target: "ai::translate", "{label}: raw response: {response:?}");
-
+    // No raw-response line: the reply restates the user's words (search keywords, a selection
+    // pattern), and debug lines reach error reports. The length above is all the log carries.
     Ok(response)
 }

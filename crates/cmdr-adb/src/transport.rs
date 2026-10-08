@@ -11,18 +11,23 @@
 //! Wire reference: `adb/protocol.txt` in the AOSP platform tools (verified
 //! against platform-tools 35, 2026-09).
 
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tokio::net::TcpStream;
+use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 
 use crate::errors::AdbError;
 
-/// One TCP socket to the ADB server.
+/// The byte stream under an [`AdbConnection`]: a loopback TCP socket in the app,
+/// an in-memory script in the fuzz targets and the framing tests.
+pub(crate) trait AdbStream: AsyncRead + AsyncWrite + Send + Unpin {}
+
+impl<T: AsyncRead + AsyncWrite + Send + Unpin> AdbStream for T {}
+
+/// One socket to the ADB server.
 ///
 /// Every method takes `&mut self`: the protocol is strictly request/response
 /// (or, after `sync:` / `shell`, a single stream), so two callers can't share
 /// one socket.
 pub struct AdbConnection {
-    stream: TcpStream,
+    stream: Box<dyn AdbStream>,
 }
 
 impl std::fmt::Debug for AdbConnection {
@@ -34,8 +39,20 @@ impl std::fmt::Debug for AdbConnection {
 impl AdbConnection {
     /// Wraps a connected socket. The caller has already dialed; see
     /// [`crate::server::AdbEndpoint::connect`].
-    pub(crate) fn from_stream(stream: TcpStream) -> Self {
-        Self { stream }
+    pub(crate) fn from_stream(stream: impl AdbStream + 'static) -> Self {
+        Self {
+            stream: Box::new(stream),
+        }
+    }
+
+    /// A connection whose peer says `peer_bytes` and then hangs up; what we
+    /// write is discarded. For the framing tests and the fuzz targets.
+    #[cfg(any(test, feature = "fuzzing"))]
+    pub(crate) fn scripted(peer_bytes: &[u8]) -> Self {
+        Self::from_stream(tokio::io::join(
+            std::io::Cursor::new(peer_bytes.to_vec()),
+            tokio::io::sink(),
+        ))
     }
 
     /// Sends one host request and reads its status. `OKAY` is `Ok(())`; `FAIL`

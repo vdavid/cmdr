@@ -1,22 +1,23 @@
 /**
- * Confirming a transfer while its dialog is still starting up.
+ * An MCP `dialog confirm` on the transfer dialog, at each point of its startup.
+ *
+ * The confirm presses the dialog's OWN confirm (`registerTransferConfirmer`), so
+ * it dispatches what the button would: the path in the box (for a compress, the
+ * `.zip` the box names, which the props never held), the picked volume, and the
+ * scan preview. It can land while the dialog is still starting: resolving the
+ * home dir, registering the scan listeners, or waiting on the `startScanPreview`
+ * IPC. Like a person's fast Enter, it then waits for the scan start it can see
+ * and hands that preview to the operation.
  *
  * `handleTransferConfirm` takes the dialog down in the same tick it starts the
  * operation, and nulls `transferDialogProps` right there, the way
  * `handleDeleteConfirm` does. The dialog's props are live getters into that
  * slot, so anything the dialog still has in flight reads a null object if it
- * reads a prop after the confirm: its mount (resolving the home dir), its scan
- * start (registering listeners, then the `startScanPreview` IPC), and its own
- * teardown. An MCP `dialog confirm` can land at any of those points, since it
- * calls `handleTransferConfirm` without waiting for the dialog.
- *
- * So these tests mount the REAL `DialogManager` and `TransferDialog`, fed by live
- * getters over a real `createDialogState`, and confirm at each point. None may
- * throw (an unhandled rejection, or a render throw the boundary would turn into
- * "dismiss every dialog"), and none may leave a scan preview that nothing owns:
- * a programmatic confirm dispatches with no preview, so the dialog's must be
- * freed, and a person's confirm hands its preview to the operation, so it must
- * not be.
+ * reads a prop after the confirm. So these tests mount the REAL `DialogManager`
+ * and `TransferDialog`, fed by live getters over a real `createDialogState`, and
+ * confirm at each point. None may throw (an unhandled rejection, or a render
+ * throw the boundary would turn into "dismiss every dialog"), and none may leave
+ * a scan preview that nothing owns.
  *
  * Why the props go null at once rather than a microtask later, and the rule the
  * dialog's async start follows: `file-operations/DETAILS.md` § "A dialog's async
@@ -29,7 +30,7 @@ import { homeDir } from '@tauri-apps/api/path'
 import * as commands from '$lib/tauri-commands'
 import DialogManager from './DialogManager.svelte'
 import { createDialogState } from './dialog-state.svelte'
-import type { TransferConfirmPayload } from './dialog-props'
+import type { TransferConfirmPayload, TransferConfirmer } from './dialog-props'
 import type { TransferDialogPropsData } from './transfer-operations'
 import type { FilePaneAPI } from './types'
 
@@ -49,6 +50,7 @@ vi.mock('$lib/tauri-commands', async (importOriginal) => ({
   pathExistsChecked: vi.fn(() => Promise.resolve({ data: true, timedOut: false })),
   destinationExists: vi.fn(() => Promise.resolve({ data: true, timedOut: false })),
   destinationWriteAccess: vi.fn(() => Promise.resolve({ kind: 'unknown' })),
+  destinationRootEcho: vi.fn(() => Promise.resolve(null)),
 }))
 
 vi.mock('$lib/settings', async (importOriginal) => ({
@@ -90,9 +92,9 @@ async function settle(): Promise<void> {
 
 const SOURCE_FOLDER = '/Users/me/photos'
 
-function transferProps(): TransferDialogPropsData {
+function transferProps(operationType: TransferDialogPropsData['operationType'] = 'copy'): TransferDialogPropsData {
   return {
-    operationType: 'copy',
+    operationType,
     sourcePaths: [`${SOURCE_FOLDER}/first.jpg`],
     destinationPath: '/Users/me/backup',
     direction: 'left',
@@ -120,7 +122,7 @@ function makePaneRef(): FilePaneAPI {
   } as unknown as FilePaneAPI
 }
 
-describe('confirming a transfer while its dialog is still starting up', () => {
+describe('an MCP confirm on the transfer dialog', () => {
   let registrations: Deferred<undefined>
   let unlistens: Array<() => void>
   let rejections: unknown[]
@@ -161,7 +163,7 @@ describe('confirming a transfer while its dialog is still starting up', () => {
   })
 
   /** Opens the transfer dialog through the real dialog state and `DialogManager`. */
-  function openTransferDialog() {
+  function openTransferDialog(operationType: TransferDialogPropsData['operationType'] = 'copy') {
     const pane = makePaneRef()
     const dialogs = createDialogState({
       getLeftPaneRef: () => pane,
@@ -209,6 +211,8 @@ describe('confirming a transfer while its dialog is still starting up', () => {
       onTransferConfirm: (payload: TransferConfirmPayload) => {
         dialogs.handleTransferConfirm(payload)
       },
+      registerTransferConfirmer: (confirm: TransferConfirmer) => dialogs.registerTransferConfirmer(confirm),
+      registerDeleteConfirmer: () => noop,
       onTransferCancel: () => {
         dialogs.handleTransferCancel()
       },
@@ -234,28 +238,36 @@ describe('confirming a transfer while its dialog is still starting up', () => {
     const target = document.createElement('div')
     document.body.appendChild(target)
     component = mount(DialogManager, { target, props }) as Record<string, unknown>
-    dialogs.showTransfer(transferProps())
+    dialogs.showTransfer(transferProps(operationType))
     flushSync()
     expect(target.querySelector('[data-dialog-id="transfer-confirmation"]')).not.toBeNull()
     return { dialogs, target, onDialogRenderError }
   }
 
-  /** What an MCP `dialog confirm` does: confirms through the dialog state, without the dialog. */
-  function confirmFromMcp(dialogs: ReturnType<typeof createDialogState>, target: HTMLElement): void {
-    dialogs.confirmOpenDialog('transfer-confirmation')
+  /** What an MCP `dialog confirm` does: presses the open dialog's own confirm, through the dialog state. */
+  function confirmFromMcp(dialogs: ReturnType<typeof createDialogState>, onConflict?: string): void {
+    dialogs.confirmOpenDialog('transfer-confirmation', onConflict)
+  }
+
+  /** Waits for the confirm to dispatch: the dialog and its props are gone, and the progress dialog is up. */
+  async function operationStarted(dialogs: ReturnType<typeof createDialogState>, target: HTMLElement): Promise<void> {
+    await vi.waitFor(() => {
+      expect(dialogs.showTransferProgressDialog).toBe(true)
+    })
     flushSync()
-    // The dialog is gone, and so are its props, in the same tick as the confirm.
     expect(target.querySelector('[data-dialog-id="transfer-confirmation"]')).toBeNull()
     expect(dialogs.transferDialogProps).toBeNull()
     expect(target.querySelector('[data-testid="progress-dialog"]')).not.toBeNull()
   }
 
-  it('starts nothing once the dialog closed while it was still resolving the home dir', async () => {
+  it('starts no scan once it confirmed while the dialog was still resolving the home dir', async () => {
     const home = deferred<string>()
     vi.mocked(homeDir).mockReturnValueOnce(home.promise)
     const { dialogs, target, onDialogRenderError } = openTransferDialog()
 
-    confirmFromMcp(dialogs, target)
+    confirmFromMcp(dialogs)
+    await operationStarted(dialogs, target)
+    expect(dialogs.transferProgressProps?.previewId).toBeNull()
     home.resolve('/Users/me')
     registrations.resolve(undefined)
     await settle()
@@ -267,24 +279,28 @@ describe('confirming a transfer while its dialog is still starting up', () => {
     expect(commands.scanVolumeForConflicts).not.toHaveBeenCalled()
   })
 
-  it('keeps no listener when the confirm lands while the scan listeners are still registering', async () => {
+  it('waits for a scan that is still registering its listeners, and hands its preview over', async () => {
     const { dialogs, target, onDialogRenderError } = openTransferDialog()
     await vi.waitFor(() => {
       expect(commands.onScanPreviewProgress).toHaveBeenCalled()
     })
 
-    confirmFromMcp(dialogs, target)
+    confirmFromMcp(dialogs)
+    await settle()
+    expect(dialogs.showTransferProgressDialog).toBe(false)
     registrations.resolve(undefined)
+    await operationStarted(dialogs, target)
     await settle()
 
     expect(rejections).toEqual([])
     expect(onDialogRenderError).not.toHaveBeenCalled()
-    expect(commands.startScanPreview).not.toHaveBeenCalled()
+    expect(dialogs.transferProgressProps?.previewId).toBe('preview-1')
+    expect(commands.cancelScanPreview).not.toHaveBeenCalled()
     expect(unlistens.length).toBeGreaterThan(0)
     for (const unlisten of unlistens) expect(unlisten).toHaveBeenCalledOnce()
   })
 
-  it('frees the preview whose id lands after the confirm, since the operation dispatched without it', async () => {
+  it('waits for a preview id still on its way, and hands it over uncancelled', async () => {
     const preview = deferred<{ previewId: string }>()
     vi.mocked(commands.startScanPreview).mockReturnValue(preview.promise)
     registrations.resolve(undefined)
@@ -293,15 +309,56 @@ describe('confirming a transfer while its dialog is still starting up', () => {
       expect(commands.startScanPreview).toHaveBeenCalled()
     })
 
-    confirmFromMcp(dialogs, target)
-    expect(dialogs.transferProgressProps?.previewId).toBeNull()
+    confirmFromMcp(dialogs)
+    await settle()
+    expect(dialogs.showTransferProgressDialog).toBe(false)
     preview.resolve({ previewId: 'preview-late' })
+    await operationStarted(dialogs, target)
     await settle()
 
     expect(rejections).toEqual([])
     expect(onDialogRenderError).not.toHaveBeenCalled()
-    expect(commands.cancelScanPreview).toHaveBeenCalledWith('preview-late')
-    expect(commands.checkScanPreviewStatus).not.toHaveBeenCalled()
+    expect(dialogs.transferProgressProps?.previewId).toBe('preview-late')
+    expect(commands.cancelScanPreview).not.toHaveBeenCalled()
+  })
+
+  it('carries the policy the agent named', async () => {
+    registrations.resolve(undefined)
+    const { dialogs, target } = openTransferDialog()
+
+    confirmFromMcp(dialogs, 'overwrite_older_all')
+    await operationStarted(dialogs, target)
+
+    expect(dialogs.transferProgressProps?.conflictResolution).toBe('overwrite_older')
+  })
+
+  it('skips clashes when the agent named no policy, without waiting on a destination listing still in flight', async () => {
+    vi.mocked(commands.scanVolumeForConflicts).mockReturnValue(new Promise(() => {}))
+    registrations.resolve(undefined)
+    const { dialogs, target } = openTransferDialog()
+    await vi.waitFor(() => {
+      expect(commands.scanVolumeForConflicts).toHaveBeenCalled()
+    })
+
+    confirmFromMcp(dialogs)
+    await operationStarted(dialogs, target)
+
+    expect(dialogs.transferProgressProps?.conflictResolution).toBe('skip')
+    expect(dialogs.transferProgressProps?.preKnownConflicts).toEqual([])
+  })
+
+  it('compresses to the archive path in the box, the one the Compress button sends', async () => {
+    registrations.resolve(undefined)
+    const { dialogs, target } = openTransferDialog('compress')
+    await vi.waitFor(() => {
+      expect(commands.checkScanPreviewStatus).toHaveBeenCalledWith('preview-1')
+    })
+
+    confirmFromMcp(dialogs)
+    await operationStarted(dialogs, target)
+
+    expect(dialogs.transferProgressProps?.destinationPath).toBe('/Users/me/backup/first.jpg.zip')
+    expect(dialogs.transferProgressProps?.operationType).toBe('compress')
   })
 
   it('hands the preview to the operation, uncancelled, when a person confirms', async () => {

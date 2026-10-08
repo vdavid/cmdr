@@ -18,6 +18,8 @@
         ArchivePasswordPropsData,
         DeleteDialogPropsData,
         TransferConfirmPayload,
+        TransferConfirmer,
+        DeleteConfirmer,
         TransferCompletePayload,
     } from './dialog-props'
     import type { FriendlyError, WriteOperationError } from '../types'
@@ -43,6 +45,8 @@
         showDeleteDialog,
         deleteDialogProps,
         onTransferConfirm,
+        registerTransferConfirmer,
+        registerDeleteConfirmer,
         onTransferCancel,
         onTransferComplete,
         onTransferCancelled,
@@ -54,6 +58,7 @@
         onAdoptedQueue,
         onTransferErrorClose,
         onTransferErrorRetry,
+        onTransferErrorCopyAnyway,
         onArchivePasswordSubmit,
         onArchivePasswordCancel,
         onNewFolderCreated,
@@ -84,6 +89,10 @@
         showDeleteDialog: boolean
         deleteDialogProps: DeleteDialogPropsData | null
         onTransferConfirm: (payload: TransferConfirmPayload) => void
+        /** Hands the mounted transfer dialog's own confirm to the dialog state, for the MCP `dialog confirm`. */
+        registerTransferConfirmer: (confirm: TransferConfirmer) => () => void
+        /** The delete dialog's twin of `registerTransferConfirmer`. */
+        registerDeleteConfirmer: (confirm: DeleteConfirmer) => () => void
         onTransferCancel: () => void
         onTransferComplete: (payload: TransferCompletePayload) => void
         onTransferCancelled: (filesProcessed: number) => void
@@ -103,6 +112,8 @@
         onTransferErrorClose: () => void
         /** The error dialog's Retry. Offered only when `transferErrorProps.retry` holds something to start. */
         onTransferErrorRetry?: () => void
+        /** The error dialog's "Copy anyway" after a space shortfall. Offered only when `transferErrorProps.retry` holds the copy to start. */
+        onTransferErrorCopyAnyway?: () => void
         onArchivePasswordSubmit: (password: string) => void
         onArchivePasswordCancel: () => void
         onNewFolderCreated: (folderName: string) => void
@@ -180,7 +191,9 @@
                 autoConfirm={transferDialogProps.autoConfirm}
                 autoConfirmOnConflict={transferDialogProps.autoConfirmOnConflict}
                 mcpRequestId={transferDialogProps.mcpRequestId}
+                newName={transferDialogProps.newName}
                 onConfirm={onTransferConfirm}
+                registerConfirmer={registerTransferConfirmer}
                 onCancel={onTransferCancel}
             />
         {/key}
@@ -225,9 +238,11 @@
             destVolumeId={transferProgressProps.destVolumeId}
             conflictResolution={transferProgressProps.conflictResolution}
             preKnownConflicts={transferProgressProps.preKnownConflicts}
+            spaceShortfall={transferProgressProps.spaceShortfall}
             itemSizes={transferProgressProps.itemSizes}
             mcpRequestId={transferProgressProps.mcpRequestId}
             initiator={transferProgressProps.initiator}
+            newName={transferProgressProps.newName}
             onComplete={onTransferComplete}
             onCancelled={onTransferCancelled}
             onError={onTransferError}
@@ -252,6 +267,7 @@
                 sourceVolumeId={deleteDialogProps.sourceVolumeId}
                 autoConfirm={deleteDialogProps.autoConfirm}
                 onConfirm={onDeleteConfirm}
+                registerConfirmer={registerDeleteConfirmer}
                 onCancel={onDeleteCancel}
             />
         {/key}
@@ -299,6 +315,7 @@
             progressAtStop={transferErrorProps.progressAtStop}
             onClose={onTransferErrorClose}
             onRetry={transferErrorProps.retry ? onTransferErrorRetry : undefined}
+            onCopyAnyway={transferErrorProps.retry ? onTransferErrorCopyAnyway : undefined}
         />
     {/if}
 

@@ -122,7 +122,7 @@
     <div class="msg error" role="status">
         <Icon name="triangle-alert" size={14} aria-hidden="true" />
         <div class="error-stack">
-            <span>{errorMessage(message.errorKind)}</span>
+            <span>{errorMessage(message.errorKind, message.managed)}</span>
             {#if message.detail}
                 <!-- The provider's own wording, so the user sees what to fix. Plain {text}
                      (Svelte auto-escapes) — never {@html}; this string is untrusted. -->
@@ -179,7 +179,16 @@
         {:else if message.undo.status === 'unavailable'}
             <span class="rename-note">{tString('askCmdr.renameUndo.unavailable')}</span>
         {:else}
-            <span>{tString('askCmdr.renameUndo.applied', undoCounts(message.fileCount))}</span>
+            {#if message.swapsSkipped > 0}
+                <div class="rename-lines">
+                    <span>{tString('askCmdr.renameUndo.applied', undoCounts(message.fileCount))}</span>
+                    <span class="rename-note">
+                        {tString('askCmdr.renameUndo.swapsSkipped', undoCounts(message.swapsSkipped))}
+                    </span>
+                </div>
+            {:else}
+                <span>{tString('askCmdr.renameUndo.applied', undoCounts(message.fileCount))}</span>
+            {/if}
             <button type="button" class="undo" aria-label={undoLabel} onclick={() => void undoRename(message)}>
                 {tString('askCmdr.renameUndo.undo')}
             </button>

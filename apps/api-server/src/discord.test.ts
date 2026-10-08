@@ -1,14 +1,14 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import {
-  buildBetaSignupPayload,
+  buildListSignupPayload,
   buildCronFailurePayload,
   buildErrorReportPayload,
   buildEvictionPayload,
   buildFeedbackPayload,
-  postBetaSignupNotification,
+  postListSignupNotification,
   postErrorReportNotification,
   postEvictionNotification,
-  type BetaSignupNotification,
+  type ListSignupNotification,
   type ErrorReportNotification,
   type FeedbackNotification,
 } from './discord'
@@ -113,6 +113,7 @@ describe('buildFeedbackPayload', () => {
     buildMode: 'release',
     appVersion: '0.14.0',
     osVersion: 'macOS 26.0',
+    hasReplyTo: false,
     feedback: 'Love the app! The Brief mode columns are perfect.',
   }
 
@@ -125,14 +126,18 @@ describe('buildFeedbackPayload', () => {
     expect(payload.embeds[0].fields.map((f) => f.name)).toEqual(['App version', 'OS'])
   })
 
-  it('prefixes [DEV] for debug builds and adds a reply-to field when an email is attached', () => {
+  it('prefixes [DEV] for debug builds and flags an attached reply-to without the address', () => {
     const payload = buildFeedbackPayload({
       ...baseFeedback,
       buildMode: 'debug',
-      email: 'tester@example.com',
+      hasReplyTo: true,
     }) as { embeds: { title: string; fields: { name: string; value: string }[] }[] }
     expect(payload.embeds[0].title).toBe('[DEV] Feedback')
-    expect(payload.embeds[0].fields).toContainEqual({ name: 'Reply to', value: 'tester@example.com', inline: true })
+    expect(payload.embeds[0].fields).toContainEqual({
+      name: 'Reply-to attached',
+      value: 'Yes (address in the feedback table)',
+      inline: true,
+    })
   })
 
   it('truncates very long feedback below the Discord description cap', () => {
@@ -144,27 +149,21 @@ describe('buildFeedbackPayload', () => {
   })
 })
 
-describe('buildBetaSignupPayload', () => {
-  const baseSignup: BetaSignupNotification = {
-    email: 'tester@example.com',
+describe('buildListSignupPayload', () => {
+  const baseSignup: ListSignupNotification = {
+    list: 'beta',
     signupUnixSeconds: 1_745_000_000,
     listAdminUrl: 'https://mail.getcmdr.com/admin/subscribers?lists=4',
-    status: 'new',
   }
 
-  it('produces a stable embed shape for a fresh signup', () => {
-    expect(buildBetaSignupPayload(baseSignup)).toMatchInlineSnapshot(`
+  it('produces a stable embed shape for a beta signup', () => {
+    expect(buildListSignupPayload(baseSignup)).toMatchInlineSnapshot(`
       {
         "embeds": [
           {
             "color": 5763719,
             "description": "Status: unconfirmed — Listmonk sent them the confirmation email.",
             "fields": [
-              {
-                "inline": true,
-                "name": "Email",
-                "value": "tester@example.com",
-              },
               {
                 "inline": true,
                 "name": "When",
@@ -182,17 +181,16 @@ describe('buildBetaSignupPayload', () => {
     `)
   })
 
-  it('describes the existing-subscriber path honestly', () => {
-    const payload = buildBetaSignupPayload({ ...baseSignup, status: 'added-existing' }) as {
-      embeds: { description: string }[]
+  it('names the newsletter list for a newsletter signup', () => {
+    const payload = buildListSignupPayload({ ...baseSignup, list: 'newsletter' }) as {
+      embeds: { title: string; fields: { value: string }[] }[]
     }
-    expect(payload.embeds[0].description).toBe(
-      'Existing subscriber, added to the beta list — Listmonk sent them the confirmation email.',
-    )
+    expect(payload.embeds[0].title).toBe('New newsletter signup')
+    expect(payload.embeds[0].fields[1].value).toContain('[Newsletter subscribers]')
   })
 })
 
-describe('postBetaSignupNotification', () => {
+describe('postListSignupNotification', () => {
   let originalFetch: typeof fetch
   beforeEach(() => {
     originalFetch = globalThis.fetch
@@ -206,11 +204,10 @@ describe('postBetaSignupNotification', () => {
     const mock = vi.fn(() => Promise.resolve(new Response(null, { status: 204 })))
     globalThis.fetch = mock
 
-    await postBetaSignupNotification('https://discord/webhook', {
-      email: 'tester@example.com',
+    await postListSignupNotification('https://discord/webhook', {
+      list: 'beta',
       signupUnixSeconds: 1_745_000_000,
       listAdminUrl: 'https://mail.getcmdr.com/admin/subscribers?lists=4',
-      status: 'new',
     })
 
     expect(mock).toHaveBeenCalledOnce()

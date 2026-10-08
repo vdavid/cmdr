@@ -204,6 +204,10 @@
   "@menu.select.sameKind": {
     "sourceHash": "9933028"
   },
+  "menu.select.compareDirectories": "Ordner vergleichen",
+  "@menu.select.compareDirectories": {
+    "sourceHash": "5cf3985"
+  },
   "menu.select.allFolders": "Alle Ordner auswählen",
   "@menu.select.allFolders": {
     "sourceHash": "5351f8b"
@@ -264,6 +268,14 @@
   "menu.view.swapPanes": "Bereiche tauschen",
   "@menu.view.swapPanes": {
     "sourceHash": "cc29396"
+  },
+  "menu.view.clonePane": "Bereich klonen",
+  "@menu.view.clonePane": {
+    "sourceHash": "74b2c7f"
+  },
+  "menu.view.calculateFolderSizes": "Ordnergrößen berechnen",
+  "@menu.view.calculateFolderSizes": {
+    "sourceHash": "d2a83da"
   },
   "menu.view.commandPalette": "Befehlspalette …",
   "@menu.view.commandPalette": {
@@ -351,13 +363,17 @@
   "@menu.go.parentFolder": {
     "sourceHash": "158f5a0"
   },
+  "menu.go.rootFolder": "Stammordner",
+  "@menu.go.rootFolder": {
+    "sourceHash": "6d92528"
+  },
   "menu.go.home": "Benutzerordner",
   "@menu.go.home": {
     "sourceHash": "3a78695"
   },
-  "menu.go.goToPath": "Zu Pfad gehen …",
+  "menu.go.goToPath": "Gehe zu Ordner …",
   "@menu.go.goToPath": {
-    "sourceHash": "936edc5"
+    "sourceHash": "33de610"
   },
   "menu.go.goToLatestDownload": "Zum neuesten Download gehen",
   "@menu.go.goToLatestDownload": {
@@ -474,6 +490,22 @@
   "menu.context.copyGoogleDriveLink": "Google-Drive-Link kopieren",
   "@menu.context.copyGoogleDriveLink": {
     "sourceHash": "070b383"
+  },
+  "menu.context.copyShareLink": "Freigabelink kopieren",
+  "@menu.context.copyShareLink": {
+    "sourceHash": "d31483e"
+  },
+  "menu.context.shareLinkSevenDays": "Läuft in sieben Tagen ab",
+  "@menu.context.shareLinkSevenDays": {
+    "sourceHash": "06949d8"
+  },
+  "menu.context.shareLinkOneDay": "Läuft in einem Tag ab",
+  "@menu.context.shareLinkOneDay": {
+    "sourceHash": "5ff3dbc"
+  },
+  "menu.context.shareLinkOneHour": "Läuft in einer Stunde ab",
+  "@menu.context.shareLinkOneHour": {
+    "sourceHash": "faf9c50"
   },
   "menu.context.askGemini": "Gemini fragen",
   "@menu.context.askGemini": {
@@ -657,10 +689,6 @@
   "@menu.dock.searchFiles": {
     "sourceHash": "149a9d1"
   },
-  "menu.dock.goToFolder": "Gehe zu Ordner …",
-  "@menu.dock.goToFolder": {
-    "sourceHash": "33de610"
-  },
   "menu.dock.connectToServer": "Mit Server verbinden …",
   "@menu.dock.connectToServer": {
     "sourceHash": "6188f47"
@@ -669,5 +697,9 @@
   "@menu.dock.locationInParent": {
     "sourceHash": "0bf83e2",
     "sameAsSourceJustification": "Pure placeholder-and-punctuation label, and German disambiguates a name with the same parenthetical frame: macOS de renders \"^2 (^3)\" (Finder LocalizableMerged IN_G6_V1) and \"Location (%@)\" → \"Umgebung (%@)\" (AppKit Menus), so the qualifier stays second in parentheses with a space before the opening paren."
+  },
+  "menu.help.viewDebugLog": "Debug-Protokoll ansehen",
+  "@menu.help.viewDebugLog": {
+    "sourceHash": "007c98d"
   }
 }

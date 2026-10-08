@@ -36,7 +36,7 @@ lives in `FilePane.svelte` as a `Set<number>`).
 - **Middle truncation in `file-info` mode uses the `useShortenMiddle` action** (`$lib/utils/`) with `preferBreakAt: '.'`
   and `startRatio: 0.7`, NOT CSS `text-overflow: ellipsis`: CSS truncates from the right and loses the file extension.
 - **Counts, size decimals, and triad separators follow the active locale via `$lib/intl`**; ❌ never a hardcoded locale
-  or separator. Keep an ASCII space between value and unit: `colorizeSizeString` parses on the last one.
+  or separator. Size tiers come from `TieredSize`, never the (translated) unit text.
 - **`SortableHeader`'s shortcut shows only when `isFocused` is true** (the `sort.by*` commands act on the focused pane).
   Hovering the unfocused pane's header shows the command name only; clicking still sorts that pane. Pinned by
   `SortableHeader.svelte.test.ts`.

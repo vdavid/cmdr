@@ -21,14 +21,14 @@ The backend (`mtp-rs`) holds storage IDs as `u32`; Tauri may surface them as a h
 
 ## Event-driven state
 
-`mtp-store.svelte.ts::initialize()` registers four listeners (and stores their unlisten handles):
+There's no frontend device store. The backend watcher auto-connects on USB hotplug and lists only connected devices'
+storages as volumes (`{device}:{storage}` ids), so the volume list is the one source of which storages exist, and a
+device-only volume id never reaches a pane. The events each have one consumer:
 
-- `onMtpDeviceConnected`: creates/updates the device entry, marks it `connected`, records its storages.
-- `onMtpDeviceDisconnected`: marks the device `disconnected`, clears storages.
-- `onMtpExclusiveAccessError`: marks `error`, records the blocking process if known (the ptpcamerad case on macOS).
-- `onMtpPermissionError`: marks `error` with a "USB permission denied, install udev rules" message (the Linux case).
-
-The store never initiates a connection; the backend watcher auto-connects on USB hotplug and emits these events.
+- `onMtpDeviceConnected`: the root layout's sticky connect toast.
+- `onMtpDeviceDisconnected`: `pane/mtp-disconnect-watch.svelte.ts`, which moves a pane off a storage that left.
+- `onMtpExclusiveAccessError` / `onMtpPermissionError`: the root layout, which opens the matching manual-fix dialog
+  (ptpcamerad on macOS, udev rules on Linux) and retries the connect after it.
 
 ## ptpcamerad (macOS)
 
@@ -64,6 +64,5 @@ MTP copy lives in the `mtp.*` catalog (`$lib/intl/messages/en/mtp.json`), resolv
 `cmdr/no-raw-user-facing-string` is enforced on `lib/mtp/`. The two manual-fix dialogs use `<Trans>` for sentences with
 inline components: `PtpcameradDialog` wraps the blocking-process name (`<process>`), the `ptpcamerad` token (`<code>`),
 and a `<ShortcutChip key="Ctrl+C">` (`<key>`); the chip/`<code>` snippets are declared at markup top level (NOT inside
-`<ModalDialog>`, or Svelte treats them as the dialog's named props). The exclusive-access device error is one ICU
-message (`mtp.error.exclusiveAccess`) with a `select` on `blocking` (`'none'` when the process is unknown). Runtime
-rules: [`$lib/intl/CLAUDE.md`](../intl/CLAUDE.md).
+`<ModalDialog>`, or Svelte treats them as the dialog's named props). Runtime rules:
+[`$lib/intl/CLAUDE.md`](../intl/CLAUDE.md).

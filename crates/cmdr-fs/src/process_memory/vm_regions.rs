@@ -68,17 +68,23 @@ pub struct VmRegionMap {
 }
 
 /// The VM tag mimalloc gives every arena it maps: `VM_MEMORY_IOACCELERATOR` in
-/// `<mach/vm_statistics.h>`. Its dirty plus swapped bytes are the Rust heap's resident
-/// size, so a heap census is read against this tag.
+/// `<mach/vm_statistics.h>`. Under mimalloc its dirty plus swapped bytes are the Rust
+/// heap's resident size, so a heap census is read against this tag.
 pub const MIMALLOC_ARENA_TAG: u32 = 100;
+
+/// Every VM tag the malloc zones map their memory under (`VM_MEMORY_MALLOC*` and
+/// `VM_MEMORY_REALLOC` in `<mach/vm_statistics.h>`). Their dirty plus swapped bytes are what
+/// every zone together holds resident, so under the system allocator the Rust heap's resident
+/// size is inside this total.
+pub const MALLOC_TAGS: &[u32] = &[1, 2, 3, 4, 6, 7, 8, 9, 11, 12, 13];
 
 /// `vmmap`'s names for the tags a Cmdr process actually maps. Anything outside
 /// this table renders as `tag-<n>`, which is still a usable fingerprint.
 ///
-/// `100` is the one to know: mimalloc tags its arenas with it and macOS calls it
-/// `IOAccelerator`, so those rows are the Rust heap (module docs). The name here
-/// carries that inline, because whoever meets it in a diagnostic payload has no
-/// module docs in front of them.
+/// `100` is the one to know in a mimalloc build: mimalloc tags its arenas with it
+/// and macOS calls it `IOAccelerator`, so those rows are the Rust heap (module
+/// docs). [`tag_name`] carries that inline there, because whoever meets it in a
+/// diagnostic payload has no module docs in front of them.
 ///
 /// `88` carries a warning for the same reason. In Cmdr's main process every
 /// `IOSurface` region is a WebKit layer backing store that WebKit's GPU process
@@ -140,7 +146,7 @@ const TAG_NAMES: &[(u32, &str)] = &[
     (89, "libnetwork"),
     (90, "Audio"),
     (97, "QuickLook thumbnails"),
-    (100, "IOAccelerator (= our Rust heap: mimalloc arenas)"),
+    (100, "IOAccelerator"),
     (103, "CoreUI cached image data"),
     (104, "ColorSync"),
     (107, "Compositor Services"),
@@ -217,8 +223,8 @@ unsafe extern "C" {
 /// Walk this process's VM map and fold it by tag: an in-process `vmmap -summary`,
 /// plus a per-tag histogram of distinct region sizes.
 ///
-/// **This is the reader that sees BOTH allocators.** [`super::query_mimalloc_heap`] and
-/// [`super::query_system_malloc_zones`] each see exactly one, and neither can say what
+/// **This is the reader that sees BOTH allocators.** [`super::query_rust_heap`] and
+/// [`super::query_system_malloc_zones`] each see one side, and neither can say what
 /// SHAPE the bytes are in. The kernel's map can, because every allocator
 /// ultimately takes its pages from it, which is what makes a repeated exact
 /// region size the cheapest available fingerprint of an unattributed block.
@@ -350,8 +356,12 @@ struct TagAccumulator {
     sizes: std::collections::HashMap<u64, (u32, u64)>,
 }
 
-/// A tag's `vmmap`-style name, or `tag-<n>` for one we don't carry.
+/// A tag's `vmmap`-style name, or `tag-<n>` for one we don't carry. In a mimalloc build,
+/// tag 100 says it's the Rust heap.
 fn tag_name(tag: u32) -> String {
+    if tag == MIMALLOC_ARENA_TAG && super::GLOBAL_ALLOCATOR == super::GlobalAllocator::Mimalloc {
+        return "IOAccelerator (= our Rust heap: mimalloc arenas)".to_string();
+    }
     TAG_NAMES
         .iter()
         .find(|(t, _)| *t == tag)
@@ -365,6 +375,7 @@ mod tests {
     /// The `MALLOC_LARGE` user tag, from `<mach/vm_statistics.h>`.
     const TAG_MALLOC_LARGE: u32 = 3;
     /// The `IOAccelerator` user tag, which mimalloc claims for its arenas.
+    #[cfg(cmdr_mimalloc)]
     const TAG_IOACCELERATOR: u32 = MIMALLOC_ARENA_TAG;
 
     fn tag(map: &VmRegionMap, tag: u32) -> Option<&TagUsage> {
@@ -453,6 +464,7 @@ mod tests {
         );
     }
 
+    #[cfg(cmdr_mimalloc)]
     #[test]
     fn the_rust_heap_shows_up_under_the_ioaccelerator_tag() {
         // The trap the module docs open with, asserted rather than only written down:
@@ -484,6 +496,43 @@ mod tests {
             accel.name.contains("Rust heap"),
             "the tag name has to carry the trap: {}",
             accel.name
+        );
+    }
+
+    /// Under the system allocator the Rust heap lives in the malloc zones, so a `malloc`
+    /// block raises the [`MALLOC_TAGS`] total, and tag 100 stops claiming to be the heap.
+    #[cfg(not(cmdr_mimalloc))]
+    #[test]
+    fn the_rust_heap_shows_up_under_the_malloc_tags() {
+        const CHUNK: usize = 64 * 1024 * 1024;
+        let malloc_dirty = |map: &VmRegionMap| -> u64 {
+            map.tags
+                .iter()
+                .filter(|t| MALLOC_TAGS.contains(&t.tag))
+                .map(|t| t.dirty_bytes)
+                .sum()
+        };
+
+        let before = malloc_dirty(&query_vm_regions(0).expect("walkable"));
+        // SAFETY: `malloc` returns an owned block of at least `CHUNK` bytes or null; we
+        // null-check, write only within it, and `free` it exactly once.
+        let after = unsafe {
+            let block = libc::malloc(CHUNK).cast::<u8>();
+            assert!(!block.is_null(), "malloc should hand back a {CHUNK}-byte block");
+            std::ptr::write_bytes(block, 1u8, CHUNK);
+            let after = malloc_dirty(&query_vm_regions(0).expect("walkable"));
+            libc::free(block.cast());
+            after
+        };
+
+        assert!(
+            after >= before + (CHUNK as u64) / 2,
+            "the malloc block should land under the malloc tags: {before} -> {after}"
+        );
+        assert!(
+            !tag_name(MIMALLOC_ARENA_TAG).contains("Rust heap"),
+            "tag 100 isn't the heap here: {}",
+            tag_name(MIMALLOC_ARENA_TAG)
         );
     }
 }

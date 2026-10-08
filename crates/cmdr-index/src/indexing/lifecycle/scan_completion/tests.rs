@@ -198,6 +198,84 @@ async fn a_cancelled_scan_writes_no_completion_marker() {
     );
 }
 
+/// A walk that ran to the end remembers how long each step after it took, in
+/// its own walk kind's bucket, so the next run of that kind can show an overall
+/// "~X left". The full aggregate the walk queued is the compute step; what's left
+/// of the post-walk flush is the save step.
+#[tokio::test(flavor = "multi_thread")]
+async fn a_completed_scan_remembers_its_step_durations() {
+    let mut fx = Fixture::new("steps-clean");
+    // What a real walk queues as its last act: the full aggregate.
+    fx.writer
+        .send(WriteMessage::ComputeAllAggregates {
+            source: crate::indexing::writer::AggSource::Sql,
+        })
+        .expect("queue the aggregate");
+    let params = fx.completion("steps-clean", Ok(summary(42)));
+    run_scan_completion(params).await;
+
+    fx.writer.flush().await.expect("flush the writer");
+    let conn = IndexStore::open_read_connection(&fx.db_path).expect("read connection");
+    let steps = IndexStore::read_step_durations(&conn, ScanCalibrationKind::FullWalk).expect("read the steps");
+    assert!(
+        steps.save_ms.is_some(),
+        "the save step's timing must be remembered: {steps:?}"
+    );
+    assert!(
+        steps.compute_ms.is_some(),
+        "the compute step's timing must be remembered: {steps:?}"
+    );
+    assert!(
+        steps.catch_up_ms.is_some(),
+        "the catch-up step's timing must be remembered: {steps:?}"
+    );
+    assert_eq!(
+        IndexStore::read_step_durations(&conn, ScanCalibrationKind::ChangeCheck).expect("read the steps"),
+        StepDurations::default(),
+        "a full walk's timings never land in the change check's bucket"
+    );
+}
+
+/// A stopped walk's save and compute covered a partial tree, so remembering
+/// them would undersell the next full run.
+#[tokio::test(flavor = "multi_thread")]
+async fn a_cancelled_scan_remembers_no_step_durations() {
+    let mut fx = Fixture::new("steps-cancelled");
+    fx.writer
+        .send(WriteMessage::ComputeAllAggregates {
+            source: crate::indexing::writer::AggSource::Sql,
+        })
+        .expect("queue the aggregate");
+    let params = fx.completion("steps-cancelled", Err(ScanError::Cancelled(summary(7))));
+    run_scan_completion(params).await;
+
+    fx.writer.flush().await.expect("flush the writer");
+    let conn = IndexStore::open_read_connection(&fx.db_path).expect("read connection");
+    assert_eq!(
+        IndexStore::read_step_durations(&conn, ScanCalibrationKind::FullWalk).expect("read the steps"),
+        StepDurations::default()
+    );
+}
+
+/// Splitting the post-walk wait: the aggregate is the compute step, and what's
+/// left of the flush is the save step. With no aggregate timing there's nothing
+/// to split by, so neither is claimed.
+#[test]
+fn the_post_walk_wait_splits_into_save_and_compute() {
+    assert_eq!(
+        split_save_and_compute(60_000, Some(19_000)),
+        StepDurations {
+            save_ms: Some(41_000),
+            compute_ms: Some(19_000),
+            catch_up_ms: None,
+        }
+    );
+    // The aggregate can start before the flush does (the writer caught up while
+    // the walk was still ending), so the save step bottoms out at zero.
+    assert_eq!(split_save_and_compute(5_000, Some(19_000)).save_ms, Some(0));
+    assert_eq!(split_save_and_compute(60_000, None), StepDurations::default());
+}
+
 /// Cancelled is its own outcome, distinguishable from BOTH neighbours. It
 /// isn't a completion (never `Fresh`, no marker) and it isn't a failure
 /// (freshness untouched, no `ScanAborted`), and the post-scan handoff still

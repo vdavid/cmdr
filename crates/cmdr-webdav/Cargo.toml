@@ -20,17 +20,27 @@ workspace = true
 #
 # Never enable in a production build.
 testing = ["cmdr-fs/testing", "dep:uuid"]
+# Exposes `fuzzing`, the entry points the fuzz targets in `fuzz/` (repo root)
+# drive. Never enable in a production build.
+fuzzing = []
 
 [dependencies]
 # The `Volume` trait, every type it exchanges, and the host seams this backend
 # asks the app through. The only crate below this one.
 cmdr-fs = { path = "../cmdr-fs" }
+# Builds the HTTP client, so a proxy and its bypass list apply here the way they do
+# everywhere else in Cmdr. A LAN server stays reachable on a proxied network only
+# because this routing sends it direct when macOS would.
+cmdr-http = { path = "../cmdr-http" }
 # The HTTP transport. Everything that touches it lives in `transport.rs`, plus
-# the status-code and method vocabulary `errors.rs` classifies on. ❗ EXACTLY the
-# app's feature set (`apps/desktop/src-tauri/Cargo.toml`), minus the two it
-# needs and this crate doesn't, so no second reqwest configuration enters the
-# graph; `rustls` brings the platform verifier the app already ships with.
-reqwest = { version = "0.13", default-features = false, features = ["rustls", "stream"] }
+# the status-code and method vocabulary `errors.rs` classifies on. A subset of
+# the app's features, so no second reqwest configuration enters the graph;
+# `rustls` brings the platform verifier the app already ships with. ❗ `http2`
+# is declared here although the app gets it anyway (through `genai`): without
+# it this crate's own tests speak HTTP/1.1 while the app negotiates HTTP/2, the
+# gap that hid a GCS-only HTTP/2 refusal from `cmdr-s3`'s live suite.
+# `transport_test.rs` pins it.
+reqwest = { version = "0.13", default-features = false, features = ["http2", "rustls", "stream"] }
 # PROPFIND `multistatus` parsing, namespace-aware: servers prefix `DAV:` as `D:`,
 # `d:`, `a:`, or nothing at all.
 quick-xml = "0.41"
@@ -60,9 +70,14 @@ uuid = { version = "1.19.0", features = ["v4"], optional = true }
 [dev-dependencies]
 # Depending on ourselves turns the `testing` feature on for every DEV target and
 # leaves it off for the lib, so a shipped build carries no fixtures.
-cmdr-webdav = { path = ".", features = ["testing"] }
+cmdr-webdav = { path = ".", features = ["testing", "fuzzing"] }
 # The recording host-seam fakes this crate's tests assert against.
 cmdr-fs = { path = "../cmdr-fs", features = ["testing"] }
 # The Docker-backed suites drive real concurrency, so their tests need a
 # multi-threaded runtime the lib deliberately can't build for itself.
 tokio = { version = "1", features = ["rt-multi-thread", "test-util"] }
+# Every response decoder reqwest has, on in the TEST build only: the app's graph
+# unifies `gzip` in (through `genai`), and any crate may add another. With them
+# on, `transport_test.rs` proves the client still hands back an encoded body
+# verbatim.
+reqwest = { version = "0.13", default-features = false, features = ["gzip", "brotli", "deflate", "zstd"] }

@@ -28,6 +28,7 @@ vi.mock('@tauri-apps/api/path', () => ({
 }))
 
 vi.mock('$lib/tauri-commands', () => ({
+  estimateOperationCost: vi.fn(() => Promise.resolve([])),
   notifyDialogOpened: vi.fn(() => Promise.resolve()),
   notifyDialogClosed: vi.fn(() => Promise.resolve()),
   getVolumeSpace: vi.fn(() =>
@@ -49,6 +50,7 @@ vi.mock('$lib/tauri-commands', () => ({
   pathExistsChecked: vi.fn(() => Promise.resolve({ data: true, timedOut: false })),
   destinationExists: vi.fn(() => Promise.resolve({ data: true, timedOut: false })),
   destinationWriteAccess: vi.fn(() => Promise.resolve({ kind: 'unknown' })),
+  destinationRootEcho: vi.fn(() => Promise.resolve(null)),
   DEFAULT_VOLUME_ID: 'root',
 }))
 
@@ -144,6 +146,33 @@ describe('a size scan that gives up', () => {
     expect(stats?.getAttribute('data-scan-state')).toBe('unavailable')
     // No "not responding" claim for something that answered and said no.
     expect(target.querySelector('.scan-unavailable')?.textContent).not.toContain('isn’t responding')
+  })
+})
+
+// A phone unplugged under a search-results pane: the preview refuses before
+// walking anything, because no volume answers for it. Retrying can't bring it
+// back, and neither can confirming, so the dialog offers neither.
+describe('a source no volume answers for', () => {
+  it('says the source is not connected, with no Retry and no way to confirm', async () => {
+    startScanPreviewMock.mockResolvedValue({ refusal: { type: 'source_not_connected', volumeId: 'nas' } })
+    const confirmed = vi.fn<(payload: TransferConfirmPayload) => void>()
+    const target = mountDialog(confirmed)
+    await flushMicrotasks()
+
+    const stats = target.querySelector('.scan-stats')
+    expect(stats?.getAttribute('data-scan-state')).toBe('unavailable')
+    expect(stats?.querySelector('.scan-status'), 'no spinner: nothing is counting').toBeNull()
+
+    const notice = target.querySelector('.scan-unavailable')
+    expect(notice?.textContent).toContain('isn’t connected anymore')
+    expect(notice?.textContent).not.toContain('couldn’t finish measuring')
+    expect(notice?.querySelector('button'), 'no Retry: it can never work').toBeNull()
+
+    const confirm = target.querySelector<HTMLButtonElement>('.btn-primary')
+    expect(confirm?.disabled).toBe(true)
+    confirm?.click()
+    await flushMicrotasks()
+    expect(confirmed).not.toHaveBeenCalled()
   })
 })
 

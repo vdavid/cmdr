@@ -65,6 +65,11 @@ pub(super) struct SourceHint {
     /// (the recursive total isn't tracked per-source — it lives in
     /// `VolumePreflight::total_bytes`).
     pub size: u64,
+    /// The top-level path's own modification date (Unix seconds), from the
+    /// stat the scan already did. What a copied top-level FOLDER is dated with
+    /// once its contents land (`folder_dates.rs`); `None` leaves it the
+    /// destination's own.
+    pub modified_at: Option<u64>,
 }
 
 /// What the caller already knows about ONE source FILE, from the listing or scan
@@ -91,22 +96,32 @@ pub(super) struct SourceFileFacts {
     /// mode: `landed_mode::apply_source_mode` then asks the source itself, but
     /// only when the destination is local and only after the bytes have landed.
     pub mode: Option<u32>,
+    /// The source's modification date (Unix seconds). A FILE's date travels on
+    /// its read stream instead; this is what dates a copied FOLDER once its
+    /// contents land (`folder_dates.rs`).
+    pub modified_at: Option<u64>,
 }
 
 impl SourceFileFacts {
-    /// What a walker that already listed the source directory knows: both
-    /// fields, for free, off the entry in hand.
+    /// What a walker that already listed the source directory knows: every
+    /// field, for free, off the entry in hand.
     pub(super) fn from_entry(entry: &crate::file_system::listing::FileEntry) -> Self {
         Self {
             size: entry.size,
             mode: Some(entry.permissions),
+            modified_at: entry.modified_at,
         }
     }
 
     /// What a top-level dispatch knows off its [`SourceHint`]: the size for a
-    /// FILE source, and no mode (the scan counts bytes, it doesn't stat modes).
-    pub(super) fn from_size_hint(size: Option<u64>) -> Self {
-        Self { size, mode: None }
+    /// FILE source, the date, and no mode (the scan counts bytes, it doesn't stat
+    /// modes).
+    pub(super) fn from_hint(hint: Option<SourceHint>) -> Self {
+        Self {
+            size: hint.and_then(|h| (!h.is_directory).then_some(h.size)),
+            mode: None,
+            modified_at: hint.and_then(|h| h.modified_at),
+        }
     }
 }
 
@@ -212,6 +227,7 @@ pub(super) async fn scan_volume_sources(
                 SourceHint {
                     is_directory: scan.top_level_is_directory,
                     size,
+                    modified_at: scan.top_level_modified_at,
                 },
             );
         }
@@ -323,6 +339,7 @@ pub(super) async fn scan_volume_sources(
             SourceHint {
                 is_directory: scan.top_level_is_directory,
                 size,
+                modified_at: scan.top_level_modified_at,
             },
         );
     }
@@ -406,6 +423,7 @@ pub(super) async fn top_level_move_hints(
                     SourceHint {
                         is_directory: false,
                         size: scan.total_bytes,
+                        modified_at: scan.top_level_modified_at,
                     },
                 );
             }
@@ -436,7 +454,14 @@ pub(super) async fn top_level_move_hints(
             if let Some(entry) = by_name.get(name) {
                 let is_directory = super::rename_merge::merges_as_a_directory(entry);
                 let size = if is_directory { 0 } else { entry.size.unwrap_or(0) };
-                source_hints.insert(path.clone(), SourceHint { is_directory, size });
+                source_hints.insert(
+                    path.clone(),
+                    SourceHint {
+                        is_directory,
+                        size,
+                        modified_at: entry.modified_at,
+                    },
+                );
             }
             // A source missing from its parent listing surfaces later as a
             // per-source rename error; leave it out of the hint map (the loop

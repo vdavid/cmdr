@@ -1,7 +1,7 @@
 {
-  "goToPath.dialog.title": "Zu Pfad gehen",
+  "goToPath.dialog.title": "Gehe zu Ordner",
   "@goToPath.dialog.title": {
-    "sourceHash": "fb65702"
+    "sourceHash": "26fc1cf"
   },
   "goToPath.dialog.inputAriaLabel": "Zielpfad",
   "@goToPath.dialog.inputAriaLabel": {
@@ -23,9 +23,9 @@
   "@goToPath.dialog.cancel": {
     "sourceHash": "19766ed"
   },
-  "goToPath.dialog.confirm": "Zu Pfad gehen",
+  "goToPath.dialog.confirm": "Gehe zu",
   "@goToPath.dialog.confirm": {
-    "sourceHash": "fb65702"
+    "sourceHash": "6cc8519"
   },
   "goToPath.dialog.ancestorHint": "Dieser Pfad existiert nicht. Am nächsten liegt {dir}.",
   "@goToPath.dialog.ancestorHint": {

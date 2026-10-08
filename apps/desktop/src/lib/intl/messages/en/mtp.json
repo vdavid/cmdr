@@ -112,20 +112,5 @@
     "description": "Generic fallback name for a connected MTP device when its real display name isn't known yet. MTP is a protocol acronym; keep it.",
     "screenshot": "mtp-browse.png",
     "screenshotNote": "MTP (phone/camera) device messaging: a connect/permission dialog or toast tied to an MTP device. This shows the MTP browse surface for context. Keep device/protocol names (MTP, PTP) as-is."
-  },
-  "mtp.error.exclusiveAccess": "Another process has exclusive access{blocking, select, none {} other { (blocked by {blocking})}}",
-  "@mtp.error.exclusiveAccess": {
-    "description": "Error stored on an MTP device entry when another process holds it exclusively, optionally naming that process. Shown in the device's error state.",
-    "placeholders": {
-      "blocking": "the blocking process name, or the literal none when it isn't known"
-    },
-    "screenshot": "mtp-browse.png",
-    "screenshotNote": "MTP (phone/camera) device messaging: a connect/permission dialog or toast tied to an MTP device. This shows the MTP browse surface for context. Keep device/protocol names (MTP, PTP) as-is."
-  },
-  "mtp.error.permissionDenied": "USB permission denied. Install udev rules and reconnect",
-  "@mtp.error.permissionDenied": {
-    "description": "Error stored on an MTP device entry when USB access was denied (Linux). udev is a Linux device-management term; keep it literal.",
-    "screenshot": "mtp-browse.png",
-    "screenshotNote": "MTP (phone/camera) device messaging: a connect/permission dialog or toast tied to an MTP device. This shows the MTP browse surface for context. Keep device/protocol names (MTP, PTP) as-is."
   }
 }

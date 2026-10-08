@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ListAllMyBucketsResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/"><Owner><ID>abc</ID></Owner><Buckets><Bucket><Name>photos</Name><CreationDate>2019-12-11T23:32:47+00:00</CreationDate><BucketRegion>eu-north-1</BucketRegion></Bucket></Buckets><ContinuationToken>next</ContinuationToken></ListAllMyBucketsResult>

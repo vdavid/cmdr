@@ -90,8 +90,8 @@ describe('contextMenuSelectionSizeBytes', () => {
 
 describe('contextMenuSizeText', () => {
   it('renders the size the way the pane column does', () => {
-    // Defaults: dynamic unit, binary base.
-    expect(contextMenuSizeText(3_355_443)).toBe('3.20 MB')
+    // Defaults: dynamic unit, SI base.
+    expect(contextMenuSizeText(3_355_443)).toBe('3.36 MB')
   })
 
   it('renders nothing at all when there is no size', () => {

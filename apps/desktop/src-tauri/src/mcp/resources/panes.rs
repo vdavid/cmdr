@@ -2,8 +2,18 @@
 //! pane state used by ordinary MCP resources.
 
 use super::StateOptions;
-use crate::mcp::pane_state::{PaneFileEntry, PaneState, TabInfo};
+use crate::mcp::pane_state::{PaneFileEntry, PaneListing, PaneState, TabInfo};
 use crate::search::format_size;
+
+/// The `listing:` value for a pane whose listing isn't settled, or `None` for one that is.
+pub(crate) fn listing_marker(listing: PaneListing) -> Option<&'static str> {
+    match listing {
+        PaneListing::Settled => None,
+        PaneListing::Loading => Some("loading"),
+        PaneListing::Stalled => Some("stalled (the volume isn't answering; retrying in the background)"),
+        PaneListing::Error => Some("error (see recentErrors)"),
+    }
+}
 
 /// Format a file entry in compact format.
 /// Format: `i:INDEX TYPE NAME [SIZE] [DATES] [MARKERS]`
@@ -212,6 +222,11 @@ pub(crate) fn build_pane_yaml_with_options(state: &PaneState, indent: &str, opts
         }
     ));
     lines.push(format!("{}totalFiles: {}", indent, state.total_files));
+    // Only when it isn't settled, so the common case stays clean: this is what tells
+    // an empty folder (`totalFiles` counting none) from one that's still coming.
+    if let Some(listing) = listing_marker(state.listing) {
+        lines.push(format!("{}listing: {}", indent, listing));
+    }
     lines.push(format!(
         "{}loadedRange: [{}, {}]",
         indent, state.loaded_start, state.loaded_end
@@ -239,6 +254,12 @@ pub(crate) fn build_pane_yaml_with_options(state: &PaneState, indent: &str, opts
 
     // Selected count
     lines.push(format!("{}selected: {}", indent, state.selected_indices.len()));
+
+    // Quick filter: only while one narrows the pane, which makes every row below
+    // a FILTERED row.
+    if let Some(ref pattern) = state.quick_filter {
+        lines.push(format!("{}quickFilter: {:?}", indent, pattern));
+    }
 
     // Type-to-jump state: only emitted while a buffer or visible indicator
     // exists, so the YAML stays clean during the common case.

@@ -10,8 +10,8 @@ use cmdr_fs::volume::remote_paths::RemoteRoot;
 use url::Url;
 
 use super::{ConnectionState, WebdavVolume, WebdavVolumeInner};
-use crate::liveness::Timings;
 use crate::params::WebdavConnectionParams;
+use cmdr_fs::volume::liveness::Timings;
 
 pub(super) fn make_test_volume(root: &str) -> WebdavVolume {
     make_test_volume_with(root, VolumeHost::detached())

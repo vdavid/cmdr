@@ -294,3 +294,90 @@ fn checkpoint_tolerates_a_blocking_reader_without_erroring() {
     write_pass(&w, 10);
     w.shutdown();
 }
+
+/// Every `(path, generation)` in the store, in path order, plus the stamped
+/// generation: enough to tell one full pass's table from another's.
+fn table_and_generation(db_path: &Path) -> (Vec<(String, i64)>, u64) {
+    let conn = open_read_connection(db_path).expect("reader");
+    let rows = conn
+        .prepare("SELECT path, as_of_generation FROM weights ORDER BY path")
+        .expect("prepare")
+        .query_map([], |r| Ok((r.get(0)?, r.get(1)?)))
+        .expect("query")
+        .collect::<Result<_, _>>()
+        .expect("rows");
+    (
+        rows,
+        crate::importance::store::read_generation(&conn).expect("generation"),
+    )
+}
+
+/// A full-pass write that is stopped PART-WAY rolls back to the previous pass.
+///
+/// This is the case that could corrupt: by the time the stop is heard, the
+/// transaction has already emptied the table and inserted the first rows of the new
+/// pass. Committing that would leave a consumer a fraction of a volume at the old
+/// generation's stamp. SQLite's progress handler fires the signal from inside the
+/// write, a couple of thousand VM instructions in (a few dozen rows), so the stop is
+/// genuinely mid-transaction and the test races nothing. (Not the update hook:
+/// `weights` is `WITHOUT ROWID`, and SQLite never calls it for those.)
+#[test]
+fn a_full_pass_stopped_mid_write_rolls_back_to_the_previous_pass() {
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    /// VM instructions between two handler calls, and the call that fires the stop.
+    const TICK: i32 = 100;
+    const STOP_AT_TICK: usize = 20;
+
+    let dir = tempfile::tempdir().expect("temp");
+    let db_path = importance_db_path(dir.path(), "root");
+    ImportanceStore::open(&db_path).expect("open store");
+    let mut conn = open_write_connection(&db_path).expect("write connection");
+    let never = CancellationToken::new();
+
+    // The previous, finished pass.
+    let previous: Vec<WeightRow> = (0..20).map(|i| row(&format!("/previous/{i:02}"), 0.5)).collect();
+    apply_full_pass(&mut conn, 1, &previous, &never).expect("the previous pass commits");
+    let before = table_and_generation(&db_path);
+    assert_eq!((before.0.len(), before.1), (20, 1));
+
+    // The next pass is three stop looks long, and its volume stops early in the first.
+    let total = 3 * STOP_CHECK_INTERVAL as usize;
+    let next: Vec<WeightRow> = (0..total).map(|i| row(&format!("/next/{i:05}"), 0.7)).collect();
+    let stop = CancellationToken::new();
+    let fire = stop.clone();
+    let ticks = AtomicUsize::new(0);
+    conn.progress_handler(
+        TICK,
+        Some(move || {
+            if ticks.fetch_add(1, Ordering::Relaxed) + 1 == STOP_AT_TICK {
+                fire.cancel();
+            }
+            false
+        }),
+    )
+    .expect("progress handler");
+
+    // `total_changes` counts every row the connection touched, rolled back or not,
+    // so it says how far the write got before it left.
+    let changes_before = conn.total_changes();
+    let stopped = apply_full_pass(&mut conn, 2, &next, &stop);
+    conn.progress_handler(0, None::<fn() -> bool>).expect("clear handler");
+    let rows_inserted = (conn.total_changes() - changes_before) as usize - previous.len();
+
+    assert_eq!(stopped, Err(PassError::Cancelled));
+    assert_eq!(
+        rows_inserted, STOP_CHECK_INTERVAL as usize,
+        "the write was one look's worth of rows in (of {total}) when it heard the stop"
+    );
+    assert_eq!(
+        table_and_generation(&db_path),
+        before,
+        "and none of it survives: the previous pass's rows and its generation are all back"
+    );
+
+    // Nothing is left half-open: the very next pass commits on the same connection.
+    apply_full_pass(&mut conn, 2, &next, &never).expect("the next pass commits");
+    let after = table_and_generation(&db_path);
+    assert_eq!((after.0.len(), after.1), (total, 2));
+}

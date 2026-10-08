@@ -40,6 +40,7 @@ import {
   volumeKindOf,
   capabilitiesForKind,
   capabilitiesFor,
+  rowCanShareLink,
   capabilitiesForPane,
   withBackendCapabilities,
   kindCanBeFavorited,
@@ -70,6 +71,8 @@ describe('capabilitiesForKind — the frozen per-kind defaults', () => {
       syncsToMcp: true,
       canBeIndexed: true,
       pollsForDeletedFolder: true,
+      canShareLinks: false,
+      renamesCanCopy: false,
     },
     smb: {
       kind: 'smb',
@@ -80,6 +83,8 @@ describe('capabilitiesForKind — the frozen per-kind defaults', () => {
       syncsToMcp: true,
       canBeIndexed: true,
       pollsForDeletedFolder: true,
+      canShareLinks: false,
+      renamesCanCopy: false,
     },
     sftp: {
       kind: 'sftp',
@@ -91,6 +96,8 @@ describe('capabilitiesForKind — the frozen per-kind defaults', () => {
       canBeIndexed: false,
       // No OS mount: the Mac can't see the folder, so nothing it watches goes blind.
       pollsForDeletedFolder: false,
+      canShareLinks: false,
+      renamesCanCopy: false,
     },
     webdav: {
       kind: 'webdav',
@@ -101,6 +108,20 @@ describe('capabilitiesForKind — the frozen per-kind defaults', () => {
       syncsToMcp: true,
       canBeIndexed: false,
       pollsForDeletedFolder: false,
+      canShareLinks: false,
+      renamesCanCopy: false,
+    },
+    s3: {
+      kind: 's3',
+      hasBackendListing: true,
+      canWrite: true,
+      canBeSource: true,
+      hasParentRow: true,
+      syncsToMcp: true,
+      canBeIndexed: false,
+      pollsForDeletedFolder: false,
+      canShareLinks: true,
+      renamesCanCopy: true,
     },
     mtp: {
       kind: 'mtp',
@@ -111,6 +132,8 @@ describe('capabilitiesForKind — the frozen per-kind defaults', () => {
       syncsToMcp: true,
       canBeIndexed: true,
       pollsForDeletedFolder: false,
+      canShareLinks: false,
+      renamesCanCopy: false,
     },
     adb: {
       kind: 'adb',
@@ -122,6 +145,8 @@ describe('capabilitiesForKind — the frozen per-kind defaults', () => {
       // Indexable like an MTP phone: this default answers for a phone nobody has dialed.
       canBeIndexed: true,
       pollsForDeletedFolder: false,
+      canShareLinks: false,
+      renamesCanCopy: false,
     },
     network: {
       kind: 'network',
@@ -134,6 +159,8 @@ describe('capabilitiesForKind — the frozen per-kind defaults', () => {
       syncsToMcp: false,
       canBeIndexed: false,
       pollsForDeletedFolder: false,
+      canShareLinks: false,
+      renamesCanCopy: false,
     },
     'search-results': {
       kind: 'search-results',
@@ -148,6 +175,8 @@ describe('capabilitiesForKind — the frozen per-kind defaults', () => {
       syncsToMcp: true,
       canBeIndexed: false,
       pollsForDeletedFolder: false,
+      canShareLinks: false,
+      renamesCanCopy: false,
     },
     archive: {
       kind: 'archive',
@@ -160,6 +189,8 @@ describe('capabilitiesForKind — the frozen per-kind defaults', () => {
       canBeIndexed: false,
       // The archive file itself sits in a folder; the DRIVE it's on still decides.
       pollsForDeletedFolder: true,
+      canShareLinks: false,
+      renamesCanCopy: false,
     },
     'git-portal': {
       kind: 'git-portal',
@@ -174,6 +205,8 @@ describe('capabilitiesForKind — the frozen per-kind defaults', () => {
       canBeIndexed: false,
       // Snapshot folders never exist on disk, so a poll would evict the user.
       pollsForDeletedFolder: false,
+      canShareLinks: false,
+      renamesCanCopy: false,
     },
   }
 
@@ -232,6 +265,7 @@ describe('volumeKindOf — the unified superset classifier', () => {
     // with an `sftp://` path. `fsType` is what tells the three apart.
     expect(volumeKindOf('sftp-nas-22-ada', 'sftp', 'network')).toBe('sftp')
     expect(volumeKindOf('webdav-cloud-443-ada', 'webdav', 'network')).toBe('webdav')
+    expect(volumeKindOf('s3-127-0-0-1-14480-akia-photos-1a2b', 's3', 'network')).toBe('s3')
     expect(volumeKindOf('volumesnaspi', 'smbfs', 'network')).toBe('smb')
   })
 
@@ -261,6 +295,7 @@ describe('volumeKindOf — the unified superset classifier', () => {
       ['x', 'smbfs', undefined],
       ['sftp-nas-22-ada', 'sftp', 'network'],
       ['webdav-cloud-443-ada', 'webdav', 'network'],
+      ['s3-127-0-0-1-14480-akia-1a2b', 's3', 'network'],
       ['fav', undefined, 'favorite'],
       ['weird', undefined, undefined],
     ]
@@ -398,12 +433,28 @@ describe("withBackendCapabilities — the backend's answer wins over the per-kin
 
   it('returns the SAME frozen row (no allocation) when the two already agree', () => {
     const row = capabilitiesForKind('local')
-    expect(withBackendCapabilities(row, { backendCanWrite: true, canExport: true, canBeIndexed: true })).toBe(row)
+    expect(
+      withBackendCapabilities(row, {
+        backendCanWrite: true,
+        canExport: true,
+        canBeIndexed: true,
+        canShareLinks: false,
+        renamesCanCopy: false,
+        hasOsMountFallback: false,
+      }),
+    ).toBe(row)
   })
 
   it("takes the backend's answer when it differs, leaving the structural fields alone", () => {
     const row = capabilitiesForKind('local')
-    const folded = withBackendCapabilities(row, { backendCanWrite: false, canExport: false, canBeIndexed: true })
+    const folded = withBackendCapabilities(row, {
+      backendCanWrite: false,
+      canExport: false,
+      canBeIndexed: true,
+      canShareLinks: false,
+      renamesCanCopy: false,
+      hasOsMountFallback: false,
+    })
     expect(folded.canWrite).toBe(false)
     expect(folded.canBeSource).toBe(false)
     // Kind and the per-namespace UI structure are not the backend's to answer.
@@ -416,7 +467,14 @@ describe("withBackendCapabilities — the backend's answer wins over the per-kin
 
   it("folds the backend's indexability too: a registered volume no index can serve says so", () => {
     const row = capabilitiesForKind('local')
-    const folded = withBackendCapabilities(row, { backendCanWrite: true, canExport: true, canBeIndexed: false })
+    const folded = withBackendCapabilities(row, {
+      backendCanWrite: true,
+      canExport: true,
+      canBeIndexed: false,
+      canShareLinks: false,
+      renamesCanCopy: false,
+      hasOsMountFallback: false,
+    })
     expect(folded.canBeIndexed).toBe(false)
     expect(folded.canWrite).toBe(true)
     expect(folded.canBeSource).toBe(true)
@@ -428,13 +486,102 @@ describe("withBackendCapabilities — the backend's answer wins over the per-kin
         id: 'weird-vol',
         fsType: 'apfs',
         category: 'attached_volume',
-        capabilities: { backendCanWrite: false, canExport: true, canBeIndexed: true },
+        capabilities: {
+          backendCanWrite: false,
+          canExport: true,
+          canBeIndexed: true,
+          canShareLinks: false,
+          renamesCanCopy: false,
+          hasOsMountFallback: false,
+        },
       }),
     ]
     const caps = capabilitiesFor('weird-vol')
     expect(caps.kind).toBe('local')
     expect(caps.canWrite).toBe(false)
     expect(caps.canBeSource).toBe(true)
+  })
+
+  it('an S3 place that publishes read-only offers copy out but no write', () => {
+    // The pane reads the backend's answer, ❌ never a kind guess.
+    volumes.list = [
+      vol({
+        id: 's3-127-0-0-1-14480-akia-photos-1a2b',
+        fsType: 's3',
+        category: 'network',
+        capabilities: {
+          backendCanWrite: false,
+          canExport: true,
+          canBeIndexed: false,
+          canShareLinks: false,
+          renamesCanCopy: false,
+          hasOsMountFallback: false,
+        },
+      }),
+    ]
+    const caps = capabilitiesFor('s3-127-0-0-1-14480-akia-photos-1a2b')
+    expect(caps.kind).toBe('s3')
+    expect(caps.canWrite).toBe(false)
+    expect(caps.canBeSource).toBe(true)
+  })
+
+  it('an S3 place that mints share links offers them, and one that doesn’t, doesn’t', () => {
+    volumes.list = [
+      vol({
+        id: 's3-127-0-0-1-14480-akia-photos-1a2b',
+        fsType: 's3',
+        category: 'network',
+        capabilities: {
+          backendCanWrite: false,
+          canExport: true,
+          canBeIndexed: false,
+          canShareLinks: true,
+          renamesCanCopy: true,
+          hasOsMountFallback: false,
+        },
+      }),
+      vol({
+        id: 'sftp-host-22-me-1a2b',
+        fsType: 'sftp',
+        category: 'network',
+        capabilities: {
+          backendCanWrite: true,
+          canExport: true,
+          canBeIndexed: false,
+          canShareLinks: false,
+          renamesCanCopy: false,
+          hasOsMountFallback: false,
+        },
+      }),
+    ]
+    expect(capabilitiesFor('s3-127-0-0-1-14480-akia-photos-1a2b').canShareLinks).toBe(true)
+    expect(capabilitiesFor('sftp-host-22-me-1a2b').canShareLinks).toBe(false)
+  })
+
+  it('offers a share link on a file, never on a folder or an archive’s insides', () => {
+    volumes.list = [
+      vol({
+        id: 's3-127-0-0-1-14480-akia-photos-1a2b',
+        fsType: 's3',
+        category: 'network',
+        capabilities: {
+          backendCanWrite: false,
+          canExport: true,
+          canBeIndexed: false,
+          canShareLinks: true,
+          renamesCanCopy: true,
+          hasOsMountFallback: false,
+        },
+      }),
+    ]
+    const id = 's3-127-0-0-1-14480-akia-photos-1a2b'
+    const root = 's3://AKIA@127.0.0.1:14480/photos'
+    expect(rowCanShareLink(id, { path: `${root}/a.jpg`, isDirectory: false })).toBe(true)
+    // The zip is an object of its own; what's inside it isn't.
+    expect(rowCanShareLink(id, { path: `${root}/old.zip`, isDirectory: false })).toBe(true)
+    expect(rowCanShareLink(id, { path: `${root}/old.zip/inner.txt`, isDirectory: false })).toBe(false)
+    expect(rowCanShareLink(id, { path: `${root}/2019`, isDirectory: true })).toBe(false)
+    expect(rowCanShareLink('root', { path: '/Users/me/a.jpg', isDirectory: false })).toBe(false)
   })
 
   it('❌ never lets the backend change the KIND', () => {
@@ -445,7 +592,14 @@ describe("withBackendCapabilities — the backend's answer wins over the per-kin
         id: 'volumesnaspi',
         fsType: 'smbfs',
         category: 'network',
-        capabilities: { backendCanWrite: true, canExport: true, canBeIndexed: true },
+        capabilities: {
+          backendCanWrite: true,
+          canExport: true,
+          canBeIndexed: true,
+          canShareLinks: false,
+          renamesCanCopy: false,
+          hasOsMountFallback: false,
+        },
       }),
     ]
     expect(capabilitiesFor('volumesnaspi').kind).toBe('smb')
@@ -473,7 +627,14 @@ describe('capabilitiesForPane — kind-from-path resolution', () => {
         id: 'root',
         fsType: 'apfs',
         category: 'main_volume',
-        capabilities: { backendCanWrite: true, canExport: true, canBeIndexed: true },
+        capabilities: {
+          backendCanWrite: true,
+          canExport: true,
+          canBeIndexed: true,
+          canShareLinks: false,
+          renamesCanCopy: false,
+          hasOsMountFallback: false,
+        },
       }),
     ]
     expect(capabilitiesForPane('root', '/Users/me/foo.tar/inner').canWrite).toBe(false)
@@ -518,7 +679,14 @@ describe('capabilitiesForPane — kind-from-path resolution', () => {
         id: 'root',
         fsType: 'apfs',
         category: 'main_volume',
-        capabilities: { backendCanWrite: true, canExport: true, canBeIndexed: true },
+        capabilities: {
+          backendCanWrite: true,
+          canExport: true,
+          canBeIndexed: true,
+          canShareLinks: false,
+          renamesCanCopy: false,
+          hasOsMountFallback: false,
+        },
       }),
     ]
     for (const path of [
@@ -548,7 +716,14 @@ describe('capabilitiesForPane — kind-from-path resolution', () => {
         id: 'root',
         fsType: 'apfs',
         category: 'main_volume',
-        capabilities: { backendCanWrite: true, canExport: true, canBeIndexed: true },
+        capabilities: {
+          backendCanWrite: true,
+          canExport: true,
+          canBeIndexed: true,
+          canShareLinks: false,
+          renamesCanCopy: false,
+          hasOsMountFallback: false,
+        },
       }),
     ]
     // The volumeId is the writable parent drive; the path crosses `.git/branches/`,
@@ -689,7 +864,7 @@ describe('kindCanBeFavorited — where a favorite may point', () => {
     // A scheme path resolves only while its server or device is live, and the
     // volume list drops a favorite whose path isn't on disk — so each of these
     // stores fine and then never shows up again.
-    for (const kind of ['sftp', 'webdav', 'mtp', 'adb'] as const) {
+    for (const kind of ['sftp', 'webdav', 's3', 'mtp', 'adb'] as const) {
       expect(kindCanBeFavorited(kind), kind).toBe(false)
     }
   })
@@ -706,6 +881,7 @@ describe('kindCanBeFavorited — where a favorite may point', () => {
       'smb',
       'sftp',
       'webdav',
+      's3',
       'mtp',
       'adb',
       'network',

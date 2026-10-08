@@ -234,7 +234,9 @@
         gap: var(--spacing-xs);
         font-size: var(--font-size-sm);
         color: var(--color-accent-text);
-        background: var(--color-bg-glass);
+        /* The steady fill, not the slider-driven one: this overlay has no blur, so at the clear
+           end of the slider the composer text would show through the hint. */
+        background: var(--color-bg-glass-steady);
         border-radius: var(--radius-md);
         pointer-events: none;
     }

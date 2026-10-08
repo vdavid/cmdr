@@ -4,12 +4,17 @@ Live: https://alternativeto.net/software/cmdr/about/. Edit it while signed in; c
 queue, and the "Note about your changes" field at the bottom speeds that up.
 
 Status: the 2026-09-18 v0.46.0 edit is live (checked 2026-09-24: description, tags, and the single $59 price all match
-this file). The fields below are what's live. Edit them here first when refreshing, then paste. Refresh cadence and what
-to update per release: `docs/guides/releasing.md` § "Refreshing the app-directory listings".
+this file). The fields below are what's live, except the v0.49.0 edit (14 languages, prepared 2026-10-01, not yet
+submitted). Edit them here first when refreshing, then paste. Refresh cadence and what to update per release:
+`docs/guides/releasing.md` § "Refreshing the app-directory listings".
 
 v0.47.0 changed nothing here (checked 2026-09-24): AlternativeTo shows no version or changelog, and nothing in the
 description, tags, or features became false. Its new features (the viewer's long lines, favorite letter shortcuts, the
 "Allow cloud AI" switch) are too small to buy room under the 3,000-character cap.
+
+v0.48.0 and v0.49.0 changed one line (checked 2026-10-01): Latin American Spanish made it 14 languages, a same-length
+edit. Their other additions (hex and binary viewer modes, tab drag and drop, streaming compression, SFTP free space)
+don't make anything false and are too small to buy room under the cap.
 
 ## Main info
 
@@ -47,7 +52,7 @@ Core features:
 - Browse zip, tar, and 7z files like folders, and create or extract them.
 - Speed: Lists 50,000 files near-instantly; the built-in viewer opens a 10 GB file in 1 sec, with search. (!)
 - Accessibility: Real dark and light modes, native macOS behavior, WCAG 2.2 AA and APCA verified contrasts.
-- Localization: Translated into 13 languages.
+- Localization: Translated into 14 languages.
 
 Extra features:
 
@@ -74,8 +79,8 @@ AI features (optional, off by default, and can stay fully local with a built-in 
 ## More info
 
 - **Supported languages**: English, German, Spanish, French, Hungarian, Dutch, Portuguese, Swedish, Vietnamese, Chinese.
-  (The 13 locales the app ships, with British and Australian English folded into English:
-  `apps/desktop/src/lib/intl/messages`. Traditional/Simplified Chinese split is not supported in their list.)
+  (The 14 locales the app ships, with British and Australian English folded into English and Latin American Spanish into
+  Spanish: `apps/desktop/src/lib/intl/messages`. Traditional/Simplified Chinese split is not supported in their list.)
 - **Pricing**: `Free for personal use`. Model `Purchase`, min `$59`, max `$59`. One figure in both fields, so the page
   renders a single price rather than a range: v0.46.0 retired the $59/year subscription and the $199 perpetual, leaving
   Commercial at $59 paid once (a year of updates included, $39/year after that to keep getting them). Enterprise
@@ -145,7 +150,13 @@ Leave unchecked, deliberately:
 
 ## Note about your changes
 
-Their optional box for the reviewing admin. Use it to head off the licensing mislabel:
+Their optional box for the reviewing admin. For the v0.49.0 edit:
+
+```
+Hi! Small one: Cmdr now ships Latin American Spanish, so the description says 14 languages instead of 13. Thanks!
+```
+
+The note that went with the v0.46.0 edit, kept for reference (it's where the licensing mislabel ask went in):
 
 ```
 Hi! Cmdr got a bunch of new stuff since my last edit (2026-08-13), so I've:

@@ -273,14 +273,19 @@ impl ImportanceIndex {
         self.with_conn(|conn| read_ordered(conn, Some(n), None))
     }
 
-    /// Every folder scoring at or above `threshold`, highest first. The agent's
-    /// summary gate. An inclusive bound: a folder exactly at `threshold` is in. A
-    /// missing DB reads empty, not an error.
+    /// Every folder scoring at or above `threshold`, in NO particular order. An
+    /// inclusive bound: a folder exactly at `threshold` is in. A missing DB reads
+    /// empty, not an error.
+    ///
+    /// Unordered because its callers fold the rows into a lookup table, and ranking
+    /// every scored folder (~90k on a big home) costs SQLite an external sort for
+    /// nothing. A caller that wants the ranking uses
+    /// [`top_above_threshold`](ImportanceIndex::top_above_threshold).
     pub fn above_threshold(&self, threshold: f64) -> Result<Vec<ScoredWeight>, ImportanceStoreError> {
         if !self.db_path.exists() {
             return Ok(Vec::new());
         }
-        self.with_conn(|conn| read_ordered(conn, None, Some(threshold)))
+        self.with_conn(|conn| read_at_least(conn, threshold))
     }
 
     /// The top `n` folders scoring at or above `threshold`, highest first — the
@@ -374,7 +379,9 @@ impl ImportanceIndex {
     ) -> Result<T, ImportanceStoreError> {
         // Generation `0`: importance reads have no invalidation generation (a
         // recompute rewrites rows in place, it never swaps the DB file), so the
-        // cache keys on the path alone.
+        // cache keys on the path alone. The two things that DO take the file away
+        // (a forgotten volume, a schema wipe) go through
+        // `sqlite_util::delete_database`, which retires the cached connections.
         READ_CONNS.with(|cell| cell.borrow_mut().with(&self.db_path, 0, open_read_connection, f))?
     }
 }
@@ -406,9 +413,8 @@ fn read_scored_weight(conn: &rusqlite::Connection, path: &str) -> Result<Option<
 }
 
 /// Read weights ordered by score descending (ties by path), optionally limited to
-/// the top `n` and/or filtered to `>= threshold`. One query serves both `top_n`
-/// (limit) and `above_threshold` (filter); the ORDER BY is stable so a threshold
-/// query and a top-n query agree on ranking.
+/// the top `n` and/or filtered to `>= threshold`. One query serves `top_n` and
+/// `top_above_threshold`; the ORDER BY is stable so the two agree on ranking.
 fn read_ordered(
     conn: &rusqlite::Connection,
     limit: Option<usize>,
@@ -432,6 +438,17 @@ fn read_ordered(
             .query_map([], row_to_scored_weight)?
             .collect::<Result<Vec<_>, _>>()?,
     };
+    Ok(out)
+}
+
+/// Read every weight `>= threshold` in storage order, with no ORDER BY, so SQLite
+/// streams the rows without a sorter pass.
+fn read_at_least(conn: &rusqlite::Connection, threshold: f64) -> Result<Vec<ScoredWeight>, ImportanceStoreError> {
+    let mut stmt =
+        conn.prepare_cached("SELECT path, score, signals, as_of_generation FROM weights WHERE score >= ?1")?;
+    let out = stmt
+        .query_map(rusqlite::params![threshold], row_to_scored_weight)?
+        .collect::<Result<Vec<_>, _>>()?;
     Ok(out)
 }
 
@@ -602,6 +619,13 @@ pub fn notify_recompute_completed_for_test(volume_id: &str, change: WeightsChang
 /// polling (subscribe-don't-poll).
 pub fn subscribe(volume_id: &str) -> broadcast::Receiver<WeightsChanged> {
     with_recompute_sender(volume_id, |sender| sender.subscribe())
+}
+
+/// How many receivers a volume's recompute-completed channel holds: for a test
+/// that pins how long a subscriber keeps listening.
+#[cfg(test)]
+pub(crate) fn subscriber_count_for_test(volume_id: &str) -> usize {
+    with_recompute_sender(volume_id, |sender| sender.receiver_count())
 }
 
 #[cfg(test)]

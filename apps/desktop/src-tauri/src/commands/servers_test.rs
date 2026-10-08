@@ -2,9 +2,12 @@
 //! one call it refuses.
 
 use super::*;
+use crate::commands::sftp::SftpHostKeyIdentity;
 use crate::network::manual_servers::ManualServerEntry;
 use crate::network::sftp_known_servers::KnownSftpServer;
+use crate::network::sftp_volume_wiring::SftpConnection;
 use crate::network::webdav_known_servers::KnownWebdavServer;
+use crate::network::webdav_volume_wiring::WebdavConnection;
 
 /// A host nobody else's cell uses, so this suite can share the process-global
 /// stores with whatever runs beside it.
@@ -212,15 +215,12 @@ fn an_sftp_account_has_one_place_carrying_the_volume_id() {
     assert!(!place.connected, "nothing is registered under that id");
 }
 
-/// ❗ **An SMB host lists NO places and cannot be pinned in this effort.**
-///
-/// `known_shares.rs` stores no share rows (its only writer leaves `share_name`
-/// empty) and carries no port, and a mounted share's id comes from `statfs`,
-/// which normalizes an mDNS name to an IP. So no id derivable from the store
-/// would match the mounted volume, and a pin here would point at nothing. SMB
-/// places keep reaching the switcher as mounted volumes.
+/// ❗ **An SMB host with no saved share lists no places, and the host row itself is
+/// never pinned**: its places are its saved SHARES, each carrying its own pin
+/// (`a_saved_share_is_a_place_under_its_host_with_its_account` below). A manual
+/// entry alone saves no share.
 #[test]
-fn an_smb_host_lists_no_places_and_is_never_pinned() {
+fn an_smb_host_with_no_saved_share_lists_no_places_and_is_never_pinned() {
     let smb_host = "192.0.2.35";
 
     let servers = saved_servers_of(vec![manual_entry(smb_host)]);
@@ -495,7 +495,7 @@ async fn connecting_a_place_that_is_already_registered_is_refused() {
 )]
 async fn forgetting_a_server_tells_the_panes_before_it_takes_the_row_away() {
     let _recorder = crate::volume_broadcast::recorder_test_lock();
-    let host = "192.0.2.41";
+    let host = "192.0.2.74";
     sftp_known_servers::remember(sftp_entry(host, true));
     let volume_id = cmdr_fs::volume::sftp_volume_id(host, 2222, "ada");
 
@@ -544,9 +544,44 @@ async fn forgetting_a_server_nothing_saved_is_a_plain_no() {
     clippy::await_holding_lock,
     reason = "the lock serializes the process-global broadcast recorders for the whole cell; holding it across the await IS the point"
 )]
+async fn disconnecting_a_connected_place_tells_the_panes_and_keeps_it_saved() {
+    let _recorder = crate::volume_broadcast::recorder_test_lock();
+    let host = "192.0.2.73";
+    sftp_known_servers::remember(sftp_entry(host, true));
+    let volume_id = cmdr_fs::volume::sftp_volume_id(host, 2222, "ada");
+    // A real `SftpVolume` with no session behind it: the wiring downcasts to the
+    // concrete type, so an `InMemoryVolume` stand-in would have nothing to drop.
+    let volume = cmdr_sftp::volume::testing::offline_volume(
+        "stand-in",
+        SftpConnectionParams::new(host, 2222, "ada", "/srv/data"),
+        cmdr_sftp::auth::AuthRungUsed::Agent,
+        cmdr_fs::volume::host::VolumeHost::detached(),
+    );
+    let manager = crate::file_system::volume::manager::get_volume_manager();
+    manager.register(&volume_id, std::sync::Arc::new(volume));
+
+    assert!(disconnect_place(volume_id.clone()).await, "there was a session to drop");
+
+    let (gone_id, _) = crate::volume_broadcast::last_volume_gone().expect("❗ the panes were told");
+    assert_eq!(gone_id, volume_id);
+    assert!(manager.get(&volume_id).is_none(), "the volume left the registry");
+    let place = crate::server_volumes::server_places()
+        .into_iter()
+        .find(|place| place.id == volume_id)
+        .expect("❗ a disconnect never forgets the place");
+    assert_eq!(place.state, cmdr_fs::volume::ConnectionState::Saved);
+}
+
+/// A place with no session has nothing to drop, and a spurious
+/// `VolumeUnmounted` would send a pane home for no reason.
+#[tokio::test]
+#[allow(
+    clippy::await_holding_lock,
+    reason = "the lock serializes the process-global broadcast recorders for the whole cell; holding it across the await IS the point"
+)]
 async fn disconnecting_a_place_that_has_no_session_announces_nothing() {
     let _recorder = crate::volume_broadcast::recorder_test_lock();
-    let host = "192.0.2.42";
+    let host = "192.0.2.75";
     sftp_known_servers::remember(sftp_entry(host, true));
     let volume_id = cmdr_fs::volume::sftp_volume_id(host, 2222, "ada");
 

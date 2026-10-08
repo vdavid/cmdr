@@ -17,6 +17,14 @@ getAppLogger('feature')
             -> fern Dispatch tree (src-tauri/src/logging/DETAILS.md has its shape)
 ```
 
+## Viewing the debug log
+
+`open-debug-log.ts` serves `help.viewDebugLog` from both the palette and the Help menu. It asks the typed
+`getDebugLogPath` wrapper for the backend’s resolved path, then opens the existing file viewer against the local volume,
+tailed (`{ tail: true }`): it starts at the end and follows new lines live. A missing path produces an informational
+toast; a rejected IPC/window call produces a retry toast and a diagnostic log. Path selection lives in
+`apps/desktop/src-tauri/src/logging/DETAILS.md`.
+
 ## Decisions
 
 - **LogTape on the frontend**: it gives the `getAppLogger()` API, hierarchical categories, and per-feature debug toggles

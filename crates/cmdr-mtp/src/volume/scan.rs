@@ -11,7 +11,7 @@ use super::MtpVolume;
 use super::mapping::map_mtp_error;
 use cmdr_fs::volume::scan_walk::conflicts_against;
 use cmdr_fs::volume::{
-    BatchScanResult, CopyScanResult, ScanBoundary, ScanConflict, ScanStop, SourceItemInfo, Volume, VolumeError,
+    BatchScanResult, CopyScanResult, ScanBoundary, ScanConflict, SourceItemInfo, Volume, VolumeError,
 };
 
 use cmdr_fs::entry::FileEntry;
@@ -19,6 +19,10 @@ use log::debug;
 use std::future::Future;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
+
+#[cfg(all(test, feature = "virtual-device"))]
+#[path = "scan_test.rs"]
+mod scan_test;
 
 impl MtpVolume {
     pub(super) fn scan_for_copy_impl<'a>(
@@ -40,18 +44,16 @@ impl MtpVolume {
         })
     }
 
-    /// [`scan_for_copy_impl`](Self::scan_for_copy_impl) that honors `stop`, for
-    /// the batch body below. The trait's single-path method hands one in nowhere,
-    /// so it can't share this.
+    /// Reuse the connection walk with the batch's cumulative progress and stop.
     fn scan_subtree_with_stop<'a>(
         &'a self,
         path: &'a Path,
-        stop: &'a ScanStop,
+        boundary: &'a ScanBoundary<'a>,
     ) -> Pin<Box<dyn Future<Output = Result<CopyScanResult, VolumeError>> + Send + 'a>> {
         Box::pin(async move {
             let mtp_path = self.to_mtp_path(path);
             self.manager
-                .scan_for_copy_with_stop(&self.device_id, self.storage_id, &mtp_path, stop)
+                .scan_for_copy_with_boundary(&self.device_id, self.storage_id, &mtp_path, boundary)
                 .await
                 .map_err(map_mtp_error)
         })
@@ -68,23 +70,16 @@ impl MtpVolume {
     ///    every child entry's size + `is_directory` comes from the cached `FileEntry`, no MTP I/O.
     ///    On miss, fall through to the existing single `list_directory(parent)` per group.
     ///
-    /// The oracle decision is per-parent: different parents in the same call
-    /// can resolve different ways (one watched, one cold). On oracle hit no
-    /// `list_directory_with_progress` callbacks fire for that parent, so the
-    /// FE's scan-preview counter doesn't tick for those entries; the final
-    /// `BatchScanResult.aggregate` still reflects them.
+    /// The oracle decision is per-parent. Progress counts only selected sources,
+    /// including their recursive contents, on both oracle hits and cold listings.
     pub(super) fn scan_for_copy_batch_with_boundary_impl<'a>(
         &'a self,
         paths: &'a [PathBuf],
         boundary: &'a ScanBoundary<'a>,
     ) -> Pin<Box<dyn Future<Output = Result<BatchScanResult, VolumeError>> + Send + 'a>> {
         Box::pin(async move {
-            // ❗ Progress goes down to `list_directory` verbatim
-            // (`ScanBoundary::raw_progress` says why a backend must pick ONE
-            // reporter), so this body counts into its own `aggregate` and asks the
-            // boundary only for the stop.
-            let on_progress = boundary.raw_progress();
-            let stop = boundary.stop();
+            // Parent listings resolve selected entries but are not scan progress:
+            // their unrelated siblings must never enter selected-source totals.
             if paths.is_empty() {
                 return Ok(BatchScanResult {
                     aggregate: CopyScanResult {
@@ -93,8 +88,10 @@ impl MtpVolume {
                         total_bytes: 0,
                         dedup_bytes: 0,
                         top_level_is_directory: false,
+                        top_level_modified_at: None,
                     },
                     per_path: Vec::new(),
+                    files: None,
                 });
             }
 
@@ -149,6 +146,7 @@ impl MtpVolume {
                 dedup_bytes: 0,
                 // Aggregate over multiple paths: not meaningful for a batch.
                 top_level_is_directory: false,
+                top_level_modified_at: None,
             };
 
             for group in groups.values() {
@@ -169,15 +167,7 @@ impl MtpVolume {
                     .listings()
                     .authoritative_listing(&self.volume_id, &group.original_parent);
 
-                // List the parent directory once on cold cache (goes through
-                // the listing cache). The MTP listing is what dominates
-                // wall-clock on a cold cache (17 s for 1047 entries via USB),
-                // so forward `on_progress` to `list_directory_with_progress`
-                // (via the trait method) so the scan-preview dialog sees a
-                // climbing file count instead of a frozen 0/0/0 spinner. On
-                // an oracle hit there's no list, so no progress ticks fire
-                // for this parent's children — the final aggregate still
-                // includes them.
+                // One cold listing per parent, without reporting its siblings.
                 let entries = match cached {
                     Some(entries) => {
                         debug!(
@@ -188,7 +178,7 @@ impl MtpVolume {
                         );
                         entries
                     }
-                    None => self.list_directory(Path::new(&group.mtp_parent), on_progress).await?,
+                    None => self.list_directory(Path::new(&group.mtp_parent), None).await?,
                 };
 
                 // Index entries by name so each child lookup is O(1). A naive
@@ -206,7 +196,10 @@ impl MtpVolume {
 
                     if let Some(entry) = entries_by_name.get(name).copied() {
                         if entry.is_directory {
-                            let scan = self.scan_subtree_with_stop(child_path, &stop).await?;
+                            let mut scan = self.scan_subtree_with_stop(child_path, boundary).await?;
+                            // The parent listing in hand carries the folder's
+                            // own date, which the subtree walk never sees.
+                            scan.top_level_modified_at = entry.modified_at;
                             aggregate.file_count += scan.file_count;
                             aggregate.dir_count += scan.dir_count;
                             aggregate.total_bytes += scan.total_bytes;
@@ -214,6 +207,7 @@ impl MtpVolume {
                             per_path_results.insert((*child_path).clone(), scan);
                         } else {
                             let size = entry.size.unwrap_or(0);
+                            boundary.file(size).await?;
                             aggregate.file_count += 1;
                             aggregate.total_bytes += size;
                             aggregate.dedup_bytes += size;
@@ -225,6 +219,7 @@ impl MtpVolume {
                                     total_bytes: size,
                                     dedup_bytes: size,
                                     top_level_is_directory: false,
+                                    top_level_modified_at: entry.modified_at,
                                 },
                             );
                         }
@@ -237,7 +232,11 @@ impl MtpVolume {
                 .filter_map(|p| per_path_results.remove(p).map(|r| (p.clone(), r)))
                 .collect();
 
-            Ok(BatchScanResult { aggregate, per_path })
+            Ok(BatchScanResult {
+                aggregate,
+                per_path,
+                files: None,
+            })
         })
     }
 

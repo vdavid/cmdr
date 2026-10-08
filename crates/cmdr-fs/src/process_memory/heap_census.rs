@@ -1,6 +1,7 @@
-//! A census of mimalloc's pages: how many of the bytes it holds are live.
+//! A census of mimalloc's pages: how many of the bytes it holds are live. Built only where
+//! mimalloc is the global allocator (`cmdr_mimalloc`).
 //!
-//! `query_mimalloc_heap` says what mimalloc has COMMITTED, and the VM map says what's
+//! `query_rust_heap` says what mimalloc has COMMITTED, and the VM map says what's
 //! resident under its tag, but neither can split that into "the program's data" and "the
 //! allocator's slack". This can: it walks every page of mimalloc's heap and sums the
 //! blocks in use against the block space the page has set up.
@@ -40,40 +41,20 @@ use std::ffi::c_void;
 
 use libmimalloc_sys::{mi_heap_area_t, mi_heap_t, mi_heap_visit_blocks};
 
-/// What mimalloc's pages hold right now.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct HeapCensus {
-    /// Bytes in allocated blocks: the Rust program's live data (leaning high; see the
-    /// module docs).
-    pub live_bytes: u64,
-    /// Bytes of block space the pages have set up, live or free. `block_space_bytes -
-    /// live_bytes` is free blocks inside pages that are in use; heap resident minus
-    /// `block_space_bytes` is slack outside any page's blocks.
-    pub block_space_bytes: u64,
-    /// How many pages the census visited.
-    pub page_count: u64,
-    /// The biggest single live allocations of at least [`LARGE_BLOCK_MIN`], biggest first,
-    /// zero-padded. A repeated exact size is a fingerprint, like a VM region size.
-    pub largest_blocks: [u64; LARGEST_BLOCKS],
-    /// True when the walk saw every page; false when it stopped at [`MAX_PAGES`].
-    pub complete: bool,
-}
-
-/// How many of the largest live blocks the census keeps.
-pub const LARGEST_BLOCKS: usize = 8;
+use super::{HeapCensus, LARGEST_BLOCKS};
 
 /// The smallest block the census names individually. Below this a block is one of many in
 /// a page and says nothing on its own.
-pub const LARGE_BLOCK_MIN: u64 = 1024 * 1024;
+const LARGE_BLOCK_MIN: u64 = 1024 * 1024;
 
 /// Where the walk stops. A page is at least 64 KiB, so this is 64 GiB of heap: past any
 /// heap a working Cmdr holds, and a few milliseconds of walking.
-pub const MAX_PAGES: u64 = 1_000_000;
+const MAX_PAGES: u64 = 1_000_000;
 
 /// Count mimalloc's pages: live bytes against block space, and the biggest live blocks.
 /// Costs one visit per page (single-digit milliseconds for a few hundred MiB of heap), so
 /// it's snapshot-only, like the VM-map walk.
-pub fn query_heap_census() -> HeapCensus {
+pub(super) fn query_heap_census() -> HeapCensus {
     let mut census = HeapCensus {
         live_bytes: 0,
         block_space_bytes: 0,

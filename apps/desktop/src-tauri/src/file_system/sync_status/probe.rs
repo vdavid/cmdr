@@ -18,6 +18,7 @@
 //!    parent module exists to keep that fact from reaching the user.
 
 use super::SyncKnowledge;
+use crate::file_system::framework_pool::note_activity;
 use cmdr_fs::file_provider::{DomainMembership, FileProviderDomains};
 use std::path::Path;
 use std::sync::LazyLock;
@@ -48,6 +49,10 @@ pub(super) fn sync_status_for(path: &Path) -> SyncKnowledge {
 pub(super) fn knowledge_for(path: &Path, domains: &FileProviderDomains) -> SyncKnowledge {
     use std::os::macos::fs::MetadataExt;
 
+    // Each step names itself first, so a pool thread that never comes back says which
+    // call it's stuck in (`framework_pool::note_activity`, logged by the service).
+    let subject = path.to_string_lossy();
+    note_activity("the File Provider domain check", &subject);
     if domains.membership_of(path) == DomainMembership::Outside {
         // Nothing manages this file, so there is no state to ask about, and no
         // reason to spend a `stat` and an `NSURL` resource-value read finding that
@@ -56,6 +61,7 @@ pub(super) fn knowledge_for(path: &Path, domains: &FileProviderDomains) -> SyncK
         return SyncKnowledge::NotCloudManaged;
     }
 
+    note_activity("stat", &subject);
     let Ok(metadata) = std::fs::metadata(path) else {
         return SyncKnowledge::Indeterminate;
     };
@@ -63,12 +69,14 @@ pub(super) fn knowledge_for(path: &Path, domains: &FileProviderDomains) -> SyncK
 
     if metadata.st_flags() & SF_DATALESS != 0 {
         // A stub: either purely online, or being fetched right now.
+        note_activity("NSURL getResourceValue(NSURLUbiquitousItemIsDownloadingKey)", &subject);
         match ubiquitous_bool(path, is_dir, "NSURLUbiquitousItemIsDownloadingKey") {
             ResourceValue::Answered(true) => SyncKnowledge::Downloading,
             _ => SyncKnowledge::OnlineOnly,
         }
     } else {
         // Local content exists: either settled, or being pushed up.
+        note_activity("NSURL getResourceValue(NSURLUbiquitousItemIsUploadingKey)", &subject);
         match ubiquitous_bool(path, is_dir, "NSURLUbiquitousItemIsUploadingKey") {
             ResourceValue::Answered(true) => SyncKnowledge::Uploading,
             ResourceValue::Answered(false) => SyncKnowledge::Synced,

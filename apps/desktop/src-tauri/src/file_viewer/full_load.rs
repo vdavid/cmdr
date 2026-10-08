@@ -107,10 +107,10 @@ impl FullLoadBackend {
         }
     }
 
-    /// `extend_to` doesn't apply to FullLoad: the session escalates to
-    /// ByteSeek/LineIndex on the first append that crosses
-    /// `FULL_LOAD_THRESHOLD`. Calling it is a bug; we panic so the call site
-    /// surfaces fast rather than silently dropping the append.
+    /// `extend_to` doesn't apply to FullLoad: on an append, the session's
+    /// `apply_tail_extend` reopens the file instead (FullLoad again, or ByteSeek
+    /// past `FULL_LOAD_THRESHOLD`). Calling it is a bug; we panic so the call
+    /// site surfaces fast rather than silently dropping the append.
     #[allow(dead_code, reason = "called by session::tail_mode_extend defensively")]
     pub fn extend_to(&self, _new_size: u64, _cancel: &AtomicBool) -> Self {
         unreachable!(
@@ -132,7 +132,7 @@ impl FullLoadBackend {
 
     fn resolve_target(&self, target: &SeekTarget) -> usize {
         match target {
-            SeekTarget::Line(n) => (*n).min(self.rows.len().saturating_sub(1)),
+            SeekTarget::Row(n) => (*n).min(self.rows.len().saturating_sub(1)),
             SeekTarget::ByteOffset(offset) => {
                 // Binary search for the row containing this byte offset.
                 match self.rows.binary_search_by_key(offset, |row| row.byte_offset) {
@@ -151,16 +151,15 @@ impl FullLoadBackend {
 
 impl FileViewerBackend for FullLoadBackend {
     fn extend_to_boxed(&self, _new_size: u64, _cancel: &AtomicBool) -> Result<Box<dyn FileViewerBackend>, ViewerError> {
-        // The session is responsible for escalating FullLoad → ByteSeek before
-        // calling extend_to. Reaching here means the caller violated that
-        // contract; surface a typed error rather than panicking inside a
-        // watcher thread.
+        // The session reopens a FullLoad file instead of extending it. Reaching
+        // here means the caller skipped that; surface a typed error rather than
+        // panicking inside a watcher thread.
         Err(ViewerError::Io {
             message: "FullLoadBackend cannot extend in place; session must escalate first".to_string(),
         })
     }
 
-    fn get_lines(&self, target: &SeekTarget, count: usize) -> Result<LineChunk, ViewerError> {
+    fn get_lines(&self, target: &SeekTarget, count: usize, cancel: &AtomicBool) -> Result<LineChunk, ViewerError> {
         let start = self.resolve_target(target);
         let mut end = start;
         let mut taken = 0u64;
@@ -168,6 +167,11 @@ impl FileViewerBackend for FullLoadBackend {
         // wrap-on viewport would rather not receive in one go, and every caller reads
         // `ChunkEnd` the same way whichever backend served it.
         while end < self.rows.len() && end - start < count {
+            // In memory, so never slow; checked anyway, so the flag means the same on
+            // every backend.
+            if cancel.load(Ordering::Relaxed) {
+                return Err(ViewerError::Cancelled);
+            }
             taken += self.rows[end].text.len() as u64;
             end += 1;
             if taken >= super::CHUNK_BUDGET_BYTES {

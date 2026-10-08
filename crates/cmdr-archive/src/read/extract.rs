@@ -34,14 +34,18 @@ use super::source::ArchiveByteSource;
 /// memory is `CHANNEL_CAPACITY × CHUNK_SIZE`, independent of the subtree's size.
 const CHANNEL_CAPACITY: usize = 4;
 
-/// One file member the one-pass extractor yields: its sanitized inner path and
-/// uncompressed size (from the parsed tree, so it matches the copy scan totals).
+/// One file member the one-pass extractor yields: its sanitized inner path,
+/// uncompressed size, and date, all from the parsed tree (so the size matches the
+/// copy scan totals and the date matches the listing).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SubtreeMember {
     /// Sanitized inner path (the index key), `/`-separated, no surrounding slashes.
     pub inner_path: String,
     /// Uncompressed size in bytes.
     pub size: u64,
+    /// Last-modified time as a Unix timestamp in seconds, as the tree recorded
+    /// it, so an extracted file keeps the member's date.
+    pub modified: Option<i64>,
 }
 
 /// The frames the producer sends over the single channel: a member header, then
@@ -91,7 +95,8 @@ pub struct SubtreeExtractReader {
 
 impl SubtreeExtractReader {
     /// Spawns the one-pass producer for `store`'s format over `source`, emitting
-    /// every file in `wanted` (inner path → uncompressed size) in archive order.
+    /// every file in `wanted` (inner path → the member the tree describes) in
+    /// archive order.
     ///
     /// Only sequential formats have a producer; a random-access store (zip, plain
     /// tar) yields nothing — the copy planner never routes those here (it gates on
@@ -100,7 +105,7 @@ impl SubtreeExtractReader {
     pub(super) fn spawn(
         store: &EntryStore,
         source: Arc<dyn ArchiveByteSource>,
-        wanted: HashMap<String, u64>,
+        wanted: HashMap<String, SubtreeMember>,
         password: Option<&str>,
     ) -> Self {
         let (tx, rx) = mpsc::channel(CHANNEL_CAPACITY);

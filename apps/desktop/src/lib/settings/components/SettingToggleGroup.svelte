@@ -18,21 +18,25 @@
         type SettingsValues,
     } from '$lib/settings'
     import { onMount } from 'svelte'
+    import { useSettingLock } from './setting-lock.svelte'
 
     interface Props {
         id: SettingId
         disabled?: boolean
         /**
          * Optional per-value label overrides. Use when a button label must
-         * reflect another reactive setting (for example, the kilobyte
-         * casing on `listing.sizeUnit` swapping `kB` ↔ `KB` with binary/SI).
+         * reflect another reactive setting (for example, the unit tiles on
+         * `listing.sizeUnit` swapping `kB` ↔ `KiB` with binary/SI).
          * Keys are stringified option values; missing entries fall back to
          * the definition label.
          */
         labelOverrides?: Record<string, string>
+        /** Id of an element that explains the control, such as a `SettingRow` disabled note. */
+        ariaDescribedBy?: string
     }
 
-    const { id, disabled = false, labelOverrides }: Props = $props()
+    const { id, disabled = false, labelOverrides, ariaDescribedBy }: Props = $props()
+    const lock = useSettingLock(id)
 
     const definition = getSettingDefinition(id)
     const label = definition?.label ?? id
@@ -69,5 +73,6 @@
     {options}
     onChange={handleChange}
     ariaLabel={label}
-    {disabled}
+    ariaDescribedBy={lock.describedBy(ariaDescribedBy)}
+    disabled={disabled || lock.locked}
 />

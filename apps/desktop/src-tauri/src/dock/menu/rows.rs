@@ -101,7 +101,8 @@ impl DockCommand {
         match self {
             DockCommand::OpenCmdr => "menu.dock.openCmdr",
             DockCommand::SearchFiles => "menu.dock.searchFiles",
-            DockCommand::GoToFolder => "menu.dock.goToFolder",
+            // The menu bar's own string, so the two can't drift apart again.
+            DockCommand::GoToFolder => "menu.go.goToPath",
             DockCommand::ConnectToServer => "menu.dock.connectToServer",
         }
     }

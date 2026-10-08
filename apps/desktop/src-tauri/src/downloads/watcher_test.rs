@@ -675,6 +675,31 @@ fn note_pending_write_suppresses_matching_event() {
     drop(watcher);
 }
 
+/// Registration matches by path prefix and never asks the filesystem: every
+/// write op registers its target, a share's folder included, and resolving a
+/// path on a network mount blocked a New Folder on a busy NAS for 12 s
+/// (ERR-AREUV). The observable trace of "no resolving": a path reached
+/// through a symlink OUTSIDE the root isn't registered under the root.
+#[test]
+fn note_pending_write_never_resolves_the_path() {
+    // Arms a live watch but waits on no delivery: `.config/nextest.toml`'s
+    // arming-only block gives it headroom, outside `real-notify`.
+    let td = unhidden_tempdir();
+    let root = td.path().join("Downloads");
+    fs::create_dir(&root).unwrap();
+    let alias = td.path().join("alias");
+    std::os::unix::fs::symlink(&root, &alias).unwrap();
+    let (sink, _rx) = ChannelSink::new();
+    let watcher = DownloadsWatcher::start_at(root.clone(), sink).unwrap();
+
+    watcher.note_pending_write(alias.join("new"), Duration::from_secs(60));
+
+    assert!(
+        !watcher.is_pending_write(&root.join("new")),
+        "registration resolved the symlinked parent, a filesystem call per write"
+    );
+}
+
 #[test]
 fn latest_download_returns_ring_value_after_event() {
     let _serial = WATCH_SERIAL.lock_ignore_poison();

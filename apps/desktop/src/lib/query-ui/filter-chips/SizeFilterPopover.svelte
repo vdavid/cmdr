@@ -14,9 +14,13 @@
     import FilterPopover from '$lib/ui/FilterPopover.svelte'
     import { tString } from '$lib/intl/messages.svelte'
     import type { SizeFilter, SizeUnit } from '../query-filter-state.svelte'
-    import { SIZE_PRESETS, byteUnitLabel, kiloByteLabel, isSizeRangeDisabled, showsUpperBound } from './filter-popover-helpers'
+    import { SIZE_PRESETS, byteUnitLabel, isSizeRangeDisabled, showsUpperBound } from './filter-popover-helpers'
+    import { unitLabel } from '$lib/units'
     import { getFileSizeFormat } from '$lib/settings/reactive-settings.svelte'
     import './filter-popover.css'
+
+    /** The unit cells after the kilobyte, in the order the column lists them. */
+    const LARGER_UNITS = ['MB', 'GB'] as const
 
     interface Props {
         /** The Size chip element, used by the popover shell for positioning + focus return. */
@@ -260,9 +264,9 @@
                         pickSizeUnit('KB')
                     }}
                 >
-                    {kiloByteLabel(getFileSizeFormat())}
+                    {unitLabel('kB', getFileSizeFormat())}
                 </button>
-                {#each ['MB', 'GB'] as larger (larger)}
+                {#each LARGER_UNITS as larger (larger)}
                     <!-- eslint-disable-next-line cmdr/prefer-ui-primitive -- Grid-style popover cell: each column is a dense list of preset cells (the Custom one even hosts an inline input), which a RadioGroup option list can't express; the enclosing role="radiogroup" carries the a11y contract. -->
                     <button
                         type="button"
@@ -272,10 +276,10 @@
                         role="radio"
                         aria-checked={sizeUnit === larger}
                         onclick={() => {
-                            pickSizeUnit(larger as SizeUnit)
+                            pickSizeUnit(larger)
                         }}
                     >
-                        {larger}
+                        {unitLabel(larger, getFileSizeFormat())}
                     </button>
                 {/each}
             </div>
@@ -363,9 +367,9 @@
                             scheduleSearch()
                         }}
                     >
-                        {kiloByteLabel(getFileSizeFormat())}
+                        {unitLabel('kB', getFileSizeFormat())}
                     </button>
-                    {#each ['MB', 'GB'] as larger (larger)}
+                    {#each LARGER_UNITS as larger (larger)}
                         <!-- eslint-disable-next-line cmdr/prefer-ui-primitive -- Grid-style popover cell: each column is a dense list of preset cells (the Custom one even hosts an inline input), which a RadioGroup option list can't express; the enclosing role="radiogroup" carries the a11y contract. -->
                         <button
                             type="button"
@@ -374,11 +378,11 @@
                             role="radio"
                             aria-checked={sizeUnitMax === larger}
                             onclick={() => {
-                                setSizeUnitMax(larger as SizeUnit)
+                                setSizeUnitMax(larger)
                                 scheduleSearch()
                             }}
                         >
-                            {larger}
+                            {unitLabel(larger, getFileSizeFormat())}
                         </button>
                     {/each}
                 </div>

@@ -242,14 +242,7 @@ fn record_error(category: &str, message: &str) -> Option<Instant> {
 /// Drain the debounce state and ship a single bundle. No-op if the state is empty (can
 /// happen if the test harness cleared it between scheduling and firing).
 async fn flush(app: AppHandle<Wry>) {
-    let snapshot = {
-        let mut guard = match STATE.lock() {
-            Ok(g) => g,
-            Err(poisoned) => poisoned.into_inner(),
-        };
-        guard.take()
-    };
-    let Some(state) = snapshot else {
+    let Some(state) = take_window_to_send().await else {
         return;
     };
 
@@ -328,6 +321,28 @@ async fn flush(app: AppHandle<Wry>) {
     }
 }
 
+/// Drains the debounce window, and hands it back only if it may go out now.
+///
+/// The `ENABLED` switch is seeded from the stored `updates.errorReports`; the organization's policy
+/// is asked here, at send time, so a managed off wins over a stored on. A refused window is dropped,
+/// like a failed upload (no retry, no queue).
+async fn take_window_to_send() -> Option<DebounceState> {
+    let state = {
+        let mut guard = match STATE.lock() {
+            Ok(g) => g,
+            Err(poisoned) => poisoned.into_inner(),
+        };
+        guard.take()
+    }?;
+    if crate::server_request::check_policy(crate::managed_policy::Egress::ErrorReport)
+        .await
+        .is_err()
+    {
+        return None;
+    }
+    Some(state)
+}
+
 /// Manifest note for an automatic report: the count, the first error's category, and its
 /// message as a `detail=` field. `build_bundle` runs automatic notes through the report's
 /// redaction context, which redacts and caps that field (`redact/DETAILS.md` § "External-text
@@ -372,6 +387,11 @@ pub fn record_error_for_test(category: &str, message: &str) -> Option<Instant> {
         return None;
     }
     record_error(category, message)
+}
+
+#[cfg(test)]
+pub async fn take_window_to_send_for_test() -> Option<usize> {
+    take_window_to_send().await.map(|state| state.error_count)
 }
 
 #[cfg(test)]

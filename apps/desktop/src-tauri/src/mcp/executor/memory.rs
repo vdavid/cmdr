@@ -9,7 +9,7 @@
 //! workload), but until now nothing could call it there: a running instance could be asked
 //! about its panes and its index, never about its own memory.
 //!
-//! How to read the payload, and the `IOAccelerator`-is-the-Rust-heap trap:
+//! How to read the payload, and which VM tags hold the Rust heap under each allocator:
 //! `crate::commands::memory_diagnostics` module docs and `docs/tooling/memory-debugging.md`.
 
 use serde_json::Value;

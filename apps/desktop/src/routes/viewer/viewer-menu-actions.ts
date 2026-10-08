@@ -1,5 +1,6 @@
 /**
- * What the viewer menu bar's Edit > Copy and Edit > Select all do.
+ * What the viewer menu bar's Edit > Copy and Edit > Select all do, and the same pair in the
+ * native right-click menu over the text.
  *
  * Neither can be a native menu item. AppKit's `copy:` / `selectAll:` selectors act on the DOM
  * selection, and the viewed file is out of its reach: `.file-content` is `user-select: none`
@@ -45,4 +46,17 @@ export function runViewerEditAction(action: ViewerEditActionKind, deps: ViewerEd
     return
   }
   deps.copyContent()
+}
+
+/**
+ * Runs the pick from the native right-click menu over the text (`showViewerContextMenu`).
+ * Always the file's, never the query's: the right-click leaves focus wherever it was, so the
+ * search box may still hold it, but the menu was opened over the file.
+ */
+export function runViewerContextMenuAction(
+  action: ViewerEditActionKind,
+  deps: Pick<ViewerEditActionDeps, 'selectAllContent' | 'copyContent'>,
+): void {
+  if (action === 'selectAll') deps.selectAllContent()
+  else deps.copyContent()
 }

@@ -12,7 +12,6 @@ import {
   copyToClipboard,
   quickLookOpen,
   quickLookClose,
-  getInfo,
   cloudMakeAvailableOffline,
   cloudRemoveDownload,
   googleDriveLinks,
@@ -29,12 +28,14 @@ import { getFocusedPanePath, getFocusedPaneVolumeId } from '$lib/file-explorer/p
 import { capabilitiesFor } from '$lib/file-explorer/pane/volume-capabilities'
 import { pathInsideArchive } from '$lib/file-explorer/pane/archive-paths'
 import { openInEditorOrExplain } from '$lib/file-explorer/pane/editor-open'
+import { openGetInfoOrExplain } from '$lib/file-explorer/pane/get-info-open'
 import { resolveTerminalFolder } from '$lib/open-terminal/terminal-target'
 import { openTerminalHereForFolder } from '$lib/open-terminal/open-terminal-here'
 import { tString } from '$lib/intl/messages.svelte'
 import { trackEvent } from '$lib/tauri-commands'
 import { editServerInView } from '$lib/file-explorer/network/servers-hub-actions'
 import type { CommandArgs } from '$lib/commands'
+import { detached } from './detached'
 import type { CommandHandlerContext, CommandHandlerRecord } from './types'
 
 /** The file entry the focused pane's cursor sits on (path + filename). */
@@ -92,14 +93,14 @@ function serverInView(explorer: NonNullable<CommandHandlerContext['explorerRef']
 
 export const fileHandlers = {
   'file.view': ({ explorerRef }) => {
-    void explorerRef?.openViewerForCursor()
+    detached(explorerRef?.openViewerForCursor())
   },
 
   'file.rename': ({ explorerRef, dispatchArgs }) => {
     // On the Servers volume, Rename is "Edit server…": the name is what a server has to
     // rename. ❗ Opened, ❌ never awaited: the sheet stays up as long as the user types.
     if (explorerRef && getFocusedPaneVolumeId() === 'network') {
-      void editServerInView(serverInView(explorerRef))
+      detached(editServerInView(serverInView(explorerRef)))
       return
     }
     // Arg-less from F2 / the palette (seed the current name); the MCP `rename`
@@ -112,7 +113,7 @@ export const fileHandlers = {
   'file.edit': (hctx) => {
     // On the Servers volume, Edit is "Edit server…", the same as Rename there.
     if (hctx.explorerRef && getFocusedPaneVolumeId() === 'network') {
-      void editServerInView(serverInView(hctx.explorerRef))
+      detached(editServerInView(serverInView(hctx.explorerRef)))
       return
     }
     return withEntryUnderCursor(hctx, async (entry) => {
@@ -122,7 +123,7 @@ export const fileHandlers = {
       // an editor was asked. No props: the file's name and extension are exactly
       // what must never cross.
       const outcome = await openInEditorOrExplain(getFocusedPaneVolumeId(), entry.path)
-      if (outcome === 'opened') void trackEvent('editor_opened', {})
+      if (outcome === 'opened') detached(trackEvent('editor_opened', {}))
     })
   },
 
@@ -132,23 +133,23 @@ export const fileHandlers = {
     // to pre-answer the conflict policy and tag provenance. `dispatchArgs` is
     // `undefined` in the arg-less case, so the openers default them all.
     const copyArgs = dispatchArgs as CommandArgs['file.copy'] | undefined
-    void explorerRef?.openCopyDialog(copyArgs)
+    detached(explorerRef?.openCopyDialog(copyArgs))
   },
 
   'file.duplicate': ({ explorerRef }) => {
     // Arg-less by design: Duplicate has no destination to choose and no conflict
     // policy to pre-answer, so there's nothing an MCP payload could say.
-    void explorerRef?.duplicateInPlace()
+    detached(explorerRef?.duplicateInPlace())
   },
 
   'file.move': ({ explorerRef, dispatchArgs }) => {
     const moveArgs = dispatchArgs as CommandArgs['file.move'] | undefined
-    void explorerRef?.openMoveDialog(moveArgs)
+    detached(explorerRef?.openMoveDialog(moveArgs))
   },
 
   'file.compress': ({ explorerRef, dispatchArgs }) => {
     const compressArgs = dispatchArgs as CommandArgs['file.compress'] | undefined
-    void explorerRef?.openCompressDialog(compressArgs)
+    detached(explorerRef?.openCompressDialog(compressArgs))
   },
 
   'file.newFolder': ({ explorerRef, dispatchArgs }) => {
@@ -156,28 +157,30 @@ export const fileHandlers = {
     // prefill the dialog and `{ pane }` to target a specific pane, plus `{ initiator }`
     // to tag provenance. (autoConfirm creates directly in Rust, never reaching here.)
     const args = dispatchArgs as CommandArgs['file.newFolder'] | undefined
-    void explorerRef?.openNewFolderDialog(args?.name, args?.pane, args?.initiator)
+    detached(explorerRef?.openNewFolderDialog(args?.name, args?.pane, args?.initiator))
   },
 
   'file.newFile': ({ explorerRef, dispatchArgs }) => {
     const args = dispatchArgs as CommandArgs['file.newFile'] | undefined
-    void explorerRef?.openNewFileDialog(args?.name, args?.pane, args?.initiator)
+    detached(explorerRef?.openNewFileDialog(args?.name, args?.pane, args?.initiator))
   },
 
   'file.delete': ({ explorerRef, dispatchArgs }) => {
     // The MCP `delete` tool may pass `permanent` (from its `mode`); F8 omits it
     // (trash-default). The dialog still clamps to permanent on no-trash volumes.
     const deleteArgs = dispatchArgs as CommandArgs['file.delete'] | undefined
-    void explorerRef?.openDeleteDialog({
-      permanent: deleteArgs?.permanent ?? false,
-      autoConfirm: deleteArgs?.autoConfirm,
-      mcpRequestId: deleteArgs?.mcpRequestId,
-      initiator: deleteArgs?.initiator,
-    })
+    detached(
+      explorerRef?.openDeleteDialog({
+        permanent: deleteArgs?.permanent ?? false,
+        autoConfirm: deleteArgs?.autoConfirm,
+        mcpRequestId: deleteArgs?.mcpRequestId,
+        initiator: deleteArgs?.initiator,
+      }),
+    )
   },
 
   'file.deletePermanently': ({ explorerRef }) => {
-    void explorerRef?.openDeleteDialog({ permanent: true })
+    detached(explorerRef?.openDeleteDialog({ permanent: true }))
   },
 
   'dialog.confirm': ({ explorerRef, dispatchArgs }) => {
@@ -242,12 +245,12 @@ export const fileHandlers = {
     if (quickLookState.isOpen) {
       quickLookState.isOpen = false
       await quickLookClose()
-      void trackEvent('quick_look_used', { outcome: 'closed' })
+      detached(trackEvent('quick_look_used', { outcome: 'closed' }))
       return
     }
     const entryUnderCursor = explorerRef?.getFileAndPathUnderCursor()
     if (!entryUnderCursor) {
-      void trackEvent('quick_look_used', { outcome: 'noTarget' })
+      detached(trackEvent('quick_look_used', { outcome: 'noTarget' }))
       return
     }
     // Quick Look can't preview a file INSIDE an archive: the inner path isn't a
@@ -263,7 +266,7 @@ export const fileHandlers = {
       // The one gate in front of Quick Look. Counted so a low `opened` number can
       // be told apart from people reaching for it where it can't work; without
       // the refusal, a zero is unreadable (`analytics/DETAILS.md` § Reading a zero).
-      void trackEvent('quick_look_used', { outcome: 'insideArchive' })
+      detached(trackEvent('quick_look_used', { outcome: 'insideArchive' }))
       return
     }
     const volumeId = getFocusedPaneVolumeId()
@@ -272,7 +275,7 @@ export const fileHandlers = {
     // the IPC resolves, but the optimistic flip means a second Shift+Space
     // press immediately after the first reads the right state.
     quickLookState.isOpen = true
-    void trackEvent('quick_look_used', { outcome: 'opened' })
+    detached(trackEvent('quick_look_used', { outcome: 'opened' }))
     await quickLookOpen(entryUnderCursor.path, volumeId)
   },
 
@@ -283,7 +286,7 @@ export const fileHandlers = {
     await explorerRef?.openContextMenuAtCursor()
   },
 
-  'file.getInfo': (hctx) => withEntryUnderCursor(hctx, (entry) => getInfo(entry.path)),
+  'file.getInfo': (hctx) => withEntryUnderCursor(hctx, (entry) => openGetInfoOrExplain(entry.path)),
 
   'cloud.makeOffline': (hctx) =>
     withEntryUnderCursor(hctx, async (entry) => {

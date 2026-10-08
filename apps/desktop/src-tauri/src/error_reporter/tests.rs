@@ -913,6 +913,41 @@ mod settings_defaults_tests {
 
         settings_defaults::reset_for_test();
     }
+
+    /// A report says what Cmdr actually ran with, the organization's locks over the stored
+    /// choice, the same as the heartbeat's config shape. A stored `cloud` under on-device only
+    /// ran as `off`.
+    #[test]
+    fn the_manifest_reports_effective_values_under_a_managed_policy() {
+        use crate::managed_policy::testing::{self, DISABLE_AI, DISABLE_CLOUD_AI, DISABLE_CRASH_AND_ERROR_REPORTS};
+        let _g = test_lock();
+        settings_defaults::reset_for_test();
+
+        let settings = Settings {
+            ai_provider: Some("cloud".to_string()),
+            error_reports_enabled: Some(true),
+            crash_reports_enabled: Some(true),
+            ..Settings::default()
+        };
+        let stored = ResolvedSettings::from_settings(&settings);
+
+        let cloud_off = stored.clone().effective(&testing::forcing(&[DISABLE_CLOUD_AI]));
+        assert_eq!(cloud_off.ai_provider, "off");
+        let ai_off = stored.clone().effective(&testing::forcing(&[DISABLE_AI]));
+        assert_eq!(ai_off.ai_provider, "off");
+        let reports_off = stored
+            .clone()
+            .effective(&testing::forcing(&[DISABLE_CRASH_AND_ERROR_REPORTS]));
+        assert!(!reports_off.error_reports_enabled && !reports_off.crash_reports_enabled);
+        assert_eq!(
+            reports_off.ai_provider, "cloud",
+            "an unlocked setting keeps its stored value"
+        );
+
+        let unmanaged = stored.effective(&crate::managed_policy::ManagedPolicy::default());
+        assert_eq!(unmanaged.ai_provider, "cloud");
+        assert!(unmanaged.error_reports_enabled);
+    }
 }
 
 /// Tests for the Flow A streaming pipeline (`build_bundle_streaming`). These exercise

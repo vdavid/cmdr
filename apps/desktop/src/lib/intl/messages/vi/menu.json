@@ -204,6 +204,10 @@
   "@menu.select.sameKind": {
     "sourceHash": "9933028"
   },
+  "menu.select.compareDirectories": "So sánh thư mục",
+  "@menu.select.compareDirectories": {
+    "sourceHash": "5cf3985"
+  },
   "menu.select.allFolders": "Chọn tất cả thư mục",
   "@menu.select.allFolders": {
     "sourceHash": "5351f8b"
@@ -263,6 +267,14 @@
   "menu.view.swapPanes": "Hoán đổi khung",
   "@menu.view.swapPanes": {
     "sourceHash": "cc29396"
+  },
+  "menu.view.clonePane": "Khung đích = khung nguồn",
+  "@menu.view.clonePane": {
+    "sourceHash": "74b2c7f"
+  },
+  "menu.view.calculateFolderSizes": "Tính toán kích cỡ thư mục",
+  "@menu.view.calculateFolderSizes": {
+    "sourceHash": "d2a83da"
   },
   "menu.view.commandPalette": "Bảng lệnh…",
   "@menu.view.commandPalette": {
@@ -353,13 +365,17 @@
   "@menu.go.parentFolder": {
     "sourceHash": "158f5a0"
   },
+  "menu.go.rootFolder": "Thư mục gốc",
+  "@menu.go.rootFolder": {
+    "sourceHash": "6d92528"
+  },
   "menu.go.home": "Nhà",
   "@menu.go.home": {
     "sourceHash": "3a78695"
   },
-  "menu.go.goToPath": "Đi tới đường dẫn…",
+  "menu.go.goToPath": "Đi tới thư mục…",
   "@menu.go.goToPath": {
-    "sourceHash": "936edc5"
+    "sourceHash": "33de610"
   },
   "menu.go.goToLatestDownload": "Đi tới bản tải về mới nhất",
   "@menu.go.goToLatestDownload": {
@@ -476,6 +492,22 @@
   "menu.context.copyGoogleDriveLink": "Sao chép liên kết Google Drive",
   "@menu.context.copyGoogleDriveLink": {
     "sourceHash": "070b383"
+  },
+  "menu.context.copyShareLink": "Sao chép liên kết chia sẻ",
+  "@menu.context.copyShareLink": {
+    "sourceHash": "d31483e"
+  },
+  "menu.context.shareLinkSevenDays": "Hết hạn sau bảy ngày",
+  "@menu.context.shareLinkSevenDays": {
+    "sourceHash": "06949d8"
+  },
+  "menu.context.shareLinkOneDay": "Hết hạn sau một ngày",
+  "@menu.context.shareLinkOneDay": {
+    "sourceHash": "5ff3dbc"
+  },
+  "menu.context.shareLinkOneHour": "Hết hạn sau một giờ",
+  "@menu.context.shareLinkOneHour": {
+    "sourceHash": "faf9c50"
   },
   "menu.context.askGemini": "Hỏi Gemini",
   "@menu.context.askGemini": {
@@ -657,10 +689,6 @@
   "@menu.dock.searchFiles": {
     "sourceHash": "149a9d1"
   },
-  "menu.dock.goToFolder": "Đi tới thư mục…",
-  "@menu.dock.goToFolder": {
-    "sourceHash": "33de610"
-  },
   "menu.dock.connectToServer": "Kết nối với máy chủ…",
   "@menu.dock.connectToServer": {
     "sourceHash": "6188f47"
@@ -669,5 +697,9 @@
   "@menu.dock.locationInParent": {
     "sourceHash": "0bf83e2",
     "sameAsSourceJustification": "Apple ships this exact disambiguation frame unchanged in Vietnamese: AppKit vi renders the \"%@ (%@)\" pattern as \"%1$@ (%2$@)\" (Common.json, InfoPanel.json), same order, same parentheses, same spacing. Vietnamese is head-initial, so the qualifier follows the name just as in English, and no vi source in the pile adds a preposition inside the parentheses. Only the two folder names, taken from disk, ever differ."
+  },
+  "menu.help.viewDebugLog": "Xem nhật ký gỡ lỗi",
+  "@menu.help.viewDebugLog": {
+    "sourceHash": "007c98d"
   }
 }

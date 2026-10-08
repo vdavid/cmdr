@@ -46,9 +46,9 @@ an APFS clonefile (`cp -c`), falling back to a plain copy, and downloading only 
 - **A copy, never a symlink into the main clone.** The Linux-E2E Docker container bind-mounts only the worktree, so a
   symlink pointing outside it dangles there and breaks the in-container build.
 - **CI release builds codesign each extracted binary**, detected by `APPLE_SIGNING_IDENTITY` being set. When
-  `LLAMA_SIGN_KEYCHAIN` is set the script passes `codesign --keychain` explicitly, and `release.yml` ALSO puts that
-  keychain in the search list: the runner's launchd session can't reach the login keychain's key, and `--keychain` on
-  its own doesn't work for a keychain outside the search list.
+  `LLAMA_SIGN_KEYCHAIN` is set the script passes `codesign --keychain` explicitly, and `release-pipeline.yml` ALSO puts
+  that keychain in the search list: the runner's launchd session can't reach the login keychain's key, and `--keychain`
+  on its own doesn't work for a keychain outside the search list.
 
 ## The capture binary
 

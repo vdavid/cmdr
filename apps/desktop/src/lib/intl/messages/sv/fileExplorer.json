@@ -55,6 +55,14 @@
   "@fileExplorer.restrictedFolder.label": {
     "sourceHash": "bbcf72f"
   },
+  "fileExplorer.archivedFile.label": "Arkiverad",
+  "@fileExplorer.archivedFile.label": {
+    "sourceHash": "bdb8650"
+  },
+  "fileExplorer.archivedFile.tooltip": "Arkiverad i kall lagring. Återställ filen i din lagringsleverantörs konsol innan du öppnar eller kopierar den.",
+  "@fileExplorer.archivedFile.tooltip": {
+    "sourceHash": "8897d71"
+  },
   "fileExplorer.diskSpace.free": "{freeText} ledigt av {totalText} ({percentText} %)",
   "@fileExplorer.diskSpace.free": {
     "sourceHash": "97781f4"
@@ -103,6 +111,14 @@
   "fileExplorer.pane.directConnectionUnreachableToast": "Det går inte att nå {server} just nu, så den här delade mappen ligger kvar på systemanslutningen.",
   "@fileExplorer.pane.directConnectionUnreachableToast": {
     "sourceHash": "4a5ca66"
+  },
+  "fileExplorer.pane.directConnectionBlockedByThisMacToast": "Något på den här Macen hindrar Cmdr från att ansluta direkt till {server}, så den här delade mappen ligger kvar på systemanslutningen. Prova att stänga av och slå på Cmdr igen under {localNetwork} eller kolla din brandväggsapp.",
+  "@fileExplorer.pane.directConnectionBlockedByThisMacToast": {
+    "sourceHash": "74f758e"
+  },
+  "fileExplorer.pane.openLocalNetworkSettings": "Öppna inställningar för {localNetwork}",
+  "@fileExplorer.pane.openLocalNetworkSettings": {
+    "sourceHash": "c3931df"
   },
   "fileExplorer.pane.directConnectionTooSlowToast": "{server} tog för lång tid på sig att svara, så den här delade mappen ligger kvar på systemanslutningen.",
   "@fileExplorer.pane.directConnectionTooSlowToast": {
@@ -288,6 +304,14 @@
   "fileExplorer.typeToJump.prefix": "Hoppa: ",
   "@fileExplorer.typeToJump.prefix": {
     "sourceHash": "e9e3412"
+  },
+  "fileExplorer.quickFilter.prefix": "Filtrera: ",
+  "@fileExplorer.quickFilter.prefix": {
+    "sourceHash": "b549365"
+  },
+  "fileExplorer.quickFilter.ariaLabel": "Visar namn som innehåller ”{pattern}”",
+  "@fileExplorer.quickFilter.ariaLabel": {
+    "sourceHash": "9b223b0"
   },
   "fileExplorer.searchResults.unavailableTitle": "Sökresultaten är inte längre tillgängliga",
   "@fileExplorer.searchResults.unavailableTitle": {
@@ -537,38 +561,6 @@
   "@fileExplorer.network.reconnect.willTryMore": {
     "sourceHash": "a7d887a"
   },
-  "fileExplorer.mtp.connectTimedOut": "Anslutningen nådde tidsgränsen. Enheten kan vara långsam eller inte svara.",
-  "@fileExplorer.mtp.connectTimedOut": {
-    "sourceHash": "cc01ae7"
-  },
-  "fileExplorer.mtp.exclusiveAccess": "En annan app använder den här enheten. Kör ptpcamerad-lösningen.",
-  "@fileExplorer.mtp.exclusiveAccess": {
-    "sourceHash": "1fac18c"
-  },
-  "fileExplorer.mtp.deviceNotFound": "Enheten hittades inte. Den kan ha kopplats ur.",
-  "@fileExplorer.mtp.deviceNotFound": {
-    "sourceHash": "15d2382"
-  },
-  "fileExplorer.mtp.disconnected": "Enheten kopplades från.",
-  "@fileExplorer.mtp.disconnected": {
-    "sourceHash": "57e823a"
-  },
-  "fileExplorer.mtp.deviceBusy": "Enheten är upptagen. Försök igen.",
-  "@fileExplorer.mtp.deviceBusy": {
-    "sourceHash": "7199b1d"
-  },
-  "fileExplorer.mtp.noStorage": "Enheten har ingen åtkomlig lagring",
-  "@fileExplorer.mtp.noStorage": {
-    "sourceHash": "ff30402"
-  },
-  "fileExplorer.mtp.connecting": "Ansluter till enheten…",
-  "@fileExplorer.mtp.connecting": {
-    "sourceHash": "860bb9b"
-  },
-  "fileExplorer.mtp.tryAgain": "Försök igen",
-  "@fileExplorer.mtp.tryAgain": {
-    "sourceHash": "d8b8392"
-  },
   "fileExplorer.networkMount.mounting": "Monterar {target}…",
   "@fileExplorer.networkMount.mounting": {
     "sourceHash": "7b7368d"
@@ -625,9 +617,65 @@
   "@fileExplorer.unreachable.openHome": {
     "sourceHash": "a178b4d"
   },
+  "fileExplorer.listingStalled.title": "Väntar fortfarande på den här mappen",
+  "@fileExplorer.listingStalled.title": {
+    "sourceHash": "2c288e7"
+  },
+  "fileExplorer.listingStalled.detail": "Servern eller enheten som mappen ligger på svarar inte. Cmdr fortsätter att försöka i bakgrunden och öppnar mappen så snart det kommer ett svar.",
+  "@fileExplorer.listingStalled.detail": {
+    "sourceHash": "3d5ca69"
+  },
+  "fileExplorer.listingStalled.detailServer": "Servern som mappen ligger på svarar inte. Cmdr fortsätter att försöka i bakgrunden och öppnar mappen så snart det kommer ett svar.",
+  "@fileExplorer.listingStalled.detailServer": {
+    "sourceHash": "f8f8837"
+  },
+  "fileExplorer.listingStalled.detailDrive": "Enheten som mappen ligger på svarar inte. Cmdr fortsätter att försöka i bakgrunden och öppnar mappen så snart det kommer ett svar.",
+  "@fileExplorer.listingStalled.detailDrive": {
+    "sourceHash": "e2f3046"
+  },
+  "fileExplorer.listingStalled.tryAgain": "Försök igen",
+  "@fileExplorer.listingStalled.tryAgain": {
+    "sourceHash": "d8b8392"
+  },
+  "fileExplorer.listingStalled.goBack": "Gå bakåt",
+  "@fileExplorer.listingStalled.goBack": {
+    "sourceHash": "6aadac2"
+  },
   "fileExplorer.clipboard.copied": "Kopierade {countText} {count, plural, one {objekt} other {objekt}}",
   "@fileExplorer.clipboard.copied": {
     "sourceHash": "1c25075"
+  },
+  "fileExplorer.compareDirectories.marked": "Markerade filer som skiljer sig åt: {leftCountText} {leftCount, plural, one {fil} other {filer}} till vänster och {rightCountText} {rightCount, plural, one {fil} other {filer}} till höger.",
+  "@fileExplorer.compareDirectories.marked": {
+    "sourceHash": "73e3ccf"
+  },
+  "fileExplorer.compareDirectories.noDifferences.newerAndMissing": "Inget att markera: varje fil finns i båda mapparna, och ingen kopia är nyare. Undermappar jämförs inte.",
+  "@fileExplorer.compareDirectories.noDifferences.newerAndMissing": {
+    "sourceHash": "c2960d8"
+  },
+  "fileExplorer.compareDirectories.noDifferences.missing": "Inget att markera: varje fil finns i båda mapparna. Undermappar jämförs inte.",
+  "@fileExplorer.compareDirectories.noDifferences.missing": {
+    "sourceHash": "ed2e696"
+  },
+  "fileExplorer.compareDirectories.noDifferences.sizeAndMissing": "Inget att markera: varje fil finns i båda mapparna, med samma storlek. Undermappar jämförs inte.",
+  "@fileExplorer.compareDirectories.noDifferences.sizeAndMissing": {
+    "sourceHash": "5f7b808"
+  },
+  "fileExplorer.compareDirectories.keptChanging": "Mapparna ändrades hela tiden medan de jämfördes. Försök igen när de har slutat ändras.",
+  "@fileExplorer.compareDirectories.keptChanging": {
+    "sourceHash": "3051074"
+  },
+  "fileExplorer.compareDirectories.needsTwoFolders": "Öppna en mapp i båda panelerna för att jämföra dem",
+  "@fileExplorer.compareDirectories.needsTwoFolders": {
+    "sourceHash": "c04ef80"
+  },
+  "fileExplorer.compareDirectories.couldNotFinish": "Det gick inte att slutföra jämförelsen av mapparna. Försök igen om en stund.",
+  "@fileExplorer.compareDirectories.couldNotFinish": {
+    "sourceHash": "0900bc9"
+  },
+  "fileExplorer.folderSizes.notConnected": "Det går inte att beräkna mappstorlekar här: den här platsen är inte ansluten just nu.",
+  "@fileExplorer.folderSizes.notConnected": {
+    "sourceHash": "8b51988"
   },
   "fileExplorer.clipboard.cutReady": "{countText} {count, plural, one {objekt} other {objekt}} redo att flyttas. Klistra in för att slutföra.",
   "@fileExplorer.clipboard.cutReady": {
@@ -705,6 +753,14 @@
   "@fileExplorer.clipboard.empty": {
     "sourceHash": "0cbe304"
   },
+  "fileExplorer.clipboard.stillPasting": "Håller fortfarande på att skapa en fil från urklipp. Volymen svarar långsamt.",
+  "@fileExplorer.clipboard.stillPasting": {
+    "sourceHash": "0e98ca7"
+  },
+  "fileExplorer.clipboard.notPasted": "Cmdr kunde inte skapa en fil från urklipp. {reason}",
+  "@fileExplorer.clipboard.notPasted": {
+    "sourceHash": "a6e63c7"
+  },
   "fileExplorer.clipboard.pastedAsFile": "Klistrade in {kind, select, image {en bild} pdf {en PDF} other {text}} från urklipp som {filename}",
   "@fileExplorer.clipboard.pastedAsFile": {
     "sourceHash": "d61d4b5"
@@ -781,6 +837,26 @@
   "@fileExplorer.git.useTransferToCopyOut": {
     "sourceHash": "a0d65fe"
   },
+  "fileExplorer.openWith.copyRefused.tooLarge": "{fileName} är större än {limit}, så Cmdr kan inte öppna filen i {appName} inifrån arkivet.",
+  "@fileExplorer.openWith.copyRefused.tooLarge": {
+    "sourceHash": "43399e6"
+  },
+  "fileExplorer.openWith.copyRefused.tooLargeInRepoHistory": "{fileName} är större än {limit}, så Cmdr kan inte öppna filen i {appName} från repots historik.",
+  "@fileExplorer.openWith.copyRefused.tooLargeInRepoHistory": {
+    "sourceHash": "aab64d0"
+  },
+  "fileExplorer.openWith.copyRefused.needsPassword": "{fileName} ligger i ett lösenordsskyddat arkiv. Kopiera filen till en mapp först (Cmdr kommer att fråga efter lösenordet) och öppna den sedan i {appName}.",
+  "@fileExplorer.openWith.copyRefused.needsPassword": {
+    "sourceHash": "882a23f"
+  },
+  "fileExplorer.openWith.copyRefused.archiveUnreadable": "Det gick inte att få ut {fileName} ur arkivet för att öppna filen i {appName}. Arkivet kan vara skadat eller använda ett format som Cmdr inte kan läsa.",
+  "@fileExplorer.openWith.copyRefused.archiveUnreadable": {
+    "sourceHash": "4ff2573"
+  },
+  "fileExplorer.openWith.copyRefused.unreadable": "Det gick inte att läsa {fileName} för att öppna filen i {appName}. Kontrollera att enheten fortfarande är ansluten och försök igen.",
+  "@fileExplorer.openWith.copyRefused.unreadable": {
+    "sourceHash": "8af2399"
+  },
   "fileExplorer.rename.hiddenAfterRename": "Din fil försvann från vyn eftersom dolda filer inte visas.",
   "@fileExplorer.rename.hiddenAfterRename": {
     "sourceHash": "6258274"
@@ -797,13 +873,17 @@
   "@fileExplorer.rename.chainKeptOriginalNameAndOthers": {
     "sourceHash": "016797b"
   },
-  "fileExplorer.rename.unconfirmed": "Det gick inte att bekräfta namnbytet av ”{name}”. Volymen kan vara långsam, så filen kan ändå ha bytt namn.",
-  "@fileExplorer.rename.unconfirmed": {
-    "sourceHash": "059ac81"
+  "fileExplorer.rename.needsOwnMoveDialog": "Namnbytet kopierar på servern och behöver därför en egen Flytta-dialog. Byt namn på objektet igen, separat.",
+  "@fileExplorer.rename.needsOwnMoveDialog": {
+    "sourceHash": "87110e0"
   },
-  "fileExplorer.rename.unconfirmedAndOthers": "Det gick inte att bekräfta namnbytena av ”{name}” och {others, plural, one {en annan fil} other {{othersText} andra filer}}. Volymen kan vara långsam, så filerna kan ändå ha bytt namn.",
-  "@fileExplorer.rename.unconfirmedAndOthers": {
-    "sourceHash": "f16b15d"
+  "fileExplorer.rename.stillRenaming": "Håller fortfarande på att byta namn på ”{name}”. Volymen svarar långsamt.",
+  "@fileExplorer.rename.stillRenaming": {
+    "sourceHash": "a05cca5"
+  },
+  "fileExplorer.rename.stillRenamingAndOthers": "Håller fortfarande på att byta namn på ”{name}” och {kind, select, folders {{others, plural, one {en annan mapp} other {{othersText} andra mappar}}} files {{others, plural, one {en annan fil} other {{othersText} andra filer}}} other {{others, plural, one {{othersText} andra filer och mappar} other {{othersText} andra filer och mappar}}}}. Volymen svarar långsamt.",
+  "@fileExplorer.rename.stillRenamingAndOthers": {
+    "sourceHash": "933be25"
   },
   "fileExplorer.columns.name": "Namn",
   "@fileExplorer.columns.name": {
@@ -1335,6 +1415,10 @@
   "@fileExplorer.navigation.connectionTooltipDirect": {
     "sourceHash": "a69a3ad"
   },
+  "fileExplorer.navigation.connectionTooltipConnected": "Ansluten",
+  "@fileExplorer.navigation.connectionTooltipConnected": {
+    "sourceHash": "2296556"
+  },
   "fileExplorer.navigation.connectionTooltipSystem": "Använder systemanslutning. Använd menyalternativet ”Anslut direkt för snabbare åtkomst” för snabbare åtkomst.",
   "@fileExplorer.navigation.connectionTooltipSystem": {
     "sourceHash": "e4ac697"
@@ -1407,9 +1491,9 @@
   "@fileExplorer.navigation.disconnectPlaceAriaLabel": {
     "sourceHash": "8f755cb"
   },
-  "fileExplorer.navigation.disconnectBusyTooltip": "Det går inte att koppla från medan åtgärder pågår på den här servern",
+  "fileExplorer.navigation.disconnectBusyTooltip": "Cmdr arbetar fortfarande med filer på den här servern. Koppla från när det är klart.",
   "@fileExplorer.navigation.disconnectBusyTooltip": {
-    "sourceHash": "a659820"
+    "sourceHash": "bd52d60"
   },
   "fileExplorer.navigation.serverPinnedToast": "{name} finns nu i din volymväljare.",
   "@fileExplorer.navigation.serverPinnedToast": {
@@ -1421,7 +1505,7 @@
   },
   "fileExplorer.navigation.pinRefusedToast": "Cmdr kunde inte ändra var {name} visas.",
   "@fileExplorer.navigation.pinRefusedToast": {
-    "sourceHash": "3ed5f60"
+    "sourceHash": "59f1f8b"
   },
   "fileExplorer.navigation.disconnectRefusedToast": "Cmdr kunde inte koppla från {name}.",
   "@fileExplorer.navigation.disconnectRefusedToast": {
@@ -1467,9 +1551,9 @@
   "@fileExplorer.navigation.ejectVolumeAriaLabel": {
     "sourceHash": "61db18b"
   },
-  "fileExplorer.navigation.ejectBusyTooltip": "Det går inte att mata ut medan åtgärder pågår på den här enheten",
+  "fileExplorer.navigation.ejectBusyTooltip": "Cmdr arbetar fortfarande med filer på den här enheten. Mata ut när det är klart.",
   "@fileExplorer.navigation.ejectBusyTooltip": {
-    "sourceHash": "eafd9bd"
+    "sourceHash": "3da6312"
   },
   "fileExplorer.navigation.ejectingVolumeAriaLabel": "Matar ut {name}…",
   "@fileExplorer.navigation.ejectingVolumeAriaLabel": {
@@ -1657,5 +1741,41 @@
   "fileExplorer.dragOut.partial": "{summary} {count, plural, =1 {Det gick inte att kopiera ”{name}”.} one {Det gick inte att kopiera {countText} objekt.} other {Det gick inte att kopiera {countText} objekt.}}",
   "@fileExplorer.dragOut.partial": {
     "sourceHash": "9215226"
+  },
+  "fileExplorer.folderSizes.unreadable": "{count, plural, one {Det gick inte att läsa # mapp helt, så storleken kan vara ofullständig.} other {Det gick inte att läsa # mappar helt, så storlekarna kan vara ofullständiga.}}",
+  "@fileExplorer.folderSizes.unreadable": {
+    "sourceHash": "ad31a56"
+  },
+  "fileExplorer.quickFilter.clear": "Rensa filter",
+  "@fileExplorer.quickFilter.clear": {
+    "sourceHash": "ba59e2d"
+  },
+  "fileExplorer.quickFilter.intro.title": "Det du skrev filtrerade panelen",
+  "@fileExplorer.quickFilter.intro.title": {
+    "sourceHash": "eef3e92"
+  },
+  "fileExplorer.quickFilter.intro.body": "Du skrev några bokstäver, så panelen visar nu bara de filer och mappar vars namn innehåller dem.",
+  "@fileExplorer.quickFilter.intro.body": {
+    "sourceHash": "e406349"
+  },
+  "fileExplorer.quickFilter.intro.escape": "Tryck på Escape för att se alla dina filer igen.",
+  "@fileExplorer.quickFilter.intro.escape": {
+    "sourceHash": "af749ad"
+  },
+  "fileExplorer.quickFilter.intro.jumpNote": "Vill du hellre flytta markören till ett matchande namn utan att gömma något? Byt till ”Hoppa”, här eller i Inställningar.",
+  "@fileExplorer.quickFilter.intro.jumpNote": {
+    "sourceHash": "ac6d3c8"
+  },
+  "fileExplorer.quickFilter.intro.switchToJump": "Byt till ”Hoppa”",
+  "@fileExplorer.quickFilter.intro.switchToJump": {
+    "sourceHash": "38642f9"
+  },
+  "fileExplorer.quickFilter.intro.openSettings": "Inställningar…",
+  "@fileExplorer.quickFilter.intro.openSettings": {
+    "sourceHash": "7a04083"
+  },
+  "fileExplorer.quickFilter.intro.gotIt": "Uppfattat",
+  "@fileExplorer.quickFilter.intro.gotIt": {
+    "sourceHash": "5ad3dbd"
   }
 }

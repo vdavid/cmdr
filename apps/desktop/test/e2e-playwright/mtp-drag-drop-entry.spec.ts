@@ -216,7 +216,7 @@ test.describe('Programmatic drop entry (MTP)', () => {
     await triggerFileDrop(tauriPage, [path.join(fixtureRoot, 'left', 'file-a.txt')], 'right')
 
     await tauriPage.waitForSelector(TRANSFER_DIALOG, 10000)
-    await expectDialogCounters(tauriPage, { bytes: '1.00 KB', files: 1, dirs: 0 })
+    await expectDialogCounters(tauriPage, { bytes: '1.02 kB', files: 1, dirs: 0 })
 
     await tauriPage.evaluate(`(function(){
         var ov = document.querySelector('${TRANSFER_DIALOG} .modal-overlay') || document.querySelector('.modal-overlay');

@@ -54,8 +54,12 @@ and classification (`transfer-error-messages.ts`). There is no `friendly_error` 
 ## The permission-denied three-way
 
 `VolumeError::PermissionDenied` is one errno covering three problems with nothing in common but the word "permission",
-so `volume_error.rs` picks between three reasons:
+so `volume_error.rs` picks between four reasons:
 
+- **`ObjectStoreRefused`** first, when the path is an S3 app path (`server_of_path`, its own `s3://` scheme): no TCC
+  gate or mount is involved, and the account refused, either for its keys' permissions or because the provider paused it
+  (a usage cap, a billing hold; B2's daily cap answers `403 AccessDenied`, live 2026-10-02). One answer covers both, so
+  the FE names both. NO `action_kind`. ❌ Never told apart by the response's message.
 - **`TccRestricted`** when `tcc_paths::tcc_denial_is_plausible(path)` holds: a TCC gate covers the path AND that gate is
   itself shut. Carries `OpenPrivacySettings`, and the FE offers both escape hatches (Full Disk Access, per-folder Files
   & Folders).

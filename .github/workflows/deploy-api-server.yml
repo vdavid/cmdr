@@ -8,6 +8,9 @@ on:
       - 'apps/api-server/**'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   deploy:
     name: Deploy API server

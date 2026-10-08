@@ -18,7 +18,9 @@ import SignInSheet from './SignInSheet.svelte'
 import HostKeyStep from './HostKeyStep.svelte'
 import ServerFormFields from './ServerFormFields.svelte'
 import SignInCredentialFields from './SignInCredentialFields.svelte'
+import S3EndpointFields from './S3EndpointFields.svelte'
 import { emptyServerForm } from './server-form'
+import { emptyS3Fields } from './s3-form'
 import { expectNoA11yViolations } from '$lib/test-a11y'
 import type { SignInAttemptOutcome, SignInSheetRequest } from './sign-in-contract'
 
@@ -191,6 +193,111 @@ describe('the three renderers on their own', () => {
         namePlaceholder: 'ada@nas.local',
         rootRefusal: "Cmdr can't open this folder on nas.local.",
         startFolderRefusal: 'The start folder has to be the root folder or a folder inside it.',
+        onChange: () => {},
+      },
+    })
+    await tick()
+    await expectNoA11yViolations(target)
+  })
+
+  it('the S3 form, Other selected, with refusals under the endpoint, the region, the bucket, and the secret, has no violations', async () => {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    const form = emptyServerForm()
+    mount(ServerFormFields, {
+      target,
+      props: {
+        form: { ...form, protocol: 's3', username: 'AKIAEXAMPLE', s3: { ...form.s3, provider: 'other' } },
+        disabled: false,
+        protocolEditable: true,
+        identityEditable: true,
+        addressRefusal: 'Nothing at this address answers as S3 storage.',
+        regionRefusal: 'This bucket is in us-east-2. Pick that region and try again.',
+        onUseRegion: () => {},
+        suggestedRegion: 'us-east-2',
+        bucketRefusal: 'There’s no bucket by that name at s3.example.com.',
+        secretRefusal: 'That secret access key didn’t work.',
+        advancedOpen: true,
+        onChange: () => {},
+      },
+    })
+    await tick()
+    await expectNoA11yViolations(target)
+  })
+
+  it('the S3 form on a preset, edit mode, has no violations', async () => {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    const form = emptyServerForm()
+    mount(ServerFormFields, {
+      target,
+      props: {
+        form: {
+          ...form,
+          protocol: 's3',
+          username: 'AKIAEXAMPLE',
+          s3: { ...form.s3, provider: 'r2', accountId: 'abc' },
+        },
+        disabled: false,
+        protocolEditable: false,
+        identityEditable: false,
+        identityHint: 'The provider, the access key ID, and the bucket are what name this place.',
+        regionRefusal: 'Use only lowercase letters, digits, and dashes here.',
+        onChange: () => {},
+      },
+    })
+    await tick()
+    await expectNoA11yViolations(target)
+  })
+
+  it('the S3 provider block on Hetzner, with a refusal under its location and the bucket, has no violations', async () => {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(S3EndpointFields, {
+      target,
+      props: {
+        fields: { ...emptyS3Fields(), provider: 'hetzner', location: 'hel1' },
+        disabled: false,
+        identityEditable: true,
+        addressRefusal: 'Nothing at this address answers as S3 storage.',
+        bucketRefusal: 'There’s no bucket by that name at hel1.your-objectstorage.com.',
+        onChange: () => {},
+      },
+    })
+    await tick()
+    await expectNoA11yViolations(target)
+  })
+
+  it('the S3 provider block on Spaces and on GCS has no violations', async () => {
+    for (const fields of [
+      { ...emptyS3Fields(), provider: 'digitalocean' as const, spacesRegion: 'fra1' },
+      { ...emptyS3Fields(), provider: 'gcs' as const },
+    ]) {
+      const target = document.createElement('div')
+      document.body.appendChild(target)
+      mount(S3EndpointFields, {
+        target,
+        props: { fields, disabled: false, identityEditable: true, onChange: () => {} },
+      })
+      await tick()
+      await expectNoA11yViolations(target)
+    }
+  })
+
+  it('the access_keys credential fields with a refusal have no violations', async () => {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(SignInCredentialFields, {
+      target,
+      props: {
+        shape: { kind: 'access_keys' },
+        accountLabel: 'AKIAEXAMPLE',
+        username: 'AKIAEXAMPLE',
+        secret: '',
+        remember: false,
+        guest: false,
+        disabled: false,
+        secretRefusal: 'That secret access key didn’t work.',
         onChange: () => {},
       },
     })

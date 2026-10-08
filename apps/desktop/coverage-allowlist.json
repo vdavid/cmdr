@@ -31,9 +31,6 @@
     "file-explorer/navigation/VolumeBreadcrumb.svelte": {
       "reason": "UI component, depends on Tauri APIs and MTP store"
     },
-    "file-explorer/network/network-store.svelte.ts": {
-      "reason": "Depends on Tauri APIs"
-    },
     "file-explorer/pane/DialogManager.svelte": {
       "reason": "Pure rendering component, dialog state tested via parent"
     },
@@ -45,9 +42,6 @@
     },
     "file-explorer/pane/FilePane.svelte": {
       "reason": "Tested in integration.test.ts, complex component"
-    },
-    "file-explorer/pane/MtpConnectionView.svelte": {
-      "reason": "MTP connection UI, depends on Tauri APIs"
     },
     "file-explorer/pane/NetworkMountView.svelte": {
       "reason": "Network mount UI, depends on Tauri APIs"
@@ -75,9 +69,6 @@
     },
     "file-explorer/rename/rename-activation.ts": {
       "reason": "Depends on document event listeners and timers"
-    },
-    "file-explorer/rename/rename-operations.ts": {
-      "reason": "Depends on Tauri commands and FilePane integration"
     },
     "file-explorer/selection/FileIcon.svelte": {
       "reason": "Simple UI component, display only"
@@ -118,17 +109,11 @@
     "query-ui/PathPills.svelte": {
       "reason": "Pure split semantics are covered by PathPills.svelte.test.ts; the overflow-collapse layout depends on `@chenglou/pretext` canvas measurement + ResizeObserver, neither of which runs in jsdom. The visible layout is exercised via the MCP-driven manual verification in the search-fixup pass."
     },
-    "reduce-transparency.ts": {
-      "reason": "Depends on Tauri invoke (getShouldReduceTransparency) and listen (reduceTransparencyChanged) APIs; just toggles the reduce-transparency html class"
-    },
     "settings/components/SettingsContent.svelte": {
       "reason": "UI layout component"
     },
     "settings/components/SettingsSidebar.svelte": {
       "reason": "UI component, search logic tested via registry"
-    },
-    "settings/mcp-main-bridge.ts": {
-      "reason": "MCP bridge, depends on Tauri event APIs (listen/emit)"
     },
     "settings/reactive-settings.svelte.ts": {
       "reason": "Svelte reactive state, depends on settings store"

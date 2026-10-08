@@ -223,7 +223,8 @@ The tool re-derives nothing the viewer already ships. Per behavior, the symbol i
 - **The backend**: `file_viewer::headless::open_text_backend(path, encoding, cancel)`: FullLoad up to 1 MB, else a
   LineIndex built under the cancel flag, falling back to ByteSeek with `line_numbers_exact = false` when the deadline
   flips the flag (`file_viewer/DETAILS.md` § Headless reads). No session, no watcher, nothing to tear down.
-- **The window**: `backend.get_lines(Line(startLine - 1), maxLines + 1)`. The extra line says exactly whether more
+- **The window**: `backend.get_lines(Line(startLine - 1), maxLines + 1)`, under a fresh cancel flag (the path's own
+  is often already set by the deadline that stopped the line index; `find`'s per-hit line reads do the same). The extra line says exactly whether more
   exist, on every backend, without leaning on `total_lines`. `window_from_chunk` (pure) joins with `\n`, strips one
   trailing `\r` per line (the backends keep it on CRLF files), cuts a line at `MAX_LINE_CHARS` (`linesCut`), stops at
   `MAX_WINDOW_CHARS` (`truncated`), and answers a past-the-end `startLine` with an empty, un-truncated window (the
@@ -236,7 +237,7 @@ The tool re-derives nothing the viewer already ships. Per behavior, the symbol i
   (FullLoad, or ByteSeek with no index: a scan streams from byte 0 and numbers lines exactly, so an index would only
   read the file twice), then `backend.search(matcher, cancel, matches, progress)`, the viewer's own loop, capped at
   `MAX_SEARCH_MATCHES`. Matches are grouped by line in arrival order, the first `MAX_FIND_LINES` (50) lines are fetched
-  by `SeekTarget::ByteOffset(match.byte_offset)` (exact on every backend; `Line(n)` is a guess on ByteSeek), `\r`
+  by `SeekTarget::ByteOffset(match.byte_offset)` (exact on every backend; `Row(n)` is a guess on ByteSeek), `\r`
   stripped, and cut by `snippet_around` to `FIND_SNIPPET_CHARS` (300) around the first match, a third before it, with
   `…` at each cut end. The match column is UTF-16 (the viewer's JS-facing unit) and goes through
   `range_read::clamp_utf16_offset_to_byte`, the one UTF-16→byte conversion in the tree; read as a char index it lands
@@ -249,11 +250,15 @@ The tool re-derives nothing the viewer already ships. Per behavior, the symbol i
   inside `crash_reporter::contain_panics` (`crash_reporter/DETAILS.md` § The one exemption): the closures wrap the
   foreign calls only, never our shapers. Order: `header_version` over the classifier's head bytes (ours, so the version
   survives a refused file), the 64 MiB `MAX_PDF_BYTES` gate (over it, `tooLarge` and no read), `std::fs::read`,
-  `Document::load_mem`, `get_pages().len()` (exact; a tree that panics the parser is `unparseable`), `is_encrypted()`
+  `Document::load_mem`, `get_pages()` (its length is the exact count; a tree that panics the parser is `unparseable`),
+  `is_encrypted()`
   (→ `encrypted`, page count kept, Info strings not read: they're ciphertext), then `Title` / `Author` through
   `doc.dereference` + `decode_text_string` (PDFDocEncoding or UTF-16, trimmed, blank is absent). Page text is
   `output_doc_page(&doc, &mut PlainTextOutput::new(&mut buf), n)`, one page at a time so a range never decodes the
-  rest; a refusal or a contained panic marks that page `unparseable` and the loop continues. `window_from_pages` and
+  rest; a refusal or a contained panic marks that page `unparseable` and the loop continues. ❗ So does a page whose
+  `Parent` chain loops (`parent_chain_ends`, checked before the parser sees the page): `pdf-extract` resolves inherited
+  `Resources` / `MediaBox` by recursing up `Parent` unguarded, a stack overflow `catch_unwind` can't contain (found by
+  the `pdf` fuzz target, `fuzz/DETAILS.md`). `window_from_pages` and
   `find_in_pages` are pure over an `extract(page)` closure (tests inject page texts): the window trims each page, cuts
   at `MAX_PAGE_CHARS` (8,000: two dense pages per row; a whole page the model can re-ask for by number beats a slice
   it can't, since there is no offset inside a page), carries whole pages until the next would break
@@ -418,6 +423,10 @@ which uncertainty it has can look.
 **One formatter, `search::format_size` + `format_timestamp`.** ❌ Never a second one: two would round differently and
 the same folder would read two sizes across two surfaces. Like the `search` results table, this path does NOT consult
 the user's SI-vs-binary units setting; MCP/agent output stays internally consistent instead of tracking a UI preference.
+It's base 1024, so it writes IEC symbols (`KiB`, `MiB`, `GiB`, `TiB`). Its inverse, `search::parse_size`, lets the
+symbol pick the base (`MiB` = 1,048,576, `MB` = 1,000,000, a bare `KB` = 1,000), and every typed or model-written
+size goes through it: MCP's `parse_human_size` and the search AI's `>50mb` / `>2gib` bounds. The selection AI writes
+raw bytes, so its prompt teaches the same split.
 
 ### The remainder: what the page didn't show
 

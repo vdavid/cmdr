@@ -123,6 +123,14 @@
   "@errorReporter.dialog.saveToDisk": {
     "description": "Developer-only button (visible in dev builds) that writes the report bundle to disk for inspection. \"debug\" marks it as a developer feature."
   },
+  "errorReporter.dialog.managedOff": "Your organization turned off sending reports. You can still save one to disk and share it yourself.",
+  "@errorReporter.dialog.managedOff": {
+    "description": "Shown in the error-report dialog in place of its usual explanation, when the person's organization (their employer's or school's IT team, through a device management profile) turned off sending crash and error reports. Nothing can be sent from the dialog, but the person can save the report as a file and pass it on, for example to their IT team. Calm, not alarming; Cmdr never uses the words \"error\" or \"failed\" in messages people read."
+  },
+  "errorReporter.dialog.saveToDiskManaged": "Save to disk",
+  "@errorReporter.dialog.saveToDiskManaged": {
+    "description": "Main button of the error-report dialog when the person's organization turned off sending reports: it saves the report as a zip file on this Mac (a Reveal in Finder button follows), so the person can share it themselves. Keep it short (a tight button)."
+  },
 
   "errorReporter.dialog.cancel": "Cancel",
   "@errorReporter.dialog.cancel": {
@@ -192,7 +200,7 @@
     "description": "Label on the primary button while the note is being attached (button is disabled meanwhile). Ends with a single-character ellipsis (…). Keep it short."
   },
 
-  "errorReporter.amend.unavailable": "That report can’t take a note any more. To get your notes to the team, send a new report from the Help menu.",
+  "errorReporter.amend.unavailable": "That report can’t take a note anymore. To get your notes to the team, send a new report from the Help menu.",
   "@errorReporter.amend.unavailable": {
     "description": "Shown instead of the note box when the report can no longer be added to, either because Cmdr restarted since it was sent or because the server left no way to add to it. Points the user at Help > Send error report instead. \"Help\" is the name of the app’s Help menu; use the wording macOS uses for that menu in your language. Avoid the words \"error\" and \"failed\" in the translated wording.",
     "screenshot": "error-report-amend.png"
@@ -239,7 +247,7 @@
 
   "errorReporter.bundleSavedToast.message": "Saved bundle to disk",
   "@errorReporter.bundleSavedToast.message": {
-    "description": "Developer-only toast confirming the report bundle was written to disk. The file path is shown below it."
+    "description": "Toast confirming the report bundle (a zip of redacted logs) was written to disk, shown in dev builds and when the person's organization turned off sending reports. The file path is shown below it."
   },
 
   "errorReporter.bundleSavedToast.dismiss": "Dismiss",

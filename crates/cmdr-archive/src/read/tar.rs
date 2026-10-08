@@ -211,7 +211,7 @@ fn entry_matches(entry: &tar::Entry<'_, impl Read>, target: &str) -> bool {
 }
 
 /// One-pass subtree extract: decode the tar stream ONCE and stream every file in
-/// `wanted` (sanitized inner path → uncompressed size) in archive order. Members
+/// `wanted` (sanitized inner path → its member) in archive order. Members
 /// not in `wanted` are skipped (the `tar` iterator advances past their data,
 /// which for a compressed tar still flows through the one decoder — the honest
 /// single-pass cost). Stops as soon as every wanted file has been delivered, so a
@@ -219,7 +219,7 @@ fn entry_matches(entry: &tar::Entry<'_, impl Read>, target: &str) -> bool {
 pub(super) fn stream_subtree(
     source: Arc<dyn ArchiveByteSource>,
     codec: TarCodec,
-    mut wanted: HashMap<String, u64>,
+    mut wanted: HashMap<String, SubtreeMember>,
     tx: &SubtreeTx,
 ) {
     if wanted.is_empty() {
@@ -235,13 +235,11 @@ pub(super) fn stream_subtree(
         // `remove` (not `get`) so a duplicate archive entry with the same name
         // isn't delivered twice; the tree kept the last, but the first-in-stream
         // occurrence is what the per-entry reader also matches.
-        let Some(size) = wanted.remove(&sanitized) else {
+        let Some(member) = wanted.remove(&sanitized) else {
             return ControlFlow::Continue(()); // not in the subtree: skip, still one forward pass
         };
-        if !tx.send_member(SubtreeMember {
-            inner_path: sanitized,
-            size,
-        }) {
+        let size = member.size;
+        if !tx.send_member(member) {
             return ControlFlow::Break(()); // consumer gone: stop decoding
         }
         if let Err(err) = pump_chunks(entry, Some(size), |chunk| tx.send_chunk(chunk), ArchiveError::from) {

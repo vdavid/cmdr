@@ -220,6 +220,10 @@
   "@askCmdr.error.noCloudConsent": {
     "sourceHash": "cd2af1d"
   },
+  "askCmdr.error.managedByOrganization": "A szervezeted nem engedélyezi ezt az AI-szolgáltatást. Az IT-csapatodtól megtudhatod, melyeket használhatod.",
+  "@askCmdr.error.managedByOrganization": {
+    "sourceHash": "845a19f"
+  },
   "askCmdr.error.localWindowTooSmall": "A Cmdrnek nagyobb kontextusablak kell, mint amekkora a helyi modellednek van. Válassz 32 768 tokent vagy többet a beállításokban, az AI résznél.",
   "@askCmdr.error.localWindowTooSmall": {
     "sourceHash": "8ac7452"
@@ -576,6 +580,10 @@
   "askCmdr.renameUndo.applied": "{countText} {count, plural, one {fájl} other {fájl}} átnevezve.",
   "@askCmdr.renameUndo.applied": {
     "sourceHash": "b06c599"
+  },
+  "askCmdr.renameUndo.swapsSkipped": "{count, plural, one {{countText} átnevezés kihagyva, mert nevet cserélne egy másikkal. Ezt a fájlt egymagában nevezd át.} other {{countText} átnevezés kihagyva, mert nevet cserélnének egymással. Ezeket a fájlokat egyenként nevezd át.}}",
+  "@askCmdr.renameUndo.swapsSkipped": {
+    "sourceHash": "90e8dfc"
   },
   "askCmdr.renameUndo.undo": "Visszavonás",
   "@askCmdr.renameUndo.undo": {

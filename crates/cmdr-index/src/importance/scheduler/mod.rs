@@ -46,9 +46,10 @@
 //! through the host runtime seam, never on the IPC thread. Local and SMB
 //! volumes; MTP is excluded at every entry point (`ScoringPolicy::for_kind`).
 //!
-//! **A pass can't be stopped**: no `CancellationToken`, no stop hook, so
-//! `stop_all_indexing` (memory watchdog, shutdown) waits it out. Why, and the
-//! `TODO` for closing it: `DETAILS.md` § "A pass can't be stopped".
+//! **A pass stops with its volume.** Each wired volume hands the scheduler a child
+//! of its root `CancellationToken`; every pass polls it through the walk, the
+//! scoring, and the write, and a stopped pass returns [`PassError::Cancelled`]
+//! having changed nothing on disk. `DETAILS.md` § "How a pass stops".
 
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -56,7 +57,10 @@ use std::sync::Arc;
 use std::sync::Mutex;
 use std::time::Instant;
 
+use tokio_util::sync::CancellationToken;
+
 use super::scorer::{SignalSet, Weights};
+use super::stop::{PassError, check};
 use super::writer::ImportanceWriter;
 use crate::IndexVolumeKind;
 use crate::importance::read::WeightsChanged;
@@ -249,6 +253,11 @@ pub struct ImportanceScheduler {
     /// burst of dir-changed batches coalesces here so overlapping passes drain one
     /// combined set, not one pass per batch.
     pending_incremental: Mutex<HashMap<String, std::collections::HashSet<String>>>,
+    /// Each wired volume's stop signal: a child of the volume's root token, handed
+    /// over by whoever wired it (the registration bus or the startup sweep). A
+    /// volume that starts again is wired again, which replaces the entry with a
+    /// child of its NEW root; the old one stays fired, as a token must.
+    stops: Mutex<HashMap<String, CancellationToken>>,
 }
 
 impl ImportanceScheduler {
@@ -296,6 +305,8 @@ mod multi_volume_tests;
 #[cfg(test)]
 mod recompute_tests;
 #[cfg(test)]
+mod stop_tests;
+#[cfg(test)]
 mod test_support;
 #[cfg(test)]
 mod walk_memory_tests;
@@ -311,7 +322,65 @@ impl ImportanceScheduler {
             data_dir,
             writers: super::writer_registry::WriterRegistry::new(),
             pending_incremental: Mutex::new(HashMap::new()),
+            stops: Mutex::new(HashMap::new()),
         }
+    }
+
+    /// Take `stop` as the signal every pass over `volume_id` runs under from now on.
+    fn adopt_stop(&self, volume_id: &str, stop: CancellationToken) {
+        self.stops.lock_ignore_poison().insert(volume_id.to_string(), stop);
+    }
+
+    /// The stop signal a pass over `volume_id` should run under right now.
+    ///
+    /// A volume nothing wired reads as already stopped. Work that can't be stopped
+    /// doesn't start, which is the safe side of the trap `indexing/host/DETAILS.md`
+    /// § Cancellation names (resolve nothing, default to a token that never fires).
+    fn stop_for(&self, volume_id: &str) -> CancellationToken {
+        self.stops
+            .lock_ignore_poison()
+            .get(volume_id)
+            .cloned()
+            .unwrap_or_else(|| {
+                let never_wired = CancellationToken::new();
+                never_wired.cancel();
+                never_wired
+            })
+    }
+
+    /// Stop every pass that is running or about to: the scheduler's half of
+    /// `stop_all_indexing` (the memory watchdog's emergency stop, and the master
+    /// indexing switch going off), reached through its subsystem stop hook.
+    ///
+    /// Cheap and non-blocking, as a hook must be: it fires tokens and returns. Each
+    /// pass leaves at its next look. A volume stays stopped here until it registers
+    /// again, the same rule `media_index` follows: a pass that was stopped doesn't
+    /// quietly resume.
+    fn stop_every_pass(&self) {
+        for stop in self.stops.lock_ignore_poison().values() {
+            stop.cancel();
+        }
+    }
+
+    /// Let go of a volume's importance database, which is about to be deleted:
+    /// what the scheduler registers with `volume_files` as the store's holder.
+    ///
+    /// Its writer thread is the one thing here that keeps the file open, so it is
+    /// shut down and joined, and the batch awaiting a rescore goes with the rows it
+    /// was about. `data_dir` says whose volume it is: two hosts in one process
+    /// (tests) can share a volume id, and only the scheduler over that data dir
+    /// holds that database.
+    ///
+    /// The removal reaches here after the volume's stop signal has fired (a live
+    /// volume is drained first, an evicted one has no pass to run), which is why
+    /// nothing re-creates the writer behind it: a pass looks at its signal right
+    /// before it asks for one.
+    fn let_go_of(&self, data_dir: &std::path::Path, volume_id: &str) {
+        if data_dir != self.data_dir {
+            return;
+        }
+        self.pending_incremental.lock_ignore_poison().remove(volume_id);
+        self.writers.retire(volume_id);
     }
 
     /// Accumulate `paths` into the volume's pending incremental set (union).
@@ -330,6 +399,43 @@ impl ImportanceScheduler {
         }
     }
 
+    /// [`run_pass_blocking`](Self::run_pass_blocking) under the volume's CURRENT stop
+    /// signal: what the async driver runs for each pass of a coalesced run.
+    ///
+    /// Resolved here, per pass, and never captured by the run: a request from a
+    /// volume that restarted can coalesce into a run its previous life began, and
+    /// that re-run has to hear the new signal (the old one has already fired).
+    pub(crate) fn run_pass_under_current_stop(
+        &self,
+        volume_id: &str,
+        available: SignalSet,
+        now_secs: u64,
+    ) -> Result<usize, PassError> {
+        let stop = self.stop_for(volume_id);
+        self.run_pass_blocking(volume_id, available, now_secs, &stop)
+    }
+
+    /// [`run_incremental_blocking`](Self::run_incremental_blocking) under the
+    /// volume's current stop signal, keeping the batch when the rescore is stopped.
+    ///
+    /// A stopped rescore wrote nothing, so its batch is still owed: it goes back
+    /// into the pending set and the volume's next rescore folds it in. Dropping it
+    /// instead would record the change as handled when it never was.
+    pub(crate) fn run_incremental_under_current_stop(
+        &self,
+        volume_id: &str,
+        available: SignalSet,
+        batch: Vec<String>,
+        now_secs: u64,
+    ) -> Result<IncrementalReport, PassError> {
+        let stop = self.stop_for(volume_id);
+        let result = self.run_incremental_blocking(volume_id, available, &batch, now_secs, &stop);
+        if result == Err(PassError::Cancelled) {
+            self.pending_incremental_paths(volume_id, batch);
+        }
+        result
+    }
+
     /// Run one full recompute pass for a volume synchronously (blocking).
     ///
     /// Resolves the volume's index read pool (a `None` — the index isn't
@@ -339,12 +445,20 @@ impl ImportanceScheduler {
     /// that one walk's paths, and writes through the shared long-lived writer. The
     /// async driver calls this on a blocking task after a `request` returns
     /// `Start`.
+    ///
+    /// `stop` is the volume's stop signal. Once it fires the pass leaves at its next
+    /// look and returns [`PassError::Cancelled`]: nothing was written, no generation
+    /// or scoring policy was stamped, and no consumer was told a pass landed. Only
+    /// `Ok` does any of those, so a stopped pass can't be taken for a finished one.
     pub(crate) fn run_pass_blocking(
         &self,
         volume_id: &str,
         available: SignalSet,
         now_secs: u64,
-    ) -> Result<usize, String> {
+        stop: &CancellationToken,
+    ) -> Result<usize, PassError> {
+        // The pass may have waited for a blocking thread while its volume stopped.
+        check(stop)?;
         let Some(pool) = crate::indexing::get_read_pool_for(volume_id) else {
             return Ok(0);
         };
@@ -358,7 +472,7 @@ impl ImportanceScheduler {
         // Walk the index ONCE; reuse the result for both the `kMDItemLastUsedDate`
         // path-set and the score (no second traversal — M2 cleanup).
         let mut folders = pool
-            .with_conn(|conn| walk_index_folders(conn, &home))
+            .with_conn(|conn| walk_index_folders(conn, &home, stop))
             .map_err(|e| format!("read pool error: {e}"))??;
         if folders.is_empty() {
             return Ok(0);
@@ -366,6 +480,10 @@ impl ImportanceScheduler {
         let folders_walked = folders.len();
 
         let visits = load_visits(&self.data_dir, volume_id);
+
+        // The sample below is the one stretch that doesn't poll (at most `SAMPLE_CAP`
+        // framework round-trips on its own thread), so look before starting it.
+        check(stop)?;
 
         // Spotlight sampling ONLY when the kind's availability mask says so — SMB
         // has no Spotlight, and sampling would issue `MDItem` queries against the
@@ -378,14 +496,18 @@ impl ImportanceScheduler {
         // 500 of them would cost one heap `String` per folder for nothing.
         let last_used = if available.last_used_available {
             let paths = folders.first_paths(super::last_used::SAMPLE_CAP);
-            super::last_used::sample_last_used(&paths)
+            super::last_used::sample_last_used(volume_id, &paths)
         } else {
             HashMap::new()
         };
         let read_elapsed = read_started.elapsed();
 
         let write_started = Instant::now();
-        let writer = self.writer_for(volume_id).map_err(|e| e.to_string())?;
+        // Right before the writer, not only at the top: asking for one CREATES the
+        // database, and a volume forgotten while the sample above ran has just had
+        // its database deleted.
+        check(stop)?;
+        let writer = self.writer_for(volume_id)?;
         let outcome = recompute_folders(
             &RecomputeInputs {
                 writer: &writer,
@@ -395,6 +517,7 @@ impl ImportanceScheduler {
                 available,
                 visits: &visits,
                 last_used: &last_used,
+                stop,
             },
             &mut folders,
         )?;
@@ -426,15 +549,20 @@ impl ImportanceScheduler {
     /// (untouched folders keep their as-of marker). Returns the pass's
     /// [`IncrementalReport`]: how many folders it rescored and how many it wrote.
     ///
-    /// A `"/"` sentinel in `changed_paths` (a full-refresh emit) escalates to a
-    /// full pass. Reads through the index read pool; a `None` pool is a no-op.
+    /// Reads through the index read pool; a `None` pool is a no-op.
+    ///
+    /// `stop` is the volume's stop signal, heard up to the write. A stopped rescore
+    /// returns [`PassError::Cancelled`] with the store untouched and nothing
+    /// announced; the caller puts the batch back so it isn't lost.
     pub(crate) fn run_incremental_blocking(
         &self,
         volume_id: &str,
         available: SignalSet,
         changed_paths: &[String],
         now_secs: u64,
-    ) -> Result<IncrementalReport, String> {
+        stop: &CancellationToken,
+    ) -> Result<IncrementalReport, PassError> {
+        check(stop)?;
         // The batch gate, BEFORE anything expensive: drop the bare root, empties, and
         // every path that floors (build output, caches, dot-directories — none of
         // which can produce a weight row). Never escalate to a full pass here; full
@@ -457,7 +585,7 @@ impl ImportanceScheduler {
         // it turns on which origins are too big to descend.
         let previous_markers = load_previous_markers(&self.data_dir, volume_id, &changed_paths);
         let (mut folders, scope, plan) = pool
-            .with_conn(|conn| walk_for_incremental(conn, &home, &changed_paths, &previous_markers))
+            .with_conn(|conn| walk_for_incremental(conn, &home, &changed_paths, &previous_markers, stop))
             .map_err(|e| format!("read pool error: {e}"))??;
         // One origin per changed subtree, and the two lists kept apart: `cleared` is
         // what the writer clears and re-inserts, `demoted` is the over-budget origins
@@ -472,16 +600,20 @@ impl ImportanceScheduler {
         // next full pass.
 
         let visits = load_visits(&self.data_dir, volume_id);
-        let writer = self.writer_for(volume_id).map_err(|e| e.to_string())?;
+        // Asking for the writer creates the database, so look first: see the full pass.
+        check(stop)?;
+        let writer = self.writer_for(volume_id)?;
 
         let outcome = incremental_rescore(
             &IncrementalInputs {
+                volume_id,
                 writer: &writer,
                 weights: &self.weights,
                 home: &home,
                 now_secs,
                 available,
                 visits: &visits,
+                stop,
             },
             &mut folders,
             &changed_paths,
@@ -493,7 +625,7 @@ impl ImportanceScheduler {
         // subtree either way, so a pass that only deleted rows (every origin gone, or a
         // whole subtree newly floored) still moved the store. The rows carry the current
         // generation (no bump), so that's what the notice announces as freshly touched.
-        let generation = writer.next_generation().map_err(|e| e.to_string())?.saturating_sub(1);
+        let generation = writer.next_generation()?.saturating_sub(1);
         super::read::notify_recompute_completed(
             volume_id,
             match outcome.delta {

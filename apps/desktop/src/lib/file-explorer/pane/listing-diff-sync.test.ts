@@ -107,7 +107,7 @@ describe('reconcileCursorAndSelection', () => {
     expect(result.selectedIndices).toEqual([1, 3])
   })
 
-  it('leaves the selection untouched while an operation owns it (operationSelectedNames set)', () => {
+  it('remaps the selection synchronously even while an operation tracks names', () => {
     const result = reconcileCursorAndSelection({
       changes: [remove(0)],
       hasParent: false,
@@ -116,9 +116,7 @@ describe('reconcileCursorAndSelection', () => {
       operationSelectedNames: ['f1.txt'],
       count: 5,
     })
-    // Cursor still adjusts, but the selection is left for the operation's own
-    // name-based re-resolution to handle.
-    expect(result.selectedIndices).toBeNull()
+    expect(result.selectedIndices).toEqual([0, 1])
   })
 
   it('leaves an empty selection as null rather than an empty array', () => {
@@ -131,6 +129,18 @@ describe('reconcileCursorAndSelection', () => {
       count: 5,
     })
     expect(result.selectedIndices).toBeNull()
+  })
+
+  it('keeps operation selections in the applied row space while name work is pending', () => {
+    const result = reconcileCursorAndSelection({
+      changes: [remove(0)],
+      hasParent: false,
+      cursorIndex: 2,
+      selectedIndices: [1, 2],
+      operationSelectedNames: ['f1', 'f2'],
+      count: 2,
+    })
+    expect(result.selectedIndices).toEqual([0, 1])
   })
 
   it('shifts the selection up to account for insertions before it', () => {

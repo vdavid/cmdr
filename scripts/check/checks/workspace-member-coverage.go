@@ -101,11 +101,13 @@ var rustScannerJurisdictions = map[string]ScannerJurisdiction{
 var rustCargoLanes = map[string]string{
 	"desktop-rust-rustfmt":           "`cargo fmt --all`",
 	"desktop-rust-clippy":            "`--workspace` via CargoSelectionArgs",
+	"desktop-rust-clippy-mimalloc":   "`--workspace` via CargoSelectionArgs, with `cmdr/mimalloc` in a private target dir",
 	"desktop-rust-rustdoc":           "every first-party member named explicitly; the vendored fork is skipped, since `--all-features` turns on two mutually exclusive arms there",
 	"desktop-rust-cargo-deny":        "reads the whole `cargo metadata` graph from the workspace root",
 	"desktop-rust-cargo-audit":       "reads the workspace `Cargo.lock`",
 	"desktop-rust-cargo-machete":     "handed each member's directory (it walks dirs, not the cargo graph)",
 	"desktop-rust-cargo-udeps":       "`--workspace` via CargoSelectionArgs",
+	"desktop-rust-fuzz":              "`cargo fuzz` in `fuzz/`, a crate outside the workspace that takes four members by path (`cmdr-adb`, `cmdr-archive`, `cmdr-s3`, `cmdr-webdav`); a targeted smoke, not a sweep",
 	"desktop-rust-module-cycles":     "every first-party library member (`kind = app` with a `src/lib.rs`), one `--lib` graph each; a bin-only tool has no library graph and the vendored fork's module layout isn't ours to ratchet",
 	"desktop-rust-tests":             "`--workspace` via HostCargoLaneArgs",
 	"nextest-filter-coverage":        "`--workspace` via HostCargoLaneArgs, listing rather than running, so it sees exactly the tests `desktop-rust-tests` does",
@@ -113,6 +115,7 @@ var rustCargoLanes = map[string]string{
 	"desktop-rust-webdav-nextcloud":  "`--workspace` via HostCargoLaneArgs, narrowed to one module of `cmdr-webdav`; the cells the shared fixture lane subtracts",
 	"desktop-rust-disk-images":       "`--workspace` via HostCargoLaneArgs, narrowed to the real-image test modules (`cmdr-fs`, `cmdr`, `cmdr-index`) and run ignored-only; a targeted macOS lane, not a sweep",
 	"desktop-rust-tests-linux":       "`--workspace` computed for `linux`, since cargo runs in a container",
+	"desktop-rust-clippy-linux":      "`--workspace` computed for `linux`, since cargo runs in a container",
 	"desktop-bindings-fresh":         "hashes every member's sources and manifest to decide whether to regenerate; the regen itself is `--workspace` via `pnpm bindings:regen`",
 	// Not coverage lanes: a handful of named tests against a live endpoint, each
 	// self-skipping without its key. They reach the app crate on purpose and nothing else.
@@ -135,12 +138,13 @@ func init() { memberCoverageRegistry = AllChecks }
 // so "which members do you reach?" isn't a question they answer. Each entry says
 // what it does instead.
 var rustMetaChecks = map[string]string{
-	"workspace-member-coverage":     "this check; it reads the member list and the registry, not the sources",
-	"index-crate-isolation":         "it reads the `cargo metadata` graph and counts `cmdr-index`'s public surface; both are about two named crates, not a sweep",
-	"desktop-shipped-locales-fresh": "it regenerates ONE file in the app crate from the message-catalog dirs and diffs it; the inputs are catalog directories, not workspace sources",
-	"desktop-native-strings-fresh":  "same shape as shipped-locales-fresh: it regenerates ONE file in the app crate from the message catalogs and diffs it, so its inputs are catalog files, not workspace sources",
-	"desktop-macos-framework-floor": "it reads a BUILT binary's Mach-O load commands, which is the linked whole rather than any member's sources; every member that contributes a framework link is in it by construction",
-	"desktop-macos-symbol-floor":    "same reason as its framework sibling: it reads a BUILT binary's imported symbols, so every member that contributes one is in it by construction",
+	"workspace-member-coverage":         "this check; it reads the member list and the registry, not the sources",
+	"index-crate-isolation":             "it reads the `cargo metadata` graph and counts `cmdr-index`'s public surface; both are about two named crates, not a sweep",
+	"desktop-shipped-locales-fresh":     "it regenerates ONE file in the app crate from the message-catalog dirs and diffs it; the inputs are catalog directories, not workspace sources",
+	"desktop-native-strings-fresh":      "same shape as shipped-locales-fresh: it regenerates ONE file in the app crate from the message catalogs and diffs it, so its inputs are catalog files, not workspace sources",
+	"desktop-macos-framework-floor":     "it reads a BUILT binary's Mach-O load commands, which is the linked whole rather than any member's sources; every member that contributes a framework link is in it by construction",
+	"desktop-macos-symbol-floor":        "same reason as its framework sibling: it reads a BUILT binary's imported symbols, so every member that contributes one is in it by construction",
+	"desktop-rust-vendor-patch-applied": "it reads the root manifest's `[patch.crates-io]` and `Cargo.lock`, which describe the resolved dependency graph rather than any member's sources",
 }
 
 // rustCheckClassification is the partition of the Rust checks: each is a cargo

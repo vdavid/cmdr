@@ -54,10 +54,11 @@ Two menu systems: the OS's, through muda (`apps/desktop/src-tauri/src/menu/`), a
 
 2. **If every row is a plain action, what does it act on?** Backend state (a path, a volume, a server, a file) → native:
    the pick becomes an IPC command anyway, so the round-trip is free and the OS behavior comes with it. Frontend state →
-   native only if BOTH are true: AppKit has a responder action for it (`copy:` / `selectAll:` / `cut:` / `paste:`), AND
-   the state that action reads lives in the DOM. A selector lands on a DOM selection or a focused text field and nowhere
-   else; pointed at a model the app maintains itself it routes into WebKit and quietly no-ops, which is the worst
-   failure shape there is, because the item looks right and does nothing. Anything else → house `Menu`.
+   a native SELECTOR only if BOTH are true: AppKit has a responder action for it (`copy:` / `selectAll:` / `cut:` /
+   `paste:`), AND the state that action reads lives in the DOM. A selector lands on a DOM selection or a focused text
+   field and nowhere else; pointed at a model the app maintains itself it routes into WebKit and quietly no-ops, which
+   is the worst failure shape there is, because the item looks right and does nothing. Otherwise it's Custom native
+   items that hand the pick back to the frontend, or the house `Menu`; question 3 picks between them.
 
    The viewer is the case to remember, because its Edit menu splits down this exact line (`build_viewer_menu` in
    `apps/desktop/src-tauri/src/menu/menu_structure.rs`). **Cut and Paste forward the native selectors and work**: they
@@ -67,9 +68,10 @@ Two menu systems: the OS's, through muda (`apps/desktop/src-tauri/src/menu/`), a
    because what they act on is the viewer's own offset-based selection: `.file-content` is `user-select: none`, so the
    only DOM selection a selector can find is the `.status-bar` footer, and native `selectAll:` highlights the footer
    while native `copy:` copies it. That's the failure shape this question exists to catch, and it's worse than a no-op,
-   since the item looks right and does the wrong thing. Its CONTENT (right-click) menu is hand-rolled for the same
-   reason plus more: Copy there is a three-band size flow over file offsets with its own IPC and dialogs, and Select all
-   takes the whole file by offset including an `EOF_LINE` sentinel.
+   since the item looks right and does the wrong thing. Its CONTENT (right-click) menu is native the same way: Custom
+   Copy and Select all whose enabled state the frontend computes at open time (`build_viewer_context_menu`) and whose
+   pick Rust emits back to the viewer (`ViewerContextMenuAction`). So frontend state can sit behind a native menu, as
+   long as it's Custom items that hand the pick back; ❌ what never works is a native selector pointed at it.
 
 3. **Tiebreaker: what opened it?** A right-click is an OS convention and people expect the OS's menu. A menu hanging off
    a chip or a button in our own chrome should look like ours.

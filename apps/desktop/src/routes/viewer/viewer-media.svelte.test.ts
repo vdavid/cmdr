@@ -18,7 +18,7 @@ function openResult(overrides: Partial<ViewerOpenResult>): ViewerOpenResult {
     fileName: 'file',
     totalBytes: 0,
     totalLines: 0,
-    estimatedTotalLines: 0,
+    estimatedTotalRows: 0,
     backendType: 'fullLoad',
     capabilities: {
       supportsLineSeek: true,

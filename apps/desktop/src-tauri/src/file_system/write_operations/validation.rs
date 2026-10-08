@@ -84,12 +84,24 @@ pub(crate) fn validate_source_names_are_distinct(sources: &[PathBuf]) -> Result<
 /// dialog's "this folder will be created" preview. A path that exists but isn't a
 /// directory is rejected (we won't transfer into a file). Symlinks are followed,
 /// so a symlink to a real directory is a valid destination.
+///
+/// A file where the destination, or a folder above it, should be is refused as
+/// [`WriteOperationError::DestinationNotAFolder`] naming that file, the same
+/// answer the volume engines give. The OS says only `ENOTDIR` (or `EEXIST`) for
+/// the path it was asked about, so the file is looked for after the refusal and
+/// the path that works pays nothing for it.
 pub(crate) fn ensure_destination_dir(destination: &Path) -> Result<(), WriteOperationError> {
+    // What a refusal becomes once it's known whether a file is in the way.
+    let refused = |fallback: WriteOperationError| match file_in_the_way(destination) {
+        Some(in_the_way) => WriteOperationError::DestinationNotAFolder {
+            path: in_the_way.display().to_string(),
+        },
+        None => fallback,
+    };
     match fs::metadata(destination) {
         Ok(meta) if meta.is_dir() => Ok(()),
-        Ok(_) => Err(WriteOperationError::IoError {
+        Ok(_) => Err(WriteOperationError::DestinationNotAFolder {
             path: destination.display().to_string(),
-            message: "Destination must be a directory".to_string(),
         }),
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
             fs::create_dir_all(destination).map_err(|e| match e.kind() {
@@ -102,17 +114,36 @@ pub(crate) fn ensure_destination_dir(destination: &Path) -> Result<(), WriteOper
                     refusing_folder(destination),
                     Some(PermissionSide::Destination),
                 ),
-                _ => WriteOperationError::IoError {
+                _ => refused(WriteOperationError::IoError {
                     path: destination.display().to_string(),
                     message: format!("Couldn't create the destination folder: {e}"),
-                },
+                }),
             })
         }
-        Err(e) => Err(WriteOperationError::IoError {
+        Err(e) => Err(refused(WriteOperationError::IoError {
             path: destination.display().to_string(),
             message: format!("Couldn't access the destination folder: {e}"),
-        }),
+        })),
     }
+}
+
+/// The nearest thing at or above `destination` that exists, when it doesn't
+/// lead to a folder: the file a create tripped over. `None` when that nearest
+/// thing is a folder (a link to one included), so the OS's own refusal stands.
+fn file_in_the_way(destination: &Path) -> Option<PathBuf> {
+    for level in destination.ancestors() {
+        if level.as_os_str().is_empty() {
+            break;
+        }
+        match fs::metadata(level) {
+            Ok(meta) if meta.is_dir() => return None,
+            Ok(_) => return Some(level.to_path_buf()),
+            // A link to nothing holds the name without leading to a folder.
+            Err(_) if fs::symlink_metadata(level).is_ok() => return Some(level.to_path_buf()),
+            Err(_) => {}
+        }
+    }
+    None
 }
 
 pub(crate) fn validate_destination_not_inside_source(
@@ -274,83 +305,6 @@ pub(crate) fn validate_destination_writable(destination: &Path) -> Result<(), Wr
 
 #[cfg(not(unix))]
 pub(crate) fn validate_destination_writable(_destination: &Path) -> Result<(), WriteOperationError> {
-    Ok(())
-}
-
-/// Checks available disk space on the destination volume against required bytes.
-///
-/// On macOS, uses `NSURLVolumeAvailableCapacityForImportantUsageKey` which includes purgeable
-/// space (APFS snapshots, iCloud caches), matching what Finder reports. Falls back to `statvfs`
-/// if the NSURL query fails. On Linux, uses `statvfs` directly (no purgeable space concept).
-#[cfg(unix)]
-pub(crate) fn validate_disk_space(destination: &Path, required_bytes: u64) -> Result<(), WriteOperationError> {
-    let available = get_available_space(destination).unwrap_or({
-        // Cannot determine space. Return u64::MAX so the check passes and we let the OS
-        // report ENOSPC if it actually happens during the copy.
-        u64::MAX
-    });
-
-    if required_bytes > available {
-        let volume_name = destination
-            .ancestors()
-            .find(|p| p.parent().is_some_and(|pp| pp == Path::new("/Volumes")))
-            .and_then(|p| p.file_name())
-            .map(|n| n.to_string_lossy().to_string());
-
-        return Err(WriteOperationError::InsufficientSpace {
-            required: required_bytes,
-            available,
-            volume_name,
-        });
-    }
-
-    Ok(())
-}
-
-/// Returns available bytes for a path, using the best API for the platform.
-///
-/// macOS: `NSURLVolumeAvailableCapacityForImportantUsageKey` (includes purgeable space).
-/// Linux: `statvfs` `f_bavail * f_frsize`.
-#[cfg(unix)]
-fn get_available_space(path: &Path) -> Option<u64> {
-    // On macOS, prefer the NSURL API that accounts for purgeable space.
-    #[cfg(target_os = "macos")]
-    {
-        if let Some(space) = crate::volumes::get_volume_space(&path.to_string_lossy()) {
-            return space.available_bytes();
-        }
-    }
-
-    // Fallback (and Linux primary path): statvfs
-    get_available_space_statvfs(path)
-}
-
-/// Returns available bytes using `statvfs`. Used as the primary method on Linux and as a
-/// fallback on macOS.
-#[cfg(unix)]
-fn get_available_space_statvfs(path: &Path) -> Option<u64> {
-    use std::ffi::CString;
-    use std::mem::MaybeUninit;
-    use std::os::unix::ffi::OsStrExt;
-
-    let c_path = CString::new(path.as_os_str().as_bytes()).ok()?;
-    let mut stat = MaybeUninit::<libc::statvfs>::uninit();
-    // SAFETY: c_path is a valid null-terminated C string, stat is a valid pointer
-    let result = unsafe { libc::statvfs(c_path.as_ptr(), stat.as_mut_ptr()) };
-    if result != 0 {
-        return None;
-    }
-    // SAFETY: statvfs succeeded, stat is initialized
-    let stat = unsafe { stat.assume_init() };
-    #[allow(
-        clippy::unnecessary_cast,
-        reason = "Required for macOS where statvfs fields are not u64"
-    )]
-    Some(stat.f_bavail as u64 * stat.f_frsize as u64)
-}
-
-#[cfg(not(unix))]
-pub(crate) fn validate_disk_space(_destination: &Path, _required_bytes: u64) -> Result<(), WriteOperationError> {
     Ok(())
 }
 

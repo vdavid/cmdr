@@ -5,7 +5,7 @@ use log::debug;
 use super::errors::MtpConnectionError;
 use super::{MtpConnectionManager, normalize_mtp_path};
 use cmdr_fs::entry::FileEntry;
-use cmdr_fs::volume::{CopyScanResult, ScanStop};
+use cmdr_fs::volume::{CopyScanResult, ScanBoundary, ScanStop};
 
 /// A scan the user stopped. ❗ The typed `Cancelled` variant, so `map_mtp_error`
 /// turns it into `VolumeError::Cancelled` and every caller classifies on the
@@ -53,32 +53,55 @@ impl MtpConnectionManager {
         path: &str,
         stop: &ScanStop,
     ) -> Result<CopyScanResult, MtpConnectionError> {
+        self.scan_for_copy_with_boundary(
+            device_id,
+            storage_id,
+            path,
+            &ScanBoundary::silent().stopping_at(stop.clone()),
+        )
+        .await
+    }
+
+    /// The existing recursive walk, reporting selected entries to the batch's boundary.
+    pub(crate) async fn scan_for_copy_with_boundary(
+        &self,
+        device_id: &str,
+        storage_id: u32,
+        path: &str,
+        boundary: &ScanBoundary<'_>,
+    ) -> Result<CopyScanResult, MtpConnectionError> {
         debug!(
             "MTP scan_for_copy: device={}, storage={}, path={}",
             device_id, storage_id, path
         );
 
-        if stop.should_stop().await {
-            return Err(scan_cancelled(device_id));
-        }
+        boundary.check().await.map_err(|_| scan_cancelled(device_id))?;
 
         // Try to list the path as a directory
         match self.list_directory(device_id, storage_id, path).await {
             Ok(entries) if !entries.is_empty() => {
                 // Directory with contents: recurse using entries directly
+                boundary.dir().await.map_err(|_| scan_cancelled(device_id))?;
                 let mut result = self
-                    .scan_entries_recursive(device_id, storage_id, entries, stop)
+                    .scan_entries_recursive(device_id, storage_id, entries, boundary)
                     .await?;
+                result.dir_count += 1;
                 result.top_level_is_directory = true;
                 Ok(result)
             }
             Ok(_) => {
                 // Empty result: either an empty directory or a file (some MTP devices
                 // return empty for files instead of an error). Check parent to disambiguate.
+                boundary.check().await.map_err(|_| scan_cancelled(device_id))?;
                 if let Some(result) = self.try_scan_as_file(device_id, storage_id, path).await {
+                    boundary
+                        .file(result.total_bytes)
+                        .await
+                        .map_err(|_| scan_cancelled(device_id))?;
                     return Ok(result);
                 }
                 // Empty directory
+                boundary.dir().await.map_err(|_| scan_cancelled(device_id))?;
                 Ok(CopyScanResult {
                     file_count: 0,
                     dir_count: 1,
@@ -86,15 +109,23 @@ impl MtpConnectionManager {
                     // MTP has no hardlinks: source footprint == write footprint.
                     dedup_bytes: 0,
                     top_level_is_directory: true,
+                    // This path listed the folder, never its parent, so nothing
+                    // here carried the folder's own date.
+                    top_level_modified_at: None,
                 })
             }
             Err(e) => {
                 // list_directory failed, likely because path is a file, not a directory.
+                boundary.check().await.map_err(|_| scan_cancelled(device_id))?;
                 debug!(
                     "MTP scan_for_copy: list_directory failed for '{}', checking if it's a file: {:?}",
                     path, e
                 );
                 if let Some(result) = self.try_scan_as_file(device_id, storage_id, path).await {
+                    boundary
+                        .file(result.total_bytes)
+                        .await
+                        .map_err(|_| scan_cancelled(device_id))?;
                     return Ok(result);
                 }
                 Err(e)
@@ -116,7 +147,7 @@ impl MtpConnectionManager {
         device_id: &str,
         storage_id: u32,
         entries: Vec<FileEntry>,
-        stop: &ScanStop,
+        boundary: &ScanBoundary<'_>,
     ) -> Result<CopyScanResult, MtpConnectionError> {
         let mut file_count = 0usize;
         let mut dir_count = 0usize;
@@ -126,21 +157,24 @@ impl MtpConnectionManager {
             // Per entry, and so BEFORE the subdirectory listing below: that
             // listing is the round trip, and asking after it is a Cancel the
             // person waits out.
-            if stop.should_stop().await {
-                return Err(scan_cancelled(device_id));
-            }
             if entry.is_directory {
+                boundary.dir().await.map_err(|_| scan_cancelled(device_id))?;
                 dir_count += 1;
                 // One list_directory call per subdirectory
                 let children = self.list_directory(device_id, storage_id, &entry.path).await?;
+                boundary.check().await.map_err(|_| scan_cancelled(device_id))?;
                 if !children.is_empty() {
                     let child_result =
-                        Box::pin(self.scan_entries_recursive(device_id, storage_id, children, stop)).await?;
+                        Box::pin(self.scan_entries_recursive(device_id, storage_id, children, boundary)).await?;
                     file_count += child_result.file_count;
                     dir_count += child_result.dir_count;
                     total_bytes += child_result.total_bytes;
                 }
             } else {
+                boundary
+                    .file(entry.size.unwrap_or(0))
+                    .await
+                    .map_err(|_| scan_cancelled(device_id))?;
                 file_count += 1;
                 total_bytes += entry.size.unwrap_or(0);
             }
@@ -161,6 +195,9 @@ impl MtpConnectionManager {
             // (caller already listed the path). Setting `true` keeps downstream
             // callers from re-issuing a type probe.
             top_level_is_directory: true,
+            // The caller listed the folder's CONTENTS; its own date was in a
+            // parent listing this walk never made.
+            top_level_modified_at: None,
         })
     }
 
@@ -196,6 +233,7 @@ impl MtpConnectionManager {
             // MTP has no hardlinks: source footprint == write footprint.
             dedup_bytes: entry.size.unwrap_or(0),
             top_level_is_directory: false,
+            top_level_modified_at: entry.modified_at,
         })
     }
 }

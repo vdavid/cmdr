@@ -50,6 +50,7 @@ vi.mock('$lib/stores/volume-store.svelte', () => ({ requestVolumeRefresh }))
 vi.mock('./lazy-trigger', () => ({ triggerNetworkDiscovery: vi.fn() }))
 
 import { connectDirectly } from './direct-connect'
+import LocalNetworkBlockedToastContent from './LocalNetworkBlockedToastContent.svelte'
 
 /** The share every test presses the button on. */
 const archive = { volumeId: 'smb-archive', shareName: 'archive' }
@@ -123,6 +124,17 @@ describe('connectDirectly', () => {
 
     await expect(connectDirectly(archive)).resolves.toBe('stillOnOsMount')
     expect(errorToasts()).toHaveLength(1)
+  })
+
+  it('offers the Local Network settings when this Mac blocked the connection', async () => {
+    // ERR-XGS9X: the fix was a switch in System Settings, so the answer comes with
+    // a button that opens it, and names the server it couldn't reach.
+    upgradeToSmbVolume.mockResolvedValue({ status: 'networkError', reason: 'blockedByThisMac', displayName: 'Mars' })
+
+    await expect(connectDirectly(archive)).resolves.toBe('stillOnOsMount')
+    const blocked = addToast.mock.calls.filter((call) => call[0] === LocalNetworkBlockedToastContent)
+    expect(blocked).toHaveLength(1)
+    expect(blocked[0][1]).toMatchObject({ level: 'error', props: { server: 'Mars' } })
   })
 
   it('says the share is gone, and reports it so the notice retires, when it vanished before the press', async () => {

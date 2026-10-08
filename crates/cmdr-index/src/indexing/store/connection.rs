@@ -3,8 +3,8 @@
 
 use super::{
     INDEX_NEEDS_REBUILD_KEY, IndexStatus, IndexStore, IndexStoreError, SCHEMA_VERSION, ScanCalibration,
-    ScanCalibrationKind, ScanCalibrationSet, USER_DISABLED_KEY, USER_ENABLED_KEY, apply_pragmas, create_tables,
-    register_platform_case_collation,
+    ScanCalibrationKind, ScanCalibrationSet, StepDurations, USER_DISABLED_KEY, USER_ENABLED_KEY, apply_pragmas,
+    create_tables, register_platform_case_collation,
 };
 use rusqlite::{Connection, params};
 use std::path::Path;
@@ -36,6 +36,16 @@ impl IndexStore {
     ///   holds millions of entries and costs tens of minutes to rebuild, so the
     ///   caller reporting a failure always beats silently discarding a good index.
     pub fn open(db_path: &Path) -> Result<Self, IndexStoreError> {
+        // The drive index lives in a cache folder that something outside Cmdr (a
+        // cleaner app, a person) may empty while it runs. A new database then has
+        // to recreate the folder rather than fail its volume until the next launch.
+        // Best-effort: a folder that can't be made fails the open below with the
+        // real reason.
+        if let Some(parent) = db_path.parent()
+            && !parent.as_os_str().is_empty()
+        {
+            let _ = std::fs::create_dir_all(parent);
+        }
         let mut attempt = 0usize;
         loop {
             match Self::try_open(db_path) {
@@ -115,20 +125,9 @@ impl IndexStore {
 
     /// Delete the DB file and create a fresh one.
     fn delete_and_recreate(db_path: &Path) -> Result<Self, IndexStoreError> {
-        // Remove the main DB file
-        if db_path.exists() {
-            std::fs::remove_file(db_path)?;
-        }
-        // Always attempt to remove WAL and SHM sidecars (they can be stale even
-        // if the base DB was already deleted).
-        let wal = db_path.with_extension("db-wal");
-        let shm = db_path.with_extension("db-shm");
-        if wal.exists() {
-            let _ = std::fs::remove_file(&wal);
-        }
-        if shm.exists() {
-            let _ = std::fs::remove_file(&shm);
-        }
+        // The main file and its WAL and SHM sidecars, which can be stale even when
+        // the main file is already gone.
+        cmdr_fs::sqlite_util::delete_database(db_path)?;
 
         let conn = cmdr_fs::sqlite_util::open(db_path)?;
         register_platform_case_collation(&conn)?;
@@ -359,6 +358,23 @@ impl IndexStore {
             total_entries: read_u64("total_entries")?,
             total_physical_bytes: read_u64("total_physical_bytes")?,
             scan_duration_ms: read_u64("scan_duration_ms")?,
+        })
+    }
+
+    /// The remembered durations of the steps after the walk, for one walk kind.
+    /// Missing or unparseable keys map to `None`; there's no cross-kind fallback
+    /// (see [`StepDurations`]).
+    pub(crate) fn read_step_durations(
+        conn: &Connection,
+        kind: ScanCalibrationKind,
+    ) -> Result<StepDurations, IndexStoreError> {
+        let read_u64 = |base: &str| -> Result<Option<u64>, IndexStoreError> {
+            Ok(Self::read_meta_value(conn, &kind.meta_key(base))?.and_then(|v| v.parse::<u64>().ok()))
+        };
+        Ok(StepDurations {
+            save_ms: read_u64(StepDurations::SAVE_KEY)?,
+            compute_ms: read_u64(StepDurations::COMPUTE_KEY)?,
+            catch_up_ms: read_u64(StepDurations::CATCH_UP_KEY)?,
         })
     }
 

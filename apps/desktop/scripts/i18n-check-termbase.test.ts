@@ -19,6 +19,7 @@ import {
 } from './i18n-check-termbase.ts'
 import type { Baseline } from './i18n-check-termbase.ts'
 import { EXIT_CLEAN, EXIT_ISSUES } from './i18n-locale-check-lib.ts'
+import { duplicateKeyErrors } from './i18n-termbase-lib.ts'
 import type { Concepts } from './i18n-termbase-lib.ts'
 
 const concepts: Concepts = {
@@ -69,6 +70,24 @@ describe('validateConcepts', () => {
       operation: { en: 'operation', match: ['operation'], notMatch: ['math operation'], sense: 's' },
     }
     expect(findDrift({ tag: 'nl', terms, concepts: withNot, en, locale: nl }).map((f) => f.key)).toEqual(['q.a'])
+  })
+})
+
+describe('duplicateKeyErrors', () => {
+  it('passes a file whose objects each name a key once, even when two objects share a key name', () => {
+    expect(duplicateKeyErrors('{ "a": { "x": 1 }, "b": { "x": 2 } }', 'f.json')).toEqual([])
+  })
+
+  it('names a key repeated at the top level and one repeated inside a nested object, with its path', () => {
+    expect(duplicateKeyErrors('{ "a": 1, "b": { "x": 1, "x": 2 }, "a": 3 }', 'f.json')).toEqual([
+      'f.json: "x" appears twice in "b"; JSON keeps only the last one, so merge them',
+      'f.json: "a" appears twice at the top level; JSON keeps only the last one, so merge them',
+    ])
+  })
+
+  it('reads a key-shaped string inside a value or an array as data, and honors escaped quotes', () => {
+    const text = '{ "a": "\\"a\\": 1", "b": ["a", { "a": 1 }], "c": { "k\\"": 1, "k": 2 } }'
+    expect(duplicateKeyErrors(text, 'f.json')).toEqual([])
   })
 })
 
@@ -270,6 +289,15 @@ describe('inspectTermbase + report + shrinkWrap (fixture tree)', () => {
     expect((JSON.parse(readFileSync(path, 'utf8')) as Baseline).decisionsBytes).toEqual({
       nl: Buffer.byteLength('# nl decisions\n'),
     })
+  })
+
+  it('exits with the schema code when terms.json repeats a key, which JSON.parse would silently drop', () => {
+    const term = '{ "chosen": "bewerking", "confidence": "high", "sources": "s" }'
+    write(join(docsRoot, 'nl', 'terms.json'), `{ "operation": ${term}, "transfer": ${term}, "operation": ${term} }`)
+    const outcome = inspectTermbase({ messagesRoot, docsRoot, baseline: { drift: { nl: 5 } } })
+    const out = capture()
+    expect(report(outcome, out.write)).toBe(EXIT_SCHEMA)
+    expect(out.lines.join('\n')).toContain('nl/terms.json: "operation" appears twice')
   })
 
   it('exits with the schema code when a termbase names an unknown concept, whatever the drift', () => {

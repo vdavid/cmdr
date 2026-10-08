@@ -42,6 +42,7 @@ export const COMMAND_IDS = [
   'app.checkForUpdates',
   'cmdr.openOnboarding',
   'help.openShortcuts',
+  'help.viewDebugLog',
   'help.sendErrorReport',
   'help.whatsNew',
   'feedback.send',
@@ -73,6 +74,7 @@ export const COMMAND_IDS = [
 
   // View commands
   'view.showHidden',
+  'view.calculateFolderSizes',
   'view.briefMode',
   'view.fullMode',
   'view.setMode',
@@ -100,6 +102,7 @@ export const COMMAND_IDS = [
   // Pane commands
   'pane.switch',
   'pane.swap',
+  'pane.clone',
   'pane.leftVolumeChooser',
   'pane.rightVolumeChooser',
   'pane.copyPathLeftToRight',
@@ -130,6 +133,8 @@ export const COMMAND_IDS = [
   'nav.pageDown',
   'nav.back',
   'nav.forward',
+  // Navigates the focused pane to the root of what it shows (volume or archive).
+  'nav.goToRoot',
   // Navigates the focused pane to the home folder. Distinct from `nav.home`,
   // which moves the CURSOR to the first row.
   'nav.goHome',
@@ -179,6 +184,9 @@ export const COMMAND_IDS = [
   'file.copyPath',
   'file.copyCurrentDirectoryPath',
   'file.copyFilename',
+  'file.copyShareLink',
+  'file.copyShareLinkOneDay',
+  'file.copyShareLinkOneHour',
   'file.getInfo',
   'file.quickLook',
   'file.contextMenu',
@@ -206,6 +214,9 @@ export const COMMAND_IDS = [
   'selection.deselectAll',
   'selection.invert',
   'selection.selectSameKind',
+  'selection.compareDirectories',
+  'selection.compareDirectoriesMissing',
+  'selection.compareDirectoriesSize',
   'selection.selectFiles',
   'selection.deselectFiles',
   // Range/all selection carried by the MCP `select` tool (start + count + mode).

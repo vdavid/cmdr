@@ -1,0 +1,6 @@
+{
+  "adb.connect.deviceGone": "Your phone isn’t connected any more.",
+  "@adb.connect.deviceGone": {
+    "sourceHash": "00d5254"
+  }
+}

@@ -8,263 +8,32 @@
  * wiring. The volume store, Tauri IPC, and settings are stubbed.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { mount, tick } from 'svelte'
-import TransferDialog from './TransferDialog.svelte'
-import * as commands from '$lib/tauri-commands'
+import { describe, it, expect, vi } from 'vitest'
+import { tick } from 'svelte'
 import type { VolumeConflictInfo } from '$lib/tauri-commands'
 import type { ConflictResolution } from '$lib/file-explorer/types'
-import type { TransferConfirmPayload } from '$lib/file-explorer/pane/dialog-props'
-
-const startScanPreviewMock = vi.mocked(commands.startScanPreview)
-const cancelScanPreviewMock = vi.mocked(commands.cancelScanPreview)
-
-// Captured scan-preview-complete callback, so a test can decide WHEN the
-// (slow) byte scan finishes relative to the conflict check.
-let scanCompleteCb: ((e: ScanCompleteEvent) => void) | null = null
-
-interface ScanCompleteEvent {
-  previewId: string
-  filesTotal: number
-  dirsTotal: number
-  bytesTotal: number
-  dedupBytesTotal: number
-}
-
-// `scanVolumeForConflicts`'s real signature (`mtp.ts`) is positional all the way down to
-// the raw IPC binding, so the exposed mock (below, in the `$lib/tauri-commands` factory)
-// stays positional too; this inner mock is what tests actually assert against, as a named
-// payload so a future edit can't silently swap `volumeId` and `destPath`.
-const scanVolumeForConflictsMock = vi.fn<
-  (payload: {
-    volumeId: string
-    sourceItems: unknown[]
-    destPath: string
-    sourceVolumeId?: string
-    sourcePaths?: string[]
-  }) => Promise<VolumeConflictInfo[]>
->(() => Promise.resolve([]))
-
-// Destination-existence probe (`destinationExists`, which counts a name the
-// volume holds in another Unicode spelling) behind the "this folder will be
-// created" warning.
-// Defaults to "exists" so most tests see no warning; a test overrides it. Same
-// positional-real-signature reasoning as `scanVolumeForConflictsMock` above.
-const destinationExistsMock = vi.fn<
-  (payload: { path: string; volumeId?: string }) => Promise<{ data: boolean; timedOut: boolean }>
->(() => Promise.resolve({ data: true, timedOut: false }))
-
-// Whether the destination folder takes writes, behind the red "nothing can go
-// here" notice. Defaults to "can't tell" so most tests see no notice.
-type WriteAccessAnswer =
-  | { kind: 'writable' }
-  | { kind: 'unwritable'; reason: 'readOnlyFilesystem' | 'noPermission' | 'unexplained' }
-  | { kind: 'unknown' }
-const destinationWriteAccessMock = vi.fn<(payload: { volumeId: string; path: string }) => Promise<WriteAccessAnswer>>(
-  () => Promise.resolve({ kind: 'unknown' }),
-)
-
-// Home dir resolution for the long-form display of a bare `~` destination.
-vi.mock('@tauri-apps/api/path', () => ({
-  homeDir: () => Promise.resolve('/Users/test'),
-}))
-
-vi.mock('$lib/tauri-commands', () => ({
-  notifyDialogOpened: vi.fn(() => Promise.resolve()),
-  notifyDialogClosed: vi.fn(() => Promise.resolve()),
-  getVolumeSpace: vi.fn(() =>
-    Promise.resolve({ data: { totalBytes: 1024 * 1024 * 1024, availableBytes: 1024 * 1024 * 500 } }),
-  ),
-  startScanPreview: vi.fn(() => Promise.resolve({ previewId: 'preview-1' })),
-  cancelScanPreview: vi.fn(() => Promise.resolve()),
-  // Returns null so the dialog keeps waiting on the (captured) complete event
-  // instead of hydrating from cached totals — lets a test hold the byte scan
-  // open while the conflict check resolves.
-  checkScanPreviewStatus: vi.fn(() => Promise.resolve(null)),
-  onScanPreviewProgress: vi.fn(() => Promise.resolve(() => {})),
-  onScanPreviewComplete: vi.fn((cb: (e: ScanCompleteEvent) => void) => {
-    scanCompleteCb = cb
-    return Promise.resolve(() => {
-      scanCompleteCb = null
-    })
-  }),
-  onScanPreviewError: vi.fn(() => Promise.resolve(() => {})),
-  onScanPreviewCancelled: vi.fn(() => Promise.resolve(() => {})),
-  scanVolumeForConflicts: (
-    volumeId: string,
-    sourceItems: unknown[],
-    destPath: string,
-    sourceVolumeId?: string,
-    sourcePaths?: string[],
-  ) => scanVolumeForConflictsMock({ volumeId, sourceItems, destPath, sourceVolumeId, sourcePaths }),
-  destinationExists: (path: string, volumeId?: string) => destinationExistsMock({ path, volumeId }),
-  destinationWriteAccess: (volumeId: string, path: string) => destinationWriteAccessMock({ volumeId, path }),
-  DEFAULT_VOLUME_ID: 'root',
-}))
-
-vi.mock('$lib/settings', () => ({
-  getSetting: vi.fn((key: string) => (key === 'behavior.archiveCompressionLevel' ? 6 : 500)),
-  // Compress mode renders `CompressLevelControl` → `SettingSlider`, which reads
-  // its metadata and default through the barrel and writes via `setSetting`.
-  setSetting: vi.fn(),
-  getDefaultValue: vi.fn(() => 6),
-  onSpecificSettingChange: vi.fn(() => () => {}),
-  getSettingDefinition: vi.fn(() => ({
-    label: 'Compression level',
-    constraints: { min: 1, max: 9, step: 1, sliderStops: [1, 2, 3, 4, 5, 6, 7, 8, 9] },
-  })),
-}))
-
-vi.mock('$lib/stores/volume-store.svelte', () => ({
-  getVolumes: () => [
-    { id: 'root', name: 'Macintosh HD', path: '/', category: 'main_volume', isEjectable: false },
-    { id: 'ext', name: 'External', path: '/Volumes/External', category: 'attached_volume', isEjectable: true },
-    {
-      id: 'mtp-336592896:65538',
-      name: 'Virtual Pixel 9 - SD Card',
-      path: '/mtp-20-5/65538',
-      category: 'mobile_device',
-      isEjectable: true,
-    },
-    {
-      id: 'smb://nas.local/public',
-      name: 'NAS share',
-      path: 'smb://nas.local/public',
-      category: 'network',
-      isEjectable: false,
-    },
-  ],
-}))
-
-function makeConflict(overrides: Partial<VolumeConflictInfo>): VolumeConflictInfo {
-  return {
-    sourcePath: 'item',
-    destPath: 'item',
-    sourceSize: 0,
-    destSize: 0,
-    sourceModified: null,
-    destModified: null,
-    sourceIsDirectory: false,
-    destIsDirectory: false,
-    ...overrides,
-  }
-}
-
-async function flushMicrotasks(rounds = 8): Promise<void> {
-  for (let i = 0; i < rounds; i++) {
-    await new Promise<void>((resolve) => {
-      setTimeout(resolve, 0)
-    })
-    await tick()
-  }
-}
-
-interface MountOpts {
-  autoConfirm?: boolean
-  autoConfirmOnConflict?: string
-  onConfirm?: ConfirmFn
-  onCancel?: () => void
-  operationType?: 'copy' | 'move' | 'compress'
-  sourceVolumeId?: string
-  /** The destination volume the dialog starts on (= `selectedVolumeId`). */
-  currentVolumeId?: string
-  sourceFolderPath?: string
-  destinationPath?: string
-  sourcePaths?: string[]
-}
-
-type ConfirmFn = (payload: TransferConfirmPayload) => void
-
-function mountDialog(opts: MountOpts = {}): HTMLDivElement {
-  const target = document.createElement('div')
-  document.body.appendChild(target)
-  mount(TransferDialog, {
-    target,
-    props: {
-      operationType: opts.operationType ?? 'copy',
-      sourcePaths: opts.sourcePaths ?? ['/Users/test/photos', '/Users/test/notes.txt'],
-      destinationPath: opts.destinationPath ?? '/Users/test/dest',
-      currentVolumeId: opts.currentVolumeId ?? 'root',
-      fileCount: 1,
-      folderCount: 1,
-      sourceFolderPath: opts.sourceFolderPath ?? '/Users/test',
-      sortColumn: 'name',
-      sortOrder: 'ascending',
-      sourceVolumeId: opts.sourceVolumeId ?? 'root',
-      destVolumeId: opts.currentVolumeId ?? 'root',
-      autoConfirm: opts.autoConfirm ?? false,
-      autoConfirmOnConflict: opts.autoConfirmOnConflict,
-      onConfirm: opts.onConfirm ?? (() => {}),
-      onCancel: opts.onCancel ?? (() => {}),
-    },
-  })
-  return target
-}
-
-function radioGroup(target: HTMLElement): HTMLElement | null {
-  return target.querySelector('.conflict-policy')
-}
-
-/** Reads the `data-scan-state` marker off the tallies element. */
-function scanState(target: HTMLElement): string | null {
-  return target.querySelector('.scan-stats')?.getAttribute('data-scan-state') ?? null
-}
-
-beforeEach(() => {
-  scanCompleteCb = null
-  scanVolumeForConflictsMock.mockReset()
-  scanVolumeForConflictsMock.mockResolvedValue([])
-  destinationExistsMock.mockReset()
-  destinationExistsMock.mockResolvedValue({ data: true, timedOut: false })
-  destinationWriteAccessMock.mockReset()
-  destinationWriteAccessMock.mockResolvedValue({ kind: 'unknown' })
-  startScanPreviewMock.mockClear()
-  startScanPreviewMock.mockResolvedValue({ previewId: 'preview-1' })
-  cancelScanPreviewMock.mockClear()
-  document.body.innerHTML = ''
-})
-
-/** A promise plus its resolver, so a test decides exactly when an async
- *  dependency settles (and can leave it pending indefinitely). */
-function deferred<T>(): { promise: Promise<T>; resolve: (value: T) => void } {
-  let resolve!: (value: T) => void
-  const promise = new Promise<T>((r) => {
-    resolve = r
-  })
-  return { promise, resolve }
-}
-
-function confirmButton(target: HTMLElement): HTMLButtonElement {
-  const btn = target.querySelector<HTMLButtonElement>('.btn-primary')
-  if (!btn) throw new Error('confirm button not rendered')
-  return btn
-}
-
-function cancelButton(target: HTMLElement): HTMLButtonElement {
-  const btn = Array.from(target.querySelectorAll<HTMLButtonElement>('button')).find(
-    (b) => b.textContent.trim() === 'Cancel',
-  )
-  if (!btn) throw new Error('cancel button not rendered')
-  return btn
-}
-
-/** The `×` in the dialog chrome. It calls `ModalDialog`'s `onclose` (= `handleCancel`)
- *  directly and is never disabled, so it's the honest way to drive the close path in a
- *  test — unlike the Cancel button, whose `disabled` would swallow the click. */
-function closeButton(target: HTMLElement): HTMLButtonElement {
-  const btn = target.querySelector<HTMLButtonElement>('.modal-close-button')
-  if (!btn) throw new Error('modal close button not rendered')
-  return btn
-}
-
-/** Clicks the Copy/Move segmented toggle option by its label. */
-function clickToggle(target: HTMLElement, label: 'Copy' | 'Move'): void {
-  const buttons = Array.from(target.querySelectorAll<HTMLButtonElement>('.tg-root .tg-item'))
-  const btn = buttons.find((b) => b.textContent.trim() === label)
-  if (!btn) throw new Error(`toggle option "${label}" not found`)
-  btn.click()
-}
-
+import {
+  estimateOperationCostMock,
+  startScanPreviewMock,
+  cancelScanPreviewMock,
+  scanCompleteCb,
+  scanVolumeForConflictsMock,
+  destinationExistsMock,
+  destinationWriteAccessMock,
+  destinationRootEchoMock,
+  makeConflict,
+  flushMicrotasks,
+  mountDialog,
+  radioGroup,
+  scanState,
+  deferred,
+  confirmButton,
+  cancelButton,
+  closeButton,
+  clickToggle,
+  pathInput,
+  type ConfirmFn,
+} from './test-transfer-dialog-harness'
 it('shows a conflict spinner beside the file count only after 100 ms, without a checking row', async () => {
   vi.useFakeTimers()
   try {
@@ -689,6 +458,55 @@ describe('TransferDialog data-scan-state marker', () => {
     expect(scanState(target)).toBe('skipped')
   })
 
+  it('scans a same-volume move where renames copy (S3), so the counts and the cost line appear', async () => {
+    const onConfirm = vi.fn<ConfirmFn>()
+    const target = mountDialog({
+      operationType: 'move',
+      sourceVolumeId: 's3-photos',
+      currentVolumeId: 's3-photos',
+      onConfirm,
+    })
+    await flushMicrotasks()
+
+    expect(startScanPreviewMock, 'a move that copies on the server scans').toHaveBeenCalled()
+    expect(scanState(target)).toBe('counting')
+
+    scanCompleteCb?.({ previewId: 'preview-1', filesTotal: 3, dirsTotal: 1, bytesTotal: 30, dedupBytesTotal: 30 })
+    await flushMicrotasks()
+    expect(scanState(target)).toBe('done')
+    expect(estimateOperationCostMock).toHaveBeenCalledWith(
+      expect.objectContaining({ operation: 'move', previewId: 'preview-1', sourceVolumeId: 's3-photos' }),
+    )
+
+    confirmButton(target).click()
+    await flushMicrotasks()
+    expect(onConfirm, 'the move hands its scan to the backend').toHaveBeenCalledWith(
+      expect.objectContaining({ previewId: 'preview-1' }),
+    )
+  })
+
+  it('prices the overwrites the chosen policy makes, from the conflict check', async () => {
+    scanVolumeForConflictsMock.mockResolvedValue([
+      makeConflict({ sourcePath: 'notes.txt', sourceSize: 10, destSize: 5, sourceModified: 200, destModified: 100 }),
+    ])
+    const target = mountDialog({ operationType: 'copy', sourceVolumeId: 'root', currentVolumeId: 's3-photos' })
+    await flushMicrotasks()
+    scanCompleteCb?.({ previewId: 'preview-1', filesTotal: 2, dirsTotal: 0, bytesTotal: 30, dedupBytesTotal: 30 })
+    await flushMicrotasks()
+
+    target.querySelector<HTMLInputElement>('input[type="radio"][value="overwrite"]')?.click()
+    await flushMicrotasks()
+
+    expect(estimateOperationCostMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        clashes: {
+          resolution: 'overwrite',
+          clashes: [{ sourceSize: 10, destSize: 5, sourceModified: 200, destModified: 100 }],
+        },
+      }),
+    )
+  })
+
   it('still reaches "done" for a same-volume COPY (copy scans even on one volume)', async () => {
     const target = mountDialog({ operationType: 'copy', sourceVolumeId: 'ext', currentVolumeId: 'ext' })
     await flushMicrotasks()
@@ -723,13 +541,6 @@ describe('TransferDialog data-scan-state marker', () => {
 /* Destination path: home long-form + "will be created" warning             */
 /* ------------------------------------------------------------------------- */
 
-function pathInput(target: HTMLElement): HTMLInputElement {
-  const input = target.querySelector<HTMLInputElement>('input[aria-label="Destination path"]')
-  if (!input) throw new Error('path input not found')
-  return input
-}
-
-/** Waits past the destination-existence debounce (300 ms) and flushes. */
 async function settleExistsCheck(): Promise<void> {
   await new Promise<void>((resolve) => setTimeout(resolve, 350))
   await flushMicrotasks()
@@ -817,6 +628,69 @@ describe('TransferDialog destination path', () => {
     expect(target.querySelector('.path-warning')).toBeNull()
   })
 
+  describe('a path repeating the place’s own root folder (#164)', () => {
+    const ECHO = { rootFolder: '/srv/data', resolved: '/srv/data/srv/data/photos', stripped: '/photos' }
+
+    function rootEchoWarning(target: HTMLElement): HTMLElement | null {
+      return target.querySelector('.root-echo')
+    }
+
+    function stripButton(target: HTMLElement): HTMLButtonElement {
+      const btn = rootEchoWarning(target)?.querySelector<HTMLButtonElement>('button')
+      if (!btn) throw new Error('strip button not rendered')
+      return btn
+    }
+
+    it('names where the path goes and offers the stripped reading, prefilled or typed', async () => {
+      // A prefilled path is ambiguous the same way a typed one is: a place rooted
+      // at `/home/bob` can really hold `/home/bob/home/bob/folder`.
+      destinationRootEchoMock.mockResolvedValue(ECHO)
+      const target = mountDialog({ destinationPath: '/srv/data/photos' })
+      await settleExistsCheck()
+
+      expect(destinationRootEchoMock).toHaveBeenCalledWith({ volumeId: 'root', path: '/srv/data/photos' })
+      const warning = rootEchoWarning(target)
+      expect(warning?.textContent).toContain('/srv/data/srv/data/photos')
+      expect(warning?.textContent).toContain('/photos')
+      // Nothing rewrites the field on its own.
+      expect(pathInput(target).value).toBe('/srv/data/photos')
+    })
+
+    it('rewrites the field only when the button is pressed', async () => {
+      destinationRootEchoMock.mockImplementation(({ path }) =>
+        Promise.resolve(path === '/srv/data/photos' ? ECHO : null),
+      )
+      const target = mountDialog({ destinationPath: '/srv/data/photos' })
+      await settleExistsCheck()
+
+      stripButton(target).click()
+      await settleExistsCheck()
+
+      expect(pathInput(target).value).toBe('/photos')
+      expect(rootEchoWarning(target)).toBeNull()
+    })
+
+    it('lets Enter send the path exactly as typed', async () => {
+      destinationRootEchoMock.mockResolvedValue(ECHO)
+      const onConfirm = vi.fn<ConfirmFn>()
+      const target = mountDialog({ destinationPath: '/srv/data/photos', onConfirm })
+      await settleExistsCheck()
+
+      pathInput(target).dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+      await flushMicrotasks()
+
+      expect(onConfirm).toHaveBeenCalledTimes(1)
+      expect(onConfirm.mock.calls[0][0].destination).toBe('/srv/data/photos')
+    })
+
+    it('shows nothing for a path that reads one way', async () => {
+      const target = mountDialog({ destinationPath: '/Users/test/dest' })
+      await settleExistsCheck()
+
+      expect(rootEchoWarning(target)).toBeNull()
+    })
+  })
+
   it('says plainly when the destination folder takes no writes, instead of promising to create it', async () => {
     // ❗ The Pixel case: copying onto a phone's `/` only surfaced after confirm, as
     // "Not enough space". The folder doesn't exist yet AND takes no writes, so
@@ -844,12 +718,36 @@ describe('TransferDialog destination path', () => {
     expect(locked.querySelector('.path-error')?.textContent).toContain('permission')
   })
 
+  it('disables Confirm while the folder refuses writes, since the transfer would only refuse it again', async () => {
+    destinationWriteAccessMock.mockResolvedValue({ kind: 'unwritable', reason: 'readOnlyFilesystem' })
+    const target = mountDialog({ destinationPath: '/Volumes/Installer' })
+    await settleExistsCheck()
+
+    expect(target.querySelector('.path-error')?.textContent).toContain('read-only')
+    expect(confirmButton(target).disabled).toBe(true)
+  })
+
+  it('ignores Enter while the folder refuses writes, the same as the disabled button', async () => {
+    destinationWriteAccessMock.mockResolvedValue({ kind: 'unwritable', reason: 'noPermission' })
+    const onConfirm = vi.fn<ConfirmFn>()
+    const target = mountDialog({ destinationPath: '/Users/other/private', onConfirm })
+    await settleExistsCheck()
+
+    pathInput(target).dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    const dialog = target.querySelector<HTMLElement>('[role="dialog"], dialog') ?? target
+    dialog.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    await flushMicrotasks()
+
+    expect(onConfirm).not.toHaveBeenCalled()
+  })
+
   it('stays quiet when the backend can’t tell whether the folder takes writes', async () => {
     destinationWriteAccessMock.mockResolvedValue({ kind: 'unknown' })
     const target = mountDialog({ destinationPath: '/Volumes/naspi/share' })
     await settleExistsCheck()
 
     expect(target.querySelector('.path-error')).toBeNull()
+    expect(confirmButton(target).disabled).toBe(false)
   })
 })
 
@@ -1050,146 +948,4 @@ describe('TransferDialog confirm without waiting for the conflict check', () => 
 
     expect(onConfirm).toHaveBeenCalledTimes(1)
   })
-})
-
-describe('copy to a filename', () => {
-  it.each(['copy', 'move'] as const)(
-    'confirms a relative %s target beside the source on another volume',
-    async (operationType) => {
-      const onConfirm = vi.fn<ConfirmFn>()
-      const target = mountDialog({
-        operationType,
-        sourcePaths: ['/Users/test/notes.txt'],
-        currentVolumeId: 'ext',
-        onConfirm,
-      })
-      await flushMicrotasks()
-      const input = target.querySelector<HTMLInputElement>('input[type="text"]')
-      if (!input) throw new Error('path input not rendered')
-      input.value = 'notes backup.txt'
-      input.dispatchEvent(new Event('input', { bubbles: true }))
-      await tick()
-      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
-      await flushMicrotasks()
-      expect(onConfirm).toHaveBeenCalledWith(
-        expect.objectContaining({
-          destination: '/Users/test',
-          destinationName: 'notes backup.txt',
-          volumeId: 'root',
-          operationType,
-        }),
-      )
-      expect(target.querySelector('#transfer-path-error')).toBeNull()
-    },
-  )
-})
-
-describe('complete single-copy target', () => {
-  it.each(['copy', 'move'] as const)('shows the original name in the %s target', async (operationType) => {
-    const target = mountDialog({ operationType, sourcePaths: ['/Users/test/notes.txt'] })
-    await flushMicrotasks()
-    expect(pathInput(target).value).toBe('/Users/test/dest/notes.txt')
-  })
-
-  it.each(['copy', 'move'] as const)('accepts full and relative %s filenames', async (operationType) => {
-    for (const [entered, destination, destinationName, volumeId] of [
-      ['/tmp/new.txt', '/tmp', 'new.txt', 'root'],
-      ['copies/new.txt', '/Users/test/copies', 'new.txt', 'root'],
-      ['../new.txt', '/Users', 'new.txt', 'root'],
-      ['/Volumes/External/copies/new.txt', '/copies', 'new.txt', 'ext'],
-      ['~/new.txt', '/Users/test', 'new.txt', 'root'],
-    ]) {
-      const onConfirm = vi.fn<ConfirmFn>()
-      const target = mountDialog({ operationType, sourcePaths: ['/Users/test/notes.txt'], onConfirm })
-      await flushMicrotasks()
-      const input = pathInput(target)
-      input.value = entered
-      input.dispatchEvent(new Event('input', { bubbles: true }))
-      await tick()
-      confirmButton(target).click()
-      await flushMicrotasks()
-      expect(onConfirm).toHaveBeenCalledWith(expect.objectContaining({ destination, destinationName, volumeId }))
-    }
-  })
-
-  it('requires the final name instead of accepting a trailing slash', async () => {
-    const onConfirm = vi.fn<ConfirmFn>()
-    const target = mountDialog({ sourcePaths: ['/Users/test/notes.txt'], onConfirm })
-    await flushMicrotasks()
-    const input = pathInput(target)
-    input.value = '/tmp/'
-    input.dispatchEvent(new Event('input', { bubbles: true }))
-    await tick()
-    confirmButton(target).click()
-    await flushMicrotasks()
-    expect(onConfirm).not.toHaveBeenCalled()
-    expect(target.querySelector('#transfer-path-error')).not.toBeNull()
-  })
-})
-
-describe('named copies on a phone', () => {
-  it.each([
-    ['/DCIM/new.jpg', '/DCIM'],
-    ['backups/new.jpg', '/DCIM/backups'],
-  ])('resolves %s in the phone namespace', async (entered, destination) => {
-    const onConfirm = vi.fn<ConfirmFn>()
-    const target = mountDialog({
-      sourcePaths: ['/mtp-20-5/65538/DCIM/original.jpg'],
-      sourceFolderPath: '/mtp-20-5/65538/DCIM',
-      sourceVolumeId: 'mtp-336592896:65538',
-      currentVolumeId: 'mtp-336592896:65538',
-      destinationPath: '/mtp-20-5/65538/DCIM',
-      onConfirm,
-    })
-    await flushMicrotasks()
-    const input = pathInput(target)
-    input.value = entered
-    input.dispatchEvent(new Event('input', { bubbles: true }))
-    await tick()
-    confirmButton(target).click()
-    await flushMicrotasks()
-    expect(onConfirm).toHaveBeenCalledWith(
-      expect.objectContaining({
-        destination,
-        destinationName: 'new.jpg',
-        volumeId: 'mtp-336592896:65538',
-      }),
-    )
-  })
-})
-
-it('resolves a relative copy beside the selected source when it is outside the pane folder', async () => {
-  const onConfirm = vi.fn<ConfirmFn>()
-  const target = mountDialog({ sourcePaths: ['/Users/other/original.txt'], sourceFolderPath: '/Users/test', onConfirm })
-  await flushMicrotasks()
-  const input = pathInput(target)
-  input.value = 'backup.txt'
-  input.dispatchEvent(new Event('input', { bubbles: true }))
-  await tick()
-  confirmButton(target).click()
-  await flushMicrotasks()
-  expect(onConfirm).toHaveBeenCalledWith(
-    expect.objectContaining({ destination: '/Users/other', destinationName: 'backup.txt' }),
-  )
-})
-
-it.each(['copy', 'move'] as const)('warns and disables %s for the identical source target', async (operationType) => {
-  const onConfirm = vi.fn<ConfirmFn>()
-  const target = mountDialog({ operationType, sourcePaths: ['/Users/test/notes.txt'], onConfirm })
-  await flushMicrotasks()
-  const input = pathInput(target)
-  for (const entered of ['/Users/test/notes.txt', 'notes.txt', './copies/../notes.txt']) {
-    input.value = entered
-    input.dispatchEvent(new Event('input', { bubbles: true }))
-    await tick()
-    expect(target.querySelector('#transfer-path-error')?.textContent).toBe('“notes.txt” is already in this location')
-    expect(confirmButton(target).disabled).toBe(true)
-    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
-    await flushMicrotasks()
-    expect(onConfirm).not.toHaveBeenCalled()
-  }
-  input.value = 'backup.txt'
-  input.dispatchEvent(new Event('input', { bubbles: true }))
-  await tick()
-  expect(confirmButton(target).disabled).toBe(false)
 })

@@ -13,7 +13,7 @@
   },
   "adb.connect.deviceGone": "Dein Telefon ist nicht mehr verbunden.",
   "@adb.connect.deviceGone": {
-    "sourceHash": "e2766e6"
+    "sourceHash": "00d5254"
   },
   "adb.connect.unauthorized": "Sieh auf dein Telefon und tippe auf „Erlauben“.",
   "@adb.connect.unauthorized": {
@@ -67,9 +67,9 @@
   "@adb.disconnectDeviceAriaLabel": {
     "sourceHash": "8f755cb"
   },
-  "adb.disconnectBusyTooltip": "Trennen nicht möglich, während auf diesem Gerät Vorgänge laufen",
+  "adb.disconnectBusyTooltip": "Cmdr arbeitet noch mit Dateien auf diesem Gerät. Trenne die Verbindung, sobald das erledigt ist.",
   "@adb.disconnectBusyTooltip": {
-    "sourceHash": "a425d4b"
+    "sourceHash": "73c355e"
   },
   "adb.disconnectingDeviceAriaLabel": "Verbindung zu {name} wird getrennt …",
   "@adb.disconnectingDeviceAriaLabel": {

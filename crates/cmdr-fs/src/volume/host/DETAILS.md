@@ -123,6 +123,17 @@ and documented in `apps/desktop/src-tauri/src/file_system/CLAUDE.md`; the seam p
 A `Handle` rather than a trait, because a backend needs the `JoinHandle` back: SMB's `stop_watcher` aborts the task it
 spawned. Wrapping that in a trait would be rebuilding tokio's API, worse.
 
+### The state directory
+
+`VolumeHost::state_dir(backend)` is `<root>/<backend>`, a directory a backend keeps durable private state in. Its first
+user is S3's record of the multipart uploads it started (`crates/cmdr-s3/DETAILS.md` § "Unfinished uploads"): S3 can't
+mark an upload as Cmdr's, so the only way a later launch can abort a leftover, and ONLY ours, is a local record. A path
+rather than a trait for the same reason as the runtime: the backend owns its file format, and a trait would only wrap
+`std::fs`.
+
+`None` without a root, which is every host but the app's installed one (`volume_host::install`), so a test binary keeps
+backend state in memory and never writes into the real data dir. ❌ A backend never falls back to a path of its own.
+
 ### `VolumeEventSink`
 
 ⇐ a global `AppHandle` the SMB backend used to hold, emitting `network::VolumeConnectionChanged` through
@@ -379,6 +390,7 @@ the subsystem that can actually give it.
 - `AnalyticsSink` ⇒ `analytics::volume_sink::PostHogVolumeAnalytics`
 - `BackendSettings` ⇒ `file_system::backend_settings::AppBackendSettings`
 - the runtime ⇒ the app's own `tauri::async_runtime` handle, so there's one thread pool
+- the state directory ⇒ `<app data dir>/backend-state/`, set only by `install()`
 
 Both signatures the design left open resolved to "no change" against the real app. `authoritative_listing`'s owned
 `Vec<FileEntry>` is what the cache can give: it clones the entries under its read lock and drops the lock before

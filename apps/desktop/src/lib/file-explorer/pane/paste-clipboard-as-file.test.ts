@@ -5,15 +5,23 @@ import type { ToastContent, ToastOptions, ToastOriginPane } from '$lib/ui/toast/
 
 // Spies for every dependency the gating helper touches. `pastedAsFileMessage`
 // deliberately uses the REAL `$lib/intl` (golden output), so intl is NOT mocked.
-const { getSettingSpy, pasteClipboardAsFileSpy, findFileIndexSpy, onDirectoryDiffSpy, addToastSpy, moveCursorSpy } =
-  vi.hoisted(() => ({
-    getSettingSpy: vi.fn<(id: string) => unknown>(),
-    pasteClipboardAsFileSpy: vi.fn<() => Promise<{ name: string; kind: 'text' | 'image' | 'pdf' } | null>>(),
-    findFileIndexSpy: vi.fn(),
-    onDirectoryDiffSpy: vi.fn(),
-    addToastSpy: vi.fn<(pane: ToastOriginPane, content: ToastContent, options?: ToastOptions) => string>(),
-    moveCursorSpy: vi.fn<() => Promise<void>>(),
-  }))
+const {
+  getSettingSpy,
+  pasteClipboardAsFileSpy,
+  findFileIndexSpy,
+  onDirectoryDiffSpy,
+  addToastSpy,
+  dismissToastSpy,
+  moveCursorSpy,
+} = vi.hoisted(() => ({
+  getSettingSpy: vi.fn<(id: string) => unknown>(),
+  pasteClipboardAsFileSpy: vi.fn<() => Promise<{ name: string; kind: 'text' | 'image' | 'pdf' } | null>>(),
+  findFileIndexSpy: vi.fn(),
+  onDirectoryDiffSpy: vi.fn(),
+  addToastSpy: vi.fn<(pane: ToastOriginPane, content: ToastContent, options?: ToastOptions) => string>(),
+  dismissToastSpy: vi.fn<(id: string | undefined) => void>(),
+  moveCursorSpy: vi.fn<() => Promise<void>>(),
+}))
 
 vi.mock('$lib/settings', () => ({ getSetting: getSettingSpy }))
 vi.mock('$lib/tauri-commands', () => ({
@@ -21,11 +29,13 @@ vi.mock('$lib/tauri-commands', () => ({
   findFileIndex: findFileIndexSpy,
   onDirectoryDiff: onDirectoryDiffSpy,
 }))
-vi.mock('$lib/ui/toast', () => ({ addToastForPane: addToastSpy }))
+vi.mock('$lib/ui/toast', () => ({ addToastForPane: addToastSpy, dismissToast: dismissToastSpy }))
 vi.mock('$lib/file-operations/mkdir/new-folder-operations', () => ({ moveCursorToNewFolder: moveCursorSpy }))
 // The toast body is passed to addToast (mocked) as an opaque component; never rendered here.
 vi.mock('../PasteClipboardToastContent.svelte', () => ({ default: {} }))
 
+import type { MutationWaitOptions } from '$lib/tauri-commands'
+import { MutationFailure } from '$lib/file-operations/mutation-error'
 import { pasteClipboardContentAsFile } from './paste-clipboard-as-file'
 import { pastedAsFileMessage } from './paste-clipboard-as-file-message'
 
@@ -71,7 +81,11 @@ describe('pasteClipboardContentAsFile — setting gating (three values)', () => 
 
     await pasteClipboardContentAsFile(deps)
 
-    expect(pasteClipboardAsFileSpy).toHaveBeenCalledWith('root', '/dest/dir')
+    expect(pasteClipboardAsFileSpy).toHaveBeenCalledWith(
+      'root',
+      '/dest/dir',
+      expect.objectContaining({ onStillRunning: expect.any(Function) as unknown }),
+    )
     expect(moveCursorSpy).toHaveBeenCalledWith(
       'lst-1',
       'pasted.txt',
@@ -153,6 +167,44 @@ describe('pasteClipboardContentAsFile — setting gating (three values)', () => 
     await pasteClipboardContentAsFile(buildDeps())
 
     expect(order).toEqual(['cursor', 'toast'])
+  })
+})
+
+describe('pasteClipboardContentAsFile on a slow volume, and when the volume refuses', () => {
+  /** A paste the backend says is still running, ending the way `end` says. */
+  function slowPaste(end: () => Promise<{ name: string; kind: 'text' } | null>) {
+    pasteClipboardAsFileSpy.mockImplementationOnce(((_v: string, _d: string, wait?: MutationWaitOptions) => {
+      wait?.onStillRunning?.()
+      return end()
+    }) as () => Promise<null>)
+  }
+
+  it('says it is still pasting, then reports the file without moving the cursor or starting a rename', async () => {
+    getSettingSpy.mockReturnValue('createFileAndRename')
+    slowPaste(() => Promise.resolve({ name: 'pasted.txt', kind: 'text' }))
+
+    await pasteClipboardContentAsFile(buildDeps())
+
+    const [, stillPasting, stillOpts] = addToastSpy.mock.calls[0]
+    expect(stillPasting).toBe('Still creating a file from the clipboard. The volume is slow to answer.')
+    expect(stillOpts).toMatchObject({ level: 'info', dismissal: 'persistent' })
+    expect(dismissToastSpy).toHaveBeenCalledWith(stillOpts?.id)
+    // The person may have moved on by the time it lands: report, don't steer.
+    expect(addToastSpy.mock.calls[1][2]).toMatchObject({ level: 'info', props: { filename: 'pasted.txt' } })
+    expect(moveCursorSpy).not.toHaveBeenCalled()
+    expect(startRenameSpy).not.toHaveBeenCalled()
+  })
+
+  it('says why when the volume refuses the paste, late or in time, and never throws', async () => {
+    getSettingSpy.mockReturnValue('createFile')
+    slowPaste(() => Promise.reject(new MutationFailure({ type: 'parentNotWritable', path: '/dest/dir' })))
+
+    await pasteClipboardContentAsFile(buildDeps())
+
+    const last = addToastSpy.mock.calls[addToastSpy.mock.calls.length - 1]
+    expect(String(last[1])).toMatch(/^Cmdr couldn’t create a file from the clipboard\. /)
+    expect(last[2]).toMatchObject({ level: 'error', dismissal: 'persistent' })
+    expect(dismissToastSpy).toHaveBeenCalled()
   })
 })
 

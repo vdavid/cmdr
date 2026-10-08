@@ -333,8 +333,8 @@ impl ArchiveIndex {
     /// each FILE member (files + symlinks) under the root in ARCHIVE order; the
     /// directory structure is NOT yielded — the caller creates it from the tree.
     ///
-    /// The set of wanted files (and their tree sizes, so they match the copy
-    /// scan totals) is computed here from the parsed tree, then handed to the
+    /// The set of wanted files (with their tree sizes, so they match the copy
+    /// scan totals, and their tree dates) is computed here from the parsed tree, then handed to the
     /// format's producer. Meant for SEQUENTIAL formats (compressed tar, 7z); a
     /// random-access store yields an empty stream (the planner never routes those
     /// here).
@@ -345,13 +345,18 @@ impl ArchiveIndex {
         password: Option<&str>,
     ) -> super::extract::SubtreeExtractReader {
         let root = normalize_lookup(inner_path);
-        let mut wanted: HashMap<String, u64> = HashMap::new();
+        let mut wanted: HashMap<String, super::extract::SubtreeMember> = HashMap::new();
+        let member = |path: &str, node: &ArchiveNode| super::extract::SubtreeMember {
+            inner_path: path.to_string(),
+            size: self.file_size(path).unwrap_or(0),
+            modified: node.modified,
+        };
 
         // A file root extracts just itself; a directory root walks its subtree.
         // Either way, only FILE nodes carry bytes to stream.
         match self.nodes.get(root) {
             Some(node) if !node.is_dir => {
-                wanted.insert(root.to_string(), self.file_size(root).unwrap_or(0));
+                wanted.insert(root.to_string(), member(root, node));
             }
             _ => {
                 let mut pending = vec![root.to_string()];
@@ -362,8 +367,8 @@ impl ArchiveIndex {
                     for child in child_paths {
                         match self.nodes.get(child) {
                             Some(node) if node.is_dir => pending.push(child.clone()),
-                            Some(_) => {
-                                wanted.insert(child.clone(), self.file_size(child).unwrap_or(0));
+                            Some(node) => {
+                                wanted.insert(child.clone(), member(child, node));
                             }
                             None => {}
                         }

@@ -203,6 +203,10 @@
   "@menu.select.sameKind": {
     "sourceHash": "9933028"
   },
+  "menu.select.compareDirectories": "Jämför mappar",
+  "@menu.select.compareDirectories": {
+    "sourceHash": "5cf3985"
+  },
   "menu.select.allFolders": "Markera alla mappar",
   "@menu.select.allFolders": {
     "sourceHash": "5351f8b"
@@ -263,6 +267,14 @@
   "menu.view.swapPanes": "Byt plats på panelerna",
   "@menu.view.swapPanes": {
     "sourceHash": "cc29396"
+  },
+  "menu.view.clonePane": "Klona panel",
+  "@menu.view.clonePane": {
+    "sourceHash": "74b2c7f"
+  },
+  "menu.view.calculateFolderSizes": "Beräkna mappstorlekar",
+  "@menu.view.calculateFolderSizes": {
+    "sourceHash": "d2a83da"
   },
   "menu.view.commandPalette": "Kommandopalett…",
   "@menu.view.commandPalette": {
@@ -349,13 +361,17 @@
   "@menu.go.parentFolder": {
     "sourceHash": "158f5a0"
   },
+  "menu.go.rootFolder": "Rotmapp",
+  "@menu.go.rootFolder": {
+    "sourceHash": "6d92528"
+  },
   "menu.go.home": "Hem",
   "@menu.go.home": {
     "sourceHash": "3a78695"
   },
-  "menu.go.goToPath": "Gå till sökväg…",
+  "menu.go.goToPath": "Gå till mapp…",
   "@menu.go.goToPath": {
-    "sourceHash": "936edc5"
+    "sourceHash": "33de610"
   },
   "menu.go.goToLatestDownload": "Gå till senaste hämtning",
   "@menu.go.goToLatestDownload": {
@@ -472,6 +488,22 @@
   "menu.context.copyGoogleDriveLink": "Kopiera Google Drive-länk",
   "@menu.context.copyGoogleDriveLink": {
     "sourceHash": "070b383"
+  },
+  "menu.context.copyShareLink": "Kopiera delningslänk",
+  "@menu.context.copyShareLink": {
+    "sourceHash": "d31483e"
+  },
+  "menu.context.shareLinkSevenDays": "Går ut om sju dagar",
+  "@menu.context.shareLinkSevenDays": {
+    "sourceHash": "06949d8"
+  },
+  "menu.context.shareLinkOneDay": "Går ut om en dag",
+  "@menu.context.shareLinkOneDay": {
+    "sourceHash": "5ff3dbc"
+  },
+  "menu.context.shareLinkOneHour": "Går ut om en timme",
+  "@menu.context.shareLinkOneHour": {
+    "sourceHash": "faf9c50"
   },
   "menu.context.askGemini": "Fråga Gemini",
   "@menu.context.askGemini": {
@@ -654,10 +686,6 @@
   "@menu.dock.searchFiles": {
     "sourceHash": "149a9d1"
   },
-  "menu.dock.goToFolder": "Gå till mapp…",
-  "@menu.dock.goToFolder": {
-    "sourceHash": "33de610"
-  },
   "menu.dock.connectToServer": "Anslut till server…",
   "@menu.dock.connectToServer": {
     "sourceHash": "6188f47"
@@ -666,5 +694,9 @@
   "@menu.dock.locationInParent": {
     "sourceHash": "0bf83e2",
     "sameAsSourceJustification": "Pure punctuation around two literal folder names. Swedish appends a disambiguating qualifier in parentheses exactly as English does, in the same order: Finder sv 'SB_iCloudDetail' is the bare '^0 (^1)' (pile macOS/Finder/LocalizableMerged.json), and the sv catalog already uses the same trailing parenthetical for qualifiers ('Mata ut ({name}) (upptagen)'). Deliberately identical."
+  },
+  "menu.help.viewDebugLog": "Visa felsökningslogg",
+  "@menu.help.viewDebugLog": {
+    "sourceHash": "007c98d"
   }
 }

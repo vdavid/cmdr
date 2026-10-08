@@ -142,11 +142,9 @@
         // Ask the backend to apply the current enabled/binding to the live
         // registration. The returned status drives nothing in this row anymore
         // (the binding + its registration feedback live in `Keyboard
-        // shortcuts`); we just keep the live-apply contract on the toggle.
-        const result = await setGlobalGoToLatestShortcut(shortcutEnabled, shortcutBinding)
-        if (result.status === 'error') {
-            log.warn('setGlobalGoToLatestShortcut failed: {error}', { error: JSON.stringify(result.error) })
-        }
+        // shortcuts`); we just keep the live-apply contract on the toggle. A
+        // refusal is the backend's to log, so the result is dropped here.
+        await setGlobalGoToLatestShortcut(shortcutEnabled, shortcutBinding)
     }
 
     async function handleShortcutEnabledChange(next: boolean) {

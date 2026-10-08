@@ -57,8 +57,9 @@ pub enum ProviderGate {
 /// follows the same rule against `BackendResolution`, which is why it is not a bool.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct AgentGates {
-    /// Ask Cmdr is switched on (`askCmdr.enabled`, read fresh from `settings.json`).
-    pub ask_cmdr_enabled: bool,
+    /// Ask Cmdr's switch (`askCmdr.enabled`, read fresh from `settings.json` through the
+    /// organization's locks), keeping the person's own off apart from a managed one.
+    pub ask_cmdr: crate::settings::AskCmdrSwitch,
     /// The Full Disk Access decision is still outstanding.
     pub fda_pending: bool,
     /// What the resolved provider for the interactive slot would do with a send.
@@ -71,8 +72,9 @@ pub enum WakeReadiness {
     Ready,
     /// Ask Cmdr is switched off. Nothing may be stored, what was stored goes, and nothing may run.
     AskCmdrOff,
-    /// The user turned AI off. Nothing new may be stored and nothing may run, and there is nothing
-    /// to ask them for: they already answered. What was stored while AI was on stays.
+    /// The user turned AI off, or the organization's policy did (AI, or Ask Cmdr's switch). Nothing
+    /// new may be stored and nothing may run, and there is nothing to ask them for: the answer is
+    /// given. What was stored while AI was on stays.
     Off,
     /// A cloud provider is picked and cloud AI isn't allowed. Like `Off`: nothing new may be
     /// stored and nothing may run, what's stored stays, and the corner is silent (the switch is
@@ -120,9 +122,12 @@ impl WakeReadiness {
 
 /// Which gap to report, in precedence order.
 pub fn readiness(gates: AgentGates) -> WakeReadiness {
-    if !gates.ask_cmdr_enabled {
+    use crate::settings::AskCmdrSwitch;
+    if gates.ask_cmdr == AskCmdrSwitch::Off {
         WakeReadiness::AskCmdrOff
-    } else if gates.provider == ProviderGate::Off {
+    } else if gates.ask_cmdr == AskCmdrSwitch::ManagedOff || gates.provider == ProviderGate::Off {
+        // A managed off is the organization's answer, like an AI-off provider: silent, and the
+        // backlog stays for when the policy lifts (it overlays, it never rewrites).
         WakeReadiness::Off
     } else if gates.provider == ProviderGate::NeedsCloudConsent {
         WakeReadiness::NeedsCloudConsent

@@ -142,7 +142,7 @@ async fn open_file_writer(
     mode: WriteMode,
 ) -> Result<smb2::client::stream::FileWriter, smb2::Error> {
     match mode {
-        WriteMode::CreateNew => tree.create_file_writer_exclusive(conn, path).await,
+        WriteMode::CreateNew | WriteMode::CreateNewInFreshFolder => tree.create_file_writer_exclusive(conn, path).await,
         WriteMode::CreateOrReplace => tree.create_file_writer(conn, path).await,
     }
 }
@@ -156,16 +156,42 @@ pub(super) struct InlineReadStream {
     data: Option<Vec<u8>>,
     total_size: u64,
     bytes_read: u64,
+    modified_at: Option<std::time::SystemTime>,
 }
 
 impl InlineReadStream {
-    pub(super) fn new(data: Vec<u8>) -> Self {
+    pub(super) fn new(data: Vec<u8>, modified_at: Option<std::time::SystemTime>) -> Self {
         let total_size = data.len() as u64;
         Self {
             data: Some(data),
             total_size,
             bytes_read: 0,
+            modified_at,
         }
+    }
+}
+
+/// What a streaming download's producer learned from opening the file.
+struct OpenedDownload {
+    total_size: u64,
+    /// The server's `LastWriteTime`, from the same CREATE response.
+    modified_at: Option<std::time::SystemTime>,
+}
+
+/// The times a copy stamps on what it wrote: the source's `LastWriteTime` and
+/// nothing else, so the server keeps its own creation and access times. `None`
+/// for a source with no date, which leaves the server's.
+fn source_times(modified: Option<std::time::SystemTime>) -> Option<smb2::FileTimes> {
+    modified.map(|t| smb2::FileTimes::new().set_modified(t))
+}
+
+/// Stamps the source's date on a streaming writer's OWN handle, before
+/// `finish()`: the server rewrites the date when a writing handle closes, so a
+/// path stamp while this one is open would lose to that close. Best effort: a
+/// date that won't set leaves the server's, and the copy goes on.
+async fn stamp_writer(writer: &mut smb2::client::stream::FileWriter, times: smb2::FileTimes, smb_path: &str) {
+    if let Err(e) = writer.set_times(times).await {
+        warn!("SmbVolume::write_from_stream: path={smb_path:?} keeps the server's date, not the source's: {e}");
     }
 }
 
@@ -184,6 +210,10 @@ impl VolumeReadStream for InlineReadStream {
 
     fn bytes_read(&self) -> u64 {
         self.bytes_read
+    }
+
+    fn modified_at(&self) -> Option<std::time::SystemTime> {
+        self.modified_at
     }
 }
 
@@ -204,7 +234,9 @@ impl SmbVolume {
     pub(super) async fn open_smb_download_stream(&self, smb_path: &str) -> Result<ChannelReadStream, VolumeError> {
         let (tree, conn) = self.clone_session().await?;
 
-        let (size_tx, size_rx) = tokio::sync::oneshot::channel::<Result<u64, VolumeError>>();
+        // The open reports the size and the date together: both ride on the
+        // download's own CREATE response, so the date costs no round trip.
+        let (opened_tx, opened_rx) = tokio::sync::oneshot::channel::<Result<OpenedDownload, VolumeError>>();
         let (chunk_tx, chunk_rx) =
             tokio::sync::mpsc::channel::<Result<Vec<u8>, VolumeError>>(SMB_STREAM_CHANNEL_CAPACITY);
         let (cancel_tx, mut cancel_rx) = tokio::sync::oneshot::channel::<()>();
@@ -235,13 +267,17 @@ impl SmbVolume {
                         "SmbVolume::download(share={:?}, path={:?}): {}",
                         share_name, smb_path_owned, e
                     );
-                    let _ = size_tx.send(Err(map_smb_error(e, &display_path)));
+                    let _ = opened_tx.send(Err(map_smb_error(e, &display_path)));
                     return;
                 }
             };
 
             let total_size = download.size();
-            if size_tx.send(Ok(total_size)).is_err() {
+            let opened = OpenedDownload {
+                total_size,
+                modified_at: download.info().and_then(|info| info.modified.to_system_time()),
+            };
+            if opened_tx.send(Ok(opened)).is_err() {
                 // Caller dropped the stream before receiving size. Drop download
                 // cleanly (Drop logs a may-leak debug line; the handle is released
                 // when the SMB session closes).
@@ -308,8 +344,8 @@ impl SmbVolume {
             // `Arc<Tree>` unwind when every concurrent task finishes.
         });
 
-        let total_size = match size_rx.await {
-            Ok(Ok(size)) => size,
+        let opened = match opened_rx.await {
+            Ok(Ok(opened)) => opened,
             Ok(Err(e)) => return Err(e),
             Err(_) => {
                 return Err(VolumeError::IoError {
@@ -319,11 +355,10 @@ impl SmbVolume {
             }
         };
 
-        Ok(ChannelReadStream::new(
-            chunk_rx,
-            cancel_tx,
-            StreamLength::Known(total_size),
-        ))
+        Ok(
+            ChannelReadStream::new(chunk_rx, cancel_tx, StreamLength::Known(opened.total_size))
+                .with_modified_at(opened.modified_at),
+        )
     }
 
     /// The negotiated `max_write_size` for the live session, or `None` when
@@ -402,6 +437,7 @@ impl SmbVolume {
             // fast-path and the streaming fallback drive their write on
             // this same clone — no second `clone_session` needed.
             let (tree, mut conn) = self.clone_session().await?;
+            let times = source_times(stream.modified_at());
 
             // Best-effort delete of a partial file on a FRESH cloned session.
             // Once a `FileWriter` is open and bytes have streamed into it, an
@@ -482,7 +518,7 @@ impl SmbVolume {
                         // refusal is a CREATE failure, so the cleanup below leaves
                         // their file alone.
                         let write_result = match mode {
-                            WriteMode::CreateNew => {
+                            WriteMode::CreateNew | WriteMode::CreateNewInFreshFolder => {
                                 tree.write_file_compound_exclusive(&mut conn, &smb_path, &buffer).await
                             }
                             WriteMode::CreateOrReplace => tree.write_file_compound(&mut conn, &smb_path, &buffer).await,
@@ -511,11 +547,19 @@ impl SmbVolume {
                                 // data loss.
                                 delete_partial().await;
                             }
-                            break 'write self.handle_smb_result(
-                                "write_from_stream(compound)",
-                                &smb_path,
-                                write_result,
-                            )?;
+                            let written =
+                                self.handle_smb_result("write_from_stream(compound)", &smb_path, write_result)?;
+                            // The frame's CLOSE already stamped the server's own
+                            // date, so this goes by path, after it. Best effort,
+                            // like `stamp_writer`.
+                            if let Some(times) = times
+                                && let Err(e) = tree.set_times(&mut conn, &smb_path, times).await
+                            {
+                                warn!(
+                                    "SmbVolume::write_from_stream: path={smb_path:?} keeps the server's date, not the source's: {e}"
+                                );
+                            }
+                            break 'write written;
                         }
                     }
                     // The source yielded MORE than one frame can carry (it
@@ -545,6 +589,9 @@ impl SmbVolume {
                     }
                     // The source signalled end-of-stream by returning None
                     // above (we exited the drain loop). No further chunks.
+                    if let Some(times) = times {
+                        stamp_writer(&mut writer, times, &smb_path).await;
+                    }
                     // `finish()` consumes the writer, so on failure the
                     // handle is already gone (best-effort delete only).
                     let finish_result = writer.finish().await;
@@ -625,6 +672,9 @@ impl SmbVolume {
                     }
                 }
 
+                if let Some(times) = times {
+                    stamp_writer(&mut writer, times, &smb_path).await;
+                }
                 // `finish()` consumes the writer; on failure the handle is
                 // already gone, so we can only best-effort delete the partial.
                 let finish_result = writer.finish().await;

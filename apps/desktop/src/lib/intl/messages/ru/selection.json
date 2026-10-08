@@ -1,0 +1,62 @@
+{
+  "selection.dialog.title.add": "Выделить файлы",
+  "@selection.dialog.title.add": {
+    "sourceHash": "e04221c"
+  },
+  "selection.dialog.title.remove": "Снять выделение с файлов",
+  "@selection.dialog.title.remove": {
+    "sourceHash": "537ddbe"
+  },
+  "selection.runHint": "Нажмите Enter, чтобы отфильтровать",
+  "@selection.runHint": {
+    "sourceHash": "c8d00d2"
+  },
+  "selection.action.select.label": "Выделить эти файлы",
+  "@selection.action.select.label": {
+    "sourceHash": "9f385e8"
+  },
+  "selection.action.select.tooltip": "Выделить эти файлы в активной панели",
+  "@selection.action.select.tooltip": {
+    "sourceHash": "d427136"
+  },
+  "selection.action.deselect.label": "Снять выделение с этих файлов",
+  "@selection.action.deselect.label": {
+    "sourceHash": "c0d3db4"
+  },
+  "selection.action.deselect.tooltip": "Снять выделение с этих файлов в активной панели",
+  "@selection.action.deselect.tooltip": {
+    "sourceHash": "bf77e53"
+  },
+  "selection.notice.snapshotPane": "Совпадения ищутся по полному пути, как он показан в списке.",
+  "@selection.notice.snapshotPane": {
+    "sourceHash": "aa4306e"
+  },
+  "selection.recent.trailingTooltip": "Показать все недавние выделения",
+  "@selection.recent.trailingTooltip": {
+    "sourceHash": "c694665"
+  },
+  "selection.recent.allButtonAria": "Все недавние выделения",
+  "@selection.recent.allButtonAria": {
+    "sourceHash": "b6ea4d8"
+  },
+  "selection.recent.filterPlaceholder": "Фильтр недавних выделений",
+  "@selection.recent.filterPlaceholder": {
+    "sourceHash": "1f8347f"
+  },
+  "selection.recent.emptyMessage": "Нет подходящих недавних выделений",
+  "@selection.recent.emptyMessage": {
+    "sourceHash": "f404527"
+  },
+  "selection.recent.popoverAria": "Недавние выделения",
+  "@selection.recent.popoverAria": {
+    "sourceHash": "94c77ad"
+  },
+  "selection.recent.listboxAria": "Недавние выделения",
+  "@selection.recent.listboxAria": {
+    "sourceHash": "94c77ad"
+  },
+  "selection.recent.applyAria": "Применить недавнее выделение ({mode}): {query}",
+  "@selection.recent.applyAria": {
+    "sourceHash": "717317a"
+  }
+}

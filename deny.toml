@@ -11,8 +11,11 @@ targets = ["aarch64-apple-darwin", "x86_64-apple-darwin"]
 [advisories]
 version = 2
 # Only flag unmaintained crates we could actually act on: a direct workspace
-# dependency. The transitive ones (`paste`, the `unic-*` family via tauri's codegen)
-# are Tauri's to replace, and denying them means a red check nobody can fix.
+# dependency. The transitive ones (`paste`, the `unic-*` family via `tauri-utils` ->
+# `urlpattern` 0.3, `ttf-parser` via `pdf-extract` -> `lopdf` 0.42) are their parents'
+# to replace, and denying them means a red check nobody can fix. OSV-Scanner has no
+# such scope, so `osv-scanner.toml` ignores the same notices one by one, each with
+# the upgrade that drops it.
 # Vulnerabilities are NOT scoped this way: every RUSTSEC vuln in the macOS graph,
 # transitive or not, still fails this check.
 unmaintained = "workspace"

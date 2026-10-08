@@ -142,7 +142,7 @@ export function createViewerRowFetch(deps: RowFetchDeps) {
     from: number
     to: number
     startAt?: ContinueFrom
-  }): { seekType: 'line' | 'byte' | 'fraction'; seekValue: number; fetchFrom: number; fetchCount: number } | null {
+  }): { seekType: 'row' | 'byte' | 'fraction'; seekValue: number; fetchFrom: number; fetchCount: number } | null {
     if (to <= from) return null
     const prefetch = deps.getPrefetchRows()
     const fetchFrom = startAt?.row ?? Math.max(0, from - prefetch)
@@ -152,7 +152,7 @@ export function createViewerRowFetch(deps: RowFetchDeps) {
     if (startAt?.byteOffset != null) {
       return { seekType: 'byte', seekValue: startAt.byteOffset, fetchFrom, fetchCount }
     }
-    if (deps.getTotalRows() !== null) return { seekType: 'line', seekValue: fetchFrom, fetchFrom, fetchCount }
+    if (deps.getTotalRows() !== null) return { seekType: 'row', seekValue: fetchFrom, fetchFrom, fetchCount }
     // A 0 estimate would make the fraction division NaN (0/0) or Infinity (>0/0); both
     // serialize to JSON null, which the Rust f64 `targetValue` rejects. With no row count
     // to go on, seek to the start of the file (fraction 0).
@@ -264,7 +264,7 @@ export function createViewerRowFetch(deps: RowFetchDeps) {
     if (chunk.end !== 'budgetReached') return null
     return {
       row: cacheStartRow + received,
-      byteOffset: request.seekType === 'line' ? null : chunk.endByteOffset,
+      byteOffset: request.seekType === 'row' ? null : chunk.endByteOffset,
     }
   }
 

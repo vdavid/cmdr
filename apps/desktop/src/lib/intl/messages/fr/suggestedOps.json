@@ -127,6 +127,26 @@
   "@suggestedOps.approvalUnsure": {
     "sourceHash": "fba515a"
   },
+  "suggestedOps.refusal.label": "Pourquoi rien n’a démarré",
+  "@suggestedOps.refusal.label": {
+    "sourceHash": "e176570"
+  },
+  "suggestedOps.refusal.nothingToRun.message": "Cmdr n’a pu lire aucun de ces fichiers au moment de votre approbation, il n’a donc rien lancé.",
+  "@suggestedOps.refusal.nothingToRun.message": {
+    "sourceHash": "3018819"
+  },
+  "suggestedOps.refusal.nothingToRun.suggestion": "Vérifiez qu’ils sont toujours là, puis approuvez à nouveau cette suggestion ou refusez-la.",
+  "@suggestedOps.refusal.nothingToRun.suggestion": {
+    "sourceHash": "f4cfc9e"
+  },
+  "suggestedOps.refusal.couldNotStart.message": "Cmdr n’a pas pu transformer cette suggestion en opération, il n’a donc rien lancé.",
+  "@suggestedOps.refusal.couldNotStart.message": {
+    "sourceHash": "77ef48b"
+  },
+  "suggestedOps.refusal.couldNotStart.suggestion": "Refusez-la, puis demandez à l’IA de la suggérer à nouveau.",
+  "@suggestedOps.refusal.couldNotStart.suggestion": {
+    "sourceHash": "5b5b779"
+  },
   "suggestedOps.indicatorTooltip": "Des suggestions de l’IA vous attendent. Cliquez pour les examiner.",
   "@suggestedOps.indicatorTooltip": {
     "sourceHash": "4508b0b"

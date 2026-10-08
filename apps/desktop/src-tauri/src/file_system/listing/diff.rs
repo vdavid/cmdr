@@ -6,7 +6,7 @@
 //! a listing whose hidden entries alone changed emits nothing. `diff_emitter`
 //! coalesces these into the `directory-diff` event; the single-entry cache helpers
 //! build them through [`DiffChange::for_pane`], while the full re-read path derives
-//! them here with [`compute_diff`].
+//! them here with [`diff_rows`] over the committed projections.
 //!
 //! Why `Move` is its own variant and how it stays minimal:
 //! `../DETAILS.md` § "Reordered rows".
@@ -15,6 +15,9 @@ use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 
 use super::FileEntry;
+#[cfg(test)]
+use super::name_filter::NameFilter;
+#[cfg(test)]
 use super::visible_rows::shows;
 
 /// What happened to one row of a listing.
@@ -88,7 +91,7 @@ impl DiffChange {
     /// which is the whole point: a dotfile write in `~` with hidden files off.
     ///
     /// Only for a patch of this ONE entry, where a row that differs means the entry
-    /// itself changed places. A batch derives its moves with [`compute_diff`].
+    /// itself changed places. A batch derives its moves with [`diff_rows`].
     pub(crate) fn for_pane(entry: FileEntry, rows: PaneRows) -> Option<Self> {
         match (rows.before, rows.after) {
             (None, None) => None,
@@ -114,43 +117,45 @@ pub struct PaneRows {
 #[serde(rename_all = "camelCase")]
 pub struct DirectoryDiff {
     pub listing_id: String,
-    /// Monotonic.
+    pub batches: Vec<DirectoryDiffBatch>,
+}
+
+/// One committed transition, with indices in its own old/new row spaces.
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct DirectoryDiffBatch {
+    pub from_sequence: u64,
     pub sequence: u64,
+    pub total_count: usize,
     pub changes: Vec<DiffChange>,
 }
 
-/// Computes the diff a pane with this `include_hidden` sees between two sorted
-/// readings of its directory.
+/// Computes the diff a pane with this `include_hidden` and quick filter sees
+/// between two sorted readings of its directory.
 ///
 /// It diffs the rows the pane shows on each side (`visible_rows::shows`), so the
 /// indices are rows, an entry hidden on both sides is left out, and one that turns
-/// hidden or visible arrives as a remove or an add. Pair it with [`listing_changed`]
-/// to decide whether the CACHE takes the new reading: an empty pane diff still owes
-/// the listing its hidden entries' news.
+/// hidden or visible arrives as a remove or an add. Committed cache transitions
+/// use [`diff_rows`] with their pinned projections instead of sampling live state.
 ///
 /// A row that survived is reported as `Move` only when it genuinely jumped the
 /// queue, ❌ never for the index shift every row below an add or a remove takes.
 /// The rows that kept their relative order are the longest increasing run of old
 /// positions read in new order, so the smallest possible set is called moved.
-pub fn compute_diff(old: &[FileEntry], new: &[FileEntry], include_hidden: bool) -> Vec<DiffChange> {
-    let old: Vec<&FileEntry> = old.iter().filter(|e| shows(e, include_hidden)).collect();
-    let new: Vec<&FileEntry> = new.iter().filter(|e| shows(e, include_hidden)).collect();
+#[cfg(test)]
+pub fn compute_diff(
+    old: &[FileEntry],
+    new: &[FileEntry],
+    include_hidden: bool,
+    name_filter: Option<&NameFilter>,
+) -> Vec<DiffChange> {
+    let old: Vec<&FileEntry> = old.iter().filter(|e| shows(e, include_hidden, name_filter)).collect();
+    let new: Vec<&FileEntry> = new.iter().filter(|e| shows(e, include_hidden, name_filter)).collect();
     diff_rows(&old, &new)
 }
 
-/// Whether two sorted readings of a directory differ in anything a diff reports:
-/// which entries, their order, or an [`is_entry_modified`] field. The same test as
-/// "an all-entries [`compute_diff`] would be non-empty", without building it.
-pub(crate) fn listing_changed(old: &[FileEntry], new: &[FileEntry]) -> bool {
-    old.len() != new.len()
-        || old
-            .iter()
-            .zip(new)
-            .any(|(old, new)| old.path != new.path || is_entry_modified(old, new))
-}
-
-/// [`compute_diff`] over rows already picked out, so an index is a row.
-fn diff_rows(old: &[&FileEntry], new: &[&FileEntry]) -> Vec<DiffChange> {
+/// Diff over rows already picked out, so an index is a row.
+pub(crate) fn diff_rows(old: &[&FileEntry], new: &[&FileEntry]) -> Vec<DiffChange> {
     let mut changes = Vec::new();
 
     // Create lookup maps by path

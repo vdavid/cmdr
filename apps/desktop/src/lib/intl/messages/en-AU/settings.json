@@ -94,5 +94,17 @@
   "settings.advanced.warningBanner": "These settings are for advanced users. Incorrect values may cause performance issues or unexpected behaviour.",
   "@settings.advanced.warningBanner": {
     "sourceHash": "b1dbbf4"
+  },
+  "settings.managed.rowNote": "Your organisation manages this setting.",
+  "@settings.managed.rowNote": {
+    "sourceHash": "891206b"
+  },
+  "settings.managed.sectionNote": "Your organisation manages some of these settings.",
+  "@settings.managed.sectionNote": {
+    "sourceHash": "ab52c49"
+  },
+  "settings.managed.summary.title": "Managed by your organisation",
+  "@settings.managed.summary.title": {
+    "sourceHash": "5450801"
   }
 }

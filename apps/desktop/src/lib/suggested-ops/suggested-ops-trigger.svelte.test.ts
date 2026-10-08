@@ -162,6 +162,75 @@ describe('approving', () => {
   })
 })
 
+describe('an approval that refuses to start', () => {
+  const notConnected = { kind: 'refused', error: { type: 'source_not_connected', path: '/DCIM/one.jpg' } }
+
+  it('keeps the group on the list with the reason under it', async () => {
+    approveMock.mockResolvedValueOnce(notConnected)
+    await openSuggestedOps()
+    await expandGroup(7)
+
+    await approveGroup(7)
+
+    expect(suggestedOpsState.open).toBe(true)
+    expect(suggestedOpsState.sweeps[0].groups.map((g) => g.groupId)).toEqual([7])
+    expect(suggestedOpsState.refusals.get(7)).toEqual(notConnected)
+    expect(suggestedOpsState.openGroupId).toBe(7)
+  })
+
+  it('gives every refusal to start a reason, not only a volume one', async () => {
+    for (const result of [{ kind: 'nothingToRun' }, { kind: 'couldNotStart' }]) {
+      approveMock.mockResolvedValueOnce(result)
+      await openSuggestedOps()
+
+      await approveGroup(7)
+
+      expect(suggestedOpsState.refusals.get(7)).toEqual(result)
+      closeSuggestedOps()
+    }
+  })
+
+  it('takes the reason down once the group is approved again', async () => {
+    approveMock.mockResolvedValueOnce(notConnected)
+    await openSuggestedOps()
+    await approveGroup(7)
+    listMock.mockResolvedValue([sweep([group(7, 3), group(8, 2)])])
+
+    await approveGroup(7)
+
+    expect(suggestedOpsState.refusals.has(7)).toBe(false)
+  })
+
+  it('takes the reason down when the group is rejected', async () => {
+    approveMock.mockResolvedValueOnce(notConnected)
+    await openSuggestedOps()
+    await approveGroup(7)
+
+    await rejectGroup(7)
+
+    expect(suggestedOpsState.refusals.has(7)).toBe(false)
+  })
+
+  it('forgets the reasons when the dialog closes', async () => {
+    approveMock.mockResolvedValueOnce(notConnected)
+    await openSuggestedOps()
+    await approveGroup(7)
+
+    closeSuggestedOps()
+
+    expect(suggestedOpsState.refusals.size).toBe(0)
+  })
+
+  it('says nothing under a group somebody else already answered', async () => {
+    approveMock.mockResolvedValueOnce({ kind: 'alreadyAnswered' })
+    await openSuggestedOps()
+
+    await approveGroup(7)
+
+    expect(suggestedOpsState.refusals.size).toBe(0)
+  })
+})
+
 describe('opening and reading', () => {
   it('opens once however many times the menu, palette, and shortcut fire', async () => {
     await openSuggestedOps()

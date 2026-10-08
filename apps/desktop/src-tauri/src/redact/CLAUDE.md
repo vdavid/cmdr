@@ -1,7 +1,7 @@
 # Redact
 
-Path-shape-preserving redactor: one composed regex with named groups, one dispatch. Unsalted `redact_line` is the stable
-compatibility sanitizer for ordinary MCP resources. `RedactionContext::redact_line` is the stricter report boundary, with
+Path-shape-preserving redactor: one composed regex with named groups, one dispatch, ONE policy. Unsalted `redact_line`
+(MCP resources, the crash hook) writes bare tokens (`<dir>`, `<host>`); `RedactionContext::redact_line` (reports) writes
 tokens that correlate only within one report and process (key from an ephemeral process secret plus the report ID;
 neither ships). Typed values use `RedactionContext::redact_path` / `redact_name` / …, which fail closed. Pattern table,
 overlaps, and decisions: `DETAILS.md`.
@@ -9,10 +9,13 @@ overlaps, and decisions: `DETAILS.md`.
 ## Must-knows
 
 - **Path shape keeps only a fixed mount/home prefix, an allowlisted immediate parent, and a conservative extension.**
-  In report mode only a home-prefix path proves a home role (`HOME_ROLE_DIRS`: Downloads, Documents, Library, …), at
-  any depth; extensionless leaves become `<dir>`.
-- **A recognized remote reference is redacted as one unit** in report mode: scheme, hierarchy, address class, port, and
-  extension stay; every identity gets its own token. Unsalted callers keep the legacy transforms.
+  Only a home-prefix path proves a home role (`HOME_ROLE_DIRS`: Downloads, Documents, Library, …), at any depth;
+  extensionless leaves become `<dir>`.
+- **A recognized remote reference is redacted as one unit**: scheme, hierarchy, address class, port, and extension
+  stay; every identity gets its own token.
+- **❌ Never branch the policy on `context.is_none()`.** The context only salts tokens. A second, byte-compatible MCP
+  policy once let a space-containing URL swallow a following path (cmdr-reports#30);
+  `unsalted_api_runs_the_report_policy_with_bare_tokens` pins the two together.
 - **Only exact derived-ID shapes are recognized** (known scheme + 16-hex digest, legacy `manual-…-<port>`). Never guess
   from arbitrary hyphens.
 - **Log a relative path or name as `key={:?}` with a key from `path_field`**, and an identity as `host={host:?}` (or
@@ -33,13 +36,15 @@ overlaps, and decisions: `DETAILS.md`.
 
 ## Gotchas
 
-- **A filename repeated in plain prose is not redacted** (`the Trash refused it: “Screenshot ….jpeg”`): no pattern
-  claims a bare name. Pinned by `trash_refusal_line_redacts_its_path`.
+- **A bare name is redacted only when its line also names it in a path** (the leaf echo scrub): `the Trash refused it:
+  “Screenshot ….jpeg”` goes because the same line logs the file's path. A name with no path or key on its line still
+  ships, so key it (`file={name:?}`). Pinned by `a_path_leaf_repeated_bare_on_its_line_is_scrubbed`.
+- **Any absolute path is a path** (`abs_path`, `\B/` plus two segments), whatever its prefix; a lone `/foo` stays prose.
 - **Dispatch order mirrors regex alternation order.** Complete URLs before generic userinfo, derived IDs before IPs.
 
 ## Files
 
 `mod.rs` (API, regex, dispatch), `context.rs` (report key, token domains), `paths.rs`, `references.rs` (remote
 references, derived IDs), `fields.rs` (keyed fields), `detail.rs` (external-text fields), `path_end.rs` (where a
-prose path ends), `names.rs` (printing normalization); tests in `tests.rs`, `reference_tests.rs`, `detail_tests.rs`,
+prose path ends), `names.rs` (printing normalization); tests in `tests.rs`, `reference_tests.rs`, `detail_tests.rs`, `prose_tests.rs`,
 `consistency_tests.rs`, golden corpus in `fixtures/`.

@@ -25,9 +25,8 @@ describe('paneFooterVisibility', () => {
     })
   })
 
-  it('keeps the footer off the connection views, which have nothing to count', () => {
+  it('keeps the footer off the network view, which has nothing to count', () => {
     expect(paneFooterVisibility({ kind: 'network', hasError: false }).selectionInfo).toBe(false)
-    expect(paneFooterVisibility({ kind: 'mtp-connect', hasError: false }).selectionInfo).toBe(false)
   })
 
   it('drops the whole footer while the pane shows an error', () => {

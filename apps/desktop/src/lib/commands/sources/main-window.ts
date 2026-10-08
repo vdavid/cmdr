@@ -96,6 +96,17 @@ export const mainWindowCommands: CommandSource[] = [
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
+    // Total Commander's Alt+Shift+Enter: the size of every folder in the pane
+    // whose exact size isn't known yet. Esc stops the calculation.
+    id: 'view.calculateFolderSizes',
+    nameKey: 'commands.viewCalculateFolderSizes.label',
+    scope: 'Main window',
+    showInPalette: true,
+    shortcuts: ['⌥⇧Enter'],
+    whileDialogOpen: BLOCKED_BY_DIALOGS,
+    descriptionKey: 'commands.viewCalculateFolderSizes.description',
+  },
+  {
     id: 'view.briefMode',
     nameKey: 'commands.viewBriefMode.label',
     scope: 'Main window',
@@ -278,6 +289,17 @@ export const mainWindowCommands: CommandSource[] = [
     showInPalette: true,
     shortcuts: ['⌘U'],
     whileDialogOpen: BLOCKED_BY_DIALOGS,
+  },
+  {
+    // Total Commander's "Target = Source": the other pane opens the focused
+    // pane's folder. Unlike ⌘→ / ⌘←, the cursor never refines it.
+    id: 'pane.clone',
+    nameKey: 'commands.paneClone.label',
+    scope: 'Main window',
+    showInPalette: true,
+    shortcuts: ['⌘⇧C'],
+    whileDialogOpen: BLOCKED_BY_DIALOGS,
+    descriptionKey: 'commands.paneClone.description',
   },
   {
     id: 'pane.leftVolumeChooser',

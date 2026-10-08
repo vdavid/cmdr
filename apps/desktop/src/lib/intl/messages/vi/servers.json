@@ -83,6 +83,22 @@
   "@servers.hub.editNearbyHint": {
     "sourceHash": "64653de"
   },
+  "servers.hub.s3AllBuckets": "Tất cả bộ chứa",
+  "@servers.hub.s3AllBuckets": {
+    "sourceHash": "2a5828a"
+  },
+  "servers.hub.openAccountHint": "{name} không phải là nơi để mở. Hãy mở một trong các bộ chứa bên dưới tài khoản này.",
+  "@servers.hub.openAccountHint": {
+    "sourceHash": "c52ee6f"
+  },
+  "servers.hub.forgetAccountConfirm": "Quên {name} và mọi bộ chứa đã lưu bên dưới tài khoản này? Cmdr sẽ ngắt các kết nối và không hiển thị tài khoản cùng các bộ chứa này nữa. Các tệp của bạn vẫn ở trong các bộ chứa.",
+  "@servers.hub.forgetAccountConfirm": {
+    "sourceHash": "e1c636e"
+  },
+  "servers.hub.forgetSecretKeyToo": "Quên cả khóa truy cập bí mật của tài khoản",
+  "@servers.hub.forgetSecretKeyToo": {
+    "sourceHash": "4f3ac6d"
+  },
   "servers.hub.forgetShare": "Quên mục chia sẻ",
   "@servers.hub.forgetShare": {
     "sourceHash": "8888a9d"
@@ -94,6 +110,10 @@
   "servers.hub.forgetShareConfirm": "Quên {name}? Cmdr sẽ không hiển thị mục chia sẻ này nữa. Nếu đang được gắn kết, mục chia sẻ vẫn được gắn kết. Các tệp của bạn vẫn ở trên máy chủ.",
   "@servers.hub.forgetShareConfirm": {
     "sourceHash": "8c14aaa"
+  },
+  "servers.hub.nearbyGroup": "{count, plural, other {{countText} máy chủ tìm thấy ở gần}}",
+  "@servers.hub.nearbyGroup": {
+    "sourceHash": "cd7a44d"
   },
   "servers.hub.discoveryOff": "Việc tìm máy chủ trên mạng cục bộ đang tắt.",
   "@servers.hub.discoveryOff": {
@@ -171,6 +191,10 @@
   "@servers.refusal.unreachable": {
     "sourceHash": "6fcba90"
   },
+  "servers.refusal.localNetworkHint": "Nếu máy chủ đang bật, hãy kiểm tra xem Cmdr có được phép trong {localNetwork} không.",
+  "@servers.refusal.localNetworkHint": {
+    "sourceHash": "baa1753"
+  },
   "servers.refusal.hostKeyUntrusted": "Cmdr chưa tin cậy khóa của {host}.",
   "@servers.refusal.hostKeyUntrusted": {
     "sourceHash": "83dc719"
@@ -206,6 +230,62 @@
   "servers.refusal.savedSecretNotUpdated": "Cmdr đã lưu các thay đổi của bạn nhưng không thể cập nhật mật khẩu trong chuỗi khóa. Hãy nhấn Lưu lần nữa để thử lại.",
   "@servers.refusal.savedSecretNotUpdated": {
     "sourceHash": "2ae1e2b"
+  },
+  "servers.refusal.s3AuthenticationRejected": "Khóa truy cập bí mật đó không dùng được.",
+  "@servers.refusal.s3AuthenticationRejected": {
+    "sourceHash": "14f90c8"
+  },
+  "servers.refusal.s3NeedsCredentials": "Tài khoản này yêu cầu khóa truy cập bí mật.",
+  "@servers.refusal.s3NeedsCredentials": {
+    "sourceHash": "23695df"
+  },
+  "servers.refusal.s3SecretMissing": "Hãy nhập khóa truy cập bí mật.",
+  "@servers.refusal.s3SecretMissing": {
+    "sourceHash": "f1f32f2"
+  },
+  "servers.refusal.s3SecretNotStored": "Cmdr không thể lưu khóa truy cập bí mật này vào chuỗi khóa. Hãy thử lại, hoặc tắt “Ghi nhớ trong chuỗi khóa” để đăng nhập mà không lưu khóa.",
+  "@servers.refusal.s3SecretNotStored": {
+    "sourceHash": "f7a9fb0"
+  },
+  "servers.refusal.s3SavedSecretNotUpdated": "Cmdr đã lưu các thay đổi của bạn nhưng không thể cập nhật khóa truy cập bí mật trong chuỗi khóa. Hãy nhấn Lưu lần nữa để thử lại.",
+  "@servers.refusal.s3SavedSecretNotUpdated": {
+    "sourceHash": "1d2889d"
+  },
+  "servers.refusal.accessDenied": "Khóa này không thể truy cập bộ chứa này. Hãy kiểm tra tên bộ chứa và khóa truy cập bí mật, cũng như xem khóa có quyền đọc bộ chứa không.",
+  "@servers.refusal.accessDenied": {
+    "sourceHash": "8372e73"
+  },
+  "servers.refusal.bucketListRefused": "Khóa này không thể liệt kê các bộ chứa trong tài khoản này. Hãy nhập tên một bộ chứa để mở bộ chứa đó, hoặc kiểm tra khóa truy cập bí mật.",
+  "@servers.refusal.bucketListRefused": {
+    "sourceHash": "1b9ebf5"
+  },
+  "servers.refusal.bucketNotFound": "Không có bộ chứa nào tên như vậy tại {host}.",
+  "@servers.refusal.bucketNotFound": {
+    "sourceHash": "0f5a04d"
+  },
+  "servers.refusal.regionMismatch": "Bộ chứa này ở một khu vực khác. Hãy chọn đúng khu vực của bộ chứa rồi thử lại.",
+  "@servers.refusal.regionMismatch": {
+    "sourceHash": "27a37f8"
+  },
+  "servers.refusal.regionMismatchNamed": "Bộ chứa này ở {region}. Hãy chọn khu vực đó rồi thử lại.",
+  "@servers.refusal.regionMismatchNamed": {
+    "sourceHash": "30abb0d"
+  },
+  "servers.refusal.clockSkewed": "Đồng hồ của máy Mac này lệch hơn 15 phút, nên máy chủ không chấp nhận các yêu cầu của Cmdr. Hãy đặt ngày và giờ tự động trong Cài đặt hệ thống, rồi thử lại.",
+  "@servers.refusal.clockSkewed": {
+    "sourceHash": "cdee0ef"
+  },
+  "servers.refusal.notAnS3Endpoint": "Không có gì ở địa chỉ này phản hồi như một kho lưu trữ S3.",
+  "@servers.refusal.notAnS3Endpoint": {
+    "sourceHash": "78557ec"
+  },
+  "servers.refusal.s3FieldMalformed": "Ở đây chỉ dùng chữ thường, chữ số và dấu gạch ngang.",
+  "@servers.refusal.s3FieldMalformed": {
+    "sourceHash": "ac8fbea"
+  },
+  "servers.refusal.endpointMalformed": "Hãy nhập điểm cuối dưới dạng http:// hoặc https:// cùng với tên máy chủ, ví dụ https://s3.example.com.",
+  "@servers.refusal.endpointMalformed": {
+    "sourceHash": "beb63dd"
   },
   "servers.sheet.addTitle": "Thêm máy chủ",
   "@servers.sheet.addTitle": {
@@ -323,6 +403,10 @@
   "@servers.sheet.password": {
     "sourceHash": "e7cf3ef"
   },
+  "servers.sheet.secretKeptPlaceholder": "Đã lưu trong chuỗi khóa. Để trống để giữ nguyên.",
+  "@servers.sheet.secretKeptPlaceholder": {
+    "sourceHash": "8711f6c"
+  },
   "servers.sheet.smbUsernamePlaceholder": "Không bắt buộc",
   "@servers.sheet.smbUsernamePlaceholder": {
     "sourceHash": "59be713"
@@ -358,6 +442,122 @@
   "servers.sheet.name": "Tên",
   "@servers.sheet.name": {
     "sourceHash": "dcd1d52"
+  },
+  "servers.sheet.protocolS3": "S3",
+  "@servers.sheet.protocolS3": {
+    "sourceHash": "44d6a8a",
+    "sameAsSourceJustification": "Protocol name S3; an acronym with no Vietnamese form, kept verbatim like its siblings SMB, SFTP, and WebDAV (the `@key` asks to keep it as-is)."
+  },
+  "servers.sheet.s3Provider": "Nhà cung cấp",
+  "@servers.sheet.s3Provider": {
+    "sourceHash": "472590a"
+  },
+  "servers.sheet.s3ProviderAws": "Amazon S3",
+  "@servers.sheet.s3ProviderAws": {
+    "sourceHash": "a4f6352",
+    "sameAsSourceJustification": "Product name Amazon S3; vendors ship it untranslated in Vietnamese too, and the `@key` asks to keep it as-is."
+  },
+  "servers.sheet.s3ProviderR2": "Cloudflare R2",
+  "@servers.sheet.s3ProviderR2": {
+    "sourceHash": "9f2f1ed",
+    "sameAsSourceJustification": "Product name Cloudflare R2; vendors ship it untranslated in Vietnamese too, and the `@key` asks to keep it as-is."
+  },
+  "servers.sheet.s3ProviderB2": "Backblaze B2",
+  "@servers.sheet.s3ProviderB2": {
+    "sourceHash": "ed40187",
+    "sameAsSourceJustification": "Product name Backblaze B2; vendors ship it untranslated in Vietnamese too, and the `@key` asks to keep it as-is."
+  },
+  "servers.sheet.s3ProviderWasabi": "Wasabi",
+  "@servers.sheet.s3ProviderWasabi": {
+    "sourceHash": "493861e",
+    "sameAsSourceJustification": "Product name Wasabi; vendors ship it untranslated in Vietnamese too, and the `@key` asks to keep it as-is."
+  },
+  "servers.sheet.s3ProviderHetzner": "Hetzner Object Storage",
+  "@servers.sheet.s3ProviderHetzner": {
+    "sourceHash": "a339b4f",
+    "sameAsSourceJustification": "Product name Hetzner Object Storage; vendors ship it untranslated in Vietnamese too, and the `@key` asks to keep it as-is."
+  },
+  "servers.sheet.s3ProviderGcs": "Google Cloud Storage",
+  "@servers.sheet.s3ProviderGcs": {
+    "sourceHash": "53fa0ba",
+    "sameAsSourceJustification": "Product name Google Cloud Storage; vendors ship it untranslated in Vietnamese too, and the `@key` asks to keep it as-is."
+  },
+  "servers.sheet.s3ProviderDigitalOcean": "DigitalOcean Spaces",
+  "@servers.sheet.s3ProviderDigitalOcean": {
+    "sourceHash": "c3f48e3",
+    "sameAsSourceJustification": "Product name DigitalOcean Spaces; vendors ship it untranslated in Vietnamese too, and the `@key` asks to keep it as-is."
+  },
+  "servers.sheet.s3GcsKeyHelp": "Đăng nhập bằng khóa HMAC lấy từ tab Interoperability trong phần cài đặt Cloud Storage của bạn.",
+  "@servers.sheet.s3GcsKeyHelp": {
+    "sourceHash": "acb72a4"
+  },
+  "servers.sheet.s3ProviderOther": "Dịch vụ tương thích S3 khác",
+  "@servers.sheet.s3ProviderOther": {
+    "sourceHash": "13d2bdc"
+  },
+  "servers.sheet.s3Region": "Khu vực",
+  "@servers.sheet.s3Region": {
+    "sourceHash": "d3a008e"
+  },
+  "servers.sheet.s3RegionOptionalPlaceholder": "Không bắt buộc. Để trống để dùng us-east-1",
+  "@servers.sheet.s3RegionOptionalPlaceholder": {
+    "sourceHash": "12dd731"
+  },
+  "servers.sheet.s3AccountId": "ID tài khoản",
+  "@servers.sheet.s3AccountId": {
+    "sourceHash": "919bb4c"
+  },
+  "servers.sheet.s3AccountIdHelp": "ID tài khoản trên trang tổng quan Cloudflare R2 của bạn.",
+  "@servers.sheet.s3AccountIdHelp": {
+    "sourceHash": "963d1f5"
+  },
+  "servers.sheet.s3Location": "Vị trí",
+  "@servers.sheet.s3Location": {
+    "sourceHash": "15b6197"
+  },
+  "servers.sheet.s3Endpoint": "Điểm cuối",
+  "@servers.sheet.s3Endpoint": {
+    "sourceHash": "3df9726"
+  },
+  "servers.sheet.s3PathStyle": "Dùng địa chỉ kiểu đường dẫn (path-style)",
+  "@servers.sheet.s3PathStyle": {
+    "sourceHash": "627c522"
+  },
+  "servers.sheet.s3PathStyleHelp": "Hầu hết máy chủ tự triển khai, như MinIO và Garage, cần tùy chọn này.",
+  "@servers.sheet.s3PathStyleHelp": {
+    "sourceHash": "bc6e240"
+  },
+  "servers.sheet.s3Bucket": "Bộ chứa",
+  "@servers.sheet.s3Bucket": {
+    "sourceHash": "c83b657"
+  },
+  "servers.sheet.s3BucketHelp": "Để trống để xem mọi bộ chứa. Nếu khóa của bạn chỉ dùng được cho một bộ chứa, hãy nhập tên bộ chứa đó.",
+  "@servers.sheet.s3BucketHelp": {
+    "sourceHash": "8d380d9"
+  },
+  "servers.sheet.s3UseRegion": "Dùng {region}",
+  "@servers.sheet.s3UseRegion": {
+    "sourceHash": "5734184"
+  },
+  "servers.sheet.accessKeyId": "ID khóa truy cập",
+  "@servers.sheet.accessKeyId": {
+    "sourceHash": "14eb0f9"
+  },
+  "servers.sheet.secretAccessKey": "Khóa truy cập bí mật",
+  "@servers.sheet.secretAccessKey": {
+    "sourceHash": "3de6b75"
+  },
+  "servers.sheet.examplePlaceholder": "Ví dụ: {example}",
+  "@servers.sheet.examplePlaceholder": {
+    "sourceHash": "9c7df45"
+  },
+  "servers.sheet.identityLockedS3": "Nhà cung cấp, ID khóa truy cập và bộ chứa là những gì xác định vị trí này. Để thay đổi chúng, hãy quên vị trí này rồi thêm lại.",
+  "@servers.sheet.identityLockedS3": {
+    "sourceHash": "fe4d469"
+  },
+  "servers.sheet.identityLockedS3Account": "Nhà cung cấp và ID khóa truy cập là những gì xác định tài khoản này. Để thay đổi chúng, hãy quên tài khoản này rồi thêm lại.",
+  "@servers.sheet.identityLockedS3Account": {
+    "sourceHash": "e03a769"
   },
   "servers.sheet.namePlaceholder": "Để trống để dùng {label}",
   "@servers.sheet.namePlaceholder": {
@@ -451,6 +651,10 @@
   "@servers.paneState.notConnected": {
     "sourceHash": "5020fac"
   },
+  "servers.paneState.unreachable": "Cmdr không kết nối được tới {name}.",
+  "@servers.paneState.unreachable": {
+    "sourceHash": "a7bc9bc"
+  },
   "servers.paneState.goBack": "Trở lại",
   "@servers.paneState.goBack": {
     "sourceHash": "6aadac2"
@@ -463,9 +667,13 @@
   "@servers.paneState.hostKeyChanged": {
     "sourceHash": "c73ddf3"
   },
-  "servers.paneState.hostKeyChangedHint": "Khóa của máy chủ đã thay đổi. Có thể máy chủ đã được cài đặt lại, hoặc có gì đó đang nằm giữa bạn và máy chủ. Hãy ngắt kết nối, rồi mở lại để kiểm tra dấu vân tay.",
+  "servers.paneState.hostKeyChangedHint": "Khóa của máy chủ đã thay đổi. Có thể máy chủ đã được cài đặt lại, hoặc có gì đó đang nằm giữa bạn và máy chủ. Hãy kiểm tra khóa mới trước khi kết nối lại.",
   "@servers.paneState.hostKeyChangedHint": {
-    "sourceHash": "923de62"
+    "sourceHash": "866b619"
+  },
+  "servers.paneState.checkHostKey": "Kiểm tra khóa",
+  "@servers.paneState.checkHostKey": {
+    "sourceHash": "fefa256"
   },
   "servers.paneState.reconnecting": "Đang kết nối lại tới {name}…",
   "@servers.paneState.reconnecting": {

@@ -80,6 +80,14 @@
   "@errorReporter.dialog.saveToDisk": {
     "sourceHash": "36d6589"
   },
+  "errorReporter.dialog.managedOff": "Votre organisation a désactivé l’envoi des rapports. Vous pouvez toujours en enregistrer un sur le disque et le partager vous-même.",
+  "@errorReporter.dialog.managedOff": {
+    "sourceHash": "9309a39"
+  },
+  "errorReporter.dialog.saveToDiskManaged": "Enregistrer sur le disque",
+  "@errorReporter.dialog.saveToDiskManaged": {
+    "sourceHash": "5a5d775"
+  },
   "errorReporter.dialog.cancel": "Annuler",
   "@errorReporter.dialog.cancel": {
     "sourceHash": "19766ed"
@@ -126,7 +134,7 @@
   },
   "errorReporter.amend.unavailable": "Ce rapport n’accepte plus de note. Pour transmettre vos notes à l’équipe, envoyez un nouveau rapport depuis le menu Aide.",
   "@errorReporter.amend.unavailable": {
-    "sourceHash": "b96b48a"
+    "sourceHash": "08ab034"
   },
   "errorReporter.amend.close": "Fermer",
   "@errorReporter.amend.close": {

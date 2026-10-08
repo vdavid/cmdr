@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { untrack } from 'svelte'
+    import { untrack, type Snippet } from 'svelte'
     import { dependOn } from '$lib/utils/reactivity'
     import type { FileEntry, SelectPayload, SortColumn, SortOrder, SyncStatus, VisibleRangePayload } from '../types'
     import type { FileIndexState, FolderCoverage } from '$lib/tauri-commands'
@@ -64,11 +64,16 @@
     /* Short, because a screen reader reads it on every restricted row; the instruction above
        is the hover tooltip on the same glyph. */
     const RESTRICTED_FOLDER_LABEL = $derived(tString('fileExplorer.restrictedFolder.label'))
+    /* Same split for an S3 object in cold storage (`inColdStorage`): a short name per row,
+       the explanation on hover. */
+    const ARCHIVED_FILE_LABEL = $derived(tString('fileExplorer.archivedFile.label'))
+    const ARCHIVED_FILE_TOOLTIP = $derived(tString('fileExplorer.archivedFile.tooltip'))
     import { iconCacheCleared } from '$lib/icon-cache'
     import { escapeHtml, tooltip } from '$lib/tooltip/tooltip'
     import type { RenameState, RenameSessionId } from '../rename/rename-state.svelte'
     import type { RenameStepDirection } from '../rename/rename-step'
-    import { formatByteSize } from '$lib/units'
+    import { formatByteSizeTiered } from '$lib/units'
+    import { isDoubleClick, type BriefListClick } from './brief-list-utils'
 
     interface Props {
         listingId: string
@@ -84,8 +89,8 @@
          * Bumped on every `directory-diff` event. Triggers a soft refresh
          * (refetch visible range in the background, keep existing entries
          * visible until new ones land). Use this instead of `cacheGeneration`
-         * for diff-driven refreshes — `cacheGeneration` does a destructive
-         * wipe that causes empty-pane flicker mid-bulk-operation.
+         * for diff-driven refreshes: a diff doesn't invalidate cold-context
+         * metadata such as Brief column widths.
          */
         softRefreshTick?: number
         cursorIndex: number
@@ -127,6 +132,11 @@
         onStartRename?: () => void
         /** Called when a drag actually initiates (threshold crossed) from this view. */
         onDragInitiate?: () => void
+        /**
+         * The host pane's loading view. When set, it covers the row area while the
+         * column header stays on screen, so a slow load never blinks the header out.
+         */
+        loadingOverlay?: Snippet
     }
 
     const {
@@ -164,12 +174,29 @@
         onRenameShakeEnd,
         onStartRename,
         onDragInitiate,
+        loadingOverlay,
     }: Props = $props()
 
     // ==== Cached entries (prefetch buffer) ====
     let cachedEntries = $state<FileEntry[]>([])
     let cachedRange = $state({ start: 0, end: 0 })
     let isFetching = $state(false)
+    let fetchEpoch = 0
+    // The epoch `cachedEntries` was fetched in. After a cold context change the old
+    // rows stay painted until the forced fetch lands, but they no longer match the
+    // indices, so lookups must not hand them out as the entry under the cursor.
+    let cachedEntriesEpoch = 0
+    // The listing and `..` row `cachedEntries` were fetched under. Rows retained from
+    // another listing paint under their own `..`: the new one can be one of the old
+    // rows (`/a` → `/a/b/c` makes it `/a/b`), a duplicate key in the keyed `#each`.
+    let cachedEntriesListingId = ''
+    let cachedEntriesParentRow = { hasParent: false, parentPath: '' }
+    let forceFetchAfterCurrent = false
+
+    /** The cached rows that are safe to act on: none while retained rows await replacement. */
+    function actionableEntries(): FileEntry[] {
+        return cachedEntriesEpoch === fetchEpoch ? cachedEntries : []
+    }
     // Recursive stats for the CURRENT directory (shown on the ".." row so that space isn't wasted).
     let parentDirStats = $state<DirStats | null>(null)
 
@@ -304,7 +331,7 @@
             globalIndex,
             hasParent,
             parentPath,
-            cachedEntries,
+            actionableEntries(),
             cachedRange,
             parentDirStats ?? undefined,
         )
@@ -312,7 +339,7 @@
 
     /** The UI index of a loaded row, or `undefined` when it isn't in the window. */
     export function indexOfEntry(path: string): number | undefined {
-        return indexOfEntryUtil(path, hasParent, cachedEntries, cachedRange)
+        return indexOfEntryUtil(path, hasParent, actionableEntries(), cachedRange)
     }
 
     /** Updates index size fields on cached directory entries AND on the ".." row. */
@@ -340,7 +367,14 @@
     // backing listing changed (file watcher diff) and the cached entries are
     // stale even though the range indices may still match.
     async function fetchVisibleRange(force = false) {
-        if (!listingId || isFetching) return
+        if (!listingId) return
+        if (isFetching) {
+            if (force) forceFetchAfterCurrent = true
+            return
+        }
+        const capturedEpoch = fetchEpoch
+        const capturedListingId = listingId
+        const capturedParentRow = { hasParent, parentPath }
 
         // Calculate which backend indices we need (convert column range to item range)
         const startCol = virtualWindow.startIndex
@@ -370,15 +404,27 @@
                 onFolderCoverageRequest,
                 force,
             })
-            if (result) {
+            if (result && capturedEpoch === fetchEpoch && capturedListingId === listingId) {
                 cachedEntries = result.entries
                 cachedRange = result.range
+                cachedEntriesEpoch = capturedEpoch
+                cachedEntriesListingId = capturedListingId
+                cachedEntriesParentRow = capturedParentRow
                 noteRenderedFolderSizes(cachedEntries, volumeId)
             }
         } catch {
-            // Silently ignore fetch errors
+            // Never leave rows from another listing under the current breadcrumb.
+            if (force && capturedEpoch === fetchEpoch && capturedListingId === listingId) {
+                cachedEntries = []
+                cachedRange = { start: 0, end: 0 }
+                cachedEntriesEpoch = capturedEpoch
+            }
         } finally {
             isFetching = false
+            if (forceFetchAfterCurrent) {
+                forceFetchAfterCurrent = false
+                void fetchVisibleRange(true)
+            }
         }
     }
 
@@ -390,6 +436,9 @@
         const entries = [...cachedEntries] // Spread to read all elements
         const rangeStart = cachedRange.start
         const rangeEnd = cachedRange.end
+        const live = { hasParent, parentPath }
+        const retained = entries.length > 0 && cachedEntriesListingId !== listingId
+        const parentRow = retained ? cachedEntriesParentRow : live
 
         const columns: { columnIndex: number; files: { file: FileEntry; globalIndex: number }[] }[] = []
         for (let col = virtualWindow.startIndex; col < virtualWindow.endIndex; col++) {
@@ -399,10 +448,10 @@
             for (let i = startFileIndex; i < endFileIndex; i++) {
                 // Inline getEntryAt logic to use local variables
                 let entry: FileEntry | undefined
-                if (hasParent && i === 0) {
-                    entry = createParentEntry(parentPath, parentDirStats ?? undefined)
+                if (parentRow.hasParent && i === 0) {
+                    entry = createParentEntry(parentRow.parentPath, parentDirStats ?? undefined)
                 } else {
-                    const backendIndex = hasParent ? i - 1 : i
+                    const backendIndex = parentRow.hasParent ? i - 1 : i
                     if (backendIndex >= rangeStart && backendIndex < rangeEnd) {
                         entry = entries[backendIndex - rangeStart]
                     }
@@ -568,20 +617,18 @@
     }
 
     // Handle file click - for double-click detection
-    let lastClickTime = 0
-    let lastClickIndex = -1
+    let lastClick: BriefListClick | undefined
     const DOUBLE_CLICK_MS = 300
 
     function handleClick(index: number) {
-        const now = Date.now()
-        if (lastClickIndex === index && now - lastClickTime < DOUBLE_CLICK_MS) {
+        const current = { listingId, index, time: Date.now() }
+        if (isDoubleClick({ previous: lastClick, current, doubleClickMs: DOUBLE_CLICK_MS })) {
             // Double click: cancel any pending click-to-rename
             cancelClickToRename()
             const entry = getEntryAt(index)
             if (entry) onNavigate(entry)
         }
-        lastClickTime = now
-        lastClickIndex = index
+        lastClick = current
     }
 
     function handleDoubleClick(index: number) {
@@ -691,8 +738,8 @@
     let prevSoftTick = 0
     let prevTotalCount = 0
 
-    // Hard reset on cold context changes (nav, sort, hidden toggle, explicit
-    // refresh): wipe entries and widths, refetch from scratch.
+    // Hard refresh on cold context changes (nav, sort, hidden toggle, explicit
+    // refresh): invalidate widths, refetch, then atomically replace the old rows.
     // Soft refresh on totalCount or softRefreshTick changes (caused by
     // `directory-diff` events during bulk ops, or renames that don't change
     // count): refetch in the background and atomically replace, keeping
@@ -705,8 +752,7 @@
         if (!listingId || containerHeight <= 0) return
 
         if (shouldResetCache(currentProps, prevCacheProps)) {
-            cachedEntries = []
-            cachedRange = { start: 0, end: 0 }
+            fetchEpoch++
             prevCacheProps = currentProps
             prevTotalCount = currentTotal
             prevSoftTick = currentTick
@@ -715,7 +761,7 @@
             widthsStore.reset()
             snapWidthTransition()
             widthsStore.request()
-            void fetchVisibleRange()
+            void fetchVisibleRange(true)
             return
         }
 
@@ -799,7 +845,7 @@
             file.recursiveFileCount ?? 0,
             file.recursiveDirCount ?? 0,
             isSizeUpdating(file),
-            formatByteSize,
+            formatByteSizeTiered,
             formatNumber,
             file.recursiveSizeComplete,
             file.recursiveSizeStale,
@@ -888,9 +934,13 @@
         />
     </div>
 
+    <!-- The row area: the scroller plus, during a slow load, the pane's loading view
+         laid over it, so the header above never leaves. -->
+    <div class="row-area">
     <!-- Scrollable file list -->
     <div
         class="brief-list"
+        class:is-covered={loadingOverlay !== undefined}
         data-file-list-surface
         bind:this={scrollContainer}
         bind:clientHeight={containerHeight}
@@ -979,6 +1029,10 @@
                                                 name="info"
                                                 label={RESTRICTED_FOLDER_LABEL}
                                                 tooltip={RESTRICTED_FOLDER_TOOLTIP}
+                                            />{/if}{#if file.inColdStorage}<StatusGlyph
+                                                name="archive"
+                                                label={ARCHIVED_FILE_LABEL}
+                                                tooltip={ARCHIVED_FILE_TOOLTIP}
                                             />{/if}</span>
                                     {#if showTags}<TagDots tags={file.tags} />{/if}
                                 {/if}
@@ -989,7 +1043,11 @@
             </div>
         </div>
     </div>
-    {#if (hasParent ? totalCount - 1 : totalCount) === 0}
+    {#if loadingOverlay}
+        <div class="loading-overlay">{@render loadingOverlay()}</div>
+    {/if}
+    </div>
+    {#if !loadingOverlay && (hasParent ? totalCount - 1 : totalCount) === 0}
         <div class="empty-folder-overlay">{tString('fileExplorer.list.empty')}</div>
     {/if}
 </div>
@@ -1043,6 +1101,25 @@
        level deeper so the padding stays out of its row-area height).
        `clientWidth`/`clientHeight` INCLUDE this padding, so the column math subtracts
        it — see `usableWidth` / `usableHeight`. */
+    .row-area {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        min-height: 0;
+    }
+
+    .loading-overlay {
+        position: absolute;
+        inset: 0;
+    }
+
+    /* The previous folder's rows stay laid out (scroll and measurements hold) but
+       unpainted and out of the a11y tree while the loading view stands in for them. */
+    .brief-list.is-covered {
+        visibility: hidden;
+    }
+
     .brief-list {
         padding: var(--spacing-xs);
         overflow-x: auto;

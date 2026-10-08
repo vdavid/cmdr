@@ -18,34 +18,8 @@ const MAX_CONTEXT_ENTRIES: usize = 100;
 /// Maximum number of suggestions to return.
 const MAX_SUGGESTIONS: usize = 5;
 
-/// Shared system prompt for both streaming and non-streaming suggestion paths.
+/// System prompt for the suggestion stream.
 const SUGGESTION_SYSTEM_PROMPT: &str = "You are a pattern-matching assistant. Carefully observe the style, language, and formatting of existing items, then generate new items that match exactly. Output only what is requested, no formatting or explanation.";
-
-/// Generates folder name suggestions for the given directory.
-///
-/// Suggestions are a nice-to-have enhancement: every "no backend" case (provider off,
-/// cloud AI not allowed, missing key, local server not running) silently returns `Ok(Vec::new())`. UI hides
-/// the feature instead of surfacing an error.
-#[tauri::command]
-#[specta::specta]
-pub async fn get_folder_suggestions(
-    app: tauri::AppHandle,
-    listing_id: String,
-    current_path: String,
-    include_hidden: bool,
-) -> Result<Vec<String>, String> {
-    log::debug!(
-        "AI suggestions: get_folder_suggestions called for listing={}, path={}",
-        listing_id,
-        current_path
-    );
-
-    let Some(backend) = super::manager::resolve_backend(&app).ready_or_log("AI suggestions") else {
-        return Ok(Vec::new());
-    };
-
-    get_suggestions_from_backend(&listing_id, &current_path, include_hidden, backend).await
-}
 
 /// Gets file names from the listing cache (up to MAX_CONTEXT_ENTRIES).
 fn get_file_names(listing_id: &str, include_hidden: bool) -> Vec<String> {
@@ -108,53 +82,6 @@ pub(super) fn sanitize_one_line(raw: &str) -> Option<String> {
         return None;
     }
     Some(cleaned.to_owned())
-}
-
-/// Parses the LLM response into validated folder name suggestions.
-fn parse_suggestions(response: &str, existing_names: &[String]) -> Vec<String> {
-    response
-        .lines()
-        .filter_map(sanitize_one_line)
-        .filter(|name| !existing_names.iter().any(|e| e.eq_ignore_ascii_case(name)))
-        .take(MAX_SUGGESTIONS)
-        .collect()
-}
-
-/// Calls the AI backend and returns parsed suggestions.
-async fn get_suggestions_from_backend(
-    listing_id: &str,
-    current_path: &str,
-    include_hidden: bool,
-    backend: super::client::AiBackend,
-) -> Result<Vec<String>, String> {
-    let file_names = get_file_names(listing_id, include_hidden);
-    let prompt = build_prompt(current_path, &file_names);
-
-    log::debug!("AI suggestions: calling AI with {} files in context", file_names.len());
-    log::trace!("AI suggestions: prompt:\n{prompt}");
-
-    let options = ChatOptions::default()
-        .with_temperature(0.6)
-        .with_max_tokens(150)
-        .with_top_p(0.95);
-
-    let backend = backend.with_log_context(LlmLogContext::folder_suggestions());
-    match super::client::chat_completion(&backend, SUGGESTION_SYSTEM_PROMPT, &prompt, &options).await {
-        Ok(response) => {
-            log::trace!("AI suggestions: raw response:\n{response}");
-            let suggestions = parse_suggestions(&response, &file_names);
-            log::debug!(
-                "AI suggestions: got {} suggestions: {:?}",
-                suggestions.len(),
-                suggestions
-            );
-            Ok(suggestions)
-        }
-        Err(e) => {
-            log::warn!("AI suggestions: AI call failed: {e}");
-            Ok(Vec::new()) // Graceful degradation: return empty on any error
-        }
-    }
 }
 
 // region: --- Streaming variant ----------------------------------------------------
@@ -384,6 +311,13 @@ mod tests {
         let prompt = build_prompt("/empty", &names);
         assert!(prompt.contains("/empty"));
         assert!(prompt.contains("Existing items:"));
+    }
+
+    /// A whole response through the streaming sanitizer, the way a one-chunk
+    /// stream arrives.
+    fn parse_suggestions(response: &str, existing_names: &[String]) -> Vec<String> {
+        let mut sanitizer = StreamingSanitizer::new(existing_names);
+        collect(&mut sanitizer, &[response])
     }
 
     #[test]

@@ -24,9 +24,9 @@ use reqwest::{RequestBuilder, Response};
 use tokio_util::sync::CancellationToken;
 
 use crate::errors::{Attempted, WebdavConnectError, map_status, map_transport_error};
-use crate::liveness::Timings;
 use crate::params::WebdavConnectionParams;
 use crate::transport::WebdavClient;
+use cmdr_fs::volume::liveness::Timings;
 
 mod copy;
 mod mapping;
@@ -111,7 +111,7 @@ struct WebdavVolumeInner {
     /// (`reconnect.rs`). ❌ Never a loop: repeated refusals lock accounts.
     auth_attempt_spent: AtomicBool,
     /// How long silence may last before the server counts as gone
-    /// (`crate::liveness`). A field rather than the constant so a cell can
+    /// (`cmdr_fs::volume::liveness`). A field rather than the constant so a cell can
     /// shorten it and still run in real time.
     silence: std::sync::RwLock<Timings>,
     /// Everything this backend asks the app around it.

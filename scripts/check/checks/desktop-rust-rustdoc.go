@@ -103,7 +103,22 @@ func RunRustdoc(ctx *CheckContext) (CheckResult, error) {
 		return CheckResult{}, err
 	}
 
-	targetOS := cargoOSName(runtime.GOOS)
+	args, documented := rustdocArgs(members, cargoOSName(runtime.GOOS))
+	if documented == 0 {
+		return Skipped("no first-party members build on this platform"), nil
+	}
+
+	cmd := exec.Command("cargo", args...)
+	cmd.Dir = ctx.RootDir
+	cmd.Env = rustdocEnv(cmd.Environ(), ctx.RootDir, rustdocLintFlags(), ctx.CI)
+	output, err := RunCommand(cmd, true)
+	return rustdocVerdict(output, err, documented, "")
+}
+
+// rustdocArgs is the doc build for one target OS, and how many members it documents.
+// Pure, so the Linux lane (`desktop-rust-clippy-linux.go`) can ask the container the
+// same question this lane asks the host.
+func rustdocArgs(members []WorkspaceMember, targetOS string) ([]string, int) {
 	args := []string{"doc", "--no-deps", "--all-features", "--document-private-items", "--locked"}
 	documented := 0
 	for _, m := range members {
@@ -116,10 +131,11 @@ func RunRustdoc(ctx *CheckContext) (CheckResult, error) {
 		args = append(args, "-p", m.Name)
 		documented++
 	}
-	if documented == 0 {
-		return Skipped("no first-party members build on this platform"), nil
-	}
+	return args, documented
+}
 
+// rustdocLintFlags is the lint contract as one `RUSTDOCFLAGS` value.
+func rustdocLintFlags() string {
 	lintFlags := make([]string, 0, len(rustdocDeniedLints)+len(rustdocAllowedLints))
 	for _, lint := range rustdocDeniedLints {
 		lintFlags = append(lintFlags, "-D rustdoc::"+lint)
@@ -127,24 +143,25 @@ func RunRustdoc(ctx *CheckContext) (CheckResult, error) {
 	for _, lint := range rustdocAllowedLints {
 		lintFlags = append(lintFlags, "-A rustdoc::"+lint)
 	}
+	return strings.Join(lintFlags, " ")
+}
 
-	cmd := exec.Command("cargo", args...)
-	cmd.Dir = ctx.RootDir
-	cmd.Env = rustdocEnv(cmd.Environ(), ctx.RootDir, strings.Join(lintFlags, " "), ctx.CI)
-	output, err := RunCommand(cmd, true)
+// rustdocVerdict turns a finished doc build into the check's answer. `where` names the
+// platform in the messages when it isn't the host (" on Linux").
+func rustdocVerdict(output string, err error, documented int, where string) (CheckResult, error) {
 	if err != nil {
-		return CheckResult{}, fmt.Errorf("cargo doc found doc-lint violations\n%s",
-			indentOutput(rustdocFailureOutput(output)))
+		return CheckResult{}, fmt.Errorf("cargo doc found doc-lint violations%s\n%s",
+			where, indentOutput(rustdocFailureOutput(output)))
 	}
 	// A green run that still printed a warning means a lint nobody owns fired.
 	// Surfacing it is the point: either it joins `rustdocDeniedLints` or the doc
 	// gets fixed, and both need a human to see it.
 	if warnings := rustdocDiagnostics(output); warnings != "" {
-		return CheckResult{}, fmt.Errorf("cargo doc emitted warnings outside the denied lints\n%s",
-			indentOutput(warnings))
+		return CheckResult{}, fmt.Errorf("cargo doc emitted warnings outside the denied lints%s\n%s",
+			where, indentOutput(warnings))
 	}
-	return Success(fmt.Sprintf("%d %s documented, no doc-lint violations",
-		documented, Pluralize(documented, "crate", "crates"))), nil
+	return Success(fmt.Sprintf("%d %s documented%s, no doc-lint violations",
+		documented, Pluralize(documented, "crate", "crates"), where)), nil
 }
 
 // diagnosticHeader matches the opening line of a rustc / rustdoc diagnostic: a

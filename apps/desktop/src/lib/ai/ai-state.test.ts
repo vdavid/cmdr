@@ -42,7 +42,6 @@ const mockModelInfo = {
   id: 'ministral-3b-instruct-q4km',
   displayName: 'Ministral 3B',
   sizeBytes: 2147023008,
-  sizeFormatted: '2.1 GB',
   kvBytesPerToken: 106496,
   baseOverheadBytes: 3500000000,
 }

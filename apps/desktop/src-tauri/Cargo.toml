@@ -1,6 +1,6 @@
 [package]
 name = "cmdr"
-version = "0.48.0"
+version = "0.50.0"
 description = "A blazing fast, keyboard-driven, two-pane file manager built, Rust, Tauri, and ❤️"
 authors = ["David Veszelovszki <david@getcmdr.com>"]
 edition = "2024"
@@ -15,6 +15,11 @@ publish = false  # Private application, not for crates.io
 workspace = true
 
 [features]
+# mimalloc as the global allocator on macOS too (Linux runs on it either way; macOS
+# defaults to the system allocator). `cmdr-fs` owns the choice and the type `main.rs`
+# installs: `crates/cmdr-fs/DETAILS.md` § "Which global allocator". A check lane
+# builds and clippies this feature so the unused path can't rot.
+mimalloc = ["cmdr-fs/mimalloc"]
 # Playwright E2E testing plugin (socket bridge to real webview). Never enable in production builds.
 playwright-e2e = ["dep:tauri-plugin-playwright", "cmdr-fs/playwright-e2e"]
 # Virtual MTP device for E2E testing (registers a fake Android device). Never enable in production builds.
@@ -30,32 +35,9 @@ virtual-mtp = ["cmdr-mtp/virtual-device"]
 # one `smb2` everything resolves to gets `testing` turned on and this crate's own
 # direct `smb2` calls (`network::virtual_smb_hosts`) see it too.
 smb-e2e = ["cmdr-smb/testing"]
-# "This is a test build.", forwarded to the two crates that act on it. They widen
-# their test-only scaffolding (`cmdr_index::testing`, `cmdr_fs::testing`) from
-# `#[cfg(test)]` to `pub`, which is the only way this crate's tests can reach it:
-# `cfg(test)` is set only while a crate compiles its OWN test target, never when a
-# consumer compiles it as a dependency.
-# Enabled automatically for every dev target and only for those; see the self
-# dev-dependency under `[dev-dependencies]`. Never enable in production builds.
-# `cmdr-smb/testing` is in the list for `cmdr_smb::volume::testing` (the shared
-# Docker fixtures the app's SMB suites connect through). It also turns
-# `smb2/testing` on for every dev target, which is harmless: `smb-e2e` already
-# does that, and nothing here reads `smb2::testing`.
-# `cmdr-sftp/testing` is in the list for `cmdr_sftp::volume::testing` (the shared
-# Docker fixtures the app's SFTP suites connect through), the same reason
-# `cmdr-smb/testing` is.
-testing = [
-  "dep:tempfile",
-  "cmdr-archive/testing",
-  "cmdr-fs/testing",
-  "cmdr-index/testing",
-  "cmdr-smb/testing",
-  "cmdr-sftp/testing",
-  "cmdr-webdav/testing",
-  "cmdr-adb/testing",
-  "cmdr-git/testing",
-  "cmdr-mtp/testing",
-]
+# No `testing` feature of our own: the app's test scaffolding is plain
+# `#[cfg(test)]`, and the workspace crates' `testing` features are turned on by
+# direct `[dev-dependencies]` entries (see there).
 
 [[bin]]
 name = "Cmdr"
@@ -97,6 +79,11 @@ cmdr-sftp = { path = "../../../crates/cmdr-sftp" }
 # verifies it without building the app. The secret store, the server list, and
 # every command stay here.
 cmdr-webdav = { path = "../../../crates/cmdr-webdav" }
+# The S3 backend: the signer, the provider profiles, and a `Volume` per place
+# (a bucket, or the account root). No `tauri` in its tree, so
+# `cargo check -p cmdr-s3` verifies it without building the app. The secret
+# store, the place list, and every command stay here.
+cmdr-s3 = { path = "../../../crates/cmdr-s3" }
 # The Android-over-ADB backend: a real-filesystem `Volume` per device behind the
 # ADB server, beside MTP. No `tauri`, no user-facing words; `docs/specs/android-adb-backend.md`.
 cmdr-adb = { path = "../../../crates/cmdr-adb" }
@@ -194,10 +181,12 @@ fern = "0.7.1"
 # so we own the rotation now. 0.8.0 (latest stable, ~14 months old, MIT). Pulls in
 # `chrono`/`filetime`/`flate2` are all already in our dep tree.
 file-rotate = "0.8.0"
-# Memory allocator: returns memory to OS faster than system malloc, reduces fragmentation
-mimalloc = "0.1"
-# HTTP client for API server validation and AI downloads
+# HTTP client for API server validation and AI downloads. Every client is built through
+# `cmdr_http::client_builder()`, which owns proxy routing (system settings, PAC, bypass list),
+# so reqwest's own `system-proxy` reader is no longer what decides.
 reqwest = { version = "0.13", features = ["json", "rustls", "stream", "multipart"], default-features = false }
+# The one door every HTTP client is built through: proxy routing the way macOS decides it.
+cmdr-http = { path = "../../../crates/cmdr-http" }
 # MCP server
 axum = "0.8"
 tokio = { version = "1", features = ["rt-multi-thread", "net", "time", "sync", "macros", "process"] }
@@ -270,13 +259,6 @@ specta = { version = "=2.0.0-rc.24", features = ["derive", "serde_json"] }
 # scoring. Pinned at 0.3.1 (published 2024-02-20, well over a month old). MPL-2.0;
 # already in the `deny.toml` allowlist. See `file_system/listing/fuzzy_jump.rs` for usage.
 nucleo-matcher = "0.3.1"
-# Scratch directories for tests and test fixtures. Optional and turned on only by
-# the `testing` feature (which the self dev-dependency below switches on for every
-# dev target), so the shipped binary never links it. It has to be a NORMAL
-# dependency rather than a dev one because the virtual-MTP fixture lives in the
-# LIB behind `any(test, feature = "testing")`, and a lib target can't see
-# dev-dependencies. Same shape as `blake3` in `cmdr-smb`.
-tempfile = { version = "3", optional = true }
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
@@ -305,12 +287,14 @@ freedesktop-icons = "0.4"
 # workaround, the registrar wiring, and the frontend events stay here in `mtp/`.
 # It carries `mtp-rs`, which the app no longer names directly.
 cmdr-mtp = { path = "../../../crates/cmdr-mtp" }
-# mDNS discovery for network host browsing (pure Rust, cross-platform)
-mdns-sd = { version = "0.20", features = ["logging"] }
+# mDNS discovery for network host browsing (pure Rust, cross-platform).
+# 0.21.5 is the floor: older releases retry a failed multicast join every 5 s forever
+# on Macs with VM or container bridges. See `src/network/DETAILS.md`.
+mdns-sd = { version = "0.21.5", features = ["logging"] }
 # SMB2/3 protocol client for share enumeration (pure Rust, pipelined I/O).
 # When bumping: also re-vendor the test containers per
 # apps/desktop/test/smb-servers/.compose/VENDORED.md
-smb2 = { version = "0.27.0", features = ["serde"] }
+smb2 = { version = "0.27.2", features = ["serde"] }
 # NFD normalization for APFS collation and SMB path normalization
 unicode-normalization = "0.1"
 # Percent-decoding for MCP resource URI query strings (cross-platform).
@@ -319,6 +303,9 @@ urlencoding = "2.1.3"
 url = "2"
 # Semver comparison: the custom updater (macOS) and the cross-platform What's-new changelog slicer.
 semver = "1"
+# Property lists: macOS bundle and Dock plists, and the managed-policy values (`managed_policy/`),
+# which the test-build plist-file override also reads on Linux.
+plist = "1.8.0"
 # CommonMark rendering for the What's-new popup, so a lead renders the way GitHub and the website
 # render the same changelog. `html` only: the default `getopts` feature is the crate's own CLI.
 pulldown-cmark = { version = "0.13.4", default-features = false, features = ["html"] }
@@ -339,7 +326,6 @@ percent-encoding = "2"
 core-foundation = "0.10.1"
 core-services = "1.0.0"
 icns = "0.4.0"
-plist = "1.8.0"
 objc2 = { version = "0.6", features = ["std", "exception"] }
 objc2-foundation = { version = "0.3", features = [
     "NSURL", "NSString", "NSDictionary", "NSDate", "NSArray", "NSValue", "NSError",
@@ -410,6 +396,13 @@ objc2-quick-look-ui = { version = "0.3.2", default-features = false, features = 
     "std", "QLPreviewPanel", "QLPreviewItem", "objc2-app-kit",
 ] }
 block2 = "0.6"
+# Whether the user turned Cmdr's notifications off (`notifications.rs`): the notification plugin
+# posts through `NSUserNotificationCenter`, which can't say, so we ask `UNUserNotificationCenter`.
+# Already in the lockfile through the objc2 family (published 2025-10-04). UserNotifications
+# arrived in macOS 10.14, under the 10.15 floor.
+objc2-user-notifications = { version = "0.3.2", default-features = false, features = [
+    "std", "block2", "UNUserNotificationCenter", "UNNotificationSettings",
+] }
 security-framework = "3.2"
 # Raw `SecItemCopyMatching` + keychain query constants, for reading SMB passwords that
 # Finder/macOS saved (internet-password items the high-level crate can't filter by
@@ -465,17 +458,37 @@ bytes = "1"
 # platform-gated, so `tar` has to be reachable from tests on every target. The
 # production side is macOS-only (see the per-target section above).
 tar = "0.4"
-# Depending on ourselves turns the `testing` feature on for every DEV target
-# (tests, benches, examples) and leaves it off for the lib and the `Cmdr` bin, so
-# the shipped binary carries no test scaffolding. Verified both ways: `cargo check
-# --lib` builds with the feature off, `cargo check --all-targets` with it on.
-# The alternative, `required-features = ["testing"]` on the bench targets, would
-# make `cargo clippy --all-targets` silently SKIP them, and an unlinted,
-# never-compiled benchmark harness rots before the next person needs it.
-cmdr = { path = ".", features = ["testing"] }
-# Same crate as the normal dependency above, with the test-wait helpers
-# (`cmdr_fs::testing::wait_until`) switched on for dev targets only.
+# Scratch directories for the lib's unit tests.
+tempfile = "3"
+# The workspace crates below are the same crates as the normal dependencies above,
+# listed again to turn `testing` on for dev targets only. `testing` widens a
+# crate's test scaffolding from `#[cfg(test)]` to `pub`, the only way OUR tests
+# can reach it: `cfg(test)` is set only while a crate compiles its own test
+# target, never when a consumer compiles it as a dependency. Resolver 2 keeps
+# dev-dependency features out of the lib and the `Cmdr` bin, so the shipped
+# binary carries none of it.
+# ❗ Don't turn this back into a self dev-dependency (`cmdr = { path = ".",
+# features = [...] }`): that links a SECOND copy of the app into the test binary,
+# and Objective-C class names are global and unmangled, so the two copies'
+# classes (`CmdrPromiseDelegate`, `QuickLookDelegate`, `CmdrDragSource`, ...)
+# collide. The linker warns `duplicate symbol` and keeps one of each, which is
+# memory corruption the day a test-only field lands on one of them.
+# The test-wait helpers (`cmdr_fs::testing::wait_until`) and friends.
 cmdr-fs = { path = "../../../crates/cmdr-fs", features = ["testing"] }
+# `cmdr_index::testing` scaffolding.
+cmdr-index = { path = "../../../crates/cmdr-index", features = ["testing"] }
+# `cmdr_archive::test_fixtures`.
+cmdr-archive = { path = "../../../crates/cmdr-archive", features = ["testing"] }
+# `cmdr_smb::volume::testing`, the shared Docker fixtures the app's SMB suites
+# connect through. It also turns `smb2/testing` on for every dev target, which is
+# harmless: `smb-e2e` already does that, and nothing here reads `smb2::testing`.
+cmdr-smb = { path = "../../../crates/cmdr-smb", features = ["testing"] }
+# `cmdr_sftp::volume::testing`, the shared Docker fixtures the app's SFTP suites
+# connect through.
+cmdr-sftp = { path = "../../../crates/cmdr-sftp", features = ["testing"] }
+cmdr-webdav = { path = "../../../crates/cmdr-webdav", features = ["testing"] }
+cmdr-s3 = { path = "../../../crates/cmdr-s3", features = ["testing"] }
+cmdr-adb = { path = "../../../crates/cmdr-adb", features = ["testing"] }
 # Same crate as the per-target normal dependency above, with `testing` on for dev
 # targets only: that's what publishes the virtual-device fixture and the
 # `list_directory` counter the app's oracle cell asserts on. A plain
@@ -515,13 +528,6 @@ proptest = "1.11.0"
 # present on chat/completions, omitted on /v1/responses) and parsing without burning
 # real API quota. Pinned at 0.6.5 (latest stable, published 2025-08-24).
 wiremock = "0.6.5"
-
-[target.'cfg(target_os = "macos")'.dev-dependencies]
-# `commands/memory_diagnostics.rs` tests the heap census against a block allocated through
-# `mi_malloc` directly: the test harness runs on the system allocator (only `main.rs` sets
-# mimalloc as the global one), so a `Vec` would never reach the heap the census walks. No new
-# package in the graph: `cmdr-fs` already links this exact crate for the census itself.
-libmimalloc-sys = { version = "0.1.49", features = ["extended"] }
 
 [[example]]
 name = "smb_compose"

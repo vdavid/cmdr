@@ -42,10 +42,12 @@ impl AdbVolume {
     ///
     /// ❗ The device's `/` comes back as the bare root, `adb://<serial>`, with no
     /// trailing slash: that is what the device provider's row and the frontend's
-    /// `constructAdbPath` spell, and a pane compares the root by string.
-    pub(super) fn to_app_path(&self, device: &str) -> PathBuf {
+    /// `constructAdbPath` spell, and a pane compares the root by string. `None`
+    /// is `RemoteRoot::to_app_path`'s refusal of a path off the root; a listing
+    /// drops that entry.
+    pub(super) fn to_app_path(&self, device: &str) -> Option<PathBuf> {
         if device == "/" {
-            return self.root.clone();
+            return Some(self.root.clone());
         }
         self.paths.to_app_path(device)
     }
@@ -54,7 +56,9 @@ impl AdbVolume {
     /// refusal becomes "no patch to make": a listing-cache patch is a courtesy
     /// and ❌ must never fail a mutation that already landed.
     pub(super) fn display_path_for(&self, path: &Path) -> Option<PathBuf> {
-        self.to_device_path(path).ok().map(|device| self.to_app_path(&device))
+        self.to_device_path(path)
+            .ok()
+            .and_then(|device| self.to_app_path(&device))
     }
 }
 

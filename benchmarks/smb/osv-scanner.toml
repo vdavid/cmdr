@@ -1,0 +1,9 @@
+# OSV-Scanner config for `benchmarks/smb/Cargo.lock` (see the root `osv-scanner.toml`). A local
+# benchmark harness pinned in lockstep with `smb` 0.11; it never ships.
+[[IgnoredVulns]]
+id = "RUSTSEC-2026-0190"
+reason = "anyhow (unsound Error::downcast_mut): only in this benchmark harness, which never calls downcast_mut and never ships. The app's own anyhow is past the fix."
+
+[[IgnoredVulns]]
+id = "RUSTSEC-2023-0071"
+reason = "rsa (Marvin attack, no patched version): only in this benchmark harness, which never ships. The app's own copy is ignored in the root osv-scanner.toml, with the reasoning in deny.toml."

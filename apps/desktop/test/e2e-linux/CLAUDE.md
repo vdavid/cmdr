@@ -1,10 +1,9 @@
 # Linux E2E Docker infrastructure
 
-Docker setup for the Playwright E2E tests on Linux. The specs live in `../e2e-playwright/` (shared with macOS; see
-`e2e-playwright/CLAUDE.md`); this directory holds only the Docker infra. `e2e-linux.sh` builds the Tauri binary in
-Docker, leases the SMB, SFTP, and WebDAV fixture stacks, launches the E2E container on all three networks, and runs
-`npx playwright test`. Architecture, build caching, and the investigations behind every gotcha below are in
-`DETAILS.md`.
+Docker setup for the Playwright E2E tests on Linux. The specs live in `../e2e-playwright/` (shared with macOS); this
+directory holds only the Docker infra. `e2e-linux.sh` builds the Tauri binary in Docker, leases the SMB, SFTP, and
+WebDAV fixture stacks, launches the E2E container on all three networks, and runs `npx playwright test`. Architecture,
+build caching, and the why behind each gotcha: `DETAILS.md`.
 
 ## Running
 
@@ -14,7 +13,7 @@ pnpm test:e2e:linux                    # Full run: build (if needed) + test in D
 pnpm test:e2e:linux:build              # Force-rebuild Docker images (base with --no-cache), no tests
 pnpm test:e2e:linux:shell              # Interactive shell in container
 pnpm test:e2e:linux:vnc                # VNC mode with hot reload (pnpm dev)
-./scripts/e2e-linux.sh --grep "SMB"    # Run only tests matching a pattern
+./scripts/e2e-linux.sh --grep "SMB"    # Run only tests matching a pattern (+ --repeat-each N for flakes)
 ```
 
 ## Must-knows

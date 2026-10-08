@@ -54,15 +54,15 @@ describe('getUserFriendlyMessage', () => {
     it('returns user-friendly message for insufficient_space error', () => {
       const error: WriteOperationError = {
         type: 'insufficient_space',
-        required: 1073741824,
-        available: 536870912,
+        required: 1_000_000_000,
+        available: 500_000_000,
         volumeName: 'Test Volume',
       }
       const result = getUserFriendlyMessage(error)
 
-      expect(result.title).toBe('Not enough space')
+      expect(result.title).toBe('The destination may not have enough space')
       expect(result.message).toContain('1.00 GB')
-      expect(result.message).toContain('512.00 MB')
+      expect(result.message).toContain('500.00 MB')
     })
 
     it('returns user-friendly message for destination_inside_source error', () => {
@@ -398,6 +398,22 @@ describe('getUserFriendlyMessage', () => {
       expect(source.suggestion).toContain('volume switcher')
     })
 
+    // A source that left the registry and nothing lists any more (a phone
+    // unplugged under a search-results pane). ❌ Never "not connected yet": there's
+    // no row in the volume switcher to open.
+    it('words a source that is gone as no longer connected, with no Retry', () => {
+      const error: WriteOperationError = { type: 'source_no_longer_connected', path: '/sdcard/DCIM/a.jpg' }
+      const message = getUserFriendlyMessage(error, 'copy')
+      expect(message.title).toBe('Not connected anymore')
+      expect(message.message).toBe(
+        'The phone or server holding these files isn’t connected anymore, so nothing has changed.',
+      )
+      expect(message.suggestion).toBe(
+        'Plug the phone back in, or open the server from the volume switcher, then try again.',
+      )
+      expect(getErrorDisplayMeta(error)).toEqual({ category: 'needs_action', retryHint: false })
+    })
+
     it('offers no Retry for a place nobody connected, since the same request refuses again until it is opened', () => {
       for (const type of ['source_not_connected', 'destination_not_connected'] as const) {
         expect(getErrorDisplayMeta({ type, path: '/p' }), type).toEqual({ category: 'needs_action', retryHint: false })
@@ -508,6 +524,24 @@ describe('getTechnicalDetails', () => {
     expect(result).toContain('Error type: source_not_found')
   })
 
+  // An object store refusal can be the key's permissions or a provider that
+  // paused the account (B2's daily cap answers 403 AccessDenied), and nothing in
+  // the answer tells them apart, so the advice names both.
+  it('names both causes when an object store account refuses', () => {
+    const error: WriteOperationError = {
+      type: 'permission_denied',
+      path: 's3://AKIATEST@s3.eu-central-003.backblazeb2.com:443/photos/a.jpg',
+      message: '/photos/a.jpg',
+      errno: null,
+      refusal: 'objectStoreAccount',
+      refusedFolder: null,
+      side: 'source',
+    }
+    const { suggestion } = getUserFriendlyMessage(error, 'copy')
+    expect(suggestion).toContain('permissions')
+    expect(suggestion).toContain('usage cap')
+  })
+
   // The errno is what a bug report needs and the prose deliberately never states:
   // 13 is a folder an administrator could write to, 1 is macOS refusing outright.
   it('includes the errno and the proved folder for a permission_denied error', () => {
@@ -567,14 +601,14 @@ describe('getTechnicalDetails', () => {
   it('includes space info for insufficient_space error', () => {
     const error: WriteOperationError = {
       type: 'insufficient_space',
-      required: 1073741824,
-      available: 536870912,
+      required: 1_000_000_000,
+      available: 500_000_000,
       volumeName: 'Test Volume',
     }
     const result = getTechnicalDetails(error)
 
     expect(result).toContain('Required: 1.00 GB')
-    expect(result).toContain('Available: 512.00 MB')
+    expect(result).toContain('Available: 500.00 MB')
     expect(result).toContain('Volume: Test Volume')
   })
 
@@ -825,6 +859,7 @@ describe('getErrorDisplayMeta', () => {
   const cases: Array<{ error: WriteOperationError; category: string; retryHint: boolean }> = [
     { error: { type: 'source_not_found', path: '/p' }, category: 'needs_action', retryHint: false },
     { error: { type: 'destination_exists', path: '/p' }, category: 'needs_action', retryHint: false },
+    { error: { type: 'destination_not_a_folder', path: '/p' }, category: 'needs_action', retryHint: false },
     {
       error: {
         type: 'permission_denied',
@@ -870,6 +905,8 @@ describe('getErrorDisplayMeta', () => {
     { error: { type: 'name_too_long', path: '/p' }, category: 'needs_action', retryHint: false },
     { error: { type: 'invalid_name', path: '/p', message: 'm' }, category: 'needs_action', retryHint: false },
     { error: { type: 'delete_pending', path: '/p' }, category: 'transient', retryHint: true },
+    { error: { type: 'source_in_cold_storage', path: '/p' }, category: 'needs_action', retryHint: false },
+    { error: { type: 'source_changed', path: '/p' }, category: 'transient', retryHint: true },
     { error: { type: 'io_error', path: '/p', message: 'm' }, category: 'serious', retryHint: true },
   ]
 

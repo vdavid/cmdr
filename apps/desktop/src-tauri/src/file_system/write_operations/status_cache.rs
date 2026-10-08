@@ -19,7 +19,7 @@ use crate::ignore_poison::IgnorePoison;
 use std::collections::{HashMap, HashSet};
 use std::sync::{LazyLock, OnceLock, RwLock};
 
-use super::types::{OperationStatus, OperationSummary, WriteOperationPhase, WriteOperationType};
+use super::types::{OperationStatus, WriteOperationPhase, WriteOperationType};
 
 #[cfg(test)]
 #[path = "status_cache_tests.rs"]
@@ -157,7 +157,7 @@ pub(super) fn unregister_operation_status(operation_id: &str) {
 ///
 /// Registers under `WriteOperationType::Copy` because a drag-out download IS a
 /// copy from the device to local disk — the type only affects diagnostics
-/// (`list_active_operations`), and the busy set itself is type-agnostic.
+/// (`get_operation_status`), and the busy set itself is type-agnostic.
 ///
 /// macOS-only: the sole caller is `native_drag::fulfillment`, which is
 /// `#[cfg(target_os = "macos")]`. On other targets this would be dead code under
@@ -264,38 +264,6 @@ fn recompute_and_emit_busy_volumes() {
 // ============================================================================
 // Public query functions
 // ============================================================================
-
-/// Lists all active write operations.
-///
-/// Returns a list of operation summaries for all currently running operations.
-/// This is useful for showing a global progress view or managing multiple concurrent operations.
-pub fn list_active_operations() -> Vec<OperationSummary> {
-    let cache = match OPERATION_STATUS_CACHE.read() {
-        Ok(c) => c,
-        Err(_) => return Vec::new(),
-    };
-
-    cache
-        .iter()
-        .map(|(id, status)| {
-            let percent_complete = if status.bytes_total > 0 {
-                ((status.bytes_done as f64 / status.bytes_total as f64) * 100.0).min(100.0) as u8
-            } else if status.files_total > 0 {
-                ((status.files_done as f64 / status.files_total as f64) * 100.0).min(100.0) as u8
-            } else {
-                0
-            };
-
-            OperationSummary {
-                operation_id: id.clone(),
-                operation_type: status.operation_type,
-                phase: status.phase,
-                percent_complete,
-                started_at: status.started_at,
-            }
-        })
-        .collect()
-}
 
 /// Gets the detailed status of a specific operation.
 ///

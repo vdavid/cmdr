@@ -152,6 +152,18 @@ describe('MediaIndexClipModel', () => {
     expect(target.querySelector('.clip-model button')).not.toBeNull()
   })
 
+  it('says the delete didn’t fully land when a prune failed backend-side', async () => {
+    statusMock.mockResolvedValue(status({ installed: true }))
+    confirmMock.mockResolvedValue(true)
+    deleteMock.mockRejectedValue(new Error('not deleted'))
+    const target = await mountModel()
+
+    target.querySelector<HTMLButtonElement>('.clip-model button')?.click()
+    await flush()
+
+    expect(target.textContent).toContain('couldn’t be removed')
+  })
+
   it('does not delete when the confirmation is dismissed', async () => {
     statusMock.mockResolvedValue(status({ installed: true }))
     confirmMock.mockResolvedValue(false)

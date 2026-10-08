@@ -7,7 +7,7 @@ import {
 } from '$lib/tauri-commands'
 import { type CanonicalPath, parentOf } from '$lib/path/canonical'
 import type { ViewMode } from '$lib/app-status-store'
-import type { SearchResultEntry } from '$lib/ipc/bindings'
+import type { PaneListing, SearchResultEntry } from '$lib/ipc/bindings'
 import type { SnapshotSort } from '$lib/search/snapshot-store.svelte'
 import { getWalkedGround, isVolumeAggregating } from '$lib/indexing/index-state.svelte'
 import { isPathAffectedByWalk } from '$lib/indexing/walked-ground'
@@ -34,6 +34,16 @@ function inFluxAnswerFor(volumeId: string): InFluxAnswer {
   const aggregating = isVolumeAggregating(volumeId)
   return (entry) =>
     isDirSizeUpdating(aggregating || isPathAffectedByWalk(ground, entry.path), entry.recursiveSizePending ?? false)
+}
+
+/**
+ * Where a pane's listing stands, from the three facts the pane renders it by. An
+ * error screen wins: it replaces the list whether or not a load is still flagged.
+ */
+export function paneListingOf(pane: { hasError: boolean; loading: boolean; stalled: boolean }): PaneListing {
+  if (pane.hasError) return 'error'
+  if (!pane.loading) return 'settled'
+  return pane.stalled ? 'stalled' : 'loading'
 }
 
 export interface PaneMcpSyncDeps {
@@ -88,6 +98,13 @@ export interface PaneMcpSyncDeps {
     indicatorStale: boolean
   }
   getLastJumpMatchedName: () => string | null
+  /** The quick filter's pattern; empty while no filter narrows the pane. */
+  getQuickFilterPattern: () => string
+  /**
+   * Where the listing stands as the pane shows it: an error screen, a stalled read,
+   * a load in flight, or settled. What tells an agent an empty folder from a stuck one.
+   */
+  getListing: () => PaneListing
 }
 
 /**
@@ -322,6 +339,8 @@ export function createPaneMcpSync(deps: PaneMcpSyncDeps) {
         loadedEnd,
         showHidden: deps.getShowHiddenFiles(),
         typeToJump: typeToJumpInfo,
+        quickFilter: deps.getQuickFilterPattern() || null,
+        listing: deps.getListing(),
       }
 
       const updateFn = deps.paneId === 'left' ? updateLeftPaneState : updateRightPaneState

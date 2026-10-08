@@ -16,11 +16,10 @@
 //! disabled "Finding apps…" line in their place ([`build_pending_open_with_submenu`]), and
 //! [`fill_open_with_submenu`] swaps the real list in while the menu is open.
 //!
-//! The first candidate (the OS default for the right-clicked file) gets a plain-text
-//! ` (default)` suffix. TODO: muda has `set_styled_text` now (`tauri-apps/muda#353`), so
-//! the remaining gap is Tauri: once its menu wrappers expose it, pass the suffix as a
-//! `TextStyle::Secondary` part so it renders in `NSColor.secondaryLabelColor`, matching
-//! Finder's "Open with" submenu.
+//! The first candidate (the OS default for the right-clicked file) reads "{app} (default)".
+//! [`default_label`] splits that label into parts, and `context_menu_icons.rs` draws the words
+//! around the app's name in `secondaryLabelColor` on the live item, matching Finder's "Open
+//! with" submenu. The Tauri item itself carries the plain text.
 
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -32,7 +31,7 @@ use tauri::{
 
 use super::context_menu_live::Placeheld;
 use crate::file_system::open_with::AppCandidate;
-use crate::intl::{menu_t, menu_t_with};
+use crate::intl::menu_t;
 
 /// Menu item ID prefix for "Open with" candidate apps. Followed by the app's bundle ID.
 pub const OPEN_WITH_ID_PREFIX: &str = "open-with:";
@@ -113,7 +112,10 @@ fn candidate_items<R: Runtime>(app: &AppHandle<R>, candidates: &[AppCandidate]) 
     let mut bundle_to_path: HashMap<String, PathBuf> = HashMap::new();
     for (idx, candidate) in candidates.iter().enumerate() {
         let label = if idx == 0 {
-            menu_t_with("menu.context.openWithDefault", &[("app", &candidate.display_name)])
+            default_label(&candidate.display_name)
+                .into_iter()
+                .map(|part| part.text)
+                .collect()
         } else {
             candidate.display_name.clone()
         };
@@ -124,6 +126,48 @@ fn candidate_items<R: Runtime>(app: &AppHandle<R>, candidates: &[AppCandidate]) 
     Ok((items, bundle_to_path))
 }
 
+/// One stretch of the OS default's label: the app's name, or the words around it that say it's
+/// the default, which draw dimmed.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(super) struct LabelPart {
+    pub text: String,
+    pub dim: bool,
+}
+
+/// The OS default's label for `app` in the active language, in parts.
+pub(super) fn default_label(app: &str) -> Vec<LabelPart> {
+    default_label_parts(&menu_t("menu.context.openWithDefault"), app)
+}
+
+/// `template` with each `{app}` as an undimmed part holding `app`, and the words between them
+/// dimmed. The parts join into exactly what `menu_t_with` would make of it. A template with no
+/// `{app}` (a translation that dropped it) comes back whole and undimmed.
+fn default_label_parts(template: &str, app: &str) -> Vec<LabelPart> {
+    const TOKEN: &str = "{app}";
+    if !template.contains(TOKEN) {
+        return vec![LabelPart {
+            text: template.to_string(),
+            dim: false,
+        }];
+    }
+    let mut parts = Vec::new();
+    for (index, words) in template.split(TOKEN).enumerate() {
+        if index > 0 && !app.is_empty() {
+            parts.push(LabelPart {
+                text: app.to_string(),
+                dim: false,
+            });
+        }
+        if !words.is_empty() {
+            parts.push(LabelPart {
+                text: words.to_string(),
+                dim: true,
+            });
+        }
+    }
+    parts
+}
+
 fn other_item<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<MenuItem<R>> {
     MenuItem::with_id(
         app,
@@ -132,4 +176,115 @@ fn other_item<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<MenuItem<R>> {
         true,
         None::<&str>,
     )
+}
+
+/// Launches `app_path` on the rows an "Open with" click acts on, for both the listed apps
+/// and "Other…".
+///
+/// A row only a route serves (a file inside an archive) has no file an app can open, so
+/// it's pulled into a fresh read-only copy first (`file_viewer/open_with_extract.rs`). That
+/// pull streams the file, so it runs off the main thread, and the launch hops back on.
+/// Every other launch stays on the main thread, synchronous, as it always was.
+///
+/// A pull that can't finish (too big, a locked or damaged archive) launches nothing and
+/// tells the main window why (`OpenWithCopyRefused`), which shows it as a toast.
+#[cfg(target_os = "macos")]
+pub(super) fn launch_with<R: Runtime>(app: &AppHandle<R>, paths: Vec<PathBuf>, app_path: PathBuf) {
+    use crate::file_system::open_with::open_paths_with;
+    use crate::file_viewer::open_with_extract;
+
+    if !open_with_extract::any_needs_extraction(&paths) {
+        if let Err(e) = open_paths_with(&paths, &app_path) {
+            log::warn!("Open with failed for {}: {e}", app_path.display());
+        }
+        return;
+    }
+    let app = app.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let copies = match open_with_extract::launch_paths(&paths) {
+            Ok(copies) => copies,
+            Err(refused) => {
+                log::warn!(
+                    "Open with: couldn't copy {} out for {}: {}",
+                    refused.path.display(),
+                    app_path.display(),
+                    refused.error
+                );
+                announce_refused_copy(&app, &refused, &app_path);
+                return;
+            }
+        };
+        let hopped = app.run_on_main_thread(move || {
+            if let Err(e) = open_paths_with(&copies, &app_path) {
+                log::warn!("Open with failed for {}: {e}", app_path.display());
+            }
+        });
+        if let Err(e) = hopped {
+            log::warn!("Open with: couldn't reach the main thread to launch: {e}");
+        }
+    });
+}
+
+/// Tells the main window an "Open with" launch didn't happen, and why.
+#[cfg(target_os = "macos")]
+fn announce_refused_copy<R: Runtime>(
+    app: &AppHandle<R>,
+    refused: &crate::file_viewer::open_with_extract::RefusedCopy,
+    app_path: &std::path::Path,
+) {
+    use crate::file_viewer::open_with_extract::OpenWithCopyRefused;
+    use tauri_specta::Event;
+
+    if let Err(e) = OpenWithCopyRefused::new(refused, app_path).emit(app) {
+        log::warn!("Open with: couldn't tell the main window the copy was refused: {e}");
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn part(text: &str, dim: bool) -> LabelPart {
+        LabelPart {
+            text: text.to_string(),
+            dim,
+        }
+    }
+
+    #[test]
+    fn the_words_around_the_app_name_dim_and_the_name_does_not() {
+        assert_eq!(
+            default_label_parts("{app} (default)", "Preview"),
+            vec![part("Preview", false), part(" (default)", true)]
+        );
+    }
+
+    /// A language may put its words before the name, or on both sides.
+    #[test]
+    fn words_on_either_side_of_the_name_dim() {
+        assert_eq!(
+            default_label_parts("Standard: {app} ✓", "Vorschau"),
+            vec![part("Standard: ", true), part("Vorschau", false), part(" ✓", true)]
+        );
+    }
+
+    /// A translation that dropped `{app}` is a bug, but its label still shows as it's written,
+    /// undimmed, rather than as one gray line.
+    #[test]
+    fn a_template_without_the_name_shows_plain() {
+        assert_eq!(default_label_parts("Default", "Preview"), vec![part("Default", false)]);
+    }
+
+    /// The parts always join into exactly the label `menu_t_with` makes (a plain `{app}`
+    /// replace), which is the title the icon pass matches the item by.
+    #[test]
+    fn the_parts_join_into_the_plain_label() {
+        for template in ["{app} (default)", "{app}（默认）", "Default", "{app} and {app}"] {
+            let joined: String = default_label_parts(template, "Preview")
+                .into_iter()
+                .map(|part| part.text)
+                .collect();
+            assert_eq!(joined, template.replace("{app}", "Preview"));
+        }
+    }
 }

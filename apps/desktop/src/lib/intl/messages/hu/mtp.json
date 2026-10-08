@@ -79,13 +79,5 @@
   "mtp.deviceFallbackName": "MTP-eszköz",
   "@mtp.deviceFallbackName": {
     "sourceHash": "8ba7a69"
-  },
-  "mtp.error.exclusiveAccess": "Egy másik folyamat kizárólagosan használja az eszközt{blocking, select, none {} other { (foglalja: {blocking})}}",
-  "@mtp.error.exclusiveAccess": {
-    "sourceHash": "a81f306"
-  },
-  "mtp.error.permissionDenied": "USB-hozzáférés megtagadva. Telepítsd az udev-szabályokat, és csatlakoztass újra",
-  "@mtp.error.permissionDenied": {
-    "sourceHash": "3362501"
   }
 }

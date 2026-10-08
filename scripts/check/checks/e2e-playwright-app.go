@@ -205,6 +205,10 @@ func startTauriApp(binaryPath string, s shardSpec) (*appHandle, error) {
 		// CHAIN, which no walker parallelism can overlap, so this is a per-directory
 		// floor rather than an average: 30 levels can't finish in under three seconds.
 		"CMDR_E2E_WALK_THROTTLE_MS=100",
+		// The organization's managed preferences come from this plist instead of
+		// CFPreferences (honored only by `playwright-e2e` and debug builds). It doesn't exist
+		// at launch, which reads as no policy; `managed-policy.spec.ts` writes and removes it.
+		"CMDR_MANAGED_PREFS_FILE="+shardManagedPrefsFile(s),
 	)
 	// Only the MTP shard registers the virtual MTP device, at THIS run's backing
 	// dir. Non-MTP shards skip the startup wipe-and-recreate, which would

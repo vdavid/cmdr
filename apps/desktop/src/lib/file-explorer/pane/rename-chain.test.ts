@@ -645,6 +645,77 @@ describe('what becomes of the name in the editor when the arrow moves on', () =>
     expect(lastToastOptions()).toMatchObject({ level: 'warn', dismissal: 'persistent' })
   })
 
+  it('holds a rename that needs the Move dialog until the editor closes, then opens it', async () => {
+    const confirmMove = { type: 'confirm-move', newName: 'big-renamed' }
+    executeRenameSaveSpy.mockResolvedValueOnce(confirmMove)
+    const listing = chainListing(['a.txt', 'b.txt'])
+    const { rename, flow, onConfirmRenameAsMove } = buildFlow(listing.staleEntryUnderCursor, true, listing.deps)
+
+    flow.startRename()
+    flow.handleRenameInput('big-renamed')
+    flow.handleRenameStep('down', rename.sessionId)
+    await vi.waitFor(() => {
+      expect(executeRenameSaveSpy).toHaveBeenCalledTimes(1)
+    })
+    await Promise.resolve()
+
+    // The user is typing b.txt's name: no dialog may open over that.
+    expect(onConfirmRenameAsMove).not.toHaveBeenCalled()
+    expect(rename.active).toBe(true)
+
+    flow.cancelRename()
+    await vi.waitFor(() => {
+      expect(onConfirmRenameAsMove).toHaveBeenCalledWith(
+        expect.objectContaining({ sourcePath: '/dir/a.txt', newName: 'big-renamed' }),
+      )
+    })
+    expect(toastedKeys().map(([key]) => key)).not.toContain('fileExplorer.rename.chainKeptOriginalName')
+  })
+
+  it('opens the Move dialog at once when the editor has already closed', async () => {
+    const save = deferred<unknown>()
+    executeRenameSaveSpy.mockReturnValueOnce(save.promise)
+    const listing = chainListing(['a.txt', 'b.txt'])
+    const { rename, flow, onConfirmRenameAsMove } = buildFlow(listing.staleEntryUnderCursor, true, listing.deps)
+
+    flow.startRename()
+    flow.handleRenameInput('big-renamed')
+    flow.handleRenameStep('down', rename.sessionId)
+    flow.cancelRename()
+    save.resolve({ type: 'confirm-move', newName: 'big-renamed' })
+
+    await vi.waitFor(() => {
+      expect(onConfirmRenameAsMove).toHaveBeenCalledWith(
+        expect.objectContaining({ sourcePath: '/dir/a.txt', newName: 'big-renamed' }),
+      )
+    })
+  })
+
+  it('opens one Move dialog per chain, and names the other renames that needed one', async () => {
+    executeRenameSaveSpy
+      .mockResolvedValueOnce({ type: 'confirm-move', newName: 'a-renamed' })
+      .mockResolvedValueOnce({ type: 'confirm-move', newName: 'b-renamed' })
+    const listing = chainListing(['a.txt', 'b.txt', 'c.txt'])
+    const { rename, flow, onConfirmRenameAsMove } = buildFlow(listing.staleEntryUnderCursor, true, listing.deps)
+
+    flow.startRename()
+    flow.handleRenameInput('a-renamed')
+    flow.handleRenameStep('down', rename.sessionId)
+    flow.handleRenameInput('b-renamed')
+    flow.handleRenameStep('down', rename.sessionId)
+    await vi.waitFor(() => {
+      expect(toastedKeys()).toContainEqual([
+        'fileExplorer.rename.chainKeptOriginalName',
+        { reason: 'fileExplorer.rename.needsOwnMoveDialog', name: 'b.txt' },
+      ])
+    })
+    flow.cancelRename()
+    await vi.waitFor(() => {
+      expect(onConfirmRenameAsMove).toHaveBeenCalledTimes(1)
+    })
+    expect(onConfirmRenameAsMove).toHaveBeenCalledWith(expect.objectContaining({ newName: 'a-renamed' }))
+  })
+
   it('commits an extension change with no dialog while the policy asks', () => {
     validateFilenameSpy.mockImplementation(gradeName)
     const listing = chainListing(['a.txt', 'b.txt'])

@@ -80,6 +80,14 @@
   "@errorReporter.dialog.saveToDisk": {
     "sourceHash": "36d6589"
   },
+  "errorReporter.dialog.managedOff": "Tổ chức của bạn đã tắt việc gửi báo cáo. Bạn vẫn có thể lưu báo cáo vào đĩa và tự chia sẻ.",
+  "@errorReporter.dialog.managedOff": {
+    "sourceHash": "9309a39"
+  },
+  "errorReporter.dialog.saveToDiskManaged": "Lưu vào đĩa",
+  "@errorReporter.dialog.saveToDiskManaged": {
+    "sourceHash": "5a5d775"
+  },
   "errorReporter.dialog.cancel": "Hủy",
   "@errorReporter.dialog.cancel": {
     "sourceHash": "19766ed"
@@ -126,7 +134,7 @@
   },
   "errorReporter.amend.unavailable": "Không thể thêm ghi chú vào báo cáo đó nữa. Để nhóm nhận được ghi chú của bạn, hãy gửi một báo cáo mới từ menu Trợ giúp.",
   "@errorReporter.amend.unavailable": {
-    "sourceHash": "b96b48a"
+    "sourceHash": "08ab034"
   },
   "errorReporter.amend.close": "Đóng",
   "@errorReporter.amend.close": {

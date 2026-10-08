@@ -32,17 +32,29 @@ pub fn is_available() -> bool {
     cfg!(target_os = "macos")
 }
 
-/// Sample `kMDItemLastUsedDate` for up to `SAMPLE_CAP` of the given folder
-/// paths, returning `path → last-used Unix seconds`. macOS only; a stub on other
-/// platforms returns an empty map. Runs the MDItem queries on a dedicated OS
-/// thread with an autoreleasepool and joins it, so the caller (a blocking
-/// recompute task) stays off the framework thread-stack hazard.
+/// Sample `kMDItemLastUsedDate` for up to `SAMPLE_CAP` of `volume_id`'s folders,
+/// given as the INDEX-relative paths a walk produces, returning `path → last-used
+/// Unix seconds` keyed by those same paths. macOS only; a stub on other platforms
+/// returns an empty map. Runs the MDItem queries on a dedicated OS thread with an
+/// autoreleasepool and joins it, so the caller (a blocking recompute task) stays
+/// off the framework thread-stack hazard.
+///
+/// ❗ Spotlight is asked about each folder where it sits on disk
+/// (`paths::routing::local_path_of`): an external drive's index stores `/photos`
+/// for `/Volumes/Ext/photos`, and asking about `/photos` asks about a boot-disk
+/// folder that isn't there. A volume the host can't place samples nothing.
 #[cfg(target_os = "macos")]
-pub fn sample_last_used(paths: &[String]) -> HashMap<String, u64> {
+pub fn sample_last_used(volume_id: &str, paths: &[String]) -> HashMap<String, u64> {
     // Cap the sample. Taking the first N is fine: folder order from the index walk
     // isn't meaningful, and the cap is about bounding cost, not fairness. A future
     // refinement could bias toward recently-listed folders.
-    let sample: Vec<String> = paths.iter().take(SAMPLE_CAP).cloned().collect();
+    let sample: Vec<(String, String)> = paths
+        .iter()
+        .take(SAMPLE_CAP)
+        .filter_map(|indexed| {
+            crate::indexing::paths::routing::local_path_of(volume_id, indexed).map(|on_disk| (indexed.clone(), on_disk))
+        })
+        .collect();
     if sample.is_empty() {
         return HashMap::new();
     }
@@ -56,9 +68,9 @@ pub fn sample_last_used(paths: &[String]) -> HashMap<String, u64> {
         .spawn(move || {
             objc2::rc::autoreleasepool(|_| {
                 let mut out = HashMap::with_capacity(sample.len());
-                for path in &sample {
-                    if let Some(secs) = macos::last_used_secs(path) {
-                        out.insert(path.clone(), secs);
+                for (indexed, on_disk) in &sample {
+                    if let Some(secs) = query(on_disk) {
+                        out.insert(indexed.clone(), secs);
                     }
                 }
                 out
@@ -75,8 +87,18 @@ pub fn sample_last_used(paths: &[String]) -> HashMap<String, u64> {
 }
 
 #[cfg(not(target_os = "macos"))]
-pub fn sample_last_used(_paths: &[String]) -> HashMap<String, u64> {
+pub fn sample_last_used(_volume_id: &str, _paths: &[String]) -> HashMap<String, u64> {
     HashMap::new()
+}
+
+/// One `kMDItemLastUsedDate` lookup, through the stand-in a test installed if there is one.
+#[cfg(target_os = "macos")]
+fn query(path: &str) -> Option<u64> {
+    #[cfg(test)]
+    if let Some(stand_in) = *tests::QUERY.lock().unwrap_or_else(std::sync::PoisonError::into_inner) {
+        return stand_in(path);
+    }
+    macos::last_used_secs(path)
 }
 
 #[cfg(target_os = "macos")]
@@ -143,5 +165,54 @@ mod macos {
 
         let unix = abs + CF_TO_UNIX_EPOCH_OFFSET;
         if unix < 0.0 { None } else { Some(unix as u64) }
+    }
+}
+
+#[cfg(all(test, target_os = "macos"))]
+mod tests {
+    use std::sync::{Arc, Mutex};
+
+    use super::*;
+    use crate::indexing::host::volumes::{FakeVolumeProvider, install_for_test};
+
+    /// One `kMDItemLastUsedDate` lookup a test answers in place of Spotlight.
+    pub(super) type StandIn = fn(&str) -> Option<u64>;
+
+    /// What [`query`] answers in place of Spotlight while a test holds it.
+    pub(super) static QUERY: Mutex<Option<StandIn>> = Mutex::new(None);
+
+    /// Puts Spotlight back however the test ends.
+    struct RealSpotlight;
+
+    impl Drop for RealSpotlight {
+        fn drop(&mut self) {
+            *QUERY.lock().unwrap_or_else(std::sync::PoisonError::into_inner) = None;
+        }
+    }
+
+    /// Spotlight as a test sees it: one folder opened, on an external drive.
+    fn spotlight_knows_the_drives_photos(path: &str) -> Option<u64> {
+        (path == "/Volumes/Ext/photos").then_some(1_700_000_000)
+    }
+
+    /// An external drive's index stores `/photos`, and Spotlight knows the folder
+    /// as `/Volumes/Ext/photos`. The sample asks about the folder ON THE DRIVE and
+    /// answers under the index's own path, which is what the scorer looks it up by.
+    /// Asking about `/photos` instead asks about a boot-disk folder that isn't there.
+    #[test]
+    fn an_external_drive_is_sampled_at_its_mount_point() {
+        let _serialized = crate::indexing::handle::test_lock();
+        let volumes = FakeVolumeProvider::shared();
+        volumes.register(
+            "ext-drive",
+            Arc::new(cmdr_fs::volume::InMemoryVolume::new("Ext").with_root("/Volumes/Ext")),
+        );
+        let _host = install_for_test(volumes);
+        *QUERY.lock().unwrap_or_else(std::sync::PoisonError::into_inner) = Some(spotlight_knows_the_drives_photos);
+        let _restore = RealSpotlight;
+
+        let sampled = sample_last_used("ext-drive", &["/photos".to_string(), "/music".to_string()]);
+
+        assert_eq!(sampled, HashMap::from([("/photos".to_string(), 1_700_000_000)]));
     }
 }

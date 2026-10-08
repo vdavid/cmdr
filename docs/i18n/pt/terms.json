@@ -17,6 +17,11 @@
     "confidence": "high",
     "sources": "macOS Finder pt-BR; shipped pt catalog"
   },
+  "access-key-id": {
+    "chosen": "ID da chave de acesso",
+    "confidence": "high",
+    "sources": "catalog servers.sheet.accessKeyId and servers.sheet.identityLockedS3; AWS console and docs in this language (outside the pile, not verified live) (pt-BR: ID da chave de acesso)"
+  },
   "account": {
     "chosen": "conta",
     "confidence": "high",
@@ -35,10 +40,16 @@
     "confidence": "high",
     "sources": "KDE Dolphin, Total Commander, Double Commander pt-BR (Adicionar ao/à …)"
   },
+  "advanced": {
+    "chosen": "Avançado",
+    "confidence": "high",
+    "forms": "Cmdr Settings section → Avançado; quote settings.section.advanced exactly in navigation paths",
+    "sources": "Network.appex Localizable (ADVANCED); catalog settings.section.advanced (macOS 26.6.2 build 25G83, live loctable key cross-reference, 2026-10-02)"
+  },
   "ai-feature": {
     "chosen": "recursos de IA",
-    "accept": ["a IA", "de IA", "por IA"],
-    "forms": "AI features → os recursos de IA; the AI (sentence subject) → a IA (A IA está desativada)",
+    "accept": ["a IA", "à IA", "de IA", "por IA"],
+    "forms": "AI features → os recursos de IA; the AI (sentence subject) → a IA (A IA está desativada); ask the AI → peça à IA",
     "confidence": "high",
     "sources": "shipped pt catalog (ai.translateError.*, settings.ai.tooltipOff)",
     "decision": "Ask Cmdr names only the chat panel"
@@ -160,7 +171,7 @@
   },
   "ask": {
     "chosen": "Perguntar",
-    "accept": ["pergunt", "Ask Cmdr", "peç", "pede", "pedi"],
+    "accept": ["pergunt", "Ask Cmdr", "pedi"],
     "forms": "segmented cell Perguntar; ask each time → perguntar a cada vez",
     "confidence": "high",
     "sources": "macOS (Perguntar); shipped pt catalog (allowFileExtensionChanges.opt.ask Sempre perguntar)"
@@ -178,6 +189,11 @@
     "forms": "Drop to attach → Solte para anexar; Remove attachment → Remover anexo",
     "confidence": "confirmed",
     "sources": "MS terminology pt-BR (attach → anexar, attached file → anexo)"
+  },
+  "automation": {
+    "chosen": "Automação",
+    "confidence": "high",
+    "sources": "macOS 27.0 (26A428) SecurityPrivacyExtension.appex Localizable.loctable, pt_BR, key AUTOMATION, 2026-10-08"
   },
   "back": {
     "chosen": "Voltar",
@@ -265,6 +281,13 @@
     "sources": "macOS pt-BR (Choose… → Escolher…, Choose File… → Escolher Arquivo…)",
     "decision": "Server sheet and host keys"
   },
+  "bucket": {
+    "chosen": "bucket",
+    "accept": ["buckets"],
+    "forms": "o bucket, pl. os buckets; All buckets → Todos os buckets",
+    "confidence": "high",
+    "sources": "AWS console and docs in this language (outside the pile, not verified live) (pt-BR keeps bucket); catalog servers.sheet.s3Bucket"
+  },
   "buffer": {
     "chosen": "buffer",
     "confidence": "high",
@@ -282,6 +305,20 @@
     "confidence": "high",
     "sources": "MS terminology pt-BR; shipped pt catalog"
   },
+  "calculate": {
+    "accept": ["calcul"],
+    "chosen": "calcular",
+    "confidence": "high",
+    "forms": "Calculate folder sizes → Calcular tamanhos das pastas; the running work in prose → o cálculo",
+    "sources": "macOS Finder ViewOptionsWindow 65.title pt-BR (Calcular o tamanho de tudo); TC pt-BR 503 Calcular espaço, 5138; Double Commander pt-BR Calcular Espaço Ocupado"
+  },
+  "camera": {
+    "accept": ["câmeras"],
+    "avoid": [{ "form": "câmara", "why": "the pt-PT spelling; Cmdr ships Brazilian" }],
+    "chosen": "câmera",
+    "confidence": "high",
+    "sources": "pt-BR macOS Photos (Modelo da câmera, Marca da câmera); catalog (mtpEnabled, MTP section)"
+  },
   "camera-details": {
     "chosen": "detalhes da câmera",
     "avoid": [
@@ -297,6 +334,12 @@
     "confidence": "high",
     "sources": "MS terminology pt-BR (câmera id 27160); shipped pt catalog (askCmdr.renameReview.evidence.metadata detalhes)",
     "decision": "What Ask Cmdr reads inside files"
+  },
+  "byte": {
+    "chosen": "byte",
+    "forms": "plural bytes, in both many and other: {count, plural, one {byte} many {bytes} other {bytes}}; the unit symbols stay as in English: binary (IEC) KiB / MiB / GiB / TiB / PiB, decimal (SI) kB / MB / GB / TB / PB with a lowercase k; never KB, which would blur the two",
+    "confidence": "confirmed",
+    "sources": "macOS Finder pt-BR LocalizableMerged.json (SP27 byte, SP28 bytes, SP22–SP26 PB / TB / GB / MB / KB); GNOME Nautilus pt-BR (%s byte / %s bytes); Microsoft terminology pt-BR (MiB, GiB); KDE Dolphin pt-BR (“ MiB”); Total Commander pt-BR (kB/s)"
   },
   "cancel": {
     "chosen": "Cancelar",
@@ -401,6 +444,17 @@
     "confidence": "confirmed",
     "sources": "macOS (Área de Transferência)"
   },
+  "clone-pane": {
+    "avoid": [
+      {
+        "form": "Duplicar",
+        "why": "Finder's Duplicate makes a file copy"
+      }
+    ],
+    "chosen": "Clonar painel",
+    "confidence": "high",
+    "sources": "MS terminology pt-BR (clone → clonar) + the pane ruling (painel). TC 532 and DC name the same command Destino=Origem; Finder has none"
+  },
   "close": {
     "chosen": "Fechar",
     "accept": ["fech"],
@@ -442,6 +496,18 @@
     "chosen": "comparador",
     "confidence": "tentative",
     "sources": "shipped pt catalog"
+  },
+  "compare-folders": {
+    "chosen": "Comparar pastas",
+    "accept": ["compar"],
+    "avoid": [
+      {
+        "form": "Comparar diretórios",
+        "why": "MC's wording; TC pt-BR, DC and Finder say pasta"
+      }
+    ],
+    "confidence": "high",
+    "sources": "TC 11.58 pt-BR menu Comparar pastas (exact match, ⇧F2) and DC Comparar pastas; MC Comparar diretórios; Finder pasta"
   },
   "complete": {
     "chosen": "concluir",
@@ -501,6 +567,12 @@
     "confidence": "confirmed",
     "sources": "macOS Finder pt-BR ConnectToWindow, NetAuthAgent (Conectar)"
   },
+  "provider-console": {
+    "chosen": "console",
+    "confidence": "high",
+    "forms": "masculine: no console do seu provedor de armazenamento, after a first mention no console do seu provedor",
+    "sources": "MS terminology pt-BR (console → console); catalog errors.listing.coldStorage.suggestion"
+  },
   "context-menu": {
     "chosen": "menu de contexto",
     "accept": ["botão direito"],
@@ -532,6 +604,19 @@
     "forms": "progress Copiando; noun cópia; Copied → Copiado",
     "confidence": "confirmed",
     "sources": "macOS Finder pt-BR MenuBar"
+  },
+  "cost": {
+    "chosen": "custo",
+    "accept": ["custa", "custar"],
+    "forms": "verb custar (não custa nada, custa US$ 59); noun o custo",
+    "avoid": [
+      {
+        "form": "preço de custo",
+        "why": "Microsoft's only pt-BR entry is the accounting sense, not a resource cost"
+      }
+    ],
+    "confidence": "high",
+    "sources": "shipped pt catalog (O custo é…, custa US$ 59, não custa nada); MS terminology pt-BR checked (cost → preço de custo, accounting sense only)"
   },
   "crash-report": {
     "chosen": "relatório de falha",
@@ -593,6 +678,13 @@
     "confidence": "tentative",
     "sources": "shipped pt catalog"
   },
+  "debugging": {
+    "chosen": "depuração",
+    "accept": ["depurar", "debug"],
+    "confidence": "high",
+    "forms": "debug log → registro de depuração; the technical level stays debug",
+    "sources": "ConsoleKit.framework Localizable (Debug Type, value_debug); catalog settings.developer.verboseLogging.description (macOS 26.6.2 build 25G83, live loctable key cross-reference, 2026-10-02)"
+  },
   "default": {
     "chosen": "padrão",
     "accept": ["padrões"],
@@ -617,6 +709,13 @@
     "confidence": "high",
     "sources": "macOS Finder pt-BR (Apagar; 0 Excluir in Finder pt-BR)",
     "decision": "Apagar, never Excluir"
+  },
+  "delete-key": {
+    "chosen": "Apagar",
+    "confidence": "high",
+    "forms": "a tecla Apagar (⌫)",
+    "note": "Pile mined 2026-10-07 (macOS 27.0.1 live bundles): VoiceOver SCRWorkspace.loctable deleteKey, Terminal keyDescriptions.loctable 007F, AccessibilitySharedSupport symbol names delete.backward.",
+    "sources": "macOS pt-BR Terminal key descriptions (⌫ Delete → ⌫ Apagar), VoiceOver (Presses the delete key → Pressiona a tecla apagar); the VoiceOver title keeps Tecla Delete; symbol names say retroceder"
   },
   "delete-permanently": {
     "chosen": "Apagar permanentemente",
@@ -783,7 +882,7 @@
   "eject": {
     "chosen": "Ejetar",
     "accept": ["ejet", "ejeç"],
-    "forms": "Ejete-o de novo; noun a ejeção",
+    "forms": "imperative Ejete (Ejete a imagem primeiro); noun a ejeção",
     "confidence": "confirmed",
     "sources": "macOS Finder pt-BR",
     "decision": "Eject and disconnect refusals"
@@ -995,6 +1094,13 @@
     "confidence": "confirmed",
     "sources": "macOS Disk Utility pt-BR (File system → Sistema de arquivos), 26.6.2, 2026-09-06"
   },
+  "filter": {
+    "accept": ["filtr"],
+    "chosen": "filtrar",
+    "confidence": "high",
+    "forms": "noun o filtro (Limpar filtro, filtro rápido); the typing-mode name and badge Filtrar (Filtrar: …), beside Ir para",
+    "sources": "macOS live pt-BR (Filter → Filtrar 33×, Filtro 13×; Show Filter Bar → Mostrar Barra de Filtro); DC, MC (Filtro); catalog (Filtrar buscas recentes)"
+  },
   "finder": {
     "chosen": "Finder",
     "forms": "masculine with article: no Finder, do Finder",
@@ -1096,11 +1202,17 @@
     "sources": "macOS Finder pt-BR"
   },
   "go-to-path": {
-    "chosen": "Ir para o caminho",
-    "accept": ["Ir para pasta", "caminho"],
-    "forms": "Go to folder… (Dock menu) → Ir para pasta…",
-    "confidence": "high",
-    "sources": "macOS Finder pt-BR MenuBar (261 Ir para Pasta…)"
+    "chosen": "Ir para pasta",
+    "forms": "menu item and command Go to folder… → Ir para pasta…; dialog title and button → Ir para pasta (Finder's dialog says Ir Para a Pasta, but one control keeps one name)",
+    "avoid": [
+      {
+        "form": "Ir para o caminho",
+        "why": "the old Go to path wording; the English now names Finder's Go to Folder"
+      }
+    ],
+    "confidence": "confirmed",
+    "sources": "macOS Finder pt-BR LocalizableMerged (N83 Ir para Pasta…, GT8 Ir Para a Pasta), sentence-cased",
+    "decision": "Go to folder"
   },
   "go-to-trash": {
     "chosen": "Ir para o Lixo",
@@ -1111,6 +1223,12 @@
     "chosen": "Entendi",
     "confidence": "high",
     "sources": "shipped pt catalog"
+  },
+  "group": {
+    "chosen": "grupo",
+    "confidence": "high",
+    "forms": "a named group takes the name bare after it (seu grupo Rede); the servers found nearby → Grupo de servidores por perto",
+    "sources": "macOS Finder pt-BR MenuBar (Use Groups → Usar Grupos), verified on macOS 27.0 (26A428), live bundle, 2026-09-30; catalog (servers.pinHint.title)"
   },
   "guest": {
     "chosen": "convidado",
@@ -1142,6 +1260,12 @@
     "chosen": "dica",
     "confidence": "high",
     "sources": "Total Commander pt-BR (DICA:)"
+  },
+  "history": {
+    "chosen": "histórico",
+    "confidence": "high",
+    "forms": "masculine (o histórico, do histórico); git history → histórico do git; the repo’s history → histórico do repo",
+    "sources": "MS terminology pt-BR (histórico); catalog (operationLog.dialog.loadError, errors.git.blobTooLarge.title)"
   },
   "home-folder": {
     "chosen": "pasta pessoal",
@@ -1260,6 +1384,13 @@
     "forms": "Keep them → Manter os arquivos; kept its name → manteve o nome",
     "confidence": "high",
     "sources": "macOS Finder pt-BR (Manter Ambos, Manter Original)"
+  },
+  "key-combination": {
+    "chosen": "combinação",
+    "accept": ["combinação de teclas"],
+    "forms": "combinação on a shortcut row, where the shortcut already sets the context (Outro app pode estar usando essa combinação); combinação de teclas standing alone",
+    "confidence": "high",
+    "sources": "MS terminology pt-BR (key combination → combinação de teclas); shipped sibling downloads.shortcutRow.invalidCombo (combinação inválida)"
   },
   "key-file": {
     "chosen": "arquivo de chave",
@@ -1517,7 +1648,10 @@
       }
     ],
     "confidence": "confirmed",
-    "sources": "macOS Finder pt-BR; MS terminology pt-BR; NetAuthAgent"
+    "sources": "macOS Finder pt-BR; MS terminology pt-BR; NetAuthAgent",
+    "exceptions": {
+      "errorReporter.dialog.managedOff": "\"share it yourself\" is the verb (pass the report on), not a network share: compartilhá-lo por conta própria."
+    }
   },
   "new-file": {
     "chosen": "Novo arquivo",
@@ -1588,6 +1722,13 @@
     "confidence": "high",
     "sources": "shipped pt catalog"
   },
+  "on-device": {
+    "chosen": "no dispositivo",
+    "forms": "on-device AI → a IA no dispositivo; On-device only → Só no dispositivo; free, on-device → grátis, no dispositivo",
+    "confidence": "high",
+    "sources": "catalog (askCmdr.cost.free grátis, no dispositivo; ai.local.notInstalled roda inteiramente no seu dispositivo); no pile hit in the mined macOS pt-BR Finder / System Settings",
+    "decision": "What your organization manages (MDM)"
+  },
   "open": {
     "chosen": "Abrir",
     "accept": ["abr", "abert"],
@@ -1646,6 +1787,21 @@
     "confidence": "high",
     "sources": "shipped pt catalog"
   },
+  "organization": {
+    "chosen": "organização",
+    "accept": ["organizações", "Organização"],
+    "forms": "your organization → sua organização (feminine); manages → gerencia (Sua organização gerencia este ajuste); your IT team → sua equipe de TI",
+    "confidence": "high",
+    "sources": "MS terminology pt-BR (organization → organização, BRA); catalog (licensing.about.fallbackOrg sua organização; errors equipe de TI; managed → gerenciado, style.md)",
+    "decision": "What your organization manages (MDM)"
+  },
+  "original": {
+    "accept": ["originais"],
+    "chosen": "original",
+    "confidence": "high",
+    "forms": "the originals → os originais",
+    "sources": "macOS Finder PE117 (…the original could not be deleted): o original; catalog (errors.write.destinationNotFound.message.copy, errors.write.deviceDisconnected.sided.destination.copy)"
+  },
   "outdated": {
     "chosen": "desatualizado",
     "accept": ["desatualiz"],
@@ -1657,6 +1813,12 @@
     ],
     "confidence": "high",
     "sources": "macOS Finder pt-BR (NE103 Os itens podem estar desatualizados.)"
+  },
+  "overall": {
+    "chosen": "No total",
+    "confidence": "high",
+    "forms": "the whole-run time-left label → No total: {eta}",
+    "sources": "GN total, DC Total:; No total is the adverbial form before a time phrase"
   },
   "overwrite": {
     "chosen": "substituir",
@@ -1793,6 +1955,13 @@
     "confidence": "tentative",
     "sources": "Google's term; no macOS or Microsoft source"
   },
+  "android-tools": {
+    "chosen": "ferramentas do Android",
+    "accept": ["ferramenta do Android"],
+    "forms": "no Android tooling → nenhuma ferramenta do Android",
+    "confidence": "high",
+    "sources": "shipped pt catalog (adb.connect.serverUnreachable, settings.fileOperations.adbEnabled.description); no macOS or Microsoft source"
+  },
   "port": {
     "chosen": "porta",
     "confidence": "high",
@@ -1860,6 +2029,11 @@
     "accept": ["consulta"],
     "confidence": "tentative",
     "sources": "shipped pt catalog"
+  },
+  "quick-filter": {
+    "chosen": "filtro rápido",
+    "confidence": "high",
+    "sources": "TC pt-BR 3018/3019 (filtro rápido desativado/ativado); DC pt-BR actQuickFilter (Filtro rápido)"
   },
   "quick-look": {
     "chosen": "Visualização rápida",
@@ -2005,6 +2179,13 @@
     "chosen": "relatório",
     "confidence": "confirmed",
     "sources": "shipped pt catalog"
+  },
+  "repository": {
+    "accept": ["repositório", "repos"],
+    "chosen": "repo",
+    "confidence": "high",
+    "forms": "masculine (o repo, do repo); English repo → repo (errors.git.*); the branch and tag tooltips spell out repositório",
+    "sources": "MS terminology pt-BR (repositório); catalog (errors.git.*)"
   },
   "request": {
     "chosen": "solicitação",
@@ -2225,7 +2406,8 @@
     "sources": "System Settings.app InfoPlist (Settings → Ajustes)",
     "exceptions": {
       "errors.mount.mountRefused": "A NAS's own admin settings are configurações do servidor; Ajustes is only Cmdr's or Apple's window.",
-      "errors.mount.unsupportedProtocol": "A NAS's own admin settings are configurações do servidor; Ajustes is only Cmdr's or Apple's window."
+      "errors.mount.unsupportedProtocol": "A NAS's own admin settings are configurações do servidor; Ajustes is only Cmdr's or Apple's window.",
+      "servers.sheet.s3GcsKeyHelp": "Quotes Google Cloud console’s own pt-BR page, Configurações; Ajustes is only Cmdr’s or Apple’s window."
     }
   },
   "share-menu": {
@@ -2289,6 +2471,36 @@
     "confidence": "confirmed",
     "sources": "macOS Finder pt-BR"
   },
+  "size-unit-gibibyte": {
+    "chosen": "GiB",
+    "confidence": "high",
+    "sources": "catalog common.sizeUnit.gibibyte; IEC 80000-13 (binary) / SI (decimal)"
+  },
+  "size-unit-kibibyte": {
+    "chosen": "KiB",
+    "confidence": "high",
+    "sources": "catalog common.sizeUnit.kibibyte; IEC 80000-13 (binary) / SI (decimal)"
+  },
+  "size-unit-kilobyte": {
+    "chosen": "kB",
+    "confidence": "high",
+    "sources": "catalog common.sizeUnit.kilobyte; IEC 80000-13 (binary) / SI (decimal)"
+  },
+  "size-unit-mebibyte": {
+    "chosen": "MiB",
+    "confidence": "high",
+    "sources": "catalog common.sizeUnit.mebibyte; IEC 80000-13 (binary) / SI (decimal)"
+  },
+  "size-unit-pebibyte": {
+    "chosen": "PiB",
+    "confidence": "high",
+    "sources": "catalog common.sizeUnit.pebibyte; IEC 80000-13 (binary) / SI (decimal)"
+  },
+  "size-unit-tebibyte": {
+    "chosen": "TiB",
+    "confidence": "high",
+    "sources": "catalog common.sizeUnit.tebibyte; IEC 80000-13 (binary) / SI (decimal)"
+  },
   "skip": {
     "chosen": "Ignorar",
     "accept": ["ignor", "pula", "pulou"],
@@ -2299,7 +2511,8 @@
   "slow": {
     "chosen": "lento",
     "accept": ["lenta", "devagar"],
-    "forms": "4x mais lenta do que …",
+    "proseAccept": ["demorando"],
+    "forms": "4x mais lenta do que …; a volume slow to answer → o volume está demorando para responder",
     "confidence": "high",
     "sources": "MS terminology pt-BR (conexão mais lenta)"
   },
@@ -2382,6 +2595,12 @@
     "accept": ["transmit"],
     "confidence": "tentative",
     "sources": "shipped pt catalog"
+  },
+  "subfolder": {
+    "chosen": "subpasta",
+    "accept": ["subpastas"],
+    "confidence": "high",
+    "sources": "macOS Finder pt-BR (PE26.1 … para uma de suas subpastas); TC pt-BR (Subpastas), DC, Nautilus, Thunar, Dolphin (Criar subpasta) agree"
   },
   "suggestion": {
     "chosen": "sugestão",
@@ -2633,6 +2852,13 @@
       "askCmdr.error.unavailable": "reaching an AI provider reads as talking to it (não foi possível falar com)"
     }
   },
+  "untouched": {
+    "accept": ["intactos", "intacta", "intactas"],
+    "chosen": "intacto",
+    "confidence": "high",
+    "forms": "the originals are untouched → os originais estão intactos",
+    "sources": "catalog (errors.write.destinationNotFound.message.copy, errors.write.deviceDisconnected.sided.destination.copy); macOS AppKit Document (To keep the file unchanged…): manter o arquivo inalterado, the verb-side form"
+  },
   "update": {
     "chosen": "atualização",
     "accept": ["atualiz"],
@@ -2794,6 +3020,13 @@
     "confidence": "high",
     "sources": "standard macOS pt-BR app and feature names"
   },
+  "space-key": {
+    "accept": ["barra de espaço"],
+    "chosen": "Espaço",
+    "confidence": "high",
+    "forms": "key name Espaço, ⇧Espaço; prose → a tecla Espaço",
+    "sources": "macOS AppKit FunctionKeyNames (Space), SystemSettings Siri/Spotlight SPACEBAR_KEY pt-BR → Espaço (Space bar → Barra de espaço); TC pt-BR 5139 barra de espaço; Midnight Commander pt-BR Tecla de espaço; Double Commander BARRA DE ESPAÇO"
+  },
   "spaces": {
     "chosen": "Spaces",
     "confidence": "high",
@@ -2810,5 +3043,61 @@
     ],
     "confidence": "tentative",
     "sources": "Cmdr's license is the BSL (docs/business/README.md); catalog (onboarding.stepFda.con.body)"
+  },
+  "restore": {
+    "chosen": "restaurar",
+    "accept": ["restaur"],
+    "forms": "noun restauração; a file back out of cold storage → Restaure o arquivo",
+    "confidence": "high",
+    "sources": "macOS Finder pt-BR (Restaurar “^1” para…); MS terminology pt-BR restore → restaurar; Nautilus and Dolphin pt-BR Restore → Restaurar"
+  },
+  "storage": {
+    "chosen": "armazenamento",
+    "accept": ["armazen"],
+    "forms": "cold storage → armazenamento frio; storage provider → provedor de armazenamento; storing logs → armazenamento de registros (catalog settings.applier.logStorageRestart)",
+    "confidence": "high",
+    "sources": "MS terminology pt-BR (cold storage → armazenamento frio, id 2266289); shipped pt catalog (armazenamento do iCloud, armazenamento de celulares)",
+    "exceptions": {
+      "servers.refusal.notAnS3Endpoint": "Follows the sibling servers.refusal.notAWebdavServer frame (Nenhum serviço … responde neste endereço)."
+    }
+  },
+  "cursor": {
+    "chosen": "cursor",
+    "confidence": "high",
+    "sources": "shipped pt catalog (10× o cursor, Abrir item sob o cursor); MS terminology pt-BR cursor → cursor"
+  },
+  "dialog": {
+    "chosen": "caixa de diálogo",
+    "accept": ["diálogo", "janela"],
+    "forms": "a named dialog in running text → o diálogo Mover / a caixa de diálogo Selecionar arquivos",
+    "confidence": "high",
+    "sources": "MS terminology pt-BR dialog box → caixa de diálogo; shipped pt catalog (commands.dialogConfirm.label, settings.advanced.exitFullScreenOnEscape.description)"
+  },
+  "example": {
+    "chosen": "Exemplo:",
+    "accept": ["Exemplo", "ex.:"],
+    "confidence": "high",
+    "sources": "shipped pt catalog (servers.sheet.usernamePlaceholder Exemplo: barry, ai.cloud.modelPlaceholderExample)"
+  },
+  "tint": {
+    "chosen": "matiz",
+    "accept": ["Matizar", "matiz"],
+    "forms": "the setting label → Matizar painéis …; the help text → Matiz de fundo aplicado a painéis …",
+    "confidence": "tentative",
+    "sources": "shipped pt catalog (settings.appearance.tint*); MS terminology pt-BR tint → tonalidade (not adopted: the catalog’s six tint keys already say matiz)"
+  },
+  "grant": {
+    "chosen": "conceder",
+    "accept": ["conced", "conceda", "receb"],
+    "forms": "grant Cmdr access → conceda acesso ao Cmdr",
+    "confidence": "high",
+    "sources": "shipped pt catalog (errors.listing.*.suggestion “conceda acesso ao Cmdr”)"
+  },
+  "owner": {
+    "chosen": "dono",
+    "accept": ["dono", "quem cuida do servidor"],
+    "forms": "a file’s owner → o dono; the person running a server → quem cuida do servidor (avoids a gendered o dono for a person)",
+    "confidence": "tentative",
+    "sources": "shipped pt catalog (errors.listing.*.suggestion “verificar o dono e as permissões”; servers decision “quem cuida do servidor”)"
   }
 }

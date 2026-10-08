@@ -142,7 +142,7 @@ feedback.post('/feedback', async (c) => {
           buildMode: body.buildMode ?? 'release',
           appVersion: body.appVersion,
           osVersion: body.osVersion,
-          email: body.email ?? undefined,
+          hasReplyTo: Boolean(body.email),
           feedback: text,
         })
       } catch (e) {

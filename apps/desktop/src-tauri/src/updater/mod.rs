@@ -37,20 +37,89 @@ const MANIFEST_REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
 const DOWNLOAD_CONNECT_TIMEOUT: Duration = Duration::from_secs(10);
 const DOWNLOAD_READ_TIMEOUT: Duration = Duration::from_secs(30);
 
+use crate::ignore_poison::IgnorePoison as _;
+use crate::managed_policy::{Egress, UpdatePolicy, UpdateRefusal};
 use crate::server_request::describe_error_chain;
 
-/// Shared state between `download_update` and `install_update`.
-/// Holds the path to the downloaded (and verified) tarball.
+/// What the latest check offered and what the latest download staged, shared by the three
+/// commands. The backend keeps both so a download fetches only what a check offered (never a URL
+/// the frontend names) and an install knows which version it's about to write.
 pub struct UpdateState {
-    downloaded_tarball: Mutex<Option<PathBuf>>,
+    slots: Mutex<UpdateSlots>,
+}
+
+#[derive(Default)]
+struct UpdateSlots {
+    offered: Option<UpdateInfo>,
+    downloaded: Option<DownloadedUpdate>,
+}
+
+/// A verified tarball waiting for `install_update`, and the version the check said it holds.
+#[derive(Debug)]
+struct DownloadedUpdate {
+    version: semver::Version,
+    tarball: PathBuf,
 }
 
 impl UpdateState {
     pub fn new() -> Self {
         Self {
-            downloaded_tarball: Mutex::new(None),
+            slots: Mutex::new(UpdateSlots::default()),
         }
     }
+
+    // A poisoned lock only means an earlier command panicked mid-write; every slot is plain data
+    // that the next check or download replaces whole.
+    fn slots(&self) -> std::sync::MutexGuard<'_, UpdateSlots> {
+        self.slots.lock_ignore_poison()
+    }
+}
+
+/// What set an update check going. The frontend's `update_check` analytics event carries the same
+/// token, and the backend reads it to refuse a background check under
+/// `DisableAutomaticUpdateChecks`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize, specta::Type)]
+#[serde(rename_all = "snake_case")]
+pub enum UpdateCheckTrigger {
+    /// The first wake of the poll loop as the app comes up.
+    Startup,
+    /// A background tick of the poll loop.
+    Poll,
+    /// `updates.autoCheck` going from off to on.
+    AutoCheckOn,
+    /// The `app.checkForUpdates` command (menu, command palette, shortcut).
+    Command,
+    /// The "Check for updates" button on Settings > Updates.
+    Settings,
+}
+
+impl UpdateCheckTrigger {
+    /// Whether the check is the automatic checking `DisableAutomaticUpdateChecks` turns off, as
+    /// opposed to a person asking.
+    fn is_automatic(self) -> bool {
+        match self {
+            Self::Startup | Self::Poll | Self::AutoCheckOn => true,
+            Self::Command | Self::Settings => false,
+        }
+    }
+}
+
+/// What one update check found. The managed outcomes are answers, not failures: the frontend
+/// renders them and ❌ never logs them at warn or error.
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, specta::Type)]
+#[serde(tag = "kind", rename_all = "camelCase", rename_all_fields = "camelCase")]
+pub enum UpdateCheckOutcome {
+    /// Nothing newer than what's running (or this isn't a production install, see `skip_reason`).
+    UpToDate,
+    /// A newer release this Mac may install. `download_update` fetches exactly this one.
+    Available { version: String },
+    /// A newer release is out, but `MaxUpdateVersion` holds this Mac at `ceiling` or earlier.
+    HeldByPolicy { available: String, ceiling: String },
+    /// `DisableUpdates`: no request was made.
+    UpdatesDisabledByPolicy,
+    /// `DisableAutomaticUpdateChecks` refused a background check: no request was made. A check a
+    /// person asks for still runs.
+    AutomaticChecksDisabledByPolicy,
 }
 
 /// Why this process must not run an update check. Carried (rather than collapsed to a bool) so
@@ -91,34 +160,93 @@ fn skip_reason() -> Option<SkipReason> {
     })
 }
 
-/// Fetches `latest.json` (via the update check proxy for analytics) and returns update info
-/// if a newer version is available.
+/// Fetches `latest.json` (via the update check proxy for analytics) and says what it found, with
+/// the organization's policy applied. An `Available` release is remembered for `download_update`.
 ///
-/// Returns `None` when:
-/// - This isn't a real user's production install ([`skip_reason`]): the executable isn't inside a
-///   `.app` bundle (dev builds: install can't possibly succeed, so there's no point checking and
-///   no point letting the user click "Update"), or one of
-///   [`crate::prod_instance::NON_PROD_ENV_VARS`] is set. Every check reaches
-///   `api.getcmdr.com/update-check`, which writes an `update_checks` row that the dashboard counts
-///   as an active install, so Cmdr's own runs must never call it.
-/// - The remote version is not newer than the current version
-/// - The manifest doesn't contain an entry for this platform
+/// Answers `UpToDate` when this isn't a real user's production install ([`skip_reason`]): the
+/// executable isn't inside a `.app` bundle (dev builds: install can't possibly succeed), or one of
+/// [`crate::prod_instance::NON_PROD_ENV_VARS`] is set. Every check reaches
+/// `api.getcmdr.com/update-check`, which writes an `update_checks` row that the dashboard counts as
+/// an active install, so Cmdr's own runs must never call it. Also `UpToDate` when the remote version
+/// isn't newer, or the manifest has no entry for this platform.
 #[tauri::command]
 #[specta::specta]
-pub async fn check_for_update() -> Result<Option<UpdateInfo>, crate::server_request::ServerRequestError> {
-    if let Some(reason) = skip_reason() {
-        log::info!("Skipping update check: {reason}");
-        return Ok(None);
+pub async fn check_for_update(
+    trigger: UpdateCheckTrigger,
+    state: State<'_, UpdateState>,
+) -> Result<UpdateCheckOutcome, crate::server_request::ServerRequestError> {
+    let current_version = env!("CARGO_PKG_VERSION");
+    run_check(trigger, &state, skip_reason(), current_version, || async move {
+        log::info!("Checking for updates (current version: {current_version})");
+        let arch = manifest::platform_key().strip_prefix("darwin-").unwrap_or("unknown");
+        let url = format!("https://api.getcmdr.com/update-check/{current_version}?arch={arch}");
+        fetch_manifest(&url).await
+    })
+    .await
+}
+
+/// The check with its environment injected, so tests can run every policy without a bundle or a
+/// network. `fetch` runs only when the policy and `skip` let the check reach the network.
+///
+/// The policy goes FIRST, ahead of `skip`: a dev build run with `CMDR_MANAGED_PREFS_FILE` then
+/// shows the managed answer, which is what a person testing a profile wants to see.
+async fn run_check<F, Fut>(
+    trigger: UpdateCheckTrigger,
+    state: &UpdateState,
+    skip: Option<SkipReason>,
+    current_version: &str,
+    fetch: F,
+) -> Result<UpdateCheckOutcome, crate::server_request::ServerRequestError>
+where
+    F: FnOnce() -> Fut,
+    Fut: Future<Output = Result<manifest::UpdateManifest, crate::server_request::ServerRequestError>>,
+{
+    // Every check replaces the last offer, so a download can only fetch what the newest check
+    // offered under the newest policy.
+    state.slots().offered = None;
+
+    let policy = crate::managed_policy::for_egress().await;
+    match policy.updates() {
+        UpdatePolicy::Disabled => {
+            log::info!(target: "managed_policy", "Not checking for updates: the organization's policy turns updates off");
+            return Ok(UpdateCheckOutcome::UpdatesDisabledByPolicy);
+        }
+        UpdatePolicy::Enabled {
+            automatic_checks: false,
+            ..
+        } if trigger.is_automatic() => {
+            log::info!(target: "managed_policy", "Not running the {trigger:?} update check: the organization's policy turns automatic checks off");
+            return Ok(UpdateCheckOutcome::AutomaticChecksDisabledByPolicy);
+        }
+        UpdatePolicy::Enabled { .. } => {}
     }
 
-    let current_version = env!("CARGO_PKG_VERSION");
-    log::info!("Checking for updates (current version: {current_version})");
+    if let Some(reason) = skip {
+        log::info!("Skipping update check: {reason}");
+        return Ok(UpdateCheckOutcome::UpToDate);
+    }
 
-    let arch = manifest::platform_key().strip_prefix("darwin-").unwrap_or("unknown");
-    let url = format!("https://api.getcmdr.com/update-check/{current_version}?arch={arch}");
-
-    let manifest = fetch_manifest(&url).await?;
-    Ok(manifest::check_manifest(&manifest, current_version))
+    let manifest = fetch().await?;
+    let Some(update) = manifest::check_manifest(&manifest, current_version) else {
+        return Ok(UpdateCheckOutcome::UpToDate);
+    };
+    let version = update.version.to_string();
+    match policy.update_to(&update.version) {
+        Ok(()) => {
+            state.slots().offered = Some(update);
+            Ok(UpdateCheckOutcome::Available { version })
+        }
+        Err(UpdateRefusal::AboveCeiling(ceiling)) => {
+            log::info!(target: "managed_policy", "Update {version} is out, but the organization's policy holds this Mac at {ceiling} or earlier");
+            Ok(UpdateCheckOutcome::HeldByPolicy {
+                available: version,
+                ceiling: ceiling.to_string(),
+            })
+        }
+        // The policy said "enabled" a moment ago and it's the same read, so this can't happen;
+        // answering it truthfully costs nothing.
+        Err(UpdateRefusal::Disabled) => Ok(UpdateCheckOutcome::UpdatesDisabledByPolicy),
+    }
 }
 
 /// Fetches and parses the manifest at `url`. Split from the command so a test can point it at a mock
@@ -130,7 +258,7 @@ pub async fn check_for_update() -> Result<Option<UpdateInfo>, crate::server_requ
 /// Cmdr's server and this build disagree on the contract. The frontend owns the log line, gated once
 /// per condition, so a Rust warn here would only repeat it every poll tick.
 async fn fetch_manifest(url: &str) -> Result<manifest::UpdateManifest, crate::server_request::ServerRequestError> {
-    let client = reqwest::Client::builder()
+    let client = cmdr_http::client_builder()
         .connect_timeout(MANIFEST_CONNECT_TIMEOUT)
         .timeout(MANIFEST_REQUEST_TIMEOUT)
         .build()
@@ -140,7 +268,7 @@ async fn fetch_manifest(url: &str) -> Result<manifest::UpdateManifest, crate::se
                 describe_error_chain(&e)
             ))
         })?;
-    let response = crate::server_request::send(client.get(url)).await?;
+    let response = crate::server_request::send(Egress::UpdateCheck, client.get(url)).await?;
     crate::server_request::read_json(response).await
 }
 
@@ -171,200 +299,170 @@ pub async fn update_write_blocker() -> Result<Option<BundleWriteBlocker>, String
     Ok(blocker)
 }
 
-/// Downloads the update tarball and verifies its minisign signature.
+/// Why a tarball download didn't leave a verified file behind. The frontend picks the log level
+/// off the variant: a `Request` failure follows the api-server rule (no network, a timeout, or a
+/// 5xx is the person's network or the host's bad moment, so warn), while a signature mismatch or a
+/// disk failure means something is wrong with the release or this machine, so error.
 ///
-/// On success, stores the tarball path in `UpdateState` for `install_update` to consume.
-#[tauri::command]
-#[specta::specta]
-pub async fn download_update(url: String, signature: String, state: State<'_, UpdateState>) -> Result<(), String> {
-    log::info!("Downloading update from {url}");
+/// ❌ `detail` is for logs only, never a sentence a person reads.
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, specta::Type)]
+#[serde(tag = "type", rename_all = "camelCase", rename_all_fields = "camelCase")]
+pub enum UpdateDownloadError {
+    /// The tarball request didn't come back with the bytes.
+    Request {
+        failure: crate::server_request::ServerRequestError,
+    },
+    /// The bytes arrived but don't verify against the manifest's signature.
+    SignatureMismatch { detail: String },
+    /// The verified tarball couldn't be written to the temp dir.
+    Disk { detail: String },
+    /// No check has offered an update since the last one: the frontend asked out of turn.
+    NothingOffered,
+    /// The organization's policy, read fresh, no longer allows the offered version (it arrived
+    /// after the check). Nothing was fetched. Not a failure: ❌ never log it at warn or error.
+    BlockedByPolicy,
+}
 
-    let client = reqwest::Client::builder()
+impl From<crate::server_request::ServerRequestError> for UpdateDownloadError {
+    fn from(failure: crate::server_request::ServerRequestError) -> Self {
+        Self::Request { failure }
+    }
+}
+
+/// Downloads the tarball at `url` and verifies it against `signature`. Split from the command so a
+/// test can point it at a mock server.
+///
+/// The status is checked before the bytes are trusted (`server_request::send`), so a 5xx
+/// maintenance page reads as the host's bad moment rather than as a tarball that fails its
+/// signature.
+async fn fetch_verified_tarball(url: &str, signature: &str) -> Result<Vec<u8>, UpdateDownloadError> {
+    let client = cmdr_http::client_builder()
         .connect_timeout(DOWNLOAD_CONNECT_TIMEOUT)
         .read_timeout(DOWNLOAD_READ_TIMEOUT)
         .build()
-        .map_err(|e| format!("Couldn't build update HTTP client: {}", describe_error_chain(&e)))?;
+        .map_err(|e| {
+            crate::server_request::ServerRequestError::unexpected(format!(
+                "update HTTP client: {}",
+                describe_error_chain(&e)
+            ))
+        })?;
 
-    let response = client
-        .get(&url)
-        .send()
-        .await
-        .map_err(|e| format!("Couldn't download update: {}", describe_error_chain(&e)))?;
-
+    let response = crate::server_request::send(Egress::UpdateDownload, client.get(url)).await?;
     let bytes = response
         .bytes()
         .await
-        .map_err(|e| format!("Couldn't read update response: {}", describe_error_chain(&e)))?;
+        .map_err(|e| crate::server_request::ServerRequestError::from_transport(&e))?;
 
     log::info!("Downloaded {} bytes, verifying signature", bytes.len());
-    signature::verify(&bytes, &signature)?;
+    signature::verify(&bytes, signature).map_err(|detail| UpdateDownloadError::SignatureMismatch { detail })?;
     log::info!("Signature verified");
+    // Zero-copy when the buffer is uniquely owned, which a freshly read body is.
+    Ok(Vec::from(bytes))
+}
+
+/// Downloads the update the last check offered and verifies its minisign signature. Takes no URL:
+/// the backend fetches only what it offered, so a bypassed frontend can't stage anything else.
+///
+/// On success, records the tarball and its version in `UpdateState` for `install_update`.
+#[tauri::command]
+#[specta::specta]
+pub async fn download_update(state: State<'_, UpdateState>) -> Result<(), UpdateDownloadError> {
+    let offer = offer_to_download(&state).await?;
+    log::info!("Downloading update {} from {}", offer.version, offer.url);
+
+    let bytes = fetch_verified_tarball(&offer.url, &offer.signature).await?;
 
     let temp_dir = std::env::temp_dir().join("cmdr-update");
-    std::fs::create_dir_all(&temp_dir).map_err(|e| format!("Couldn't create temp dir: {e}"))?;
+    std::fs::create_dir_all(&temp_dir).map_err(|e| UpdateDownloadError::Disk {
+        detail: format!("couldn't create temp dir: {e}"),
+    })?;
 
     let tarball_path = temp_dir.join("Cmdr.app.tar.gz");
-    std::fs::write(&tarball_path, &bytes).map_err(|e| format!("Couldn't write tarball: {e}"))?;
+    std::fs::write(&tarball_path, &bytes).map_err(|e| UpdateDownloadError::Disk {
+        detail: format!("couldn't write tarball: {e}"),
+    })?;
 
-    let mut guard = state
-        .downloaded_tarball
-        .lock()
-        .map_err(|e| format!("Couldn't lock update state: {e}"))?;
-    *guard = Some(tarball_path);
-
+    state.slots().downloaded = Some(DownloadedUpdate {
+        version: offer.version,
+        tarball: tarball_path,
+    });
     Ok(())
+}
+
+/// The offered update, if the policy, read fresh, still allows its version. A profile that arrived
+/// between the check and the download stops it here, before a byte is fetched.
+async fn offer_to_download(state: &UpdateState) -> Result<UpdateInfo, UpdateDownloadError> {
+    let offer = state
+        .slots()
+        .offered
+        .clone()
+        .ok_or(UpdateDownloadError::NothingOffered)?;
+    if let Err(refusal) = crate::managed_policy::for_egress().await.update_to(&offer.version) {
+        log::info!(target: "managed_policy", "Not downloading update {}: the organization's policy refuses it ({refusal:?})", offer.version);
+        return Err(UpdateDownloadError::BlockedByPolicy);
+    }
+    Ok(offer)
+}
+
+/// Why `install_update` didn't install. `Failed` covers everything local (extraction, the version
+/// check, the sync), which the frontend logs at error.
+///
+/// ❌ `detail` is for logs only, never a sentence a person reads.
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, specta::Type)]
+#[serde(tag = "type", rename_all = "camelCase", rename_all_fields = "camelCase")]
+pub enum UpdateInstallError {
+    /// The organization's policy, read fresh, doesn't allow the staged version. Nothing was
+    /// written. Not a failure: ❌ never log it at warn or error.
+    BlockedByPolicy,
+    /// No verified download is waiting: the frontend asked out of turn.
+    NothingStaged,
+    /// The install ran and didn't finish.
+    Failed { detail: String },
+}
+
+impl From<String> for UpdateInstallError {
+    fn from(detail: String) -> Self {
+        Self::Failed { detail }
+    }
 }
 
 /// Installs a previously downloaded update by syncing files into the running `.app` bundle.
 ///
-/// Reads (and clears) the tarball path stored by `download_update`.
+/// Takes the download `download_update` recorded, and refuses it when the CURRENT policy doesn't
+/// allow its version: a download staged before a profile arrived must not install.
 #[tauri::command]
 #[specta::specta]
-pub async fn install_update(state: State<'_, UpdateState>) -> Result<(), String> {
-    let tarball_path = {
-        let mut guard = state
-            .downloaded_tarball
-            .lock()
-            .map_err(|e| format!("Couldn't lock update state: {e}"))?;
-        guard.take().ok_or_else(|| "No update downloaded".to_string())?
-    };
+pub async fn install_update(state: State<'_, UpdateState>) -> Result<(), UpdateInstallError> {
+    let (staged, policy) = staged_to_install(&state).await?;
+    log::info!("Installing update {} from {}", staged.version, staged.tarball.display());
 
-    log::info!("Installing update from {}", tarball_path.display());
+    // The archive's own `Info.plist` is what binds its version (the manifest isn't signed), so the
+    // installer asks the policy again about THAT version once it has extracted it.
+    tokio::task::spawn_blocking(move || {
+        installer::install(&staged.tarball, &|version| policy.update_to(version).is_ok())
+    })
+    .await
+    .map_err(|e| UpdateInstallError::Failed {
+        detail: format!("Install task panicked: {e}"),
+    })?
+}
 
-    // Run the install on a blocking thread since it does filesystem I/O
-
-    tokio::task::spawn_blocking(move || installer::install(&tarball_path))
-        .await
-        .map_err(|e| format!("Install task panicked: {e}"))?
+/// The staged download and the fresh policy that allows it, or why not.
+async fn staged_to_install(
+    state: &UpdateState,
+) -> Result<(DownloadedUpdate, std::sync::Arc<crate::managed_policy::ManagedPolicy>), UpdateInstallError> {
+    let staged = state
+        .slots()
+        .downloaded
+        .take()
+        .ok_or(UpdateInstallError::NothingStaged)?;
+    let policy = crate::managed_policy::for_egress().await;
+    if let Err(refusal) = policy.update_to(&staged.version) {
+        log::info!(target: "managed_policy", "Not installing update {}: the organization's policy refuses it ({refusal:?})", staged.version);
+        return Err(UpdateInstallError::BlockedByPolicy);
+    }
+    Ok((staged, policy))
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use std::collections::HashSet;
-
-    /// Asks the gate about a process running from `in_app_bundle` whose environment holds exactly
-    /// `vars` and nothing else.
-    fn skip(in_app_bundle: bool, vars: &[&str]) -> Option<SkipReason> {
-        let set: HashSet<&str> = vars.iter().copied().collect();
-        skip_reason_for(in_app_bundle, &|name| set.contains(name))
-    }
-
-    #[test]
-    fn a_bundled_release_with_clean_env_may_check() {
-        assert_eq!(skip(true, &[]), None);
-    }
-
-    #[test]
-    fn an_unbundled_build_never_checks() {
-        assert_eq!(skip(false, &[]), Some(SkipReason::NotAnAppBundle));
-    }
-
-    /// Every non-prod signal suppresses on its own, even from a properly bundled app. A bundled
-    /// harness run is exactly the case the old `CI`-only gate let through.
-    #[test]
-    fn each_non_prod_env_var_suppresses_a_bundled_app() {
-        for name in crate::prod_instance::NON_PROD_ENV_VARS {
-            assert_eq!(
-                skip(true, &[name]),
-                Some(SkipReason::NonProdEnv(name)),
-                "{name} alone must keep a bundled app off the update-check endpoint"
-            );
-        }
-    }
-
-    /// The gate and the analytics gate must agree about what a real install is, or the dashboard's
-    /// `update_checks` ceiling and its heartbeat floor start counting different populations.
-    #[test]
-    fn every_tooling_launcher_is_suppressed_even_when_bundled() {
-        // `scripts/check/checks/e2e-playwright-app.go`.
-        let e2e_checker = ["CMDR_INSTANCE_ID", "CMDR_DATA_DIR", "CMDR_E2E_MODE", "CMDR_MOCK_FDA"];
-        // `apps/desktop/scripts/i18n-capture.ts`.
-        let i18n_capture = ["CMDR_E2E_MODE", "CMDR_DATA_DIR", "CMDR_MOCK_FDA"];
-        // `apps/desktop/scripts/marketing-shots.ts` deliberately leaves `CMDR_E2E_MODE` unset.
-        let marketing_shots = ["CMDR_DATA_DIR"];
-        // `apps/desktop/scripts/tauri-wrapper.ts` (dev and per-worktree dev).
-        let dev_wrapper = ["CMDR_INSTANCE_ID", "CMDR_DATA_DIR"];
-
-        for (label, vars) in [
-            ("e2e checker", &e2e_checker[..]),
-            ("i18n capture", &i18n_capture[..]),
-            ("marketing shots", &marketing_shots[..]),
-            ("dev wrapper", &dev_wrapper[..]),
-        ] {
-            assert!(
-                skip(true, vars).is_some(),
-                "{label} must not reach the update-check endpoint"
-            );
-        }
-    }
-
-    /// The bundle condition wins, so the log names the thing that makes an update impossible
-    /// rather than one that merely makes it unwanted.
-    #[test]
-    fn the_bundle_condition_is_reported_first() {
-        assert_eq!(skip(false, &["CMDR_E2E_MODE"]), Some(SkipReason::NotAnAppBundle));
-    }
-
-    /// The log has to name the condition, or the next pollution incident is undiagnosable.
-    #[test]
-    fn reasons_name_the_condition() {
-        assert_eq!(SkipReason::NotAnAppBundle.to_string(), "not running from a .app bundle");
-        assert_eq!(
-            SkipReason::NonProdEnv("CMDR_DATA_DIR").to_string(),
-            "CMDR_DATA_DIR is set"
-        );
-    }
-
-    use crate::server_request::ServerRequestError;
-    use serde_json::json;
-    use wiremock::matchers::method;
-    use wiremock::{Mock, MockServer, ResponseTemplate};
-
-    /// A mock server answering every GET with `response`, and the manifest URL on it. Keep the server
-    /// bound for the test's length: dropping it stops the mock.
-    async fn manifest_at(response: ResponseTemplate) -> (MockServer, String) {
-        let server = MockServer::start().await;
-        Mock::given(method("GET")).respond_with(response).mount(&server).await;
-        let url = format!("{}/latest.json", server.uri());
-        (server, url)
-    }
-
-    #[tokio::test]
-    async fn a_manifest_the_server_serves_parses() {
-        let (_server, url) = manifest_at(ResponseTemplate::new(200).set_body_json(json!({
-            "version": "0.45.1",
-            "platforms": { "darwin-aarch64": { "url": "https://example.invalid/Cmdr.tar.gz", "signature": "sig" } }
-        })))
-        .await;
-        let manifest = fetch_manifest(&url).await.expect("a well-formed manifest parses");
-        assert_eq!(manifest.version, "0.45.1");
-    }
-
-    /// The shape behind the old "Couldn't parse update manifest" lines: a 2xx that isn't a manifest
-    /// means Cmdr's server and this build disagree, which the frontend logs at error. It must never
-    /// read as a network blip.
-    #[tokio::test]
-    async fn a_2xx_that_isnt_a_manifest_is_a_bad_response() {
-        let (_server, url) =
-            manifest_at(ResponseTemplate::new(200).set_body_json(json!({ "version": "0.45.1" }))).await;
-        let err = fetch_manifest(&url)
-            .await
-            .expect_err("a manifest without platforms doesn't parse");
-        assert!(
-            matches!(err, ServerRequestError::BadResponse { .. }),
-            "expected BadResponse, got {err:?}"
-        );
-    }
-
-    /// A maintenance page on a 5xx stays a refusal with its status, never "the manifest is malformed".
-    #[tokio::test]
-    async fn a_5xx_maintenance_page_is_refused_not_malformed() {
-        let (_server, url) = manifest_at(ResponseTemplate::new(503).set_body_string("<html>maintenance</html>")).await;
-        let err = fetch_manifest(&url).await.expect_err("a 503 is a refusal");
-        assert!(
-            matches!(err, ServerRequestError::Refused { status: 503, .. }),
-            "expected a 503 Refused, got {err:?}"
-        );
-    }
-}
+mod tests;

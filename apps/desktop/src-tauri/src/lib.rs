@@ -33,10 +33,13 @@ mod ai;
 mod analytics;
 mod app_lifecycle;
 pub mod benchmark;
+// Core Foundation property lists as `plist::Value`, shared by every CFPreferences reader.
 /// Test-only: invariants over the `capabilities/` manifests, which no other
 /// code references (Tauri reads them at build time).
 #[cfg(test)]
 mod capabilities;
+#[cfg(target_os = "macos")]
+mod cf_plist;
 mod child_window_state;
 mod clipboard;
 mod commands;
@@ -76,6 +79,8 @@ mod install_id;
 // which must not disagree about it. macOS-only, like both of them and the `running_bundle()` it
 // asks.
 #[cfg(target_os = "macos")]
+mod glass_tint;
+#[cfg(target_os = "macos")]
 mod install_location;
 mod instance_lock;
 mod intl;
@@ -92,6 +97,10 @@ mod location;
 mod macos_icons;
 mod main_window_show;
 mod main_window_visibility;
+// What an organization's MDM profile restricts (telemetry, updates, AI). Gated like `network`, whose
+// deps (`url`, `semver`) it shares.
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+mod managed_policy;
 mod mcp;
 mod menu;
 #[cfg(target_os = "macos")]
@@ -103,6 +112,7 @@ mod native_drag;
 mod net;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 mod network;
+mod notifications;
 #[cfg(feature = "playwright-e2e")]
 mod open_mock;
 pub mod operation_log;
@@ -124,6 +134,7 @@ mod restricted_paths;
 // has to resolve on every platform for `ipc.rs`'s `collect_events!`, which can't cfg-gate
 // inline. The three macOS-only submodules are gated inside (`reveal/mod.rs`).
 mod reveal;
+mod s3_costs;
 pub mod search;
 mod secrets;
 pub mod selection;
@@ -131,13 +142,12 @@ mod send_schedule;
 // `Cmdr > Services`: what Cmdr tells AppKit it can hand a service, and what the selection is at the
 // moment one is picked. macOS only. An outer `///` here would merge with the module's own `//!`
 // header and break its intra-doc links (see the `rustdoc` check's hint).
+mod server_request;
 #[cfg(target_os = "macos")]
 pub mod services_menu;
 mod settings;
 // The saved-and-live SFTP and WebDAV servers, as volume rows. Gated with
 // `network`, whose stores it reads.
-/// One request to Cmdr's own api server, and the typed answer when it doesn't land.
-mod server_request;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 mod server_volumes;
 mod short_id;
@@ -181,7 +191,7 @@ mod stubs;
 
 use tauri::Manager;
 
-// `greet` and the rest of the Tauri command surface live in `ipc.rs`, which
+// The Tauri command surface lives in `ipc.rs`, which
 // exposes them through a typed `tauri_specta::Builder`. See `ipc.rs` for the
 // migration recipe.
 
@@ -229,11 +239,6 @@ pub fn run() {
     // it lives in one place off the spine; see `tauri_builder.rs`.
     tauri_builder::configure(tauri::Builder::default())
         .setup(move |app| {
-            // Everything the index needs from this app, in one place. Must run
-            // before anything can start background work. Mirror of
-            // `indexing/host/`, which declares the other side of each seam.
-            index_host::install(app.handle());
-
             // Everything a storage backend needs from this app, in one place.
             // Must run before any volume is constructed. Mirror of
             // `cmdr_fs::volume::host`, which declares the other side of each seam.
@@ -272,10 +277,23 @@ pub fn run() {
                 ),
             }
 
+            // Everything the index needs from this app, in one place. Must run before anything
+            // can start background work, and AFTER the instance lock: building the index moves a
+            // drive index an older build left in the data dir, which is only safe while no other
+            // process can have those files open. Mirror of `indexing/host/`, which declares the
+            // other side of each seam.
+            index_host::install(app.handle());
+
             // Snapshot the diagnostics id into a cheap static before anything that might crash,
             // so the panic hook can read it without allocating or locking. Mints both install
             // ids on first launch.
             install_id::init();
+
+            // The organization's managed policy, before anything that might send: the crash
+            // reporter's next-launch path below is the first. The read is lazy anyway (no caller
+            // can see an unloaded policy); this puts its one main-thread `cfprefsd` trip here.
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
+            managed_policy::init(app.handle());
 
             // Initialize crash reporter early, before anything that might crash
             crash_reporter::init(app.handle());
@@ -312,6 +330,9 @@ pub fn run() {
             // other's live temps), and reap any `.cmdr-viewer-*` orphan left by a crash.
             if let Ok(data_dir) = config::resolved_app_data_dir(app.handle()) {
                 file_viewer::init_materialize_dir(data_dir.join("viewer-extract"));
+                // "Open with" on a file inside an archive gets its own dir and prefix
+                // for the same reason, and its own startup-only reaper.
+                file_viewer::init_open_with_extract_dir(data_dir.join("open-with-extract"));
 
                 // Point the leftover ledger at the data dir and settle what an
                 // earlier run left (a quit or a crash mid-copy), each under the rules
@@ -505,6 +526,7 @@ pub fn run() {
             network::load_sftp_stores(app.handle());
             // And the WebDAV server list, for the same picker.
             network::load_webdav_stores(app.handle());
+            network::load_s3_stores(app.handle());
 
             // Load persisted recent search history into the in-memory cache.
             search::history::RECENT_SEARCHES.load(app.handle());
@@ -535,6 +557,12 @@ pub fn run() {
             reduce_transparency::observe_reduce_transparency_changes(app.handle().clone());
             #[cfg(not(target_os = "macos"))]
             stubs::reduce_transparency::observe_reduce_transparency_changes(app.handle().clone());
+
+            // Follow the macOS 27 Appearance > Liquid Glass slider
+            #[cfg(target_os = "macos")]
+            glass_tint::observe_glass_tint_changes(app.handle().clone());
+            #[cfg(not(target_os = "macos"))]
+            stubs::glass_tint::observe_glass_tint_changes(app.handle().clone());
 
             // Watch the mouse's back / forward navigation. macOS only: the mouse's own
             // driver decides what the press becomes, and a Logi Options+ mouse posts a
@@ -751,6 +779,7 @@ pub fn run() {
                     // day. The data dir is the isolated one for a dev or E2E instance, so those
                     // runs can't pollute the real ledger. See `usage/CLAUDE.md`.
                     usage::record_launch(&data_dir);
+                    search::set_drive_index_dir(index_host::drive_index_dir(&data_dir));
                     search::start_importance_weight_subscriber(data_dir);
                 }
                 Err(e) => log::warn!("search importance weights and the launch-day ledger not wired: {e}"),

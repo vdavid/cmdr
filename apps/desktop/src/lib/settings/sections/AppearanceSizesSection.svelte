@@ -28,11 +28,13 @@
     // its primary section). `shouldShow` still gates this row when a query is active.
     const sizeColorsDef = getSettingDefinition('appearance.sizeColors') ?? { label: '', description: '' }
 
-    // The kilobyte tile reflects the active binary/SI base live: `KB` for
-    // binary (1024-based), `kB` for SI (1000-based). MB/GB look the same in
-    // both bases so they don't need overrides.
+    // The unit tiles read in the UI language's symbols (`$lib/units`) and follow the
+    // active binary/SI base live (`KiB` / `MiB` / `GiB` for 1024-based, `kB` / `MB` /
+    // `GB` for 1000-based), which the registry can't know.
     const sizeUnitLabelOverrides = $derived({
         kB: unitLabel('kB', getFileSizeFormat()),
+        MB: unitLabel('MB', getFileSizeFormat()),
+        GB: unitLabel('GB', getFileSizeFormat()),
     })
 </script>
 

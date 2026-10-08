@@ -31,12 +31,15 @@ use std::ops::ControlFlow;
 use std::path::Path;
 use std::pin::Pin;
 use std::sync::Arc;
+use std::time::SystemTime;
 
 use cmdr_fs::volume::{StreamLength, StreamWriteProgress, VolumeError, VolumeReadStream, WriteMode};
 use futures_util::StreamExt;
 use futures_util::stream::FuturesUnordered;
-use log::debug;
+use log::{debug, warn};
+use openssh_sftp_client::UnixTimeStamp;
 use openssh_sftp_client::file::File;
+use openssh_sftp_client::metadata::MetaDataBuilder;
 use tokio::io::AsyncSeek;
 
 use super::SftpVolume;
@@ -224,12 +227,12 @@ impl SftpVolume {
         let mut options = session.sftp().options();
         options.write(true);
         let opened = match mode {
-            WriteMode::CreateNew => options.create_new(true).open(&remote).await,
+            WriteMode::CreateNew | WriteMode::CreateNewInFreshFolder => options.create_new(true).open(&remote).await,
             WriteMode::CreateOrReplace => options.create(true).truncate(true).open(&remote).await,
         };
         let file = match opened {
             Ok(file) => file,
-            Err(e) if mode == WriteMode::CreateNew => return Err(self.name_taken(&session, &remote, &e).await),
+            Err(e) if mode.refuses_occupied() => return Err(self.name_taken(&session, &remote, &e).await),
             Err(e) => return Err(map_sftp_error(&e, &remote)),
         };
         let writer = RemoteWrite::new(file, Arc::from(remote.as_str()));
@@ -244,6 +247,7 @@ impl SftpVolume {
                     self.remove_partial(&session, &remote).await;
                     return Err(e);
                 }
+                keep_source_date(&session, &remote, stream.modified_at()).await;
                 cmdr_fs::volume::patching::patch_created(self, dest).await;
                 Ok(written)
             }
@@ -330,6 +334,45 @@ impl SftpVolume {
                 cmdr_fs::log_detail::LogDetail(&e.to_string())
             );
         }
+    }
+}
+
+/// Stamps the source's modification date onto what an upload just wrote.
+///
+/// ❗ After the close, by path: every byte is committed by then, so no server
+/// that buffers writes until the close can bump the date past ours. Still before
+/// the transfer layer's final rename (`remote` is its staging name), so the file
+/// never wears its real name with the wrong date. SFTP v3 carries whole seconds
+/// and forces atime alongside (`ATTR_ACMODTIME`); atime gets the same value.
+///
+/// Best effort: a refusal is logged and the upload stays a success, since the
+/// bytes are what matter. `None` leaves the server's own date. The contract:
+/// `apps/desktop/src-tauri/src/file_system/write_operations/transfer/volume/DETAILS.md`
+/// § "Copies keep the source's date".
+pub(super) async fn keep_source_date(
+    session: &crate::transport::SshConnection,
+    remote: &str,
+    modified_at: Option<SystemTime>,
+) {
+    let Some(modified_at) = modified_at else { return };
+    let stamp = match UnixTimeStamp::new(modified_at) {
+        Ok(stamp) => stamp,
+        Err(e) => {
+            // Before 1970 or past 2106: outside what SFTP v3's `u32` can say.
+            warn!("SftpVolume::keep_source_date: can't express the source date of {remote:?} in SFTP v3: {e}");
+            return;
+        }
+    };
+    let attrs = MetaDataBuilder::new().time(stamp, stamp).create();
+    if let Err(e) = session.sftp().fs().set_metadata(remote, attrs).await {
+        let status = match &e {
+            openssh_sftp_client::Error::SftpError(kind, _) => crate::errors::sftp_status_code(*kind),
+            _ => 0,
+        };
+        warn!(
+            "SftpVolume::keep_source_date: couldn't keep the source date on path={remote:?}: source=backend, backend=sftp, operation=set_mtime, sftp_status={status}, detail={:?}",
+            cmdr_fs::log_detail::LogDetail(&e.to_string())
+        );
     }
 }
 

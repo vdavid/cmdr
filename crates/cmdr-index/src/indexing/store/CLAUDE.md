@@ -39,7 +39,8 @@ types, and the re-exports every `store::X` path resolves through), `schema.rs` (
   default 16 silently re-compiles: no error, no failing test.
 - **Scan calibration lives in PER-WALK-KIND `meta` buckets, never one slot.** A truncating full walk and a
   rescan-in-place differ ~5x, so sharing makes each run predict the other's time. Write suffixed
-  (`ScanCalibrationKind::meta_key`) plus unsuffixed keys; read via `read_scan_calibration_set`.
+  (`ScanCalibrationKind::meta_key`) plus unsuffixed keys; read via `read_scan_calibration_set`. The steps AFTER the walk
+  (`StepDurations`) are per-kind ONLY, ❌ no fallback: a borrowed timing would fake the overall "~X left".
 
 Schema columns, the honest-sizes epoch model that shares them (`listed_epoch`, `min_subtree_epoch`, `current_epoch`),
 and the module structure: `DETAILS.md`. Read it before any non-trivial work here: editing, planning, reorganizing, or

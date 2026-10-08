@@ -32,6 +32,13 @@
         { value: 'other', label: 'Choose an app…' },
     ]
     let appValue = $state('terminal')
+
+    const serviceItems: SelectItem[] = [
+        { value: 'openai', label: 'OpenAI' },
+        { value: 'anthropic', label: 'Anthropic', description: 'not allowed by your organization', disabled: true },
+        { value: 'custom', label: 'Custom' },
+    ]
+    let serviceValue = $state('openai')
 </script>
 
 <SectionCard id="components-select" label="Select">
@@ -77,6 +84,23 @@
                         appValue = v
                     }}
                     ariaLabel="Terminal app"
+                />
+            </div>
+        </div>
+
+        <div class="cell">
+            <p class="caption">
+                An item that stays listed but can't be picked (<code>disabled</code>), its reason in
+                <code>description</code>, for example a cloud AI service the organization doesn't allow.
+            </p>
+            <div class="control">
+                <Select
+                    items={serviceItems}
+                    value={serviceValue}
+                    onChange={(v: string) => {
+                        serviceValue = v
+                    }}
+                    ariaLabel="Cloud AI service"
                 />
             </div>
         </div>

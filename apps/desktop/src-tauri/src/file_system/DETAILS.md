@@ -15,15 +15,40 @@ badges). The leaves beside them:
   read as a refusal. Its presence answer (`mount_identity`, `is_mounted`) reads the non-blocking mount table by
   filesystem identity (`f_fsid` on macOS, `major:minor` from `/proc/self/mountinfo` on Linux), ❌ never by root path: a
   rename moves a mounted drive's root while the drive stays mounted. `index_provider/real_image.rs` pins that on real
-  APFS and HFS+ images (`crates/cmdr-index/src/indexing/host/DETAILS.md` § "The volume seam").
+  APFS and HFS+ images (`crates/cmdr-index/src/indexing/host/DETAILS.md` § "The volume seam"). `mount_points` hands
+  the index the same table, unfiltered (another account's mounts included), which it cuts the boot scan at. Its
+  network answer is § "Local disk or not".
 - `backend_settings.rs`: live per-backend knobs.
 - `cloud_actions.rs`: iCloud download and eviction. `cloud_provider.rs`: who owns a path, and what they can do.
 - `google_drive/`: Drive item links, with `mirror_db.rs` as the mirror-mode fallback.
 - `file_provider_actions/`: every provider's own File Provider actions in the file context menu (Dropbox, Google Drive,
   MacDroid, any provider).
 - `open_with.rs`: the "Open with" candidate apps. `share.rs`: the `Share` submenu's services.
+- `get_info.rs`: Finder's Get Info window, through `osascript`, refusing up front when the user has turned off Cmdr's control
+  of Finder (why `osascript` and not an in-process Apple Event: its module doc).
 - `tags.rs`: Finder tags. `terminal.rs`: "open terminal here". `text_editor.rs`: which app F4 opens a file in (wire
   types; the macOS half in `text_editor_macos.rs`, its tests in `text_editor_test.rs`).
+
+## Local disk or not (`index_provider.rs`)
+
+`MountFacts::is_network` (the index's walker choice) and `path_is_on_network_mount` (a watch's `WatchCoverage`) share
+one predicate, `mount_is_local_disk`, over a single probe (`filesystem_kind::probe_mount_for_path`: `statfs` on macOS,
+`/proc/mounts` on Linux) that returns the fs type AND the mount source. A mount is local only if its source is a block
+device (`/dev/…`: disks, partitions, attached disk images) or its type is a known local disk type that needn't have a
+device source (`zfs`, `overlay`, `tmpfs`, …). Everything else is "network": shares, FUSE, cloud mounts (`pcloudfs`,
+rclone and sshfs over `macfuse`/`osxfuse`), and a mount the probe couldn't resolve.
+
+- **Decision: an allowlist of local, not a denylist of network.** Why: a miss in the allowlist walks a local disk with
+  the network walker (slower, safe), while a miss in a denylist (`pcloudfs`, a new FSKit type, FUSE-T posing as `nfs`)
+  crawls a remote tree at local-walker speed. That's what a pCloud mount did to a search scoped into it.
+- **Decision: watch coverage follows the same answer.** A FUSE or cloud mount's other writers never reach FSEvents, so
+  `ThisMachineOnly` is the true answer there too.
+- **Consequence:** a FUSE mount under `/Volumes` indexes through the network (trait) walker, never the local one.
+- ❌ **Don't trust `MNT_LOCAL`**: Xcode's `devicefs` is flagged local.
+- ❌ **Don't widen `volumes::is_network_fs_type` instead**: it also picks the volume-ID derivation, so changing it
+  re-IDs existing FUSE volumes and orphans their tabs, `lastUsedPaths`, and index DBs.
+- Evidence: exFAT, FAT, and HFS+ disk images report `exfat`, `msdos`, and `hfs` from `/dev/diskNs1` sources (verified
+  on macOS 26, `hdiutil attach -nobrowse`, 2026-09-30).
 
 ## What `mod.rs` is for
 
@@ -43,17 +68,14 @@ those left in the pane after an otherwise successful 768-file copy: the SMB watc
 its batched add landed after the rename event that would have cleared it.
 
 **Read-path, not watcher.** Filtering where the frontend asks for a range (`CachedListing::rows`) rather than where the
-cache is filled is what makes the fix safe. The cache stays the truth; every accessor re-tests on every fetch, so an
-entry the pane received can always be taken away again. Filtering the watcher instead inverts the bug into a worse one:
+cache is filled is what makes the fix safe. The cache stays the truth; read boundaries reconcile scratch visibility
+through the revisioned projection (`listing/DETAILS.md` § "Diff event coalescing"). Filtering the watcher instead inverts the bug into a worse one:
 a full listing shows the temp, the watcher skips the removal that would clear it, and the pane keeps an entry pointing
 at nothing. The `.sb-` filter lived in `crates/cmdr-smb/src/volume/watcher.rs` from 2026-04-10 to 2026-08-01 and had exactly that ghost — its
 `continue` sat above the `match action`, so it skipped `Removed` too.
 
-**Re-testing on every fetch is not the same as re-deriving the whole sequence on every fetch**, and conflating the two
-is what wedged a big directory (`listing/DETAILS.md` § "Row numbers"). A listing materializes its row numbers once and
-keeps the scratch-named entries — the only ones whose answer can still change — in a short side list it re-asks about
-per read. `could_be_hidden_from_listings` is the pure name test that gates `is_hidden_from_listings`, so "this name is
-settled" holds by construction rather than by reading three functions and hoping.
+**Re-testing scratch does not require re-deriving every row on every fetch.** Cached row maps and the scratch-candidate
+gate keep ordinary directory reads constant-time; `listing/DETAILS.md` § "Row numbers" explains their split.
 
 **Other apps' scratch hides by NAME, and that's a different rule on purpose.** macOS safe-save writes
 `file.txt.sb-<uuid>` next to the original on every save (TextEdit, Preview, anything on `NSDocument`). There's no

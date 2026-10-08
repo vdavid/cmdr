@@ -83,6 +83,22 @@
   "@servers.hub.editNearbyHint": {
     "sourceHash": "64653de"
   },
+  "servers.hub.s3AllBuckets": "Todos los buckets",
+  "@servers.hub.s3AllBuckets": {
+    "sourceHash": "2a5828a"
+  },
+  "servers.hub.openAccountHint": "{name} no se puede abrir. Abre uno de los buckets que hay debajo.",
+  "@servers.hub.openAccountHint": {
+    "sourceHash": "c52ee6f"
+  },
+  "servers.hub.forgetAccountConfirm": "¿Olvidar la cuenta {name} y todos los buckets guardados en ella? Cmdr corta las conexiones y los quita de la lista. Tus archivos se quedan en los buckets.",
+  "@servers.hub.forgetAccountConfirm": {
+    "sourceHash": "e1c636e"
+  },
+  "servers.hub.forgetSecretKeyToo": "Olvidar también la clave de acceso secreta de la cuenta",
+  "@servers.hub.forgetSecretKeyToo": {
+    "sourceHash": "4f3ac6d"
+  },
   "servers.hub.forgetShare": "Olvidar el recurso compartido",
   "@servers.hub.forgetShare": {
     "sourceHash": "8888a9d"
@@ -94,6 +110,10 @@
   "servers.hub.forgetShareConfirm": "¿Olvidar el recurso compartido {name}? Cmdr lo quita de la lista. Si está montado, sigue montado, y tus archivos se quedan en el servidor.",
   "@servers.hub.forgetShareConfirm": {
     "sourceHash": "8c14aaa"
+  },
+  "servers.hub.nearbyGroup": "{count, plural, one {{countText} servidor encontrado cerca} many {{countText} servidores encontrados cerca} other {{countText} servidores encontrados cerca}}",
+  "@servers.hub.nearbyGroup": {
+    "sourceHash": "cd7a44d"
   },
   "servers.hub.discoveryOff": "La detección de servidores en la red local está desactivada.",
   "@servers.hub.discoveryOff": {
@@ -171,6 +191,10 @@
   "@servers.refusal.unreachable": {
     "sourceHash": "6fcba90"
   },
+  "servers.refusal.localNetworkHint": "Si el servidor está encendido, comprueba que Cmdr tenga permiso en {localNetwork}.",
+  "@servers.refusal.localNetworkHint": {
+    "sourceHash": "baa1753"
+  },
   "servers.refusal.hostKeyUntrusted": "Cmdr todavía no confía en la clave de {host}.",
   "@servers.refusal.hostKeyUntrusted": {
     "sourceHash": "83dc719"
@@ -206,6 +230,62 @@
   "servers.refusal.savedSecretNotUpdated": "Cmdr ha guardado tus cambios, pero no ha podido actualizar la contraseña en el Llavero. Vuelve a guardar para intentarlo otra vez.",
   "@servers.refusal.savedSecretNotUpdated": {
     "sourceHash": "2ae1e2b"
+  },
+  "servers.refusal.s3AuthenticationRejected": "Esa clave de acceso secreta no ha funcionado.",
+  "@servers.refusal.s3AuthenticationRejected": {
+    "sourceHash": "14f90c8"
+  },
+  "servers.refusal.s3NeedsCredentials": "Esta cuenta pide una clave de acceso secreta.",
+  "@servers.refusal.s3NeedsCredentials": {
+    "sourceHash": "23695df"
+  },
+  "servers.refusal.s3SecretMissing": "Introduce la clave de acceso secreta.",
+  "@servers.refusal.s3SecretMissing": {
+    "sourceHash": "f1f32f2"
+  },
+  "servers.refusal.s3SecretNotStored": "Cmdr no ha podido guardar esta clave de acceso secreta en el Llavero. Inténtalo de nuevo o desactiva “Recordar en el Llavero” para iniciar sesión sin guardarla.",
+  "@servers.refusal.s3SecretNotStored": {
+    "sourceHash": "f7a9fb0"
+  },
+  "servers.refusal.s3SavedSecretNotUpdated": "Cmdr ha guardado tus cambios, pero no ha podido actualizar la clave de acceso secreta en el Llavero. Vuelve a guardar para intentarlo otra vez.",
+  "@servers.refusal.s3SavedSecretNotUpdated": {
+    "sourceHash": "1d2889d"
+  },
+  "servers.refusal.accessDenied": "Esta clave no puede acceder a este bucket. Comprueba el nombre del bucket y la clave de acceso secreta, y que la clave tenga permiso para leer el bucket.",
+  "@servers.refusal.accessDenied": {
+    "sourceHash": "8372e73"
+  },
+  "servers.refusal.bucketListRefused": "Esta clave no puede ver la lista de buckets de esta cuenta. Escribe el nombre de un bucket para abrirlo, o comprueba la clave de acceso secreta.",
+  "@servers.refusal.bucketListRefused": {
+    "sourceHash": "1b9ebf5"
+  },
+  "servers.refusal.bucketNotFound": "No hay ningún bucket con ese nombre en {host}.",
+  "@servers.refusal.bucketNotFound": {
+    "sourceHash": "0f5a04d"
+  },
+  "servers.refusal.regionMismatch": "Este bucket está en otra región. Elige su región y vuelve a intentarlo.",
+  "@servers.refusal.regionMismatch": {
+    "sourceHash": "27a37f8"
+  },
+  "servers.refusal.regionMismatchNamed": "Este bucket está en {region}. Elige esa región y vuelve a intentarlo.",
+  "@servers.refusal.regionMismatchNamed": {
+    "sourceHash": "30abb0d"
+  },
+  "servers.refusal.clockSkewed": "El reloj de este Mac va desfasado más de 15 minutos, así que el servidor no acepta las solicitudes de Cmdr. Haz que la fecha y la hora se ajusten automáticamente en Ajustes del Sistema y vuelve a intentarlo.",
+  "@servers.refusal.clockSkewed": {
+    "sourceHash": "cdee0ef"
+  },
+  "servers.refusal.notAnS3Endpoint": "En esta dirección no hay nada que responda como almacenamiento S3.",
+  "@servers.refusal.notAnS3Endpoint": {
+    "sourceHash": "78557ec"
+  },
+  "servers.refusal.s3FieldMalformed": "Usa aquí solo letras minúsculas, cifras y guiones.",
+  "@servers.refusal.s3FieldMalformed": {
+    "sourceHash": "ac8fbea"
+  },
+  "servers.refusal.endpointMalformed": "Introduce el punto de conexión como http:// o https:// seguido de un nombre de host, por ejemplo https://s3.example.com.",
+  "@servers.refusal.endpointMalformed": {
+    "sourceHash": "beb63dd"
   },
   "servers.sheet.addTitle": "Añadir servidor",
   "@servers.sheet.addTitle": {
@@ -323,6 +403,10 @@
   "@servers.sheet.password": {
     "sourceHash": "e7cf3ef"
   },
+  "servers.sheet.secretKeptPlaceholder": "Guardada en el Llavero. Déjalo vacío para conservarla.",
+  "@servers.sheet.secretKeptPlaceholder": {
+    "sourceHash": "8711f6c"
+  },
   "servers.sheet.smbUsernamePlaceholder": "Opcional",
   "@servers.sheet.smbUsernamePlaceholder": {
     "sourceHash": "59be713"
@@ -358,6 +442,123 @@
   "servers.sheet.name": "Nombre",
   "@servers.sheet.name": {
     "sourceHash": "dcd1d52"
+  },
+  "servers.sheet.protocolS3": "S3",
+  "@servers.sheet.protocolS3": {
+    "sourceHash": "44d6a8a",
+    "sameAsSourceJustification": "Nombre de protocolo, se mantiene verbatim como WebDAV o SMB (descripción de la clave)."
+  },
+  "servers.sheet.s3Provider": "Proveedor",
+  "@servers.sheet.s3Provider": {
+    "sourceHash": "472590a"
+  },
+  "servers.sheet.s3ProviderAws": "Amazon S3",
+  "@servers.sheet.s3ProviderAws": {
+    "sourceHash": "a4f6352",
+    "sameAsSourceJustification": "Nombre de producto; la consola de AWS en español lo deja como «Amazon S3»."
+  },
+  "servers.sheet.s3ProviderR2": "Cloudflare R2",
+  "@servers.sheet.s3ProviderR2": {
+    "sourceHash": "9f2f1ed",
+    "sameAsSourceJustification": "Nombre de producto; Cloudflare no lo traduce en ningún idioma."
+  },
+  "servers.sheet.s3ProviderB2": "Backblaze B2",
+  "@servers.sheet.s3ProviderB2": {
+    "sourceHash": "ed40187",
+    "sameAsSourceJustification": "Nombre de producto de Backblaze, sin traducción."
+  },
+  "servers.sheet.s3ProviderWasabi": "Wasabi",
+  "@servers.sheet.s3ProviderWasabi": {
+    "sourceHash": "493861e",
+    "sameAsSourceJustification": "Nombre de producto, sin traducción."
+  },
+  "servers.sheet.s3ProviderHetzner": "Hetzner Object Storage",
+  "@servers.sheet.s3ProviderHetzner": {
+    "sourceHash": "a339b4f",
+    "sameAsSourceJustification": "Nombre de producto; Hetzner publica su consola solo en inglés."
+  },
+  "servers.sheet.s3ProviderGcs": "Google Cloud Storage",
+  "@servers.sheet.s3ProviderGcs": {
+    "sourceHash": "53fa0ba",
+    "sameAsSourceJustification": "Nombre de producto; la consola de Google Cloud en español lo deja como «Google Cloud Storage»."
+  },
+  "servers.sheet.s3ProviderDigitalOcean": "DigitalOcean Spaces",
+  "@servers.sheet.s3ProviderDigitalOcean": {
+    "sourceHash": "c3f48e3",
+    "sameAsSourceJustification": "Nombre de producto; DigitalOcean publica su consola solo en inglés."
+  },
+  "servers.sheet.s3GcsKeyHelp": "Inicia sesión con una clave HMAC de la pestaña Interoperabilidad, en la configuración de Cloud Storage.",
+  "@servers.sheet.s3GcsKeyHelp": {
+    "sourceHash": "acb72a4"
+  },
+  "servers.sheet.s3ProviderOther": "Otro compatible con S3",
+  "@servers.sheet.s3ProviderOther": {
+    "sourceHash": "13d2bdc"
+  },
+  "servers.sheet.s3Region": "Región",
+  "@servers.sheet.s3Region": {
+    "sourceHash": "d3a008e"
+  },
+  "servers.sheet.s3RegionOptionalPlaceholder": "Opcional. Déjalo vacío y se usará us-east-1",
+  "@servers.sheet.s3RegionOptionalPlaceholder": {
+    "sourceHash": "12dd731"
+  },
+  "servers.sheet.s3AccountId": "ID de cuenta",
+  "@servers.sheet.s3AccountId": {
+    "sourceHash": "919bb4c"
+  },
+  "servers.sheet.s3AccountIdHelp": "El ID de cuenta que aparece en la página de información general de Cloudflare R2.",
+  "@servers.sheet.s3AccountIdHelp": {
+    "sourceHash": "963d1f5"
+  },
+  "servers.sheet.s3Location": "Ubicación",
+  "@servers.sheet.s3Location": {
+    "sourceHash": "15b6197"
+  },
+  "servers.sheet.s3Endpoint": "Punto de conexión",
+  "@servers.sheet.s3Endpoint": {
+    "sourceHash": "3df9726"
+  },
+  "servers.sheet.s3PathStyle": "Usar direccionamiento de estilo de ruta",
+  "@servers.sheet.s3PathStyle": {
+    "sourceHash": "627c522"
+  },
+  "servers.sheet.s3PathStyleHelp": "La mayoría de los servidores autoalojados, como MinIO y Garage, lo necesitan.",
+  "@servers.sheet.s3PathStyleHelp": {
+    "sourceHash": "bc6e240"
+  },
+  "servers.sheet.s3Bucket": "Bucket",
+  "@servers.sheet.s3Bucket": {
+    "sourceHash": "c83b657",
+    "sameAsSourceJustification": "Las consolas de AWS y Google Cloud en español dicen «bucket» («Crear bucket»); el «cubo» del TBX de Microsoft es otra acepción (estructura de datos). Regla en terms.json (bucket)."
+  },
+  "servers.sheet.s3BucketHelp": "Déjalo vacío y verás todos los buckets. Si tu clave está limitada a un bucket, escribe su nombre.",
+  "@servers.sheet.s3BucketHelp": {
+    "sourceHash": "8d380d9"
+  },
+  "servers.sheet.s3UseRegion": "Usar {region}",
+  "@servers.sheet.s3UseRegion": {
+    "sourceHash": "5734184"
+  },
+  "servers.sheet.accessKeyId": "ID de clave de acceso",
+  "@servers.sheet.accessKeyId": {
+    "sourceHash": "14eb0f9"
+  },
+  "servers.sheet.secretAccessKey": "Clave de acceso secreta",
+  "@servers.sheet.secretAccessKey": {
+    "sourceHash": "3de6b75"
+  },
+  "servers.sheet.examplePlaceholder": "Ejemplo: {example}",
+  "@servers.sheet.examplePlaceholder": {
+    "sourceHash": "9c7df45"
+  },
+  "servers.sheet.identityLockedS3": "El proveedor, el ID de clave de acceso y el bucket son los que identifican este lugar. Para cambiarlos, olvida este lugar y vuelve a añadirlo.",
+  "@servers.sheet.identityLockedS3": {
+    "sourceHash": "fe4d469"
+  },
+  "servers.sheet.identityLockedS3Account": "El proveedor y el ID de clave de acceso son los que identifican esta cuenta. Para cambiarlos, olvida esta cuenta y vuelve a añadirla.",
+  "@servers.sheet.identityLockedS3Account": {
+    "sourceHash": "e03a769"
   },
   "servers.sheet.namePlaceholder": "Déjalo vacío y se usará {label}",
   "@servers.sheet.namePlaceholder": {
@@ -451,6 +652,10 @@
   "@servers.paneState.notConnected": {
     "sourceHash": "5020fac"
   },
+  "servers.paneState.unreachable": "Cmdr no ha podido acceder a {name}.",
+  "@servers.paneState.unreachable": {
+    "sourceHash": "a7bc9bc"
+  },
   "servers.paneState.goBack": "Atrás",
   "@servers.paneState.goBack": {
     "sourceHash": "6aadac2"
@@ -463,9 +668,13 @@
   "@servers.paneState.hostKeyChanged": {
     "sourceHash": "c73ddf3"
   },
-  "servers.paneState.hostKeyChangedHint": "Su clave ha cambiado. Esto puede significar que el servidor se ha reinstalado, o que hay algo entre tú y él. Desconecta y vuelve a abrirlo para comprobar la huella digital.",
+  "servers.paneState.hostKeyChangedHint": "Su clave ha cambiado. Esto puede significar que el servidor se ha reinstalado, o que hay algo entre tú y él. Comprueba la nueva clave antes de volver a conectarte.",
   "@servers.paneState.hostKeyChangedHint": {
-    "sourceHash": "923de62"
+    "sourceHash": "866b619"
+  },
+  "servers.paneState.checkHostKey": "Comprobar la clave",
+  "@servers.paneState.checkHostKey": {
+    "sourceHash": "fefa256"
   },
   "servers.paneState.reconnecting": "Reconectándose a {name}…",
   "@servers.paneState.reconnecting": {

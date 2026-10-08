@@ -22,9 +22,8 @@ Builds a privacy-redacted zip of recent logs plus a manifest and ships it to `PO
 - **Never widen what we send.** No license keys, device IDs, raw paths, volume names, SMB creds, settings beyond the
   resolved flags, or anything outside the log dir. `manifest.system` is the one PII-reviewed exception (sizes and
   coarse machine identity). Add nothing naming a drive, path, or person.
-- **Diagnostic state stays typed and process-local.** At most eight captures: one per 30 s of errors, plus one per
-  report id (preview and send share it). Raw
-  identities never enter logs or disk; bundle assembly transforms them with that report's context.
+- **Diagnostic state stays typed and process-local** (at most eight captures). Raw identities never enter logs or
+  disk; bundle assembly transforms them with that report's context.
 - **Breadcrumbs accept only `BreadcrumbEvent`.** Add a reviewed enum variant and typed fields for new diagnostic facts;
   never restore free-form messages, maps, or JSON. Unknown IPC fields fail closed, and command events retain only ids
   from the frontend's authoritative `COMMAND_IDS` tuple (compiled into Rust by `build.rs`).
@@ -36,9 +35,13 @@ Builds a privacy-redacted zip of recent logs plus a manifest and ships it to `PO
   and the `playwright-e2e` feature short-circuit.
 - **`diagId` is the `diag_` diagnostics id, NEVER the `anal_` analytics id**: that split keeps an attached email
   unjoinable from analytics.
+- **A managed `DisableCrashAndErrorReports` wins over a stored `updates.errorReports: true`.** Every send rides
+  `server_request::send`; the send commands and Flow B's `take_window_to_send` also ask `check_policy` first, so no
+  bundle gets built for nothing. `save_error_report_to_disk` (every build) stays allowed.
 - **The auto-dispatcher does NOT flush on shutdown, and that's load-bearing**: the panic courier opens a window for
   EVERY panic, so a flush would double-report every fatal one. No queue, no persistence.
 - ❌ **Never move the crash-file stamp out of `flush`'s `Ok` arm**: earlier stamps a delivery that didn't happen.
   `crash_reporter/CLAUDE.md`.
 
-Architecture, flows, and decisions: `DETAILS.md`. Read it before any non-trivial work here.
+Architecture, flows, and decisions: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
+reorganizing, or advising.

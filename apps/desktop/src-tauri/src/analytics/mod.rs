@@ -26,10 +26,6 @@ use tauri::AppHandle;
 /// instance ever spools or beats, so a test run can't pollute production analytics.
 const FORCE_ENV: &str = "CMDR_ANALYTICS_FORCE";
 
-/// Bundle id from `tauri.conf.json`, mirrored so the raw-settings read works without an
-/// `AppHandle`. Matches `settings/loader.rs`'s early-load helpers. Keep in sync if it changes.
-const BUNDLE_ID: &str = "com.veszelovszki.cmdr";
-
 static APP_HANDLE: OnceLock<AppHandle> = OnceLock::new();
 
 /// The event spool, opened at [`init`]. `None` before then, or when the data dir can't be resolved.
@@ -73,10 +69,10 @@ fn send_permission() -> SendPermission {
     if let Some(reason) = suppression_reason() {
         return SendPermission::Suppressed(reason);
     }
-    let Some(app) = APP_HANDLE.get() else {
+    if APP_HANDLE.get().is_none() {
         return SendPermission::Suppressed(SuppressionReason::NotInitialized);
-    };
-    if analytics_consent_granted(crate::settings::load_settings(app).analytics_enabled) {
+    }
+    if usage_consent_granted(&crate::managed_policy::current(), read_raw_settings()) {
         SendPermission::Granted
     } else {
         SendPermission::OptedOut
@@ -97,6 +93,14 @@ pub fn item_count_bucket(count: usize) -> &'static str {
         101..=1000 => "101-1000",
         _ => "1000+",
     }
+}
+
+/// Consent from the stored settings as the EFFECTIVE `analytics.enabled`: the organization's locks
+/// over the person's own choice, so a managed off is an ordinary opt-out (capture drops, the
+/// heartbeat forgets the spool and the unreported uptime).
+fn usage_consent_granted(policy: &crate::managed_policy::ManagedPolicy, mut settings: serde_json::Value) -> bool {
+    crate::managed_policy::overlay(policy, &mut settings);
+    analytics_consent_granted(settings.get("analytics.enabled").and_then(serde_json::Value::as_bool))
 }
 
 /// Whether analytics may send, per the tri-state consent rule. `None` (no key persisted, the
@@ -156,23 +160,61 @@ fn suppression_reason() -> Option<SuppressionReason> {
     })
 }
 
-/// Reads `settings.json` as a raw JSON value for the config-shape builder. Resolves the data dir
+/// Reads the stored `settings.json` as a raw JSON value, before any managed lock: callers overlay
+/// the policy themselves (consent, the config shape). Resolves the data dir
 /// without an `AppHandle` (mirroring the install-id and early-load helpers). A missing or corrupt
 /// file yields `Value::Null`, which the builder treats as "no settings."
 fn read_raw_settings() -> serde_json::Value {
-    let data_dir: PathBuf = if let Ok(custom) = std::env::var("CMDR_DATA_DIR") {
-        PathBuf::from(custom)
-    } else {
-        match dirs::data_dir() {
-            Some(base) => base.join(BUNDLE_ID),
-            None => return serde_json::Value::Null,
-        }
+    let Some(data_dir) = crate::config::standalone_app_data_dir() else {
+        return serde_json::Value::Null;
     };
     let settings_path = data_dir.join("settings.json");
     std::fs::read_to_string(&settings_path)
         .ok()
         .and_then(|contents| serde_json::from_str(&contents).ok())
         .unwrap_or(serde_json::Value::Null)
+}
+
+#[cfg(test)]
+mod consent_tests {
+    use super::*;
+    use crate::managed_policy::testing;
+    use serde_json::json;
+
+    #[test]
+    fn the_persons_own_choice_decides_without_a_policy() {
+        let none = crate::managed_policy::ManagedPolicy::default();
+        assert!(usage_consent_granted(&none, json!({})));
+        assert!(usage_consent_granted(&none, serde_json::Value::Null));
+        assert!(usage_consent_granted(&none, json!({ "analytics.enabled": true })));
+        assert!(!usage_consent_granted(&none, json!({ "analytics.enabled": false })));
+    }
+
+    #[test]
+    fn a_managed_off_wins_over_every_stored_choice() {
+        let off = testing::forcing(&[testing::DISABLE_USAGE_STATS]);
+        for stored in [
+            json!({}),
+            serde_json::Value::Null,
+            json!({ "analytics.enabled": true }),
+            json!({ "analytics.enabled": false }),
+        ] {
+            assert!(!usage_consent_granted(&off, stored.clone()), "{stored}");
+        }
+    }
+
+    #[test]
+    fn other_keys_leave_usage_consent_alone() {
+        let reports_off = testing::forcing(&[testing::DISABLE_CRASH_AND_ERROR_REPORTS, testing::DISABLE_AI]);
+        assert!(usage_consent_granted(
+            &reports_off,
+            json!({ "analytics.enabled": true })
+        ));
+        assert!(!usage_consent_granted(
+            &reports_off,
+            json!({ "analytics.enabled": false })
+        ));
+    }
 }
 
 #[cfg(test)]

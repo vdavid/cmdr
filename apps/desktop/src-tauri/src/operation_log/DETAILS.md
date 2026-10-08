@@ -14,8 +14,9 @@ alpha dialog) builds on the read side.
 
 ## Why a separate durable DB
 
-Every other on-disk store here is a disposable cache: the drive index and `importance.db` live in `~/Library/Caches/`,
-are per-volume, and delete-and-recreate on any schema change (Time Machine skips them, the OS may purge them). A mutation
+The index's stores are per-volume and delete-and-recreate on any schema change; the biggest, the drive index, lives in
+`~/Library/Caches/` (Time Machine skips it, the OS may purge it; `crates/cmdr-index/DETAILS.md` § "Where the stores
+live"). A mutation
 history is the opposite — valuable user data that must survive for years and span volumes (a copy from disk A to disk B
 is ONE operation with one identity). So it's its own `operation-log.db` beside the durable app data
 (`resolved_app_data_dir`), which Time Machine backs up normally.
@@ -80,6 +81,13 @@ non-obvious choices:
     name_folded)` would fail to dedupe root-level dirs (NULL parent). The identity is a **unique expression index** on
     `(volume_id, IFNULL(parent_dir_id, 0), name_folded)` instead — dir ids start at 1, so 0 is a safe stand-in for a
     NULL parent. `intern_dir` inserts with `ON CONFLICT` on that expression, then reads the id back.
+  - **A remote volume's root is ONE name.** A remote path is rooted at `scheme://authority` (`adb://serial/…`,
+    `sftp://ada@nas:22/…`, `smb://nas/share`), and `intern_dir` keeps that head whole as the first name under the
+    volume-root row (`split_scheme_root`); `reconstruct_dir_path` renders a chain led by such a name without the leading
+    `/`. Splitting it on `/` like the rest drops the empty segment inside `://`, so `adb://serial/x` came back as
+    `/adb:/serial/x`: a path no volume answers to, in the item views AND in the `RollbackUnit` the rollback hands to the
+    volume. No real folder name can hold `://` (a name has no `/`), so the rule can't misfire on a local path. Rows
+    written before it keep their mangled chain. Pinned by `intern_dir_round_trips_a_scheme_rooted_path`.
 - **`operations` — one row per batch.** `op_id` (the pipeline UUID), typed `kind` + nullable `archive_subkind`,
   `initiator`, the two-axis status (`execution_status` + `rollback_state` + nullable `not_rollbackable_reason`),
   `rolls_back_op_id` (the rollback linkage), source/dest volume ids, timestamps, `item_count` (the **planned** total,
@@ -156,8 +164,11 @@ cache that the same record points already write, and the `manager()` operation-m
   top-level source count, known before the scan) plus the destination volume; `finalize_op` then refines the three
   aggregates from the live `OperationStatus` cache (the same one the queue UI drives — `header_totals_from_status`), so
   a finished op carries the scanned leaf total and completed count, not zeros. When no status row exists (an instant
-  create, an archive edit, or a direct-call test), `item_count` stays at the open value and `items_done`/`bytes_total`
-  stay 0. **The unit differs by kind, matching that kind's row granularity**: a copy or cross-FS move reports scanned
+  create, an in-ZIP edit, or a direct-call test), `item_count` stays at the open value and `items_done`/`bytes_total`
+  stay 0. A fresh compress is the one archive op with real aggregates, and it hands them over itself
+  (`finalize_archive_op`'s `PackedTotals`: planned entries, entries written, uncompressed source bytes), because the
+  status cache reads zero by then (both finishing phases clear their totals). Its header also names the SOURCE volume
+  (`open_compress_op`), where an in-ZIP edit names the archive's volume on both sides. **The unit differs by kind, matching that kind's row granularity**: a copy or cross-FS move reports scanned
   LEAF files, a same-FS move reports top-level ITEMS (one rename-back reverses a whole subtree, so that's what its rows
   count). `move_with_rename` writes the cache itself — no scan seeds it and its renames are instant — which is also what
   keeps a finished move from journaling `items_done = 0`. These fields are informational (the alpha dialog renders "Copy N items" from `item_count`), NOT the rollback

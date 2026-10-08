@@ -3,6 +3,10 @@
   "@fileOperations.button.cancel": {
     "sourceHash": "19766ed"
   },
+  "fileOperations.button.close": "Stäng",
+  "@fileOperations.button.close": {
+    "sourceHash": "7d9eb7a"
+  },
   "fileOperations.button.ok": "OK",
   "@fileOperations.button.ok": {
     "sourceHash": "565339b",
@@ -82,7 +86,7 @@
   },
   "fileOperations.delete.scanDir": "{count, plural, one {mapp} other {mappar}}",
   "@fileOperations.delete.scanDir": {
-    "sourceHash": "1c5273d"
+    "sourceHash": "46b23b5"
   },
   "fileOperations.delete.confirmDelete": "Radera",
   "@fileOperations.delete.confirmDelete": {
@@ -124,6 +128,14 @@
   "@fileOperations.delete.symlinkNoticeMany": {
     "sourceHash": "56b3f52"
   },
+  "fileOperations.mkfile.notCreatedToast": "Cmdr kunde inte skapa filen ”{name}”. {reason}",
+  "@fileOperations.mkfile.notCreatedToast": {
+    "sourceHash": "4f30e62"
+  },
+  "fileOperations.newEntry.stillCreating": "Håller fortfarande på att skapa ”{name}”. Volymen svarar långsamt. Du kan lugnt stänga dialogen. Skapandet fortsätter ändå och går inte längre att avbryta.",
+  "@fileOperations.newEntry.stillCreating": {
+    "sourceHash": "74e376f"
+  },
   "fileOperations.mkfile.title": "Ny fil",
   "@fileOperations.mkfile.title": {
     "sourceHash": "44dedd0"
@@ -156,17 +168,9 @@
   "@fileOperations.mkdir.placeholder": {
     "sourceHash": "7612b56"
   },
-  "fileOperations.mkdir.timeoutMessage": "Det gick inte att bekräfta att mappen skapades. Volymen kan vara långsam, så mappen kan ändå ha skapats.",
-  "@fileOperations.mkdir.timeoutMessage": {
-    "sourceHash": "8bc758a"
-  },
-  "fileOperations.mkdir.timeoutRefresh": "Uppdatera listan",
-  "@fileOperations.mkdir.timeoutRefresh": {
-    "sourceHash": "b0e5436"
-  },
-  "fileOperations.mkdir.timeoutDismiss": "Avfärda",
-  "@fileOperations.mkdir.timeoutDismiss": {
-    "sourceHash": "48845bf"
+  "fileOperations.mkdir.notCreatedToast": "Cmdr kunde inte skapa mappen ”{name}”. {reason}",
+  "@fileOperations.mkdir.notCreatedToast": {
+    "sourceHash": "517ef4b"
   },
   "fileOperations.mkdir.aiSuggestionsAria": "AI-förslag",
   "@fileOperations.mkdir.aiSuggestionsAria": {
@@ -249,9 +253,21 @@
   "@fileOperations.transferDialog.targetWillBeCreatedCopy": {
     "sourceHash": "4e8d166"
   },
+  "fileOperations.transferDialog.renameByMoveHint": "Ett namnbyte här kopierar allt innehåll på servern, så det körs som en flytt som du kan pausa eller avbryta.",
+  "@fileOperations.transferDialog.renameByMoveHint": {
+    "sourceHash": "31987cc"
+  },
   "fileOperations.transferDialog.targetWillBeCreatedMove": "Den här mappen finns inte än. Cmdr skapar den under flytten.",
   "@fileOperations.transferDialog.targetWillBeCreatedMove": {
     "sourceHash": "1246331"
+  },
+  "fileOperations.transferDialog.rootEchoWarning": "Den här platsen börjar redan i {rootFolder}, så den här sökvägen leder till {resolvedPath}. Menade du {strippedPath}?",
+  "@fileOperations.transferDialog.rootEchoWarning": {
+    "sourceHash": "b692d10"
+  },
+  "fileOperations.transferDialog.rootEchoUseStripped": "Använd kortare sökväg",
+  "@fileOperations.transferDialog.rootEchoUseStripped": {
+    "sourceHash": "66972e3"
   },
   "fileOperations.transferDialog.destinationReadOnly": "Den här mappen är skrivskyddad, så inget kan hamna här.",
   "@fileOperations.transferDialog.destinationReadOnly": {
@@ -275,7 +291,7 @@
   },
   "fileOperations.transferDialog.scanDir": "{count, plural, one {mapp} other {mappar}}",
   "@fileOperations.transferDialog.scanDir": {
-    "sourceHash": "1c5273d"
+    "sourceHash": "46b23b5"
   },
   "fileOperations.transferDialog.hardlinkNote": "<written></written> kommer att skrivas. Källan är <ondisk></ondisk> på disken – det extra är hårdlänkade filer, som inte kan förbli länkade mellan enheter.",
   "@fileOperations.transferDialog.hardlinkNote": {
@@ -293,6 +309,18 @@
   "@fileOperations.transferDialog.estimatedSizeTooltip": {
     "sourceHash": "2e8ba70"
   },
+  "fileOperations.s3Cost.line": "Cirka {amount} enligt listpriserna hos {provider}",
+  "@fileOperations.s3Cost.line": {
+    "sourceHash": "e8db02b"
+  },
+  "fileOperations.s3Cost.infoLabel": "Om den här uppskattningen",
+  "@fileOperations.s3Cost.infoLabel": {
+    "sourceHash": "19637c5"
+  },
+  "fileOperations.s3Cost.infoText": "Uppskattningen bygger på leverantörens offentliga listpriser. Gratisnivåer, rabatter, inkluderade kvoter och minimiavgifter kan göra din faktura lägre eller högre.",
+  "@fileOperations.s3Cost.infoText": {
+    "sourceHash": "379665c"
+  },
   "fileOperations.transferDialog.scanUnresponsive": "Källan svarar inte, så mer än så här kunde vi inte räkna.",
   "@fileOperations.transferDialog.scanUnresponsive": {
     "sourceHash": "ec3beb2"
@@ -304,6 +332,10 @@
   "fileOperations.transferDialog.scanRetry": "Försök igen",
   "@fileOperations.transferDialog.scanRetry": {
     "sourceHash": "d8b8392"
+  },
+  "fileOperations.transferDialog.sourceNoLongerConnected": "Telefonen eller servern som innehåller de här filerna är inte ansluten längre, så Cmdr kan inte kopiera därifrån.",
+  "@fileOperations.transferDialog.sourceNoLongerConnected": {
+    "sourceHash": "4741405"
   },
   "fileOperations.transferDialog.conflictsUnknown": "Vi kunde inte kolla vad som redan finns på målplatsen. Du får en fråga om allt som krockar.",
   "@fileOperations.transferDialog.conflictsUnknown": {
@@ -399,7 +431,7 @@
   },
   "fileOperations.scanPhase.scanDir": "{count, plural, one {mapp} other {mappar}}",
   "@fileOperations.scanPhase.scanDir": {
-    "sourceHash": "1c5273d"
+    "sourceHash": "46b23b5"
   },
   "fileOperations.transferProgress.scanTitleCopy": "Verifierar före kopiering…",
   "@fileOperations.transferProgress.scanTitleCopy": {
@@ -537,9 +569,13 @@
   "@fileOperations.transferProgress.stageFinishingTransferStep": {
     "sourceHash": "1f28724"
   },
-  "fileOperations.transferProgress.warningFileOverFolder": "Målet finns och är en <strong>mapp</strong>. Du är på väg att skriva över det med en <strong>fil</strong> med samma namn. Allt innehåll i målmappen skulle raderas och ersättas av filen. Vad vill du göra?",
+  "fileOperations.transferProgress.warningFileOverFolder": "Målet finns och är en <strong>mapp</strong>. Du är på väg att ersätta det med en <strong>fil</strong> med samma namn. Allt i mappen skulle försvinna. Vad vill du göra?",
   "@fileOperations.transferProgress.warningFileOverFolder": {
-    "sourceHash": "6dce75c"
+    "sourceHash": "bacab9d"
+  },
+  "fileOperations.transferProgress.warningFolderOverFile": "Målet finns och är en <strong>fil</strong>. Du är på väg att ersätta det med en <strong>mapp</strong> med samma namn. Filen skulle försvinna när mappen tar dess plats. Vad vill du göra?",
+  "@fileOperations.transferProgress.warningFolderOverFile": {
+    "sourceHash": "b681083"
   },
   "fileOperations.transferProgress.lookAlikeHint": "Namnen ser likadana ut, men servern stavar dem olika. Skriv över ersätter det som redan finns där.",
   "@fileOperations.transferProgress.lookAlikeHint": {
@@ -884,6 +920,10 @@
   "fileOperations.errorDialog.retry": "Försök igen",
   "@fileOperations.errorDialog.retry": {
     "sourceHash": "942087c"
+  },
+  "fileOperations.errorDialog.copyAnyway": "Kopiera ändå",
+  "@fileOperations.errorDialog.copyAnyway": {
+    "sourceHash": "f794181"
   },
   "fileOperations.errorDialog.close": "Stäng",
   "@fileOperations.errorDialog.close": {

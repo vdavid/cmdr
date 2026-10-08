@@ -33,7 +33,7 @@ The full top-level inventory is here:
   (`WriteOperationRegistry`, `WriteOperationState`, the settle guard, plus `state/controls.rs`:
   the by-id cancel / abort / pause / resume / conflict-answer entry points, re-exported through `state`),
   `status_cache.rs` (the status cache, the busy-volumes set it derives, the external drag-out seam, and
-  `list_active_operations` / `get_operation_status`), `operation_intent.rs` (`OperationIntent`, `PauseGate`), `human_wait.rs` (how long a person has kept the operation waiting),
+  `get_operation_status`), `operation_intent.rs` (`OperationIntent`, `PauseGate`), `human_wait.rs` (how long a person has kept the operation waiting),
   `archive_edit/` (the zip-edit driver).
 - The in-flight ledgers and what reverses them: `ledger.rs` (`CopyTransaction` and `WrittenFile`, the vocabulary of what
   an operation currently has at the destination, plus the `Drop` panic net) and `reversal.rs` (the policy over it: the
@@ -81,10 +81,11 @@ The full top-level inventory is here:
   `types/errors.rs`, `WriteOperationError` with the typed payloads its variants carry — both re-exported through
   `types`), `event_sinks.rs`, `error_classification.rs`, `transfer_sides.rs` (the two volumes a transfer runs
   between, the mount-table question, and the one boundary that words a stop; tests in `transfer_sides_tests.rs`),
-  `mutation_error.rs` (the typed refusal an instant mutation returns), `validation.rs`, `analytics.rs`, `eta.rs`. Journaling: `journal.rs`, `journal_search.rs`. The
+  `target_names.rs` (the new NAME a renamed source takes in a move, § "Renames that run as moves"),
+  `mutation_error.rs` (the typed refusal an instant mutation returns), `mutation_reply.rs` (its reply within the deadline, and the late settle, § "A slow instant mutation says it is still running"), `validation.rs`, `free_space.rs` (the copy's free-space pre-flight, § "The free-space pre-flight"), `analytics.rs`, `eta.rs`. Journaling: `journal.rs`, `journal_search.rs`. The
   scratch dir archive edits stage local bytes in: `scratch_dir.rs` (the remote edit itself is `archive_edit/remote.rs`). Entry points: `create/` + `create.rs`, `rename/` +
   `rename.rs`, `paste_clipboard.rs`, `routing.rs` (the one routing every cross-volume transfer takes:
-  `start_volume_{copy,move,compress}`). `source_binding.rs` is the optional set of sources an op may touch. Fixtures:
+  `start_volume_{copy,move,compress}`, plus `start_rename_by_move`). `source_binding.rs` is the optional set of sources an op may touch. Fixtures:
   `test_support.rs`. Every backend's cells through this pipeline live in `backend_suites/`: the backend-blind
   `network_*_test_support.rs` scenarios the WebDAV, SFTP, SMB, and ADB suites drive, the chunk-gated sources in
   `network_gated_source_test_support.rs` (§ "The network transfer suites"), the per-backend fixture dials
@@ -134,6 +135,13 @@ decisions"; the estimator in § "ETA + throughput"; `WriteSettledGuard` in § "S
   missing destination (and its ancestors) can never materialize a folder inside a source. The volume-aware pipelines
   mirror both the behavior and the order with `Volume::create_directory_all(dest)`; see `../volume/DETAILS.md`
   § "Recursive destination create".
+- **A file in the way of the destination folder is `WriteOperationError::DestinationNotAFolder { path }`**, from both
+  engines, refused before anything is written. `path` is the FILE, which is often a level or more above the folder the
+  user typed, and naming it is the variant's whole job: as `DestinationNotFound` the dialog blamed a folder Cmdr was
+  asked to create, and as an `IoError` it offered a Retry that could only meet the same file again. The volume engines
+  get it from `VolumeError::NotADirectory` (`create_directory_all`, every backend); the local one looks upward for the
+  file only after the OS refused (`validation.rs::file_in_the_way`), since `ENOTDIR` and `EEXIST` name only the path
+  that was asked about. A destination reached through a link to a folder is a folder to both.
 - **`validation.rs::validate_source_names_are_distinct` refuses a copy or move whose top-level items share a name**,
   with the typed `WriteOperationError::DuplicateSourceNames` (carrying the name plus both paths, so the dialog can show
   which two clashed). Two same-named sources both want `<destination>/<name>` and neither engine has an answer: the
@@ -196,7 +204,8 @@ decisions"; the estimator in § "ETA + throughput"; `WriteSettledGuard` in § "S
   (`transfer/DETAILS.md`, the volume-side Rename reservation).
 - **`create.rs` co-locates the synthetic listing-cache diff** (`should_emit_synthetic_diff` /
   `emit_synthetic_entry_diff`, both `pub(super)`) that lands a brand-new entry in the pane on local-FS-backed volumes.
-  `paste_clipboard.rs` reuses both so a pasted file cursor-lands exactly like mkfile.
+  `paste_clipboard.rs` reuses both so a pasted file cursor-lands exactly like mkfile. The insertion helper owns
+  publication; see `../listing/DETAILS.md` § "Diff event coalescing".
 - **Scan-phase `expected_files_total` / `expected_bytes_total` come from
   `crate::indexing::read::expected_totals::expected_totals_for_sources`** and are `None` when the index doesn't cover
   every source; the FE then falls back to a tally-only display instead of a progress bar. `scan.rs`'s walker derives
@@ -205,14 +214,17 @@ decisions"; the estimator in § "ETA + throughput"; `WriteSettledGuard` in § "S
   takes only backend-owned rows accepted by preflight and runs through `spawn_managed` as one lane-queued operation. Its
   dependency planner renames independent rows directly, peels acyclic chains from their free destination, uses one
   same-directory temporary per cycle, and retains one temporary for a case-only rename on a case-insensitive filesystem.
-  Local and remote drivers share the plan, so remote rename-as-copy backends don't duplicate every transfer.
-  Cancellation happens between components: a started cycle finishes or reverses before the driver observes cancellation
+  Local and remote drivers share the plan, so remote rename-as-copy backends don't duplicate every transfer. A batch
+  that won't start answers a typed `RenameStartError` (an unregistered volume is the `WriteOperationError` a clicked
+  copy would get, via `unregistered_source_error`), ❌ never a sentence. Cancellation happens between components: a started cycle finishes or reverses before the driver observes cancellation
   again. It journals one header and one final outcome per row. The Ask Cmdr command is the only caller, and it never
   receives paths or names from the frontend. On a non-root volume its destinations are new names: § "Look-alike
   names".
-- **`paste_clipboard.rs::write_payload_to_dir` runs under a 30 s write timeout** (`commands/clipboard.rs`), a longer
-  tier than the 5 s empty-mkfile write, because the payload can be a large image landing on a slow network volume. It
-  takes an already-read `ClipboardPayload` + a `&Path`, decoupled from NSPasteboard and the IPC edge, so it's
+- **`paste_clipboard.rs::write_payload_to_dir` runs detached under the instant-mutation reply deadline**
+  (`write_payload_replying`, § "A slow instant mutation says it is still running"), since the payload can be a large
+  image landing on a slow network volume. ❌ Never a bare timeout around it: that DROPS the write mid-flight. Its reply
+  and settle carry the created file (`PasteClipboardReply`, `clipboard-paste-settled`), which is why it uses
+  `reply_or_hand_off`, the value-carrying core of `reply_within`. The writer takes an already-read `ClipboardPayload` + a `&Path`, decoupled from NSPasteboard and the IPC edge, so it's
   `TempDir`-testable; the retry loop writes via `Volume::create_file` (O_EXCL) and bumps the counter on the TYPED
   `VolumeError::AlreadyExists`, so there's no pre-scan-then-write TOCTOU and it works on any writable volume.
   **Partial-file-on-timeout edge (accepted):** past 30 s the write future is dropped and a partial `pasted.<ext>` may
@@ -271,7 +283,7 @@ Frontend
                on hit, build the entry list from `per_path` — top-level files come
                straight from the cache, top-level dirs recurse via the oracle-aware
                walker; on miss, fall through to `scan_volume_recursive`)
-          → disk space check (statvfs)
+          → free-space check (copy: `free_space.rs`, § "The free-space pre-flight")
           → execute phase: per-file copy/delete
               → throttled write-progress events (200ms default)
           → success (copy/move): flush_created_destinations() → emit write-progress (phase: flushing) → fdatasync dests → CopyTransaction::commit(), emit write-complete
@@ -437,6 +449,33 @@ the only `Err` it can produce is the deadline or a panicked task; and `paste_cli
 `CreateFile` op under the hood and refuses the way one does (`paste_clipboard.rs`). A volume's own refusal rides through
 `MutationError::Volume` carrying the whole `VolumeError`. Full rules: `docs/guides/error-handling.md`.
 
+## A slow instant mutation says it is still running (`mutation_reply.rs`)
+
+`create_directory`, `create_file`, and `rename_file` answer within `MUTATION_REPLY_DEADLINE` (2 s) with a
+`MutationReply`: `Done`, or `StillRunning { pendingId }`. A refusal inside the deadline stays the command's
+`Err(MutationError)`. Past it, `reply_within` keeps the work's join handle (`deadline::race_detached`) and a follow-up
+task emits `mutation-settled { pendingId, outcome }` when the work ends: `Landed`, or `Refused { error }` with the same
+typed refusal an in-time reply carries (a panicked task is `Unexpected`). The frontend's `awaitMutation`
+(`apps/desktop/src/lib/tauri-commands/mutation-reply.ts`) listens BEFORE invoking, since the event can overtake the reply.
+
+`paste_clipboard_as_file` follows the same contract with the created file riding along: `PasteClipboardReply` /
+`clipboard-paste-settled`, built on `reply_or_hand_off` (the value-carrying core `reply_within` wraps), awaited by
+`awaitClipboardPaste`. The frontend shows a "still pasting" toast past the deadline, and a late landing only toasts
+the file name: no cursor land, no auto-rename, since the person may have moved on.
+
+**Why not `TimedOut`.** The deadline never bounded the work, only the reply: on a busy NAS a new folder took 7–12 s,
+the dialog said it timed out, and the folder appeared anyway, sometimes (ERR-AREUV, 2026-10). An answer the user sees
+disproven is worse than "still working".
+
+**Why 2 s.** The deadline gives up on nothing; it only decides when the person hears the volume is slow, so it sits
+just above a healthy share's create or rename (well under a second). ❌ Don't stretch it with `io_budget`: a longer wait
+only keeps the dialog silent longer.
+
+**Why no hard limit behind it.** A session's transport already ends a dead server's work (smb2 declares it dead and
+the request errors), and a kernel mount that blocks for minutes really is still working for those minutes. The
+frontend keeps saying so, and the person can close the dialog; the work was never cancelable mid-syscall anyway.
+`MutationError::TimedOut` stays for the reads and the trash path that still use it.
+
 ## The rename pre-flight, and who it applies to
 
 `check_rename_permission_for_volume` (`rename.rs`) is what the inline editor asks before it opens: parent writable
@@ -459,6 +498,38 @@ stage a reader can't tell which half answered, and without the line at all a ref
 over an empty log: that was ERR-8RFN4, and the pre-flight kept that blind spot for one release after the rename closed
 it. Only the file log chain is `Debug` unconditionally, so both levels land in the bundle.
 
+## Renames that run as moves
+
+**Decision**: every caller of `Volume::rename` asks `Volume::rename_work` first, and an entry that renames by copy (an
+S3 folder, or an object past the 64 MiB part floor) is never handed to `rename`: it runs as a same-volume move with a
+new NAME (`target_names.rs`) through `routing::start_rename_by_move`. **Why**: each caller assumed one cheap call (F2
+waits 5 s on an instant op; a bulk rename hops name by name), while on an object store a folder rename is one copy and
+one delete per object, which needs a scan, byte progress, pause, cancel, conflicts, and journaling. The engine side:
+`transfer/volume/DETAILS.md` § "A same-volume move whose renames copy".
+
+- **F2** (`rename_managed`): an entry that copies starts the background move and answers `Ok` once it has started,
+  the way an in-zip rename answers once its edit driver is running; the sink is the global one the archive route uses.
+  The progress chip shows it. Before that, `check_rename_validity_impl` reports `by_move` (`RenameByMove`: files and
+  bytes from a bounded count, at most `SMALL_RENAME_FILES` + 1, and `confirm_first`), and the frontend opens the Move
+  dialog prefilled with the new name instead of renaming when `confirm_first` is set (past 100 files, a count that
+  couldn't finish, or an estimate that doesn't round to zero); it confirms through the `rename_by_move` command. The
+  estimate prices the count's own files (`s3_costs::estimate_rename`, no extra request), which is what catches Wasabi
+  billing a young object's remaining days on even a one-file rename. The dialog's scan preview then feeds the cost line
+  it shows (`apps/desktop/src-tauri/src/s3_costs/DETAILS.md`); a rename that starts without the dialog costs nothing
+  worth a line.
+- **The MCP rename tool** (autoConfirm) calls `rename_file_replying`, so it takes F2's route; a `StillRunning` reply
+  becomes an `OK` saying the rename is still running.
+- **Bulk rename and Ask Cmdr's proposals** go through `start_renames`: every row's `rename_work` is asked (eight at a
+  time; free on a volume that renames in one call), and a batch with any copying row runs as ONE move with the new
+  names (`rename/bulk/by_move.rs`): the executor's dependency order (a chain moves its last link first), conflicts
+  skipped (a name something outside the batch holds keeps its owner, the executor's answer too), the sources bound to
+  their preflight fingerprints. ❗ A swap (`a ↔ b`) is left out: it would need a temporary name, and a move onto a
+  FOLDER that's still there merges into it. `RenamesStarted::swaps_left_out` counts its rows; the review's apply
+  (`apply_bulk_rename`) hands the count to the thread's result line ("Skipped 2 renames that swap names…"), while an
+  approval through the suggested-ops bridge only logs it. An all-one-call batch keeps the executor.
+- **A same-volume move** routes itself (`move_same.rs`), and so does the **operation log's undo**: a same-volume
+  restore whose rename copies goes back through the staged per-file move (`rollback.rs`).
+
 ## Look-alike names
 
 `look_alike.rs` answers one question for every write that makes a name: does the folder already hold it under another
@@ -471,6 +542,18 @@ identical-looking twin beside the user's entry.
 - **It costs a listing only when it can matter**: never for an ASCII name, never on a volume whose lookups match any
   form (`Volume::matches_names_in_any_unicode_form`, APFS), otherwise one listing of the folder after the exact lookup
   missed.
+- **A pane's listing stands in for that read where a person is waiting on a name**: new folder, new file, rename (and
+  its live validity check), and bulk rename build `ListedFolders::with_pane_listings(volume, volume_id)`, which asks
+  the fresh-listing oracle (`listing::caching::try_get_authoritative_listing`, `EveryWriter` coverage only) before
+  listing. **Why:** the folder being named into is almost always the one the pane shows, and on a busy NAS re-reading a
+  3,340-entry share folder per new name cost a second or more (ERR-AREUV, v0.50.0). **Why it's safe:** the oracle's
+  debounce can lag another client by ~200 ms, which risks only a missed twin: a second, look-alike entry, never an
+  overwrite, since the volume holds the two spellings as two names, and an exact clash stays the backend's to refuse
+  as before. A `ThisMachineOnly` watch (an OS-mounted share)
+  doesn't qualify: the twin this check exists for is usually another client's spelling. The transfers, compress, and
+  the dialogs' existence probe still list (`ListedFolders::new`, `look_alike_in`): a transfer asks mid-write, while its
+  own landings may not have reached the cache yet. Both paths log at DEBUG under target `look_alike`, the read with its
+  duration. Cells: `look_alike_tests.rs`.
 - **New names take the volume's spelling** (`Volume::spell_new_name`; SMB, SFTP, and WebDAV compose). `place_new_entry` is the instant
   ops' door: a new folder or file is refused as `AlreadyExists` beside a look-alike; a rename's target is refused the
   same way unless the user confirmed replacing it, which then replaces the look-alike under ITS spelling (one entry). A
@@ -545,7 +628,9 @@ The errno survives the volume layer too: `VolumeError::PermissionDenied { path, 
 cross-volume move's source delete hitting a Finder-locked file, cmdr-reports#17) gets the same advice as a local one
 and the details block shows the OS's sentence rather than the path twice. A backend that words its own refusals
 (SMB, MTP, and ADB, whose errno is the DEVICE's and would earn macOS advice for an Android file) carries `None` and
-stays `Unclassified`.
+stays `Unclassified`. An errno-less refusal on an S3 app path (`server_of_path`) is `ObjectStoreAccount` instead
+(`WriteOperationError::object_store_refused`): the key's permissions or a provider that paused the account (a usage
+cap, a billing hold) answer alike, so its advice names both.
 
 **Why the folder is PROVED, never inferred.** A `rename(2)` needs write access to both parent folders, a `unlink(2)` to
 the one it removes from, and a `create_dir_all` to the deepest ancestor that exists; no errno says which refused. So
@@ -730,7 +815,7 @@ The paused bit has TWO homes, kept in sync by the IPC layer: a `PauseGate` on `W
 
 - **`PauseGate`** (`operation_intent.rs`): a `paused: AtomicBool` plus a `std::sync::Condvar` (for the sync driver, which parks inside `spawn_blocking`) and a `tokio::sync::Notify` (for the async volume drivers). `pause()` sets the flag and opens the operation's human-wait clock; `resume()` clears the flag, closes the clock, and wakes both waiters; `wake()` wakes both WITHOUT clearing the flag (the cancel path uses it) but DOES close the clock — the operation is winding down, so nobody is being waited on any more, and a clock left open would make the rollback that follows measure no rate at all. `wait_while_paused_sync(&intent)` / `wait_while_paused_async(&intent).await` park while `paused && !cancelled` and return immediately on cancel; ordinary loops reach them through `stop_or_park_*` below rather than calling them directly.
 - **One question per boundary: `WriteOperationState::stop_or_park_sync()` / `stop_or_park_async()`.** `true` means stop, `false` means carry on with the next item. It owns the whole contract, so no loop can spell it wrong: cancel is read FIRST (a stopping op never parks, and nothing destructive runs between the two reads), only a live op parks, and the intent is re-read after the wake, so a cancel landing WHILE parked is answered at that same boundary instead of one item later. A caller whose reading of "stop" ISN'T `is_cancelled` — a reversal running under `RollingBack` (`rollback.rs`'s `StopMeans`), a detached scan preview watching its own flag — drives `PauseGate`'s `*_until` helpers instead and names its own predicate.
-- **Gate placement: exactly where the loop already observes cancel, and only there** ([The park](#the-park) has the reasoning). Every serial loop that can spend real time asks: both transfer drivers' per-source loop tops (`transfer_driver/{sync,async}_driver.rs`), both delete walkers' delete-phase file and dir loops (`delete/walker.rs`), trash's per-item loop (`delete/trash.rs`), all of `move_op/`'s per-item loops (`transfer/DETAILS.md` § "Pause in the local move engine"), the copy's scanned-dirs pass (`transfer/copy/scanned_dirs.rs`), the two cross-volume merge walks and the sequential extractor's member loop (`transfer/volume/DETAILS.md` § "Pause in the volume walks"), the archive mutator through `MutationHooks::wait_if_paused`, and every SCAN boundary that already observes cancel. The cross-volume streaming copy path ALSO parks BETWEEN CHUNKS via the `CheckpointStream` wrapper in `transfer/volume/strategy.rs` (the sync per-chunk `on_progress` callback can't `.await`, so the async stream decorator owns mid-file parking + a `yield_now`), so a paused single large file (e.g. MTP→local) stops mid-stream holding only its `.cmdr-tmp-<uuid>`. Two paths still pause only at a file boundary, both for the same reason — no stream to park between chunks and nothing freed by parking: the local-FS sync chunk loop (`chunked_copy.rs`, which receives the cancel atom, not the `PauseGate`) and a server-side `copy_within` (`transfer/volume/strategy.rs`'s `try_server_side_copy`). Full rationale + scope: `transfer/DETAILS.md` § "Pause reaches between chunks".
+- **Gate placement: exactly where the loop already observes cancel, and only there** ([The park](#the-park) has the reasoning). Every serial loop that can spend real time asks: both transfer drivers' per-source loop tops (`transfer_driver/{sync,async}_driver.rs`), both delete walkers' delete-phase file and dir loops (`delete/walker.rs`), trash's per-item loop (`delete/trash.rs`), all of `move_op/`'s per-item loops (`transfer/DETAILS.md` § "Pause in the local move engine"), the copy's scanned-dirs pass (`transfer/copy/scanned_dirs.rs`), the two cross-volume merge walks and the sequential extractor's member loop (`transfer/volume/DETAILS.md` § "Pause in the volume walks"), the archive mutator through `MutationHooks::wait_if_paused`, and every SCAN boundary that already observes cancel. The cross-volume streaming copy path ALSO parks BETWEEN CHUNKS via the `CheckpointStream` wrapper in `transfer/volume/strategy.rs` (the sync per-chunk `on_progress` callback can't `.await`, so the async stream decorator owns mid-file parking + a `yield_now`), so a paused single large file (e.g. MTP→local) stops mid-stream holding only its `.cmdr-tmp-<uuid>`. Two paths still pause only at a file boundary, both for the same reason — no stream to park between chunks and nothing freed by parking: the local-FS sync chunk loop (`chunked_copy.rs`, which receives the cancel atom, not the `PauseGate`) and a server-side copy made in one call, such as SFTP's `copy_within` (`transfer/volume/server_side_copy.rs`'s `try_server_side_copy`); one made in pieces (S3's parts) parks between them, at `ServerCopyProgress::checkpoint`. Full rationale + scope: `transfer/DETAILS.md` § "Pause reaches between chunks".
 - **Cancellation always wins over pause.** `cancel_write_operation` / `cancel_all_write_operations` flip the intent AND call `pause_gate.wake()`, so a paused, parked op unblocks, observes the non-`Running` intent, and bails through the existing keep-partials path (keeping already-copied files, deleting only the last partial). Without that wake a paused op parked on the condvar would never see the cancel.
 - **A paused Running op keeps its lane slots** (`set_paused` never touches lanes), so a same-lane Queued op can't start and then fight it on resume. Resume runs NO admission pass (the op never freed its lanes). Pausing a Queued op is a v1 no-op (it isn't touching a device yet; it stays Queued and admits normally when its lanes free). Pinned by `manager::tests::{set_paused_flips_running_op_to_paused_and_keeps_its_lane, paused_running_op_does_not_admit_a_queued_same_lane_op}`.
 - **The request reports what it did**, as a `PauseOutcome`: `Applied` (the record flipped), `AlreadyInState` (asked for what it already is, so the caller's intent holds and a retry isn't a refusal), `NotApplicable` (queued, over, or unknown — nothing changed and nothing is remembered). It travels the whole way out: `set_paused` → `pause_operation` / `resume_operation` → the IPC commands → `bindings.ts`. The MCP `queue` tool is the consumer that needs it, since an agent acts on the answer; the queue window ignores it and reads the live status from `operations-changed` instead.
@@ -961,7 +1046,7 @@ a set number of milliseconds. Per-test rather than per-process, so one spec's wi
 ## The pre-flight conflict check
 
 `conflict_preflight.rs` is the transfer dialog's "which of these would already collide at the destination?" check:
-`VolumeScanError` (the refusal vocabulary, shared with `scan_for_volume_copy`), `SourceItemInput` (the FE's per-item
+`VolumeScanError` (the refusal vocabulary), `SourceItemInput` (the FE's per-item
 input), and `scan_volume_for_conflicts_within`, the whole budgeted check. `commands/file_system/volume_copy.rs`'s
 `scan_volume_for_conflicts` is a thin `#[tauri::command]` wrapper that calls it with the production
 `CONFLICT_CHECK_BUDGET` (30 s); the split exists so a test can hand the inner function a budget it can wait out
@@ -1077,9 +1162,9 @@ add a second feed site (see `../../priority/CLAUDE.md`).
 
 - The manager registers an op's volume IDs busy (`register_operation_status(op_id, type, volume_ids)`) **only when it admits the op (Running)** — a Queued op isn't touching the device, so it marks nothing busy. Source **and** destination go in (a download from a phone is as corruptible as an upload to it). The manager's `on_settled` / `ManagedTaskGuard` Drop unregisters on every exit (including panic), so a finished or panicking op can't leave a volume stuck busy.
 - The busy set is the union of every Running op's `volume_ids` **∪ external registrations**, minus `root` (never ejectable). `recompute_and_emit_busy_volumes` fires `volumes-busy-changed` only when membership changes — progress ticks don't churn it (`LAST_EMITTED_BUSY`). Membership-by-union means two concurrent transfers to one device keep it busy until both finish, with no manual refcount.
-- **Where `volume_ids` come from**: the `OperationDescriptor` each spawn site hands the manager. The cross-volume entry points (`copy_between_volumes`, `move_between_volumes`, `move_within_same_volume`) and the volume-aware delete carry the IDs; the both-local branch of `copy_between_volumes` (a local→USB / DMG copy) passes both IDs through `copy_files_start` / `move_files_start` so the ejectable destination is still marked. The plain `copy_files` / `move_files` / `trash` commands pass an empty list — the unified transfer dialog only routes through them for same-`root` ops, where no ejectable volume is involved.
+- **Where `volume_ids` come from**: the `OperationDescriptor` each spawn site hands the manager. The cross-volume entry points (`copy_between_volumes`, `move_between_volumes`, `move_within_same_volume`) and the volume-aware delete carry the IDs; the both-local branch of `copy_between_volumes` (a local→USB / DMG copy) passes both IDs through `copy_files_start` / `move_files_start` so the ejectable destination is still marked. The plain `move_files` / `trash` commands pass an empty list — the unified transfer dialog only routes through them for same-`root` ops, where no ejectable volume is involved.
 - **Consumers**: `busy_volume_ids()` backs the `get_busy_volume_ids` bootstrap command, the `eject_volume` server-side guard (refuses a busy volume — the real safety net, since the picker's disable is only UX), and the native breadcrumb-menu builder (renders the Eject item disabled with a ` (busy)` suffix). The frontend `volume-busy-store.svelte.ts` subscribes to `volumes-busy-changed` and exposes `isVolumeBusy(id)` to disable the picker's eject controls. `init_busy_volume_emitter(app)` wires the emitter at startup (`lib.rs`).
-- **External (non-write-op) seam**: the drag-out file-promise fulfillment service (`native_drag::fulfillment`) marks the source volume busy while it streams a promise to a Finder destination, but it isn't a real write op (no `WRITE_OPERATION_STATE`, no progress events, no settle). The `pub(crate)` `register_external_volume_op(op_id, volume_ids)` / `release_external_volume_op(op_id)` pair (in `status_cache.rs`, surfaced through `state::` and re-exported from `mod.rs`) is the seam: it touches only the `OPERATION_STATUS_CACHE` half that `recompute_and_emit_busy_volumes` reads, registering under `WriteOperationType::Copy` (the type only affects `list_active_operations` diagnostics; the busy set is type-agnostic). The fulfillment side wraps it in an RAII guard so release fires on every exit path.
+- **External (non-write-op) seam**: the drag-out file-promise fulfillment service (`native_drag::fulfillment`) marks the source volume busy while it streams a promise to a Finder destination, but it isn't a real write op (no `WRITE_OPERATION_STATE`, no progress events, no settle). The `pub(crate)` `register_external_volume_op(op_id, volume_ids)` / `release_external_volume_op(op_id)` pair (in `status_cache.rs`, surfaced through `state::` and re-exported from `mod.rs`) is the seam: it touches only the `OPERATION_STATUS_CACHE` half that `recompute_and_emit_busy_volumes` reads, registering under `WriteOperationType::Copy` (the type only affects `get_operation_status` diagnostics; the busy set is type-agnostic). The fulfillment side wraps it in an RAII guard so release fires on every exit path.
 
 ## Settle contract
 
@@ -1089,7 +1174,7 @@ add a second feed site (see `../../priority/CLAUDE.md`).
 
 **Guard pattern**: every op's deferred start (the future the manager spawns from each of the five entry points) constructs a `WriteSettledGuard` at the top, from the same injected `Arc<dyn OperationEventSink>` the rest of the op emits through. The guard's `Drop` impl calls `sink.emit_settled(...)`. This makes the emit panic-safe: even if the op body panics and the task exits via `JoinError`, the guard still drops during stack unwinding, so the FE never hangs waiting for a settle that never comes. `emit_settled` is a required `OperationEventSink` method (no default no-op), so a new sink can't silently swallow settle. See `settle_event_tests.rs::settled_fires_on_panic_unwind` for the safety-net pin.
 
-**Cache-cleanup panic safety**: removal from `WRITE_OPERATION_STATE` + `OPERATION_STATUS_CACHE` must survive a panic, or the op lingers forever in `list_active_operations`. The manager owns this: `on_settled` removes both maps on the happy path, and the `ManagedTaskGuard` Drop (held by every spawned task, declared so it drops AFTER the `WriteSettledGuard`'s scope cleanup runs but frees caches before the settle emit) does it on unwind. The guard NEVER spawns in Drop — see [Operation manager](#operation-manager) § "Dequeue on settle". Pinned by `manager::tests::panicking_op_releases_its_lane_without_spawning_next`.
+**Cache-cleanup panic safety**: removal from `WRITE_OPERATION_STATE` + `OPERATION_STATUS_CACHE` must survive a panic, or the op lingers forever in the status cache. The manager owns this: `on_settled` removes both maps on the happy path, and the `ManagedTaskGuard` Drop (held by every spawned task, declared so it drops AFTER the `WriteSettledGuard`'s scope cleanup runs but frees caches before the settle emit) does it on unwind. The guard NEVER spawns in Drop — see [Operation manager](#operation-manager) § "Dequeue on settle". Pinned by `manager::tests::panicking_op_releases_its_lane_without_spawning_next`.
 
 **Payload**: `{ operationId: String, operationType, volumeId: Option<String> }`. The `volume_id` is best-effort: filled with the source volume's display name for volume-aware ops (copy/move between volumes, volume delete), `None` for pure local-FS operations. The FE currently filters only by `operationId`; `volume_id` is for diagnostics and forward compatibility.
 
@@ -1121,10 +1206,37 @@ add a second feed site (see `../../priority/CLAUDE.md`).
 **Decision**: `types.rs` is the floor of `write_operations` and imports no sibling. `state.rs` keeps its `operation_intent` + `scan_cache` + `status_cache` re-export facade, and `mod.rs` keeps its `transfer::*` + `delete::*` one.
 **Why**: See § "Why `types` imports nothing" for the floor. The two surviving facades sit ABOVE the floor and point down, so neither can close a circle: `state` and `mod.rs` already depend on everything they re-export. Both front a broad name surface (`operation_intent` at ~35 sites across ~20 files, every cancellation check; the `scan_cache` types across `scan.rs`, `scan_preview.rs`, `validation.rs`, and two test files), which is a legitimate shape for a facade that costs nothing structurally.
 
+## The free-space pre-flight
+
+A copy checks the destination's room after its scan and before anything is written: `free_space.rs::check_local_copy_space` for a local
+copy, `transfer/volume/copy.rs` Phase 2 for the volume engine
+(`transfer/volume/DETAILS.md` § "The destination free-space pre-flight"). A local-FS move has no space check.
+
+- **What the destination has**: `statvfs` first, the purgeable-aware NSURL figure only on a shortfall, the larger of
+  the two winning (§ "Shared gotchas" has why). No figure at all lets the copy go ahead.
+- **What the copy can need**: the full write footprint (`total_bytes`), unless that doesn't fit AND the destination is
+  a local disk (`index_provider::path_is_on_network_mount` says no). Then `local_copy_need` stats each source file at
+  its destination name, and a file landing on an existing file counts per policy: `Skip` nothing, the three overwrite
+  policies `max(0, size - existing)` plus headroom for the largest `min(size, existing)` (the new bytes stage beside the
+  old ones before the rename), and `Rename` / `Stop` the whole file (both copies can stay). That bound stays above the
+  real peak whatever the order (proof on `SpaceNeed`). A source already AT the destination is a duplicate, counted in
+  full. ❌ Never run that probe against a network destination: it's a round trip per file, so a share keeps the full
+  count and relies on the next point.
+- **A shortfall is the person's call.** The figure is an upper bound (it can't see clashes on a network share or inside
+  the volume engine), so `InsufficientSpace` is a question: the error dialog offers "Copy anyway", which starts the same
+  copy again with `SpaceShortfall::Proceed` (`apps/desktop/src/lib/file-operations/transfer/DETAILS.md` § "Copy
+  anyway"). A destination that really fills up mid-copy stops the copy as `DestinationFull` (`ENOSPC` / `EDQUOT` via
+  `error_classification.rs`, `StorageFull` via `transfer/volume/transfer_error.rs`), and a failed copy keeps what
+  landed. #351 is the case: re-syncing 1.5 GB onto a
+  2 GB SMB share that already held most of it was refused outright.
+
+Pinned by `free_space_tests.rs` (the figure order, the per-policy need, the real-folder probe, the verdict) and
+`transfer/volume/copy_space_tests.rs::copy_anyway_goes_past_a_destination_that_says_it_is_too_small`.
+
 ## Shared gotchas
 
-**Gotcha**: On macOS, never use `statvfs` alone for disk space checks; use `NSURLVolumeAvailableCapacityForImportantUsageKey`
-**Why**: `statvfs` reports only physically free blocks. On APFS, purgeable space (iCloud caches, APFS snapshots) can account for tens of GB that macOS will reclaim on demand. Using `statvfs` causes the "insufficient space" error to reject copies that would actually succeed, and shows a different available-space number than the status bar (which uses the NSURL API). `validate_disk_space` in `validation.rs` calls `crate::volumes::get_volume_space()` on macOS and falls back to `statvfs` on Linux.
+**Gotcha**: On macOS, never refuse a copy on `statvfs` alone, and never ask NSURL first.
+**Why**: `statvfs` reports only physically free blocks. On APFS, purgeable space (iCloud caches, APFS snapshots) can account for tens of GB that macOS reclaims on demand, so `statvfs` alone rejects copies that would succeed. `NSURLVolumeAvailableCapacityForImportantUsageKey` counts it, but it walks the volume in the kernel and serializes across callers (0.6 s for one copy, over 5 s for 40 at once, 2026-10-02, #350). So `free_space.rs::available_space_from` asks `statvfs` first and NSURL only when `statvfs` says the copy won't fit. Pinned by `free_space_tests.rs`.
 
 **Gotcha**: Volume-side `on_progress` callbacks report counts LOCAL to the current scan operation, not cumulative.
 **Why**: `Volume::scan_for_copy_batch_with_boundary` and `scan_subtree_with_oracle` both invoke `on_progress(count)` with a count local to the current `list_directory` call / subtree (starts at 1 each time). Forwarding that unchanged through `run_volume_scan_preview`'s closure made the FE's running tally drop visibly between parent groups, between sibling top-level dirs in a cache-hit branch, and between recursion frames inside `scan_subtree_with_oracle`. `run_oracle_aware_batch_scan` now wraps `on_progress` with a `baseline = aggregate.file_count` shift before each scan call (cold-cache batch + cache-hit subtree), and `scan_subtree_with_oracle` does the same at its own recursion site (`baseline = totals.file_count`). The visible FE count stays cumulative across the entire scan. Direct `on_progress(aggregate.file_count)` emit sites in `run_oracle_aware_batch_scan` (cache-hit per-file paths, fallthrough `scan_for_copy` after a name miss) stay unwrapped — they're already cumulative. Future scan call sites that delegate to a volume backend or to `scan_subtree_with_oracle` need the same baseline wrap.
@@ -1159,7 +1271,7 @@ write-op test at once. `test_support::TestOperationGuard` owns one entry per tes
   hardcoded literal can't collide with a sibling test. `register_as(op_id, state)` adopts an id the suite already
   generated (`transfer_driver`'s `unique_op_id`), for tests that thread the id through the call under test.
 - **Panic-safe teardown.** `Drop` removes the entry, so an assertion that fails before a hand-rolled `remove` can't
-  leave a corpse for the next test's `cancel_all_write_operations` to walk or `list_active_operations` to count. Pinned
+  leave a corpse for the next test's `cancel_all_write_operations` to walk or `get_operation_status` to answer for. Pinned
   by `state::tests::guard_unregisters_its_state_even_when_the_test_body_panics`. Keep the guard on the stack: a
   `std::mem::forget` or a clone that outlives the test defeats it.
 
@@ -1252,6 +1364,10 @@ predicate the crate never states, and a free-space pre-flight reading `NotSuppor
     stays with its new bytes, the rest goes, and `AppearedDuringMove` counts it. The saved-over file changes SIZE,
     since a server's whole-second mtime can't tell a same-size save apart.
 - **Which backend drives what.** SFTP, SMB, and WebDAV drive all six; ADB drives `network_transfer_test_support.rs`.
+  S3 drives the transfer, semantics, safety, and move-drift scenarios (`s3_transfer_*`), minus the name-taken-mid-upload
+  cell, whose guard is a staged landing S3 never makes. Its scenarios take a `cmdr_s3::volume::testing::S3Target`, so
+  `s3_live_engine_test.rs` runs the same bodies against real accounts by hand (`live-engine.sh`; each scenario's waits
+  stretch to ten minutes under `CMDR_S3_LIVE=1`, `network_transfer_test_support::budget`).
   SFTP also points the same-server move and copy, the inline rename, and the remote zip edit at
   `sftp-fixture-noposixrename`, where the server can't copy for itself and a rename has no atomic replace. WebDAV points
   the zip browse at `webdav-fixture-norange`, whose whole-file answer to every ranged GET is what a zip reader's many
@@ -1267,7 +1383,7 @@ predicate the crate never states, and a free-space pre-flight reading `NotSuppor
   `PermissionDenied`), loses nothing, and ❗ leaves the volume connected, since a refusal is an answer. The refusal
   comes from `webdav_refusing_proxy_test_support.rs`, an HTTP proxy in front of the real Apache that answers one
   request itself; ❌ never reconfigure the shared container for a cell. A refused `COPY` falls back to streaming by
-  design (`transfer/volume/strategy.rs::try_server_side_copy`).
+  design (`transfer/volume/server_side_copy.rs::try_server_side_copy`).
 - **`adb_transfer_test.rs` runs the same scenarios against a phone on `cmdr-adb`'s in-process fake server**, so it
   needs no Docker, runs in the unit lane, and has no name prefix to keep. Its own cells start a copy from two registered
   ids (`start_copy_by_id`, through `start_volume_copy`), check that a copy onto the phone lands through the writer's own
@@ -1439,21 +1555,21 @@ the copy names a drive, and the boot disk never goes away, so it meets the rule 
 
 ## Testing the in-flight temp ledger
 
-`in_flight_temps.rs` keeps ONE process-wide `STORE` for the whole test binary, and three rules follow from that. Ignore
-either and the tests fail on load rather than on a break, which is worse than not having them.
+**Every test that records or sweeps owns its ledger.** `in_flight_temps::Ledger` is a handle; the app has one
+(`Ledger::process()`, which a `WriteOperationState` records into unless it carries another), and a test builds its own
+and hands it to the states it drives with `WriteOperationState::with_in_flight_ledger`. The state holds only that
+`Option<Ledger>` and `Ledger::of` resolves it, so `state` never calls into `in_flight_temps`: that call closed a
+`state` → `in_flight_temps` → `sweep` → `transfer_sides` → `state` module cycle. `Ledger::recording_in(data_dir)` records into a
+fresh log there; dropping it is the crash; `Ledger::for_test().launch_in(data_dir)` is the next launch, replaying that
+log; `live_paths()` is what that ledger alone believes is on disk. So a cell's log, tally, and live set hold its own
+records and nothing else, and it can assert on all of them whole.
 
-- **Take `test_support::take_store()` (or `use_store_in`) for the WHOLE test body**, ❌ never for just the part that
-  writes. Installing a log into the singleton redirects every `register` in the process into that file, from any
-  thread, so two tests doing it at once put one test's records in the other's log — and leave a startup-sweep fixture
-  replaying an empty log, sweeping nothing. The guard holds a `SINGLE_FILE` mutex that serializes them; releasing it
-  early hands the singleton to the next test while this one is still recording. `simulate_process_exit()` is how a test
-  detaches the process's handle (the crash it's reproducing) without giving the singleton back.
-- **Assert about the path under test, ❌ never about the whole ledger.** `live_paths()` and the log file are shared with
-  every transfer test that stages a write without holding the guard, so `live_paths().is_empty()` and
-  `read_recorded(..).is_empty()` are assertions about the rest of the suite. Ask `contains(&subject)` instead; it pins
-  the same regression.
-- **A volume-borne cell picks a volume ID nothing else uses.** The ledger's arrival listener is installed once per
-  process and stays for the rest of the test binary, so a shared ID lets one cell's registration claim another's
+- ❌ **Don't reintroduce a singleton that tests install a log into.** That's how a sweep cell replayed the records of
+  every transfer test running beside it and deleted their live temps mid-copy under plain `cargo test` (#162; the
+  check runner's one-process-per-test runner hid it). A test whose states use the default process ledger records
+  only in memory, since nothing opens that ledger's log under test.
+- **A volume-borne cell picks a volume ID nothing else uses.** The volume registry is still one per process, and each
+  ledger's arrival listener hears every registration, so a shared ID lets one cell's registration claim another's
   pending records.
 
 **The sweep signals completion, so no test needs a deadline.** `init_and_sweep` returns a `SweepHandle`; the launch path

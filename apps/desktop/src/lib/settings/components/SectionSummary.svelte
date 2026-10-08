@@ -47,7 +47,7 @@
     }
 </script>
 
-<div class="section-summary">
+<div class="section-summary" data-summary-section={sectionName}>
     <h2 class="summary-title">{sectionTitle(sectionName)}</h2>
 
     {#if section && section.subsections.length > 0}

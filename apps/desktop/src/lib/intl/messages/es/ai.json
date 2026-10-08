@@ -227,6 +227,14 @@
   "@ai.translateError.unknownProvider.body": {
     "sourceHash": "7042a75"
   },
+  "ai.translateError.managed.title": "Tu organización gestiona la IA en Cmdr",
+  "@ai.translateError.managed.title": {
+    "sourceHash": "12f8233"
+  },
+  "ai.translateError.managed.body": "Tu equipo de informática puede decirte qué servicios de IA puedes usar.",
+  "@ai.translateError.managed.body": {
+    "sourceHash": "cb7e811"
+  },
   "ai.cloud.serviceAria": "Servicio de IA en la nube",
   "@ai.cloud.serviceAria": {
     "sourceHash": "7dec1e0"
@@ -456,5 +464,33 @@
   "ai.secretError.genericBody": "Comprueba que el llavero del sistema esté disponible y vuelve a intentarlo. Si continúa, reinicia la app.",
   "@ai.secretError.genericBody": {
     "sourceHash": "2ee417d"
+  },
+  "ai.secretError.removeTitle": "No se ha podido quitar tu clave de API guardada.",
+  "@ai.secretError.removeTitle": {
+    "sourceHash": "5986628"
+  },
+  "ai.secretError.removeKeychainBody": "Abre Acceso a Llaveros, busca la entrada “Cmdr” y elimínala ahí.",
+  "@ai.secretError.removeKeychainBody": {
+    "sourceHash": "4e3abe7"
+  },
+  "ai.managed.aiOff": "Tu organización ha desactivado la IA en Cmdr.",
+  "@ai.managed.aiOff": {
+    "sourceHash": "25b7aef"
+  },
+  "ai.managed.cloudAiOff": "Tu organización solo permite la IA en el dispositivo.",
+  "@ai.managed.cloudAiOff": {
+    "sourceHash": "894c53d"
+  },
+  "ai.managed.hostNotAllowed": "Tu organización no permite este servicio de IA. Tu equipo de informática puede decirte cuáles puedes usar.",
+  "@ai.managed.hostNotAllowed": {
+    "sourceHash": "845a19f"
+  },
+  "ai.managed.localOnlyUnsupported": "Tu organización solo permite la IA en el dispositivo, y este Mac no puede ejecutarla.",
+  "@ai.managed.localOnlyUnsupported": {
+    "sourceHash": "b760ca4"
+  },
+  "ai.managed.serviceNotAllowed": "sin permiso de tu organización",
+  "@ai.managed.serviceNotAllowed": {
+    "sourceHash": "026e7e3"
   }
 }

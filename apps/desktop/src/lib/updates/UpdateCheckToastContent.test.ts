@@ -113,4 +113,21 @@ describe('UpdateCheckToastContent', () => {
     link?.click()
     expect(openErrorReportDialogMock).toHaveBeenCalledWith(shown)
   })
+
+  it('says the organization manages updates when it turned them off, with no report link', async () => {
+    updateState.managed = { kind: 'updatesDisabledByPolicy' }
+    _setUpdateStatusForTest('idle')
+    const target = render()
+    await tick()
+    expect(target.textContent).toContain('Your organization manages updates for Cmdr.')
+    expect(target.querySelector('button')).toBeNull()
+  })
+
+  it('says a newer release is out but the organization holds this Mac back', async () => {
+    updateState.managed = { kind: 'heldByPolicy', available: '0.53.0', ceiling: '0.52' }
+    _setUpdateStatusForTest('idle')
+    const target = render()
+    await tick()
+    expect(target.textContent).toContain('Cmdr 0.53.0 is out, but your organization keeps this Mac on 0.52 or earlier.')
+  })
 })

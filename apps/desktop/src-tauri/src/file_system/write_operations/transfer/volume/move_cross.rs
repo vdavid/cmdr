@@ -36,7 +36,7 @@ use super::conflict::resolve_volume_conflict;
 use super::displaced_destination::DisplacedLedger;
 use super::preflight::SourceFileFacts;
 use super::preflight::{SourceHint, scan_volume_sources};
-use super::strategy::{copy_single_path, resolve_source_is_directory};
+use super::strategy::{Replaces, copy_single_path, resolve_source_is_directory};
 use super::transfer_error::{PathRole, WriteFailure, map_volume_error, source_not_removed};
 use crate::file_system::volume::Volume;
 use crate::ignore_poison::IgnorePoison;
@@ -302,7 +302,7 @@ pub(crate) async fn move_volumes_with_progress(
                             }
                             ConflictDecision::Proceed {
                                 dest_path: rc.write_path,
-                                replace_after_write: rc.replace_after_write,
+                                replaces: rc.replaces,
                             }
                         }
                     })
@@ -376,11 +376,11 @@ pub(crate) async fn move_volumes_with_progress(
                     .dest_path
                     .expect("async driver always supplies dest_path")
                     .to_path_buf();
-                // `Some(orig)` ⇒ `dest_item_path` is a temp sibling on the dest
-                // volume; after the copy lands, swap it over `orig` BEFORE
+                // `ViaTemp(orig)` ⇒ `dest_item_path` is a temp sibling on the
+                // dest volume; after the copy lands, swap it over `orig` BEFORE
                 // deleting the source (a move must never delete the source if
                 // the destination isn't fully in place).
-                let replace_after_write = ctx.replace_after_write.map(Path::to_path_buf);
+                let replaces = ctx.replaces.clone();
                 // Whether the driver's conflict resolution PICKED this
                 // destination name (a `Rename`, an Overwrite that cleared it),
                 // which is what the landing needs to tell its own placeholder
@@ -404,8 +404,7 @@ pub(crate) async fn move_volumes_with_progress(
                             Ok(is_dir) => is_dir,
                             Err(e) => return Err(map_volume_error(&source_path.display().to_string(), PathRole::Source, e)),
                         };
-                    let source_facts =
-                        SourceFileFacts::from_size_hint(hint.and_then(|h| (!h.is_directory).then_some(h.size)));
+                    let source_facts = SourceFileFacts::from_hint(hint);
 
                     let file_name = source_path.file_name().map(|n| n.to_string_lossy().to_string());
                     // The driver's tally of every PRIOR source, which the leaves
@@ -496,7 +495,7 @@ pub(crate) async fn move_volumes_with_progress(
                         &created,
                         &leaf_progress,
                         Some(&merge_ctx),
-                        super::strategy::staging_for(&replace_after_write, landing),
+                        super::strategy::staging_for(&replaces, landing),
                     );
                     // Bind this source's probe as a task-local for the whole
                     // copy phase, so `stream_pipe_file` and `CheckpointStream`
@@ -532,17 +531,19 @@ pub(crate) async fn move_volumes_with_progress(
                     // dump taken during it must not still claim the task is
                     // streaming.
                     probe.set_phase(super::super::transfer_probe::TaskPhase::Finalizing);
-                    // Overwrote iff the top-level file→file safe-replace fires below
-                    // OR a deep-merge child replaced a dest file. Captured before
-                    // `replace_after_write` is consumed; feeds move eligibility.
-                    let source_overwrote = replace_after_write.is_some() || created.any_overwrote();
+                    // Overwrote iff the top-level Overwrite replaced a file (below,
+                    // or in place) OR a deep-merge child did. Captured before
+                    // `replaces` is consumed; feeds move eligibility.
+                    let source_overwrote = replaces.overwrites() || created.any_overwrote();
                     // Where a FILE source actually lands: `orig` after a safe-replace
                     // (the temp `dest_item_path` gets renamed onto it below), else
                     // `dest_item_path`. A DIR source's dest root is `dest_item_path`.
                     let landed_dest = if source_is_dir {
                         dest_item_path.clone()
                     } else {
-                        replace_after_write.clone().unwrap_or_else(|| dest_item_path.clone())
+                        replaces
+                            .swap_target()
+                            .map_or_else(|| dest_item_path.clone(), Path::to_path_buf)
                     };
 
                     // Safe-replace finalize (file→file Overwrite): the temp on
@@ -551,7 +552,7 @@ pub(crate) async fn move_volumes_with_progress(
                     // MUST happen before deleting the source: if the finalize
                     // fails, the source is untouched, the original dest is
                     // intact, and the new data survives in the temp.
-                    if let Some(orig) = replace_after_write
+                    if let Replaces::ViaTemp(orig) = replaces
                         && let Err(e) =
                             super::finalize::finalize_safe_replace(&dest_volume, &dest_item_path, &orig).await
                         {
@@ -749,6 +750,11 @@ pub(crate) async fn move_volumes_with_progress(
 // `use super::*`, and `test_support` has to stay one module so its fixtures are
 // one type everywhere. `super::super` is `volume` either way, so the paths that
 // cross to a sibling engine are unchanged.
+/// A same-volume move whose entries rename by copy, and renames that run as
+/// moves.
+#[cfg(test)]
+#[path = "move_by_copy_tests.rs"]
+mod by_copy_tests;
 #[cfg(test)]
 #[path = "move_cancel_tests.rs"]
 mod cancel_tests;

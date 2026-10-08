@@ -18,11 +18,12 @@ Keep the two in step by hand when you edit either. `docs/i18n/en-AU/style.md` re
 
 ## What forks
 
-151 keys of 3,263 (4.6%). Four groups:
+151 keys of 3,263 (4.6%). Five groups:
 
 - **Bin (37 keys)**, the loudest one: the Trash is a destination people navigate to, and their Mac calls it the Bin.
 - **Spelling (65 keys)**: `-our`, `-ise`, `-ll-`, plus `grey`, `ageing`, `towards`, and `got` for `gotten`.
 - **`licence` (45 keys)**: the whole licensing surface.
+- **`any more` (16 keys)**: the "no longer" sense, two words. Ruling below.
 - **Three odds and ends**: `per cent` (2 keys) and `Go forwards` (1, `en-GB` only).
 
 ## Rulings
@@ -81,6 +82,20 @@ copy is entirely UI chrome, which is the localised side of that line.
 The product-tier names go with it (`Personal licence`, `Commercial licence`). They're descriptive category names in
 running prose, not trademarks, and a British reader parses `license` there as a spelling mistake. getcmdr.com keeps US
 spelling; it's a different surface with a different audience.
+
+### `any more` for "no longer", two words
+
+Base `en` writes **`anymore`** (one word, the American form) whenever it means "no longer": `isn’t connected anymore`,
+`There’s nothing at “{path}” anymore.` The overlays write **`any more`**, the usual British and Australian spelling for
+that sense. **Every `en` key whose value says `anymore` gets a fork here and in `en-AU`**, with only that word changed;
+when you add a new one, add both overrides in the same edit. The quantity sense (`any more files`, `add any more`) is
+two words in every dialect, base `en` included, so it never forks.
+
+This is David's call (2026-10-01), and it goes further than Apple: British and Australian Finder keep Apple's American
+`anymore` in both strings that use it (`PE131` `doesn’t exist anymore`, `NE7` `is not available anymore`, in
+`_ignored/i18n/{en-GB,en-AU}/macOS/Finder/LocalizableMerged.json`, 2026-10-01), and so does `en-GB` Thunar
+(`_ignored/i18n/en-GB/xfce-thunar/thunar.po`). Read those as untouched US strings rather than a British ruling; British
+dictionaries and editors write two words. ❌ Don't "re-discover" the Apple attestation and drop the forks.
 
 ### The Oxford comma: Apple reverses Cmdr's house style, and we keep ours anyway
 

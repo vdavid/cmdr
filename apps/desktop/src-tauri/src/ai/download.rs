@@ -23,7 +23,9 @@ where
 {
     use futures_util::StreamExt;
 
-    let client = reqwest::Client::new();
+    let client = cmdr_http::client_builder()
+        .build()
+        .map_err(|e| format!("Download failed: {e}"))?;
 
     // Check for resume (existing partial file)
     let existing_size = dest.metadata().map(|m| m.len()).unwrap_or(0);

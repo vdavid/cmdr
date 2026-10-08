@@ -1,0 +1,28 @@
+#!/bin/sh
+# Builds and runs the hook program in `scripts/git-hooks` for the hook named in $1.
+# What the hooks do and why: docs/tooling/git-hooks.md
+#
+# Every way this can't run ends in `exit 0`. The hooks keep formatting from being
+# forgotten and CI stays the gate, so a missing toolchain or a hook program that
+# doesn't build must never stand between someone and their commit.
+
+root=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
+src="$root/scripts/git-hooks"
+[ -d "$src" ] || exit 0
+command -v go >/dev/null 2>&1 || exit 0
+
+# One binary per worktree, inside its own git directory: worktrees sit on different
+# commits, so they can't share a build. Rebuilding an unchanged program costs about
+# 60 ms, which is cheaper than being wrong about whether it's stale.
+bin=$(git rev-parse --git-path cmdr-git-hooks) || exit 0
+case "$bin" in
+  /*) ;;
+  *) bin="$root/$bin" ;;
+esac
+
+if ! (cd "$src" && go build -buildvcs=false -o "$bin" . 2>/dev/null); then
+  echo "format hook: skipped, scripts/git-hooks didn't build" >&2
+  exit 0
+fi
+
+exec "$bin" "$1" "$root"

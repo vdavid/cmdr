@@ -47,6 +47,18 @@ const SETTLE_BUDGET: Duration = Duration::from_secs(6);
 /// whose conflict never comes still has room to say so before the cap lands.
 const CONFLICT_BUDGET: Duration = Duration::from_secs(5);
 
+/// `fixture_budget`, or ten minutes when the scenario runs against a real
+/// account (`CMDR_S3_LIVE=1`, `s3_live_engine_test.rs`): a home uplink moves a
+/// 140 MiB upload in tens of seconds, not the fixture's two. The live runner
+/// goes through `cargo test`, so the nextest cap above doesn't apply there.
+pub(super) fn budget(fixture_budget: Duration) -> Duration {
+    if std::env::var("CMDR_S3_LIVE").as_deref() == Ok("1") {
+        Duration::from_secs(600)
+    } else {
+        fixture_budget
+    }
+}
+
 // ── Bytes ────────────────────────────────────────────────────────────
 
 /// A payload whose every position says where it belongs, so a hole or a
@@ -185,7 +197,7 @@ impl RunningCopy {
     /// event and after every cleanup the driver owns. Anything the destination
     /// still holds at that point, it means to hold.
     pub(super) async fn settle(&self) {
-        crate::test_support::wait_until_async(SETTLE_BUDGET, "the copy to settle", || {
+        crate::test_support::wait_until_async(budget(SETTLE_BUDGET), "the copy to settle", || {
             !self.events.settled.lock_ignore_poison().is_empty()
         })
         .await;
@@ -213,7 +225,7 @@ impl RunningCopy {
     /// the copy settles turns that case into a sentence about what the copy did.
     async fn await_one_conflict(&self) -> super::super::types::WriteConflictEvent {
         crate::test_support::wait_until_async(
-            CONFLICT_BUDGET,
+            budget(CONFLICT_BUDGET),
             "the copy to raise its clash or settle without one",
             || {
                 !self.events.conflicts.lock_ignore_poison().is_empty()
@@ -440,7 +452,22 @@ pub(super) async fn a_directory_tree_lands_intact_on_the_server(remote: Arc<dyn 
 /// in its path mapping, fails here and nowhere in its own crate's suite.
 pub(super) async fn a_directory_tree_lands_intact_off_the_server(remote: Arc<dyn Volume>, dir: PathBuf) {
     seed_remote_tree(remote.as_ref(), &dir.join("tree")).await;
+    a_seeded_tree_lands_intact_off_the_server(Arc::clone(&remote), &dir).await;
+    clean_deep(remote.as_ref(), &dir).await;
+}
 
+/// Every file of the fixture tree as a relative path and its bytes, for a cell
+/// that seeds through the protocol rather than the volume under test (S3's
+/// `testing::seed`).
+pub(super) fn tree_files() -> impl Iterator<Item = (&'static str, Vec<u8>)> {
+    TREE.into_iter()
+        .map(|(relative, len)| (relative, self_describing_bytes(len, relative)))
+}
+
+/// The fixture tree, already seeded at `dir/tree` by whatever means the
+/// backend has, copied off the server and compared name for name and byte for
+/// byte. Leaves the remote side for the caller to clean.
+pub(super) async fn a_seeded_tree_lands_intact_off_the_server(remote: Arc<dyn Volume>, dir: &Path) {
     let expected = expected_tree_lines();
     assert_eq!(
         tree_fingerprint(remote.as_ref(), &dir.join("tree")).await,
@@ -465,8 +492,6 @@ pub(super) async fn a_directory_tree_lands_intact_off_the_server(remote: Arc<dyn
         expected,
         "the tree on local disk must match the one on the server, name for name and byte for byte"
     );
-
-    clean_deep(remote.as_ref(), &dir).await;
 }
 
 /// A copy stopped mid-upload leaves the destination exactly as it found it.
@@ -501,9 +526,11 @@ pub(super) async fn a_cancelled_upload_leaves_nothing_behind(remote: Arc<dyn Vol
     // run — bytes offered, nothing ingested — satisfy every "nothing was left
     // behind" claim below without a byte ever landing.
     source.gate.add_permits(2);
-    crate::test_support::wait_until_async(SETTLE_BUDGET, "the upload to get two chunks into the server", || {
-        source.handed_out.load(std::sync::atomic::Ordering::SeqCst) >= 2
-    })
+    crate::test_support::wait_until_async(
+        budget(SETTLE_BUDGET),
+        "the upload to get two chunks into the server",
+        || source.handed_out.load(std::sync::atomic::Ordering::SeqCst) >= 2,
+    )
     .await;
     cancel_write_operation(&running.operation_id, false);
     // Let the source answer again, so a backend that only notices the cancel on

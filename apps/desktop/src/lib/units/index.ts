@@ -3,7 +3,7 @@
  * text a person reads.
  *
  * Start here. `formatByteSize` honors the user's `appearance.fileSizeFormat`
- * (binary KB / SI kB) automatically; `formatFileSizeWithFormat` takes the base
+ * (binary KiB, MiB / SI kB, MB) automatically; `formatFileSizeWithFormat` takes the base
  * explicitly for pure code and tests. The component form of a size is
  * `<Size bytes>` (`$lib/ui/Size.svelte`), which also carries the size-tier
  * colors.
@@ -11,7 +11,7 @@
  * ```ts
  * import { formatByteSize, formatDuration, seconds } from '$lib/units'
  *
- * formatByteSize(87_654_321)   // "83.59 MB" (binary) or "87.65 MB" (SI)
+ * formatByteSize(87_654_321)   // "83.59 MiB" (binary) or "87.65 MB" (SI)
  * formatDuration(seconds(492)) // "8m 12s"
  * ```
  *
@@ -29,21 +29,23 @@
  *
  * Size-tier COLORING (the `size-bytes` … `size-tb` spans) is a separate layer
  * in `$lib/file-explorer/selection/selection-info-utils.ts`
- * (`formatSizeForDisplay`, `colorizeSizeString`), because the classes belong to
+ * (`formatSizeForDisplay`, `colorizeSize`), because the classes belong to
  * the list views' stylesheet. Dates have their own single source of truth in
  * `$lib/settings/format-utils.ts` + `<DateLabel>`.
  */
 
 import { getFileSizeFormat } from '$lib/settings/reactive-settings.svelte'
-import { formatDriveFigure, formatFileSizeWithFormat } from './byte-size'
+import { formatDriveFigure, formatFileSizeWithFormat, formatTieredSize, type TieredSize } from './byte-size'
 
 export {
   type ByteCount,
   type BytesPerSecond,
+  type TieredSize,
   bytes,
   bytesPerSecond,
   baseFor,
   unitLabel,
+  bytesLabel,
   dynamicTierIndex,
   formatFileSizeWithFormat,
   formatDriveFigure,
@@ -72,4 +74,13 @@ export function formatByteSize(byteCount: number, forceUnit?: 'kB' | 'MB' | 'GB'
  */
 export function formatDriveSize(byteCount: number, driveBytes: number): string {
   return formatDriveFigure(byteCount, driveBytes, getFileSizeFormat())
+}
+
+/**
+ * {@link formatByteSize}, plus the size tier to color it by, for HTML that
+ * wraps the size in a tier span (`colorizeSize` in
+ * `$lib/file-explorer/selection/selection-info-utils`).
+ */
+export function formatByteSizeTiered(byteCount: number): TieredSize {
+  return formatTieredSize(byteCount, getFileSizeFormat())
 }

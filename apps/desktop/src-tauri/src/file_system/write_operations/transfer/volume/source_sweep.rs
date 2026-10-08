@@ -128,6 +128,9 @@ async fn sweep_level(
 
     let mut remains = false;
     let mut first_failure: Option<PathedVolumeError> = None;
+    // The files this level clears, deleted together once the level is read:
+    // one request per thousand on an object store (`Volume::delete_files`).
+    let mut doomed: Vec<PathBuf> = Vec::new();
     for entry in &entries {
         let path = PathBuf::from(&entry.path);
         let outcome = if skipped.contains(&path) {
@@ -155,23 +158,18 @@ async fn sweep_level(
                         left.changed += 1;
                         Ok(true)
                     }
-                    Some(_) => volume.delete(&path).await.at(&path).map(|()| false),
+                    Some(_) => {
+                        doomed.push(path);
+                        Ok(false)
+                    }
                 },
             }
         };
-        match outcome {
-            Ok(stays) => remains |= stays,
-            Err(e) => {
-                log::warn!(
-                    target: "move",
-                    "source sweep: couldn't remove {}: {:?}",
-                    e.path.display(),
-                    e.error
-                );
-                remains = true;
-                first_failure.get_or_insert(e);
-            }
-        }
+        note_outcome(outcome, &mut remains, &mut first_failure);
+    }
+    let results = volume.delete_files(&doomed).await;
+    for (path, result) in doomed.iter().zip(results) {
+        note_outcome(result.at(path).map(|()| false), &mut remains, &mut first_failure);
     }
 
     if remains {
@@ -180,7 +178,34 @@ async fn sweep_level(
             None => Ok(true),
         };
     }
-    volume.delete(dir).await.at(dir).map(|()| false)
+    match volume.delete(dir).await {
+        // A folder that only existed through what was in it (an object
+        // store's prefix with no marker) went with its last file.
+        Ok(()) | Err(VolumeError::NotFound(_)) => Ok(false),
+        Err(e) => Err(e).at(dir),
+    }
+}
+
+/// Folds one entry's outcome into its level's: something that stays keeps the
+/// folder, and the FIRST failure is the one reported, with its own path.
+fn note_outcome(
+    outcome: Result<bool, PathedVolumeError>,
+    remains: &mut bool,
+    first_failure: &mut Option<PathedVolumeError>,
+) {
+    match outcome {
+        Ok(stays) => *remains |= stays,
+        Err(e) => {
+            log::warn!(
+                target: "move",
+                "source sweep: couldn't remove {}: {:?}",
+                e.path.display(),
+                e.error
+            );
+            *remains = true;
+            first_failure.get_or_insert(e);
+        }
+    }
 }
 
 /// What a move carried out of one top-level source, for the sweep that removes

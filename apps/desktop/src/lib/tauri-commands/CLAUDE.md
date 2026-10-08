@@ -4,7 +4,7 @@ Typed TypeScript wrappers for every Tauri IPC command and event. This is the can
 communication.
 
 ```ts
-import { listDirectoryStart, copyFiles } from '$lib/tauri-commands' // correct
+import { listDirectoryStart, copyBetweenVolumes } from '$lib/tauri-commands' // correct
 import { listDirectoryStart } from '$lib/tauri-commands/file-listing' // wrong: never import sub-files directly
 ```
 
@@ -12,12 +12,14 @@ import { listDirectoryStart } from '$lib/tauri-commands/file-listing' // wrong: 
 
 `index.ts` barrel-re-exports per-domain sub-files: `file-listing.ts`, `file-viewer.ts`, `file-actions.ts`,
 `favorites.ts`, `icons.ts`, `app-state.ts`, `write-operations.ts`, `rename.ts`, `storage.ts`, `networking.ts`, `mtp.ts`,
-`licensing.ts`, `settings.ts`, `tab.ts`, `function-key-bar.ts`, `clipboard-files.ts`, `git.ts`, `go-to-path.ts`,
-`tags.ts`, `updates.ts`, `debug.ts`, `usage.ts`, `dock.ts`, `crash-reporter.ts`, plus mostly-event modules (several also
-carry a few commands): `indexing.ts`, `ai.ts`, `appearance.ts`, `menu-events.ts`, `directory-watcher.ts`,
-`native-drag.ts`, `quick-look.ts`, `downloads.ts`, `reveal.ts`, `restricted-paths.ts`, `dialog-events.ts`.
-`ipc-types.ts` holds `TimedOut<T>` and the last-resort `throwIpcError`. DETAILS.md has the per-file contents and the
-"where to put a new command" routing map.
+`licensing.ts`, `settings.ts`, `logging.ts`, `tab.ts`, `function-key-bar.ts`, `clipboard-files.ts`, `git.ts`,
+`go-to-path.ts`, `tags.ts`, `updates.ts`, `debug.ts`, `usage.ts`, `dock.ts`, `notifications.ts`, `crash-reporter.ts`,
+`managed-policy.ts`, plus mostly-event modules (several also carry a few commands): `indexing.ts`, `ai.ts`,
+`appearance.ts`, `menu-events.ts`, `directory-watcher.ts`, `native-drag.ts`, `quick-look.ts`, `downloads.ts`,
+`reveal.ts`, `restricted-paths.ts`, `dialog-events.ts`. `ipc-types.ts` holds `TimedOut<T>` and the last-resort
+`throwIpcError`. `listing-gone.ts` is the listing reads' typed `Gone` refusal; `onListingGone` lets the pane showing
+that listing re-list (`file-explorer/pane/listing-liveness.ts`). DETAILS.md has the per-file contents and the "where to
+put a new command" routing map.
 
 ## Must-knows (invariants and guardrails)
 
@@ -29,6 +31,8 @@ carry a few commands): `indexing.ts`, `ai.ts`, `appearance.ts`, `menu-events.ts`
   Rust's `serde(rename_all = "camelCase")` and carry an `// eslint-disable-next-line cmdr/no-raw-tauri-invoke -- …`
   comment naming the conversion blocker. Only fall back to raw `invoke` if the signature hits a documented specta
   blocker.
+- **A wrapper or command needs a production caller, or an allowlist entry with a reason.** Tests and mocks don't count.
+  `desktop-ipc-unused` enforces it; `DETAILS.md` § "Unused wrappers and commands".
 - **Event listeners return `UnlistenFn`; call it in `onDestroy` or you leak.**
 
   ```ts
@@ -62,5 +66,5 @@ carry a few commands): `indexing.ts`, `ai.ts`, `appearance.ts`, `menu-events.ts`
   `playwright-e2e` build can record instead of launch); see `file-actions.ts`.
 - Types from `$lib/file-explorer/types`.
 
-Full details (per-file command inventory, the new-command routing map, and notable non-obvious placements):
-`DETAILS.md`.
+Per-file inventory and the new-command routing map: `DETAILS.md`. Read it before any non-trivial work here: editing,
+planning, reorganizing, or advising.

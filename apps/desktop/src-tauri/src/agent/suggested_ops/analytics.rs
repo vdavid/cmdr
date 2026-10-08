@@ -18,7 +18,7 @@ pub(super) fn group_proposed(verb: ProposalVerb, op_count: usize) {
     capture("suggestion_group_proposed", verb, op_count);
 }
 
-/// The user approved a group, and its ops went to the queue.
+/// The user approved a group, and its operation started. A start the engine refused is not one.
 pub(super) fn group_approved(verb: ProposalVerb, op_count: u64) {
     capture("suggestion_group_approved", verb, op_count as usize);
 }
@@ -29,8 +29,24 @@ pub(super) fn group_rejected(verb: ProposalVerb, op_count: u64) {
 }
 
 fn capture(event: &str, verb: ProposalVerb, op_count: usize) {
+    #[cfg(test)]
+    CAPTURED.with(|captured| captured.borrow_mut().push(event.to_string()));
     crate::analytics::events::capture(
         event,
         json!({ "verb": verb.as_token(), "op_count": item_count_bucket(op_count) }),
     );
+}
+
+#[cfg(test)]
+thread_local! {
+    /// Every lifecycle event this thread captured. Analytics are suppressed in tests, so this is
+    /// how one asks what WOULD have been counted. Per thread, so side-by-side tests never read
+    /// each other's events.
+    static CAPTURED: std::cell::RefCell<Vec<String>> = const { std::cell::RefCell::new(Vec::new()) };
+}
+
+/// Take the event names the calling thread has captured so far, leaving nothing behind.
+#[cfg(test)]
+pub(crate) fn take_captured() -> Vec<String> {
+    CAPTURED.with(|captured| std::mem::take(&mut *captured.borrow_mut()))
 }

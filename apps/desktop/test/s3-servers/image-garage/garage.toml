@@ -1,0 +1,18 @@
+# A single-node Garage for tests. Nothing here is secret: the fixture binds to
+# loopback, and the RPC and admin ports aren't published at all.
+metadata_dir = "/var/lib/garage/meta"
+data_dir = "/var/lib/garage/data"
+db_engine = "sqlite"
+replication_factor = 1
+
+rpc_bind_addr = "[::]:3901"
+rpc_public_addr = "127.0.0.1:3901"
+rpc_secret = "c0dec0dec0dec0dec0dec0dec0dec0dec0dec0dec0dec0dec0dec0dec0dec0de"
+
+[s3_api]
+# The same region VersityGW defaults to, so one signing config reaches both.
+s3_region = "us-east-1"
+api_bind_addr = "[::]:3900"
+# Only a Host ending in this suffix is read as virtual-hosted style; anything
+# else, `127.0.0.1:<port>` included, is path style.
+root_domain = ".s3.garage.localhost"

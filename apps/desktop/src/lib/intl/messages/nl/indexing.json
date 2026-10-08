@@ -14,7 +14,7 @@
   },
   "indexing.scan.counters": "{entriesText} {entries, plural, one {onderdeel} other {onderdelen}}, {dirsText} {dirs, plural, one {map} other {mappen}}",
   "@indexing.scan.counters": {
-    "sourceHash": "f635790"
+    "sourceHash": "ecf47f2"
   },
   "indexing.scan.countersElapsed": "{counters} · {elapsed}",
   "@indexing.scan.countersElapsed": {
@@ -134,9 +134,21 @@
     "sourceHash": "26b29da",
     "sameAsSourceJustification": "Pure format string ({percent}%, {eta}) — a number, a percent sign, a comma separator, and an already-formatted phrase. This locale uses the same percent spacing and comma as English, so the format is genuinely identical; nothing here is translatable prose."
   },
+  "indexing.overall.eta": "In totaal: {eta}",
+  "@indexing.overall.eta": {
+    "sourceHash": "a9a2ffc"
+  },
+  "indexing.overall.estimating": "In totaal: berekenen…",
+  "@indexing.overall.estimating": {
+    "sourceHash": "9dac967"
+  },
   "indexing.eta.almostDone": "Bijna klaar",
   "@indexing.eta.almostDone": {
     "sourceHash": "506f162"
+  },
+  "indexing.eta.almostDoneMidSentence": "bijna klaar",
+  "@indexing.eta.almostDoneMidSentence": {
+    "sourceHash": "1d2fb48"
   },
   "indexing.eta.secondsLeft": "nog {secondsText}s",
   "@indexing.eta.secondsLeft": {
@@ -189,6 +201,10 @@
   "indexing.needsFreshScan.afterDisconnect": "{name} werd losgekoppeld terwijl Cmdr de index bijwerkte. Cmdr doorzoekt deze schijf de volgende keer helemaal opnieuw, zodat de mapgroottes weer kloppen.",
   "@indexing.needsFreshScan.afterDisconnect": {
     "sourceHash": "a90dbdf"
+  },
+  "indexing.memoryStop.paused": "Cmdr heeft het indexeren van schijven gepauzeerd, omdat er te veel geheugen werd gebruikt. Mapgroottes kunnen verouderd zijn tot je Cmdr herstart.",
+  "@indexing.memoryStop.paused": {
+    "sourceHash": "32d225a"
   },
   "indexing.firstConnect.title": "{name} indexeren?",
   "@indexing.firstConnect.title": {

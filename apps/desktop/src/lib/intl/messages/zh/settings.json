@@ -150,21 +150,21 @@
   "@settings.appearance.tintLocal.description": {
     "sourceHash": "3c86b48"
   },
-  "settings.appearance.tintSmb.label": "为服务器窗格着色（SMB、SFTP、WebDAV）",
+  "settings.appearance.tintSmb.label": "为服务器窗格着色（SMB、SFTP、WebDAV、S3）",
   "@settings.appearance.tintSmb.label": {
-    "sourceHash": "d801804"
+    "sourceHash": "d912bcf"
   },
-  "settings.appearance.tintSmb.description": "为显示 SMB 共享、SFTP 服务器或 WebDAV 服务器的窗格添加的背景着色。",
+  "settings.appearance.tintSmb.description": "为显示 SMB 共享、SFTP 服务器、WebDAV 服务器或 S3 存储的窗格添加的背景着色。",
   "@settings.appearance.tintSmb.description": {
-    "sourceHash": "2e071d3"
+    "sourceHash": "bddee40"
   },
-  "settings.appearance.tintMtp.label": "为 MTP 窗格着色",
+  "settings.appearance.tintMtp.label": "为设备窗格着色（MTP、ADB）",
   "@settings.appearance.tintMtp.label": {
-    "sourceHash": "2054351"
+    "sourceHash": "c50c536"
   },
-  "settings.appearance.tintMtp.description": "为显示 Android、Kindle 或相机设备的窗格添加的背景着色。",
+  "settings.appearance.tintMtp.description": "为显示手机、Kindle 或相机的窗格添加的背景着色，无论通过 MTP 还是 ADB 连接。",
   "@settings.appearance.tintMtp.description": {
-    "sourceHash": "a09d99a"
+    "sourceHash": "d70512d"
   },
   "settings.appearance.textSize.label": "文本大小",
   "@settings.appearance.textSize.label": {
@@ -218,9 +218,9 @@
   "@settings.listing.sizeUnit.label": {
     "sourceHash": "2a817d3"
   },
-  "settings.listing.sizeUnit.description": "动态会为每个文件挑选最易读的单位（1.02 MB）。固定单位让整个列表的大小可以直接对比。字节显示精确的数值，方便精准比较。",
+  "settings.listing.sizeUnit.description": "动态会为每个文件挑选最易读的单位。固定单位让整个列表的大小可以直接对比。字节显示精确的数值，方便精准比较。",
   "@settings.listing.sizeUnit.description": {
-    "sourceHash": "702a201"
+    "sourceHash": "fae7a91"
   },
   "settings.listing.sizeUnit.opt.dynamic": "动态",
   "@settings.listing.sizeUnit.opt.dynamic": {
@@ -230,36 +230,21 @@
   "@settings.listing.sizeUnit.opt.bytes": {
     "sourceHash": "4d80003"
   },
-  "settings.listing.sizeUnit.opt.kB": "kB",
-  "@settings.listing.sizeUnit.opt.kB": {
-    "sourceHash": "591e59c",
-    "sameAsSourceJustification": "\"kB\" is an international unit symbol, kept verbatim. Chinese UI (Apple/Microsoft zh) shows storage units as \"kB\". Sibling size-unit options ARE translated (Dynamic→动态, Bytes→字节)."
-  },
-  "settings.listing.sizeUnit.opt.mB": "MB",
-  "@settings.listing.sizeUnit.opt.mB": {
-    "sourceHash": "1d09f6f",
-    "sameAsSourceJustification": "\"MB\" is an international unit symbol, kept verbatim. Chinese UI (Apple/Microsoft zh) shows storage units as \"MB\". Sibling size-unit options ARE translated (Dynamic→动态, Bytes→字节)."
-  },
-  "settings.listing.sizeUnit.opt.gB": "GB",
-  "@settings.listing.sizeUnit.opt.gB": {
-    "sourceHash": "b4043b0",
-    "sameAsSourceJustification": "\"GB\" is an international unit symbol, kept verbatim. Chinese UI (Apple/Microsoft zh) shows storage units as \"GB\". Sibling size-unit options ARE translated (Dynamic→动态, Bytes→字节)."
-  },
   "settings.appearance.fileSizeFormat.label": "文件大小格式",
   "@settings.appearance.fileSizeFormat.label": {
     "sourceHash": "355c89b"
   },
-  "settings.appearance.fileSizeFormat.description": "文件列表中文件大小的显示方式：二进制（KiB、MiB，其中 1 KiB = 1024 字节）或 SI 十进制（KB、MB，其中 1 KB = 1000 字节）。",
+  "settings.appearance.fileSizeFormat.description": "各处大小的显示方式：二进制（KiB、MiB，其中 1 KiB = 1024 字节）或 SI 十进制（kB、MB，其中 1 kB = 1000 字节）。",
   "@settings.appearance.fileSizeFormat.description": {
-    "sourceHash": "8219704"
+    "sourceHash": "db264e2"
   },
   "settings.appearance.fileSizeFormat.opt.binary": "二进制（KiB、MiB、GiB）",
   "@settings.appearance.fileSizeFormat.opt.binary": {
     "sourceHash": "0a4ce4e"
   },
-  "settings.appearance.fileSizeFormat.opt.si": "SI 十进制（KB、MB、GB）",
+  "settings.appearance.fileSizeFormat.opt.si": "SI 十进制（kB、MB、GB）",
   "@settings.appearance.fileSizeFormat.opt.si": {
-    "sourceHash": "8984a13"
+    "sourceHash": "4dcc22e"
   },
   "settings.listing.sizeMismatchWarning.label": "大小不一致警告",
   "@settings.listing.sizeMismatchWarning.label": {
@@ -309,13 +294,33 @@
   "@settings.listing.showTags.description": {
     "sourceHash": "005f3b0"
   },
-  "settings.listing.directorySortMode.label": "目录排序",
-  "@settings.listing.directorySortMode.label": {
-    "sourceHash": "7f0a1e4"
+  "settings.listing.foldersFirst.label": "优先显示文件夹",
+  "@settings.listing.foldersFirst.label": {
+    "sourceHash": "a61d73e"
   },
-  "settings.listing.directorySortMode.description": "更改排序列时，目录的排序方式。",
+  "settings.listing.foldersFirst.description": "在文件上方列出文件夹。关闭后，文件夹和文件会混在一起。",
+  "@settings.listing.foldersFirst.description": {
+    "sourceHash": "8505ff3"
+  },
+  "settings.listing.spaceCalculatesFolderSize.label": "按空格键计算文件夹大小",
+  "@settings.listing.spaceCalculatesFolderSize.label": {
+    "sourceHash": "1a403eb"
+  },
+  "settings.listing.spaceCalculatesFolderSize.description": "用空格键选择一个还不知道大小的文件夹时，Cmdr 会把其中的内容加起来并显示总大小。按 Esc 键可停止计算。",
+  "@settings.listing.spaceCalculatesFolderSize.description": {
+    "sourceHash": "38d64c1"
+  },
+  "settings.listing.directorySortMode.label": "文件夹排序",
+  "@settings.listing.directorySortMode.label": {
+    "sourceHash": "7d0b088"
+  },
+  "settings.listing.directorySortMode.description": "更改排序列时，文件夹的排序方式。",
   "@settings.listing.directorySortMode.description": {
-    "sourceHash": "fe5f12a"
+    "sourceHash": "797d93b"
+  },
+  "settings.listing.directorySortMode.disabledReason": "当前已停用，因为文件夹和文件混在一起。开启“优先显示文件夹”即可使用这项设置。",
+  "@settings.listing.directorySortMode.disabledReason": {
+    "sourceHash": "f17416c"
   },
   "settings.listing.directorySortMode.opt.likeFiles": "与文件一致",
   "@settings.listing.directorySortMode.opt.likeFiles": {
@@ -963,6 +968,10 @@
   "@settings.network.firstTriggerDone.description": {
     "sourceHash": "7982e11"
   },
+  "settings.network.nearbyServersGroup.label": "附近服务器分组",
+  "@settings.network.nearbyServersGroup.label": {
+    "sourceHash": "cfa28b1"
+  },
   "settings.network.directSmbConnection.label": "直接连接到 SMB 共享",
   "@settings.network.directSmbConnection.label": {
     "sourceHash": "407c4f1"
@@ -1057,7 +1066,7 @@
   },
   "settings.fileOperations.adbEnabled.description": "只要 Android 手机开启了 USB 调试，就能访问它的整个文件系统，包括 MTP 显示不了的部分。需要在这台 Mac 上安装 Android 平台工具（也就是 adb 命令）。如果你没装任何 Android 工具，开着这一项也不会有任何开销。",
   "@settings.fileOperations.adbEnabled.description": {
-    "sourceHash": "9a22518"
+    "sourceHash": "a89c957"
   },
   "settings.fileOperations.adbBinaryPath.label": "adb 的位置",
   "@settings.fileOperations.adbBinaryPath.label": {
@@ -1247,15 +1256,15 @@
   "@settings.fileViewer.suppressBinaryWarning.label": {
     "sourceHash": "8cdaada"
   },
-  "settings.fileViewer.suppressBinaryWarning.description": "F3 会打开 Cmdr 的文件查看器，它显示原始字节（非文本内容按有损的 UTF-8 显示）。当你打开图像、PDF、归档或其他二进制文件时，查看器会显示一条红色横幅，告诉你 ⇧Space（快速查看）或 Enter（在关联 App 中打开）很可能才是你想要的。打开这一项（或点按横幅里的“不再显示此警告”），就能永久关掉这条警告。",
+  "settings.fileViewer.suppressBinaryWarning.description": "F3 会打开 Cmdr 的文件查看器，它显示原始字节（非文本内容按有损的 UTF-8 显示）。当你打开图像、PDF、归档或其他二进制文件时，查看器会显示一条红色横幅，告诉你⇧空格键（快速查看）或 Enter（在关联 App 中打开）很可能才是你想要的。打开这一项（或点按横幅里的“不再显示此警告”），就能永久关掉这条警告。",
   "@settings.fileViewer.suppressBinaryWarning.description": {
     "sourceHash": "a93b4cb"
   },
-  "settings.fileExplorer.suppressQuickLookHint.label": "不显示 Space 键的快速查看提示",
+  "settings.fileExplorer.suppressQuickLookHint.label": "不显示空格键的快速查看提示",
   "@settings.fileExplorer.suppressQuickLookHint.label": {
     "sourceHash": "bd9da35"
   },
-  "settings.fileExplorer.suppressQuickLookHint.description": "Cmdr 用 Space 切换文件选择，用 ⇧Space 触发快速查看（Finder 用单独的 Space 触发快速查看）。每次你在文件列表中按 Space，Cmdr 都会显示一段简短的提醒，说明这一差别。打开这一项（或点按提示里的“不再显示”），就能永久关掉这条提醒。",
+  "settings.fileExplorer.suppressQuickLookHint.description": "Cmdr 用空格键切换文件选择，用⇧空格键触发快速查看（Finder 用单独的空格键触发快速查看）。每次你在文件列表中按空格键，Cmdr 都会显示一段简短的提醒，说明这一差别。打开这一项（或点按提示里的“不再显示”），就能永久关掉这条提醒。",
   "@settings.fileExplorer.suppressQuickLookHint.description": {
     "sourceHash": "10357b4"
   },
@@ -1298,6 +1307,22 @@
   "settings.fileExplorer.typeToJump.resetDelay.description": "最后一次按键后，输入跳转缓冲区还会保留多久。数值越低，多次搜索之间重置越快；数值越高，对慢速打字者越宽容。",
   "@settings.fileExplorer.typeToJump.resetDelay.description": {
     "sourceHash": "ff59a6a"
+  },
+  "settings.fileExplorer.typeToJump.mode.label": "在窗格中输入时",
+  "@settings.fileExplorer.typeToJump.mode.label": {
+    "sourceHash": "4ee8ef5"
+  },
+  "settings.fileExplorer.typeToJump.mode.description": "“跳转”会把光标移到最佳匹配项上。“筛选”只显示名称中包含你所输入内容的文件和文件夹，类似 Total Commander 的快速筛选。按 Delete（⌫）键可修改，按 Esc 键可清除。",
+  "@settings.fileExplorer.typeToJump.mode.description": {
+    "sourceHash": "e142e97"
+  },
+  "settings.fileExplorer.typeToJump.mode.opt.jump": "跳转",
+  "@settings.fileExplorer.typeToJump.mode.opt.jump": {
+    "sourceHash": "9ee0ca3"
+  },
+  "settings.fileExplorer.typeToJump.mode.opt.filter": "筛选",
+  "@settings.fileExplorer.typeToJump.mode.opt.filter": {
+    "sourceHash": "638e249"
   },
   "settings.fileOperations.maxConflictsToShow.label": "最多显示的冲突数",
   "@settings.fileOperations.maxConflictsToShow.label": {
@@ -1635,9 +1660,9 @@
   "@settings.behavior.doubleClickOnPaneNotificationSeen.description": {
     "sourceHash": "56238d4"
   },
-  "settings.behavior.serversPinHintSeen.label": "已显示“网络”分组过长提示",
+  "settings.behavior.serversPinHintSeen.label": "已显示“从宗卷选择器中取消固定”提示",
   "@settings.behavior.serversPinHintSeen.label": {
-    "sourceHash": "8d632ca"
+    "sourceHash": "8513a3c"
   },
   "settings.behavior.serversPinHintSeen.description": "是否已显示过关于取消固定服务器的一次性提示。",
   "@settings.behavior.serversPinHintSeen.description": {
@@ -1903,36 +1928,6 @@
   "@settings.operationLog.maxSize.description": {
     "sourceHash": "ad5152a"
   },
-  "settings.operationLog.maxSize.opt.mb100": "100 MB",
-  "@settings.operationLog.maxSize.opt.mb100": {
-    "sourceHash": "991d5de",
-    "sameAsSourceJustification": "Byte-unit label kept verbatim (numeral literal, MB/GB not localized), matching the app's size-unit setting."
-  },
-  "settings.operationLog.maxSize.opt.mb250": "250 MB",
-  "@settings.operationLog.maxSize.opt.mb250": {
-    "sourceHash": "028b133",
-    "sameAsSourceJustification": "Byte-unit label kept verbatim (numeral literal, MB/GB not localized), matching the app's size-unit setting."
-  },
-  "settings.operationLog.maxSize.opt.gb1": "1 GB",
-  "@settings.operationLog.maxSize.opt.gb1": {
-    "sourceHash": "6c31b63",
-    "sameAsSourceJustification": "Byte-unit label kept verbatim (numeral literal, MB/GB not localized), matching the app's size-unit setting."
-  },
-  "settings.operationLog.maxSize.opt.gb2": "2 GB",
-  "@settings.operationLog.maxSize.opt.gb2": {
-    "sourceHash": "b2dd624",
-    "sameAsSourceJustification": "Byte-unit label kept verbatim (numeral literal, MB/GB not localized), matching the app's size-unit setting."
-  },
-  "settings.operationLog.maxSize.opt.gb3": "3 GB",
-  "@settings.operationLog.maxSize.opt.gb3": {
-    "sourceHash": "485f66b",
-    "sameAsSourceJustification": "Byte-unit label kept verbatim (numeral literal, MB/GB not localized), matching the app's size-unit setting."
-  },
-  "settings.operationLog.maxSize.opt.gb5": "5 GB",
-  "@settings.operationLog.maxSize.opt.gb5": {
-    "sourceHash": "43644bc",
-    "sameAsSourceJustification": "Byte-unit label kept verbatim (numeral literal, MB/GB not localized), matching the app's size-unit setting."
-  },
   "settings.section.mcpServer": "MCP 服务器",
   "@settings.section.mcpServer": {
     "sourceHash": "d938c81"
@@ -1965,9 +1960,9 @@
   "@settings.summary.fileAndFolderSizes": {
     "sourceHash": "cdd8214"
   },
-  "settings.summary.listing": "文稿图标、目录排序，以及简洁模式的列宽。",
+  "settings.summary.listing": "文稿图标、文件夹排序，以及简洁模式的列宽。",
   "@settings.summary.listing": {
-    "sourceHash": "7756e95"
+    "sourceHash": "ebed448"
   },
   "settings.summary.navigationAndFileOps": "双击前往上层文件夹，以及重命名文件时的行为。",
   "@settings.summary.navigationAndFileOps": {
@@ -1991,7 +1986,7 @@
   },
   "settings.summary.servers": "你信任过的 SSH 主机密钥。",
   "@settings.summary.servers": {
-    "sourceHash": "40940fa"
+    "sourceHash": "3335380"
   },
   "settings.summary.adb": "浏览已开启 USB 调试的 Android 手机。",
   "@settings.summary.adb": {
@@ -2052,6 +2047,75 @@
   "settings.control.backToPresetsAriaLabel": "返回预设",
   "@settings.control.backToPresetsAriaLabel": {
     "sourceHash": "1579f3f"
+  },
+  "settings.control.unitItems": "个项目",
+  "@settings.control.unitItems": {
+    "sourceHash": "5f3c4f8"
+  },
+  "settings.managed.rowNote": "这项设置由你的组织管理。",
+  "@settings.managed.rowNote": {
+    "sourceHash": "891206b"
+  },
+  "settings.managed.sectionNote": "这里有些设置由你的组织管理。",
+  "@settings.managed.sectionNote": {
+    "sourceHash": "ab52c49"
+  },
+  "settings.managed.summary.title": "由你的组织管理",
+  "@settings.managed.summary.title": {
+    "sourceHash": "5450801"
+  },
+  "settings.managed.summary.usageStats": "使用统计",
+  "@settings.managed.summary.usageStats": {
+    "sourceHash": "4e0483c"
+  },
+  "settings.managed.summary.usageStatsOff": "关闭",
+  "@settings.managed.summary.usageStatsOff": {
+    "sourceHash": "ca7981b"
+  },
+  "settings.managed.summary.reports": "崩溃和错误报告",
+  "@settings.managed.summary.reports": {
+    "sourceHash": "ef409c3"
+  },
+  "settings.managed.summary.reportsOff": "关闭",
+  "@settings.managed.summary.reportsOff": {
+    "sourceHash": "ca7981b"
+  },
+  "settings.managed.summary.updates": "更新",
+  "@settings.managed.summary.updates": {
+    "sourceHash": "22e2bad"
+  },
+  "settings.managed.summary.updatesOff": "关闭",
+  "@settings.managed.summary.updatesOff": {
+    "sourceHash": "ca7981b"
+  },
+  "settings.managed.summary.ai": "AI",
+  "@settings.managed.summary.ai": {
+    "sourceHash": "11fb682",
+    "sameAsSourceJustification": "\"AI\" stays Latin in zh UI: the catalog writes AI throughout (云端 AI, 本地 AI, AI 功能, the settings section “设置 › AI”), as Apple zh-CN does for Apple Intelligence copy."
+  },
+  "settings.managed.summary.aiOff": "关闭",
+  "@settings.managed.summary.aiOff": {
+    "sourceHash": "ca7981b"
+  },
+  "settings.managed.summary.upTo": "最高到 {ceiling}",
+  "@settings.managed.summary.upTo": {
+    "sourceHash": "8989a97"
+  },
+  "settings.managed.summary.manualChecksOnly": "只能手动检查",
+  "@settings.managed.summary.manualChecksOnly": {
+    "sourceHash": "1969d26"
+  },
+  "settings.managed.summary.upToManualChecksOnly": "最高到 {ceiling}，只能手动检查",
+  "@settings.managed.summary.upToManualChecksOnly": {
+    "sourceHash": "c769ffd"
+  },
+  "settings.managed.summary.onDeviceOnly": "只限本地",
+  "@settings.managed.summary.onDeviceOnly": {
+    "sourceHash": "d4f8552"
+  },
+  "settings.managed.summary.cloudHostsOnly": "只能通过 {hosts} 使用云端 AI",
+  "@settings.managed.summary.cloudHostsOnly": {
+    "sourceHash": "00f1237"
   },
   "settings.sidebar.searchPlaceholder": "搜索设置…",
   "@settings.sidebar.searchPlaceholder": {
@@ -2520,13 +2584,13 @@
   "@settings.adb.recheck": {
     "sourceHash": "24fcca0"
   },
-  "settings.adb.install.intro": "安装 Android 平台工具，然后点按“再次检查”：",
+  "settings.adb.install.intro": "安装 Android 平台工具，然后选择“再次检查”：",
   "@settings.adb.install.intro": {
-    "sourceHash": "5a82ea4"
+    "sourceHash": "9f7a0f4"
   },
-  "settings.adb.pathPlaceholder": "按常规方式查找 adb",
+  "settings.adb.pathPlaceholder": "Cmdr 会按常规方式查找 adb",
   "@settings.adb.pathPlaceholder": {
-    "sourceHash": "e236ef2"
+    "sourceHash": "538b307"
   },
   "settings.adb.browse": "浏览…",
   "@settings.adb.browse": {
@@ -2535,5 +2599,13 @@
   "settings.adb.pickerTitle": "选取 adb 命令",
   "@settings.adb.pickerTitle": {
     "sourceHash": "d6fc142"
+  },
+  "settings.fileExplorer.quickFilterIntroSeen.label": "已显示快速筛选说明",
+  "@settings.fileExplorer.quickFilterIntroSeen.label": {
+    "sourceHash": "5d124bb"
+  },
+  "settings.fileExplorer.quickFilterIntroSeen.description": "是否已经显示过解释首次快速筛选的提示。",
+  "@settings.fileExplorer.quickFilterIntroSeen.description": {
+    "sourceHash": "855c661"
   }
 }

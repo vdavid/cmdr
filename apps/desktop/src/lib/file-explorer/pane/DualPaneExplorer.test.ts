@@ -64,6 +64,8 @@ vi.mock('$lib/tauri-commands', () => ({
   // `listing-loader.ts::abandonListing`), so both have to exist here.
   cancelListing: vi.fn().mockResolvedValue(undefined),
   listDirectoryEnd: vi.fn().mockResolvedValue(undefined),
+  onListingGone: vi.fn(() => () => {}),
+  keepListingsAlive: vi.fn().mockResolvedValue([]),
   openFile: vi.fn().mockResolvedValue(undefined),
   getIcons: vi.fn().mockResolvedValue({ data: {}, timedOut: false }),
   listen: vi.fn(() => Promise.resolve(() => {})),
@@ -111,7 +113,6 @@ vi.mock('$lib/tauri-commands', () => ({
   getNetworkDiscoveryState: vi.fn().mockResolvedValue('idle'),
   resolveNetworkHost: vi.fn().mockResolvedValue(null),
   // MTP device mocks
-  listMtpDevices: vi.fn().mockResolvedValue([]),
   onMtpDeviceConnected: vi.fn().mockResolvedValue(() => {}),
   onMtpDeviceDisconnected: vi.fn().mockResolvedValue(() => {}),
   onVolumeSpaceChanged: vi.fn().mockResolvedValue(() => {}),
@@ -165,6 +166,30 @@ vi.mock('$lib/settings', () => ({
   getSetting: vi.fn().mockReturnValue(undefined),
   onSpecificSettingChange: vi.fn(() => () => {}),
   onSettingChange: vi.fn(() => () => {}),
+}))
+
+// A pane mounts its list from the first load on (the header stays while it loads),
+// and the list reads its row height off reactive-settings. The `$lib/settings` mock
+// answers `undefined` for every setting, which crashes `getRowHeight`'s
+// `densityMappings[uiDensity]`, so pin the list's getters to safe defaults.
+vi.mock('$lib/settings/reactive-settings.svelte', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('$lib/settings/reactive-settings.svelte')>()),
+  getRowHeight: vi.fn().mockReturnValue(24),
+  getIconSize: vi.fn().mockReturnValue(16),
+  getIsCompactDensity: vi.fn().mockReturnValue(false),
+  getUseAppIconsForDocuments: vi.fn().mockReturnValue(false),
+  getDirectorySortMode: vi.fn().mockReturnValue('likeFiles'),
+  getIsCmdrGold: vi.fn().mockReturnValue(false),
+  getSizeDisplayMode: vi.fn().mockReturnValue('size'),
+  getSizeMismatchWarning: vi.fn().mockReturnValue(false),
+  getFileSizeUnit: vi.fn().mockReturnValue('binary'),
+  getFileSizeFormat: vi.fn().mockReturnValue('short'),
+  getStripedRows: vi.fn().mockReturnValue(false),
+  getShowExtensionInName: vi.fn().mockReturnValue(false),
+  getBriefColumnWidthMode: vi.fn().mockReturnValue('auto'),
+  getBriefColumnWidthMaxPx: vi.fn().mockReturnValue(400),
+  getNetworkEnabled: vi.fn().mockReturnValue(true),
+  getTypeToJumpResetDelay: vi.fn().mockReturnValue(1000),
 }))
 
 describe('DualPaneExplorer', () => {

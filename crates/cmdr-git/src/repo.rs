@@ -99,11 +99,7 @@ pub fn repo_info(handle: &RepoHandle, repo_root: &Path) -> Result<RepoInfo, Frie
         }
     }
 
-    let is_dirty = if unborn {
-        false
-    } else {
-        repo.is_dirty().unwrap_or(false)
-    };
+    let is_dirty = if unborn { false } else { is_dirty(&repo) };
 
     Ok(RepoInfo {
         repo_root: repo_root.display().to_string(),
@@ -115,6 +111,94 @@ pub fn repo_info(handle: &RepoHandle, repo_root: &Path) -> Result<RepoInfo, Frie
         behind,
         is_dirty,
     })
+}
+
+/// Whether anything is staged or changed in the worktree, untracked files aside,
+/// a submodule's own edits included.
+///
+/// gix's own `Repository::is_dirty` asks submodules for their worktree status
+/// "as configured", which opens each one with its OWN config, filter drivers
+/// included ([`without_filter_drivers`]). This is the same question with
+/// [`submodule_status`] plus [`dirty_submodule_paths`].
+fn is_dirty(repo: &gix::Repository) -> bool {
+    let Ok(platform) = repo.status(gix::progress::Discard) else {
+        return false;
+    };
+    let Ok(mut items) = platform
+        .index_worktree_rewrites(None)
+        .index_worktree_submodules(submodule_status(true))
+        .index_worktree_options_mut(|opts| opts.dirwalk_options = None)
+        .into_iter(std::iter::empty::<gix::bstr::BString>())
+    else {
+        return false;
+    };
+    items.next().is_some_and(|item| item.is_ok()) || !dirty_submodule_paths(repo).is_empty()
+}
+
+/// The worktree paths (`/`-separated, relative to `repo`'s) of submodules whose
+/// own worktree has changes, nested ones included.
+///
+/// Each is opened and then stripped by [`without_filter_drivers`] before its
+/// worktree is walked, which is what gix's built-in submodule status can't do.
+/// A submodule configured `ignore = dirty` or `all` is left out, as git would.
+pub(crate) fn dirty_submodule_paths(repo: &gix::Repository) -> Vec<String> {
+    let Ok(Some(modules)) = repo.submodules() else {
+        return Vec::new();
+    };
+    modules
+        .filter_map(|sm| {
+            let ignored = matches!(
+                sm.ignore(),
+                Ok(Some(
+                    gix::submodule::config::Ignore::Dirty | gix::submodule::config::Ignore::All
+                ))
+            );
+            if ignored {
+                return None;
+            }
+            let path = sm.path().ok()?.to_string();
+            // Opening reads config and runs nothing; the walk below is what could.
+            let opened = sm.open().ok()??;
+            let stripped = without_filter_drivers(opened.into_sync()).ok()?.to_thread_local();
+            is_dirty(&stripped).then_some(path)
+        })
+        .collect()
+}
+
+/// How far gix's status looks into a submodule: its checked-out commit against
+/// the one the parent records, ❌ never its worktree. A worktree status hashes
+/// files, which runs that repo's filter drivers, and gix opens a submodule with
+/// its own config, out of reach of [`without_filter_drivers`].
+/// [`dirty_submodule_paths`] answers the worktree half safely.
+pub(crate) fn submodule_status(check_dirty: bool) -> gix::status::Submodule {
+    gix::status::Submodule::Given {
+        ignore: gix::submodule::config::Ignore::Dirty,
+        check_dirty,
+    }
+}
+
+/// `repo` with every `filter.<driver>` section dropped from its in-memory config.
+///
+/// ❗ A repository's own config can name a command (`filter.x.clean`,
+/// `.smudge`, `.process`) that its `.gitattributes` applies to files, and gix
+/// runs it whenever status has to hash a file whose stat changed. A repo the user
+/// downloaded or unzipped is owned by them, so gix trusts that config in full:
+/// without this, showing such a folder in a pane runs its author's command.
+/// Cmdr only reads, so a filter buys nothing here. Nothing is written to disk.
+fn without_filter_drivers(repo: gix::ThreadSafeRepository) -> Result<gix::ThreadSafeRepository, FriendlyGitError> {
+    let mut local = repo.to_thread_local();
+    let mut config = local.config_snapshot_mut();
+    let ids: Vec<_> = config
+        .sections_and_ids_by_name("filter")
+        .map(|sections| sections.map(|(_, id)| id).collect())
+        .unwrap_or_default();
+    for id in ids {
+        config.remove_section_by_id(id);
+    }
+    config
+        .commit()
+        .map_err(|e| FriendlyGitError::with_source(FriendlyGitErrorKind::CorruptRepo, e.to_string(), e))?;
+    Ok(local.into_sync())
 }
 
 fn map_discover_err(err: gix::discover::Error) -> FriendlyGitError {
@@ -209,7 +293,7 @@ impl RepoCache {
             return Ok((handle, root));
         }
 
-        let repo = gix::ThreadSafeRepository::discover(path).map_err(map_discover_err)?;
+        let repo = without_filter_drivers(gix::ThreadSafeRepository::discover(path).map_err(map_discover_err)?)?;
         // `ThreadSafeRepository` only exposes `work_dir()` (no `workdir`).
         // Suppress the deprecation warning here – gix kept work_dir on the
         // ThreadSafe wrapper while only the Repository alias got a replacement.

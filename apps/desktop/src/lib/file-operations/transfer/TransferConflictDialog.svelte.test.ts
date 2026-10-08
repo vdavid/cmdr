@@ -103,3 +103,28 @@ describe('a clash with a name the destination spells differently', () => {
     expect(target.querySelector('.conflict-look-alike')).toBeNull()
   })
 })
+
+describe('a clash between a file and a folder', () => {
+  // Overwrite on muscle memory is the risk: the type swap has to stand out in
+  // BOTH directions, not just when a folder's contents are on the line.
+  const path = '/Volumes/Backup/2026/report'
+
+  it('warns when a file is about to replace a folder', async () => {
+    const target = await mountDialog({ ...conflict(path), destinationIsDirectory: true })
+    const warning = target.querySelector('.conflict-warning[role="alert"]')
+    expect(warning?.textContent).toContain('Everything inside the folder would be gone')
+  })
+
+  it('warns when a folder is about to replace a file', async () => {
+    const target = await mountDialog({ ...conflict(path), sourceIsDirectory: true })
+    const warning = target.querySelector('.conflict-warning[role="alert"]')
+    expect(warning?.textContent.trim()).toBe(
+      'The target exists and is a file. You’re about to replace it with a folder by the same name. The file would be gone once the folder takes its place. What to do?',
+    )
+  })
+
+  it('warns about neither for two files', async () => {
+    const target = await mountDialog(conflict(path))
+    expect(target.querySelector('.conflict-warning')).toBeNull()
+  })
+})

@@ -13,7 +13,14 @@
 
 import { getCloudProvider, getProviderConfigs, setProviderConfig, getSetting, setSetting } from '$lib/settings'
 import type { CloudProviderPreset } from '$lib/settings/cloud-providers'
-import { checkAiConnection, getAiApiKeyStatus, saveAiApiKey } from '$lib/tauri-commands'
+import {
+  checkAiConnection,
+  cloudAiHostVerdicts,
+  deleteAiApiKey,
+  getAiApiKeyStatus,
+  saveAiApiKey,
+} from '$lib/tauri-commands'
+import type { ManagedAiRefusal } from '$lib/ipc/bindings'
 import { computeModelCacheKey, getCachedModels, setCachedModels } from '$lib/settings/ai-model-cache'
 import { describeSecretError, type SecretErrorMessage } from '$lib/settings/sections/ai-secret-error'
 import { isE2eRun } from '$lib/app-mode'
@@ -29,6 +36,8 @@ export type ConnectionStatus =
   | 'auth-error'
   | 'connection-error'
   | 'error'
+  // The organization's policy refuses this endpoint (`managedRefusal` says which rule); nothing was sent.
+  | 'managed'
 
 export interface ProviderSetupOptions {
   /** Logger scope, so a warning says which surface it came from. */
@@ -40,10 +49,11 @@ export interface ProviderSetupOptions {
    */
   onSecretErrorChange?: (error: SecretErrorMessage | null) => void
   /**
-   * Fires after a key lands in the secret store for the CURRENT provider. Settings uses it
-   * to re-push the AI config; the wizard pushes once, from its own "Next" handler.
+   * Fires after a key lands in, or leaves, the secret store for the CURRENT provider.
+   * Settings uses it to re-push the AI config; the wizard pushes once, from its own "Next"
+   * handler.
    */
-  onKeyPersisted?: () => void
+  onKeyChanged?: () => void
 }
 
 /**
@@ -84,6 +94,7 @@ export class ProviderSetupController {
   #status = $state<ConnectionStatus>('idle')
   #error = $state<string | null>(null)
   #models = $state<string[]>([])
+  #managedRefusal = $state<ManagedAiRefusal | null>(null)
   #secretError = $state<SecretErrorMessage | null>(null)
 
   #apiKeySaveTimer: ReturnType<typeof setTimeout> | null = null
@@ -129,6 +140,10 @@ export class ProviderSetupController {
   get secretError(): SecretErrorMessage | null {
     return this.#secretError
   }
+  /** Which policy rule refuses this endpoint, set exactly while `status` is `managed`. */
+  get managedRefusal(): ManagedAiRefusal | null {
+    return this.#managedRefusal
+  }
   get isChecking(): boolean {
     return this.#status === 'checking'
   }
@@ -162,7 +177,10 @@ export class ProviderSetupController {
     this.#providerId = id
     this.#resetConnectionState()
     this.#loadFromStore(id)
-    void this.#loadKeyStatus(id).then(() => this.populateOnOpen())
+    void this.#loadKeyStatus(id).then(async () => {
+      if (await this.#refusedByPolicy()) return
+      await this.populateOnOpen()
+    })
   }
 
   /** Commits anything still in the save debounce. Idempotent; safe on teardown. */
@@ -197,6 +215,35 @@ export class ProviderSetupController {
       this.#pendingApiKeySave = null
       if (pending) void this.#persistApiKey(pending.providerId, pending.value)
     }, API_KEY_SAVE_DEBOUNCE_MS)
+  }
+
+  /**
+   * Takes this provider's key out of the secret store. A key still in the save debounce
+   * goes with it: saving it after the removal would bring back what the user just removed.
+   * A refusal leaves the key in place and surfaces as `secretError`.
+   */
+  async removeApiKey(): Promise<void> {
+    const id = this.#providerId
+    if (this.#apiKeySaveTimer) {
+      clearTimeout(this.#apiKeySaveTimer)
+      this.#apiKeySaveTimer = null
+    }
+    this.#pendingApiKeySave = null
+    this.#apiKey = ''
+    this.#setSecretError(null)
+    try {
+      await deleteAiApiKey(id)
+    } catch (e) {
+      this.#log.warn("Couldn't remove the AI API key for provider {provider}: {error}", { provider: id, error: e })
+      if (id === this.#providerId) this.#setSecretError(describeSecretError(e, 'remove'))
+      return
+    }
+    if (id !== this.#providerId) return
+    this.#keyIsSet = false
+    this.#keyFingerprint = ''
+    // The models and the "connected" tick came from the key that's gone.
+    this.#resetConnectionState()
+    this.#options.onKeyChanged?.()
   }
 
   saveModel(value: string): void {
@@ -279,12 +326,15 @@ export class ProviderSetupController {
     try {
       await saveAiApiKey(id, value)
     } catch (e) {
-      // Surface it and skip the check: an in-memory value would tell the user it worked.
-      this.#setSecretError(describeSecretError(e, 'save'))
       this.#log.warn("Couldn't save the AI API key for provider {provider}: {error}", {
         provider: id,
         error: e,
       })
+      // Surface it and skip the check: an in-memory value would tell the user it worked. Only
+      // for the provider on screen, though: a flush for the one they switched away from would
+      // otherwise land under the new provider's field. Coming back re-reads the store, so that
+      // provider's row then shows what's really saved.
+      if (id === this.#providerId) this.#setSecretError(describeSecretError(e, 'save'))
       return
     }
     if (id !== this.#providerId) return
@@ -293,7 +343,7 @@ export class ProviderSetupController {
     // previous key's models.
     await this.#loadKeyStatus(id)
     if (id !== this.#providerId) return
-    this.#options.onKeyPersisted?.()
+    this.#options.onKeyChanged?.()
     this.#scheduleConnectionCheck()
   }
 
@@ -319,6 +369,9 @@ export class ProviderSetupController {
       clearTimeout(this.#connectionCheckTimer)
       this.#connectionCheckTimer = null
     }
+    // The policy first: a typed endpoint is judged once entered, key or no key, and a refused one
+    // is never probed.
+    if (await this.#refusedByPolicy()) return
     if (!this.hasCheckableConfig) return
 
     // Captured so the result is cached under the config it was fetched for, even if the
@@ -329,6 +382,7 @@ export class ProviderSetupController {
 
     this.#status = 'checking'
     this.#error = null
+    this.#managedRefusal = null
     // The prior list stays put during a refetch: a suggestion list that blanks mid-check is
     // a regression we forbid.
 
@@ -337,7 +391,10 @@ export class ProviderSetupController {
       // be committed first. That's why the check is scheduled from `#persistApiKey`.
       const result = await checkAiConnection(baseUrlAtStart, idAtStart)
       if (idAtStart !== this.#providerId) return
-      if (result.cloudConsentMissing) {
+      if (result.managed) {
+        this.#status = 'managed'
+        this.#managedRefusal = result.managed
+      } else if (result.cloudConsentMissing) {
         // The backend sent nothing: cloud AI isn't allowed yet. Not a connection problem, so
         // no error line; the section is locked behind the Allow cloud AI switch anyway.
         this.#status = 'idle'
@@ -364,6 +421,42 @@ export class ProviderSetupController {
     }
   }
 
+  /**
+   * Asks the backend whether the organization's policy lets cloud AI reach this endpoint, and
+   * shows the refusal when it doesn't. Local and instant, and it needs no key, so a typed endpoint
+   * is judged the moment it's checked and a refused preset says so on open. `true` means refused:
+   * the caller stops there, so nothing probes a refused host.
+   *
+   * The backend answers each URL with the policy's own refusal, so a policy that changed while
+   * this was open shows its real reason. A failed ask reads as allowed: the backend still refuses
+   * the request itself.
+   */
+  async #refusedByPolicy(): Promise<boolean> {
+    const idAtStart = this.#providerId
+    const baseUrlAtStart = this.resolvedBaseUrl
+    let refusal: ManagedAiRefusal | null = null
+    if (baseUrlAtStart !== '') {
+      try {
+        refusal = (await cloudAiHostVerdicts([baseUrlAtStart]))[0] ?? null
+      } catch (e) {
+        this.#log.debug("Couldn't ask the policy about this endpoint, so it reads as allowed: {error}", { error: e })
+      }
+    }
+    // A later edit or switch owns the state now; its own check decides.
+    if (idAtStart !== this.#providerId || baseUrlAtStart !== this.resolvedBaseUrl) return true
+    if (refusal !== null) {
+      this.#status = 'managed'
+      this.#managedRefusal = refusal
+      this.#error = null
+      return true
+    }
+    if (this.#status === 'managed') {
+      this.#status = 'idle'
+      this.#managedRefusal = null
+    }
+    return false
+  }
+
   async #cacheModels(providerId: string, baseUrl: string, keyFingerprint: string, models: string[]): Promise<void> {
     const key = await this.#cacheKey(providerId, baseUrl, keyFingerprint)
     if (key !== null) setCachedModels(key, models)
@@ -387,6 +480,7 @@ export class ProviderSetupController {
   #resetConnectionState(): void {
     this.#status = 'idle'
     this.#error = null
+    this.#managedRefusal = null
     this.#models = []
     if (this.#connectionCheckTimer) {
       clearTimeout(this.#connectionCheckTimer)

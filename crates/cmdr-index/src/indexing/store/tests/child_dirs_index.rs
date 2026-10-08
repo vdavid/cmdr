@@ -7,10 +7,10 @@ use crate::indexing::read::coverage::CHILD_DIR_COVERAGE_SQL;
 use crate::indexing::store::dir_stats::CHILD_DIRS_MIN_SUBTREE_EPOCH_SQL;
 use crate::indexing::store::entries::{CHILD_DIR_IDS_AND_NAMES_SQL, child_directories_of_sql};
 
-fn has_child_dirs_index(conn: &Connection) -> bool {
+fn has_index(conn: &Connection, name: &str) -> bool {
     conn.query_row(
-        "SELECT COUNT(*) FROM sqlite_master WHERE type = 'index' AND name = 'idx_child_dirs'",
-        [],
+        "SELECT COUNT(*) FROM sqlite_master WHERE type = 'index' AND name = ?1",
+        [name],
         |row| row.get::<_, i64>(0),
     )
     .unwrap()
@@ -49,24 +49,28 @@ fn child_dir_queries_are_served_by_the_partial_index() {
     }
 }
 
-/// The rollout path: an index DB from a build without `idx_child_dirs` keeps its
-/// rows (no `SCHEMA_VERSION` bump, so no rescan) and gains the index on open.
+/// The rollout path: an index DB from a build without the partial indexes
+/// (`idx_child_dirs`, `idx_child_symlinks`) keeps its rows (no `SCHEMA_VERSION`
+/// bump, so no rescan) and gains them on open.
 #[test]
-fn an_index_built_without_the_partial_index_gains_it_on_open() {
+fn an_index_built_without_the_partial_indexes_gains_them_on_open() {
     let dir = tempfile::tempdir().unwrap();
     let db_path = dir.path().join("older.db");
     let kept = {
         let store = IndexStore::open(&db_path).unwrap();
         let conn = IndexStore::open_write_connection(store.db_path()).unwrap();
         let kept = insert_entry(&conn, ROOT_ID, "kept", true, None);
-        conn.execute_batch("DROP INDEX IF EXISTS idx_child_dirs").unwrap();
-        assert!(!has_child_dirs_index(&conn));
+        conn.execute_batch("DROP INDEX IF EXISTS idx_child_dirs; DROP INDEX IF EXISTS idx_child_symlinks")
+            .unwrap();
+        assert!(!has_index(&conn, "idx_child_dirs"));
+        assert!(!has_index(&conn, "idx_child_symlinks"));
         kept
     };
 
     let store = IndexStore::open(&db_path).unwrap();
     let conn = IndexStore::open_write_connection(store.db_path()).unwrap();
-    assert!(has_child_dirs_index(&conn));
+    assert!(has_index(&conn, "idx_child_dirs"));
+    assert!(has_index(&conn, "idx_child_symlinks"));
     assert_eq!(
         IndexStore::list_child_dir_ids_and_names(&conn, ROOT_ID).unwrap(),
         vec![(kept, "kept".to_string())]

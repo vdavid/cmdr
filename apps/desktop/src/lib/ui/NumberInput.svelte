@@ -20,9 +20,12 @@
         ariaLabel: string
         /** Quiet trailing unit ("px", "%", "s"). Presentational: the value stays unitless. */
         unit?: string
+        /** Id of an element that explains the field, for example why it's disabled. */
+        ariaDescribedBy?: string
     }
 
-    const { value, onChange, min, max, step = 1, disabled = false, ariaLabel, unit = '' }: Props = $props()
+    const { value, onChange, min, max, step = 1, disabled = false, ariaLabel, unit = '', ariaDescribedBy }: Props =
+        $props()
 
     function handleValueChange(details: NumberInputValueChangeDetails): void {
         // An emptied field parses as `NaN`. Swallow it rather than committing a broken
@@ -38,7 +41,7 @@
             <NumberInput.DecrementTrigger class="ni-btn" aria-label={tString('ui.numberInput.decrease', { label: ariaLabel })}
                 >−</NumberInput.DecrementTrigger
             >
-            <NumberInput.Input class="ni-input" aria-label={ariaLabel} />
+            <NumberInput.Input class="ni-input" aria-label={ariaLabel} aria-describedby={ariaDescribedBy} />
             <NumberInput.IncrementTrigger class="ni-btn" aria-label={tString('ui.numberInput.increase', { label: ariaLabel })}
                 >+</NumberInput.IncrementTrigger
             >

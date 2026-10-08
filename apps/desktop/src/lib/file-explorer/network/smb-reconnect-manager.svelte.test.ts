@@ -27,9 +27,9 @@ vi.mock('$lib/tauri-commands', () => ({
   },
 }))
 
-const { warn } = vi.hoisted(() => ({ warn: vi.fn() }))
+const { warn, error } = vi.hoisted(() => ({ warn: vi.fn(), error: vi.fn() }))
 vi.mock('$lib/logging/logger', () => ({
-  getAppLogger: () => ({ warn, info: vi.fn(), debug: vi.fn(), error: vi.fn() }),
+  getAppLogger: () => ({ warn, info: vi.fn(), debug: vi.fn(), error }),
 }))
 
 import {
@@ -237,6 +237,27 @@ describe('smbReconnectManager', () => {
     expect(onSuccess).toHaveBeenCalledTimes(1)
 
     unsub()
+  })
+
+  // A throwing callback is a bug in Cmdr's own code, so it has to reach error reports.
+  it('logs a throwing success callback at error and still notifies the others', async () => {
+    await smbReconnectManager.init()
+    const throwing = vi.fn(() => {
+      throw new Error('subscriber bug')
+    })
+    const healthy = vi.fn()
+    const unsubThrowing = smbReconnectManager.subscribe('vol-throw', throwing)
+    const unsubHealthy = smbReconnectManager.subscribe('vol-throw', healthy)
+    error.mockClear()
+
+    emit('vol-throw', 'disconnected')
+    emit('vol-throw', 'connected')
+
+    expect(healthy).toHaveBeenCalledOnce()
+    expect(error).toHaveBeenCalledOnce()
+
+    unsubThrowing()
+    unsubHealthy()
   })
 
   it('"Retry now" fires immediately and resumes backoff at attempt 2', async () => {

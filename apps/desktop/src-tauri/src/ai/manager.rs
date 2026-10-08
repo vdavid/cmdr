@@ -26,6 +26,7 @@ use super::state::{
 };
 use super::{AiStarting, AiStatus, AiTranslateError, AiTranslateErrorKind, is_local_ai_supported};
 use crate::ignore_poison::IgnorePoison;
+use crate::managed_policy::{AiDestination, ManagedAiRefusal, ManagedPolicy};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use tauri::{AppHandle, Runtime};
@@ -100,6 +101,7 @@ pub fn get_ai_status() -> AiStatus {
         return AiStatus::Unavailable;
     };
     compute_ai_status(
+        &crate::managed_policy::current(),
         &m.provider,
         m.state.installed,
         m.child_pid.is_some(),
@@ -112,6 +114,7 @@ pub fn get_ai_status() -> AiStatus {
 /// Pure decision function for [`get_ai_status`]. Split out so the global `MANAGER` lock
 /// and the compile-time `cfg!(target_arch)` gate don't have to participate in tests.
 fn compute_ai_status(
+    policy: &ManagedPolicy,
     provider: &str,
     installed: bool,
     server_running: bool,
@@ -119,7 +122,7 @@ fn compute_ai_status(
     local_ai_supported: bool,
     now_secs: u64,
 ) -> AiStatus {
-    if provider == "off" {
+    if provider == "off" || policy.ai_destination(&AiDestination::LocalServer).is_err() {
         return AiStatus::Unavailable;
     }
     if installed && server_running {
@@ -170,9 +173,13 @@ pub enum BackendResolution {
     Ready(super::client::AiBackend),
     /// Provider value isn't recognized.
     UnknownProvider(String),
+    /// The organization's managed policy refuses this provider or endpoint. Decided before
+    /// consent, key, and endpoint, so the user sees the reason they can't change themselves.
+    Managed(ManagedAiRefusal),
 }
 
-/// The ONE place an LLM backend comes from, and so the one place cloud consent is enforced
+/// The ONE place an LLM backend comes from, and so the one place the managed policy's typed
+/// reason is produced (the client re-checks per request) and cloud consent is enforced
 /// (`super::cloud_consent`). Taking the app handle is what makes that structural: no caller can
 /// resolve a backend without the consent read, and `AiBackend::remote` is private to `ai/`.
 /// Consent is read only when the provider is cloud, and outside the `MANAGER` lock.
@@ -181,6 +188,7 @@ pub fn resolve_backend<R: Runtime>(app: &AppHandle<R>) -> BackendResolution {
     let cloud_consent = provider == "cloud" && super::cloud_consent::cloud_consent_from_app(app);
     let (api_key, base_url, model) = get_cloud_config();
     resolve_backend_inner(
+        &crate::managed_policy::current(),
         &provider,
         get_port(),
         api_key,
@@ -235,6 +243,7 @@ impl BackendResolution {
                 K::UnknownProvider,
                 format!("Unknown AI provider: {p}"),
             )),
+            BackendResolution::Managed(refusal) => Err(AiTranslateError::from_refusal(refusal)),
         }
     }
 
@@ -260,6 +269,10 @@ impl BackendResolution {
                 log::debug!("{context}: unknown provider '{p}', returning empty");
                 None
             }
+            BackendResolution::Managed(refusal) => {
+                log::debug!("{context}: the organization's policy refuses it ({refusal:?}), returning empty");
+                None
+            }
         }
     }
 }
@@ -273,30 +286,47 @@ impl BackendResolution {
 /// `ai.provider !== 'cloud'`, so this gate is the belt-and-braces check for a
 /// misconfigured frontend or an automation caller. Because a non-cloud provider
 /// (including `off`) is rejected here, the cloud path only ever reaches
-/// [`BackendResolution::into_translate_result`] with `Ready`/`NoCloudConsent`/`NotConfigured`.
+/// [`BackendResolution::into_translate_result`] with `Ready`/`NoCloudConsent`/`NotConfigured`/`Managed`.
 pub fn resolve_translate_backend<R: Runtime>(
     app: &AppHandle<R>,
     cloud_only: bool,
 ) -> Result<super::client::AiBackend, AiTranslateError> {
     if cloud_only && get_provider() != "cloud" {
-        return Err(AiTranslateError::new(
-            AiTranslateErrorKind::NotConfigured,
-            "AI selection needs a cloud provider. Set one in Settings > AI.",
-        ));
+        return Err(cloud_only_refusal(&crate::managed_policy::current()));
     }
     resolve_backend(app).into_translate_result()
+}
+
+/// Why a cloud-only feature can't run on a non-cloud provider: the organization's reason when its
+/// policy rules out every cloud host (so nobody is told to pick a provider they can't), else the
+/// setup hint.
+fn cloud_only_refusal(policy: &ManagedPolicy) -> AiTranslateError {
+    match policy.any_cloud_refusal() {
+        Some(refusal) => AiTranslateError::from_refusal(refusal),
+        None => AiTranslateError::new(
+            AiTranslateErrorKind::NotConfigured,
+            "AI selection needs a cloud provider. Set one in Settings > AI.",
+        ),
+    }
 }
 
 /// Pure provider-resolution decision, split out so the global `MANAGER` lock doesn't have to
 /// participate in tests (mirrors `compute_ai_status`).
 ///
-/// Cloud consent is checked FIRST for cloud, before the key and endpoint: nothing about the
-/// service matters until the user allowed sending to it. Local and off ignore it.
+/// The managed policy is checked FIRST, for every provider (`DisableAI` refuses even `off`, so a
+/// caller names the organization's reason), then for cloud against the configured endpoint. Cloud
+/// consent follows, before the key and endpoint: nothing about the service matters until the user
+/// allowed sending to it. Local and off ignore it.
 ///
 /// The empty-key → `NotConfigured` gate applies ONLY when the provider needs a key
 /// (`requires_api_key`). Keyless OpenAI-compatible endpoints (Ollama, LM Studio, a custom
 /// endpoint) legitimately have no key, so they resolve to `Ready` on a non-empty base URL.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "a pure decision over every input it reads, for tests"
+)]
 fn resolve_backend_inner(
+    policy: &ManagedPolicy,
     provider: &str,
     port: Option<u16>,
     api_key: String,
@@ -305,6 +335,11 @@ fn resolve_backend_inner(
     requires_api_key: bool,
     cloud_consent: bool,
 ) -> BackendResolution {
+    // The organization's answer comes first: nothing about consent or setup matters when the
+    // policy refuses, and the user should see the reason they can't change themselves.
+    if let Err(refusal) = policy.ai_destination(&AiDestination::LocalServer) {
+        return BackendResolution::Managed(refusal);
+    }
     match provider {
         "off" => BackendResolution::Off,
         "local" => match port {
@@ -312,7 +347,9 @@ fn resolve_backend_inner(
             None => BackendResolution::NotConfigured("Local AI server isn't running. Start it in settings."),
         },
         "cloud" => {
-            if !cloud_consent {
+            if let Err(refusal) = policy.ai_destination(&super::client::remote_destination(&base_url)) {
+                BackendResolution::Managed(refusal)
+            } else if !cloud_consent {
                 BackendResolution::NoCloudConsent
             } else if requires_api_key && api_key.is_empty() {
                 BackendResolution::NotConfigured("Cloud AI API key not configured. Add it in settings.")
@@ -337,7 +374,6 @@ pub struct AiRuntimeStatus {
     pub model_installed: bool,
     pub model_name: String,
     pub model_size_bytes: u64,
-    pub model_size_formatted: String,
     pub download_in_progress: bool,
     pub local_ai_supported: bool,
     pub kv_bytes_per_token: u64,
@@ -359,7 +395,6 @@ pub fn get_ai_runtime_status() -> AiRuntimeStatus {
             model_installed: is_fully_installed(m),
             model_name: model.display_name.to_string(),
             model_size_bytes: model.size_bytes,
-            model_size_formatted: super::state::format_bytes_gb(model.size_bytes),
             download_in_progress: m.download_in_progress,
             local_ai_supported: is_local_ai_supported(),
             kv_bytes_per_token: model.kv_bytes_per_token,
@@ -373,7 +408,6 @@ pub fn get_ai_runtime_status() -> AiRuntimeStatus {
             model_installed: false,
             model_name: model.display_name.to_string(),
             model_size_bytes: model.size_bytes,
-            model_size_formatted: super::state::format_bytes_gb(model.size_bytes),
             download_in_progress: false,
             local_ai_supported: is_local_ai_supported(),
             kv_bytes_per_token: model.kv_bytes_per_token,
@@ -423,6 +457,11 @@ pub fn configure_ai<R: Runtime>(
         super::connection_check::validate_ai_base_url(&cloud_base_url, &cloud_api_key)?;
     }
 
+    // Under the organization's `DisableAI` the local server never runs, whatever the provider:
+    // treated exactly like switching away from local. Cached read: this must not block.
+    let local_allowed =
+        provider == "local" && super::managed::local_ai_allowed(&crate::managed_policy::current()).is_ok();
+
     // Single lock: decide, stop, spawn (no race window for orphan processes)
     let spawn_result;
     {
@@ -434,12 +473,14 @@ pub fn configure_ai<R: Runtime>(
         // Switching away from local: cancel any in-flight startup (so its waiter exits
         // quietly instead of reporting the deliberate stop as a failure) and stop a
         // running server.
-        if provider != "local" {
+        if !local_allowed {
             if let Some(token) = m.start_cancel.take() {
                 token.cancel();
             }
             if let Some(pid) = m.child_pid.take() {
-                log::info!("AI configure: provider changed away from local, stopping server");
+                log::info!(
+                    "AI configure: provider changed away from local (or local AI is managed off), stopping server"
+                );
                 super::process::kill_and_reap_in_background(pid);
                 m.state.port = None;
                 m.state.pid = None;
@@ -456,21 +497,24 @@ pub fn configure_ai<R: Runtime>(
 
         // Spawn server synchronously so child_pid is set before the lock is released.
         // Only the health check (up to 60s) runs async.
-        spawn_result =
-            if provider == "local" && is_local_ai_supported() && is_fully_installed(m) && m.child_pid.is_none() {
-                match spawn_and_track_server(m) {
-                    Ok((pid, port, cancel)) => {
-                        m.server_starting = true;
-                        Some((pid, port, cancel))
-                    }
-                    Err(e) => {
-                        crate::log_error!("AI configure: couldn't spawn server: {e}");
-                        None
-                    }
+        spawn_result = if local_allowed && is_local_ai_supported() && is_fully_installed(m) && m.child_pid.is_none() {
+            match spawn_and_track_server(m) {
+                Ok((pid, port, cancel)) => {
+                    m.server_starting = true;
+                    Some((pid, port, cancel))
                 }
-            } else {
-                None
-            };
+                Err(super::server::LocalAiError::Managed { refusal }) => {
+                    log::info!("AI configure: the organization's policy refuses local AI ({refusal:?}), not starting");
+                    None
+                }
+                Err(e) => {
+                    crate::log_error!("AI configure: couldn't spawn server: {e:?}");
+                    None
+                }
+            }
+        } else {
+            None
+        };
     }
 
     // The wake loop gates on whether a provider can answer, and it caches that rather than
@@ -490,255 +534,5 @@ pub fn configure_ai<R: Runtime>(
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn resolve_off_and_unknown_provider() {
-        assert!(matches!(
-            resolve_backend_inner("off", None, String::new(), String::new(), String::new(), true, true),
-            BackendResolution::Off
-        ));
-        assert!(matches!(
-            resolve_backend_inner("bogus", None, String::new(), String::new(), String::new(), true, true),
-            BackendResolution::UnknownProvider(p) if p == "bogus"
-        ));
-    }
-
-    #[test]
-    fn resolve_local_needs_a_running_port() {
-        assert!(matches!(
-            resolve_backend_inner("local", None, String::new(), String::new(), String::new(), false, true),
-            BackendResolution::NotConfigured(_)
-        ));
-        assert!(matches!(
-            resolve_backend_inner(
-                "local",
-                Some(8080),
-                String::new(),
-                String::new(),
-                String::new(),
-                false,
-                true
-            ),
-            BackendResolution::Ready(_)
-        ));
-    }
-
-    #[test]
-    fn resolve_cloud_key_required_provider_needs_a_key() {
-        // A key-requiring provider (OpenAI etc.) with no key stays NotConfigured (friendly hint).
-        assert!(matches!(
-            resolve_backend_inner(
-                "cloud",
-                None,
-                String::new(),
-                String::from("https://api.openai.com/v1"),
-                String::from("gpt-4o-mini"),
-                true,
-                true,
-            ),
-            BackendResolution::NotConfigured(_)
-        ));
-        // Same provider, key present → Ready.
-        assert!(matches!(
-            resolve_backend_inner(
-                "cloud",
-                None,
-                String::from("sk-key"),
-                String::from("https://api.openai.com/v1"),
-                String::from("gpt-4o-mini"),
-                true,
-                true,
-            ),
-            BackendResolution::Ready(_)
-        ));
-    }
-
-    #[test]
-    fn resolve_cloud_keyless_local_endpoint_is_ready() {
-        // Ollama / LM Studio / custom: `requires_api_key = false`, no key, but a real endpoint +
-        // model. This is the bug from issue #29 — it must resolve to Ready, not NotConfigured.
-        assert!(matches!(
-            resolve_backend_inner(
-                "cloud",
-                None,
-                String::new(),
-                String::from("http://localhost:11434/v1"),
-                String::from("llama3.2"),
-                false,
-                true,
-            ),
-            BackendResolution::Ready(_)
-        ));
-        // A keyless *remote* custom endpoint is equally valid (custom shows no key field).
-        assert!(matches!(
-            resolve_backend_inner(
-                "cloud",
-                None,
-                String::new(),
-                String::from("https://my-proxy.example.com/v1"),
-                String::from("some-model"),
-                false,
-                true,
-            ),
-            BackendResolution::Ready(_)
-        ));
-    }
-
-    #[test]
-    fn resolve_cloud_without_an_endpoint_is_not_configured() {
-        // Keyless provider but no base URL yet (e.g. custom before the user types one): there's
-        // nothing to connect to, so it's genuinely not configured.
-        assert!(matches!(
-            resolve_backend_inner("cloud", None, String::new(), String::new(), String::new(), false, true),
-            BackendResolution::NotConfigured(_)
-        ));
-    }
-
-    // --- cloud AI consent: checked for cloud only, before any key or endpoint ---
-
-    fn cloud_ready_inputs(consented: bool) -> BackendResolution {
-        resolve_backend_inner(
-            "cloud",
-            None,
-            String::from("sk-key"),
-            String::from("https://api.openai.com/v1"),
-            String::from("gpt-4o-mini"),
-            true,
-            consented,
-        )
-    }
-
-    #[test]
-    fn cloud_without_consent_refuses_even_when_fully_configured() {
-        assert!(matches!(cloud_ready_inputs(false), BackendResolution::NoCloudConsent));
-    }
-
-    #[test]
-    fn cloud_with_consent_is_ready() {
-        assert!(matches!(cloud_ready_inputs(true), BackendResolution::Ready(_)));
-    }
-
-    /// Consent precedes setup: an unconfigured cloud provider without consent names the consent
-    /// gap, not the missing key.
-    #[test]
-    fn cloud_without_consent_or_key_names_the_consent_gap() {
-        assert!(matches!(
-            resolve_backend_inner("cloud", None, String::new(), String::new(), String::new(), true, false),
-            BackendResolution::NoCloudConsent
-        ));
-    }
-
-    /// Local AI never leaves the Mac, so it needs no consent.
-    #[test]
-    fn local_needs_no_cloud_consent() {
-        assert!(matches!(
-            resolve_backend_inner(
-                "local",
-                Some(8080),
-                String::new(),
-                String::new(),
-                String::new(),
-                false,
-                false
-            ),
-            BackendResolution::Ready(_)
-        ));
-    }
-
-    #[test]
-    fn off_is_off_whatever_the_consent() {
-        for consented in [true, false] {
-            assert!(matches!(
-                resolve_backend_inner(
-                    "off",
-                    None,
-                    String::new(),
-                    String::new(),
-                    String::new(),
-                    true,
-                    consented
-                ),
-                BackendResolution::Off
-            ));
-        }
-    }
-
-    #[test]
-    fn a_missing_consent_maps_to_its_own_translate_kind() {
-        let Err(err) = BackendResolution::NoCloudConsent.into_translate_result() else {
-            panic!("a refused resolution must not translate to a backend");
-        };
-        assert_eq!(err.kind, AiTranslateErrorKind::NoCloudConsent);
-    }
-
-    #[test]
-    fn a_missing_consent_is_a_quiet_empty_for_nice_to_have_features() {
-        assert!(BackendResolution::NoCloudConsent.ready_or_log("test").is_none());
-    }
-
-    #[test]
-    fn test_get_ai_status_no_manager() {
-        // When manager is not initialized, status is Unavailable
-        let status = get_ai_status();
-        assert_eq!(status, AiStatus::Unavailable);
-    }
-
-    // --- compute_ai_status: pure decision function ---
-
-    const NOW: u64 = 1_700_000_000;
-
-    #[test]
-    fn compute_ai_status_provider_off_is_unavailable() {
-        let s = compute_ai_status("off", true, true, None, true, NOW);
-        assert_eq!(s, AiStatus::Unavailable);
-    }
-
-    #[test]
-    fn compute_ai_status_installed_and_running_is_available() {
-        let s = compute_ai_status("local", true, true, None, true, NOW);
-        assert_eq!(s, AiStatus::Available);
-    }
-
-    #[test]
-    fn compute_ai_status_installed_but_server_down_is_unavailable() {
-        let s = compute_ai_status("local", true, false, None, true, NOW);
-        assert_eq!(s, AiStatus::Unavailable);
-    }
-
-    #[test]
-    fn compute_ai_status_not_installed_offers_on_apple_silicon() {
-        let s = compute_ai_status("local", false, false, None, true, NOW);
-        assert_eq!(s, AiStatus::Offer);
-    }
-
-    #[test]
-    fn compute_ai_status_not_installed_does_not_offer_on_intel() {
-        // The bug this guard fixes: Intel users with default provider="local" used to see
-        // the AI download toast, only to be rejected by `start_ai_download` on click.
-        let s = compute_ai_status("local", false, false, None, false, NOW);
-        assert_eq!(s, AiStatus::Unavailable);
-    }
-
-    #[test]
-    fn compute_ai_status_intel_with_installed_state_still_unavailable() {
-        // Defense in depth: even if state somehow says installed on Intel (e.g. user copied
-        // their data dir across machines), we still don't claim Available because the binary
-        // is ARM64-only and won't run.
-        let s = compute_ai_status("local", true, false, None, false, NOW);
-        assert_eq!(s, AiStatus::Unavailable);
-    }
-
-    #[test]
-    fn compute_ai_status_dismissed_offer_is_hidden() {
-        let s = compute_ai_status("local", false, false, Some(NOW + 60), true, NOW);
-        assert_eq!(s, AiStatus::Unavailable);
-    }
-
-    #[test]
-    fn compute_ai_status_expired_dismissal_offers_again() {
-        let s = compute_ai_status("local", false, false, Some(NOW - 60), true, NOW);
-        assert_eq!(s, AiStatus::Offer);
-    }
-}
+#[path = "manager_test.rs"]
+mod tests;

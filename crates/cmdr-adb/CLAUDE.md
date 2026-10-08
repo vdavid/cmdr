@@ -9,20 +9,20 @@ words.
 - `server.rs` (endpoint + the one `start-server` attempt), `transport.rs` (the ONLY module that knows the wire framing),
   `devices.rs` (`host:devices-l` + the `host:track-devices` hotplug stream), `features.rs` (read once per session),
   `sync.rs` (`STAT`/`LIST`/`RECV`/`SEND`), `shell.rs` (`mkdir`/`rm`/`mv`/`cp`/`df`), `errors.rs`, `params.rs`,
-  `testing/` (the fake ADB server: `tree` the filesystem model, `server` the listener and wire, `shell` the device-shell
-  verbs).
+  `testing/` (the fake ADB server), `fuzzing.rs` (the fuzz targets' entry points, `fuzzing` feature).
 - `volume/`: the `Volume` impl by job: `paths`, `query`, `streams`, `writes`, `mapping`, `state`, `volume_impl`,
   `testing`, `index_scope` (which directories a drive-index walk descends), plus `scan` and `mutation`, which are just
   this backend's `ScanSource` / `PatchSource` impls.
 
 ## Must-knows
 
-- **❗ Keep the framing in `transport.rs`.** Hex-length requests, `OKAY`/`FAIL`, sync packets: one module, so a protocol
-  change stays one file's problem.
+- **❗ Host framing (hex lengths, `OKAY`/`FAIL`) lives only in `transport.rs`**; `sync.rs` / `shell.rs` decode the
+  device's packets through its raw helpers. **Every device-chosen length is capped BEFORE its buffer exists**
+  (`MAX_DATA_CHUNK`, `MAX_FRAME_PAYLOAD`), or a hostile phone allocates 4 GiB. DETAILS § "Wire contract".
 - **❗ The peer is the server, not the phone.** `adb` owns USB and pairing; a refused loopback connect earns exactly one
   `adb start-server` per process, ❌ never a retry loop that spawns processes.
 - **❗ `shell_v2` is required; a device without it is `AdbConnectError::DeviceTooOld`.** Legacy `shell:` has no exit
-  code, and inferring one from output would be string-matching control flow.
+  code, and output is never parsed for one.
 - **❗ A shell failure is classified by a follow-up stat of the path and its parent, ❌ never by stderr.** The exit code
   says "no"; the sync service says why. `DETAILS.md` § "The error policy".
 - **❗ `NotFound` / `PermissionDenied` carry the PATH**, ❌ never the device's wording: the frontend renders it as the
@@ -30,7 +30,7 @@ words.
 - **❗ Paths are `adb://<serial>/…` both ways; `volume/paths.rs` is the ONLY translation.** ❌ A bare `/sdcard` or a
   `..` above `/` is refused, never anchored.
 - **❌ Never collect a file into a `Vec<u8>`.** `RECV`/`SEND` stream chunkwise; `read_range` runs bounded, quoted
-  device-side `dd`, never prefix-discard `RECV`.
+  device-side `dd`.
 - **❗ Every write lands under a staging name (`<name>.cmdr-tmp-<pid>-<n>`) and is `mv -f`ed into place.** `SEND`
   accepts known or unknown length but truncates on open, so direct writes stage.
 - **❗ Every mutation calls `notify_mutation`.** There is no watcher; `can_watch_listings` is `false` and stays so.
@@ -40,15 +40,14 @@ words.
 - **❗ One sync socket per operation, ❌ no shared session behind a mutex**: a same-volume copy would deadlock and a
   paused transfer would park every listing. `max_concurrent_ops` (1, the app's `"adb"` settings row) is what bounds
   transfers.
-- **❗ `host:track-devices` is the hotplug channel AND the retirement signal**: `track_devices` refetches the long list
-  on every push and reconnects with backoff, but ENDS on `AdbNotInstalled` (no binary, nothing to reconnect to, and a
-  retry would warn all session on every machine without Android tooling); the app retires the volume of a serial that
-  left, and revives a stopped tracker through `forget_start_attempt`. Operations remain the liveness detector in
-  between, like SFTP.
+- **❗ `host:track-devices` is the hotplug channel AND the retirement signal**: `track_devices` refetches on every push
+  and reconnects with backoff, but ENDS on `AdbNotInstalled` (a retry would warn all session on every machine without
+  Android tooling); the app retires a departed serial's volume and revives a stopped tracker through
+  `forget_start_attempt`. Operations remain the liveness detector in between.
 - **❗ Features are read once at connect** (`DeviceFeatures::fetch`). ❌ Never re-probe at a call site.
 - **❗ Report transitions, never states** (`volume/state.rs`); a retired volume reports nothing.
 - **❌ Never `cfg(test)`-gate a fixture; use `any(test, feature = "testing")`.** The app's ADB suites share
   `testing::FakeAdbServer` and `volume::testing`.
 
-The wire contract, the `Volume` answers and why, the error policy, the testing story, and the known gaps: `DETAILS.md`.
-Read it first.
+The wire contract, the `Volume` answers, the error policy, testing, and known gaps: `DETAILS.md`. Read it before any
+non-trivial work here: editing, planning, reorganizing, or advising.

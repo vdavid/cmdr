@@ -59,6 +59,22 @@ pub fn is_network_fs_type(fs_type: Option<&str>) -> bool {
 /// If `statfs` fails (ENOENT for a deleted directory), walks up parent
 /// directories until one succeeds. Returns `None` only if even `/` fails.
 pub(crate) fn get_mount_point(path: &str) -> Option<(String, String)> {
+    get_mount_info(path).map(|info| (info.mount_point, info.fs_type))
+}
+
+/// The mount a path lives on, as one `statfs` reports it.
+pub(crate) struct MountPointInfo {
+    /// Where it's mounted, firmlink-normalized (see [`get_mount_point`]).
+    pub mount_point: String,
+    /// `f_fstypename`, for example `apfs` or `smbfs`.
+    pub fs_type: String,
+    /// `f_mntfromname`: a device node (`/dev/disk3s1`) for a disk or disk image,
+    /// a URL-ish string for a share, whatever a FUSE or cloud mount chose.
+    pub source: String,
+}
+
+/// [`get_mount_point`] plus the mount's source, from the same single `statfs`.
+pub(crate) fn get_mount_info(path: &str) -> Option<MountPointInfo> {
     use std::ffi::CString;
 
     let mut current = path.to_string();
@@ -74,6 +90,7 @@ pub(crate) fn get_mount_point(path: &str) -> Option<(String, String)> {
 
                 let mount_point = statfs_string(&stat.f_mntonname);
                 let fs_type = statfs_string(&stat.f_fstypename);
+                let source = statfs_string(&stat.f_mntfromname);
 
                 // APFS firmlink normalization: /System/Volumes/Data → /
                 let mount_point = if mount_point == "/System/Volumes/Data" {
@@ -82,7 +99,11 @@ pub(crate) fn get_mount_point(path: &str) -> Option<(String, String)> {
                     mount_point
                 };
 
-                return Some((mount_point, fs_type));
+                return Some(MountPointInfo {
+                    mount_point,
+                    fs_type,
+                    source,
+                });
             }
         }
 

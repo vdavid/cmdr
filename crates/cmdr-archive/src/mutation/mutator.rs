@@ -27,7 +27,7 @@ use std::io::{self, Read, Write};
 use std::path::{Path, PathBuf};
 
 use uuid::Uuid;
-use zip::write::SimpleFileOptions;
+use zip::write::{FullFileOptions, SimpleFileOptions};
 use zip::{CompressionMethod, ZipArchive, ZipWriter};
 
 /// Same-directory temp infix: `foo.zip` builds into `foo.zip.cmdr-tmp-<uuid>`.
@@ -286,7 +286,10 @@ pub fn apply(archive_path: &Path, changeset: &Changeset, hooks: &dyn MutationHoo
     for dir in &changeset.mkdirs {
         checkpoint(hooks)?;
         writer
-            .add_directory(dir.trim_matches('/'), SimpleFileOptions::default())
+            .add_directory(
+                dir.trim_matches('/'),
+                with_entry_mtime(SimpleFileOptions::default(), std::time::SystemTime::now()),
+            )
             .map_err(MutationError::Zip)?;
         progress.entries_done += 1;
         hooks.on_progress(progress);
@@ -394,50 +397,87 @@ fn stream_added_entry(
 }
 
 /// The write options for an added entry: Deflated compression at `compression_level`
-/// (`None` = the crate default, level 6), plus the source file's modification time
-/// for a `LocalPath` add (a copy/move INTO the archive), so the archived copy carries
-/// the original's mtime rather than "now". Zip stores time in MS-DOS format (2-second
-/// granularity, 1980-2107 range); an mtime outside that range — or an in-memory `Bytes`
-/// add (mkfile / resident payload, which has no source file) — keeps the `zip` default
-/// (write time).
+/// (`None` = the crate default, level 6), plus a modification time: the source
+/// file's for a `LocalPath` add (a copy/move INTO the archive), so the archived
+/// copy carries the original's mtime, and the write time for an in-memory `Bytes`
+/// add (mkfile / resident payload, which has no source file).
 ///
 /// The level is CLAMPED to 1..=9: the `zip` crate hard-errors (`UnsupportedArchive`)
 /// on an out-of-range deflate level at the first entry write rather than clamping, so
 /// a bad setting value or MCP `set_setting` must not be able to fail the whole edit.
-fn add_entry_options(add: &AddEntry, compression_level: Option<i64>) -> SimpleFileOptions {
+fn add_entry_options(add: &AddEntry, compression_level: Option<i64>) -> FullFileOptions<'static> {
     let options = SimpleFileOptions::default()
         .compression_method(CompressionMethod::Deflated)
         .compression_level(compression_level.map(|level| level.clamp(1, 9)));
-    let AddSource::LocalPath(path) = &add.source else {
-        return options;
+    let source_mtime = match &add.source {
+        AddSource::LocalPath(path) => std::fs::metadata(path).and_then(|meta| meta.modified()).ok(),
+        AddSource::Bytes(_) => None,
     };
-    match std::fs::metadata(path)
-        .and_then(|m| m.modified())
-        .ok()
-        .and_then(system_time_to_zip_datetime)
-    {
-        Some(dt) => options.last_modified_time(dt),
-        None => options,
-    }
+    with_entry_mtime(options, source_mtime.unwrap_or_else(std::time::SystemTime::now))
 }
 
-/// Converts a `SystemTime` to a `zip::DateTime` via a UTC calendar decompose,
-/// returning `None` outside the MS-DOS-representable 1980-2107 range. UTC (not
-/// local) is deliberate: `rc-zip` reads the stored DOS date/time fields back as
-/// UTC, so decomposing in UTC here keeps an added file's mtime stable across the
-/// write-then-reparse round-trip (within the 2-second DOS-time granularity).
-fn system_time_to_zip_datetime(time: std::time::SystemTime) -> Option<zip::DateTime> {
+/// Info-ZIP's extended-timestamp extra field ("UT"): a flags byte, then the
+/// times it names as Unix seconds.
+const EXTENDED_TIMESTAMP_ID: u16 = 0x5455;
+
+/// Stamps `modified` on a NEW entry's write options the way ZIP tools read it,
+/// twice over:
+///
+/// - the header's MS-DOS date and time, decomposed in LOCAL time. The format
+///   carries no zone and every tool (`unzip -l`, Finder, Explorer) shows the
+///   field as local wall-clock time, so a UTC decompose reads hours off. It has
+///   2-second granularity and a 1980-2107 range; outside that range it stays at
+///   the format's zero, 1980-01-01.
+/// - the extended-timestamp extra field, the exact UTC second. Tools prefer it
+///   over the DOS field, and so does our own reader (`rc-zip`), which is what
+///   keeps a written mtime stable across the write-then-reparse round trip in
+///   any time zone. Written when the time fits the field's signed 32 bits
+///   (1970 to 2038), which is what Info-ZIP reads it as.
+///
+/// Every entry Cmdr writes goes through here, the fresh-ZIP producer included.
+/// ❗ Without it a `zip` entry says 1980-01-01: the crate's own "now" default
+/// needs its `time` feature, which this workspace doesn't enable.
+pub fn with_entry_mtime(options: SimpleFileOptions, modified: std::time::SystemTime) -> FullFileOptions<'static> {
+    with_entry_mtime_in(options, modified, &chrono::Local)
+}
+
+/// [`with_entry_mtime`] with the zone that stands for "local" spelled out, so a
+/// test doesn't depend on the machine's.
+fn with_entry_mtime_in<Tz: chrono::TimeZone>(
+    options: SimpleFileOptions,
+    modified: std::time::SystemTime,
+    local_zone: &Tz,
+) -> FullFileOptions<'static> {
     use chrono::{Datelike, Timelike};
-    let dt: chrono::DateTime<chrono::Utc> = time.into();
-    zip::DateTime::from_date_and_time(
-        dt.year().try_into().ok()?,
-        dt.month() as u8,
-        dt.day() as u8,
-        dt.hour() as u8,
-        dt.minute() as u8,
-        dt.second() as u8,
-    )
-    .ok()
+    let utc: chrono::DateTime<chrono::Utc> = modified.into();
+    let local = utc.with_timezone(local_zone).naive_local();
+    let mut options = options.into_full_options();
+    let dos_time = u16::try_from(local.year()).ok().and_then(|year| {
+        zip::DateTime::from_date_and_time(
+            year,
+            local.month() as u8,
+            local.day() as u8,
+            local.hour() as u8,
+            local.minute() as u8,
+            local.second() as u8,
+        )
+        .ok()
+    });
+    if let Some(dos_time) = dos_time {
+        options = options.last_modified_time(dos_time);
+    }
+    if let Ok(seconds) = i32::try_from(utc.timestamp())
+        && seconds >= 0
+    {
+        const MODIFIED_PRESENT: u8 = 1;
+        let mut field = [MODIFIED_PRESENT; 5];
+        field[1..].copy_from_slice(&seconds.to_le_bytes());
+        // `false`: into the local header, which `zip` repeats in the central directory.
+        if let Err(error) = options.add_extra_data(EXTENDED_TIMESTAMP_ID, field, false) {
+            log::warn!(target: "archive_mutator", "Couldn't attach a ZIP entry's exact timestamp: {error}");
+        }
+    }
+    options
 }
 
 /// The uncompressed byte length of an add source, for the progress total. A

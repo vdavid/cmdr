@@ -19,9 +19,9 @@
   "@viewer.error.noPath": {
     "sourceHash": "2b069fc"
   },
-  "viewer.error.readFailed": "Nem sikerült beolvasni a fájlt",
+  "viewer.error.readFailed": "Nem sikerült beolvasni ezt a fájlt. Megpróbálod újra?",
   "@viewer.error.readFailed": {
-    "sourceHash": "ea7d976"
+    "sourceHash": "8c420fd"
   },
   "viewer.error.notFound": "Nem sikerült megtalálni ezt a fájlt. Lehet, hogy áthelyezték, átnevezték vagy törölték.",
   "@viewer.error.notFound": {
@@ -42,6 +42,10 @@
   "viewer.error.archiveUnreadable": "Nem sikerült megnyitni ezt a fájlt az archívumból. Lehet, hogy titkosított, sérült, vagy olyan formátumú, amelyet a Cmdr nem tud elolvasni.",
   "@viewer.error.archiveUnreadable": {
     "sourceHash": "e0b8f4e"
+  },
+  "viewer.error.coldStorage": "Ez a fájl archiválva van, ezért a visszaállításáig nincs mit megjeleníteni. Állítsd vissza a tárhelyszolgáltatód konzolján, aztán nyisd meg újra.",
+  "@viewer.error.coldStorage": {
+    "sourceHash": "236cd1b"
   },
   "viewer.error.retry": "Újra",
   "@viewer.error.retry": {
@@ -287,18 +291,6 @@
   "@viewer.pdf.loading": {
     "sourceHash": "7f9acf3"
   },
-  "viewer.contextMenu.ariaLabel": "Megjelenítő műveletei",
-  "@viewer.contextMenu.ariaLabel": {
-    "sourceHash": "4cf8e51"
-  },
-  "viewer.contextMenu.copy": "Másolás",
-  "@viewer.contextMenu.copy": {
-    "sourceHash": "e21f935"
-  },
-  "viewer.contextMenu.selectAll": "Összes kijelölése",
-  "@viewer.contextMenu.selectAll": {
-    "sourceHash": "1fc9a38"
-  },
   "viewer.copyDialog.confirmTitleKnown": "Lemásolod a vágólapra ezt: {size}?",
   "@viewer.copyDialog.confirmTitleKnown": {
     "sourceHash": "7f97ebf"
@@ -403,17 +395,17 @@
   "@viewer.selection.toEndOfFile": {
     "sourceHash": "62d95be"
   },
-  "viewer.selection.singleLine": "{line}. sor: {chars} karakter kijelölve",
+  "viewer.selection.singleLine": "{line}. sor: {chars, plural, one {# karakter} other {# karakter}} kijelölve",
   "@viewer.selection.singleLine": {
-    "sourceHash": "bb320d5"
+    "sourceHash": "eb11697"
   },
-  "viewer.selection.multiLine": "Kijelölt sorok: {startLine}–{endLine}, {chars} karakter",
+  "viewer.selection.multiLine": "Kijelölt sorok: {startLine}–{endLine}, {chars, plural, one {# karakter} other {# karakter}}",
   "@viewer.selection.multiLine": {
-    "sourceHash": "074c687"
+    "sourceHash": "5ba7791"
   },
-  "viewer.selection.charsOnly": "{chars} karakter kijelölve",
+  "viewer.selection.charsOnly": "{chars, plural, one {# karakter} other {# karakter}} kijelölve",
   "@viewer.selection.charsOnly": {
-    "sourceHash": "b772db6"
+    "sourceHash": "3db2c4e"
   },
   "viewer.selection.toEndOfFileNoLine": "Kijelölve a fájl végéig",
   "@viewer.selection.toEndOfFileNoLine": {

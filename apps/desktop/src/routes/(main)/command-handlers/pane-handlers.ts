@@ -1,6 +1,6 @@
 /**
- * Pane handlers: switch / swap the active pane, toggle each pane's volume
- * chooser, copy a path between panes, and refresh the focused pane (⌘R and the
+ * Pane handlers: switch / swap the active pane, clone the focused pane into the
+ * other, toggle each pane's volume chooser, copy a path between panes, and refresh the focused pane (⌘R and the
  * MCP `refresh` tool).
  */
 import type { CommandHandlerRecord } from './types'
@@ -12,6 +12,13 @@ export const paneHandlers = {
 
   'pane.swap': ({ explorerRef }) => {
     explorerRef?.swapPanes()
+  },
+
+  'pane.clone': ({ explorerRef }) => {
+    if (!explorerRef) return
+    const source = explorerRef.getFocusedPane()
+    const target = source === 'left' ? 'right' : 'left'
+    explorerRef.copyPathBetweenPanes({ source, target, followCursor: false })
   },
 
   'pane.leftVolumeChooser': ({ explorerRef }) => {

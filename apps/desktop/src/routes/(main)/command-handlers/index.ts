@@ -14,6 +14,7 @@ import { tabHandlers } from './tab-handlers'
 import { navHandlers } from './nav-handlers'
 import { sortHandlers } from './sort-handlers'
 import { fileHandlers } from './file-handlers'
+import { shareLinkHandlers } from './share-link-handlers'
 import { clipboardHandlers } from './clipboard-handlers'
 import { selectionHandlers } from './selection-handlers'
 import { tagHandlers } from './tag-handlers'
@@ -29,6 +30,7 @@ export const commandHandlers: CommandHandlerRecord = {
   ...navHandlers,
   ...sortHandlers,
   ...fileHandlers,
+  ...shareLinkHandlers,
   ...clipboardHandlers,
   ...selectionHandlers,
   ...tagHandlers,

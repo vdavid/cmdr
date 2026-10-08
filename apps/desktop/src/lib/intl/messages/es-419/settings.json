@@ -35,6 +35,10 @@
   "@settings.appearance.useAppIconsForDocuments.description": {
     "sourceHash": "9353728"
   },
+  "settings.listing.directorySortMode.disabledReason": "Desactivada por ahora, porque las carpetas se mezclan con los archivos. Activa “Mostrar carpetas primero” para usar esta opción.",
+  "@settings.listing.directorySortMode.disabledReason": {
+    "sourceHash": "2d38158"
+  },
   "settings.archives.zip.description": "Qué hace presionar Intro en un archivo zip.",
   "@settings.archives.zip.description": {
     "sourceHash": "e33a325"
@@ -359,12 +363,28 @@
   "@settings.window.loading": {
     "sourceHash": "229d202"
   },
-  "settings.adb.install.intro": "Instala las herramientas de plataforma de Android y después presiona Comprobar de nuevo:",
-  "@settings.adb.install.intro": {
-    "sourceHash": "add9e91"
-  },
-  "settings.adb.pathPlaceholder": "Buscar adb en los lugares habituales",
+  "settings.adb.pathPlaceholder": "Cmdr busca adb en los lugares habituales",
   "@settings.adb.pathPlaceholder": {
-    "sourceHash": "ba15cb8"
+    "sourceHash": "68669b9"
+  },
+  "settings.managed.rowNote": "Tu organización administra esta configuración.",
+  "@settings.managed.rowNote": {
+    "sourceHash": "d89c614"
+  },
+  "settings.managed.sectionNote": "Tu organización administra parte de esta configuración.",
+  "@settings.managed.sectionNote": {
+    "sourceHash": "4fd755d"
+  },
+  "settings.managed.summary.title": "Lo que administra tu organización",
+  "@settings.managed.summary.title": {
+    "sourceHash": "6a4d7e4"
+  },
+  "settings.managed.summary.reports": "Reportes de fallos y de error",
+  "@settings.managed.summary.reports": {
+    "sourceHash": "44a9e49"
+  },
+  "settings.fileExplorer.quickFilterIntroSeen.description": "Si ya se mostró el aviso que explica el primer filtro rápido.",
+  "@settings.fileExplorer.quickFilterIntroSeen.description": {
+    "sourceHash": "fa180c6"
   }
 }

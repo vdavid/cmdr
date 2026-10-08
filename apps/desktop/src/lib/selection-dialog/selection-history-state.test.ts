@@ -16,7 +16,7 @@ function entry(over: Partial<SelectionHistoryEntry> = {}): SelectionHistoryEntry
     timestamp: 0,
     mode: 'filename',
     query: '*.png',
-    filters: { sizeMin: 1024 * 1024, sizeMax: null, modifiedAfter: null, modifiedBefore: null },
+    filters: { sizeMin: 1000 * 1000, sizeMax: null, modifiedAfter: null, modifiedBefore: null },
     caseSensitive: false,
     matchCount: 12,
     ...over,

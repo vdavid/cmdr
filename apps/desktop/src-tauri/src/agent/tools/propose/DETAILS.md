@@ -136,6 +136,20 @@ refusal answers with.
 one plan, one volume, and sends one `volumeId` beside `renames` — which is what happened, and the boundary can only
 refuse it. Worth revisiting as a schema change rather than defending forever with a better refusal.
 
+## A plan built from a cut listing is counted, not refused
+
+`list_pane_files` stops at a page in a big folder, and the system prompt requires the reply to say "N of M"
+(`prompt_requires_exact_truncation_disclosure`). Nothing checks the model obeyed. `cut_listing.rs` keeps each thread's
+latest `list_pane_files` numbers in process memory (`PaneListingCuts`, fed by `view.rs`; a problem result leaves the
+previous one standing, an elided one never lands), and a plan that stages with rows in a folder last seen cut fires
+`rename_plan_from_cut_listing` (`analytics/DETAILS.md`). The `coverage` token compares the plan's row count in that
+folder against `returned` and `total`.
+
+Counting comes first because refusing needs evidence that models misstate coverage. If `matches_total` shows up, the
+refusal is the same comparison at stage time: a plan with a row for every file, from a listing that showed fewer. ❌ Not
+a check on whether the reply's sentence claims full coverage: that's string matching on model prose, which breaks on a
+paraphrase or another language.
+
 ## Where a staged proposal lives
 
 One group on the durable proposal spine, in `main.db`. **The spine's mechanism — the three levels, `GroupIntent`, the

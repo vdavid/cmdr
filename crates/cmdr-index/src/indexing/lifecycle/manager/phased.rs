@@ -27,6 +27,7 @@ use crate::indexing::events::ScanRunKind;
 use crate::indexing::hold::HoldKind;
 use crate::indexing::lifecycle::phases::{self, MachineContext};
 use crate::indexing::lifecycle::rescan_request::ScanStartError;
+use crate::indexing::lifecycle::steps_ahead::StepsAhead;
 use crate::indexing::scanner::{exclusion_policy_stamp_message, index_predates_exclusion_policy};
 use crate::indexing::store::IndexStore;
 use crate::indexing::watch::branches;
@@ -125,7 +126,9 @@ impl IndexManager {
         // fatal bug above; read as "always" it silently blesses rows written under
         // an older policy. Both misreadings are silent.
         if truncated || empty {
-            let _ = self.writer.send(exclusion_policy_stamp_message());
+            let _ = self.writer.send(exclusion_policy_stamp_message(
+                self.path_space().exclusion_scope().tier(),
+            ));
         }
         // Committed before the first walk reads `current_epoch` on its own
         // connection, exactly as a scan start flushes before its walker starts.
@@ -163,10 +166,10 @@ impl IndexManager {
         let populated = IndexStore::get_entry_count(self.store.read_conn()).is_ok_and(|count| count > 1);
         let why = if !populated {
             None
-        } else if start == PhasedStart::RebuildFirst {
-            Some("it has rows but no record of which ground they cover")
-        } else if index_predates_exclusion_policy(self.store.read_conn()) {
+        } else if index_predates_exclusion_policy(self.store.read_conn(), self.path_space().exclusion_scope().tier()) {
             Some("it predates this build's exclusion policy, so nothing in it counts as covered")
+        } else if start == PhasedStart::RebuildFirst {
+            Some("it has rows but no record of which ground they cover, or it's marked for a rebuild")
         } else {
             None
         };
@@ -421,6 +424,9 @@ impl PhaseStart {
                 prior: calibration_set.for_kind(run_kind.calibration_kind()),
                 volume_used_bytes: None,
                 run_kind,
+                // A first index has nothing to remember yet, and its one step is
+                // the whole run, so there's no remainder to add.
+                steps_ahead: StepsAhead::default(),
             },
             handle: phases::start(self.context),
         }

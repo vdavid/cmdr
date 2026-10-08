@@ -18,7 +18,7 @@ use super::AdbVolume;
 use super::paths::join_device_path;
 use super::writes::WhatIsThere;
 use crate::errors::{ENOENT, volume_error_from_errno};
-use crate::sync::{MAX_DATA_CHUNK, SyncEntryKind, SyncSession};
+use crate::sync::{MAX_DATA_CHUNK, SyncEntryKind, SyncSession, done_mtime_word};
 
 /// Chunks buffered between the producer and the consumer. Peak memory per
 /// stream is `this * MAX_DATA_CHUNK`, regardless of file size.
@@ -58,6 +58,7 @@ impl AdbVolume {
             return Err(VolumeError::IsADirectory(device));
         }
         let total_size = stat.size;
+        let modified_at = stat.modified_at();
 
         let (chunk_tx, chunk_rx) = tokio::sync::mpsc::channel::<Result<Vec<u8>, VolumeError>>(STREAM_CHANNEL_CAPACITY);
         let (cancel_tx, cancel_rx) = tokio::sync::oneshot::channel::<()>();
@@ -69,11 +70,7 @@ impl AdbVolume {
             .runtime()
             .spawn(async move { produce(inner, session, device, offset, chunk_tx, cancel_rx).await });
 
-        Ok(ChannelReadStream::new(
-            chunk_rx,
-            cancel_tx,
-            StreamLength::Known(total_size),
-        ))
+        Ok(ChannelReadStream::new(chunk_rx, cancel_tx, StreamLength::Known(total_size)).with_modified_at(modified_at))
     }
 
     /// Reads one bounded range without `RECV` downloading the prefix.
@@ -162,7 +159,7 @@ impl AdbVolume {
 
         match pumped {
             Ok(written) => {
-                if mode == WriteMode::CreateNew && self.probe(&device).await != WhatIsThere::Nothing {
+                if mode.refuses_occupied() && self.probe(&device).await != WhatIsThere::Nothing {
                     self.remove_partial(&staging).await;
                     return Err(VolumeError::AlreadyExists(device));
                 }
@@ -182,6 +179,10 @@ impl AdbVolume {
 
     /// The upload itself: `SEND`, one `DATA` frame per chunk, `DONE` with the
     /// mtime, progress after every chunk the device took.
+    ///
+    /// The mtime is the source's date, so a copy keeps it; `DONE` must carry
+    /// one, so a source without a date lands dated now, as `adb push` does.
+    /// The staging `mv` keeps it.
     async fn pump(
         &self,
         session: &mut SyncSession,
@@ -209,14 +210,8 @@ impl AdbVolume {
                 return Err(VolumeError::Cancelled(device.to_string()));
             }
         }
-        let mtime = u32::try_from(
-            std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .map(|d| d.as_secs())
-                .unwrap_or(0),
-        )
-        .unwrap_or(u32::MAX);
-        session.send_finish(mtime).await.map_err(map)?;
+        let date = stream.modified_at().unwrap_or_else(std::time::SystemTime::now);
+        session.send_finish(done_mtime_word(date)).await.map_err(map)?;
         Ok(written)
     }
 
@@ -345,5 +340,10 @@ impl VolumeReadStream for BytesReadStream {
 
     fn bytes_read(&self) -> u64 {
         self.read
+    }
+
+    fn modified_at(&self) -> Option<std::time::SystemTime> {
+        // `create_file`'s fresh bytes: the device stamps its own date.
+        None
     }
 }

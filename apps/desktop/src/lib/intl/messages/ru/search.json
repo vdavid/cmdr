@@ -1,0 +1,230 @@
+{
+  "search.dialog.title": "Поиск",
+  "@search.dialog.title": {
+    "sourceHash": "49c266b"
+  },
+  "search.runHint": "Нажмите Enter для поиска",
+  "@search.runHint": {
+    "sourceHash": "406d32e"
+  },
+  "search.action.showAll.label": "Показать все в главном окне",
+  "@search.action.showAll.label": {
+    "sourceHash": "782075a"
+  },
+  "search.action.showAll.tooltip": "Открыть результаты поиска в активной панели",
+  "@search.action.showAll.tooltip": {
+    "sourceHash": "4e8c58a"
+  },
+  "search.action.goToFile.label": "Перейти к файлу",
+  "@search.action.goToFile.label": {
+    "sourceHash": "70299e6"
+  },
+  "search.action.goToFile.tooltip": "Открыть файл в активной панели",
+  "@search.action.goToFile.tooltip": {
+    "sourceHash": "2627d2e"
+  },
+  "search.recent.runAria": "Выполнить недавний поиск ({mode}): {query}",
+  "@search.recent.runAria": {
+    "sourceHash": "fb0939c"
+  },
+  "search.systemDirExclude.default": "Исключает распространенные системные папки и папки сборки",
+  "@search.systemDirExclude.default": {
+    "sourceHash": "dcdf28a"
+  },
+  "search.systemDirExclude.heading": "Эти папки скрыты:",
+  "@search.systemDirExclude.heading": {
+    "sourceHash": "5ee8d52"
+  },
+  "search.notAFolderToast": "Результаты поиска не являются папкой. Вставьте в настоящую папку.",
+  "@search.notAFolderToast": {
+    "sourceHash": "a801255"
+  },
+  "search.searchableFolder.disabledTooltip": "В текущей папке открыты результаты поиска, а в них искать нельзя. Сначала откройте настоящую папку.",
+  "@search.searchableFolder.disabledTooltip": {
+    "sourceHash": "42e599d"
+  },
+  "search.imageResults.title": "Текст в изображениях",
+  "@search.imageResults.title": {
+    "sourceHash": "d4c2a29"
+  },
+  "search.imageResults.count": "Найдено: {totalText}",
+  "@search.imageResults.count": {
+    "sourceHash": "3132fe5"
+  },
+  "search.imageResults.countCapped": "показано {shownText} из {totalText}",
+  "@search.imageResults.countCapped": {
+    "sourceHash": "3191a77"
+  },
+  "search.imageResults.indexing": "Индексация изображений еще идет, поэтому результаты могут быть неполными.",
+  "@search.imageResults.indexing": {
+    "sourceHash": "20841d8"
+  },
+  "search.imageResults.notIndexed": "Изображения на этом диске пока не проиндексированы. Поиск станет доступен после индексации.",
+  "@search.imageResults.notIndexed": {
+    "sourceHash": "aa3cc36"
+  },
+  "search.imageResults.empty": "Нет изображений с этим текстом.",
+  "@search.imageResults.empty": {
+    "sourceHash": "edb6672"
+  },
+  "search.imageResults.networkOff": "Включите индексацию изображений для этого сетевого диска в настройках, чтобы искать текст на фотографиях.",
+  "@search.imageResults.networkOff": {
+    "sourceHash": "ccf901b"
+  },
+  "search.imageResults.paused": "Диск отключен. Показаны фотографии, проиндексированные ранее.",
+  "@search.imageResults.paused": {
+    "sourceHash": "ec483f7"
+  },
+  "search.imageResults.findSimilar": "Найти похожие изображения",
+  "@search.imageResults.findSimilar": {
+    "sourceHash": "708c3bd"
+  },
+  "search.imageResults.matchedDescription": "Соответствует вашему описанию",
+  "@search.imageResults.matchedDescription": {
+    "sourceHash": "3b30350"
+  },
+  "search.imageResults.similarTo": "Похожие на {name}",
+  "@search.imageResults.similarTo": {
+    "sourceHash": "fc94bbb"
+  },
+  "search.imageResults.backToResults": "Вернуться к поиску",
+  "@search.imageResults.backToResults": {
+    "sourceHash": "22252a1"
+  },
+  "search.imageResults.similarEmpty": "Похожих изображений не найдено.",
+  "@search.imageResults.similarEmpty": {
+    "sourceHash": "d3ef9f7"
+  },
+  "search.walkHandoff.running": "Поиск по запросу «{label}» еще идет",
+  "@search.walkHandoff.running": {
+    "sourceHash": "79a7339"
+  },
+  "search.walkHandoff.counts": "Пока найдено {matchCount, plural, one {# совпадение} few {# совпадения} many {# совпадений} other {# совпадения}}, {folderCount, plural, one {просканирована # папка} few {просканированы # папки} many {просканировано # папок} other {просканировано # папки}}",
+  "@search.walkHandoff.counts": {
+    "sourceHash": "8e68f3f"
+  },
+  "search.walkHandoff.reopen": "Снова открыть поиск",
+  "@search.walkHandoff.reopen": {
+    "sourceHash": "6b49872"
+  },
+  "search.walkHandoff.stop": "Остановить",
+  "@search.walkHandoff.stop": {
+    "sourceHash": "cae7d57"
+  },
+  "search.walkHandoff.hideTooltip": "Скрыть. Поиск продолжится.",
+  "@search.walkHandoff.hideTooltip": {
+    "sourceHash": "7ee94f1"
+  },
+  "search.walkHandoff.finished": "По запросу «{label}» {count, plural, one {найдено # совпадение} few {найдено # совпадения} many {найдено # совпадений} other {найдено # совпадения}}.",
+  "@search.walkHandoff.finished": {
+    "sourceHash": "0cbc210"
+  },
+  "search.walkHandoff.stoppedShort": "Результаты по запросу «{label}» могут быть неполными: Cmdr проверил не все.",
+  "@search.walkHandoff.stoppedShort": {
+    "sourceHash": "d196ce2"
+  },
+  "search.walkHandoff.superseded": "Cmdr перестал дополнять результаты по запросу «{label}», потому что начался ваш новый поиск.",
+  "@search.walkHandoff.superseded": {
+    "sourceHash": "83aa5a2"
+  },
+  "search.coverage.uncovered.local": "Cmdr еще не проиндексировал диск {drive}, поэтому при поиске пропущено:",
+  "@search.coverage.uncovered.local": {
+    "sourceHash": "8fe8ce1"
+  },
+  "search.coverage.uncovered.network": "Cmdr индексирует сетевые диски только по вашему запросу, поэтому при поиске пропущено:",
+  "@search.coverage.uncovered.network": {
+    "sourceHash": "0066012"
+  },
+  "search.coverage.uncovered.unavailable": "Cmdr пока не может искать на диске {drive}, поэтому при поиске пропущено:",
+  "@search.coverage.uncovered.unavailable": {
+    "sourceHash": "6f9cb5b"
+  },
+  "search.coverage.uncovered.indexing": "Cmdr еще индексирует диск {drive} и не дошел до этих папок, поэтому при поиске пропущено:",
+  "@search.coverage.uncovered.indexing": {
+    "sourceHash": "9cf6003"
+  },
+  "search.coverage.unresolved": "{count, plural, =1 {Эта папка еще не входит в индекс Cmdr, поэтому при поиске она пропущена:} one {Эти папки еще не входят в индекс Cmdr, поэтому при поиске они пропущены:} few {Эти папки еще не входят в индекс Cmdr, поэтому при поиске они пропущены:} many {Эти папки еще не входят в индекс Cmdr, поэтому при поиске они пропущены:} other {Эти папки еще не входят в индекс Cmdr, поэтому при поиске они пропущены:}}",
+  "@search.coverage.unresolved": {
+    "sourceHash": "6afa798"
+  },
+  "search.coverage.walk.cancelled": "Поиск остановлен по вашему запросу. Показано все, что Cmdr успел найти. Прочитанные данные сохранены, поэтому повторный поиск продолжится с этого места.",
+  "@search.coverage.walk.cancelled": {
+    "sourceHash": "ea9caa1"
+  },
+  "search.coverage.walk.interrupted": "Поиск завершился раньше времени. На диске {drive} могут быть и другие результаты. Повторный поиск продолжится с места остановки.",
+  "@search.coverage.walk.interrupted": {
+    "sourceHash": "4c6a0a4"
+  },
+  "search.coverage.walk.abandoned": "Некоторые папки перестали отвечать. Cmdr пропустил их, поэтому список может быть неполным. Повторный поиск проверит эти папки снова.",
+  "@search.coverage.walk.abandoned": {
+    "sourceHash": "4a6a2af"
+  },
+  "search.coverage.walk.abandonedCount": "{count, plural, =1 {Одно место на этом диске перестало отвечать. Cmdr пропустил это место, поэтому список может быть неполным. Cmdr вернется сюда позже, а повторный поиск проверит это место снова.} one {{countText} место на этом диске перестало отвечать. Cmdr пропустил эти места, поэтому список может быть неполным. Cmdr вернется к ним позже, а повторный поиск проверит их снова.} few {{countText} места на этом диске перестали отвечать. Cmdr пропустил эти места, поэтому список может быть неполным. Cmdr вернется к ним позже, а повторный поиск проверит их снова.} many {{countText} мест на этом диске перестало отвечать. Cmdr пропустил эти места, поэтому список может быть неполным. Cmdr вернется к ним позже, а повторный поиск проверит их снова.} other {{countText} места на этом диске перестало отвечать. Cmdr пропустил эти места, поэтому список может быть неполным. Cmdr вернется к ним позже, а повторный поиск проверит их снова.}}",
+  "@search.coverage.walk.abandonedCount": {
+    "sourceHash": "2a79bc5"
+  },
+  "search.coverage.denied": "{count, plural, =1 {Cmdr не разрешено заглядывать в эту папку, поэтому ее содержимого нет в результатах:} one {Cmdr не разрешено заглядывать в эти папки, поэтому их содержимого нет в результатах:} few {Cmdr не разрешено заглядывать в эти папки, поэтому их содержимого нет в результатах:} many {Cmdr не разрешено заглядывать в эти папки, поэтому их содержимого нет в результатах:} other {Cmdr не разрешено заглядывать в эти папки, поэтому их содержимого нет в результатах:}}",
+  "@search.coverage.denied": {
+    "sourceHash": "c71fc2e"
+  },
+  "search.coverage.deniedFullDiskAccess": "С полным доступом к диску Cmdr может искать и в таких папках.",
+  "@search.coverage.deniedFullDiskAccess": {
+    "sourceHash": "8de9168"
+  },
+  "search.coverage.setUpFullDiskAccess": "Настроить полный доступ к диску",
+  "@search.coverage.setUpFullDiskAccess": {
+    "sourceHash": "98226cc"
+  },
+  "search.coverage.declined": "{count, plural, =1 {Cmdr не просматривает папки снимков, поэтому содержимого этой папки нет в результатах:} one {Cmdr не просматривает папки снимков, поэтому содержимого этих папок нет в результатах:} few {Cmdr не просматривает папки снимков, поэтому содержимого этих папок нет в результатах:} many {Cmdr не просматривает папки снимков, поэтому содержимого этих папок нет в результатах:} other {Cmdr не просматривает папки снимков, поэтому содержимого этих папок нет в результатах:}}",
+  "@search.coverage.declined": {
+    "sourceHash": "85465f3"
+  },
+  "search.coverage.stillCovering": "{count, plural, =1 {Другой поиск уже проверяет эту папку, ее файлы скоро появятся:} one {Другой поиск уже проверяет эти папки, их файлы скоро появятся:} few {Другой поиск уже проверяет эти папки, их файлы скоро появятся:} many {Другой поиск уже проверяет эти папки, их файлы скоро появятся:} other {Другой поиск уже проверяет эти папки, их файлы скоро появятся:}}",
+  "@search.coverage.stillCovering": {
+    "sourceHash": "acd21dc"
+  },
+  "search.coverage.unnamedDrive": "без названия",
+  "@search.coverage.unnamedDrive": {
+    "sourceHash": "5092f21"
+  },
+  "search.coverage.indexDrive": "Индексировать этот диск",
+  "@search.coverage.indexDrive": {
+    "sourceHash": "dce1f3a"
+  },
+  "search.coverage.dontAskAgain": "Больше не спрашивать",
+  "@search.coverage.dontAskAgain": {
+    "sourceHash": "3f6e4da"
+  },
+  "search.coverage.toast.started": "Началась индексация диска {drive}. После завершения поиск здесь будет мгновенным.",
+  "@search.coverage.toast.started": {
+    "sourceHash": "fb6978e"
+  },
+  "search.coverage.toast.indexingOff": "Индексация дисков выключена в настройках, поэтому ничего не индексируется. Включите ее в разделе «Индексация > Индексация дисков».",
+  "@search.coverage.toast.indexingOff": {
+    "sourceHash": "abfe24b"
+  },
+  "search.coverage.toast.deferredUntilSearchEnds": "Cmdr уже ищет на диске {drive}. Индексация начнется сразу после завершения поиска.",
+  "@search.coverage.toast.deferredUntilSearchEnds": {
+    "sourceHash": "d62392a"
+  },
+  "search.coverage.toast.notStarted": "Cmdr сейчас не может индексировать диск {drive}. Повторить попытку можно через меню диска.",
+  "@search.coverage.toast.notStarted": {
+    "sourceHash": "7b98412"
+  },
+  "search.snapshot.defaultLabel": "Поиск",
+  "@search.snapshot.defaultLabel": {
+    "sourceHash": "49c266b"
+  },
+  "search.snapshot.cappedLabel": "{label} (первые {capText} из {totalText})",
+  "@search.snapshot.cappedLabel": {
+    "sourceHash": "35523ac"
+  },
+  "search.runTitle": "Поиск, включая еще не проиндексированные папки",
+  "@search.runTitle": {
+    "sourceHash": "1c389b2"
+  },
+  "search.coverage.pressEnter": "Нажмите Enter, и Cmdr проверит содержимое сейчас.",
+  "@search.coverage.pressEnter": {
+    "sourceHash": "f340335"
+  }
+}

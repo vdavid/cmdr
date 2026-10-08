@@ -413,6 +413,24 @@ describe('VolumeBreadcrumb chip control', () => {
     stubs.containingVolumeId = 'root'
   })
 
+  // The chip only ever shows a live session's dot (`direct`), so on a server with no
+  // OS-mount alternative it could only say "connected" about a place the pane is browsing.
+  it('shows no connection dot on a server with only one way in', async () => {
+    await mountOn({ ...place, capabilities: { hasOsMountFallback: false } })
+    expect(document.querySelector('.volume-breadcrumb .smb-indicator')).toBeNull()
+  })
+
+  it("keeps the green dot on an SMB share's direct session, where the OS mount is the other way in", async () => {
+    await mountOn({
+      ...place,
+      id: 'smb-share',
+      fsType: 'smbfs',
+      path: '/Volumes/share',
+      capabilities: { hasOsMountFallback: true },
+    })
+    expect(document.querySelector('.volume-breadcrumb .smb-indicator-direct')).toBeTruthy()
+  })
+
   it('says Disconnect on a server, and closes the session rather than asking for an eject', async () => {
     await mountOn(place)
 

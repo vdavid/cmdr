@@ -67,6 +67,57 @@ async fn sftp_integration_a_server_side_copy_lands_byte_for_byte() {
     clean_scratch(&volume, &dir).await;
 }
 
+/// A server-side copy keeps the source's modification date, the way a copy
+/// through Cmdr's stream does (`conformance_test.rs`'s date cell) and the way a
+/// local same-disk copy does. `copy-data` moves bytes only, so without a stamp the
+/// copy would carry the moment it was made.
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[ignore = "needs the SFTP fixture stack: sftp-servers/start.sh (sftp-fixture)"]
+async fn sftp_integration_a_server_side_copy_keeps_the_source_date() {
+    use cmdr_fs::volume::conformance::SOURCE_DATE_SECS;
+    use openssh_sftp_client::UnixTimeStamp;
+    use openssh_sftp_client::metadata::MetaDataBuilder;
+
+    let (volume, dir) = scratch_on("OPENSSH", 12480, "copy-within-dated").await;
+    let source = format!("{dir}/source.bin");
+    volume
+        .create_file(Path::new(&source), b"bytes from 2021")
+        .await
+        .expect(FIXTURE);
+    let stamp = UnixTimeStamp::new(std::time::UNIX_EPOCH + std::time::Duration::from_secs(SOURCE_DATE_SECS))
+        .expect("2021 fits SFTP v3's u32");
+    let session = volume.clone_session().await.expect(FIXTURE);
+    session
+        .sftp()
+        .fs()
+        .set_metadata(
+            volume.to_remote_path(Path::new(&source)).expect(FIXTURE),
+            MetaDataBuilder::new().time(stamp, stamp).create(),
+        )
+        .await
+        .expect("date the seed into the past");
+
+    volume
+        .copy_within(Path::new(&source), Path::new(&format!("{dir}/copy.bin")), &|_, _| {
+            ControlFlow::Continue(())
+        })
+        .await
+        .expect(FIXTURE);
+
+    let landed = volume
+        .get_metadata(Path::new(&format!("{dir}/copy.bin")))
+        .await
+        .expect(FIXTURE)
+        .modified_at;
+    assert_eq!(
+        landed,
+        Some(SOURCE_DATE_SECS),
+        "a server-side copy must keep the source's date, not stamp the moment it ran"
+    );
+
+    clean_scratch(&volume, &dir).await;
+}
+
 /// Progress climbs to the whole file and never past it.
 ///
 /// The chunk loop is the only reason there is progress at all: one `copy-data`

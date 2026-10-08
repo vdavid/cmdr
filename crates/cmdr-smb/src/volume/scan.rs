@@ -4,7 +4,7 @@
 //! methods in `volume_impl` delegate to.
 
 use super::SmbVolume;
-use super::mapping::map_smb_error;
+use super::mapping::{filetime_to_unix_secs, map_smb_error};
 use cmdr_fs::entry::FileEntry;
 use cmdr_fs::volume::scan_walk::{conflicts_against, fold_batch};
 use cmdr_fs::volume::{BatchScanResult, CopyScanResult, ScanBoundary, ScanConflict, SourceItemInfo, VolumeError};
@@ -38,6 +38,9 @@ impl SmbVolume {
                 // overwrites this to `false`. Subdirectory recursions also
                 // return `true`; only the leaf file branch sets `false`.
                 top_level_is_directory: true,
+                // The stat below fills it; the share root has no stat and no
+                // date to keep.
+                top_level_modified_at: None,
             };
 
             // Before the stat: a cancel that landed while the previous subtree
@@ -53,6 +56,7 @@ impl SmbVolume {
                     let r = tree.stat(&mut conn, smb_path).await;
                     self.handle_smb_result("scan_for_copy(stat)", smb_path, r)?
                 };
+                result.top_level_modified_at = filetime_to_unix_secs(info.modified);
 
                 if !info.is_directory {
                     result.file_count = 1;
@@ -137,8 +141,10 @@ impl SmbVolume {
                         total_bytes: 0,
                         dedup_bytes: 0,
                         top_level_is_directory: false,
+                        top_level_modified_at: None,
                     },
                     per_path: Vec::new(),
+                    files: None,
                 });
             }
             if paths.len() == 1 {
@@ -147,6 +153,7 @@ impl SmbVolume {
                 return Ok(BatchScanResult {
                     aggregate: scan.clone(),
                     per_path: vec![(paths[0].clone(), scan)],
+                    files: None,
                 });
             }
 
@@ -209,6 +216,7 @@ impl SmbVolume {
                             total_bytes: entry.size.unwrap_or(0),
                             dedup_bytes: entry.size.unwrap_or(0),
                             top_level_is_directory: false,
+                            top_level_modified_at: entry.modified_at,
                         });
                         boundary.file(entry.size.unwrap_or(0)).await?;
                     }
@@ -338,6 +346,7 @@ impl SmbVolume {
                                 total_bytes: info.size,
                                 dedup_bytes: info.size,
                                 top_level_is_directory: false,
+                                top_level_modified_at: filetime_to_unix_secs(info.modified),
                             });
                             files_from_stats.push(info.size);
                         }

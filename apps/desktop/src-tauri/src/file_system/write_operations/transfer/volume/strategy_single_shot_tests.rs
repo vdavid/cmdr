@@ -31,23 +31,27 @@ struct SingleShotDest {
     /// `Some(n)`: writes of 1..=n bytes are single-shot. `None`: the volume makes
     /// no such promise (the trait default), so everything must stage.
     limit: Option<u64>,
-    writes: Arc<StdMutex<Vec<PathBuf>>>,
+    /// What `publishes_writes_whole` answers: an object store's promise, for
+    /// every size, with no single-shot one beside it.
+    whole: bool,
+    writes: Arc<StdMutex<Vec<(PathBuf, WriteMode)>>>,
     renames: Arc<StdMutex<Vec<(PathBuf, PathBuf)>>>,
 }
 
 /// A `SingleShotDest` plus handles on what it recorded.
 struct Fixture {
     dest: Arc<dyn Volume>,
-    writes: Arc<StdMutex<Vec<PathBuf>>>,
+    writes: Arc<StdMutex<Vec<(PathBuf, WriteMode)>>>,
     renames: Arc<StdMutex<Vec<(PathBuf, PathBuf)>>>,
 }
 
 impl SingleShotDest {
-    fn fixture(limit: Option<u64>) -> Fixture {
+    fn fixture(limit: Option<u64>, whole: bool) -> Fixture {
         let writes = Arc::new(StdMutex::new(Vec::new()));
         let renames = Arc::new(StdMutex::new(Vec::new()));
         let dest: Arc<dyn Volume> = Arc::new(Self {
             limit,
+            whole,
             writes: Arc::clone(&writes),
             renames: Arc::clone(&renames),
         });
@@ -109,10 +113,13 @@ impl Volume for SingleShotDest {
             .is_some_and(|size| self.limit.is_some_and(|limit| size > 0 && size <= limit));
         Box::pin(async move { answer })
     }
+    fn publishes_writes_whole(&self) -> bool {
+        self.whole
+    }
     fn write_from_stream<'a>(
         &'a self,
         dest: &'a Path,
-        _mode: WriteMode,
+        mode: WriteMode,
         length: StreamLength,
         mut stream: Box<dyn VolumeReadStream>,
         on_progress: &'a (dyn Fn(StreamWriteProgress) -> ControlFlow<()> + Sync),
@@ -121,7 +128,7 @@ impl Volume for SingleShotDest {
             return Box::pin(async { Err(VolumeError::NotSupported) });
         };
         let writes = Arc::clone(&self.writes);
-        let recorded = dest.to_path_buf();
+        let recorded = (dest.to_path_buf(), mode);
         Box::pin(async move {
             writes.lock_ignore_poison().push(recorded);
             let mut written = 0u64;
@@ -149,12 +156,29 @@ async fn copy_one(
     staging: WriteStaging,
     dest_path: &Path,
 ) -> (Vec<PathBuf>, Vec<(PathBuf, PathBuf)>, Arc<WriteOperationState>) {
+    let (writes, renames, state) = copy_one_to(size, limit, false, staging, dest_path).await;
+    (writes.into_iter().map(|(path, _)| path).collect(), renames, state)
+}
+
+/// [`copy_one`], into a destination that may also publish whole, keeping the
+/// mode each write was asked for.
+async fn copy_one_to(
+    size: usize,
+    limit: Option<u64>,
+    whole: bool,
+    staging: WriteStaging,
+    dest_path: &Path,
+) -> (
+    Vec<(PathBuf, WriteMode)>,
+    Vec<(PathBuf, PathBuf)>,
+    Arc<WriteOperationState>,
+) {
     let source: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("source"));
     source
         .create_file(Path::new("/notes.txt"), &vec![0xAB; size])
         .await
         .unwrap();
-    let Fixture { dest, writes, renames } = SingleShotDest::fixture(limit);
+    let Fixture { dest, writes, renames } = SingleShotDest::fixture(limit, whole);
     let state = make_state();
 
     copy_single_path(
@@ -258,4 +282,49 @@ async fn a_caller_staged_write_is_never_turned_into_a_single_shot() {
         "the caller's temp is the write target; got {writes:?}"
     );
     assert!(renames.is_empty(), "the caller lands its own temp; got {renames:?}");
+}
+
+/// An object store publishes every write whole (S3's PUT and multipart
+/// completion), so a fresh file goes straight to its final name at ANY size: a
+/// staged landing there would be a server-side copy plus a delete. With no
+/// landing to refuse a name someone took mid-upload, the write itself carries
+/// `CreateNew`.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_whole_publishing_destination_takes_a_fresh_file_at_its_final_name() {
+    let (writes, renames, state) = copy_one_to(4096, None, true, WriteStaging::Stage, Path::new("/notes.txt")).await;
+
+    assert_eq!(
+        writes,
+        vec![(PathBuf::from("/notes.txt"), WriteMode::CreateNew)],
+        "a whole-publish write goes to the final name and refuses a taken one; got {writes:?}"
+    );
+    assert!(
+        renames.is_empty(),
+        "nothing was staged, so nothing lands; got {renames:?}"
+    );
+    assert!(
+        state.in_flight_temps.lock_ignore_poison().is_empty(),
+        "an unstaged write owns no partial to track"
+    );
+}
+
+/// A name the caller claimed is the caller's to write over, so it goes out as
+/// `CreateOrReplace`, still at the final name.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_whole_publishing_destination_writes_a_claimed_name_over_in_place() {
+    let (writes, renames, _state) = copy_one_to(
+        4096,
+        None,
+        true,
+        WriteStaging::StageOntoClaimedName,
+        Path::new("/notes.txt"),
+    )
+    .await;
+
+    assert_eq!(
+        writes,
+        vec![(PathBuf::from("/notes.txt"), WriteMode::CreateOrReplace)],
+        "got {writes:?}"
+    );
+    assert!(renames.is_empty(), "got {renames:?}");
 }

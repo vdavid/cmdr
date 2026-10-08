@@ -7,6 +7,10 @@
   "@fileExplorer.pane.disconnectFailedToast": {
     "sourceHash": "dedbdef"
   },
+  "fileExplorer.pane.openLocalNetworkSettings": "Abrir la configuración de {localNetwork}",
+  "@fileExplorer.pane.openLocalNetworkSettings": {
+    "sourceHash": "6d40280"
+  },
   "fileExplorer.pane.directConnectionTooSlowToast": "{server} tardó demasiado en responder, así que este recurso compartido sigue usando la conexión del sistema.",
   "@fileExplorer.pane.directConnectionTooSlowToast": {
     "sourceHash": "2794ba6"
@@ -103,18 +107,6 @@
   "@fileExplorer.network.reconnect.willTryMore": {
     "sourceHash": "afff898"
   },
-  "fileExplorer.mtp.connectTimedOut": "Se agotó el tiempo de conexión. El dispositivo puede ir lento o no responder.",
-  "@fileExplorer.mtp.connectTimedOut": {
-    "sourceHash": "a0ff4e2"
-  },
-  "fileExplorer.mtp.deviceNotFound": "No se encontró el dispositivo. Puede que se haya desconectado.",
-  "@fileExplorer.mtp.deviceNotFound": {
-    "sourceHash": "f89bc21"
-  },
-  "fileExplorer.mtp.disconnected": "El dispositivo se desconectó.",
-  "@fileExplorer.mtp.disconnected": {
-    "sourceHash": "6618af7"
-  },
   "fileExplorer.networkMount.mountFailedTitle": "No se pudo montar el recurso compartido",
   "@fileExplorer.networkMount.mountFailedTitle": {
     "sourceHash": "57250cc"
@@ -130,6 +122,14 @@
   "fileExplorer.unreachable.detailTimeout": "El volumen de esta ruta no respondió a tiempo. Puede que sea una unidad de red que no está disponible ahora mismo.",
   "@fileExplorer.unreachable.detailTimeout": {
     "sourceHash": "e83b556"
+  },
+  "fileExplorer.compareDirectories.keptChanging": "Las carpetas no dejaron de cambiar mientras se comparaban. Vuelve a intentarlo cuando dejen de cambiar.",
+  "@fileExplorer.compareDirectories.keptChanging": {
+    "sourceHash": "f36f2bd"
+  },
+  "fileExplorer.compareDirectories.couldNotFinish": "No se pudo completar la comparación de las carpetas. Inténtalo de nuevo en un momento.",
+  "@fileExplorer.compareDirectories.couldNotFinish": {
+    "sourceHash": "40e603a"
   },
   "fileExplorer.edit.notOnThisMac": "Cmdr aún no puede editar este archivo en el editor, porque no es un archivo normal de tu Mac. Presiona F3 para verlo.",
   "@fileExplorer.edit.notOnThisMac": {
@@ -159,6 +159,10 @@
   "@fileExplorer.edit.launchRefused": {
     "sourceHash": "50368e9"
   },
+  "fileExplorer.clipboard.notPasted": "Cmdr no pudo crear un archivo a partir del portapapeles. {reason}",
+  "@fileExplorer.clipboard.notPasted": {
+    "sourceHash": "69d94ad"
+  },
   "fileExplorer.clipboard.pastedAsFile": "Se pegó {kind, select, image {la imagen} pdf {el PDF} other {el texto}} del portapapeles como {filename}",
   "@fileExplorer.clipboard.pastedAsFile": {
     "sourceHash": "8b6ffb6"
@@ -166,6 +170,14 @@
   "fileExplorer.clipboard.pastedAsFileSettings": "Configuración",
   "@fileExplorer.clipboard.pastedAsFileSettings": {
     "sourceHash": "4f2debb"
+  },
+  "fileExplorer.openWith.copyRefused.archiveUnreadable": "No se pudo sacar {fileName} de su archivo comprimido para abrirlo en {appName}. Puede que el archivo comprimido esté dañado o use un formato que Cmdr no puede leer.",
+  "@fileExplorer.openWith.copyRefused.archiveUnreadable": {
+    "sourceHash": "ab5a658"
+  },
+  "fileExplorer.openWith.copyRefused.unreadable": "No se pudo leer {fileName} para abrirlo en {appName}. Comprueba que la unidad donde está siga conectada y vuelve a intentarlo.",
+  "@fileExplorer.openWith.copyRefused.unreadable": {
+    "sourceHash": "c59cae3"
   },
   "fileExplorer.rename.hiddenAfterRename": "Tu archivo desapareció de la vista porque no se muestran los archivos ocultos.",
   "@fileExplorer.rename.hiddenAfterRename": {
@@ -182,14 +194,6 @@
   "fileExplorer.rename.chainKeptOriginalNameAndOthers": "{others, plural, one {Otro archivo mantuvo su nombre} many {Otros {othersText} archivos mantuvieron su nombre} other {Otros {othersText} archivos mantuvieron su nombre}}, y también se mantuvo “{name}”: {reason}",
   "@fileExplorer.rename.chainKeptOriginalNameAndOthers": {
     "sourceHash": "0953523"
-  },
-  "fileExplorer.rename.unconfirmed": "No se pudo confirmar el cambio de nombre de “{name}”. El volumen puede ir lento, así que es posible que el cambio sí se haya aplicado.",
-  "@fileExplorer.rename.unconfirmed": {
-    "sourceHash": "6823529"
-  },
-  "fileExplorer.rename.unconfirmedAndOthers": "No se pudo confirmar el cambio de nombre de “{name}” ni el de {others, plural, one {otro archivo} many {otros {othersText} archivos} other {otros {othersText} archivos}}. El volumen puede ir lento, así que es posible que los cambios sí se hayan aplicado.",
-  "@fileExplorer.rename.unconfirmedAndOthers": {
-    "sourceHash": "674578c"
   },
   "fileExplorer.dateTooltip.lastMoved": "Último movimiento (“agregado”)",
   "@fileExplorer.dateTooltip.lastMoved": {
@@ -346,5 +350,29 @@
   "fileExplorer.network.browser.hostRemoved": "Cmdr olvidó {hostName}",
   "@fileExplorer.network.browser.hostRemoved": {
     "sourceHash": "b6ed0e4"
+  },
+  "fileExplorer.folderSizes.unreadable": "{count, plural, one {No se pudo leer por completo # carpeta, así que puede que su tamaño esté incompleto.} many {No se pudieron leer por completo # carpetas, así que puede que sus tamaños estén incompletos.} other {No se pudieron leer por completo # carpetas, así que puede que sus tamaños estén incompletos.}}",
+  "@fileExplorer.folderSizes.unreadable": {
+    "sourceHash": "82dc6a5"
+  },
+  "fileExplorer.quickFilter.intro.title": "Este panel se filtró al escribir",
+  "@fileExplorer.quickFilter.intro.title": {
+    "sourceHash": "da13d0e"
+  },
+  "fileExplorer.quickFilter.intro.body": "Escribiste algunas letras, así que el panel ahora solo muestra los archivos y carpetas cuyo nombre las contiene.",
+  "@fileExplorer.quickFilter.intro.body": {
+    "sourceHash": "c4f5fad"
+  },
+  "fileExplorer.quickFilter.intro.escape": "Presiona Esc para volver a ver todos tus archivos.",
+  "@fileExplorer.quickFilter.intro.escape": {
+    "sourceHash": "db65860"
+  },
+  "fileExplorer.quickFilter.intro.jumpNote": "¿Prefieres mover el cursor a un nombre que coincida sin ocultar nada? Cambia a “Saltar”, aquí o en Configuración.",
+  "@fileExplorer.quickFilter.intro.jumpNote": {
+    "sourceHash": "0d1e2b4"
+  },
+  "fileExplorer.quickFilter.intro.openSettings": "Configuración…",
+  "@fileExplorer.quickFilter.intro.openSettings": {
+    "sourceHash": "4184f3c"
   }
 }

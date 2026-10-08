@@ -7,8 +7,13 @@
 //! multi-million-row NAS indexes, so what it keeps per folder decides whether a
 //! pass costs tens of MB or hundreds. Depth: `DETAILS.md` § The walk.
 
+use std::ops::ControlFlow;
+
+use tokio_util::sync::CancellationToken;
+
 use crate::importance::classify::{is_project_marker, self_floors};
 use crate::importance::signals::ChildAggregate;
+use crate::importance::stop::{PassError, StopPoll};
 use crate::indexing::store::{ARENA_FULL, DirTree, IndexStore, ROOT_ID};
 
 /// One folder the walk found, in the shape scoring needs and nothing more.
@@ -84,15 +89,29 @@ impl WalkedFolders {
     /// The path lands in one buffer reused across the whole visit, so iterating a
     /// NAS-sized volume allocates once rather than once per folder. Takes `&mut self`
     /// for that buffer and the tree's own ancestor scratch, not to mutate the walk.
+    #[cfg(any(test, feature = "tooling"))]
     pub(crate) fn for_each(&mut self, mut visit: impl FnMut(&IndexFolder, &str)) {
+        let _: Result<(), std::convert::Infallible> = self.try_for_each(|folder, path| {
+            visit(folder, path);
+            Ok(())
+        });
+    }
+
+    /// [`for_each`](WalkedFolders::for_each), leaving at the first folder `visit`
+    /// fails on: how a loop over the whole volume hears a stop.
+    pub(crate) fn try_for_each<E>(
+        &mut self,
+        mut visit: impl FnMut(&IndexFolder, &str) -> Result<(), E>,
+    ) -> Result<(), E> {
         let mut path = String::new();
         for index in 0..self.folders.len() {
             // Copied out (it's a small `Copy` record) so the tree can borrow mutably
             // for its path scratch while the visitor reads the folder.
             let folder = self.folders[index];
             self.tree.path_at_into(folder.dir_index as usize, &mut path);
-            visit(&folder, &path);
+            visit(&folder, &path)?;
         }
+        Ok(())
     }
 
     /// Visit every folder MUTABLY with its reconstructed absolute path.
@@ -176,7 +195,16 @@ impl WalkedFolders {
 /// children and the sibling directory children. `has_marker_below` is a single upward
 /// propagation after the walk, so a `.git` deep in a tree raises its ancestors;
 /// `under_floored_ancestor` is its downward twin.
-pub(crate) fn walk_index_folders(conn: &rusqlite::Connection, home: &str) -> Result<WalkedFolders, String> {
+///
+/// **Every loop here polls `stop`**, the two row streams included: this walk is where
+/// a full pass spends its seconds, so it's where a stopped volume's pass has to be
+/// able to leave. A stopped walk returns [`PassError::Cancelled`] and no folders, so
+/// nothing downstream can score half a volume.
+pub(crate) fn walk_index_folders(
+    conn: &rusqlite::Connection,
+    home: &str,
+    stop: &CancellationToken,
+) -> Result<WalkedFolders, PassError> {
     let mut walked = WalkedFolders {
         tree: DirTree::new(),
         folders: Vec::new(),
@@ -184,12 +212,17 @@ pub(crate) fn walk_index_folders(conn: &rusqlite::Connection, home: &str) -> Res
 
     // The directory rows, ascending by id: one tree row each (the root sentinel
     // included, since paths reconstruct through it) and one folder record each.
-    let mut arena_full = false;
+    let mut left_early: Option<PassError> = None;
+    let mut poll = StopPoll::new(stop);
     let mut folded = String::new();
     IndexStore::for_each_directory(conn, |id, parent_id, name, modified_at| {
+        if let Err(stopped) = poll.tick() {
+            left_early = Some(stopped);
+            return ControlFlow::Break(());
+        }
         if !walked.tree.push(id, parent_id, name) {
-            arena_full = true;
-            return;
+            left_early = Some(PassError::Failed(ARENA_FULL.to_string()));
+            return ControlFlow::Break(());
         }
         if id != ROOT_ID {
             walked.folders.push(IndexFolder {
@@ -200,16 +233,18 @@ pub(crate) fn walk_index_folders(conn: &rusqlite::Connection, home: &str) -> Res
                 under_floored_ancestor: false,
             });
         }
+        ControlFlow::Continue(())
     })
     .map_err(|e| e.to_string())?;
-    if arena_full {
-        return Err(ARENA_FULL.to_string());
+    if let Some(reason) = left_early {
+        return Err(reason);
     }
 
     // Directory children first: a `.git`/`.hg`/`.svn` marker is a DIRECTORY, so fold
     // the directory set into each parent's direct-marker flag. (Directories never
     // contribute to the extension count or file count.)
     for dir_index in 0..walked.tree.len() {
+        poll.tick()?;
         if walked.tree.id_at(dir_index) == ROOT_ID
             || !folded_is_project_marker(walked.tree.name_at(dir_index), &mut folded)
         {
@@ -220,9 +255,9 @@ pub(crate) fn walk_index_folders(conn: &rusqlite::Connection, home: &str) -> Res
         }
     }
 
-    fold_file_children(conn, &mut walked, &mut folded)?;
-    propagate_floor_to_descendants(&mut walked, home);
-    propagate_marker_to_ancestors(&mut walked);
+    fold_file_children(conn, &mut walked, &mut folded, stop)?;
+    propagate_floor_to_descendants(&mut walked, home, stop)?;
+    propagate_marker_to_ancestors(&mut walked, stop)?;
 
     Ok(walked)
 }
@@ -236,7 +271,10 @@ fn fold_file_children(
     conn: &rusqlite::Connection,
     walked: &mut WalkedFolders,
     folded: &mut String,
-) -> Result<(), String> {
+    stop: &CancellationToken,
+) -> Result<(), PassError> {
+    let mut poll = StopPoll::new(stop);
+    let mut stopped: Option<PassError> = None;
     let mut group_parent: Option<i64> = None;
     let mut group_folder: Option<usize> = None;
     let mut extensions = ExtensionGroup::default();
@@ -245,6 +283,10 @@ fn fold_file_children(
     let mut extension = String::new();
 
     IndexStore::for_each_file_child_by_parent(conn, |parent_id, name| {
+        if let Err(reason) = poll.tick() {
+            stopped = Some(reason);
+            return ControlFlow::Break(());
+        }
         if group_parent != Some(parent_id) {
             close_group(walked, group_folder, file_count, extensions.len(), has_marker);
             group_parent = Some(parent_id);
@@ -259,8 +301,12 @@ fn fold_file_children(
         if folded_is_project_marker(name, folded) {
             has_marker = true;
         }
+        ControlFlow::Continue(())
     })
     .map_err(|e| e.to_string())?;
+    if let Some(reason) = stopped {
+        return Err(reason);
+    }
     // The last group has no following row to close it.
     close_group(walked, group_folder, file_count, extensions.len(), has_marker);
     Ok(())
@@ -293,11 +339,17 @@ fn close_group(
 /// shared `classify` predicate), then marks every DESCENDANT of a seed by walking its
 /// parent chain and checking whether any ancestor is a seed. The seed set is a flag per
 /// TREE row, so an ancestor check is a binary search plus a byte, never a hash lookup.
-fn propagate_floor_to_descendants(walked: &mut WalkedFolders, home: &str) {
+fn propagate_floor_to_descendants(
+    walked: &mut WalkedFolders,
+    home: &str,
+    stop: &CancellationToken,
+) -> Result<(), PassError> {
+    let mut poll = StopPoll::new(stop);
     let mut self_floored = vec![false; walked.tree.len()];
     let mut any_floored = false;
     let mut path = String::new();
     for index in 0..walked.folders.len() {
+        poll.tick()?;
         let dir_index = walked.folders[index].dir_index as usize;
         walked.tree.path_at_into(dir_index, &mut path);
         if self_floors(&path, walked.tree.name_at(dir_index), home) {
@@ -306,10 +358,11 @@ fn propagate_floor_to_descendants(walked: &mut WalkedFolders, home: &str) {
         }
     }
     if !any_floored {
-        return;
+        return Ok(());
     }
 
     for index in 0..walked.folders.len() {
+        poll.tick()?;
         let mut cursor = walked.tree.parent_at(walked.folders[index].dir_index as usize);
         while cursor != ROOT_ID {
             let Some(dir_index) = walked.tree.index_of(cursor) else {
@@ -322,12 +375,17 @@ fn propagate_floor_to_descendants(walked: &mut WalkedFolders, home: &str) {
             cursor = walked.tree.parent_at(dir_index);
         }
     }
+    Ok(())
 }
 
 /// Propagate a direct project marker up to every ancestor: a `.git` deep in a subtree
 /// marks the whole path above it as project-adjacent. Seeds from each
 /// folder's own direct-marker flag, then walks parent pointers.
-pub(super) fn propagate_marker_to_ancestors(walked: &mut WalkedFolders) {
+pub(super) fn propagate_marker_to_ancestors(
+    walked: &mut WalkedFolders,
+    stop: &CancellationToken,
+) -> Result<(), PassError> {
+    let mut poll = StopPoll::new(stop);
     let seeds: Vec<u32> = walked
         .folders
         .iter()
@@ -335,6 +393,7 @@ pub(super) fn propagate_marker_to_ancestors(walked: &mut WalkedFolders) {
         .map(|f| f.dir_index)
         .collect();
     for seed in seeds {
+        poll.tick()?;
         let mut cursor = walked.tree.parent_at(seed as usize);
         while cursor != ROOT_ID {
             let Some(dir_index) = walked.tree.index_of(cursor) else {
@@ -346,6 +405,7 @@ pub(super) fn propagate_marker_to_ancestors(walked: &mut WalkedFolders) {
             cursor = walked.tree.parent_at(dir_index);
         }
     }
+    Ok(())
 }
 
 #[cfg(test)]
@@ -401,8 +461,10 @@ impl WalkedFolders {
             }
         }
 
-        propagate_floor_to_descendants(&mut walked, home);
-        propagate_marker_to_ancestors(&mut walked);
+        // No volume stands behind a synthetic walk, so nothing can stop it.
+        let never = CancellationToken::new();
+        propagate_floor_to_descendants(&mut walked, home, &never).expect("never stopped");
+        propagate_marker_to_ancestors(&mut walked, &never).expect("never stopped");
         walked
     }
 }

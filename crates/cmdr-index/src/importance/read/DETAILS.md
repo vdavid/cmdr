@@ -10,8 +10,10 @@ dep on the store. The agent and media-ML plans point here rather than restating 
 `READ_CONNS` is a small per-thread LRU (`sqlite_util::ThreadConnCache`, three slots), not one connection: a thread that
 reads two volumes' weights would otherwise reopen on every alternation and lose the connection's `prepare_cached`
 statements. It passes generation `0` — importance reads have no invalidation generation, because a recompute rewrites
-rows in place and never swaps the DB file. Why more open connections is affordable: `indexing/store/DETAILS.md` §
-"SQLite page memory is one process-wide slab".
+rows in place and never swaps the DB file. The two things that do take the file away (a forgotten volume, a schema wipe)
+delete it through `sqlite_util::delete_database`, which retires the cached connections; without that a thread would keep
+answering from the unlinked file. Why more open connections is affordable: `indexing/store/DETAILS.md` § "SQLite page
+memory is one process-wide slab".
 
 `open(data_dir, volume_id, available)` doesn't touch the DB until the first read, so it's cheap and never fails on a
 missing file. `open_at(db_path, available)` serves a caller that already has a path (the dev tuning surface).
@@ -26,10 +28,11 @@ home-relative; defaults to `$HOME`); `with_weights` overrides the weights `expla
   the reason (`nameDenylisted` / `hiddenOrSystem` / `underFlooredAncestor`, in that precedence) is derived live from the
   path — the single derivation `explain`'s floored breakdown also uses. A caller that only wants the number can use
   `WeightLookup::score()`, which flattens floored and unscored to `0.0`.
-- `top_n(n)` / `above_threshold(t)` / `top_above_threshold(n, t)` — ranked folders (score DESC, ties by path ASC).
-  `above_threshold` is INCLUSIVE at the bound (a folder exactly at `t` is returned); `top_above_threshold` combines the
-  `LIMIT` and `WHERE score >= t` in one bounded query, which is how the MCP resource's capped threshold read fetches
-  `cap + 1` to detect truncation without loading the whole tail. The agent's summary gate and media-ML's
+- `top_n(n)` / `top_above_threshold(n, t)` — ranked folders (score DESC, ties by path ASC). `above_threshold(t)` — every
+  folder at or above `t`, UNORDERED: its callers build a lookup table, so a sort of every scored folder would buy
+  nothing. Both threshold reads are INCLUSIVE at the bound (a folder exactly at `t` is returned); `top_above_threshold`
+  combines the `LIMIT` and `WHERE score >= t` in one bounded query, which is how the MCP resource's capped threshold
+  read fetches `cap + 1` to detect truncation without loading the whole tail. The agent's summary gate and media-ML's
   enrich-important-first.
 - `scored_folder_count()` — the `weights` row count (a `COUNT(*)`, no deserialization), for the overview surface.
 - `for_each_nonzero_weight(visit)` — STREAMS every `(path, score)` with a non-zero score (floored folders omitted), for
@@ -149,7 +152,6 @@ signals and re-scores.
 cargo run -p index-query --bin importance-tune -- <path-to-importance-root.db> [top_n]
 ```
 
-Find the DB under the app data dir as `importance-root.db` (beside `index-root.db`); `top_n` defaults to 30. The
-printout lists each folder's score, then per-signal `weight`, `raw`, and `contribution` (skipping signals redistributed
-to zero), so a mis-ranked folder's cause is visible. Measuring ranking QUALITY (rather than eyeballing it) is
-`../evals/DETAILS.md`.
+Find the DB in the app data dir as `importance-root.db`; `top_n` defaults to 30. The printout lists each folder's score,
+then per-signal `weight`, `raw`, and `contribution` (skipping signals redistributed to zero), so a mis-ranked folder's
+cause is visible. Measuring ranking QUALITY (rather than eyeballing it) is `../evals/DETAILS.md`.

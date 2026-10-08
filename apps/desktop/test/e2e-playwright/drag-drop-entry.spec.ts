@@ -59,7 +59,7 @@ test.describe('Programmatic drop entry (local)', () => {
     const title = await tauriPage.textContent(`${TRANSFER_DIALOG} h2`)
     expect(title).toContain('Copy')
 
-    await expectDialogCounters(tauriPage, { bytes: '1.00 KB', files: 1, dirs: 0 })
+    await expectDialogCounters(tauriPage, { bytes: '1.02 kB', files: 1, dirs: 0 })
 
     await dismissOverlay(tauriPage)
   })
@@ -80,7 +80,7 @@ test.describe('Programmatic drop entry (local)', () => {
     await tauriPage.waitForSelector(TRANSFER_DIALOG, 5000)
     // Poll the scan to terminal before reading: the byte scan over the recorded
     // local source must fill the counters (file-a.txt is 1 KB).
-    await expectDialogCounters(tauriPage, { bytes: '1.00 KB', files: 1, dirs: 0 })
+    await expectDialogCounters(tauriPage, { bytes: '1.02 kB', files: 1, dirs: 0 })
 
     await dismissOverlay(tauriPage)
   })
@@ -95,7 +95,7 @@ test.describe('Programmatic drop entry (local)', () => {
     await tauriPage.waitForSelector(TRANSFER_DIALOG, 5000)
 
     // Settle on the copy counters first.
-    await expectDialogCounters(tauriPage, { bytes: '1.00 KB', files: 1, dirs: 0 })
+    await expectDialogCounters(tauriPage, { bytes: '1.02 kB', files: 1, dirs: 0 })
 
     // Toggle to Move. A local→local move is NOT the same-volume rename fast path,
     // so the deep scan must keep running and the tallies must NOT zero out.
@@ -113,7 +113,7 @@ test.describe('Programmatic drop entry (local)', () => {
 
     // …and the counters survive (state stays `done`/`counting`, never `skipped`,
     // and the file/byte totals are unchanged).
-    await expectDialogCounters(tauriPage, { bytes: '1.00 KB', files: 1, dirs: 0 })
+    await expectDialogCounters(tauriPage, { bytes: '1.02 kB', files: 1, dirs: 0 })
     const snapshot = await readDialogCounters(tauriPage)
     expect(snapshot?.scanState, 'a local→local move must NOT be the skipped fast path').not.toBe('skipped')
 

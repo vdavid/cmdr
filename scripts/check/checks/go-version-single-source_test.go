@@ -244,11 +244,8 @@ func TestLinuxContainerProvisionsTheMisePinnedGo(t *testing.T) {
 	if err != nil {
 		t.Fatalf("MiseGoVersion: %v", err)
 	}
-	script, err := buildProvisionScript(root)
-	if err != nil {
-		t.Fatalf("buildProvisionScript: %v", err)
-	}
-	if !strings.Contains(script, "go"+version+".linux-") {
-		t.Fatalf("the provision script does not download Go %s from .mise.toml", version)
+	dockerfile := repoLinuxDockerfile(t, root)
+	if !strings.Contains(dockerfile, "go"+version+".linux-") {
+		t.Fatalf("the Linux lanes' image does not download Go %s from .mise.toml", version)
 	}
 }

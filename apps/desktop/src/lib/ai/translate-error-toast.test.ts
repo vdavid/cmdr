@@ -38,6 +38,7 @@ const ALL_KINDS: AiTranslateErrorKind[] = [
   'serverError',
   'parseError',
   'unknownProvider',
+  'managed',
 ]
 
 function makeThrown(kind: AiTranslateErrorKind): AiTranslateThrown {
@@ -68,6 +69,32 @@ describe('aiTranslateErrorToast', () => {
     expect(copy.title).toBe('Cloud AI is off')
     expect(copy.body).toBe('Allow it in Settings > AI, then try again.')
     expect(copy.level).toBe('warn')
+  })
+
+  it('names the organization, calmly, when its policy refused the request', () => {
+    const copy = aiTranslateErrorToast('managed')
+    expect(copy.title).toBe('Your organization manages AI in Cmdr')
+    expect(copy.body).toBe('Your IT team can tell you which AI services you can use.')
+    expect(copy.level).toBe('info')
+  })
+
+  it('says which rule refused, when the backend names it', () => {
+    expect(aiTranslateErrorToast('managed', 'aiOff').body).toBe('Your organization turned off AI in Cmdr.')
+    expect(aiTranslateErrorToast('managed', 'cloudAiOff').body).toBe('Your organization allows only on-device AI.')
+    expect(aiTranslateErrorToast('managed', 'hostNotAllowed').body).toBe(
+      'Your organization doesn’t allow this AI service. Your IT team can tell you which ones you can use.',
+    )
+    expect(aiTranslateErrorToast('managed', 'hostNotAllowed').title).toBe('Your organization manages AI in Cmdr')
+  })
+
+  it('toasts the specific rule a thrown managed refusal carries', () => {
+    addToastMock.mockClear()
+    const thrown = Object.assign(new Error('refused'), { kind: 'managed' as const, managed: 'cloudAiOff' as const })
+    expect(showAiTranslateErrorToast(thrown)).toBe(true)
+    expect(addToastMock).toHaveBeenCalledWith(
+      'Your organization manages AI in Cmdr\nYour organization allows only on-device AI.',
+      expect.objectContaining({ level: 'info' }),
+    )
   })
 
   it('points the quota case at the plan/billing and the empty case at a smaller model', () => {

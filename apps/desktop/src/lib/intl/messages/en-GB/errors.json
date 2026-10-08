@@ -35,6 +35,22 @@
   "@errors.write.sourceNotFound.message.trash": {
     "sourceHash": "dbc0bbe"
   },
+  "errors.write.destinationNotFound.message.copy": "The folder you’re copying into isn’t there any more, so there was nowhere to put your files. The originals are untouched.",
+  "@errors.write.destinationNotFound.message.copy": {
+    "sourceHash": "b747547"
+  },
+  "errors.write.destinationNotFound.message.move": "The folder you’re moving into isn’t there any more, so there was nowhere to put your files. The originals are untouched.",
+  "@errors.write.destinationNotFound.message.move": {
+    "sourceHash": "20fb725"
+  },
+  "errors.write.noLongerConnected.title": "Not connected any more",
+  "@errors.write.noLongerConnected.title": {
+    "sourceHash": "3974fa0"
+  },
+  "errors.write.noLongerConnected.message": "The phone or server holding these files isn’t connected any more, so nothing has changed.",
+  "@errors.write.noLongerConnected.message": {
+    "sourceHash": "d0827c4"
+  },
   "errors.write.cancelled.title.copy": "Copy cancelled",
   "@errors.write.cancelled.title.copy": {
     "sourceHash": "7edfd40"
@@ -123,6 +139,18 @@
   "@errors.write.fallback.message.trash": {
     "sourceHash": "63f8393"
   },
+  "errors.mutation.notFound": "There’s nothing at “{path}” any more.",
+  "@errors.mutation.notFound": {
+    "sourceHash": "9c068a2"
+  },
+  "errors.mutation.volumeGone": "That volume isn’t available any more, so nothing changed.",
+  "@errors.mutation.volumeGone": {
+    "sourceHash": "2d24729"
+  },
+  "errors.volume.notFound": "There’s nothing at “{path}” any more.",
+  "@errors.volume.notFound": {
+    "sourceHash": "9c068a2"
+  },
   "errors.mutation.trashNotSupported": "This volume has no Bin, so the only way is to delete permanently.",
   "@errors.mutation.trashNotSupported": {
     "sourceHash": "525ef25"
@@ -130,5 +158,17 @@
   "errors.mutation.trashRefused": "macOS wouldn’t move this to the Bin.",
   "@errors.mutation.trashRefused": {
     "sourceHash": "7a6d1a5"
+  },
+  "errors.eject.volumeNotFound": "That drive isn’t connected any more, so there’s nothing to eject.",
+  "@errors.eject.volumeNotFound": {
+    "sourceHash": "75b7870"
+  },
+  "errors.eject.remoteNotConnected": "This server isn’t connected any more, so there’s nothing left to close.",
+  "@errors.eject.remoteNotConnected": {
+    "sourceHash": "3f38dd0"
+  },
+  "errors.serverRequest.blockedByPolicy": "Your organisation turned this off for Cmdr.",
+  "@errors.serverRequest.blockedByPolicy": {
+    "sourceHash": "9a27fb3"
   }
 }

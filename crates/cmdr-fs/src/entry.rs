@@ -227,6 +227,14 @@ pub struct FileEntry {
     /// cross-category Size sorting is meaningless, and that's an honest
     /// tradeoff. `None` on every non-portal entry.
     pub git_meta: Option<crate::git_meta::GitEntryMeta>,
+    /// `true` for a file whose bytes sit in a cold storage class and can't be
+    /// read until someone restores them: S3 Glacier Flexible Retrieval or Deep
+    /// Archive, from the listing's `StorageClass`. The pane shows it as
+    /// "archived" (the internals say "cold storage" because `is_archive`
+    /// already means a zip), and a read answers `VolumeError::ColdStorage`.
+    /// A restored object still lists as archived: the listing can't tell.
+    /// `false` on every other backend.
+    pub in_cold_storage: bool,
 }
 
 impl FileEntry {
@@ -263,6 +271,7 @@ impl FileEntry {
             recursive_size_stale: None,
             redirect_to_path: None,
             git_meta: None,
+            in_cold_storage: false,
         }
     }
 }

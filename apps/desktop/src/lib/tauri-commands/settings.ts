@@ -2,7 +2,7 @@
 
 import { Channel, invoke } from '@tauri-apps/api/core'
 import { type UnlistenFn } from '@tauri-apps/api/event'
-import type { AiApiKeyError } from '$lib/ipc/bindings'
+import type { AiApiKeyError, ManagedAiRefusal } from '$lib/ipc/bindings'
 import {
   commands,
   events,
@@ -346,8 +346,6 @@ export interface AiModelInfo {
   id: string
   displayName: string
   sizeBytes: number
-  /** Human-readable size (like "4.3 GB") */
-  sizeFormatted: string
   /** Bytes per token for KV cache (used for memory estimation) */
   kvBytesPerToken: number
   /** Base memory overhead in bytes (model weights + compute buffers) */
@@ -363,7 +361,6 @@ export interface AiRuntimeStatus {
   modelInstalled: boolean
   modelName: string
   modelSizeBytes: number
-  modelSizeFormatted: string
   downloadInProgress: boolean
   localAiSupported: boolean
   kvBytesPerToken: number
@@ -455,6 +452,8 @@ export interface AiConnectionCheckResult {
   error: string | null
   /** The user hasn't allowed cloud AI, so nothing was sent and the other fields are empty. */
   cloudConsentMissing: boolean
+  /** The organization's policy refuses this endpoint, so nothing was sent. Decided before consent. */
+  managed: ManagedAiRefusal | null
 }
 
 /**
@@ -465,6 +464,15 @@ export interface AiConnectionCheckResult {
  */
 export async function checkAiConnection(baseUrl: string, providerId: string): Promise<AiConnectionCheckResult> {
   return commands.checkAiConnection(baseUrl, providerId)
+}
+
+/**
+ * For each base URL, the organization's refusal of cloud AI sending there, or `null` when it may:
+ * the provider picker renders a refused preset disabled, and a typed endpoint is judged once
+ * entered. Local and instant (no request); a URL, never a key, crosses IPC.
+ */
+export async function cloudAiHostVerdicts(baseUrls: string[]): Promise<(ManagedAiRefusal | null)[]> {
+  return commands.cloudAiHostVerdicts(baseUrls)
 }
 
 // ============================================================================
@@ -555,21 +563,6 @@ export async function isForceOnboarding(): Promise<boolean> {
     return await commands.isForceOnboarding()
   } catch {
     return false
-  }
-}
-
-/** Gets AI-generated folder name suggestions for the current directory. */
-export async function getFolderSuggestions(
-  listingId: string,
-  currentPath: string,
-  includeHidden: boolean,
-): Promise<string[]> {
-  try {
-    const res = await commands.getFolderSuggestions(listingId, currentPath, includeHidden)
-    if (res.status === 'error') return []
-    return res.data
-  } catch {
-    return []
   }
 }
 

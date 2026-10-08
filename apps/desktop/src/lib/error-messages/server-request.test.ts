@@ -45,6 +45,24 @@ describe('serverRequestLogLevel', () => {
   })
 })
 
+describe('a request the organization’s policy blocked', () => {
+  const blocked: ServerRequestError = { type: 'blockedByPolicy' }
+
+  it('logs at info: nothing went wrong, the organization turned it off', () => {
+    expect(serverRequestLogLevel(blocked)).toBe('info')
+  })
+
+  it('says the organization turned it off, unlike any network or server sentence', () => {
+    const sentence = describeServerRequestFailure(blocked)
+    expect(sentence).toContain('organization')
+    expect(sentence).not.toBe(describeServerRequestFailure({ type: 'unreachable', detail: '' }))
+  })
+
+  it('names the policy in the diagnostic', () => {
+    expect(new ServerRequestFailure(blocked).message).toContain('blockedByPolicy')
+  })
+})
+
 describe('describeServerRequestFailure', () => {
   const every: (ServerRequestError | null)[] = [
     { type: 'unreachable', detail: 'error sending request for url (https://api.getcmdr.com/crash-report)' },
@@ -53,13 +71,14 @@ describe('describeServerRequestFailure', () => {
     refused(422),
     { type: 'badResponse', detail: 'error decoding response body' },
     { type: 'unexpected', detail: 'HTTP client: failed' },
+    { type: 'blockedByPolicy' },
     null,
   ]
 
   it.each(every)('words %j from the catalog, without the raw detail or the words "error" and "failed"', (failure) => {
     const sentence = describeServerRequestFailure(failure)
     expect(sentence.length).toBeGreaterThan(0)
-    if (failure !== null) expect(sentence).not.toContain(failure.detail)
+    if (failure !== null && 'detail' in failure) expect(sentence).not.toContain(failure.detail)
     expect(sentence.toLowerCase()).not.toMatch(/\berror\b|\bfailed\b/)
   })
 

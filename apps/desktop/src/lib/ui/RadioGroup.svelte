@@ -40,6 +40,8 @@
         columns?: number
         /** Accessible name for the group root. */
         ariaLabel?: string
+        /** Id of an element that explains the group, for example why it's disabled. */
+        ariaDescribedBy?: string
         /**
          * Rendered after the items, receiving the current `value`. Preserves the "custom content when
          * a specific option is selected" feature; the caller decides visibility.
@@ -79,6 +81,7 @@
         orientation = 'vertical',
         columns,
         ariaLabel,
+        ariaDescribedBy,
         footer,
         itemTrailing,
         itemInline,
@@ -94,7 +97,13 @@
     }
 </script>
 
-<RadioGroup.Root {value} onValueChange={handleValueChange} {disabled} aria-label={ariaLabel}>
+<RadioGroup.Root
+    {value}
+    onValueChange={handleValueChange}
+    {disabled}
+    aria-label={ariaLabel}
+    aria-describedby={ariaDescribedBy}
+>
     <div
         class="radio-group"
         class:horizontal={orientation === 'horizontal' && columns === undefined}

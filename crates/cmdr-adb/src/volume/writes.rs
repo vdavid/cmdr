@@ -80,19 +80,51 @@ impl AdbVolume {
         Ok(())
     }
 
-    /// The same verb, answering honestly whether the leaf was there before.
+    /// The same verb, answering honestly whether the leaf was there before, and
+    /// naming a file that's in the way.
     ///
     /// ❗ `Created` is a promise the transfer driver SPENDS by skipping its
     /// per-file destination conflict probe, so the leaf is stat'ed before the
-    /// `mkdir` and a hit answers `AlreadyExisted`.
+    /// `mkdir` and a hit answers `AlreadyExisted`. That same stat refuses a leaf
+    /// that isn't a folder, which `mkdir -p` would only name on stderr.
+    ///
+    /// A file where an ANCESTOR should be is looked for only once `mkdir -p` has
+    /// refused, so a create that works costs what it did. The probe follows
+    /// links, so a path through a link to a folder (`/sdcard`) is created into.
     pub(super) async fn create_directory_all_impl(&self, path: &Path) -> Result<DirectoryCreation, VolumeError> {
         let device = self.to_device_path(path)?;
-        if device == "/" || self.probe(&device).await == WhatIsThere::Directory {
+        if device == "/" {
             return Ok(DirectoryCreation::AlreadyExisted);
         }
-        self.shell_verb(&["mkdir", "-p", &device], &device).await?;
+        match self.probe(&device).await {
+            WhatIsThere::Directory => return Ok(DirectoryCreation::AlreadyExisted),
+            WhatIsThere::NotADirectory => return Err(VolumeError::NotADirectory(device)),
+            WhatIsThere::Nothing => {}
+        }
+        if let Err(refusal) = self.shell_verb(&["mkdir", "-p", &device], &device).await {
+            return Err(match self.file_above(&device).await {
+                Some(in_the_way) => VolumeError::NotADirectory(in_the_way),
+                None => refusal,
+            });
+        }
         self.notify_created(path).await;
         Ok(DirectoryCreation::Created)
+    }
+
+    /// The nearest ancestor of `device` that exists, when it isn't a directory:
+    /// the file a `mkdir -p` tripped over. `None` when that ancestor is a
+    /// directory, so the verb's own refusal stands.
+    async fn file_above(&self, device: &str) -> Option<String> {
+        let mut at = device;
+        while let Some(cut) = at.rfind('/').filter(|cut| *cut > 0) {
+            at = &at[..cut];
+            match self.probe(at).await {
+                WhatIsThere::NotADirectory => return Some(at.to_string()),
+                WhatIsThere::Directory => return None,
+                WhatIsThere::Nothing => {}
+            }
+        }
+        None
     }
 
     /// Deletes one file or one EMPTY directory.

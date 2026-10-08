@@ -13,6 +13,7 @@
 
 use super::cached_listing::LISTING_CACHE;
 use super::caching_test_support::TestListing;
+use super::operations::{ListingLookupError, get_file_at, keep_listings_alive};
 use super::orphan_reaper::{ORPHAN_IDLE_WINDOW, orphan_ids, reap_orphaned_listings_at_for};
 use crate::file_system::watcher::{WATCHER_MANAGER, start_watching};
 use crate::ignore_poison::RwLockIgnorePoison;
@@ -148,6 +149,52 @@ fn touch_rescues_a_listing_that_would_otherwise_be_orphaned() {
         "touch() must reset the idle clock"
     );
     assert!(listing.is_cached(), "touched listing survives the sweep");
+}
+
+// ---- the pane heartbeat keeps an idle, on-screen listing alive ----------------
+//
+// Regression anchor: a pane left on ~/Downloads overnight had no reads and no FS
+// events for 6 h, so the reaper took its listing (and its watcher). The pane kept
+// showing stale rows, new files never appeared, and every F3/F4/F5/F6 failed with
+// a missing listing. The frontend now heartbeats its live listings.
+
+#[test]
+fn keep_listings_alive_rescues_an_idle_listing_from_the_reaper() {
+    let listing = TestListing::new()
+        .path("/idle/overnight")
+        .last_accessed_ms(0)
+        .insert("heartbeat");
+
+    let unknown = keep_listings_alive(&[listing.id().to_string()]);
+    assert!(unknown.is_empty(), "a cached listing isn't reported unknown");
+
+    let reaped = reap_orphaned_listings_at_for(
+        super::cached_listing::epoch_millis_now(),
+        ORPHAN_IDLE_WINDOW.as_millis() as u64,
+        &[listing.id()],
+    );
+    assert!(reaped.is_empty(), "a heartbeated listing must survive the sweep");
+    assert!(listing.is_cached());
+}
+
+#[test]
+fn keep_listings_alive_names_the_listings_it_no_longer_holds() {
+    let live = TestListing::new().path("/live").insert("heartbeat-live");
+    let gone = "heartbeat-never-existed".to_string();
+
+    let unknown = keep_listings_alive(&[live.id().to_string(), gone.clone()]);
+
+    assert_eq!(
+        unknown,
+        vec![gone],
+        "only the missing id comes back, for the pane to re-list"
+    );
+}
+
+#[test]
+fn reading_a_missing_listing_is_a_typed_gone_error() {
+    let err = get_file_at("read-never-existed", 0, false).expect_err("no such listing");
+    assert!(matches!(err, ListingLookupError::Gone { ref listing_id } if listing_id == "read-never-existed"));
 }
 
 // ---- a sweep stays inside its own test ----------------------------------------

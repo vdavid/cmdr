@@ -8,6 +8,7 @@ import {
   commands,
   events,
   type AccentColorChanged,
+  type GlassTintChanged,
   type LocalizedSystemStrings,
   type ReduceTransparencyChanged,
   type SystemTextSizeChanged,
@@ -23,6 +24,14 @@ export function getAccentColor(): Promise<string> {
 /** Reads the current macOS "reduce transparency" (Accessibility > Display) state. */
 export function getShouldReduceTransparency(): Promise<boolean> {
   return commands.getShouldReduceTransparency()
+}
+
+/**
+ * Reads the macOS 27 Appearance > Liquid Glass slider: `0` clearest to `1` most tinted, or
+ * `null` when macOS reports none.
+ */
+export function getGlassTintAmount(): Promise<number | null> {
+  return commands.getGlassTintAmount()
 }
 
 /** Reads the current macOS Accessibility text-size multiplier (1.0 = default). */
@@ -82,12 +91,23 @@ export function onOsLocalesChanged(handler: (payload: OsLocalesChanged) => void)
 /**
  * Subscribes to macOS "reduce transparency" (Accessibility > Display) changes.
  * The payload's `reduce` is the new value. Drives the `reduce-transparency`
- * class on `<html>` (see `$lib/reduce-transparency`).
+ * class on `<html>` (see `$lib/glass-material`).
  */
 export function onReduceTransparencyChanged(
   handler: (payload: ReduceTransparencyChanged) => void,
 ): Promise<UnlistenFn> {
   return events.reduceTransparencyChanged.listen((event) => {
+    handler(event.payload)
+  })
+}
+
+/**
+ * Subscribes to macOS 27 Liquid Glass slider moves, re-read each time the app becomes
+ * active. The payload's `amount` is the new value, or `null` when macOS reports none.
+ * Drives `--glass-tint` on `<html>` (see `$lib/glass-material`).
+ */
+export function onGlassTintChanged(handler: (payload: GlassTintChanged) => void): Promise<UnlistenFn> {
+  return events.glassTintChanged.listen((event) => {
     handler(event.payload)
   })
 }

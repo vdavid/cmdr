@@ -281,6 +281,97 @@ describe('ToastItem auto-dismiss rule', () => {
   })
 })
 
+describe('ToastItem countdown ring', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    clearAllToasts()
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  function ringOf(target: HTMLElement): { state: string | null; from: number; ms: number } | null {
+    const ring = target.querySelector<SVGElement>('.toast-timer')
+    const circle = ring?.querySelector<SVGCircleElement>('circle')
+    if (!ring || !circle) return null
+    const circumference = parseFloat(circle.style.getPropertyValue('stroke-dasharray'))
+    const emptied = parseFloat(circle.style.getPropertyValue('stroke-dashoffset'))
+    return {
+      state: ring.getAttribute('data-state'),
+      from: Math.round((1 - emptied / circumference) * 1000) / 1000,
+      ms: parseFloat(circle.style.getPropertyValue('animation-duration')),
+    }
+  }
+
+  it('draws no ring around the X of a persistent toast', async () => {
+    const target = mountItem({ dismissal: 'persistent', timeoutMs: 0 })
+    await tick()
+
+    expect(ringOf(target)).toBeNull()
+  })
+
+  it('drains a full ring over the whole timeout of a transient toast', async () => {
+    const target = mountItem({ dismissal: 'transient', timeoutMs: 4000 })
+    await tick()
+
+    expect(ringOf(target)).toEqual({ state: 'running', from: 1, ms: 4000 })
+  })
+
+  it('freezes the ring where it is while the pointer is on the toast', async () => {
+    const target = mountItem({ dismissal: 'transient', timeoutMs: 4000 })
+    await tick()
+
+    vi.advanceTimersByTime(1000)
+    ;(target.querySelector('.toast') as HTMLElement).dispatchEvent(new PointerEvent('pointerenter'))
+    await tick()
+
+    const ring = ringOf(target)
+    expect(ring?.state).toBe('paused')
+    expect(ring?.from).toBeCloseTo(0.75)
+  })
+
+  it('drains the frozen ring over exactly the time the toast has left once the pointer leaves', async () => {
+    const target = mountItem({ dismissal: 'transient', timeoutMs: 4000 })
+    await tick()
+    const toast = target.querySelector('.toast') as HTMLElement
+
+    // Hovered from t=1000 to t=20000: the toast now hides one grace second after leaving.
+    vi.advanceTimersByTime(1000)
+    toast.dispatchEvent(new PointerEvent('pointerenter'))
+    vi.advanceTimersByTime(19000)
+    toast.dispatchEvent(new PointerEvent('pointerleave'))
+    await tick()
+
+    const ring = ringOf(target)
+    expect(ring?.state).toBe('running')
+    expect(ring?.from).toBeCloseTo(0.75)
+    expect(ring?.ms).toBe(HOVER_LEAVE_GRACE_MS)
+  })
+
+  it('refills the ring when the toast is re-raised under the same id', async () => {
+    addToast('Indexing…', { id: 'index', timeoutMs: 4000 })
+    const target = await mountContainer()
+
+    vi.advanceTimersByTime(3000)
+    addToast('Indexing completed', { id: 'index', timeoutMs: 4000 })
+    await tick()
+
+    expect(ringOf(target)).toEqual({ state: 'running', from: 1, ms: 4000 })
+  })
+
+  it('drops the ring when a transient toast is re-raised as persistent', async () => {
+    addToast('Copied 3 files', { id: 'op', timeoutMs: 4000 })
+    const target = await mountContainer()
+
+    addToast('Copy needs your attention', { id: 'op', dismissal: 'persistent' })
+    await tick()
+
+    expect(ringOf(target)).toBeNull()
+  })
+})
+
 describe('ToastItem component content', () => {
   beforeEach(() => {
     document.body.innerHTML = ''

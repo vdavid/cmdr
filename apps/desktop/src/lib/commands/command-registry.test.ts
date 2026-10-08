@@ -29,6 +29,7 @@ const EXPECTED_PALETTE_IDS: readonly CommandId[] = [
   'cmdr.openOnboarding',
   'help.openShortcuts',
   'queue.show',
+  'help.viewDebugLog',
   'help.sendErrorReport',
   'help.whatsNew',
   'feedback.send',
@@ -41,6 +42,7 @@ const EXPECTED_PALETTE_IDS: readonly CommandId[] = [
   'favorites.open',
   'downloads.goToLatest',
   'view.showHidden',
+  'view.calculateFolderSizes',
   'view.briefMode',
   'view.fullMode',
   'view.zoom.set75',
@@ -59,6 +61,7 @@ const EXPECTED_PALETTE_IDS: readonly CommandId[] = [
   'sort.toggleOrder',
   'pane.switch',
   'pane.swap',
+  'pane.clone',
   'pane.leftVolumeChooser',
   'pane.rightVolumeChooser',
   'pane.copyPathLeftToRight',
@@ -79,6 +82,7 @@ const EXPECTED_PALETTE_IDS: readonly CommandId[] = [
   'nav.pageDown',
   'nav.back',
   'nav.forward',
+  'nav.goToRoot',
   'nav.goHome',
   'file.rename',
   'file.view',
@@ -100,6 +104,9 @@ const EXPECTED_PALETTE_IDS: readonly CommandId[] = [
   'file.copyPath',
   'file.copyCurrentDirectoryPath',
   'file.copyFilename',
+  'file.copyShareLink',
+  'file.copyShareLinkOneDay',
+  'file.copyShareLinkOneHour',
   'file.contextMenu',
   'selection.toggle',
   'selection.toggleAndDown',
@@ -107,6 +114,9 @@ const EXPECTED_PALETTE_IDS: readonly CommandId[] = [
   'selection.deselectAll',
   'selection.invert',
   'selection.selectSameKind',
+  'selection.compareDirectories',
+  'selection.compareDirectoriesMissing',
+  'selection.compareDirectoriesSize',
   'selection.selectFiles',
   'selection.deselectFiles',
   'network.refresh',
@@ -208,6 +218,7 @@ const RUNS_OVER_DIALOGS: readonly CommandId[] = [
   // Their own windows: the dialog in the main window stays up and untouched.
   'app.settings',
   'help.openShortcuts',
+  'help.viewDebugLog',
   'queue.show',
   // App-wide text size: it scales the dialog too, and touches no pane.
   'view.zoom.set75',
@@ -259,6 +270,20 @@ describe('whileDialogOpen', () => {
     expect(whileDialogOpenFor('app.settings').runs).toBe('always')
     expect(whileDialogOpenFor('edit.paste').runs).toBe('inTextInput')
     expect(whileDialogOpenFor('tab.close').runs).toBe('never')
+  })
+})
+
+describe('conditional palette rows', () => {
+  const shareLinkIds = ['file.copyShareLink', 'file.copyShareLinkOneDay', 'file.copyShareLinkOneHour']
+
+  it('leaves the share-link rows out where the focused pane can’t mint links', () => {
+    const ids = getPaletteCommands(() => false).map((c) => c.id)
+    for (const id of shareLinkIds) expect(ids).not.toContain(id)
+  })
+
+  it('shows them where it can', () => {
+    const ids = getPaletteCommands(() => true).map((c) => c.id)
+    for (const id of shareLinkIds) expect(ids).toContain(id)
   })
 })
 

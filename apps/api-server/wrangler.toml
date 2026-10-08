@@ -34,6 +34,13 @@ id = "4ff902a7cb084fca97e02c7758ba913e"
 binding = "LINK_CODES"
 id = "6dbba67c8ece475daf3e8c0406d242c9"
 
+# KV namespace for CSP-violation alert dedupe: one `csp:<directive>:<blocked origin>` key per
+# alert, expiring after 24 h, so a broken fetch pings Discord once a day instead of once per visit.
+# Created with `wrangler kv namespace create`.
+[[kv_namespaces]]
+binding = "CSP_ALERTS"
+id = "aee2061faad542008fb4a9b5fc765428"
+
 # Analytics Engine for device count tracking (fair use monitoring)
 [[analytics_engine_datasets]]
 binding = "DEVICE_COUNTS"
@@ -46,7 +53,8 @@ database_name = "cmdr-telemetry"
 database_id = "537fdb4a-cd66-4faf-a2fe-3e51b5f6f915"
 
 # R2 bucket for error report bundles (zips of redacted logs + manifest)
-# Provision with ./scripts/setup-cf-infra.sh (that also applies the 90-day lifecycle rule).
+# Provision with ./scripts/setup-cf-infra.sh (that also applies the 90-day lifecycle rule, scoped to the
+# `error-reports/` prefix so the license backups under `backups/licenses/` survive).
 [[r2_buckets]]
 binding = "ERROR_REPORTS_BUCKET"
 bucket_name = "cmdr-error-reports"
@@ -72,11 +80,11 @@ namespace_id = "1001"
 limit = 12
 period = 60
 
-# Rate limit for POST /beta-signup, keyed by the caller IP (transient, never stored). Signups are
-# rare, so this is tighter than the heartbeat: 5/min/IP blocks a signup/confirmation-mail spam loop
+# Rate limit shared by POST /beta-signup and /newsletter-signup, keyed by the caller IP
+# (transient, never stored). Signups are rare, so this is tighter than the heartbeat: 5/min/IP blocks a signup/confirmation-mail spam loop
 # without touching real users. `period` must be 10 or 60. `namespace_id` is a per-account integer id.
 [[ratelimits]]
-name = "BETA_SIGNUP_LIMITER"
+name = "SIGNUP_LIMITER"
 namespace_id = "1002"
 
 [ratelimits.simple]
@@ -146,6 +154,42 @@ namespace_id = "1006"
 limit = 20
 period = 60
 
+# Rate limit for POST /csp-report, keyed by the caller IP (transient, never stored). A page load
+# that hits a violation sends a handful of reports at most, so 30/min/IP never drops a real one.
+[[ratelimits]]
+name = "CSP_REPORT_LIMITER"
+namespace_id = "1008"
+
+[ratelimits.simple]
+limit = 30
+period = 60
+
+# Rate limit for POST /activate, keyed by the caller IP (transient, never stored). A short code is
+# all it takes to fetch a full license key, so this keeps code guessing slow. A buyer activates
+# once, maybe after a typo or two, so 10/min/IP never turns a real one away. `period` must be 10 or
+# 60. `namespace_id` is a per-account integer id.
+[[ratelimits]]
+name = "ACTIVATE_LIMITER"
+namespace_id = "1009"
+
+[ratelimits.simple]
+limit = 10
+period = 60
+
+# Rate limit for POST /validate, keyed by the caller IP (transient, never stored). Each request
+# costs a Paddle API call. A Mac rechecks once every seven days, so even a thousand Macs behind one
+# company NAT average a few per hour, and a Monday-morning burst rarely reaches 60 in one minute.
+# A 429 is harmless to a real one anyway: the app keeps its cached status and tries again after its
+# cooldown. 60/min/IP still caps one abusive client at one Paddle call a second. `period` must be
+# 10 or 60. `namespace_id` is a per-account integer id.
+[[ratelimits]]
+name = "VALIDATE_LIMITER"
+namespace_id = "1010"
+
+[ratelimits.simple]
+limit = 60
+period = 60
+
 [triggers]
 crons = ["0 */3 * * *"]
 
@@ -165,16 +209,17 @@ SUPPORT_EMAIL = "david@getcmdr.com"
 # which a later `wrangler deploy` would silently clobber back to this value.
 PADDLE_ENVIRONMENT = "live"
 
-# Listmonk beta-tester signup (POST /beta-signup). Non-secret config; only the API token is a
-# secret (set via `wrangler secret put LISTMONK_API_TOKEN`). The list id MUST be a TOML integer:
-# the route requires `typeof listId === 'number'`, so a string secret would disable signups.
+# Listmonk. The signup routes (POST /beta-signup, /newsletter-signup) subscribe by list UUID through
+# Listmonk's public endpoint, which needs no credentials; the UUIDs are public anyway (Listmonk's own
+# subscription form shows them). The API user + token (`wrangler secret put LISTMONK_API_TOKEN`) are
+# only for GET /admin/funnel. The list ids MUST be TOML integers: the funnel checks
+# `typeof === 'number'`, so a string would drop that list from its count.
 LISTMONK_API_URL = "https://mail.getcmdr.com"
 LISTMONK_API_USER = "agent"
 LISTMONK_BETA_LIST_ID = 4
-# Newsletter list id, read by GET /admin/funnel for its per-day signups column (it sums this list
-# plus the beta list). Same TOML-integer requirement as the beta list id (the funnel checks
-# `typeof === 'number'`, so a string would drop this list from the count).
+LISTMONK_BETA_LIST_UUID = "8ad332ca-ef4d-4663-b38f-933ec7e857c9"
 LISTMONK_NEWSLETTER_LIST_ID = 3
+LISTMONK_NEWSLETTER_LIST_UUID = "160d5cda-88f3-4f87-a8b3-82677f0b9157"
 
 # The PRIVATE GitHub repo that in-app error reports and feedback are filed into as issues, so triage
 # happens on one board instead of across Discord and an inbox. `owner/name`.

@@ -750,9 +750,51 @@ fn a_refused_add_says_whether_it_was_the_address_or_the_server() {
 
     let unreachable = serde_json::to_value(AddServerError::Unreachable {
         message: "Couldn't reach nas:445".to_string(),
+        hint: Some(UnreachableHint::LocalNetworkPermission),
     })
     .unwrap();
     assert_eq!(unreachable["type"], "unreachable");
+    assert_eq!(unreachable["hint"], "local_network_permission");
+}
+
+/// ERR-XGS9X (macOS 27.0, 2026-09-30): this probe's `No route to host (os error 65)`
+/// to a LAN server was a stuck Local Network permission, not a server that was off.
+/// With no mount to compare against, the two look the same, so the Add sheet only
+/// HINTS at the permission, and only where it can apply: the kernel refusing the
+/// route to a private-range address.
+#[test]
+fn a_route_refused_to_a_lan_address_hints_at_the_local_network_permission() {
+    use std::net::SocketAddr;
+    let lan: SocketAddr = "192.168.0.153:445".parse().unwrap();
+    let private_10: SocketAddr = "10.0.0.24:445".parse().unwrap();
+    let link_local: SocketAddr = "169.254.10.2:445".parse().unwrap();
+    let ula: SocketAddr = "[fd12:3456::1]:445".parse().unwrap();
+    let public: SocketAddr = "93.184.216.34:445".parse().unwrap();
+    let no_route = std::io::Error::from_raw_os_error(libc::EHOSTUNREACH);
+    let no_network = std::io::Error::from_raw_os_error(libc::ENETUNREACH);
+    let refused = std::io::Error::from_raw_os_error(libc::ECONNREFUSED);
+    let hint = Some(UnreachableHint::LocalNetworkPermission);
+
+    assert_eq!(unreachable_hint(&no_route, &[lan]), hint, "ERR-XGS9X's probe");
+    assert_eq!(unreachable_hint(&no_network, &[private_10]), hint);
+    assert_eq!(unreachable_hint(&no_route, &[link_local]), hint);
+    assert_eq!(unreachable_hint(&no_route, &[ula]), hint);
+    assert_eq!(
+        unreachable_hint(&no_route, &[public]),
+        None,
+        "Local Network doesn't gate the internet"
+    );
+    assert_eq!(
+        unreachable_hint(&no_route, &[lan, public]),
+        None,
+        "a name that also resolves off the LAN may just be using that route"
+    );
+    assert_eq!(
+        unreachable_hint(&refused, &[lan]),
+        None,
+        "a refused connection reached something, so the route was fine"
+    );
+    assert_eq!(unreachable_hint(&no_route, &[]), None);
 }
 
 /// The unchecked add parses exactly like a checked one: only the TCP probe is

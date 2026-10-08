@@ -62,6 +62,8 @@ function baseProps(onDialogRenderError: (error: unknown) => void): DialogManager
     showDeleteDialog: false,
     deleteDialogProps: null,
     onTransferConfirm: noop,
+    registerTransferConfirmer: () => noop,
+    registerDeleteConfirmer: () => noop,
     onTransferCancel: noop,
     onTransferComplete: noop,
     onTransferCancelled: noop,
@@ -307,5 +309,24 @@ describe('DialogManager transfer error Retry', () => {
     })
 
     expect(retryButton()).toBeUndefined()
+  })
+
+  it('offers Copy anyway for a copy refused for space and hands the click to its handler', () => {
+    const onTransferErrorCopyAnyway = vi.fn()
+    render({
+      showTransferErrorDialog: true,
+      transferErrorProps: {
+        operationType: 'copy',
+        error: { type: 'insufficient_space', required: 2_000, available: 500, volumeName: null },
+        progressAtStop: null,
+        retry: { ...failedMove, operationType: 'copy' },
+      },
+      onTransferErrorCopyAnyway,
+    })
+
+    const button = [...host.querySelectorAll('button')].find((b) => b.textContent.trim() === 'Copy anyway')
+    expect(button).toBeDefined()
+    button?.click()
+    expect(onTransferErrorCopyAnyway).toHaveBeenCalledTimes(1)
   })
 })

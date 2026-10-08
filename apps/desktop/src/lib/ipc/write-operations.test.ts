@@ -1,6 +1,6 @@
 /**
- * IPC contract tests for the destructive write commands: `copy_files`, `move_files`,
- * `delete_files`, `trash_files`.
+ * IPC contract tests for the destructive write commands: `move_files`, `delete_files`,
+ * `trash_files`.
  *
  * These verify the **boundary**: that the typed bindings send the right snake_case
  * command name, with the camelCase payload shape the Rust signatures expect, including
@@ -24,14 +24,14 @@ afterEach(() => {
 })
 
 const happyResult: WriteOperationStartResult = {
-  operationId: 'op-1',
-  operationType: 'copy',
+  operationId: 'op-2',
+  operationType: 'move',
 }
 
-describe('commands.copyFiles', () => {
-  it('invokes copy_files with snake_case payload keys (sources, destination, config)', async () => {
+describe('commands.moveFiles', () => {
+  it('invokes move_files with snake_case payload keys (sources, destination, config)', async () => {
     const ipc = installIpcMock()
-    ipc.mock('copy_files', () => happyResult)
+    ipc.mock('move_files', () => happyResult)
 
     const sources = ['/a/foo.txt', '/a/bar.txt']
     const destination = '/b'
@@ -42,49 +42,19 @@ describe('commands.copyFiles', () => {
       maxConflictsToShow: 50,
     }
 
-    const result = await commands.copyFiles(sources, destination, config, null)
+    const result = await commands.moveFiles(sources, destination, config, null)
 
     expect(result).toEqual({ status: 'ok', data: happyResult })
     expect(ipc.calls).toHaveLength(1)
     expect(ipc.calls[0]).toEqual({
-      command: 'copy_files',
+      command: 'move_files',
       payload: { sources, destination, config, initiator: null },
     })
   })
 
   it('passes null config through as null (not omitted)', async () => {
     const ipc = installIpcMock()
-    ipc.mock('copy_files', () => ({ ...happyResult, operationType: 'copy' as const }))
-
-    await commands.copyFiles(['/a'], '/b', null, null)
-
-    expect(ipc.lastCall('copy_files')?.payload).toEqual({
-      sources: ['/a'],
-      destination: '/b',
-      config: null,
-      initiator: null,
-    })
-  })
-
-  it('surfaces a WriteOperationError variant on the error branch', async () => {
-    const ipc = installIpcMock()
-    ipc.mock('copy_files', () => {
-      throw { type: 'source_not_found', path: '/a/missing.txt' }
-    })
-
-    const result = await commands.copyFiles(['/a/missing.txt'], '/b', null, null)
-
-    expect(result.status).toBe('error')
-    if (result.status === 'error') {
-      expect(result.error).toEqual({ type: 'source_not_found', path: '/a/missing.txt' })
-    }
-  })
-})
-
-describe('commands.moveFiles', () => {
-  it('invokes move_files with the same payload shape as copy_files', async () => {
-    const ipc = installIpcMock()
-    ipc.mock('move_files', () => ({ operationId: 'op-2', operationType: 'move' as const }))
+    ipc.mock('move_files', () => happyResult)
 
     await commands.moveFiles(['/a/x'], '/b', null, null)
 
@@ -94,6 +64,20 @@ describe('commands.moveFiles', () => {
       config: null,
       initiator: null,
     })
+  })
+
+  it('surfaces a WriteOperationError variant on the error branch', async () => {
+    const ipc = installIpcMock()
+    ipc.mock('move_files', () => {
+      throw { type: 'source_not_found', path: '/a/missing.txt' }
+    })
+
+    const result = await commands.moveFiles(['/a/missing.txt'], '/b', null, null)
+
+    expect(result.status).toBe('error')
+    if (result.status === 'error') {
+      expect(result.error).toEqual({ type: 'source_not_found', path: '/a/missing.txt' })
+    }
   })
 })
 

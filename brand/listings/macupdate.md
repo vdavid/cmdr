@@ -4,8 +4,8 @@ Live: https://cmdr.macupdate.com/ (accepted from the 2026-09-18 v0.46.0 submissi
 through). Submission form: https://member.macupdate.com/content/submit (needs a MacUpdate member account). The same form
 creates and modifies a listing: type `Cmdr` into "Modify an existing listing?" at the top to load this one.
 
-Status: **v0.47.0 prepared 2026-09-24, not yet submitted** (the fields below are the update to paste). The live page
-still shows v0.46.0.
+Status: **v0.49.0 prepared 2026-10-01, not yet submitted** (the fields below are the update to paste). The live page
+still shows v0.46.0; the v0.47.0 update prepared 2026-09-24 never went in, and this one supersedes it.
 
 ❗ **The Download URL must be a DIRECT link to the installer**, not a redirect. Their guidelines say "the direct URL to
 the installer package (e.g., .pkg .dmg, .zip)", and `getcmdr.com/download/latest/universal` takes 3 redirects to a
@@ -26,14 +26,14 @@ the Price field and the note to the review team instead.
 
 - **App name**: `Cmdr`
 - **Developer name**: `David Veszelovszki`
-- **Download URL**: `https://github.com/vdavid/cmdr/releases/download/v0.47.0/Cmdr_0.47.0_universal.dmg`
+- **Download URL**: `https://github.com/vdavid/cmdr/releases/download/v0.49.0/Cmdr_0.49.0_universal.dmg`
   - Version-pinned, so bump it with every listing update (see the Download URL note at the top). The redirecting
     `https://getcmdr.com/download/latest/universal?ref=macupdate.com` would never go stale and would attribute downloads
     to MacUpdate, but it's what the rejected submissions used.
 - **Product page URL**: `https://getcmdr.com`
 - **Purchase URL**: `https://getcmdr.com/pricing`
 - **Developer support URL**: `https://github.com/vdavid/cmdr/issues`
-- **Version number**: `0.47.0`
+- **Version number**: `0.49.0`
 - **Price**: leave empty (their hint says empty means free). Cmdr is free for personal use; commercial licenses are sold
   on the purchase URL and explained to the review team below.
 
@@ -130,68 +130,69 @@ A blazing-fast, keyboard-driven two-pane file manager for macOS, with fully opti
 
 ### Version changes
 
-Their hint asks for the changes in the current version, with `<h5>` section heads and `<ul>` lists. This covers v0.47.0;
-everything older is the Description's job.
+Their hint asks for the changes in the current version, with `<h5>` section heads and `<ul>` lists. This covers v0.48.0
+and v0.49.0 (neither line had patches); everything older is the Description's job.
 
 ```html
 <h5>New</h5>
 <ul>
+  <li>Drag a tab to reorder it, or drop it on the other pane's tab bar to move it there.</li>
   <li>
-    The file viewer opens files with one huge line, like minified JSON, without hanging. Reading, searching, copying,
-    and saving all stay fast.
+    The viewer has Text, Binary, Hex, and Media modes, one keypress apart (0–3). Contributed by Gábor Gyebnár. Thank
+    you!
   </li>
-  <li>Give any favorite a letter shortcut from its right-click menu. Contributed by Gábor Gyebnár. Thank you!</li>
-  <li>A new "Allow cloud AI" switch: no AI feature sends anything to a cloud service until you turn it on.</li>
   <li>
-    A per-share switch for Cmdr's fast direct network connection, so you can keep a share on the regular macOS mount,
-    and a one-click "Connect directly now".
+    The Servers view remembers SMB shares, lets you name servers and switch accounts, and works fully from the keyboard.
   </li>
-  <li>Command-Option-Left and Right switch tabs too, like in browsers.</li>
-  <li>A refused move or delete now names the folder that said no, and whether admin rights would help.</li>
-  <li>A search says when it's waiting for the drive's index to load.</li>
+  <li>SFTP servers show their free space, and a copy onto one checks it first.</li>
+  <li>Reveal any search result in its folder, from the keyboard or the right-click menu.</li>
+  <li>Latin American Spanish.</li>
+  <li>
+    When macOS blocks Cmdr from reaching a server, Cmdr points you to the Local Network permission, with a button to
+    open it.
+  </li>
+  <li>A "Check the key" button for an SFTP server whose host key changed.</li>
+  <li>The AI chat can look inside files on connected phones, servers, and direct network shares.</li>
 </ul>
 <h5>Improved</h5>
 <ul>
-  <li>An SMB share stays browsable while you copy to it.</li>
   <li>
-    Cmdr no longer talks to PostHog: usage stats and update checks go through Cmdr's own server, every three hours.
+    Compression, rebuilt: zips stream straight to local disks, network shares, SFTP servers, and phones, with
+    step-by-step progress and a Cancel that stops promptly.
   </li>
-  <li>The search dialog opens much faster on large drives.</li>
-  <li>Less CPU and memory use while idle.</li>
-  <li>Faster uploads to WebDAV servers.</li>
-  <li>
-    Each drive's actions (eject, disconnect, rename, pin, forget) live in its own submenu in the drive list, and
-    "Connect to server" moved to the Go menu, like in Finder.
-  </li>
+  <li>Much faster broad searches on large drives.</li>
+  <li>Lower memory use, settling around 240 MB after heavy searches instead of 400 MB, and less CPU while idle.</li>
+  <li>Right-click menus open promptly on slow network shares, and busy NAS drives stay responsive.</li>
+  <li>Cmdr no longer signs in to every SMB machine on the network at launch.</li>
+  <li>A server that wants an account asks for one calmly, with no red message before you've typed anything.</li>
+  <li>A copy, move, or new folder blocked by a same-named file now names the file in the way.</li>
+  <li>Menus, toasts, and tooltips look closer to native macOS.</li>
+  <li>Every translation reads more naturally, and elapsed times and ETAs speak your language.</li>
 </ul>
 <h5>Fixed</h5>
 <ul>
+  <li>Copying or moving a folder onto a folder link could write into the link's target, replacing files elsewhere.</li>
+  <li>A move between drives could delete originals, or files that changed while the move was running.</li>
+  <li>A canceled or unsuccessful replacing copy or move could lose the original.</li>
+  <li>Rollback on phones and servers skipped every item.</li>
+  <li>Zips Cmdr wrote showed times off by your time zone in other apps.</li>
   <li>
-    Accented file names on a NAS's network share showed up but couldn't be opened, copied, renamed, or deleted. (Even
-    Finder gets this one wrong.)
+    Indexing and search crawled pCloud, rclone, sshfs, and NFS mounts over the network as if they were local disks.
   </li>
-  <li>Copies to some NAS and Samba setups failed or hung.</li>
-  <li>Downloading a 1–8 MB file from a network share showed no progress and blocked browsing that share.</li>
-  <li>A failed copy could delete a file someone else had just saved under the same name.</li>
-  <li>In rare error cases on a network share, a rename or overwrite could replace the wrong file.</li>
-  <li>A refused overwrite could leave a temporary file in your folder for up to an hour.</li>
-  <li>
-    In the viewer, Command-A then copy could drop a file's last line, and a copy could come back empty or with a line
-    twice.
-  </li>
-  <li>Enter could open a file twice, and Page Up, Page Down, Home, and End jumped twice as far.</li>
-  <li>Every menu icon went blank on macOS 27.</li>
-  <li>Escape on a dialog also took the window out of full screen.</li>
-  <li>An SFTP or WebDAV server that went silent hung operations instead of showing the disconnect.</li>
-  <li>A transfer's progress bar could jump backward, or freeze without saying it was waiting on the source.</li>
-  <li>A false "can't reach your server" notice could pop up at launch.</li>
-  <li>The drive list could stall on a network share that stopped responding.</li>
+  <li>Picking a slow cloud drive like pCloud dropped you in your home folder.</li>
+  <li>Thunderbolt SSDs and other fixed external disks had no eject button.</li>
+  <li>Forgotten drives left tens of MB of index data behind.</li>
+  <li>Folders you granted access to in System Settings stayed grayed out until a restart.</li>
+  <li>Settings text fields lost your edits when you closed the window.</li>
+  <li>Rebuilt or cleared search indexes kept showing old results.</li>
+  <li>Quick Look opened slowly or ignored Escape.</li>
+  <li>A flicker when entering a folder. Contributed by Gábor Gyebnár.</li>
 </ul>
 <h5>Security</h5>
 <ul>
-  <li>Dropped a code-signing exception that could have let another program load code into Cmdr.</li>
-  <li>Release builds always keep server passwords and AI keys in the macOS Keychain.</li>
-  <li>Natural-language search queries stay out of the log and error reports.</li>
+  <li>Error and crash reports leave out file names, paths, server, share, and account names, and search words.</li>
+  <li>Cmdr's MCP server requires its token for every request.</li>
+  <li>Cmdr ignores files a server or phone lists outside the folder you connected to.</li>
 </ul>
 ```
 
@@ -218,7 +219,7 @@ macOS 12 Monterey or later, both Apple Silicon and Intel. macOS 10.15 Catalina a
 For an update, keep it short:
 
 ```
-Hi folks! Thanks for listing Cmdr! This is the v0.47.0 update: new version number, download link, and version changes. The description is unchanged.
+Hi folks! Thanks for listing Cmdr! This is the v0.49.0 update: new version number, download link, and version changes. The description is unchanged.
 
 David
 ```

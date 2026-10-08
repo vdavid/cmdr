@@ -23,9 +23,8 @@ use tauri::AppHandle;
 use tauri_specta::Event as _;
 
 use crate::file_system::listing::{
-    DiffChange, FileEntry, OverlayRows, compute_diff, get_listing_entries, get_listing_volume_id_and_path,
-    get_single_entry, has_entry, insert_entry_sorted, list_directory_core, listing_changed, remove_entries_by_paths,
-    update_entry_sorted, update_listing_entries,
+    FileEntry, OverlayRows, get_listing_entries, get_listing_volume_id_and_path, get_single_entry, has_entry,
+    insert_entry_sorted, list_directory_core, remove_entries_by_paths, update_entry_sorted, update_listing_entries,
 };
 use crate::index_host::index;
 use cmdr_fs::firmlinks;
@@ -441,32 +440,18 @@ pub(super) fn handle_directory_change_incremental(listing_id: &str, events: Vec<
     // entry, and the whole batch costs one lookup pass. Every patch lands in the cache;
     // only the ones the pane shows on some side become a change (`DiffChange::for_pane`),
     // so a dotfile write in `~` with hidden files off emits nothing.
-    let mut changes: Vec<DiffChange> = Vec::new();
-
-    for (rows, removed_entry) in remove_entries_by_paths(listing_id, &removes) {
-        changes.extend(DiffChange::for_pane(removed_entry, rows));
-    }
+    let _ = remove_entries_by_paths(listing_id, &removes);
 
     for entry in adds {
-        if let Some(rows) = insert_entry_sorted(listing_id, entry.clone()) {
-            changes.extend(DiffChange::for_pane(entry, rows));
-        }
+        let _ = insert_entry_sorted(listing_id, entry);
     }
 
     for mut entry in modifies {
         // Preserve already-loaded Finder tags across this re-stat: `get_single_entry`
         // reads no xattr, so a bare modify would otherwise blank the file's dots.
         crate::file_system::listing::caching::carry_forward_tags(listing_id, &mut entry);
-        if let Some(rows) = update_entry_sorted(listing_id, entry.clone()) {
-            changes.extend(DiffChange::for_pane(entry, rows));
-        }
+        let _ = update_entry_sorted(listing_id, entry);
     }
-
-    if changes.is_empty() {
-        return;
-    }
-
-    crate::file_system::listing::diff_emitter::enqueue_diff(listing_id, changes);
 }
 
 /// Force a re-read of a directory listing, computing and emitting any diff.
@@ -492,7 +477,7 @@ pub async fn handle_directory_change(listing_id: &str) {
     };
 
     // Get old entries and path from the unified LISTING_CACHE
-    let Some((path, old_entries)) = get_listing_entries(listing_id) else {
+    let Some((path, _)) = get_listing_entries(listing_id) else {
         return; // Listing no longer exists
     };
 
@@ -563,24 +548,6 @@ pub async fn handle_directory_change(listing_id: &str) {
 
     let mut new_entries = new_entries;
 
-    // The listing's sort params and its pane's hidden-files setting, taken once: the
-    // overlay pass between the enrich and the sort is `async`, and the cache guard
-    // can't be held across it.
-    let (sort_params, include_hidden) = {
-        use crate::file_system::listing::cached_listing::LISTING_CACHE;
-
-        let listing_view = LISTING_CACHE.read().ok().and_then(|cache| {
-            cache
-                .get(listing_id)
-                .map(|l| ((l.sort_by, l.sort_order, l.directory_sort_mode), l.include_hidden()))
-        });
-        // A listing gone by now takes no update below either, so the setting is moot.
-        (
-            listing_view.map(|(sort, _)| sort),
-            listing_view.is_none_or(|(_, hidden)| hidden),
-        )
-    };
-
     // Enrich with index data so diff entries have recursive_size etc. Skipped for
     // a routed volume, which has no drive index (an archive's inner paths and a
     // git snapshot's paths aren't real FS paths) — the same gate the three reads
@@ -602,23 +569,8 @@ pub async fn handle_directory_change(listing_id: &str) {
         None => OverlayRows::Unchanged,
     };
 
-    // Re-sort new_entries by the listing's sort params so compute_diff compares
-    // two lists in the same order (list_directory returns entries in Name/Asc).
-    if let Some((sort_by, sort_order, directory_sort_mode)) = sort_params {
-        crate::file_system::listing::sorting::sort_entries(&mut new_entries, sort_by, sort_order, directory_sort_mode);
-    }
-
-    // The cache takes any change, hidden entries' included, so showing hidden files
-    // later is instant and right; the pane hears only about its own rows.
-    if !listing_changed(&old_entries, &new_entries) {
-        return; // No actual changes
-    }
-    let changes = compute_diff(&old_entries, &new_entries, include_hidden);
-
-    // Update the unified LISTING_CACHE with new entries.
+    // Sort, diff the actual current cache, replace, and publish under one write lock.
     update_listing_entries(listing_id, new_entries, overlay_rows);
-
-    crate::file_system::listing::diff_emitter::enqueue_diff(listing_id, changes);
 }
 
 /// Flushes pending watcher events by re-reading every active watch.

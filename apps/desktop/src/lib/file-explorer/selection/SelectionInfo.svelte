@@ -35,7 +35,7 @@
     import { useShortenMiddle } from '$lib/utils/shorten-middle-action'
     import type { SpaceInfo } from '$lib/ipc/bindings'
     import { formatDiskSpaceStatus, formatSpaceNotes } from '../disk-space-utils'
-    import { formatByteSize } from '$lib/units'
+    import { formatByteSizeTiered } from '$lib/units'
     import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
 
     // Free-space text is intentionally uncolored: red GB would falsely signal "low space".
@@ -185,12 +185,12 @@
                       entry.recursiveFileCount ?? 0,
                       entry.recursiveDirCount ?? 0,
                       dirActive,
-                      formatByteSize,
+                      formatByteSizeTiered,
                       formatNumber,
                       entry.recursiveSizeComplete,
                       entry.recursiveSizeStale,
                   ) || undefined
-                : buildFileSizeTooltip(entry.size, entry.physicalSize, formatByteSize)
+                : buildFileSizeTooltip(entry.size, entry.physicalSize, formatByteSizeTiered)
             : undefined,
     )
     /**
@@ -291,7 +291,7 @@
             selectedPhysicalSize,
             totalLogicalSize,
             totalPhysicalSize,
-            formatByteSize,
+            formatByteSizeTiered,
         ),
     )
 </script>

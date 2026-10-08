@@ -22,5 +22,60 @@
   "common.downloadsFdaHint": "Cmdr behöver Full skivtillgång för att bevaka mappen Hämtade filer. <settingsLink>Öppna Systeminställningar</settingsLink>",
   "@common.downloadsFdaHint": {
     "sourceHash": "315e1d8"
+  },
+  "common.sizeUnit.byte": "{count, plural, one {byte} other {byte}}",
+  "@common.sizeUnit.byte": {
+    "sourceHash": "ee1f643",
+    "sameAsSourceJustification": "Swedish byte is invariant (1 byte / 2 byte, terms.json byte ruling; Swedish macOS Finder ”Noll byte”), so both branches read byte."
+  },
+  "common.sizeUnit.kibibyte": "KiB",
+  "@common.sizeUnit.kibibyte": {
+    "sourceHash": "97ee1b8",
+    "sameAsSourceJustification": "Swedish keeps the IEC binary symbols unchanged (Microsoft terminology sv MiB and GiB, Dolphin sv MiB), kept distinct from the SI symbols."
+  },
+  "common.sizeUnit.mebibyte": "MiB",
+  "@common.sizeUnit.mebibyte": {
+    "sourceHash": "dea6cb8",
+    "sameAsSourceJustification": "Swedish keeps the IEC binary symbols unchanged (Microsoft terminology sv MiB and GiB, Dolphin sv MiB), kept distinct from the SI symbols."
+  },
+  "common.sizeUnit.gibibyte": "GiB",
+  "@common.sizeUnit.gibibyte": {
+    "sourceHash": "66a1561",
+    "sameAsSourceJustification": "Swedish keeps the IEC binary symbols unchanged (Microsoft terminology sv MiB and GiB, Dolphin sv MiB), kept distinct from the SI symbols."
+  },
+  "common.sizeUnit.tebibyte": "TiB",
+  "@common.sizeUnit.tebibyte": {
+    "sourceHash": "15c1ec4",
+    "sameAsSourceJustification": "Swedish keeps the IEC binary symbols unchanged (Microsoft terminology sv MiB and GiB, Dolphin sv MiB), kept distinct from the SI symbols."
+  },
+  "common.sizeUnit.pebibyte": "PiB",
+  "@common.sizeUnit.pebibyte": {
+    "sourceHash": "38ca5a1",
+    "sameAsSourceJustification": "Swedish keeps the IEC binary symbols unchanged (Microsoft terminology sv MiB and GiB, Dolphin sv MiB), kept distinct from the SI symbols."
+  },
+  "common.sizeUnit.kilobyte": "kB",
+  "@common.sizeUnit.kilobyte": {
+    "sourceHash": "591e59c",
+    "sameAsSourceJustification": "Swedish writes the SI symbol kB unchanged with the lowercase k (Nautilus sv 500 kB, Total Commander sv 64 kB), kept distinct from KiB."
+  },
+  "common.sizeUnit.megabyte": "MB",
+  "@common.sizeUnit.megabyte": {
+    "sourceHash": "1d09f6f",
+    "sameAsSourceJustification": "Swedish writes the international unit symbols unchanged (Nautilus sv ”500 kB”, Swedish macOS Finder sizes), so the symbol stays verbatim."
+  },
+  "common.sizeUnit.gigabyte": "GB",
+  "@common.sizeUnit.gigabyte": {
+    "sourceHash": "b4043b0",
+    "sameAsSourceJustification": "Swedish writes the international unit symbols unchanged (Nautilus sv ”500 kB”, Swedish macOS Finder sizes), so the symbol stays verbatim."
+  },
+  "common.sizeUnit.terabyte": "TB",
+  "@common.sizeUnit.terabyte": {
+    "sourceHash": "791b0ac",
+    "sameAsSourceJustification": "Swedish writes the international unit symbols unchanged (Nautilus sv ”500 kB”, Swedish macOS Finder sizes), so the symbol stays verbatim."
+  },
+  "common.sizeUnit.petabyte": "PB",
+  "@common.sizeUnit.petabyte": {
+    "sourceHash": "f9085bf",
+    "sameAsSourceJustification": "Swedish writes the international unit symbols unchanged (Nautilus sv ”500 kB”, Swedish macOS Finder sizes), so the symbol stays verbatim."
   }
 }

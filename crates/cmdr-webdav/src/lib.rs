@@ -7,11 +7,13 @@
 use cmdr_webdav as _;
 
 pub(crate) mod errors;
-pub(crate) mod liveness;
 pub(crate) mod params;
 pub(crate) mod propfind;
 pub(crate) mod transport;
 pub mod volume;
+
+#[cfg(feature = "fuzzing")]
+pub mod fuzzing;
 
 pub use errors::WebdavConnectError;
 pub use params::WebdavConnectionParams;

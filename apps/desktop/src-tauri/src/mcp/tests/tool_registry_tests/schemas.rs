@@ -32,8 +32,11 @@ fn test_tab_tool_schema() {
     assert!(props.get("pane").is_some());
     assert!(props.get("tabId").is_some());
     assert!(props.get("pinned").is_some());
+    assert!(props.get("toPane").is_some());
+    assert!(props.get("toIndex").is_some());
 
     let action_enum = props.get("action").unwrap().get("enum").unwrap().as_array().unwrap();
+    assert!(action_enum.contains(&json!("move")));
     assert!(action_enum.contains(&json!("new")));
     assert!(action_enum.contains(&json!("close")));
     assert!(action_enum.contains(&json!("close_others")));

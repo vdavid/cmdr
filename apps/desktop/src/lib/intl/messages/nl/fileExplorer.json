@@ -55,6 +55,14 @@
   "@fileExplorer.restrictedFolder.label": {
     "sourceHash": "bbcf72f"
   },
+  "fileExplorer.archivedFile.label": "Gearchiveerd",
+  "@fileExplorer.archivedFile.label": {
+    "sourceHash": "bdb8650"
+  },
+  "fileExplorer.archivedFile.tooltip": "Gearchiveerd in koude opslag. Herstel het bestand in de console van je opslagaanbieder voordat je het opent of kopieert.",
+  "@fileExplorer.archivedFile.tooltip": {
+    "sourceHash": "8897d71"
+  },
   "fileExplorer.diskSpace.free": "{freeText} van {totalText} vrij ({percentText}%)",
   "@fileExplorer.diskSpace.free": {
     "sourceHash": "97781f4"
@@ -103,6 +111,14 @@
   "fileExplorer.pane.directConnectionUnreachableToast": "{server} is nu niet bereikbaar, dus deze gedeelde map blijft op de systeemverbinding.",
   "@fileExplorer.pane.directConnectionUnreachableToast": {
     "sourceHash": "4a5ca66"
+  },
+  "fileExplorer.pane.directConnectionBlockedByThisMacToast": "Iets op deze Mac verhindert dat Cmdr direct verbinding maakt met {server}, dus deze gedeelde map blijft op de systeemverbinding. Probeer Cmdr onder {localNetwork} uit en weer aan te zetten, of controleer je firewallapp.",
+  "@fileExplorer.pane.directConnectionBlockedByThisMacToast": {
+    "sourceHash": "74f758e"
+  },
+  "fileExplorer.pane.openLocalNetworkSettings": "Open instellingen voor {localNetwork}",
+  "@fileExplorer.pane.openLocalNetworkSettings": {
+    "sourceHash": "c3931df"
   },
   "fileExplorer.pane.directConnectionTooSlowToast": "{server} deed er te lang over om te antwoorden, dus deze gedeelde map blijft op de systeemverbinding.",
   "@fileExplorer.pane.directConnectionTooSlowToast": {
@@ -289,6 +305,15 @@
   "fileExplorer.typeToJump.prefix": "Ga naar: ",
   "@fileExplorer.typeToJump.prefix": {
     "sourceHash": "e9e3412"
+  },
+  "fileExplorer.quickFilter.prefix": "Filter: ",
+  "@fileExplorer.quickFilter.prefix": {
+    "sourceHash": "b549365",
+    "sameAsSourceJustification": "'Filter' is the Dutch word too (catalog: Filter recente selecties, Groottefilter actief; nl terms.json filter); the badge names the Filter typing mode, beside the shipped 'Ga naar: '."
+  },
+  "fileExplorer.quickFilter.ariaLabel": "Toont namen die ‘{pattern}’ bevatten",
+  "@fileExplorer.quickFilter.ariaLabel": {
+    "sourceHash": "9b223b0"
   },
   "fileExplorer.searchResults.unavailableTitle": "Zoekresultaten zijn niet meer beschikbaar",
   "@fileExplorer.searchResults.unavailableTitle": {
@@ -538,38 +563,6 @@
   "@fileExplorer.network.reconnect.willTryMore": {
     "sourceHash": "a7d887a"
   },
-  "fileExplorer.mtp.connectTimedOut": "Verbinding maken duurde te lang. Het apparaat is mogelijk traag of reageert niet.",
-  "@fileExplorer.mtp.connectTimedOut": {
-    "sourceHash": "cc01ae7"
-  },
-  "fileExplorer.mtp.exclusiveAccess": "Een andere app gebruikt dit apparaat. Voer de ptpcamerad-tijdelijke oplossing uit.",
-  "@fileExplorer.mtp.exclusiveAccess": {
-    "sourceHash": "1fac18c"
-  },
-  "fileExplorer.mtp.deviceNotFound": "Apparaat niet gevonden. Het is misschien losgekoppeld.",
-  "@fileExplorer.mtp.deviceNotFound": {
-    "sourceHash": "15d2382"
-  },
-  "fileExplorer.mtp.disconnected": "Het apparaat is losgekoppeld.",
-  "@fileExplorer.mtp.disconnected": {
-    "sourceHash": "57e823a"
-  },
-  "fileExplorer.mtp.deviceBusy": "Het apparaat is bezig. Probeer opnieuw.",
-  "@fileExplorer.mtp.deviceBusy": {
-    "sourceHash": "7199b1d"
-  },
-  "fileExplorer.mtp.noStorage": "Het apparaat heeft geen toegankelijke opslag",
-  "@fileExplorer.mtp.noStorage": {
-    "sourceHash": "ff30402"
-  },
-  "fileExplorer.mtp.connecting": "Verbinden met apparaat…",
-  "@fileExplorer.mtp.connecting": {
-    "sourceHash": "860bb9b"
-  },
-  "fileExplorer.mtp.tryAgain": "Probeer opnieuw",
-  "@fileExplorer.mtp.tryAgain": {
-    "sourceHash": "d8b8392"
-  },
   "fileExplorer.networkMount.mounting": "{target} aankoppelen…",
   "@fileExplorer.networkMount.mounting": {
     "sourceHash": "7b7368d"
@@ -626,9 +619,65 @@
   "@fileExplorer.unreachable.openHome": {
     "sourceHash": "a178b4d"
   },
+  "fileExplorer.listingStalled.title": "Nog steeds wachten op deze map",
+  "@fileExplorer.listingStalled.title": {
+    "sourceHash": "2c288e7"
+  },
+  "fileExplorer.listingStalled.detail": "De server of schijf waarop deze map staat reageert niet. Cmdr blijft het op de achtergrond proberen en opent de map zodra er antwoord komt.",
+  "@fileExplorer.listingStalled.detail": {
+    "sourceHash": "3d5ca69"
+  },
+  "fileExplorer.listingStalled.detailServer": "De server waarop deze map staat reageert niet. Cmdr blijft het op de achtergrond proberen en opent de map zodra er antwoord komt.",
+  "@fileExplorer.listingStalled.detailServer": {
+    "sourceHash": "f8f8837"
+  },
+  "fileExplorer.listingStalled.detailDrive": "De schijf waarop deze map staat reageert niet. Cmdr blijft het op de achtergrond proberen en opent de map zodra er antwoord komt.",
+  "@fileExplorer.listingStalled.detailDrive": {
+    "sourceHash": "e2f3046"
+  },
+  "fileExplorer.listingStalled.tryAgain": "Probeer opnieuw",
+  "@fileExplorer.listingStalled.tryAgain": {
+    "sourceHash": "d8b8392"
+  },
+  "fileExplorer.listingStalled.goBack": "Ga terug",
+  "@fileExplorer.listingStalled.goBack": {
+    "sourceHash": "6aadac2"
+  },
   "fileExplorer.clipboard.copied": "{countText} {count, plural, one {onderdeel} other {onderdelen}} gekopieerd",
   "@fileExplorer.clipboard.copied": {
     "sourceHash": "1c25075"
+  },
+  "fileExplorer.compareDirectories.marked": "Afwijkende bestanden geselecteerd: {leftCountText} {leftCount, plural, one {bestand} other {bestanden}} links en {rightCountText} {rightCount, plural, one {bestand} other {bestanden}} rechts.",
+  "@fileExplorer.compareDirectories.marked": {
+    "sourceHash": "73e3ccf"
+  },
+  "fileExplorer.compareDirectories.noDifferences.newerAndMissing": "Niets te selecteren: elk bestand staat in beide mappen, en geen van beide kopieën is nieuwer. Submappen worden niet vergeleken.",
+  "@fileExplorer.compareDirectories.noDifferences.newerAndMissing": {
+    "sourceHash": "c2960d8"
+  },
+  "fileExplorer.compareDirectories.noDifferences.missing": "Niets te selecteren: elk bestand staat in beide mappen. Submappen worden niet vergeleken.",
+  "@fileExplorer.compareDirectories.noDifferences.missing": {
+    "sourceHash": "ed2e696"
+  },
+  "fileExplorer.compareDirectories.noDifferences.sizeAndMissing": "Niets te selecteren: elk bestand staat in beide mappen, met dezelfde grootte. Submappen worden niet vergeleken.",
+  "@fileExplorer.compareDirectories.noDifferences.sizeAndMissing": {
+    "sourceHash": "5f7b808"
+  },
+  "fileExplorer.compareDirectories.keptChanging": "De mappen bleven veranderen tijdens het vergelijken. Probeer het opnieuw zodra ze niet meer veranderen.",
+  "@fileExplorer.compareDirectories.keptChanging": {
+    "sourceHash": "3051074"
+  },
+  "fileExplorer.compareDirectories.needsTwoFolders": "Open in beide panelen een map om ze te vergelijken",
+  "@fileExplorer.compareDirectories.needsTwoFolders": {
+    "sourceHash": "c04ef80"
+  },
+  "fileExplorer.compareDirectories.couldNotFinish": "Het vergelijken van de mappen is niet voltooid. Probeer het zo meteen opnieuw.",
+  "@fileExplorer.compareDirectories.couldNotFinish": {
+    "sourceHash": "0900bc9"
+  },
+  "fileExplorer.folderSizes.notConnected": "Kan hier geen mapgroottes berekenen: deze locatie is nu niet verbonden.",
+  "@fileExplorer.folderSizes.notConnected": {
+    "sourceHash": "8b51988"
   },
   "fileExplorer.clipboard.cutReady": "{countText} {count, plural, one {onderdeel} other {onderdelen}} klaar om te verplaatsen. Plak om te voltooien.",
   "@fileExplorer.clipboard.cutReady": {
@@ -706,6 +755,14 @@
   "@fileExplorer.clipboard.empty": {
     "sourceHash": "0cbe304"
   },
+  "fileExplorer.clipboard.stillPasting": "Er wordt nog een bestand aangemaakt met de klembordinhoud. Het volume reageert traag.",
+  "@fileExplorer.clipboard.stillPasting": {
+    "sourceHash": "0e98ca7"
+  },
+  "fileExplorer.clipboard.notPasted": "Cmdr kon geen bestand aanmaken met de klembordinhoud. {reason}",
+  "@fileExplorer.clipboard.notPasted": {
+    "sourceHash": "a6e63c7"
+  },
   "fileExplorer.clipboard.pastedAsFile": "{kind, select, image {Klembordafbeelding} pdf {Klembord-PDF} other {Klembordtekst}} als {filename} geplakt",
   "@fileExplorer.clipboard.pastedAsFile": {
     "sourceHash": "d61d4b5"
@@ -782,6 +839,26 @@
   "@fileExplorer.git.useTransferToCopyOut": {
     "sourceHash": "a0d65fe"
   },
+  "fileExplorer.openWith.copyRefused.tooLarge": "{fileName} is groter dan {limit}, dus Cmdr kan het bestand niet vanuit het archief in {appName} openen.",
+  "@fileExplorer.openWith.copyRefused.tooLarge": {
+    "sourceHash": "43399e6"
+  },
+  "fileExplorer.openWith.copyRefused.tooLargeInRepoHistory": "{fileName} is groter dan {limit}, dus Cmdr kan het bestand niet vanuit de geschiedenis van de repo in {appName} openen.",
+  "@fileExplorer.openWith.copyRefused.tooLargeInRepoHistory": {
+    "sourceHash": "aab64d0"
+  },
+  "fileExplorer.openWith.copyRefused.needsPassword": "{fileName} staat in een met een wachtwoord beveiligd archief. Kopieer het bestand eerst naar een map (Cmdr zal dan om het wachtwoord vragen) en open het daarna in {appName}.",
+  "@fileExplorer.openWith.copyRefused.needsPassword": {
+    "sourceHash": "882a23f"
+  },
+  "fileExplorer.openWith.copyRefused.archiveUnreadable": "Kon {fileName} niet uit het archief halen om in {appName} te openen. Het archief is mogelijk beschadigd, of het gebruikt een structuur die Cmdr niet kan lezen.",
+  "@fileExplorer.openWith.copyRefused.archiveUnreadable": {
+    "sourceHash": "4ff2573"
+  },
+  "fileExplorer.openWith.copyRefused.unreadable": "Kon {fileName} niet lezen om in {appName} te openen. Controleer of de schijf nog is aangesloten en probeer het dan opnieuw.",
+  "@fileExplorer.openWith.copyRefused.unreadable": {
+    "sourceHash": "8af2399"
+  },
   "fileExplorer.rename.hiddenAfterRename": "Je bestand is uit beeld verdwenen omdat verborgen bestanden niet worden getoond.",
   "@fileExplorer.rename.hiddenAfterRename": {
     "sourceHash": "6258274"
@@ -798,13 +875,17 @@
   "@fileExplorer.rename.chainKeptOriginalNameAndOthers": {
     "sourceHash": "016797b"
   },
-  "fileExplorer.rename.unconfirmed": "We konden de naamwijziging van ‘{name}’ niet bevestigen. Het volume is mogelijk traag, dus de naam is misschien toch gewijzigd.",
-  "@fileExplorer.rename.unconfirmed": {
-    "sourceHash": "059ac81"
+  "fileExplorer.rename.needsOwnMoveDialog": "Een naamwijziging kopieert hier op de server, en daarvoor is een eigen venster ‘Verplaats’ nodig. Wijzig die naam nog eens, los van de rest.",
+  "@fileExplorer.rename.needsOwnMoveDialog": {
+    "sourceHash": "87110e0"
   },
-  "fileExplorer.rename.unconfirmedAndOthers": "We konden de naamwijzigingen van ‘{name}’ en {others, plural, one {één ander bestand} other {{othersText} andere bestanden}} niet bevestigen. Het volume is mogelijk traag, dus de namen zijn misschien toch gewijzigd.",
-  "@fileExplorer.rename.unconfirmedAndOthers": {
-    "sourceHash": "f16b15d"
+  "fileExplorer.rename.stillRenaming": "De naam van ‘{name}’ wordt nog gewijzigd. Het volume reageert traag.",
+  "@fileExplorer.rename.stillRenaming": {
+    "sourceHash": "a05cca5"
+  },
+  "fileExplorer.rename.stillRenamingAndOthers": "De namen van ‘{name}’ en {kind, select, folders {{others, plural, one {één andere map} other {{othersText} andere mappen}}} files {{others, plural, one {één ander bestand} other {{othersText} andere bestanden}}} other {{others, plural, one {{othersText} andere bestanden en mappen} other {{othersText} andere bestanden en mappen}}}} worden nog gewijzigd. Het volume reageert traag.",
+  "@fileExplorer.rename.stillRenamingAndOthers": {
+    "sourceHash": "933be25"
   },
   "fileExplorer.columns.name": "Naam",
   "@fileExplorer.columns.name": {
@@ -1345,6 +1426,10 @@
   "@fileExplorer.navigation.connectionTooltipDirect": {
     "sourceHash": "a69a3ad"
   },
+  "fileExplorer.navigation.connectionTooltipConnected": "Verbonden",
+  "@fileExplorer.navigation.connectionTooltipConnected": {
+    "sourceHash": "2296556"
+  },
   "fileExplorer.navigation.connectionTooltipSystem": "Systeemverbinding in gebruik. Gebruik het menu-item ‘Verbind direct voor snellere toegang’ voor snellere toegang.",
   "@fileExplorer.navigation.connectionTooltipSystem": {
     "sourceHash": "e4ac697"
@@ -1417,9 +1502,9 @@
   "@fileExplorer.navigation.disconnectPlaceAriaLabel": {
     "sourceHash": "8f755cb"
   },
-  "fileExplorer.navigation.disconnectBusyTooltip": "Verbinding verbreken kan niet terwijl er bewerkingen op deze server bezig zijn",
+  "fileExplorer.navigation.disconnectBusyTooltip": "Cmdr is nog bezig met bestanden op deze server. Verbreek de verbinding zodra dat klaar is.",
   "@fileExplorer.navigation.disconnectBusyTooltip": {
-    "sourceHash": "a659820"
+    "sourceHash": "bd52d60"
   },
   "fileExplorer.navigation.serverPinnedToast": "{name} staat nu in je volumekiezer.",
   "@fileExplorer.navigation.serverPinnedToast": {
@@ -1431,7 +1516,7 @@
   },
   "fileExplorer.navigation.pinRefusedToast": "Cmdr kon niet wijzigen waar {name} te zien is.",
   "@fileExplorer.navigation.pinRefusedToast": {
-    "sourceHash": "3ed5f60"
+    "sourceHash": "59f1f8b"
   },
   "fileExplorer.navigation.disconnectRefusedToast": "Cmdr kon de verbinding met {name} niet verbreken.",
   "@fileExplorer.navigation.disconnectRefusedToast": {
@@ -1477,9 +1562,9 @@
   "@fileExplorer.navigation.ejectVolumeAriaLabel": {
     "sourceHash": "61db18b"
   },
-  "fileExplorer.navigation.ejectBusyTooltip": "Uitwerpen kan niet terwijl er bewerkingen op dit apparaat bezig zijn",
+  "fileExplorer.navigation.ejectBusyTooltip": "Cmdr is nog bezig met bestanden op dit apparaat. Werp het uit zodra dat klaar is.",
   "@fileExplorer.navigation.ejectBusyTooltip": {
-    "sourceHash": "eafd9bd"
+    "sourceHash": "3da6312"
   },
   "fileExplorer.navigation.ejectingVolumeAriaLabel": "{name} wordt uitgeworpen…",
   "@fileExplorer.navigation.ejectingVolumeAriaLabel": {
@@ -1667,5 +1752,41 @@
   "fileExplorer.dragOut.partial": "{summary} {count, plural, =1 {Kon ‘{name}’ niet kopiëren.} one {Kon {countText} onderdeel niet kopiëren.} other {Kon {countText} onderdelen niet kopiëren.}}",
   "@fileExplorer.dragOut.partial": {
     "sourceHash": "9215226"
+  },
+  "fileExplorer.folderSizes.unreadable": "{count, plural, one {Kon # map niet volledig lezen, dus de grootte ervan is misschien onvolledig.} other {Kon # mappen niet volledig lezen, dus de groottes ervan zijn misschien onvolledig.}}",
+  "@fileExplorer.folderSizes.unreadable": {
+    "sourceHash": "ad31a56"
+  },
+  "fileExplorer.quickFilter.clear": "Filter wissen",
+  "@fileExplorer.quickFilter.clear": {
+    "sourceHash": "ba59e2d"
+  },
+  "fileExplorer.quickFilter.intro.title": "Typen heeft dit paneel gefilterd",
+  "@fileExplorer.quickFilter.intro.title": {
+    "sourceHash": "eef3e92"
+  },
+  "fileExplorer.quickFilter.intro.body": "Je hebt een paar letters getypt, dus het paneel toont nu alleen de bestanden en mappen waarvan de naam ze bevat.",
+  "@fileExplorer.quickFilter.intro.body": {
+    "sourceHash": "e406349"
+  },
+  "fileExplorer.quickFilter.intro.escape": "Druk op Escape om weer al je bestanden te zien.",
+  "@fileExplorer.quickFilter.intro.escape": {
+    "sourceHash": "af749ad"
+  },
+  "fileExplorer.quickFilter.intro.jumpNote": "Liever de cursor naar een overeenkomende naam verplaatsen zonder iets te verbergen? Schakel naar ‘Ga naar’, hier of in Instellingen.",
+  "@fileExplorer.quickFilter.intro.jumpNote": {
+    "sourceHash": "ac6d3c8"
+  },
+  "fileExplorer.quickFilter.intro.switchToJump": "Schakel naar ‘Ga naar’",
+  "@fileExplorer.quickFilter.intro.switchToJump": {
+    "sourceHash": "38642f9"
+  },
+  "fileExplorer.quickFilter.intro.openSettings": "Instellingen…",
+  "@fileExplorer.quickFilter.intro.openSettings": {
+    "sourceHash": "7a04083"
+  },
+  "fileExplorer.quickFilter.intro.gotIt": "Begrepen",
+  "@fileExplorer.quickFilter.intro.gotIt": {
+    "sourceHash": "5ad3dbd"
   }
 }

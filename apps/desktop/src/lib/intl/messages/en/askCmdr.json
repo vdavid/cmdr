@@ -227,6 +227,10 @@
   "@askCmdr.error.noCloudConsent": {
     "description": "Shown in the Ask Cmdr side panel in the rare case a message was sent while the Allow cloud AI switch was off, so nothing was sent. \"it\" is cloud AI; Settings > AI is a navigation path, keep it as shown."
   },
+  "askCmdr.error.managedByOrganization": "Your organization doesn’t allow this AI service. Your IT team can tell you which ones you can use.",
+  "@askCmdr.error.managedByOrganization": {
+    "description": "Shown in the Ask Cmdr side panel when a message was refused because the person's organization (their employer's IT team, through a device management profile) doesn't allow the AI service Cmdr is set up with, so nothing was sent. \"ones\" refers to AI services. Friendly; avoids the words error and failed."
+  },
   "askCmdr.error.localWindowTooSmall": "Cmdr needs a bigger context window than your local model has. Pick 32,768 tokens or more in settings, under AI.",
   "@askCmdr.error.localWindowTooSmall": {
     "description": "Shown in the Ask Cmdr chat when the local AI server is running with a context window too small to hold one message, so Cmdr refused to send rather than have the model reject it. Names the number to pick and where. Friendly and actionable; avoids the words error and failed. Group the number the way the language does. Sentence case."
@@ -669,6 +673,14 @@
     "placeholders": {
       "countText": "How many files were renamed, ready to drop into the sentence (e.g. 1,234).",
       "count": "The same number of files (decides whether the noun is singular or plural)."
+    }
+  },
+  "askCmdr.renameUndo.swapsSkipped": "Skipped {countText} {count, plural, one {rename} other {renames}} that swap names. Rename them one at a time.",
+  "@askCmdr.renameUndo.swapsSkipped": {
+    "description": "A second line under askCmdr.renameUndo.applied in the Ask Cmdr chat thread, shown when a batch of renames on cloud storage (S3) left some renames out. Those renames swap names with each other (for example a → b and b → a). On S3, renaming a folder copies everything inside it on the server, and copying one folder onto another that is still there would mix their contents, so the batch skipped them and the files kept their names. Tells the user to rename those files one by one instead. Sentence case.",
+    "placeholders": {
+      "countText": "How many renames were skipped, ready to drop into the sentence (always 2 or more).",
+      "count": "The same number of renames (decides whether the noun is singular or plural)."
     }
   },
   "askCmdr.renameUndo.undo": "Undo",

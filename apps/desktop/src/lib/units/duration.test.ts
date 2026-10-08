@@ -3,7 +3,7 @@
  */
 import { afterEach, describe, it, expect } from 'vitest'
 import { formatDuration, formatFilesPerSecond, formatMilliseconds, seconds } from './duration'
-import { _setLocaleForTests } from '$lib/intl/locale'
+import { _setFormatLocaleForTests, _setLocaleForTests } from '$lib/intl/locale'
 
 describe('formatDuration', () => {
   it('renders sub-minute durations in whole seconds', () => {
@@ -142,21 +142,52 @@ describe('the locale owns the decimal mark, in every unit on the screen', () => 
   it('formats a sub-second duration through the locale too', () => {
     // Diagnostics-only, and fixed anyway: two identical bugs in one file is how
     // the next person finds the second one all over again.
-    _setLocaleForTests('de-DE')
-    expect(formatMilliseconds(1400)).toBe('1,4 s')
+    _setFormatLocaleForTests('de-DE')
+    expect(formatMilliseconds(1400)).toBe('1,4s')
   })
 })
 
 describe('formatMilliseconds', () => {
+  afterEach(() => {
+    _setLocaleForTests(null)
+  })
+
+  // The unit symbols are CLDR's narrow ones in the UI language, the same style
+  // `formatDuration` hands off to past a minute ("8m 12s"), so a timing never
+  // reads "847 ms" beside "1m 5s".
+  const platform = (locale: string, unit: 'millisecond' | 'second', value: number, fractionDigits = 0) =>
+    new Intl.NumberFormat(locale, {
+      style: 'unit',
+      unit,
+      unitDisplay: 'narrow',
+      minimumFractionDigits: fractionDigits,
+      maximumFractionDigits: fractionDigits,
+    }).format(value)
+
   it('renders sub-second timings in whole milliseconds', () => {
-    expect(formatMilliseconds(847)).toBe('847 ms')
+    expect(formatMilliseconds(847)).toBe('847ms')
   })
 
   it('renders a sub-minute timing in seconds, to a tenth', () => {
-    expect(formatMilliseconds(1400)).toBe('1.4 s')
+    expect(formatMilliseconds(1400)).toBe('1.4s')
   })
 
   it('hands anything longer to formatDuration', () => {
     expect(formatMilliseconds(492_000)).toBe('8m 12s')
+  })
+
+  it('speaks the UI language in every shipped language', () => {
+    for (const locale of ['de', 'es', 'fr', 'hu', 'nl', 'pt', 'ru', 'sv', 'vi', 'zh', 'zh-Hant']) {
+      _setLocaleForTests(locale)
+      expect(formatMilliseconds(847), locale).toBe(platform(locale, 'millisecond', 847))
+      expect(formatMilliseconds(1400), locale).toBe(platform(locale, 'second', 1.4, 1))
+    }
+  })
+
+  it('takes the decimal mark from the formatting locale, the unit from the UI language', () => {
+    // A French speaker on a US-formatted Mac: French unit, US decimal point.
+    _setLocaleForTests('fr-FR')
+    _setFormatLocaleForTests('en-US')
+    expect(formatMilliseconds(1400)).toBe(platform('fr', 'second', 1.4, 1).replace(',', '.'))
   })
 })

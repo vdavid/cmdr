@@ -49,8 +49,8 @@ pub(crate) fn placeholder_conflict(conflict_id: ConflictId) -> WriteConflictEven
 /// A hardcoded op id (`"op-merge-cancel"`) collides with any sibling test using
 /// the same literal, and a manual `remove` placed after the assertions leaks the
 /// entry whenever an assertion fails first: the next test's
-/// `cancel_all_write_operations` then walks a corpse, and `list_active_operations`
-/// counts it. A UNIQUE id plus removal from `Drop` fixes both — `Drop` runs on
+/// `cancel_all_write_operations` then walks a corpse, and `get_operation_status`
+/// still answers for it. A UNIQUE id plus removal from `Drop` fixes both — `Drop` runs on
 /// unwind, so a panicking test cleans up too.
 ///
 /// Mirrors `indexing::tests::stress_test_helpers::TestInstanceGuard`, the same

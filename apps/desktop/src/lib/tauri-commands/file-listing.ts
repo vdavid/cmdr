@@ -1,7 +1,16 @@
 // On-demand virtual scrolling API (listing-based), sync status, font metrics
 
 import { type UnlistenFn } from '@tauri-apps/api/event'
-import { commands, events, type Initiator, type RowBeside } from '$lib/ipc/bindings'
+import {
+  commands,
+  events,
+  type CompareDirectoriesMode,
+  type CompareDirectoriesResult,
+  type FolderSizeCountOutcome,
+  type Initiator,
+  type NameFilterResult,
+  type RowBeside,
+} from '$lib/ipc/bindings'
 import type {
   FileEntry,
   ListingStats,
@@ -21,14 +30,17 @@ import type {
   ListingProgressEvent,
   ListingReadCompleteEvent,
   ListingRespelledEvent,
+  ListingStalledEvent,
 } from '$lib/ipc/bindings'
 import type { TimedOut } from './ipc-types'
 import { throwIpcError } from './ipc-types'
-import { throwMutationError } from '$lib/file-operations/mutation-error'
-import type { DirectorySortMode } from '$lib/settings'
+import { throwListingLookupError } from './listing-gone'
+import { awaitMutation, type MutationWaitOptions } from './mutation-reply'
+import type { ListingDirectorySortMode } from '$lib/settings'
 
 export type {
   ListingOpeningEvent,
+  ListingStalledEvent,
   ListingProgressEvent,
   ListingReadCompleteEvent,
   ListingCompleteEvent,
@@ -47,7 +59,7 @@ export type {
  * @param sortBy - Column to sort by.
  * @param sortOrder - Ascending or descending.
  * @param listingId - Unique identifier for the listing (used for cancellation)
- * @param directorySortMode - How to sort directories: like files or always by name.
+ * @param directorySortMode - Where directories go: first (like files, or always by name), or mixed with files.
  */
 export async function listDirectoryStart(
   volumeId: string,
@@ -56,7 +68,7 @@ export async function listDirectoryStart(
   sortBy: SortColumn,
   sortOrder: SortOrder,
   listingId: string,
-  directorySortMode?: DirectorySortMode,
+  directorySortMode?: ListingDirectorySortMode,
 ): Promise<StreamingListingStartResult> {
   const res = await commands.listDirectoryStartStreaming(
     volumeId,
@@ -90,7 +102,7 @@ export async function cancelListing(listingId: string): Promise<void> {
  * @param includeHidden - Whether to include hidden files when calculating cursor index.
  * @param selectedIndices - Optional indices of selected files to track through re-sort.
  * @param allSelected - If true, all files are selected (optimization).
- * @param directorySortMode - How to sort directories: like files or always by name.
+ * @param directorySortMode - Where directories go: first (like files, or always by name), or mixed with files.
  * @public
  */
 export async function resortListing(
@@ -101,7 +113,8 @@ export async function resortListing(
   includeHidden: boolean,
   selectedIndices?: number[],
   allSelected?: boolean,
-  directorySortMode?: DirectorySortMode,
+  directorySortMode?: ListingDirectorySortMode,
+  expectedSequence: number | null = null,
 ): Promise<ResortResult> {
   const res = await commands.resortListing(
     listingId,
@@ -112,8 +125,9 @@ export async function resortListing(
     includeHidden,
     selectedIndices ?? null,
     allSelected ?? null,
+    expectedSequence,
   )
-  if (res.status === 'error') throwIpcError(res.error)
+  if (res.status === 'error') throwListingLookupError(res.error)
   return res.data
 }
 
@@ -131,19 +145,55 @@ export async function getFileRange(
   includeHidden: boolean,
 ): Promise<FileEntry[]> {
   const res = await commands.getFileRange(listingId, start, count, includeHidden)
-  if (res.status === 'error') throwIpcError(res.error)
+  if (res.status === 'error') throwListingLookupError(res.error)
   return res.data as FileEntry[]
 }
 
+export type { CompareDirectoriesMode, CompareDirectoriesResult }
+
 /**
- * Gets total count of entries in a cached listing.
- * @param listingId - The listing ID from listDirectoryStart.
- * @param includeHidden - Whether to include hidden files in count.
+ * Compare directories (⇧F2): the rows each pane should mark against the other,
+ * in each pane's own row space (no `..` offset).
  */
-export async function getTotalCount(listingId: string, includeHidden: boolean): Promise<number> {
-  const res = await commands.getTotalCount(listingId, includeHidden)
+export async function compareDirectories(
+  leftListingId: string,
+  leftIncludeHidden: boolean,
+  rightListingId: string,
+  rightIncludeHidden: boolean,
+  mode: CompareDirectoriesMode,
+): Promise<CompareDirectoriesResult> {
+  const res = await commands.compareDirectories(
+    leftListingId,
+    leftIncludeHidden,
+    rightListingId,
+    rightIncludeHidden,
+    mode,
+  )
+  if (res.status === 'error') {
+    if (res.error.type === 'gone') throwListingLookupError(res.error)
+    throwIpcError(res.error)
+  }
+  return res.data
+}
+
+/**
+ * Calculates folder sizes in a pane (⌥⇧⏎; `paths` for Space on a folder). Each
+ * reading arrives as `listing-index-sizes-changed`; this resolves when the count
+ * ends. Throws with `type` `gone` or `notConnected` when it can't start.
+ */
+export async function countFolderSizes(
+  listingId: string,
+  includeHidden: boolean,
+  paths: string[] | null,
+): Promise<FolderSizeCountOutcome> {
+  const res = await commands.countFolderSizes(listingId, includeHidden, paths)
   if (res.status === 'error') throwIpcError(res.error)
   return res.data
+}
+
+/** Stops the folder-size count running in a pane. Reports whether one was running. */
+export async function cancelFolderSizeCount(listingId: string): Promise<boolean> {
+  return commands.cancelFolderSizeCount(listingId)
 }
 
 /**
@@ -154,7 +204,7 @@ export async function getTotalCount(listingId: string, includeHidden: boolean): 
  */
 export async function findFileIndex(listingId: string, name: string, includeHidden: boolean): Promise<number | null> {
   const res = await commands.findFileIndex(listingId, name, includeHidden)
-  if (res.status === 'error') throwIpcError(res.error)
+  if (res.status === 'error') throwListingLookupError(res.error)
   return res.data
 }
 
@@ -168,7 +218,7 @@ export async function findFileIndices(
   includeHidden: boolean,
 ): Promise<Record<string, number>> {
   const res = await commands.findFileIndices(listingId, names, includeHidden)
-  if (res.status === 'error') throwIpcError(res.error)
+  if (res.status === 'error') throwListingLookupError(res.error)
   return res.data
 }
 
@@ -199,7 +249,7 @@ export async function findFirstFuzzyMatch(
  */
 export async function getFileAt(listingId: string, index: number, includeHidden: boolean): Promise<FileEntry | null> {
   const res = await commands.getFileAt(listingId, index, includeHidden)
-  if (res.status === 'error') throwIpcError(res.error)
+  if (res.status === 'error') throwListingLookupError(res.error)
   return res.data as FileEntry | null
 }
 
@@ -223,7 +273,7 @@ export async function getFileBeside(
   includeHidden: boolean,
 ): Promise<FileEntry | null> {
   const res = await commands.getFileBeside(listingId, name, side, includeHidden)
-  if (res.status === 'error') throwIpcError(res.error)
+  if (res.status === 'error') throwListingLookupError(res.error)
   return res.data as FileEntry | null
 }
 
@@ -242,7 +292,7 @@ export async function getPathsAtIndices(
   hasParent: boolean,
 ): Promise<string[]> {
   const res = await commands.getPathsAtIndices(listingId, selectedIndices, includeHidden, hasParent)
-  if (res.status === 'error') throwIpcError(res.error)
+  if (res.status === 'error') throwListingLookupError(res.error)
   return res.data
 }
 
@@ -259,7 +309,7 @@ export async function getFilesAtIndices(
   includeHidden: boolean,
 ): Promise<FileEntry[]> {
   const res = await commands.getFilesAtIndices(listingId, selectedIndices, includeHidden)
-  if (res.status === 'error') throwIpcError(res.error)
+  if (res.status === 'error') throwListingLookupError(res.error)
   return res.data as FileEntry[]
 }
 
@@ -272,14 +322,82 @@ export async function listDirectoryEnd(listingId: string): Promise<void> {
 }
 
 /**
+ * The panes' heartbeat: keeps the named listings safe from the backend's orphan
+ * reaper and returns the ids it no longer holds. Driven by `file-explorer/pane/listing-liveness.ts`.
+ * @param listingIds - Every listing a pane currently shows.
+ */
+export async function keepListingsAlive(listingIds: string[]): Promise<string[]> {
+  return commands.keepListingsAlive(listingIds)
+}
+
+/**
  * Tells the backend whether the pane showing this listing shows hidden files. Its
  * `directory-diff` events number the pane's rows and skip rows it doesn't show.
  * @param listingId - The listing ID from listDirectoryStart.
  * @param includeHidden - The pane's hidden-files setting.
  */
-export async function setListingIncludeHidden(listingId: string, includeHidden: boolean): Promise<void> {
-  const res = await commands.setListingIncludeHidden(listingId, includeHidden)
-  if (res.status === 'error') throwIpcError(res.error)
+export async function setListingIncludeHidden(
+  listingId: string,
+  includeHidden: boolean,
+  expectedSequence: number | null,
+  cursorFilename: string | null,
+  selectedIndices: number[] | null,
+  allSelected: boolean | null,
+): Promise<ResortResult> {
+  const res = await commands.setListingIncludeHidden(
+    listingId,
+    includeHidden,
+    expectedSequence,
+    cursorFilename,
+    selectedIndices,
+    allSelected,
+  )
+  if (res.status === 'error') throwListingLookupError(res.error)
+  return res.data
+}
+
+/** Paths and counts resolved under one lock, only for the caller's exact row state. */
+export async function getSelectionSnapshot(
+  listingId: string,
+  includeHidden: boolean,
+  selectedIndices: number[],
+  expectedSequence: number,
+) {
+  const res = await commands.getSelectionSnapshot(listingId, includeHidden, selectedIndices, expectedSequence)
+  if (res.status === 'error') throwListingLookupError(res.error)
+  return res.data
+}
+
+/**
+ * Sets the quick filter of the pane showing this listing (`null` or `''` clears
+ * it), carrying the cursor's file and the selection into the filtered rows.
+ * @param listingId - The listing ID from listDirectoryStart.
+ * @param pattern - What the user typed; `*` and `?` are wildcards.
+ * @param includeHidden - The pane's hidden-files setting.
+ * @param cursorFilename - The file under the cursor, to find in the new rows.
+ * @param selectedIndices - Backend indices of the selected files.
+ * @param refuseEmpty - Refuse a pattern that matches nothing (`accepted: false`), keeping the old filter.
+ */
+export async function setListingNameFilter(
+  listingId: string,
+  pattern: string | null,
+  includeHidden: boolean,
+  cursorFilename: string | undefined,
+  selectedIndices: number[],
+  refuseEmpty: boolean,
+  expectedSequence: number | null = null,
+): Promise<NameFilterResult> {
+  const res = await commands.setListingNameFilter(
+    listingId,
+    pattern,
+    includeHidden,
+    cursorFilename ?? null,
+    selectedIndices,
+    refuseEmpty,
+    expectedSequence,
+  )
+  if (res.status === 'error') throwListingLookupError(res.error)
+  return res.data
 }
 
 /**
@@ -318,7 +436,7 @@ export async function getListingStats(
   selectedIndices?: number[],
 ): Promise<ListingStats> {
   const res = await commands.getListingStats(listingId, includeHidden, selectedIndices ?? null)
-  if (res.status === 'error') throwIpcError(res.error)
+  if (res.status === 'error') throwListingLookupError(res.error)
   return res.data
 }
 
@@ -457,39 +575,36 @@ export async function storedSpellings(volumeId: string, paths: string[]): Promis
 }
 
 /**
- * Creates a new directory.
+ * Creates a new directory. Resolves once it landed, however slow the volume is;
+ * `wait.onStillRunning` says when it's being slow (`./mutation-reply.ts`).
  * @param parentPath - The parent directory path.
  * @param name - The folder name to create.
  * @param volumeId - Optional volume ID. Defaults to "root" for local filesystem.
- * @returns The full path of the created directory.
  */
 export async function createDirectory(
   parentPath: string,
   name: string,
   volumeId?: string,
   initiator?: Initiator,
-): Promise<string> {
-  const res = await commands.createDirectory(volumeId ?? null, parentPath, name, initiator ?? null)
-  if (res.status === 'error') throwMutationError(res.error)
-  return res.data
+  wait?: MutationWaitOptions,
+): Promise<void> {
+  await awaitMutation(() => commands.createDirectory(volumeId ?? null, parentPath, name, initiator ?? null), wait)
 }
 
 /**
- * Creates a new empty file.
+ * Creates a new empty file. Same waiting as `createDirectory`.
  * @param parentPath - The parent directory path.
  * @param name - The file name to create.
  * @param volumeId - Optional volume ID. Defaults to "root" for local filesystem.
- * @returns The full path of the created file.
  */
 export async function createFile(
   parentPath: string,
   name: string,
   volumeId?: string,
   initiator?: Initiator,
-): Promise<string> {
-  const res = await commands.createFile(volumeId ?? null, parentPath, name, initiator ?? null)
-  if (res.status === 'error') throwMutationError(res.error)
-  return res.data
+  wait?: MutationWaitOptions,
+): Promise<void> {
+  await awaitMutation(() => commands.createFile(volumeId ?? null, parentPath, name, initiator ?? null), wait)
 }
 
 // ============================================================================
@@ -562,6 +677,17 @@ export async function hasFontMetrics(fontId: string): Promise<boolean> {
 /** Emitted just before `read_dir` starts (the slow part for network folders). */
 export async function onListingOpening(callback: (event: ListingOpeningEvent) => void): Promise<UnlistenFn> {
   return events.listingOpening.listen((event) => {
+    callback(event.payload)
+  })
+}
+
+/**
+ * Emitted when a read goes several seconds without a new entry: the folder's volume
+ * stopped answering. The listing keeps waiting and retrying; any later event for the
+ * same id supersedes it.
+ */
+export async function onListingStalled(callback: (event: ListingStalledEvent) => void): Promise<UnlistenFn> {
+  return events.listingStalled.listen((event) => {
     callback(event.payload)
   })
 }

@@ -10,6 +10,8 @@
 import { vi } from 'vitest'
 import { createListingLoader, type ListingLoaderDeps } from './listing-loader'
 import type { ConnectionState } from '../types'
+import type { StalledOn } from '$lib/ipc/bindings'
+import type { HistoryCursor } from '../navigation/navigation-history'
 
 export interface Deferred<T> {
   promise: Promise<T>
@@ -41,11 +43,16 @@ interface PaneState {
   error: string | null
   friendlyError: unknown
   openingFolder: boolean
+  stalled: StalledOn | null
   loadingCount: number | undefined
   finalizingCount: number | undefined
   volumeRootFromEvent: string | undefined
   cursorIndex: number
+  /** The name of the entry under the cursor, as the pane's selection info knows it. */
+  cursorName: string | undefined
   selectedIndices: number[]
+  /** What a pending Back / Forward restore hands the next load of its path. */
+  historyCursor: { path: string; cursor: HistoryCursor | undefined } | null
 }
 
 export function makeHarness(over: Partial<PaneState> = {}) {
@@ -67,11 +74,14 @@ export function makeHarness(over: Partial<PaneState> = {}) {
     error: null,
     friendlyError: null,
     openingFolder: false,
+    stalled: null,
     loadingCount: undefined,
     finalizingCount: undefined,
     volumeRootFromEvent: undefined,
     cursorIndex: 0,
+    cursorName: undefined,
     selectedIndices: [],
+    historyCursor: null,
     ...over,
   }
   const spies = {
@@ -146,6 +156,9 @@ export function makeHarness(over: Partial<PaneState> = {}) {
     setOpeningFolder: (v) => {
       state.openingFolder = v
     },
+    setStalled: (v) => {
+      state.stalled = v
+    },
     setLoadingCount: (c) => {
       state.loadingCount = c
     },
@@ -156,6 +169,12 @@ export function makeHarness(over: Partial<PaneState> = {}) {
       state.volumeRootFromEvent = r
     },
     getCursorIndex: () => state.cursorIndex,
+    getCursorName: () => state.cursorName,
+    takeHistoryCursor: (path) => {
+      const pending = state.historyCursor
+      state.historyCursor = null
+      return pending?.path === path ? pending.cursor : undefined
+    },
     setCursorIndexRaw: (i) => {
       state.cursorIndex = i
     },

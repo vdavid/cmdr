@@ -115,6 +115,8 @@
 use std::collections::HashSet;
 use std::future::Future;
 use std::path::{Path, PathBuf};
+
+use super::staged_write::Replaces;
 use std::pin::Pin;
 use std::sync::Arc;
 
@@ -213,14 +215,14 @@ pub(super) struct TransferContext<'a> {
     /// Rename). For the sync driver this is `None` (the closure derives the
     /// destination from its own destination root + `source_path`).
     pub dest_path: Option<&'a Path>,
-    /// File→file safe-replace target. When `Some(orig)`, `dest_path` is a temp
-    /// sibling: after a successful streaming write, the closure must finalize by
-    /// deleting `orig` and renaming `dest_path` → `orig` (see
-    /// `volume::finalize::finalize_safe_replace`). `None` ⇒ write `dest_path`
-    /// directly. Only set by the async driver from
-    /// `ConflictDecision::Proceed`; always `None` for the sync driver and for
-    /// no-conflict paths.
-    pub replace_after_write: Option<&'a Path>,
+    /// What the write does to a file at the destination name. Under
+    /// `Replaces::ViaTemp(orig)`, `dest_path` is a temp sibling: after a
+    /// successful streaming write, the closure must finalize by deleting `orig`
+    /// and renaming `dest_path` → `orig` (see
+    /// `volume::finalize::finalize_safe_replace`). Otherwise write `dest_path`
+    /// directly. Only the async driver sets anything but `Nothing`, from
+    /// `ConflictDecision::Proceed`.
+    pub replaces: &'a Replaces,
     /// Whether `dest_path` is a name conflict resolution PICKED (a `Rename`
     /// pick, an Overwrite whose destination it cleared) rather than the plain
     /// `dest_root.join(name)` nothing has looked at.
@@ -441,18 +443,15 @@ pub(super) enum ConflictDecision {
     /// Proceed with the given (possibly rewritten) destination path. Driver
     /// calls `transfer_one` with `dest_path = Some(this)`.
     ///
-    /// `replace_after_write` carries the file→file safe-replace contract: when
-    /// `Some(orig)`, `dest_path` is a temp sibling the closure streams into,
-    /// and after a successful write the closure must finalize by deleting
-    /// `orig` and renaming the temp into place (see
-    /// `volume::finalize::finalize_safe_replace`). `None` ⇒ write `dest_path`
-    /// directly. The driver passes `dest_path` through `TransferContext`
-    /// unchanged; only the closure acts on `replace_after_write`, so the driver
-    /// stays agnostic to the safe-replace mechanism.
-    Proceed {
-        dest_path: PathBuf,
-        replace_after_write: Option<PathBuf>,
-    },
+    /// `replaces` carries the file→file Overwrite contract: under
+    /// `Replaces::ViaTemp(orig)`, `dest_path` is a temp sibling the closure
+    /// streams into, and after a successful write the closure must finalize by
+    /// deleting `orig` and renaming the temp into place (see
+    /// `volume::finalize::finalize_safe_replace`); under `InPlace` the write
+    /// goes to the original's own name on a whole-publishing destination. The
+    /// driver passes both through `TransferContext` unchanged; only the closure
+    /// acts on them, so the driver stays agnostic to the replace mechanism.
+    Proceed { dest_path: PathBuf, replaces: Replaces },
 }
 
 // The test files stay at the `transfer/` level (one is large and tracked in the

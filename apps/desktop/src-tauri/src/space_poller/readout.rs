@@ -21,10 +21,10 @@ use crate::file_system::volume::SpaceInfo;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Deserialize, specta::Type)]
 #[serde(rename_all = "lowercase")]
 pub enum FileSizeFormat {
-    /// Base 1024 (`KB`, `MB`, `GB`), the setting's default.
-    #[default]
+    /// Base 1024 (`KiB`, `MiB`, `GiB`).
     Binary,
-    /// Base 1000 (`kB`, `MB`, `GB`).
+    /// Base 1000 (`kB`, `MB`, `GB`), the setting's default.
+    #[default]
     Si,
 }
 
@@ -32,8 +32,8 @@ impl FileSizeFormat {
     /// The setting's stored value, or the default for anything it doesn't recognize.
     pub fn from_setting(value: Option<&str>) -> Self {
         match value {
-            Some("si") => Self::Si,
-            _ => Self::Binary,
+            Some("binary") => Self::Binary,
+            _ => Self::Si,
         }
     }
 
@@ -220,7 +220,7 @@ mod tests {
     /// `displayed_size` rendered the way the webview's `formatDriveFigure` writes it in en-US.
     fn en_text(size: DisplayedSize, format: FileSizeFormat) -> String {
         let labels = match format {
-            FileSizeFormat::Binary => ["bytes", "KB", "MB", "GB", "TB", "PB"],
+            FileSizeFormat::Binary => ["bytes", "KiB", "MiB", "GiB", "TiB", "PiB"],
             FileSizeFormat::Si => ["bytes", "kB", "MB", "GB", "TB", "PB"],
         };
         let digits = usize::from(size.digits);
@@ -291,9 +291,11 @@ mod tests {
     }
 
     #[test]
-    fn the_setting_parses_with_binary_as_the_default() {
+    fn the_setting_parses_with_si_as_the_default() {
         assert_eq!(FileSizeFormat::from_setting(Some("si")), FileSizeFormat::Si);
         assert_eq!(FileSizeFormat::from_setting(Some("binary")), FileSizeFormat::Binary);
-        assert_eq!(FileSizeFormat::from_setting(None), FileSizeFormat::Binary);
+        assert_eq!(FileSizeFormat::from_setting(None), FileSizeFormat::Si);
+        assert_eq!(FileSizeFormat::from_setting(Some("bogus")), FileSizeFormat::Si);
+        assert_eq!(FileSizeFormat::default(), FileSizeFormat::Si);
     }
 }

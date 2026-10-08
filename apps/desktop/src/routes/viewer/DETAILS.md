@@ -21,6 +21,7 @@ Per-file inventory for the route. Locate symbols via `codegraph_search`; this is
   `viewer-scroll` creates and delegates to), **`viewer-search`** (start/poll/cancel/navigate, regex projection),
   **`viewer-line-heights`** (word-wrap height map via DOM measurement, FullLoad only), **`viewer-text-width`**
   (`ResizeObserver` width tracker), **`viewer-tail`** (`viewer:file-changed:<sid>` → reload toasts).
+- **`viewer-tail-follow.ts`**: `isScrolledToEnd`, the "parked at the end" test tail follow keys on (§ "Tail mode").
 - **`viewer-indexing-poll.ts`**: `viewer_get_status` poll during line-index build.
 - **`viewer-open-failure.ts`**: `handleOpenFailure`, the copy, Retry flag, and log level for an open that didn't
   succeed, shared by the three open sites. See § "A read that didn't come back".
@@ -28,7 +29,8 @@ Per-file inventory for the route. Locate symbols via `codegraph_search`; this is
   bare-key dispatch, and the twelve selection-extension chords).
 - **`viewer-menu-actions.ts`**: `runViewerEditAction`, the dispatcher behind the viewer menu bar's Edit > Copy and
   Edit > Select all. Branches on search-input focus through the same `isSearchInputFocused` / `inputHasSelection` the
-  keydown router uses, so the menu path and the ⌘-chord path end in the same two functions. See § Gotchas.
+  keydown router uses, so the menu path and the ⌘-chord path end in the same two functions. Beside it,
+  `runViewerContextMenuAction` for the native right-click menu, which never branches. See § Gotchas.
 - Selection: **`selection.svelte.ts`** (model), **`line-segments.ts`** (pure segmenter), **`viewer-caret-geometry.ts`**
   (pure point → offset search, surrogate-safe), **`viewer-pointer.ts`** (its DOM adapter and the ONE place line text is
   measured: row hit-test, character rects, `caretRectFor`, `measureColumnWidth`), **`viewer-pointer-drag.svelte.ts`**
@@ -46,10 +48,10 @@ Per-file inventory for the route. Locate symbols via `codegraph_search`; this is
 - Media: **`media-view.ts`** (pure helpers incl. `mediaUrl(token)`, the ONE `cmdr-media://localhost/` origin, + zoom
   math), **`viewer-media.svelte.ts`** (`createViewerMedia`: state, `isMedia`/`mediaSrc`, `lastMediaKind`, switch
   triggers), **`MediaImageView` / `MediaPdfView`** (inline `<img>` / `<embed>`).
-- Presentational: **`ViewerContextMenu`**, **`ViewerToolbar`** (title-bar overlay, owns `data-tauri-drag-region`,
-  disabled-not-hidden in media), **`ViewerStatusBar`** (keeps `user-select: text`), **`ViewerCopyDialogs`**,
-  **`EncodingPicker`**, **`ViewModePicker`** (text / binary / hex / optional rendered media),
-  **`ViewerReloadToastContent`** (session id and change kind as toast props).
+- Presentational: **`ViewerToolbar`** (title-bar overlay, owns `data-tauri-drag-region`, disabled-not-hidden in media),
+  **`ViewerStatusBar`** (keeps `user-select: text`), **`ViewerCopyDialogs`**, **`EncodingPicker`**, **`ViewModePicker`**
+  (text / binary / hex / optional rendered media), **`ViewerReloadToastContent`** (session id and change kind as toast
+  props).
 
 ## Rows, not lines
 
@@ -60,9 +62,8 @@ fetch costs more than a bounded read however long a line is. The rule, the wire 
 **The text coordinate is a row, everywhere.** `rowCache`, `visibleFrom` / `visibleTo`, `estimatedTotalRows()`, the
 selection's `(row, offset)` endpoints, `EOF_ROW`, the caret motions, and the search jump all count rows. A file whose
 every line is shorter than a segment has rows and lines one-to-one, so nothing about it changed; a minified bundle is
-where the two part company. ❗ `RangeEnd`'s `line` field and `SearchMatch.line` are the WIRE's spelling of that same row
-index (the IPC rename is its own milestone); `toRangeEnds` and `viewerSearchPoll` are the only two places that crossing
-happens, and both convert at the boundary rather than letting a field called `line` travel inward.
+where the two part company. The wire speaks rows too (`RangeEnd`'s `{ kind: 'row', row, offset }`, `SearchMatch.row`,
+the `'row'` seek kind), so the row travels straight through with no conversion at the IPC boundary.
 
 **`totalLines` still exists, and it is not a coordinate.** The status bar's "N lines" is a physical line count, `null`
 on `byteSeek`. The row total comes from `TotalRows` (`exact` or `estimated`) on the open result's first chunk, on every
@@ -85,8 +86,8 @@ the rule in `ViewerRow.svelte`, and `ViewerRow.test.ts` fails if someone swaps i
 **A Cmdr break is not a newline.** Nothing that measures or reconstructs text from cached rows may put a byte or a
 character between two rows of the same line. `rowMetrics` is the one place that decides a row's delimiter (0 when the
 row `continues`, 0 on the file's last row, 1 otherwise), and `describeSelectionForAt` sums row lengths with nothing
-between them. Assuming one per row over-counts a minified file by a byte every 20 000 — and those bytes pick the 10 MiB
-confirm tier and the 100 MiB refusal, which is invariant I3 (`src-tauri/src/file_viewer/DETAILS.md` § "The row
+between them. Assuming one per row over-counts a minified file by a byte every 20 000 — and those bytes pick the 10 MB
+confirm tier and the 100 MB refusal, which is invariant I3 (`src-tauri/src/file_viewer/DETAILS.md` § "The row
 invariants").
 
 Decision/Why: **WebKit's own soft wraps stay unmarked** (David's call). With word wrap on, only the segment break Cmdr
@@ -284,7 +285,7 @@ logical coordinates, independent of which lines happen to be rendered.
   (`handleSilentCopy`). `selectionBytesFromFileSize` subtracts the unselected remainder from the known file size rather
   than rounding a near-whole-file selection up to it, so a selection stopping partway into the last row reports what it
   will actually copy. ❌ Never short-circuit that back to `totalBytes` on a start of `(0, 0)`: the same number decides
-  the 10 MiB confirm and the 100 MiB refusal. Spec invariant I3: a number in front of the user is a claim about their
+  the 10 MB confirm and the 100 MB refusal. Spec invariant I3: a number in front of the user is a claim about their
   data.
 - **Render**: the page calls `getLineSegmentBounds(selection, lineNumber, lineLength)` and passes the bounds to
   `search.getHighlightedSegments(...)`. The shared `segmentLine()` function (in `line-segments.ts`) merges search-match
@@ -634,12 +635,23 @@ Toast deduplication: ids include the kind (`viewer-file-changed-<sid>-grew`, `�
 coalesce into one toast. A rotated event explicitly dismisses any open grew toast: the older "reload to catch up"
 message is no longer accurate.
 
-Tail mode is **not persisted** across sessions: it defaults off on every viewer open and the user re-enables it per
-session. The viewer window has no `store:default` capability by security design (it renders arbitrary, possibly-hostile
-file content), so it can't write a per-path store. Viewer settings that DO persist (`viewer.wordWrap`,
-`fileViewer.suppressBinaryWarning`) route through the typed restricted-window commands (`get_restricted_window_settings`
-/ `persist_restricted_window_setting`) — never re-grant store access to the window; extend that allowlist instead. See
-`src-tauri/capabilities/CLAUDE.md` § viewer and `lib/settings/DETAILS.md` § "Restricted-window mode".
+**Follow.** With tail mode on, a viewport parked at the end stays at the end as the file grows, the way `tail -f` reads:
+`viewer-scroll.svelte.ts` keeps a `followsEnd` flag that only the user's own scroll events set (scrolling up releases
+it, scrolling back to the end re-pins it; growth fires no scroll event, so it survives that), and `runTailFollowEffect`
+scrolls to the new end on every row-count change while it holds. The "at the end" test allows one row of slack
+(`viewer-tail-follow.ts`), since zoom leaves a fractional gap.
+
+**Opening tailed.** `openFileViewer(path, volumeId, { tail: true })` adds `tail=1` to the viewer URL; the page then
+turns tail mode on after the open and `pinToEnd()`s once the content renders. Help > View debug log opens this way. Text
+only: a media open ignores it.
+
+Tail mode is **not persisted** across sessions: it defaults off on every viewer open (unless the opener passed `tail=1`)
+and the user re-enables it per session. The viewer window has no `store:default` capability by security design (it
+renders arbitrary, possibly-hostile file content), so it can't write a per-path store. Viewer settings that DO persist
+(`viewer.wordWrap`, `fileViewer.suppressBinaryWarning`) route through the typed restricted-window commands
+(`get_restricted_window_settings` / `persist_restricted_window_setting`) — never re-grant store access to the window;
+extend that allowlist instead. See `src-tauri/capabilities/CLAUDE.md` § viewer and `lib/settings/DETAILS.md` §
+"Restricted-window mode".
 
 ## Search modes
 
@@ -698,8 +710,9 @@ VARIANT (`kind: 'timedOut'`) rather than a flag beside a sentence. Both surfaces
 `asViewerError(e)?.kind`: `viewer-row-fetch.svelte.ts` routes `timedOut` to `deps.onTimeoutError()` and logs everything
 else by kind, and `viewer-open-failure.ts`'s `handleOpenFailure` (all three open sites) maps `timedOut` /
 `stoppedResponding` / `notFound` / `isDirectory` / `tooLargeToPreview` / `archive` to their own catalog keys and falls
-back to `viewer.error.readFailed` for anything else. `timedOut` and `stoppedResponding` also set `canRetry`, which puts
-Retry and Cancel under the message. Nothing renders the backend's own words. The wider split:
+back to `viewer.error.readFailed` for anything else. `timedOut`, `stoppedResponding`, and that fallback set `canRetry`,
+which puts Retry and Cancel under the message: the fallback covers passing trouble (a busy disk, a flaky mount) as often
+as lasting trouble, so offering Retry is honest. Nothing renders the backend's own words. The wider split:
 `docs/guides/error-handling.md`.
 
 **Log level follows what the window shows.** An error log counts toward an auto-sent error report, so an outcome the
@@ -788,12 +801,19 @@ so the page shows how far it got. Backend half: `apps/desktop/src-tauri/src/file
   uses a monotonic per-session counter. This avoids an extra round-trip (call to "start read", await `read_id`, then
   another call to "wait for read"); the FE just sends the id with the read request, and the backend keys the cancel flag
   off that id. Uniqueness within the session is the only invariant.
-- **`ViewerContextMenu` Escape stops propagation AND the page checks `contextMenuPos`.** The page's
-  `<svelte:window on:keydown>` listener is registered first (the menu mounts later), so the page's handler runs before
-  the menu's. If the page didn't gate on `contextMenuPos !== null` first, Escape would fall through to `closeWindow()`
-  and shut the whole viewer window. The menu's `stopImmediatePropagation()` is defense-in-depth for any future
-  listener-order change. See `tryConsumeEscapeForCopy` in `viewer-keyboard.ts` (`createViewerKeyboard`) and `handleKey`
-  in `ViewerContextMenu.svelte`.
+- **The right-click menu over the text is a native OS menu**, same as every other right-click in the app
+  (`build_viewer_context_menu` in `src-tauri/src/menu/menu_structure.rs`). `handleContextMenu` cancels the webview's own
+  menu and calls the `showContextMenu` dep, which the page wires to `showViewerContextMenu(hasSelection)`: the native
+  menu can't see the viewer's selection model, so the frontend reads it at open time and Rust greys Copy from that. The
+  pick comes back as `ViewerContextMenuAction` to this viewer, and `runViewerContextMenuAction` runs the same
+  `handleCopy` / `handleSelectAllShortcut` the ⌘-chords end in.
+  - ❗ It's its own event, ❌ never a `ViewerEditAction`: the bar's pair hands Copy and Select all to the search box
+    while it has focus, and a right-click on the text doesn't move focus (`handlePointerDown` ignores button 2), so the
+    bar's dispatcher would copy the query from a menu opened over the file.
+  - Escape on the open menu never reaches the webview: the OS menu's tracking loop takes it (GTK's popup grabs the
+    keyboard the same way), so the page's Escape ladder needs no menu gate.
+  - The E2E suite can't drive a native menu, so the dispatch is pinned in `viewer-menu-actions.test.ts` and the id
+    routing in `menu_handlers.rs`'s `viewer_edit_action_tests`.
 - **The AT announcement speaks PHYSICAL LINES, and caps its row iteration.** `describeSelectionForAt` in
   `selection.svelte.ts` builds the screen-reader announcement from a per-row lookup of `(utf16Length, lineNumber)`. It
   names the line numbers the gutter draws, never row indexes: a selection sitting inside one wrapped line is one line
@@ -804,11 +824,19 @@ so the page shows how far it got. Backend half: `apps/desktop/src-tauri/src/file
   always starts the file's first line. ⌘A in ByteSeek-no-index mode sets `focus.row = EOF_ROW` (the sentinel that maps
   to `RangeEnd::Eof` at the IPC boundary), so an uncapped loop would iterate 9e15 times; the
   `MAX_ANNOUNCE_ROWS = 10_000` cap short-circuits to "Selected from line N to the end of the file" without touching the
-  row lookup at all.
+  row lookup at all. The character count goes in as a NUMBER, ❌ never `String(n)`: the strings are ICU plurals whose
+  `#` picks the singular ("1 character") and prints the locale's digit grouping ("12,345"), and a string argument gets
+  neither.
+- **Drag autoscroll copies WebKit's selection autoscroll**, which Binary and Hex get natively: nothing until the pointer
+  is PAST the top or bottom edge, then `AUTOSCROLL_PX_PER_SEC_PER_PX_PAST` (20) px/s per px past it (WebKit's 50 ms
+  timer revealing the pointer each tick). Speed is per second off the RAF timestamp, so 60 Hz and 120 Hz cover the same
+  distance; sub-pixel frames accumulate, so a 1 px pull still crawls; and it's in content px, divided through
+  `getScrollScale` for a squeezed huge file. Gotcha/Why: ❌ no band inside the edge and no per-frame speed. A 30 px
+  inner band ramping to 540 px per frame reached a file's end before the user could take two more lines.
 - **Drag autoscroll honours `prefers-reduced-motion`.** Under reduced motion, `createViewerAutoscroll().start()` does a
-  single synchronous snap step and exits without queuing a RAF. The page's `pointermove` calls `start()` on every move,
-  so the user still progresses through the file in discrete jumps. Override via the `prefersReducedMotion` dep for
-  tests.
+  single synchronous step (one WebKit tick: the distance past the edge) and exits without queuing a RAF. The page's
+  `pointermove` calls `start()` on every move, so the user still progresses through the file in discrete jumps. Override
+  via the `prefersReducedMotion` dep for tests.
 - `getLineHeight()` (returns `18px × effective scale`) and the CSS rule
   `.line { height: calc(18px * var(--font-scale)) }` in `+page.svelte` must stay paired. Both read the same scale: the
   JS function for virtualization math, the CSS rule for layout. If you change the 18 base, change both.

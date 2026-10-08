@@ -616,9 +616,11 @@ maintainability.
 
 Props:
 
-- `items: SelectItem[]` — `{ value, label, description?, group?, iconUrl? }`. `description` renders as quieter inline
-  text after the label (used by `SettingSelect`); `group`, when present on any item, buckets items under Ark `ItemGroup`
-  / `ItemGroupLabel` headings (used by the viewer's `EncodingPicker` for Unicode / Western); `iconUrl` puts a 16px image
+- `items: SelectItem[]` — `{ value, label, description?, group?, iconUrl?, disabled? }`. A `disabled` item stays listed
+  but dimmed, and pointer and keyboard skip it (Ark reads `disabled` off the item); say why in its `description` (the AI
+  service picker lists a service the organization refuses this way). `description` renders as quieter inline text after
+  the label (used by `SettingSelect`); `group`, when present on any item, buckets items under Ark `ItemGroup` /
+  `ItemGroupLabel` headings (used by the viewer's `EncodingPicker` for Unicode / Western); `iconUrl` puts a 16px image
   before the label. Icons are decorative (`alt=""`), so a label must never lean on one to be understandable. As soon as
   ONE item carries an icon every row reserves the slot, keeping labels in a single column, and the trigger shows the
   selected item's icon so the button reads like the row it came from. The one caller today is the settings row that
@@ -628,7 +630,9 @@ Props:
 - `onChange: (value: string) => void`.
 - `onHighlightChange?: (highlightedValue: string | null) => void` — fires on keyboard / pointer highlight.
   `SettingSelect` uses it to apply on highlight.
-- `disabled?`, `placeholder?` (default `Select...`), `ariaLabel` (lands on the trigger).
+- `disabled?`, `placeholder?` (default `Select...`), `ariaLabel` and `ariaDescribedBy?` (both land on the trigger).
+  `Checkbox`, `Switch`, `RadioGroup`, and `NumberInput` take the same `ariaDescribedBy?`, which a settings row points at
+  its disabled or managed note (`../settings/components/DETAILS.md` § Managed rows).
 - `contentClass?: string` — extra class on the `.select-content` element (`SettingSelect` sets `custom-highlighted` to
   suppress the checked state on other items while its "Custom…" row is highlighted).
 
@@ -637,7 +641,7 @@ Props:
 `--color-border-glass` tokens with tooltips and filter-chip popovers; blur dropped under `html.reduce-transparency`).
 The checkmark marks the current value on the LEFT (`.select-item-text` is the flex label cell after it); the accent fill
 follows the keyboard / pointer highlight (`[data-highlighted]`), so a checked-but-not-highlighted row is plain with just
-its checkmark — matching macOS, and distinct from the old "checked = accent bg" behavior.
+its checkmark, matching macOS.
 
 **macOS overlap positioning (the menu opens _over_ the trigger).** Zag positions the _positioner_ just below the trigger
 (`bottom-start`, `gutter: 0`, `flip: false`, `slide: true`); we then translate the _content_ (a child of the positioner,
@@ -1171,6 +1175,8 @@ every toast body keeps this contract:
   first row plain text with any glyph inline, so its lines wrap around the corner.
 - **Decision: CSS floats do the wrapping.** `@chenglou/pretext` lays out plain text lines in JS, and a toast body is
   rich markup (chips, links, `<Trans>` sentences, buttons) that it can't lay out, while a float costs no JS at all.
+- **A long unbroken run breaks inside the box.** `.toast-content` sets `overflow-wrap: anywhere`, inherited by every
+  body: a toast naming an S3 account by its `<access key id>@<account id>` label once ran far past the right edge.
 
 Age label: once a toast has been up a minute, "2m ago" / "1h ago" sits on the content's first line. Decisions:
 
@@ -1181,6 +1187,17 @@ Age label: once a toast has been up a minute, "2m ago" / "1h ago" sits on the co
 - **No polling.** One timer per toast, armed for the next whole minute (or hour) and re-armed when it fires.
 - **It counts from `postedAt`, which a same-id re-add re-stamps.** Replaced content is fresh news; "5m ago" on it would
   be wrong.
+
+Countdown ring: a transient toast draws a thin ring around its X that empties exactly when the dismiss timer fires, so
+the user can tell a toast that's leaving from one that stays (persistent toasts get no ring). Decisions:
+
+- **It tells the truth about the timer, not about the natural clock.** Under the pointer the ring freezes (the toast
+  won't go while hovered); on leave it drains its remainder over whatever the timer was re-armed for, so it still hits
+  zero as the toast goes even when the one-second grace tail decides. A same-id re-raise refills it.
+- **CSS draws it.** `ToastItem` only sets the circle's inline dash offset (the share already emptied), its
+  `animation-duration`, and a `data-state`; a keyed `{#key ringRun}` restarts the animation. No per-frame JS. It's
+  `aria-hidden`, like the age label.
+- **It runs under reduced motion too.** It's a slow, linear status indicator, not movement across the screen.
 
 Five levels. Pick by what kind of feedback the toast carries, not by how the message reads:
 
@@ -1324,9 +1341,8 @@ passes its own, since "Copy command to clipboard" would be a lie to a screen rea
 decimal) and follows palette swaps via the `data-size-colors` attribute on `<html>` automatically.
 
 Use this in Svelte templates: `<Size bytes={entry.size} />`. For HTML string contexts (tooltips, error messages, prose
-that goes through `{@html}`), use `colorizeSizeString(text)` from
-`$lib/file-explorer/selection/selection-info-utils.ts`: pass an already-formatted size string (for example, from
-`formatByteSize` in `$lib/units`) and it wraps the value in the right tier span.
+that goes through `{@html}`), use `colorizeSize(formatByteSizeTiered(bytes))`: `colorizeSize` lives in
+`$lib/file-explorer/selection/selection-info-utils.ts` and wraps the size in the tier span its `TieredSize` names.
 
 Free-space displays (volume picker, status bar, usage-bar tooltip, transfer-dialog destination info) intentionally DON'T
 tier-color the numbers — for "free space" big-is-good, and red GB would falsely signal "low space". They use the plain

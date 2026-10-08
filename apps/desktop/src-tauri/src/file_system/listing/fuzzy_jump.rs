@@ -24,7 +24,6 @@
 //! (`commands/file_system/listing.rs`) a thin pass-through that just grabs the
 //! read lock and delegates here.
 
-use crate::ignore_poison::RwLockIgnorePoison as _;
 use serde::{Deserialize, Serialize};
 use std::time::Instant;
 
@@ -33,7 +32,6 @@ use nucleo_matcher::{
     pattern::{CaseMatching, Normalization, Pattern},
 };
 
-use crate::file_system::listing::cached_listing::LISTING_CACHE;
 use crate::file_system::listing::metadata::FileEntry;
 
 /// Returns the row number of the highest-scoring fuzzy match for `query` among the
@@ -125,7 +123,7 @@ pub fn fuzzy_find_first_match_in_listing(
     let started = Instant::now();
     // Recovering is right for a read of a cache: a panic elsewhere left the map
     // intact, and refusing every jump afterwards would be worse than reading it.
-    let cache = LISTING_CACHE.read_ignore_poison();
+    let cache = super::operations::reconciled_cache(&[listing_id]);
 
     let listing = cache.get(listing_id).ok_or_else(|| FuzzyJumpError::ListingNotFound {
         listing_id: listing_id.to_string(),

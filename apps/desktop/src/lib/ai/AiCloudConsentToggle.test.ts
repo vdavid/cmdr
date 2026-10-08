@@ -8,7 +8,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, tick } from 'svelte'
 
 const { consentState } = vi.hoisted(() => {
-  const consentState: { accepted: boolean | null; acceptedAt: number | null } = { accepted: false, acceptedAt: null }
+  const consentState: { accepted: boolean | null; acceptedAt: number | null; managed: 'cloudAiOff' | null } = {
+    accepted: false,
+    acceptedAt: null,
+    managed: null,
+  }
   return { consentState }
 })
 vi.mock('./cloud-consent.svelte', () => ({
@@ -63,6 +67,7 @@ async function userToggles(details: HTMLDetailsElement): Promise<void> {
 beforeEach(() => {
   consentState.accepted = false
   consentState.acceptedAt = null
+  consentState.managed = null
 })
 
 describe('the "What Cmdr sends" fold', () => {
@@ -94,6 +99,19 @@ describe('the "What Cmdr sends" fold', () => {
     await toggle()
     expect(consentState.accepted).toBe(false)
     expect(details.open).toBe(true)
+    target.remove()
+  })
+})
+
+describe("the switch under the organization's policy", () => {
+  it('locks off with the reason in view when the organization rules out every cloud host', async () => {
+    consentState.managed = 'cloudAiOff'
+    const { target } = await mountToggle()
+    const input = target.querySelector<HTMLInputElement>('[data-test="cloud-ai-consent"]')
+    expect(input?.disabled).toBe(true)
+    const note = target.querySelector('.consent-managed')
+    expect(note?.textContent).toBe('Your organization allows only on-device AI.')
+    expect(input?.getAttribute('aria-describedby')).toBe(note?.id)
     target.remove()
   })
 })

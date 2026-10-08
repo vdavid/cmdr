@@ -7,6 +7,7 @@ import { addToast } from '$lib/ui/toast'
 import { tString } from '$lib/intl/messages.svelte'
 import type { CommandArgs } from '$lib/commands'
 import type { CommandHandlerRecord } from './types'
+import { moveTabForMcp } from '../mcp-tab-move'
 
 export const tabHandlers = {
   'tab.new': ({ explorerRef }) => {
@@ -53,7 +54,10 @@ export const tabHandlers = {
     // MCP `tab` tool: a per-pane tab action targeting a SPECIFIC pane and tab
     // (the focused-pane `tab.new`/`tab.close`/etc. can't). Routes to the
     // component's `handleMcpTabAction`, which owns the tab-mutation primitives.
-    const { pane, action, tabId, pinned } = dispatchArgs as CommandArgs['tab.mcpAction']
-    explorerRef?.handleMcpTabAction(pane, action, tabId, pinned)
+    const args = dispatchArgs as CommandArgs['tab.mcpAction']
+    // A move can be refused, so it replies on its request id with what it did; the
+    // rest are fire-and-forget behind the backend's generation ack.
+    if (args.action === 'move') return moveTabForMcp({ explorer: explorerRef, args })
+    explorerRef?.handleMcpTabAction(args.pane, args.action, args.tabId, args.pinned)
   },
 } satisfies Partial<CommandHandlerRecord>

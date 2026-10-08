@@ -191,8 +191,9 @@ export async function initializeShortcuts(): Promise<void> {
     // Bring display-form key names back to the canonical vocabulary (`⌘⌫` →
     // `⌘Backspace`). A file written before the two spellings were unified would
     // otherwise hold a binding no keypress can produce and no menu accelerator
-    // can parse. See `key-capture.ts` for the canonical-vs-display split.
-    customShortcuts.set(commandId, healed.map(toCanonicalShortcut))
+    // can parse. See `key-capture.ts` for the canonical-vs-display split. Healing
+    // can fold two entries into one (`['⇧8', '*']` → `*` twice), so dedupe.
+    customShortcuts.set(commandId, [...new Set(healed.map(toCanonicalShortcut))])
   }
 
   if (customShortcuts.size > 0) {
@@ -247,6 +248,7 @@ export const menuCommands = [
   'cmdr.openOnboarding',
   // Help (registered in MenuState.items so a future custom binding syncs its accelerator)
   'help.whatsNew',
+  'help.viewDebugLog',
   // View > Operation queue (default ⌥⌘Q; registered so a custom binding syncs its accelerator)
   'queue.show',
   // View > Operation log (default ⌥⌘L; registered so a custom binding syncs its accelerator)
@@ -279,6 +281,9 @@ export const menuCommands = [
   'file.quickLook',
   'file.copyPath',
   'file.copyFilename',
+  'file.copyShareLink',
+  'file.copyShareLinkOneDay',
+  'file.copyShareLinkOneHour',
   // Cloud actions (macOS File Provider, items only show when the right-clicked file is in a cloud folder)
   'cloud.makeOffline',
   'cloud.removeDownload',
@@ -290,12 +295,15 @@ export const menuCommands = [
   'selection.selectAll',
   'selection.deselectAll',
   'selection.selectSameKind',
+  'selection.compareDirectories',
   'selection.invert',
   'selection.selectFiles',
   'selection.deselectFiles',
   // Panes
   'pane.switch',
   'pane.swap',
+  'pane.clone',
+  'view.calculateFolderSizes',
   // Search
   'search.open',
   // Sort
@@ -307,6 +315,7 @@ export const menuCommands = [
   'nav.back',
   'nav.forward',
   'nav.parent',
+  'nav.goToRoot',
   'nav.goHome',
   'nav.goToPath',
   // Downloads

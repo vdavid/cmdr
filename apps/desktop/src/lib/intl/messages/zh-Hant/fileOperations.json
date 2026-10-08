@@ -3,6 +3,10 @@
   "@fileOperations.button.cancel": {
     "sourceHash": "19766ed"
   },
+  "fileOperations.button.close": "關閉",
+  "@fileOperations.button.close": {
+    "sourceHash": "7d9eb7a"
+  },
   "fileOperations.button.ok": "好",
   "@fileOperations.button.ok": {
     "sourceHash": "565339b"
@@ -79,9 +83,9 @@
   "@fileOperations.delete.scanFile": {
     "sourceHash": "46012b1"
   },
-  "fileOperations.delete.scanDir": "{count, plural, other {個目錄}}",
+  "fileOperations.delete.scanDir": "{count, plural, other {個資料夾}}",
   "@fileOperations.delete.scanDir": {
-    "sourceHash": "1c5273d"
+    "sourceHash": "46b23b5"
   },
   "fileOperations.delete.confirmDelete": "刪除",
   "@fileOperations.delete.confirmDelete": {
@@ -123,6 +127,14 @@
   "@fileOperations.delete.symlinkNoticeMany": {
     "sourceHash": "56b3f52"
   },
+  "fileOperations.mkfile.notCreatedToast": "Cmdr 無法建立檔案「{name}」。{reason}",
+  "@fileOperations.mkfile.notCreatedToast": {
+    "sourceHash": "4f30e62"
+  },
+  "fileOperations.newEntry.stillCreating": "仍在建立「{name}」。卷宗回應很慢。你可以放心關閉這個對話方塊，建立會繼續進行，而且現在已經無法取消了。",
+  "@fileOperations.newEntry.stillCreating": {
+    "sourceHash": "74e376f"
+  },
   "fileOperations.mkfile.title": "新增檔案",
   "@fileOperations.mkfile.title": {
     "sourceHash": "44dedd0"
@@ -155,17 +167,9 @@
   "@fileOperations.mkdir.placeholder": {
     "sourceHash": "7612b56"
   },
-  "fileOperations.mkdir.timeoutMessage": "無法確認資料夾是不是建好了。這個卷宗可能比較慢，所以資料夾也許已經建好了。",
-  "@fileOperations.mkdir.timeoutMessage": {
-    "sourceHash": "8bc758a"
-  },
-  "fileOperations.mkdir.timeoutRefresh": "重新整理檔案列表",
-  "@fileOperations.mkdir.timeoutRefresh": {
-    "sourceHash": "b0e5436"
-  },
-  "fileOperations.mkdir.timeoutDismiss": "關閉",
-  "@fileOperations.mkdir.timeoutDismiss": {
-    "sourceHash": "48845bf"
+  "fileOperations.mkdir.notCreatedToast": "Cmdr 無法建立資料夾「{name}」。{reason}",
+  "@fileOperations.mkdir.notCreatedToast": {
+    "sourceHash": "517ef4b"
   },
   "fileOperations.mkdir.aiSuggestionsAria": "AI 建議",
   "@fileOperations.mkdir.aiSuggestionsAria": {
@@ -247,9 +251,21 @@
   "@fileOperations.transferDialog.targetWillBeCreatedCopy": {
     "sourceHash": "4e8d166"
   },
+  "fileOperations.transferDialog.renameByMoveHint": "重新命名這個項目會在伺服器上複製裡面的所有內容，所以會以移動的方式執行，你可以暫停或取消。",
+  "@fileOperations.transferDialog.renameByMoveHint": {
+    "sourceHash": "31987cc"
+  },
   "fileOperations.transferDialog.targetWillBeCreatedMove": "這個資料夾還不存在。Cmdr 會在移動時把它建起來。",
   "@fileOperations.transferDialog.targetWillBeCreatedMove": {
     "sourceHash": "1246331"
+  },
+  "fileOperations.transferDialog.rootEchoWarning": "這個位置本來就從 {rootFolder} 開始，所以這個路徑會通往 {resolvedPath}。你是想用 {strippedPath} 嗎？",
+  "@fileOperations.transferDialog.rootEchoWarning": {
+    "sourceHash": "b692d10"
+  },
+  "fileOperations.transferDialog.rootEchoUseStripped": "使用較短的路徑",
+  "@fileOperations.transferDialog.rootEchoUseStripped": {
+    "sourceHash": "66972e3"
   },
   "fileOperations.transferDialog.destinationReadOnly": "這個資料夾是唯讀的，無法放入任何東西。",
   "@fileOperations.transferDialog.destinationReadOnly": {
@@ -271,9 +287,9 @@
   "@fileOperations.transferDialog.scanFile": {
     "sourceHash": "46012b1"
   },
-  "fileOperations.transferDialog.scanDir": "{count, plural, other {個目錄}}",
+  "fileOperations.transferDialog.scanDir": "{count, plural, other {個資料夾}}",
   "@fileOperations.transferDialog.scanDir": {
-    "sourceHash": "1c5273d"
+    "sourceHash": "46b23b5"
   },
   "fileOperations.transferDialog.hardlinkNote": "將會寫入 <written></written>。來源在磁碟上佔用 <ondisk></ondisk>，多出來的是硬式連結檔案，跨磁碟機時無法保持連結。",
   "@fileOperations.transferDialog.hardlinkNote": {
@@ -291,6 +307,18 @@
   "@fileOperations.transferDialog.estimatedSizeTooltip": {
     "sourceHash": "2e8ba70"
   },
+  "fileOperations.s3Cost.line": "依 {provider} 的公開定價，約 {amount}",
+  "@fileOperations.s3Cost.line": {
+    "sourceHash": "e8db02b"
+  },
+  "fileOperations.s3Cost.infoLabel": "關於這個估算",
+  "@fileOperations.s3Cost.infoLabel": {
+    "sourceHash": "19637c5"
+  },
+  "fileOperations.s3Cost.infoText": "這個估算使用提供者公開的定價。免費額度、折扣、內含用量和最低收費，都可能讓你的實際帳單更低或更高。",
+  "@fileOperations.s3Cost.infoText": {
+    "sourceHash": "379665c"
+  },
   "fileOperations.transferDialog.scanUnresponsive": "來源沒有回應，所以只統計到這些。",
   "@fileOperations.transferDialog.scanUnresponsive": {
     "sourceHash": "ec3beb2"
@@ -302,6 +330,10 @@
   "fileOperations.transferDialog.scanRetry": "再試一次",
   "@fileOperations.transferDialog.scanRetry": {
     "sourceHash": "d8b8392"
+  },
+  "fileOperations.transferDialog.sourceNoLongerConnected": "存放這些檔案的手機或伺服器已經中斷連線了，所以 Cmdr 無法從那裡複製。",
+  "@fileOperations.transferDialog.sourceNoLongerConnected": {
+    "sourceHash": "4741405"
   },
   "fileOperations.transferDialog.conflictsUnknown": "我們無法檢查目標位置已經有什麼。遇到同名的項目時會再問你。",
   "@fileOperations.transferDialog.conflictsUnknown": {
@@ -395,9 +427,9 @@
   "@fileOperations.scanPhase.scanFile": {
     "sourceHash": "46012b1"
   },
-  "fileOperations.scanPhase.scanDir": "{count, plural, other {個目錄}}",
+  "fileOperations.scanPhase.scanDir": "{count, plural, other {個資料夾}}",
   "@fileOperations.scanPhase.scanDir": {
-    "sourceHash": "1c5273d"
+    "sourceHash": "46b23b5"
   },
   "fileOperations.transferProgress.scanTitleCopy": "複製前正在核對⋯",
   "@fileOperations.transferProgress.scanTitleCopy": {
@@ -535,9 +567,13 @@
   "@fileOperations.transferProgress.stageFinishingTransferStep": {
     "sourceHash": "1f28724"
   },
-  "fileOperations.transferProgress.warningFileOverFolder": "目標已經存在，而且是一個<strong>資料夾</strong>。你正要用同名的<strong>檔案</strong>覆寫它。目標資料夾的全部內容會被刪除，由這個檔案取代。要怎麼做？",
+  "fileOperations.transferProgress.warningFileOverFolder": "目標已經存在，而且是一個<strong>資料夾</strong>。你正要用同名的<strong>檔案</strong>取代它。資料夾裡的所有東西都會沒了。要怎麼做？",
   "@fileOperations.transferProgress.warningFileOverFolder": {
-    "sourceHash": "6dce75c"
+    "sourceHash": "bacab9d"
+  },
+  "fileOperations.transferProgress.warningFolderOverFile": "目標已經存在，而且是一個<strong>檔案</strong>。你正要用同名的<strong>資料夾</strong>取代它。資料夾一換上去，原本的檔案就沒了。要怎麼做？",
+  "@fileOperations.transferProgress.warningFolderOverFile": {
+    "sourceHash": "b681083"
   },
   "fileOperations.transferProgress.lookAlikeHint": "這兩個名稱看起來一樣，但伺服器儲存的寫法不同。按一下「覆寫」會取代現有的那一個。",
   "@fileOperations.transferProgress.lookAlikeHint": {
@@ -882,6 +918,10 @@
   "fileOperations.errorDialog.retry": "再試一次",
   "@fileOperations.errorDialog.retry": {
     "sourceHash": "942087c"
+  },
+  "fileOperations.errorDialog.copyAnyway": "仍要複製",
+  "@fileOperations.errorDialog.copyAnyway": {
+    "sourceHash": "f794181"
   },
   "fileOperations.errorDialog.close": "關閉",
   "@fileOperations.errorDialog.close": {

@@ -7,7 +7,7 @@
 //! ground evaluates the same rules this scan does. What stays here is arena-shaped:
 //! the scope filter's ancestor walk, ranking, and path reconstruction.
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
 use rayon::prelude::*;
@@ -57,7 +57,9 @@ impl ScopeFilter {
     /// is the difference between "no results" and "27 results, 400 more inside
     /// caches". An entry outside the include roots was never in scope and is not
     /// worth counting.
-    fn verdict(&self, index: &SearchIndex, entry_idx: usize) -> ScopeVerdict {
+    ///
+    /// `memo` is the calling scan chunk's own (see [`AncestorVerdicts`]).
+    fn verdict(&self, index: &SearchIndex, entry_idx: usize, memo: &mut AncestorVerdicts) -> ScopeVerdict {
         let entry = &index.entries[entry_idx];
 
         // Include check: walk ancestors and check if any is in include_ids
@@ -94,27 +96,58 @@ impl ScopeFilter {
         }
 
         // For bare-name excludes, walk ancestors and check directory names
-        if self.excludes.has_name_rules() {
-            let mut current_id = entry.parent_id;
-            loop {
-                if current_id == ROOT_ID || current_id == 0 {
-                    break;
-                }
-                match index.index_of_id(current_id) {
-                    Some(idx) => {
-                        let ancestor = &index.entries[idx];
-                        if ancestor.is_directory && self.excludes.excludes_dir_name(index.name(ancestor)) {
-                            return ScopeVerdict::Excluded;
-                        }
-                        current_id = ancestor.parent_id;
-                    }
-                    None => break,
-                }
-            }
+        if self.excludes.has_name_rules() && self.excluded_by_name_at_or_above(index, entry.parent_id, memo) {
+            return ScopeVerdict::Excluded;
         }
 
         ScopeVerdict::Inside
     }
+
+    /// Whether a name rule excludes the folder `folder_id` or any folder above it.
+    ///
+    /// Walks up until the root or a folder `memo` already judged, then records the
+    /// answer for every folder it passed: they all share it, since each one's
+    /// verdict is its own name OR its parent's verdict.
+    fn excluded_by_name_at_or_above(&self, index: &SearchIndex, folder_id: i64, memo: &mut AncestorVerdicts) -> bool {
+        memo.walked.clear();
+        let mut current_id = folder_id;
+        let excluded = loop {
+            if current_id == ROOT_ID || current_id == 0 {
+                break false;
+            }
+            if let Some(&known) = memo.by_folder.get(&current_id) {
+                break known;
+            }
+            let Some(idx) = index.index_of_id(current_id) else {
+                break false;
+            };
+            memo.walked.push(current_id);
+            let ancestor = &index.entries[idx];
+            if ancestor.is_directory && self.excludes.excludes_dir_name(index.name(ancestor)) {
+                break true;
+            }
+            current_id = ancestor.parent_id;
+        };
+        for id in memo.walked.drain(..) {
+            memo.by_folder.insert(id, excluded);
+        }
+        excluded
+    }
+}
+
+/// One scan chunk's memo of the name-exclusion walk: folder id → whether a name
+/// rule excludes that folder or anything above it.
+///
+/// Matches cluster in folders, so without it a broad query re-walked (a binary
+/// search per ancestor) and re-judged (a non-ASCII name folds through `String`s)
+/// the same folders for every match: ~1.9 M matches for a one-letter query.
+/// ❌ Keep it per chunk, never shared across rayon workers: a shared map is a lock
+/// on the hot path, the exact contention the per-chunk clones exist to avoid.
+#[derive(Default)]
+struct AncestorVerdicts {
+    by_folder: HashMap<i64, bool>,
+    /// Scratch for the folders one walk passed before it found an answer.
+    walked: Vec<i64>,
 }
 
 /// Why the scope filter kept or dropped an entry that already matched the query.
@@ -198,7 +231,7 @@ pub(crate) fn search(
 /// reads their size, because they lose a recency-weighted ranking against
 /// hundreds of thousands of freshly-touched ones.
 pub(crate) struct DirSizes {
-    by_id: std::collections::HashMap<i64, u64>,
+    by_id: HashMap<i64, u64>,
     /// Whether absence from the map means "outside the size filter" (a filter) or
     /// merely "size unknown" (built only to sort by size). Getting this backwards
     /// would silently delete every directory the index has no `dir_stats` row for.
@@ -206,7 +239,7 @@ pub(crate) struct DirSizes {
 }
 
 impl DirSizes {
-    pub(crate) fn new(by_id: std::collections::HashMap<i64, u64>, is_filter: bool) -> Self {
+    pub(crate) fn new(by_id: HashMap<i64, u64>, is_filter: bool) -> Self {
         Self { by_id, is_filter }
     }
 
@@ -291,6 +324,7 @@ pub(crate) fn search_ranked(
         .flat_map_iter(|(chunk_no, chunk)| {
             let compiled = compiled.clone();
             let scope_filter = scope_filter.clone();
+            let mut ancestor_verdicts = AncestorVerdicts::default();
             let first = chunk_no * SCAN_CHUNK_ROWS;
             chunk.iter().enumerate().filter_map(move |(offset, entry)| {
                 let i = first + offset;
@@ -322,7 +356,7 @@ pub(crate) fn search_ranked(
 
                 // Scope filter (ancestor walk): only for entries passing all other filters
                 if scope_filter.is_active() {
-                    match scope_filter.verdict(index, i) {
+                    match scope_filter.verdict(index, i, &mut ancestor_verdicts) {
                         ScopeVerdict::Inside => {}
                         ScopeVerdict::Excluded => {
                             hidden.fetch_add(1, std::sync::atomic::Ordering::Relaxed);

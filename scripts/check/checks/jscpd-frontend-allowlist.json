@@ -1,6 +1,10 @@
 {
   "$comment": "Accepted duplicated lines per file pair, plus generated files whose duplication is the generator's output shape. Each `pairs` value is {\"lines\": N, \"reason\": \"…\"}: the reason is mandatory and says why this duplication stays, or starts with `TODO: ` when it should be extracted and the reason says how. `pnpm check jscpd-frontend` shrink-wraps the numbers, so a reason is the only part written by hand. See `.claude/rules/file-length-allowlist.md`.",
   "pairs": {
+    "apps/desktop/src/lib/servers/S3EndpointFields.svelte ↔ apps/desktop/src/lib/servers/ServerFormFields.svelte": {
+      "lines": 25,
+      "reason": "TODO: the add form's field styles (`.field`, `.field-label`, `.field-help`, `.field-refusal`, `.remedy-row`), which a scoped `<style>` can't share with a child component. `SignInCredentialFields.svelte` carries a third copy. Extract a `lib/ui` form-field primitive (label, control slot, help line, refusal line with its `role=\"alert\"` and id pairing) and render every server form field through it, so the three components drop both the markup pattern and the styles."
+    },
     "apps/desktop/src/lib/file-operations/delete/DeleteDialog.svelte ↔ apps/desktop/src/lib/file-operations/transfer/ScanPhaseBody.svelte": {
       "lines": 23,
       "reason": "TODO: both components hand-render the same scan readout: the `scan-status` spinner span with its tooltip, the `scan-throughput` row (file rate, a middot separator, byte rate), the `scan-current-dir` line under `useShortenMiddle`, and the CSS for all four classes. Extract a `ScanProgressReadout.svelte` into `lib/file-operations/` beside `TransferProgressReadout.svelte`, taking `scanning`, `scanRate`, `bytesPerSec`, `currentDir`, and an `align` prop for the one real divergence (`justify-content: flex-end` in the delete dialog, `center` in the scan phase), so `DeleteDialog` and `ScanPhaseBody` each render it and drop both the markup and the styles. The umbrella `CLAUDE.md` already names this pattern for the write phase (one dual-bar readout, two surfaces); the scan phase is its twin case."

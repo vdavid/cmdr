@@ -24,7 +24,7 @@ fn summary(duration: Duration, writer_wait: Duration) -> ReconcileSummary {
 fn dirs_that_vanished_mid_walk_are_counted_on_the_summary_line() {
     let mut vanished = summary(Duration::from_millis(120), Duration::ZERO);
     vanished.unreadable_dirs = 143;
-    let (level, message) = reconcile_report(Path::new("/tmp/target"), &vanished);
+    let (level, message) = reconcile_report(Path::new("/tmp/target"), &vanished, None);
     assert_eq!(level, log::Level::Debug, "a vanishing build dir is not a problem");
     assert_eq!(
         message,
@@ -39,6 +39,7 @@ fn a_walk_that_read_everything_says_nothing_about_unreadable_dirs() {
     let (_, message) = reconcile_report(
         Path::new("/tmp/quiet"),
         &summary(Duration::from_millis(120), Duration::ZERO),
+        None,
     );
     assert!(!message.contains("unreadable"), "{message}");
 }
@@ -49,7 +50,7 @@ fn a_walk_that_read_everything_says_nothing_about_unreadable_dirs() {
 fn a_slow_walk_carries_the_unreadable_count_too() {
     let mut vanished = summary(Duration::from_secs(21), Duration::from_millis(300));
     vanished.unreadable_dirs = 9;
-    let (level, message) = reconcile_report(Path::new("/tmp/deep-tree"), &vanished);
+    let (level, message) = reconcile_report(Path::new("/tmp/deep-tree"), &vanished, None);
     assert_eq!(level, log::Level::Warn);
     assert_eq!(
         message,
@@ -65,6 +66,7 @@ fn a_reconcile_dominated_by_the_writer_wait_says_so_and_stays_quiet() {
     let (level, message) = reconcile_report(
         Path::new("/tmp/site-data"),
         &summary(Duration::from_secs(21), Duration::from_secs(19)),
+        None,
     );
     assert_eq!(
         level,
@@ -84,6 +86,7 @@ fn a_slow_walk_that_was_not_waiting_still_warns() {
     let (level, message) = reconcile_report(
         Path::new("/tmp/deep-tree"),
         &summary(Duration::from_secs(21), Duration::from_millis(300)),
+        None,
     );
     assert_eq!(level, log::Level::Warn);
     assert_eq!(
@@ -101,11 +104,49 @@ fn a_quick_reconcile_stays_out_of_the_way() {
     let (level, message) = reconcile_report(
         Path::new("/tmp/quick"),
         &summary(Duration::from_millis(120), Duration::ZERO),
+        None,
     );
     assert_eq!(level, log::Level::Debug);
     assert_eq!(
         message,
         "MustScanSubDirs: reconcile complete for /tmp/quick (+7 -0 ~0, 120ms)"
+    );
+}
+
+/// The walk's own CPU rides the line, because wall time on a loaded machine is
+/// mostly waiting on the disk: a 225 s walk on 2026-10-05 read as the CPU spike
+/// when the writer was the one burning it.
+#[test]
+fn the_line_carries_the_walks_cpu() {
+    let (_, quick) = reconcile_report(
+        Path::new("/tmp/quick"),
+        &summary(Duration::from_millis(120), Duration::ZERO),
+        Some(Duration::from_millis(15)),
+    );
+    assert_eq!(
+        quick,
+        "MustScanSubDirs: reconcile complete for /tmp/quick (+7 -0 ~0, 120ms, 15ms CPU)"
+    );
+
+    let (level, slow) = reconcile_report(
+        Path::new("/tmp/worktree"),
+        &summary(Duration::from_secs(225), Duration::from_millis(300)),
+        Some(Duration::from_millis(4_200)),
+    );
+    assert_eq!(level, log::Level::Warn, "the slow verdict stays about wall time");
+    assert_eq!(
+        slow,
+        "MustScanSubDirs: reconcile slow for /tmp/worktree (+7 -0 ~0, 225s, 4s CPU)"
+    );
+
+    let (_, waited) = reconcile_report(
+        Path::new("/tmp/site-data"),
+        &summary(Duration::from_secs(21), Duration::from_secs(19)),
+        Some(Duration::from_secs(1)),
+    );
+    assert_eq!(
+        waited,
+        "MustScanSubDirs: reconcile waited for /tmp/site-data (+7 -0 ~0, 21s, 1s CPU, 19s waiting on the writer)"
     );
 }
 

@@ -19,6 +19,7 @@ use super::{
     BackendFactory, BeginOutcome, ConservativeFetchPolicy, FinishOutcome, MediaScheduler, PauseReason, VisionBackend,
     gate, live, network,
 };
+use crate::indexing::host::runtime::spawn_until_stopped;
 use crate::indexing::lifecycle::lifecycle_bus;
 use crate::media_index::coverage::FolderScores;
 use crate::media_index::paths::parent_dir;
@@ -243,7 +244,7 @@ pub(super) fn start() -> Option<Arc<MediaScheduler>> {
     crate::indexing::host::runtime::spawn(async move {
         loop {
             match reg_rx.recv().await {
-                Ok(reg) => wire_volume(Arc::clone(&reg_scheduler), reg.volume_id, reg.kind),
+                Ok(reg) => wire_volume(Arc::clone(&reg_scheduler), reg.volume_id, reg.kind, reg.stop),
                 Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => continue,
                 Err(tokio::sync::broadcast::error::RecvError::Closed) => break,
             }
@@ -253,8 +254,8 @@ pub(super) fn start() -> Option<Arc<MediaScheduler>> {
     // Startup sweep: wire each ready volume's subscriptions. A volume Fresh at launch
     // keeps a `Pending` bus and never re-fires `ScanCompleted`, so wiring alone never
     // enriches it — the kick below is what starts work.
-    for (volume_id, kind) in crate::indexing::lifecycle::state::ready_volumes_with_kind() {
-        wire_volume(Arc::clone(&scheduler), volume_id, kind);
+    for ready in crate::indexing::lifecycle::state::ready_volumes_to_wire() {
+        wire_volume(Arc::clone(&scheduler), ready.volume_id, ready.kind, ready.stop);
     }
 
     // The persisted-on restart case: with the master toggle already on, kick every
@@ -290,7 +291,23 @@ enum PassKind {
 /// - **MTP and ADB**: NEVER background-swept: a phone/camera is transient
 ///   and slow, so enrichment is on-demand-per-visit, not a background sweep. The
 ///   on-demand trigger is a later slice; this gate is real now.
-pub(super) fn wire_volume(scheduler: Arc<MediaScheduler>, volume_id: String, kind: IndexVolumeKind) {
+///
+/// `stop` is a child of the volume's root token, handed over with the volume by
+/// whoever found it (the registration bus or the startup sweep). It scopes the
+/// three listeners below to ONE LIFE of the volume. Every start of a volume
+/// registers it (a share reconnecting, a drive turned off and on, a search walking
+/// a cold drive), so a volume is wired once per start, and listeners that outlived
+/// their volume piled up one set per start. ❌ Don't spawn a per-volume listener any
+/// other way than `spawn_until_stopped`.
+///
+/// It scopes the LISTENERS only. A pass stops on `gate::should_stop`, which is
+/// process-wide, and the kicks and the privacy re-fire below are one-shots.
+pub(super) fn wire_volume(
+    scheduler: Arc<MediaScheduler>,
+    volume_id: String,
+    kind: IndexVolumeKind,
+    stop: tokio_util::sync::CancellationToken,
+) {
     let pass_kind = match kind {
         IndexVolumeKind::Local => PassKind::Local,
         IndexVolumeKind::Smb => PassKind::Network,
@@ -332,7 +349,7 @@ pub(super) fn wire_volume(scheduler: Arc<MediaScheduler>, volume_id: String, kin
     // mount mapping), and SMB's live path never publishes dirs_changed anyway, so wiring
     // it for network would be dead. MTP/LocalExternal already returned above.
     if pass_kind == PassKind::Local {
-        live::start_live_follow(Arc::clone(&scheduler), volume_id.clone());
+        live::start_live_follow(Arc::clone(&scheduler), volume_id.clone(), &stop);
     }
 
     // Privacy retro-delete re-fire: a folder excluded while this volume was
@@ -376,7 +393,7 @@ pub(super) fn wire_volume(scheduler: Arc<MediaScheduler>, volume_id: String, kin
     let bridge_scheduler = Arc::clone(&scheduler);
     let bridge_volume = volume_id.clone();
     let mut imp_rx = crate::importance::read::subscribe(&volume_id);
-    crate::indexing::host::runtime::spawn(async move {
+    spawn_until_stopped(&stop, async move {
         // A `Closed` channel ends the task; the senders are process-global, so that
         // never fires in practice.
         while !matches!(
@@ -396,7 +413,7 @@ pub(super) fn wire_volume(scheduler: Arc<MediaScheduler>, volume_id: String, kin
     let sub_volume = volume_id.clone();
     let mut rx = lifecycle_bus::subscribe(&volume_id);
     let mut home_rx = lifecycle_bus::subscribe_home_covered(&volume_id);
-    crate::indexing::host::runtime::spawn(async move {
+    spawn_until_stopped(&stop, async move {
         // Observe the retained value EDGE-triggered: `borrow_and_update` marks it
         // seen, so a later `changed()` fires only on a NEW completion, never on a
         // re-read of the retained `Completed`. This is the data-safety property —

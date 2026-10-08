@@ -205,7 +205,7 @@
 
   "downloads.shortcutRow.notRegistered": "Not registered",
   "@downloads.shortcutRow.notRegistered": {
-    "description": "Status shown when the system-wide shortcut was saved but macOS did not actually claim the hotkey (e.g. another app holds it). A short status phrase."
+    "description": "Status shown when the system-wide shortcut was saved but macOS did not actually claim the hotkey, or when registering it went wrong inside Cmdr. A short status phrase."
   },
 
   "downloads.shortcutRow.invalidCombo": "Couldn’t register: invalid combo",
@@ -213,12 +213,9 @@
     "description": "Warning status shown when the chosen system-wide shortcut can't be registered because the key combination is invalid. 'combo' = key combination. Avoid the words 'error' and 'failed'."
   },
 
-  "downloads.shortcutRow.registerFailed": "Couldn’t register: {reason}",
-  "@downloads.shortcutRow.registerFailed": {
-    "description": "Warning status shown when the system-wide shortcut can't be registered, with a reason from the system appended. Avoid the words 'error' and 'failed'.",
-    "placeholders": {
-      "reason": "a short reason describing why registration didn't work (from the system)"
-    }
+  "downloads.shortcutRow.unavailable": "Another app may be using that combo",
+  "@downloads.shortcutRow.unavailable": {
+    "description": "Warning status shown when macOS refuses the system-wide shortcut the user just recorded, most likely because another app already holds that key combination. The previous shortcut stays active and still shows on the row. 'combo' = key combination. Hedged ('may') on purpose: macOS doesn't say which app, or whether that's the reason. Avoid the words 'error' and 'failed'."
   },
 
   "downloads.shortcutRow.addModifier": "Add a modifier (⌘, ⌃, ⌥, or ⇧)",

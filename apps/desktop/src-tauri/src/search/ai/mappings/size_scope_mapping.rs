@@ -1,6 +1,7 @@
 use crate::commands::file_system::expand_tilde;
 
-use super::{GB, KB, MB};
+use super::{GIB, KIB, MIB};
+use crate::search::parse_size;
 
 // ── Size mapping ─────────────────────────────────────────────────────
 
@@ -8,31 +9,13 @@ use super::{GB, KB, MB};
 pub fn size_to_filter(s: &str) -> (Option<u64>, Option<u64>) {
     match s {
         "empty" => (None, Some(0)),
-        "tiny" => (None, Some(100 * KB)),
-        "small" => (None, Some(MB)),
-        "large" => (Some(100 * MB), None),
-        "huge" => (Some(GB), None),
-        _ if s.starts_with('>') => parse_size_value(&s[1..]).map_or((None, None), |v| (Some(v), None)),
-        _ if s.starts_with('<') => parse_size_value(&s[1..]).map_or((None, None), |v| (None, Some(v))),
+        "tiny" => (None, Some(100 * KIB)),
+        "small" => (None, Some(MIB)),
+        "large" => (Some(100 * MIB), None),
+        "huge" => (Some(GIB), None),
+        _ if s.starts_with('>') => parse_size(&s[1..]).map_or((None, None), |v| (Some(v), None)),
+        _ if s.starts_with('<') => parse_size(&s[1..]).map_or((None, None), |v| (None, Some(v))),
         _ => (None, None),
-    }
-}
-
-/// Parse a size string like "50mb", "1gb", "500kb" into bytes.
-fn parse_size_value(s: &str) -> Option<u64> {
-    let s = s.trim().to_lowercase();
-    if let Some(num_str) = s.strip_suffix("gb") {
-        let num: f64 = num_str.parse().ok()?;
-        Some((num * GB as f64) as u64)
-    } else if let Some(num_str) = s.strip_suffix("mb") {
-        let num: f64 = num_str.parse().ok()?;
-        Some((num * MB as f64) as u64)
-    } else if let Some(num_str) = s.strip_suffix("kb") {
-        let num: f64 = num_str.parse().ok()?;
-        Some((num * KB as f64) as u64)
-    } else {
-        // Try parsing as plain bytes
-        s.parse().ok()
     }
 }
 
@@ -80,16 +63,17 @@ mod tests {
     #[test]
     fn size_all_enum_values() {
         assert_eq!(size_to_filter("empty"), (None, Some(0)));
-        assert_eq!(size_to_filter("tiny"), (None, Some(100 * KB)));
-        assert_eq!(size_to_filter("small"), (None, Some(MB)));
-        assert_eq!(size_to_filter("large"), (Some(100 * MB), None));
-        assert_eq!(size_to_filter("huge"), (Some(GB), None));
+        assert_eq!(size_to_filter("tiny"), (None, Some(100 * KIB)));
+        assert_eq!(size_to_filter("small"), (None, Some(MIB)));
+        assert_eq!(size_to_filter("large"), (Some(100 * MIB), None));
+        assert_eq!(size_to_filter("huge"), (Some(GIB), None));
     }
 
     #[test]
     fn size_greater_than() {
+        // MB is the SI megabyte, so the bound matches the "MB" the user and the UI write.
         let (min, max) = size_to_filter(">50mb");
-        assert_eq!(min, Some(50 * MB));
+        assert_eq!(min, Some(50_000_000));
         assert!(max.is_none());
     }
 
@@ -97,7 +81,16 @@ mod tests {
     fn size_less_than() {
         let (min, max) = size_to_filter("<1gb");
         assert!(min.is_none());
-        assert_eq!(max, Some(GB));
+        assert_eq!(max, Some(1_000_000_000));
+    }
+
+    #[test]
+    fn size_in_iec_units_is_base_1024() {
+        assert_eq!(size_to_filter(">50mib").0, Some(50 * 1_048_576));
+        assert_eq!(size_to_filter("<1gib").1, Some(1_073_741_824));
+        assert_eq!(size_to_filter(">500kib").0, Some(512_000));
+        assert_eq!(size_to_filter(">500kb").0, Some(500_000));
+        assert_eq!(size_to_filter(">1tb").0, Some(1_000_000_000_000));
     }
 
     #[test]
@@ -110,7 +103,7 @@ mod tests {
     #[test]
     fn size_greater_than_gb() {
         let (min, max) = size_to_filter(">2gb");
-        assert_eq!(min, Some(2 * GB));
+        assert_eq!(min, Some(2_000_000_000));
         assert!(max.is_none());
     }
 

@@ -12,6 +12,7 @@ import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import { mount, tick } from 'svelte'
 import SignInSheet from './SignInSheet.svelte'
 import type { SignInAttemptOutcome, SignInSheetRequest, SignInSubmission } from './sign-in-contract'
+import { systemStrings } from '$lib/system-strings.svelte'
 
 vi.mock('$lib/tauri-commands', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
@@ -393,6 +394,42 @@ describe('SignInSheet: Add and Add and open', () => {
     buttonSaying('Add anyway').click()
     await flush()
     expect(submissions.at(-1)).toMatchObject({ mode: 'add_smb', intent: 'save_unchecked' })
+  })
+
+  /**
+   * ERR-XGS9X: a stuck Local Network permission looks like a server that's off, so
+   * the hint only suggests, under the same sentence, and Add anyway stays.
+   */
+  it('hints at the Local Network permission under the unreachable sentence when the probe points at it', async () => {
+    await renderSheet({
+      mode: 'add',
+      attempt: recording({ kind: 'refused', refusal: 'unreachable', hint: 'local_network_permission' }),
+    })
+    typeInto(document.body.querySelector<HTMLInputElement>('#server-address') as HTMLInputElement, '192.168.0.153')
+    await tick()
+    buttonSaying('Add and open').click()
+    await flush()
+
+    const refusal = document.body.querySelector('#server-address-refusal')?.textContent ?? ''
+    expect(refusal).toContain('reach 192.168.0.153.')
+    expect(document.body.querySelector('#server-address-hint')?.textContent).toContain(systemStrings.localNetwork)
+    expect(buttonSaying('Add anyway')).toBeTruthy()
+
+    // Editing the address retires the refusal, and its hint with it.
+    typeInto(document.body.querySelector<HTMLInputElement>('#server-address') as HTMLInputElement, '192.168.0.154')
+    await tick()
+    expect(document.body.querySelector('#server-address-hint')).toBeNull()
+  })
+
+  it('shows no Local Network hint for a server that just did not answer', async () => {
+    await renderSheet({ mode: 'add', attempt: recording({ kind: 'refused', refusal: 'unreachable' }) })
+    typeInto(document.body.querySelector<HTMLInputElement>('#server-address') as HTMLInputElement, 'naspolya')
+    await tick()
+    buttonSaying('Add and open').click()
+    await flush()
+
+    expect(document.body.querySelector('#server-address-refusal')).not.toBeNull()
+    expect(document.body.querySelector('#server-address-hint')).toBeNull()
   })
 
   /** ❗ "Couldn't reach localhost" named a different server than `localhost:11499`: the port is part of which one. */
@@ -883,6 +920,45 @@ describe('SignInSheet: edit mode', () => {
     // "store an empty one".
     expect(vi.mocked(commands.saveSftpCredentials)).not.toHaveBeenCalled()
     expect(vi.mocked(commands.forgetServerSecret)).not.toHaveBeenCalled()
+  })
+
+  it('says a stored password is kept when its field stays empty, and keeps it on Save', async () => {
+    const commands = await import('$lib/tauri-commands')
+    vi.mocked(commands.hasServerSecret).mockResolvedValueOnce(true)
+    const { done } = await renderSheet({ mode: 'edit', server: SAVED })
+
+    // ❗ A blank field over a stored secret read as "no password saved".
+    const secret = document.body.querySelector<HTMLInputElement>('#server-secret')
+    expect(secret?.value).toBe('')
+    expect(secret?.placeholder).toBe('Saved in Keychain. Leave empty to keep it.')
+
+    buttonSaying('Save').click()
+    await flush()
+
+    expect(done).toEqual([{ kind: 'saved' }])
+    expect(vi.mocked(commands.saveSftpCredentials)).not.toHaveBeenCalled()
+    expect(vi.mocked(commands.forgetServerSecret)).not.toHaveBeenCalled()
+  })
+
+  it('drops the "saved" placeholder once Remember goes off, since Save then forgets the password', async () => {
+    const commands = await import('$lib/tauri-commands')
+    vi.mocked(commands.hasServerSecret).mockResolvedValueOnce(true)
+    await renderSheet({ mode: 'edit', server: SAVED })
+    expect(document.body.querySelector<HTMLInputElement>('#server-secret')?.placeholder).not.toBe('')
+
+    const remember = [...document.body.querySelectorAll('label')].find((l) =>
+      l.textContent.includes('Remember in Keychain'),
+    )
+    remember?.click()
+    await flush()
+
+    expect(document.body.querySelector<HTMLInputElement>('#server-secret')?.placeholder ?? '').toBe('')
+  })
+
+  it('shows no "saved" placeholder when nothing is stored', async () => {
+    await renderSheet({ mode: 'edit', server: SAVED })
+
+    expect(document.body.querySelector<HTMLInputElement>('#server-secret')?.placeholder ?? '').toBe('')
   })
 })
 

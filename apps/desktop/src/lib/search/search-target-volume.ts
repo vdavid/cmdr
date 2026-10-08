@@ -33,7 +33,7 @@ import { ROOT_VOLUME_ID } from '$lib/indexing'
  */
 function isNetworkVolume(info: VolumeInfo): boolean {
   const kind = volumeKindOf(info.id, info.fsType, info.category)
-  return kind === 'smb' || kind === 'sftp' || kind === 'webdav'
+  return kind === 'smb' || kind === 'sftp' || kind === 'webdav' || kind === 's3'
 }
 
 /** The volume a Search session covers, plus what the dialog needs to voice it. */

@@ -113,7 +113,10 @@ export function createTransferPaneEffects(
         // Force backend to re-read directories and emit diffs. The file watcher may
         // not have fired yet (common for instant renames on Linux), leaving stale cache.
         refreshPaneListing(destPaneRef)
-        if (opType === 'move') {
+        // A same-folder copy changes the source listing too; its rename follow-up
+        // must not depend on a watcher that may still be arming after navigation.
+        const copiedIntoSource = opType === 'copy' && sourcePaneRef?.getCurrentPath() === props?.destinationPath
+        if (opType === 'move' || copiedIntoSource) {
           refreshPaneListing(sourcePaneRef)
         }
       }

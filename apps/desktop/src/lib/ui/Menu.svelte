@@ -476,24 +476,21 @@
 
 <style>
     /* Frosted-glass surface, shared tokens with `Select` / the tooltip so every glass surface
-       reads as one material; the blur drops under reduced transparency (the token flips opaque). */
+       reads as one material, following the macOS Liquid Glass slider (`app.css` § Frosted-glass
+       material); the blur drops under reduced transparency (the token flips opaque). The shape
+       follows a native macOS 26+ menu: rounder corners, rows highlighted as inset pills. */
     .menu-surface {
         position: fixed;
         overflow-y: auto;
         padding: var(--spacing-xs) 0;
         background: var(--color-bg-glass);
-        -webkit-backdrop-filter: saturate(180%) blur(20px);
-        backdrop-filter: saturate(180%) blur(20px);
+        -webkit-backdrop-filter: var(--glass-backdrop);
+        backdrop-filter: var(--glass-backdrop);
         border: 0.5px solid var(--color-border-glass);
-        border-radius: var(--radius-md);
-        box-shadow: var(--shadow-md);
+        border-radius: var(--radius-menu);
+        box-shadow: var(--shadow-glass), var(--shadow-glass-rim);
         z-index: var(--z-overlay);
         outline: none;
-    }
-
-    :global(html.reduce-transparency) .menu-surface {
-        -webkit-backdrop-filter: none;
-        backdrop-filter: none;
     }
 
     /* Above the parent surface, which it overlaps by a few px. */
@@ -512,10 +509,11 @@
         letter-spacing: 0.5px;
     }
 
+    /* Inset to the row text, and as faint as the surface's own hairline, like a native one. */
     .menu-separator {
         height: 1px;
-        margin: var(--spacing-xs) var(--spacing-sm);
-        background-color: var(--color-border-strong);
+        margin: var(--spacing-xs) var(--spacing-md);
+        background-color: var(--color-border-glass);
     }
 
     .menu-row {
@@ -523,7 +521,9 @@
         display: flex;
         align-items: center;
         gap: var(--spacing-sm);
-        padding: var(--spacing-sm) var(--spacing-md);
+        margin: 0 var(--spacing-xs);
+        padding: var(--spacing-sm);
+        border-radius: var(--radius-md);
         cursor: default;
         color: var(--color-text-primary);
         font-size: var(--font-size-sm);

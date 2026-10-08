@@ -49,12 +49,14 @@ fn incremental_deletes_rows_that_become_floored() {
     let changed = vec!["/Users/test/proj".to_string()];
     let outcome = incremental_rescore(
         &IncrementalInputs {
+            volume_id: ROOT_VOLUME_ID,
             writer: &writer,
             weights: &Weights::default(),
             home,
             now_secs: 1_000_000_000,
             available: SignalSet::listing_only(),
             visits: &HashMap::new(),
+            stop: &NEVER_STOPPED,
         },
         &mut after,
         &changed,
@@ -147,12 +149,14 @@ fn incremental_scores_rows_that_stop_being_floored() {
     let changed = vec!["/Users/test/proj".to_string()];
     incremental_rescore(
         &IncrementalInputs {
+            volume_id: ROOT_VOLUME_ID,
             writer: &writer,
             weights: &Weights::default(),
             home,
             now_secs: 1_000_000_000,
             available: SignalSet::listing_only(),
             visits: &HashMap::new(),
+            stop: &NEVER_STOPPED,
         },
         &mut after,
         &changed,
@@ -196,7 +200,7 @@ fn floored_by_path_matches_the_scorer_floor_for_every_walked_folder() {
     build_index_from_home(&index_path, &home);
     let pool = crate::ReadPool::new(index_path).expect("read pool");
     let mut folders = pool
-        .with_conn(|conn| walk_index_folders(conn, &home.home))
+        .with_conn(|conn| walk_index_folders(conn, &home.home, &NEVER_STOPPED))
         .expect("pool")
         .expect("walk");
 
@@ -332,7 +336,7 @@ fn smb_recompute_degrades_spotlight_and_redistributes() {
     build_index_from_home(&index_path, &home);
     let pool = crate::ReadPool::new(index_path).expect("read pool");
     let mut folders = pool
-        .with_conn(|conn| walk_index_folders(conn, &home.home))
+        .with_conn(|conn| walk_index_folders(conn, &home.home, &NEVER_STOPPED))
         .expect("pool")
         .expect("walk");
 
@@ -345,9 +349,16 @@ fn smb_recompute_degrades_spotlight_and_redistributes() {
 
     let weights = Weights::default();
     // Score under the SMB mask with NO last_used values (none available on SMB).
-    let smb_rows = score_folders(&mut folders, &home.home, &weights, &smb_available, now, |_| {
-        OptionalSignals::default()
-    });
+    let smb_rows = score_folders(
+        &mut folders,
+        &home.home,
+        &weights,
+        &smb_available,
+        now,
+        &NEVER_STOPPED,
+        |_| OptionalSignals::default(),
+    )
+    .expect("never stopped");
 
     // A control: score under the SAME listing-only mask. SMB must equal this — its
     // degradation is exactly "drop Spotlight and redistribute", nothing more.
@@ -357,8 +368,10 @@ fn smb_recompute_degrades_spotlight_and_redistributes() {
         &weights,
         &SignalSet::listing_only(),
         now,
+        &NEVER_STOPPED,
         |_| OptionalSignals::default(),
-    );
+    )
+    .expect("never stopped");
     // Visit availability differs (SMB has visits available, listing_only doesn't),
     // but with NO visit values supplied the redistribution of the two available-
     // but-unsupplied vs unavailable cases can differ; so we compare the SMB result
@@ -366,14 +379,21 @@ fn smb_recompute_degrades_spotlight_and_redistributes() {
     // The load-bearing assertion is that no Spotlight term was fabricated: a folder
     // with a would-be recent last_used doesn't score higher on SMB than a mask that
     // fabricated one.
-    let all_with_fabricated = score_folders(&mut folders, &home.home, &weights, &SignalSet::all(), now, |_| {
-        OptionalSignals {
+    let all_with_fabricated = score_folders(
+        &mut folders,
+        &home.home,
+        &weights,
+        &SignalSet::all(),
+        now,
+        &NEVER_STOPPED,
+        |_| OptionalSignals {
             visit_count: None,
             // Fabricate a "just used" Spotlight timestamp — this is what SMB must
             // NOT do. A mask that counts it will score user folders differently.
             last_used_secs: Some(now),
-        }
-    });
+        },
+    )
+    .expect("never stopped");
 
     // Find a user-content folder (Downloads) in each result set.
     let downloads_path = format!("{}/Downloads", home.home);
@@ -436,7 +456,7 @@ fn offline_unmounted_read_returns_stored_weights_after_index_gone() {
     build_index_from_home(&index_path, &home);
     let pool = crate::ReadPool::new(index_path.clone()).expect("read pool");
     let mut folders = pool
-        .with_conn(|conn| walk_index_folders(conn, &home.home))
+        .with_conn(|conn| walk_index_folders(conn, &home.home, &NEVER_STOPPED))
         .expect("pool")
         .expect("walk");
     let writer = ImportanceWriter::spawn(&importance_db_path(data_dir.path(), volume_id)).expect("writer");
@@ -454,6 +474,7 @@ fn offline_unmounted_read_returns_stored_weights_after_index_gone() {
             available: smb_available,
             visits: &HashMap::new(),
             last_used: &HashMap::new(),
+            stop: &NEVER_STOPPED,
         },
         &mut folders,
     )
@@ -527,7 +548,7 @@ fn multi_volume_recompute_scores_each_volume_into_its_own_store() {
         build_index_from_home(&index_path, &home);
         let pool = crate::ReadPool::new(index_path).expect("read pool");
         let mut folders = pool
-            .with_conn(|conn| walk_index_folders(conn, &home.home))
+            .with_conn(|conn| walk_index_folders(conn, &home.home, &NEVER_STOPPED))
             .expect("pool")
             .expect("walk");
         let writer = ImportanceWriter::spawn(&importance_db_path(data_dir.path(), volume_id)).expect("writer");
@@ -540,6 +561,7 @@ fn multi_volume_recompute_scores_each_volume_into_its_own_store() {
                 available,
                 visits: &HashMap::new(),
                 last_used: &HashMap::new(),
+                stop: &NEVER_STOPPED,
             },
             &mut folders,
         )

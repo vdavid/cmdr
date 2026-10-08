@@ -353,35 +353,11 @@ func TestTheContainerScriptQuotesTheFilterExpression(t *testing.T) {
 	if !strings.Contains(script, `'test(=a::b) + test(=c::d)'`) {
 		t.Errorf("the filter expression must reach nextest as one quoted argument, got:\n%s", script)
 	}
-	if !strings.Contains(script, "export PATH=/usr/local/go/bin:$PATH") {
-		t.Errorf("the re-run needs Go on PATH for build.rs, got:\n%s", script)
-	}
 }
 
 func TestShellQuoteEscapesEmbeddedQuotes(t *testing.T) {
 	if got, want := shellQuote(`it's`), `'it'\''s'`; got != want {
 		t.Errorf("shellQuote = %q, want %q", got, want)
-	}
-}
-
-// Provisioning stops before the tests run: the test run and the contention re-run are
-// separate execs into the SAME container, which is what makes re-running a failure alone
-// cost seconds instead of a fresh provision plus a full workspace rebuild.
-func TestProvisionScriptStopsBeforeRunningTests(t *testing.T) {
-	script, err := buildProvisionScript(repoRootForTest(t))
-	if err != nil {
-		t.Fatalf("buildProvisionScript: %v", err)
-	}
-	if strings.Contains(script, "cargo nextest run") {
-		t.Errorf("provisioning must not run the suite; that's a separate exec:\n%s", script)
-	}
-	// The Go tarball assertion lives in TestLinuxContainerProvisionsTheMisePinnedGo,
-	// which owns the "container Go == .mise.toml" invariant.
-	if !strings.Contains(script, "get.nexte.st/"+containerNextestVersion+"/") {
-		t.Errorf("the container's nextest must be pinned to %s, got:\n%s", containerNextestVersion, script)
-	}
-	if strings.Contains(script, "get.nexte.st/latest") {
-		t.Errorf("an unpinned nextest can classify contention differently from the host lanes:\n%s", script)
 	}
 }
 

@@ -11,7 +11,8 @@ F6 (move), F7 (new folder), F8 / Shift+F8 (trash / delete).
 - Umbrella-level files (what each is: DETAILS § File map): `TransferProgressReadout.svelte`, `scan-throughput.ts`,
   `foreground-operation.svelte.ts`, `foreground-request.ts`, `operation-conflict.svelte.ts`, `settled-operations.ts`,
   `op-kind.ts`, `mutation-error.ts` + `mutation-error-messages.ts` (the mutation-refusal path), plus
-  `NewEntryNameField.svelte` + `new-entry-name-check.svelte.ts` and `cursor-entry.ts` (shared by `mkdir/` + `mkfile/`).
+  `NewEntryNameField.svelte`, `new-entry-name-check.svelte.ts`, `create-submission.svelte.ts`, `cursor-entry.ts` (shared
+  by `mkdir/` + `mkfile/`), `S3CostLine.svelte`.
 
 ## Must-knows
 
@@ -26,7 +27,7 @@ F6 (move), F7 (new folder), F8 / Shift+F8 (trash / delete).
   `setForegroundOperationId(null)` (a late teardown silences the next dialog's operation).
 - **A rename / mkdir / mkfile refusal stays TYPED to the surface.** `throwMutationError` (a `TypedFailure`; ❌
   `throwIpcError` flattens it to JSON) → `asMutationError` → `renderMutationError`. ❌ Never render `Unexpected.detail`
-  or a `VolumeError` as the message. `timedOut` means the write may STILL LAND. DETAILS § "Mutation refusals".
+  or a `VolumeError` as the message. Slow is `stillRunning`, not failure. DETAILS § "Mutation refusals".
 - **An error dialog is a HANDOVER, not a release.** `handleTransferError` passes the id to `setForegroundFailureId`
   while the dialog still owns it; closing releases it. Skip it and the chip and toast announce what the user is reading.
 - **Rollback asks first, Cancel doesn't.** Every surface stacks `RollbackConfirmDialog` and calls nothing until the

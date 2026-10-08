@@ -6,9 +6,10 @@
 //! collection tree hangs under it, and a bare server-absolute path is ❌ REFUSED
 //! rather than anchored. That module's header has the reasoning.
 
-use std::path::{Component, Path, PathBuf};
+use std::path::{Path, PathBuf};
 
 use cmdr_fs::volume::VolumeError;
+use cmdr_fs::volume::remote_paths::normalize_remote_path;
 
 use super::WebdavVolume;
 
@@ -17,9 +18,10 @@ use super::WebdavVolume;
 ///
 /// ❗ Needed BEFORE a volume exists: `connect_webdav_volume` probes the root
 /// with one PROPFIND to prove the credential, and there is nothing to ask yet.
+/// The spelling is `normalize_remote_path`'s, the one `RemoteRoot` gives the
+/// root once the volume exists, so the probe and the volume agree.
 pub(super) fn root_remote_path(remote_root: &Path) -> String {
-    let normalized = normalize(&Path::new("/").join(remote_root));
-    normalized.to_string_lossy().into_owned()
+    normalize_remote_path(remote_root).to_string_lossy().into_owned()
 }
 
 impl WebdavVolume {
@@ -40,28 +42,8 @@ impl WebdavVolume {
     pub(super) fn display_path_for(&self, path: &Path) -> Option<PathBuf> {
         self.root
             .to_remote_path(path)
-            .map(|remote| self.root.to_app_path(&remote))
+            .and_then(|remote| self.root.to_app_path(&remote))
     }
-}
-
-/// Resolves `.` and `..` lexically. `..` at the root is absorbed.
-fn normalize(path: &Path) -> PathBuf {
-    let mut out = PathBuf::new();
-    for component in path.components() {
-        match component {
-            Component::RootDir => out.push(Component::RootDir),
-            Component::CurDir => {}
-            Component::ParentDir => {
-                out.pop();
-            }
-            Component::Normal(part) => out.push(part),
-            Component::Prefix(_) => {}
-        }
-    }
-    if out.as_os_str().is_empty() {
-        out.push(Component::RootDir);
-    }
-    out
 }
 
 /// `parent/name` in remote-path spelling.

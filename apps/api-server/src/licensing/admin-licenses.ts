@@ -10,6 +10,7 @@
 import { Hono } from 'hono'
 import { isValidShortCode } from './license'
 import { listLedger, updateLedgerNote, type LedgerEntry } from './license-issuance'
+import { listAdjustments, type AdjustmentEntry } from './refunds'
 import { type Bindings, maxLicenseNoteLength, maxTransactionIdLength, verifyAdminAuth } from '../types'
 
 const adminLicenses = new Hono<{ Bindings: Bindings }>()
@@ -24,7 +25,8 @@ const adminLicenses = new Hono<{ Bindings: Bindings }>()
  *
  * - `active`: codes issued and (for a purchase) delivered, not expired, not revoked.
  * - `expired`: past `expiresAt`, which only a hand-issued license carries.
- * - `revoked`: killed by `/admin/revoke`. Its codes are gone from KV by design.
+ * - `revoked`: killed by `/admin/revoke`, or by a full refund or chargeback (`refunds.ts`). Its codes
+ *   are gone from KV by design.
  * - `undelivered`: a purchase whose codes were minted but never emailed. Someone paid and is waiting.
  * - `unfinished`: claimed, never minted. A delivery that died, or one in flight this second.
  */
@@ -32,6 +34,8 @@ export type LicenseState = 'active' | 'expired' | 'revoked' | 'undelivered' | 'u
 
 export interface LicenseListEntry extends LedgerEntry {
   state: LicenseState
+  /** Refunds, chargebacks, and credits Paddle reported against this purchase, newest first. */
+  adjustments: AdjustmentEntry[]
 }
 
 export interface LicenseListing {
@@ -47,6 +51,11 @@ export interface LicenseListing {
    * activated. Revoked licenses are left out, since revoking deletes their codes on purpose.
    */
   missingCodes: string[]
+  /**
+   * Adjustments against a transaction no ledger row describes: a purchase from before the ledger
+   * existed, most likely. Only non-revoking ones end up here, since a revoking one writes a row.
+   */
+  unmatchedAdjustments: AdjustmentEntry[]
 }
 
 export function classifyLedgerEntry(entry: LedgerEntry, nowMs: number): LicenseState {
@@ -68,10 +77,20 @@ adminLicenses.get('/admin/licenses', async (c) => {
   const unauthorized = verifyAdminAuth(c)
   if (unauthorized) return unauthorized
 
-  const [ledger, codesInKv] = await Promise.all([listLedger(c.env.TELEMETRY_DB), listShortCodes(c.env.LICENSE_CODES)])
+  const [ledger, codesInKv, adjustments] = await Promise.all([
+    listLedger(c.env.TELEMETRY_DB),
+    listShortCodes(c.env.LICENSE_CODES),
+    listAdjustments(c.env.TELEMETRY_DB),
+  ])
 
   const now = Date.now()
-  const licenses = ledger.map((entry) => ({ ...entry, state: classifyLedgerEntry(entry, now) }))
+  const licenses = ledger.map((entry) => ({
+    ...entry,
+    state: classifyLedgerEntry(entry, now),
+    adjustments: adjustments.filter((adjustment) => adjustment.transactionId === entry.transactionId),
+  }))
+  const listed = new Set(ledger.map((entry) => entry.transactionId))
+  const unmatchedAdjustments = adjustments.filter((adjustment) => !listed.has(adjustment.transactionId))
 
   const recorded = new Set(ledger.flatMap((entry) => entry.shortCodes))
   const stored = new Set(codesInKv)
@@ -82,7 +101,7 @@ adminLicenses.get('/admin/licenses', async (c) => {
     .filter((code) => !stored.has(code))
     .sort()
 
-  return c.json<LicenseListing>({ licenses, orphanCodes, missingCodes })
+  return c.json<LicenseListing>({ licenses, orphanCodes, missingCodes, unmatchedAdjustments })
 })
 
 interface NoteBody {

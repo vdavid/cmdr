@@ -23,8 +23,8 @@ use std::time::{Duration, Instant};
 use cmdr_fs::ignore_poison::IgnorePoison;
 use cmdr_fs::volume::friendly_error::git::{FriendlyGitError, FriendlyGitErrorKind};
 use notify::event::{AccessKind, AccessMode};
-use notify::{EventKind, RecursiveMode};
-use notify_debouncer_full::{DebounceEventResult, new_debouncer};
+use notify::{EventKind, RecommendedWatcher, RecursiveMode};
+use notify_debouncer_full::{DebounceEventResult, NoCache, new_debouncer_opt};
 
 use crate::repo::{RepoCache, RepoHandle, RepoInfo, repo_info};
 use crate::state_sink::GitStateSink;
@@ -54,15 +54,16 @@ type LastReport = Arc<Mutex<Option<(Instant, RepoInfo)>>>;
 /// What a subscription arms so a repository's `.git/*` writes come back as one
 /// debounced report.
 ///
-/// A trait because arming a real FSEvents stream over ~10 paths is by far the
-/// most expensive thing a subscribe does, and every cell that asserts only the
-/// registry's bookkeeping has no use for it. Production always gets
+/// A trait because arming a real FSEvents stream is by far the most expensive
+/// thing a subscribe does, and every cell that asserts only the registry's
+/// bookkeeping has no use for it. Production always gets
 /// [`NotifyWatcherBackend`]; a test asks [`GitPortal::with_scripted_watcher`]
 /// for one it drives by hand.
 ///
 /// [`GitPortal::with_scripted_watcher`]: crate::GitPortal::with_scripted_watcher
 pub(crate) trait GitWatcherBackend: Send + Sync {
-    /// Starts watching the gitdir of the repository at `repo_root`, calling
+    /// Starts watching the gitdir of the repository at `repo_root` (for a linked
+    /// worktree, the common one: [`WatchScope`]), calling
     /// `on_change` once per batch it emits, on a thread of the backend's own.
     /// ❗ A burst can arrive as more than one batch; making that ONE report is
     /// [`recompute_and_report`]'s job, ❌ not a promise a backend has to keep.
@@ -80,18 +81,33 @@ pub(crate) trait GitWatcherBackend: Send + Sync {
     }
 }
 
-/// The real backend: one `notify` debouncer per repository, watching the
-/// `.git/*` paths a state change can touch.
+/// The real backend: one `notify` debouncer per repository, with ONE recursive
+/// watch on the gitdir ([`WatchScope::watched_dir`]).
+///
+/// ❗ **One path, ❌ never one per state directory.** On macOS `notify` stops and
+/// restarts the whole FSEvents stream for every `watch` call (joining its run-loop
+/// thread each time), so every extra path is another restart before the
+/// chip's handshake can start. FSEvents watches a path's whole subtree in the
+/// kernel either way, so the recursive gitdir costs nothing a narrower set saved.
+///
+/// ❗ **A directory, ❌ never `HEAD` or `index`.** git renames `HEAD.lock` over
+/// `HEAD`, and inotify watches an inode, so a watch on the file goes dead at the
+/// first rename (Linux CI, 2026-09-06). Directory watches survive it.
+///
+/// `NoCache`, like the listing watcher: the default `FileIdMap` walks and stats
+/// the whole watched tree at arm time (here, every object), to pair renames we
+/// never look at. [`is_repo_state_change`] drops `objects/`, `*.lock`, and the
+/// rest of the churn before anything opens the repository.
 pub(crate) struct NotifyWatcherBackend;
 
 impl GitWatcherBackend for NotifyWatcherBackend {
     fn watch(&self, repo_root: &Path, on_change: RepoChanged) -> Result<Box<dyn Send>, FriendlyGitError> {
-        let git_dir = git_dir_path(repo_root);
-        let filter_dir = git_dir.clone();
+        let scope = WatchScope::of(repo_root);
+        let watched_dir = scope.watched_dir().to_path_buf();
         let logged_root = repo_root.to_path_buf();
-        let mut debouncer = new_debouncer(DEBOUNCE, None, move |result: DebounceEventResult| match result {
+        let handler = move |result: DebounceEventResult| match result {
             Ok(events) => {
-                let touched_state = events.iter().any(|event| is_repo_state_change(&filter_dir, event));
+                let touched_state = events.iter().any(|event| is_repo_state_change(&scope, event));
                 trace_delivery(&logged_root, Ok(&events), touched_state);
                 if touched_state {
                     on_change();
@@ -113,18 +129,18 @@ impl GitWatcherBackend for NotifyWatcherBackend {
                 trace_delivery(&logged_root, Err(&errors), true);
                 on_change();
             }
-        })
+        };
+        let mut debouncer = new_debouncer_opt::<_, RecommendedWatcher, NoCache>(
+            DEBOUNCE,
+            None,
+            handler,
+            NoCache,
+            notify::Config::default(),
+        )
         .map_err(|e| FriendlyGitError::with_source(FriendlyGitErrorKind::CorruptRepo, e.to_string(), e))?;
-
-        for (path, mode) in watch_targets(&git_dir) {
-            // A missing target is ordinary (`logs/` with reflogs off, `worktrees/`
-            // until the first `git worktree add`). The non-recursive watch on the
-            // gitdir sees it appear, and the report that drives re-reads the
-            // repository rather than the directory that was missing.
-            if path.exists() {
-                let _ = debouncer.watch(&path, mode);
-            }
-        }
+        // A failed watch costs live updates, ❌ not the chip: the handshake still
+        // reads the repository, so the subscribe goes ahead without one.
+        let _ = debouncer.watch(&watched_dir, RecursiveMode::Recursive);
         Ok(Box::new(debouncer))
     }
 }
@@ -247,6 +263,12 @@ mod scripted {
 }
 
 /// One per repo. Owns the live watch and the subscriber count.
+///
+/// Keyed by worktree root, so two linked worktrees of one repository hold two
+/// watches on the same common gitdir. ❗ Kept separate on purpose: each reports its
+/// OWN root through its own [`WatchScope`] filter, and sharing one stream would
+/// mean a second refcount layer plus a fan-out that re-filters per worktree, all
+/// to save a kernel-side subscription that costs next to nothing.
 struct Subscription {
     refcount: u32,
     /// Keep the backend's watch alive so it doesn't stop. Opaque on purpose:
@@ -449,59 +471,116 @@ fn git_dir_path(repo_root: &Path) -> PathBuf {
     dot_git
 }
 
-/// The direct children of the gitdir whose contents decide a [`RepoInfo`], as
-/// file NAMES rather than paths: the watch is on the directory, and this is what
-/// makes an event in it worth a recompute.
-pub(crate) const STATE_FILES: [&str; 6] = ["HEAD", "ORIG_HEAD", "MERGE_HEAD", "FETCH_HEAD", "packed-refs", "index"];
+/// Where one worktree's state lives on disk: the directory the watch goes on, and
+/// which paths under it are this worktree's.
+///
+/// ❗ **A linked worktree watches the COMMON gitdir**, ❌ never only its own. Its
+/// own gitdir (`<common>/worktrees/<name>/`) holds `HEAD`, `index`, `logs/HEAD`,
+/// and the merge/fetch heads, but every branch, tag, and remote-tracking ref is
+/// shared in the common dir, so a watch on the own gitdir alone never heard a
+/// `git fetch`, a `git push`, or a branch created or deleted. The common dir
+/// contains the own one, so it's still ONE recursive watch.
+pub(crate) struct WatchScope {
+    /// The gitdir holding the shared refs: the main worktree's `.git`.
+    common_dir: PathBuf,
+    /// A linked worktree's own gitdir, under `common_dir`. `None` for the main
+    /// worktree, whose own files ARE the common dir's top level.
+    linked_dir: Option<PathBuf>,
+}
+
+impl WatchScope {
+    /// The scope of the worktree checked out at `repo_root`.
+    pub(crate) fn of(repo_root: &Path) -> Self {
+        let git_dir = git_dir_path(repo_root);
+        match common_dir_of(&git_dir) {
+            Some(common_dir) => Self {
+                common_dir,
+                linked_dir: Some(git_dir.canonicalize().unwrap_or(git_dir)),
+            },
+            None => Self {
+                common_dir: git_dir,
+                linked_dir: None,
+            },
+        }
+    }
+
+    /// The ONE directory the recursive watch goes on.
+    pub(crate) fn watched_dir(&self) -> &Path {
+        &self.common_dir
+    }
+
+    /// Whether an event on `path` is worth recomputing this worktree for.
+    ///
+    /// For a linked worktree: its own gitdir's state files, plus the shared refs
+    /// and `config`.
+    /// The common dir's top-level `HEAD`, `index`, and `logs/HEAD` are the MAIN
+    /// worktree's, and `worktrees/<sibling>/` is a sibling's, so neither is news
+    /// here.
+    pub(crate) fn is_state_path(&self, path: &Path) -> bool {
+        match &self.linked_dir {
+            None => is_repo_state_path(&self.common_dir, path),
+            Some(own) if path.starts_with(own) => is_repo_state_path(own, path),
+            Some(_) => is_shared_ref_path(&self.common_dir, path),
+        }
+    }
+}
+
+/// The common gitdir a linked worktree's gitdir points at through its
+/// `commondir` file (`../..` as git writes it), canonical so it's spelled the way
+/// the operating system reports event paths. `None` for a main worktree's gitdir,
+/// which has no such file.
+fn common_dir_of(git_dir: &Path) -> Option<PathBuf> {
+    let content = std::fs::read_to_string(git_dir.join("commondir")).ok()?;
+    let common_dir = git_dir.join(content.trim());
+    Some(common_dir.canonicalize().unwrap_or(common_dir))
+}
+
+/// Whether `path` is state every worktree of a repository shares: anything under
+/// `refs/`, `packed-refs`, and `config` (each branch's upstream). ❗ Not `*.lock`,
+/// for the reason [`is_repo_state_path`] gives.
+fn is_shared_ref_path(common_dir: &Path, path: &Path) -> bool {
+    let Ok(relative) = path.strip_prefix(common_dir) else {
+        return false;
+    };
+    if path.extension().is_some_and(|extension| extension == "lock") {
+        return false;
+    }
+    let mut components = relative.components();
+    match components.next() {
+        Some(std::path::Component::Normal(first)) if first == "refs" => true,
+        Some(std::path::Component::Normal(first)) => {
+            (first == "packed-refs" || first == "config") && components.next().is_none()
+        }
+        _ => false,
+    }
+}
+
+/// The direct children of the gitdir whose contents decide a [`RepoInfo`].
+/// `config` names each branch's upstream, so `--set-upstream-to` moves the chip's
+/// upstream and ahead/behind.
+const STATE_FILES: [&str; 7] = [
+    "HEAD",
+    "ORIG_HEAD",
+    "MERGE_HEAD",
+    "FETCH_HEAD",
+    "packed-refs",
+    "index",
+    "config",
+];
 
 /// The directories under the gitdir whose whole subtree matters, as first path
-/// components: refs (every branch, tag, and remote), the reflog `logs/HEAD` the
-/// categories read, and each linked worktree's own `HEAD`.
-const STATE_DIRS: [&str; 3] = ["refs", "logs", "worktrees"];
-
-/// What the backend arms, as `(path, mode)` pairs.
-///
-/// ❗ **Directories, ❌ never the state FILES themselves.** git never writes
-/// `HEAD` or `index` in place: it writes `HEAD.lock` and renames it over the top.
-/// inotify watches an INODE, so a watch on the file itself goes dead at the first
-/// rename and every later write in the same burst is lost silently. A watch on
-/// the directory survives, because the directory's inode is what gets modified.
-/// macOS FSEvents is path-based and tolerated the file watches, which is why this
-/// only ever failed on Linux (`a_debounced_burst_reports_once_and_the_watch_survives_for_the_next_one`
-/// timed out there while passing here, 2026-09-06).
-///
-/// The cost of watching directories is events for things no snapshot reads
-/// (`COMMIT_EDITMSG`, `*.lock`, `objects/` churn) and, on Linux, an event for
-/// every file the recompute itself OPENS. [`is_repo_state_change`] drops both
-/// before anything opens the repository.
-pub(crate) fn watch_targets(git_dir: &Path) -> Vec<(PathBuf, RecursiveMode)> {
-    let mut targets = vec![
-        // The gitdir itself, non-recursively: every file in `STATE_FILES` is a
-        // direct child, so this one watch covers all of them plus their creation
-        // (no `MERGE_HEAD` exists until a merge starts).
-        (git_dir.to_path_buf(), RecursiveMode::NonRecursive),
-        // Refs live in a tree that grows (`refs/heads/feature/x`), so this one
-        // has to reach down.
-        (git_dir.join("refs"), RecursiveMode::Recursive),
-        // `logs/HEAD` is a direct child of `logs/`; the per-ref reflogs below it
-        // say nothing a `RepoInfo` or a category listing reads.
-        (git_dir.join("logs"), RecursiveMode::NonRecursive),
-    ];
-    // Each linked worktree keeps its own `HEAD` at `worktrees/<name>/HEAD`, and a
-    // `git worktree add` creates the directory. Recursive covers both the HEADs
-    // and worktrees that appear after this call, which the old per-worktree
-    // enumeration could not.
-    targets.push((git_dir.join("worktrees"), RecursiveMode::Recursive));
-    targets
-}
+/// components: refs (every branch, tag, and remote) and each linked worktree's
+/// own `HEAD`. ❗ Not `logs/`: only `logs/HEAD` is read, and the per-ref reflogs
+/// beside it change with every commit.
+const STATE_DIRS: [&str; 2] = ["refs", "worktrees"];
 
 /// Whether a delivered event is one the repository can have CHANGED behind.
 ///
 /// Two gates, and each carries half the answer: the event has to name a path a
 /// snapshot reads ([`is_repo_state_path`]), and it has to be a WRITE rather than
 /// one of the reads [`is_a_read`] drops.
-pub(crate) fn is_repo_state_change(git_dir: &Path, event: &notify::Event) -> bool {
-    !is_a_read(&event.kind) && event.paths.iter().any(|path| is_repo_state_path(git_dir, path))
+pub(crate) fn is_repo_state_change(scope: &WatchScope, event: &notify::Event) -> bool {
+    !is_a_read(&event.kind) && event.paths.iter().any(|path| scope.is_state_path(path))
 }
 
 /// Whether an event kind says somebody READ something rather than wrote it.
@@ -513,7 +592,7 @@ pub(crate) fn is_repo_state_change(git_dir: &Path, event: &notify::Event) -> boo
 /// opens every one of them. Pass those on and each report becomes the trigger for
 /// the next, one per [`DEBOUNCE`] window, until the last subscriber leaves.
 /// macOS FSEvents reports no reads at all, so this only ever ran away on Linux
-/// (`a_debounced_burst_reports_once_and_the_watch_survives_for_the_next_one` timed
+/// (`a_burst_reports_its_end_state_and_the_watch_survives_for_the_next_one` timed
 /// out there with 48 identical reports in 10 s, CI, 2026-09-06).
 ///
 /// ❗ A write is never dropped here: it reaches us as `Modify`, `Create`,
@@ -529,9 +608,9 @@ fn is_a_read(kind: &EventKind) -> bool {
 
 /// Whether an event on `path` is worth recomputing the repository for.
 ///
-/// The allowlist half of the directory watches above: a `RepoInfo`, the six
-/// category listings, and the status column read [`STATE_FILES`] and
-/// [`STATE_DIRS`] and nothing else, so `COMMIT_EDITMSG`, `MERGE_MSG`, and the
+/// The allowlist half of the recursive gitdir watch: a `RepoInfo`, the six
+/// category listings, and the status column read [`STATE_FILES`], `logs/HEAD`,
+/// and [`STATE_DIRS`] and nothing else, so `COMMIT_EDITMSG`, `MERGE_MSG`, and the
 /// `objects/` writes a commit makes never reach the sink.
 ///
 /// ❗ `*.lock` is dropped on purpose. git's write dance is create-lock,
@@ -549,10 +628,13 @@ pub(crate) fn is_repo_state_path(git_dir: &Path, path: &Path) -> bool {
     let Some(std::path::Component::Normal(first)) = components.next() else {
         return false;
     };
-    if components.next().is_none() {
+    match components.next() {
         // A direct child of the gitdir: one of the state files, or one of the
         // state directories being created.
-        return STATE_FILES.iter().any(|name| first == *name) || STATE_DIRS.iter().any(|name| first == *name);
+        None => STATE_FILES.iter().any(|name| first == *name) || STATE_DIRS.iter().any(|name| first == *name),
+        Some(second) => {
+            STATE_DIRS.iter().any(|name| first == *name)
+                || (first == "logs" && second.as_os_str() == "HEAD" && components.next().is_none())
+        }
     }
-    STATE_DIRS.iter().any(|name| first == *name)
 }

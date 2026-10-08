@@ -9,11 +9,11 @@ describe('selectCopyAction', () => {
     expect(selectCopyAction(1024)).toBe('silent')
   })
 
-  it('boundary: just under 10 MiB is silent', () => {
+  it('boundary: just under 10 MB is silent', () => {
     expect(selectCopyAction(COPY_CONFIRM_BYTES - 1)).toBe('silent')
   })
 
-  it('boundary: exactly 10 MiB is confirm', () => {
+  it('boundary: exactly 10 MB is confirm', () => {
     expect(selectCopyAction(COPY_CONFIRM_BYTES)).toBe('confirm')
   })
 
@@ -21,11 +21,11 @@ describe('selectCopyAction', () => {
     expect(selectCopyAction(50 * 1024 * 1024)).toBe('confirm')
   })
 
-  it('boundary: just under 100 MiB is confirm', () => {
+  it('boundary: just under 100 MB is confirm', () => {
     expect(selectCopyAction(COPY_REFUSE_BYTES - 1)).toBe('confirm')
   })
 
-  it('boundary: exactly 100 MiB is refuse', () => {
+  it('boundary: exactly 100 MB is refuse', () => {
     expect(selectCopyAction(COPY_REFUSE_BYTES)).toBe('refuse')
   })
 

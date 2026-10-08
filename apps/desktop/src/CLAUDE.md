@@ -14,9 +14,9 @@ it; feature must-knows live in each directory's colocated `CLAUDE.md`, and the m
 - ❌ Never write a raw `line-height` number (stylelint rejects all but `0`). Leading comes from the
   `--font-line-height-*` tokens, which text surfaces inherit, so a component usually writes nothing. Which token where:
   `docs/design-system.md` § Leading; who inherits what: `DETAILS.md` § Leading.
-- A frosted-glass surface MUST degrade under "reduce transparency", keyed off the `html.reduce-transparency` CLASS, ❌
-  never `@media (prefers-reduced-transparency)` (WKWebView never reflects it). Use the `--color-bg-glass` /
-  `--color-border-glass` tokens and drop `backdrop-filter` under that class. `DETAILS.md` § Reduced transparency.
+- A frosted-glass surface uses the `--color-bg-glass` / `--glass-backdrop` / `--color-border-glass` tokens: they follow
+  the Liquid Glass slider and go opaque under the `html.reduce-transparency` CLASS, ❌ never
+  `@media (prefers-reduced-transparency)` (WKWebView ignores it). `DETAILS.md` § Glass material.
 - ❌ No raw `invoke('…')` outside `lib/ipc/`. Call the typed `commands.*` wrappers (regenerate with
   `pnpm bindings:regen`); prefer named locals to inline primitives at call sites. `cmdr/no-raw-tauri-invoke`;
   `lib/ipc/CLAUDE.md`.

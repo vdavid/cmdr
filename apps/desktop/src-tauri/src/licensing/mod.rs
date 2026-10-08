@@ -5,6 +5,7 @@
 
 mod app_status;
 mod device_id;
+mod offline_policy;
 mod validation_client;
 mod verification;
 
@@ -14,8 +15,7 @@ pub use app_status::{
     validate_license_async, write_cached_status_without_validation,
 };
 pub use verification::{
-    LicenseActivationError, LicenseInfo, VerifyResult, activate_license, activate_license_async, commit_license,
-    get_license_info, verify_license_async,
+    LicenseActivationError, LicenseInfo, VerifyResult, commit_license, get_license_info, verify_license_async,
 };
 
 use serde::{Deserialize, Serialize};
@@ -42,4 +42,7 @@ pub struct LicenseData {
     pub organization_name: Option<String>,
     #[serde(rename = "shortCode")]
     pub short_code: Option<String>,
+    /// RFC 3339, only on a dated license. Signed in, so the app enforces it offline.
+    #[serde(rename = "expiresAt")]
+    pub expires_at: Option<String>,
 }

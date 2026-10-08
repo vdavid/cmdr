@@ -63,6 +63,30 @@ fn seed_corpus(w: &MediaWriter, n: usize) {
     w.flush_blocking().expect("flush");
 }
 
+/// Every file a space keeps beside the media database is one `volume_files` names
+/// for the media store, so removing a volume's media store takes the vector index
+/// with it. Pre-fix the two lists were separate, and the retired-ID sweep deleted
+/// `media-{id}.db` while `media-{id}.clip.usearch` stayed.
+///
+/// The `match` is what makes a new space fail here until it's listed there.
+#[test]
+fn every_spaces_files_are_among_the_media_stores() {
+    let db_path = Path::new("/data/media-root.db");
+    let store_files = crate::volume_files::VolumeStore::Media.files(db_path);
+    for space in [AnnSpace::Clip] {
+        match space {
+            AnnSpace::Clip => {}
+        }
+        for file in [
+            index_path(db_path, space),
+            meta_path(db_path, space),
+            dirty_path(db_path, space),
+        ] {
+            assert!(store_files.contains(&file), "{} is missing", file.display());
+        }
+    }
+}
+
 /// Route with production model id.
 fn route_for(db_path: &Path, threshold: usize) -> Route {
     cache::route(db_path, AnnSpace::Clip, threshold, AnnSpace::Clip.current_model_id())

@@ -416,6 +416,24 @@ export async function openSystemSettingsUrl(url: string): Promise<void> {
   }
 }
 
+/**
+ * Opens System Settings at Privacy & Security > Local Network, where Cmdr's
+ * permission to reach LAN servers is switched. Fire-and-forget, like
+ * `openSystemSettingsUrl`.
+ */
+export async function openLocalNetworkSettings(): Promise<void> {
+  await openSystemSettingsUrl('x-apple.systempreferences:com.apple.preference.security?Privacy_LocalNetwork')
+}
+
+/**
+ * Opens System Settings at Privacy & Security > Automation, where Cmdr's permission
+ * to control Finder (which Get info needs) is switched. Fire-and-forget, like
+ * `openSystemSettingsUrl`.
+ */
+export async function openAutomationSettings(): Promise<void> {
+  await openSystemSettingsUrl('x-apple.systempreferences:com.apple.preference.security?Privacy_Automation')
+}
+
 /** Opens the system appearance settings. On macOS, opens System Settings > Appearance. On Linux, opens the DE-specific appearance settings. */
 export async function openAppearanceSettings(): Promise<void> {
   try {

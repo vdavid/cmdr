@@ -77,6 +77,20 @@
       "groupName": "linters and formatters"
     },
     {
+      "description": "Docker images, pinned by digest for Scorecard's Pinned-Dependencies (`FROM image:tag@sha256:...`), so a tag that upstream re-points can't change what we build. Every digest refresh and non-major tag bump across all Dockerfiles and compose files lands as one weekly PR that automerges on green CI, overriding the per-app groups above (the desktop one would otherwise hold the test-fixture images for dashboard approval). Majors still go through the dashboard rule below. The top-level `dockerfile` / `docker-compose` blocks give these two managers their own `ignorePaths`, without `**/test/**`, since most images are test fixtures. The listmonk image's tag is an ARG, which Renovate can't read: `infra/listmonk/README.md` § Updates.",
+      "matchManagers": ["dockerfile", "docker-compose"],
+      "matchUpdateTypes": ["patch", "minor", "pin", "digest", "pinDigest"],
+      "groupName": "docker images",
+      "dependencyDashboardApproval": false,
+      "automerge": true
+    },
+    {
+      "description": "The fixture compose files name their locally built images (`cmdr-sftp-fixture:latest` and friends); no registry has them.",
+      "matchManagers": ["docker-compose"],
+      "matchPackageNames": ["/^cmdr-/"],
+      "enabled": false
+    },
+    {
       "description": "Majors, dashboard-only for the same reason as the desktop group: a major needs code changes, so an unattended PR just sits red and mails about it (#61, TypeScript v7, sat red for ten days). Renovate still tracks what's available; `/weekly-upgrades` decides which ones to take.",
       "groupName": "all major updates",
       "matchUpdateTypes": ["major"],
@@ -120,6 +134,14 @@
   },
   "gomod": {
     "enabled": true
+  },
+  "dockerfile": {
+    "pinDigests": true,
+    "ignorePaths": ["**/node_modules/**", "**/vendor/**"]
+  },
+  "docker-compose": {
+    "pinDigests": true,
+    "ignorePaths": ["**/node_modules/**", "**/vendor/**"]
   },
   "vulnerabilityAlerts": {
     "enabled": true,

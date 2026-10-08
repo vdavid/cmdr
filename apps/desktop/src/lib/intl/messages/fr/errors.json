@@ -163,9 +163,9 @@
   "@errors.listing.notPermitted.explanation": {
     "sourceHash": "e28dd0e"
   },
-  "errors.listing.notPermitted.suggestion": "Voici ce que vous pouvez essayer :\n- Ouvrez **{system_settings} > {privacy_and_security} > {files_and_folders}** et accordez l’accès à Cmdr\n- Si c’est un dossier protégé par le système (comme les répertoires système), vous devrez peut-être accorder à Cmdr l’**{full_disk_access}** sous {privacy_and_security}\n- Dans Terminal, lancez `ls -la` sur ce chemin pour vérifier le propriétaire et les autorisations",
+  "errors.listing.notPermitted.suggestion": "Voici ce que vous pouvez essayer :\n- Ouvrez **{system_settings} > {privacy_and_security} > {files_and_folders}** et accordez l’accès à Cmdr\n- Si c’est un dossier protégé par le système, vous devrez peut-être accorder à Cmdr l’**{full_disk_access}** sous {privacy_and_security}\n- Dans Terminal, lancez `ls -la` sur ce chemin pour vérifier le propriétaire et les autorisations",
   "@errors.listing.notPermitted.suggestion": {
-    "sourceHash": "bbaa904"
+    "sourceHash": "2926956"
   },
   "errors.listing.pathNotFoundErrno.title": "Chemin introuvable",
   "@errors.listing.pathNotFoundErrno.title": {
@@ -271,9 +271,9 @@
   "@errors.listing.notSupportedErrno.explanation": {
     "sourceHash": "a0ca28f"
   },
-  "errors.listing.notSupportedErrno.suggestion": "Essayez une autre approche, ou utilisez le Finder pour cette opération. Si vous travaillez avec un disque externe, il est peut-être formaté avec un système de fichiers qui a des limites (par exemple, FAT32 ne peut pas stocker de fichiers de plus de 4 Go).",
+  "errors.listing.notSupportedErrno.suggestion": "Essayez une autre approche, ou utilisez le Finder pour cette opération. Si vous travaillez avec un disque externe, il est peut-être formaté avec un système de fichiers qui a des limites (par exemple, FAT32 ne peut pas stocker de fichiers de 4 Gio ou plus).",
   "@errors.listing.notSupportedErrno.suggestion": {
-    "sourceHash": "de64ad5"
+    "sourceHash": "8fea918"
   },
   "errors.listing.networkUnreachable.title": "Réseau inaccessible",
   "@errors.listing.networkUnreachable.title": {
@@ -491,6 +491,18 @@
   "@errors.listing.permissionDenied.suggestion": {
     "sourceHash": "3450aff"
   },
+  "errors.listing.objectStoreRefused.title": "Votre fournisseur de stockage a refusé l’accès",
+  "@errors.listing.objectStoreRefused.title": {
+    "sourceHash": "2c26546"
+  },
+  "errors.listing.objectStoreRefused.explanation": "`{path}` se trouve dans un stockage cloud, et le fournisseur a refusé la requête. Soit la clé d’accès n’a pas l’autorisation ici, soit le fournisseur a suspendu l’accès au compte, par exemple à cause d’un plafond d’utilisation atteint ou d’un problème de facturation.",
+  "@errors.listing.objectStoreRefused.explanation": {
+    "sourceHash": "b9f0f12"
+  },
+  "errors.listing.objectStoreRefused.suggestion": "Vérifiez les autorisations de la clé d’accès, ou cherchez dans la console de votre fournisseur un plafond d’utilisation ou un avis de facturation.",
+  "@errors.listing.objectStoreRefused.suggestion": {
+    "sourceHash": "718da2a"
+  },
   "errors.listing.remotePermissionDenied.title": "Le serveur n’ouvre pas ce dossier",
   "@errors.listing.remotePermissionDenied.title": {
     "sourceHash": "f9cb7bd"
@@ -622,6 +634,18 @@
   "errors.listing.deletePending.suggestion": "Voici ce que vous pouvez essayer :\n- Patientez un instant et réessayez — une fois le dernier handle fermé, le fichier disparaît\n- Fermez toute autre app qui pourrait avoir ce fichier ouvert\n- S’il persiste, redémarrez Cmdr pour libérer les handles qu’il pourrait encore détenir",
   "@errors.listing.deletePending.suggestion": {
     "sourceHash": "0531cd8"
+  },
+  "errors.listing.coldStorage.title": "Ce fichier est archivé",
+  "@errors.listing.coldStorage.title": {
+    "sourceHash": "73da082"
+  },
+  "errors.listing.coldStorage.explanation": "Le fichier `{path}` est archivé, donc son contenu reste illisible tant que le fichier n’a pas été restauré.",
+  "@errors.listing.coldStorage.explanation": {
+    "sourceHash": "78f52d7"
+  },
+  "errors.listing.coldStorage.suggestion": "Voici ce que vous pouvez essayer :\n- Restaurez le fichier dans la console de votre fournisseur de stockage, puis ouvrez-le à nouveau\n- Une restauration peut prendre de quelques minutes à deux jours",
+  "@errors.listing.coldStorage.suggestion": {
+    "sourceHash": "0becf43"
   },
   "errors.listing.invalidName.title": "Ce nom ne passe pas ici",
   "@errors.listing.invalidName.title": {
@@ -1103,15 +1127,27 @@
   },
   "errors.write.destinationNotFound.message.copy": "Le dossier vers lequel vous copiez n’existe plus, il n’y avait donc nulle part où mettre vos fichiers. Les originaux sont intacts.",
   "@errors.write.destinationNotFound.message.copy": {
-    "sourceHash": "80f4a4c"
+    "sourceHash": "b747547"
   },
   "errors.write.destinationNotFound.message.move": "Le dossier vers lequel vous déplacez n’existe plus, il n’y avait donc nulle part où mettre vos fichiers. Les originaux sont intacts.",
   "@errors.write.destinationNotFound.message.move": {
-    "sourceHash": "b764d42"
+    "sourceHash": "20fb725"
   },
   "errors.write.destinationNotFound.suggestion": "Il a peut-être été renommé ou supprimé, ou le disque a été déconnecté. Choisissez une autre destination, ou rouvrez le dossier et réessayez.",
   "@errors.write.destinationNotFound.suggestion": {
     "sourceHash": "2e99059"
+  },
+  "errors.write.destinationNotAFolder.title": "Un fichier occupe la place",
+  "@errors.write.destinationNotAFolder.title": {
+    "sourceHash": "d371870"
+  },
+  "errors.write.destinationNotAFolder.message": "Cmdr n’a pas pu créer le dossier de destination, car un fichier se trouve à {path}, là où il faut un dossier. Rien n’a été écrit et les originaux sont intacts.",
+  "@errors.write.destinationNotAFolder.message": {
+    "sourceHash": "dfebb59"
+  },
+  "errors.write.destinationNotAFolder.suggestion": "Choisissez une autre destination, ou renommez ou déplacez ce fichier, puis réessayez.",
+  "@errors.write.destinationNotAFolder.suggestion": {
+    "sourceHash": "c410ecf"
   },
   "errors.write.notConnected.title": "Pas encore connecté",
   "@errors.write.notConnected.title": {
@@ -1128,6 +1164,18 @@
   "errors.write.notConnected.suggestion": "Ouvrez-le depuis le sélecteur de volume pour vous y connecter, puis réessayez. Si c’est un téléphone, déverrouillez-le et acceptez toute demande qu’il affiche.",
   "@errors.write.notConnected.suggestion": {
     "sourceHash": "3fdc936"
+  },
+  "errors.write.noLongerConnected.title": "Plus connecté",
+  "@errors.write.noLongerConnected.title": {
+    "sourceHash": "3974fa0"
+  },
+  "errors.write.noLongerConnected.message": "Le téléphone ou le serveur qui contient ces fichiers n’est plus connecté, rien n’a donc changé.",
+  "@errors.write.noLongerConnected.message": {
+    "sourceHash": "d0827c4"
+  },
+  "errors.write.noLongerConnected.suggestion": "Rebranchez le téléphone ou ouvrez le serveur depuis le sélecteur de volume, puis réessayez.",
+  "@errors.write.noLongerConnected.suggestion": {
+    "sourceHash": "850ecdb"
   },
   "errors.write.destinationExists.title": "Le fichier existe déjà",
   "@errors.write.destinationExists.title": {
@@ -1393,9 +1441,9 @@
   "@errors.write.invalidName.message": {
     "sourceHash": "ad395af"
   },
-  "errors.write.invalidName.suggestion": "Renommez-le avec quelque chose de plus court et de plus simple, puis réessayez. Certaines destinations refusent aussi les noms réservés comme CON, NUL ou LPT1.",
+  "errors.write.invalidName.suggestion": "Renommez-le avec quelque chose de plus court et de plus simple, puis réessayez. Certaines destinations refusent les tabulations ou les retours à la ligne dans un nom, et d’autres les noms réservés comme CON, NUL ou LPT1.",
   "@errors.write.invalidName.suggestion": {
-    "sourceHash": "3721c3d"
+    "sourceHash": "77cff09"
   },
   "errors.write.trashRefused.title": "Placement dans la corbeille impossible",
   "@errors.write.trashRefused.title": {
@@ -1501,6 +1549,10 @@
   "@errors.write.permissionDenied.message.named": {
     "sourceHash": "0ffd79b"
   },
+  "errors.write.permissionDenied.suggestion.objectStoreAccount": "Le fournisseur a refusé, et cela peut signifier deux choses. Vérifiez les autorisations de la clé d’accès, ou cherchez dans la console de votre fournisseur un plafond d’utilisation ou un avis de facturation.",
+  "@errors.write.permissionDenied.suggestion.objectStoreAccount": {
+    "sourceHash": "31deca5"
+  },
   "errors.write.permissionDenied.suggestion.needsAdminMac": "Cela demande des droits d’administrateur. Pour donner l’accès à votre propre compte, sélectionnez le dossier dans le Finder, choisissez Lire les informations, puis vérifiez la section Partage et permissions.",
   "@errors.write.permissionDenied.suggestion.needsAdminMac": {
     "sourceHash": "674192a"
@@ -1529,17 +1581,17 @@
   "@errors.write.permissionDenied.suggestion.sourceRead": {
     "sourceHash": "978e180"
   },
-  "errors.write.insufficientSpace.title": "Espace insuffisant",
+  "errors.write.insufficientSpace.title": "La destination n’a peut-être pas assez d’espace libre",
   "@errors.write.insufficientSpace.title": {
-    "sourceHash": "c5f8c45"
+    "sourceHash": "9db6685"
   },
-  "errors.write.insufficientSpace.message": "La destination a besoin de {required} mais n’a que {available} de disponible.",
+  "errors.write.insufficientSpace.message": "Il faut jusqu’à {required}, et la destination a {available} de libre.",
   "@errors.write.insufficientSpace.message": {
-    "sourceHash": "582f30a"
+    "sourceHash": "931f1e0"
   },
-  "errors.write.insufficientSpace.suggestion": "Libérez de l’espace sur la destination en supprimant des fichiers inutiles, ou choisissez un emplacement différent.",
+  "errors.write.insufficientSpace.suggestion": "Si des fichiers sont déjà présents à destination, la copie aura peut-être besoin de moins d’espace. Si la destination se remplit, Cmdr s’arrête et vous prévient. Par précaution, libérez de l’espace ou choisissez un autre emplacement.",
   "@errors.write.insufficientSpace.suggestion": {
-    "sourceHash": "257f1d9"
+    "sourceHash": "91fafd3"
   },
   "errors.write.destinationFull.title": "La destination est pleine",
   "@errors.write.destinationFull.title": {
@@ -1653,6 +1705,30 @@
   "@errors.write.deletePending.suggestion": {
     "sourceHash": "39e64a9"
   },
+  "errors.write.sourceInColdStorage.title": "Ce fichier est archivé",
+  "@errors.write.sourceInColdStorage.title": {
+    "sourceHash": "73da082"
+  },
+  "errors.write.sourceInColdStorage.message": "Le fichier {path} est archivé, donc illisible tant qu’il n’a pas été restauré.",
+  "@errors.write.sourceInColdStorage.message": {
+    "sourceHash": "1015fe5"
+  },
+  "errors.write.sourceInColdStorage.suggestion": "Restaurez le fichier dans la console de votre fournisseur de stockage, puis réessayez. Une restauration peut prendre de quelques minutes à deux jours.",
+  "@errors.write.sourceInColdStorage.suggestion": {
+    "sourceHash": "f279603"
+  },
+  "errors.write.sourceChanged.title": "Ce fichier a changé pendant la copie",
+  "@errors.write.sourceChanged.title": {
+    "sourceHash": "1c63c8b"
+  },
+  "errors.write.sourceChanged.message": "Le fichier {path} a changé pendant que Cmdr le copiait, Cmdr n’a donc rien enregistré. Le fichier reste là où il était.",
+  "@errors.write.sourceChanged.message": {
+    "sourceHash": "4c404e0"
+  },
+  "errors.write.sourceChanged.suggestion": "Réessayez pour copier la version qui s’y trouve maintenant.",
+  "@errors.write.sourceChanged.suggestion": {
+    "sourceHash": "97fc945"
+  },
   "errors.write.newDataKeptAt.title": "Votre nouveau fichier porte un autre nom",
   "@errors.write.newDataKeptAt.title": {
     "sourceHash": "06bc297"
@@ -1735,7 +1811,7 @@
   },
   "errors.mutation.notFound": "« {path} » n’existe plus.",
   "@errors.mutation.notFound": {
-    "sourceHash": "64611c8"
+    "sourceHash": "9c068a2"
   },
   "errors.mutation.cantRenameVolumeRoot": "Impossible de renommer ici le dossier racine d’un volume.",
   "@errors.mutation.cantRenameVolumeRoot": {
@@ -1755,7 +1831,7 @@
   },
   "errors.mutation.volumeGone": "Ce volume n’est plus disponible, rien n’a donc été modifié.",
   "@errors.mutation.volumeGone": {
-    "sourceHash": "643398b"
+    "sourceHash": "2d24729"
   },
   "errors.mutation.archiveNotEditable": "Cmdr ne peut pas ouvrir cette archive en écriture pour le moment.",
   "@errors.mutation.archiveNotEditable": {
@@ -1791,7 +1867,7 @@
   },
   "errors.volume.notFound": "« {path} » n’existe plus.",
   "@errors.volume.notFound": {
-    "sourceHash": "64611c8"
+    "sourceHash": "9c068a2"
   },
   "errors.volume.permissionDenied": "Cmdr n’a pas accès à « {path} ».",
   "@errors.volume.permissionDenied": {
@@ -1837,6 +1913,14 @@
   "@errors.volume.isADirectory": {
     "sourceHash": "224ae5e"
   },
+  "errors.volume.notADirectory": "Un fichier se trouve à « {path} », là où il faut un dossier.",
+  "@errors.volume.notADirectory": {
+    "sourceHash": "2f66bc8"
+  },
+  "errors.volume.invalidNameNamed": "Le nom « {name} » ne peut pas être stocké ici. Choisissez-en un autre.",
+  "@errors.volume.invalidNameNamed": {
+    "sourceHash": "6f65c40"
+  },
   "errors.volume.invalidName": "La destination ne peut pas stocker ce nom. Choisissez-en un autre.",
   "@errors.volume.invalidName": {
     "sourceHash": "531488f"
@@ -1844,6 +1928,14 @@
   "errors.volume.deletePending": "Ce fichier est en train de disparaître, et quelque chose le maintient encore ouvert. Patientez un instant et réessayez.",
   "@errors.volume.deletePending": {
     "sourceHash": "f7d0ab7"
+  },
+  "errors.volume.coldStorage": "Le fichier « {path} » est archivé. Restaurez-le d’abord dans la console de votre fournisseur de stockage.",
+  "@errors.volume.coldStorage": {
+    "sourceHash": "c742f7c"
+  },
+  "errors.volume.sourceChanged": "Le fichier « {path} » a changé pendant que Cmdr le copiait, Cmdr n’a donc rien enregistré. Réessayez pour copier la nouvelle version.",
+  "@errors.volume.sourceChanged": {
+    "sourceHash": "18062cb"
   },
   "errors.volume.ambiguousName": "Plusieurs éléments du serveur correspondent à « {path} » : Cmdr n’en a donc choisi aucun. Choisissez plutôt l’élément voulu dans son dossier.",
   "@errors.volume.ambiguousName": {
@@ -1893,13 +1985,17 @@
   "@errors.serverRequest.unexpected": {
     "sourceHash": "5be7ebd"
   },
-  "errors.eject.busy": "Cmdr déplace encore des fichiers sur ce disque. Éjectez-le une fois l’opération terminée.",
+  "errors.serverRequest.blockedByPolicy": "Votre organisation a désactivé cette fonction pour Cmdr.",
+  "@errors.serverRequest.blockedByPolicy": {
+    "sourceHash": "9a27fb3"
+  },
+  "errors.eject.busy": "Cmdr y déplace encore des fichiers. Réessayez une fois l’opération terminée.",
   "@errors.eject.busy": {
-    "sourceHash": "0600dd5"
+    "sourceHash": "560c0db"
   },
   "errors.eject.volumeNotFound": "Ce disque n’est plus connecté, il n’y a donc rien à éjecter.",
   "@errors.eject.volumeNotFound": {
-    "sourceHash": "2c5112f"
+    "sourceHash": "75b7870"
   },
   "errors.eject.notEjectable": "Ce disque n’est pas amovible, il reste donc connecté.",
   "@errors.eject.notEjectable": {
@@ -1911,39 +2007,51 @@
   },
   "errors.eject.remoteNotConnected": "Ce serveur n’est plus connecté, il n’y a donc plus rien à fermer.",
   "@errors.eject.remoteNotConnected": {
-    "sourceHash": "3b531d1"
+    "sourceHash": "3f38dd0"
   },
   "errors.eject.deviceDisconnectRefused": "L’appareil a refusé de fermer sa connexion. Débranchez-le quand il n’est plus occupé.",
   "@errors.eject.deviceDisconnectRefused": {
     "sourceHash": "5b99318"
   },
-  "errors.eject.unmountRefused": "Quelque chose utilise encore ce disque. Fermez les fichiers et les apps ouverts, puis éjectez-le à nouveau.",
+  "errors.eject.unmountRefused": "Quelque chose y garde encore des fichiers ouverts. Fermez les fichiers et les apps ouverts, puis réessayez.",
   "@errors.eject.unmountRefused": {
-    "sourceHash": "1ff7d31"
+    "sourceHash": "709ecc5"
   },
-  "errors.eject.unmountRefusedByApp": "{app} utilise encore ce disque. Fermez ce que cette app y a ouvert, puis éjectez-le à nouveau.",
+  "errors.eject.unmountRefusedByApp": "{app} y garde encore des fichiers ouverts. Fermez-les, puis réessayez.",
   "@errors.eject.unmountRefusedByApp": {
-    "sourceHash": "bee2660"
+    "sourceHash": "c6e596a"
   },
-  "errors.eject.unmountRefusedByApps": "{apps} utilisent encore ce disque. Fermez ce que ces apps y ont ouvert, puis éjectez-le à nouveau.",
+  "errors.eject.unmountRefusedByApps": "{apps} y gardent encore des fichiers ouverts. Fermez-les, puis réessayez.",
   "@errors.eject.unmountRefusedByApps": {
-    "sourceHash": "0864134"
+    "sourceHash": "93120f1"
   },
   "errors.eject.otherApps": "d’autres apps",
   "@errors.eject.otherApps": {
     "sourceHash": "09fe5b1"
   },
-  "errors.eject.unmountRefusedByDiskImage": "Ce disque contient une image disque encore ouverte. Éjectez d’abord l’image, puis le disque.",
+  "errors.eject.unmountRefusedByProcess": "Un processus nommé {process} y garde encore des fichiers ouverts. (Cmdr n’a pas de nom d’app, seulement le nom du processus.)",
+  "@errors.eject.unmountRefusedByProcess": {
+    "sourceHash": "ad7c1d5"
+  },
+  "errors.eject.unmountRefusedByProcesses": "{countText} processus nommés {processes} y gardent encore des fichiers ouverts. (Cmdr n’a pas de noms d’app, seulement les noms des processus.)",
+  "@errors.eject.unmountRefusedByProcesses": {
+    "sourceHash": "5e9dbac"
+  },
+  "errors.eject.otherProcesses": "d’autres",
+  "@errors.eject.otherProcesses": {
+    "sourceHash": "01db91d"
+  },
+  "errors.eject.unmountRefusedByDiskImage": "Une image disque qui s’y trouve est encore ouverte. Éjectez d’abord cette image, puis réessayez.",
   "@errors.eject.unmountRefusedByDiskImage": {
-    "sourceHash": "82fc540"
+    "sourceHash": "1fa3d53"
   },
-  "errors.eject.unmountRefusedBySystem": "macOS travaille encore sur ce disque. Patientez une minute, puis éjectez-le à nouveau.",
+  "errors.eject.unmountRefusedBySystem": "macOS y garde encore des fichiers ouverts. Patientez une minute, puis réessayez.",
   "@errors.eject.unmountRefusedBySystem": {
-    "sourceHash": "27636e6"
+    "sourceHash": "e778b5c"
   },
-  "errors.eject.unmountRefusedByCmdr": "Cmdr lui-même utilise encore ce disque. Patientez un instant et éjectez-le à nouveau, ou envoyez un rapport si cela continue.",
+  "errors.eject.unmountRefusedByCmdr": "Cmdr lui-même y garde encore des fichiers ouverts. Patientez un instant et réessayez, ou envoyez un rapport si cela continue.",
   "@errors.eject.unmountRefusedByCmdr": {
-    "sourceHash": "2f56d2c"
+    "sourceHash": "e79c1d8"
   },
   "errors.eject.timedOut": "Le disque n’a pas encore répondu, donc l’éjection peut encore aboutir d’elle-même.",
   "@errors.eject.timedOut": {

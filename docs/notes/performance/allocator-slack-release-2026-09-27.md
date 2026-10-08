@@ -139,6 +139,28 @@ round plus D (rounds 1–3). G is left out.
   malloc-zone memory), and glibc on Linux, which is unmeasured. What switching takes:
   `allocator-comparison-2026-09-23.md` § "What switching would take".
 
+## Check round after the switch (2026-09-30)
+
+After this note, macOS moved to the system allocator (`crates/cmdr-fs/DETAILS.md` § "Which global allocator"). One round
+of the same protocol checked the switch commit on a release build
+(`pnpm tauri build --no-bundle --target aarch64-apple-darwin`), with a `--features mimalloc` build of the same commit
+launched beside it: C system, A mimalloc. Data was a snapshot of prod 0.48.0 taken by holding a read transaction and
+`cp -c`-ing each DB with its `-wal` (the hub's isolation rule says why not `.backup`). Load average 5–99, from sibling
+agents' builds: both instances' index writers worked through 2.2–3.4 M FS-event messages over the round.
+
+MiB footprint, idle 8 min → peak → +1 / +5 / +10 / +15 min:
+
+- C system: 206 → 1,825 → 777 / 403 / 389 / 308.
+- A mimalloc: 306 → 1,582 → 476 / 513 / 514 / 517.
+
+- **The settle lands in the system allocator's range above** (+15 min: 308 against 211–382), and 209 MiB under the
+  mimalloc build beside it. The peak (1,825) and the +1 min transient (777) are inside this note's system ranges too.
+- **At +15 min**, C's default zone held 178 MiB live in 583 reserved, and malloc's slack across every zone was 102 MiB;
+  A's census read 180 live and 267 slack.
+- **Idle CPU isn't worse.** With indexing off (MCP on), one 240 s window side by side: C 0.229% of a core, A 0.241%;
+  footprint 120 against 153 MiB. Under the round's indexing churn, C spent 10.5–11.5 s of CPU per 100,000 writer
+  messages in the two post-burst windows, A 12.1–17.8.
+
 ## Harness
 
 The experiment `main.rs` isn't on `main`. Its pieces, for a rerun: the `CMDR_EXP_ALLOC` switch; a trigger-file thread

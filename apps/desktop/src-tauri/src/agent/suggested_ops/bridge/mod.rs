@@ -37,9 +37,10 @@ use super::super::store::proposals::{
 use super::super::types::{OpStatus, ProposalVerb};
 use crate::file_system::volume::Volume;
 use crate::file_system::write_operations::{
-    BulkRenameRow, ExpectedSources, OperationEventSink, SourceFingerprint, VolumeCopyConfig, WriteOperationConfig,
-    WriteOperationError, WriteOperationStartResult, delete_files_start, resolve_source_volume, start_bulk_rename,
-    start_volume_compress, start_volume_copy, start_volume_move, trash_files_start,
+    BulkRenameRow, ExpectedSources, OperationEventSink, RenameStartError, SourceFingerprint, VolumeCopyConfig,
+    WriteOperationConfig, WriteOperationError, WriteOperationStartResult, delete_files_start, resolve_source_volume,
+    start_renames, start_volume_compress, start_volume_copy, start_volume_move, trash_files_start,
+    unregistered_source_error,
 };
 use crate::operation_log::types::Initiator;
 
@@ -57,17 +58,19 @@ pub enum ApprovalRefusal {
     NotAccepted(AcceptanceOutcome),
     /// The claim transaction refused. Its two variants mean different recoveries.
     Claim(ClaimRefusal),
-    /// The volume the group's sources live on is no longer registered: a drive ejected or a
-    /// share went away between the proposal and the review. Nothing was claimed.
-    SourceVolumeGone { volume_id: String },
-    /// The write engine refused to start the operation.
-    EngineRefused { detail: String },
+    /// No volume is registered for the group's sources: a phone or server nobody has connected
+    /// (`SourceNotConnected`), or a drive that left (`SourceNoLongerConnected`). Classified by
+    /// `crate::unregistered_volumes`, exactly as a clicked copy off it would be. Nothing was
+    /// claimed.
+    SourceUnavailable(WriteOperationError),
     /// The stored row lacks the target its verb binds. Unreachable through `GroupIntent`,
     /// which pairs each verb with its target at construction; reported rather than panicked
     /// because the row is read back from SQLite, where a hand-edit could produce it.
     TargetMissing { verb: ProposalVerb },
     /// The group claimed cleanly and the write engine refused to start.
     Engine(WriteOperationError),
+    /// The group claimed cleanly and the rename batch refused to start.
+    Rename(RenameStartError),
 }
 
 /// What approving a group did.
@@ -124,16 +127,19 @@ pub async fn approve_and_execute(
 
     let volume_id = source_volume_of(conn, group_id)?;
     let Some((source_volume, _)) = resolve_source_volume(&volume_id, sources.first()).await else {
-        return Ok(ApprovalOutcome::Refused(ApprovalRefusal::SourceVolumeGone {
-            volume_id,
-        }));
+        let first = sources
+            .first()
+            .map(|path| path.display().to_string())
+            .unwrap_or_default();
+        let refusal = unregistered_source_error(&volume_id, &first).await;
+        return Ok(ApprovalOutcome::Refused(ApprovalRefusal::SourceUnavailable(refusal)));
     };
     let expected = capture_expected_sources(source_volume.as_ref(), &sources).await;
 
-    // Through the service layer, so the approval metric is reported in the one place that
-    // owns it rather than a second time here.
-    let group = match super::approve(conn, group_id, now)? {
-        ClaimOutcome::Claimed(claimed) => claimed.group,
+    // Through the service layer, which owns both the claim's announcement and the approval
+    // metric. The metric waits for the start: a refused start gives the group back.
+    let claimed = match super::approve(conn, group_id, now)? {
+        ClaimOutcome::Claimed(claimed) => claimed,
         ClaimOutcome::Refused(refusal) => return Ok(ApprovalOutcome::Refused(ApprovalRefusal::Claim(refusal))),
     };
 
@@ -145,9 +151,38 @@ pub async fn approve_and_execute(
         memory,
     ));
 
-    match start_for(&group, sources, &ops, expected, sink).await {
-        Ok(operation) => Ok(ApprovalOutcome::Started(ApprovedGroup { group_id, operation })),
-        Err(refusal) => Ok(ApprovalOutcome::Refused(refusal)),
+    match start_for(&claimed.group, sources, &ops, expected, sink).await {
+        Ok(operation) => {
+            super::started(&claimed);
+            Ok(ApprovalOutcome::Started(ApprovedGroup { group_id, operation }))
+        }
+        Err(refusal) => {
+            give_back_after(conn, group_id, &refusal);
+            Ok(ApprovalOutcome::Refused(refusal))
+        }
+    }
+}
+
+/// The claim landed before the engine was asked, so a refusal from it would leave the group
+/// `approved` with nothing running: off the review list, without a word. Nothing ran, so the
+/// group goes back to `pending` and the dialog shows the refusal under it.
+///
+/// A store that can't take it back is logged, ❌ never raised: the refusal is the answer the
+/// user needs, and the group then reads as interrupted on the next launch, which is honest.
+fn give_back_after(conn: &Connection, group_id: i64, refusal: &ApprovalRefusal) {
+    match super::give_back(conn, group_id) {
+        Ok(true) => log::info!(
+            target: "agent::suggested_ops",
+            "group {group_id} went back to the list: the engine refused it ({refusal:?})"
+        ),
+        Ok(false) => log::warn!(
+            target: "agent::suggested_ops",
+            "group {group_id} was refused ({refusal:?}) but is no longer a claim to give back"
+        ),
+        Err(e) => log::warn!(
+            target: "agent::suggested_ops",
+            "group {group_id} was refused ({refusal:?}) and couldn't go back to the list: {e}"
+        ),
     }
 }
 
@@ -257,10 +292,18 @@ async fn start_for(
         // per row, which is exactly what the live preflight capture produces. The group binds
         // the shared PARENT, and each op carries the NAME it becomes.
         ProposalVerb::Rename => {
-            let (parent, _) = target_of(group)?;
+            // A rename stays on its source volume, so the group stores no destination volume
+            // and `target_of`, which needs one, would refuse every rename group.
+            let parent = group
+                .destination
+                .clone()
+                .ok_or(ApprovalRefusal::TargetMissing { verb: group.verb })?;
             let rows = rename_rows(&parent, ops, &expected)?;
-            start_bulk_rename(events, group.source_volume_id.clone(), rows, Initiator::Agent)
-                .map_err(|detail| ApprovalRefusal::EngineRefused { detail })
+            // Routed: where a rename copies (an S3 folder), the batch runs as one move.
+            start_renames(events, group.source_volume_id.clone(), rows, Initiator::Agent)
+                .await
+                .map(|started| started.operation)
+                .map_err(ApprovalRefusal::Rename)
         }
     }
 }

@@ -20,6 +20,7 @@
     import { forceSave, getSetting, getSettingDefinition, setSetting } from '$lib/settings'
     import { useBooleanSetting } from '$lib/settings/components/boolean-setting.svelte'
     import { createBetaEmailSignup } from '$lib/settings/sections/beta-email-signup.svelte'
+    import { isSettingLocked } from '$lib/managed-policy/managed-policy.svelte'
     import { openExternalUrl } from '$lib/tauri-commands'
     import { GITHUB_REPO_URL, ABOUT_DAVID_URL, ALTERNATIVE_TO_URL } from '$lib/beta-links'
     import { TERMS_URL, TERMS_VERSION } from '$lib/legal/terms'
@@ -77,6 +78,10 @@
     const analyticsDef = getSettingDefinition('analytics.enabled') ?? { label: '', description: '' }
     /** The usage-stats row's tick IS the setting, on the same wiring `<SettingSwitch>` uses. */
     const analytics = useBooleanSetting('analytics.enabled')
+    /** The organization's policy pins usage stats (off): the row shows why instead of a tick. */
+    const analyticsLocked = $derived(isSettingLocked('analytics.enabled'))
+    /** The organization's policy pins crash reports (off), so the tip mustn't call them on. */
+    const crashReportsLocked = $derived(isSettingLocked('updates.crashReports'))
 
     const statsLabel = $derived(tString('onboarding.stepBeta.analyticsTitle'))
     const starLabel = $derived(tString('onboarding.stepBeta.checklist.star'))
@@ -104,20 +109,30 @@
      * would open on a checklist that ticks itself.
      */
     const tickTimers: number[] = []
+    /** Set on destroy, so a page that opens after the step is gone arms no timer to clear. */
+    let destroyed = false
 
     /**
      * Click handler for a checklist link: open the page, then tick the row once the user has
      * had time to act on it. Ticking on the click itself would claim they did something they
-     * hadn't yet even seen.
+     * hadn't yet even seen, and the timer starts only once the page opened: a link that never
+     * opened leaves nothing done to tick.
      */
     function openAndTick(url: string, item: BetaChecklistItem) {
-        const open = openLink(url)
         return (event: MouseEvent) => {
-            open(event)
-            tickTimers.push(
-                window.setTimeout(() => {
-                    setBetaChecklistItem(item, true)
-                }, CHECKLIST_TICK_DELAY_MS),
+            event.preventDefault()
+            openExternalUrl(url).then(
+                () => {
+                    if (destroyed) return
+                    tickTimers.push(
+                        window.setTimeout(() => {
+                            setBetaChecklistItem(item, true)
+                        }, CHECKLIST_TICK_DELAY_MS),
+                    )
+                },
+                (error: unknown) => {
+                    log.warn('openExternalUrl({url}) failed: {error}', { url, error })
+                },
             )
         }
     }
@@ -236,6 +251,7 @@
         // Clear the footer override so other steps' default buttons render again, and so a
         // teardown-then-remount doesn't leak stale closures.
         setFooterOverride(null)
+        destroyed = true
         for (const timer of tickTimers) window.clearTimeout(timer)
         tickTimers.length = 0
     })
@@ -307,23 +323,43 @@
         <!-- Each row names itself, the way `data-provider-id` names an AI preset. The row
              text is translated copy that gets edited, so it can't be what identifies a row. -->
         <li class="checklist-row" data-checklist-item="analytics">
-            <Checkbox
-                checked={analytics.checked}
-                ariaLabel={statsLabel}
-                onCheckedChange={(checked: boolean) => { analytics.set(checked); }}
-            />
+            {#if analyticsLocked}
+                <!-- The organization turned usage stats off: nothing to tick, so the tick's
+                     cell stays empty and the line says who decided. -->
+                <span></span>
+            {:else}
+                <Checkbox
+                    checked={analytics.checked}
+                    ariaLabel={statsLabel}
+                    onCheckedChange={(checked: boolean) => { analytics.set(checked); }}
+                />
+            {/if}
             <span class="row-glyph"><Icon name="chart-no-axes-column" size={16} aria-hidden="true" /></span>
             <span class="row-text">
-                {statsLabel}
-                <InfoTip label={moreAbout(statsLabel)}>
-                    <p class="tip-para">{tString('onboarding.stepBeta.analyticsLede')}</p>
-                    <p class="tip-para">{analyticsDef.description}</p>
-                    <p class="tip-para">{tString('onboarding.stepBeta.analyticsCaption')}</p>
-                    <!-- Crash reports default on too, and a default that sends something has to
-                         be disclosed beside the analytics one, not only in Settings. No toggle:
-                         that switch lives in Settings > Updates & privacy. -->
-                    <p class="tip-para">{tString('onboarding.stepBeta.crashReportsNote')}</p>
-                </InfoTip>
+                {#if analyticsLocked}
+                    {tString('onboarding.stepBeta.analyticsManaged')}
+                    <!-- Crash reports still default on unless the organization turned them off
+                         too, and that default has to be disclosed here as well. -->
+                    {#if !crashReportsLocked}
+                        <InfoTip label={moreAbout(statsLabel)}>
+                            <p class="tip-para">{tString('onboarding.stepBeta.crashReportsNoteAlone')}</p>
+                        </InfoTip>
+                    {/if}
+                {:else}
+                    {statsLabel}
+                    <InfoTip label={moreAbout(statsLabel)}>
+                        <p class="tip-para">{tString('onboarding.stepBeta.analyticsLede')}</p>
+                        <p class="tip-para">{analyticsDef.description}</p>
+                        <p class="tip-para">{tString('onboarding.stepBeta.analyticsCaption')}</p>
+                        <!-- Crash reports default on too, and a default that sends something has
+                             to be disclosed beside the analytics one, not only in Settings. No
+                             toggle: that switch lives in Settings > Updates & privacy. Not when
+                             the organization turned them off: then they're not on. -->
+                        {#if !crashReportsLocked}
+                            <p class="tip-para">{tString('onboarding.stepBeta.crashReportsNote')}</p>
+                        {/if}
+                    </InfoTip>
+                {/if}
             </span>
         </li>
 

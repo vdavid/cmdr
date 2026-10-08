@@ -389,7 +389,7 @@ Search-only contracts (cross-consumer ones live in `../query-ui/CLAUDE.md`):
 - The Search façade's `recordAiTranslation` (composed call) overwrites the matching hand-typed buffer
   (`handTyped.filename` for a glob, `handTyped.regex` for a regex) so a fresh AI run clobbers the user's earlier
   hand-typed pattern in the same kind.
-- `filter-chip-state.ts::deriveSizeChip` accepts a `FileSizeFormat` argument; the chip follows the popover's `kB`/`KB`
+- `filter-chip-state.ts::deriveSizeChip` accepts a `FileSizeFormat` argument; the chip follows the popover's `kB`/`KiB`
   mapping instead of printing the raw enum value.
 - `path-pills-layout.ts::scheduleStableWidthMeasure` runs a follow-up re-measure on the next animation frame and again
   ~80ms later. Catches the CSS grid race where `el.clientWidth` reads stale before the parent track settles, which would
@@ -779,8 +779,8 @@ cursor row alone for a while, so Cmd+A then delete took one file (ERR-Q373S). Wi
   capabilities" carries the mechanism.
 - **F5 / F6** route through `openUnifiedTransferDialog`, which routes off the kind's `hasBackendListing` capability and
   calls `transfer-operations::buildTransferPropsFromSnapshot` instead of the listing-id-driven builders. The resolved
-  entries feed the same `TransferDialogPropsData` shape every transfer uses, and the existing `copy_files` /
-  `move_files` IPCs run with `sources: Vec<String>`.
+  entries feed the same `TransferDialogPropsData` shape every transfer uses, and the existing transfer IPCs run with
+  `sources: Vec<String>`.
 - **F8 / Shift+F8** route through `file-operation-commands::openDeleteFromSearchResults`, on the same
   `hasBackendListing` gate. The resolved entries become the dialog's `DeleteSourceItem[]`, `isFromCursor` is true only
   on the cursor fallback (it picks the dialog's title), and `sourceFolderPath` is the COMMON PARENT of the resolved
@@ -797,9 +797,9 @@ cursor row alone for a while, so Cmd+A then delete took one file (ERR-Q373S). Wi
   PERMANENT delete.
 - **No operation snapshot is taken**, because `entries-snapshot::fetchSelectedNames` returns early on a pane with no
   listing id. The name snapshot exists to feed listing-diff-driven selection adjustment, which doesn't run here; the
-  path-based remap below does that job instead. Without the guard, `getFileAt('')` rejects with "Listing not found"
-  inside a `void`-ed call, so every F5 / F6 / F8 from a snapshot pane with a partial selection raises an unhandled
-  promise rejection.
+  path-based remap below does that job instead. Without the guard, `getFileAt('')` rejects as a gone listing
+  (`ListingLookupError::Gone`) inside a `void`-ed call, so every F5 / F6 / F8 from a snapshot pane with a partial
+  selection raises an unhandled promise rejection.
 - **Drag-out** uses the `'paths'` drag context in `lib/file-explorer/drag/drag-drop.ts`: when `FullList` is rendered
   with `staticEntries` and the user drags a selection, the FE builds a paths array from `getEntryAt(idx)` and routes
   through `start_drag_paths`. `SearchResultsView` hands `FullList` the snapshot's `volumeId`, so the drag records the
@@ -848,9 +848,9 @@ the column, because that is what the click will actually do. Ranked shows no act
 
 **The comparator is Rust's, not a copy of it.** `sort_search_results` (`src-tauri/src/commands/search.rs`) runs
 `file_system::listing::sorting::entry_comparator`, the SAME comparator every directory listing sorts by, over a
-`SearchSortRow` that implements the shared `SortableEntry` trait. Natural number ordering, case folding,
-directories-first, and the user's `directorySortMode` all come along, and there is no second implementation to drift. A
-frontend comparator would have had to reproduce `alphanumeric_sort`'s leading-zero and non-ASCII rules by hand.
+`SearchSortRow` that implements the shared `SortableEntry` trait. Natural number ordering, case folding, and the user's
+folders-first and `directorySortMode` choices all come along, and there is no second implementation to drift. A frontend
+comparator would have had to reproduce `alphanumeric_sort`'s leading-zero and non-ASCII rules by hand.
 
 Two consequences of that trait's `None` answers, both deliberate. A search result carries no CREATION time, so
 `sort.byCreated` lands on the comparator's both-unknown arm and orders by name (the header has no Created column to

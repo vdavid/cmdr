@@ -36,6 +36,21 @@ render the switch and say why a feature is quiet.
   `queryUi.ai.cloudOff.body` plus a button in the AI mode's empty state (the chip stays), a refused translate raises
   `CloudAiOffToastContent`, and the Ask Cmdr rail shows its cloud gate (`lib/ask-cmdr/DETAILS.md`).
 
+## Under the organization's policy
+
+The backend refuses every LLM request, model download, and server start the MDM policy rules out
+(`src-tauri/src/ai/DETAILS.md`); this module renders the typed refusal, and every sentence comes from
+`managedAiRefusalMessage` (`$lib/managed-policy/ai-refusal.ts`).
+
+- **Consent**: `cloudConsentState.managed` mirrors `CloudAiConsentStatus.managed`. While it's set, the switch is
+  disabled and reads off, with the refusal as a visible note its `aria-describedby` points at.
+- **Translate**: a `managed` `AiTranslateErrorKind` carries the rule in `err.managed`; the toast body names it, and
+  falls back to `ai.translateError.managed.body` when absent.
+- **Local AI** (`local-ai-error.ts`): `start_ai_server` and `start_ai_download` reject with the typed `LocalAiError`
+  (`managed` / `unsupported` / `cancelled` / `failed`). They're invoked raw, so `toLocalAiError` restores the type from
+  `unknown`, and `localAiErrorLogLevel` logs `managed` and `cancelled` (a policy change cancels a download too) at info:
+  an error-level log can send an automatic error report. Callers: `AiLocalSection` and onboarding's `StepAi`.
+
 ## Settings registry and config push
 
 `ai.provider`, `ai.cloudProvider`, `ai.cloudProviderConfigs`, and `ai.localContextSize` are defined in

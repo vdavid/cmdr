@@ -9,8 +9,8 @@
 //! rather than a real FSEvents stream.
 //!
 //! Two cells pay for a real watcher, because what they prove is the operating
-//! system's rather than the registry's: the debounce is app-side
-//! (`file_system::git::wiring_tests::a_debounced_burst_reports_once_and_the_watch_survives_for_the_next_one`),
+//! system's rather than the registry's: delivery across git's renames is app-side
+//! (`file_system::git::wiring_tests::a_burst_reports_its_end_state_and_the_watch_survives_for_the_next_one`),
 //! and what a DELETED repository does to its own watch is
 //! [`a_deleted_repository_stops_reporting_and_still_gives_its_hold_back`] here.
 
@@ -187,53 +187,7 @@ fn the_same_state_after_the_window_is_news_again() {
     cleanup(&dir);
 }
 
-/// ❗ **Every watch target is a DIRECTORY**, so none of them can die the way a
-/// watch on `HEAD` or `index` does.
-///
-/// git never writes those in place: it writes `HEAD.lock` and renames it over the
-/// top. inotify watches an inode, so a watch on the file itself goes dead at the
-/// first rename and every later write in the burst is lost with no error. macOS
-/// FSEvents is path-based and tolerated it, so this only ever showed up on Linux
-/// CI, where the debounce cell timed out with nothing after the first commit
-/// (2026-09-06). A directory's inode survives the rename dance.
-#[test]
-fn every_watch_target_is_a_directory_no_rename_can_kill() {
-    let (dir, root, _fixture) = a_repo("watch_targets");
-    let git_dir = root.join(".git");
-
-    let targets = crate::watcher::watch_targets(&git_dir);
-    for (path, _) in &targets {
-        let name = path.file_name().expect("a target always names something");
-        assert!(
-            !crate::watcher::STATE_FILES.iter().any(|state| name == *state),
-            "{} is a file git renames over, ❌ never a watch target: {targets:?}",
-            path.display()
-        );
-        assert!(
-            path.is_dir() || !path.exists(),
-            "a target is a directory or absent, ❌ never a file: {}",
-            path.display()
-        );
-    }
-
-    let watched: Vec<PathBuf> = targets.iter().map(|(path, _)| path.clone()).collect();
-    for expected in [
-        &git_dir,
-        &git_dir.join("refs"),
-        &git_dir.join("logs"),
-        &git_dir.join("worktrees"),
-    ] {
-        assert!(
-            watched.contains(expected),
-            "{} is watched: {watched:?}",
-            expected.display()
-        );
-    }
-
-    cleanup(&dir);
-}
-
-/// The allowlist that pays for those directory watches: everything a `RepoInfo`,
+/// The allowlist that pays for the recursive gitdir watch: everything a `RepoInfo`,
 /// a category listing, or the status column reads counts, and the churn a commit
 /// makes beside it does not.
 #[test]
@@ -241,7 +195,17 @@ fn only_the_paths_a_snapshot_reads_are_worth_a_recompute() {
     let git_dir = PathBuf::from("/repo/.git");
     let matters = |relative: &str| crate::watcher::is_repo_state_path(&git_dir, &git_dir.join(relative));
 
-    for path in ["HEAD", "index", "packed-refs", "MERGE_HEAD", "ORIG_HEAD", "FETCH_HEAD"] {
+    // `config` too: it names each branch's upstream, so `--set-upstream-to` moves
+    // the chip's upstream and ahead/behind.
+    for path in [
+        "HEAD",
+        "index",
+        "packed-refs",
+        "MERGE_HEAD",
+        "ORIG_HEAD",
+        "FETCH_HEAD",
+        "config",
+    ] {
         assert!(matters(path), "{path} should decide a RepoInfo");
     }
     for path in [
@@ -259,7 +223,10 @@ fn only_the_paths_a_snapshot_reads_are_worth_a_recompute() {
         "MERGE_MSG",
         "objects/ab/cdef",
         "hooks/pre-commit",
-        "config",
+        // The per-ref reflogs: the gitdir watch is recursive, so these arrive too,
+        // and only `logs/HEAD` is read by anything.
+        "logs/refs/heads/main",
+        "modules/sub/HEAD",
     ] {
         assert!(!matters(path), "{path} is noise the directory watch delivers");
     }
@@ -274,6 +241,66 @@ fn only_the_paths_a_snapshot_reads_are_worth_a_recompute() {
     );
 }
 
+/// ❗ **A linked worktree watches the COMMON gitdir**, because its refs live there.
+///
+/// `git worktree add` gives the worktree a gitdir of its own
+/// (`<common>/worktrees/<name>/`) holding only `HEAD`, `index`, and `logs/HEAD`;
+/// every branch, tag, and remote-tracking ref is shared in the common dir. A
+/// watch on the worktree's own gitdir alone never saw a `git fetch` or a
+/// `git push` (ahead/behind went stale) or a branch created or deleted there.
+/// The sibling worktrees' own files sit under the same watch and are theirs, so
+/// they are noise to this one.
+#[test]
+fn a_linked_worktree_hears_the_shared_refs_and_not_its_siblings() {
+    let (dir, _root, _fixture) = a_repo("linked_scope");
+    let linked = dir.join("linked");
+    let sibling = dir.join("sibling");
+    crate::test_fixtures::git_cli(
+        &dir,
+        &["worktree", "add", "-q", linked.to_str().unwrap(), "-b", "linked"],
+    );
+    crate::test_fixtures::git_cli(
+        &dir,
+        &["worktree", "add", "-q", sibling.to_str().unwrap(), "-b", "sibling"],
+    );
+    let common = dir.join(".git").canonicalize().expect("the common gitdir exists");
+    let linked_root = linked.canonicalize().expect("the linked worktree exists");
+
+    let scope = crate::watcher::WatchScope::of(&linked_root);
+    assert_eq!(
+        scope.watched_dir().canonicalize().ok().as_deref(),
+        Some(common.as_path()),
+        "one watch, on the dir that holds the shared refs"
+    );
+    let matters = |relative: &str| scope.is_state_path(&scope.watched_dir().join(relative));
+
+    for path in [
+        "refs/remotes/origin/main",
+        "refs/heads/new-branch",
+        "packed-refs",
+        "config",
+        "worktrees/linked/HEAD",
+        "worktrees/linked/index",
+        "worktrees/linked/logs/HEAD",
+        "worktrees/linked/ORIG_HEAD",
+    ] {
+        assert!(matters(path), "the linked worktree's chip should hear {path}");
+    }
+    for path in [
+        "worktrees/sibling/HEAD",
+        "worktrees/sibling/index",
+        "HEAD",
+        "index",
+        "logs/HEAD",
+        "objects/ab/cdef",
+        "logs/refs/heads/linked",
+        "refs/remotes/origin/main.lock",
+    ] {
+        assert!(!matters(path), "{path} is another worktree's, or noise");
+    }
+    cleanup(&dir);
+}
+
 /// ❗ **A READ of the gitdir is never a change**, and dropping one is what keeps
 /// the watcher from feeding itself.
 ///
@@ -283,16 +310,21 @@ fn only_the_paths_a_snapshot_reads_are_worth_a_recompute() {
 /// we watch. With only the path allowlist in front of it, the recompute became its
 /// own trigger: one report per debounce window, forever, each carrying the
 /// identical snapshot. macOS FSEvents reports no reads at all, so it only ever ran
-/// away on Linux (`a_debounced_burst_reports_once_and_the_watch_survives_for_the_next_one`
+/// away on Linux (`a_burst_reports_its_end_state_and_the_watch_survives_for_the_next_one`
 /// timed out there with 48 identical reports in 10 s, CI, 2026-09-06).
 #[test]
 fn the_watchers_own_reads_are_not_changes() {
     use notify::EventKind;
     use notify::event::{AccessKind, AccessMode, CreateKind, DataChange, ModifyKind, RenameMode};
 
-    let git_dir = PathBuf::from("/repo/.git");
+    // A real repository, ❌ never a made-up `/repo`: `WatchScope::of` reads the
+    // `.git` it finds there, and the Linux test container mounts a checkout at
+    // `/repo` whose `.git` is a linked worktree's gitlink.
+    let (dir, root, _fixture) = a_repo("own_reads");
+    let git_dir = root.join(".git");
+    let scope = crate::watcher::WatchScope::of(&root);
     let about = |kind: EventKind, relative: &str| {
-        crate::watcher::is_repo_state_change(&git_dir, &notify::Event::new(kind).add_path(git_dir.join(relative)))
+        crate::watcher::is_repo_state_change(&scope, &notify::Event::new(kind).add_path(git_dir.join(relative)))
     };
 
     // Everything the recompute itself provokes. Each of these names a path the
@@ -321,6 +353,7 @@ fn the_watchers_own_reads_are_not_changes() {
     ] {
         assert!(about(kind, "HEAD"), "a write to HEAD is news whichever kind it wears");
     }
+    cleanup(&dir);
 }
 
 /// ❗ **Reading a repository leaves its gitdir untouched.** The watcher recomputes

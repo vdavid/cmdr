@@ -46,6 +46,7 @@ mod sevenz;
 mod source;
 mod tar;
 mod zip;
+mod zip_times;
 
 #[cfg(test)]
 mod archive_test;

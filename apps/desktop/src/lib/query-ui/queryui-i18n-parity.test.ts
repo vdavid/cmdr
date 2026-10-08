@@ -81,10 +81,10 @@ describe('query-ui interpolated-string parity (en)', () => {
 
 describe('query-ui filter-chip summary parity (en)', () => {
   it('renders single-bound and range size summaries', () => {
-    expect(deriveSizeChip('gte', '100', 'MB', '', 'B', 'binary').summary).toBe('> 100 MB')
-    expect(deriveSizeChip('lte', '5', 'GB', '', 'B', 'binary').summary).toBe('< 5 GB')
-    expect(deriveSizeChip('eq', '0', 'B', '', 'B', 'binary').summary).toBe('= 0 B')
-    expect(deriveSizeChip('between', '1', 'MB', '200', 'MB', 'binary').summary).toBe('1 MB – 200 MB')
+    expect(deriveSizeChip('gte', '100', 'MB', '', 'B', 'binary').summary).toBe('> 100 MiB')
+    expect(deriveSizeChip('lte', '5', 'GB', '', 'B', 'binary').summary).toBe('< 5 GiB')
+    expect(deriveSizeChip('eq', '0', 'B', '', 'B', 'binary').summary).toBe('= 0 bytes')
+    expect(deriveSizeChip('between', '1', 'MB', '200', 'MB', 'binary').summary).toBe('1 MiB – 200 MiB')
   })
 
   it('renders date summaries', () => {
@@ -140,7 +140,7 @@ describe('query-ui recent-items parity (en)', () => {
       timestamp: now - 86_400_000,
       mode: 'filename',
       query: '*.pdf',
-      filters: { sizeMin: 1024 * 1024, sizeMax: null, modifiedAfter: '2026-01-01', modifiedBefore: null },
+      filters: { sizeMin: 1000 * 1000, sizeMax: null, modifiedAfter: '2026-01-01', modifiedBefore: null },
       scope: '/Users/me/Docs',
       caseSensitive: true,
       excludeSystemDirs: false,
@@ -148,7 +148,7 @@ describe('query-ui recent-items parity (en)', () => {
     }
     expect(chipTooltip(entry, now)).toBe(
       'Filename · 1d ago\n' +
-        'size > 1.00 MB, after 2026-01-01, scope: /Users/me/Docs, case-sensitive, system dirs included\n' +
+        'size > 1.00 MB, after 2026-01-01, scope: /Users/me/Docs, case-sensitive, system folders included\n' +
         '42 results last time',
     )
   })

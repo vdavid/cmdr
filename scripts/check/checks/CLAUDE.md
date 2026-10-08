@@ -52,5 +52,5 @@ One Go file per check, registered in `registry.go`'s `AllChecks`. Runner: `../CL
 - After authoring, run `pnpm check go-vet staticcheck` and update DETAILS § "Apps and check counts". `--fast` membership
   is `IsFast`, hand-curated.
 
-The authoring walkthrough, output-filtering recipes, the nightly bump, workspace geometry, the Rust input blocks, and
-decision detail: `DETAILS.md`. Read it before non-trivial work here.
+The authoring walkthrough, output filtering, the nightly bump, workspace geometry, and decisions: `DETAILS.md`. Read it
+before any non-trivial work here: editing, planning, reorganizing, or advising.

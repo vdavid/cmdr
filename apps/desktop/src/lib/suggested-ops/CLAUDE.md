@@ -12,6 +12,7 @@ per-group approve and reject and per-op deselection. The backend it reads is
 - `suggested-ops-badge.svelte.ts` / `SuggestedOpsIndicator.svelte` — the status-corner count and its subscription.
 - `suggested-ops-failure.ts` — the `TypedFailure` every wrapper throws; a failed decision re-reads, then words the
   variant (`DETAILS.md` § "When a read or an answer doesn't happen").
+- `suggested-ops-refusal.ts` — the reason under a group whose approval refused to start, via the transfer error copy.
 
 ## Must-knows
 
@@ -34,6 +35,9 @@ per-group approve and reject and per-op deselection. The backend it reads is
   exists during a review, so folding them would leave the corner reading a store nothing fills until the dialog opens.
   It seeds once at startup AND listens: suggestions never expire, so one proposed last week is waiting before any event
   fires. ❌ Don't drop the seed as redundant.
+- **An approval that refuses to start gives the group back, with its reason under it.** Nothing ran, the backend put it
+  back to `pending`, and `refusals` holds why. ❌ Never word an engine refusal with new copy: it is the same
+  `WriteOperationError` a clicked operation shows.
 - **A change notice keys on `reason`, not on the group id alone.** An approval and an amendment carry the same
   `groupId`; only `amended` means "the thing you're reading moved". Keying on the id alone raises the notice on the
   user's own approval.

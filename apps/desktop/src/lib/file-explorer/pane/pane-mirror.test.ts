@@ -102,6 +102,28 @@ describe('createPaneMirror', () => {
     })
   })
 
+  it('copies the pane location exactly, cursor or not, with followCursor: false (Clone pane)', () => {
+    getCurrentEntrySpy.mockReturnValue({ networkHost: null })
+    const getCursorEntry = vi.fn(() => ({ isDirectory: true, name: 'sub', path: '/a/b/sub' }) as never)
+    const left = makePaneRef({ getCursorEntry })
+    const right = makePaneRef()
+    const { mirror, navigate } = setup({
+      refs: { left, right },
+      volumeIdByPane: { left: 'root', right: 'usb' },
+      pathByPane: { left: '/a/b', right: '/x' },
+      focused: 'left',
+    })
+
+    mirror.copyPathBetweenPanes({ source: 'left', target: 'right', followCursor: false })
+
+    expect(navigate).toHaveBeenCalledWith({
+      pane: 'right',
+      to: { goTo: { volumeId: 'root', path: '/a/b' } },
+      source: 'mirror',
+    })
+    expect(getCursorEntry).not.toHaveBeenCalled()
+  })
+
   it('skips the redundant navigation when the target already shows the same volume + path', () => {
     getCurrentEntrySpy.mockReturnValue({ networkHost: null })
     const { mirror, navigate, setFocusedPane } = setup({

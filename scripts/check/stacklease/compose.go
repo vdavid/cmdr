@@ -136,6 +136,16 @@ func (d dockerComposer) Restart(services []string) error {
 	return nil
 }
 
+// Exec runs a shell script in the service's running container. Bare (no `-f`),
+// like Restart; `-T` because no TTY is attached.
+func (d dockerComposer) Exec(service, script string) (string, error) {
+	out, err := d.runDocker("compose", "-p", d.stack.ProjectName, "exec", "-T", service, "sh", "-c", script)
+	if err != nil {
+		return out, fmt.Errorf("docker compose exec %s: %w\n%s", service, err, out)
+	}
+	return out, nil
+}
+
 // upArgs builds the `docker compose … up` argv, split out so the one decision in
 // it is testable without a daemon.
 func (d dockerComposer) upArgs(services, fileArgs []string) []string {

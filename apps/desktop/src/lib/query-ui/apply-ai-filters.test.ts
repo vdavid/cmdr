@@ -11,7 +11,7 @@ describe('applySizeFromAi', () => {
 
   it('sets a gte filter from a min-only bound', () => {
     const state = createQueryFilterState({ defaultMode: 'filename' })
-    expect(applySizeFromAi(state, 1024 * 1024, null)).toBe(true)
+    expect(applySizeFromAi(state, 1000 * 1000, null)).toBe(true)
     expect(state.getSizeFilter()).toBe('gte')
     expect(state.getSizeValue()).toBe('1')
     expect(state.getSizeUnit()).toBe('MB')
@@ -19,7 +19,7 @@ describe('applySizeFromAi', () => {
 
   it('sets an lte filter from a max-only bound', () => {
     const state = createQueryFilterState({ defaultMode: 'filename' })
-    expect(applySizeFromAi(state, null, 5 * 1024 * 1024)).toBe(true)
+    expect(applySizeFromAi(state, null, 5 * 1000 * 1000)).toBe(true)
     expect(state.getSizeFilter()).toBe('lte')
     expect(state.getSizeValue()).toBe('5')
     expect(state.getSizeUnit()).toBe('MB')
@@ -27,7 +27,7 @@ describe('applySizeFromAi', () => {
 
   it('sets a between filter from both bounds', () => {
     const state = createQueryFilterState({ defaultMode: 'filename' })
-    expect(applySizeFromAi(state, 1024, 1024 * 1024 * 1024)).toBe(true)
+    expect(applySizeFromAi(state, 1000, 1000 * 1000 * 1000)).toBe(true)
     expect(state.getSizeFilter()).toBe('between')
     expect(state.getSizeValue()).toBe('1')
     expect(state.getSizeUnit()).toBe('KB')
@@ -39,7 +39,7 @@ describe('applySizeFromAi', () => {
   // the chip reads "= N" rather than "between N and N".
   it('sets an eq filter when min == max (so "size = 5 MB" reads as = not between)', () => {
     const state = createQueryFilterState({ defaultMode: 'filename' })
-    expect(applySizeFromAi(state, 5 * 1024 * 1024, 5 * 1024 * 1024)).toBe(true)
+    expect(applySizeFromAi(state, 5 * 1000 * 1000, 5 * 1000 * 1000)).toBe(true)
     expect(state.getSizeFilter()).toBe('eq')
     expect(state.getSizeValue()).toBe('5')
     expect(state.getSizeUnit()).toBe('MB')

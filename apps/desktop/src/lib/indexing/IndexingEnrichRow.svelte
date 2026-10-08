@@ -72,13 +72,14 @@
         return rate != null ? Math.max(1, Math.round(rate * 60)) : null
     })
 
-    const eta = $derived.by(() => {
+    // Seconds left, formatted at the join below: the phrase is mid-sentence after
+    // the rate ("320/min · almost done") but starts the line on its own.
+    const etaSeconds = $derived.by(() => {
         if (paused !== null || imagesFraction == null || total <= 0 || done <= 0) return null
         const remaining = total - done
-        if (remaining <= 0) return tString('indexing.eta.almostDone')
+        if (remaining <= 0) return 0
         const elapsedSec = activity.startedAt > 0 ? (now - activity.startedAt) / 1000 : 0
-        const blended = blendEtas(computeElapsedEta(elapsedSec, done, remaining), computeWindowEta(snapshots, remaining))
-        return blended != null ? formatEta(blended) : null
+        return blendEtas(computeElapsedEta(elapsedSec, done, remaining), computeWindowEta(snapshots, remaining))
     })
 
     // The status line under the heading: the paused reason, else "N of M images".
@@ -97,8 +98,10 @@
     const rateEtaLine = $derived.by(() => {
         if (paused !== null) return null
         const rate = imagesPerMin != null ? tString('indexing.enrich.rate', { rateText: formatNumber(imagesPerMin) }) : null
-        if (rate && eta) return tString('indexing.enrich.rateEta', { rate, eta })
-        return rate ?? eta
+        if (rate && etaSeconds != null) {
+            return tString('indexing.enrich.rateEta', { rate, eta: formatEta(etaSeconds, 'midSentence') })
+        }
+        return rate ?? (etaSeconds != null ? formatEta(etaSeconds) : null)
     })
 
     const imagesBarLabel = $derived(tString('indexing.enrich.imagesBarLabel'))

@@ -76,4 +76,29 @@ describe('network-volume-prefs', () => {
     await expect(prefs.setVolumeAlwaysIndexed('smb-1', true)).rejects.toThrow('nope')
     expect(store.get('mediaIndex.alwaysIndexVolumes')).toEqual(['smb-9'])
   })
+
+  // A toggle that lands while an earlier one is still in flight must survive the earlier one's rollback.
+  it('rolls back only its own change when an earlier toggle fails after a later one landed', async () => {
+    let rejectFirst: (err: Error) => void = () => {}
+    setNetworkVolumeEnabled.mockImplementationOnce(
+      () =>
+        new Promise<void>((_, reject) => {
+          rejectFirst = reject
+        }),
+    )
+    const first = prefs.setNetworkVolumeOptedIn('smb-1', true)
+    await prefs.setNetworkVolumeOptedIn('smb-2', true)
+
+    rejectFirst(new Error('backend down'))
+    await expect(first).rejects.toThrow('backend down')
+
+    expect(store.get('mediaIndex.networkVolumes')).toEqual(['smb-2'])
+  })
+
+  it('leaves an entry that was already there when re-adding it fails', async () => {
+    store.set('mediaIndex.alwaysIndexVolumes', ['smb-1'])
+    setAlwaysIndexVolume.mockRejectedValueOnce(new Error('nope'))
+    await expect(prefs.setVolumeAlwaysIndexed('smb-1', true)).rejects.toThrow('nope')
+    expect(store.get('mediaIndex.alwaysIndexVolumes')).toEqual(['smb-1'])
+  })
 })

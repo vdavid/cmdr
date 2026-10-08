@@ -31,8 +31,10 @@ mechanics, deep-link wiring, and the smoke-test guide.
   `setGlobalGoToLatestBinding` resets `acknowledged` to `false`.
 - **`global-shortcut-description.ts`**: pure builder for the on/off toggle's helper text, tracking the live binding.
 - **`GlobalShortcutRow.svelte`**: the go-to-latest hotkey as a `(global)`-marked row in Keyboard shortcuts. Recorder
-  pill (`$lib/settings/sections/ShortcutPill.svelte`, shared with the section's rows) + reset; writes via
-  `setGlobalGoToLatestBinding` then `set_global_go_to_latest_shortcut` for live-apply.
+  pill (`$lib/settings/sections/ShortcutPill.svelte`, shared with the section's rows) + reset. Calls
+  `set_global_go_to_latest_shortcut` first and saves via `setGlobalGoToLatestBinding` only when the backend accepts: on
+  a refusal the backend keeps the previous combo registered, so the row keeps showing it, with "Another app may be using
+  that combo" for `unavailable`. It doesn't log a refusal; the backend already did.
 - **`LatestDownloadEmptyToastContent.svelte`**: INFO toast "Your Downloads folder is empty…" with "Go to Downloads".
 - **`LatestDownloadFdaToastContent.svelte`**: INFO toast "Cmdr needs Full Disk Access…" with "Open System Settings".
 
@@ -107,8 +109,8 @@ Swift spike for the OS behavior.)
 
 The blocker is the plumbing between us and the OS, NOT macOS:
 
-- `@tauri-apps/plugin-notification`'s `Options` has `id?: number` ("the notification identifier to reference this object
-  later") and `group?: string` (documented against Apple's `threadIdentifier`), which reads like it should work.
+- The notification plugin's options carry `id?: number` ("the notification identifier to reference this object later")
+  and `group?: string` (documented against Apple's `threadIdentifier`), which reads like it should work.
 - It doesn't: those fields are MOBILE-only. `tauri-plugin-notification` 2.3.3's desktop `NotificationBuilder::show`
   forwards exactly four fields to `notify_rust`: title, body, icon, sound. `id`, `group`, `extra`, and the rest are
   dropped before they reach the OS.

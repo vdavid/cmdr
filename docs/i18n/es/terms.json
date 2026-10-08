@@ -18,6 +18,11 @@
     "confidence": "high",
     "sources": "macOS (acceso); catalog (errors.listing.*.suggestion)"
   },
+  "access-key-id": {
+    "chosen": "ID de clave de acceso",
+    "confidence": "high",
+    "sources": "catalog servers.sheet.accessKeyId; decisions.md \"S3\" (AWS console and docs in this language (outside the pile, not verified live))"
+  },
   "account": {
     "chosen": "cuenta",
     "forms": "la cuenta; ❌ never por su cuenta for the account (that locution means on its own)",
@@ -45,6 +50,12 @@
     "confidence": "high",
     "sources": "macOS Finder (Añadir, Añadir a favoritos, Añadir al Dock, Añadir etiquetas…)",
     "decision": "Añadir a un informe ya enviado: el diálogo de la nota tardía"
+  },
+  "advanced": {
+    "chosen": "Avanzado",
+    "confidence": "high",
+    "forms": "Cmdr Settings section → Avanzado; quote settings.section.advanced exactly in navigation paths",
+    "sources": "Network.appex Localizable (ADVANCED); catalog settings.section.advanced (macOS 26.6.2 build 25G83, live loctable key cross-reference, 2026-10-02)"
   },
   "ai-feature": {
     "chosen": "funciones de IA",
@@ -79,6 +90,18 @@
     "accept": ["ya exist"],
     "confidence": "high",
     "sources": "macOS Finder (ya existe un ítem con el nombre…)"
+  },
+  "android-platform-tools": {
+    "chosen": "herramientas de plataforma",
+    "accept": ["herramientas de la plataforma"],
+    "forms": "the download → las herramientas de plataforma de Android; Google's docs title → Herramientas de la plataforma del SDK de Android",
+    "confidence": "tentative",
+    "sources": "Android Developers es-419 (machine-translated: Herramientas de la plataforma del SDK); catalog (four keys say herramientas de plataforma de Android); no Tier 1 or Tier 3 hit in the pile"
+  },
+  "android-tools": {
+    "chosen": "herramientas de Android",
+    "confidence": "high",
+    "sources": "catalog (adb.connect.serverUnreachable, settings.fileOperations.adbEnabled.description); plain descriptive phrase, no vendor label to quote"
   },
   "answer": {
     "chosen": "responder",
@@ -173,11 +196,10 @@
   "ask": {
     "chosen": "Preguntar",
     "accept": ["pregunt"],
+    "proseAccept": ["pedi", "pide"],
     "confidence": "high",
     "sources": "standard option label",
-    "exceptions": {
-      "settings.network.permissionIntroSuffix": "Asking a person or the AI for something (pedir), not the ask-each-time option (proposed: tighten the concept's match)."
-    }
+    "note": "Asking someone FOR something (a password, a yes) is pedir in prose (te pedirá la contraseña); the option label stays Preguntar."
   },
   "ask-cmdr": {
     "chosen": "Ask Cmdr",
@@ -191,6 +213,11 @@
     "forms": "attach → adjuntar; attachment → adjunto; attach your email → adjunta tu correo",
     "confidence": "high",
     "sources": "MS terminology (attach → adjuntar, attachment → adjunto)"
+  },
+  "automation": {
+    "chosen": "Automatización",
+    "confidence": "high",
+    "sources": "macOS 27.0 (26A428) SecurityPrivacyExtension.appex Localizable.loctable, key AUTOMATION, 2026-10-08"
   },
   "available-offline": {
     "chosen": "disponible sin conexión",
@@ -262,10 +289,42 @@
     "confidence": "high",
     "sources": "macOS Finder ConnectToWindow (48.title)"
   },
+  "bucket": {
+    "chosen": "bucket",
+    "forms": "el bucket, pl. los buckets; All buckets → Todos los buckets",
+    "avoid": [
+      {
+        "form": "cubo",
+        "why": "MS term; AWS es keeps bucket"
+      }
+    ],
+    "confidence": "high",
+    "sources": "decisions.md \"S3\" (AWS console and docs in this language (outside the pile, not verified live)); catalog servers.sheet.s3Bucket"
+  },
+  "byte": {
+    "chosen": "byte",
+    "accept": ["bytes", "Bytes"],
+    "forms": "el byte, los bytes; size unit plural one byte / many, other bytes; unit symbols unchanged from English: decimal (SI) kB, MB, GB, TB, PB; binary (IEC) KiB, MiB, GiB, TiB, PiB; ❌ KB (uppercase K is neither)",
+    "confidence": "high",
+    "sources": "macOS es Finder (bytes, KB, MB, GB); Thunar, Dolphin, and Microsoft es (KiB, MiB); Nautilus es (kB); RAE (byte, pl. bytes); catalog Bytes (fileOperations.transferProgress.progressBytes)"
+  },
   "cache": {
     "chosen": "caché",
     "confidence": "high",
     "sources": "MS terminology (cache → caché)"
+  },
+  "calculate": {
+    "accept": ["calcul"],
+    "chosen": "calcular",
+    "confidence": "high",
+    "forms": "Calculate folder sizes → Calcular tamaños de carpetas; the running work → el cálculo; adding up in prose → suma",
+    "sources": "macOS Finder ViewOptionsWindow 65.title (Calcular los tamaños); TC 503 Calcular espacio, 5138; Double Commander Calcular espacio ocupado"
+  },
+  "camera": {
+    "accept": ["cámaras"],
+    "chosen": "cámara",
+    "confidence": "high",
+    "sources": "macOS AppKit NSStillCameraTemplate “cámara”; catalog (settings.fileOperations.mtpEnabled.label)"
   },
   "camera-details": {
     "chosen": "datos de la cámara",
@@ -399,6 +458,17 @@
     "confidence": "high",
     "sources": "macOS (Portapapeles, Contenido del portapapeles)"
   },
+  "clone-pane": {
+    "avoid": [
+      {
+        "form": "Duplicar",
+        "why": "Finder's Duplicate makes a file copy"
+      }
+    ],
+    "chosen": "Clonar panel",
+    "confidence": "high",
+    "sources": "MS terminology (clone → clonar) + the pane ruling (panel). TC 532 and DC name the same command Destino=Origen; Finder has none"
+  },
   "close": {
     "chosen": "Cerrar",
     "accept": ["cerr", "cierr", "ciérr"],
@@ -418,6 +488,13 @@
     "forms": "cloud service → servicio en la nube; cloud folders → carpetas en la nube",
     "confidence": "high",
     "sources": "catalog"
+  },
+  "column": {
+    "accept": ["columnas"],
+    "chosen": "columna",
+    "confidence": "high",
+    "forms": "the Name column → la columna Nombre; sort column → columna de ordenación; column width → ancho de columna",
+    "sources": "macOS Finder (SV2 columna de ordenación); catalog"
   },
   "coming-soon": {
     "chosen": "próximamente",
@@ -444,6 +521,18 @@
     "chosen": "Comparador",
     "confidence": "high",
     "sources": "standard"
+  },
+  "compare-folders": {
+    "chosen": "Comparar carpetas",
+    "accept": ["compar"],
+    "avoid": [
+      {
+        "form": "Comparar directorios",
+        "why": "TC's wording; Cmdr follows Finder's carpeta"
+      }
+    ],
+    "confidence": "high",
+    "sources": "DC Comparar carpetas (exact match); TC 11.58 and MC say Comparar directorios; Finder carpeta"
   },
   "complete": {
     "chosen": "completar",
@@ -500,6 +589,19 @@
     "confidence": "high",
     "sources": "macOS Finder (Conectar, MN1 Conectándose a ^0…, Conectarse a un servidor), NetAuthAgent (Conectando…)",
     "decision": "El hub de servidores: conectar, desconectar y olvidar"
+  },
+  "key-combination": {
+    "chosen": "combinación",
+    "accept": ["combinación de teclas", "combinaciones"],
+    "forms": "short form combinación in shortcut rows and conflict warnings (Elige otra combinación); full combinación de teclas where the context lacks keys",
+    "confidence": "high",
+    "sources": "macOS/Microsoft es (combinación de teclas, 7 hits in the pile); catalog combinación (shortcuts.conflict.*, downloads.shortcutRow.invalidCombo)"
+  },
+  "provider-console": {
+    "chosen": "consola",
+    "confidence": "high",
+    "forms": "a storage provider’s console → la consola de tu proveedor de almacenamiento, after a first mention la consola de tu proveedor",
+    "sources": "MS terminology (console → consola); catalog errors.listing.coldStorage.suggestion"
   },
   "context-menu": {
     "chosen": "menú contextual",
@@ -573,6 +675,12 @@
     "confidence": "high",
     "sources": "macOS Finder (Mostrar la ubicación de la carpeta actual); catalog (commands.favoritesAdd.description)"
   },
+  "cursor": {
+    "chosen": "cursor",
+    "forms": "el cursor; under the cursor → bajo el cursor; move the cursor to X → mueve el cursor a X",
+    "confidence": "high",
+    "sources": "catalog (commands.navOpenUnderCursor.label Abrir el elemento bajo el cursor, ×5 uses); MS terminology (cursor)"
+  },
   "custom": {
     "chosen": "personalizado",
     "accept": ["personaliz"],
@@ -633,6 +741,13 @@
       "settings.fileSystemWatching.clearIndexDescription": "Describes the Clear index button (Borrar el índice), so it keeps the button's verb."
     }
   },
+  "delete-key": {
+    "chosen": "Suprimir",
+    "confidence": "high",
+    "forms": "la tecla Suprimir (⌫); forward delete is Suprimir (derecha)",
+    "note": "Pile mined 2026-10-07 (macOS 27.0.1 live bundles): VoiceOver SCRWorkspace.loctable deleteKey, Terminal keyDescriptions.loctable 007F, AccessibilitySharedSupport symbol names delete.backward.",
+    "sources": "macOS VoiceOver (Delete Key → Tecla Suprimir; Presses the delete key → Pulsa la tecla Suprimir), Terminal key descriptions (⌫ Delete → ⌫ Suprimir); the symbol names say retroceso, the Windows word"
+  },
   "delete-permanently": {
     "chosen": "permanentemente",
     "accept": ["para siempre", "Permanente"],
@@ -673,6 +788,12 @@
     "confidence": "high",
     "sources": "catalog (settings.fileOperations.mtpConnectionWarning.description)"
   },
+  "dialog": {
+    "chosen": "diálogo",
+    "forms": "a named Cmdr dialog → el diálogo Mover, el diálogo Seleccionar archivos (name unquoted); cuadro de diálogo is also fine in prose",
+    "confidence": "high",
+    "sources": "catalog (diálogo ×10, cuadro de diálogo ×1)"
+  },
   "direct-connection": {
     "chosen": "conexión directa",
     "accept": ["directamente"],
@@ -690,8 +811,8 @@
   },
   "disconnect": {
     "chosen": "Desconectar",
-    "accept": ["desconect"],
-    "forms": "menu item Desconectar (ocupado) when busy; aria Desconectar {name}",
+    "accept": ["desconect", "desconéct"],
+    "forms": "menu item Desconectar (ocupado) when busy; aria Desconectar {name}; imperative with a clitic Desconéctalo",
     "confidence": "high",
     "sources": "macOS Finder (MR10.1, N200 Desconectar)",
     "decision": "El hub de servidores: conectar, desconectar y olvidar"
@@ -856,7 +977,8 @@
     "confidence": "high",
     "sources": "catalog (errorReporter.dialog.title, menu.help.sendErrorReport)",
     "exceptions": {
-      "settings.updates.attachEmailToReports.description": "\"A crash or error report\" shares the head noun: un informe de fallos o de error."
+      "settings.updates.attachEmailToReports.description": "\"A crash or error report\" shares the head noun: un informe de fallos o de error.",
+      "settings.managed.summary.reports": "\"Crash and error reports\" shares the head noun: Informes de fallos y de error."
     },
     "decision": "Añadir a un informe ya enviado: el diálogo de la nota tardía"
   },
@@ -872,6 +994,13 @@
     "accept": ["estimad", "estimacion", "estimación"],
     "confidence": "high",
     "sources": "catalog"
+  },
+  "example": {
+    "chosen": "Ejemplo:",
+    "accept": ["ejemplo", "p. ej."],
+    "forms": "placeholder prefix Ejemplo: {value}; inline in prose → por ejemplo; a tight option description → p. ej.",
+    "confidence": "high",
+    "sources": "catalog (servers.sheet.usernamePlaceholder, onboarding.cloudSetup.step.endpointPlaceholder, ai.cloud.modelPlaceholderExample)"
   },
   "expired": {
     "chosen": "caducar",
@@ -997,6 +1126,13 @@
     "forms": "File system watching → Vigilancia del sistema de archivos",
     "confidence": "high",
     "sources": "macOS AppKit DocumentDragging.loctable (en el sistema de archivos), macOS 26.6.2, 2026-09-06"
+  },
+  "filter": {
+    "accept": ["filtr"],
+    "chosen": "filtrar",
+    "confidence": "high",
+    "forms": "noun el filtro (filtro rápido); the typing-mode name and badge Filtrar (Filtrar: …), beside Saltar",
+    "sources": "macOS live (Filter → Filtrar 45×, Filtro 18×; Clear Filter → Borrar filtro); DC, MC (Filtro); catalog (selection.runHint)"
   },
   "finder": {
     "chosen": "Finder",
@@ -1134,11 +1270,16 @@
     "sources": "macOS Finder (Atrás, Adelante)"
   },
   "go-to-path": {
-    "chosen": "Ir a la ruta",
-    "accept": ["Ir a la carpeta"],
-    "forms": "Cmdr's own dialog and command say Ir a la ruta (English says path); the Dock item that says folder follows Finder: Ir a la carpeta…",
-    "confidence": "high",
-    "sources": "macOS Finder (Ir a la carpeta Documentos pattern; MenuBar 261.title Ir a la carpeta…)"
+    "chosen": "Ir a la carpeta",
+    "forms": "menu item and palette command Ir a la carpeta…; dialog title and its confirm button Ir a la carpeta, as Finder's Go to Folder dialog",
+    "avoid": [
+      {
+        "form": "Ir a la ruta",
+        "why": "English moved from path to folder to match Finder"
+      }
+    ],
+    "confidence": "confirmed",
+    "sources": "macOS Finder es and es_419 (MenuBar 261.title / N83 Ir a la carpeta…; GT8 and Go To Folder Ir a la carpeta)"
   },
   "go-to-trash": {
     "chosen": "Ir a la papelera",
@@ -1149,6 +1290,12 @@
     "chosen": "Entendido",
     "confidence": "high",
     "sources": "catalog"
+  },
+  "group": {
+    "chosen": "grupo",
+    "confidence": "high",
+    "forms": "a named group takes the name bare after it (tu grupo Red); the servers found nearby → Grupo de servidores encontrados cerca",
+    "sources": "macOS Finder MenuBar (Use Groups → Usar grupos), verified on macOS 27.0 (26A428), live bundle, 2026-09-30; catalog (servers.pinHint.title)"
   },
   "guest": {
     "chosen": "invitado",
@@ -1555,7 +1702,8 @@
     "confidence": "high",
     "sources": "macOS (recurso compartido), NetAuthAgent (EINFO_NO_SHARES), MS",
     "exceptions": {
-      "settings.section.smbNetworkShares": "Settings sidebar title, shortened to SMB/Recursos de red."
+      "settings.section.smbNetworkShares": "Settings sidebar title, shortened to SMB/Recursos de red.",
+      "errorReporter.dialog.managedOff": "\"share it yourself\" is the verb (pass the report on), not a network share: compartirlo tú."
     },
     "decision": "Por qué no se monta un recurso compartido o no carga su lista"
   },
@@ -1626,6 +1774,13 @@
     "sources": "catalog (fileOperations.delete.cloudOnlineOnly*); no pile hit (macOS es has neither form in the mined Finder/AppKit)",
     "decision": "El aviso de contenido solo en línea"
   },
+  "on-device": {
+    "chosen": "en el dispositivo",
+    "forms": "on-device AI → la IA en el dispositivo; On-device only → Solo en el dispositivo; free, on-device → gratis, en el dispositivo",
+    "confidence": "high",
+    "sources": "catalog (askCmdr.cost.free gratis, en el dispositivo; settings.mediaIndex.clip.description un modelo de IA en el dispositivo); macOS es (Se conservará en el dispositivo)",
+    "decision": "Lo que gestiona tu organización (MDM)"
+  },
   "open": {
     "chosen": "Abrir",
     "accept": ["abr", "abiert", "apertura", "ábr"],
@@ -1671,6 +1826,14 @@
     "confidence": "high",
     "sources": "standard"
   },
+  "organization": {
+    "chosen": "organización",
+    "accept": ["organizaciones", "Organización"],
+    "forms": "your organization → tu organización; managed by → gestiona (Tu organización gestiona este ajuste); your IT team → tu equipo de informática",
+    "confidence": "high",
+    "sources": "MS terminology (organization → organización, ESP); catalog (licensing.about.fallbackOrg tu organización; errors.listing.authRequiredEauth.suggestion tu equipo de informática); macOS es (iCloud Drive gestionado)",
+    "decision": "Lo que gestiona tu organización (MDM)"
+  },
   "original": {
     "chosen": "originales",
     "accept": ["original"],
@@ -1685,6 +1848,12 @@
     "confidence": "high",
     "sources": "macOS Finder (NE103/NE105 no estén actualizados)",
     "decision": "El índice desactualizado de un teléfono por ADB"
+  },
+  "overall": {
+    "chosen": "En total",
+    "confidence": "high",
+    "forms": "the whole-run time-left label → En total: {eta}",
+    "sources": "GN total, DC Total:; En total is the adverbial form that reads before a time phrase"
   },
   "overwrite": {
     "chosen": "Sobrescribir",
@@ -1910,6 +2079,11 @@
     "confidence": "high",
     "sources": "catalog"
   },
+  "quick-filter": {
+    "chosen": "filtro rápido",
+    "confidence": "high",
+    "sources": "TC 3018/3019 (filtro rápido desactivado/activado); DC actQuickFilter (Filtro rápido)"
+  },
   "quick-look": {
     "chosen": "Vista rápida",
     "confidence": "high",
@@ -2063,6 +2237,13 @@
     "confidence": "high",
     "sources": "MS terminology (report → informe)"
   },
+  "repository": {
+    "accept": ["repositorio", "repos"],
+    "chosen": "repo",
+    "confidence": "high",
+    "forms": "masculine (el repo, del repo); English repo → repo (errors.git.*, the history toast); the branch and tag tooltips spell out repositorio",
+    "sources": "MS terminology es (repositorio, with repo as a listed variant); catalog (errors.git.*)"
+  },
   "reserved": {
     "chosen": "reservado",
     "accept": ["reserv"],
@@ -2088,6 +2269,13 @@
     "accept": ["reanud"],
     "confidence": "high",
     "sources": "macOS Finder (NE101 Reanudar, N158.1 Reanudar copia)"
+  },
+  "restore": {
+    "chosen": "restaurar",
+    "accept": ["restaur", "restáur"],
+    "forms": "noun la restauración; a file in cold storage → restáuralo en la consola de tu proveedor de almacenamiento",
+    "confidence": "high",
+    "sources": "macOS (Restore → Restaurar, Restore a Copy → Restaurar una copia); AWS es console (restaurar objetos archivados)"
   },
   "retry": {
     "chosen": "Reintentar",
@@ -2253,6 +2441,9 @@
     ],
     "confidence": "high",
     "sources": "macOS SystemSettings (Ajustes, Ajustes del Sistema)",
+    "exceptions": {
+      "servers.sheet.s3GcsKeyHelp": "Google Cloud’s own Spanish console names that page Configuración; a third-party label is quoted from its own UI."
+    },
     "decision": "Ask Cmdr: el panel del chat"
   },
   "share-menu": {
@@ -2319,6 +2510,36 @@
     "confidence": "high",
     "sources": "macOS (Restablecer tamaños)"
   },
+  "size-unit-gibibyte": {
+    "chosen": "GiB",
+    "confidence": "high",
+    "sources": "catalog common.sizeUnit.gibibyte; IEC 80000-13 (binary) / SI (decimal)"
+  },
+  "size-unit-kibibyte": {
+    "chosen": "KiB",
+    "confidence": "high",
+    "sources": "catalog common.sizeUnit.kibibyte; IEC 80000-13 (binary) / SI (decimal)"
+  },
+  "size-unit-kilobyte": {
+    "chosen": "kB",
+    "confidence": "high",
+    "sources": "catalog common.sizeUnit.kilobyte; IEC 80000-13 (binary) / SI (decimal)"
+  },
+  "size-unit-mebibyte": {
+    "chosen": "MiB",
+    "confidence": "high",
+    "sources": "catalog common.sizeUnit.mebibyte; IEC 80000-13 (binary) / SI (decimal)"
+  },
+  "size-unit-pebibyte": {
+    "chosen": "PiB",
+    "confidence": "high",
+    "sources": "catalog common.sizeUnit.pebibyte; IEC 80000-13 (binary) / SI (decimal)"
+  },
+  "size-unit-tebibyte": {
+    "chosen": "TiB",
+    "confidence": "high",
+    "sources": "catalog common.sizeUnit.tebibyte; IEC 80000-13 (binary) / SI (decimal)"
+  },
   "skip": {
     "chosen": "Omitir",
     "accept": ["omit"],
@@ -2330,7 +2551,7 @@
     "accept": ["lent", "despacio", "tarda"],
     "forms": "the volume may be slow → el volumen puede ir lento",
     "confidence": "high",
-    "sources": "catalog (fileOperations.mkdir.timeoutMessage)"
+    "sources": "catalog (fileExplorer.pane.trashUnconfirmedToast, fileOperations.newEntry.stillCreating)"
   },
   "sort": {
     "chosen": "Ordenar",
@@ -2408,11 +2629,30 @@
     },
     "decision": "El teléfono Android por ADB: el panel de conexión, los avisos del selector y la línea de invitación"
   },
+  "storage": {
+    "chosen": "almacenamiento",
+    "forms": "cloud storage → almacenamiento en la nube; S3 storage → almacenamiento S3; storage provider → proveedor de almacenamiento; cold storage → almacenamiento en frío; storing logs → almacenamiento de registros",
+    "confidence": "high",
+    "sources": "macOS (Almacenamiento); MS terminology (storage → almacenamiento)"
+  },
+  "store": {
+    "chosen": "guardar",
+    "accept": ["guard", "almacen"],
+    "forms": "store a secret in the Keychain → guardar en el Llavero; what a file system can hold → almacenar (FAT32 no puede almacenar archivos de más de 4 GB)",
+    "confidence": "high",
+    "sources": "catalog (servers.refusal.secretNotStored: no ha podido guardar esta contraseña en el Llavero)"
+  },
   "streaming": {
     "chosen": "transmisión",
     "accept": ["transmit"],
     "confidence": "tentative",
     "sources": "standard"
+  },
+  "subfolder": {
+    "chosen": "subcarpeta",
+    "accept": ["subcarpetas"],
+    "confidence": "high",
+    "sources": "macOS Finder (PE26.1 … a una de sus subcarpetas); DC, Nautilus, Thunar, Dolphin (Crear subcarpeta) agree"
   },
   "suggestion": {
     "chosen": "sugerencia",
@@ -2671,6 +2911,13 @@
     "confidence": "high",
     "sources": "catalog (reach → acceder a)"
   },
+  "untouched": {
+    "accept": ["intactos", "intacta", "intactas"],
+    "chosen": "intacto",
+    "confidence": "high",
+    "forms": "the originals are untouched → los originales están intactos",
+    "sources": "macOS AppKit Document (To keep the file unchanged…): dejar el archivo intacto; catalog (errors.write.destinationNotFound.message.copy, errors.write.deviceDisconnected.sided.destination.copy)"
+  },
   "update": {
     "chosen": "actualización",
     "accept": ["actualiz", "al día", "actualic"],
@@ -2838,6 +3085,13 @@
     "chosen": "Mission Control",
     "confidence": "high",
     "sources": "macOS es"
+  },
+  "space-key": {
+    "accept": ["barra espaciadora"],
+    "chosen": "Espacio",
+    "confidence": "high",
+    "forms": "key name Espacio, ⇧Espacio; prose may say la tecla Espacio; macOS prose also says la barra espaciadora",
+    "sources": "macOS AppKit FunctionKeyNames (Space), SystemSettings Siri/Spotlight SPACEBAR_KEY → Espacio (Space bar → Barra espaciadora); TC 5139 ESPACIO; Midnight Commander Espacio; Double Commander barra espaciadora"
   },
   "spaces": {
     "chosen": "Spaces",

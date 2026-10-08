@@ -18,6 +18,7 @@ import {
   deleteFiles,
   moveBetweenVolumes,
   moveFiles,
+  renameByMove,
   trashFiles,
   DEFAULT_VOLUME_ID,
   type Initiator,
@@ -25,6 +26,7 @@ import {
 import type { ConflictResolution, SortColumn, SortOrder, TransferOperationType } from '$lib/file-explorer/types'
 import { getSetting } from '$lib/settings'
 import { pathCrossesArchiveBoundary, pathInsideArchive } from '$lib/file-explorer/pane/archive-paths'
+import type { SpaceShortfall } from '$lib/ipc/bindings'
 
 /** Everything the backend needs to start this operation. Captured at the moment
  *  the user confirmed, and never re-read afterwards. */
@@ -49,11 +51,16 @@ export interface TransferDispatchConfig {
   conflictResolution?: ConflictResolution
   /** Source filenames known to conflict at dest (forwarded so the BE bulk-skips them under `Skip all`). */
   preKnownConflicts?: string[]
+  /** Copy only: `proceed` when the person chose "Copy anyway" after a space shortfall. */
+  spaceShortfall?: SpaceShortfall
   /** Per-item sizes for trash progress (from scan or drive index). */
   itemSizes?: number[]
   /** Who triggered this operation. `undefined`/`user` for direct UI actions;
    *  `aiClient` when an MCP tool initiated it (drives the operation-log provenance). */
   initiator?: Initiator
+  /** Rename mode: a move of the ONE source into `destinationPath` under this name
+   *  (F2 on a big S3 folder, confirmed in the Move dialog). */
+  newName?: string
 }
 
 /**
@@ -120,6 +127,26 @@ export function dispatchTransferOperation(config: TransferDispatchConfig): Promi
     )
   }
   if (config.operationType === 'move') {
+    const volumeMoveConfig = {
+      destinationName: config.destinationName,
+      conflictResolution: config.conflictResolution ?? 'stop',
+      progressIntervalMs,
+      maxConflictsToShow,
+      previewId: config.previewId,
+      preKnownConflicts: config.preKnownConflicts ?? [],
+      compressionLevel,
+    }
+    // A rename that copies, confirmed in the Move dialog: one source, one volume.
+    if (config.newName !== undefined) {
+      return renameByMove(
+        config.sourceVolumeId,
+        config.sourcePaths[0] ?? '',
+        config.destinationPath ?? '',
+        config.newName,
+        volumeMoveConfig,
+        config.initiator,
+      )
+    }
     // Volume move (MTP or other non-local); backend handles same-volume, cross-volume, etc.
     if (isVolumeMove(config)) {
       return moveBetweenVolumes(
@@ -127,15 +154,7 @@ export function dispatchTransferOperation(config: TransferDispatchConfig): Promi
         config.sourcePaths,
         config.destVolumeId ?? DEFAULT_VOLUME_ID,
         config.destinationPath ?? '',
-        {
-          conflictResolution: config.conflictResolution ?? 'stop',
-          progressIntervalMs,
-          maxConflictsToShow,
-          previewId: config.previewId,
-          preKnownConflicts: config.preKnownConflicts ?? [],
-          compressionLevel,
-          destinationName: config.destinationName,
-        },
+        volumeMoveConfig,
         config.initiator,
       )
     }
@@ -182,6 +201,7 @@ function dispatchCopy(
       preKnownConflicts: config.preKnownConflicts ?? [],
       compressionLevel,
       destinationName: config.destinationName,
+      spaceShortfall: config.spaceShortfall ?? 'refuse',
     },
     config.initiator,
   )

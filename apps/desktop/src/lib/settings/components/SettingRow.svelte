@@ -2,11 +2,13 @@
     import type { Snippet } from 'svelte'
     import { isModified, resetSetting, onSpecificSettingChange, type SettingId } from '$lib/settings'
     import { getMatchIndicesForLabel, highlightMatches } from '$lib/settings/settings-search'
-    import { settingAnchorId } from '$lib/settings/settings-window'
+    import { disabledNoteId, settingAnchorId } from '$lib/settings/settings-window'
     import { tooltip } from '$lib/tooltip/tooltip'
     import Icon from '$lib/ui/Icon.svelte'
     import { onMount } from 'svelte'
     import { tString } from '$lib/intl/messages.svelte'
+    import { isSettingLocked } from '$lib/managed-policy/managed-policy.svelte'
+    import { registerSectionRow } from './section-rows.svelte'
 
     interface Props {
         id: SettingId
@@ -14,6 +16,12 @@
         description: string
         disabled?: boolean
         disabledReason?: string
+        /**
+         * A sentence explaining why the row is disabled and how to enable it, shown under the
+         * description (with an info glyph) only while `disabled`. Stays at full contrast while the
+         * rest of the row greys out. Point the control's `aria-describedby` at `disabledNoteId(id)`.
+         */
+        disabledNote?: string
         requiresRestart?: boolean
         /** When true, label and control each take 50% width for consistent vertical alignment across rows. */
         split?: boolean
@@ -32,8 +40,9 @@
         id,
         label,
         description,
-        disabled = false,
-        disabledReason,
+        disabled: sectionDisabled = false,
+        disabledReason: sectionDisabledReason,
+        disabledNote: sectionDisabledNote,
         requiresRestart = false,
         split = false,
         searchQuery = '',
@@ -41,6 +50,16 @@
         descriptionContent,
         labelTrailing,
     }: Props = $props()
+
+    // A setting the organization manages renders locked whatever the section passed: disabled,
+    // with ONE note (the managed one), no badge of the section's own, and no reset pip. The
+    // primitive inside picks the lock up too (disabled, described by this row's note).
+    const locked = $derived(isSettingLocked(id))
+    const disabled = $derived(locked || sectionDisabled)
+    const disabledReason = $derived(locked ? undefined : sectionDisabledReason)
+    const disabledNote = $derived(locked ? tString('settings.managed.rowNote') : sectionDisabledNote)
+
+    registerSectionRow(id)
 
     // Get highlighted label segments based on search query
     const labelSegments = $derived.by(() => {
@@ -78,7 +97,7 @@
                         >{:else}{segment.text}{/if}{/each}</label
             >
             {#if labelTrailing}{@render labelTrailing()}{/if}
-            {#if modified}
+            {#if modified && !locked}
                 <button
                     class="reset-button"
                     use:tooltip={tString('settings.control.resetToDefault')}
@@ -104,6 +123,12 @@
     {:else}
         <p class="setting-description">{description}</p>
     {/if}
+    {#if disabled && disabledNote}
+        <p class="setting-disabled-note" id={disabledNoteId(id)}>
+            <span class="disabled-note-icon"><Icon name="info" size={14} aria-hidden="true" /></span>
+            <span>{disabledNote}</span>
+        </p>
+    {/if}
 </div>
 
 <style>
@@ -116,7 +141,9 @@
         border-bottom: none;
     }
 
-    .setting-row.disabled {
+    /* Dim the children, not the row: opacity can't be undone on a descendant, and the
+       disabled note has to stay at full AA contrast to be readable. */
+    .setting-row.disabled > :not(.setting-disabled-note) {
         opacity: 0.6;
     }
 
@@ -197,6 +224,22 @@
         margin: var(--spacing-xs) 0 0;
         color: var(--color-text-secondary);
         font-size: var(--font-size-sm);
+    }
+
+    .setting-disabled-note {
+        display: flex;
+        align-items: flex-start;
+        gap: var(--spacing-xs);
+        margin: var(--spacing-xs) 0 0;
+        color: var(--color-text-secondary);
+        font-size: var(--font-size-sm);
+    }
+
+    /* Centers the glyph on the first text line, however the note wraps. */
+    .disabled-note-icon {
+        display: flex;
+        align-items: center;
+        height: 1lh;
     }
 
     .search-highlight {

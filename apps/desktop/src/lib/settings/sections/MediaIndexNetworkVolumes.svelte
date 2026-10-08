@@ -29,7 +29,6 @@
     import { tString } from '$lib/intl/messages.svelte'
     import { formatInteger } from '$lib/intl/number-format'
     import Spinner from '$lib/ui/Spinner.svelte'
-    import { getAppLogger } from '$lib/logging/logger'
     import { onSpecificSettingChange } from '$lib/settings'
     import { mediaIndexVolumeState, type MediaIndexVolumeState } from '$lib/tauri-commands'
     import {
@@ -38,8 +37,6 @@
         setNetworkVolumeOptedIn,
         setVolumeAlwaysIndexed,
     } from '$lib/media-index/network-volume-prefs'
-
-    const log = getAppLogger('media-index')
 
     // The mounted network (SMB) volumes, reactive off the shared volume store.
     const networkVolumes = $derived(getVolumes().filter((v: VolumeInfo) => v.category === 'network'))
@@ -74,6 +71,7 @@
         }
     }
 
+    // These two never reject: the setter already logged a failure, so the catch only flips the switch back.
     async function handleOptInChange(volumeId: string, enabled: boolean): Promise<void> {
         optIn.set(volumeId, enabled)
         try {
@@ -183,9 +181,7 @@
                         <Switch
                             checked={isOn}
                             onCheckedChange={(next: boolean) => {
-                                void handleOptInChange(volume.id, next).catch((err: unknown) => {
-                                    log.warn('opt-in toggle failed: {err}', { err: String(err) })
-                                })
+                                void handleOptInChange(volume.id, next)
                             }}
                             ariaLabel={tString('settings.mediaIndex.networkVolumes.optInLabel', {
                                 name: volume.name,
@@ -209,9 +205,7 @@
                             <Switch
                                 checked={always.get(volume.id) ?? false}
                                 onCheckedChange={(next: boolean) => {
-                                    void handleAlwaysChange(volume.id, next).catch((err: unknown) => {
-                                        log.warn('always-index toggle failed: {err}', { err: String(err) })
-                                    })
+                                    void handleAlwaysChange(volume.id, next)
                                 }}
                                 ariaLabel={tString('settings.mediaIndex.networkVolumes.alwaysAria', {
                                     name: volume.name,

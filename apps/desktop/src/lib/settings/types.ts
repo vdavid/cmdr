@@ -257,10 +257,20 @@ export type ThemeMode = 'light' | 'dark' | 'system'
  * disk; the Rust side keeps a serde alias for it, since it reads the file first.
  */
 export type FullDiskAccessChoice = 'allow' | 'deny' | 'unanswered'
+/** Whether the servers hub's "found nearby" group is open: the person's last toggle, or `auto` before any. */
+export type NearbyServersGroupChoice = 'auto' | 'expanded' | 'collapsed'
 export type ExtensionChangePolicy = 'yes' | 'no' | 'ask'
 /** What ⌘V does in a pane when the clipboard holds no file URLs but has pasteable content (text, image, PDF). */
 export type PasteClipboardAsFileMode = 'doNothing' | 'createFile' | 'createFileAndRename'
 export type DirectorySortMode = 'likeFiles' | 'alwaysByName'
+/** What typing a letter in a pane does: jump the cursor, or narrow the list (quick filter). */
+export type TypeToJumpMode = 'jump' | 'filter'
+/**
+ * What a listing's comparator is told (the Rust `DirectorySortMode`): the "Sort folders"
+ * choice while "Show folders first" is on, else `mixedWithFiles`. `getDirectorySortMode()` folds
+ * the two settings into it; it's never stored.
+ */
+export type ListingDirectorySortMode = DirectorySortMode | 'mixedWithFiles'
 export type SizeDisplayMode = 'smart' | 'logical' | 'physical'
 export type BriefColumnWidthMode = 'paneWidth' | 'limited'
 export type AppColor = 'system' | 'cmdr-gold'
@@ -350,6 +360,8 @@ export interface SettingsValues {
 
   // Listing
   'listing.showHiddenFiles': boolean
+  'listing.foldersFirst': boolean
+  'listing.spaceCalculatesFolderSize': boolean
   'listing.directorySortMode': DirectorySortMode
   'listing.sizeDisplay': SizeDisplayMode
   'listing.sizeUnit': FileSizeUnit
@@ -366,6 +378,8 @@ export interface SettingsValues {
   'fileExplorer.git.showVirtualGitPortal': boolean
 
   // Type-to-jump
+  'fileExplorer.typeToJump.mode': TypeToJumpMode
+  'fileExplorer.quickFilterIntroSeen': boolean
   'fileExplorer.typeToJump.resetDelay': number
 
   // Quick Look
@@ -458,6 +472,8 @@ export interface SettingsValues {
   // Network
   'network.enabled': boolean
   'network.firstTriggerDone': boolean
+  /** Internal: the servers hub's "found nearby" group, as the person last left it. */
+  'network.nearbyServersGroup': NearbyServersGroupChoice
   'network.directSmbConnection': boolean
   'network.shareCacheDuration': number
   'network.timeoutMode': NetworkTimeoutMode
@@ -608,7 +624,7 @@ export interface SettingsValues {
   'ai.cloudConsentRevokePending': boolean
 
   // Ask Cmdr
-  // The feature's plain on/off. Read fresh backend-side each send (`load_ask_cmdr_enabled`); the
+  // The feature's plain on/off. Read fresh backend-side each send (`load_ask_cmdr_switch`); the
   // wake loop's cached readiness hears about it through a `settings-applier` case.
   'askCmdr.enabled': boolean
   // The interactive-slot model override (empty = use the shared `ai/` provider's model).

@@ -30,7 +30,7 @@ the surface, so every later slice grows here too.
   never bytes). Widening the line is a copy change AND a `CLOUD_AI_CONSENT_VERSION` bump (invariant 8).
 - **Ask Cmdr has a plain on/off (`askCmdr.enabled`); cloud consent is `ai/`'s.** `ask_cmdr_send_message` refuses with
   a typed `AskCmdrOff` before a thread exists, and the slot's resolution refuses `NoCloudConsent` on Cloud without
-  "Allow cloud AI" (`session::admit_send`). Consent itself: `../ai/DETAILS.md` § Cloud AI consent.
+  "Allow cloud AI", or `Managed` when the organization's policy refuses it (`session::admit_send`). Consent itself: `../ai/DETAILS.md` § Cloud AI consent.
 - **The interactive slot layers a model over shared `ai/` config.** `resolve_agent_llm` reads `askCmdr.interactiveModel`
   fresh; provider on/off, keys, and base URLs stay single-sourced in `ai/` (D49). Empty override ⇒ the `ai/` model.
 - **IPC is wired.** `agent::start` registers `ChatRuntime`; `../commands/agent/` is the thin surface. `run_turn` runs

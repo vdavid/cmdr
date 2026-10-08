@@ -2,6 +2,7 @@
     import SettingsSection from '../components/SettingsSection.svelte'
     import { tString } from '$lib/intl/messages.svelte'
     import SettingRow from '../components/SettingRow.svelte'
+    import { disabledNoteId } from '$lib/settings/settings-window'
     import SettingToggleGroup from '../components/SettingToggleGroup.svelte'
     import SettingSwitch from '../components/SettingSwitch.svelte'
     import SettingRadioGroup from '../components/SettingRadioGroup.svelte'
@@ -22,7 +23,10 @@
     const showHiddenDef = getSettingDefinition('listing.showHiddenFiles') ?? { label: '', description: '' }
     const appIconsDef = getSettingDefinition('appearance.useAppIconsForDocuments') ?? { label: '', description: '' }
     const fnKeyBarDef = getSettingDefinition('appearance.showFunctionKeyBar') ?? { label: '', description: '' }
+    const foldersFirstDef = getSettingDefinition('listing.foldersFirst') ?? { label: '', description: '' }
+    const spaceSizeDef = getSettingDefinition('listing.spaceCalculatesFolderSize') ?? { label: '', description: '' }
     const dirSortDef = getSettingDefinition('listing.directorySortMode') ?? { label: '', description: '' }
+    const typeModeDef = getSettingDefinition('fileExplorer.typeToJump.mode') ?? { label: '', description: '' }
     const showExtInNameDef = getSettingDefinition('listing.showExtensionInName') ?? { label: '', description: '' }
     const showTagsDef = getSettingDefinition('listing.showTags') ?? { label: '', description: '' }
     const briefWidthModeDef = getSettingDefinition('listing.briefColumnWidthMode') ?? { label: '', description: '' }
@@ -37,10 +41,19 @@
         }),
     )
     const widthFieldDisabled = $derived(briefWidthMode !== 'limited')
+
+    // "Sort folders" only means something while folders lead; mixed in with
+    // files, they sort by the column like any file. Same in-window read as above.
+    let foldersFirst = $state<boolean>(getSetting('listing.foldersFirst'))
+    onMount(() =>
+        onSpecificSettingChange('listing.foldersFirst', (value) => {
+            foldersFirst = value
+        }),
+    )
 </script>
 
 <SettingsSection title={tString('settings.section.listing')}>
-    {#if anyVisible(shouldShow, 'listing.showHiddenFiles', 'appearance.useAppIconsForDocuments', 'appearance.showFunctionKeyBar', 'listing.directorySortMode', 'listing.showExtensionInName', 'listing.showTags')}
+    {#if anyVisible(shouldShow, 'listing.showHiddenFiles', 'appearance.useAppIconsForDocuments', 'appearance.showFunctionKeyBar', 'listing.foldersFirst', 'listing.directorySortMode', 'listing.spaceCalculatesFolderSize', 'fileExplorer.typeToJump.mode', 'listing.showExtensionInName', 'listing.showTags')}
         <SectionCard label={tString('settings.appearance.card.namesAndIcons')}>
             {#if shouldShow('listing.showHiddenFiles')}
                 <SettingRow
@@ -72,14 +85,50 @@
                     <SettingSwitch id="appearance.showFunctionKeyBar" />
                 </SettingRow>
             {/if}
+            {#if shouldShow('listing.foldersFirst')}
+                <SettingRow
+                    id="listing.foldersFirst"
+                    label={foldersFirstDef.label}
+                    description={foldersFirstDef.description}
+                    {searchQuery}
+                >
+                    <SettingSwitch id="listing.foldersFirst" />
+                </SettingRow>
+            {/if}
             {#if shouldShow('listing.directorySortMode')}
                 <SettingRow
                     id="listing.directorySortMode"
                     label={dirSortDef.label}
                     description={dirSortDef.description}
+                    disabled={!foldersFirst}
+                    disabledNote={tString('settings.listing.directorySortMode.disabledReason')}
                     {searchQuery}
                 >
-                    <SettingToggleGroup id="listing.directorySortMode" />
+                    <SettingToggleGroup
+                        id="listing.directorySortMode"
+                        disabled={!foldersFirst}
+                        ariaDescribedBy={foldersFirst ? undefined : disabledNoteId('listing.directorySortMode')}
+                    />
+                </SettingRow>
+            {/if}
+            {#if shouldShow('listing.spaceCalculatesFolderSize')}
+                <SettingRow
+                    id="listing.spaceCalculatesFolderSize"
+                    label={spaceSizeDef.label}
+                    description={spaceSizeDef.description}
+                    {searchQuery}
+                >
+                    <SettingSwitch id="listing.spaceCalculatesFolderSize" />
+                </SettingRow>
+            {/if}
+            {#if shouldShow('fileExplorer.typeToJump.mode')}
+                <SettingRow
+                    id="fileExplorer.typeToJump.mode"
+                    label={typeModeDef.label}
+                    description={typeModeDef.description}
+                    {searchQuery}
+                >
+                    <SettingToggleGroup id="fileExplorer.typeToJump.mode" />
                 </SettingRow>
             {/if}
             {#if shouldShow('listing.showExtensionInName')}

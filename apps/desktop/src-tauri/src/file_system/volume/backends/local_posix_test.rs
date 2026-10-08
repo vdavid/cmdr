@@ -473,6 +473,29 @@ async fn test_open_read_stream_single_file() {
     assert_eq!(content, b"Test content");
 }
 
+/// A destination that stores modification times (S3's `x-amz-meta-mtime`)
+/// reads the source's off the stream, so the local stream has to carry the
+/// file's own, to the nanosecond the filesystem kept.
+#[tokio::test]
+async fn test_open_read_stream_reports_the_file_mtime() {
+    use std::fs;
+
+    let src_dir = TestDir::new("read_stream_mtime_test");
+    let path = src_dir.join("dated.txt");
+    fs::write(&path, "dated").unwrap();
+    let mtime = std::time::SystemTime::UNIX_EPOCH + std::time::Duration::new(1_354_040_105, 123_456_000);
+    fs::File::options()
+        .write(true)
+        .open(&path)
+        .unwrap()
+        .set_modified(mtime)
+        .unwrap();
+
+    let volume = LocalPosixVolume::new("Test", src_dir.to_str().unwrap());
+    let stream = volume.open_read_stream(Path::new("dated.txt")).await.unwrap();
+    assert_eq!(stream.modified_at(), Some(mtime));
+}
+
 #[tokio::test]
 async fn test_open_read_stream_rejects_directory() {
     use std::fs;

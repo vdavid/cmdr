@@ -16,8 +16,9 @@
  *   4. Otherwise forward to the focused pane's `handleKeyDown`.
  */
 
+import { cancelCountInPane } from './folder-size-count'
 import { isTextInputTarget } from '$lib/utils/text-input-focus'
-import { isPrintableJumpContinuation, isTypeToJumpChar, isTypeToJumpResetKey } from './type-to-jump-keys'
+import { routeTypingKey } from './type-to-jump-keys'
 import type { FilePaneAPI } from './types'
 
 export interface KeyDispatchDeps {
@@ -88,6 +89,16 @@ export function createKeyDispatch(deps: KeyDispatchDeps): KeyDispatch {
     containerElement?.focus()
   }
 
+  /**
+   * Esc while folder sizes are being calculated stops the count (Total Commander's
+   * Esc). Not while renaming: there Esc cancels the rename. True when it stopped one.
+   */
+  function stopFolderSizeCount(): boolean {
+    const pane = deps.getPaneRef(deps.getFocusedPane())
+    if (!pane || pane.isRenaming()) return false
+    return cancelCountInPane(pane.getListingId())
+  }
+
   function handleKeyDown(e: KeyboardEvent): void {
     // ESC during loading = cancel and go back
     if (e.key === 'Escape' && handleEscapeDuringLoading()) {
@@ -100,29 +111,22 @@ export function createKeyDispatch(deps: KeyDispatchDeps): KeyDispatch {
       return
     }
 
-    // Type-to-jump intercept: route printable letters/digits into the
-    // active pane's buffer before any other shortcut sees them. Reset keys
-    // (arrows, page nav, enter, tab, backspace, esc) clear an active buffer
-    // and then fall through to their existing handlers.
-    //
-    // Once a jump is ACTIVE (buffer non-empty), the captured set widens to
-    // every printable key (`isPrintableJumpContinuation`): while you're typing
-    // a name, `-`, Space, etc. extend the buffer instead of firing their own
-    // single-char command. The widening ends when the reset timeout empties
-    // the buffer, so a lone `-` deselects again. (Mirror this in
-    // `pane-commands.ts` `routePanelKey` — landmine L9.)
+    if (e.key === 'Escape' && stopFolderSizeCount()) {
+      e.preventDefault()
+      return
+    }
+
+    // Typing intercept (type-to-jump or the quick filter, per the pane's
+    // mode): route printable letters/digits into the active pane before any
+    // other shortcut sees them. Once a jump or filter is ACTIVE, the captured
+    // set widens to every printable key, so `-`, Space, etc. extend it instead
+    // of firing their own single-char command. The rules, shared with
+    // `pane-commands.ts` `routePanelKey` (landmine L9): `routeTypingKey`.
     const activePaneRef = deps.getPaneRef(deps.getFocusedPane())
-    if (activePaneRef && !isTypingInInput(e) && !activePaneRef.isRenaming()) {
-      if (isTypeToJumpChar(e) || (activePaneRef.isJumpActive() && isPrintableJumpContinuation(e))) {
-        activePaneRef.handleJumpKeystroke(e.key)
-        e.preventDefault()
-        e.stopPropagation()
-        return
-      }
-      if (isTypeToJumpResetKey(e)) {
-        activePaneRef.clearJumpState()
-        // Fall through; Enter/arrows/Backspace/ESC keep their existing meaning.
-      }
+    if (activePaneRef && !isTypingInInput(e) && routeTypingKey(activePaneRef, e)) {
+      e.preventDefault()
+      e.stopPropagation()
+      return
     }
 
     // Forward arrow keys and Enter to the focused pane

@@ -220,6 +220,10 @@
   "@askCmdr.error.noCloudConsent": {
     "sourceHash": "cd2af1d"
   },
+  "askCmdr.error.managedByOrganization": "你的組織不允許使用這個 AI 服務。IT 人員可以告訴你能用哪些服務。",
+  "@askCmdr.error.managedByOrganization": {
+    "sourceHash": "845a19f"
+  },
   "askCmdr.error.localWindowTooSmall": "Cmdr 需要的上下文視窗比你的本機模型大。請到設定的「AI」裡選 32,768 個 token 以上。",
   "@askCmdr.error.localWindowTooSmall": {
     "sourceHash": "8ac7452"
@@ -575,6 +579,10 @@
   "askCmdr.renameUndo.applied": "已重新命名 {countText} 個{count, plural, other {檔案}}。",
   "@askCmdr.renameUndo.applied": {
     "sourceHash": "b06c599"
+  },
+  "askCmdr.renameUndo.swapsSkipped": "已略過 {countText} 項會互換名稱的{count, plural, other {重新命名}}。請一次重新命名一個。",
+  "@askCmdr.renameUndo.swapsSkipped": {
+    "sourceHash": "90e8dfc"
   },
   "askCmdr.renameUndo.undo": "還原",
   "@askCmdr.renameUndo.undo": {

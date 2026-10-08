@@ -3,6 +3,9 @@ import type { DragAutoScrollFrameResult, DragAutoScrollPointer } from '../drag/d
 import type { Initiator, ListingIndexSizesChanged, Location } from '$lib/tauri-commands'
 import type { HubRow } from '../network/servers-hub-rows'
 import type { FavoritesMenuOpenTrigger } from '../navigation/favorites-analytics'
+import type { HistoryCursor } from '../navigation/navigation-history'
+import type { PaneRowState } from './pane-row-state'
+import type { ResortResult } from '../types'
 
 /** Options for `startRename`. */
 export interface StartRenameOptions {
@@ -59,6 +62,14 @@ export interface LoadDirectoryArgs {
 /** A directory load: the volume and path it lists, and the entry it puts under the cursor on landing. */
 export interface ListingLoad extends LoadDirectoryArgs {
   volumeId: string
+  /** A Back / Forward landing's remembered cursor, restored when `selectName` is absent. */
+  historyCursor?: HistoryCursor
+}
+
+/** Where a history walk lands, and the cursor its entry remembers (none on a first visit's entry). */
+export interface HistoryCursorTarget {
+  path: string
+  cursor: HistoryCursor | undefined
 }
 
 /**
@@ -80,6 +91,13 @@ export interface CancelLoadingPayload {
 export interface CopyPathBetweenPanesArgs {
   source: 'left' | 'right'
   target: 'left' | 'right'
+  /**
+   * When the source pane is focused, let the cursor refine the destination (a
+   * folder under the cursor opens instead of the pane's own folder). Default
+   * `true`, the ⌘→ / ⌘← behavior; `pane.clone` passes `false` to copy the pane's
+   * location exactly.
+   */
+  followCursor?: boolean
 }
 
 /**
@@ -129,6 +147,8 @@ export interface FilePaneAPI {
 
   getListingId(): string
   isLoading(): boolean
+  /** Whether the folder stopped answering mid-read (`listing-stalled`); the load stays in flight. */
+  isStalled(): boolean
   /**
    * Resolves when the current load (if any) settles. Used by callers that need
    * a stable `listingId` for a backend call (for example, the MCP `move_cursor`
@@ -164,8 +184,23 @@ export interface FilePaneAPI {
    * inserted at or above the cursor's index.
    */
   setPendingCursorName(name: string | null): void
+  /**
+   * A Back / Forward landing: put the cursor where it last sat in the destination
+   * history entry once that entry's rows are on screen (`pane/history-cursor-sync.svelte.ts`).
+   */
+  restoreHistoryCursor(target: HistoryCursorTarget): void
   isInNetworkView(): boolean
   hasParentEntry(): boolean
+  /**
+   * The last `directory-diff` sequence applied: which state of the listing the rows
+   * show. Row numbers the backend read at another sequence don't fit them.
+   */
+  getLastSequence(): number
+  getViewGeneration(): number
+  isRowStateReady(): boolean
+  getRowState(): PaneRowState
+  /** Installs count, cursor, and selection synchronously; row-state owns the revision. */
+  applyRowResult(result: ResortResult): () => void
   getCurrentPath(): string
   getVolumeId(): string
   isMtp(): boolean
@@ -249,6 +284,17 @@ export interface FilePaneAPI {
   isJumpActive(): boolean
   /** Type-to-jump: clear the buffer + hide the indicator immediately. */
   clearJumpState(): void
+
+  /** Quick filter: true when typing in this pane narrows the list instead of jumping (the setting). */
+  isQuickFilterMode(): boolean
+  /** Quick filter: true while a pattern narrows the list. */
+  isQuickFilterActive(): boolean
+  /** Quick filter: append one printable character to the pattern. */
+  appendQuickFilter(char: string): void
+  /** Quick filter: drop the pattern's last character. */
+  backspaceQuickFilter(): void
+  /** Quick filter: clear the pattern and show every row again. */
+  clearQuickFilter(): void
 
   /** Debug only: inject a FriendlyError into this pane's error state. */
   injectError(friendly: FriendlyError): void
@@ -360,11 +406,11 @@ export interface PlacesBrowserAPI extends BrowserAPI {
 
 /** Typed interface for SearchResultsView's exported methods. */
 /**
- * Which view a pane renders, as a function of its capability KIND (plus the MTP
- * device-only connection sub-state). `FilePane`'s alt-view `{#if}` chain branches
- * on it, and `pane-footer.ts` decides the status footer from it.
+ * Which view a pane renders, as a function of its capability KIND. `FilePane`'s
+ * alt-view `{#if}` chain branches on it, and `pane-footer.ts` decides the status
+ * footer from it.
  */
-export type PaneViewKind = 'network' | 'search-results' | 'mtp-connect' | 'normal'
+export type PaneViewKind = 'network' | 'search-results' | 'normal'
 
 export interface SearchResultsViewAPI {
   setCursorIndex(index: number): void
@@ -405,5 +451,5 @@ export type NetworkCursorEntry =
   /** An SMB host in the hub, with the hub row it is on (Edit server… acts on the row). */
   | { kind: 'host'; host: NetworkHost; row: HubRow }
   | { kind: 'share'; share: ShareInfo }
-  /** A one-place server in the hub: SFTP or WebDAV, which has no SMB host. */
+  /** A hub row with no SMB host: an SFTP or WebDAV server, or an S3 account or one of its places. */
   | { kind: 'server'; row: HubRow }

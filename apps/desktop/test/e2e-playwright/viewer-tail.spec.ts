@@ -5,7 +5,7 @@
  * shapes, watcher classification) lives in vitest + Rust unit tests. What
  * only an E2E can verify is the cross-component flow: the user clicks the
  * tail toggle, the FS-watcher fires for a real filesystem append, and the
- * viewport auto-scrolls to the new bottom.
+ * backend's line count grows. Following the end is `debug-log.spec.ts`.
  *
  * Fixture: a small text file we append to via Node's `fs.appendFile` after
  * the viewer is open. macOS FSEvents has variable latency (~300 ms debounce
@@ -24,10 +24,10 @@ const TAIL_FIXTURE_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'cmdr-viewer-tail
 const TAIL_FIXTURE_PATH = path.join(TAIL_FIXTURE_DIR, 'tailable.log')
 
 // Seed with enough lines to push the backend over the 1 MB FullLoad
-// threshold so it picks ByteSeek + LineIndex. FullLoad doesn't support
-// `extend_to`, so tail mode is a no-op on FullLoad files. Each line is
-// ~84 bytes ("seed line NNNNNNNN " + 60 'x' chars + "\n"), so we need
-// ~12.5k lines for 1 MB.
+// threshold so it picks ByteSeek + LineIndex, the in-place `extend_to` path.
+// (A FullLoad file reopens on growth instead; `debug-log.spec.ts` covers that.)
+// Each line is ~84 bytes ("seed line NNNNNNNN " + 60 'x' chars + "\n"), so we
+// need ~12.5k lines for 1 MB.
 const INITIAL_LINES: string[] = []
 for (let i = 0; i < 15000; i++) {
   INITIAL_LINES.push(`seed line ${String(i).padStart(8, '0')} ${'x'.repeat(60)}`)

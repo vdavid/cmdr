@@ -79,6 +79,9 @@ var SMB = &Stack{
 	// `smb-consumer-flaky` cycles up/down by design and ships no HEALTHCHECK;
 	// every other service bakes `HEALTHCHECK nc -z localhost 445`.
 	servicesWithoutHealthcheck: map[string]bool{"smb-consumer-flaky": true},
+	// The guest's `public` share is the one every `cmdr-smb` suite writes to and
+	// watches, so it's where killed clients' leaked watches pile up.
+	soloResets: map[string]string{"smb-consumer-guest": smbNotifydReset},
 }
 
 // SFTP is the SFTP fixture stack: first-party, so one compose file sitting
@@ -189,11 +192,45 @@ var WEBDAV = &Stack{
 	servicesWithoutHealthcheck: map[string]bool{},
 }
 
+// S3 is the S3 fixture stack: VersityGW (AWS-like, conditional writes work) and
+// Garage (no conditional writes), first-party like WebDAV. Each server has its
+// own image wrapping the upstream binary with an entrypoint that bootstraps the
+// buckets, and a HEALTHCHECK that passes only once they exist, so adopting a
+// healthy stack never hands a cell a `NoSuchBucket`. Its two named volumes are
+// the only state, and they hold nothing a bring-up can't recreate.
+//
+// ❗ `modeServices` has to stay in lock-step with the fixture's own case table
+// (`apps/desktop/test/s3-servers/start.sh`); `TestS3ModeServicesAgree` says so.
+var S3 = &Stack{
+	Name:          "s3",
+	ProjectName:   "s3-fixture",
+	lockFile:      "cmdr-s3.lock",
+	leaseDirName:  "cmdr-s3-leases",
+	composeDirRel: "apps/desktop/test/s3-servers",
+	composeDirEnv: "CMDR_S3_COMPOSE_DIR",
+	composeFiles:  []string{"docker-compose.yml"},
+	// Both images are first-party wrappers, and their entrypoints are what
+	// create the buckets: an edit that never reaches a running container is a
+	// change that silently doesn't happen.
+	buildContextsRel: []string{"image-versitygw", "image-garage"},
+	// Host ports live in their own pinned range, 14480+, clear of WebDAV's
+	// 13480+, SFTP's 12480+, SMB's 11480+, and smb2's 10480+.
+	portEnvPrefix: "S3_FIXTURE_",
+	modeServices: map[string][]string{
+		ModeMinimal: {"s3-fixture-versitygw"},
+		ModeCore:    {"s3-fixture-versitygw", "s3-fixture-garage"},
+		ModeAll:     nil,
+	},
+	// Empty: both images bake a HEALTHCHECK on their bootstrap marker.
+	servicesWithoutHealthcheck: map[string]bool{},
+}
+
 // registered is every stack this package leases, keyed by name.
 var registered = map[string]*Stack{
 	SMB.Name:    SMB,
 	SFTP.Name:   SFTP,
 	WEBDAV.Name: WEBDAV,
+	S3.Name:     S3,
 }
 
 // Lookup resolves a stack by name, listing the registered names when it can't.

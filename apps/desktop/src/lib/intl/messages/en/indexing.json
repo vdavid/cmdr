@@ -19,9 +19,9 @@
     "description": "Generic fallback shown on the drive’s badge for ANY indexing run (a first index covered folder by folder, a full scan, or a repeat check) before live progress activity arrives. It says “indexing” rather than “scanning” because a first index no longer makes one pass over the drive. The trailing '…' signals ongoing work; keep it."
   },
 
-  "indexing.scan.counters": "{entriesText} {entries, plural, one {entry} other {entries}}, {dirsText} {dirs, plural, one {dir} other {dirs}}",
+  "indexing.scan.counters": "{entriesText} {entries, plural, one {entry} other {entries}}, {dirsText} {dirs, plural, one {folder} other {folders}}",
   "@indexing.scan.counters": {
-    "description": "Standalone running tally detail line shown under the scan heading, e.g. '12,345 entries, 678 dirs'. No leading space (it’s its own line, not joined to the heading); 'dirs' is short for directories/folders (keep it terse, this is a compact status line).",
+    "description": "Standalone running tally detail line shown under the scan heading, e.g. '12,345 entries, 678 folders'. No leading space (it’s its own line, not joined to the heading). Keep it terse: this is a compact status line.",
     "placeholders": {
       "entries": "the same number of files and folders (drives the singular/plural form of its noun)",
       "dirs": "the same number of folders (drives the singular/plural form of its noun)",
@@ -33,9 +33,9 @@
 
   "indexing.scan.countersElapsed": "{counters} · {elapsed}",
   "@indexing.scan.countersElapsed": {
-    "description": "Detail line under the heading during a drive’s FIRST scan, joining the running entry/dir tally with how long the scan has been running, e.g. '12,345 entries, 678 dirs · 2:34'. There’s no trustworthy percent on a first scan, so this count + elapsed clock is the honest progress signal instead of a bar. The middle dot (·) is a separator; keep it. {counters} and {elapsed} are already formatted (don’t translate inside them); place the separator idiomatically for your language.",
+    "description": "Detail line under the heading during a drive’s FIRST scan, joining the running entry/folder tally with how long the scan has been running, e.g. '12,345 entries, 678 folders · 2:34'. There’s no trustworthy percent on a first scan, so this count + elapsed clock is the honest progress signal instead of a bar. The middle dot (·) is a separator; keep it. {counters} and {elapsed} are already formatted (don’t translate inside them); place the separator idiomatically for your language.",
     "placeholders": {
-      "counters": "the already-formatted entry/dir tally (e.g. '12,345 entries, 678 dirs')",
+      "counters": "the already-formatted entry/folder tally (e.g. '12,345 entries, 678 folders')",
       "elapsed": "how long the scan has been running, as a clock (minutes:seconds, e.g. 2:34)"
     },
     "screenshot": "indexing-checklist.png"
@@ -43,7 +43,7 @@
 
   "indexing.scan.etaRough": "roughly {eta}",
   "@indexing.scan.etaRough": {
-    "description": "Wraps the estimated time remaining during a rough first scan to flag it as approximate, e.g. 'roughly 2m left'. {eta} is an already-formatted time-left phrase; don't translate inside it.",
+    "description": "Wraps the estimated time remaining during a rough first scan to flag it as approximate, e.g. 'roughly 2m left'. {eta} is an already-formatted time-left phrase; don't translate inside it. It's never 'almost done': that one shows without 'roughly'.",
     "placeholders": {
       "eta": "the formatted time-remaining phrase, e.g. '2m left'"
     }
@@ -209,7 +209,7 @@
 
   "indexing.progress.percentEta": "{percent}%, {eta}",
   "@indexing.progress.percentEta": {
-    "description": "Compact progress line in the indexing tooltip joining the percent complete with the time remaining, e.g. '95%, roughly 8s left'. {eta} is an already-formatted time-left phrase (don't translate inside it); place the comma idiomatically for your language.",
+    "description": "Compact progress line in the indexing tooltip joining the percent complete with the time remaining, e.g. '95%, roughly 8s left'. {eta} is an already-formatted time-left phrase (don't translate inside it) that lands mid-sentence, after the comma; it can also be the mid-sentence 'almost done' (indexing.eta.almostDoneMidSentence). Place the comma idiomatically for your language.",
     "placeholders": {
       "percent": "whole-number percent complete, already formatted (e.g. 95)",
       "eta": "the formatted time-remaining phrase, e.g. 'roughly 8s left'"
@@ -217,10 +217,30 @@
     "screenshot": "indexing-checklist.png"
   },
 
+  "indexing.overall.eta": "Overall: {eta}",
+  "@indexing.overall.eta": {
+    "description": "Line under the run-kind header in the drive-indexing checklist: how long the WHOLE run has left, across every step still to go, e.g. 'Overall: 12m left'. The step list below it still shows the current step's own time left; this one answers 'when is my drive done?'. Only shown when Cmdr remembers how long the remaining steps took on this drive last time, so it's an honest estimate. {eta} is an already-formatted time-left phrase (don't translate inside it) that lands mid-sentence, after the colon; it can also be the mid-sentence 'almost done' (indexing.eta.almostDoneMidSentence).",
+    "placeholders": {
+      "eta": "the formatted time-remaining phrase, e.g. '12m left' or '1 hour 24 minutes left'"
+    }
+  },
+
+  "indexing.overall.estimating": "Overall: estimating…",
+  "@indexing.overall.estimating": {
+    "description": "Placeholder for the whole-run time-left line ('Overall: 12m left') in the drive-indexing checklist, shown for the few seconds the current step has no estimate of its own yet (for example right after a step starts) while more steps are still to come. The trailing '…' signals ongoing work; keep it."
+  },
+
   "indexing.eta.almostDone": "Almost done",
   "@indexing.eta.almostDone": {
-    "description": "Time-remaining phrase shown when an indexing operation has under two seconds left (a precise countdown there would be noise). Reassuring and terse.",
+    "description": "Time-remaining phrase shown when an indexing operation has under two seconds left (a precise countdown there would be noise). Reassuring and terse. This form stands alone and starts its line, so it's capitalized; inside a wrapper like 'Overall: …' the mid-sentence variant (indexing.eta.almostDoneMidSentence) shows instead.",
     "screenshot": "indexing-checklist.png"
+  },
+
+  "indexing.eta.almostDoneMidSentence": "almost done",
+  "@indexing.eta.almostDoneMidSentence": {
+    "description": "The mid-sentence form of 'Almost done' (indexing.eta.almostDone): the time-left phrase for an indexing step or run with under two seconds left, placed INSIDE another line, e.g. 'Overall: almost done', '99%, almost done', or '320/min · almost done'. It doesn't start a sentence, so use the casing your language gives a phrase after a colon or comma (lowercase in English).",
+    "screenshot": "indexing-checklist.png",
+    "screenshotNote": "The drive-indexing checklist, pictured here. Your string is what a time-left phrase in it (like the overall line or the one after the percent) reads in the last seconds, in the middle of that line."
   },
 
   "indexing.eta.secondsLeft": "{secondsText}s left",
@@ -312,6 +332,10 @@
       "name": "the drive’s display name (e.g. Backups)"
     }
   },
+  "indexing.memoryStop.paused": "Cmdr paused drive indexing because it was using too much memory. Folder sizes may be out of date until you restart Cmdr.",
+  "@indexing.memoryStop.paused": {
+    "description": "Warning toast that stays on screen until dismissed. Shown when Cmdr’s memory safety limit stopped the drive index on every drive, so folder sizes stop updating. \"It\" in \"it was using too much memory\" is Cmdr as a whole (the app’s total memory use), not the indexing alone. Restarting the app starts indexing again. “Cmdr” is the app name and must NOT be translated. “Drive indexing” is the background feature that computes folder sizes."
+  },
 
   "indexing.firstConnect.title": "Index {name}?",
   "@indexing.firstConnect.title": {
@@ -401,7 +425,7 @@
   },
   "indexing.enrich.rateEta": "{rate} · {eta}",
   "@indexing.enrich.rateEta": {
-    "description": "Joins the speed and the time-left into one detail line, e.g. '320/min · 2m left'. The middle dot is a separator; keep spaces around it.",
+    "description": "Joins the speed and the time-left into one detail line, e.g. '320/min · 2m left'. The middle dot is a separator; keep spaces around it. {eta} lands mid-line, so it can be the mid-sentence 'almost done' (indexing.eta.almostDoneMidSentence).",
     "placeholders": {
       "rate": "the already-built rate text (e.g. 320/min)",
       "eta": "the already-built time-left text (e.g. 2m left)"

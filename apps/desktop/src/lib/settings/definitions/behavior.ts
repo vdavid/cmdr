@@ -3,7 +3,21 @@
  * which concatenates this array into the full registry in section order.
  */
 
-import type { SettingDefinitionSource } from '../types'
+import type { EnumOption, SettingDefinitionSource } from '../types'
+import { formatRoundSize } from '$lib/units/byte-size'
+
+/**
+ * A preset size option built in base 1024, labelled with its IEC symbol in the UI
+ * language ("100 MiB", "3 GiB"). A getter, so a language change relabels it live.
+ */
+function binarySizeOption(byteCount: number): EnumOption {
+  return {
+    value: byteCount,
+    get label() {
+      return formatRoundSize(byteCount, 'binary')
+    },
+  }
+}
 
 export const behaviorSettings: SettingDefinitionSource[] = [
   // ========================================================================
@@ -301,20 +315,21 @@ export const behaviorSettings: SettingDefinitionSource[] = [
     descriptionKey: 'settings.operationLog.maxSize.description',
     keywords: ['operation', 'log', 'history', 'retention', 'size', 'disk', 'space', 'limit', 'megabytes', 'gigabytes'],
     type: 'number',
-    default: 3221225472, // 3 GB (binary), the default retention budget
+    default: 3221225472, // 3 GiB, the default retention budget
     component: 'select',
     constraints: {
+      // Binary values, so the labels name binary units whatever the display setting is.
       options: [
-        { value: 104857600, labelKey: 'settings.operationLog.maxSize.opt.mb100' },
-        { value: 262144000, labelKey: 'settings.operationLog.maxSize.opt.mb250' },
-        { value: 1073741824, labelKey: 'settings.operationLog.maxSize.opt.gb1' },
-        { value: 2147483648, labelKey: 'settings.operationLog.maxSize.opt.gb2' },
-        { value: 3221225472, labelKey: 'settings.operationLog.maxSize.opt.gb3' },
-        { value: 5368709120, labelKey: 'settings.operationLog.maxSize.opt.gb5' },
+        binarySizeOption(104857600), // 100 MiB
+        binarySizeOption(262144000), // 250 MiB
+        binarySizeOption(1073741824), // 1 GiB
+        binarySizeOption(2147483648), // 2 GiB
+        binarySizeOption(3221225472), // 3 GiB
+        binarySizeOption(5368709120), // 5 GiB
       ],
       allowCustom: true,
-      customMin: 10485760, // 10 MB
-      customMax: 107374182400, // 100 GB
+      customMin: 10485760, // 10 MiB
+      customMax: 107374182400, // 100 GiB
     },
   },
 

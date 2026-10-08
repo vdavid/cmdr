@@ -33,8 +33,9 @@
         type AggregationSubPhase,
         type IndexStepStatus,
     } from './indexing-steps'
+    import { deriveOverallEta } from './overall-eta'
     import type { VolumeIndexActivity, AggregationActivity } from './index-state.svelte'
-    import type { ActivityPhase, CoveragePhase, ScanRunKind } from '$lib/ipc/bindings'
+    import type { ActivityPhase, CoveragePhase, ScanRunKind, StepsAheadMs } from '$lib/ipc/bindings'
     import type { MessageKey } from '$lib/intl/keys.gen'
     import { formatNumber } from '$lib/file-explorer/selection/selection-info-utils'
     import ProgressBar from '$lib/ui/ProgressBar.svelte'
@@ -51,9 +52,18 @@
          *  and the aggregation ETA advance live even when progress events stall. */
         now: number
         /** The scan/replay ETA from the wrapper's sliding window, already formatted
-         *  (and "roughly"-wrapped for a rough first scan). `null` when there's no
+         *  in its mid-sentence form (it only lands inside `indexing.progress.percentEta`)
+         *  and "roughly"-wrapped for a rough first scan. `null` when there's no
          *  windowed estimate (before the window has samples). */
         windowedEta: string | null
+        /** The calibrated scan ETA in seconds, the same estimate `windowedEta`
+         *  shows, so the overall figure adds to exactly what the step says. `null`
+         *  when there's none (or on a rough first scan). */
+        windowedEtaSeconds?: number | null
+        /** What the steps after each one took on this drive's last completed run of
+         *  the same kind (the backend's honest sum), for the overall figure.
+         *  `undefined` when there's no plan, which shows no overall line. */
+        stepsAhead?: StepsAheadMs
         /** This volume's current top-level pipeline phase (from `getVolumePhase`).
          *  The authoritative driver for the catch-up step, and a tiebreaker for the
          *  others after a mid-scan reload drops the transition-only event. */
@@ -84,6 +94,8 @@
         aggregation,
         now,
         windowedEta,
+        windowedEtaSeconds = null,
+        stepsAhead,
         phase,
         isNetwork,
         coveredInPhases,
@@ -167,12 +179,13 @@
     const aggFraction = $derived(aggTotal > 0 ? Math.min(1, aggCurrent / aggTotal) : null)
     // Aggregation's ETA needs no sliding window (a single elapsed extrapolation),
     // so it's computed here from the wrapper's `now` tick rather than injected.
-    const aggEta = $derived.by(() => {
+    const aggEtaSeconds = $derived.by(() => {
         if (aggTotal === 0 || aggCurrent === 0 || aggStartedAt === 0) return null
         const elapsed = (now - aggStartedAt) / 1000
-        const remaining = computeElapsedEta(elapsed, aggCurrent, aggTotal - aggCurrent)
-        return remaining != null ? formatEta(remaining) : null
+        return computeElapsedEta(elapsed, aggCurrent, aggTotal - aggCurrent)
     })
+    // Mid-sentence: it only ever lands inside `indexing.progress.percentEta`.
+    const aggEta = $derived(aggEtaSeconds != null ? formatEta(aggEtaSeconds, 'midSentence') : null)
 
     // ── Replay inputs (the Update-index step's detail) ────────────────
     const eventsProcessed = $derived(activity.replayEventsProcessed)
@@ -229,6 +242,31 @@
         }
     })
 
+    // ── The overall figure ────────────────────────────────────────────
+    // The active step's own estimate, in seconds: the same number its ETA line
+    // shows (`null` where the step shows none, like loading/sorting or catch-up).
+    const activeEtaSeconds = $derived.by(() => {
+        switch (active?.kind) {
+            case 'findFiles':
+                return windowedEtaSeconds
+            case 'saveFileList':
+            case 'updateFileList':
+                return aggEtaSeconds
+            case 'computeFolderSizes':
+                return aggSubPhase === 'computing' || aggSubPhase === 'writing' ? aggEtaSeconds : null
+            default:
+                return null
+        }
+    })
+    const overall = $derived(deriveOverallEta(active?.kind, activeEtaSeconds, stepsAhead))
+    const overallText = $derived(
+        overall.kind === 'known'
+            ? tString('indexing.overall.eta', { eta: formatEta(overall.seconds, 'midSentence') })
+            : overall.kind === 'estimating'
+              ? tString('indexing.overall.estimating')
+              : null,
+    )
+
     const percent = $derived(
         activeDetail?.progress != null ? Math.min(100, Math.round(activeDetail.progress * 100)) : null,
     )
@@ -243,6 +281,11 @@
 
 {#if headerKey}
     <span class="run-kind">{tString(headerKey)}</span>
+{/if}
+{#if overallText}
+    <!-- The whole run's "~X left", answering "when am I done?". The active step's
+         own ETA stays in the list below, explaining a long step. -->
+    <span class="overall-eta">{overallText}</span>
 {/if}
 <ul class="step-list">
     {#each steps as step (step.kind)}
@@ -290,6 +333,14 @@
        drive-name heading above it, louder than the step detail below. */
     .run-kind {
         color: var(--color-text-secondary);
+    }
+
+    /* The overall figure sits under the header at the header's weight: it answers
+       the question people actually have, so it reads before the step detail.
+       `tabular-nums` keeps it from reflowing as it counts down. */
+    .overall-eta {
+        color: var(--color-text-secondary);
+        font-variant-numeric: tabular-nums;
     }
 
     .step-list {

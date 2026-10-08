@@ -25,13 +25,13 @@ forwards to PostHog. The app calls no third-party host. Install ids live in [`cr
 - **The crash signal handler must NOT call `diagnostics_id()`** (it allocates and locks). The panic hook reads the
   `install_id::init()` snapshot.
 - **Ids live in Rust-owned `install-ids.json`**, not `settings.json`, whose every write the frontend owns.
-- **Consent is tri-state, default-on, fully-silent opt-out.** Opt-out is `analytics.enabled` in `settings.json`; the
-  frontend persists only non-default values, so an opted-in install has NO key. `analytics_consent_granted`: `None`
-  (default) and `Some(true)` → granted, `Some(false)` → opted out.
-  Opt-out sends NOTHING, not even an "I opted out" bit, and the loop deletes the spool and unreported uptime.
+- **Consent is default-on, fully-silent opt-out** (`analytics.enabled` in `settings.json`; an opted-in install has
+  no key). Opt-out sends NOTHING, and the loop deletes the spool and unreported uptime. A managed `DisableUsageStats`
+  is the same opt-out: consent and the config shape read `settings.json` through `managed_policy::overlay`, ❌ never
+  raw.
 - **PII-free by allowlist, NEVER by redaction** (`config_shape.rs`). Include every bool- or number-valued key plus the
-  small `CATEGORICAL_STRING_KEYS` allowlist (theme, sort mode, AI provider);
-  exclude every other string, object, and array; add `fdaGranted` explicitly. A new categorical string setting joins
+  small `CATEGORICAL_STRING_KEYS` allowlist (theme, sort mode, AI provider); exclude every other string, object, and
+  array; add `fdaGranted` and `managedByOrganization` explicitly. A new categorical string setting joins
   `CATEGORICAL_STRING_KEYS`; NEVER loosen the bool/number rule to "include all strings."
   `excludes_pii_shaped_strings` is the invariant.
 - **Only a real user's install may send.** `suppression_reason()` is the ONE gate for both pipelines: debug builds, plus
@@ -48,5 +48,5 @@ forwards to PostHog. The app calls no third-party host. Install ids live in [`cr
 - **Name events after the UI**: user-facing vocabulary (`pane_navigated`, `search_used`), categorical props
   (`volume_kind`, `mode`). The set is OPEN; a count goes through `item_count_bucket`.
 
-Full details (wiring, id storage, the heartbeat's schedule and payload, the spool, the event set and where each fires,
-and the first-index events): `DETAILS.md`.
+Wiring, id storage, the heartbeat's schedule and payload, the spool, the event set, and the first-index events:
+`DETAILS.md`. Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

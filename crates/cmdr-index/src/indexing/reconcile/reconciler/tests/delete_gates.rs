@@ -26,9 +26,16 @@ struct Drive {
     _installed: crate::indexing::host::volumes::TestProviderGuard,
 }
 
-fn mount_a_drive(root: &Path, volume_id: &str) -> Drive {
+/// Where the drive sits in the fake mount table. The gates ask whether its IDENTITY
+/// is still mounted, never where, so the table lists it where a real drive lives:
+/// listed at the temp tree's own path, it would be a filesystem mounted inside the
+/// boot tree, which the boot-space walks these tests run stop at
+/// (`scanner::boot_tree_mounts`).
+const DRIVE_MOUNT_POINT: &str = "/Volumes/cmdr-gate-test-drive";
+
+fn mount_a_drive(volume_id: &str) -> Drive {
     let provider = FakeVolumeProvider::shared();
-    provider.mount(root.to_path_buf(), DRIVE);
+    provider.mount(DRIVE_MOUNT_POINT, DRIVE);
     let installed = install_for_test(Arc::clone(&provider) as Arc<dyn VolumeProvider>);
     Drive {
         provider,
@@ -63,7 +70,7 @@ fn reconcile_after_a_removal(volume_id: &str, pull_the_drive: bool) -> Vec<Strin
     let (writer, _db_dir, conn) = setup_test_writer();
     let root_str = root.to_string_lossy().to_string();
     ensure_path_in_db(&writer.db_path(), &root_str, &writer);
-    let drive = mount_a_drive(root, volume_id);
+    let drive = mount_a_drive(volume_id);
     let space = IndexPathSpace::root();
 
     // First pass: a healthy drive fills the index.
@@ -80,7 +87,7 @@ fn reconcile_after_a_removal(volume_id: &str, pull_the_drive: bool) -> Vec<Strin
         // ⚠️ AFTER the removal and before the second pass: the directory still lists
         // fine (its mount-point folder is a real temp dir), so only the presence read
         // can tell that the drive is gone.
-        drive.provider.mark_unmounted(root);
+        drive.provider.mark_unmounted(DRIVE_MOUNT_POINT);
     }
 
     reconcile_subtree(root, &space, &conn, &writer, &drive.work, None).expect("the second reconcile walks");
@@ -192,7 +199,7 @@ fn live_removal_after_a_deletion(volume_id: &str, pull_the_drive: bool) -> Vec<S
         writer.next_id().fetch_max(next_id, Ordering::Relaxed);
     }
 
-    let drive = mount_a_drive(root, volume_id);
+    let drive = mount_a_drive(volume_id);
     let mut reconciler = EventReconciler::new_for(
         volume_id.to_string(),
         IndexPathSpace::root(),
@@ -204,7 +211,7 @@ fn live_removal_after_a_deletion(volume_id: &str, pull_the_drive: bool) -> Vec<S
     // tell — only the presence read can say whether the drive was there to see it.
     std::fs::remove_file(&doomed).expect("remove doomed.txt");
     if pull_the_drive {
-        drive.provider.mark_unmounted(root);
+        drive.provider.mark_unmounted(DRIVE_MOUNT_POINT);
     }
 
     let event = make_event(&doomed.to_string_lossy(), 7, removed_file_flags());

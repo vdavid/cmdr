@@ -85,6 +85,22 @@
   "@servers.hub.editNearbyHint": {
     "sourceHash": "64653de"
   },
+  "servers.hub.s3AllBuckets": "Alle Buckets",
+  "@servers.hub.s3AllBuckets": {
+    "sourceHash": "2a5828a"
+  },
+  "servers.hub.openAccountHint": "{name} ist kein Ort, den du öffnen kannst. Öffne einen der Buckets darunter.",
+  "@servers.hub.openAccountHint": {
+    "sourceHash": "c52ee6f"
+  },
+  "servers.hub.forgetAccountConfirm": "{name} und alle darunter gespeicherten Buckets vergessen? Cmdr trennt die Verbindungen und zeigt die Buckets nicht mehr an. Deine Dateien bleiben in den Buckets.",
+  "@servers.hub.forgetAccountConfirm": {
+    "sourceHash": "e1c636e"
+  },
+  "servers.hub.forgetSecretKeyToo": "Auch den geheimen Zugriffsschlüssel des Kontos vergessen",
+  "@servers.hub.forgetSecretKeyToo": {
+    "sourceHash": "4f3ac6d"
+  },
   "servers.hub.forgetShare": "Freigabe vergessen",
   "@servers.hub.forgetShare": {
     "sourceHash": "8888a9d"
@@ -96,6 +112,10 @@
   "servers.hub.forgetShareConfirm": "{name} vergessen? Cmdr zeigt die Freigabe nicht mehr an. Ist sie eingebunden, bleibt sie eingebunden, und deine Dateien bleiben auf dem Server.",
   "@servers.hub.forgetShareConfirm": {
     "sourceHash": "8c14aaa"
+  },
+  "servers.hub.nearbyGroup": "{count, plural, one {{countText} Server in der Nähe gefunden} other {{countText} Server in der Nähe gefunden}}",
+  "@servers.hub.nearbyGroup": {
+    "sourceHash": "cd7a44d"
   },
   "servers.hub.discoveryOff": "Die Suche im lokalen Netzwerk ist ausgeschaltet.",
   "@servers.hub.discoveryOff": {
@@ -173,6 +193,10 @@
   "@servers.refusal.unreachable": {
     "sourceHash": "6fcba90"
   },
+  "servers.refusal.localNetworkHint": "Wenn der Server eingeschaltet ist, prüfe, ob Cmdr unter {localNetwork} erlaubt ist.",
+  "@servers.refusal.localNetworkHint": {
+    "sourceHash": "baa1753"
+  },
   "servers.refusal.hostKeyUntrusted": "Cmdr vertraut dem Schlüssel von {host} noch nicht.",
   "@servers.refusal.hostKeyUntrusted": {
     "sourceHash": "83dc719"
@@ -208,6 +232,62 @@
   "servers.refusal.savedSecretNotUpdated": "Cmdr hat deine Änderungen gesichert, konnte das Passwort im Schlüsselbund aber nicht aktualisieren. Sichere noch einmal, um es erneut zu versuchen.",
   "@servers.refusal.savedSecretNotUpdated": {
     "sourceHash": "2ae1e2b"
+  },
+  "servers.refusal.s3AuthenticationRejected": "Dieser geheime Zugriffsschlüssel hat nicht geklappt.",
+  "@servers.refusal.s3AuthenticationRejected": {
+    "sourceHash": "14f90c8"
+  },
+  "servers.refusal.s3NeedsCredentials": "Dieses Konto fragt nach einem geheimen Zugriffsschlüssel.",
+  "@servers.refusal.s3NeedsCredentials": {
+    "sourceHash": "23695df"
+  },
+  "servers.refusal.s3SecretMissing": "Gib den geheimen Zugriffsschlüssel ein.",
+  "@servers.refusal.s3SecretMissing": {
+    "sourceHash": "f1f32f2"
+  },
+  "servers.refusal.s3SecretNotStored": "Cmdr konnte diesen geheimen Zugriffsschlüssel nicht im Schlüsselbund sichern. Versuche es noch einmal oder schalte „Im Schlüsselbund merken“ aus, um dich anzumelden, ohne ihn zu sichern.",
+  "@servers.refusal.s3SecretNotStored": {
+    "sourceHash": "f7a9fb0"
+  },
+  "servers.refusal.s3SavedSecretNotUpdated": "Cmdr hat deine Änderungen gesichert, konnte den geheimen Zugriffsschlüssel im Schlüsselbund aber nicht aktualisieren. Sichere noch einmal, um es erneut zu versuchen.",
+  "@servers.refusal.s3SavedSecretNotUpdated": {
+    "sourceHash": "1d2889d"
+  },
+  "servers.refusal.accessDenied": "Mit diesem Schlüssel ist dieser Bucket nicht erreichbar. Prüfe den Bucket-Namen, den geheimen Zugriffsschlüssel und ob der Schlüssel den Bucket lesen darf.",
+  "@servers.refusal.accessDenied": {
+    "sourceHash": "8372e73"
+  },
+  "servers.refusal.bucketListRefused": "Dieser Schlüssel darf die Buckets dieses Kontos nicht auflisten. Gib einen Bucket-Namen ein, um diesen Bucket zu öffnen, oder prüfe den geheimen Zugriffsschlüssel.",
+  "@servers.refusal.bucketListRefused": {
+    "sourceHash": "1b9ebf5"
+  },
+  "servers.refusal.bucketNotFound": "Auf {host} gibt es keinen Bucket mit diesem Namen.",
+  "@servers.refusal.bucketNotFound": {
+    "sourceHash": "0f5a04d"
+  },
+  "servers.refusal.regionMismatch": "Dieser Bucket liegt in einer anderen Region. Wähle seine Region aus und versuche es erneut.",
+  "@servers.refusal.regionMismatch": {
+    "sourceHash": "27a37f8"
+  },
+  "servers.refusal.regionMismatchNamed": "Dieser Bucket liegt in der Region {region}. Wähle diese Region aus und versuche es erneut.",
+  "@servers.refusal.regionMismatchNamed": {
+    "sourceHash": "30abb0d"
+  },
+  "servers.refusal.clockSkewed": "Die Uhr auf diesem Mac geht um mehr als 15 Minuten falsch, deshalb nimmt der Server keine Anfragen von Cmdr an. Lass Datum und Uhrzeit in den Systemeinstellungen automatisch einstellen und versuche es dann erneut.",
+  "@servers.refusal.clockSkewed": {
+    "sourceHash": "cdee0ef"
+  },
+  "servers.refusal.notAnS3Endpoint": "Unter dieser Adresse antwortet kein S3-Speicher.",
+  "@servers.refusal.notAnS3Endpoint": {
+    "sourceHash": "78557ec"
+  },
+  "servers.refusal.s3FieldMalformed": "Verwende hier nur Kleinbuchstaben, Ziffern und Bindestriche.",
+  "@servers.refusal.s3FieldMalformed": {
+    "sourceHash": "ac8fbea"
+  },
+  "servers.refusal.endpointMalformed": "Gib den Endpunkt mit http:// oder https:// und einem Hostnamen ein, etwa https://s3.example.com.",
+  "@servers.refusal.endpointMalformed": {
+    "sourceHash": "beb63dd"
   },
   "servers.sheet.addTitle": "Server hinzufügen",
   "@servers.sheet.addTitle": {
@@ -325,6 +405,10 @@
   "@servers.sheet.password": {
     "sourceHash": "e7cf3ef"
   },
+  "servers.sheet.secretKeptPlaceholder": "Im Schlüsselbund gespeichert. Zum Behalten leer lassen.",
+  "@servers.sheet.secretKeptPlaceholder": {
+    "sourceHash": "8711f6c"
+  },
   "servers.sheet.smbUsernamePlaceholder": "Optional",
   "@servers.sheet.smbUsernamePlaceholder": {
     "sourceHash": "59be713",
@@ -362,6 +446,124 @@
   "@servers.sheet.name": {
     "sourceHash": "dcd1d52",
     "sameAsSourceJustification": "„Name“ ist im Deutschen dasselbe Wort; macOS Finder beschriftet dasselbe Feld genauso (NetAuthAgent `AuthDialog.loctable` `SV8-VX-EVJ.title` „Name:“, macOS 26.6.2, 2026-09-07)."
+  },
+  "servers.sheet.protocolS3": "S3",
+  "@servers.sheet.protocolS3": {
+    "sourceHash": "44d6a8a",
+    "sameAsSourceJustification": "Protokollname, der in jeder Sprache unverändert bleibt, wie „SMB“ und „WebDAV“ im selben Auswahlfeld (servers.sheet.protocolSmb, servers.sheet.protocolWebdav)."
+  },
+  "servers.sheet.s3Provider": "Anbieter",
+  "@servers.sheet.s3Provider": {
+    "sourceHash": "472590a"
+  },
+  "servers.sheet.s3ProviderAws": "Amazon S3",
+  "@servers.sheet.s3ProviderAws": {
+    "sourceHash": "a4f6352",
+    "sameAsSourceJustification": "Produktname, den der Anbieter auch auf seinen deutschen Seiten unverändert führt; wie die Markennamen in servers.sheet.protocolSmb bleibt er stehen."
+  },
+  "servers.sheet.s3ProviderR2": "Cloudflare R2",
+  "@servers.sheet.s3ProviderR2": {
+    "sourceHash": "9f2f1ed",
+    "sameAsSourceJustification": "Produktname, den der Anbieter auch auf seinen deutschen Seiten unverändert führt; wie die Markennamen in servers.sheet.protocolSmb bleibt er stehen."
+  },
+  "servers.sheet.s3ProviderB2": "Backblaze B2",
+  "@servers.sheet.s3ProviderB2": {
+    "sourceHash": "ed40187",
+    "sameAsSourceJustification": "Produktname, den der Anbieter auch auf seinen deutschen Seiten unverändert führt; wie die Markennamen in servers.sheet.protocolSmb bleibt er stehen."
+  },
+  "servers.sheet.s3ProviderWasabi": "Wasabi",
+  "@servers.sheet.s3ProviderWasabi": {
+    "sourceHash": "493861e",
+    "sameAsSourceJustification": "Produktname, den der Anbieter auch auf seinen deutschen Seiten unverändert führt; wie die Markennamen in servers.sheet.protocolSmb bleibt er stehen."
+  },
+  "servers.sheet.s3ProviderHetzner": "Hetzner Object Storage",
+  "@servers.sheet.s3ProviderHetzner": {
+    "sourceHash": "a339b4f",
+    "sameAsSourceJustification": "Produktname von Hetzner, auch auf den deutschen Hetzner-Seiten englisch („Hetzner Object Storage“); als Name bleibt er stehen."
+  },
+  "servers.sheet.s3ProviderGcs": "Google Cloud Storage",
+  "@servers.sheet.s3ProviderGcs": {
+    "sourceHash": "53fa0ba",
+    "sameAsSourceJustification": "Produktname, den der Anbieter auch auf seinen deutschen Seiten unverändert führt; wie die Markennamen in servers.sheet.protocolSmb bleibt er stehen."
+  },
+  "servers.sheet.s3ProviderDigitalOcean": "DigitalOcean Spaces",
+  "@servers.sheet.s3ProviderDigitalOcean": {
+    "sourceHash": "c3f48e3",
+    "sameAsSourceJustification": "Produktname, den der Anbieter auch auf seinen deutschen Seiten unverändert führt; wie die Markennamen in servers.sheet.protocolSmb bleibt er stehen."
+  },
+  "servers.sheet.s3GcsKeyHelp": "Melde dich mit einem HMAC-Schlüssel aus dem Tab „Interoperabilität“ deiner Cloud-Storage-Einstellungen an.",
+  "@servers.sheet.s3GcsKeyHelp": {
+    "sourceHash": "acb72a4"
+  },
+  "servers.sheet.s3ProviderOther": "Anderer S3-kompatibler Speicher",
+  "@servers.sheet.s3ProviderOther": {
+    "sourceHash": "13d2bdc"
+  },
+  "servers.sheet.s3Region": "Region",
+  "@servers.sheet.s3Region": {
+    "sourceHash": "d3a008e",
+    "sameAsSourceJustification": "„Region“ ist im Deutschen dasselbe Wort; die deutschen Konsolen von AWS und Azure nennen das Feld „Region“ (MS-Terminologie „Bereich“ meint einen Bildbereich, nicht die Cloud-Region)."
+  },
+  "servers.sheet.s3RegionOptionalPlaceholder": "Optional. Leer lassen, um us-east-1 zu verwenden",
+  "@servers.sheet.s3RegionOptionalPlaceholder": {
+    "sourceHash": "12dd731"
+  },
+  "servers.sheet.s3AccountId": "Konto-ID",
+  "@servers.sheet.s3AccountId": {
+    "sourceHash": "919bb4c"
+  },
+  "servers.sheet.s3AccountIdHelp": "Die Konto-ID steht auf deiner Übersichtsseite von Cloudflare R2.",
+  "@servers.sheet.s3AccountIdHelp": {
+    "sourceHash": "963d1f5"
+  },
+  "servers.sheet.s3Location": "Standort",
+  "@servers.sheet.s3Location": {
+    "sourceHash": "15b6197"
+  },
+  "servers.sheet.s3Endpoint": "Endpunkt",
+  "@servers.sheet.s3Endpoint": {
+    "sourceHash": "3df9726"
+  },
+  "servers.sheet.s3PathStyle": "Adressierung im Pfadstil verwenden",
+  "@servers.sheet.s3PathStyle": {
+    "sourceHash": "627c522"
+  },
+  "servers.sheet.s3PathStyleHelp": "Die meisten selbst gehosteten Server wie MinIO und Garage brauchen das.",
+  "@servers.sheet.s3PathStyleHelp": {
+    "sourceHash": "bc6e240"
+  },
+  "servers.sheet.s3Bucket": "Bucket",
+  "@servers.sheet.s3Bucket": {
+    "sourceHash": "c83b657",
+    "sameAsSourceJustification": "„Bucket“ bleibt im Deutschen englisch: die deutschen Konsolen von AWS, Google Cloud und Hetzner führen „Bucket“ (der Bucket), ebenso MS-Terminologie (bucket → Bucket)."
+  },
+  "servers.sheet.s3BucketHelp": "Leer lassen, um alle Buckets zu sehen. Ist dein Schlüssel auf einen Bucket beschränkt, gib dessen Namen ein.",
+  "@servers.sheet.s3BucketHelp": {
+    "sourceHash": "8d380d9"
+  },
+  "servers.sheet.s3UseRegion": "{region} verwenden",
+  "@servers.sheet.s3UseRegion": {
+    "sourceHash": "5734184"
+  },
+  "servers.sheet.accessKeyId": "Zugriffsschlüssel-ID",
+  "@servers.sheet.accessKeyId": {
+    "sourceHash": "14eb0f9"
+  },
+  "servers.sheet.secretAccessKey": "Geheimer Zugriffsschlüssel",
+  "@servers.sheet.secretAccessKey": {
+    "sourceHash": "3de6b75"
+  },
+  "servers.sheet.examplePlaceholder": "Beispiel: {example}",
+  "@servers.sheet.examplePlaceholder": {
+    "sourceHash": "9c7df45"
+  },
+  "servers.sheet.identityLockedS3": "Anbieter, Zugriffsschlüssel-ID und Bucket machen diesen Ort aus. Vergiss ihn und füge ihn erneut hinzu, um sie zu ändern.",
+  "@servers.sheet.identityLockedS3": {
+    "sourceHash": "fe4d469"
+  },
+  "servers.sheet.identityLockedS3Account": "Anbieter und Zugriffsschlüssel-ID machen dieses Konto aus. Vergiss es und füge es erneut hinzu, um sie zu ändern.",
+  "@servers.sheet.identityLockedS3Account": {
+    "sourceHash": "e03a769"
   },
   "servers.sheet.namePlaceholder": "Leer lassen, um {label} zu verwenden",
   "@servers.sheet.namePlaceholder": {
@@ -455,6 +657,10 @@
   "@servers.paneState.notConnected": {
     "sourceHash": "5020fac"
   },
+  "servers.paneState.unreachable": "Cmdr konnte {name} nicht erreichen.",
+  "@servers.paneState.unreachable": {
+    "sourceHash": "a7bc9bc"
+  },
   "servers.paneState.goBack": "Zurück",
   "@servers.paneState.goBack": {
     "sourceHash": "6aadac2"
@@ -467,9 +673,13 @@
   "@servers.paneState.hostKeyChanged": {
     "sourceHash": "c73ddf3"
   },
-  "servers.paneState.hostKeyChangedHint": "Der Schlüssel des Servers hat sich geändert. Das kann bedeuten, dass der Server neu aufgesetzt wurde, oder dass sich etwas zwischen dich und den Server geschaltet hat. Trenne die Verbindung und öffne den Server dann erneut, um den Fingerabdruck zu prüfen.",
+  "servers.paneState.hostKeyChangedHint": "Der Schlüssel des Servers hat sich geändert. Das kann bedeuten, dass der Server neu aufgesetzt wurde, oder dass sich etwas zwischen dich und den Server geschaltet hat. Prüfe den neuen Schlüssel, bevor du dich wieder verbindest.",
   "@servers.paneState.hostKeyChangedHint": {
-    "sourceHash": "923de62"
+    "sourceHash": "866b619"
+  },
+  "servers.paneState.checkHostKey": "Schlüssel prüfen",
+  "@servers.paneState.checkHostKey": {
+    "sourceHash": "fefa256"
   },
   "servers.paneState.reconnecting": "Verbindung zu {name} wird wiederhergestellt …",
   "@servers.paneState.reconnecting": {

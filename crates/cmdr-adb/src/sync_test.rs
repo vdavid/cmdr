@@ -156,3 +156,77 @@ fn kind_reads_the_type_bits() {
         .exists()
     );
 }
+
+/// A `STA2`/`DNT2` stat body with everything zeroed but the mode.
+fn stat_v2_body(mode: u32) -> Vec<u8> {
+    let mut body = vec![0u8; 68];
+    body[20..24].copy_from_slice(&mode.to_le_bytes());
+    body
+}
+
+// Regression: a length word straight off the wire sized the buffer, so one
+// hostile `DNT2` made us allocate 4 GiB (found by the `adb_sync` fuzz target).
+#[tokio::test]
+async fn a_name_longer_than_the_protocol_allows_is_refused_before_allocating() {
+    let mut device = b"DNT2".to_vec();
+    device.extend(stat_v2_body(0o100644));
+    device.extend(u32::MAX.to_le_bytes());
+    let mut session = SyncSession::from_connection(AdbConnection::scripted(&device), DeviceFeatures::all());
+
+    let err = session.list("/sdcard", &mut |_| {}).await.unwrap_err();
+
+    assert!(matches!(err, AdbError::Protocol(_)), "got {err:?}");
+}
+
+#[tokio::test]
+async fn a_data_chunk_longer_than_the_protocol_allows_is_refused() {
+    let mut device = b"DATA".to_vec();
+    device.extend(u32::try_from(MAX_DATA_CHUNK + 1).unwrap().to_le_bytes());
+    let mut session = SyncSession::from_connection(AdbConnection::scripted(&device), DeviceFeatures::all());
+
+    let err = session.recv_chunk().await.unwrap_err();
+
+    assert!(matches!(err, AdbError::Protocol(_)), "got {err:?}");
+}
+
+#[tokio::test]
+async fn a_full_size_data_chunk_still_reads() {
+    let mut device = b"DATA".to_vec();
+    device.extend(u32::try_from(MAX_DATA_CHUNK).unwrap().to_le_bytes());
+    device.extend(vec![7u8; MAX_DATA_CHUNK]);
+    let mut session = SyncSession::from_connection(AdbConnection::scripted(&device), DeviceFeatures::all());
+
+    let chunk = session.recv_chunk().await.unwrap().unwrap();
+
+    assert_eq!(chunk.len(), MAX_DATA_CHUNK);
+}
+
+#[test]
+fn a_stat_reports_its_mtime_as_a_date_and_a_pre_epoch_one_as_none() {
+    let stat = |mtime| SyncStat {
+        mode: 0o100644,
+        size: 0,
+        mtime,
+        errno: None,
+    };
+    let at = |secs| UNIX_EPOCH + Duration::from_secs(secs);
+    assert_eq!(stat(1_611_909_015).modified_at(), Some(at(1_611_909_015)));
+    // `STA2`/`DNT2` carry 64 bits: a date past 2106 stays whole.
+    assert_eq!(stat(5_000_000_000).modified_at(), Some(at(5_000_000_000)));
+    // The listing shows no date for these, so the stream mustn't invent one.
+    assert_eq!(stat(-1).modified_at(), None);
+}
+
+#[test]
+fn the_done_word_carries_whole_seconds_clamped_to_u32() {
+    use std::time::{Duration, UNIX_EPOCH};
+    assert_eq!(
+        done_mtime_word(UNIX_EPOCH + Duration::from_millis(1_611_909_015_750)),
+        1_611_909_015
+    );
+    assert_eq!(done_mtime_word(UNIX_EPOCH - Duration::from_secs(10)), 0);
+    assert_eq!(
+        done_mtime_word(UNIX_EPOCH + Duration::from_secs(5_000_000_000)),
+        u32::MAX
+    );
+}

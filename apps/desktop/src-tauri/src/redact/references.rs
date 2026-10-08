@@ -6,42 +6,13 @@
 use super::RedactionContext;
 use super::context::TokenDomain;
 use super::identity_token;
-use super::paths::{has_extension_like_suffix, redact_leaf, redact_path_tail};
+use super::paths::{has_extension_like_suffix, redact_leaf};
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 
-/// The unsalted SMB rewrite that ordinary MCP exposed before report delivery gained a
-/// component-aware reference parser. Userinfo and authority collapse together, and query /
-/// fragment text remains part of the path leaf heuristic.
-pub(super) fn redact_legacy_smb_url(reference: &str) -> String {
-    let after = reference.strip_prefix("smb://").unwrap_or(reference);
-    let (_, rest) = match after.split_once('/') {
-        Some(parts) => parts,
-        None => return "smb://<host>".to_string(),
-    };
-    let (_, tail) = match rest.split_once('/') {
-        Some((share, tail)) => (share, format!("/{tail}")),
-        None => return "smb://<host>/<share>".to_string(),
-    };
-    format!("smb://<host>/<share>{}", redact_path_tail(&tail, None))
-}
-
-/// The unsalted UNC rewrite paired with [`redact_legacy_smb_url`].
-pub(super) fn redact_legacy_unc(reference: &str) -> String {
-    let after = reference.strip_prefix(r"\\").unwrap_or(reference);
-    let normalized: String = after.chars().map(|c| if c == '\\' { '/' } else { c }).collect();
-    let parts: Vec<&str> = normalized.splitn(3, '/').collect();
-    match parts.as_slice() {
-        [_host] => r"\\<host>".to_string(),
-        [_host, _share] => r"\\<host>\<share>".to_string(),
-        [_host, _share, tail] => {
-            let redacted = redact_path_tail(&format!("/{tail}"), None);
-            format!(r"\\<host>\<share>{}", redacted.replace('/', "\\"))
-        }
-        _ => r"\\<host>".to_string(),
-    }
-}
-
 pub(super) fn redact_remote_url(reference: &str, context: Option<&RedactionContext>) -> String {
+    if is_svelte_error_url(reference) {
+        return reference.to_string();
+    }
     let Some((scheme, remainder)) = reference.split_once("://") else {
         return reference.to_string();
     };
@@ -67,6 +38,19 @@ pub(super) fn redact_remote_url(reference: &str, context: Option<&RedactionConte
         context,
     ));
     out
+}
+
+/// A production Svelte error, `https://svelte.dev/e/<snake_case_code>`, is the whole message an
+/// uncaught frontend error carries, and it names a public error code rather than anyone's data.
+/// Only that exact shape passes: a port, userinfo, query, fragment, or extra segment means it
+/// isn't one Svelte built, and it gets the full remote-URL treatment.
+fn is_svelte_error_url(reference: &str) -> bool {
+    reference.strip_prefix("https://svelte.dev/e/").is_some_and(|code| {
+        code.starts_with(|c: char| c.is_ascii_lowercase())
+            && code
+                .chars()
+                .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '_')
+    })
 }
 
 pub(super) fn redact_scheme_less(reference: &str, context: Option<&RedactionContext>) -> String {
@@ -125,8 +109,10 @@ pub(super) fn redact_derived_id(id: &str, context: Option<&RedactionContext>) ->
         return id.to_string();
     };
     let (scheme, slug) = scheme_and_slug.split_once('-').unwrap_or((scheme_and_slug, ""));
-    if !matches!(scheme, "smb" | "sftp" | "webdav" | "adb" | "mtp" | "vol" | "path")
-        || !valid_derived_slug(slug)
+    if !matches!(
+        scheme,
+        "smb" | "sftp" | "webdav" | "s3" | "adb" | "mtp" | "vol" | "path"
+    ) || !valid_derived_slug(slug)
         || digest.len() != 16
         || !digest.chars().all(|c| c.is_ascii_hexdigit() && !c.is_ascii_uppercase())
         || (id.contains(':') && storage.is_none())

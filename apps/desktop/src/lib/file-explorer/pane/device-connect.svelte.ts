@@ -22,9 +22,8 @@
  * the dial starts with nothing pressed — one subscription for the whole app
  * rather than one per pane.
  *
- * MTP is deliberately NOT folded in here: its volume id CHANGES on connect
- * (device-only → storage), which is a different pane transition, and it keeps
- * `MtpConnectionView.svelte`.
+ * MTP needs no dialer: the backend auto-connects a phone on hotplug and lists
+ * only its storages, so an MTP pane only ever stands on an open one.
  */
 
 import { untrack } from 'svelte'

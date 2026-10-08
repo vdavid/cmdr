@@ -33,7 +33,8 @@ var (
 	eventsCaptureRe = regexp.MustCompile(`events::capture\(\s*"([a-z0-9_]+)"`)
 	bareCaptureRe   = regexp.MustCompile(`\bcapture\(\s*"([a-z0-9_]+)"`)
 	// The `AnalyticsSink` seam the backend crates use, since they can't see `tauri`.
-	analyticsSinkRe = regexp.MustCompile(`analytics\(\)\.record\(\s*"([a-z0-9_]+)"`)
+	// Whitespace may sit before `.record`: rustfmt breaks a long call chain there.
+	analyticsSinkRe = regexp.MustCompile(`analytics\(\)\s*\.record\(\s*"([a-z0-9_]+)"`)
 	// The frontend's one path, the `track_event` IPC wrapper.
 	trackEventRe = regexp.MustCompile(`trackEvent\(\s*['"]([a-z0-9_]+)['"]`)
 	// A catalog bullet opens with one or more backticked names joined by " / ".

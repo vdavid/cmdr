@@ -8,7 +8,7 @@
 # file hash. The fast-changing part (entrypoint.sh) lives in `Dockerfile`,
 # which builds FROM this image in ~1 s.
 
-FROM ubuntu:26.04
+FROM ubuntu:26.04@sha256:f144425ff09be612d6d9ad965196e9cdc23dae1f42110a8a11a3e9a8198759f7
 
 # Avoid prompts during package installation
 ENV DEBIAN_FRONTEND=noninteractive
@@ -98,16 +98,26 @@ RUN apt-get update && apt-get install -y \
     # Clean up
     && rm -rf /var/lib/apt/lists/*
 
-# Install Node.js 22 LTS
-RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
-    && apt-get install -y nodejs \
-    && rm -rf /var/lib/apt/lists/*
+# Node.js 22 LTS and Rust come from the official images, pinned by digest, so the toolchain is
+# exactly what Renovate last reviewed rather than whatever a `curl | sh` installer served today.
+# Node's binaries are built against an old glibc and run unchanged on Ubuntu.
+COPY --from=node:22-trixie-slim@sha256:154ba2f4d6fec323d28e4f4bb86bba4677f1223391a1979cf521304e03a98dfa /usr/local/bin/node /usr/local/bin/node
+COPY --from=node:22-trixie-slim@sha256:154ba2f4d6fec323d28e4f4bb86bba4677f1223391a1979cf521304e03a98dfa /usr/local/lib/node_modules /usr/local/lib/node_modules
+RUN ln -s ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
+    && ln -s ../lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx \
+    && ln -s ../lib/node_modules/corepack/dist/corepack.js /usr/local/bin/corepack
 
-# Install pnpm
-RUN npm install -g pnpm
+# pnpm through corepack, which fetches the version the repo's `packageManager` names at first use
+# and checks the npm registry's signature on it.
+ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+RUN corepack enable pnpm
 
-# Install Rust (needed to compile the Tauri binary with --features playwright-e2e)
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+# Rust (needed to compile the Tauri binary with --features playwright-e2e). The bind-mounted
+# registry cache in `e2e-linux.sh` lives under /root/.cargo, so the toolchain moves there too.
+# `rust-toolchain.toml` still picks the compiler; matching the image to its pin saves the download.
+COPY --from=rust:1.97.1-slim-trixie@sha256:8e8cf8f7fd54a2d23d5a743b3a03f56e26b6c774276c33fa0595111704ebb15c /usr/local/cargo /root/.cargo
+COPY --from=rust:1.97.1-slim-trixie@sha256:8e8cf8f7fd54a2d23d5a743b3a03f56e26b6c774276c33fa0595111704ebb15c /usr/local/rustup /root/.rustup
+ENV CARGO_HOME=/root/.cargo RUSTUP_HOME=/root/.rustup
 ENV PATH="/root/.cargo/bin:${PATH}"
 
 # Set up display for Xvfb

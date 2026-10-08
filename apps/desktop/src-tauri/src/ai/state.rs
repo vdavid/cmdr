@@ -127,8 +127,6 @@ pub struct AiModelInfo {
     pub id: String,
     pub display_name: String,
     pub size_bytes: u64,
-    /// Human-readable size (like "4.3 GB")
-    pub size_formatted: String,
     /// Bytes per token for KV cache (used for memory estimation)
     pub kv_bytes_per_token: u64,
     /// Base memory overhead in bytes (model weights + compute buffers)
@@ -144,16 +142,9 @@ pub fn get_ai_model_info() -> AiModelInfo {
         id: model.id.to_string(),
         display_name: model.display_name.to_string(),
         size_bytes: model.size_bytes,
-        size_formatted: format_bytes_gb(model.size_bytes),
         kv_bytes_per_token: model.kv_bytes_per_token,
         base_overhead_bytes: model.base_overhead_bytes,
     }
-}
-
-/// Formats bytes as GB with one decimal place (like "4.3 GB").
-pub(super) fn format_bytes_gb(bytes: u64) -> String {
-    let gb = bytes as f64 / 1_000_000_000.0;
-    format!("{gb:.1} GB")
 }
 
 /// Returns the model info for the currently selected/installed model.

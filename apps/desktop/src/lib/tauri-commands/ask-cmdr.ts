@@ -25,6 +25,7 @@ import {
   type AttachmentRef,
   type AttachmentKindView,
   type LegacyAskCmdrOptIn,
+  type ManagedAiRefusal,
   type ConversationCost,
   type CostSummary,
   type ModelWindowView,
@@ -102,7 +103,7 @@ export type AskCmdrSendOutcome =
   /** Decided before the turn existed (Ask Cmdr off, cloud AI not allowed, no slot, a window
    * too small), so it can't arrive as a stream event — some of these happen before there IS a
    * thread to key one on. */
-  | { accepted: false; kind: AskCmdrErrorKind; detail: string | null }
+  | { accepted: false; kind: AskCmdrErrorKind; detail: string | null; managed: ManagedAiRefusal | null }
 
 /**
  * Send one message. `conversationId` is `null` to start a fresh thread; the resolved id comes
@@ -120,7 +121,9 @@ export async function sendAskCmdrMessage(
   deniedNames: string[],
 ): Promise<AskCmdrSendOutcome> {
   const res = await commands.askCmdrSendMessage(conversationId, text, attachments, deniedNames)
-  if (res.status === 'error') return { accepted: false, kind: res.error.kind, detail: res.error.detail }
+  if (res.status === 'error') {
+    return { accepted: false, kind: res.error.kind, detail: res.error.detail, managed: res.error.managed }
+  }
   return { accepted: true, conversationId: res.data }
 }
 

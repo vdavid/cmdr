@@ -46,6 +46,7 @@ describe('filesystemLabel: remote places', () => {
   it('names the protocol for a server row, so the slot says what the row speaks', () => {
     expect(filesystemLabel(vol({ category: 'network', fsType: 'sftp' }))).toBe('SFTP')
     expect(filesystemLabel(vol({ category: 'network', fsType: 'webdav' }))).toBe('WebDAV')
+    expect(filesystemLabel(vol({ category: 'network', fsType: 's3' }))).toBe('S3')
     expect(filesystemLabel(vol({ category: 'network', fsType: 'smbfs' }))).toBe('SMB')
     expect(filesystemLabel(vol({ category: 'network', fsType: 'cifs' }))).toBe('SMB')
   })

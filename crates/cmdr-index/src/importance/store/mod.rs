@@ -141,7 +141,7 @@ pub(crate) fn needs_full_pass(data_dir: &Path, volume_id: &str) -> Result<bool, 
 /// the app data dir. Mirrors the index's `index-{volume_id}.db` naming so the two
 /// disposable caches live together and relocate together (location-independence).
 pub fn importance_db_path(data_dir: &Path, volume_id: &str) -> PathBuf {
-    data_dir.join(format!("importance-{volume_id}.db"))
+    crate::volume_files::VolumeStore::Importance.db_path(data_dir, volume_id)
 }
 
 /// A stored weight for one folder: the scalar, the raw signal vector it was
@@ -262,14 +262,10 @@ impl ImportanceStore {
     }
 
     fn delete_and_recreate(db_path: &Path) -> Result<Self, ImportanceStoreError> {
-        if db_path.exists() {
-            std::fs::remove_file(db_path)?;
-        }
-        for sidecar in [db_path.with_extension("db-wal"), db_path.with_extension("db-shm")] {
-            if sidecar.exists() {
-                let _ = std::fs::remove_file(&sidecar);
-            }
-        }
+        // Through the one delete, so the read connections threads have cached to
+        // the outgoing file are retired: they'd otherwise keep answering from the
+        // unlinked inode, since importance reads carry no generation of their own.
+        cmdr_fs::sqlite_util::delete_database(db_path)?;
         let conn = open_write_connection(db_path)?;
         stamp_schema_version(&conn)?;
         Ok(Self {

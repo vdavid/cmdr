@@ -58,6 +58,11 @@ impl VolumeReadStream for GitBlobReadStream {
     fn bytes_read(&self) -> u64 {
         self.pos as u64
     }
+
+    fn modified_at(&self) -> Option<std::time::SystemTime> {
+        // A blob has no date of its own; the same blob sits in many commits.
+        None
+    }
 }
 
 #[cfg(test)]

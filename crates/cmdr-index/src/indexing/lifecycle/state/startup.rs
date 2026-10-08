@@ -113,6 +113,13 @@ impl StartRequest {
     pub(super) fn volume_root(&self) -> &Path {
         &self.volume_root
     }
+
+    /// The same start for a volume whose mount point moved to `volume_root`: same
+    /// kind, same inode fact, same activation. A rename keeps the filesystem, so
+    /// nothing but the root can have changed.
+    pub(super) fn moved_to(self, volume_root: PathBuf) -> Self {
+        Self { volume_root, ..self }
+    }
 }
 
 /// Record that the user turned drive indexing ON for this volume, on the volume's
@@ -220,7 +227,7 @@ pub(in crate::indexing::lifecycle) fn start_indexing_for(
     // launch, a reconnect, and a start recorded while the volume was still dying.
     if super::is_failed(volume_id) {
         log::info!("start_indexing: '{volume_id}' has a dead index; clearing it so this start can rebuild");
-        if let Err(e) = super::clear_index(volume_id) {
+        if let Err(e) = super::clear_index(volume_id, crate::volume_files::Removal::IndexRebuild) {
             log::warn!("start_indexing: clearing the failed index for '{volume_id}' failed: {e}");
         }
     }
@@ -332,8 +339,10 @@ pub(in crate::indexing::lifecycle) fn start_indexing_for(
     // M4 late-registering volumes). The kind rides along so the consumer branches
     // typed (score Local + SMB, exclude MTP), never on the id string. Published
     // once, right after the reservation wins, so an early scan completion still
-    // arrives on the (already-subscribed) scan bus afterwards.
-    lifecycle_bus::publish_volume_registered(volume_id, kind);
+    // arrives on the (already-subscribed) scan bus afterwards. A child of this
+    // start's stop signal rides along too, so whatever the subscriber starts for
+    // the volume ends with this life of it.
+    lifecycle_bus::publish_volume_registered(volume_id, kind, reservation.child_token());
 
     let mut manager = match IndexManager::new_for_kind(
         volume_id.to_string(),
@@ -539,6 +548,11 @@ pub(in crate::indexing::lifecycle) fn start_pending_phases(volume_id: &str) {
 /// deliberately — an unregistered volume answers neither sizes nor coverage
 /// questions, so the first moment that coverage can be read is the moment its
 /// index comes up, and that's the moment to make it live again.
+///
+/// ⚠️ The watcher starts OFF the lock (`state::ensure_branch_watch`): a stream
+/// start is an `fseventsd` round trip. Reading the branch set back still happens
+/// inside the window, see `../DETAILS.md` § "And the standing-up itself runs off
+/// the lock too" for why that one is left.
 fn resume_branch_watch(volume_id: &str) {
     with_running_manager(volume_id, |mgr| {
         let conn = match IndexStore::open_read_connection(mgr.db_path()) {
@@ -549,8 +563,8 @@ fn resume_branch_watch(volume_id: &str) {
             }
         };
         crate::indexing::watch::branches::resumed_for(volume_id, &mgr.path_space(), &conn);
-        mgr.ensure_branch_watch(true);
     });
+    super::ensure_branch_watch(volume_id, true);
 }
 
 /// Internal SMB-start entry point, called by `smb_index::start_indexing_for_smb`

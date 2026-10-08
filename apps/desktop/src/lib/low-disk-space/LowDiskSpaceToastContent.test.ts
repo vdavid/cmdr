@@ -78,7 +78,7 @@ describe('LowDiskSpaceToastContent', () => {
     mount(LowDiskSpaceToastContent, { target, props: makeProps() })
     await tick()
 
-    expect(target.textContent).toContain('39 GB')
+    expect(target.textContent).toContain('39 GiB')
     expect(target.textContent).toContain('4.2%')
     expect(target.textContent).toContain('running low on space')
   })
@@ -101,7 +101,7 @@ describe('LowDiskSpaceToastContent', () => {
       },
     })
     await tick()
-    expect(target.textContent).toContain('20 GB')
+    expect(target.textContent).toContain('20 GiB')
     expect(target.textContent).toContain('2.1%')
 
     // An update for a different volume is ignored.
@@ -110,7 +110,7 @@ describe('LowDiskSpaceToastContent', () => {
       space: { kind: 'bounded', totalBytes: 500, availableBytes: 10, usedBytes: 490 },
     })
     await tick()
-    expect(target.textContent).toContain('20 GB')
+    expect(target.textContent).toContain('20 GiB')
     expect(target.textContent).toContain('2.1%')
   })
 
@@ -127,7 +127,7 @@ describe('LowDiskSpaceToastContent', () => {
     getListener()({ volumeId: 'root', space: { kind: 'unbounded', usedBytes: 64_000_000 } })
     await tick()
 
-    expect(target.textContent).toContain('39 GB')
+    expect(target.textContent).toContain('39 GiB')
     expect(target.textContent).toContain('4.2%')
   })
 

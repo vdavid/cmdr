@@ -79,13 +79,5 @@
   "mtp.deviceFallbackName": "Thiết bị MTP",
   "@mtp.deviceFallbackName": {
     "sourceHash": "8ba7a69"
-  },
-  "mtp.error.exclusiveAccess": "Một tiến trình khác đang giữ quyền truy cập độc quyền{blocking, select, none {} other { (bị chặn bởi {blocking})}}",
-  "@mtp.error.exclusiveAccess": {
-    "sourceHash": "a81f306"
-  },
-  "mtp.error.permissionDenied": "Quyền truy cập USB bị từ chối. Hãy cài các quy tắc udev và kết nối lại",
-  "@mtp.error.permissionDenied": {
-    "sourceHash": "3362501"
   }
 }

@@ -23,7 +23,12 @@
 
     const log = getAppLogger('askCmdr')
 
-    let cost = $state<ConversationCost | null>(null)
+    // Keyed by the thread it was read for, so a thread switch hides the old total at once
+    // instead of showing it under the new thread until the new read lands.
+    let fetched = $state<{ conversationId: number; cost: ConversationCost } | null>(null)
+    const cost = $derived(
+        fetched !== null && fetched.conversationId === askCmdrState.conversationId ? fetched.cost : null,
+    )
 
     // Refetch when the active thread changes or a turn finishes streaming (the meter is
     // updated per completed turn), so the footer tracks the newest total. A brand-new,
@@ -31,16 +36,14 @@
     $effect(() => {
         const id = askCmdrState.conversationId
         const streaming = askCmdrState.streaming
-        if (id === null) {
-            cost = null
-            return
-        }
+        if (id === null) return
         // Read after streaming ends (the `done` event flipped `streaming` false and the
         // meter row is written by then).
         if (streaming) return
         void askCmdrConversationCost(id).then(
             (c) => {
-                cost = c
+                // A slow read for a thread the user already left must not replace the newer one.
+                if (askCmdrState.conversationId === id) fetched = { conversationId: id, cost: c }
             },
             (e: unknown) => {
                 log.warn('reading chat cost failed: {error}', { error: String(e) })

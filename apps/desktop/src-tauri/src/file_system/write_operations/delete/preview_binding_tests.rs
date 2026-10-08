@@ -74,6 +74,7 @@ fn local_preview_of(
                 total_bytes: source_total,
                 dedup_bytes: source_total,
                 top_level_is_directory: true,
+                top_level_modified_at: None,
             },
         ));
     }
@@ -231,6 +232,7 @@ async fn a_volume_delete_stays_bound_to_its_own_sources() {
                     total_bytes: 7,
                     dedup_bytes: 7,
                     top_level_is_directory: false,
+                    top_level_modified_at: None,
                 },
             )],
         ),

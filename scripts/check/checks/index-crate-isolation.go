@@ -36,7 +36,7 @@ import (
 
 // guardedIndexCrates are the crates whose dependency trees must stay app-free.
 var guardedIndexCrates = []string{
-	"cmdr-index", "cmdr-fs", "cmdr-archive", "cmdr-smb", "cmdr-sftp", "cmdr-webdav", "cmdr-mtp",
+	"cmdr-index", "cmdr-fs", "cmdr-archive", "cmdr-smb", "cmdr-sftp", "cmdr-webdav", "cmdr-mtp", "cmdr-s3", "cmdr-adb", "cmdr-git", "cmdr-http",
 }
 
 // forbiddenForIndexCrates are the packages that must not appear in a guarded
@@ -248,9 +248,9 @@ type surfaceCounts struct {
 	HandleMethods  int
 	PublicModules  int
 	SubsystemItems int
-	// Gated is the `testing` / `tooling` surface, counted apart because it isn't
-	// the API: it exists so a consumer's tests and the measurement binaries have
-	// one door instead of a widened module.
+	// Gated is the `testing` / `tooling` / `fuzzing` surface, counted apart because
+	// it isn't the API: it exists so a consumer's tests, the measurement binaries,
+	// and the fuzz targets have one door instead of a widened module.
 	Gated int
 }
 
@@ -350,7 +350,7 @@ func countSurface(files map[string]string, rootFile, handleType string) surfaceC
 }
 
 // publicModDecls returns the module names a file declares as `pub mod`, skipping
-// `pub(crate) mod`, plain `mod`, and anything behind a `testing` / `tooling` gate.
+// `pub(crate) mod`, plain `mod`, and anything behind a `testing` / `tooling` / `fuzzing` gate.
 func publicModDecls(source string) []string {
 	var names []string
 	lines := strings.Split(source, "\n")
@@ -562,8 +562,8 @@ trimmed:
 	return head == typeName
 }
 
-// isGated reports whether the item at `index` sits under a `testing` / `tooling`
-// feature gate or a `cfg(test)`, walking back over the contiguous attribute and doc
+// isGated reports whether the item at `index` sits under a `testing` / `tooling` /
+// `fuzzing` feature gate (none ships in a production build) or a `cfg(test)`, walking back over the contiguous attribute and doc
 // lines above it.
 func isGated(lines []string, index int) bool {
 	indent := len(lines[index]) - len(strings.TrimLeft(lines[index], " "))
@@ -583,6 +583,7 @@ func isGated(lines []string, index int) bool {
 		}
 		if strings.Contains(trimmed, `feature = "testing"`) ||
 			strings.Contains(trimmed, `feature = "tooling"`) ||
+			strings.Contains(trimmed, `feature = "fuzzing"`) ||
 			strings.Contains(trimmed, "cfg(test)") {
 			return true
 		}

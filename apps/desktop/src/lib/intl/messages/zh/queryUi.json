@@ -389,9 +389,9 @@
   "@queryUi.recent.caseSensitive": {
     "sourceHash": "3934758"
   },
-  "queryUi.recent.systemDirsIncluded": "包含系统目录",
+  "queryUi.recent.systemDirsIncluded": "包含系统文件夹",
   "@queryUi.recent.systemDirsIncluded": {
-    "sourceHash": "b7996cc"
+    "sourceHash": "c928638"
   },
   "queryUi.recent.resultCount": "上次有 {countText} {count, plural, other {个结果}}",
   "@queryUi.recent.resultCount": {
@@ -524,14 +524,6 @@
   "queryUi.size.comparator.between": "介于",
   "@queryUi.size.comparator.between": {
     "sourceHash": "fbb27fb"
-  },
-  "queryUi.size.unit.byte": "字节",
-  "@queryUi.size.unit.byte": {
-    "sourceHash": "1c31626"
-  },
-  "queryUi.size.unit.bytes": "字节",
-  "@queryUi.size.unit.bytes": {
-    "sourceHash": "277089d"
   },
   "queryUi.size.customCell": "自定义…",
   "@queryUi.size.customCell": {

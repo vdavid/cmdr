@@ -32,7 +32,10 @@ fn a_small_file_opens_full_load_with_exact_lines() {
         Some(11),
         "10 lines plus the trailing empty one"
     );
-    let chunk = opened.backend.get_lines(&SeekTarget::Line(7), 2).unwrap();
+    let chunk = opened
+        .backend
+        .get_lines(&SeekTarget::Row(7), 2, &AtomicBool::new(false))
+        .unwrap();
     assert_eq!(chunk.first_row_number, 7);
     assert!(chunk.texts()[0].starts_with("line 000008"));
 }
@@ -47,7 +50,10 @@ fn a_large_file_opens_line_index_with_exact_lines() {
     let opened = open_text_backend(&path, FileEncoding::Utf8, &cancel).unwrap();
     assert!(opened.line_numbers_exact);
     assert_eq!(opened.backend.total_lines(), Some(50_001));
-    let chunk = opened.backend.get_lines(&SeekTarget::Line(40_000), 1).unwrap();
+    let chunk = opened
+        .backend
+        .get_lines(&SeekTarget::Row(40_000), 1, &AtomicBool::new(false))
+        .unwrap();
     assert_eq!(chunk.first_row_number, 40_000);
     assert!(
         chunk.texts()[0].starts_with("line 040001"),
@@ -67,7 +73,10 @@ fn a_cancelled_index_build_falls_back_to_byte_seek_and_says_lines_are_approximat
     assert!(!opened.line_numbers_exact);
     assert_eq!(opened.backend.total_lines(), None);
     assert!(!opened.backend.capabilities().knows_total_lines);
-    let chunk = opened.backend.get_lines(&SeekTarget::Line(0), 2).unwrap();
+    let chunk = opened
+        .backend
+        .get_lines(&SeekTarget::Row(0), 2, &AtomicBool::new(false))
+        .unwrap();
     assert!(chunk.texts()[0].starts_with("line 000001"));
     // The flag is the caller's; the fallback must not clear it.
     assert!(cancel.load(Ordering::Relaxed));
@@ -110,10 +119,14 @@ fn a_scan_backend_skips_the_index_and_still_finds_lines_exactly() {
     assert_eq!(scanned, backend.total_bytes(), "the scan streams the whole file");
     let found = matches.into_inner().unwrap();
     assert_eq!(found.len(), 1);
-    assert_eq!(found[0].line, 39_999, "0-based, exact, with no index");
+    assert_eq!(found[0].row, 39_999, "0-based, exact, with no index");
     // The line comes back by its byte offset, the one seek every backend does exactly.
     let chunk = backend
-        .get_lines(&SeekTarget::ByteOffset(found[0].byte_offset), 1)
+        .get_lines(
+            &SeekTarget::ByteOffset(found[0].byte_offset),
+            1,
+            &AtomicBool::new(false),
+        )
         .unwrap();
     assert_eq!(chunk.texts()[0], "line 040000 padding........");
 

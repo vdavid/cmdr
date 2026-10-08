@@ -14,7 +14,7 @@
   },
   "indexing.scan.counters": "{entriesText} {entries, plural, one {Eintrag} other {Einträge}}, {dirsText} {dirs, plural, one {Ordner} other {Ordner}}",
   "@indexing.scan.counters": {
-    "sourceHash": "f635790"
+    "sourceHash": "ecf47f2"
   },
   "indexing.scan.countersElapsed": "{counters} · {elapsed}",
   "@indexing.scan.countersElapsed": {
@@ -133,9 +133,21 @@
   "@indexing.progress.percentEta": {
     "sourceHash": "26b29da"
   },
+  "indexing.overall.eta": "Insgesamt: {eta}",
+  "@indexing.overall.eta": {
+    "sourceHash": "a9a2ffc"
+  },
+  "indexing.overall.estimating": "Insgesamt: wird geschätzt …",
+  "@indexing.overall.estimating": {
+    "sourceHash": "9dac967"
+  },
   "indexing.eta.almostDone": "Fast fertig",
   "@indexing.eta.almostDone": {
     "sourceHash": "506f162"
+  },
+  "indexing.eta.almostDoneMidSentence": "fast fertig",
+  "@indexing.eta.almostDoneMidSentence": {
+    "sourceHash": "1d2fb48"
   },
   "indexing.eta.secondsLeft": "noch {secondsText} s",
   "@indexing.eta.secondsLeft": {
@@ -188,6 +200,10 @@
   "indexing.needsFreshScan.afterDisconnect": "{name} wurde getrennt, während Cmdr gerade seinen Index aktualisiert hat. Der nächste Durchlauf dieses Laufwerks startet von vorn, damit die Ordnergrößen wieder stimmen.",
   "@indexing.needsFreshScan.afterDisconnect": {
     "sourceHash": "a90dbdf"
+  },
+  "indexing.memoryStop.paused": "Cmdr hat die Laufwerksindizierung angehalten, weil zu viel Speicher belegt war. Bis du Cmdr neu startest, sind die Ordnergrößen womöglich nicht mehr aktuell.",
+  "@indexing.memoryStop.paused": {
+    "sourceHash": "32d225a"
   },
   "indexing.firstConnect.title": "{name} indizieren?",
   "@indexing.firstConnect.title": {

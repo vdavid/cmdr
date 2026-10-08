@@ -151,21 +151,21 @@
   "@settings.appearance.tintLocal.description": {
     "sourceHash": "3c86b48"
   },
-  "settings.appearance.tintSmb.label": "Tona serverpaneler (SMB, SFTP, WebDAV)",
+  "settings.appearance.tintSmb.label": "Tona serverpaneler (SMB, SFTP, WebDAV, S3)",
   "@settings.appearance.tintSmb.label": {
-    "sourceHash": "d801804"
+    "sourceHash": "d912bcf"
   },
-  "settings.appearance.tintSmb.description": "Bakgrundston som läggs på paneler som visar en delad SMB-mapp, en SFTP-server eller en WebDAV-server.",
+  "settings.appearance.tintSmb.description": "Bakgrundston som läggs på paneler som visar en delad SMB-mapp, en SFTP-server, en WebDAV-server eller S3-lagring.",
   "@settings.appearance.tintSmb.description": {
-    "sourceHash": "2e071d3"
+    "sourceHash": "bddee40"
   },
-  "settings.appearance.tintMtp.label": "Tona MTP-paneler",
+  "settings.appearance.tintMtp.label": "Tona enhetspaneler (MTP, ADB)",
   "@settings.appearance.tintMtp.label": {
-    "sourceHash": "2054351"
+    "sourceHash": "c50c536"
   },
-  "settings.appearance.tintMtp.description": "Bakgrundston som läggs på paneler som visar en Android-, Kindle- eller kameraenhet.",
+  "settings.appearance.tintMtp.description": "Bakgrundston som läggs på paneler som visar en telefon, en Kindle eller en kamera, oavsett om den är ansluten via MTP eller ADB.",
   "@settings.appearance.tintMtp.description": {
-    "sourceHash": "a09d99a"
+    "sourceHash": "d70512d"
   },
   "settings.appearance.textSize.label": "Textstorlek",
   "@settings.appearance.textSize.label": {
@@ -220,9 +220,9 @@
   "@settings.listing.sizeUnit.label": {
     "sourceHash": "2a817d3"
   },
-  "settings.listing.sizeUnit.description": "Dynamisk väljer den vänligaste enheten per fil (1,02 MB). Fasta enheter gör storlekarna jämförbara genom hela listan. Byte visar exakt antal för noggrann jämförelse.",
+  "settings.listing.sizeUnit.description": "Dynamisk väljer den vänligaste enheten per fil. Fasta enheter gör storlekarna jämförbara genom hela listan. Byte visar exakt antal för noggrann jämförelse.",
   "@settings.listing.sizeUnit.description": {
-    "sourceHash": "702a201"
+    "sourceHash": "fae7a91"
   },
   "settings.listing.sizeUnit.opt.dynamic": "Dynamisk",
   "@settings.listing.sizeUnit.opt.dynamic": {
@@ -232,36 +232,21 @@
   "@settings.listing.sizeUnit.opt.bytes": {
     "sourceHash": "4d80003"
   },
-  "settings.listing.sizeUnit.opt.kB": "kB",
-  "@settings.listing.sizeUnit.opt.kB": {
-    "sourceHash": "591e59c",
-    "sameAsSourceJustification": "'kB' is a unit symbol; kept verbatim in every locale."
-  },
-  "settings.listing.sizeUnit.opt.mB": "MB",
-  "@settings.listing.sizeUnit.opt.mB": {
-    "sourceHash": "1d09f6f",
-    "sameAsSourceJustification": "'MB' is a unit symbol; kept verbatim in every locale."
-  },
-  "settings.listing.sizeUnit.opt.gB": "GB",
-  "@settings.listing.sizeUnit.opt.gB": {
-    "sourceHash": "b4043b0",
-    "sameAsSourceJustification": "'GB' is a unit symbol; kept verbatim in every locale."
-  },
   "settings.appearance.fileSizeFormat.label": "Filstorleksformat",
   "@settings.appearance.fileSizeFormat.label": {
     "sourceHash": "355c89b"
   },
-  "settings.appearance.fileSizeFormat.description": "Hur filstorlekar visas i fillistan: binärt (KiB, MiB, där 1 KiB = 1024 byte) eller SI-decimal (KB, MB, där 1 KB = 1000 byte).",
+  "settings.appearance.fileSizeFormat.description": "Hur storlekar visas överallt: binärt (KiB, MiB, där 1 KiB = 1 024 byte) eller SI-decimal (kB, MB, där 1 kB = 1 000 byte).",
   "@settings.appearance.fileSizeFormat.description": {
-    "sourceHash": "8219704"
+    "sourceHash": "db264e2"
   },
   "settings.appearance.fileSizeFormat.opt.binary": "Binärt (KiB, MiB, GiB)",
   "@settings.appearance.fileSizeFormat.opt.binary": {
     "sourceHash": "0a4ce4e"
   },
-  "settings.appearance.fileSizeFormat.opt.si": "SI-decimal (KB, MB, GB)",
+  "settings.appearance.fileSizeFormat.opt.si": "SI-decimal (kB, MB, GB)",
   "@settings.appearance.fileSizeFormat.opt.si": {
-    "sourceHash": "8984a13"
+    "sourceHash": "4dcc22e"
   },
   "settings.listing.sizeMismatchWarning.label": "Varning vid storleksavvikelse",
   "@settings.listing.sizeMismatchWarning.label": {
@@ -311,13 +296,33 @@
   "@settings.listing.showTags.description": {
     "sourceHash": "005f3b0"
   },
-  "settings.listing.directorySortMode.label": "Sortera kataloger",
-  "@settings.listing.directorySortMode.label": {
-    "sourceHash": "7f0a1e4"
+  "settings.listing.foldersFirst.label": "Visa mappar först",
+  "@settings.listing.foldersFirst.label": {
+    "sourceHash": "a61d73e"
   },
-  "settings.listing.directorySortMode.description": "Hur kataloger sorteras när du byter sorteringskolumn.",
+  "settings.listing.foldersFirst.description": "Listar mappar ovanför filer. Stäng av det för att blanda mappar och filer.",
+  "@settings.listing.foldersFirst.description": {
+    "sourceHash": "8505ff3"
+  },
+  "settings.listing.spaceCalculatesFolderSize.label": "Beräkna mappstorlek med Mellanslag",
+  "@settings.listing.spaceCalculatesFolderSize.label": {
+    "sourceHash": "1a403eb"
+  },
+  "settings.listing.spaceCalculatesFolderSize.description": "När Mellanslag markerar en mapp vars storlek inte är känd ännu räknar Cmdr ihop innehållet och visar totalen. Escape stoppar beräkningen.",
+  "@settings.listing.spaceCalculatesFolderSize.description": {
+    "sourceHash": "38d64c1"
+  },
+  "settings.listing.directorySortMode.label": "Sortera mappar",
+  "@settings.listing.directorySortMode.label": {
+    "sourceHash": "7d0b088"
+  },
+  "settings.listing.directorySortMode.description": "Hur mappar sorteras när du byter sorteringskolumn.",
   "@settings.listing.directorySortMode.description": {
-    "sourceHash": "fe5f12a"
+    "sourceHash": "797d93b"
+  },
+  "settings.listing.directorySortMode.disabledReason": "Avstängd just nu eftersom mappar och filer blandas. Slå på ”Visa mappar först” för att aktivera den här inställningen.",
+  "@settings.listing.directorySortMode.disabledReason": {
+    "sourceHash": "f17416c"
   },
   "settings.listing.directorySortMode.opt.likeFiles": "Som filer",
   "@settings.listing.directorySortMode.opt.likeFiles": {
@@ -965,6 +970,10 @@
   "@settings.network.firstTriggerDone.description": {
     "sourceHash": "7982e11"
   },
+  "settings.network.nearbyServersGroup.label": "Grupp med servrar i närheten",
+  "@settings.network.nearbyServersGroup.label": {
+    "sourceHash": "cfa28b1"
+  },
   "settings.network.directSmbConnection.label": "Anslut direkt till SMB-resurser",
   "@settings.network.directSmbConnection.label": {
     "sourceHash": "407c4f1"
@@ -1059,7 +1068,7 @@
   },
   "settings.fileOperations.adbEnabled.description": "Nå hela filsystemet på en Android-telefon som har USB-felsökning aktiverad, något som MTP inte kan visa dig. Kräver Android platform tools (kommandot ”adb”) på den här Macen. Att låta det vara påslaget kostar ingenting om du inte har några Android-verktyg installerade.",
   "@settings.fileOperations.adbEnabled.description": {
-    "sourceHash": "9a22518"
+    "sourceHash": "a89c957"
   },
   "settings.fileOperations.adbBinaryPath.label": "Sökväg till adb",
   "@settings.fileOperations.adbBinaryPath.label": {
@@ -1301,6 +1310,22 @@
   "settings.fileExplorer.typeToJump.resetDelay.description": "Hur länge bufferten för skriv-för-att-hoppa lever efter den sista tangenttryckningen. Lägre värden återställs snabbare mellan sökningar; högre värden är mer förlåtande för långsamma skrivare.",
   "@settings.fileExplorer.typeToJump.resetDelay.description": {
     "sourceHash": "ff59a6a"
+  },
+  "settings.fileExplorer.typeToJump.mode.label": "När du skriver i en panel",
+  "@settings.fileExplorer.typeToJump.mode.label": {
+    "sourceHash": "4ee8ef5"
+  },
+  "settings.fileExplorer.typeToJump.mode.description": "”Hoppa” flyttar markören till den bästa träffen. ”Filtrera” visar bara de filer och mappar vars namn innehåller det du skriver, som snabbfiltret i Total Commander. Backsteg (⌫) ändrar filtret och Escape rensar det.",
+  "@settings.fileExplorer.typeToJump.mode.description": {
+    "sourceHash": "e142e97"
+  },
+  "settings.fileExplorer.typeToJump.mode.opt.jump": "Hoppa",
+  "@settings.fileExplorer.typeToJump.mode.opt.jump": {
+    "sourceHash": "9ee0ca3"
+  },
+  "settings.fileExplorer.typeToJump.mode.opt.filter": "Filtrera",
+  "@settings.fileExplorer.typeToJump.mode.opt.filter": {
+    "sourceHash": "638e249"
   },
   "settings.fileOperations.maxConflictsToShow.label": "Högsta antal konflikter att visa",
   "@settings.fileOperations.maxConflictsToShow.label": {
@@ -1643,9 +1668,9 @@
   "@settings.behavior.doubleClickOnPaneNotificationSeen.description": {
     "sourceHash": "56238d4"
   },
-  "settings.behavior.serversPinHintSeen.label": "Tips om lång Nätverk-grupp visat",
+  "settings.behavior.serversPinHintSeen.label": "Tips om ”Lossa från volymväljaren” visat",
   "@settings.behavior.serversPinHintSeen.label": {
-    "sourceHash": "8d632ca"
+    "sourceHash": "8513a3c"
   },
   "settings.behavior.serversPinHintSeen.description": "Om engångstipset om att lossa servrar har visats.",
   "@settings.behavior.serversPinHintSeen.description": {
@@ -1912,36 +1937,6 @@
   "@settings.operationLog.maxSize.description": {
     "sourceHash": "ad5152a"
   },
-  "settings.operationLog.maxSize.opt.mb100": "100 MB",
-  "@settings.operationLog.maxSize.opt.mb100": {
-    "sourceHash": "991d5de",
-    "sameAsSourceJustification": "Byte-unit label kept verbatim (numeral literal, MB/GB not localized), matching the app's size-unit setting."
-  },
-  "settings.operationLog.maxSize.opt.mb250": "250 MB",
-  "@settings.operationLog.maxSize.opt.mb250": {
-    "sourceHash": "028b133",
-    "sameAsSourceJustification": "Byte-unit label kept verbatim (numeral literal, MB/GB not localized), matching the app's size-unit setting."
-  },
-  "settings.operationLog.maxSize.opt.gb1": "1 GB",
-  "@settings.operationLog.maxSize.opt.gb1": {
-    "sourceHash": "6c31b63",
-    "sameAsSourceJustification": "Byte-unit label kept verbatim (numeral literal, MB/GB not localized), matching the app's size-unit setting."
-  },
-  "settings.operationLog.maxSize.opt.gb2": "2 GB",
-  "@settings.operationLog.maxSize.opt.gb2": {
-    "sourceHash": "b2dd624",
-    "sameAsSourceJustification": "Byte-unit label kept verbatim (numeral literal, MB/GB not localized), matching the app's size-unit setting."
-  },
-  "settings.operationLog.maxSize.opt.gb3": "3 GB",
-  "@settings.operationLog.maxSize.opt.gb3": {
-    "sourceHash": "485f66b",
-    "sameAsSourceJustification": "Byte-unit label kept verbatim (numeral literal, MB/GB not localized), matching the app's size-unit setting."
-  },
-  "settings.operationLog.maxSize.opt.gb5": "5 GB",
-  "@settings.operationLog.maxSize.opt.gb5": {
-    "sourceHash": "43644bc",
-    "sameAsSourceJustification": "Byte-unit label kept verbatim (numeral literal, MB/GB not localized), matching the app's size-unit setting."
-  },
   "settings.section.mcpServer": "MCP-server",
   "@settings.section.mcpServer": {
     "sourceHash": "d938c81"
@@ -1974,9 +1969,9 @@
   "@settings.summary.fileAndFolderSizes": {
     "sourceHash": "cdd8214"
   },
-  "settings.summary.listing": "Dokumentsymboler, katalogsortering och kolumnbredd i Kortfattat läge.",
+  "settings.summary.listing": "Dokumentsymboler, mappsortering och kolumnbredd i Kortfattat läge.",
   "@settings.summary.listing": {
-    "sourceHash": "7756e95"
+    "sourceHash": "ebed448"
   },
   "settings.summary.navigationAndFileOps": "Navigering till överordnad mapp med dubbelklick och beteende när du byter namn på filer.",
   "@settings.summary.navigationAndFileOps": {
@@ -2000,7 +1995,7 @@
   },
   "settings.summary.servers": "SSH-värdnycklarna du har litat på.",
   "@settings.summary.servers": {
-    "sourceHash": "40940fa"
+    "sourceHash": "3335380"
   },
   "settings.summary.adb": "Bläddra i en Android-telefon som har USB-felsökning aktiverad.",
   "@settings.summary.adb": {
@@ -2061,6 +2056,75 @@
   "settings.control.backToPresetsAriaLabel": "Tillbaka till förinställningar",
   "@settings.control.backToPresetsAriaLabel": {
     "sourceHash": "1579f3f"
+  },
+  "settings.control.unitItems": "objekt",
+  "@settings.control.unitItems": {
+    "sourceHash": "5f3c4f8"
+  },
+  "settings.managed.rowNote": "Din organisation hanterar den här inställningen.",
+  "@settings.managed.rowNote": {
+    "sourceHash": "891206b"
+  },
+  "settings.managed.sectionNote": "Din organisation hanterar några av de här inställningarna.",
+  "@settings.managed.sectionNote": {
+    "sourceHash": "ab52c49"
+  },
+  "settings.managed.summary.title": "Hanteras av din organisation",
+  "@settings.managed.summary.title": {
+    "sourceHash": "5450801"
+  },
+  "settings.managed.summary.usageStats": "Användningsstatistik",
+  "@settings.managed.summary.usageStats": {
+    "sourceHash": "4e0483c"
+  },
+  "settings.managed.summary.usageStatsOff": "Av",
+  "@settings.managed.summary.usageStatsOff": {
+    "sourceHash": "ca7981b"
+  },
+  "settings.managed.summary.reports": "Krasch- och felrapporter",
+  "@settings.managed.summary.reports": {
+    "sourceHash": "ef409c3"
+  },
+  "settings.managed.summary.reportsOff": "Av",
+  "@settings.managed.summary.reportsOff": {
+    "sourceHash": "ca7981b"
+  },
+  "settings.managed.summary.updates": "Uppdateringar",
+  "@settings.managed.summary.updates": {
+    "sourceHash": "22e2bad"
+  },
+  "settings.managed.summary.updatesOff": "Av",
+  "@settings.managed.summary.updatesOff": {
+    "sourceHash": "ca7981b"
+  },
+  "settings.managed.summary.ai": "AI",
+  "@settings.managed.summary.ai": {
+    "sourceHash": "11fb682",
+    "sameAsSourceJustification": "'AI' is the Swedish term too (catalog: settings window section Inställningar > AI, 'AI är avstängt'). Deliberately identical."
+  },
+  "settings.managed.summary.aiOff": "Av",
+  "@settings.managed.summary.aiOff": {
+    "sourceHash": "ca7981b"
+  },
+  "settings.managed.summary.upTo": "Upp till {ceiling}",
+  "@settings.managed.summary.upTo": {
+    "sourceHash": "8989a97"
+  },
+  "settings.managed.summary.manualChecksOnly": "Bara manuell kontroll",
+  "@settings.managed.summary.manualChecksOnly": {
+    "sourceHash": "1969d26"
+  },
+  "settings.managed.summary.upToManualChecksOnly": "Upp till {ceiling}, bara manuell kontroll",
+  "@settings.managed.summary.upToManualChecksOnly": {
+    "sourceHash": "c769ffd"
+  },
+  "settings.managed.summary.onDeviceOnly": "Bara lokal AI",
+  "@settings.managed.summary.onDeviceOnly": {
+    "sourceHash": "d4f8552"
+  },
+  "settings.managed.summary.cloudHostsOnly": "Moln-AI bara via {hosts}",
+  "@settings.managed.summary.cloudHostsOnly": {
+    "sourceHash": "00f1237"
   },
   "settings.sidebar.searchPlaceholder": "Sök inställningar…",
   "@settings.sidebar.searchPlaceholder": {
@@ -2529,13 +2593,13 @@
   "@settings.adb.recheck": {
     "sourceHash": "24fcca0"
   },
-  "settings.adb.install.intro": "Installera Android platform tools och tryck sedan på Leta igen:",
+  "settings.adb.install.intro": "Installera Android platform tools och välj sedan Leta igen:",
   "@settings.adb.install.intro": {
-    "sourceHash": "5a82ea4"
+    "sourceHash": "9f7a0f4"
   },
-  "settings.adb.pathPlaceholder": "Leta efter adb på vanligt sätt",
+  "settings.adb.pathPlaceholder": "Cmdr letar efter adb på vanligt sätt",
   "@settings.adb.pathPlaceholder": {
-    "sourceHash": "e236ef2"
+    "sourceHash": "538b307"
   },
   "settings.adb.browse": "Bläddra…",
   "@settings.adb.browse": {
@@ -2544,5 +2608,13 @@
   "settings.adb.pickerTitle": "Välj kommandot adb",
   "@settings.adb.pickerTitle": {
     "sourceHash": "d6fc142"
+  },
+  "settings.fileExplorer.quickFilterIntroSeen.label": "Snabbfilter förklarat",
+  "@settings.fileExplorer.quickFilterIntroSeen.label": {
+    "sourceHash": "5d124bb"
+  },
+  "settings.fileExplorer.quickFilterIntroSeen.description": "Om aviseringen som förklarar det första snabbfiltret har visats.",
+  "@settings.fileExplorer.quickFilterIntroSeen.description": {
+    "sourceHash": "855c661"
   }
 }

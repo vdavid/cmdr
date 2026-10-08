@@ -14,7 +14,7 @@
   },
   "indexing.scan.counters": "{entriesText} {entries, plural, one {entrada} many {entradas} other {entradas}}, {dirsText} {dirs, plural, one {pasta} many {pastas} other {pastas}}",
   "@indexing.scan.counters": {
-    "sourceHash": "f635790"
+    "sourceHash": "ecf47f2"
   },
   "indexing.scan.countersElapsed": "{counters} · {elapsed}",
   "@indexing.scan.countersElapsed": {
@@ -134,9 +134,21 @@
     "sourceHash": "26b29da",
     "sameAsSourceJustification": "Pure format string ({percent}%, {eta}) — a number, a percent sign, a comma separator, and an already-formatted phrase. This locale uses the same percent spacing and comma as English, so the format is genuinely identical; nothing here is translatable prose."
   },
+  "indexing.overall.eta": "No total: {eta}",
+  "@indexing.overall.eta": {
+    "sourceHash": "a9a2ffc"
+  },
+  "indexing.overall.estimating": "No total: estimando…",
+  "@indexing.overall.estimating": {
+    "sourceHash": "9dac967"
+  },
   "indexing.eta.almostDone": "Quase pronto",
   "@indexing.eta.almostDone": {
     "sourceHash": "506f162"
+  },
+  "indexing.eta.almostDoneMidSentence": "quase pronto",
+  "@indexing.eta.almostDoneMidSentence": {
+    "sourceHash": "1d2fb48"
   },
   "indexing.eta.secondsLeft": "{secondsText}s restantes",
   "@indexing.eta.secondsLeft": {
@@ -189,6 +201,10 @@
   "indexing.needsFreshScan.afterDisconnect": "O disco {name} foi desconectado enquanto o Cmdr atualizava o índice. A próxima varredura deste disco começa do zero, então os tamanhos das pastas voltam a ficar certos.",
   "@indexing.needsFreshScan.afterDisconnect": {
     "sourceHash": "a90dbdf"
+  },
+  "indexing.memoryStop.paused": "O Cmdr pausou a indexação de discos porque estava usando memória demais. Os tamanhos das pastas podem estar desatualizados até você reiniciar o Cmdr.",
+  "@indexing.memoryStop.paused": {
+    "sourceHash": "32d225a"
   },
   "indexing.firstConnect.title": "Indexar {name}?",
   "@indexing.firstConnect.title": {

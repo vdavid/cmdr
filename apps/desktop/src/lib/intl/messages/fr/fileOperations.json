@@ -3,6 +3,10 @@
   "@fileOperations.button.cancel": {
     "sourceHash": "19766ed"
   },
+  "fileOperations.button.close": "Fermer",
+  "@fileOperations.button.close": {
+    "sourceHash": "7d9eb7a"
+  },
   "fileOperations.button.ok": "OK",
   "@fileOperations.button.ok": {
     "sourceHash": "565339b",
@@ -80,9 +84,9 @@
   "@fileOperations.delete.scanFile": {
     "sourceHash": "46012b1"
   },
-  "fileOperations.delete.scanDir": "{count, plural, one {rép.} many {rép.} other {rép.}}",
+  "fileOperations.delete.scanDir": "{count, plural, one {dossier} many {dossiers} other {dossiers}}",
   "@fileOperations.delete.scanDir": {
-    "sourceHash": "1c5273d"
+    "sourceHash": "46b23b5"
   },
   "fileOperations.delete.confirmDelete": "Supprimer",
   "@fileOperations.delete.confirmDelete": {
@@ -124,6 +128,14 @@
   "@fileOperations.delete.symlinkNoticeMany": {
     "sourceHash": "56b3f52"
   },
+  "fileOperations.mkfile.notCreatedToast": "Cmdr n’a pas pu créer le fichier « {name} ». {reason}",
+  "@fileOperations.mkfile.notCreatedToast": {
+    "sourceHash": "4f30e62"
+  },
+  "fileOperations.newEntry.stillCreating": "Création de « {name} » toujours en cours. Le volume met du temps à répondre. Vous pouvez fermer cette fenêtre sans crainte : la création va continuer et ne peut plus être annulée.",
+  "@fileOperations.newEntry.stillCreating": {
+    "sourceHash": "74e376f"
+  },
   "fileOperations.mkfile.title": "Nouveau fichier",
   "@fileOperations.mkfile.title": {
     "sourceHash": "44dedd0"
@@ -156,17 +168,9 @@
   "@fileOperations.mkdir.placeholder": {
     "sourceHash": "7612b56"
   },
-  "fileOperations.mkdir.timeoutMessage": "Impossible de confirmer la création du dossier. Le volume est peut-être lent, donc le dossier a peut-être quand même été créé.",
-  "@fileOperations.mkdir.timeoutMessage": {
-    "sourceHash": "8bc758a"
-  },
-  "fileOperations.mkdir.timeoutRefresh": "Actualiser la liste",
-  "@fileOperations.mkdir.timeoutRefresh": {
-    "sourceHash": "b0e5436"
-  },
-  "fileOperations.mkdir.timeoutDismiss": "Ignorer",
-  "@fileOperations.mkdir.timeoutDismiss": {
-    "sourceHash": "48845bf"
+  "fileOperations.mkdir.notCreatedToast": "Cmdr n’a pas pu créer le dossier « {name} ». {reason}",
+  "@fileOperations.mkdir.notCreatedToast": {
+    "sourceHash": "517ef4b"
   },
   "fileOperations.mkdir.aiSuggestionsAria": "Suggestions de l’IA",
   "@fileOperations.mkdir.aiSuggestionsAria": {
@@ -250,9 +254,21 @@
   "@fileOperations.transferDialog.targetWillBeCreatedCopy": {
     "sourceHash": "4e8d166"
   },
+  "fileOperations.transferDialog.renameByMoveHint": "Renommer cet élément copie tout son contenu sur le serveur : l’opération se fait donc comme un déplacement, que vous pouvez mettre en pause ou annuler.",
+  "@fileOperations.transferDialog.renameByMoveHint": {
+    "sourceHash": "31987cc"
+  },
   "fileOperations.transferDialog.targetWillBeCreatedMove": "Ce dossier n’existe pas encore. Cmdr le créera lors du déplacement.",
   "@fileOperations.transferDialog.targetWillBeCreatedMove": {
     "sourceHash": "1246331"
+  },
+  "fileOperations.transferDialog.rootEchoWarning": "Cet emplacement commence déjà dans {rootFolder}, donc ce chemin mène à {resolvedPath}. Vouliez-vous dire {strippedPath} ?",
+  "@fileOperations.transferDialog.rootEchoWarning": {
+    "sourceHash": "b692d10"
+  },
+  "fileOperations.transferDialog.rootEchoUseStripped": "Utiliser le chemin plus court",
+  "@fileOperations.transferDialog.rootEchoUseStripped": {
+    "sourceHash": "66972e3"
   },
   "fileOperations.transferDialog.destinationReadOnly": "Ce dossier est en lecture seule : rien ne peut y être placé.",
   "@fileOperations.transferDialog.destinationReadOnly": {
@@ -274,9 +290,9 @@
   "@fileOperations.transferDialog.scanFile": {
     "sourceHash": "46012b1"
   },
-  "fileOperations.transferDialog.scanDir": "{count, plural, one {rép.} many {rép.} other {rép.}}",
+  "fileOperations.transferDialog.scanDir": "{count, plural, one {dossier} many {dossiers} other {dossiers}}",
   "@fileOperations.transferDialog.scanDir": {
-    "sourceHash": "1c5273d"
+    "sourceHash": "46b23b5"
   },
   "fileOperations.transferDialog.hardlinkNote": "<written></written> seront écrits. La source occupe <ondisk></ondisk> sur le disque – le surplus correspond aux fichiers à liens physiques, qui ne peuvent pas rester liés d’un disque à l’autre.",
   "@fileOperations.transferDialog.hardlinkNote": {
@@ -294,6 +310,18 @@
   "@fileOperations.transferDialog.estimatedSizeTooltip": {
     "sourceHash": "2e8ba70"
   },
+  "fileOperations.s3Cost.line": "Environ {amount} au prix catalogue chez {provider}",
+  "@fileOperations.s3Cost.line": {
+    "sourceHash": "e8db02b"
+  },
+  "fileOperations.s3Cost.infoLabel": "À propos de cette estimation",
+  "@fileOperations.s3Cost.infoLabel": {
+    "sourceHash": "19637c5"
+  },
+  "fileOperations.s3Cost.infoText": "Cette estimation utilise les prix catalogue publics du fournisseur. Les offres gratuites, les remises, les quotas inclus et les frais minimums peuvent faire baisser ou augmenter votre facture.",
+  "@fileOperations.s3Cost.infoText": {
+    "sourceHash": "379665c"
+  },
   "fileOperations.transferDialog.scanUnresponsive": "La source ne répond pas, cette taille est donc tout ce que nous avons pu compter.",
   "@fileOperations.transferDialog.scanUnresponsive": {
     "sourceHash": "ec3beb2"
@@ -305,6 +333,10 @@
   "fileOperations.transferDialog.scanRetry": "Réessayer",
   "@fileOperations.transferDialog.scanRetry": {
     "sourceHash": "d8b8392"
+  },
+  "fileOperations.transferDialog.sourceNoLongerConnected": "Le téléphone ou le serveur qui contient ces fichiers n’est plus connecté, Cmdr ne peut donc rien en copier.",
+  "@fileOperations.transferDialog.sourceNoLongerConnected": {
+    "sourceHash": "4741405"
   },
   "fileOperations.transferDialog.conflictsUnknown": "Nous n’avons pas pu vérifier ce qui se trouve déjà à destination. Nous vous demanderons quoi faire à chaque conflit.",
   "@fileOperations.transferDialog.conflictsUnknown": {
@@ -398,9 +430,9 @@
   "@fileOperations.scanPhase.scanFile": {
     "sourceHash": "46012b1"
   },
-  "fileOperations.scanPhase.scanDir": "{count, plural, one {rép.} many {rép.} other {rép.}}",
+  "fileOperations.scanPhase.scanDir": "{count, plural, one {dossier} many {dossiers} other {dossiers}}",
   "@fileOperations.scanPhase.scanDir": {
-    "sourceHash": "1c5273d"
+    "sourceHash": "46b23b5"
   },
   "fileOperations.transferProgress.scanTitleCopy": "Vérification avant la copie…",
   "@fileOperations.transferProgress.scanTitleCopy": {
@@ -538,9 +570,13 @@
   "@fileOperations.transferProgress.stageFinishingTransferStep": {
     "sourceHash": "1f28724"
   },
-  "fileOperations.transferProgress.warningFileOverFolder": "La cible existe et c’est un <strong>dossier</strong>. Vous êtes sur le point de l’écraser avec un <strong>fichier</strong> portant le même nom. Tout le contenu du dossier cible serait supprimé et remplacé par le fichier. Que faire ?",
+  "fileOperations.transferProgress.warningFileOverFolder": "La cible existe et c’est un <strong>dossier</strong>. Vous êtes sur le point de le remplacer par un <strong>fichier</strong> portant le même nom. Tout ce que contient le dossier disparaîtrait. Que faire ?",
   "@fileOperations.transferProgress.warningFileOverFolder": {
-    "sourceHash": "6dce75c"
+    "sourceHash": "bacab9d"
+  },
+  "fileOperations.transferProgress.warningFolderOverFile": "La cible existe et c’est un <strong>fichier</strong>. Vous êtes sur le point de le remplacer par un <strong>dossier</strong> portant le même nom. Le fichier disparaîtrait dès que le dossier prendrait sa place. Que faire ?",
+  "@fileOperations.transferProgress.warningFolderOverFile": {
+    "sourceHash": "b681083"
   },
   "fileOperations.transferProgress.lookAlikeHint": "Ces noms semblent identiques, mais le serveur les écrit différemment. « Écraser » remplace l’élément déjà présent.",
   "@fileOperations.transferProgress.lookAlikeHint": {
@@ -886,6 +922,10 @@
   "fileOperations.errorDialog.retry": "Réessayer",
   "@fileOperations.errorDialog.retry": {
     "sourceHash": "942087c"
+  },
+  "fileOperations.errorDialog.copyAnyway": "Copier quand même",
+  "@fileOperations.errorDialog.copyAnyway": {
+    "sourceHash": "f794181"
   },
   "fileOperations.errorDialog.close": "Fermer",
   "@fileOperations.errorDialog.close": {

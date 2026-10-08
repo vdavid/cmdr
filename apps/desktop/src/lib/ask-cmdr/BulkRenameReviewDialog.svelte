@@ -229,7 +229,7 @@
 
     onMount(() => {
         const listener = onDirectoryDiff((diff) => {
-            void renameReviewListingChanged(diff.changes)
+            for (const batch of diff.batches) void renameReviewListingChanged(batch.changes)
         })
         return () => {
             void listener

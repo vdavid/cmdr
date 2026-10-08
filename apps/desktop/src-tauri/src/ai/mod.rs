@@ -23,6 +23,8 @@ mod client_integration_test;
 #[cfg(test)]
 mod client_local_llama_test;
 #[cfg(test)]
+mod client_policy_test;
+#[cfg(test)]
 mod client_real_anthropic_test;
 #[cfg(test)]
 mod client_real_fireworks_test;
@@ -43,6 +45,7 @@ pub(crate) mod download;
 pub mod extract;
 pub mod install;
 pub mod llm_log;
+pub mod managed;
 pub mod manager;
 mod process;
 pub mod server;

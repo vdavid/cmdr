@@ -76,7 +76,7 @@ describe('the background check schedule', () => {
     _resetUpdaterStateForTest()
     vi.clearAllMocks()
     vi.useFakeTimers()
-    checkForUpdateMock.mockResolvedValue(null)
+    checkForUpdateMock.mockResolvedValue({ kind: 'upToDate' })
   })
 
   afterEach(() => {
@@ -139,7 +139,7 @@ describe('the background check schedule', () => {
 
   it('counts a check whose download failed as answered: the check is what the schedule is about', async () => {
     scheduleAnsweredAt(null)
-    checkForUpdateMock.mockResolvedValueOnce({ version: '0.33.0', url: 'https://example.invalid/a', signature: 's' })
+    checkForUpdateMock.mockResolvedValueOnce({ kind: 'available', version: '0.33.0' })
     downloadUpdateMock.mockRejectedValueOnce(new Error('disk full'))
     stop = startUpdateChecker()
     await vi.advanceTimersByTimeAsync(0)

@@ -362,3 +362,75 @@ fn a_wildcard_exclude_reaches_a_directory_name_with_a_newline_in_it() {
     let result = search(&index, &query, &ImportanceWeights::empty()).unwrap();
     assert_eq!(result.total_count, 0, "note.txt sits under an excluded directory");
 }
+
+#[test]
+fn matches_sharing_folders_get_the_same_verdict_as_a_fresh_walk() {
+    // The scan memoizes each folder's verdict per chunk, so the second match in a
+    // folder answers from the memo. A wrong propagation would leak an excluded file
+    // (memo said "fine" below `node_modules`) or hide a kept one (memo said
+    // "excluded" for the `b/c` that sits under `x`, not under `node_modules`).
+    //
+    // /a/node_modules/b/c/f.txt  excluded, walks c, b, node_modules
+    // /a/node_modules/b/g.txt    excluded, answered by b's memo
+    // /a/x/b/c/h.txt             kept, walks c, b, x, a
+    // /a/x/b/i.txt               kept, answered by b's memo
+    // /a/node_modules/j.txt      excluded, answered by node_modules' memo
+    let rows: [(i64, i64, &str, bool); 13] = [
+        (1, 0, "", true),
+        (2, 1, "a", true),
+        (3, 2, "node_modules", true),
+        (4, 3, "b", true),
+        (5, 4, "c", true),
+        (6, 2, "x", true),
+        (7, 6, "b", true),
+        (8, 7, "c", true),
+        (9, 5, "f.txt", false),
+        (10, 4, "g.txt", false),
+        (11, 8, "h.txt", false),
+        (12, 7, "i.txt", false),
+        (13, 3, "j.txt", false),
+    ];
+    let mut names = String::new();
+    let entries = rows
+        .iter()
+        .map(|&(id, parent_id, name, is_directory)| {
+            let (name_offset, name_len) = arena_push(&mut names, name);
+            SearchEntry {
+                id,
+                parent_id,
+                name_offset,
+                name_len,
+                is_directory,
+                size: OptU64::NONE,
+                modified_at: OptU64::NONE,
+            }
+        })
+        .collect();
+    let index = SearchIndex {
+        names,
+        entries,
+        generation: 1,
+    };
+    let query = SearchQuery {
+        name_pattern: Some("*.txt".to_string()),
+        pattern_type: PatternType::Glob,
+        min_size: None,
+        max_size: None,
+        modified_after: None,
+        modified_before: None,
+        is_directory: Some(false),
+        include_paths: None,
+        exclude_dir_names: Some(vec!["node_modules".to_string()]),
+        include_path_ids: None,
+        count_only: false,
+        limit: 30,
+        case_sensitive: None,
+        exclude_system_dirs: Some(false),
+        sort_by: None,
+    };
+    let result = search(&index, &query, &ImportanceWeights::empty()).unwrap();
+    let mut kept: Vec<&str> = result.entries.iter().map(|e| e.name.as_str()).collect();
+    kept.sort_unstable();
+    assert_eq!(kept, ["h.txt", "i.txt"]);
+    assert_eq!(result.hidden_by_excludes, 3);
+}

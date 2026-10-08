@@ -20,7 +20,6 @@ vi.mock('$lib/tauri-commands', () => ({
   resolvePathVolume: vi.fn(() => Promise.resolve({ volume: null })),
   updateLeftPaneState: vi.fn(() => Promise.resolve()),
   updateRightPaneState: vi.fn(() => Promise.resolve()),
-  removeManualServer: vi.fn(() => Promise.resolve()),
   showNetworkHostContextMenu: vi.fn(() => Promise.resolve()),
   onNetworkHostContextAction: vi.fn(() => Promise.resolve(() => {})),
   disconnectNetworkHost: vi.fn(() => Promise.resolve()),

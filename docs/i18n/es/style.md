@@ -175,9 +175,6 @@ grammatical gender; article and adjective must agree with the counted noun in ev
   2026-09-09). De ahí sale el patrón «verbo + nombre de la app» sin preposición ni artículo (`Mostrar %@`,
   `Ocultar %@`), que es el que sigue `menu.dock.openCmdr` = `Abrir Cmdr`. Evidencia: `decisions.md` § El menú del icono
   en el Dock.
-- **`folder` es `carpeta` y `path` es `ruta`, aunque los dos comandos lleven al mismo diálogo.** `menu.dock.goToFolder`
-  dice `Ir a la carpeta…` (lo que dice el Finder) y `goToPath.dialog.title` dice `Ir a la ruta` (lo que dice su inglés).
-  Frontera deliberada: cada clave sigue a su propia fuente, no se unifican.
 - **Un ítem de menú desactivado por estar en uso lleva ` (ocupado)` al final, y nada más.** La forma `…Busy` de un ítem
   repite palabra por palabra el texto del ítem base y le añade solo ese marcador: `Desconectar (ocupado)`,
   `Olvidar el servidor (ocupado)`, `Olvidar la contraseña guardada (ocupado)`, siguiendo a `menu.volume.ejectBusy`

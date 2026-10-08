@@ -191,13 +191,10 @@ pub(in crate::file_system::write_operations) async fn run_volume_scan_preview(
             settle_preview(
                 &preview_id,
                 ScanOutcome::Complete,
-                Some(CachedScanResult::from_volume_batch(
-                    sources,
-                    total_files,
-                    total_bytes,
-                    dedup_bytes,
-                    batch.per_path,
-                )),
+                Some(
+                    CachedScanResult::from_volume_batch(sources, total_files, total_bytes, dedup_bytes, batch.per_path)
+                        .keeping_files(batch.files),
+                ),
             );
 
             events.emit_complete(ScanPreviewCompleteEvent {
@@ -257,8 +254,13 @@ pub(in crate::file_system::write_operations) async fn run_oracle_aware_batch_sca
         dedup_bytes: 0,
         // Aggregate across multiple paths — meaningless, per the BatchScanResult contract.
         top_level_is_directory: false,
+        top_level_modified_at: None,
     };
     let mut per_path_unordered: HashMap<PathBuf, CopyScanResult> = HashMap::new();
+    // Every file's size and date, for a cost estimate, while every group came
+    // back with them (a backend that keeps files, walked cold). One group that
+    // didn't makes the whole list partial, and a partial list would price low.
+    let mut files: Option<Vec<crate::file_system::volume::ScannedFile>> = Some(Vec::new());
     // Batch-scoped hardlink dedup for the source-footprint number. Shared
     // across all groups so a hardlink spanning two selected sources counts
     // once. Only `LocalPosixVolume` cached entries carry inodes; other
@@ -283,6 +285,7 @@ pub(in crate::file_system::write_operations) async fn run_oracle_aware_batch_sca
             .expect("group_order tracks every parent inserted into groups");
 
         if let Some(cached_entries) = try_get_authoritative_listing(volume_id, parent) {
+            files = None;
             log::debug!(
                 "scan-preview: oracle hit for parent {} ({} cached entries, {} selected children)",
                 parent.display(),
@@ -370,6 +373,7 @@ pub(in crate::file_system::write_operations) async fn run_oracle_aware_batch_sca
                             total_bytes: subtree.total_bytes,
                             dedup_bytes: subtree.dedup_bytes,
                             top_level_is_directory: true,
+                            top_level_modified_at: entry.modified_at,
                         },
                     );
                 } else {
@@ -392,6 +396,7 @@ pub(in crate::file_system::write_operations) async fn run_oracle_aware_batch_sca
                             total_bytes: size,
                             dedup_bytes: dedup_contribution,
                             top_level_is_directory: false,
+                            top_level_modified_at: entry.modified_at,
                         },
                     );
                     on_progress(ListingProgress {
@@ -448,6 +453,13 @@ pub(in crate::file_system::write_operations) async fn run_oracle_aware_batch_sca
             for (path, scan) in group_result.per_path {
                 per_path_unordered.insert(path, scan);
             }
+            files = match (files, group_result.files) {
+                (Some(mut so_far), Some(more)) => {
+                    so_far.extend(more);
+                    Some(so_far)
+                }
+                _ => None,
+            };
         }
     }
 
@@ -458,5 +470,9 @@ pub(in crate::file_system::write_operations) async fn run_oracle_aware_batch_sca
         .filter_map(|src| per_path_unordered.remove(src).map(|scan| (src.clone(), scan)))
         .collect();
 
-    Ok(BatchScanResult { aggregate, per_path })
+    Ok(BatchScanResult {
+        aggregate,
+        per_path,
+        files,
+    })
 }

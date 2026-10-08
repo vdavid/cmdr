@@ -12,9 +12,12 @@ import {
   type FileSizeFormat,
   type FileSizeUnit,
   type DirectorySortMode,
+  type TypeToJumpMode,
+  type ListingDirectorySortMode,
   type SizeDisplayMode,
   type BriefColumnWidthMode,
   type AppColor,
+  type NearbyServersGroupChoice,
   densityMappings,
 } from '$lib/settings'
 import { formatDateForDisplay, type FormattedDate } from './format-utils'
@@ -28,11 +31,12 @@ const log = getAppLogger('reactive-settings')
 let uiDensity = $state<UiDensity>('comfortable')
 let dateTimeFormat = $state<DateTimeFormat>('iso')
 let customDateTimeFormat = $state<string>('YYYY-MM-DD HH:mm')
-let fileSizeFormat = $state<FileSizeFormat>('binary')
+let fileSizeFormat = $state<FileSizeFormat>('si')
 let useAppIconsForDocuments = $state<boolean>(true)
 let showFunctionKeyBar = $state<boolean>(true)
 let showHiddenFiles = $state<boolean>(false)
 let directorySortMode = $state<DirectorySortMode>('likeFiles')
+let foldersFirst = $state<boolean>(true)
 let appColor = $state<AppColor>('cmdr-gold')
 let sizeDisplay = $state<SizeDisplayMode>('smart')
 let sizeUnit = $state<FileSizeUnit>('dynamic')
@@ -43,7 +47,10 @@ let showTags = $state<boolean>(true)
 let briefColumnWidthMode = $state<BriefColumnWidthMode>('paneWidth')
 let briefColumnWidthMaxPx = $state<number>(400)
 let networkEnabled = $state<boolean>(true)
+let nearbyServersGroup = $state<NearbyServersGroupChoice>('auto')
 let typeToJumpResetDelay = $state<number>(1000)
+let spaceCalculatesFolderSize = $state<boolean>(true)
+let typeToJumpMode = $state<TypeToJumpMode>('jump')
 let driveIndexingEnabled = $state<boolean>(true)
 let mediaIndexEnabled = $state<boolean>(false)
 let mediaIndexShowFileStatusIcons = $state<boolean>(true)
@@ -90,6 +97,7 @@ async function runInit(options?: { restrictedWindow?: boolean }): Promise<void> 
     showFunctionKeyBar = getSetting('appearance.showFunctionKeyBar')
     showHiddenFiles = getSetting('listing.showHiddenFiles')
     directorySortMode = getSetting('listing.directorySortMode')
+    foldersFirst = getSetting('listing.foldersFirst')
     appColor = getSetting('appearance.appColor')
     sizeDisplay = getSetting('listing.sizeDisplay')
     sizeUnit = getSetting('listing.sizeUnit')
@@ -100,7 +108,10 @@ async function runInit(options?: { restrictedWindow?: boolean }): Promise<void> 
     briefColumnWidthMode = getSetting('listing.briefColumnWidthMode')
     briefColumnWidthMaxPx = getSetting('listing.briefColumnWidthMaxPx')
     networkEnabled = getSetting('network.enabled')
+    nearbyServersGroup = nearbyServersGroupChoiceOf(getSetting('network.nearbyServersGroup'))
     typeToJumpResetDelay = getSetting('fileExplorer.typeToJump.resetDelay')
+    spaceCalculatesFolderSize = getSetting('listing.spaceCalculatesFolderSize')
+    typeToJumpMode = getSetting('fileExplorer.typeToJump.mode')
     driveIndexingEnabled = getSetting('indexing.enabled')
     mediaIndexEnabled = getSetting('mediaIndex.enabled')
     mediaIndexShowFileStatusIcons = getSetting('mediaIndex.showFileStatusIcons')
@@ -157,6 +168,9 @@ function applySettingChange(id: string, value: unknown): void {
     case 'listing.directorySortMode':
       directorySortMode = value as DirectorySortMode
       break
+    case 'listing.foldersFirst':
+      foldersFirst = value as boolean
+      break
     case 'appearance.appColor':
       appColor = value as AppColor
       break
@@ -187,8 +201,17 @@ function applySettingChange(id: string, value: unknown): void {
     case 'network.enabled':
       networkEnabled = value as boolean
       break
+    case 'network.nearbyServersGroup':
+      nearbyServersGroup = nearbyServersGroupChoiceOf(value)
+      break
     case 'fileExplorer.typeToJump.resetDelay':
       typeToJumpResetDelay = value as number
+      break
+    case 'listing.spaceCalculatesFolderSize':
+      spaceCalculatesFolderSize = value as boolean
+      break
+    case 'fileExplorer.typeToJump.mode':
+      typeToJumpMode = value as TypeToJumpMode
       break
     case 'indexing.enabled':
       driveIndexingEnabled = value as boolean
@@ -272,9 +295,13 @@ export function getShowHiddenFiles(): boolean {
   return showHiddenFiles
 }
 
-/** Get current directory sort mode */
-export function getDirectorySortMode(): DirectorySortMode {
-  return directorySortMode
+/**
+ * The directory sort mode every listing and re-sort hands the backend comparator: "Show folders
+ * first" off mixes folders in with files (where "Sort folders" has nothing to say), else the
+ * "Sort folders" choice. Reads both settings, so an `$effect` on it re-sorts on either.
+ */
+export function getDirectorySortMode(): ListingDirectorySortMode {
+  return foldersFirst ? directorySortMode : 'mixedWithFiles'
 }
 
 /** Whether the user has selected Cmdr gold as their app color */
@@ -296,7 +323,7 @@ export function getSizeMismatchWarning(): boolean {
  * Get the current size-unit mode. `'dynamic'` picks the friendliest unit per
  * file ("1.02 MB"); `'bytes'` shows raw byte triads for precise comparison;
  * `'kB'`/`'MB'`/`'GB'` force a fixed unit so sizes are apples-to-apples across
- * a directory. The chosen base (binary KB / SI kB) follows
+ * a directory. The chosen base (binary KiB / SI kB) follows
  * `appearance.fileSizeFormat`.
  */
 export function getFileSizeUnit(): FileSizeUnit {
@@ -347,6 +374,19 @@ export function getNetworkEnabled(): boolean {
 }
 
 /**
+ * Whether the servers hub's "found nearby" group is open: `expanded` or
+ * `collapsed` once the person toggled it, `auto` before.
+ */
+export function getNearbyServersGroupChoice(): NearbyServersGroupChoice {
+  return nearbyServersGroup
+}
+
+/** A stored `string` nothing validates: anything but the two choices reads as "never chose". */
+function nearbyServersGroupChoiceOf(value: unknown): NearbyServersGroupChoice {
+  return value === 'expanded' || value === 'collapsed' ? value : 'auto'
+}
+
+/**
  * Get the type-to-jump buffer reset delay in milliseconds.
  *
  * The factory in `file-explorer/pane/type-to-jump-state.svelte.ts` reads this
@@ -355,6 +395,20 @@ export function getNetworkEnabled(): boolean {
  */
 export function getTypeToJumpResetDelay(): number {
   return typeToJumpResetDelay
+}
+
+/** Whether Space on a folder also calculates its size (`listing.spaceCalculatesFolderSize`). */
+export function getSpaceCalculatesFolderSize(): boolean {
+  return spaceCalculatesFolderSize
+}
+
+/**
+ * What typing a letter in a pane does: jump the cursor to the best match
+ * (`jump`), or narrow the pane to the matching rows (`filter`). Read on every
+ * keystroke, so a change takes effect on the next one.
+ */
+export function getTypeToJumpMode(): TypeToJumpMode {
+  return typeToJumpMode
 }
 
 /**

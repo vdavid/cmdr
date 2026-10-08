@@ -10,8 +10,9 @@
 //!
 //! Sibling guards on the media walk: `media_index/scheduler/enrich_memory_tests.rs`.
 
+use super::test_support::NEVER_STOPPED;
 use super::walk::walk_index_folders;
-use crate::indexing::store::{IndexStore, ROOT_ID};
+use crate::indexing::store::IndexStore;
 use crate::indexing::test_support::{count_allocations, heap_bytes_held};
 
 /// Branch folders directly under the home, each holding [`LEAVES_PER_BRANCH`] leaf
@@ -38,54 +39,9 @@ const BYTES_PER_FOLDER_CEILING: i64 = 150;
 /// allocation per folder would land above [`FOLDERS`], and one per file an order beyond.
 const ALLOCATION_CEILING: u64 = 300;
 
-/// A folder-heavy index with a few files in each leaf: the shape a real home or NAS
-/// has, and the one where per-folder cost dominates.
+/// The index both guards measure, in this file's shape.
 fn build_folder_heavy_index(path: &std::path::Path) -> String {
-    let store = IndexStore::open(path).expect("open index");
-    let conn = store.read_conn();
-    let mut next_id = ROOT_ID + 1;
-    let insert = |parent_id: i64, name: &str, id: i64, is_directory: bool| {
-        IndexStore::insert_entry_v2_with_id(
-            conn,
-            id,
-            parent_id,
-            name,
-            is_directory,
-            false,
-            None,
-            None,
-            Some(1_000_000_000),
-            None,
-        )
-        .expect("insert entry");
-    };
-
-    let users_id = next_id;
-    next_id += 1;
-    insert(ROOT_ID, "Users", users_id, true);
-    let home_id = next_id;
-    next_id += 1;
-    insert(users_id, "test", home_id, true);
-
-    for branch in 0..BRANCHES {
-        let branch_id = next_id;
-        next_id += 1;
-        insert(home_id, &format!("branch{branch}"), branch_id, true);
-        for leaf in 0..LEAVES_PER_BRANCH {
-            let leaf_id = next_id;
-            next_id += 1;
-            insert(branch_id, &format!("leaf{leaf}"), leaf_id, true);
-            for file in 0..FILES_PER_LEAF {
-                let file_id = next_id;
-                next_id += 1;
-                // A handful of extensions, some repeated, so the distinct-extension
-                // fold has something to deduplicate.
-                let extension = ["txt", "jpg", "TXT", "md", "jpg", "rs"][file];
-                insert(leaf_id, &format!("file{file}.{extension}"), file_id, false);
-            }
-        }
-    }
-    "/Users/test".to_string()
+    super::test_support::build_folder_heavy_index(path, BRANCHES, LEAVES_PER_BRANCH, FILES_PER_LEAF)
 }
 
 #[test]
@@ -97,8 +53,9 @@ fn the_walk_holds_a_small_fixed_record_per_folder() {
 
     // Warm the connection's prepared-statement cache first, so the measured walk holds
     // steady-state structures rather than one-off SQL preparation.
-    drop(walk_index_folders(store.read_conn(), &home).expect("warm-up walk"));
-    let (folders, bytes) = heap_bytes_held(|| walk_index_folders(store.read_conn(), &home).expect("walk"));
+    drop(walk_index_folders(store.read_conn(), &home, &NEVER_STOPPED).expect("warm-up walk"));
+    let (folders, bytes) =
+        heap_bytes_held(|| walk_index_folders(store.read_conn(), &home, &NEVER_STOPPED).expect("walk"));
 
     assert_eq!(folders.len() as i64, FOLDERS, "the walk found every folder");
     let per_folder = bytes / FOLDERS;
@@ -118,8 +75,9 @@ fn the_walk_does_not_allocate_per_folder_or_per_file() {
     let home = build_folder_heavy_index(&index_path);
     let store = IndexStore::open(&index_path).expect("reopen");
 
-    drop(walk_index_folders(store.read_conn(), &home).expect("warm-up walk"));
-    let (folders, allocations) = count_allocations(|| walk_index_folders(store.read_conn(), &home).expect("walk"));
+    drop(walk_index_folders(store.read_conn(), &home, &NEVER_STOPPED).expect("warm-up walk"));
+    let (folders, allocations) =
+        count_allocations(|| walk_index_folders(store.read_conn(), &home, &NEVER_STOPPED).expect("walk"));
 
     assert_eq!(folders.len() as i64, FOLDERS, "the walk found every folder");
     assert!(

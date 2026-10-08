@@ -80,12 +80,6 @@ pub async fn start_drive_index() -> Result<(), String> {
 
 #[tauri::command]
 #[specta::specta]
-pub async fn stop_drive_index() -> Result<(), String> {
-    index().stop_scan(ROOT_VOLUME_ID).map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-#[specta::specta]
 pub async fn get_index_status() -> Result<IndexStatusResponse, String> {
     index().status(ROOT_VOLUME_ID).map_err(|e| e.to_string())
 }
@@ -140,26 +134,11 @@ pub async fn get_index_debug_status() -> Result<IndexDebugStatusResponse, String
     index().debug_status(ROOT_VOLUME_ID).map_err(|e| e.to_string())
 }
 
-/// Per-volume index status for the freshness badge (the per-drive freshness UX).
-///
-/// Returns the volume's freshness color plus the last completed scan's facts
-/// (`scan_completed_at`, `scan_duration_ms`). Resolves the owning volume from
-/// the path so the FE can pass a listing path; an SMB path maps to its SMB
-/// volume id, everything else to `root`. A not-indexed volume reports
-/// `enabled: false`, `freshness: None` (gray).
-#[tauri::command]
-#[specta::specta]
-pub async fn get_volume_index_status(path: String) -> Result<VolumeIndexStatus, String> {
-    Ok(index().volume_status_for_path(&path))
-}
-
 /// Per-volume index status keyed by volume id (the per-drive badge surface).
 ///
 /// The dropdown renders one badge per drive ROW, and the FE identifies drives by
-/// `volume.id` (`"root"`, `smb-…`, `mtp-…`), not by a path. This is the id-keyed
-/// sibling of `get_volume_index_status` (which takes a listing path for the
-/// always-visible active-drive badge). Both return the same [`VolumeIndexStatus`]
-/// shape; a not-indexed volume reports `enabled: false`, `freshness: None` (gray).
+/// `volume.id` (`"root"`, `smb-…`, `mtp-…`), not by a path. A not-indexed volume
+/// reports `enabled: false`, `freshness: None` (gray).
 #[tauri::command]
 #[specta::specta]
 pub async fn get_volume_index_status_by_id(volume_id: String) -> Result<VolumeIndexStatus, String> {
@@ -321,9 +300,10 @@ pub async fn disable_drive_index(volume_id: String) -> Result<(), String> {
         .map_err(|e| e.to_string())
 }
 
-/// Forget a drive's index entirely: stop it, DELETE its index DB (plus WAL/SHM
-/// sidecars), and drop its registry instance, so its badge goes gray and a
-/// future enable does a clean fresh scan rather than resuming a stale DB.
+/// Forget a drive's index entirely: stop it, DELETE its index DB and the
+/// folder-importance DB that scores it (each with its WAL/SHM sidecars), and
+/// drop its registry instance, so its badge goes gray and a future enable does a
+/// clean fresh scan rather than resuming a stale DB. The media index stays.
 ///
 /// This is the per-volume sibling of `clear_drive_index` (which clears every volume):
 /// the user-facing "forget this drive" action for an external (SMB/MTP) index

@@ -44,8 +44,23 @@ use crate::ignore_poison::IgnorePoison;
 pub(super) struct ConflictResponderSink {
     pub inner: CollectorEventSink,
     state: Arc<WriteOperationState>,
-    resolution: ConflictResolution,
-    apply_to_all: bool,
+    answer: Answer,
+    /// Runs as each prompt arrives, before it's answered: the moment the
+    /// operation is parked on the question, for a test that needs to see what
+    /// the destination held then.
+    on_prompt: Option<Box<dyn Fn() + Send + Sync>>,
+}
+
+/// How [`ConflictResponderSink`] answers a prompt.
+enum Answer {
+    /// Picks a resolution, as the dialog's buttons do.
+    Resolve {
+        resolution: ConflictResolution,
+        apply_to_all: bool,
+    },
+    /// Refuses the prompt: the dialog's Cancel, which stops the whole operation
+    /// (keeping what landed) rather than answering the clash.
+    CancelOperation { operation_id: String },
 }
 
 impl ConflictResponderSink {
@@ -54,9 +69,31 @@ impl ConflictResponderSink {
         Self {
             inner: CollectorEventSink::new(),
             state: Arc::clone(state),
-            resolution,
-            apply_to_all,
+            answer: Answer::Resolve {
+                resolution,
+                apply_to_all,
+            },
+            on_prompt: None,
         }
+    }
+
+    /// Refuses every prompt by cancelling `operation_id` (without rollback), the
+    /// way a person pressing Cancel on the conflict dialog does.
+    pub(super) fn cancelling(state: &Arc<WriteOperationState>, operation_id: &str) -> Self {
+        Self {
+            inner: CollectorEventSink::new(),
+            state: Arc::clone(state),
+            answer: Answer::CancelOperation {
+                operation_id: operation_id.to_string(),
+            },
+            on_prompt: None,
+        }
+    }
+
+    /// Runs `probe` as each prompt arrives, before it's answered.
+    pub(super) fn on_prompt(mut self, probe: impl Fn() + Send + Sync + 'static) -> Self {
+        self.on_prompt = Some(Box::new(probe));
+        self
     }
 }
 
@@ -79,16 +116,30 @@ impl OperationEventSink for ConflictResponderSink {
         // clash this event carries, exactly as a real surface would.
         let clash = e.conflict_id;
         self.inner.emit_conflict(e);
+        if let Some(probe) = &self.on_prompt {
+            probe();
+        }
 
         // The slot was armed before this event was emitted, so the answer can't
-        // miss. It unblocks the op's `rx.await` synchronously.
-        let _ = self.state.conflict_slot.answer(
-            clash,
-            ConflictResolutionResponse {
-                resolution: self.resolution,
-                apply_to_all: self.apply_to_all,
-            },
-        );
+        // miss. Either way it unblocks the op's `rx.await` synchronously: an
+        // answer through the slot, a cancel by abandoning it.
+        match &self.answer {
+            Answer::Resolve {
+                resolution,
+                apply_to_all,
+            } => {
+                let _ = self.state.conflict_slot.answer(
+                    clash,
+                    ConflictResolutionResponse {
+                        resolution: *resolution,
+                        apply_to_all: *apply_to_all,
+                    },
+                );
+            }
+            Answer::CancelOperation { operation_id } => {
+                super::super::state::cancel_write_operation(operation_id, false);
+            }
+        }
     }
     fn emit_conflict_resolved(&self, e: WriteConflictResolvedEvent) {
         self.inner.emit_conflict_resolved(e);

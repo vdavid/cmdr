@@ -33,8 +33,8 @@ pub mod watcher;
 #[cfg(feature = "virtual-mtp")]
 pub use cmdr_mtp::virtual_device;
 pub use cmdr_mtp::{
-    ConnectedDeviceInfo, DeviceWatch, MtpConnectionError, MtpConnectionManager, MtpDeleteScope, MtpDeviceInfo,
-    MtpDisconnectReason, MtpObjectInfo, MtpStorageInfo, MtpVolumeRegistrar, list_mtp_devices,
+    ConnectedDeviceInfo, DeviceWatch, MtpConnectionError, MtpConnectionManager, MtpDisconnectReason,
+    MtpVolumeRegistrar, list_mtp_devices,
 };
 pub use events::{
     MtpDeviceConnected, MtpDeviceDisconnected, MtpExclusiveAccessError, MtpPermissionError, MtpPtpcameradRestored,

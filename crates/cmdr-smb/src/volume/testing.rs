@@ -257,9 +257,10 @@ pub fn client_lock_tickets_issued() -> u64 {
 }
 
 /// A whole buffer as a one-chunk [`VolumeReadStream`], for a suite that needs to
-/// drive `write_from_stream` without a second volume behind it.
+/// drive `write_from_stream` without a second volume behind it. It carries no
+/// date, so the written file keeps the server's own.
 pub fn inline_read_stream(bytes: Vec<u8>) -> Box<dyn VolumeReadStream> {
-    Box::new(super::streams::InlineReadStream::new(bytes))
+    Box::new(super::streams::InlineReadStream::new(bytes, None))
 }
 
 #[cfg(test)]

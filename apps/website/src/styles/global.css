@@ -44,13 +44,6 @@
   /* Semantic colors */
   --color-warning: #ff4d6d;
 
-  /* Inline markdown icon colors (`:yes:` etc., see src/plugins/blog-icons.mjs). Brand-adjacent and
-     legible on both surfaces; `no` reuses the semantic red so it tracks the theme. */
-  --color-icon-yes: #2ea043;
-  --color-icon-no: var(--color-warning);
-  --color-icon-warn: #e0a106;
-  --color-icon-soon: #4493f8;
-
   /* Fonts - Inter is self-hosted, monospace falls back to system */
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
   --font-mono: ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace;
@@ -62,6 +55,17 @@
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
   --duration-normal: 300ms;
   --duration-slow: 500ms;
+}
+
+/* Inline markdown icon colors (`:yes:` etc., see src/plugins/blog-icons.mjs). Brand-adjacent and legible on both
+   surfaces; `no` reuses the semantic red so it tracks the theme. Plain variables rather than `@theme` tokens: only CSS
+   reads them, and as theme colors the `no` alias made the canonical-class lint suggest `text-icon-no` for
+   `text-warning`. */
+:root {
+  --color-icon-yes: #2ea043;
+  --color-icon-no: var(--color-warning);
+  --color-icon-warn: #e0a106;
+  --color-icon-soon: #4493f8;
 }
 
 /* Global styles */

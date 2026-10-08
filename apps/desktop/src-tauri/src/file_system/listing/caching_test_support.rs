@@ -215,6 +215,9 @@ pub(crate) struct WatchCoverageVolume {
     /// How many `get_metadata` calls reached the volume, for a test pinning that
     /// a cached answer spared the round trip.
     metadata_calls: std::sync::atomic::AtomicUsize,
+    /// How many `list_directory` calls reached the volume, the same pin for a
+    /// cached listing.
+    list_calls: std::sync::atomic::AtomicUsize,
 }
 
 impl WatchCoverageVolume {
@@ -223,12 +226,18 @@ impl WatchCoverageVolume {
             inner: InMemoryVolume::new(name),
             coverage: AtomicU8::new(encode_coverage(coverage)),
             metadata_calls: std::sync::atomic::AtomicUsize::new(0),
+            list_calls: std::sync::atomic::AtomicUsize::new(0),
         }
     }
 
     /// How many `get_metadata` calls reached this volume so far.
     pub(crate) fn metadata_calls(&self) -> usize {
         self.metadata_calls.load(Ordering::Relaxed)
+    }
+
+    /// How many `list_directory` calls reached this volume so far.
+    pub(crate) fn list_calls(&self) -> usize {
+        self.list_calls.load(Ordering::Relaxed)
     }
 
     pub(crate) fn set_coverage(&self, coverage: WatchCoverage) {
@@ -270,6 +279,7 @@ impl Volume for WatchCoverageVolume {
         path: &'a Path,
         on_progress: Option<&'a (dyn Fn(crate::file_system::volume::ListingProgress) + Sync)>,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
+        self.list_calls.fetch_add(1, Ordering::Relaxed);
         self.inner.list_directory(path, on_progress)
     }
 
@@ -290,6 +300,13 @@ impl Volume for WatchCoverageVolume {
         path: &'a Path,
     ) -> Pin<Box<dyn Future<Output = Result<bool, VolumeError>> + Send + 'a>> {
         self.inner.is_directory(path)
+    }
+
+    fn create_directory<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+        self.inner.create_directory(path)
     }
 
     fn listing_watch_coverage(&self, _path: &Path) -> WatchCoverage {

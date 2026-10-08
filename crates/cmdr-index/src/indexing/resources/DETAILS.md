@@ -32,35 +32,35 @@ of proportionate alerts instead of one per 5 s tick (a 16→40 GB climb produces
 `stop_all_indexing` in case a volume registered again. It says plainly that the stop didn't hold, so the growth is not
 (only) the index scan. Dropping back under the warn line logs a recovery and clears the record, re-arming the stop.
 
-### What the snapshot measures, and the mimalloc blindness
+### What the snapshot measures, and which allocator it reads
 
 **The threshold basis is `phys_footprint`, not `resident_size` (RSS).** RSS counts graphics and shared mappings that
 aren't real memory pressure; `phys_footprint` is what macOS keys memory pressure and jetsam on and what Activity
 Monitor's "Memory" column shows. Keying the stop on RSS would let graphics trip a machine-protection stop.
 
-**Gotcha: the macOS malloc-zone APIs cannot see the Rust heap.** Cmdr sets mimalloc as the global allocator in
-`main.rs`, and mimalloc registers no malloc zone, so `malloc_zone_statistics` and `malloc_get_all_zones` report WebKit,
-Objective-C, and C-library allocations only. The snapshot used to read exactly those zones and label the result "the
-real Rust/C heap; indexing lives here"; in the runaway that printed "malloc heap 1.6 GB" against a 16.5 GB
-`phys_footprint`. `crate::process_memory` is the canonical home for this and for all four readers (`query_task_vm_info`,
-`query_basic_info`, `query_mimalloc_heap`, `query_system_malloc_zones`); the watchdog holds policy only.
+**The Rust heap comes from whichever allocator is global** (`crates/cmdr-fs/DETAILS.md` § "Which global allocator"): the
+default malloc zone's reserved bytes under the system allocator (macOS by default), mimalloc's committed bytes under
+mimalloc. `query_rust_heap` returns an enum naming which, and `query_system_malloc_zones` reads the zones beyond it, so
+the two never overlap. `crate::process_memory` is the canonical home for the readers (`query_task_vm_info`,
+`query_basic_info`, `query_rust_heap`, `query_system_malloc_zones`); the watchdog holds policy only.
 
-`query_mimalloc_heap` calls `mi_process_info` through a direct `libmimalloc-sys` dependency (the `mimalloc` wrapper
-crate doesn't re-export its `ffi` module) for `current_commit` / `peak_commit`. Committed, not in-use: mimalloc exposes
-no cheap process-wide in-use total, and committed is what tracks the arenas. Note that `#[global_allocator]` lives in
-`main.rs`, so the unit-test harness does NOT run on mimalloc; the blindness test allocates via `mi_malloc` directly to
-stay meaningful there.
+**Gotcha, mimalloc builds: the macOS malloc-zone APIs cannot see the Rust heap.** mimalloc registers no malloc zone, so
+`malloc_zone_statistics` and `malloc_get_all_zones` report WebKit, Objective-C, and C-library allocations only. The
+snapshot used to read exactly those zones and label the result "the real Rust/C heap; indexing lives here"; in the
+runaway that printed "malloc heap 1.6 GB" against a 16.5 GB `phys_footprint`.
 
-**Gotcha: `vmmap`'s `IOAccelerator` rows are the Rust heap.** mimalloc `mmap`s its arenas with `os_tag` 100, and macOS
-defines `VM_MEMORY_IOACCELERATOR = 100`, so `vmmap` / `footprint` label every 128 MB mimalloc arena `IOAccelerator`
-(verified with `MallocStackLogging=1` + `vmmap -fullStacks`: each region backtraces to `mmap` ← `_mi_prim_alloc` ←
-`mi_arena_reserve`; commenting out the `#[global_allocator]` collapses those rows to 64 KB and the same memory reappears
-as `MALLOC_*`, macOS 15, 2026-07). Reading those rows as GPU memory is what sent three investigations into the frontend.
-Any older analysis that split "GPU vs heap" off a zone-only heap reading inherits this error.
+**Gotcha, mimalloc builds: `vmmap`'s `IOAccelerator` rows are the Rust heap.** mimalloc `mmap`s its arenas with `os_tag`
+100, and macOS defines `VM_MEMORY_IOACCELERATOR = 100`, so `vmmap` / `footprint` label every 128 MB mimalloc arena
+`IOAccelerator` (verified with `MallocStackLogging=1` + `vmmap -fullStacks`: each region backtraces to `mmap` ←
+`_mi_prim_alloc` ← `mi_arena_reserve`; on the system allocator those rows collapse to 64 KB and the same memory
+reappears as `MALLOC_*`, macOS 15, 2026-07). Reading those rows as GPU memory is what sent three investigations into the
+frontend. Any older analysis that split "GPU vs heap" off a zone-only heap reading inherits this error. The report's
+last line tells a `vmmap` reader which rows hold the heap in the running build.
 
-When a threshold trips, the watchdog captures a `MemorySnapshot` — `phys_footprint` (+ ledger peak), RSS (+ max), the
-mimalloc heap (+ peak), the system malloc zones (in use + reserved, zone count, largest zone), the `untracked`
-remainder, and `live_event_count` — and logs it as a multi-line breakdown where every line states what its number MEANS.
+When a threshold trips, the watchdog captures a `MemorySnapshot` (`memory_snapshot.rs`) — `phys_footprint` (+ ledger
+peak), RSS (+ max), the Rust heap (mimalloc's committed + peak, or the default zone's in use + reserved), the other
+malloc zones (in use + reserved, zone count, largest zone), the `untracked` remainder, and `live_event_count` — and logs
+it as a multi-line breakdown where every line states what its number MEANS.
 
 **Decision (why the verdict is derived, not asserted).** The old report ended with "a large resident−phys_footprint
 delta usually means WebView/GPU memory, not the indexing heap", printed unconditionally. In the runaway that delta was
@@ -70,47 +70,62 @@ over the same figures the report prints: whichever source holds a majority wins 
 `Unattributed`), otherwise `Mixed`. Graphics is only ever named when neither allocator claims the majority. If you add a
 hint here, derive it from the numbers or leave it out.
 
-The `index-memory-warning` event carries the five figures in bytes plus a typed `MemoryWatchdogAction`; see
-`../events/DETAILS.md`. TODO (tracked in the snapshot's `live_event_count` comment): surface writer-channel depth and
-reconciler `pending_events` len once they're atomics.
+The `index-memory-warning` event carries the five figures in bytes, the `GlobalAllocator` they came from, and a typed
+`MemoryWatchdogAction`; see `../events/DETAILS.md`. TODO (tracked in the snapshot's `live_event_count` comment): surface
+writer-channel depth and reconciler `pending_events` len once they're atomics.
 
 ### The shared ceiling (subsystem_stop.rs)
 
-That one budget covers OTHER resident-pool subsystems too: a subsystem (image enrichment in `media_index/`, which
-decodes HEIC/RAW and can spike RAM) calls `register_subsystem_stop_hook` once at startup, and `stop_all_indexing` runs
-`run_subsystem_stop_hooks` alongside stopping indexing. This is deliberate — a second independent 16 GB ceiling over the
-same pool would let the two sum to ~2× real headroom. `STOP_HOOKS` is a process-global, append-only `Vec` (a subsystem
-registers once and never unregisters; it lives for the process). Hooks run inline in the stop path, so they must be
-cheap and non-blocking (flip an atomic cancel flag).
+That one budget covers OTHER resident-pool subsystems too: a subsystem calls `register_subsystem_stop_hook` once at
+startup, and `stop_all_indexing` runs `run_subsystem_stop_hooks` alongside stopping indexing. Two register today: image
+enrichment in `media_index/` (it decodes HEIC/RAW and can spike RAM), and the `importance/` scheduler (a full pass holds
+a transient ~166 MB on a big volume). This is deliberate — a second independent 16 GB ceiling over the same pool would
+let the two sum to ~2× real headroom. `STOP_HOOKS` is a process-global, append-only `Vec` (a subsystem registers once
+and never unregisters; it lives for the process). Hooks run inline in the stop path, so they must be cheap and
+non-blocking (fire a cancellation token).
+
+**The hooks run FIRST, before any volume is stopped.** Each `stop_indexing` drains its volume for up to seconds, one
+after another, and a hook only fires a signal and returns. Run last, a subsystem busy on the fifth volume would keep
+allocating through four drains of an emergency stop. ❌ Don't move them back behind the drains, and don't let a hook
+block: it would delay every volume's stop.
 
 ## Index retention and cleanup (retention.rs)
 
-Local disk has exactly one index DB; every SMB share and MTP storage spawns its own `index-{volume_id}.db`, so the data
-dir can accumulate one DB per drive the user ever connected. `retention.rs` bounds that.
+Local disk has exactly one index DB; every SMB share and MTP storage spawns its own `index-{volume_id}.db`, so the
+drive-index dir can accumulate one DB per drive the user ever connected. `retention.rs` bounds that.
 
 A simple COUNT cap (`MAX_EXTERNAL_INDEX_DBS = 32`) on external (non-root) index DBs, with LRU eviction of the
 least-recently-used OFFLINE ones. `enforce_external_index_cap(app)` runs after a successful SMB/MTP enable (exactly when
-accumulation can grow): it enumerates `index-*.db` in the data dir, pairs each with its mtime (the LRU proxy — a DB is
-rewritten on every scan/live write), and calls the pure, filesystem-free
+accumulation can grow): it enumerates `index-*.db` in the drive-index dir, pairs each with its mtime (the LRU proxy — a
+DB is rewritten on every scan/live write), and calls the pure, filesystem-free
 `select_evictions(candidates, registered, cap)`.
 
 SAFETY, enforced by the selector and unit-tested: a candidate whose volume id is in the registry snapshot
 (`all_registered_volume_ids`) is dropped before any eviction decision, so a `Running`/`Initializing` volume's DB is
-never evicted no matter how old its mtime; `root` is excluded too. Eviction is a plain unlink of the DB + WAL/SHM (the
-volume is offline, no writer to drain), mirroring `clear_index`'s file deletion, and logs what it evicted. Deliberately
-simple: not a byte budget, not an access-time LRU — `TODO(retention)` in `select_evictions` flags those if
-abandoned-drive accumulation ever proves to need more.
+never evicted no matter how old its mtime; `root` is excluded too. An evicted volume is a FORGOTTEN one: its files go
+through `volume_files::remove` with `Removal::Forgotten`, the same door `clear_index` uses, so the importance database
+beside the index goes with it and the importance writer lets go first (the volume is offline, so there is no index
+writer to drain). ❌ Never unlink an `index-{id}.db` here by hand. Deliberately simple: not a byte budget, not an
+access-time LRU — `TODO(retention)` in `select_evictions` flags those if abandoned-drive accumulation ever proves to
+need more.
+
+`sweep_legacy_scheme_dbs` is the other automatic removal, one shot per launch: every store's files keyed by a volume ID
+from the retired scheme, removed as `Removal::Unreachable`. It reads the ids from every store's files and never from the
+index's alone, so a sibling whose index an earlier forget already took is swept too. Which stores each reason takes, and
+why: `crates/cmdr-index/DETAILS.md` § "A volume's files, and the one door they leave by".
 
 The user-facing forget/disable/clear paths and the prune→Disabled model live in `../lifecycle/DETAILS.md` (`clear_index`
 / `forget_drive_index` / `disable_drive_index`); retention here is the automatic bounded-accumulation backstop.
 
 ### What it all takes up, and clearing it (the settings screen)
 
-`total_index_db_bytes` and `volume_ids_on_disk` answer over the same enumeration the cap uses, `root` included. They
-exist because the REGISTRY can't answer either question: a database a search's walk built has no instance behind it the
-moment the app restarts, and neither does the index of a drive whose indexing the user turned off. Those are exactly the
-bytes a person is entitled to see and reclaim, so the settings row and its Clear button read the files
-(`Index::disk_footprint`, `Index::forget_all_volumes`).
+`total_index_db_bytes` and `volume_ids_on_disk` answer over the files of every store a forgotten volume loses
+(`volume_files::volume_ids_on_disk` with `Removal::Forgotten`), `root` included. They exist because the REGISTRY can't
+answer either question: a database a search's walk built has no instance behind it the moment the app restarts, and
+neither does the index of a drive whose indexing the user turned off. Those are exactly the bytes a person is entitled
+to see and reclaim, so the settings row and its Clear button read the files (`Index::disk_footprint`,
+`Index::forget_all_volumes`). Both read the SAME set, so the number shown is the number a clear takes to zero, and it
+includes an importance database whose index is already gone.
 
 There is **no size cap** on any of it, by decision (`docs/specs/unindexed-search-plan.md` Decision 17): the answer to
 disk use is that the size and the Clear button work with drive indexing off, not a byte budget. If people complain about

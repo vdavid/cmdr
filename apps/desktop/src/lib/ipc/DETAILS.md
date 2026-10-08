@@ -30,7 +30,7 @@ fails on drift with a "Run `pnpm bindings:regen`" hint. CI never modifies the wo
 ```typescript
 import { commands } from '$lib/ipc/bindings'
 
-const result = await commands.greet('world')
+const hasMetrics = await commands.hasFontMetrics(fontId)
 ```
 
 For commands that return `Result<T, E>` on the Rust side, the TS wrapper returns
@@ -209,13 +209,10 @@ problem to the helper instead of solving it. Just rename the locals at the call 
    returns `Result`, unwrap it: throw a `TypedFailure` subclass (`typed-failure.ts`) when the refusal reaches a person,
    `throwIpcError` when it only ever reaches a log.
 
-**A command surface may land with no frontend calling it, and nothing warns.** The Rust side is reachable from
-`ipc_command_manifest!`, so no `#[allow(dead_code)]` is needed, and `knip.json` ignores both `src/lib/ipc/bindings.ts`
-and `src/lib/tauri-commands/**`, so an unused generated binding and its typed wrapper trip nothing either. That is what
-lets a backend ship its whole IPC surface ahead of the UI that will call it — `commands/sftp.rs` and
-`tauri-commands/sftp.ts` are the worked example — and it means "nothing calls this" is never the signal that a surface
-is unfinished. `crates/cmdr-sftp/DETAILS.md` § "Connecting from the frontend" is where a surface waiting for its UI says
-so out loud instead.
+**A command needs a caller, or an allowlist entry saying why not.** rustc never calls a registered command unused (the
+manifest reaches it) and knip ignores the generated `bindings.ts`, so the `desktop-ipc-unused` check is what fails on a
+`commands.*` entry nothing live calls. A backend shipping its IPC surface ahead of the UI allowlists each piece with a
+reason. The rule and what counts as a caller: `../tauri-commands/DETAILS.md` § "Unused wrappers and commands".
 
 ## Type shape constraints (specta rc.24)
 
@@ -250,6 +247,11 @@ These commands stay on raw `invoke()` for now. Each call site has:
 | `get_auto_sent_report_preview`                           | Returns the same `BundleManifest`                                                       | Rides along with `prepare_error_report_preview`                                  |
 | `store_font_metrics`                                     | Generic over `<R: tauri::Runtime>`, specta can't collect type info for generic commands | Keep as-is; font metrics are write-only (no TS type needed for the return value) |
 | `stream_folder_suggestions`, `cancel_folder_suggestions` | Tauri `Channel<T>` (streaming) isn't specta-friendly yet                                | Re-evaluate when specta supports `Channel<T>` (track upstream)                   |
+
+The table names the representative cases; the complete list is `ipc_command_manifest!` in `src-tauri/src/ipc.rs`. Many
+more commands are generic over `<R: Runtime>` like `store_font_metrics` (the menu-sync commands, `configure_ai`,
+`start_ai_server`, `start_ai_download`, …). A generic command that rejects with a typed error still crosses as
+`unknown`, so its caller restores the type (`$lib/ai/local-ai-error.ts` for the two local-AI ones).
 
 When specta gets a fix that closes one of these, drop the opt-out comment, add the command to `collect_*_types()`,
 regenerate, migrate the call site to `commands.foo(...)`.
@@ -321,9 +323,9 @@ import { installIpcMock } from './test-helpers'
 import { commands } from './bindings'
 
 const ipc = installIpcMock()
-ipc.mock('copy_files', () => null)
-await commands.copyFiles({ sources, destination, volumeId, itemSizes, config })
-const call = ipc.lastCall('copy_files')
+ipc.mock('move_files', () => null)
+await commands.moveFiles(sources, destination, config, null)
+const call = ipc.lastCall('move_files')
 expect(call?.payload).toMatchObject({ sources, destination /* ... */ })
 ```
 

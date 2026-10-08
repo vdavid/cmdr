@@ -34,10 +34,18 @@ use crate::media_index::network::config::NetworkEnrichConfig;
 /// Everything the index needs from the product.
 #[derive(Clone, Debug)]
 pub struct IndexConfig {
-    /// Where every index database lives. One directory for the drive index, the
-    /// media index, and the importance index, resolved once by the app so dev,
-    /// production, and each worktree stay separated.
+    /// Where the importance and media databases live: the durable app data dir,
+    /// resolved once by the app so dev, production, and each worktree stay
+    /// separated. Importance keeps navigation visits nothing can rebuild, and the
+    /// media index is hours of image analysis, so both stay where backups reach.
     pub data_dir: PathBuf,
+    /// Where the drive index's databases live. A rebuildable cache measured in
+    /// gigabytes, so the app points it at a folder backups skip (on macOS,
+    /// `~/Library/Caches`). May equal `data_dir`.
+    ///
+    /// When it differs, building the index moves any drive index an older build
+    /// left in `data_dir` over here (`drive_index_relocation.rs`).
+    pub drive_index_dir: PathBuf,
     /// The media index's user-controlled policy.
     pub media: MediaConfig,
     /// Whether a drive's first index is covered folder by folder, in the order
@@ -57,6 +65,7 @@ impl Default for IndexConfig {
     fn default() -> Self {
         Self {
             data_dir: PathBuf::default(),
+            drive_index_dir: PathBuf::default(),
             media: MediaConfig::default(),
             phased_first_index: true,
         }
@@ -102,7 +111,14 @@ impl Default for MediaConfig {
 
 /// Where index databases live. The one piece of [`IndexConfig`] that isn't stored
 /// somewhere else already. `RwLock` rather than `OnceLock` so tests can swap it.
-static DATA_DIR: RwLock<Option<PathBuf>> = RwLock::new(None);
+static DIRS: RwLock<Option<Dirs>> = RwLock::new(None);
+
+/// The two folders the index keeps databases in.
+#[derive(Clone, Debug)]
+struct Dirs {
+    data: PathBuf,
+    drive_index: PathBuf,
+}
 
 /// Hand the index its configuration, applying the media half to the gate.
 ///
@@ -126,16 +142,31 @@ pub(crate) fn set_config(config: IndexConfig) {
     network::config::set_config(config.media.network);
     crate::indexing::lifecycle::phases::set_phased_first_index(config.phased_first_index);
 
-    *DATA_DIR.write_ignore_poison() = Some(config.data_dir);
+    *DIRS.write_ignore_poison() = Some(Dirs {
+        data: config.data_dir,
+        drive_index: config.drive_index_dir,
+    });
 }
 
-/// Where index databases live, or an error naming what's missing.
+/// Where the importance and media databases live, or an error naming what's
+/// missing.
 ///
 /// Returns `Err` rather than a bogus path when nothing was configured, because
 /// writing an index DB to a relative path would scatter databases through the
 /// working directory instead of failing where it's noticeable.
 pub(crate) fn data_dir() -> Result<PathBuf, DataDirUnset> {
-    DATA_DIR.read_ignore_poison().clone().ok_or(DataDirUnset)
+    DIRS.read_ignore_poison()
+        .as_ref()
+        .map(|dirs| dirs.data.clone())
+        .ok_or(DataDirUnset)
+}
+
+/// Where the drive index's databases live. Errs exactly when [`data_dir`] does.
+pub(crate) fn drive_index_dir() -> Result<PathBuf, DataDirUnset> {
+    DIRS.read_ignore_poison()
+        .as_ref()
+        .map(|dirs| dirs.drive_index.clone())
+        .ok_or(DataDirUnset)
 }
 
 /// No data directory has been configured, so nothing can be opened on disk.
@@ -149,26 +180,31 @@ impl std::fmt::Display for DataDirUnset {
 }
 
 /// Point the index at `dir` for the duration of one test, restoring the previous
-/// config when the guard drops.
+/// config when the guard drops. Every store lives in `dir`, the drive index
+/// included.
 ///
 /// The slot is process-wide, so hold `handle::test_lock` first.
 #[cfg(any(test, feature = "testing"))]
 #[must_use = "the config is restored when the guard drops"]
 pub fn install_data_dir_for_test(dir: impl AsRef<std::path::Path>) -> TestConfigGuard {
-    let previous = DATA_DIR.write_ignore_poison().replace(dir.as_ref().to_path_buf());
+    let dir = dir.as_ref().to_path_buf();
+    let previous = DIRS.write_ignore_poison().replace(Dirs {
+        data: dir.clone(),
+        drive_index: dir,
+    });
     TestConfigGuard { previous }
 }
 
 /// Restores the previous config on drop, including on a panic.
 #[cfg(any(test, feature = "testing"))]
 pub struct TestConfigGuard {
-    previous: Option<PathBuf>,
+    previous: Option<Dirs>,
 }
 
 #[cfg(any(test, feature = "testing"))]
 impl Drop for TestConfigGuard {
     fn drop(&mut self) {
-        *DATA_DIR.write_ignore_poison() = self.previous.take();
+        *DIRS.write_ignore_poison() = self.previous.take();
     }
 }
 
@@ -182,6 +218,7 @@ mod tests {
     fn an_unset_data_dir_is_an_error_not_an_empty_path() {
         let _serialized = crate::indexing::handle::test_lock();
         assert!(data_dir().is_err());
+        assert!(drive_index_dir().is_err());
     }
 
     /// The round trip the whole seam exists for: a value set through the config is
@@ -192,6 +229,10 @@ mod tests {
         let _installed = install_data_dir_for_test("/tmp/cmdr-config-round-trip");
         assert_eq!(
             data_dir().expect("configured"),
+            PathBuf::from("/tmp/cmdr-config-round-trip")
+        );
+        assert_eq!(
+            drive_index_dir().expect("configured"),
             PathBuf::from("/tmp/cmdr-config-round-trip")
         );
     }

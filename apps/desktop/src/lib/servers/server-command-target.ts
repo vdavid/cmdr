@@ -43,10 +43,11 @@ export function serverCommandTarget(sources: ServerCommandSources): ServerComman
   if (row?.volumeId) {
     return { volumeId: row.volumeId, name: row.name, pinned: row.pinned }
   }
-  // ❗ A row with no `volumeId` is an SMB host, whose places are mounted shares
-  // with ids `statfs` mints. It stops the search rather than falling through to
-  // the pane's volume: the user is pointing at that host, and acting on
-  // something else instead is worse than doing nothing.
+  // ❗ A row with no `volumeId` is a many-place server: an SMB host, whose places
+  // are mounted shares with ids `statfs` mints, or an S3 account, whose places are
+  // its buckets. It stops the search rather than falling through to the pane's
+  // volume: the user is pointing at that server, and acting on something else
+  // instead is worse than doing nothing.
   if (row) return null
 
   const volume = sources.paneVolume

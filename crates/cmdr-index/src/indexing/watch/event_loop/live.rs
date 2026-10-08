@@ -571,10 +571,14 @@ pub(in crate::indexing) fn process_live_batch(
         // freshly-queued anchors are visible in `rescan_scopes()` for the drop
         // filter below.
         let removal_paths: Vec<&str> = removals.iter().map(|(p, _)| p.as_str()).collect();
-        for anchor in storm::detect_storm_anchors(&removal_paths) {
+        for storm::StormAnchor {
+            path: anchor,
+            removals: count,
+        } in storm::detect_storm_anchors(&removal_paths)
+        {
             log::info!(
                 "Removal storm: coalescing {} removals into a subtree rescan of {}",
-                removals.len(),
+                count,
                 anchor.display(),
             );
             // ⚠️ Surfaced to the tap BEFORE the drop filter below throws the

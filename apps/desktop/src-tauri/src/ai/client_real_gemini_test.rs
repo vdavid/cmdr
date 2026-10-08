@@ -151,7 +151,7 @@ async fn model_is_gone(err: &AiError) -> bool {
     let Ok(key) = std::env::var(GEMINI.env_var) else {
         return false;
     };
-    let Ok(client) = reqwest::Client::builder().timeout(Duration::from_secs(30)).build() else {
+    let Ok(client) = cmdr_http::client_builder().timeout(Duration::from_secs(30)).build() else {
         return false;
     };
 

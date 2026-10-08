@@ -400,6 +400,17 @@ scan.
 so a stop taken inside the very first walk leaves the stitch's rows with nothing recording what ground they cover. The
 next launch rebuilds them, by the same rule that throws away an interrupted bulk scan. Tests: `tests/menu_actions.rs`.
 
+## The test fixture runs on a fake FSEvents journal
+
+The `Drive` fixture in `tests.rs` puts its tree on `watch::watcher::fake_journal`, so the branch watch the machine
+stands up has no real stream behind it. Nothing in these tests waits on a delivery (the churn tests write the
+reconciler's row themselves, `tests/retry.rs`), and the real calls queue on the one `fseventsd` every process shares,
+which timed 15–18 of them out at full parallelism (`watch/DETAILS.md` § Module structure).
+
+⚠️ Fast tests exposed two waits that had only ever passed by being slow: the drive reads idle a moment BEFORE
+`Machine::finish` arms the completion retry, and the home stamp commits a moment BEFORE its bus signal. Wait on the
+thing asserted (`is_waiting`, the signal itself), ❌ never on the step before it.
+
 ## The database is prepared for a walk through writer MESSAGES
 
 `prepare_database_for_a_walk` runs only for an `Activation::WriterOnly` start, on its own write connection, before any

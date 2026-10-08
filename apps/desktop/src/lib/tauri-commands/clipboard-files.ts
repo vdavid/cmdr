@@ -1,5 +1,6 @@
 import { commands, type PastedClipboardFile } from '$lib/ipc/bindings'
 import { throwIpcError } from './ipc-types'
+import { awaitClipboardPaste, type MutationWaitOptions } from './mutation-reply'
 
 export type { PastedClipboardFile } from '$lib/ipc/bindings'
 
@@ -76,15 +77,16 @@ export async function clearClipboardCutState(): Promise<void> {
 /**
  * Reads the highest-intent non-file clipboard flavor (image / PDF / text) and
  * writes it into `directory` as a new `pasted.<ext>` file, returning the created
- * file's name + kind. Resolves to `null` when nothing pasteable is on the
- * clipboard — the caller treats that as "no file created" (today's warn toast),
- * not an error.
+ * file's name + kind once it landed, however slow the volume is
+ * (`wait.onStillRunning` says when it's being slow, `./mutation-reply.ts`).
+ * Resolves to `null` when nothing pasteable is on the clipboard — the caller
+ * treats that as "no file created" (today's warn toast), not an error. A refusal
+ * throws typed (`MutationFailure`).
  */
 export async function pasteClipboardAsFile(
   volumeId: string | null,
   directory: string,
+  wait?: MutationWaitOptions,
 ): Promise<PastedClipboardFile | null> {
-  const res = await commands.pasteClipboardAsFile(volumeId, directory)
-  if (res.status === 'error') throwIpcError(res.error)
-  return res.data
+  return awaitClipboardPaste(() => commands.pasteClipboardAsFile(volumeId, directory), wait)
 }

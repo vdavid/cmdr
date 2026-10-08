@@ -92,7 +92,7 @@ describe('parseSelectMode', () => {
 
 describe('parseTabAction', () => {
   it('accepts every tab action', () => {
-    for (const action of ['new', 'close', 'close_others', 'activate', 'reopen', 'set_pinned'] as const) {
+    for (const action of ['new', 'close', 'close_others', 'activate', 'reopen', 'set_pinned', 'move'] as const) {
       expect(parseTabAction(action)).toBe(action)
     }
   })
@@ -243,6 +243,67 @@ describe('mcp-refresh listener (round-trip)', () => {
   })
 })
 
+describe('mcp-tab listener', () => {
+  it('dispatches a fire-and-forget action with its tab and pin state', async () => {
+    const dispatch = vi.fn(() => Promise.resolve()) as unknown as CommandDispatch
+    const handlers = await setupWithHandlers(dispatch)
+
+    getHandler(handlers, 'mcp-tab')({ payload: { pane: 'left', action: 'set_pinned', tabId: 't1', pinned: true } })
+
+    expect(dispatch).toHaveBeenCalledExactlyOnceWith('tab.mcpAction', {
+      pane: 'left',
+      action: 'set_pinned',
+      tabId: 't1',
+      pinned: true,
+    })
+  })
+
+  it('dispatches a move with its target and the request id the reply rides on', async () => {
+    const dispatch = vi.fn(() => Promise.resolve()) as unknown as CommandDispatch
+    const handlers = await setupWithHandlers(dispatch)
+
+    getHandler(
+      handlers,
+      'mcp-tab',
+    )({ payload: { pane: 'left', action: 'move', tabId: 't1', toPane: 'right', toIndex: 2, requestId: 'req-9' } })
+
+    expect(dispatch).toHaveBeenCalledExactlyOnceWith('tab.mcpAction', {
+      pane: 'left',
+      action: 'move',
+      tabId: 't1',
+      toPane: 'right',
+      toIndex: 2,
+      mcpRequestId: 'req-9',
+    })
+  })
+
+  it('leaves the index out of a move that named none, so the tab goes to the end', async () => {
+    const dispatch = vi.fn(() => Promise.resolve()) as unknown as CommandDispatch
+    const handlers = await setupWithHandlers(dispatch)
+
+    getHandler(handlers, 'mcp-tab')({ payload: { pane: 'left', action: 'move', tabId: 't1', toPane: 'left' } })
+
+    expect(dispatch).toHaveBeenCalledExactlyOnceWith('tab.mcpAction', {
+      pane: 'left',
+      action: 'move',
+      tabId: 't1',
+      toPane: 'left',
+      toIndex: undefined,
+      mcpRequestId: undefined,
+    })
+  })
+
+  it('drops a move with no tab or no target pane', async () => {
+    const dispatch = vi.fn(() => Promise.resolve()) as unknown as CommandDispatch
+    const handlers = await setupWithHandlers(dispatch)
+
+    getHandler(handlers, 'mcp-tab')({ payload: { pane: 'left', action: 'move', toPane: 'right' } })
+    getHandler(handlers, 'mcp-tab')({ payload: { pane: 'left', action: 'move', tabId: 't1', toPane: 'up' } })
+
+    expect(dispatch).not.toHaveBeenCalled()
+  })
+})
+
 describe('mcp-volume-select listener', () => {
   it('carries the volume id and request id through the bus, so the exact connection is selected', async () => {
     const dispatch = vi.fn(() => Promise.resolve()) as unknown as CommandDispatch
@@ -366,9 +427,11 @@ describe('mcp-nav-to-path listener', () => {
   })
 
   const setFocusedPaneMock = vi.fn()
+  const syncPaneStateToMcpMock = vi.fn(() => Promise.resolve())
 
   async function setupWithExplorer(navigate: () => NavigateResult): Promise<Map<string, TauriEventHandler>> {
     setFocusedPaneMock.mockClear()
+    syncPaneStateToMcpMock.mockClear()
     const handlers = new Map<string, TauriEventHandler>()
     // A pane already sitting on the target, on the target's volume: the in-place arm,
     // whose `settled` is the listing itself, so the reply needs no quiet wait.
@@ -376,9 +439,16 @@ describe('mcp-nav-to-path listener', () => {
       getPaneLocation: () => ({ volumeId: 'root', volumePath: '/', path: '/Library' }),
       getPaneListingId: () => 'listing-1',
       isPaneLoading: () => false,
+      isPaneStalled: () => false,
     }
     await setupMcpListeners({
-      getExplorer: () => ({ navigate, setFocusedPane: setFocusedPaneMock, ...restingPane }) as unknown as ExplorerAPI,
+      getExplorer: () =>
+        ({
+          navigate,
+          setFocusedPane: setFocusedPaneMock,
+          syncPaneStateToMcp: syncPaneStateToMcpMock,
+          ...restingPane,
+        }) as unknown as ExplorerAPI,
       dispatch: vi.fn(),
       listenTauri: (event, handler) => {
         handlers.set(event, handler)
@@ -412,6 +482,23 @@ describe('mcp-nav-to-path listener', () => {
       volumeId: 'root',
       path: '/Library',
     })
+  })
+
+  // The pane's own push is debounced, so without a flush the reply can beat it and a
+  // `cmdr://state` read right after `OK` still shows the previous folder (#342).
+  it('flushes the pane state to the backend before replying', async () => {
+    resolveLocationMock.mockResolvedValue({ ok: true, location: { volumeId: 'root', path: '/Library' } })
+    const handlers = await setupWithExplorer(() => ({ status: 'started', settled: Promise.resolve() }))
+
+    getHandler(handlers, 'mcp-nav-to-path')({ payload: { pane: 'left', path: '/Library', requestId: 'req-f' } })
+    await flushAsyncWork()
+
+    expect(syncPaneStateToMcpMock).toHaveBeenCalledWith('left')
+    const replyOrder = vi.mocked(emit).mock.calls.findIndex(([name]) => name === 'mcp-response')
+    expect(replyOrder).toBeGreaterThanOrEqual(0)
+    expect(syncPaneStateToMcpMock.mock.invocationCallOrder[0]).toBeLessThan(
+      vi.mocked(emit).mock.invocationCallOrder[replyOrder],
+    )
   })
 
   it('does NOT shift focus when the navigate is refused', async () => {
@@ -571,20 +658,25 @@ describe('mcp-nav-to-path landing outcomes (the volume-switch arm)', () => {
    * the switch arm's optimistic commit itself — destination in place, fresh listing
    * loading — because that ordering is what the adapter reads around.
    */
-  function fakePane(start: { volumeId: string; path: string; listingId: string | null }) {
-    const pane = { ...start, loading: false }
+  function fakePane(
+    start: { volumeId: string; path: string; listingId: string | null },
+    settled: Promise<void> = Promise.resolve(),
+  ) {
+    const pane = { ...start, loading: false, stalled: false }
     const explorer = {
       navigate: vi.fn((intent: { to: { goTo: { volumeId: string; path: string } } }): NavigateResult => {
         pane.volumeId = intent.to.goTo.volumeId
         pane.path = intent.to.goTo.path
         pane.listingId = 'L1'
         pane.loading = true
-        return { status: 'started', settled: Promise.resolve() }
+        return { status: 'started', settled }
       }),
       setFocusedPane: vi.fn(),
+      syncPaneStateToMcp: vi.fn(() => Promise.resolve()),
       getPaneLocation: () => ({ volumeId: pane.volumeId, volumePath: '/', path: pane.path }),
       getPaneListingId: () => pane.listingId,
       isPaneLoading: () => pane.loading,
+      isPaneStalled: () => pane.stalled,
     }
     return { pane, explorer }
   }
@@ -661,6 +753,58 @@ describe('mcp-nav-to-path landing outcomes (the volume-switch arm)', () => {
       outcome: 'fell-back',
       volumeId: 'root',
       path: '/Users/david',
+    })
+  })
+
+  // A stalled listing stays in flight and retries until the server answers, so the
+  // pane never comes to rest: the reply goes out the moment the pane shows the stall,
+  // not after the backend's 30 s budget.
+  it('acks `stalled` as soon as a switched pane’s folder stops answering', async () => {
+    resolveLocationMock.mockResolvedValue({ ok: true, location: { volumeId: 'nas', path: '/Volumes/nas/photos' } })
+    const { pane, explorer } = fakePane({ volumeId: 'root', path: '/Users/david', listingId: 'L0' })
+    const handlers = await setup(explorer)
+
+    getHandler(
+      handlers,
+      'mcp-nav-to-path',
+    )({ payload: { pane: 'left', path: '/Volumes/nas/photos', requestId: 'req-stall' } })
+    await vi.advanceTimersByTimeAsync(300)
+    expect(emit).not.toHaveBeenCalled()
+
+    pane.stalled = true
+    await vi.advanceTimersByTimeAsync(200)
+
+    expect(emit).toHaveBeenCalledWith('mcp-response', {
+      requestId: 'req-stall',
+      ok: false,
+      outcome: 'stalled',
+      volumeId: 'nas',
+      path: '/Volumes/nas/photos',
+    })
+  })
+
+  it('acks `stalled` for a same-volume navigation whose listing never lands', async () => {
+    resolveLocationMock.mockResolvedValue({ ok: true, location: { volumeId: 'root', path: '/Users/david/nfs' } })
+    const neverLands = new Promise<void>(() => {})
+    const { pane, explorer } = fakePane({ volumeId: 'root', path: '/Users/david', listingId: 'L0' }, neverLands)
+    const handlers = await setup(explorer)
+
+    getHandler(
+      handlers,
+      'mcp-nav-to-path',
+    )({ payload: { pane: 'left', path: '/Users/david/nfs', requestId: 'req-in-place' } })
+    await vi.advanceTimersByTimeAsync(300)
+    expect(emit).not.toHaveBeenCalled()
+
+    pane.stalled = true
+    await vi.advanceTimersByTimeAsync(200)
+
+    expect(emit).toHaveBeenCalledWith('mcp-response', {
+      requestId: 'req-in-place',
+      ok: false,
+      outcome: 'stalled',
+      volumeId: 'root',
+      path: '/Users/david/nfs',
     })
   })
 

@@ -12,6 +12,7 @@ import Bell from '~icons/lucide/bell'
 import Brain from '~icons/lucide/brain'
 import ChartPie from '~icons/lucide/chart-pie'
 import Cloud from '~icons/lucide/cloud'
+import Container from '~icons/lucide/container'
 import Copy from '~icons/lucide/copy'
 import Database from '~icons/lucide/database'
 import Eye from '~icons/lucide/eye'
@@ -39,6 +40,7 @@ import Smartphone from '~icons/lucide/smartphone'
 import Sparkles from '~icons/lucide/sparkles'
 import SquareChevronRight from '~icons/lucide/square-chevron-right'
 import SquareTerminal from '~icons/lucide/square-terminal'
+import Star from '~icons/lucide/star'
 import Usb from '~icons/lucide/usb'
 import Zap from '~icons/lucide/zap'
 
@@ -48,6 +50,7 @@ export const ICONS = {
   brain: Brain,
   'chart-pie': ChartPie,
   cloud: Cloud,
+  container: Container,
   copy: Copy,
   database: Database,
   eye: Eye,
@@ -75,6 +78,7 @@ export const ICONS = {
   sparkles: Sparkles,
   'square-chevron-right': SquareChevronRight,
   'square-terminal': SquareTerminal,
+  star: Star,
   usb: Usb,
   zap: Zap,
 } as const

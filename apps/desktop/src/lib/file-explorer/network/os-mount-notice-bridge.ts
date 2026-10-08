@@ -77,7 +77,14 @@ function raiseNotice(payload: SmbFellBackToOsMount): void {
     dismissal: 'persistent',
     id: osMountNoticeToastId(payload.volumeId),
     closeTooltip: tString('fileExplorer.network.osMountFallback.closeTooltip'),
-    props: { volumeId: payload.volumeId, share: payload.share, retryable },
+    props: {
+      volumeId: payload.volumeId,
+      share: payload.share,
+      retryable,
+      // This Mac refused the route to a server its own mount reaches: the notice
+      // names the server and the permission to switch.
+      blockedServer: payload.reason === 'blockedByThisMac' ? payload.displayName : undefined,
+    },
   })
 }
 

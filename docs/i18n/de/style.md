@@ -304,11 +304,10 @@ Dateien".
   übernimmt `Im Dock behalten`, `Aus dem Dock entfernen` und `Zum Dock hinzufügen` zeichengleich aus dem Dock-Menü, das
   der Nutzer beim Rechtsklick auf dasselbe Symbol sieht. Dieselbe Logik wie bei den nativen Menüs oben, nur eine Ebene
   weiter: die Fläche muss nicht Cmdrs eigene sein.
-- **Das Dock-Menü zählt zu den nativen Menüs und nimmt Apples Wortlaut, auch gegen Cmdrs eigene Menüleiste.** Beim
-  Rechtsklick auf Cmdrs Dock-Symbol steht der Eintrag neben Apples Dock-Menü und Finders `Gehe zu`, also gewinnt deren
-  Formulierung: `Go to folder…` → `Gehe zu Ordner …` (Finder), obwohl Cmdrs Menüleiste denselben Dialog
-  `Zu Pfad gehen …` nennt. Das Englische unterscheidet die beiden Flächen genauso. Belege: `decisions.md` § Das
-  Dock-Menü von Cmdr.
+- **Das Dock-Menü zählt zu den nativen Menüs und nimmt Apples Wortlaut.** Beim Rechtsklick auf das Dock-Symbol von Cmdr
+  steht der Eintrag neben Apples Dock-Menü, also gewinnt dessen Formulierung (`Cmdr öffnen`). Der Dialog zum Springen
+  heißt auf jeder Fläche wie im Finder: `Gehe zu Ordner …`. Belege: `decisions.md` § Das Dock-Menü von Cmdr. Zum Dialog:
+  `decisions.md` § Gehe zu Ordner.
 - **Zwei Schlüssel mit demselben englischen Wert bekommen EIN deutsches Wort.** `desktop-i18n-term-consistency` meldet
   jede Stelle, an der derselbe englische String zweimal verschieden übersetzt ist, und identische Werte tragen denselben
   `sourceHash`, sodass man es beim Übersetzen sofort sieht. Deshalb vor jedem Ein-Wort-Label kurz im `en`-Katalog nach

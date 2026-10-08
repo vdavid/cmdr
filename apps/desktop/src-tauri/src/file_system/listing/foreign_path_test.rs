@@ -214,9 +214,7 @@ async fn a_listing_read_while_the_backend_is_replaced_lands_on_the_stored_spelli
     let listing = TestListingGuard::adopt(unique_test_id("respell-mid-listing"));
 
     let events: std::sync::Arc<dyn ListingEventSink> = std::sync::Arc::new(CollectorListingEventSink::new());
-    let state = std::sync::Arc::new(StreamingListingState {
-        cancel: CancellationToken::new(),
-    });
+    let state = std::sync::Arc::new(StreamingListingState::new());
     read_directory_with_progress(
         &events,
         listing.id(),

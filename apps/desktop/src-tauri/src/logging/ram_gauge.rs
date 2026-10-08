@@ -115,17 +115,17 @@ fn is_truthy(value: &str) -> bool {
     matches!(value.trim().to_ascii_lowercase().as_str(), "1" | "true" | "yes" | "on")
 }
 
-/// Format bytes as `MB` below 1 GiB, else `GB` with two decimals. Binary units,
+/// Format bytes as `MiB` below 1 GiB, else `GiB` with two decimals. Binary units,
 /// matching the watchdog's `gb()`/`mb()` and Activity Monitor's rounding intent.
 fn format_footprint(bytes: u64) -> String {
     const MIB: u64 = 1024 * 1024;
     const GIB: u64 = 1024 * MIB;
     if bytes == 0 {
-        "?? MB".to_string()
+        "?? MiB".to_string()
     } else if bytes < GIB {
-        format!("{} MB", bytes / MIB)
+        format!("{} MiB", bytes / MIB)
     } else {
-        format!("{:.2} GB", bytes as f64 / GIB as f64)
+        format!("{:.2} GiB", bytes as f64 / GIB as f64)
     }
 }
 
@@ -134,17 +134,17 @@ mod tests {
     use super::*;
 
     #[test]
-    fn format_footprint_uses_mb_below_a_gib() {
-        assert_eq!(format_footprint(374 * 1024 * 1024), "374 MB");
-        assert_eq!(format_footprint(0), "?? MB");
-        // Just under 1 GiB still reads as MB.
-        assert_eq!(format_footprint(1023 * 1024 * 1024), "1023 MB");
+    fn format_footprint_uses_mib_below_a_gib() {
+        assert_eq!(format_footprint(374 * 1024 * 1024), "374 MiB");
+        assert_eq!(format_footprint(0), "?? MiB");
+        // Just under 1 GiB still reads as MiB.
+        assert_eq!(format_footprint(1023 * 1024 * 1024), "1023 MiB");
     }
 
     #[test]
-    fn format_footprint_uses_gb_at_and_above_a_gib() {
-        assert_eq!(format_footprint(1024 * 1024 * 1024), "1.00 GB");
-        assert_eq!(format_footprint(3 * 1024 * 1024 * 1024 + 512 * 1024 * 1024), "3.50 GB");
+    fn format_footprint_uses_gib_at_and_above_a_gib() {
+        assert_eq!(format_footprint(1024 * 1024 * 1024), "1.00 GiB");
+        assert_eq!(format_footprint(3 * 1024 * 1024 * 1024 + 512 * 1024 * 1024), "3.50 GiB");
     }
 
     #[test]

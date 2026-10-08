@@ -19,7 +19,7 @@ import { boundShortcuts } from '$lib/shortcuts'
 import type { FileEntry, SelectPayload } from '../types'
 import { getSetting, setSetting } from '$lib/settings'
 import { addToast } from '$lib/ui/toast'
-import { capabilitiesFor, paneFolderCanBeFavorited, rowIsOsVisible } from './volume-capabilities'
+import { capabilitiesFor, paneFolderCanBeFavorited, rowCanShareLink, rowIsOsVisible } from './volume-capabilities'
 import { canOpenTerminalIn } from '$lib/open-terminal/terminal-target'
 import { isFileListBackgroundClick } from './pane-background-dblclick'
 import { sameKindTargetFor } from './select-same-kind'
@@ -126,6 +126,7 @@ export function createPanePointer(deps: PanePointerDeps): PanePointer {
       }
     }
     const volumeId = deps.getVolumeId()
+    const rowsAreOsPaths = rowIsOsVisible(volumeId, entry.path)
     // The header at the top of the menu says what the menu will act on, so its size has
     // to be the size of THAT: the whole selection when the click landed inside it (the
     // pane already totals it for the status bar), this one row otherwise.
@@ -143,11 +144,16 @@ export function createPanePointer(deps: PanePointerDeps): PanePointer {
         // "Share…" acts on the ROWS, so it asks about the row: a snapshot pane has no
         // folder to `cd` into but lists real files, and an archive's insides are the
         // other way round.
-        canShare: rowIsOsVisible(volumeId, entry.path),
+        canShare: rowsAreOsPaths,
+        // The tag colors write an xattr through the row's path, so they ask the same
+        // question: a phone or a protocol-only server would take the click and store nothing.
+        canTag: rowsAreOsPaths,
         // "Add to favorites" acts on the right-clicked FOLDER, and asks a stricter
         // question than sharing does: not just whether the OS can read it now, but
         // whether it's still there next launch. A snapshot row fails exactly there.
         canFavorite: paneFolderCanBeFavorited(volumeId, entry.path),
+        // A FILE on a volume that mints links (S3), not inside an archive.
+        canShareLink: rowCanShareLink(volumeId, entry),
       },
       { countText: contextMenuCountText(paths.length), sizeText: contextMenuSizeText(sizeBytes) },
       boundShortcuts(),

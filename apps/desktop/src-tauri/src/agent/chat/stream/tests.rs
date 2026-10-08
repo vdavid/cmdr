@@ -25,6 +25,7 @@ fn every_error_kind_maps_to_its_own_wire_kind() {
         AgentErrorKind::RepeatedToolCall,
         AgentErrorKind::UnfinishedReply,
         AgentErrorKind::Provider,
+        AgentErrorKind::ManagedByOrganization(crate::managed_policy::ManagedAiRefusal::AiOff),
     ]
     .into_iter()
     .map(|kind| serde_json::to_value(AgentErrorKindView::from(kind)).expect("serializes"))
@@ -43,8 +44,23 @@ fn every_error_kind_maps_to_its_own_wire_kind() {
             "repeatedToolCall",
             "unfinishedReply",
             "provider",
+            "managedByOrganization",
         ]
     );
+}
+
+/// A mid-turn refusal from the LLM client's policy backstop ends the turn as the
+/// organization's "no", the same kind the slot refuses with, never as a provider failure.
+#[test]
+fn a_mid_turn_policy_refusal_ends_the_turn_as_managed() {
+    use crate::agent::llm::types::AgentLlmError;
+    use crate::managed_policy::ManagedAiRefusal;
+    let kind = AgentErrorKind::from(AgentLlmError::Managed(ManagedAiRefusal::CloudAiOff));
+    assert_eq!(
+        kind,
+        AgentErrorKind::ManagedByOrganization(ManagedAiRefusal::CloudAiOff)
+    );
+    assert_eq!(kind.as_token(), AgentErrorKindView::ManagedByOrganization.as_token());
 }
 
 /// `AskCmdrOff` exists only on the wire: the backend refuses the send before a provider is
@@ -223,14 +239,27 @@ fn failed_carries_the_typed_kind_and_the_providers_own_wording_verbatim() {
             kind: AgentErrorKind::RateLimited,
             detail: Some("quota resets at 14:00".into()),
         }),
-        json!({ "type": "failed", "kind": "rateLimited", "detail": "quota resets at 14:00" })
+        json!({ "type": "failed", "kind": "rateLimited", "detail": "quota resets at 14:00", "managed": null })
     );
     assert_eq!(
         wire(AgentChatEvent::Failed {
             kind: AgentErrorKind::BudgetExhausted,
             detail: None,
         }),
-        json!({ "type": "failed", "kind": "budgetExhausted", "detail": null })
+        json!({ "type": "failed", "kind": "budgetExhausted", "detail": null, "managed": null })
+    );
+}
+
+/// A turn the organization's policy stopped mid-way names which rule, so the rail can word it.
+#[test]
+fn a_managed_failure_carries_the_organizations_reason() {
+    use crate::managed_policy::ManagedAiRefusal;
+    assert_eq!(
+        wire(AgentChatEvent::Failed {
+            kind: AgentErrorKind::ManagedByOrganization(ManagedAiRefusal::CloudAiOff),
+            detail: None,
+        }),
+        json!({ "type": "failed", "kind": "managedByOrganization", "detail": null, "managed": "cloudAiOff" })
     );
 }
 
@@ -264,5 +293,44 @@ fn a_wake_brackets_its_thread_with_started_and_discarded() {
     assert_eq!(
         serde_json::to_value(AskCmdrStreamEvent::Discarded).expect("serializes"),
         json!({ "type": "discarded" })
+    );
+}
+
+/// A decision is the one event that arrives outside a turn, straight from the path that wrote
+/// its timeline row. The row's id rides along so a rail that both loaded the row and heard the
+/// event shows one line, and the decision crosses as the verbs and counts the history view
+/// carries, never as the English line the model reads.
+#[test]
+fn a_decision_crosses_with_its_row_and_no_authored_sentence() {
+    use crate::agent::types::{ProposalDecision, ProposalOutcomeKind, ProposalVerb};
+
+    let event = AskCmdrStreamEvent::ProposalDecided {
+        message_id: 12,
+        seq: 4,
+        decision: ProposalDecision {
+            verb: ProposalVerb::Trash,
+            what: "/Users/dana/Downloads/*.dmg".to_string(),
+            ops: 3,
+            outcome: ProposalOutcomeKind::Ran {
+                done: 2,
+                skipped: 1,
+                failed: 0,
+            },
+        },
+    };
+
+    assert_eq!(
+        serde_json::to_value(event).expect("serializes"),
+        json!({
+            "type": "proposalDecided",
+            "messageId": 12,
+            "seq": 4,
+            "decision": {
+                "verb": "trash",
+                "what": "/Users/dana/Downloads/*.dmg",
+                "ops": 3,
+                "outcome": { "kind": "ran", "done": 2, "skipped": 1, "failed": 0 },
+            },
+        })
     );
 }

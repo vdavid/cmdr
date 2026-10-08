@@ -41,14 +41,14 @@ Top-level leaves this file owns: `classify.rs` (the shared categorical classifie
 - **A classifier change is INERT until `store::SCORING_POLICY_KEY` re-arms stores** (a full pass runs once, an
   incremental only touches changed folders). It hashes the lists plus `SCORING_RULES_VERSION`; bump the latter by hand
   for a rule no list can see.
-- **`importance-{volume_id}.db` is a disposable cache**: a `SCHEMA_VERSION` mismatch delete-and-recreates it, no
-  migrations. ONE long-lived `ImportanceWriter` per volume through `writer_registry`; visits AND recomputes both route
-  through it. ❌ Never a second writer thread on one DB.
+- **`importance-{volume_id}.db` is a disposable cache**: a `SCHEMA_VERSION` mismatch delete-and-recreates it (no
+  migrations), and a forgotten volume takes it along, writer retired first. ONE `ImportanceWriter` per volume through
+  `writer_registry`, for visits AND recomputes. ❌ Never a second writer thread on one DB.
 - **Volume kind ⇒ policy, TYPED** (`scheduler::ScoringPolicy::for_kind`): Local and SMB scored, **MTP excluded** at
   every entry point. ❌ NEVER a filesystem syscall against an SMB or MTP mount — read the local index DB only.
-- **Nothing here is cancelable, so don't assume a pass stops.** No `CancellationToken`, no stop hook, so
-  `stop_all_indexing` (memory watchdog, shutdown) doesn't reach a running recompute; it walks the whole index to the
-  end. Known gap with a `TODO(importance)` in `scheduler/recompute.rs`; ❌ don't add a second primitive to fix it.
+- **A pass stops with its volume** (its `CancellationToken`'s child, plus a `stop_all_indexing` hook).
+  `PassError::Cancelled` is an ERROR: ❌ never stamp or announce a pass off anything but `Ok`, and ❌ never loop over a
+  whole volume without `stop::StopPoll`. `scheduler/DETAILS.md` § "How a pass stops".
 - **Only a FULL pass stamps `recompute_generation`**, so generation `0` does NOT mean "no weights" (an incremental-only
   store holds hundreds of thousands of rows at generation 0). A consumer asking "genuinely unscored?" keys on the row
   count.

@@ -279,11 +279,34 @@ pub fn wake_fake_script() -> WakeFakeScript {
 ///
 /// The wider rule this serves: **a test run must not observe or react to the
 /// developer's real machine.** Anything the app discovers rather than creates is a
-/// candidate — the real-USB half of MTP enumeration is the known remaining one
-/// (`mtp/watcher.rs`, `docs/testing.md` § "The host machine is not a fixture"). Note
-/// that MTP's `ptpcamerad` suppression is gated on the DEVICE being virtual rather
-/// than on this flag, which covers a `CMDR_VIRTUAL_MTP=1` dev session too.
+/// candidate; real phones go through [`may_discover_real_devices`]
+/// (`docs/testing.md` § "The host machine is not a fixture").
 pub fn may_adopt_preexisting_network_mounts() -> bool {
+    !is_e2e_mode()
+}
+
+/// Whether the app may discover the developer's real USB/MTP and ADB devices.
+///
+/// False in an automated run (E2E and the capture run on top of it): a phone plugged
+/// into the machine would otherwise be auto-connected over MTP, raising the
+/// `ptpcamerad` exclusive-access dialog over whatever spec was driving the UI, or be
+/// listed in the switcher through the real ADB server. The run's own fixtures stay:
+/// the virtual MTP device passes the MTP filter (`mtp/watcher.rs::claimable_device_ids`),
+/// and the ADB specs publish synthetic rows. Same rule as
+/// [`may_adopt_preexisting_network_mounts`].
+pub fn may_discover_real_devices() -> bool {
+    !is_e2e_mode()
+}
+
+/// Whether the app may claim a system-wide hotkey (the go-to-latest-download
+/// `⌃⌥⌘J`).
+///
+/// False in an automated run: the OS delivers a global hotkey to whichever process
+/// registered it, so a developer pressing `⌃⌥⌘J` for their own Cmdr mid-suite fired
+/// the run's copy instead, which jumped a pane to Downloads and raised the
+/// first-trigger warn toast over an unrelated spec. Same rule as
+/// [`may_discover_real_devices`]: a test run doesn't take input from the machine.
+pub fn may_register_global_hotkeys() -> bool {
     !is_e2e_mode()
 }
 
@@ -465,6 +488,20 @@ mod tests {
     #[test]
     fn preexisting_network_mounts_are_adopted_outside_e2e_only() {
         assert_eq!(may_adopt_preexisting_network_mounts(), !is_e2e_mode());
+    }
+
+    /// Real device discovery is exactly "not under E2E", for the same reason as the
+    /// network-mount gate above: a test run must not react to a phone on the desk.
+    #[test]
+    fn real_devices_are_discovered_outside_e2e_only() {
+        assert_eq!(may_discover_real_devices(), !is_e2e_mode());
+    }
+
+    /// A test run never claims the machine's `⌃⌥⌘J`, or the developer's key press
+    /// lands in the run.
+    #[test]
+    fn global_hotkeys_are_registered_outside_e2e_only() {
+        assert_eq!(may_register_global_hotkeys(), !is_e2e_mode());
     }
 
     /// The data-dir guard fires only when E2E mode is on AND no usable `CMDR_DATA_DIR`

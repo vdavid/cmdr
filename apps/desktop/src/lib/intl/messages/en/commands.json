@@ -135,14 +135,14 @@
     "description": "Command name that opens the file search. Appears in the command palette.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-  "commands.navGoToPath.label": "Go to path…",
+  "commands.navGoToPath.label": "Go to folder…",
   "@commands.navGoToPath.label": {
-    "description": "Command name that opens a dialog to jump to a typed path. The trailing ellipsis (…) signals it opens a dialog; keep it. \"Path\" means a filesystem location like ~/Documents.",
+    "description": "Command name that opens a dialog to jump to a typed path. Matches Finder's Go > Go to Folder… on purpose; use the wording macOS Finder uses in this language. The trailing ellipsis (…) signals it opens a dialog; keep it.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
   "commands.navGoToPath.description": "Jump the focused pane to a typed, pasted, or recent path.",
   "@commands.navGoToPath.description": {
-    "description": "Longer help text for the \"Go to path…\" command, shown as a secondary line in the command palette. \"Pane\" is one of the app's two side-by-side file lists."
+    "description": "Longer help text for the \"Go to folder…\" command, shown as a secondary line in the command palette. \"Pane\" is one of the app's two side-by-side file lists."
   },
   "commands.favoritesAdd.label": "Add to favorites",
   "@commands.favoritesAdd.label": {
@@ -180,6 +180,14 @@
   "@commands.viewShowHidden.label": {
     "description": "Command name that shows or hides hidden files (those normally not displayed, like dotfiles). Appears in the command palette and the View menu.",
     "screenshot": "settings-keyboard-shortcuts.png"
+  },
+  "commands.viewCalculateFolderSizes.label": "Calculate folder sizes",
+  "@commands.viewCalculateFolderSizes.label": {
+    "description": "Command name (Alt+Shift+Enter, like Total Commander) in the command palette and View menu: shows the total size of every folder in the focused file list."
+  },
+  "commands.viewCalculateFolderSizes.description": "Shows the size of every folder in this pane that doesn’t have one yet. Esc stops the calculation.",
+  "@commands.viewCalculateFolderSizes.description": {
+    "description": "Longer help text for \"Calculate folder sizes\", shown as a secondary line in the command palette. \"Pane\" is one of the two side-by-side file lists; Esc is the key name."
   },
   "commands.viewBriefMode.label": "Switch to Brief view",
   "@commands.viewBriefMode.label": {
@@ -280,6 +288,14 @@
   "@commands.paneSwap.label": {
     "description": "Command name that swaps the contents of the left and right panes. \"Panes\" are the two side-by-side file lists. Appears in the command palette.",
     "screenshot": "settings-keyboard-shortcuts.png"
+  },
+  "commands.paneClone.label": "Clone pane",
+  "@commands.paneClone.label": {
+    "description": "Command name that opens the focused pane's folder in the other pane too, so both panes show the same folder. \"Pane\" is one of the two side-by-side file lists. Appears in the command palette and the View menu. Total Commander calls this \"Target = Source\"; Finder has no equivalent. Not the Copy command (F5): nothing is copied, only the folder shown changes."
+  },
+  "commands.paneClone.description": "Open this pane’s folder in the other pane too.",
+  "@commands.paneClone.description": {
+    "description": "Longer help text for the \"Clone pane\" command, shown as a secondary line in the command palette. Total Commander calls this \"Target = Source\"; Finder has no equivalent. Not the Copy command (F5): nothing is copied, only the folder shown changes."
   },
   "commands.paneLeftVolumeChooser.label": "Open left volume switcher",
   "@commands.paneLeftVolumeChooser.label": {
@@ -403,6 +419,10 @@
   "@commands.navForward.label": {
     "description": "Command name that navigates forward in history. Appears in the command palette.",
     "screenshot": "settings-keyboard-shortcuts.png"
+  },
+  "commands.navGoToRoot.label": "Go to root folder",
+  "@commands.navGoToRoot.label": {
+    "description": "Command name that opens the topmost folder of what the active pane shows: \"/\" on the Mac's main disk, the top of a USB drive, server, or phone, or the top of an archive when the pane is inside one (⌘/). \"Root\" is the top of a folder tree, nothing to do with plants or admin rights. Use this language's ruling for the \"root folder\" term, as in the Go menu's \"Root folder\" item."
   },
   "commands.navGoHome.label": "Go to home folder",
   "@commands.navGoHome.label": {
@@ -583,9 +603,9 @@
     "description": "Command name that copies the selected file's full path to the clipboard. \"Path\" is the file's filesystem location. Appears in the command palette.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
-  "commands.fileCopyCurrentDirectoryPath.label": "Copy current directory path",
+  "commands.fileCopyCurrentDirectoryPath.label": "Copy current folder path",
   "@commands.fileCopyCurrentDirectoryPath.label": {
-    "description": "Command name that copies the current folder's full path to the clipboard. \"Directory\" and \"path\" are filesystem terms. Appears in the command palette.",
+    "description": "Command name that copies the current folder's full path to the clipboard. \"Folder\" and \"path\" are filesystem terms. Appears in the command palette.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
   "commands.fileCopyFilename.label": "Copy filename",
@@ -664,6 +684,30 @@
   "commands.cloudAskGemini.description": "Opens Google Drive’s Gemini assistant with the selected file as its subject",
   "@commands.cloudAskGemini.description": {
     "description": "Longer help text for the \"Ask Gemini\" command, shown as a secondary line in the command palette."
+  },
+  "commands.fileCopyShareLink.label": "Copy share link (seven days)",
+  "@commands.fileCopyShareLink.label": {
+    "description": "Command name that copies a share link to the selected file in an S3 bucket (cloud storage), valid for seven days. A share link is a web address anyone can open to download that one file, without signing in, until it expires. It copies a link, not the file. Appears in the command palette, only while the focused pane is on a bucket."
+  },
+  "commands.fileCopyShareLink.description": "Copies a link anyone can open to download the file for seven days",
+  "@commands.fileCopyShareLink.description": {
+    "description": "Longer help text for the \"Copy share link (seven days)\" command, shown as a secondary line in the command palette."
+  },
+  "commands.fileCopyShareLinkOneDay.label": "Copy share link (one day)",
+  "@commands.fileCopyShareLinkOneDay.label": {
+    "description": "Command name that copies a share link to the selected file in an S3 bucket (cloud storage), valid for one day. A share link is a web address anyone can open to download that one file, without signing in, until it expires. It copies a link, not the file. Appears in the command palette, only while the focused pane is on a bucket."
+  },
+  "commands.fileCopyShareLinkOneDay.description": "Copies a link anyone can open to download the file for one day",
+  "@commands.fileCopyShareLinkOneDay.description": {
+    "description": "Longer help text for the \"Copy share link (one day)\" command, shown as a secondary line in the command palette."
+  },
+  "commands.fileCopyShareLinkOneHour.label": "Copy share link (one hour)",
+  "@commands.fileCopyShareLinkOneHour.label": {
+    "description": "Command name that copies a share link to the selected file in an S3 bucket (cloud storage), valid for one hour. A share link is a web address anyone can open to download that one file, without signing in, until it expires. It copies a link, not the file. Appears in the command palette, only while the focused pane is on a bucket."
+  },
+  "commands.fileCopyShareLinkOneHour.description": "Copies a link anyone can open to download the file for one hour",
+  "@commands.fileCopyShareLinkOneHour.description": {
+    "description": "Longer help text for the \"Copy share link (one hour)\" command, shown as a secondary line in the command palette."
   },
   "commands.tagsToggleGrey.label": "Toggle gray tag",
   "@commands.tagsToggleGrey.label": {
@@ -769,6 +813,30 @@
   "commands.selectionSelectSameKind.description": "Adds every entry like the one under the cursor to the selection, without clearing it",
   "@commands.selectionSelectSameKind.description": {
     "description": "Longer help text for the \"Select all of the same kind\" command, shown as a secondary line in the command palette. \"Like the one under the cursor\" means same extension for a file, or a folder for a folder."
+  },
+  "commands.selectionCompareDirectories.label": "Compare folders",
+  "@commands.selectionCompareDirectories.label": {
+    "description": "Command name in the command palette and Select menu. Compares the folders shown in the two side-by-side panes and selects the files that differ, like Total Commander's Compare directories (Shift+F2)."
+  },
+  "commands.selectionCompareDirectories.description": "Selects, in each pane, the files the other pane lacks and the newer copies of the rest",
+  "@commands.selectionCompareDirectories.description": {
+    "description": "Longer help text for this compare-directories command, shown as a secondary line in the command palette. \"Pane\" is one of the two side-by-side file lists."
+  },
+  "commands.selectionCompareDirectoriesMissing.label": "Compare folders: missing files only",
+  "@commands.selectionCompareDirectoriesMissing.label": {
+    "description": "Command name in the command palette and Select menu. Compares the folders shown in the two side-by-side panes and selects the files that differ, like Total Commander's Compare directories (Shift+F2)."
+  },
+  "commands.selectionCompareDirectoriesMissing.description": "Selects, in each pane, only the files the other pane lacks",
+  "@commands.selectionCompareDirectoriesMissing.description": {
+    "description": "Longer help text for this compare-directories command, shown as a secondary line in the command palette. \"Pane\" is one of the two side-by-side file lists."
+  },
+  "commands.selectionCompareDirectoriesSize.label": "Compare folders: different size",
+  "@commands.selectionCompareDirectoriesSize.label": {
+    "description": "Command name in the command palette and Select menu. Compares the folders shown in the two side-by-side panes and selects the files that differ, like Total Commander's Compare directories (Shift+F2)."
+  },
+  "commands.selectionCompareDirectoriesSize.description": "Selects, in each pane, the files the other pane lacks and both copies of files whose size differs",
+  "@commands.selectionCompareDirectoriesSize.description": {
+    "description": "Longer help text for this compare-directories command, shown as a secondary line in the command palette. \"Pane\" is one of the two side-by-side file lists."
   },
   "commands.selectionSelectSameKind.allFolders": "Select all folders",
   "@commands.selectionSelectSameKind.allFolders": {
@@ -971,6 +1039,29 @@
       "detail": "the raw underlying error text appended after the sentence (a technical message, often in English)"
     }
   },
+  "commands.handler.shareLinkCopied.sevenDays": "Copied a share link. It works for seven days.",
+  "@commands.handler.shareLinkCopied.sevenDays": {
+    "description": "Success toast after copying a share link to a file in an S3 bucket that works for seven days. A share link is a web address anyone can open to download that one file, without signing in, until it expires. It copies a link, not the file."
+  },
+  "commands.handler.shareLinkCopied.oneDay": "Copied a share link. It works for one day.",
+  "@commands.handler.shareLinkCopied.oneDay": {
+    "description": "Success toast after copying a share link that works for one day. A share link is a web address anyone can open to download that one file, without signing in, until it expires. It copies a link, not the file."
+  },
+  "commands.handler.shareLinkCopied.oneHour": "Copied a share link. It works for one hour.",
+  "@commands.handler.shareLinkCopied.oneHour": {
+    "description": "Success toast after copying a share link that works for one hour. A share link is a web address anyone can open to download that one file, without signing in, until it expires. It copies a link, not the file."
+  },
+  "commands.handler.shareLinkUnavailable": "Move the cursor to a file in an S3 bucket to copy a share link.",
+  "@commands.handler.shareLinkUnavailable": {
+    "description": "Warning toast when \"Copy share link\" runs but the cursor isn't on a file in an S3 bucket (a folder, or a pane somewhere else). \"S3 bucket\" is cloud storage; \"S3\" is a product name and stays in English."
+  },
+  "commands.handler.shareLinkFailed": "Couldn’t make a share link. {detail}",
+  "@commands.handler.shareLinkFailed": {
+    "description": "Error toast when a share link to a file in an S3 bucket couldn't be made or copied. Uses a contraction (\"Couldn't\").",
+    "placeholders": {
+      "detail": "a sentence saying why, already in the user's language (for example that the bucket isn't connected)"
+    }
+  },
   "commands.handler.openTerminalHere.hint": "Opened this folder in your terminal app. Want Cmdr to open a different app next time? Pick one in Settings, under Navigation & file ops.",
   "@commands.handler.openTerminalHere.hint": {
     "description": "The one-time toast that appears the first time \"Open terminal here\" runs on a Mac with more than one terminal app installed. First sentence: what just happened (\"this folder\" is the folder the pane was showing). The rest points at the settings row that picks the terminal app; the button beside the toast opens exactly that row. \"Navigation & file ops\" is a settings section title, so use the same wording as settings.section.navigationAndFileOps."
@@ -1005,6 +1096,18 @@
   "commands.handler.openTerminalHere.timedOut": "Your terminal app is taking a while to start. It may still open.",
   "@commands.handler.openTerminalHere.timedOut": {
     "description": "Toast shown when the launch outlived the few seconds Cmdr waits for it. Honest about not knowing: the app may well appear a moment later. Conversational; avoid the words \"error\" and \"failed\"."
+  },
+  "commands.handler.getInfo.automationOff": "Get info needs Cmdr to control Finder, and that’s turned off. Switch on Finder under Cmdr in System Settings > Privacy & Security > Automation.",
+  "@commands.handler.getInfo.automationOff": {
+    "description": "Toast shown when the user presses Get info (opens Finder's file-information window) but has earlier told macOS not to let Cmdr control Finder. Cmdr asks Finder to open that window, so it can't without this permission. \"System Settings\", \"Privacy & Security\", and \"Automation\" are Apple's names for the macOS settings pane and must match the localized macOS wording in the target language. \"Get info\" matches the File menu item (menu.file.getInfo). A button below opens that settings pane. Conversational; avoid the words \"error\" and \"failed\"."
+  },
+  "commands.handler.getInfo.openAutomationSettings": "Open Automation settings",
+  "@commands.handler.getInfo.openAutomationSettings": {
+    "description": "Button in the Get info toast (commands.handler.getInfo.automationOff) that opens System Settings at Privacy & Security > Automation. \"Automation\" is Apple's name for that macOS settings pane and must match the localized macOS wording."
+  },
+  "commands.handler.getInfo.notReached": "Cmdr couldn’t reach Finder to open Get info. Give it another try.",
+  "@commands.handler.getInfo.notReached": {
+    "description": "Toast shown when Cmdr couldn't ask Finder to open its Get info window (the helper didn't start, or didn't answer in a few seconds). Usually a one-off; the second sentence suggests trying again. \"Get info\" matches the File menu item (menu.file.getInfo). Conversational; avoid the words \"error\" and \"failed\"."
   },
   "commands.handler.zoomResetHintShortcut": "You can reset the zoom level to 100% by {shortcut}.",
   "@commands.handler.zoomResetHintShortcut": {
@@ -1048,5 +1151,21 @@
   "commands.suggestedOpsShow.description": "Review the file operations the AI suggested, and decide what runs",
   "@commands.suggestedOpsShow.description": {
     "description": "Longer help text for the Suggested ops command, shown as a secondary line in the command palette."
+  },
+  "commands.helpViewDebugLog.label": "View debug log",
+  "@commands.helpViewDebugLog.label": {
+    "description": "Verb phrase (imperative). Command palette action that opens the running app’s own current debug log file in the internal read-only file viewer. Use the same wording as menu.help.viewDebugLog. No ellipsis; there is no input to collect."
+  },
+  "commands.helpViewDebugLog.description": "Watch Cmdr’s debug log live in the file viewer",
+  "@commands.helpViewDebugLog.description": {
+    "description": "Secondary help line beneath View debug log in the command palette. Starts with a verb. The viewer opens at the end of the log and keeps scrolling as new lines arrive, which is what live means here. The log contains diagnostic records from the running application, not the user’s file-operation history. Cmdr is the brand name; keep it recognizable."
+  },
+  "commands.handler.viewDebugLog.disabled": "Log storage is off. Set a disk space limit above 0 in Settings > Advanced, then restart Cmdr to view the debug log.",
+  "@commands.handler.viewDebugLog.disabled": {
+    "description": "Informational toast after selecting View debug log when log storage is off. The control is a number field, not a switch: settings.advanced.maxLogStorageMb.label (Maximum disk space for log files (MB)), where 0 means off. So the instruction is to set that limit above 0, then restart the app. Settings > Advanced is a navigation path; use this language's names for the Settings window and its Advanced section. Cmdr is the brand name."
+  },
+  "commands.handler.viewDebugLog.unavailable": "Couldn’t open the debug log. Try again.",
+  "@commands.handler.viewDebugLog.unavailable": {
+    "description": "Toast after the View debug log action cannot get the log path or open the internal viewer window. No diagnostic details or placeholders. Suggest retrying."
   }
 }

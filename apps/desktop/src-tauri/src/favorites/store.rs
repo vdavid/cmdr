@@ -35,10 +35,6 @@ use std::path::{Path, PathBuf};
 use std::sync::{Mutex, OnceLock};
 use uuid::Uuid;
 
-/// Bundle id from `tauri.conf.json`. Mirrored here so the data-dir resolution works without an
-/// `AppHandle`, matching `install_id.rs`. Keep in sync if it ever changes.
-const BUNDLE_ID: &str = "com.veszelovszki.cmdr";
-
 /// Filename inside `{app_data_dir}/`.
 const FAVORITES_FILE_NAME: &str = "favorites.json";
 
@@ -257,14 +253,11 @@ fn reorder_store(store: &mut FavoritesStore, ordered_ids: &[String]) {
 // Disk I/O (mirrors `go_to_path/history.rs`)
 // ---------------------------------------------------------------------------
 
-/// Resolves the favorites file path without an `AppHandle` (mirrors `install_id.rs`).
+/// Resolves the favorites file path without an `AppHandle`.
 fn favorites_path() -> PathBuf {
-    let data_dir: PathBuf = if let Ok(custom) = std::env::var("CMDR_DATA_DIR") {
-        PathBuf::from(custom)
-    } else {
-        dirs::data_dir().map(|base| base.join(BUNDLE_ID)).unwrap_or_default()
-    };
-    data_dir.join(FAVORITES_FILE_NAME)
+    config::standalone_app_data_dir()
+        .unwrap_or_default()
+        .join(FAVORITES_FILE_NAME)
 }
 
 fn cleanup_tmp_file(path: &Path) {

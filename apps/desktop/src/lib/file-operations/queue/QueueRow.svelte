@@ -23,6 +23,9 @@
     import { opKindForWireType } from '../op-kind'
     import { archivePhaseLabel, isIndeterminateProgressPhase, progressCountKind } from '../progress-readout'
     import { requestForegroundOperation } from '$lib/tauri-commands'
+    import { getAppLogger } from '$lib/logging/logger'
+
+    const log = getAppLogger('queue')
 
     interface Props {
         row: OperationRow
@@ -121,6 +124,22 @@
      *  to fill the dialog with yet. Instant ops emit no progress at all, so
      *  there's nothing to show for them either. DETAILS § Show. */
     const canForeground = $derived((isRunning || isPaused) && !isInstantOperation(snapshot.operationType))
+
+    /** Asks the main window to show this operation. A rejected emit is logged,
+     *  never swallowed: the main window only learns of a press through this
+     *  event, so a request that never left reads as the main window ignoring
+     *  the button, with nothing in the log to tell the two apart. */
+    async function showInMainWindow(): Promise<void> {
+        const operationId = snapshot.operationId
+        try {
+            await requestForegroundOperation(operationId)
+        } catch (error) {
+            log.warn('Could not ask the main window to show op={operationId}: {error}', {
+                operationId,
+                error: String(error),
+            })
+        }
+    }
 
     /** The operation has stopped on a clash nobody has answered yet. The
      *  lifecycle status stays `running` throughout (a clash pauses nothing), so
@@ -295,7 +314,7 @@
             <Button
                 variant="secondary"
                 size="mini"
-                onclick={() => void requestForegroundOperation(snapshot.operationId)}
+                onclick={() => void showInMainWindow()}
                 aria-label={tString('queue.row.foregroundAria')}
             >
                 <span class="btn-inner">

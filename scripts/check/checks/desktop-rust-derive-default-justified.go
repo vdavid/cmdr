@@ -42,8 +42,9 @@ type deriveDefaultSite struct {
 // next type carrying a filesystem fact has to argue for its zero value at the
 // moment someone writes it.
 //
-// Jurisdiction is PRODUCTION code under the app's `file_system/` and all of
-// `cmdr-fs` — the two trees where a zero value is a claim about a disk. Test
+// Jurisdiction is PRODUCTION code under the app's `file_system/`, all of
+// `cmdr-fs`, and the app's IPC twins of `cmdr-fs` file types
+// (`deriveDefaultTrees`) — where a zero value is a claim about a disk. Test
 // code is exempt in both senses the word has: a dedicated test file
 // (isRustTestPath), AND the body of an inline test module inside a production
 // file. A test double's zero value is a test's problem, and demanding an
@@ -108,16 +109,36 @@ func RunDeriveDefaultJustified(ctx *CheckContext) (CheckResult, error) {
 }
 
 // deriveDefaultTrees narrows a member's `src/` to the subtrees where a zero
-// value is a claim about a disk. In the app that's `file_system/` alone; a
-// member whose whole reason to exist is filesystem vocabulary (`cmdr-fs`) is in
-// scope end to end. Everything else in the workspace stays out: widening to
-// every member would put ~120 more derives under the rule and buy nothing, since
-// the fault class is specifically "a type that carries a fact about a file".
+// value is a claim about a disk. In the app that's `file_system/` plus the IPC
+// twins of `cmdr-fs` file types; a member whose whole reason to exist is
+// filesystem vocabulary (`cmdr-fs`) is in scope end to end. Everything else in
+// the workspace stays out: widening to every member would put ~120 more derives
+// under the rule and buy nothing, since the fault class is specifically "a type
+// that carries a fact about a file".
+//
+// The twins, listed by file rather than by tree:
+//
+//   - `mcp/pane_state.rs`: `PaneFileEntry` mirrors `FileEntry` (size, modified,
+//     is-a-directory) for `cmdr://state`.
+//
+// Surveyed and left out, because none mirrors a `cmdr-fs` type or none carries a
+// fact a zero would fake: the search and selection query filters
+// (`search/history.rs`, `selection/ai/parser.rs`: a bound the user typed, all
+// `Option`), the context-menu header (`menu/context_menu_header.rs`: the
+// frontend's rendered text, all `Option`), the agent's drift snapshot
+// (`agent/store/proposals/write.rs`'s `OpSnapshot`: all `Option`, internal), and
+// the memory and SMB diagnostics payloads (process counters, not file facts).
+// Nothing else outside `file_system/` derives `Default` while carrying a size, a
+// date, or a kind (surveyed 2026-10-01 by grepping every `Default` derive's
+// fields). A new twin goes in the list above.
 func deriveDefaultTrees(srcDir string) []string {
 	if strings.HasSuffix(filepath.ToSlash(srcDir), "crates/cmdr-fs/src") {
 		return []string{srcDir}
 	}
-	return []string{filepath.Join(srcDir, "file_system")}
+	return []string{
+		filepath.Join(srcDir, "file_system"),
+		filepath.Join(srcDir, "mcp", "pane_state.rs"),
+	}
 }
 
 func scanForDeriveDefault(rootDir, srcDir string) ([]deriveDefaultSite, []orphanDirective, int, error) {

@@ -17,7 +17,7 @@ sections compose).
   (`src-tauri/src/analytics/DETAILS.md`); the onboarding wizard's picker is the other caller
 - **`AppearanceZoomSection.svelte`**: `Appearance > Zoom and density`: text size slider and UI density
 - **`AppearanceSizesSection.svelte`**: `Appearance > File and folder sizes`: size display, size unit (binary/SI drives
-  `kB`↔`KB` label override), file size format, size mismatch warning
+  `kB`↔`KiB`, `MB`↔`MiB`, `GB`↔`GiB` label overrides), file size format, size mismatch warning
 - **`ListingSection.svelte`**: `Appearance > Listing`: document icons, directory sort, brief column width. The width row
   is one control, not two: the `listing.briefColumnWidthMode` radio group carries the `briefColumnWidthMaxPx` number
   field on its "Limit to" option's own line (`SettingRadioGroup`'s `itemTrailing`), greyed out while the other option is
@@ -101,14 +101,18 @@ sections compose).
   carries a "Provider" label, so an unlabeled card avoids a duplicate heading). Card boundaries are a deliberate
   "tasteful, not one-big-card" choice: only the registry-row clusters are card-framed; the AI status blocks, gauge,
   action buttons, and the delete modal stay full-bleed (they already read as distinct blocks and don't belong inside a
-  card).
+  card). Under the organization's lock on `ai.provider`, `useSettingLock` disables the whole toggle when pinned, and a
+  narrowed lock disables only the options `lockAllowsWrite` rules out, with a visible line under the row
+  (`settings-ai-provider-managed`; `../../managed-policy/DETAILS.md` § The UI).
 - **`AiCloudSection.svelte`**: Cloud provider config: the preset dropdown, then the SAME numbered setup steps the
   onboarding wizard shows (`$lib/ai-provider-setup/`), then the connection-status block, all in one unlabeled
   `SectionCard` (no `anyVisible` gate: the section mounts only when `provider === 'cloud'`). Endpoint, key, and model
   are controls inside those steps now, not three `SettingRow`s; they were all one setting (`ai.cloudProviderConfigs`)
   before, so the block's single `shouldShow('ai.cloudProviderConfigs')` gate is the same search visibility the rows had.
   See § "The setup steps are shared with onboarding". The provider row is the one hand-rolled `Select` in settings;
-  every other dropdown here goes through `SettingSelect`.
+  every other dropdown here goes through `SettingSelect`. A preset the organization refuses stays listed as a `disabled`
+  item with the reason as its description (`followPresetHostVerdicts`, `$lib/ai-provider-setup/DETAILS.md` § The
+  organization's policy).
 - **`AiLocalSection.svelte`**: Local llama-server lifecycle, model install with multi-step tracking, context window
   "Apply" (server restart), RAM gauge, delete confirmation. Only the context-window registry-row cluster (`SettingRow`
   - the RAM gauge) is wrapped in an unlabeled `SectionCard`, and that wrapper sits INSIDE the
@@ -219,12 +223,16 @@ sections compose).
   `developer.mcp*` id prefix is a stable persistence key; homing the setting under AI doesn't touch it.) Verbose logging
   is NOT a section here: `developer.verboseLogging` lives in Advanced's "Logging" card (see `AdvancedSection` below),
   whose open-log and copy-diagnostics action buttons ride the Advanced per-card "extra content" mechanism.
-- **`UpdatesSection.svelte`**: `Updates & privacy`: two `SectionCard` card groups — Updates (the "Check for updates"
-  action + status, `updates.autoCheck`, `whatsNew.showOnUpdate`) and Privacy and data sharing (the beta analytics
-  opt-out `analytics.enabled` default-on, the `analytics.email` contact field with its "never sent with your usage data"
-  note, and the `updates.crashReports` / `updates.errorReports` opt-ins — Flow B auto-send; Flow A consent-on-click is
-  always available). The cards are presentation only. Frames are gated via `anyVisible(shouldShow, ...)` (same pattern
-  as FSW above). The email field persists to settings here; the beta-signup network call is wired separately
+- **`UpdatesSection.svelte`**: `Updates & privacy`: on a managed Mac, the "Managed by your organization" card
+  (`ManagedPolicySummary`, `../../managed-policy/DETAILS.md` § The UI) tops the page while no search is active; it has
+  no search entry, since a static one would hit on every unmanaged Mac. Under `DisableUpdates` the check button stays
+  disabled and the idle status line reads `updates.status.managedOff` up front (a staged build keeps its own line). Then
+  two `SectionCard` card groups — Updates (the "Check for updates" action + status, `updates.autoCheck`,
+  `whatsNew.showOnUpdate`) and Privacy and data sharing (the beta analytics opt-out `analytics.enabled` default-on, the
+  `analytics.email` contact field with its "never sent with your usage data" note, and the `updates.crashReports` /
+  `updates.errorReports` opt-ins — Flow B auto-send; Flow A consent-on-click is always available). The cards are
+  presentation only. Frames are gated via `anyVisible(shouldShow, ...)` (same pattern as FSW above). The email field
+  persists to settings here; the beta-signup network call is wired separately
 - **`LicenseSection.svelte`**: `License`: special (non-registry), reads `getLicenseInfo` / `getLicenseStatus`. The info
   block + action buttons live in one unlabeled `SectionCard`; the personal / commercial / expired / loading states are
   presentational variants of that one block, all inside the one card (no `anyVisible` gate — it's not registry
@@ -395,7 +403,7 @@ the model picker's cache and the "never zero `availableModels` mid-refetch" rule
 
 Two things this section still has to get right:
 
-- **Pass `onSecretErrorChange` and `onKeyPersisted`.** They're what make the persistent toast and the
+- **Pass `onSecretErrorChange` and `onKeyChanged`.** They're what make the persistent toast and the
   `pushConfigToBackend()` re-push happen; the wizard deliberately passes neither.
 - **Drive the controller from `onSpecificSettingChange('ai.cloudProvider', …)`**, not from the `Select`'s `onChange`.
   The `Select` only writes the setting, so a provider switch made anywhere (MCP, another window) reloads the section the

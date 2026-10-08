@@ -23,7 +23,8 @@ never finished. It stays put through aggregation and reconcile, after the live s
 header and the per-step copy stay truthful; it's cleared on the terminal `live`/`idle` phase transitions and on
 `index-scan-aborted`, mirroring the `phase` map. A volume seeded by a progress tick alone (mid-scan reload) gets NO
 entry — the header is omitted rather than guessed — and root recovers via the `get_index_status` backfill's
-`scanRunKind`. Read via `getVolumeScanRunKind`.
+`scanRunKind`. Read via `getVolumeScanRunKind`. A fifth map, `stepsAhead` (`volumeId → StepsAheadMs`), has the same
+lifetime and the same backfill, and feeds the overall figure (see "The overall figure" below).
 
 **Gotcha — store a FRESH object on every progress tick, never mutate-in-place + re-set.** `SvelteMap.set` bumps its
 per-key reactive source only when the stored value REFERENCE changes; re-setting the same (just-mutated) object is a
@@ -50,6 +51,7 @@ isAnyVolumeIndexing(): boolean                    // scan/replay map non-empty O
 getVolumeAggregation(volumeId): AggregationActivity | undefined  // that volume's live aggregation, or undefined
 getVolumePhase(volumeId): ActivityPhase | undefined  // that volume's current mid-pipeline phase, or undefined (step checklist)
 getVolumeScanRunKind(volumeId): ScanRunKind | undefined  // the backend's run kind, or undefined when unknown (the run-kind header + per-step copy)
+getVolumeStepsAhead(volumeId): StepsAheadMs | undefined  // the remembered time left after each step, or undefined with no plan (the overall figure)
 getAggregatingVolumeIds(): string[]               // every volume currently aggregating
 getActivePhaseVolumeIds(): string[]               // every volume with a live phase (incl. reconcile, no scan/agg entry)
 placeholderActivity(volumeId): VolumeIndexActivity  // a zero-valued activity for an aggregation-/reconcile-only row
@@ -69,17 +71,18 @@ Index size updates don't pass through here: the backend works out which open lis
 
 ## Scan-state events (`index-state.svelte.ts`)
 
-Thirteen Tauri events drive the state. All of them carry a `volumeId`: scan and replay key the live-`activity` map,
-aggregation keys its own `aggregation` map, and the phase event keys its own `phase` map.
+Fourteen Tauri events drive the state. All but `index-memory-warning` carry a `volumeId`: scan and replay key the
+live-`activity` map, aggregation keys its own `aggregation` map, and the phase event keys its own `phase` map.
 
-- **`index-scan-started`** (`{ volumeId, scanRunKind, priorTotalEntries, priorScanDurationMs, volumeUsedBytes }`):
+- **`index-scan-started`**
+  (`{ volumeId, scanRunKind, priorTotalEntries, priorScanDurationMs, volumeUsedBytes, coveredInPhases, stepsAheadMs }`):
   create/replace the volume's `activity` entry (`phase: 'scanning'`, `scanStartedAt = Date.now()`, stash the
-  calibration), and stamp the volume's `scanRunKind` from the payload. The prior totals are the backend's PER-KIND
-  calibration (a change check is timed off the last change check), so the tier-1 ETA no longer mixes the two walks.
-  `coveredInPhases` names which FAMILY of checklist steps this run produces and says nothing about the size hourglass:
-  the ground under the walker arrives on the branch events below, whichever kind of run this is. A mid-run window reload
-  recovers both from `get_index_status`, which carries `walkedRoots` beside `coveredInPhases` rather than inferring
-  either from the other.
+  calibration), and stamp the volume's `scanRunKind` and `stepsAhead` from the payload. The prior totals are the
+  backend's PER-KIND calibration (a change check is timed off the last change check), so the tier-1 ETA no longer mixes
+  the two walks. `coveredInPhases` names which FAMILY of checklist steps this run produces and says nothing about the
+  size hourglass: the ground under the walker arrives on the branch events below, whichever kind of run this is. A
+  mid-run window reload recovers both from `get_index_status`, which carries `walkedRoots` beside `coveredInPhases`
+  rather than inferring either from the other.
 - **`index-scan-progress`** (`{ volumeId, entriesScanned, dirsFound, bytesScanned }`): update that volume's counters
   (seeds a scanning entry if the started event was missed, e.g. mid-scan reload).
 - **`index-scan-complete`** (`{ volumeId, totalEntries, totalDirs, durationMs }`): remove the volume's `activity` entry
@@ -108,6 +111,10 @@ aggregation keys its own `aggregation` map, and the phase event keys its own `ph
   don't replace each other's notice. Keeps NO state: the backend fires it once per marker write, ❌ never per launch, so
   there's no dedup to do on this side and nothing to clear on a terminal event. Nothing is asked of the person either —
   the rebuild is already arranged — so it exists to give the folder sizes about to be recomputed a reason.
+- **`index-memory-warning`** (process-wide, no `volumeId`): the memory watchdog acted. On `stoppedIndexing` (every
+  volume's index stopped at the 16 GB safety limit) show a persistent WARN toast (`indexing.memoryStop.paused`, id
+  `index-memory-stopped`): without it the person only sees folder sizes going stale, with no reason and no way out, and
+  it stays true until a restart. `stillGrowingAfterStop` is for the shipped report and shows nothing. Keeps NO state.
 - **`index-replay-progress`** (`{ volumeId, eventsProcessed, estimatedTotal }`): create/replace the volume's `activity`
   entry as `phase: 'replaying'`, update counters.
 - **`index-replay-complete`** (`{ volumeId, durationMs }`): remove the volume's replay entry.
@@ -255,9 +262,24 @@ aggregation-only or reconcile-only row never leaks scan zeros:
 - **Catch up on recent changes** (the `reconciling` phase): indeterminate, no detail — just the spinner + label.
 - **Update index** (replay): "N events processed" + a bar + the blended replay ETA.
 
-**Per-step ETA, no overall ETA.** Only the active step's own ETA shows, where its denominator is trustworthy. A true
-overall "~Xm left" is deliberately deferred with its backend per-phase calibration (the step-of-N structure carries "how
-far" honestly without it): see GitHub [#241](https://github.com/vdavid/cmdr/issues/241).
+**The overall figure ("Overall: 12m left").** One line under the run-kind header answers "when is my drive done?", while
+the active step keeps its own ETA in the list (David's call: the overall answers "when", the step ETA explains a long
+step). It's the active step's live estimate PLUS what the steps after it took on this drive's last completed run of the
+same kind:
+
+- The remembered half is the backend's `StepsAheadMs` (one entry per step: the time left once that step is done),
+  carried on `index-scan-started` and backfilled for root from `get_index_status`'s `leftAfter*Ms`. The index crate
+  measures each step, stores it per walk kind, and sums it (`crates/cmdr-index/src/indexing/lifecycle/steps_ahead.rs`),
+  so the honesty gate lives there: an entry is `null` when any step after it has no history on this kind of run, which
+  covers a drive's first index, a change check that never finished before, and every step a run shape doesn't have.
+- The live half is the SAME number the active step shows (`windowedEtaSeconds` from the wrapper for find files, the
+  aggregation estimate for save and compute), so the overall never contradicts the line under it.
+- `deriveOverallEta` (`overall-eta.ts`, pure) picks the entry for the active step (`updateFileList` reads the save
+  entry) and returns `none`, `estimating`, or `known`. `estimating` ("Overall: estimating…") holds the line while the
+  active step has no estimate yet and work is still ahead, because the tooltip measures its height once on show; on the
+  last step with no estimate the line goes, since there is nothing to add.
+- No overall line for a phased first index, an event-log roll-on (its one step's ETA already is the overall), or a rough
+  first scan. Secondary drives' one-line `IndexingDriveSummary` stays without it.
 
 **Reconcile visibility.** The catch-up step has no scan/aggregation entry — only the `phase` event marks it — so
 `isAnyVolumeIndexing` and the indicator/badge include `phase`-only volumes (`getActivePhaseVolumeIds`, a
@@ -328,7 +350,7 @@ next progress tick.
 **`IndexingEnrichRow`** is the WRAPPER (owns its own rate/ETA sliding window over `done` + a 1 Hz tick, like
 `IndexingDriveRow`): an images bar + a bytes bar (both aria-labeled), an "N of M images" line, images/min
 (`computeWindowRate`), and the per-volume ETA (`blendEtas` over elapsed + windowed). A paused row shows the paused
-message and no bars. No overall ETA (per-row only, consistent with the drive rows). Tests:
+message and no bars. No overall ETA: a pass is one step, so its row ETA already is the whole wait. Tests:
 `media-enrich-state.svelte.test.ts` (terminal clears / re-voices, listen-first seeding, fresh-object reactivity) and the
 `IndexingEnrichRow` block of `presentational.a11y.test.ts` (mirrors the `IndexingDriveRow` block beside it).
 
@@ -356,11 +378,16 @@ sliding window fills again (accepted). Tier 1 reads the prior scan's totals from
 Pure helpers. `formatEta` tiers: under two seconds "Almost done", under a minute whole seconds, under an hour whole
 minutes ("12m left"), one-to-ten hours spelled out ("1 hour 24 minutes left" — a bare "84m left" makes the reader do the
 division), and from ten hours up whole hours only, rounded ("20 hours left" — minute precision is noise at that scale).
-Aggregation uses a single elapsed extrapolation. Scan and replay blend that 50-50 with a sliding-window rate over the
-last ~5 seconds (early extrapolation alone is wildly wrong). The window-snapshot collection is the only stateful glue
-and stays in each `IndexingDriveRow` (so per-drive rates don't collide); it feeds the pure `pruneSnapshots` /
-`computeWindowEta` / `blendEtas` / `formatEta`. Tier 1's prior-duration seed (`priorScanDurationMs − elapsed`,
-ms→seconds) covers the gap before the window has samples. Tier 2's ETA is prefixed "roughly".
+Its `placement` picks between two "Almost done" messages: `standalone` (capitalized, starts the line) and `midSentence`
+(`indexing.eta.almostDoneMidSentence`, lowercase in English) for every wrapper the phrase lands in (`Overall: …`,
+`percentEta`, the enrich row's `rateEta`). Separate messages because recasing a translated string by hand breaks across
+locales. The windowed and aggregation ETAs are always mid-sentence (they only show inside `percentEta`); the enrich row
+keeps seconds and formats at the join, since its ETA can also stand alone. Aggregation uses a single elapsed
+extrapolation. Scan and replay blend that 50-50 with a sliding-window rate over the last ~5 seconds (early extrapolation
+alone is wildly wrong). The window-snapshot collection is the only stateful glue and stays in each `IndexingDriveRow`
+(so per-drive rates don't collide); it feeds the pure `pruneSnapshots` / `computeWindowEta` / `blendEtas` / `formatEta`.
+Tier 1's prior-duration seed (`priorScanDurationMs − elapsed`, ms→seconds) covers the gap before the window has samples.
+Tier 2's ETA is prefixed "roughly".
 
 ## The prompts this area owns
 
@@ -405,6 +432,9 @@ first, which reads both for real.
 - **`eta.test.ts`**: the pure ETA helpers (thresholds incl. the hour-scale word formats, elapsed + window estimation,
   blending, snapshot pruning), plus `computeScanProgress` (tier selection, both clamps, null/zero-denominator fallbacks)
   and the `formatEta` non-finite pin.
+- **`overall-eta.test.ts`**: the pure `deriveOverallEta` (TDD'd red→green): the sum, the change check's update step
+  reading the save entry, `null` history hiding the line, no plan, a roll-on, the `estimating` placeholder, and the last
+  step. The `IndexingStatusBody overall figure` block of `IndexingStatusBody.svelte.test.ts` mounts it end to end.
 - **`indexing-steps.test.ts`**: the pure `deriveSteps` (TDD'd red→green) — local full scan through all four steps,
   network (no Save/Catch-up), replay (one step), the aggregation-sub-phase-alone derivation after a reload, and the
   accepted reconcile-after-reload gap (catch-up stays pending) — plus `deriveRunLabel` (update / first / rescan / the
@@ -438,7 +468,7 @@ Manual end-to-end testing runs the Rust indexer via `pnpm dev`.
 - `$lib/tauri-commands`: the `tauri-specta`-typed indexing event wrappers (`onIndexScan*`, `onIndexAggregation*`,
   `onIndexReplay*`, `onIndexRescanNotification`, `onIndexNeedsFreshScan`, `onIndexDirUpdated`) + `UnlistenFn`, in
   `tauri-commands/indexing.ts`.
-- `$lib/ui/toast`: `addToast` (the rescan-notification and needs-fresh-scan toasts).
+- `$lib/ui/toast`: `addToast` (the rescan-notification, needs-fresh-scan, and memory-stop toasts).
 - `$lib/file-explorer/selection/selection-info-utils`: `formatNumber` (indicator only, `'en-US'` locale).
 - `$lib/tooltip/tooltip`: `tooltip` action with the `contentEl` live-content param (indicator only).
 - `$lib/ui/ProgressBar.svelte`: size `sm` (drive row).

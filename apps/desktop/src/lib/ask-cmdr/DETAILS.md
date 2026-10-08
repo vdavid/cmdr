@@ -64,7 +64,10 @@ stays simple:
 - `failed` → drop an empty bubble, push a typed `{ kind: 'error' }` item, `streaming = false`. The item carries the
   source error's own wording (`detail`, when the backend has one — a retired model slug, a quota reset time) under the
   friendly headline, rendered as escaped plain text (never `{@html}`), so the user sees what to fix. Display only: the
-  UI branches on `errorKind`, never on `detail`.
+  UI branches on `errorKind`, never on `detail`. `managedByOrganization` (the organization's MDM policy refused the
+  turn, nothing sent) words the rule that refused through `managedAiRefusalMessage`: the send refusal and the `failed`
+  event carry it as `managed` beside the unit kind. `askCmdr.error.managedByOrganization` is the fallback when none
+  came.
 - `modelChanged` / `chatMemoryChanged` → insert a `{ kind: 'modelChange' }` / `{ kind: 'chatMemoryChange' }` timeline
   line BEFORE the current user bubble (the change happened between the turns; the backend already persisted the event
   row). Both go through the one `insertBeforeCurrentTurn` helper. `chatMemoryChanged` carries a token COUNT and the rail
@@ -74,6 +77,7 @@ stays simple:
   turn (the backend dedupes). Live-stream only, deliberately NOT persisted: it describes one assembly, not thread
   content, so reloading the thread doesn't replay it. Rationale (why the drop must be loud at all):
   `src-tauri/src/agent/chat/DETAILS.md` § Budget enforcement.
+- `proposalDecided` → not a turn event at all, and handled before the reducer: § How an open thread stays current.
 
 Every terminal path uses the same assistant finalizer. It clears thinking/stalled state and removes tool rows that never
 received `toolCallFinished`, while retaining completed tool history. This also covers local cancellation, the
@@ -112,6 +116,7 @@ the point of having one.
 
 **Live, the digest arrives on the next load, not mid-turn.** `userPersisted` carries an id and no content, so a rail
 opened onto a wake already in flight shows the answer streaming above an empty spot until the thread is re-read.
+Widening that event to carry the block is the fix if it ever matters.
 
 ## What the user answered about a suggestion
 
@@ -128,15 +133,44 @@ many decisions are in the list.
 behind a fingerprint mismatch, and the outcome the store records is what SETTLED, not what was claimed. Hiding a partial
 run would leave the user believing their files moved.
 
-**Live, a decision arrives on the next load**, the same limitation the digest above has and for the same reason: the
-line is a persisted row, and nothing streams it. `SuggestionsChanged` does fire on every approve and reject, so a rail
-that wanted the line to appear under an open thread could refetch on it; it deliberately doesn't yet, because the fetch
-would run for every decision whether or not it concerns the thread on screen.
-
 The seven verb names are a spelled-out `Record`, ❌ not a key built from the verb token at runtime:
 `desktop-message-keys-unused` reads a runtime-built key as dead translation work unless it is on that check's closed
-dynamic-prefix allowlist, and seven literals are cheaper than an allowlist entry. Widening that event to carry the block
-is the fix if it ever matters.
+dynamic-prefix allowlist, and seven literals are cheaper than an allowlist entry.
+
+### How an open thread stays current
+
+The single-decision row is announced as it is written: `agent/outcomes.rs` emits `proposalDecided` on the turn
+transport, under the conversation the row went into, carrying the row's id and the decision. `handleTurnEvent` takes it
+before any turn rule applies and `showDecision` adds ONE line to the thread on screen. Each case has a test in
+`ask-cmdr-turn-stream.test.ts`.
+
+**Decision: the rail patches from the event's payload, it doesn't re-read the thread.** **Why**: a re-read replaces the
+whole message list. That throws away an answer that is mid-stream (its text isn't persisted until `done`) and the older
+pages the user loaded, and its reply can come back after the user moved to another thread. A patch is synchronous, so
+the conversation filter is the whole guard and there is nothing to arrive late.
+
+**Decision: the signal is its own event, ❌ not `suggestions-changed`.** **Why**: that event says the PENDING SET moved,
+which is a different fact at the one moment it matters. It says `approved` at the claim, while an approval's line is
+written when the operation settles (`agent/suggested_ops/DETAILS.md` § What the user's answer teaches the agent), so a
+rail listening to it would look before there is anything to see. It also fires for a dismissed review, which writes no
+line, and it goes to every window under a rule that it carries no display text. Emitting where the row is written makes
+the other cases fall out: a sweep with no thread (or a deleted one) writes no row and so announces nothing, and "reject
+all" over a sweep is one row and one line per group, in whichever thread each group's sweep belongs to.
+
+What the reducer has to get right:
+
+- **It is the one event that isn't part of a turn.** It never sets `streaming`, never hands a fresh chat an id (only
+  `started` does), and a thread on the stopped list still shows it.
+- **It goes above a bubble that is still streaming.** The streaming bubble has to stay last, or the next chunk opens a
+  second one and splits the answer.
+- **One row is one line, by row id.** The row is written before the event is emitted, so a thread load can return the
+  row and the event still follow.
+- **A decision heard during a thread load is held and put back when the load ends** (`endThreadLoad` →
+  `settleDecisionsHeardWhileLoading`). The load's read can be a moment older than the decision, and it replaces the list
+  the line was shown in, or the rail isn't on that thread yet.
+
+The sweep-wide `user`-role row still arrives on the next load, exactly like the digest: it opens a turn, and
+`userPersisted` carries no content.
 
 ## The staged-proposal toast
 
@@ -165,7 +199,10 @@ reaches every window, and only this one has a corner).
 conversation id) plus the readiness gap. The turn stream carries a turn's PROGRESS to whoever is showing that thread;
 this carries a phase to a corner showing no thread at all, so folding them would subscribe the corner to every text
 delta of every rail send. The one read at startup is not redundant with the subscription: a wake already running when
-the window opened announced itself before anyone was listening, and so did a gate that closed before then.
+the window opened announced itself before anyone was listening, and so did a gate that closed before then. The
+subscription goes up first and the seed loses to any event that lands while its read is in flight (an event counter
+compared across the `await`): that event is newer, and applying the seed after it would put a just-started wake back to
+idle.
 
 ### What renders, and what does not
 
@@ -229,6 +266,12 @@ registry lives below `commands/` rather than inside the chat command.
   tracked on scroll), so streaming follows but loading older doesn't jump. Page-boundary caveat: `buildRailMessages`
   folds each loaded page independently, so a tool result split across a page seam may render unfolded — negligible in
   practice (threads sit under the ~40 soft cap, well below a 50-message page, so paging rarely fires at all).
+- **Only the latest thread load may touch the rail** (`latestThreadLoad` in `ask-cmdr-trigger.svelte.ts`). Every read is
+  its own command, so the first one asked can be the last one answered: picking thread A and then B must leave B on
+  screen whichever answers second, and a late answer must not repaint a chat the user cleared with "new chat". An
+  overtaken load writes nothing, the `loadingHistory` flag included (the newer load owns ending it). "Load earlier"
+  drops its page the same way when any thread load happened since it asked, because its offset tiled against a list that
+  is no longer on screen. ❌ Don't add a read that writes thread state after an `await` without this check.
 
 ## Attachments by reference
 
@@ -363,8 +406,9 @@ engine's exclusive final rename remains the data-safety boundary.
 ## Undo after a batch lands
 
 Apply hands back a queued operation id, and `noteRenameApplied` turns it into a `renameApplied` rail line: "Renamed 23
-files." plus an Undo. This is the only safety net that fires after the names are real, which is the only moment the user
-can tell a name is wrong.
+files." plus an Undo. A batch that ran as a move (a rename that copies on S3) can't swap names, so Apply also hands back
+`swapsLeftOut`: those rows come off the count and get their own line (`askCmdr.renameUndo.swapsSkipped`). This is the
+only safety net that fires after the names are real, which is the only moment the user can tell a name is wrong.
 
 A line per batch, so a run of several reads as a run. One Apply over a multi-batch review produces that run in one go,
 which is the same shape as a run built one turn at a time. Only the newest still-undoable line carries the job-wide
@@ -555,7 +599,8 @@ fake path — which never sets a real provider — needs the gate to treat the f
 - **Cost footer** (`AskCmdrCostFooter.svelte` + pure `ask-cmdr-cost.ts`): the active thread's cumulative tokens + cost,
   refetched (`ask_cmdr_conversation_cost`) when the thread changes or a turn finishes streaming. Honest miss-path: a
   local-only thread reads "free, on-device", an unpriced model reads "cost unknown", a priced thread shows "about
-  {amount}" — never a silent $0. Hidden until a metered turn exists.
+  {amount}" — never a silent $0. Hidden until a metered turn exists. A fetched total is keyed by the thread it was read
+  for: a thread switch hides it at once, and a slow read for a thread the user already left is dropped.
 - **Settings section** (`settings/sections/AskCmdrSection.svelte`, top-level `Ask Cmdr`): the `askCmdr.enabled` switch,
   a "cloud AI is off" hint plus an "Open AI settings" button when it's on over Cloud without consent, the provider hint
   (reads `ai.provider`) + the interactive-model row (`askCmdr.interactiveModel`), the two memory controls, and the

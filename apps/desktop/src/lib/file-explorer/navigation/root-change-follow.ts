@@ -1,7 +1,8 @@
 /**
- * Where a path on a connected place goes when an edit moves its root or its start
- * folder (`volume-root-changed`): the one rule every pane, tab, and remembered
- * path follows. Applying it is `../pane/volume-root-follow.ts`.
+ * Where a path on a volume goes when its root or its start folder moves
+ * (`volume-root-changed`): an edit to a connected place, or a renamed drive. The
+ * one rule every pane, tab, and remembered path follows. Applying it is
+ * `../pane/volume-root-follow.ts`.
  *
  * ❗ By whole components, ❌ never a string prefix: `/srv/data-1` is a sibling of
  * `/srv/data`. The Rust twin of the containment test is
@@ -13,6 +14,9 @@ import type { VolumeRootChanged } from '$lib/ipc/bindings'
 /**
  * The path `path` becomes after `change`.
  *
+ * 0. A MOVED root (a renamed drive) and a path at or under the old root → the
+ *    same place under the new root. It's the same tree at a new name, so sending
+ *    the person to the top would lose their place for nothing.
  * 1. On the old root or the old landing → the new landing. That's where the
  *    place put the person, and the edit says where that is now.
  * 2. Inside the new root → unchanged. The folder is still reachable, and moving
@@ -26,7 +30,11 @@ import type { VolumeRootChanged } from '$lib/ipc/bindings'
  */
 export function pathAfterRootChange(path: string, change: VolumeRootChanged): string {
   const here = withoutTrailingSlash(path)
-  if (here === withoutTrailingSlash(change.oldRoot) || here === withoutTrailingSlash(change.oldLanding)) {
+  const oldRoot = withoutTrailingSlash(change.oldRoot)
+  if (change.kind === 'moved' && isAtOrUnder(oldRoot, here)) {
+    return withoutTrailingSlash(change.newRoot) + here.slice(oldRoot.length)
+  }
+  if (here === oldRoot || here === withoutTrailingSlash(change.oldLanding)) {
     return change.newLanding
   }
   if (isAtOrUnder(withoutTrailingSlash(change.newRoot), here)) return path

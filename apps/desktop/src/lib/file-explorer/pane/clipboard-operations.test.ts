@@ -494,6 +494,21 @@ describe('cutToClipboard', () => {
     expect(cutFilesToClipboardSpy).not.toHaveBeenCalled()
   })
 
+  it('refuses an S3 cut as a SERVER too: an `s3://` path is nothing another app can open', async () => {
+    const access = buildAccess({
+      volumeId: 's3-r2-akia-photos-1a2b',
+      volumes: [{ id: 's3-r2-akia-photos-1a2b', name: 'photos' }],
+    })
+    volumeStore.list = [{ id: 's3-r2-akia-photos-1a2b', fsType: 's3', category: 'network' } as unknown as VolumeInfo]
+
+    await createClipboardOperations(access, buildDialogs()).cutToClipboard()
+
+    expect(addToastSpy).toHaveBeenCalledWith('The clipboard can’t carry files from this server. Use F6 to move them.', {
+      level: 'info',
+    })
+    expect(cutFilesToClipboardSpy).not.toHaveBeenCalled()
+  })
+
   it('cuts via listing id on a regular pane and toasts the singular move-ready wording', async () => {
     cutFilesToClipboardSpy.mockResolvedValue(1)
     const access = buildAccess({ volumeId: 'root' })

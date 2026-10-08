@@ -16,7 +16,9 @@
 //! exactly as the single-volume design was.
 
 use std::collections::HashMap;
-use std::path::{Path, PathBuf};
+#[cfg(test)]
+use std::path::Path;
+use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
 use std::sync::{Arc, LazyLock, Mutex};
 
@@ -33,20 +35,54 @@ pub(crate) use weights::{start_importance_weight_subscriber, weights_for};
 
 // ── App data dir (set once at startup) ───────────────────────────────
 
-/// The resolved app data dir, where every `index-{volume_id}.db` and
-/// `importance-{volume_id}.db` lives. Set from app setup (search commands and MCP
-/// have no `AppHandle`, so they read it from here instead of re-resolving), and
-/// swapped under a guard by a test that needs its own — a live search builds a
-/// real index DB in there, so a shared path would have two tests reading each
-/// other's drives.
+/// The resolved app data dir, where every `importance-{volume_id}.db` lives. Set
+/// from app setup (search commands and MCP have no `AppHandle`, so they read it
+/// from here instead of re-resolving), and swapped under a guard by a test that
+/// needs its own — a live search builds a real index DB in there, so a shared path
+/// would have two tests reading each other's drives.
 static DATA_DIR: LazyLock<Mutex<Option<PathBuf>>> = LazyLock::new(|| Mutex::new(None));
+
+/// Where every `index-{volume_id}.db` lives: the drive-index dir the index was
+/// configured with (`crate::index_host::drive_index_dir`). Set and swapped beside
+/// [`DATA_DIR`].
+static DRIVE_INDEX_DIR: LazyLock<Mutex<Option<PathBuf>>> = LazyLock::new(|| Mutex::new(None));
 
 pub(crate) fn set_data_dir(dir: PathBuf) {
     *DATA_DIR.lock_ignore_poison() = Some(dir);
 }
 
-fn data_dir() -> Option<PathBuf> {
-    DATA_DIR.lock_ignore_poison().clone()
+pub(crate) fn set_drive_index_dir(dir: PathBuf) {
+    *DRIVE_INDEX_DIR.lock_ignore_poison() = Some(dir);
+}
+
+/// The two folders a load reads: the drive index's and the importance store's.
+struct SearchDirs {
+    data: PathBuf,
+    drive_index: PathBuf,
+}
+
+impl SearchDirs {
+    /// Both, once app setup has set them.
+    fn current() -> Option<Self> {
+        Some(Self {
+            data: DATA_DIR.lock_ignore_poison().clone()?,
+            drive_index: DRIVE_INDEX_DIR.lock_ignore_poison().clone()?,
+        })
+    }
+
+    /// Every store in `dir`.
+    #[cfg(test)]
+    fn single(dir: &Path) -> Self {
+        Self {
+            data: dir.to_path_buf(),
+            drive_index: dir.to_path_buf(),
+        }
+    }
+
+    /// A volume's drive-index database, whether or not it exists.
+    fn index_db(&self, volume_id: &str) -> PathBuf {
+        self.drive_index.join(format!("index-{volume_id}.db"))
+    }
 }
 
 /// Point search's data directory somewhere for one test, restoring the previous
@@ -55,19 +91,25 @@ fn data_dir() -> Option<PathBuf> {
 #[cfg(test)]
 pub(crate) fn install_data_dir_for_test(dir: &Path) -> TestDataDirGuard {
     let previous = DATA_DIR.lock_ignore_poison().replace(dir.to_path_buf());
-    TestDataDirGuard { previous }
+    let previous_drive_index = DRIVE_INDEX_DIR.lock_ignore_poison().replace(dir.to_path_buf());
+    TestDataDirGuard {
+        previous,
+        previous_drive_index,
+    }
 }
 
-/// Puts the previous search data directory back.
+/// Puts the previous search data directories back.
 #[cfg(test)]
 pub(crate) struct TestDataDirGuard {
     previous: Option<PathBuf>,
+    previous_drive_index: Option<PathBuf>,
 }
 
 #[cfg(test)]
 impl Drop for TestDataDirGuard {
     fn drop(&mut self) {
         *DATA_DIR.lock_ignore_poison() = self.previous.take();
+        *DRIVE_INDEX_DIR.lock_ignore_poison() = self.previous_drive_index.take();
     }
 }
 
@@ -276,14 +318,14 @@ fn spawn_background_refresh(volume_id: &str) {
     }
     let volume_id = volume_id.to_string();
     tauri::async_runtime::spawn_blocking(move || {
-        let Some(data_dir) = data_dir() else { return };
+        let Some(dirs) = SearchDirs::current() else { return };
         // Same gate `ensure_volume` uses, so a refresh and a cold load can't read the
         // same DB at once (a cold `ensure_volume` waiting here gets this arena).
         let gate = load_gate(&volume_id);
         let _gate_held = gate.lock_ignore_poison();
         let cancel = Arc::new(AtomicBool::new(false));
         LOADING.lock_ignore_poison().insert(volume_id.clone(), cancel.clone());
-        let outcome = load_volume_blocking(&volume_id, &data_dir, &cancel);
+        let outcome = load_volume_blocking(&volume_id, &dirs, &cancel);
         LOADING.lock_ignore_poison().remove(&volume_id);
 
         match outcome {
@@ -314,7 +356,7 @@ pub(crate) fn has_searchable_index(volume_id: &str) -> bool {
     if volume_id == ROOT_VOLUME_ID {
         return index().read_pool(ROOT_VOLUME_ID).is_some();
     }
-    data_dir().is_some_and(|dir| dir.join(format!("index-{volume_id}.db")).exists())
+    SearchDirs::current().is_some_and(|dirs| dirs.index_db(volume_id).exists())
 }
 
 /// A non-root volume's mount root, needed to prefix its mount-relative index paths.
@@ -360,7 +402,7 @@ fn usable_mount_root(root: String) -> Option<String> {
 /// read pool (root's from the live registry; a non-root volume's read-only straight
 /// from `index-{volume_id}.db` on disk), loads the arena, reads the mount root, and
 /// loads the volume's importance weights into `WEIGHTS`.
-fn load_volume_blocking(volume_id: &str, data_dir: &Path, cancel: &AtomicBool) -> VolumeLoad {
+fn load_volume_blocking(volume_id: &str, dirs: &SearchDirs, cancel: &AtomicBool) -> VolumeLoad {
     #[cfg(test)]
     ARENAS_BUILT.fetch_add(1, Ordering::Relaxed);
 
@@ -378,7 +420,7 @@ fn load_volume_blocking(volume_id: &str, data_dir: &Path, cancel: &AtomicBool) -
             None => return VolumeLoad::NotIndexed,
         }
     } else {
-        let db_path = data_dir.join(format!("index-{volume_id}.db"));
+        let db_path = dirs.index_db(volume_id);
         if !db_path.exists() {
             return VolumeLoad::NotIndexed;
         }
@@ -396,7 +438,7 @@ fn load_volume_blocking(volume_id: &str, data_dir: &Path, cancel: &AtomicBool) -
     // nothing, so they overlap.
     let (index, weights) = rayon::join(
         || load_search_index(&pool, cancel),
-        || load_weights(data_dir, volume_id),
+        || load_weights(&dirs.data, volume_id),
     );
     let index = match index {
         Ok(index) => Arc::new(index),
@@ -509,7 +551,7 @@ pub(crate) fn ensure_volume(volume_id: &str) -> VolumeLoad {
         return VolumeLoad::Loaded(v);
     }
 
-    let Some(data_dir) = data_dir() else {
+    let Some(dirs) = SearchDirs::current() else {
         return VolumeLoad::Failed("search data dir not initialized".to_string());
     };
 
@@ -535,7 +577,7 @@ pub(crate) fn ensure_volume(volume_id: &str) -> VolumeLoad {
         .lock_ignore_poison()
         .insert(volume_id.to_string(), cancel.clone());
 
-    let outcome = load_volume_blocking(volume_id, &data_dir, &cancel);
+    let outcome = load_volume_blocking(volume_id, &dirs, &cancel);
 
     LOADING.lock_ignore_poison().remove(volume_id);
 

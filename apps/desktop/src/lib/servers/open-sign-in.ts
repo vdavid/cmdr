@@ -24,9 +24,11 @@ import {
   forgetServerSecret,
   getVolumeSignInState,
   hasServerSecret,
+  knownS3PlaceOf,
   listSavedServers,
   newServerAttemptId,
   reconnectVolumeWithCredentials,
+  saveS3Credentials,
   saveSftpCredentials,
   saveWebdavCredentials,
   savedServerId,
@@ -55,6 +57,7 @@ import type {
 } from './sign-in-contract'
 import { readConnectOutcome, readSavedServerOutcome } from './server-outcomes'
 import { openSignInSheet } from './sign-in-sheet-state.svelte'
+import { saveTargetSecret } from './saved-server-io'
 import { asAddServerError } from './add-server-error'
 import { addToast } from '$lib/ui/toast'
 import { tString } from '$lib/intl/messages.svelte'
@@ -152,9 +155,12 @@ export async function placeRootOf(volumeId: string): Promise<string | null> {
   return null
 }
 
-/** Opens edit mode on a saved server. Save writes; nothing dials. */
-export async function openEditServerSheet(server: SavedServer): Promise<SignInSheetResult> {
-  return await openSignInSheet({ mode: 'edit', server })
+/**
+ * Opens edit mode on a saved server. Save writes; nothing dials. `placeVolumeId` picks the
+ * place for a server whose places are each saved on their own (an S3 account's buckets).
+ */
+export async function openEditServerSheet(server: SavedServer, placeVolumeId?: string): Promise<SignInSheetResult> {
+  return await openSignInSheet({ mode: 'edit', server, placeVolumeId })
 }
 
 /**
@@ -298,12 +304,12 @@ async function attemptAdd(
   )
   const attemptId = newServerAttemptId()
   const outcome = readConnectOutcome(await connectServer(submission.target, attemptId, submission.secret))
-  // A WebDAV connect asks the store before it dials, so "needs credentials" with
-  // an empty field is the field, not the server: word it as such.
+  // A WebDAV or S3 connect asks the store before it dials, so "needs credentials"
+  // with an empty field is the field, not the server: word it as such.
   if (
     outcome.kind === 'refused' &&
     outcome.refusal === 'needs_credentials' &&
-    submission.target.protocol === 'webdav' &&
+    (submission.target.protocol === 'webdav' || submission.target.protocol === 's3') &&
     !submission.secret?.secret
   ) {
     return { kind: 'refused', refusal: 'password_missing' }
@@ -354,7 +360,7 @@ async function attemptAddSmb(
     // parse is a typo, not a server that's asleep.
     const typed = asAddServerError(e)
     if (typed?.type === 'invalid_address') return { kind: 'refused', refusal: 'invalid_url' }
-    if (typed) return { kind: 'refused', refusal: 'unreachable' }
+    if (typed) return { kind: 'refused', refusal: 'unreachable', hint: typed.hint ?? undefined }
     // The host, ❌ never the typed address: `smb://user:password@host` is a
     // spelling people paste, and this line reaches error-report bundles.
     const parsed = parseServerAddress(submission.address)
@@ -381,11 +387,7 @@ async function saveUnchecked(target: ServerTarget, secret: SecretOffer | null): 
   if (saved.kind === 'refused') return saved
   if (secret?.remember) {
     try {
-      if (target.protocol === 'sftp') {
-        await saveSftpCredentials(target.host, target.port, target.username, secret.secret)
-      } else {
-        await saveWebdavCredentials(target.url, target.username, secret.secret)
-      }
+      await saveTargetSecret(target, secret.secret)
     } catch (e) {
       log.warn('The server saved, but its password did not: {error}', { error: String(e) })
       return { kind: 'refused', refusal: 'saved_secret_not_updated' }
@@ -506,13 +508,41 @@ async function identityFor(volumeId: string): Promise<PlaceIdentity> {
   const endpoint: SignInEndpoint = {
     protocol: owner.protocol,
     displayName: place?.name ?? owner.displayName,
-    // An SMB share's header names the share on its host: the place IS that share.
-    address: owner.protocol === 'smb' && place ? `smb://${owner.address}/${place.name}` : owner.address,
+    address: headerAddressOf(owner, place, parsed),
     host: parsed?.host ?? owner.address,
     // ❗ The PLACE's account first: an SMB host's shares each remember their own.
     username: parsed?.username ?? place?.username ?? owner.username ?? undefined,
   }
-  return { endpoint, saveSecret: secretWriterFor(owner, parsed) }
+  const saveSecret = owner.protocol === 's3' ? await s3SecretWriterFor(volumeId) : secretWriterFor(owner, parsed)
+  return { endpoint, saveSecret }
+}
+
+/**
+ * An S3 place files its ACCOUNT's secret, keyed on the provider choice plus the
+ * access key id, which only the saved entry knows (the listing carries neither the
+ * preset nor its fields). `null` when no saved place answers for the id.
+ */
+async function s3SecretWriterFor(volumeId: string): Promise<((secret: string) => Promise<void>) | null> {
+  const place = await knownS3PlaceOf(volumeId)
+  if (!place) return null
+  return async (secret) => {
+    await saveS3Credentials(place.provider, place.accessKeyId, secret)
+  }
+}
+
+/**
+ * The sheet's header line for a place. An SMB share names the share on its host, and
+ * an S3 bucket the bucket on its endpoint: in both, the place IS that share or bucket.
+ * Every other place is its server's address.
+ */
+function headerAddressOf(
+  owner: SavedServer,
+  place: SavedServer['places'][number] | undefined,
+  parsed: ReturnType<typeof parseServerPath>,
+): string {
+  if (owner.protocol === 'smb' && place) return `smb://${owner.address}/${place.name}`
+  const bucket = parsed?.protocol === 's3' ? parsed.path.split('/')[0] : ''
+  return bucket ? `${owner.address}/${bucket}` : owner.address
 }
 
 /**

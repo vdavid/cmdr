@@ -20,13 +20,18 @@
  * writes (`destinationWriteAccess`): "can't tell" shows nothing, and the transfer
  * asks again before it writes, which is the answer that refuses.
  *
+ * The same debounced probe asks `destinationRootEcho` whether the path repeats the
+ * place's own root folder (#164), for the warning that offers the stripped reading.
+ * The backend decides; this only carries the answer.
+ *
  * Mirrors the factory pattern of `transfer-conflict-check.svelte.ts`: reactive
  * inputs arrive via getter callbacks, state is read through a getter, and the
  * internal `$effect` lands in the effect-tracking context because the dialog
  * creates this synchronously at component init.
  */
 
-import { destinationExists, destinationWriteAccess } from '$lib/tauri-commands'
+import { destinationExists, destinationRootEcho, destinationWriteAccess } from '$lib/tauri-commands'
+import type { DestinationRootEcho } from '$lib/ipc/bindings'
 import type { UnwritableReason } from '$lib/file-explorer/types'
 import { validateDirectoryPath } from '$lib/utils/filename-validation'
 import { createDebounce } from '$lib/utils/timing'
@@ -59,6 +64,9 @@ export function createTransferDestExistsCheck(deps: TransferDestExistsCheckDeps)
   // the backend can't tell. ❗ Only a definite "no" sets it.
   let refusal = $state<UnwritableReason | null>(null)
 
+  // Both readings of a path that repeats the place's root folder, or `null`.
+  let rootEcho = $state<DestinationRootEcho | null>(null)
+
   // Monotonic guard: only the newest probe may write the state above.
   let checkSeq = 0
 
@@ -71,15 +79,20 @@ export function createTransferDestExistsCheck(deps: TransferDestExistsCheckDeps)
       targetMissing = false
       targetExists = false
       refusal = null
+      rootEcho = null
       return
     }
     try {
-      // Both at once. A failed write-access probe says nothing (`null`), ❌ never
-      // takes the existence answer down with it.
-      const [result, access] = await Promise.all([
+      // All at once. A failed write-access or root-echo probe says nothing
+      // (`null`), ❌ never takes the existence answer down with it.
+      const [result, access, echo] = await Promise.all([
         destinationExists(path, volumeId),
         destinationWriteAccess(volumeId, path).catch((err: unknown) => {
           deps.log.debug('Destination write-access check failed: {error}', { error: err })
+          return null
+        }),
+        destinationRootEcho(volumeId, path).catch((err: unknown) => {
+          deps.log.debug('Destination root-echo check failed: {error}', { error: err })
           return null
         }),
       ])
@@ -90,11 +103,13 @@ export function createTransferDestExistsCheck(deps: TransferDestExistsCheckDeps)
       targetMissing = !result.timedOut && !result.data
       targetExists = !result.timedOut && result.data
       refusal = access?.kind === 'unwritable' ? access.reason : null
+      rootEcho = echo
     } catch (err) {
       if (seq !== checkSeq) return
       targetMissing = false
       targetExists = false
       refusal = null
+      rootEcho = null
       deps.log.debug('Destination existence check failed: {error}', { error: err })
     }
   }
@@ -118,6 +133,10 @@ export function createTransferDestExistsCheck(deps: TransferDestExistsCheckDeps)
     /** Why the destination folder takes no writes, or `null` (takes them, or can't tell). */
     get refusal() {
       return refusal
+    },
+    /** Both readings of a path that repeats the place's own root folder, or `null`. */
+    get rootEcho() {
+      return rootEcho
     },
     /**
      * One-shot, non-debounced existence probe for the compress auto-confirm gate:

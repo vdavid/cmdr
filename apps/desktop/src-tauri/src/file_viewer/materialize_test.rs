@@ -7,10 +7,12 @@ use std::sync::{Arc, Mutex};
 
 use super::ViewerError;
 use super::materialize::{
-    PREVIEW_CAP_BYTES, extract_if_routed_with, init_materialize_dir, is_orphan_temp_name, materialize_for_inspect_with,
-    materialize_for_viewer_with, reap_orphan_temps,
+    PREVIEW_CAP_BYTES, extract_if_routed_with, init_materialize_dir, is_orphan_temp_name, map_volume_error,
+    materialize_for_inspect_with, materialize_for_viewer_with, reap_orphan_temps,
 };
 use super::session;
+use crate::file_system::volume::VolumeError;
+use crate::file_system::volume::manager::RoutedKind;
 
 /// Serializes the tests that drive `open_session` (they share the process-wide extract
 /// dir set by `init_materialize_dir`).
@@ -344,9 +346,7 @@ impl Drop for CountingStream {
 impl crate::file_system::volume::VolumeReadStream for CountingStream {
     fn next_chunk(
         &mut self,
-    ) -> std::pin::Pin<
-        Box<dyn Future<Output = Option<Result<Vec<u8>, crate::file_system::volume::VolumeError>>> + Send + '_>,
-    > {
+    ) -> std::pin::Pin<Box<dyn Future<Output = Option<Result<Vec<u8>, VolumeError>>> + Send + '_>> {
         Box::pin(async move {
             let chunk = self.inner.next_chunk().await;
             if matches!(chunk, Some(Ok(_))) {
@@ -362,6 +362,10 @@ impl crate::file_system::volume::VolumeReadStream for CountingStream {
 
     fn bytes_read(&self) -> u64 {
         self.inner.bytes_read()
+    }
+
+    fn modified_at(&self) -> Option<std::time::SystemTime> {
+        self.inner.modified_at()
     }
 }
 
@@ -382,26 +386,15 @@ impl crate::file_system::volume::Volume for SlowPhone {
         &'a self,
         path: &'a Path,
         on_progress: Option<&'a (dyn Fn(crate::file_system::volume::ListingProgress) + Sync)>,
-    ) -> std::pin::Pin<
-        Box<
-            dyn Future<Output = Result<Vec<crate::file_system::FileEntry>, crate::file_system::volume::VolumeError>>
-                + Send
-                + 'a,
-        >,
-    > {
+    ) -> std::pin::Pin<Box<dyn Future<Output = Result<Vec<crate::file_system::FileEntry>, VolumeError>> + Send + 'a>>
+    {
         self.inner.list_directory(path, on_progress)
     }
 
     fn get_metadata<'a>(
         &'a self,
         path: &'a Path,
-    ) -> std::pin::Pin<
-        Box<
-            dyn Future<Output = Result<crate::file_system::FileEntry, crate::file_system::volume::VolumeError>>
-                + Send
-                + 'a,
-        >,
-    > {
+    ) -> std::pin::Pin<Box<dyn Future<Output = Result<crate::file_system::FileEntry, VolumeError>> + Send + 'a>> {
         self.inner.get_metadata(path)
     }
 
@@ -414,13 +407,7 @@ impl crate::file_system::volume::Volume for SlowPhone {
         path: &'a Path,
     ) -> std::pin::Pin<
         Box<
-            dyn Future<
-                    Output = Result<
-                        Box<dyn crate::file_system::volume::VolumeReadStream>,
-                        crate::file_system::volume::VolumeError,
-                    >,
-                > + Send
-                + 'a,
+            dyn Future<Output = Result<Box<dyn crate::file_system::volume::VolumeReadStream>, VolumeError>> + Send + 'a,
         >,
     > {
         Box::pin(async move {
@@ -649,8 +636,13 @@ fn switching_the_view_mode_reuses_the_windows_temp_and_reads_nothing_from_the_ph
 
     // The frontend closes the old session once it has swapped to the new one.
     session::close_session(&first.session_id).expect("close the first session");
-    let lines = session::get_lines(&second.session_id, super::SeekTarget::Line(0), 1)
-        .expect("the new session still reads its file");
+    let lines = session::get_lines(
+        &second.session_id,
+        super::SeekTarget::Row(0),
+        1,
+        &AtomicBool::new(false),
+    )
+    .expect("the new session still reads its file");
     assert!(lines.texts()[0].starts_with('x'));
     let temps = temps_in(&extract);
     assert_eq!(temps.len(), 1, "one temp, shared rather than copied, found {temps:?}");
@@ -696,7 +688,13 @@ fn another_window_on_the_same_file_pulls_its_own_copy() {
     );
 
     session::close_session(&first.session_id).expect("close the first window's session");
-    session::get_lines(&second.session_id, super::SeekTarget::Line(0), 1).expect("the second window still reads");
+    session::get_lines(
+        &second.session_id,
+        super::SeekTarget::Row(0),
+        1,
+        &AtomicBool::new(false),
+    )
+    .expect("the second window still reads");
     session::close_session(&second.session_id).expect("close the second window's session");
     let left = temps_in(&extract);
     assert!(left.is_empty(), "both temps go, found {left:?}");
@@ -712,4 +710,20 @@ fn the_too_large_display_string_names_no_particular_routed_source() {
         rendered,
         "This item is too large to preview from here (size 9, limit 2)"
     );
+}
+
+#[test]
+fn an_archived_file_says_so_whatever_route_it_came_through() {
+    // An S3 object in Glacier, opened directly or as the zip a route reads
+    // through: either way the fix is a restore, so the viewer names it rather
+    // than offering the generic read failure's Retry.
+    for routed in [None, Some(RoutedKind::Archive)] {
+        assert!(
+            matches!(
+                map_volume_error(VolumeError::ColdStorage("/b/old.zip".into()), routed),
+                ViewerError::ColdStorage
+            ),
+            "routed: {routed:?}"
+        );
+    }
 }

@@ -21,6 +21,8 @@ import {
   hasCachedSmbCredentials,
   deleteSmbCredentials,
   setServersViewShown,
+  listSavedServers,
+  type SavedServer,
 } from '$lib/tauri-commands'
 import { getNetworkTimeoutMs, getShareCacheTtlMs } from '$lib/settings/network-settings'
 import { initializeSettings } from '$lib/settings'
@@ -28,6 +30,7 @@ import type { UnlistenFn } from '$lib/tauri-commands'
 import type { NetworkHost, DiscoveryState, ShareListResult, ShareListError } from '../types'
 import { ShareListFailure, shareListErrorOf } from './share-list-error'
 import type { SignedInAs } from './signed-in-as'
+import { savedSmbHostIds } from './servers-hub-rows'
 
 // Singleton state for network discovery
 let hosts = $state<NetworkHost[]>([])
@@ -50,6 +53,8 @@ const listedAccounts = new SvelteMap<string, SignedInAs>()
 /** Hosts a guest listing worked on this session: where "Use guest" is a real way back. */
 const guestListingHosts = new SvelteSet<string>()
 const prefetchingHosts = new SvelteSet<string>()
+/** How many Servers views are on screen (two panes can each show one). */
+let serversViewsShown = 0
 
 // Credential status tracking - 'unknown' | 'has_creds' | 'no_creds' | 'failed'
 type CredentialStatus = 'unknown' | 'has_creds' | 'no_creds' | 'failed'
@@ -92,13 +97,45 @@ function startResolution(host: NetworkHost) {
     })
 }
 
+/** The saved-list read in flight, shared by every host that asks while it's out. */
+let savedServersRead: Promise<SavedServer[]> | undefined
+
 /**
- * Start prefetching shares for a host (fire-and-forget).
- * Called automatically after host resolution.
+ * The servers the person saved, read fresh: a host becomes theirs the moment they
+ * add it or mount one of its shares, and nothing tells this store when.
+ *
+ * One read serves every caller that asks while it's out, so a launch's worth of
+ * resolved hosts costs one. ❗ A read that breaks answers "none saved": not
+ * knowing whose a host is must never be what signs Cmdr in to it.
+ */
+function readSavedServers(): Promise<SavedServer[]> {
+  savedServersRead ??= listSavedServers()
+    // `Array.isArray` because this is an IPC boundary, as in the hub's own read.
+    .then((answer: unknown) => (Array.isArray(answer) ? (answer as SavedServer[]) : []))
+    .catch(() => [])
+    .finally(() => {
+      savedServersRead = undefined
+    })
+  return savedServersRead
+}
+
+/**
+ * Lists a host's shares ahead of time (fire-and-forget), so its share list is
+ * there the moment the person opens it. Called when a Servers view opens, and
+ * when a host resolves while one is open.
+ *
+ * ❗ **Only while a Servers view is on screen, and only for a server the person
+ * SAVED** (`savedSmbHostIds`, the hub's own match). Listing means connecting to
+ * the host and signing in, as a guest where it lets one in: every launch used to
+ * do it to every SMB machine on the network (#324). With no Servers view open,
+ * nobody is about to pick a share. A found host is listed when the person opens
+ * it (`fetchShares`), and at no other time: see `refreshAllStaleShares` and the
+ * hub's refresh, which hold the same line.
  */
 function startPrefetchShares(host: NetworkHost) {
-  // Skip if no hostname or already have data
-  if (!host.hostname || shareStates.has(host.id)) {
+  const { hostname } = host
+  // Skip if no Servers view is up, no hostname, or we already have data
+  if (serversViewsShown === 0 || !hostname || shareStates.has(host.id)) {
     return
   }
 
@@ -109,13 +146,23 @@ function startPrefetchShares(host: NetworkHost) {
 
   prefetchingHosts.add(host.id)
 
-  void prefetchSharesCmd(host.id, host.hostname, host.ipAddress, host.port, getNetworkTimeoutMs(), getShareCacheTtlMs())
-    .then(() => {
-      // Prefetch succeeded - backend has cached it
-      if (!shareStates.has(host.id)) {
-        // Trigger a proper fetch to get the cached result and update UI
-        void fetchSharesSilent(host)
-      }
+  void readSavedServers()
+    .then((saved) => {
+      if (!savedSmbHostIds(saved, [host]).has(host.id)) return
+      return prefetchSharesCmd(
+        host.id,
+        hostname,
+        host.ipAddress,
+        host.port,
+        getNetworkTimeoutMs(),
+        getShareCacheTtlMs(),
+      ).then(() => {
+        // Prefetch succeeded - backend has cached it
+        if (!shareStates.has(host.id)) {
+          // Trigger a proper fetch to get the cached result and update UI
+          void fetchSharesSilent(host)
+        }
+      })
     })
     .catch(() => {
       // Silently ignore prefetch errors
@@ -148,17 +195,18 @@ async function fetchSharesSilent(host: NetworkHost): Promise<void> {
   }
 }
 
-/** How many Servers views are on screen (two panes can each show one). */
-let serversViewsShown = 0
-
 /**
  * Keeps the backend's mDNS browse running while a Servers view is on screen, so hosts
- * arrive and leave live there. Call when the view appears; call the returned release
+ * arrive and leave live there, and lists the saved servers' shares the first time one
+ * appears (`startPrefetchShares`). Call when the view appears; call the returned release
  * when it goes. The backend hears only the first appearance and the last departure.
  */
 export function holdDiscoveryForServersView(): () => void {
   serversViewsShown += 1
-  if (serversViewsShown === 1) void setServersViewShown(true)
+  if (serversViewsShown === 1) {
+    void setServersViewShown(true)
+    for (const host of hosts) startPrefetchShares(host)
+  }
   let released = false
   return () => {
     if (released) return
@@ -187,11 +235,10 @@ export async function initNetworkDiscovery(): Promise<void> {
   hosts = await listNetworkHosts()
   discoveryState = await getNetworkDiscoveryState()
 
-  // Start resolving all loaded hosts immediately (non-blocking)
-  // Also prefetch shares for already-resolved hosts
+  // Start resolving all loaded hosts immediately (non-blocking). Resolved ones go
+  // to the prefetch, which lists nothing unless a Servers view is already open.
   for (const host of hosts) {
     if (host.hostname) {
-      // Already resolved - prefetch shares directly
       startPrefetchShares(host)
     } else {
       // Needs resolution first (will prefetch after)
@@ -418,12 +465,23 @@ export function refreshSharesIfStale(host: NetworkHost): boolean {
 }
 
 /**
- * Refresh all stale shares (call when entering network view).
+ * Brings the share lists up to date (call when entering the Servers view): a saved
+ * host's stale list is re-read in the background, and a found host's is dropped.
+ *
+ * ❗ Dropped, ❌ not re-read: a host nobody saved is listed only when the person
+ * opens it (see `startPrefetchShares`), and with no list cached, opening it reads
+ * a fresh one instead of showing the old.
  */
 export function refreshAllStaleShares(): void {
-  for (const host of hosts) {
-    refreshSharesIfStale(host)
-  }
+  const stale = hosts.filter((host) => isShareDataStale(host.id))
+  if (stale.length === 0) return
+  void readSavedServers().then((saved) => {
+    const savedHosts = savedSmbHostIds(saved, stale)
+    for (const host of stale) {
+      if (savedHosts.has(host.id)) refreshSharesIfStale(host)
+      else if (isShareDataStale(host.id)) shareStates.delete(host.id)
+    }
+  })
 }
 
 // ============================================================================

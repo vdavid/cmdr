@@ -88,7 +88,7 @@ async fn the_known_servers_trio_round_trips() {
         "❗ the switch is the user's, so editing a server has to be able to turn it off"
     );
 
-    assert!(forget_known_sftp_server(host.to_string(), 22, "ada".to_string()));
+    assert!(sftp_known_servers::forget(host, 22, "ada"));
     assert!(
         !get_known_sftp_servers().iter().any(|entry| entry.host == host),
         "a forgotten server is gone from the list"

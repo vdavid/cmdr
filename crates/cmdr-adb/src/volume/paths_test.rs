@@ -52,10 +52,10 @@ fn a_prefixed_and_a_relative_path_land_on_the_same_device_path() {
 #[test]
 fn the_app_spelling_round_trips_and_the_root_has_no_trailing_slash() {
     let volume = detached_volume();
-    assert_eq!(volume.to_app_path("/"), PathBuf::from(prefix()));
+    assert_eq!(volume.to_app_path("/"), Some(PathBuf::from(prefix())));
     assert_eq!(
         volume.to_app_path("/sdcard/DCIM"),
-        PathBuf::from(format!("{}/sdcard/DCIM", prefix()))
+        Some(PathBuf::from(format!("{}/sdcard/DCIM", prefix())))
     );
     assert_eq!(
         volume.display_path_for(Path::new("sdcard/DCIM")),

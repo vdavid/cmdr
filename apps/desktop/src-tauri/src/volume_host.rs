@@ -14,6 +14,7 @@
 //! - analytics — `analytics::volume_sink::SpooledVolumeAnalytics`
 //! - settings — `file_system::backend_settings::AppBackendSettings`
 //! - runtime — the app's own tokio handle, so there's one thread pool
+//! - state dir — `<app data dir>/backend-state/`, one subdirectory per backend
 //!
 //! ## The host is a value
 //!
@@ -46,9 +47,13 @@ use cmdr_fs::volume::host::events::VolumeEventSink;
 /// [`host`].
 static HOST: OnceLock<VolumeHost> = OnceLock::new();
 
-/// Wires every seam but the frontend event channel, which is the one answer that
-/// needs a running app.
-fn wire(events: Option<Arc<dyn VolumeEventSink>>) -> VolumeHost {
+/// The directory each backend's durable private state goes under
+/// (`VolumeHost::state_dir`).
+const BACKEND_STATE_DIR: &str = "backend-state";
+
+/// Wires every seam but the frontend event channel and the state directory,
+/// the two answers that need a running app.
+fn wire(events: Option<Arc<dyn VolumeEventSink>>, state_root: Option<&std::path::Path>) -> VolumeHost {
     let builder = VolumeHost::builder()
         .listings(Arc::new(crate::file_system::listing::listing_host::AppListings))
         .credentials(Arc::new(crate::network::credential_store::KeychainCredentials))
@@ -59,6 +64,12 @@ fn wire(events: Option<Arc<dyn VolumeEventSink>>) -> VolumeHost {
         .activity(Arc::new(crate::priority::host_policy::AppUserActivity))
         .analytics(Arc::new(crate::analytics::volume_sink::SpooledVolumeAnalytics))
         .settings(Arc::new(crate::file_system::backend_settings::AppBackendSettings));
+    // ❗ Only from `install`: a test binary's host keeps backend state in
+    // memory, so no cell ever writes into the real data dir.
+    let builder = match state_root {
+        Some(root) => builder.state_root(root),
+        None => builder,
+    };
     match events {
         Some(events) => builder
             // The app's own runtime, so background work a backend starts shares
@@ -76,7 +87,7 @@ fn wire(events: Option<Arc<dyn VolumeEventSink>>) -> VolumeHost {
 
 /// Wire every seam a backend can ask about to this app: runtime, listings,
 /// events, credentials, trusted host keys, index notifications, activity,
-/// analytics, and settings.
+/// analytics, settings, and the backend state directory.
 ///
 /// Call once, in `setup()`, before anything constructs a volume. Nothing here can
 /// fail: a seam that isn't installed answers with a no-op rather than an error,
@@ -85,9 +96,19 @@ pub fn install(app: &AppHandle) {
     // The typed connection transition becomes a Tauri payload in
     // `events/volume_mapping.rs` and nowhere else, which is what keeps every
     // user-facing word app-side.
-    let host = wire(Some(Arc::new(crate::events::volume_mapping::TauriVolumeEvents::new(
-        app.clone(),
-    ))));
+    let state_root = match crate::config::resolved_app_data_dir(app) {
+        Ok(dir) => Some(dir.join(BACKEND_STATE_DIR)),
+        Err(e) => {
+            log::warn!(target: "volume", "no app data dir for backend state ({e}); backends keep it in memory");
+            None
+        }
+    };
+    let host = wire(
+        Some(Arc::new(crate::events::volume_mapping::TauriVolumeEvents::new(
+            app.clone(),
+        ))),
+        state_root.as_deref(),
+    );
 
     if HOST.set(host).is_err() {
         log::warn!(target: "volume", "the volume host was already installed; keeping the first one");
@@ -102,7 +123,7 @@ pub fn install(app: &AppHandle) {
 /// reads the real settings, it just has no frontend to tell about a session
 /// coming and going.
 pub fn host() -> VolumeHost {
-    HOST.get().cloned().unwrap_or_else(|| wire(None))
+    HOST.get().cloned().unwrap_or_else(|| wire(None, None))
 }
 
 #[cfg(test)]

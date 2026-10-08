@@ -18,6 +18,7 @@ import type { DeleteDialogPropsData } from '$lib/file-explorer/pane/dialog-props
 import DeleteDialog from './DeleteDialog.svelte'
 
 vi.mock('$lib/tauri-commands', () => ({
+  estimateOperationCost: vi.fn(() => Promise.resolve([])),
   notifyDialogOpened: vi.fn(() => Promise.resolve()),
   notifyDialogClosed: vi.fn(() => Promise.resolve()),
   startScanPreview: vi.fn(),

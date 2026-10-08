@@ -15,7 +15,8 @@ the first index, each with its own `CLAUDE.md`. Other leaves are one job each (`
   the registry lock).
 - **Never hold the registry across a blocking or re-entrant manager call.** `start_indexing` reserves lock-first,
   teardown drops the guard before the drain, and a scan start hands the manager out under `IndexPhase::Detached` through
-  the one door `state::off_the_registry`.
+  the one door `state::off_the_registry`. ❌ Every `fseventsd` call counts, a watcher's STOP too: a branch watch starts
+  through `state::ensure_branch_watch` (plan, start off-lock, install).
 - **❌ Nothing bounces off a TRANSIENT phase; it RECORDS its request there.** A teardown meeting `Detached` claims it; a
   start meeting `ShuttingDown` (a drain, up to 5 s) or a claimed `Detached` rides the same `Option`, and whoever ends
   the window carries it out through `start_indexing_for` (so the master switch still gates it). Refusing instead is a

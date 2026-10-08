@@ -39,7 +39,8 @@ Anything else in production, including employment, contract work, and business a
 
 - A license key, delivered by email after the Paddle transaction completes. Keys are Ed25519-signed, self-contained
   (`base64(payload).base64(signature)`), and verify offline against a public key compiled into the app. The short form
-  is `CMDR-XXXX-XXXX-XXXX`, exchanged server-side for the full key.
+  is `CMDR-XXXX-XXXX-XXXX`, exchanged server-side for the full key; the email carries the full key too, so a new Mac
+  activates even with no server.
 - **Per person, not per machine.** One license covers all of that person's own machines.
 - **All features, Cmdr AI included.** AI is bring-your-own-key, so there is nothing metered and nothing extra to buy
   (`product-facts.md`). When the Pro plan ships (`pricing.md`), a license bought before it keeps AI with the buyer's own
@@ -52,8 +53,11 @@ Anything else in production, including employment, contract work, and business a
 
 **Two license types exist in the code**: `commercial_subscription` and `commercial_perpetual`
 (`apps/api-server/src/licensing/license.ts`). Only the perpetual one is sold now; the subscription type stays because
-existing subscribers still validate against it. A subscription license re-validates with the server every 7 days with a
-30-day offline grace; a perpetual one never re-validates. Mechanics: `apps/desktop/src-tauri/src/licensing/CLAUDE.md`.
+existing subscribers still validate against it. The app checks in with the server every 7 days when it can, only to
+learn a revocation, expiry, or renewal (answers are signed, so nobody else can forge one). **A perpetual license stays
+valid offline forever** and drops to Personal only on a verified revocation, never because the server is unreachable. A
+time-limited license runs to a date: one signed into the key, or for a renewing subscription the last reported period
+end plus 30 days. Rules and hostile cases: `apps/desktop/src-tauri/src/licensing/DETAILS.md` § Offline policy.
 
 ## How commercial use is encouraged in-app
 

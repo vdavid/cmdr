@@ -293,8 +293,13 @@ fn a_rescan_during_the_phased_window_starts_the_machine_under_a_live_walk() {
     drive.cover(&scope);
     let walked_row = drive.path("scope/found.txt");
     assert!(drive.is_indexed(&walked_row), "precondition: the walk's rows are in");
-    assert!(
-        crate::indexing::lifecycle::state::force_scan(drive.volume_id).is_ok(),
+    // ⚠️ Read the marker, ❌ don't probe with a `force_scan`: that starts the machine,
+    // and over a tree this small the machine finishes and stamps the drive complete
+    // before the call below, which then (rightly) defers a TRUNCATING rescan. Only
+    // the slow FSEvents round trips this suite used to make hid that.
+    assert_eq!(
+        drive.index.volume_status(drive.volume_id).scan_completed_at,
+        None,
         "precondition: this drive has no completed scan, so it is the machine's"
     );
     let epoch = drive.current_epoch();
@@ -354,7 +359,10 @@ fn a_clear_during_the_extraction_window_really_clears() {
 
     let mut clear_result = None;
     crate::indexing::lifecycle::state::while_detached_for_test(drive.volume_id, || {
-        clear_result = Some(crate::indexing::lifecycle::state::clear_index(drive.volume_id));
+        clear_result = Some(crate::indexing::lifecycle::state::clear_index(
+            drive.volume_id,
+            crate::volume_files::Removal::Forgotten,
+        ));
     });
 
     assert_eq!(clear_result, Some(Ok(())), "the caller is told the clear worked");

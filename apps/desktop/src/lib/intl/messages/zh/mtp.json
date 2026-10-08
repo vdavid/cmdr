@@ -78,13 +78,5 @@
   "mtp.deviceFallbackName": "MTP 设备",
   "@mtp.deviceFallbackName": {
     "sourceHash": "8ba7a69"
-  },
-  "mtp.error.exclusiveAccess": "另一个进程拥有独占访问权限{blocking, select, none {} other {（被 {blocking} 占用）}}",
-  "@mtp.error.exclusiveAccess": {
-    "sourceHash": "a81f306"
-  },
-  "mtp.error.permissionDenied": "USB 访问权限被拒绝。请安装 udev 规则并重新连接",
-  "@mtp.error.permissionDenied": {
-    "sourceHash": "3362501"
   }
 }

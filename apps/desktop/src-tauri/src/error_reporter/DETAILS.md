@@ -40,8 +40,8 @@ Manifest fields (`BundleManifest`):
   different one and the user copies an id no report was ever filed under. Anything that
   isn't a well-formed `ERR-XXXXX` is discarded and a fresh id minted: the value crosses
   IPC, and it becomes part of a server-side object key, so it's vetted rather than
-  trusted. `save_error_report_to_disk` takes the same argument so the debug path can't
-  drift from the real one.
+  trusted. `save_error_report_to_disk` takes the same argument so the saved zip can't
+  drift from the one a send would ship.
 - `kind`: `"user"` (user-initiated send) or `"auto"` (opt-in auto-send).
 - `buildMode`: `"release"` or `"debug"`. Resolved at compile time from
   `cfg!(debug_assertions)` via `BuildMode::current()`. Forwarded to the api server so the
@@ -56,7 +56,9 @@ Manifest fields (`BundleManifest`):
   pushed once at FE startup from `settings-store.ts::initializeSettings`) → hardcoded
   fallback in `ResolvedSettings::from_settings`. The hardcoded values are a safety
   net for "error fires before FE init" and unit tests; the registry stays the source
-  of truth at runtime.
+  of truth at runtime. Then the organization's locks apply on every bundle
+  (`ResolvedSettings::effective`, through `managed_policy::overlay`), so `aiProvider`,
+  `errorReportsEnabled`, and `crashReportsEnabled` say what Cmdr ran with, as the heartbeat's config shape does.
 - `logLevels`: `LogLevelSnapshot` with `stdoutDefault` (startup level), `stdoutCurrent`
   (live atomic), `fileChain` (always `"debug"`), and `stdoutModuleOverrides` (noise
   suppression + `RUST_LOG` directives in insertion order). Lets a triager tell whether
@@ -181,6 +183,16 @@ deterministic enough that the preview hash matches what'll be uploaded.
 manifest, a couple of dozen sample lines, a count, and a size: a few KB, held for as long
 as one toast lives. The megabytes never survive the dispatch.
 
+## Managed policy
+
+Under `DisableCrashAndErrorReports` nothing leaves: `upload` and `send_amend` ride `server_request::send`
+(`Egress::ErrorReport` / `ErrorReportAmend`), which refuses with `ServerRequestError::BlockedByPolicy`. That's the
+guarantee; `send_error_report`, `send_crash_log_report`, and `amend_error_report` ask `server_request::check_policy`
+first only so no bundle gets built for nothing. The refusal reaches the dialog as `ErrorReportSendError::Server`, logs
+at info, and is never an error-level line (which would itself feed Flow B). `save_error_report_to_disk` stays allowed,
+in release builds too: nothing leaves the Mac, and it's what the dialog offers instead of Send (the person passes the
+zip on themselves, for example to their IT team).
+
 ## CI and E2E bypass
 
 [`upload`] short-circuits in two cases, returning the locally-generated ID without
@@ -215,7 +227,9 @@ at a glance. Don't gate `upload()` on `cfg!(debug_assertions)`: that path makes 
 "Send report" silently no-op, which is confusing and unhelpful.
 
 The dialog has an extra "Save bundle to disk (debug)" button in dev that calls
-`save_error_report_to_disk` instead, writing the zip to the app data dir for inspection.
+`save_error_report_to_disk` instead, writing the zip to the app data dir for inspection. The
+command exists in every build: under `DisableCrashAndErrorReports` the dialog's only action is
+"Save to disk" (§ Managed policy).
 
 ## Bundle scope and cap
 
@@ -294,7 +308,9 @@ per-event consent, so the consent has to be up front). When enabled:
    `log::error!` emit.
 2. The first error in a 60 s window captures its category, message, and timestamp and schedules a flush at
    `now + 60 s ± 10 s of jitter`. Subsequent errors in the same window only bump the counter.
-3. When the timer fires: build a bundle (`BundleKind::Auto`, the note says `auto-send: N errors within 60s, first:
+3. When the timer fires, `take_window_to_send` drains the window and asks the managed policy (fresh): under
+   `DisableCrashAndErrorReports` the window is dropped like a failed upload. The `ENABLED` atomic is seeded from the
+   stored setting, so this send-time check is what makes a forced off win over a stored on. Otherwise: build a bundle (`BundleKind::Auto`, the note says `auto-send: N errors within 60s, first:
    <category> detail="<message>"`, redacted and capped by the report pass), trim to a 1 MB tail via
    `cap_bundle_to_mb`, upload, record what
    went out in `auto_sent`, then emit `error-report-auto-sent` with the ID (the same

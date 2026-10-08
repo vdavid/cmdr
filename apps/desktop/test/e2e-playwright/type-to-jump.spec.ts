@@ -19,6 +19,7 @@ import { waitBudget } from './wait-budget.js'
 import { test, expect } from './fixtures.js'
 import { recreateFixtures } from '../e2e-shared/fixtures.js'
 import { ensureAppReady, getFixtureRoot } from './helpers.js'
+import { ensureMcpClient, mcpCall } from '../e2e-shared/mcp-client.js'
 import type { TauriPage, BrowserPageAdapter } from '@srsholmes/tauri-playwright'
 
 type PageLike = TauriPage | BrowserPageAdapter
@@ -70,6 +71,16 @@ async function indicatorText(tauriPage: PageLike): Promise<string> {
   })()`)
 }
 
+/**
+ * Typing filters by default (the quick filter); these tests are about Jump, so
+ * they pick it through the same MCP `set_setting` path the Settings toggle takes.
+ * The quick filter's own behavior is pinned by its unit and controller tests.
+ */
+async function useJumpMode(tauriPage: PageLike): Promise<void> {
+  await ensureMcpClient(tauriPage)
+  await mcpCall('set_setting', { id: 'fileExplorer.typeToJump.mode', value: 'jump' })
+}
+
 test.describe('Type-to-jump', () => {
   // These tests cross 4-5 IPC roundtrips each (key dispatch + indicator poll +
   // cursor-name poll). On macOS local they run in 200-500 ms; on Linux Docker
@@ -78,8 +89,14 @@ test.describe('Type-to-jump', () => {
   // without masking genuine hangs (a real bug would still blow past 15 s).
   test.describe.configure({ timeout: waitBudget(15_000) })
 
+  // Later suites share this app: leave typing as the default found it.
+  test.afterAll(async () => {
+    await mcpCall('set_setting', { id: 'fileExplorer.typeToJump.mode', value: 'filter' })
+  })
+
   test('typing letters jumps the cursor to the best fuzzy match', async ({ tauriPage }) => {
     await ensureAppReady(tauriPage)
+    await useJumpMode(tauriPage)
 
     // Type "file": the left pane has `file-a.txt`, `file-b.txt`, plus
     // directories `sub-dir/` and `bulk/`. The top-scoring fuzzy match for
@@ -111,6 +128,7 @@ test.describe('Type-to-jump', () => {
 
   test('ESC clears the buffer and hides the indicator', async ({ tauriPage }) => {
     await ensureAppReady(tauriPage)
+    await useJumpMode(tauriPage)
     await typeChars(tauriPage, 'fi')
 
     // Wait for the indicator to appear first.
@@ -124,6 +142,7 @@ test.describe('Type-to-jump', () => {
 
   test('Cmd/Ctrl-modified keys do not feed the buffer', async ({ tauriPage }) => {
     await ensureAppReady(tauriPage)
+    await useJumpMode(tauriPage)
 
     // Dispatch a DOM keydown carrying the modifier flag so the explorer's
     // `isTypeToJumpChar` returns false on it. We use the DOM path (not
@@ -147,6 +166,7 @@ test.describe('Type-to-jump', () => {
 
   test('switching pane clears the previous pane indicator', async ({ tauriPage }) => {
     await ensureAppReady(tauriPage)
+    await useJumpMode(tauriPage)
     await typeChars(tauriPage, 'f')
     await tauriPage.waitForSelector(INDICATOR, 3000)
 

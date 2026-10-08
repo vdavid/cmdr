@@ -98,6 +98,15 @@ export const fileListCommands: CommandSource[] = [
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
+    // ⌘/ because `/` is the root's own name.
+    id: 'nav.goToRoot',
+    nameKey: 'commands.navGoToRoot.label',
+    scope: 'Main window/File list',
+    showInPalette: true,
+    shortcuts: ['⌘/'],
+    whileDialogOpen: BLOCKED_BY_DIALOGS,
+  },
+  {
     // ⌘⇧H, not ⌘H: macOS reserves ⌘H for "Hide Cmdr" (an AppKit predefined item
     // Cmdr can neither rebind nor intercept — see `NATIVE_SHORTCUT_COMMAND_IDS`).
     id: 'nav.goHome',
@@ -290,10 +299,12 @@ export const fileListCommands: CommandSource[] = [
     nameKey: 'commands.fileDelete.label',
     scope: 'Main window/File list',
     showInPalette: true,
-    // `⌘Backspace` (shown as ⌘⌫) mirrors Finder's "Move to Trash". The menu
-    // accelerator stays `F8` (first shortcut); ⌘⌫ dispatches purely via the
-    // document keydown handler.
-    shortcuts: ['F8', '⌘Backspace'],
+    // `⌘Backspace` (shown as ⌘⌫) mirrors Finder's "Move to Trash", and `Delete`
+    // is the forward-delete key (⌦, or fn+⌫ on a laptop), the way Total Commander
+    // and Windows users reach for it. The menu accelerator stays `F8` (first
+    // shortcut); the other two dispatch purely via the document keydown handler,
+    // which leaves them to a focused text field.
+    shortcuts: ['F8', '⌘Backspace', 'Delete'],
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
@@ -361,6 +372,39 @@ export const fileListCommands: CommandSource[] = [
     showInPalette: true,
     shortcuts: [],
     whileDialogOpen: BLOCKED_BY_DIALOGS,
+  },
+  {
+    id: 'file.copyShareLink',
+    nameKey: 'commands.fileCopyShareLink.label',
+    scope: 'Main window/File list',
+    showInPalette: true,
+    // Only where the focused pane's volume can mint one (S3 today), by capability.
+    paletteCondition: 'focusedPaneSharesLinks',
+    shortcuts: [],
+    whileDialogOpen: BLOCKED_BY_DIALOGS,
+    descriptionKey: 'commands.fileCopyShareLink.description',
+  },
+  {
+    id: 'file.copyShareLinkOneDay',
+    nameKey: 'commands.fileCopyShareLinkOneDay.label',
+    scope: 'Main window/File list',
+    showInPalette: true,
+    // Only where the focused pane's volume can mint one (S3 today), by capability.
+    paletteCondition: 'focusedPaneSharesLinks',
+    shortcuts: [],
+    whileDialogOpen: BLOCKED_BY_DIALOGS,
+    descriptionKey: 'commands.fileCopyShareLinkOneDay.description',
+  },
+  {
+    id: 'file.copyShareLinkOneHour',
+    nameKey: 'commands.fileCopyShareLinkOneHour.label',
+    scope: 'Main window/File list',
+    showInPalette: true,
+    // Only where the focused pane's volume can mint one (S3 today), by capability.
+    paletteCondition: 'focusedPaneSharesLinks',
+    shortcuts: [],
+    whileDialogOpen: BLOCKED_BY_DIALOGS,
+    descriptionKey: 'commands.fileCopyShareLinkOneHour.description',
   },
   {
     id: 'file.getInfo',
@@ -548,13 +592,10 @@ export const fileListCommands: CommandSource[] = [
     nameKey: 'commands.selectionInvert.label',
     scope: 'Main window/File list',
     showInPalette: true,
-    // Total Commander's invert key, both ways it's typed. `⇧8` is `*` on a US
-    // layout, matched by physical key too (`eventMatchesCommand`'s digit
-    // fallback) so it works where Shift+8 types something else; bare `*` is the
-    // numpad key, which reports `*` with no Shift on every layout. `⇧8` stays
-    // first because a menu accelerator (pushed only on a rebind) reads
-    // `shortcuts[0]`.
-    shortcuts: ['⇧8', '*'],
+    // Total Commander's invert key: whichever key types `*` on the user's layout
+    // (US ⇧8, Swedish ⇧', the numpad, an AltGr-style ⌥ combo), since
+    // `formatKeyCombo` names typed symbols by character.
+    shortcuts: ['*'],
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.selectionInvert.description',
   },
@@ -565,8 +606,8 @@ export const fileListCommands: CommandSource[] = [
     showInPalette: true,
     // Total Commander's `Alt+Num +`, both ways it's typed: the main-row key and
     // the numpad one. `⌥⇧=` is `±` on a US layout, matched by physical key
-    // (`eventMatchesCommand`'s punctuation fallback) so it works wherever the
-    // combo types something else. It stays first because that's the combo the
+    // (`keyComboCandidates`) so it works wherever the combo types something
+    // else. It stays first because that's the combo the
     // menu DISPLAYS; the file pane's keydown handler owns both, so neither is a
     // real menu accelerator (a bare-ish `⌥` combo would eat the character in
     // every text field).
@@ -575,6 +616,35 @@ export const fileListCommands: CommandSource[] = [
     descriptionKey: 'commands.selectionSelectSameKind.description',
     // The palette alone reads this; every listing surface keeps the static name.
     displayName: sameKindCommandLabel,
+  },
+  {
+    // Total Commander's ⇧F2: each pane marks the files the other lacks plus the
+    // newer copies, so F5 afterwards brings the other side up to date.
+    id: 'selection.compareDirectories',
+    nameKey: 'commands.selectionCompareDirectories.label',
+    scope: 'Main window/File list',
+    showInPalette: true,
+    shortcuts: ['⇧F2'],
+    whileDialogOpen: BLOCKED_BY_DIALOGS,
+    descriptionKey: 'commands.selectionCompareDirectories.description',
+  },
+  {
+    id: 'selection.compareDirectoriesMissing',
+    nameKey: 'commands.selectionCompareDirectoriesMissing.label',
+    scope: 'Main window/File list',
+    showInPalette: true,
+    shortcuts: [],
+    whileDialogOpen: BLOCKED_BY_DIALOGS,
+    descriptionKey: 'commands.selectionCompareDirectoriesMissing.description',
+  },
+  {
+    id: 'selection.compareDirectoriesSize',
+    nameKey: 'commands.selectionCompareDirectoriesSize.label',
+    scope: 'Main window/File list',
+    showInPalette: true,
+    shortcuts: [],
+    whileDialogOpen: BLOCKED_BY_DIALOGS,
+    descriptionKey: 'commands.selectionCompareDirectoriesSize.description',
   },
   {
     id: 'selection.selectFiles',
@@ -591,10 +661,10 @@ export const fileListCommands: CommandSource[] = [
     nameKey: 'commands.selectionDeselectFiles.label',
     scope: 'Main window/File list',
     showInPalette: true,
-    // `-` and `⇧-` both open "Deselect files…"; FilePane classifies the physical
-    // Minus key (layout-independent) in `selection-dialog-keys.ts`. The menu
-    // accelerator stays `-` (first shortcut).
-    shortcuts: ['-', '⇧-'],
+    // Total Commander's `-`: the main-row key and the numpad one, whatever Shift
+    // the layout needs to type it (`formatKeyCombo` names typed symbols by
+    // character). The menu only displays it: no ⌘ / ⌃ / ⌥, so no accelerator.
+    shortcuts: ['-'],
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     status: getBadgeStatus('select-files'),
     descriptionKey: 'commands.selectionDeselectFiles.description',

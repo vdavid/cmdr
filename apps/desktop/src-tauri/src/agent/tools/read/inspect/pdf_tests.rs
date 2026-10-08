@@ -358,6 +358,30 @@ fn a_pdf_over_the_size_cap_is_too_large_and_is_never_parsed() {
     assert_eq!(pdf.page_count, Some(2));
 }
 
+// Regression: `pdf-extract` resolves an inherited key (`Resources`, `MediaBox`) by
+// following `Parent` with no visited set, so a page that is its own parent spun a
+// thread forever. `catch_unwind` can't contain a loop. Found by the `pdf` fuzz target.
+#[test]
+fn a_page_that_is_its_own_parent_is_unparseable_instead_of_hanging() {
+    let dir = TestDir::new("inspect_pdf_parent_cycle");
+    let mut doc = author_pdf(&[text_page("Hello")], None);
+    let page_id = *doc.get_pages().get(&1).unwrap();
+    doc.get_object_mut(page_id)
+        .unwrap()
+        .as_dict_mut()
+        .unwrap()
+        .set("Parent", page_id);
+    let path = write(&dir, "cycle.pdf", &pdf_bytes(doc));
+
+    let row = inspect(&path, &TextAsk::Window(WindowOpts::default()));
+
+    let pdf = pdf_of(&row);
+    assert_eq!(pdf.page_count, Some(1));
+    let pages = pages_of(pdf);
+    assert_eq!(pages.returned_pages, 1);
+    assert!(pages.pages[0].unparseable);
+}
+
 #[test]
 fn header_version_reads_the_first_line_and_nothing_else() {
     assert_eq!(

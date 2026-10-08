@@ -23,7 +23,8 @@ and no tabs shows exactly the four commands. `Show All Windows` stays on purpose
 how someone reaches one particular file-viewer window, which nothing in our half offers.
 
 `magnifyingglass` and `arrow.right.to.line` are the glyphs the menu bar already gives
-`Search files…` and `Go to path…`; the same concept gets the same glyph.
+`Search files…` and `Go to folder…`; the same concept gets the same glyph. `Go to folder…` is the bar's own
+`menu.go.goToPath` string too, so the two can't name one command differently.
 
 ## Why the menu can't stall the Dock
 

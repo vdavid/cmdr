@@ -167,7 +167,8 @@ stays true either way.
 can't write a file until `init` sets `CRASH_PATH` (the data dir isn't resolved before
 Tauri's `setup`), and the logger isn't up that early either, so a panic in the first few
 milliseconds of `run()` reaches stderr only. Everything after `logging::startup::init()`
-is logged; everything after `crash_reporter::init` is also written to disk.
+is logged; everything after `crash_reporter::init` is also written to disk. An unresolvable data dir costs the crash
+FILE, never the hook.
 
 ### The one exemption: `contain_panics`
 
@@ -214,8 +215,16 @@ all three; nextest never sees the race, so a test green only under nextest is th
 4. Otherwise: show a dialog letting the user inspect and choose to send or dismiss. Radical transparency: the dialog
    shows the exact JSON payload before sending.
 5. Send returns only that preview's `shortId` and optional explicitly attached email. `pending_delivery.rs` reloads the
-   pending file, rejects an id mismatch, transforms the backend-owned report, uploads it, and deletes the file only if
-   it still carries the same id. The same module owns dismissal, which deletes without sending.
+   pending file, rejects an id mismatch, claims the file, transforms the backend-owned report, uploads it, and deletes
+   the claim. The same module owns dismissal, which deletes without sending.
+6. Under a managed `DisableCrashAndErrorReports`, step 2 discards the pending file (the dismissal helper, which can't
+   reach a claim) and answers `None`, so nothing is offered: the person couldn't send it, and the offer would return
+   every launch. A send that races a newly arrived policy refuses with `BlockedByPolicy` BEFORE the claim, leaving the
+   file in place for the next launch to discard. Capture (hook, handler, next-launch assembly) never reads the policy:
+   it locks and talks to `cfprefsd`, neither of which is safe in a dying process.
+7. `activeSettings` carries the EFFECTIVE `aiProvider` (the organization's locks over the stored value, through
+   `managed_policy::overlay`), as the heartbeat's config shape does. It's computed once at startup
+   (`active_settings_from`, in `init`), never in the hook or handler, for the same reason as step 6.
 
 ### Released-build gates
 
@@ -236,7 +245,8 @@ These are reporter gates, not release-pipeline behavior.
 - Panic message (`panicMessage`) and thread name (`threadName`). The hook stores them through `sanitize_panic_message`
   / `sanitize_thread_name` (the shared `crate::redact` pipeline, then a 2,000-char / 100-char cap; a byte-index cut
   would panic inside the hook). Delivery re-redacts both with the report's context and re-caps. `None` for signal
-  crashes, which carry no payload. The cap exists because the ingestion endpoint rejects a report body over 64 KB, so an
+  crashes, which carry no payload. Paths matter here because `unwrap()` on an `io::Error` embeds the file path in the
+  panic message. The cap exists because the ingestion endpoint rejects a report body over 64 KB, so an
   uncapped `assert_eq!` dump would cost the whole report. Redaction catches paths and identities, not arbitrary words
   a panic message may quote.
 - Active feature flags (booleans plus the closed `ai.provider` values `off`, `cloud`, or `local`). An unknown provider
@@ -280,10 +290,23 @@ send re-applies it safely.
 Preview is not an authority handoff. `pending_delivery.rs` accepts only the preview's id and optional email, then
 reloads the pending artifact and reapplies the transform before adding the separately supplied `AttachedEmail`. It
 rejects a stale id before upload, so a frontend mutation cannot alter any payload field or send the replacement under
-consent for its predecessor. After upload it rechecks the current file's id before deletion, which preserves a
-replacement already present at that check. The read-ID/remove pair is not atomic: a replacement written between those
-operations can still be removed. That pre-existing TOCTOU does not weaken upload authority, but this lifecycle must not
-be described as guaranteeing every in-flight replacement survives. A field that cannot be transformed or proven to be
+consent for its predecessor.
+
+**The send claims the file before uploading.** After the id check it renames `crash-report.json` to
+`crash-report.sending.<short id>.json`, uploads from the claim, and deletes only the claim. The pending slot is free for
+the whole upload, so a panic in this session writes a fresh `crash-report.json` that nothing in the send can reach. A
+crash landing between the id check and the rename puts someone else's report under the claim; the send notices the id
+mismatch after claiming and puts it back. The claim's name carries the id so the claiming rename never clobbers an older
+claim still waiting.
+
+**Putting a claim back never replaces anything** (`release_claim`): it hard-links the claim to `crash-report.json`,
+which fails on an existing name where a rename would overwrite a crash written while the claim was out, then removes the
+claim. A failed upload goes back this way, so the dialog's Send retries it. A claim that can't go back (a newer crash
+holds the slot) waits, and so does one left by a crash or quit mid-upload. At the next launch `restore_unfinished_sends`
+runs first in `process_pending_crash`: a claim moves back into a free slot, keeps waiting while another report holds it,
+and is dropped when it duplicates the pending report's id. A crash after the server accepted the upload but before the delete means the
+report goes out twice; the server doesn't dedupe by `shortId`, and that rare duplicate is the price of never losing
+one. A field that cannot be transformed or proven to be
 closed typed metadata stays out.
 
 ## Where a field is filled in

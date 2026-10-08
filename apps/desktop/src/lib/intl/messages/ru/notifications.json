@@ -1,0 +1,6 @@
+{
+  "notifications.permissionDenied": "Уведомления macOS выключены. Откройте Системные настройки, чтобы разрешить их.",
+  "@notifications.permissionDenied": {
+    "sourceHash": "4fef9ce"
+  }
+}

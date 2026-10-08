@@ -39,7 +39,21 @@ pub(super) fn nav_result(pane: &str, requested: &str, ack: NavAck) -> ToolResult
             "Navigation to {requested} didn't settle: the {pane} pane is still listing and reports {}. Read cmdr://state to triage, then retry or use `await` to watch for the path.",
             landed_or(path)
         ))),
+        NavAck::Stalled { path } => {
+            let path = landed_or(path);
+            Err(stalled_error(
+                format!(
+                    "The {pane} pane is on {path}, but the folder isn't answering: its server or drive stopped responding mid-read. Cmdr keeps retrying in the background and opens it once it answers. Navigate elsewhere, or retry later; cmdr://state shows `listing: stalled` meanwhile."
+                ),
+                &path,
+            ))
+        }
     }
+}
+
+/// The error for a folder that stalled, with a typed `reason` an agent can branch on.
+fn stalled_error(message: String, path: &str) -> ToolError {
+    ToolError::internal(message).with_data(json!({ "reason": "folderStalled", "path": path }))
 }
 
 /// Round-trip budget for `select_volume`. The FE holds its reply for the switch's
@@ -66,6 +80,12 @@ pub(super) fn select_volume_result(pane: &str, volume_name: &str, ack: NavAck) -
         NavAck::DidNotSettle { path } => Err(ToolError::internal(format!(
             "Switching the {pane} pane to volume {volume_name} didn't settle: it's still listing and reports {path}. Read cmdr://state to triage, then retry."
         ))),
+        NavAck::Stalled { path } => Err(stalled_error(
+            format!(
+                "Switched the {pane} pane to volume {volume_name}, but {path} isn't answering: its server or drive stopped responding mid-read. Cmdr keeps retrying in the background and opens it once it answers. Navigate elsewhere, or retry later; cmdr://state shows `listing: stalled` meanwhile."
+            ),
+            &path,
+        )),
     }
 }
 

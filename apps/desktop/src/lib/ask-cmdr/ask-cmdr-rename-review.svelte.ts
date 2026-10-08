@@ -223,7 +223,8 @@ export async function applyRenameReview(): Promise<void> {
     try {
       const started = await applyBulkRename(batch.proposalId, batch.allowedRowIds)
       applied += 1
-      noteRenameApplied(started.operationId, batch.allowedRowIds.length)
+      const swapsSkipped = started.swapsLeftOut
+      noteRenameApplied(started.operationId, batch.allowedRowIds.length - swapsSkipped, swapsSkipped)
       dropAppliedProposal(batch.proposalId)
     } catch (e) {
       log.warn('starting the rename plan failed: {error}', { error: String(e) })
@@ -271,7 +272,7 @@ function dropAppliedProposal(proposalId: string): void {
  * their own Undo, so "undo everything" appears once, at the bottom. That holds
  * whether the ids arrive one turn at a time or together from one Apply.
  */
-export function noteRenameApplied(operationId: string, fileCount: number): void {
+export function noteRenameApplied(operationId: string, fileCount: number, swapsSkipped = 0): void {
   const run = renameRunLines()
   // Built from the lines themselves, never from a previous line's stored job set:
   // that set already includes its predecessors, so folding it in would repeat ids.
@@ -288,6 +289,7 @@ export function noteRenameApplied(operationId: string, fileCount: number): void 
     fileCount,
     jobOperationIds: jobOperationIds.length > 1 ? jobOperationIds : [],
     jobFileCount: jobOperationIds.length > 1 ? jobFileCount : 0,
+    swapsSkipped,
     undo: { status: 'undoable' },
   })
 }

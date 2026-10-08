@@ -21,7 +21,7 @@ use cmdr_git::{GitPortal, GitStateSink, RecordingGitStateSink, RepoInfo, no_git_
 /// A portal over the real host, reporting into `sink`, whose watcher is
 /// scripted rather than real: [`GitPortal::fire_watcher`] stands in for the
 /// operating system. What every cell here but one wants, because arming a real
-/// FSEvents stream over a repository's ~10 `.git/*` paths is most of what a
+/// FSEvents stream on a repository's gitdir is most of what a
 /// subscribe costs and none of them assert on it.
 fn portal_reporting_into(sink: Arc<dyn GitStateSink>) -> GitPortal {
     GitPortal::with_scripted_watcher(crate::volume_host::host(), sink)
@@ -62,43 +62,40 @@ fn the_payload_serializes_to_the_shape_the_frontend_subscribes_to() {
     assert_eq!(json["info"]["isDirty"], true);
 }
 
-/// A burst of `.git/*` writes collapses into ONE report carrying the state as it
-/// is AFTER the burst, and the watch is still alive to do the same for the NEXT
-/// burst. That's what keeps a `git checkout` (which rewrites `HEAD`, `index`, and
-/// a pile of refs) from driving an event per file and a re-read of every open
-/// portal pane per file.
+/// A burst of `.git/*` writes ends in a report carrying the state as it is AFTER
+/// the burst, the reports then go quiet, and the watch is still alive to do the
+/// same for the NEXT burst.
 ///
 /// ❗ **The second burst is not a repetition.** git writes `HEAD` and `index` by
 /// renaming a lockfile over them, so a watch registered on those FILES dies at
 /// the first rename: burst one reports, and everything after it is lost with no
 /// error. That is exactly how this cell failed on Linux, whose inotify is
 /// inode-based, while passing on macOS, whose FSEvents is path-based (CI,
-/// 2026-09-06). The watcher watches the DIRECTORIES now, and this second act is
-/// what would catch a return to the old shape on either platform.
+/// 2026-09-06). The watcher watches the gitdir DIRECTORY, and this second act is
+/// what would catch a return to file watches on either platform.
 ///
-/// ❗ **"Once" is a CEILING as much as a floor.** The same settle wait catches the
-/// opposite Linux failure: the watcher recomputing by reading the repository,
-/// inotify reporting those reads back as events, and every report triggering the
-/// next one forever (48 identical reports in 10 s, CI, 2026-09-06). The kind gate
-/// that closes that loop is `cmdr_git`'s, and so is the reasoning:
-/// `crates/cmdr-git/DETAILS.md` § "Watcher path set".
+/// ❗ **Quiet is the ceiling.** The settle wait catches the opposite Linux
+/// failure: the watcher recomputing by reading the repository, inotify reporting
+/// those reads back as events, and every report triggering the next one forever
+/// (48 identical reports in 10 s, CI, 2026-09-06). A loop like that reports once
+/// per debounce window and never goes quiet. The kind gate that closes it is
+/// `cmdr_git`'s: `crates/cmdr-git/DETAILS.md` § "Watcher path set".
 ///
-/// ❗ **The one cell in the app that arms a REAL `.git/*` watcher.** The debounce
-/// it proves is `notify`'s own, so a scripted backend can't stand in: it would
-/// assert the fake's arithmetic. Every other subscription cell here and in
+/// ❗ **The last report and quiet, ❌ never a count.** How many batches a real
+/// burst arrives in depends on how long its writes take against the 200 ms
+/// window, and a loaded machine stretches them: five commits spanning two windows
+/// legitimately report an intermediate state first. Asserting "exactly one" made
+/// this the most-retried cell in the Rust lane (78 runs, 2026-09-06 to
+/// 2026-09-11). One report for a burst the debouncer SPLIT is
+/// `cmdr_git::watcher::recompute_and_report`'s coalescing, asserted without any
+/// timing against the scripted backend in `cmdr_git::watcher_tests`.
+///
+/// ❗ **The one cell in the app that arms a REAL `.git/*` watcher.** Delivery and
+/// the watch surviving git's renames are the operating system's, so a scripted
+/// backend can't stand in. Every other subscription cell here and in
 /// `cmdr_git::watcher_tests` takes the scripted one and runs in milliseconds.
-///
-/// ❗ **Why one is a real number here.** `notify_debouncer_full` emits on a tick
-/// cadence, so this burst reaches the backend as one batch or two (measured on an
-/// M1 Max, 2026-09-06, 20 runs: 13 ms of writes, one batch about two-thirds of
-/// the time and two, ~60 ms apart, the rest). `cmdr_git::watcher::recompute_and_report`
-/// drops the second when it recomputes the same snapshot inside the debounce
-/// window, so the count stops depending on where the tick boundary fell. What
-/// coalescing does NOT do is swallow a later change that leaves `RepoInfo`
-/// untouched: `cmdr_git::watcher_tests::the_same_state_after_the_window_is_news_again`
-/// is the cell for that.
 #[test]
-fn a_debounced_burst_reports_once_and_the_watch_survives_for_the_next_one() {
+fn a_burst_reports_its_end_state_and_the_watch_survives_for_the_next_one() {
     let dir = temp_dir("wiring", "one_report_per_burst");
     let mut fixture = Fixture::init(dir.clone());
     fixture.commit_file("README.md", b"hello\n", "initial");
@@ -112,11 +109,9 @@ fn a_debounced_burst_reports_once_and_the_watch_survives_for_the_next_one() {
     assert_eq!(first.branch.as_deref(), Some("main"));
     assert_eq!(sink.count(), 0, "subscribing itself reports nothing");
 
-    // One burst, and nothing waits inside it: the writes land back to back, in a
-    // span measured in microseconds, so this is one burst by construction rather
-    // than by timing luck. The branch switch at the end is what makes the
-    // REPORTED state distinguishable from the one `subscribe_state` answered
-    // with, which is otherwise `main` either way.
+    // The branch switch at the end is what makes the REPORTED state
+    // distinguishable from the one `subscribe_state` answered with, which is
+    // otherwise `main` either way.
     const COMMITS_IN_THE_BURST: usize = 5;
     for index in 0..COMMITS_IN_THE_BURST {
         fixture.commit_file(&format!("f{index}.txt"), b"x\n", "more");
@@ -124,70 +119,45 @@ fn a_debounced_burst_reports_once_and_the_watch_survives_for_the_next_one() {
     fixture.create_branch("after-the-burst");
     fixture.checkout("after-the-burst");
 
-    let changes = changes_once_settled(&sink, 1);
-    assert_eq!(
-        changes.len(),
-        1,
-        "one burst, one report, whichever way the debouncer batched it: {changes:?}"
+    let changes = reports_settled_on(&sink, "after-the-burst");
+    assert!(
+        changes.iter().all(|(reported_root, _)| reported_root == &root),
+        "every report names the canonical root: {changes:?}"
     );
-    let (reported_root, info) = &changes[0];
-    assert_eq!(reported_root, &root);
-    // The state AFTER the whole burst, not the `main` the subscribe saw: a report
-    // carrying a snapshot taken at the FIRST write would still say `main` here.
-    assert_eq!(
-        info.branch.as_deref(),
-        Some("after-the-burst"),
-        "the report carries the state the burst left behind: {info:?}"
-    );
+    let after_first_burst = changes.len();
 
     // A SECOND burst, after the first has already renamed a lockfile over `HEAD`
     // and `index`. A dead watch delivers nothing here and the settle wait times
-    // out naming the one report it kept.
+    // out naming the reports it kept.
     for index in 0..COMMITS_IN_THE_BURST {
         fixture.commit_file(&format!("g{index}.txt"), b"y\n", "more still");
     }
     fixture.create_branch("after-the-second-burst");
     fixture.checkout("after-the-second-burst");
 
-    let changes = changes_once_settled(&sink, 2);
-    assert_eq!(
-        changes.len(),
-        2,
-        "the second burst costs one more report, and the watch was alive to send it: {changes:?}"
-    );
-    assert_eq!(
-        changes[1].1.branch.as_deref(),
-        Some("after-the-second-burst"),
-        "the second report carries what the second burst left behind: {changes:?}"
+    let changes = reports_settled_on(&sink, "after-the-second-burst");
+    assert!(
+        changes.len() > after_first_burst,
+        "the watch was alive to report the second burst: {changes:?}"
     );
 
     portal.unsubscribe_state(&root);
     cleanup(&dir);
 }
 
-/// Everything the sink holds once it has gone QUIET for longer than the
-/// watcher's debounce window.
+/// Everything the sink holds once its LAST report carries `branch` and it has
+/// then gone quiet for longer than the watcher's debounce window.
 ///
-/// ❗ `at_least` is a FLOOR, ❌ not the answer: quiet still decides the number,
-/// and the assertion at the call site decides whether it's the right one. It
-/// exists because the quiet window is longer than a debounce, so a wait started
-/// right after a second burst would otherwise be satisfied by the FIRST burst's
-/// report sitting there untouched, and return before the second one landed.
+/// ❗ Waits on the end state, ❌ never on a count: the count depends on how the
+/// burst's writes fell against the window, the end state doesn't. A report taken
+/// at the FIRST write of a burst would still say the previous branch, so a
+/// watcher that stops reporting mid-burst never satisfies this.
 ///
-/// ❗ Read the count through this, ❌ never by waiting for the FIRST report.
-/// `wait_until(count >= 1)` returns while a second report may still be in
-/// flight, so the same run asserted 1 when it read early and 2 when it read
-/// late: the cell passed and failed at random without the behavior changing.
-/// Waiting for quiet makes the number observed the number that actually
-/// happened, so a real regression fails every time and a slow machine doesn't.
-///
-/// ❗ **The timeout names the reports it saw**, because "timed out waiting for
-/// the reports to settle" is the same message whether the watcher delivered
-/// nothing at all or delivered a burst that never went quiet, and those are
-/// opposite bugs. A watcher whose delivery breaks (as it did on Linux, where
-/// watching the state FILES let git's rename dance kill the watch) shows up here
-/// as an empty list, which says so.
-fn changes_once_settled(sink: &RecordingGitStateSink, at_least: usize) -> Vec<(PathBuf, RepoInfo)> {
+/// ❗ **The timeout names the reports it saw**, because "timed out" is the same
+/// message whether the watcher delivered nothing at all or delivered a burst that
+/// never went quiet, and those are opposite bugs. A dead watch shows up here as
+/// a list that stops short of `branch`; a read loop as one that keeps growing.
+fn reports_settled_on(sink: &RecordingGitStateSink, branch: &str) -> Vec<(PathBuf, RepoInfo)> {
     // Twice the window, so a report arriving one poll interval late still counts
     // as part of the burst rather than as quiet.
     let quiet = WATCH_DEBOUNCE * 2;
@@ -198,20 +168,21 @@ fn changes_once_settled(sink: &RecordingGitStateSink, at_least: usize) -> Vec<(P
     // The outer cap is deliberately unreachable: the deadline inside fires first
     // and carries the diagnostic, and this only backstops it.
     wait_until(SETTLE_TIMEOUT * 2, "the watcher's reports to settle", || {
-        let now = sink.count();
-        if now != seen {
-            seen = now;
+        let changes = sink.changes();
+        if changes.len() != seen {
+            seen = changes.len();
             unchanged_since = Instant::now();
             return false;
         }
-        if now >= at_least && unchanged_since.elapsed() >= quiet {
+        let landed = changes
+            .last()
+            .is_some_and(|(_, info)| info.branch.as_deref() == Some(branch));
+        if landed && unchanged_since.elapsed() >= quiet {
             return true;
         }
         assert!(
             Instant::now() < deadline,
-            "the watcher's reports never settled in {SETTLE_TIMEOUT:?}; {} reported so far: {:?}",
-            now,
-            sink.changes()
+            "the watcher's reports never settled on `{branch}` in {SETTLE_TIMEOUT:?}; reported so far: {changes:?}"
         );
         false
     });

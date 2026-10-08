@@ -21,6 +21,7 @@ pub struct ChannelReadStream {
     cancel: Option<tokio::sync::oneshot::Sender<()>>,
     total_size: StreamLength,
     bytes_read: u64,
+    modified_at: Option<std::time::SystemTime>,
 }
 
 impl ChannelReadStream {
@@ -40,7 +41,17 @@ impl ChannelReadStream {
             cancel: Some(cancel),
             total_size,
             bytes_read: 0,
+            modified_at: None,
         }
+    }
+
+    /// The source file's date, for [`VolumeReadStream::modified_at`]. Pass what
+    /// the open already learned (its stat or listing); `None` leaves the
+    /// destination's own date.
+    #[must_use]
+    pub fn with_modified_at(mut self, modified_at: Option<std::time::SystemTime>) -> Self {
+        self.modified_at = modified_at;
+        self
     }
 }
 
@@ -71,5 +82,9 @@ impl VolumeReadStream for ChannelReadStream {
 
     fn bytes_read(&self) -> u64 {
         self.bytes_read
+    }
+
+    fn modified_at(&self) -> Option<std::time::SystemTime> {
+        self.modified_at
     }
 }

@@ -29,7 +29,7 @@ use super::super::transfer_probe::{CURRENT_TASK_PROBE, TaskProbeHandle};
 use super::displaced_destination::DisplacedLedger;
 use super::merge_ctx::{CreatedPaths, FileWindow, MergeCtx, MergeProbe};
 use super::preflight::{SourceFileFacts, SourceHint};
-use super::strategy::{LandingName, copy_single_path, failed_write_leaves_ours_at, staging_for};
+use super::strategy::{LandingName, Replaces, copy_single_path, failed_write_leaves_ours_at, staging_for};
 use crate::file_system::volume::{Volume, VolumeError};
 use crate::ignore_poison::IgnorePoison;
 
@@ -130,12 +130,12 @@ pub(super) struct CopyTask {
     /// dispatch carries no mode here (the scan counts bytes), so a file landing
     /// on a local destination resolves one after its bytes cross.
     pub(super) source_facts: SourceFileFacts,
-    /// Where this task streams: the temp sibling when `replace_after_write` is
-    /// `Some`, else the destination itself.
+    /// Where this task streams: the temp sibling under
+    /// [`Replaces::ViaTemp`], else the destination itself.
     pub(super) dest_path: PathBuf,
-    /// `Some(orig)` ⇒ safe-replace: after a successful write, swap the temp over
-    /// `orig`.
-    pub(super) replace_after_write: Option<PathBuf>,
+    /// What the write does to a file at the name: under `ViaTemp(orig)`, swap
+    /// the temp over `orig` after a successful write.
+    pub(super) replaces: Replaces,
     /// Whether conflict resolution PICKED `dest_path` (a `Rename` pick, an
     /// Overwrite that cleared it) rather than it being the plain
     /// `dest_root.join(name)` nothing has looked at. The landing needs it to
@@ -182,7 +182,7 @@ pub(super) async fn run_copy_task(task: CopyTask) -> Result<CopyTaskSuccess, Cop
         source_is_dir,
         source_facts,
         dest_path,
-        replace_after_write,
+        replaces,
         dest_name_claimed,
         file_name,
         window,
@@ -228,7 +228,7 @@ pub(super) async fn run_copy_task(task: CopyTask) -> Result<CopyTaskSuccess, Cop
     // width 1.
     let _leaf_permit = if source_is_dir { None } else { window.reserve().await };
     let staging = staging_for(
-        &replace_after_write,
+        &replaces,
         if dest_name_claimed {
             LandingName::ClaimedByTheCaller
         } else {
@@ -261,11 +261,12 @@ pub(super) async fn run_copy_task(task: CopyTask) -> Result<CopyTaskSuccess, Cop
     // landed durably (the move op may drop it from the archive).
     let task_skipped_count = created.skipped_file_count();
     let task_skipped_bytes = created.skipped_byte_count();
-    // Overwrote iff a top-level file→file safe-replace fires below, OR a
-    // deep-merge child replaced an existing dest file. Computed before
-    // `replace_after_write` is consumed. Feeds the operation-log eligibility (a
-    // copy that overwrote can't roll back).
-    let task_overwrote = replace_after_write.is_some() || created.any_overwrote();
+    // Overwrote iff a top-level file→file Overwrite replaced a file (a
+    // safe-replace below, or an in-place write on a whole-publishing
+    // destination), OR a deep-merge child replaced an existing dest file.
+    // Computed before `replaces` is consumed. Feeds the operation-log
+    // eligibility (a copy that overwrote can't roll back).
+    let task_overwrote = replaces.overwrites() || created.any_overwrote();
     match result {
         Ok(bytes) => {
             // Safe-replace finalize: the temp now holds the complete new data;
@@ -275,7 +276,7 @@ pub(super) async fn run_copy_task(task: CopyTask) -> Result<CopyTaskSuccess, Cop
             // only complete copy, since finalize's delete step may already have
             // removed the original). It must survive as a recoverable
             // `.cmdr-tmp-*` artifact, NOT be cleaned.
-            if let Some(orig) = replace_after_write {
+            if let Replaces::ViaTemp(orig) = replaces {
                 if let Err(e) = super::finalize::finalize_safe_replace(&dest_volume, &dest_path, &orig).await {
                     // Finalize is file→file only (safe-replace), so there's no
                     // directory ledger to carry. The failure is the

@@ -1,0 +1,36 @@
+{
+  "$comment": "Russian typography as live macOS 27 ru writes it (the reference pile's Finder/AppKit/System Settings strings): «…» primary (Finder «^0»), „…“ nested (the GOST pair), ’ for the rare foreign apostrophe, the single … hugging its word (198 label-ending, zero spaced), a no-break space before % (11 no-break, 3 plain, 0 tight: «100 %») and before the dash — with a space after (all 72 macOS dashes: «Системные настройки — %@»). Hedges: every bracketed or slashed number, case, or gender ending, and a guessed ending on an insert. Grammar is resolved with ICU plural/select or a neutral frame, never a hedge. Rationale: docs/i18n/ru/style.md § Typography. Schema: docs/i18n/termbase.md § <tag>/mechanics.json schema.",
+  "quotes": { "primary": ["«", "»"], "nested": ["„", "“"] },
+  "ellipsis": { "glyph": "…" },
+  "apostrophes": ["’"],
+  "spacing": [
+    {
+      "pattern": "[\\d\\uFFFC] ?%",
+      "why": "a no-break space (U+00A0) goes before % (42 %), as macOS ru writes it"
+    },
+    {
+      "pattern": "[^\\u00a0\\n]—",
+      "why": "the dash — takes a no-break space (U+00A0) before it (Cmdr — файловый менеджер), as macOS ru writes it"
+    },
+    { "pattern": "—[\\p{L}\\d\\uFFFC]", "why": "the dash — takes a space after it" },
+    { "pattern": "«\\s|\\s»", "why": "Russian quotes hug their text: no space inside «…»" }
+  ],
+  "hedges": [
+    {
+      "pattern": "\\p{L}\\((?:а|я|ы|и|е|у|ю|о|ь|ов|ев|ей|ам|ям|ах|ях|ла|ло|ли|ая|ое|ые|ой|ый|ий|ую)\\)",
+      "why": "a bracketed number, case, or gender ending (файл(ы), удалил(а)); use ICU plural/select, or restructure"
+    },
+    {
+      "pattern": "\\p{L}/(?:а|я|ы|и|е|ов|ев|ей|ла|ло|ли|ая|ое|ые)(?!\\p{L})",
+      "why": "a slashed ending (объект/а, готов/а); use ICU plural/select, or restructure"
+    },
+    {
+      "pattern": "(?<!\\p{L})(?:он|она|оно|его|ее|её|ему|ей)/(?:он|она|оно|его|ее|её|ему|ей)(?!\\p{L})",
+      "why": "a slashed pronoun hedging an unknown gender; repeat the type noun (сервер, папка) or rephrase"
+    },
+    {
+      "pattern": "{@name}-?[а-яё]",
+      "why": "a case ending glued to a name Cmdr can't know ({name}а); put a type noun before it, quote it, or use a colon slot"
+    }
+  ]
+}

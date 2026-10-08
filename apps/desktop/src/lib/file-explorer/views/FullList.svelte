@@ -1,4 +1,5 @@
 <script lang="ts">
+    import type { Snippet } from 'svelte'
     import Icon from '$lib/ui/Icon.svelte'
     import StatusGlyph from '$lib/ui/StatusGlyph.svelte'
     import { dependOn } from '$lib/utils/reactivity'
@@ -31,6 +32,10 @@
     /* Short, because a screen reader reads it on every restricted row; the instruction above
        is the hover tooltip on the same glyph. */
     const RESTRICTED_FOLDER_LABEL = $derived(tString('fileExplorer.restrictedFolder.label'))
+    /* Same split for an S3 object in cold storage (`inColdStorage`): a short name per row,
+       the explanation on hover. */
+    const ARCHIVED_FILE_LABEL = $derived(tString('fileExplorer.archivedFile.label'))
+    const ARCHIVED_FILE_TOOLTIP = $derived(tString('fileExplorer.archivedFile.tooltip'))
     import {
         getVisibleItemsCount as getVisibleItemsCountUtil,
         getVirtualizationBufferRows,
@@ -68,7 +73,7 @@
     import { useShortenMiddle } from '$lib/utils/shorten-middle-action'
     import type { RenameState, RenameSessionId } from '../rename/rename-state.svelte'
     import type { RenameStepDirection } from '../rename/rename-step'
-    import { formatByteSize } from '$lib/units'
+    import { formatByteSizeTiered } from '$lib/units'
 
     interface Props {
         listingId: string
@@ -84,8 +89,8 @@
          * Bumped on every `directory-diff` event. Triggers a soft refresh
          * (refetch visible range in the background, keep existing entries
          * visible until new ones land). Use this instead of `cacheGeneration`
-         * for diff-driven refreshes — `cacheGeneration` does a destructive
-         * wipe that causes empty-pane flicker mid-bulk-operation.
+         * for diff-driven refreshes: a diff doesn't invalidate cold-context
+         * metadata such as measured columns.
          */
         softRefreshTick?: number
         cursorIndex: number
@@ -157,6 +162,11 @@
          * click reads "Sort by relevance". See `SortableHeader`'s prop.
          */
         clearsSortLabel?: string
+        /**
+         * The host pane's loading view. When set, it covers the row area while the
+         * column header stays on screen, so a slow load never blinks the header out.
+         */
+        loadingOverlay?: Snippet
     }
 
     const {
@@ -198,6 +208,7 @@
         onDragInitiate,
         staticEntries,
         clearsSortLabel,
+        loadingOverlay,
     }: Props = $props()
 
     /**
@@ -619,10 +630,10 @@
         cache.syncStaticEntries()
     })
 
-    // Hard reset on cold context changes, soft refresh on diff bursts; the cache
-    // owns the decision. A reset suppresses the grid-template-columns transition
-    // for the first paint after a dir switch, else the header (which persists
-    // across navs) slides from the previous dir's widths to the new ones.
+    // Hard refresh on cold context changes, soft refresh on diff bursts; the cache
+    // owns the decision. Both replace the visible window atomically. A reset also
+    // suppresses the grid-template-columns transition for the first paint after a
+    // dir switch, else the header slides from the previous widths to the new ones.
     $effect(() => {
         const sync = cache.syncToProps(rowAreaHeight > 0)
         if (sync === 'idle') return
@@ -634,7 +645,7 @@
                 })
             })
         }
-        fetchVisibleRange(sync === 'refresh')
+        fetchVisibleRange(sync === 'reset' || sync === 'refresh')
     })
 
     // Returns the number of visible items (for Page Up/Down navigation)
@@ -684,11 +695,15 @@
         {clearsSortLabel}
         {onSortChange}
     />
+    <!-- The row area: the scroller plus, during a slow load, the pane's loading view
+         laid over it, so the header above never leaves. -->
+    <div class="row-area">
     <!-- Scrollable file list. `role="listbox"` lives on the inner rows wrapper
          because a listbox's children must be options/groups, and the scroller also
          holds the "empty folder" message. -->
     <div
         class="full-list"
+        class:is-covered={loadingOverlay !== undefined}
         data-file-list-surface
         bind:this={scrollContainer}
         bind:clientHeight={rowAreaHeight}
@@ -793,6 +808,10 @@
                                     name="info"
                                     label={RESTRICTED_FOLDER_LABEL}
                                     tooltip={RESTRICTED_FOLDER_TOOLTIP}
+                                />{/if}{#if file.inColdStorage}<StatusGlyph
+                                    name="archive"
+                                    label={ARCHIVED_FILE_LABEL}
+                                    tooltip={ARCHIVED_FILE_TOOLTIP}
                                 />{/if}{#if showTags}<TagDots tags={file.tags} />{/if}</span>
                             {#if gitColumnVisible}
                                 {@const status = gitColumn.statusFor(file)}
@@ -828,12 +847,12 @@
                                         file.recursiveFileCount ?? 0,
                                         file.recursiveDirCount ?? 0,
                                         isSizeUpdating(file),
-                                        formatByteSize,
+                                        formatByteSizeTiered,
                                         formatNumber,
                                         file.recursiveSizeComplete,
                                         file.recursiveSizeStale,
                                     )
-                                  : buildFileSizeTooltip(file.size, file.physicalSize, formatByteSize)}
+                                  : buildFileSizeTooltip(file.size, file.physicalSize, formatByteSizeTiered)}
                         >
                             {#if sizeOverride.override !== undefined}
                                 <span class="size-text">{sizeOverride.override}</span>
@@ -879,7 +898,7 @@
                                             file.recursiveFileCount ?? 0,
                                             file.recursiveDirCount ?? 0,
                                             dirUpdating,
-                                            formatByteSize,
+                                            formatByteSizeTiered,
                                             formatNumber,
                                             file.recursiveSizeComplete,
                                             file.recursiveSizeStale,
@@ -918,9 +937,13 @@
         <!-- Sibling of the listbox, not a child: the empty-state text is not an
              option, and a listbox holding a non-option child is an
              aria-required-children violation. An EMPTY listbox is fine. -->
-        {#if (hasParent ? totalCount - 1 : totalCount) === 0}
+        {#if !loadingOverlay && (hasParent ? totalCount - 1 : totalCount) === 0}
             <div class="empty-folder-message">{tString('fileExplorer.list.empty')}</div>
         {/if}
+    </div>
+    {#if loadingOverlay}
+        <div class="loading-overlay">{@render loadingOverlay()}</div>
+    {/if}
     </div>
 </div>
 
@@ -931,6 +954,25 @@
         flex: 1;
         min-height: 0;
         width: 100%;
+    }
+
+    .row-area {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        min-height: 0;
+    }
+
+    .loading-overlay {
+        position: absolute;
+        inset: 0;
+    }
+
+    /* The previous folder's rows stay laid out (scroll and measurements hold) but
+       unpainted and out of the a11y tree while the loading view stands in for them. */
+    .full-list.is-covered {
+        visibility: hidden;
     }
 
     .full-list {

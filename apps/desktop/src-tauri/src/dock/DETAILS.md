@@ -81,8 +81,10 @@ answer to "what does the Dock see" and the wrong one to "what am I about to over
 as `ManagedDock` rather than written to and silently ignored.
 
 Values cross the boundary as **binary plist bytes**: `CFPropertyListCreateData` on the way in,
-`CFPropertyListCreateWithData` on the way out, with the `plist` crate on the Rust side. That keeps
-the whole CF surface to four calls and leaves every decision above it operating on `plist::Value`,
+`CFPropertyListCreateWithData` on the way out, with the `plist` crate on the Rust side. That
+conversion lives in `crate::cf_plist` (`../cf_plist.rs`), shared with the managed-policy reader
+(`../managed_policy/source.rs`), along with the `ScratchDomain` test helper. It keeps `prefs.rs` to a
+handful of CF calls and leaves every decision above it operating on `plist::Value`,
 testable with no preferences domain anywhere near it. The alternative — walking `CFArray` and
 `CFDictionary` by hand — would have spread `unsafe` across the module for no gain.
 

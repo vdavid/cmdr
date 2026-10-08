@@ -55,6 +55,14 @@
   "@fileExplorer.restrictedFolder.label": {
     "sourceHash": "bbcf72f"
   },
+  "fileExplorer.archivedFile.label": "Lưu trữ lạnh",
+  "@fileExplorer.archivedFile.label": {
+    "sourceHash": "bdb8650"
+  },
+  "fileExplorer.archivedFile.tooltip": "Đang ở kho lưu trữ lạnh. Hãy khôi phục tệp trong bảng điều khiển của nhà cung cấp dịch vụ lưu trữ trước khi mở hoặc sao chép.",
+  "@fileExplorer.archivedFile.tooltip": {
+    "sourceHash": "8897d71"
+  },
   "fileExplorer.diskSpace.free": "Còn trống {freeText} trong {totalText} ({percentText}%)",
   "@fileExplorer.diskSpace.free": {
     "sourceHash": "97781f4"
@@ -103,6 +111,14 @@
   "fileExplorer.pane.directConnectionUnreachableToast": "Hiện không kết nối được tới {server}, nên mục chia sẻ này vẫn dùng kết nối hệ thống.",
   "@fileExplorer.pane.directConnectionUnreachableToast": {
     "sourceHash": "4a5ca66"
+  },
+  "fileExplorer.pane.directConnectionBlockedByThisMacToast": "Có thứ gì đó trên máy Mac này đang ngăn Cmdr kết nối trực tiếp tới {server}, nên mục chia sẻ này vẫn dùng kết nối hệ thống. Hãy thử tắt rồi bật lại Cmdr trong {localNetwork} hoặc kiểm tra ứng dụng tường lửa của bạn.",
+  "@fileExplorer.pane.directConnectionBlockedByThisMacToast": {
+    "sourceHash": "74f758e"
+  },
+  "fileExplorer.pane.openLocalNetworkSettings": "Mở cài đặt {localNetwork}",
+  "@fileExplorer.pane.openLocalNetworkSettings": {
+    "sourceHash": "c3931df"
   },
   "fileExplorer.pane.directConnectionTooSlowToast": "{server} phản hồi quá chậm, nên mục chia sẻ này vẫn dùng kết nối hệ thống.",
   "@fileExplorer.pane.directConnectionTooSlowToast": {
@@ -288,6 +304,14 @@
   "fileExplorer.typeToJump.prefix": "Nhảy tới: ",
   "@fileExplorer.typeToJump.prefix": {
     "sourceHash": "e9e3412"
+  },
+  "fileExplorer.quickFilter.prefix": "Lọc: ",
+  "@fileExplorer.quickFilter.prefix": {
+    "sourceHash": "b549365"
+  },
+  "fileExplorer.quickFilter.ariaLabel": "Đang hiển thị các tên có chứa “{pattern}”",
+  "@fileExplorer.quickFilter.ariaLabel": {
+    "sourceHash": "9b223b0"
   },
   "fileExplorer.searchResults.unavailableTitle": "Kết quả tìm kiếm không còn khả dụng",
   "@fileExplorer.searchResults.unavailableTitle": {
@@ -537,38 +561,6 @@
   "@fileExplorer.network.reconnect.willTryMore": {
     "sourceHash": "a7d887a"
   },
-  "fileExplorer.mtp.connectTimedOut": "Kết nối đã hết thời gian chờ. Thiết bị có thể đang chậm hoặc không phản hồi.",
-  "@fileExplorer.mtp.connectTimedOut": {
-    "sourceHash": "cc01ae7"
-  },
-  "fileExplorer.mtp.exclusiveAccess": "Một ứng dụng khác đang dùng thiết bị này. Hãy chạy cách khắc phục ptpcamerad.",
-  "@fileExplorer.mtp.exclusiveAccess": {
-    "sourceHash": "1fac18c"
-  },
-  "fileExplorer.mtp.deviceNotFound": "Không tìm thấy thiết bị. Thiết bị có thể đã bị rút ra.",
-  "@fileExplorer.mtp.deviceNotFound": {
-    "sourceHash": "15d2382"
-  },
-  "fileExplorer.mtp.disconnected": "Thiết bị đã bị ngắt kết nối.",
-  "@fileExplorer.mtp.disconnected": {
-    "sourceHash": "57e823a"
-  },
-  "fileExplorer.mtp.deviceBusy": "Thiết bị đang bận. Hãy thử lại.",
-  "@fileExplorer.mtp.deviceBusy": {
-    "sourceHash": "7199b1d"
-  },
-  "fileExplorer.mtp.noStorage": "Thiết bị không có bộ nhớ nào truy cập được",
-  "@fileExplorer.mtp.noStorage": {
-    "sourceHash": "ff30402"
-  },
-  "fileExplorer.mtp.connecting": "Đang kết nối tới thiết bị…",
-  "@fileExplorer.mtp.connecting": {
-    "sourceHash": "860bb9b"
-  },
-  "fileExplorer.mtp.tryAgain": "Thử lại",
-  "@fileExplorer.mtp.tryAgain": {
-    "sourceHash": "d8b8392"
-  },
   "fileExplorer.networkMount.mounting": "Đang gắn kết {target}…",
   "@fileExplorer.networkMount.mounting": {
     "sourceHash": "7b7368d"
@@ -625,9 +617,65 @@
   "@fileExplorer.unreachable.openHome": {
     "sourceHash": "a178b4d"
   },
+  "fileExplorer.listingStalled.title": "Vẫn đang chờ thư mục này",
+  "@fileExplorer.listingStalled.title": {
+    "sourceHash": "2c288e7"
+  },
+  "fileExplorer.listingStalled.detail": "Máy chủ hoặc ổ đĩa chứa thư mục này không phản hồi. Cmdr vẫn tiếp tục thử ở chế độ nền và sẽ mở thư mục ngay khi có phản hồi.",
+  "@fileExplorer.listingStalled.detail": {
+    "sourceHash": "3d5ca69"
+  },
+  "fileExplorer.listingStalled.detailServer": "Máy chủ chứa thư mục này không phản hồi. Cmdr vẫn tiếp tục thử ở chế độ nền và sẽ mở thư mục ngay khi có phản hồi.",
+  "@fileExplorer.listingStalled.detailServer": {
+    "sourceHash": "f8f8837"
+  },
+  "fileExplorer.listingStalled.detailDrive": "Ổ đĩa chứa thư mục này không phản hồi. Cmdr vẫn tiếp tục thử ở chế độ nền và sẽ mở thư mục ngay khi có phản hồi.",
+  "@fileExplorer.listingStalled.detailDrive": {
+    "sourceHash": "e2f3046"
+  },
+  "fileExplorer.listingStalled.tryAgain": "Thử lại",
+  "@fileExplorer.listingStalled.tryAgain": {
+    "sourceHash": "d8b8392"
+  },
+  "fileExplorer.listingStalled.goBack": "Trở lại",
+  "@fileExplorer.listingStalled.goBack": {
+    "sourceHash": "6aadac2"
+  },
   "fileExplorer.clipboard.copied": "Đã sao chép {countText} {count, plural, other {mục}}",
   "@fileExplorer.clipboard.copied": {
     "sourceHash": "1c25075"
+  },
+  "fileExplorer.compareDirectories.marked": "Đã chọn các tệp khác nhau: {leftCountText} {leftCount, plural, other {tệp}} bên trái và {rightCountText} {rightCount, plural, other {tệp}} bên phải.",
+  "@fileExplorer.compareDirectories.marked": {
+    "sourceHash": "73e3ccf"
+  },
+  "fileExplorer.compareDirectories.noDifferences.newerAndMissing": "Không có gì để chọn: tệp nào cũng có ở cả hai thư mục, và không bản sao nào mới hơn. Thư mục con không được so sánh.",
+  "@fileExplorer.compareDirectories.noDifferences.newerAndMissing": {
+    "sourceHash": "c2960d8"
+  },
+  "fileExplorer.compareDirectories.noDifferences.missing": "Không có gì để chọn: tệp nào cũng có ở cả hai thư mục. Thư mục con không được so sánh.",
+  "@fileExplorer.compareDirectories.noDifferences.missing": {
+    "sourceHash": "ed2e696"
+  },
+  "fileExplorer.compareDirectories.noDifferences.sizeAndMissing": "Không có gì để chọn: tệp nào cũng có ở cả hai thư mục, với cùng kích cỡ. Thư mục con không được so sánh.",
+  "@fileExplorer.compareDirectories.noDifferences.sizeAndMissing": {
+    "sourceHash": "5f7b808"
+  },
+  "fileExplorer.compareDirectories.keptChanging": "Các thư mục liên tục thay đổi trong lúc so sánh. Hãy thử lại khi chúng không còn thay đổi.",
+  "@fileExplorer.compareDirectories.keptChanging": {
+    "sourceHash": "3051074"
+  },
+  "fileExplorer.compareDirectories.needsTwoFolders": "Hãy mở một thư mục ở mỗi khung để so sánh",
+  "@fileExplorer.compareDirectories.needsTwoFolders": {
+    "sourceHash": "c04ef80"
+  },
+  "fileExplorer.compareDirectories.couldNotFinish": "Chưa so sánh xong hai thư mục. Hãy thử lại sau giây lát.",
+  "@fileExplorer.compareDirectories.couldNotFinish": {
+    "sourceHash": "0900bc9"
+  },
+  "fileExplorer.folderSizes.notConnected": "Không thể tính toán kích cỡ thư mục ở đây: vị trí này hiện không được kết nối.",
+  "@fileExplorer.folderSizes.notConnected": {
+    "sourceHash": "8b51988"
   },
   "fileExplorer.clipboard.cutReady": "{countText} {count, plural, other {mục}} sẵn sàng để di chuyển. Dán để hoàn tất.",
   "@fileExplorer.clipboard.cutReady": {
@@ -705,6 +753,14 @@
   "@fileExplorer.clipboard.empty": {
     "sourceHash": "0cbe304"
   },
+  "fileExplorer.clipboard.stillPasting": "Vẫn đang tạo tệp từ bảng nhớ tạm. Ổ đĩa phản hồi chậm.",
+  "@fileExplorer.clipboard.stillPasting": {
+    "sourceHash": "0e98ca7"
+  },
+  "fileExplorer.clipboard.notPasted": "Cmdr không thể tạo tệp từ bảng nhớ tạm. {reason}",
+  "@fileExplorer.clipboard.notPasted": {
+    "sourceHash": "a6e63c7"
+  },
   "fileExplorer.clipboard.pastedAsFile": "Đã dán {kind, select, image {hình ảnh} pdf {PDF} other {văn bản}} từ bảng nhớ tạm thành {filename}",
   "@fileExplorer.clipboard.pastedAsFile": {
     "sourceHash": "d61d4b5"
@@ -781,6 +837,26 @@
   "@fileExplorer.git.useTransferToCopyOut": {
     "sourceHash": "a0d65fe"
   },
+  "fileExplorer.openWith.copyRefused.tooLarge": "“{fileName}” lớn hơn {limit}, nên Cmdr không thể mở tệp này bằng {appName} từ bên trong tệp nén.",
+  "@fileExplorer.openWith.copyRefused.tooLarge": {
+    "sourceHash": "43399e6"
+  },
+  "fileExplorer.openWith.copyRefused.tooLargeInRepoHistory": "“{fileName}” lớn hơn {limit}, nên Cmdr không thể mở tệp này bằng {appName} từ lịch sử của repo.",
+  "@fileExplorer.openWith.copyRefused.tooLargeInRepoHistory": {
+    "sourceHash": "aab64d0"
+  },
+  "fileExplorer.openWith.copyRefused.needsPassword": "“{fileName}” nằm trong một tệp nén được bảo vệ bằng mật khẩu. Hãy sao chép tệp vào một thư mục trước (Cmdr sẽ hỏi mật khẩu), rồi mở bằng {appName}.",
+  "@fileExplorer.openWith.copyRefused.needsPassword": {
+    "sourceHash": "882a23f"
+  },
+  "fileExplorer.openWith.copyRefused.archiveUnreadable": "Không thể lấy “{fileName}” ra khỏi tệp nén để mở bằng {appName}. Có thể tệp nén bị hỏng hoặc dùng định dạng mà Cmdr không đọc được.",
+  "@fileExplorer.openWith.copyRefused.archiveUnreadable": {
+    "sourceHash": "4ff2573"
+  },
+  "fileExplorer.openWith.copyRefused.unreadable": "Không thể đọc “{fileName}” để mở bằng {appName}. Hãy kiểm tra xem ổ đĩa chứa tệp có còn kết nối không, rồi thử lại.",
+  "@fileExplorer.openWith.copyRefused.unreadable": {
+    "sourceHash": "8af2399"
+  },
   "fileExplorer.rename.hiddenAfterRename": "Tệp của bạn đã biến mất khỏi khung nhìn vì các tệp ẩn không được hiển thị.",
   "@fileExplorer.rename.hiddenAfterRename": {
     "sourceHash": "6258274"
@@ -797,13 +873,17 @@
   "@fileExplorer.rename.chainKeptOriginalNameAndOthers": {
     "sourceHash": "016797b"
   },
-  "fileExplorer.rename.unconfirmed": "Chưa xác nhận được việc đổi tên “{name}”. Ổ đĩa có thể chậm, nên việc đổi tên vẫn có thể đã hoàn tất.",
-  "@fileExplorer.rename.unconfirmed": {
-    "sourceHash": "059ac81"
+  "fileExplorer.rename.needsOwnMoveDialog": "Việc đổi tên sẽ sao chép trên máy chủ, nên cần một hộp thoại Di chuyển riêng. Hãy đổi tên lại riêng mục này.",
+  "@fileExplorer.rename.needsOwnMoveDialog": {
+    "sourceHash": "87110e0"
   },
-  "fileExplorer.rename.unconfirmedAndOthers": "Chưa xác nhận được việc đổi tên “{name}” và {others, plural, other {{othersText} tệp khác}}. Ổ đĩa có thể chậm, nên các lần đổi tên vẫn có thể đã hoàn tất.",
-  "@fileExplorer.rename.unconfirmedAndOthers": {
-    "sourceHash": "f16b15d"
+  "fileExplorer.rename.stillRenaming": "Vẫn đang đổi tên “{name}”. Ổ đĩa phản hồi chậm.",
+  "@fileExplorer.rename.stillRenaming": {
+    "sourceHash": "a05cca5"
+  },
+  "fileExplorer.rename.stillRenamingAndOthers": "Vẫn đang đổi tên “{name}” và {kind, select, folders {{others, plural, other {{othersText} thư mục khác}}} files {{others, plural, other {{othersText} tệp khác}}} other {{others, plural, other {{othersText} tệp và thư mục khác}}}}. Ổ đĩa phản hồi chậm.",
+  "@fileExplorer.rename.stillRenamingAndOthers": {
+    "sourceHash": "933be25"
   },
   "fileExplorer.columns.name": "Tên",
   "@fileExplorer.columns.name": {
@@ -1336,6 +1416,10 @@
   "@fileExplorer.navigation.connectionTooltipDirect": {
     "sourceHash": "a69a3ad"
   },
+  "fileExplorer.navigation.connectionTooltipConnected": "Đã kết nối",
+  "@fileExplorer.navigation.connectionTooltipConnected": {
+    "sourceHash": "2296556"
+  },
   "fileExplorer.navigation.connectionTooltipSystem": "Đang dùng kết nối hệ thống. Hãy dùng mục menu “Kết nối trực tiếp để truy cập nhanh hơn” để truy cập nhanh hơn.",
   "@fileExplorer.navigation.connectionTooltipSystem": {
     "sourceHash": "e4ac697"
@@ -1408,9 +1492,9 @@
   "@fileExplorer.navigation.disconnectPlaceAriaLabel": {
     "sourceHash": "8f755cb"
   },
-  "fileExplorer.navigation.disconnectBusyTooltip": "Không thể ngắt kết nối khi còn thao tác đang chạy trên máy chủ này",
+  "fileExplorer.navigation.disconnectBusyTooltip": "Cmdr vẫn đang làm việc với tệp trên máy chủ này. Hãy ngắt kết nối khi việc đó xong.",
   "@fileExplorer.navigation.disconnectBusyTooltip": {
-    "sourceHash": "a659820"
+    "sourceHash": "bd52d60"
   },
   "fileExplorer.navigation.serverPinnedToast": "{name} giờ đã có trong bộ chọn ổ đĩa của bạn.",
   "@fileExplorer.navigation.serverPinnedToast": {
@@ -1420,9 +1504,9 @@
   "@fileExplorer.navigation.serverUnpinnedToast": {
     "sourceHash": "7fa97b2"
   },
-  "fileExplorer.navigation.pinRefusedToast": "Cmdr không thể thay đổi nơi {name} hiển thị.",
+  "fileExplorer.navigation.pinRefusedToast": "Cmdr không thể thay đổi nơi {name} xuất hiện.",
   "@fileExplorer.navigation.pinRefusedToast": {
-    "sourceHash": "3ed5f60"
+    "sourceHash": "59f1f8b"
   },
   "fileExplorer.navigation.disconnectRefusedToast": "Cmdr không thể ngắt kết nối khỏi {name}.",
   "@fileExplorer.navigation.disconnectRefusedToast": {
@@ -1468,9 +1552,9 @@
   "@fileExplorer.navigation.ejectVolumeAriaLabel": {
     "sourceHash": "61db18b"
   },
-  "fileExplorer.navigation.ejectBusyTooltip": "Không thể tháo khi còn thao tác đang chạy trên thiết bị này",
+  "fileExplorer.navigation.ejectBusyTooltip": "Cmdr vẫn đang làm việc với tệp trên thiết bị này. Hãy tháo khi việc đó xong.",
   "@fileExplorer.navigation.ejectBusyTooltip": {
-    "sourceHash": "eafd9bd"
+    "sourceHash": "3da6312"
   },
   "fileExplorer.navigation.ejectingVolumeAriaLabel": "Đang tháo {name}…",
   "@fileExplorer.navigation.ejectingVolumeAriaLabel": {
@@ -1655,5 +1739,41 @@
   "fileExplorer.dragOut.partial": "{summary} {count, plural, =1 {Không thể sao chép “{name}”.} other {Không thể sao chép {countText} mục.}}",
   "@fileExplorer.dragOut.partial": {
     "sourceHash": "9215226"
+  },
+  "fileExplorer.folderSizes.unreadable": "{count, plural, other {Có # thư mục không đọc được hết, nên kích cỡ có thể không đầy đủ.}}",
+  "@fileExplorer.folderSizes.unreadable": {
+    "sourceHash": "ad31a56"
+  },
+  "fileExplorer.quickFilter.clear": "Xóa bộ lọc",
+  "@fileExplorer.quickFilter.clear": {
+    "sourceHash": "ba59e2d"
+  },
+  "fileExplorer.quickFilter.intro.title": "Khung này đã được lọc khi bạn gõ",
+  "@fileExplorer.quickFilter.intro.title": {
+    "sourceHash": "eef3e92"
+  },
+  "fileExplorer.quickFilter.intro.body": "Bạn đã gõ vài chữ cái, nên giờ khung chỉ hiển thị các tệp và thư mục có tên chứa các chữ cái đó.",
+  "@fileExplorer.quickFilter.intro.body": {
+    "sourceHash": "e406349"
+  },
+  "fileExplorer.quickFilter.intro.escape": "Nhấn Escape để xem lại tất cả tệp của bạn.",
+  "@fileExplorer.quickFilter.intro.escape": {
+    "sourceHash": "af749ad"
+  },
+  "fileExplorer.quickFilter.intro.jumpNote": "Bạn muốn đưa con trỏ tới tên khớp mà không ẩn gì? Hãy chuyển sang “Nhảy tới”, ngay tại đây hoặc trong Cài đặt.",
+  "@fileExplorer.quickFilter.intro.jumpNote": {
+    "sourceHash": "ac6d3c8"
+  },
+  "fileExplorer.quickFilter.intro.switchToJump": "Chuyển sang “Nhảy tới”",
+  "@fileExplorer.quickFilter.intro.switchToJump": {
+    "sourceHash": "38642f9"
+  },
+  "fileExplorer.quickFilter.intro.openSettings": "Cài đặt…",
+  "@fileExplorer.quickFilter.intro.openSettings": {
+    "sourceHash": "7a04083"
+  },
+  "fileExplorer.quickFilter.intro.gotIt": "Đã hiểu",
+  "@fileExplorer.quickFilter.intro.gotIt": {
+    "sourceHash": "5ad3dbd"
   }
 }

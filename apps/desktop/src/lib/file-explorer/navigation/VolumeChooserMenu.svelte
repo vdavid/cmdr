@@ -443,7 +443,10 @@
                     >
                 {/if}
                 {#if volume.connectionState}
-                    <ConnectionDot state={volume.connectionState} />
+                    <ConnectionDot
+                        state={volume.connectionState}
+                        hasOsMountFallback={volume.capabilities?.hasOsMountFallback ?? false}
+                    />
                 {/if}
                 {#if volume.usbSpeed}
                     <UsbSpeedDot speed={volume.usbSpeed} />

@@ -786,12 +786,16 @@ penalty under the system allocator. Evidence and before/after numbers:
   `try_lock` builds and drops a whole cache. That lock traffic, not the allocator, was most of the cost: 64 → 10 ms
   for a no-match query under mimalloc. `ExcludeRules` and `ScopeFilter` share their sets behind `Arc`s so the clone is
   cheap. `collect()` over the chunks still preserves arena order.
+- **Each scan chunk memoizes the name-exclusion walk** (`AncestorVerdicts`: folder id → "a name rule excludes this
+  folder or one above it"). A match walks up only until a folder the chunk already judged, then records the answer for
+  every folder it passed, so each folder is judged once per chunk rather than once per match under it. That halved a
+  one-letter query (~300 → ~175 ms on a 5.6 M-row arena). The memo is per chunk, ❌ never shared across workers: a
+  shared map is a lock on the hot path.
 - **`ExcludeRules::excludes_dir_name` folds an ASCII name on the stack** (`with_ascii_folded`), byte-identical to
-  `fold` (pinned by `the_ascii_fold_agrees_with_the_general_one`). It runs per ancestor per match with the system
-  excludes on by default. A non-ASCII or over-long name still takes `fold`'s `String`s: ~1% of directory names on a
-  real boot volume, which is the ~67,000 allocations a `*.pdf` query still makes. ❌ Don't make that path
-  allocation-free by folding char by char here: it would re-derive `normalize_for_comparison`'s NFD and case rules
-  (final sigma included), the fork `CLAUDE.md` forbids.
+  `fold` (pinned by `the_ascii_fold_agrees_with_the_general_one`). A non-ASCII or over-long name still takes `fold`'s
+  `String`s (~1% of directory names on a real boot volume), now once per folder per chunk thanks to the memo. ❌ Don't
+  make that path allocation-free by folding char by char here: it would re-derive `normalize_for_comparison`'s NFD and
+  case rules (final sigma included), the fork `CLAUDE.md` forbids.
 - **Ranking hashes a folder's path off a stack buffer**, and its memos are few and warm (§ Ranking cost below).
 
 Pinned per query, not per row, by `engine/tests/allocations.rs` over `test_support::allocations_on_pool`, which counts a

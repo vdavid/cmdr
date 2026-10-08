@@ -35,6 +35,22 @@ export const MAX_HISTORY_PER_TAB = 100
 export type HistoryEntry = Location & {
   /** For network volume: the network host (if browsing shares) */
   networkHost?: NetworkHost
+  /**
+   * Where the cursor last sat while this entry was on screen, so Back and Forward
+   * put it back. Written in place by `history-cursor.ts::recordCursor`, and NOT
+   * part of the entry's identity (`entriesEqual` ignores it).
+   */
+  cursor?: HistoryCursor
+}
+
+/**
+ * One history entry's remembered cursor: the row's path when a read confirmed it,
+ * with the index as the fallback for a row that's gone. Session-only, like the
+ * history that holds it.
+ */
+export interface HistoryCursor {
+  index: number
+  rowPath?: string
 }
 
 export interface NavigationHistory {

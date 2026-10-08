@@ -152,22 +152,12 @@ fn load_branches(space: &IndexPathSpace, conn: &rusqlite::Connection) -> Vec<Str
     let Ok(Some(stored)) = IndexStore::get_meta(conn, COVERED_BRANCHES_KEY) else {
         return Vec::new();
     };
-    let volume_root = space.volume_root_string();
     stored
         .lines()
         .map(str::trim)
         .filter(|line| !line.is_empty())
-        .map(|relative| join_volume_relative(&volume_root, relative))
+        .map(|relative| space.absolute_of(relative))
         .collect()
-}
-
-/// Rebuild an absolute path from the volume root and an index-relative one. The
-/// boot disk's index-relative paths are already absolute, so its root (`/`) has
-/// to not double up the separator.
-fn join_volume_relative(volume_root: &str, relative: &str) -> String {
-    let trimmed_root = volume_root.trim_end_matches('/');
-    let trimmed_relative = relative.trim_start_matches('/');
-    format!("{trimmed_root}/{trimmed_relative}")
 }
 
 /// One patch of ground a search walk covered on this volume. Its absolute path

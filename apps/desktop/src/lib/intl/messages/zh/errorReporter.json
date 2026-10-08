@@ -80,6 +80,14 @@
   "@errorReporter.dialog.saveToDisk": {
     "sourceHash": "36d6589"
   },
+  "errorReporter.dialog.managedOff": "你的组织关闭了发送报告的功能。你仍然可以把报告保存到磁盘，再自己发给别人。",
+  "@errorReporter.dialog.managedOff": {
+    "sourceHash": "9309a39"
+  },
+  "errorReporter.dialog.saveToDiskManaged": "保存到磁盘",
+  "@errorReporter.dialog.saveToDiskManaged": {
+    "sourceHash": "5a5d775"
+  },
   "errorReporter.dialog.cancel": "取消",
   "@errorReporter.dialog.cancel": {
     "sourceHash": "19766ed"
@@ -126,7 +134,7 @@
   },
   "errorReporter.amend.unavailable": "这份报告已经无法再添加备注。要把你的备注交给团队，请从“帮助”菜单发送一份新报告。",
   "@errorReporter.amend.unavailable": {
-    "sourceHash": "b96b48a"
+    "sourceHash": "08ab034"
   },
   "errorReporter.amend.close": "关闭",
   "@errorReporter.amend.close": {

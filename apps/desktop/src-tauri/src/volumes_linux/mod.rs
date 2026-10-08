@@ -30,7 +30,7 @@ pub use smb::{SmbMountInfo, enrich_from_volume_registry, get_smb_mount_info};
 
 pub(crate) use fs_type::get_mount_point;
 pub(crate) use ids::volume_id_for_mount;
-pub(crate) use mounts::mount_roots;
+pub(crate) use mounts::{mount_roots, registrable_mount_roots};
 pub(crate) use smb::{parse_gvfs_smb_dirname, smb_mounts};
 
 #[allow(
@@ -40,8 +40,8 @@ pub(crate) use smb::{parse_gvfs_smb_dirname, smb_mounts};
 pub use crate::file_system::volume::ConnectionState;
 
 use crate::file_system::linux_mounts::{self, MountEntry};
+use cmdr_fs::volume::published_locations::{PublishedLocation, dedupe_locations};
 use serde::{Deserialize, Serialize};
-use std::collections::HashSet;
 use std::path::Path;
 
 /// Category of a location item.
@@ -132,63 +132,46 @@ impl cmdr_fs::volume::canonical_root::MountRootCandidate for LocationInfo {
     }
 }
 
+impl PublishedLocation for LocationInfo {
+    fn location_id(&self) -> &str {
+        &self.id
+    }
+
+    fn location_path(&self) -> &str {
+        &self.path
+    }
+
+    fn is_favorite(&self) -> bool {
+        self.category == LocationCategory::Favorite
+    }
+}
+
 /// The volume-shaped name for the same struct; see the macOS twin in `volumes/mod.rs`.
 pub use LocationInfo as VolumeInfo;
 
 /// Default volume ID for the root filesystem.
 pub const DEFAULT_VOLUME_ID: &str = "root";
 
-/// Get all locations organized by category, deduplicated by path AND by volume
-/// ID.
+/// Get all locations organized by category, deduplicated.
 ///
-/// The ID half matters because a volume ID is identity: one filesystem reachable
-/// through two categories (a CIFS mount that's also GVFS-mounted) derives one ID
-/// at two paths, and everything downstream keys on the ID. `get_mounted_volumes`
-/// already collapses double mounts within its own category; this catches the
-/// cross-category case.
+/// Gathers favorites, the main volume, mounted volumes (real filesystems,
+/// excluding root and virtual), cloud drives, and GVFS SMB shares in that
+/// order, then dedupes through `cmdr_fs::volume::published_locations` (shared
+/// with macOS), whose header says which row wins a clash. The ID half of that
+/// rule catches one filesystem reachable through two categories (a CIFS mount
+/// that's also GVFS-mounted); `get_mounted_volumes` already collapses double
+/// mounts within its own category.
 pub fn list_locations() -> Vec<LocationInfo> {
     // An unreadable table lists no attached volumes; favorites, root, cloud
     // drives, and GVFS shares don't come from it, so they still show.
     let mounts = linux_mounts::parse_proc_mounts().unwrap_or_default();
-    let mut locations = Vec::new();
-    let mut seen_paths: HashSet<String> = HashSet::new();
-    let mut seen_ids: HashSet<String> = HashSet::new();
-
-    let mut push_unique = |locations: &mut Vec<LocationInfo>, loc: LocationInfo| {
-        // Both inserts must run, so the sets can't drift apart on a partial hit.
-        let new_path = seen_paths.insert(loc.path.clone());
-        let new_id = seen_ids.insert(loc.id.clone());
-        if new_path && new_id {
-            locations.push(loc);
-        }
-    };
-
-    // 1. Favorites
-    for loc in get_favorites(&mounts) {
-        push_unique(&mut locations, loc);
-    }
-
-    // 2. Main volume
-    if let Some(loc) = get_main_volume(&mounts) {
-        push_unique(&mut locations, loc);
-    }
-
-    // 3. Mounted volumes (real filesystems, excluding root and virtual)
-    for loc in get_mounted_volumes(&mounts) {
-        push_unique(&mut locations, loc);
-    }
-
-    // 4. Cloud drives
-    for loc in cloud::get_cloud_drives(&mounts) {
-        push_unique(&mut locations, loc);
-    }
-
-    // 5. Network mounts (GVFS SMB shares)
-    for loc in smb::get_network_mounts() {
-        push_unique(&mut locations, loc);
-    }
-
-    locations
+    let locations = get_favorites(&mounts)
+        .into_iter()
+        .chain(get_main_volume(&mounts))
+        .chain(get_mounted_volumes(&mounts))
+        .chain(cloud::get_cloud_drives(&mounts))
+        .chain(smb::get_network_mounts());
+    dedupe_locations(locations)
 }
 
 /// Get the user's favorites from the editable store (`favorites.json`).

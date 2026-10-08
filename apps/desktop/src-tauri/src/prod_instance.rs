@@ -87,9 +87,9 @@ mod tests {
         // `apps/desktop/scripts/i18n-capture.ts`.
         let i18n_capture = ["CMDR_E2E_MODE", "CMDR_DATA_DIR", "CMDR_MOCK_FDA"];
         // `apps/desktop/scripts/marketing-shots.ts` deliberately leaves `CMDR_E2E_MODE` unset.
-        let marketing_shots = ["CMDR_DATA_DIR"];
+        let marketing_shots = ["CMDR_DATA_DIR", "CMDR_CACHE_DIR"];
         // `apps/desktop/scripts/tauri-wrapper.ts` (dev and per-worktree dev).
-        let dev_wrapper = ["CMDR_INSTANCE_ID", "CMDR_DATA_DIR"];
+        let dev_wrapper = ["CMDR_INSTANCE_ID", "CMDR_DATA_DIR", "CMDR_CACHE_DIR"];
 
         for (label, vars) in [
             ("e2e checker", &e2e_checker[..]),

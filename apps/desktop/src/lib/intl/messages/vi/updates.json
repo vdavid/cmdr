@@ -80,6 +80,14 @@
   "@updates.status.installing": {
     "sourceHash": "214ef12"
   },
+  "updates.status.managedOff": "Tổ chức của bạn quản lý việc cập nhật Cmdr.",
+  "@updates.status.managedOff": {
+    "sourceHash": "aa342dc"
+  },
+  "updates.status.heldByPolicy": "Đã có Cmdr {available}, nhưng tổ chức của bạn giữ máy Mac này ở phiên bản {ceiling} hoặc cũ hơn.",
+  "@updates.status.heldByPolicy": {
+    "sourceHash": "5c9b196"
+  },
   "updates.status.ready": "Bản cập nhật v{next} đã sẵn sàng. Khởi động lại để áp dụng.",
   "@updates.status.ready": {
     "sourceHash": "2c226ff"

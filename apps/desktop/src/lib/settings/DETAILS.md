@@ -100,6 +100,10 @@ config UIs), `KeyboardShortcutsSection` (command names from the command registry
 - Cross-window sync: emits `settings:changed` events when values change (payload carries an `explicit` flag; see §
   Sparse persistence)
 - **Sparse: `settings.json` holds only keys an actor explicitly set** — see § Sparse persistence below.
+- **The organization's MDM policy overlays it.** `initializeSettings` loads the policy before it marks the store
+  initialized; `getSetting` then returns a locked setting's pinned value (or a narrowed one's fallback), `setSetting`
+  and `resetSetting` refuse what the lock rules out, and a policy change notifies each setting whose effective value
+  moved. Nothing of it is ever persisted. `../managed-policy/DETAILS.md` § The settings store under a lock.
 
 ### Change listeners: `onSpecificSettingChange` drops the id
 
@@ -282,9 +286,10 @@ wraps every route — so a new window gets settings for free and can't forget.
   pins the access map against the capability files and fails if a new route has no entry.
 
 Before this, only `(main)/+layout.svelte` initialized the reactive layer, so every OTHER window rendered every reactive
-setting at its registry default: sizes in binary when the user had picked SI, dates in ISO when they had picked a custom
-format. `AppearanceSizesSection.svelte` carried a hand-rolled `getSetting` + `onSpecificSettingChange` workaround for
-exactly that; the root-layout init is what let it go back to `getFileSizeFormat()`.
+setting at its registry default: sizes in the default base when the user had picked the other one, dates in ISO when
+they had picked a custom format. `AppearanceSizesSection.svelte` carried a hand-rolled `getSetting` +
+`onSpecificSettingChange` workaround for exactly that; the root-layout init is what let it go back to
+`getFileSizeFormat()`.
 
 ### Reactive state (`reactive-settings.svelte.ts`)
 
@@ -385,8 +390,11 @@ split-layout rule, and the `SettingPasswordInput` store-driven vs controlled mod
   setting that records a consent answer: `analytics.enabled`, `updates.crashReports`, `updates.errorReports`, the two
   `onboarding.termsAccepted*`, `ai.cloudConsentRevokePending`, `askCmdr.consentRevokePending`, `askCmdr.enabled`) with a
   typed `notSettableOverMcp` refusal, keyed on the registry mark, never the id; a new consent-bearing setting sets the
-  mark. The YAML lists it too. It handles `mcp-get-all-settings` and `mcp-set-setting` round-trip events in the main
-  window (always alive), enabling AI agents to query and modify settings without the settings window open
+  mark. The YAML lists it too. A setting the organization's policy manages is marked `managed: true` (its `value` is
+  already the effective one), and a write the lock rules out is refused with `refusal: 'managedByOrganization'`, the
+  backstop to the backend's own refusal before the round trip. It handles `mcp-get-all-settings` and `mcp-set-setting`
+  round-trip events in the main window (always alive), enabling AI agents to query and modify settings without the
+  settings window open
 
 ### Every open funnels through `openSettingsWindow`
 

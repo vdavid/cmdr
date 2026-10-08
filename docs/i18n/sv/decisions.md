@@ -232,14 +232,11 @@ catalog.
 - `stagedLeftover.*` is Cmdr's own work file: `ofullständig kopia`, `rensar bort`, and `vid en senare överföring`, ❌
   never "nästa gång": cleanup skips anything younger than an hour, so the next try may clear nothing.
 
-## Rename toasts: chained and unconfirmed (`fileExplorer.rename.chainKeptOriginalNameAndOthers`, `fileExplorer.rename.unconfirmed*`, `fileOperations.validation.nameNotUsable`)
+## Rename toasts: chained (`fileExplorer.rename.chainKeptOriginalNameAndOthers`, `fileOperations.validation.nameNotUsable`)
 
-- The two families mean opposite things (definitely kept vs unknown) and must never blur.
 - "kept its name" → present `behåller sitt namn` (Total Commander's `Behåll namnet`): the state the file is in.
 - "and so did …" → `, liksom …`. ❌ Not `och det gör …` (unreadable without a comma) nor bureaucratic
   `och detsamma gäller`.
-- Unconfirmed follows `fileOperations.mkdir.timeoutMessage`: `så filen kan ändå ha bytt namn`. ❌ Not `gått igenom` or
-  `lyckats` (the house voice avoids that status word). Several renames take the definite plural `namnbytena av`.
 - `Det här mappnamnet / filnamnet kan inte användas` (Finder's `Namnet … kan inte användas`), no final period.
 
 ## Suggested operations (`suggestedOps.*`, `commands.suggestedOpsShow.*`)
@@ -307,13 +304,14 @@ catalog.
 - `koppla från` is programmatic, `koppla ur` the device out of the port, `dra ur` the cable.
 - The noun `utmatningen` in `timedOut` (tentative): ❌ not `så den kan fortfarande matas ut`, which reads as "you can
   still eject it".
-- Named-app refusals (`unmountRefusedBy*`) keep `unmountRefused`'s frame with `{app}` as a bare subject; active over
-  AppKit's passive `används av ”%@”`, and the key forbids quoting the name. `other apps` → indefinite `andra appar`.
-  macOS `arbetar fortfarande med` keeps the English split from an app's `använder`; `Vänta en minut` vs `Vänta en stund`
-  keeps the English split too.
+- The refusals (`unmountRefused*`) share one skeleton, `X har fortfarande filer öppna där.` +
+  `… och försök sedan igen.`: either wrapper may concern a share or a phone, so never `den här enheten` or
+  `mata ut igen`. `{app}` is a bare subject; active over AppKit's passive `används av ”%@”`, and the key forbids quoting
+  the name. `Stäng dem` points at `filer`; the aside keeps Cmdr as subject, never `Vi`. `other apps` → `andra appar`;
+  other processes → bare `andra`. The busy tooltips keep `arbetar fortfarande med`; `Vänta en minut` vs `Vänta en stund`
+  follows English.
 - disk image → `skivavbild`, short `avbilden`; ❌ not MS's `avbildning` (Windows side).
-- A disabled button's tooltip says `Det går inte att koppla från medan åtgärder pågår på den här servern`, without the
-  menus' `(upptagen)` marker.
+- Disabled buttons' tooltips skip the menus' `(upptagen)` marker.
 
 ## Trash toast (`fileOperations.trash.*`, `commands.fileGoToTrash.*`)
 
@@ -431,7 +429,7 @@ catalog.
 - Got it → `Uppfattat` over macOS's `OK`, which the catalog keeps for a dialog's default button.
 - `värdnyckel` only where the English writes "host key".
 - Found at {path} → `Hittades: {path}`, ❌ not `i {path}`: the path is the binary itself, not its folder.
-- Re-check → `Leta igen`, tying the button to the placeholder `Leta efter adb på vanligt sätt`.
+- Re-check → `Leta igen`, tying the button to the placeholder `Cmdr letar efter adb på vanligt sätt`.
 - The picker's title is `Välj kommandot adb` (Apple's picker button `Välj`); the button opening it is `Bläddra…`.
 - Location of adb → `Sökväg till adb`, ❌ not Finder's `Plats` (the enclosing folder).
 - `platform tools` stays English (the SDK Manager shows `Platform-Tools` in every locale; tentative).
@@ -455,7 +453,7 @@ catalog.
 - `Dock` takes no article, inflection, or possessive (`i Dock`), and pin / unpin on Apple's surface are `Behåll i Dock`
   / `Ta bort från Dock` (Dock's own menu), ❌ not Cmdr's `fäst` / `lossa`.
 - The Applications folder is `Appar` since macOS 26: `dra … från mappen Appar` (AppKit's model sentence).
-- managed by → `styrs av` (Apple's MDM formula); `hanterar` stays for the person administering the Mac.
+- managed by a profile → `styrs av`; by a person or organization → `hanteras av` (Apple's MDM).
 - `Cmdrs symbol är på plats, men Dock startade inte om`: never claim the pin failed; the icon IS there.
 - `Nej tack`, ❌ not `Inte nu`, which promises a later ask Cmdr never makes.
 - Never a number for a movable threshold (`några dagar`, `ett tag nu`).

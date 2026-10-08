@@ -25,7 +25,7 @@ import type { ExplorerAPI } from '../../routes/(main)/explorer-api'
 import GoToPathAncestorToastContent from './GoToPathAncestorToastContent.svelte'
 import { GO_TO_PATH_ANCESTOR_TOAST_ID } from './go-to-path-ids'
 import { addRecentPath } from './recent-paths-state.svelte'
-import { actOnSchemeInput, readSchemeInput, type GoToPathOutcome } from './scheme-intercept'
+import { actOnSchemeInput, readSchemeInput, type GoToPathOutcome, type SchemeIntent } from './scheme-intercept'
 
 export type { GoToPathOutcome }
 
@@ -46,8 +46,9 @@ const log = getAppLogger('go-to-path')
  *   asked: a saved server or a device navigates, any other server address opens
  *   the sign-in sheet and answers `handed_off`.
  *
- * On `directory` / `file` / `nearestAncestor` success the resolved target is
- * recorded into recents. The helper is a no-op when `explorer` is `undefined`
+ * Once the pane accepts the navigation, the resolved target is recorded into
+ * recents. A refused navigation records nothing: the path didn't work, so the
+ * recents list mustn't offer it again. The helper is a no-op when `explorer` is `undefined`
  * (HMR or pre-mount).
  *
  * Returns the resolution so callers (the dialog) can react (close on success,
@@ -63,30 +64,7 @@ export async function goToPath(explorer: ExplorerAPI | undefined, input: string)
   // the pane's directory there and answers `invalid`; here it navigates to the
   // saved place, or opens the sheet on the address.
   const intent = await readSchemeInput(input)
-  if (intent) {
-    const outcome = await actOnSchemeInput(intent, {
-      // ❗ The SAME destination ⌘K's hand-off uses: the saved host's share list,
-      // mounting the share the address named. An SMB connect is a share MOUNT, so
-      // there is no volume to navigate to until that mount lands.
-      onSmbHandOff: (handOff) => {
-        explorer.openSmbHandOffInFocusedPane(handOff)
-      },
-      // An SFTP or WebDAV address connects a place, and the jump lands on it.
-      onConnected: ({ volumeId, root }) => {
-        explorer.navigate({
-          pane: explorer.getFocusedPane(),
-          to: { selectVolume: { volumeId, path: root } },
-          source: 'user',
-        })
-      },
-    })
-    if (outcome.kind !== 'directory') return outcome
-    const location = await resolveLocationOrToast(outcome.path)
-    if (!location) return outcome
-    await navigateToDirInPane(explorer, explorer.getFocusedPane(), location)
-    await recordRecent(outcome.path)
-    return outcome
-  }
+  if (intent) return goToSchemeInput(explorer, intent)
 
   const baseDir = getFocusedPanePath()
   const result = await resolveGoToPath(input, baseDir)
@@ -109,21 +87,19 @@ export async function goToPath(explorer: ExplorerAPI | undefined, input: string)
     case 'directory': {
       const location = await resolveLocationOrToast(resolution.path)
       if (!location) return resolution
-      await navigateToDirInPane(explorer, pane, location)
-      await recordRecent(resolution.path)
+      if (await navigateToDirInPane(explorer, pane, location)) await recordRecent(resolution.path)
       return resolution
     }
     case 'file': {
       const location = await resolveLocationOrToast(resolution.parentDir)
       if (!location) return resolution
-      await navigateToFileInPane(explorer, pane, location, resolution.fileName)
-      await recordRecent(resolution.path)
+      if (await navigateToFileInPane(explorer, pane, location, resolution.fileName)) await recordRecent(resolution.path)
       return resolution
     }
     case 'nearestAncestor': {
       const location = await resolveLocationOrToast(resolution.ancestorDir)
       if (!location) return resolution
-      await navigateToDirInPane(explorer, pane, location)
+      if (!(await navigateToDirInPane(explorer, pane, location))) return resolution
       // Snapshot the back-shortcut at toast-creation time so a later rebind
       // doesn't rewrite a visible toast (matches the downloads snapshot rule).
       const backShortcut = toDisplayShortcut(getEffectiveShortcuts('nav.back')[0] ?? '')
@@ -144,6 +120,31 @@ export async function goToPath(explorer: ExplorerAPI | undefined, input: string)
       log.debug('goToPath: invalid input {input}: {reason}', { input, reason: resolution.reason })
       return resolution
   }
+}
+
+/** Acts on a `<scheme>://` input, and jumps to the place it named when there is one. */
+async function goToSchemeInput(explorer: ExplorerAPI, intent: SchemeIntent): Promise<GoToPathOutcome> {
+  const outcome = await actOnSchemeInput(intent, {
+    // ❗ The SAME destination ⌘K's hand-off uses: the saved host's share list,
+    // mounting the share the address named. An SMB connect is a share MOUNT, so
+    // there is no volume to navigate to until that mount lands.
+    onSmbHandOff: (handOff) => {
+      explorer.openSmbHandOffInFocusedPane(handOff)
+    },
+    // An SFTP, WebDAV, or S3 address connects a place, and the jump lands on it.
+    onConnected: ({ volumeId, root }) => {
+      explorer.navigate({
+        pane: explorer.getFocusedPane(),
+        to: { selectVolume: { volumeId, path: root } },
+        source: 'user',
+      })
+    },
+  })
+  if (outcome.kind !== 'directory') return outcome
+  const location = await resolveLocationOrToast(outcome.path)
+  if (!location) return outcome
+  if (await navigateToDirInPane(explorer, explorer.getFocusedPane(), location)) await recordRecent(outcome.path)
+  return outcome
 }
 
 /**

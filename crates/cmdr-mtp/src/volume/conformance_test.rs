@@ -84,6 +84,25 @@ async fn create_directory_all_honors_the_shared_honesty_contract() {
     device.teardown(test_connection_manager()).await;
 }
 
+/// The shared file-in-the-way assertion, over a real `MtpVolume`.
+///
+/// MTP addresses a new folder by its parent's object handle, so nothing in the
+/// protocol says "that parent isn't a folder" in a way the walk could read. The
+/// walk has to ask what it found.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn create_directory_all_honors_the_shared_file_in_the_way_contract() {
+    let _guard = device_lock().await;
+    let (device, volume) = connect_primed_volume(Some("/Documents")).await;
+
+    cmdr_fs::volume::conformance::assert_create_directory_all_refuses_a_file_in_the_way(
+        &volume,
+        Path::new("/Documents/notes.txt"),
+    )
+    .await;
+
+    device.teardown(test_connection_manager()).await;
+}
+
 /// The shared writability-declaration assertion: `is_writable()` and what the
 /// device actually accepts say the same thing.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
@@ -117,6 +136,25 @@ async fn export_honors_the_shared_handshake_contract() {
 
     cmdr_fs::volume::conformance::assert_export_matches_the_bytes_offered(&volume, Path::new("/exported.txt"), content)
         .await;
+
+    device.teardown(test_connection_manager()).await;
+}
+
+/// The shared date assertions, over a real `MtpVolume`: an upload carries the
+/// source's date in its ObjectInfo, and a read reports the device's.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_copy_keeps_the_source_date_per_the_shared_contract() {
+    let _guard = device_lock().await;
+    let (device, volume) = connect_primed_volume(Some("/Documents")).await;
+
+    let dated = Path::new("/Documents/dated.txt");
+    cmdr_fs::volume::conformance::assert_write_from_stream_keeps_the_source_date(
+        &volume,
+        dated,
+        std::time::Duration::ZERO,
+    )
+    .await;
+    cmdr_fs::volume::conformance::assert_read_stream_reports_the_listed_date(&volume, dated).await;
 
     device.teardown(test_connection_manager()).await;
 }

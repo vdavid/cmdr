@@ -3,13 +3,15 @@ import {
   generateLicenseKey,
   generateShortCode,
   isPaddleTransactionId,
+  isValidNonce,
   isValidShortCode,
+  signValidationAnswer,
   type LicenseType,
   type StoredLicense,
 } from './license'
 import { manualLicenses } from './manual-licenses'
 import { adminLicenses } from './admin-licenses'
-import { sendLicenseEmail } from '../email/license'
+import { sendLicenseEmail, type EmailedLicense } from '../email/license'
 import { sendDeviceCountAlert } from '../email/ops-alerts'
 import { verifyPaddleWebhookMulti } from './paddle'
 import {
@@ -21,10 +23,12 @@ import {
   type PriceIdMapping,
 } from './paddle-api'
 import { pruneStaleDevices, shouldAlert, type DeviceSet } from './device-tracking'
+import { parseAdjustment, processAdjustment } from './refunds'
 import {
   claimIssuance,
   classifyIssuance,
   classifyManualLicense,
+  isPaddleLicenseRevoked,
   loadIssuance,
   loadManualLicense,
   markIssuanceDelivered,
@@ -36,6 +40,7 @@ import {
   type PaddleWebhookPayload,
   maxOrganizationNameLength,
   activationCountKey,
+  enforceIpRateLimit,
   maxTransactionIdLength,
   redactEmail,
   getPaddleConfig,
@@ -45,6 +50,9 @@ const licensing = new Hono<{ Bindings: Bindings }>()
 
 // Activate license - exchange short code for full cryptographic key
 licensing.post('/activate', async (c) => {
+  const limited = await enforceIpRateLimit(c.env.ACTIVATE_LIMITER, c.req)
+  if (limited) return limited
+
   const { code } = await c.req.json<{ code?: string }>()
 
   if (!code || typeof code !== 'string' || code.length > 50) {
@@ -97,10 +105,30 @@ const deviceAlertThreshold = 6
 
 // Validate license - called by app to check subscription status
 licensing.post('/validate', async (c) => {
-  const body = await c.req.json<{ transactionId?: string; deviceId?: string }>()
+  const limited = await enforceIpRateLimit(c.env.VALIDATE_LIMITER, c.req)
+  if (limited) return limited
+
+  const body = await c.req.json<{ transactionId?: string; deviceId?: string; nonce?: unknown }>()
   const { response, trackingPromise } = await handleValidation(body.transactionId, body.deviceId, c.env)
   if (trackingPromise) {
     c.executionCtx.waitUntil(trackingPromise)
+  }
+  // Only an answer bound to the app's nonce gets signed: without one it could be replayed. Apps
+  // before signed answers send no nonce and read the plain fields, which stay beside it.
+  const { transactionId, nonce } = body
+  if (
+    response.status === 200 &&
+    'status' in response.body &&
+    typeof transactionId === 'string' &&
+    transactionId.length <= maxTransactionIdLength &&
+    isValidNonce(nonce)
+  ) {
+    const signedAnswer = await signValidationAnswer(
+      { ...response.body, transactionId, nonce },
+      c.env.ED25519_PRIVATE_KEY,
+      new Date(),
+    )
+    return c.json({ ...response.body, signedAnswer }, 200)
   }
   return c.json(response.body, response.status)
 })
@@ -210,6 +238,14 @@ async function handleValidation(
 
   const baseTransactionId = transactionId.replace(/-\d+$/, '')
 
+  // A refund leaves the transaction `completed` in Paddle, so only our ledger knows about it. The
+  // ledger can take a Paddle license away, never grant one: anything else still comes from Paddle.
+  const revocation = await readPaddleRevocation(baseTransactionId, env.TELEMETRY_DB)
+  if (revocation === 'revoked') return { response: { body: invalidResponse(), status: 200 }, trackingPromise: null }
+  if (revocation === 'unreadable') {
+    return { response: { body: { error: 'upstream_error' }, status: 502 }, trackingPromise: null }
+  }
+
   const paddleConfig = getPaddleConfig(env)
   if (!paddleConfig) {
     console.error('No Paddle API key configured')
@@ -248,6 +284,23 @@ async function handleValidation(
     : null
 
   return { response: { body, status: 200 }, trackingPromise }
+}
+
+/**
+ * Whether the purchase was refunded. `unreadable` (the ledger read threw) answers 502
+ * `upstream_error`, the same as a Paddle outage, so the app keeps its cached status rather than
+ * reading a D1 blip as anything.
+ */
+async function readPaddleRevocation(
+  baseTransactionId: string,
+  db: D1Database,
+): Promise<'revoked' | 'not_revoked' | 'unreadable'> {
+  try {
+    return (await isPaddleLicenseRevoked(db, baseTransactionId)) ? 'revoked' : 'not_revoked'
+  } catch (error) {
+    console.error('Ledger read failed during validation:', error instanceof Error ? error.message : String(error))
+    return 'unreadable'
+  }
 }
 
 /**
@@ -314,7 +367,7 @@ function invalidResponse(): ValidationResponse {
   }
 }
 
-// Paddle webhook - called when purchase completes
+// Paddle webhook: a completed purchase mints licenses, a refund or chargeback revokes them
 licensing.post('/webhook/paddle', async (c) => {
   const body = await c.req.text()
   const signature = c.req.header('Paddle-Signature') ?? ''
@@ -338,18 +391,52 @@ licensing.post('/webhook/paddle', async (c) => {
   }
   console.log('Received webhook:', payload.event_type)
 
-  // Only handle completed purchases
-  if (payload.event_type !== 'transaction.completed') {
-    return c.json({ status: 'ignored', event: payload.event_type })
-  }
-
   try {
-    return await processCompletedTransaction(payload, c.env)
+    return await dispatchWebhookEvent(payload, c.env)
   } catch (error) {
     console.error('Webhook processing failed:', error instanceof Error ? error.message : String(error))
     return c.json({ error: 'Internal server error' }, 500)
   }
 })
+
+/** Route a verified webhook to its handler: a purchase mints, an adjustment may revoke, the rest is acknowledged. */
+async function dispatchWebhookEvent(payload: PaddleWebhookPayload, env: Bindings): Promise<Response> {
+  if (payload.event_type === 'transaction.completed') {
+    if (isSubscriptionFollowUp(payload.data?.origin)) {
+      console.log('Subscription follow-up transaction, nothing to issue:', payload.data?.id, payload.data?.origin)
+      return Response.json({ status: 'ignored', event: payload.event_type, origin: payload.data?.origin })
+    }
+    return await processCompletedTransaction(payload, env)
+  }
+  if (payload.event_type === 'adjustment.created' || payload.event_type === 'adjustment.updated') {
+    const adjustment = parseAdjustment(payload.data)
+    if (!adjustment) {
+      console.error('Adjustment webhook without a usable adjustment id, transaction id, action, or status')
+      return Response.json({ error: 'Invalid adjustment' }, { status: 400 })
+    }
+    return await processAdjustment(adjustment, payload.event_id ?? null, env)
+  }
+  return Response.json({ status: 'ignored', event: payload.event_type })
+}
+
+/**
+ * Transactions Paddle creates on its own from an existing subscription: a renewal, a one-off charge,
+ * a plan or seat change, a payment-method update. Each completes with a NEW `txn_` id, but the
+ * buyer's key names the subscription's FIRST transaction and keeps validating through the
+ * subscription's status, so fulfilling one would only mail a second, redundant set of licenses.
+ * A missing or unknown origin still fulfills: a paying buyer left without a key is the worse miss.
+ * (Origins from https://developer.paddle.com/webhooks/transactions/transaction-completed, 2026-10-06.)
+ */
+const subscriptionFollowUpOrigins: ReadonlySet<string> = new Set([
+  'subscription_recurring',
+  'subscription_charge',
+  'subscription_update',
+  'subscription_payment_method_change',
+])
+
+function isSubscriptionFollowUp(origin: string | undefined): boolean {
+  return origin !== undefined && subscriptionFollowUpOrigins.has(origin)
+}
 
 /** Process a completed Paddle transaction: claim it, mint licenses if needed, email them. */
 async function processCompletedTransaction(payload: PaddleWebhookPayload, env: Bindings): Promise<Response> {
@@ -395,9 +482,9 @@ async function processCompletedTransaction(payload: PaddleWebhookPayload, env: B
 
   // Mint only when this claim has no codes yet. A redelivery that inherited codes re-sends those,
   // so a lost email costs a duplicate message, never a second set of usable licenses.
-  let shortCodes = claim.shortCodes
-  if (shortCodes.length === 0) {
-    shortCodes = await mintLicenses({
+  let licenses: EmailedLicense[]
+  if (claim.shortCodes.length === 0) {
+    licenses = await mintLicenses({
       customerEmail: customer.email,
       transactionId: purchaseData.transactionId,
       quantity: purchaseData.quantity,
@@ -408,18 +495,21 @@ async function processCompletedTransaction(payload: PaddleWebhookPayload, env: B
     })
     await recordIssuedCodes(env.TELEMETRY_DB, {
       transactionId: purchaseData.transactionId,
-      shortCodes,
+      shortCodes: licenses.map((license) => license.shortCode),
       quantity: purchaseData.quantity,
       licenseType,
       customerEmail: customer.email,
       now: new Date(),
     })
+  } else {
+    licenses = await readStoredLicenses(env.LICENSE_CODES, claim.shortCodes)
   }
+  const shortCodes = licenses.map((license) => license.shortCode)
 
   await sendLicenseEmail({
     to: customer.email,
     customerName: customer.name ?? 'there',
-    licenseKeys: shortCodes,
+    licenses,
     productName: env.PRODUCT_NAME,
     supportEmail: env.SUPPORT_EMAIL,
     resendApiKey: env.RESEND_API_KEY,
@@ -456,6 +546,10 @@ async function claimFulfillment(db: D1Database, transactionId: string, eventId: 
   if (!record) return { proceed: false, response: retryLater(transactionId) }
 
   const state = classifyIssuance(record, now.getTime())
+  if (state === 'revoked') {
+    console.log('Transaction was refunded, not fulfilling it:', transactionId)
+    return { proceed: false, response: Response.json({ status: 'revoked', transactionId }) }
+  }
   if (state === 'delivered') {
     console.log('Transaction already fulfilled:', transactionId)
     return { proceed: false, response: Response.json({ status: 'already_processed', transactionId }) }
@@ -510,8 +604,8 @@ async function mintLicenses(params: {
   organizationName: string | undefined
   privateKey: string
   kv: KVNamespace
-}): Promise<string[]> {
-  const licenseCodes: string[] = []
+}): Promise<EmailedLicense[]> {
+  const licenses: EmailedLicense[] = []
 
   for (let i = 0; i < params.quantity; i++) {
     // Generate the short code first so it can be embedded in the signed payload
@@ -537,10 +631,24 @@ async function mintLicenses(params: {
       // For subscriptions, server validation handles expiry
     })
 
-    licenseCodes.push(shortCode)
+    licenses.push({ shortCode, fullKey })
   }
 
-  return licenseCodes
+  return licenses
+}
+
+/**
+ * The full keys behind codes an earlier delivery minted, so a resent email carries them too. A code
+ * missing from KV still goes out on its own: holding back the whole email over it would leave the
+ * buyer with nothing.
+ */
+async function readStoredLicenses(kv: KVNamespace, shortCodes: string[]): Promise<EmailedLicense[]> {
+  return Promise.all(
+    shortCodes.map(async (shortCode) => {
+      const stored = await kv.get<StoredLicense>(shortCode, 'json')
+      return stored ? { shortCode, fullKey: stored.fullKey } : { shortCode }
+    }),
+  )
 }
 
 // Minting and revoking hand-issued licenses, and listing everything we've ever issued, are their own

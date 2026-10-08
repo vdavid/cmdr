@@ -8,6 +8,9 @@
 //! `mod_dav` can settle none of them: it honours `Range` natively and omits the
 //! quota properties entirely.
 //!
+//! It also holds the one cell that can see a copy onto WebDAV keep its date:
+//! `mod_dav` stores none (`DETAILS.md` § "Dates").
+//!
 //! ❗ **This module is selected by its PATH.** `desktop-rust-webdav-nextcloud`
 //! runs `test(volume::nextcloud_test::)` and the shared fixture lane subtracts
 //! the same atom, so renaming or moving this module silently takes these cells
@@ -72,7 +75,7 @@ fn raw(method: Method, at: &str) -> reqwest::RequestBuilder {
         .base_url
         .join(at)
         .unwrap_or_else(|e| panic!("joining {at} onto the fixture base URL: {e}"));
-    reqwest::Client::builder()
+    cmdr_http::client_builder()
         .user_agent("Cmdr")
         .build()
         .expect("a client with no TLS options is infallible")
@@ -103,6 +106,10 @@ impl VolumeReadStream for BufferSource {
     }
     fn bytes_read(&self) -> u64 {
         self.at as u64
+    }
+
+    fn modified_at(&self) -> Option<std::time::SystemTime> {
+        None
     }
 }
 
@@ -164,6 +171,24 @@ async fn the_write_path_lands_a_file_byte_exact_on_sabre_dav() {
         "the staging sibling has to be gone, found {:?}",
         siblings.iter().map(|e| &e.name).collect::<Vec<_>>()
     );
+
+    clean(&volume, &dir).await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[ignore = "needs the Nextcloud WebDAV fixture: apps/desktop/test/webdav-servers/start.sh nextcloud (webdav-fixture-nextcloud)"]
+async fn a_file_in_the_way_of_a_new_folder_is_named_on_sabre_dav() {
+    // sabre/dav answers a MKCOL the way RFC 4918 says to: 405 on a name a FILE
+    // holds, 409 under one. Apache answers 400 to both, so the same promise is
+    // kept by a different branch of the walk there
+    // (`conformance_test.rs`), and this cell is the only one that holds the
+    // by-the-book branch up: read as "already there" and "parent missing", those
+    // two answers report the folder the user asked Cmdr to create as not found.
+    let (volume, dir) = nextcloud_with_scratch().await;
+    let notes = dir.join("notes");
+    volume.create_file(&notes, b"the user's notes").await.expect(FIXTURE);
+
+    cmdr_fs::volume::conformance::assert_create_directory_all_refuses_a_file_in_the_way(&volume, &notes).await;
 
     clean(&volume, &dir).await;
 }
@@ -341,4 +366,27 @@ async fn an_account_with_no_quota_reports_what_it_holds_and_no_ceiling() {
         None,
         "'available' with no total is the value this shape exists to make unrepresentable"
     );
+}
+
+/// Both halves of the date contract on the server that can store one.
+///
+/// ❗ THE destination-half cell for WebDAV. Apache `mod_dav` stores no date
+/// (`conformance_test.rs` keeps that on record), so only here does a PUT that
+/// stops carrying `X-OC-Mtime` fail a test. The write is `CreateNew`, so it also
+/// proves the staging `MOVE` keeps what the `PUT` set.
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[ignore = "needs the Nextcloud WebDAV fixture: apps/desktop/test/webdav-servers/start.sh nextcloud (webdav-fixture-nextcloud)"]
+async fn nextcloud_a_copy_keeps_the_source_date() {
+    let (volume, dir) = nextcloud_with_scratch().await;
+    let dated = dir.join("dated.txt");
+
+    cmdr_fs::volume::conformance::assert_write_from_stream_keeps_the_source_date(
+        &volume,
+        &dated,
+        std::time::Duration::ZERO,
+    )
+    .await;
+    cmdr_fs::volume::conformance::assert_read_stream_reports_the_listed_date(&volume, &dated).await;
+
+    clean(&volume, &dir).await;
 }

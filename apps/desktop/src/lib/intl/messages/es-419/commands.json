@@ -111,6 +111,22 @@
   "@commands.handler.googleDriveCopyFailed": {
     "sourceHash": "a4bd00b"
   },
+  "commands.handler.shareLinkCopied.sevenDays": "Se copió un enlace para compartir. Funciona durante siete días.",
+  "@commands.handler.shareLinkCopied.sevenDays": {
+    "sourceHash": "6dac1f1"
+  },
+  "commands.handler.shareLinkCopied.oneDay": "Se copió un enlace para compartir. Funciona durante un día.",
+  "@commands.handler.shareLinkCopied.oneDay": {
+    "sourceHash": "58fd6b8"
+  },
+  "commands.handler.shareLinkCopied.oneHour": "Se copió un enlace para compartir. Funciona durante una hora.",
+  "@commands.handler.shareLinkCopied.oneHour": {
+    "sourceHash": "fb11a63"
+  },
+  "commands.handler.shareLinkFailed": "No se pudo crear un enlace para compartir. {detail}",
+  "@commands.handler.shareLinkFailed": {
+    "sourceHash": "c46a8a3"
+  },
   "commands.handler.openTerminalHere.hint": "Carpeta abierta en tu app de terminal. ¿Quieres que Cmdr abra otra app la próxima vez? Elígela en Configuración, en “Navegación y operaciones de archivos”.",
   "@commands.handler.openTerminalHere.hint": {
     "sourceHash": "1942df6"
@@ -134,5 +150,25 @@
   "commands.suggestedOpsShow.description": "Revisa las operaciones de archivos que sugirió la IA y decide qué se ejecuta",
   "@commands.suggestedOpsShow.description": {
     "sourceHash": "7864be0"
+  },
+  "commands.handler.viewDebugLog.disabled": "El almacenamiento de registros está desactivado. Pon un límite de espacio en disco mayor que 0 en Configuración > Avanzado y reinicia Cmdr para ver el registro de depuración.",
+  "@commands.handler.viewDebugLog.disabled": {
+    "sourceHash": "2bf377a"
+  },
+  "commands.handler.getInfo.automationOff": "Para Obtener información, Cmdr necesita controlar el Finder, y eso está desactivado. Activa el Finder debajo de Cmdr en Configuración del Sistema > Privacidad y seguridad > Automatización.",
+  "@commands.handler.getInfo.automationOff": {
+    "sourceHash": "3f4a837"
+  },
+  "commands.handler.getInfo.openAutomationSettings": "Abrir la configuración de Automatización",
+  "@commands.handler.getInfo.openAutomationSettings": {
+    "sourceHash": "257d756"
+  },
+  "commands.handler.getInfo.notReached": "Cmdr no pudo acceder al Finder para abrir Obtener información. Inténtalo de nuevo.",
+  "@commands.handler.getInfo.notReached": {
+    "sourceHash": "b210237"
+  },
+  "commands.handler.viewDebugLog.unavailable": "No se pudo abrir el registro de depuración. Inténtalo de nuevo.",
+  "@commands.handler.viewDebugLog.unavailable": {
+    "sourceHash": "02e53dd"
   }
 }

@@ -56,7 +56,7 @@ describe('ViewerCopyDialogs', () => {
     await tick()
 
     const title = document.getElementById('viewer-copy-confirm-title')
-    expect(title?.textContent).toContain('4.88 KB')
+    expect(title?.textContent).toContain('5.00 kB')
 
     void unmount(instance)
   })
@@ -108,7 +108,7 @@ describe('ViewerCopyDialogs', () => {
 
     const title = document.getElementById('viewer-copy-refuse-title')
     expect(title).not.toBeNull()
-    expect(title?.textContent).toContain('190.73 MB')
+    expect(title?.textContent).toContain('200.00 MB')
 
     void unmount(instance)
   })

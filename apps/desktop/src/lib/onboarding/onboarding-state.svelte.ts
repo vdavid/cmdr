@@ -21,6 +21,8 @@
 import { isMacOS } from '$lib/shortcuts/key-capture'
 import { isDialogOpen } from '$lib/ui/open-dialogs.svelte'
 import type { FullDiskAccessChoice } from '$lib/settings'
+import type { SettingLock } from '$lib/ipc/bindings'
+import { lockAllowsWrite } from '$lib/managed-policy/overlay'
 
 /** Where the wizard was opened from. */
 export type OnboardingSource = 'force' | 'first-launch' | 'menu' | 'palette'
@@ -125,6 +127,11 @@ interface OnboardingStateData {
   /** Pre-computed step-2 banner mode (set on step transition, read by step 2). */
   stepTwoBanner: StepTwoFdaBanner
   /**
+   * The organization's policy leaves nothing to pick on step 2 but "no AI" (`aiStepSkippedFor`), so
+   * the wizard walks past it both ways. The wizard sets it on mount; `false` until then.
+   */
+  aiStepSkipped: boolean
+  /**
    * If set, the wizard renders these buttons in the footer's right slot instead of
    * its default single primary button. The AI step registers its "Go to open beta"
    * forward button here, the Optional step its "Start using Cmdr" finish button. Reset
@@ -168,6 +175,7 @@ const state = $state<OnboardingStateData>({
   step1FooterMode: 'decide',
   step1Granted: false,
   stepTwoBanner: 'stuck',
+  aiStepSkipped: false,
   footerOverride: null,
   footerNote: null,
   betaChecklist: { star: false, alternativeTo: false, email: false },
@@ -291,6 +299,7 @@ export function closeWizard(): void {
   state.step1FooterMode = 'decide'
   state.step1Granted = false
   state.stepTwoBanner = 'stuck'
+  state.aiStepSkipped = false
   state.footerOverride = null
   state.footerNote = null
   state.betaChecklist = { star: false, alternativeTo: false, email: false }
@@ -305,7 +314,8 @@ export function nextStep(): void {
   if (state.currentStep === null) return
   if (state.currentStep === 1 && state.step1FooterMode === 'restart') return
   if (state.currentStep < ONBOARDING_STEP_COUNT) {
-    state.currentStep = (state.currentStep + 1) as OnboardingStep
+    const next = (state.currentStep + 1) as OnboardingStep
+    state.currentStep = next === 2 && state.aiStepSkipped ? 3 : next
     // Clear any prior step's footer override; the new step opts in fresh if it wants.
     state.footerOverride = null
     state.footerNote = null
@@ -321,11 +331,12 @@ export function nextStep(): void {
  * Allow/Deny buttons are live again (a prior Deny shouldn't lock the user into the
  * restart-mode footer on a return visit).
  */
-export function previousStep(): void {
+export function previousStep(platform: { isMac?: boolean } = {}): void {
   if (state.currentStep === null) return
-  if (!isMacOS() && state.currentStep === 2) return
+  if (isAtFirstStep(platform)) return
   if (state.currentStep > 1) {
-    state.currentStep = (state.currentStep - 1) as OnboardingStep
+    const previous = (state.currentStep - 1) as OnboardingStep
+    state.currentStep = previous === 2 && state.aiStepSkipped ? 1 : previous
     state.step1FooterMode = 'decide'
     state.step1Granted = false
     state.footerOverride = null
@@ -333,10 +344,35 @@ export function previousStep(): void {
   }
 }
 
-/** True when on the first reachable step (Back should be disabled). */
-export function isAtFirstStep(): boolean {
-  if (!isMacOS()) return state.currentStep === 2
-  return state.currentStep === 1
+/** True when on the first reachable step (Back should be disabled). `platform` is a test seam. */
+export function isAtFirstStep(platform: { isMac?: boolean } = {}): boolean {
+  if (platform.isMac ?? isMacOS()) return state.currentStep === 1
+  return state.currentStep === (state.aiStepSkipped ? 3 : 2)
+}
+
+/**
+ * Whether step 2 has nothing to offer but "no AI": the organization's lock on `ai.provider` rules
+ * out cloud AI, and local AI is ruled out too (by the lock, or because this Mac can't run it).
+ * Without a lock the step always shows: an Intel Mac still has cloud AI to pick. The backend
+ * decides the lock; this only reads what's left.
+ */
+export function aiStepSkippedFor(input: { lock: SettingLock | undefined; localAiSupported: boolean }): boolean {
+  if (input.lock === undefined) return false
+  const localPickable = input.localAiSupported && lockAllowsWrite(input.lock, 'local')
+  return !localPickable && !lockAllowsWrite(input.lock, 'cloud')
+}
+
+/**
+ * Record whether step 2 is skipped (the wizard calls it on mount and when the policy moves). A skip
+ * that lands while step 2 is on screen moves on to step 3 at once.
+ */
+export function setAiStepSkipped(skipped: boolean): void {
+  state.aiStepSkipped = skipped
+  if (skipped && state.currentStep === 2) {
+    state.currentStep = 3
+    state.footerOverride = null
+    state.footerNote = null
+  }
 }
 
 /** True when on the last step (Next should read "Finish" / submit instead). */
@@ -437,6 +473,7 @@ export function resetForTesting(): void {
   state.step1FooterMode = 'decide'
   state.step1Granted = false
   state.stepTwoBanner = 'stuck'
+  state.aiStepSkipped = false
   state.footerOverride = null
   state.footerNote = null
   state.betaChecklist = { star: false, alternativeTo: false, email: false }

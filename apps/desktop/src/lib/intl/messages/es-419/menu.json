@@ -23,6 +23,18 @@
   "@menu.context.addToFavorites": {
     "sourceHash": "cd2319d"
   },
+  "menu.context.shareLinkSevenDays": "Vence en siete días",
+  "@menu.context.shareLinkSevenDays": {
+    "sourceHash": "94ae6f7"
+  },
+  "menu.context.shareLinkOneDay": "Vence en un día",
+  "@menu.context.shareLinkOneDay": {
+    "sourceHash": "da760fb"
+  },
+  "menu.context.shareLinkOneHour": "Vence en una hora",
+  "@menu.context.shareLinkOneHour": {
+    "sourceHash": "a586d11"
+  },
   "menu.context.openWithDefault": "{app} (predeterminado)",
   "@menu.context.openWithDefault": {
     "sourceHash": "f3a45a2"

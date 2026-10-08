@@ -87,6 +87,9 @@ pub const DESELECT_ALL_ID: &str = "deselect_all";
 /// (`menu_items::same_kind_menu_label`), so this is also the id `update_select_same_kind_menu`
 /// looks the tracked item up by.
 pub const SELECT_SAME_KIND_ID: &str = "select_same_kind";
+
+/// Menu item ID for Compare directories (Select menu, ⇧F2).
+pub const COMPARE_DIRECTORIES_ID: &str = "compare_directories";
 pub const INVERT_SELECTION_ID: &str = "invert_selection";
 pub const SELECT_FILES_ID: &str = "select_files";
 pub const DESELECT_FILES_ID: &str = "deselect_files";
@@ -109,6 +112,13 @@ pub const DRIVE_OPEN_ID: &str = "drive_open";
 pub const DRIVE_COPY_LINK_ID: &str = "drive_copy_link";
 /// Files only: Gemini's `?di=` names a document, so a folder never gets this one.
 pub const DRIVE_ASK_GEMINI_ID: &str = "drive_ask_gemini";
+
+/// "Copy share link" (files on a volume that `supports_share_links`): a submenu
+/// holding one item per expiry, seven days first because it's the default.
+pub const SHARE_LINK_SUBMENU_ID: &str = "share_link_submenu";
+pub const SHARE_LINK_SEVEN_DAYS_ID: &str = "share_link_seven_days";
+pub const SHARE_LINK_ONE_DAY_ID: &str = "share_link_one_day";
+pub const SHARE_LINK_ONE_HOUR_ID: &str = "share_link_one_hour";
 
 /// Submenu ID for `Services` in the file context menu (macOS). Never handled: AppKit
 /// fills the submenu and performs the pick, so the item itself is never clicked. It
@@ -159,10 +169,18 @@ pub const SWITCH_PANE_ID: &str = "switch_pane";
 /// Menu item ID for Swap Panes.
 pub const SWAP_PANES_ID: &str = "swap_panes";
 
+/// Menu item ID for cloning the focused folder into the other pane.
+pub const CLONE_PANE_ID: &str = "clone_pane";
+
+/// Menu item ID for Calculate folder sizes (View menu, ⌥⇧⏎).
+pub const CALCULATE_FOLDER_SIZES_ID: &str = "calculate_folder_sizes";
+
 /// Menu item IDs for navigation (Go menu).
 pub const GO_BACK_ID: &str = "go_back";
 pub const GO_FORWARD_ID: &str = "go_forward";
 pub const GO_PARENT_ID: &str = "go_parent";
+/// "Root folder" (⌘/): opens the root of what the focused pane shows, its volume's or its archive's.
+pub const GO_ROOT_ID: &str = "go_root";
 /// "Go to path…" (⌘G): opens the Go-to-path dialog (dialog-open is idempotency-guarded).
 pub const GO_TO_PATH_ID: &str = "go_to_path";
 /// "Go to latest download" (⌘J): jumps the focused pane to the most recent download.
@@ -227,6 +245,15 @@ pub const VIEWER_SELECT_ALL_ID: &str = "viewer_select_all";
 pub const VIEWER_EDIT_CUT_ID: &str = "viewer_edit_cut";
 pub const VIEWER_EDIT_PASTE_ID: &str = "viewer_edit_paste";
 
+/// Menu item IDs for the viewer's right-click menu over the file text (Copy, Select all).
+///
+/// ❗ Distinct from the bar's `VIEWER_EDIT_COPY_ID` / `VIEWER_SELECT_ALL_ID`: those go through
+/// `runViewerEditAction`, which hands Copy and Select all to the search box when it has focus.
+/// A right-click on the text doesn't move focus, so this menu's pair travels as
+/// `ViewerContextMenuAction` and always acts on the file. Unmapped in `menu_id_to_command`.
+pub const VIEWER_CONTEXT_COPY_ID: &str = "viewer_context_copy";
+pub const VIEWER_CONTEXT_SELECT_ALL_ID: &str = "viewer_context_select_all";
+
 /// Menu item IDs for tab actions (app menu).
 pub const NEW_TAB_ID: &str = "new_tab";
 pub const PIN_TAB_MENU_ID: &str = "pin_tab_menu";
@@ -273,6 +300,9 @@ pub const HELP_SEND_FEEDBACK_ID: &str = "help_send_feedback";
 
 /// Menu item ID for "Keyboard shortcuts" (opens the read-only shortcuts help window, under the Help menu).
 pub const HELP_SHORTCUTS_ID: &str = "help_shortcuts";
+
+/// Opens the current debug log in the internal viewer, under the Help menu.
+pub const HELP_DEBUG_LOG_ID: &str = "help_debug_log";
 
 /// Menu item ID for "Operation queue" (opens the operation-queue window, under the View menu).
 pub const QUEUE_SHOW_ID: &str = "queue_show";
@@ -321,6 +351,7 @@ pub fn menu_id_to_command(menu_id: &str) -> Option<(&'static str, CommandScope)>
         COMMAND_PALETTE_ID => Some(("app.commandPalette", CommandScope::FileScoped)),
         SEARCH_FILES_ID => Some(("search.open", CommandScope::FileScoped)),
         HELP_SHORTCUTS_ID => Some(("help.openShortcuts", CommandScope::App)),
+        HELP_DEBUG_LOG_ID => Some(("help.viewDebugLog", CommandScope::App)),
         QUEUE_SHOW_ID => Some(("queue.show", CommandScope::App)),
         HELP_WHATS_NEW_ID => Some(("help.whatsNew", CommandScope::App)),
         // Second entry point (Cmdr menu) to the same "What's new" popup. Deliberately maps
@@ -338,11 +369,14 @@ pub fn menu_id_to_command(menu_id: &str) -> Option<(&'static str, CommandScope)>
         // Pane commands (file-scoped)
         SWITCH_PANE_ID => Some(("pane.switch", CommandScope::FileScoped)),
         SWAP_PANES_ID => Some(("pane.swap", CommandScope::FileScoped)),
+        CLONE_PANE_ID => Some(("pane.clone", CommandScope::FileScoped)),
+        CALCULATE_FOLDER_SIZES_ID => Some(("view.calculateFolderSizes", CommandScope::FileScoped)),
 
         // Navigation commands (file-scoped)
         GO_BACK_ID => Some(("nav.back", CommandScope::FileScoped)),
         GO_FORWARD_ID => Some(("nav.forward", CommandScope::FileScoped)),
         GO_PARENT_ID => Some(("nav.parent", CommandScope::FileScoped)),
+        GO_ROOT_ID => Some(("nav.goToRoot", CommandScope::FileScoped)),
         GO_TO_PATH_ID => Some(("nav.goToPath", CommandScope::FileScoped)),
         GO_LATEST_DOWNLOAD_ID => Some(("downloads.goToLatest", CommandScope::FileScoped)),
         GO_HOME_ID => Some(("nav.goHome", CommandScope::FileScoped)),
@@ -395,6 +429,7 @@ pub fn menu_id_to_command(menu_id: &str) -> Option<(&'static str, CommandScope)>
         SELECT_ALL_ID => Some(("selection.selectAll", CommandScope::FileScoped)),
         DESELECT_ALL_ID => Some(("selection.deselectAll", CommandScope::FileScoped)),
         SELECT_SAME_KIND_ID => Some(("selection.selectSameKind", CommandScope::FileScoped)),
+        COMPARE_DIRECTORIES_ID => Some(("selection.compareDirectories", CommandScope::FileScoped)),
         INVERT_SELECTION_ID => Some(("selection.invert", CommandScope::FileScoped)),
         SELECT_FILES_ID => Some(("selection.selectFiles", CommandScope::FileScoped)),
         DESELECT_FILES_ID => Some(("selection.deselectFiles", CommandScope::FileScoped)),
@@ -406,6 +441,9 @@ pub fn menu_id_to_command(menu_id: &str) -> Option<(&'static str, CommandScope)>
         DRIVE_OPEN_ID => Some(("cloud.openInGoogleDrive", CommandScope::FileScoped)),
         DRIVE_COPY_LINK_ID => Some(("cloud.copyGoogleDriveLink", CommandScope::FileScoped)),
         DRIVE_ASK_GEMINI_ID => Some(("cloud.askGemini", CommandScope::FileScoped)),
+        SHARE_LINK_SEVEN_DAYS_ID => Some(("file.copyShareLink", CommandScope::FileScoped)),
+        SHARE_LINK_ONE_DAY_ID => Some(("file.copyShareLinkOneDay", CommandScope::FileScoped)),
+        SHARE_LINK_ONE_HOUR_ID => Some(("file.copyShareLinkOneHour", CommandScope::FileScoped)),
 
         // Zoom (text size): App scope so ⌘0/⌘+/⌘- work in any focused window.
         VIEW_ZOOM_75_ID => Some(("view.zoom.set75", CommandScope::App)),
@@ -444,6 +482,7 @@ pub fn command_id_to_menu_id(command_id: &str) -> Option<&'static str> {
         "app.commandPalette" => Some(COMMAND_PALETTE_ID),
         "search.open" => Some(SEARCH_FILES_ID),
         "help.openShortcuts" => Some(HELP_SHORTCUTS_ID),
+        "help.viewDebugLog" => Some(HELP_DEBUG_LOG_ID),
         "queue.show" => Some(QUEUE_SHOW_ID),
         "help.whatsNew" => Some(HELP_WHATS_NEW_ID),
         "log.operationLog" => Some(OPERATION_LOG_ID),
@@ -455,9 +494,12 @@ pub fn command_id_to_menu_id(command_id: &str) -> Option<&'static str> {
         "cmdr.openOnboarding" => Some(OPEN_ONBOARDING_ID),
         "pane.switch" => Some(SWITCH_PANE_ID),
         "pane.swap" => Some(SWAP_PANES_ID),
+        "pane.clone" => Some(CLONE_PANE_ID),
+        "view.calculateFolderSizes" => Some(CALCULATE_FOLDER_SIZES_ID),
         "nav.back" => Some(GO_BACK_ID),
         "nav.forward" => Some(GO_FORWARD_ID),
         "nav.parent" => Some(GO_PARENT_ID),
+        "nav.goToRoot" => Some(GO_ROOT_ID),
         "nav.goToPath" => Some(GO_TO_PATH_ID),
         "downloads.goToLatest" => Some(GO_LATEST_DOWNLOAD_ID),
         "nav.goHome" => Some(GO_HOME_ID),
@@ -492,6 +534,7 @@ pub fn command_id_to_menu_id(command_id: &str) -> Option<&'static str> {
         "selection.selectAll" => Some(SELECT_ALL_ID),
         "selection.deselectAll" => Some(DESELECT_ALL_ID),
         "selection.selectSameKind" => Some(SELECT_SAME_KIND_ID),
+        "selection.compareDirectories" => Some(COMPARE_DIRECTORIES_ID),
         "selection.invert" => Some(INVERT_SELECTION_ID),
         "selection.selectFiles" => Some(SELECT_FILES_ID),
         "selection.deselectFiles" => Some(DESELECT_FILES_ID),
@@ -511,6 +554,9 @@ pub fn command_id_to_menu_id(command_id: &str) -> Option<&'static str> {
         "cloud.openInGoogleDrive" => Some(DRIVE_OPEN_ID),
         "cloud.copyGoogleDriveLink" => Some(DRIVE_COPY_LINK_ID),
         "cloud.askGemini" => Some(DRIVE_ASK_GEMINI_ID),
+        "file.copyShareLink" => Some(SHARE_LINK_SEVEN_DAYS_ID),
+        "file.copyShareLinkOneDay" => Some(SHARE_LINK_ONE_DAY_ID),
+        "file.copyShareLinkOneHour" => Some(SHARE_LINK_ONE_HOUR_ID),
         "sort.byName" => Some(SORT_BY_NAME_ID),
         "sort.byExtension" => Some(SORT_BY_EXTENSION_ID),
         "sort.byModified" => Some(SORT_BY_MODIFIED_ID),
@@ -646,6 +692,8 @@ mod tests {
             "app.commandPalette",
             "pane.switch",
             "pane.swap",
+            "pane.clone",
+            "view.calculateFolderSizes",
             "nav.back",
             "nav.forward",
             "nav.parent",
@@ -678,15 +726,20 @@ mod tests {
             "file.openTerminalHere",
             "file.copyPath",
             "file.copyFilename",
+            "file.copyShareLink",
+            "file.copyShareLinkOneDay",
+            "file.copyShareLinkOneHour",
             "file.getInfo",
             "file.quickLook",
             "selection.selectAll",
             "selection.deselectAll",
             "selection.selectSameKind",
+            "selection.compareDirectories",
             "selection.invert",
             "selection.selectFiles",
             "selection.deselectFiles",
             "help.openShortcuts",
+            "help.viewDebugLog",
             "queue.show",
             "help.whatsNew",
             "log.operationLog",

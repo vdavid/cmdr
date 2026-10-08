@@ -24,8 +24,9 @@ const macOSAvailabilityCheckID = "desktop-rust-macos-availability"
 const tauriConfRelPath = "apps/desktop/src-tauri/tauri.conf.json"
 
 // macOSAvailabilitySelectorsFile caches what the SDK headers say, so the check
-// still runs where the SDK doesn't exist. CI is Linux end to end, and a guard that
-// only fires on the author's Mac isn't the gate this one has to be.
+// still runs where the SDK doesn't exist. CI's Linux lanes have no SDK (and its macOS
+// job's lags the newest Mac's), and a guard that only fires on the author's Mac isn't
+// the gate this one has to be.
 const macOSAvailabilitySelectorsFile = "macos-availability-selectors.json"
 
 // AllowNewerSelectorComment opts a single call out of this check, for a selector

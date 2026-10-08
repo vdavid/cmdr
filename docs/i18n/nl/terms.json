@@ -22,6 +22,11 @@
     "forms": "exclusive access → exclusieve toegang; in prose, \"trying to access a folder\" → een map proberen te openen (benaderen reads bookish)",
     "sources": "macOS (\"geen toegang\")"
   },
+  "access-key-id": {
+    "chosen": "toegangssleutel-ID",
+    "confidence": "high",
+    "sources": "decisions.md \"S3\" (MS toegangssleutel-ID); catalog servers.sheet.accessKeyId"
+  },
   "account": {
     "chosen": "account",
     "confidence": "high",
@@ -48,6 +53,12 @@
     "decision": "Aanvullen wat al verstuurd is: het notitievenster bij een automatisch foutrapport",
     "forms": "button Voeg … toe with the particle LAST (Voeg aan rapport toe, Voeg server toe…, Voeg huidige map aan favorieten toe); window title Toevoegen aan je foutrapport; participle toegevoegd",
     "sources": "macOS Finder (Add Password → Voeg wachtwoord toe, Add Tags → Voeg tags toe), AppKit (Voeg aan begin van knoppenbalk toe)"
+  },
+  "advanced": {
+    "chosen": "Geavanceerd",
+    "confidence": "high",
+    "forms": "Cmdr Settings section → Geavanceerd; quote settings.section.advanced exactly in navigation paths",
+    "sources": "Network.appex Localizable (ADVANCED); catalog settings.section.advanced (macOS 26.6.2 build 25G83, live loctable key cross-reference, 2026-10-02)"
   },
   "ai-feature": {
     "accept": ["de AI", "AI-"],
@@ -77,10 +88,20 @@
     "sources": "MS terminology (tool → hulpmiddel)"
   },
   "allow": {
-    "accept": ["toestaan", "toegestaan", "Sta alles toe", "Toestaan", "toestaat", "toe te staan", "Sta ", "mocht"],
+    "accept": [
+      "toestaan",
+      "toegestaan",
+      "Sta alles toe",
+      "Toestaan",
+      "toestaat",
+      "toe te staan",
+      "Sta ",
+      "mocht",
+      "staat "
+    ],
     "chosen": "Sta toe",
     "confidence": "high",
-    "forms": "button Sta toe / Sta alles toe; settings label <object> toestaan (Cloud-AI toestaan); Android's own dialog button is quoted as ‘Toestaan’",
+    "forms": "button Sta toe / Sta alles toe; settings label <object> toestaan (Cloud-AI toestaan); Android's own dialog button is quoted as ‘Toestaan’; finite separable verb in prose: je organisatie staat … (niet) toe",
     "sources": "macOS Finder (Allow Anyway → Sta toch toe), MS (allow → toestaan), AOSP SystemUI usb_debugging_allow = Toestaan"
   },
   "already-exists": {
@@ -89,6 +110,20 @@
     "confidence": "high",
     "forms": "\"Er bestaat al … op deze locatie\"; conflict title Bestand bestaat al",
     "sources": "macOS Finder (\"Er bestaat al een onderdeel … op deze locatie\")"
+  },
+  "android-platform-tools": {
+    "accept": ["platform tools"],
+    "chosen": "Android platform tools",
+    "confidence": "high",
+    "forms": "the download's name stays English, unhyphenated: de Android platform tools; shortened the platform tools → de platform tools",
+    "sources": "Google's docs serve no Dutch (developer.android.com/tools/releases/platform-tools?hl=nl renders English, 2026-10-01); catalog (adb.connect.adbNotInstalled)"
+  },
+  "android-tools": {
+    "accept": ["Android-tools"],
+    "chosen": "Android-tools",
+    "confidence": "high",
+    "forms": "compound with a hyphen after the proper name: de Android-tools op deze Mac",
+    "sources": "catalog (adb.connect.serverUnreachable); style guide § Compounds"
   },
   "answer": {
     "accept": ["antwoord", "beantwoord"],
@@ -216,6 +251,11 @@
     "forms": "noun bijlage; verb bijvoegen (Zet hier neer om bij te voegen)",
     "sources": "MS (attachment → bijlage); verb paired with the noun (tentative)"
   },
+  "automation": {
+    "chosen": "Automatisering",
+    "confidence": "high",
+    "sources": "macOS 27.0 (26A428) SecurityPrivacyExtension.appex Localizable.loctable, key AUTOMATION, 2026-10-08"
+  },
   "available-offline": {
     "chosen": "offline beschikbaar",
     "confidence": "high",
@@ -300,10 +340,37 @@
     "confidence": "high",
     "sources": "macOS Finder ConnectToWindow.strings 48.title"
   },
+  "bucket": {
+    "chosen": "bucket",
+    "accept": ["buckets"],
+    "forms": "de bucket, pl. de buckets; All buckets → Alle buckets",
+    "confidence": "high",
+    "sources": "decisions.md \"S3\" (MS bucket); catalog servers.sheet.s3Bucket"
+  },
+  "byte": {
+    "accept": ["bytes", "Bytes"],
+    "chosen": "byte",
+    "confidence": "high",
+    "forms": "pl. bytes (512 bytes); unit symbols as in English: binary (IEC) KiB / MiB / GiB / TiB / PiB, decimal (SI) kB / MB / GB / TB / PB; never KB for either",
+    "sources": "macOS Finder nl (SP27 byte, SP28 bytes; SP24–SP26 GB, MB, KB), KDE Dolphin nl (MiB), GNOME/KDE nl (kB/s), catalog (Bytes)"
+  },
   "cache": {
     "chosen": "cache",
     "confidence": "high",
     "sources": "MS (unchanged)"
+  },
+  "calculate": {
+    "accept": ["bereken", "berekening"],
+    "chosen": "berekenen",
+    "confidence": "high",
+    "forms": "menu and command Bereken mapgroottes (imperative first, like Finder); Settings label infinitive last (Mapgrootte berekenen met Spatie); the running work → de berekening",
+    "sources": "macOS Finder ViewOptionsWindow 65.title (Bereken alle grootten); TC 503 Ruimte berekenen, 5138; Double Commander Bereken in gebruik zijnde ruimte"
+  },
+  "camera": {
+    "accept": ["camera’s", "camera's"],
+    "chosen": "camera",
+    "confidence": "high",
+    "sources": "macOS AppKit NSStillCameraTemplate ‘camera’; catalog"
   },
   "camera-details": {
     "chosen": "cameragegevens",
@@ -319,7 +386,7 @@
     "sources": "macOS (Cancel → Annuleer, AppKit + Finder)"
   },
   "case-sensitive": {
-    "accept": ["hoofdletters"],
+    "accept": ["hoofdletters", "kleine letters"],
     "chosen": "hoofdlettergevoelig",
     "confidence": "high",
     "forms": "upper and lower case → hoofdletters en kleine letters",
@@ -426,6 +493,18 @@
     "forms": "clipboard content → klembordinhoud; Klembordafbeelding, Klembordtekst, Klembord-PDF (hyphen before an acronym)",
     "sources": "macOS AppKit (Clipboard → Klembord), MS"
   },
+  "clone-pane": {
+    "accept": ["kloon", "klonen"],
+    "avoid": [
+      {
+        "form": "Dupliceer",
+        "why": "Finder's Duplicate makes a file copy"
+      }
+    ],
+    "chosen": "Kloon paneel",
+    "confidence": "high",
+    "sources": "MS terminology (clone → klonen, kloon) + the pane ruling (paneel). TC (Vensters gelijkmaken, 532 Doel=Bron) and DC (Doel is bron) name the same command differently; Finder has none"
+  },
   "close": {
     "accept": ["sluiten", "gesloten"],
     "chosen": "Sluit",
@@ -448,6 +527,13 @@
     "forms": "your cloud provider → je cloudprovider; cloud folders → cloudmappen; cloud mount → Cloudkoppeling; provider app names (Dropbox, Google Drive, OneDrive, iCloud Drive, macFUSE) stay verbatim",
     "sources": "compositional; brands do-not-translate"
   },
+  "column": {
+    "accept": ["kolommen"],
+    "chosen": "kolom",
+    "confidence": "high",
+    "forms": "de-woord; the Name column → de kolom Naam / naamkolom; sort column → sorteerkolom; column width → kolombreedte",
+    "sources": "macOS Finder (SV2 sorteerkolom); catalog"
+  },
   "command": {
     "accept": ["opdrachten"],
     "chosen": "opdracht",
@@ -466,6 +552,13 @@
     "chosen": "vergelijkingsteken",
     "confidence": "tentative",
     "sources": "standard NL (math comparison sign)"
+  },
+  "compare-folders": {
+    "chosen": "Vergelijk mappen",
+    "accept": ["vergelijk"],
+    "forms": "menu item Vergelijk mappen; the act → het vergelijken van de mappen",
+    "confidence": "high",
+    "sources": "DC Vergelijk mappen (exact match); MC Mappen vergelijken; TC 11.58 Directory's vergelijken; Finder map; bare-stem imperative per the menu register"
   },
   "complete": {
     "accept": ["voltooi", "voltooien", "onvolledig", "niet voltooid"],
@@ -510,7 +603,6 @@
     "accept": ["bevestig", "bevestiging"],
     "chosen": "bevestigen",
     "confidence": "high",
-    "decision": "De onbevestigde naamwijziging en de onbruikbare naam",
     "forms": "\"Couldn't confirm …\" → We konden … niet bevestigen / Cmdr kon … niet bevestigen; heading Kon het verplaatsen niet bevestigen",
     "sources": "MS (confirm → bevestigen), macOS AppKit (Bevestig)"
   },
@@ -526,6 +618,12 @@
     "confidence": "high",
     "forms": "button Verbind; Connect to server → Verbind met server; Connect as guest → Verbind als gast; progress Verbinden met {name}…; status Verbonden; in a sentence verbinding maken; a phone plugged in by cable is aangesloten, not verbonden",
     "sources": "macOS Finder (Connect to server → Verbind met server, Connect As… → Verbind als…), AppKit (Connecting… → Verbinden…, Connected → Verbonden)"
+  },
+  "provider-console": {
+    "chosen": "console",
+    "confidence": "high",
+    "forms": "a storage provider’s console → de console van je opslagaanbieder, after a first mention de console van je aanbieder",
+    "sources": "MS terminology (console → console); catalog errors.listing.coldStorage.suggestion"
   },
   "context-menu": {
     "accept": ["rechtermuisknop"],
@@ -568,6 +666,13 @@
     "forms": "button Kopieer; verb kopiëren; participle gekopieerd; noun kopie; an unfinished copy → onvolledig exemplaar",
     "sources": "macOS (Copy → Kopieer), Nautilus (Copied … → … gekopieerd)"
   },
+  "cost": {
+    "accept": ["kost", "kosten", "kostte", "gekost"],
+    "chosen": "kosten",
+    "confidence": "high",
+    "forms": "verb in prose: Het kost niets om …; noun de kosten",
+    "sources": "MS terminology (cost → kosten, kostprijs); catalog"
+  },
   "crash-report": {
     "accept": ["crashrapporten", "gecrasht", "crash", "vastgelopen"],
     "chosen": "crashrapport",
@@ -593,6 +698,12 @@
     "forms": "no article in a short label (Kopieer pad van huidige map), article in a full sentence",
     "sources": "catalog; macOS (Ga naar map in huidige locatie)"
   },
+  "cursor": {
+    "chosen": "cursor",
+    "confidence": "high",
+    "forms": "put the cursor on X → Zet de cursor op X; Open onderdeel onder cursor",
+    "sources": "Microsoft Terminology (cursor → cursor); catalog (16 values)"
+  },
   "custom": {
     "accept": ["aangepaste"],
     "chosen": "Aangepast",
@@ -616,6 +727,13 @@
     "confidence": "high",
     "sources": "MS terminology"
   },
+  "debugging": {
+    "chosen": "foutopsporing",
+    "accept": ["foutopspor", "debug"],
+    "confidence": "high",
+    "forms": "debug log → foutopsporingslogbestand; the technical level stays debug",
+    "sources": "ConsoleKit.framework Localizable (Debug Type, value_debug); catalog settings.developer.verboseLogging.description (macOS 26.6.2 build 25G83, live loctable key cross-reference, 2026-10-02)"
+  },
   "default": {
     "accept": ["standaard"],
     "chosen": "Standaard",
@@ -629,6 +747,13 @@
     "confidence": "high",
     "forms": "button Verwijder; progress Bezig met verwijderen / Verwijderen…",
     "sources": "macOS Finder (Delete → Verwijder)"
+  },
+  "delete-key": {
+    "chosen": "Delete",
+    "confidence": "high",
+    "forms": "bare Delete (⌫) where English is bare; in a sentence de Delete-toets",
+    "note": "Pile mined 2026-10-07 (macOS 27.0.1 live bundles): VoiceOver SCRWorkspace.loctable deleteKey, Terminal keyDescriptions.loctable 007F, AccessibilitySharedSupport symbol names delete.backward.",
+    "sources": "macOS Terminal key descriptions (⌫ Delete → ⌫ Delete), VoiceOver (Delete Key → Delete-toets); symbol names backspace"
   },
   "delete-permanently": {
     "accept": ["voorgoed"],
@@ -693,6 +818,17 @@
     "confidence": "high",
     "forms": "an idle device → niet meer bezig (counterpart of Het apparaat is bezig)",
     "sources": "macOS Dutch"
+  },
+  "dialog": {
+    "accept": ["venster", "dialoogvenster", "dialoog", "dialoogacties"],
+    "chosen": "venster",
+    "confidence": "high",
+    "forms": "a named Cmdr dialog → het venster ‘<titel>’ (het venster ‘Verplaats’, het venster ‘Selecteer bestanden’); a generic dialog → dialoogvenster",
+    "sources": "Microsoft Terminology (dialog box → dialoogvenster); catalog (commands.selectionSelectFiles.description)",
+    "exceptions": {
+      "fileOperations.delete.cloudOnlineOnlyAllWarning": "The sentence names Cmdr as the actor (In dit geval biedt Cmdr …) and leaves the dialog implied.",
+      "fileOperations.delete.cloudOnlineOnlyMixedWarning": "The sentence names Cmdr as the actor (In dit geval biedt Cmdr …) and leaves the dialog implied."
+    }
   },
   "disable": {
     "accept": ["uitgeschakeld", "schakel", "uit"],
@@ -895,11 +1031,19 @@
     "confidence": "high",
     "sources": "standard NL"
   },
+  "example": {
+    "chosen": "Voorbeeld:",
+    "confidence": "high",
+    "forms": "placeholder prefix → Voorbeeld: {value}; inline \"for example\" / \"e.g.\" → bijvoorbeeld / bijv.",
+    "sources": "catalog (13 values, servers.sheet.usernamePlaceholder Voorbeeld: bram)",
+    "accept": ["bijvoorbeeld", "bijv."]
+  },
   "expired": {
     "chosen": "verlopen",
     "confidence": "high",
-    "forms": "expired on → Verlopen op",
-    "sources": "standard NL"
+    "forms": "expired on → Verlopen op; expires in → Verloopt over (menu.context.shareLink*)",
+    "sources": "standard NL",
+    "accept": ["verloopt"]
   },
   "extension": {
     "accept": ["extensies"],
@@ -996,6 +1140,13 @@
     "confidence": "high",
     "forms": "File system watching (section) → Bestandssysteem volgen (tentative)",
     "sources": "macOS AppKit DocumentDragging.loctable (in het bestandssysteem)"
+  },
+  "filter": {
+    "accept": ["filteren", "gefilterd"],
+    "chosen": "filter",
+    "confidence": "high",
+    "forms": "noun and bare-stem button Filter (Filter wissen, snelfilter); verb filteren; the typing-mode name Filter, beside Ga naar",
+    "sources": "macOS live (Filter → Filter 63×; Clear Filter → Wis filter); DC, MC (Filter); catalog (Groottefilter actief)"
   },
   "finder": {
     "chosen": "Finder",
@@ -1131,11 +1282,16 @@
     "sources": "standard NL navigation (macOS Terug / Vooruit)"
   },
   "go-to-path": {
-    "accept": ["Ga naar map"],
-    "chosen": "Ga naar pad",
+    "avoid": [
+      {
+        "form": "Ga naar pad",
+        "why": "the English became Go to folder to match Finder; Finder's Dutch is Ga naar map"
+      }
+    ],
+    "chosen": "Ga naar map",
     "confidence": "high",
-    "forms": "Cmdr's dialog Ga naar pad…; the Dock menu's Finder item Go to Folder… → Ga naar map…",
-    "sources": "macOS Finder Ga naar … pattern (MenuBar 261.title Ga naar map…)"
+    "forms": "command and menu item Ga naar map…; dialog title and its confirm button Ga naar map",
+    "sources": "macOS Finder (MenuBar 261.title and N83 Ga naar map…, GT8 dialog title Ga naar map)"
   },
   "go-to-trash": {
     "avoid": [
@@ -1158,6 +1314,12 @@
     "chosen": "Begrepen",
     "confidence": "high",
     "sources": "macOS (Begrepen)"
+  },
+  "group": {
+    "chosen": "groep",
+    "confidence": "high",
+    "forms": "a named group takes the name bare after it (je groep Netwerk); the servers found nearby → Groep servers in de buurt",
+    "sources": "macOS Finder MenuBar (Use Groups → Gebruik groepen), verified on macOS 27.0 (26A428), live bundle, 2026-09-30; catalog (servers.pinHint.title)"
   },
   "guest": {
     "accept": ["gasten", "gasttoegang"],
@@ -1197,6 +1359,12 @@
     },
     "forms": "internal seen-flags: Hint voor … getoond / … gesloten",
     "sources": "MS terminology (hint → hint)"
+  },
+  "history": {
+    "chosen": "geschiedenis",
+    "confidence": "high",
+    "forms": "git history → git-geschiedenis; file history → bestandsgeschiedenis; operation history → bewerkingsgeschiedenis; the repo’s history → de geschiedenis van de repo",
+    "sources": "macOS AppKit (NSToolbarHistoryTemplate geschiedenis; versiegeschiedenis); catalog (errors.git.blobTooLarge.title, operationLog.rollback.refusalUnknown)"
   },
   "host": {
     "accept": ["hosts"],
@@ -1354,6 +1522,13 @@
     "forms": "rollback prompt's safe button Behoud de bestanden; a rename that kept its name → behoudt zijn naam",
     "sources": "macOS AppKit Revisions (Behoud beide), Finder (Behoud origineel)"
   },
+  "key-combination": {
+    "accept": ["combinaties", "toetsencombinatie", "toetsencombinaties"],
+    "chosen": "combinatie",
+    "confidence": "high",
+    "forms": "combo → combinatie (Kies een andere combinatie); spelled out: toetsencombinatie",
+    "sources": "catalog (4 keys: shortcuts.conflict.*, downloads.shortcutRow.invalidCombo), Microsoft Terminology (key combination → toetsencombinatie), Double Commander / KDE (Toetsencombinaties); macOS nl has no hit"
+  },
   "key-file": {
     "accept": ["wachtzin", "Sleutelwachtzin"],
     "avoid": [
@@ -1455,7 +1630,7 @@
   },
   "list": {
     "accept": ["lijst", "lijsten"],
-    "proseAccept": ["toont", "noemen", "op te sommen"],
+    "proseAccept": ["toont", "noemen", "op te sommen", "opsommen"],
     "chosen": "lijst",
     "confidence": "high",
     "forms": "the Servers list → de lijst Servers (the hub's name after the noun); server list → serverlijst; stops listing it → haalt … uit de lijst; the verb list (apps, shares, names) → tonen, opsommen, noemen in prose",
@@ -1668,6 +1843,9 @@
     "chosen": "gedeelde map",
     "confidence": "high",
     "decision": "Waarom een gedeelde map niet aankoppelt of de lijst niet laadt",
+    "exceptions": {
+      "errorReporter.dialog.managedOff": "English \"share it yourself\" is the verb (pass the file on), not a network share: zelf delen."
+    },
     "forms": "in the pane, share lists, and mount messages → gedeelde map; \"not a network share\" and the error family → netwerkshare; compounds keep share (SMB-share, SMB-/netwerkshares)",
     "sources": "macOS Finder (Shared folder → Gedeelde map), MS (network share → netwerkshare)"
   },
@@ -1720,6 +1898,14 @@
     "confidence": "tentative",
     "forms": "closed compounds onboardingopties, onboardingwizard, Onboardingchecklist",
     "sources": "loanword kept (matches the untranslated app title Cmdr onboarding)"
+  },
+  "on-device": {
+    "accept": ["lokale AI", "lokaal", "op je Mac", "op deze Mac", "op het apparaat", "op dit apparaat"],
+    "chosen": "lokaal",
+    "confidence": "high",
+    "forms": "on-device AI → lokale AI (de-woord: refer back with die); the card value On-device only → Alleen lokaal; prose about where it runs may say op je Mac",
+    "note": "The catalog already names this same model lokale AI / Lokale LLM (settings.ai.tooltipLocalDisabled, ai.local.deleteConfirmMessage, settings.ai.provider.opt.local), so on-device reuses it.",
+    "sources": "catalog (Lokale AI, Lokale LLM); macOS System Settings CloudSync (alleen … op dit apparaat) for the device sense"
   },
   "online-only": {
     "avoid": [
@@ -1804,11 +1990,31 @@
     },
     "sources": "macOS (Options → Opties)"
   },
+  "organization": {
+    "accept": ["organisatie", "organisaties"],
+    "chosen": "organisatie",
+    "confidence": "high",
+    "forms": "your organization → je organisatie; managed by your organization → Beheerd door je organisatie; manages → beheert",
+    "sources": "MS terminology (organization → organisatie; managed → beheerd); catalog (licensing.about.fallbackOrg = je organisatie); macOS (degene die je computer beheert)"
+  },
+  "original": {
+    "accept": ["originelen"],
+    "chosen": "origineel",
+    "confidence": "high",
+    "forms": "the originals → de originelen",
+    "sources": "macOS Finder PE117 (…the original could not be deleted): het origineel; catalog (errors.write.destinationNotFound.message.copy, errors.write.deviceDisconnected.sided.destination.copy)"
+  },
   "outdated": {
     "chosen": "verouderd",
     "confidence": "high",
     "forms": "De index van deze schijf is mogelijk verouderd",
     "sources": "standard NL"
+  },
+  "overall": {
+    "chosen": "In totaal",
+    "confidence": "high",
+    "forms": "the whole-run time-left label → In totaal: {eta}",
+    "sources": "GN totaal, DC Totaal:; catalog in totaal (servers.paneState.retryKeepsTrying)"
   },
   "overwrite": {
     "accept": ["overschrijven", "overschreven"],
@@ -1853,7 +2059,9 @@
     "sources": "macOS, MS"
   },
   "password-protected": {
+    "accept": ["met een wachtwoord beveiligd"],
     "chosen": "beveiligd met een wachtwoord",
+    "forms": "predicative (Dit archief is beveiligd met een wachtwoord); attributive before the noun (een met een wachtwoord beveiligd archief)",
     "confidence": "high",
     "sources": "Total Commander, Double Commander"
   },
@@ -2015,6 +2223,11 @@
     "confidence": "high",
     "sources": "macOS Finder (zoekopdracht)"
   },
+  "quick-filter": {
+    "chosen": "snelfilter",
+    "confidence": "high",
+    "sources": "TC 3018/3019 (snelfilter uit/aan); DC actQuickFilter (Snelfilter)"
+  },
   "quick-look": {
     "accept": ["Geef snel weer"],
     "avoid": [
@@ -2159,6 +2372,19 @@
     "forms": "Send report → Verstuur rapport (button), Rapport versturen (title)",
     "sources": "MS (report → rapport)"
   },
+  "repository": {
+    "accept": ["repository", "repo's"],
+    "avoid": [
+      {
+        "form": "opslagplaats",
+        "why": "MS terminology's coinage; KDE Dolphin and Dutch developers keep repository, and the catalog says repo"
+      }
+    ],
+    "chosen": "repo",
+    "confidence": "high",
+    "forms": "de-woord (de repo, deze repo); compounds hoofdrepo, repo-chip; the branch and tag tooltips spell out repository",
+    "sources": "catalog (errors.git.*); KDE Dolphin (SVN-repository); MS terminology NLD has only opslagplaats"
+  },
   "reserved": {
     "accept": ["gereserveerde"],
     "chosen": "gereserveerd",
@@ -2195,6 +2421,19 @@
     "confidence": "high",
     "forms": "button Herstart; Restart to update → Herstart om bij te werken; a restart (of the Mac) → herstarten",
     "sources": "macOS (Restart → Herstart)"
+  },
+  "restore": {
+    "accept": ["herstel", "hersteld", "Herstellen"],
+    "avoid": [
+      {
+        "form": "terugzetten",
+        "why": "the catalog's put-back and rename-undo word (Zet terug, teruggezet)"
+      }
+    ],
+    "chosen": "herstellen",
+    "confidence": "tentative",
+    "forms": "getting a file back from cloud cold storage → herstellen (Herstel het bestand in de console …; Herstellen kan … duren); the Edit-menu Herstel is undo, a different concept",
+    "sources": "Microsoft Terminology (restore → herstellen in four of five senses; terugzetten only for a backup copy)"
   },
   "resume": {
     "accept": ["hervatten", "hervat", "gaat verder"],
@@ -2470,6 +2709,36 @@
     "forms": "folder sizes → mapgroottes; File and folder sizes → Bestands- en mapgroottes",
     "sources": "macOS Finder (Size → Grootte)"
   },
+  "size-unit-gibibyte": {
+    "chosen": "GiB",
+    "confidence": "high",
+    "sources": "catalog common.sizeUnit.gibibyte; IEC 80000-13 (binary) / SI (decimal)"
+  },
+  "size-unit-kibibyte": {
+    "chosen": "KiB",
+    "confidence": "high",
+    "sources": "catalog common.sizeUnit.kibibyte; IEC 80000-13 (binary) / SI (decimal)"
+  },
+  "size-unit-kilobyte": {
+    "chosen": "kB",
+    "confidence": "high",
+    "sources": "catalog common.sizeUnit.kilobyte; IEC 80000-13 (binary) / SI (decimal)"
+  },
+  "size-unit-mebibyte": {
+    "chosen": "MiB",
+    "confidence": "high",
+    "sources": "catalog common.sizeUnit.mebibyte; IEC 80000-13 (binary) / SI (decimal)"
+  },
+  "size-unit-pebibyte": {
+    "chosen": "PiB",
+    "confidence": "high",
+    "sources": "catalog common.sizeUnit.pebibyte; IEC 80000-13 (binary) / SI (decimal)"
+  },
+  "size-unit-tebibyte": {
+    "chosen": "TiB",
+    "confidence": "high",
+    "sources": "catalog common.sizeUnit.tebibyte; IEC 80000-13 (binary) / SI (decimal)"
+  },
   "skip": {
     "accept": ["overslaan", "overgeslagen", "slaat", "sla", "sloeg"],
     "chosen": "Sla over",
@@ -2529,11 +2798,31 @@
     "forms": "button Stop everywhere (Stop met zoeken, Stop en verwijder …); a button that stops running work is the imperative even when only a screen reader hears it",
     "sources": "macOS Finder (BN62, PE107, SD23)"
   },
+  "storage": {
+    "accept": ["opslag", "opslagaanbieder", "koude opslag", "S3-opslag"],
+    "chosen": "opslag",
+    "confidence": "high",
+    "forms": "storage provider → opslagaanbieder (aanbieder per ai-provider); cold storage → koude opslag; S3 storage → S3-opslag; storing logs → logopslag",
+    "sources": "Microsoft Terminology (storage → opslag; cold storage → koude opslag); macOS (Cloudopslag, Beheer opslag…)"
+  },
+  "store": {
+    "accept": ["opgeslagen", "slaat", "bewaren", "bewaard"],
+    "chosen": "opslaan",
+    "confidence": "high",
+    "forms": "a destination that can’t store a name → kan … niet opslaan / kan hier niet worden opgeslagen; keeping a file, secret, or address → bewaren / bewaard (the save ruling’s verb: FAT32 kan geen bestanden bewaren, bewaren in Sleutelhanger)",
+    "sources": "catalog errors.volume.invalidName, errors.write.invalidName.message"
+  },
   "streaming": {
     "accept": ["streammodus", "stream"],
     "chosen": "streamen",
     "confidence": "tentative",
     "sources": "loanword kept; no Dutch UI equivalent"
+  },
+  "subfolder": {
+    "chosen": "submap",
+    "accept": ["submappen"],
+    "confidence": "high",
+    "sources": "macOS Finder (PE26.1 … naar een van de submappen); DC, MC, Nautilus, Thunar, Dolphin (Submap aanmaken) agree"
   },
   "suggestion": {
     "accept": ["suggesties", "voorgesteld", "voorstel"],
@@ -2663,6 +2952,13 @@
     "forms": "in a sentence prefer the settled reageerde niet op tijd",
     "sources": "standard NL spelling"
   },
+  "tint": {
+    "accept": ["tinten", "achtergrondtint"],
+    "chosen": "tint",
+    "confidence": "high",
+    "forms": "Settings label → <X>-panelen tinten; description → Achtergrondtint voor panelen die …",
+    "sources": "Microsoft Terminology (tint → tint); catalog (settings.appearance.tint*)"
+  },
   "title-bar": {
     "chosen": "titelbalk",
     "confidence": "high",
@@ -2781,6 +3077,12 @@
     "chosen": "onbereikbaar",
     "confidence": "high",
     "sources": "standard NL; catalog (servers.refusal.unreachable)"
+  },
+  "untouched": {
+    "chosen": "onaangeroerd",
+    "confidence": "high",
+    "forms": "the originals are untouched → de originelen zijn onaangeroerd",
+    "sources": "catalog (errors.write.destinationNotFound.message.copy, errors.write.deviceDisconnected.sided.destination.copy); macOS AppKit Document (To keep the file unchanged…): het bestand ongewijzigd laten, the verb-side form"
   },
   "update": {
     "accept": ["updates", "bijwerken", "bijgewerkt", "bij te werken", "werkt"],
@@ -2951,6 +3253,13 @@
     "chosen": "Mission Control",
     "confidence": "high",
     "sources": "Apple-name literals kept per their @key notes; Mission Control / Spotlight / Spaces stay English in Dutch macOS"
+  },
+  "space-key": {
+    "accept": ["spatiebalk", "spatietoets"],
+    "chosen": "Spatie",
+    "confidence": "high",
+    "forms": "key name Spatie, ⇧Spatie; prose may say de spatietoets or (macOS) de spatiebalk",
+    "sources": "macOS AppKit FunctionKeyNames (Space), SystemSettings Siri/Spotlight SPACEBAR_KEY → Spatie (Space bar → Spatiebalk); TC 5139 spatiebalk; Midnight Commander Spatie; Double Commander SPATIEBALK"
   },
   "spaces": {
     "chosen": "Spaces",

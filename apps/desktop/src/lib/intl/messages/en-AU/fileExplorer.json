@@ -1,4 +1,8 @@
 {
+  "fileExplorer.pane.directConnectionShareGoneToast": "{share} isn’t connected any more, so there’s no connection to speed up.",
+  "@fileExplorer.pane.directConnectionShareGoneToast": {
+    "sourceHash": "d562549"
+  },
   "fileExplorer.pane.trashUnconfirmedToast": "Couldn’t confirm the file was moved to the Bin. The volume may be slow, but the file may still have been moved. Please check your Bin to be sure.",
   "@fileExplorer.pane.trashUnconfirmedToast": {
     "sourceHash": "6764112"

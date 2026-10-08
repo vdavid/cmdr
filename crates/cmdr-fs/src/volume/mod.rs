@@ -21,71 +21,6 @@ use tokio_util::sync::CancellationToken;
 /// Default volume ID for the root filesystem.
 pub const DEFAULT_VOLUME_ID: &str = "root";
 
-/// A stream of bytes read from a volume.
-///
-/// This is an async interface for reading file data in chunks. Used for
-/// streaming transfers between volumes. `next_chunk` is async (returns a
-/// pinned boxed future) so that network-backed volumes (MTP, SMB) can
-/// yield to the runtime instead of blocking. `total_size` and `bytes_read`
-/// stay sync because they return cached values.
-pub trait VolumeReadStream: Send {
-    /// Returns the next chunk of data, or None if complete.
-    #[allow(
-        clippy::type_complexity,
-        reason = "async trait method returns a pinned boxed future by design"
-    )]
-    fn next_chunk(&mut self) -> Pin<Box<dyn Future<Output = Option<Result<Vec<u8>, VolumeError>>> + Send + '_>>;
-
-    /// Final byte length, when it is known before the stream reaches EOF.
-    fn total_size(&self) -> StreamLength;
-
-    /// Bytes read so far (for progress tracking).
-    fn bytes_read(&self) -> u64;
-
-    /// Promptly release any scarce backend resource this stream holds across
-    /// chunks, before the stream is dropped. After this call the stream is spent;
-    /// `next_chunk` must not be called again on it.
-    ///
-    /// Default is a no-op, and that's what every current backend uses: reads that
-    /// could otherwise pin a scarce resource (MTP's one-per-device PTP session)
-    /// are bounded windows that hold nothing between chunks, so the copy wrapper
-    /// (`CheckpointStream`) parks in place rather than releasing anything. This
-    /// stays a trait hook for a hypothetical future backend whose stream genuinely
-    /// holds a resource across chunks; nothing in the copy path calls it today.
-    #[allow(
-        clippy::type_complexity,
-        reason = "async trait method returns a pinned boxed future by design"
-    )]
-    fn cancel_and_release(&mut self) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
-        Box::pin(async {})
-    }
-}
-
-/// A ONE-PASS extractor over a subtree of a SEQUENTIAL source (a compressed tar
-/// or solid 7z), where a per-entry random read re-decodes the prefix and makes a
-/// subtree extract O(n²). Decoding the stream a single time, it yields each file
-/// in ARCHIVE order: [`next_file`](Self::next_file) advances to the next member,
-/// then [`current_stream`](Self::current_stream) hands its bytes to the
-/// destination's `write_from_stream`.
-///
-/// The copy engine drives it after creating the destination directory structure
-/// from the tree (cheap, no decode), so this never yields directories. Dropping
-/// the extractor stops the underlying decoder (drop-based cancellation).
-pub trait SequentialExtract: Send {
-    /// Advances to the next file member (draining any unread bytes of the current
-    /// one), or `Ok(None)` at the end of the subtree.
-    #[allow(
-        clippy::type_complexity,
-        reason = "async trait method returns a pinned boxed future by design"
-    )]
-    fn next_file(&mut self) -> Pin<Box<dyn Future<Output = Result<Option<ExtractedFile>, VolumeError>> + Send + '_>>;
-
-    /// An owned read stream over the CURRENT member's decoded bytes, to hand to
-    /// the destination's `write_from_stream`. Valid until the next
-    /// [`next_file`](Self::next_file); call exactly once per member.
-    fn current_stream(&self) -> Box<dyn VolumeReadStream>;
-}
-
 /// Async trait for volume file system operations.
 ///
 /// Implementations provide access to different storage backends:
@@ -447,20 +382,32 @@ pub trait Volume: Send + Sync {
     /// SMB, MTP, in-memory), matching the local-FS `ensure_destination_dir`.
     ///
     /// The default walks `path`'s ancestors leaf→root, stopping at the first one
-    /// that already `exists()` (or at the volume root), then creates the missing
-    /// ones shallowest-first via `create_directory`. Probing existence per
-    /// ancestor before creating means it never calls `create_directory` on a dir
-    /// that's already there, so backends whose `create_directory` can't signal a
+    /// that leads to a directory (or at the volume root), then creates the
+    /// missing ones shallowest-first via `create_directory`. Probing per ancestor
+    /// before creating means it never calls `create_directory` on a dir that's
+    /// already there, so backends whose `create_directory` can't signal a
     /// collision (`MtpVolume`, `create_directory_errors_on_existing_dir() ==
     /// false`) never make a duplicate sibling. An `AlreadyExists` from
     /// `create_directory` (a concurrent op won a race) is also treated as
     /// success. These are network/IPC round-trips, so the leaf-first walk keeps
     /// them minimal: when the parent already exists (the common "new folder name
-    /// under an existing dir" case), it's one `exists()` plus one
-    /// `create_directory`.
+    /// under an existing dir" case), it's one probe plus one `create_directory`.
     ///
     /// Backends override only if they have a cheaper native recursive mkdir;
     /// SMB and MTP don't, so the per-component loop is the right shape there.
+    ///
+    /// **A file in the way is refused, by name.** A path that exists and doesn't
+    /// lead to a directory (a file, or a link to anything but a folder), at
+    /// `path` itself or at an ancestor, answers [`VolumeError::NotADirectory`]
+    /// carrying the path of the thing in the way, and nothing is created. ❌
+    /// Never `Ok(AlreadyExisted)` for it, and ❌ never the `NotFound` of the
+    /// level below it. A link that leads to a folder IS a folder here, and the
+    /// walk creates through it. Every mutable backend runs
+    /// `conformance::assert_create_directory_all_refuses_a_file_in_the_way`, and
+    /// the ones with links run
+    /// `conformance::assert_create_directory_all_goes_through_a_link_to_a_folder`.
+    /// Why a link is fine here and not in a merge: `mkdir_all.rs` § "A link to a
+    /// folder is a folder".
     ///
     /// Reports whether the LEAF was created here or was already there
     /// ([`DirectoryCreation`]). An overriding backend MUST answer that honestly:
@@ -483,15 +430,19 @@ pub trait Volume: Send + Sync {
             // one that already exists (or run out). A component with no file
             // name (the volume root `/`, an empty path, or `.`) has nothing to
             // create above it — the root always exists — so it stops the walk.
+            // ❗ "Exists" has to mean "leads to a directory": a bare `exists()`
+            // stops at a FILE just as happily, and the walk then answers
+            // `AlreadyExisted` for it or fails one level below it.
             let mut missing: Vec<PathBuf> = Vec::new();
             for ancestor in path.ancestors() {
                 if ancestor.file_name().is_none() {
                     break;
                 }
-                if self.exists(ancestor).await {
-                    break;
+                match mkdir_all::volume_path_leads_to(self, ancestor).await {
+                    LeadsTo::Directory => break,
+                    LeadsTo::NotADirectory => return Err(VolumeError::NotADirectory(ancestor.display().to_string())),
+                    LeadsTo::Nothing => missing.push(ancestor.to_path_buf()),
                 }
-                missing.push(ancestor.to_path_buf());
             }
 
             // `ancestors()` yields leaf→root, so `missing[0]` is the leaf and
@@ -505,16 +456,48 @@ pub trait Volume: Send + Sync {
                             leaf = DirectoryCreation::Created;
                         }
                     }
-                    // A concurrent op created it between our `exists()` check and
-                    // this call. Treat as success to keep the create idempotent —
-                    // but NOT as ours: somebody else's directory may already have
-                    // something in it.
-                    Err(VolumeError::AlreadyExists(_)) => {}
+                    // A concurrent op created it between our probe and this call.
+                    // Treat as success to keep the create idempotent — but NOT as
+                    // ours: somebody else's directory may already have something
+                    // in it. And only a DIRECTORY is success: what won the race
+                    // can be a file.
+                    Err(VolumeError::AlreadyExists(_)) => {
+                        if mkdir_all::volume_path_leads_to(self, dir).await == LeadsTo::NotADirectory {
+                            return Err(VolumeError::NotADirectory(dir.display().to_string()));
+                        }
+                    }
                     Err(e) => return Err(e),
                 }
             }
             Ok(leaf)
         })
+    }
+
+    /// Sets the modification date of the file or folder at `path`, at the finest
+    /// precision the backend keeps (whole seconds on most).
+    ///
+    /// The cross-volume copy calls it on every FOLDER it created, once that
+    /// folder's contents have landed (writing a child bumps its folder's date).
+    /// A file's date travels on its write instead (`write_from_stream` reads
+    /// [`VolumeReadStream::modified_at`]), so a backend needn't route that here.
+    /// Best effort for the caller: an error is logged and the copy stands. The
+    /// contract: `apps/desktop/src-tauri/src/file_system/write_operations/transfer/volume/DETAILS.md`
+    /// § "Copies keep the source's date".
+    ///
+    /// **A shared conformance assertion enforces it**: every backend that
+    /// implements it runs `conformance::assert_set_modified_dates_a_folder`
+    /// (test builds only).
+    ///
+    /// Default: `NotSupported`, for a store with no folder date to set (S3's
+    /// prefixes, an MTP device, WebDAV) or no way to set one (ADB's sync
+    /// protocol), and for every read-only backend.
+    fn set_modified<'a>(
+        &'a self,
+        path: &'a Path,
+        modified: std::time::SystemTime,
+    ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+        let _ = (path, modified);
+        Box::pin(async { Err(VolumeError::NotSupported) })
     }
 
     /// Deletes a single file or **empty** directory.
@@ -587,6 +570,96 @@ pub trait Volume: Send + Sync {
     ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
         let _ = (from, to, force);
         Box::pin(async { Err(VolumeError::NotSupported) })
+    }
+
+    /// Whether renaming the entry at `path` is one cheap server-side call here,
+    /// or a copy of its bytes plus a delete ([`RenameWork`], `server_side.rs`).
+    ///
+    /// ❗ Every caller of [`rename`](Self::rename) asks this first, and sends a
+    /// [`RenameWork::CopyThenDelete`] entry through the transfer engine as a
+    /// same-volume move (progress, pause, cancel, journaling) instead of
+    /// calling `rename`. ❌ Never inferred from a backend kind: the answer is
+    /// per entry (S3 renames a small file in one call, a folder never).
+    ///
+    /// Default `OneCall`, with no I/O.
+    ///
+    /// A volume that can answer `CopyThenDelete` says so up front with
+    /// [`renames_can_copy`](Self::renames_can_copy).
+    fn rename_work<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<RenameWork, VolumeError>> + Send + 'a>> {
+        let _ = path;
+        Box::pin(async { Ok(RenameWork::OneCall) })
+    }
+
+    /// Whether [`rename_work`](Self::rename_work) can answer `CopyThenDelete`
+    /// for some entry here, asked with no I/O: a move within this volume may be
+    /// a server-side copy per object. Published as
+    /// `VolumeCapabilities::renames_can_copy`, so the Move dialog scans such a
+    /// move instead of skipping the scan as it does for a one-call rename.
+    ///
+    /// Default `false`, matching `rename_work`'s `OneCall`. S3 answers `true`.
+    fn renames_can_copy(&self) -> bool {
+        false
+    }
+
+    /// Counts the files under `path` (a file counts as one), stopping once
+    /// more than `cap` are found ([`SubtreeTally::complete`] is then `false`).
+    /// What a rename that copies would move, for the rename editor to decide
+    /// whether to confirm first.
+    ///
+    /// Default: one listing per folder ([`server_side::tally_by_listing`]). An
+    /// object store overrides it with a recursive listing, a thousand keys per
+    /// request whatever the nesting.
+    fn tally_subtree<'a>(
+        &'a self,
+        path: &'a Path,
+        cap: u64,
+    ) -> Pin<Box<dyn Future<Output = Result<SubtreeTally, VolumeError>> + Send + 'a>> {
+        Box::pin(server_side::tally_by_listing(self, path, cap))
+    }
+
+    /// Deletes several FILES, answering one result per path, in order.
+    ///
+    /// The batch form of [`delete`](Self::delete), for a move's source sweep:
+    /// an object store deletes a thousand keys per request (`DeleteObjects`).
+    /// ❗ Files only, each one a path the caller just listed as a file: a
+    /// backend may delete by key without the folder check `delete` makes. A
+    /// path already gone answers `Ok`.
+    ///
+    /// Default: [`delete`](Self::delete) per path.
+    #[allow(
+        clippy::type_complexity,
+        reason = "async trait method returns a pinned boxed future by design"
+    )]
+    fn delete_files<'a>(
+        &'a self,
+        paths: &'a [PathBuf],
+    ) -> Pin<Box<dyn Future<Output = Vec<Result<(), VolumeError>>> + Send + 'a>> {
+        Box::pin(async move {
+            let mut results = Vec::with_capacity(paths.len());
+            for path in paths {
+                results.push(match self.delete(path).await {
+                    Err(VolumeError::NotFound(_)) => Ok(()),
+                    other => other,
+                });
+            }
+            results
+        })
+    }
+
+    /// How many files one [`delete_files`](Self::delete_files) call removes in
+    /// a single request, for a backend that batches on the wire; `None` (the
+    /// default) when it deletes one file at a time.
+    ///
+    /// A delete walker hands such a backend its files in chunks of this size,
+    /// pausing and checking Cancel between chunks, instead of one
+    /// [`delete`](Self::delete) per file: on an object store that's a capped
+    /// listing, a stat, and a delete per object, three thousand requests for a
+    /// folder of a thousand files where two batches do.
+    fn delete_batch_size(&self) -> Option<std::num::NonZeroUsize> {
+        None
     }
 
     // ========================================
@@ -832,6 +905,32 @@ pub trait Volume: Send + Sync {
         false
     }
 
+    /// Whether [`share_link`](Self::share_link) can mint a link to a file here:
+    /// a URL anyone can open to download it, for a while. Gates "Copy share
+    /// link" in the context menu and the command palette.
+    ///
+    /// Default `false`, matching `share_link`'s `NotSupported`. S3 answers `true`
+    /// (a presigned GET, computed offline).
+    fn supports_share_links(&self) -> bool {
+        false
+    }
+
+    /// A link to the FILE at `path` that anyone can open to download it, valid
+    /// for `expires_in`. ❗ The link is a credential: [`ShareLink`] keeps it out of
+    /// `Debug`, and ❌ nothing may log what it holds.
+    ///
+    /// A folder answers [`VolumeError::IsADirectory`]: a link names one object.
+    /// Default `NotSupported`; a backend that overrides it answers
+    /// [`supports_share_links`](Self::supports_share_links) `true`.
+    fn share_link<'a>(
+        &'a self,
+        path: &'a Path,
+        expires_in: ShareLinkExpiry,
+    ) -> Pin<Box<dyn Future<Output = Result<ShareLink, VolumeError>> + Send + 'a>> {
+        let _ = (path, expires_in);
+        Box::pin(async { Err(VolumeError::NotSupported) })
+    }
+
     /// Whether a [`FileEntry::permissions`](crate::entry::FileEntry::permissions)
     /// from this backend is a REAL POSIX mode somebody recorded, rather than the
     /// `0` that means "this backend has no permission concept".
@@ -898,7 +997,10 @@ pub trait Volume: Send + Sync {
         VolumeCapabilities {
             backend_can_write: self.is_writable(),
             can_export: self.supports_export(),
+            can_share_links: self.supports_share_links(),
             can_be_indexed: self.backend_kind().can_be_indexed(),
+            renames_can_copy: self.renames_can_copy(),
+            has_os_mount_fallback: self.backend_kind().has_os_mount_fallback(),
         }
     }
 
@@ -1056,6 +1158,7 @@ pub trait Volume: Send + Sync {
                 // Aggregate over multiple paths: meaningless for a batch.
                 // Callers that need per-path type should read `per_path`.
                 top_level_is_directory: false,
+                top_level_modified_at: None,
             };
             let mut per_path = Vec::with_capacity(paths.len());
             for path in paths {
@@ -1070,7 +1173,11 @@ pub trait Volume: Send + Sync {
                     .await?;
                 per_path.push((path.clone(), scan));
             }
-            Ok(BatchScanResult { aggregate, per_path })
+            Ok(BatchScanResult {
+                aggregate,
+                per_path,
+                files: None,
+            })
         })
     }
 
@@ -1557,6 +1664,33 @@ pub trait Volume: Send + Sync {
         Box::pin(async { false })
     }
 
+    /// Whether EVERY [`write_from_stream`](Self::write_from_stream) here is
+    /// published whole by the protocol itself: the name shows nothing new until
+    /// the write completes, a write that never completes leaves nothing at the
+    /// name (not after a crash, a dropped connection, or a cancel), and a
+    /// replacing write keeps the old content readable until the new is complete.
+    /// An object store answers `true` (S3's PUT and multipart completion).
+    ///
+    /// The transfer layer then writes straight to the final name, a fresh file
+    /// and a file→file Overwrite alike: staging there would buy nothing the
+    /// protocol doesn't already give, and its landing rename can cost a full
+    /// server-side copy plus a delete (`write_operations/transfer/volume/DETAILS.md`
+    /// § "Whole-publish destinations").
+    ///
+    /// It promises less than [`write_is_single_shot`](Self::write_is_single_shot),
+    /// and that's why it's a separate answer: a request stays open on the server
+    /// while the source drains, and the [`WriteMode::CreateNew`] refusal may be
+    /// a check just before the write where the server has no atomic primitive.
+    /// So the destination-side foreground yield and the stall watchdog keep
+    /// reading `write_is_single_shot` alone.
+    ///
+    /// ❌ Answer `true` only when it holds for every size and both modes, by
+    /// protocol, ❌ never by a backend's own cleanup: a cleanup doesn't run on a
+    /// force-quit. Default `false`.
+    fn publishes_writes_whole(&self) -> bool {
+        false
+    }
+
     /// Writes data from a stream to the given path.
     ///
     /// `on_progress` receives structured byte progress after each chunk is
@@ -1642,6 +1776,44 @@ pub trait Volume: Send + Sync {
         let _ = (from, to, on_progress);
         Box::pin(async { Err(VolumeError::NotSupported) })
     }
+
+    /// Copies one FILE from `from` on `source` to `to` here, without the bytes
+    /// travelling through Cmdr: the transfer engine's one server-side-copy
+    /// entry point, asked before every streamed file.
+    ///
+    /// `source` may be THIS volume, or another view of the same storage the
+    /// backend can copy across (two S3 places of one account). ❗ The backend
+    /// decides that from `source`'s concrete type and identity, ❌ never from a
+    /// path: a copy on a server the source path doesn't belong to copies the
+    /// wrong file, silently.
+    ///
+    /// `to` is written the way [`write_from_stream`](Self::write_from_stream)
+    /// writes it under `mode`; a whole-publishing backend
+    /// ([`publishes_writes_whole`](Self::publishes_writes_whole)) publishes the
+    /// copy whole too, so the caller writes its final name. Cancellation comes
+    /// through `progress`, and the backend removes its partial before
+    /// answering [`VolumeError::Cancelled`].
+    ///
+    /// `NotSupported` means "stream it instead", never a failure. Default:
+    /// [`copy_within`](Self::copy_within) when `source` is this very volume
+    /// and `mode` is `CreateOrReplace` (its contract truncates), else
+    /// `NotSupported`.
+    fn copy_on_server<'a>(
+        &'a self,
+        source: &'a dyn Volume,
+        from: &'a Path,
+        to: &'a Path,
+        mode: WriteMode,
+        progress: &'a dyn ServerCopyProgress,
+    ) -> Pin<Box<dyn Future<Output = Result<u64, VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            if mode.refuses_occupied() || !std::ptr::addr_eq(self as *const Self, source as *const dyn Volume) {
+                return Err(VolumeError::NotSupported);
+            }
+            self.copy_within(from, to, &|done, total| progress.advanced(done, total))
+                .await
+        })
+    }
 }
 
 /// Anchors a caller-supplied path at `root`, giving the absolute, root-anchored
@@ -1689,20 +1861,27 @@ pub fn root_anchored(root: &Path, path: &Path) -> PathBuf {
 // `volume::VolumeError`, `volume::smb_volume_id`, etc.
 mod capabilities;
 mod channel_stream;
+mod child_name;
 mod connection;
 mod entry_kind;
 mod error;
 mod ids;
 mod in_memory;
+pub mod liveness;
 pub mod mkdir_all;
 pub mod mtp_ids;
 pub mod patching;
+mod read_stream;
 pub mod remote_paths;
 mod retirement;
+mod root_echo;
 mod scan_boundary;
 pub mod scan_stop;
 pub mod scan_walk;
 pub mod secret_store;
+pub mod server_side;
+pub mod share_link;
+pub mod tls;
 mod types;
 mod usb_speed;
 
@@ -1710,6 +1889,7 @@ mod usb_speed;
 // top of it: rustdoc resolves the concatenated fragments in THIS module's scope,
 // so the file's own inner-doc links to its items stop resolving.
 pub mod canonical_root;
+pub mod published_locations;
 pub mod smb_mount_source;
 
 /// Typed, word-free classification of why a volume operation failed.
@@ -1726,14 +1906,24 @@ pub mod host;
 
 pub use capabilities::VolumeCapabilities;
 pub use channel_stream::ChannelReadStream;
+pub use child_name::{ChildName, NotAChildName};
 pub use connection::{BackendKind, ConnectionState, DeviceReadiness, DeviceUnavailableReason, SignInShape};
 pub use entry_kind::EntryKind;
 pub use error::{ErrnoField, VolumeError};
 pub use ids::*;
+pub use server_side::{RenameWork, ServerCopyProgress, SubtreeTally};
+pub use share_link::{ShareLink, ShareLinkExpiry};
+// The app-path schemes live beside the translation they feed; re-exported here
+// so callers keep `volume::sftp_app_root` and friends.
 pub use in_memory::InMemoryVolume;
-pub use mkdir_all::{MadeDirectories, MakesDirectories};
+pub use mkdir_all::{LeadsTo, MadeDirectories, MakesDirectories};
 pub use patching::{PatchSource, patch_created, patch_deleted, patch_mutation, patch_renamed};
+pub use read_stream::{SequentialExtract, VolumeReadStream};
+pub use remote_paths::{
+    ServerPath, adb_app_root, adb_serial_of_path, s3_app_root, server_of_path, sftp_app_root, webdav_app_root,
+};
 pub use retirement::{Retirement, Retires, SelfHandle};
+pub use root_echo::{RootEcho, root_echo};
 pub use scan_boundary::{ScanBoundary, stopped as scan_stopped};
 pub use scan_stop::{ScanStop, ScanStopSignal};
 pub use scan_walk::{ScanSource, Walking, conflicts_against, fold_batch, scan_conflicts, scan_one, scan_trees};
@@ -1754,3 +1944,5 @@ mod in_memory_test;
 mod retirement_test;
 #[cfg(test)]
 mod root_anchored_path_test;
+#[cfg(test)]
+mod root_echo_test;

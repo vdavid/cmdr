@@ -45,13 +45,14 @@ fn app_handle() -> Option<AppHandle> {
 
 /// Tells the frontend a share is staying on the macOS kernel mount, so it can
 /// offer a retry instead of leaving someone on the slow path with no explanation.
-fn emit_fell_back_to_os_mount(volume_id: &str, share: &str, reason: UpgradeFailure) {
+fn emit_fell_back_to_os_mount(server: &str, volume_id: &str, share: &str, reason: UpgradeFailure) {
     use tauri_specta::Event;
     if let Some(app) = app_handle()
         && let Err(e) = (crate::network::SmbFellBackToOsMount {
             volume_id: volume_id.to_string(),
             share: share.to_string(),
             reason,
+            display_name: crate::network::smb_server_address::friendly_server_name(server),
         })
         .emit(&app)
     {
@@ -160,7 +161,7 @@ pub(crate) fn announce_os_mount_fallback(
         return;
     }
     log::debug!("Telling the frontend about the kernel-mount fallback on server={server:?}, share={share:?}");
-    emit_fell_back_to_os_mount(volume_id, share, reason);
+    emit_fell_back_to_os_mount(server, volume_id, share, reason);
 }
 
 /// Forgets `server` once a direct session lands on it.

@@ -227,6 +227,14 @@
   "@ai.translateError.unknownProvider.body": {
     "sourceHash": "7042a75"
   },
+  "ai.translateError.managed.title": "Tổ chức của bạn quản lý AI trong Cmdr",
+  "@ai.translateError.managed.title": {
+    "sourceHash": "12f8233"
+  },
+  "ai.translateError.managed.body": "Bộ phận IT có thể cho bạn biết những dịch vụ AI nào bạn được dùng.",
+  "@ai.translateError.managed.body": {
+    "sourceHash": "cb7e811"
+  },
   "ai.cloud.serviceAria": "Dịch vụ AI đám mây",
   "@ai.cloud.serviceAria": {
     "sourceHash": "7dec1e0"
@@ -456,5 +464,33 @@
   "ai.secretError.genericBody": "Kiểm tra xem kho khóa hệ thống của bạn có sẵn sàng không, rồi thử lại. Nếu vẫn tiếp diễn, hãy khởi động lại ứng dụng.",
   "@ai.secretError.genericBody": {
     "sourceHash": "2ee417d"
+  },
+  "ai.secretError.removeTitle": "Không thể xóa khóa API đã lưu của bạn.",
+  "@ai.secretError.removeTitle": {
+    "sourceHash": "5986628"
+  },
+  "ai.secretError.removeKeychainBody": "Mở Truy cập chuỗi khóa, tìm mục “Cmdr” rồi xóa mục đó.",
+  "@ai.secretError.removeKeychainBody": {
+    "sourceHash": "4e3abe7"
+  },
+  "ai.managed.aiOff": "Tổ chức của bạn đã tắt AI trong Cmdr.",
+  "@ai.managed.aiOff": {
+    "sourceHash": "25b7aef"
+  },
+  "ai.managed.cloudAiOff": "Tổ chức của bạn chỉ cho phép AI trên thiết bị.",
+  "@ai.managed.cloudAiOff": {
+    "sourceHash": "894c53d"
+  },
+  "ai.managed.hostNotAllowed": "Tổ chức của bạn không cho phép dịch vụ AI này. Bộ phận IT có thể cho bạn biết những dịch vụ nào bạn được dùng.",
+  "@ai.managed.hostNotAllowed": {
+    "sourceHash": "845a19f"
+  },
+  "ai.managed.localOnlyUnsupported": "Tổ chức của bạn chỉ cho phép AI trên thiết bị, và máy Mac này không chạy được AI đó.",
+  "@ai.managed.localOnlyUnsupported": {
+    "sourceHash": "b760ca4"
+  },
+  "ai.managed.serviceNotAllowed": "tổ chức của bạn không cho phép",
+  "@ai.managed.serviceNotAllowed": {
+    "sourceHash": "026e7e3"
   }
 }

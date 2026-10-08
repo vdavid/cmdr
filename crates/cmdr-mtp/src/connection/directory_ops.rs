@@ -882,8 +882,8 @@ fn entry_for_object(parent_path: &Path, info: &mtp_rs::ObjectInfo) -> (FileEntry
     let child_path = parent_path.join(&info.filename);
     let entry = FileEntry {
         size: if is_dir { None } else { Some(info.size) },
-        modified_at: info.modified.map(convert_mtp_datetime),
-        created_at: info.created.map(convert_mtp_datetime),
+        modified_at: info.modified.and_then(convert_mtp_datetime),
+        created_at: info.created.and_then(convert_mtp_datetime),
         permissions: NO_PERMISSION_CONCEPT,
         icon_id: get_mtp_icon_id(is_dir, &info.filename),
         extended_metadata_loaded: true,

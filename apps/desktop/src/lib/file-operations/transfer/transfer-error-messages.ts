@@ -27,11 +27,11 @@ import type { ProgressAtStop } from '$lib/tauri-commands'
 import { formatInteger } from '$lib/intl/number-format'
 import { isMacOS } from '$lib/shortcuts/key-capture'
 import { getEffectiveShortcuts, toDisplayShortcut } from '$lib/shortcuts'
-import { colorizeSizeString } from '$lib/file-explorer/selection/selection-info-utils'
+import { colorizeSize } from '$lib/file-explorer/selection/selection-info-utils'
 import { escapeHtml } from '$lib/tooltip/tooltip'
 import { getMessage } from '$lib/intl/messages.svelte'
 import type { MessageKey } from '$lib/intl/keys.gen'
-import { formatByteSize } from '$lib/units'
+import { formatByteSizeTiered } from '$lib/units'
 
 /** Substitutes `{token}` placeholders in a catalog value with runtime strings. */
 function interpolate(template: string, params: Record<string, string> = {}): string {
@@ -96,6 +96,14 @@ const simpleMessageFactories: Partial<
     title: w('notConnected.title'),
     message: w('notConnected.message.destination'),
     suggestion: w('notConnected.suggestion'),
+  }),
+  // A source whose volume left and that nothing lists any more: a phone unplugged
+  // under a search-results pane. ❌ Never the "not connected yet" sentence, whose
+  // advice points at a volume-switcher row that isn't there.
+  source_no_longer_connected: () => ({
+    title: w('noLongerConnected.title'),
+    message: w('noLongerConnected.message'),
+    suggestion: w('noLongerConnected.suggestion'),
   }),
   // destinationInsideSource can only happen on copy/move (delete/trash have no
   // destination), so `${op}` only ever resolves to `.copy` or `.move` here.
@@ -187,6 +195,12 @@ const errorDisplayMetaMap: Record<WriteOperationError['type'], ErrorDisplayMeta>
   cancelled: { category: 'transient', retryHint: true },
   connection_interrupted: { category: 'transient', retryHint: true },
   delete_pending: { category: 'transient', retryHint: true },
+  // No Retry: the file stays archived until someone restores it, which Cmdr
+  // can't do yet, so the identical request can only meet it again.
+  source_in_cold_storage: { category: 'needs_action', retryHint: false },
+  // Retry: nothing was saved and the source is whole, so the same copy again
+  // takes the version that's there now.
+  source_changed: { category: 'transient', retryHint: true },
   device_disconnected: { category: 'needs_action', retryHint: true },
   // Retry: nothing is broken and nothing was lost. The originals are all where
   // they were, so running the same move again is exactly the way out.
@@ -203,10 +217,15 @@ const errorDisplayMetaMap: Record<WriteOperationError['type'], ErrorDisplayMeta>
   // No Retry: the folder is missing, so the identical request can only fail
   // again. The way out is picking another destination or restoring the folder.
   destination_not_found: { category: 'needs_action', retryHint: false },
+  // No Retry: the file is still in the way, so the identical request can only
+  // meet it again. The way out is another destination, or moving the file.
+  destination_not_a_folder: { category: 'needs_action', retryHint: false },
   // No Retry: the same request refuses again until the phone or server is
   // opened in a pane, which is what the suggestion asks for.
   source_not_connected: { category: 'needs_action', retryHint: false },
   destination_not_connected: { category: 'needs_action', retryHint: false },
+  // No Retry: the same request refuses again until the phone or server is back.
+  source_no_longer_connected: { category: 'needs_action', retryHint: false },
   destination_exists: { category: 'needs_action', retryHint: false },
   permission_denied: { category: 'needs_action', retryHint: false },
   insufficient_space: { category: 'needs_action', retryHint: false },
@@ -260,14 +279,14 @@ export function getErrorDisplayMeta(error: WriteOperationError): ErrorDisplayMet
 function tooLargeForFilesystemMessage(
   error: Extract<WriteOperationError, { type: 'files_too_large_for_filesystem' }>,
 ): FriendlyErrorMessage {
-  const maxSize = colorizeSizeString(formatByteSize(error.maxSize))
+  const maxSize = colorizeSize(formatByteSizeTiered(error.maxSize))
   if (error.totalCount === 1) {
     const file = error.files[0]
     return {
       title: w('filesTooLargeForFilesystem.title.one'),
       message: w('filesTooLargeForFilesystem.message.one', {
         name: escapeHtml(file.name),
-        size: colorizeSizeString(formatByteSize(file.size)),
+        size: colorizeSize(formatByteSizeTiered(file.size)),
         maxSize,
       }),
       suggestion: w('filesTooLargeForFilesystem.suggestion'),
@@ -344,6 +363,9 @@ function permissionDeniedMessage(
 
 /** The advice half of `permissionDeniedMessage`: the errno's answer first, then the operation's. */
 function permissionSuggestionKey(refusal: PermissionRefusal, op: TransferOperationType, sourceSide: boolean): string {
+  // An object store account's refusal has the same advice whichever side or
+  // operation met it: the key, or a provider that paused the account.
+  if (refusal === 'objectStoreAccount') return 'objectStoreAccount'
   const mac = isMacOS()
   if (refusal === 'folderPermissions') return mac ? 'needsAdminMac' : 'needsAdminOther'
   if (refusal === 'systemProtected') return mac ? 'systemProtectedMac' : 'systemProtectedOther'
@@ -530,6 +552,16 @@ function fieldDrivenMessage(error: WriteOperationError): FriendlyErrorMessage | 
       return readOnlyMessage(error)
     case 'destination_not_writable':
       return destinationNotWritableMessage(error)
+    // A file sits where the destination folder, or one above it, has to be.
+    // `error.path` is that FILE, which is often not the folder the user typed,
+    // so naming it is the message's whole job. One sentence for copy and move
+    // alike: it's refused before either writes anything.
+    case 'destination_not_a_folder':
+      return {
+        title: w('destinationNotAFolder.title'),
+        message: w('destinationNotAFolder.message', { path: escapeHtml(error.path) }),
+        suggestion: w('destinationNotAFolder.suggestion'),
+      }
     // STATUS_DELETE_PENDING: the file is marked for deletion on the server but an
     // open handle is keeping it alive. Transient: retry-after-a-moment. Named,
     // because a move involves two files and "this file" didn't say which.
@@ -559,6 +591,22 @@ function fieldDrivenMessage(error: WriteOperationError): FriendlyErrorMessage | 
         title: w('deletePending.title'),
         message: w('deletePending.message', { path: escapeHtml(error.path) }),
         suggestion: w('deletePending.suggestion'),
+      }
+    // An S3 object in Glacier: named, because one archived file deep in a
+    // selected folder is the whole problem, and only a restore gets it back.
+    case 'source_in_cold_storage':
+      return {
+        title: w('sourceInColdStorage.title'),
+        message: w('sourceInColdStorage.message', { path: escapeHtml(error.path) }),
+        suggestion: w('sourceInColdStorage.suggestion'),
+      }
+    // A server-side copy whose source was replaced mid-copy: named, and it says
+    // the source stays, because a move would otherwise look like it lost it.
+    case 'source_changed':
+      return {
+        title: w('sourceChanged.title'),
+        message: w('sourceChanged.message', { path: escapeHtml(error.path) }),
+        suggestion: w('sourceChanged.suggestion'),
       }
     default:
       return null
@@ -625,8 +673,8 @@ export function getUserFriendlyMessage(
       return {
         title: w('insufficientSpace.title'),
         message: w('insufficientSpace.message', {
-          required: colorizeSizeString(formatByteSize(error.required)),
-          available: colorizeSizeString(formatByteSize(error.available)),
+          required: colorizeSize(formatByteSizeTiered(error.required)),
+          available: colorizeSize(formatByteSizeTiered(error.available)),
         }),
         suggestion: w('insufficientSpace.suggestion'),
       }

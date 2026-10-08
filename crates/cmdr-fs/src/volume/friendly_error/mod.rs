@@ -247,6 +247,14 @@ pub enum ListingErrorReason {
         /// The path the failure was about.
         path: String,
     },
+    /// An object store account (S3) refused a path: its keys may lack the
+    /// permission, or the provider may have paused the account (a usage cap, a
+    /// billing hold). The answer can't tell the two apart, so the advice names
+    /// both.
+    ObjectStoreRefused {
+        /// The path the failure was about.
+        path: String,
+    },
     /// `VolumeError::AlreadyExists`: the destination is taken.
     AlreadyExists {
         /// The path the failure was about.
@@ -286,6 +294,13 @@ pub enum ListingErrorReason {
     },
     /// A delete is pending on the path and an open handle is keeping it alive.
     DeletePending {
+        /// The path the failure was about.
+        path: String,
+    },
+    /// `VolumeError::ColdStorage`: the file's bytes sit in a cold storage class
+    /// (S3 Glacier) and need a restore before they can be read, which is how a
+    /// listing meets it: browsing into an archived zip. No retry hint.
+    ColdStorage {
         /// The path the failure was about.
         path: String,
     },

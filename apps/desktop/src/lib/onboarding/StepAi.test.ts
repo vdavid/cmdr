@@ -32,6 +32,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount, tick, unmount, flushSync } from 'svelte'
 import type { ConsentOutcome } from '$lib/ai/cloud-consent.svelte'
+import type { SettingLock } from '$lib/ipc/bindings'
+import { lockAllowsWrite, lockedValue } from '$lib/managed-policy/overlay'
 import StepAi from './StepAi.svelte'
 import {
   closeWizard,
@@ -73,7 +75,6 @@ const getAiRuntimeStatus = vi.fn(() =>
     modelInstalled: false,
     modelName: 'Ministral 3B',
     modelSizeBytes: 0,
-    modelSizeFormatted: '0 B',
     downloadInProgress: false,
     localAiSupported: true,
     kvBytesPerToken: 0,
@@ -92,6 +93,14 @@ vi.mock('$lib/tauri-commands', () => ({
   openPrivacySettings: () => openPrivacySettings(),
   configureAi: (...args: unknown[]) => configureAi(...args),
   getAiRuntimeStatus: () => getAiRuntimeStatus(),
+  cloudAiHostVerdicts: (urls: string[]) => Promise.resolve(urls.map(() => null)),
+}))
+
+// The organization's lock on `ai.provider`, as the backend's `locked_settings` would name it.
+const policyLocks = vi.hoisted(() => new Map<string, unknown>())
+vi.mock('$lib/managed-policy/managed-policy.svelte', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  getSettingLock: (id: string) => policyLocks.get(id),
 }))
 
 // Settings store mock: in-memory key-value, mirroring what `$lib/settings` exposes.
@@ -117,8 +126,12 @@ vi.mock('$lib/settings', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>()
   return {
     ...actual,
-    getSetting: (id: string) => settingsMap[id] ?? '',
+    // Reads go through the policy overlay, as the real store's do.
+    getSetting: (id: string) => lockedValue(policyLocks.get(id) as SettingLock | undefined, settingsMap[id] ?? ''),
+    isOverriddenByPolicy: (id: string) =>
+      lockedValue(policyLocks.get(id) as SettingLock | undefined, settingsMap[id] ?? '') !== (settingsMap[id] ?? ''),
     setSetting: (id: string, value: unknown) => {
+      if (!lockAllowsWrite(policyLocks.get(id) as SettingLock | undefined, value)) return
       settingsMap[id] = value
       explicitlySet.add(id)
     },
@@ -169,6 +182,19 @@ vi.mock('$lib/logging/logger', () => ({
     debug: () => undefined,
     error: () => undefined,
   }),
+}))
+
+// Where a genuine failure gets SAID (held until the wizard closes); its own tests cover the
+// holding. Lazy wrappers, same reason as the logger's.
+const noteLocalDownloadFailed = vi.fn<() => void>()
+const clearLocalDownloadFailure = vi.fn<() => void>()
+vi.mock('./local-download-notice', () => ({
+  noteLocalDownloadFailed: () => {
+    noteLocalDownloadFailed()
+  },
+  clearLocalDownloadFailure: () => {
+    clearLocalDownloadFailure()
+  },
 }))
 
 /** A start that stays pending until the test settles it, like a real download in flight. */
@@ -226,6 +252,7 @@ describe('StepAi', () => {
     resetSettings()
     closeWizard()
     resetForTesting()
+    policyLocks.clear()
     // Land us on step 2 with a default banner; tests override per case.
     openWizard('force')
     setCurrentStep(2)
@@ -237,6 +264,8 @@ describe('StepAi', () => {
     cancelAiDownload.mockClear()
     logWarn.mockClear()
     logInfo.mockClear()
+    noteLocalDownloadFailed.mockClear()
+    clearLocalDownloadFailure.mockClear()
     checkAiConnection.mockClear()
     saveAiApiKey.mockClear()
     getAiApiKeyStatus.mockReset()
@@ -258,7 +287,6 @@ describe('StepAi', () => {
       modelInstalled: false,
       modelName: 'Ministral 3B',
       modelSizeBytes: 0,
-      modelSizeFormatted: '0 B',
       downloadInProgress: false,
       localAiSupported: true,
       kvBytesPerToken: 0,
@@ -390,6 +418,64 @@ describe('StepAi', () => {
     expect(logInfo).not.toHaveBeenCalled()
   })
 
+  it('a download the organization’s policy stopped logs at info, not as a failure', async () => {
+    const start = pendingStart()
+    mounted = mountStep()
+    await waitForAsync()
+    pickChoice(mounted.target, 'local')
+    await waitForAsync()
+
+    start.reject({ type: 'cancelled' })
+    await waitForAsync()
+
+    expect(logWarn).not.toHaveBeenCalled()
+    expect(logInfo).toHaveBeenCalledOnce()
+  })
+
+  it('tells the user when the local model download stops while Local is still picked', async () => {
+    const start = pendingStart()
+    mounted = mountStep()
+    await waitForAsync()
+    pickChoice(mounted.target, 'local')
+    await waitForAsync()
+
+    start.reject(new Error('HTTP 503'))
+    await waitForAsync()
+
+    expect(noteLocalDownloadFailed).toHaveBeenCalledOnce()
+  })
+
+  it('says nothing about a download the person stopped by switching away from Local', async () => {
+    const start = pendingStart()
+    mounted = mountStep()
+    await waitForAsync()
+    pickChoice(mounted.target, 'local')
+    await waitForAsync()
+    pickChoice(mounted.target, 'cloud')
+    await waitForAsync()
+
+    start.reject(new Error('Download cancelled'))
+    await waitForAsync()
+
+    expect(noteLocalDownloadFailed).not.toHaveBeenCalled()
+  })
+
+  it('forgets an earlier failure once the person picks again', async () => {
+    const start = pendingStart()
+    mounted = mountStep()
+    await waitForAsync()
+    pickChoice(mounted.target, 'local')
+    await waitForAsync()
+    start.reject(new Error('HTTP 503'))
+    await waitForAsync()
+    clearLocalDownloadFailure.mockClear()
+
+    pickChoice(mounted.target, 'off')
+    await waitForAsync()
+
+    expect(clearLocalDownloadFailure).toHaveBeenCalled()
+  })
+
   it('Intel gate: when localAiSupported is false the local radio is disabled and ignored', async () => {
     getAiRuntimeStatus.mockResolvedValue({
       serverRunning: false,
@@ -399,7 +485,6 @@ describe('StepAi', () => {
       modelInstalled: false,
       modelName: 'Ministral 3B',
       modelSizeBytes: 0,
-      modelSizeFormatted: '0 B',
       downloadInProgress: false,
       localAiSupported: false,
       kvBytesPerToken: 0,
@@ -415,6 +500,59 @@ describe('StepAi', () => {
     await waitForAsync()
     expect(startAiDownload).not.toHaveBeenCalled()
     expect(settingsMap['ai.provider']).toBe('off')
+  })
+
+  it('under on-device-only, offers only local or no AI, and says why Cloud is out', async () => {
+    policyLocks.set('ai.provider', { kind: 'disallowedValues', values: ['cloud'], fallback: 'off' })
+    mounted = mountStep()
+    await waitForAsync()
+    expect(radioByValue(mounted.target, 'cloud')?.getAttribute('data-disabled')).not.toBeNull()
+    expect(radioByValue(mounted.target, 'local')?.getAttribute('data-disabled')).toBeNull()
+    expect(radioByValue(mounted.target, 'off')?.getAttribute('data-disabled')).toBeNull()
+    expect(mounted.target.textContent).toContain('Your organization allows only on-device AI.')
+    // No "Recommended" steer toward an option nobody can pick.
+    expect(mounted.target.querySelector('.choice-badge')).toBeNull()
+  })
+
+  it('a reopened wizard on an on-device-only Mac writes nothing the policy put on screen', async () => {
+    // The person chose cloud AI and Ask Cmdr; then IT ruled cloud out, and the wizard reopened (a
+    // revoked FDA grant, say). "No AI" is preselected only because the lock reads `cloud` as `off`.
+    policyLocks.set('ai.provider', { kind: 'disallowedValues', values: ['cloud'], fallback: 'off' })
+    settingsMap['ai.provider'] = 'cloud'
+    settingsMap['askCmdr.enabled'] = true
+    explicitlySet.add('ai.provider')
+    explicitlySet.add('askCmdr.enabled')
+    mounted = mountStep()
+    await waitForAsync()
+    expect(radioByValue(mounted.target, 'off')?.getAttribute('data-state')).toBe('checked')
+
+    getOnboardingState().footerOverride?.[0].onclick()
+    await waitForAsync()
+
+    // Removing the profile must bring every one of the person's own answers back.
+    expect(settingsMap['ai.provider']).toBe('cloud')
+    expect(settingsMap['askCmdr.enabled']).toBe(true)
+    expect(settingsMap['askCmdr.proactive']).toBe(true)
+    expect(declineConsent).not.toHaveBeenCalled()
+    expect(getOnboardingState().currentStep).toBe(3)
+  })
+
+  it('on an on-device-only Mac, a "no AI" the person picks themselves still lands', async () => {
+    policyLocks.set('ai.provider', { kind: 'disallowedValues', values: ['cloud'], fallback: 'off' })
+    settingsMap['ai.provider'] = 'cloud'
+    mounted = mountStep()
+    await waitForAsync()
+    pickChoice(mounted.target, 'local')
+    await waitForAsync()
+    pickChoice(mounted.target, 'off')
+    await waitForAsync()
+
+    getOnboardingState().footerOverride?.[0].onclick()
+    await waitForAsync()
+
+    expect(settingsMap['ai.provider']).toBe('off')
+    expect(declineConsent).toHaveBeenCalledTimes(1)
+    expect(settingsMap['askCmdr.enabled']).toBe(false)
   })
 
   it('registers a single "Next" forward button via setFooterOverride', async () => {

@@ -19,6 +19,20 @@
     import TextInput from '$lib/ui/TextInput.svelte'
     import { tString } from '$lib/intl/messages.svelte'
     import { dependOn } from '$lib/utils/reactivity'
+    import type { PaletteCondition } from '$lib/commands'
+    import { getFocusedPanePath, getFocusedPaneVolumeId } from '$lib/file-explorer/pane/focused-pane-reads'
+    import { capabilitiesForPane } from '$lib/file-explorer/pane/volume-capabilities'
+
+    /**
+     * Whether each conditional row belongs in the palette right now. A record, so a
+     * new `PaletteCondition` doesn't compile until it's answered here. Read through
+     * the focused pane's routed kind, so an archive's insides on a bucket don't count.
+     */
+    const PALETTE_CONDITIONS: Record<PaletteCondition, () => boolean> = {
+        focusedPaneSharesLinks: () =>
+            capabilitiesForPane(getFocusedPaneVolumeId(), getFocusedPanePath()).canShareLinks,
+    }
+    const paletteConditionHolds = (condition: PaletteCondition): boolean => PALETTE_CONDITIONS[condition]()
 
     /** How many shortcut chips a palette row shows (power users discover alternates). */
     const MAX_SHORTCUTS_SHOWN = 3
@@ -49,7 +63,7 @@
     // Derived: filtered and ranked results. When the query is empty, recents
     // lead the list (most-recent first) so the cursor at index 0 lands on the
     // user's last-executed command (Enter re-runs it).
-    const results = $derived(searchCommands(query, recentCommandIds))
+    const results = $derived(searchCommands(query, recentCommandIds, paletteConditionHolds))
 
     // Boundary between recents and the rest in the empty-query view. Used to
     // render the "Recent" / "All commands" subheaders. Always 0 when the query

@@ -329,14 +329,16 @@ Both surfaces use **borders as the primary depth cue.** Shadows are reserved for
 
 ### App shadows
 
-| Token            | Light value                            | Dark value                    | Role                   |
-| ---------------- | -------------------------------------- | ----------------------------- | ---------------------- |
-| `--shadow-sm`    | `0 1px 3px rgba(0,0,0,0.12)`           | `0 1px 3px rgba(0,0,0,0.3)`   | Subtle lift (tooltips) |
-| `--shadow-md`    | `0 4px 12px rgba(0,0,0,0.1)`           | `0 4px 12px rgba(0,0,0,0.35)` | Dropdowns, popovers    |
-| `--shadow-lg`    | `0 16px 48px rgba(0,0,0,0.15)`         | `0 16px 48px rgba(0,0,0,0.5)` | Modals                 |
-| `--shadow-focus` | `0 0 0 3px var(--color-accent-subtle)` | same                          | Focus rings            |
+| Token            | Light value                            | Dark value                    | Role                |
+| ---------------- | -------------------------------------- | ----------------------------- | ------------------- |
+| `--shadow-sm`    | `0 1px 3px rgba(0,0,0,0.12)`           | `0 1px 3px rgba(0,0,0,0.3)`   | Subtle lift         |
+| `--shadow-md`    | `0 4px 12px rgba(0,0,0,0.1)`           | `0 4px 12px rgba(0,0,0,0.35)` | Dropdowns, popovers |
+| `--shadow-lg`    | `0 16px 48px rgba(0,0,0,0.15)`         | `0 16px 48px rgba(0,0,0,0.5)` | Modals              |
+| `--shadow-focus` | `0 0 0 3px var(--color-accent-subtle)` | same                          | Focus rings         |
 
-Dark mode shadows use higher opacity because dark-on-dark has less perceived contrast.
+Dark mode shadows use higher opacity because dark-on-dark has less perceived contrast. Glass surfaces carry their own
+shadows in `app.css` § Frosted-glass material: `--shadow-glass` (menus, selects), `--shadow-tooltip` (a strong, tight
+lift like a native tooltip), `--shadow-toast`, and the `--shadow-glass-rim` inset top highlight added to each.
 
 **Focus ring accessibility.** When the accent color is close to the background (for example, a light-blue accent on a
 light background), the focus ring can become hard to see. Use a two-layer strategy:
@@ -768,16 +770,17 @@ user wants to type an exact value (Brief mode's column-width limit). Registry-ba
 Custom frosted-glass tooltips via Svelte action (`use:tooltip`). A singleton `<div>` is appended to `<body>` and
 repositioned per hover; only one tooltip exists at a time.
 
-**Glass material:** the blur and hairline are the shared glass tokens (`--color-bg-glass` / `--color-border-glass`, also
-used by filter-chip popovers and the volume dropdown), but the FILL is tooltip-specific.
+**Glass material:** the blur and hairline are the shared glass tokens (`--glass-backdrop` / `--color-border-glass`, also
+used by menus, filter-chip popovers, and toasts), but the FILL is tooltip-specific and doesn't follow the Liquid Glass
+slider.
 
-- Fill: `--color-bg-tooltip` — the shared glass nudged 10% toward black (light) / white (dark), so a tooltip separates
-  from whatever surface it floats over. Derived from `--color-bg-glass`, so it follows the reduce-transparency flip to
-  an opaque fill for free. Verified ≥4.5:1 for `--color-text-primary` on every app backdrop and on the translucent worst
+- Fill: `--color-bg-tooltip` — the fixed `--color-bg-glass-steady` nudged 10% toward black (light) / white (dark), so a
+  tooltip separates from whatever surface it floats over. The steady token flips opaque under reduce transparency, so
+  the tooltip does too. Verified ≥4.5:1 for `--color-text-primary` on every app backdrop and on the translucent worst
   case.
-- Blur: `backdrop-filter: saturate(180%) blur(20px)`, dropped under `html.reduce-transparency`
-- Hairline border: `0.5px solid rgba(0, 0, 0, 0.12)` (light) / `rgba(255, 255, 255, 0.1)` (dark)
-- Shadow: `--shadow-sm`
+- Blur: `--glass-backdrop` (follows the slider, `none` under `html.reduce-transparency`)
+- Hairline border: `--color-border-glass`
+- Shadow: `--shadow-tooltip`
 - Radius: `--radius-sm` (4px)
 
 **Typography:** `--font-size-sm` (12px), weight 400, line-height 1.3. Keyboard shortcuts render in a `<kbd>` badge with
@@ -811,14 +814,15 @@ pointing to the tooltip's unique `id`. Tooltip has `role="tooltip"`.
 in-app menu (right-click menus stay native/muda). A consumer builds a controller with `createMenu(deps)`, hands it to
 `<Menu {menu} ariaLabel>`, and never writes a key handler, a highlight index, or a `getBoundingClientRect`.
 
-**Surface:** the shared glass tokens (`--color-bg-glass` / `--color-border-glass`, blur dropped under
-`html.reduce-transparency`), `--radius-md`, `--shadow-md`, `--z-overlay`. Fixed-positioned, clamped into the viewport,
-and capped to the room below its anchor so a long list scrolls inside itself.
+**Surface:** the shared glass tokens (`--color-bg-glass` / `--glass-backdrop` / `--color-border-glass`, which follow the
+macOS Liquid Glass slider and go opaque under `html.reduce-transparency`), `--radius-menu`, `--shadow-glass` plus
+`--shadow-glass-rim`, `--z-overlay`. Fixed-positioned, clamped into the viewport, and capped to the room below its
+anchor so a long list scrolls inside itself.
 
-**Rows:** `--spacing-sm` / `--spacing-md` padding, then a reserved 14px checkmark column (so labels line up whether or
-not a row is checked), the icon column at `--spacing-icon-size`, the label, and the trailing slot. Section headings are
-uppercase `--font-size-sm` tertiary text; separators are a `--color-border-strong` hairline. An empty section shows its
-own italic tertiary placeholder rather than vanishing.
+**Rows:** inset pills (`--spacing-xs` margin, `--radius-md`, `--spacing-sm` padding), then a reserved 14px checkmark
+column (so labels line up whether or not a row is checked), the icon column at `--spacing-icon-size`, the label, and the
+trailing slot. Section headings are uppercase `--font-size-sm` tertiary text; separators are a `--color-border-glass`
+hairline inset to the row text. An empty section shows its own italic tertiary placeholder rather than vanishing.
 
 **Accelerators:** a row may carry a single character that both shows and activates it (`1`–`9` for a numbered list, `0`
 for its action row). It sits in its own 14px column LEFT of the checkmark, a plain `--color-text-tertiary` digit at the

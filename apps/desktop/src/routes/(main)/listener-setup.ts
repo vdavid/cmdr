@@ -461,17 +461,27 @@ export async function setupDialogListeners(ctx: ListenerSetupContext): Promise<v
   // refused, and a toast behind another window reads as the button doing
   // nothing. A row this window's snapshot doesn't have is an operation that
   // ended between the click and the delivery; its queue row went with it.
+  // Both early exits log at warn: `mainListeners` reaches release logs only from
+  // warn up, and a Show that opened nothing is otherwise indistinguishable from a
+  // request that never arrived.
   await pushTauri(unlistenFns, () =>
     onForegroundOperationRequested((payload) => {
       void focusMainWindow()
-      const operation = adoptedOperationFor(getMainWindowOperationRows(), payload.operationId)
+      const rows = getMainWindowOperationRows()
+      const operation = adoptedOperationFor(rows, payload.operationId)
       if (!operation) {
-        log.info('Nothing to show for op={operationId}: this window has no such operation', {
+        log.warn('Nothing to show for op={operationId}: this window has no such operation (row count: {rowCount})', {
           operationId: payload.operationId,
+          rowCount: rows.length,
         })
         return
       }
-      getExplorer()?.foregroundOperation(operation)
+      const explorer = getExplorer()
+      if (!explorer) {
+        log.warn('Nothing to show op={operationId} in: no explorer yet', { operationId: payload.operationId })
+        return
+      }
+      explorer.foregroundOperation(operation)
     }),
   )
 

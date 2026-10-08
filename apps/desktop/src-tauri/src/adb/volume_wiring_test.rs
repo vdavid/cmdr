@@ -9,7 +9,6 @@
 use std::path::Path;
 
 use tokio::net::TcpListener;
-use tokio_util::sync::CancellationToken;
 
 use cmdr_adb::AdbEndpoint;
 
@@ -324,9 +323,7 @@ async fn a_pane_on_an_adb_path_lists_the_phone_through_the_listing_pipeline() {
     let listing = TestListingGuard::adopt(unique_test_id("adb-pane-listing"));
     let sink = Arc::new(CollectorListingEventSink::new());
     let events: Arc<dyn ListingEventSink> = Arc::clone(&sink) as Arc<dyn ListingEventSink>;
-    let state = Arc::new(StreamingListingState {
-        cancel: CancellationToken::new(),
-    });
+    let state = Arc::new(StreamingListingState::new());
     let pane_path = format!("adb://{SERIAL}/sdcard");
     let outcome = read_directory_with_progress(
         &events,
@@ -410,9 +407,7 @@ async fn listing_a_listed_phone_nobody_dialed_says_it_is_not_connected() {
 
     let listing = TestListingGuard::adopt(unique_test_id("adb-undialed-listing"));
     let events: Arc<dyn ListingEventSink> = Arc::new(CollectorListingEventSink::new());
-    let state = Arc::new(StreamingListingState {
-        cancel: CancellationToken::new(),
-    });
+    let state = Arc::new(StreamingListingState::new());
     let pane_path = format!("adb://{SERIAL}/sdcard");
     let outcome = read_directory_with_progress(
         &events,

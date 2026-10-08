@@ -581,8 +581,9 @@ async fn attachments_reach_the_llm_in_the_envelope_and_nothing_more() {
 /// when the gate refuses, and exactly one call when it opens (so the empty cases mean something).
 #[tokio::test]
 async fn the_send_gate_refuses_before_any_thread_or_llm_call() {
-    use crate::agent::chat::session::{SlotRefusal, admit_send};
+    use crate::agent::chat::session::{SendGateRefusal, SlotRefusal, admit_send};
     use crate::agent::chat::stream::AgentErrorKindView;
+    use crate::settings::AskCmdrSwitch;
 
     let conn = migrated_conn();
     let llm = ProgrammableLlm::new(vec![Program::Answer {
@@ -594,16 +595,26 @@ async fn the_send_gate_refuses_before_any_thread_or_llm_call() {
 
     // Ask Cmdr switched off: refused without even resolving the slot.
     let mut resolved = false;
-    let off = admit_send(false, || {
+    let off = admit_send(AskCmdrSwitch::Off, || {
         resolved = true;
         Ok(())
     });
-    assert!(matches!(off, Err(AgentErrorKindView::AskCmdrOff)));
+    assert!(matches!(off, Err(SendGateRefusal::AskCmdrOff)));
     assert!(!resolved, "an Ask Cmdr that's off never looks at the provider");
 
+    // On, but pinned off by the organization: the slot names the organization's reason, never
+    // "Ask Cmdr is off" (the person didn't turn it off).
+    let managed_off = admit_send(AskCmdrSwitch::ManagedOff, || {
+        Err::<(), _>(SlotRefusal::Managed(crate::managed_policy::ManagedAiRefusal::AiOff))
+    });
+    assert!(managed_off.is_err_and(|gate| matches!(gate.view(), AgentErrorKindView::ManagedByOrganization)));
+
     // Ask Cmdr on, Cloud picked, cloud AI not allowed: the slot's refusal comes through as its own kind.
-    let no_cloud = admit_send(true, || Err::<(), _>(SlotRefusal::NoCloudConsent));
-    assert!(matches!(no_cloud, Err(AgentErrorKindView::NoCloudConsent)));
+    let no_cloud = admit_send(AskCmdrSwitch::On, || Err::<(), _>(SlotRefusal::NoCloudConsent));
+    assert!(matches!(
+        no_cloud,
+        Err(SendGateRefusal::Slot(SlotRefusal::NoCloudConsent))
+    ));
 
     for refused in [off.is_ok(), no_cloud.is_ok()] {
         if refused {
@@ -624,7 +635,7 @@ async fn the_send_gate_refuses_before_any_thread_or_llm_call() {
     assert_eq!(threads(&conn), 0, "and adds no thread");
 
     // Ask Cmdr on with a slot that resolves (Local, or Cloud with consent): the send proceeds.
-    if admit_send(true, || Ok::<(), SlotRefusal>(())).is_ok() {
+    if admit_send(AskCmdrSwitch::On, || Ok::<(), SlotRefusal>(())).is_ok() {
         let id = conversation(&conn);
         run_turn(
             &llm,

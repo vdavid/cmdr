@@ -21,15 +21,13 @@ interface LowDiskSpacePayload {
 const {
   onLowDiskSpaceMock,
   getLowDiskSpaceNotificationsModeMock,
-  ensureMacosNotificationPermissionMock,
   sendNotificationMock,
   addToastMock,
   dismissToastMock,
 } = vi.hoisted(() => ({
   onLowDiskSpaceMock: vi.fn(),
   getLowDiskSpaceNotificationsModeMock: vi.fn<() => 'in-app' | 'macos' | 'off'>(),
-  ensureMacosNotificationPermissionMock: vi.fn<() => Promise<boolean>>(),
-  sendNotificationMock: vi.fn(),
+  sendNotificationMock: vi.fn<(notification: { title: string; body: string }) => Promise<void>>(),
   addToastMock: vi.fn<(content: unknown, options?: Record<string, unknown>) => string>(() => 'toast-id'),
   dismissToastMock: vi.fn<(id: string) => void>(),
 }))
@@ -38,12 +36,9 @@ vi.mock('$lib/tauri-commands', () => ({
   onLowDiskSpace: onLowDiskSpaceMock,
 }))
 
-vi.mock('@tauri-apps/plugin-notification', () => ({
-  sendNotification: sendNotificationMock,
-}))
-
-vi.mock('$lib/notifications/macos-notification-permission', () => ({
-  ensureMacosNotificationPermission: ensureMacosNotificationPermissionMock,
+// Permission and send failures are `sendMacosNotification`'s (tested in `$lib/notifications`).
+vi.mock('$lib/notifications/send-macos-notification', () => ({
+  sendMacosNotification: sendNotificationMock,
 }))
 
 vi.mock('./notifications-mode', () => ({
@@ -98,8 +93,7 @@ describe('startLowDiskSpaceEventBridge', () => {
   beforeEach(() => {
     onLowDiskSpaceMock.mockReset()
     getLowDiskSpaceNotificationsModeMock.mockReset().mockReturnValue('in-app')
-    ensureMacosNotificationPermissionMock.mockReset().mockResolvedValue(true)
-    sendNotificationMock.mockReset()
+    sendNotificationMock.mockReset().mockResolvedValue(undefined)
     addToastMock.mockReset().mockReturnValue('toast-id')
     dismissToastMock.mockReset()
   })
@@ -158,17 +152,6 @@ describe('startLowDiskSpaceEventBridge', () => {
 
     expect(sendNotificationMock).not.toHaveBeenCalled()
     expect(dismissToastMock).not.toHaveBeenCalled()
-    expect(addToastMock).not.toHaveBeenCalled()
-  })
-
-  it("mode 'macos' skips the notification when permission is denied", async () => {
-    getLowDiskSpaceNotificationsModeMock.mockReturnValue('macos')
-    ensureMacosNotificationPermissionMock.mockResolvedValue(false)
-    const listener = await startBridgeAndCaptureListener()
-    listener(payload())
-    await flushAsync()
-
-    expect(sendNotificationMock).not.toHaveBeenCalled()
     expect(addToastMock).not.toHaveBeenCalled()
   })
 

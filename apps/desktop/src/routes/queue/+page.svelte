@@ -5,7 +5,7 @@
     import { listen, type UnlistenFn } from '@tauri-apps/api/event'
     import { initWindowSettings, initWindowLanguageSync } from '$lib/settings/window-settings'
     import { initAccentColor, cleanupAccentColor } from '$lib/accent-color'
-    import { initReduceTransparency, cleanupReduceTransparency } from '$lib/reduce-transparency'
+    import { initGlassMaterial, cleanupGlassMaterial } from '$lib/glass-material'
     import { initTextSize, cleanupTextSize } from '$lib/text-size.svelte'
     import { trackOwnRect } from '$lib/window-positioning'
     import { getAppLogger } from '$lib/logging/logger'
@@ -151,7 +151,7 @@
             await initWindowSettings()
             unsubscribeLanguage = initWindowLanguageSync()
             await initAccentColor()
-            await initReduceTransparency()
+            await initGlassMaterial()
             await initTextSize()
             await store.init()
             // This window's session registry. Subscribed here, before any row
@@ -182,7 +182,7 @@
         store.dispose()
         destroyOperationSessions()
         cleanupAccentColor()
-        cleanupReduceTransparency()
+        cleanupGlassMaterial()
         cleanupTextSize()
     })
 </script>

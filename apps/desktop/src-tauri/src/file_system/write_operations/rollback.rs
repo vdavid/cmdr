@@ -188,12 +188,21 @@ impl RollbackRunner for ReversalRunner {
                     if let Some(parent) = to_path.parent() {
                         to.create_directory_all(parent).await?;
                     }
-                    if same_volume {
+                    // ❗ On an object store a rename of a big file isn't one call
+                    // (`Volume::rename_work`), and `rename` refuses it: that one
+                    // goes back the way a cross-volume one does, copied (on the
+                    // server, where it can) and then deleted.
+                    let renames_in_one_call = same_volume
+                        && matches!(
+                            from.rename_work(from_path).await,
+                            Ok(crate::file_system::volume::RenameWork::OneCall)
+                        );
+                    if renames_in_one_call {
                         // A same-FS move / rename-back / trash-restore: one rename,
                         // atomic, nothing to stream.
                         from.rename(from_path, to_path, force).await
                     } else {
-                        // Cross-volume: the staged per-file move, which is what buys
+                        // Cross-volume, or a rename that copies: the staged per-file move, which is what buys
                         // mid-file cancel, byte progress, a `.cmdr-tmp-*` landing,
                         // retry, and stall detection. The callback carries BOTH: the
                         // stop travels to the backend as a `Break`, and the bytes so
@@ -671,5 +680,46 @@ mod tests {
         assert_eq!(frames.len(), 2, "the frame that reaches the total ignores the throttle");
         assert_eq!(frames[1].files_done, 3);
         assert_eq!(frames[1].phase, WriteOperationPhase::RollingBack);
+    }
+
+    /// ❗ Undoing a move on an object store, where a big file's rename is a copy
+    /// (`Volume::rename_work`) and `rename` refuses it: the file goes back
+    /// copied and then deleted, never through the `rename` that would fail.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn a_same_volume_restore_that_renames_by_copy_goes_back_by_copy() {
+        use crate::file_system::volume::{InMemoryVolume, Volume};
+        use std::path::Path;
+
+        let volume: Arc<dyn Volume> = Arc::new(
+            InMemoryVolume::new("Bucket")
+                .with_whole_publish()
+                .with_renames_by_copy()
+                .with_space_info(1_000_000, 1_000_000),
+        );
+        volume.create_directory(Path::new("/moved")).await.unwrap();
+        volume
+            .create_file(Path::new("/moved/big.mov"), b"frames")
+            .await
+            .unwrap();
+        let reversal = Reversal::new("restore-by-copy");
+
+        reversal
+            .runner()
+            .perform(InverseAct::Restore {
+                from: &volume,
+                from_path: Path::new("/moved/big.mov"),
+                to: &volume,
+                to_path: Path::new("/home/big.mov"),
+                same_volume: true,
+                force: false,
+            })
+            .await
+            .expect("the restore lands");
+
+        assert!(volume.exists(Path::new("/home/big.mov")).await, "back where it started");
+        assert!(
+            !volume.exists(Path::new("/moved/big.mov")).await,
+            "and gone from where it was"
+        );
     }
 }

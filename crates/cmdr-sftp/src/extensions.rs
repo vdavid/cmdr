@@ -11,15 +11,13 @@
 //! standing up a server that lacks the extension.
 //!
 //! ⚠️ **The predicates are all that's readable.** `max_read_len` and
-//! `max_write_len` sit behind the engine's `__ci-tests` feature, and
-//! `statvfs@openssh.com` has no predicate at all — nor a request to send it, so
-//! free space is honestly unavailable (`DETAILS.md` § "The `Volume` answers").
+//! `max_write_len` sit behind the engine's `__ci-tests` feature.
 
 use openssh_sftp_client::Sftp;
 
-/// The five extensions this crate can ask a session about.
+/// The six extensions this crate can ask a session about.
 ///
-/// Two of them gate behaviour and three are a record: `DETAILS.md` § "What the
+/// Three of them gate behaviour and three are a record: `DETAILS.md` § "What the
 /// server said it can do" says what each would buy and why the unspent ones stay
 /// unspent. ❌ Don't add a field for an extension the engine has no predicate
 /// for — there is no way to answer it short of vendoring the protocol crate.
@@ -42,6 +40,9 @@ pub struct ServerExtensions {
     pub hardlink: bool,
     /// `expand-path@openssh.com`: resolve `~` and relative paths server-side.
     pub expand_path: bool,
+    /// `statvfs@openssh.com`: the free and total space of the filesystem
+    /// holding a path. Without it, free space is honestly unknown.
+    pub statvfs: bool,
 }
 
 impl ServerExtensions {
@@ -53,6 +54,7 @@ impl ServerExtensions {
             fsync: sftp.support_fsync(),
             hardlink: sftp.support_hardlink(),
             expand_path: sftp.support_expand_path(),
+            statvfs: sftp.support_statvfs(),
         }
     }
 
@@ -67,13 +69,14 @@ impl ServerExtensions {
     /// ❗ PII-free by construction: extension names are protocol constants, and
     /// nothing about the host, the account, or a path can reach this.
     pub(crate) fn advertised(&self) -> Vec<&'static str> {
-        let mut names = Vec::with_capacity(5);
+        let mut names = Vec::with_capacity(6);
         for (present, name) in [
             (self.posix_rename, "posix-rename"),
             (self.copy_data, "copy-data"),
             (self.fsync, "fsync"),
             (self.hardlink, "hardlink"),
             (self.expand_path, "expand-path"),
+            (self.statvfs, "statvfs"),
         ] {
             if present {
                 names.push(name);

@@ -187,7 +187,7 @@ describe('formatBarTooltip', () => {
   it('scales the figures to the drive, about one step per pixel of the bar', () => {
     // A 926 GB SSD moves in whole gigabytes: a tenth of one is a tenth of a pixel.
     const space = createSpace(994_286_378_496, 280_660_262_912)
-    expect(formatBarTooltip(space, 'binary')).toBe('261 GB of 926 GB free (28%)')
+    expect(formatBarTooltip(space, 'binary')).toBe('261 GiB of 926 GiB free (28%)')
     expect(formatDiskSpaceShort(space, 'si')).toBe('281 GB free of 994 GB')
   })
 
@@ -241,11 +241,11 @@ describe('storage with no ceiling', () => {
   })
 
   it('states what is stored instead of what is free', () => {
-    expect(formatDiskSpaceStatus(createUnbounded(64_000_000), 'binary')).toBe('61.04 MB used')
+    expect(formatDiskSpaceStatus(createUnbounded(64_000_000), 'binary')).toBe('61.04 MiB used')
   })
 
   it('states the same thing in the narrow drive picker', () => {
-    expect(formatDiskSpaceShort(createUnbounded(64_000_000), 'binary')).toBe('61.04 MB used')
+    expect(formatDiskSpaceShort(createUnbounded(64_000_000), 'binary')).toBe('61.04 MiB used')
   })
 
   it('never fires a low-space warning, however much is stored', () => {
@@ -258,13 +258,13 @@ describe('storage with no ceiling', () => {
 
   it('explains in the tooltip why there is no bar', () => {
     expect(formatBarTooltip(createUnbounded(64_000_000), 'binary')).toBe(
-      '61.04 MB used. This storage has no size limit, so there’s no bar to fill.',
+      '61.04 MiB used. This storage has no size limit, so there’s no bar to fill.',
     )
   })
 
   it('still carries the phone-storage hint after its own note', () => {
     expect(formatBarTooltip(createUnbounded(64_000_000), 'binary', 'Phones hide app data.')).toBe(
-      '61.04 MB used. This storage has no size limit, so there’s no bar to fill. Phones hide app data.',
+      '61.04 MiB used. This storage has no size limit, so there’s no bar to fill. Phones hide app data.',
     )
   })
 })

@@ -208,12 +208,14 @@ fn wide_tree(projects: usize, subs: usize) -> Vec<String> {
 fn rescore(writer: &ImportanceWriter, home: &str, folders: &mut WalkedFolders, changed: &[String]) -> usize {
     incremental_rescore(
         &IncrementalInputs {
+            volume_id: ROOT_VOLUME_ID,
             writer,
             weights: &Weights::default(),
             home,
             now_secs: 1_000_000_000,
             available: SignalSet::listing_only(),
             visits: &HashMap::new(),
+            stop: &NEVER_STOPPED,
         },
         folders,
         changed,
@@ -382,7 +384,7 @@ fn incremental_rescore_rescopes_and_preserves_untouched_generation() {
     build_index_from_home(&index_path, &home);
     let pool = crate::ReadPool::new(index_path).expect("read pool");
     let mut folders = pool
-        .with_conn(|conn| walk_index_folders(conn, &home.home))
+        .with_conn(|conn| walk_index_folders(conn, &home.home, &NEVER_STOPPED))
         .expect("pool")
         .expect("walk");
 
@@ -400,6 +402,7 @@ fn incremental_rescore_rescopes_and_preserves_untouched_generation() {
             available: SignalSet::listing_only(),
             visits: &HashMap::new(),
             last_used: &HashMap::new(),
+            stop: &NEVER_STOPPED,
         },
         &mut folders,
     )
@@ -411,12 +414,14 @@ fn incremental_rescore_rescopes_and_preserves_untouched_generation() {
     let changed = vec![format!("{}/Downloads", home.home)];
     let count = incremental_rescore(
         &IncrementalInputs {
+            volume_id: ROOT_VOLUME_ID,
             writer: &writer,
             weights: &weights,
             home: &home.home,
             now_secs: now,
             available: SignalSet::listing_only(),
             visits: &HashMap::new(),
+            stop: &NEVER_STOPPED,
         },
         &mut folders,
         &changed,

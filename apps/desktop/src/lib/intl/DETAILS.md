@@ -42,7 +42,9 @@ At module load, `import.meta.glob(['./messages/*/*.json', '!./messages/screensho
 dir's catalog files, not just `en`. The dir segment of each glob path is the locale tag (`messages/pt-BR/foo.json` →
 `pt-BR`), and a `BCP47_DIR` regex gate keeps only directories that look like a BCP-47 tag. The dev-only `en-XA/`
 pseudolocale is globbed when present and simply absent in prod (gitignored). The result is `catalogs`: a
-`localeTag → merged metadata-stripped Catalog` map.
+`localeTag → merged metadata-stripped Catalog` map. In every Vite build (dev included) the `@key` metadata is already
+gone before bundling, so it never ships or reaches the heap; the runtime `stripMetadata()` covers Vitest, which skips
+the plugin, and narrows the JSON's types. Canonical: `messages/DETAILS.md` § `@key` metadata schema.
 
 **`screenshots/` is excluded by the glob PATTERN, and the pattern is the load-bearing half.** That dir is a sibling of
 the locale dirs holding translator tooling, and `capture-report.json` alone is ~280 kB. `BCP47_DIR` would reject it
@@ -205,8 +207,9 @@ halves of this split, and is the net if a refactor ever reaches for a shared `us
 ## Value↔unit spacing invariant
 
 Human-friendly sizes compose as `` `${value} ${unitLabel}` `` with an explicit ASCII space; we never adopt `Intl`'s
-`style: 'unit'`, which injects a narrow no-break space. `colorizeSizeString`/`tierClassForUnit` recover the unit via
-`lastIndexOf(' ')`, so a non-ASCII space there would break tier coloring.
+`style: 'unit'`, which injects a narrow no-break space and has no IEC binary units (`KiB`, `MiB`) at all. The unit word
+itself is catalog copy in the UI language (`common.sizeUnit.*`, so French reads `Mo`), and tier coloring takes the tier
+from `formatTieredSize`, never from the text.
 
 ## Chinese list joins get Han–Latin spacing
 

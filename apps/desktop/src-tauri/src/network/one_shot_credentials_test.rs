@@ -50,11 +50,11 @@ fn every_other_key_forwards_to_the_real_store() {
     );
 }
 
-/// ❗ **The wrapper never writes.** A `remember: false` dial exists so nothing is
-/// persisted, and a backend that decided to save what it authenticated with
-/// would defeat exactly that.
+/// ❗ **The wrapper never writes while the offer is live.** A `remember: false`
+/// dial exists so nothing is persisted, and a backend that decided to save what
+/// it authenticated with would defeat exactly that.
 #[test]
-fn the_wrapper_never_writes() {
+fn the_wrapper_never_writes_while_the_offer_is_live() {
     let inner = Arc::new(InMemoryCredentials::new());
     let wrapper = OneShotCredentials::new(inner.clone(), SERVICE, Some(ACCOUNT), offered());
 
@@ -65,6 +65,25 @@ fn the_wrapper_never_writes() {
     assert!(
         inner.credentials(SERVICE, Some(ACCOUNT)).is_none(),
         "❗ and nothing reached the durable store behind it"
+    );
+}
+
+/// Once the offer is over, the wrapper is the real store again, writes included:
+/// a volume opened once without remembering must still be able to save a
+/// password a person later asks it to keep.
+#[test]
+fn a_forgotten_offer_saves_through_to_the_real_store() {
+    let inner = Arc::new(InMemoryCredentials::new());
+    let wrapper = OneShotCredentials::new(inner.clone(), SERVICE, Some(ACCOUNT), offered());
+
+    wrapper.forget();
+    wrapper
+        .save_credentials(SERVICE, Some(ACCOUNT), &offered())
+        .expect("with no live offer, a save is the real store's answer");
+    assert_eq!(
+        inner.credentials(SERVICE, Some(ACCOUNT)).map(|c| c.secret),
+        Some("typed-just-now".to_string()),
+        "the save reached the durable store"
     );
 }
 
@@ -93,15 +112,21 @@ fn the_offer_is_gone_once_the_attempt_is_over() {
     );
 }
 
-/// The offer carries the switch the sign-in sheet showed, so the wiring above
-/// decides where the secret goes rather than guessing from the shape.
+/// The offer reads the shape the sign-in sheet sends over IPC, switch included,
+/// so the wiring decides where the secret goes from what the person chose.
 #[test]
-fn an_offer_says_whether_to_remember_it() {
-    let offer = SecretOffer {
-        secret: "typed-just-now".to_string(),
-        remember: false,
-    };
-    assert!(!offer.remember);
+fn an_offer_reads_the_sign_in_sheets_wire_shape() {
+    for remember in [true, false] {
+        let offer: SecretOffer =
+            serde_json::from_value(serde_json::json!({ "secret": "typed-just-now", "remember": remember }))
+                .expect("the sheet's payload deserializes");
+        assert_eq!(offer.secret, "typed-just-now");
+        assert_eq!(offer.remember, remember, "the switch arrives as the sheet showed it");
+    }
+    assert!(
+        serde_json::from_value::<SecretOffer>(serde_json::json!({ "secret": "typed-just-now" })).is_err(),
+        "❗ a payload without the switch is refused, never read as a default"
+    );
 }
 
 /// ❗ **A remembered offer is written only once the dial went through.** It used to

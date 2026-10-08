@@ -1,12 +1,12 @@
 //! A server that's SLOW is not a server that's gone, and the silence watch
-//! tells them apart (`crate::liveness`).
+//! tells them apart (`cmdr_fs::volume::liveness`).
 //!
 //! These cells need a server that answers one request while it holds another,
 //! trickles a body a byte at a time, or goes quiet on command, so they bring
 //! their own: [`FakeDav`], a few dozen lines of HTTP/1.1 in the test's process.
 //! No Docker, so they run in the plain crate lane. The silence ladder is
 //! shortened (`SHORT`) so they run in real time; the production-length ladder
-//! is `liveness_test.rs` (paused clock) and `connection_drop_test.rs` (a real
+//! is `cmdr-fs`'s `volume/liveness_test.rs` (paused clock) and `connection_drop_test.rs` (a real
 //! server behind a black-holed proxy).
 
 use std::sync::Arc;
@@ -24,8 +24,8 @@ use tokio_util::sync::CancellationToken;
 use url::Url;
 
 use super::{WebdavVolume, connect_webdav_volume};
-use crate::liveness::Timings;
 use crate::params::WebdavConnectionParams;
+use cmdr_fs::volume::liveness::Timings;
 
 /// Quiet for 300 ms, then two probes of 1 s: gone at 2.3 s. The probe budget
 /// stays generous for a loopback answer, so a loaded machine can't fake a loss.

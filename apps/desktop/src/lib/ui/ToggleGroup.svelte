@@ -56,6 +56,8 @@
         options: ToggleGroupOption[]
         onChange: (value: string) => void
         ariaLabel: string
+        /** Id of an element that explains the group, for example why it's disabled. */
+        ariaDescribedBy?: string
         disabled?: boolean
         /**
          * Stretches the group to its container's full width, with every cell an equal
@@ -66,7 +68,16 @@
         fullWidth?: boolean
     }
 
-    const { semantics, value, options, onChange, ariaLabel, disabled = false, fullWidth = false }: Props = $props()
+    const {
+        semantics,
+        value,
+        options,
+        onChange,
+        ariaLabel,
+        ariaDescribedBy,
+        disabled = false,
+        fullWidth = false,
+    }: Props = $props()
 
     // Index of the option that should carry `tabindex=0` in tabs mode: the active one if it's
     // interactive, otherwise the first interactive option. Mirrors today's `SearchModeChips` logic
@@ -138,7 +149,10 @@
 </script>
 
 {#if semantics === 'tabs'}
-    <div class="tg-root" class:is-full-width={fullWidth} role="tablist" aria-label={ariaLabel}>
+    <div class="tg-root" class:is-full-width={fullWidth} role="tablist"
+        aria-label={ariaLabel}
+        aria-describedby={ariaDescribedBy}
+    >
         {#each options as option, index (option.value)}
             <button
                 bind:this={tabButtons[index]}
@@ -179,6 +193,7 @@
         onValueChange={handleToggleValueChange}
         {disabled}
         aria-label={ariaLabel}
+        aria-describedby={ariaDescribedBy}
     >
         {#each options as option (option.value)}
             <ArkToggleGroup.Item

@@ -51,9 +51,13 @@
   "@fileOperations.delete.confirmMoveToTrash": {
     "sourceHash": "b9a042e"
   },
-  "fileOperations.mkdir.timeoutMessage": "No se pudo confirmar que se creara la carpeta. El volumen puede ir lento, así que es posible que la carpeta sí se haya creado.",
-  "@fileOperations.mkdir.timeoutMessage": {
-    "sourceHash": "8030f14"
+  "fileOperations.mkfile.notCreatedToast": "Cmdr no pudo crear el archivo “{name}”. {reason}",
+  "@fileOperations.mkfile.notCreatedToast": {
+    "sourceHash": "134e04c"
+  },
+  "fileOperations.mkdir.notCreatedToast": "Cmdr no pudo crear la carpeta “{name}”. {reason}",
+  "@fileOperations.mkdir.notCreatedToast": {
+    "sourceHash": "b941580"
   },
   "fileOperations.transferDialog.destinationNoPermission": "No tienes permiso para agregar archivos a esta carpeta.",
   "@fileOperations.transferDialog.destinationNoPermission": {

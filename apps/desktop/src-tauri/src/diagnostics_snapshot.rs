@@ -83,7 +83,8 @@ impl SystemSnapshot {
 
     /// Stable-fields-only snapshot (`live: None`). For crash reports, assembled at next launch.
     pub(crate) fn collect_stable(data_dir: &Path) -> Self {
-        let sizes = index_db_sizes(data_dir);
+        // The drive index lives in the cache dir, beside the data dir rather than in it.
+        let sizes = index_db_sizes(&crate::index_host::drive_index_dir(data_dir));
         let (free, total) = volume_space(data_dir);
         Self {
             os_build: os_build(),
@@ -136,10 +137,10 @@ fn process_rss_bytes() -> u64 {
 }
 
 /// Sum of each `index-*.db` plus its `-wal`/`-shm` siblings, one entry per database, sorted desc.
-/// Reads only file *sizes* in the app data dir — never index contents, never paths leave the host.
-fn index_db_sizes(data_dir: &Path) -> Vec<u64> {
+/// Reads only file *sizes* in the drive-index dir — never index contents, never paths leave the host.
+fn index_db_sizes(drive_index_dir: &Path) -> Vec<u64> {
     let mut sizes = Vec::new();
-    let Ok(read_dir) = std::fs::read_dir(data_dir) else {
+    let Ok(read_dir) = std::fs::read_dir(drive_index_dir) else {
         return sizes;
     };
     for entry in read_dir.flatten() {
