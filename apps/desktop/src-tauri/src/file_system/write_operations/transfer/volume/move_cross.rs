@@ -218,7 +218,7 @@ pub(crate) async fn move_volumes_with_progress(
         &driver_config,
         super::landing::top_level_precheck(
             &dest_volume, Some(Arc::clone(&op_probe)), super::landing::NewName::Respell,
-            config.destination_name.as_ref().map(|name| dest_path.join(name)),
+            config.destination_name.as_deref(),
         ),
         {
             let source_volume = Arc::clone(&source_volume);

@@ -178,7 +178,7 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
             &dest_volume,
             op_probe.clone(),
             super::landing::NewName::Respell,
-            config.destination_name.as_ref().map(|name| dest_path.join(name)),
+            config.destination_name.as_deref(),
         ),
         {
             let source_volume = Arc::clone(&source_volume);
