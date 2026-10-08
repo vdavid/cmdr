@@ -223,8 +223,8 @@ describe('characterization — id partition self-check', () => {
     for (const id of EXEMPT_IDS) expect(COMMAND_IDS).toContain(id)
   })
 
-  it('dispatchable set is exactly 134 ids', () => {
-    expect(DISPATCHABLE_IDS).toHaveLength(134)
+  it('dispatchable set is exactly 135 ids', () => {
+    expect(DISPATCHABLE_IDS).toHaveLength(135)
   })
 
   it('dispatchable ∪ exempt = COMMAND_IDS, disjoint', () => {
