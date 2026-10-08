@@ -61,7 +61,8 @@ COMPLETED files".
 ## File map
 
 `TransferDialog.test.ts` covers preflight and conflict UX; `TransferDialog.targets.test.ts` covers filename targets and
-rename-by-move. Both use the IPC doubles and mount helpers in `test-transfer-dialog-harness.ts`.
+rename-by-move. Both use the IPC doubles and mount helpers in `test-transfer-dialog-harness.ts`, which unmounts every
+dialog after each test so pending debounce work cannot reach another test's mocks.
 
 Where a symbol lives and who calls it: `codegraph_search` / `codegraph_explore`. The area's shape: `CLAUDE.md` § Module
 map. What the pieces DO is in the sections below: the two dialogs and both state factories in § "How transfer flows",

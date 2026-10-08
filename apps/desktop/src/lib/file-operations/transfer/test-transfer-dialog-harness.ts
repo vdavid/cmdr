@@ -1,6 +1,6 @@
 /** Shared IPC doubles and mount helpers for TransferDialog component tests. */
-import { vi, beforeEach } from 'vitest'
-import { mount, tick } from 'svelte'
+import { vi, beforeEach, afterEach } from 'vitest'
+import { mount, unmount, tick } from 'svelte'
 import TransferDialog from './TransferDialog.svelte'
 import * as commands from '$lib/tauri-commands'
 import type { VolumeConflictInfo } from '$lib/tauri-commands'
@@ -195,10 +195,12 @@ interface MountOpts {
 
 export type ConfirmFn = (payload: TransferConfirmPayload) => void
 
+const cleanupDialogs: Array<() => Promise<void>> = []
+
 export function mountDialog(opts: MountOpts = {}): HTMLDivElement {
   const target = document.createElement('div')
   document.body.appendChild(target)
-  mount(TransferDialog, {
+  const dialog = mount(TransferDialog, {
     target,
     props: {
       operationType: opts.operationType ?? 'copy',
@@ -219,6 +221,7 @@ export function mountDialog(opts: MountOpts = {}): HTMLDivElement {
       onCancel: opts.onCancel ?? (() => {}),
     },
   })
+  cleanupDialogs.push(() => unmount(dialog))
   return target
 }
 
@@ -244,6 +247,11 @@ beforeEach(() => {
   startScanPreviewMock.mockClear()
   startScanPreviewMock.mockResolvedValue({ previewId: 'preview-1' })
   cancelScanPreviewMock.mockClear()
+  document.body.innerHTML = ''
+})
+
+afterEach(async () => {
+  await Promise.all(cleanupDialogs.splice(0).map((cleanup) => cleanup()))
   document.body.innerHTML = ''
 })
 
