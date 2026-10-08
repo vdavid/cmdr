@@ -627,16 +627,7 @@
         // check only gates `skip`.
         if (isSameVolumeMove) {
             scan.cancelPreview()
-            if (needsConflictNames(isAuto)) await (conflictCheckPromise ??= conflicts.check())
-            onConfirm({
-                destination: targetPath,
-                destinationName: namedTarget?.name,
-                volumeId: targetVolumeId,
-                previewId: null,
-                conflictResolution: conflictPolicy,
-                operationType: activeOperationType,
-                preKnownConflicts: conflicts.conflictNames,
-            })
+            await confirmTransfer({ previewId: null, isAuto })
             return
         }
         // Wait for `startScanPreview` so `previewId` is non-null on a fast
@@ -653,12 +644,16 @@
         // can take minutes on a big remote dir, and only `skip` consumes its
         // names.
         await scan.scanStarted
+        await confirmTransfer({ previewId: scan.previewId, isAuto })
+    }
+
+    async function confirmTransfer({ previewId, isAuto }: { previewId: string | null; isAuto: boolean }) {
         if (needsConflictNames(isAuto) && !isRenameMode) await (conflictCheckPromise ??= conflicts.check())
         onConfirm({
             destination: targetPath,
             destinationName: namedTarget?.name,
             volumeId: targetVolumeId,
-            previewId: scan.previewId,
+            previewId,
             conflictResolution: conflictPolicy,
             operationType: activeOperationType,
             preKnownConflicts: conflicts.conflictNames,
