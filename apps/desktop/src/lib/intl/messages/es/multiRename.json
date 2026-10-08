@@ -1,0 +1,210 @@
+{
+  "multiRename.title": "Renombrado múltiple",
+  "@multiRename.title": {
+    "sourceHash": "5ceb1a2"
+  },
+  "multiRename.nameMask": "Máscara de nombre",
+  "@multiRename.nameMask": {
+    "sourceHash": "3dcc6e4"
+  },
+  "multiRename.extensionMask": "Extensión",
+  "@multiRename.extensionMask": {
+    "sourceHash": "395aeb9"
+  },
+  "multiRename.insertPlaceholder": "Insertar marcador",
+  "@multiRename.insertPlaceholder": {
+    "sourceHash": "f467cda"
+  },
+  "multiRename.search": "Buscar",
+  "@multiRename.search": {
+    "sourceHash": "6ea8f74"
+  },
+  "multiRename.replace": "Reemplazar por",
+  "@multiRename.replace": {
+    "sourceHash": "8382d31"
+  },
+  "multiRename.caseSensitive": "Distinguir mayúsculas y minúsculas",
+  "@multiRename.caseSensitive": {
+    "sourceHash": "6198801"
+  },
+  "multiRename.firstOnly": "Solo la primera coincidencia",
+  "@multiRename.firstOnly": {
+    "sourceHash": "1ddb563"
+  },
+  "multiRename.includeExtension": "Incluir la extensión",
+  "@multiRename.includeExtension": {
+    "sourceHash": "10c3dc5"
+  },
+  "multiRename.regex": "Expresión regular",
+  "@multiRename.regex": {
+    "sourceHash": "9f896c3"
+  },
+  "multiRename.substitute": "Reemplazar todo el nombre",
+  "@multiRename.substitute": {
+    "sourceHash": "1cee1b2"
+  },
+  "multiRename.case": "Mayúsculas y minúsculas",
+  "@multiRename.case": {
+    "sourceHash": "9785096"
+  },
+  "multiRename.case.unchanged": "Sin cambios",
+  "@multiRename.case.unchanged": {
+    "sourceHash": "88b6f74"
+  },
+  "multiRename.case.lower": "minúsculas",
+  "@multiRename.case.lower": {
+    "sourceHash": "46ede93"
+  },
+  "multiRename.case.upper": "MAYÚSCULAS",
+  "@multiRename.case.upper": {
+    "sourceHash": "9755f22"
+  },
+  "multiRename.case.firstUpper": "Primera letra en mayúscula",
+  "@multiRename.case.firstUpper": {
+    "sourceHash": "4da45d5"
+  },
+  "multiRename.case.words": "Cada Palabra En Mayúscula",
+  "@multiRename.case.words": {
+    "sourceHash": "fdeb85e"
+  },
+  "multiRename.removeDiacritics": "Quitar diacríticos",
+  "@multiRename.removeDiacritics": {
+    "sourceHash": "4103ca1"
+  },
+  "multiRename.counterStart": "Contador desde",
+  "@multiRename.counterStart": {
+    "sourceHash": "562151d"
+  },
+  "multiRename.counterStep": "Incremento",
+  "@multiRename.counterStep": {
+    "sourceHash": "8e6a6cc"
+  },
+  "multiRename.counterDigits": "Dígitos",
+  "@multiRename.counterDigits": {
+    "sourceHash": "9cd500d"
+  },
+  "multiRename.presets": "Preajuste",
+  "@multiRename.presets": {
+    "sourceHash": "7252e7c"
+  },
+  "multiRename.presetPlaceholder": "Cargar un preajuste",
+  "@multiRename.presetPlaceholder": {
+    "sourceHash": "e07d83e"
+  },
+  "multiRename.preset.default": "Sin cambios",
+  "@multiRename.preset.default": {
+    "sourceHash": "41f9d57"
+  },
+  "multiRename.preset.removeDiacritics": "Quitar diacríticos",
+  "@multiRename.preset.removeDiacritics": {
+    "sourceHash": "4103ca1"
+  },
+  "multiRename.presetName": "Nombre del preajuste",
+  "@multiRename.presetName": {
+    "sourceHash": "e534a66"
+  },
+  "multiRename.savePreset": "Guardar preajuste",
+  "@multiRename.savePreset": {
+    "sourceHash": "362a137"
+  },
+  "multiRename.deletePreset": "Eliminar preajuste",
+  "@multiRename.deletePreset": {
+    "sourceHash": "f307af8"
+  },
+  "multiRename.preview": "Vista previa",
+  "@multiRename.preview": {
+    "sourceHash": "324b134"
+  },
+  "multiRename.oldName": "Nombre anterior",
+  "@multiRename.oldName": {
+    "sourceHash": "f192b20"
+  },
+  "multiRename.newName": "Nombre nuevo",
+  "@multiRename.newName": {
+    "sourceHash": "04eea2a"
+  },
+  "multiRename.statusColumn": "Estado",
+  "@multiRename.statusColumn": {
+    "sourceHash": "920e413"
+  },
+  "multiRename.status.unchanged": "Sin cambios",
+  "@multiRename.status.unchanged": {
+    "sourceHash": "41f9d57"
+  },
+  "multiRename.status.duplicate": "Mismo nombre que otro archivo",
+  "@multiRename.status.duplicate": {
+    "sourceHash": "ff0347b"
+  },
+  "multiRename.status.targetExists": "El nombre ya está ocupado",
+  "@multiRename.status.targetExists": {
+    "sourceHash": "629f53b"
+  },
+  "multiRename.status.invalidName": "No es un nombre válido",
+  "@multiRename.status.invalidName": {
+    "sourceHash": "f1e6391"
+  },
+  "multiRename.status.disallowedCharacter": "No puede contener {character}",
+  "@multiRename.status.disallowedCharacter": {
+    "sourceHash": "2f21c26"
+  },
+  "multiRename.error.unclosed": "A un marcador le falta el “]” de cierre",
+  "@multiRename.error.unclosed": {
+    "sourceHash": "aa4efba"
+  },
+  "multiRename.error.unknown": "Cmdr no conoce el marcador [{placeholder}]",
+  "@multiRename.error.unknown": {
+    "sourceHash": "7845fb5"
+  },
+  "multiRename.error.badRegex": "La expresión regular no es válida",
+  "@multiRename.error.badRegex": {
+    "sourceHash": "176cb2f"
+  },
+  "multiRename.error.gone": "Esta carpeta ya no está abierta. Cierra “Renombrado múltiple” y vuelve a abrirlo.",
+  "@multiRename.error.gone": {
+    "sourceHash": "8420f29"
+  },
+  "multiRename.error.nothingToRename": "No hay nada que renombrar: cada nombre nuevo es igual al anterior o tiene algún problema",
+  "@multiRename.error.nothingToRename": {
+    "sourceHash": "cf68ee2"
+  },
+  "multiRename.error.notConnected": "Esta ubicación no está conectada ahora mismo",
+  "@multiRename.error.notConnected": {
+    "sourceHash": "21b3bd0"
+  },
+  "multiRename.error.couldntStart": "No se ha podido empezar a renombrar. Inténtalo de nuevo en un momento.",
+  "@multiRename.error.couldntStart": {
+    "sourceHash": "4b123be"
+  },
+  "multiRename.moreRows": "{count, plural, one {# archivo más no se muestra, pero se renombrará} many {# archivos más no se muestran, pero se renombrarán} other {# archivos más no se muestran, pero se renombrarán}}",
+  "@multiRename.moreRows": {
+    "sourceHash": "8c036bb"
+  },
+  "multiRename.counts": "{ready, plural, one {# para renombrar} many {# para renombrar} other {# para renombrar}} · {unchanged, plural, one {# sin cambios} many {# sin cambios} other {# sin cambios}} · {problems, plural, one {# problema} many {# problemas} other {# problemas}}",
+  "@multiRename.counts": {
+    "sourceHash": "7464938"
+  },
+  "multiRename.cancel": "Cancelar",
+  "@multiRename.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "multiRename.rename": "{count, plural, =0 {Renombrar} one {Renombrar # archivo} many {Renombrar # archivos} other {Renombrar # archivos}}",
+  "@multiRename.rename": {
+    "sourceHash": "9789ca5"
+  },
+  "multiRename.started": "{count, plural, one {Renombrando # archivo} many {Renombrando # archivos} other {Renombrando # archivos}}. Puedes revertirlo desde el registro de operaciones.",
+  "@multiRename.started": {
+    "sourceHash": "55b4878"
+  },
+  "multiRename.error.previewOutOfDate": "La carpeta ha cambiado desde la vista previa. Comprueba la nueva vista previa y vuelve a renombrar.",
+  "@multiRename.error.previewOutOfDate": {
+    "sourceHash": "46432fe"
+  },
+  "multiRename.error.readOnly": "No se puede renombrar en esta carpeta: está dentro de un archivo comprimido o de otro lugar de solo lectura",
+  "@multiRename.error.readOnly": {
+    "sourceHash": "f576c74"
+  },
+  "multiRename.hiddenProblems": "{count, plural, one {# archivo más allá de las filas mostradas tiene un problema y no se renombrará} many {# archivos más allá de las filas mostradas tienen un problema y no se renombrarán} other {# archivos más allá de las filas mostradas tienen un problema y no se renombrarán}}",
+  "@multiRename.hiddenProblems": {
+    "sourceHash": "aea1ba2"
+  }
+}

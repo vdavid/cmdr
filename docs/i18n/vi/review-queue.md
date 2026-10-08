@@ -63,6 +63,11 @@ wording into `terms.json` (and `decisions.md` when the reason is worth keeping).
 - **`Khung đích = khung nguồn`** (`commands.paneClone.label`, `menu.view.clonePane`, tentative): Total Commander’s name
   for Clone pane, because `nhân bản` is Duplicate and `sao chép` is Copy. Only TC has it (no Double Commander vi);
   confirm a Vietnamese reader takes it as "show the same folder in the other pane".
+- **Multi-rename wording** (`multiRename.*`): `mặt nạ tên` for the name mask (TC 6602 `Mặt nạ đổi tên`, MS mask →
+  `mặt nạ`) may read technical to a non-TC user; `ký hiệu` for the `[N]`/`[C]` placeholders follows the catalog's
+  `Ký hiệu định dạng`; `tùy chọn đặt trước` for a saved rename preset (the tentative preset ruling) runs long on
+  `Lưu`/`Xóa`/`Tên tùy chọn đặt trước`, and `thiết lập đã lưu` is the alternative; `Viết Hoa Đầu Mỗi Từ` is title-cased
+  on purpose to show the result (EN `Every Word Capitalized`); `Bỏ dấu` for Remove diacritics.
 
 ## Layout
 

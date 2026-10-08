@@ -1,0 +1,10 @@
+{
+  "multiRename.error.couldntStart": "No se pudo empezar a renombrar. Inténtalo de nuevo en un momento.",
+  "@multiRename.error.couldntStart": {
+    "sourceHash": "8b5d5ce"
+  },
+  "multiRename.error.previewOutOfDate": "La carpeta cambió desde la vista previa. Comprueba la nueva vista previa y vuelve a renombrar.",
+  "@multiRename.error.previewOutOfDate": {
+    "sourceHash": "ef34c2b"
+  }
+}

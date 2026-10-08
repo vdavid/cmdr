@@ -123,9 +123,9 @@
   "@multiRename.newName": {
     "description": "Preview table column: the name the file will get."
   },
-  "multiRename.statusColumn": "Note",
+  "multiRename.statusColumn": "Status",
   "@multiRename.statusColumn": {
-    "description": "Preview table column saying why a file won't be renamed (for example the name is taken). Empty when it will be."
+    "description": "Header of the preview table's status column. Each row says whether the file will be renamed (ready), stays as it is (unchanged), or has a problem and why (invalid name, duplicate, name taken)."
   },
   "multiRename.status.unchanged": "No change",
   "@multiRename.status.unchanged": {
@@ -143,43 +143,43 @@
   "@multiRename.status.invalidName": {
     "description": "Preview note: the new name can't be a file name (empty, too long, or \".\" / \"..\")."
   },
-  "multiRename.status.disallowedCharacter": "Can't contain {character}",
+  "multiRename.status.disallowedCharacter": "Can’t contain {character}",
   "@multiRename.status.disallowedCharacter": {
     "description": "Preview note: the new name contains a character file names can't have, such as a slash. {character} is that character."
   },
-  "multiRename.error.unclosed": "A placeholder is missing its closing ]",
+  "multiRename.error.unclosed": "A placeholder is missing its closing “]”",
   "@multiRename.error.unclosed": {
     "description": "Shown when a mask has a [ without a matching ]."
   },
-  "multiRename.error.unknown": "Cmdr doesn't know the placeholder [{placeholder}]",
+  "multiRename.error.unknown": "Cmdr doesn’t know the placeholder [{placeholder}]",
   "@multiRename.error.unknown": {
     "description": "Shown when a mask has a placeholder that doesn't exist. {placeholder} is what's between the brackets."
   },
-  "multiRename.error.badRegex": "The regular expression isn't valid",
+  "multiRename.error.badRegex": "The regular expression isn’t valid",
   "@multiRename.error.badRegex": {
     "description": "Shown when the search is a regular expression that can't be parsed."
   },
-  "multiRename.error.gone": "This folder isn't open any more. Close and open the tool again.",
+  "multiRename.error.gone": "This folder isn’t open any more. Close Multi-rename and open it again.",
   "@multiRename.error.gone": {
     "description": "Shown when the pane the tool renames in moved to another folder."
   },
-  "multiRename.error.nothingToRename": "Nothing to rename: every new name is the same or has a problem",
+  "multiRename.error.nothingToRename": "Nothing to rename: every new name is the same as the old one or has a problem",
   "@multiRename.error.nothingToRename": {
     "description": "Shown when Rename is pressed but no file is ready to be renamed."
   },
-  "multiRename.error.notConnected": "This location isn't connected right now",
+  "multiRename.error.notConnected": "This location isn’t connected right now",
   "@multiRename.error.notConnected": {
     "description": "Shown when the drive or server of the folder is no longer connected."
   },
-  "multiRename.error.couldntStart": "Couldn't start renaming. Try again in a moment.",
+  "multiRename.error.couldntStart": "Couldn’t start renaming. Try again in a moment.",
   "@multiRename.error.couldntStart": {
     "description": "Shown when the rename couldn't start or the preview took too long."
   },
-  "multiRename.moreRows": "{count, plural, one {# more file isn't shown, but will be renamed} other {# more files aren't shown, but will be renamed}}",
+  "multiRename.moreRows": "{count, plural, one {# more file isn’t shown, but will be renamed} other {# more files aren’t shown, but will be renamed}}",
   "@multiRename.moreRows": {
     "description": "Below the preview table when it only shows the first 1,000 files. {count} is how many more there are."
   },
-  "multiRename.counts": "{ready, plural, one {# to rename} other {# to rename}} · {unchanged} unchanged · {problems, plural, one {# problem} other {# problems}}",
+  "multiRename.counts": "{ready, plural, one {# to rename} other {# to rename}} · {unchanged, plural, one {# unchanged} other {# unchanged}} · {problems, plural, one {# problem} other {# problems}}",
   "@multiRename.counts": {
     "description": "Footer summary of the preview: how many files will be renamed, how many keep their name, and how many have a problem."
   },
@@ -191,19 +191,19 @@
   "@multiRename.rename": {
     "description": "Primary button that renames the files that are ready. {count} is how many."
   },
-  "multiRename.started": "{count, plural, one {Renaming # file} other {Renaming # files}}. Undo is in the operation log.",
+  "multiRename.started": "{count, plural, one {Renaming # file} other {Renaming # files}}. You can roll it back from the operation log.",
   "@multiRename.started": {
-    "description": "Toast after Rename starts. {count} is how many files. The operation log is the window listing past operations, where Undo is."
+    "description": "Toast after Rename starts. {count} is how many files. The operation log is the window listing past operations, where Undo is. \"Roll back\" is the button's name in the operation log (operationLog.dialog.rollBack): use the same words."
   },
   "multiRename.error.previewOutOfDate": "The folder changed since the preview. Check the new preview, then rename again.",
   "@multiRename.error.previewOutOfDate": {
     "description": "Shown when Rename is pressed but files in the folder changed after the preview was shown, so nothing was renamed and the preview is refreshed."
   },
-  "multiRename.error.readOnly": "This folder can't be renamed in: it's inside an archive or another read-only place",
+  "multiRename.error.readOnly": "This folder can’t be renamed in: it’s inside an archive or another read-only place",
   "@multiRename.error.readOnly": {
     "description": "Shown when Rename is pressed in a folder that can't be changed, such as the inside of a zip archive."
   },
-  "multiRename.hiddenProblems": "{count, plural, one {# file below the preview has a problem and won't be renamed} other {# files below the preview have a problem and won't be renamed}}",
+  "multiRename.hiddenProblems": "{count, plural, one {# file past the rows shown has a problem and won’t be renamed} other {# files past the rows shown have a problem and won’t be renamed}}",
   "@multiRename.hiddenProblems": {
     "description": "Below the preview table when files past the first 1,000 shown have a problem (name taken, invalid) and will be skipped. {count} is how many."
   }

@@ -3365,5 +3365,60 @@
     "confidence": "high",
     "forms": "the Window menu is Venster; compounds close up (Over-venster keeps its hyphen after a capitalized name)",
     "sources": "macOS (83 hits in nl.lproj, menu Venster); MS terminology (window → venster); catalog (38 hits)"
+  },
+  "batch-rename": {
+    "chosen": "meerdere namen wijzigen",
+    "accept": ["Wijzig meerdere namen", "meerdere namen", "massaal"],
+    "confidence": "high",
+    "forms": "command, File-menu item and sheet title → Wijzig meerdere namen (menu with …); onboarding prose keeps massaal namen wijzigen / het massaal wijzigen van namen",
+    "avoid": [
+      {
+        "form": "Uitgebreid hernoemen",
+        "why": "Total Commander 6601 / MNU 2400; hernoemen is avoided per the rename ruling"
+      },
+      {
+        "form": "Meervoudig hernoemen",
+        "why": "Double Commander tfrmmultirename.caption; same reason (hernoemen)"
+      }
+    ],
+    "sources": "macOS Finder bulk rename (ME22_V3 ‘Wijzig naam van ^0 onderdelen…’, BulkRenameWindow ‘Wijzig naam van Finder-onderdelen:’), catalog Wijzig alle namen (conflictRenameAll); TC 6601 / DC tfrmmultirename.caption reviewed and rejected for hernoemen"
+  },
+  "placeholder": {
+    "chosen": "plaatshouder",
+    "accept": ["plaatshouders", "tijdelijke aanduiding"],
+    "confidence": "tentative",
+    "forms": "a token in a mask or format string ([N], [C], YYYY) → plaatshouder (Notatieplaatshouders, Voeg plaatshouder in); the stand-in in a URL the user must replace → tijdelijke aanduiding (onboarding.cloudSetup.hint.azureEndpoint)",
+    "sources": "catalog settings.appearance.customDateTimeFormat.description / formatPlaceholdersTitle (plaatshouders); MS terminology placeholder → tijdelijke aanduiding (slide-layout sense); TC/DC have no word for it (TC lists the tokens bare)"
+  },
+  "regex": {
+    "chosen": "reguliere expressie",
+    "accept": ["Regex", "regex", "reguliere-expressie"],
+    "confidence": "high",
+    "forms": "spelled-out Regular expression → Reguliere expressie; the short mode name Regex stays Regex (queryUi.mode.regex.label, viewer.search.regex); compound Reguliere-expressiepatroon",
+    "sources": "MS terminology (regular expression → reguliere expressie, id 774399); DC tfrmmultirename.cbregexp (Reguliere uitdrukkingen, not used: MS + catalog); catalog queryUi.bar.placeholder.regex"
+  },
+  "valid": {
+    "chosen": "geldig",
+    "accept": ["ongeldig", "niet geldig", "geldige"],
+    "confidence": "high",
+    "forms": "label-like predicate → Ongeldige X / X is ongeldig; a sentence → is niet geldig (MS); Valid until → Geldig tot",
+    "sources": "MS terminology (invalid → niet geldig); catalog licensing.* (Geldig tot), errors.write.invalidName.title (Ongeldige bestandsnaam)"
+  },
+  "problem": {
+    "chosen": "probleem",
+    "accept": ["problemen", "probleem"],
+    "confidence": "high",
+    "forms": "pl. problemen; compounds leesprobleem, apparaatprobleem",
+    "exceptions": {
+      "licensing.dialog.mailtoBody": "\"I'm having trouble activating\" is rendered idiomatically as Ik kan mijn licentiesleutel niet activeren; no noun needed."
+    },
+    "sources": "catalog (33 hits: errors.listing.diskReadProblem.title, deviceProblem.title); MS problem → probleem"
+  },
+  "load": {
+    "chosen": "laden",
+    "accept": ["Laad", "laad", "geladen"],
+    "confidence": "high",
+    "forms": "button / placeholder imperative Laad (Laad meer, Laad een voorinstelling); infinitive laden in prose (kon … niet laden)",
+    "sources": "macOS SystemSettings CDsAndDvDsSettingsIntents (load → laden); DC Laad voorinstelling 1 (actloadpreset1); catalog askCmdr.sessions.loadMore"
   }
 }

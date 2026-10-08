@@ -2151,11 +2151,11 @@
     "sources": "AP-HK, THU, DOL (AP-TW mixes 丟到垃圾桶 and 移至垃圾桶)"
   },
   "batch-rename": {
-    "accept": ["大量重新命名"],
     "chosen": "多檔重新命名",
+    "accept": ["大量重新命名"],
     "confidence": "high",
-    "forms": "Cmdr's own batch rename UI → 大量重新命名; Total Commander's multi-rename tool → 多檔重新命名",
-    "sources": "TC (DC says 多重命名工具)"
+    "forms": "the Multi-rename tool's name (command, File menu item, sheet title) → 多檔重新命名 (menu: 多檔重新命名⋯); renaming many files at once as a generic idea (onboarding.stepAi.table.rowRename, .renameWithout) → 大量重新命名",
+    "sources": "Total Commander zh-TW (WCMD.INC 2400 多檔重新命名; WCMD.MNU 多檔重新命名(&R)...\\tCtrl+M; LNG 6601 dialog title 多檔重新命名); DC zh-TW says 多重命名工具 (Simplified-flavoured, not lifted)"
   },
   "name": {
     "accept": ["檔名", "名字", "同名", "原名", "重名"],
@@ -3892,5 +3892,95 @@
     "confidence": "high",
     "forms": "a chat’s token usage → 這次對話的用量; memory usage → 記憶體用量; a usage cap → 用量上限; app usage stats → 使用統計; the spending section → 花費",
     "sources": "catalog askCmdr and settings families; MS terminology’s 使用方式 is the how-it’s-used sense, not the amount"
+  },
+  "name-mask": {
+    "chosen": "名稱規則",
+    "accept": ["重新命名規則", "規則"],
+    "confidence": "tentative",
+    "forms": "the name field's label → 名稱規則; the extension field is just 副檔名 (TC 6608); in the command description → 用名稱規則、計數器和搜尋與取代",
+    "avoid": [
+      {
+        "form": "名稱遮罩",
+        "why": "MS/DC's mask (類別遮罩) is graphics-and-netmask jargon; Total Commander zh-TW, the feature's lineage, says 規則"
+      },
+      {
+        "form": "名稱格式",
+        "why": "macOS Finder BulkRenameWindow's 名稱格式 is a dropdown of fixed formats (名稱和計數器), not a free template"
+      }
+    ],
+    "sources": "Total Commander zh-TW LNG 6602 重新命名規則(&M): 檔名; MS terminology mask → 遮罩 (rejected); macOS Finder BulkRenameWindow 名稱格式 (different sense)"
+  },
+  "rename-counter": {
+    "chosen": "計數器",
+    "confidence": "high",
+    "forms": "Counter from → 計數器起始於 (like Finder's 編號起始於：); the counter's step → 增量 (TC 6618); digits → 位數 (TC 6619)",
+    "sources": "Total Commander zh-TW LNG 6605 [C] 計數器, 6616 定義計數器[C]; DC zh-TW Counter → 計數器; macOS Finder BulkRenameWindow 名稱和計數器; MS terminology counter → 計數器"
+  },
+  "diacritics": {
+    "chosen": "變音符號",
+    "confidence": "high",
+    "forms": "Remove diacritics → 移除變音符號",
+    "avoid": [
+      {
+        "form": "變音和連字",
+        "why": "DC zh-TW's Diacritics and ligatures; bare 變音 means a sound change"
+      },
+      {
+        "form": "重音符號",
+        "why": "accent marks only; diacritics also cover ˇ, ¨, ß"
+      }
+    ],
+    "sources": "MS terminology (diacritic, diacritical mark → 變音符號); macOS zh-TW has no attestation"
+  },
+  "preset": {
+    "chosen": "預設組合",
+    "confidence": "high",
+    "forms": "Preset (menu label) → 預設組合; Load a preset → 載入預設組合; Preset name → 預設組合名稱; Save/Delete preset → 儲存/刪除預設組合; Multi-rename's built-in presets are named by what they do (沒有變更, 移除變音符號)",
+    "avoid": [
+      {
+        "form": "預設",
+        "why": "bare 預設 is this catalog's default (style.md § Notes: if a visible preset appears, write 預設組合)"
+      },
+      {
+        "form": "預先配置",
+        "why": "DC zh-TW's Presets; 配置 is Simplified-flavoured (Traditional says 設定)"
+      }
+    ],
+    "sources": "style.md § Notes and decisions (預設組合 reserved for preset); MS terminology preset → 預設 (rejected, collides with default); DC zh-TW Presets → 預先配置 (rejected); TC zh-TW calls them 設定 (1510 載入/儲存 設定)"
+  },
+  "problem": {
+    "chosen": "問題",
+    "accept": ["出問題", "狀況", "出了狀況"],
+    "confidence": "high",
+    "forms": "has a problem → 有問題; a count → # 個有問題; ran into a problem → 遇到了問題; a device/disk/connection trouble in errors.listing.* titles and explanations → 狀況 (裝置出了狀況): the everyday calm word for something going wrong, softer than 問題 and never an error word",
+    "avoid": [
+      {
+        "form": "錯誤",
+        "why": "style.md voice: the calm noun is 問題, not an error word"
+      }
+    ],
+    "exceptions": {
+      "errors.write.readError.suggestion": "If the problem persists → 如果一直這樣: the pronoun-free restatement carries the problem without naming it",
+      "errors.write.writeError.suggestion": "If the problem persists → 如果一直這樣: the pronoun-free restatement carries the problem without naming it",
+      "errors.write.ioError.suggestion": "If the problem persists → 如果一直這樣: the pronoun-free restatement carries the problem without naming it",
+      "licensing.dialog.mailtoBody": "I'm having trouble activating → 我的授權碼無法啟用: the user's own email states the failure with 無法, the house error shape"
+    },
+    "sources": "MS terminology problem → 問題; catalog (35 values, e.g. crashReporter.dialog.body.* 遇到了問題); TC zh-TW has no house noun"
+  },
+  "valid": {
+    "chosen": "有效",
+    "accept": ["無效", "有效性", "有效期", "不正確"],
+    "confidence": "high",
+    "forms": "Not a valid name → 不是有效的名稱; isn't valid → 無效 (這個正規表示式無效); license validity → 有效性 / 有效期至",
+    "exceptions": {
+      "errors.write.invalidName.title": "Invalid file name → 檔名不合用: a write-error title written as plain advice; not this batch's key, left for a follow-up alignment with 無效"
+    },
+    "sources": "MS terminology valid → 有效, invalid → 無效; catalog (licensing.dialog.validityActive 有效, ai.cloud.authError 無效, licensing.error.badSignature 不是有效的授權碼)"
+  },
+  "operation-log": {
+    "chosen": "操作記錄",
+    "confidence": "high",
+    "forms": "the window and View-menu item → 操作記錄; in prose, quoted as a window name → 「操作記錄」; its rollback button is 復原 (operationLog.dialog.rollBack)",
+    "sources": "catalog (operationLog.dialog.title, menu.view.operationLog, settings.navigationAndFileOps.card.operationLog → 操作記錄); TC zh-TW INC -9 多檔重新命名操作記錄"
   }
 }

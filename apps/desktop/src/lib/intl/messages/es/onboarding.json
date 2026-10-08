@@ -235,11 +235,11 @@
   "@onboarding.stepAi.table.searchWith": {
     "sourceHash": "457e19a"
   },
-  "onboarding.stepAi.table.rowRename": "Renombrar en masa",
+  "onboarding.stepAi.table.rowRename": "Renombrado múltiple",
   "@onboarding.stepAi.table.rowRename": {
     "sourceHash": "9246b56"
   },
-  "onboarding.stepAi.table.renameWithout": "Usas la interfaz de renombrado por lotes para definir el patrón a mano, revisas y aplicas.",
+  "onboarding.stepAi.table.renameWithout": "Usas la herramienta de renombrado múltiple para definir el patrón a mano, revisas y aplicas.",
   "@onboarding.stepAi.table.renameWithout": {
     "sourceHash": "b12d997"
   },

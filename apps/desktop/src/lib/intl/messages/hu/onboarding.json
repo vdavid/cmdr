@@ -239,7 +239,7 @@
   "@onboarding.stepAi.table.rowRename": {
     "sourceHash": "9246b56"
   },
-  "onboarding.stepAi.table.renameWithout": "A kötegelt átnevezés felületén kézzel állítod be az átnevezési mintát, átnézed és alkalmazod.",
+  "onboarding.stepAi.table.renameWithout": "A csoportos átnevezés felületén kézzel állítod be az átnevezési mintát, átnézed és alkalmazod.",
   "@onboarding.stepAi.table.renameWithout": {
     "sourceHash": "b12d997"
   },

@@ -349,8 +349,8 @@
   },
   "case-sensitive": {
     "chosen": "Distinguir mayúsculas y minúsculas",
-    "accept": ["mayúsculas", "minúsculas"],
-    "forms": "in a comma list, third person lowercase: distingue mayúsculas y minúsculas",
+    "accept": ["mayúscul", "minúscul"],
+    "forms": "in a comma list, third person lowercase: distingue mayúsculas y minúsculas; the rename tool's letter-case menu → Mayúsculas y minúsculas, options Sin cambios / minúsculas / MAYÚSCULAS / Primera letra en mayúscula / Cada Palabra En Mayúscula (singular mayúscula, after Total Commander 6611 May. primera letra)",
     "avoid": [
       {
         "form": "Distinguir mayúsculas",
@@ -358,7 +358,7 @@
       }
     ],
     "confidence": "high",
-    "sources": "macOS AppKit find panel (Distinguir mayúsculas y minúsculas; Ignorar mayúsculas/minúsculas)",
+    "sources": "macOS AppKit find panel (Distinguir mayúsculas y minúsculas; Ignorar mayúsculas/minúsculas); Total Commander 6611/6615 (MAYS./minúsculas; Sin cambios, Minúsculas, MAYÚSCULAS, May. primera letra, May. Cada Palabra)",
     "decision": "El nombre accesible tiene que contener la etiqueta visible"
   },
   "certificate": {
@@ -3181,5 +3181,50 @@
     "forms": "the Window menu → Ventana; close this window → cierra esta ventana; the About window → la ventana Acerca de",
     "confidence": "high",
     "sources": "macOS es (the Ventana menu; ventana ×72 in the pile); MS terminology (window → ventana)"
+  },
+  "batch-rename": {
+    "chosen": "Renombrado múltiple",
+    "accept": ["renombrado múltiple", "renombrar varios"],
+    "forms": "tool name (command, File menu item, sheet title) → Renombrado múltiple; menu item keeps the ellipsis: Renombrado múltiple…; prose verb stays renombrar",
+    "avoid": [
+      {
+        "form": "Renombrar seleccionados",
+        "why": "Total Commander's menu item (WCMD.MNU 2400); Cmdr's tool also renames the whole folder when nothing is selected"
+      },
+      {
+        "form": "Cambio de nombre múltiple",
+        "why": "the rename noun periphrasis reads as one change, not a tool name; Double Commander's Renombrado múltiple is the orthodox-pair name"
+      }
+    ],
+    "confidence": "high",
+    "sources": "Double Commander (tfrmmultirename.caption Multi-Rename Tool → Renombrado múltiple; Multi-&Rename Tool → &Renombrado múltiple); Total Commander 6601 Herramienta Renombrar, INC 2400 Renombrar múltiples ficheros"
+  },
+  "placeholder": {
+    "chosen": "marcador",
+    "accept": ["marcador", "marcadores", "marcador de posición"],
+    "forms": "a token in a rename mask ([N], [C]) → marcador (Insertar marcador, el marcador [{placeholder}]); the example text in an empty field → marcador de posición",
+    "confidence": "tentative",
+    "sources": "Microsoft terminology (placeholder → marcador de posición); TC/DC name each token by type ([N] Nombre, [C] Contador) and have no generic word; the short marcador keeps the mask-token sense tight"
+  },
+  "load": {
+    "chosen": "cargar",
+    "accept": ["carg"],
+    "forms": "Load a preset → Cargar un preajuste; Load more → Cargar más",
+    "confidence": "high",
+    "sources": "shipped catalog (operationLog.dialog.loadMore Cargar 50 más, askCmdr.sessions.loadMore Cargar más); Total Commander 6628 Cargar nombres de fichero…"
+  },
+  "valid": {
+    "chosen": "válido",
+    "accept": ["válid", "no válid", "validez"],
+    "forms": "agrees with its noun: no es un nombre válido, la expresión regular no es válida, combinación no válida; the noun validity → validez (licensing.dialog.labelValidity)",
+    "confidence": "high",
+    "sources": "shipped catalog (errors.write.invalidName.title Nombre de archivo no válido, ai.cloud.authError La clave de API no es válida, settings.appearance.dateInvalidFormat Formato no válido)"
+  },
+  "problem": {
+    "chosen": "problema",
+    "accept": ["problema", "problemas"],
+    "forms": "masculine despite -a: un problema, algún problema",
+    "confidence": "high",
+    "sources": "shipped catalog (errors.listing.diskReadProblem.title Problema de lectura del disco, errors.listing.deviceProblem.title Problema con el dispositivo)"
   }
 }

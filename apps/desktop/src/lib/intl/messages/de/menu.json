@@ -701,5 +701,9 @@
   "menu.help.viewDebugLog": "Debug-Protokoll ansehen",
   "@menu.help.viewDebugLog": {
     "sourceHash": "007c98d"
+  },
+  "menu.file.multiRename": "Mehrfach umbenennen …",
+  "@menu.file.multiRename": {
+    "sourceHash": "36b1dc2"
   }
 }

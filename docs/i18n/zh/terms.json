@@ -2667,7 +2667,11 @@
     "chosen": "搜索",
     "confidence": "confirmed",
     "forms": "Press Enter to search 按 Enter 键搜索; searching again 再搜一次",
-    "sources": "macOS"
+    "sources": "macOS",
+    "exceptions": {
+      "multiRename.search": "find-and-replace inside file names is 查找 / 替换为 in every Chinese source (macOS Finder BulkRenameWindow 查找： / 替换成：, Total Commander 6613 查找, Double Commander 查找(&F)...), and the catalog's in-text find is already 查找 (viewer.search.placeholder); 搜索 is the file-search feature",
+      "commands.fileMultiRename.description": "the tool's search & replace is the fixed phrase 查找替换 (Total Commander 6612 查找并替换, Double Commander 查找与替换), matching the multiRename.search label 查找"
+    }
   },
   "search-match": {
     "accept": ["匹配"],
@@ -3412,5 +3416,91 @@
     ],
     "confidence": "tentative",
     "sources": "Cmdr's license is the BSL (docs/business/README.md); catalog (onboarding.stepFda.con.body)"
+  },
+  "batch-rename": {
+    "chosen": "批量重命名",
+    "confidence": "high",
+    "forms": "command, File menu item and sheet title → 批量重命名 (menu: 批量重命名…); the onboarding rows already say 批量重命名 / 批量重命名界面",
+    "avoid": [
+      {
+        "form": "批量重命名工具",
+        "why": "Total Commander's tool name; Cmdr's command label is the action without 工具, like Double Commander"
+      },
+      {
+        "form": "多重重命名",
+        "why": "calque of Multi-rename; no Chinese source uses it"
+      }
+    ],
+    "sources": "Total Commander zh-CN (WCMD.LNG 6601 批量重命名工具; WCMD.MNU 2400 批量重命名工具(&R)...); Double Commander zh-CN (tfrmmultirename.caption Multi-Rename Tool → 批量重命名); catalog (onboarding.stepAi.table.rowRename 批量重命名)"
+  },
+  "name-mask": {
+    "chosen": "名称规则",
+    "accept": ["规则"],
+    "confidence": "tentative",
+    "forms": "the Name mask field → 名称规则; a rename mask in prose → 重命名规则 (as the pattern ruling already says)",
+    "avoid": [
+      {
+        "form": "名称掩码",
+        "why": "Double Commander's 掩码 is netmask jargon; Total Commander zh and the catalog's rename-pattern form both say 规则"
+      }
+    ],
+    "sources": "Total Commander zh-CN (WCMD.LNG 6602 Rename mask: file name → 重命名规则: 名称); Double Commander zh-CN (Mask → 掩码, rejected); catalog pattern ruling (a rename pattern 重命名规则)"
+  },
+  "rename-counter": {
+    "chosen": "计数器",
+    "confidence": "high",
+    "forms": "Counter from → 计数器起始值; Step → 步长; Digits → 位数 (all Total Commander 6616–6619)",
+    "sources": "Total Commander zh-CN (WCMD.LNG 6605 [C] 计数器, 6616 计数器[C], 6617 起始值, 6618 步长, 6619 位数); Double Commander zh-CN (Counter → 计数器); macOS Finder BulkRenameWindow (Name and Counter → 名称和计数)"
+  },
+  "diacritics": {
+    "chosen": "变音符号",
+    "confidence": "tentative",
+    "forms": "Remove diacritics → 移除变音符号 (remove ruling 移除)",
+    "avoid": [
+      {
+        "form": "音调符号",
+        "why": "Microsoft's term reads as Chinese tone marks only; the option also strips á, ž, ß"
+      },
+      {
+        "form": "重音符号",
+        "why": "Total Commander 1703 uses it, but accents are only one kind of diacritic (ß, ž)"
+      }
+    ],
+    "sources": "Microsoft terminology zh-Hans (diacritic → 音调符号 / 标注字符, rejected); Total Commander zh-CN 1703 (无重音符号的字符); Double Commander zh-CN (Ignore accents → 忽略重音); no macOS zh-CN string; 变音符号 is the standard Chinese linguistics term"
+  },
+  "placeholder": {
+    "chosen": "占位符",
+    "confidence": "high",
+    "forms": "a rename-mask token ([N], [C]) → 占位符 (插入占位符, 占位符 [{placeholder}]); format placeholders → 格式占位符",
+    "note": "The empty-field example text never surfaces as a word in the UI, so one word covers both senses.",
+    "sources": "catalog (onboarding.cloudSetup.hint.azureEndpoint 占位符, settings.appearance.formatPlaceholdersTitle 格式占位符); Microsoft terminology zh-Hans (placeholder → 占位符)"
+  },
+  "problem": {
+    "chosen": "问题",
+    "confidence": "high",
+    "forms": "ran into a problem → 出现了问题 / 遇到了问题; something's off → 出了点问题; a count → # 个有问题",
+    "avoid": [
+      {
+        "form": "错误",
+        "why": "the style guide bans 错误 as a label outside 错误报告; 问题 is the calm noun"
+      }
+    ],
+    "sources": "catalog (crashReporter.dialog.body.unknown, errors.listing.deviceProblem.title 设备问题, errors.serverRequest.serverBusy 出了点问题); style.md voice rule",
+    "exceptions": {
+      "licensing.dialog.mailtoBody": "the user's own email to support says 遇到了麻烦 (\"having trouble\"), the ordinary letter phrasing; the user is the speaker, not Cmdr"
+    }
+  },
+  "valid": {
+    "chosen": "有效",
+    "accept": ["无效"],
+    "confidence": "high",
+    "forms": "Not a valid name → 名称无效; X isn't valid → X 无效; Valid until → 有效期至; Validity → 有效期",
+    "sources": "catalog (errors.write.invalidName.title 文件名无效, ai.cloud.authError API 密钥无效, licensing.dialog.validityValidUntil 有效期至); Total Commander zh-CN 1414 非法字符 (rejected as harsh)"
+  },
+  "load": {
+    "chosen": "加载",
+    "confidence": "high",
+    "forms": "Load a preset → 加载预设; Load more → 加载更多; Loading… → 正在加载…",
+    "sources": "catalog (askCmdr.sessions.loadMore 加载更多, operationLog.dialog.loadMore 再加载 50 条, every 正在加载…); Double Commander zh-CN (Load Preset 1 → 加载预设 1)"
   }
 }

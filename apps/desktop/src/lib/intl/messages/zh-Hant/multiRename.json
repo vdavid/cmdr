@@ -1,0 +1,210 @@
+{
+  "multiRename.title": "多檔重新命名",
+  "@multiRename.title": {
+    "sourceHash": "5ceb1a2"
+  },
+  "multiRename.nameMask": "名稱規則",
+  "@multiRename.nameMask": {
+    "sourceHash": "3dcc6e4"
+  },
+  "multiRename.extensionMask": "副檔名",
+  "@multiRename.extensionMask": {
+    "sourceHash": "395aeb9"
+  },
+  "multiRename.insertPlaceholder": "插入預留位置",
+  "@multiRename.insertPlaceholder": {
+    "sourceHash": "f467cda"
+  },
+  "multiRename.search": "搜尋",
+  "@multiRename.search": {
+    "sourceHash": "6ea8f74"
+  },
+  "multiRename.replace": "取代為",
+  "@multiRename.replace": {
+    "sourceHash": "8382d31"
+  },
+  "multiRename.caseSensitive": "區分大小寫",
+  "@multiRename.caseSensitive": {
+    "sourceHash": "6198801"
+  },
+  "multiRename.firstOnly": "只取代第一處符合的文字",
+  "@multiRename.firstOnly": {
+    "sourceHash": "1ddb563"
+  },
+  "multiRename.includeExtension": "包含副檔名",
+  "@multiRename.includeExtension": {
+    "sourceHash": "10c3dc5"
+  },
+  "multiRename.regex": "正規表示式",
+  "@multiRename.regex": {
+    "sourceHash": "9f896c3"
+  },
+  "multiRename.substitute": "取代整個名稱",
+  "@multiRename.substitute": {
+    "sourceHash": "1cee1b2"
+  },
+  "multiRename.case": "大小寫",
+  "@multiRename.case": {
+    "sourceHash": "9785096"
+  },
+  "multiRename.case.unchanged": "不改變",
+  "@multiRename.case.unchanged": {
+    "sourceHash": "88b6f74"
+  },
+  "multiRename.case.lower": "全部小寫",
+  "@multiRename.case.lower": {
+    "sourceHash": "46ede93"
+  },
+  "multiRename.case.upper": "全部大寫",
+  "@multiRename.case.upper": {
+    "sourceHash": "9755f22"
+  },
+  "multiRename.case.firstUpper": "首字母大寫",
+  "@multiRename.case.firstUpper": {
+    "sourceHash": "4da45d5"
+  },
+  "multiRename.case.words": "每個字的首字母大寫",
+  "@multiRename.case.words": {
+    "sourceHash": "fdeb85e"
+  },
+  "multiRename.removeDiacritics": "移除變音符號",
+  "@multiRename.removeDiacritics": {
+    "sourceHash": "4103ca1"
+  },
+  "multiRename.counterStart": "計數器起始於",
+  "@multiRename.counterStart": {
+    "sourceHash": "562151d"
+  },
+  "multiRename.counterStep": "增量",
+  "@multiRename.counterStep": {
+    "sourceHash": "8e6a6cc"
+  },
+  "multiRename.counterDigits": "位數",
+  "@multiRename.counterDigits": {
+    "sourceHash": "9cd500d"
+  },
+  "multiRename.presets": "預設組合",
+  "@multiRename.presets": {
+    "sourceHash": "7252e7c"
+  },
+  "multiRename.presetPlaceholder": "載入預設組合",
+  "@multiRename.presetPlaceholder": {
+    "sourceHash": "e07d83e"
+  },
+  "multiRename.preset.default": "沒有變更",
+  "@multiRename.preset.default": {
+    "sourceHash": "41f9d57"
+  },
+  "multiRename.preset.removeDiacritics": "移除變音符號",
+  "@multiRename.preset.removeDiacritics": {
+    "sourceHash": "4103ca1"
+  },
+  "multiRename.presetName": "預設組合名稱",
+  "@multiRename.presetName": {
+    "sourceHash": "e534a66"
+  },
+  "multiRename.savePreset": "儲存預設組合",
+  "@multiRename.savePreset": {
+    "sourceHash": "362a137"
+  },
+  "multiRename.deletePreset": "刪除預設組合",
+  "@multiRename.deletePreset": {
+    "sourceHash": "f307af8"
+  },
+  "multiRename.preview": "預覽",
+  "@multiRename.preview": {
+    "sourceHash": "324b134"
+  },
+  "multiRename.oldName": "舊名稱",
+  "@multiRename.oldName": {
+    "sourceHash": "f192b20"
+  },
+  "multiRename.newName": "新名稱",
+  "@multiRename.newName": {
+    "sourceHash": "04eea2a"
+  },
+  "multiRename.statusColumn": "狀態",
+  "@multiRename.statusColumn": {
+    "sourceHash": "920e413"
+  },
+  "multiRename.status.unchanged": "沒有變更",
+  "@multiRename.status.unchanged": {
+    "sourceHash": "41f9d57"
+  },
+  "multiRename.status.duplicate": "和另一個檔案同名",
+  "@multiRename.status.duplicate": {
+    "sourceHash": "ff0347b"
+  },
+  "multiRename.status.targetExists": "名稱已被佔用",
+  "@multiRename.status.targetExists": {
+    "sourceHash": "629f53b"
+  },
+  "multiRename.status.invalidName": "不是有效的名稱",
+  "@multiRename.status.invalidName": {
+    "sourceHash": "f1e6391"
+  },
+  "multiRename.status.disallowedCharacter": "不能包含「{character}」",
+  "@multiRename.status.disallowedCharacter": {
+    "sourceHash": "2f21c26"
+  },
+  "multiRename.error.unclosed": "有個預留位置缺少結尾的「]」",
+  "@multiRename.error.unclosed": {
+    "sourceHash": "aa4efba"
+  },
+  "multiRename.error.unknown": "Cmdr 不認得「[{placeholder}]」這個預留位置",
+  "@multiRename.error.unknown": {
+    "sourceHash": "7845fb5"
+  },
+  "multiRename.error.badRegex": "這個正規表示式無效",
+  "@multiRename.error.badRegex": {
+    "sourceHash": "176cb2f"
+  },
+  "multiRename.error.gone": "這個資料夾已經沒有開著了。請關閉「多檔重新命名」，再重新開啟一次。",
+  "@multiRename.error.gone": {
+    "sourceHash": "8420f29"
+  },
+  "multiRename.error.nothingToRename": "沒有可以重新命名的檔案：每個新名稱不是和舊名稱相同，就是有問題",
+  "@multiRename.error.nothingToRename": {
+    "sourceHash": "cf68ee2"
+  },
+  "multiRename.error.notConnected": "這個位置現在沒有連線",
+  "@multiRename.error.notConnected": {
+    "sourceHash": "21b3bd0"
+  },
+  "multiRename.error.couldntStart": "無法開始重新命名。請稍後再試一次。",
+  "@multiRename.error.couldntStart": {
+    "sourceHash": "4b123be"
+  },
+  "multiRename.moreRows": "{count, plural, other {還有 # 個檔案沒有顯示在預覽裡，但也會重新命名}}",
+  "@multiRename.moreRows": {
+    "sourceHash": "8c036bb"
+  },
+  "multiRename.counts": "{ready, plural, other {# 個要重新命名}} · {unchanged, plural, other {# 個不變}} · {problems, plural, other {# 個有問題}}",
+  "@multiRename.counts": {
+    "sourceHash": "7464938"
+  },
+  "multiRename.cancel": "取消",
+  "@multiRename.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "multiRename.rename": "{count, plural, =0 {重新命名} other {重新命名 # 個檔案}}",
+  "@multiRename.rename": {
+    "sourceHash": "9789ca5"
+  },
+  "multiRename.started": "{count, plural, other {正在重新命名 # 個檔案}}。要還原的話，可以到「操作記錄」裡按「復原」。",
+  "@multiRename.started": {
+    "sourceHash": "55b4878"
+  },
+  "multiRename.error.previewOutOfDate": "資料夾在預覽之後有過更動。請先檢查新的預覽，再重新命名一次。",
+  "@multiRename.error.previewOutOfDate": {
+    "sourceHash": "46432fe"
+  },
+  "multiRename.error.readOnly": "無法在這個資料夾裡重新命名，因為它在封存檔或其他唯讀的位置裡",
+  "@multiRename.error.readOnly": {
+    "sourceHash": "f576c74"
+  },
+  "multiRename.hiddenProblems": "{count, plural, other {顯示的列之外還有 # 個檔案有問題，不會重新命名}}",
+  "@multiRename.hiddenProblems": {
+    "sourceHash": "aea1ba2"
+  }
+}

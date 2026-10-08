@@ -186,3 +186,21 @@ rule into `translation-principles.md` or `translator-instructions.md`), then del
 - `fileExplorer.navigation.favoriteUnreachable.mtpOff`, `.adbOff`: "Android phones are turned off in Settings" reads,
   translated literally, as the phones being powered off (vi `Điện thoại … đang tắt`). Name the feature: "Android phone
   access is turned off in Settings". (vi, zh-Hant)
+- `multiRename.counterStart` "Counter from" is a fragment, and `.counterStep` / `.counterDigits` don't name the counter
+  (no group box like TC's). Consider "Counter start", "Counter step", "Counter digits". (fr, ru, vi)
+- `multiRename.case.lower`, `.upper`, `.words`: say whether locales mirror the show-the-result casing. Proposed rule:
+  such keys are exempt from sentence case, and scripts without case (zh, ja, ko) describe the transform. (fr, sv, vi,
+  zh-Hant)
+- `multiRename.preset.default` and `.status.unchanged` share "No change" across two roles (a preset name, a row status),
+  forcing identical translations. Give the preset its own English ("Keep names"). (zh, zh-Hant)
+- `multiRename.removeDiacritics` and `.preset.removeDiacritics` share one English for a checkbox and a preset name; and
+  say whether an everyday "accents" word is fine, since ß→ss goes beyond diacritics. (ru, pt, fr, nl)
+- `onboarding.stepAi.table.renameWithout` ("batch rename UI") and `.rowRename` ("Mass-rename") likely name the new tool;
+  align the English to "Multi-rename". (de, hu, es realigned their values)
+- `multiRename.search` "Search for" is find-and-replace, yet the `search` concept means finding files; zh needed
+  exceptions (查找 vs 搜索). Add a `find` concept or a `notMatch`. (zh)
+- "Extension" is both `menu.sort.extension` and `multiRename.extensionMask`, so term-consistency forces one word; a
+  field label might want the fuller form. Consider "Extension mask" or an allowlist entry. (sv)
+- No screenshot of the Multi-Rename sheet, so label lengths (counter row, title-case option) are unverified. (all)
+- Tooling: the brief tells translators to restamp and edit `terms.json`/`source-queue.md`, which races when 11 run in
+  parallel. Consider a `--parallel` brief mode that routes termbase writes to a proposals file. (nl)

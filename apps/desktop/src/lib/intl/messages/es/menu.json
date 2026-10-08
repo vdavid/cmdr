@@ -702,5 +702,9 @@
   "menu.help.viewDebugLog": "Ver registro de depuración",
   "@menu.help.viewDebugLog": {
     "sourceHash": "007c98d"
+  },
+  "menu.file.multiRename": "Renombrado múltiple…",
+  "@menu.file.multiRename": {
+    "sourceHash": "36b1dc2"
   }
 }

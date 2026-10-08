@@ -668,3 +668,10 @@ in prose.
 
 - Managed `由你的组织管理` (Apple MDM copy: `受…组织管理`); turned off `你的组织关闭了…`, a plain past act, no apology.
 - Card values stay terse: `关闭` (the switch word, `settings.ai.provider.opt.off`), `只限本地`, `只能手动检查`.
+
+## 批量重命名工具（`multiRename.*`、`commands.fileMultiRename.*`、`menu.file.multiRename`）
+
+- Name and dialog labels follow Total Commander zh-CN: `批量重命名`, mask `名称规则` (TC `重命名规则`, not DC's `掩码`),
+  `计数器` / `起始值` / `步长` / `位数`, case menu `不变` / `全部小写` / `全部大写`.
+- Search & replace is `查找` / `替换为` (Finder BulkRename `查找：`, TC 6613), not the file-search `搜索`; the status
+  column is `状态`, not the user-note `备注`.

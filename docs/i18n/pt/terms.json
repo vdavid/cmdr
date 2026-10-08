@@ -3112,5 +3112,47 @@
     "forms": "a file’s owner → o dono; the person running a server → quem cuida do servidor (avoids a gendered o dono for a person)",
     "confidence": "tentative",
     "sources": "shipped pt catalog (errors.listing.*.suggestion “verificar o dono e as permissões”; servers decision “quem cuida do servidor”)"
+  },
+  "batch-rename": {
+    "chosen": "renomear em lote",
+    "accept": ["em lote"],
+    "forms": "command, menu item and sheet title Renomear em lote (Renomear em lote… in the File menu); noun renomeação em lote",
+    "avoid": [
+      {
+        "form": "Multirenomear",
+        "why": "DC's coinage, not Portuguese"
+      },
+      {
+        "form": "Ferramenta Multi-Renomear",
+        "why": "TC's menu calque; TC's own dialog title already says Renomeação em Lote"
+      }
+    ],
+    "exceptions": {
+      "onboarding.stepAi.table.rowRename": "A compact onboarding table row comparing with and without AI; the shipped Renomear em massa is the same idea in a three-word cell and isn't the tool's name."
+    },
+    "confidence": "high",
+    "sources": "TC pt-BR WCMD.LNG 6601 Renomeação em Lote; shipped pt onboarding.stepAi.table.renameWithout (renomeação em lote); Finder pt-BR Renomear ^0 Itens…",
+    "note": "Same English Multi-rename in commands.fileMultiRename.label, menu.file.multiRename and multiRename.title: one form, infinitive."
+  },
+  "load": {
+    "chosen": "carregar",
+    "accept": ["carreg"],
+    "forms": "Load more → Carregar mais; Load a preset → Carregar uma predefinição",
+    "confidence": "high",
+    "sources": "shipped pt catalog (operationLog.dialog.loadMore, askCmdr.sessions.loadMore); DC pt-BR Carregar/Salvar; TC pt-BR 1547 Carregar configuração"
+  },
+  "problem": {
+    "chosen": "problema",
+    "accept": ["problemas", "dificuldade"],
+    "confidence": "high",
+    "sources": "shipped pt catalog (Relatório de problema, Tente de novo. Se o problema continuar…); MS pt-BR problem → problema",
+    "forms": "the user's own voice for trouble (I'm having trouble activating…) → estou com dificuldade para…, as in licensing.dialog.mailtoBody"
+  },
+  "valid": {
+    "chosen": "válido",
+    "accept": ["válid", "inválid", "validade"],
+    "forms": "label/status Nome inválido; sentence A expressão regular não é válida; agrees in gender with its noun; the noun Validity → Validade (licensing.dialog.labelValidity)",
+    "confidence": "high",
+    "sources": "macOS pt-BR (O nome digitado não é válido; Endereço inválido); shipped pt catalog (Nome de arquivo inválido, Válida até {date})"
   }
 }

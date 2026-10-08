@@ -398,6 +398,14 @@
   "@commands.fileRename.label": {
     "sourceHash": "3064d79"
   },
+  "commands.fileMultiRename.label": "Wijzig meerdere namen",
+  "@commands.fileMultiRename.label": {
+    "sourceHash": "5ceb1a2"
+  },
+  "commands.fileMultiRename.description": "Wijzigt de namen van de geselecteerde bestanden (of van de hele map) met een naammasker, een teller en zoeken en vervangen",
+  "@commands.fileMultiRename.description": {
+    "sourceHash": "d294fb1"
+  },
   "commands.fileView.label": "Toon",
   "@commands.fileView.label": {
     "sourceHash": "dcc839a"

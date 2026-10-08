@@ -396,6 +396,14 @@
   "@commands.fileRename.label": {
     "sourceHash": "3064d79"
   },
+  "commands.fileMultiRename.label": "Renombrado múltiple",
+  "@commands.fileMultiRename.label": {
+    "sourceHash": "5ceb1a2"
+  },
+  "commands.fileMultiRename.description": "Renombra los archivos seleccionados (o toda la carpeta) con una máscara de nombre, un contador y buscar y reemplazar",
+  "@commands.fileMultiRename.description": {
+    "sourceHash": "d294fb1"
+  },
   "commands.fileView.label": "Ver",
   "@commands.fileView.label": {
     "sourceHash": "dcc839a"

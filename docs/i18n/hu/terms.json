@@ -491,8 +491,8 @@
   },
   "case-sensitive": {
     "chosen": "kis- és nagybetűérzékeny",
-    "accept": ["kis- és nagybet", "nagybetű"],
-    "forms": "toggle Kis- és nagybetűérzékeny (one solid compound); upper and lower case (prose) → kis- és nagybetűk",
+    "accept": ["kis- és nagybet", "nagybetű", "kisbetű", "kezdőbetű"],
+    "forms": "toggle Kis- és nagybetűérzékeny (one solid compound; Match case too); upper and lower case (prose) → kis- és nagybetűk; letter-case menu: csupa kisbetű / CSUPA NAGYBETŰ / Nagy kezdőbetű / Minden Szó Nagy Kezdőbetűs",
     "avoid": [
       {
         "form": "Kis- és nagybetűre érzékeny",
@@ -504,7 +504,7 @@
       }
     ],
     "confidence": "high",
-    "sources": "macOS (Kis- és nagybetűérzékeny; AppKit A kis- és nagybetűk azonosak)"
+    "sources": "macOS (Kis- és nagybetűérzékeny; AppKit A kis- és nagybetűk azonosak, Kisbetűssé alakítás); Total Commander hu LNG 6611 (Változatlan / mind kisbetű / MIND NAGYBETŰ / Nagy kezdőbetű / Minden Szó Nagybetűs)"
   },
   "certificate": {
     "chosen": "tanúsítvány",
@@ -3793,5 +3793,38 @@
     ],
     "confidence": "tentative",
     "sources": "Cmdr's license is the BSL (docs/business/README.md); catalog (onboarding.stepFda.con.body)"
+  },
+  "batch-rename": {
+    "chosen": "csoportos átnevezés",
+    "forms": "the tool, its command, menu item, and sheet title → Csoportos átnevezés (menu: Csoportos átnevezés…)",
+    "avoid": [
+      {
+        "form": "Többszörös átnevezés",
+        "why": "Double Commander's calque; Total Commander (the feature's model) says Csoportos átnevezés"
+      },
+      {
+        "form": "kötegelt átnevezés",
+        "why": "a second name for the same tool; onboarding.stepAi.table.renameWithout should be realigned to csoportos átnevezés"
+      }
+    ],
+    "exceptions": {
+      "onboarding.stepAi.table.rowRename": "Mass-rename → Tömeges átnevezés: an AI-capability row in the onboarding comparison table, different English from the tool's name (Multi-rename)."
+    },
+    "confidence": "high",
+    "sources": "Total Commander hu (LNG 6601 Csoportos átnevezés, MNU/INC 2400 Csoportos átnevezés…, INC -9 Tárolt csoportos átnevezés megnyitása); Double Commander hu (tfrmmultirename.caption Többszörös átnevezés eszköz, rejected)"
+  },
+  "load": {
+    "chosen": "betöltés",
+    "accept": ["betölt", "tölts be"],
+    "forms": "Load X → X betöltése (Előbeállítás betöltése); progress Betöltés…; Load more → További betöltése",
+    "confidence": "high",
+    "sources": "MS terminology (load → betölt / betöltés); Double Commander hu (actloadpreset Sablon betöltése); catalog (viewer.loading Betöltés…, askCmdr.sessions.loadMore)"
+  },
+  "valid": {
+    "chosen": "érvényes",
+    "accept": ["érvény"],
+    "forms": "invalid → érvénytelen (Érvénytelen név, Érvénytelen fájlnév); isn't valid → nem érvényes",
+    "confidence": "high",
+    "sources": "MS terminology (valid → érvényes, invalid → érvénytelen); macOS CoreTypes (Érvénytelen argumentum); catalog (errors.write.invalidName.title Érvénytelen fájlnév)"
   }
 }

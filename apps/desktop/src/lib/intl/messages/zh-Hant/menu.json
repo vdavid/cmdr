@@ -699,5 +699,9 @@
   "menu.help.viewDebugLog": "檢視除錯記錄檔",
   "@menu.help.viewDebugLog": {
     "sourceHash": "007c98d"
+  },
+  "menu.file.multiRename": "多檔重新命名⋯",
+  "@menu.file.multiRename": {
+    "sourceHash": "36b1dc2"
   }
 }

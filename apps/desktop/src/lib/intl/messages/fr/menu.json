@@ -701,5 +701,9 @@
   "menu.help.viewDebugLog": "Visualiser le journal de débogage",
   "@menu.help.viewDebugLog": {
     "sourceHash": "007c98d"
+  },
+  "menu.file.multiRename": "Renommer par lot…",
+  "@menu.file.multiRename": {
+    "sourceHash": "36b1dc2"
   }
 }

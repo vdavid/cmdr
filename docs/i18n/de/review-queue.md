@@ -88,3 +88,7 @@ German runs 20–35% longer than English. Look at these against the pseudolocale
 
 - `ai.translateError.managed.body`, `ai.managed.hostNotAllowed`: `dein IT-Team` follows the English „IT team“; a native
   reviewer may prefer the more common `deine IT-Abteilung`.
+
+- `multiRename.case.lower` / `.upper` / `.words` (`alles klein`, `ALLES GROSS`, `Jeder Wortanfang Groß`): written in
+  their own result like the English; `Groß` capitalized on purpose, and `GROSS` without ẞ. Check they read as intended.
+- `multiRename.firstOnly` (`Nur den ersten Treffer`) leaves `ersetzen` implicit, as the English does.

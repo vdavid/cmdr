@@ -389,9 +389,8 @@ CLDR category: **`other` only** (verified with `new Intl.PluralRules('zh-Hant').
   Cmdr ships Finder tags AND browser-style tabs in the same UI, so we take the pan-Traditional `分頁` for tab and leave
   `標籤` to mean tag alone. This is a second, independent reason for the `分頁` ruling above.
 - **`預設` means "default" here, which collides with "preset".** Microsoft's zh-Hant TBX renders _preset_ as `預設` too.
-  No shipped value currently contains the word "preset" (it appears only in `@key` descriptions and in
-  `queryUi.date.preset.*` key NAMES, whose values are "Today", "Yesterday", …), so nothing is broken today. If a visible
-  "preset" ever appears, write `預設組合` and keep bare `預設` for _default_.
+  A visible "preset" is `預設組合` (Multi-rename's `multiRename.presets`, `.savePreset`, `.presetName`, …); bare `預設`
+  stays _default_. ❌ Don't shorten `預設組合` to `預設` to save room.
 - **Menu names in running text get corner brackets, not a path.** Write `請從「說明」選單傳送新的報告。` in prose, and
   reserve the bold `Cmdr > 引導設定⋯` path shape for step-by-step onboarding instructions. Menu names must match the
   `menu.*` keys exactly, so a copy edit can't drift the two apart.

@@ -66,3 +66,6 @@ settled wording into `terms.json` (and `decisions.md` when the reason is worth k
 - **On-device AI → `本地 AI`** (`ai.managed.cloudAiOff`, `ai.managed.localOnlyUnsupported`,
   `settings.managed.summary.onDeviceOnly` = `只限本地`): reuses the local provider's word so the person recognizes it;
   Apple Intelligence copy says `设备端`. Confirm `本地` reads as "runs on this Mac" to an IT-managed user.
+- **Multi-rename labels** (`multiRename.*`): `名称规则` for "Name mask" (TC's `重命名规则`, over DC's `掩码`),
+  `移除变音符号` for "Remove diacritics" (no macOS zh-CN source; Microsoft's `音调符号` rejected), the `说明` status
+  column, and the preset/status pair `无变化` (same English "No change"). Confirm each reads naturally in the sheet.

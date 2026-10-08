@@ -700,5 +700,9 @@
   "menu.help.viewDebugLog": "Hibakeresési napló megtekintése",
   "@menu.help.viewDebugLog": {
     "sourceHash": "007c98d"
+  },
+  "menu.file.multiRename": "Csoportos átnevezés…",
+  "@menu.file.multiRename": {
+    "sourceHash": "36b1dc2"
   }
 }

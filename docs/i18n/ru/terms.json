@@ -3865,9 +3865,10 @@
   "rename": {
     "chosen": "Переименовать",
     "accept": ["переимен", "имя", "имен"],
-    "forms": "the command → «Переименовать»; renaming / a rename (noun) → переименование; batch rename → массовое переименование",
+    "forms": "the command → «Переименовать»; renaming / a rename (noun) → переименование; batch rename → групповое переименование (see `batch-rename`)",
     "confidence": "high",
-    "sources": "macOS Finder LocalizableMerged N169.7 Rename → «Переименовать», BulkRenameWindow Rename → «Переименовать»; Double Commander Rename → «Переименовать»"
+    "sources": "macOS Finder LocalizableMerged N169.7 Rename → «Переименовать», BulkRenameWindow Rename → «Переименовать»; Double Commander Rename → «Переименовать»",
+    "note": "The old form «batch rename → массовое переименование» contradicted the `batch-rename` ruling, which avoids «массовое» (TC 6601, DC, Nautilus say «групповое»)."
   },
   "rename-cycle": {
     "chosen": "циклическое переименование",
@@ -4190,16 +4191,19 @@
   "search": {
     "chosen": "Поиск",
     "accept": ["поиск", "искать", "ищ", "наход", "найт", "найд", "запрос"],
-    "forms": "feature, dialog title, and the button: «Поиск»; status «Поиск…» / «Идет поиск…»; verb «искать», «Искать в»",
+    "forms": "feature, dialog title, and the button: «Поиск»; status «Поиск…» / «Идет поиск…»; verb «искать», «Искать в»; the search field of a search-and-replace pair → «Найти» beside «Заменить на» (Finder BulkRenameWindow, TC 6613/6614)",
     "avoid": [
       {
         "form": "Найти",
-        "why": "Finder and AppKit name the feature and the field «Поиск»; «Найти» is the Find command in text editors"
+        "why": "Finder and AppKit name the feature and the field «Поиск»; «Найти» is the Find command in text editors (and the find half of a find/replace pair, see exceptions)"
       }
     ],
     "confidence": "high",
-    "sources": "Finder LocalizableMerged TL23: Search → Поиск; Finder: Searching… → Поиск…; AppKit TextFinder: Searching… → Идет поиск…; MS: search → поиск; Nautilus, Dolphin, Thunar, DC: Search → Поиск",
-    "note": "«запрос» is accepted because a recent search is a stored query («Недавние запросы»); the query concept itself is `query`."
+    "sources": "Finder LocalizableMerged TL23: Search → Поиск; Finder: Searching… → Поиск…; AppKit TextFinder: Searching… → Идет поиск…; MS: search → поиск; Nautilus, Dolphin, Thunar, DC: Search → Поиск; Finder BulkRenameWindow 6Q3-e2-U7r «Найти:» / erz-Yf-3kR «Заменить на:»; TC 6613 «Найти:», 6614 «Заменить на:»",
+    "note": "«запрос» is accepted because a recent search is a stored query («Недавние запросы»); the query concept itself is `query`.",
+    "exceptions": {
+      "multiRename.search": "the find half of the rename tool's search-and-replace pair: Finder's own bulk-rename window and TC both label it «Найти» next to «Заменить на»"
+    }
   },
   "search-match": {
     "chosen": "совпадение",
@@ -5881,5 +5885,38 @@
     "forms": "menu «Масштаб»; «Увеличить масштаб», «Уменьшить масштаб»; the macOS Window menu's Zoom is Apple's «Изменить масштаб»",
     "confidence": "high",
     "sources": "Live macOS MainMenu (Game Center): Zoom → Изменить масштаб; Contacts: zoom → изменить масштаб; Dolphin: Zoom → Масштаб; Nautilus, DC: Zoom In → Увеличить, Zoom Out → Уменьшить; MS: zoom → масштабирование / увеличить"
+  },
+  "name-mask": {
+    "chosen": "маска имени",
+    "accept": ["маск"],
+    "forms": "the field label → «Маска имени»; the extension field → «Расширение»; tokens like [N], [C] inside it → обозначения (see `placeholder`)",
+    "avoid": [
+      {
+        "form": "шаблон",
+        "why": "TC/DC use «шаблон» for saved presets and Cmdr uses it for match patterns; a mask is «маска» in TC (6602 «Маска для: имени файла») and DC («Маска»)"
+      }
+    ],
+    "confidence": "high",
+    "sources": "TC ru 6602 « Маска для: &имени файла », fullpack 6602 «Маски переименования: Имя...»; DC ru tfrmmultirename Mask → «Маска»; TC 5463 «&Маска для распаковки:»"
+  },
+  "rename-counter": {
+    "chosen": "счетчик",
+    "accept": ["счетчик", "счетчика"],
+    "forms": "Counter from → «Начало счетчика»; Step → «Шаг»; Digits → «Число цифр»",
+    "confidence": "high",
+    "sources": "TC ru 6605 «[C] Счётчик», 6616 «Параметры счётчика [C]», 6617 «Начать с:», 6618 «Шаг:», 6619 «Цифр:»; DC ru Counter → «Счётчик»; Finder BulkRenameWindow «Имя и счетчик», «Начинать номера с:» (е, not ё, per style)"
+  },
+  "diacritics": {
+    "chosen": "диакритические знаки",
+    "accept": ["диакрит"],
+    "forms": "Remove diacritics (checkbox and built-in preset, same English) → «Удаление диакритических знаков», a noun phrase that works both as a standing option and as a preset name; a letter with an accent → буква с диакритическим знаком",
+    "avoid": [
+      {
+        "form": "акценты",
+        "why": "too narrow (ß, ł, ø are not accents) and reads as stress marks"
+      }
+    ],
+    "confidence": "high",
+    "sources": "catalog errors.listing.ambiguousName.explanation «букву с диакритическим знаком»; MS terminology diacritic → диакритический знак; TC has no equivalent option"
   }
 }

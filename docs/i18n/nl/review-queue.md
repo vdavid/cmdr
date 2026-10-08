@@ -161,3 +161,9 @@ wording into `terms.json` (and `decisions.md` when the reason is worth keeping).
   `fileOperations.leftovers.stagingFolderKept`.
 - `settings.section.navigationAndFileOps` `Navigatie en bewerkingen`: fallback `Navigatie en bestandsbewerkingen` if the
   clip reads odd.
+
+## Wijzig meerdere namen (`multiRename.*`)
+
+- `multiRename.removeDiacritics` / `.preset.removeDiacritics` `Accenten verwijderen` (everyday) over MS
+  `diakritische tekens`; ß → ss is not strictly an accent.
+- `multiRename.case.words` `Elk Woord Met Hoofdletter` shape.

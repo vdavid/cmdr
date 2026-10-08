@@ -3197,5 +3197,41 @@
     "chosen": "Spaces",
     "confidence": "high",
     "sources": "macOS Disk Utility.app sv (2026-08-30)"
+  },
+  "batch-rename": {
+    "chosen": "massbyt namn",
+    "accept": ["massbyte av namn", "massbyte"],
+    "confidence": "high",
+    "forms": "command, menu item and sheet title → Massbyt namn (menu Massbyt namn…); the act in prose → massbyte av namn; built on the rename ruling byt namn",
+    "avoid": [
+      {
+        "form": "massomdöpning",
+        "why": "Total Commander/Double Commander's noun (Massomdöpningsverktyg, Verktyg för massomdöpning) builds on döpa om, while Cmdr's rename name is byt namn (macOS Finder)"
+      }
+    ],
+    "sources": "catalog (onboarding.stepAi.table.rowRename Massbyt namn, .renameWithout massbyte av namn); Total Commander sv (6601 Massomdöpningsverktyg, INC 2400 Döp om flera filer); Double Commander sv (Multi-Rename Tool → Verktyg för massomdöpning); macOS Finder has no tool name (Byt namn på ^0 objekt…, Byt namn på Finder-objekt:)"
+  },
+  "problem": {
+    "chosen": "problem",
+    "accept": ["problemet", "problemen", "läsproblem", "faktureringsproblem"],
+    "confidence": "high",
+    "forms": "ett problem, problemet, plural problem; has a problem → har ett problem / har problem; count → # problem in both branches; ran into a problem → stötte på ett problem",
+    "avoid": [
+      {
+        "form": "fel",
+        "why": "style.md bans fel as a bare label; problem is the calm noun"
+      }
+    ],
+    "sources": "catalog (crashReporter.dialog.body.unknown stötte på ett problem, fileExplorer.network.browser.status.error Problem, errors.listing.deviceProblem.title Problem med enheten); style.md voice rule",
+    "exceptions": {
+      "errors.listing.unexpectedSystemResponse.suggestion": "pre-existing: “run First Aid … to check for file system problems” is rendered as kör Skivkontroll … för att kontrollera filsystemet, which keeps the meaning without the noun"
+    }
+  },
+  "regex": {
+    "chosen": "reguljärt uttryck",
+    "accept": ["regex", "reguljära uttrycket", "reguljära uttryck"],
+    "confidence": "high",
+    "forms": "an option or field label → Reguljärt uttryck; the short mode name Regex stays (queryUi.mode.regex.label, viewer.search.regex) and compounds with a hyphen (Regex-läge, regex-sökningar)",
+    "sources": "catalog (queryUi.bar.placeholder.regex Reguljärt uttryck, queryUi.mode.regex.label Regex); Double Commander sv (Regular expressions → Reguljära uttryck); Total Commander sv (6626 RegEx)"
   }
 }

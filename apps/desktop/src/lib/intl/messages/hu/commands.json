@@ -396,6 +396,14 @@
   "@commands.fileRename.label": {
     "sourceHash": "3064d79"
   },
+  "commands.fileMultiRename.label": "Csoportos átnevezés",
+  "@commands.fileMultiRename.label": {
+    "sourceHash": "5ceb1a2"
+  },
+  "commands.fileMultiRename.description": "Átnevezi a kijelölt fájlokat (vagy az egész mappát) névmaszkkal, számlálóval, valamint kereséssel és cserével",
+  "@commands.fileMultiRename.description": {
+    "sourceHash": "d294fb1"
+  },
   "commands.fileView.label": "Megtekintés",
   "@commands.fileView.label": {
     "sourceHash": "dcc839a"

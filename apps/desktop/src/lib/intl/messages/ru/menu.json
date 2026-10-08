@@ -700,5 +700,9 @@
   "menu.help.viewDebugLog": "Просмотреть журнал отладки",
   "@menu.help.viewDebugLog": {
     "sourceHash": "007c98d"
+  },
+  "menu.file.multiRename": "Групповое переименование…",
+  "@menu.file.multiRename": {
+    "sourceHash": "36b1dc2"
   }
 }

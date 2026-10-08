@@ -396,6 +396,14 @@
   "@commands.fileRename.label": {
     "sourceHash": "3064d79"
   },
+  "commands.fileMultiRename.label": "Групповое переименование",
+  "@commands.fileMultiRename.label": {
+    "sourceHash": "5ceb1a2"
+  },
+  "commands.fileMultiRename.description": "Переименовать выделенные файлы (или всю папку) по маске имени, со счетчиком, поиском и заменой",
+  "@commands.fileMultiRename.description": {
+    "sourceHash": "d294fb1"
+  },
   "commands.fileView.label": "Просмотр",
   "@commands.fileView.label": {
     "sourceHash": "dcc839a"

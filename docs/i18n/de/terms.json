@@ -434,8 +434,8 @@
     "accept": ["Groß- und Kleinschreibung", "Großbuchstaben", "Kleinbuchstaben"],
     "chosen": "Groß-/Kleinschreibung",
     "confidence": "high",
-    "forms": "Groß-/Kleinschreibung beachten (macOS shows the negation … ignorieren); aria wraps the label: Beim Abgleich Groß-/Kleinschreibung beachten; tell apart → zwischen Groß- und Kleinschreibung unterscheiden",
-    "sources": "MS terminology (case-sensitive); macOS Finder ( … nicht zwischen Groß- und Kleinschreibung unterscheidet)"
+    "forms": "Groß-/Kleinschreibung beachten (macOS shows the negation … ignorieren); aria wraps the label: Beim Abgleich Groß-/Kleinschreibung beachten; tell apart → zwischen Groß- und Kleinschreibung unterscheiden; the letter-case menu of Mehrfach umbenennen → Groß-/Kleinschreibung (Finder BulkRenameWindow)",
+    "sources": "MS terminology (case-sensitive); macOS Finder ( … nicht zwischen Groß- und Kleinschreibung unterscheidet; Groß-/Kleinschreibung beachten)"
   },
   "certificate": {
     "chosen": "Zertifikat",
@@ -2438,11 +2438,11 @@
     "sources": "macOS Finder (Aktualisieren)"
   },
   "regex": {
-    "accept": ["regulärer Ausdruck", "regulären Ausdruck"],
+    "accept": ["regulärer Ausdruck", "regulären Ausdruck", "reguläre Ausdruck"],
     "chosen": "Regex",
     "confidence": "high",
-    "forms": "the mode chip → Regex; prose → regulärer Ausdruck",
-    "sources": "MS terminology (regulärer Ausdruck)"
+    "forms": "the mode chip → Regex; prose and the Mehrfach-umbenennen checkbox → regulärer Ausdruck (with the definite article: der reguläre Ausdruck)",
+    "sources": "MS terminology (regulärer Ausdruck); Double Commander de (Regular expressions → Reguläre Ausdrücke)"
   },
   "register-shortcut": {
     "accept": ["registrier"],
@@ -3533,5 +3533,45 @@
     "confidence": "high",
     "forms": "a destination that can’t store a name → … lässt sich hier nicht speichern / kann … nicht speichern",
     "sources": "catalog errors.volume.invalidName, errors.write.invalidName.message (gespeichert per the save trap: storing data); a secret in the keychain → sichern (servers.refusal.secretNotStored, the save button’s verb); a disk image sitting there → liegt"
+  },
+  "batch-rename": {
+    "chosen": "Mehrfach umbenennen",
+    "confidence": "high",
+    "forms": "command, menu item, and sheet title → Mehrfach umbenennen (menu with … after a no-break space); the act in prose → das Umbenennen",
+    "sources": "Total Commander de (6601 Mehrfach-Umbenenn-Tool; WCMD.MNU 2400 &Mehrfach-Umbenenn-Tool…); Double Commander de (Multi-Rename Tool → Mehrfaches Umbenennen); macOS Finder has no tool name (BulkRenameWindow: Umbenennen, Suchen:, Ersetzen durch:, Name mit Zähler)",
+    "exceptions": {
+      "onboarding.stepAi.table.rowRename": "pre-existing onboarding comparison row naming bulk renaming in general as a noun (Massenumbenennung); not this batch's key, left for a follow-up alignment with Mehrfach umbenennen",
+      "onboarding.stepAi.table.renameWithout": "pre-existing onboarding prose (Stapel-Umbenennung); not this batch's key, left for a follow-up alignment with Mehrfach umbenennen"
+    }
+  },
+  "load": {
+    "accept": ["geladen", "Laden", "lade", "lädt"],
+    "chosen": "laden",
+    "confidence": "high",
+    "forms": "Load a preset → Voreinstellung laden; Load more → Mehr laden; Loading … → Wird geladen …",
+    "sources": "Double Commander de (Load Preset 1 → Voreinstellung 1 laden); catalog (askCmdr.sessions.loadMore, operationLog.dialog.loadMore, queryUi.results.loadingIndex)"
+  },
+  "problem": {
+    "accept": ["Probleme", "Problemen", "Problems"],
+    "chosen": "Problem",
+    "confidence": "high",
+    "forms": "ran into a problem → ist auf ein Problem gestoßen; has a problem → hat ein Problem; count → # Problem / # Probleme",
+    "avoid": [
+      {
+        "form": "Fehler",
+        "why": "the style guide bans Fehler as a bare label; Problem is the calm noun"
+      }
+    ],
+    "sources": "catalog (fileExplorer.network.browser.status.error Problem, errors.listing.diskReadProblem.title); style.md voice rule",
+    "exceptions": {
+      "fileExplorer.navigation.driveIndex.tooltipFailed": "pre-existing: „because of a problem saving“ is rendered as the plain cause (… nicht gespeichert werden konnte), which drops the noun without losing meaning"
+    }
+  },
+  "valid": {
+    "accept": ["ungültig", "Gültigkeit"],
+    "chosen": "gültig",
+    "confidence": "high",
+    "forms": "Not a valid name → Kein gültiger Name; isn't valid → ist ungültig",
+    "sources": "macOS Finder de (Der eingegebene Name ist ungültig.; Ungültiger Schlüssel); MS terminology; catalog (licensing.dialog.validityValidUntil Gültig bis, ai.cloud.authError ungültig)"
   }
 }

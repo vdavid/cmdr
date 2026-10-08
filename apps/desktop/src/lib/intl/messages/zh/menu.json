@@ -699,5 +699,9 @@
   "menu.help.viewDebugLog": "查看调试日志",
   "@menu.help.viewDebugLog": {
     "sourceHash": "007c98d"
+  },
+  "menu.file.multiRename": "批量重命名…",
+  "@menu.file.multiRename": {
+    "sourceHash": "36b1dc2"
   }
 }

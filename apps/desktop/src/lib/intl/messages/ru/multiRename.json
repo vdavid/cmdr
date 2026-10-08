@@ -1,0 +1,210 @@
+{
+  "multiRename.title": "Групповое переименование",
+  "@multiRename.title": {
+    "sourceHash": "5ceb1a2"
+  },
+  "multiRename.nameMask": "Маска имени",
+  "@multiRename.nameMask": {
+    "sourceHash": "3dcc6e4"
+  },
+  "multiRename.extensionMask": "Расширение",
+  "@multiRename.extensionMask": {
+    "sourceHash": "395aeb9"
+  },
+  "multiRename.insertPlaceholder": "Вставить обозначение",
+  "@multiRename.insertPlaceholder": {
+    "sourceHash": "f467cda"
+  },
+  "multiRename.search": "Найти",
+  "@multiRename.search": {
+    "sourceHash": "6ea8f74"
+  },
+  "multiRename.replace": "Заменить на",
+  "@multiRename.replace": {
+    "sourceHash": "8382d31"
+  },
+  "multiRename.caseSensitive": "С учетом регистра",
+  "@multiRename.caseSensitive": {
+    "sourceHash": "6198801"
+  },
+  "multiRename.firstOnly": "Только первое совпадение",
+  "@multiRename.firstOnly": {
+    "sourceHash": "1ddb563"
+  },
+  "multiRename.includeExtension": "Включая расширение",
+  "@multiRename.includeExtension": {
+    "sourceHash": "10c3dc5"
+  },
+  "multiRename.regex": "Регулярное выражение",
+  "@multiRename.regex": {
+    "sourceHash": "9f896c3"
+  },
+  "multiRename.substitute": "Заменять имя целиком",
+  "@multiRename.substitute": {
+    "sourceHash": "1cee1b2"
+  },
+  "multiRename.case": "Регистр букв",
+  "@multiRename.case": {
+    "sourceHash": "9785096"
+  },
+  "multiRename.case.unchanged": "Без изменений",
+  "@multiRename.case.unchanged": {
+    "sourceHash": "88b6f74"
+  },
+  "multiRename.case.lower": "все строчные",
+  "@multiRename.case.lower": {
+    "sourceHash": "46ede93"
+  },
+  "multiRename.case.upper": "ВСЕ ЗАГЛАВНЫЕ",
+  "@multiRename.case.upper": {
+    "sourceHash": "9755f22"
+  },
+  "multiRename.case.firstUpper": "Первая буква заглавная",
+  "@multiRename.case.firstUpper": {
+    "sourceHash": "4da45d5"
+  },
+  "multiRename.case.words": "Каждое Слово С Заглавной",
+  "@multiRename.case.words": {
+    "sourceHash": "fdeb85e"
+  },
+  "multiRename.removeDiacritics": "Удаление диакритических знаков",
+  "@multiRename.removeDiacritics": {
+    "sourceHash": "4103ca1"
+  },
+  "multiRename.counterStart": "Начало счетчика",
+  "@multiRename.counterStart": {
+    "sourceHash": "562151d"
+  },
+  "multiRename.counterStep": "Шаг",
+  "@multiRename.counterStep": {
+    "sourceHash": "8e6a6cc"
+  },
+  "multiRename.counterDigits": "Число цифр",
+  "@multiRename.counterDigits": {
+    "sourceHash": "9cd500d"
+  },
+  "multiRename.presets": "Набор настроек",
+  "@multiRename.presets": {
+    "sourceHash": "7252e7c"
+  },
+  "multiRename.presetPlaceholder": "Загрузить набор настроек",
+  "@multiRename.presetPlaceholder": {
+    "sourceHash": "e07d83e"
+  },
+  "multiRename.preset.default": "Без изменений",
+  "@multiRename.preset.default": {
+    "sourceHash": "41f9d57"
+  },
+  "multiRename.preset.removeDiacritics": "Удаление диакритических знаков",
+  "@multiRename.preset.removeDiacritics": {
+    "sourceHash": "4103ca1"
+  },
+  "multiRename.presetName": "Название набора настроек",
+  "@multiRename.presetName": {
+    "sourceHash": "e534a66"
+  },
+  "multiRename.savePreset": "Сохранить набор настроек",
+  "@multiRename.savePreset": {
+    "sourceHash": "362a137"
+  },
+  "multiRename.deletePreset": "Удалить набор настроек",
+  "@multiRename.deletePreset": {
+    "sourceHash": "f307af8"
+  },
+  "multiRename.preview": "Просмотр",
+  "@multiRename.preview": {
+    "sourceHash": "324b134"
+  },
+  "multiRename.oldName": "Старое имя",
+  "@multiRename.oldName": {
+    "sourceHash": "f192b20"
+  },
+  "multiRename.newName": "Новое имя",
+  "@multiRename.newName": {
+    "sourceHash": "04eea2a"
+  },
+  "multiRename.statusColumn": "Состояние",
+  "@multiRename.statusColumn": {
+    "sourceHash": "920e413"
+  },
+  "multiRename.status.unchanged": "Без изменений",
+  "@multiRename.status.unchanged": {
+    "sourceHash": "41f9d57"
+  },
+  "multiRename.status.duplicate": "Такое же имя у другого файла",
+  "@multiRename.status.duplicate": {
+    "sourceHash": "ff0347b"
+  },
+  "multiRename.status.targetExists": "Имя занято",
+  "@multiRename.status.targetExists": {
+    "sourceHash": "629f53b"
+  },
+  "multiRename.status.invalidName": "Недопустимое имя",
+  "@multiRename.status.invalidName": {
+    "sourceHash": "f1e6391"
+  },
+  "multiRename.status.disallowedCharacter": "Имя не может содержать символ {character}",
+  "@multiRename.status.disallowedCharacter": {
+    "sourceHash": "2f21c26"
+  },
+  "multiRename.error.unclosed": "У обозначения нет закрывающей скобки «]»",
+  "@multiRename.error.unclosed": {
+    "sourceHash": "aa4efba"
+  },
+  "multiRename.error.unknown": "Cmdr не знает обозначение [{placeholder}]",
+  "@multiRename.error.unknown": {
+    "sourceHash": "7845fb5"
+  },
+  "multiRename.error.badRegex": "Регулярное выражение составлено неверно",
+  "@multiRename.error.badRegex": {
+    "sourceHash": "176cb2f"
+  },
+  "multiRename.error.gone": "Эта папка больше не открыта. Закройте «Групповое переименование» и откройте его снова.",
+  "@multiRename.error.gone": {
+    "sourceHash": "8420f29"
+  },
+  "multiRename.error.nothingToRename": "Нечего переименовывать: все новые имена либо совпадают со старыми, либо с ними есть проблема",
+  "@multiRename.error.nothingToRename": {
+    "sourceHash": "cf68ee2"
+  },
+  "multiRename.error.notConnected": "Это место сейчас не подключено",
+  "@multiRename.error.notConnected": {
+    "sourceHash": "21b3bd0"
+  },
+  "multiRename.error.couldntStart": "Не удалось начать переименование. Попробуйте еще раз чуть позже.",
+  "@multiRename.error.couldntStart": {
+    "sourceHash": "4b123be"
+  },
+  "multiRename.moreRows": "{count, plural, one {Еще # файл не показан, но будет переименован} few {Еще # файла не показаны, но будут переименованы} many {Еще # файлов не показано, но они будут переименованы} other {Еще # файла не показано, но они будут переименованы}}",
+  "@multiRename.moreRows": {
+    "sourceHash": "8c036bb"
+  },
+  "multiRename.counts": "{ready, plural, one {# файл будет переименован} few {# файла будут переименованы} many {# файлов будут переименованы} other {# файла будут переименованы}} · {unchanged, plural, one {# файл без изменений} few {# файла без изменений} many {# файлов без изменений} other {# файла без изменений}} · {problems, plural, one {# проблема} few {# проблемы} many {# проблем} other {# проблемы}}",
+  "@multiRename.counts": {
+    "sourceHash": "7464938"
+  },
+  "multiRename.cancel": "Отменить",
+  "@multiRename.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "multiRename.rename": "{count, plural, =0 {Переименовать} one {Переименовать # файл} few {Переименовать # файла} many {Переименовать # файлов} other {Переименовать # файла}}",
+  "@multiRename.rename": {
+    "sourceHash": "9789ca5"
+  },
+  "multiRename.started": "{count, plural, one {Идет переименование # файла} few {Идет переименование # файлов} many {Идет переименование # файлов} other {Идет переименование # файла}}. Откатить его можно в журнале операций.",
+  "@multiRename.started": {
+    "sourceHash": "55b4878"
+  },
+  "multiRename.error.previewOutOfDate": "Папка изменилась, и просмотр устарел. Проверьте обновленный просмотр и переименуйте снова.",
+  "@multiRename.error.previewOutOfDate": {
+    "sourceHash": "46432fe"
+  },
+  "multiRename.error.readOnly": "В этой папке нельзя переименовывать: она находится в архиве или в другом месте только для чтения",
+  "@multiRename.error.readOnly": {
+    "sourceHash": "f576c74"
+  },
+  "multiRename.hiddenProblems": "{count, plural, one {# файл за пределами показанных строк не будет переименован из-за проблемы} few {# файла за пределами показанных строк не будут переименованы из-за проблем} many {# файлов за пределами показанных строк не будут переименованы из-за проблем} other {# файла за пределами показанных строк не будут переименованы из-за проблем}}",
+  "@multiRename.hiddenProblems": {
+    "sourceHash": "aea1ba2"
+  }
+}

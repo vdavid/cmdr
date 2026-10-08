@@ -111,7 +111,7 @@
     "en": "tool (AI)",
     "match": ["tool", "tools"],
     "note": "Developer tooling (Android platform tools) is not this concept.",
-    "notMatch": ["platform tools", "android tools", "backup tools", "zip tools", "some tools"],
+    "notMatch": ["platform tools", "android tools", "backup tools", "zip tools", "some tools", "open the tool"],
     "sense": "A function the AI can call (list a folder, search), and its status lines."
   },
   "alias": {
@@ -463,7 +463,7 @@
       "lowercase"
     ],
     "sense": "Whether upper- and lowercase letters count as different.",
-    "notMatch": ["only lowercase letters"]
+    "notMatch": ["only lowercase letters", "=lowercase", "=uppercase", "first letter uppercase"]
   },
   "certificate": {
     "distinct": ["trust"],
@@ -583,7 +583,7 @@
     "distinct": ["dismiss", "cancel", "quit"],
     "en": "Close",
     "match": ["close", "closes", "closed", "closing"],
-    "notMatch": ["close its connection", "closed the connection", "stay closed"],
+    "notMatch": ["close its connection", "closed the connection", "stay closed", "its closing"],
     "sense": "Closing a window, dialog, tab, or file."
   },
   "cloud-ai": {
@@ -2067,7 +2067,7 @@
     "distinct": ["feedback"],
     "en": "note",
     "match": ["note", "notes"],
-    "notMatch": ["note that", "read the note", "notes.txt", "update notes"],
+    "notMatch": ["note that", "read the note", "notes.txt", "update notes", "=note"],
     "sense": "Free text the user writes (a note on an error report, the feedback message), or Ask Cmdr's saved notes."
   },
   "notification": {
@@ -3131,6 +3131,8 @@
     "distinct": ["onboarding"],
     "en": "step",
     "match": ["step", "steps"],
+    "note": "A bare Step label is the Multi-Rename counter's increment, not a stage.",
+    "notMatch": ["=step"],
     "sense": "One numbered stage of the onboarding wizard, a setup guide, or an install (Step 2 of 4)."
   },
   "stop": {
@@ -3630,5 +3632,23 @@
     "match": ["incoming"],
     "notMatch": ["incoming connections", "incoming connection"],
     "sense": "The item being copied or moved in, in the conflict comparison beside the existing one (Incoming file: vs Existing file:). Never the create commands."
+  },
+  "name-mask": {
+    "en": "name mask",
+    "sense": "The Multi-Rename Tool's template for a new name: plain text plus bracket placeholders such as [N] and [C].",
+    "match": ["name mask", "rename mask"],
+    "distinct": ["placeholder", "batch-rename"]
+  },
+  "rename-counter": {
+    "en": "counter",
+    "sense": "The Multi-Rename Tool's running number ([C]) with its start, step and digit count.",
+    "match": ["counter"],
+    "distinct": ["step"]
+  },
+  "diacritics": {
+    "distinct": ["accent"],
+    "en": "diacritics",
+    "sense": "Accents and other marks on letters (á, ž, ß) that the Multi-Rename Tool can strip to plain letters.",
+    "match": ["diacritics", "diacritic"]
   }
 }

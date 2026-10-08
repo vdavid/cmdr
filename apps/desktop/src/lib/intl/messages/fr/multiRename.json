@@ -1,0 +1,211 @@
+{
+  "multiRename.title": "Renommer par lot",
+  "@multiRename.title": {
+    "sourceHash": "5ceb1a2"
+  },
+  "multiRename.nameMask": "Masque de nom",
+  "@multiRename.nameMask": {
+    "sourceHash": "3dcc6e4"
+  },
+  "multiRename.extensionMask": "Extension",
+  "@multiRename.extensionMask": {
+    "sourceHash": "395aeb9",
+    "sameAsSourceJustification": "French uses the same word, extension, for the part of a filename after the dot (macOS Finder « Masquer l’extension », TC « Extension », DC « Extension »; terms.json extension)."
+  },
+  "multiRename.insertPlaceholder": "Insérer un marqueur",
+  "@multiRename.insertPlaceholder": {
+    "sourceHash": "f467cda"
+  },
+  "multiRename.search": "Rechercher",
+  "@multiRename.search": {
+    "sourceHash": "6ea8f74"
+  },
+  "multiRename.replace": "Remplacer par",
+  "@multiRename.replace": {
+    "sourceHash": "8382d31"
+  },
+  "multiRename.caseSensitive": "Respecter la casse",
+  "@multiRename.caseSensitive": {
+    "sourceHash": "6198801"
+  },
+  "multiRename.firstOnly": "Première correspondance uniquement",
+  "@multiRename.firstOnly": {
+    "sourceHash": "1ddb563"
+  },
+  "multiRename.includeExtension": "Inclure l’extension",
+  "@multiRename.includeExtension": {
+    "sourceHash": "10c3dc5"
+  },
+  "multiRename.regex": "Expression régulière",
+  "@multiRename.regex": {
+    "sourceHash": "9f896c3"
+  },
+  "multiRename.substitute": "Remplacer tout le nom",
+  "@multiRename.substitute": {
+    "sourceHash": "1cee1b2"
+  },
+  "multiRename.case": "Casse",
+  "@multiRename.case": {
+    "sourceHash": "9785096"
+  },
+  "multiRename.case.unchanged": "Sans changement",
+  "@multiRename.case.unchanged": {
+    "sourceHash": "88b6f74"
+  },
+  "multiRename.case.lower": "minuscules",
+  "@multiRename.case.lower": {
+    "sourceHash": "46ede93"
+  },
+  "multiRename.case.upper": "MAJUSCULES",
+  "@multiRename.case.upper": {
+    "sourceHash": "9755f22"
+  },
+  "multiRename.case.firstUpper": "Première lettre en majuscule",
+  "@multiRename.case.firstUpper": {
+    "sourceHash": "4da45d5"
+  },
+  "multiRename.case.words": "Initiale De Chaque Mot En Majuscule",
+  "@multiRename.case.words": {
+    "sourceHash": "fdeb85e"
+  },
+  "multiRename.removeDiacritics": "Retirer les accents",
+  "@multiRename.removeDiacritics": {
+    "sourceHash": "4103ca1"
+  },
+  "multiRename.counterStart": "Début du compteur",
+  "@multiRename.counterStart": {
+    "sourceHash": "562151d"
+  },
+  "multiRename.counterStep": "Pas",
+  "@multiRename.counterStep": {
+    "sourceHash": "8e6a6cc"
+  },
+  "multiRename.counterDigits": "Chiffres",
+  "@multiRename.counterDigits": {
+    "sourceHash": "9cd500d"
+  },
+  "multiRename.presets": "Présélection",
+  "@multiRename.presets": {
+    "sourceHash": "7252e7c"
+  },
+  "multiRename.presetPlaceholder": "Charger une présélection",
+  "@multiRename.presetPlaceholder": {
+    "sourceHash": "e07d83e"
+  },
+  "multiRename.preset.default": "Aucun changement",
+  "@multiRename.preset.default": {
+    "sourceHash": "41f9d57"
+  },
+  "multiRename.preset.removeDiacritics": "Retirer les accents",
+  "@multiRename.preset.removeDiacritics": {
+    "sourceHash": "4103ca1"
+  },
+  "multiRename.presetName": "Nom de la présélection",
+  "@multiRename.presetName": {
+    "sourceHash": "e534a66"
+  },
+  "multiRename.savePreset": "Enregistrer la présélection",
+  "@multiRename.savePreset": {
+    "sourceHash": "362a137"
+  },
+  "multiRename.deletePreset": "Supprimer la présélection",
+  "@multiRename.deletePreset": {
+    "sourceHash": "f307af8"
+  },
+  "multiRename.preview": "Aperçu",
+  "@multiRename.preview": {
+    "sourceHash": "324b134"
+  },
+  "multiRename.oldName": "Ancien nom",
+  "@multiRename.oldName": {
+    "sourceHash": "f192b20"
+  },
+  "multiRename.newName": "Nouveau nom",
+  "@multiRename.newName": {
+    "sourceHash": "04eea2a"
+  },
+  "multiRename.statusColumn": "État",
+  "@multiRename.statusColumn": {
+    "sourceHash": "920e413"
+  },
+  "multiRename.status.unchanged": "Aucun changement",
+  "@multiRename.status.unchanged": {
+    "sourceHash": "41f9d57"
+  },
+  "multiRename.status.duplicate": "Même nom qu’un autre fichier",
+  "@multiRename.status.duplicate": {
+    "sourceHash": "ff0347b"
+  },
+  "multiRename.status.targetExists": "Ce nom est déjà pris",
+  "@multiRename.status.targetExists": {
+    "sourceHash": "629f53b"
+  },
+  "multiRename.status.invalidName": "Nom non valide",
+  "@multiRename.status.invalidName": {
+    "sourceHash": "f1e6391"
+  },
+  "multiRename.status.disallowedCharacter": "Ne peut pas contenir le caractère {character}",
+  "@multiRename.status.disallowedCharacter": {
+    "sourceHash": "2f21c26"
+  },
+  "multiRename.error.unclosed": "Il manque le « ] » fermant d’un marqueur",
+  "@multiRename.error.unclosed": {
+    "sourceHash": "aa4efba"
+  },
+  "multiRename.error.unknown": "Cmdr ne connaît pas le marqueur [{placeholder}]",
+  "@multiRename.error.unknown": {
+    "sourceHash": "7845fb5"
+  },
+  "multiRename.error.badRegex": "L’expression régulière n’est pas valide",
+  "@multiRename.error.badRegex": {
+    "sourceHash": "176cb2f"
+  },
+  "multiRename.error.gone": "Ce dossier n’est plus ouvert. Fermez « Renommer par lot », puis rouvrez-le.",
+  "@multiRename.error.gone": {
+    "sourceHash": "8420f29"
+  },
+  "multiRename.error.nothingToRename": "Rien à renommer : chaque nouveau nom est identique à l’ancien ou pose un problème",
+  "@multiRename.error.nothingToRename": {
+    "sourceHash": "cf68ee2"
+  },
+  "multiRename.error.notConnected": "Cet emplacement n’est pas connecté pour le moment",
+  "@multiRename.error.notConnected": {
+    "sourceHash": "21b3bd0"
+  },
+  "multiRename.error.couldntStart": "Lancement du renommage impossible. Réessayez dans un instant.",
+  "@multiRename.error.couldntStart": {
+    "sourceHash": "4b123be"
+  },
+  "multiRename.moreRows": "{count, plural, one {# autre fichier n’est pas affiché, mais sera renommé} many {# autres fichiers ne sont pas affichés, mais seront renommés} other {# autres fichiers ne sont pas affichés, mais seront renommés}}",
+  "@multiRename.moreRows": {
+    "sourceHash": "8c036bb"
+  },
+  "multiRename.counts": "{ready, plural, one {# à renommer} many {# à renommer} other {# à renommer}} · {unchanged, plural, one {# sans changement} many {# sans changement} other {# sans changement}} · {problems, plural, one {# problème} many {# problèmes} other {# problèmes}}",
+  "@multiRename.counts": {
+    "sourceHash": "7464938"
+  },
+  "multiRename.cancel": "Annuler",
+  "@multiRename.cancel": {
+    "sourceHash": "19766ed"
+  },
+  "multiRename.rename": "{count, plural, =0 {Renommer} one {Renommer # fichier} many {Renommer # fichiers} other {Renommer # fichiers}}",
+  "@multiRename.rename": {
+    "sourceHash": "9789ca5"
+  },
+  "multiRename.started": "{count, plural, one {Renommage de # fichier} many {Renommage de # fichiers} other {Renommage de # fichiers}}. Vous pouvez revenir en arrière depuis l’historique des opérations.",
+  "@multiRename.started": {
+    "sourceHash": "55b4878"
+  },
+  "multiRename.error.previewOutOfDate": "Le dossier a changé depuis l’aperçu. Vérifiez le nouvel aperçu, puis renommez à nouveau.",
+  "@multiRename.error.previewOutOfDate": {
+    "sourceHash": "46432fe"
+  },
+  "multiRename.error.readOnly": "Renommage impossible dans ce dossier : il se trouve dans une archive ou dans un autre emplacement en lecture seule",
+  "@multiRename.error.readOnly": {
+    "sourceHash": "f576c74"
+  },
+  "multiRename.hiddenProblems": "{count, plural, one {# fichier au-delà des lignes affichées pose un problème et ne sera pas renommé} many {# fichiers au-delà des lignes affichées posent un problème et ne seront pas renommés} other {# fichiers au-delà des lignes affichées posent un problème et ne seront pas renommés}}",
+  "@multiRename.hiddenProblems": {
+    "sourceHash": "aea1ba2"
+  }
+}

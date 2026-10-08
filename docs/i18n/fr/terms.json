@@ -292,11 +292,11 @@
     "sources": "descriptive FR (no pile hit)"
   },
   "batch-rename": {
-    "accept": ["renommage en masse"],
     "chosen": "renommage par lot",
-    "confidence": "tentative",
-    "forms": "batch rename → renommage par lot; mass-rename → renommage en masse",
-    "sources": "descriptive FR"
+    "accept": ["renommage en masse", "Renommer par lot"],
+    "confidence": "high",
+    "forms": "batch rename (noun) → renommage par lot; the Multi-Rename Tool's command, menu item and sheet title (infinitive label) → Renommer par lot (Renommer par lot… in the File menu); mass-rename → renommage en masse",
+    "sources": "Double Commander (tfrmmultirename.caption \"Multi-Rename Tool\" → \"Renommer par lot\"); Total Commander (WCMD.INC 2400 \"Renommer par lots\", WCMD.LNG 6601 \"Outil *Renommer par lots*\", WCMD.MNU \"Outil Renommer (par lots)\"); catalog (interface de renommage par lot)"
   },
   "binary-view": {
     "chosen": "Binaire",
@@ -431,11 +431,11 @@
     "sources": "macOS AppKit/Finder, pervasive"
   },
   "case-sensitive": {
-    "accept": ["majuscules", "minuscules"],
     "chosen": "casse",
+    "accept": ["majuscules", "minuscules", "majuscule", "minuscule"],
     "confidence": "high",
-    "forms": "setting labels follow macOS (Sensible à la casse, Respecter la casse); an explanatory sentence says majuscules et minuscules, since casse is typographic jargon",
-    "sources": "macOS (\"Sensible à la casse\")"
+    "forms": "setting labels follow macOS (Sensible à la casse, Respecter la casse); an explanatory sentence says majuscules et minuscules, since casse is typographic jargon; letter-case menu options → Première lettre en majuscule, minuscules, MAJUSCULES (TC 6611)",
+    "sources": "macOS (\"Sensible à la casse\"); Total Commander WCMD.LNG 6611 (\"1° lettre en majuscule\", \"Tout en MAJUSCULES\")"
   },
   "certificate": {
     "chosen": "certificat",
@@ -3435,5 +3435,43 @@
     "chosen": "Spaces",
     "confidence": "high",
     "sources": "macOS app names"
+  },
+  "load": {
+    "chosen": "charger",
+    "accept": ["Charger", "chargement", "chargé", "charge"],
+    "confidence": "high",
+    "forms": "Load more → Charger plus; Load a preset → Charger une présélection; the loading state → Chargement…",
+    "sources": "catalog (askCmdr.sessions.loadMore « Charger plus », operationLog.dialog.loadMore); Total Commander WCMD.LNG 5641 « &Charger »; Double Commander (« Charger la configuration 1 »)"
+  },
+  "problem": {
+    "chosen": "problème",
+    "accept": ["problèmes", "souci"],
+    "confidence": "high",
+    "forms": "has a problem → pose un problème; a count → # problème / # problèmes; the generic error status → Problème (style.md)",
+    "sources": "style.md (settled fallback « Problème »); catalog (41 uses)",
+    "exceptions": {
+      "crashReporter.dialog.privacyNote": "Paraphrase: « which part of the code ran into the problem » → « la partie du code concernée »; repeating « problème » in a crash-report privacy note reads heavier and adds nothing.",
+      "errors.listing.unexpectedSystemResponse.suggestion": "Paraphrase: « to check for file system problems » is folded into « pour vérifier le système de fichiers » (S.O.S checks the file system); « Si cela continue » renders « If this keeps happening », not the problem noun."
+    }
+  },
+  "valid": {
+    "chosen": "valide",
+    "accept": ["non valide", "invalide", "validité", "valable"],
+    "confidence": "high",
+    "forms": "a status label → Nom non valide; a sentence → … n’est pas valide; invalide is accepted in shipped titles (errors.write.invalidName.title) but non valide is the default; validity of a key or licence and « valid until » → valable (Valable jusqu’au, clé valable, n’est pas valable), the established French register for something valid for a period or purpose",
+    "sources": "macOS Finder (IN_S13 « Le nom saisi n’est pas valide »); catalog (Format non valide, combinaison non valide)"
+  },
+  "name-mask": {
+    "chosen": "masque de nom",
+    "accept": ["masque"],
+    "confidence": "high",
+    "forms": "Name mask → Masque de nom; the extension field stays Extension",
+    "sources": "Total Commander WCMD.LNG 6602 « Masque p.renom. : nom fichier »; Double Commander (« Masque »)"
+  },
+  "rename-counter": {
+    "chosen": "compteur",
+    "confidence": "high",
+    "forms": "Counter from → Début du compteur; Step → Pas; Digits → Chiffres",
+    "sources": "Total Commander WCMD.LNG 6605 « [C] Compteur », 6617-6619 (« Partir de : », « Par pas de : », « Chiffres : »); Double Commander (« Compteur »); macOS Finder BulkRenameWindow (« Nom et compteur »)"
   }
 }

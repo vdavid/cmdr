@@ -698,5 +698,9 @@
   "menu.help.viewDebugLog": "Visa felsökningslogg",
   "@menu.help.viewDebugLog": {
     "sourceHash": "007c98d"
+  },
+  "menu.file.multiRename": "Massbyt namn…",
+  "@menu.file.multiRename": {
+    "sourceHash": "36b1dc2"
   }
 }

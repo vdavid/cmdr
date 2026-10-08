@@ -396,6 +396,14 @@
   "@commands.fileRename.label": {
     "sourceHash": "3064d79"
   },
+  "commands.fileMultiRename.label": "Renomear em lote",
+  "@commands.fileMultiRename.label": {
+    "sourceHash": "5ceb1a2"
+  },
+  "commands.fileMultiRename.description": "Renomeia os arquivos selecionados (ou a pasta inteira) com máscara de nome, contador e busca e substituição",
+  "@commands.fileMultiRename.description": {
+    "sourceHash": "d294fb1"
+  },
   "commands.fileView.label": "Visualizar",
   "@commands.fileView.label": {
     "sourceHash": "dcc839a"

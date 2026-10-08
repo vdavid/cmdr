@@ -64,9 +64,15 @@ wording into `terms.json` (and `decisions.md` when the reason is worth keeping).
   (`settings.behavior.textEditorApp.label`), **`Vous ne verrez ce message qu’une seule fois.`**
   (`main.escapeFullScreenHint.*`), **`Le transfert n’avance plus.`** (the sentence shape).
 - **The online-only delete warnings** (`fileOperations.delete.cloudOnline*`): shipped as a draft, never read by a human.
+- **The Multi-Rename Tool** (`multiRename.*`): `Initiale De Chaque Mot En Majuscule` (`case.words`, the capitals show
+  the result, as in English; French has no title case, so a native should confirm it reads as a demo, not a typo);
+  `Retirer les accents` for « Remove diacritics » (covers ç, ü, ß→ss in practice, though only some of those are «
+  accents »); `Première correspondance uniquement`; `Début du compteur`; `une recherche avec remplacement`
+  (`commands.fileMultiRename.description`).
 
 ## Overflow (check against the `en-XA` pseudolocale)
 
+- `Initiale De Chaque Mot En Majuscule` in the letter-case menu (35 characters against 22).
 - `Visualiser` on the function key bar (10 characters).
 - `Rechercher à nouveau` (the adb Re-check button, three words in a narrow button).
 - `Comment faire` at the end of an already long adb hint line.

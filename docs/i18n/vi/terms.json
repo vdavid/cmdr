@@ -2226,9 +2226,11 @@
       "commands.handler.cloudRemoveDownloadFailed": "Same deletion as `commands.cloudRemoveDownload.label`, so `xóa`.",
       "fileExplorer.network.share.forgetPasswordTooltip": "The saved password is deleted from the keychain, so `xóa` (like `fileExplorer.network.deletePasswordFailed`).",
       "menu.context.removeDownload": "Finder's own item: Remove Download → `Xóa bản tải về`; identical to `commands.cloudRemoveDownload.label`.",
-      "onboarding.cloudSetup.removeKey": "Same deletion as `ai.secretError.removeTitle`, so `xóa`."
+      "onboarding.cloudSetup.removeKey": "Same deletion as `ai.secretError.removeTitle`, so `xóa`.",
+      "multiRename.removeDiacritics": "Remove diacritics is a letter transform, not taking an item off a list: Vietnamese says `bỏ dấu` for stripping accents (tiếng Việt không dấu); `gỡ bỏ dấu` is not idiomatic. MS terminology: diacritic → dấu phụ.",
+      "multiRename.preset.removeDiacritics": "Same letter transform as `multiRename.removeDiacritics`, so the identical `Bỏ dấu`."
     },
-    "forms": "taking an item off a list while it lives on → gỡ bỏ (one form, even with an object); the tag row → Gỡ bỏ “{color}”; forget a saved item → Quên",
+    "forms": "taking an item off a list while it lives on → gỡ bỏ (one form, even with an object); the tag row → Gỡ bỏ “{color}”; forget a saved item → Quên; strip diacritics → bỏ dấu",
     "sources": "Xfce Thunar (_Remove → Gỡ bỏ), GNOME Nautilus (Gỡ bỏ ổ đĩa một cách an toàn)"
   },
   "rename": {
@@ -3092,5 +3094,54 @@
     ],
     "confidence": "tentative",
     "sources": "Cmdr's license is the BSL (docs/business/README.md); catalog (onboarding.stepFda.con.body)"
+  },
+  "batch-rename": {
+    "chosen": "đổi tên hàng loạt",
+    "confidence": "high",
+    "forms": "command, menu item, and sheet title → Đổi tên hàng loạt (menu with a trailing …); TC's tool name → Công cụ đổi tên hàng loạt",
+    "sources": "Total Commander vi (6601 Công cụ đổi tên hàng loạt; INC -9 Mở thao tác đổi tên hàng loạt đã lưu); KDE Dolphin vi (Open the bulk rename dialog → Mở hộp thoại đổi tên hàng loạt); catalog (onboarding.stepAi.table.rowRename Đổi tên hàng loạt, .renameWithout giao diện đổi tên hàng loạt)"
+  },
+  "load": {
+    "chosen": "tải",
+    "accept": ["nạp"],
+    "confidence": "high",
+    "forms": "Load a preset → Tải tùy chọn đặt trước; Load more → Tải thêm; Loading… → Đang tải…; too big to load from history → nạp (errors.git.blobTooLarge.title)",
+    "sources": "macOS AppKit Revisions (Load version → Tải phiên bản); MS terminology (load → tải); catalog (operationLog.dialog.loadMore, askCmdr.sessions.loadMore, viewer.loading)"
+  },
+  "placeholder": {
+    "chosen": "ký hiệu",
+    "accept": ["phần giữ chỗ"],
+    "confidence": "high",
+    "forms": "a token in a format string or a rename mask ([N], [C], YYYY) → ký hiệu (Chèn ký hiệu, Cmdr không biết ký hiệu [{placeholder}], Ký hiệu định dạng); a stand-in inside a URL the user must swap out → phần giữ chỗ (onboarding.cloudSetup.hint.azureEndpoint)",
+    "avoid": [
+      {
+        "form": "chỗ dành sẵn",
+        "why": "MS's form for the example text in an empty input field; reads as a reserved slot, not a token the user types"
+      }
+    ],
+    "sources": "catalog (settings.appearance.formatPlaceholdersTitle Ký hiệu định dạng, settings.appearance.customDateTimeFormat.description các ký hiệu như YYYY); MS terminology (placeholder → chỗ dành sẵn, the input-field sense); Total Commander vi names no placeholder noun (6603 [N] Tên, 6605 [C] Bộ đếm)"
+  },
+  "problem": {
+    "chosen": "vấn đề",
+    "accept": ["sự cố", "trục trặc"],
+    "confidence": "high",
+    "forms": "has a problem → có vấn đề; count → # có vấn đề; a hardware or read problem → trục trặc (errors.listing.diskReadProblem.*); runs into a problem in the background → gặp sự cố (never claims Cmdr quit)",
+    "avoid": [
+      {
+        "form": "lỗi",
+        "why": "the style guide bans lỗi as a bare label; vấn đề is the calm noun"
+      }
+    ],
+    "sources": "GNOME Nautilus vi (There was a problem running this software → Gặp vấn đề chạy phần mềm này); catalog (errors.write.readError.suggestion Nếu vấn đề vẫn còn, settings.advanced.warningBanner gây vấn đề hiệu năng)",
+    "exceptions": {
+      "errors.listing.unexpectedSystemResponse.suggestion": "pre-existing: \"check for file system problems\" is rendered as kiểm tra hệ thống tệp (check the file system), which drops the noun without losing meaning"
+    }
+  },
+  "valid": {
+    "chosen": "hợp lệ",
+    "accept": ["hiệu lực"],
+    "confidence": "high",
+    "forms": "Not a valid name → Tên không hợp lệ; isn't valid → không hợp lệ; a license valid until a date → có hiệu lực đến {date}; Validity → Hiệu lực",
+    "sources": "Total Commander vi (1908 Tên không hợp lệ; 608 Tên tệp không hợp lệ!); GNOME Nautilus vi (The name “%s” is not valid → Tên “%s” không hợp lệ); MS terminology (invalid → không hợp lệ); catalog (errors.write.invalidName.title, ai.cloud.authError, licensing.dialog.validityValidUntil Có hiệu lực đến)"
   }
 }
