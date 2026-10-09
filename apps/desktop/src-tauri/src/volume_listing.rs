@@ -94,7 +94,9 @@ pub(crate) async fn discover_local(timeout: Duration) -> ListingOutcome {
 
 /// Completes a local listing into the list every consumer publishes: appends
 /// every device provider's storages (`device_volumes`) and every server place
-/// (`server_volumes`), then enriches every entry from the volume registry.
+/// (`server_volumes`), enriches every entry from the volume registry, then lets
+/// the favorites reach pass (`favorites/reach.rs`) decide every favorite row's
+/// target from the finished rows.
 ///
 /// **The order is the reason this function exists.** Enrichment copies across
 /// what only the registered `Volume` knows (its capability surface and its
@@ -119,6 +121,17 @@ pub(crate) async fn complete(local: Vec<LocationInfo>) -> Vec<LocationInfo> {
     crate::volumes::enrich_from_volume_registry(&mut volumes);
     #[cfg(target_os = "linux")]
     crate::volumes_linux::enrich_from_volume_registry(&mut volumes);
+
+    // Favorites last: the reach pass reads every row's FINAL connection state and capabilities,
+    // and rows only (`favorites/reach.rs`). The claims it makes for legacy entries are a file
+    // write, so they persist off this path.
+    let claims = crate::favorites::reach::annotate(&mut volumes, &crate::favorites::reach::ReachFacts::now());
+    if !claims.is_empty() {
+        // A claim that doesn't land is re-made by the next listing.
+        tauri::async_runtime::spawn_blocking(move || {
+            crate::favorites::store::claim_volumes(&claims);
+        });
+    }
 
     volumes
 }

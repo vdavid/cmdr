@@ -508,6 +508,7 @@ pub fn run() {
             #[cfg(any(target_os = "macos", target_os = "linux"))]
             {
                 adb::set_adb_binary_path(saved_settings.adb_binary_path.clone());
+                adb::set_adb_enabled_flag(saved_settings.adb_enabled.unwrap_or(true));
                 if saved_settings.adb_enabled.unwrap_or(true) {
                     adb::start_adb_tracker();
                 }

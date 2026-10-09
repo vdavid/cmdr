@@ -7,7 +7,7 @@
 
 use std::collections::BTreeMap;
 use std::path::PathBuf;
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 
 use cmdr_adb::{AdbConnectError, AdbConnectionParams, AdbEndpoint, AdbVolume, DeviceTracker};
@@ -23,6 +23,21 @@ use crate::network::connect_wiring::AttemptTable;
 /// tracker gives up when no `adb` binary exists, and a re-check has to be able
 /// to put a fresh one in its place.
 static TRACKER: Mutex<Option<DeviceTracker>> = Mutex::new(None);
+
+/// Whether ADB support is switched on in Settings. Seeded at startup, moved by
+/// [`set_adb_settings`]. Read by the favorites reach pass, which words a favorite on an absent
+/// phone as "switched off" rather than "unplugged" when this is false.
+static ADB_ENABLED: AtomicBool = AtomicBool::new(true);
+
+/// Records the ADB setting without side effects. Startup calls it before the tracker starts.
+pub fn set_adb_enabled_flag(enabled: bool) {
+    ADB_ENABLED.store(enabled, Ordering::Relaxed);
+}
+
+/// Whether ADB support is switched on in Settings.
+pub(crate) fn is_adb_enabled() -> bool {
+    ADB_ENABLED.load(Ordering::Relaxed)
+}
 
 /// Files ADB as a device provider. Call once at startup.
 pub(crate) fn install_device_provider() {
@@ -55,6 +70,7 @@ pub fn set_adb_binary_path(configured: Option<String>) {
 /// An automated run only records the path: it never follows the real server
 /// (see [`start_adb_tracker`]), so there's no tracker to stop and no list to empty.
 pub async fn set_adb_settings(enabled: bool, binary_path: Option<String>) {
+    set_adb_enabled_flag(enabled);
     if !crate::test_mode::may_discover_real_devices() {
         set_adb_binary_path(binary_path);
         return;

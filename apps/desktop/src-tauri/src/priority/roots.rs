@@ -122,12 +122,23 @@ fn collect_inputs() -> Option<RootInputs> {
         tabs: last_session_tab_paths(&home),
         favorites: crate::favorites::store::list()
             .into_iter()
-            .map(|favorite| PathBuf::from(favorite.path))
+            .filter_map(local_favorite_path)
             .collect(),
         recent: recency::folders(&home, fda_pending),
         fda_pending,
         home,
     })
+}
+
+/// A favorite's folder as a path the local walker can take, or `None` for one on a server or a
+/// phone: those spell their tree in the server's or phone's own namespace (`sftp://…`), which the
+/// walker would read as a relative path. An unclaimed legacy entry counts when its path is absolute.
+fn local_favorite_path(favorite: crate::favorites::store::Favorite) -> Option<PathBuf> {
+    let on_an_os_path = match &favorite.volume {
+        Some(volume) => cmdr_fs::volume::VolumeScheme::of(&volume.id).is_mount_rooted(),
+        None => Path::new(&favorite.path).is_absolute(),
+    };
+    on_an_os_path.then(|| PathBuf::from(favorite.path))
 }
 
 /// Whether some mount other than the boot volume covers `path`. An in-memory registry

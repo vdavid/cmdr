@@ -174,6 +174,53 @@ onboarding-flood the FDA modal exists to prevent. So while the gate is pending, 
 (`Unchecked`, reach `Ready`). Non-protected paths are still checked (for example `/Applications`
 can be absent on slim systems). Linux has no TCC, so its twin has no gate.
 
+**Stage 2, the reach pass** (`reach.rs::annotate`). Runs inside `volume_listing::complete` AFTER
+registry enrichment, so every row's `connection_state` and `capabilities` are final, and reads rows
+plus two in-memory settings (`ReachFacts`: MTP's manager bit, `adb::volume_wiring::is_adb_enabled`),
+❌ never a disk. Per favorite: the target is the stored volume id, or a claim (§ Claiming legacy
+entries). With a row for that id, `volume_root` is the row's path, a mount-rooted volume
+(`VolumeScheme::is_mount_rooted`: root, local, path, SMB, cloud) has the favorite's `path` REBASED
+from the stored root onto the row's (a share back at `/Volumes/naspi-1`, a renamed drive), and a
+server or phone path stays verbatim (it's in that namespace; an edited remote root doesn't move it).
+Discovery's `OnDisk::No` counts only when no rebase happened, since it probed the stored path.
+
+The reach table, one decision site:
+
+- Row live (`connection_state` `None`, `Direct`, or `OsMount`), or a device row that's registered and
+  ready → `Ready`, unless discovery saw the folder gone → `NotFound`. A path no longer under the
+  row's root → `NotFound`.
+- Row `Saved`, `Disconnected`, `NeedsSignIn`, `NeedsHostKeyApproval` → `Connects`: the pane's own
+  views (place-connect, the reconnect banner, the sign-in and host-key sheets) take it from there.
+- Device row listed but unregistered (an ADB phone not dialed yet), or `WaitingForAuthorization` →
+  `Connects` (the pane's device view dials or waits for the tap).
+- Device row `Unavailable { reason }` → `Unplugged { device: phone, reason }`.
+- No row, MTP or ADB with its setting off → `AccessOff { backend }`; on → `Unplugged { phone }`, or
+  `Unplugged { storage }` when the same MTP device is listed under another storage id (a swapped
+  card, `mtp_ids::device_id_of_volume`).
+- No row, root / local / path / cloud → `Unplugged { drive }` (also an NFS or AFP mount that's gone).
+- No row, SMB / SFTP / WebDAV / S3 → `Forgotten`: nothing saved knows the id. Forget keeps the
+  favorite, and the same place coming back mints the same id and revives it.
+- No target at all (an unclaimable legacy entry) → `NotFound`.
+
+## Claiming legacy entries
+
+An entry written before `volume` existed (`volume: None`) is claimed lazily by the reach pass, ❌
+never at load: load stays syscall-free and `AppHandle`-free.
+
+- The claim is the NON-favorite row whose path is the deepest whole-segment prefix of the
+  favorite's path (mount rows, the boot volume, cloud folders, saved SMB rows at their last mount
+  path, server places, device storages).
+- ❗ **Claim only from evidence.** The boot volume claims a folder only when discovery SAW it
+  (`OnDisk::Yes`). Otherwise `/Volumes/naspi/docs` on an unmounted share nobody saved would be
+  claimed by `/`, written down, and read "not found" forever after the share comes back. Any other
+  row names the volume by being there.
+- Claims persist through `store::claim_volumes`, which fills `None` only, reports nothing to
+  analytics, and emits no `volumes-changed` (the published row already shows the claimed facts). It
+  writes a file, so `complete` runs it on the blocking pool, off the listing path; one that doesn't
+  land is re-made by the next listing.
+- A legacy favorite nothing can claim stays `volume: None` and reads `NotFound`, visible and greyed,
+  and claims itself the first time its share is mounted.
+
 ## The add gate
 
 A favorite points at a folder on a VOLUME the app can name: a local drive, an SMB share, an SFTP /

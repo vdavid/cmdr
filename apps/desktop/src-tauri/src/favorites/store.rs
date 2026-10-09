@@ -616,7 +616,6 @@ pub fn reorder(ordered_ids: &[String]) {
 /// facts.
 ///
 /// ❗ Writes a file, so the listing calls it off its own path (`spawn_blocking`).
-#[expect(dead_code, reason = "its caller, the listing's reach pass, lands next")]
 pub fn claim_volumes(claims: &[(String, FavoriteVolume)]) {
     mutate_and_persist(StoreChange::Claimed, |store| claim_in_store(store, claims));
 }

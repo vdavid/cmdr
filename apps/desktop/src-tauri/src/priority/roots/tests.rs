@@ -502,3 +502,39 @@ fn an_unreadable_store_yields_no_tabs_rather_than_an_opinion() {
     assert!(parse_tab_paths("{not json", &home).is_empty());
     assert!(parse_tab_paths("{}", &home).is_empty());
 }
+
+/// ❗ Favorites now live on servers and phones too. Those paths are in the server's or phone's own
+/// namespace, and the local walker handed `sftp://…` would read it as a relative path.
+#[test]
+fn only_favorites_on_an_os_path_become_priority_roots() {
+    use crate::favorites::store::{Favorite, FavoriteVolume};
+    let favorite = |path: &str, volume_id: Option<&str>| Favorite {
+        id: "f".to_string(),
+        path: path.to_string(),
+        name: "f".to_string(),
+        shortcut: None,
+        volume: volume_id.map(|id| FavoriteVolume {
+            id: id.to_string(),
+            root: "/".to_string(),
+            name: "v".to_string(),
+        }),
+    };
+    assert_eq!(
+        local_favorite_path(favorite("/Users/me/Docs", Some("root"))),
+        Some(PathBuf::from("/Users/me/Docs"))
+    );
+    assert_eq!(
+        local_favorite_path(favorite("/Users/me/Legacy", None)),
+        Some(PathBuf::from("/Users/me/Legacy")),
+        "an unclaimed legacy entry with an absolute path is still a local folder"
+    );
+    assert_eq!(
+        local_favorite_path(favorite("sftp://ada@nas:22/srv", Some("sftp-nas-1"))),
+        None
+    );
+    assert_eq!(
+        local_favorite_path(favorite("mtp://p1/65537/DCIM", Some("mtp-p1:65537"))),
+        None
+    );
+    assert_eq!(local_favorite_path(favorite("adb://s1/sdcard", None)), None);
+}

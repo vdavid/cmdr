@@ -83,6 +83,34 @@ fn only_the_ids_minted_for_a_mount_are_mount_backed() {
     assert!(!mount_backed(&adb_volume_id("R58M12345")));
 }
 
+#[test]
+fn os_path_schemes_are_mount_rooted_and_namespaces_are_not() {
+    // A stored favorite path rebases onto these volumes' CURRENT root when it moves; a server or a
+    // phone spells its tree in its own namespace, which doesn't move with anything.
+    let mount_rooted = |id: &str| VolumeScheme::of(id).is_mount_rooted();
+    assert!(mount_rooted(DEFAULT_VOLUME_ID));
+    assert!(mount_rooted(&local_volume_id(
+        Some("5C1A2D4E-0000-4000-8000-00000000BEEF"),
+        "/Volumes/Backup"
+    )));
+    assert!(mount_rooted(&path_volume_id("/Volumes/NO NAME")));
+    assert!(mount_rooted(&smb_volume_id("naspolya", 445, "public")));
+    assert!(mount_rooted("cloud-dropbox"));
+
+    assert!(!mount_rooted(&sftp_volume_id("naspolya", 22, "ada")));
+    assert!(!mount_rooted(&webdav_volume_id("naspolya", 443, "ada")));
+    assert!(!mount_rooted(&s3_volume_id(
+        "s3.example.com",
+        443,
+        "AKIA",
+        Some("photos")
+    )));
+    assert!(!mount_rooted(&adb_volume_id("R58M12345")));
+    assert!(!mount_rooted("mtp-abc-1234:65537"));
+    assert!(!mount_rooted("fav-1"));
+    assert!(!mount_rooted("search-results"));
+}
+
 // ── The property the whole module exists for: injectivity ─────────────
 
 #[test]

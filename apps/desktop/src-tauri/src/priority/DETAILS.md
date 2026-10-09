@@ -106,7 +106,10 @@ what makes it safe to rank on signals that are cheap, incomplete, and occasional
    pre-tabs scalar `leftPath` / `rightPath` keys still answer for an install nobody has touched in a while.
 2. **Cmdr favorites** in the user's own order. The seed is platform-dependent (`/Applications` on macOS, the home folder
    on Linux), so the ranking takes whatever `favorites::store::list()` hands it; ❌ never assume the macOS four. Note
-   that reading them seeds the defaults on a first run, exactly as the volume switcher's own read does.
+   that reading them seeds the defaults on a first run, exactly as the volume switcher's own read does. ❗ Only a
+   favorite on an OS path counts (`local_favorite_path`: its volume's scheme is mount-rooted, or an unclaimed legacy
+   entry with an absolute path): a favorite on a server or phone is spelled in that namespace (`sftp://…`), which the
+   walker would read as a relative path.
 3. **Where they have been working this month**, from Spotlight: the folders holding files with a
    `kMDItemLastUsedDate` inside the window, busiest first. `roots/recency.rs` decides when to ask and what to keep;
    `apps/desktop/src-tauri/src/spotlight.rs` asks. Below the two signals the user stated OUTRIGHT and above the static list, which is the whole

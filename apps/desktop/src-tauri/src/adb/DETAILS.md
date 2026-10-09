@@ -37,7 +37,9 @@ synthetic rows instead.
 **Settings** (`fileOperations.adbEnabled`, default on; `fileOperations.adbBinaryPath`, empty for the platform
 search): both are live-applied, and they travel TOGETHER through one `set_adb_settings` command, because the tracker
 restarts under whichever binary the path names and pushing one alone would restart it under a stale one. The frontend's
-`adb-settings.ts` re-reads both and pushes; `settings-applier.ts` wires either change to it. Startup seeds the path
+`adb-settings.ts` re-reads both and pushes; `settings-applier.ts` wires either change to it. The on/off bit is also
+kept in memory (`ADB_ENABLED`, read by `is_adb_enabled`) for the favorites reach pass, which words a favorite on an
+absent phone as "switched off" when it's false; startup seeds it beside the path. Startup seeds the path
 BEFORE `start_adb_tracker`, or the first subscription runs against whatever the environment offered. ❗ Turning ADB off
 stops the subscription AND empties the cached device list (`apply_device_list(Vec::new())`), which is what retires the
 connected volumes and takes the rows off the switcher: a stopped tracker alone leaves the last list frozen on screen and

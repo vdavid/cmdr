@@ -394,6 +394,18 @@ impl VolumeScheme {
         }
     }
 
+    /// Whether a volume of this scheme addresses its files by an OS path under a root that can
+    /// MOVE: a mount point (a share remounted at `/Volumes/naspi-1`, a renamed drive) or a cloud
+    /// folder. A path stored against such a root rebases onto the volume's current one. A server or
+    /// a phone spells its tree in its own namespace (`sftp://…`, `mtp://…`), which moves with
+    /// nothing, so a stored path there stays verbatim.
+    pub fn is_mount_rooted(self) -> bool {
+        match self {
+            Self::Root | Self::Local | Self::Path | Self::Smb | Self::Cloud => true,
+            Self::Sftp | Self::Webdav | Self::S3 | Self::Mtp | Self::Adb | Self::Favorite | Self::Unknown => false,
+        }
+    }
+
     /// The tag [`derived_id`] mints under. Only the derived schemes reach it.
     fn minted_tag(self) -> &'static str {
         debug_assert!(!matches!(self, Self::Root | Self::Unknown), "{self:?} is never derived");
