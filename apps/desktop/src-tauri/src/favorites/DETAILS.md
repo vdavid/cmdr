@@ -21,21 +21,35 @@ the Linux `volumes_linux/mod.rs` twins) reads `favorites::store::list()` and map
 {
   "_schemaVersion": 1,
   "favorites": [
-    { "id": "9f1c…", "path": "/Applications", "name": "Applications", "shortcut": "A" },
-    { "id": "a83e…", "path": "/Users/me/Desktop", "name": "Desktop" }
+    { "id": "9f1c…", "path": "/Applications", "name": "Applications", "shortcut": "A",
+      "volume": { "id": "root", "root": "/", "name": "Macintosh HD" } },
+    { "id": "a83e…", "path": "/Volumes/naspi/docs", "name": "docs",
+      "volume": { "id": "smb-naspi-…", "root": "/Volumes/naspi", "name": "naspi on nas.local" } }
   ]
 }
 ```
 
 - `id`: a random UUID minted on add, never derived from `path`. The frontend exposes it as
   `LocationInfo.id = "fav-<id>"`.
-- `path`: the absolute filesystem path.
+- `path`: the folder as an app path, spelled the way it was when last seen live: an OS path for a
+  mounted volume, a `scheme://` path for a server or a phone.
 - `name`: the display label. Defaults to the path's file name on add; the user can override via
   rename.
-- `shortcut`: an optional uppercase ASCII letter. Omitted for unassigned and older entries, so
-  schema v1 remains readable without migration.
+- `shortcut`: an optional uppercase ASCII letter. Omitted for unassigned and older entries.
+- `volume`: which volume the folder lives on (`FavoriteVolume { id, root, name }`), as it was when
+  the favorite was added or last claimed. The id is the registry id, the same identity a tab's
+  `volumeId` carries, so a saved share, server, or phone names its row even while offline. `root` is
+  what `path` sits under, which is what lets the listing rebase a mount-rooted favorite onto a moved
+  mount point. `name` words a pick when the volume has no row at all. Absent on an entry written
+  before the field existed until a listing claims it (§ Claiming legacy entries).
 
 Order in the array is the display order.
+
+**No schema bump for `volume`** (stays 1): the field is additive and optional, exactly like
+`shortcut`. A bump would be actively harmful: `read_store_from_path` QUARANTINES a version mismatch,
+so a beta user who downgrades would lose their whole list. An older build ignores `volume` (serde
+ignores unknown fields; there's no `deny_unknown_fields`), drops it on its next write, and the next
+newer build re-claims it.
 
 ## Seed-once contract
 
@@ -64,11 +78,17 @@ Platform defaults (`default_favorites`, platform-native per `design-principles.m
 
 All in `store.rs`, unit-tested without disk or an `AppHandle`:
 
-- `add(path, name?)`: dedups by normalized path. A re-add moves the existing entry to the end and
-  keeps its id (applying a `name` override if given). A fresh add appends with a UUID id and a label
-  defaulting to the path's file name. Move-to-end (not move-to-top) because favorites are a curated,
-  ordered list, not a recency stack: a re-add shouldn't reshuffle the user's deliberate ordering more
-  than necessary.
+- `add(path, name?, volume)`: dedups by `(volume.id, path under volume.root)` when both sides know
+  their volume, else by normalized path, so one share mounted at `/Volumes/naspi` and later at
+  `/Volumes/naspi-1` is one favorite, and a legacy entry meets its own re-add. A re-add moves the
+  existing entry to the end, keeps its id (applying a `name` override if given), and takes the add's
+  `path` and `volume` (the root and name may have moved). A fresh add appends with a UUID id and a
+  label defaulting to the path's file name. Move-to-end (not move-to-top) because favorites are a
+  curated, ordered list, not a recency stack: a re-add shouldn't reshuffle the user's deliberate
+  ordering more than necessary.
+- `claim_volumes(claims)`: fills the `volume` of each named entry ❗ only where it's still `None`
+  (§ Claiming legacy entries). Not a user gesture: `mutate_and_persist` takes a `StoreChange`, and
+  `Claimed` reports nothing to analytics.
 - `remove(id)`: drops by id. No-op if absent.
 - `rename(id, name)`: updates the label by id. No-op if absent.
 - `reorder(ordered_ids)`: reorders to match the given id list. Unknown ids are ignored; favorites
@@ -78,7 +98,8 @@ All in `store.rs`, unit-tested without disk or an `AppHandle`:
   uppercase. Assigning one already owned by another favorite transfers it, keeping keyboard picks
   unambiguous. No-op if the id is absent.
 
-`normalize_for_dedup` strips a single trailing `/` (but keeps root `/`). Case-sensitivity is a known
+`normalize_for_dedup` strips a single trailing `/` (but keeps root `/`), so `sftp://u@h:22/` and
+`sftp://u@h:22` are one root while `…/srv/data` and `…/srv/data-1` stay two. Case-sensitivity is a known
 limitation, same as `go_to_path/history.rs`: on case-insensitive APFS `/Users/x/Foo` and
 `/Users/x/foo` compare unequal (worst case: a duplicate-looking row). We don't `canonicalize()` (it
 would resolve symlinks and require the path to exist).
@@ -201,8 +222,9 @@ The MCP `favorites` tool wraps the `commands::favorites` pass-throughs (add / re
 
 ## Analytics
 
-`mutate_and_persist` reports `favorite_changed` past its no-op guard, with a required `FavoriteAction` and the list's
-size after the change. The action is a PARAMETER rather than something inferred from the closure, so a fifth mutation
-can't be added without deciding what it reports. The other half of the story, `favorite_opened`, is the frontend's
+`mutate_and_persist` reports `favorite_changed` past its no-op guard, with the `FavoriteAction` of a
+`StoreChange::Gesture` and the list's size after the change. The change is a required PARAMETER rather than something
+inferred from the closure, so a new mutation can't be added without deciding what it reports; `StoreChange::Claimed`
+(the listing's legacy-entry claims) reports nothing, since nobody did anything. The other half of the story, `favorite_opened`, is the frontend's
 (`src/lib/file-explorer/navigation/favorites-analytics.ts`): this store can't see a navigation. Props and rationale:
 `src-tauri/src/analytics/DETAILS.md` § "Starter event set".

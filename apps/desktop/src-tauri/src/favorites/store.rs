@@ -29,6 +29,7 @@
 
 use crate::config;
 use crate::ignore_poison::IgnorePoison;
+use cmdr_fs::volume::app_paths::path_under;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -54,6 +55,28 @@ pub struct Favorite {
     /// Optional unmodified A–Z key that opens this favorite while its menu is visible.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub shortcut: Option<String>,
+    /// The volume the folder lives on. `None` only on an entry written before this field existed
+    /// that no listing has claimed yet (`claim_volumes`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub volume: Option<FavoriteVolume>,
+}
+
+/// Which volume a favorite's folder lives on, as it was when last seen live.
+///
+/// ❗ The id is the identity, exactly as a tab's `volumeId` is: a saved share or server and its
+/// live volume share it, so a favorite on an offline place still names the row that dials it.
+/// `path` is spelled relative to `root`, which is what lets the listing rebase a mount-rooted
+/// favorite when its volume comes back at another mount point.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct FavoriteVolume {
+    /// The registry id (`cmdr_fs::volume::ids`, `mtp_ids`), ❌ never derived here.
+    pub id: String,
+    /// The volume's root when the favorite was added or last claimed: what `path` is under.
+    pub root: String,
+    /// What the volume was called then, for wording a pick when the volume has no row at all
+    /// (an unplugged phone, a forgotten server).
+    pub name: String,
 }
 
 /// On-disk shape. `_schemaVersion` lets future versions detect incompatible files.
@@ -124,6 +147,8 @@ fn default_favorites() -> Vec<Favorite> {
             path: path.to_string_lossy().to_string(),
             name: name.to_string(),
             shortcut: None,
+            // The first listing claims them (boot volume), so the seed stays syscall-free.
+            volume: None,
         })
         .collect()
 }
@@ -159,19 +184,43 @@ fn normalize_for_dedup(path: &str) -> String {
 // Pure core (testable without disk or an AppHandle)
 // ---------------------------------------------------------------------------
 
-/// Adds a favorite, deduping by normalized path. If the path already exists, moves the existing entry
-/// to the end and applies an explicit `name` override when given (keeping its id). Returns the id of
+/// Whether `favorite` and an add of `path` on `volume` name the same folder.
+///
+/// By `(volume id, path under its root)` when both know their volume, so one share mounted at
+/// `/Volumes/naspi` and later at `/Volumes/naspi-1` is one favorite. Otherwise by normalized path,
+/// which is how a legacy entry (no volume yet) meets its own re-add.
+fn is_same_folder(favorite: &Favorite, path: &str, volume: Option<&FavoriteVolume>) -> bool {
+    if let (Some(known), Some(added)) = (favorite.volume.as_ref(), volume)
+        && let (Some(known_under), Some(added_under)) =
+            (path_under(&favorite.path, &known.root), path_under(path, &added.root))
+    {
+        return known.id == added.id && known_under == added_under;
+    }
+    normalize_for_dedup(&favorite.path) == normalize_for_dedup(path)
+}
+
+/// Adds a favorite, deduping by [`is_same_folder`]. A re-add moves the existing entry to the end,
+/// applies an explicit `name` override when given, keeps its id, and takes the add's `path` and
+/// `volume` when it names one (the volume's root and name may have moved since). Returns the id of
 /// the affected entry.
-fn add_to_store(store: &mut FavoritesStore, path: &str, name: Option<String>) -> String {
-    let normalized = normalize_for_dedup(path);
+fn add_to_store(
+    store: &mut FavoritesStore,
+    path: &str,
+    name: Option<String>,
+    volume: Option<FavoriteVolume>,
+) -> String {
     if let Some(pos) = store
         .favorites
         .iter()
-        .position(|f| normalize_for_dedup(&f.path) == normalized)
+        .position(|f| is_same_folder(f, path, volume.as_ref()))
     {
         let mut existing = store.favorites.remove(pos);
         if let Some(name) = name {
             existing.name = name;
+        }
+        if volume.is_some() {
+            existing.path = path.to_string();
+            existing.volume = volume;
         }
         let id = existing.id.clone();
         store.favorites.push(existing);
@@ -185,8 +234,23 @@ fn add_to_store(store: &mut FavoritesStore, path: &str, name: Option<String>) ->
         path: path.to_string(),
         name: label,
         shortcut: None,
+        volume,
     });
     id
+}
+
+/// Fills in the volume of each favorite a claim names, ❗ only where it's still `None`: a volume
+/// already there came from the user's own add or an earlier claim, and a claim is only the
+/// listing's best reading. Returns whether anything changed.
+fn claim_in_store(store: &mut FavoritesStore, claims: &[(String, FavoriteVolume)]) -> bool {
+    let mut changed = false;
+    for (id, volume) in claims {
+        if let Some(favorite) = store.favorites.iter_mut().find(|f| &f.id == id && f.volume.is_none()) {
+            favorite.volume = Some(volume.clone());
+            changed = true;
+        }
+    }
+    changed
 }
 
 /// Removes a favorite by id. Returns `true` if an entry was removed.
@@ -385,11 +449,7 @@ fn load_or_seed() -> Vec<Favorite> {
     favorites
 }
 
-/// Applies a mutation to the cached store and persists it. The `mutate` closure runs under the cache
-/// lock and returns whether the change is worth persisting (so a no-op skips the disk write).
-/// Which favorites gesture a [`mutate_and_persist`] call is, for analytics. The
-/// parameter is required rather than optional so a fifth mutation can't be added
-/// without deciding what it reports.
+/// Which favorites gesture a [`StoreChange::Gesture`] is, for analytics.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum FavoriteAction {
     Added,
@@ -411,7 +471,30 @@ impl FavoriteAction {
     }
 }
 
-fn mutate_and_persist<F>(action: FavoriteAction, mutate: F)
+/// What a [`mutate_and_persist`] call is. A required parameter, so a new mutation can't be added
+/// without deciding whether it's something the user did.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum StoreChange {
+    /// The user changed their list: reported as `favorite_changed`.
+    Gesture(FavoriteAction),
+    /// The listing filled in a legacy entry's volume (`claim_volumes`): bookkeeping, ❌ not a
+    /// gesture, so it reports nothing.
+    Claimed,
+}
+
+impl StoreChange {
+    /// The `favorite_changed` action this change reports, or `None` for one that reports nothing.
+    fn analytics_action(self) -> Option<FavoriteAction> {
+        match self {
+            Self::Gesture(action) => Some(action),
+            Self::Claimed => None,
+        }
+    }
+}
+
+/// Applies a mutation to the cached store and persists it. The `mutate` closure runs under the cache
+/// lock and returns whether the change is worth persisting (so a no-op skips the disk write).
+fn mutate_and_persist<F>(change: StoreChange, mutate: F)
 where
     F: FnOnce(&mut FavoritesStore) -> bool,
 {
@@ -434,13 +517,15 @@ where
     // The list SIZE rides along bucketed, because "do people keep favorites?" is
     // answered by how many they end up with, not by how often they touch the list.
     // Never a path or a label: both are the user's own text.
-    crate::analytics::events::capture(
-        "favorite_changed",
-        serde_json::json!({
-            "action": action.as_token(),
-            "favorites": crate::analytics::item_count_bucket(snapshot.favorites.len()),
-        }),
-    );
+    if let Some(action) = change.analytics_action() {
+        crate::analytics::events::capture(
+            "favorite_changed",
+            serde_json::json!({
+                "action": action.as_token(),
+                "favorites": crate::analytics::item_count_bucket(snapshot.favorites.len()),
+            }),
+        );
+    }
 
     let path = favorites_path();
     let _disk_guard = disk_lock().lock_ignore_poison();
@@ -487,26 +572,30 @@ pub fn list_cached() -> Option<Vec<Favorite>> {
 /// Adds a favorite for `path`, deduping by normalized path (a re-add moves the existing entry to the
 /// end). When `name` is `None`, the label defaults to the path's file name.
 pub fn add(path: &str, name: Option<String>) {
-    mutate_and_persist(FavoriteAction::Added, |store| {
+    mutate_and_persist(StoreChange::Gesture(FavoriteAction::Added), |store| {
         // allowed-discarded-outcome: nobody consumes the new id; both callers answer with `()`.
-        add_to_store(store, path, name);
+        add_to_store(store, path, name, None);
         true
     });
 }
 
 /// Removes a favorite by id. No-op when the id isn't present.
 pub fn remove(id: &str) {
-    mutate_and_persist(FavoriteAction::Removed, |store| remove_from_store(store, id));
+    mutate_and_persist(StoreChange::Gesture(FavoriteAction::Removed), |store| {
+        remove_from_store(store, id)
+    });
 }
 
 /// Renames a favorite by id. No-op when the id isn't present.
 pub fn rename(id: &str, name: &str) {
-    mutate_and_persist(FavoriteAction::Renamed, |store| rename_in_store(store, id, name));
+    mutate_and_persist(StoreChange::Gesture(FavoriteAction::Renamed), |store| {
+        rename_in_store(store, id, name)
+    });
 }
 
 /// Sets or clears an A–Z menu shortcut. Reusing a letter transfers it from its previous owner.
 pub fn set_shortcut(id: &str, shortcut: Option<&str>) {
-    mutate_and_persist(FavoriteAction::ShortcutChanged, |store| {
+    mutate_and_persist(StoreChange::Gesture(FavoriteAction::ShortcutChanged), |store| {
         set_shortcut_in_store(store, id, shortcut)
     });
 }
@@ -514,10 +603,21 @@ pub fn set_shortcut(id: &str, shortcut: Option<&str>) {
 /// Reorders the favorites to match `ordered_ids`. Unknown ids are ignored; favorites missing from the
 /// list are appended in their current order.
 pub fn reorder(ordered_ids: &[String]) {
-    mutate_and_persist(FavoriteAction::Reordered, |store| {
+    mutate_and_persist(StoreChange::Gesture(FavoriteAction::Reordered), |store| {
         reorder_store(store, ordered_ids);
         true
     });
+}
+
+/// Records which volume each named legacy favorite (`volume: None`) lives on, as the listing's
+/// reach pass read it (`super::reach`). Fills `None` only, ❌ never overwrites; reports nothing to
+/// analytics and emits no `volumes-changed`, because the published row already shows the claimed
+/// facts.
+///
+/// ❗ Writes a file, so the listing calls it off its own path (`spawn_blocking`).
+#[expect(dead_code, reason = "its caller, the listing's reach pass, lands next")]
+pub fn claim_volumes(claims: &[(String, FavoriteVolume)]) {
+    mutate_and_persist(StoreChange::Claimed, |store| claim_in_store(store, claims));
 }
 
 // ---------------------------------------------------------------------------
