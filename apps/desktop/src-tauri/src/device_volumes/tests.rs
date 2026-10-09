@@ -78,14 +78,3 @@ async fn append_from_folds_every_provider_into_mobile_device_entries() {
     assert_eq!(volumes[0].fs_type.as_deref(), Some("mtp"));
     assert_eq!(volumes[1].fs_type.as_deref(), Some("adb"));
 }
-
-#[test]
-fn a_path_is_under_its_root_or_a_slash_separated_child_of_it() {
-    assert!(path_is_under("adb://serial", "adb://serial"));
-    assert!(path_is_under("adb://serial/sdcard/DCIM", "adb://serial"));
-    assert!(
-        !path_is_under("adb://serial2", "adb://serial"),
-        "a sibling sharing a prefix isn't inside"
-    );
-    assert!(!path_is_under("mtp://dev/655370", "mtp://dev/65537"));
-}

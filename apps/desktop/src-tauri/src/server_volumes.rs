@@ -21,6 +21,7 @@
 //! `(volumeId, path)`, the switcher shows the same id greyed, and activating
 //! either dials the same saved entry.
 
+use cmdr_fs::volume::app_paths::path_is_under;
 use cmdr_fs::volume::remote_paths::RemoteRoot;
 use cmdr_fs::volume::{BackendKind, ConnectionState};
 
@@ -329,16 +330,6 @@ pub(crate) fn server_volume_for_path(path: &str) -> Option<LocationInfo> {
         .filter(|place| path_is_under(path, &place.app_root))
         .max_by_key(|place| place.app_root.trim_end_matches('/').len())
         .map(location_from_place)
-}
-
-/// Whether `path` is `root` or sits under it, by whole `/`-separated segments.
-///
-/// ❗ Segment-wise, ❌ never a raw string prefix: `sftp://ada@nas:22/srv/data`
-/// would otherwise claim `sftp://ada@nas:22/srv/data-1`, a different volume's
-/// tree.
-fn path_is_under(path: &str, root: &str) -> bool {
-    let root = root.trim_end_matches('/');
-    path == root || path.strip_prefix(root).is_some_and(|rest| rest.starts_with('/'))
 }
 
 #[cfg(test)]

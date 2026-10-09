@@ -1868,6 +1868,7 @@ pub fn root_anchored(root: &Path, path: &Path) -> PathBuf {
 // …) live in `types`; the volume ID funnel (`local_volume_id`, `smb_volume_id`,
 // …) lives in `ids`. Both are re-exported below so callers import
 // `volume::VolumeError`, `volume::smb_volume_id`, etc.
+pub mod app_paths;
 mod capabilities;
 mod channel_stream;
 mod child_name;

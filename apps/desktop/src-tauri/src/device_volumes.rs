@@ -18,6 +18,7 @@ use std::sync::{Arc, LazyLock, RwLock};
 
 use cmdr_fs::ignore_poison::RwLockIgnorePoison;
 use cmdr_fs::volume::DeviceReadiness;
+use cmdr_fs::volume::app_paths::path_is_under;
 
 use crate::usb_speed::UsbSpeed;
 use crate::volume_listing::{LocationCategory, LocationInfo};
@@ -178,11 +179,6 @@ pub(crate) async fn device_volume_for_path(path: &str) -> Option<LocationInfo> {
     let mut volumes = Vec::new();
     append_device_volumes(&mut volumes).await;
     volumes.into_iter().find(|v| path_is_under(path, &v.path))
-}
-
-/// Whether `path` is `root` itself or something inside it.
-fn path_is_under(path: &str, root: &str) -> bool {
-    path == root || path.strip_prefix(root).is_some_and(|rest| rest.starts_with('/'))
 }
 
 #[cfg(test)]

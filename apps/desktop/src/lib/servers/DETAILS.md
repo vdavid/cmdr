@@ -49,7 +49,8 @@ An SFTP place's app-facing paths are `sftp://<user>@<host>:<port>/<server path>`
 `…/`. `server-path-utils.ts` is the frontend's reader and writer; the Rust twin is
 `cmdr_fs::volume::remote_paths::RemoteRoot` (translation both ways) over the prefix `sftp_app_root` / `webdav_app_root`
 / `s3_app_root` mints. ❗ The account root's trailing `/` is why containment goes through `isUnderServerRoot`, the twin
-of Rust's `server_volumes::path_is_under` (root trimmed first): a bare `${root}/` prefix refused every bucket under it.
+of Rust's `cmdr_fs::volume::app_paths::path_is_under` (root trimmed first): a bare `${root}/` prefix refused every
+bucket under it.
 
 **Why a scheme and not a hint.** `commands/volumes.rs::resolve_path_to_volume` falls through to the mount table, which
 on both platforms walks up to `/` and answers the LOCAL root for any absolute path it doesn't recognize. So a
