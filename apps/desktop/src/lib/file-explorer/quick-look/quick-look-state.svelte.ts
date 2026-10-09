@@ -8,10 +8,9 @@
  *   to close again).
  * - `quick-look-key`: backend forwards a key event the panel didn't want to
  *   handle. We route it through the focused pane's navigation primitives via
- *   `explorerRef.routePanelKey(payload)`. Shift+Space is a special case — we
- *   close the panel directly instead of routing, because the menu accelerator
- *   path isn't reliable while the panel is key (it may consume the keydown
- *   before AppKit's menu dispatcher sees it).
+ *   `explorerRef.routePanelKey(payload)`. The Quick Look key goes to the
+ *   keyboard dispatcher instead (so the central dedup sees it), and plain
+ *   Space closes the panel.
  * - Escape or plain Space in the main window: a capture listener closes the
  *   panel while the main window still has key focus (the panel is opening, or
  *   a click moved focus back), so Space never toggles the selection instead.
@@ -52,33 +51,6 @@ export interface QuickLookKeyEventPayload {
  * event listener flips it back to `false` when the panel goes away.
  */
 export const quickLookState = $state({ isOpen: false })
-
-/**
- * Timestamp of the last `file.quickLook` dispatch (`performance.now()`).
- *
- * Every Shift+Space keypress fires `file.quickLook` *twice*: once via the
- * AppKit menu accelerator (`on_menu_event` → `execute-command` Tauri event)
- * and once via WKWebView's keydown → centralized JS shortcut dispatch. The
- * second fire would re-toggle the panel, so the dispatcher arms this guard on
- * entry and swallows any second fire inside the 200 ms window. The window is
- * comfortably below human "second press" cadence (~250 ms) and above any
- * plausible AppKit→IPC round-trip.
- *
- * The Shift+Space-from-panel close path (in the `quick-look-key` listener
- * below) also arms this guard, for the same reason: when the panel is key,
- * AppKit can still leak a delayed menu-accelerator fire of the same keystroke
- * to the dispatcher, which would re-open the just-closed panel.
- */
-let lastQuickLookDispatchAt = Number.NEGATIVE_INFINITY
-const QUICK_LOOK_DISPATCH_GRACE_MS = 200
-
-export function quickLookDispatchGuardJustFired(): boolean {
-  return performance.now() - lastQuickLookDispatchAt < QUICK_LOOK_DISPATCH_GRACE_MS
-}
-
-export function armQuickLookDispatchGuard(): void {
-  lastQuickLookDispatchAt = performance.now()
-}
 
 /**
  * Close the panel because the focused pane went into an error state
@@ -159,7 +131,10 @@ let attached = false
  *
  * Returns an `UnlistenFn`-style cleanup that detaches both listeners.
  */
-export async function initQuickLookListeners(getExplorer: () => ExplorerAPI | undefined): Promise<UnlistenFn> {
+export async function initQuickLookListeners(
+  getExplorer: () => ExplorerAPI | undefined,
+  dispatchKeyboard: (commandId: 'file.quickLook') => Promise<void>,
+): Promise<UnlistenFn> {
   if (attached) {
     // Belt and braces — the +page lifecycle should only call us once, but
     // returning a no-op keeps the API safe against double-attach during HMR.
@@ -172,16 +147,20 @@ export async function initQuickLookListeners(getExplorer: () => ExplorerAPI | un
   })
 
   const unlistenKey = await onQuickLookKey((payload) => {
-    // The Quick Look key and plain Space close. The native monitor consumes
-    // Space and ⇧Space before they get here; this covers a rebound Quick Look
-    // key, and a Space the panel forwards anyway (monitor not installed). Plain
-    // Space must never reach the pane, where it would toggle the selection.
-    if (isQuickLookCloseKey(payload) || isPlainSpace(payload)) {
-      armQuickLookDispatchGuard()
-      // Flip `isOpen` immediately so any synchronous follow-up dispatch
-      // (rare AppKit menu-accelerator race) sees the closed state.
-      quickLookState.isOpen = false
-      void quickLookClose()
+    // The Quick Look key toggles through the dispatch core like any keypress, so
+    // the central keyboard+menu dedup drops the File menu's late duplicate of
+    // the same press instead of letting it reopen the panel. The native monitor
+    // consumes ⇧Space before it gets here, so this is the path for a rebound
+    // Quick Look key.
+    if (isQuickLookCloseKey(payload)) {
+      void dispatchKeyboard('file.quickLook')
+      return
+    }
+    // Plain Space closes like it does in Finder. It reaches us only if the panel
+    // forwards it anyway (the native monitor wasn't installed), and must never
+    // reach the pane, where it would toggle the selection.
+    if (isPlainSpace(payload)) {
+      closeIfOpen()
       return
     }
     // Everything else flows through the focused pane's existing navigation

@@ -52,19 +52,9 @@ const m = vi.hoisted(() => ({
   cloudMakeAvailableOffline: vi.fn<(...a: unknown[]) => Promise<void>>(() => Promise.resolve()),
   cloudRemoveDownload: vi.fn<(...a: unknown[]) => Promise<void>>(() => Promise.resolve()),
   quickLookState: { isOpen: false },
-  quickLookDispatchGuardJustFired: vi.fn<() => boolean>(() => false),
-  armQuickLookDispatchGuard: vi.fn<() => void>(),
 }))
 
-const {
-  getVolumeId,
-  getPanePath,
-  getSetting,
-  getEffectiveShortcuts,
-  readClipboardText,
-  quickLookDispatchGuardJustFired,
-  quickLookState,
-} = m
+const { getVolumeId, getPanePath, getSetting, getEffectiveShortcuts, readClipboardText, quickLookState } = m
 
 // `getAppLogger('user-action')` runs at module top-level; `m.logInfo` captures
 // the logged `id` so the preamble-order + exempt tests can assert on it.
@@ -142,13 +132,9 @@ vi.mock('$lib/tauri-commands', () => ({
   cloudRemoveDownload: (...a: unknown[]) => m.cloudRemoveDownload(...a),
 }))
 
-// QuickLook dispatch guard + the `$state` singleton (reconfigurable per branch).
+// QuickLook's `$state` singleton (reconfigurable per branch).
 vi.mock('$lib/file-explorer/quick-look/quick-look-state.svelte', () => ({
   quickLookState: m.quickLookState,
-  quickLookDispatchGuardJustFired: () => m.quickLookDispatchGuardJustFired(),
-  armQuickLookDispatchGuard: () => {
-    m.armQuickLookDispatchGuard()
-  },
 }))
 
 import { handleCommandExecute } from './command-dispatch'
@@ -161,7 +147,6 @@ beforeEach(() => {
   getSetting.mockReturnValue(100)
   getEffectiveShortcuts.mockReturnValue([])
   readClipboardText.mockResolvedValue('')
-  quickLookDispatchGuardJustFired.mockReturnValue(false)
   quickLookState.isOpen = false
 })
 

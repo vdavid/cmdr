@@ -60,8 +60,6 @@ const m = vi.hoisted(() => ({
   cloudMakeAvailableOffline: vi.fn<(...a: unknown[]) => Promise<void>>(() => Promise.resolve()),
   cloudRemoveDownload: vi.fn<(...a: unknown[]) => Promise<void>>(() => Promise.resolve()),
   quickLookState: { isOpen: false },
-  quickLookDispatchGuardJustFired: vi.fn<() => boolean>(() => false),
-  armQuickLookDispatchGuard: vi.fn<() => void>(),
 }))
 
 const {
@@ -93,8 +91,6 @@ const {
   cloudMakeAvailableOffline,
   cloudRemoveDownload,
   quickLookState,
-  quickLookDispatchGuardJustFired,
-  armQuickLookDispatchGuard,
 } = m
 
 // `getAppLogger('user-action')` runs at module top-level; `m.logInfo` captures
@@ -194,13 +190,9 @@ vi.mock('$lib/tauri-commands', () => ({
   asOpenTerminalError: () => null,
 }))
 
-// QuickLook dispatch guard + the `$state` singleton (reconfigurable per branch).
+// QuickLook's `$state` singleton (reconfigurable per branch).
 vi.mock('$lib/file-explorer/quick-look/quick-look-state.svelte', () => ({
   quickLookState: m.quickLookState,
-  quickLookDispatchGuardJustFired: () => m.quickLookDispatchGuardJustFired(),
-  armQuickLookDispatchGuard: () => {
-    m.armQuickLookDispatchGuard()
-  },
 }))
 
 import { handleCommandExecute, type CommandDispatchContext } from './command-dispatch'
@@ -219,7 +211,6 @@ beforeEach(() => {
   getSetting.mockReturnValue(100)
   getEffectiveShortcuts.mockReturnValue([])
   readClipboardText.mockResolvedValue('')
-  quickLookDispatchGuardJustFired.mockReturnValue(false)
   quickLookState.isOpen = false
 })
 
@@ -653,25 +644,15 @@ describe('characterization — activeElement input branches', () => {
 })
 
 // ===========================================================================
-// file.quickLook: dispatch guard + open/close toggle.
+// file.quickLook: open/close toggle.
 // ===========================================================================
 describe('characterization — file.quickLook', () => {
-  it('returns immediately (no arm/open/close) when the dispatch guard just fired', async () => {
-    quickLookDispatchGuardJustFired.mockReturnValue(true)
-    const explorer = makeExplorerSpy()
-    await handleCommandExecute('file.quickLook', makeCtx(explorer))
-    expect(armQuickLookDispatchGuard).not.toHaveBeenCalled()
-    expect(quickLookOpen).not.toHaveBeenCalled()
-    expect(quickLookClose).not.toHaveBeenCalled()
-  })
-
-  it('opens Quick Look (arms the guard, flips isOpen, calls quickLookOpen) when closed', async () => {
+  it('opens Quick Look (flips isOpen, calls quickLookOpen) when closed', async () => {
     quickLookState.isOpen = false
     getVolumeId.mockReturnValue('local')
     const explorer = makeExplorerSpy()
     explorer.getFileAndPathUnderCursor.mockReturnValue({ path: '/Users/test/a.png', filename: 'a.png' })
     await handleCommandExecute('file.quickLook', makeCtx(explorer))
-    expect(armQuickLookDispatchGuard).toHaveBeenCalledOnce()
     expect(quickLookState.isOpen).toBe(true)
     expect(quickLookOpen).toHaveBeenCalledExactlyOnceWith('/Users/test/a.png', 'local')
   })
@@ -679,18 +660,16 @@ describe('characterization — file.quickLook', () => {
   it('closes Quick Look (flips isOpen false, calls quickLookClose) when open', async () => {
     quickLookState.isOpen = true
     await handleCommandExecute('file.quickLook', makeCtx(makeExplorerSpy()))
-    expect(armQuickLookDispatchGuard).toHaveBeenCalledOnce()
     expect(quickLookState.isOpen).toBe(false)
     expect(quickLookClose).toHaveBeenCalledOnce()
     expect(quickLookOpen).not.toHaveBeenCalled()
   })
 
-  it('arms the guard but no-ops when closed and nothing is under the cursor', async () => {
+  it('no-ops when closed and nothing is under the cursor', async () => {
     quickLookState.isOpen = false
     const explorer = makeExplorerSpy()
     explorer.getFileAndPathUnderCursor.mockReturnValue(undefined)
     await handleCommandExecute('file.quickLook', makeCtx(explorer))
-    expect(armQuickLookDispatchGuard).toHaveBeenCalledOnce()
     expect(quickLookOpen).not.toHaveBeenCalled()
     expect(quickLookState.isOpen).toBe(false)
   })

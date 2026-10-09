@@ -67,8 +67,6 @@ vi.mock('$lib/tauri-commands', () => ({
 
 import {
   quickLookState,
-  quickLookDispatchGuardJustFired,
-  armQuickLookDispatchGuard,
   initQuickLookListeners,
   closeFromPaneError,
   closeFromMainWindowKey,
@@ -76,6 +74,7 @@ import {
 } from './quick-look-state.svelte'
 
 describe('quickLookState', () => {
+  const noDispatch = () => Promise.resolve()
   let teardown: (() => void) | undefined
 
   beforeEach(() => {
@@ -99,30 +98,8 @@ describe('quickLookState', () => {
     expect(quickLookState.isOpen).toBe(false)
   })
 
-  it('quickLookDispatchGuardJustFired defaults to false before any dispatch fires', () => {
-    expect(quickLookDispatchGuardJustFired()).toBe(false)
-  })
-
-  it('armQuickLookDispatchGuard arms the guard so subsequent fires are swallowed', () => {
-    // Defends against the AppKit menu accelerator + JS shortcut double-dispatch:
-    // the dispatcher arms on entry, so the second fire of the same keystroke
-    // reads `quickLookDispatchGuardJustFired() === true` and returns early.
-    const nowSpy = vi.spyOn(performance, 'now')
-    nowSpy.mockReturnValue(5_000)
-    expect(quickLookDispatchGuardJustFired()).toBe(false)
-    armQuickLookDispatchGuard()
-    expect(quickLookDispatchGuardJustFired()).toBe(true)
-    // Still armed 100 ms later.
-    nowSpy.mockReturnValue(5_100)
-    expect(quickLookDispatchGuardJustFired()).toBe(true)
-    // Expired 250 ms later (> 200 ms grace).
-    nowSpy.mockReturnValue(5_250)
-    expect(quickLookDispatchGuardJustFired()).toBe(false)
-    nowSpy.mockRestore()
-  })
-
   it('initQuickLookListeners attaches both event listeners and is idempotent', async () => {
-    teardown = await initQuickLookListeners(() => undefined)
+    teardown = await initQuickLookListeners(() => undefined, noDispatch)
     expect(typeof teardown).toBe('function')
     expect(typeof handlers['quick-look-closed']).toBe('function')
     expect(typeof handlers['quick-look-key']).toBe('function')
@@ -130,28 +107,31 @@ describe('quickLookState', () => {
     // Second call short-circuits and returns the no-op (the listener-set is
     // module-singleton; double-attach during HMR would otherwise double-fire
     // every event).
-    const cleanupB = await initQuickLookListeners(() => undefined)
+    const cleanupB = await initQuickLookListeners(() => undefined, noDispatch)
     expect(typeof cleanupB).toBe('function')
     // Still only the original two unlisten functions registered.
     expect(unlistenFns).toHaveLength(2)
   })
 
   it('quick-look-closed event flips isOpen to false', async () => {
-    teardown = await initQuickLookListeners(() => undefined)
+    teardown = await initQuickLookListeners(() => undefined, noDispatch)
     quickLookState.isOpen = true
     handlers['quick-look-closed']({ payload: null })
     expect(quickLookState.isOpen).toBe(false)
   })
 
-  it('Shift+Space from panel closes via IPC and arms the dispatch guard', async () => {
-    teardown = await initQuickLookListeners(() => undefined)
+  it('⇧Space from the panel dispatches file.quickLook down the keyboard road', async () => {
+    // The toggle goes through the dispatch core like any keypress, so the central
+    // keyboard+menu dedup drops the File menu's late duplicate of the same press
+    // instead of letting it reopen the panel (cmdr-reports#32).
+    const dispatchKeyboard = vi.fn(() => Promise.resolve())
+    teardown = await initQuickLookListeners(() => undefined, dispatchKeyboard)
     quickLookState.isOpen = true
     handlers['quick-look-key']({
       payload: { key: ' ', code: 'Space', shiftKey: true, metaKey: false, altKey: false, ctrlKey: false },
     })
-    expect(quickLookState.isOpen).toBe(false)
-    expect(quickLookCloseMock).toHaveBeenCalledTimes(1)
-    expect(quickLookDispatchGuardJustFired()).toBe(true)
+    expect(dispatchKeyboard).toHaveBeenCalledExactlyOnceWith('file.quickLook')
+    expect(quickLookCloseMock).not.toHaveBeenCalled()
   })
 
   it('⌥⇧Space routes through the explorer instead of closing (modifier superset)', async () => {
@@ -159,7 +139,7 @@ describe('quickLookState', () => {
     const fakeExplorer = { routePanelKey } as unknown as NonNullable<
       ReturnType<Parameters<typeof initQuickLookListeners>[0]>
     >
-    teardown = await initQuickLookListeners(() => fakeExplorer)
+    teardown = await initQuickLookListeners(() => fakeExplorer, noDispatch)
     quickLookState.isOpen = true
     // `⇧Space` is `file.quickLook`; `⌥⇧Space` is a different combo entirely. The old
     // `payload.shiftKey && payload.key === ' '` test matched both, so any ⇧Space
@@ -179,7 +159,7 @@ describe('quickLookState', () => {
     const fakeExplorer = { routePanelKey } as unknown as NonNullable<
       ReturnType<Parameters<typeof initQuickLookListeners>[0]>
     >
-    teardown = await initQuickLookListeners(() => fakeExplorer)
+    teardown = await initQuickLookListeners(() => fakeExplorer, noDispatch)
     quickLookState.isOpen = true
     handlers['quick-look-key']({
       payload: { key: ' ', code: 'Space', shiftKey: false, metaKey: false, altKey: false, ctrlKey: false },
@@ -194,7 +174,7 @@ describe('quickLookState', () => {
     const fakeExplorer = { routePanelKey } as unknown as NonNullable<
       ReturnType<Parameters<typeof initQuickLookListeners>[0]>
     >
-    teardown = await initQuickLookListeners(() => fakeExplorer)
+    teardown = await initQuickLookListeners(() => fakeExplorer, noDispatch)
     const payload = {
       key: 'ArrowDown',
       code: 'ArrowDown',
@@ -282,7 +262,7 @@ describe('quickLookState', () => {
   })
 
   it('teardown detaches both listeners and allows fresh attachment afterwards', async () => {
-    teardown = await initQuickLookListeners(() => undefined)
+    teardown = await initQuickLookListeners(() => undefined, noDispatch)
     expect(unlistenFns).toHaveLength(2)
     expect(unlistenFns[0]).not.toHaveBeenCalled()
     expect(unlistenFns[1]).not.toHaveBeenCalled()
@@ -296,26 +276,7 @@ describe('quickLookState', () => {
     // After teardown the module is detachable again — a fresh init attaches
     // new listeners rather than short-circuiting on the singleton guard.
     const before = unlistenFns.length
-    teardown = await initQuickLookListeners(() => undefined)
+    teardown = await initQuickLookListeners(() => undefined, noDispatch)
     expect(unlistenFns.length).toBe(before + 2)
-  })
-
-  it('dispatch guard window expires after QUICK_LOOK_DISPATCH_GRACE_MS', async () => {
-    // The guard reads `performance.now()` directly, not `Date.now()`. Stub it
-    // so we can travel deterministically across the 200 ms window without
-    // relying on real wall-clock timing in tests.
-    const nowSpy = vi.spyOn(performance, 'now')
-    nowSpy.mockReturnValue(1_000)
-    teardown = await initQuickLookListeners(() => undefined)
-    quickLookState.isOpen = true
-    // Drive the same Shift+Space close path that arms the grace window.
-    handlers['quick-look-key']({
-      payload: { key: ' ', code: 'Space', shiftKey: true, metaKey: false, altKey: false, ctrlKey: false },
-    })
-    expect(quickLookDispatchGuardJustFired()).toBe(true)
-    // 250 ms later (> 200 ms grace window) the guard reports false.
-    nowSpy.mockReturnValue(1_000 + 250)
-    expect(quickLookDispatchGuardJustFired()).toBe(false)
-    nowSpy.mockRestore()
   })
 })

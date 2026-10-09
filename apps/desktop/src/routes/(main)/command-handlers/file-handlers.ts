@@ -17,11 +17,7 @@ import {
   googleDriveLinks,
   openExternalUrl,
 } from '$lib/tauri-commands'
-import {
-  quickLookState,
-  quickLookDispatchGuardJustFired,
-  armQuickLookDispatchGuard,
-} from '$lib/file-explorer/quick-look/quick-look-state.svelte'
+import { quickLookState } from '$lib/file-explorer/quick-look/quick-look-state.svelte'
 import { addToast } from '$lib/ui/toast'
 import CopiedPathToastContent from '$lib/file-explorer/CopiedPathToastContent.svelte'
 import { getFocusedPanePath, getFocusedPaneVolumeId } from '$lib/file-explorer/pane/focused-pane-reads'
@@ -226,22 +222,12 @@ export const fileHandlers = {
   'file.copyFilename': (hctx) => withEntryUnderCursor(hctx, (entry) => copyToClipboard(entry.filename)),
 
   'file.quickLook': async ({ explorerRef }) => {
-    // Shift+Space toggles. The panel close path (✕, Esc, our `quickLookClose`
-    // call below) all converge on a `quick-look-closed` event that flips
-    // `isOpen` back to false in the state singleton, so the next press opens.
-    //
-    // Race guard: every Shift+Space keypress fires this case twice — once via
-    // AppKit's menu accelerator (`on_menu_event` → `execute-command` event)
-    // and once via WKWebView's keydown → centralized JS shortcut dispatch.
-    // Without the guard, the second fire toggles the panel back. The guard
-    // also covers the panel-key Shift+Space-from-listener path (which arms
-    // it before flipping `isOpen`).
-    if (quickLookDispatchGuardJustFired()) {
-      // The duplicate fire of ONE keypress. Counting it would double every
-      // number this event produces.
-      return
-    }
-    armQuickLookDispatchGuard()
+    // Shift+Space toggles. Every close path (✕, Esc, Space, our `quickLookClose`
+    // call below) converges on a `quick-look-closed` event that flips `isOpen`
+    // back to false in the state singleton, so the next press opens. One press
+    // can fire this twice (AppKit's menu accelerator plus the webview keydown);
+    // the dispatch core's cross-source dedup drops the second before it gets
+    // here (`dispatch-dedup.ts`).
     if (quickLookState.isOpen) {
       quickLookState.isOpen = false
       await quickLookClose()

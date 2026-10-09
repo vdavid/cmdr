@@ -40,8 +40,8 @@ the union and the tuple in sync.
 
 - `quick_look_used` on all four arms of the `file.quickLook` toggle, the refusals included, so the inner-archive gate
   has a number of its own. The double fire of one Shift+Space (AppKit's menu accelerator plus the webview keydown) is
-  swallowed by `quickLookDispatchGuardJustFired()` BEFORE the emit; moving the emit above that guard would double every
-  number this event produces.
+  dropped by the dispatch core's cross-source dedup (`dispatch-dedup.ts`) before the handler runs, so each press counts
+  once.
 - `editor_opened` on `file.edit`, with no props: F4 hands the file to the OS's text editor (`open -t`), and the file's
   name and extension are exactly what must never cross.
 

@@ -206,9 +206,9 @@ export async function startWindowServices(ctx: WindowServicesContext): Promise<v
   await startOperationConflictHost()
   await setupWindowFocusListener(listenerCtx)
   // Native Quick Look (macOS) event wiring: `quick-look-closed` flips `isOpen` on the state
-  // singleton; `quick-look-key` routes panel keystrokes back into the focused pane (and
-  // intercepts Shift+Space to close).
-  unlistenFns.push(await initQuickLookListeners(ctx.getExplorer))
+  // singleton; `quick-look-key` routes panel keystrokes back into the focused pane, and the
+  // Quick Look key down the keyboard road (a panel keypress is a keypress).
+  unlistenFns.push(await initQuickLookListeners(ctx.getExplorer, ctx.dispatchers.keyboard))
   // Downloads notifications event bridge: one `download-detected` listener that fans out to the
   // in-app toast and/or the macOS native notification per the current settings value.
   unlistenFns.push(await startDownloadsEventBridge(ctx.getExplorer()))

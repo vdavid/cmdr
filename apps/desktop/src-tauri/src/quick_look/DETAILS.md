@@ -46,8 +46,9 @@ selects as usual (cmdr-reports#32). Two event paths cover the focus handoff:
   `is_open`, drops the mutex guard, then calls `orderOut` so a close notification cannot reenter a locked controller.
 
 The delegate's `handleEvent:` also closes on the close keys if the panel forwards one as unhandled, and the frontend's
-`quick-look-key` listener closes on the Quick Look shortcut (so a rebound key works) and on plain Space; neither path
-ever routes plain Space to the pane. The close notification remains the native side's source of truth for state and
+`quick-look-key` listener sends the Quick Look shortcut (so a rebound key works) down the keyboard dispatcher, where
+the central keyboard+menu dedup catches a menu duplicate, and closes on plain Space; neither path ever routes plain
+Space to the pane. The close notification remains the native side's source of truth for state and
 the frontend's `quick-look-closed` event.
 
 `quick_look_open` answers whether the panel opened. A volume whose paths macOS can't preview (MTP) opens nothing and

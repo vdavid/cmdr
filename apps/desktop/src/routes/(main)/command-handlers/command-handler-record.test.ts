@@ -50,8 +50,6 @@ vi.mock('$lib/file-explorer/pane/focused-pane-reads', () => ({
 }))
 vi.mock('$lib/file-explorer/quick-look/quick-look-state.svelte', () => ({
   quickLookState: { isOpen: false },
-  quickLookDispatchGuardJustFired: vi.fn(() => false),
-  armQuickLookDispatchGuard: vi.fn(),
 }))
 
 import { commandHandlers } from './index'

@@ -475,9 +475,10 @@ The dispatch core swallows this class centrally: every dispatch carries its road
 `+page.svelte`), and `routes/(main)/dispatch-dedup.ts` drops the same command arriving from the OTHER of the keyboard
 and menu roads within 300ms. Both halves also pass the same dialog gate, so neither can run behind a dialog. Keying on
 the source pair (instead of a bare time window) means real rapid input — double-presses, key auto-repeat — is
-same-source and always passes. New toggle commands need NO per-command guard. Quick Look's older local guard
-(`quickLookDispatchGuardJustFired` in `file-explorer/quick-look/quick-look-state.svelte.ts`) predates the central one
-and remains as a harmless second line of defense.
+same-source and always passes. New toggle commands need NO per-command guard. A keypress that arrives by another route
+still takes the keyboard road: Quick Look's panel forwards its toggle key to `dispatchers.keyboard`, so the menu's
+duplicate of that press is dropped too. A time-window guard of its own once swallowed real presses whenever two copies
+of the page were mounted (hot reload), so don't reintroduce one.
 
 ### Scope hierarchy is hardcoded
 
