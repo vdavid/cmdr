@@ -1389,9 +1389,10 @@ mismatch-warning + cursor-row neutralization treatment.
 ## ColumnList
 
 Every dialog that lists files or records in columns renders `ColumnList`: Search and Selection (`QueryResults`) today,
-the Multi-rename preview and Ask Cmdr's rename review next. One look, one cursor model, one width contract. The name
-says what it is: a list (one cursor, listbox semantics by default) laid out in columns. Ark UI has no table or data
-grid, and its `Listbox` owns selection and keys itself, which is exactly what this leaves to the parent.
+Ask Cmdr's rename review (`table` semantics, content-sized rows), and the Multi-rename preview next. One look, one
+cursor model, one width contract. The name says what it is: a list (one cursor, listbox semantics by default) laid out
+in columns. Ark UI has no table or data grid, and its `Listbox` owns selection and keys itself, which is exactly what
+this leaves to the parent.
 
 ### Consumer contract
 
@@ -1466,9 +1467,22 @@ grid, and its `Listbox` owns selection and keys itself, which is exactly what th
   on the inner box standing in for the rest, so the scrollbar spans the whole list. Before the row height or viewport is
   known (the first frame, or the test DOM) it draws the first `FALLBACK_ROWS` (100), so a short list renders whole and
   behaves exactly like an unvirtualized one.
-- **Rows can't grow**: content taller than the row height spills over its neighbors rather than growing the row, because
-  every row's position is `index × height`. A consumer whose rows need more (badges, a second line) raises `rowHeight`
-  for every row.
+- **Virtual rows can't grow**: content taller than the row height spills over its neighbors rather than growing the row,
+  because every row's position is `index × height`. A consumer whose rows need more either raises `rowHeight` for every
+  row, or, for a short list, turns virtualization off.
+
+### Content-sized rows (`virtualized={false}`)
+
+- **For short lists whose rows grow** (badges, a wrapped quote, a text field), like Ask Cmdr's rename review: every row
+  is drawn, each as tall as its content, with no spacers. The default row height (or `rowHeight`) becomes the row's
+  `min-height`, and a hairline (`--color-border-subtle`) separates data rows, since rows of varying height lose the
+  rhythm a fixed height gives.
+- **Decision: a mode, not a guessed taller `rowHeight`.** A rename row is one line or five depending on its badges and
+  evidence, so any fixed height either wastes most rows' space or clips the tall ones. Windowing over measured heights
+  would serve both, but costs a height cache and scroll anchoring that no consumer needs yet: the lists that grow are
+  the ones that stay small (a rename review is about 100 rows per batch).
+- `scrollIndexIntoView` scrolls the row's element (`scrollIntoView({ block: 'nearest' })`), since no arithmetic knows
+  where row N sits. ❌ Don't use it for a large or windowed source: it draws the whole `count`.
 
 ## DateLabel
 

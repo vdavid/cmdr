@@ -54,6 +54,13 @@
         rowClass?: string
         /** A CSS length overriding the default row height, for taller rows (thumbnails). */
         rowHeight?: string
+        /**
+         * `true` (default): fixed-height rows, drawn in a window. `false`: every row drawn, each
+         * as tall as its content (the row height becomes a floor), for short lists whose rows
+         * grow (badges, a wrapped quote, a text field). Array sources only, in practice: it
+         * draws the whole `count`.
+         */
+        virtualized?: boolean
     }
 
     const {
@@ -71,6 +78,7 @@
         headerClass = '',
         rowClass = '',
         rowHeight,
+        virtualized = true,
     }: Props = $props()
 
     function isWindowed(source: ColumnListSource<T>): source is ColumnListWindowedSource<T> {
@@ -86,10 +94,15 @@
     let rowHeightPx = $state(0)
 
     const isTable = $derived(semantics === 'table')
+    // A content-sized row takes `rowHeight` as its floor rather than its height.
+    const rowStyleHeight = $derived(virtualized ? rowHeight : undefined)
+    const rowMinHeight = $derived(virtualized ? undefined : rowHeight)
     const arrayRows = $derived(isWindowed(rows) ? null : rows)
     const count = $derived(isWindowed(rows) ? rows.count : rows.length)
     const range = $derived(
-        visibleRange({ count, rowHeight: rowHeightPx, scrollTop, viewportHeight, overscan: OVERSCAN_ROWS }),
+        virtualized
+            ? visibleRange({ count, rowHeight: rowHeightPx, scrollTop, viewportHeight, overscan: OVERSCAN_ROWS })
+            : { start: 0, end: count },
     )
     const drawn = $derived(Array.from({ length: range.end - range.start }, (_, i) => range.start + i))
     // Spacers stand in for the rows outside the window, so the scrollbar spans the whole list.
@@ -145,7 +158,7 @@
     export function scrollIndexIntoView(index: number): void {
         const viewport = viewportEl
         if (!viewport || index < 0 || index >= count) return
-        if (rowHeightPx > 0 && viewport.clientHeight > 0) {
+        if (virtualized && rowHeightPx > 0 && viewport.clientHeight > 0) {
             const next = revealScrollTop({
                 index,
                 rowHeight: rowHeightPx,
@@ -157,18 +170,25 @@
             scrollTop = next
             return
         }
-        // No layout yet (first frame, or jsdom): every drawn row is a real element.
+        // Content-sized rows, or no layout yet (first frame, or jsdom): every drawn row is a
+        // real element.
         viewport.querySelector(`[data-index="${String(index)}"]`)?.scrollIntoView({ block: 'nearest' })
     }
 </script>
 
 <div
     class="column-list"
+    class:is-content-sized={!virtualized}
     role={isTable ? 'table' : undefined}
     aria-label={isTable ? ariaLabel : undefined}
     aria-rowcount={isTable ? count + 1 : undefined}
 >
-    <div class="column-list-row column-list-probe" aria-hidden="true" style:height={rowHeight} bind:this={probeEl}></div>
+    <div
+        class="column-list-row column-list-probe"
+        aria-hidden="true"
+        style:height={rowHeight}
+        bind:this={probeEl}
+    ></div>
     <div
         class="column-list-header {headerClass}"
         class:animate-track={tracks.animateTracks}
@@ -208,7 +228,11 @@
                 {@const row = rowAt(index)}
                 {#if row === undefined}
                     <!-- A windowed row that hasn't arrived yet: holds its place, says nothing. -->
-                    <div class="column-list-row is-placeholder {rowClass}" aria-hidden="true" style:height={rowHeight}></div>
+                    <div
+                        class="column-list-row is-placeholder {rowClass}"
+                        aria-hidden="true"
+                        style:height={rowHeight}
+                    ></div>
                 {:else if isGroupHeading?.(row)}
                     <!-- In a listbox a heading can't be a child (options and groups only), so it
                          stays visual there and each option's own label must carry the context. -->
@@ -217,7 +241,8 @@
                         role={isTable ? 'row' : undefined}
                         aria-rowindex={isTable ? index + 2 : undefined}
                         aria-hidden={isTable ? undefined : 'true'}
-                        style:height={rowHeight}
+                        style:height={rowStyleHeight}
+                        style:min-height={rowMinHeight}
                         data-index={index}
                     >
                         <span
@@ -235,7 +260,8 @@
                         class:animate-track={tracks.animateTracks}
                         class:is-under-cursor={isUnderCursor}
                         style="grid-template-columns: {tracks.gridTemplate};"
-                        style:height={rowHeight}
+                        style:height={rowStyleHeight}
+                        style:min-height={rowMinHeight}
                         role={isTable ? 'row' : 'option'}
                         tabindex={isTable ? undefined : -1}
                         aria-selected={isTable ? undefined : isUnderCursor}
@@ -359,6 +385,18 @@
         padding: var(--spacing-xxs) var(--spacing-md);
         font-size: var(--font-size-md);
         color: var(--color-text-primary);
+    }
+
+    /* Content-sized rows (`virtualized={false}`): the row height is a floor, and a row grows
+       with its content. Rows of varying height lose the rhythm a fixed height gives, so a
+       hairline separates them. */
+    .column-list.is-content-sized .column-list-row {
+        height: auto;
+        min-height: calc(var(--font-size-md) * var(--font-line-height-normal) + 2 * var(--spacing-xxs));
+    }
+
+    .column-list.is-content-sized .column-list-row.is-data + .column-list-row {
+        border-top: 1px solid var(--color-border-subtle);
     }
 
     /* Single cursor: hover and the parent's arrow keys both write the cursor index, so

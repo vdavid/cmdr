@@ -132,6 +132,49 @@ describe('ColumnList virtual window', () => {
   })
 })
 
+describe('ColumnList content-sized rows', () => {
+  it('draws every row with no spacers, however far the viewport is from them', async () => {
+    const target = await render({ rows: items(300), virtualized: false })
+    expect(drawnIndices(target)).toEqual(Array.from({ length: 300 }, (_, i) => i))
+    const inner = target.querySelector<HTMLElement>('.column-list-viewport > div')
+    expect(inner?.style.paddingTop).toBe('0px')
+    expect(inner?.style.paddingBottom).toBe('0px')
+
+    layout.scroll(VIEWPORT, 4_000)
+    flushSync()
+    expect(drawnIndices(target)).toHaveLength(300)
+  })
+
+  it('makes the row height a floor rather than the height', async () => {
+    const target = await render({ rows: items(3), virtualized: false, rowHeight: '40px' })
+    const row = target.querySelector<HTMLElement>('.column-list-row.is-data')
+    expect(row?.style.height).toBe('')
+    expect(row?.style.minHeight).toBe('40px')
+    expect(target.querySelector('.column-list')?.classList.contains('is-content-sized')).toBe(true)
+  })
+
+  it('scrolls a row into view by its element, since rows have no fixed height', async () => {
+    const scrolled: string[] = []
+    vi.spyOn(HTMLElement.prototype, 'scrollIntoView').mockImplementation(function (this: HTMLElement) {
+      scrolled.push(this.dataset.index ?? '')
+    })
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    const component = mount(ColumnList<Item>, {
+      target,
+      props: { columns: plainColumns, ariaLabel: 'Things', rows: items(300), virtualized: false },
+    })
+    cleanup = () => {
+      void unmount(component)
+    }
+    await tick()
+    component.scrollIndexIntoView(250)
+    expect(scrolled).toEqual(['250'])
+    // The fixed-height arithmetic would have written a scroll offset instead.
+    expect(target.querySelector<HTMLElement>(VIEWPORT)?.scrollTop).toBe(0)
+  })
+})
+
 describe('ColumnList windowed source', () => {
   it('draws placeholders for rows not loaded yet and reports the range on screen', async () => {
     const loaded = new Map(items(5).map((item) => [item.id, item]))
