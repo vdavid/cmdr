@@ -201,7 +201,9 @@ A keypress can mean more than one combo, and `keyComboCandidates(event)` lists t
 1. `formatKeyCombo(event)`, the exact combo.
 2. `physicalKeyCombo(event)`: the combo as if the layout had typed the key's own character, for a COMMAND combo whose
    modifiers retyped the key (`⌥⇧=` reports `±`, `⌘⇧.` reports `>`). Only with ⌥ held, or ⇧ beside ⌘ / ⌃; Shift alone is
-   the character rule above. Only the digit row and the punctuation `codeToKey` names.
+   the character rule above. Only the digit row and the punctuation `codeToKey` names, plus letters when ⌘ / ⌃ is held
+   too: ⌘⌥R reports `®` and ⌘⌥F `ƒ` on US, so the key position is the only name they have (the Multi-rename sheet's
+   option keys rely on it). A bare ⌥ + letter is typing (`å`), so it never counts.
 3. `typedCharacterCombo(event)`: the bare character an ⌥ keypress typed, with no ⌘ / ⌃. On a Mac, Option is the PC's
    AltGr, and plenty of layouts type `*` or `-` with it, so a `*` binding reaches those users too.
 

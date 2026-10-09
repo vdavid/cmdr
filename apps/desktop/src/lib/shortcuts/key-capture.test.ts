@@ -203,6 +203,14 @@ describe('physicalKeyCombo', () => {
     expect(physicalKeyCombo(makeKeyEvent({ key: '+', code: 'NumpadAdd', altKey: true }))).toBeNull()
     expect(physicalKeyCombo(makeKeyEvent({ key: 'F1', code: 'F1', shiftKey: true }))).toBeNull()
   })
+
+  it('names the letter key when ⌥ composed a character under a command modifier', () => {
+    setMacOS(true)
+    // ⌘⌥R reports `®` and ⌘⌥F `ƒ` on US: never typing, so the key position is the identity,
+    // as the Dead branch of `normalizeKeyName` already makes it for ⌘⌥E.
+    expect(physicalKeyCombo(makeKeyEvent({ key: '®', code: 'KeyR', metaKey: true, altKey: true }))).toBe('⌘⌥R')
+    expect(physicalKeyCombo(makeKeyEvent({ key: 'ƒ', code: 'KeyF', ctrlKey: true, altKey: true }))).toBe('⌃⌥F')
+  })
 })
 
 /**

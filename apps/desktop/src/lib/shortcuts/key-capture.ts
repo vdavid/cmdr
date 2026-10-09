@@ -287,12 +287,14 @@ function eventModifiers(event: KeyboardEvent): Pick<KeyboardEvent, 'metaKey' | '
  * Deliberately narrow: only the digit row and the punctuation `codeToKey` names,
  * and only while a command combo's modifiers retyped the key. Shift ALONE is out:
  * there the typed character is the identity (`formatKeyCombo`), so `⇧8` is `*` and
- * never the key position. Everywhere else `event.key` is the right identity, and
- * the `Dead` branch of `normalizeKeyName` already covers the ⌥+letter layouts.
+ * never the key position. Letters count only with ⌘ or ⌃ held as well: ⌘⌥R reports
+ * `®`, never typing, so the key position names it, as the `Dead` branch of
+ * `normalizeKeyName` does for ⌘⌥E. A bare ⌥ + letter is typing (`å`), so it stays.
  */
 export function physicalKeyCombo(event: KeyboardEvent): string | null {
   if (!event.altKey && !(event.shiftKey && hasCommandModifier(event))) return null
-  const physical = physicalKeyCharacter(event.code)
+  const letter = hasCommandModifier(event) ? /^Key([A-Z])$/.exec(event.code)?.[1].toLowerCase() : undefined
+  const physical = letter ?? physicalKeyCharacter(event.code)
   if (physical === undefined || physical === event.key) return null
   return formatKeyCombo({ ...eventModifiers(event), key: physical, code: event.code } as KeyboardEvent)
 }
