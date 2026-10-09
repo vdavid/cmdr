@@ -143,6 +143,13 @@ describe('searchCommands', () => {
       expect(ids).toContain('downloads.goToLatest')
     })
 
+    it.each(['batch rename', 'bulk rename', 'mass rename'])('finds Multi-rename for "%s"', (query) => {
+      // Users name the tool by what it does, not by Total Commander's name for it. Both the
+      // palette and Settings > Keyboard shortcuts (`searchAllCommands`) must find it.
+      expect(searchCommands(query).map((r) => r.command.id)).toContain('file.multiRename')
+      expect(searchAllCommands(query).map((r) => r.command.id)).toContain('file.multiRename')
+    })
+
     it('never highlights past the visible name on a keyword-only match', () => {
       // "jump" appears only in the keywords, not the name, so any highlight indices
       // must stay within the visible label.

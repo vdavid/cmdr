@@ -195,6 +195,9 @@ export const fileListCommands: CommandSource[] = [
     shortcuts: ['⌃M'],
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     descriptionKey: 'commands.fileMultiRename.description',
+    // Phrases, not loose words: the palette's uFuzzy matches a query's words in order and at
+    // most three characters apart, so "batch rename" needs "batch" right before a "rename".
+    keywords: ['batch rename', 'bulk rename', 'mass rename', 'rename multiple', 'rename many'],
   },
   {
     id: 'file.view',
