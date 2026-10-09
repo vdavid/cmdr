@@ -13,41 +13,12 @@ use tokio::time::Duration;
 
 use crate::deadline::{Deadline, blocking_typed_result_with_timeout, io_budget_for_volume, timeout_detached_within};
 use crate::file_system::volume::Volume;
-use crate::file_system::write_operations::{BulkRenameRow, RenameStartError, SourceFingerprint, start_renames};
+use crate::file_system::write_operations::{BulkRenameRow, SourceFingerprint, start_renames};
 use crate::operation_log::types::Initiator;
 
-use super::plan::{PreviewRow, SpecError};
+use super::error::MultiRenameError;
+use super::plan::PreviewRow;
 use super::session::{Prepared, prepare};
-
-/// Why a session, a preview, or an apply didn't answer. Typed, so the frontend words it.
-#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
-#[serde(tag = "type", rename_all = "camelCase", rename_all_fields = "camelCase")]
-pub enum MultiRenameError {
-    /// The pane's listing is no longer cached (it moved on).
-    Gone { listing_id: String },
-    /// The pane's rows aren't the listing's state any more (a file came or went
-    /// between the selection and the open): open again.
-    SelectionChanged { listing_id: String },
-    /// The session ended (the sheet closed, or it sat idle and another opened).
-    SessionClosed,
-    /// The spec doesn't parse; the sheet shows it under its field.
-    Spec { error: SpecError },
-    /// No row is ready to rename.
-    NothingToRename,
-    /// No volume answers for the folder (unplugged, disconnected).
-    NotConnected { volume_id: String },
-    /// The executor refused before renaming anything.
-    CouldntStart { reason: RenameStartError },
-    /// The folder changed since the preview the user started from, or a newer
-    /// preview replaced it: re-preview.
-    PreviewOutOfDate,
-    /// The folder is read-only (inside an archive or a `.git` portal).
-    ReadOnly,
-    /// The work didn't finish within its deadline.
-    TimedOut,
-    /// The worker failed; `detail` is log text only.
-    Internal { detail: String },
-}
 
 /// A started rename.
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]

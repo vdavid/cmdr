@@ -5,9 +5,10 @@ use std::sync::Arc;
 use tokio::time::Duration;
 
 use crate::deadline::{BlockingBudget, blocking_typed_result_with_timeout, timeout_detached_typed};
+use crate::multi_rename::error::MultiRenameError;
 use crate::multi_rename::plan::{MultiRenameSpec, PreviewRow};
 use crate::multi_rename::presets::{MAX_PRESETS, MultiRenamePreset, PRESETS};
-use crate::multi_rename::run::{MultiRenameError, MultiRenameStarted, apply};
+use crate::multi_rename::run::{MultiRenameStarted, apply};
 use crate::multi_rename::session::{self, MultiRenameOpened, MultiRenamePreview};
 
 /// Opens a session over the pane's selection: `selected_indices` are backend row

@@ -10,6 +10,7 @@ removing diacritics, a counter, presets, and a live preview. The sheet is `src/l
 - `plan.rs` the preview over a folder's entries: each row's new name and status. Pure.
 - `session.rs` one open sheet's files (resolved once from the pane's selection), its latest preview, and paging.
 - `run.rs` apply: proves the ready rows against the preview shown, then runs `start_renames` (Ask Cmdr's executor).
+- `error.rs` `MultiRenameError`, shared by `session` and `run` so neither imports the other (`module-cycles`).
 - `presets.rs` named presets on `crate::recents`.
 
 ## Must-knows

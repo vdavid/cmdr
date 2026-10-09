@@ -21,8 +21,8 @@ use crate::file_system::listing::cached_listing::{LISTING_CACHE, reconciled_cach
 use crate::file_system::listing::metadata::FileEntry;
 use crate::ignore_poison::{IgnorePoison, RwLockIgnorePoison};
 
+use super::error::MultiRenameError;
 use super::plan::{Compiled, MultiRenameSpec, PreviewRow, RowStatus, preview};
-use super::run::MultiRenameError;
 
 /// How many sessions live at once. A sheet is modal, so more than one or two is
 /// a window that closed without saying so. Tests share the store and run in

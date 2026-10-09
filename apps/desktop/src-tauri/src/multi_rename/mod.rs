@@ -1,5 +1,6 @@
 //! Multi-Rename Tool (⌃M): Total Commander's mask renamer. See `DETAILS.md`.
 
+pub(crate) mod error;
 pub(crate) mod mask;
 pub(crate) mod plan;
 pub(crate) mod presets;

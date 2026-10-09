@@ -4,8 +4,9 @@
 use std::path::Path;
 use std::sync::Arc;
 
+use super::error::MultiRenameError;
 use super::plan::{MultiRenameSpec, RowStatus};
-use super::run::{MultiRenameError, apply};
+use super::run::apply;
 use super::session::{FIRST_PAGE, close, is_open, open, page, preview_session};
 use super::transform::CaseChange;
 use crate::file_system::listing::cached_listing::LISTING_CACHE;
