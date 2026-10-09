@@ -165,7 +165,7 @@ export function renderedByMask(masks: readonly string[], examples: MaskExamples)
  */
 export function examplePieces(hint: SyntaxHint, rendered: ReadonlyMap<string, string>): ExamplePiece[] | null {
   const counter = counterOf(hint.mask)
-  if (counter !== null) return [{ text: `${counterSamples(counter).shown.join(', ')}…`, taken: true }]
+  if (counter !== null) return [{ text: `${counterSamples(counter).join(', ')}…`, taken: true }]
   const taken = rendered.get(hint.mask)
   if (taken === undefined) return null
   const pieces = [

@@ -303,9 +303,5 @@
   "multiRename.counterEditor.counts": "Räknar {first}, {second}, {third}…",
   "@multiRename.counterEditor.counts": {
     "sourceHash": "1e814e0"
-  },
-  "multiRename.counterEditor.countsPadded": "Räknar {first}, {second}, {third}…, visas som {firstShown}, {secondShown}, {thirdShown}",
-  "@multiRename.counterEditor.countsPadded": {
-    "sourceHash": "0e7d580"
   }
 }

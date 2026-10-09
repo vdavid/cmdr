@@ -2429,7 +2429,6 @@ export type MessageKey =
   | 'multiRename.case.words'
   | 'multiRename.caseSensitive'
   | 'multiRename.counterEditor.counts'
-  | 'multiRename.counterEditor.countsPadded'
   | 'multiRename.counterEditor.digits'
   | 'multiRename.counterEditor.marker'
   | 'multiRename.counterEditor.start'

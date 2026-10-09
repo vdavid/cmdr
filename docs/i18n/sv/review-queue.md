@@ -78,8 +78,6 @@ wording into `terms.json` (and `decisions.md` when the reason is worth keeping).
   both `tentative`, set without the reference pile; confirm against Total Commander's sv multi-rename tool.
 - **`Startvärde`** (`multiRename.counterEditor.start`): a noun for the first number; Finder's `Starta med nummer:` is a
   verb phrase and doesn't fit a short field label.
-- **`Räknar 1, 3, 5…, visas som 001, 003, 005`** (`multiRename.counterEditor.countsPadded`): a terse caption mirroring
-  English; `…, i namnen 001, 003, 005` is the alternative if `visas som` reads ungrammatical.
 - **`# byter namn · # oförändrade · # problem`** (`multiRename.summary`): `oförändrad(e)` agrees with an unstated `fil`;
   confirm it reads right when folders are in the batch too.
 

@@ -27,21 +27,10 @@
     /** What the user typed in a field, while it differs from the value (`-`, or empty). */
     let drafts = $state<Partial<Record<Part, string>>>({})
 
-    const samples = $derived(counterSamples(value))
+    // The numbers as they land in the names, padding included.
     const sampleLine = $derived.by(() => {
-        const [first, second, third] = samples.values
-        const [firstShown, secondShown, thirdShown] = samples.shown
-        if (samples.shown.join() === samples.values.join()) {
-            return tString('multiRename.counterEditor.counts', { first, second, third })
-        }
-        return tString('multiRename.counterEditor.countsPadded', {
-            first,
-            second,
-            third,
-            firstShown,
-            secondShown,
-            thirdShown,
-        })
+        const [first, second, third] = counterSamples(value)
+        return tString('multiRename.counterEditor.counts', { first, second, third })
     })
     const uid = $props.id()
     const sampleId = `counter-editor-sample-${uid}`

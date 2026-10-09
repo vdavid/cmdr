@@ -303,9 +303,5 @@
   "multiRename.counterEditor.counts": "Donne {first}, {second}, {third}…",
   "@multiRename.counterEditor.counts": {
     "sourceHash": "1e814e0"
-  },
-  "multiRename.counterEditor.countsPadded": "Donne {first}, {second}, {third}…, affichés sous la forme {firstShown}, {secondShown}, {thirdShown}",
-  "@multiRename.counterEditor.countsPadded": {
-    "sourceHash": "0e7d580"
   }
 }

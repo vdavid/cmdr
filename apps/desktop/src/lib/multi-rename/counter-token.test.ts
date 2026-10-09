@@ -65,11 +65,8 @@ describe('counter token', () => {
   })
 
   it('shows the first few numbers, padded as the backend pads them', () => {
-    expect(counterSamples({ start: 1, step: 2, digits: 3 })).toEqual({
-      values: ['1', '3', '5'],
-      shown: ['001', '003', '005'],
-    })
-    expect(counterSamples({ start: 1, step: -1, digits: 3 }).shown).toEqual(['001', '000', '-01'])
-    expect(counterSamples({ start: 10, step: 1, digits: 1 }).shown).toEqual(['10', '11', '12'])
+    expect(counterSamples({ start: 1, step: 2, digits: 3 })).toEqual(['001', '003', '005'])
+    expect(counterSamples({ start: 1, step: -1, digits: 3 })).toEqual(['001', '000', '-01'])
+    expect(counterSamples({ start: 10, step: 1, digits: 1 })).toEqual(['10', '11', '12'])
   })
 })

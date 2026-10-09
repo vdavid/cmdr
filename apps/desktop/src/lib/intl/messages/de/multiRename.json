@@ -303,9 +303,5 @@
   "multiRename.counterEditor.counts": "Zählt {first}, {second}, {third} …",
   "@multiRename.counterEditor.counts": {
     "sourceHash": "1e814e0"
-  },
-  "multiRename.counterEditor.countsPadded": "Zählt {first}, {second}, {third} …, angezeigt als {firstShown}, {secondShown}, {thirdShown}",
-  "@multiRename.counterEditor.countsPadded": {
-    "sourceHash": "0e7d580"
   }
 }

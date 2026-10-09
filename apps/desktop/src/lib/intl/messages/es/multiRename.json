@@ -302,9 +302,5 @@
   "multiRename.counterEditor.counts": "Numera así: {first}, {second}, {third}…",
   "@multiRename.counterEditor.counts": {
     "sourceHash": "1e814e0"
-  },
-  "multiRename.counterEditor.countsPadded": "Numera así: {first}, {second}, {third}…, que aparecen como {firstShown}, {secondShown}, {thirdShown}",
-  "@multiRename.counterEditor.countsPadded": {
-    "sourceHash": "0e7d580"
   }
 }

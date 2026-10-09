@@ -302,9 +302,5 @@
   "multiRename.counterEditor.counts": "Номера: {first}, {second}, {third}…",
   "@multiRename.counterEditor.counts": {
     "sourceHash": "1e814e0"
-  },
-  "multiRename.counterEditor.countsPadded": "Номера: {first}, {second}, {third}… (в именах: {firstShown}, {secondShown}, {thirdShown})",
-  "@multiRename.counterEditor.countsPadded": {
-    "sourceHash": "0e7d580"
   }
 }

@@ -4463,8 +4463,7 @@
       "settings.fileExplorer.git.showStatusColumn.description": "A column showing status → «колонку состояния»; no Show action.",
       "errors.listing.notConnected.suggestion": "Any prompt it shows → «запросы на экране»; no Show action.",
       "errors.write.notConnected.suggestion": "Any prompt it shows → «запросы на экране»; no Show action.",
-      "settings.askCmdr.wakeToast.label": "Show a notice folds into the verb «Уведомлять».",
-      "multiRename.counterEditor.countsPadded": "Shown as (how a number appears in the new names) → «(в именах: …)»; names the place, no Show action."
+      "settings.askCmdr.wakeToast.label": "Show a notice folds into the verb «Уведомлять»."
     }
   },
   "show-in-finder": {

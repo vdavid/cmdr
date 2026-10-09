@@ -302,9 +302,5 @@
   "multiRename.counterEditor.counts": "依序編號 {first}、{second}、{third}⋯",
   "@multiRename.counterEditor.counts": {
     "sourceHash": "1e814e0"
-  },
-  "multiRename.counterEditor.countsPadded": "依序編號 {first}、{second}、{third}⋯，顯示為 {firstShown}、{secondShown}、{thirdShown}",
-  "@multiRename.counterEditor.countsPadded": {
-    "sourceHash": "0e7d580"
   }
 }

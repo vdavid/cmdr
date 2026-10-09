@@ -118,8 +118,7 @@ function pad(value: number, digits: number): string {
   return String(value).padStart(width, '0')
 }
 
-/** The first three numbers the counter gives, plain and as they land in the names. */
-export function counterSamples(counter: Counter): { values: string[]; shown: string[] } {
-  const numbers = [0, 1, 2].map((i) => counter.start + counter.step * i)
-  return { values: numbers.map(String), shown: numbers.map((n) => pad(n, counter.digits)) }
+/** The first three numbers the counter gives, as they land in the names. */
+export function counterSamples(counter: Counter): string[] {
+  return [0, 1, 2].map((i) => pad(counter.start + counter.step * i, counter.digits))
 }

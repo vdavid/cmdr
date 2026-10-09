@@ -302,9 +302,5 @@
   "multiRename.counterEditor.counts": "依次计为 {first}、{second}、{third}…",
   "@multiRename.counterEditor.counts": {
     "sourceHash": "1e814e0"
-  },
-  "multiRename.counterEditor.countsPadded": "依次计为 {first}、{second}、{third}…，显示为 {firstShown}、{secondShown}、{thirdShown}",
-  "@multiRename.counterEditor.countsPadded": {
-    "sourceHash": "0e7d580"
   }
 }

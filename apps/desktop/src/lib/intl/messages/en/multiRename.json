@@ -306,23 +306,11 @@
   },
   "multiRename.counterEditor.counts": "Counts {first}, {second}, {third}…",
   "@multiRename.counterEditor.counts": {
-    "description": "Plain-language line under the fields of the small popover that edits one counter placeholder ([C], or [C10+5:3] with its own start, step, and digits) in the Multi-rename name or extension mask. It opens from a small ▾ after the placeholder, or with the down arrow key while the text cursor is in it, showing the first three numbers the counter gives, when they need no leading zeros.",
+    "description": "Plain-language line under the fields of the small popover that edits one counter placeholder ([C], or [C10+5:3] with its own start, step, and digits) in the Multi-rename name or extension mask. It opens from a small ▾ under the placeholder, when the text cursor rests in it, or when the mouse rests on it. Shows the first three numbers the counter gives, exactly as they appear in the new names (with leading zeros when the counter has more digits).",
     "placeholders": {
-      "first": "the first file’s number (e.g. 1)",
-      "second": "the second file’s number (e.g. 3)",
-      "third": "the third file’s number (e.g. 5)"
-    }
-  },
-  "multiRename.counterEditor.countsPadded": "Counts {first}, {second}, {third}…, shown as {firstShown}, {secondShown}, {thirdShown}",
-  "@multiRename.counterEditor.countsPadded": {
-    "description": "Plain-language line under the fields of the small popover that edits one counter placeholder ([C], or [C10+5:3] with its own start, step, and digits) in the Multi-rename name or extension mask. It opens from a small ▾ after the placeholder, or with the down arrow key while the text cursor is in it, showing the first three numbers the counter gives and how they appear in the new names once padded with leading zeros to the chosen digits.",
-    "placeholders": {
-      "first": "the first file’s number (e.g. 1)",
-      "second": "the second file’s number (e.g. 3)",
-      "third": "the third file’s number (e.g. 5)",
-      "firstShown": "the first number as it appears in the name (e.g. 001)",
-      "secondShown": "the second number as it appears in the name (e.g. 003)",
-      "thirdShown": "the third number as it appears in the name (e.g. 005)"
+      "first": "the first file’s number as it appears in the name (e.g. 1, or 001)",
+      "second": "the second file’s number as it appears in the name (e.g. 3, or 003)",
+      "third": "the third file’s number as it appears in the name (e.g. 5, or 005)"
     }
   },
   "multiRename.placeholderHelp.name": "The file’s name, without its extension",
