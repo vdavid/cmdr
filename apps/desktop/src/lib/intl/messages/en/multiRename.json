@@ -294,5 +294,46 @@
   "multiRename.archiveMessage": "To rename files in this zip, rename them one at a time.",
   "@multiRename.archiveMessage": {
     "description": "Alert body under multiRename.archiveTitle. Points the user to renaming files inside the zip one by one (the regular single-file rename), which does work there."
+  },
+  "multiRename.counterEditor.marker": "Edit counter",
+  "@multiRename.counterEditor.marker": {
+    "description": "Accessible name (read by screen readers) of the small ▾ button drawn right after each counter placeholder [C] in the Multi-rename mask field. Clicking it opens a popover that edits one counter placeholder ([C], or [C10+5:3] with its own start, step, and digits) in the Multi-rename name or extension mask. It opens from a small ▾ after the placeholder, or with the down arrow key while the text cursor is in it. A VERB phrase."
+  },
+  "multiRename.counterEditor.title": "Counter",
+  "@multiRename.counterEditor.title": {
+    "description": "Accessible name of the small popover that edits one counter placeholder ([C], or [C10+5:3] with its own start, step, and digits) in the Multi-rename name or extension mask. It opens from a small ▾ after the placeholder, or with the down arrow key while the text cursor is in it. A NOUN: the counter that numbers the renamed files."
+  },
+  "multiRename.counterEditor.start": "Start",
+  "@multiRename.counterEditor.start": {
+    "description": "Label of the number field in the small popover that edits one counter placeholder ([C], or [C10+5:3] with its own start, step, and digits) in the Multi-rename name or extension mask. It opens from a small ▾ after the placeholder, or with the down arrow key while the text cursor is in it: the number the first file gets. A NOUN (where counting starts), not a verb."
+  },
+  "multiRename.counterEditor.step": "Step",
+  "@multiRename.counterEditor.step": {
+    "description": "Label of the number field in the small popover that edits one counter placeholder ([C], or [C10+5:3] with its own start, step, and digits) in the Multi-rename name or extension mask. It opens from a small ▾ after the placeholder, or with the down arrow key while the text cursor is in it: how much the number goes up per file (down, when negative). A NOUN."
+  },
+  "multiRename.counterEditor.digits": "Digits",
+  "@multiRename.counterEditor.digits": {
+    "description": "Label of the number field in the small popover that edits one counter placeholder ([C], or [C10+5:3] with its own start, step, and digits) in the Multi-rename name or extension mask. It opens from a small ▾ after the placeholder, or with the down arrow key while the text cursor is in it: how many digits the number has at least; shorter numbers get leading zeros (3 digits turns 7 into 007). A NOUN."
+  },
+  "multiRename.counterEditor.counts": "Counts {first}, {second}, {third}…",
+  "@multiRename.counterEditor.counts": {
+    "description": "Plain-language line under the fields of the small popover that edits one counter placeholder ([C], or [C10+5:3] with its own start, step, and digits) in the Multi-rename name or extension mask. It opens from a small ▾ after the placeholder, or with the down arrow key while the text cursor is in it, showing the first three numbers the counter gives, when they need no leading zeros.",
+    "placeholders": {
+      "first": "the first file’s number (e.g. 1)",
+      "second": "the second file’s number (e.g. 3)",
+      "third": "the third file’s number (e.g. 5)"
+    }
+  },
+  "multiRename.counterEditor.countsPadded": "Counts {first}, {second}, {third}…, shown as {firstShown}, {secondShown}, {thirdShown}",
+  "@multiRename.counterEditor.countsPadded": {
+    "description": "Plain-language line under the fields of the small popover that edits one counter placeholder ([C], or [C10+5:3] with its own start, step, and digits) in the Multi-rename name or extension mask. It opens from a small ▾ after the placeholder, or with the down arrow key while the text cursor is in it, showing the first three numbers the counter gives and how they appear in the new names once padded with leading zeros to the chosen digits.",
+    "placeholders": {
+      "first": "the first file’s number (e.g. 1)",
+      "second": "the second file’s number (e.g. 3)",
+      "third": "the third file’s number (e.g. 5)",
+      "firstShown": "the first number as it appears in the name (e.g. 001)",
+      "secondShown": "the second number as it appears in the name (e.g. 003)",
+      "thirdShown": "the third number as it appears in the name (e.g. 005)"
+    }
   }
 }
