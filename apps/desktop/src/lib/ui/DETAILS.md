@@ -29,6 +29,8 @@ Pull-tier docs for `lib/ui/`: architecture, component APIs, and decision rationa
   Never named `menu.svelte.ts` (§ Menu says why)
 - **`menu-types.ts`**: `MenuItem` / `MenuSection` / `MenuRowContext` / `MenuIcon`, in a `.ts` so non-Svelte controllers
   resolve them as real types
+- **`anchored-placement.ts`**: the pure placement math `Menu` and `Popover` share: below / above / roomier side with a
+  height cap, viewport clamp, and the submenu's right-or-left flip. See § Menu
 - **`menu-navigation.ts`** / **`menu-reorder.ts`**: the pure halves: which row is next and what a key means; the drag
   and ⌥↑/⌥↓ index math
 - **`FilterPopover.svelte`**: `Popover` + a labelled section header; the query dialogs' Size / Modified / Search-in
@@ -825,10 +827,11 @@ path) and the `Combobox` block of `overlays.a11y.test.ts`.
 ## Popover
 
 Generic positioned floater anchored to a trigger element. Frosted-glass material (the tooltip's), small radius, hairline
-border, soft shadow. Positions itself below the anchor and auto-flips above when there isn't room; clamps horizontally
-to the viewport; re-runs on resize. Owns a focus trap (Tab cycles inside, focus returns to the anchor on close) and an
-Esc-scoped close that `stopPropagation`s so a host dialog's capture-phase Escape doesn't also fire. Click-outside closes
-(on `mousedown`, so a drag that starts inside and ends outside doesn't). Controlled: the parent owns `open`.
+border, soft shadow. Places itself with the menu's rule (`placeOffAnchor`, § Menu: below, above, or the roomier side
+capped with its own scroll); re-runs on resize. Owns a focus trap (Tab cycles inside, focus returns to the anchor on
+close) and an Esc-scoped close that `stopPropagation`s so a host dialog's capture-phase Escape doesn't also fire.
+Click-outside closes (on `mousedown`, so a drag that starts inside and ends outside doesn't). Controlled: the parent
+owns `open`.
 
 Props:
 
@@ -978,8 +981,15 @@ surface (the menu, or the open submenu) has an `icon`, the rows without one get 
   `pointerReorderTarget` answers "no target" for every row, and a drop silently puts the row back where it started —
   which is what shipped for two milestones, because every drag TEST called `bindSurface` itself. The regression anchor
   in `Menu.svelte.test.ts` deliberately doesn't.
-- **Placement**: fixed, clamped into the viewport, `max-height` to the room below the anchor with its own scroll, the
-  cursor scrolled into view, and submenus positioned off the row's rect with a small overlap.
+- **Placement**: fixed, and always inside the viewport, decided by the pure `anchored-placement.ts` (unit-tested;
+  `Popover` uses the same `placeOffAnchor`). Below the anchor when the surface fits there, above it when only that fits,
+  else the roomier side with `max-height` to that room and its own scroll; clamped horizontally. An element anchor
+  passes its whole RECT, so a flip lands on the anchor's TOP edge; a point anchor (`openAt`) is a zero-size rect with no
+  gap. `getBottomLimit` lowers the floor below (the switcher stops above its pane's footer). ❗ The surface is measured
+  by `scrollHeight`, ❌ never `offsetHeight`: on a resize the last pass's cap is still on, and `offsetHeight` would read
+  the capped height and never flip back. The cursor scrolls into view. A submenu (`placeBesideRow`) hangs off its parent
+  row's rect with a 5 px overlap, flips left when the right has no room, slides up to keep its bottom on screen, and
+  caps at the viewport; it mounts hidden for one measuring pass first.
 
 **A menu inside a menu** (the drive-index badge sits in a volume-switcher row and opens its own; it's not a submenu — a
 separate consumer owns it). The primitive handles the pair, so neither consumer wires anything:

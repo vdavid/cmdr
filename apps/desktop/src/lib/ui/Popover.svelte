@@ -25,6 +25,7 @@
     import { onMount, onDestroy, tick, type Snippet } from 'svelte'
     import { trapFocus } from '$lib/ui/focus-trap'
     import { tString } from '$lib/intl/messages.svelte'
+    import { placeOffAnchor } from './anchored-placement'
 
     interface Props {
         /** The trigger element. Used for positioning and as the focus-return target. */
@@ -42,37 +43,32 @@
     const resolvedAriaLabel = $derived(ariaLabel ?? tString('ui.popover.defaultAriaLabel'))
 
     let popoverEl: HTMLDivElement | undefined = $state()
-    let position = $state<{ left: number; top: number; flipped: boolean }>({ left: 0, top: 0, flipped: false })
+    let position = $state<{ left: number; top: number; maxHeight: number | undefined; flipped: boolean }>({
+        left: 0,
+        top: 0,
+        maxHeight: undefined,
+        flipped: false,
+    })
 
     const VIEWPORT_MARGIN = 8
     const OFFSET = 2
 
-    /** Repositions the popover relative to its anchor. Auto-flips above when needed. */
+    /**
+     * Repositions the popover relative to its anchor: below, above when only that fits, else the
+     * roomier side with a height cap it scrolls inside. Same rule as the menu (`placeOffAnchor`).
+     */
     function reposition(): void {
         // anchor is a required prop (HTMLElement), so no anchor-null check.
         if (!popoverEl) return
-        const anchorRect = anchor.getBoundingClientRect()
-        const popRect = popoverEl.getBoundingClientRect()
-
-        let left = anchorRect.left
-        let top = anchorRect.bottom + OFFSET
-        let flipped = false
-
-        // Flip above if there's not enough room below.
-        if (top + popRect.height > window.innerHeight - VIEWPORT_MARGIN) {
-            const flippedTop = anchorRect.top - popRect.height - OFFSET
-            if (flippedTop >= VIEWPORT_MARGIN) {
-                top = flippedTop
-                flipped = true
-            } else {
-                // Pin to the bottom of the viewport if neither fits cleanly.
-                top = Math.max(VIEWPORT_MARGIN, window.innerHeight - popRect.height - VIEWPORT_MARGIN)
-            }
-        }
-
-        // Clamp horizontally so the popover stays on screen.
-        left = Math.max(VIEWPORT_MARGIN, Math.min(left, window.innerWidth - popRect.width - VIEWPORT_MARGIN))
-        position = { left, top, flipped }
+        const placed = placeOffAnchor({
+            anchor: anchor.getBoundingClientRect(),
+            // `scrollHeight`: the natural height even once a cap from the last pass applies.
+            size: { width: popoverEl.offsetWidth, height: popoverEl.scrollHeight },
+            viewport: { width: window.innerWidth, height: window.innerHeight },
+            gap: OFFSET,
+            margin: VIEWPORT_MARGIN,
+        })
+        position = { left: placed.left, top: placed.top, maxHeight: placed.maxHeight, flipped: placed.side === 'above' }
     }
 
     /** Lists every focusable element currently inside the popover, in DOM order. */
@@ -153,6 +149,7 @@
         data-flipped={position.flipped}
         style:left="{position.left}px"
         style:top="{position.top}px"
+        style:max-height={position.maxHeight === undefined ? undefined : `${String(position.maxHeight)}px`}
         onkeydown={handleKeyDown}
         tabindex="-1"
         use:trapFocus={{ onEscape: closeAndReturnFocus }}
@@ -165,6 +162,7 @@
     .ui-popover {
         position: fixed;
         z-index: var(--z-dropdown);
+        overflow-y: auto;
 
         /* Frosted-glass material via shared design tokens. Same translucency, blur, and hairline
            as the tooltip primitive — reuse the tooltip's frosted-glass material values exactly.

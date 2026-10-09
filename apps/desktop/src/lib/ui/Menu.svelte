@@ -29,6 +29,7 @@
     import { tooltip } from '$lib/tooltip/tooltip'
     import { formatInteger } from '$lib/intl/number-format'
     import { usePortalTarget } from './portal-target'
+    import { placeBesideRow, placeOffAnchor, type PlacementRect } from './anchored-placement'
     import type { MenuController } from './menu-controller.svelte'
     import { disclosureRowValue } from './menu-navigation'
     import type { MenuItem, MenuRowContext, MenuSection } from './menu-types'
@@ -81,7 +82,7 @@
     let surfaceEl: HTMLDivElement | undefined = $state()
     let submenuEl: HTMLDivElement | undefined = $state()
     let position = $state<{ left: number; top: number; maxHeight: number } | null>(null)
-    let submenuPosition = $state<{ top: number; left: number } | null>(null)
+    let submenuPosition = $state<{ top: number; left: number; maxHeight: number } | null>(null)
 
     /**
      * The surface this menu hangs off, when its anchor lives inside ANOTHER menu — the
@@ -118,30 +119,33 @@
             }),
     })
 
-    /** The rect the menu hangs off, whichever way it was opened. */
-    function anchorRect(): { left: number; bottom: number } | null {
+    /** The rect the menu hangs off, whichever way it was opened, and the gap it keeps from it. */
+    function anchorRect(): { rect: PlacementRect; gap: number } | null {
         const anchor = menu.anchor
         if (!anchor) return null
-        if (anchor.kind === 'point') return { left: anchor.x, bottom: anchor.y }
-        const rect = anchor.element.getBoundingClientRect()
-        return { left: rect.left, bottom: rect.bottom + ANCHOR_GAP }
+        if (anchor.kind === 'point') {
+            return { rect: { left: anchor.x, right: anchor.x, top: anchor.y, bottom: anchor.y }, gap: 0 }
+        }
+        return { rect: anchor.element.getBoundingClientRect(), gap: ANCHOR_GAP }
     }
 
     /**
-     * Pin the surface to the viewport: clamped horizontally, and capped to the room below the
-     * anchor so a long list scrolls inside itself instead of running off screen.
+     * Pin the surface to the viewport: below the anchor when it fits, above when only that fits,
+     * else the roomier side capped so a long list scrolls inside itself (`placeOffAnchor`).
      */
     async function fitToViewport(): Promise<void> {
         await tick()
-        const rect = anchorRect()
-        if (!rect || !surfaceEl) return
-        const width = surfaceEl.offsetWidth || minWidth
-        const left = Math.max(VIEWPORT_MARGIN, Math.min(rect.left, window.innerWidth - width - VIEWPORT_MARGIN))
-        const top = Math.max(VIEWPORT_MARGIN, rect.bottom)
-        const windowBottom = window.innerHeight - VIEWPORT_MARGIN
-        const limit = getBottomLimit?.()
-        const bottom = limit === undefined ? windowBottom : Math.min(windowBottom, limit - ANCHOR_GAP)
-        position = { left, top, maxHeight: bottom - top }
+        const anchor = anchorRect()
+        if (!anchor || !surfaceEl) return
+        position = placeOffAnchor({
+            anchor: anchor.rect,
+            // `scrollHeight`: the natural height even once a cap from the last pass applies.
+            size: { width: surfaceEl.offsetWidth || minWidth, height: surfaceEl.scrollHeight },
+            viewport: { width: window.innerWidth, height: window.innerHeight },
+            gap: anchor.gap,
+            margin: VIEWPORT_MARGIN,
+            bottomLimit: getBottomLimit?.(),
+        })
     }
 
     /**
@@ -192,19 +196,30 @@
         })
     })
 
-    /** A submenu is fixed-positioned off its parent row's rect: inside the scroller it would clip. */
+    /**
+     * A submenu is fixed-positioned off its parent row's rect (inside the scroller it would
+     * clip), and measured first, hidden, so it can flip left or slide up to stay on screen.
+     * Like the surface's, this depends on `submenuEl`: the node mounts after the value opens.
+     */
     $effect(() => {
         const parent = menu.openSubmenuValue
-        if (parent === null) {
+        const el = submenuEl
+        if (parent === null || !el) {
             submenuPosition = null
             return
         }
         void tick().then(() => {
             const row = surfaceEl?.querySelector(`[data-menu-row="${CSS.escape(parent)}"]`)
             if (!row) return
-            const rect = row.getBoundingClientRect()
-            // A few px of overlap, the way macOS hands a submenu off from its parent row.
-            submenuPosition = { top: rect.top - ANCHOR_GAP, left: rect.right - 5 }
+            submenuPosition = placeBesideRow({
+                row: row.getBoundingClientRect(),
+                size: { width: el.offsetWidth, height: el.scrollHeight },
+                viewport: { width: window.innerWidth, height: window.innerHeight },
+                gap: ANCHOR_GAP,
+                // A few px of overlap, the way macOS hands a submenu off from its parent row.
+                overlap: 5,
+                margin: VIEWPORT_MARGIN,
+            })
         })
     })
 
@@ -507,15 +522,17 @@
             {#if footer}{@render footer()}{/if}
         </div>
 
-        {#if menu.openSubmenuValue !== null && submenuPosition}
+        {#if menu.openSubmenuValue !== null}
             <div
                 bind:this={submenuEl}
                 class="menu-surface menu-submenu"
                 data-menu-submenu=""
                 role="menu"
                 aria-label={ariaLabel}
-                style:top="{submenuPosition.top}px"
-                style:left="{submenuPosition.left}px"
+                style:top="{submenuPosition?.top ?? 0}px"
+                style:left="{submenuPosition?.left ?? 0}px"
+                style:max-height={submenuPosition ? `${String(submenuPosition.maxHeight)}px` : undefined}
+                style:visibility={submenuPosition ? 'visible' : 'hidden'}
                 onmouseleave={() => {
                     menu.surface.closeSubmenu()
                 }}
