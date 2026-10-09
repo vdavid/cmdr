@@ -50,3 +50,31 @@
     `file.rename` menu command (`$lib/commands/menu-claims.ts`, run by the dispatch core for the menu road ahead of the
     dialog gate), its keydown and its Presets menu's `onKey` call the same `pressOpenKey`, and `createKeyRoadEcho` drops
     the other road's fire within 300 ms, so one F2 toggles the menu once whichever arrives first.
+
+## Mask input
+
+`MaskInput.svelte` is the mask field with inline token editors. Not wired into the sheet yet; to wire it, swap each
+mask's `TextInput` for it.
+
+- **Props**: `value` (the mask), `onValueChange(next)` (every keystroke AND every token edit; feed it to
+  `tool.update({ nameMask })`), `ariaLabel`, `invalid`, and bindable `inputElement` (the `<input>`, for focus and
+  `insertPlaceholder`'s caret). It renders `TextInput mono` itself.
+- **Keys**: ArrowDown with the caret inside or right after an editable token (`tokenAtCaret`: `from < caret <= to`)
+  opens its editor and is claimed (`claimKey`); anywhere else ArrowDown isn't touched. In the editor, ArrowDown /
+  ArrowUp walk the fields, and Enter or ArrowUp from the first field closes it; both are claimed, so the sheet's
+  Enter-starts never sees them. Escape is the `Popover`'s, which stops it before the sheet closes. All three put focus
+  back in the field with the caret after the token (Escape through the anchor span's `onfocus`); a click elsewhere
+  closes the editor and leaves focus where it landed.
+- **Markers**: an absolutely placed ▾ `<button tabindex="-1">` ("Edit counter", `aria-haspopup="dialog"`) under each
+  token's end, measured with a canvas in the input's computed font, net of `scrollLeft`; one scrolled out of view isn't
+  drawn. Mousedown is prevented, so a click never moves focus out of the field. Re-measured on mask change, input
+  scroll, resize, and `selectionchange` (the caret can scroll the input).
+- **Token kinds** (`mask-token-kinds.ts`): each is a grammar (`parse(inner)` → value or `null`, `format(value)` → the
+  shortest inner text, in a pure module), an editor component taking `TokenEditorProps` (`value`, `onChange`, `onDone`),
+  and two message keys. The text is the single source of truth: an editor edit is `format` + `replaceToken`, never state
+  of its own. A new kind (a range, a date) is one entry there plus its grammar's tests.
+- **Counter** (`counter-token.ts`): parses step for step like `counter()` in `mask.rs`, quirks included (`[C++5]` is
+  step 5); both sides test against `counter_token_vectors.json`. Writes back in minimal form: defaults (start 1, step 1,
+  digits 1) left out, so all-default is a bare `[C]`; a start can't carry a sign (`[C-5]` is a step), so it clamps to 0
+  and up; digits clamp to 1–`MAX_COUNTER_DIGITS`. An emptied editor field means that part's default; a half-typed `-`
+  waits.

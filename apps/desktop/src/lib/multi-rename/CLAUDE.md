@@ -14,6 +14,9 @@ The ⌃M sheet over `src-tauri/src/multi_rename/` (the engine and its rules: tha
   `preset-menu.ts` builds the menu's rows and finds a name clash; `preset-keys.ts` reads F2 / ⌘S. Both pure.
 - `spec.ts` the default spec, built-in presets, `specsEqual`, placeholder insertion. Pure.
 - `row-status.ts` a row status → its glyph, short label, and tooltip reason (message keys). Pure.
+- `MaskInput.svelte` a mask field whose `[C…]` tokens get a ▾ marker and an inline editor (`CounterTokenEditor`), from
+  the `mask-token-kinds.ts` registry; `mask-tokens.ts` / `counter-token.ts` scan, parse, and rewrite tokens. Pure. Not
+  wired into the sheet yet: DETAILS § Mask input.
 
 ## Must-knows
 
@@ -31,6 +34,8 @@ The ⌃M sheet over `src-tauri/src/multi_rename/` (the engine and its rules: tha
   (`claimMenuCommand('file.rename', …)`), so both roads end in `PresetsControl.pressOpenKey`, which toggles once per
   press (`createKeyRoadEcho` drops the other road's echo). ❌ Don't call `openMenu` from a key path: the echo would
   close the menu it opened. ⌘S isn't a menu accelerator.
+- **`counter-token.ts` must read `[C…]` as `mask.rs` does**: both test against
+  `src-tauri/src/multi_rename/counter_token_vectors.json`; change the grammar there first.
 - **A spec error keeps the last good preview** on screen under the message; any other error clears it.
 - Built-in preset names are message keys (translated); saved ones are the user's text. `edited` compares against the
   preset as it is in the list now, so a rename, update, or delete is followed with no syncing.
