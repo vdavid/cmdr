@@ -18,6 +18,18 @@ The async driver resolves the top-level conflict itself and never invokes the cl
 that to the closure, which is why point 2 of the data-safety contract is async-only. ❌ Don't unify the two by moving
 resolution into the sync driver without moving the closure's `&mut` state with it.
 
+## A `Cancelled` from any closure is a cancel, ❌ never a failure
+
+Both drivers turn every closure `Err` into the loop's ending through `PostLoopIntent::stopped_by`: `Cancelled` ends it as
+`PostLoopIntent::Cancelled`, anything else as `Failed`. The async driver has three closures that can say it, and the
+resolver is the one that matters most: a cancel pressed while a Stop-mode clash is on screen drops the parked slot's
+sender (`../../conflict_slot.rs::abandon`), so the resolver comes back `Err(Cancelled)` instead of a decision. The
+engines emit `write-cancelled` only from their `Cancelled` arm (`../volume/move_cross.rs`, `../volume/move_same.rs`),
+and the moves' outer wrappers only LOG a `Cancelled` error. So a `Failed(Cancelled)` emitted no terminal event at all,
+and the progress dialog stayed parked on the stale prompt until the person answered it (a cross-volume move to an SMB
+share in 0.51.0). Pinned by `async_driver_resolver_cancel_ends_the_loop_as_cancelled` and the two
+`*_move_cancelled_at_a_conflict_prompt_emits_cancelled_event` tests in `../volume/move_cancel_tests.rs`.
+
 ### Progress stays honest across a retry, and across leaves that overlap
 
 Three types, one per scope (`progress.rs`): `LeafProgressLedger` holds the operation's totals, `SourceProgress` is one

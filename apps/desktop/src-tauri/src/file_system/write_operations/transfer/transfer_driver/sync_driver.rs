@@ -183,22 +183,13 @@ where
                     total_bytes,
                 );
             }
-            Err(WriteOperationError::Cancelled { .. }) => {
-                return TransferLoopOutcome {
-                    files_done,
-                    bytes_done,
-                    files_skipped,
-                    bytes_skipped,
-                    intent: PostLoopIntent::Cancelled,
-                };
-            }
             Err(e) => {
                 return TransferLoopOutcome {
                     files_done,
                     bytes_done,
                     files_skipped,
                     bytes_skipped,
-                    intent: PostLoopIntent::Failed(e),
+                    intent: PostLoopIntent::stopped_by(e),
                 };
             }
         }

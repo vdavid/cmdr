@@ -510,6 +510,49 @@ describe('derived read state', () => {
     dispose()
   })
 
+  it('lets go of the clash once the operation has ended, with no retraction for it', () => {
+    // A cancel takes a parked clash away without answering it, so no
+    // `conflictResolved` ever names it: the ending is the only word a view gets.
+    // Holding the clash past it would leave a cancelled operation asking a
+    // question the backend has already dropped.
+    const { fanout, session, dispose } = harness()
+    fanout._testEmit({
+      kind: 'progress',
+      event: progress('a', {
+        activity: {
+          inFlight: 1,
+          stillForSeconds: 0,
+          waitingOn: 'conflict',
+          openingSource: false,
+          sourceInboundBytesPerSecond: null,
+        },
+      }),
+    })
+    fanout._testEmit({ kind: 'conflict', event: conflict('a') })
+    expect(session.awaitingAnswer).toBe(true)
+
+    fanout._testEmit({
+      kind: 'cancelled',
+      event: {
+        operationId: 'a',
+        operationType: 'move',
+        filesProcessed: 0,
+        rollback: {
+          outcome: 'notRolledBack',
+          reversed: 0,
+          skips: [],
+          stagedLeftovers: null,
+          originalsStillInPlace: null,
+          recovered: [],
+        },
+      },
+    })
+
+    expect(session.conflict).toBeNull()
+    expect(session.awaitingAnswer).toBe(false)
+    dispose()
+  })
+
   it('stops reading the stream once disposed', () => {
     const { fanout, session } = harness()
     fanout._testEmit({ kind: 'progress', event: progress('a', { bytesDone: 10 }) })

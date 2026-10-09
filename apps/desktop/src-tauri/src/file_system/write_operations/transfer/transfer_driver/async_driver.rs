@@ -9,7 +9,6 @@ use std::time::Instant;
 
 use crate::file_system::write_operations::event_sinks::OperationEventSink;
 use crate::file_system::write_operations::state::{OperationIntent, WriteOperationState, load_intent};
-use crate::file_system::write_operations::types::WriteOperationError;
 
 use super::{
     ConflictDecision, ConflictDecisionInput, DriverConfig, FetchFut, NameAtDest, PostLoopIntent, ResolveFut,
@@ -35,7 +34,9 @@ use super::{
 ///    Skip pre-known-conflict sources (no closure invocation). c. Conflict detection via
 ///    `dest_meta_fetcher`. If conflict, invoke `conflict_resolver` and respect its decision. d. If
 ///    Skip, do skip accounting + emit throttled progress; continue. e. If Proceed, invoke
-///    `transfer_one` with the resolved dest path.
+///    `transfer_one` with the resolved dest path. A `Cancelled` from ANY of the three closures
+///    (the resolver's comes from a cancel dropping the parked conflict slot) ends the loop as
+///    `PostLoopIntent::Cancelled`, any other `Err` as `Failed` (`PostLoopIntent::stopped_by`).
 /// 3. Return `PostLoopIntent::Completed` if the loop drained without incident.
 ///
 /// # Closure-bound shape: boxed future, not `AsyncFnMut`
@@ -172,7 +173,7 @@ where
                     bytes_done,
                     files_skipped,
                     bytes_skipped,
-                    intent: PostLoopIntent::Failed(e),
+                    intent: PostLoopIntent::stopped_by(e),
                 };
             }
         };
@@ -224,13 +225,15 @@ where
                         continue;
                     }
                     Ok(ConflictDecision::Proceed { dest_path, replaces }) => (dest_path, replaces, true),
+                    // A cancel pressed while the clash was on screen drops the
+                    // slot's sender, so the resolver comes back `Cancelled`.
                     Err(e) => {
                         return TransferLoopOutcome {
                             files_done,
                             bytes_done,
                             files_skipped,
                             bytes_skipped,
-                            intent: PostLoopIntent::Failed(e),
+                            intent: PostLoopIntent::stopped_by(e),
                         };
                     }
                 }
@@ -301,22 +304,13 @@ where
                     );
                 }
             }
-            Err(WriteOperationError::Cancelled { .. }) => {
-                return TransferLoopOutcome {
-                    files_done,
-                    bytes_done,
-                    files_skipped,
-                    bytes_skipped,
-                    intent: PostLoopIntent::Cancelled,
-                };
-            }
             Err(e) => {
                 return TransferLoopOutcome {
                     files_done,
                     bytes_done,
                     files_skipped,
                     bytes_skipped,
-                    intent: PostLoopIntent::Failed(e),
+                    intent: PostLoopIntent::stopped_by(e),
                 };
             }
         }

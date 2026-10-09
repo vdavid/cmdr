@@ -99,7 +99,8 @@ export interface OperationSession extends OperationSessionCommands {
    *  same fact, so no two views can word one wait differently. */
   readonly awaitingAnswer: boolean
   /** The conflict the operation is parked on, if any. Cleared once the backend
-   *  has ruled on it, whichever surface asked. */
+   *  has ruled on it, whichever surface asked, and once the operation has ended:
+   *  a cancel takes a parked clash away with no retraction of its own. */
   readonly conflict: WriteConflictEvent | null
   /** How it ended, or `null` while it's live. Write-once. */
   readonly outcome: OperationOutcome | null
@@ -219,7 +220,7 @@ export function createOperationSession(operationId: string, fanout: OperationEve
    *  was done. A pause is the other half, and the lifecycle status already
    *  names that one, so a view wanting to say "this one needs you" wants this. */
   function awaitingAnswer(): boolean {
-    return progress?.activity?.waitingOn === 'conflict'
+    return outcome === null && progress?.activity?.waitingOn === 'conflict'
   }
 
   /** First outcome wins: a cancel that races a completion must not flip the
@@ -380,7 +381,9 @@ export function createOperationSession(operationId: string, fanout: OperationEve
       return awaitingAnswer()
     },
     get conflict(): WriteConflictEvent | null {
-      return conflict
+      // An ended operation asks nothing. A cancel drops the parked clash without
+      // answering it, so no `conflictResolved` names it; the ending is the word.
+      return outcome === null ? conflict : null
     },
     get outcome(): OperationOutcome | null {
       return outcome
