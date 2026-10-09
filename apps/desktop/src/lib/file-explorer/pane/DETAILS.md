@@ -847,6 +847,8 @@ below rather than merely spreading lines:
 - `archive-password-flow.svelte.ts`: the password prompt and its `transfer` / `browse` modes.
 - `transfer-op-label.ts`: the log-line label for an operation type, shared by the two families.
 - `programmatic-confirm.ts`: the MCP `dialog confirm`, owning the transfer and delete dialogs' registered confirms.
+- `confirmation-skip.ts`: which copy, move, and trash confirmations the "Skip confirmation" setting leaves out, and the
+  answer a skipped one gives.
 
 `dialog-state.svelte.ts` keeps birth context, the confirmation / alert / error dialogs, and the cross-cutting queries
 (`anyDialogOpen`, `isConfirmationDialogOpen`, `dismissAllAfterRenderFailure`).
@@ -869,6 +871,24 @@ backend registers the operation at confirm and its own task waits for the previe
 (`apps/desktop/src-tauri/src/file_system/write_operations/DETAILS.md` § "The scan-wait"). What the handler MUST keep
 threading is `previewId`, and the archive-password retry MUST keep clearing it: that retry is a new operation, a preview
 accepts exactly one claimant, so a carried-over id would silently downgrade to a full re-walk.
+
+### Skipping a confirmation
+
+The `fileOperations.skipConfirmation` setting (default off) starts a copy, move, or trash without its dialog. The skip
+is decided in ONE place: `dialog-state`'s `showTransfer` / `showDeleteConfirmation`, which every entry point already
+funnels through (F5/F6/F8, the F-key bar, the palette, the menus, drag and drop), AFTER each one's own guards ran.
+
+- **A skipped dialog answers through its own confirm handler** (`handleTransferConfirm` / `handleDeleteConfirm`), with
+  what it would have preselected: the prefilled destination (volume-relative, like the path box), "Ask for each" on
+  conflicts, and no scan preview (the backend walks the sources itself, as for paste). So birth context, the selection
+  snapshot, and the operation gate behave exactly as after a click.
+- **The dialog still shows whenever it's the only place something gets seen or decided**: any permanent delete, a cloud
+  folder that may turn a trash into a delete mid-scan, compress, rename mode, a destination its path check refuses, S3
+  on either side (the cost line), and anything from MCP. The list and the why live in `confirmation-skip.ts`'s module
+  doc; pinned by `confirmation-skip.test.ts` and `dialog-state.confirmation-skip.svelte.test.ts`.
+- **Accepted gap**: a destination that refuses writes (read-only folder, no permission) is a red notice in the dialog,
+  found by an async probe. A skipped transfer meets the backend's typed refusal in the error dialog instead, which says
+  the same thing one step later. Read-only VOLUMES are refused before any of this by the entry guard.
 
 ### The Duplicate command
 

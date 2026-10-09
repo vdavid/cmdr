@@ -123,7 +123,7 @@
     import { createIndexEventHandler } from './index-events'
     import { loadPersistedState } from './initialization'
     import { getDirectorySortMode, getShowHiddenFiles } from '$lib/settings/reactive-settings.svelte'
-    import { onSettingChange } from '$lib/settings'
+    import { getSetting, onSettingChange } from '$lib/settings'
     import { onMenuBarRebuilt, activateWindowMenu, onListingIndexSizesChanged } from '$lib/tauri-commands'
     import { resyncSameKindMenu } from './same-kind-target.svelte'
     import { resyncMenuAccelerators } from '$lib/shortcuts'
@@ -193,6 +193,7 @@
         // directly rather than routed back in as a prop: they're this component's
         // own exports, so there's nothing to plumb from the route.
         getExplorer: () => ({ getFocusedPane, setFocusedPane, getPaneLocation, navigate, moveCursor }),
+        skipsConfirmations: () => getSetting('fileOperations.skipConfirmation'),
         onRefocus: () => containerElement?.focus(),
         onOpenInEditor: (path: string) => void openInEditorOrExplain(getPaneVolumeId(focusedPane), path),
     })

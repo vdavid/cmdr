@@ -173,6 +173,7 @@ describe('an MCP confirm on the transfer dialog', () => {
       getShowHiddenFiles: () => false,
       getExplorer: () => undefined,
       onRefocus: vi.fn(),
+      skipsConfirmations: () => false,
       onOpenInEditor: vi.fn(),
     })
     const onDialogRenderError = vi.fn()

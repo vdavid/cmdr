@@ -68,6 +68,7 @@ function makeState() {
     // No pane navigation in these suites; the trash toast is the only consumer.
     getExplorer: () => undefined,
     onRefocus,
+    skipsConfirmations: () => false,
     onOpenInEditor: vi.fn(),
   })
   return { dialogs, rightPane, leftPane }

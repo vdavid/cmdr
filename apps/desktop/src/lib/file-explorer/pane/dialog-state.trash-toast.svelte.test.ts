@@ -73,6 +73,7 @@ function makeState() {
     getShowHiddenFiles: () => false,
     getExplorer: () => explorer,
     onRefocus: vi.fn(),
+    skipsConfirmations: () => false,
     onOpenInEditor: vi.fn(),
   })
 }

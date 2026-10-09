@@ -172,6 +172,34 @@ export const behaviorSettings: SettingDefinitionSource[] = [
       ],
     },
   },
+  {
+    // FE-owned: read by `DualPaneExplorer` into the dialog state, where
+    // `pane/confirmation-skip.ts` decides which confirmations it may leave out.
+    // A permanent delete always asks, whatever this says.
+    id: 'fileOperations.skipConfirmation',
+    section: ['Behavior', 'Navigation & file ops'],
+    cardKey: 'settings.navigationAndFileOps.card.fileOperations',
+    labelKey: 'settings.fileOperations.skipConfirmation.label',
+    descriptionKey: 'settings.fileOperations.skipConfirmation.description',
+    keywords: [
+      'confirm',
+      'confirmation',
+      'dialog',
+      'ask',
+      'copy',
+      'move',
+      'trash',
+      'delete',
+      'skip',
+      'clicks',
+      'F5',
+      'F6',
+      'F8',
+    ],
+    type: 'boolean',
+    default: false,
+    component: 'switch',
+  },
 
   // ------------------------------------------------------------------------
   // Text editor, rendered as its own card inside Navigation & file ops, above

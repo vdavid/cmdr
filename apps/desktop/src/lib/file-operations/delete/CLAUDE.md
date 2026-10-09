@@ -38,7 +38,8 @@ Backend counterpart: `apps/desktop/src-tauri/src/file_system/write_operations/de
   Scan-preview detail.
 - **A trash is undoable, a delete never is.** Its toast carries Undo and "Go to trash", both needing the journaled op id
   (no id → plain sentence). ❌ Never add a permanent delete there: it shows after EVERY trash, one misclick from the one
-  op no rollback reverses. No `confirmBeforeDelete` setting: the dialog always shows.
+  op no rollback reverses. "Skip confirmation" skips a TRASH dialog only
+  (`../../file-explorer/pane/confirmation-skip.ts`).
 - **A partly refused trash must never read as a clean success**: `refused` on the completion drops the toast to `warn`
   and raises a second naming what stayed (`composeTrashRefusedToast`). ❌ Nor a failure: what went IS trashed, and Undo
   must stay reachable.

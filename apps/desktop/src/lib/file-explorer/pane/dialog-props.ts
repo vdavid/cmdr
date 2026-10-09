@@ -284,6 +284,8 @@ export interface DialogStateDeps {
    * `$lib/file-explorer/navigation/navigate-and-select` needs.
    */
   getExplorer: () => PaneRevealAPI | undefined
+  /** The "Skip confirmation" setting: copy, move, and trash start without their dialog. */
+  skipsConfirmations: () => boolean
   onRefocus: () => void
   onOpenInEditor: (path: string) => void
 }

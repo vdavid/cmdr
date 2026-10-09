@@ -1,7 +1,7 @@
 # Transfer (copy and move)
 
-Copy (F5), move (F6), and compress (⌥F5): setup, conflict scan, progress, and errors. Delete/trash reuse progress.
-Backend: `apps/desktop/src-tauri/src/file_system/write_operations/CLAUDE.md`.
+Copy (F5), move (F6), compress (⌥F5): setup, conflict scan, progress, errors. Delete/trash reuse progress. Backend:
+`apps/desktop/src-tauri/src/file_system/write_operations/CLAUDE.md`.
 
 ## Module map
 
@@ -18,15 +18,15 @@ Backend: `apps/desktop/src-tauri/src/file_system/write_operations/CLAUDE.md`.
 - **A close is a DETACH, ❌ never a cancel.** `onclose` calls `detach()`; only the Cancel button cancels, and unmounting
   stops nothing. With no session yet it leaves the operation ALONE. ❌ While a clash is up there's no `onclose` at all:
   every way out of a clash decides something about the user's files.
-- **Queue and the dialog-scoped F2 are FRONTEND-ONLY** (set `backgrounded`, open the queue window, unmount). ❌
-  `backgrounded` and `destroyed` stay plain `let`s: teardown reads them during reactive-scope disposal, where a rune
-  goes stale, which is how a just-queued transfer once got cancelled.
-- **One transfer entry seam**: F5/F6, drag-and-drop, and paste all prepare through `pane/transfer-entry.ts`. The paste
-  path's scheme-path refusal stays SEPARATE and BEFORE the shared guard.
-- **Batch IPC for selection lookups** (`get_paths_at_indices` / `get_files_at_indices`), ❌ never a per-index loop: 50k
-  files costs 5-10 s vs ~1 ms.
+- **Queue and the dialog-scoped F2 are FRONTEND-ONLY** (set `backgrounded`, open the queue, unmount). ❌ `backgrounded`
+  and `destroyed` stay plain `let`s: teardown reads them during reactive-scope disposal, where a rune goes stale, which
+  is how a just-queued transfer once got cancelled.
+- **One transfer entry seam**: F5/F6, drag-and-drop, and paste all prepare through `pane/transfer-entry.ts`. Paste's
+  scheme-path refusal stays SEPARATE and BEFORE the shared guard.
+- **Batch IPC for selection lookups** (`get_paths_at_indices` / `get_files_at_indices`), ❌ never per index: 50k files
+  costs 5-10 s vs ~1 ms.
 - **Speed, ETA, and bars are backend-owned and SHARED with the queue window** (`../TransferProgressReadout.svelte`): ❌
-  no second instantaneous rate here.
+  no second rate here.
 - **A stall drops the ETA and says why** (`transfer-stall.ts`): the BACKEND classifies, this side owns the threshold. ❌
   Never infer a stall from event timing: a wedge emits no events at all. DETAILS § "The stalled-transfer notice".
 - **A cancel's reversal drains its bar to zero, so the TOAST says what actually stayed** (`cancel-rollback-toast.ts`,
@@ -41,11 +41,13 @@ Backend: `apps/desktop/src-tauri/src/file_system/write_operations/CLAUDE.md`.
 - **The progress dialog does NOT wait for the scan; the BACKEND does.** It dispatches on mount, so a still-counting
   transfer has an `operationId`, a queue row, and Background from frame one. ❌ Never cancel the preview on teardown;
   confirm ALWAYS awaits `scan.scanStarted`. DETAILS § Scan.
-- **Compress swaps the conflict-policy UI for a dest-exists overwrite check**; its auto-confirm (MCP) path ❌ never
-  silently overwrites.
+- **"Skip confirmation" confirms copy/move unmounted**: give a new must-see notice a case in
+  `../../file-explorer/pane/confirmation-skip.ts`.
+- **Compress swaps the conflict-policy UI for a dest-exists overwrite check**; its MCP auto-confirm ❌ never silently
+  overwrites.
 - **ONE map from an MCP `onConflict` name to a policy** (`conflict-policy.ts`), and ONE confirm path: `dialog confirm`
   presses `handleConfirm` via `registerConfirmer`. ❌ Never a second map (an unmapped name silently becomes `skip`) or a
   payload built from the opening props (no edited path, volume, or preview).
 
-The file map, rollback's limits, the password interception, the E2E markers, the phase catalog, flows, and decisions:
-`DETAILS.md`. Read it before any non-trivial work here: editing, planning, reorganizing, or advising.
+File map, rollback's limits, password interception, E2E markers, phase catalog, flows, and decisions: `DETAILS.md`. Read
+it before any non-trivial work here: editing, planning, reorganizing, or advising.

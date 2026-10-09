@@ -3370,6 +3370,8 @@ export type MessageKey =
   | 'settings.fileOperations.pasteClipboardAsFile.opt.doNothing'
   | 'settings.fileOperations.progressUpdateInterval.description'
   | 'settings.fileOperations.progressUpdateInterval.label'
+  | 'settings.fileOperations.skipConfirmation.description'
+  | 'settings.fileOperations.skipConfirmation.label'
   | 'settings.fileSystemWatching.cardDownloads'
   | 'settings.fileSystemWatching.cardLowDiskSpace'
   | 'settings.fileSystemWatching.clearIndex'

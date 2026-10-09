@@ -392,6 +392,14 @@
   "@settings.fileOperations.pasteClipboardAsFile.opt.createFileAndRename": {
     "sourceHash": "ed7b1b9"
   },
+  "settings.fileOperations.skipConfirmation.label": "Skip confirmation for copy, move, and trash",
+  "@settings.fileOperations.skipConfirmation.label": {
+    "sourceHash": "6af6546"
+  },
+  "settings.fileOperations.skipConfirmation.description": "F5 and F6 copy and move into the other pane right away, and F8 moves to the trash without asking. A bit risky, since one keypress acts at once. Deleting permanently always asks first.",
+  "@settings.fileOperations.skipConfirmation.description": {
+    "sourceHash": "086379d"
+  },
   "settings.archives.card.archives": "Archieven",
   "@settings.archives.card.archives": {
     "sourceHash": "e404aa8"

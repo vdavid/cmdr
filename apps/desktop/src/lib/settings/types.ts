@@ -451,6 +451,7 @@ export interface SettingsValues {
   'fileOperations.adbBinaryPath': string
   'fileOperations.allowFileExtensionChanges': ExtensionChangePolicy
   'fileOperations.pasteClipboardAsFile': PasteClipboardAsFileMode
+  'fileOperations.skipConfirmation': boolean
   'fileOperations.progressUpdateInterval': number
   'fileOperations.maxConflictsToShow': number
 

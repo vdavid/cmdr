@@ -2101,6 +2101,7 @@
     "fileOperations.mtpConnectionWarning": true,
     "fileOperations.mtpEnabled": true,
     "fileOperations.progressUpdateInterval": 500,
+    "fileOperations.skipConfirmation": false,
     "fileViewer.suppressBinaryWarning": false,
     "indexing.askForEachDrive": true,
     "indexing.enabled": true,

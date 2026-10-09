@@ -487,6 +487,14 @@
     "description": "Paste-as-file option: pressing ⌘V creates a new file from the clipboard content and immediately starts an inline rename so the user can name it. Radio-button label. This is the default.",
     "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
+  "settings.fileOperations.skipConfirmation.label": "Skip confirmation for copy, move, and trash",
+  "@settings.fileOperations.skipConfirmation.label": {
+    "description": "Settings switch label. When on, Copy, Move, and Move to Trash start right away without their confirmation dialog. \"trash\" is the macOS Trash (use the OS's localized name for it)."
+  },
+  "settings.fileOperations.skipConfirmation.description": "F5 and F6 copy and move into the other pane right away, and F8 moves to the trash without asking. A bit risky, since one keypress acts at once. Deleting permanently always asks first.",
+  "@settings.fileOperations.skipConfirmation.description": {
+    "description": "Help text under the skip-confirmation switch. \"F5\", \"F6\", and \"F8\" are keyboard keys (Copy, Move, Delete); keep them. \"A bit risky\" is a gentle, friendly caution, not an alarm: keep the tone light. \"the other pane\" = the second file list of the two-pane window. \"trash\" is the macOS Trash (use the OS's localized name)."
+  },
   "settings.archives.card.archives": "Archives",
   "@settings.archives.card.archives": {
     "description": "Card title in Settings > Behavior > Archives, grouping the archive formats Cmdr can browse into (zip today). \"Cmdr\" is the product name; do not translate it."

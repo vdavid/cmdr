@@ -40,6 +40,8 @@ import { createTransferPaneEffects } from './transfer-pane-effects'
 import { createAdoptedOperation } from './adopted-operation.svelte'
 import { createArchivePasswordFlow } from './archive-password-flow.svelte'
 import { createProgrammaticConfirm } from './programmatic-confirm'
+import { skippedDeleteConfirmation, skippedTransferConfirmation } from './confirmation-skip'
+import { getVolumes } from '$lib/stores/volume-store.svelte'
 import { openRenameOnDuplicate } from './duplicate-rename'
 import type { TransferDialogPropsData } from './transfer-operations'
 import type { TransferOperationType, WriteOperationError } from '../types'
@@ -397,9 +399,13 @@ export function createDialogState(deps: DialogStateDeps) {
       showAlertDialog = true
     },
 
+    /** Opens the copy/move/compress confirmation, or, with confirmations skipped
+     *  (`confirmation-skip.ts`), answers it the way the dialog would have. */
     showTransfer(props: TransferDialogPropsData) {
       transferDialogProps = props
-      showTransferDialog = true
+      const skipped = deps.skipsConfirmations() ? skippedTransferConfirmation(props, getVolumes()) : null
+      if (skipped) state.handleTransferConfirm(skipped)
+      else showTransferDialog = true
     },
 
     /** Opens the progress dialog directly, skipping the destination picker (used by
@@ -424,9 +430,13 @@ export function createDialogState(deps: DialogStateDeps) {
       showNewFileDialog = true
     },
 
+    /** Opens the delete/trash confirmation, or, with confirmations skipped
+     *  (`confirmation-skip.ts`), trashes right away. A permanent delete always asks. */
     showDeleteConfirmation(props: DeleteDialogPropsData) {
       deleteDialogProps = props
-      showDeleteDialog = true
+      const skipped = deps.skipsConfirmations() ? skippedDeleteConfirmation(props) : null
+      if (skipped) state.handleDeleteConfirm(skipped.previewId, skipped.isPermanent)
+      else showDeleteDialog = true
     },
 
     /** Raises the browse-time archive-password prompt (a listing of a
