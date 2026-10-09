@@ -3,10 +3,11 @@
  * (Behavior › Navigation & file ops).
  *
  * Labeled cards: "Navigation" (the double-click-to-parent switch), "File
- * operations" (the file-extension-change radio), "Text editor" (which app F4
+ * operations" (the file-extension-change radio, paste as a file, and the copy/move
+ * dialog's starting "files already exist" choice), "Text editor" (which app F4
  * opens files in) and "Terminal" (which app "Open terminal here" launches), both
- * macOS-only, and "Operation log" (the retention limits). The conflict/progress
- * settings live in Advanced (their single home), never mirrored here.
+ * macOS-only, and "Operation log" (the retention limits). The conflict-preview/progress
+ * tuning settings live in Advanced (their single home), never mirrored here.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
@@ -17,6 +18,7 @@ import NavigationAndFileOpsSection from './NavigationAndFileOpsSection.svelte'
 vi.mock('$lib/settings/settings-store', () => ({
   getSetting: vi.fn((key: string) => {
     if (key === 'fileOperations.allowFileExtensionChanges') return 'ask'
+    if (key === 'fileOperations.defaultConflictPolicy') return 'stop'
     if (key === 'behavior.doubleClickPaneNavigatesToParent') return true
     if (key === 'behavior.textEditorApp') return 'system'
     if (key === 'behavior.openTerminalHereApp') return 'com.apple.Terminal'
@@ -104,6 +106,7 @@ describe('NavigationAndFileOpsSection', () => {
     const fors = labelFors(target)
     expect(fors).toContain('behavior.doubleClickPaneNavigatesToParent')
     expect(fors).toContain('fileOperations.allowFileExtensionChanges')
+    expect(fors).toContain('fileOperations.defaultConflictPolicy')
     expect(fors).toContain('behavior.textEditorApp')
     expect(fors).toContain('behavior.openTerminalHereApp')
     expect(fors).toContain('operationLog.maxAge')
@@ -140,6 +143,13 @@ describe('NavigationAndFileOpsSection', () => {
   it('shows only the matching card under a scoped search', async () => {
     const target = await mountSection('double-click')
     expect(cardLabels(target)).toEqual(['Navigation'])
+    target.remove()
+  })
+
+  it('surfaces the File operations card under a search for the conflict choice', async () => {
+    const target = await mountSection('overwrite')
+    expect(cardLabels(target)).toEqual(['File operations'])
+    expect(labelFors(target)).toEqual(['fileOperations.defaultConflictPolicy'])
     target.remove()
   })
 

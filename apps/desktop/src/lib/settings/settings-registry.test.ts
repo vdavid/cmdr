@@ -10,6 +10,7 @@ import {
   buildSectionTree,
 } from './settings-registry'
 import { searchSettings, clearSearchIndex } from './settings-search'
+import { tString } from '$lib/intl/messages.svelte'
 
 describe('settingsRegistry', () => {
   it('should have at least one setting defined', () => {
@@ -604,6 +605,50 @@ describe('fileOperations.pasteClipboardAsFile', () => {
     const navFileOps = behavior?.subsections.find((s) => s.name === 'Navigation & file ops')
     const ids = (navFileOps?.settings ?? []).map((s) => s.id)
     expect(ids).toContain('fileOperations.pasteClipboardAsFile')
+  })
+})
+
+describe('fileOperations.defaultConflictPolicy', () => {
+  const id = 'fileOperations.defaultConflictPolicy'
+  const policies = ['stop', 'skip', 'overwrite', 'overwrite_smaller', 'overwrite_older']
+
+  it('registers a select in Behavior > Navigation & file ops, defaulting to asking for each', () => {
+    const def = getSettingDefinition(id)
+    expect(def?.type).toBe('enum')
+    expect(def?.default).toBe('stop')
+    expect(def?.component).toBe('select')
+    expect(def?.section).toEqual(['Behavior', 'Navigation & file ops'])
+  })
+
+  it('offers the copy dialog’s five choices, in its order, with its words', () => {
+    const options = getSettingDefinition(id)?.constraints?.options ?? []
+    expect(options.map((o) => o.value)).toEqual(policies)
+    // The plural ("several clashes") wording of each dialog radio.
+    expect(options.map((o) => o.label)).toEqual([
+      tString('fileOperations.transferDialog.policyStop', { count: 2 }),
+      tString('fileOperations.transferDialog.policySkip', { count: 2 }),
+      tString('fileOperations.transferDialog.policyOverwrite', { count: 2 }),
+      tString('fileOperations.transferDialog.policyOverwriteSmaller', { count: 2 }),
+      tString('fileOperations.transferDialog.policyOverwriteOlder', { count: 2 }),
+    ])
+  })
+
+  it('accepts the five policies and rejects `rename`, which the dialog never offers upfront', () => {
+    for (const value of policies) {
+      expect(() => {
+        validateSettingValue(id, value)
+      }).not.toThrow()
+    }
+    expect(() => {
+      validateSettingValue(id, 'rename')
+    }).toThrow()
+  })
+
+  it('is findable by the words a Total Commander user would search for', () => {
+    clearSearchIndex()
+    for (const query of ['overwrite', 'already exist']) {
+      expect(searchSettings(query).map((r) => r.entry.id)).toContain(id)
+    }
   })
 })
 

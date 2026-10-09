@@ -2102,7 +2102,7 @@
     "sources": "macOS/MS common usage"
   },
   "overwrite": {
-    "accept": ["überschrieben", "Überschreiben"],
+    "accept": ["überschrieben", "Überschreiben", "überschreibt"],
     "chosen": "überschreiben",
     "confidence": "high",
     "forms": "Overwrite all → Alle überschreiben; Overwrite all smaller/older → Alle kleineren/älteren überschreiben; the rename badge → (Überschreiben!), nominalized so it labels the risk",

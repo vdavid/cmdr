@@ -375,6 +375,10 @@
   "@fileOperations.transferDialog.policyStop": {
     "sourceHash": "61a6295"
   },
+  "fileOperations.transferDialog.rememberedOverwriteNote": "{reach, select, smaller {你儲存的選項會覆寫目標位置原本就有的較小檔案。} older {你儲存的選項會覆寫目標位置原本就有的較舊檔案。} other {你儲存的選項會覆寫目標位置原本就有的檔案。}}",
+  "@fileOperations.transferDialog.rememberedOverwriteNote": {
+    "sourceHash": "7456023"
+  },
   "fileOperations.transferDialog.typeMismatchWarning": "有些衝突是同名的檔案和資料夾。覆寫會取代掉不同類型的項目，包括整個資料夾的內容。",
   "@fileOperations.transferDialog.typeMismatchWarning": {
     "sourceHash": "76f1ab1"

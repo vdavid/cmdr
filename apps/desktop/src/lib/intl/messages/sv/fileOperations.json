@@ -377,6 +377,10 @@
   "@fileOperations.transferDialog.policyStop": {
     "sourceHash": "61a6295"
   },
+  "fileOperations.transferDialog.rememberedOverwriteNote": "{reach, select, smaller {Ditt sparade val gör att filer som redan finns där skrivs över om de är mindre.} older {Ditt sparade val gör att filer som redan finns där skrivs över om de är äldre.} other {Ditt sparade val gör att filer som redan finns där skrivs över.}}",
+  "@fileOperations.transferDialog.rememberedOverwriteNote": {
+    "sourceHash": "7456023"
+  },
   "fileOperations.transferDialog.typeMismatchWarning": "Vissa konflikter blandar en fil och en mapp med samma namn. Att skriva över ersätter objekt av en annan typ, inklusive hela innehållet i en mapp.",
   "@fileOperations.transferDialog.typeMismatchWarning": {
     "sourceHash": "76f1ab1"

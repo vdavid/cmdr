@@ -45,6 +45,7 @@ import {
   waitForDialogsToClose,
   waitForConflict,
   resolveConflict,
+  resetRememberedConflictPolicy,
 } from './conflict-helpers.js'
 
 const INTERNAL_STORAGE = 'Virtual Pixel 9 - Internal Storage'
@@ -63,6 +64,7 @@ test.setTimeout(waitBudget(120_000))
 test.beforeEach(async ({ tauriPage }) => {
   recreateFixtures(getFixtureRoot())
   await initMcpClient(tauriPage)
+  await resetRememberedConflictPolicy(tauriPage)
 
   await tauriPage.evaluate(`window.__TAURI_INTERNALS__.invoke('pause_virtual_mtp_watcher')`)
   recreateMtpFixtures()

@@ -262,6 +262,12 @@ export type NearbyServersGroupChoice = 'auto' | 'expanded' | 'collapsed'
 export type ExtensionChangePolicy = 'yes' | 'no' | 'ask'
 /** What ⌘V does in a pane when the clipboard holds no file URLs but has pasteable content (text, image, PDF). */
 export type PasteClipboardAsFileMode = 'doNothing' | 'createFile' | 'createFileAndRename'
+/**
+ * The policy the copy/move dialog's "files already exist" radios start on: the
+ * dialog's own five choices, spelled as the wire `ConflictResolution` values
+ * (`stop` = ask for each). `rename` stays out: the dialog doesn't offer it upfront.
+ */
+export type DefaultConflictPolicy = 'stop' | 'skip' | 'overwrite' | 'overwrite_smaller' | 'overwrite_older'
 export type DirectorySortMode = 'likeFiles' | 'alwaysByName'
 /** What typing a letter in a pane does: jump the cursor, or narrow the list (quick filter). */
 export type TypeToJumpMode = 'jump' | 'filter'
@@ -451,6 +457,7 @@ export interface SettingsValues {
   'fileOperations.adbBinaryPath': string
   'fileOperations.allowFileExtensionChanges': ExtensionChangePolicy
   'fileOperations.pasteClipboardAsFile': PasteClipboardAsFileMode
+  'fileOperations.defaultConflictPolicy': DefaultConflictPolicy
   'fileOperations.progressUpdateInterval': number
   'fileOperations.maxConflictsToShow': number
 

@@ -376,6 +376,10 @@
   "@fileOperations.transferDialog.policyStop": {
     "sourceHash": "61a6295"
   },
+  "fileOperations.transferDialog.rememberedOverwriteNote": "{reach, select, smaller {Lựa chọn đã lưu của bạn sẽ ghi đè các tệp nhỏ hơn đang có ở đích.} older {Lựa chọn đã lưu của bạn sẽ ghi đè các tệp cũ hơn đang có ở đích.} other {Lựa chọn đã lưu của bạn sẽ ghi đè các tệp đang có ở đích.}}",
+  "@fileOperations.transferDialog.rememberedOverwriteNote": {
+    "sourceHash": "7456023"
+  },
   "fileOperations.transferDialog.typeMismatchWarning": "Một số xung đột lẫn lộn một tệp và một thư mục trùng tên. Việc ghi đè sẽ thay thế các mục khác loại, bao gồm toàn bộ nội dung của một thư mục.",
   "@fileOperations.transferDialog.typeMismatchWarning": {
     "sourceHash": "76f1ab1"

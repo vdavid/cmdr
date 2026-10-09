@@ -13,6 +13,7 @@ export type {
   SizeDisplayMode,
   BriefColumnWidthMode,
   ExtensionChangePolicy,
+  DefaultConflictPolicy,
   FileSizeFormat,
   FileSizeUnit,
   FullDiskAccessChoice,

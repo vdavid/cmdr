@@ -391,6 +391,34 @@
   "@settings.fileOperations.pasteClipboardAsFile.opt.createFileAndRename": {
     "sourceHash": "ed7b1b9"
   },
+  "settings.fileOperations.defaultConflictPolicy.label": "Quando os arquivos já existem",
+  "@settings.fileOperations.defaultConflictPolicy.label": {
+    "sourceHash": "8824317"
+  },
+  "settings.fileOperations.defaultConflictPolicy.description": "A opção com que a caixa de diálogo de copiar e mover abre. Escolha outra lá e confirme, e ela fica salva aqui.",
+  "@settings.fileOperations.defaultConflictPolicy.description": {
+    "sourceHash": "2bfdf68"
+  },
+  "settings.fileOperations.defaultConflictPolicy.opt.stop": "Perguntar para cada",
+  "@settings.fileOperations.defaultConflictPolicy.opt.stop": {
+    "sourceHash": "4302843"
+  },
+  "settings.fileOperations.defaultConflictPolicy.opt.skip": "Ignorar todos",
+  "@settings.fileOperations.defaultConflictPolicy.opt.skip": {
+    "sourceHash": "5fc4280"
+  },
+  "settings.fileOperations.defaultConflictPolicy.opt.overwrite": "Substituir todos",
+  "@settings.fileOperations.defaultConflictPolicy.opt.overwrite": {
+    "sourceHash": "4662d17"
+  },
+  "settings.fileOperations.defaultConflictPolicy.opt.overwriteSmaller": "Substituir todos os menores",
+  "@settings.fileOperations.defaultConflictPolicy.opt.overwriteSmaller": {
+    "sourceHash": "2c9bbed"
+  },
+  "settings.fileOperations.defaultConflictPolicy.opt.overwriteOlder": "Substituir todos os mais antigos",
+  "@settings.fileOperations.defaultConflictPolicy.opt.overwriteOlder": {
+    "sourceHash": "b07b06a"
+  },
   "settings.archives.card.archives": "Arquivos compactados",
   "@settings.archives.card.archives": {
     "sourceHash": "e404aa8"

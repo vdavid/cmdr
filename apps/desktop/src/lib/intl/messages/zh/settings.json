@@ -390,6 +390,34 @@
   "@settings.fileOperations.pasteClipboardAsFile.opt.createFileAndRename": {
     "sourceHash": "ed7b1b9"
   },
+  "settings.fileOperations.defaultConflictPolicy.label": "文件已存在时",
+  "@settings.fileOperations.defaultConflictPolicy.label": {
+    "sourceHash": "8824317"
+  },
+  "settings.fileOperations.defaultConflictPolicy.description": "拷贝和移动对话框打开时默认选中的选项。在对话框中换一个并确认，就会记到这里。",
+  "@settings.fileOperations.defaultConflictPolicy.description": {
+    "sourceHash": "2bfdf68"
+  },
+  "settings.fileOperations.defaultConflictPolicy.opt.stop": "逐个询问",
+  "@settings.fileOperations.defaultConflictPolicy.opt.stop": {
+    "sourceHash": "4302843"
+  },
+  "settings.fileOperations.defaultConflictPolicy.opt.skip": "全部跳过",
+  "@settings.fileOperations.defaultConflictPolicy.opt.skip": {
+    "sourceHash": "5fc4280"
+  },
+  "settings.fileOperations.defaultConflictPolicy.opt.overwrite": "全部覆盖",
+  "@settings.fileOperations.defaultConflictPolicy.opt.overwrite": {
+    "sourceHash": "4662d17"
+  },
+  "settings.fileOperations.defaultConflictPolicy.opt.overwriteSmaller": "覆盖全部较小的",
+  "@settings.fileOperations.defaultConflictPolicy.opt.overwriteSmaller": {
+    "sourceHash": "2c9bbed"
+  },
+  "settings.fileOperations.defaultConflictPolicy.opt.overwriteOlder": "覆盖全部较旧的",
+  "@settings.fileOperations.defaultConflictPolicy.opt.overwriteOlder": {
+    "sourceHash": "b07b06a"
+  },
   "settings.archives.card.archives": "压缩文件",
   "@settings.archives.card.archives": {
     "sourceHash": "e404aa8"

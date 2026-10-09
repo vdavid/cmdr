@@ -31,6 +31,7 @@ import {
   clickTransferStart,
   confirmRollback,
   waitForDialogsToClose,
+  resetRememberedConflictPolicy,
 } from './conflict-helpers.js'
 
 // Layout B's own top-level items, WITHOUT the preserved ~170 MB `bulk/` tree.
@@ -38,8 +39,9 @@ import {
 // sweeping in bulk/ slowed ops into the 15 s per-test budget under Docker load.
 const LAYOUT_B_ITEMS = ['alpha', 'bravo', 'charlie', 'delta.txt']
 
-test.beforeEach(() => {
+test.beforeEach(async ({ tauriPage }) => {
   recreateFixtures(getFixtureRoot())
+  await resetRememberedConflictPolicy(tauriPage)
 })
 
 // Putting the shared `left/` + `right/` tree back is this spec's job: the
@@ -53,6 +55,7 @@ test.beforeEach(() => {
 test.afterEach(async ({ tauriPage }) => {
   await drainOperations(tauriPage)
   restoreFixtureTree(getFixtureRoot())
+  await resetRememberedConflictPolicy(tauriPage)
 })
 
 test.describe('Move multi-item merge (Layout B)', () => {

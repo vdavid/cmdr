@@ -105,10 +105,10 @@
     "sources": "macOS Finder (Allow Anyway → Sta toch toe), MS (allow → toestaan), AOSP SystemUI usb_debugging_allow = Toestaan"
   },
   "already-exists": {
-    "accept": ["staat al", "bestaan al"],
+    "accept": ["staat al", "bestaan al", "al bestaan", "al bestaat"],
     "chosen": "bestaat al",
     "confidence": "high",
-    "forms": "\"Er bestaat al … op deze locatie\"; conflict title Bestand bestaat al",
+    "forms": "\"Er bestaat al … op deze locatie\"; conflict title Bestand bestaat al; a subordinate clause puts al first (Als bestanden al bestaan)",
     "sources": "macOS Finder (\"Er bestaat al een onderdeel … op deze locatie\")"
   },
   "android-platform-tools": {

@@ -38,17 +38,20 @@ import {
   confirmRollback,
   waitForDialogsToClose,
   expectNoTempArtifacts,
+  resetRememberedConflictPolicy,
 } from './conflict-helpers.js'
 
-test.beforeEach(() => {
+test.beforeEach(async ({ tauriPage }) => {
   recreateFixtures(getFixtureRoot())
+  await resetRememberedConflictPolicy(tauriPage)
 })
 
 // Putting the shared `left/` + `right/` tree back is this spec's job: the
 // post-test leak guard fails whoever leaves it dirty, and the restore is
 // surgical, so it only rewrites what actually drifted.
-test.afterEach(() => {
+test.afterEach(async ({ tauriPage }) => {
   restoreFixtureTree(getFixtureRoot())
+  await resetRememberedConflictPolicy(tauriPage)
 })
 
 test.describe('Cancel and rollback', () => {

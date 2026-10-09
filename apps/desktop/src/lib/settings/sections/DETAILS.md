@@ -24,11 +24,13 @@ sections compose).
   picked, so the row reads as the sentence the option label was written for ("Limit to [400 px]")
 - **`NavigationAndFileOpsSection.svelte`**: `Behavior > Navigation & file ops`: labeled `SectionCard`s — Navigation (the
   `behavior.doubleClickPaneNavigatesToParent` switch), File operations (the extension-change confirmation row
-  `allowFileExtensionChanges` + the `pasteClipboardAsFile` toggle group), Text editor (the `behavior.textEditorApp` row)
-  and Terminal (the `behavior.openTerminalHereApp` row), both macOS-only and described below, then Show in Finder
-  (`RevealHandlerCard`) and Operation log (the retention limits `operationLog.maxAge` / `operationLog.maxSize`, plus the
-  `settings.operationLog.intro` blurb). The conflict/progress settings live ONLY in Advanced (`maxConflictsToShow`,
-  `progressUpdateInterval` → `section: ['Advanced']`), never mirrored here. The hidden
+  `allowFileExtensionChanges` + the `pasteClipboardAsFile` toggle group + the `defaultConflictPolicy` select, the copy
+  dialog's starting "files already exist" choice, which the dialog also writes back:
+  `lib/file-operations/transfer/DETAILS.md` § "The remembered conflict policy"), Text editor (the
+  `behavior.textEditorApp` row) and Terminal (the `behavior.openTerminalHereApp` row), both macOS-only and described
+  below, then Show in Finder (`RevealHandlerCard`) and Operation log (the retention limits `operationLog.maxAge` /
+  `operationLog.maxSize`, plus the `settings.operationLog.intro` blurb). The conflict/progress settings live ONLY in
+  Advanced (`maxConflictsToShow`, `progressUpdateInterval` → `section: ['Advanced']`), never mirrored here. The hidden
   `behavior.doubleClickOnPaneNotificationSeen`, `behavior.textEditorHintSeen`, and `behavior.openTerminalHereToastSeen`
   flags (one-time-hint trackers) are registered but render no row. Each card frame gated via
   `anyVisible(shouldShow, ...)` (the card-group pattern).

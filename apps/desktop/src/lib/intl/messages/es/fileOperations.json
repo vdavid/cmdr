@@ -376,6 +376,10 @@
   "@fileOperations.transferDialog.policyStop": {
     "sourceHash": "61a6295"
   },
+  "fileOperations.transferDialog.rememberedOverwriteNote": "{reach, select, smaller {Tu opción guardada sobrescribe los archivos del destino que sean más pequeños.} older {Tu opción guardada sobrescribe los archivos del destino que sean más antiguos.} other {Tu opción guardada sobrescribe los archivos que ya hay en el destino.}}",
+  "@fileOperations.transferDialog.rememberedOverwriteNote": {
+    "sourceHash": "7456023"
+  },
   "fileOperations.transferDialog.typeMismatchWarning": "Algunos conflictos mezclan un archivo y una carpeta con el mismo nombre. Sobrescribir reemplazará elementos de distinto tipo, incluido todo el contenido de una carpeta.",
   "@fileOperations.transferDialog.typeMismatchWarning": {
     "sourceHash": "76f1ab1"

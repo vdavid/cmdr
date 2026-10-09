@@ -392,6 +392,34 @@
   "@settings.fileOperations.pasteClipboardAsFile.opt.createFileAndRename": {
     "sourceHash": "ed7b1b9"
   },
+  "settings.fileOperations.defaultConflictPolicy.label": "När filer redan finns",
+  "@settings.fileOperations.defaultConflictPolicy.label": {
+    "sourceHash": "8824317"
+  },
+  "settings.fileOperations.defaultConflictPolicy.description": "Valet som dialogen för kopiering och flytt öppnas med. Väljer du ett annat där och bekräftar, så sparas det här.",
+  "@settings.fileOperations.defaultConflictPolicy.description": {
+    "sourceHash": "2bfdf68"
+  },
+  "settings.fileOperations.defaultConflictPolicy.opt.stop": "Fråga för varje",
+  "@settings.fileOperations.defaultConflictPolicy.opt.stop": {
+    "sourceHash": "4302843"
+  },
+  "settings.fileOperations.defaultConflictPolicy.opt.skip": "Hoppa över alla",
+  "@settings.fileOperations.defaultConflictPolicy.opt.skip": {
+    "sourceHash": "5fc4280"
+  },
+  "settings.fileOperations.defaultConflictPolicy.opt.overwrite": "Skriv över alla",
+  "@settings.fileOperations.defaultConflictPolicy.opt.overwrite": {
+    "sourceHash": "4662d17"
+  },
+  "settings.fileOperations.defaultConflictPolicy.opt.overwriteSmaller": "Skriv över alla mindre",
+  "@settings.fileOperations.defaultConflictPolicy.opt.overwriteSmaller": {
+    "sourceHash": "2c9bbed"
+  },
+  "settings.fileOperations.defaultConflictPolicy.opt.overwriteOlder": "Skriv över alla äldre",
+  "@settings.fileOperations.defaultConflictPolicy.opt.overwriteOlder": {
+    "sourceHash": "b07b06a"
+  },
   "settings.archives.card.archives": "Arkiv",
   "@settings.archives.card.archives": {
     "sourceHash": "e404aa8"

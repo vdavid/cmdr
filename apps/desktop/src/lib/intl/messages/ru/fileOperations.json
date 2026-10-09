@@ -376,6 +376,10 @@
   "@fileOperations.transferDialog.policyStop": {
     "sourceHash": "61a6295"
   },
+  "fileOperations.transferDialog.rememberedOverwriteNote": "{reach, select, smaller {Сохраненный вариант перезаписывает уже существующие файлы меньшего размера.} older {Сохраненный вариант перезаписывает уже существующие более старые файлы.} other {Сохраненный вариант перезаписывает уже существующие файлы.}}",
+  "@fileOperations.transferDialog.rememberedOverwriteNote": {
+    "sourceHash": "7456023"
+  },
   "fileOperations.transferDialog.typeMismatchWarning": "В некоторых конфликтах файл и папка имеют одинаковое имя. Замена затронет объекты другого типа, включая все содержимое папки.",
   "@fileOperations.transferDialog.typeMismatchWarning": {
     "sourceHash": "76f1ab1"

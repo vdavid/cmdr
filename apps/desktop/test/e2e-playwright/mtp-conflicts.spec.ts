@@ -41,6 +41,7 @@ import {
   selectConflictPolicy,
   clickTransferStart,
   waitForDialogsToClose,
+  resetRememberedConflictPolicy,
 } from './conflict-helpers.js'
 
 const INTERNAL_STORAGE = 'Virtual Pixel 9 - Internal Storage'
@@ -59,6 +60,7 @@ test.setTimeout(waitBudget(120_000))
 test.beforeEach(async ({ tauriPage }) => {
   recreateFixtures(getFixtureRoot())
   await initMcpClient(tauriPage)
+  await resetRememberedConflictPolicy(tauriPage)
 
   // Pause the watcher, recreate fixtures, then sync the object tree via an
   // explicit rescan. The watcher stays PAUSED (not resumed) so late FSEvents
@@ -85,8 +87,9 @@ test.beforeEach(async ({ tauriPage }) => {
 // Putting the shared `left/` + `right/` tree back is this spec's job: the
 // post-test leak guard fails whoever leaves it dirty, and the restore is
 // surgical, so it only rewrites what actually drifted.
-test.afterEach(() => {
+test.afterEach(async ({ tauriPage }) => {
   restoreFixtureTree(getFixtureRoot())
+  await resetRememberedConflictPolicy(tauriPage)
 })
 
 // ── Cross-volume move conflicts (MTP ↔ local) ──────────────────────────────

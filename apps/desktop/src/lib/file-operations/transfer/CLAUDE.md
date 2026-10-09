@@ -23,12 +23,11 @@ Backend: `apps/desktop/src-tauri/src/file_system/write_operations/CLAUDE.md`.
   goes stale, which is how a just-queued transfer once got cancelled.
 - **One transfer entry seam**: F5/F6, drag-and-drop, and paste all prepare through `pane/transfer-entry.ts`. The paste
   path's scheme-path refusal stays SEPARATE and BEFORE the shared guard.
-- **Batch IPC for selection lookups** (`get_paths_at_indices` / `get_files_at_indices`), ❌ never a per-index loop: 50k
-  files costs 5-10 s vs ~1 ms.
+- **Batch IPC for selection lookups** (`get_paths_at_indices` / `get_files_at_indices`), ❌ never per index.
 - **Speed, ETA, and bars are backend-owned and SHARED with the queue window** (`../TransferProgressReadout.svelte`): ❌
-  no second instantaneous rate here.
+  no second rate here.
 - **A stall drops the ETA and says why** (`transfer-stall.ts`): the BACKEND classifies, this side owns the threshold. ❌
-  Never infer a stall from event timing: a wedge emits no events at all. DETAILS § "The stalled-transfer notice".
+  Never infer a stall from event timing: a wedge emits no events. DETAILS § "The stalled-transfer notice".
 - **A cancel's reversal drains its bar to zero, so the TOAST says what actually stayed** (`cancel-rollback-toast.ts`,
   off `event.rollback`). ❌ Never read the verb off the view's config: an ADOPTED dialog's is inert, and a move's
   reversal worded as a delete is a data-safety lie. ❌ Never colour a deliberate skip as a warning. DETAILS § "What a
@@ -41,11 +40,13 @@ Backend: `apps/desktop/src-tauri/src/file_system/write_operations/CLAUDE.md`.
 - **The progress dialog does NOT wait for the scan; the BACKEND does.** It dispatches on mount, so a still-counting
   transfer has an `operationId`, a queue row, and Background from frame one. ❌ Never cancel the preview on teardown;
   confirm ALWAYS awaits `scan.scanStarted`. DETAILS § Scan.
-- **Compress swaps the conflict-policy UI for a dest-exists overwrite check**; its auto-confirm (MCP) path ❌ never
-  silently overwrites.
+- **Compress swaps the conflict-policy UI for a dest-exists overwrite check**; its MCP auto-confirm ❌ never silently
+  overwrites.
+- **Radios open on the saved policy; only a person's confirm saves it**, ❌ never MCP. DETAILS § "The remembered
+  conflict policy".
 - **ONE map from an MCP `onConflict` name to a policy** (`conflict-policy.ts`), and ONE confirm path: `dialog confirm`
   presses `handleConfirm` via `registerConfirmer`. ❌ Never a second map (an unmapped name silently becomes `skip`) or a
-  payload built from the opening props (no edited path, volume, or preview).
+  payload built from the opening props.
 
 The file map, rollback's limits, the password interception, the E2E markers, the phase catalog, flows, and decisions:
 `DETAILS.md`. Read it before any non-trivial work here: editing, planning, reorganizing, or advising.

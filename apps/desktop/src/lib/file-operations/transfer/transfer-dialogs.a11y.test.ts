@@ -304,6 +304,48 @@ describe('TransferDialog a11y', () => {
     await expectNoA11yViolations(target)
     stubs.conflictResult = []
   })
+
+  it('dialog opened on a remembered overwrite, with its note, has no a11y violations', async () => {
+    stubs.getSetting = (id) => (id === 'fileOperations.defaultConflictPolicy' ? 'overwrite_older' : 500)
+    stubs.conflictResult = [
+      {
+        sourcePath: 'notes.txt',
+        destPath: 'notes.txt',
+        sourceSize: 10,
+        destSize: 20,
+        sourceModified: null,
+        destModified: null,
+        sourceIsDirectory: false,
+        destIsDirectory: false,
+      } satisfies VolumeConflictInfo,
+    ]
+    const target = container()
+    mount(TransferDialog, {
+      target,
+      props: {
+        operationType: 'copy',
+        sourcePaths: ['/Users/test/notes.txt'],
+        destinationPath: '/Users/test/dest',
+        currentVolumeId: 'root',
+        fileCount: 1,
+        folderCount: 0,
+        sourceFolderPath: '/Users/test',
+        sortColumn: 'name',
+        sortOrder: 'ascending',
+        sourceVolumeId: 'root',
+        destVolumeId: 'root',
+        onConfirm: () => {},
+        onCancel: () => {},
+      },
+    })
+    for (let i = 0; i < 6; i++) {
+      await new Promise<void>((resolve) => setTimeout(resolve, 0))
+      await tick()
+    }
+    if (!target.querySelector('.remembered-overwrite-note')) throw new Error('remembered-overwrite note not rendered')
+    await expectNoA11yViolations(target)
+    stubs.conflictResult = []
+  })
 })
 
 /**

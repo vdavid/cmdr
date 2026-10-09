@@ -487,6 +487,34 @@
     "description": "Paste-as-file option: pressing ⌘V creates a new file from the clipboard content and immediately starts an inline rename so the user can name it. Radio-button label. This is the default.",
     "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
+  "settings.fileOperations.defaultConflictPolicy.label": "When files already exist",
+  "@settings.fileOperations.defaultConflictPolicy.label": {
+    "description": "Label for the picker choosing which option the copy and move dialog starts on when files with the same names are already at the destination. In Settings > Behavior > Navigation & file ops > File operations."
+  },
+  "settings.fileOperations.defaultConflictPolicy.description": "The choice the copy and move dialog starts on. Pick a different one there and confirm, and it’s remembered here.",
+  "@settings.fileOperations.defaultConflictPolicy.description": {
+    "description": "Help text for the 'When files already exist' setting. Explains that the copy/move (F5/F6) dialog opens on this choice, and that confirming a copy or move with a different choice in the dialog updates this setting."
+  },
+  "settings.fileOperations.defaultConflictPolicy.opt.stop": "Ask for each",
+  "@settings.fileOperations.defaultConflictPolicy.opt.stop": {
+    "description": "Option of the 'When files already exist' setting: decide per clashing file during the copy or move. This is the default. Must match the plural form of the copy dialog's radio 'Ask for each' (fileOperations.transferDialog.policyStop)."
+  },
+  "settings.fileOperations.defaultConflictPolicy.opt.skip": "Skip all",
+  "@settings.fileOperations.defaultConflictPolicy.opt.skip": {
+    "description": "Option of the 'When files already exist' setting: leave every clashing file at the destination untouched. Must match the plural form of the copy dialog's radio 'Skip all' (fileOperations.transferDialog.policySkip)."
+  },
+  "settings.fileOperations.defaultConflictPolicy.opt.overwrite": "Overwrite all",
+  "@settings.fileOperations.defaultConflictPolicy.opt.overwrite": {
+    "description": "Option of the 'When files already exist' setting: replace every clashing file at the destination. Must match the plural form of the copy dialog's radio 'Overwrite all' (fileOperations.transferDialog.policyOverwrite)."
+  },
+  "settings.fileOperations.defaultConflictPolicy.opt.overwriteSmaller": "Overwrite all smaller",
+  "@settings.fileOperations.defaultConflictPolicy.opt.overwriteSmaller": {
+    "description": "Option of the 'When files already exist' setting: replace a clashing file only when the one already at the destination is smaller. Must match the plural form of the copy dialog's radio 'Overwrite all smaller' (fileOperations.transferDialog.policyOverwriteSmaller)."
+  },
+  "settings.fileOperations.defaultConflictPolicy.opt.overwriteOlder": "Overwrite all older",
+  "@settings.fileOperations.defaultConflictPolicy.opt.overwriteOlder": {
+    "description": "Option of the 'When files already exist' setting: replace a clashing file only when the one already at the destination is older. Must match the plural form of the copy dialog's radio 'Overwrite all older' (fileOperations.transferDialog.policyOverwriteOlder)."
+  },
   "settings.archives.card.archives": "Archives",
   "@settings.archives.card.archives": {
     "description": "Card title in Settings > Behavior > Archives, grouping the archive formats Cmdr can browse into (zip today). \"Cmdr\" is the product name; do not translate it."

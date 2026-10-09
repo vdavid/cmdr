@@ -392,6 +392,34 @@
   "@settings.fileOperations.pasteClipboardAsFile.opt.createFileAndRename": {
     "sourceHash": "ed7b1b9"
   },
+  "settings.fileOperations.defaultConflictPolicy.label": "Als bestanden al bestaan",
+  "@settings.fileOperations.defaultConflictPolicy.label": {
+    "sourceHash": "8824317"
+  },
+  "settings.fileOperations.defaultConflictPolicy.description": "De keuze waarmee het venster voor kopiëren en verplaatsen opent. Kies daar een andere en bevestig, dan wordt die hier onthouden.",
+  "@settings.fileOperations.defaultConflictPolicy.description": {
+    "sourceHash": "2bfdf68"
+  },
+  "settings.fileOperations.defaultConflictPolicy.opt.stop": "Vraag voor elk",
+  "@settings.fileOperations.defaultConflictPolicy.opt.stop": {
+    "sourceHash": "4302843"
+  },
+  "settings.fileOperations.defaultConflictPolicy.opt.skip": "Sla alles over",
+  "@settings.fileOperations.defaultConflictPolicy.opt.skip": {
+    "sourceHash": "5fc4280"
+  },
+  "settings.fileOperations.defaultConflictPolicy.opt.overwrite": "Overschrijf alles",
+  "@settings.fileOperations.defaultConflictPolicy.opt.overwrite": {
+    "sourceHash": "4662d17"
+  },
+  "settings.fileOperations.defaultConflictPolicy.opt.overwriteSmaller": "Overschrijf alles kleiner",
+  "@settings.fileOperations.defaultConflictPolicy.opt.overwriteSmaller": {
+    "sourceHash": "2c9bbed"
+  },
+  "settings.fileOperations.defaultConflictPolicy.opt.overwriteOlder": "Overschrijf alles ouder",
+  "@settings.fileOperations.defaultConflictPolicy.opt.overwriteOlder": {
+    "sourceHash": "b07b06a"
+  },
   "settings.archives.card.archives": "Archieven",
   "@settings.archives.card.archives": {
     "sourceHash": "e404aa8"

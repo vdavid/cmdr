@@ -377,6 +377,10 @@
   "@fileOperations.transferDialog.policyStop": {
     "sourceHash": "61a6295"
   },
+  "fileOperations.transferDialog.rememberedOverwriteNote": "{reach, select, smaller {Sua opção salva substitui os arquivos menores que já estão no destino.} older {Sua opção salva substitui os arquivos mais antigos que já estão no destino.} other {Sua opção salva substitui os arquivos que já estão no destino.}}",
+  "@fileOperations.transferDialog.rememberedOverwriteNote": {
+    "sourceHash": "7456023"
+  },
   "fileOperations.transferDialog.typeMismatchWarning": "Alguns conflitos misturam um arquivo e uma pasta com o mesmo nome. Substituir vai trocar itens de tipos diferentes, incluindo todo o conteúdo de uma pasta.",
   "@fileOperations.transferDialog.typeMismatchWarning": {
     "sourceHash": "76f1ab1"

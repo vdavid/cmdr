@@ -377,6 +377,10 @@
   "@fileOperations.transferDialog.policyStop": {
     "sourceHash": "61a6295"
   },
+  "fileOperations.transferDialog.rememberedOverwriteNote": "{reach, select, smaller {A mentett választásod felülírja a célhelyen már meglévő, kisebb fájlokat.} older {A mentett választásod felülírja a célhelyen már meglévő, régebbi fájlokat.} other {A mentett választásod felülírja a célhelyen már meglévő fájlokat.}}",
+  "@fileOperations.transferDialog.rememberedOverwriteNote": {
+    "sourceHash": "7456023"
+  },
   "fileOperations.transferDialog.typeMismatchWarning": "Néhány ütközésben egy fájl és egy azonos nevű mappa keveredik. A felülírás eltérő típusú elemeket cserél le, beleértve egy mappa teljes tartalmát is.",
   "@fileOperations.transferDialog.typeMismatchWarning": {
     "sourceHash": "76f1ab1"

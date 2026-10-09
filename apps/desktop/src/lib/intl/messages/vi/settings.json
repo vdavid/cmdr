@@ -388,6 +388,34 @@
   "@settings.fileOperations.pasteClipboardAsFile.opt.createFileAndRename": {
     "sourceHash": "ed7b1b9"
   },
+  "settings.fileOperations.defaultConflictPolicy.label": "Khi tệp đã tồn tại",
+  "@settings.fileOperations.defaultConflictPolicy.label": {
+    "sourceHash": "8824317"
+  },
+  "settings.fileOperations.defaultConflictPolicy.description": "Lựa chọn mà hộp thoại sao chép và di chuyển dùng khi mở. Nếu bạn chọn cái khác ở đó rồi xác nhận, lựa chọn đó sẽ được ghi nhớ ở đây.",
+  "@settings.fileOperations.defaultConflictPolicy.description": {
+    "sourceHash": "2bfdf68"
+  },
+  "settings.fileOperations.defaultConflictPolicy.opt.stop": "Hỏi cho từng cái",
+  "@settings.fileOperations.defaultConflictPolicy.opt.stop": {
+    "sourceHash": "4302843"
+  },
+  "settings.fileOperations.defaultConflictPolicy.opt.skip": "Bỏ qua tất cả",
+  "@settings.fileOperations.defaultConflictPolicy.opt.skip": {
+    "sourceHash": "5fc4280"
+  },
+  "settings.fileOperations.defaultConflictPolicy.opt.overwrite": "Ghi đè tất cả",
+  "@settings.fileOperations.defaultConflictPolicy.opt.overwrite": {
+    "sourceHash": "4662d17"
+  },
+  "settings.fileOperations.defaultConflictPolicy.opt.overwriteSmaller": "Ghi đè tất cả nhỏ hơn",
+  "@settings.fileOperations.defaultConflictPolicy.opt.overwriteSmaller": {
+    "sourceHash": "2c9bbed"
+  },
+  "settings.fileOperations.defaultConflictPolicy.opt.overwriteOlder": "Ghi đè tất cả cũ hơn",
+  "@settings.fileOperations.defaultConflictPolicy.opt.overwriteOlder": {
+    "sourceHash": "b07b06a"
+  },
   "settings.archives.card.archives": "Tệp nén",
   "@settings.archives.card.archives": {
     "sourceHash": "e404aa8"

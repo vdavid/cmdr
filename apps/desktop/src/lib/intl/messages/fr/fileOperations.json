@@ -378,6 +378,10 @@
   "@fileOperations.transferDialog.policyStop": {
     "sourceHash": "61a6295"
   },
+  "fileOperations.transferDialog.rememberedOverwriteNote": "{reach, select, smaller {Votre choix enregistré écrase les fichiers déjà présents qui sont plus petits.} older {Votre choix enregistré écrase les fichiers déjà présents qui sont plus anciens.} other {Votre choix enregistré écrase les fichiers déjà présents.}}",
+  "@fileOperations.transferDialog.rememberedOverwriteNote": {
+    "sourceHash": "7456023"
+  },
   "fileOperations.transferDialog.typeMismatchWarning": "Certains conflits associent un fichier et un dossier portant le même nom. L’écrasement remplacera des éléments d’un type différent, y compris tout le contenu d’un dossier.",
   "@fileOperations.transferDialog.typeMismatchWarning": {
     "sourceHash": "76f1ab1"

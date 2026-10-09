@@ -46,6 +46,7 @@ import {
   waitForConflict,
   waitForDialogsToClose,
   waitForNextConflictOrDone,
+  resetRememberedConflictPolicy,
 } from './conflict-helpers.js'
 
 // The conflict fixtures' own top-level items, WITHOUT the preserved `bulk/` tree
@@ -55,15 +56,17 @@ import {
 const LAYOUT_A_ITEMS = ['readme.txt', 'only-in-source.txt', 'docs']
 const LAYOUT_B_ITEMS = ['alpha', 'bravo', 'charlie', 'delta.txt']
 
-test.beforeEach(() => {
+test.beforeEach(async ({ tauriPage }) => {
   recreateFixtures(getFixtureRoot())
+  await resetRememberedConflictPolicy(tauriPage)
 })
 
 // Putting the shared `left/` + `right/` tree back is this spec's job: the
 // post-test leak guard fails whoever leaves it dirty, and the restore is
 // surgical, so it only rewrites what actually drifted.
-test.afterEach(() => {
+test.afterEach(async ({ tauriPage }) => {
   restoreFixtureTree(getFixtureRoot())
+  await resetRememberedConflictPolicy(tauriPage)
 })
 
 test.describe('Copy with conflict policies (Layout A)', () => {
