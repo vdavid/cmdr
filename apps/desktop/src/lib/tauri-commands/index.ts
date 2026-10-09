@@ -1022,5 +1022,6 @@ export type {
   MultiRenameSpec,
   MultiRenameStarted,
   PreviewCounts,
+  PreviewFilter,
   PreviewRow,
 } from './multi-rename'

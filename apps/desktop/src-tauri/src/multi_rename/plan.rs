@@ -56,6 +56,10 @@ pub struct PreviewRow {
     pub old_name: String,
     pub new_name: String,
     pub status: RowStatus,
+    /// The file's icon key (`FileEntry::icon_id`), for the sheet's file glyph.
+    /// `None` for a file that's gone.
+    pub icon_id: Option<String>,
+    pub is_directory: bool,
 }
 
 /// Whether a row can be renamed to its new name.
@@ -93,6 +97,11 @@ pub enum InvalidNameReason {
 impl RowStatus {
     pub fn is_ready(&self) -> bool {
         matches!(self, Self::Ready)
+    }
+
+    /// Every status but ready and unchanged: the rows the sheet flags.
+    pub fn is_problem(&self) -> bool {
+        !matches!(self, Self::Ready | Self::Unchanged)
     }
 }
 
@@ -196,6 +205,8 @@ pub(crate) fn preview(
                 old_name: entry.name.clone(),
                 new_name,
                 status,
+                icon_id: Some(entry.icon_id.clone()),
+                is_directory: entry.is_directory,
             }
         })
         .collect();

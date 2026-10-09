@@ -251,3 +251,18 @@ fn a_long_chain_blocked_at_its_end_settles_in_linear_work() {
     let folds = FOLDS.with(Cell::get);
     assert!(folds <= folder.len() + 2 * N, "fold count: {folds}");
 }
+
+#[test]
+fn a_row_carries_its_file_icon_and_whether_it_is_a_folder() {
+    let folder = [
+        file("notes.txt"),
+        FileEntry::new("Trips".to_string(), format!("{DIR}/Trips"), true, false),
+    ];
+    let compiled = Compiled::new(&spec("[N]")).expect("a valid spec");
+    let rows: Vec<(usize, &FileEntry)> = folder.iter().enumerate().collect();
+    let out = preview(&compiled, Path::new(DIR), &rows, &folder);
+    assert_eq!(out[0].icon_id.as_deref(), Some(folder[0].icon_id.as_str()));
+    assert!(!out[0].is_directory);
+    assert_eq!(out[1].icon_id.as_deref(), Some(folder[1].icon_id.as_str()));
+    assert!(out[1].is_directory);
+}

@@ -9,7 +9,7 @@ use crate::multi_rename::error::MultiRenameError;
 use crate::multi_rename::plan::{MultiRenameSpec, PreviewRow};
 use crate::multi_rename::presets::{MAX_PRESETS, MultiRenamePreset, PRESETS, rename_in, update_spec_in};
 use crate::multi_rename::run::{MultiRenameStarted, apply};
-use crate::multi_rename::session::{self, MultiRenameOpened, MultiRenamePreview};
+use crate::multi_rename::session::{self, MultiRenameOpened, MultiRenamePreview, PreviewFilter};
 
 /// Opens a session over the pane's selection: `selected_indices` are backend row
 /// numbers in rename order (`None` for every row the pane shows), read at
@@ -65,8 +65,8 @@ pub async fn preview_multi_rename(
     .await
 }
 
-/// Rows `offset..offset + limit` of preview `preview_id`, for the table's window.
-/// `previewOutOfDate` when a newer preview replaced it.
+/// Rows `offset..offset + limit` of preview `preview_id` (or of its problem rows
+/// alone), for the list's window. `previewOutOfDate` when a newer preview replaced it.
 #[tauri::command]
 #[specta::specta]
 pub async fn get_multi_rename_preview_rows(
@@ -74,8 +74,9 @@ pub async fn get_multi_rename_preview_rows(
     preview_id: u64,
     offset: usize,
     limit: usize,
+    filter: PreviewFilter,
 ) -> Result<Vec<PreviewRow>, MultiRenameError> {
-    session::page(&session_id, preview_id, offset, limit)
+    session::page(&session_id, preview_id, offset, limit, filter)
 }
 
 /// Renames the rows preview `preview_id` showed as ready, as one operation the

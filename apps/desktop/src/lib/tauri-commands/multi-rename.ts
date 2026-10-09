@@ -11,6 +11,7 @@ import {
   type MultiRenameSpec,
   type MultiRenameStarted,
   type PreviewCounts,
+  type PreviewFilter,
   type PreviewRow,
 } from '$lib/ipc/bindings'
 
@@ -22,6 +23,7 @@ export type {
   MultiRenameSpec,
   MultiRenameStarted,
   PreviewCounts,
+  PreviewFilter,
   PreviewRow,
 }
 
@@ -56,14 +58,18 @@ export async function previewMultiRename(
   return result(await commands.previewMultiRename(sessionId, spec))
 }
 
-/** Rows `offset..offset + limit` of a preview. `previewOutOfDate` once a newer one replaced it. */
+/**
+ * Rows `offset..offset + limit` of a preview, counted among all its rows or its problem
+ * rows alone (`filter`). `previewOutOfDate` once a newer one replaced it.
+ */
 export async function getMultiRenamePreviewRows(
   sessionId: string,
   previewId: number,
   offset: number,
   limit: number,
+  filter: PreviewFilter,
 ): Promise<MultiRenameResult<PreviewRow[]>> {
-  return result(await commands.getMultiRenamePreviewRows(sessionId, previewId, offset, limit))
+  return result(await commands.getMultiRenamePreviewRows(sessionId, previewId, offset, limit, filter))
 }
 
 /**

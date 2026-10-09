@@ -1,12 +1,12 @@
 /**
  * The Multi-Rename sheet's state: the spec the fields edit, the live preview, the
- * window of rows the table draws, the presets (and which one the fields came from),
- * and Start. One instance per open
- * sheet, over one backend session.
+ * window of rows the list draws, the presets (and which one the fields came from),
+ * and Start. One instance per open sheet, over one backend session.
  *
  * The files and their names live in the backend session (`src-tauri/src/multi_rename/session.rs`):
- * a preview answers its id, the counts, and the first rows, and the table pages in
- * the rows it scrolls to (`show`). Start sends the session and preview ids, never names.
+ * a preview answers its id, the counts, and the first rows, and the list pages in
+ * the rows it scrolls to (`show`, which `source` hands `ColumnList`), from every row
+ * or from the problem rows alone. Start sends the session and preview ids, never names.
  *
  * The preview reruns 120 ms after the last edit, and a generation counter drops
  * an answer a newer edit overtook, so fast typing never shows an older preview.
@@ -26,8 +26,10 @@ import {
   type MultiRenameSpec,
   type MultiRenameStarted,
   type PreviewCounts,
+  type PreviewFilter,
   type PreviewRow,
 } from '$lib/tauri-commands'
+import type { ColumnListWindowedSource } from '$lib/ui/column-list-types'
 import { SvelteMap } from 'svelte/reactivity'
 import { BUILT_IN_PRESETS, DEFAULT_SPEC, specsEqual } from './spec'
 
@@ -56,8 +58,12 @@ export interface RowWindow {
 export interface MultiRenameState {
   readonly spec: MultiRenameSpec
   readonly counts: PreviewCounts
-  /** How many rows the preview has: the table's height. */
+  /** How many rows the list shows: the preview's, or its problem rows' with `problemsOnly`. */
   readonly total: number
+  /** The list shows the problem rows alone. */
+  readonly problemsOnly: boolean
+  /** The rows as `ColumnList` reads them: `total`, `rowAt`, and `show`. */
+  readonly source: ColumnListWindowedSource<PreviewRow>
   /** Why the preview has no answer: a bad mask or regex, a gone listing, a timeout. */
   readonly error: MultiRenameError | null
   /** Why the last Start didn't run. Cleared by the next edit or preview; doesn't block a retry. */
@@ -70,10 +76,12 @@ export interface MultiRenameState {
   /** A field differs from the loaded preset. Always `false` with nothing loaded. */
   readonly edited: boolean
   readonly applying: boolean
-  /** Row `index` of the preview, or `undefined` while its page is on its way. */
+  /** Row `index` of the list (of the problem rows, with `problemsOnly`), or `undefined` while its page is on its way. */
   rowAt: (index: number) => PreviewRow | undefined
-  /** The table shows rows `start..end`: fetch the ones missing, drop the far ones. */
+  /** The list shows rows `start..end`: fetch the ones missing, drop the far ones. */
   show: (window: RowWindow) => void
+  /** Lists the problem rows alone, or every row again. Pages them in from the same preview. */
+  setProblemsOnly: (on: boolean) => void
   update: (patch: Partial<MultiRenameSpec>) => void
   /** Fills every field from a preset (doesn't start anything). An unknown one is ignored. */
   loadPreset: (preset: LoadedPreset) => void
@@ -98,7 +106,9 @@ export function createMultiRenameState(sessionId: string): MultiRenameState {
   let spec = $state<MultiRenameSpec>({ ...DEFAULT_SPEC })
   let previewId = $state<number | null>(null)
   let counts = $state.raw<PreviewCounts>(NO_COUNTS)
-  // Replaced with each preview; pages land in it as they arrive.
+  let problemsOnly = $state(false)
+  // Keyed by place in the list (every row, or the problem rows alone). Replaced with
+  // each preview and each switch of the list; pages land in it as they arrive.
   let rows = $state.raw(new SvelteMap<number, PreviewRow>())
   let error = $state<MultiRenameError | null>(null)
   let presets = $state.raw<MultiRenamePreset[]>([])
@@ -112,6 +122,8 @@ export function createMultiRenameState(sessionId: string): MultiRenameState {
   let fetching: string | null = null
 
   const totalOf = (c: PreviewCounts): number => c.ready + c.unchanged + c.problems
+  const filterOf = (): PreviewFilter => (problemsOnly ? 'problems' : 'all')
+  const listed = (): number => (problemsOnly ? counts.problems : totalOf(counts))
 
   function specOf(preset: LoadedPreset): MultiRenameSpec | undefined {
     const from = preset.kind === 'saved' ? presets : BUILT_IN_PRESETS
@@ -138,7 +150,8 @@ export function createMultiRenameState(sessionId: string): MultiRenameState {
     if (answer.ok) {
       previewId = answer.value.previewId
       counts = answer.value.counts
-      rows = new SvelteMap(answer.value.rows.map((row) => [row.row, row]))
+      // The first page is every row's; a list of problems pages its own in.
+      rows = problemsOnly ? new SvelteMap() : new SvelteMap(answer.value.rows.map((row) => [row.row, row]))
       error = null
       show(shown)
     } else {
@@ -157,21 +170,23 @@ export function createMultiRenameState(sessionId: string): MultiRenameState {
     const { start, end } = window
     const id = previewId
     if (id === null) return
-    const last = Math.min(end, totalOf(counts))
+    const filter = filterOf()
+    const last = Math.min(end, listed())
     let from = start
     while (from < last && rows.has(from)) from++
     if (from >= last) return
     let to = last
     while (to > from && rows.has(to - 1)) to--
     const limit = Math.min(to - from, PAGE_LIMIT)
-    const key = `${String(id)}:${String(from)}:${String(limit)}`
+    const key = `${String(id)}:${filter}:${String(from)}:${String(limit)}`
     if (fetching === key) return
     fetching = key
-    void getMultiRenamePreviewRows(sessionId, id, from, limit).then((answer) => {
+    const into = rows
+    void getMultiRenamePreviewRows(sessionId, id, from, limit, filter).then((answer) => {
       if (fetching === key) fetching = null
-      // A newer preview replaced this one: its own rows are on their way.
-      if (!answer.ok || previewId !== id) return
-      for (const row of answer.value) rows.set(row.row, row)
+      // A newer preview or the other list replaced this one: its own rows are on their way.
+      if (!answer.ok || previewId !== id || rows !== into) return
+      answer.value.forEach((row, i) => rows.set(from + i, row))
       if (rows.size > HELD_ROWS) {
         const keepFrom = shown.start - PAGE_LIMIT
         const keepTo = shown.end + PAGE_LIMIT
@@ -204,7 +219,19 @@ export function createMultiRenameState(sessionId: string): MultiRenameState {
       return counts
     },
     get total() {
-      return totalOf(counts)
+      return listed()
+    },
+    get problemsOnly() {
+      return problemsOnly
+    },
+    source: {
+      get count() {
+        return listed()
+      },
+      getRow: (index) => rows.get(index),
+      onRangeChange: (range) => {
+        show(range)
+      },
     },
     get error() {
       return error
@@ -231,6 +258,13 @@ export function createMultiRenameState(sessionId: string): MultiRenameState {
       return rows.get(index)
     },
     show,
+    setProblemsOnly(on) {
+      if (on === problemsOnly) return
+      problemsOnly = on
+      rows = new SvelteMap()
+      fetching = null
+      show(shown)
+    },
     update(patch) {
       spec = { ...spec, ...patch }
       schedule()

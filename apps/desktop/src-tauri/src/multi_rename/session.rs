@@ -72,6 +72,16 @@ impl PreviewCounts {
     }
 }
 
+/// Which rows a page counts through: all of them, or only the problems
+/// (`RowStatus::is_problem`), so the sheet can list those alone without holding
+/// every row.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum PreviewFilter {
+    All,
+    Problems,
+}
+
 /// A preview: its id (what apply and paging name), its counts, and its first rows.
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
@@ -217,6 +227,8 @@ fn compute(inputs: &Inputs, compiled: &Compiled) -> Result<Vec<PreviewRow>, Mult
         old_name: inputs.names[row].clone(),
         new_name: inputs.names[row].clone(),
         status: RowStatus::Missing,
+        icon_id: None,
+        is_directory: false,
     }));
     previewed.sort_by_key(|r| r.row);
     Ok(previewed)
@@ -274,21 +286,22 @@ fn stored(session_id: &str, preview_id: u64) -> Result<(Arc<StoredPreview>, Inpu
     })?
 }
 
-/// Rows `offset..offset + limit` (at most `MAX_PAGE`) of preview `preview_id`.
+/// Rows `offset..offset + limit` (at most `MAX_PAGE`) of preview `preview_id`,
+/// counted among the rows `filter` keeps. A problems page walks the rows before
+/// it, which is a scan of plain structs: a few ms at 200k rows.
 pub(crate) fn page(
     session_id: &str,
     preview_id: u64,
     offset: usize,
     limit: usize,
+    filter: PreviewFilter,
 ) -> Result<Vec<PreviewRow>, MultiRenameError> {
     let (latest, _) = stored(session_id, preview_id)?;
-    Ok(latest
+    let kept = latest
         .rows
         .iter()
-        .skip(offset)
-        .take(limit.min(MAX_PAGE))
-        .cloned()
-        .collect())
+        .filter(|row| filter == PreviewFilter::All || row.status.is_problem());
+    Ok(kept.skip(offset).take(limit.min(MAX_PAGE)).cloned().collect())
 }
 
 /// What apply renames: the rows ready now, proven to be the ones preview

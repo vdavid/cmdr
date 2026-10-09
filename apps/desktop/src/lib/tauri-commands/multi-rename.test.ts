@@ -67,8 +67,8 @@ describe('multi-rename wrappers', () => {
     expect(await previewMultiRename('S', spec)).toEqual({ ok: false, error: { type: 'gone' } })
 
     vi.mocked(commands.getMultiRenamePreviewRows).mockResolvedValueOnce({ status: 'ok', data: rows } as never)
-    expect(await getMultiRenamePreviewRows('S', 1, 200, 100)).toEqual({ ok: true, value: rows })
-    expect(commands.getMultiRenamePreviewRows).toHaveBeenCalledWith('S', 1, 200, 100)
+    expect(await getMultiRenamePreviewRows('S', 1, 200, 100, 'problems')).toEqual({ ok: true, value: rows })
+    expect(commands.getMultiRenamePreviewRows).toHaveBeenCalledWith('S', 1, 200, 100, 'problems')
   })
 
   it('starts a rename from the preview the user saw, and reports a refusal', async () => {

@@ -116,9 +116,90 @@ describe('createMultiRenameState', () => {
     tool.show({ start: 4000, end: 4040 })
     await settle()
 
-    expect(ipc.getMultiRenamePreviewRows).toHaveBeenCalledWith('S', 7, 4000, 40)
+    expect(ipc.getMultiRenamePreviewRows).toHaveBeenCalledWith('S', 7, 4000, 40, 'all')
     expect(tool.rowAt(4039)?.oldName).toBe('f4039')
     expect(tool.rowAt(3999)).toBeUndefined()
+    tool.dispose()
+  })
+
+  it('is a windowed source for the list: its count, its rows, and the range it pages in', async () => {
+    ipc.previewMultiRename.mockResolvedValue(preview(7, [row(0, 'a', 'b')], 5000))
+    ipc.getMultiRenamePreviewRows.mockImplementation((_s: string, _p: number, offset: number, limit: number) =>
+      Promise.resolve({
+        ok: true,
+        value: Array.from({ length: limit }, (_, i) => row(offset + i, `f${String(offset + i)}`, 'x')),
+      }),
+    )
+    const tool = createMultiRenameState('S')
+    await settle()
+    expect(tool.source.count).toBe(5000)
+    expect(tool.source.getRow(0)?.newName).toBe('b')
+
+    tool.source.onRangeChange?.({ start: 100, end: 120 })
+    await settle()
+
+    expect(ipc.getMultiRenamePreviewRows).toHaveBeenCalledWith('S', 7, 100, 20, 'all')
+    expect(tool.source.getRow(119)?.oldName).toBe('f119')
+    tool.dispose()
+  })
+
+  it('lists the problem rows alone, paged from the backend, and back to every row', async () => {
+    const first = [row(0, 'a', 'b'), row(1, 'c', 'd', 'duplicate'), row(2, 'e', 'f', 'targetExists')]
+    ipc.previewMultiRename.mockResolvedValue({
+      ok: true,
+      value: { previewId: 7, counts: { ready: 1, unchanged: 0, problems: 2 }, rows: first },
+    })
+    ipc.getMultiRenamePreviewRows.mockImplementation(
+      (_s: string, _p: number, offset: number, limit: number, filter: string) =>
+        Promise.resolve({
+          ok: true,
+          value: (filter === 'problems' ? first.slice(1) : first).slice(offset, offset + limit),
+        }),
+    )
+    const tool = createMultiRenameState('S')
+    await settle()
+    tool.show({ start: 0, end: 40 })
+    await settle()
+
+    tool.setProblemsOnly(true)
+    expect(tool.problemsOnly).toBe(true)
+    expect(tool.total).toBe(2)
+    await settle()
+    expect(ipc.getMultiRenamePreviewRows).toHaveBeenLastCalledWith('S', 7, 0, 2, 'problems')
+    expect(tool.rowAt(0)?.oldName).toBe('c')
+    expect(tool.rowAt(1)?.oldName).toBe('e')
+
+    tool.setProblemsOnly(false)
+    expect(tool.total).toBe(3)
+    await settle()
+    expect(tool.rowAt(0)?.oldName).toBe('a')
+    expect(tool.rowAt(2)?.oldName).toBe('e')
+    tool.dispose()
+  })
+
+  it('a new preview while listing problems pages its problem rows in, never its first page', async () => {
+    const first = [row(0, 'a', 'b'), row(1, 'c', 'd', 'duplicate')]
+    ipc.previewMultiRename.mockResolvedValue({
+      ok: true,
+      value: { previewId: 7, counts: { ready: 1, unchanged: 0, problems: 1 }, rows: first },
+    })
+    ipc.getMultiRenamePreviewRows.mockImplementation(() => Promise.resolve({ ok: true, value: [first[1]] }))
+    const tool = createMultiRenameState('S')
+    await settle()
+    tool.setProblemsOnly(true)
+    tool.show({ start: 0, end: 40 })
+    await settle()
+
+    ipc.previewMultiRename.mockResolvedValue({
+      ok: true,
+      value: { previewId: 8, counts: { ready: 1, unchanged: 0, problems: 1 }, rows: first },
+    })
+    tool.update({ nameMask: '[N]x' })
+    await vi.advanceTimersByTimeAsync(PREVIEW_DELAY_MS)
+    await settle()
+
+    expect(ipc.getMultiRenamePreviewRows).toHaveBeenLastCalledWith('S', 8, 0, 1, 'problems')
+    expect(tool.rowAt(0)?.oldName).toBe('c')
     tool.dispose()
   })
 

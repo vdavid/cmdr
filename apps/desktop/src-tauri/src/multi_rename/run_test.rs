@@ -7,7 +7,7 @@ use std::sync::Arc;
 use super::error::MultiRenameError;
 use super::plan::{MultiRenameSpec, RowStatus};
 use super::run::apply;
-use super::session::{FIRST_PAGE, close, is_open, open, page, preview_session};
+use super::session::{FIRST_PAGE, PreviewFilter, close, is_open, open, page, preview_session};
 use super::transform::CaseChange;
 use crate::file_system::listing::cached_listing::LISTING_CACHE;
 use crate::file_system::listing::caching_test_support::{TestListing, TestListingGuard};
@@ -163,6 +163,7 @@ fn a_session_file_that_vanished_previews_as_missing() {
     assert_eq!(preview.rows.len(), 2);
     assert_eq!(preview.rows[0].old_name, "a-ä.txt");
     assert_eq!(preview.rows[0].status, RowStatus::Missing);
+    assert_eq!(preview.rows[0].icon_id, None, "a gone file has no icon to show");
     assert_eq!(preview.rows[1].old_name, "b-ö.txt");
     assert_eq!(preview.rows[1].status, RowStatus::Ready);
     assert_eq!((preview.counts.ready, preview.counts.problems), (1, 1));
@@ -222,7 +223,7 @@ async fn a_preview_a_newer_one_replaced_is_refused() {
 
     assert!(matches!(outcome, Err(MultiRenameError::PreviewOutOfDate)));
     assert!(matches!(
-        page(&session.session_id, seen.preview_id, 0, 10),
+        page(&session.session_id, seen.preview_id, 0, 10, PreviewFilter::All),
         Err(MultiRenameError::PreviewOutOfDate)
     ));
     assert!(dir.join("plán.txt").exists(), "nothing was renamed");
@@ -240,7 +241,14 @@ fn the_preview_answers_one_page_and_the_rest_pages_in() {
     assert_eq!(preview.rows.len(), FIRST_PAGE);
     assert_eq!(preview.counts.unchanged, FIRST_PAGE + 50);
 
-    let rest = page(&session.session_id, preview.preview_id, FIRST_PAGE, 1000).expect("a page");
+    let rest = page(
+        &session.session_id,
+        preview.preview_id,
+        FIRST_PAGE,
+        1000,
+        PreviewFilter::All,
+    )
+    .expect("a page");
     assert_eq!(rest.len(), 50);
     assert_eq!(rest[0].row, FIRST_PAGE);
     assert_eq!(rest[0].old_name, names[FIRST_PAGE]);
@@ -260,4 +268,27 @@ fn a_closed_session_answers_nothing() {
         preview_session(&session.session_id, &strip_diacritics()),
         Err(MultiRenameError::SessionClosed)
     ));
+}
+
+#[test]
+fn problems_only_pages_through_the_problem_rows_alone() {
+    // Each `éN` strips to `eN`, which stays: five taken names among eleven rows.
+    let mut names: Vec<String> = (0..5)
+        .flat_map(|i| [format!("é{i}.txt"), format!("e{i}.txt")])
+        .collect();
+    names.push("zz.txt".to_string());
+    let refs: Vec<&str> = names.iter().map(String::as_str).collect();
+    let (_dir, listing) = folder("multi-rename-problems-only", &refs);
+    let session = open(listing.id(), true, None, 0).expect("the session opens");
+    let preview = preview_session(&session.session_id, &strip_diacritics()).expect("a preview");
+    assert_eq!(preview.counts.problems, 5);
+
+    let all = page(&session.session_id, preview.preview_id, 0, 100, PreviewFilter::Problems).expect("a page");
+    assert_eq!(all.len(), 5);
+    assert!(all.iter().all(|r| r.status == RowStatus::TargetExists));
+    assert!(all.windows(2).all(|w| w[0].row < w[1].row), "in rename order");
+
+    let tail = page(&session.session_id, preview.preview_id, 2, 2, PreviewFilter::Problems).expect("a page");
+    assert_eq!(tail, all[2..4].to_vec());
+    close(&session.session_id);
 }

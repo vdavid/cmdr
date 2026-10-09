@@ -1347,12 +1347,18 @@ export const commands = {
   previewMultiRename: (sessionId: string, spec: MultiRenameSpec) =>
     typedError<MultiRenamePreview, MultiRenameError>(__TAURI_INVOKE('preview_multi_rename', { sessionId, spec })),
   /**
-   *  Rows `offset..offset + limit` of preview `preview_id`, for the table's window.
-   *  `previewOutOfDate` when a newer preview replaced it.
+   *  Rows `offset..offset + limit` of preview `preview_id` (or of its problem rows
+   *  alone), for the list's window. `previewOutOfDate` when a newer preview replaced it.
    */
-  getMultiRenamePreviewRows: (sessionId: string, previewId: number, offset: number, limit: number) =>
+  getMultiRenamePreviewRows: (
+    sessionId: string,
+    previewId: number,
+    offset: number,
+    limit: number,
+    filter: PreviewFilter,
+  ) =>
     typedError<PreviewRow[], MultiRenameError>(
-      __TAURI_INVOKE('get_multi_rename_preview_rows', { sessionId, previewId, offset, limit }),
+      __TAURI_INVOKE('get_multi_rename_preview_rows', { sessionId, previewId, offset, limit, filter }),
     ),
   /**
    *  Renames the rows preview `preview_id` showed as ready, as one operation the
@@ -12266,6 +12272,13 @@ export type PreviewCounts = {
   problems: number
 }
 
+/**
+ *  Which rows a page counts through: all of them, or only the problems
+ *  (`RowStatus::is_problem`), so the sheet can list those alone without holding
+ *  every row.
+ */
+export type PreviewFilter = 'all' | 'problems'
+
 // One row of the preview.
 export type PreviewRow = {
   // The row's place in the batch (rename order), stable across previews.
@@ -12273,6 +12286,12 @@ export type PreviewRow = {
   oldName: string
   newName: string
   status: RowStatus
+  /**
+   *  The file's icon key (`FileEntry::icon_id`), for the sheet's file glyph.
+   *  `None` for a file that's gone.
+   */
+  iconId: string | null
+  isDirectory: boolean
 }
 
 /**
