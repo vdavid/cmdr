@@ -12,7 +12,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createRawSnippet, flushSync, mount, tick, unmount } from 'svelte'
 import ColumnList from './ColumnList.svelte'
-import type { ColumnListColumn, ColumnListWindowedSource } from './column-list-types'
+import type { ColumnListApi, ColumnListColumn, ColumnListWindowedSource } from './column-list-types'
 import { installLayoutMock, type LayoutMock } from '$lib/test-layout'
 
 vi.mock('@chenglou/pretext', () => ({
@@ -49,10 +49,10 @@ let cleanup: (() => void) | null = null
 
 beforeEach(() => {
   layout = installLayoutMock({ [VIEWPORT]: { clientHeight: 200, clientWidth: 600 } })
-  const real = HTMLElement.prototype.getBoundingClientRect
+  // The spy lands on `HTMLElement.prototype`, so `Element.prototype` still holds the real one.
   vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
     if (this.classList.contains('column-list-probe')) return { height: ROW_PX } as DOMRect
-    return real.call(this)
+    return Element.prototype.getBoundingClientRect.call(this)
   })
 })
 
@@ -123,7 +123,7 @@ describe('ColumnList virtual window', () => {
       void unmount(component)
     }
     await tick()
-    component.scrollIndexIntoView(500)
+    ;(component as ColumnListApi).scrollIndexIntoView(500)
     flushSync()
     const viewport = target.querySelector<HTMLElement>(VIEWPORT)
     // Row 500's bottom edge (501 * 20) aligned to the 200 px viewport's bottom.
@@ -168,7 +168,7 @@ describe('ColumnList content-sized rows', () => {
       void unmount(component)
     }
     await tick()
-    component.scrollIndexIntoView(250)
+    ;(component as ColumnListApi).scrollIndexIntoView(250)
     expect(scrolled).toEqual(['250'])
     // The fixed-height arithmetic would have written a scroll offset instead.
     expect(target.querySelector<HTMLElement>(VIEWPORT)?.scrollTop).toBe(0)
