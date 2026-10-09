@@ -7,8 +7,9 @@ The standalone macOS window for running, waiting, and couldn't-finish operations
 
 - `queue-window.ts` opens the window (perms in `src-tauri/capabilities/queue.json`), `operations-store.svelte.ts` is the
   single reactive source it renders from, `QueueRow.svelte` a row, shell `routes/queue/+page.svelte`.
-- Pure helpers: `failure-reason.ts` (a retained failure's title/explanation/suggestion), `queue-backlog.ts`
-  (`hasOtherQueuedWork`, behind the progress dialog's Background/Queue label).
+- Pure helpers: `queue-window-keys.ts` (Esc and F2 close the window), `failure-reason.ts` (a retained failure's
+  title/explanation/suggestion), `queue-backlog.ts` (`hasOtherQueuedWork`, behind the progress dialog's Background/Queue
+  label).
 
 ## Must-knows
 

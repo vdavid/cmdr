@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { queueWindowKeyAction } from '$lib/file-operations/queue/queue-window-keys'
     import { onMount, onDestroy } from 'svelte'
     import { SvelteSet } from 'svelte/reactivity'
     import { getCurrentWindow } from '@tauri-apps/api/window'
@@ -125,7 +126,7 @@
     }
 
     function handleKeydown(event: KeyboardEvent): void {
-        if (event.key === 'Escape') {
+        if (queueWindowKeyAction(event) === 'close') {
             event.preventDefault()
             // Defer the close past the current event-loop tick so any in-flight IPC
             // ack settles before the webview is destroyed. `setTimeout(0)`, not rAF

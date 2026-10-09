@@ -25,6 +25,12 @@ real OS window you can leave open in the background — not a sheet, not a panel
 exact Settings-window pattern (singleton, vibrancy, overlay title bar, position via `$lib/window-positioning`) so it
 reads as a first-class macOS utility window, consistent with Settings and Keyboard shortcuts.
 
+## Keys
+
+Esc and F2 close the window (`queue-window-keys.ts`). **Decision: F2 too**, because the progress dialog's F2 (Queue) is
+what opens it: pressing F2 twice sends the operation to the queue and then the queue itself out of sight, as Total
+Commander's background queue goes. Closing loses nothing; the status corner and ⌥⌘Q bring it back.
+
 ## The two-stream model
 
 The window renders from `createOperationsStore()`, which merges:
