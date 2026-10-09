@@ -1943,9 +1943,10 @@ drifts the moment a fourth trigger appears. A third module reaches one that live
 - `drag-drop-controller.svelte.ts::handleDrop` emits `drop_received` on EVERY arm, refusals included.
 - `volume-selection.ts` does NOT emit its own `favorite_opened`. Its `category === 'favorite'` branch calls
   `../navigation/open-favorite.ts`, which owns the single emit and takes the `{ surface, via }` payload from whichever
-  surface made the pick. There's no lower chokepoint than that module: every route folds onto
-  `navigate({ to: { selectVolume } })`, which by then holds the containing volume's id and can't tell a favorite from a
-  drive.
+  surface made the pick. A favorite the pane can't go to comes back as `unreachable-favorite` with its worded reason,
+  which MCP `select_volume` replies with (`routes/(main)/mcp-volume-select.ts`). There's no lower chokepoint than that
+  module: every route folds onto `navigate({ to: { selectVolume } })`, which by then holds the containing volume's id
+  and can't tell a favorite from a drive.
 
 Vocabulary and props: `src-tauri/src/analytics/DETAILS.md` § "Starter event set".
 

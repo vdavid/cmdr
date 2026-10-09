@@ -11,6 +11,7 @@
  */
 
 import { trackEvent } from '$lib/tauri-commands'
+import type { FavoriteReach } from '$lib/ipc/bindings'
 
 /**
  * A pick, as the event carries it: WHERE it happened and HOW.
@@ -28,9 +29,13 @@ import { trackEvent } from '$lib/tauri-commands'
 export type FavoriteOpenedEvent =
   | { surface: 'favorites_menu'; via: 'digit' | 'letter' | 'keyboard' | 'pointer' }
   | { surface: 'command'; via: 'command' }
+  /** The Dock tile's right-click menu: like `command`, the menu item IS the interaction. */
+  | { surface: 'dock'; via: 'dock' }
 
 /**
- * Reports navigating to a favorite.
+ * Reports a favorite being picked, with whether the pane could follow it (`reach`:
+ * `ready` and `connects` open; the rest leave the pane put with a toast). So the
+ * event counts PICKS, and `reach` splits arrivals from offline places.
  *
  * ONE emit site: `navigation/open-favorite.ts`, the single way a favorite opens.
  * It's the lowest chokepoint there is — every caller folds onto
@@ -38,8 +43,8 @@ export type FavoriteOpenedEvent =
  * volume's id and can no longer tell a favorite from a drive — so the payload
  * comes down from whichever surface made the pick.
  */
-export function reportFavoriteOpened(event: FavoriteOpenedEvent): void {
-  void trackEvent('favorite_opened', { surface: event.surface, via: event.via })
+export function reportFavoriteOpened(event: FavoriteOpenedEvent, reach: FavoriteReach['kind']): void {
+  void trackEvent('favorite_opened', { surface: event.surface, via: event.via, reach })
 }
 
 /** What brought the favorites menu up. */

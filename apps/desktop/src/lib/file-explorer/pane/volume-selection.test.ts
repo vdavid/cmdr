@@ -11,6 +11,8 @@ vi.mock('$lib/tauri-commands', () => ({
   // Picking a favorite reports `favorite_opened`; fire-and-forget, so a stub suffices.
   trackEvent: vi.fn(() => Promise.resolve()),
 }))
+vi.mock('$lib/ui/toast', () => ({ addToast: vi.fn(), addToastForPane: vi.fn() }))
+vi.mock('$lib/settings/settings-window', () => ({ openSettingsWindow: vi.fn() }))
 vi.mock('$lib/logging/logger', () => ({
   getAppLogger: () => ({ warn: vi.fn(), info: vi.fn(), error: vi.fn(), debug: vi.fn() }),
 }))
@@ -131,10 +133,11 @@ describe('createVolumeSelection', () => {
       pane: 'left',
       to: { selectVolume: { volumeId: 'root', path: '/Users/me/Docs' } },
       source: 'user',
+      exact: true,
     })
   })
 
-  it('selectVolumeByName says not-found for a favorite whose containing volume does not resolve', async () => {
+  it('selectVolumeByName refuses a favorite whose containing volume does not resolve', async () => {
     // ❗ It used to fall back to volume `root` at the raw path, which for a dead
     // `search-results://` favorite evicts the pane and then errors about a path
     // nobody typed. `navigation/open-favorite.ts` refuses instead, and a volume
@@ -143,7 +146,55 @@ describe('createVolumeSelection', () => {
     const { ops, navigate } = setup([
       vol({ id: 'fav', name: 'Old search', path: 'search-results://dead-id', category: 'favorite' }),
     ])
-    expect(await ops.selectVolumeByName('left', 'Old search')).toEqual({ kind: 'not-found' })
+    expect(await ops.selectVolumeByName('left', 'Old search')).toMatchObject({
+      kind: 'unreachable-favorite',
+      refusal: { kind: 'not_found' },
+    })
+    expect(navigate).not.toHaveBeenCalled()
+  })
+
+  it('selectVolumeById enters a favorite on an unmounted saved share at its target, which dials', async () => {
+    const { ops, navigate, started } = setup([
+      vol({
+        id: 'fav-1',
+        name: 'Docs',
+        path: '/Volumes/naspi/docs',
+        category: 'favorite',
+        favoriteTarget: {
+          volumeId: 'smb-naspi',
+          volumeName: 'naspi',
+          volumeRoot: '/Volumes/naspi',
+          reach: { kind: 'connects' },
+        },
+      }),
+    ])
+    expect(await ops.selectVolumeById('left', 'fav-1')).toEqual({
+      kind: 'selected',
+      volumeId: 'smb-naspi',
+      navigation: started,
+    })
+    expect(resolvePathVolumeSpy).not.toHaveBeenCalled()
+    expect(navigate).toHaveBeenCalledWith({
+      pane: 'left',
+      to: { selectVolume: { volumeId: 'smb-naspi', path: '/Volumes/naspi/docs' } },
+      source: 'user',
+      exact: true,
+    })
+  })
+
+  it('selectVolumeById words why a favorite on a forgotten server can`t open, for the MCP reply', async () => {
+    const { ops, navigate } = setup([
+      vol({
+        id: 'fav-2',
+        name: 'Docs',
+        path: '/Volumes/naspi/docs',
+        category: 'favorite',
+        favoriteTarget: { volumeId: 'smb-naspi', volumeName: 'naspi', volumeRoot: null, reach: { kind: 'forgotten' } },
+      }),
+    ])
+    const outcome = await ops.selectVolumeById('left', 'fav-2')
+    expect(outcome).toMatchObject({ kind: 'unreachable-favorite', refusal: { kind: 'forgotten' } })
+    expect(outcome.kind === 'unreachable-favorite' && outcome.message).toContain('naspi')
     expect(navigate).not.toHaveBeenCalled()
   })
 

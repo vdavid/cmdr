@@ -112,7 +112,8 @@ selection and pixel scroll stay out.
 switching volumes. Runs checks **in parallel** with 500ms frontend timeouts per check (11 s on a live session, see
 "Non-blocking navigation pattern"). Priority:
 
-1. Favorite path (when `targetPath !== volumePath`)
+1. Favorite path (when `targetPath !== volumePath`, or `exact`: a favorite at a volume ROOT sets it through
+   `VolumeChangePayload.exact` → `NavigateIntent.exact`, or it would read as a plain switch and land elsewhere)
 2. Other pane's path (if same volume and path exists)
 3. Stored `lastUsedPath` for this volume
 4. Default: `~` for `DEFAULT_VOLUME_ID`, else `firstLandingOn(volumePath, landingPath)`
@@ -602,18 +603,42 @@ so an emptied list still reads as a real state) and a one-row `add` section. The
 and reached by arrow or pointer. The add row carries `'0'`. A favorite can also carry an assigned uppercase letter in
 the right-aligned `shortcut` slot, independent of its positional digit.
 
-**Opening a favorite** is `open-favorite.ts`'s, the one way it happens anywhere: resolve the containing volume, emit
-`favorite_opened`, then switch the pane onto that volume with the favorite's path. `via` comes from the primitive's
-`MenuActivationSource` (`accelerator` → `digit`, `shortcut` → `letter`, `keyboard`, `pointer`), which is the only honest
-source: by the time a consumer sees the pick, the key, the Enter, and the click have collapsed into one call. ❌ Don't
-rebuild it by sniffing `onKey`.
+**Opening a favorite** is `open-favorite.ts`'s, the one way it happens anywhere (this menu, its letter shortcuts, MCP
+`select_volume` through `pane/volume-selection.ts`, the Dock tile menu). It reads the ROW: Rust's reach pass
+(`src-tauri/src/favorites/reach.rs`) put `favoriteTarget` on it (`volumeId`, the live `volumeRoot`, the path rebased
+onto it, and `reach`). ❌ It never asks which volume contains the path: for an unmounted share the mount table walks UP
+and answers the boot disk. Per reach:
+
+- **`ready`, `connects`**: `go({ volumeId, volumePath: volumeRoot, targetPath: path, exact: true })`. For `connects` the
+  pane lands on the saved place and its own connect view (`../pane/place-connect.svelte.ts`, or
+  `../pane/device-connect.svelte.ts` for a phone) dials, shows Cancel, and enters the folder. Nothing favorite-specific.
+- **`unplugged`, `access_off`, `forgotten`, `not_found`**: the pane STAYS PUT (an id with no row is a volume the app
+  says doesn't exist) and one info toast for that pane (`FavoriteRefusalToastContent.svelte`) says why, with one action
+  where there is one: Open settings (the MTP or ADB section), Show servers (this pane onto the servers hub), Remove
+  favorite. Words and action: `favorite-reach.ts`, also what MCP replies with.
+- **No `favoriteTarget`** (a listing from before the reach pass): ask Rust for the containing volume; none is
+  `not_found`.
+
+`favorite_opened` fires once per PICK with its `reach`. `via` comes from the primitive's `MenuActivationSource`
+(`accelerator` → `digit`, `shortcut` → `letter`, `keyboard`, `pointer`), which is the only honest source: by the time a
+consumer sees the pick, the key, the Enter, and the click have collapsed into one call. ❌ Don't rebuild it by sniffing
+`onKey`.
+
+**Every favorite stays pickable.** One a pick can't open right away (`favoriteIsDimmed`: anything but `ready`) renders
+its label quiet (`.is-unreachable`, the switcher's undialed-saved-place color, ❌ not `aria-disabled`: a pick is what
+dials it), and its tooltip carries a status line between the path and the hints (`favoriteReachStatus`, via
+`buildFavoriteTooltip`'s `status`). Its icon is the NSWorkspace one when the row has it, else a glyph by the target's
+kind (`server` for a share or server, `smartphone` for a phone; the read side never asks the OS about a network path),
+else the generic folder.
 
 **The `0` row's three states.** Enabled; disabled saying "This folder is already a favorite"; disabled saying this
 folder can't be a favorite because favorites only work on disks and mounted shares. Both refusals open with the same
 "this folder" subject, so a reader learns which one they hit without re-reading. The reason IS the tooltip — a greyed
 row that says nothing is a dead end. ❗ Capability first (`paneFolderCanBeFavorited`, `pane/volume-capabilities.ts`),
 THEN the already-a-favorite test: on an archive or `.git`-portal pane the folder could never be a favorite at all, so
-"already a favorite" would be answering a question that doesn't arise. Re-adding a folder that IS one is refused rather
+"already a favorite" would be answering a question that doesn't arise. "Already a favorite" compares the way the store
+dedupes an add: with a known target on the pane's volume, the same path under each one's root (so a share mounted at a
+moved path still matches), else the paths with trailing slashes aside. Re-adding a folder that IS one is refused rather
 than allowed because the store answers a duplicate by moving that favorite to the END of the list, which looks like the
 row jumping for no reason (David, 2026-09-16). The add itself is `add-favorite-folder.ts`, shared with the
 `favorites.add` command so the success and failure wording can't drift.

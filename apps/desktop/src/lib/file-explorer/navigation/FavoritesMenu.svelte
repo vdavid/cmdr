@@ -56,6 +56,7 @@
 
     const favorites = createFavoritesMenu({
         getVolumes: () => getVolumes(),
+        getPaneId: () => paneId,
         getPaneVolumeId: () => volumeId,
         getPaneCurrentPath: () => currentPath,
         getDirIconFallback: () => dirIconFallback,
@@ -154,7 +155,9 @@
                 aria-label={tString('fileExplorer.navigation.renameFavoriteAriaLabel')}
             />
         {:else}
-            <span class="favorite-label">{ctx.item.label}</span>
+            <!-- A row a pick can't open right away reads quiet, like the switcher's undialed saved
+                 place. ❌ Not `aria-disabled`: picking it is what dials it. Its tooltip says why. -->
+            <span class="favorite-label" class:is-unreachable={row?.kind === 'favorite' && favorites.isDimmed(row.volume)}>{ctx.item.label}</span>
         {/if}
     {/snippet}
     {#snippet trailing(ctx: MenuRowContext<FavoritesRow>)}
@@ -181,6 +184,11 @@
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+    }
+
+    /*noinspection CssUnusedSymbol*/
+    .favorite-label.is-unreachable {
+        color: var(--color-text-quiet);
     }
 
     .favorite-rename-input {

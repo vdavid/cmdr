@@ -2048,6 +2048,15 @@
     },
     "screenshot": "favorites-menu.png"
   },
+  "fileExplorer.navigation.favoriteTooltipWithStatus": "{path}\n{status}\nDrag to reorder, or {reorder}. Right-click to rename or remove.",
+  "@fileExplorer.navigation.favoriteTooltipWithStatus": {
+    "description": "Hover tooltip for a dimmed favorite row in the favorites menu: one whose folder is on a share, server, phone, or drive that isn't connected, or that isn't there anymore. Same as fileExplorer.navigation.favoriteTooltip, with a status line between the path and the hints; translate the hints the same way. The \\n are real line breaks.",
+    "placeholders": {
+      "path": "the file-system path the favorite points to",
+      "status": "one sentence saying why the row is dimmed, for example \"Not connected. Opening it connects to naspi.\" (already translated)",
+      "reorder": "the keyboard reorder shortcut glyphs"
+    }
+  },
   "fileExplorer.navigation.renameFavoriteAriaLabel": "Rename favorite",
   "@fileExplorer.navigation.renameFavoriteAriaLabel": {
     "description": "Accessibility label for the inline text field that appears when renaming a favorite in the favorites menu."
@@ -2078,6 +2087,73 @@
   "fileExplorer.navigation.reorderFavoritesFailed": "Couldn’t reorder favorites. Try again?",
   "@fileExplorer.navigation.reorderFavoritesFailed": {
     "description": "Error toast when reordering favorites did not work, inviting the user to retry."
+  },
+  "fileExplorer.navigation.favoriteStatus.connects": "Not connected. Opening it connects to {place}.",
+  "@fileExplorer.navigation.favoriteStatus.connects": {
+    "description": "Second line of the hover tooltip on a dimmed favorite in the favorites menu, under the folder's path. The favorite is on a saved network share, server, or phone that isn't connected right now; picking it still works, because Cmdr connects first and then opens the folder. Reassure, don't warn.",
+    "placeholders": {
+      "place": "the name of the share, server, or phone the favorite lives on, for example \"naspi on nas.local\" or \"Pixel 7\""
+    }
+  },
+  "fileExplorer.navigation.favoriteStatus.notFound": "This folder isn’t there anymore.",
+  "@fileExplorer.navigation.favoriteStatus.notFound": {
+    "description": "Second line of the hover tooltip on a dimmed favorite in the favorites menu, under the folder's path: the folder was moved or deleted, or Cmdr can't tell which disk it was on. \"Anymore\" means \"no longer\"."
+  },
+  "fileExplorer.navigation.favoriteUnreachable.phoneUnplugged": "{device} isn’t connected. Plug it in with a USB cable and unlock it, then try again.",
+  "@fileExplorer.navigation.favoriteUnreachable.phoneUnplugged": {
+    "description": "Info toast after the user picked a favorite folder on a phone that isn't plugged in, so the pane stayed where it was. Also the second line of that favorite's tooltip in the favorites menu. Says how to fix it: plug in by USB and unlock the phone.",
+    "placeholders": {
+      "device": "the phone's name, for example \"Pixel 7\""
+    }
+  },
+  "fileExplorer.navigation.favoriteUnreachable.storageUnplugged": "That storage on {device} isn’t available right now.",
+  "@fileExplorer.navigation.favoriteUnreachable.storageUnplugged": {
+    "description": "Info toast after the user picked a favorite folder on a phone that IS connected, but the storage the folder lived on (typically an SD card) isn't there now, so the pane stayed where it was. Also the second line of that favorite's tooltip in the favorites menu.",
+    "placeholders": {
+      "device": "the phone's name, for example \"Pixel 7\""
+    }
+  },
+  "fileExplorer.navigation.favoriteUnreachable.driveUnplugged": "“{drive}” isn’t connected. Connect it, then try again.",
+  "@fileExplorer.navigation.favoriteUnreachable.driveUnplugged": {
+    "description": "Info toast after the user picked a favorite folder on an external drive (or a network mount Cmdr can't connect itself) that isn't connected, so the pane stayed where it was. Also the second line of that favorite's tooltip in the favorites menu.",
+    "placeholders": {
+      "drive": "the drive's name, for example \"Samsung T7\""
+    }
+  },
+  "fileExplorer.navigation.favoriteUnreachable.mtpOff": "Phones and cameras over MTP are turned off in Settings.",
+  "@fileExplorer.navigation.favoriteUnreachable.mtpOff": {
+    "description": "Info toast after the user picked a favorite folder on a phone or camera, while Cmdr's MTP support (the USB protocol phones and cameras use for file transfer) is switched off in Settings, so the pane stayed where it was. The toast's button opens that setting. Keep \"MTP\" as is."
+  },
+  "fileExplorer.navigation.favoriteUnreachable.adbOff": "Android phones are turned off in Settings.",
+  "@fileExplorer.navigation.favoriteUnreachable.adbOff": {
+    "description": "Info toast after the user picked a favorite folder on an Android phone, while Cmdr's Android (ADB) support is switched off in Settings, so the pane stayed where it was. The toast's button opens that setting."
+  },
+  "fileExplorer.navigation.favoriteUnreachable.forgotten": "Cmdr doesn’t know how to reach “{place}” anymore. Connect to it again from Servers, and this favorite works again.",
+  "@fileExplorer.navigation.favoriteUnreachable.forgotten": {
+    "description": "Info toast after the user picked a favorite folder on a network share or server that was removed (forgotten) from Cmdr's saved servers, so Cmdr has no way to connect to it; the pane stayed where it was. Connecting to the same place again brings the favorite back. \"Servers\" is the name of the place in Cmdr that lists servers (use the same word as fileExplorer.navigation.networkVolume); the toast's button opens it. \"Anymore\" means \"no longer\".",
+    "placeholders": {
+      "place": "the share or server's name, for example \"naspi on nas.local\""
+    }
+  },
+  "fileExplorer.navigation.favoriteUnreachable.notFound": "“{name}” isn’t at {path} anymore.",
+  "@fileExplorer.navigation.favoriteUnreachable.notFound": {
+    "description": "Info toast after the user picked a favorite whose folder was moved or deleted, so the pane stayed where it was. The toast's button removes the favorite. \"Anymore\" means \"no longer\".",
+    "placeholders": {
+      "name": "the favorite's name as shown in the favorites menu, for example \"Projects\"",
+      "path": "where the folder used to be, for example \"/Users/ada/Projects\""
+    }
+  },
+  "fileExplorer.navigation.favoriteUnreachable.openSettings": "Open settings",
+  "@fileExplorer.navigation.favoriteUnreachable.openSettings": {
+    "description": "VERB phrase. Button on the toast saying phones are turned off in Settings: opens Cmdr's Settings at that switch."
+  },
+  "fileExplorer.navigation.favoriteUnreachable.openServers": "Show servers",
+  "@fileExplorer.navigation.favoriteUnreachable.openServers": {
+    "description": "VERB phrase. Button on the toast saying Cmdr doesn't know how to reach a favorite's server anymore: puts this pane on the Servers list, where the user can connect to it again."
+  },
+  "fileExplorer.navigation.favoriteUnreachable.removeFavorite": "Remove favorite",
+  "@fileExplorer.navigation.favoriteUnreachable.removeFavorite": {
+    "description": "VERB phrase. Button on the toast saying a favorite's folder isn't there anymore: removes that favorite from the favorites menu. Doesn't touch any files."
   },
   "fileExplorer.navigation.locationUnreachableToast": "Couldn’t reach that location’s drive. It might be disconnected.",
   "@fileExplorer.navigation.locationUnreachableToast": {

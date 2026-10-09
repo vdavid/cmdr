@@ -42,11 +42,17 @@ vi.mock('$lib/tauri-commands', () => ({
   },
 }))
 
+const addToastForPane = vi.fn()
 vi.mock('$lib/ui/toast', () => ({
   addToast: (message: string, options: { level: string }) => {
     addToast(message, options)
   },
+  addToastForPane: (...args: unknown[]) => {
+    addToastForPane(...(args as []))
+  },
 }))
+
+vi.mock('$lib/settings/settings-window', () => ({ openSettingsWindow: vi.fn(() => Promise.resolve()) }))
 
 vi.mock('$lib/stores/volume-store.svelte', () => ({ getVolumes: () => stubs.volumes }))
 
@@ -56,7 +62,7 @@ vi.mock('$lib/settings/reactive-settings.svelte', () => ({
   getShowVirtualGitPortal: () => stubs.showVirtualGitPortal,
 }))
 
-vi.mock('$lib/logging/logger', () => ({ getAppLogger: () => ({ warn: vi.fn() }) }))
+vi.mock('$lib/logging/logger', () => ({ getAppLogger: () => ({ warn: vi.fn(), info: vi.fn() }) }))
 
 import { createFavoritesMenu, ADD_ROW_VALUE, FAVORITES_SECTION_ID } from './favorites-menu.svelte'
 
@@ -75,7 +81,7 @@ const THREE_FAVORITES = [
 interface Harness {
   menu: ReturnType<typeof createFavoritesMenu>
   /** Every `VolumeChangePayload` the menu handed its host. */
-  went: { volumeId: string; volumePath: string; targetPath: string }[]
+  went: { volumeId: string; volumePath: string; targetPath: string; exact?: boolean }[]
   renameInput: HTMLInputElement
 }
 
@@ -92,6 +98,7 @@ function harness(paneCurrentPath = '/Users/test/elsewhere', paneVolumeId = 'root
   dispose = $effect.root(() => {
     menu = createFavoritesMenu({
       getVolumes: () => stubs.volumes as VolumeInfo[],
+      getPaneId: () => 'left',
       getPaneVolumeId: () => paneVolumeId,
       getPaneCurrentPath: () => paneCurrentPath,
       getDirIconFallback: () => '/icons/dir.png',
@@ -251,11 +258,14 @@ describe('opening a favorite', () => {
     await menu.select(favoriteRows(menu)[index], source)
   }
 
-  it('sends the pane to the favorite`s path on the volume that contains it', async () => {
+  it('sends the pane to the favorite`s path on the volume its row names', async () => {
+    stubs.volumes = [onShare('connects'), DISK]
     const { menu, went } = harness()
-    await pick(menu, 1, 'pointer')
-    expect(resolvePathVolume).toHaveBeenCalledWith('/Users/test/Downloads')
-    expect(went).toEqual([{ volumeId: 'root', volumePath: '/', targetPath: '/Users/test/Downloads' }])
+    await pick(menu, 0, 'pointer')
+    expect(resolvePathVolume).not.toHaveBeenCalled()
+    expect(went).toEqual([
+      { volumeId: 'smb-naspi', volumePath: '/Volumes/naspi', targetPath: '/Volumes/naspi/docs', exact: true },
+    ])
   })
 
   it.each([
@@ -263,17 +273,86 @@ describe('opening a favorite', () => {
     ['keyboard', 'keyboard'],
     ['pointer', 'pointer'],
   ] as const)('reports a %s activation as via: %s', async (source, via) => {
+    stubs.volumes = [onShare('ready'), DISK]
     const { menu } = harness()
     await pick(menu, 0, source)
-    expect(trackEvent).toHaveBeenCalledWith('favorite_opened', { surface: 'favorites_menu', via })
+    expect(trackEvent).toHaveBeenCalledWith('favorite_opened', { surface: 'favorites_menu', via, reach: 'ready' })
   })
 
-  it('reports NOTHING when the favorite resolves to no volume, and leaves the pane put', async () => {
-    resolvePathVolume.mockResolvedValue({ volume: null, timedOut: false })
+  it('leaves the pane put on a favorite it can`t reach, and says why in a toast for THIS pane', async () => {
+    stubs.volumes = [onShare('forgotten'), DISK]
     const { menu, went } = harness()
     await pick(menu, 0, 'accelerator')
     expect(went).toEqual([])
-    expect(trackEvent).not.toHaveBeenCalled()
+    expect(addToastForPane).toHaveBeenCalledWith('left', expect.anything(), expect.objectContaining({ level: 'info' }))
+  })
+})
+
+/** A favorite on the `naspi` share, with the reach the listing gave it. */
+function onShare(reach: 'ready' | 'connects' | 'forgotten' | 'not_found'): VolumeInfo {
+  return {
+    ...favorite(7, '/Volumes/naspi/docs', 'docs'),
+    favoriteTarget: {
+      volumeId: 'smb-naspi',
+      volumeName: 'naspi on nas.local',
+      volumeRoot: reach === 'forgotten' ? null : '/Volumes/naspi',
+      reach: { kind: reach },
+    },
+  }
+}
+
+/**
+ * How a row reads before it's picked. Every favorite stays pickable (a pick is what
+ * dials a saved place); one a pick can't open right away reads dimmed and says why.
+ */
+describe('a favorite the pane can`t open right away', () => {
+  it('stays pickable, with its reason on the line under its path', () => {
+    stubs.volumes = [onShare('connects'), DISK]
+    const { menu } = harness()
+    const [row] = favoriteRows(menu)
+    expect(row.disabled ?? false).toBe(false)
+    const [path, status] = (row.tooltip ?? '').split('\n')
+    expect(path).toBe('/Volumes/naspi/docs')
+    expect(status).toBe('Not connected. Opening it connects to naspi on nas.local.')
+    expect(menu.isDimmed(row.data?.kind === 'favorite' ? row.data.volume : DISK)).toBe(true)
+  })
+
+  it('says nothing extra for a ready one', () => {
+    stubs.volumes = [onShare('ready'), DISK]
+    const { menu } = harness()
+    const [row] = favoriteRows(menu)
+    expect((row.tooltip ?? '').split('\n')[1]).toMatch(/^Drag to reorder/)
+    expect(menu.isDimmed(row.data?.kind === 'favorite' ? row.data.volume : DISK)).toBe(false)
+  })
+
+  it('shows a glyph by the kind of place when the folder has no icon of its own', () => {
+    stubs.volumes = [onShare('connects'), DISK]
+    const { menu } = harness()
+    expect(favoriteRows(menu)[0].icon).toEqual({ lucide: 'server' })
+  })
+
+  it('reads "already a favorite" for the same folder on a share mounted at a NEW path', () => {
+    // The listing rebases a live share's favorite onto its current root, but a favorite
+    // whose target is known compares by (volume, path under its root) all the same.
+    const share: VolumeInfo = {
+      id: 'smb-naspi',
+      name: 'naspi',
+      path: '/Volumes/naspi-1',
+      category: 'network',
+      isEjectable: true,
+    }
+    const atOldRoot: VolumeInfo = {
+      ...onShare('ready'),
+      favoriteTarget: {
+        volumeId: 'smb-naspi',
+        volumeName: 'naspi',
+        volumeRoot: '/Volumes/naspi',
+        reach: { kind: 'ready' },
+      },
+    }
+    stubs.volumes = [atOldRoot, share, DISK]
+    const { menu } = harness('/Volumes/naspi-1/docs', 'smb-naspi')
+    expect(addRow(menu).tooltip).toBe('This folder is already a favorite')
   })
 })
 

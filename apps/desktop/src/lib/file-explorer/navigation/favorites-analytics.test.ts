@@ -21,17 +21,30 @@ import { reportFavoriteOpened, reportFavoritesMenuOpened } from './favorites-ana
 beforeEach(() => trackEvent.mockReset())
 
 describe('reportFavoriteOpened', () => {
-  it('sends both props, so `via` is never missing from a row', () => {
-    reportFavoriteOpened({ surface: 'favorites_menu', via: 'digit' })
-    expect(trackEvent).toHaveBeenCalledWith('favorite_opened', { surface: 'favorites_menu', via: 'digit' })
+  it('sends every prop, so `via` and `reach` are never missing from a row', () => {
+    reportFavoriteOpened({ surface: 'favorites_menu', via: 'digit' }, 'ready')
+    expect(trackEvent).toHaveBeenCalledWith('favorite_opened', {
+      surface: 'favorites_menu',
+      via: 'digit',
+      reach: 'ready',
+    })
+  })
+
+  it('carries the reach of a pick the pane could not follow', () => {
+    reportFavoriteOpened({ surface: 'dock', via: 'dock' }, 'unplugged')
+    expect(trackEvent).toHaveBeenCalledWith('favorite_opened', { surface: 'dock', via: 'dock', reach: 'unplugged' })
   })
 
   it('pairs the command surface with the command via', () => {
     // The arm where the command IS the interaction: no row to point at, so no
     // digit / keyboard / pointer answer exists. The payload union is what makes
     // any other pairing a compile error.
-    reportFavoriteOpened({ surface: 'command', via: 'command' })
-    expect(trackEvent).toHaveBeenCalledWith('favorite_opened', { surface: 'command', via: 'command' })
+    reportFavoriteOpened({ surface: 'command', via: 'command' }, 'connects')
+    expect(trackEvent).toHaveBeenCalledWith('favorite_opened', {
+      surface: 'command',
+      via: 'command',
+      reach: 'connects',
+    })
   })
 })
 

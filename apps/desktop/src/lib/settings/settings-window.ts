@@ -114,6 +114,8 @@ export type SettingsSurface =
   | 'escape-full-screen-toast'
   /** The "local AI model didn't finish downloading" toast after onboarding, deep-linking to AI > Provider. */
   | 'local-download-toast'
+  /** The "phones are turned off in Settings" toast after a favorite pick, deep-linking to the MTP or ADB section. */
+  | 'favorite-toast'
 
 /**
  * Opens the settings window, or focuses it if already open. When `section` is provided,

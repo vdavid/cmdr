@@ -75,6 +75,11 @@ export async function selectVolumeForMcp(args: {
     await reply({ ok: false, error: `Volume '${selector}' not found` })
     return
   }
+  if (selection.kind === 'unreachable-favorite') {
+    // The pane stayed put; the reason is the same sentence its toast shows.
+    await reply({ ok: false, error: selection.message })
+    return
+  }
   const { navigation } = selection
   if (navigation.status === 'refused') {
     log.warn('mcp-volume-select refused {selector} ({pane} pane): {reason}', {

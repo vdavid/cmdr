@@ -6,8 +6,9 @@
  * Both routes fold onto `navigate({ to: { selectVolume }, source: 'user' })`, so
  * the standard volume-switch mechanics (focus shift, history push, new-tab-on-
  * pinned) apply uniformly. A favorite goes through the shared
- * `navigation/open-favorite.ts`, which navigates to its path on the containing
- * volume; a real volume opens where `pathForPickedVolume` says (a saved server
+ * `navigation/open-favorite.ts`, which enters the volume its row names at its path
+ * (a saved place dials from there), or refuses with a worded reason the MCP reply
+ * repeats; a real volume opens where `pathForPickedVolume` says (a saved server
  * place on its start folder, anything else at its root); the virtual servers-hub
  * volume isn't in the
  * volumes list, so it's special-cased. The switch arm shifts STORE focus but not DOM focus — re-
@@ -18,6 +19,7 @@
 import { tString } from '$lib/intl/messages.svelte'
 import { getAppLogger } from '$lib/logging/logger'
 import { openFavorite } from '../navigation/open-favorite'
+import type { FavoriteRefusal } from '../navigation/favorite-reach'
 import { pathForPickedVolume } from '../navigation/picked-volume-path'
 import type { VolumeInfo } from '../types'
 import type { NavigateIntent, NavigateResult } from './navigate'
@@ -38,6 +40,8 @@ export interface VolumeSelectionDeps {
 export type VolumeSelectOutcome =
   | { kind: 'not-found' }
   | { kind: 'selected'; volumeId: string; navigation: NavigateResult }
+  /** A favorite the pane can't go to (an unplugged phone, a forgotten server): the pane stays put. */
+  | { kind: 'unreachable-favorite'; refusal: FavoriteRefusal; message: string }
 
 export interface VolumeSelection {
   /** Select a volume by zero-based index into the volumes array. */
@@ -49,8 +53,13 @@ export interface VolumeSelection {
 }
 
 export function createVolumeSelection(deps: VolumeSelectionDeps): VolumeSelection {
-  function select(pane: 'left' | 'right', volumeId: string, path: string): VolumeSelectOutcome {
-    const navigation = deps.navigate({ pane, to: { selectVolume: { volumeId, path } }, source: 'user' })
+  function select(pane: 'left' | 'right', volumeId: string, path: string, exact?: boolean): VolumeSelectOutcome {
+    const navigation = deps.navigate({
+      pane,
+      to: { selectVolume: { volumeId, path } },
+      source: 'user',
+      ...(exact ? { exact } : {}),
+    })
     return { kind: 'selected', volumeId, navigation }
   }
 
@@ -64,15 +73,18 @@ export function createVolumeSelection(deps: VolumeSelectionDeps): VolumeSelectio
     const volume = volumes[index]
 
     // A favorite is a row pointing at a path on some other volume, so it takes the
-    // shared open (`navigation/open-favorite.ts`), which resolves that volume and
-    // emits. One that resolves to nothing is a volume this pane can't be sent to.
+    // shared open (`navigation/open-favorite.ts`), which reads the volume off the row
+    // and emits. One the pane can't go to says why, in words the MCP reply repeats.
     if (volume.category === 'favorite') {
       const opened = await openFavorite({
-        favoritePath: volume.path,
+        favorite: volume,
+        pane,
         picked: { surface: 'command', via: 'command' },
-        go: (target) => select(pane, target.volumeId, target.targetPath),
+        go: (target) => select(pane, target.volumeId, target.targetPath, target.exact),
       })
-      return opened.kind === 'opened' ? opened.opened : { kind: 'not-found' }
+      return opened.kind === 'opened'
+        ? opened.opened
+        : { kind: 'unreachable-favorite', refusal: opened.refusal, message: opened.message }
     }
     // A saved server place opens on its start folder; anything else at its root.
     return select(pane, volume.id, pathForPickedVolume(volume))

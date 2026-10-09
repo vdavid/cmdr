@@ -77,7 +77,11 @@ vi.mock('$lib/stores/volume-busy-store.svelte', () => ({
   isVolumeEjecting: () => false,
 }))
 
-vi.mock('$lib/ui/toast', () => ({ addToast: vi.fn(() => 'toast-id'), dismissToast: vi.fn() }))
+vi.mock('$lib/ui/toast', () => ({
+  addToast: vi.fn(() => 'toast-id'),
+  addToastForPane: vi.fn(() => 'toast-id'),
+  dismissToast: vi.fn(),
+}))
 
 vi.mock('$lib/settings/reactive-settings.svelte', () => ({
   formatFileSize: (n: number) => `${String(n)} B`,
@@ -283,6 +287,7 @@ describe('the number keys', () => {
       volumeId: 'root',
       volumePath: '/',
       targetPath: '/Users/test/Downloads',
+      exact: true,
     })
     // A pick closes the menu: the digit is the whole interaction.
     expect(menuSurface()).toBeNull()
@@ -492,7 +497,11 @@ describe('how a favorite was opened', () => {
     await openFavorites()
     pressDigit(1)
     await vi.waitFor(() => {
-      expect(trackEvent).toHaveBeenCalledWith('favorite_opened', { surface: 'favorites_menu', via: 'digit' })
+      expect(trackEvent).toHaveBeenCalledWith('favorite_opened', {
+        surface: 'favorites_menu',
+        via: 'digit',
+        reach: 'ready',
+      })
     })
   })
 
@@ -508,7 +517,11 @@ describe('how a favorite was opened', () => {
     expect(menuRow('fav-2')?.getAttribute('aria-keyshortcuts')).toBe('2 P')
     press('p')
     await vi.waitFor(() => {
-      expect(trackEvent).toHaveBeenCalledWith('favorite_opened', { surface: 'favorites_menu', via: 'letter' })
+      expect(trackEvent).toHaveBeenCalledWith('favorite_opened', {
+        surface: 'favorites_menu',
+        via: 'letter',
+        reach: 'ready',
+      })
     })
   })
 
@@ -516,7 +529,11 @@ describe('how a favorite was opened', () => {
     await openFavorites()
     press('Enter')
     await vi.waitFor(() => {
-      expect(trackEvent).toHaveBeenCalledWith('favorite_opened', { surface: 'favorites_menu', via: 'keyboard' })
+      expect(trackEvent).toHaveBeenCalledWith('favorite_opened', {
+        surface: 'favorites_menu',
+        via: 'keyboard',
+        reach: 'ready',
+      })
     })
   })
 
@@ -524,7 +541,11 @@ describe('how a favorite was opened', () => {
     await openFavorites()
     favoriteRows()[0].click()
     await vi.waitFor(() => {
-      expect(trackEvent).toHaveBeenCalledWith('favorite_opened', { surface: 'favorites_menu', via: 'pointer' })
+      expect(trackEvent).toHaveBeenCalledWith('favorite_opened', {
+        surface: 'favorites_menu',
+        via: 'pointer',
+        reach: 'ready',
+      })
     })
   })
 })

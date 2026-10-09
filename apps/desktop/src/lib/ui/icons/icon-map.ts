@@ -59,6 +59,7 @@ import IconSearch from '~icons/lucide/search'
 import IconServer from '~icons/lucide/server'
 import IconShieldCheck from '~icons/lucide/shield-check'
 import IconShieldOff from '~icons/lucide/shield-off'
+import IconSmartphone from '~icons/lucide/smartphone'
 import IconSparkles from '~icons/lucide/sparkles'
 import IconDownload from '~icons/lucide/download'
 import IconStar from '~icons/lucide/star'
@@ -147,6 +148,7 @@ export const ICON_COMPONENTS = {
   server: IconServer,
   'shield-check': IconShieldCheck,
   'shield-off': IconShieldOff,
+  smartphone: IconSmartphone,
   sparkles: IconSparkles,
   download: IconDownload,
   square: IconSquare,

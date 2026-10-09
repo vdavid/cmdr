@@ -28,7 +28,9 @@ import { paneFolderCanBeFavorited } from '../pane/volume-capabilities'
 import type { VolumeChangePayload } from '../pane/types'
 import type { VolumeInfo } from '../types'
 import { addFavoriteFolder } from './add-favorite-folder'
+import { isPathOnVolume } from '$lib/path/canonical'
 import { buildFavoriteTooltip } from './favorite-tooltip'
+import { favoriteFallbackGlyph, favoriteIsDimmed, favoriteReachStatus } from './favorite-reach'
 import { openFavorite } from './open-favorite'
 import { favoriteRowMenu, rowMenuItems, type RowMenuPick } from './row-menu'
 import type { FavoriteOpenedEvent } from './favorites-analytics'
@@ -55,6 +57,8 @@ const NUMBERED_FAVORITES = 9
 export interface FavoritesMenuDeps {
   /** The whole volume list; the favorites are filtered out of it, in store order. */
   getVolumes: () => VolumeInfo[]
+  /** Which pane the menu belongs to: where a refused pick's toast goes. */
+  getPaneId: () => 'left' | 'right'
   /** The pane's volume id and folder: what the `0` row acts on, and what gates it. */
   getPaneVolumeId: () => string
   getPaneCurrentPath: () => string
@@ -78,6 +82,8 @@ export interface FavoritesMenuController {
   get editingShortcutId(): string | null
   /** True while the inline editor owns every keystroke, so the primitive handles none. */
   isEditing: () => boolean
+  /** Whether a favorite's row reads dimmed: a pick can't open it right away (`favorite-reach.ts`). */
+  isDimmed: (favorite: VolumeInfo) => boolean
   /** Carry out a pick. `source` is the primitive's, and becomes the analytics `via`. */
   select: (item: MenuItem<FavoritesRow>, source: MenuActivationSource) => Promise<void>
   /** Take the order the menu just settled on (drag or ⌥↑/⌥↓) and persist it. */
@@ -94,6 +100,29 @@ export interface FavoritesMenuController {
 /** Trailing slashes aside, the same folder. Matches how the store dedupes an add. */
 function samePath(a: string, b: string): boolean {
   return a.replace(/\/+$/, '') === b.replace(/\/+$/, '')
+}
+
+/** `path` under `root`, slashes trimmed, or `null` when it isn't under it. */
+function pathUnder(path: string, root: string): string | null {
+  if (!isPathOnVolume(path, root)) return null
+  return path.slice(root.length).replace(/^\/+|\/+$/g, '')
+}
+
+/**
+ * Whether `favorite` is the pane's folder. With a known target it compares the way the
+ * store dedupes an add: the same volume, the same path under its root, so one share at a
+ * moved mount path is still one favorite. Otherwise the paths, trailing slashes aside.
+ */
+function isPaneFolder(
+  favorite: VolumeInfo,
+  pane: { volumeId: string; root: string | undefined; path: string },
+): boolean {
+  const target = favorite.favoriteTarget
+  if (target?.volumeId === pane.volumeId && target.volumeRoot && pane.root) {
+    const theirs = pathUnder(favorite.path, target.volumeRoot)
+    return theirs !== null && theirs === pathUnder(pane.path, pane.root)
+  }
+  return samePath(favorite.path, pane.path)
 }
 
 /** The primitive says HOW a row was activated; the analytics contract words it its own way. */
@@ -171,7 +200,9 @@ export function createFavoritesMenu(deps: FavoritesMenuDeps): FavoritesMenuContr
     if (!paneFolderCanBeFavorited(deps.getPaneVolumeId(), path)) {
       return tString('fileExplorer.navigation.favoritesCantAddHere')
     }
-    if (favorites.some((favorite) => samePath(favorite.path, path))) {
+    const volumeId = deps.getPaneVolumeId()
+    const pane = { volumeId, root: deps.getVolumes().find((volume) => volume.id === volumeId)?.path, path }
+    if (favorites.some((favorite) => isPaneFolder(favorite, pane))) {
       return tString('fileExplorer.navigation.favoritesAlreadyAdded')
     }
     return null
@@ -183,6 +214,10 @@ export function createFavoritesMenu(deps: FavoritesMenuDeps): FavoritesMenuContr
     const fallback = deps.getDirIconFallback()
     if (isRestricted(volume.path) && fallback) return { src: fallback }
     if (volume.icon) return { src: volume.icon }
+    // A folder on a share, server, or phone has no icon of its own (the read side never
+    // asks the OS about a network path), so its glyph says what kind of place it's on.
+    const glyph = favoriteFallbackGlyph(volume.favoriteTarget)
+    if (glyph !== 'folder') return { lucide: glyph }
     if (fallback) return { src: fallback }
     return { lucide: 'folder' }
   }
@@ -201,8 +236,9 @@ export function createFavoritesMenu(deps: FavoritesMenuDeps): FavoritesMenuContr
       // 1-indexed, and only while a single digit is left to give.
       accelerator: index < NUMBERED_FAVORITES ? String(index + 1) : undefined,
       shortcut: editingShortcutId === volume.id ? undefined : (shortcut ?? undefined),
-      // The PATH leads, so a renamed favorite still reveals where it points.
-      tooltip: buildFavoriteTooltip(volume.path, isMacOS()),
+      // The PATH leads, so a renamed favorite still reveals where it points. A dimmed row
+      // says why right under it; it stays pickable, since a pick is what dials a saved place.
+      tooltip: buildFavoriteTooltip(volume.path, isMacOS(), favoriteReachStatus(volume)),
       // Rename, Set shortcut, and Remove, behind → or a right-click (`row-menu.ts`).
       submenu: rowMenuItems(volume.id, favoriteRowMenu(), (entry) => ({ kind: 'row-entry', volume, entry })),
       data: { kind: 'favorite', volume },
@@ -247,11 +283,11 @@ export function createFavoritesMenu(deps: FavoritesMenuDeps): FavoritesMenuContr
       if (row.entry.type === 'action') handleContextAction({ action: row.entry.action, volumeId: row.volume.id })
       return
     }
-    // `open-favorite.ts` owns the whole favorite open: resolve the containing volume,
-    // emit, and switch onto it. A favorite that resolves to no volume leaves the pane
-    // where it is.
+    // `open-favorite.ts` owns the whole favorite open: read the row's target, emit, and
+    // switch onto it, or leave the pane put with a toast saying why.
     await openFavorite({
-      favoritePath: row.volume.path,
+      favorite: row.volume,
+      pane: deps.getPaneId(),
       picked: { surface: 'favorites_menu', via: viaOf(source) },
       go: deps.go,
     })
@@ -386,6 +422,7 @@ export function createFavoritesMenu(deps: FavoritesMenuDeps): FavoritesMenuContr
       renameDraft = value
     },
     isEditing: () => renamingFavoriteId !== null || editingShortcutId !== null,
+    isDimmed: favoriteIsDimmed,
     select,
     applyReorder,
     handleContextAction,
