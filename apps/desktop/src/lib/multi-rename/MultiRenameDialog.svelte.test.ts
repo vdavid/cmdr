@@ -233,9 +233,6 @@ describe('MultiRenameDialog', () => {
       substitute: false,
       case: 'unchanged',
       removeDiacritics: false,
-      counterStart: 1,
-      counterStep: 1,
-      counterDigits: 1,
     }
 
     it('F2 in a field opens the Presets menu, and 1 loads the first saved preset without renaming', async () => {

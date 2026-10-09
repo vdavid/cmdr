@@ -352,11 +352,11 @@ describe('createMultiRenameState', () => {
       const tool = createMultiRenameState('S')
       await tool.loadPresets()
       tool.loadPreset({ kind: 'saved', id: 'p1' })
-      tool.update({ counterDigits: 3 })
+      tool.update({ nameMask: '[N]-[C:3]' })
       expect(tool.edited).toBe(true)
 
       await tool.updatePreset('p1')
-      expect(ipc.updateMultiRenamePreset).toHaveBeenCalledWith('p1', expect.objectContaining({ counterDigits: 3 }))
+      expect(ipc.updateMultiRenamePreset).toHaveBeenCalledWith('p1', expect.objectContaining({ nameMask: '[N]-[C:3]' }))
       expect(tool.loaded).toEqual({ kind: 'saved', id: 'p1' })
       expect(tool.edited).toBe(false)
       tool.dispose()

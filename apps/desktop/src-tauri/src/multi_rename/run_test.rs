@@ -29,9 +29,6 @@ fn strip_diacritics() -> MultiRenameSpec {
         substitute: false,
         case: CaseChange::Unchanged,
         remove_diacritics: true,
-        counter_start: 1,
-        counter_step: 1,
-        counter_digits: 1,
     }
 }
 

@@ -18,9 +18,6 @@ fn spec(name_mask: &str) -> MultiRenameSpec {
         substitute: false,
         case: CaseChange::Unchanged,
         remove_diacritics: false,
-        counter_start: 1,
-        counter_step: 1,
-        counter_digits: 1,
     }
 }
 
@@ -97,4 +94,115 @@ fn a_rename_persists_as_one_write() {
     let reloaded = reader.entries(None);
     assert_eq!(names(&reloaded), ["Music"]);
     assert_eq!(reloaded[0].id, "a");
+}
+
+/// A preset as an older Cmdr saved it, with the sheet-wide counter fields.
+fn legacy(name_mask: &str, extension_mask: &str, start: i64, step: i64, digits: u32) -> MultiRenamePreset {
+    serde_json::from_value(serde_json::json!({
+        "id": "old",
+        "name": "Old",
+        "spec": {
+            "nameMask": name_mask,
+            "extensionMask": extension_mask,
+            "search": "",
+            "replace": "",
+            "caseSensitive": false,
+            "firstOnly": false,
+            "includeExtension": false,
+            "regex": false,
+            "substitute": false,
+            "case": "unchanged",
+            "removeDiacritics": false,
+            "counterStart": start,
+            "counterStep": step,
+            "counterDigits": digits,
+        },
+    }))
+    .expect("a legacy preset loads")
+}
+
+fn masks(preset: &MultiRenamePreset) -> (&str, &str) {
+    (&preset.spec.name_mask, &preset.spec.extension_mask)
+}
+
+#[test]
+fn a_legacy_counter_moves_into_every_bare_c_of_both_masks() {
+    let p = legacy("[N]_[C] ([C])", "[E][C]", 10, 5, 3);
+    assert_eq!(masks(&p), ("[N]_[C10+5:3] ([C10+5:3])", "[E][C10+5:3]"));
+}
+
+#[test]
+fn a_legacy_counter_carries_only_its_non_default_parts() {
+    assert_eq!(masks(&legacy("[C]", "[E]", 1, 1, 3)), ("[C:3]", "[E]"));
+    assert_eq!(masks(&legacy("[C]", "[E]", 10, 1, 1)), ("[C10]", "[E]"));
+    assert_eq!(masks(&legacy("[C]", "[E]", 1, -2, 1)), ("[C-2]", "[E]"));
+    assert_eq!(masks(&legacy("[C]", "[E]", 1, 0, 1)), ("[C+0]", "[E]"));
+    assert_eq!(masks(&legacy("[C]", "[E]", 100, -10, 1)), ("[C100-10]", "[E]"));
+}
+
+#[test]
+fn a_legacy_negative_start_keeps_its_step_explicit() {
+    // A lone leading sign is the step (`[C-5]` counts down by five), so a
+    // negative start always says its step too.
+    assert_eq!(masks(&legacy("[C]", "[E]", -5, 1, 1)), ("[C-5+1]", "[E]"));
+    assert_eq!(masks(&legacy("[C]", "[E]", -5, -2, 2)), ("[C-5-2:2]", "[E]"));
+}
+
+#[test]
+fn a_legacy_default_counter_changes_nothing() {
+    let p = legacy("[N]_[C]", "[E]", 1, 1, 1);
+    assert_eq!(masks(&p), ("[N]_[C]", "[E]"));
+}
+
+#[test]
+fn a_legacy_inline_counter_keeps_its_own_parts_and_takes_the_rest() {
+    // `[C:4]` used to take the sheet's start: it keeps counting from there.
+    let p = legacy("[C2+3:4]-[C:4]-[C20]", "[E]", 10, 1, 3);
+    assert_eq!(masks(&p), ("[C2+3:4]-[C10:4]-[C20:3]", "[E]"));
+}
+
+#[test]
+fn a_legacy_migration_leaves_literals_and_other_placeholders_alone() {
+    let p = legacy("[[C]-[N]-[N2-5]-[CX", "[E]", 10, 1, 1);
+    assert_eq!(masks(&p), ("[[C]-[N]-[N2-5]-[CX", "[E]"));
+}
+
+#[test]
+fn a_legacy_digits_width_over_the_cap_renders_the_same() {
+    // The old sheet clamped digits to 1..=64; zero meant one.
+    assert_eq!(masks(&legacy("[C]", "[E]", 1, 1, 0)), ("[C]", "[E]"));
+    assert_eq!(masks(&legacy("[C]", "[E]", 1, 1, 4_000_000_000)), ("[C:64]", "[E]"));
+}
+
+#[test]
+fn a_saved_preset_writes_no_legacy_counter_fields() {
+    let p = legacy("[C]", "[E]", 10, 1, 1);
+    let json = serde_json::to_value(&p).expect("serializes");
+    let spec = json["spec"].as_object().expect("a spec object");
+    assert!(!spec.contains_key("counterStart"));
+    assert!(!spec.contains_key("counterStep"));
+    assert!(!spec.contains_key("counterDigits"));
+    let again: MultiRenamePreset = serde_json::from_value(json).expect("reloads");
+    assert_eq!(again, p, "a migrated preset reloads unchanged");
+}
+
+#[test]
+fn a_legacy_presets_file_loads_migrated() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let path = dir.path().join("multi-rename-presets.json");
+    let writer: RecentsFile<MultiRenamePreset> = RecentsFile::new();
+    writer.add_at(Some(&path), preset("a", "Photos"), 10);
+    // Turn the stored preset into an older Cmdr's: bare `[C]`, sheet digits 3.
+    let mut stored: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(&path).expect("read")).expect("json");
+    let entry = &mut stored["entries"][0];
+    entry["spec"]["nameMask"] = "[N]-[C]".into();
+    entry["spec"]["counterStart"] = 1.into();
+    entry["spec"]["counterStep"] = 1.into();
+    entry["spec"]["counterDigits"] = 3.into();
+    std::fs::write(&path, stored.to_string()).expect("write");
+
+    let reader: RecentsFile<MultiRenamePreset> = RecentsFile::new();
+    reader.load_at(&path);
+    assert_eq!(reader.entries(None)[0].spec.name_mask, "[N]-[C:3]");
 }

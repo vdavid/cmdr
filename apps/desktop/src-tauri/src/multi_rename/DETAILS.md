@@ -19,7 +19,12 @@ Per row, in rename order (`position` counts from 0 and is what `[C]` counts):
 - Fields with ranges: `[N]` `[E]` `[P]` `[G]`, and a bare range (`[2-5]`) on the full name. `[N1]` one character,
   `[N2-5]`, `[N2,5]` (start, length), `[N2-]`, negative starts count from the end; with a negative start a positive end
   counts from the end too (`[N-8-5]` is 8th-last to 5th-last), as TC documents.
-- Counter `[C]` with the sheet's start / step / digits, or inline `[C10+5:3]`, `[C10]`, `[C+5]`, `[C:3]`, `[C100-10]`.
+- Counter `[C]`: 1, 2, 3, in the name mask or the extension mask. Each counter carries its own settings, as TC writes
+  them: start, `+`/`-` step, `:` digits (`[C10+5:3]`, `[C10]`, `[C+5]`, `[C:3]`, `[C100-10]`), each defaulting to 1.
+  **Decision/Why:** the settings live in the mask, not in sheet-wide fields, so two counters can count differently and a
+  preset is its masks; a bare `[C]` never pads to the batch size (David's call: TC doesn't either). A lone leading sign
+  is the step (`[C-5]` counts down by five, as in TC), so a negative start needs its step: `[C-5+1]` (Cmdr's extension;
+  TC has no negative start).
 - Date and time of the last modification: `[Y]` `[y]` `[M]` `[D]` `[h]` `[m]` `[s]`, combinable (`[YMD]`, `[hms]`),
   `[d]` ISO date, `[t]` `hh.mm.ss` (TC's country-specific forms would put `:` in names, which macOS shows as `/`).
 - Case switches `[U]` `[L]` `[F]` `[n]` apply from where they stand.
@@ -90,3 +95,9 @@ in the frontend (`spec.ts`) so their names are translated.
   sheet's Presets menu numbers saved presets 1–9, so moving one to the top on a rename would renumber the rest under the
   user's fingers. A rename onto a taken name drops the other preset in that same step (`rename_in`), so no reader ever
   sees two presets with one name, or neither.
+- **Legacy counter fields.** Presets saved while the sheet had counter start / step / digits fields still carry
+  `counterStart` / `counterStep` / `counterDigits`. `MultiRenamePreset`'s hand-written `Deserialize` folds them into
+  every counter of both masks (`mask::fill_counter_defaults`): a part the counter already has stays, a missing one takes
+  the old field unless that's the default 1, so `[C]` with start 10, step 5, digits 3 becomes `[C10+5:3]` and `[C:4]`
+  with start 10 becomes `[C10:4]`, the names the preset always made. Nothing writes the fields anymore; the next save of
+  that preset drops them.

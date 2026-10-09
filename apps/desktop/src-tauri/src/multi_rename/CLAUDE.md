@@ -29,7 +29,9 @@ removing diacritics, a counter, presets, and a live preview. The sheet is `src/l
 - **A folder has no extension** (`RowFacts::split_name`); a leading or trailing dot belongs to the name. Names are
   composed (NFC) before the mask, so a range never splits an accent off its letter.
 - **Diacritics go only on Latin and Greek letters**: kana dakuten, Indic vowel signs, Cyrillic `й`/`ё` are letters.
-- **The counter width is capped** (`MAX_COUNTER_DIGITS`) and its arithmetic saturates.
+- **The counter's settings live in the mask** (`[C10+5:3]`); a bare `[C]` counts 1, 2, 3, unpadded. Old presets'
+  sheet-wide counter fields fold into the masks on load (`presets.rs`). Its width is capped (`MAX_COUNTER_DIGITS`) and
+  its arithmetic saturates.
 - **Statuses compare folded names** (`name_fold`, as the Mac does, so over-cautious on a case-sensitive volume): a name
   held by a file that stays is `TargetExists`, one a batch row leaves is free, and a block cascades (a blocked row
   stays, which can block the row renaming into it) through a worklist, so a long chain stays linear.

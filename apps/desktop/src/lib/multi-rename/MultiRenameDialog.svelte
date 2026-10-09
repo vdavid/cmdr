@@ -22,7 +22,6 @@
     import { columnListProps, type ColumnListCellContext, type ColumnListColumn } from '$lib/ui/column-list-types'
     import { getCachedIcon, iconCacheVersion } from '$lib/icon-cache'
     import { useShortenMiddle } from '$lib/utils/shorten-middle-action'
-    import NumberInput from '$lib/ui/NumberInput.svelte'
     import Select from '$lib/ui/Select.svelte'
     import TextInput from '$lib/ui/TextInput.svelte'
     import { tString } from '$lib/intl/messages.svelte'
@@ -288,36 +287,6 @@
             <Checkbox checked={tool.spec.removeDiacritics} onCheckedChange={(v: boolean) => { tool.update({ removeDiacritics: v }) }}>
                 {tString('multiRename.removeDiacritics')}
             </Checkbox>
-            <div class="field">
-                <span class="label">{tString('multiRename.counterStart')}</span>
-                <NumberInput
-                    value={tool.spec.counterStart}
-                    min={-1000000}
-                    max={1000000}
-                    onChange={(n: number) => { tool.update({ counterStart: n }) }}
-                    ariaLabel={tString('multiRename.counterStart')}
-                />
-            </div>
-            <div class="field">
-                <span class="label">{tString('multiRename.counterStep')}</span>
-                <NumberInput
-                    value={tool.spec.counterStep}
-                    min={-1000}
-                    max={1000}
-                    onChange={(n: number) => { tool.update({ counterStep: n }) }}
-                    ariaLabel={tString('multiRename.counterStep')}
-                />
-            </div>
-            <div class="field">
-                <span class="label">{tString('multiRename.counterDigits')}</span>
-                <NumberInput
-                    value={tool.spec.counterDigits}
-                    min={1}
-                    max={10}
-                    onChange={(n: number) => { tool.update({ counterDigits: n }) }}
-                    ariaLabel={tString('multiRename.counterDigits')}
-                />
-            </div>
         </div>
 
         {#if shownError}

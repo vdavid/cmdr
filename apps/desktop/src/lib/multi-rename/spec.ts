@@ -19,9 +19,6 @@ export const DEFAULT_SPEC: MultiRenameSpec = {
   substitute: false,
   case: 'unchanged',
   removeDiacritics: false,
-  counterStart: 1,
-  counterStep: 1,
-  counterDigits: 1,
 }
 
 /** A preset that ships with Cmdr. Its name is a message key, so it's translated. */

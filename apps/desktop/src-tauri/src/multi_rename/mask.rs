@@ -9,8 +9,10 @@
 //!   character, `[N2-5]` 2 to 5, `[N2,5]` five from 2, `[N2-]` from 2 to the end,
 //!   `[N-8,5]` five from the 8th-last, `[N-8-5]` 8th-last to 5th-last, `[N2--5]`
 //!   2 to 5th-last, `[N-5-]` from the 5th-last.
-//! - `[C]` the counter with the sheet's start / step / digits, or its own:
-//!   `[C10+5:3]`, `[C10]`, `[C+5]`, `[C:3]`, `[C100-10]`.
+//! - `[C]` the counter, 1, 2, 3 by default (no padding). Each counter carries its
+//!   own start, `+`/`-` step, and `:` digits: `[C10+5:3]`, `[C10]`, `[C+5]`,
+//!   `[C:3]`, `[C100-10]`. A lone leading sign is the step (`[C-5]` counts down
+//!   by five), so a negative start says its step too: `[C-5+1]`.
 //! - Date and time of the last modification, local time: `[Y]` `[y]` `[M]` `[D]`
 //!   `[h]` `[m]` `[s]`, combined as `[YMD]` or `[hms]`; `[d]` is `2026-06-15` and
 //!   `[t]` is `23.10.09` (no colons, which macOS shows as slashes).
@@ -60,14 +62,6 @@ impl<'a> RowFacts<'a> {
     }
 }
 
-/// The sheet's counter settings, the defaults a `[C]` falls back to.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Counter {
-    pub start: i64,
-    pub step: i64,
-    pub digits: u32,
-}
-
 /// Why a mask doesn't parse. Typed, so the frontend words it.
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, specta::Type)]
 #[serde(tag = "type", rename_all = "camelCase", rename_all_fields = "camelCase")]
@@ -86,13 +80,40 @@ pub struct Mask(Vec<Token>);
 enum Token {
     Literal(String),
     Field(Field, Range),
-    Counter {
-        start: Option<i64>,
-        step: Option<i64>,
-        digits: Option<u32>,
-    },
+    Counter(CounterParts),
     Date(Vec<DatePart>),
     Case(Case),
+}
+
+/// A counter's own settings, as typed: `None` is the default (start 1, step 1,
+/// one digit).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct CounterParts {
+    start: Option<i64>,
+    step: Option<i64>,
+    digits: Option<u32>,
+}
+
+impl CounterParts {
+    /// The text between the brackets, `C` included.
+    fn text(&self) -> String {
+        let mut out = String::from("C");
+        if let Some(start) = self.start {
+            let _ = write!(out, "{start}");
+        }
+        // A negative start alone would read as a step.
+        let step = match (self.start, self.step) {
+            (Some(start), None) if start < 0 => Some(1),
+            (_, step) => step,
+        };
+        if let Some(step) = step {
+            let _ = write!(out, "{step:+}");
+        }
+        if let Some(digits) = self.digits {
+            let _ = write!(out, ":{digits}");
+        }
+        out
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -170,8 +191,8 @@ impl Mask {
         Ok(Self(tokens))
     }
 
-    /// The mask's text for `row`, with `counter` as the sheet's counter settings.
-    pub fn render(&self, row: &RowFacts<'_>, counter: &Counter) -> String {
+    /// The mask's text for `row`.
+    pub fn render(&self, row: &RowFacts<'_>) -> String {
         let (name, extension) = row.split_name();
         let mut out = CaseWriter::default();
         for token in &self.0 {
@@ -187,12 +208,12 @@ impl Mask {
                     };
                     out.push(&slice(source, *range));
                 }
-                Token::Counter { start, step, digits } => {
+                Token::Counter(CounterParts { start, step, digits }) => {
                     let position = i64::try_from(row.position).unwrap_or(i64::MAX);
                     let value = start
-                        .unwrap_or(counter.start)
-                        .saturating_add(step.unwrap_or(counter.step).saturating_mul(position));
-                    out.push(&pad(value, digits.unwrap_or(counter.digits)));
+                        .unwrap_or(1)
+                        .saturating_add(step.unwrap_or(1).saturating_mul(position));
+                    out.push(&pad(value, digits.unwrap_or(1)));
                 }
                 Token::Date(parts) => {
                     if let Some(when) = row.modified {
@@ -231,7 +252,7 @@ fn placeholder(inner: &str) -> Result<Token, MaskError> {
         return range(rest).map(|r| Token::Field(field, r)).ok_or_else(unknown);
     }
     if first == 'C' {
-        return counter(rest).ok_or_else(unknown);
+        return counter(rest).map(Token::Counter).ok_or_else(unknown);
     }
     if first.is_ascii_digit() || first == '-' {
         return range(inner)
@@ -271,26 +292,83 @@ fn range(text: &str) -> Option<Range> {
     }
 }
 
-fn counter(text: &str) -> Option<Token> {
+fn counter(text: &str) -> Option<CounterParts> {
     let (body, digits) = match text.split_once(':') {
         Some((body, digits)) => (body, Some(digits.parse().ok()?)),
         None => (text, None),
     };
-    let step_at = body
+    let sign_after_first = body
         .char_indices()
         .skip(1)
         .find(|&(_, c)| c == '+' || c == '-')
         .map(|(i, _)| i);
+    // A leading `-` is the start's sign only when a step follows it.
     let step_at = match body.chars().next() {
-        Some('+') | Some('-') => Some(0),
-        _ => step_at,
+        Some('+') => Some(0),
+        Some('-') => sign_after_first.or(Some(0)),
+        _ => sign_after_first,
     };
     let (start, step) = match step_at {
         Some(at) => (&body[..at], Some(number(body[at..].trim_start_matches('+'))?)),
         None => (body, None),
     };
     let start = if start.is_empty() { None } else { Some(number(start)?) };
-    Some(Token::Counter { start, step, digits })
+    Some(CounterParts { start, step, digits })
+}
+
+/// The `(start, step, digits)` a whole `[C…]` token sets, as typed: for the
+/// tests that hold the frontend's parser to this one.
+#[cfg(test)]
+pub(super) fn counter_token(token: &str) -> Option<(Option<i64>, Option<i64>, Option<u32>)> {
+    let inner = token.strip_prefix("[C")?.strip_suffix(']')?;
+    counter(inner).map(|p| (p.start, p.step, p.digits))
+}
+
+/// `mask` with every counter's missing start / step / digits filled from these,
+/// as an older sheet's own counter fields did; a part at its default fills
+/// nothing. A counter that gains nothing, and the rest of the mask, keep their
+/// text. For loading presets saved before the counter lived in the mask.
+pub fn fill_counter_defaults(mask: &str, start: i64, step: i64, digits: u32) -> String {
+    let digits = digits.clamp(1, MAX_COUNTER_DIGITS);
+    let mut out = String::with_capacity(mask.len());
+    let mut rest = mask;
+    // The same bracket rules as `Mask::parse`.
+    while let Some(open) = rest.find('[') {
+        out.push_str(&rest[..open]);
+        let after = &rest[open + 1..];
+        if let Some(tail) = after.strip_prefix('[') {
+            out.push_str("[[");
+            rest = tail;
+            continue;
+        }
+        let Some(close) = after.find(']') else {
+            rest = &rest[open..];
+            break;
+        };
+        let inner = &after[..close];
+        let parts = inner.strip_prefix('C').and_then(counter);
+        match parts {
+            Some(parts) => {
+                let filled = CounterParts {
+                    start: parts.start.or((start != 1).then_some(start)),
+                    step: parts.step.or((step != 1).then_some(step)),
+                    digits: parts.digits.or((digits != 1).then_some(digits)),
+                };
+                let text = if filled == parts {
+                    inner.to_string()
+                } else {
+                    filled.text()
+                };
+                let _ = write!(out, "[{text}]");
+            }
+            None => {
+                let _ = write!(out, "[{inner}]");
+            }
+        }
+        rest = &after[close + 1..];
+    }
+    out.push_str(rest);
+    out
 }
 
 fn date_parts(text: &str) -> Option<Vec<DatePart>> {

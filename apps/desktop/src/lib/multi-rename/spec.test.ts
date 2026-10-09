@@ -16,7 +16,7 @@ describe('multi-rename spec helpers', () => {
   it('compares two specs field by field, whatever order the fields came in', () => {
     const reordered = Object.fromEntries(Object.entries(DEFAULT_SPEC).reverse()) as typeof DEFAULT_SPEC
     expect(specsEqual(DEFAULT_SPEC, reordered)).toBe(true)
-    expect(specsEqual(DEFAULT_SPEC, { ...DEFAULT_SPEC, counterDigits: 2 })).toBe(false)
+    expect(specsEqual(DEFAULT_SPEC, { ...DEFAULT_SPEC, nameMask: '[N] [C]' })).toBe(false)
     expect(specsEqual(DEFAULT_SPEC, { ...DEFAULT_SPEC, regex: true })).toBe(false)
   })
 

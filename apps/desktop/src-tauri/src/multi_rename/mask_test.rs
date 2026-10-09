@@ -2,7 +2,7 @@
 
 use chrono::NaiveDate;
 
-use super::mask::{Counter, Mask, MaskError, RowFacts};
+use super::mask::{MAX_COUNTER_DIGITS, Mask, MaskError, RowFacts, counter_token};
 
 fn facts(name: &str) -> RowFacts<'_> {
     RowFacts {
@@ -15,15 +15,9 @@ fn facts(name: &str) -> RowFacts<'_> {
     }
 }
 
-const COUNTER: Counter = Counter {
-    start: 1,
-    step: 1,
-    digits: 1,
-};
-
 /// Renders `mask` as the NAME mask of `file` (the extension mask is a separate field).
 fn name(mask: &str, file: &str) -> String {
-    Mask::parse(mask).expect("a valid mask").render(&facts(file), &COUNTER)
+    Mask::parse(mask).expect("a valid mask").render(&facts(file))
 }
 
 #[test]
@@ -68,29 +62,26 @@ fn a_folder_has_no_extension() {
         ..facts("archive.2024")
     };
     let mask = Mask::parse("[N]|[E]").expect("valid");
-    assert_eq!(mask.render(&folder, &COUNTER), "archive.2024|");
+    assert_eq!(mask.render(&folder), "archive.2024|");
 }
 
 #[test]
-fn the_counter_takes_the_sheet_defaults_or_its_own() {
+fn a_bare_counter_counts_one_two_three_and_each_counter_has_its_own_settings() {
     let mask = Mask::parse("[C]").expect("valid");
     let row = |position| RowFacts {
         position,
         ..facts("a.txt")
     };
-    let sheet = Counter {
-        start: 1,
-        step: 1,
-        digits: 3,
-    };
-    assert_eq!(mask.render(&row(0), &sheet), "001");
-    assert_eq!(mask.render(&row(4), &sheet), "005");
+    assert_eq!(mask.render(&row(0)), "1");
+    assert_eq!(mask.render(&row(11)), "12", "no padding to the batch size");
 
     let inline = Mask::parse("[C10+5:3]").expect("valid");
-    assert_eq!(inline.render(&row(0), &sheet), "010");
-    assert_eq!(inline.render(&row(2), &sheet), "020");
-    assert_eq!(Mask::parse("[C:2]").expect("valid").render(&row(8), &COUNTER), "09");
-    assert_eq!(Mask::parse("[C100-10]").expect("valid").render(&row(3), &COUNTER), "70");
+    assert_eq!(inline.render(&row(0)), "010");
+    assert_eq!(inline.render(&row(2)), "020");
+    let two = Mask::parse("[C]-[C100-10:4]").expect("valid");
+    assert_eq!(two.render(&row(2)), "3-0080");
+    assert_eq!(Mask::parse("[C:2]").expect("valid").render(&row(8)), "09");
+    assert_eq!(Mask::parse("[C100-10]").expect("valid").render(&row(3)), "70");
 }
 
 #[test]
@@ -136,9 +127,9 @@ fn an_inline_width_is_capped_and_the_counter_never_overflows() {
         ..facts("a.txt")
     };
     let wide = Mask::parse("[C:4000000000]").expect("valid");
-    assert_eq!(wide.render(&row, &COUNTER).len(), 64);
+    assert_eq!(wide.render(&row).len(), 64);
     let huge = Mask::parse("[C9223372036854775807+9223372036854775807]").expect("valid");
-    assert_eq!(huge.render(&row, &COUNTER), i64::MAX.to_string());
+    assert_eq!(huge.render(&row), i64::MAX.to_string());
 }
 
 #[test]
@@ -151,4 +142,64 @@ fn a_huge_range_length_runs_to_the_end_without_overflowing() {
         "a usize past i64::MAX"
     );
     assert_eq!(name("[N-3,9223372036854775807]", file), "HIJ");
+}
+
+#[test]
+fn a_negative_start_is_followed_by_its_step() {
+    let row = |position| RowFacts {
+        position,
+        ..facts("a.txt")
+    };
+    let render = |mask: &str, position| Mask::parse(mask).expect("valid").render(&row(position));
+    assert_eq!(render("[C-5+1]", 0), "-5");
+    assert_eq!(render("[C-5+1]", 6), "1");
+    assert_eq!(render("[C-5-2:3]", 1), "-07");
+    // A lone leading sign is the step, as in TC.
+    assert_eq!(render("[C-5]", 1), "-4");
+    assert_eq!(render("[C+5]", 1), "6");
+}
+
+/// The `[C…]` vectors the frontend's `counter-token.ts` is tested against too, so
+/// the two parsers can't drift.
+#[test]
+fn the_counter_grammar_agrees_with_the_shared_vectors() {
+    let vectors: serde_json::Value =
+        serde_json::from_str(include_str!("counter_token_vectors.json")).expect("the vectors are JSON");
+    assert_eq!(vectors["maxDigits"], u64::from(MAX_COUNTER_DIGITS));
+    let row = |position| RowFacts {
+        position,
+        ..facts("a.txt")
+    };
+    let valid = vectors["valid"].as_array().expect("a valid list");
+    assert!(!valid.is_empty());
+    for vector in valid {
+        let token = vector["token"].as_str().expect("a token");
+        let expected = (
+            vector["start"].as_i64(),
+            vector["step"].as_i64(),
+            vector["digits"]
+                .as_u64()
+                .map(|d| u32::try_from(d).expect("a u32 width")),
+        );
+        assert_eq!(counter_token(token), Some(expected), "{token}");
+        // The frontend's minimal rewrite counts the same.
+        let minimal = vector["minimal"].as_str().expect("a minimal form");
+        let (typed, rewritten) = (Mask::parse(token).expect(token), Mask::parse(minimal).expect(minimal));
+        for position in [0, 1, 7] {
+            assert_eq!(
+                typed.render(&row(position)),
+                rewritten.render(&row(position)),
+                "{token} vs {minimal}"
+            );
+        }
+    }
+    let invalid = vectors["invalid"].as_array().expect("an invalid list");
+    assert!(!invalid.is_empty());
+    for token in invalid {
+        let token = token.as_str().expect("a token");
+        assert!(
+            matches!(Mask::parse(token), Err(MaskError::Unknown { .. })),
+            "{token} must not parse"
+        );
+    }
 }

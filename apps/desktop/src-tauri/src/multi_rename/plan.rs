@@ -15,7 +15,7 @@ use unicode_normalization::UnicodeNormalization;
 use crate::file_system::listing::metadata::FileEntry;
 use crate::file_system::validation::{ValidationError, validate_filename};
 
-use super::mask::{Counter, Mask, MaskError, RowFacts};
+use super::mask::{Mask, MaskError, RowFacts};
 use super::transform::{CaseChange, CompiledTransform, Replace, ReplaceError, Transform};
 
 /// Everything the sheet sets.
@@ -33,9 +33,6 @@ pub struct MultiRenameSpec {
     pub substitute: bool,
     pub case: CaseChange,
     pub remove_diacritics: bool,
-    pub counter_start: i64,
-    pub counter_step: i64,
-    pub counter_digits: u32,
 }
 
 /// Why the spec itself can't run (the sheet shows it under the field).
@@ -110,7 +107,6 @@ pub(crate) struct Compiled {
     name_mask: Mask,
     extension_mask: Mask,
     transform: CompiledTransform,
-    counter: Counter,
 }
 
 impl Compiled {
@@ -138,11 +134,6 @@ impl Compiled {
             name_mask,
             extension_mask,
             transform,
-            counter: Counter {
-                start: spec.counter_start,
-                step: spec.counter_step,
-                digits: spec.counter_digits.clamp(1, super::mask::MAX_COUNTER_DIGITS),
-            },
         })
     }
 
@@ -165,8 +156,8 @@ impl Compiled {
             modified: entry.modified_at.and_then(local_time),
             position,
         };
-        let name = self.name_mask.render(&facts, &self.counter);
-        let extension = self.extension_mask.render(&facts, &self.counter);
+        let name = self.name_mask.render(&facts);
+        let extension = self.extension_mask.render(&facts);
         let (name, extension) = self.transform.apply(&name, &extension);
         if extension.is_empty() {
             name

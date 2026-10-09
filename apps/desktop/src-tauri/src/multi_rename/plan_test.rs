@@ -29,9 +29,6 @@ fn spec(name_mask: &str) -> MultiRenameSpec {
         substitute: false,
         case: CaseChange::Unchanged,
         remove_diacritics: false,
-        counter_start: 1,
-        counter_step: 1,
-        counter_digits: 2,
     }
 }
 
@@ -52,7 +49,7 @@ fn run(spec: &MultiRenameSpec, folder: &[FileEntry], batch: &[&str]) -> Vec<(Str
 #[test]
 fn a_counter_and_the_parent_number_the_batch_in_order() {
     let folder = [file("IMG_0003.jpg"), file("IMG_0001.jpg"), file("notes.txt")];
-    let out = run(&spec("[P] [C]"), &folder, &["IMG_0003.jpg", "IMG_0001.jpg"]);
+    let out = run(&spec("[P] [C:2]"), &folder, &["IMG_0003.jpg", "IMG_0001.jpg"]);
     assert_eq!(
         out,
         vec![
@@ -207,11 +204,7 @@ fn a_decomposed_name_is_unchanged_when_only_its_form_would_change() {
 #[test]
 fn a_huge_counter_width_is_capped() {
     let folder = [file("a.txt")];
-    let wide = MultiRenameSpec {
-        counter_digits: 4_000_000_000,
-        ..spec("[C]")
-    };
-    let out = run(&wide, &folder, &["a.txt"]);
+    let out = run(&spec("[C:4000000000]"), &folder, &["a.txt"]);
     assert_eq!(out[0].0.len(), 64 + ".txt".len());
 }
 
@@ -238,11 +231,7 @@ fn a_long_chain_blocked_at_its_end_settles_in_linear_work() {
     const N: usize = 1000;
     let folder: Vec<FileEntry> = (1..=N + 1).map(|i| file(&format!("f{i:04}.txt"))).collect();
     let batch: Vec<&str> = folder[..N].iter().map(|e| e.name.as_str()).collect();
-    let s = MultiRenameSpec {
-        counter_start: 2,
-        counter_digits: 4,
-        ..spec("f[C]")
-    };
+    let s = spec("f[C2:4]");
     FOLDS.with(|n| n.set(0));
     let out = run(&s, &folder, &batch);
     assert_eq!(out[0].0, "f0002.txt");
@@ -265,4 +254,16 @@ fn a_row_carries_its_file_icon_and_whether_it_is_a_folder() {
     assert!(!out[0].is_directory);
     assert_eq!(out[1].icon_id.as_deref(), Some(folder[1].icon_id.as_str()));
     assert!(out[1].is_directory);
+}
+
+#[test]
+fn the_extension_mask_counts_too() {
+    let folder = [file("a.txt"), file("b.txt")];
+    let s = MultiRenameSpec {
+        extension_mask: "[E][C:2]".to_string(),
+        ..spec("[N]")
+    };
+    let out = run(&s, &folder, &["a.txt", "b.txt"]);
+    assert_eq!(out[0].0, "a.txt01");
+    assert_eq!(out[1].0, "b.txt02");
 }

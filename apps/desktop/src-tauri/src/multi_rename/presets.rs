@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::recents::{RecentEntry, RecentsFile};
 
+use super::mask::fill_counter_defaults;
 use super::plan::MultiRenameSpec;
 
 /// How many presets the list keeps.
@@ -15,12 +16,56 @@ pub const MAX_PRESETS: usize = 200;
 pub static PRESETS: RecentsFile<MultiRenamePreset> = RecentsFile::new();
 
 /// One saved preset.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct MultiRenamePreset {
     pub id: String,
     pub name: String,
     pub spec: MultiRenameSpec,
+}
+
+/// A preset as stored. Presets saved before the counter lived in the mask carry
+/// the sheet's counter fields; loading folds them into the masks' counters, so
+/// they keep producing the same names. Nothing writes them anymore.
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct StoredPreset {
+    id: String,
+    name: String,
+    spec: StoredSpec,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct StoredSpec {
+    #[serde(flatten)]
+    spec: MultiRenameSpec,
+    counter_start: Option<i64>,
+    counter_step: Option<i64>,
+    counter_digits: Option<u32>,
+}
+
+impl<'de> Deserialize<'de> for MultiRenamePreset {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let StoredPreset { id, name, spec } = StoredPreset::deserialize(deserializer)?;
+        let StoredSpec {
+            mut spec,
+            counter_start,
+            counter_step,
+            counter_digits,
+        } = spec;
+        let fill = |mask: &str| {
+            fill_counter_defaults(
+                mask,
+                counter_start.unwrap_or(1),
+                counter_step.unwrap_or(1),
+                counter_digits.unwrap_or(1),
+            )
+        };
+        spec.name_mask = fill(&spec.name_mask);
+        spec.extension_mask = fill(&spec.extension_mask);
+        Ok(Self { id, name, spec })
+    }
 }
 
 impl RecentEntry for MultiRenamePreset {

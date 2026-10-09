@@ -11213,9 +11213,6 @@ export type MultiRenameSpec = {
   substitute: boolean
   case: CaseChange
   removeDiacritics: boolean
-  counterStart: number
-  counterStep: number
-  counterDigits: number
 }
 
 // A started rename.
