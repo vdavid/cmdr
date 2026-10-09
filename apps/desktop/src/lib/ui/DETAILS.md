@@ -1389,10 +1389,10 @@ mismatch-warning + cursor-row neutralization treatment.
 ## ColumnList
 
 Every dialog that lists files or records in columns renders `ColumnList`: Search and Selection (`QueryResults`) today,
-Ask Cmdr's rename review (`table` semantics, content-sized rows), and the Multi-rename preview next. One look, one
-cursor model, one width contract. The name says what it is: a list (one cursor, listbox semantics by default) laid out
-in columns. Ark UI has no table or data grid, and its `Listbox` owns selection and keys itself, which is exactly what
-this leaves to the parent.
+Ask Cmdr's rename review (`table` semantics, content-sized rows), and the Multi-rename preview (`table` semantics, a
+windowed source). One look, one cursor model, one width contract. The name says what it is: a list (one cursor, listbox
+semantics by default) laid out in columns. Ark UI has no table or data grid, and its `Listbox` owns selection and keys
+itself, which is exactly what this leaves to the parent.
 
 ### Consumer contract
 

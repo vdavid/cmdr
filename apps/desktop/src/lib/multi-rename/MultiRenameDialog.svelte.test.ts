@@ -30,7 +30,9 @@ vi.mock('$lib/tauri-commands', () => ({
 const READY = {
   previewId: 1,
   counts: { ready: 1, unchanged: 0, problems: 0 },
-  rows: [{ row: 0, oldName: 'Ž.pdf', newName: 'Z.pdf', status: { type: 'ready' } }],
+  rows: [
+    { row: 0, oldName: 'Ž.pdf', newName: 'Z.pdf', status: { type: 'ready' }, iconId: 'ext:pdf', isDirectory: false },
+  ],
 }
 
 async function settle(): Promise<void> {
@@ -123,6 +125,75 @@ describe('MultiRenameDialog', () => {
     await settle()
     expect(ipc.applyMultiRename).toHaveBeenCalledWith('S', 1)
     expect(onApplied).toHaveBeenCalledWith(started)
+  })
+
+  describe('preview list', () => {
+    const MIXED = {
+      previewId: 3,
+      counts: { ready: 1, unchanged: 0, problems: 2 },
+      rows: [
+        {
+          row: 0,
+          oldName: 'a.pdf',
+          newName: 'b.pdf',
+          status: { type: 'ready' },
+          iconId: 'ext:pdf',
+          isDirectory: false,
+        },
+        {
+          row: 1,
+          oldName: 'c.pdf',
+          newName: 'd.pdf',
+          status: { type: 'targetExists' },
+          iconId: 'ext:pdf',
+          isDirectory: false,
+        },
+        {
+          row: 2,
+          oldName: 'gone.pdf',
+          newName: 'gone.pdf',
+          status: { type: 'missing' },
+          iconId: null,
+          isDirectory: false,
+        },
+      ],
+    }
+
+    function cellTexts(root: HTMLElement, column: string): string[] {
+      return [...root.querySelectorAll(`[role="cell"][data-column="${column}"]`)].map((c) => c.textContent.trim())
+    }
+
+    it('lists each file’s old and new name as table rows', async () => {
+      ipc.previewMultiRename.mockResolvedValue({ ok: true, value: MIXED })
+      const root = await mountSheet()
+      expect(root.querySelector('[role="table"]')?.getAttribute('aria-label')).toBe('Preview')
+      expect(cellTexts(root, 'old-name')).toEqual(['a.pdf', 'c.pdf', 'gone.pdf'])
+      expect(cellTexts(root, 'new-name')).toEqual(['b.pdf', 'd.pdf', 'gone.pdf'])
+    })
+
+    it('marks a problem with a named glyph, and says a ready row is ready to screen readers only', async () => {
+      ipc.previewMultiRename.mockResolvedValue({ ok: true, value: MIXED })
+      const root = await mountSheet()
+      const status = [...root.querySelectorAll('[role="cell"][data-column="status"]')]
+      expect(status[0].querySelector('[role="img"]')).toBeNull()
+      expect(status[0].querySelector('.sr-only')?.textContent).toBe('Ready to rename')
+      expect(status[1].querySelector('[role="img"]')?.getAttribute('aria-label')).toBe('Name is taken')
+      expect(status[2].querySelector('[role="img"]')?.getAttribute('aria-label')).toBe('No longer in this folder')
+    })
+
+    it('“Problems only” lists the problem rows alone, paged from the backend', async () => {
+      ipc.previewMultiRename.mockResolvedValue({ ok: true, value: MIXED })
+      ipc.getMultiRenamePreviewRows.mockResolvedValue({ ok: true, value: MIXED.rows.slice(1) })
+      const root = await mountSheet()
+      const toggle = [...root.querySelectorAll<HTMLElement>('label, [role="checkbox"]')].find((el) =>
+        el.textContent.includes('Problems only'),
+      )
+      if (!toggle) throw new Error('no Problems only toggle')
+      toggle.click()
+      await settle()
+      expect(ipc.getMultiRenamePreviewRows).toHaveBeenLastCalledWith('S', 3, 0, 2, 'problems')
+      expect(cellTexts(root, 'old-name')).toEqual(['c.pdf', 'gone.pdf'])
+    })
   })
 
   it('inserts a placeholder into the name mask from its button', async () => {

@@ -161,7 +161,7 @@
   },
   "multiRename.statusColumn": "Status",
   "@multiRename.statusColumn": {
-    "description": "Header of the preview table's status column. Each row says whether the file will be renamed (ready), stays as it is (unchanged), or has a problem and why (invalid name, duplicate, name taken)."
+    "description": "Header of the preview list's status column, read out by screen readers only: the column shows a small symbol on each row with a problem (invalid name, duplicate, name taken, gone), and nothing on rows that are ready or unchanged."
   },
   "multiRename.status.unchanged": "No change",
   "@multiRename.status.unchanged": {
@@ -242,6 +242,42 @@
   "multiRename.status.missing": "No longer in this folder",
   "@multiRename.status.missing": {
     "description": "Preview note: a file the user picked for renaming was deleted or moved out of the folder while the tool was open, so it can't be renamed."
+  },
+  "multiRename.status.ready": "Ready to rename",
+  "@multiRename.status.ready": {
+    "description": "Screen-reader text in the preview's status column for a file that will be renamed. Sighted users see no mark on these rows; only the problem rows get a symbol."
+  },
+  "multiRename.reason.duplicate": "Another file in this batch gets the same new name, so neither is renamed.",
+  "@multiRename.reason.duplicate": {
+    "description": "Tooltip on the preview's duplicate symbol: the full reason behind multiRename.status.duplicate."
+  },
+  "multiRename.reason.targetExists": "A file that stays in this folder already has this name, so this one keeps its name.",
+  "@multiRename.reason.targetExists": {
+    "description": "Tooltip on the preview's \"name is taken\" symbol: the full reason behind multiRename.status.targetExists. The file that holds the name isn't part of the rename (or can't be renamed itself)."
+  },
+  "multiRename.reason.missing": "This file was moved or deleted after Multi-rename opened, so it’s left out.",
+  "@multiRename.reason.missing": {
+    "description": "Tooltip on the preview's \"gone\" symbol: the full reason behind multiRename.status.missing. \"Multi-rename\" is the tool's name; match multiRename.title."
+  },
+  "multiRename.reason.empty": "The new name is empty.",
+  "@multiRename.reason.empty": {
+    "description": "Tooltip on the preview's \"not a valid name\" symbol when the masks produce an empty name."
+  },
+  "multiRename.reason.tooLong": "The new name is too long for a file name.",
+  "@multiRename.reason.tooLong": {
+    "description": "Tooltip on the preview's \"not a valid name\" symbol when the new name is longer than a file name may be."
+  },
+  "multiRename.reason.reserved": "“.” and “..” can’t be file names.",
+  "@multiRename.reason.reserved": {
+    "description": "Tooltip on the preview's \"not a valid name\" symbol when the new name is \".\" or \"..\", which name a folder itself and its parent. Keep both dot names exactly as they are."
+  },
+  "multiRename.reason.disallowedCharacter": "File names can’t contain {character}.",
+  "@multiRename.reason.disallowedCharacter": {
+    "description": "Tooltip on the preview's \"not a valid name\" symbol when the new name holds a character file names can't have, such as a slash. {character} is that character."
+  },
+  "multiRename.problemsOnly": "Problems only",
+  "@multiRename.problemsOnly": {
+    "description": "Checkbox above the preview list: when on, the list shows only the files that can't be renamed (invalid name, duplicate, name taken, gone), hiding the ones that are ready or unchanged."
   },
   "multiRename.selectionChanged": "The folder changed while Multi-rename was opening. Check your selection, then try again.",
   "@multiRename.selectionChanged": {

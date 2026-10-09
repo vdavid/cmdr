@@ -4,7 +4,8 @@
      * mask with placeholders, search & replace, a case step, removing diacritics,
      * a counter, presets, and a live preview of every row. Start renames the
      * rows that are ready as one operation (the queue shows it; Undo reverses it).
-     * The rows come a page at a time: the table draws only the ones in view.
+     * The preview is the house `ColumnList` over a windowed source: the rows come a
+     * page at a time, and it draws only the ones in view.
      *
      * Keyboard-first: the name mask has focus on open, Tab walks the fields, the
      * preview follows every keystroke, Enter starts, Esc closes, F2 opens the Presets
@@ -13,8 +14,14 @@
     import { onDestroy, onMount } from 'svelte'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import StatusBadge from '$lib/ui/StatusBadge.svelte'
+    import StatusGlyph from '$lib/ui/StatusGlyph.svelte'
     import Button from '$lib/ui/Button.svelte'
     import Checkbox from '$lib/ui/Checkbox.svelte'
+    import ColumnList from '$lib/ui/ColumnList.svelte'
+    import Icon from '$lib/ui/Icon.svelte'
+    import type { ColumnListCellContext, ColumnListColumn } from '$lib/ui/column-list-types'
+    import { getCachedIcon, iconCacheVersion } from '$lib/icon-cache'
+    import { useShortenMiddle } from '$lib/utils/shorten-middle-action'
     import NumberInput from '$lib/ui/NumberInput.svelte'
     import Select from '$lib/ui/Select.svelte'
     import TextInput from '$lib/ui/TextInput.svelte'
@@ -26,6 +33,7 @@
     import { createMultiRenameState } from './multi-rename-state.svelte'
     import { presetKeyOf } from './preset-keys'
     import PresetsControl from './PresetsControl.svelte'
+    import { rowStatusView, type StatusMessage } from './row-status'
     import { insertAtCaret } from './spec'
 
     interface Props {
@@ -45,16 +53,15 @@
     let nameMaskInput = $state<HTMLInputElement>()
     let presetsControl = $state<PresetsControl>()
 
-    /** Rows drawn above and below the ones in view, so a scroll doesn't flash empty rows. */
-    const OVERSCAN = 20
-    /** Rows drawn before the table knows its height (in a test, or before the first layout). */
-    const FALLBACK_VISIBLE_ROWS = 40
+    /** The icon track, the same as Search's results (`query-ui/result-column-widths.ts`). */
+    const ICON_TRACK_PX = 24
+    /** The arrow and status glyph tracks: one small glyph each. */
+    const GLYPH_TRACK_PX = 16
+    /** Floor on each name track: a narrow sheet still shows a few characters of both. */
+    const NAME_MIN_PX = 80
 
-    let previewEl = $state<HTMLDivElement>()
-    let scrollTop = $state(0)
-    let viewportHeight = $state(0)
-    /** One row's height, measured from a drawn row. */
-    let rowHeight = $state(0)
+    // Read so a late icon re-renders its rows.
+    const iconVersion = $derived($iconCacheVersion)
 
     const PLACEHOLDERS = ['[N]', '[E]', '[P]', '[C]', '[YMD]', '[hms]'] as const
 
@@ -68,44 +75,41 @@
 
     const canStart = $derived(tool.counts.ready > 0 && tool.error === null && !tool.pending && !tool.applying)
     const shownError = $derived(tool.error ?? tool.applyError)
-    const firstShown = $derived(rowHeight > 0 ? Math.max(0, Math.floor(scrollTop / rowHeight) - OVERSCAN) : 0)
-    const endShown = $derived(
-        Math.min(
-            tool.total,
-            rowHeight > 0 && viewportHeight > 0
-                ? Math.ceil((scrollTop + viewportHeight) / rowHeight) + OVERSCAN
-                : FALLBACK_VISIBLE_ROWS,
-        ),
-    )
-    const shownIndices = $derived(Array.from({ length: Math.max(0, endShown - firstShown) }, (_, i) => firstShown + i))
 
-    $effect(() => {
-        tool.show({ start: firstShown, end: endShown })
-    })
-
-    $effect(() => {
-        // Re-measure whenever the drawn rows change; every row has the same height.
-        if (shownIndices.length === 0) return
-        const drawn = previewEl?.querySelector<HTMLElement>('tbody tr.row')
-        const height = drawn?.getBoundingClientRect().height ?? 0
-        if (height > 0 && height !== rowHeight) rowHeight = height
-    })
-
-    function handlePreviewScroll(): void {
-        scrollTop = previewEl?.scrollTop ?? 0
-        viewportHeight = previewEl?.clientHeight ?? 0
-    }
+    // Every track is fixed or shared: a windowed source can't be measured, so the two names
+    // split what the glyphs leave.
+    const columns = $derived<ColumnListColumn<PreviewRow>[]>([
+        { id: 'icon', label: '', width: { kind: 'fixed', px: ICON_TRACK_PX }, clip: false, cell: iconCell },
+        {
+            id: 'old-name',
+            label: tString('multiRename.oldName'),
+            width: { kind: 'share', minPx: NAME_MIN_PX },
+            class: 'preview-old-name',
+            cell: oldNameCell,
+        },
+        { id: 'arrow', label: '', width: { kind: 'fixed', px: GLYPH_TRACK_PX }, tone: 'tertiary', cell: arrowCell },
+        {
+            id: 'new-name',
+            label: tString('multiRename.newName'),
+            width: { kind: 'share', minPx: NAME_MIN_PX },
+            emphasis: true,
+            class: 'preview-new-name',
+            cell: newNameCell,
+        },
+        {
+            id: 'status',
+            label: tString('multiRename.statusColumn'),
+            labelHidden: true,
+            width: { kind: 'fixed', px: GLYPH_TRACK_PX },
+            clip: false,
+            class: 'preview-status',
+            cell: statusCell,
+        },
+    ])
 
     onMount(() => {
         void tool.loadPresets()
         nameMaskInput?.focus()
-        handlePreviewScroll()
-        if (typeof ResizeObserver === 'undefined' || !previewEl) return
-        const observer = new ResizeObserver(handlePreviewScroll)
-        observer.observe(previewEl)
-        return () => {
-            observer.disconnect()
-        }
     })
 
     onDestroy(() => {
@@ -144,23 +148,14 @@
         void start()
     }
 
-    function statusText(row: PreviewRow): string {
-        switch (row.status.type) {
-            case 'ready':
-                return ''
-            case 'unchanged':
-                return tString('multiRename.status.unchanged')
-            case 'duplicate':
-                return tString('multiRename.status.duplicate')
-            case 'targetExists':
-                return tString('multiRename.status.targetExists')
-            case 'missing':
-                return tString('multiRename.status.missing')
-            case 'invalidName':
-                return row.status.reason.type === 'disallowedCharacter'
-                    ? tString('multiRename.status.disallowedCharacter', { character: row.status.reason.character })
-                    : tString('multiRename.status.invalidName')
-        }
+    function words(message: StatusMessage): string {
+        return tString(message.key, message.params)
+    }
+
+    function iconUrl(iconId: string | null): string | undefined {
+        // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- reactive read: a late icon re-renders the row.
+        iconVersion
+        return iconId === null ? undefined : getCachedIcon(iconId)
     }
 
     function errorText(error: MultiRenameError): string {
@@ -323,42 +318,24 @@
             <p class="error" role="alert">{errorText(shownError)}</p>
         {/if}
 
-        <div
-            class="preview"
-            role="region"
-            aria-label={tString('multiRename.preview')}
-            bind:this={previewEl}
-            onscroll={handlePreviewScroll}
-        >
-            <table>
-                <thead>
-                    <tr>
-                        <th>{tString('multiRename.oldName')}</th>
-                        <th>{tString('multiRename.newName')}</th>
-                        <th>{tString('multiRename.statusColumn')}</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {#if firstShown > 0}
-                        <tr class="spacer" aria-hidden="true" style:height="{firstShown * rowHeight}px"><td colspan="3"></td></tr>
-                    {/if}
-                    {#each shownIndices as index (index)}
-                        {@const row = tool.rowAt(index)}
-                        {#if row}
-                            <tr class="row" class:problem={row.status.type !== 'ready' && row.status.type !== 'unchanged'}>
-                                <td class="name">{row.oldName}</td>
-                                <td class="name" class:unchanged={row.status.type === 'unchanged'}>{row.newName}</td>
-                                <td class="status">{statusText(row)}</td>
-                            </tr>
-                        {:else}
-                            <tr class="row loading" aria-hidden="true"><td class="name"></td><td class="name"></td><td></td></tr>
-                        {/if}
-                    {/each}
-                    {#if endShown < tool.total}
-                        <tr class="spacer" aria-hidden="true" style:height="{(tool.total - endShown) * rowHeight}px"><td colspan="3"></td></tr>
-                    {/if}
-                </tbody>
-            </table>
+        <div class="preview-bar">
+            <Checkbox
+                checked={tool.problemsOnly}
+                disabled={!tool.problemsOnly && tool.counts.problems === 0}
+                onCheckedChange={(on: boolean) => { tool.setProblemsOnly(on) }}
+            >
+                {tString('multiRename.problemsOnly')}
+            </Checkbox>
+        </div>
+        <div class="preview">
+            <ColumnList
+                {columns}
+                rows={tool.source}
+                semantics="table"
+                ariaLabel={tString('multiRename.preview')}
+                headerClass="preview-header"
+                rowClass="preview-row"
+            />
         </div>
     </div>
 
@@ -381,6 +358,54 @@
         </Button>
     {/snippet}
 </ModalDialog>
+
+{#snippet iconCell({ row }: ColumnListCellContext<PreviewRow>)}
+    <span class="icon-box">
+        {#if iconUrl(row.iconId)}
+            <img class="icon-img" src={iconUrl(row.iconId)} alt="" width="16" height="16" />
+        {:else}
+            <Icon name={row.isDirectory ? 'folder' : 'file'} size={16} aria-hidden="true" />
+        {/if}
+    </span>
+{/snippet}
+
+<!-- Mid-truncating names, as in Search's results: the extension stays in view, and the full
+     name is on hover when it was cut. -->
+{#snippet oldNameCell({ row }: ColumnListCellContext<PreviewRow>)}
+    <span
+        class="name-text"
+        use:useShortenMiddle={{ text: row.oldName, preferBreakAt: '.', startRatio: 0.7, tooltipWhenTruncated: true }}
+    ></span>
+{/snippet}
+
+{#snippet arrowCell()}
+    <span class="arrow" aria-hidden="true"><Icon name="arrow-right" size={12} /></span>
+{/snippet}
+
+{#snippet newNameCell({ row }: ColumnListCellContext<PreviewRow>)}
+    <span
+        class="name-text"
+        class:unchanged={row.status.type === 'unchanged'}
+        use:useShortenMiddle={{ text: row.newName, preferBreakAt: '.', startRatio: 0.7, tooltipWhenTruncated: true }}
+    ></span>
+{/snippet}
+
+<!-- A problem shows its glyph, named by its label and explained by its tooltip; a ready or
+     unchanged row stays quiet and says what it is to screen readers alone. -->
+{#snippet statusCell({ row }: ColumnListCellContext<PreviewRow>)}
+    {@const view = rowStatusView(row.status)}
+    {#if view.glyph}
+        <span class="problem-glyph">
+            <StatusGlyph
+                name={view.glyph}
+                label={words(view.label)}
+                tooltip={view.reason ? words(view.reason) : undefined}
+            />
+        </span>
+    {:else}
+        <span class="sr-only">{words(view.label)}</span>
+    {/if}
+{/snippet}
 
 <style>
     .sheet {
@@ -431,61 +456,60 @@
         font-size: var(--font-size-sm);
     }
 
+    .preview-bar {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-md);
+    }
+
+    /* The well around the list: one element owns the border and the rounded corners, and
+       hands the list the sheet's spare height. */
     .preview {
+        display: flex;
+        flex-direction: column;
         flex: 1 1 auto;
         min-height: 0;
-        overflow: auto;
+        overflow: hidden;
         border: 1px solid var(--color-border);
         border-radius: var(--radius-sm);
     }
 
-    table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: var(--font-size-sm);
-    }
-
-    th {
-        position: sticky;
-        top: 0;
-        text-align: left;
-        background: var(--color-bg-secondary);
-        padding: var(--spacing-xxs) var(--spacing-sm);
-        font-weight: normal;
+    /* Cell contents. The cells themselves (font, tone, the track widths) are `ColumnList`'s. */
+    .icon-box {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 16px;
         color: var(--color-text-secondary);
     }
 
-    td {
-        padding: var(--spacing-xxs) var(--spacing-sm);
-        border-top: 1px solid var(--color-border);
+    .icon-img {
+        width: 16px;
+        height: 16px;
+        object-fit: contain;
     }
 
-    .name {
-        font-family: var(--font-mono);
-        white-space: pre;
-    }
-
-    /* A row whose page is on its way keeps a row's height, so the scroll doesn't jump. */
-    .loading .name::before {
-        content: '\00a0';
-    }
-
-    .spacer td {
-        padding: 0;
-        border: none;
-    }
-
-    .unchanged {
-        color: var(--color-text-quiet);
-    }
-
-    .problem .status {
-        color: var(--color-error-text);
-    }
-
-    .status {
-        color: var(--color-text-secondary);
+    /* A block, so `useShortenMiddle` reads the track's width rather than its own text's. */
+    .name-text {
+        display: block;
+        overflow: hidden;
         white-space: nowrap;
+    }
+
+    .name-text.unchanged {
+        color: var(--color-text-quiet);
+        font-weight: normal;
+    }
+
+    .arrow {
+        display: flex;
+        align-items: center;
+    }
+
+    .problem-glyph {
+        display: flex;
+        align-items: center;
+        color: var(--color-error-text);
     }
 
     .footer-leading {

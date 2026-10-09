@@ -3,9 +3,21 @@
 - **Keyboard-first**: the name mask has focus on open; Tab walks the fields; Enter in a text field starts (TC's Start!),
   a button or menu keeps its own Enter; Esc closes. The placeholder buttons insert at the name mask's caret.
 - **Preview**: reruns `PREVIEW_DELAY_MS` (120 ms) after the last edit. The answer carries the counts (the footer and the
-  Rename button) and the first page of rows. The table is windowed: spacer rows give it the full height, it draws the
-  rows in view plus `OVERSCAN`, measures one drawn row for the height, and `show` pages the missing ones in from the
-  same preview. Far rows are dropped past `HELD_ROWS`. A row still on its way draws empty at full height.
+  Rename button) and the first page of rows. The list is the house `ColumnList` (`lib/ui/DETAILS.md` § ColumnList), the
+  same look as Search's results, fed the state's windowed `source`: `count` is the rows listed, `getRow` reads the held
+  rows, and `onRangeChange` is `show`, which pages the missing ones in from the same preview. Far rows are dropped past
+  `HELD_ROWS`. A row still on its way is `ColumnList`'s placeholder row.
+- **Columns**: file icon (the row's `iconId` from the icon cache, else a file or folder glyph), old name, a quiet arrow,
+  new name (emphasis; quiet when unchanged), and a status glyph. Names mid-truncate as Search's do (`useShortenMiddle`).
+  Every track is fixed or `share`d: a windowed source can't be measured, so the two names split what the glyphs leave.
+  `table` semantics, since it's a preview with no cursor.
+- **Status glyphs** (`row-status.ts`): one glyph per problem kind (invalid name, duplicate, name taken, gone) in a
+  `StatusGlyph`, its short label the accessible name and the full reason the tooltip, in the error color. Ready and
+  unchanged rows show nothing and carry screen-reader-only text, so a screen-reader user still hears every row's status.
+- **Problems only**: a checkbox over the list. The state switches its rows to the problem rows alone, paged by the
+  backend (`get_multi_rename_preview_rows` with `PreviewFilter::Problems`, offsets counted among the problems), so a
+  200k-row preview never ships to find its problems. The preview's first page is every row's, so in this mode a new
+  preview pages its rows in rather than showing it. Disabled while there are no problems (unless it's on).
 - **Start** calls `applyMultiRename`; the page shows a toast and closes the sheet. The operation is in the queue, and
   the operation log's Undo reverses it. An Undo button in the toast is a follow-up.
 - **Target**: the focused pane's selected rows in row order (backend numbers, `..` offset removed), or `null` for the
