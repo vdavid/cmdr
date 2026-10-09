@@ -161,6 +161,13 @@ describe('isReadyForFirstConnectPrompt', () => {
     expect(isReadyForFirstConnectPrompt({ id: 'usb-1', connectionState: null }, 'root')).toBe(false)
     expect(isReadyForFirstConnectPrompt({ id: 'usb-1', connectionState: null }, 'usb-1')).toBe(true)
   })
+
+  // ERR-JUCNB: the offer went up for an ADB phone still waiting for its "Allow USB
+  // debugging?" tap, and accepting it could only be refused.
+  it("waits for a phone's volume to be registered", () => {
+    const phone = 'adb-lgh815-0123456789abcdef'
+    expect(isReadyForFirstConnectPrompt({ id: phone, connectionState: null }, phone)).toBe(false)
+  })
 })
 
 /**

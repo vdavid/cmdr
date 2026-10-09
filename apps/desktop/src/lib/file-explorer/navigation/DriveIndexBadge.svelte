@@ -52,11 +52,16 @@
         breadcrumb?: boolean
         /** This drive's display name, for the scanning tooltip's shared body. */
         driveName: string
+        /**
+         * Whether the drive answers right now (`answersNow`). A phone nobody has
+         * connected doesn't, so the menu drops the actions that start a walk.
+         */
+        answers: boolean
         /** The parent runs the actual IPC for a picked menu action. */
         onAction: (volumeId: string, action: DriveIndexMenuAction) => void
     }
 
-    const { volumeId, status, breadcrumb = false, driveName, onAction }: Props = $props()
+    const { volumeId, status, breadcrumb = false, driveName, answers, onAction }: Props = $props()
 
     const badgeState = $derived<DriveIndexState>(driveIndexState(status))
 
@@ -190,7 +195,7 @@
             : tooltipText,
     )
 
-    const menuActions = $derived(driveIndexMenuActions(badgeState, masterEnabled))
+    const menuActions = $derived(driveIndexMenuActions(badgeState, masterEnabled, answers))
     const showFooter = $derived(hasLastScanFacts(status))
 
     // One section of plain action rows, or none at all while the master switch is
@@ -273,6 +278,12 @@
             <!-- Master switch off: no actions, one line saying why and where to
                  change it, plus the reassurance that this drive's own choice is kept. -->
             <p class="drive-index-menu-note">{tString('fileExplorer.navigation.driveIndex.menuIndexingOffNote')}</p>
+        {:else if menuActions.length === 0}
+            <!-- The drive doesn't answer yet (a phone nobody has connected), so
+                 nothing here can start. Say what will. -->
+            <p class="drive-index-menu-note">
+                {tString('fileExplorer.navigation.driveIndex.refusedDisconnected', { name: driveName })}
+            </p>
         {/if}
         {#if showFooter}
             <div class="drive-index-menu-separator"></div>

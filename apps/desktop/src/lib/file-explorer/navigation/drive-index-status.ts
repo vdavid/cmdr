@@ -59,12 +59,24 @@ export function driveIndexColorClass(state: DriveIndexState): string {
  */
 export type DriveIndexMenuAction = 'enable' | 'rescan' | 'disable' | 'stop' | 'forget'
 
-export function driveIndexMenuActions(state: DriveIndexState, masterEnabled = true): DriveIndexMenuAction[] {
+export function driveIndexMenuActions(
+  state: DriveIndexState,
+  masterEnabled = true,
+  answers = true,
+): DriveIndexMenuAction[] {
   // The master switch (`indexing.enabled`) outranks every per-drive choice: while
   // it's off nothing can index, so offering per-drive actions would promise work
   // the backend refuses. The menu shows the explanatory note instead. The drive's
   // own choice is untouched and comes back when the master does.
   if (!masterEnabled) return []
+  // A drive that doesn't answer yet (`answersNow`: a phone nobody has connected)
+  // can't start a walk, so `enable` and `rescan` would only be refused. Turning it
+  // off and forgetting it work offline, so they stay.
+  if (!answers) return walkingActions(state).filter((action) => action !== 'enable' && action !== 'rescan')
+  return walkingActions(state)
+}
+
+function walkingActions(state: DriveIndexState): DriveIndexMenuAction[] {
   switch (state) {
     case 'disabled':
       return ['enable']

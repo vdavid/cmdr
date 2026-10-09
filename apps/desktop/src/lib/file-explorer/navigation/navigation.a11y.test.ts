@@ -159,7 +159,7 @@ describe('DriveIndexBadge a11y', () => {
     document.body.appendChild(target)
     mount(DriveIndexBadge, {
       target,
-      props: { volumeId: status.volumeId, status, driveName: 'Backups', onAction: () => {} },
+      props: { volumeId: status.volumeId, status, driveName: 'Backups', answers: true, onAction: () => {} },
     })
     await tick()
     return target

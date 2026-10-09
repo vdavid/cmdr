@@ -90,12 +90,12 @@ function makeStatus(overrides: Partial<VolumeIndexStatus> = {}): VolumeIndexStat
 /** Torn down after each test: a portaled menu outlives the target it was mounted into. */
 let mounted: (() => void)[] = []
 
-function render(status: VolumeIndexStatus, onAction = vi.fn(), host?: HTMLElement) {
+function render(status: VolumeIndexStatus, onAction = vi.fn(), host?: HTMLElement, answers = true) {
   const target = document.createElement('div')
   ;(host ?? document.body).appendChild(target)
   const component = mount(DriveIndexBadge, {
     target,
-    props: { volumeId: status.volumeId, status, driveName: 'Backups', onAction },
+    props: { volumeId: status.volumeId, status, driveName: 'Backups', answers, onAction },
   })
   mounted.push(() => void unmount(component))
   flushSync()
@@ -270,6 +270,22 @@ describe('DriveIndexBadge menu', () => {
     await openMenu(target)
     expect(menuLabels()).toEqual([])
     expect(noteEl()?.textContent).toContain('Drive indexing is off in Settings')
+  })
+
+  // ERR-JUCNB: a phone still waiting for its "Allow USB debugging?" tap offered
+  // "Turn on indexing", and the refusal told the person to restart Cmdr.
+  it("offers nothing that starts a walk on a drive that isn't connected, and says to connect it", async () => {
+    const { target } = render(makeStatus({ enabled: false, freshness: null }), vi.fn(), undefined, false)
+    await openMenu(target)
+    expect(menuLabels()).toEqual([])
+    expect(noteEl()?.textContent).toContain('Backups is disconnected. Reconnect it')
+  })
+
+  it("keeps turning off and forgetting a disconnected drive's index", async () => {
+    const { target } = render(makeStatus({ freshness: 'stale' }), vi.fn(), undefined, false)
+    await openMenu(target)
+    expect(menuLabels()).toEqual(['Turn off indexing for this drive', 'Forget this drive’s index'])
+    expect(noteEl()).toBeNull()
   })
 
   it('says the master switch is off in the tooltip, not "off for this drive"', () => {

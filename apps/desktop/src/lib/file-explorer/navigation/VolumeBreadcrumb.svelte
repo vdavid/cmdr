@@ -37,6 +37,7 @@
     import { runDetach } from './detach-volume'
     import { createDriveBadges } from './drive-badges.svelte'
     import { isDriveRow } from './drive-index-manager.svelte'
+    import { answersNow } from './connection-state'
     import { filesystemLabel } from './filesystem-label'
     import { getIconForVolume } from './volume-grouping'
     import { createBreadcrumbPopupController } from './volume-breadcrumb-handlers.svelte'
@@ -277,6 +278,7 @@
                 volumeId={currentVolume.id}
                 status={activeIndexStatus}
                 driveName={currentVolume.name}
+                answers={answersNow(currentVolume)}
                 breadcrumb
                 onAction={badges.runAction}
             />

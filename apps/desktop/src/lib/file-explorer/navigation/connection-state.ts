@@ -13,7 +13,8 @@
  * (`crates/cmdr-fs/src/volume/connection.rs`).
  */
 
-import type { ConnectionState } from '../types'
+import { volumeScheme } from '$lib/volume-scheme'
+import type { ConnectionState, VolumeBackendCapabilities } from '../types'
 
 /** `null` and `undefined` both arrive: Rust's `Option::None` serializes to `null`. */
 type MaybeState = ConnectionState | null | undefined
@@ -45,13 +46,49 @@ export function isLiveSession(state: MaybeState): boolean {
   return state === 'direct' || state === 'os_mount'
 }
 
+/** The parts of a volume row that say whether it answers: a `VolumeInfo` satisfies it. */
+export interface VolumePresence {
+  id: string
+  connectionState?: MaybeState
+  capabilities?: VolumeBackendCapabilities | null
+}
+
 /**
  * Whether the volume answers right now: a local one (no session at all) always, a
- * session-backed one while its session is live. What a readout of the volume (its
- * free space, an offer to index it) waits for.
+ * session-backed one while its session is live, and a phone once its volume is
+ * registered. What a readout of the volume (its free space, an offer to index it)
+ * waits for.
+ *
+ * ❗ A phone's row is listed before anything dials it, with no session state at
+ * all, so the session alone reads an ADB phone still waiting for its "Allow USB
+ * debugging?" tap as a local drive that answers. That offered to index a phone
+ * that couldn't be indexed yet, and the refusal told the person to restart Cmdr
+ * (`ERR-JUCNB`). Registration (`capabilities`) is the typed fact that it's connected.
  */
-export function answersNow(state: MaybeState): boolean {
-  return state === undefined || state === null || isLiveSession(state)
+export function answersNow(volume: VolumePresence): boolean {
+  const scheme = volumeScheme(volume.id)
+  switch (scheme) {
+    case 'mtp':
+    case 'adb':
+      return volume.capabilities != null
+    case 'root':
+    case 'local':
+    case 'path':
+    case 'smb':
+    case 'sftp':
+    case 'webdav':
+    case 's3':
+    case 'cloud':
+    case 'favorite':
+    case 'unknown': {
+      const state = volume.connectionState
+      return state === undefined || state === null || isLiveSession(state)
+    }
+    default: {
+      const unhandled: never = scheme
+      return unhandled
+    }
+  }
 }
 
 /**

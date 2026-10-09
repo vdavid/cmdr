@@ -17,8 +17,7 @@ import { addToast, dismissToast, getToasts } from '$lib/ui/toast'
 import { getVolumeIndexStatusById } from '$lib/tauri-commands'
 import { getSetting } from '$lib/settings'
 import { getAppLogger } from '$lib/logging/logger'
-import type { ConnectionState } from '$lib/ipc/bindings'
-import { answersNow } from '$lib/file-explorer/navigation/connection-state'
+import { answersNow, type VolumePresence } from '$lib/file-explorer/navigation/connection-state'
 import { isDriveSilenced } from './drive-index-prefs'
 import FirstConnectIndexToastContent from './FirstConnectIndexToastContent.svelte'
 
@@ -93,11 +92,8 @@ export async function maybePromptFirstConnect(
  * between, so asking at the pick put "Index private?" over a share that was
  * still connecting, behind its sign-in sheet (QA round 3).
  */
-export function isReadyForFirstConnectPrompt(
-  volume: { id: string; connectionState?: ConnectionState | null },
-  containingVolumeId: string | null,
-): boolean {
-  return answersNow(volume.connectionState) && containingVolumeId === volume.id
+export function isReadyForFirstConnectPrompt(volume: VolumePresence, containingVolumeId: string | null): boolean {
+  return answersNow(volume) && containingVolumeId === volume.id
 }
 
 /**
@@ -109,12 +105,10 @@ export function isReadyForFirstConnectPrompt(
  * ❗ Withdrawn, the drive still counts as offered this session: it came back on every
  * reconnect of the same share, which nags about a question the person already saw.
  */
-export function withdrawGonePrompts(
-  volumes: readonly { id: string; connectionState?: ConnectionState | null }[],
-): void {
+export function withdrawGonePrompts(volumes: readonly VolumePresence[]): void {
   for (const volumeId of offered) {
     const volume = volumes.find((v) => v.id === volumeId)
-    if (volume && answersNow(volume.connectionState)) continue
+    if (volume && answersNow(volume)) continue
     offered.delete(volumeId)
     const id = toastIdFor(volumeId)
     if (!getToasts().some((toast) => toast.id === id)) continue

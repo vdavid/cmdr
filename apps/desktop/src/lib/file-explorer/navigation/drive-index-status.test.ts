@@ -107,6 +107,14 @@ describe('driveIndexMenuActions', () => {
     expect(driveIndexMenuActions('fresh', true)).toEqual(['rescan', 'disable', 'forget'])
     expect(driveIndexMenuActions('disabled', true)).toEqual(['enable'])
   })
+
+  // ERR-JUCNB: a phone that isn't connected yet can't start a walk, so offering
+  // to start one only led to a refusal. What works offline stays.
+  it("offers nothing that starts a walk on a drive that doesn't answer yet", () => {
+    expect(driveIndexMenuActions('disabled', true, false)).toEqual([])
+    expect(driveIndexMenuActions('stale', true, false)).toEqual(['disable', 'forget'])
+    expect(driveIndexMenuActions('failed', true, false)).toEqual(['forget'])
+  })
 })
 
 describe('driveIndexMenuLabelKey', () => {

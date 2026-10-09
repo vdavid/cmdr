@@ -718,7 +718,7 @@
         getSpaceVolume: () => {
             const volume = paneVolume.volume
             if (!volume) return null
-            const isLive = answersNow(volume.connectionState)
+            const isLive = answersNow(volume)
             return { id: volume.id, path: volume.path, isDiskImage: volume.isDiskImage === true, isLive }
         },
     })

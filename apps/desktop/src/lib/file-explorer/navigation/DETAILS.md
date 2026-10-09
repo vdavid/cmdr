@@ -719,6 +719,12 @@ yellow tooltip branches on `liveWatch`: a phone over ADB, which nothing watches,
   a volume registers, which is exactly when an undialed phone's row gets clicked. Since this predicate also gates the
   first-connect prompt and the status fetch, one exclusion covers all three. The badge is gray for any drive without a
   registered index, so it's safe to query for every eligible row.
+- **Eligible isn't startable: `answersNow(volume)` (`connection-state.ts`) gates what can START a walk.** A phone's row
+  is listed before anything dials it, with no session state, so only its registration (`capabilities`) says it's
+  connected. While it isn't, the badge menu drops "Turn on indexing" and "Rescan now" (`driveIndexMenuActions`'s
+  `answers`) and shows the reconnect note in their place, keeps turn-off and forget (they work offline), and the
+  first-connect prompt waits (`isReadyForFirstConnectPrompt`). ❗ Offering the enable for an ADB phone still waiting for
+  its USB debugging tap is what produced `ERR-JUCNB`.
 - **Status stays live by SUBSCRIPTION, not polling** (`drive-index-manager.svelte.ts`): it listens to
   `index-freshness-changed`, `index-scan-started`, and `index-scan-complete`, refetching the named volume's status on
   each (the events alone don't carry the last-scan facts). The active-drive badge also refetches when the active drive

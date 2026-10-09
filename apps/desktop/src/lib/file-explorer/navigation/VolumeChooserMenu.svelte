@@ -48,6 +48,7 @@
     import { detachControlFor } from './detach-control'
     import { runDetach } from './detach-volume'
     import { isDriveRow } from './drive-index-manager.svelte'
+    import { answersNow } from './connection-state'
     import { filesystemLabel } from './filesystem-label'
     import { pathForPickedVolume } from './picked-volume-path'
     import {
@@ -458,6 +459,7 @@
                             volumeId={volume.id}
                             status={indexStatus}
                             driveName={volume.name}
+                            answers={answersNow(volume)}
                             onAction={badges.runAction}
                         />
                     {/if}

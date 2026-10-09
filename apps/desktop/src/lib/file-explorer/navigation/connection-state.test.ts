@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { hasReconnectLoop, isLiveSession, showsDisconnect } from './connection-state'
-import type { ConnectionState } from '../types'
+import { answersNow, hasReconnectLoop, isLiveSession, showsDisconnect } from './connection-state'
+import type { ConnectionState, VolumeBackendCapabilities } from '../types'
 
 const ALL: ConnectionState[] = [
   'direct',
@@ -47,5 +47,38 @@ describe('connection-state predicates', () => {
       'needs_sign_in',
       'needs_host_key_approval',
     ])
+  })
+})
+
+describe('answersNow', () => {
+  const registered: VolumeBackendCapabilities = {
+    backendCanWrite: true,
+    canExport: true,
+    canBeIndexed: true,
+    canShareLinks: false,
+    renamesCanCopy: false,
+    hasOsMountFallback: false,
+  }
+
+  it('answers for a local drive, which has no session to wait for', () => {
+    expect(answersNow({ id: 'root' })).toBe(true)
+    expect(answersNow({ id: 'vol-backup-0123456789abcdef', connectionState: null })).toBe(true)
+  })
+
+  it('answers for a session-backed volume only while its session is live', () => {
+    expect(answersNow({ id: 'smb-nas-0123456789abcdef', connectionState: 'direct' })).toBe(true)
+    expect(answersNow({ id: 'smb-nas-0123456789abcdef', connectionState: 'saved' })).toBe(false)
+    expect(answersNow({ id: 'smb-nas-0123456789abcdef', connectionState: 'disconnected' })).toBe(false)
+  })
+
+  // Regression anchor for ERR-JUCNB / ERR-JT9ZX: an ADB phone waiting for its
+  // "Allow USB debugging?" tap is listed with no session state at all, so it read
+  // as a local drive that answers, and the app offered to index it.
+  it("doesn't answer for a phone until its volume is registered", () => {
+    expect(answersNow({ id: 'adb-lgh815-0123456789abcdef', connectionState: null })).toBe(false)
+    expect(answersNow({ id: 'adb-lgh815-0123456789abcdef', capabilities: null })).toBe(false)
+    expect(answersNow({ id: 'adb-lgh815-0123456789abcdef', capabilities: registered })).toBe(true)
+    expect(answersNow({ id: 'mtp-lgh815-0123456789abcdef:65537' })).toBe(false)
+    expect(answersNow({ id: 'mtp-lgh815-0123456789abcdef:65537', capabilities: registered })).toBe(true)
   })
 })
