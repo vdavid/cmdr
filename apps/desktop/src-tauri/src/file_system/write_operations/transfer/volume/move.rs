@@ -172,7 +172,10 @@ pub async fn move_between_volumes(
     let summary = manager::OperationSummaryText {
         source: Some(source_volume.name().to_string()),
         destination: Some(dest_volume.name().to_string()),
-        paths: manager::OperationPaths::from_paths(&source_paths, Some(std::path::Path::new(&dest_path))),
+        paths: manager::OperationPaths::from_paths(&source_paths, Some(std::path::Path::new(&dest_path))).on_volumes(
+            manager::OperationPaths::volume_label(source_volume.as_ref()),
+            manager::OperationPaths::volume_label(dest_volume.as_ref()),
+        ),
     };
     let descriptor = manager::OperationDescriptor {
         operation_id: operation_id.clone(),

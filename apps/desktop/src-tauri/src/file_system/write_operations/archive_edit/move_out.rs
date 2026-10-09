@@ -109,7 +109,10 @@ pub(crate) async fn route_archive_move_out(
     let summary = OperationSummaryText {
         source: Some(source_volume.name().to_string()),
         destination: Some(dest_volume.name().to_string()),
-        paths: OperationPaths::from_paths(&source_paths, Some(Path::new(&dest_path))),
+        paths: OperationPaths::from_paths(&source_paths, Some(Path::new(&dest_path))).on_volumes(
+            OperationPaths::volume_label(source_volume.as_ref()),
+            OperationPaths::volume_label(dest_volume.as_ref()),
+        ),
     };
     let descriptor = OperationDescriptor {
         operation_id: operation_id.clone(),

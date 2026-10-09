@@ -364,6 +364,13 @@ Decisions:
   A broken bridge logs a warn and says "Details aren't available right now." instead of an empty box.
 - **Expanded is component state**, not page state. The page keys rows by `operationId`, so the row and its open panel
   survive every snapshot rebuild; a reopened window starts collapsed, which matches the window's no-persistence rule.
+- **A path that names nothing on this Mac carries its volume's name**: `Pixel 8 › /DCIM/x`. The rule lives in ONE pure
+  helper, `operation-path.ts::formatOperationPath`, so it changes in one place. The backend decides per side whether a
+  path needs it (`sourceVolumeName` / `destinationVolumeName`, set only when the volume's paths aren't OS-visible: MTP,
+  S3, SFTP, WebDAV, a direct SMB session whose mount is gone) and sends the same volume `name()` the row's summary
+  shows. A path the Mac can resolve (the local disk, a mounted drive, an OS-mounted share, a zip on any of those, which
+  reads `/…/a.zip/inner`) already says where it is, so it stays bare. The `›` separator is the settings breadcrumbs'
+  own, and punctuation, so no catalog string.
 - **Conflict outcomes (skipped / overwritten) aren't shown.** No progress tick or registry field counts them today; the
   per-source outcomes ride `write-source-item-done`, which this window doesn't subscribe to.
 

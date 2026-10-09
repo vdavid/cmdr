@@ -591,7 +591,13 @@ async fn archive_copy_into_start(
         summary: OperationSummaryText {
             source: summary_source,
             destination: None,
-            paths: OperationPaths::from_paths(&source_paths, Some(archive_path.join(&dest_inner).as_path())),
+            paths: OperationPaths::from_paths(&source_paths, Some(archive_path.join(&dest_inner).as_path()))
+                .on_volumes(
+                    OperationPaths::volume_label(source_volume.as_ref()),
+                    get_volume_manager()
+                        .get(&parent_volume_id)
+                        .and_then(|parent| OperationPaths::volume_label(parent.as_ref())),
+                ),
         },
         // A zip edit is a whole-archive temp+rename rewrite: it either lands or
         // it doesn't, so there's no half-written state to reverse.

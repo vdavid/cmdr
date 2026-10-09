@@ -108,8 +108,8 @@ pub(crate) fn start_bulk_rename(
     // volume, including a locally mounted removable drive, stays on its Volume
     // route so its listing and connection semantics remain authoritative.
     let uses_local_paths = volume_id == "root";
-    let (lanes, volume_ids, settled_volume, rows) = if uses_local_paths {
-        (vec![LaneKey::new("root")], Vec::new(), None, rows)
+    let (lanes, volume_ids, settled_volume, volume_label, rows) = if uses_local_paths {
+        (vec![LaneKey::new("root")], Vec::new(), None, None, rows)
     } else {
         // `start_renames` classified an unregistered id before this; one missing NOW left the
         // registry in between (an unmount race).
@@ -125,6 +125,7 @@ pub(crate) fn start_bulk_rename(
             vec![volume.lane_key()],
             vec![volume_id.clone()],
             Some(volume.name().to_string()),
+            OperationPaths::volume_label(volume.as_ref()),
             rows,
         )
     };
@@ -139,7 +140,8 @@ pub(crate) fn start_bulk_rename(
             rows.len(),
             rows.iter().map(|row| row.source.to_string_lossy().into_owned()),
             None,
-        ),
+        )
+        .on_volumes(volume_label, None),
     };
     let descriptor = OperationDescriptor {
         operation_id: operation_id.clone(),

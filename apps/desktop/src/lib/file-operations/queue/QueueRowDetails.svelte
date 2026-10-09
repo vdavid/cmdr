@@ -18,6 +18,7 @@
     import { formatDuration, seconds } from '$lib/units'
     import type { OperationSnapshot, WriteProgressEvent } from '$lib/ipc/bindings'
     import { createOperationDetailsLoader } from './operation-details.svelte'
+    import { formatOperationPath } from './operation-path'
 
     interface Props {
         snapshot: OperationSnapshot
@@ -90,7 +91,7 @@
                 <div class="sources" role="region" aria-label={tString('queue.details.sourcesAria')} tabindex="0">
                     <ul>
                         {#each details.sourcePaths as path, index (index)}
-                            <li class="path selectable">{path}</li>
+                            <li class="path selectable">{formatOperationPath(path, details.sourceVolumeName)}</li>
                         {/each}
                         {#if hiddenSourceCount > 0}
                             <li class="more">
@@ -106,7 +107,9 @@
         {/if}
         {#if details?.destinationPath}
             <dt>{tString('queue.details.to')}</dt>
-            <dd class="path selectable">{details.destinationPath}</dd>
+            <dd class="path selectable">
+                {formatOperationPath(details.destinationPath, details.destinationVolumeName)}
+            </dd>
         {/if}
         {#if currentFile}
             <dt>{tString('queue.details.currentFile')}</dt>

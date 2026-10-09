@@ -11483,6 +11483,15 @@ export type OperationDetails = {
   sourceCount: number
   // Where it writes (see [`OperationPaths`]), `None` for a delete or trash.
   destinationPath: string | null
+  /**
+   *  The display name of the volume the source paths live on, set only when
+   *  those paths can't name a place by themselves (an MTP phone, a cloud or
+   *  server volume). `None` for a plain local path. See
+   *  `OperationPaths::volume_label`.
+   */
+  sourceVolumeName: string | null
+  // The same for `destination_path`.
+  destinationVolumeName: string | null
   // When the operation was registered, which is when its row appeared.
   queuedAt: number
   // When it was admitted to run. `None` while it waits for a lane.

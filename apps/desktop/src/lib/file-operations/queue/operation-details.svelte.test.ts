@@ -20,6 +20,8 @@ function detailsFor(operationId: string, sourcePaths: string[] = ['/a/one.txt'])
     sourcePaths,
     sourceCount: sourcePaths.length,
     destinationPath: '/b',
+    sourceVolumeName: null,
+    destinationVolumeName: null,
     queuedAt: 1_700_000_000,
     startedAt: 1_700_000_005,
   }

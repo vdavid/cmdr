@@ -42,6 +42,8 @@ function detailsWith(overrides: Partial<OperationDetails> = {}): OperationDetail
     sourcePaths: ['/Users/me/photos/a.raw', '/Users/me/photos/b.raw'],
     sourceCount: 5,
     destinationPath: '/Volumes/Naspolya/backup',
+    sourceVolumeName: null,
+    destinationVolumeName: null,
     queuedAt: 1_700_000_000,
     startedAt: STARTED,
     ...overrides,
@@ -118,6 +120,22 @@ describe('QueueRowDetails', () => {
       Elapsed: '2m 30s',
     })
     expect(target.firstElementChild?.id).toBe('details-op-1')
+  })
+
+  it('puts the volume name in front of paths that only make sense on that volume', async () => {
+    fetchDetails.mockResolvedValue(
+      detailsWith({
+        sourcePaths: ['/DCIM/a.jpg'],
+        sourceCount: 1,
+        sourceVolumeName: 'Pixel 8',
+        destinationPath: '/Users/me/in',
+      }),
+    )
+    await render(snapshotWith('running'), copying)
+
+    const sources = [...target.querySelectorAll('.sources li')].map((li) => li.textContent.trim())
+    expect(sources).toEqual(['Pixel 8 › /DCIM/a.jpg'])
+    expect(facts().To, 'a local destination names itself').toBe('/Users/me/in')
   })
 
   it('says when a waiting operation joined the queue, and nothing about a start', async () => {

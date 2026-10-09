@@ -11,6 +11,7 @@
 use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use crate::file_system::volume::Volume;
 use crate::ignore_poison::IgnorePoison;
 
 use super::{OperationManager, OperationSnapshot};
@@ -36,6 +37,11 @@ pub struct OperationPaths {
     /// Where the operation writes: the destination folder of a transfer, the
     /// new name of a rename, the archive of a compress. `None` for a delete.
     destination: Option<String>,
+    /// The display name of the volume `sources` live on, when those paths
+    /// can't name a place by themselves ([`Self::volume_label`]).
+    source_volume: Option<String>,
+    /// The same for `destination`.
+    destination_volume: Option<String>,
 }
 
 impl OperationPaths {
@@ -60,7 +66,32 @@ impl OperationPaths {
             sources: sources.into_iter().take(DETAILS_SOURCE_CAP).collect(),
             source_count: count,
             destination,
+            source_volume: None,
+            destination_volume: None,
         }
+    }
+
+    /// Names the volumes the paths live on, each from [`Self::volume_label`].
+    pub(crate) fn on_volumes(self, source: Option<String>, destination: Option<String>) -> Self {
+        Self {
+            source_volume: source,
+            destination_volume: destination,
+            ..self
+        }
+    }
+
+    /// The name to put in front of a path on `volume`, or `None` when the path
+    /// already names a place on this Mac.
+    ///
+    /// The rule: a path the OS can resolve (`paths_are_os_visible`: the local
+    /// disk, a mounted drive, an OS-mounted share, all `/…` or `/Volumes/…`)
+    /// says where it is on its own. A path on an MTP phone, an S3 bucket, an
+    /// SFTP or WebDAV server is relative to that volume, so `/DCIM/a.jpg`
+    /// alone could be anywhere: it gets the volume's `name()`, the same name
+    /// the queue row's summary shows. How the two are joined on screen is the
+    /// frontend's call (`formatOperationPath`).
+    pub(crate) fn volume_label(volume: &dyn Volume) -> Option<String> {
+        (!volume.paths_are_os_visible()).then(|| volume.name().to_string())
     }
 
     /// The IPC answer for this op, given its timing.
@@ -70,6 +101,8 @@ impl OperationPaths {
             source_paths: self.sources.clone(),
             source_count: self.source_count.max(self.sources.len()),
             destination_path: self.destination.clone(),
+            source_volume_name: self.source_volume.clone(),
+            destination_volume_name: self.destination_volume.clone(),
             queued_at,
             started_at,
         }
@@ -91,6 +124,13 @@ pub struct OperationDetails {
     pub source_count: usize,
     /// Where it writes (see [`OperationPaths`]), `None` for a delete or trash.
     pub destination_path: Option<String>,
+    /// The display name of the volume the source paths live on, set only when
+    /// those paths can't name a place by themselves (an MTP phone, a cloud or
+    /// server volume). `None` for a plain local path. See
+    /// `OperationPaths::volume_label`.
+    pub source_volume_name: Option<String>,
+    /// The same for `destination_path`.
+    pub destination_volume_name: Option<String>,
     /// When the operation was registered, which is when its row appeared.
     pub queued_at: u64,
     /// When it was admitted to run. `None` while it waits for a lane.

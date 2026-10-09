@@ -812,6 +812,11 @@ The queue window's expanded row asks `get_operation_details(id)` for the full so
 
 - **❌ Never on `OperationSnapshot`.** The snapshot is rebuilt and broadcast to every window whenever anything in the registry moves, and a selection can hold thousands of sources; most rows are never expanded. The frontend asks when a row opens and again when its lifecycle status changes (`apps/desktop/src/lib/file-operations/queue/DETAILS.md` § "Row details").
 - **The paths ride `OperationSummaryText::paths`** (an `OperationPaths`), next to the short names the row shows, so every spawn path states both in the same struct literal and a new one can't forget. `path_summary` fills them for the local copy/move/delete/trash starters; volume transfers, archive edits, bulk rename, rename, and the operation-log reversal pass what they hold. Instant mkdir/mkfile pass `OperationPaths::default()`: they're over before a row could open, and their builder has only the new name. Empty paths render as absence, never a guess.
+- **A side whose paths name nothing on this Mac carries its volume's name** (`source_volume_name` /
+  `destination_volume_name`), from `OperationPaths::volume_label`: the volume's `name()` (the same name the row summary
+  shows) when `paths_are_os_visible()` is false, else `None`. The volume transfer, move, delete, compress, copy-into,
+  move-out, and bulk-rename starters pass it through `on_volumes`; the local starters have nothing to add. The frontend
+  joins name and path (`apps/desktop/src/lib/file-operations/queue/DETAILS.md` § "Row details").
 - **Capped at `DETAILS_SOURCE_CAP = 200`** top-level sources, with `source_count` carrying the real total ("and N more" on screen). The cap bounds both the copy each op keeps and the IPC answer.
 - **The two stamps live on `OpRecord`**, set in `spawn_managed` / `run_instant` (registration) and the admission pass (Running). An instant op is born Running, so both match. A retained failure copies them off the live record; one whose record was already gone has no paths and `queued_at = 0`, which the frontend renders as no time.
 - Pinned by `manager::tests::details`.

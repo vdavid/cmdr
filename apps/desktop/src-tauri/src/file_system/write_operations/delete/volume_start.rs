@@ -55,7 +55,16 @@ pub(in crate::file_system::write_operations) fn start_volume_delete(
         operation_type: WriteOperationType::Delete,
         lanes: vec![lane],
         volume_ids: vec![volume_id.clone()],
-        summary: path_summary(&sources, None),
+        summary: {
+            // A delete on a volume whose paths name nothing on this Mac (a phone,
+            // a bucket) says which volume, like the transfer starters do.
+            let mut summary = path_summary(&sources, None);
+            let label = get_volume_manager()
+                .get(&volume_id)
+                .and_then(|volume| manager::OperationPaths::volume_label(volume.as_ref()));
+            summary.paths = summary.paths.on_volumes(label, None);
+            summary
+        },
         // Deleted is deleted; there's nothing for a rollback to put back.
         supports_rollback: false,
         preview_id: config.preview_id.clone(),

@@ -181,3 +181,30 @@ async fn a_retained_failure_keeps_its_details_until_dismissed() {
         "a dismissed failure has nothing left to explain"
     );
 }
+
+#[test]
+fn paths_on_a_volume_the_os_cant_resolve_carry_its_name() {
+    let phone = crate::file_system::volume::InMemoryVolume::new("Pixel 8");
+    assert!(
+        !crate::file_system::volume::Volume::paths_are_os_visible(&phone),
+        "fixture: an in-memory volume's paths name nothing on the Mac"
+    );
+    let paths = OperationPaths::from_paths(&[PathBuf::from("/DCIM/a.jpg")], Some(Path::new("/Users/me/in")))
+        .on_volumes(OperationPaths::volume_label(&phone), None);
+
+    let details = paths.details_for("op", 1, None);
+    assert_eq!(details.source_volume_name.as_deref(), Some("Pixel 8"));
+    assert_eq!(details.destination_volume_name, None, "a plain local path names itself");
+    assert_eq!(
+        details.source_paths,
+        vec!["/DCIM/a.jpg".to_string()],
+        "the path itself is untouched"
+    );
+}
+
+#[test]
+fn a_local_path_carries_no_volume_name() {
+    let details = OperationPaths::from_paths(&[PathBuf::from("/a")], None).details_for("op", 1, None);
+    assert_eq!(details.source_volume_name, None);
+    assert_eq!(details.destination_volume_name, None);
+}

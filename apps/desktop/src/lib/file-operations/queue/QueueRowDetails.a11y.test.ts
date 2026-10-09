@@ -37,6 +37,8 @@ const capped: OperationDetails = {
   ),
   sourceCount: 300,
   destinationPath: '/Volumes/Naspolya/backup',
+  sourceVolumeName: null,
+  destinationVolumeName: null,
   queuedAt: 1_700_000_000,
   startedAt: 1_700_000_005,
 }

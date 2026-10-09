@@ -24,6 +24,8 @@ vi.mock('$lib/tauri-commands', () => ({
       sourcePaths: ['/Users/me/Documents/report.pdf'],
       sourceCount: 1,
       destinationPath: '/Volumes/Backup',
+      sourceVolumeName: null,
+      destinationVolumeName: null,
       queuedAt: 1_700_000_000,
       startedAt: 1_700_000_001,
     }),
