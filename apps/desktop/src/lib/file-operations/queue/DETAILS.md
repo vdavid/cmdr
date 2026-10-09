@@ -322,11 +322,57 @@ already has the arrow to say which way things move, and "Putting files back in r
 The Rust side of the summary is `InverseSummary` / `summarize_inverse` (`src-tauri/src/operation_log/rollback.rs`),
 which fills `from` for a removal and both `from` and `to` for a restore.
 
-A row is a five-column grid whose chrome (select, type icon, source→dest summary, status, actions) sits on line 1, with
-the shared `../TransferProgressReadout.svelte` spanning line 2 from the summary column to the end. The readout gets the
-full row width rather than a slot beside the buttons because its columns are fixed-width: sharing a line with the status
-and two buttons would have pushed the window's minimum width past 700 px for the bars to survive. A row with no
-`write-progress` to show — a queued op, or an instant `rename` / `create_folder` / `create_file` — renders line 1 only.
+A row is a five-column grid whose chrome (select, type icon, source→dest summary, status, actions ending in the details
+chevron) sits on line 1, with the shared `../TransferProgressReadout.svelte` spanning line 2 from the summary column to
+the end. The readout gets the full row width rather than a slot beside the buttons because its columns are fixed-width:
+sharing a line with the status and two buttons would have pushed the window's minimum width past 700 px for the bars to
+survive. A row with no `write-progress` to show — a queued op, or an instant `rename` / `create_folder` / `create_file`
+— renders line 1 only.
+
+## Row details
+
+Every row ends in a chevron (`aria-expanded`, `aria-controls`, a plain `<button>` because `Button` passes neither) that
+opens `QueueRowDetails.svelte` on a last line, under the readout or the failure's reason, both of which stay as they
+are. Collapsed is the row it always was. The prior art is the usual one: Explorer's copy dialog "More details", Total
+Commander's background-transfer window (the current file "from → to" with full paths), Double Commander's operations
+viewer, ForkLift's Activities.
+
+What the panel shows, each line only when there's something true to say:
+
+- **From**: every top-level source as a full path, selectable, wrapping mid-token (`overflow-wrap: anywhere`, like
+  `CopiedPathToastContent`). A long list scrolls inside the panel (a focusable `region`, so the keyboard reaches it) and
+  ends in "and N more" past the backend's cap.
+- **To**: the destination folder of a transfer, the new name of a rename, the archive a compress writes.
+- **Current file**: `progress.currentFile` off the live tick the row already renders, on a running or paused row only.
+- **Waiting since** (a queued row), **Started**, and **Elapsed** (a live row; a wall clock that ticks once a second
+  while the panel is open, and keeps counting through a pause or a clash, because it says how long since it started, not
+  how long it has been moving).
+
+Decisions:
+
+- **On demand, ❌ never on the snapshot.** `operations-changed` is rebuilt and sent to every window each time anything
+  in the registry moves, and a selection can hold thousands of paths. Most rows are never expanded. So the paths and the
+  timing live behind `get_operation_details(id)` (`apps/desktop/src-tauri/src/file_system/write_operations/DETAILS.md` §
+  "Row details"), asked when the panel opens and again when the row's lifecycle STATUS changes (queued → running stamps
+  a start time). The ask is keyed on the id and status as primitives, so a snapshot rebuild about some OTHER operation
+  asks nothing.
+- **❌ No counts, sizes, rates, or time left in the panel.** The readout one line up already shows them, from the row's
+  session; a second copy in the panel would be a second place for the same number to go stale.
+- **Answers are keyed by operation id and request counter, ❌ never by row position** (`operation-details.svelte.ts`).
+  An answer that a newer request overtook, one about a different id, or one landing after the row unmounted is dropped.
+  `notFound` (the operation settled, or its failure was dismissed, in between) shows nothing: the row is leaving anyway.
+  A broken bridge logs a warn and says "Details aren't available right now." instead of an empty box.
+- **Expanded is component state**, not page state. The page keys rows by `operationId`, so the row and its open panel
+  survive every snapshot rebuild; a reopened window starts collapsed, which matches the window's no-persistence rule.
+- **A path that names nothing on this Mac carries its volume's name**: `Pixel 8 › /DCIM/x`. The rule lives in ONE pure
+  helper, `operation-path.ts::formatOperationPath`, so it changes in one place. The backend decides per side whether a
+  path needs it (`sourceVolumeName` / `destinationVolumeName`, set only when the volume's paths aren't OS-visible: MTP,
+  S3, SFTP, WebDAV, a direct SMB session whose mount is gone) and sends the same volume `name()` the row's summary
+  shows. A path the Mac can resolve (the local disk, a mounted drive, an OS-mounted share, a zip on any of those, which
+  reads `/…/a.zip/inner`) already says where it is, so it stays bare. The `›` separator is the settings breadcrumbs'
+  own, and punctuation, so no catalog string.
+- **Conflict outcomes (skipped / overwritten) aren't shown.** No progress tick or registry field counts them today; the
+  per-source outcomes ride `write-source-item-done`, which this window doesn't subscribe to.
 
 ## Vibrancy + reduce-transparency
 
@@ -372,12 +418,17 @@ the MAIN window, which already holds those perms — nothing to add there (see `
   subscribed).
 - `failure-reason.test.ts`: the wire-type → catalog-arm mapping (per-operation wording, the copy fallback for the types
   the catalog has no arm for) and the null-for-a-live-row contract.
-- `QueueRow.svelte.test.ts`: which control a given status offers (Pause vs Resume vs queued vs failed), the select
-  checkbox, the live bar from a progress event, the failed row's reason across two error variants and two operation
-  types, and the `data-status` / `data-operation-id` E2E hooks. What a click SENDS isn't here: that needs a window
-  registry, so it lives in `queue-row-session.svelte.test.ts`. The readout's own behavior (both bars, percents, rates,
-  time left, stall) is covered once, in `../TransferProgressReadout.svelte.test.ts`.
-- `QueueRow.a11y.test.ts`: axe over the row in running / paused / queued / selected states.
+- `QueueRow.svelte.test.ts`: which control a given status offers (Pause vs Resume vs queued vs failed), the details
+  chevron opening and closing its panel, the select checkbox, the live bar from a progress event, the failed row's
+  reason across two error variants and two operation types, and the `data-status` / `data-operation-id` E2E hooks. What
+  a click SENDS isn't here: that needs a window registry, so it lives in `queue-row-session.svelte.test.ts`. The
+  readout's own behavior (both bars, percents, rates, time left, stall) is covered once, in
+  `../TransferProgressReadout.svelte.test.ts`.
+- `QueueRow.a11y.test.ts`: axe over the row in running / paused / queued / selected / expanded states.
+- `QueueRowDetails.svelte.test.ts` + `.a11y.test.ts`: which lines each status gets, the capped source list, asking again
+  on a status change but not on a rebuild, the unavailable note, and axe over a long scrolling list.
+- `operation-details.svelte.test.ts`: the loader's staleness rules (an overtaken answer, another id's answer, a late
+  answer after dispose, `null` for a gone op, a warn on a broken bridge).
 - `queue-row-session.svelte.test.ts`: what a row takes from its session and what it asks of it, through real rows on a
   real registry — one `createEtaSmoother` per operation however many ticks or snapshot rebuilds arrive, none in the
   store, a scanning row's files/s, and each control's command (including the toggle following the snapshot status, and

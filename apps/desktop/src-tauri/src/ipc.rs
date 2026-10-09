@@ -184,6 +184,7 @@ macro_rules! ipc_command_manifest {
                     crate::commands::file_system::resume_all,
                     crate::commands::file_system::dismiss_failed_operation,
                     crate::commands::file_system::dismiss_all_failed_operations,
+                    crate::commands::file_system::get_operation_details,
                     crate::commands::file_system::copy_between_volumes,
                     crate::commands::file_system::move_between_volumes,
                     crate::commands::file_system::rename_by_move,

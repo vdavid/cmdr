@@ -6,7 +6,8 @@ The standalone macOS window for running, waiting, and couldn't-finish operations
 ## Module map
 
 - `queue-window.ts` opens the window (perms in `src-tauri/capabilities/queue.json`), `operations-store.svelte.ts` is the
-  single reactive source it renders from, `QueueRow.svelte` a row, shell `routes/queue/+page.svelte`.
+  single reactive source it renders from, `QueueRow.svelte` a row, `QueueRowDetails.svelte` its expanded panel (fed by
+  `operation-details.svelte.ts`), shell `routes/queue/+page.svelte`.
 - Pure helpers: `failure-reason.ts` (a retained failure's title/explanation/suggestion), `queue-backlog.ts`
   (`hasOtherQueuedWork`, behind the progress dialog's Background/Queue label).
 
@@ -19,7 +20,8 @@ The standalone macOS window for running, waiting, and couldn't-finish operations
   `bindOperationSession`, ❌ never the raw tick. The session keeps a parked row's speed off the screen while its time
   left stays. ❌ No smoother in the store: it holds membership and the latest tick, both stateless.
 - **Two streams, never poll**: `operations-changed` is the THIN membership + status snapshot, `write-progress` drives
-  the live bars, keyed by `operationId` and pruned to snapshot membership. ❌ Don't fatten it with per-tick data.
+  the live bars, keyed by `operationId` and pruned to snapshot membership. ❌ Don't fatten either: an expanded row's
+  paths and times come on demand (`get_operation_details`).
 - **Rows cover copy/move/delete/trash AND the instant ops** (`rename` / `create_folder` / `create_file`), which emit no
   `write-progress`, so they're a spinner + label with no bars. Icon and label arms (`operation-icon.ts`) take the
   SNAKE_CASE wire values.
@@ -43,8 +45,8 @@ The standalone macOS window for running, waiting, and couldn't-finish operations
   rollback, no confirm (why `capabilities/queue.json` DROPS `dialog:allow-ask`/`store:default`). `session.rollback()`
   shows ONLY where `supportsRollback` and `reversalWindowClosed` allow it, ❌ never inferred from the type.
 - **Window perms fail SILENTLY**: `await` every Tauri call in try/catch with a `log.warn`, and smoke-test with
-  `pnpm dev` after a perm change. Being its own webview, the page inits its own i18n / theme / transparency / text size
-  (`initWindowSettings()`, `lib/settings/CLAUDE.md`).
+  `pnpm dev` after a perm change. The page inits its own i18n / theme / transparency / text size
+  (`initWindowSettings()`).
 - **One opener, one store per webview**: `openQueueWindow`, plus the main window's own
   (`main-window-operations.svelte.ts`).
 

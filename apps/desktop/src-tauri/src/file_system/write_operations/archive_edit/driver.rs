@@ -12,7 +12,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use super::super::OperationEventSink;
-use super::super::manager::{self, ManagedTaskGuard, OperationDescriptor, OperationSummaryText};
+use super::super::manager::{self, ManagedTaskGuard, OperationDescriptor, OperationPaths, OperationSummaryText};
 use super::super::state::{WriteOperationState, WriteSettledGuard};
 use super::super::types::ReadOnlySide;
 use super::super::types::{WriteOperationError, WriteOperationStartResult, WriteOperationType};
@@ -91,6 +91,7 @@ pub(crate) async fn route_archive_delete(
         summary: OperationSummaryText {
             source: summary_source,
             destination: None,
+            paths: OperationPaths::from_paths(sources, None),
         },
         skipped_count: 0,
         preview_id,

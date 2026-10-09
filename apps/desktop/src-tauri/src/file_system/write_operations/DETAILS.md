@@ -29,7 +29,8 @@ Pre-flight scans reuse cached listings when the source volume reports `WatchCove
 Where a symbol lives and who calls it: `codegraph_search` / `codegraph_explore`. The spine: `CLAUDE.md` § Module map.
 The full top-level inventory is here:
 
-- `mod.rs` (public API + the `start_write_operation` lifecycle), `manager.rs` (registry + lane admission), `state.rs`
+- `mod.rs` (public API + the `start_write_operation` lifecycle), `manager.rs` (registry + lane admission; `manager/details.rs` holds an expanded queue row's on-demand answer and
+  the retained-failure entry), `state.rs`
   (`WriteOperationRegistry`, `WriteOperationState`, the settle guard, plus `state/controls.rs`:
   the by-id cancel / abort / pause / resume / conflict-answer entry points, re-exported through `state`),
   `status_cache.rs` (the status cache, the busy-volumes set it derives, the external drag-out seam, and
@@ -751,7 +752,7 @@ A live RECORD only ever holds `Queued` / `Running` / `Paused`: `Done` and `Cance
 
 ### Retained failures
 
-**The exception to removal-on-terminal.** Nothing else can hold the failure of an operation that was backgrounded: the record is deleted on settle, and `write-error` only reaches a window that is listening at that moment — and the queue window being closed is the exact scenario this is for. So the manager keeps a bounded list of failures OUT OF BAND — `ManagerInner::failures`, a `VecDeque<OperationSnapshot>` capped at `FAILURE_CAPACITY = 20`, oldest evicted first — and `snapshot()` appends them after the live rows.
+**The exception to removal-on-terminal.** Nothing else can hold the failure of an operation that was backgrounded: the record is deleted on settle, and `write-error` only reaches a window that is listening at that moment — and the queue window being closed is the exact scenario this is for. So the manager keeps a bounded list of failures OUT OF BAND — `ManagerInner::failures`, a `VecDeque<RetainedFailure>` (the snapshot row plus its [row details](#row-details-get_operation_details), one entry so they can't be evicted or dismissed apart) capped at `FAILURE_CAPACITY = 20`, oldest evicted first — and `snapshot()` appends them after the live rows.
 
 - **`free_and_remove` is untouched.** Admission, laning, the busy-volumes set, and settling behave exactly as before: a failed op frees its lane slots, cleans its caches, deletes its record, and admits the next op on the same `on_settled` it always did. Retention is a separate structure the settle path never consults. Pinned by `manager::tests::a_failed_op_frees_its_lane_and_admits_the_next_exactly_as_before`.
 - **Recorded at the emit site.** `TauriEventSink::emit_error` calls `record_failure`, next to the `mcp::terminal_ops::record` line. ❌ Not in the `OperationEventSink` trait and not in `CollectorEventSink`: test sinks stay side-effect-free.
@@ -805,9 +806,24 @@ move: `cross_fs.rs` commits its transaction before Phase 4, so a Rollback presse
 sweep reverses nothing and only stops the sweep. The frontend names that window in one place,
 `file-operations/reversal-wording.ts`'s `reversalWindowClosed`, which the dialog and the queue row both call.
 
+### Row details (`get_operation_details`)
+
+The queue window's expanded row asks `get_operation_details(id)` for the full source paths, the destination path, and when the operation was registered (`queued_at`) and admitted (`started_at`, `None` while Queued), as Unix seconds. It answers from a live record, then from a retained failure (the same join `snapshot()` makes), else the typed `OperationDetailsError::NotFound`. An in-memory read under the manager lock: no I/O, so no timeout.
+
+- **❌ Never on `OperationSnapshot`.** The snapshot is rebuilt and broadcast to every window whenever anything in the registry moves, and a selection can hold thousands of sources; most rows are never expanded. The frontend asks when a row opens and again when its lifecycle status changes (`apps/desktop/src/lib/file-operations/queue/DETAILS.md` § "Row details").
+- **The paths ride `OperationSummaryText::paths`** (an `OperationPaths`), next to the short names the row shows, so every spawn path states both in the same struct literal and a new one can't forget. `path_summary` fills them for the local copy/move/delete/trash starters; volume transfers, archive edits, bulk rename, rename, and the operation-log reversal pass what they hold. Instant mkdir/mkfile pass `OperationPaths::default()`: they're over before a row could open, and their builder has only the new name. Empty paths render as absence, never a guess.
+- **A side whose paths name nothing on this Mac carries its volume's name** (`source_volume_name` /
+  `destination_volume_name`), from `OperationPaths::volume_label`: the volume's `name()` (the same name the row summary
+  shows) when `paths_are_os_visible()` is false, else `None`. The volume transfer, move, delete, compress, copy-into,
+  move-out, and bulk-rename starters pass it through `on_volumes`; the local starters have nothing to add. The frontend
+  joins name and path (`apps/desktop/src/lib/file-operations/queue/DETAILS.md` § "Row details").
+- **Capped at `DETAILS_SOURCE_CAP = 200`** top-level sources, with `source_count` carrying the real total ("and N more" on screen). The cap bounds both the copy each op keeps and the IPC answer.
+- **The two stamps live on `OpRecord`**, set in `spawn_managed` / `run_instant` (registration) and the admission pass (Running). An instant op is born Running, so both match. A retained failure copies them off the live record; one whose record was already gone has no paths and `queued_at = 0`, which the frontend renders as no time.
+- Pinned by `manager::tests::details`.
+
 ### IPC
 
-`list_operations` (the thin snapshot), `cancel_operation(id)`, `cancel_operations(ids)` (the queue window's "Cancel selected"), `pause_operation(id)` / `resume_operation(id)`, and `pause_all` / `resume_all`. Cancel routes through `cancel_operation`: a Queued op is dropped from the registry without ever spawning (`cancel_if_queued`); a Running/Paused op falls through to the existing `cancel_write_operation(id, rollback=false)` keep-partials path. Pause/resume flip BOTH the live `WriteOperationState` pause gate (so the driver parks) AND the manager record's `LifecycleStatus` (so the UI shows Paused), via `set_paused`, and both RETURN a `PauseOutcome` (`Applied` / `AlreadyInState` / `NotApplicable`) that rides out through `bindings.ts` ([Pause / resume](#pause--resume)). Plus `dismiss_failed_operation(id)` / `dismiss_all_failed_operations()`, which drop retained failures and re-emit ([Retained failures](#retained-failures)). Registered in the `ipc.rs` manifest; `OperationSnapshot` / `LifecycleStatus` / `OperationsChanged` ride into `bindings.ts`. No capability change: manager commands go through the invoke handler, not the ACL.
+`get_operation_details(id)` (above), `list_operations` (the thin snapshot), `cancel_operation(id)`, `cancel_operations(ids)` (the queue window's "Cancel selected"), `pause_operation(id)` / `resume_operation(id)`, and `pause_all` / `resume_all`. Cancel routes through `cancel_operation`: a Queued op is dropped from the registry without ever spawning (`cancel_if_queued`); a Running/Paused op falls through to the existing `cancel_write_operation(id, rollback=false)` keep-partials path. Pause/resume flip BOTH the live `WriteOperationState` pause gate (so the driver parks) AND the manager record's `LifecycleStatus` (so the UI shows Paused), via `set_paused`, and both RETURN a `PauseOutcome` (`Applied` / `AlreadyInState` / `NotApplicable`) that rides out through `bindings.ts` ([Pause / resume](#pause--resume)). Plus `dismiss_failed_operation(id)` / `dismiss_all_failed_operations()`, which drop retained failures and re-emit ([Retained failures](#retained-failures)). Registered in the `ipc.rs` manifest; `OperationSnapshot` / `LifecycleStatus` / `OperationsChanged` ride into `bindings.ts`. No capability change: manager commands go through the invoke handler, not the ACL.
 
 ### Pause / resume
 

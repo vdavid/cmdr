@@ -11,12 +11,25 @@ import { requestForegroundOperation } from '$lib/tauri-commands'
 // test isolated.
 vi.mock('$lib/settings/reactive-settings.svelte', () => ({
   getFileSizeFormat: () => 'decimal',
+  formatDateTime: (unixSeconds: number) => `at-${String(unixSeconds)}`,
 }))
 
 // Show crosses to the main window over a Tauri event; the row's job is to ask
 // for its own operation and nothing else.
 vi.mock('$lib/tauri-commands', () => ({
   requestForegroundOperation: vi.fn(() => Promise.resolve()),
+  getOperationDetails: vi.fn(() =>
+    Promise.resolve({
+      operationId: 'op-1',
+      sourcePaths: ['/Users/me/Documents/report.pdf'],
+      sourceCount: 1,
+      destinationPath: '/Volumes/Backup',
+      sourceVolumeName: null,
+      destinationVolumeName: null,
+      queuedAt: 1_700_000_000,
+      startedAt: 1_700_000_001,
+    }),
+  ),
 }))
 
 const logWarn = vi.hoisted(() => vi.fn())
@@ -109,6 +122,35 @@ beforeEach(() => {
 })
 
 describe('QueueRow', () => {
+  it('starts collapsed, and its chevron opens and closes the details under the row', async () => {
+    render({ row: buildRow('running') })
+    const toggle = target.querySelector<HTMLButtonElement>('button[aria-label="Details"]')
+    expect(toggle?.getAttribute('aria-expanded')).toBe('false')
+    expect(target.querySelector('.details'), 'collapsed is today’s row, nothing more').toBeNull()
+
+    toggle?.click()
+    flushSync()
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    flushSync()
+    expect(toggle?.getAttribute('aria-expanded')).toBe('true')
+    const panel = target.querySelector('.details')
+    expect(panel?.id).toBe(toggle?.getAttribute('aria-controls'))
+    expect(panel?.textContent).toContain('/Volumes/Backup')
+
+    toggle?.click()
+    flushSync()
+    expect(toggle?.getAttribute('aria-expanded')).toBe('false')
+    expect(target.querySelector('.details')).toBeNull()
+  })
+
+  it('offers the details on every kind of row, a failure included', () => {
+    for (const status of ['queued', 'paused', 'failed'] as const) {
+      render({ row: buildRow(status) })
+      expect(target.querySelector('button[aria-label="Details"]'), status).not.toBeNull()
+      if (instance) void unmount(instance)
+    }
+  })
+
   it('shows Pause for a running op and Resume for a paused op', () => {
     render({ row: buildRow('running') })
     expect(target.querySelector('[aria-label="Pause this operation"]')).not.toBeNull()

@@ -338,9 +338,10 @@ export {
   resumeAll,
   dismissFailedOperation,
   dismissAllFailedOperations,
+  getOperationDetails,
   onOperationsChanged,
 } from './operations'
-export type { OperationSnapshot, OperationsChanged } from './operations'
+export type { OperationDetails, OperationSnapshot, OperationsChanged } from './operations'
 
 // The quit gate: the backend holding an exit while operations run, and the
 // dialog's two answers.

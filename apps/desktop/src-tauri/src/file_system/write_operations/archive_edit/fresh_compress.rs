@@ -11,7 +11,7 @@ use std::time::Duration;
 use cmdr_archive::mutator::{MutationHooks, MutationProgress};
 
 use super::super::OperationEventSink;
-use super::super::manager::{self, ManagedTaskGuard, OperationDescriptor, OperationSummaryText};
+use super::super::manager::{self, ManagedTaskGuard, OperationDescriptor, OperationPaths, OperationSummaryText};
 use super::super::scratch_dir::ScratchDir;
 use super::super::state::{WriteOperationState, WriteSettledGuard};
 use super::super::transfer::StagedWrite;
@@ -133,6 +133,10 @@ pub(super) async fn start(
         summary: OperationSummaryText {
             source: summary_source,
             destination: Some(archive_path.display().to_string()),
+            paths: OperationPaths::from_paths(&source_paths, Some(archive_path.as_path())).on_volumes(
+                OperationPaths::volume_label(source_volume.as_ref()),
+                OperationPaths::volume_label(dest_volume.as_ref()),
+            ),
         },
         supports_rollback: net_new,
         preview_id,

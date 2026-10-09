@@ -274,5 +274,59 @@
       "detail": "the trailing detail: the time left, already formatted (for example \"1m 20s left\")"
     },
     "screenshot": "operation-chip.png"
+  },
+
+  "queue.row.detailsToggleAria": "Details",
+  "@queue.row.detailsToggleAria": {
+    "description": "Screen-reader label and tooltip of the small chevron button at the right end of each row in the operation queue window. It opens and closes a panel under the row with the operation’s full source paths, its destination, the file it’s working on, and when it started. The button shows only a chevron, and the screen reader announces separately whether the panel is open, so this stays one noun that doesn’t change with the state."
+  },
+
+  "queue.details.from": "From",
+  "@queue.details.from": {
+    "description": "Label in an operation row’s expanded details panel (operation queue window), in front of the full paths of the files and folders the operation reads or removes. One word, like the label column of a form: the paths sit beside it. Same meaning as the copy dialog’s \"From\" group title (fileOperations.transferDialog.sourceGroupTitle), so use the same word."
+  },
+
+  "queue.details.to": "To",
+  "@queue.details.to": {
+    "description": "Label in an operation row’s expanded details panel (operation queue window), in front of the full path the operation writes to: the destination folder of a copy or move, the new name of a rename, or the archive a compress creates. One word, paired with queue.details.from (\"From\"). Same meaning as the copy dialog’s \"To\" group title (fileOperations.transferDialog.targetGroupTitle), so use the same word."
+  },
+
+  "queue.details.moreSources": "{count, plural, one {and {countText} more} other {and {countText} more}}",
+  "@queue.details.moreSources": {
+    "description": "Last line of the source list in an operation row’s expanded details panel (operation queue window), when the operation covers more files and folders than the list shows. Continues the list above it, so it reads as a tail: \"and 1,240 more\".",
+    "placeholders": {
+      "count": "how many more top-level files and folders the operation covers beyond the ones listed",
+      "countText": "the same number, already formatted with the locale’s digit grouping (for example 1,240)"
+    }
+  },
+
+  "queue.details.sourcesAria": "Source items",
+  "@queue.details.sourcesAria": {
+    "description": "Screen-reader name of the scrollable list of source paths in an operation row’s expanded details panel (operation queue window). Never shown on screen. It names what the list holds: the files and folders the operation works on."
+  },
+
+  "queue.details.currentFile": "Current file",
+  "@queue.details.currentFile": {
+    "description": "Label in an operation row’s expanded details panel (operation queue window), in front of the name of the file the operation is working on at this moment. Shown only while it’s running or paused."
+  },
+
+  "queue.details.waitingSince": "Waiting since",
+  "@queue.details.waitingSince": {
+    "description": "Label in an operation row’s expanded details panel (operation queue window), in front of the date and time the operation joined the queue. Shown only while it’s still waiting for another operation on the same drive to finish, before it has started. Pairs with the row’s status word \"Waiting\" (queue.row.status), so use the same verb."
+  },
+
+  "queue.details.started": "Started",
+  "@queue.details.started": {
+    "description": "Label in an operation row’s expanded details panel (operation queue window), in front of the date and time the operation began its work."
+  },
+
+  "queue.details.elapsed": "Elapsed",
+  "@queue.details.elapsed": {
+    "description": "Label in an operation row’s expanded details panel (operation queue window), in front of how long the operation has been going since it started, for example \"2m 30s\". The time keeps counting while the operation is paused or waiting for an answer."
+  },
+
+  "queue.details.unavailable": "Details aren’t available right now.",
+  "@queue.details.unavailable": {
+    "description": "Shown in an operation row’s expanded details panel (operation queue window) in place of the paths and times when the app couldn’t look them up. The row itself and its progress still work; only this extra panel is affected."
   }
 }

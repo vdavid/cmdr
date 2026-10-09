@@ -146,5 +146,45 @@
   "queue.chip.tooltip": "{label}{count, plural, =0 {} other { · 共 {countText} 个项目}}{hasDestination, select, yes { · 目标：“{destination}”} other {}} · {percentText}%{hasDetail, select, yes { · {detail}} other {}}",
   "@queue.chip.tooltip": {
     "sourceHash": "6680100"
+  },
+  "queue.row.detailsToggleAria": "详情",
+  "@queue.row.detailsToggleAria": {
+    "sourceHash": "45989de"
+  },
+  "queue.details.from": "来源",
+  "@queue.details.from": {
+    "sourceHash": "2181976"
+  },
+  "queue.details.to": "目标",
+  "@queue.details.to": {
+    "sourceHash": "f4b06ef"
+  },
+  "queue.details.moreSources": "{count, plural, other {另有 {countText} 个项目}}",
+  "@queue.details.moreSources": {
+    "sourceHash": "ef18403"
+  },
+  "queue.details.sourcesAria": "来源项目",
+  "@queue.details.sourcesAria": {
+    "sourceHash": "35af8a2"
+  },
+  "queue.details.currentFile": "当前文件",
+  "@queue.details.currentFile": {
+    "sourceHash": "5ac9225"
+  },
+  "queue.details.waitingSince": "开始等待",
+  "@queue.details.waitingSince": {
+    "sourceHash": "cd16bd6"
+  },
+  "queue.details.started": "开始时间",
+  "@queue.details.started": {
+    "sourceHash": "ecbc89c"
+  },
+  "queue.details.elapsed": "已用时间",
+  "@queue.details.elapsed": {
+    "sourceHash": "a194a68"
+  },
+  "queue.details.unavailable": "暂时无法显示详情。",
+  "@queue.details.unavailable": {
+    "sourceHash": "c285eec"
   }
 }

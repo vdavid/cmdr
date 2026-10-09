@@ -134,9 +134,12 @@ pub use state::abort_all_write_operations;
 // `LifecycleStatus` they carry is vocabulary and lives in `types`.
 // `init_operation_event_emitter` wires the emitter at startup; the command
 // helpers back the new `list_operations` / `cancel_operation(s)` IPC.
+// `OperationDetails` is the expanded queue row's on-demand answer
+// (`get_operation_details`), kept off the thin snapshot on purpose.
 pub use manager::{
-    OperationSnapshot, OperationSummaryText, OperationsChanged, PauseAllOutcome, PauseOutcome, cancel_operation,
-    cancel_operations, dismiss_all_failed_operations, dismiss_failed_operation, init_operation_event_emitter,
+    OperationDetails, OperationDetailsError, OperationPaths, OperationSnapshot, OperationSummaryText,
+    OperationsChanged, PauseAllOutcome, PauseOutcome, cancel_operation, cancel_operations,
+    dismiss_all_failed_operations, dismiss_failed_operation, get_operation_details, init_operation_event_emitter,
     list_operations, pause_all, pause_operation, resume_all, resume_operation,
 };
 // Managed instant mutations (rename / mkdir / mkfile) + rename validation. The
@@ -478,6 +481,7 @@ pub(super) fn path_summary(sources: &[PathBuf], destination: Option<&std::path::
     OperationSummaryText {
         source,
         destination: destination.map(name),
+        paths: OperationPaths::from_paths(sources, destination),
     }
 }
 

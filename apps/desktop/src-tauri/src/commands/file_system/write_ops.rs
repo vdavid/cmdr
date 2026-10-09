@@ -10,14 +10,15 @@ use crate::file_system::write_operations::{
     trash_routing_for_selection as ops_trash_routing_for_selection,
 };
 use crate::file_system::{
-    OperationEventSink, OperationSnapshot, PauseAllOutcome, PauseOutcome, ReadOnlySide, SortColumn, SortOrder,
-    TauriEventSink, WriteOperationConfig, WriteOperationError, WriteOperationStartResult,
-    cancel_operation as ops_cancel_operation, cancel_operations as ops_cancel_operations,
+    OperationDetails, OperationDetailsError, OperationEventSink, OperationSnapshot, PauseAllOutcome, PauseOutcome,
+    ReadOnlySide, SortColumn, SortOrder, TauriEventSink, WriteOperationConfig, WriteOperationError,
+    WriteOperationStartResult, cancel_operation as ops_cancel_operation, cancel_operations as ops_cancel_operations,
     cancel_write_operation as ops_cancel_write_operation, delete_files_start as ops_delete_files_start,
     dismiss_all_failed_operations as ops_dismiss_all_failed_operations,
-    dismiss_failed_operation as ops_dismiss_failed_operation, list_operations as ops_list_operations,
-    move_files_start as ops_move_files_start, pause_all as ops_pause_all, pause_operation as ops_pause_operation,
-    resume_all as ops_resume_all, resume_operation as ops_resume_operation, trash_files_start as ops_trash_files_start,
+    dismiss_failed_operation as ops_dismiss_failed_operation, get_operation_details as ops_get_operation_details,
+    list_operations as ops_list_operations, move_files_start as ops_move_files_start, pause_all as ops_pause_all,
+    pause_operation as ops_pause_operation, resume_all as ops_resume_all, resume_operation as ops_resume_operation,
+    trash_files_start as ops_trash_files_start,
 };
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -452,6 +453,17 @@ pub fn resolve_write_conflict(
 #[specta::specta]
 pub fn list_operations() -> Vec<OperationSnapshot> {
     ops_list_operations()
+}
+
+/// The full source and destination paths and the timing of one operation, for
+/// the queue window's expanded row. Fetched when a row opens, ❌ never carried
+/// on `operations-changed`: most rows are never expanded, and a selection can
+/// hold thousands of sources. An in-memory registry read, so no I/O and no
+/// timeout. `NotFound` means the operation already left (the row is going too).
+#[tauri::command]
+#[specta::specta]
+pub fn get_operation_details(operation_id: String) -> Result<OperationDetails, OperationDetailsError> {
+    ops_get_operation_details(&operation_id)
 }
 
 /// Cancels one operation, keeping already-copied files. A Queued op is dropped
