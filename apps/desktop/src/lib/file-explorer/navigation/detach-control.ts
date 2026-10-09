@@ -21,7 +21,7 @@
  * transfer touches the volume (can't be pressed, says why); idle.
  */
 import { tString } from '$lib/intl/messages.svelte'
-import { isAdbVolumeId } from '$lib/adb/adb-path-utils'
+import { volumeScheme } from '$lib/volume-scheme'
 import { showsDisconnect } from './connection-state'
 import { isVolumeEjectable } from './eject-predicate'
 import { isServerPlaceRow } from './server-row-actions'
@@ -86,7 +86,7 @@ function placeLook(volume: Pick<VolumeInfo, 'name'>, activity: DetachActivity): 
 
 /** A drive's or a phone's words. */
 function ejectLook(volume: Pick<VolumeInfo, 'id' | 'name'>, activity: DetachActivity): DetachButtonLook {
-  const onAPhone = isAdbVolumeId(volume.id)
+  const onAPhone = volumeScheme(volume.id) === 'adb'
   const icon = onAPhone ? 'unplug' : 'eject'
   const name = volume.name
   if (activity.ejecting) {

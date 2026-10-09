@@ -30,8 +30,9 @@ describe('volumeKindFor', () => {
     expect(volumeKindFor('mtp-336592896:65537', undefined, 'mobile_device')).toBe('mtp')
   })
 
-  it('classifies a device-only MTP id (with colon) as mtp', () => {
-    expect(volumeKindFor('0-5:65537', undefined, undefined)).toBe('mtp')
+  it('classifies an MTP id as mtp off its scheme alone, with no category', () => {
+    expect(volumeKindFor('mtp-336592896', undefined, undefined)).toBe('mtp')
+    expect(volumeKindFor('mtp-336592896:65537', undefined, undefined)).toBe('mtp')
   })
 
   it('classifies a "mtp-" prefixed id without colon as mtp', () => {

@@ -15,7 +15,8 @@ import { connectPlace, cancelPlaceConnect } from '$lib/servers/connect-flow'
 import { openSignInForPlace } from '$lib/servers/open-sign-in'
 import type { ConnectRefusalKind } from '$lib/servers/connect-refusals'
 import { wordPaneRefusal } from '$lib/servers/connect-refusals'
-import { isAtOrUnder, isSmbVolumeId, parseServerPath } from '$lib/servers/server-path-utils'
+import { isAtOrUnder, parseServerPath } from '$lib/servers/server-path-utils'
+import { volumeScheme } from '$lib/volume-scheme'
 import { resolveValidPath } from '../navigation/path-resolution'
 import { getAppLogger } from '$lib/logging/logger'
 import type { RemoteConnectState } from './remote-connect-state'
@@ -81,7 +82,7 @@ export function createPlaceConnect(deps: PlaceConnectDeps): PlaceConnect {
     // whose root and volume disagree lists one server under another's path, where
     // a write would reach the wrong one (QA round 4, R3-A). The live row's path is
     // `statfs`'s, so it is the one to trust.
-    if (info && isSmbVolumeId(volumeId) && isLiveSession(info.connectionState)) {
+    if (info && volumeScheme(volumeId) === 'smb' && isLiveSession(info.connectionState)) {
       const root = deps.getVolumePath()
       // ❗ Also when the root matches but the folder is outside the mount: a mount that
       // finished after a Cancel left the pane at the stale saved path, listing "Not
@@ -182,7 +183,7 @@ export function createPlaceConnect(deps: PlaceConnectDeps): PlaceConnect {
    * the pane's root.
    */
   async function landingOf(volumeId: string): Promise<string | null> {
-    if (!isSmbVolumeId(volumeId)) return null
+    if (volumeScheme(volumeId) !== 'smb') return null
     const live = deps.getCurrentVolumeInfo()
     if (live && isLiveSession(live.connectionState)) return live.path
     return (await deps.landingOf?.(volumeId)) ?? null
@@ -196,7 +197,7 @@ export function createPlaceConnect(deps: PlaceConnectDeps): PlaceConnect {
    * listing asks.
    */
   async function folderThatExists(volumeId: string, target: string, volumePath: string): Promise<string> {
-    if (!isSmbVolumeId(volumeId) || target === volumePath) return target
+    if (volumeScheme(volumeId) !== 'smb' || target === volumePath) return target
     const found = await resolveValidPath(target, { volumeRoot: volumePath, volumeId })
     return found && isAtOrUnder(found, volumePath) ? found : volumePath
   }
@@ -209,7 +210,7 @@ export function createPlaceConnect(deps: PlaceConnectDeps): PlaceConnect {
   ): RemoteConnectState {
     const parsed = parseServerPath(info.path)
     // An SMB share's path is its mount point, which names no server by design.
-    if (!parsed && !isSmbVolumeId(volumeId)) {
+    if (!parsed && volumeScheme(volumeId) !== 'smb') {
       log.warn('A place refused a dial but its path names no server: {path}', { path: info.path })
     }
     return {

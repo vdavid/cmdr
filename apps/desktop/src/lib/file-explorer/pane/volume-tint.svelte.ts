@@ -26,8 +26,7 @@
  */
 
 import { getSetting, onSpecificSettingChange, type VolumeTintColor } from '$lib/settings'
-import { isMtpVolumeId } from '$lib/mtp/mtp-path-utils'
-import { isAdbVolumeId } from '$lib/adb/adb-path-utils'
+import { volumeScheme } from '$lib/volume-scheme'
 import type { LocationCategory } from '$lib/file-explorer/types'
 import { hasColorMix } from '$lib/utils/webkit-compat'
 import { dependOn } from '$lib/utils/reactivity'
@@ -111,18 +110,14 @@ export function volumeKindFor(
   fsType: string | undefined,
   category: LocationCategory | undefined,
 ): VolumeKind {
-  if (isAdbVolumeId(volumeId) || fsType === 'adb') return 'adb'
-  if (isMtpVolumeId(volumeId) || category === 'mobile_device') return 'mtp'
+  const scheme = volumeScheme(volumeId)
+  if (scheme === 'adb' || fsType === 'adb') return 'adb'
+  if (scheme === 'mtp' || category === 'mobile_device') return 'mtp'
   if (fsType === 'sftp') return 'sftp'
   if (fsType === 'webdav') return 'webdav'
   if (fsType === 's3') return 's3'
   if (category === 'network' || fsType === 'smbfs') return 'smb'
-  if (
-    volumeId === 'root' ||
-    category === 'main_volume' ||
-    category === 'attached_volume' ||
-    category === 'cloud_drive'
-  ) {
+  if (scheme === 'root' || category === 'main_volume' || category === 'attached_volume' || category === 'cloud_drive') {
     return 'local'
   }
   return 'other'

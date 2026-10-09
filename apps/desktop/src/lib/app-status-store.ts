@@ -7,7 +7,7 @@ import { defaultSortOrders } from './file-explorer/types'
 import type { PersistedTab, PersistedPaneTabs } from './file-explorer/tabs/tab-types'
 import { resolveValidPath } from './file-explorer/navigation/path-resolution'
 import { isSnapshotPath } from './file-explorer/navigation/real-folder-history'
-import { isSmbVolumeId } from './servers/server-path-utils'
+import { volumeScheme } from './volume-scheme'
 import { resolveStorePath } from './settings/store-path'
 import type { Location } from './tauri-commands'
 
@@ -111,7 +111,7 @@ export async function resolvePersistedPath(
  * list in hand, and walks it with [`resolvePersistedPath`] when it isn't one.
  */
 async function resolveTabPath(location: Location, pathExistsFn: (p: string) => Promise<boolean>): Promise<string> {
-  if (location.volumeId === 'network' || isSmbVolumeId(location.volumeId)) return location.path
+  if (location.volumeId === 'network' || volumeScheme(location.volumeId) === 'smb') return location.path
   return await resolvePersistedPath(location.path, pathExistsFn)
 }
 

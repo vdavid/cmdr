@@ -16,8 +16,7 @@
 import { lookupRepoInfo, subscribeToRepo, unsubscribeFromRepo, type RepoInfo } from '../git/git-store.svelte'
 import { getSetting, onSpecificSettingChange } from '$lib/settings'
 import { dependOn } from '$lib/utils/reactivity'
-import { isMtpVolumeId } from '$lib/mtp'
-import { isAdbVolumeId } from '$lib/adb/adb-path-utils'
+import { isDeviceVolumeId } from '$lib/adb/adb-path-utils'
 import { pathCrossesArchiveBoundary } from './archive-paths'
 
 export interface GitBrowserSyncDeps {
@@ -76,16 +75,15 @@ export function createGitBrowserSync(deps: GitBrowserSyncDeps): GitBrowserSync {
     const gitFeaturesNeeded = showRepoChip || showGitStatusColumn
     // The virtual-volume half (network / search-results) folds into
     // `!getHasBackendListing()` (no real directory to host a repo). The
-    // `isMtpVolumeId` check STAYS: MTP DOES have a backend listing but git can't
-    // run over the MTP transport, so it's an MTP-path-specific skip, not a
+    // `isDeviceVolumeId` check STAYS: MTP and ADB DO have a backend listing but git
+    // can't run over either transport, so it's a device-specific skip, not a
     // capability question. Archives ALSO have a backend listing (so
     // `getHasBackendListing()` is true), but a git repo can't live inside a zip —
     // an explicit `pathCrossesArchiveBoundary` skip, since `hasBackendListing` doesn't cover
     // it (a `lookupRepoInfo` on a `…/foo.zip/…` path would walk out of the archive).
     if (
       !gitFeaturesNeeded ||
-      isMtpVolumeId(deps.getVolumeId()) ||
-      isAdbVolumeId(deps.getVolumeId()) || // same reason: git can't run over the ADB transport
+      isDeviceVolumeId(deps.getVolumeId()) ||
       !deps.getHasBackendListing() ||
       pathCrossesArchiveBoundary(path)
     ) {

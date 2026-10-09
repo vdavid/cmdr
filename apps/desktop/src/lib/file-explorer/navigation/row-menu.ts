@@ -42,7 +42,7 @@ import { showsDisconnect } from './connection-state'
 import { detachControlFor } from './detach-control'
 import { runDetach } from './detach-volume'
 import { isServerPlaceRow, runServerRowAction } from './server-row-actions'
-import { isSmbVolumeId } from '$lib/servers/server-path-utils'
+import { volumeScheme } from '$lib/volume-scheme'
 import type { VolumeInfo } from '../types'
 
 /** A per-row switch the submenu carries as a checkbox row. */
@@ -256,7 +256,8 @@ export function volumeRowMenu(volume: VolumeInfo, facts: VolumeRowFacts): RowMen
     if (detach) actions.push(detach)
     // A SAVED SMB share is pinnable like a server place (`docs/specs/saved-smb-shares.md`);
     // a mount nothing saved (Finder's) has no pin to move.
-    if (volume.category === 'network' && isSmbVolumeId(volume.id) && facts.isSaved) actions.push(pinAction(volume))
+    if (volume.category === 'network' && volumeScheme(volume.id) === 'smb' && facts.isSaved)
+      actions.push(pinAction(volume))
   }
   return { actions, fixes: rowFixes(volume, facts), settings: rowToggles(facts) }
 }

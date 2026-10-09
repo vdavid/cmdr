@@ -2,14 +2,7 @@
  * Tests for MTP path utility functions
  */
 import { describe, it, expect } from 'vitest'
-import {
-  parseMtpPath,
-  constructMtpPath,
-  isMtpVolumeId,
-  getMtpParentPath,
-  joinMtpPath,
-  getMtpDisplayPath,
-} from './mtp-path-utils'
+import { parseMtpPath, constructMtpPath, getMtpParentPath, joinMtpPath, getMtpDisplayPath } from './mtp-path-utils'
 
 describe('parseMtpPath', () => {
   it('parses a valid MTP path with device and storage IDs', () => {
@@ -75,24 +68,6 @@ describe('constructMtpPath', () => {
 
   it('handles single folder path', () => {
     expect(constructMtpPath('device', 1, 'Downloads')).toBe('mtp://device/1/Downloads')
-  })
-})
-
-describe('isMtpVolumeId', () => {
-  it('returns true for volume ID with colon format', () => {
-    expect(isMtpVolumeId('0-5:65537')).toBe(true)
-    expect(isMtpVolumeId('device-123:1')).toBe(true)
-  })
-
-  it('returns true for volume ID with mtp- prefix', () => {
-    expect(isMtpVolumeId('mtp-336592896')).toBe(true)
-    expect(isMtpVolumeId('mtp-336592896:65537')).toBe(true)
-  })
-
-  it('returns false for local volume IDs', () => {
-    expect(isMtpVolumeId('local')).toBe(false)
-    expect(isMtpVolumeId('/')).toBe(false)
-    expect(isMtpVolumeId('Macintosh HD')).toBe(false)
   })
 })
 

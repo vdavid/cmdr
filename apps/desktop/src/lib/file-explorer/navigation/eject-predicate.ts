@@ -1,6 +1,6 @@
 import type { VolumeInfo } from '../types'
 import { isLiveSession, showsDisconnect } from './connection-state'
-import { isAdbVolumeId } from '$lib/adb/adb-path-utils'
+import { volumeScheme } from '$lib/volume-scheme'
 
 /**
  * Whether the volume picker offers this row an eject-or-disconnect control at all.
@@ -29,6 +29,6 @@ import { isAdbVolumeId } from '$lib/adb/adb-path-utils'
  */
 export function isVolumeEjectable(volume: VolumeInfo | undefined): boolean {
   if (!volume) return false
-  if (isAdbVolumeId(volume.id)) return volume.deviceReadiness?.kind === 'ready'
+  if (volumeScheme(volume.id) === 'adb') return volume.deviceReadiness?.kind === 'ready'
   return volume.isEjectable || isLiveSession(volume.connectionState) || showsDisconnect(volume.connectionState)
 }

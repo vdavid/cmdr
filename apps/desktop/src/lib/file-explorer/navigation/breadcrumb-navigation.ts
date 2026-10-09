@@ -17,8 +17,9 @@
  * a real path) is never clickable.
  */
 
-import { isMtpVolumeId, parseMtpPath, constructMtpPath } from '$lib/mtp'
-import { constructAdbPath, isAdbVolumeId, parseAdbPath } from '$lib/adb/adb-path-utils'
+import { parseMtpPath, constructMtpPath } from '$lib/mtp'
+import { volumeScheme } from '$lib/volume-scheme'
+import { constructAdbPath, parseAdbPath } from '$lib/adb/adb-path-utils'
 import type { PathSegment } from './path-segments'
 
 export interface BreadcrumbNavContext {
@@ -53,13 +54,14 @@ function innerPath(segments: PathSegment[], index: number): string {
 function targetFor(segments: PathSegment[], index: number, ctx: BreadcrumbNavContext): string | null {
   if (ctx.isSearchResults) return null
 
-  if (isMtpVolumeId(ctx.volumeId)) {
+  const scheme = volumeScheme(ctx.volumeId)
+  if (scheme === 'mtp') {
     const parsed = parseMtpPath(ctx.currentPath)
     if (!parsed) return null
     return constructMtpPath(parsed.deviceId, parsed.storageId, innerPath(segments, index))
   }
 
-  if (isAdbVolumeId(ctx.volumeId)) {
+  if (scheme === 'adb') {
     const parsed = parseAdbPath(ctx.currentPath)
     if (!parsed) return null
     return constructAdbPath(parsed.serial, innerPath(segments, index))

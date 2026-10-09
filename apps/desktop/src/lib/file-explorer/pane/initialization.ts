@@ -16,7 +16,8 @@ import {
   checkFullDiskAccessQuiet,
   listSavedServers,
 } from '$lib/tauri-commands'
-import { isAtOrUnder, isSmbVolumeId } from '$lib/servers/server-path-utils'
+import { isAtOrUnder } from '$lib/servers/server-path-utils'
+import { volumeScheme } from '$lib/volume-scheme'
 import { getAppLogger } from '$lib/logging/logger'
 import { applyFirstRunLayout, resolveFirstRunLayout } from './first-run-layout'
 import { createTabManagerFromPersisted } from './tab-operations'
@@ -200,12 +201,12 @@ export async function loadPersistedState(): Promise<InitializedState> {
  */
 async function unmountedShareRoots(tabs: PersistedTab[]): Promise<Map<string, string>> {
   const roots = new Map<string, string>()
-  if (!tabs.some((tab) => isSmbVolumeId(tab.volumeId))) return roots
+  if (!tabs.some((tab) => volumeScheme(tab.volumeId) === 'smb')) return roots
   try {
     for (const server of await listSavedServers()) {
       for (const place of server.places) {
         // A share no mount went through has an `smb://` root and no folder to land in.
-        if (isSmbVolumeId(place.volumeId) && !place.connected && place.appRoot.startsWith('/')) {
+        if (volumeScheme(place.volumeId) === 'smb' && !place.connected && place.appRoot.startsWith('/')) {
           roots.set(place.volumeId, place.appRoot)
         }
       }
@@ -229,7 +230,7 @@ async function restoreShareTab(
   tab: PersistedTab,
   shareRoots: Map<string, string>,
 ): Promise<{ kept: boolean; path: string }> {
-  if (!isSmbVolumeId(tab.volumeId)) return { kept: false, path: tab.path }
+  if (volumeScheme(tab.volumeId) !== 'smb') return { kept: false, path: tab.path }
   const root = shareRoots.get(tab.volumeId)
   if (root && isAtOrUnder(tab.path, root)) return { kept: true, path: tab.path }
   return { kept: false, path: await resolvePersistedPath(tab.path, pathExists) }

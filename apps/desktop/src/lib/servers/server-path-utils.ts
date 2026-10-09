@@ -23,6 +23,8 @@
  * this spelling and the server's own is `cmdr_fs::volume::remote_paths`.
  */
 
+import { volumeScheme } from '$lib/volume-scheme'
+
 /** The protocols that address a place by a scheme path. */
 export type ServerPathProtocol = 'sftp' | 'webdav' | 's3'
 
@@ -79,16 +81,6 @@ export function isServerVolumeId(volumeId: string): boolean {
 }
 
 /**
- * Whether a volume id names an SMB share (`smb-…`, `cmdr_fs::volume::smb_volume_id`),
- * mounted or saved. ❗ Not a server PLACE in `isServerVolumeId`'s sense: a share's
- * session is a mount, which `disconnectPlace` doesn't speak, but a saved one is
- * dialed through the same `connectSavedPlace` and pinned through the same writer.
- */
-export function isSmbVolumeId(volumeId: string): boolean {
-  return volumeId.startsWith('smb-')
-}
-
-/**
  * Whether `path` is `root` or a folder inside it, by whole components: a share's
  * mount at `/Volumes/naspi` doesn't hold `/Volumes/naspi-1`.
  */
@@ -105,7 +97,29 @@ export function isAtOrUnder(path: string, root: string): boolean {
  * SFTP puts the wrong word in the sheet's header and in the refusal under it.
  */
 export function serverProtocolOfVolumeId(volumeId: string): ServerPathProtocol | null {
-  return SERVER_SCHEMES.find((scheme) => volumeId.startsWith(`${scheme}-`)) ?? null
+  const scheme = volumeScheme(volumeId)
+  switch (scheme) {
+    case 'sftp':
+    case 'webdav':
+    case 's3':
+      return scheme
+    // An SMB share isn't a server place: its session is a mount, which
+    // `disconnectPlace` doesn't speak.
+    case 'smb':
+    case 'root':
+    case 'local':
+    case 'path':
+    case 'mtp':
+    case 'adb':
+    case 'cloud':
+    case 'favorite':
+    case 'unknown':
+      return null
+    default: {
+      const unhandled: never = scheme
+      return unhandled
+    }
+  }
 }
 
 /**

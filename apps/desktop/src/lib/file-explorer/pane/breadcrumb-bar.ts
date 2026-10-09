@@ -10,8 +10,9 @@
 
 import { showBreadcrumbContextMenu } from '$lib/tauri-commands'
 import type { VolumeInfo } from '../types'
-import { isMtpVolumeId, getMtpDisplayPath } from '$lib/mtp'
-import { getAdbDisplayPath, isAdbVolumeId } from '$lib/adb/adb-path-utils'
+import { getMtpDisplayPath } from '$lib/mtp'
+import { volumeScheme } from '$lib/volume-scheme'
+import { getAdbDisplayPath } from '$lib/adb/adb-path-utils'
 import { boundShortcuts } from '$lib/shortcuts'
 import { isVolumeEjectable } from '../navigation/eject-predicate'
 import type { VolumeChangePayload } from './types'
@@ -46,8 +47,9 @@ export function breadcrumbDisplayPath(input: BreadcrumbDisplayPathInput): string
   if (input.isSearchResultsView) {
     return input.searchLabel ?? 'Search'
   }
-  if (isMtpVolumeId(volumeId)) return getMtpDisplayPath(currentPath)
-  if (isAdbVolumeId(volumeId)) return getAdbDisplayPath(currentPath)
+  const scheme = volumeScheme(volumeId)
+  if (scheme === 'mtp') return getMtpDisplayPath(currentPath)
+  if (scheme === 'adb') return getAdbDisplayPath(currentPath)
 
   // For non-root volumes, strip the volume path prefix
   if (volumePath !== '/') {
@@ -113,7 +115,7 @@ export function createBreadcrumbHandlers(deps: BreadcrumbHandlerDeps): Breadcrum
     // Don't load directory for network views (they handle their own data)
     // or device-only MTP views (they need connection first via auto-connect effect)
     // But DO load for connected MTP views (storage-specific volume ID contains ":")
-    const isDeviceOnlyMtp = isMtpVolumeId(newVolumeId) && !newVolumeId.includes(':')
+    const isDeviceOnlyMtp = volumeScheme(newVolumeId) === 'mtp' && !newVolumeId.includes(':')
     // The disk space follows the pane's volume on its own (`volume-space.svelte.ts`).
     if (newVolumeId !== 'network' && !isDeviceOnlyMtp) {
       deps.loadDirectory(targetPath)

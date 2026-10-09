@@ -508,10 +508,10 @@ There's no Search-specific capabilities shim — `lib/search/capabilities.ts` ke
   `RemoteConnectState`, the gave-up banner, `loading` / `friendlyError` / `error`) stay per-feature and gate IN FRONT of
   the descriptor, byte-identical precedence. This is a derived discriminant, NOT a new component. The git lookup and the
   type-to-jump keystroke read `!caps.hasBackendListing` for the "is there a real directory" half; the git lookup's
-  `isMtpVolumeId(volumeId)` skip STAYS — MTP has a backend listing but git can't run on it. The dir-exists poll reads
-  its own capability instead, `paneFolderIsPolledForDeletion` (§ "Volume capabilities"). `caps` is derived once per pane
-  (`caps = $derived(capabilitiesForPane(volumeId, currentPath))`); the named `isNetworkView` / `isSearchResultsView`
-  deriveds re-source off `caps.kind`.
+  `isDeviceVolumeId(volumeId)` skip STAYS — MTP and ADB have a backend listing but git can't run on either. The
+  dir-exists poll reads its own capability instead, `paneFolderIsPolledForDeletion` (§ "Volume capabilities"). `caps` is
+  derived once per pane (`caps = $derived(capabilitiesForPane(volumeId, currentPath))`); the named `isNetworkView` /
+  `isSearchResultsView` deriveds re-source off `caps.kind`.
 
 ### A pane on a saved place
 
@@ -615,15 +615,15 @@ questions").
   stands on a storage that's already open.
 
 **The volume-id string compares that REMAIN are not guards — don't "finish the sweep".** A grep for
-`=== 'search-results'` / `=== 'network'` / `startsWith('mtp-')` (and the `!==` forms) across `apps/desktop/src/` returns
-hits, and every one is a classifier input, a namespace mechanic, or a display choice. Forcing one of those through the
-capability record is the "differently complicated" failure mode to avoid:
+`=== 'search-results'` / `=== 'network'` / `volumeScheme(…) === 'mtp'` (and the `!==` forms) across `apps/desktop/src/`
+returns hits, and every one is a classifier input, a namespace mechanic, or a display choice. Forcing one of those
+through the capability record is the "differently complicated" failure mode to avoid:
 
 - **Classifier internals (the inputs that FEED `volumeKindOf`).** `volume-capabilities.ts` (the two virtual-id checks),
   `volume-tint.svelte.ts::volumeKindFor` (`fsType === 'sftp'` / `'webdav'` first, then
   `category === 'network' || fsType === 'smbfs'`), `volume-grouping.ts` (`category === 'network'` sidebar grouping),
-  `mtp-path-utils.ts::isMtpVolumeId` (`startsWith('mtp-')`). These ARE the classifier — converting them would be
-  circular.
+  `lib/volume-scheme.ts::volumeScheme` (the one reader of an id's `{tag}-` prefix). These ARE the classifier —
+  converting them would be circular.
 - **Namespace / path mechanics (which string scheme, not what's allowed).** `navigate.ts` and `navigate-refusals.ts`
   (the on-network / on-MTP refusal sources + the `smb://` / `search-results://` drop-foreign-listings prefix +
   `validateMtpNavigation` path parse), `DualPaneExplorer.svelte` (synthetic `smb://` path/name synthesis + the

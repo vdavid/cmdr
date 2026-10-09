@@ -7,13 +7,14 @@
  *   - adb://R58M12345 (the device's `/`)
  *   - adb://R58M12345/sdcard/DCIM (a folder on the device)
  *
- * Volume id format: `adb-{slug}-{digest}`. No colon, so `isMtpVolumeId` stays
- * false for it and the two families never shadow each other.
+ * Volume id format: `adb-{slug}-{digest}`; `volumeScheme` (`$lib/volume-scheme`)
+ * classifies it.
  *
  * Contract: `crates/cmdr-adb/DETAILS.md` § "The `Volume` answers, and why".
  */
 
-import { getMtpDisplayPath, isMtpVolumeId } from '$lib/mtp/mtp-path-utils'
+import { getMtpDisplayPath } from '$lib/mtp/mtp-path-utils'
+import { volumeScheme } from '$lib/volume-scheme'
 
 const ADB_SCHEME = 'adb://'
 const MTP_SCHEME = 'mtp://'
@@ -43,11 +44,6 @@ export function constructAdbPath(serial: string, path: string = ''): string {
   if (!path || path === '/') return base
   const normalizedPath = path.startsWith('/') ? path.slice(1) : path
   return `${base}/${normalizedPath}`
-}
-
-/** Whether a volume id names an ADB volume (`adb-…`). */
-export function isAdbVolumeId(volumeId: string): boolean {
-  return volumeId.startsWith('adb-')
 }
 
 /** Whether a path is on the `adb://` scheme. */
@@ -88,7 +84,8 @@ export function getAdbDisplayPath(path: string): string {
  * no trash, no Finder reveal, no OS-visible path, no git over the transport.
  */
 export function isDeviceVolumeId(volumeId: string): boolean {
-  return isMtpVolumeId(volumeId) || isAdbVolumeId(volumeId)
+  const scheme = volumeScheme(volumeId)
+  return scheme === 'mtp' || scheme === 'adb'
 }
 
 /** Whether a path is on one of the device schemes (`mtp://` or `adb://`). */

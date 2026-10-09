@@ -88,7 +88,7 @@
     import { servicesSelectionForPane } from './services-selection'
 
     const log = getAppLogger('fileExplorer')
-    import { isMtpVolumeId } from '$lib/mtp'
+    import { volumeScheme } from '$lib/volume-scheme'
     import { getPaneTintBg, getPaneTintName } from './volume-tint.svelte'
     import { createCursorNavKeys } from './cursor-nav-keys'
     import { createSearchPaneKeys } from './search-pane-keys'
@@ -611,7 +611,7 @@
     )
 
     // Check if we're viewing an MTP device
-    const isMtpView = $derived(isMtpVolumeId(volumeId))
+    const isMtpView = $derived(volumeScheme(volumeId) === 'mtp')
 
     /**
      * The KIND-structural alt-view selector for the `{#if}` chain below. It picks

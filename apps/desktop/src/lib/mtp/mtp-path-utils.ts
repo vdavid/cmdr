@@ -67,13 +67,6 @@ export function constructMtpPath(deviceId: string, storageId: number, path: stri
 }
 
 /**
- * Checks if a volume ID represents an MTP volume.
- */
-export function isMtpVolumeId(volumeId: string): boolean {
-  return volumeId.includes(':') || volumeId.startsWith('mtp-')
-}
-
-/**
  * Gets the parent path for an MTP path.
  * Returns the storage root if already at root.
  */

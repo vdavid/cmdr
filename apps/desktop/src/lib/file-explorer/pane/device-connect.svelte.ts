@@ -29,7 +29,8 @@
 import { untrack } from 'svelte'
 import { asAdbConnectError, cancelAdbConnect, connectAdbDevice, newAdbAttemptId } from '$lib/tauri-commands'
 import { openSettingsWindow } from '$lib/settings/settings-window'
-import { isAdbVolumeId, parseAdbPath } from '$lib/adb/adb-path-utils'
+import { parseAdbPath } from '$lib/adb/adb-path-utils'
+import { volumeScheme } from '$lib/volume-scheme'
 import { readAdbConnectOutcome, waitingForTheAllowTap } from '$lib/adb/adb-connect-errors'
 import { tString } from '$lib/intl/messages.svelte'
 import { getAppLogger } from '$lib/logging/logger'
@@ -86,13 +87,13 @@ export function createDeviceConnect(deps: DeviceConnectDeps): DeviceConnect {
   let handled: string | null = null
 
   const holdsListing = $derived(
-    isAdbVolumeId(deps.getVolumeId()) && deps.getCurrentVolumeInfo() !== null && opened !== deps.getVolumeId(),
+    volumeScheme(deps.getVolumeId()) === 'adb' && deps.getCurrentVolumeInfo() !== null && opened !== deps.getVolumeId(),
   )
 
   $effect(() => {
     const volumeId = deps.getVolumeId()
     const info = deps.getCurrentVolumeInfo()
-    if (!isAdbVolumeId(volumeId) || !info) {
+    if (volumeScheme(volumeId) !== 'adb' || !info) {
       // A local volume, a server, or a phone that left the list. Nothing to hold
       // and nothing to remember: a phone that comes back is dialed afresh.
       state = null

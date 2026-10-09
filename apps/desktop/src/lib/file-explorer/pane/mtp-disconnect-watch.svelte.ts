@@ -9,7 +9,7 @@
  */
 
 import { onMtpDeviceDisconnected } from '$lib/tauri-commands'
-import { isMtpVolumeId } from '$lib/mtp'
+import { volumeScheme } from '$lib/volume-scheme'
 import { getAppLogger } from '$lib/logging/logger'
 
 const log = getAppLogger('fileExplorer')
@@ -29,7 +29,7 @@ export interface MtpDisconnectWatchDeps {
  * `cmdr_fs::volume::mtp_ids::device_id_of_volume`.
  */
 export function mtpDeviceIdOfVolume(volumeId: string): string | null {
-  if (!isMtpVolumeId(volumeId) || !volumeId.includes(':')) return null
+  if (volumeScheme(volumeId) !== 'mtp' || !volumeId.includes(':')) return null
   return volumeId.slice(0, volumeId.lastIndexOf(':'))
 }
 

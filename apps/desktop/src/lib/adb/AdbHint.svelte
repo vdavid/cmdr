@@ -5,7 +5,7 @@
     import { getSetting, setSetting } from '$lib/settings'
     import { getVolumes } from '$lib/stores/volume-store.svelte'
     import { openExternalUrl } from '$lib/tauri-commands'
-    import { isMtpVolumeId } from '$lib/mtp'
+    import { volumeScheme } from '$lib/volume-scheme'
     import { getAppLogger } from '$lib/logging/logger'
     import { shouldShowAdbHint } from './should-show-adb-hint'
 
@@ -49,7 +49,7 @@
 
     const visible = $derived(
         shouldShowAdbHint({
-            isMtpPane: isMtpVolumeId(volumeId),
+            isMtpPane: volumeScheme(volumeId) === 'mtp',
             deviceName,
             deviceNames: volumes.filter((v) => v.category === 'mobile_device').map((v) => v.name),
             adbEnabled: getSetting('fileOperations.adbEnabled'),

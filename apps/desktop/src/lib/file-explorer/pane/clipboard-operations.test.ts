@@ -87,7 +87,7 @@ vi.mock('./transfer-operations', () => ({
 // The MTP / snapshot refusals read the capability table via `capabilitiesFor`,
 // which resolves fsType/category from the volume store for real ids. The two
 // virtual ids ('network' / 'search-results') short-circuit before the lookup;
-// MTP ids ('mtp-…') classify via `isMtpVolumeId` without needing the store.
+// MTP ids ('mtp-…') classify via `volumeScheme` without needing the store.
 // An empty store is enough for every id this suite exercises.
 const volumeStore = vi.hoisted(() => ({ list: [] as VolumeInfo[] }))
 vi.mock('$lib/stores/volume-store.svelte', () => ({ getVolumes: () => volumeStore.list }))
@@ -107,7 +107,7 @@ vi.mock('$lib/logging/logger', () => ({
 
 import { createClipboardOperations } from './clipboard-operations'
 // The real classifier (volume store is mocked to empty; virtual ids short-circuit,
-// MTP ids classify via `isMtpVolumeId`), used by the equivalence pin below.
+// MTP ids classify via `volumeScheme`), used by the equivalence pin below.
 import { capabilitiesFor as capabilitiesForReal } from './volume-capabilities'
 
 /** Builds a `FilePaneAPI` stub exposing only the members the clipboard path reads. */
@@ -909,10 +909,9 @@ describe('getSnapshotClipboardPaths', () => {
  * Pin that the two agree across every volumeId a focused pane can hold when a
  * clipboard op fires, so no user-visible toast changes.
  *
- * The capability MTP arm (`isMtpVolumeId || category === 'mobile_device'`) is
- * BROADER than `startsWith('mtp-')` (it also catches colon-form ids), but no
- * live clipboard-time pane is colon-form-only: real MTP panes carry
- * `mtp-{location}` / `mtp-{device}:{storage}` ids, both `startsWith('mtp-')`.
+ * The capability MTP arm (`volumeScheme(id) === 'mtp' || category === 'mobile_device'`)
+ * reads the same `mtp-` prefix: real MTP panes carry `mtp-{location}` /
+ * `mtp-{device}:{storage}` ids, both `startsWith('mtp-')`.
  * And `network` / `search-results` (which also lack a system clipboard) must
  * NOT be MTP-refused — `kind === 'mtp'` keeps them out, unlike a generalized
  * "no system clipboard" capability would.

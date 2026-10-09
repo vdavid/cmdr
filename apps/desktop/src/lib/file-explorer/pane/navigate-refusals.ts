@@ -4,7 +4,7 @@
  * checks of the in-place arm. Split out of `navigate.ts` for length; the strings are
  * contract (L12), byte-pinned by `navigate.refusals.test.ts`.
  */
-import { isAdbVolumeId } from '$lib/adb/adb-path-utils'
+import { volumeScheme } from '$lib/volume-scheme'
 import { isServerPath, isServerVolumeId, isUnderServerRoot } from '$lib/servers/server-path-utils'
 
 /** Why a synchronous navigation refused. `message` is the exact current string — contract (L12). */
@@ -83,7 +83,7 @@ export function validateMtpNavigation(
     if (!pathDeviceId || !pathStorageId || volumeId !== `${pathDeviceId}:${pathStorageId}`) {
       return { kind: 'mtp-unconnected', message: `Pane is not on this MTP volume — call select_volume first.` }
     }
-  } else if (volumeId.includes(':') && volumeId.startsWith('mtp-')) {
+  } else if (volumeScheme(volumeId) === 'mtp' && volumeId.includes(':')) {
     return {
       kind: 'mtp-unconnected',
       message: `Pane is on the ${volumeName ?? volumeId} MTP volume. Use select_volume to switch to a local volume first.`,
@@ -106,10 +106,10 @@ export function validateAdbNavigation(
     // The volume id (`adb-<slug>-<digest>`) isn't derivable from the serial; the
     // volume's registered root (`adb://<serial>`) is the link.
     const serial = /^adb:\/\/([^/]+)/.exec(path)?.[1]
-    if (!serial || !isAdbVolumeId(volumeId) || deps.getVolumePathById(volumeId) !== `adb://${serial}`) {
+    if (!serial || volumeScheme(volumeId) !== 'adb' || deps.getVolumePathById(volumeId) !== `adb://${serial}`) {
       return { kind: 'adb-unconnected', message: 'Pane is not on this ADB volume. Call select_volume first.' }
     }
-  } else if (isAdbVolumeId(volumeId)) {
+  } else if (volumeScheme(volumeId) === 'adb') {
     return {
       kind: 'adb-unconnected',
       message: `Pane is on the ${volumeName ?? volumeId} ADB volume. Use select_volume to switch to a local volume first.`,

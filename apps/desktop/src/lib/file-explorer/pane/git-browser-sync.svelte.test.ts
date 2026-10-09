@@ -20,11 +20,11 @@ import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vite
 import { flushSync } from 'svelte'
 import type { RepoInfo } from '../git/git-store.svelte'
 
-const { gitStore, settingsListeners, settingsValues, isMtpVolumeIdSpy } = vi.hoisted<{
+const { gitStore, settingsListeners, settingsValues, isDeviceVolumeIdSpy } = vi.hoisted<{
   gitStore: { lookupRepoInfo: Mock; subscribeToRepo: Mock; unsubscribeFromRepo: Mock }
   settingsListeners: Record<string, (v: boolean) => void>
   settingsValues: Record<string, boolean>
-  isMtpVolumeIdSpy: Mock
+  isDeviceVolumeIdSpy: Mock
 }>(() => ({
   gitStore: {
     lookupRepoInfo: vi.fn(),
@@ -36,7 +36,7 @@ const { gitStore, settingsListeners, settingsValues, isMtpVolumeIdSpy } = vi.hoi
     'fileExplorer.git.showRepoChip': true,
     'fileExplorer.git.showStatusColumn': true,
   },
-  isMtpVolumeIdSpy: vi.fn((id: string) => id.startsWith('mtp-')),
+  isDeviceVolumeIdSpy: vi.fn(),
 }))
 
 vi.mock('../git/git-store.svelte', () => ({
@@ -51,7 +51,12 @@ vi.mock('$lib/settings', () => ({
     return () => delete settingsListeners[id]
   },
 }))
-vi.mock('$lib/mtp', () => ({ isMtpVolumeId: isMtpVolumeIdSpy }))
+// The real predicate, spied on so a test can tell the sync ran.
+vi.mock('$lib/adb/adb-path-utils', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('$lib/adb/adb-path-utils')>()
+  isDeviceVolumeIdSpy.mockImplementation(actual.isDeviceVolumeId)
+  return { ...actual, isDeviceVolumeId: isDeviceVolumeIdSpy }
+})
 
 import { createGitBrowserSync, type GitBrowserSyncDeps } from './git-browser-sync.svelte'
 
@@ -182,7 +187,7 @@ describe('createGitBrowserSync', () => {
   it('skips the lookup on a volume without a backend listing', async () => {
     create({ path: 'smb://host', volumeId: 'network', hasBackendListing: false })
     await vi.waitFor(() => {
-      expect(isMtpVolumeIdSpy).toHaveBeenCalled()
+      expect(isDeviceVolumeIdSpy).toHaveBeenCalled()
     })
     expect(gitStore.lookupRepoInfo).not.toHaveBeenCalled()
   })

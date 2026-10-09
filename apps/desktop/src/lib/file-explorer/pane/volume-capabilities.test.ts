@@ -255,7 +255,7 @@ describe('volumeKindOf — the unified superset classifier', () => {
     expect(volumeKindOf('volumesnaspi', 'smbfs', 'network')).toBe('smb')
     expect(volumeKindOf('some-id', 'smbfs', undefined)).toBe('smb')
     expect(volumeKindOf('mtp-336592896:65537', undefined, 'mobile_device')).toBe('mtp')
-    expect(volumeKindOf('0-5:65537', undefined, undefined)).toBe('mtp')
+    expect(volumeKindOf('mtp-336592896:65537', undefined, undefined)).toBe('mtp')
     expect(volumeKindOf('adb-pixel-7-a1b2c3d', 'adb', 'mobile_device')).toBe('adb')
   })
 

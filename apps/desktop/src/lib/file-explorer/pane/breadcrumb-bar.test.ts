@@ -15,14 +15,14 @@ import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest'
 const { ipc, eject, mtp, volumeStore, boundCombos } = vi.hoisted<{
   ipc: { showBreadcrumbContextMenu: Mock }
   eject: { isVolumeEjectable: Mock }
-  mtp: { isMtpVolumeId: Mock; getMtpDisplayPath: Mock }
+  mtp: { getMtpDisplayPath: Mock }
   volumeStore: { getVolumes: Mock }
   /** What the registry answers here; the menu's "Copy path" label comes from it. */
   boundCombos: Record<string, string>
 }>(() => ({
   ipc: { showBreadcrumbContextMenu: vi.fn() },
   eject: { isVolumeEjectable: vi.fn() },
-  mtp: { isMtpVolumeId: vi.fn(), getMtpDisplayPath: vi.fn() },
+  mtp: { getMtpDisplayPath: vi.fn() },
   volumeStore: { getVolumes: vi.fn() },
   boundCombos: { 'file.copyCurrentDirectoryPath': '⌘⇧C' },
 }))
@@ -30,7 +30,7 @@ const { ipc, eject, mtp, volumeStore, boundCombos } = vi.hoisted<{
 vi.mock('$lib/tauri-commands', () => ({ showBreadcrumbContextMenu: ipc.showBreadcrumbContextMenu }))
 vi.mock('$lib/shortcuts', () => ({ boundShortcuts: () => boundCombos }))
 vi.mock('../navigation/eject-predicate', () => ({ isVolumeEjectable: eject.isVolumeEjectable }))
-vi.mock('$lib/mtp', () => ({ isMtpVolumeId: mtp.isMtpVolumeId, getMtpDisplayPath: mtp.getMtpDisplayPath }))
+vi.mock('$lib/mtp', () => ({ getMtpDisplayPath: mtp.getMtpDisplayPath }))
 vi.mock('$lib/stores/volume-store.svelte', () => ({ getVolumes: volumeStore.getVolumes }))
 
 import { breadcrumbDisplayPath, createBreadcrumbHandlers, type BreadcrumbHandlerDeps } from './breadcrumb-bar'
@@ -38,7 +38,6 @@ import { breadcrumbDisplayPath, createBreadcrumbHandlers, type BreadcrumbHandler
 describe('breadcrumbDisplayPath', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mtp.isMtpVolumeId.mockReturnValue(false)
   })
 
   it('replaces the home prefix with `~` on the root volume', () => {
@@ -120,7 +119,6 @@ describe('breadcrumbDisplayPath', () => {
   })
 
   it('uses the MTP display form on an MTP volume', () => {
-    mtp.isMtpVolumeId.mockReturnValue(true)
     mtp.getMtpDisplayPath.mockReturnValue('Phone/DCIM')
     expect(
       breadcrumbDisplayPath({
@@ -169,7 +167,6 @@ describe('createBreadcrumbHandlers', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     eject.isVolumeEjectable.mockReturnValue(false)
-    mtp.isMtpVolumeId.mockReturnValue(false)
     ipc.showBreadcrumbContextMenu.mockResolvedValue(undefined)
     volumes = [{ id: 'ext', name: 'External' }]
     volumeStore.getVolumes.mockImplementation(() => volumes)
@@ -238,13 +235,11 @@ describe('createBreadcrumbHandlers', () => {
     })
 
     it('skips the load for a device-only MTP target, which needs connecting first', () => {
-      mtp.isMtpVolumeId.mockReturnValue(true)
       createBreadcrumbHandlers(deps).handleVolumeChange({ volumeId: 'mtp-2097152', volumePath: '/', targetPath: '/' })
       expect(calls.loadDirectory).not.toHaveBeenCalled()
     })
 
     it('loads a connected MTP storage target', () => {
-      mtp.isMtpVolumeId.mockReturnValue(true)
       createBreadcrumbHandlers(deps).handleVolumeChange({
         volumeId: 'mtp-2097152:65537',
         volumePath: '/',

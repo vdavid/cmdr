@@ -5,7 +5,6 @@ import {
   getAdbParentPath,
   getDeviceDisplayPath,
   isAdbPath,
-  isAdbVolumeId,
   isDeviceScheme,
   isDeviceVolumeId,
   joinAdbPath,
@@ -86,12 +85,6 @@ describe('getAdbDisplayPath', () => {
 })
 
 describe('the device-family predicates', () => {
-  it('isAdbVolumeId matches only the adb- prefix', () => {
-    expect(isAdbVolumeId('adb-pixel-7-a1b2c3d')).toBe(true)
-    expect(isAdbVolumeId('mtp-336592896:65537')).toBe(false)
-    expect(isAdbVolumeId('root')).toBe(false)
-  })
-
   it('isAdbPath matches only the adb:// scheme', () => {
     expect(isAdbPath('adb://R58M12345/sdcard')).toBe(true)
     expect(isAdbPath('mtp://0-5/65537')).toBe(false)
