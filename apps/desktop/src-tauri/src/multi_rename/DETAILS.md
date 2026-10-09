@@ -57,9 +57,13 @@ subfolders (the executor's one-parent rule refuses it today), "next step" chaini
   `get_multi_rename_preview_rows` serves the rest of the stored preview a page (≤ `MAX_PAGE`) at a time, so a
   200,000-file folder never ships its names to the frontend and back. Only the latest preview is stored (ids are
   handed out at request time, so a slow older one never replaces it); paging a replaced one is `PreviewOutOfDate`.
+  A page counts through every row or, with `PreviewFilter::Problems`, the problem rows alone (`RowStatus::is_problem`),
+  so the sheet's "Problems only" list never needs the whole preview. Each row carries its entry's `icon_id` and
+  `is_directory` for the sheet's file glyph (`None` for a `Missing` row); they're part of the apply proof's equality,
+  which is right: a name that turned from a file into a folder isn't the row the user saw.
 - **Decision: apply recomputes, then requires the preview the user saw.** `apply_multi_rename(session, previewId)`
   reruns that preview's spec over the session's files and refuses with `PreviewOutOfDate` unless its ready rows are
-  exactly the stored ones (same row, old name, new name). Why: the folder can change between the preview and Start.
+  exactly the stored ones (same row, names, status, icon, and kind). Why: the folder can change between the preview and Start.
 - Sessions live in a process-wide map, at most `MAX_SESSIONS`; opening one drops sessions idle past `IDLE_LIMIT`,
   then the least recently used. The sheet closes its session (`close_multi_rename`) when it closes.
 - Plain search: a `*` is lazy (`IMG_*_` ends at the first `_`) except a trailing one, which runs to the end. Search
