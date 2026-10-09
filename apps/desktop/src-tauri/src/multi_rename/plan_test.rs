@@ -249,5 +249,5 @@ fn a_long_chain_blocked_at_its_end_settles_in_linear_work() {
     assert!(out.iter().all(|(_, status)| *status == RowStatus::TargetExists));
     // Each sibling once, and each row's old and new name once.
     let folds = FOLDS.with(Cell::get);
-    assert!(folds <= folder.len() + 2 * N, "{folds} folds");
+    assert!(folds <= folder.len() + 2 * N, "fold count: {folds}");
 }
