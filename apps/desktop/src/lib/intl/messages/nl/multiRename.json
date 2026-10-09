@@ -204,10 +204,6 @@
   "@multiRename.error.timedOut": {
     "sourceHash": "a336ee5"
   },
-  "multiRename.counts": "{ready, plural, one {# naam te wijzigen} other {# namen te wijzigen}} · {unchanged, plural, one {# naam ongewijzigd} other {# namen ongewijzigd}} · {problems, plural, one {# probleem} other {# problemen}}",
-  "@multiRename.counts": {
-    "sourceHash": "7464938"
-  },
   "multiRename.cancel": "Annuleer",
   "@multiRename.cancel": {
     "sourceHash": "19766ed"
@@ -263,10 +259,6 @@
   "multiRename.reason.disallowedCharacter": "Bestandsnamen mogen geen {character} bevatten.",
   "@multiRename.reason.disallowedCharacter": {
     "sourceHash": "66a09f6"
-  },
-  "multiRename.problemsOnly": "Alleen problemen",
-  "@multiRename.problemsOnly": {
-    "sourceHash": "1d4614b"
   },
   "multiRename.selectionChanged": "De map is gewijzigd terwijl ‘Wijzig meerdere namen’ werd geopend. Controleer je selectie en probeer het dan opnieuw.",
   "@multiRename.selectionChanged": {

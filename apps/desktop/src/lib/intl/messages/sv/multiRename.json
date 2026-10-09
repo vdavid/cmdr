@@ -204,10 +204,6 @@
   "@multiRename.error.timedOut": {
     "sourceHash": "a336ee5"
   },
-  "multiRename.counts": "{ready, plural, one {# byter namn} other {# byter namn}} · {unchanged, plural, one {# oförändrad} other {# oförändrade}} · {problems, plural, one {# problem} other {# problem}}",
-  "@multiRename.counts": {
-    "sourceHash": "7464938"
-  },
   "multiRename.cancel": "Avbryt",
   "@multiRename.cancel": {
     "sourceHash": "19766ed"
@@ -263,10 +259,6 @@
   "multiRename.reason.disallowedCharacter": "Filnamn får inte innehålla {character}.",
   "@multiRename.reason.disallowedCharacter": {
     "sourceHash": "66a09f6"
-  },
-  "multiRename.problemsOnly": "Bara problem",
-  "@multiRename.problemsOnly": {
-    "sourceHash": "1d4614b"
   },
   "multiRename.selectionChanged": "Mappen ändrades medan ”Massbyt namn” öppnades. Kontrollera markeringen och försök sedan igen.",
   "@multiRename.selectionChanged": {

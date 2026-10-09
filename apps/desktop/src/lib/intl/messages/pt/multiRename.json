@@ -204,10 +204,6 @@
   "@multiRename.error.timedOut": {
     "sourceHash": "a336ee5"
   },
-  "multiRename.counts": "{ready, plural, one {# para renomear} many {# para renomear} other {# para renomear}} · {unchanged, plural, one {# sem alteração} many {# sem alteração} other {# sem alteração}} · {problems, plural, one {# problema} many {# problemas} other {# problemas}}",
-  "@multiRename.counts": {
-    "sourceHash": "7464938"
-  },
   "multiRename.cancel": "Cancelar",
   "@multiRename.cancel": {
     "sourceHash": "19766ed"
@@ -263,10 +259,6 @@
   "multiRename.reason.disallowedCharacter": "Nomes de arquivo não podem conter {character}.",
   "@multiRename.reason.disallowedCharacter": {
     "sourceHash": "66a09f6"
-  },
-  "multiRename.problemsOnly": "Apenas problemas",
-  "@multiRename.problemsOnly": {
-    "sourceHash": "1d4614b"
   },
   "multiRename.selectionChanged": "A pasta mudou enquanto “Renomear em lote” abria. Confira a seleção e tente de novo.",
   "@multiRename.selectionChanged": {

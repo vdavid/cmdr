@@ -1135,6 +1135,10 @@ For a link that unfolds a disclosure below it, pass `aria-expanded` and `aria-co
 what tells a screen reader the link opens something and whether it's open right now. Onboarding's step 1 "Why?" is the
 example.
 
+For a link that switches a view on and off in place, pass `aria-pressed` (button mode only): it reads as a toggle
+button, and pressed it drops the underline for an accent wash that bleeds into the margin, so the text doesn't move.
+Multi-rename's "N problems" in its summary line is the example.
+
 The `href` mode includes a per-line eslint disable for `svelte/no-navigation-without-resolve`. That rule wants
 SvelteKit's `resolve()`, which is for internal routes; we route external URLs through `openExternalUrl()` after
 `event.preventDefault()` in `onclick`. The `<a href>` is decorative: it gives screen readers the right semantics and

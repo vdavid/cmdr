@@ -14,10 +14,12 @@
 - **Status glyphs** (`row-status.ts`): one glyph per problem kind (invalid name, duplicate, name taken, gone) in a
   `StatusGlyph`, its short label the accessible name and the full reason the tooltip, in the error color. Ready and
   unchanged rows show nothing and carry screen-reader-only text, so a screen-reader user still hears every row's status.
-- **Problems only**: a checkbox over the list. The state switches its rows to the problem rows alone, paged by the
-  backend (`get_multi_rename_preview_rows` with `PreviewFilter::Problems`, offsets counted among the problems), so a
-  200k-row preview never ships to find its problems. The preview's first page is every row's, so in this mode a new
-  preview pages its rows in rather than showing it. Disabled while there are no problems (unless it's on).
+- **Problems only**: the "N problems" in the footer's summary (`multiRename.summary`, a `Trans` `<problemsToggle>` tag)
+  is a `LinkButton` with `aria-pressed`: pressed, the state lists the problem rows alone, paged by the backend
+  (`get_multi_rename_preview_rows` with `PreviewFilter::Problems`, offsets counted among the problems), so a 200k-row
+  preview never ships to find its problems. The preview's first page is every row's, so in this mode a new preview pages
+  its rows in rather than showing it. With no problems it's plain text, and a preview with none (or a lost preview)
+  switches the list back to every row.
 - **Start** calls `applyMultiRename`; the page shows a toast and closes the sheet. The operation is in the queue, and
   the operation log's Undo reverses it. An Undo button in the toast is a follow-up.
 - **Target**: the focused pane's selected rows in row order (backend numbers, `..` offset removed), or `null` for the
@@ -51,10 +53,31 @@
     dialog gate), its keydown and its Presets menu's `onKey` call the same `pressOpenKey`, and `createKeyRoadEcho` drops
     the other road's fire within 300 ms, so one F2 toggles the menu once whichever arrives first.
 
+## Layout and option keys
+
+- **Two columns over the preview.** Left: name mask (grows) and extension mask (140 px), the placeholder buttons, then
+  Search for / Replace with. Right, past a hairline: a two-column grid of option and key chip. Letter case and Remove
+  diacritics (they change the whole name) on top; a `1fr` gap row sinks the five search options (Match case, First match
+  only, Include extension, Regular expression, Replace whole name) to the bottom, beside the search fields. Each
+  `Checkbox` sits in a wrapper span, since it renders more than one element and would take two grid cells.
+- **Option keys**: ⌘⌥U opens Letter case (focus + click on its `.select-trigger`, `Select`'s stable class, so the menu
+  opens on the checked row as a click would), and ⌘⌥ N/I/F/E/R/W flip Remove diacritics, Match case, First match only,
+  Include extension, Regular expression, and Replace whole name. Fixed-key registry commands in
+  `Main window/Multi-rename` (`sources/file-list.ts`), so Settings and the Help window list them and
+  `registry-conflicts.test.ts` guards the defaults. The sheet's keydown asks `optionKeyOf` → `eventMatchesCommand` and
+  claims the key.
+  - ⌥ composes a character in `key` (`®`, `ƒ`, `∑`, or `Dead`), so the match runs on the key position:
+    `physicalKeyCombo` names a letter by `code` while ⌘ / ⌃ is held (`lib/shortcuts/DETAILS.md` § Key capture). Verified
+    in unit and component tests with US-layout events; a real keypress in the running app isn't verified (the MCP driver
+    sends synthetic events).
+  - None of U/N/I/F/E/R/W with ⌘⌥ is a Cmdr command or a native menu accelerator (`menu_bar.rs` holds ⌘⌥ C/O/T/V/Q/L/A,
+    the registry adds H; checked 2026-10-09), so no menu command needs claiming.
+  - Each key shows as a dim `ShortcutChip` (`commandId`, not clickable: the keys can't be rebound) beside its option,
+    `aria-hidden`: decoration for sighted users, the same keys listed in the Help window.
+
 ## Mask input
 
-`MaskInput.svelte` is the mask field with inline token editors. Not wired into the sheet yet; to wire it, swap each
-mask's `TextInput` for it.
+`MaskInput.svelte` is the mask field with inline token editors, used for both masks.
 
 - **Props**: `value` (the mask), `onValueChange(next)` (every keystroke AND every token edit; feed it to
   `tool.update({ nameMask })`), `ariaLabel`, `invalid`, and bindable `inputElement` (the `<input>`, for focus and

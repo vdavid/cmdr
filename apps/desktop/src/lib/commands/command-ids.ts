@@ -163,6 +163,13 @@ export const COMMAND_IDS = [
   // Keys the Multi-rename sheet answers itself
   'multiRename.openPresets',
   'multiRename.savePreset',
+  'multiRename.letterCase',
+  'multiRename.removeDiacritics',
+  'multiRename.matchCase',
+  'multiRename.firstMatchOnly',
+  'multiRename.includeExtension',
+  'multiRename.regex',
+  'multiRename.replaceWholeName',
   'file.view',
   'file.edit',
   'file.copy',

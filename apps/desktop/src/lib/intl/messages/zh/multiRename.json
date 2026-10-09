@@ -203,10 +203,6 @@
   "@multiRename.error.timedOut": {
     "sourceHash": "a336ee5"
   },
-  "multiRename.counts": "{ready, plural, other {# 个待重命名}} · {unchanged, plural, other {# 个不变}} · {problems, plural, other {# 个有问题}}",
-  "@multiRename.counts": {
-    "sourceHash": "7464938"
-  },
   "multiRename.cancel": "取消",
   "@multiRename.cancel": {
     "sourceHash": "19766ed"
@@ -262,10 +258,6 @@
   "multiRename.reason.disallowedCharacter": "文件名不能包含“{character}”。",
   "@multiRename.reason.disallowedCharacter": {
     "sourceHash": "66a09f6"
-  },
-  "multiRename.problemsOnly": "只显示有问题的",
-  "@multiRename.problemsOnly": {
-    "sourceHash": "1d4614b"
   },
   "multiRename.selectionChanged": "打开“批量重命名”时文件夹有了改动。请确认选中的文件，然后再试一次。",
   "@multiRename.selectionChanged": {

@@ -203,10 +203,6 @@
   "@multiRename.error.timedOut": {
     "sourceHash": "a336ee5"
   },
-  "multiRename.counts": "{ready, plural, one {# átnevezendő} other {# átnevezendő}} · {unchanged, plural, one {# változatlan} other {# változatlan}} · {problems, plural, one {# probléma} other {# probléma}}",
-  "@multiRename.counts": {
-    "sourceHash": "7464938"
-  },
   "multiRename.cancel": "Mégsem",
   "@multiRename.cancel": {
     "sourceHash": "19766ed"
@@ -262,10 +258,6 @@
   "multiRename.reason.disallowedCharacter": "A fájlnév nem tartalmazhat ilyen karaktert: {character}.",
   "@multiRename.reason.disallowedCharacter": {
     "sourceHash": "66a09f6"
-  },
-  "multiRename.problemsOnly": "Csak a problémák",
-  "@multiRename.problemsOnly": {
-    "sourceHash": "1d4614b"
   },
   "multiRename.selectionChanged": "A mappa megváltozott a Csoportos átnevezés megnyitása közben. Ellenőrizd a kijelölést, aztán próbáld újra.",
   "@multiRename.selectionChanged": {

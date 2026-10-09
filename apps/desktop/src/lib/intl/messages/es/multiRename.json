@@ -203,10 +203,6 @@
   "@multiRename.error.timedOut": {
     "sourceHash": "a336ee5"
   },
-  "multiRename.counts": "{ready, plural, one {# para renombrar} many {# para renombrar} other {# para renombrar}} · {unchanged, plural, one {# sin cambios} many {# sin cambios} other {# sin cambios}} · {problems, plural, one {# problema} many {# problemas} other {# problemas}}",
-  "@multiRename.counts": {
-    "sourceHash": "7464938"
-  },
   "multiRename.cancel": "Cancelar",
   "@multiRename.cancel": {
     "sourceHash": "19766ed"
@@ -262,10 +258,6 @@
   "multiRename.reason.disallowedCharacter": "Los nombres de archivo no pueden contener {character}.",
   "@multiRename.reason.disallowedCharacter": {
     "sourceHash": "66a09f6"
-  },
-  "multiRename.problemsOnly": "Solo problemas",
-  "@multiRename.problemsOnly": {
-    "sourceHash": "1d4614b"
   },
   "multiRename.selectionChanged": "La carpeta ha cambiado mientras se abría “Renombrado múltiple”. Comprueba la selección e inténtalo de nuevo.",
   "@multiRename.selectionChanged": {

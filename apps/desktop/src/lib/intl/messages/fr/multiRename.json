@@ -204,10 +204,6 @@
   "@multiRename.error.timedOut": {
     "sourceHash": "a336ee5"
   },
-  "multiRename.counts": "{ready, plural, one {# à renommer} many {# à renommer} other {# à renommer}} · {unchanged, plural, one {# sans changement} many {# sans changement} other {# sans changement}} · {problems, plural, one {# problème} many {# problèmes} other {# problèmes}}",
-  "@multiRename.counts": {
-    "sourceHash": "7464938"
-  },
   "multiRename.cancel": "Annuler",
   "@multiRename.cancel": {
     "sourceHash": "19766ed"
@@ -263,10 +259,6 @@
   "multiRename.reason.disallowedCharacter": "Les noms de fichiers ne peuvent pas contenir le caractère {character}.",
   "@multiRename.reason.disallowedCharacter": {
     "sourceHash": "66a09f6"
-  },
-  "multiRename.problemsOnly": "Problèmes uniquement",
-  "@multiRename.problemsOnly": {
-    "sourceHash": "1d4614b"
   },
   "multiRename.selectionChanged": "Le dossier a changé pendant l’ouverture de « Renommer par lot ». Vérifiez votre sélection, puis réessayez.",
   "@multiRename.selectionChanged": {

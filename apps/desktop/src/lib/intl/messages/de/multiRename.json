@@ -204,10 +204,6 @@
   "@multiRename.error.timedOut": {
     "sourceHash": "a336ee5"
   },
-  "multiRename.counts": "{ready, plural, one {# umzubenennen} other {# umzubenennen}} · {unchanged, plural, one {# unverändert} other {# unverändert}} · {problems, plural, one {# Problem} other {# Probleme}}",
-  "@multiRename.counts": {
-    "sourceHash": "7464938"
-  },
   "multiRename.cancel": "Abbrechen",
   "@multiRename.cancel": {
     "sourceHash": "19766ed"
@@ -263,10 +259,6 @@
   "multiRename.reason.disallowedCharacter": "Dateinamen dürfen das Zeichen {character} nicht enthalten.",
   "@multiRename.reason.disallowedCharacter": {
     "sourceHash": "66a09f6"
-  },
-  "multiRename.problemsOnly": "Nur Probleme",
-  "@multiRename.problemsOnly": {
-    "sourceHash": "1d4614b"
   },
   "multiRename.selectionChanged": "Der Ordner hat sich geändert, während „Mehrfach umbenennen“ geöffnet wurde. Prüfe deine Auswahl und versuche es dann erneut.",
   "@multiRename.selectionChanged": {

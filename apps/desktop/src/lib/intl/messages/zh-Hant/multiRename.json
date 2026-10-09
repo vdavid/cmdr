@@ -203,10 +203,6 @@
   "@multiRename.error.timedOut": {
     "sourceHash": "a336ee5"
   },
-  "multiRename.counts": "{ready, plural, other {# 個要重新命名}} · {unchanged, plural, other {# 個不變}} · {problems, plural, other {# 個有問題}}",
-  "@multiRename.counts": {
-    "sourceHash": "7464938"
-  },
   "multiRename.cancel": "取消",
   "@multiRename.cancel": {
     "sourceHash": "19766ed"
@@ -262,10 +258,6 @@
   "multiRename.reason.disallowedCharacter": "檔名不能包含「{character}」。",
   "@multiRename.reason.disallowedCharacter": {
     "sourceHash": "66a09f6"
-  },
-  "multiRename.problemsOnly": "只顯示有問題的",
-  "@multiRename.problemsOnly": {
-    "sourceHash": "1d4614b"
   },
   "multiRename.selectionChanged": "開啟「多檔重新命名」時，資料夾有了更動。請確認選取的檔案，再試一次。",
   "@multiRename.selectionChanged": {

@@ -182,18 +182,100 @@ describe('MultiRenameDialog', () => {
       expect(status[2].querySelector('[role="img"]')?.getAttribute('aria-label')).toBe('No longer in this folder')
     })
 
-    it('“Problems only” lists the problem rows alone, paged from the backend', async () => {
+    function problemsToggle(root: HTMLElement): HTMLButtonElement | null {
+      return root.querySelector<HTMLButtonElement>('.counts button')
+    }
+
+    it('“N problems” in the summary lists the problem rows alone, and every row again', async () => {
       ipc.previewMultiRename.mockResolvedValue({ ok: true, value: MIXED })
       ipc.getMultiRenamePreviewRows.mockResolvedValue({ ok: true, value: MIXED.rows.slice(1) })
       const root = await mountSheet()
-      const toggle = [...root.querySelectorAll<HTMLElement>('label, [role="checkbox"]')].find((el) =>
-        el.textContent.includes('Problems only'),
-      )
-      if (!toggle) throw new Error('no Problems only toggle')
+      const toggle = problemsToggle(root)
+      if (!toggle) throw new Error('no problems toggle')
+      expect(toggle.textContent.trim()).toBe('2 problems')
+      expect(toggle.getAttribute('aria-pressed')).toBe('false')
+
       toggle.click()
       await settle()
+      expect(toggle.getAttribute('aria-pressed')).toBe('true')
       expect(ipc.getMultiRenamePreviewRows).toHaveBeenLastCalledWith('S', 3, 0, 2, 'problems')
       expect(cellTexts(root, 'old-name')).toEqual(['c.pdf', 'gone.pdf'])
+
+      ipc.getMultiRenamePreviewRows.mockResolvedValue({ ok: true, value: MIXED.rows })
+      toggle.click()
+      await settle()
+      expect(toggle.getAttribute('aria-pressed')).toBe('false')
+      expect(cellTexts(root, 'old-name')).toEqual(['a.pdf', 'c.pdf', 'gone.pdf'])
+    })
+
+    it('with no problems, the count is plain text', async () => {
+      const root = await mountSheet()
+      expect(problemsToggle(root)).toBeNull()
+      expect(root.querySelector('.counts')?.textContent).toContain('0 problems')
+    })
+  })
+
+  describe('option keys', () => {
+    // `formatKeyCombo` emits ⌘-form modifiers only when `isMacOS()` is true, and happy-dom reports a Linux UA.
+    const navigatorSpy = vi.spyOn(globalThis, 'navigator', 'get')
+    beforeEach(() => {
+      navigatorSpy.mockReturnValue({ userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X)' } as Navigator)
+    })
+    afterEach(() => navigatorSpy.mockReset())
+
+    function checkbox(root: HTMLElement, label: string): HTMLInputElement {
+      const box = [...root.querySelectorAll('label')]
+        .find((el) => el.textContent.includes(label))
+        ?.querySelector<HTMLInputElement>('input[type="checkbox"]')
+      if (!box) throw new Error(`no ${label} checkbox`)
+      return box
+    }
+
+    function lastSpec(): Record<string, unknown> {
+      return ipc.previewMultiRename.mock.lastCall?.[1] as Record<string, unknown>
+    }
+
+    // ⌘⌥ plus the letter as macOS sends it on a US layout, from the name mask: `key` is what ⌥ composed.
+    it.each([
+      ['Remove diacritics', 'KeyN', 'Dead', 'removeDiacritics'],
+      ['Match case', 'KeyI', 'Dead', 'caseSensitive'],
+      ['First match only', 'KeyF', 'ƒ', 'firstOnly'],
+      ['Include extension', 'KeyE', 'Dead', 'includeExtension'],
+      ['Regular expression', 'KeyR', '®', 'regex'],
+      ['Replace whole name', 'KeyW', '∑', 'substitute'],
+    ])('⌘⌥ on %s flips its checkbox, from a text field too', async (label, code, composed, field) => {
+      const root = await mountSheet()
+      const mask = inputs(root)[0]
+      const event = new KeyboardEvent('keydown', {
+        key: composed,
+        code,
+        metaKey: true,
+        altKey: true,
+        bubbles: true,
+        cancelable: true,
+      })
+      mask.dispatchEvent(event)
+      await vi.waitFor(() => {
+        expect(lastSpec()[field]).toBe(true)
+      })
+      expect(event.defaultPrevented).toBe(true)
+      expect(checkbox(root, label).checked).toBe(true)
+
+      key(mask, composed, { code, metaKey: true, altKey: true })
+      await vi.waitFor(() => {
+        expect(lastSpec()[field]).toBe(false)
+      })
+      expect(checkbox(root, label).checked).toBe(false)
+    })
+
+    it('⌘⌥U opens the Letter case menu', async () => {
+      const root = await mountSheet()
+      const trigger = root.querySelector<HTMLElement>('.case-field .select-trigger')
+      expect(trigger?.getAttribute('aria-expanded')).toBe('false')
+      key(inputs(root)[0], 'Dead', { code: 'KeyU', metaKey: true, altKey: true })
+      await settle()
+      expect(trigger?.getAttribute('aria-expanded')).toBe('true')
+      expect(document.activeElement).not.toBe(inputs(root)[0])
     })
   })
 

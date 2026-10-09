@@ -490,6 +490,34 @@
   "@commands.multiRenameSavePreset.label": {
     "description": "Row in the Keyboard shortcuts list: what Cmd+S does while the Multi-rename tool is open. It asks for a name and saves the tool's current fields as a preset to load later. Read-only (the key can't be rebound)."
   },
+  "commands.multiRenameLetterCase.label": "Open the letter case menu",
+  "@commands.multiRenameLetterCase.label": {
+    "description": "Row in the Keyboard shortcuts list: what the key does while the Multi-rename tool (renames many files at once) is open. Read-only (the key can’t be rebound). It opens the menu that changes the new names to lowercase, UPPERCASE, and so on."
+  },
+  "commands.multiRenameRemoveDiacritics.label": "Turn Remove diacritics on or off",
+  "@commands.multiRenameRemoveDiacritics.label": {
+    "description": "Row in the Keyboard shortcuts list: what the key does while the Multi-rename tool (renames many files at once) is open. Read-only (the key can’t be rebound). It switches on or off the option that turns accented letters into plain ones (á becomes a). Use the same words as that option’s checkbox, \"Remove diacritics\"."
+  },
+  "commands.multiRenameMatchCase.label": "Turn Match case on or off",
+  "@commands.multiRenameMatchCase.label": {
+    "description": "Row in the Keyboard shortcuts list: what the key does while the Multi-rename tool (renames many files at once) is open. Read-only (the key can’t be rebound). It switches on or off the search & replace option that only matches the same uppercase and lowercase letters. Use the same words as that option’s checkbox, \"Match case\"."
+  },
+  "commands.multiRenameFirstMatchOnly.label": "Turn First match only on or off",
+  "@commands.multiRenameFirstMatchOnly.label": {
+    "description": "Row in the Keyboard shortcuts list: what the key does while the Multi-rename tool (renames many files at once) is open. Read-only (the key can’t be rebound). It switches on or off the search & replace option that replaces only the first match in each name. Use the same words as that option’s checkbox, \"First match only\"."
+  },
+  "commands.multiRenameIncludeExtension.label": "Turn Include extension on or off",
+  "@commands.multiRenameIncludeExtension.label": {
+    "description": "Row in the Keyboard shortcuts list: what the key does while the Multi-rename tool (renames many files at once) is open. Read-only (the key can’t be rebound). It switches on or off the search & replace option that also searches the file extension. Use the same words as that option’s checkbox, \"Include extension\"."
+  },
+  "commands.multiRenameRegex.label": "Turn Regular expression on or off",
+  "@commands.multiRenameRegex.label": {
+    "description": "Row in the Keyboard shortcuts list: what the key does while the Multi-rename tool (renames many files at once) is open. Read-only (the key can’t be rebound). It switches on or off the search & replace option that reads the search as a regular expression. Use the same words as that option’s checkbox, \"Regular expression\"."
+  },
+  "commands.multiRenameReplaceWholeName.label": "Turn Replace whole name on or off",
+  "@commands.multiRenameReplaceWholeName.label": {
+    "description": "Row in the Keyboard shortcuts list: what the key does while the Multi-rename tool (renames many files at once) is open. Read-only (the key can’t be rebound). It switches on or off the search & replace option where a match replaces the whole name. Use the same words as that option’s checkbox, \"Replace whole name\"."
+  },
   "commands.fileView.label": "View",
   "@commands.fileView.label": {
     "description": "Command name that opens the built-in viewer for the selected file. Appears in the command palette. A terse control label.",

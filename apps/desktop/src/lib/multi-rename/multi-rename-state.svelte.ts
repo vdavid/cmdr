@@ -150,6 +150,8 @@ export function createMultiRenameState(sessionId: string): MultiRenameState {
     if (answer.ok) {
       previewId = answer.value.previewId
       counts = answer.value.counts
+      // With no problems left there's nothing to list alone: every row again.
+      if (counts.problems === 0) problemsOnly = false
       // The first page is every row's; a list of problems pages its own in.
       rows = problemsOnly ? new SvelteMap() : new SvelteMap(answer.value.rows.map((row) => [row.row, row]))
       error = null
@@ -160,6 +162,7 @@ export function createMultiRenameState(sessionId: string): MultiRenameState {
       if (answer.error.type !== 'spec') {
         previewId = null
         counts = NO_COUNTS
+        problemsOnly = false
         rows = new SvelteMap()
       }
     }

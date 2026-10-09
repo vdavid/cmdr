@@ -203,10 +203,6 @@
   "@multiRename.error.timedOut": {
     "sourceHash": "a336ee5"
   },
-  "multiRename.counts": "{ready, plural, one {# файл будет переименован} few {# файла будут переименованы} many {# файлов будут переименованы} other {# файла будут переименованы}} · {unchanged, plural, one {# файл без изменений} few {# файла без изменений} many {# файлов без изменений} other {# файла без изменений}} · {problems, plural, one {# проблема} few {# проблемы} many {# проблем} other {# проблемы}}",
-  "@multiRename.counts": {
-    "sourceHash": "7464938"
-  },
   "multiRename.cancel": "Отменить",
   "@multiRename.cancel": {
     "sourceHash": "19766ed"
@@ -262,10 +258,6 @@
   "multiRename.reason.disallowedCharacter": "Имя файла не может содержать символ {character}.",
   "@multiRename.reason.disallowedCharacter": {
     "sourceHash": "66a09f6"
-  },
-  "multiRename.problemsOnly": "Только проблемы",
-  "@multiRename.problemsOnly": {
-    "sourceHash": "1d4614b"
   },
   "multiRename.selectionChanged": "Папка изменилась, пока открывалось «Групповое переименование». Проверьте выделение и попробуйте еще раз.",
   "@multiRename.selectionChanged": {

@@ -203,9 +203,14 @@
   "@multiRename.error.timedOut": {
     "description": "Shown under the Multi-rename preview when working out the new names, or getting the rename ready after Start, took longer than Cmdr waits. Nothing was renamed. 'Cmdr' is the app name; keep it untranslated."
   },
-  "multiRename.counts": "{ready, plural, one {# to rename} other {# to rename}} · {unchanged, plural, one {# unchanged} other {# unchanged}} · {problems, plural, one {# problem} other {# problems}}",
-  "@multiRename.counts": {
-    "description": "Footer summary of the preview: how many files will be renamed, how many keep their name, and how many have a problem."
+  "multiRename.summary": "{ready, plural, one {# to rename} other {# to rename}} · {unchanged, plural, one {# unchanged} other {# unchanged}} · <problemsToggle>{problems, plural, one {# problem} other {# problems}}</problemsToggle>",
+  "@multiRename.summary": {
+    "description": "Footer summary of the Multi-rename preview: how many files will be renamed, how many keep their name, and how many have a problem. While there are problems, the part inside <problemsToggle> is a link-styled toggle button: pressing it shows only the files with a problem in the preview list, pressing it again shows every file. Keep the <problemsToggle> tags around the problem count.",
+    "placeholders": {
+      "ready": "how many files get a new name",
+      "unchanged": "how many files keep their name",
+      "problems": "how many files can’t be renamed (invalid name, duplicate, name taken, gone)"
+    }
   },
   "multiRename.cancel": "Cancel",
   "@multiRename.cancel": {
@@ -262,10 +267,6 @@
   "multiRename.reason.disallowedCharacter": "File names can’t contain {character}.",
   "@multiRename.reason.disallowedCharacter": {
     "description": "Tooltip on the preview's \"not a valid name\" symbol when the new name holds a character file names can't have, such as a slash. {character} is that character."
-  },
-  "multiRename.problemsOnly": "Problems only",
-  "@multiRename.problemsOnly": {
-    "description": "Checkbox above the preview list: when on, the list shows only the files that can't be renamed (invalid name, duplicate, name taken, gone), hiding the ones that are ready or unchanged."
   },
   "multiRename.selectionChanged": "The folder changed while Multi-rename was opening. Check your selection, then try again.",
   "@multiRename.selectionChanged": {

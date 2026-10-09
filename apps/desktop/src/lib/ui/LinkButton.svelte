@@ -26,6 +26,11 @@
          */
         'aria-expanded'?: boolean
         'aria-controls'?: string
+        /**
+         * For a link that switches a view on and off in place (a filter, say): it reads as a
+         * toggle button, pressed or not. Button form only.
+         */
+        'aria-pressed'?: boolean
         children: Snippet
     }
 
@@ -39,6 +44,7 @@
         'aria-label': ariaLabel,
         'aria-expanded': ariaExpanded,
         'aria-controls': ariaControls,
+        'aria-pressed': ariaPressed,
         children,
     }: Props = $props()
 </script>
@@ -57,6 +63,7 @@
         aria-label={ariaLabel}
         aria-expanded={ariaExpanded}
         aria-controls={ariaControls}
+        aria-pressed={ariaPressed}
     >
         {@render children()}
     </button>
@@ -81,6 +88,16 @@
            --color-accent-hover doesn't meet 4.5:1 on white. Underline is enough
            affordance, already present in the resting state. */
         text-decoration: underline;
+    }
+
+    /* A pressed toggle drops the underline and sits on an accent wash: it's the view in use,
+       no longer a place to go. The wash bleeds into the margin so the text doesn't move. */
+    .link-button[aria-pressed='true'] {
+        text-decoration: none;
+        background: var(--color-accent-subtle);
+        border-radius: var(--radius-xs);
+        padding: 0 var(--spacing-xxs);
+        margin: 0 calc(-1 * var(--spacing-xxs));
     }
 
     .link-button:focus-visible {

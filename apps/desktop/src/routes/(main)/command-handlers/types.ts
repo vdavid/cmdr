@@ -57,6 +57,13 @@ export type DispatchExemptId =
   // The Multi-rename sheet's own keys, answered by its keydown through `eventMatchesCommand`.
   | 'multiRename.openPresets'
   | 'multiRename.savePreset'
+  | 'multiRename.letterCase'
+  | 'multiRename.removeDiacritics'
+  | 'multiRename.matchCase'
+  | 'multiRename.firstMatchOnly'
+  | 'multiRename.includeExtension'
+  | 'multiRename.regex'
+  | 'multiRename.replaceWholeName'
   | 'network.selectHost'
   | 'share.back'
   | 'share.selectShare'

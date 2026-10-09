@@ -203,10 +203,6 @@
   "@multiRename.error.timedOut": {
     "sourceHash": "a336ee5"
   },
-  "multiRename.counts": "{ready, plural, other {# sẽ đổi tên}} · {unchanged, plural, other {# giữ nguyên}} · {problems, plural, other {# có vấn đề}}",
-  "@multiRename.counts": {
-    "sourceHash": "7464938"
-  },
   "multiRename.cancel": "Hủy",
   "@multiRename.cancel": {
     "sourceHash": "19766ed"
@@ -262,10 +258,6 @@
   "multiRename.reason.disallowedCharacter": "Tên tệp không được chứa {character}.",
   "@multiRename.reason.disallowedCharacter": {
     "sourceHash": "66a09f6"
-  },
-  "multiRename.problemsOnly": "Chỉ các vấn đề",
-  "@multiRename.problemsOnly": {
-    "sourceHash": "1d4614b"
   },
   "multiRename.selectionChanged": "Thư mục đã thay đổi trong lúc đang mở “Đổi tên hàng loạt”. Hãy xem lại các mục đã chọn rồi thử lại.",
   "@multiRename.selectionChanged": {

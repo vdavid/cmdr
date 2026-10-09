@@ -14,16 +14,17 @@ The ⌃M sheet over `src-tauri/src/multi_rename/` (the engine and its rules: tha
   `preset-menu.ts` builds the menu's rows and finds a name clash; `preset-keys.ts` reads F2 / ⌘S. Both pure.
 - `spec.ts` the default spec, built-in presets, `specsEqual`, placeholder insertion. Pure.
 - `row-status.ts` a row status → its glyph, short label, and tooltip reason (message keys). Pure.
-- `MaskInput.svelte` a mask field whose `[C…]` tokens get a ▾ marker and an inline editor (`CounterTokenEditor`), from
-  the `mask-token-kinds.ts` registry; `mask-tokens.ts` / `counter-token.ts` scan, parse, and rewrite tokens. Pure. Not
-  wired into the sheet yet: DETAILS § Mask input.
+- `MaskInput.svelte` both mask fields: `[C…]` tokens get a ▾ marker and an inline editor (`CounterTokenEditor`), from
+  the `mask-token-kinds.ts` registry; `mask-tokens.ts` / `counter-token.ts` scan, parse, and rewrite tokens. Pure.
+- `option-keys.ts` reads the ⌘⌥ option keys (`TOGGLE_COMMANDS`). Pure.
 
 ## Must-knows
 
 - **Names stay in the backend session.** The selection goes over ONCE, with the pane's applied sequence (a stale one is
   `selectionChanged`: a toast, no sheet). After that the sheet sends the spec and, at Start, the `previewId` it shows;
-  it holds only the counts and the rows near the view, keyed by place in the list. "Problems only" pages the problem
-  rows from the backend (`PreviewFilter`), ❌ never by filtering rows it holds. `previewOutOfDate` re-previews.
+  it holds only the counts and the rows near the view, keyed by place in the list. "Problems only" (the summary's "N
+  problems" toggle) pages the problem rows from the backend (`PreviewFilter`), ❌ never by filtering rows it holds.
+  `previewOutOfDate` re-previews.
 - **Start waits for the preview of the last edit** (`pending`), so it never runs a spec nobody saw; a failed Start
   (`applyError`) doesn't block a retry.
 - **Enter starts from a mask or search field**, saves from the preset-name popover, and never fires mid-composition.
@@ -34,6 +35,8 @@ The ⌃M sheet over `src-tauri/src/multi_rename/` (the engine and its rules: tha
   (`claimMenuCommand('file.rename', …)`), so both roads end in `PresetsControl.pressOpenKey`, which toggles once per
   press (`createKeyRoadEcho` drops the other road's echo). ❌ Don't call `openMenu` from a key path: the echo would
   close the menu it opened. ⌘S isn't a menu accelerator.
+- **The ⌘⌥ option keys are registry commands too** (fixed, same scope), read through `optionKeyOf` and claimed, from a
+  text field as well. ⌘⌥ C/A/H/L/O/Q/T/V belong to app commands. DETAILS § Layout and option keys.
 - **`counter-token.ts` must read `[C…]` as `mask.rs` does**: both test against
   `src-tauri/src/multi_rename/counter_token_vectors.json`; change the grammar there first.
 - **A spec error keeps the last good preview** on screen under the message; any other error clears it.

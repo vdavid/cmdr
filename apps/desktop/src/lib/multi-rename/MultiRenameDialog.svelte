@@ -9,14 +9,17 @@
      *
      * Keyboard-first: the name mask has focus on open, Tab walks the fields, the
      * preview follows every keystroke, Enter starts, Esc closes, F2 opens the Presets
-     * menu, and ⌘S saves the fields as a preset.
+     * menu, ⌘S saves the fields as a preset, and ⌘⌥ plus a letter flips an option
+     * (the chip beside each one says which).
      */
-    import { onDestroy, onMount } from 'svelte'
+    import { onDestroy, onMount, type Snippet } from 'svelte'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
     import StatusBadge from '$lib/ui/StatusBadge.svelte'
     import StatusGlyph from '$lib/ui/StatusGlyph.svelte'
     import Button from '$lib/ui/Button.svelte'
     import Checkbox from '$lib/ui/Checkbox.svelte'
+    import LinkButton from '$lib/ui/LinkButton.svelte'
+    import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
     import ColumnList from '$lib/ui/ColumnList.svelte'
     import Icon from '$lib/ui/Icon.svelte'
     import { columnListProps, type ColumnListCellContext, type ColumnListColumn } from '$lib/ui/column-list-types'
@@ -24,13 +27,17 @@
     import { useShortenMiddle } from '$lib/utils/shorten-middle-action'
     import Select from '$lib/ui/Select.svelte'
     import TextInput from '$lib/ui/TextInput.svelte'
+    import Trans from '$lib/intl/Trans.svelte'
     import { tString } from '$lib/intl/messages.svelte'
+    import type { MessageKey } from '$lib/intl/keys.gen'
     import { claimKey } from '$lib/shortcuts/claim-key'
     import { claimMenuCommand } from '$lib/commands/menu-claims'
     import { getBadgeStatus } from '$lib/feature-status'
     import type { MultiRenameError, MultiRenameOpened, MultiRenameStarted, PreviewRow } from '$lib/tauri-commands'
     import type { CaseChange } from '$lib/ipc/bindings'
     import { createMultiRenameState } from './multi-rename-state.svelte'
+    import MaskInput from './MaskInput.svelte'
+    import { TOGGLE_COMMANDS, optionKeyOf, type ToggleField } from './option-keys'
     import { presetKeyOf, type PresetsControlApi } from './preset-keys'
     import PresetsControl from './PresetsControl.svelte'
     import { rowStatusView, type StatusMessage } from './row-status'
@@ -51,6 +58,8 @@
     const tool = createMultiRenameState(session.sessionId)
 
     let nameMaskInput = $state<HTMLInputElement>()
+    /** Holds the Letter case `Select`, so ⌘⌥U can open it through its trigger. */
+    let caseField = $state<HTMLElement>()
     let presetsControl = $state<PresetsControlApi>()
 
     /** The icon track, the same as Search's results (`query-ui/result-column-widths.ts`). */
@@ -64,6 +73,18 @@
     const iconVersion = $derived($iconCacheVersion)
 
     const PLACEHOLDERS = ['[N]', '[E]', '[P]', '[C]', '[YMD]', '[hms]'] as const
+
+    const TOGGLE_LABELS: Record<ToggleField, MessageKey> = {
+        removeDiacritics: 'multiRename.removeDiacritics',
+        caseSensitive: 'multiRename.caseSensitive',
+        firstOnly: 'multiRename.firstOnly',
+        includeExtension: 'multiRename.includeExtension',
+        regex: 'multiRename.regex',
+        substitute: 'multiRename.substitute',
+    }
+    // Remove diacritics changes the whole name, so it sits with Letter case; the gap before Match case
+    // sinks the rest, which tune the search, down beside the search fields.
+    const FIRST_SEARCH_TOGGLE: ToggleField = 'caseSensitive'
 
     const caseItems = $derived([
         { value: 'unchanged', label: tString('multiRename.case.unchanged') },
@@ -131,6 +152,17 @@
         })
     }
 
+    function toggle(field: ToggleField): void {
+        tool.update({ [field]: !tool.spec[field] })
+    }
+
+    /** Opens the Letter case menu as a click on its trigger would (`.select-trigger` is `Select`'s stable class). */
+    function openCaseMenu(): void {
+        const trigger = caseField?.querySelector<HTMLElement>('.select-trigger')
+        trigger?.focus()
+        trigger?.click()
+    }
+
     async function start(): Promise<void> {
         if (!canStart) return
         const started = await tool.apply()
@@ -144,6 +176,14 @@
             claimKey(e)
             if (presetKey === 'openMenu') presetsControl?.pressOpenKey('keyboard')
             else presetsControl?.openSave()
+            return
+        }
+        // So do the option keys: ⌘⌥ plus a letter flips a checkbox or opens Letter case.
+        const optionKey = optionKeyOf(e)
+        if (optionKey !== null) {
+            claimKey(e)
+            if (optionKey.kind === 'toggle') toggle(optionKey.field)
+            else openCaseMenu()
             return
         }
         // Enter in a text field starts, as TC's Start! does; a button or menu keeps its own Enter.
@@ -208,100 +248,91 @@
     {/snippet}
 
     <div class="sheet">
-        <div class="masks">
-            <label class="field grow">
-                <span class="label">{tString('multiRename.nameMask')}</span>
-                <TextInput
-                    mono
-                    bind:inputElement={nameMaskInput}
-                    value={tool.spec.nameMask}
-                    oninput={(e: Event) => { tool.update({ nameMask: (e.currentTarget as HTMLInputElement).value }) }}
-                    ariaLabel={tString('multiRename.nameMask')}
-                    invalid={tool.error?.type === 'spec' && tool.error.error.type === 'nameMask'}
-                />
-            </label>
-            <label class="field">
-                <span class="label">{tString('multiRename.extensionMask')}</span>
-                <TextInput
-                    mono
-                    value={tool.spec.extensionMask}
-                    oninput={(e: Event) => { tool.update({ extensionMask: (e.currentTarget as HTMLInputElement).value }) }}
-                    ariaLabel={tString('multiRename.extensionMask')}
-                    invalid={tool.error?.type === 'spec' && tool.error.error.type === 'extensionMask'}
-                />
-            </label>
-        </div>
-        <div class="placeholders" role="group" aria-label={tString('multiRename.insertPlaceholder')}>
-            {#each PLACEHOLDERS as placeholder (placeholder)}
-                <Button size="mini" onclick={() => { insertPlaceholder(placeholder) }}>{placeholder}</Button>
-            {/each}
-        </div>
-
-        <div class="row">
-            <label class="field grow">
-                <span class="label">{tString('multiRename.search')}</span>
-                <TextInput
-                    value={tool.spec.search}
-                    oninput={(e: Event) => { tool.update({ search: (e.currentTarget as HTMLInputElement).value }) }}
-                    ariaLabel={tString('multiRename.search')}
-                    invalid={tool.error?.type === 'spec' && tool.error.error.type === 'badRegex'}
-                />
-            </label>
-            <label class="field grow">
-                <span class="label">{tString('multiRename.replace')}</span>
-                <TextInput
-                    value={tool.spec.replace}
-                    oninput={(e: Event) => { tool.update({ replace: (e.currentTarget as HTMLInputElement).value }) }}
-                    ariaLabel={tString('multiRename.replace')}
-                />
-            </label>
-        </div>
-        <div class="row options">
-            <Checkbox checked={tool.spec.caseSensitive} onCheckedChange={(v: boolean) => { tool.update({ caseSensitive: v }) }}>
-                {tString('multiRename.caseSensitive')}
-            </Checkbox>
-            <Checkbox checked={tool.spec.firstOnly} onCheckedChange={(v: boolean) => { tool.update({ firstOnly: v }) }}>
-                {tString('multiRename.firstOnly')}
-            </Checkbox>
-            <Checkbox checked={tool.spec.includeExtension} onCheckedChange={(v: boolean) => { tool.update({ includeExtension: v }) }}>
-                {tString('multiRename.includeExtension')}
-            </Checkbox>
-            <Checkbox checked={tool.spec.regex} onCheckedChange={(v: boolean) => { tool.update({ regex: v }) }}>
-                {tString('multiRename.regex')}
-            </Checkbox>
-            <Checkbox checked={tool.spec.substitute} onCheckedChange={(v: boolean) => { tool.update({ substitute: v }) }}>
-                {tString('multiRename.substitute')}
-            </Checkbox>
-        </div>
-
-        <div class="row options">
-            <div class="field">
-                <span class="label">{tString('multiRename.case')}</span>
-                <Select
-                    items={caseItems}
-                    value={tool.spec.case}
-                    onChange={(v: string) => { tool.update({ case: v as CaseChange }) }}
-                    ariaLabel={tString('multiRename.case')}
-                />
+        <div class="controls">
+            <div class="fields">
+                <div class="masks">
+                    <label class="field grow">
+                        <span class="label">{tString('multiRename.nameMask')}</span>
+                        <MaskInput
+                            bind:inputElement={nameMaskInput}
+                            value={tool.spec.nameMask}
+                            onValueChange={(nameMask: string) => { tool.update({ nameMask }) }}
+                            ariaLabel={tString('multiRename.nameMask')}
+                            invalid={tool.error?.type === 'spec' && tool.error.error.type === 'nameMask'}
+                        />
+                    </label>
+                    <label class="field extension">
+                        <span class="label">{tString('multiRename.extensionMask')}</span>
+                        <MaskInput
+                            value={tool.spec.extensionMask}
+                            onValueChange={(extensionMask: string) => { tool.update({ extensionMask }) }}
+                            ariaLabel={tString('multiRename.extensionMask')}
+                            invalid={tool.error?.type === 'spec' && tool.error.error.type === 'extensionMask'}
+                        />
+                    </label>
+                </div>
+                <div class="placeholders" role="group" aria-label={tString('multiRename.insertPlaceholder')}>
+                    {#each PLACEHOLDERS as placeholder (placeholder)}
+                        <Button size="mini" onclick={() => { insertPlaceholder(placeholder) }}>{placeholder}</Button>
+                    {/each}
+                </div>
+                <div class="search">
+                    <label class="field grow">
+                        <span class="label">{tString('multiRename.search')}</span>
+                        <TextInput
+                            value={tool.spec.search}
+                            oninput={(e: Event) => { tool.update({ search: (e.currentTarget as HTMLInputElement).value }) }}
+                            ariaLabel={tString('multiRename.search')}
+                            invalid={tool.error?.type === 'spec' && tool.error.error.type === 'badRegex'}
+                        />
+                    </label>
+                    <label class="field grow">
+                        <span class="label">{tString('multiRename.replace')}</span>
+                        <TextInput
+                            value={tool.spec.replace}
+                            oninput={(e: Event) => { tool.update({ replace: (e.currentTarget as HTMLInputElement).value }) }}
+                            ariaLabel={tString('multiRename.replace')}
+                        />
+                    </label>
+                </div>
             </div>
-            <Checkbox checked={tool.spec.removeDiacritics} onCheckedChange={(v: boolean) => { tool.update({ removeDiacritics: v }) }}>
-                {tString('multiRename.removeDiacritics')}
-            </Checkbox>
+
+            <!-- The options, a grid of option and key: what changes the whole name on top, the
+                 search's own options sunk to the bottom, level with the search fields. Each names
+                 its ⌘⌥ key in a quiet chip. -->
+            <div class="options">
+                <span class="case-field" bind:this={caseField}>
+                    <span class="label">{tString('multiRename.case')}</span>
+                    <Select
+                        items={caseItems}
+                        value={tool.spec.case}
+                        onChange={(v: string) => { tool.update({ case: v as CaseChange }) }}
+                        ariaLabel={tString('multiRename.case')}
+                    />
+                </span>
+                <span class="option-key" aria-hidden="true">
+                    <ShortcutChip commandId="multiRename.letterCase" clickable={false} size="sm" />
+                </span>
+                {#each TOGGLE_COMMANDS as { field, commandId } (field)}
+                    {#if field === FIRST_SEARCH_TOGGLE}<span class="options-gap"></span>{/if}
+                    <!-- One grid cell: `Checkbox` renders more than one element. -->
+                    <span class="option-control">
+                        <Checkbox checked={tool.spec[field]} onCheckedChange={(on: boolean) => { tool.update({ [field]: on }) }}>
+                            {tString(TOGGLE_LABELS[field])}
+                        </Checkbox>
+                    </span>
+                    <!-- The key, quiet: a hint for next time, never a control (it can't be rebound). -->
+                    <span class="option-key" aria-hidden="true">
+                        <ShortcutChip {commandId} clickable={false} size="sm" />
+                    </span>
+                {/each}
+            </div>
         </div>
 
         {#if shownError}
             <p class="error" role="alert">{errorText(shownError)}</p>
         {/if}
 
-        <div class="preview-bar">
-            <Checkbox
-                checked={tool.problemsOnly}
-                disabled={!tool.problemsOnly && tool.counts.problems === 0}
-                onCheckedChange={(on: boolean) => { tool.setProblemsOnly(on) }}
-            >
-                {tString('multiRename.problemsOnly')}
-            </Checkbox>
-        </div>
         <div class="preview">
             <ColumnList
                 {...columnListProps({
@@ -320,11 +351,11 @@
         <div class="footer-leading">
             <PresetsControl bind:this={presetsControl} {tool} />
             <span class="counts" role="status">
-                {tString('multiRename.counts', {
-                    ready: tool.counts.ready,
-                    unchanged: tool.counts.unchanged,
-                    problems: tool.counts.problems,
-                })}
+                <Trans
+                    key="multiRename.summary"
+                    params={{ ready: tool.counts.ready, unchanged: tool.counts.unchanged, problems: tool.counts.problems }}
+                    snippets={{ problemsToggle }}
+                />
             </span>
         </div>
     {/snippet}
@@ -335,6 +366,17 @@
         </Button>
     {/snippet}
 </ModalDialog>
+
+<!-- "N problems" in the summary: a toggle that lists the problem rows alone while there are any. -->
+{#snippet problemsToggle(children: Snippet)}
+    {#if tool.counts.problems > 0}
+        <LinkButton aria-pressed={tool.problemsOnly} onclick={() => { tool.setProblemsOnly(!tool.problemsOnly) }}>
+            {@render children()}
+        </LinkButton>
+    {:else}
+        {@render children()}
+    {/if}
+{/snippet}
 
 {#snippet iconCell({ row }: ColumnListCellContext<PreviewRow>)}
     <span class="icon-box">
@@ -393,16 +435,25 @@
         min-height: 0;
     }
 
-    .masks,
-    .row {
-        display: flex;
-        flex-wrap: wrap;
-        gap: var(--spacing-md);
-        align-items: flex-end;
+    /* The fields on the left, the options in a column beside them. */
+    .controls {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: var(--spacing-lg);
     }
 
-    .options {
-        align-items: center;
+    .fields {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-sm);
+        min-width: 0;
+    }
+
+    .masks,
+    .search {
+        display: flex;
+        gap: var(--spacing-md);
+        align-items: flex-end;
     }
 
     .field {
@@ -413,7 +464,12 @@
     }
 
     .grow {
-        flex: 1 1 220px;
+        flex: 1 1 0;
+    }
+
+    /* An extension mask is short: `[E]`, or a counter at most. */
+    .extension {
+        flex: 0 0 140px;
     }
 
     .label {
@@ -427,16 +483,47 @@
         flex-wrap: wrap;
     }
 
+    /* Two columns, option and key, so the keys line up. The gap row takes the spare height,
+       which sinks the search options to the bottom, level with the search fields they tune. */
+    .options {
+        display: grid;
+        grid-template-columns: auto auto;
+        grid-template-rows: auto auto minmax(var(--spacing-xs), 1fr);
+        grid-auto-rows: auto;
+        align-items: center;
+        gap: var(--spacing-xs) var(--spacing-lg);
+        padding-left: var(--spacing-lg);
+        border-left: 1px solid var(--color-border);
+    }
+
+    .option-control {
+        display: flex;
+    }
+
+    .options-gap {
+        grid-column: 1 / -1;
+    }
+
+    .case-field {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+    }
+
+    /* The key hint stays quiet: tertiary text on no fill, so seven of them don't shout. */
+    .option-key {
+        display: flex;
+    }
+
+    .option-key :global(.shortcut-chip) {
+        color: var(--color-text-tertiary);
+        background: transparent;
+    }
+
     .error {
         margin: 0;
         color: var(--color-error-text);
         font-size: var(--font-size-sm);
-    }
-
-    .preview-bar {
-        display: flex;
-        align-items: center;
-        gap: var(--spacing-md);
     }
 
     /* The well around the list: one element owns the border and the rounded corners, and
