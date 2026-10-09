@@ -114,6 +114,7 @@ suite:
   search snapshot's rows; the Selection list keeps the search engine's BASENAME in `name` (a mask like `*.txt` has to
   mean the filename), unlike `SearchResultsView`'s own adapter, which synthesizes the `~`-shortened full path for the
   Name column. `SearchResultEntry.parentPath` is home-relative too, so it is display text and never a path to join onto.
+- `selected-paths-read.ts`: the selection as paths for copy-path / copy-filename (§ Copy-path below).
 - `snapshot-source-volume.ts`: which real volume a search-results pane's rows live on, for the delete and transfer
   openers. ❌ Never assume `root` there — any volume with a persisted index is searchable, SMB and MTP included.
 - `trash-availability.ts`: `paneOffersTrash`, the one answer to "can this pane trash rather than delete" (the volume's
@@ -475,6 +476,7 @@ There's no Search-specific capabilities shim — `lib/search/capabilities.ts` ke
   `file-operations/transfer/CLAUDE.md` § "One transfer entry seam". The `search-results://` URL parses stay (namespace
   mechanics).
 - **`pane-commands.ts`**: `isSnapshotPane` (the Selection-dialog banner flag) off `!hasBackendListing`.
+- **`selected-paths-read.ts`**: snapshot-vs-listing resolution of the copy-path selection off `!hasBackendListing`.
 - **The column header** (`views/FullList.svelte` → `FullListHeader` → `SortableHeader`) reads no capability at all:
   every pane that renders a file list sorts one. What varies is `sortBy: SortColumn | null`, where `null` means the rows
   are in no column's order (the snapshot pane's ranked state): every header stays clickable, none is active, no caret
@@ -804,6 +806,14 @@ rename, Get Info, Quick Look, tags, the cloud pair) must keep reading `..` as "n
 cursor at all, so the handler no-ops instead of copying a path nobody pointed at. Reading the pane path here is safe
 from the `search-results://` hazard above: the `..` row only exists where `hasParent` holds, which a snapshot pane never
 does.
+
+**Copy-path and copy-filename read the selection through `selected-paths-read.ts` first.** It reads the selected indices
+synchronously at dispatch and resolves them with `getSelectionSnapshot` against the pane's last-seen sequence, the same
+revision check the F5/F6 dialog builder uses. A listing that moved on (or row state still settling) answers `changed`,
+❌ never a re-read: a watcher insert renumbers rows, and the old indices would name other files. The paths are the rows'
+own `path`, the same field the cursor getter reads, so archive, S3, SFTP, and phone panes copy the same kind of path for
+N rows as for one. A search-results pane resolves from its frozen snapshot instead (no listing, no shifting); the
+Servers hub has no file selection and falls back to the cursor.
 
 **"Open terminal here" reads the cursor through a third getter**, `getCursorRowForTerminal()`, which returns the row's
 name, path, and `isDirectory`. It needs `..` as a real answer (like copy-path) AND the folder flag (unlike either

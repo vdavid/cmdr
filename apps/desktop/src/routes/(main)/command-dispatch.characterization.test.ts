@@ -377,6 +377,59 @@ describe('characterization — entry-under-cursor arms', () => {
     expect(copyToClipboard).toHaveBeenCalledExactlyOnceWith(ENTRY.filename)
   })
 
+  it('file.copyPath → every selected path, one per line, with a count toast', async () => {
+    const explorer = makeExplorerSpy()
+    explorer.readSelectedPathsForCopy.mockResolvedValue({ kind: 'paths', paths: ['/d/a.txt', '/d/b', '/d/c.md'] })
+    await handleCommandExecute('file.copyPath', makeCtx(explorer))
+    expect(copyToClipboard).toHaveBeenCalledExactlyOnceWith('/d/a.txt\n/d/b\n/d/c.md')
+    expect(explorer.getPathToCopyUnderCursor).not.toHaveBeenCalled()
+    expect(addToast).toHaveBeenCalledExactlyOnceWith('Copied 3 paths.', {
+      level: 'info',
+      toastGroup: 'copied-path',
+      maxInGroup: 1,
+    })
+  })
+
+  it('file.copyPath → one selected item keeps the copied-path toast', async () => {
+    const explorer = makeExplorerSpy()
+    explorer.readSelectedPathsForCopy.mockResolvedValue({ kind: 'paths', paths: ['/d/only.txt'] })
+    await handleCommandExecute('file.copyPath', makeCtx(explorer))
+    expect(copyToClipboard).toHaveBeenCalledExactlyOnceWith('/d/only.txt')
+    expect(addToast).toHaveBeenCalledExactlyOnceWith(
+      CopiedPathToastContent,
+      expect.objectContaining({ props: { path: '/d/only.txt' } }),
+    )
+  })
+
+  it('file.copyPath → copies nothing and says so when the folder changed under the selection', async () => {
+    const explorer = makeExplorerSpy()
+    explorer.readSelectedPathsForCopy.mockResolvedValue({ kind: 'changed' })
+    explorer.getPathToCopyUnderCursor.mockReturnValue(ENTRY.path)
+    await handleCommandExecute('file.copyPath', makeCtx(explorer))
+    expect(copyToClipboard).not.toHaveBeenCalled()
+    expect(addToast).toHaveBeenCalledExactlyOnceWith('The folder just changed, so nothing was copied. Try again.', {
+      level: 'warn',
+    })
+  })
+
+  it('file.copyFilename → every selected name, one per line, no toast', async () => {
+    const explorer = makeExplorerSpy()
+    explorer.readSelectedPathsForCopy.mockResolvedValue({ kind: 'paths', paths: ['/d/a.txt', '/d/sub', '/e/c.md'] })
+    await handleCommandExecute('file.copyFilename', makeCtx(explorer))
+    expect(copyToClipboard).toHaveBeenCalledExactlyOnceWith('a.txt\nsub\nc.md')
+    expect(explorer.getFileAndPathUnderCursor).not.toHaveBeenCalled()
+    expect(addToast).not.toHaveBeenCalled()
+  })
+
+  it('file.copyFilename → copies nothing when the folder changed under the selection', async () => {
+    const explorer = makeExplorerSpy()
+    explorer.readSelectedPathsForCopy.mockResolvedValue({ kind: 'changed' })
+    explorer.getFileAndPathUnderCursor.mockReturnValue(ENTRY)
+    await handleCommandExecute('file.copyFilename', makeCtx(explorer))
+    expect(copyToClipboard).not.toHaveBeenCalled()
+    expect(addToast).toHaveBeenCalledTimes(1)
+  })
+
   it('file.getInfo → getInfo(path)', async () => {
     const explorer = makeExplorerSpy()
     explorer.getFileAndPathUnderCursor.mockReturnValue(ENTRY)
