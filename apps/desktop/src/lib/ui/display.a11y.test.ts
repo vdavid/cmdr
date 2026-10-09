@@ -1,6 +1,6 @@
 /**
  * Tier 3 a11y tests for the presentational primitives: chips, badges, glyphs,
- * spinners, progress, and the two formatted-value labels.
+ * spinners, progress, the two formatted-value labels, and the column list.
  *
  * One file per primitive would cost about ten times as much: `svelte-tests`
  * charges per test FILE, not per test (`docs/testing.md` § "What a test actually
@@ -51,6 +51,8 @@ vi.mock('$lib/ipc/bindings', () => ({
 }))
 
 import Chip from './Chip.svelte'
+import ColumnList from './ColumnList.svelte'
+import type { ColumnListColumn } from './column-list-types'
 import DateLabel from './DateLabel.svelte'
 import Icon from './Icon.svelte'
 import InfoTip from './InfoTip.svelte'
@@ -79,6 +81,58 @@ function snip(text: string) {
 // document-wide. Clearing between tests keeps each audit to its own container.
 afterEach(() => {
   document.body.innerHTML = ''
+})
+
+/**
+ * Tier-3 a11y tests for `ColumnList.svelte`.
+ *
+ * Both semantics: a listbox of options (the cursor row `aria-selected`, a decorative icon
+ * column's empty header hidden) and a table whose group heading is a spanning row header and
+ * whose not-yet-loaded rows are hidden placeholders.
+ */
+describe('ColumnList a11y', () => {
+  interface Row {
+    name: string
+    note: string
+  }
+  const nameCell = createRawSnippet<[{ row: Row }]>((ctx) => ({ render: () => `<span>${ctx().row.name}</span>` }))
+  const noteCell = createRawSnippet<[{ row: Row }]>((ctx) => ({ render: () => `<span>${ctx().row.note}</span>` }))
+  const iconCell = createRawSnippet(() => ({ render: () => '<span aria-hidden="true">·</span>' }))
+  const columns: ColumnListColumn<Row>[] = [
+    { id: 'icon', label: '', width: { kind: 'fixed', px: 24 }, cell: iconCell },
+    { id: 'name', label: 'Name', width: { kind: 'share', minPx: 80 }, emphasis: true, cell: nameCell },
+    { id: 'note', label: 'Note', width: { kind: 'fixed', ch: 10 }, tone: 'tertiary', cell: noteCell },
+  ]
+  const rows: Row[] = [
+    { name: 'a.txt', note: 'one' },
+    { name: 'b.txt', note: 'two' },
+  ]
+
+  it('listbox with a cursor row has no a11y violations', async () => {
+    const target = container()
+    mount(ColumnList<Row>, { target, props: { columns, rows, ariaLabel: 'Files', cursorIndex: 1 } })
+    await tick()
+    await expectNoA11yViolations(target)
+  })
+
+  it('table with a group heading and a loading row has no a11y violations', async () => {
+    const target = container()
+    const all: Row[] = [{ name: '~/Photos', note: '' }, ...rows]
+    mount(ColumnList<Row>, {
+      target,
+      props: {
+        columns,
+        rows: { count: 4, getRow: (index: number) => all[index] },
+        semantics: 'table',
+        ariaLabel: 'Renames',
+        isGroupHeading: (row: Row) => row.note === '',
+        groupHeading: nameCell,
+      },
+    })
+    await tick()
+    expect(target.querySelector('.column-list-row.is-placeholder')).not.toBeNull()
+    await expectNoA11yViolations(target)
+  })
 })
 
 /**

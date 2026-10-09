@@ -134,6 +134,16 @@ Two primitives, and the same rule rejects hand-rolling either: a `<button>` whos
 A glyph that means nothing on its own (a banner's or a dialog header's leading mark) is neither: it's a bare `<Icon>` in
 a `<span>`. Picking between them and the geometry each assumes: `apps/desktop/src/lib/ui/DETAILS.md`.
 
+## Listing files or records in a dialog
+
+Use `apps/desktop/src/lib/ui/ColumnList.svelte`, ❌ never a hand-built `<table>` or a grid of divs. It gives every
+dialog list the same look: a header and rows on one measured column template, the single cursor (hover and the parent's
+arrow keys move one accent row), virtual scrolling over a fixed row height, and either listbox semantics (rows you move
+through and act on) or table semantics (previews, rows holding controls). It takes a plain array or a windowed source
+that pages from the backend, and optional folder-style group headings. The parent keeps the keyboard. Contract and width
+rules: `apps/desktop/src/lib/ui/DETAILS.md` § ColumnList; Search's results are the reference consumer
+(`apps/desktop/src/lib/query-ui/QueryResults.svelte`).
+
 ## Building a settings screen
 
 Compose from the settings components in `apps/desktop/src/lib/settings/components`:

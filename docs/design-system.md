@@ -877,6 +877,21 @@ takes focus, because these sit in recycled virtual-scroll rows where a tab stop 
 of a 10,000-entry list. If the glyph should open something on Tab as well as hover, it's an `InfoTip`. A glyph that
 means nothing on its own (a banner's or a dialog header's leading mark) is neither: it's a bare `<Icon>` in a `<span>`.
 
+### Column list (app)
+
+`ColumnList.svelte` is how a dialog lists files or records in columns: Search and Selection results today, the rename
+previews next. It's the dialog-sized sibling of the file list, so it borrows its cursor and leaves density alone.
+
+- **Surface**: `--color-bg-primary`, the recessed well against the dialog panel. A header row of `--color-text-tertiary`
+  labels on `--spacing-xs` / `--spacing-md` padding, a `--color-border-subtle` hairline under it.
+- **Rows**: a fixed height (one line of `--font-size-md` at `--font-line-height-normal`, plus `--spacing-xxs` above and
+  below), `--spacing-md` side padding and column gap. The primary column is weight 500; quieter columns use the
+  `secondary` / `tertiary` text tones.
+- **Cursor**: one, painted `--color-accent-subtle`; hover moves it, so there's no separate hover background. Under it
+  every tone reads at `--color-text-primary`, which keeps AA on the lightest accent tints.
+- **Columns** fit their content: short ones shrink-wrap, and the wide ones share what's left so whichever is still cut
+  off gets the spare room. Tracks ease between widths over `--transition-slow`, never under reduced motion.
+
 ### Keyboard shortcut hints (app)
 
 Shortcut hints appear in custom tooltips (via `use:tooltip={{ text: "Label", shortcut: "⌘K" }}`) and in the command

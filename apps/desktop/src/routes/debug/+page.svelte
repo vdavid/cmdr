@@ -58,6 +58,7 @@
         | 'components-size-badges'
         | 'components-status-badge'
         | 'components-date-label'
+        | 'components-column-list'
         | 'components-shortcut-chip'
         | 'components-copybox'
         | 'components-empty-states'
@@ -114,6 +115,7 @@
                 { id: 'components-size-badges', label: 'Size badges' },
                 { id: 'components-status-badge', label: 'Status badge' },
                 { id: 'components-date-label', label: 'Date label' },
+                { id: 'components-column-list', label: 'Column list' },
                 { id: 'components-shortcut-chip', label: 'Shortcut chip' },
                 { id: 'components-copybox', label: 'CopyBox' },
                 { id: 'components-empty-states', label: 'Empty states' },

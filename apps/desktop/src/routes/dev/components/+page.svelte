@@ -24,6 +24,7 @@
     import SizeBadges from './sections/SizeBadges.svelte'
     import StatusBadgeSection from './sections/StatusBadgeSection.svelte'
     import DateLabelSection from './sections/DateLabelSection.svelte'
+    import ColumnListSection from './sections/ColumnListSection.svelte'
     import ShortcutChipSection from './sections/ShortcutChip.svelte'
     import CopyBoxSection from './sections/CopyBoxSection.svelte'
     import EmptyStates from './sections/EmptyStates.svelte'
@@ -66,6 +67,7 @@
         'size-badges',
         'status-badge',
         'date-label',
+        'column-list',
         'shortcut-chip',
         'commandbox',
         'empty-states',
@@ -110,6 +112,7 @@
         <SizeBadges />
         <StatusBadgeSection />
         <DateLabelSection />
+        <ColumnListSection />
         <ShortcutChipSection />
         <CopyBoxSection />
         <EmptyStates />

@@ -51,6 +51,9 @@ Pull-tier docs for `lib/ui/`: architecture, component APIs, and decision rationa
   `SettingSlider` wraps it
 - **`NumberInput.svelte`**: Presentational Ark `NumberInput`: framed field with −/+ steppers and a unit;
   `SettingNumberInput` wraps it
+- **`ColumnList.svelte`**: The house list of rows in measured columns: one shared grid template, a single cursor,
+  virtual scrolling, listbox or table semantics. Math in `column-list-layout.ts`, DOM reads in
+  `column-list-tracks.svelte.ts`, types in `column-list-types.ts`. See § ColumnList
 - **`DateLabel.svelte`**: Canonical inline modified-date renderer: format + per-component age-tier coloring
 - **`ShortcutChip.svelte`**: Canonical keyboard-shortcut renderer: live `commandId` mode (clickable) or literal `key`
   mode
@@ -1382,6 +1385,90 @@ The `<Size>` component always renders the friendly dynamic form regardless of th
 matters; tooltips, dialogs, breadcrumbs, and inline `<Size>` callouts read more clearly with the self-describing dynamic
 format. The file-list column renders `formatSizeForDisplay` directly (passing the active unit) because it also needs the
 mismatch-warning + cursor-row neutralization treatment.
+
+## ColumnList
+
+Every dialog that lists files or records in columns renders `ColumnList`: Search and Selection (`QueryResults`) today,
+the Multi-rename preview and Ask Cmdr's rename review next. One look, one cursor model, one width contract. The name
+says what it is: a list (one cursor, listbox semantics by default) laid out in columns. Ark UI has no table or data
+grid, and its `Listbox` owns selection and keys itself, which is exactly what this leaves to the parent.
+
+### Consumer contract
+
+- **Columns** (`ColumnListColumn<T>`): `id`, `label` (header text and what the header demand measures; empty means a
+  decorative column whose header is `aria-hidden`), optional `labelHidden` (screen-reader-only header) or `header`
+  snippet (a consumer-styled label), `width`, optional `demand` / `headerDemand`, `align: 'end'`, `emphasis` (weight
+  500, measured at that weight), `tone` (`secondary` / `tertiary` at rest), `clip` (default on: ellipsis; off for cells
+  holding controls, whose focus rings would be cut), `class` (a consumer hook on every cell), and the `cell` snippet,
+  which receives `{ row, index, isUnderCursor }`.
+- **Rows**: a plain array, or a `ColumnListWindowedSource<T>`: `count`, a reactive `getRow(index)` (return `undefined`
+  for a row not loaded yet, which draws an `aria-hidden` placeholder), and `onRangeChange({ start, end })`, called (in
+  `untrack`) whenever the drawn range moves, so the consumer fetches those rows. `rowKey` keys an array's rows; a
+  windowed source is keyed by index.
+- **Cursor**: the parent owns it and the keyboard. `cursorIndex` paints `.is-under-cursor` (and `aria-selected` in a
+  listbox); `onHover(index)` fires on `mouseenter`, and writing it back to `cursorIndex` is what makes hover and arrows
+  one cursor. After moving the cursor by key, call the exported `scrollIndexIntoView(index)` (it computes the scroll
+  from the row height, so it works for rows outside the drawn window). `onRowClick(index)`, and
+  `onRowContextMenu({ index, row, event })`, which `preventDefault`s for you.
+- **Semantics**: `listbox` (default) for lists you move through and act on: rows are `option`s with `aria-setsize` /
+  `aria-posinset`, so a virtualized list still announces its true length. `table` for previews and rows that hold
+  controls (an `option` can't contain a checkbox or a text field): `table` / `row` / `columnheader` / `cell`, with
+  `aria-rowcount` and per-row `aria-rowindex` (the header is row 1).
+- **Group headings**: `isGroupHeading(row)` marks a row as a heading and `groupHeading` renders it across every column.
+  In a table it's a `row` with one `rowheader` (`aria-colspan` = column count). A listbox can't hold one (options and
+  groups only), so there it's `aria-hidden` and each option's own label must carry the context. The cursor index counts
+  heading rows; the parent's arrow keys skip them.
+- **Hook classes**: `headerClass` / `rowClass` / column `class` exist so a consumer keeps its own stable selectors
+  (`QueryResults` keeps `.column-header`, `.result-row`, `.result-name`, which E2E and the contrast audit key on).
+  Consumer styling belongs inside its cell snippets, which carry the consumer's own scoped CSS.
+
+### Column widths
+
+- **Width kinds** (`column-list-layout.ts`): `fixed` (`px`, or `ch` of the row font), `fit` (shrink-wraps its widest
+  cell or header; shows `fallback` until measured), and `share` (splits what the other tracks leave with the other
+  `share` columns, never below `minPx`).
+- **Decision: max-min fairness among `share` columns.** Each has a demand (its widest cell, uncut). Water-filling: every
+  column whose demand fits in an even share of what's left takes exactly its demand, the rest split the remainder as
+  `minmax(<min>px, 1fr)` tracks. When every column fits, the LAST `share` column turns flexible so the spare width lands
+  there. Why: the column you're reading is the one that's cut off, so spare width goes wherever text is still hidden. A
+  `share` column without a `demand` always wants more (a plain even split). Search's two-column case and its history:
+  `$lib/query-ui/DETAILS.md` § Column widths.
+- **The flexible column is a `minmax(<floor>px, 1fr)` track, never a computed pixel width.** Only the branch decision
+  reads the container width; CSS resolves the remainder, so the right edge stays flush on every frame of a resize. `ch`
+  tracks count against the shared width at one `ch` = the regular measurer's `'0'`.
+- **Demands come from the row DATA through each column's `demand`**, with a 2 px measurement pad (pretext's canvas and
+  the DOM disagree by a fraction of a pixel on WKWebView; same constant as
+  `file-explorer/views/measure-column-widths.ts`). Measuring needs an array source (it walks the first `MEASURE_ROW_CAP`
+  rows, so the columns stay put while scrolling); a windowed source shows every `fit` column's fallback and an even
+  `share` split.
+- **The layout cannot oscillate**, and any change here has to keep it that way. Every input comes from the data, CSS, or
+  the dialog, never from the tracks: the row data, the cells' computed fonts, the row's padding and `column-gap`, and
+  the viewport's `clientWidth`. ❌ Never measure DOM text: `useShortenMiddle` and `PathPills` write shortened text into
+  cells.
+- **Two measurers, keyed on computed font strings** read off the first drawn data row: an `emphasis` cell's font and a
+  regular cell's. A text-size change rebuilds them. Each is probed once (`candidate('0')`) before adoption, because
+  pretext needs Canvas 2D and only fails on first use; without canvas the list stays on the unmeasured template.
+- **Digits measure as the font's widest digit** (`measure.tabular`): `tabular-nums` can't be modeled in canvas.
+- **Header and rows are separate grid containers**, so both declare `--font-size-md` (`ch` tracks resolve against the
+  grid owner's font) and get the template as ONE inline string.
+- **Tracks ease between layouts** (`--transition-slow`, off under `prefers-reduced-motion`), except the first measured
+  layout, so opening a dialog doesn't animate the columns in.
+
+### Virtual scrolling
+
+- **Fixed row height from tokens**: by default the dialog type's one line plus the row's vertical padding
+  (`--font-size-md` × `--font-line-height-normal` + 2 × `--spacing-xxs`, 23.6 px at the default text size), as a `calc`
+  on `.column-list-row`. The `rowHeight` prop overrides it with any CSS length (taller thumbnail rows), inline on every
+  row. A hidden probe row carries the same height; its `getBoundingClientRect().height` (fractional, since
+  `offsetHeight` rounds and the drift adds up over 200k rows) is the pixel height the window math divides by, and a
+  `ResizeObserver` on it re-windows on a text-size change.
+- **The window** (`visibleRange`): the rows in view plus `OVERSCAN_ROWS` (20) on each side, with top and bottom padding
+  on the inner box standing in for the rest, so the scrollbar spans the whole list. Before the row height or viewport is
+  known (the first frame, or the test DOM) it draws the first `FALLBACK_ROWS` (100), so a short list renders whole and
+  behaves exactly like an unvirtualized one.
+- **Rows can't grow**: content taller than the row height spills over its neighbors rather than growing the row, because
+  every row's position is `index × height`. A consumer whose rows need more (badges, a second line) raises `rowHeight`
+  for every row.
 
 ## DateLabel
 

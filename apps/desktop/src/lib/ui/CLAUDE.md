@@ -8,19 +8,19 @@ Reusable components; only silent-breakage rules live here. Ark UI backs the comp
   `dialog-registry.ts` (`SOFT_DIALOG_REGISTRY`), `AlertDialog.svelte`.
 - The house menu: `Menu.svelte` + `createMenu` (`menu-controller.svelte.ts`), over `menu-navigation.ts` /
   `menu-reorder.ts`. ❗ A `.svelte.ts` may never case-collide with a component. DETAILS § Menu.
-- The primitives (`Icon`, `Spinner`, `Button`, form controls, `Select`, `Combobox`, text fields, `ShortcutChip`,
-  `InfoTip` (a `<button>`), `StatusGlyph` (❌ never focusable: a tab stop per virtual row wrecks keyboard navigation),
-  `toast/`) are catalogued in DETAILS § Key files. `ToggleGroup` is segmented, ≠ `RadioGroup`; Tooltip is the sibling
-  `../tooltip/tooltip.ts`.
+- The primitives (`Icon`, `Spinner`, `Button`, `ColumnList`, form controls, `Select`, `Combobox`, text fields,
+  `ShortcutChip`, `InfoTip` (a `<button>`), `StatusGlyph` (❌ never focusable: a tab stop per virtual row wrecks
+  keyboard navigation), `toast/`) are catalogued in DETAILS § Key files. `ToggleGroup` is segmented, ≠ `RadioGroup`;
+  Tooltip is the sibling `../tooltip/tooltip.ts`.
 
 ## Must-knows
 
-- **A missing primitive is the cue to add a wrapper here** (`@ark-ui/svelte` and lucide imports are allowlisted here;
-  see `src/CLAUDE.md`). A new one owes a tier-3 a11y test, a Debug > Components row, and a `design-system.md` entry, all
-  check-enforced. `docs/guides/building-ui.md`.
+- **A missing primitive is the cue to add a wrapper here** (`@ark-ui/svelte` and lucide imports are allowed here). A new
+  one owes a tier-3 a11y test, a Debug > Components row, and a `design-system.md` entry, all check-enforced.
+  `docs/guides/building-ui.md`.
 - **Every `role="dialog"` / `role="alertdialog"` element MUST carry `use:trapFocus` on the SAME element**
   (`cmdr/dialog-needs-focus-trap`), else Tab leaks into the shortcut-suppressed background: a keyboard lockout.
-  `ModalDialog` owns the directive, so `role`-prop callers don't repeat it.
+  `ModalDialog` owns it.
 - **Adding a dialog** (soft sheets too): register its id in `SOFT_DIALOG_REGISTRY`, pass it as `dialogId`, add a gallery
   row (`dialog-gallery-coverage`). Its `whileOpen` verdict won't compile until answered: it decides whether a file
   operation may start behind the dialog. `$lib/file-explorer/pane/DETAILS.md` § "The operation-start gate".
@@ -38,13 +38,14 @@ Reusable components; only silent-breakage rules live here. Ark UI backs the comp
     on `!el.isConnected`), or a recycled virtual-scroll row fires the 400 ms timer on a dead node. Its hover-suppress
     flag isn't redundant (scrolling slides a fresh row under a still pointer). ❌ Never a native `title`
     (`cmdr/no-title-attribute`): it skips keyboard focus. Keep any `aria-label`.
+  - `ColumnList`: demands read row DATA, ❌ never DOM text (it'd oscillate).
   - `ShortcutChip`: import `openShortcutCustomization` dynamically in the click handler: a static import drags
     `@tauri-apps/api/webviewWindow` onto a module-eval surface the capability-restricted viewer can't have. Set exactly
     one of `commandId` / `key`.
   - `Select`: `.select-*` classes are a contract; don't rename or recolor off the accent tokens. `--z-dropdown` on
     `.select-content`, ❌ never the positioner. Trapping modals call `providePortalTarget`.
-  - `Combobox` is a text-field-with-suggestions: drive its text off `inputValue`, never `value` / `items`, which blanks
-    it on an empty list or custom name.
+  - `Combobox`: drive its text off `inputValue`, never `value` / `items`, which blanks it on an empty list or custom
+    name.
   - Text fields: chrome lives in `app.css` § "Text fields", so ONE edit restyles all five (keep `Combobox` /
     `NumberInput` in sync). `.text-field` / `.text-field-control` are a selector contract, and `TextInput` is one-way
     `value` + `oninput`, never an internal `bind:value`.
