@@ -15,6 +15,7 @@ vi.mock('$lib/tauri-commands', () => ({
   notifyDialogClosed: vi.fn(() => Promise.resolve()),
   previewMultiRename,
   getMultiRenamePreviewRows: vi.fn(() => Promise.resolve({ ok: true, value: [] })),
+  renderMultiRenameExamples: vi.fn(() => Promise.resolve(null)),
   applyMultiRename: vi.fn(() => Promise.resolve({ ok: false, error: { type: 'nothingToRename' } })),
   getMultiRenamePresets: vi.fn(() => Promise.resolve([{ id: 'p1', name: 'Bez diakritiky', spec: {} }])),
   saveMultiRenamePreset: vi.fn(() => Promise.resolve()),

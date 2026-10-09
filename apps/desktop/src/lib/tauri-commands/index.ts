@@ -1005,6 +1005,7 @@ export {
   openMultiRename,
   previewMultiRename,
   getMultiRenamePreviewRows,
+  renderMultiRenameExamples,
   applyMultiRename,
   closeMultiRename,
   getMultiRenamePresets,
@@ -1014,6 +1015,7 @@ export {
   updateMultiRenamePreset,
 } from './multi-rename'
 export type {
+  MaskExamples,
   MultiRenameError,
   MultiRenameOpened,
   MultiRenamePreset,

@@ -7,7 +7,8 @@ removing diacritics, a counter, presets, and a live preview. The sheet is `src/l
 
 - `mask.rs` the placeholders (`[N2-5]`, `[C10+5:3]`, `[YMD]`, `[U]`…), parsed once, rendered per row. Pure.
 - `transform.rs` search & replace, the case step, `remove_diacritics`. Pure.
-- `plan.rs` the preview over a folder's entries: each row's new name and status. Pure.
+- `plan.rs` the preview over a folder's entries: each row's new name and status; `mask_examples` renders the sheet's
+  placeholder-tooltip examples for the first file through the same `RowFacts`. Pure.
 - `session.rs` one open sheet's files (resolved once from the pane's selection), its latest preview, and paging.
 - `run.rs` apply: proves the ready rows against the preview shown, then runs `start_renames` (Ask Cmdr's executor).
 - `error.rs` `MultiRenameError`, shared by `session` and `run` so neither imports the other (`module-cycles`).

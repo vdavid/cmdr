@@ -3,7 +3,9 @@
 use std::cell::Cell;
 use std::path::Path;
 
-use super::plan::{Compiled, FOLDS, InvalidNameReason, MultiRenameSpec, RowStatus, SpecError, preview};
+use super::plan::{
+    Compiled, FOLDS, InvalidNameReason, MaskExamples, MultiRenameSpec, RowStatus, SpecError, mask_examples, preview,
+};
 use super::transform::{CaseChange, SEARCH_BUILDS};
 use crate::file_system::listing::metadata::FileEntry;
 
@@ -266,4 +268,51 @@ fn the_extension_mask_counts_too() {
     let out = run(&s, &folder, &["a.txt", "b.txt"]);
     assert_eq!(out[0].0, "a.txt01");
     assert_eq!(out[1].0, "b.txt02");
+}
+
+fn masks(list: &[&str]) -> Vec<String> {
+    list.iter().map(|m| (*m).to_string()).collect()
+}
+
+#[test]
+fn examples_render_each_mask_for_the_file_as_the_preview_would() {
+    let entry = file("report.pdf");
+    let out = mask_examples(
+        &entry,
+        Path::new(DIR),
+        &masks(&["[N]", "[E1]", "[E2-]", "[N1--4]", "[N-3-]", "[P]", "[G]"]),
+    );
+    assert_eq!(
+        out.rendered,
+        vec![
+            Some("report".to_string()),
+            Some("p".to_string()),
+            Some("df".to_string()),
+            Some("rep".to_string()),
+            Some("ort".to_string()),
+            Some("Holiday 2026".to_string()),
+            Some("Photos".to_string()),
+        ]
+    );
+    assert!(!out.sample_date);
+}
+
+#[test]
+fn an_example_mask_that_doesnt_parse_renders_nothing_rather_than_failing_the_rest() {
+    let out = mask_examples(&file("a.txt"), Path::new(DIR), &masks(&["[Q]", "[E]"]));
+    assert_eq!(out.rendered, vec![None, Some("txt".to_string())]);
+}
+
+#[test]
+fn a_file_with_no_modified_time_shows_dates_for_a_sample_one_and_says_so() {
+    let entry = FileEntry {
+        modified_at: None,
+        ..file("a.txt")
+    };
+    let MaskExamples { rendered, sample_date } = mask_examples(&entry, Path::new(DIR), &masks(&["[YMD]", "[t]"]));
+    assert_eq!(
+        rendered,
+        vec![Some("20260615".to_string()), Some("23.10.09".to_string())]
+    );
+    assert!(sample_date);
 }

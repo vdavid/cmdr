@@ -11,6 +11,7 @@ vi.mock('$lib/ipc/bindings', () => ({
     openMultiRename: vi.fn(),
     previewMultiRename: vi.fn(),
     getMultiRenamePreviewRows: vi.fn(),
+    renderMultiRenameExamples: vi.fn(),
     applyMultiRename: vi.fn(),
     closeMultiRename: vi.fn(),
     getMultiRenamePresets: vi.fn(),
@@ -28,6 +29,7 @@ import {
   getMultiRenamePreviewRows,
   openMultiRename,
   previewMultiRename,
+  renderMultiRenameExamples,
   saveMultiRenamePreset,
 } from './multi-rename'
 
@@ -97,5 +99,18 @@ describe('multi-rename wrappers', () => {
     expect(commands.saveMultiRenamePreset).toHaveBeenCalledWith(preset)
     await deleteMultiRenamePreset('p')
     expect(commands.deleteMultiRenamePreset).toHaveBeenCalledWith('p')
+  })
+
+  it('hands back the first file’s examples, or nothing when there are none to show', async () => {
+    const examples = { rendered: ['pdf'], sampleDate: false }
+    vi.mocked(commands.renderMultiRenameExamples).mockResolvedValueOnce({ status: 'ok', data: examples } as never)
+    expect(await renderMultiRenameExamples('S', ['[E]'])).toEqual(examples)
+    expect(commands.renderMultiRenameExamples).toHaveBeenCalledWith('S', ['[E]'])
+
+    vi.mocked(commands.renderMultiRenameExamples).mockResolvedValueOnce({
+      status: 'error',
+      error: { type: 'sessionClosed' },
+    } as never)
+    expect(await renderMultiRenameExamples('S', ['[E]'])).toBeNull()
   })
 })

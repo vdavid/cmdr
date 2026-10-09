@@ -22,7 +22,7 @@ use crate::file_system::listing::metadata::FileEntry;
 use crate::ignore_poison::{IgnorePoison, RwLockIgnorePoison};
 
 use super::error::MultiRenameError;
-use super::plan::{Compiled, MultiRenameSpec, PreviewRow, RowStatus, preview};
+use super::plan::{Compiled, MaskExamples, MultiRenameSpec, PreviewRow, RowStatus, mask_examples, preview};
 
 /// How many sessions live at once. A sheet is modal, so more than one or two is
 /// a window that closed without saying so. Tests share the store and run in
@@ -302,6 +302,21 @@ pub(crate) fn page(
         .iter()
         .filter(|row| filter == PreviewFilter::All || row.status.is_problem());
     Ok(kept.skip(offset).take(limit.min(MAX_PAGE)).cloned().collect())
+}
+
+/// `masks` rendered for the session's first file as the listing holds it now,
+/// for the sheet's placeholder examples; `None` when there's no first file any more.
+pub(crate) fn examples(session_id: &str, masks: &[String]) -> Result<Option<MaskExamples>, MultiRenameError> {
+    let inputs = with_session(session_id, |s| inputs_of(s))?;
+    let Some(first) = inputs.names.first() else {
+        return Ok(None);
+    };
+    let cache = LISTING_CACHE.read_ignore_poison();
+    let listing = cache.get(&inputs.listing_id).ok_or_else(|| MultiRenameError::Gone {
+        listing_id: inputs.listing_id.clone(),
+    })?;
+    let entry = listing.entries().iter().find(|e| &e.name == first);
+    Ok(entry.map(|entry| mask_examples(entry, &inputs.dir, masks)))
 }
 
 /// What apply renames: the rows ready now, proven to be the ones preview

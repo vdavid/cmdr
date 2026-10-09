@@ -1361,6 +1361,20 @@ export const commands = {
       __TAURI_INVOKE('get_multi_rename_preview_rows', { sessionId, previewId, offset, limit, filter }),
     ),
   /**
+   *  `masks` rendered for the session's first file, for the placeholder tooltips'
+   *  examples. `None` when that file is gone.
+   */
+  renderMultiRenameExamples: (sessionId: string, masks: string[]) =>
+    typedError<
+      {
+        // Each mask's text for the file, in order; `None` for a mask that doesn't parse.
+        rendered: (string | null)[]
+        // The file has no modified time, so dates and times show `SAMPLE_MODIFIED`.
+        sampleDate: boolean
+      } | null,
+      MultiRenameError
+    >(__TAURI_INVOKE('render_multi_rename_examples', { sessionId, masks })),
+  /**
    *  Renames the rows preview `preview_id` showed as ready, as one operation the
    *  queue shows and Undo reverses. Refuses with `previewOutOfDate` when the folder
    *  changed since that preview.
@@ -10239,6 +10253,14 @@ export type MaskError =
   | { type: 'unclosed'; at: number }
   // A placeholder Cmdr doesn't know, as typed between the brackets.
   | { type: 'unknown'; placeholder: string }
+
+// Example masks rendered for one file, for the sheet's placeholder tooltips.
+export type MaskExamples = {
+  // Each mask's text for the file, in order; `None` for a mask that doesn't parse.
+  rendered: (string | null)[]
+  // The file has no modified time, so dates and times show `SAMPLE_MODIFIED`.
+  sampleDate: boolean
+}
 
 /**
  *  `mcp-settings-close`: ask the settings window to close itself. Emitted via a

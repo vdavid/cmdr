@@ -208,6 +208,7 @@ macro_rules! ipc_command_manifest {
                     crate::commands::multi_rename::open_multi_rename,
                     crate::commands::multi_rename::preview_multi_rename,
                     crate::commands::multi_rename::get_multi_rename_preview_rows,
+                    crate::commands::multi_rename::render_multi_rename_examples,
                     crate::commands::multi_rename::apply_multi_rename,
                     crate::commands::multi_rename::close_multi_rename,
                     crate::commands::multi_rename::get_multi_rename_presets,

@@ -14,6 +14,7 @@ import { runMenuClaim } from '$lib/commands/menu-claims'
 const ipc = vi.hoisted(() => ({
   previewMultiRename: vi.fn(),
   getMultiRenamePreviewRows: vi.fn(),
+  renderMultiRenameExamples: vi.fn(),
   applyMultiRename: vi.fn(),
   getMultiRenamePresets: vi.fn(),
   saveMultiRenamePreset: vi.fn(),
@@ -72,6 +73,17 @@ describe('MultiRenameDialog', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     ipc.previewMultiRename.mockResolvedValue({ ok: true, value: READY })
+    ipc.renderMultiRenameExamples.mockImplementation((_session: string, masks: string[]) => {
+      const forReportPdf: Record<string, string> = {
+        '[1-]': 'report.pdf',
+        '[E]': 'pdf',
+        '[E1]': 'p',
+        '[E2-]': 'df',
+        '[E2-3]': 'df',
+        '[E4-]': '',
+      }
+      return Promise.resolve({ rendered: masks.map((mask) => forReportPdf[mask] ?? null), sampleDate: false })
+    })
     ipc.getMultiRenamePresets.mockResolvedValue([{ id: 'p1', name: 'Mine', spec: {} }])
     ipc.saveMultiRenamePreset.mockResolvedValue(undefined)
     ipc.deleteMultiRenamePreset.mockResolvedValue(undefined)
@@ -96,6 +108,34 @@ describe('MultiRenameDialog', () => {
     const line = root.querySelector('[role="alert"]')
     expect(line).not.toBeNull()
     expect(line?.textContent.trim()).toBe('')
+  })
+
+  it('explains a placeholder in its button’s tooltip, with the first file’s example and the part a form takes', async () => {
+    const root = await mountSheet()
+    const button = [...root.querySelectorAll<HTMLButtonElement>('.placeholders button')].find(
+      (b) => b.textContent.trim() === '[E]',
+    )
+    if (!button) throw new Error('no [E] button')
+    const tip = root.querySelectorAll('.placeholder-tip')[1]
+    expect(tip.textContent).toContain('The file’s current extension')
+    expect(tip.textContent).toContain('For “report.pdf”:')
+    const range = [...tip.querySelectorAll('.forms .example')][1]
+    expect([...range.children].map((piece) => [piece.textContent, piece.classList.contains('taken')])).toEqual([
+      ['p', false],
+      ['df', true],
+    ])
+  })
+
+  it('shows a placeholder’s tooltip on keyboard focus and points the button at it', async () => {
+    const root = await mountSheet()
+    const button = [...root.querySelectorAll<HTMLButtonElement>('.placeholders button')].find(
+      (b) => b.textContent.trim() === '[N]',
+    )
+    button?.focus()
+    await new Promise((resolve) => setTimeout(resolve, 450))
+    const id = button?.getAttribute('aria-describedby')
+    expect(id).toBeTruthy()
+    expect(document.getElementById(id ?? '')?.textContent).toContain('The file’s name, without its extension')
   })
 
   it('says a preview that ran out of time took too long, not that renaming couldn’t start', async () => {

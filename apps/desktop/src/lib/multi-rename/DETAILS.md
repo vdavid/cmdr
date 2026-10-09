@@ -2,6 +2,16 @@
 
 - **Keyboard-first**: the name mask has focus on open; Tab walks the fields; Enter in a text field starts (TC's Start!),
   a button or menu keeps its own Enter; Esc closes. The placeholder buttons insert at the name mask's caret.
+- **Placeholder tooltips**: each button's tooltip (`PlaceholderTip`, adopted as the house tooltip's `contentEl`, so it
+  shows on hover AND keyboard focus and is the button's `aria-describedby`) gives the meaning, an example from the
+  batch's first file, a few other forms from `mask.rs` with their examples, and for a range the part it takes in bold
+  with what the field keeps around it quiet. The examples are the backend's own render of each mask
+  (`render_multi_rename_examples` → `plan::mask_examples`), asked once on open (`exampleMasks`): a range also renders
+  its surroundings as masks (`[E2-3]` with `[E1]` and `[E4-]`), so no slicing grammar lives in TypeScript. A file with
+  no modified time gets dates for a sample one (`sampleDate`), and the line says so; counters need no file
+  (`counterSamples`). With no first file (it's gone) the examples are left out.
+- **Error line**: always rendered under the search row, one line tall (ellipsis, overflow tooltip), so the preview never
+  shifts.
 - **Preview**: reruns `PREVIEW_DELAY_MS` (120 ms) after the last edit. The answer carries the counts (the footer and the
   Rename button) and the first page of rows. The list is the house `ColumnList` (`lib/ui/DETAILS.md` § ColumnList), the
   same look as Search's results, fed the state's windowed `source`: `count` is the rows listed, `getRow` reads the held
@@ -56,10 +66,12 @@
 ## Layout and option keys
 
 - **Two columns over the preview.** Left: name mask (grows) and extension mask (140 px), the placeholder buttons, then
-  Search for / Replace with. Right, past a hairline: a two-column grid of option and key chip. Letter case and Remove
-  diacritics (they change the whole name) on top; a `1fr` gap row sinks the five search options (Match case, First match
-  only, Include extension, Regular expression, Replace whole name) to the bottom, beside the search fields. Each
-  `Checkbox` sits in a wrapper span, since it renders more than one element and would take two grid cells.
+  Search for / Replace with. Right, past a hairline: a two-column grid of option and key chip, each pair one `subgrid`
+  row, so the chips share one right edge. Letter case and Remove diacritics (they change the whole name) on top; Match
+  case's row is the `1fr` one and sits at its bottom, which sinks the five search options (Match case, First match only,
+  Include extension, Regular expression, Replace whole name) beside the search fields when there's spare height. With
+  none, every row is one gap apart. ❌ No spacer row: it costs its own two grid gaps (it made the gap under Remove
+  diacritics three times the others). Each `Checkbox` sits in a wrapper span, since it renders more than one element.
 - **Option keys**: ⌘⌥U opens Letter case (focus + click on its `.select-trigger`, `Select`'s stable class, so the menu
   opens on the checked row as a click would), and ⌘⌥ N/I/F/E/R/W flip Remove diacritics, Match case, First match only,
   Include extension, Regular expression, and Replace whole name. Fixed-key registry commands in
@@ -82,14 +94,28 @@
 - **Props**: `value` (the mask), `onValueChange(next)` (every keystroke AND every token edit; feed it to
   `tool.update({ nameMask })`), `ariaLabel`, `invalid`, and bindable `inputElement` (the `<input>`, for focus and
   `insertPlaceholder`'s caret). It renders `TextInput mono` itself.
-- **Keys**: ArrowDown with the caret inside or right after an editable token (`tokenAtCaret`: `from < caret <= to`)
-  opens its editor and is claimed (`claimKey`); anywhere else ArrowDown isn't touched. In the editor, ArrowDown /
-  ArrowUp walk the fields, and Enter or ArrowUp from the first field closes it; both are claimed, so the sheet's
-  Enter-starts never sees them. Escape is the `Popover`'s, which stops it before the sheet closes. All three put focus
-  back in the field with the caret after the token (Escape through the anchor span's `onfocus`); a click elsewhere
-  closes the editor and leaves focus where it landed.
-- **Markers**: an absolutely placed ▾ `<button tabindex="-1">` ("Edit counter", `aria-haspopup="dialog"`) under each
-  token's end, measured with a canvas in the input's computed font, net of `scrollLeft`; one scrolled out of view isn't
+- **Opening on its own** (`token-editor-rules.ts`, a pure reducer over caret, hover, request, engage, tokens, and
+  dismiss events; the delays are the component's):
+  - The caret resting strictly inside a token (`tokenInside`: `from < caret < to`) for 250 ms opens it, `passive`: focus
+    stays in the field and typing goes on. The caret leaving, Tab or a click away, or the token stopping being one
+    (`[C1x]`) closes it. Right after `]` doesn't count, so typing a token through never pops its editor.
+  - The pointer resting on a token's text (measured extent) or its marker for 300 ms opens it; it stays while the
+    pointer crosses into the popover and closes 300 ms after it leaves both. Hover never takes over an editor the caret
+    or the user holds.
+  - Focus going into the editor (ArrowDown, a click into it, the marker) makes it `focus`-held: only Escape, Enter,
+    ArrowUp, or a click elsewhere closes it. A mousedown back in the field hands it to the caret first, `flushSync`ed,
+    so the popover's trap is gone before focus moves (else the trap pulls focus back).
+  - The popover is `surface="solid"` (opaque `--color-bg-secondary`): the house glass is ~70% opaque, and the numbers
+    must read cleanly over the mask and the list.
+- **Keys**: ArrowDown with an editor open goes into its first field; with none, ArrowDown with the caret inside or right
+  after an editable token (`tokenAtCaret`: `from < caret <= to`) opens it there. Both are claimed (`claimKey`); anywhere
+  else ArrowDown isn't touched. Escape in the field closes an open editor and is claimed, so the sheet stays. In the
+  editor, ArrowDown / ArrowUp walk the fields, and Enter or ArrowUp from the first field closes it; both are claimed, so
+  the sheet's Enter-starts never sees them. Escape is the `Popover`'s, which stops it before the sheet closes. All three
+  put focus back in the field with the caret after the token (Escape through the anchor span's `onfocus`); a click
+  elsewhere closes the editor and leaves focus where it landed.
+- **Markers**: an absolutely placed ▾ `<button tabindex="-1">` ("Edit counter", `aria-haspopup="dialog"`) centered under
+  each token, measured with a canvas in the input's computed font, net of `scrollLeft`; one scrolled out of view isn't
   drawn. Mousedown is prevented, so a click never moves focus out of the field. Re-measured on mask change, input
   scroll, resize, and `selectionchange` (the caret can scroll the input).
 - **Token kinds** (`mask-token-kinds.ts`): each is a grammar (`parse(inner)` → value or `null`, `format(value)` → the

@@ -139,31 +139,76 @@ impl Compiled {
 
     /// The new full name for `entry` at `position` in the rename order.
     fn new_name(&self, entry: &FileEntry, dir: &Path, position: usize) -> String {
-        // Composed, so a range never splits a letter from its accent in a name an
-        // SMB share or HFS stores decomposed.
-        let file_name: String = entry.name.nfc().collect();
-        let parent = dir.file_name().map(|n| n.to_string_lossy()).unwrap_or_default();
-        let grandparent = dir
-            .parent()
-            .and_then(Path::file_name)
-            .map(|n| n.to_string_lossy())
-            .unwrap_or_default();
-        let facts = RowFacts {
-            file_name: &file_name,
-            is_directory: entry.is_directory,
-            parent: &parent,
-            grandparent: &grandparent,
-            modified: entry.modified_at.and_then(local_time),
-            position,
-        };
-        let name = self.name_mask.render(&facts);
-        let extension = self.extension_mask.render(&facts);
-        let (name, extension) = self.transform.apply(&name, &extension);
-        if extension.is_empty() {
-            name
-        } else {
-            format!("{name}.{extension}")
-        }
+        with_facts(entry, dir, position, entry.modified_at.and_then(local_time), |facts| {
+            let name = self.name_mask.render(facts);
+            let extension = self.extension_mask.render(facts);
+            let (name, extension) = self.transform.apply(&name, &extension);
+            if extension.is_empty() {
+                name
+            } else {
+                format!("{name}.{extension}")
+            }
+        })
+    }
+}
+
+/// Runs `f` over what a mask knows about `entry` in `dir`.
+fn with_facts<R>(
+    entry: &FileEntry,
+    dir: &Path,
+    position: usize,
+    modified: Option<NaiveDateTime>,
+    f: impl FnOnce(&RowFacts<'_>) -> R,
+) -> R {
+    // Composed, so a range never splits a letter from its accent in a name an
+    // SMB share or HFS stores decomposed.
+    let file_name: String = entry.name.nfc().collect();
+    let parent = dir.file_name().map(|n| n.to_string_lossy()).unwrap_or_default();
+    let grandparent = dir
+        .parent()
+        .and_then(Path::file_name)
+        .map(|n| n.to_string_lossy())
+        .unwrap_or_default();
+    f(&RowFacts {
+        file_name: &file_name,
+        is_directory: entry.is_directory,
+        parent: &parent,
+        grandparent: &grandparent,
+        modified,
+        position,
+    })
+}
+
+/// Example masks rendered for one file, for the sheet's placeholder tooltips.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct MaskExamples {
+    /// Each mask's text for the file, in order; `None` for a mask that doesn't parse.
+    pub rendered: Vec<Option<String>>,
+    /// The file has no modified time, so dates and times show `SAMPLE_MODIFIED`.
+    pub sample_date: bool,
+}
+
+/// The date and time examples show for a file with none: 2026-06-15 23:10:09.
+const SAMPLE_MODIFIED: (i32, u32, u32, u32, u32, u32) = (2026, 6, 15, 23, 10, 9);
+
+/// Each of `masks` as the name mask would render it for `entry` (the batch's
+/// first file, counter at its start), so the sheet's examples are exactly what
+/// a rename would produce.
+pub(crate) fn mask_examples(entry: &FileEntry, dir: &Path, masks: &[String]) -> MaskExamples {
+    let known = entry.modified_at.and_then(local_time);
+    let (y, mo, d, h, mi, s) = SAMPLE_MODIFIED;
+    let modified =
+        known.or_else(|| chrono::NaiveDate::from_ymd_opt(y, mo, d).and_then(|date| date.and_hms_opt(h, mi, s)));
+    let rendered = with_facts(entry, dir, 0, modified, |facts| {
+        masks
+            .iter()
+            .map(|mask| Mask::parse(mask).ok().map(|m| m.render(facts)))
+            .collect()
+    });
+    MaskExamples {
+        rendered,
+        sample_date: known.is_none(),
     }
 }
 

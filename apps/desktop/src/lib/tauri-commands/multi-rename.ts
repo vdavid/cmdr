@@ -4,6 +4,7 @@
 
 import {
   commands,
+  type MaskExamples,
   type MultiRenameError,
   type MultiRenameOpened,
   type MultiRenamePreset,
@@ -16,6 +17,7 @@ import {
 } from '$lib/ipc/bindings'
 
 export type {
+  MaskExamples,
   MultiRenameError,
   MultiRenameOpened,
   MultiRenamePreset,
@@ -70,6 +72,15 @@ export async function getMultiRenamePreviewRows(
   filter: PreviewFilter,
 ): Promise<MultiRenameResult<PreviewRow[]>> {
   return result(await commands.getMultiRenamePreviewRows(sessionId, previewId, offset, limit, filter))
+}
+
+/**
+ * `masks` rendered for the session's first file, for the placeholder tooltips' examples.
+ * `null` when there's no first file to show (it's gone, or the session is).
+ */
+export async function renderMultiRenameExamples(sessionId: string, masks: string[]): Promise<MaskExamples | null> {
+  const res = await commands.renderMultiRenameExamples(sessionId, masks)
+  return res.status === 'ok' ? res.data : null
 }
 
 /**

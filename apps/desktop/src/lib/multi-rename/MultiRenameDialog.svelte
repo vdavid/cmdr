@@ -43,6 +43,9 @@
     import PresetsControl from './PresetsControl.svelte'
     import { rowStatusView, type StatusMessage } from './row-status'
     import { insertAtCaret } from './spec'
+    import { PLACEHOLDER_HELP, exampleMasks, renderedByMask } from './placeholder-help'
+    import PlaceholderTip from './PlaceholderTip.svelte'
+    import { renderMultiRenameExamples } from '$lib/tauri-commands'
 
     interface Props {
         session: MultiRenameOpened
@@ -73,7 +76,16 @@
     // Read so a late icon re-renders its rows.
     const iconVersion = $derived($iconCacheVersion)
 
-    const PLACEHOLDERS = ['[N]', '[E]', '[P]', '[C]', '[YMD]', '[hms]'] as const
+    /** Each placeholder button's tooltip body, which the tooltip adopts on show. */
+    const tipContent = $state<Partial<Record<string, HTMLDivElement>>>({})
+    /** The tooltips' examples, rendered by the backend for the first file; `null` until they come. */
+    let examples = $state.raw<{ rendered: ReadonlyMap<string, string>; sampleDate: boolean } | null>(null)
+
+    async function loadExamples(): Promise<void> {
+        const masks = exampleMasks(PLACEHOLDER_HELP)
+        const answer = await renderMultiRenameExamples(session.sessionId, masks)
+        if (answer) examples = { rendered: renderedByMask(masks, answer), sampleDate: answer.sampleDate }
+    }
 
     const TOGGLE_LABELS: Record<ToggleField, MessageKey> = {
         removeDiacritics: 'multiRename.removeDiacritics',
@@ -131,6 +143,7 @@
 
     onMount(() => {
         void tool.loadPresets()
+        void loadExamples()
         nameMaskInput?.focus()
         // F2 is also File > Rename's accelerator. Where AppKit runs the menu item instead of
         // (or as well as) handing the webview the key, its fire comes here too.
@@ -273,8 +286,20 @@
                     </label>
                 </div>
                 <div class="placeholders" role="group" aria-label={tString('multiRename.insertPlaceholder')}>
-                    {#each PLACEHOLDERS as placeholder (placeholder)}
-                        <Button size="mini" onclick={() => { insertPlaceholder(placeholder) }}>{placeholder}</Button>
+                    {#each PLACEHOLDER_HELP as help (help.placeholder)}
+                        <Button
+                            size="mini"
+                            tooltipContent={{ contentEl: tipContent[help.placeholder] }}
+                            onclick={() => { insertPlaceholder(help.placeholder) }}
+                        >
+                            {help.placeholder}
+                        </Button>
+                        <PlaceholderTip
+                            {help}
+                            rendered={examples?.rendered ?? null}
+                            sampleDate={examples?.sampleDate ?? false}
+                            bind:contentEl={tipContent[help.placeholder]}
+                        />
                     {/each}
                 </div>
                 <div class="search">
