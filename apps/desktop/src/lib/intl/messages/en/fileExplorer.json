@@ -1150,7 +1150,19 @@
   },
   "fileExplorer.clipboard.copiedPath": "Copied the path, it’s now on your clipboard:",
   "@fileExplorer.clipboard.copiedPath": {
-    "description": "Info toast confirming that the path of the item under the cursor (or of the current folder, when the cursor sits on the \"..\" row) went to the system clipboard. The path itself is rendered on its own line below this sentence, in a monospace font, so the sentence ends with a colon and never contains the path."
+    "description": "Info toast confirming that ONE path went to the system clipboard: the one selected item, or with nothing selected the item under the cursor (or the current folder, when the cursor sits on the \"..\" row). Several selected items get fileExplorer.clipboard.copiedPaths instead. The path itself is rendered on its own line below this sentence, in a monospace font, so the sentence ends with a colon and never contains the path."
+  },
+  "fileExplorer.clipboard.copiedPaths": "Copied {countText} {count, plural, one {path} other {paths}}.",
+  "@fileExplorer.clipboard.copiedPaths": {
+    "description": "Info toast confirming that the full paths of several selected files and folders went to the system clipboard as text, one path per line, e.g. \"Copied 5 paths.\" \"Path\" is a file's location like /Users/me/photo.jpg; use the same word as menu.edit.copyPath. Only shown for two or more items: a single path gets fileExplorer.clipboard.copiedPath, which shows the path itself.",
+    "placeholders": {
+      "countText": "how many paths, already formatted for display",
+      "count": "the same number of paths (drives the singular/plural form)"
+    }
+  },
+  "fileExplorer.clipboard.selectionChanged": "The folder just changed, so nothing was copied. Try again.",
+  "@fileExplorer.clipboard.selectionChanged": {
+    "description": "Warning toast when the user copies the paths or names of the selected files, but files appeared or disappeared in the folder at that very moment, so Cmdr couldn't be sure which files the selection meant and copied nothing. Pressing the shortcut again works once the folder settles."
   },
   "fileExplorer.tabs.limitReached": "Tab limit reached",
   "@fileExplorer.tabs.limitReached": {

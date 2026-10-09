@@ -773,6 +773,14 @@
   "@fileExplorer.clipboard.copiedPath": {
     "sourceHash": "a2eec16"
   },
+  "fileExplorer.clipboard.copiedPaths": "{count, plural, one {{countText} caminho copiado} many {{countText} caminhos copiados} other {{countText} caminhos copiados}}.",
+  "@fileExplorer.clipboard.copiedPaths": {
+    "sourceHash": "aed343a"
+  },
+  "fileExplorer.clipboard.selectionChanged": "A pasta acabou de mudar, então nada foi copiado. Tente de novo.",
+  "@fileExplorer.clipboard.selectionChanged": {
+    "sourceHash": "6f31115"
+  },
   "fileExplorer.tabs.limitReached": "Limite de abas atingido",
   "@fileExplorer.tabs.limitReached": {
     "sourceHash": "2d4205a"

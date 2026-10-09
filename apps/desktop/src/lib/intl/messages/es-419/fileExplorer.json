@@ -171,6 +171,10 @@
   "@fileExplorer.clipboard.pastedAsFileSettings": {
     "sourceHash": "4f2debb"
   },
+  "fileExplorer.clipboard.selectionChanged": "La carpeta acaba de cambiar, así que no se copió nada. Inténtalo de nuevo.",
+  "@fileExplorer.clipboard.selectionChanged": {
+    "sourceHash": "35c080b"
+  },
   "fileExplorer.openWith.copyRefused.archiveUnreadable": "No se pudo sacar {fileName} de su archivo comprimido para abrirlo en {appName}. Puede que el archivo comprimido esté dañado o use un formato que Cmdr no puede leer.",
   "@fileExplorer.openWith.copyRefused.archiveUnreadable": {
     "sourceHash": "ab5a658"

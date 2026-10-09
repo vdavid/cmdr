@@ -22,16 +22,19 @@ The family-grouped handler modules behind the dispatch core (`../command-dispatc
 - **Fire and forget through `detached(...)`, ❌ never a bare `void promise`.** A voided promise's rejection escapes the
   gesture dispatcher's `catch` and lands as an unhandled rejection (F3–F6 on a pane whose listing was gone did, on every
   press). `detached.ts` absorbs it into a debug line; `file-handlers.detached.test.ts` pins it.
-- **Grouped ids share ONE body, no copy-paste** (`applyZoomPreset`, `withEntryUnderCursor`, `copyPathAndAnnounce`).
+- **Grouped ids share ONE body, no copy-paste** (`applyZoomPreset`, `withEntryUnderCursor`, `copyPathAndAnnounce`,
+  `copySelectionOr`).
 - **The `servers.*` row actions (pin, disconnect, forget, edit) go through `runServerRowAction`**, the native row menu's
   own path, so menu and palette can't drift on a confirmation or a toast. Which server they act on is
   `$lib/servers/server-command-target.ts`'s call, ❌ never `getFocusedPaneVolumeId()` alone: the hub IS a pane, so that
   reading answers the synthetic hub row (`$lib/servers/DETAILS.md` § Which server a command acts on). Finding no server
   says NOTHING: the palette lists every command whatever the pane is on. ❗ `servers.edit` and `servers.connect` open
   their sheet and return; awaiting it holds the pipeline open.
-- **`file.copyPath` skips `withEntryUnderCursor`** for `getPathToCopyUnderCursor()`, which resolves `..` to the pane's
-  own directory. Every other under-cursor arm keeps treating `..` as "no entry" (`file-explorer/pane/DETAILS.md` §
-  Copy-path).
+- **`file.copyPath` / `file.copyFilename` act on the whole selection first** (`copySelectionOr` over
+  `readSelectedPathsForCopy()`, one line per item), and only with nothing selected fall back to the cursor row. ❌ Never
+  resolve the selection by row index after an `await`: rows renumber under a watcher insert. Copy-path's cursor fallback
+  skips `withEntryUnderCursor` for `getPathToCopyUnderCursor()`, which resolves `..` to the pane's own directory; every
+  other under-cursor arm keeps treating `..` as "no entry" (`file-explorer/pane/DETAILS.md` § Copy-path).
 - **The clipboard arms branch on `isTextInputFocused()` (`$lib/utils/text-input-focus`) before touching the explorer**:
   a native menu accelerator reaches them even with focus in a dialog's text field. Don't re-roll the `activeElement`
   check: the keydown resolver and the capability guard read that same predicate.

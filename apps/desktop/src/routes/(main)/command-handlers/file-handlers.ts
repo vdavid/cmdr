@@ -4,8 +4,9 @@
  * get-entry-under-cursor-then-act arms (edit / show in Finder / copy filename /
  * get info / the cloud offline pair). The repeated "read the entry under the
  * cursor, act on it if present" shape is the `withEntryUnderCursor` helper, so the
- * cursor read happens once per arm. The two copy-a-path arms sit outside it: they
- * accept the `..` row (as the pane's own directory) and share `copyPathAndAnnounce`.
+ * cursor read happens once per arm. The copy-path and copy-filename arms sit
+ * outside it: they act on the whole SELECTION first (`copySelectionOr`), and
+ * copy-path accepts the `..` row (as the pane's own directory).
  */
 import {
   showInFinder,
@@ -32,6 +33,8 @@ import { openGetInfoOrExplain } from '$lib/file-explorer/pane/get-info-open'
 import { resolveTerminalFolder } from '$lib/open-terminal/terminal-target'
 import { openTerminalHereForFolder } from '$lib/open-terminal/open-terminal-here'
 import { tString } from '$lib/intl/messages.svelte'
+import { formatNumber } from '$lib/file-explorer/selection/selection-info-utils'
+import { extractFilename } from '$lib/file-explorer/operations/selection-adjustment'
 import { trackEvent } from '$lib/tauri-commands'
 import { editServerInView } from '$lib/file-explorer/network/servers-hub-actions'
 import type { CommandArgs } from '$lib/commands'
@@ -84,6 +87,54 @@ async function copyPathAndAnnounce(path: string): Promise<void> {
     toastGroup: 'copied-path',
     maxInGroup: 1,
   })
+}
+
+/**
+ * Line separator between copied paths or names. `\n` on every platform: Finder's
+ * "Copy as Pathname" writes it, and every macOS text field takes it.
+ */
+const CLIPBOARD_LINE_SEPARATOR = '\n'
+
+/**
+ * Puts several paths on the clipboard, one per line, and confirms with a count.
+ * Same one-slot toast group as the single-path toast, so a quick second copy of
+ * either kind replaces the first instead of stacking.
+ */
+async function copyPathsAndAnnounce(paths: string[]): Promise<void> {
+  await copyToClipboard(paths.join(CLIPBOARD_LINE_SEPARATOR))
+  addToast(
+    tString('fileExplorer.clipboard.copiedPaths', { countText: formatNumber(paths.length), count: paths.length }),
+    {
+      level: 'info',
+      toastGroup: 'copied-path',
+      maxInGroup: 1,
+    },
+  )
+}
+
+/** A row path's last segment. A trailing `/` (an S3 "folder" key) doesn't count as one. */
+function nameOfPath(path: string): string {
+  return extractFilename(path.replace(/\/+$/, ''))
+}
+
+/**
+ * Runs `onSelection` with every selected row's path when the focused pane has a
+ * selection, else `onCursor` (today's single-item behavior). A selection the
+ * listing moved out from under copies NOTHING and says so: copying the old
+ * indices' new occupants would put the wrong files on the clipboard.
+ */
+async function copySelectionOr(
+  { explorerRef }: CommandHandlerContext,
+  onSelection: (paths: string[]) => Promise<void>,
+  onCursor: () => void | Promise<void>,
+): Promise<void> {
+  const read = await explorerRef?.readSelectedPathsForCopy()
+  if (read?.kind === 'paths') return onSelection(read.paths)
+  if (read?.kind === 'changed') {
+    addToast(tString('fileExplorer.clipboard.selectionChanged'), { level: 'warn' })
+    return
+  }
+  return onCursor()
 }
 
 /** What the Servers volume shows: the hub row under the cursor, or the host whose share list is up. */
@@ -207,14 +258,19 @@ export const fileHandlers = {
     await openTerminalHereForFolder({ folder, volumeId })
   },
 
-  'file.copyPath': async ({ explorerRef }) => {
-    // Not `withEntryUnderCursor`: on the `..` row this copies the pane's OWN
-    // directory, where every other under-cursor arm treats `..` as "no entry".
-    const path = explorerRef?.getPathToCopyUnderCursor()
-    if (path) {
-      await copyPathAndAnnounce(path)
-    }
-  },
+  'file.copyPath': (hctx) =>
+    copySelectionOr(
+      hctx,
+      (paths) => (paths.length === 1 ? copyPathAndAnnounce(paths[0]) : copyPathsAndAnnounce(paths)),
+      async () => {
+        // Not `withEntryUnderCursor`: on the `..` row this copies the pane's OWN
+        // directory, where every other under-cursor arm treats `..` as "no entry".
+        const path = hctx.explorerRef?.getPathToCopyUnderCursor()
+        if (path) {
+          await copyPathAndAnnounce(path)
+        }
+      },
+    ),
 
   'file.copyCurrentDirectoryPath': async () => {
     const currentPath = getFocusedPanePath()
@@ -223,7 +279,12 @@ export const fileHandlers = {
     }
   },
 
-  'file.copyFilename': (hctx) => withEntryUnderCursor(hctx, (entry) => copyToClipboard(entry.filename)),
+  'file.copyFilename': (hctx) =>
+    copySelectionOr(
+      hctx,
+      (paths) => copyToClipboard(paths.map(nameOfPath).join(CLIPBOARD_LINE_SEPARATOR)),
+      () => withEntryUnderCursor(hctx, (entry) => copyToClipboard(entry.filename)),
+    ),
 
   'file.quickLook': async ({ explorerRef }) => {
     // Shift+Space toggles. The panel close path (✕, Esc, our `quickLookClose`

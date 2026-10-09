@@ -120,6 +120,7 @@ export function makeExplorerSpy(): Record<string, ReturnType<typeof vi.fn>> {
     'startRename',
     'getFileAndPathUnderCursor',
     'getPathToCopyUnderCursor',
+    'readSelectedPathsForCopy',
     'getCursorRowForTerminal',
     'toggleTagOnFocusedSelection',
     'openCopyDialog',

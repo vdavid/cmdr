@@ -773,6 +773,14 @@
   "@fileExplorer.clipboard.copiedPath": {
     "sourceHash": "a2eec16"
   },
+  "fileExplorer.clipboard.copiedPaths": "Đã sao chép {countText} {count, plural, other {đường dẫn}}.",
+  "@fileExplorer.clipboard.copiedPaths": {
+    "sourceHash": "aed343a"
+  },
+  "fileExplorer.clipboard.selectionChanged": "Thư mục vừa thay đổi, nên không có gì được sao chép. Hãy thử lại.",
+  "@fileExplorer.clipboard.selectionChanged": {
+    "sourceHash": "6f31115"
+  },
   "fileExplorer.tabs.limitReached": "Đã đạt giới hạn số tab",
   "@fileExplorer.tabs.limitReached": {
     "sourceHash": "2d4205a"

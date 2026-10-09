@@ -31,8 +31,24 @@ the union and the tuple in sync.
 - `applyZoomPreset` (`view-handlers.ts`) backs the four `view.zoom.setNN` presets.
 - `withEntryUnderCursor` (`file-handlers.ts`) backs every get-entry-then-act file and cloud arm. `file.copyPath` is the
   documented exception.
+- `copySelectionOr` (`file-handlers.ts`) backs `file.copyPath` and `file.copyFilename`: with a selection it copies every
+  selected item, else it runs the arm's cursor fallback. A `changed` read copies nothing and shows a warn toast.
 - `copyPathAndAnnounce` (`file-handlers.ts`) does the clipboard write plus the copied-path toast for `file.copyPath` and
-  `file.copyCurrentDirectoryPath`.
+  `file.copyCurrentDirectoryPath`. One selected item goes through it too, so it shows the path itself;
+  `copyPathsAndAnnounce` takes two or more and shows a count ("Copied 5 paths."), in the same one-slot toast group.
+
+## Copying the selection's paths and names
+
+`file.copyPath` (⌘⌥C) and `file.copyFilename` copy EVERY selected item, one per line (`\n`, no trailing newline), in
+pane order, and fall back to the cursor row only when nothing is selected. That's what Finder's ⌥⌘C "Copy as Pathname"
+and Total Commander's "Copy names with full path" / "Copy selected names" do, and the cursor-only version surprised a
+user who'd selected five files and got one path.
+
+- `file.copyFilename` stays toast-free, as it was for one name. Only copy-path confirms, because its single-item toast
+  already existed.
+- `file.copyFilename` stays unbound: ⇧⌘C (Nimble Commander's names key) is `pane.clone`'s.
+- The labels keep their wording ("Copy path", "Copy filename"), like Finder's "Copy as Pathname", which doesn't
+  pluralize either. Changing them would invalidate every locale for no gain in meaning.
 
 ## Analytics from the file arms
 

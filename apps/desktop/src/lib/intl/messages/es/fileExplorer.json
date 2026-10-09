@@ -773,6 +773,14 @@
   "@fileExplorer.clipboard.copiedPath": {
     "sourceHash": "a2eec16"
   },
+  "fileExplorer.clipboard.copiedPaths": "{count, plural, one {{countText} ruta copiada} many {{countText} rutas copiadas} other {{countText} rutas copiadas}}.",
+  "@fileExplorer.clipboard.copiedPaths": {
+    "sourceHash": "aed343a"
+  },
+  "fileExplorer.clipboard.selectionChanged": "La carpeta acaba de cambiar, así que no se ha copiado nada. Inténtalo de nuevo.",
+  "@fileExplorer.clipboard.selectionChanged": {
+    "sourceHash": "6f31115"
+  },
   "fileExplorer.tabs.limitReached": "Límite de pestañas alcanzado",
   "@fileExplorer.tabs.limitReached": {
     "sourceHash": "2d4205a"

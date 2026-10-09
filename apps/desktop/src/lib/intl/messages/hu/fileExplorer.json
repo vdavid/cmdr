@@ -773,6 +773,14 @@
   "@fileExplorer.clipboard.copiedPath": {
     "sourceHash": "a2eec16"
   },
+  "fileExplorer.clipboard.copiedPaths": "{countText} {count, plural, one {útvonal} other {útvonal}} másolva.",
+  "@fileExplorer.clipboard.copiedPaths": {
+    "sourceHash": "aed343a"
+  },
+  "fileExplorer.clipboard.selectionChanged": "A mappa épp most megváltozott, ezért nem történt másolás. Próbáld újra.",
+  "@fileExplorer.clipboard.selectionChanged": {
+    "sourceHash": "6f31115"
+  },
   "fileExplorer.tabs.limitReached": "Elérted a lapok korlátját",
   "@fileExplorer.tabs.limitReached": {
     "sourceHash": "2d4205a"

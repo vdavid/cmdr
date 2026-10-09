@@ -771,6 +771,14 @@
   "@fileExplorer.clipboard.copiedPath": {
     "sourceHash": "a2eec16"
   },
+  "fileExplorer.clipboard.copiedPaths": "已複製 {countText} {count, plural, other {個路徑}}。",
+  "@fileExplorer.clipboard.copiedPaths": {
+    "sourceHash": "aed343a"
+  },
+  "fileExplorer.clipboard.selectionChanged": "資料夾剛剛變動了，所以什麼都沒複製。請再試一次。",
+  "@fileExplorer.clipboard.selectionChanged": {
+    "sourceHash": "6f31115"
+  },
   "fileExplorer.tabs.limitReached": "已達分頁數量上限",
   "@fileExplorer.tabs.limitReached": {
     "sourceHash": "2d4205a"

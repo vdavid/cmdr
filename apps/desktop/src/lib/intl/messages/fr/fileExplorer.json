@@ -773,6 +773,14 @@
   "@fileExplorer.clipboard.copiedPath": {
     "sourceHash": "a2eec16"
   },
+  "fileExplorer.clipboard.copiedPaths": "{countText} {count, plural, one {chemin copié} many {chemins copiés} other {chemins copiés}}.",
+  "@fileExplorer.clipboard.copiedPaths": {
+    "sourceHash": "aed343a"
+  },
+  "fileExplorer.clipboard.selectionChanged": "Le dossier vient de changer, rien n’a donc été copié. Réessayez.",
+  "@fileExplorer.clipboard.selectionChanged": {
+    "sourceHash": "6f31115"
+  },
   "fileExplorer.tabs.limitReached": "Limite d’onglets atteinte",
   "@fileExplorer.tabs.limitReached": {
     "sourceHash": "2d4205a"

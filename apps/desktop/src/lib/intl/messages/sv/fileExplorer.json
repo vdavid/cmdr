@@ -773,6 +773,14 @@
   "@fileExplorer.clipboard.copiedPath": {
     "sourceHash": "a2eec16"
   },
+  "fileExplorer.clipboard.copiedPaths": "Kopierade {countText} {count, plural, one {sökväg} other {sökvägar}}.",
+  "@fileExplorer.clipboard.copiedPaths": {
+    "sourceHash": "aed343a"
+  },
+  "fileExplorer.clipboard.selectionChanged": "Mappen ändrades precis, så inget kopierades. Försök igen.",
+  "@fileExplorer.clipboard.selectionChanged": {
+    "sourceHash": "6f31115"
+  },
   "fileExplorer.tabs.limitReached": "Gränsen för antal flikar nådd",
   "@fileExplorer.tabs.limitReached": {
     "sourceHash": "2d4205a"
