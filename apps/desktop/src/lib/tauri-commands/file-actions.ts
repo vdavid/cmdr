@@ -321,13 +321,14 @@ export async function copyToClipboard(text: string): Promise<void> {
 
 /**
  * Open the native Quick Look panel on the given path (macOS only).
- * No-op on volumes without local-fs access (MTP etc.) and on non-macOS.
+ * Resolves to whether the panel opened: `false` on volumes without OS-visible paths (MTP etc.) and on non-macOS.
  * @param path - Absolute path to the file under the cursor.
  * @param volumeId - Volume id of the path. Backend uses this to gate non-local volumes.
  */
-export async function quickLookOpen(path: string, volumeId: string): Promise<void> {
+export async function quickLookOpen(path: string, volumeId: string): Promise<boolean> {
   const res = await commands.quickLookOpen(path, volumeId)
   if (res.status === 'error') throwIpcError(res.error)
+  return res.data
 }
 
 /**

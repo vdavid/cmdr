@@ -17,11 +17,13 @@ use tauri::AppHandle;
 #[cfg(target_os = "macos")]
 use tauri::Manager;
 
-/// Open (or re-open) Quick Look on the given path.
+/// Open (or re-open) Quick Look on the given path. Answers whether the panel opened: `false`
+/// for a volume whose paths macOS can't preview, so the frontend drops its optimistic
+/// open state (no close event will ever follow a panel that never showed).
 #[tauri::command]
 #[specta::specta]
 #[cfg(target_os = "macos")]
-pub async fn quick_look_open(app: AppHandle, path: String, volume_id: String) -> Result<(), String> {
+pub async fn quick_look_open(app: AppHandle, path: String, volume_id: String) -> Result<bool, String> {
     use crate::deadline::blocking_with_timeout;
     use std::sync::mpsc::channel;
     use tokio::time::Duration;
@@ -31,7 +33,7 @@ pub async fn quick_look_open(app: AppHandle, path: String, volume_id: String) ->
             target: "quick_look",
             "skipping open: volume {volume_id} doesn't support local fs access (path={path})"
         );
-        return Ok(());
+        return Ok(false);
     }
 
     let app_inner = app.clone();
@@ -43,12 +45,11 @@ pub async fn quick_look_open(app: AppHandle, path: String, volume_id: String) ->
         app_inner
             .run_on_main_thread(move || {
                 let state = app_for_closure.state::<crate::quick_look::QuickLookState>();
-                state.lock_ignore_poison().open_on_main(&app_for_closure, path_main);
-                let _ = tx.send(());
+                let opened = state.lock_ignore_poison().open_on_main(&app_for_closure, path_main);
+                let _ = tx.send(opened);
             })
             .map_err(|e| format!("run_on_main_thread failed: {e}"))?;
-        rx.recv().map_err(|_| "main-thread reply lost".to_string())?;
-        Ok::<(), String>(())
+        rx.recv().map_err(|_| "main-thread reply lost".to_string())
     })
     .await
 }
@@ -116,8 +117,8 @@ pub async fn quick_look_close(app: AppHandle) -> Result<(), String> {
 #[tauri::command]
 #[specta::specta]
 #[cfg(not(target_os = "macos"))]
-pub async fn quick_look_open(_app: AppHandle, _path: String, _volume_id: String) -> Result<(), String> {
-    Ok(())
+pub async fn quick_look_open(_app: AppHandle, _path: String, _volume_id: String) -> Result<bool, String> {
+    Ok(false)
 }
 
 #[tauri::command]

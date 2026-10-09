@@ -107,12 +107,16 @@ The native panel rendering itself isn't covered, so verify that visually. See th
   AppKit-driven and only verifiable manually (hold ArrowDown over a multi-file folder with the panel open — preview
   should follow).
 
-## Opening and Escape check
+## Opening and close-key check
 
 On macOS, use a local file and press Shift+Space, then Escape immediately, before the preview has fully appeared. Repeat
 after leaving the preview open for a moment. Both presses should close it on the first Escape, and the next Shift+Space
 should reopen it. Check that the panel appears without a slow fade. With Quick Look open, bring another Cmdr window or
 dialog forward and confirm Escape still acts on that surface rather than closing the preview behind it.
+
+Then the Space keys (cmdr-reports#32): open the preview with Shift+Space and press Shift+Space a few times in a row.
+Each press should toggle it exactly once, never closing and reopening in one press. Open it again, release Shift, and
+press plain Space: the preview closes and the file under the cursor stays unselected. The next plain Space selects it.
 
 ## When something fails
 

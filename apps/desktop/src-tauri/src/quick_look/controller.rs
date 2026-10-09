@@ -50,6 +50,17 @@ use crate::ignore_poison::IgnorePoison;
 use crate::quick_look::{QuickLookClosed, QuickLookKeyEvent};
 
 const ESCAPE_KEY_CODE: u16 = 53;
+const SPACE_KEY_CODE: u16 = 49;
+
+/// Whether a key press addressed to our panel closes it: Escape, Space, or ⇧Space, with no
+/// ⌘, ⌥, or ⌃ (those chords belong to other commands). Space closes like it does in Finder, so
+/// the press never also toggles the selection behind the panel. ⇧Space is Quick Look's own
+/// toggle; closing it here, before AppKit matches the menu accelerator, keeps the menu from
+/// firing a second `file.quickLook` that reopens the panel.
+fn closes_panel(key_code: u16, flags: NSEventModifierFlags) -> bool {
+    let chord_modifiers = NSEventModifierFlags::Control | NSEventModifierFlags::Option | NSEventModifierFlags::Command;
+    matches!(key_code, ESCAPE_KEY_CODE | SPACE_KEY_CODE) && !flags.intersects(chord_modifiers)
+}
 
 /// Cross-thread state held by the Tauri-managed `Mutex<QuickLookController>`.
 ///
@@ -62,8 +73,8 @@ pub struct QuickLookController {
     /// Whether we currently consider the panel ours and on-screen. Flipped to
     /// `false` by the close-notification observer when the panel leaves.
     is_open: bool,
-    /// The process-wide local Escape monitor is installed on the first open.
-    escape_monitor_installed: bool,
+    /// The process-wide local close-key monitor is installed on the first open.
+    close_key_monitor_installed: bool,
 }
 
 impl QuickLookController {
@@ -71,7 +82,7 @@ impl QuickLookController {
         Self {
             current_url: None,
             is_open: false,
-            escape_monitor_installed: false,
+            close_key_monitor_installed: false,
         }
     }
 
@@ -123,17 +134,19 @@ impl QuickLookController {
     /// `app` is used by the delegate to emit `quick-look-key` /
     /// `quick-look-closed` events later, and by the close-notification
     /// observer registered the first time we ever open.
-    pub fn open_on_main(&mut self, app: &AppHandle<Wry>, path: std::path::PathBuf) {
+    ///
+    /// Returns whether the panel opened.
+    pub fn open_on_main(&mut self, app: &AppHandle<Wry>, path: std::path::PathBuf) -> bool {
         let mtm = MainThreadMarker::new().expect("open_on_main requires the AppKit main thread");
 
         let Some(panel) = shared_panel(mtm) else {
             log::warn!(target: "quick_look", "QLPreviewPanel.sharedPreviewPanel returned nil; skipping open");
-            return;
+            return false;
         };
 
         let delegate = ensure_delegate(app, &panel, mtm);
-        if !self.escape_monitor_installed {
-            self.escape_monitor_installed = install_escape_monitor(app);
+        if !self.close_key_monitor_installed {
+            self.close_key_monitor_installed = install_close_key_monitor(app);
         }
         set_delegate_url(&delegate, Some(&path));
         self.apply_open(path);
@@ -156,6 +169,7 @@ impl QuickLookController {
         // requires the main thread.
         unsafe { panel.reloadData() };
         log::debug!(target: "quick_look", "panel opened for {:?}", self.current_url);
+        true
     }
 
     /// Re-target the panel to a new path. No-op if not currently open.
@@ -228,17 +242,16 @@ fn shared_panel(mtm: MainThreadMarker) -> Option<Retained<QLPreviewPanel>> {
     unsafe { QLPreviewPanel::sharedPreviewPanel(mtm) }
 }
 
-/// Catch Escape before Quick Look's opening transition or event routing can
-/// discard it. Only consume a key addressed to our panel; other windows keep
-/// their own Escape behavior.
-fn install_escape_monitor(app: &AppHandle<Wry>) -> bool {
+/// Catch the close keys (`closes_panel`) before Quick Look's opening transition,
+/// its event routing, or the menu's key equivalents can act on them. Only
+/// consume a key addressed to our panel; other windows keep their own Escape
+/// and Space behavior.
+fn install_close_key_monitor(app: &AppHandle<Wry>) -> bool {
     let app = app.clone();
     let block = block2::RcBlock::new(move |event: NonNull<NSEvent>| -> *mut NSEvent {
         // SAFETY: AppKit keeps this event alive throughout the local monitor callback.
         let event_ref = unsafe { event.as_ref() };
-        let chord_modifiers =
-            NSEventModifierFlags::Control | NSEventModifierFlags::Option | NSEventModifierFlags::Command;
-        if event_ref.keyCode() != ESCAPE_KEY_CODE || event_ref.modifierFlags().intersects(chord_modifiers) {
+        if !closes_panel(event_ref.keyCode(), event_ref.modifierFlags()) {
             return event.as_ptr();
         }
         let Some(mtm) = MainThreadMarker::new() else {
@@ -262,7 +275,7 @@ fn install_escape_monitor(app: &AppHandle<Wry>) -> bool {
     });
 
     // SAFETY: The block has AppKit's `(NSEvent *) -> NSEvent *` signature;
-    // returning the original event passes it on, and null consumes Escape.
+    // returning the original event passes it on, and null consumes the key.
     let monitor = unsafe { NSEvent::addLocalMonitorForEventsMatchingMask_handler(NSEventMask::KeyDown, &block) };
     match monitor {
         Some(monitor) => {
@@ -270,7 +283,7 @@ fn install_escape_monitor(app: &AppHandle<Wry>) -> bool {
             true
         }
         None => {
-            log::warn!(target: "quick_look", "AppKit refused the Quick Look Escape monitor");
+            log::warn!(target: "quick_look", "AppKit refused the Quick Look close-key monitor");
             false
         }
     }
@@ -355,7 +368,7 @@ define_class!(
     /// `QLPreviewPanelDelegate`. We only implement `handleEvent:` so we can
     /// intercept key events while the panel is key and forward them to the
     /// focused pane via Tauri events. Mouse events return NO so the panel can
-    /// handle them natively; Escape closes if the local monitor missed it.
+    /// handle them natively; the close keys close if the local monitor missed them.
     unsafe impl QLPreviewPanelDelegate for QuickLookDelegate {
         #[unsafe(method(previewPanel:handleEvent:))]
         fn handle_event(&self, panel: Option<&QLPreviewPanel>, event: Option<&NSEvent>) -> Bool {
@@ -364,17 +377,16 @@ define_class!(
             if event_type != NSEventType::KeyDown {
                 return Bool::NO;
             }
-            let Some(payload) = build_key_event(event) else { return Bool::NO };
-
             // This delegate only sees keys the panel did not handle. Close on
-            // Escape if it reaches us despite the local monitor above.
-            if payload.key == "Escape" && !payload.meta_key && !payload.ctrl_key && !payload.alt_key {
+            // the close keys if they reach us despite the local monitor.
+            if closes_panel(event.keyCode(), event.modifierFlags()) {
                 if let Some(panel) = panel {
                     panel.orderOut(None);
                     return Bool::YES;
                 }
                 return Bool::NO;
             }
+            let Some(payload) = build_key_event(event) else { return Bool::NO };
 
             if let Err(e) = payload.emit(&self.ivars().app) {
                 log::warn!(target: "quick_look", "failed to emit quick-look-key: {e}");
@@ -648,5 +660,43 @@ mod tests {
         assert_eq!(key_code_to_dom_code(125), "ArrowDown");
         assert_eq!(key_code_to_dom_code(126), "ArrowUp");
         assert_eq!(key_code_to_dom_code(9999), "");
+    }
+
+    #[test]
+    fn escape_and_space_close_the_panel_with_or_without_shift() {
+        // Space closes Quick Look like it does in Finder, so a press meant to dismiss the
+        // preview never toggles the selection behind it. ⇧Space is our own toggle; closing it
+        // here keeps the menu accelerator from also firing and reopening the panel.
+        assert!(closes_panel(ESCAPE_KEY_CODE, NSEventModifierFlags::empty()));
+        assert!(closes_panel(SPACE_KEY_CODE, NSEventModifierFlags::empty()));
+        assert!(closes_panel(SPACE_KEY_CODE, NSEventModifierFlags::Shift));
+        // Caps Lock and the Fn flag ride along on ordinary presses.
+        assert!(closes_panel(
+            SPACE_KEY_CODE,
+            NSEventModifierFlags::CapsLock | NSEventModifierFlags::Function
+        ));
+    }
+
+    #[test]
+    fn chords_and_other_keys_pass_through() {
+        for chord in [
+            NSEventModifierFlags::Command,
+            NSEventModifierFlags::Option,
+            NSEventModifierFlags::Control,
+            NSEventModifierFlags::Shift | NSEventModifierFlags::Option,
+        ] {
+            assert!(
+                !closes_panel(SPACE_KEY_CODE, chord),
+                "{chord:?}+Space must reach its own command"
+            );
+            assert!(
+                !closes_panel(ESCAPE_KEY_CODE, chord),
+                "{chord:?}+Escape must reach its own command"
+            );
+        }
+        assert!(
+            !closes_panel(125, NSEventModifierFlags::empty()),
+            "ArrowDown keeps navigating the list"
+        );
     }
 }

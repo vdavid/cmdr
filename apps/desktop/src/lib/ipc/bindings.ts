@@ -1632,9 +1632,13 @@ export const commands = {
     typedError<null, string>(__TAURI_INVOKE('show_viewer_context_menu', { hasSelection })),
   // Show a file in Finder (reveal in parent folder)
   showInFinder: (path: string) => typedError<null, string>(__TAURI_INVOKE('show_in_finder', { path })),
-  // Open (or re-open) Quick Look on the given path.
+  /**
+   *  Open (or re-open) Quick Look on the given path. Answers whether the panel opened: `false`
+   *  for a volume whose paths macOS can't preview, so the frontend drops its optimistic
+   *  open state (no close event will ever follow a panel that never showed).
+   */
   quickLookOpen: (path: string, volumeId: string) =>
-    typedError<null, string>(__TAURI_INVOKE('quick_look_open', { path, volumeId })),
+    typedError<boolean, string>(__TAURI_INVOKE('quick_look_open', { path, volumeId })),
   quickLookSetPath: (path: string, volumeId: string) =>
     typedError<null, string>(__TAURI_INVOKE('quick_look_set_path', { path, volumeId })),
   quickLookClose: () => typedError<null, string>(__TAURI_INVOKE('quick_look_close')),

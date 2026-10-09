@@ -12,8 +12,9 @@
  *   close the panel directly instead of routing, because the menu accelerator
  *   path isn't reliable while the panel is key (it may consume the keydown
  *   before AppKit's menu dispatcher sees it).
- * - Escape in the main window: a capture listener closes an optimistically
- *   opened panel before native key focus has moved to Quick Look.
+ * - Escape or plain Space in the main window: a capture listener closes the
+ *   panel while the main window still has key focus (the panel is opening, or
+ *   a click moved focus back), so Space never toggles the selection instead.
  *
  * The state object is a module-level singleton (`quickLookState`). The
  * command dispatcher reads `isOpen` to choose between `quickLookOpen` and
@@ -32,6 +33,7 @@ import { type UnlistenFn } from '@tauri-apps/api/event'
 
 import { onQuickLookClosed, onQuickLookKey, quickLookClose } from '$lib/tauri-commands'
 import { eventMatchesCommand } from '$lib/shortcuts'
+import { isTextInputFocused } from '$lib/utils/text-input-focus'
 
 import type { ExplorerAPI } from '../../../routes/(main)/explorer-api'
 
@@ -101,25 +103,29 @@ export function closeFromPaneError(): void {
   closeIfOpen()
 }
 
-/** Close while the main webview still owns the key event during panel opening. */
-export function closeFromEscape(): boolean {
+/** Close from a main-window key (`shouldCloseFromMainWindowKey`). */
+export function closeFromMainWindowKey(): boolean {
   return closeIfOpen()
 }
 
-/** Let a foreground dialog keep Escape even if Quick Look is open behind it. */
-export function shouldCloseFromMainWindowEscape(
+/** Space with no modifier at all: the key Finder closes Quick Look with. */
+function isPlainSpace(e: { code: string; shiftKey: boolean; metaKey: boolean; altKey: boolean; ctrlKey: boolean }) {
+  return e.code === 'Space' && !e.shiftKey && !e.metaKey && !e.altKey && !e.ctrlKey
+}
+
+/**
+ * Whether a main-window keydown closes an open Quick Look: plain Escape, or plain Space, which
+ * closes like it does in Finder instead of toggling the selection behind the panel. The main
+ * window sees these while the panel is still taking key focus, or after a click moved focus
+ * back. A foreground dialog keeps both, and a text field keeps its Space.
+ */
+export function shouldCloseFromMainWindowKey(
   event: KeyboardEvent,
   dialogs: { dialogOpen: boolean; paletteOpen: boolean },
 ): boolean {
-  return (
-    event.key === 'Escape' &&
-    !event.metaKey &&
-    !event.ctrlKey &&
-    !event.altKey &&
-    quickLookState.isOpen &&
-    !dialogs.dialogOpen &&
-    !dialogs.paletteOpen
-  )
+  if (!quickLookState.isOpen || dialogs.dialogOpen || dialogs.paletteOpen) return false
+  if (event.key === 'Escape') return !event.metaKey && !event.ctrlKey && !event.altKey
+  return isPlainSpace(event) && !isTextInputFocused()
 }
 
 /**
@@ -166,10 +172,11 @@ export async function initQuickLookListeners(getExplorer: () => ExplorerAPI | un
   })
 
   const unlistenKey = await onQuickLookKey((payload) => {
-    // Shift+Space closes — the panel is key, so the AppKit menu accelerator
-    // can't be relied on. We close synchronously and let the close-event
-    // listener flip `isOpen` back when the panel finishes animating out.
-    if (isQuickLookCloseKey(payload)) {
+    // The Quick Look key and plain Space close. The native monitor consumes
+    // Space and ⇧Space before they get here; this covers a rebound Quick Look
+    // key, and a Space the panel forwards anyway (monitor not installed). Plain
+    // Space must never reach the pane, where it would toggle the selection.
+    if (isQuickLookCloseKey(payload) || isPlainSpace(payload)) {
       armQuickLookDispatchGuard()
       // Flip `isOpen` immediately so any synchronous follow-up dispatch
       // (rare AppKit menu-accelerator race) sees the closed state.

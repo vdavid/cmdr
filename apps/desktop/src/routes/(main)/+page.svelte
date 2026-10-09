@@ -5,8 +5,8 @@
     import OnboardingWizard from '$lib/onboarding/OnboardingWizard.svelte'
     import { refreshFdaStatus } from '$lib/onboarding/fda-status.svelte'
     import {
-        closeFromEscape,
-        shouldCloseFromMainWindowEscape,
+        closeFromMainWindowKey,
+        shouldCloseFromMainWindowKey,
     } from '$lib/file-explorer/quick-look/quick-look-state.svelte'
     import AlertDialog from '$lib/ui/AlertDialog.svelte'
     import ExpirationModal from '$lib/licensing/ExpirationModal.svelte'
@@ -159,7 +159,7 @@
 
     // Event handlers stored for cleanup
     let handleKeyDown: ((e: KeyboardEvent) => void) | undefined
-    let handleQuickLookEscape: ((e: KeyboardEvent) => void) | undefined
+    let handleQuickLookKey: ((e: KeyboardEvent) => void) | undefined
     let handleContextMenu: ((e: MouseEvent) => void) | undefined
     let handleMouseDown: ((e: MouseEvent) => void) | undefined
     let handleMouseUp: ((e: MouseEvent) => void) | undefined
@@ -253,9 +253,9 @@
         }
     }
 
-    function handleEscapeWhileQuickLookOpens(e: KeyboardEvent): void {
-        if (e.key !== 'Escape' || !shouldCloseFromMainWindowEscape(e, dialogsOnScreen())) return
-        closeFromEscape()
+    function handleQuickLookCloseKey(e: KeyboardEvent): void {
+        if (!shouldCloseFromMainWindowKey(e, dialogsOnScreen())) return
+        closeFromMainWindowKey()
         e.preventDefault()
         e.stopPropagation()
     }
@@ -417,13 +417,13 @@
         initShortcutDispatch()
 
         handleKeyDown = handleGlobalKeyDown
-        handleQuickLookEscape = handleEscapeWhileQuickLookOpens
+        handleQuickLookKey = handleQuickLookCloseKey
         handleContextMenu = handleGlobalContextMenu
         handleMouseDown = handleGlobalMouseDown
         handleMouseUp = handleGlobalMouseUp
         document.addEventListener('keydown', handleKeyDown)
         uninstallEscapeStopClaims = installEscapeStopClaims()
-        document.addEventListener('keydown', handleQuickLookEscape, true)
+        document.addEventListener('keydown', handleQuickLookKey, true)
         document.addEventListener('contextmenu', handleContextMenu, true)
         document.addEventListener('mousedown', handleMouseDown)
         document.addEventListener('mouseup', handleMouseUp)
@@ -457,8 +457,8 @@
         if (handleKeyDown) {
             document.removeEventListener('keydown', handleKeyDown)
         }
-        if (handleQuickLookEscape) {
-            document.removeEventListener('keydown', handleQuickLookEscape, true)
+        if (handleQuickLookKey) {
+            document.removeEventListener('keydown', handleQuickLookKey, true)
         }
         if (handleContextMenu) {
             document.removeEventListener('contextmenu', handleContextMenu, true)

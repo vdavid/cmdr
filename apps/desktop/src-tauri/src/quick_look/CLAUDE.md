@@ -29,9 +29,11 @@ Full details (decisions, NSOpenPanel coexistence, the testing gap, multi-selecti
 - **All three commands hop to the AppKit main thread** via `app.run_on_main_thread()` + a one-shot `mpsc`, wrapped in
   `blocking_with_timeout` (2 s) so a wedged AppKit pump can't freeze the IPC pool. Keep new entry points on this
   pattern.
-- **Escape has two owners during opening.** The main webview catches it before Quick Look takes key focus; a local
-  AppKit monitor catches it once addressed to our panel, before Quick Look's own event routing. Keep the monitor scoped
-  to the panel's window number and our delegate so other windows retain Escape. See `DETAILS.md` § Opening and Escape.
+- **The close keys (Escape, Space, ⇧Space) have two owners.** The main webview's capture listener catches them before
+  Quick Look takes key focus; a local AppKit monitor catches them once addressed to our panel, before the panel's
+  routing and the menu's ⇧Space accelerator (which would otherwise reopen the panel). Keep the monitor scoped to the
+  panel's window number and our delegate so other windows keep their keys. See `DETAILS.md` § Opening and the close
+  keys.
 - **The close observer is the single source of truth for `is_open`; don't add a parallel flip.** `panel.orderOut(nil)`
   makes `QLPreviewPanel` post its close notification. A second flip in `close_on_main` would race the observer's and
   break a quick reopen.

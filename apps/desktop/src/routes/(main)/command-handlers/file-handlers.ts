@@ -276,7 +276,8 @@ export const fileHandlers = {
     // press immediately after the first reads the right state.
     quickLookState.isOpen = true
     detached(trackEvent('quick_look_used', { outcome: 'opened' }))
-    await quickLookOpen(entryUnderCursor.path, volumeId)
+    // A volume macOS can't preview (an MTP phone) opens nothing, and no close event follows.
+    if (!(await quickLookOpen(entryUnderCursor.path, volumeId))) quickLookState.isOpen = false
   },
 
   'file.contextMenu': async ({ explorerRef }) => {

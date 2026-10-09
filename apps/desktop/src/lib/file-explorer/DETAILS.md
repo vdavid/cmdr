@@ -7,7 +7,8 @@ The cross-cutting subsystem detail that belongs to a child directory (type-to-ju
 `navigate()` transaction, volume capabilities) lives in `pane/CLAUDE.md` and `pane/DETAILS.md`; this file owns
 selection, sorting, the command palette, operations, and the cross-cutting decisions.
 
-Quick Look's opening and Escape handling are documented in `src-tauri/src/quick_look/DETAILS.md` § Opening and Escape.
+Quick Look's opening and close-key handling are documented in `src-tauri/src/quick_look/DETAILS.md` § Opening and the
+close keys.
 
 ## Selection (`selection/`)
 

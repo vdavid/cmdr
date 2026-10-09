@@ -14,7 +14,7 @@ vi.mock('$lib/ui/toast', () => ({ addToast: vi.fn() }))
 vi.mock('$lib/tauri-commands', () => ({
   showInFinder: vi.fn(),
   copyToClipboard: vi.fn(),
-  quickLookOpen: vi.fn(() => Promise.resolve()),
+  quickLookOpen: vi.fn(() => Promise.resolve(true)),
   quickLookClose: vi.fn(() => Promise.resolve()),
   getInfo: vi.fn(),
   openInEditor: vi.fn(),
@@ -94,6 +94,17 @@ describe('file.quickLook archive gate', () => {
     // `word/document.xml` has no file on disk, exactly like a zip's inner entry.
     await fileHandlers['file.quickLook'](ctxAt('/x/report.docx/word/document.xml'))
     expect(quickLookOpen).not.toHaveBeenCalled()
+    expect(quickLookState.isOpen).toBe(false)
+  })
+})
+
+describe('file.quickLook on a volume the panel cannot preview', () => {
+  it('drops the optimistic isOpen when the backend skips the open', async () => {
+    // An MTP phone's paths aren't real files to macOS, so the backend opens nothing and no
+    // close event ever follows. A stale `isOpen: true` would make the next plain Space
+    // "close" a panel that isn't there instead of toggling the selection.
+    vi.mocked(quickLookOpen).mockResolvedValueOnce(false)
+    await fileHandlers['file.quickLook'](ctxAt('/x/normal.txt'))
     expect(quickLookState.isOpen).toBe(false)
   })
 })

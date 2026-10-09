@@ -71,8 +71,8 @@ import {
   armQuickLookDispatchGuard,
   initQuickLookListeners,
   closeFromPaneError,
-  closeFromEscape,
-  shouldCloseFromMainWindowEscape,
+  closeFromMainWindowKey,
+  shouldCloseFromMainWindowKey,
 } from './quick-look-state.svelte'
 
 describe('quickLookState', () => {
@@ -171,6 +171,24 @@ describe('quickLookState', () => {
     expect(quickLookState.isOpen).toBe(true)
   })
 
+  it('plain Space from the panel closes it and never reaches the selection toggle', async () => {
+    // Space closes Quick Look like it does in Finder (cmdr-reports#32): the press that
+    // dismisses the preview must not also select the file. The native monitor consumes
+    // it first; this is the path for a Space the panel forwards anyway.
+    const routePanelKey = vi.fn()
+    const fakeExplorer = { routePanelKey } as unknown as NonNullable<
+      ReturnType<Parameters<typeof initQuickLookListeners>[0]>
+    >
+    teardown = await initQuickLookListeners(() => fakeExplorer)
+    quickLookState.isOpen = true
+    handlers['quick-look-key']({
+      payload: { key: ' ', code: 'Space', shiftKey: false, metaKey: false, altKey: false, ctrlKey: false },
+    })
+    expect(routePanelKey).not.toHaveBeenCalled()
+    expect(quickLookCloseMock).toHaveBeenCalledTimes(1)
+    expect(quickLookState.isOpen).toBe(false)
+  })
+
   it('non-shift-space key events route through the explorer', async () => {
     const routePanelKey = vi.fn()
     const fakeExplorer = { routePanelKey } as unknown as NonNullable<
@@ -214,27 +232,53 @@ describe('quickLookState', () => {
 
   it('Escape during the opening handoff closes once and clears optimistic state', () => {
     quickLookState.isOpen = true
-    expect(closeFromEscape()).toBe(true)
+    expect(closeFromMainWindowKey()).toBe(true)
     expect(quickLookState.isOpen).toBe(false)
-    expect(closeFromEscape()).toBe(false)
+    expect(closeFromMainWindowKey()).toBe(false)
     expect(quickLookCloseMock).toHaveBeenCalledTimes(1)
   })
 
   it('only takes plain Escape when the main window has no foreground dialog', () => {
     quickLookState.isOpen = true
     const noDialogs = { dialogOpen: false, paletteOpen: false }
-    expect(shouldCloseFromMainWindowEscape(new KeyboardEvent('keydown', { key: 'Escape' }), noDialogs)).toBe(true)
+    expect(shouldCloseFromMainWindowKey(new KeyboardEvent('keydown', { key: 'Escape' }), noDialogs)).toBe(true)
     expect(
-      shouldCloseFromMainWindowEscape(new KeyboardEvent('keydown', { key: 'Escape', metaKey: true }), noDialogs),
+      shouldCloseFromMainWindowKey(new KeyboardEvent('keydown', { key: 'Escape', metaKey: true }), noDialogs),
     ).toBe(false)
     expect(
-      shouldCloseFromMainWindowEscape(new KeyboardEvent('keydown', { key: 'Escape' }), {
+      shouldCloseFromMainWindowKey(new KeyboardEvent('keydown', { key: 'Escape' }), {
         dialogOpen: true,
         paletteOpen: false,
       }),
     ).toBe(false)
     quickLookState.isOpen = false
-    expect(shouldCloseFromMainWindowEscape(new KeyboardEvent('keydown', { key: 'Escape' }), noDialogs)).toBe(false)
+    expect(shouldCloseFromMainWindowKey(new KeyboardEvent('keydown', { key: 'Escape' }), noDialogs)).toBe(false)
+  })
+
+  it('takes plain Space in the main window while open, so it closes instead of selecting', () => {
+    quickLookState.isOpen = true
+    const noDialogs = { dialogOpen: false, paletteOpen: false }
+    const space = (init: KeyboardEventInit = {}) => new KeyboardEvent('keydown', { key: ' ', code: 'Space', ...init })
+    expect(shouldCloseFromMainWindowKey(space(), noDialogs)).toBe(true)
+    // ⇧Space is the toggle command itself, which closes through the dispatcher.
+    expect(shouldCloseFromMainWindowKey(space({ shiftKey: true }), noDialogs)).toBe(false)
+    expect(shouldCloseFromMainWindowKey(space({ metaKey: true }), noDialogs)).toBe(false)
+    expect(shouldCloseFromMainWindowKey(space(), { dialogOpen: false, paletteOpen: true })).toBe(false)
+    quickLookState.isOpen = false
+    expect(shouldCloseFromMainWindowKey(space(), noDialogs)).toBe(false)
+  })
+
+  it('leaves a Space typed into a text field alone', () => {
+    quickLookState.isOpen = true
+    const input = document.createElement('input')
+    document.body.append(input)
+    input.focus()
+    const verdict = shouldCloseFromMainWindowKey(new KeyboardEvent('keydown', { key: ' ', code: 'Space' }), {
+      dialogOpen: false,
+      paletteOpen: false,
+    })
+    input.remove()
+    expect(verdict).toBe(false)
   })
 
   it('teardown detaches both listeners and allows fresh attachment afterwards', async () => {

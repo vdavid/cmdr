@@ -24,19 +24,35 @@ Architecture and decisions for the native macOS Quick Look integration. `CLAUDE.
   it through `setDelegate:`. The observer must outlive any specific open/close cycle. When `AppHandle` drops at process
   shutdown, the delegate (and observer) go with it. This is the documented pattern for singleton observers in AppKit.
 
-## Opening and Escape
+## Opening and the close keys
 
 `open_on_main` sets `NSWindowAnimationBehaviorNone` before ordering the shared panel front. Cmdr has no preview-item
 source frame for a Quick Look zoom transition; AppKit's fallback is a visible fade. The setting requests no automatic
 window animation. The panel still loads preview content through `reloadData`.
 
-Two event paths cover the focus handoff. While the main webview still receives keydown, its capture listener closes the
-optimistically opened Quick Look state on Escape. Once the panel receives key events, a process-local `NSEvent`
-monitor sees Escape before the panel's event routing. It consumes the event only when its window number is the shared
-panel's and our delegate is installed; it ignores Command, Control, and Option combinations. The monitor reads
-`is_open`, drops the mutex guard, then calls `orderOut` so a close notification cannot reenter a locked controller.
-The delegate's `handleEvent:` also closes on Escape if the panel forwards one as unhandled. The close notification
-remains the native side's source of truth for state and the frontend's `quick-look-closed` event.
+The close keys are Escape, Space, and ⇧Space, with no ⌘, ⌥, or ⌃ (`closes_panel` in `controller.rs`). Space closes like
+it does in Finder, so the press that dismisses the preview never also toggles the selection behind it; the next Space
+selects as usual (cmdr-reports#32). Two event paths cover the focus handoff:
+
+- **While the main webview still receives keydown** (the panel is opening, or a click moved focus back), a capture
+  listener in `+page.svelte` closes on plain Escape or plain Space via `shouldCloseFromMainWindowKey`. A foreground
+  dialog keeps both keys, and a focused text field keeps its Space. ⇧Space there is the toggle command, which closes
+  through the dispatcher.
+- **Once the panel receives key events**, a process-local `NSEvent` monitor sees the close keys before the panel's
+  event routing AND before AppKit matches menu key equivalents. It consumes the event only when its window number is
+  the shared panel's and our delegate is installed. Consuming ⇧Space there is load-bearing: when the panel handled it
+  AND the File menu's ⇧Space accelerator also fired `file.quickLook`, the late menu fire reopened the panel the press
+  had just closed (seen in user logs as a close and a reopen ~200 ms apart from one press). The monitor reads
+  `is_open`, drops the mutex guard, then calls `orderOut` so a close notification cannot reenter a locked controller.
+
+The delegate's `handleEvent:` also closes on the close keys if the panel forwards one as unhandled, and the frontend's
+`quick-look-key` listener closes on the Quick Look shortcut (so a rebound key works) and on plain Space; neither path
+ever routes plain Space to the pane. The close notification remains the native side's source of truth for state and
+the frontend's `quick-look-closed` event.
+
+`quick_look_open` answers whether the panel opened. A volume whose paths macOS can't preview (MTP) opens nothing and
+no close event follows, so the frontend drops its optimistic `isOpen` on `false`; a stale `true` would make the next
+Space close a panel that isn't there.
 
 ## Coexistence with NSOpenPanel
 
