@@ -724,7 +724,7 @@ reconnect view's Disconnect, a separate action.
 the control re-enables while the row lingers until `volumes-changed` arrives, and a click there would reach
 `resolve_is_ejectable`, which answers "not ejectable" for a path that's gone. So `eject_now` asks `is_already_unmounted`
 first, for every registered non-device volume, and answers `Ok` with an `info` line. It trusts "not listed" only for
-an ID whose scheme names a mount (`cmdr_fs::volume::is_mount_backed_volume_id`: `vol-`, `path-`, `smb-`): a cloud
+an ID whose scheme names a mount (`cmdr_fs::volume::VolumeScheme::is_mount_backed`: `vol-`, `path-`, `smb-`): a cloud
 drive's root is a plain folder that was never in the table, so it keeps answering `NotEjectable`, and `root` is always
 mounted. It's the same non-probing read `settle` uses, so a hung mount can't block it and an unreadable table counts as
 still mounted.

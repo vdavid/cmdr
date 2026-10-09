@@ -400,11 +400,11 @@ async fn name_the_holders(
 /// non-probing table read ([`unmount_tool::is_still_mounted`]).
 ///
 /// Trusts "not listed" only for an ID whose scheme names a mount
-/// ([`cmdr_fs::volume::is_mount_backed_volume_id`]), and doesn't read the table
+/// ([`VolumeScheme::is_mount_backed`](cmdr_fs::volume::VolumeScheme::is_mount_backed)), and doesn't read the table
 /// for any other: a cloud drive's root is a plain folder that was never listed, so
 /// answering `Ok` for it would be a false success where `NotEjectable` is right.
 fn is_already_unmounted(volume_id: &str, still_mounted: impl FnOnce() -> bool) -> bool {
-    cmdr_fs::volume::is_mount_backed_volume_id(volume_id) && !still_mounted()
+    cmdr_fs::volume::VolumeScheme::of(volume_id).is_mount_backed() && !still_mounted()
 }
 
 /// Stop the volume's index (if any) BEFORE running the unmount/eject.

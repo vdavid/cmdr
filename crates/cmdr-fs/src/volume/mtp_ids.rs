@@ -30,12 +30,6 @@
 //! `index-{volume_id}.db` filename. The right-split then holds even if that ever
 //! regressed. The serial itself is OPAQUE — we never interpret its contents.
 
-/// The `mtp-` prefix every MTP device id carries, so a volume id is recognizable
-/// as MTP and distinct from `root` / SMB ids. Must match the scheme
-/// [`super::ids::mtp_device_id`] mints under; `prefix_matches_the_id_funnel`
-/// holds the two together.
-pub const MTP_DEVICE_ID_PREFIX: &str = "mtp-";
-
 /// Build the stable MTP device id for a device, preferring its serial number.
 ///
 /// - With a non-empty serial: keyed by the serial (stable across replug to ANY port).
@@ -87,10 +81,10 @@ pub fn storage_id_of_volume(volume_id: &str) -> Option<u32> {
     split_volume_id(volume_id).map(|(_, storage_id)| storage_id)
 }
 
-/// Whether `id` looks like an MTP device id (carries the `mtp-` prefix). A cheap
+/// Whether `id` looks like an MTP device id ([`VolumeScheme::Mtp`](super::VolumeScheme::Mtp)). A cheap
 /// shape check; it does NOT prove the device is connected.
 pub fn is_mtp_device_id(id: &str) -> bool {
-    id.starts_with(MTP_DEVICE_ID_PREFIX)
+    super::ids::VolumeScheme::of(id) == super::ids::VolumeScheme::Mtp
 }
 
 /// Whether `volume_id` is a well-formed MTP volume id: an `mtp-`-prefixed device
@@ -106,16 +100,9 @@ mod tests {
     // ── device_id_for: serial preferred, location fallback ────────────────
 
     #[test]
-    fn prefixes_every_device_id() {
-        assert!(device_id_for(Some("ABC123"), 336_592_896).starts_with(MTP_DEVICE_ID_PREFIX));
-        assert!(device_id_for(None, 336_592_896).starts_with(MTP_DEVICE_ID_PREFIX));
-    }
-
-    #[test]
-    fn prefix_matches_the_id_funnel() {
-        // `MTP_DEVICE_ID_PREFIX` and the funnel's scheme are two spellings of one
-        // fact; a drift would make `is_mtp_device_id` blind to real MTP ids.
-        assert!(super::super::ids::mtp_device_id("anything").starts_with(MTP_DEVICE_ID_PREFIX));
+    fn every_device_id_reads_back_as_mtp() {
+        assert!(is_mtp_device_id(&device_id_for(Some("ABC123"), 336_592_896)));
+        assert!(is_mtp_device_id(&device_id_for(None, 336_592_896)));
     }
 
     #[test]

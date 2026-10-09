@@ -70,7 +70,7 @@ static COOLDOWNS: LazyLock<Mutex<Cooldowns>> = LazyLock::new(Mutex::default);
 /// `mount_at`, the per-share switch through `switched_on`.
 ///
 /// Gates, cheapest first:
-/// 1. The id names an SMB share (`is_smb_volume_id`), so a local navigation stops
+/// 1. The id names an SMB share (`VolumeScheme::Smb`), so a local navigation stops
 ///    here without reading the mount table.
 /// 2. It's registered, and served by something other than an `SmbVolume`: that
 ///    combination is exactly "an OS mount Cmdr hasn't upgraded". A share with a
@@ -91,7 +91,7 @@ fn plan(
     cooldowns: &mut Cooldowns,
     now: Instant,
 ) -> Option<PaneUpgrade> {
-    if !cmdr_fs::volume::is_smb_volume_id(volume_id) {
+    if cmdr_fs::volume::VolumeScheme::of(volume_id) != cmdr_fs::volume::VolumeScheme::Smb {
         return None;
     }
     let root = match (backend, root) {
@@ -125,7 +125,9 @@ fn plan(
 /// person is looking at this share, so a failure is news they can act on (once per
 /// server per run).
 pub(crate) fn upgrade_on_pane_open(volume_id: &str) {
-    if !crate::file_system::is_direct_smb_enabled() || !cmdr_fs::volume::is_smb_volume_id(volume_id) {
+    if !crate::file_system::is_direct_smb_enabled()
+        || cmdr_fs::volume::VolumeScheme::of(volume_id) != cmdr_fs::volume::VolumeScheme::Smb
+    {
         return;
     }
     let volume = crate::file_system::volume::manager::get_volume_manager().get(volume_id);

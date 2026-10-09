@@ -84,8 +84,8 @@ pure, unit-tested decision it wraps:
   `mtp://{device}/{storage}` scheme + segments to the inner `/path` the index stores under. The path's device+storage
   must match the volume id (a `:`-in-serial device id round-trips verbatim); a plain `/inner` path already
   storage-relative is accepted as-is; anything else ⇒ `None`.
-- **ADB** (id recognized by `cmdr_fs::volume::is_adb_volume_id`) — `adb_index_relative_path` reads the serial off the
-  path (`cmdr_fs::volume::adb_serial_of_path`), requires `adb_volume_id(serial)` to equal the volume id, then strips
+- **ADB** (id recognized by `VolumeScheme::Adb`) — `adb_index_relative_path` reads the serial off the path
+  (`cmdr_fs::volume::adb_serial_of_path`), requires `adb_volume_id(serial)` to equal the volume id, then strips
   `adb_app_root(serial)` with the shared `index_relative_path`, leaving the device path (`/sdcard/DCIM`). A bare
   `/sdcard/…` is `None`: scheme-free is the Mac's boot disk in app vocabulary, and nothing hands this index one.
 - **SMB (non-root with a known mount root)** — strip the mount root via `transports::smb::watch::index_relative_path`.

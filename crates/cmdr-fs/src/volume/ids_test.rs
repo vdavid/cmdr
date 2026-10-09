@@ -1,40 +1,86 @@
 use super::super::mtp_ids::{device_id_for, mtp_volume_id};
 use super::*;
 
-// ── Scheme shape: which IDs name an OS mount ──────────────────────────
+// ── Scheme: every id reads back as the scheme it was minted under ────
+
+#[test]
+fn every_constructor_reads_back_as_its_own_scheme() {
+    let cases = [
+        (DEFAULT_VOLUME_ID.to_string(), VolumeScheme::Root),
+        (
+            local_volume_id(Some("5C1A2D4E-0000-4000-8000-00000000BEEF"), "/Volumes/Backup"),
+            VolumeScheme::Local,
+        ),
+        (path_volume_id("/Volumes/NO NAME"), VolumeScheme::Path),
+        (smb_volume_id("naspolya", 445, "public"), VolumeScheme::Smb),
+        (sftp_volume_id("naspolya", 22, "ada"), VolumeScheme::Sftp),
+        (webdav_volume_id("naspolya", 443, "ada"), VolumeScheme::Webdav),
+        (
+            s3_volume_id("s3.amazonaws.com", 443, "AKIA", Some("photos")),
+            VolumeScheme::S3,
+        ),
+        (mtp_device_id("39041FDJH00A0K"), VolumeScheme::Mtp),
+        (
+            mtp_volume_id(&mtp_device_id("39041FDJH00A0K"), 65537),
+            VolumeScheme::Mtp,
+        ),
+        (adb_volume_id("39041FDJH00A0K"), VolumeScheme::Adb),
+        ("cloud-dropbox".to_string(), VolumeScheme::Cloud),
+        ("fav-1".to_string(), VolumeScheme::Favorite),
+    ];
+    for (id, scheme) in cases {
+        assert_eq!(VolumeScheme::of(&id), scheme, "{id}");
+    }
+}
+
+#[test]
+fn an_id_no_constructor_mints_is_unknown() {
+    // A pre-scheme id, a frontend-only virtual id, and a bare tag with no body.
+    for id in [
+        "volumesmydisk",
+        "network",
+        "search-results",
+        "",
+        "adb",
+        "rooted",
+        "smbshare",
+    ] {
+        assert_eq!(VolumeScheme::of(id), VolumeScheme::Unknown, "{id}");
+    }
+}
+
+#[test]
+fn a_lookalike_mount_path_keeps_its_own_scheme() {
+    // The slug carries the mount path, so the tag must be read off the FRONT only.
+    assert_eq!(
+        VolumeScheme::of(&path_volume_id("/Volumes/smb-lookalike")),
+        VolumeScheme::Path
+    );
+    assert_eq!(
+        VolumeScheme::of(&local_volume_id(None, "/Volumes/adb")),
+        VolumeScheme::Path
+    );
+}
 
 #[test]
 fn only_the_ids_minted_for_a_mount_are_mount_backed() {
     // Eject trusts "no longer in the mount table" only for these: a root that was
     // never a mount (a cloud drive's plain folder) is never listed, which says
     // nothing about whether it's still there.
-    assert!(is_mount_backed_volume_id(&local_volume_id(
+    let mount_backed = |id: &str| VolumeScheme::of(id).is_mount_backed();
+    assert!(mount_backed(&local_volume_id(
         Some("5C1A2D4E-0000-4000-8000-00000000BEEF"),
         "/Volumes/Backup"
     )));
-    assert!(is_mount_backed_volume_id(&path_volume_id("/Volumes/NO NAME")));
-    assert!(is_mount_backed_volume_id(&smb_volume_id("naspolya", 445, "public")));
+    assert!(mount_backed(&path_volume_id("/Volumes/NO NAME")));
+    assert!(mount_backed(&smb_volume_id("naspolya", 445, "public")));
 
-    assert!(!is_mount_backed_volume_id(DEFAULT_VOLUME_ID));
-    assert!(!is_mount_backed_volume_id("cloud-dropbox"));
-    assert!(!is_mount_backed_volume_id("fav-1"));
-    assert!(!is_mount_backed_volume_id(&sftp_volume_id("naspolya", 22, "ada")));
-    assert!(!is_mount_backed_volume_id(&webdav_volume_id("naspolya", 443, "ada")));
-    assert!(!is_mount_backed_volume_id(&adb_volume_id("R58M12345")));
-}
-
-#[test]
-fn only_an_smb_share_has_an_smb_volume_id() {
-    // The pane-open SMB upgrade reads this before it looks at the mount table, so
-    // a local navigation never pays for that read.
-    assert!(is_smb_volume_id(&smb_volume_id("naspolya", 445, "public")));
-    assert!(is_smb_volume_id(&smb_volume_id("192.168.1.111", 10480, "naspi")));
-
-    assert!(!is_smb_volume_id(DEFAULT_VOLUME_ID));
-    assert!(!is_smb_volume_id(&path_volume_id("/Volumes/smb-lookalike")));
-    assert!(!is_smb_volume_id(&local_volume_id(None, "/Volumes/smb")));
-    assert!(!is_smb_volume_id(&sftp_volume_id("naspolya", 22, "ada")));
-    assert!(!is_smb_volume_id(&webdav_volume_id("naspolya", 443, "ada")));
+    assert!(!mount_backed(DEFAULT_VOLUME_ID));
+    assert!(!mount_backed("cloud-dropbox"));
+    assert!(!mount_backed("fav-1"));
+    assert!(!mount_backed(&sftp_volume_id("naspolya", 22, "ada")));
+    assert!(!mount_backed(&webdav_volume_id("naspolya", 443, "ada")));
+    assert!(!mount_backed(&adb_volume_id("R58M12345")));
 }
 
 // ── The property the whole module exists for: injectivity ─────────────
@@ -313,16 +359,6 @@ fn an_unsluggable_identity_still_gets_an_id() {
 }
 
 // ── Cross-scheme separation ───────────────────────────────────────────
-
-#[test]
-fn a_phone_is_recognizable_from_its_id_alone() {
-    // The native menus have only the volume id to go on when they decide
-    // whether the row's detach control says Eject or Disconnect.
-    assert!(is_adb_volume_id(&adb_volume_id("39041FDJH00A0K")));
-    assert!(!is_adb_volume_id(&mtp_device_id("39041FDJH00A0K")));
-    assert!(!is_adb_volume_id(&path_volume_id("/Volumes/Backup")));
-    assert!(!is_adb_volume_id(DEFAULT_VOLUME_ID));
-}
 
 #[test]
 fn ids_from_different_schemes_never_collide() {

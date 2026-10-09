@@ -543,7 +543,7 @@ impl IndexDoor for AppIndexDoor {
         let Some(volume) = super::manager::get_volume_manager().get(volume_id) else {
             return false;
         };
-        if !cmdr_fs::volume::is_mount_backed_volume_id(volume_id) {
+        if !cmdr_fs::volume::VolumeScheme::of(volume_id).is_mount_backed() {
             return true;
         }
         #[cfg(any(target_os = "macos", target_os = "linux"))]

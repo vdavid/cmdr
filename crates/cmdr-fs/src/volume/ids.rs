@@ -33,6 +33,9 @@
 //! - `path-`: the fallback when nothing better exists ([`path_volume_id`]),
 //!   keyed by the mount path. Stable only as long as the mount path is.
 //!
+//! [`VolumeScheme::of`] reads the scheme back, and it's the only thing that
+//! may: route on the enum, never on a `starts_with` of your own.
+//!
 //! ❌ Never build a volume ID by hand, and never build one by STRIPPING
 //! characters. Stripping is a many-to-one map, so it hands two volumes the same
 //! identity: `/Volumes/My Disk` and `/Volumes/My_Disk` both reduce to
@@ -98,7 +101,8 @@ fn digest(scheme: &str, parts: &[&str]) -> String {
 /// `slug_source` is cosmetic; `canonical_parts` is the identity. Pass every part
 /// that distinguishes this volume from another, already case-folded wherever
 /// folding is semantically right (see [`smb_volume_id`]).
-fn derived_id(scheme: &str, slug_source: &str, canonical_parts: &[&str]) -> String {
+fn derived_id(scheme: VolumeScheme, slug_source: &str, canonical_parts: &[&str]) -> String {
+    let scheme = scheme.minted_tag();
     let digest = digest(scheme, canonical_parts);
     let slug = slug(slug_source);
     if slug.is_empty() {
@@ -134,7 +138,7 @@ pub fn local_volume_id(uuid: Option<&str>, mount_path: &str) -> String {
         // must not get two IDs because two APIs disagree on case.
         Some(uuid) => {
             let folded = uuid.to_lowercase();
-            derived_id("vol", &folded, &[&folded])
+            derived_id(VolumeScheme::Local, &folded, &[&folded])
         }
         None => path_volume_id(mount_path),
     }
@@ -153,7 +157,7 @@ pub fn path_volume_id(mount_path: &str) -> String {
     if mount_path == "/" {
         return DEFAULT_VOLUME_ID.to_string();
     }
-    derived_id("path", mount_path, &[mount_path])
+    derived_id(VolumeScheme::Path, mount_path, &[mount_path])
 }
 
 /// Build the ID for an SMB mount, keyed by the mount rather than the path shape.
@@ -185,7 +189,11 @@ pub fn smb_volume_id(server: &str, port: u16, share: &str) -> String {
     let server = fold_name(server);
     let share = fold_name(share);
     let port = port.to_string();
-    derived_id("smb", &format!("{server}-{port}-{share}"), &[&server, &port, &share])
+    derived_id(
+        VolumeScheme::Smb,
+        &format!("{server}-{port}-{share}"),
+        &[&server, &port, &share],
+    )
 }
 
 /// Build the ID for an SFTP volume, keyed by the ACCOUNT on the server rather
@@ -210,7 +218,11 @@ pub fn smb_volume_id(server: &str, port: u16, share: &str) -> String {
 pub fn sftp_volume_id(host: &str, port: u16, username: &str) -> String {
     let host = host.to_lowercase();
     let port = port.to_string();
-    derived_id("sftp", &format!("{host}-{port}-{username}"), &[&host, &port, username])
+    derived_id(
+        VolumeScheme::Sftp,
+        &format!("{host}-{port}-{username}"),
+        &[&host, &port, username],
+    )
 }
 
 /// Build the ID for a WebDAV server from its (host, port, username) triple.
@@ -231,7 +243,7 @@ pub fn webdav_volume_id(host: &str, port: u16, username: &str) -> String {
     let host = host.to_lowercase();
     let port = port.to_string();
     derived_id(
-        "webdav",
+        VolumeScheme::Webdav,
         &format!("{host}-{port}-{username}"),
         &[&host, &port, username],
     )
@@ -259,7 +271,7 @@ pub fn s3_volume_id(host: &str, port: u16, access_key_id: &str, bucket: Option<&
     let port = port.to_string();
     let bucket = bucket.unwrap_or_default();
     derived_id(
-        "s3",
+        VolumeScheme::S3,
         &format!("{bucket}-{host}"),
         &[&host, &port, access_key_id, bucket],
     )
@@ -273,7 +285,7 @@ pub fn s3_volume_id(host: &str, port: u16, access_key_id: &str, bucket: Option<&
 /// `.` can't break the `index-{id}.db` filename or the `{device}:{storage}`
 /// split.
 pub fn mtp_device_id(serial_or_location: &str) -> String {
-    derived_id("mtp", serial_or_location, &[serial_or_location])
+    derived_id(VolumeScheme::Mtp, serial_or_location, &[serial_or_location])
 }
 
 /// Build the ID for an Android device reached over ADB from its (opaque,
@@ -286,40 +298,110 @@ pub fn mtp_device_id(serial_or_location: &str) -> String {
 /// for the other. Routing the serial through the funnel keeps a `/`, `:`, or
 /// `.` in it out of the `index-{id}.db` filename.
 pub fn adb_volume_id(serial: &str) -> String {
-    derived_id("adb", serial, &[serial])
+    derived_id(VolumeScheme::Adb, serial, &[serial])
 }
 
-/// Whether `id` names an Android device reached over ADB.
+/// Which identity scheme a volume ID was minted under: the typed reading of its
+/// `{scheme}-` prefix, and the ONE place anything reads that prefix.
 ///
-/// The Rust twin of `isAdbVolumeId` in `adb-path-utils.ts`, and the same test:
-/// the scheme prefix [`adb_volume_id`] mints. Shape-only, like
-/// [`is_mtp_device_id`](super::mtp_ids::is_mtp_device_id): it does NOT prove the
-/// phone is attached. Used where a phone must read differently from a disk,
-/// which is anywhere the word "Eject" would otherwise appear.
-pub fn is_adb_volume_id(id: &str) -> bool {
-    id.starts_with("adb-")
+/// It answers "what kind of drive does this ID name" from the ID alone, so it
+/// holds for a drive that isn't connected, where no registered volume exists to
+/// ask. That's what sets it apart from [`BackendKind`](super::BackendKind),
+/// which says what serves a REGISTERED volume right now (an `smb-` share Cmdr
+/// hasn't upgraded yet is served by a `Local` backend). Route by scheme for
+/// "which transport owns this drive", read the backend for "can it be walked
+/// now".
+///
+/// Shape-only: it does NOT prove the drive is attached. Decide per kind with an
+/// exhaustive `match`, so a new scheme breaks the build everywhere a decision
+/// has to be made for it. The frontend twin is `volumeScheme`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum VolumeScheme {
+    /// The boot volume, [`DEFAULT_VOLUME_ID`].
+    Root,
+    /// `vol-`: a local volume keyed by its filesystem UUID ([`local_volume_id`]).
+    Local,
+    /// `path-`: a mount keyed by its path ([`path_volume_id`]): a local volume
+    /// with no UUID, or a non-SMB network mount.
+    Path,
+    /// `smb-`: an SMB share ([`smb_volume_id`]), whichever backend serves it.
+    Smb,
+    /// `sftp-`: an SFTP server ([`sftp_volume_id`]).
+    Sftp,
+    /// `webdav-`: a WebDAV server ([`webdav_volume_id`]).
+    Webdav,
+    /// `s3-`: a place on an S3 account ([`s3_volume_id`]).
+    S3,
+    /// `mtp-`: an MTP device, or one storage on it (`super::mtp_ids`).
+    Mtp,
+    /// `adb-`: an Android device over ADB ([`adb_volume_id`]).
+    Adb,
+    /// `cloud-`: a cloud-sync folder (iCloud Drive, Dropbox, …), a literal ID.
+    Cloud,
+    /// `fav-`: a favorite shown as a volume, a literal ID.
+    Favorite,
+    /// No current scheme: a pre-scheme ID, or a frontend-only virtual one.
+    Unknown,
 }
 
-/// Whether `id` names an SMB share ([`smb_volume_id`]), whichever backend serves it
-/// right now: Cmdr's own session or the OS mount it rides beside.
-///
-/// Shape-only, like [`is_adb_volume_id`]: it does NOT prove the share is mounted.
-pub fn is_smb_volume_id(id: &str) -> bool {
-    id.starts_with("smb-")
-}
+impl VolumeScheme {
+    /// Every prefixed scheme with its tag. [`Self::of`] reads it and
+    /// [`derived_id`] writes it, so minting and parsing can't drift apart.
+    const TAGGED: [(Self, &'static str); 10] = [
+        (Self::Local, "vol"),
+        (Self::Path, "path"),
+        (Self::Smb, "smb"),
+        (Self::Sftp, "sftp"),
+        (Self::Webdav, "webdav"),
+        (Self::S3, "s3"),
+        (Self::Mtp, "mtp"),
+        (Self::Adb, "adb"),
+        (Self::Cloud, "cloud"),
+        (Self::Favorite, "fav"),
+    ];
 
-/// Whether `id` names a volume whose root is an OS mount: a local volume
-/// ([`local_volume_id`], or its [`path_volume_id`] fallback) or an SMB mount
-/// ([`smb_volume_id`]).
-///
-/// Shape-only, like [`is_adb_volume_id`]: it does NOT prove the mount is still
-/// there. Eject reads it before trusting "no longer in the mount table", because
-/// a root that was never a mount (a `cloud-` drive's plain folder) is never
-/// listed, which says nothing about whether it's gone. False for
-/// [`DEFAULT_VOLUME_ID`], the `cloud-`/`fav-` literals, and the server and device
-/// schemes.
-pub fn is_mount_backed_volume_id(id: &str) -> bool {
-    id.starts_with("vol-") || id.starts_with("path-") || id.starts_with("smb-")
+    /// The scheme `id` was minted under, or [`Self::Unknown`].
+    pub fn of(id: &str) -> Self {
+        if id == DEFAULT_VOLUME_ID {
+            return Self::Root;
+        }
+        Self::TAGGED
+            .iter()
+            .find(|(_, tag)| {
+                id.strip_prefix(tag)
+                    .and_then(|rest| rest.strip_prefix('-'))
+                    .is_some_and(|body| !body.is_empty())
+            })
+            .map_or(Self::Unknown, |(scheme, _)| *scheme)
+    }
+
+    /// Whether IDs of this scheme name an OS mount: a local volume or an SMB
+    /// share. Eject reads it before trusting "no longer in the mount table",
+    /// because a root that was never a mount (a `cloud-` drive's plain folder) is
+    /// never listed, which says nothing about whether it's gone.
+    pub fn is_mount_backed(self) -> bool {
+        match self {
+            Self::Local | Self::Path | Self::Smb => true,
+            Self::Root
+            | Self::Sftp
+            | Self::Webdav
+            | Self::S3
+            | Self::Mtp
+            | Self::Adb
+            | Self::Cloud
+            | Self::Favorite
+            | Self::Unknown => false,
+        }
+    }
+
+    /// The tag [`derived_id`] mints under. Only the derived schemes reach it.
+    fn minted_tag(self) -> &'static str {
+        debug_assert!(!matches!(self, Self::Root | Self::Unknown), "{self:?} is never derived");
+        Self::TAGGED
+            .iter()
+            .find(|(scheme, _)| *scheme == self)
+            .map_or("", |(_, tag)| tag)
+    }
 }
 
 /// Whether `id` predates the current ID scheme, so the state it keys can never
@@ -334,7 +416,10 @@ pub fn is_mount_backed_volume_id(id: &str) -> bool {
 /// and a live ID misread as legacy costs a rescan of a disposable cache. It is
 /// NOT a security boundary; don't grow one on top of it.
 pub fn is_legacy_volume_id(id: &str) -> bool {
-    if id == DEFAULT_VOLUME_ID || id.starts_with("cloud-") || id.starts_with("fav-") {
+    if matches!(
+        VolumeScheme::of(id),
+        VolumeScheme::Root | VolumeScheme::Cloud | VolumeScheme::Favorite
+    ) {
         return false;
     }
     // An MTP volume ID is `{device_id}:{storage_id}`; the device half is the

@@ -88,10 +88,20 @@ impl DetachWord {
     /// The word for a row, read off its volume id: the one input both native
     /// menus already carry, so neither can drift from the other.
     pub(crate) fn for_volume_id(volume_id: &str) -> Self {
-        if cmdr_fs::volume::is_adb_volume_id(volume_id) {
-            Self::Disconnect
-        } else {
-            Self::Eject
+        use cmdr_fs::volume::VolumeScheme;
+        match VolumeScheme::of(volume_id) {
+            VolumeScheme::Adb => Self::Disconnect,
+            VolumeScheme::Root
+            | VolumeScheme::Local
+            | VolumeScheme::Path
+            | VolumeScheme::Smb
+            | VolumeScheme::Sftp
+            | VolumeScheme::Webdav
+            | VolumeScheme::S3
+            | VolumeScheme::Mtp
+            | VolumeScheme::Cloud
+            | VolumeScheme::Favorite
+            | VolumeScheme::Unknown => Self::Eject,
         }
     }
 }

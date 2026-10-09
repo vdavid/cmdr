@@ -816,7 +816,7 @@ macOS has up, and nobody asked for the rest (issue #123).
 
 **Which volumes qualify** (`plan`, pure, cheapest gate first, so a local navigation costs one prefix check):
 
-1. The id is an SMB share's (`cmdr_fs::volume::is_smb_volume_id`).
+1. The id is an SMB share's (`VolumeScheme::of` says `Smb`).
 2. The registry serves it with something other than an `SmbVolume`. That pair IS "an OS mount Cmdr hasn't upgraded";
    a share with a session, `Disconnected` included, owns its recovery through `attempt_reconnect`.
 3. The kernel's mount table (`volumes::smb_mounts`, non-blocking) still lists an SMB mount at the volume's root, and

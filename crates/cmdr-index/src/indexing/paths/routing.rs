@@ -218,7 +218,7 @@ fn index_read_path_pure(volume_id: &str, normalized_abs: &str, mount_root: Optio
     }
     // ADB: the index `ROOT_ID` is the device's `/`, under `adb://<serial>`. Pure
     // over the path, so an unplugged phone's index still answers for its paths.
-    if cmdr_fs::volume::is_adb_volume_id(volume_id) {
+    if cmdr_fs::volume::VolumeScheme::of(volume_id) == cmdr_fs::volume::VolumeScheme::Adb {
         return adb_index_relative_path(volume_id, normalized_abs);
     }
     let mount_root = mount_root?;

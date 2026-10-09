@@ -102,7 +102,8 @@ pub(super) fn redact_derived_id(id: &str, context: Option<&RedactionContext>) ->
     let (core, storage) = id
         .rsplit_once(':')
         .filter(|(core, storage)| {
-            core.starts_with("mtp-") && storage.parse::<u32>().is_ok_and(|value| value.to_string() == *storage)
+            cmdr_fs::volume::VolumeScheme::of(core) == cmdr_fs::volume::VolumeScheme::Mtp
+                && storage.parse::<u32>().is_ok_and(|value| value.to_string() == *storage)
         })
         .map_or((id, None), |(core, storage)| (core, Some(storage)));
     let Some((scheme_and_slug, digest)) = core.rsplit_once('-') else {
