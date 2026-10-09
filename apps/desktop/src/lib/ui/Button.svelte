@@ -29,6 +29,8 @@
          * still telling a screen reader which row it belongs to.
          */
         'aria-describedby'?: string
+        /** The keys that press this button without focusing it (`S Enter`), for a screen reader. */
+        'aria-keyshortcuts'?: string
         /**
          * Focus this button after mount. Uses `requestAnimationFrame` so it lands
          * after a parent `ModalDialog` has settled its own mount-time focus (the
@@ -48,6 +50,7 @@
         onclick,
         'aria-label': ariaLabel,
         'aria-describedby': ariaDescribedby,
+        'aria-keyshortcuts': ariaKeyshortcuts,
         autoFocus = false,
         children,
     }: Props = $props()
@@ -70,6 +73,7 @@
     {onclick}
     aria-label={ariaLabel}
     aria-describedby={ariaDescribedby}
+    aria-keyshortcuts={ariaKeyshortcuts}
     use:tooltip={tooltipContent}
 >
     {@render children()}

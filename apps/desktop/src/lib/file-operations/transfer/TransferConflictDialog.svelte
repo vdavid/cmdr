@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { untrack } from 'svelte'
     import Icon from '$lib/ui/Icon.svelte'
     import Trans from '$lib/intl/Trans.svelte'
     import Button from '$lib/ui/Button.svelte'
@@ -12,6 +13,8 @@
     import { formatDate } from '$lib/file-explorer/selection/selection-info-utils'
     import type { WriteConflictEvent } from '$lib/tauri-commands'
     import type { ConflictResolution } from '$lib/file-explorer/types'
+    import DecisionKeyHint from '../DecisionKeyHint.svelte'
+    import { answerDecisionKey, CONFLICT_KEYS, DECISION_KEYS_ARM_MS, type DecisionChoice } from '../decision-keys'
 
     interface Props {
         /** The conflict to resolve (one clash; the BE re-prompts per remaining clash). */
@@ -107,9 +110,75 @@
     const smallerDisabledTooltip = $derived(
         destSizeUnknown ? tString('fileOperations.transferProgress.smallerDisabledTooltip') : undefined,
     )
+
+    // One function per answer, shared by the button and its letter key.
+    const skip = () => { onResolve('skip', false) }
+    const skipAll = () => { onResolve('skip', true) }
+    const rename = () => { onResolve('rename', false) }
+    const renameAll = () => { onResolve('rename', true) }
+    const overwrite = () => { onResolve('overwrite', false) }
+    const overwriteAll = () => { onResolve('overwrite', true) }
+    const overwriteAllSmaller = () => { onResolve('overwrite_smaller', true) }
+    const overwriteAllOlder = () => { onResolve('overwrite_older', true) }
+    const cancel = () => { onCancel(false) }
+    const rollBack = () => { onCancel(true) }
+
+    /** The bottom row's live exit: a plain Cancel, or a Rollback that asks first. */
+    const offersRollback = $derived(!rollbackUnavailable && (isCopy || isMove))
+    const exitLocked = $derived(isCancelling || isResolvingConflict)
+
+    /** Every button's letter, enabled exactly when the button is. `decision-keys.ts`. */
+    const keyChoices = $derived<DecisionChoice[]>([
+        { key: CONFLICT_KEYS.skip, enabled: !isResolvingConflict, run: skip },
+        { key: CONFLICT_KEYS.skipAll, enabled: !isResolvingConflict, run: skipAll },
+        { key: CONFLICT_KEYS.rename, enabled: !isResolvingConflict, run: rename },
+        { key: CONFLICT_KEYS.renameAll, enabled: !isResolvingConflict, run: renameAll },
+        { key: CONFLICT_KEYS.overwrite, enabled: !isResolvingConflict, run: overwrite },
+        { key: CONFLICT_KEYS.overwriteAll, enabled: !isResolvingConflict, run: overwriteAll },
+        {
+            key: CONFLICT_KEYS.overwriteAllSmaller,
+            enabled: !isResolvingConflict && !destSizeUnknown,
+            run: overwriteAllSmaller,
+        },
+        { key: CONFLICT_KEYS.overwriteAllOlder, enabled: !isResolvingConflict, run: overwriteAllOlder },
+        { key: CONFLICT_KEYS.cancel, enabled: !offersRollback && !exitLocked, run: cancel },
+        { key: CONFLICT_KEYS.rollback, enabled: offersRollback && !exitLocked, run: rollBack },
+    ])
+
+    let section: HTMLDivElement | undefined = $state()
+    /** The clash whose keys are live: set `DECISION_KEYS_ARM_MS` after it appears. */
+    let armedConflictId = $state<number | null>(null)
+
+    // Per clash: re-arm, and take focus back if it was lost. The progress dialog
+    // swaps its whole body for this one, so a focused Pause or Cancel button
+    // unmounts and focus falls to <body>, where no dialog hears a key. Focus
+    // that's anywhere else (another dialog stacked on top) is left alone.
+    $effect(() => {
+        const conflictId = conflictEvent.conflictId
+        const active = document.activeElement
+        // Untracked: the section binding landing must not restart the arming.
+        if (active === null || active === document.body) untrack(() => section)?.focus()
+        const timer = setTimeout(() => {
+            armedConflictId = conflictId
+        }, DECISION_KEYS_ARM_MS)
+        return () => {
+            clearTimeout(timer)
+        }
+    })
+
+    /**
+     * Answers the clash from a bare letter (or Enter = Skip, the safe default).
+     * The host dialog forwards its keydowns here, so only a keypress inside THAT
+     * dialog can answer, and Escape never does (it isn't a choice). Returns
+     * whether the key answered.
+     */
+    export function handleKeydown(event: KeyboardEvent): boolean {
+        if (armedConflictId !== conflictEvent.conflictId) return false
+        return answerDecisionKey(event, keyChoices, CONFLICT_KEYS.skip)
+    }
 </script>
 
-<div class="conflict-section">
+<div class="conflict-section" bind:this={section} tabindex="-1">
     {#if isTypeMismatch}
         <!-- Red warning sits below the title and above the filename.
              The "boring" title is `File already exists`; the type swap gets
@@ -208,67 +277,81 @@
         <div class="conflict-buttons-row">
             <Button
                 variant="secondary"
-                onclick={() => { onResolve('skip', false); }}
+                onclick={skip}
                 disabled={isResolvingConflict}
+                aria-keyshortcuts="{CONFLICT_KEYS.skip} Enter"
             >
-                {tString('fileOperations.transferProgress.conflictSkip')}
+                {tString('fileOperations.transferProgress.conflictSkip')}<DecisionKeyHint key={CONFLICT_KEYS.skip} />
             </Button>
             <Button
                 variant="secondary"
-                onclick={() => { onResolve('skip', true); }}
+                onclick={skipAll}
                 disabled={isResolvingConflict}
+                aria-keyshortcuts={CONFLICT_KEYS.skipAll}
             >
-                {tString('fileOperations.transferProgress.conflictSkipAll')}
-            </Button>
-        </div>
-        <div class="conflict-buttons-row">
-            <Button
-                variant="secondary"
-                onclick={() => { onResolve('rename', false); }}
-                disabled={isResolvingConflict}
-            >
-                {tString('fileOperations.transferProgress.conflictRename')}
-            </Button>
-            <Button
-                variant="secondary"
-                onclick={() => { onResolve('rename', true); }}
-                disabled={isResolvingConflict}
-            >
-                {tString('fileOperations.transferProgress.conflictRenameAll')}
+                {tString('fileOperations.transferProgress.conflictSkipAll')}<DecisionKeyHint key={CONFLICT_KEYS.skipAll} />
             </Button>
         </div>
         <div class="conflict-buttons-row">
             <Button
                 variant="secondary"
-                onclick={() => { onResolve('overwrite', false); }}
+                onclick={rename}
                 disabled={isResolvingConflict}
+                aria-keyshortcuts={CONFLICT_KEYS.rename}
             >
-                {overwriteLabel}
+                {tString('fileOperations.transferProgress.conflictRename')}<DecisionKeyHint key={CONFLICT_KEYS.rename} />
             </Button>
             <Button
                 variant="secondary"
-                onclick={() => { onResolve('overwrite', true); }}
+                onclick={renameAll}
                 disabled={isResolvingConflict}
+                aria-keyshortcuts={CONFLICT_KEYS.renameAll}
             >
-                {overwriteAllLabel}
+                {tString('fileOperations.transferProgress.conflictRenameAll')}<DecisionKeyHint
+                    key={CONFLICT_KEYS.renameAll}
+                />
+            </Button>
+        </div>
+        <div class="conflict-buttons-row">
+            <Button
+                variant="secondary"
+                onclick={overwrite}
+                disabled={isResolvingConflict}
+                aria-keyshortcuts={CONFLICT_KEYS.overwrite}
+            >
+                {overwriteLabel}<DecisionKeyHint key={CONFLICT_KEYS.overwrite} />
+            </Button>
+            <Button
+                variant="secondary"
+                onclick={overwriteAll}
+                disabled={isResolvingConflict}
+                aria-keyshortcuts={CONFLICT_KEYS.overwriteAll}
+            >
+                {overwriteAllLabel}<DecisionKeyHint key={CONFLICT_KEYS.overwriteAll} />
             </Button>
         </div>
         <div class="conflict-buttons-row">
             <span use:tooltip={smallerDisabledTooltip} class="conflict-button-wrap">
                 <Button
                     variant="secondary"
-                    onclick={() => { onResolve('overwrite_smaller', true); }}
+                    onclick={overwriteAllSmaller}
                     disabled={isResolvingConflict || destSizeUnknown}
+                    aria-keyshortcuts={CONFLICT_KEYS.overwriteAllSmaller}
                 >
-                    {tString('fileOperations.transferProgress.conflictOverwriteAllSmaller')}
+                    {tString('fileOperations.transferProgress.conflictOverwriteAllSmaller')}<DecisionKeyHint
+                        key={CONFLICT_KEYS.overwriteAllSmaller}
+                    />
                 </Button>
             </span>
             <Button
                 variant="secondary"
-                onclick={() => { onResolve('overwrite_older', true); }}
+                onclick={overwriteAllOlder}
                 disabled={isResolvingConflict}
+                aria-keyshortcuts={CONFLICT_KEYS.overwriteAllOlder}
             >
-                {tString('fileOperations.transferProgress.conflictOverwriteAllOlder')}
+                {tString('fileOperations.transferProgress.conflictOverwriteAllOlder')}<DecisionKeyHint
+                    key={CONFLICT_KEYS.overwriteAllOlder}
+                />
             </Button>
         </div>
     </div>
@@ -280,10 +363,11 @@
         {#if rollbackUnavailable}
             <button
                 class="danger-text"
-                onclick={() => { onCancel(false); }}
-                disabled={isCancelling || isResolvingConflict}
+                onclick={cancel}
+                disabled={exitLocked}
+                aria-keyshortcuts={CONFLICT_KEYS.cancel}
             >
-                {tString('fileOperations.transferProgress.conflictCancel')}
+                {tString('fileOperations.transferProgress.conflictCancel')}<DecisionKeyHint key={CONFLICT_KEYS.cancel} />
             </button>
             <!-- Blocked, not `disabled`: the reason is worth reading, and a
                  disabled button leaves the tab order with its tooltip. No click
@@ -291,21 +375,25 @@
             <button class="danger-text" aria-disabled="true" use:tooltip={ROLLBACK_UNAVAILABLE_TOOLTIP}
                 >{tString('fileOperations.transferProgress.conflictRollback')}</button
             >
-        {:else if isCopy || isMove}
+        {:else if offersRollback}
             <button
                 class="danger-text"
-                onclick={() => { onCancel(true); }}
-                disabled={isCancelling || isResolvingConflict}
+                onclick={rollBack}
+                disabled={exitLocked}
+                aria-keyshortcuts={CONFLICT_KEYS.rollback}
             >
-                {tString('fileOperations.transferProgress.conflictRollback')}
+                {tString('fileOperations.transferProgress.conflictRollback')}<DecisionKeyHint
+                    key={CONFLICT_KEYS.rollback}
+                />
             </button>
         {:else}
             <button
                 class="danger-text"
-                onclick={() => { onCancel(false); }}
-                disabled={isCancelling || isResolvingConflict}
+                onclick={cancel}
+                disabled={exitLocked}
+                aria-keyshortcuts={CONFLICT_KEYS.cancel}
             >
-                {tString('fileOperations.transferProgress.conflictCancel')}
+                {tString('fileOperations.transferProgress.conflictCancel')}<DecisionKeyHint key={CONFLICT_KEYS.cancel} />
             </button>
         {/if}
     </div>
@@ -317,6 +405,13 @@
     /* Conflict section */
     .conflict-section {
         padding: var(--spacing-md) var(--spacing-xl) var(--spacing-xl);
+    }
+
+    /* Focused only to catch the answer keys when the dialog's own focus was
+       lost (see the script); a ring around the whole body would read as a
+       control. */
+    .conflict-section:focus {
+        outline: none;
     }
 
     /* Name and folder read as one subject, so the gap to the comparison rows

@@ -13,6 +13,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { mount, tick } from 'svelte'
 import TransferErrorDialog from './TransferErrorDialog.svelte'
 import type { WriteOperationError } from '$lib/file-explorer/types'
+import { buttonLabel } from '../test-button-label'
 
 vi.mock('$lib/tauri-commands', () => ({
   notifyDialogOpened: vi.fn(() => Promise.resolve()),
@@ -82,7 +83,7 @@ describe('TransferErrorDialog: typed-error rendering', () => {
   it('renders Retry when the category is transient (even without retryHint)', async () => {
     const target = mountDialog({ error: { type: 'connection_interrupted', path: '/p' }, onRetry: () => {} })
     await tick()
-    const buttons = Array.from(target.querySelectorAll('button')).map((b) => b.textContent.trim())
+    const buttons = Array.from(target.querySelectorAll('button')).map(buttonLabel)
     expect(buttons).toContain('Retry')
   })
 
@@ -90,7 +91,7 @@ describe('TransferErrorDialog: typed-error rendering', () => {
     // io_error → serious, retryHint=true
     const target = mountDialog({ error: { type: 'io_error', path: '/p', message: 'm' }, onRetry: () => {} })
     await tick()
-    const buttons = Array.from(target.querySelectorAll('button')).map((b) => b.textContent.trim())
+    const buttons = Array.from(target.querySelectorAll('button')).map(buttonLabel)
     expect(buttons).toContain('Retry')
   })
 
@@ -101,7 +102,7 @@ describe('TransferErrorDialog: typed-error rendering', () => {
       onRetry: () => {},
     })
     await tick()
-    const buttons = Array.from(target.querySelectorAll('button')).map((b) => b.textContent.trim())
+    const buttons = Array.from(target.querySelectorAll('button')).map(buttonLabel)
     expect(buttons).not.toContain('Retry')
   })
 
@@ -114,14 +115,14 @@ describe('TransferErrorDialog: typed-error rendering', () => {
     }
 
     function buttonLabels(target: HTMLElement): string[] {
-      return Array.from(target.querySelectorAll('button')).map((b) => b.textContent.trim())
+      return Array.from(target.querySelectorAll('button')).map(buttonLabel)
     }
 
     it('offers Copy anyway on a copy, which starts it again', async () => {
       const onCopyAnyway = vi.fn()
       const target = mountDialog({ error: shortfall, operationType: 'copy', onCopyAnyway })
       await tick()
-      const button = Array.from(target.querySelectorAll('button')).find((b) => b.textContent.trim() === 'Copy anyway')
+      const button = Array.from(target.querySelectorAll('button')).find((b) => buttonLabel(b) === 'Copy anyway')
       expect(button).toBeDefined()
       button?.click()
       expect(onCopyAnyway).toHaveBeenCalledTimes(1)

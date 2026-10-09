@@ -36,6 +36,8 @@ vi.mock('$lib/settings/reactive-settings.svelte', () => ({
 }))
 
 import OperationConflictDialog from './OperationConflictDialog.svelte'
+import { buttonLabel } from './test-button-label'
+import { DECISION_KEYS_ARM_MS } from './decision-keys'
 
 function snapshot(over: Partial<OperationSnapshot> = {}): OperationSnapshot {
   return {
@@ -146,7 +148,7 @@ describe('OperationConflictDialog', () => {
     const host = render()
 
     const buttons = [...host.querySelectorAll('button')]
-    const skipAll = buttons.find((b) => b.textContent.trim() === 'Skip all')
+    const skipAll = buttons.find((b) => buttonLabel(b) === 'Skip all')
     skipAll?.click()
 
     expect(resolveConflictPrompt).toHaveBeenCalledWith('skip', true)
@@ -157,7 +159,7 @@ describe('OperationConflictDialog', () => {
     const host = render()
 
     const buttons = [...host.querySelectorAll('button')]
-    const rollback = buttons.find((b) => b.textContent.trim() === 'Rollback')
+    const rollback = buttons.find((b) => buttonLabel(b) === 'Rollback')
     expect(rollback?.disabled).toBe(false)
     rollback?.click()
     flushSync()
@@ -166,7 +168,7 @@ describe('OperationConflictDialog', () => {
     // operation has written, and an overwritten one has no backup.
     expect(cancelConflictPrompt).not.toHaveBeenCalled()
 
-    const confirm = [...host.querySelectorAll('button')].find((b) => b.textContent.trim() === 'Roll back')
+    const confirm = [...host.querySelectorAll('button')].find((b) => buttonLabel(b) === 'Roll back')
     expect(confirm, 'the question is on screen').toBeDefined()
     confirm?.click()
 
@@ -177,9 +179,9 @@ describe('OperationConflictDialog', () => {
     prompt = makePrompt()
     const host = render()
 
-    ;[...host.querySelectorAll('button')].find((b) => b.textContent.trim() === 'Rollback')?.click()
+    ;[...host.querySelectorAll('button')].find((b) => buttonLabel(b) === 'Rollback')?.click()
     flushSync()
-    ;[...host.querySelectorAll('button')].find((b) => b.textContent.trim() === 'Keep them')?.click()
+    ;[...host.querySelectorAll('button')].find((b) => buttonLabel(b) === 'Keep them')?.click()
     flushSync()
 
     expect(cancelConflictPrompt).not.toHaveBeenCalled()
@@ -195,11 +197,11 @@ describe('OperationConflictDialog', () => {
     const host = render()
 
     const buttons = [...host.querySelectorAll('button')]
-    const rollback = buttons.find((b) => b.textContent.trim() === 'Rollback')
+    const rollback = buttons.find((b) => buttonLabel(b) === 'Rollback')
     // Blocked rather than `disabled`, so the tooltip saying why is reachable by
     // keyboard.
     expect(rollback?.getAttribute('aria-disabled')).toBe('true')
-    buttons.find((b) => b.textContent.trim() === 'Cancel')?.click()
+    buttons.find((b) => buttonLabel(b) === 'Cancel')?.click()
 
     expect(cancelConflictPrompt).toHaveBeenCalledWith(false)
   })
@@ -215,5 +217,81 @@ describe('OperationConflictDialog', () => {
 
     expect(cancelConflictPrompt).not.toHaveBeenCalled()
     expect(host.querySelector('[role="dialog"]')).not.toBeNull()
+  })
+})
+
+describe('OperationConflictDialog answered from the keyboard', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  /** A keydown where the person's focus is: the dialog took it on opening. */
+  function press(host: HTMLElement, init: KeyboardEventInit): void {
+    const at = document.activeElement instanceof HTMLElement ? document.activeElement : host
+    at.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, cancelable: true, ...init }))
+    flushSync()
+  }
+
+  function renderArmed(): HTMLElement {
+    const host = render()
+    vi.advanceTimersByTime(DECISION_KEYS_ARM_MS)
+    flushSync()
+    return host
+  }
+
+  it('answers with a letter pressed inside the dialog', () => {
+    prompt = makePrompt()
+    const host = renderArmed()
+    expect(host.querySelector('[role="dialog"]')?.contains(document.activeElement)).toBe(true)
+
+    press(host, { key: 'a', code: 'KeyA' })
+
+    expect(resolveConflictPrompt).toHaveBeenCalledTimes(1)
+    expect(resolveConflictPrompt).toHaveBeenCalledWith('overwrite', true)
+  })
+
+  it('skips on Enter and does nothing on Escape', () => {
+    prompt = makePrompt()
+    const host = renderArmed()
+
+    press(host, { key: 'Escape', code: 'Escape' })
+    expect(resolveConflictPrompt).not.toHaveBeenCalled()
+    expect(cancelConflictPrompt).not.toHaveBeenCalled()
+
+    press(host, { key: 'Enter', code: 'Enter' })
+    expect(resolveConflictPrompt).toHaveBeenCalledWith('skip', false)
+  })
+
+  it('ignores a letter typed the instant the prompt appeared', () => {
+    prompt = makePrompt()
+    const host = render()
+    press(host, { key: 'o', code: 'KeyO' })
+    expect(resolveConflictPrompt).not.toHaveBeenCalled()
+  })
+
+  it('asks before B rolls back, and keys typed at that question do not answer the clash', () => {
+    prompt = makePrompt()
+    const host = renderArmed()
+
+    press(host, { key: 'b', code: 'KeyB' })
+    expect(cancelConflictPrompt).not.toHaveBeenCalled()
+    const question = host.querySelector('#rollback-confirmation-body')
+    expect(question, 'the rollback question is up').not.toBeNull()
+
+    // The question sits in its own dialog: its keydowns stop at its overlay.
+    question?.dispatchEvent(new KeyboardEvent('keydown', { key: 's', code: 'KeyS', bubbles: true }))
+    flushSync()
+    expect(resolveConflictPrompt).not.toHaveBeenCalled()
+  })
+
+  it('cancels with C when the operation cannot roll back', () => {
+    prompt = makePrompt({ snapshot: snapshot({ operationType: 'move', supportsRollback: false }) })
+    const host = renderArmed()
+    press(host, { key: 'c', code: 'KeyC' })
+    expect(cancelConflictPrompt).toHaveBeenCalledWith(false)
   })
 })

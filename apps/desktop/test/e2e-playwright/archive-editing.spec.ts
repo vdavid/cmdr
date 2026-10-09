@@ -438,7 +438,8 @@ test.describe('Archive editing', () => {
     // the op settles and the dialog closes, then clear the completion toast.
     await tauriPage.evaluate(`(function(){
         var btns = Array.prototype.slice.call(document.querySelectorAll('.conflict-buttons-row button'));
-        var pick = btns.find(function(b){ return /^overwrite$/i.test((b.textContent||'').trim()); }) || btns[0];
+        // O is Overwrite's answer key (decision-keys.ts); its text also holds the letter chip.
+        var pick = btns.find(function(b){ return b.getAttribute('aria-keyshortcuts') === 'O'; }) || btns[0];
         if (pick) pick.click();
     })()`)
     await expect

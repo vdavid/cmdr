@@ -164,7 +164,8 @@ test.describe('Move rollback', () => {
         tauriPage.evaluate<boolean>(`(function(){
           var btns = document.querySelectorAll('.conflict-cancel button');
           for (var i=0; i<btns.length; i++) {
-            if ((btns[i].textContent || '').trim() === 'Rollback') return true;
+            // B answers with the live Rollback; a blocked one carries no key.
+            if ((btns[i].getAttribute('aria-keyshortcuts') || '') === 'B') return true;
           }
           return false;
         })()`),

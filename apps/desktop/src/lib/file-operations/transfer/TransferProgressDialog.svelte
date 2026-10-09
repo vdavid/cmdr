@@ -298,7 +298,14 @@
         return event.metaKey || event.ctrlKey || event.altKey || event.shiftKey
     }
 
+    /** The conflict body's answer keys, reached through this dialog's keydowns. */
+    let conflictBody: { handleKeydown(event: KeyboardEvent): boolean } | undefined = $state()
+
     function handleKeydown(event: KeyboardEvent) {
+        // A clash's letter keys (and Enter = Skip). Esc never answers one: with a
+        // clash up there's no `onclose`, so `ModalDialog` passes it on unhandled.
+        if (conflictBody?.handleKeydown(event)) return
+
         // Dialog-scoped F2 → "Queue" (send to background). This is Total
         // Commander's copy-dialog-local F2, NOT the global `file.rename` binding:
         // it works ONLY while this dialog is open and intercepts here. The
@@ -413,6 +420,7 @@
 
     {#if !isDeleteOrTrash && conflictEvent}
         <TransferConflictDialog
+            bind:this={conflictBody}
             {conflictEvent}
             {isCopy}
             {isMove}

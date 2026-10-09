@@ -278,9 +278,11 @@ const PRESS_FAILURE_REASON: Record<ButtonPressOutcome, string> = {
 }
 
 /**
- * Presses the element under `selector` whose trimmed text is exactly
+ * Presses the element under `selector` whose trimmed label is exactly
  * `buttonText`, waiting until it is genuinely ACTIONABLE and failing loudly if
- * it never gets there.
+ * it never gets there. The label is the text minus any `aria-hidden` part, the
+ * way a screen reader names it: a decision prompt's button carries its answer
+ * letter in a hidden chip (`DecisionKeyHint.svelte`), so its text reads "SkipS".
  *
  * This is the sanctioned way for a spec to press a button, because the obvious
  * hand-rolled version is a trap: `element.click()` on a `disabled` button
@@ -326,8 +328,14 @@ export async function clickButtonByText(
       outcome = await tauriPage.evaluate<ButtonPressOutcome>(`(function(){
             var els = document.querySelectorAll(${sel});
             var blocked = 'missing';
+            function label(el) {
+                var copy = el.cloneNode(true);
+                var hidden = copy.querySelectorAll('[aria-hidden="true"]');
+                for (var j = 0; j < hidden.length; j++) hidden[j].remove();
+                return (copy.textContent || '').trim();
+            }
             for (var i = 0; i < els.length; i++) {
-                if ((els[i].textContent || '').trim() !== ${txt}) continue;
+                if (label(els[i]) !== ${txt}) continue;
                 if (els[i].disabled) { blocked = 'disabled'; continue; }
                 els[i].click();
                 return 'clicked';

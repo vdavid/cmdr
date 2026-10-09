@@ -36,6 +36,7 @@ vi.mock('$lib/tauri-commands', async (orig) => ({
 
 import DialogManager from './DialogManager.svelte'
 import type { AdoptedOperationData, TransferProgressPropsData } from './dialog-props'
+import { buttonLabel } from '$lib/file-operations/test-button-label'
 
 type DialogManagerProps = ComponentProps<typeof DialogManager>
 
@@ -274,7 +275,7 @@ describe('DialogManager transfer error Retry', () => {
   }
 
   function retryButton(): HTMLButtonElement | undefined {
-    return [...host.querySelectorAll('button')].find((b) => b.textContent.trim() === 'Retry')
+    return [...host.querySelectorAll('button')].find((b) => buttonLabel(b) === 'Retry')
   }
 
   it('offers Retry for a delete_pending error and hands the click to the retry handler', () => {
@@ -324,7 +325,7 @@ describe('DialogManager transfer error Retry', () => {
       onTransferErrorCopyAnyway,
     })
 
-    const button = [...host.querySelectorAll('button')].find((b) => b.textContent.trim() === 'Copy anyway')
+    const button = [...host.querySelectorAll('button')].find((b) => buttonLabel(b) === 'Copy anyway')
     expect(button).toBeDefined()
     button?.click()
     expect(onTransferErrorCopyAnyway).toHaveBeenCalledTimes(1)

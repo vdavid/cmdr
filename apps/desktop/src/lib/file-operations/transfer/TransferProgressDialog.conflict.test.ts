@@ -25,6 +25,9 @@ import {
   initOperationSessions,
 } from '$lib/file-operations/operation-session/window-operation-sessions.svelte'
 import TransferProgressDialog from './TransferProgressDialog.svelte'
+import { buttonLabel } from '../test-button-label'
+import { DECISION_KEYS_ARM_MS } from '../decision-keys'
+import { resolveWriteConflict, cancelWriteOperation } from '$lib/tauri-commands'
 
 let conflictCb: ((e: WriteConflictEvent) => void) | null = null
 
@@ -155,7 +158,7 @@ async function mountDialogWithConflict(event: WriteConflictEvent): Promise<HTMLD
 
 function buttonByText(target: HTMLElement, text: string): HTMLButtonElement | null {
   const buttons = Array.from(target.querySelectorAll<HTMLButtonElement>('button'))
-  return buttons.find((b) => b.textContent.trim() === text) ?? null
+  return buttons.find((b) => buttonLabel(b) === text) ?? null
 }
 
 function makeEvent(overrides: Partial<WriteConflictEvent> = {}): WriteConflictEvent {
@@ -494,7 +497,7 @@ describe('TransferProgressDialog conflict — no way out that is not an answer',
   it("asks before the conflict body's Rollback reverses anything", async () => {
     const target = await mountDialogWithConflict(makeEvent())
     const rollbackButton = Array.from(target.querySelectorAll<HTMLButtonElement>('.conflict-cancel button')).find(
-      (button) => button.textContent.trim() === 'Rollback',
+      (button) => buttonLabel(button) === 'Rollback',
     )
     expect(rollbackButton, 'the conflict body offers Rollback').toBeDefined()
 
@@ -502,5 +505,73 @@ describe('TransferProgressDialog conflict — no way out that is not an answer',
     await tick()
 
     expect(target.querySelector('#rollback-confirmation-body'), 'the question is up').not.toBeNull()
+  })
+})
+
+describe('TransferProgressDialog conflict answered from the keyboard', () => {
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  /** Raises the clash on a settled dialog, with the arming timer under test control. */
+  async function raiseArmedClash(target: HTMLElement): Promise<void> {
+    vi.mocked(resolveWriteConflict).mockClear()
+    vi.mocked(cancelWriteOperation).mockClear()
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    const cb = conflictCb
+    if (cb === null) throw new Error('conflict subscriber never registered')
+    cb(makeEvent())
+    await tick()
+    vi.advanceTimersByTime(DECISION_KEYS_ARM_MS)
+    vi.useRealTimers()
+    await tick()
+    expect(target.querySelector('.conflict-section')).not.toBeNull()
+  }
+
+  /** A keydown where the person's focus is. */
+  function pressAtFocus(init: KeyboardEventInit): void {
+    const at = document.activeElement ?? document.body
+    at.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, cancelable: true, ...init }))
+  }
+
+  it('takes back the focus the swapped-out progress body dropped, and a letter answers', async () => {
+    const target = await mountDialogWithoutConflict()
+    // Focus on a progress-body button, which the clash body replaces.
+    buttonByText(target, 'Cancel')?.focus()
+    expect(document.activeElement?.tagName).toBe('BUTTON')
+
+    await raiseArmedClash(target)
+    expect(document.activeElement).toBe(target.querySelector('.conflict-section'))
+
+    pressAtFocus({ key: 'k', code: 'KeyK' })
+    await flushMicrotasks()
+    expect(resolveWriteConflict).toHaveBeenCalledTimes(1)
+    expect(resolveWriteConflict).toHaveBeenCalledWith('op-1', 1, 'skip', true)
+  })
+
+  it('skips on Enter, and Escape answers nothing', async () => {
+    const target = await mountDialogWithoutConflict()
+    await raiseArmedClash(target)
+
+    target
+      .querySelector('.modal-overlay')
+      ?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    await flushMicrotasks()
+    expect(resolveWriteConflict).not.toHaveBeenCalled()
+    expect(cancelWriteOperation).not.toHaveBeenCalled()
+
+    target.querySelector('.modal-overlay')?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    await flushMicrotasks()
+    expect(resolveWriteConflict).toHaveBeenCalledWith('op-1', 1, 'skip', false)
+  })
+
+  it('asks before B rolls the copy back', async () => {
+    const target = await mountDialogWithoutConflict()
+    await raiseArmedClash(target)
+
+    pressAtFocus({ key: 'b', code: 'KeyB' })
+    await tick()
+    expect(target.querySelector('#rollback-confirmation-body'), 'the question is up').not.toBeNull()
+    expect(cancelWriteOperation).not.toHaveBeenCalled()
   })
 })
