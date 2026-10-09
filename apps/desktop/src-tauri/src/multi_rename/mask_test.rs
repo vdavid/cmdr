@@ -140,3 +140,15 @@ fn an_inline_width_is_capped_and_the_counter_never_overflows() {
     let huge = Mask::parse("[C9223372036854775807+9223372036854775807]").expect("valid");
     assert_eq!(huge.render(&row, &COUNTER), i64::MAX.to_string());
 }
+
+#[test]
+fn a_huge_range_length_runs_to_the_end_without_overflowing() {
+    let file = "ABCDEFGHIJ.txt";
+    assert_eq!(name("[N5,9223372036854775807]", file), "EFGHIJ");
+    assert_eq!(
+        name("[N5,18446744073709551615]", file),
+        "EFGHIJ",
+        "a usize past i64::MAX"
+    );
+    assert_eq!(name("[N-3,9223372036854775807]", file), "HIJ");
+}

@@ -331,7 +331,9 @@ fn slice(source: &str, range: Range) -> String {
         Range::From(at) => (index_of(at, len), len as i64 - 1),
         Range::Length(at, length) => {
             let first = index_of(at, len);
-            (first, first + length as i64 - 1)
+            // Saturating: `[N5,9223372036854775807]` runs to the end, never wraps.
+            let length = i64::try_from(length).unwrap_or(i64::MAX);
+            (first, first.saturating_add(length).saturating_sub(1))
         }
         // A negative start counts the end from the end too: `[N-8-5]` is the
         // 8th-last to the 5th-last.
