@@ -715,10 +715,11 @@ yellow tooltip branches on `liveWatch`: a phone over ADB, which nothing watches,
   disk images (`isDiskImage`), and any volume whose `canBeIndexed` capability says no (`pane/volume-capabilities.ts`):
   the synthetic `network` / `search-results` rows, and SFTP and WebDAV servers. SMB shares, phones over MTP or ADB, and
   the local disk DO get a badge. Disk images are a product choice (transient install-style mounts we deliberately never
-  index); the rest is the backend's answer (`BackendKind::can_be_indexed`), with the per-kind default standing in until
-  a volume registers, which is exactly when an undialed phone's row gets clicked. Since this predicate also gates the
-  first-connect prompt and the status fetch, one exclusion covers all three. The badge is gray for any drive without a
-  registered index, so it's safe to query for every eligible row.
+  index); the rest is the backend's answer (`BackendKind::can_be_indexed`, plus the mount class for a volume on a mount,
+  so an NFS or FUSE mount says no), with the per-kind default standing in until a volume registers, which is exactly
+  when an undialed phone's row gets clicked. Since this predicate also gates the first-connect prompt and the status
+  fetch, one exclusion covers all three. The badge is gray for any drive without a registered index, so it's safe to
+  query for every eligible row.
 - **Eligible isn't startable: `answersNow(volume)` (`connection-state.ts`) gates what can START a walk.** A phone's row
   is listed before anything dials it, with no session state, so only its registration (`capabilities`) says it's
   connected. While it isn't, the badge menu drops "Turn on indexing" and "Rescan now" (`driveIndexMenuActions`'s

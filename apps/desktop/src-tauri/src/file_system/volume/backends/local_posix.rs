@@ -17,6 +17,7 @@ use crate::file_system::listing::{FileEntry, ListingTally, get_single_entry, lis
 use crate::file_system::volume::{EntryKind, ListingProgress, StreamLength, StreamWriteProgress, WriteMode};
 #[cfg(feature = "playwright-e2e")]
 use crate::ignore_poison::IgnorePoison;
+use cmdr_fs::volume::MountClass;
 use std::future::Future;
 use std::io;
 use std::path::{Path, PathBuf};
@@ -180,6 +181,9 @@ pub(super) fn rename_if_free(source: &Path, destination: &Path, state: NameState
 pub struct LocalPosixVolume {
     name: String,
     root: PathBuf,
+    /// The mount this volume sits on, which decides whether a drive index can
+    /// serve it (`capabilities`).
+    mount: MountClass,
     /// Raw errno to inject on the next `list_directory` call. Cleared after use.
     #[cfg(feature = "playwright-e2e")]
     injected_error: std::sync::Mutex<Option<i32>>,
@@ -191,10 +195,21 @@ impl LocalPosixVolume {
     /// # Arguments
     /// * `name` - Display name (like "Macintosh HD", "Dropbox")
     /// * `root` - Absolute path to the volume root (like "/", "/Users/you/Dropbox")
+    ///
+    /// For a folder on a local disk: the boot volume, a cloud-sync folder. A
+    /// MOUNT goes through [`Self::on_mount`] with the class its registration
+    /// probed, or a network mount would publish itself as indexable.
     pub fn new(name: impl Into<String>, root: impl Into<PathBuf>) -> Self {
+        Self::on_mount(name, root, MountClass::LocalDisk)
+    }
+
+    /// A volume rooted at a mount, with the [`MountClass`] its registration found
+    /// (`index_provider::mount_class_at`).
+    pub fn on_mount(name: impl Into<String>, root: impl Into<PathBuf>, mount: MountClass) -> Self {
         Self {
             name: name.into(),
             root: root.into(),
+            mount,
             #[cfg(feature = "playwright-e2e")]
             injected_error: std::sync::Mutex::new(None),
         }
@@ -234,7 +249,11 @@ impl Volume for LocalPosixVolume {
     /// is what lets the registry hand a doubly-mounted share's ID to the mount
     /// that's still live when the active one goes away.
     fn rerooted(&self, new_root: &Path) -> Option<Arc<dyn Volume>> {
-        Some(Arc::new(LocalPosixVolume::new(self.name.clone(), new_root)))
+        Some(Arc::new(LocalPosixVolume::on_mount(
+            self.name.clone(),
+            new_root,
+            self.mount,
+        )))
     }
 
     fn as_any(&self) -> &dyn std::any::Any {
@@ -542,6 +561,10 @@ impl Volume for LocalPosixVolume {
 
     fn is_writable(&self) -> bool {
         true
+    }
+
+    fn mount_class(&self) -> Option<MountClass> {
+        Some(self.mount)
     }
 
     fn supports_export(&self) -> bool {

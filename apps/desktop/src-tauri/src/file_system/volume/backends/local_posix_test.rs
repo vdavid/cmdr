@@ -5,6 +5,7 @@ use crate::file_system::volume::WriteMode;
 use crate::file_system::volume::{ListingProgress, StreamLength, UnwritableReason, WriteAccess};
 use crate::ignore_poison::IgnorePoison;
 use crate::test_support::TestDir;
+use cmdr_fs::volume::MountClass;
 use std::path::Path;
 
 #[test]
@@ -12,6 +13,47 @@ fn test_new_creates_volume_with_correct_name_and_root() {
     let volume = LocalPosixVolume::new("Test Volume", "/tmp");
     assert_eq!(volume.name(), "Test Volume");
     assert_eq!(volume.root(), Path::new("/tmp"));
+}
+
+// ── Whether a drive index can serve it, by the mount it sits on ───────
+
+#[test]
+fn a_folder_on_a_local_disk_can_be_indexed() {
+    assert!(LocalPosixVolume::new("Macintosh HD", "/").capabilities().can_be_indexed);
+    assert!(
+        LocalPosixVolume::on_mount("Backup", "/Volumes/Backup", MountClass::LocalDisk)
+            .capabilities()
+            .can_be_indexed
+    );
+}
+
+#[test]
+fn an_os_mounted_smb_share_can_be_indexed_because_the_gate_upgrades_it() {
+    assert!(
+        LocalPosixVolume::on_mount("naspi", "/Volumes/naspi", MountClass::SmbShare)
+            .capabilities()
+            .can_be_indexed
+    );
+}
+
+/// Regression anchor (follow-up to `ERR-JUCNB`): an NFS, AFP, Finder-WebDAV, or
+/// FUSE mount was offered "Turn on indexing", and the enable could only be
+/// refused, because the capability answered per backend while the router
+/// answered per mount. The capability is the answer the switcher, the
+/// first-connect prompt, search, and `start_volume`'s door all read.
+#[test]
+fn a_mount_on_any_other_network_filesystem_cant_be_indexed() {
+    let volume = LocalPosixVolume::on_mount("export", "/Volumes/export", MountClass::OtherNetwork);
+    assert!(!volume.capabilities().can_be_indexed);
+}
+
+#[test]
+fn a_rerooted_volume_keeps_its_mount_class() {
+    let volume = LocalPosixVolume::on_mount("export", "/Volumes/export", MountClass::OtherNetwork);
+    let moved = volume
+        .rerooted(Path::new("/Volumes/export-1"))
+        .expect("a local volume re-roots");
+    assert!(!moved.capabilities().can_be_indexed);
 }
 
 #[test]

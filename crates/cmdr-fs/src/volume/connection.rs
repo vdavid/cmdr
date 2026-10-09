@@ -140,11 +140,42 @@ pub enum BackendKind {
     GitPortal,
 }
 
+/// What kind of mount a volume reached through `std::fs` sits on, as far as a
+/// drive index cares. Decided once, when the mount is registered, so the
+/// published capability and the index's routing can't disagree about it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MountClass {
+    /// A known local disk (a block device, or a local disk type like ZFS or
+    /// tmpfs): the local walker indexes it. Also the boot volume and any plain
+    /// folder on one.
+    LocalDisk,
+    /// An OS-mounted SMB share: the index upgrades it to a direct smb2 session
+    /// and walks that.
+    SmbShare,
+    /// Any other network or FUSE mount (NFS, AFP, a Finder-mounted WebDAV share,
+    /// sshfs): no drive index has a transport for it.
+    OtherNetwork,
+}
+
+impl MountClass {
+    /// Whether a drive index can be turned on for a volume on this mount. ❗ Must
+    /// say yes exactly where `Index::start_volume`'s routing would start one: the
+    /// local walker for a local disk, the SMB gate's upgrade for a share.
+    #[must_use]
+    pub fn can_be_indexed(self) -> bool {
+        match self {
+            Self::LocalDisk | Self::SmbShare => true,
+            Self::OtherNetwork => false,
+        }
+    }
+}
+
 impl BackendKind {
     /// Whether a drive index can be turned on for a volume this backend serves:
     /// the index has a transport that walks it (the local walker for a real
     /// filesystem, an OS-mounted share included, and the `Volume`-trait scanner
-    /// for an smb2 session and a phone over MTP or ADB).
+    /// for an smb2 session and a phone over MTP or ADB). For `Local` that's only
+    /// the backend's half: the mount it sits on ([`MountClass`]) has the other.
     ///
     /// ❗ The one answer both sides read: `Volume::capabilities` publishes it for
     /// the volume switcher's index affordances, and the index's `start_volume`

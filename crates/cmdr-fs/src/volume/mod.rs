@@ -983,6 +983,14 @@ pub trait Volume: Send + Sync {
         false
     }
 
+    /// The mount this volume sits on, for a backend reached through `std::fs`;
+    /// `None` for one that isn't (a session, a device, a view inside a drive).
+    /// Folded into `can_be_indexed` below: a local volume on an NFS or FUSE mount
+    /// has no index transport, though its backend in general does.
+    fn mount_class(&self) -> Option<MountClass> {
+        None
+    }
+
     /// This volume's capability surface as DATA, for consumers outside the
     /// backend (it travels over IPC to the frontend).
     ///
@@ -998,7 +1006,8 @@ pub trait Volume: Send + Sync {
             backend_can_write: self.is_writable(),
             can_export: self.supports_export(),
             can_share_links: self.supports_share_links(),
-            can_be_indexed: self.backend_kind().can_be_indexed(),
+            can_be_indexed: self.backend_kind().can_be_indexed()
+                && self.mount_class().is_none_or(MountClass::can_be_indexed),
             renames_can_copy: self.renames_can_copy(),
             has_os_mount_fallback: self.backend_kind().has_os_mount_fallback(),
         }
@@ -1907,7 +1916,7 @@ pub mod host;
 pub use capabilities::VolumeCapabilities;
 pub use channel_stream::ChannelReadStream;
 pub use child_name::{ChildName, NotAChildName};
-pub use connection::{BackendKind, ConnectionState, DeviceReadiness, DeviceUnavailableReason, SignInShape};
+pub use connection::{BackendKind, ConnectionState, DeviceReadiness, DeviceUnavailableReason, MountClass, SignInShape};
 pub use entry_kind::EntryKind;
 pub use error::{ErrnoField, VolumeError};
 pub use ids::*;

@@ -579,7 +579,11 @@ pub(crate) async fn return_to_os_mount(volume_id: &str) -> bool {
     if current.backend_kind() != BackendKind::Smb {
         return false;
     }
-    let os_mount = std::sync::Arc::new(LocalPosixVolume::new(current.name(), current.root()));
+    let os_mount = std::sync::Arc::new(LocalPosixVolume::on_mount(
+        current.name(),
+        current.root(),
+        cmdr_fs::volume::MountClass::SmbShare,
+    ));
     register_replacing_predecessor(volume_id, os_mount).await;
     log::info!(
         "Handed {volume_id} back to the macOS mount at {}",

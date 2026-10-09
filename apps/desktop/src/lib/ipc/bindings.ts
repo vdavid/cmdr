@@ -16067,8 +16067,9 @@ export type VolumeCapabilities = {
   canShareLinks: boolean
   /**
    *  A drive index can be turned on for this volume, because the index has a
-   *  transport that walks and watches this backend. `BackendKind::can_be_indexed`
-   *  is the one decider.
+   *  transport that walks and watches it: `BackendKind::can_be_indexed`, and for
+   *  a volume on a mount, `MountClass::can_be_indexed` (an NFS or FUSE mount has
+   *  none, though the local backend in general does).
    */
   canBeIndexed: boolean
   /**

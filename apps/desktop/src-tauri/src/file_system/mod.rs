@@ -205,7 +205,8 @@ fn register_discovered_volumes() {
         let attached = crate::volumes::get_attached_volumes();
         log::debug!("Registering {} attached volume(s)", attached.len());
         for location in attached {
-            let volume = Arc::new(LocalPosixVolume::new(&location.name, &location.path));
+            let mount = index_provider::mount_class_at(std::path::Path::new(&location.path));
+            let volume = Arc::new(LocalPosixVolume::on_mount(&location.name, &location.path, mount));
             get_volume_manager().register(&location.id, volume);
             log::debug!("  Registered attached volume: {} -> {}", location.id, location.path);
         }
@@ -229,7 +230,8 @@ fn register_discovered_volumes() {
             .collect();
         log::debug!("Registering {} volume(s)", non_fav.len());
         for location in non_fav {
-            let volume = Arc::new(LocalPosixVolume::new(&location.name, &location.path));
+            let mount = index_provider::mount_class_at(std::path::Path::new(&location.path));
+            let volume = Arc::new(LocalPosixVolume::on_mount(&location.name, &location.path, mount));
             get_volume_manager().register(&location.id, volume);
             log::debug!("  Registered volume: {} -> {}", location.id, location.path);
         }

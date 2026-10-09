@@ -41,9 +41,10 @@ import { capabilitiesForInfo } from '../pane/volume-capabilities'
  *   MOUNT, not a `~/Library/CloudStorage` folder — those are ordinary directories
  *   on the data volume, and Cmdr has always indexed them at local speed.
  * - **No drive index can serve it** (`canBeIndexed`, a typed capability): the
- *   synthetic `network` / `search-results` rows, and an SFTP, WebDAV, or S3 server
+ *   synthetic `network` / `search-results` rows, an SFTP, WebDAV, or S3 server
  *   (whose `sftp://…` root no local walker can read, so an enable would leave a
- *   fresh-looking empty index). The backend's answer wins once a volume is
+ *   fresh-looking empty index), and an NFS, AFP, or FUSE mount (no transport for
+ *   it, so the enable could only be refused). The backend's answer wins once a volume is
  *   registered; before that (a phone nobody has dialed, the moment its row is
  *   clicked) the per-kind default answers. A mounted SMB share and a phone over
  *   MTP or ADB stay in: the index really does walk all three.

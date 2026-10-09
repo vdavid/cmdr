@@ -30,6 +30,34 @@ pub fn path_is_on_network_mount(path: &Path) -> bool {
     is_network(&super::filesystem_kind::probe_mount_for_path(path))
 }
 
+/// The [`MountClass`](cmdr_fs::volume::MountClass) of the mount at `root`, for a
+/// `LocalPosixVolume` being registered on it.
+///
+/// ❗ Built from the SAME two facts `Index::start_volume`'s routing reads, so the
+/// published `can_be_indexed` and the router can't disagree: [`is_network`]
+/// (via `mount_facts`) is the local-external walker's test, and
+/// [`smb_volume_id_for_path`] is the SMB gate's. Blocking like both (a `statfs`,
+/// and for a network mount the SMB lookup), so call it where registration already
+/// probes the mount, ❌ never per query.
+pub(crate) fn mount_class_at(root: &Path) -> cmdr_fs::volume::MountClass {
+    classify_mount(!is_network(&super::filesystem_kind::probe_mount_for_path(root)), || {
+        smb_volume_id_for_path(&root.to_string_lossy()).is_some()
+    })
+}
+
+/// The pure half of [`mount_class_at`]. The SMB question is asked only for a
+/// mount that isn't a local disk, since it costs a second lookup.
+fn classify_mount(is_local_disk: bool, is_smb_share: impl FnOnce() -> bool) -> cmdr_fs::volume::MountClass {
+    use cmdr_fs::volume::MountClass;
+    if is_local_disk {
+        MountClass::LocalDisk
+    } else if is_smb_share() {
+        MountClass::SmbShare
+    } else {
+        MountClass::OtherNetwork
+    }
+}
+
 /// "Network" here means "not a known local disk" ([`mount_is_local_disk`]), so
 /// FUSE and cloud mounts count too. Split out so one probe can answer both of
 /// [`mount_facts`](AppVolumeProvider::mount_facts)' questions.
@@ -340,6 +368,20 @@ mod tests {
     #[test]
     fn an_unprobed_mount_is_not_a_local_disk() {
         assert!(!mount_is_local_disk(None, None));
+    }
+
+    /// The class a registered mount publishes is the router's own answer: the
+    /// local walker for a local disk, the SMB gate for a share, nothing for the
+    /// rest. A local disk never pays for the SMB lookup.
+    #[test]
+    fn a_mount_is_classed_the_way_the_index_would_route_it() {
+        use cmdr_fs::volume::MountClass;
+        assert_eq!(
+            classify_mount(true, || panic!("a local disk never asks about SMB")),
+            MountClass::LocalDisk
+        );
+        assert_eq!(classify_mount(false, || true), MountClass::SmbShare);
+        assert_eq!(classify_mount(false, || false), MountClass::OtherNetwork);
     }
 
     /// The index's presence seam reads the kernel mount table by filesystem: the boot
