@@ -302,7 +302,8 @@ Tab-Tab bug: Esc, ⌘⇧P, and Tab all dead, mouse-only recovery). The action do
 
 Traps **stack**: with several mounted (a `FilterChipPopover` inside `QueryDialog`), only the most recently mounted one
 enforces; closing it hands enforcement back down. That's what gives nested popovers their "Esc closes only the popover"
-semantics on the leaked-focus path.
+semantics on the leaked-focus path. A trap with `enabled: false` is parked: still mounted, skipped when finding the top
+one (`Popover`'s `passive`, whose field sits outside it).
 
 Usage: `use:trapFocus={{ onEscape: <close callback> }}` on the dialog's outermost element (the one carrying
 `role="dialog"`). Omit `onEscape` only for dialogs that must swallow Escape (the onboarding wizard). All listeners run
@@ -839,6 +840,12 @@ Props:
 - `open: boolean` (required): controlled visibility.
 - `onClose: () => void` (required): fired on Esc / click-outside.
 - `ariaLabel?: string`: region label (default "Options").
+- `passive?: boolean`: opens without taking focus, and its trap stays off while passive, for a popover that follows a
+  field the user types in (the Multi-rename mask's token editor). Flipping to `false` focuses the first field unless
+  focus is already inside. Default `false`.
+- `alsoInside?: HTMLElement`: a mousedown in it isn't "outside" (the field a passive popover follows).
+- `surface?: 'glass' | 'solid'`: `solid` swaps the frosted glass for opaque `--color-bg-secondary`, for fields and
+  numbers that must read cleanly over anything. Default `glass`.
 - `children: Snippet`: the floating content.
 
 The rendered element carries the `.ui-popover` class. Host dialogs that must defer Escape to an open popover detect it

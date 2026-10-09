@@ -39,16 +39,24 @@ export function tokenInside<T extends { span: PlaceholderSpan }>(tokens: readonl
   return tokens.find((token) => caret > token.span.from && caret < token.span.to)
 }
 
+/** The caret only moves while the field has focus, so an editor the user was in follows the caret again, as does one the pointer opened once the caret lands in a token. */
+function onCaret(open: EditorOpen | null, from: number | null): EditorOpen | null {
+  if (from !== null) return { from, reason: 'caret' }
+  return open?.reason === 'hover' ? open : null
+}
+
+/** The pointer only opens or moves an editor nothing else holds. */
+function onHover(open: EditorOpen | null, from: number | null): EditorOpen | null {
+  if (open !== null && open.reason !== 'hover') return open
+  return from === null ? null : { from, reason: 'hover' }
+}
+
 export function nextEditor(open: EditorOpen | null, event: EditorEvent): EditorOpen | null {
   switch (event.type) {
     case 'caret':
-      // The caret only moves while the field has focus, so an editor the user was in is back to
-      // following the caret, as is one the pointer opened once the caret lands in a token.
-      if (event.from !== null) return { from: event.from, reason: 'caret' }
-      return open?.reason === 'hover' ? open : null
+      return onCaret(open, event.from)
     case 'hover':
-      if (open !== null && open.reason !== 'hover') return open
-      return event.from === null ? null : { from: event.from, reason: 'hover' }
+      return onHover(open, event.from)
     case 'request':
       return { from: event.from, reason: 'focus' }
     case 'engage':

@@ -311,4 +311,23 @@ describe('trapFocus: stacking', () => {
     expect(first).not.toHaveBeenCalled()
     expect(second).toHaveBeenCalledOnce()
   })
+
+  it('a parked trap (`enabled: false`) leaves enforcing to the one below until it’s enabled again', async () => {
+    const { container: dialog, buttons: dialogButtons } = buildDialog(2)
+    const { container: popover, buttons: popoverButtons } = buildDialog(1)
+    trapFocus(dialog)
+    const popoverTrap = trapFocus(popover, { enabled: false })
+
+    // Focus in the dialog, outside the parked popover, stays where it is.
+    focusWithEvent(dialogButtons[1])
+    await flushMicrotasks()
+    expect(document.activeElement).toBe(dialogButtons[1])
+
+    popoverTrap.update?.({ enabled: true })
+    const outside = document.createElement('button')
+    document.body.appendChild(outside)
+    focusWithEvent(outside)
+    await flushMicrotasks()
+    expect(document.activeElement).toBe(popoverButtons[0])
+  })
 })

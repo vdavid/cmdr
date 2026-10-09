@@ -35,6 +35,11 @@ export interface TrapFocusOptions {
    * swallow Escape (the onboarding wizard).
    */
   onEscape?: () => void
+  /**
+   * `false` parks the trap: it stays mounted but doesn't enforce, and the next trap down the stack
+   * does. For a passive popover that follows a field outside it (`Popover`'s `passive`). Default true.
+   */
+  enabled?: boolean
 }
 
 /**
@@ -132,8 +137,13 @@ function restoreFocus(entry: TrapEntry): void {
   node.focus()
 }
 
+/** The trap that enforces: the most recently mounted one that isn't parked. */
+function topTrap(): TrapEntry | undefined {
+  return stack.findLast((entry) => entry.options.enabled !== false)
+}
+
 function handleKeyDown(e: KeyboardEvent): void {
-  const top = stack.at(-1)
+  const top = topTrap()
   if (!top) return
   const target = e.target instanceof HTMLElement ? e.target : null
   const inside = target !== null && top.node.contains(target)
@@ -181,7 +191,7 @@ function wrapTab(e: KeyboardEvent, node: HTMLElement, target: HTMLElement): void
 }
 
 function handleFocusIn(e: FocusEvent): void {
-  const top = stack.at(-1)
+  const top = topTrap()
   if (!top) return
   const target = e.target instanceof HTMLElement ? e.target : null
   if (!target) return
@@ -195,7 +205,7 @@ function handleFocusIn(e: FocusEvent): void {
   // action's destroy has unregistered the trap, so a closing dialog never yanks
   // focus back into its own dying DOM.
   queueMicrotask(() => {
-    if (stack.at(-1) !== top || !top.node.isConnected) return
+    if (topTrap() !== top || !top.node.isConnected) return
     const active = document.activeElement
     if (active instanceof HTMLElement && top.node.contains(active)) return
     restoreFocus(top)

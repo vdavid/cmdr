@@ -113,23 +113,6 @@
         focusables[0]?.focus()
     }
 
-    /** `trapFocus` while `enabled`: a passive popover mustn't pull focus out of the field it follows. */
-    function trapWhile(node: HTMLElement, params: { enabled: boolean; onEscape: () => void }) {
-        let trap = params.enabled ? trapFocus(node, { onEscape: params.onEscape }) : undefined
-        return {
-            update(next: { enabled: boolean; onEscape: () => void }) {
-                if (next.enabled && !trap) trap = trapFocus(node, { onEscape: next.onEscape })
-                else if (!next.enabled && trap) {
-                    trap.destroy?.()
-                    trap = undefined
-                } else trap?.update?.({ onEscape: next.onEscape })
-            },
-            destroy() {
-                trap?.destroy?.()
-            },
-        }
-    }
-
     function handleKeyDown(e: KeyboardEvent): void {
         if (e.key === 'Escape') {
             e.preventDefault()
@@ -199,7 +182,7 @@
         style:max-height={position.maxHeight === undefined ? undefined : `${String(position.maxHeight)}px`}
         onkeydown={handleKeyDown}
         tabindex="-1"
-        use:trapWhile={{ enabled: !passive, onEscape: closeAndReturnFocus }}
+        use:trapFocus={{ onEscape: closeAndReturnFocus, enabled: !passive }}
     >
         {@render children()}
     </div>

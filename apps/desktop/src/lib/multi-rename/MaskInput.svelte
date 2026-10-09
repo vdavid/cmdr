@@ -193,7 +193,19 @@
         resize.observe(input)
         input.addEventListener('scroll', remeasure)
         document.addEventListener('selectionchange', onSelectionChange)
+        // Pointer-only (the keyboard's road is the caret), so these sit on the wrapper as listeners
+        // rather than as handlers on a role-less element.
+        const wrapper = wrapperEl
+        const onPointerLeave = (): void => {
+            hover(null)
+        }
+        wrapper?.addEventListener('mousemove', handlePointerMove)
+        wrapper?.addEventListener('mouseleave', onPointerLeave)
+        wrapper?.addEventListener('mousedown', handleFieldMouseDown)
         return () => {
+            wrapper?.removeEventListener('mousemove', handlePointerMove)
+            wrapper?.removeEventListener('mouseleave', onPointerLeave)
+            wrapper?.removeEventListener('mousedown', handleFieldMouseDown)
             resize.disconnect()
             input.removeEventListener('scroll', remeasure)
             document.removeEventListener('selectionchange', onSelectionChange)
@@ -272,23 +284,17 @@
         apply({ type: 'dismiss' })
     }
 
-    function handleFieldMouseDown(): void {
+    function handleFieldMouseDown(e: MouseEvent): void {
         // Back from the editor into the field: hand the editor to the caret BEFORE focus moves,
-        // so its focus trap is gone and doesn't pull focus back into it.
+        // so its focus trap is gone and doesn't pull focus back into it. A marker takes no focus.
         if (editor?.reason !== 'focus') return
+        if (e.target instanceof Element && e.target.closest('.token-marker')) return
         editor = { ...editor, reason: 'caret' }
         flushSync()
     }
 </script>
 
-<!-- svelte-ignore a11y_no_static_element_interactions -- pointer-only hover tracking; the keyboard road is the caret -->
-<div
-    class="mask-input"
-    bind:this={wrapperEl}
-    onmousemove={handlePointerMove}
-    onmouseleave={() => { hover(null) }}
-    onmousedown={handleFieldMouseDown}
->
+<div class="mask-input" bind:this={wrapperEl}>
     <TextInput
         mono
         bind:inputElement
@@ -318,10 +324,7 @@
                 aria-expanded={editor?.from === token.span.from}
                 style:left="{middle - MARKER_WIDTH / 2}px"
                 style:top="{markerTop - MARKER_RISE}px"
-                onmousedown={(e: MouseEvent) => {
-                    e.preventDefault()
-                    e.stopPropagation()
-                }}
+                onmousedown={(e: MouseEvent) => { e.preventDefault() }}
                 onmouseenter={() => { hover(token.span.from) }}
                 onclick={() => { apply({ type: 'request', from: token.span.from }) }}
             >
