@@ -91,6 +91,13 @@ describe('MultiRenameDialog', () => {
     expect(root.querySelector('[role="alert"]')?.textContent.trim()).toBeTruthy()
   })
 
+  it('keeps the error line in place with no error, so a message coming or going moves nothing', async () => {
+    const root = await mountSheet()
+    const line = root.querySelector('[role="alert"]')
+    expect(line).not.toBeNull()
+    expect(line?.textContent.trim()).toBe('')
+  })
+
   it('says a preview that ran out of time took too long, not that renaming couldn’t start', async () => {
     const alertFor = async (error: unknown): Promise<string | undefined> => {
       ipc.previewMultiRename.mockResolvedValue({ ok: false, error })

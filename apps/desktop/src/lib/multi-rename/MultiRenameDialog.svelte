@@ -31,6 +31,7 @@
     import { tString } from '$lib/intl/messages.svelte'
     import type { MessageKey } from '$lib/intl/keys.gen'
     import { claimKey } from '$lib/shortcuts/claim-key'
+    import { tooltip } from '$lib/tooltip/tooltip'
     import { claimMenuCommand } from '$lib/commands/menu-claims'
     import { getBadgeStatus } from '$lib/feature-status'
     import type { MultiRenameError, MultiRenameOpened, MultiRenameStarted, PreviewRow } from '$lib/tauri-commands'
@@ -82,8 +83,8 @@
         regex: 'multiRename.regex',
         substitute: 'multiRename.substitute',
     }
-    // Remove diacritics changes the whole name, so it sits with Letter case; the gap before Match case
-    // sinks the rest, which tune the search, down beside the search fields.
+    // Remove diacritics changes the whole name, so it sits with Letter case; Match case's row takes
+    // the spare height, which sinks the rest, which tune the search, down beside the search fields.
     const FIRST_SEARCH_TOGGLE: ToggleField = 'caseSensitive'
 
     const caseItems = $derived([
@@ -301,37 +302,45 @@
                  search's own options sunk to the bottom, level with the search fields. Each names
                  its ⌘⌥ key in a quiet chip. -->
             <div class="options">
-                <span class="case-field" bind:this={caseField}>
-                    <span class="label">{tString('multiRename.case')}</span>
-                    <Select
-                        items={caseItems}
-                        value={tool.spec.case}
-                        onChange={(v: string) => { tool.update({ case: v as CaseChange }) }}
-                        ariaLabel={tString('multiRename.case')}
-                    />
-                </span>
-                <span class="option-key" aria-hidden="true">
-                    <ShortcutChip commandId="multiRename.letterCase" clickable={false} size="sm" />
+                <span class="option-row">
+                    <span class="case-field" bind:this={caseField}>
+                        <span class="label">{tString('multiRename.case')}</span>
+                        <Select
+                            items={caseItems}
+                            value={tool.spec.case}
+                            onChange={(v: string) => { tool.update({ case: v as CaseChange }) }}
+                            ariaLabel={tString('multiRename.case')}
+                        />
+                    </span>
+                    <span class="option-key" aria-hidden="true">
+                        <ShortcutChip commandId="multiRename.letterCase" clickable={false} size="sm" />
+                    </span>
                 </span>
                 {#each TOGGLE_COMMANDS as { field, commandId } (field)}
-                    {#if field === FIRST_SEARCH_TOGGLE}<span class="options-gap"></span>{/if}
-                    <!-- One grid cell: `Checkbox` renders more than one element. -->
-                    <span class="option-control">
-                        <Checkbox checked={tool.spec[field]} onCheckedChange={(on: boolean) => { tool.update({ [field]: on }) }}>
-                            {tString(TOGGLE_LABELS[field])}
-                        </Checkbox>
-                    </span>
-                    <!-- The key, quiet: a hint for next time, never a control (it can't be rebound). -->
-                    <span class="option-key" aria-hidden="true">
-                        <ShortcutChip {commandId} clickable={false} size="sm" />
+                    <span class="option-row" class:sinks={field === FIRST_SEARCH_TOGGLE}>
+                        <!-- One grid cell: `Checkbox` renders more than one element. -->
+                        <span class="option-control">
+                            <Checkbox checked={tool.spec[field]} onCheckedChange={(on: boolean) => { tool.update({ [field]: on }) }}>
+                                {tString(TOGGLE_LABELS[field])}
+                            </Checkbox>
+                        </span>
+                        <!-- The key, quiet: a hint for next time, never a control (it can't be rebound). -->
+                        <span class="option-key" aria-hidden="true">
+                            <ShortcutChip {commandId} clickable={false} size="sm" />
+                        </span>
                     </span>
                 {/each}
             </div>
         </div>
 
-        {#if shownError}
-            <p class="error" role="alert">{errorText(shownError)}</p>
-        {/if}
+        <!-- Always there, one line tall, so a message coming or going never moves the preview. -->
+        <p
+            class="error"
+            role="alert"
+            use:tooltip={shownError ? { text: errorText(shownError), overflowOnly: true } : undefined}
+        >
+            {shownError ? errorText(shownError) : ''}
+        </p>
 
         <div class="preview">
             <ColumnList
@@ -483,14 +492,15 @@
         flex-wrap: wrap;
     }
 
-    /* Two columns, option and key, so the keys line up. The gap row takes the spare height,
-       which sinks the search options to the bottom, level with the search fields they tune. */
+    /* Two columns, option and key, so the keys line up on one right edge. Match case's row takes
+       any spare height and sits at its bottom, which sinks the search options level with
+       the search fields they tune. With no spare height every row is one gap apart: a spacer row
+       of its own would add two more gaps. */
     .options {
         display: grid;
         grid-template-columns: auto auto;
-        grid-template-rows: auto auto minmax(var(--spacing-xs), 1fr);
+        grid-template-rows: auto auto 1fr;
         grid-auto-rows: auto;
-        align-items: center;
         gap: var(--spacing-xs) var(--spacing-lg);
         padding-left: var(--spacing-lg);
         border-left: 1px solid var(--color-border);
@@ -500,8 +510,16 @@
         display: flex;
     }
 
-    .options-gap {
+    /* One row: the option and its key share the column tracks and center on each other. */
+    .option-row {
         grid-column: 1 / -1;
+        display: grid;
+        grid-template-columns: subgrid;
+        align-items: center;
+    }
+
+    .option-row.sinks {
+        align-self: end;
     }
 
     .case-field {
@@ -513,6 +531,7 @@
     /* The key hint stays quiet: tertiary text on no fill, so seven of them don't shout. */
     .option-key {
         display: flex;
+        justify-content: flex-end;
     }
 
     .option-key :global(.shortcut-chip) {
@@ -520,10 +539,17 @@
         background: transparent;
     }
 
+    /* One reserved line under the search row: a long message ends in an ellipsis (the whole of it
+       on hover) rather than growing the line. */
     .error {
         margin: 0;
+        min-height: calc(var(--font-size-sm) * var(--font-line-height-normal));
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
         color: var(--color-error-text);
         font-size: var(--font-size-sm);
+        line-height: var(--font-line-height-normal);
     }
 
     /* The well around the list: one element owns the border and the rounded corners, and
