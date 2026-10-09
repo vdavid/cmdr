@@ -462,3 +462,24 @@ describe('operation-log shortcut binding', () => {
     expect(claimants('⌘⌥O')).toEqual(['file.showInFinder'])
   })
 })
+
+describe('delete shortcut pairs', () => {
+  // Total Commander users press Shift with the key that moves to the trash to delete
+  // permanently instead; Finder's ⌥⌘⌫ is "Delete Immediately".
+  const shortcutsOf = (id: CommandId): string[] => commands.find((c) => c.id === id)?.shortcuts ?? []
+
+  it('moves to the trash on F8, ⌘⌫, and Delete', () => {
+    expect(shortcutsOf('file.delete')).toEqual(['F8', '⌘Backspace', 'Delete'])
+  })
+
+  it('deletes permanently on each of them with Shift, and on Finder’s ⌥⌘⌫', () => {
+    expect(shortcutsOf('file.deletePermanently')).toEqual(['⇧F8', '⇧Delete', '⌘⌥Backspace'])
+  })
+
+  it('binds ⇧Delete and ⌥⌘⌫ to nothing else', () => {
+    for (const shortcut of ['⇧Delete', '⌘⌥Backspace']) {
+      const claimants = commands.filter((c) => c.shortcuts.includes(shortcut)).map((c) => c.id)
+      expect(claimants, shortcut).toEqual(['file.deletePermanently'])
+    }
+  })
+})

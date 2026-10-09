@@ -312,7 +312,9 @@ export const fileListCommands: CommandSource[] = [
     nameKey: 'commands.fileDeletePermanently.label',
     scope: 'Main window/File list',
     showInPalette: true,
-    shortcuts: ['⇧F8'],
+    // Each delete-to-trash key with Shift, Total Commander's way (`⇧F8`, `⇧Delete`),
+    // plus Finder's "Delete Immediately" (`⌥⌘⌫`). The menu accelerator stays `⇧F8`.
+    shortcuts: ['⇧F8', '⇧Delete', '⌘⌥Backspace'],
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
