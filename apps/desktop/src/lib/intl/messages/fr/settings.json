@@ -391,31 +391,31 @@
   "@settings.fileOperations.pasteClipboardAsFile.opt.createFileAndRename": {
     "sourceHash": "ed7b1b9"
   },
-  "settings.fileOperations.defaultConflictPolicy.label": "When files already exist",
+  "settings.fileOperations.defaultConflictPolicy.label": "Si des fichiers existent déjà",
   "@settings.fileOperations.defaultConflictPolicy.label": {
     "sourceHash": "8824317"
   },
-  "settings.fileOperations.defaultConflictPolicy.description": "The choice the copy and move dialog starts on. Pick a different one there and confirm, and it’s remembered here.",
+  "settings.fileOperations.defaultConflictPolicy.description": "L’option sélectionnée à l’ouverture de la boîte de dialogue de copie et de déplacement. Si vous en choisissez une autre et confirmez, elle est mémorisée ici.",
   "@settings.fileOperations.defaultConflictPolicy.description": {
     "sourceHash": "2bfdf68"
   },
-  "settings.fileOperations.defaultConflictPolicy.opt.stop": "Ask for each",
+  "settings.fileOperations.defaultConflictPolicy.opt.stop": "Demander pour chacun",
   "@settings.fileOperations.defaultConflictPolicy.opt.stop": {
     "sourceHash": "4302843"
   },
-  "settings.fileOperations.defaultConflictPolicy.opt.skip": "Skip all",
+  "settings.fileOperations.defaultConflictPolicy.opt.skip": "Tout ignorer",
   "@settings.fileOperations.defaultConflictPolicy.opt.skip": {
     "sourceHash": "5fc4280"
   },
-  "settings.fileOperations.defaultConflictPolicy.opt.overwrite": "Overwrite all",
+  "settings.fileOperations.defaultConflictPolicy.opt.overwrite": "Tout écraser",
   "@settings.fileOperations.defaultConflictPolicy.opt.overwrite": {
     "sourceHash": "4662d17"
   },
-  "settings.fileOperations.defaultConflictPolicy.opt.overwriteSmaller": "Overwrite all smaller",
+  "settings.fileOperations.defaultConflictPolicy.opt.overwriteSmaller": "Écraser tous les plus petits",
   "@settings.fileOperations.defaultConflictPolicy.opt.overwriteSmaller": {
     "sourceHash": "2c9bbed"
   },
-  "settings.fileOperations.defaultConflictPolicy.opt.overwriteOlder": "Overwrite all older",
+  "settings.fileOperations.defaultConflictPolicy.opt.overwriteOlder": "Écraser tous les plus anciens",
   "@settings.fileOperations.defaultConflictPolicy.opt.overwriteOlder": {
     "sourceHash": "b07b06a"
   },

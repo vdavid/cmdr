@@ -150,6 +150,13 @@
     "forms": "toggle 允許使用雲端 AI; Android's own dialog button is quoted 「允許」",
     "sources": "AP-TW = AP-HK TCC REQUEST_ACCESS_ALLOW; AOSP SystemUI usb_debugging_allow = 允許"
   },
+  "already-exists": {
+    "accept": ["已存在", "已經有"],
+    "chosen": "已經存在",
+    "confidence": "high",
+    "forms": "conflict title 檔案已經存在; a name in a folder → 這個資料夾裡已經有「{name}」; label When files already exist → 檔案已經存在時",
+    "sources": "AP-TW = AP-HK 檔案已存在 / 已經存在 (Finder); TC 檔案已存在; DC 已存在; catalog titles errors.write.destinationExists.title, fileOperations.transferProgress.titleConflict"
+  },
   "always": {
     "avoid": [
       {

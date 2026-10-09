@@ -377,7 +377,7 @@
   "@fileOperations.transferDialog.policyStop": {
     "sourceHash": "61a6295"
   },
-  "fileOperations.transferDialog.rememberedOverwriteNote": "{reach, select, smaller {Your saved choice overwrites files already there that are smaller.} older {Your saved choice overwrites files already there that are older.} other {Your saved choice overwrites the files already there.}}",
+  "fileOperations.transferDialog.rememberedOverwriteNote": "{reach, select, smaller {A mentett választásod felülírja a célhelyen már meglévő, kisebb fájlokat.} older {A mentett választásod felülírja a célhelyen már meglévő, régebbi fájlokat.} other {A mentett választásod felülírja a célhelyen már meglévő fájlokat.}}",
   "@fileOperations.transferDialog.rememberedOverwriteNote": {
     "sourceHash": "7456023"
   },
