@@ -85,6 +85,24 @@ describe('determineNavigationPath', () => {
     expect(mockPathExists).not.toHaveBeenCalled()
   })
 
+  it('keeps an `exact` destination even when it IS the volume root (a favorite at a drive`s root)', async () => {
+    // A favorite at `/Volumes/T7` sends `targetPath === volumePath`. Without `exact` that
+    // reads as a plain switch, so the other pane's folder or the remembered one wins.
+    mockPathExists.mockResolvedValue(true)
+    mockGetLastUsedPath.mockResolvedValue('/Volumes/T7/deep/folder')
+
+    const result = await determineNavigationPath({
+      volumeId: 't7',
+      volumePath: '/Volumes/T7',
+      targetPath: '/Volumes/T7',
+      exact: true,
+      otherPane: { otherPaneVolumeId: 't7', otherPanePath: '/Volumes/T7/other' },
+    })
+
+    expect(result).toBe('/Volumes/T7')
+    expect(mockPathExists).not.toHaveBeenCalled()
+  })
+
   it('returns other pane path when same volume and path exists', async () => {
     const otherPane: OtherPaneState = {
       otherPaneVolumeId: 'root',

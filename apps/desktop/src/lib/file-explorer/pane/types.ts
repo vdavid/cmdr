@@ -46,6 +46,12 @@ export interface VolumeChangePayload {
   volumeId: string
   volumePath: string
   targetPath: string
+  /**
+   * `targetPath` is where the pane goes, even when it's the volume's root (a favorite at
+   * `/Volumes/T7`). Without it, a root target reads as a plain switch and the pane lands on
+   * the other pane's or the remembered folder instead.
+   */
+  exact?: boolean
 }
 
 /**

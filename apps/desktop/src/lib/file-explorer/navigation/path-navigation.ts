@@ -40,6 +40,11 @@ export interface DetermineNavigationPathArgs {
    * of the folder the user left there.
    */
   connectionState?: ConnectionState | null
+  /**
+   * `targetPath` IS the destination, even when it equals `volumePath`: a favorite at a
+   * volume's root (`/Volumes/T7`, `/`) opens there, never at a remembered folder.
+   */
+  exact?: boolean
 }
 
 /**
@@ -48,17 +53,17 @@ export interface DetermineNavigationPathArgs {
  * session, `probeTimeoutMs`). The switch itself already landed on the volume root,
  * so the wait holds up only this background correction, never the UI.
  * Priority order:
- * 1. Favorite path (if targetPath !== volumePath)
+ * 1. Favorite path (if targetPath !== volumePath, or `exact`)
  * 2. Other pane's path (if the other pane is on the same volume)
  * 3. Stored lastUsedPath for this volume
  * 4. Default: ~ for main volume, the volume's landing for others (`firstLandingOn`)
  */
 export async function determineNavigationPath(args: DetermineNavigationPathArgs): Promise<string> {
-  const { volumeId, volumePath, targetPath, otherPane, landingPath, connectionState } = args
+  const { volumeId, volumePath, targetPath, otherPane, landingPath, connectionState, exact } = args
   const pathExistsTimeoutMs = probeTimeoutMs(connectionState, 500)
 
   // User navigated to a favorite, so go to the favorite's path directly
-  if (targetPath !== volumePath) {
+  if (exact || targetPath !== volumePath) {
     return targetPath
   }
 

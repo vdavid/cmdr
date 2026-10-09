@@ -262,6 +262,7 @@ function scheduleVolumePathCorrection(
   volumeId: string,
   volumePath: string,
   targetPath: string,
+  exact: boolean,
 ): Promise<void> {
   const correctionGen = (deps.correctionGen.value += 1)
   const other = deps.otherPane(pane)
@@ -270,6 +271,7 @@ function scheduleVolumePathCorrection(
       volumeId,
       volumePath,
       targetPath,
+      exact,
       otherPane: {
         otherPaneVolumeId: deps.getPaneVolumeId(other),
         otherPanePath: deps.getPanePath(other),
@@ -336,6 +338,7 @@ function commitVolumeSwitch(
     terminal?: boolean
     pushHistory?: boolean
     fromCancel?: boolean
+    exact?: boolean
   },
 ): Promise<void> {
   if (!options.terminal) {
@@ -357,7 +360,7 @@ function commitVolumeSwitch(
   if (!options.terminal && tryPinnedVolumeFork(deps, pane, { volumeId, path: targetPath })) {
     if (options.shiftFocus) deps.setFocusedPane(pane)
     deps.persist({ kind: 'pane-state', pane })
-    return scheduleVolumePathCorrection(deps, pane, token, volumeId, volumePath, targetPath)
+    return scheduleVolumePathCorrection(deps, pane, token, volumeId, volumePath, targetPath, options.exact === true)
   }
 
   const commitSwitch = () => {
@@ -378,7 +381,7 @@ function commitVolumeSwitch(
   }
   if (options.shiftFocus) deps.setFocusedPane(pane)
   if (options.terminal) return SETTLED_NOOP
-  return scheduleVolumePathCorrection(deps, pane, token, volumeId, volumePath, targetPath)
+  return scheduleVolumePathCorrection(deps, pane, token, volumeId, volumePath, targetPath, options.exact === true)
 }
 
 /**
@@ -455,6 +458,7 @@ function switchVolumeArm(deps: NavigateDeps, intent: NavigateIntent, volumeId: s
     terminal: source === 'fallback' || source === 'cancel',
     pushHistory: intent.pushHistory,
     fromCancel: source === 'cancel',
+    exact: intent.exact,
   })
   return { status: 'started', settled: SETTLED_NOOP, corrected }
 }

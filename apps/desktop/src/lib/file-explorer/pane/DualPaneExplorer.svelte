@@ -1372,11 +1372,12 @@
                 onCursorReading={(reading: CursorReading) => {
                     recordCursor(getCurrentEntry(getPaneHistory(paneId)), reading)
                 }}
-                onVolumeChange={({ volumeId, targetPath }: VolumeChangePayload) => {
+                onVolumeChange={({ volumeId, targetPath, exact }: VolumeChangePayload) => {
                     navigateIntent({
                         pane: paneId,
                         to: { selectVolume: { volumeId, path: targetPath } },
                         source: 'user',
+                        exact,
                     })
                 }}
                 onGoToLocation={(location: Location) => {

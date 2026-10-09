@@ -55,6 +55,11 @@ export interface NavigateIntent {
    * focus behavior (none shift the focused pane) and differ only in this push.
    */
   pushHistory?: boolean
+  /**
+   * A switch's `path` is the destination even at the volume's root, so the background
+   * correction keeps it (`determineNavigationPath`'s `exact`). Set by `openFavorite`.
+   */
+  exact?: boolean
 }
 
 /**

@@ -111,8 +111,19 @@ describe('volume switch (P4 — truly optimistic, synchronous commit)', () => {
       volumeId: 'ext',
       volumePath: '/Volumes/Ext',
       targetPath: '/Volumes/Ext',
+      exact: false,
       otherPane: expect.anything() as DetermineNavigationPathArgs['otherPane'],
     })
+  })
+
+  it('hands the background correction an `exact` switch, so a favorite at a volume root stays at the root', () => {
+    navigate(
+      { pane: 'left', to: { selectVolume: { volumeId: 'ext', path: '/Volumes/Ext' } }, source: 'user', exact: true },
+      h.deps,
+    )
+    expect(h.determineNavigationPath).toHaveBeenCalledWith(
+      expect.objectContaining({ volumeId: 'ext', targetPath: '/Volumes/Ext', exact: true }),
+    )
   })
 
   it("hands the background correction the volume's landing, so a place with nothing remembered opens on its start folder", () => {
