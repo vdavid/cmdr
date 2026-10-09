@@ -268,10 +268,10 @@ describe('BulkRenameReviewDialog', () => {
     const target = mountDialog()
     await tick()
 
-    const headers = [...target.querySelectorAll('th')].map((th) => th.textContent)
+    const headers = [...target.querySelectorAll('[role="columnheader"]')].map((header) => header.textContent)
     expect(headers).toContain('Why this name')
 
-    const cells = [...target.querySelectorAll<HTMLElement>('td.why')]
+    const cells = [...target.querySelectorAll<HTMLElement>('[data-evidence-source]')]
     expect(cells).toHaveLength(4)
     expect(cells[0]?.textContent).toContain('Text in the image')
     expect(cells[0]?.textContent).toContain('Invoice 4021 total 250 SEK')
@@ -331,7 +331,7 @@ describe('BulkRenameReviewDialog', () => {
     const target = mountDialog()
     await tick()
 
-    const cells = [...target.querySelectorAll<HTMLElement>('td.why')]
+    const cells = [...target.querySelectorAll<HTMLElement>('[data-evidence-source]')]
     // The quote sits inside its surrounding line, with the cut ends marked.
     expect(cells[0]?.textContent).toContain('…Betalning mottagen  Total 1 299 kr  Tack för ditt köp…')
     expect(cells[0]?.querySelector('mark')?.textContent).toBe('Total 1 299 kr')
@@ -371,7 +371,7 @@ describe('BulkRenameReviewDialog', () => {
     const target = mountDialog()
     await tick()
 
-    const cell = requiredElement(target, 'td.why')
+    const cell = requiredElement(target, '[data-evidence-source]')
     expect(cell.querySelector('img')).toBeNull()
     expect(cell.textContent).toContain(MARKUP_DETAIL)
   })
@@ -396,7 +396,8 @@ describe('BulkRenameReviewDialog', () => {
 
     buttons[1]?.focus()
     flushSync()
-    const focusedRows = [...target.querySelectorAll('tbody tr.focused')]
+    // The row whose preview holds focus is the list's cursor row.
+    const focusedRows = [...target.querySelectorAll('[role="row"].is-under-cursor')]
     expect(focusedRows).toHaveLength(1)
     expect(focusedRows[0]?.textContent).toContain('before-two.png')
 
@@ -472,7 +473,7 @@ describe('BulkRenameReviewDialog', () => {
     const target = mountDialog()
     await tick()
 
-    const cell = requiredElement(target, 'td.why')
+    const cell = requiredElement(target, '[data-evidence-source]')
     expect(cell.querySelector('img')).toBeNull()
     expect(cell.textContent).toContain(MARKUP_DETAIL)
   })
@@ -616,7 +617,7 @@ describe('BulkRenameReviewDialog', () => {
     expect(target.querySelectorAll('[data-name-provenance]')).toHaveLength(2)
 
     // A user-typed name states whose name it is, and claims nothing beyond that.
-    const cells = [...target.querySelectorAll<HTMLElement>('td.why')]
+    const cells = [...target.querySelectorAll<HTMLElement>('[data-evidence-source]')]
     expect(cells[3]?.textContent?.trim()).toBe('You typed this name')
     expect(cells[3]?.querySelector('.evidence-detail')).toBeNull()
     await expectNoA11yViolations(target)
@@ -654,7 +655,11 @@ describe('BulkRenameReviewDialog', () => {
     // Both folders are named, once each, above the rows they own.
     const headings = [...target.querySelectorAll('.folder-heading')].map((heading) => heading.textContent.trim())
     expect(headings).toEqual(['/shots', '/Documents/invoices'])
-    expect(target.querySelectorAll('tbody')).toHaveLength(2)
+    // Each heading sits above the rows it owns.
+    const order = [...target.querySelectorAll<HTMLElement>('.folder-heading, input[data-row-id]')].map(
+      (element) => element.dataset.rowId ?? element.textContent.trim(),
+    )
+    expect(order).toEqual(['/shots', 'shots-row', '/Documents/invoices', 'invoices-row'])
     // One decision covers both: the count and the button speak for the whole job.
     expect(requiredElement(target, '[role="status"]').textContent).toContain('2 renames allowed')
 
@@ -679,6 +684,36 @@ describe('BulkRenameReviewDialog', () => {
     await tick()
 
     expect(target.querySelectorAll('.folder-heading')).toHaveLength(0)
+  })
+
+  /** An expired batch has nothing left to decide, so it says so in place of its rows. */
+  it('replaces an expired batch with a notice and keeps the live one reviewable', async () => {
+    reviewState.renameReview = {
+      proposals: [
+        batch({ proposalId: 'batch-expired', expired: true }),
+        batch({
+          proposalId: 'batch-live',
+          rows: [row({ rowId: 'live-row', sourcePath: '/Documents/live.png' })],
+        }),
+      ],
+    }
+    const target = mountDialog()
+    await tick()
+
+    const notices = [...target.querySelectorAll('[role="rowheader"] [role="status"]')]
+    expect(notices).toHaveLength(1)
+    expect(target.querySelectorAll('input[data-row-id]')).toHaveLength(1)
+    expect(nameInput(target, 'live-row').value).toBe('after-one.png')
+    await expectNoA11yViolations(target)
+  })
+
+  it('shows only the notice when every batch expired', async () => {
+    reviewState.renameReview = { proposals: [batch({ expired: true })] }
+    const target = mountDialog()
+    await tick()
+
+    expect(target.querySelector('.notice[role="status"]')).not.toBeNull()
+    expect(target.querySelector('[role="table"]')).toBeNull()
   })
 
   it('disables and labels Apply when no valid row remains allowed', async () => {

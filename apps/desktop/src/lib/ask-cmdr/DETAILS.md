@@ -473,7 +473,7 @@ wrong name gets corrected in place.
 ## The "Why this name" column
 
 Every row carries typed evidence from the backend (`evidence: { source, detail }`, the wire mirror of Rust
-`RenameEvidence`), rendered as the table's rightmost column. `evidenceSourceLabel` in `ask-cmdr-labels.ts` maps the
+`RenameEvidence`), rendered as the list's rightmost column. `evidenceSourceLabel` in `ask-cmdr-labels.ts` maps the
 source to its catalog string; the raw `detail` renders below it.
 
 Three properties this column exists for:
@@ -500,10 +500,17 @@ name is wrong, only that the user should look. A thin row takes the warning tone
 (`role="img"`, so its label doesn't depend on text content the way the row badges' does), so it never reads by color
 alone.
 
-The layout: three fixed-pixel columns (allow 56, preview 44, arrow 32) plus three shared text columns at 25 / 25 / 42
-percent, inside a `min(1040px, calc(100vw - 48px))` resizable dialog. Evidence wraps (`overflow-wrap: anywhere`) and
-clamps at four lines. The clamp defends a hand-shrunk dialog; it isn't a routine truncation, because hiding evidence
-from the reviewer is the failure this column fixes.
+The layout is the house `ColumnList` (`lib/ui/DETAILS.md` § ColumnList), so the review reads like Search's results: one
+header and row grid, the same cursor tint, the same width contract. It runs in `table` semantics (rows hold a checkbox,
+a button, and a text field, which a listbox option can't) with content-sized rows (`virtualized={false}`): a row is one
+line or five depending on its badges and evidence, and a review stays small (about 101 rows per batch). The batches
+flatten into one row list (`ListRow`: a folder heading, an expired batch's notice, or a file row), headings and notices
+rendering as the list's group-heading rows. Columns: Allow `fit` (its header or the 16 px checkbox), preview `fixed` 36
+px, original and new name `share` measured from the row DATA (the new name from the STORED `destinationName`, never the
+draft, so typing doesn't move the columns), the arrow `fixed`, and "Why this name" a `share` with no demand, so the
+spare width lands on the evidence. Cells holding controls set `clip: false`, or their focus rings would be cut. Evidence
+wraps (`overflow-wrap: anywhere`) and clamps at four lines. The clamp defends a hand-shrunk dialog; it isn't a routine
+truncation, because hiding evidence from the reviewer is the failure this column fixes.
 
 ## The preview column
 
@@ -511,7 +518,8 @@ The reviewer has to be able to see the file, because a plausible wrong name only
 row shows its own 36 px thumbnail (scanning 50 rows for the odd wrong one is the actual review task, so a detail pane
 would only show the row the user already suspects), and each thumbnail is a button that opens the file in the full
 viewer with Space or Enter. ArrowDown / ArrowUp walk the buttons, so the preview follows the focused row with no mouse,
-and the focused row is highlighted.
+and the focused row is the list's cursor row (`cursorIndex`). Hover doesn't move it: the highlight marks the row Space
+acts on.
 
 - **Thumbnails reuse the viewer's `cmdr-media://` preview scheme** through `mediaIndexThumbnailToken` + `mediaUrl`, the
   same path `lib/search/ImageSearchResults.svelte` takes. They do NOT depend on media-index enrichment: the token is
