@@ -180,8 +180,8 @@
      *
      * `Popover` is the exposed one (it positions `fixed` from `getBoundingClientRect()` and
      * deliberately does NOT portal, so the host dialog's Escape handler can find it in its own
-     * subtree). `Menu` portals to `document.body`, and `Select` / `Combobox` portal into the
-     * overlay, outside the panel, so all three are immune.
+     * subtree). `Menu`, `Select`, and `Combobox` portal into the overlay (`providePortalTarget`),
+     * outside the panel, so all three are immune.
      *
      * `left` / `top` shift the panel visually without reflowing siblings (same as the
      * transform did) and establish no containing block. `will-change: transform` is the

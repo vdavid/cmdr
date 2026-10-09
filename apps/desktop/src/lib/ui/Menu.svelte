@@ -28,6 +28,7 @@
     import ShortcutChip from './ShortcutChip.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
     import { formatInteger } from '$lib/intl/number-format'
+    import { usePortalTarget } from './portal-target'
     import type { MenuController } from './menu-controller.svelte'
     import { disclosureRowValue } from './menu-navigation'
     import type { MenuItem, MenuRowContext, MenuSection } from './menu-types'
@@ -72,6 +73,9 @@
 
     menuInstanceCount += 1
     const instanceId = `menu-${String(menuInstanceCount)}`
+    // Inside a modal the menu lands in its overlay: under `document.body` it would sit below
+    // the scrim, and the modal's focus trap would pull focus straight back out of it.
+    const portalTarget = usePortalTarget()
     const rowId = (value: string) => `${instanceId}-row-${value}`
 
     let surfaceEl: HTMLDivElement | undefined = $state()
@@ -343,7 +347,7 @@
 {/snippet}
 
 {#if menu.isOpen}
-    <Portal>
+    <Portal container={portalTarget()}>
         <div
             bind:this={surfaceEl}
             class="menu-surface"

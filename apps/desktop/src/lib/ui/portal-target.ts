@@ -1,5 +1,5 @@
 /**
- * Where a floating menu (`Select`, `Combobox`) mounts while it's open.
+ * Where a floating menu (`Select`, `Combobox`, the house `Menu`) mounts while it's open.
  *
  * Every menu portals: rendered inline it would inherit its ancestors' `overflow`
  * clip, `mask-image`, and stacking context, and no `z-index` escapes those. The
@@ -9,7 +9,7 @@
  * focus straight back out of a menu that lives outside it. So a modal layer calls
  * `providePortalTarget` with its overlay element (the one that carries the rung and
  * the trap, never a clipping panel inside it), and every menu beneath it lands
- * there. Callers of `Select` / `Combobox` never choose.
+ * there. Callers of `Select` / `Combobox` / `Menu` never choose.
  */
 
 import { getContext, setContext } from 'svelte'
