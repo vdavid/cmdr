@@ -783,3 +783,50 @@ fn a_row_saved_before_share_places_reads_as_the_hosts_history() {
     assert_eq!(row.volume_id, None);
     assert!(!row.pinned);
 }
+
+/// ❗ **Favoriting a folder on a share Cmdr didn't mount saves the share, unpinned**
+/// (`docs/specs/saved-smb-shares.md` writer 4): a Finder-mounted share has no row,
+/// so once it unmounts nothing could dial the favorite. Unpinned, because a
+/// favorite is no request to crowd the switcher.
+#[test]
+fn a_favorited_share_nobody_saved_gets_an_unpinned_row_with_its_place() {
+    let mut rows = Vec::new();
+
+    let added = insert_unless_saved(
+        &mut rows,
+        mounted("192.0.2.9", "192.0.2.9", "naspi", Some("david"), "smb-n"),
+        &[],
+    );
+
+    assert!(added);
+    assert_eq!(rows.len(), 1);
+    assert!(!rows[0].pinned, "a favorite doesn't pin its share");
+    assert_eq!(rows[0].volume_id.as_deref(), Some("smb-n"));
+    assert_eq!(rows[0].mount_path.as_deref(), Some("/Volumes/naspi"));
+}
+
+/// A share that's already saved keeps everything the person chose: its pin and
+/// the account it's saved under.
+#[test]
+fn a_favorited_share_already_saved_is_left_alone() {
+    let hosts = [naspolya()];
+    let mut rows = Vec::new();
+    upsert_share_row(
+        &mut rows,
+        mounted("Naspolya", "192.168.1.111", "naspi", Some("david"), "smb-a"),
+        &hosts,
+    );
+    rows[0].pinned = true;
+
+    let added = insert_unless_saved(
+        &mut rows,
+        mounted("192.168.1.111", "192.168.1.111", "naspi", None, "smb-a"),
+        &hosts,
+    );
+
+    assert!(!added);
+    assert_eq!(rows.len(), 1);
+    assert!(rows[0].pinned);
+    assert_eq!(rows[0].username.as_deref(), Some("david"));
+    assert_eq!(rows[0].server_name, "Naspolya");
+}

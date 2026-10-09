@@ -141,7 +141,7 @@ Remove, rename, and reorder answer in `DeadlineError` (`deadline/mod.rs`) rather
 because the store swallows its own write errors: a favorite that doesn't reach disk still applies in
 memory, so a missed deadline (or a panicked blocking task) is the only thing they can report.
 `add_favorite` can also REFUSE (§ The add gate), so it owns `AddFavoriteError`: the same two
-deadline variants plus `NotAnOsVisiblePath`. The error-type map is
+deadline variants plus `NotAPlace` and `PlaceNotConnected`. The error-type map is
 `docs/guides/error-handling.md`.
 `set_favorite_shortcut` owns `SetFavoriteShortcutError` because it also rejects anything other than
 one ASCII letter (or `None`), including untrusted IPC callers.
@@ -176,47 +176,58 @@ can be absent on slim systems). Linux has no TCC, so its twin has no gate.
 
 ## The add gate
 
-A favorite points at an OS-visible filesystem path: a local drive, or an SMB share while it's
-mounted. `add_favorite` enforces that, and `commands/favorites.rs::path_can_be_favorited` is the one
-place the rule lives.
+A favorite points at a folder on a VOLUME the app can name: a local drive, an SMB share, an SFTP /
+WebDAV / S3 place, or an MTP / ADB phone. `add_favorite` enforces that and records which volume,
+and `commands/favorites.rs::favorite_volume_for` is the one place the rule lives.
 
-**Why it has to exist.** `volumes::get_favorites` (the READ side, in `volumes/mod.rs`) drops any
-favorite whose path isn't on disk. So without a gate an `smb://`, `sftp://`, `webdav://`, `mtp://`,
-`adb://`, `search-results://`, archive-inner, or `.git`-portal path is written to `favorites.json`
-and then shown nowhere at all: no row, no error, and a file that only grows. The gate and that
-existence filter have to agree, and the gate must never be the laxer of the two.
+**Why it has to exist.** The read side resolves every favorite through its stored volume id, the
+same identity a tab carries, so a favorite with no volume behind it could never say where it
+points or dial anything. Without a gate a `search-results://`, archive-inner, `.git`-portal, or
+servers-hub path would be written down with nothing able to reopen it.
 
-**What it reads**, three typed questions and ❌ not one test on the path string:
+**What it reads**, typed questions only, ❌ not one test on the path string:
 
-- `Path::is_absolute()`. A scheme path with no protocol arm in `resolve_path_volume`
-  (`search-results://` today) reaches the mount table, which walks UP to a parent on a failed
-  `statfs` and so answers with the boot volume. Asking `std::path` whether this is a path at all
-  keeps that generic instead of a list of schemes to remember to extend.
-- `VolumeManager::path_routes_over_its_parent()`. An archive-inner or `.git`-portal path resolves to
-  the parent DRIVE, which IS OS-visible, while the path itself has no file of its own there. Same
-  reading the write-op router and the agent's `WritableDestination` take.
-- `Volume::paths_are_os_visible()` on the volume `resolve_path_volume` names. The same reading Quick
-  Look, the drag commands, and "Open terminal here" take: it admits local drives and direct SMB
-  (whose `/Volumes/…` paths stay OS-openable while the share is mounted) and refuses every
-  protocol-only backend. ❌ Not `supports_local_fs_access()`, which direct SMB answers `false` to.
-  **Gotcha**: an id the registry doesn't hold is a REFUSAL here, the opposite of what `quick_look`
-  and `terminal.rs` assume. A saved-but-offline server and an unplugged phone both resolve to a
-  `VolumeInfo` with no registered volume behind it, and guessing yes there writes the invisible
-  favorite this whole section exists to prevent.
+1. `VolumeManager::path_routes_over_its_parent()`. An archive-inner or `.git`-portal path resolves to
+   the parent DRIVE while the path itself has no folder of its own there. Same reading the
+   write-op router and the agent's `WritableDestination` take.
+2. The canonical resolver (`resolve_path_volume_with_timeout`): protocol arms for `mtp://`,
+   `adb://`, `sftp://`, `webdav://`, `s3://` (each from cached state, never dialing), `smb://` → the
+   servers hub, the mount table otherwise.
+3. **The volume must CONTAIN the path**, by whole segments (`cmdr_fs::volume::app_paths`). A scheme
+   with no protocol arm (`search-results://`) reaches the mount table, which walks UP to `/`, and `/`
+   doesn't contain it. That keeps the rule generic instead of a list of schemes to extend.
+4. **The volume must be REGISTERED, and its backend admitted** by `backend_holds_favorites`, an
+   EXHAUSTIVE match on `BackendKind` (❌ no `_` arm, so a new backend is a compile error here
+   rather than a silent yes): `Local | Smb | Sftp | Webdav | S3 | Mtp | Adb` yes, `Archive |
+   GitPortal` no. Registered means the folder was seen live. An unregistered saved place or listed
+   device (a server that isn't connected, a phone not dialed yet) answers
+   `AddFavoriteError::PlaceNotConnected`, so MCP can say "connect first"; anything else
+   unregistered (the servers hub) answers `NotAPlace`.
 
-So today it accepts local and SMB-mounted panes, and refuses SFTP, WebDAV, MTP, ADB, the `smb://`
-servers hub, search-results snapshots, archive-inner paths, and `.git`-portal paths.
+It answers `FavoriteVolume { id, root, name }` from the resolved row. An OS-mounted SMB share
+served by `LocalPosixVolume` reports `BackendKind::Local`, which is admitted like any drive.
+
+**A folder on a share nothing saved saves the share** (D2, `docs/specs/saved-smb-shares.md` writer
+4). A Finder-mounted share has no `known-shares.json` row, so once it unmounts nothing could dial the
+favorite. For an SMB-scheme volume, `add_favorite` calls
+`network::smb_saved_shares::remember_favorited_share` before persisting: the server, port, share, and
+account from the live mount's source, the gate's volume id, `pinned: false`, and ❗ an existing row
+left exactly as it is (pin and account included). Visible effect: the share appears in the servers
+hub, unpinned. Its password lives in Finder's Keychain item, so the first offline pick asks once
+through the sign-in sheet. A GVFS share (Linux) has no mount-table source, so it isn't saved.
 
 **A resolver timeout is not a refusal.** It means the gate could not classify the path, so
 `add_favorite` returns `AddFavoriteError::TimedOut` and does not persist anything. Resolver-correctness
 tests inject a generous filesystem timeout because a saturated blocking pool can spend the production
 two-second budget waiting to schedule an otherwise fast mount-table read; a separate synthetic resolver
-result pins the typed timeout outcome without depending on scheduler timing.
+result pins the typed timeout outcome without depending on scheduler timing. The classification
+itself (`favorite_volume_from`) takes the registry lookup as a closure, so its cells run without
+touching the process-wide registry.
 
 **Every add surface meets it**, because they all route through the command: the `favorites.add`
 palette / Go-menu handler, the folder-row and `..` context menus (`menu/menu_handlers.rs` calls
 `commands::favorites::add_favorite`, ❌ never `store::add`), and the MCP `favorites` tool, which maps
-the refusal to `invalid_params` rather than an internal problem. `rename_favorite` takes no path and
+both refusals to `invalid_params` with words naming the rule rather than an internal problem. `rename_favorite` takes no path and
 can't move one, so it needs no gate.
 
 **The frontend predicate beside it is a different job, ❌ not duplication.** The favorites menu greys
@@ -224,11 +235,9 @@ its "Add current folder to favorites" row out on the pane's own capability readi
 AFFORDANCE: it tells someone up front that this pane can't be favorited. This one is the
 ENFORCEMENT, and it's authoritative — the MCP tool and the native menus never go near the frontend.
 The frontend's half is `kindCanBeFavorited` / `paneFolderCanBeFavorited` in
-`src/lib/file-explorer/pane/volume-capabilities.ts`, reading the pane's ROUTED kind. The two land on
-the same answer set (local and SMB) from different readings, so a change to one is a prompt to
-check the other.
-
-Broader network and device favorites stay deferred (mount-state complexity).
+`src/lib/file-explorer/pane/volume-capabilities.ts`, reading the pane's ROUTED kind. The two give
+the same answer set from different readings (pane kind vs backend kind), so a change to one is a
+prompt to check the other.
 
 ## MCP consumer
 

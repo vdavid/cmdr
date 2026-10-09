@@ -48,7 +48,8 @@ shared seams (`connect_wiring.rs`, `server_list_file.rs`, `saved_server_fields.r
 - **Forgetting a server's SMB password takes only its own entries** (`keychain::forget_server_credentials`): every name
   on ITS port, plus a port-less entry only when a lookup noted finding its password there
   (`note_found_under_portless`). ❌ Never delete a port-less key blind: it's also the 445 server's key.
-- **Only Cmdr's own mounts save an SMB share** (`smb_saved_shares.rs`), keyed by server + share, ❌ never by account,
+- **Only Cmdr's own mounts (and a favorite on an unsaved share) save an SMB share** (`smb_saved_shares.rs`), keyed by
+  server + share, ❌ never by account,
   with the id the mount reported. An upgrade or watcher path that wrote one would invent history (`DETAILS.md` § "Saved
   SMB shares").
 

@@ -79,3 +79,30 @@ fn an_added_share_row_tells_the_lists_to_redraw() {
     remember_named_share("192.0.2.77", "redraw-test", Some("testuser"));
     assert!(crate::volume_broadcast::volumes_changed_requests() > before);
 }
+
+/// The share a favorite saves is a PLACE (address, port, volume id, mount path), so a pick can dial
+/// it once it's unmounted, and ❗ unpinned.
+#[test]
+fn a_favorited_share_row_is_an_unpinned_place_the_mount_described() {
+    let row = favorited_share_row(
+        "192.0.2.9",
+        10445,
+        "naspi",
+        Some("david"),
+        "/Volumes/naspi",
+        "smb-naspi-1",
+    );
+    assert!(row.is_share());
+    assert!(!row.pinned);
+    assert_eq!(row.address.as_deref(), Some("192.0.2.9"));
+    assert_eq!(row.port, Some(10445));
+    assert_eq!(row.username.as_deref(), Some("david"));
+    assert_eq!(row.last_connection_mode, ConnectionMode::Credentials);
+    assert_eq!(row.volume_id.as_deref(), Some("smb-naspi-1"));
+    assert_eq!(row.mount_path.as_deref(), Some("/Volumes/naspi"));
+    assert_eq!(known_shares::place_id(&row), "smb-naspi-1");
+
+    let guest = favorited_share_row("nas.local", 445, "public", None, "/Volumes/public", "smb-public-1");
+    assert_eq!(guest.port, None, "445 is the default and isn't written");
+    assert_eq!(guest.last_connection_mode, ConnectionMode::Guest);
+}

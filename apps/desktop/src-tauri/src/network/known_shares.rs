@@ -341,6 +341,37 @@ pub fn remember_share(row: KnownNetworkShare) {
     save_known_shares();
 }
 
+/// Files `row` (a share row) in `rows` only when no row holds that share yet, answering whether it
+/// did. ❗ A share that's already saved keeps everything about it: its pin, its account, the name
+/// its server goes by. See [`remember_share_unless_saved`].
+fn insert_unless_saved(rows: &mut Vec<KnownNetworkShare>, row: KnownNetworkShare, hosts: &[NetworkHost]) -> bool {
+    let place = place_id(&row);
+    if rows
+        .iter()
+        .any(|existing| existing.is_share() && (place_id(existing) == place || same_share_row(existing, &row, hosts)))
+    {
+        return false;
+    }
+    rows.push(row);
+    true
+}
+
+/// Records a share only when nothing has saved it yet, as `row` says (pin included), answering
+/// whether it did. The favorites writer (`smb_saved_shares::remember_favorited_share`): favoriting
+/// a folder is a "remember this place", ❌ never a reason to move a pin or an account the person set.
+pub fn remember_share_unless_saved(row: KnownNetworkShare) -> bool {
+    debug_assert!(row.is_share(), "a share row names its share");
+    let hosts = crate::network::fresh_discovered_hosts();
+    let added = {
+        let mut store = get_known_shares_mutex().lock_ignore_poison();
+        insert_unless_saved(&mut store.known_network_shares, row, &hosts)
+    };
+    if added {
+        save_known_shares();
+    }
+    added
+}
+
 /// Every saved share row.
 pub fn saved_shares() -> Vec<KnownNetworkShare> {
     get_all_known_shares()

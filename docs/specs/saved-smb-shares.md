@@ -34,6 +34,11 @@ Writers, all upserts on the share's key:
    guest included. It takes the host's name beside the dial address for that.
 2. **Add with a share path** (`smb://sven@host/Container`) records the share with no volume id yet.
 3. **Opening a saved share place** (below) mounts through the same writer.
+4. **Favoriting a folder on a share nothing has saved** (a Finder or login mount) records the share from the live
+   mount's source, with the mount's volume id, `pinned: false`, and only when no row holds the share yet, so an existing
+   row's pin and account stay as the person set them. Favoriting is an explicit "remember this place", the same class of
+   intent as 1 and 2, and without it a favorite on that share could never dial once it unmounts
+   (`smb_saved_shares::remember_favorited_share`).
 
 ❌ Not written by the mount watcher, the startup adopter, the pane-open upgrade, or "Connect directly": those see mounts
 nobody asked Cmdr to save (Finder's, macOS's at login), and minting rows for them would invent a history. Their volume

@@ -569,12 +569,13 @@ pub fn list_cached() -> Option<Vec<Favorite>> {
     guard.as_ref().map(|store| store.favorites.clone())
 }
 
-/// Adds a favorite for `path`, deduping by normalized path (a re-add moves the existing entry to the
-/// end). When `name` is `None`, the label defaults to the path's file name.
-pub fn add(path: &str, name: Option<String>) {
+/// Adds a favorite for `path` on `volume` (the add gate's answer), deduping by the same folder on
+/// the same volume (a re-add moves the existing entry to the end). When `name` is `None`, the label
+/// defaults to the path's file name.
+pub fn add(path: &str, name: Option<String>, volume: FavoriteVolume) {
     mutate_and_persist(StoreChange::Gesture(FavoriteAction::Added), |store| {
         // allowed-discarded-outcome: nobody consumes the new id; both callers answer with `()`.
-        add_to_store(store, path, name, None);
+        add_to_store(store, path, name, Some(volume));
         true
     });
 }

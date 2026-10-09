@@ -9,6 +9,8 @@
 //! save (Finder's, macOS's at login), and a row for one of those would invent a
 //! history. Their volume ids are the same `statfs` ids, so a saved row and a live
 //! mount of one share dedupe by id without either writer knowing about the other.
+//! The one other writer is an explicit "remember this place": favoriting a folder
+//! on a share nothing saved ([`remember_favorited_share`]).
 
 use std::time::Duration;
 
@@ -98,6 +100,69 @@ pub fn remember_named_share(host_name: &str, share: &str, username: Option<&str>
         pinned: false,
     });
     crate::volume_broadcast::emit_volumes_changed();
+}
+
+/// Saves the share mounted at `mount_path` when nothing has saved it yet, because a folder on it
+/// was just favorited: a Finder-mounted share has no row, so once it unmounts nothing could dial
+/// the favorite. Writer 4 of `docs/specs/saved-smb-shares.md`.
+///
+/// ❗ Unpinned (a favorite is no request to crowd the switcher), and a share that's already saved
+/// is left exactly as it is. The server goes by the address the mount dialed, since nothing here
+/// knows a nicer name for it. The account's password lives in Finder's Keychain item, not Cmdr's,
+/// so the first offline pick asks once through the sign-in sheet.
+///
+/// Reads the mount table for `mount_path`, which the add gate just resolved as live. Runs inside
+/// the add command's blocking, deadline-bound write.
+pub fn remember_favorited_share(mount_path: &str, volume_id: &str) {
+    #[cfg(target_os = "macos")]
+    let info = crate::volumes::get_smb_mount_info(mount_path);
+    #[cfg(target_os = "linux")]
+    let info = crate::volumes_linux::get_smb_mount_info(mount_path);
+    let Some(info) = info else {
+        // A GVFS share (Linux) isn't in the mount table, and a non-SMB mount has no source to read.
+        log::debug!("No SMB mount source at {mount_path:?}; the favorite's share isn't saved");
+        return;
+    };
+    let row = favorited_share_row(
+        &info.server,
+        info.port,
+        &info.share,
+        info.username.as_deref(),
+        mount_path,
+        volume_id,
+    );
+    if known_shares::remember_share_unless_saved(row) {
+        log::info!("Saved the share {:?} on {:?} for a favorite", info.share, info.server);
+    }
+}
+
+/// The row [`remember_favorited_share`] files: a share place no Cmdr mount went through, unpinned.
+fn favorited_share_row(
+    server: &str,
+    port: u16,
+    share: &str,
+    username: Option<&str>,
+    mount_path: &str,
+    volume_id: &str,
+) -> KnownNetworkShare {
+    KnownNetworkShare {
+        server_name: server.to_string(),
+        share_name: share.to_string(),
+        protocol: "smb".to_string(),
+        last_connected_at: chrono::Utc::now().to_rfc3339(),
+        last_connection_mode: if username.is_some() {
+            ConnectionMode::Credentials
+        } else {
+            ConnectionMode::Guest
+        },
+        last_known_auth_options: AuthOptions::GuestOrCredentials,
+        username: username.map(str::to_string),
+        address: Some(server.to_string()),
+        port: (port != 445).then_some(port),
+        volume_id: Some(volume_id.to_string()),
+        mount_path: Some(mount_path.to_string()),
+        pinned: false,
+    }
 }
 
 /// Brings a saved share place to life: mounts it as its account, connects the

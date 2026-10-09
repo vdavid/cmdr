@@ -638,7 +638,9 @@ which addresses it dialed.
 the migration, and what Forget does). What the code has to defend:
 
 - **❗ Only Cmdr's own mounts write one**: `mount_network_share` and `connect_saved_place`'s SMB arm, both through
-  `smb_saved_shares::remember_mount`, plus Add naming a share (`remember_named_share`, no place yet). ❌ Never the
+  `smb_saved_shares::remember_mount`, plus Add naming a share (`remember_named_share`, no place yet), plus favoriting a
+  folder on a share nothing saved (`remember_favorited_share`: an explicit "remember this place", filed unpinned and
+  only when no row holds the share, `favorites/DETAILS.md` § The add gate). ❌ Never the
   mount watcher, the adopter pass, the pane-open upgrade, or "Connect directly": they see mounts nobody asked Cmdr to
   save, and a row for one would invent history. That split is also why nothing dedupes by hand: every path keys the
   volume by the same `statfs` id (`smb_upgrade::mounted_volume_id`), so a saved row and a live mount meet on the id.

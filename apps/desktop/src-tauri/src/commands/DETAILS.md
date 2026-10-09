@@ -207,8 +207,8 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
 - **`favorites.rs`**: `add_favorite`, `remove_favorite`, `rename_favorite`, `reorder_favorites`. Pass-throughs over
   `crate::favorites::store`; each persists `favorites.json` (5s write timeout) then re-emits `volumes-changed`. No
   `list_favorites` (listing rides `list_volumes` / `volumes-changed`). Carries one piece of judgment, the add gate
-  (`path_can_be_favorited`, answering `AddFavoriteError::NotAnOsVisiblePath`, or `TimedOut` when volume resolution
-  has no answer): the store stays sync and
+  (`favorite_volume_for`, answering the volume a favorite lives on, `AddFavoriteError::NotAPlace` /
+  `PlaceNotConnected`, or `TimedOut` when volume resolution has no answer): the store stays sync and
   `AppHandle`-free, so the one reading that needs volume state lives at the command every add surface shares. See
   `favorites/DETAILS.md` § The add gate.
 - **`font_metrics.rs`**: `store_font_metrics`, `has_font_metrics`.

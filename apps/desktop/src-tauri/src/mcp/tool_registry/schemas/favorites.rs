@@ -13,7 +13,7 @@ pub fn favorites_schema() -> Value {
             },
             "path": {
                 "type": "string",
-                "description": "For add: the folder path to favorite (~ expands to home)."
+                "description": "For add: the folder to favorite, on a disk, a share, a server (sftp://, webdav://, s3://), or a phone (mtp://, adb://) that is connected now (~ expands to home)."
             },
             "id": {
                 "type": "string",

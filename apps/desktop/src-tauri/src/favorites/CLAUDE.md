@@ -23,10 +23,12 @@ favorites. Full depth in `DETAILS.md`.
   their list. Don't "simplify" the `Option` to a plain `Vec`: it would erase the absent-vs-empty
   distinction the whole contract rests on.
 - **Every add goes through `commands::favorites::add_favorite`, ❌ never `store::add`.** That's the
-  only place the add gate runs, and the gate isn't optional: `volumes::get_favorites` HIDES a
-  favorite whose path isn't on disk, so an ungated add writes an entry no menu can ever show.
-  The native folder-row menu calls the command for exactly this reason. What it accepts and why:
-  `DETAILS.md` § The add gate.
+  only place the add gate runs: it names the volume a favorite lives on (registered, containing the
+  path, an exhaustively admitted backend) and saves an unsaved SMB share, unpinned. An ungated add
+  writes a favorite with no volume, which nothing can reopen or dial. `DETAILS.md` § The add gate.
+- **A favorite's identity is its volume id + the path under its root**, exactly like a tab's.
+  Discovery seeds the row, the reach pass decides `FavoriteReach` from rows alone, and ❌ a favorite
+  row never carries `connection_state` (volume-shaped consumers read it). `target.rs` header.
 - **`id` is a random UUID minted on add, never derived from `path`.** Paths repeat across renames
   and re-adds, so the id must outlive the path. The frontend's `LocationInfo.id` is `format!("fav-{id}")`.
 - **Data dir is resolved WITHOUT an `AppHandle`**, via `config::standalone_app_data_dir()` (a

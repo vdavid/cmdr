@@ -32,13 +32,15 @@ pub async fn execute_favorites(params: &Value) -> ToolResult {
             crate::commands::favorites::add_favorite(path.clone(), name)
                 .await
                 .map_err(|e| match e {
-                    // A refusal, ❌ not a fault: `volumes::get_favorites` only hands back favorites
-                    // on OS-visible filesystem paths, so an archive-inner, `.git`-portal, phone, or
-                    // server path would store a row nothing can ever display. Say so where the
-                    // caller can act on it rather than reporting an internal problem.
-                    AddFavoriteError::NotAnOsVisiblePath => ToolError::invalid_params(format!(
-                        "Can't favorite {path}: favorites point at local or mounted-share folders, \
-                         and this path isn't one of those."
+                    // Refusals, ❌ not faults: say so where the caller can act on them rather than
+                    // reporting an internal problem.
+                    AddFavoriteError::NotAPlace => ToolError::invalid_params(format!(
+                        "Can't favorite {path}: favorites point at folders on disks, shares, servers, \
+                         and phones, and this path isn't one of those."
+                    )),
+                    AddFavoriteError::PlaceNotConnected => ToolError::invalid_params(format!(
+                        "Can't favorite {path} yet: the place it's on isn't connected. Connect to it \
+                         first, then add the favorite."
                     )),
                     other => ToolError::internal(format!("Couldn't add favorite: {other}")),
                 })?;

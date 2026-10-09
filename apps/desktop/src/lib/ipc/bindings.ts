@@ -3010,12 +3010,17 @@ export const commands = {
   // Clears every recent-path entry.
   clearRecentPaths: () => typedError<null, string>(__TAURI_INVOKE('clear_recent_paths')),
   /**
-   *  Adds a favorite for `path`, deduping by normalized path. When `name` is omitted, the label
-   *  defaults to the path's file name.
+   *  Adds a favorite for `path`, on the volume the add gate names. When `name` is omitted, the label
+   *  defaults to the path's file name. A re-add of the same folder on the same volume moves the
+   *  existing favorite rather than adding a second.
    *
-   *  Refuses a path a favorite can't point at ([`path_can_be_favorited`]). The frontend greys its
-   *  add affordance out on the same reading, but that's an affordance and this is the enforcement:
-   *  the MCP `favorites` tool and the native folder-row menus never touch that frontend predicate.
+   *  Refuses a path a favorite can't point at ([`favorite_volume_for`]). The frontend greys its add
+   *  affordance out on the pane's kind, but that's an affordance and this is the enforcement: the MCP
+   *  `favorites` tool and the native folder-row menus never touch that frontend predicate.
+   *
+   *  A folder on an SMB share nothing has saved (Finder mounted it) saves the share first, unpinned
+   *  (`network::smb_saved_shares::remember_favorited_share`): otherwise nothing could dial the
+   *  favorite once the share unmounts.
    */
   addFavorite: (path: string, name: string | null) =>
     typedError<null, AddFavoriteError>(__TAURI_INVOKE('add_favorite', { path, name })),
@@ -5021,10 +5026,16 @@ export type AdbInstallStatus = {
  */
 export type AddFavoriteError =
   /**
-   *  `path` isn't one `volumes::get_favorites` would ever hand back, so storing it would grow
-   *  `favorites.json` with an entry no pane can list or reach. See [`path_can_be_favorited`].
+   *  `path` isn't a folder on a disk, a share, a server, or a phone: an archive-inner or
+   *  `.git`-portal path, a search-results snapshot, the servers hub, or a path no volume
+   *  contains. See [`favorite_volume_for`].
    */
-  | { type: 'notAnOsVisiblePath' }
+  | { type: 'notAPlace' }
+  /**
+   *  `path` is on a saved place (a server, a phone) that isn't connected right now. Cmdr only
+   *  favorites a folder it has seen live, so the caller connects first.
+   */
+  | { type: 'placeNotConnected' }
   // The work didn't finish inside the command's wait. ❗ It was NOT cancelled.
   | { type: 'timedOut' }
   // The task panicked, so no answer is coming.
