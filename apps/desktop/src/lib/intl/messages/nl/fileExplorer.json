@@ -1725,9 +1725,9 @@
   "@fileExplorer.navigation.driveIndex.refusedGeneric": {
     "sourceHash": "83bd66e"
   },
-  "fileExplorer.navigation.driveIndex.refusedInternal": "Cmdr liep tegen een probleempje aan bij het inschakelen van indexeren voor {name}. Dit zou niet mogen gebeuren. Cmdr opnieuw starten lost het meestal op.",
-  "@fileExplorer.navigation.driveIndex.refusedInternal": {
-    "sourceHash": "e3841d9"
+  "fileExplorer.navigation.driveIndex.refusedNotIndexable": "Cmdr kan {name} nog niet indexeren. Het indexeren werkt op lokale schijven, SMB-shares en telefoons.",
+  "@fileExplorer.navigation.driveIndex.refusedNotIndexable": {
+    "sourceHash": "4ef8487"
   },
   "fileExplorer.navigation.driveIndex.refusedIndexingOff": "Het indexeren van schijven staat uit in Instellingen, dus {name} wordt niet geïndexeerd. Zet het aan bij Indexeren > Schijf indexeren.",
   "@fileExplorer.navigation.driveIndex.refusedIndexingOff": {

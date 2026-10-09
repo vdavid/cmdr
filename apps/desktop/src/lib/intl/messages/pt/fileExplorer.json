@@ -1720,9 +1720,9 @@
   "@fileExplorer.navigation.driveIndex.refusedGeneric": {
     "sourceHash": "83bd66e"
   },
-  "fileExplorer.navigation.driveIndex.refusedInternal": "O Cmdr encontrou um problema ao ativar a indexação de {name}. Isso não deveria acontecer. Reiniciar o Cmdr costuma resolver.",
-  "@fileExplorer.navigation.driveIndex.refusedInternal": {
-    "sourceHash": "e3841d9"
+  "fileExplorer.navigation.driveIndex.refusedNotIndexable": "O Cmdr ainda não pode indexar {name}. A indexação funciona em discos locais, compartilhamentos SMB e celulares.",
+  "@fileExplorer.navigation.driveIndex.refusedNotIndexable": {
+    "sourceHash": "4ef8487"
   },
   "fileExplorer.navigation.driveIndex.refusedIndexingOff": "A indexação de disco está desativada nos Ajustes, então {name} continua sem índice. Ative-a em Indexação > Indexação de disco.",
   "@fileExplorer.navigation.driveIndex.refusedIndexingOff": {

@@ -173,8 +173,8 @@ describe('hasLastScanFacts', () => {
 })
 
 describe('driveIndexRefusalMessageKey', () => {
-  it('maps a drive no index can serve to the internal-error copy, not reconnect advice', () => {
-    expect(driveIndexRefusalMessageKey('not_indexable')).toBe('fileExplorer.navigation.driveIndex.refusedInternal')
+  it("tells the user which drives can be indexed when this one can't, not reconnect advice", () => {
+    expect(driveIndexRefusalMessageKey('not_indexable')).toBe('fileExplorer.navigation.driveIndex.refusedNotIndexable')
   })
 
   // Regression anchor for ERR-JUCNB / ERR-JT9ZX: a phone waiting for its USB

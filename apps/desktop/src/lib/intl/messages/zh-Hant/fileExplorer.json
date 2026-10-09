@@ -1709,9 +1709,9 @@
   "@fileExplorer.navigation.driveIndex.refusedGeneric": {
     "sourceHash": "83bd66e"
   },
-  "fileExplorer.navigation.driveIndex.refusedInternal": "Cmdr 為 {name} 開啟索引時遇到了狀況。這本來不該發生。重新啟動 Cmdr 通常就能解決。",
-  "@fileExplorer.navigation.driveIndex.refusedInternal": {
-    "sourceHash": "e3841d9"
+  "fileExplorer.navigation.driveIndex.refusedNotIndexable": "Cmdr 還不能為 {name} 建立索引。索引功能目前支援本機磁碟機、SMB 共享資料夾和手機。",
+  "@fileExplorer.navigation.driveIndex.refusedNotIndexable": {
+    "sourceHash": "4ef8487"
   },
   "fileExplorer.navigation.driveIndex.refusedIndexingOff": "磁碟機索引已在設定中關閉，所以 {name} 仍然沒有建立索引。可以在「索引 > 磁碟機索引」中開啟。",
   "@fileExplorer.navigation.driveIndex.refusedIndexingOff": {

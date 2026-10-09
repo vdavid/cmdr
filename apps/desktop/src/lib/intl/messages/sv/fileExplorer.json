@@ -1714,9 +1714,9 @@
   "@fileExplorer.navigation.driveIndex.refusedGeneric": {
     "sourceHash": "83bd66e"
   },
-  "fileExplorer.navigation.driveIndex.refusedInternal": "Cmdr stötte på ett problem när indexeringen för {name} skulle slås på. Det här borde inte hända. Att starta om Cmdr brukar lösa det.",
-  "@fileExplorer.navigation.driveIndex.refusedInternal": {
-    "sourceHash": "e3841d9"
+  "fileExplorer.navigation.driveIndex.refusedNotIndexable": "Cmdr kan inte indexera {name} än. Indexering fungerar på lokala enheter, SMB-resurser och telefoner.",
+  "@fileExplorer.navigation.driveIndex.refusedNotIndexable": {
+    "sourceHash": "4ef8487"
   },
   "fileExplorer.navigation.driveIndex.refusedIndexingOff": "Enhetsindexering är avstängd i Inställningar, så {name} indexeras inte. Slå på den under Indexering > Enhetsindexering.",
   "@fileExplorer.navigation.driveIndex.refusedIndexingOff": {

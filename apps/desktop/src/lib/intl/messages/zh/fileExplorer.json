@@ -1709,9 +1709,9 @@
   "@fileExplorer.navigation.driveIndex.refusedGeneric": {
     "sourceHash": "83bd66e"
   },
-  "fileExplorer.navigation.driveIndex.refusedInternal": "Cmdr 在为 {name} 打开索引时遇到了问题。这本不该发生。重新启动 Cmdr 通常就能解决。",
-  "@fileExplorer.navigation.driveIndex.refusedInternal": {
-    "sourceHash": "e3841d9"
+  "fileExplorer.navigation.driveIndex.refusedNotIndexable": "Cmdr 还不能为 {name} 建立索引。索引功能目前支持本地驱动器、SMB 共享和手机。",
+  "@fileExplorer.navigation.driveIndex.refusedNotIndexable": {
+    "sourceHash": "4ef8487"
   },
   "fileExplorer.navigation.driveIndex.refusedIndexingOff": "驱动器索引已在设置中关闭，因此 {name} 仍未建立索引。可在“索引 > 驱动器索引”中开启。",
   "@fileExplorer.navigation.driveIndex.refusedIndexingOff": {

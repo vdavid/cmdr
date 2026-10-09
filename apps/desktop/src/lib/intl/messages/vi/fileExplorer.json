@@ -1712,9 +1712,9 @@
   "@fileExplorer.navigation.driveIndex.refusedGeneric": {
     "sourceHash": "83bd66e"
   },
-  "fileExplorer.navigation.driveIndex.refusedInternal": "Cmdr gặp một trục trặc khi bật lập chỉ mục cho {name}. Điều này không nên xảy ra. Khởi động lại Cmdr thường khắc phục được.",
-  "@fileExplorer.navigation.driveIndex.refusedInternal": {
-    "sourceHash": "e3841d9"
+  "fileExplorer.navigation.driveIndex.refusedNotIndexable": "Cmdr chưa thể lập chỉ mục {name}. Tính năng lập chỉ mục hoạt động trên ổ đĩa cục bộ, mục chia sẻ SMB và điện thoại.",
+  "@fileExplorer.navigation.driveIndex.refusedNotIndexable": {
+    "sourceHash": "4ef8487"
   },
   "fileExplorer.navigation.driveIndex.refusedIndexingOff": "Lập chỉ mục ổ đĩa đang tắt trong Cài đặt, nên {name} vẫn chưa được lập chỉ mục. Hãy bật trong Lập chỉ mục > Lập chỉ mục ổ đĩa.",
   "@fileExplorer.navigation.driveIndex.refusedIndexingOff": {

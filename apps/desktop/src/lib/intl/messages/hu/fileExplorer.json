@@ -1712,9 +1712,9 @@
   "@fileExplorer.navigation.driveIndex.refusedGeneric": {
     "sourceHash": "83bd66e"
   },
-  "fileExplorer.navigation.driveIndex.refusedInternal": "A Cmdr valamibe beleütközött, miközben bekapcsolta az indexelést ehhez: {name}. Ennek nem szabadna előfordulnia. A Cmdr újraindítása általában megoldja.",
-  "@fileExplorer.navigation.driveIndex.refusedInternal": {
-    "sourceHash": "e3841d9"
+  "fileExplorer.navigation.driveIndex.refusedNotIndexable": "A Cmdr még nem tudja indexelni ezt: {name}. Az indexelés helyi meghajtókon, SMB-megosztásokon és telefonokon működik.",
+  "@fileExplorer.navigation.driveIndex.refusedNotIndexable": {
+    "sourceHash": "4ef8487"
   },
   "fileExplorer.navigation.driveIndex.refusedIndexingOff": "A meghajtó indexelése ki van kapcsolva a Beállításokban, ezért {name} továbbra sem lesz indexelve. Kapcsold be itt: Indexelés > Meghajtó indexelése.",
   "@fileExplorer.navigation.driveIndex.refusedIndexingOff": {

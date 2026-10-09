@@ -326,12 +326,13 @@ export function driveIndexActionFeedback(
  * `credentials_needed` (which routes into the reconnect/login flow instead of a
  * toast). Branch on the typed variant, never the message string.
  *
- * `not_connected` and `disconnected` both say "reconnect it": a drive with a row
+ * `not_connected` and `disconnected` both say "connect it": a drive with a row
  * but no live volume is an ordinary state (a phone waiting for its USB debugging
- * tap, an asleep NAS), and the internal-error copy for it once sent a user
- * restarting Cmdr and reporting a bug (`ERR-JUCNB`). Only `not_indexable` gets
- * the internal-error copy: the UI offers indexing only where a drive index can
- * serve the volume, so reaching it means something upstream disagreed.
+ * tap, an asleep NAS), and "this shouldn't happen, restart Cmdr" for it once sent
+ * a user restarting and reporting a bug (`ERR-JUCNB`). `not_indexable` says which
+ * drives can be indexed: the UI offers indexing only where the published
+ * `canBeIndexed` says yes, so it's rare (an MCP call, a drive that changed while
+ * its menu was open), and never a reason to restart.
  */
 export function driveIndexRefusalMessageKey(reason: DriveIndexRefusal): MessageKey | null {
   switch (reason) {
@@ -343,7 +344,7 @@ export function driveIndexRefusalMessageKey(reason: DriveIndexRefusal): MessageK
     case 'disconnected':
       return 'fileExplorer.navigation.driveIndex.refusedDisconnected'
     case 'not_indexable':
-      return 'fileExplorer.navigation.driveIndex.refusedInternal'
+      return 'fileExplorer.navigation.driveIndex.refusedNotIndexable'
     // The master switch is off. Not a share problem, so it gets the settings-
     // oriented copy rather than reconnect advice. Normally unreachable from the
     // UI (the menu offers no actions while the master is off), but MCP and a

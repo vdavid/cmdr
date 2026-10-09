@@ -1461,7 +1461,7 @@ export type MessageKey =
   | 'fileExplorer.navigation.driveIndex.refusedDisconnected'
   | 'fileExplorer.navigation.driveIndex.refusedGeneric'
   | 'fileExplorer.navigation.driveIndex.refusedIndexingOff'
-  | 'fileExplorer.navigation.driveIndex.refusedInternal'
+  | 'fileExplorer.navigation.driveIndex.refusedNotIndexable'
   | 'fileExplorer.navigation.driveIndex.refusedUpgradeFailed'
   | 'fileExplorer.navigation.driveIndex.tooltipCoalesced'
   | 'fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning'

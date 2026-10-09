@@ -65,7 +65,7 @@ click → `нажмите`, double-click → `дважды нажмите` / `д
 `Подробный режим` over `Полный режим`: Total Commander pairs 301 `Краткий режим` with 302 `Подробный режим`, DC says
 `Подробный`, and `полный` reads as "complete". Command labels name the mode (`Подробный режим`), not `Переключить на …`.
 
-## No «ошибка» in error copy (`askCmdr.error.provider`, `ai.cloud.genericError`, `onboarding.cloudSetup.status.genericError`, `licensing.error.generic`, `ai.translateError.serverError.title`, `askCmdr.decision.result`, `fileExplorer.navigation.driveIndex.tooltipFailed`, `fileExplorer.network.browser.status.error`, `fileExplorer.navigation.driveIndex.refusedInternal`)
+## No «ошибка» in error copy (`askCmdr.error.provider`, `ai.cloud.genericError`, `onboarding.cloudSetup.status.genericError`, `licensing.error.generic`, `ai.translateError.serverError.title`, `askCmdr.decision.result`, `fileExplorer.navigation.driveIndex.tooltipFailed`, `fileExplorer.network.browser.status.error`)
 
 `Что-то пошло не так` (Nautilus) over `Произошла ошибка`; `возникла проблема`, `не выполнено: {failedText}`, a status
 cell `Проблема`, "hit a snag" `Что-то помешало Cmdr…`. `Не удалось` stays where the English says "Couldn't" (macOS ru's

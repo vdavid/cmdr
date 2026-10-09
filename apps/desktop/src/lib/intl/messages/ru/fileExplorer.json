@@ -1711,9 +1711,9 @@
   "@fileExplorer.navigation.driveIndex.refusedGeneric": {
     "sourceHash": "83bd66e"
   },
-  "fileExplorer.navigation.driveIndex.refusedInternal": "Что-то помешало Cmdr включить индексацию для {name}. Так быть не должно. Обычно помогает перезапуск Cmdr.",
-  "@fileExplorer.navigation.driveIndex.refusedInternal": {
-    "sourceHash": "e3841d9"
+  "fileExplorer.navigation.driveIndex.refusedNotIndexable": "Cmdr пока не может индексировать диск {name}. Индексировать можно локальные диски, общие папки SMB и телефоны.",
+  "@fileExplorer.navigation.driveIndex.refusedNotIndexable": {
+    "sourceHash": "4ef8487"
   },
   "fileExplorer.navigation.driveIndex.refusedIndexingOff": "Индексация дисков отключена в настройках, поэтому {name} не индексируется. Включите ее в разделе «Индексация» > «Индексация дисков».",
   "@fileExplorer.navigation.driveIndex.refusedIndexingOff": {

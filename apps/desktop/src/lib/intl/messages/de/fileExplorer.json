@@ -1717,9 +1717,9 @@
   "@fileExplorer.navigation.driveIndex.refusedGeneric": {
     "sourceHash": "83bd66e"
   },
-  "fileExplorer.navigation.driveIndex.refusedInternal": "Cmdr ist beim Einschalten der Indizierung für {name} auf ein Problem gestoßen. Das sollte nicht passieren. Ein Neustart von Cmdr behebt das normalerweise.",
-  "@fileExplorer.navigation.driveIndex.refusedInternal": {
-    "sourceHash": "e3841d9"
+  "fileExplorer.navigation.driveIndex.refusedNotIndexable": "Cmdr kann {name} noch nicht indizieren. Die Indizierung funktioniert auf lokalen Laufwerken, SMB-Freigaben und Telefonen.",
+  "@fileExplorer.navigation.driveIndex.refusedNotIndexable": {
+    "sourceHash": "4ef8487"
   },
   "fileExplorer.navigation.driveIndex.refusedIndexingOff": "Die Laufwerksindizierung ist in den Einstellungen aus, deshalb wird {name} nicht indiziert. Schalte sie unter Indizierung > Laufwerksindizierung ein.",
   "@fileExplorer.navigation.driveIndex.refusedIndexingOff": {

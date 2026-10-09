@@ -2496,9 +2496,9 @@
       "name": "the drive’s display name (e.g. Backups)"
     }
   },
-  "fileExplorer.navigation.driveIndex.refusedInternal": "Cmdr hit a snag turning on indexing for {name}. This shouldn’t happen. Restarting Cmdr usually clears it.",
-  "@fileExplorer.navigation.driveIndex.refusedInternal": {
-    "description": "Toast shown when turning on indexing for a drive is refused for a reason that signals an internal problem rather than something the user can fix by reconnecting (no drive index can serve a volume the app offered indexing for). Reassuring and conversational; avoid the words “error” and “failed”.",
+  "fileExplorer.navigation.driveIndex.refusedNotIndexable": "Cmdr can’t index {name} yet. Indexing works on local drives, SMB shares, and phones.",
+  "@fileExplorer.navigation.driveIndex.refusedNotIndexable": {
+    "description": "Toast shown when turning on indexing for a drive is refused because no drive index can serve it, for example an SFTP, WebDAV, or S3 server, or an NFS or FUSE mount. The app normally doesn’t offer indexing for these, so this is rare (an AI agent asking, or a drive that changed between opening the menu and clicking). Calm and factual, not an apology or an alarm: it says what Cmdr can index instead. “SMB” stays as is. Avoid the words “error” and “failed”.",
     "placeholders": {
       "name": "the drive’s display name (e.g. Backups)"
     }
