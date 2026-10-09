@@ -621,7 +621,7 @@ mod tests {
         std::os::unix::fs::symlink("real.txt", temp.path().join("tree/link")).expect("symlink");
         let _socket =
             std::os::unix::net::UnixListener::bind(temp.path().join("tree/sock")).expect("bind a socket file");
-        let source: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("source", temp.path().to_path_buf()));
+        let source: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("source", temp.path().to_path_buf()));
         let state = Arc::new(WriteOperationState::new(Duration::ZERO));
 
         let plan = plan_sources_with_context(
@@ -649,7 +649,7 @@ mod tests {
         std::fs::create_dir_all(temp.path().join("b")).expect("create b");
         std::fs::write(temp.path().join("a/report.txt"), b"first").expect("write first");
         std::fs::write(temp.path().join("b/report.txt"), b"second").expect("write second");
-        let source: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("source", temp.path().to_path_buf()));
+        let source: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("source", temp.path().to_path_buf()));
         let paths = [PathBuf::from("a/report.txt"), PathBuf::from("b/report.txt")];
         let state = Arc::new(WriteOperationState::new(Duration::ZERO));
 

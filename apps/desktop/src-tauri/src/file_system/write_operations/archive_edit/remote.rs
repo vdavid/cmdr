@@ -211,7 +211,7 @@ async fn upload_archive(
 
     // A `LocalPosixVolume` gives us a streaming reader over the local working file
     // (the same primitive the cross-volume copy engine uses for a local source).
-    let local = LocalPosixVolume::new("archive-upload", "/");
+    let local = LocalPosixVolume::local_folder("archive-upload", "/");
     let stream = local
         .open_read_stream(local_working)
         .await

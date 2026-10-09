@@ -132,7 +132,7 @@ mod tests {
         fixture.create_branch("feature/foo");
 
         let manager = VolumeManager::new();
-        manager.register("root", Arc::new(LocalPosixVolume::new("Root", &dir)));
+        manager.register("root", Arc::new(LocalPosixVolume::local_folder("Root", &dir)));
         git::wiring::set_virtual_portal_enabled(true);
         (dir, manager)
     }
@@ -302,7 +302,7 @@ mod tests {
             let dir = temp_dir("git_routing", &format!("lru{index}"));
             let mut fixture = Fixture::init(dir.clone());
             fixture.commit_file("README.md", b"hello\n", "initial");
-            manager.register("root", Arc::new(LocalPosixVolume::new("Root", &dir)));
+            manager.register("root", Arc::new(LocalPosixVolume::local_folder("Root", &dir)));
             manager.resolve("root", &dir.join(".git/branches")).await;
             repos.push(dir);
         }
@@ -312,7 +312,7 @@ mod tests {
         let oldest = git_portal_volume_id(&std::fs::canonicalize(&repos[0]).expect("canonical"));
         assert!(manager.get(&oldest).is_none());
 
-        manager.register("root", Arc::new(LocalPosixVolume::new("Root", &repos[0])));
+        manager.register("root", Arc::new(LocalPosixVolume::local_folder("Root", &repos[0])));
         assert_eq!(
             manager.resolve("root", &repos[0].join(".git/branches")).await.routed,
             Some(RoutedKind::GitPortal)
@@ -335,7 +335,7 @@ mod tests {
         fixture.commit_file("README.md", b"hello\n", "initial");
 
         let manager = VolumeManager::new();
-        manager.register("ext", Arc::new(LocalPosixVolume::new("Ext", &dir)));
+        manager.register("ext", Arc::new(LocalPosixVolume::local_folder("Ext", &dir)));
         git::wiring::set_virtual_portal_enabled(true);
 
         let virtual_path = dir.join(".git/branches/main");

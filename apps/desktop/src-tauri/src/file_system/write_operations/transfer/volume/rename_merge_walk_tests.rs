@@ -33,7 +33,7 @@ struct CountingVolume {
 impl CountingVolume {
     fn new(root: &Path) -> Arc<Self> {
         Arc::new(Self {
-            inner: Arc::new(LocalPosixVolume::new("V", root.to_path_buf())),
+            inner: Arc::new(LocalPosixVolume::local_folder("V", root.to_path_buf())),
             listed: Arc::new(std::sync::Mutex::new(Vec::new())),
             stat_calls: Arc::new(AtomicUsize::new(0)),
         })

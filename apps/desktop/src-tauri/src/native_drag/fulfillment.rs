@@ -275,7 +275,7 @@ async fn write_to_local_dest(
     stream: Box<dyn VolumeReadStream>,
     on_progress: &(dyn Fn(crate::file_system::volume::StreamWriteProgress) -> std::ops::ControlFlow<()> + Sync),
 ) -> Result<u64, VolumeError> {
-    let local = crate::file_system::volume::LocalPosixVolume::new("Local", PathBuf::from("/"));
+    let local = crate::file_system::volume::LocalPosixVolume::local_folder("Local", PathBuf::from("/"));
     // Finder created `dest_path` as a placeholder for us to fill, so it's ours
     // to replace.
     local

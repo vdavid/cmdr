@@ -265,7 +265,7 @@ fn local_tree(label: &str) -> LocalTree {
     for (name, bytes) in &files {
         std::fs::write(dir.join("tree").join(name), bytes).expect("seeding the local tree");
     }
-    let volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Local", &*dir));
+    let volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("Local", &*dir));
     LocalTree {
         _dir: dir,
         volume,
@@ -548,7 +548,7 @@ pub(super) async fn requests_sent_against_the_estimate(target: &S3Target) -> Vec
     for (name, len) in [("t0.bin", top_files[0]), ("t1.bin", top_files[1])] {
         std::fs::write(local_dir.join(name), self_describing_bytes(len, name)).expect("seeding a local file");
     }
-    let local: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Local", &*local_dir));
+    let local: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("Local", &*local_dir));
     let local_id = format!("cost-local-{}-{}", target.name(), std::process::id());
     get_volume_manager().register(&local_id, Arc::clone(&local));
     // Destinations the person already has, as the dialogs' are.
@@ -586,7 +586,7 @@ pub(super) async fn requests_sent_against_the_estimate(target: &S3Target) -> Vec
     });
 
     let back_dir = TestDir::new("s3_cost_download");
-    let back: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Local", &*back_dir));
+    let back: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("Local", &*back_dir));
     run_copy(
         "cost-download",
         Arc::clone(&remote),
@@ -655,7 +655,7 @@ pub(super) async fn requests_sent_against_the_estimate(target: &S3Target) -> Vec
     });
 
     let off_dir = TestDir::new("s3_cost_move_off");
-    let off: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Local", &*off_dir));
+    let off: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("Local", &*off_dir));
     let off_id = format!("cost-off-{}-{}", target.name(), std::process::id());
     get_volume_manager().register(&off_id, Arc::clone(&off));
     let events = Arc::new(CollectorEventSink::new());

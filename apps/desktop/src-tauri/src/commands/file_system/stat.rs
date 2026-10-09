@@ -188,7 +188,7 @@ mod tests {
         // `stat` resolves against the default volume, so the repo has to be on it.
         get_volume_manager().register_if_absent(
             crate::file_system::volume::DEFAULT_VOLUME_ID,
-            Arc::new(LocalPosixVolume::new("Root", "/")),
+            Arc::new(LocalPosixVolume::local_folder("Root", "/")),
         );
         crate::file_system::git::wiring::set_virtual_portal_enabled(true);
 

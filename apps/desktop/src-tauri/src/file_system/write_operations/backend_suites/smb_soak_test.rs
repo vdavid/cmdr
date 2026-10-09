@@ -229,7 +229,7 @@ async fn smb_soak_copy_loop() {
         // the block, so the only on-disk state between iterations is
         // the 100 source bytes on the SMB side.
         let local_dir = tempfile::TempDir::new().expect("create TempDir");
-        let dest_vol: Arc<dyn Volume> = Arc::new(crate::file_system::volume::LocalPosixVolume::new(
+        let dest_vol: Arc<dyn Volume> = Arc::new(crate::file_system::volume::LocalPosixVolume::local_folder(
             "dest",
             local_dir.path().to_path_buf(),
         ));

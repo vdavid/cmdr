@@ -23,7 +23,7 @@ static SERIAL: Mutex<()> = Mutex::new(());
 fn ensure_root_volume() {
     use crate::file_system::volume::LocalPosixVolume;
     use crate::file_system::volume::manager::get_volume_manager;
-    get_volume_manager().register_if_absent("root", Arc::new(LocalPosixVolume::new("Test root", "/")));
+    get_volume_manager().register_if_absent("root", Arc::new(LocalPosixVolume::local_folder("Test root", "/")));
 }
 
 /// Writes a real zip to `path`. A `name` ending in `/` becomes a directory entry.

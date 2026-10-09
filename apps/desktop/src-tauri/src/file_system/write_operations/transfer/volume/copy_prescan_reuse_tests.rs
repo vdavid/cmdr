@@ -557,8 +557,8 @@ async fn test_pre_known_conflicts_bulk_skip_on_real_local_volumes() {
     fs::write(dst_dir.join("c.txt"), "old-c").unwrap();
     fs::write(dst_dir.join("e.txt"), "old-e").unwrap();
 
-    let source: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Source", src_dir.to_str().unwrap()));
-    let dest: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Dest", dst_dir.to_str().unwrap()));
+    let source: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("Source", src_dir.to_str().unwrap()));
+    let dest: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("Dest", dst_dir.to_str().unwrap()));
 
     let events = Arc::new(CollectorEventSink::new());
     let state = make_state();

@@ -15,7 +15,7 @@ use super::{ArchiveFailureKind, ViewerError};
 fn ensure_root_volume() {
     use crate::file_system::volume::LocalPosixVolume;
     use crate::file_system::volume::manager::get_volume_manager;
-    get_volume_manager().register_if_absent("root", Arc::new(LocalPosixVolume::new("Test root", "/")));
+    get_volume_manager().register_if_absent("root", Arc::new(LocalPosixVolume::local_folder("Test root", "/")));
 }
 
 fn build_zip(path: &Path, entries: &[(&str, &[u8])]) {

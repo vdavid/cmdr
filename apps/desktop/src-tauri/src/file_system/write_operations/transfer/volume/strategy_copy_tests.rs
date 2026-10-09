@@ -26,8 +26,8 @@ async fn test_copy_single_path_local_to_local() {
 
     fs::write(src_dir.join("source.txt"), "Source content").unwrap();
 
-    let source: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Source", src_dir.to_str().unwrap()));
-    let dest: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Dest", dst_dir.to_str().unwrap()));
+    let source: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("Source", src_dir.to_str().unwrap()));
+    let dest: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("Dest", dst_dir.to_str().unwrap()));
 
     let state = Arc::new(WriteOperationState::new(Duration::from_millis(200)));
 
@@ -60,8 +60,8 @@ async fn test_copy_single_path_cancelled() {
 
     fs::write(src_dir.join("source.txt"), "Content").unwrap();
 
-    let source: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Source", src_dir.to_str().unwrap()));
-    let dest: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Dest", dst_dir.to_str().unwrap()));
+    let source: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("Source", src_dir.to_str().unwrap()));
+    let dest: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("Dest", dst_dir.to_str().unwrap()));
 
     let state = Arc::new(WriteOperationState::new(Duration::from_millis(200)));
     state.intent.store(OperationIntent::Stopped as u8, Ordering::Relaxed);

@@ -333,7 +333,7 @@ async fn a_folder_replacing_a_dir_link_drops_the_link_and_never_its_target() {
     std::fs::create_dir(root.join("target")).unwrap();
     std::fs::write(root.join("target/precious.txt"), b"the user's data").unwrap();
     std::os::unix::fs::symlink(root.join("target"), root.join("clash")).unwrap();
-    let dest: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Dest", root.clone()));
+    let dest: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("Dest", root.clone()));
 
     let source = in_memory_source();
     source.create_directory(Path::new("/clash")).await.unwrap();

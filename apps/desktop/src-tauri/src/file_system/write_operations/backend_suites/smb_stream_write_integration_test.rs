@@ -37,7 +37,7 @@ async fn smb_integration_write_from_stream_local_source_large_file() {
     let local_tmp = TestDir::new("smb-import");
     std::fs::write(local_tmp.join("import-large.bin"), &data).unwrap();
 
-    let local_vol = crate::file_system::volume::LocalPosixVolume::new("local-src", local_tmp.to_path_buf());
+    let local_vol = crate::file_system::volume::LocalPosixVolume::local_folder("local-src", local_tmp.to_path_buf());
 
     let smb_path = format!("{}/import-large.bin", dir);
     let progress_calls = AtomicUsize::new(0);

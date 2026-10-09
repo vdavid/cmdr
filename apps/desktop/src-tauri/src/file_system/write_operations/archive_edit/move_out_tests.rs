@@ -117,7 +117,7 @@ async fn move_out_lands_files_at_dest_deletes_entries_and_keeps_the_remainder() 
     std::fs::create_dir_all(&dest_dir).expect("mkdir dest");
 
     let source_volume = archive_source_volume(&archive);
-    let dest_volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("dest", dest_dir.clone()));
+    let dest_volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("dest", dest_dir.clone()));
 
     let events = Arc::new(CollectorEventSink::new());
     route_archive_move_out(
@@ -231,7 +231,7 @@ async fn move_out_a_lone_skipped_source_stays_in_the_archive() {
     std::fs::write(dest_dir.join("move_me.txt"), b"EXISTING").expect("pre-existing dest");
 
     let source_volume = archive_source_volume(&archive);
-    let dest_volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("dest", dest_dir.clone()));
+    let dest_volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("dest", dest_dir.clone()));
 
     let events = Arc::new(CollectorEventSink::new());
     let config = crate::file_system::VolumeCopyConfig {
@@ -284,7 +284,7 @@ async fn move_out_cancel_leaves_the_archive_untouched() {
     std::fs::create_dir_all(&dest_dir).expect("mkdir dest");
 
     let source_volume = archive_source_volume(&archive);
-    let dest_volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("dest", dest_dir.clone()));
+    let dest_volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("dest", dest_dir.clone()));
 
     let events = Arc::new(CollectorEventSink::new());
     let start = route_archive_move_out(
@@ -344,7 +344,7 @@ async fn move_out_dir_with_a_deep_skipped_child_keeps_that_child_in_the_archive(
     std::fs::write(dest_dir.join("dir/collides.txt"), b"EXISTING").expect("pre-existing dest child");
 
     let source_volume = archive_source_volume(&archive);
-    let dest_volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("dest", dest_dir.clone()));
+    let dest_volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("dest", dest_dir.clone()));
 
     let events = Arc::new(CollectorEventSink::new());
     let config = crate::file_system::VolumeCopyConfig {
@@ -493,7 +493,7 @@ async fn move_out_partial_skip_converges_deletes_landed_keeps_skipped() {
     std::fs::write(dest_dir.join("b.txt"), b"EXISTING").expect("pre-existing dest");
 
     let source_volume = archive_source_volume(&archive);
-    let dest_volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("dest", dest_dir.clone()));
+    let dest_volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("dest", dest_dir.clone()));
 
     let events = Arc::new(CollectorEventSink::new());
     let config = crate::file_system::VolumeCopyConfig {
@@ -610,7 +610,7 @@ async fn move_out_rollback_deletes_nothing_from_the_archive() {
     std::fs::create_dir_all(&dest_dir).expect("mkdir dest");
 
     let source_volume = archive_source_volume(&archive);
-    let dest_volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("dest", dest_dir.clone()));
+    let dest_volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("dest", dest_dir.clone()));
 
     let events = Arc::new(CollectorEventSink::new());
     let start = route_archive_move_out(

@@ -1983,7 +1983,10 @@ fn opens_a_file_out_of_a_git_snapshot_and_reads_its_lines() {
     let mut fixture = Fixture::init(dir.clone());
     fixture.commit_file("README.md", b"first line\nsecond line\n", "initial");
     // (nextest isolates the process-global manager per test.)
-    get_volume_manager().register("root", Arc::new(LocalPosixVolume::new("Root", dir.to_str().unwrap())));
+    get_volume_manager().register(
+        "root",
+        Arc::new(LocalPosixVolume::local_folder("Root", dir.to_str().unwrap())),
+    );
     git::wiring::set_virtual_portal_enabled(true);
 
     let snapshot = dir.join(".git/branches/main/README.md");

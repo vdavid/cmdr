@@ -192,7 +192,7 @@ async fn a_local_source_keeps_what_changed_or_appeared_during_a_move_into_a_zip(
         std::fs::write(&draft_in_sink, b"final draft, longer").expect("save over");
         std::fs::write(&newcomer_in_sink, b"arrived mid-move").expect("newcomer");
     });
-    let source_volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("src", src_root.clone()));
+    let source_volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("src", src_root.clone()));
 
     let complete = move_into(&events, source_volume, "d", &archive).await;
 

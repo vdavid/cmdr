@@ -53,7 +53,7 @@ async fn a_stat_the_os_refuses_is_couldnt_tell() {
     std::fs::set_permissions(&locked, std::fs::Permissions::from_mode(0o000)).unwrap();
 
     let id = format!("path-exists-errors-{}", uuid::Uuid::new_v4());
-    let volume = LocalPosixVolume::new("Temp", &*dir);
+    let volume = LocalPosixVolume::local_folder("Temp", &*dir);
     get_volume_manager().register(&id, Arc::new(volume) as Arc<dyn Volume>);
     let child = locked.join("child").to_string_lossy().into_owned();
     let refused = path_exists(Some(id.clone()), child).await;

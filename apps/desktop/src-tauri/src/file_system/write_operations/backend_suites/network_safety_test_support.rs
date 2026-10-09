@@ -61,7 +61,7 @@ const ARRIVING_ALBUM: [(&str, &[u8]); 3] = [
 /// months), which made the driver believe the source was a FILE.
 async fn failing_album(label: &str) -> (TestDir, Arc<LocalPosixVolume>, Arc<dyn Volume>, VolumeCopyConfig) {
     let local_dir = TestDir::new(label);
-    let local = Arc::new(LocalPosixVolume::new("Local", &*local_dir));
+    let local = Arc::new(LocalPosixVolume::local_folder("Local", &*local_dir));
     seed(local.as_ref(), Path::new("album"), &ARRIVING_ALBUM).await;
     let source: Arc<dyn Volume> = FaultyVolume::wrapping(Arc::clone(&local))
         .failing_call(FaultyOp::OpenReadStream, 2, injected_read_failure())
@@ -312,7 +312,7 @@ pub(super) async fn an_unknown_source_type_never_clears_a_server_folder(remote: 
 
     let (local_dir, _) = local_volume("unknown-source-type");
     std::fs::write(local_dir.join("swap"), b"SRC-swap-file").expect("seeding the local file");
-    let local = Arc::new(LocalPosixVolume::new("Local", &*local_dir));
+    let local = Arc::new(LocalPosixVolume::local_folder("Local", &*local_dir));
     let faulty = FaultyVolume::wrapping(local)
         .failing_call(FaultyOp::IsDirectory, 1, injected_read_failure())
         .arc();

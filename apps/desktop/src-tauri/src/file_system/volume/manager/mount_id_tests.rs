@@ -14,9 +14,12 @@ fn mount_id_for_path_returns_longest_non_root_ancestor() {
     use crate::file_system::LocalPosixVolume;
 
     let manager = VolumeManager::new();
-    manager.register("root", Arc::new(LocalPosixVolume::new("Root", "/")));
-    manager.register("ext", Arc::new(LocalPosixVolume::new("Ext", "/Volumes/X")));
-    manager.register("nested", Arc::new(LocalPosixVolume::new("Nested", "/Volumes/X/Y")));
+    manager.register("root", Arc::new(LocalPosixVolume::local_folder("Root", "/")));
+    manager.register("ext", Arc::new(LocalPosixVolume::local_folder("Ext", "/Volumes/X")));
+    manager.register(
+        "nested",
+        Arc::new(LocalPosixVolume::local_folder("Nested", "/Volumes/X/Y")),
+    );
 
     // A path under the external mount routes to it, never to `root`.
     assert_eq!(manager.mount_id_for_path("/Volumes/X/sub").as_deref(), Some("ext"));
@@ -46,7 +49,7 @@ fn mount_id_for_path_skips_any_volume_that_routes_over_a_parent() {
     use crate::file_system::volume::InMemoryVolume;
 
     let manager = VolumeManager::new();
-    manager.register("ext", Arc::new(LocalPosixVolume::new("Ext", "/Volumes/X")));
+    manager.register("ext", Arc::new(LocalPosixVolume::local_folder("Ext", "/Volumes/X")));
     manager.register(
         "routed",
         Arc::new(

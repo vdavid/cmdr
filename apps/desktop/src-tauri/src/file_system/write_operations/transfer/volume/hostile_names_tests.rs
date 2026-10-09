@@ -80,7 +80,7 @@ async fn a_copy_refuses_a_listed_name_that_isnt_one_plain_component() {
 
         let dest_dir = TempDir::new().unwrap();
         std::fs::create_dir(dest_dir.path().join("inbox")).unwrap();
-        let dest: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Dest", dest_dir.path().to_path_buf()));
+        let dest: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("Dest", dest_dir.path().to_path_buf()));
 
         let result = copy_volumes_with_progress(
             Arc::new(CollectorEventSink::new()),
@@ -123,7 +123,7 @@ async fn a_copy_refuses_a_folder_listed_under_a_parent_name() {
 
     let dest_dir = TempDir::new().unwrap();
     std::fs::create_dir(dest_dir.path().join("inbox")).unwrap();
-    let dest: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Dest", dest_dir.path().to_path_buf()));
+    let dest: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("Dest", dest_dir.path().to_path_buf()));
 
     let result = copy_volumes_with_progress(
         Arc::new(CollectorEventSink::new()),
@@ -169,7 +169,7 @@ async fn a_copy_never_merges_through_a_destination_link() {
         std::fs::create_dir_all(&outside).unwrap();
         std::fs::create_dir_all(dest_dir.path().join("inbox/album")).unwrap();
         std::os::unix::fs::symlink(&outside, dest_dir.path().join("inbox/album/a")).unwrap();
-        let dest: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Dest", dest_dir.path().to_path_buf()));
+        let dest: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("Dest", dest_dir.path().to_path_buf()));
 
         let _ = copy_volumes_with_progress(
             Arc::new(CollectorEventSink::new()),
@@ -209,7 +209,7 @@ async fn a_copy_with_a_file_and_folder_listed_under_one_name_stays_inside() {
 
     let dest_dir = TempDir::new().unwrap();
     std::fs::create_dir(dest_dir.path().join("inbox")).unwrap();
-    let dest: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Dest", dest_dir.path().to_path_buf()));
+    let dest: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("Dest", dest_dir.path().to_path_buf()));
 
     let _ = copy_volumes_with_progress(
         Arc::new(CollectorEventSink::new()),
@@ -272,7 +272,7 @@ async fn a_rename_merge_refuses_a_listed_name_that_isnt_one_plain_component() {
         write_file(root, "src/album/evil.txt", b"EVIL");
         write_file(root, "dst/album/keep.txt", b"KEEP");
         let volume: Arc<dyn Volume> = Arc::new(RenamingListings {
-            inner: LocalPosixVolume::new("V", root.to_path_buf()),
+            inner: LocalPosixVolume::local_folder("V", root.to_path_buf()),
             real: "evil.txt".to_string(),
             reported: name.to_string(),
         });

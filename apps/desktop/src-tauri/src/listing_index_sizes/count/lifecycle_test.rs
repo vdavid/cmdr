@@ -196,7 +196,9 @@ async fn unreadable_and_quickly_cancelled_retries_preserve_a_manual_partial() {
         &|_| {},
     );
     let requested = plan(listing.id(), false, None, |_| true).expect("cached");
-    let missing: Arc<dyn Volume> = Arc::new(crate::file_system::volume::LocalPosixVolume::new("missing", "/"));
+    let missing: Arc<dyn Volume> = Arc::new(crate::file_system::volume::LocalPosixVolume::local_folder(
+        "missing", "/",
+    ));
     assert_eq!(
         count_with(listing.id(), requested, missing, &|_| {}).await.unreadable,
         1

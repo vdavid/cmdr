@@ -22,7 +22,7 @@ use std::path::Path;
 #[tokio::test]
 async fn delete_honors_the_shared_non_recursion_contract() {
     let test_dir = TestDir::new("delete_non_recursion_test");
-    let volume = LocalPosixVolume::new("Test", &*test_dir);
+    let volume = LocalPosixVolume::local_folder("Test", &*test_dir);
 
     volume.create_directory(Path::new("album")).await.unwrap();
     volume
@@ -38,7 +38,7 @@ async fn delete_honors_the_shared_non_recursion_contract() {
 #[tokio::test]
 async fn delete_files_honors_the_shared_batch_contract() {
     let test_dir = TestDir::new("delete_files_batch_test");
-    let volume = LocalPosixVolume::new("Test", &*test_dir);
+    let volume = LocalPosixVolume::local_folder("Test", &*test_dir);
     volume.create_directory(Path::new("level")).await.unwrap();
     for name in ["a.txt", "b.txt", "kept.txt"] {
         volume
@@ -63,7 +63,7 @@ async fn delete_files_honors_the_shared_batch_contract() {
 #[tokio::test]
 async fn rename_honors_the_shared_no_clobber_contract() {
     let test_dir = TestDir::new("rename_no_clobber_conformance_test");
-    let volume = LocalPosixVolume::new("Test", &*test_dir);
+    let volume = LocalPosixVolume::local_folder("Test", &*test_dir);
 
     volume.create_file(Path::new("source.txt"), b"source").await.unwrap();
     volume
@@ -86,7 +86,7 @@ async fn rename_honors_the_shared_no_clobber_contract() {
 #[tokio::test]
 async fn create_file_honors_the_shared_no_clobber_contract() {
     let test_dir = TestDir::new("create_file_no_clobber_conformance_test");
-    let volume = LocalPosixVolume::new("Test", &*test_dir);
+    let volume = LocalPosixVolume::local_folder("Test", &*test_dir);
 
     volume
         .create_file(Path::new("notes.txt"), b"the user's notes")
@@ -101,7 +101,7 @@ async fn create_file_honors_the_shared_no_clobber_contract() {
 #[tokio::test]
 async fn write_from_stream_create_new_honors_the_shared_no_clobber_contract() {
     let test_dir = TestDir::new("write_create_new_conformance_test");
-    let volume = LocalPosixVolume::new("Test", &*test_dir);
+    let volume = LocalPosixVolume::local_folder("Test", &*test_dir);
 
     volume
         .create_file(Path::new("notes.txt"), b"the user's notes")
@@ -123,7 +123,7 @@ async fn write_from_stream_create_new_honors_the_shared_no_clobber_contract() {
 #[tokio::test]
 async fn a_copy_keeps_the_source_date_per_the_shared_contract() {
     let test_dir = TestDir::new("dated_write_conformance_test");
-    let volume = LocalPosixVolume::new("Test", &*test_dir);
+    let volume = LocalPosixVolume::local_folder("Test", &*test_dir);
 
     cmdr_fs::volume::conformance::assert_write_from_stream_keeps_the_source_date(
         &volume,
@@ -139,7 +139,7 @@ async fn a_copy_keeps_the_source_date_per_the_shared_contract() {
 #[tokio::test]
 async fn set_modified_honors_the_shared_folder_date_contract() {
     let test_dir = TestDir::new("folder_date_conformance_test");
-    let volume = LocalPosixVolume::new("Test", &*test_dir);
+    let volume = LocalPosixVolume::local_folder("Test", &*test_dir);
 
     cmdr_fs::volume::conformance::assert_set_modified_dates_a_folder(
         &volume,
@@ -152,7 +152,7 @@ async fn set_modified_honors_the_shared_folder_date_contract() {
 #[tokio::test]
 async fn unknown_write_streams_all_bytes_and_reports_the_accepted_count() {
     let test_dir = TestDir::new("unknown_write_conformance_test");
-    let volume = LocalPosixVolume::new("Test", &*test_dir);
+    let volume = LocalPosixVolume::local_folder("Test", &*test_dir);
     let (tx, rx) = tokio::sync::mpsc::channel(1);
     let (cancel_tx, _cancel_rx) = tokio::sync::oneshot::channel();
     tx.send(Ok(b"first".to_vec())).await.unwrap();
@@ -190,7 +190,7 @@ async fn unknown_write_streams_all_bytes_and_reports_the_accepted_count() {
 #[tokio::test]
 async fn create_directory_all_honors_the_shared_honesty_contract() {
     let test_dir = TestDir::new("create_directory_all_honesty_conformance_test");
-    let volume = LocalPosixVolume::new("Test", &*test_dir);
+    let volume = LocalPosixVolume::local_folder("Test", &*test_dir);
 
     volume.create_directory(Path::new("album")).await.unwrap();
 
@@ -207,7 +207,7 @@ async fn create_directory_all_honors_the_shared_honesty_contract() {
 #[tokio::test]
 async fn create_directory_all_honors_the_shared_file_in_the_way_contract() {
     let test_dir = TestDir::new("create_directory_all_file_in_the_way_conformance_test");
-    let volume = LocalPosixVolume::new("Test", &*test_dir);
+    let volume = LocalPosixVolume::local_folder("Test", &*test_dir);
 
     volume
         .create_file(Path::new("notes"), b"the user's notes")
@@ -224,7 +224,7 @@ async fn create_directory_all_honors_the_shared_file_in_the_way_contract() {
 #[tokio::test]
 async fn create_directory_all_honors_the_shared_through_a_link_contract() {
     let test_dir = TestDir::new("create_directory_all_through_a_link_conformance_test");
-    let volume = LocalPosixVolume::new("Test", &*test_dir);
+    let volume = LocalPosixVolume::local_folder("Test", &*test_dir);
 
     volume.create_directory(Path::new("real")).await.unwrap();
     std::os::unix::fs::symlink(test_dir.join("real"), test_dir.join("link")).unwrap();
@@ -242,7 +242,7 @@ async fn create_directory_all_honors_the_shared_through_a_link_contract() {
 #[tokio::test]
 async fn is_writable_honors_the_shared_declaration_contract() {
     let test_dir = TestDir::new("is_writable_declaration_conformance_test");
-    let volume = LocalPosixVolume::new("Test", &*test_dir);
+    let volume = LocalPosixVolume::local_folder("Test", &*test_dir);
 
     cmdr_fs::volume::conformance::assert_writability_matches_the_mutations_offered(&volume, Path::new("scratch")).await;
 }
@@ -252,7 +252,7 @@ async fn is_writable_honors_the_shared_declaration_contract() {
 #[tokio::test]
 async fn export_honors_the_shared_handshake_contract() {
     let test_dir = TestDir::new("export_handshake_conformance_test");
-    let volume = LocalPosixVolume::new("Test", &*test_dir);
+    let volume = LocalPosixVolume::local_folder("Test", &*test_dir);
     let content = b"the bytes a copy would move";
     volume.create_file(Path::new("exported.txt"), content).await.unwrap();
 
@@ -270,7 +270,7 @@ async fn export_honors_the_shared_handshake_contract() {
 #[tokio::test]
 async fn not_found_honors_the_shared_path_payload_contract() {
     let test_dir = TestDir::new("not_found_payload_conformance_test");
-    let volume = LocalPosixVolume::new("Test", &*test_dir);
+    let volume = LocalPosixVolume::local_folder("Test", &*test_dir);
 
     cmdr_fs::volume::conformance::assert_not_found_carries_the_path(&volume, Path::new("no-such-file.txt")).await;
 }
@@ -282,7 +282,7 @@ async fn not_found_honors_the_shared_path_payload_contract() {
 #[tokio::test]
 async fn conflict_scan_honors_the_shared_missing_destination_contract() {
     let test_dir = TestDir::new("conflict_scan_missing_destination_conformance_test");
-    let volume = LocalPosixVolume::new("Test", &*test_dir);
+    let volume = LocalPosixVolume::local_folder("Test", &*test_dir);
 
     cmdr_fs::volume::conformance::assert_conflict_scan_reads_a_missing_destination_as_empty(
         &volume,

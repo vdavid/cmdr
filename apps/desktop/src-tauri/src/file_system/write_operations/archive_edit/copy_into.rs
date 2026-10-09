@@ -247,7 +247,7 @@ async fn materialize_sources(
             message: e.to_string(),
         })
     })?;
-    let dest_volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new(
+    let dest_volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder(
         "archive-source-pull",
         scratch.path().to_path_buf(),
     ));

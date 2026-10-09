@@ -190,16 +190,18 @@ pub struct LocalPosixVolume {
 }
 
 impl LocalPosixVolume {
-    /// Creates a new local volume with the given name and root path.
+    /// A volume for a folder on a local disk: the boot volume, a cloud-sync
+    /// folder.
     ///
     /// # Arguments
     /// * `name` - Display name (like "Macintosh HD", "Dropbox")
     /// * `root` - Absolute path to the volume root (like "/", "/Users/you/Dropbox")
     ///
-    /// For a folder on a local disk: the boot volume, a cloud-sync folder. A
-    /// MOUNT goes through [`Self::on_mount`] with the class its registration
-    /// probed, or a network mount would publish itself as indexable.
-    pub fn new(name: impl Into<String>, root: impl Into<PathBuf>) -> Self {
+    /// ❗ Named for what it assumes. A MOUNT goes through [`Self::on_mount`] with
+    /// the class its registration probed: a network mount built here would
+    /// publish itself as indexable, and the user would be offered indexing that
+    /// could only be refused.
+    pub fn local_folder(name: impl Into<String>, root: impl Into<PathBuf>) -> Self {
         Self::on_mount(name, root, MountClass::LocalDisk)
     }
 

@@ -25,7 +25,7 @@ async fn local_fs_rename_reserves_the_chosen_name_on_disk() {
     let target = temp.path().join("notes.txt");
     std::fs::write(&target, b"original").unwrap();
 
-    let vol: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("dst", temp.path().to_path_buf()));
+    let vol: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("dst", temp.path().to_path_buf()));
 
     let claimed = find_unique_volume_name(&vol, &target, false, &ClaimedNames::default()).await;
     let unique = claimed.path;
@@ -56,7 +56,7 @@ async fn local_fs_rename_keeps_extension_in_the_right_place() {
     let target = temp.path().join("report.pdf");
     std::fs::write(&target, b"x").unwrap();
 
-    let vol: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("dst", temp.path().to_path_buf()));
+    let vol: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("dst", temp.path().to_path_buf()));
     let unique = find_unique_volume_name(&vol, &target, false, &ClaimedNames::default())
         .await
         .path;
@@ -97,7 +97,7 @@ async fn local_fs_rename_continues_a_trailing_sequence() {
     let target = temp.path().join("notes (1).txt");
     std::fs::write(&target, b"original").unwrap();
 
-    let vol: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("dst", temp.path().to_path_buf()));
+    let vol: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("dst", temp.path().to_path_buf()));
 
     let unique = find_unique_volume_name(&vol, &target, false, &ClaimedNames::default())
         .await
@@ -130,7 +130,7 @@ async fn a_directory_name_is_never_reserved_with_a_file_placeholder() {
     let target = temp.path().join("docs");
     std::fs::create_dir(&target).unwrap();
 
-    let vol: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("dst", temp.path().to_path_buf()));
+    let vol: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("dst", temp.path().to_path_buf()));
 
     let unique = find_unique_volume_name(&vol, &target, true, &ClaimedNames::default())
         .await

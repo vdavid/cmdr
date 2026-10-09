@@ -315,7 +315,7 @@ async fn smb_integration_many_files_at_full_concurrency_land_intact() {
 
     let local_dir = tempfile::TempDir::new().expect("create TempDir");
     let (source_paths, source_sizes) = build_source_tree(local_dir.path(), large_bytes);
-    let source_vol: Arc<dyn Volume> = Arc::new(crate::file_system::volume::LocalPosixVolume::new(
+    let source_vol: Arc<dyn Volume> = Arc::new(crate::file_system::volume::LocalPosixVolume::local_folder(
         "src",
         local_dir.path().to_path_buf(),
     ));
@@ -501,7 +501,7 @@ async fn smb_integration_a_wedged_copy_is_caught_and_names_its_phase() {
         std::fs::write(local_dir.path().join(&name), expected_content(index, SMALL_FILE_BYTES)).unwrap();
         source_paths.push(PathBuf::from(name));
     }
-    let source_vol: Arc<dyn Volume> = Arc::new(crate::file_system::volume::LocalPosixVolume::new(
+    let source_vol: Arc<dyn Volume> = Arc::new(crate::file_system::volume::LocalPosixVolume::local_folder(
         "src",
         local_dir.path().to_path_buf(),
     ));

@@ -195,7 +195,10 @@ async fn a_copy_onto_a_saved_server_nobody_connected_is_refused_as_not_connected
     let dir = crate::test_support::TestDir::new("copy_onto_saved_server");
     std::fs::write(dir.join("notes.txt"), b"notes").expect("seeding the local file");
     let source_id = format!("saved-server-copy-source-{}", uuid::Uuid::new_v4());
-    get_volume_manager().register(&source_id, std::sync::Arc::new(LocalPosixVolume::new("Local", &*dir)));
+    get_volume_manager().register(
+        &source_id,
+        std::sync::Arc::new(LocalPosixVolume::local_folder("Local", &*dir)),
+    );
 
     let refused = start_volume_copy(
         std::sync::Arc::new(CollectorEventSink::new()),

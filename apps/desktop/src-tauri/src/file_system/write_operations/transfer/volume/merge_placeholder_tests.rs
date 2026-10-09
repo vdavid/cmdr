@@ -81,7 +81,7 @@ async fn a_merge_child_that_never_lands_takes_its_rename_placeholder_back() {
     let root = dest_dir.path().to_path_buf();
     std::fs::create_dir(root.join("album")).unwrap();
     std::fs::write(root.join("album").join("clash.txt"), b"the user's file").unwrap();
-    let dest: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Dest", root.clone()));
+    let dest: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("Dest", root.clone()));
 
     let source_inner = Arc::new(InMemoryVolume::new("Source").with_space_info(10_000_000, 10_000_000));
     source_inner.create_directory(Path::new("/album")).await.unwrap();
@@ -140,7 +140,7 @@ async fn a_merge_child_that_lands_keeps_its_rename_name() {
     let root = dest_dir.path().to_path_buf();
     std::fs::create_dir(root.join("album")).unwrap();
     std::fs::write(root.join("album").join("clash.txt"), b"the user's file").unwrap();
-    let dest: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Dest", root.clone()));
+    let dest: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("Dest", root.clone()));
 
     let source: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Source").with_space_info(10_000_000, 10_000_000));
     source.create_directory(Path::new("/album")).await.unwrap();
@@ -193,7 +193,7 @@ async fn an_empty_file_that_lands_on_its_reservation_is_kept() {
         std::fs::create_dir(root.join("album")).unwrap();
         std::fs::write(root.join("album").join("clash.txt"), b"the user's file").unwrap();
         std::fs::write(root.join("clash.txt"), b"the user's other file").unwrap();
-        let dest: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Dest", root.clone()));
+        let dest: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("Dest", root.clone()));
 
         let source_inner = Arc::new(InMemoryVolume::new("Source").with_space_info(10_000_000, 10_000_000));
         source_inner.create_directory(Path::new("/album")).await.unwrap();
@@ -270,7 +270,7 @@ async fn a_merge_child_abandoned_at_the_drain_deadline_takes_its_rename_placehol
     let root = dest_dir.path().to_path_buf();
     std::fs::create_dir(root.join("album")).unwrap();
     std::fs::write(root.join("album").join("clash.bin"), b"the user's file").unwrap();
-    let dest: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Dest", root.clone()));
+    let dest: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("Dest", root.clone()));
 
     let gated = gated_source(CHUNK as u64 * 4);
     gated.source_inner.create_directory(Path::new("/album")).await.unwrap();

@@ -511,7 +511,10 @@ async fn a_local_directory_read_emits_progress_events() {
 
     let volume_id = &format!("test-local-progress-{}", uuid::Uuid::new_v4());
     let listing = TestListingGuard::adopt(unique_test_id("streaming-local-progress"));
-    get_volume_manager().register(volume_id, Arc::new(LocalPosixVolume::new("Test Volume", &*dir)));
+    get_volume_manager().register(
+        volume_id,
+        Arc::new(LocalPosixVolume::local_folder("Test Volume", &*dir)),
+    );
 
     let sink = Arc::new(CollectorListingEventSink::new());
     let events: Arc<dyn ListingEventSink> = Arc::clone(&sink) as Arc<dyn ListingEventSink>;

@@ -45,7 +45,7 @@ async fn a_full_refresh_of_dot_git_tracks_what_the_overlay_contributes() {
     crate::file_system::git::overlay::register();
 
     let volume_id = unique_test_id("overlay-refresh-vol");
-    let volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Repo", &dir));
+    let volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("Repo", &dir));
     get_volume_manager().register(&volume_id, Arc::clone(&volume));
 
     // A pane's listing as the first read left it: real entries plus the six.
@@ -121,7 +121,7 @@ async fn a_diff_patch_leaves_the_contributed_row_count_alone() {
     crate::file_system::git::wiring::set_virtual_portal_enabled(true);
     crate::file_system::git::overlay::register();
 
-    let volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Repo", &dir));
+    let volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("Repo", &dir));
     let mut entries = volume.list_directory(&dot_git, None).await.expect("listing .git");
     let added = crate::listing_overlays::decorate(&volume, &dot_git, &mut entries).await;
     assert_eq!(added, 6);
@@ -171,7 +171,7 @@ async fn a_listing_refresh_of_dot_git_keeps_the_portal_rows() {
     crate::file_system::git::overlay::register();
 
     let volume_id = unique_test_id("overlay-listing-refresh-vol");
-    let volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Repo", &dir));
+    let volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("Repo", &dir));
     get_volume_manager().register(&volume_id, Arc::clone(&volume));
 
     let mut entries = volume.list_directory(&dot_git, None).await.expect("listing .git");

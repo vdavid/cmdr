@@ -27,7 +27,7 @@ async fn start_interactive_copy_into(
     use crate::file_system::volume::backends::LocalPosixVolume;
     use crate::file_system::write_operations::route_archive_copy_into;
 
-    let source_volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("src", src_root.to_path_buf()));
+    let source_volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("src", src_root.to_path_buf()));
     let events = Arc::new(CollectorEventSink::new());
     let start = route_archive_copy_into(
         Arc::clone(&events) as Arc<dyn OperationEventSink>,
@@ -255,7 +255,7 @@ async fn interactive_move_into_with_a_skipped_collision_keeps_the_source() {
     std::fs::write(src_root.join("d/a.txt"), b"NEW").expect("w1"); // collides
     std::fs::write(src_root.join("d/b.txt"), b"bbb").expect("w2"); // lands
 
-    let source_volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("src", src_root.to_path_buf()));
+    let source_volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("src", src_root.to_path_buf()));
     let events = Arc::new(CollectorEventSink::new());
     let start = route_archive_copy_into(
         Arc::clone(&events) as Arc<dyn OperationEventSink>,

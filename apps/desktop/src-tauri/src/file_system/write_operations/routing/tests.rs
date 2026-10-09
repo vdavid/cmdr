@@ -49,7 +49,7 @@ fn a_remote_destination_at_the_share_root_stays_the_root() {
 
 #[test]
 fn a_local_destination_still_expands_the_home_shortcut() {
-    let volume: Arc<dyn Volume> = Arc::new(crate::file_system::volume::LocalPosixVolume::new("Root", "/"));
+    let volume: Arc<dyn Volume> = Arc::new(crate::file_system::volume::LocalPosixVolume::local_folder("Root", "/"));
     let home = std::env::var("HOME").expect("HOME");
     assert_eq!(
         resolve_dest_path(&volume, "~/Downloads".to_string()),
@@ -68,7 +68,7 @@ async fn resolve_source_treats_the_zip_file_itself_as_a_plain_file() {
     // The parent drive holds the `.zip`. (nextest isolates the global per test.)
     get_volume_manager().register(
         "root",
-        Arc::new(LocalPosixVolume::new("Root", dir.path().to_str().unwrap())),
+        Arc::new(LocalPosixVolume::local_folder("Root", dir.path().to_str().unwrap())),
     );
 
     // The `.zip` FILE itself is copied as a plain file: routed to the PARENT
@@ -102,7 +102,10 @@ async fn resolve_source_routes_a_snapshot_path_to_the_git_portal() {
     let dir = temp_dir("write_routing", "copy_out");
     let mut fixture = Fixture::init(dir.clone());
     fixture.commit_file("README.md", b"hello\n", "initial");
-    get_volume_manager().register("root", Arc::new(LocalPosixVolume::new("Root", dir.to_str().unwrap())));
+    get_volume_manager().register(
+        "root",
+        Arc::new(LocalPosixVolume::local_folder("Root", dir.to_str().unwrap())),
+    );
     git::wiring::set_virtual_portal_enabled(true);
 
     let (volume, route) = resolve_source_volume("root", Some(&dir.join(".git/branches/main/README.md")))

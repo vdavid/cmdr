@@ -239,7 +239,7 @@ async fn the_binding_holds_what_preflight_saw_not_what_the_agent_saw() {
     let reviewed = dir.join("reviewed.dmg");
     std::fs::write(&reviewed, b"as reviewed").expect("seed");
 
-    let volume = crate::file_system::volume::LocalPosixVolume::new("Root", "/");
+    let volume = crate::file_system::volume::LocalPosixVolume::local_folder("Root", "/");
     let sources = vec![reviewed.clone()];
     let expected = super::capture_expected_sources(&volume, &sources).await;
 
@@ -266,7 +266,7 @@ async fn an_untouched_source_survives_its_own_binding() {
     let reviewed = dir.join("reviewed.dmg");
     std::fs::write(&reviewed, b"as reviewed").expect("seed");
 
-    let volume = crate::file_system::volume::LocalPosixVolume::new("Root", "/");
+    let volume = crate::file_system::volume::LocalPosixVolume::local_folder("Root", "/");
     let sources = vec![reviewed.clone()];
     let expected = super::capture_expected_sources(&volume, &sources).await;
 
@@ -290,7 +290,7 @@ async fn a_source_that_vanished_before_preflight_is_left_out_of_the_binding() {
     let dir = TestDir::new("bridge_live_binding_gone");
     let gone = dir.join("gone.dmg");
 
-    let volume = crate::file_system::volume::LocalPosixVolume::new("Root", "/");
+    let volume = crate::file_system::volume::LocalPosixVolume::local_folder("Root", "/");
     let expected = super::capture_expected_sources(&volume, std::slice::from_ref(&gone)).await;
 
     let sink = CollectorEventSink::new();
@@ -309,7 +309,7 @@ async fn a_source_that_vanished_before_preflight_is_left_out_of_the_binding() {
 fn ensure_root_volume() {
     use crate::file_system::volume::LocalPosixVolume;
     use crate::file_system::volume::manager::get_volume_manager;
-    get_volume_manager().register_if_absent("root", Arc::new(LocalPosixVolume::new("Test root", "/")));
+    get_volume_manager().register_if_absent("root", Arc::new(LocalPosixVolume::local_folder("Test root", "/")));
 }
 
 /// A rename group whose files are all gone by the time the user approves it: preflight reads

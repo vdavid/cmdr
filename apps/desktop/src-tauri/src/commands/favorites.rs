@@ -283,7 +283,7 @@ mod add_gate_tests {
     /// `register_if_absent` because the registry is process-wide and shared with every other test
     /// in this binary.
     fn ensure_root_volume() {
-        get_volume_manager().register_if_absent("root", Arc::new(LocalPosixVolume::new("Test root", "/")));
+        get_volume_manager().register_if_absent("root", Arc::new(LocalPosixVolume::local_folder("Test root", "/")));
     }
 
     #[tokio::test]

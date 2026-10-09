@@ -138,7 +138,7 @@ async fn case_folded_file_collision_prompts_exactly_once() {
     write_file(root, "dst/album/clash.txt", b"DEST");
 
     let volume: Arc<dyn Volume> = Arc::new(CaseInsensitiveVolume {
-        inner: Arc::new(LocalPosixVolume::new("V", root.to_path_buf())),
+        inner: Arc::new(LocalPosixVolume::local_folder("V", root.to_path_buf())),
     });
 
     let state = make_state();
@@ -185,7 +185,7 @@ async fn case_folded_overwrite_does_not_prompt_twice() {
     write_file(root, "dst/album/photo.jpg", b"DEST-OLD");
 
     let volume: Arc<dyn Volume> = Arc::new(CaseInsensitiveVolume {
-        inner: Arc::new(LocalPosixVolume::new("V", root.to_path_buf())),
+        inner: Arc::new(LocalPosixVolume::local_folder("V", root.to_path_buf())),
     });
 
     let state = make_state();

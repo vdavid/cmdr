@@ -158,7 +158,7 @@ async fn a_sequential_extract_carries_the_executable_bit() {
     ]);
     let source = fixture.volume();
     let dest_dir = TestDir::new("seq-extract-dest");
-    let dest: Arc<dyn Volume> = Arc::new(crate::file_system::volume::LocalPosixVolume::new(
+    let dest: Arc<dyn Volume> = Arc::new(crate::file_system::volume::LocalPosixVolume::local_folder(
         "Dest",
         dest_dir.to_str().expect("dest path"),
     ));
@@ -562,7 +562,7 @@ async fn a_failed_sequential_extract_takes_back_every_unfilled_reservation() {
     std::fs::create_dir(dest_dir.join("album")).unwrap();
     std::fs::write(dest_dir.join("album/a.txt"), b"the user's a").unwrap();
     std::fs::write(dest_dir.join("album/b.txt"), b"the user's b").unwrap();
-    let dest = FaultyVolume::wrapping(Arc::new(LocalPosixVolume::new(
+    let dest = FaultyVolume::wrapping(Arc::new(LocalPosixVolume::local_folder(
         "Dest",
         dest_dir.to_str().expect("dest path"),
     )))

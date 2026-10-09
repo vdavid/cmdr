@@ -115,7 +115,7 @@ async fn rename_merge_cancel_keeps_moved_children_and_preserves_source() {
 
     let op = TestOperationGuard::register_state("rename-merge-cancel", make_state());
     let volume: Arc<dyn Volume> = Arc::new(CancelOnFirstRenameVolume {
-        inner: Arc::new(LocalPosixVolume::new("V", root.to_path_buf())),
+        inner: Arc::new(LocalPosixVolume::local_folder("V", root.to_path_buf())),
         operation_id: op.id().to_string(),
         renames: AtomicUsize::new(0),
     });

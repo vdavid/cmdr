@@ -67,7 +67,7 @@ async fn volume_delete_hardlinked_files_reports_dedup_d_bytes() {
     let payload_dir = build_hardlink_tree(&root, "to_delete");
 
     let volume_id = format!("vol-hardlink-delete-{}", unique_op_id("vid"));
-    let volume = Arc::new(LocalPosixVolume::new(
+    let volume = Arc::new(LocalPosixVolume::local_folder(
         "HardlinkVol",
         root.to_str().expect("temp dir is utf8"),
     ));

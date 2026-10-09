@@ -64,7 +64,10 @@ async fn phase4_bench_baseline_smb_to_local_100_tiny_files() {
 
     // ── Set up destination (local temp dir) ───────────────────────
     let tmpdir = tempfile::tempdir().expect("tempdir");
-    let local_volume = Arc::new(LocalPosixVolume::new("bench-local", tmpdir.path().to_path_buf()));
+    let local_volume = Arc::new(LocalPosixVolume::local_folder(
+        "bench-local",
+        tmpdir.path().to_path_buf(),
+    ));
 
     let source_volume: Arc<dyn Volume> = Arc::new(smb_volume);
     let source_paths: Vec<PathBuf> = (0..FILE_COUNT)

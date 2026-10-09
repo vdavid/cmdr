@@ -25,7 +25,7 @@ async fn stream_pipe_file_retries_once_on_stale_destination_handle() {
     let src_dir = TestDir::new("retry_stale_src");
     fs::write(src_dir.join("a.txt"), "payload-bytes").unwrap(); // 13 bytes
 
-    let source: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Source", src_dir.to_str().unwrap()));
+    let source: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("Source", src_dir.to_str().unwrap()));
     let dest: Arc<dyn Volume> = Arc::new(FailOnceStaleDest {
         calls: AtomicUsize::new(0),
     });

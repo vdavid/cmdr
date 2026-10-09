@@ -22,7 +22,7 @@ async fn compress_start_packs_local_files_into_a_new_zip() {
     let source_bytes = (one.len() + two.len()) as u64;
     std::fs::write(src_root.join("one.txt"), &one).expect("w1");
     std::fs::write(src_root.join("two.txt"), &two).expect("w2");
-    let source_volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("src", src_root.clone()));
+    let source_volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("src", src_root.clone()));
 
     // The target ZIP doesn't exist yet; it must remain absent until publication.
     let dest = tmp.path().join("bundle.zip");
@@ -143,7 +143,7 @@ async fn a_name_taken_after_start_is_not_replaced_or_reported_complete() {
     let src_root = tmp.path().join("src");
     std::fs::create_dir_all(&src_root).expect("mkdir src");
     std::fs::write(src_root.join("new.txt"), b"new archive bytes").expect("write source");
-    let source_volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("src", src_root));
+    let source_volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("src", src_root));
     let dest = tmp.path().join("bundle.zip");
     let raced_bytes = b"a file created after the compression was approved";
     let events = PhaseGateSink::new(WriteOperationPhase::FinishingCompression);
@@ -189,7 +189,7 @@ async fn stop_policy_prompts_for_duplicate_source_names_and_honors_overwrite() {
     std::fs::create_dir_all(src_root.join("second")).expect("mkdir second");
     std::fs::write(src_root.join("first/report.txt"), b"first").expect("write first");
     std::fs::write(src_root.join("second/report.txt"), b"second").expect("write second");
-    let source_volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("src", src_root));
+    let source_volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("src", src_root));
     let dest = tmp.path().join("bundle.zip");
     let events = Arc::new(CollectorEventSink::new());
 
@@ -231,7 +231,7 @@ async fn an_existing_local_archive_stays_byte_exact_until_publication() {
     let src_root = tmp.path().join("src");
     std::fs::create_dir_all(&src_root).expect("mkdir src");
     std::fs::write(src_root.join("new.txt"), b"new bytes").expect("write source");
-    let source_volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("src", src_root));
+    let source_volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("src", src_root));
     let dest = tmp.path().join("bundle.zip");
     let original = zip_bytes(&[("old.txt", b"original bytes")]);
     std::fs::write(&dest, &original).expect("write original archive");
@@ -277,7 +277,7 @@ async fn local_alias_and_destination_inside_source_are_refused_before_registrati
     std::fs::write(&source_archive, b"source").expect("write source");
     let alias = tmp.path().join("alias.zip");
     std::fs::hard_link(&source_archive, &alias).expect("hard link alias");
-    let source_volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("src", "/"));
+    let source_volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("src", "/"));
     let events = Arc::new(CollectorEventSink::new());
 
     let alias_result = compress_start(
@@ -339,7 +339,7 @@ async fn compress_refuses_a_read_only_destination_without_touching_its_bytes() {
         let original: &[u8] = b"the user's real document, which must survive a refused compress";
         std::fs::write(&dest, original).expect("pre-write the victim file");
 
-        let source_volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("src", src_root.clone()));
+        let source_volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("src", src_root.clone()));
         let events = Arc::new(CollectorEventSink::new());
         let result = compress_start(
             Arc::clone(&events) as Arc<dyn OperationEventSink>,
@@ -403,7 +403,7 @@ async fn compress_journals_subkind_and_net_new_from_the_driver() {
     let src_root = tmp.path().join("src");
     std::fs::create_dir_all(&src_root).expect("mkdir src");
     std::fs::write(src_root.join("one.txt"), b"first").expect("w1");
-    let source_volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("src", src_root.clone()));
+    let source_volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("src", src_root.clone()));
 
     let dest = tmp.path().join("bundle.zip");
     assert!(!dest.exists(), "the target must be net-new");
@@ -486,7 +486,7 @@ async fn compress_journals_the_source_volume_and_what_it_packed() {
     std::fs::create_dir_all(src_root.join("album")).expect("mkdir src");
     std::fs::write(src_root.join("one.txt"), b"first").expect("w1");
     std::fs::write(src_root.join("album/two.txt"), b"second!").expect("w2");
-    let source_volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("src", src_root.clone()));
+    let source_volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("src", src_root.clone()));
     let source_id = unique_lane_id();
     get_volume_manager().register(&source_id, Arc::clone(&source_volume));
     let parent_id = unique_lane_id();
@@ -541,7 +541,7 @@ async fn compress_start_packs_a_directory_subtree() {
     std::fs::create_dir_all(src_root.join("project/sub")).expect("mkdir");
     std::fs::write(src_root.join("project/readme.txt"), b"top").expect("w1");
     std::fs::write(src_root.join("project/sub/deep.txt"), b"nested").expect("w2");
-    let source_volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("src", src_root.clone()));
+    let source_volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("src", src_root.clone()));
 
     let dest = tmp.path().join("project.zip");
     let events = Arc::new(CollectorEventSink::new());
@@ -603,7 +603,7 @@ async fn compress_payload_at(dir: &Path, tag: &str, level: Option<i64>, payload:
     let src_root = dir.join(format!("src-{tag}"));
     std::fs::create_dir_all(&src_root).expect("mkdir src");
     std::fs::write(src_root.join("data.txt"), payload).expect("write payload");
-    let source_volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("src", src_root.clone()));
+    let source_volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("src", src_root.clone()));
 
     let dest = dir.join(format!("out-{tag}.zip"));
     let events = Arc::new(CollectorEventSink::new());

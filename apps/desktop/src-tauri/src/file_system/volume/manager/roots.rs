@@ -380,7 +380,7 @@ mod tests {
     use std::pin::Pin;
 
     fn registration_over(roots: &[&str]) -> Registration {
-        let mut reg = Registration::new(Arc::new(LocalPosixVolume::new("share", roots[0])));
+        let mut reg = Registration::new(Arc::new(LocalPosixVolume::local_folder("share", roots[0])));
         for root in &roots[1..] {
             reg.record_root(Path::new(root));
         }
@@ -553,7 +553,10 @@ mod tests {
         let manager = VolumeManager::new();
         let (spy, told) = root_spy("/Volumes/naspi");
         manager.register("share", spy);
-        manager.register("share", Arc::new(LocalPosixVolume::new("naspi", "/Volumes/naspi-1")));
+        manager.register(
+            "share",
+            Arc::new(LocalPosixVolume::local_folder("naspi", "/Volumes/naspi-1")),
+        );
 
         manager.mark_root_stale("share", Path::new("/Volumes/naspi-1"));
         assert!(told().is_empty(), "the ACTIVE root still looks alive");
@@ -572,8 +575,14 @@ mod tests {
         use crate::file_system::LocalPosixVolume;
 
         let manager = VolumeManager::new();
-        manager.register("share", Arc::new(LocalPosixVolume::new("naspi", "/Volumes/naspi")));
-        manager.register("share", Arc::new(LocalPosixVolume::new("naspi", "/Volumes/naspi-1")));
+        manager.register(
+            "share",
+            Arc::new(LocalPosixVolume::local_folder("naspi", "/Volumes/naspi")),
+        );
+        manager.register(
+            "share",
+            Arc::new(LocalPosixVolume::local_folder("naspi", "/Volumes/naspi-1")),
+        );
         manager
     }
 
@@ -703,10 +712,13 @@ mod tests {
         let id = "cmdr-test-stale-errno-share";
         let manager = get_volume_manager();
         manager.unregister(id);
-        manager.register(id, Arc::new(LocalPosixVolume::new("naspi", "/Volumes/cmdr-test-stale")));
         manager.register(
             id,
-            Arc::new(LocalPosixVolume::new("naspi", "/Volumes/cmdr-test-stale-1")),
+            Arc::new(LocalPosixVolume::local_folder("naspi", "/Volumes/cmdr-test-stale")),
+        );
+        manager.register(
+            id,
+            Arc::new(LocalPosixVolume::local_folder("naspi", "/Volumes/cmdr-test-stale-1")),
         );
 
         // A missing file says nothing about the mount.

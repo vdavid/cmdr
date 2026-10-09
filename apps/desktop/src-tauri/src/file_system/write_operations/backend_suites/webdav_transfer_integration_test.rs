@@ -61,7 +61,7 @@ async fn webdav_integration_copying_off_a_server_lands_every_byte() {
     assert_eq!(source_digest, sha256(&content), "the fixture seed must round-trip");
 
     let local_dir = TestDir::new("webdav_copy_off_server");
-    let local: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Local", &*local_dir));
+    let local: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("Local", &*local_dir));
 
     run_copy(
         "copy-off-webdav",
@@ -96,7 +96,7 @@ async fn webdav_integration_copying_onto_a_server_lands_every_byte() {
 
     let content = self_describing_bytes(PAYLOAD_BYTES, "uploaded.bin");
     let local_dir = TestDir::new("webdav_copy_onto_server");
-    let local: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Local", &*local_dir));
+    let local: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("Local", &*local_dir));
     local
         .create_file(Path::new("uploaded.bin"), &content)
         .await

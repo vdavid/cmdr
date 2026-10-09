@@ -35,7 +35,7 @@ async fn a_dot_git_that_is_not_this_repos_gitdir_gets_no_rows() {
     let stray = dir.join("fixtures").join("sample").join(".git");
     std::fs::create_dir_all(&stray).expect("make the placeholder");
 
-    let volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Test", &dir));
+    let volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("Test", &dir));
     let mut entries = volume.list_directory(&stray, None).await.expect("listing it");
     assert_eq!(decorate(&volume, &stray, &mut entries).await, 0, "{entries:?}");
 
@@ -55,7 +55,7 @@ async fn a_dot_git_that_is_not_this_repos_gitdir_gets_no_rows() {
 #[test]
 fn a_volume_with_no_local_path_never_gets_the_portal() {
     super::wiring::set_virtual_portal_enabled(true);
-    let local = LocalPosixVolume::new("Local", Path::new("/"));
+    let local = LocalPosixVolume::local_folder("Local", Path::new("/"));
     let remote = WatchCoverageVolume::new("Remote", WatchCoverage::EveryWriter);
 
     assert!(super::wiring::volume_holds_real_repos(&local));
@@ -72,7 +72,7 @@ fn a_volume_with_no_local_path_never_gets_the_portal() {
 #[test]
 fn only_the_dot_git_directory_itself_is_claimed() {
     super::wiring::set_virtual_portal_enabled(true);
-    let volume = LocalPosixVolume::new("Local", Path::new("/"));
+    let volume = LocalPosixVolume::local_folder("Local", Path::new("/"));
     let overlay = GitPortalOverlay;
 
     assert!(overlay.applies_to(&volume, Path::new("/repo/.git")));
@@ -179,7 +179,7 @@ fn the_toggle_silences_both_portal_seams() {
     let dir = repo("portal_toggle");
     let dot_git = dir.join(".git");
     let overlay = GitPortalOverlay;
-    let volume = LocalPosixVolume::new("Test", &dir);
+    let volume = LocalPosixVolume::local_folder("Test", &dir);
 
     super::wiring::set_virtual_portal_enabled(true);
     assert!(super::wiring::is_virtual_portal_enabled());

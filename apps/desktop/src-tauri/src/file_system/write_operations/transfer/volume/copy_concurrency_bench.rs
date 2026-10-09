@@ -379,7 +379,7 @@ fn build_corpus(shape: Shape, source_concurrency: usize) -> Corpus {
         None => file_names.iter().map(PathBuf::from).collect(),
     };
     let volume: Arc<dyn Volume> = Arc::new(FixedConcurrencySource {
-        inner: LocalPosixVolume::new("bench-src", dir.path().to_path_buf()),
+        inner: LocalPosixVolume::local_folder("bench-src", dir.path().to_path_buf()),
         concurrency: source_concurrency,
     });
     Corpus {

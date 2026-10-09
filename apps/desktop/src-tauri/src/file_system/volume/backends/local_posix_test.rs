@@ -10,7 +10,7 @@ use std::path::Path;
 
 #[test]
 fn test_new_creates_volume_with_correct_name_and_root() {
-    let volume = LocalPosixVolume::new("Test Volume", "/tmp");
+    let volume = LocalPosixVolume::local_folder("Test Volume", "/tmp");
     assert_eq!(volume.name(), "Test Volume");
     assert_eq!(volume.root(), Path::new("/tmp"));
 }
@@ -19,7 +19,11 @@ fn test_new_creates_volume_with_correct_name_and_root() {
 
 #[test]
 fn a_folder_on_a_local_disk_can_be_indexed() {
-    assert!(LocalPosixVolume::new("Macintosh HD", "/").capabilities().can_be_indexed);
+    assert!(
+        LocalPosixVolume::local_folder("Macintosh HD", "/")
+            .capabilities()
+            .can_be_indexed
+    );
     assert!(
         LocalPosixVolume::on_mount("Backup", "/Volumes/Backup", MountClass::LocalDisk)
             .capabilities()
@@ -58,19 +62,19 @@ fn a_rerooted_volume_keeps_its_mount_class() {
 
 #[test]
 fn test_resolve_empty_path_returns_root() {
-    let volume = LocalPosixVolume::new("Test", "/tmp");
+    let volume = LocalPosixVolume::local_folder("Test", "/tmp");
     assert_eq!(volume.resolve(Path::new("")), Path::new("/tmp"));
 }
 
 #[test]
 fn test_resolve_dot_returns_root() {
-    let volume = LocalPosixVolume::new("Test", "/tmp");
+    let volume = LocalPosixVolume::local_folder("Test", "/tmp");
     assert_eq!(volume.resolve(Path::new(".")), Path::new("/tmp"));
 }
 
 #[test]
 fn test_resolve_relative_path_joins_with_root() {
-    let volume = LocalPosixVolume::new("Test", "/tmp");
+    let volume = LocalPosixVolume::local_folder("Test", "/tmp");
     assert_eq!(
         volume.resolve(Path::new("subdir/file.txt")),
         Path::new("/tmp/subdir/file.txt")
@@ -79,7 +83,7 @@ fn test_resolve_relative_path_joins_with_root() {
 
 #[test]
 fn test_resolve_absolute_path_treats_as_relative() {
-    let volume = LocalPosixVolume::new("Test", "/tmp");
+    let volume = LocalPosixVolume::local_folder("Test", "/tmp");
     // Absolute paths should be treated as relative to volume root
     assert_eq!(
         volume.resolve(Path::new("/subdir/file.txt")),
@@ -89,21 +93,21 @@ fn test_resolve_absolute_path_treats_as_relative() {
 
 #[tokio::test]
 async fn test_exists_returns_true_for_root() {
-    let volume = LocalPosixVolume::new("Test", "/tmp");
+    let volume = LocalPosixVolume::local_folder("Test", "/tmp");
     assert!(volume.exists(Path::new("")).await);
     assert!(volume.exists(Path::new(".")).await);
 }
 
 #[tokio::test]
 async fn test_exists_returns_false_for_nonexistent() {
-    let volume = LocalPosixVolume::new("Test", "/tmp");
+    let volume = LocalPosixVolume::local_folder("Test", "/tmp");
     assert!(!volume.exists(Path::new("definitely_does_not_exist_12345")).await);
 }
 
 #[tokio::test]
 async fn test_list_directory_returns_entries() {
     // Use /tmp which should exist and have some contents on any POSIX system
-    let volume = LocalPosixVolume::new("Temp", "/tmp");
+    let volume = LocalPosixVolume::local_folder("Temp", "/tmp");
     let result = volume.list_directory(Path::new(""), None).await;
 
     // Should succeed (even if empty)
@@ -112,7 +116,7 @@ async fn test_list_directory_returns_entries() {
 
 #[tokio::test]
 async fn test_list_directory_nonexistent_returns_error() {
-    let volume = LocalPosixVolume::new("Test", "/definitely_does_not_exist_12345");
+    let volume = LocalPosixVolume::local_folder("Test", "/definitely_does_not_exist_12345");
     let result = volume.list_directory(Path::new(""), None).await;
 
     assert!(result.is_err());
@@ -136,7 +140,7 @@ async fn test_dot_hidden_file_hides_a_name_at_the_volume_root_only() {
     std::fs::create_dir(test_dir.join("sub")).unwrap();
     std::fs::create_dir(test_dir.join("sub/secret_dir")).unwrap();
 
-    let volume = LocalPosixVolume::new("Test", &*test_dir);
+    let volume = LocalPosixVolume::local_folder("Test", &*test_dir);
 
     let root_entries = volume.list_directory(Path::new(""), None).await.unwrap();
     let root_secret = root_entries
@@ -161,7 +165,7 @@ async fn test_dot_hidden_file_hides_a_name_at_the_volume_root_only() {
 
 #[tokio::test]
 async fn test_get_metadata_returns_entry() {
-    let volume = LocalPosixVolume::new("Temp", "/tmp");
+    let volume = LocalPosixVolume::local_folder("Temp", "/tmp");
     // /tmp itself exists on any POSIX system
     let result = volume.get_metadata(Path::new("")).await;
 
@@ -172,7 +176,7 @@ async fn test_get_metadata_returns_entry() {
 
 #[tokio::test]
 async fn test_get_metadata_nonexistent_returns_error() {
-    let volume = LocalPosixVolume::new("Test", "/tmp");
+    let volume = LocalPosixVolume::local_folder("Test", "/tmp");
     let result = volume.get_metadata(Path::new("definitely_does_not_exist_12345")).await;
 
     assert!(result.is_err());
@@ -180,7 +184,7 @@ async fn test_get_metadata_nonexistent_returns_error() {
 
 #[test]
 fn test_can_watch_listings_returns_true() {
-    let volume = LocalPosixVolume::new("Test", "/tmp");
+    let volume = LocalPosixVolume::local_folder("Test", "/tmp");
     assert!(volume.can_watch_listings());
 }
 
@@ -188,7 +192,7 @@ fn test_can_watch_listings_returns_true() {
 fn test_supports_streaming_returns_true() {
     // Since Phase 4, LocalPosixVolume exposes open_read_stream and
     // write_from_stream so cross-volume copies can pipe through it.
-    let volume = LocalPosixVolume::new("Test", "/tmp");
+    let volume = LocalPosixVolume::local_folder("Test", "/tmp");
     assert!(volume.supports_streaming());
 }
 
@@ -199,7 +203,7 @@ async fn test_write_operations() {
     // Create a temp directory for this test
     let test_dir = TestDir::new("write_ops_test");
 
-    let volume = LocalPosixVolume::new("Test", &*test_dir);
+    let volume = LocalPosixVolume::local_folder("Test", &*test_dir);
 
     // Test create_file
     let result = volume.create_file(Path::new("test.txt"), b"hello world").await;
@@ -234,7 +238,7 @@ async fn test_write_operations() {
 async fn test_rename_conflict_no_force() {
     let test_dir = TestDir::new("rename_conflict_test");
 
-    let volume = LocalPosixVolume::new("Test", &*test_dir);
+    let volume = LocalPosixVolume::local_folder("Test", &*test_dir);
     volume.create_file(Path::new("source.txt"), b"source").await.unwrap();
     volume.create_file(Path::new("target.txt"), b"target").await.unwrap();
 
@@ -253,7 +257,7 @@ async fn test_rename_force_overwrites() {
 
     let test_dir = TestDir::new("rename_force_test");
 
-    let volume = LocalPosixVolume::new("Test", &*test_dir);
+    let volume = LocalPosixVolume::local_folder("Test", &*test_dir);
     volume
         .create_file(Path::new("source.txt"), b"new content")
         .await
@@ -281,7 +285,7 @@ async fn test_create_file_does_not_clobber_existing() {
 
     let test_dir = TestDir::new("create_file_no_clobber_test");
 
-    let volume = LocalPosixVolume::new("Test", &*test_dir);
+    let volume = LocalPosixVolume::local_folder("Test", &*test_dir);
     let target = test_dir.join("notes.txt");
 
     fs::write(&target, "important user data").unwrap();
@@ -318,7 +322,7 @@ async fn test_symlink_to_file_detected() {
     fs::write(&target_file, "content").unwrap();
     symlink(&target_file, &link_file).unwrap();
 
-    let volume = LocalPosixVolume::new("Test", test_dir.to_str().unwrap());
+    let volume = LocalPosixVolume::local_folder("Test", test_dir.to_str().unwrap());
 
     // The symlink should exist
     assert!(volume.exists(Path::new("link_to_file.txt")).await);
@@ -343,7 +347,7 @@ async fn test_symlink_to_directory_detected() {
     fs::create_dir(&target_dir).unwrap();
     symlink(&target_dir, &link_to_dir).unwrap();
 
-    let volume = LocalPosixVolume::new("Test", test_dir.to_str().unwrap());
+    let volume = LocalPosixVolume::local_folder("Test", test_dir.to_str().unwrap());
 
     // Get metadata - should report is_symlink=true AND is_directory=true
     let metadata = volume.get_metadata(Path::new("link_to_dir")).await.unwrap();
@@ -361,7 +365,7 @@ async fn test_broken_symlink_still_exists() {
     let broken_link = test_dir.join("broken_link.txt");
     symlink("/definitely_does_not_exist_12345", &broken_link).unwrap();
 
-    let volume = LocalPosixVolume::new("Test", test_dir.to_str().unwrap());
+    let volume = LocalPosixVolume::local_folder("Test", test_dir.to_str().unwrap());
 
     // The broken symlink itself exists
     assert!(volume.exists(Path::new("broken_link.txt")).await);
@@ -378,7 +382,7 @@ async fn test_broken_symlink_still_exists() {
 
 #[test]
 fn test_supports_export_returns_true() {
-    let volume = LocalPosixVolume::new("Test", "/tmp");
+    let volume = LocalPosixVolume::local_folder("Test", "/tmp");
     assert!(volume.supports_export());
 }
 
@@ -391,7 +395,7 @@ async fn test_scan_for_copy_single_file() {
     // Create a single file with known content
     fs::write(test_dir.join("test.txt"), "Hello, World!").unwrap();
 
-    let volume = LocalPosixVolume::new("Test", test_dir.to_str().unwrap());
+    let volume = LocalPosixVolume::local_folder("Test", test_dir.to_str().unwrap());
     let result = volume.scan_for_copy(Path::new("test.txt")).await.unwrap();
 
     assert_eq!(result.file_count, 1);
@@ -414,7 +418,7 @@ async fn test_scan_for_copy_directory() {
     fs::create_dir(&nested).unwrap();
     fs::write(nested.join("file3.txt"), "A").unwrap();
 
-    let volume = LocalPosixVolume::new("Test", test_dir.to_str().unwrap());
+    let volume = LocalPosixVolume::local_folder("Test", test_dir.to_str().unwrap());
     let result = volume.scan_for_copy(Path::new("mydir")).await.unwrap();
 
     assert_eq!(result.file_count, 3);
@@ -441,7 +445,7 @@ async fn a_batch_scan_stops_when_it_is_told_to() {
     fs::write(tree.join("a.txt"), "a").unwrap();
     fs::write(tree.join("b.txt"), "bb").unwrap();
 
-    let volume = LocalPosixVolume::new("Test", test_dir.to_str().unwrap());
+    let volume = LocalPosixVolume::local_folder("Test", test_dir.to_str().unwrap());
     cmdr_fs::volume::conformance::assert_batch_scan_stops_when_told(&volume, Path::new("tree")).await;
 }
 
@@ -458,7 +462,7 @@ async fn a_batch_scan_asks_its_boundary_inside_the_walk() {
     fs::create_dir(&nested).unwrap();
     fs::write(nested.join("c.txt"), "ccc").unwrap();
 
-    let volume = LocalPosixVolume::new("Test", test_dir.to_str().unwrap());
+    let volume = LocalPosixVolume::local_folder("Test", test_dir.to_str().unwrap());
     cmdr_fs::volume::conformance::assert_batch_scan_asks_inside_the_walk(&volume, Path::new("tree"), 4).await;
 }
 
@@ -482,7 +486,7 @@ async fn test_scan_for_copy_dedupes_hardlinks_for_source_size_only() {
     fs::hard_link(&original, tree.join("hardlink_b")).unwrap();
     fs::write(tree.join("standalone"), vec![0u8; 4096]).unwrap();
 
-    let volume = LocalPosixVolume::new("Test", test_dir.to_str().unwrap());
+    let volume = LocalPosixVolume::local_folder("Test", test_dir.to_str().unwrap());
     let result = volume.scan_for_copy(Path::new("tree")).await.unwrap();
 
     assert_eq!(result.file_count, 4);
@@ -504,7 +508,7 @@ async fn test_open_read_stream_single_file() {
 
     fs::write(src_dir.join("source.txt"), "Test content").unwrap();
 
-    let volume = LocalPosixVolume::new("Test", src_dir.to_str().unwrap());
+    let volume = LocalPosixVolume::local_folder("Test", src_dir.to_str().unwrap());
     let mut stream = volume.open_read_stream(Path::new("source.txt")).await.unwrap();
     assert_eq!(stream.total_size(), StreamLength::Known(12));
 
@@ -533,7 +537,7 @@ async fn test_open_read_stream_reports_the_file_mtime() {
         .set_modified(mtime)
         .unwrap();
 
-    let volume = LocalPosixVolume::new("Test", src_dir.to_str().unwrap());
+    let volume = LocalPosixVolume::local_folder("Test", src_dir.to_str().unwrap());
     let stream = volume.open_read_stream(Path::new("dated.txt")).await.unwrap();
     assert_eq!(stream.modified_at(), Some(mtime));
 }
@@ -547,7 +551,7 @@ async fn test_open_read_stream_rejects_directory() {
     // Create a nested dir so we can attempt to stream it.
     fs::create_dir(src_dir.join("sourcedir")).unwrap();
 
-    let volume = LocalPosixVolume::new("Test", src_dir.to_str().unwrap());
+    let volume = LocalPosixVolume::local_folder("Test", src_dir.to_str().unwrap());
     let result = volume.open_read_stream(Path::new("sourcedir")).await;
     assert!(result.is_err(), "streaming a directory should fail");
 }
@@ -568,7 +572,7 @@ async fn test_write_from_stream_creates_file() {
 
     let stream = source.open_read_stream(Path::new("/local.txt")).await.unwrap();
     let size = stream.total_size();
-    let volume = LocalPosixVolume::new("Test", vol_dir.to_str().unwrap());
+    let volume = LocalPosixVolume::local_folder("Test", vol_dir.to_str().unwrap());
     let bytes = volume
         .write_from_stream(
             Path::new("imported.txt"),
@@ -609,7 +613,7 @@ async fn test_write_from_stream_multichunk_is_durable_and_correct() {
 
     let stream = source.open_read_stream(Path::new("/big.bin")).await.unwrap();
     let size = stream.total_size();
-    let volume = LocalPosixVolume::new("Test", vol_dir.to_str().unwrap());
+    let volume = LocalPosixVolume::local_folder("Test", vol_dir.to_str().unwrap());
     let bytes = volume
         .write_from_stream(
             Path::new("imported.bin"),
@@ -629,7 +633,7 @@ async fn test_write_from_stream_multichunk_is_durable_and_correct() {
 async fn test_scan_for_conflicts_no_conflicts() {
     let test_dir = TestDir::new("conflicts_none_test");
 
-    let volume = LocalPosixVolume::new("Test", test_dir.to_str().unwrap());
+    let volume = LocalPosixVolume::local_folder("Test", test_dir.to_str().unwrap());
 
     let source_items = vec![
         SourceItemInfo {
@@ -660,7 +664,7 @@ async fn test_scan_for_conflicts_with_conflicts() {
     fs::write(test_dir.join("existing.txt"), "Old content").unwrap();
     fs::write(test_dir.join("another.txt"), "Another old").unwrap();
 
-    let volume = LocalPosixVolume::new("Test", test_dir.to_str().unwrap());
+    let volume = LocalPosixVolume::local_folder("Test", test_dir.to_str().unwrap());
 
     let source_items = vec![
         SourceItemInfo {
@@ -696,7 +700,7 @@ async fn test_scan_for_conflicts_with_conflicts() {
 #[tokio::test]
 async fn test_get_space_info() {
     // Test against /tmp which should exist on any POSIX system
-    let volume = LocalPosixVolume::new("Test", "/tmp");
+    let volume = LocalPosixVolume::local_folder("Test", "/tmp");
     let space = volume.get_space_info().await.unwrap();
 
     // Basic sanity checks. A mounted filesystem always has a ceiling, so the
@@ -732,7 +736,7 @@ async fn test_list_directory_includes_symlinks() {
     symlink(&file, &link_to_file).unwrap();
     symlink(&dir, &link_to_dir).unwrap();
 
-    let volume = LocalPosixVolume::new("Test", test_dir.to_str().unwrap());
+    let volume = LocalPosixVolume::local_folder("Test", test_dir.to_str().unwrap());
     let entries = volume.list_directory(Path::new(""), None).await.unwrap();
 
     // Should have 4 entries
@@ -757,7 +761,7 @@ fn test_listing_watch_coverage_flips_with_watcher_lifecycle() {
 
     let test_dir = tempfile::tempdir().expect("tempdir");
     let path = test_dir.path().to_path_buf();
-    let volume = LocalPosixVolume::new("Test", &path);
+    let volume = LocalPosixVolume::local_folder("Test", &path);
 
     // No listing yet, no watcher: no coverage.
     assert_eq!(
@@ -804,7 +808,7 @@ async fn listing_a_local_directory_reports_progress_while_it_reads() {
         std::fs::write(dir.join(format!("file_{i:05}.txt")), b"x").expect("writing a scratch file succeeds");
     }
 
-    let volume = LocalPosixVolume::new("Test", &*dir);
+    let volume = LocalPosixVolume::local_folder("Test", &*dir);
     let ticks: std::sync::Mutex<Vec<ListingProgress>> = std::sync::Mutex::new(Vec::new());
     let on_progress = |p: ListingProgress| ticks.lock_ignore_poison().push(p);
 
@@ -842,7 +846,7 @@ async fn listing_a_local_directory_reports_progress_while_it_reads() {
 #[tokio::test]
 async fn write_access_of_a_writable_folder_and_of_one_a_copy_would_create() {
     let dir = TestDir::new("local_posix_write_access");
-    let volume = LocalPosixVolume::new("Test", &*dir);
+    let volume = LocalPosixVolume::local_folder("Test", &*dir);
     assert_eq!(volume.write_access_at(Path::new("/")).await, WriteAccess::Writable);
     assert_eq!(
         volume.write_access_at(Path::new("/new/deeper")).await,
@@ -865,7 +869,7 @@ async fn write_access_of_a_folder_without_write_permission_is_no_permission() {
     let locked = dir.join("locked");
     std::fs::create_dir(&locked).expect("making the folder");
     std::fs::set_permissions(&locked, std::fs::Permissions::from_mode(0o555)).expect("taking write away");
-    let volume = LocalPosixVolume::new("Test", &*dir);
+    let volume = LocalPosixVolume::local_folder("Test", &*dir);
 
     let access = volume.write_access_at(Path::new("/locked")).await;
     std::fs::set_permissions(&locked, std::fs::Permissions::from_mode(0o755)).expect("giving write back for cleanup");
@@ -883,7 +887,7 @@ async fn write_access_of_a_folder_without_write_permission_is_no_permission() {
 #[cfg(target_os = "macos")]
 #[tokio::test]
 async fn write_access_on_the_sealed_system_volume_is_read_only() {
-    let volume = LocalPosixVolume::new("Macintosh HD", "/");
+    let volume = LocalPosixVolume::local_folder("Macintosh HD", "/");
     assert_eq!(
         volume.write_access_at(Path::new("/System/Library")).await,
         WriteAccess::Unwritable {
@@ -911,7 +915,7 @@ async fn a_stream_onto_a_read_only_filesystem_is_read_only() {
         .await
         .expect("opening the source");
     let size = stream.total_size();
-    let volume = LocalPosixVolume::new("Macintosh HD", "/");
+    let volume = LocalPosixVolume::local_folder("Macintosh HD", "/");
 
     let err = volume
         .write_from_stream(

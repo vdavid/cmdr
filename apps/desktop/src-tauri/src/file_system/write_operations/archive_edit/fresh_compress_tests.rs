@@ -440,7 +440,7 @@ impl GatedRun {
     async fn start(direct: bool, script: AfterFirstChunk) -> Self {
         let source_dir = tempfile::tempdir().expect("tempdir");
         std::fs::write(source_dir.path().join("big.bin"), incompressible(3 * 1024 * 1024)).expect("write source");
-        let source: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("src", source_dir.path().to_path_buf()));
+        let source: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("src", source_dir.path().to_path_buf()));
         let id = format!("gated-share-{}", uuid::Uuid::new_v4());
         let inner = InMemoryVolume::new("Share")
             .with_lane_key(id.clone())
@@ -633,7 +633,7 @@ async fn a_file_whose_name_holds_a_backslash_compresses_and_validates() {
     // as a separator, so `a\b.txt` reads back as `a/` + `b.txt`.
     let source_dir = tempfile::tempdir().expect("tempdir");
     std::fs::write(source_dir.path().join("a\\b.txt"), b"backslash").expect("write source");
-    let source: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("src", source_dir.path().to_path_buf()));
+    let source: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("src", source_dir.path().to_path_buf()));
     let dest_dir = tempfile::tempdir().expect("tempdir");
     let archive = dest_dir.path().join("odd.zip");
     let events = Arc::new(CollectorEventSink::new());
@@ -671,7 +671,7 @@ async fn compress_local_selection(
     source_dir: &Path,
     selected: &[&str],
 ) -> (Arc<CollectorEventSink>, tempfile::TempDir, PathBuf) {
-    let source: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("src", source_dir.to_path_buf()));
+    let source: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("src", source_dir.to_path_buf()));
     let dest_dir = tempfile::tempdir().expect("tempdir");
     let archive = dest_dir.path().join("out.zip");
     let events = Arc::new(CollectorEventSink::new());

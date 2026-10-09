@@ -51,7 +51,7 @@ async fn auto_yield_parks_before_next_window_then_resumes_byte_exact() {
     });
 
     let dst_dir = TestDir::new("autoyield_dst");
-    let dest: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Dest", dst_dir.to_str().unwrap()));
+    let dest: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("Dest", dst_dir.to_str().unwrap()));
 
     let state = make_state();
     // Watches the bytes the copy REPORTS, which is the number the transfer
@@ -164,7 +164,7 @@ async fn auto_yield_debounces_a_burst_into_one_park() {
     });
 
     let dst_dir = TestDir::new("autoyield_burst_dst");
-    let dest: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Dest", dst_dir.to_str().unwrap()));
+    let dest: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("Dest", dst_dir.to_str().unwrap()));
 
     let state = make_state();
     // Watches the bytes the copy REPORTS, which is the number the transfer
@@ -267,7 +267,7 @@ async fn auto_yield_min_progress_floor_prevents_starvation() {
     });
 
     let dst_dir = TestDir::new("autoyield_floor_dst");
-    let dest: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Dest", dst_dir.to_str().unwrap()));
+    let dest: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("Dest", dst_dir.to_str().unwrap()));
 
     let state = make_state();
     // Watches the bytes the copy REPORTS, which is the number the transfer
@@ -354,7 +354,7 @@ async fn auto_yield_cancel_while_yielding_keeps_no_partial() {
     });
 
     let dst_dir = TestDir::new("autoyield_cancel_dst");
-    let dest: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Dest", dst_dir.to_str().unwrap()));
+    let dest: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("Dest", dst_dir.to_str().unwrap()));
 
     let op = TestOperationGuard::register_state("test-autoyield-cancel", make_state());
     let op_id = op.id().to_string();
@@ -452,7 +452,7 @@ async fn non_mtp_source_never_auto_yields_for_foreground() {
     );
 
     let dst_dir = TestDir::new("autoyield_nonmtp_dst");
-    let dest: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Dest", dst_dir.to_str().unwrap()));
+    let dest: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("Dest", dst_dir.to_str().unwrap()));
 
     let state = make_state();
     let bytes = copy_single_path(
@@ -497,7 +497,7 @@ async fn yield_capable_source_with_no_foreground_pending_never_self_yields() {
     });
 
     let dst_dir = TestDir::new("no_self_yield_dst");
-    let dest: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Dest", dst_dir.to_str().unwrap()));
+    let dest: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("Dest", dst_dir.to_str().unwrap()));
 
     let state = make_state();
     let local = tokio::task::LocalSet::new();

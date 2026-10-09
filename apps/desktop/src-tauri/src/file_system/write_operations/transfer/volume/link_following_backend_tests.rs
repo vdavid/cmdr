@@ -129,7 +129,7 @@ impl Volume for LinkFollowingVolume {
 fn following_volume() -> (Arc<dyn Volume>, TempDir) {
     let dir = TempDir::new().unwrap();
     let volume: Arc<dyn Volume> = Arc::new(LinkFollowingVolume {
-        inner: LocalPosixVolume::new("V", dir.path().to_path_buf()),
+        inner: LocalPosixVolume::local_folder("V", dir.path().to_path_buf()),
         link_takes_freed_name: None,
     });
     (volume, dir)
@@ -144,7 +144,7 @@ async fn a_link_racing_into_a_freed_name_is_never_merged_into() {
     let dir = TempDir::new().unwrap();
     let root = dir.path();
     let volume: Arc<dyn Volume> = Arc::new(LinkFollowingVolume {
-        inner: LocalPosixVolume::new("V", root.to_path_buf()),
+        inner: LocalPosixVolume::local_folder("V", root.to_path_buf()),
         link_takes_freed_name: Some((PathBuf::from("dst/album/thing"), root.join("outside/target"))),
     });
     plant_target(root);
@@ -311,7 +311,7 @@ async fn a_same_volume_move_onto_a_dir_link_never_lands_in_the_target() {
 
 fn plain_volume() -> (Arc<dyn Volume>, TempDir) {
     let dir = TempDir::new().unwrap();
-    let volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("V", dir.path().to_path_buf()));
+    let volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("V", dir.path().to_path_buf()));
     (volume, dir)
 }
 

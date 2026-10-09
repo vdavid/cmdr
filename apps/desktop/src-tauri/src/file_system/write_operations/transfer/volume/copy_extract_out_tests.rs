@@ -138,7 +138,7 @@ async fn the_executable_bit_survives_an_extract_out_of_a_zip() {
         ArchiveFormat::Zip,
         VolumeHost::detached(),
     ));
-    let dest: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new(
+    let dest: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder(
         "Dest",
         dest_dir.path().to_str().expect("dest path"),
     ));
@@ -219,7 +219,7 @@ async fn extracting_a_symlink_entry_writes_a_regular_file_never_a_symlink() {
 
     // A real-filesystem destination so we can stat the landed entry's kind.
     let dst_dir = tempfile::tempdir().expect("dst tempdir");
-    let dest: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Dest", dst_dir.path().to_str().unwrap()));
+    let dest: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("Dest", dst_dir.path().to_str().unwrap()));
 
     let events = Arc::new(CollectorEventSink::new());
     let state = make_state();

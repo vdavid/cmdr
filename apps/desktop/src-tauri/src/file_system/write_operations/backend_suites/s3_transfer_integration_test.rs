@@ -61,7 +61,7 @@ async fn copy_off_and_compare(label: &str, remote: Arc<dyn Volume>, source: Path
     let name = source.file_name().expect("a file name").to_string_lossy().into_owned();
 
     let local_dir = TestDir::new(label);
-    let local: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Local", &*local_dir));
+    let local: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("Local", &*local_dir));
     run_copy(
         label,
         Arc::clone(&remote),
@@ -191,7 +191,7 @@ pub(super) async fn copying_onto_a_bucket_lands_every_byte_and_the_mtime(target:
             .and_then(|file| file.set_modified(mtime))
             .expect("dating the local file");
     }
-    let local: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Local", &*local_dir));
+    let local: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("Local", &*local_dir));
 
     run_copy(
         "s3_copy_onto_bucket",

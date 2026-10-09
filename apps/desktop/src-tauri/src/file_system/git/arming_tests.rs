@@ -44,7 +44,7 @@ impl Repo {
         // absolute paths, and a volume rooted at the repo would resolve them
         // against that root and look for the repo inside itself.
         let volume_id = format!("arming-{name}-{}", std::process::id());
-        let volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Disk", Path::new("/")));
+        let volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("Disk", Path::new("/")));
         get_volume_manager().register(&volume_id, volume);
 
         Self { dir, root, volume_id }
@@ -148,7 +148,7 @@ async fn two_listings_on_one_repo_share_a_watch_until_the_last_one_closes() {
 /// arm that never comes proves nothing.
 #[test]
 fn only_a_listing_inside_a_real_repos_dot_git_arms_a_watcher() {
-    let local: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Disk", Path::new("/")));
+    let local: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("Disk", Path::new("/")));
     let protocol: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("Phone"));
     let repo = Path::new("/work/proj");
     let dot_git = repo.join(".git");

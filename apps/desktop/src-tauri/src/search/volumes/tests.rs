@@ -147,7 +147,7 @@ fn mount_root_falls_back_to_the_volume_registry() {
     make_index_db_without_volume_path(dir.path(), vid);
 
     let manager = get_volume_manager();
-    manager.register(vid, Arc::new(LocalPosixVolume::new("Fallback", root)));
+    manager.register(vid, Arc::new(LocalPosixVolume::local_folder("Fallback", root)));
 
     let cancel = AtomicBool::new(false);
     let loaded = match load_volume_blocking(vid, &SearchDirs::single(dir.path()), &cancel) {

@@ -171,7 +171,7 @@ async fn smb_integration_move_into_a_subfolder_addressed_the_way_the_dialog_addr
 
     let local_dir = tempfile::TempDir::new().expect("create TempDir");
     std::fs::write(local_dir.path().join("clip.mp4"), b"footage").unwrap();
-    let source_vol: Arc<dyn Volume> = Arc::new(crate::file_system::volume::LocalPosixVolume::new(
+    let source_vol: Arc<dyn Volume> = Arc::new(crate::file_system::volume::LocalPosixVolume::local_folder(
         "src",
         local_dir.path().to_path_buf(),
     ));
@@ -267,7 +267,7 @@ async fn smb_integration_a_running_copy_survives_the_volume_being_replaced() {
         std::fs::write(local_dir.path().join(&name), vec![i as u8; FILE_BYTES]).unwrap();
         names.push(PathBuf::from(&name));
     }
-    let source_vol: Arc<dyn Volume> = Arc::new(crate::file_system::volume::LocalPosixVolume::new(
+    let source_vol: Arc<dyn Volume> = Arc::new(crate::file_system::volume::LocalPosixVolume::local_folder(
         "src",
         local_dir.path().to_path_buf(),
     ));

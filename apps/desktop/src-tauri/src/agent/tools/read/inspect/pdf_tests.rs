@@ -575,7 +575,7 @@ fn find_skips_an_unparseable_page_and_keeps_going() {
 
 #[test]
 fn a_pdf_inside_a_zip_reads_as_a_pdf() {
-    get_volume_manager().register_if_absent("root", Arc::new(LocalPosixVolume::new("Test root", "/")));
+    get_volume_manager().register_if_absent("root", Arc::new(LocalPosixVolume::local_folder("Test root", "/")));
     let dir = TestDir::new("inspect_pdf_in_zip");
     let zip = write(
         &dir,

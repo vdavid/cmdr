@@ -87,7 +87,7 @@ pub(super) async fn start(
             (volume, lane)
         }
         None => (
-            Arc::new(LocalPosixVolume::new("local", PathBuf::from("/"))) as Arc<dyn Volume>,
+            Arc::new(LocalPosixVolume::local_folder("local", PathBuf::from("/"))) as Arc<dyn Volume>,
             LaneKey::new(parent_volume_id.clone()),
         ),
     };
@@ -445,8 +445,10 @@ async fn produce_via_spool(
     let scratch = ScratchDir::new("cmdr-fresh-zip").map_err(|error| io_write_error(&archive_path, error))?;
     let spool_path = PathBuf::from("archive.zip");
     let spool_full = scratch.path().join(&spool_path);
-    let spool_volume: Arc<dyn Volume> =
-        Arc::new(LocalPosixVolume::new("fresh-zip-spool", scratch.path().to_path_buf()));
+    let spool_volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder(
+        "fresh-zip-spool",
+        scratch.path().to_path_buf(),
+    ));
     let (written, produced) = produce_into(
         plan,
         Arc::clone(&spool_volume),

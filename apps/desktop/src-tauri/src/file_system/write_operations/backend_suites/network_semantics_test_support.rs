@@ -89,7 +89,7 @@ pub(super) async fn names_in(volume: &dyn Volume, dir: &Path) -> Vec<String> {
 /// A local volume rooted at a fresh temp dir. The `TestDir` has to outlive it.
 pub(super) fn local_volume(what: &str) -> (TestDir, Arc<dyn Volume>) {
     let dir = TestDir::new(what);
-    let volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Local", &*dir));
+    let volume: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("Local", &*dir));
     (dir, volume)
 }
 

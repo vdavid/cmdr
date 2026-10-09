@@ -264,7 +264,7 @@ fn returned_drive(name: &str, volume_id: &str, staged: Option<&[u8]>) -> Returne
     if let Some(bytes) = staged {
         std::fs::write(staging.join("footage.mov"), bytes).expect("stage a file");
     }
-    let volume = Arc::new(LocalPosixVolume::new("Fältkamera", &root)) as Arc<dyn Volume>;
+    let volume = Arc::new(LocalPosixVolume::local_folder("Fältkamera", &root)) as Arc<dyn Volume>;
     ReturnedDrive {
         _registration: TestVolumeRegistration::install(volume_id, volume),
         _hook: test_hook::answer_each(vec![(root, Some(true))]),

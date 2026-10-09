@@ -414,7 +414,7 @@ fn expected_tree_lines() -> Vec<String> {
 pub(super) async fn a_directory_tree_lands_intact_on_the_server(remote: Arc<dyn Volume>, dir: PathBuf) {
     let local_dir = TestDir::new("network_tree_onto_server");
     seed_local_tree(&local_dir.join("tree"));
-    let local: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Local", &*local_dir));
+    let local: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("Local", &*local_dir));
 
     // The fingerprint at the SOURCE end, taken through the volume the copy reads
     // from rather than from the buffers we wrote, so a bad seed can't make a bad
@@ -476,7 +476,7 @@ pub(super) async fn a_seeded_tree_lands_intact_off_the_server(remote: Arc<dyn Vo
     );
 
     let local_dir = TestDir::new("network_tree_off_server");
-    let local: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Local", &*local_dir));
+    let local: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("Local", &*local_dir));
 
     run_copy(
         "tree-off-server",
@@ -585,7 +585,7 @@ pub(super) async fn an_overwrite_answer_replaces_the_destination_bytes(remote: A
 
     let local_dir = TestDir::new("network_overwrite_answer");
     std::fs::write(local_dir.join("target.bin"), &new).expect("seeding the local file");
-    let local: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Local", &*local_dir));
+    let local: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("Local", &*local_dir));
 
     // `Stop` is what makes the driver ask rather than decide, which is the whole
     // point: this cell is about the answer travelling, not about a config flag.
@@ -651,7 +651,7 @@ pub(super) async fn a_pre_existing_destination_still_probes_each_name(remote: Ar
         std::fs::write(local_dir.join(name), self_describing_bytes(len, name))
             .unwrap_or_else(|e| panic!("seeding {name}: {e:?}"));
     }
-    let local: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Local", &*local_dir));
+    let local: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("Local", &*local_dir));
 
     let running = start_copy(
         "pre-existing-destination",
@@ -731,7 +731,7 @@ pub(super) async fn awkward_names_survive_a_round_trip(remote: Arc<dyn Volume>, 
     // silently drops a file the user very much still owns.
     std::fs::write(source_root.join("nothing at all.bin"), b"").expect("seeding the empty file");
 
-    let source: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Local", &*out_dir));
+    let source: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("Local", &*out_dir));
     let expected = tree_fingerprint(source.as_ref(), Path::new("names")).await;
     assert_eq!(
         expected.len(),
@@ -754,7 +754,7 @@ pub(super) async fn awkward_names_survive_a_round_trip(remote: Arc<dyn Volume>, 
     );
 
     let back_dir = TestDir::new("network_awkward_names_back");
-    let back: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Local", &*back_dir));
+    let back: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("Local", &*back_dir));
     run_copy(
         "awkward-names-off-server",
         Arc::clone(&remote),

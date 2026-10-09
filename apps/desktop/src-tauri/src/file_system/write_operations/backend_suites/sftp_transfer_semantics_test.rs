@@ -249,7 +249,7 @@ async fn sftp_integration_a_move_into_a_dialog_addressed_subfolder_lands_where_t
 
     let local_dir = TestDir::new("sftp_anchored_dest");
     std::fs::write(local_dir.join("clip.mp4"), b"footage").expect("seed the local source");
-    let local: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Local", &*local_dir));
+    let local: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("Local", &*local_dir));
 
     // What the dialog puts on the wire (leading slash, no root: the volume is a
     // separate dropdown), and what the boundary makes of it.
@@ -319,7 +319,7 @@ async fn sftp_integration_a_bare_server_path_destination_is_refused_before_anyth
 
     let local_dir = TestDir::new("sftp_bare_dest");
     std::fs::write(local_dir.join("clip.mp4"), b"footage").expect("seed the local source");
-    let local: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Local", &*local_dir));
+    let local: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("Local", &*local_dir));
 
     // What nothing in the app spells any more: the server's own absolute path,
     // with no prefix on it.

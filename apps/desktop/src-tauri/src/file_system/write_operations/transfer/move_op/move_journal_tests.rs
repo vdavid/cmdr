@@ -60,7 +60,7 @@ impl MoveLoop {
         // real `root` volume is registered.
         vm.register(
             "root",
-            Arc::new(LocalPosixVolume::new("Test root", "/")) as Arc<dyn Volume>,
+            Arc::new(LocalPosixVolume::local_folder("Test root", "/")) as Arc<dyn Volume>,
         );
 
         MoveLoop {

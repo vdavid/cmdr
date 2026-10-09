@@ -34,7 +34,7 @@ pub(super) fn make_state() -> Arc<WriteOperationState> {
 /// the caller keeps it alive for the test's duration.
 pub(super) fn local_volume() -> (Arc<dyn Volume>, TempDir) {
     let dir = TempDir::new().unwrap();
-    let vol: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("V", dir.path().to_path_buf()));
+    let vol: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("V", dir.path().to_path_buf()));
     (vol, dir)
 }
 

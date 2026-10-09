@@ -117,7 +117,7 @@ impl Drop for RegisteredLocal {
 pub(super) fn registered_local(what: &str) -> RegisteredLocal {
     let dir = TestDir::new(what);
     let volume_id = format!("adb-transfer-local-{}", uuid::Uuid::new_v4());
-    get_volume_manager().register(&volume_id, Arc::new(LocalPosixVolume::new("Local", &*dir)));
+    get_volume_manager().register(&volume_id, Arc::new(LocalPosixVolume::local_folder("Local", &*dir)));
     RegisteredLocal { dir, volume_id }
 }
 

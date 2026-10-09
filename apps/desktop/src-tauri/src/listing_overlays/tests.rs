@@ -46,7 +46,7 @@ fn real_row(name: &str) -> FileEntry {
 }
 
 fn a_volume() -> Arc<dyn Volume> {
-    Arc::new(LocalPosixVolume::new("Test", Path::new("/"))) as Arc<dyn Volume>
+    Arc::new(LocalPosixVolume::local_folder("Test", Path::new("/"))) as Arc<dyn Volume>
 }
 
 /// `decorate` folds a contributor's rows in and reports how many it added.

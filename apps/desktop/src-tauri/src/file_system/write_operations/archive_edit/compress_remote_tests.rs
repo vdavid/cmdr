@@ -34,7 +34,7 @@ fn local_source_with(files: &[(&str, &[u8])]) -> (tempfile::TempDir, Arc<dyn Vol
     for (name, bytes) in files {
         std::fs::write(tmp.path().join(name), bytes).expect("write source file");
     }
-    let vol: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("src", tmp.path().to_path_buf()));
+    let vol: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("src", tmp.path().to_path_buf()));
     (tmp, vol)
 }
 

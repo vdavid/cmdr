@@ -390,7 +390,7 @@ async fn an_archived_object_refuses_reads_by_name(target: &S3Target) {
         }
 
         let local_dir = TestDir::new("s3_cold_copy");
-        let local: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("Local", &*local_dir));
+        let local: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("Local", &*local_dir));
         let running = start_copy(
             "cold-copy",
             Arc::clone(&volume) as Arc<dyn Volume>,

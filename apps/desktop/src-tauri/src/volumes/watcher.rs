@@ -590,7 +590,7 @@ mod tests {
         let volume_id = super::super::volume_id_for_mount(volume_path);
 
         // Pre-register so the unmount handler has something to remove.
-        let volume = Arc::new(LocalPosixVolume::new("cmdr-test", volume_path));
+        let volume = Arc::new(LocalPosixVolume::local_folder("cmdr-test", volume_path));
         get_volume_manager().register_if_absent(&volume_id, volume);
         assert!(
             get_volume_manager().get(&volume_id).is_some(),
@@ -621,10 +621,10 @@ mod tests {
         let manager = get_volume_manager();
         manager.unregister(volume_id);
 
-        manager.register(volume_id, Arc::new(LocalPosixVolume::new("share", first)));
+        manager.register(volume_id, Arc::new(LocalPosixVolume::local_folder("share", first)));
         // The second mount event: the incumbent keeps the ID, the new root is
         // recorded as a fallback.
-        manager.register_if_absent(volume_id, Arc::new(LocalPosixVolume::new("share", second)));
+        manager.register_if_absent(volume_id, Arc::new(LocalPosixVolume::local_folder("share", second)));
 
         handle_volume_unmounted(first);
 
