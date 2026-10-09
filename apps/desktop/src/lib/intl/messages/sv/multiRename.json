@@ -176,6 +176,10 @@
   "@multiRename.error.couldntStart": {
     "sourceHash": "4b123be"
   },
+  "multiRename.error.timedOut": "Det tog för lång tid, så Cmdr slutade vänta. Försök igen eller markera färre filer.",
+  "@multiRename.error.timedOut": {
+    "sourceHash": "a336ee5"
+  },
   "multiRename.counts": "{ready, plural, one {# byter namn} other {# byter namn}} · {unchanged, plural, one {# oförändrad} other {# oförändrade}} · {problems, plural, one {# problem} other {# problem}}",
   "@multiRename.counts": {
     "sourceHash": "7464938"
@@ -199,5 +203,25 @@
   "multiRename.error.readOnly": "Det går inte att byta namn i den här mappen: den ligger i ett arkiv eller på en annan skrivskyddad plats",
   "@multiRename.error.readOnly": {
     "sourceHash": "f576c74"
+  },
+  "multiRename.status.missing": "Finns inte längre i den här mappen",
+  "@multiRename.status.missing": {
+    "sourceHash": "80d16af"
+  },
+  "multiRename.selectionChanged": "Mappen ändrades medan ”Massbyt namn” öppnades. Kontrollera markeringen och försök sedan igen.",
+  "@multiRename.selectionChanged": {
+    "sourceHash": "357470f"
+  },
+  "multiRename.swapsSkipped": "{count, plural, one {Hoppade över # namnbyte} other {Hoppade över # namnbyten}} där filer byter namn med varandra. Byt namn på de filerna en i taget.",
+  "@multiRename.swapsSkipped": {
+    "sourceHash": "09cb80e"
+  },
+  "multiRename.archiveTitle": "”Massbyt namn” fungerar inte i arkiv",
+  "@multiRename.archiveTitle": {
+    "sourceHash": "709e0ec"
+  },
+  "multiRename.archiveMessage": "Byt namn på filerna i det här zip-arkivet en i taget.",
+  "@multiRename.archiveMessage": {
+    "sourceHash": "2486bf3"
   }
 }

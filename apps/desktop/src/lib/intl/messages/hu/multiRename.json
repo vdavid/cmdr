@@ -175,6 +175,10 @@
   "@multiRename.error.couldntStart": {
     "sourceHash": "4b123be"
   },
+  "multiRename.error.timedOut": "Ez túl sokáig tartott, ezért a Cmdr abbahagyta a várakozást. Próbáld újra, vagy jelölj ki kevesebb fájlt.",
+  "@multiRename.error.timedOut": {
+    "sourceHash": "a336ee5"
+  },
   "multiRename.counts": "{ready, plural, one {# átnevezendő} other {# átnevezendő}} · {unchanged, plural, one {# változatlan} other {# változatlan}} · {problems, plural, one {# probléma} other {# probléma}}",
   "@multiRename.counts": {
     "sourceHash": "7464938"
@@ -198,5 +202,25 @@
   "multiRename.error.readOnly": "Ebben a mappában nem lehet átnevezni: archívumban vagy más csak olvasható helyen van",
   "@multiRename.error.readOnly": {
     "sourceHash": "f576c74"
+  },
+  "multiRename.status.missing": "Már nincs ebben a mappában",
+  "@multiRename.status.missing": {
+    "sourceHash": "80d16af"
+  },
+  "multiRename.selectionChanged": "A mappa megváltozott a Csoportos átnevezés megnyitása közben. Ellenőrizd a kijelölést, aztán próbáld újra.",
+  "@multiRename.selectionChanged": {
+    "sourceHash": "357470f"
+  },
+  "multiRename.swapsSkipped": "{count, plural, one {# átnevezés kihagyva, mert nevet cserélne egy másikkal. Ezt a fájlt egymagában nevezd át.} other {# átnevezés kihagyva, mert nevet cserélnének egymással. Ezeket a fájlokat egyenként nevezd át.}}",
+  "@multiRename.swapsSkipped": {
+    "sourceHash": "09cb80e"
+  },
+  "multiRename.archiveTitle": "A Csoportos átnevezés nem működik archívumokban",
+  "@multiRename.archiveTitle": {
+    "sourceHash": "709e0ec"
+  },
+  "multiRename.archiveMessage": "Ebben a zip-archívumban egyenként nevezd át a fájlokat.",
+  "@multiRename.archiveMessage": {
+    "sourceHash": "2486bf3"
   }
 }

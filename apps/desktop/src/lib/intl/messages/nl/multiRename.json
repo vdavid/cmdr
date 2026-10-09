@@ -176,6 +176,10 @@
   "@multiRename.error.couldntStart": {
     "sourceHash": "4b123be"
   },
+  "multiRename.error.timedOut": "Dat duurde te lang, dus Cmdr is gestopt met wachten. Probeer het opnieuw of selecteer minder bestanden.",
+  "@multiRename.error.timedOut": {
+    "sourceHash": "a336ee5"
+  },
   "multiRename.counts": "{ready, plural, one {# naam te wijzigen} other {# namen te wijzigen}} · {unchanged, plural, one {# naam ongewijzigd} other {# namen ongewijzigd}} · {problems, plural, one {# probleem} other {# problemen}}",
   "@multiRename.counts": {
     "sourceHash": "7464938"
@@ -199,5 +203,25 @@
   "multiRename.error.readOnly": "In deze map kunnen geen namen worden gewijzigd: hij staat in een archief of op een andere alleen-lezenplek",
   "@multiRename.error.readOnly": {
     "sourceHash": "f576c74"
+  },
+  "multiRename.status.missing": "Niet meer in deze map",
+  "@multiRename.status.missing": {
+    "sourceHash": "80d16af"
+  },
+  "multiRename.selectionChanged": "De map is gewijzigd terwijl ‘Wijzig meerdere namen’ werd geopend. Controleer je selectie en probeer het dan opnieuw.",
+  "@multiRename.selectionChanged": {
+    "sourceHash": "357470f"
+  },
+  "multiRename.swapsSkipped": "{count, plural, one {Overgeslagen: # naamwijziging waarbij bestanden van naam wisselen} other {Overgeslagen: # naamwijzigingen waarbij bestanden van naam wisselen}}. Wijzig de namen van die bestanden één voor één.",
+  "@multiRename.swapsSkipped": {
+    "sourceHash": "09cb80e"
+  },
+  "multiRename.archiveTitle": "‘Wijzig meerdere namen’ werkt niet in archieven",
+  "@multiRename.archiveTitle": {
+    "sourceHash": "709e0ec"
+  },
+  "multiRename.archiveMessage": "Wijzig de namen van de bestanden in dit zip-archief één voor één.",
+  "@multiRename.archiveMessage": {
+    "sourceHash": "2486bf3"
   }
 }

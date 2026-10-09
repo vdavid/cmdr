@@ -2630,7 +2630,7 @@
   },
   "stop": {
     "chosen": "Detener",
-    "accept": ["deten", "detien", "detuv", "dejar de", "deja de", "dejará de", "dejó de", "dejes de"],
+    "accept": ["deten", "detien", "detuv", "dejar de", "deja de", "dejará de", "dejó de", "dejes de", "dejado de"],
     "forms": "a finished result the user caused → detener (La reversión se detuvo…, Detuviste esta búsqueda); a stalled progress line never says se ha detenido (reads as paused)",
     "avoid": [
       {

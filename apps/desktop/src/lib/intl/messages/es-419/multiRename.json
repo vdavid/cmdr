@@ -6,5 +6,17 @@
   "multiRename.error.previewOutOfDate": "La carpeta cambió desde la vista previa. Comprueba la nueva vista previa y vuelve a renombrar.",
   "@multiRename.error.previewOutOfDate": {
     "sourceHash": "ef34c2b"
+  },
+  "multiRename.selectionChanged": "La carpeta cambió mientras se abría “Renombrado múltiple”. Comprueba la selección e inténtalo de nuevo.",
+  "@multiRename.selectionChanged": {
+    "sourceHash": "b151ef2"
+  },
+  "multiRename.swapsSkipped": "Se {count, plural, one {omitió # cambio de nombre que intercambia nombres} many {omitieron # cambios de nombre que intercambian nombres} other {omitieron # cambios de nombre que intercambian nombres}}. Renombra esos archivos de uno en uno.",
+  "@multiRename.swapsSkipped": {
+    "sourceHash": "63e7bd6"
+  },
+  "multiRename.error.timedOut": "Tardó demasiado, así que Cmdr dejó de esperar. Inténtalo de nuevo o selecciona menos archivos.",
+  "@multiRename.error.timedOut": {
+    "sourceHash": "c97a77e"
   }
 }

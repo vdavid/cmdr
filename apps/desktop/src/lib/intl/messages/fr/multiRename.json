@@ -176,6 +176,10 @@
   "@multiRename.error.couldntStart": {
     "sourceHash": "4b123be"
   },
+  "multiRename.error.timedOut": "Ça a pris trop de temps, Cmdr a donc arrêté d’attendre. Réessayez ou sélectionnez moins de fichiers.",
+  "@multiRename.error.timedOut": {
+    "sourceHash": "a336ee5"
+  },
   "multiRename.counts": "{ready, plural, one {# à renommer} many {# à renommer} other {# à renommer}} · {unchanged, plural, one {# sans changement} many {# sans changement} other {# sans changement}} · {problems, plural, one {# problème} many {# problèmes} other {# problèmes}}",
   "@multiRename.counts": {
     "sourceHash": "7464938"
@@ -199,5 +203,25 @@
   "multiRename.error.readOnly": "Renommage impossible dans ce dossier : il se trouve dans une archive ou dans un autre emplacement en lecture seule",
   "@multiRename.error.readOnly": {
     "sourceHash": "f576c74"
+  },
+  "multiRename.status.missing": "N’est plus dans ce dossier",
+  "@multiRename.status.missing": {
+    "sourceHash": "80d16af"
+  },
+  "multiRename.selectionChanged": "Le dossier a changé pendant l’ouverture de « Renommer par lot ». Vérifiez votre sélection, puis réessayez.",
+  "@multiRename.selectionChanged": {
+    "sourceHash": "357470f"
+  },
+  "multiRename.swapsSkipped": "{count, plural, one {# renommage ignoré, car il permute des noms} many {# renommages ignorés, car ils permutent des noms} other {# renommages ignorés, car ils permutent des noms}}. Renommez ces fichiers un par un.",
+  "@multiRename.swapsSkipped": {
+    "sourceHash": "09cb80e"
+  },
+  "multiRename.archiveTitle": "« Renommer par lot » ne fonctionne pas dans les archives",
+  "@multiRename.archiveTitle": {
+    "sourceHash": "709e0ec"
+  },
+  "multiRename.archiveMessage": "Pour renommer des fichiers dans cette archive zip, renommez-les un par un.",
+  "@multiRename.archiveMessage": {
+    "sourceHash": "2486bf3"
   }
 }

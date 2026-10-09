@@ -204,3 +204,7 @@ rule into `translation-principles.md` or `translator-instructions.md`), then del
 - No screenshot of the Multi-Rename sheet, so label lengths (counter row, title-case option) are unverified. (all)
 - Tooling: the brief tells translators to restamp and edit `terms.json`/`source-queue.md`, which races when 11 run in
   parallel. Consider a `--parallel` brief mode that routes termbase writes to a proposals file. (nl)
+- `multiRename.swapsSkipped` vs `askCmdr.renameUndo.swapsSkipped`: the description says match the sibling, but the tails
+  differ ("Rename those files one at a time." vs "Rename them one at a time."). Align the English. (all)
+- `multiRename.status.missing`: the description says "a file", but a picked row may be a folder; say "item" so locales
+  don't pick a file-only subject (all kept it subject-free). (ru, de)

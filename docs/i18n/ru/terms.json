@@ -4835,7 +4835,7 @@
     ],
     "confidence": "high",
     "sources": "Finder LocalizableMerged: Stop → Остановить; MS: Stop (UI item that halts a process) → остановить; Nautilus, Dolphin: Stop → Остановить; DC: Stopped → Остановлено; AppKit FunctionKeyNames: Stop → Стоп (the key)",
-    "proseAccept": ["перестан", "прекращ", "отмен"]
+    "proseAccept": ["перестан", "перестал", "прекращ", "отмен"]
   },
   "storage": {
     "chosen": "хранилище",

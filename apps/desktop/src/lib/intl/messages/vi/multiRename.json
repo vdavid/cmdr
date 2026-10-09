@@ -175,6 +175,10 @@
   "@multiRename.error.couldntStart": {
     "sourceHash": "4b123be"
   },
+  "multiRename.error.timedOut": "Việc này mất quá nhiều thời gian nên Cmdr đã dừng chờ. Hãy thử lại hoặc chọn ít tệp hơn.",
+  "@multiRename.error.timedOut": {
+    "sourceHash": "a336ee5"
+  },
   "multiRename.counts": "{ready, plural, other {# sẽ đổi tên}} · {unchanged, plural, other {# giữ nguyên}} · {problems, plural, other {# có vấn đề}}",
   "@multiRename.counts": {
     "sourceHash": "7464938"
@@ -198,5 +202,25 @@
   "multiRename.error.readOnly": "Không đổi tên được trong thư mục này: thư mục nằm bên trong một tệp nén hoặc một nơi chỉ đọc khác",
   "@multiRename.error.readOnly": {
     "sourceHash": "f576c74"
+  },
+  "multiRename.status.missing": "Không còn trong thư mục này",
+  "@multiRename.status.missing": {
+    "sourceHash": "80d16af"
+  },
+  "multiRename.selectionChanged": "Thư mục đã thay đổi trong lúc đang mở “Đổi tên hàng loạt”. Hãy xem lại các mục đã chọn rồi thử lại.",
+  "@multiRename.selectionChanged": {
+    "sourceHash": "357470f"
+  },
+  "multiRename.swapsSkipped": "{count, plural, other {Đã bỏ qua # lần đổi tên}} hoán đổi tên cho nhau. Hãy đổi tên từng tệp một.",
+  "@multiRename.swapsSkipped": {
+    "sourceHash": "09cb80e"
+  },
+  "multiRename.archiveTitle": "“Đổi tên hàng loạt” không dùng được bên trong tệp nén",
+  "@multiRename.archiveTitle": {
+    "sourceHash": "709e0ec"
+  },
+  "multiRename.archiveMessage": "Để đổi tên các tệp trong tệp nén zip này, hãy đổi tên từng tệp một.",
+  "@multiRename.archiveMessage": {
+    "sourceHash": "2486bf3"
   }
 }

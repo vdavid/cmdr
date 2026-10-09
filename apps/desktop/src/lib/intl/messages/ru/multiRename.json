@@ -175,6 +175,10 @@
   "@multiRename.error.couldntStart": {
     "sourceHash": "4b123be"
   },
+  "multiRename.error.timedOut": "Это заняло слишком много времени, поэтому Cmdr перестал ждать. Попробуйте еще раз или выделите меньше файлов.",
+  "@multiRename.error.timedOut": {
+    "sourceHash": "a336ee5"
+  },
   "multiRename.counts": "{ready, plural, one {# файл будет переименован} few {# файла будут переименованы} many {# файлов будут переименованы} other {# файла будут переименованы}} · {unchanged, plural, one {# файл без изменений} few {# файла без изменений} many {# файлов без изменений} other {# файла без изменений}} · {problems, plural, one {# проблема} few {# проблемы} many {# проблем} other {# проблемы}}",
   "@multiRename.counts": {
     "sourceHash": "7464938"
@@ -198,5 +202,25 @@
   "multiRename.error.readOnly": "В этой папке нельзя переименовывать: она находится в архиве или в другом месте только для чтения",
   "@multiRename.error.readOnly": {
     "sourceHash": "f576c74"
+  },
+  "multiRename.status.missing": "Больше нет в этой папке",
+  "@multiRename.status.missing": {
+    "sourceHash": "80d16af"
+  },
+  "multiRename.selectionChanged": "Папка изменилась, пока открывалось «Групповое переименование». Проверьте выделение и попробуйте еще раз.",
+  "@multiRename.selectionChanged": {
+    "sourceHash": "357470f"
+  },
+  "multiRename.swapsSkipped": "{count, plural, one {Пропущено # переименование, которое меняет имена местами} few {Пропущены # переименования, которые меняют имена местами} many {Пропущено # переименований, которые меняют имена местами} other {Пропущено # переименования, которые меняют имена местами}}. Переименуйте эти файлы по одному.",
+  "@multiRename.swapsSkipped": {
+    "sourceHash": "09cb80e"
+  },
+  "multiRename.archiveTitle": "«Групповое переименование» не работает внутри архивов",
+  "@multiRename.archiveTitle": {
+    "sourceHash": "709e0ec"
+  },
+  "multiRename.archiveMessage": "Чтобы переименовать файлы в этом zip-архиве, переименуйте их по одному.",
+  "@multiRename.archiveMessage": {
+    "sourceHash": "2486bf3"
   }
 }

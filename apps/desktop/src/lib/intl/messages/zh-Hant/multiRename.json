@@ -175,6 +175,10 @@
   "@multiRename.error.couldntStart": {
     "sourceHash": "4b123be"
   },
+  "multiRename.error.timedOut": "這次花太久了，所以 Cmdr 停止等待。請再試一次，或選取少一點的檔案。",
+  "@multiRename.error.timedOut": {
+    "sourceHash": "a336ee5"
+  },
   "multiRename.counts": "{ready, plural, other {# 個要重新命名}} · {unchanged, plural, other {# 個不變}} · {problems, plural, other {# 個有問題}}",
   "@multiRename.counts": {
     "sourceHash": "7464938"
@@ -198,5 +202,25 @@
   "multiRename.error.readOnly": "無法在這個資料夾裡重新命名，因為它在封存檔或其他唯讀的位置裡",
   "@multiRename.error.readOnly": {
     "sourceHash": "f576c74"
+  },
+  "multiRename.status.missing": "已不在這個資料夾中",
+  "@multiRename.status.missing": {
+    "sourceHash": "80d16af"
+  },
+  "multiRename.selectionChanged": "開啟「多檔重新命名」時，資料夾有了更動。請確認選取的檔案，再試一次。",
+  "@multiRename.selectionChanged": {
+    "sourceHash": "357470f"
+  },
+  "multiRename.swapsSkipped": "已略過 {count, plural, other {# 項會互換名稱的重新命名}}。請將這些檔案一次重新命名一個。",
+  "@multiRename.swapsSkipped": {
+    "sourceHash": "09cb80e"
+  },
+  "multiRename.archiveTitle": "「多檔重新命名」無法在封存檔裡使用",
+  "@multiRename.archiveTitle": {
+    "sourceHash": "709e0ec"
+  },
+  "multiRename.archiveMessage": "如要重新命名這個 zip 壓縮檔裡的檔案，請一次重新命名一個。",
+  "@multiRename.archiveMessage": {
+    "sourceHash": "2486bf3"
   }
 }

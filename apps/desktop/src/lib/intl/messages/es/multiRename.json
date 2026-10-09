@@ -175,6 +175,10 @@
   "@multiRename.error.couldntStart": {
     "sourceHash": "4b123be"
   },
+  "multiRename.error.timedOut": "Ha tardado demasiado, así que Cmdr ha dejado de esperar. Inténtalo de nuevo o selecciona menos archivos.",
+  "@multiRename.error.timedOut": {
+    "sourceHash": "a336ee5"
+  },
   "multiRename.counts": "{ready, plural, one {# para renombrar} many {# para renombrar} other {# para renombrar}} · {unchanged, plural, one {# sin cambios} many {# sin cambios} other {# sin cambios}} · {problems, plural, one {# problema} many {# problemas} other {# problemas}}",
   "@multiRename.counts": {
     "sourceHash": "7464938"
@@ -198,5 +202,25 @@
   "multiRename.error.readOnly": "No se puede renombrar en esta carpeta: está dentro de un archivo comprimido o de otro lugar de solo lectura",
   "@multiRename.error.readOnly": {
     "sourceHash": "f576c74"
+  },
+  "multiRename.status.missing": "Ya no está en esta carpeta",
+  "@multiRename.status.missing": {
+    "sourceHash": "80d16af"
+  },
+  "multiRename.selectionChanged": "La carpeta ha cambiado mientras se abría “Renombrado múltiple”. Comprueba la selección e inténtalo de nuevo.",
+  "@multiRename.selectionChanged": {
+    "sourceHash": "357470f"
+  },
+  "multiRename.swapsSkipped": "Se {count, plural, one {ha omitido # cambio de nombre que intercambia nombres} many {han omitido # cambios de nombre que intercambian nombres} other {han omitido # cambios de nombre que intercambian nombres}}. Renombra esos archivos de uno en uno.",
+  "@multiRename.swapsSkipped": {
+    "sourceHash": "09cb80e"
+  },
+  "multiRename.archiveTitle": "“Renombrado múltiple” no funciona dentro de archivos comprimidos",
+  "@multiRename.archiveTitle": {
+    "sourceHash": "709e0ec"
+  },
+  "multiRename.archiveMessage": "Para renombrar archivos en este zip, renómbralos de uno en uno.",
+  "@multiRename.archiveMessage": {
+    "sourceHash": "2486bf3"
   }
 }

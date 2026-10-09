@@ -176,6 +176,10 @@
   "@multiRename.error.couldntStart": {
     "sourceHash": "4b123be"
   },
+  "multiRename.error.timedOut": "Isso demorou demais, então o Cmdr parou de esperar. Tente de novo ou selecione menos arquivos.",
+  "@multiRename.error.timedOut": {
+    "sourceHash": "a336ee5"
+  },
   "multiRename.counts": "{ready, plural, one {# para renomear} many {# para renomear} other {# para renomear}} · {unchanged, plural, one {# sem alteração} many {# sem alteração} other {# sem alteração}} · {problems, plural, one {# problema} many {# problemas} other {# problemas}}",
   "@multiRename.counts": {
     "sourceHash": "7464938"
@@ -199,5 +203,25 @@
   "multiRename.error.readOnly": "Não é possível renomear arquivos nesta pasta: ela fica dentro de um arquivo compactado ou de outro local somente leitura",
   "@multiRename.error.readOnly": {
     "sourceHash": "f576c74"
+  },
+  "multiRename.status.missing": "Não está mais nesta pasta",
+  "@multiRename.status.missing": {
+    "sourceHash": "80d16af"
+  },
+  "multiRename.selectionChanged": "A pasta mudou enquanto “Renomear em lote” abria. Confira a seleção e tente de novo.",
+  "@multiRename.selectionChanged": {
+    "sourceHash": "357470f"
+  },
+  "multiRename.swapsSkipped": "O Cmdr ignorou {count, plural, one {# renomeação que troca} many {# renomeações que trocam} other {# renomeações que trocam}} nomes. Renomeie esses arquivos um de cada vez.",
+  "@multiRename.swapsSkipped": {
+    "sourceHash": "09cb80e"
+  },
+  "multiRename.archiveTitle": "“Renomear em lote” não funciona dentro de arquivos compactados",
+  "@multiRename.archiveTitle": {
+    "sourceHash": "709e0ec"
+  },
+  "multiRename.archiveMessage": "Para renomear arquivos neste arquivo zip, renomeie-os um de cada vez.",
+  "@multiRename.archiveMessage": {
+    "sourceHash": "2486bf3"
   }
 }

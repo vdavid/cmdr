@@ -175,6 +175,10 @@
   "@multiRename.error.couldntStart": {
     "sourceHash": "4b123be"
   },
+  "multiRename.error.timedOut": "这次耗时太久，Cmdr 已停止等待。请再试一次，或者少选择一些文件。",
+  "@multiRename.error.timedOut": {
+    "sourceHash": "a336ee5"
+  },
   "multiRename.counts": "{ready, plural, other {# 个待重命名}} · {unchanged, plural, other {# 个不变}} · {problems, plural, other {# 个有问题}}",
   "@multiRename.counts": {
     "sourceHash": "7464938"
@@ -198,5 +202,25 @@
   "multiRename.error.readOnly": "无法在这个文件夹里重命名：它位于压缩文件或其他只读位置中",
   "@multiRename.error.readOnly": {
     "sourceHash": "f576c74"
+  },
+  "multiRename.status.missing": "已不在这个文件夹中",
+  "@multiRename.status.missing": {
+    "sourceHash": "80d16af"
+  },
+  "multiRename.selectionChanged": "打开“批量重命名”时文件夹有了改动。请确认选中的文件，然后再试一次。",
+  "@multiRename.selectionChanged": {
+    "sourceHash": "357470f"
+  },
+  "multiRename.swapsSkipped": "已跳过 {count, plural, other {# 项互换名称的重命名}}。请一个一个地重命名这些文件。",
+  "@multiRename.swapsSkipped": {
+    "sourceHash": "09cb80e"
+  },
+  "multiRename.archiveTitle": "“批量重命名”无法在压缩文件里使用",
+  "@multiRename.archiveTitle": {
+    "sourceHash": "709e0ec"
+  },
+  "multiRename.archiveMessage": "要重命名这个 zip 压缩文件里的文件，请一个一个地重命名。",
+  "@multiRename.archiveMessage": {
+    "sourceHash": "2486bf3"
   }
 }
