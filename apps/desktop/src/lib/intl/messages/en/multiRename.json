@@ -173,7 +173,11 @@
   },
   "multiRename.error.couldntStart": "Couldn’t start renaming. Try again in a moment.",
   "@multiRename.error.couldntStart": {
-    "description": "Shown when the rename couldn't start or the preview took too long."
+    "description": "Shown when the rename couldn't start (the rename queue refused it, or something went wrong inside Cmdr). Nothing was renamed."
+  },
+  "multiRename.error.timedOut": "That took too long, so Cmdr stopped waiting. Try again, or select fewer files.",
+  "@multiRename.error.timedOut": {
+    "description": "Shown under the Multi-rename preview when working out the new names, or getting the rename ready after Start, took longer than Cmdr waits. Nothing was renamed. 'Cmdr' is the app name; keep it untranslated."
   },
   "multiRename.counts": "{ready, plural, one {# to rename} other {# to rename}} · {unchanged, plural, one {# unchanged} other {# unchanged}} · {problems, plural, one {# problem} other {# problems}}",
   "@multiRename.counts": {

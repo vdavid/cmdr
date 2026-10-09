@@ -79,6 +79,18 @@ describe('MultiRenameDialog', () => {
     expect(root.querySelector('[role="alert"]')?.textContent.trim()).toBeTruthy()
   })
 
+  it('says a preview that ran out of time took too long, not that renaming couldn’t start', async () => {
+    const alertFor = async (error: unknown): Promise<string | undefined> => {
+      ipc.previewMultiRename.mockResolvedValue({ ok: false, error })
+      const root = await mountSheet()
+      return root.querySelector('[role="alert"]')?.textContent.trim()
+    }
+    const timedOut = await alertFor({ type: 'timedOut' })
+    const internal = await alertFor({ type: 'internal', detail: 'x' })
+    expect(timedOut).toBeTruthy()
+    expect(timedOut).not.toBe(internal)
+  })
+
   it.each([
     [{ type: 'nothingToRename' }],
     [{ type: 'previewOutOfDate' }],

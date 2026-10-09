@@ -226,8 +226,9 @@
                 return tString('multiRename.error.previewOutOfDate')
             case 'readOnly':
                 return tString('multiRename.error.readOnly')
-            case 'couldntStart':
             case 'timedOut':
+                return tString('multiRename.error.timedOut')
+            case 'couldntStart':
             case 'internal':
                 return tString('multiRename.error.couldntStart')
         }
