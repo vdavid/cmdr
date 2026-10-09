@@ -27,6 +27,10 @@ The ⌃M sheet over `src-tauri/src/multi_rename/` (the engine and its rules: tha
 - **F2 and ⌘S are registry commands** (`multiRename.openPresets` / `multiRename.savePreset`, fixed keys in the
   `Main window/Multi-rename` scope), read through `presetKeyOf` → `eventMatchesCommand`, and claimed. ❌ No raw key
   tests. An open Presets menu owns every key, so its `onKey` answers F2 (close) and ⌘S (save) itself.
+- **F2 is also File > Rename's menu accelerator.** The sheet claims that menu command while mounted
+  (`claimMenuCommand('file.rename', …)`), so both roads end in `PresetsControl.pressOpenKey`, which toggles once per
+  press (`createKeyRoadEcho` drops the other road's echo). ❌ Don't call `openMenu` from a key path: the echo would
+  close the menu it opened. ⌘S isn't a menu accelerator.
 - **A spec error keeps the last good preview** on screen under the message; any other error clears it.
 - Built-in preset names are message keys (translated); saved ones are the user's text. `edited` compares against the
   preset as it is in the list now, so a rename, update, or delete is followed with no syncing.

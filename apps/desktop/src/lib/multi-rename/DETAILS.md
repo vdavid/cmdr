@@ -41,6 +41,12 @@
   - The menu lives in the sheet's overlay (`Menu` portals through `providePortalTarget`), so it sits above the scrim and
     inside the focus trap; its capture listener takes every key while open, so the sheet's Enter can't start a rename
     from it.
-  - Unverified in the running app: F2 is also the native File > Rename accelerator. The dialog gate refuses that menu
-    command while the sheet is open, and the keydown still reaches the webview, as the Shift+Space double fire shows
-    (`routes/(main)/command-handlers/DETAILS.md`).
+  - **F2 vs File > Rename's accelerator.** wry hands a key equivalent to WKWebView first for a top-level webview
+    (`WryWebView::performKeyEquivalent` defers to super), and WebKit lets the menu fire only when the page didn't handle
+    the key, which the sheet's `claimKey` does; an unhandled keyDown bubbles to `WryWebViewParent`, which runs the main
+    menu's key equivalent (wry 0.57.0 source, 2026-10-09). But this repo has recorded the menu firing first (⌘A) and
+    both firing (⇧Space), and a disabled item's accelerator still fires (`routes/(main)/DETAILS.md` § Native-menu and
+    input-focus interactions). Not verified in the running app. So both roads land in one place: the sheet claims the
+    `file.rename` menu command (`$lib/commands/menu-claims.ts`, run by the dispatch core for the menu road ahead of the
+    dialog gate), its keydown and its Presets menu's `onKey` call the same `pressOpenKey`, and `createKeyRoadEcho` drops
+    the other road's fire within 300 ms, so one F2 toggles the menu once whichever arrives first.

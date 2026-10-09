@@ -93,7 +93,7 @@ export interface MultiRenameState {
   /** Saves the fields under `name`, replacing a preset with that name; it becomes the loaded one. */
   savePreset: (name: string) => Promise<void>
   /** Renames a preset in place; a preset with that name is replaced. */
-  renamePreset: (id: string, name: string) => Promise<void>
+  renamePreset: (args: { id: string; name: string }) => Promise<void>
   /** Gives a preset the current fields; it becomes the loaded one. */
   updatePreset: (id: string) => Promise<void>
   deletePreset: (id: string) => Promise<void>
@@ -293,7 +293,7 @@ export function createMultiRenameState(sessionId: string): MultiRenameState {
       presets = await getMultiRenamePresets()
       loaded = { kind: 'saved', id }
     },
-    async renamePreset(id, name) {
+    async renamePreset({ id, name }) {
       const trimmed = name.trim()
       if (trimmed === '') return
       await renameMultiRenamePreset(id, trimmed)

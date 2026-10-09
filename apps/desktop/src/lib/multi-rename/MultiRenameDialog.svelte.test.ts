@@ -9,6 +9,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount, tick } from 'svelte'
 import MultiRenameDialog from './MultiRenameDialog.svelte'
+import { runMenuClaim } from '$lib/commands/menu-claims'
 
 const ipc = vi.hoisted(() => ({
   previewMultiRename: vi.fn(),
@@ -257,6 +258,18 @@ describe('MultiRenameDialog', () => {
       mask.dispatchEvent(new Event('input', { bubbles: true }))
       await settle()
       expect(presetsButton(root).textContent).toContain('Mine (edited)')
+    })
+
+    it('File > Rename’s F2 accelerator opens the Presets menu, and the keydown echo of that F2 leaves it open', async () => {
+      const root = await mountSheet()
+      expect(runMenuClaim('file.rename')).toBe(true)
+      await settle()
+      expect(document.querySelector('[data-menu]')).toBeTruthy()
+
+      // The same keypress reaching the webview too: one F2, so the menu stays open.
+      key(document.activeElement ?? root, 'F2', { code: 'F2' })
+      await settle()
+      expect(document.querySelector('[data-menu]')).toBeTruthy()
     })
 
     it('⌘S asks for a name, asks before replacing a taken one, and Enter never starts a rename', async () => {

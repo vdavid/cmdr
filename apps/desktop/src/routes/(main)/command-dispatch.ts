@@ -2,9 +2,9 @@
  * Command dispatch: maps command IDs from the command palette, keyboard shortcuts,
  * and menu actions to concrete app actions.
  *
- * This is the dispatch CORE: it runs the preamble (cross-source dedup → text-region
- * intercept → dialog gate → `log.info` → breadcrumb → close palette → capability
- * guard) in order, builds the
+ * This is the dispatch CORE: it runs the preamble (cross-source dedup → a dialog's
+ * menu claim → text-region intercept → dialog gate → `log.info` → breadcrumb → close
+ * palette → capability guard) in order, builds the
  * per-dispatch context once, then looks up the id in the flat
  * `commandHandlers` record and awaits the handler. The handlers themselves live
  * in `command-handlers/`, grouped by family. Ids with no handler are the
@@ -18,6 +18,7 @@ import { getAppLogger } from '$lib/logging/logger'
 import { getFocusedPanePath, getFocusedPaneVolumeId } from '$lib/file-explorer/pane/focused-pane-reads'
 import { capabilitiesForPane } from '$lib/file-explorer/pane/volume-capabilities'
 import { isTextInputFocused } from '$lib/utils/text-input-focus'
+import { runMenuClaim } from '$lib/commands/menu-claims'
 import type { CommandId, CommandArgs, CommandDispatchArgs } from '$lib/commands'
 import type { ExplorerAPI } from './explorer-api'
 import { commandHandlers } from './command-handlers'
@@ -159,6 +160,14 @@ export async function handleCommandExecute<K extends CommandId>(
   // dispatch-dedup.ts for the source-pair rationale.
   if (shouldDropCrossSourceDuplicate(id, ctx.source)) {
     log.debug('Dropped cross-source duplicate dispatch of {id}', { id })
+    return
+  }
+
+  // An open dialog that answers this command's accelerator itself (the Multi-rename sheet's
+  // F2 is File > Rename's) takes the menu road's fire, ahead of the dialog gate that would
+  // refuse it. `$lib/commands/menu-claims.ts`.
+  if (ctx.source === 'menu' && runMenuClaim(id)) {
+    log.debug('Handed {id} from the menu to the open dialog that claims it', { id })
     return
   }
 

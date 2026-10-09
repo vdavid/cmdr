@@ -219,6 +219,10 @@ route through `handleCommandExecute(commandId, ctx)` in `routes/(main)/command-d
 `on_menu_event` handler maps menu item ids to command registry ids and emits a single `"execute-command"` Tauri event;
 the frontend listens and dispatches it down the menu's road.
 
+An open dialog can claim a menu command whose accelerator is one of its own keys (`menu-claims.ts`: the Multi-rename
+sheet's F2 is File > Rename's). The core runs the claim for that command's menu road, ahead of the dialog gate;
+`routes/(main)/DETAILS.md` § The dialog gate.
+
 Exception: `CheckMenuItem`s (show hidden files, view modes) keep separate handling to avoid double-toggle. Close tab
 (⌘W) has special logic to close focused non-main windows.
 

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { presetKeyOf } from './preset-keys'
+import { createKeyRoadEcho, presetKeyOf } from './preset-keys'
 
 // `formatKeyCombo` emits ⌘-form modifiers only when `isMacOS()` is true, and happy-dom reports a Linux UA.
 const navigatorSpy = vi.spyOn(globalThis, 'navigator', 'get')
@@ -30,5 +30,40 @@ describe('presetKeyOf', () => {
   it('never acts mid-composition', () => {
     expect(presetKeyOf(key({ key: 'F2', code: 'F2', isComposing: true }))).toBeNull()
     expect(presetKeyOf(key({ key: 's', code: 'KeyS', metaKey: true, isComposing: true }))).toBeNull()
+  })
+})
+
+describe('createKeyRoadEcho', () => {
+  function roads(): { at: (ms: number) => void; isEcho: ReturnType<typeof createKeyRoadEcho> } {
+    let now = 0
+    return { at: (ms) => (now = ms), isEcho: createKeyRoadEcho(() => now) }
+  }
+
+  it('takes the other road’s fire of the same keypress as its echo, either way round', () => {
+    const a = roads()
+    expect(a.isEcho('keyboard')).toBe(false)
+    a.at(20)
+    expect(a.isEcho('menu')).toBe(true)
+
+    const b = roads()
+    expect(b.isEcho('menu')).toBe(false)
+    b.at(20)
+    expect(b.isEcho('keyboard')).toBe(true)
+  })
+
+  it('lets a second press on the same road through, however fast', () => {
+    const r = roads()
+    expect(r.isEcho('keyboard')).toBe(false)
+    r.at(5)
+    expect(r.isEcho('keyboard')).toBe(false)
+  })
+
+  it('lets the other road through once the window has passed, and an echo never extends it', () => {
+    const r = roads()
+    expect(r.isEcho('keyboard')).toBe(false)
+    r.at(200)
+    expect(r.isEcho('menu')).toBe(true)
+    r.at(400)
+    expect(r.isEcho('menu')).toBe(false)
   })
 })

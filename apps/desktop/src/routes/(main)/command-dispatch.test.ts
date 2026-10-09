@@ -7,7 +7,7 @@
  * native-menu `view-mode-changed` event's path onto the bus. The routes file has
  * no coverage gate, so this is a behavioral guard, not a coverage filler.
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 // `getAppLogger('user-action')` runs at module top-level in command-dispatch,
 // and the dispatch preamble fires `record_breadcrumb` via `invoke`. Mock both so
@@ -44,6 +44,8 @@ vi.mock('$lib/settings/settings-window', () => ({
 }))
 
 import { handleCommandExecute, type CommandDispatchContext } from './command-dispatch'
+import { _resetDedupForTests } from './dispatch-dedup'
+import { claimMenuCommand } from '$lib/commands/menu-claims'
 import type { DialogsOnScreen, DispatchSource } from './command-dispatch-context'
 import { SEARCH_RESULTS_NOT_A_FOLDER_TOAST } from '$lib/search/capabilities'
 import type { ExplorerAPI } from './explorer-api'
@@ -110,6 +112,49 @@ describe('handleCommandExecute — the dialog gate', () => {
     const onScreen: DialogsOnScreen = { dialogOpen: false, paletteOpen: true }
     await handleCommandExecute('tab.new', makeCtx({ newTab }, { source: 'palette', onScreen }))
     expect(newTab).toHaveBeenCalledOnce()
+  })
+})
+
+/**
+ * A dialog that owns a key the native menu also binds (the Multi-rename sheet's F2, which
+ * is File > Rename's accelerator) claims that menu command while it's open, so the
+ * accelerator reaches the dialog wherever AppKit takes the key before the webview.
+ */
+describe("handleCommandExecute — a dialog's claim on a menu command", () => {
+  let release: () => void = () => {}
+  beforeEach(() => {
+    vi.clearAllMocks()
+    _resetDedupForTests()
+    getVolumeId.mockReturnValue('local')
+  })
+  afterEach(() => {
+    release()
+  })
+
+  it('hands the menu road’s command to the claim, past the dialog gate, instead of its handler', async () => {
+    const claim = vi.fn()
+    release = claimMenuCommand('file.rename', claim)
+    const startRename = vi.fn()
+    await handleCommandExecute('file.rename', makeCtx({ startRename }, { source: 'menu', onScreen: DIALOG_OPEN }))
+    expect(claim).toHaveBeenCalledOnce()
+    expect(startRename).not.toHaveBeenCalled()
+  })
+
+  it('leaves the other roads to the command itself', async () => {
+    const claim = vi.fn()
+    release = claimMenuCommand('file.rename', claim)
+    const startRename = vi.fn()
+    await handleCommandExecute('file.rename', makeCtx({ startRename }, { source: 'palette' }))
+    expect(claim).not.toHaveBeenCalled()
+    expect(startRename).toHaveBeenCalledOnce()
+  })
+
+  it('runs the command as before once the claim is released', async () => {
+    release = claimMenuCommand('file.rename', vi.fn())
+    release()
+    const startRename = vi.fn()
+    await handleCommandExecute('file.rename', makeCtx({ startRename }, { source: 'menu' }))
+    expect(startRename).toHaveBeenCalledOnce()
   })
 })
 

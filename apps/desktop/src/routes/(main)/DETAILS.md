@@ -154,10 +154,10 @@ a toast over the wizard, or hold one forever.
 
 ## Dispatch core
 
-`handleCommandExecute<K extends CommandId>(commandId, ctx, ...args)` runs the preamble (cross-source dedup, then
-text-region intercept, then the dialog gate, then `log.info`, then `record_breadcrumb`, then close palette, then
-capability guard), then looks the id up in the flat `commandHandlers` record and awaits the handler. Arg-carrying ids
-take a typed payload.
+`handleCommandExecute<K extends CommandId>(commandId, ctx, ...args)` runs the preamble (cross-source dedup, then a
+dialog's menu claim, then text-region intercept, then the dialog gate, then `log.info`, then `record_breadcrumb`, then
+close palette, then capability guard), then looks the id up in the flat `commandHandlers` record and awaits the handler.
+Arg-carrying ids take a typed payload.
 
 **The text-region intercept.** `handleTextRegionShortcut` short-circuits `edit.copy` and `selection.selectAll` when
 focus sits inside `.error-pane` or a `[data-text-region]`, so copying an error message copies its text rather than the
@@ -184,6 +184,11 @@ the answer is the same whichever road a command came in by.
   way.
 - **The keydown resolver asks the gate too**, before claiming a key. A key the core would refuse stays unclaimed, so Tab
   still moves focus inside a dialog instead of being `preventDefault`ed on its way to `pane.switch`.
+- **A dialog can claim a menu command whose accelerator is its own key** (`$lib/commands/menu-claims.ts`): the
+  Multi-rename sheet's F2 (its Presets menu) is File > Rename's accelerator. While the sheet is mounted, the MENU road's
+  `file.rename` runs the sheet's claim, ahead of the gate that would refuse it; every other road, and the menu road with
+  no claim, is unchanged. The sheet answers the keydown too and drops the second half of a double fire itself
+  (`createKeyRoadEcho`), so it works whichever of AppKit and the webview gets the key first.
 - **Why it lives in the core.** When only the keyboard resolver knew about dialogs, a native-menu accelerator (⌘W, ⌘T,
   ⌘K) reached its handler behind an open dialog: the `execute-command` listener had no gate. Refusing that listener
   wholesale isn't the fix either (§ Native-menu and input-focus interactions); the per-command rule is.

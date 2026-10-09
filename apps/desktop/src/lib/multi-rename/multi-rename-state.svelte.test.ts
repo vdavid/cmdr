@@ -304,7 +304,7 @@ describe('createMultiRenameState', () => {
       tool.dispose()
     })
 
-    it('loads a built-in preset, and Reset all fields leaves nothing loaded', async () => {
+    it('loads a built-in preset, and Reset all fields leaves nothing loaded', () => {
       const tool = createMultiRenameState('S')
       tool.loadPreset({ kind: 'builtIn', id: 'builtin:remove-diacritics' })
       expect(tool.spec.removeDiacritics).toBe(true)
@@ -342,7 +342,7 @@ describe('createMultiRenameState', () => {
     it('renames a preset in place, and its replacement drops the preset that had the name', async () => {
       const tool = createMultiRenameState('S')
       await tool.loadPresets()
-      await tool.renamePreset('p2', ' photos ')
+      await tool.renamePreset({ id: 'p2', name: ' photos ' })
       expect(ipc.renameMultiRenamePreset).toHaveBeenCalledWith('p2', 'photos')
       expect(tool.presets.map((p) => p.name)).toEqual(['photos'])
       tool.dispose()

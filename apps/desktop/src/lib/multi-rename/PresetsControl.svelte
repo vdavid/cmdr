@@ -3,7 +3,7 @@
      * The Multi-rename sheet's presets: one button (F2) that opens the Presets menu
      * (saved presets numbered 1–9, built-ins, Reset all fields, Save current as…, and a
      * Rename / Update / Delete submenu per saved preset), plus the name popover that
-     * ⌘S and Rename… open. The sheet owns the keys and calls `openMenu` / `openSave`;
+     * ⌘S and Rename… open. The sheet owns the keys and calls `pressOpenKey` / `openSave`;
      * everything else lives here.
      */
     import { onDestroy, onMount } from 'svelte'
@@ -20,7 +20,7 @@
     import { tString } from '$lib/intl/messages.svelte'
     import { getAppLogger } from '$lib/logging/logger'
     import type { MultiRenameState } from './multi-rename-state.svelte'
-    import { presetKeyOf } from './preset-keys'
+    import { createKeyRoadEcho, presetKeyOf, type KeyRoad } from './preset-keys'
     import { presetMenuSections, presetNameClash, type PresetAction, type PresetNameMode } from './preset-menu'
     import { BUILT_IN_PRESETS } from './spec'
 
@@ -43,6 +43,9 @@
     let confirmedClash = $state<string | null>(null)
 
     const openShortcut = $derived(getFirstShortcutReactive('multiRename.openPresets'))
+
+    // F2 can arrive twice for one press: the keydown, and File > Rename's accelerator.
+    const isEcho = createKeyRoadEcho()
 
     const loadedName = $derived.by(() => {
         const loaded = tool.loaded
@@ -73,10 +76,11 @@
             if (item.data) act(item.data)
         },
         onKey: (event: KeyboardEvent) => {
-            // F2 again closes the menu, and ⌘S goes straight to saving, as it does anywhere in the sheet.
+            // F2 again closes the menu (unless it's the echo of the F2 that opened it), and ⌘S
+            // goes straight to saving, as it does anywhere in the sheet.
             const key = presetKeyOf(event)
             if (key === 'openMenu') {
-                menu.close()
+                pressOpenKey('keyboard')
                 return true
             }
             if (key === 'save') {
@@ -130,10 +134,16 @@
         }
     }
 
-    /** Opens the Presets menu under its button (F2, or a click). */
-    export function openMenu(): void {
+    /** Opens or closes the Presets menu under its button (a click). */
+    function openMenu(): void {
         if (nameMode !== null || !buttonEl) return
         menu.toggleUnder(buttonEl)
+    }
+
+    /** F2, from the sheet's keydown or File > Rename's accelerator: toggles the menu, once per press. */
+    export function pressOpenKey(road: KeyRoad): void {
+        if (isEcho(road)) return
+        openMenu()
     }
 
     /** Opens the name popover to save the fields (⌘S), prefilled with the loaded saved preset's name. */
@@ -167,7 +177,7 @@
         closeName()
         buttonEl?.focus()
         if (mode.kind === 'save') await run('save', () => tool.savePreset(name))
-        else await run('rename', () => tool.renamePreset(mode.id, name))
+        else await run('rename', () => tool.renamePreset({ id: mode.id, name }))
     }
 
     function handleNameKeydown(e: KeyboardEvent): void {

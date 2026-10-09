@@ -27,11 +27,12 @@
     import TextInput from '$lib/ui/TextInput.svelte'
     import { tString } from '$lib/intl/messages.svelte'
     import { claimKey } from '$lib/shortcuts/claim-key'
+    import { claimMenuCommand } from '$lib/commands/menu-claims'
     import { getBadgeStatus } from '$lib/feature-status'
     import type { MultiRenameError, MultiRenameOpened, MultiRenameStarted, PreviewRow } from '$lib/tauri-commands'
     import type { CaseChange } from '$lib/ipc/bindings'
     import { createMultiRenameState } from './multi-rename-state.svelte'
-    import { presetKeyOf } from './preset-keys'
+    import { presetKeyOf, type KeyRoad } from './preset-keys'
     import PresetsControl from './PresetsControl.svelte'
     import { rowStatusView, type StatusMessage } from './row-status'
     import { insertAtCaret } from './spec'
@@ -50,8 +51,14 @@
     // One sheet renames one session; a new session remounts it.
     const tool = createMultiRenameState(session.sessionId)
 
+    /** What the sheet calls on `PresetsControl` (a typed ref: the linter can't see a component's exports). */
+    interface PresetsApi {
+        pressOpenKey: (road: KeyRoad) => void
+        openSave: () => void
+    }
+
     let nameMaskInput = $state<HTMLInputElement>()
-    let presetsControl = $state<PresetsControl>()
+    let presetsControl = $state<PresetsApi>()
 
     /** The icon track, the same as Search's results (`query-ui/result-column-widths.ts`). */
     const ICON_TRACK_PX = 24
@@ -110,6 +117,11 @@
     onMount(() => {
         void tool.loadPresets()
         nameMaskInput?.focus()
+        // F2 is also File > Rename's accelerator. Where AppKit runs the menu item instead of
+        // (or as well as) handing the webview the key, its fire comes here too.
+        return claimMenuCommand('file.rename', () => {
+            presetsControl?.pressOpenKey('menu')
+        })
     })
 
     onDestroy(() => {
@@ -137,7 +149,7 @@
         const presetKey = presetKeyOf(e)
         if (presetKey !== null) {
             claimKey(e)
-            if (presetKey === 'openMenu') presetsControl?.openMenu()
+            if (presetKey === 'openMenu') presetsControl?.pressOpenKey('keyboard')
             else presetsControl?.openSave()
             return
         }
