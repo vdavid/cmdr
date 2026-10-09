@@ -314,6 +314,8 @@ export interface ExplorerAPI {
    * Selection dialog on commit.
    */
   applyIndicesToFocusedPane: (idxs: number[], mode: 'add' | 'remove') => void
+  /** Alerts and returns `true` when the focused pane can't take a Multi-Rename (an archive, the `.git` portal, a read-only volume). */
+  refuseMultiRename: () => boolean
   /** The Multi-Rename Tool's target: the focused pane's listing, selected rows, and their sequence. */
   getFocusedPaneRenameTarget: () => MultiRenameSelection | null
   /**

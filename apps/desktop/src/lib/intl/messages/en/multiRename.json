@@ -214,5 +214,13 @@
   "multiRename.swapsSkipped": "{count, plural, one {Skipped # rename that swaps names} other {Skipped # renames that swap names}}. Rename those files one at a time.",
   "@multiRename.swapsSkipped": {
     "description": "Warning toast after Rename starts on cloud storage (S3), when some renames swap names with each other (for example a → b and b → a). On S3, renaming a folder copies everything inside it, and copying one folder onto another that is still there would mix their contents, so those renames were skipped and the files kept their names. {count} is how many (always 2 or more). Match the wording of askCmdr.renameUndo.swapsSkipped."
+  },
+  "multiRename.archiveTitle": "Multi-rename doesn’t work inside archives",
+  "@multiRename.archiveTitle": {
+    "description": "Alert title when ⌃M (Multi-rename) is pressed while browsing inside a zip archive. Cmdr can rename files in a zip one by one, but the Multi-rename tool only works in folders on a drive. \"Multi-rename\" is the tool’s name; match multiRename.title."
+  },
+  "multiRename.archiveMessage": "To rename files in this zip, rename them one at a time.",
+  "@multiRename.archiveMessage": {
+    "description": "Alert body under multiRename.archiveTitle. Points the user to renaming files inside the zip one by one (the regular single-file rename), which does work there."
   }
 }

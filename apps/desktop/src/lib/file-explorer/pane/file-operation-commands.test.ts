@@ -175,6 +175,50 @@ describe('startRename', () => {
   })
 })
 
+describe('refuseMultiRename', () => {
+  function refusal(path: string, readOnlyMount = false) {
+    const access = buildAccess({
+      paneRefs: { left: buildPaneRef() },
+      volumes: [volume({ mountIsReadOnly: readOnlyMount })],
+      paths: { left: path },
+    })
+    const dialogs = buildDialogs()
+    const refused = create(access, dialogs).refuseMultiRename()
+    return { refused, alert: dialogs.showAlert.mock.calls[0] as [string, string] | undefined }
+  }
+
+  it('lets a writable folder through without an alert', () => {
+    expect(refusal('/left/photos')).toEqual({ refused: false, alert: undefined })
+  })
+
+  it('refuses inside a read-only archive with the archive alert', () => {
+    const { refused, alert } = refusal('/left/backup.tar/inner')
+    expect(refused).toBe(true)
+    expect(alert?.[0]).toBe('Read-only archive')
+  })
+
+  it('refuses inside a zip too: F2 edits a zip, but Multi-rename only renames on a drive', () => {
+    const { refused, alert } = refusal('/left/foo.zip/inner')
+    expect(refused).toBe(true)
+    expect(alert).toEqual([
+      'Multi-rename doesn’t work inside archives',
+      'To rename files in this zip, rename them one at a time.',
+    ])
+  })
+
+  it('refuses inside the .git portal with the portal alert', () => {
+    const { refused, alert } = refusal('/left/repo/.git/branches/main')
+    expect(refused).toBe(true)
+    expect(alert?.[0]).toBe('Read-only git portal')
+  })
+
+  it('refuses on a read-only volume with the rename alert', () => {
+    const { refused, alert } = refusal('/left/photos', true)
+    expect(refused).toBe(true)
+    expect(alert).toEqual(['Read-only volume', 'This is a read-only volume. Renaming isn’t possible here.'])
+  })
+})
+
 describe('cancelRename', () => {
   it('cancels rename on both panes', () => {
     const cancelLeft = vi.fn()

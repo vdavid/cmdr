@@ -1044,6 +1044,12 @@
     }
 
     // noinspection JSUnusedGlobalSymbols -- consumed by +page.svelte for the Multi-Rename Tool
+    /** Alerts and returns `true` when the focused pane can't take a Multi-Rename (an archive, the `.git` portal, a read-only volume). */
+    export function refuseMultiRename(): boolean {
+        return fileOps.refuseMultiRename()
+    }
+
+    // noinspection JSUnusedGlobalSymbols -- consumed by +page.svelte for the Multi-Rename Tool
     /** The Multi-Rename Tool's target: the focused pane's listing, selected rows, and their sequence. */
     export function getFocusedPaneRenameTarget(): MultiRenameSelection | null {
         return paneCommands.getFocusedPaneRenameTarget()

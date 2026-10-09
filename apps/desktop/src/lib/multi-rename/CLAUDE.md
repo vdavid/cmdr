@@ -3,7 +3,9 @@
 The ⌃M sheet over `src-tauri/src/multi_rename/` (the engine and its rules: that module's `CLAUDE.md` / `DETAILS.md`).
 
 - `MultiRenameDialog.svelte` the sheet and its windowed table; `routes/(main)/+page.svelte` opens a backend session over
-  the focused pane's selection (`getFocusedPaneRenameTarget` → `openMultiRename`) first, and closes it with the sheet.
+  the focused pane’s selection (`getFocusedPaneRenameTarget` → `openMultiRename`) first, and closes it with the sheet. A
+  read-only pane (any archive, the `.git` portal, a read-only volume) gets `refuseMultiRename`’s alert instead; the
+  backend’s `ReadOnly` at Start is the safety net.
 - `multi-rename-state.svelte.ts` the spec, the debounced preview (a generation counter drops stale answers), the rows in
   view (`show` / `rowAt`), presets, Start.
 - `spec.ts` the default spec, built-in presets, placeholder insertion. Pure.

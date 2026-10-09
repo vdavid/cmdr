@@ -567,11 +567,14 @@
 
     /**
      * Opens the Multi-Rename Tool on the focused pane (⌃M): the backend resolves the
-     * selection into its files once, here. A pane with no real listing has nothing to
-     * rename; a selection the listing moved past is refused, as F5 refuses it.
+     * selection into its files once, here. A read-only pane (an archive, the `.git`
+     * portal) refuses with F2's alert before any session opens. A pane with no real
+     * listing has nothing to rename; a selection the listing moved past is refused,
+     * as F5 refuses it.
      */
     async function openMultiRename(): Promise<void> {
         if (multiRenameSession || openingMultiRename || !explorerRef) return
+        if (explorerRef.refuseMultiRename()) return
         const target = explorerRef.getFocusedPaneRenameTarget()
         if (!target) return
         openingMultiRename = true

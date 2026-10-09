@@ -166,6 +166,25 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
     paneRef?.startRename(options)
   }
 
+  /**
+   * Shows the refusal alert and returns `true` when the focused pane can't take a
+   * Multi-rename (⌃M), so the sheet never opens on a folder Start would refuse.
+   * Stricter than F2: the batch runs on a drive's own volume, so ANY archive
+   * refuses, a writable zip included (F2's archive-edit flow covers one file at a
+   * time there). The backend's `ReadOnly` answer at Start stays the safety net.
+   */
+  function refuseMultiRename(): boolean {
+    const pane = access.getFocusedPane()
+    const paneCaps = capabilitiesForPane(access.getPaneVolumeId(pane), access.getPanePath(pane))
+    const refusal =
+      paneCaps.kind === 'archive' && paneCaps.canWrite
+        ? { title: tString('multiRename.archiveTitle'), message: tString('multiRename.archiveMessage') }
+        : readOnlyRefusal('rename', pane)
+    if (!refusal) return false
+    dialogs.showAlert(refusal.title, refusal.message)
+    return true
+  }
+
   /** Cancels any active inline rename on either pane. */
   function cancelRename() {
     for (const side of ['left', 'right'] as const) {
@@ -756,6 +775,7 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
 
   return {
     startRename,
+    refuseMultiRename,
     cancelRename,
     isRenaming,
     openNewFolderDialog,
