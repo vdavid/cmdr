@@ -22,6 +22,17 @@ export function presetKeyOf(event: KeyboardEvent): PresetKey | null {
 export type KeyRoad = 'keyboard' | 'menu'
 
 /**
+ * What a `bind:this` ref to `PresetsControl` exposes: the sheet routes F2 and ⌘S to it. A typed
+ * ref, since the type-aware linter can't see a component's exports.
+ */
+export interface PresetsControlApi {
+  /** F2 from either road: toggles the Presets menu once per press. */
+  pressOpenKey: (road: KeyRoad) => void
+  /** ⌘S: the name popover, to save the fields as a preset. */
+  openSave: () => void
+}
+
+/**
  * The two fires of one keypress land milliseconds apart; a person can't press the key and
  * pick the menu item inside this. Same window as the dispatch core's (`dispatch-dedup.ts`).
  */

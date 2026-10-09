@@ -19,7 +19,7 @@
     import Checkbox from '$lib/ui/Checkbox.svelte'
     import ColumnList from '$lib/ui/ColumnList.svelte'
     import Icon from '$lib/ui/Icon.svelte'
-    import type { ColumnListCellContext, ColumnListColumn } from '$lib/ui/column-list-types'
+    import { columnListProps, type ColumnListCellContext, type ColumnListColumn } from '$lib/ui/column-list-types'
     import { getCachedIcon, iconCacheVersion } from '$lib/icon-cache'
     import { useShortenMiddle } from '$lib/utils/shorten-middle-action'
     import NumberInput from '$lib/ui/NumberInput.svelte'
@@ -32,7 +32,7 @@
     import type { MultiRenameError, MultiRenameOpened, MultiRenameStarted, PreviewRow } from '$lib/tauri-commands'
     import type { CaseChange } from '$lib/ipc/bindings'
     import { createMultiRenameState } from './multi-rename-state.svelte'
-    import { presetKeyOf, type KeyRoad } from './preset-keys'
+    import { presetKeyOf, type PresetsControlApi } from './preset-keys'
     import PresetsControl from './PresetsControl.svelte'
     import { rowStatusView, type StatusMessage } from './row-status'
     import { insertAtCaret } from './spec'
@@ -51,14 +51,8 @@
     // One sheet renames one session; a new session remounts it.
     const tool = createMultiRenameState(session.sessionId)
 
-    /** What the sheet calls on `PresetsControl` (a typed ref: the linter can't see a component's exports). */
-    interface PresetsApi {
-        pressOpenKey: (road: KeyRoad) => void
-        openSave: () => void
-    }
-
     let nameMaskInput = $state<HTMLInputElement>()
-    let presetsControl = $state<PresetsApi>()
+    let presetsControl = $state<PresetsControlApi>()
 
     /** The icon track, the same as Search's results (`query-ui/result-column-widths.ts`). */
     const ICON_TRACK_PX = 24
@@ -341,12 +335,14 @@
         </div>
         <div class="preview">
             <ColumnList
-                {columns}
-                rows={tool.source}
-                semantics="table"
-                ariaLabel={tString('multiRename.preview')}
-                headerClass="preview-header"
-                rowClass="preview-row"
+                {...columnListProps({
+                    columns,
+                    rows: tool.source,
+                    semantics: 'table',
+                    ariaLabel: tString('multiRename.preview'),
+                    headerClass: 'preview-header',
+                    rowClass: 'preview-row',
+                })}
             />
         </div>
     </div>
