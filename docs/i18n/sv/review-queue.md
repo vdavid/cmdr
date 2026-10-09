@@ -74,8 +74,6 @@ wording into `terms.json` (and `decisions.md` when the reason is worth keeping).
 
 - **`Varje Ord Med Versal`** (`multiRename.case.words`): title-case demo, which Swedish never writes; TC's
   `Versal Först I Varje Ord` is the attested alternative. Confirm it reads as an option, not a typo.
-- **`Räkna från`** / **`Steg`** / **`Antal siffror`** (`multiRename.counterStart`/`.counterStep`/`.counterDigits`): TC
-  says `Börja med:`, `Steglängd:`, `Antal siffror:`; confirm `Räkna från` reads as the counter's start value.
 
 ## Layout (overflow-check against the pseudolocale)
 

@@ -71,18 +71,6 @@
   "@multiRename.removeDiacritics": {
     "sourceHash": "4103ca1"
   },
-  "multiRename.counterStart": "Contador desde",
-  "@multiRename.counterStart": {
-    "sourceHash": "562151d"
-  },
-  "multiRename.counterStep": "Incremento",
-  "@multiRename.counterStep": {
-    "sourceHash": "8e6a6cc"
-  },
-  "multiRename.counterDigits": "Dígitos",
-  "@multiRename.counterDigits": {
-    "sourceHash": "9cd500d"
-  },
   "multiRename.presets.title": "Preajustes",
   "@multiRename.presets.title": {
     "sourceHash": "954f93f"

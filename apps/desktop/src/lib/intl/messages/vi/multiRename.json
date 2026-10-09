@@ -71,18 +71,6 @@
   "@multiRename.removeDiacritics": {
     "sourceHash": "4103ca1"
   },
-  "multiRename.counterStart": "Bộ đếm bắt đầu từ",
-  "@multiRename.counterStart": {
-    "sourceHash": "562151d"
-  },
-  "multiRename.counterStep": "Bước",
-  "@multiRename.counterStep": {
-    "sourceHash": "8e6a6cc"
-  },
-  "multiRename.counterDigits": "Số chữ số",
-  "@multiRename.counterDigits": {
-    "sourceHash": "9cd500d"
-  },
   "multiRename.presets.title": "Tùy chọn đặt trước",
   "@multiRename.presets.title": {
     "sourceHash": "954f93f"

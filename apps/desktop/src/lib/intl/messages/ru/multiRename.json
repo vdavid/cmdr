@@ -71,18 +71,6 @@
   "@multiRename.removeDiacritics": {
     "sourceHash": "4103ca1"
   },
-  "multiRename.counterStart": "Начало счетчика",
-  "@multiRename.counterStart": {
-    "sourceHash": "562151d"
-  },
-  "multiRename.counterStep": "Шаг",
-  "@multiRename.counterStep": {
-    "sourceHash": "8e6a6cc"
-  },
-  "multiRename.counterDigits": "Число цифр",
-  "@multiRename.counterDigits": {
-    "sourceHash": "9cd500d"
-  },
   "multiRename.presets.title": "Наборы настроек",
   "@multiRename.presets.title": {
     "sourceHash": "954f93f"

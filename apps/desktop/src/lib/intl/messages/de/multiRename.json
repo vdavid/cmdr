@@ -71,18 +71,6 @@
   "@multiRename.removeDiacritics": {
     "sourceHash": "4103ca1"
   },
-  "multiRename.counterStart": "Zähler ab",
-  "@multiRename.counterStart": {
-    "sourceHash": "562151d"
-  },
-  "multiRename.counterStep": "Schrittweite",
-  "@multiRename.counterStep": {
-    "sourceHash": "8e6a6cc"
-  },
-  "multiRename.counterDigits": "Stellen",
-  "@multiRename.counterDigits": {
-    "sourceHash": "9cd500d"
-  },
   "multiRename.presets.title": "Voreinstellungen",
   "@multiRename.presets.title": {
     "sourceHash": "954f93f"

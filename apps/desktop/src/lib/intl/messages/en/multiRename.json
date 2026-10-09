@@ -71,18 +71,6 @@
   "@multiRename.removeDiacritics": {
     "description": "Option: turn letters with accents and other diacritics into plain letters (á becomes a, ž becomes z, ß becomes ss), in every language."
   },
-  "multiRename.counterStart": "Counter from",
-  "@multiRename.counterStart": {
-    "description": "Label of the number the counter placeholder [C] starts at."
-  },
-  "multiRename.counterStep": "Step",
-  "@multiRename.counterStep": {
-    "description": "Label of the amount the counter placeholder [C] goes up (or down, when negative) per file."
-  },
-  "multiRename.counterDigits": "Digits",
-  "@multiRename.counterDigits": {
-    "description": "Label of how many digits the counter placeholder [C] has; shorter numbers get leading zeros."
-  },
   "multiRename.presets.title": "Presets",
   "@multiRename.presets.title": {
     "description": "Label of the button at the bottom left of the Multi-rename tool that opens the menu of presets (saved rename settings), and the accessible name of that menu. Followed by a down arrow and, when one is loaded, the preset's name."

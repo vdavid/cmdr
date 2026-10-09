@@ -71,18 +71,6 @@
   "@multiRename.removeDiacritics": {
     "sourceHash": "4103ca1"
   },
-  "multiRename.counterStart": "Teller vanaf",
-  "@multiRename.counterStart": {
-    "sourceHash": "562151d"
-  },
-  "multiRename.counterStep": "Stapgrootte",
-  "@multiRename.counterStep": {
-    "sourceHash": "8e6a6cc"
-  },
-  "multiRename.counterDigits": "Cijfers",
-  "@multiRename.counterDigits": {
-    "sourceHash": "9cd500d"
-  },
   "multiRename.presets.title": "Voorinstellingen",
   "@multiRename.presets.title": {
     "sourceHash": "954f93f"
