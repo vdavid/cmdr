@@ -142,6 +142,13 @@ describe('MaskInput', () => {
     type(digits, '500')
     await settle()
     expect(m.value()).toBe('[C:64]')
+    const [start] = editorFields()
+    type(start, '-5')
+    await settle()
+    expect(m.value()).toBe('[C-5+1:64]')
+    type(start, '-9999999')
+    await settle()
+    expect(m.value()).toBe('[C-1000000+1:64]')
   })
 
   it('Escape closes the editor, not the sheet, and puts the caret after the token', async () => {

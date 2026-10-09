@@ -1,25 +1,168 @@
 {
-  "$comment": "Shared test vectors for the counter placeholder `[C…]` (`mask.rs` `counter()`), read by the Rust parser's test and by the frontend's `counter-token.test.ts`, so the two parsers can't drift. `maxDigits` is `MAX_COUNTER_DIGITS`. Each `valid` entry is a whole token and what it parses to: `start` / `step` / `digits` are the numbers written in it, `null` where the token leaves that part out (the default: start 1, step 1, digits 1). `minimal` is the frontend editor's rewrite of the same counter: defaults omitted, digits clamped to 1..maxDigits. Each `invalid` entry is a token the mask parser rejects as an unknown placeholder. Keep every number within ±2^53 so JavaScript reads it exactly.",
+  "$comment": "Shared test vectors for the counter placeholder `[C…]` (`mask.rs` `counter()`), read by the Rust parser's test and by the frontend's `counter-token.test.ts`, so the two parsers can't drift. `maxDigits` is `MAX_COUNTER_DIGITS`. Each `valid` entry is a whole token and what it parses to: `start` / `step` / `digits` are the numbers written in it, `null` where the token leaves that part out (the default: start 1, step 1, digits 1). `minimal` is the frontend editor's rewrite of the same counter: defaults omitted, digits clamped to 1..maxDigits. Each `invalid` entry is a token the mask parser rejects as an unknown placeholder. A leading `-` is the start’s sign when another `+`/`-` follows (`[C-5+1]`); a lone leading sign is the step (`[C-5]`). Keep every number within ±2^53 so JavaScript reads it exactly.",
   "maxDigits": 64,
   "valid": [
-    { "token": "[C]", "start": null, "step": null, "digits": null, "minimal": "[C]" },
-    { "token": "[C10]", "start": 10, "step": null, "digits": null, "minimal": "[C10]" },
-    { "token": "[C+5]", "start": null, "step": 5, "digits": null, "minimal": "[C+5]" },
-    { "token": "[C-5]", "start": null, "step": -5, "digits": null, "minimal": "[C-5]" },
-    { "token": "[C:3]", "start": null, "step": null, "digits": 3, "minimal": "[C:3]" },
-    { "token": "[C100-10]", "start": 100, "step": -10, "digits": null, "minimal": "[C100-10]" },
-    { "token": "[C10+5:3]", "start": 10, "step": 5, "digits": 3, "minimal": "[C10+5:3]" },
-    { "token": "[C1+1:1]", "start": 1, "step": 1, "digits": 1, "minimal": "[C]" },
-    { "token": "[C0]", "start": 0, "step": null, "digits": null, "minimal": "[C0]" },
-    { "token": "[C+0]", "start": null, "step": 0, "digits": null, "minimal": "[C+0]" },
-    { "token": "[C007]", "start": 7, "step": null, "digits": null, "minimal": "[C7]" },
-    { "token": "[C:0]", "start": null, "step": null, "digits": 0, "minimal": "[C]" },
-    { "token": "[C:+3]", "start": null, "step": null, "digits": 3, "minimal": "[C:3]" },
-    { "token": "[C:64]", "start": null, "step": null, "digits": 64, "minimal": "[C:64]" },
-    { "token": "[C:65]", "start": null, "step": null, "digits": 65, "minimal": "[C:64]" },
-    { "token": "[C++5]", "start": null, "step": 5, "digits": null, "minimal": "[C+5]" },
-    { "token": "[C10+-5]", "start": 10, "step": -5, "digits": null, "minimal": "[C10-5]" },
-    { "token": "[C9007199254740991]", "start": 9007199254740991, "step": null, "digits": null, "minimal": "[C9007199254740991]" }
+    {
+      "token": "[C]",
+      "start": null,
+      "step": null,
+      "digits": null,
+      "minimal": "[C]"
+    },
+    {
+      "token": "[C10]",
+      "start": 10,
+      "step": null,
+      "digits": null,
+      "minimal": "[C10]"
+    },
+    {
+      "token": "[C+5]",
+      "start": null,
+      "step": 5,
+      "digits": null,
+      "minimal": "[C+5]"
+    },
+    {
+      "token": "[C-5]",
+      "start": null,
+      "step": -5,
+      "digits": null,
+      "minimal": "[C-5]"
+    },
+    {
+      "token": "[C:3]",
+      "start": null,
+      "step": null,
+      "digits": 3,
+      "minimal": "[C:3]"
+    },
+    {
+      "token": "[C100-10]",
+      "start": 100,
+      "step": -10,
+      "digits": null,
+      "minimal": "[C100-10]"
+    },
+    {
+      "token": "[C10+5:3]",
+      "start": 10,
+      "step": 5,
+      "digits": 3,
+      "minimal": "[C10+5:3]"
+    },
+    {
+      "token": "[C1+1:1]",
+      "start": 1,
+      "step": 1,
+      "digits": 1,
+      "minimal": "[C]"
+    },
+    {
+      "token": "[C0]",
+      "start": 0,
+      "step": null,
+      "digits": null,
+      "minimal": "[C0]"
+    },
+    {
+      "token": "[C+0]",
+      "start": null,
+      "step": 0,
+      "digits": null,
+      "minimal": "[C+0]"
+    },
+    {
+      "token": "[C007]",
+      "start": 7,
+      "step": null,
+      "digits": null,
+      "minimal": "[C7]"
+    },
+    {
+      "token": "[C:0]",
+      "start": null,
+      "step": null,
+      "digits": 0,
+      "minimal": "[C]"
+    },
+    {
+      "token": "[C:+3]",
+      "start": null,
+      "step": null,
+      "digits": 3,
+      "minimal": "[C:3]"
+    },
+    {
+      "token": "[C:64]",
+      "start": null,
+      "step": null,
+      "digits": 64,
+      "minimal": "[C:64]"
+    },
+    {
+      "token": "[C:65]",
+      "start": null,
+      "step": null,
+      "digits": 65,
+      "minimal": "[C:64]"
+    },
+    {
+      "token": "[C++5]",
+      "start": null,
+      "step": 5,
+      "digits": null,
+      "minimal": "[C+5]"
+    },
+    {
+      "token": "[C10+-5]",
+      "start": 10,
+      "step": -5,
+      "digits": null,
+      "minimal": "[C10-5]"
+    },
+    {
+      "token": "[C9007199254740991]",
+      "start": 9007199254740991,
+      "step": null,
+      "digits": null,
+      "minimal": "[C9007199254740991]"
+    },
+    {
+      "token": "[C-5+1]",
+      "start": -5,
+      "step": 1,
+      "digits": null,
+      "minimal": "[C-5+1]"
+    },
+    {
+      "token": "[C-5-2]",
+      "start": -5,
+      "step": -2,
+      "digits": null,
+      "minimal": "[C-5-2]"
+    },
+    {
+      "token": "[C-5+1:3]",
+      "start": -5,
+      "step": 1,
+      "digits": 3,
+      "minimal": "[C-5+1:3]"
+    },
+    {
+      "token": "[C-1000000+2]",
+      "start": -1000000,
+      "step": 2,
+      "digits": null,
+      "minimal": "[C-1000000+2]"
+    },
+    {
+      "token": "[C-0+1]",
+      "start": 0,
+      "step": 1,
+      "digits": null,
+      "minimal": "[C0]"
+    }
   ],
   "invalid": [
     "[C+]",
@@ -35,6 +178,10 @@
     "[C 5]",
     "[C5 ]",
     "[C99999999999999999999]",
-    "[C:4294967296]"
+    "[C:4294967296]",
+    "[C--5]",
+    "[C-+5]",
+    "[C-5--2]",
+    "[C+5+2]"
   ]
 }

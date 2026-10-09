@@ -56,8 +56,10 @@ describe('counter token', () => {
   })
 
   it('clamps to what the grammar can write', () => {
-    // A start can't carry a sign: `[C-5]` is a step.
-    expect(formatCounter({ start: -3, step: 1, digits: 1 })).toBe('C0')
+    // A negative start always writes its step: `[C-3]` would read as a step of -3.
+    expect(formatCounter({ start: -3, step: 1, digits: 1 })).toBe('C-3+1')
+    expect(formatCounter({ start: -3, step: -2, digits: 1 })).toBe('C-3-2')
+    expect(formatCounter({ start: -2000000, step: 1, digits: 1 })).toBe('C-1000000+1')
     expect(formatCounter({ start: 1, step: 1, digits: 999 })).toBe('C:64')
     expect(formatCounter({ start: 1, step: 1, digits: 0 })).toBe('C')
   })

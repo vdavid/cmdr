@@ -75,6 +75,6 @@ mask's `TextInput` for it.
   of its own. A new kind (a range, a date) is one entry there plus its grammar's tests.
 - **Counter** (`counter-token.ts`): parses step for step like `counter()` in `mask.rs`, quirks included (`[C++5]` is
   step 5); both sides test against `counter_token_vectors.json`. Writes back in minimal form: defaults (start 1, step 1,
-  digits 1) left out, so all-default is a bare `[C]`; a start can't carry a sign (`[C-5]` is a step), so it clamps to 0
-  and up; digits clamp to 1–`MAX_COUNTER_DIGITS`. An emptied editor field means that part's default; a half-typed `-`
-  waits.
+  digits 1) left out, so all-default is a bare `[C]`; a negative start always writes its step (`[C-5+1]`: a lone `[C-5]`
+  is a step of -5) and clamps at `MIN_COUNTER_START`; digits clamp to 1–`MAX_COUNTER_DIGITS`. An emptied editor field
+  means that part's default; a half-typed `-` waits.

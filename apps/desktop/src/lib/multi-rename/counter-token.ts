@@ -53,9 +53,11 @@ export function parseCounterParts(inner: string): CounterParts | null {
     digits = parseU32(text.slice(colon + 1))
     if (digits === null) return null
   }
-  // The step starts at a leading sign, else at the first sign after the start.
-  const signAfterStart = body.slice(1).search(/[+-]/)
-  const stepAt = /^[+-]/.test(body) ? 0 : signAfterStart === -1 ? -1 : signAfterStart + 1
+  // The step starts at the first sign after the first character. A leading `+` is always the
+  // step's; a leading `-` is the start's sign when another sign follows (`[C-5+1]`), else the step's.
+  const signAfterFirst = body.slice(1).search(/[+-]/)
+  const stepAfterFirst = signAfterFirst === -1 ? -1 : signAfterFirst + 1
+  const stepAt = body.startsWith('+') ? 0 : body.startsWith('-') && stepAfterFirst === -1 ? 0 : stepAfterFirst
   let step: number | null = null
   if (stepAt !== -1) {
     step = parseI64(body.slice(stepAt).replace(/^\++/, ''))
@@ -71,20 +73,26 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, Math.trunc(value)))
 }
 
-/** `counter` within what a token can write: a start can't carry a sign (`[C-5]` is a step). */
+/** The lowest start the editor writes. */
+export const MIN_COUNTER_START = -1_000_000
+
+/** `counter` within what the editor writes. */
 export function clampCounter(counter: Counter): Counter {
   return {
-    start: clamp(counter.start, 0, Number.MAX_SAFE_INTEGER),
+    start: clamp(counter.start, MIN_COUNTER_START, Number.MAX_SAFE_INTEGER),
     step: clamp(counter.step, -Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER),
     digits: clamp(counter.digits, 1, MAX_COUNTER_DIGITS),
   }
 }
 
-/** The token's text without brackets, defaults left out: `C10+5:3`, or a bare `C`. */
+/**
+ * The token's text without brackets, defaults left out: `C10+5:3`, or a bare `C`. A negative start
+ * always writes its step (`C-5+1`): a lone `C-5` reads as a step of -5.
+ */
 export function formatCounter(counter: Counter): string {
   const { start, step, digits } = clampCounter(counter)
   const startText = start === COUNTER_DEFAULTS.start ? '' : String(start)
-  const stepText = step === COUNTER_DEFAULTS.step ? '' : step < 0 ? String(step) : `+${String(step)}`
+  const stepText = step === COUNTER_DEFAULTS.step && start >= 0 ? '' : step < 0 ? String(step) : `+${String(step)}`
   const digitsText = digits === COUNTER_DEFAULTS.digits ? '' : `:${String(digits)}`
   return `C${startText}${stepText}${digitsText}`
 }
