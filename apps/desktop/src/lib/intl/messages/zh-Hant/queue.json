@@ -147,43 +147,43 @@
   "@queue.chip.tooltip": {
     "sourceHash": "6680100"
   },
-  "queue.row.detailsToggleAria": "Details",
+  "queue.row.detailsToggleAria": "詳細資訊",
   "@queue.row.detailsToggleAria": {
     "sourceHash": "45989de"
   },
-  "queue.details.from": "From",
+  "queue.details.from": "來源",
   "@queue.details.from": {
     "sourceHash": "2181976"
   },
-  "queue.details.to": "To",
+  "queue.details.to": "目標",
   "@queue.details.to": {
     "sourceHash": "f4b06ef"
   },
-  "queue.details.moreSources": "{count, plural, one {and {countText} more} other {and {countText} more}}",
+  "queue.details.moreSources": "{count, plural, other {另外還有 {countText} 個項目}}",
   "@queue.details.moreSources": {
     "sourceHash": "ef18403"
   },
-  "queue.details.sourcesAria": "Source items",
+  "queue.details.sourcesAria": "來源項目",
   "@queue.details.sourcesAria": {
     "sourceHash": "35af8a2"
   },
-  "queue.details.currentFile": "Current file",
+  "queue.details.currentFile": "目前檔案",
   "@queue.details.currentFile": {
     "sourceHash": "5ac9225"
   },
-  "queue.details.waitingSince": "Waiting since",
+  "queue.details.waitingSince": "開始等待",
   "@queue.details.waitingSince": {
     "sourceHash": "cd16bd6"
   },
-  "queue.details.started": "Started",
+  "queue.details.started": "開始時間",
   "@queue.details.started": {
     "sourceHash": "ecbc89c"
   },
-  "queue.details.elapsed": "Elapsed",
+  "queue.details.elapsed": "經過時間",
   "@queue.details.elapsed": {
     "sourceHash": "a194a68"
   },
-  "queue.details.unavailable": "Details aren’t available right now.",
+  "queue.details.unavailable": "目前無法顯示詳細資訊。",
   "@queue.details.unavailable": {
     "sourceHash": "c285eec"
   }
