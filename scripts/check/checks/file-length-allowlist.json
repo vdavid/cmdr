@@ -164,10 +164,6 @@
       "lines": 823,
       "reason": "The wiring seam itself: script 524 / markup 229 / style 81, where the script is event handlers plus the documented lifecycle contracts and the markup is prop threading into `QueryBar`, `ModeChips`, `FilterChips` (about 32 props), `QueryResults` (about 30), and `RecentItemsPopover`. The logic already lives in the four tested siblings `query-runner.svelte.ts`, `recent-popover.svelte.ts`, `query-shortcuts.ts`, and `result-actions.ts`, the split `query-ui/CLAUDE.md` § Module map states; what remains is the one place those pieces meet, plus the three state-ownership contracts spelled out in the file header."
     },
-    "apps/desktop/src/lib/query-ui/QueryResults.svelte": {
-      "lines": 945,
-      "reason": "TODO: The status bar is a separable concern: `getStatusText`, `walkProgress`, `waitElapsed`, the `waitNow` ticker, and the `createAnnouncementThrottle` live region (about 80 script) plus its markup (about 40) and `.status-*` style (about 55) already take every helper from `query-stream.ts`, so a `QueryStatusBar.svelte` taking the counts and the `LiveRunView` lifts roughly 175 lines cleanly. (Column measurement already lives in `result-columns.svelte.ts`.) That leaves the state-branch chain and the row template at roughly 710 lines."
-    },
     "apps/desktop/src/lib/servers/SignInSheet.svelte": {
       "lines": 903,
       "reason": "TODO: split it, because most of its lines are script and the markup is small. The round machinery (`run`, `applyOutcome`, `refuse`, `focusField`, the refusal and hint state, `refusalSubject`) is pure state with no markup dependency beyond the field refs, and belongs in a `sign-in-sheet-rounds.svelte.ts` the component drives, the pattern `sign-in-sheet-state.svelte.ts` already sets beside it. Edit mode's save path (`save`, `saveTarget`, `saveS3Account`, `saveSmbHost`, `writeRememberFlip`, `writeTypedSecret`, `s3EditScope` / `storeId`) is the second seam: it reads the form and the opened-with flags and writes through `saved-server-io.ts`, so it fits a `sign-in-sheet-edit.ts` beside it. The sheet then sits near 500 lines."

@@ -396,7 +396,7 @@ describe('SearchResults column tracks', () => {
     await tick()
     const header = target.querySelector<HTMLElement>('.column-header')
     expect(header?.style.gridTemplateColumns).toBe('24px minmax(80px, 1fr) 10ch 16ch')
-    expect(header?.querySelectorAll('.col-label').length).toBe(4)
+    expect(header?.querySelectorAll('.column-list-label').length).toBe(4)
   })
 })
 

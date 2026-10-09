@@ -2,24 +2,16 @@
     /**
      * SearchResults: Column headers + results list + all states + status bar.
      *
-     * The table is a CSS grid with measured tracks (see "Column widths" below). Name
-     * mid-truncates (`useShortenMiddle`); Path renders via `PathPills` with overflow-aware
-     * collapse; Size and Modified shrink-wrap to their widest cell and sit comfortably apart
-     * (the grid's `column-gap`). There is no
-     * actions column: the row's own right-click (`oncontextmenu` → `onRowMenu`) opens
-     * the native context menu, which is the whole of what a per-row `…` button offered.
+     * The rows are the house `ColumnList` (measured tracks shared by header and rows, the
+     * single cursor, virtual scrolling); this component owns the states around it and the
+     * cells. Name mid-truncates (`useShortenMiddle`); Path renders via `PathPills` with
+     * overflow-aware collapse; Size and Modified shrink-wrap to their widest cell. There is
+     * no actions column: the row's own right-click (`onRowMenu`) opens the native context
+     * menu, which is the whole of what a per-row `…` button offered.
      *
-     * Cursor model (single cursor): both mouse hover and keyboard arrows move the
-     * same accent-colored cursor (`cursorIndex`). There is NO separate "hovered"
-     * background — hovering a row writes to `cursorIndex` via `onHover`. The cursor
-     * loops top<->bottom on arrow nav (handled by the parent dialog). This mirrors
-     * the volume switcher's hover-syncs-cursor pattern.
-     *
-     * Column widths: Size and Modified fit their widest cell; Name and Path split the rest
-     * 50-50, and a column that needs less than half hands its spare to the other. The
-     * result goes to BOTH grid containers as one inline `grid-template-columns` string so
-     * they can't drift. Full contract, and the argument for why the measurement can't
-     * oscillate: DETAILS.md § Column widths.
+     * Cursor model (single cursor): hover writes `cursorIndex` via `onHover`, so mouse and
+     * keyboard share one accent-colored cursor; the parent dialog owns the arrows and loops
+     * top<->bottom. Column widths: `result-column-widths.ts` and DETAILS.md § Column widths.
      */
     import { tick } from 'svelte'
     import { getCachedIcon, iconCacheVersion } from '$lib/icon-cache'
@@ -34,7 +26,9 @@
     import Spinner from '$lib/ui/Spinner.svelte'
     import DateLabel from '$lib/ui/DateLabel.svelte'
     import { useShortenMiddle } from '$lib/utils/shorten-middle-action'
-    import { createResultColumns } from './result-columns.svelte'
+    import ColumnList from '$lib/ui/ColumnList.svelte'
+    import type { ColumnListCellContext, ColumnListColumn } from '$lib/ui/column-list-types'
+    import { resultColumnWidths } from './result-column-widths'
     import EmptyState from './EmptyState.svelte'
     import PathPills from './PathPills.svelte'
     import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
@@ -164,7 +158,7 @@
         onRowMenu,
     }: Props = $props()
 
-    let resultsContainer: HTMLDivElement | undefined = $state()
+    let columnList: ReturnType<typeof ColumnList<SearchResultEntry>> | undefined = $state()
 
     // Subscribe to icon cache version for reactivity
     const iconVersion = $derived($iconCacheVersion)
@@ -264,23 +258,58 @@
         live !== null && streaming && (countOnly ? countOnlyHasNothingToShow(live.phase) : results.length === 0),
     )
 
-    // True only when the `{:else}` branch below actually renders option rows. `role="listbox"`
-    // requires `option` children, so it must NOT be set during the searching / loading / empty
-    // states (which replace the rows with a spinner or message) even when `results` still holds
-    // a stale set. Gating on `results.length > 0` alone tripped axe's `aria-required-children`.
-    // `isSearching` is TRUE for a live run's whole life, and its rows are the point, so the
-    // spinner only owns the area while nothing has arrived (`liveWaiting`).
+    // True only when the list renders rows. `ColumnList` is a `role="listbox"`, which requires
+    // `option` children, so it must NOT render during the searching / loading / empty states
+    // (which replace the rows with a spinner or message) even when `results` still holds a
+    // stale set. `isSearching` is TRUE for a live run's whole life, and its rows are the
+    // point, so the spinner only owns the area while nothing has arrived (`liveWaiting`).
     const showingRows = $derived(
         isIndexAvailable && isIndexReady && (!isSearching || streaming) && !countOnly && results.length > 0,
     )
 
-    // Column widths: see § "Column widths" at the top of this file.
-    const columns = createResultColumns(() => ({
-        container: resultsContainer,
-        results,
-        showPathColumn,
-        showingRows,
-    }))
+    const columns = $derived.by<ColumnListColumn<SearchResultEntry>[]>(() => {
+        const widths = resultColumnWidths(showPathColumn)
+        const name: ColumnListColumn<SearchResultEntry> = {
+            id: 'name',
+            label: tString('queryUi.results.col.name'),
+            ...widths.name,
+            emphasis: true,
+            class: 'result-name',
+            cell: nameCell,
+        }
+        const path: ColumnListColumn<SearchResultEntry> = {
+            id: 'path',
+            label: tString('queryUi.results.col.path'),
+            header: pathHeader,
+            ...widths.path,
+            tone: 'tertiary',
+            class: 'result-path',
+            cell: pathCell,
+        }
+        return [
+            { id: 'icon', label: '', ...widths.icon, clip: false, class: 'result-icon', cell: iconCell },
+            name,
+            ...(showPathColumn ? [path] : []),
+            {
+                id: 'size',
+                label: tString('queryUi.results.col.size'),
+                ...widths.size,
+                align: 'end',
+                tone: 'secondary',
+                class: 'result-size',
+                cell: sizeCell,
+            },
+            {
+                id: 'modified',
+                label: tString('queryUi.results.col.modified'),
+                ...widths.modified,
+                align: 'end',
+                tone: 'tertiary',
+                class: 'result-modified',
+                cell: modifiedCell,
+            },
+        ]
+    })
 
     // Count-only shows a bare total instead of rows. Renders once a search has run (including a
     // 0-match run), so an active count-only query that matches nothing reads "0 results", not the
@@ -334,8 +363,7 @@
     /** Scrolls the cursor row into view. Called by the parent after cursor changes. */
     export function scrollCursorIntoView(): void {
         void tick().then(() => {
-            const cursor = resultsContainer?.querySelector('.result-row.is-under-cursor')
-            cursor?.scrollIntoView({ block: 'nearest' })
+            columnList?.scrollIndexIntoView(cursorIndex)
         })
     }
 </script>
@@ -346,40 +374,57 @@
         >{@render children()}</strong
     >{/snippet}
 
+{#snippet iconCell({ row }: ColumnListCellContext<SearchResultEntry>)}
+    <span class="icon-box">
+        {#if getIconUrl(row.iconId)}
+            <img class="icon-img" src={getIconUrl(row.iconId)} alt="" width="16" height="16" />
+        {:else if row.isDirectory}
+            <span class="icon-fallback"><Icon name="folder" size={16} aria-hidden="true" /></span>
+        {:else}
+            <span class="icon-fallback"><Icon name="file" size={16} aria-hidden="true" /></span>
+        {/if}
+    </span>
+{/snippet}
+
+<!-- Mid-truncating name. `useShortenMiddle` measures with pretext and snaps to '.' so the
+     extension stays visible. Tooltip shows the full name only when truncation happened. -->
+{#snippet nameCell({ row }: ColumnListCellContext<SearchResultEntry>)}
+    <span
+        class="name-text"
+        use:useShortenMiddle={{ text: row.name, preferBreakAt: '.', startRatio: 0.7, tooltipWhenTruncated: true }}
+    ></span>
+{/snippet}
+
+<!-- The Path cell's content is a `PathPills` strip whose first pill carries
+     `padding: 0 var(--spacing-xxs)`, so its text box starts inside the track. The header
+     label is inset by the same amount so the two left edges line up. -->
+{#snippet pathHeader()}
+    <span class="path-label">{tString('queryUi.results.col.path')}</span>
+{/snippet}
+
+{#snippet pathCell({ row }: ColumnListCellContext<SearchResultEntry>)}
+    <PathPills path={row.parentPath} onPick={onPickPath} />
+{/snippet}
+
+{#snippet sizeCell({ row }: ColumnListCellContext<SearchResultEntry>)}
+    <Size bytes={row.size} />
+{/snippet}
+
+{#snippet modifiedCell({ row }: ColumnListCellContext<SearchResultEntry>)}
+    <DateLabel modifiedAt={row.modifiedAt} />
+{/snippet}
+
 <!-- The well wraps header + list + status bar so ONE element owns the rounded corners
      and clips the three square children inside them. It also carries the `flex: 1`
      that used to sit on `.results-container`, so the well (not the list alone) is
      what absorbs the dialog's spare height. -->
 <div class="results-well">
-    <!-- Column headers. Header cells use the same grid template as the rows so columns line up.
-
-         Rendered ONLY when rows are (the `showingRows` predicate). Column labels over a
-         spinner, a "no files match" list, the empty state, or a count-only total describe a
-         table that isn't there, and they're the loudest thing in an otherwise quiet area.
-         The seam they used to draw between the chip strip and the results is now the chip
-         strip's own bottom hairline plus the surface flip. -->
-    {#if showingRows}
-        <div
-            class="column-header"
-            class:animate-track={columns.animateTracks}
-            style="grid-template-columns: {columns.gridTemplate};"
-        >
-            <span class="col-label col-icon" aria-hidden="true"></span>
-            <span class="col-label">{tString('queryUi.results.col.name')}</span>
-            {#if showPathColumn}<span class="col-label col-path">{tString('queryUi.results.col.path')}</span>{/if}
-            <span class="col-label col-right">{tString('queryUi.results.col.size')}</span>
-            <span class="col-label col-right">{tString('queryUi.results.col.modified')}</span>
-        </div>
-    {/if}
-
-    <!-- Results list. `role="listbox"` only applies when option rows are rendered; empty/loading/
-         unavailable states are bare text containers so axe doesn't flag aria-required-children. -->
-    <div
-        class="results-container"
-        bind:this={resultsContainer}
-        role={showingRows ? 'listbox' : undefined}
-        aria-label={showingRows ? tString('queryUi.results.listboxAria') : undefined}
-    >
+    <!-- The list owns its column header, so the labels render ONLY with the rows (the
+         `showingRows` predicate). Column labels over a spinner, a "no files match" list, the
+         empty state, or a count-only total describe a table that isn't there, and they're the
+         loudest thing in an otherwise quiet area. Every other state is a bare text container
+         with no role, so axe doesn't flag `aria-required-children`. -->
+    <div class="results-container" class:has-list={showingRows}>
         {#if !isIndexAvailable}
             <div class="index-unavailable">
                 <p class="unavailable-message">
@@ -461,61 +506,22 @@
             </div>
         {:else if !hasSearched && !query.trim() && isIndexReady && sizeFilter === 'any' && dateFilter === 'any'}
             <EmptyState {aiEnabled} {aiBlocked} {indexEntryCount} examples={emptyExamples} onPick={onPickExample} />
-        {:else}
-            {#each results as entry, index (entry.path)}
-                <div
-                    class="result-row"
-                    class:animate-track={columns.animateTracks}
-                    class:is-under-cursor={index === cursorIndex}
-                    style="grid-template-columns: {columns.gridTemplate};"
-                    onclick={() => {
-                        onResultClick(index)
-                    }}
-                    oncontextmenu={(e) => {
-                        e.preventDefault()
-                        onRowMenu(entry)
-                    }}
-                    onmouseenter={() => {
-                        onHover(index)
-                    }}
-                    role="option"
-                    tabindex="-1"
-                    aria-selected={index === cursorIndex}
-                >
-                    <span class="result-icon">
-                        {#if getIconUrl(entry.iconId)}
-                            <img class="icon-img" src={getIconUrl(entry.iconId)} alt="" width="16" height="16" />
-                        {:else if entry.isDirectory}
-                            <span class="icon-fallback"><Icon name="folder" size={16} aria-hidden="true" /></span>
-                        {:else}
-                            <span class="icon-fallback"><Icon name="file" size={16} aria-hidden="true" /></span>
-                        {/if}
-                    </span>
-                    <!-- Mid-truncating name. `useShortenMiddle` measures with pretext
-                         and snaps to '.' so the extension stays visible. Tooltip
-                         shows the full name only when truncation actually happened. -->
-                    <span
-                        class="result-name"
-                        use:useShortenMiddle={{
-                            text: entry.name,
-                            preferBreakAt: '.',
-                            startRatio: 0.7,
-                            tooltipWhenTruncated: true,
-                        }}
-                    ></span>
-                    {#if showPathColumn}
-                        <span class="result-path">
-                            <PathPills path={entry.parentPath} onPick={onPickPath} />
-                        </span>
-                    {/if}
-                    <span class="result-size">
-                        <Size bytes={entry.size} />
-                    </span>
-                    <span class="result-modified">
-                        <DateLabel modifiedAt={entry.modifiedAt} />
-                    </span>
-                </div>
-            {/each}
+        {:else if showingRows}
+            <ColumnList
+                bind:this={columnList}
+                {columns}
+                rows={results}
+                rowKey={(entry) => entry.path}
+                ariaLabel={tString('queryUi.results.listboxAria')}
+                {cursorIndex}
+                {onHover}
+                onRowClick={onResultClick}
+                onRowContextMenu={({ row }) => {
+                    onRowMenu(row)
+                }}
+                headerClass="column-header"
+                rowClass="result-row"
+            />
         {/if}
     </div>
 
@@ -563,32 +569,6 @@
 </div>
 
 <style>
-    /* Both containers get their `grid-template-columns` as one inline string from the
-       `columns.gridTemplate` (icon | name | path | size | modified), so they can't resolve
-       the same tracks differently. Every track is measured in the script, never
-       `max-content`: each row is its own grid, so `max-content` would resolve per row from
-       that row's data and the columns would drift out of line. The tracks ease between
-       widths; `.animate-track` is off for the first layout so opening the dialog doesn't
-       animate. */
-    .column-header,
-    .result-row {
-        display: grid;
-        column-gap: var(--spacing-md);
-        align-items: center;
-    }
-
-    .column-header.animate-track,
-    .result-row.animate-track {
-        transition: grid-template-columns var(--transition-slow);
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-        .column-header.animate-track,
-        .result-row.animate-track {
-            transition: none;
-        }
-    }
-
     /* The results zone (header + list + status bar) is the ONLY part of the dialog with
        a surface of its own: `--color-bg-primary`, a recessed well against the panel's
        `--color-bg-dialog`. Everything above it sits on the panel. That flip IS the
@@ -607,51 +587,21 @@
         overflow: hidden;
     }
 
-    /* The well's children inset by `--spacing-md`, their breathing room inside it; the
-       dialog's own edge inset is `ModalDialog`'s and lands on the well. */
-    .column-header {
-        padding: var(--spacing-xs) var(--spacing-md);
-        background: var(--color-bg-primary);
-        /* The font-size MUST sit on the grid container, not just on `.col-label`: the
-           `ch` tracks above resolve against the element that owns the grid. `.result-row`
-           declares `--font-size-md` on itself, so a header left at the inherited root size
-           resolved every `ch` track ~14% wider and pushed the whole right-hand side of the
-           header out of line with the rows (the "Modified" label sat left of its dates).
-           Keep the two declarations in lockstep. */
-        font-size: var(--font-size-md);
-        border-bottom: 1px solid var(--color-border-subtle);
-        user-select: none;
-    }
-
-    .col-label {
-        color: var(--color-text-tertiary);
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
-    /* The Path cell's content is a `PathPills` strip whose first pill carries
-       `padding: 0 var(--spacing-xxs)`, so its text box starts inside the track. Inset the
-       header label by the same amount and the two left edges line up. */
-    .col-label.col-path {
-        padding-left: var(--spacing-xxs);
-    }
-
-    .col-label.col-icon {
-        width: 24px;
-    }
-
-    .col-label.col-right {
-        text-align: right;
-    }
-
-    /* Results list. The `flex: 1 1 auto` child of the well, so it absorbs every bit of
-       room the header and status bar leave. */
+    /* The content area: the list, or the state that replaces it. The `flex: 1 1 auto`
+       child of the well, so it absorbs every bit of room the status bar leaves. */
     .results-container {
         flex: 1 1 auto;
         min-height: 0;
         overflow-y: auto;
         background: var(--color-bg-primary);
+    }
+
+    /* Rows: the list scrolls its own viewport under a pinned header, so the container
+       hands it the height instead of scrolling itself. */
+    .results-container.has-list {
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
     }
 
     /* Vertical stack so the spinner sits above the label, matching the rest of
@@ -730,38 +680,9 @@
         margin: 0;
     }
 
-    .result-row {
-        /* Vertical padding sits at --spacing-xxs (~4 px) instead of --spacing-xs
-           (~8 px) to keep the row compact at the dialog's --font-size-md type.
-           All cells vertically center via the grid's `align-items: center` rule above,
-           so the look stays clean with the tighter padding. Rows aren't virtualized
-           (search caps at 30, Selection lists one folder), so the height is content-
-           driven: no row-height constant to keep in sync with the font. */
-        padding: var(--spacing-xxs) var(--spacing-md);
-        font-size: var(--font-size-md);
-        color: var(--color-text-primary);
-    }
-
-    /* Single cursor: mouse hover and keyboard arrows both write to `cursorIndex`
-       (see `onHover` in the row's `onmouseenter`), so there's no separate
-       `.is-hovered` background. The accent-colored cursor follows whichever
-       input the user reaches for (volume-switcher pattern). */
-    .result-row.is-under-cursor {
-        background: var(--color-accent-subtle);
-    }
-
-    /* Under the cursor the muted columns (path / size / modified) read at full
-       `--color-text-primary`: the tertiary / secondary tokens drop below WCAG AA
-       on the lightest accent tints of the cursor bg (verified by the contrast
-       checker, `scripts/check-a11y-contrast/query_dialog_states.go`). Full-contrast
-       text on the active row is also the expected "this row is focused" read. */
-    .result-row.is-under-cursor .result-path,
-    .result-row.is-under-cursor .result-size,
-    .result-row.is-under-cursor .result-modified {
-        color: var(--color-text-primary);
-    }
-
-    .result-icon {
+    /* Cell contents. The cells themselves (font, tone, alignment, the cursor recolor) are
+       `ColumnList`'s. */
+    .icon-box {
         display: flex;
         align-items: center;
         justify-content: center;
@@ -783,31 +704,15 @@
         color: var(--color-text-secondary);
     }
 
-    /* Name column: mid-truncation handled by `useShortenMiddle`; we just keep
-       overflow hidden so a name wider than its track never pushes Path off the edge. */
-    .result-name {
+    /* A block, so `useShortenMiddle` reads the track's width rather than its own text's. */
+    .name-text {
+        display: block;
         overflow: hidden;
         white-space: nowrap;
-        font-weight: 500;
-        min-width: 0;
     }
 
-    .result-path {
-        color: var(--color-text-tertiary);
-        overflow: hidden;
-        min-width: 0;
-    }
-
-    .result-size {
-        color: var(--color-text-secondary);
-        white-space: nowrap;
-        text-align: right;
-    }
-
-    .result-modified {
-        color: var(--color-text-tertiary);
-        white-space: nowrap;
-        text-align: right;
+    .path-label {
+        padding-left: var(--spacing-xxs);
     }
 
     /* Status bar closes the results zone: same surface as the list, separated by a

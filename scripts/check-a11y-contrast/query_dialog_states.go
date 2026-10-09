@@ -59,11 +59,12 @@ var queryDialogScenarios = []ancestorBgScenario{
 		FgVar:    "color-accent-fg",
 		BgVar:    "color-accent",
 	},
-	// Under-cursor result row (`.result-row.is-under-cursor`) in `QueryResults`:
-	// the row bg flips to `--color-accent-subtle`, composited over the results
-	// surface (`--color-bg-primary`). The muted columns (path / size / modified)
-	// set their color on separate `.result-*` selectors, so the walker never
-	// pairs them with the cursor bg. Under the cursor all three render at
+	// Under-cursor result row (`.result-row.is-under-cursor`) in `QueryResults`,
+	// rendered by the house `ColumnList` (`lib/ui/ColumnList.svelte`): the row bg
+	// flips to `--color-accent-subtle`, composited over the list surface
+	// (`--color-bg-primary`). The muted columns (path / size / modified) set their
+	// color through the cell tone classes, so the walker never pairs them with
+	// the cursor bg. Under the cursor every tone renders at
 	// `--color-text-primary` (the tertiary / secondary tokens don't clear AA on
 	// the lightest accent tints); this entry pins that.
 	{

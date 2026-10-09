@@ -1,7 +1,9 @@
 /**
- * End-to-end wiring for the results table's column widths in `QueryResults.svelte`.
+ * End-to-end wiring for the results table's column widths in `QueryResults.svelte` over
+ * `$lib/ui/ColumnList.svelte`.
  *
- * The math itself is pinned in `result-column-widths.test.ts`; this file pins that the
+ * The math itself is pinned in `$lib/ui/column-list-layout.test.ts` and the declarations in
+ * `result-column-widths.test.ts`; this file pins that the
  * component actually reaches it and writes ONE template onto both grid containers. jsdom
  * has no Canvas 2D, so `@chenglou/pretext` is stubbed with a 10px-per-character font, and
  * no layout either, so the container's `clientWidth` is stubbed to a fixed width.
@@ -36,7 +38,7 @@ beforeAll(() => {
   Object.defineProperty(HTMLElement.prototype, 'clientWidth', {
     configurable: true,
     get(this: HTMLElement) {
-      return this.classList.contains('results-container') ? CONTAINER_PX : 0
+      return this.classList.contains('column-list-viewport') ? CONTAINER_PX : 0
     },
   })
 })

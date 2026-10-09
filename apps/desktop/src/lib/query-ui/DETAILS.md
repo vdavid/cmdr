@@ -126,7 +126,8 @@ Five opt-ins carry the shape this dialog needs (each documented in `$lib/ui/DETA
 - `align="top"` — the Spotlight placement, 10vh from the top.
 - `fillBody` + `containerStyle="… max-height: 80vh"` — a fixed-height frame whose body is a flex column, so
   `.results-well` (the only `flex: 1 1 auto` descendant) absorbs the slack while every strip keeps its intrinsic height;
-  `.results-container` inside the well is what actually scrolls.
+  `.results-container` inside the well holds the state messages, or `ColumnList`, whose own viewport scrolls under its
+  pinned header.
 - `ownsKeyboard` — `handleKeyDown` owns the whole contract: Enter (the `⏎` ownership swap) and the capture-phase Escape
   that defers to an open `.ui-popover`. `ModalDialog` still `stopPropagation()`s (shielding the explorer behind the
   scrim) and still drives `onclose` from the × button, the focus-trap escape fallback, and the MCP close registry.
@@ -417,12 +418,11 @@ builds on live in `$lib/ui/`. Only the layout facts that none of those carry liv
   button MUST re-run, for the same reason `showResultsFromCount` does: setting the scope alone leaves the user looking
   at the empty list that prompted the click. Why the bullet earns its place: `$lib/search/DETAILS.md` § "The empty box
   means the current folder".
-- **The results header and the result rows are two separate grid containers, so every track has to resolve identically
-  in both.** `ch` tracks resolve against the font-size of the element that owns the grid, so `.column-header` declares
-  `--font-size-md` exactly like `.result-row` does; without it the header's `10ch` / `16ch` tracks came out ~14% wider
-  (the root size) and the whole right-hand side drifted. The measured template is handed to both as one inline
-  `grid-template-columns` string for the same reason. The Path header additionally insets by `--spacing-xxs`, matching
-  the horizontal padding on `PathPills`' first pill, so the two left edges line up on TEXT rather than on box edges.
+- **The rows are `ColumnList`'s, the cells are `QueryResults`'** (snippets, styled in its own scope). It keeps its hook
+  classes through the list's `headerClass` / `rowClass` / column `class` (`.column-header`, `.result-row`,
+  `.result-name` / `.result-path` / `.result-size` / `.result-modified`), because the E2E suite and the contrast audit
+  key on them. The Path header insets by `--spacing-xxs`, matching the horizontal padding on `PathPills`' first pill, so
+  the two left edges line up on TEXT rather than on box edges.
 
 Component tests (`*.svelte.test.ts`) colocate with what they pin; `codegraph_files` lists them. The tier-3 a11y audits
 are directory-level, because `svelte-tests` charges per test FILE (`docs/testing.md` § "What a test actually costs"):
@@ -433,43 +433,23 @@ described in § i18n: a copy edit lands in the catalog AND in its goldens, toget
 
 ## Column widths
 
-Search's results table sizes every track from the data. Size and Modified fit their widest cell (or header). Name and
-Path share what's left by max-min fairness: each has a demand (its widest row, uncut), they split the width 50-50, and a
-column whose demand fits in its half takes exactly that and hands the rest to the other. When both fit, the spare width
-goes to Path, so it reads as blank space before the right-aligned Size column. Widening the dialog therefore widens
-whichever column is still cut off, and neither can hoard space it doesn't need.
+The results rows are `$lib/ui/ColumnList.svelte`, which owns the width contract: measured tracks, ONE inline template
+for header and rows, max-min fairness among `share` columns, and the no-oscillation rule. `$lib/ui/DETAILS.md` §
+ColumnList. What's Search's own, declared in `result-column-widths.ts` (`resultColumnWidths`):
 
+- **Search: Size and Modified `fit`** their widest cell (or header), falling back to `10ch` / `16ch` until measured.
+  **Name and Path `share`** what's left (floors: Name `80px`, Path `120px`). When both fit, the spare width goes to
+  Path, so it reads as blank space before the right-aligned Size column.
 - **Decision: max-min fairness over a fixed Name cap.** A `22ch` Name cap with Path as the lone `1fr` track cut long
-  filenames short while short paths sat on half-empty columns, and a wider dialog only ever widened Path. Why fairness:
-  the column you're reading is the one that's cut off, so spare width should go wherever text is still hidden.
-- **Math is pure and unit-tested with mocked widths** (`result-column-widths.ts`): `measureColumnDemands` (floors: Name
-  `80px`, Path `120px`; a 2 px measurement pad, same rationale as `file-explorer/views/measure-column-widths.ts`) and
-  `splitNameAndPath`. The Path demand is the UNCOLLAPSED pill strip, built from `path-pills-layout.ts`' `splitPath`,
-  `totalWidth`, and pill constants, so a Path track sized to its demand never trips `PathPills`' collapse.
-- **The flexible column is a `minmax(<floor>px, 1fr)` track, never a computed pixel width.** Only the branch decision
-  reads the container width; CSS resolves the actual remainder, so the right edge stays flush on every frame of a resize
-  even before the `ResizeObserver` reading catches up. Both-flex resolves to an even split.
-- **Every row counts, not only those on screen.** Search caps at 30 rows, so measuring all of them is cheap, and the
-  columns stay put while scrolling.
-- **The DOM side lives in `result-columns.svelte.ts`** (`createResultColumns`), which hands `QueryResults` one
-  `gridTemplate` string plus the `animateTracks` flag.
-- **The layout cannot oscillate**, and any change here has to keep it that way. Every input comes from the data, CSS, or
-  the dialog, never from the tracks: the entry data (`entry.name`, `splitPath(entry.parentPath)`, the same size and date
-  formatting `<Size>` / `<DateLabel>` render, via `sizeDisplayParts` and `formattedDate`), the cells' computed fonts,
-  the row's padding and `column-gap`, and the container's `clientWidth`. Never measure DOM text: `useShortenMiddle` and
-  `PathPills` write shortened text into the cells.
-- **Two measurers, keyed on computed font strings** read off a real row: `.result-name` (weight 500) and `.result-size`
-  (regular, shared by the path pills and Modified). A text-size change rebuilds them on its own. Each is probed once
-  (`candidate('0')`) before adoption, because pretext needs Canvas 2D and only fails on first use; without canvas the
-  table stays on the even-split CSS fallback.
-- **Digits are measured as the font's widest digit**: `DateLabel` renders `tabular-nums`, which canvas can't model. It
-  over-reserves by a pixel or two, never clips. Same trick as `measure-column-widths.ts`.
-- **Tracks ease between layouts** (`--transition-slow` on `grid-template-columns`, `prefers-reduced-motion` respected),
-  except for the first measured layout, so opening the dialog doesn't animate the columns in. During a dialog resize the
-  template string rarely changes (the flex track absorbs it), so resizing doesn't lag.
+  filenames short while short paths sat on half-empty columns, and a wider dialog only ever widened Path.
+- **The Path demand is the UNCOLLAPSED pill strip**, built from `path-pills-layout.ts`' `splitPath`, `totalWidth`, and
+  pill constants, so a Path track sized to its demand never trips `PathPills`' collapse. The Path header insets by half
+  a pill's chrome (`headerDemand`), matching the `--spacing-xxs` CSS inset that lines its text up with the first pill's.
+- **Demands read the same texts the cells render** (`resultRowTexts`): `entry.name`, `splitPath(entry.parentPath)`, and
+  the size and date formatting `<Size>` / `<DateLabel>` render, via `sizeDisplayParts` and `formattedDate`.
 - **Selection (`showPathColumn: false`) keeps Name as the `1fr` flex track with fixed `10ch` / `16ch` Size and
-  Modified.** With no Path column there's nothing to share, and Selection can list a whole folder, so it skips the
-  per-row measuring.
+  Modified.** With no Path column there's nothing to share, and Selection can list a whole folder, so it measures
+  nothing.
 
 ## State shape contract
 
