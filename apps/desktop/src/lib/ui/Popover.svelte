@@ -21,6 +21,12 @@
      *
      * Click-outside closes too. The check looks at the mousedown target rather than click, so a
      * mousedown inside followed by mouseup outside (a drag) doesn't accidentally close.
+     *
+     * `passive` is for a popover that follows a field the user is typing in (the Multi-rename
+     * mask's token editor): it opens without taking focus, and its trap stays off while focus is
+     * elsewhere, so Tab in the field goes on as usual. Once it stops being passive, it focuses its
+     * first field unless focus is already inside, and traps as usual. `alsoInside` names that field,
+     * so placing the caret in it isn't a click outside.
      */
     import { onMount, onDestroy, tick, type Snippet } from 'svelte'
     import { trapFocus } from '$lib/ui/focus-trap'
@@ -36,10 +42,28 @@
         onClose: () => void
         /** Optional: aria-label for the popover region (defaults to "Options"). */
         ariaLabel?: string
+        /** Opens without taking focus or trapping it (see the comment above). Default false. */
+        passive?: boolean
+        /** An element a mousedown in doesn't count as outside: the field a passive popover follows. */
+        alsoInside?: HTMLElement
+        /**
+         * `glass` (the default) is the frosted material; `solid` is opaque, for content that must read
+         * cleanly whatever sits under it (fields, numbers).
+         */
+        surface?: 'glass' | 'solid'
         children: Snippet
     }
 
-    const { anchor, open, onClose, ariaLabel, children }: Props = $props()
+    const {
+        anchor,
+        open,
+        onClose,
+        ariaLabel,
+        passive = false,
+        alsoInside,
+        surface = 'glass',
+        children,
+    }: Props = $props()
     const resolvedAriaLabel = $derived(ariaLabel ?? tString('ui.popover.defaultAriaLabel'))
 
     let popoverEl: HTMLDivElement | undefined = $state()
@@ -81,11 +105,29 @@
         )
     }
 
-    /** Moves focus to the first focusable element inside the popover. */
+    /** Moves focus to the first focusable element inside the popover, unless focus is already in it. */
     async function focusFirst(): Promise<void> {
         await tick()
+        if (popoverEl?.contains(document.activeElement)) return
         const focusables = focusableElements()
         focusables[0]?.focus()
+    }
+
+    /** `trapFocus` while `enabled`: a passive popover mustn't pull focus out of the field it follows. */
+    function trapWhile(node: HTMLElement, params: { enabled: boolean; onEscape: () => void }) {
+        let trap = params.enabled ? trapFocus(node, { onEscape: params.onEscape }) : undefined
+        return {
+            update(next: { enabled: boolean; onEscape: () => void }) {
+                if (next.enabled && !trap) trap = trapFocus(node, { onEscape: next.onEscape })
+                else if (!next.enabled && trap) {
+                    trap.destroy?.()
+                    trap = undefined
+                } else trap?.update?.({ onEscape: next.onEscape })
+            },
+            destroy() {
+                trap?.destroy?.()
+            },
+        }
     }
 
     function handleKeyDown(e: KeyboardEvent): void {
@@ -113,6 +155,7 @@
         if (!target) return
         if (popoverEl.contains(target)) return
         if (anchor.contains(target)) return
+        if (alsoInside?.contains(target)) return
         onClose()
     }
 
@@ -122,11 +165,14 @@
 
     $effect(() => {
         if (!open) return
-        // Re-run on every open: measure after the popover renders, then position and focus.
-        void tick().then(() => {
-            reposition()
-            void focusFirst()
-        })
+        // Re-run on every open: measure after the popover renders, then position.
+        void tick().then(reposition)
+    })
+
+    $effect(() => {
+        if (!open || passive) return
+        // On every open, and when a passive popover becomes an active one.
+        void focusFirst()
     })
 
     onMount(() => {
@@ -144,6 +190,7 @@
     <div
         bind:this={popoverEl}
         class="ui-popover"
+        class:solid={surface === 'solid'}
         role="dialog"
         aria-label={resolvedAriaLabel}
         data-flipped={position.flipped}
@@ -152,7 +199,7 @@
         style:max-height={position.maxHeight === undefined ? undefined : `${String(position.maxHeight)}px`}
         onkeydown={handleKeyDown}
         tabindex="-1"
-        use:trapFocus={{ onEscape: closeAndReturnFocus }}
+        use:trapWhile={{ enabled: !passive, onEscape: closeAndReturnFocus }}
     >
         {@render children()}
     </div>
@@ -178,5 +225,13 @@
         color: var(--color-text-primary);
         font-size: var(--font-size-sm);
         line-height: var(--font-line-height-normal);
+    }
+
+    /* Opaque: a step off the dialog's own fill, so it still reads as a surface above it. */
+    .ui-popover.solid {
+        background: var(--color-bg-secondary);
+        -webkit-backdrop-filter: none;
+        backdrop-filter: none;
+        border-color: var(--color-border);
     }
 </style>

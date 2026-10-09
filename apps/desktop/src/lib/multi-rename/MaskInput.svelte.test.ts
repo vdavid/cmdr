@@ -192,4 +192,92 @@ describe('MaskInput', () => {
     expect(m.input.selectionStart).toBe(5)
     expect(m.outerKeys).toEqual([])
   })
+
+  describe('opening on its own', () => {
+    /** Past the caret's and the pointer's open and close delays. */
+    const pause = (): Promise<void> => new Promise((resolve) => setTimeout(resolve, 450))
+
+    async function caretAt(m: Mounted, caret: number): Promise<void> {
+      m.input.focus()
+      m.input.setSelectionRange(caret, caret)
+      m.input.dispatchEvent(new Event('keyup', { bubbles: true }))
+      await pause()
+      await settle()
+    }
+
+    it('opens when the caret rests inside a counter, and leaves focus in the field', async () => {
+      const m = await mountField('IMG_[C10] x')
+      await caretAt(m, 6)
+      expect(editorFields().map((f) => f.value)).toEqual(['10', '1', '1'])
+      expect(document.activeElement).toBe(m.input)
+    })
+
+    it('stays shut with the caret right after a token, so finishing one never pops it', async () => {
+      const m = await mountField('IMG_[C10] x')
+      await caretAt(m, 9)
+      expect(document.querySelector('.ui-popover')).toBeNull()
+    })
+
+    it('closes once the caret leaves the token', async () => {
+      const m = await mountField('IMG_[C10] x')
+      await caretAt(m, 6)
+      await caretAt(m, 1)
+      expect(document.querySelector('.ui-popover')).toBeNull()
+    })
+
+    it('ArrowDown moves from the field into the open editor’s first field', async () => {
+      const m = await mountField('IMG_[C10] x')
+      await caretAt(m, 6)
+      key(m.input, 'ArrowDown')
+      await settle()
+      expect(document.activeElement).toBe(editorFields()[0])
+      expect(m.outerKeys).toEqual([])
+    })
+
+    it('Escape closes it from the field without reaching the sheet', async () => {
+      const m = await mountField('IMG_[C10] x')
+      await caretAt(m, 6)
+      key(m.input, 'Escape')
+      await settle()
+      expect(document.querySelector('.ui-popover')).toBeNull()
+      expect(m.outerKeys).toEqual([])
+      expect(document.activeElement).toBe(m.input)
+    })
+
+    it('closes when the token stops being a counter', async () => {
+      const m = await mountField('IMG_[C10] x')
+      await caretAt(m, 6)
+      type(m.input, 'IMG_[C1x0] x')
+      m.input.setSelectionRange(7, 7)
+      await settle()
+      expect(document.querySelector('.ui-popover')).toBeNull()
+    })
+
+    it('opens on hover after a moment, and closes a moment after the pointer leaves', async () => {
+      await mountField('[C] x [C+5]')
+      const marker = document.querySelectorAll<HTMLButtonElement>('button[aria-label="Edit counter"]')[1]
+      marker.dispatchEvent(new MouseEvent('mouseenter'))
+      await pause()
+      await settle()
+      expect(editorFields().map((f) => f.value)).toEqual(['1', '5', '1'])
+      marker.dispatchEvent(new MouseEvent('mouseleave'))
+      marker.parentElement?.dispatchEvent(new MouseEvent('mouseleave'))
+      await pause()
+      await settle()
+      expect(document.querySelector('.ui-popover')).toBeNull()
+    })
+
+    it('stays open while the pointer moves from the token into the editor', async () => {
+      await mountField('[C] x')
+      const marker = document.querySelector<HTMLButtonElement>('button[aria-label="Edit counter"]')
+      marker?.dispatchEvent(new MouseEvent('mouseenter'))
+      await pause()
+      await settle()
+      marker?.parentElement?.dispatchEvent(new MouseEvent('mouseleave'))
+      document.querySelector('.ui-popover')?.dispatchEvent(new MouseEvent('mouseenter'))
+      await pause()
+      await settle()
+      expect(document.querySelector('.ui-popover')).not.toBeNull()
+    })
+  })
 })

@@ -200,4 +200,89 @@ describe('Popover behavior', () => {
     // for coverage of the resize listener wiring.
     void unmount(component)
   })
+
+  describe('passive (a popover that follows a field)', () => {
+    const fieldChildren = createRawSnippet(() => ({ render: () => '<div><input id="inner" /></div>' }))
+
+    async function settle(): Promise<void> {
+      for (let i = 0; i < 3; i++) {
+        await tick()
+        await new Promise((resolve) => setTimeout(resolve, 0))
+      }
+    }
+
+    it('opens without taking focus from where the user is typing, and Tab isn’t pulled into it', async () => {
+      const anchor = makeAnchor()
+      const field = document.createElement('input')
+      document.body.appendChild(field)
+      field.focus()
+      const target = document.createElement('div')
+      document.body.appendChild(target)
+      const component = mount(Popover, {
+        target,
+        props: { anchor, open: true, passive: true, onClose: () => {}, children: fieldChildren },
+      })
+      await settle()
+      expect(document.activeElement).toBe(field)
+      const tab = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true })
+      field.dispatchEvent(tab)
+      expect(tab.defaultPrevented).toBe(false)
+      void unmount(component)
+    })
+
+    it('goes into its first field once it stops being passive', async () => {
+      const anchor = makeAnchor()
+      const target = document.createElement('div')
+      document.body.appendChild(target)
+      let passive = $state(true)
+      const component = mount(Popover, {
+        target,
+        props: {
+          anchor,
+          open: true,
+          get passive() {
+            return passive
+          },
+          onClose: () => {},
+          children: fieldChildren,
+        },
+      })
+      await settle()
+      expect(document.activeElement?.id).not.toBe('inner')
+      passive = false
+      await settle()
+      expect(document.activeElement?.id).toBe('inner')
+      void unmount(component)
+    })
+
+    it('stays open for a mousedown in `alsoInside`', async () => {
+      const anchor = makeAnchor()
+      const field = document.createElement('input')
+      document.body.appendChild(field)
+      const onClose = vi.fn()
+      const target = document.createElement('div')
+      document.body.appendChild(target)
+      const component = mount(Popover, {
+        target,
+        props: { anchor, open: true, passive: true, alsoInside: field, onClose, children: fieldChildren },
+      })
+      await settle()
+      field.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }))
+      expect(onClose).not.toHaveBeenCalled()
+      void unmount(component)
+    })
+  })
+
+  it('wears an opaque surface when asked, for content that must read cleanly over anything', async () => {
+    const anchor = makeAnchor()
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    const component = mount(Popover, {
+      target,
+      props: { anchor, open: true, surface: 'solid', onClose: () => {}, children: emptyChildren },
+    })
+    await tick()
+    expect(document.querySelector('.ui-popover')?.classList.contains('solid')).toBe(true)
+    void unmount(component)
+  })
 })

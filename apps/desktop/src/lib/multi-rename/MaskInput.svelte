@@ -3,18 +3,22 @@
      * A rename mask field whose editable placeholders (`MASK_TOKEN_KINDS`, the counter so far)
      * carry a small ▾ marker that opens an inline editor for that one token.
      *
-     * - The markers are an overlay: an input can't hold widgets. Each sits at its token's end,
-     *   measured with a canvas in the input's font, net of `scrollLeft`; one scrolled out of view
-     *   isn't drawn. They take no focus (`tabindex="-1"`, mousedown prevented), so typing never
-     *   loses the caret.
-     * - ArrowDown with the caret inside or right after an editable token opens its editor and is
-     *   claimed; anywhere else it's left alone.
+     * - The markers are an overlay: an input can't hold widgets. Each sits centered under its
+     *   token, measured with a canvas in the input's font, net of `scrollLeft`; one scrolled out of
+     *   view isn't drawn. They take no focus (`tabindex="-1"`, mousedown prevented), so typing
+     *   never loses the caret.
+     * - The editor opens on its own (`token-editor-rules.ts`): while the caret rests inside a token,
+     *   with focus staying in the field, and while the pointer rests on a token or the editor. It
+     *   opens after a short delay, so a caret or pointer passing through doesn't flash it.
+     * - ArrowDown with the caret inside or right after a token goes into its editor (opening it
+     *   first if needed) and is claimed; anywhere else it's left alone. Escape in the field closes
+     *   an open editor, and is claimed so the sheet stays.
      * - The editor lives in a house `Popover` under the token. Every edit rewrites the token in
      *   the text through `onValueChange`, so the mask stays the single source of truth. Enter,
      *   Escape, or ArrowUp from its first field return focus here with the caret after the token;
      *   a click elsewhere closes it and leaves focus where the click put it.
      */
-    import { onMount, tick } from 'svelte'
+    import { flushSync, onDestroy, onMount, tick } from 'svelte'
     import { tString } from '$lib/intl/messages.svelte'
     import Icon from '$lib/ui/Icon.svelte'
     import Popover from '$lib/ui/Popover.svelte'
@@ -22,6 +26,7 @@
     import { claimKey } from '$lib/shortcuts/claim-key'
     import { MASK_TOKEN_KINDS } from './mask-token-kinds'
     import { findTokens, replaceToken, tokenAtCaret, type MaskToken } from './mask-tokens'
+    import { nextEditor, tokenInside, type EditorEvent, type EditorOpen } from './token-editor-rules'
 
     type Token = MaskToken<(typeof MASK_TOKEN_KINDS)[number]>
 
@@ -42,23 +47,40 @@
     const MARKER_WIDTH = 12
     /** The marker rides this far up from the text box's bottom, so it sits in the field's bottom padding. */
     const MARKER_RISE = 2
+    /** How long the caret rests inside a token before its editor opens. */
+    const CARET_OPEN_MS = 250
+    /** How long the pointer rests on a token before its editor opens. */
+    const HOVER_OPEN_MS = 300
+    /** How long after the pointer left the token and the editor the editor closes. */
+    const HOVER_CLOSE_MS = 300
 
     let wrapperEl: HTMLDivElement | undefined = $state()
     let anchorEl: HTMLSpanElement | undefined = $state()
+    let editorEl: HTMLDivElement | undefined = $state()
 
     const tokens = $derived(findTokens(value, MASK_TOKEN_KINDS))
 
-    /** Where each token's marker sits, keyed by the token's start; `null` while scrolled out of view. */
-    let markerLeft = $state<Partial<Record<number, number | null>>>({})
+    /** Each token's horizontal extent in the wrapper, keyed by its start; `null` while its middle is scrolled out of view. */
+    let tokenBox = $state<Partial<Record<number, { left: number; right: number } | null>>>({})
     let markerTop = $state(0)
 
-    /** The token being edited, by its start (a rewrite changes only its end). */
-    let editingFrom = $state<number | null>(null)
-    const editing = $derived(tokens.find((token) => token.span.from === editingFrom))
+    /** The open editor: its token, by start (a rewrite changes only its end), and why it's open. */
+    let editor = $state<EditorOpen | null>(null)
+    const editing = $derived(tokens.find((token) => token.span.from === editor?.from))
     /** Where the caret goes once the editor closes through a key. */
     let returnCaret: number | null = null
 
+    let caretTimer: ReturnType<typeof setTimeout> | undefined
+    let hoverTimer: ReturnType<typeof setTimeout> | undefined
+    /** The token the pointer rests on now, so a move within it doesn't restart its delay. */
+    let hoveredFrom: number | null = null
+
     let measureContext: CanvasRenderingContext2D | null | undefined
+
+    function middleOf(from: number): number | null {
+        const box = tokenBox[from]
+        return box ? (box.left + box.right) / 2 : null
+    }
 
     function measure(current: readonly Token[]): void {
         const input = inputElement
@@ -72,16 +94,18 @@
         const wrapperRect = wrapperEl.getBoundingClientRect()
         const contentLeft = inputRect.left - wrapperRect.left + input.clientLeft
         const textLeft = contentLeft + (parseFloat(style.paddingLeft) || 0) - input.scrollLeft
+        const xAt = (offset: number): number => textLeft + (measureContext?.measureText(value.slice(0, offset)).width ?? 0)
         // An input not laid out (no width yet) can't say what's scrolled away, so every marker shows.
         const laidOut = input.clientWidth > 0
-        const next: Record<number, number | null> = {}
+        const next: Record<number, { left: number; right: number } | null> = {}
         for (const token of current) {
-            const width = measureContext?.measureText(value.slice(0, token.span.to)).width ?? 0
-            const end = textLeft + width
-            const visible = !laidOut || (end >= contentLeft && end <= contentLeft + input.clientWidth)
-            next[token.span.from] = visible ? end : null
+            const left = xAt(token.span.from)
+            const right = xAt(token.span.to)
+            const middle = (left + right) / 2
+            const visible = !laidOut || (middle >= contentLeft && middle <= contentLeft + input.clientWidth)
+            next[token.span.from] = visible ? { left, right } : null
         }
-        markerLeft = next
+        tokenBox = next
         markerTop = inputRect.bottom - wrapperRect.top
     }
 
@@ -90,6 +114,70 @@
         measure(tokens)
     })
 
+    $effect(() => {
+        // A token that's gone (edited into something else, deleted) takes its editor with it.
+        const froms = tokens.map((token) => token.span.from)
+        const current = $state.snapshot(editor)
+        const next = nextEditor(current, { type: 'tokens', froms })
+        if (next !== current) editor = next
+    })
+
+    function apply(event: EditorEvent): void {
+        if (event.type === 'request' || event.type === 'engage' || event.type === 'dismiss') {
+            clearTimeout(caretTimer)
+            clearTimeout(hoverTimer)
+        }
+        editor = nextEditor(editor, event)
+    }
+
+    /** The token the caret is inside of now, while the field has focus and nothing is selected. */
+    function caretToken(): number | null {
+        const input = inputElement
+        if (!input || document.activeElement !== input) return null
+        if (input.selectionStart !== input.selectionEnd) return null
+        return tokenInside(tokens, input.selectionEnd ?? -1)?.span.from ?? null
+    }
+
+    /** Follows the caret: a new token opens after `CARET_OPEN_MS`, anything else applies now. */
+    function syncCaret(): void {
+        const input = inputElement
+        if (!input || document.activeElement !== input) return
+        clearTimeout(caretTimer)
+        const from = caretToken()
+        if (from !== null && from !== editor?.from) {
+            caretTimer = setTimeout(() => {
+                if (document.activeElement === inputElement) apply({ type: 'caret', from: caretToken() })
+            }, CARET_OPEN_MS)
+            return
+        }
+        apply({ type: 'caret', from })
+    }
+
+    /** Follows the pointer: settling on a token opens it after a delay, leaving closes it after one. */
+    function hover(from: number | null): void {
+        if (from === hoveredFrom) return
+        hoveredFrom = from
+        clearTimeout(hoverTimer)
+        if (from === null && editor?.reason !== 'hover') return
+        if (from !== null && editor?.from === from) return
+        hoverTimer = setTimeout(
+            () => {
+                apply({ type: 'hover', from })
+            },
+            from === null ? HOVER_CLOSE_MS : HOVER_OPEN_MS,
+        )
+    }
+
+    function handlePointerMove(e: MouseEvent): void {
+        if (!wrapperEl) return
+        const x = e.clientX - wrapperEl.getBoundingClientRect().left
+        const over = tokens.find((token) => {
+            const box = tokenBox[token.span.from]
+            return box && x >= box.left && x <= box.right
+        })
+        hover(over?.span.from ?? null)
+    }
+
     onMount(() => {
         const input = inputElement
         if (!input) return
@@ -97,7 +185,9 @@
             measure(tokens)
         }
         const onSelectionChange = (): void => {
-            if (document.activeElement === input) remeasure()
+            if (document.activeElement !== input) return
+            remeasure()
+            syncCaret()
         }
         const resize = new ResizeObserver(remeasure)
         resize.observe(input)
@@ -110,10 +200,28 @@
         }
     })
 
-    function open(token: Token): void {
-        returnCaret = null
-        editingFrom = token.span.from
-    }
+    onDestroy(() => {
+        clearTimeout(caretTimer)
+        clearTimeout(hoverTimer)
+    })
+
+    // The popover's own surface keeps a hover-opened editor open while the pointer is on it.
+    $effect(() => {
+        const surface = editorEl?.closest<HTMLElement>('.ui-popover')
+        if (!surface) return
+        const enter = (): void => {
+            hover(editor?.from ?? null)
+        }
+        const leave = (): void => {
+            hover(null)
+        }
+        surface.addEventListener('mouseenter', enter)
+        surface.addEventListener('mouseleave', leave)
+        return () => {
+            surface.removeEventListener('mouseenter', enter)
+            surface.removeEventListener('mouseleave', leave)
+        }
+    })
 
     function rewrite(token: Token, inner: string): void {
         onValueChange(replaceToken(value, token.span, inner).mask)
@@ -122,7 +230,7 @@
     /** Closes the editor; focus comes back through the anchor (Escape) or `focusAfterEditing` (Enter, ArrowUp). */
     function close(): void {
         returnCaret = editing?.span.to ?? null
-        editingFrom = null
+        apply({ type: 'dismiss' })
     }
 
     function focusAfterEditing(): void {
@@ -140,40 +248,82 @@
     }
 
     function handleKeydown(e: KeyboardEvent): void {
-        if (e.key !== 'ArrowDown' || e.isComposing || e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return
+        if (e.isComposing || e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return
+        if (e.key === 'Escape' && editor !== null) {
+            claimKey(e)
+            apply({ type: 'dismiss' })
+            return
+        }
+        if (e.key !== 'ArrowDown') return
         const input = e.currentTarget as HTMLInputElement
-        const token = tokenAtCaret(tokens, input.selectionEnd ?? -1)
+        const token = editing ?? tokenAtCaret(tokens, input.selectionEnd ?? -1)
         if (!token) return
         claimKey(e)
-        open(token)
+        // A passive editor stops being one, which sends focus to its first field.
+        apply({ type: 'request', from: token.span.from })
+    }
+
+    function handleBlur(e: FocusEvent): void {
+        // Tabbing (or clicking) away from the field takes a caret-opened editor with it; going
+        // into the editor itself doesn't.
+        if (editor?.reason !== 'caret') return
+        const next = e.relatedTarget
+        if (next instanceof Node && editorEl?.closest('.ui-popover')?.contains(next)) return
+        apply({ type: 'dismiss' })
+    }
+
+    function handleFieldMouseDown(): void {
+        // Back from the editor into the field: hand the editor to the caret BEFORE focus moves,
+        // so its focus trap is gone and doesn't pull focus back into it.
+        if (editor?.reason !== 'focus') return
+        editor = { ...editor, reason: 'caret' }
+        flushSync()
     }
 </script>
 
-<div class="mask-input" bind:this={wrapperEl}>
+<!-- svelte-ignore a11y_no_static_element_interactions -- pointer-only hover tracking; the keyboard road is the caret -->
+<div
+    class="mask-input"
+    bind:this={wrapperEl}
+    onmousemove={handlePointerMove}
+    onmouseleave={() => { hover(null) }}
+    onmousedown={handleFieldMouseDown}
+>
     <TextInput
         mono
         bind:inputElement
         {value}
-        oninput={(e: Event) => { onValueChange((e.currentTarget as HTMLInputElement).value) }}
+        oninput={(e: Event) => {
+            onValueChange((e.currentTarget as HTMLInputElement).value)
+            syncCaret()
+        }}
         onkeydown={handleKeydown}
+        onkeyup={syncCaret}
+        onmouseup={syncCaret}
+        onfocus={syncCaret}
+        onblur={handleBlur}
         {ariaLabel}
         {invalid}
     />
     {#each tokens as token (token.span.from)}
-        {@const left = markerLeft[token.span.from]}
-        {#if left !== undefined && left !== null}
+        {@const middle = middleOf(token.span.from)}
+        {#if middle !== null}
             <button
                 type="button"
                 class="token-marker"
-                class:open={editingFrom === token.span.from}
+                class:open={editor?.from === token.span.from}
                 tabindex="-1"
                 aria-label={tString(token.kind.markerLabel)}
                 aria-haspopup="dialog"
-                aria-expanded={editingFrom === token.span.from}
-                style:left="{left - MARKER_WIDTH / 2}px"
+                aria-expanded={editor?.from === token.span.from}
+                style:left="{middle - MARKER_WIDTH / 2}px"
                 style:top="{markerTop - MARKER_RISE}px"
-                onmousedown={(e: MouseEvent) => { e.preventDefault() }}
-                onclick={() => { open(token) }}
+                onmousedown={(e: MouseEvent) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                }}
+                onmouseenter={() => { hover(token.span.from) }}
+                onclick={() => { apply({ type: 'request', from: token.span.from }) }}
             >
                 <Icon name="chevron-down" size={10} aria-hidden="true" />
             </button>
@@ -185,7 +335,7 @@
         class="editor-anchor"
         bind:this={anchorEl}
         tabindex="-1"
-        style:left="{(editing ? markerLeft[editing.span.from] : null) ?? 0}px"
+        style:left="{(editing ? middleOf(editing.span.from) : null) ?? 0}px"
         style:top="{markerTop}px"
         onfocus={focusAfterEditing}
     ></span>
@@ -196,16 +346,25 @@
     <Popover
         anchor={anchorEl}
         open={token !== undefined}
+        passive={editor?.reason !== 'focus'}
+        alsoInside={wrapperEl}
+        surface="solid"
         onClose={close}
         ariaLabel={token ? tString(token.kind.editorLabel) : undefined}
     >
         {#if token}
             {@const Editor = token.kind.editor}
-            <Editor
-                value={token.value}
-                onChange={(next) => { rewrite(token, token.kind.format(next)) }}
-                onDone={done}
-            />
+            <!-- Focus arriving here (a click, ArrowDown) means the user is working in the editor. -->
+            <div
+                bind:this={editorEl}
+                onfocusin={() => { apply({ type: 'engage' }) }}
+            >
+                <Editor
+                    value={token.value}
+                    onChange={(next) => { rewrite(token, token.kind.format(next)) }}
+                    onDone={done}
+                />
+            </div>
         {/if}
     </Popover>
 {/if}
