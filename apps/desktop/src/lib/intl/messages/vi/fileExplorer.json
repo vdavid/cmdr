@@ -773,11 +773,11 @@
   "@fileExplorer.clipboard.copiedPath": {
     "sourceHash": "a2eec16"
   },
-  "fileExplorer.clipboard.copiedPaths": "Copied {countText} {count, plural, one {path} other {paths}}.",
+  "fileExplorer.clipboard.copiedPaths": "Đã sao chép {countText} {count, plural, other {đường dẫn}}.",
   "@fileExplorer.clipboard.copiedPaths": {
     "sourceHash": "aed343a"
   },
-  "fileExplorer.clipboard.selectionChanged": "The folder just changed, so nothing was copied. Try again.",
+  "fileExplorer.clipboard.selectionChanged": "Thư mục vừa thay đổi, nên không có gì được sao chép. Hãy thử lại.",
   "@fileExplorer.clipboard.selectionChanged": {
     "sourceHash": "6f31115"
   },

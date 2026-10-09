@@ -773,11 +773,11 @@
   "@fileExplorer.clipboard.copiedPath": {
     "sourceHash": "a2eec16"
   },
-  "fileExplorer.clipboard.copiedPaths": "Copied {countText} {count, plural, one {path} other {paths}}.",
+  "fileExplorer.clipboard.copiedPaths": "Скопировано: {countText} {count, plural, one {путь} few {пути} many {путей} other {пути}}.",
   "@fileExplorer.clipboard.copiedPaths": {
     "sourceHash": "aed343a"
   },
-  "fileExplorer.clipboard.selectionChanged": "The folder just changed, so nothing was copied. Try again.",
+  "fileExplorer.clipboard.selectionChanged": "Папка только что изменилась, поэтому ничего не скопировано. Попробуйте еще раз.",
   "@fileExplorer.clipboard.selectionChanged": {
     "sourceHash": "6f31115"
   },

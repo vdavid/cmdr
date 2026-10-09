@@ -775,11 +775,11 @@
   "@fileExplorer.clipboard.copiedPath": {
     "sourceHash": "a2eec16"
   },
-  "fileExplorer.clipboard.copiedPaths": "Copied {countText} {count, plural, one {path} other {paths}}.",
+  "fileExplorer.clipboard.copiedPaths": "{countText} {count, plural, one {pad} other {paden}} gekopieerd.",
   "@fileExplorer.clipboard.copiedPaths": {
     "sourceHash": "aed343a"
   },
-  "fileExplorer.clipboard.selectionChanged": "The folder just changed, so nothing was copied. Try again.",
+  "fileExplorer.clipboard.selectionChanged": "De map is net gewijzigd, dus er is niets gekopieerd. Probeer het opnieuw.",
   "@fileExplorer.clipboard.selectionChanged": {
     "sourceHash": "6f31115"
   },

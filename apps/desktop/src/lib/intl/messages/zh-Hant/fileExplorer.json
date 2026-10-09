@@ -771,11 +771,11 @@
   "@fileExplorer.clipboard.copiedPath": {
     "sourceHash": "a2eec16"
   },
-  "fileExplorer.clipboard.copiedPaths": "Copied {countText} {count, plural, one {path} other {paths}}.",
+  "fileExplorer.clipboard.copiedPaths": "已複製 {countText} {count, plural, other {個路徑}}。",
   "@fileExplorer.clipboard.copiedPaths": {
     "sourceHash": "aed343a"
   },
-  "fileExplorer.clipboard.selectionChanged": "The folder just changed, so nothing was copied. Try again.",
+  "fileExplorer.clipboard.selectionChanged": "資料夾剛剛變動了，所以什麼都沒複製。請再試一次。",
   "@fileExplorer.clipboard.selectionChanged": {
     "sourceHash": "6f31115"
   },

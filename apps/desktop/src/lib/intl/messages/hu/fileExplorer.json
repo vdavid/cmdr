@@ -773,11 +773,11 @@
   "@fileExplorer.clipboard.copiedPath": {
     "sourceHash": "a2eec16"
   },
-  "fileExplorer.clipboard.copiedPaths": "Copied {countText} {count, plural, one {path} other {paths}}.",
+  "fileExplorer.clipboard.copiedPaths": "{countText} {count, plural, one {útvonal} other {útvonal}} másolva.",
   "@fileExplorer.clipboard.copiedPaths": {
     "sourceHash": "aed343a"
   },
-  "fileExplorer.clipboard.selectionChanged": "The folder just changed, so nothing was copied. Try again.",
+  "fileExplorer.clipboard.selectionChanged": "A mappa épp most megváltozott, ezért nem történt másolás. Próbáld újra.",
   "@fileExplorer.clipboard.selectionChanged": {
     "sourceHash": "6f31115"
   },
