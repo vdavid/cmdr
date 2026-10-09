@@ -17,8 +17,8 @@
     import SearchDialog from '$lib/search/SearchDialog.svelte'
     import SelectionDialog from '$lib/selection-dialog/SelectionDialog.svelte'
     import MultiRenameDialog from '$lib/multi-rename/MultiRenameDialog.svelte'
-    import type { MultiRenameTarget } from '$lib/multi-rename/multi-rename-state.svelte'
-    import type { MultiRenameStarted } from '$lib/tauri-commands'
+    import { closeMultiRename as endMultiRenameSession, openMultiRename as openMultiRenameSession } from '$lib/tauri-commands'
+    import type { MultiRenameOpened, MultiRenameStarted } from '$lib/tauri-commands'
     import GoToPathDialog from '$lib/go-to-path/GoToPathDialog.svelte'
     import WhatsNewDialog from '$lib/whats-new/WhatsNewDialog.svelte'
     import AcknowledgementsDialog from '$lib/licensing/AcknowledgementsDialog.svelte'
@@ -139,7 +139,9 @@
      * every auto-applied keystroke.
      */
     let showSelectionDialog = $state<'add' | 'remove' | null>(null)
-    let multiRenameTarget = $state.raw<MultiRenameTarget | null>(null)
+    let multiRenameSession = $state.raw<MultiRenameOpened | null>(null)
+    let openingMultiRename = false
+    const multiRenameLog = getAppLogger('multiRename')
     let selectionDialogSnapshot = $state.raw<{
         entries: FileEntry[]
         cursorIndex: number
@@ -563,16 +565,39 @@
         showSelectionDialog = mode
     }
 
-    /** Opens the Multi-Rename Tool on the focused pane (⌃M). A pane with no real listing has nothing to rename. */
-    function openMultiRename(): void {
-        if (multiRenameTarget || !explorerRef) return
+    /**
+     * Opens the Multi-Rename Tool on the focused pane (⌃M): the backend resolves the
+     * selection into its files once, here. A pane with no real listing has nothing to
+     * rename; a selection the listing moved past is refused, as F5 refuses it.
+     */
+    async function openMultiRename(): Promise<void> {
+        if (multiRenameSession || openingMultiRename || !explorerRef) return
         const target = explorerRef.getFocusedPaneRenameTarget()
         if (!target) return
-        multiRenameTarget = { ...target, includeHidden: getShowHiddenFiles() }
+        openingMultiRename = true
+        try {
+            const opened = await openMultiRenameSession(
+                target.listingId,
+                getShowHiddenFiles(),
+                target.selectedIndices,
+                target.expectedSequence,
+            )
+            if (opened.ok) {
+                multiRenameSession = opened.value
+                return
+            }
+            multiRenameLog.warn("couldn't open Multi-Rename: {reason}", { reason: opened.error.type })
+            if (opened.error.type === 'selectionChanged') {
+                addToast(tString('multiRename.selectionChanged'), { level: 'warn' })
+            }
+        } finally {
+            openingMultiRename = false
+        }
     }
 
     function closeMultiRename(): void {
-        multiRenameTarget = null
+        if (multiRenameSession) void endMultiRenameSession(multiRenameSession.sessionId)
+        multiRenameSession = null
         void Promise.resolve().then(() => {
             explorerRef?.refocus()
         })
@@ -580,6 +605,10 @@
 
     function handleMultiRenameApplied(started: MultiRenameStarted): void {
         addToast(tString('multiRename.started', { count: started.renaming }), { level: 'info' })
+        // A batch that ran as a move (a rename that copies, on S3) can't swap names.
+        if (started.swapsLeftOut > 0) {
+            addToast(tString('multiRename.swapsSkipped', { count: started.swapsLeftOut }), { level: 'warn' })
+        }
         closeMultiRename()
     }
 
@@ -660,7 +689,7 @@
                 void setSelectionDialog(mode)
             },
             showMultiRename: () => {
-                openMultiRename()
+                void openMultiRename()
             },
             openOnboarding: () => openOnboardingFromMenuOrPalette(startupGatesCtx, 'menu'),
         },
@@ -792,9 +821,9 @@
             />
         {/if}
 
-        {#if multiRenameTarget}
+        {#if multiRenameSession}
             <MultiRenameDialog
-                target={multiRenameTarget}
+                session={multiRenameSession}
                 onApplied={handleMultiRenameApplied}
                 onClose={closeMultiRename}
             />

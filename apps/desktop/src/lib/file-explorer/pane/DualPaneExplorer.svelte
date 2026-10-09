@@ -90,7 +90,7 @@
     import type { RenameAsMoveRequest } from './rename-flow.svelte'
     import { createClipboardOperations } from './clipboard-operations'
     import { createFileOperationCommands } from './file-operation-commands'
-    import { createPaneCommands } from './pane-commands'
+    import { createPaneCommands, type MultiRenameSelection } from './pane-commands'
     import { createSortOperations } from './sort-operations'
     import { createSwapPanes } from './swap-panes'
     import { createVolumeSelection, type VolumeSelectOutcome } from './volume-selection'
@@ -1043,9 +1043,9 @@
         paneCommands.applyIndicesToFocusedPane(idxs, mode)
     }
 
-    // noinspection JSUnusedGlobalSymbols -- consumed by +page.svelte for Selection dialog
-    /** The Multi-Rename Tool's target: the focused pane's listing and selected rows. */
-    export function getFocusedPaneRenameTarget(): { listingId: string; rows: number[] | null } | null {
+    // noinspection JSUnusedGlobalSymbols -- consumed by +page.svelte for the Multi-Rename Tool
+    /** The Multi-Rename Tool's target: the focused pane's listing, selected rows, and their sequence. */
+    export function getFocusedPaneRenameTarget(): MultiRenameSelection | null {
         return paneCommands.getFocusedPaneRenameTarget()
     }
 

@@ -175,10 +175,6 @@
   "@multiRename.error.couldntStart": {
     "sourceHash": "4b123be"
   },
-  "multiRename.moreRows": "{count, plural, one {# archivo más no se muestra, pero se renombrará} many {# archivos más no se muestran, pero se renombrarán} other {# archivos más no se muestran, pero se renombrarán}}",
-  "@multiRename.moreRows": {
-    "sourceHash": "8c036bb"
-  },
   "multiRename.counts": "{ready, plural, one {# para renombrar} many {# para renombrar} other {# para renombrar}} · {unchanged, plural, one {# sin cambios} many {# sin cambios} other {# sin cambios}} · {problems, plural, one {# problema} many {# problemas} other {# problemas}}",
   "@multiRename.counts": {
     "sourceHash": "7464938"
@@ -202,9 +198,5 @@
   "multiRename.error.readOnly": "No se puede renombrar en esta carpeta: está dentro de un archivo comprimido o de otro lugar de solo lectura",
   "@multiRename.error.readOnly": {
     "sourceHash": "f576c74"
-  },
-  "multiRename.hiddenProblems": "{count, plural, one {# archivo más allá de las filas mostradas tiene un problema y no se renombrará} many {# archivos más allá de las filas mostradas tienen un problema y no se renombrarán} other {# archivos más allá de las filas mostradas tienen un problema y no se renombrarán}}",
-  "@multiRename.hiddenProblems": {
-    "sourceHash": "aea1ba2"
   }
 }

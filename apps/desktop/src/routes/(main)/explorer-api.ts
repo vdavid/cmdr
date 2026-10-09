@@ -14,6 +14,7 @@ import type { AdoptedOperationData, ForegroundOperationVerdict } from '$lib/file
 import type { NavigateIntent, NavigateResult } from '$lib/file-explorer/pane/navigate'
 import type { VolumeSelectOutcome } from '$lib/file-explorer/pane/volume-selection'
 import type { FavoriteOpenedEvent } from '$lib/file-explorer/navigation/favorites-analytics'
+import type { MultiRenameSelection } from '$lib/file-explorer/pane/pane-commands'
 import type {
   CopyPathBetweenPanesArgs,
   OpenDeleteDialogArgs,
@@ -313,12 +314,13 @@ export interface ExplorerAPI {
    * Selection dialog on commit.
    */
   applyIndicesToFocusedPane: (idxs: number[], mode: 'add' | 'remove') => void
+  /** The Multi-Rename Tool's target: the focused pane's listing, selected rows, and their sequence. */
+  getFocusedPaneRenameTarget: () => MultiRenameSelection | null
   /**
    * Returns a snapshot of the focused pane's entries + cursor index for the Selection
    * dialog. Captured ONCE at dialog open; the dialog does not refresh on mid-dialog
    * focused-pane change.
    */
-  getFocusedPaneRenameTarget: () => { listingId: string; rows: number[] | null } | null
   getFocusedPaneEntries: () => Promise<{
     entries: FileEntry[]
     cursorIndex: number

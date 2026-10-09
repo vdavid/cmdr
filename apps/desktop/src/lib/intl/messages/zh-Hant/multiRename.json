@@ -175,10 +175,6 @@
   "@multiRename.error.couldntStart": {
     "sourceHash": "4b123be"
   },
-  "multiRename.moreRows": "{count, plural, other {還有 # 個檔案沒有顯示在預覽裡，但也會重新命名}}",
-  "@multiRename.moreRows": {
-    "sourceHash": "8c036bb"
-  },
   "multiRename.counts": "{ready, plural, other {# 個要重新命名}} · {unchanged, plural, other {# 個不變}} · {problems, plural, other {# 個有問題}}",
   "@multiRename.counts": {
     "sourceHash": "7464938"
@@ -202,9 +198,5 @@
   "multiRename.error.readOnly": "無法在這個資料夾裡重新命名，因為它在封存檔或其他唯讀的位置裡",
   "@multiRename.error.readOnly": {
     "sourceHash": "f576c74"
-  },
-  "multiRename.hiddenProblems": "{count, plural, other {顯示的列之外還有 # 個檔案有問題，不會重新命名}}",
-  "@multiRename.hiddenProblems": {
-    "sourceHash": "aea1ba2"
   }
 }

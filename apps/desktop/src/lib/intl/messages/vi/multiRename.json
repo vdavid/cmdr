@@ -175,10 +175,6 @@
   "@multiRename.error.couldntStart": {
     "sourceHash": "4b123be"
   },
-  "multiRename.moreRows": "{count, plural, other {Còn # tệp nữa không được hiển thị, nhưng vẫn sẽ được đổi tên}}",
-  "@multiRename.moreRows": {
-    "sourceHash": "8c036bb"
-  },
   "multiRename.counts": "{ready, plural, other {# sẽ đổi tên}} · {unchanged, plural, other {# giữ nguyên}} · {problems, plural, other {# có vấn đề}}",
   "@multiRename.counts": {
     "sourceHash": "7464938"
@@ -202,9 +198,5 @@
   "multiRename.error.readOnly": "Không đổi tên được trong thư mục này: thư mục nằm bên trong một tệp nén hoặc một nơi chỉ đọc khác",
   "@multiRename.error.readOnly": {
     "sourceHash": "f576c74"
-  },
-  "multiRename.hiddenProblems": "{count, plural, other {# tệp ngoài các hàng đang hiển thị có vấn đề và sẽ không được đổi tên}}",
-  "@multiRename.hiddenProblems": {
-    "sourceHash": "aea1ba2"
   }
 }

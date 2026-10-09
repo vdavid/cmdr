@@ -8,15 +8,19 @@ removing diacritics, a counter, presets, and a live preview. The sheet is `src/l
 - `mask.rs` the placeholders (`[N2-5]`, `[C10+5:3]`, `[YMD]`, `[U]`…), parsed once, rendered per row. Pure.
 - `transform.rs` search & replace, the case step, `remove_diacritics`. Pure.
 - `plan.rs` the preview over a folder's entries: each row's new name and status. Pure.
-- `run.rs` preview and apply off the pane's cached listing; apply runs `start_renames` (Ask Cmdr's executor).
+- `session.rs` one open sheet's files (resolved once from the pane's selection), its latest preview, and paging.
+- `run.rs` apply: proves the ready rows against the preview shown, then runs `start_renames` (Ask Cmdr's executor).
 - `presets.rs` named presets on `crate::recents`.
 
 ## Must-knows
 
-- **Names come from the backend, never the frontend.** Apply recomputes the preview from the listing and renames only
-  if its ready rows are EXACTLY the `(row, old, new)` the user saw (`ExpectedRename`), else `PreviewOutOfDate`: a row
-  number that shifted never renames another file. The heavy part runs off the IPC thread; a routed (read-only) folder
-  is refused.
+- **The selection becomes file names ONCE, when the sheet opens** (`session::open`, under the listing's sequence
+  guard). ❌ Never map row numbers through the live listing again: a file appearing while the sheet is open shifts the
+  rows, and the preview and Start would rename files the user never picked. A session file that's gone is `Missing`.
+- **Names stay in the backend.** The sheet gets counts and the page of rows it draws; apply takes `(session, preview)`
+  ids, recomputes, and refuses with `PreviewOutOfDate` unless its ready rows are EXACTLY that preview's.
+- **Sessions are bounded** (`MAX_SESSIONS`, idle eviction on open): a sheet that never closed can't hold a big
+  folder's names for long.
 - **`a|b` → `x|y` replaces in ONE pass** (`Replacement::Pairs`): `a|b` → `b|c` turns `a` into `b`, `one|two` →
   `two|one` swaps. ❌ Never chain the pairs: that's how `a` became `c`.
 - **TC's order is fixed**: mask, then search & replace, then case, then diacritics. Positions count from 1; a range past

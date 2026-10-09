@@ -175,10 +175,6 @@
   "@multiRename.error.couldntStart": {
     "sourceHash": "4b123be"
   },
-  "multiRename.moreRows": "{count, plural, other {另有 # 个文件没有显示，但也会重命名}}",
-  "@multiRename.moreRows": {
-    "sourceHash": "8c036bb"
-  },
   "multiRename.counts": "{ready, plural, other {# 个待重命名}} · {unchanged, plural, other {# 个不变}} · {problems, plural, other {# 个有问题}}",
   "@multiRename.counts": {
     "sourceHash": "7464938"
@@ -202,9 +198,5 @@
   "multiRename.error.readOnly": "无法在这个文件夹里重命名：它位于压缩文件或其他只读位置中",
   "@multiRename.error.readOnly": {
     "sourceHash": "f576c74"
-  },
-  "multiRename.hiddenProblems": "{count, plural, other {显示的行之外还有 # 个文件有问题，不会重命名}}",
-  "@multiRename.hiddenProblems": {
-    "sourceHash": "aea1ba2"
   }
 }

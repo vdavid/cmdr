@@ -175,10 +175,6 @@
   "@multiRename.error.couldntStart": {
     "sourceHash": "4b123be"
   },
-  "multiRename.moreRows": "{count, plural, one {További # fájl nem látszik, de a Cmdr azt is átnevezi} other {További # fájl nem látszik, de a Cmdr azokat is átnevezi}}",
-  "@multiRename.moreRows": {
-    "sourceHash": "8c036bb"
-  },
   "multiRename.counts": "{ready, plural, one {# átnevezendő} other {# átnevezendő}} · {unchanged, plural, one {# változatlan} other {# változatlan}} · {problems, plural, one {# probléma} other {# probléma}}",
   "@multiRename.counts": {
     "sourceHash": "7464938"
@@ -202,9 +198,5 @@
   "multiRename.error.readOnly": "Ebben a mappában nem lehet átnevezni: archívumban vagy más csak olvasható helyen van",
   "@multiRename.error.readOnly": {
     "sourceHash": "f576c74"
-  },
-  "multiRename.hiddenProblems": "{count, plural, one {A megjelenített sorokon túl még # fájllal probléma van, ezért a Cmdr nem nevezi át} other {A megjelenített sorokon túl még # fájllal probléma van, ezért a Cmdr nem nevezi át őket}}",
-  "@multiRename.hiddenProblems": {
-    "sourceHash": "aea1ba2"
   }
 }

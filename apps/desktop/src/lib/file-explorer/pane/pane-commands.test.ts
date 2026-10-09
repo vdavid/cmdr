@@ -49,6 +49,9 @@ function buildPaneRef(
     filenameUnderCursor: string | undefined
     pathUnderCursor: string | undefined
     selectedIndices: number[]
+    allSelected: boolean
+    rowStateReady: boolean
+    lastSequence: number
     entriesSnapshot: FileEntry[]
     entriesCursorIndex: number
   }> = {},
@@ -62,6 +65,9 @@ function buildPaneRef(
     getFilenameUnderCursor: () => ('filenameUnderCursor' in overrides ? overrides.filenameUnderCursor : 'file.txt'),
     getPathUnderCursor: () => overrides.pathUnderCursor,
     getSelectedIndices: () => overrides.selectedIndices ?? [],
+    isAllSelected: () => overrides.allSelected ?? false,
+    isRowStateReady: () => overrides.rowStateReady ?? true,
+    getLastSequence: () => overrides.lastSequence ?? 0,
     getEntriesSnapshot: () => Promise.resolve(overrides.entriesSnapshot ?? []),
     getEntriesCursorIndex: () => overrides.entriesCursorIndex ?? 0,
     // Action / select spies
@@ -386,6 +392,35 @@ describe('routePanelKey type-to-jump intercept mirroring', () => {
     cmds.routePanelKey(payload({ key: 'a' }))
     expect(ref.handleJumpKeystroke).not.toHaveBeenCalled()
     expect(ref.handleKeyDown).toHaveBeenCalledOnce()
+  })
+})
+
+describe('getFocusedPaneRenameTarget', () => {
+  it('hands over the selection as backend rows in row order, with the sequence they belong to', () => {
+    const ref = buildPaneRef({ hasParent: true, selectedIndices: [5, 0, 2], lastSequence: 9 })
+    const cmds = create(buildAccess({ paneRefs: { left: ref } }))
+    // Row 0 is `..`: it never renames, and the rest shift down by one.
+    expect(cmds.getFocusedPaneRenameTarget()).toEqual({
+      listingId: 'listing-1',
+      selectedIndices: [1, 4],
+      expectedSequence: 9,
+    })
+  })
+
+  it('names the whole folder when nothing or everything is selected', () => {
+    const none = create(buildAccess({ paneRefs: { left: buildPaneRef({ lastSequence: 3 }) } }))
+    expect(none.getFocusedPaneRenameTarget()?.selectedIndices).toBeNull()
+    const all = create(
+      buildAccess({ paneRefs: { left: buildPaneRef({ allSelected: true, selectedIndices: [0, 1, 2] }) } }),
+    )
+    expect(all.getFocusedPaneRenameTarget()?.selectedIndices).toBeNull()
+  })
+
+  it('opens nothing while the selected rows are still settling, or on a pane with no listing', () => {
+    const settling = buildPaneRef({ selectedIndices: [1], rowStateReady: false })
+    expect(create(buildAccess({ paneRefs: { left: settling } })).getFocusedPaneRenameTarget()).toBeNull()
+    const search = buildPaneRef({ volumeId: 'search-results' })
+    expect(create(buildAccess({ paneRefs: { left: search } })).getFocusedPaneRenameTarget()).toBeNull()
   })
 })
 

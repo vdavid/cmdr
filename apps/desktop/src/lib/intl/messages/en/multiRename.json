@@ -175,10 +175,6 @@
   "@multiRename.error.couldntStart": {
     "description": "Shown when the rename couldn't start or the preview took too long."
   },
-  "multiRename.moreRows": "{count, plural, one {# more file isn’t shown, but will be renamed} other {# more files aren’t shown, but will be renamed}}",
-  "@multiRename.moreRows": {
-    "description": "Below the preview table when it only shows the first 1,000 files. {count} is how many more there are."
-  },
   "multiRename.counts": "{ready, plural, one {# to rename} other {# to rename}} · {unchanged, plural, one {# unchanged} other {# unchanged}} · {problems, plural, one {# problem} other {# problems}}",
   "@multiRename.counts": {
     "description": "Footer summary of the preview: how many files will be renamed, how many keep their name, and how many have a problem."
@@ -203,8 +199,16 @@
   "@multiRename.error.readOnly": {
     "description": "Shown when Rename is pressed in a folder that can't be changed, such as the inside of a zip archive."
   },
-  "multiRename.hiddenProblems": "{count, plural, one {# file past the rows shown has a problem and won’t be renamed} other {# files past the rows shown have a problem and won’t be renamed}}",
-  "@multiRename.hiddenProblems": {
-    "description": "Below the preview table when files past the first 1,000 shown have a problem (name taken, invalid) and will be skipped. {count} is how many."
+  "multiRename.status.missing": "No longer in this folder",
+  "@multiRename.status.missing": {
+    "description": "Preview note: a file the user picked for renaming was deleted or moved out of the folder while the tool was open, so it can't be renamed."
+  },
+  "multiRename.selectionChanged": "The folder changed while Multi-rename was opening. Check your selection, then try again.",
+  "@multiRename.selectionChanged": {
+    "description": "Warning toast when ⌃M (Multi-rename) didn't open because files appeared or disappeared in the folder at that moment, so the selected rows may no longer be the files the user picked. Nothing was renamed."
+  },
+  "multiRename.swapsSkipped": "{count, plural, one {Skipped # rename that swaps names} other {Skipped # renames that swap names}}. Rename those files one at a time.",
+  "@multiRename.swapsSkipped": {
+    "description": "Warning toast after Rename starts on cloud storage (S3), when some renames swap names with each other (for example a → b and b → a). On S3, renaming a folder copies everything inside it, and copying one folder onto another that is still there would mix their contents, so those renames were skipped and the files kept their names. {count} is how many (always 2 or more). Match the wording of askCmdr.renameUndo.swapsSkipped."
   }
 }

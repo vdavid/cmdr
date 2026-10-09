@@ -1,6 +1,6 @@
 /**
  * Tier 3 a11y tests for `MultiRenameDialog.svelte`: the sheet with a preview of
- * ready, unchanged, and blocked rows, and with a mask error showing.
+ * ready, unchanged, blocked, and missing rows, and with a mask error showing.
  */
 
 import { describe, it, vi } from 'vitest'
@@ -14,6 +14,7 @@ vi.mock('$lib/tauri-commands', () => ({
   notifyDialogOpened: vi.fn(() => Promise.resolve()),
   notifyDialogClosed: vi.fn(() => Promise.resolve()),
   previewMultiRename,
+  getMultiRenamePreviewRows: vi.fn(() => Promise.resolve({ ok: true, value: [] })),
   applyMultiRename: vi.fn(() => Promise.resolve({ ok: false, error: { type: 'nothingToRename' } })),
   getMultiRenamePresets: vi.fn(() => Promise.resolve([{ id: 'p1', name: 'Bez diakritiky', spec: {} }])),
   saveMultiRenamePreset: vi.fn(() => Promise.resolve()),
@@ -30,6 +31,7 @@ const ROWS = [
     newName: 'x/y.pdf',
     status: { type: 'invalidName', reason: { type: 'disallowedCharacter', character: '/' } },
   },
+  { row: 4, oldName: 'gone.pdf', newName: 'gone.pdf', status: { type: 'missing' } },
 ]
 
 async function mountSheet(): Promise<HTMLElement> {
@@ -38,7 +40,7 @@ async function mountSheet(): Promise<HTMLElement> {
   mount(MultiRenameDialog, {
     target,
     props: {
-      target: { listingId: 'L', includeHidden: false, rows: null },
+      session: { sessionId: 'S', count: 5 },
       onApplied: () => {},
       onClose: () => {},
     },
@@ -51,7 +53,10 @@ async function mountSheet(): Promise<HTMLElement> {
 
 describe('MultiRenameDialog a11y', () => {
   it('with a preview of mixed rows has no violations', async () => {
-    previewMultiRename.mockResolvedValue({ ok: true, value: ROWS })
+    previewMultiRename.mockResolvedValue({
+      ok: true,
+      value: { previewId: 1, counts: { ready: 1, unchanged: 1, problems: 3 }, rows: ROWS },
+    })
     await expectNoA11yViolations(await mountSheet())
   })
 

@@ -85,5 +85,3 @@ item once settled, and record the outcome in `terms.json` or `decisions.md`.
   `multiRename.insertPlaceholder`): `Начало счетчика`, `Число цифр` (TC writes `Начать с:` / `Цифр:` inside a «Параметры
   счетчика» group Cmdr lacks), the noun phrase `Удаление диакритических знаков` shared by the checkbox and the preset,
   and `обозначение` for the [N]/[C] tokens. Natural for TC users?
-- **Hidden rows** (`multiRename.hiddenProblems`, `multiRename.moreRows`): «за пределами показанных строк» and «Еще #
-  файл не показан» both mean past the 1,000 shown rows. Clear enough?

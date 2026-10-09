@@ -9,8 +9,18 @@ import type { FilePaneAPI } from './types'
 import type { FileEntry, FriendlyError } from '../types'
 import type { createDialogState } from './dialog-state.svelte'
 import type { PaneAccess } from './pane-access'
+import { toBackendIndices } from '$lib/file-operations/transfer/transfer-dialog-utils'
 
 type DialogState = ReturnType<typeof createDialogState>
+
+/** What the Multi-Rename Tool opens a session over (`openMultiRename`). */
+export interface MultiRenameSelection {
+  listingId: string
+  /** Backend row numbers in row order, or `null` for every row the pane shows. */
+  selectedIndices: number[] | null
+  /** The pane's applied listing sequence the row numbers belong to. */
+  expectedSequence: number
+}
 
 /**
  * Read-only / delegating command bodies for the MCP + palette surface, lifted
@@ -328,21 +338,29 @@ export function createPaneCommands(access: PaneAccess, dialogs: DialogState) {
   }
 
   /**
-   * What the Multi-Rename Tool renames: the focused pane's listing and its
-   * selected rows as backend row numbers (in row order), or `null` rows for the
-   * whole folder. `null` when the pane shows no real listing (servers, search results).
+   * What the Multi-Rename Tool renames: the focused pane's listing, its selected
+   * rows as backend row numbers (in row order; `null` for every row, when all or
+   * none are selected), and the applied sequence they belong to, so the backend
+   * refuses them once the rows moved. `null` when the pane shows no real listing
+   * (servers, search results) or its rows are still settling.
    */
-  function getFocusedPaneRenameTarget(): { listingId: string; rows: number[] | null } | null {
+  function getFocusedPaneRenameTarget(): MultiRenameSelection | null {
     const pane = access.getPaneRef(access.getFocusedPane())
     if (!pane || !capabilitiesFor(pane.getVolumeId()).hasBackendListing) return null
     const listingId = pane.getListingId()
     if (listingId === '') return null
-    const hasParent = pane.hasParentEntry()
-    const selected = [...pane.getSelectedIndices()]
-      .sort((a, b) => a - b)
-      .map((i) => (hasParent ? i - 1 : i))
-      .filter((i) => i >= 0)
-    return { listingId, rows: selected.length > 0 ? selected : null }
+    const selected = pane.isAllSelected()
+      ? []
+      : toBackendIndices(
+          [...pane.getSelectedIndices()].sort((a, b) => a - b),
+          pane.hasParentEntry(),
+        )
+    if (selected.length > 0 && !pane.isRowStateReady()) return null
+    return {
+      listingId,
+      selectedIndices: selected.length > 0 ? selected : null,
+      expectedSequence: pane.getLastSequence(),
+    }
   }
 
   /** Returns true when the cursor landed on the named item, false when it wasn't found. */

@@ -4,6 +4,7 @@
      * mask with placeholders, search & replace, a case step, removing diacritics,
      * a counter, presets, and a live preview of every row. Start renames the
      * rows that are ready as one operation (the queue shows it; Undo reverses it).
+     * The rows come a page at a time: the table draws only the ones in view.
      *
      * Keyboard-first: the name mask has focus on open, Tab walks the fields, the
      * preview follows every keystroke, Enter starts, Esc closes.
@@ -17,30 +18,38 @@
     import TextInput from '$lib/ui/TextInput.svelte'
     import { tString } from '$lib/intl/messages.svelte'
     import { getAppLogger } from '$lib/logging/logger'
-    import type { MultiRenameError, MultiRenameStarted, PreviewRow } from '$lib/tauri-commands'
+    import type { MultiRenameError, MultiRenameOpened, MultiRenameStarted, PreviewRow } from '$lib/tauri-commands'
     import type { CaseChange } from '$lib/ipc/bindings'
-    import { createMultiRenameState, type MultiRenameTarget } from './multi-rename-state.svelte'
+    import { createMultiRenameState } from './multi-rename-state.svelte'
     import { BUILT_IN_PRESETS, DEFAULT_SPEC, insertAtCaret } from './spec'
 
     interface Props {
-        target: MultiRenameTarget
+        session: MultiRenameOpened
         onApplied: (started: MultiRenameStarted) => void
         onClose: () => void
     }
 
-    const { target, onApplied, onClose }: Props = $props()
+    const { session, onApplied, onClose }: Props = $props()
 
     const log = getAppLogger('multiRename')
 
-    // One sheet renames one target; a new target remounts it.
-    const tool = createMultiRenameState(target)
+    // One sheet renames one session; a new session remounts it.
+    const tool = createMultiRenameState(session.sessionId)
 
     let nameMaskInput = $state<HTMLInputElement>()
     let presetName = $state('')
     let selectedPresetId = $state('')
 
-    /** How many preview rows the table draws; the rest still rename. */
-    const SHOWN_ROWS = 1000
+    /** Rows drawn above and below the ones in view, so a scroll doesn't flash empty rows. */
+    const OVERSCAN = 20
+    /** Rows drawn before the table knows its height (in a test, or before the first layout). */
+    const FALLBACK_VISIBLE_ROWS = 40
+
+    let previewEl = $state<HTMLDivElement>()
+    let scrollTop = $state(0)
+    let viewportHeight = $state(0)
+    /** One row's height, measured from a drawn row. */
+    let rowHeight = $state(0)
 
     const PLACEHOLDERS = ['[N]', '[E]', '[P]', '[C]', '[YMD]', '[hms]'] as const
 
@@ -60,15 +69,44 @@
 
     const canStart = $derived(tool.counts.ready > 0 && tool.error === null && !tool.pending && !tool.applying)
     const shownError = $derived(tool.error ?? tool.applyError)
-    const hiddenProblems = $derived(
-        tool.rows
-            .slice(SHOWN_ROWS)
-            .filter((r) => r.status.type !== 'ready' && r.status.type !== 'unchanged').length,
+    const firstShown = $derived(rowHeight > 0 ? Math.max(0, Math.floor(scrollTop / rowHeight) - OVERSCAN) : 0)
+    const endShown = $derived(
+        Math.min(
+            tool.total,
+            rowHeight > 0 && viewportHeight > 0
+                ? Math.ceil((scrollTop + viewportHeight) / rowHeight) + OVERSCAN
+                : FALLBACK_VISIBLE_ROWS,
+        ),
     )
+    const shownIndices = $derived(Array.from({ length: Math.max(0, endShown - firstShown) }, (_, i) => firstShown + i))
+
+    $effect(() => {
+        tool.show({ start: firstShown, end: endShown })
+    })
+
+    $effect(() => {
+        // Re-measure whenever the drawn rows change; every row has the same height.
+        if (shownIndices.length === 0) return
+        const drawn = previewEl?.querySelector<HTMLElement>('tbody tr.row')
+        const height = drawn?.getBoundingClientRect().height ?? 0
+        if (height > 0 && height !== rowHeight) rowHeight = height
+    })
+
+    function handlePreviewScroll(): void {
+        scrollTop = previewEl?.scrollTop ?? 0
+        viewportHeight = previewEl?.clientHeight ?? 0
+    }
 
     onMount(() => {
         void tool.loadPresets()
         nameMaskInput?.focus()
+        handlePreviewScroll()
+        if (typeof ResizeObserver === 'undefined' || !previewEl) return
+        const observer = new ResizeObserver(handlePreviewScroll)
+        observer.observe(previewEl)
+        return () => {
+            observer.disconnect()
+        }
     })
 
     onDestroy(() => {
@@ -154,6 +192,8 @@
                 return tString('multiRename.status.duplicate')
             case 'targetExists':
                 return tString('multiRename.status.targetExists')
+            case 'missing':
+                return tString('multiRename.status.missing')
             case 'invalidName':
                 return row.status.reason.type === 'disallowedCharacter'
                     ? tString('multiRename.status.disallowedCharacter', { character: row.status.reason.character })
@@ -169,7 +209,10 @@
                     ? tString('multiRename.error.unclosed')
                     : tString('multiRename.error.unknown', { placeholder: error.error.error.placeholder })
             case 'gone':
+            case 'sessionClosed':
                 return tString('multiRename.error.gone')
+            case 'selectionChanged':
+                return tString('multiRename.selectionChanged')
             case 'nothingToRename':
                 return tString('multiRename.error.nothingToRename')
             case 'notConnected':
@@ -344,7 +387,13 @@
             <p class="error" role="alert">{errorText(shownError)}</p>
         {/if}
 
-        <div class="preview" role="region" aria-label={tString('multiRename.preview')}>
+        <div
+            class="preview"
+            role="region"
+            aria-label={tString('multiRename.preview')}
+            bind:this={previewEl}
+            onscroll={handlePreviewScroll}
+        >
             <table>
                 <thead>
                     <tr>
@@ -354,21 +403,26 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {#each tool.rows.slice(0, SHOWN_ROWS) as row (row.row)}
-                        <tr class:problem={row.status.type !== 'ready' && row.status.type !== 'unchanged'}>
-                            <td class="name">{row.oldName}</td>
-                            <td class="name" class:unchanged={row.status.type === 'unchanged'}>{row.newName}</td>
-                            <td class="status">{statusText(row)}</td>
-                        </tr>
+                    {#if firstShown > 0}
+                        <tr class="spacer" aria-hidden="true" style:height="{firstShown * rowHeight}px"><td colspan="3"></td></tr>
+                    {/if}
+                    {#each shownIndices as index (index)}
+                        {@const row = tool.rowAt(index)}
+                        {#if row}
+                            <tr class="row" class:problem={row.status.type !== 'ready' && row.status.type !== 'unchanged'}>
+                                <td class="name">{row.oldName}</td>
+                                <td class="name" class:unchanged={row.status.type === 'unchanged'}>{row.newName}</td>
+                                <td class="status">{statusText(row)}</td>
+                            </tr>
+                        {:else}
+                            <tr class="row loading" aria-hidden="true"><td class="name"></td><td class="name"></td><td></td></tr>
+                        {/if}
                     {/each}
+                    {#if endShown < tool.total}
+                        <tr class="spacer" aria-hidden="true" style:height="{(tool.total - endShown) * rowHeight}px"><td colspan="3"></td></tr>
+                    {/if}
                 </tbody>
             </table>
-            {#if tool.rows.length > SHOWN_ROWS}
-                <p class="more">{tString('multiRename.moreRows', { count: tool.rows.length - SHOWN_ROWS })}</p>
-            {/if}
-            {#if hiddenProblems > 0}
-                <p class="more problem-note">{tString('multiRename.hiddenProblems', { count: hiddenProblems })}</p>
-            {/if}
         </div>
     </div>
 
@@ -472,6 +526,16 @@
         white-space: pre;
     }
 
+    /* A row whose page is on its way keeps a row's height, so the scroll doesn't jump. */
+    .loading .name::before {
+        content: '\00a0';
+    }
+
+    .spacer td {
+        padding: 0;
+        border: none;
+    }
+
     .unchanged {
         color: var(--color-text-quiet);
     }
@@ -485,17 +549,8 @@
         white-space: nowrap;
     }
 
-    .more,
     .counts {
         font-size: var(--font-size-sm);
         color: var(--color-text-secondary);
-    }
-
-    .more {
-        margin: var(--spacing-xs) var(--spacing-sm);
-    }
-
-    .problem-note {
-        color: var(--color-error-text);
     }
 </style>

@@ -11,6 +11,7 @@ import MultiRenameDialog from './MultiRenameDialog.svelte'
 
 const ipc = vi.hoisted(() => ({
   previewMultiRename: vi.fn(),
+  getMultiRenamePreviewRows: vi.fn(),
   applyMultiRename: vi.fn(),
   getMultiRenamePresets: vi.fn(),
   saveMultiRenamePreset: vi.fn(),
@@ -23,7 +24,11 @@ vi.mock('$lib/tauri-commands', () => ({
   ...ipc,
 }))
 
-const READY = [{ row: 0, oldName: 'Ž.pdf', newName: 'Z.pdf', status: { type: 'ready' } }]
+const READY = {
+  previewId: 1,
+  counts: { ready: 1, unchanged: 0, problems: 0 },
+  rows: [{ row: 0, oldName: 'Ž.pdf', newName: 'Z.pdf', status: { type: 'ready' } }],
+}
 
 async function settle(): Promise<void> {
   for (let i = 0; i < 4; i++) {
@@ -37,7 +42,7 @@ async function mountSheet(onApplied = vi.fn()): Promise<HTMLElement> {
   document.body.appendChild(target)
   mount(MultiRenameDialog, {
     target,
-    props: { target: { listingId: 'L', includeHidden: false, rows: null }, onApplied, onClose: vi.fn() },
+    props: { session: { sessionId: 'S', count: 1 }, onApplied, onClose: vi.fn() },
   })
   await settle()
   return target
@@ -65,6 +70,7 @@ describe('MultiRenameDialog', () => {
     [{ type: 'spec', error: { type: 'nameMask', error: { type: 'unclosed', at: 1 } } }],
     [{ type: 'spec', error: { type: 'nameMask', error: { type: 'unknown', placeholder: 'Q' } } }],
     [{ type: 'gone' }],
+    [{ type: 'sessionClosed' }],
     [{ type: 'notConnected', volumeId: 'v' }],
     [{ type: 'timedOut' }],
   ])('words a preview error (%o) instead of showing rows', async (error) => {
@@ -88,12 +94,14 @@ describe('MultiRenameDialog', () => {
   })
 
   it('starts from Enter in the name mask and hands the operation up', async () => {
-    ipc.applyMultiRename.mockResolvedValue({ ok: true, value: { operationId: 'op', renaming: 1 } })
+    const started = { operationId: 'op', renaming: 1, swapsLeftOut: 0 }
+    ipc.applyMultiRename.mockResolvedValue({ ok: true, value: started })
     const onApplied = vi.fn()
     const root = await mountSheet(onApplied)
     key(inputs(root)[0], 'Enter')
     await settle()
-    expect(onApplied).toHaveBeenCalledWith({ operationId: 'op', renaming: 1 })
+    expect(ipc.applyMultiRename).toHaveBeenCalledWith('S', 1)
+    expect(onApplied).toHaveBeenCalledWith(started)
   })
 
   it('inserts a placeholder into the name mask from its button', async () => {
@@ -103,7 +111,7 @@ describe('MultiRenameDialog', () => {
     counter?.click()
     // The preview reruns after its debounce (`PREVIEW_DELAY_MS`).
     await vi.waitFor(() => {
-      const lastSpec = ipc.previewMultiRename.mock.calls.at(-1)?.[3] as { nameMask: string } | undefined
+      const lastSpec = ipc.previewMultiRename.mock.calls.at(-1)?.[1] as { nameMask: string } | undefined
       expect(lastSpec?.nameMask).toContain('[C]')
     })
   })

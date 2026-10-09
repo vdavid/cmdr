@@ -2,16 +2,17 @@
 
 The ⌃M sheet over `src-tauri/src/multi_rename/` (the engine and its rules: that module's `CLAUDE.md` / `DETAILS.md`).
 
-- `MultiRenameDialog.svelte` the sheet; opened from `routes/(main)/+page.svelte` with the focused pane's target
-  (`getFocusedPaneRenameTarget`), closed back to the pane.
-- `multi-rename-state.svelte.ts` the spec, the debounced preview (a generation counter drops stale answers), presets,
-  Start.
-- `spec.ts` the default spec, built-in presets, counts, placeholder insertion. Pure.
+- `MultiRenameDialog.svelte` the sheet and its windowed table; `routes/(main)/+page.svelte` opens a backend session over
+  the focused pane's selection (`getFocusedPaneRenameTarget` → `openMultiRename`) first, and closes it with the sheet.
+- `multi-rename-state.svelte.ts` the spec, the debounced preview (a generation counter drops stale answers), the rows in
+  view (`show` / `rowAt`), presets, Start.
+- `spec.ts` the default spec, built-in presets, placeholder insertion. Pure.
 
 ## Must-knows
 
-- **Names come from the backend.** The sheet sends the listing id, backend row numbers, the spec, and at Start the ready
-  rows it SHOWED, which the backend only checks against its own (`previewOutOfDate` re-previews).
+- **Names stay in the backend session.** The selection goes over ONCE, with the pane's applied sequence (a stale one is
+  `selectionChanged`: a toast, no sheet). After that the sheet sends the spec and, at Start, the `previewId` it shows;
+  it holds only the counts and the rows near the view. `previewOutOfDate` re-previews.
 - **Start waits for the preview of the last edit** (`pending`), so it never runs a spec nobody saw; a failed Start
   (`applyError`) doesn't block a retry.
 - **Enter starts from a mask or search field**, saves from the preset-name field, and never fires mid-composition.

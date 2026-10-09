@@ -176,10 +176,6 @@
   "@multiRename.error.couldntStart": {
     "sourceHash": "4b123be"
   },
-  "multiRename.moreRows": "{count, plural, one {# autre fichier n’est pas affiché, mais sera renommé} many {# autres fichiers ne sont pas affichés, mais seront renommés} other {# autres fichiers ne sont pas affichés, mais seront renommés}}",
-  "@multiRename.moreRows": {
-    "sourceHash": "8c036bb"
-  },
   "multiRename.counts": "{ready, plural, one {# à renommer} many {# à renommer} other {# à renommer}} · {unchanged, plural, one {# sans changement} many {# sans changement} other {# sans changement}} · {problems, plural, one {# problème} many {# problèmes} other {# problèmes}}",
   "@multiRename.counts": {
     "sourceHash": "7464938"
@@ -203,9 +199,5 @@
   "multiRename.error.readOnly": "Renommage impossible dans ce dossier : il se trouve dans une archive ou dans un autre emplacement en lecture seule",
   "@multiRename.error.readOnly": {
     "sourceHash": "f576c74"
-  },
-  "multiRename.hiddenProblems": "{count, plural, one {# fichier au-delà des lignes affichées pose un problème et ne sera pas renommé} many {# fichiers au-delà des lignes affichées posent un problème et ne seront pas renommés} other {# fichiers au-delà des lignes affichées posent un problème et ne seront pas renommés}}",
-  "@multiRename.hiddenProblems": {
-    "sourceHash": "aea1ba2"
   }
 }

@@ -176,10 +176,6 @@
   "@multiRename.error.couldntStart": {
     "sourceHash": "4b123be"
   },
-  "multiRename.moreRows": "{count, plural, one {# weitere Datei wird nicht angezeigt, aber umbenannt} other {# weitere Dateien werden nicht angezeigt, aber umbenannt}}",
-  "@multiRename.moreRows": {
-    "sourceHash": "8c036bb"
-  },
   "multiRename.counts": "{ready, plural, one {# umzubenennen} other {# umzubenennen}} · {unchanged, plural, one {# unverändert} other {# unverändert}} · {problems, plural, one {# Problem} other {# Probleme}}",
   "@multiRename.counts": {
     "sourceHash": "7464938"
@@ -203,9 +199,5 @@
   "multiRename.error.readOnly": "In diesem Ordner lässt sich nichts umbenennen: Er liegt in einem Archiv oder an einem anderen schreibgeschützten Ort",
   "@multiRename.error.readOnly": {
     "sourceHash": "f576c74"
-  },
-  "multiRename.hiddenProblems": "{count, plural, one {# Datei jenseits der angezeigten Zeilen hat ein Problem und wird nicht umbenannt} other {# Dateien jenseits der angezeigten Zeilen haben ein Problem und werden nicht umbenannt}}",
-  "@multiRename.hiddenProblems": {
-    "sourceHash": "aea1ba2"
   }
 }

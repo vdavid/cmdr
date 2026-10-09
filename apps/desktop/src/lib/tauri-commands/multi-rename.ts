@@ -1,48 +1,85 @@
-// Multi-Rename Tool (⌃M): preview, apply, and presets. The work is the backend's
-// (`src-tauri/src/multi_rename/`); these are pass-throughs.
+// Multi-Rename Tool (⌃M): the session, its preview pages, apply, and presets. The
+// work and the file names are the backend's (`src-tauri/src/multi_rename/`); these
+// are pass-throughs.
 
 import {
   commands,
-  type ExpectedRename,
   type MultiRenameError,
+  type MultiRenameOpened,
   type MultiRenamePreset,
+  type MultiRenamePreview,
   type MultiRenameSpec,
   type MultiRenameStarted,
+  type PreviewCounts,
   type PreviewRow,
 } from '$lib/ipc/bindings'
 
-export type { ExpectedRename, MultiRenameError, MultiRenamePreset, MultiRenameSpec, MultiRenameStarted, PreviewRow }
+export type {
+  MultiRenameError,
+  MultiRenameOpened,
+  MultiRenamePreset,
+  MultiRenamePreview,
+  MultiRenameSpec,
+  MultiRenameStarted,
+  PreviewCounts,
+  PreviewRow,
+}
 
-/** A typed answer the sheet words itself: the rows, or why there are none. */
+/** A typed answer the sheet words itself: the value, or why there is none. */
 export type MultiRenameResult<T> = { ok: true; value: T } | { ok: false; error: MultiRenameError }
 
-/**
- * Each row's new name and whether it can take it. `rows` are backend row numbers
- * in rename order; `null` previews every row the pane shows.
- */
-export async function previewMultiRename(
-  listingId: string,
-  includeHidden: boolean,
-  rows: number[] | null,
-  spec: MultiRenameSpec,
-): Promise<MultiRenameResult<PreviewRow[]>> {
-  const res = await commands.previewMultiRename(listingId, includeHidden, rows, spec)
+function result<T>(
+  res: { status: 'ok'; data: T } | { status: 'error'; error: MultiRenameError },
+): MultiRenameResult<T> {
   return res.status === 'ok' ? { ok: true, value: res.data } : { ok: false, error: res.error }
 }
 
 /**
- * Renames the rows the user saw as ready (`expected`), as one operation (queue,
+ * Opens a session over a pane's selection: `selectedIndices` are backend row
+ * numbers in rename order (`null` for every row the pane shows), read at the
+ * pane's applied `expectedSequence`. `selectionChanged` when they're stale.
+ */
+export async function openMultiRename(
+  listingId: string,
+  includeHidden: boolean,
+  selectedIndices: number[] | null,
+  expectedSequence: number,
+): Promise<MultiRenameResult<MultiRenameOpened>> {
+  return result(await commands.openMultiRename(listingId, includeHidden, selectedIndices, expectedSequence))
+}
+
+/** The session's preview of `spec`: its id, the counts, and the first rows. */
+export async function previewMultiRename(
+  sessionId: string,
+  spec: MultiRenameSpec,
+): Promise<MultiRenameResult<MultiRenamePreview>> {
+  return result(await commands.previewMultiRename(sessionId, spec))
+}
+
+/** Rows `offset..offset + limit` of a preview. `previewOutOfDate` once a newer one replaced it. */
+export async function getMultiRenamePreviewRows(
+  sessionId: string,
+  previewId: number,
+  offset: number,
+  limit: number,
+): Promise<MultiRenameResult<PreviewRow[]>> {
+  return result(await commands.getMultiRenamePreviewRows(sessionId, previewId, offset, limit))
+}
+
+/**
+ * Renames the rows preview `previewId` showed as ready, as one operation (queue,
  * Undo). `previewOutOfDate` when the folder changed since that preview.
  */
 export async function applyMultiRename(
-  listingId: string,
-  includeHidden: boolean,
-  rows: number[] | null,
-  spec: MultiRenameSpec,
-  expected: ExpectedRename[],
+  sessionId: string,
+  previewId: number,
 ): Promise<MultiRenameResult<MultiRenameStarted>> {
-  const res = await commands.applyMultiRename(listingId, includeHidden, rows, spec, expected)
-  return res.status === 'ok' ? { ok: true, value: res.data } : { ok: false, error: res.error }
+  return result(await commands.applyMultiRename(sessionId, previewId))
+}
+
+/** Ends the session (the sheet closed). */
+export async function closeMultiRename(sessionId: string): Promise<void> {
+  await commands.closeMultiRename(sessionId)
 }
 
 export async function getMultiRenamePresets(): Promise<MultiRenamePreset[]> {

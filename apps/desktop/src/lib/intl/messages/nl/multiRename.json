@@ -176,10 +176,6 @@
   "@multiRename.error.couldntStart": {
     "sourceHash": "4b123be"
   },
-  "multiRename.moreRows": "{count, plural, one {Nog # bestand wordt niet getoond, maar krijgt wel een nieuwe naam} other {Nog # bestanden worden niet getoond, maar krijgen wel een nieuwe naam}}",
-  "@multiRename.moreRows": {
-    "sourceHash": "8c036bb"
-  },
   "multiRename.counts": "{ready, plural, one {# naam te wijzigen} other {# namen te wijzigen}} · {unchanged, plural, one {# naam ongewijzigd} other {# namen ongewijzigd}} · {problems, plural, one {# probleem} other {# problemen}}",
   "@multiRename.counts": {
     "sourceHash": "7464938"
@@ -203,9 +199,5 @@
   "multiRename.error.readOnly": "In deze map kunnen geen namen worden gewijzigd: hij staat in een archief of op een andere alleen-lezenplek",
   "@multiRename.error.readOnly": {
     "sourceHash": "f576c74"
-  },
-  "multiRename.hiddenProblems": "{count, plural, one {# bestand buiten de getoonde rijen heeft een probleem en krijgt geen nieuwe naam} other {# bestanden buiten de getoonde rijen hebben een probleem en krijgen geen nieuwe naam}}",
-  "@multiRename.hiddenProblems": {
-    "sourceHash": "aea1ba2"
   }
 }

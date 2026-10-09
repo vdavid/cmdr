@@ -1002,18 +1002,23 @@ export type {
 export { confirmWithCheckbox } from './confirm-dialog'
 
 export {
+  openMultiRename,
   previewMultiRename,
+  getMultiRenamePreviewRows,
   applyMultiRename,
+  closeMultiRename,
   getMultiRenamePresets,
   saveMultiRenamePreset,
   deleteMultiRenamePreset,
 } from './multi-rename'
 export type {
-  ExpectedRename,
   MultiRenameError,
+  MultiRenameOpened,
   MultiRenamePreset,
+  MultiRenamePreview,
   MultiRenameResult,
   MultiRenameSpec,
   MultiRenameStarted,
+  PreviewCounts,
   PreviewRow,
 } from './multi-rename'

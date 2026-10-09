@@ -1,10 +1,10 @@
 /**
  * The Multi-Rename sheet's settings: the default (Total Commander's `<Default>`:
- * no change), the built-in presets, and the counts the footer shows. Pure, so the
+ * no change), the built-in presets, and placeholder insertion. Pure, so the
  * sheet's state module and its tests share it.
  */
 
-import type { MultiRenameSpec, PreviewRow } from '$lib/tauri-commands'
+import type { MultiRenameSpec } from '$lib/tauri-commands'
 
 /** TC's `<Default>`: every name stays as it is. */
 export const DEFAULT_SPEC: MultiRenameSpec = {
@@ -38,23 +38,6 @@ export const BUILT_IN_PRESETS: BuiltInPreset[] = [
     spec: { ...DEFAULT_SPEC, removeDiacritics: true },
   },
 ]
-
-/** How the preview's rows add up, for the footer and the Rename button. */
-export interface PreviewCounts {
-  ready: number
-  unchanged: number
-  problems: number
-}
-
-export function countPreview(rows: PreviewRow[]): PreviewCounts {
-  let ready = 0
-  let unchanged = 0
-  for (const row of rows) {
-    if (row.status.type === 'ready') ready++
-    else if (row.status.type === 'unchanged') unchanged++
-  }
-  return { ready, unchanged, problems: rows.length - ready - unchanged }
-}
 
 /** Inserts `placeholder` into `mask` at the caret (or at the end). Returns the new mask and caret. */
 export function insertAtCaret(

@@ -176,10 +176,6 @@
   "@multiRename.error.couldntStart": {
     "sourceHash": "4b123be"
   },
-  "multiRename.moreRows": "{count, plural, one {Mais # arquivo não aparece, mas vai ser renomeado} many {Mais # arquivos não aparecem, mas vão ser renomeados} other {Mais # arquivos não aparecem, mas vão ser renomeados}}",
-  "@multiRename.moreRows": {
-    "sourceHash": "8c036bb"
-  },
   "multiRename.counts": "{ready, plural, one {# para renomear} many {# para renomear} other {# para renomear}} · {unchanged, plural, one {# sem alteração} many {# sem alteração} other {# sem alteração}} · {problems, plural, one {# problema} many {# problemas} other {# problemas}}",
   "@multiRename.counts": {
     "sourceHash": "7464938"
@@ -203,9 +199,5 @@
   "multiRename.error.readOnly": "Não é possível renomear arquivos nesta pasta: ela fica dentro de um arquivo compactado ou de outro local somente leitura",
   "@multiRename.error.readOnly": {
     "sourceHash": "f576c74"
-  },
-  "multiRename.hiddenProblems": "{count, plural, one {# arquivo além das linhas mostradas tem um problema e não vai ser renomeado} many {# arquivos além das linhas mostradas têm um problema e não vão ser renomeados} other {# arquivos além das linhas mostradas têm um problema e não vão ser renomeados}}",
-  "@multiRename.hiddenProblems": {
-    "sourceHash": "aea1ba2"
   }
 }

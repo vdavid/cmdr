@@ -40,23 +40,39 @@ subfolders (the executor's one-parent rule refuses it today), "next step" chaini
 - `remove_diacritics`: NFD with the combining marks dropped, a table for the letters that don't decompose (`ł` `đ` `ø`
   `ß` `æ` `œ` `þ` `ð` `ı` `ħ` `ŧ`), then NFC. Like foobar2000's `$ascii()`.
 
-## Preview and apply (`plan.rs`, `run.rs`)
+## Session, preview, and apply (`session.rs`, `plan.rs`, `run.rs`)
 
 - Row statuses: `Ready`, `Unchanged` (same name), `InvalidName` (via `validate_filename`, plus `.` / `..`),
   `Duplicate` (two rows get one folded name), `TargetExists` (a sibling that STAYS holds the folded name; siblings
-  include hidden entries). A batch row renaming away frees its name, so chains and swaps preview as ready.
-- **Decision: apply recomputes, then requires the user's preview.** The frontend sends listing id + row numbers + spec
-  + the ready rows it showed; apply recomputes from the listing and refuses with `PreviewOutOfDate` unless its ready
-  rows are exactly those. Why: row numbers shift when a file appears above them, and renaming "row 7" would then rename
-  a file the user never saw; names come from the backend, the frontend's only confirm them.
+  include hidden entries), and `Missing` (the session's file left the folder; set by `session.rs`, never by `plan`). A
+  batch row renaming away frees its name, so chains and swaps preview as ready.
+- **Decision: a backend session holds the files, by name.** `open_multi_rename(listing, includeHidden, rows | null,
+  sequence)` reads the pane's rows (`null`: every row the pane shows, which is what "all selected" and "nothing
+  selected" both mean) under `reconciled_cache`, refuses with `SelectionChanged` when the sequence or the hidden-files
+  setting moved (the `get_selection_snapshot` guard F5 uses), and stores the names. Every preview looks them up in the
+  listing's entries by name. Why: the sheet first sent row numbers and every preview mapped them through the LIVE
+  listing, so a file landing above the selection shifted it onto files the user never picked, in the preview and at
+  Start. A row's `row` is its place in the session, so it's stable across previews.
+- **Decision: names stay in the backend.** A preview answers `previewId`, the counts, and the first `FIRST_PAGE` rows;
+  `get_multi_rename_preview_rows` serves the rest of the stored preview a page (≤ `MAX_PAGE`) at a time, so a
+  200,000-file folder never ships its names to the frontend and back. Only the latest preview is stored (ids are
+  handed out at request time, so a slow older one never replaces it); paging a replaced one is `PreviewOutOfDate`.
+- **Decision: apply recomputes, then requires the preview the user saw.** `apply_multi_rename(session, previewId)`
+  reruns that preview's spec over the session's files and refuses with `PreviewOutOfDate` unless its ready rows are
+  exactly the stored ones (same row, old name, new name). Why: the folder can change between the preview and Start.
+- Sessions live in a process-wide map, at most `MAX_SESSIONS`; opening one drops sessions idle past `IDLE_LIMIT`,
+  then the least recently used. The sheet closes its session (`close_multi_rename`) when it closes.
 - Plain search: a `*` is lazy (`IMG_*_` ends at the first `_`) except a trailing one, which runs to the end. Search
   and names are composed (NFC) first, so `é` typed finds the decomposed `é` an SMB share stores.
 - A single search takes its replacement literally (`|` included); only a list pairs with a list. A list of nothing
   (`|`) searches for nothing.
-- Apply captures a `SourceFingerprint` per ready row (local on `root`, the volume's elsewhere) and calls
+- Apply captures a `SourceFingerprint` per ready row: locally on `root`, through the volume elsewhere, eight at a time
+  under one deadline (`REMOTE_FINGERPRINT_TIMEOUT`, stretched by `io_budget` on a live-session volume). It calls
   `start_renames(.., Initiator::User)`: the executor orders chains, swaps through temp names, rechecks fingerprints,
-  journals every hop (so `undo_operations` reverses it), and runs a copying rename (S3) as one move.
-- The preview runs off the IPC thread with a 5 s deadline.
+  journals every hop (so `undo_operations` reverses it), and runs a copying rename (S3) as one move, which can't swap
+  names: those rows come back as `swapsLeftOut` and get their own toast (`multiRename.swapsSkipped`).
+- The preview runs off the IPC thread with a 5 s deadline, two at a time (`BlockingBudget`), since the sheet re-issues
+  it on every edit.
 
 ## Presets (`presets.rs`)
 

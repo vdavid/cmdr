@@ -1,49 +1,101 @@
-//! IPC for the Multi-Rename Tool (⌃M). Thin: the work is `crate::multi_rename::run`.
+//! IPC for the Multi-Rename Tool (⌃M). Thin: the work is `crate::multi_rename::session` and `run`.
 
 use std::sync::Arc;
 
 use tokio::time::Duration;
 
-use crate::deadline::blocking_typed_result_with_timeout;
+use crate::deadline::{BlockingBudget, blocking_typed_result_with_timeout, timeout_detached_typed};
 use crate::multi_rename::plan::{MultiRenameSpec, PreviewRow};
 use crate::multi_rename::presets::{MAX_PRESETS, MultiRenamePreset, PRESETS};
-use crate::multi_rename::run::{ExpectedRename, MultiRenameError, MultiRenameStarted, apply, preview_rows};
+use crate::multi_rename::run::{MultiRenameError, MultiRenameStarted, apply};
+use crate::multi_rename::session::{self, MultiRenameOpened, MultiRenamePreview};
 
-/// The live preview: each row's new name and whether it can take it. `rows` are
-/// backend row numbers in rename order; `None` previews every row the pane shows.
+/// Opens a session over the pane's selection: `selected_indices` are backend row
+/// numbers in rename order (`None` for every row the pane shows), read at
+/// `expected_sequence`. The files are resolved once, here; `selectionChanged`
+/// when the rows aren't the listing's state any more.
 #[tauri::command]
 #[specta::specta]
-pub async fn preview_multi_rename(
+pub async fn open_multi_rename(
     listing_id: String,
     include_hidden: bool,
-    rows: Option<Vec<usize>>,
-    spec: MultiRenameSpec,
-) -> Result<Vec<PreviewRow>, MultiRenameError> {
-    // Off the IPC thread: a big folder is a mask and a regex per row.
+    selected_indices: Option<Vec<usize>>,
+    expected_sequence: u64,
+) -> Result<MultiRenameOpened, MultiRenameError> {
     blocking_typed_result_with_timeout(
-        Duration::from_secs(5),
+        Duration::from_secs(2),
         || MultiRenameError::TimedOut,
         |detail| MultiRenameError::Internal { detail },
-        move || preview_rows(&listing_id, include_hidden, rows.as_deref(), &spec),
+        move || {
+            session::open(
+                &listing_id,
+                include_hidden,
+                selected_indices.as_deref(),
+                expected_sequence,
+            )
+        },
     )
     .await
 }
 
-/// Renames the rows the user saw as ready (`expected`, from the preview they
-/// started from), as one operation the queue shows and Undo reverses. Refuses
-/// with `previewOutOfDate` when the folder changed since that preview.
+/// The previews the sheet re-issues on every edit (120 ms apart), which on a
+/// huge folder take longer than that: two at a time, the rest wait their turn.
+static PREVIEWS: BlockingBudget = BlockingBudget::new(2);
+
+/// The live preview of the session's files: the counts and the first rows.
+#[tauri::command]
+#[specta::specta]
+pub async fn preview_multi_rename(
+    session_id: String,
+    spec: MultiRenameSpec,
+) -> Result<MultiRenamePreview, MultiRenameError> {
+    // Off the IPC thread: a big folder is a mask and a regex per row.
+    timeout_detached_typed(
+        Duration::from_secs(5),
+        || MultiRenameError::TimedOut,
+        |detail| MultiRenameError::Internal { detail },
+        async move {
+            PREVIEWS
+                .run(move || session::preview_session(&session_id, &spec))
+                .await
+                .map_err(|e| MultiRenameError::Internal { detail: e.to_string() })?
+        },
+    )
+    .await
+}
+
+/// Rows `offset..offset + limit` of preview `preview_id`, for the table's window.
+/// `previewOutOfDate` when a newer preview replaced it.
+#[tauri::command]
+#[specta::specta]
+pub async fn get_multi_rename_preview_rows(
+    session_id: String,
+    preview_id: u64,
+    offset: usize,
+    limit: usize,
+) -> Result<Vec<PreviewRow>, MultiRenameError> {
+    session::page(&session_id, preview_id, offset, limit)
+}
+
+/// Renames the rows preview `preview_id` showed as ready, as one operation the
+/// queue shows and Undo reverses. Refuses with `previewOutOfDate` when the folder
+/// changed since that preview.
 #[tauri::command]
 #[specta::specta]
 pub async fn apply_multi_rename(
     app: tauri::AppHandle,
-    listing_id: String,
-    include_hidden: bool,
-    rows: Option<Vec<usize>>,
-    spec: MultiRenameSpec,
-    expected: Vec<ExpectedRename>,
+    session_id: String,
+    preview_id: u64,
 ) -> Result<MultiRenameStarted, MultiRenameError> {
     let events = Arc::new(crate::file_system::write_operations::TauriEventSink::new(app));
-    apply(events, listing_id, include_hidden, rows, spec, expected).await
+    apply(events, session_id, preview_id).await
+}
+
+/// Ends the session when the sheet closes. No-op when it's already gone.
+#[tauri::command]
+#[specta::specta]
+pub async fn close_multi_rename(session_id: String) {
+    session::close(&session_id);
 }
 
 /// The saved presets, newest first.

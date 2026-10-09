@@ -175,10 +175,6 @@
   "@multiRename.error.couldntStart": {
     "sourceHash": "4b123be"
   },
-  "multiRename.moreRows": "{count, plural, one {Еще # файл не показан, но будет переименован} few {Еще # файла не показаны, но будут переименованы} many {Еще # файлов не показано, но они будут переименованы} other {Еще # файла не показано, но они будут переименованы}}",
-  "@multiRename.moreRows": {
-    "sourceHash": "8c036bb"
-  },
   "multiRename.counts": "{ready, plural, one {# файл будет переименован} few {# файла будут переименованы} many {# файлов будут переименованы} other {# файла будут переименованы}} · {unchanged, plural, one {# файл без изменений} few {# файла без изменений} many {# файлов без изменений} other {# файла без изменений}} · {problems, plural, one {# проблема} few {# проблемы} many {# проблем} other {# проблемы}}",
   "@multiRename.counts": {
     "sourceHash": "7464938"
@@ -202,9 +198,5 @@
   "multiRename.error.readOnly": "В этой папке нельзя переименовывать: она находится в архиве или в другом месте только для чтения",
   "@multiRename.error.readOnly": {
     "sourceHash": "f576c74"
-  },
-  "multiRename.hiddenProblems": "{count, plural, one {# файл за пределами показанных строк не будет переименован из-за проблемы} few {# файла за пределами показанных строк не будут переименованы из-за проблем} many {# файлов за пределами показанных строк не будут переименованы из-за проблем} other {# файла за пределами показанных строк не будут переименованы из-за проблем}}",
-  "@multiRename.hiddenProblems": {
-    "sourceHash": "aea1ba2"
   }
 }

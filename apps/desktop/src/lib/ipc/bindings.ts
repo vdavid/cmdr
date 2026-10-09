@@ -1329,28 +1329,40 @@ export const commands = {
   ) =>
     typedError<MutationReply, MutationError>(__TAURI_INVOKE('rename_file', { from, to, force, volumeId, initiator })),
   /**
-   *  The live preview: each row's new name and whether it can take it. `rows` are
-   *  backend row numbers in rename order; `None` previews every row the pane shows.
+   *  Opens a session over the pane's selection: `selected_indices` are backend row
+   *  numbers in rename order (`None` for every row the pane shows), read at
+   *  `expected_sequence`. The files are resolved once, here; `selectionChanged`
+   *  when the rows aren't the listing's state any more.
    */
-  previewMultiRename: (listingId: string, includeHidden: boolean, rows: number[] | null, spec: MultiRenameSpec) =>
-    typedError<PreviewRow[], MultiRenameError>(
-      __TAURI_INVOKE('preview_multi_rename', { listingId, includeHidden, rows, spec }),
-    ),
-  /**
-   *  Renames the rows the user saw as ready (`expected`, from the preview they
-   *  started from), as one operation the queue shows and Undo reverses. Refuses
-   *  with `previewOutOfDate` when the folder changed since that preview.
-   */
-  applyMultiRename: (
+  openMultiRename: (
     listingId: string,
     includeHidden: boolean,
-    rows: number[] | null,
-    spec: MultiRenameSpec,
-    expected: ExpectedRename[],
+    selectedIndices: number[] | null,
+    expectedSequence: number,
   ) =>
-    typedError<MultiRenameStarted, MultiRenameError>(
-      __TAURI_INVOKE('apply_multi_rename', { listingId, includeHidden, rows, spec, expected }),
+    typedError<MultiRenameOpened, MultiRenameError>(
+      __TAURI_INVOKE('open_multi_rename', { listingId, includeHidden, selectedIndices, expectedSequence }),
     ),
+  // The live preview of the session's files: the counts and the first rows.
+  previewMultiRename: (sessionId: string, spec: MultiRenameSpec) =>
+    typedError<MultiRenamePreview, MultiRenameError>(__TAURI_INVOKE('preview_multi_rename', { sessionId, spec })),
+  /**
+   *  Rows `offset..offset + limit` of preview `preview_id`, for the table's window.
+   *  `previewOutOfDate` when a newer preview replaced it.
+   */
+  getMultiRenamePreviewRows: (sessionId: string, previewId: number, offset: number, limit: number) =>
+    typedError<PreviewRow[], MultiRenameError>(
+      __TAURI_INVOKE('get_multi_rename_preview_rows', { sessionId, previewId, offset, limit }),
+    ),
+  /**
+   *  Renames the rows preview `preview_id` showed as ready, as one operation the
+   *  queue shows and Undo reverses. Refuses with `previewOutOfDate` when the folder
+   *  changed since that preview.
+   */
+  applyMultiRename: (sessionId: string, previewId: number) =>
+    typedError<MultiRenameStarted, MultiRenameError>(__TAURI_INVOKE('apply_multi_rename', { sessionId, previewId })),
+  // Ends the session when the sheet closes. No-op when it's already gone.
+  closeMultiRename: (sessionId: string) => __TAURI_INVOKE<void>('close_multi_rename', { sessionId }),
   // The saved presets, newest first.
   getMultiRenamePresets: () => __TAURI_INVOKE<MultiRenamePreset[]>('get_multi_rename_presets'),
   // Saves a preset; one with the same name is replaced.
@@ -11117,10 +11129,17 @@ export type MtpStorageRemoved = {
   storageId: number
 }
 
-// Why a preview or an apply didn't answer. Typed, so the frontend words it.
+// Why a session, a preview, or an apply didn't answer. Typed, so the frontend words it.
 export type MultiRenameError =
   // The pane's listing is no longer cached (it moved on).
   | { type: 'gone'; listingId: string }
+  /**
+   *  The pane's rows aren't the listing's state any more (a file came or went
+   *  between the selection and the open): open again.
+   */
+  | { type: 'selectionChanged'; listingId: string }
+  // The session ended (the sheet closed, or it sat idle and another opened).
+  | { type: 'sessionClosed' }
   // The spec doesn't parse; the sheet shows it under its field.
   | { type: 'spec'; error: SpecError }
   // No row is ready to rename.
@@ -11129,20 +11148,38 @@ export type MultiRenameError =
   | { type: 'notConnected'; volumeId: string }
   // The executor refused before renaming anything.
   | { type: 'couldntStart'; reason: RenameStartError }
-  // The folder changed since the preview the user started from: re-preview.
+  /**
+   *  The folder changed since the preview the user started from, or a newer
+   *  preview replaced it: re-preview.
+   */
   | { type: 'previewOutOfDate' }
   // The folder is read-only (inside an archive or a `.git` portal).
   | { type: 'readOnly' }
-  // The preview didn't finish within its deadline.
+  // The work didn't finish within its deadline.
   | { type: 'timedOut' }
-  // The preview's worker failed; `detail` is log text only.
+  // The worker failed; `detail` is log text only.
   | { type: 'internal'; detail: string }
+
+// An open sheet's session.
+export type MultiRenameOpened = {
+  sessionId: string
+  // How many files the session renames.
+  count: number
+}
 
 // One saved preset.
 export type MultiRenamePreset = {
   id: string
   name: string
   spec: MultiRenameSpec
+}
+
+// A preview: its id (what apply and paging name), its counts, and its first rows.
+export type MultiRenamePreview = {
+  previewId: number
+  counts: PreviewCounts
+  // Rows `0..FIRST_PAGE`; the rest come from `get_multi_rename_preview_rows`.
+  rows: PreviewRow[]
 }
 
 // Everything the sheet sets.
@@ -11169,6 +11206,11 @@ export type MultiRenameStarted = {
   operationId: string
   // How many rows it renames.
   renaming: number
+  /**
+   *  Rows that swap names with each other, which a batch that runs as a move
+   *  (a rename that copies, on S3) leaves out: they keep their names.
+   */
+  swapsLeftOut: number
 }
 
 /**
@@ -12204,9 +12246,17 @@ export type PrepareResult = {
   loading: boolean
 }
 
+// How a preview's rows add up, for the footer and the Rename button.
+export type PreviewCounts = {
+  ready: number
+  unchanged: number
+  // Every other row: a bad or taken name, a duplicate, a file that's gone.
+  problems: number
+}
+
 // One row of the preview.
 export type PreviewRow = {
-  // The pane row (backend index, no `..`).
+  // The row's place in the batch (rename order), stable across previews.
   row: number
   oldName: string
   newName: string
@@ -13069,6 +13119,11 @@ export type RowStatus =
   | { type: 'duplicate' }
   // Something that stays in the folder already has the name.
   | { type: 'targetExists' }
+  /**
+   *  The file left the folder since the sheet opened (set by `session.rs`;
+   *  `preview` never sees it).
+   */
+  | { type: 'missing' }
 
 /**
  *  The mimalloc heap split into live data and allocator slack.
