@@ -5,7 +5,8 @@
 //! which left the FE dialog open forever. Each test here pins one shape: cancel
 //! before any source is touched (cross-volume and same-volume), and cancel
 //! mid-batch, where the already-moved files must be at the destination and gone
-//! from the source, with nothing sitting on both sides or neither.
+//! from the source, with nothing sitting on both sides or neither, and cancel
+//! while a Stop-mode clash is on screen (both paths).
 //!
 //! Shared fixtures and the `CancelAfterFirstSink` double live in
 //! `volume/move_test_support.rs` (`super::test_support`).
@@ -191,4 +192,132 @@ async fn same_volume_move_cancel_emits_cancelled_event() {
     let cancelled = events.cancelled.lock().unwrap();
     assert_eq!(cancelled.len(), 1, "expected exactly one write-cancelled event");
     assert_eq!(cancelled[0].rollback.outcome, CancelRollbackOutcome::NotRolledBack);
+}
+
+/// Cancelling while a Stop-mode clash is on screen ends a cross-volume move with
+/// exactly one `write-cancelled`, and leaves both sides of the clash alone.
+///
+/// The cancel drops the clash's parked answer slot, so the resolver comes back
+/// `Err(Cancelled)` rather than with a decision. That has to reach the post-loop
+/// as a CANCEL: read as a failure, the move's outer wrapper only logged it, no
+/// terminal event went out, and the progress dialog sat on the stale prompt until
+/// the person answered it (a cross-volume move to an SMB share, Cmdr 0.51.0).
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn cross_volume_move_cancelled_at_a_conflict_prompt_emits_cancelled_event() {
+    use super::super::super::conflict_responder_test_support::ConflictResponderSink;
+    use crate::file_system::write_operations::test_support::TestOperationGuard;
+
+    let (source, dest) = make_volumes();
+    source.create_file(Path::new("/a.txt"), b"incoming").await.unwrap();
+    dest.create_file(Path::new("/a.txt"), b"the user's own file")
+        .await
+        .unwrap();
+
+    let op = TestOperationGuard::register_state("move-cancel-at-prompt", make_state());
+    let events = Arc::new(ConflictResponderSink::cancelling(op.state(), op.id()));
+
+    let result = move_volumes_with_progress(
+        events.clone(),
+        op.id(),
+        op.state(),
+        Arc::clone(&source),
+        &[PathBuf::from("/a.txt")],
+        Arc::clone(&dest),
+        Path::new("/"),
+        &config_default(),
+    )
+    .await;
+
+    assert!(
+        matches!(
+            result.as_ref().err().map(|f| &f.error),
+            Some(WriteOperationError::Cancelled { .. })
+        ),
+        "a cancel at the prompt ends the move as cancelled, got {result:?}"
+    );
+    assert_eq!(
+        events.inner.conflicts.lock().unwrap().len(),
+        1,
+        "exactly one prompt went up"
+    );
+    {
+        let cancelled = events.inner.cancelled.lock().unwrap();
+        assert_eq!(
+            cancelled.len(),
+            1,
+            "the FE needs exactly one write-cancelled to close on"
+        );
+        assert_eq!(cancelled[0].operation_type, WriteOperationType::Move);
+        assert_eq!(cancelled[0].rollback.outcome, CancelRollbackOutcome::NotRolledBack);
+    }
+    assert!(
+        events.inner.errors.lock().unwrap().is_empty(),
+        "a cancel is not a failure"
+    );
+    assert!(
+        source.exists(Path::new("/a.txt")).await,
+        "the source stays where it was"
+    );
+    let mut stream = dest.open_read_stream(Path::new("/a.txt")).await.unwrap();
+    let mut kept = Vec::new();
+    while let Some(chunk) = stream.next_chunk().await {
+        kept.extend_from_slice(&chunk.unwrap());
+    }
+    assert_eq!(
+        kept, b"the user's own file",
+        "the clash's destination file is untouched"
+    );
+}
+
+/// The same-volume twin: a rename-based move cancelled at its clash prompt also
+/// reports `write-cancelled`, through the same driver arm.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn same_volume_move_cancelled_at_a_conflict_prompt_emits_cancelled_event() {
+    use super::super::super::conflict_responder_test_support::ConflictResponderSink;
+    use crate::file_system::write_operations::test_support::TestOperationGuard;
+
+    let volume: Arc<dyn Volume> = Arc::new(InMemoryVolume::new("V").with_space_info(10_000_000, 10_000_000));
+    volume.create_file(Path::new("/a.txt"), b"incoming").await.unwrap();
+    volume.create_directory(Path::new("/dst")).await.unwrap();
+    volume
+        .create_file(Path::new("/dst/a.txt"), b"the user's own file")
+        .await
+        .unwrap();
+
+    let op = TestOperationGuard::register_state("same-move-cancel-at-prompt", make_state());
+    let events = Arc::new(ConflictResponderSink::cancelling(op.state(), op.id()));
+
+    let result = move_within_same_volume_with_progress(
+        events.clone(),
+        op.id(),
+        op.state(),
+        Arc::clone(&volume),
+        &[PathBuf::from("/a.txt")],
+        Path::new("/dst"),
+        &VolumeCopyConfig::default(),
+    )
+    .await;
+
+    assert!(
+        matches!(result, Err(WriteOperationError::Cancelled { .. })),
+        "a cancel at the prompt ends the move as cancelled, got {result:?}"
+    );
+    assert_eq!(
+        events.inner.conflicts.lock().unwrap().len(),
+        1,
+        "exactly one prompt went up"
+    );
+    {
+        let cancelled = events.inner.cancelled.lock().unwrap();
+        assert_eq!(
+            cancelled.len(),
+            1,
+            "the FE needs exactly one write-cancelled to close on"
+        );
+        assert_eq!(cancelled[0].rollback.outcome, CancelRollbackOutcome::NotRolledBack);
+    }
+    assert!(
+        volume.exists(Path::new("/a.txt")).await,
+        "the source stays where it was"
+    );
 }

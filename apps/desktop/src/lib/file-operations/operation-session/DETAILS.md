@@ -344,6 +344,11 @@ and then releases the hold it took. Without it a prompt sits on screen asking a 
 and being a modal, refuses to let any new operation start behind it. Scoped by id for the same reason answering is: the
 retraction for the old clash routinely lands with the new one already on screen.
 
+**An ended operation asks nothing.** A cancel takes a parked clash away WITHOUT answering it, so no
+`write-conflict-resolved` names it (`write_operations/conflict_slot.rs::abandon`); the terminal event is the only word a
+view gets. So `conflict` reads `null` and `awaitingAnswer` reads `false` once `outcome` is set, whatever the last event
+said. The raw clash stays held underneath, which keeps `outcome` the one fact both getters branch on.
+
 Three rules follow, and all three are guardrails rather than observations:
 
 - ❌ **Never rebuild a frontend rule that makes correctness depend on one surface being allowed to answer.** That rule

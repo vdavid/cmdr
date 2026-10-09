@@ -1040,10 +1040,10 @@ pub(crate) async fn copy_volumes_with_progress(
     // Post-loop: handle success, cancellation, or error
     let intent = load_intent(&state.intent);
 
-    // A `VolumeError::Cancelled` from a per-task stream (concurrent path's
-    // `Err((dest, e))` arm, or the serial driver's `PostLoopIntent::Failed`
-    // arm) maps to `WriteOperationError::Cancelled` and ends up here in
-    // `copy_error`. That's not a transport failure: it's the cooperative
+    // A `VolumeError::Cancelled` from a per-task stream (the concurrent path's
+    // `Err((dest, e))` arm) maps to `WriteOperationError::Cancelled` and ends up
+    // here in `copy_error`; the serial driver reports its own as
+    // `PostLoopIntent::Cancelled` (`PostLoopIntent::stopped_by`). That's not a transport failure: it's the cooperative
     // response to the user's cancel click. Reclassify it as cancellation so
     // the gate below emits `write-cancelled` instead of dropping the terminal
     // event entirely and wedging the FE dialog.

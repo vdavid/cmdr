@@ -429,6 +429,54 @@ async fn async_driver_resolver_error_propagates_as_failed_intent() {
     unregister_operation_status(&op_id);
 }
 
+/// A cancel pressed while a clash is on screen drops the conflict slot's sender,
+/// so the resolver answers `Cancelled` rather than with a decision. That is the
+/// person's cancel, not a failure: the engines emit `write-cancelled` only on the
+/// `Cancelled` intent, and a `Failed(Cancelled)` left the progress dialog parked
+/// on a stale prompt with no terminal event ever coming.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn async_driver_resolver_cancel_ends_the_loop_as_cancelled() {
+    let op_id = unique_op_id("async-resolver-cancel");
+    let state = make_state();
+    let _op_guard = install_state(&op_id, Arc::clone(&state));
+    register_operation_status(&op_id, WriteOperationType::Copy, vec![]);
+    let sink = CollectorEventSink::new();
+
+    let outcome = drive_transfer_serial_async(
+        &sink,
+        &state,
+        &op_id,
+        &paths(&["/a.txt", "/b.txt"]),
+        Path::new("/dest"),
+        2,
+        0,
+        0,
+        0,
+        &HashSet::new(),
+        &copy_config(),
+        |p: &Path| -> FetchFut<'_> { taken(p, 0) },
+        |_i: ConflictDecisionInput<'_>| -> ResolveFut<'_> {
+            Box::pin(async {
+                Err(WriteOperationError::Cancelled {
+                    message: "Operation cancelled by user".into(),
+                })
+            })
+        },
+        |_ctx: TransferContext<'_>| -> TransferFut<'_> {
+            Box::pin(async { panic!("closure must NEVER fire when the clash was cancelled") })
+        },
+    )
+    .await;
+
+    assert!(
+        matches!(outcome.intent, PostLoopIntent::Cancelled),
+        "a cancel at the prompt is a cancel, got {:?}",
+        outcome.intent
+    );
+    assert_eq!(outcome.files_done, 0, "nothing after the cancelled clash is touched");
+    unregister_operation_status(&op_id);
+}
+
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn async_driver_no_conflict_skips_resolver_entirely() {
     let op_id = unique_op_id("async-no-conflict-no-resolver");

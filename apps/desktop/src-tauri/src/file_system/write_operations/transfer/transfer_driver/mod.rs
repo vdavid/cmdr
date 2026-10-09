@@ -293,6 +293,22 @@ pub(super) enum PostLoopIntent {
     Failed(WriteOperationError),
 }
 
+impl PostLoopIntent {
+    /// How a loop that stopped on `error` ended. A `Cancelled` is the cooperative
+    /// answer to the person's cancel, wherever in the iteration it surfaced (a
+    /// dropped conflict slot, a backend that honoured `backend_cancel` mid-probe,
+    /// the transfer itself), so it ends the loop as [`PostLoopIntent::Cancelled`].
+    /// ❌ Never `Failed`: a cancel that reaches the caller as a failure gets no
+    /// `write-cancelled` from the engines that branch on this intent, and the
+    /// progress dialog waits forever on a prompt nothing will answer.
+    pub(super) fn stopped_by(error: WriteOperationError) -> Self {
+        match error {
+            WriteOperationError::Cancelled { .. } => Self::Cancelled,
+            other => Self::Failed(other),
+        }
+    }
+}
+
 // ============================================================================
 // Shared helpers
 // ============================================================================
