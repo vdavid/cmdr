@@ -473,7 +473,7 @@ pub async fn set_smb_direct_connection_enabled(volume_id: String, enabled: bool)
 // Per-drive indexing enable/disable/rescan lives in `commands/indexing.rs` as a
 // single drive-type-agnostic surface (`enable_drive_index` / `disable_drive_index`
 // / `rescan_drive_index`), so the freshness UX drives any drive (local or SMB)
-// through one set of commands. The SMB-specific gate + typed `SmbIndexGateReason`
+// through one set of commands. The SMB-specific gate + typed `DriveIndexRefusal`
 // it surfaces still live in `indexing::start_indexing_for_smb`.
 
 /// Upgrades an existing OS-mounted SMB volume using explicit credentials.

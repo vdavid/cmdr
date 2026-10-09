@@ -19,7 +19,7 @@ import {
   rescanDriveIndex,
   type MediaIndexVolumeState,
 } from '$lib/tauri-commands'
-import type { SmbIndexGateReason, VolumeIndexStatus } from '$lib/ipc/bindings'
+import type { DriveIndexRefusal, VolumeIndexStatus } from '$lib/ipc/bindings'
 import { getEnrichingVolumes } from '$lib/indexing/media-enrich-state.svelte'
 import { addToast } from '$lib/ui/toast'
 import { tString } from '$lib/intl/messages.svelte'
@@ -87,7 +87,7 @@ export function createDriveBadges(deps: DriveBadgesDeps): DriveBadges {
 
   /** Surface a typed index refusal: route credentials to login, else a friendly toast.
    *  The variant→copy mapping is the pure `driveIndexRefusalMessageKey` (unit-tested). */
-  function handleRefusal(volumeId: string, name: string, reason: SmbIndexGateReason): void {
+  function handleRefusal(volumeId: string, name: string, reason: DriveIndexRefusal): void {
     const messageKey = driveIndexRefusalMessageKey(reason)
     if (messageKey === null) {
       // `credentials_needed`: reuse the direct-connect flow, which prompts for the
@@ -98,7 +98,7 @@ export function createDriveBadges(deps: DriveBadgesDeps): DriveBadges {
     addToast(tString(messageKey, { name }), { level: 'error' })
   }
 
-  // `enable`/`rescan` can be refused on SMB (a typed `SmbIndexGateReason`); we classify by
+  // `enable`/`rescan` can be refused on SMB (a typed `DriveIndexRefusal`); we classify by
   // variant (never by message) and route `credentials_needed` into the direct-connect flow.
   async function runActionAsync(volumeId: string, action: DriveIndexMenuAction): Promise<void> {
     const name = deps.getVolumes().find((volume) => volume.id === volumeId)?.name ?? volumeId

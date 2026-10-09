@@ -2463,9 +2463,9 @@
   },
   "fileExplorer.navigation.driveIndex.refusedDisconnected": "{name} is disconnected. Reconnect it, then turn on indexing.",
   "@fileExplorer.navigation.driveIndex.refusedDisconnected": {
-    "description": "Toast shown when turning on indexing for an SMB share is refused because the share is currently disconnected.",
+    "description": "Toast shown when turning on indexing for a drive is refused because it isn’t connected right now: an SMB share whose session dropped or that’s offline, an unplugged drive, or a phone that hasn’t been connected yet (for example, still waiting for the person to allow USB debugging on it).",
     "placeholders": {
-      "name": "the share’s display name (e.g. Backups)"
+      "name": "the drive’s display name (e.g. Backups)"
     }
   },
   "fileExplorer.navigation.driveIndex.deferredRescan": "Cmdr is searching {name} right now. The rescan starts as soon as that finishes.",
@@ -2498,7 +2498,7 @@
   },
   "fileExplorer.navigation.driveIndex.refusedInternal": "Cmdr hit a snag turning on indexing for {name}. This shouldn’t happen. Restarting Cmdr usually clears it.",
   "@fileExplorer.navigation.driveIndex.refusedInternal": {
-    "description": "Toast shown when turning on indexing for a drive is refused for a reason that signals an internal problem rather than something the user can fix by reconnecting (the drive isn’t registered, or it’s classified as a non-SMB volume when it shouldn’t be). Reassuring and conversational; avoid the words “error” and “failed”.",
+    "description": "Toast shown when turning on indexing for a drive is refused for a reason that signals an internal problem rather than something the user can fix by reconnecting (no drive index can serve a volume the app offered indexing for). Reassuring and conversational; avoid the words “error” and “failed”.",
     "placeholders": {
       "name": "the drive’s display name (e.g. Backups)"
     }

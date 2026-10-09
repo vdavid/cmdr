@@ -42,6 +42,7 @@ use tokio_util::sync::CancellationToken;
 mod builder;
 mod error;
 mod ingest;
+mod refusal;
 
 pub use builder::{IndexBuildError, IndexBuilder};
 pub use error::IndexError;
@@ -64,6 +65,7 @@ use crate::{IndexDebugStatusResponse, IndexStatusResponse, VolumeIndexStatus};
 
 #[cfg(any(test, feature = "testing"))]
 pub use builder::TestInstallGuard;
+pub use refusal::DriveIndexRefusal;
 
 #[cfg(test)]
 mod cover_refusal_tests;
@@ -90,7 +92,7 @@ pub enum StartOutcome {
     IndexingDisabled,
     /// A share couldn't be indexed yet, for a typed reason the host can act on
     /// (sign in, reconnect, or just show the state honestly).
-    Refused(crate::SmbIndexGateReason),
+    Refused(DriveIndexRefusal),
 }
 
 /// The lifecycle's answer to a manual rescan, in the vocabulary a host speaks.
@@ -217,9 +219,7 @@ impl Index {
             .is_some_and(|volume| !volume.capabilities().can_be_indexed)
         {
             log::info!(target: "indexing", "start_volume: refusing '{volume_id}', no drive index can serve its backend");
-            return Ok(StartOutcome::Refused(
-                crate::indexing::transports::smb::index::SmbIndexGateReason::NotAnSmbVolume,
-            ));
+            return Ok(StartOutcome::Refused(DriveIndexRefusal::NotIndexable));
         }
         // ❌ Not `is_active`: a volume with a teardown claimed on it reads active
         // right up to the moment it stops, and short-circuiting there answers
@@ -260,34 +260,77 @@ impl Index {
         // guards it, and `record_drive_index_enabled` carries the other two reasons.
         state::record_drive_index_enabled(volume_id);
 
-        if volume_id == crate::ROOT_VOLUME_ID {
-            state::start_indexing()?;
-            return Ok(StartOutcome::Started);
+        // Routed by the id's scheme, which names the owning transport whether or
+        // not the drive is connected right now. ❗ Not by the registered backend:
+        // a phone still waiting for its USB debugging tap has no registration, and
+        // routing on one sent it to the SMB gate (`ERR-JUCNB`). Exhaustive on
+        // purpose, so a new scheme has to say where it goes.
+        use cmdr_fs::volume::VolumeScheme;
+        match VolumeScheme::of(volume_id) {
+            VolumeScheme::Root => {
+                state::start_indexing()?;
+                Ok(StartOutcome::Started)
+            }
+            VolumeScheme::Mtp | VolumeScheme::Adb => Self::start_phone(volume_id),
+            VolumeScheme::Smb => Ok(Self::start_share(volume_id).await),
+            // A local drive, or a mount whose id doesn't say what it is (a `path-`
+            // network mount, a cloud folder): the local-external walk takes it if
+            // the mount is a local disk, and the SMB gate gets the rest. The
+            // server schemes land here only when unregistered, since a registered
+            // one was refused above, and the gate answers `NotConnected` for them.
+            VolumeScheme::Local
+            | VolumeScheme::Path
+            | VolumeScheme::Cloud
+            | VolumeScheme::Favorite
+            | VolumeScheme::Sftp
+            | VolumeScheme::Webdav
+            | VolumeScheme::S3
+            | VolumeScheme::Unknown => {
+                #[cfg(any(target_os = "macos", target_os = "linux"))]
+                {
+                    use crate::indexing::transports::local_external::index::{
+                        LocalExternalEnable, start_indexing_for_local_external,
+                    };
+                    match start_indexing_for_local_external(volume_id.to_string()).await? {
+                        LocalExternalEnable::Started => return Ok(StartOutcome::Started),
+                        LocalExternalEnable::NotLocalExternal => {}
+                    }
+                }
+                Ok(Self::start_share(volume_id).await)
+            }
         }
+    }
 
+    /// Start a phone's index, over MTP or ADB by its id. A phone that isn't
+    /// connected is refused as `NotConnected`: neither transport has a session to
+    /// upgrade, so being registered is the whole precondition.
+    fn start_phone(volume_id: &str) -> Result<StartOutcome, IndexError> {
+        if crate::indexing::host::volumes::current().get(volume_id).is_none() {
+            log::info!(target: "indexing", "start_volume: refusing '{volume_id}', the phone isn't connected");
+            return Ok(StartOutcome::Refused(DriveIndexRefusal::NotConnected));
+        }
         #[cfg(any(target_os = "macos", target_os = "linux"))]
         {
-            use crate::indexing::transports::local_external::index::{
-                LocalExternalEnable, start_indexing_for_local_external,
-            };
-
-            if cmdr_fs::volume::mtp_ids::is_mtp_volume_id(volume_id) {
+            use cmdr_fs::volume::VolumeScheme;
+            if VolumeScheme::of(volume_id) == VolumeScheme::Mtp {
                 crate::indexing::transports::mtp::index::start_indexing_for_mtp(volume_id.to_string())?;
-                return Ok(StartOutcome::Started);
-            }
-            if crate::indexing::transports::adb::is_registered_adb_volume(volume_id) {
+            } else {
                 crate::indexing::transports::adb::start_indexing_for_adb(volume_id)?;
-                return Ok(StartOutcome::Started);
             }
-            match start_indexing_for_local_external(volume_id.to_string()).await? {
-                LocalExternalEnable::Started => return Ok(StartOutcome::Started),
-                LocalExternalEnable::NotLocalExternal => {}
-            }
+            Ok(StartOutcome::Started)
         }
+        #[cfg(not(any(target_os = "macos", target_os = "linux")))]
+        {
+            Ok(StartOutcome::Refused(DriveIndexRefusal::NotIndexable))
+        }
+    }
 
+    /// Start a share's index behind the SMB gate, which upgrades an OS mount to a
+    /// direct session or refuses with the reason it couldn't.
+    async fn start_share(volume_id: &str) -> StartOutcome {
         match crate::indexing::transports::smb::index::start_indexing_for_smb(volume_id.to_string()).await {
-            Ok(()) => Ok(StartOutcome::Started),
-            Err(reason) => Ok(StartOutcome::Refused(reason)),
+            Ok(()) => StartOutcome::Started,
+            Err(reason) => StartOutcome::Refused(reason),
         }
     }
 

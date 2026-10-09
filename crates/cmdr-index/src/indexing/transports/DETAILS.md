@@ -21,11 +21,12 @@ over smb2 is what the kind check prevents), then: `Direct` → index now; anythi
 (reconnect first); a `Local` volume on an `smbfs` mount → trigger/await the host's `ensure_direct_smb` (the app's
 "Connect directly" upgrade), then re-check.
 
-Every refusal is a TYPED `SmbIndexGateReason` (`NotRegistered` / `NotAnSmbVolume` / `UpgradeFailed` /
-`CredentialsNeeded` / `Disconnected`) that crosses IPC as a snake_case tag, never a message substring. FDA-independent:
-SMB paths aren't TCC-protected, so `start_indexing_for_smb` never routes through `should_auto_start_indexing`. Volume
-access goes through the host seam (`host::volumes::current()`, a `LazyLock`, no `AppHandle` needed).
-`smb_volume_id_for_path` probes the mount (`get_smb_mount_info`) and keys by `(server, port, share)`.
+Every refusal is a TYPED `DriveIndexRefusal` (`NotConnected` / `NotIndexable` / `UpgradeFailed` / `CredentialsNeeded` /
+`Disconnected` / `IndexingDisabled`) that crosses IPC as a snake_case tag, never a message substring. It's
+transport-neutral (`handle/refusal.rs`): a phone that isn't connected answers `NotConnected` too. FDA-independent: SMB
+paths aren't TCC-protected, so `start_indexing_for_smb` never routes through `should_auto_start_indexing`. Volume access
+goes through the host seam (`host::volumes::current()`, a `LazyLock`, no `AppHandle` needed). `smb_volume_id_for_path`
+probes the mount (`get_smb_mount_info`) and keys by `(server, port, share)`.
 
 ### Auto-resume on (re)connect (`smb/index.rs`)
 
@@ -199,9 +200,11 @@ three places.
 ### Enable
 
 `start_indexing_for_adb` needs only the phone dialed (the volume registered): no connection gate, FDA-independent.
-`Index::start_volume` routes to it by the registered volume's `BackendKind::Adb`, a typed fact, rather than by the id's
-shape, and the cover walk's bootstrap classifies the same way. An unplugged phone's id isn't registered, so a start for
-it falls through to the SMB gate and is refused as `NotRegistered`.
+`Index::start_volume` routes a phone by its id's scheme (`VolumeScheme::Adb` / `Mtp`), which holds whether or not the
+phone is connected, and refuses one with no registered volume as `NotConnected` (unplugged, or still waiting for its USB
+debugging tap). ❗ Routing on the registered `BackendKind` instead sent such a phone to the SMB gate, which told the
+user to restart Cmdr (`ERR-JUCNB`, 0.50.0). The cover walk's bootstrap only ever sees a registered volume, so it
+classifies by backend.
 
 ### No live watch, so a finished walk reads Stale
 
@@ -235,10 +238,11 @@ ADB server by `apps/desktop/src-tauri/src/file_system/write_operations/backend_s
 
 ### Enable + classification (`local_external/index.rs`)
 
-`enable_drive_index` routes a per-drive "Turn on indexing" by id: `root` → local; an `mtp-*` id → MTP; then the
-**local-external branch** (`start_indexing_for_local_external`); then the SMB fall-through. The local-external branch is
+`enable_drive_index` → `Index::start_volume` routes a per-drive "Turn on indexing" by the id's `VolumeScheme`, in one
+exhaustive `match`: `Root` → local; `Mtp` / `Adb` → the phone transports; `Smb` → the SMB gate; everything else → the
+**local-external branch** (`start_indexing_for_local_external`), then the SMB fall-through. The local-external branch is
 what a plain local external drive (USB stick, SD card, extra disk, mounted disk image) needs — before it existed, a
-healthy local drive fell to the SMB path and was refused as `NotAnSmbVolume` (the reported bug). Unlike SMB it has NO
+healthy local drive fell to the SMB path and was refused as `NotIndexable` (the reported bug). Unlike SMB it has NO
 connection gate (a local mount is already directly readable) and NO typed refusal; unlike MTP it uses the local scanner.
 
 **Classification (`classify`)** decides local-external vs fall-through from TYPED facts, never a volume-id/path

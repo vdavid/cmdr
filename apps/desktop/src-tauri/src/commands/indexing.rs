@@ -8,7 +8,7 @@ use tauri::AppHandle;
 use crate::file_system::volume::drive_release::{self, Gated, SkipReason, StartKind};
 use crate::index_host::index;
 use cmdr_index::{
-    IndexDebugStatusResponse, IndexError, IndexStatusResponse, ROOT_VOLUME_ID, SmbIndexGateReason, StartOutcome,
+    DriveIndexRefusal, IndexDebugStatusResponse, IndexError, IndexStatusResponse, ROOT_VOLUME_ID, StartOutcome,
     VolumeIndexStatus, store::DirStats,
 };
 
@@ -40,7 +40,7 @@ pub enum EnableIndexingOutcome {
     /// An SMB volume couldn't be indexed yet; `reason` says why (upgrade failed,
     /// credentials needed, disconnected). The FE shows an honest status and, for
     /// `credentials_needed`, can route into the reconnect/login flow.
-    Refused { reason: SmbIndexGateReason },
+    Refused { reason: DriveIndexRefusal },
     /// An unmount of the drive was under way, so no start ran: it hadn't settled
     /// when the wait for it ran out (`drive_release::UNMOUNT_PENDING_WAIT`), or it
     /// landed and the drive left the mount table. ❌ Never worded as a start.
@@ -233,7 +233,7 @@ pub async fn start_indexing_after_fda_decision(app: AppHandle) -> Result<(), Str
 // now". Thin pass-throughs to the `indexing` module (smart backend / thin
 // frontend). SMB enable is FDA-independent by design (network paths aren't
 // TCC-protected) and triggers the direct-smb2 upgrade when needed, surfacing a
-// TYPED `SmbIndexGateReason` on refusal.
+// TYPED `DriveIndexRefusal` on refusal.
 
 /// Turn on indexing for a specific drive.
 ///

@@ -97,7 +97,7 @@ async fn turning_indexing_on_for_a_volume_no_index_can_serve_refuses_and_records
 
     assert_eq!(
         outcome,
-        crate::indexing::handle::StartOutcome::Refused(crate::SmbIndexGateReason::NotAnSmbVolume),
+        crate::indexing::handle::StartOutcome::Refused(crate::DriveIndexRefusal::NotIndexable),
         "an SFTP server has no index transport",
     );
     assert!(
@@ -115,7 +115,7 @@ async fn turning_indexing_on_for_a_volume_no_index_can_serve_refuses_and_records
     reason = "the fixture holds the process-wide seams for the whole test; holding it across the await IS the point"
 )]
 async fn turning_indexing_on_for_a_phone_over_adb_starts_it_and_records_the_choice() {
-    let phone = ColdDrive::with_volume("cover-enable-adb-phone-test", |volume| {
+    let phone = ColdDrive::with_volume("adb-cover-enable-phone-test", |volume| {
         volume.with_backend_kind(cmdr_fs::volume::BackendKind::Adb)
     });
 
@@ -134,6 +134,40 @@ async fn turning_indexing_on_for_a_phone_over_adb_starts_it_and_records_the_choi
         IndexStore::user_enabled(&phone.db_path()),
         "and the choice is on the phone's own database",
     );
+}
+
+/// Turning indexing on for a phone that isn't connected answers `NotConnected`,
+/// over ADB and MTP alike.
+///
+/// Regression anchor for `ERR-JUCNB` / `ERR-JT9ZX` (0.50.0): an ADB phone still
+/// waiting for its USB debugging tap has a row but no registered volume, so the
+/// enable fell through to the SMB gate, and the user saw "this shouldn't happen,
+/// restart Cmdr" for a phone that only needed connecting. An MTP phone in the same
+/// state came back as an untyped error. The id's scheme says which transport owns
+/// the drive whether or not it's connected, so both route to their own transport,
+/// and that transport says what's actually wrong.
+#[tokio::test(flavor = "multi_thread")]
+#[allow(
+    clippy::await_holding_lock,
+    reason = "the fixture holds the process-wide seams for the whole test; holding it across the await IS the point"
+)]
+async fn turning_indexing_on_for_a_phone_that_isnt_connected_says_so() {
+    let drive = ColdDrive::new("cover-enable-unplugged-phone-test");
+    let adb_phone = cmdr_fs::volume::adb_volume_id("LGH815e3b95e49");
+    let mtp_phone = cmdr_fs::volume::mtp_ids::mtp_volume_id(&cmdr_fs::volume::mtp_device_id("LGH815e3b95e49"), 65537);
+
+    for volume_id in [adb_phone, mtp_phone] {
+        let outcome = drive.index.start_volume(&volume_id).await;
+        assert!(
+            matches!(
+                outcome,
+                Ok(crate::indexing::handle::StartOutcome::Refused(
+                    crate::DriveIndexRefusal::NotConnected
+                ))
+            ),
+            "{volume_id}: a phone that isn't connected needs connecting, got {outcome:?}",
+        );
+    }
 }
 
 /// Turning indexing on for a share that ISN'T reachable still records the choice,
@@ -169,7 +203,7 @@ async fn turning_indexing_on_for_an_offline_share_records_the_choice_anyway() {
 
     assert_eq!(
         outcome,
-        crate::indexing::handle::StartOutcome::Refused(crate::SmbIndexGateReason::Disconnected),
+        crate::indexing::handle::StartOutcome::Refused(crate::DriveIndexRefusal::Disconnected),
         "precondition: the transport has to have REFUSED, or this test proves nothing",
     );
     assert!(

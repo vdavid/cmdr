@@ -9,22 +9,11 @@
 //!   index: the backend reports every mutation to its listing host, and the host
 //!   folds it in through `Index::apply_directory_change`, the same translation an
 //!   SMB `CHANGE_NOTIFY` takes (`transports/smb/watch.rs`).
-//! - **Dispatch is by the registered backend** (`BackendKind::Adb`), a typed fact
-//!   off the volume the host registered, rather than by the id's shape.
-
-use cmdr_fs::volume::BackendKind;
+//! - **Dispatch is by the id's scheme** (`VolumeScheme::Adb`, in
+//!   `Index::start_volume`), so a phone that isn't connected yet still reaches
+//!   this transport's own `NotConnected` answer.
 
 use crate::indexing::lifecycle::state;
-
-/// Whether `volume_id` names a phone over ADB the host has registered.
-///
-/// `false` for an unplugged phone, whose volume is gone: a start for it then
-/// falls through to the SMB gate, which refuses it as `NotRegistered`.
-pub(crate) fn is_registered_adb_volume(volume_id: &str) -> bool {
-    crate::indexing::host::volumes::current()
-        .get(volume_id)
-        .is_some_and(|volume| volume.backend_kind() == BackendKind::Adb)
-}
 
 /// Turn on indexing for a phone over ADB (the per-drive "Turn on indexing" action,
 /// routed here by `Index::start_volume`).

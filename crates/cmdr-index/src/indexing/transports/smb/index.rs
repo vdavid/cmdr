@@ -16,51 +16,12 @@
 
 use std::path::PathBuf;
 
+use crate::DriveIndexRefusal;
 use crate::indexing::host::volumes::SmbUpgradeRefusal;
 use crate::indexing::lifecycle::freshness;
 use crate::indexing::lifecycle::master;
 use crate::indexing::lifecycle::state;
 use cmdr_fs::volume::{BackendKind, ConnectionState};
-
-/// Why an SMB volume couldn't be indexed. Typed (and serialized as a
-/// snake_case tag) so callers and the per-drive UX classify by variant on BOTH sides
-/// of the IPC boundary, never by message substring.
-#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, specta::Type)]
-#[serde(rename_all = "snake_case")]
-pub enum SmbIndexGateReason {
-    /// No volume is registered for this id (unmounted, or never seen).
-    NotRegistered,
-    /// The volume isn't an SMB share at all: a different backend serves it, or
-    /// it's an ordinary local disk on no network mount.
-    NotAnSmbVolume,
-    /// The share is OS-mounted but the upgrade to a direct smb2 session failed
-    /// (network unreachable, server refused). Indexing stays disabled.
-    UpgradeFailed,
-    /// The upgrade needs credentials Cmdr doesn't have cached. The user must
-    /// sign in (the FE reconnect/credentials flow) before indexing can start.
-    CredentialsNeeded,
-    /// The volume's smb2 session is currently `Disconnected`. Reconnect first.
-    Disconnected,
-    /// The master drive-indexing switch is off, so no drive may index. Nothing is
-    /// wrong with the share; the user turned indexing off in settings.
-    IndexingDisabled,
-}
-
-impl std::fmt::Display for SmbIndexGateReason {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        // Diagnostic / log text only. Classification is by variant, never by
-        // parsing this string.
-        let s = match self {
-            Self::NotRegistered => "no volume registered for this id",
-            Self::NotAnSmbVolume => "not an SMB volume",
-            Self::UpgradeFailed => "upgrade to a direct smb2 connection failed",
-            Self::CredentialsNeeded => "a direct smb2 connection needs credentials",
-            Self::Disconnected => "the smb2 session is disconnected",
-            Self::IndexingDisabled => "drive indexing is off in settings",
-        };
-        f.write_str(s)
-    }
-}
 
 /// Whether the volume registered under `volume_id` is a live, direct (smb2)
 /// SMB volume ready to index right now. Pure inspection — no upgrade attempt.
@@ -81,7 +42,7 @@ fn is_direct_smb(volume_id: &str) -> bool {
 /// Mirrors the FE "Turn on indexing" intent: an `os_mount` share triggers/awaits
 /// the host's `ensure_direct_smb`; a failed/credential-needing upgrade keeps
 /// indexing disabled with a typed reason.
-async fn ensure_direct_smb(volume_id: &str) -> Result<PathBuf, SmbIndexGateReason> {
+async fn ensure_direct_smb(volume_id: &str) -> Result<PathBuf, DriveIndexRefusal> {
     let volumes = crate::indexing::host::volumes::current();
 
     let Some(volume) = volumes.get(volume_id) else {
@@ -89,7 +50,7 @@ async fn ensure_direct_smb(volume_id: &str) -> Result<PathBuf, SmbIndexGateReaso
         // future refusal isn't invisible in the logs — the reason the missing
         // local-drive branch stayed hidden for so long.
         log::warn!(target: "indexing::smb_index", "SMB index gate: no volume registered for '{volume_id}'");
-        return Err(SmbIndexGateReason::NotRegistered);
+        return Err(DriveIndexRefusal::NotConnected);
     };
     // A server this transport has no business walking: SFTP, WebDAV, and a dialed
     // phone all report a healthy `connection_state()` too, so the transport
@@ -97,7 +58,7 @@ async fn ensure_direct_smb(volume_id: &str) -> Result<PathBuf, SmbIndexGateReaso
     // below: it is served by `LocalPosixVolume` and answers `Local` here.
     if !matches!(volume.backend_kind(), BackendKind::Smb | BackendKind::Local) {
         log::warn!(target: "indexing::smb_index", "SMB index gate: '{volume_id}' is served by a backend this transport can't walk");
-        return Err(SmbIndexGateReason::NotAnSmbVolume);
+        return Err(DriveIndexRefusal::NotIndexable);
     }
     if volume.backend_kind() == BackendKind::Smb {
         match volume.connection_state() {
@@ -107,7 +68,7 @@ async fn ensure_direct_smb(volume_id: &str) -> Result<PathBuf, SmbIndexGateReaso
             // session; the FE reconnect flow owns recovery.
             _ => {
                 log::warn!(target: "indexing::smb_index", "SMB index gate: '{volume_id}' smb2 session is disconnected");
-                return Err(SmbIndexGateReason::Disconnected);
+                return Err(DriveIndexRefusal::Disconnected);
             }
         }
     }
@@ -121,7 +82,7 @@ async fn ensure_direct_smb(volume_id: &str) -> Result<PathBuf, SmbIndexGateReaso
         .is_none()
     {
         log::warn!(target: "indexing::smb_index", "SMB index gate: '{volume_id}' is not an SMB volume");
-        return Err(SmbIndexGateReason::NotAnSmbVolume);
+        return Err(DriveIndexRefusal::NotIndexable);
     }
 
     // os_mount → ask the host to upgrade it to a direct smb2 session. Mounting,
@@ -131,20 +92,20 @@ async fn ensure_direct_smb(volume_id: &str) -> Result<PathBuf, SmbIndexGateReaso
         Ok(()) => {}
         Err(SmbUpgradeRefusal::CredentialsNeeded) => {
             log::info!(target: "indexing::smb_index", "SMB index gate: '{volume_id}' needs credentials for a direct smb2 connection");
-            return Err(SmbIndexGateReason::CredentialsNeeded);
+            return Err(DriveIndexRefusal::CredentialsNeeded);
         }
         Err(SmbUpgradeRefusal::Failed(reason)) => {
             log::warn!(target: "indexing::smb_index", "SMB index gate: upgrade failed for '{volume_id}': {reason}");
-            return Err(SmbIndexGateReason::UpgradeFailed);
+            return Err(DriveIndexRefusal::UpgradeFailed);
         }
     }
 
     // Re-fetch: the upgrade replaced the LocalPosixVolume with an SmbVolume.
     if is_direct_smb(volume_id) {
-        let volume = volumes.get(volume_id).ok_or(SmbIndexGateReason::NotRegistered)?;
+        let volume = volumes.get(volume_id).ok_or(DriveIndexRefusal::NotConnected)?;
         Ok(volume.root().to_path_buf())
     } else {
-        Err(SmbIndexGateReason::UpgradeFailed)
+        Err(DriveIndexRefusal::UpgradeFailed)
     }
 }
 
@@ -155,7 +116,7 @@ async fn ensure_direct_smb(volume_id: &str) -> Result<PathBuf, SmbIndexGateReaso
 /// by design (network paths aren't TCC-protected). Returns the typed gate reason
 /// on refusal so the caller (and the per-drive UX) can show an honest, non-string-matched
 /// status. A no-op if the volume's index is already active.
-pub async fn start_indexing_for_smb(volume_id: String) -> Result<(), SmbIndexGateReason> {
+pub async fn start_indexing_for_smb(volume_id: String) -> Result<(), DriveIndexRefusal> {
     // ❌ Not `is_active`: a volume with a teardown claimed on it is active right up
     // to the moment it stops, and this is the enable that has to bring it back.
     if state::is_active_and_staying(&volume_id) {
@@ -167,7 +128,7 @@ pub async fn start_indexing_for_smb(volume_id: String) -> Result<(), SmbIndexGat
     // even open an smb2 session for a share nothing is allowed to index.
     if !master::master_enabled() {
         log::info!(target: "indexing::smb_index", "SMB index gate: '{volume_id}' refused, drive indexing is off in settings");
-        return Err(SmbIndexGateReason::IndexingDisabled);
+        return Err(DriveIndexRefusal::IndexingDisabled);
     }
 
     let mount_root = ensure_direct_smb(&volume_id).await?;
@@ -197,7 +158,7 @@ pub async fn start_indexing_for_smb(volume_id: String) -> Result<(), SmbIndexGat
         // A start failure here isn't a gate reason — it's an internal error
         // (DB open, manager spawn). Treat as UpgradeFailed for the caller's
         // typed surface; the log carries the detail.
-        return Err(SmbIndexGateReason::UpgradeFailed);
+        return Err(DriveIndexRefusal::UpgradeFailed);
     }
 
     // A new external index DB just came online (or resumed): cap accumulation by
@@ -329,12 +290,12 @@ mod tests {
         // `matches!` / `==` check never conflates two. (Guards against an
         // accidental same-variant alias during edits.)
         let all = [
-            SmbIndexGateReason::NotRegistered,
-            SmbIndexGateReason::NotAnSmbVolume,
-            SmbIndexGateReason::UpgradeFailed,
-            SmbIndexGateReason::CredentialsNeeded,
-            SmbIndexGateReason::Disconnected,
-            SmbIndexGateReason::IndexingDisabled,
+            DriveIndexRefusal::NotConnected,
+            DriveIndexRefusal::NotIndexable,
+            DriveIndexRefusal::UpgradeFailed,
+            DriveIndexRefusal::CredentialsNeeded,
+            DriveIndexRefusal::Disconnected,
+            DriveIndexRefusal::IndexingDisabled,
         ];
         for (i, a) in all.iter().enumerate() {
             for (j, b) in all.iter().enumerate() {
@@ -359,7 +320,7 @@ mod tests {
 
         assert_eq!(
             ensure_direct_smb("sftp-nas-22-ada").await,
-            Err(SmbIndexGateReason::NotAnSmbVolume),
+            Err(DriveIndexRefusal::NotIndexable),
             "a live SFTP session is not a share this transport may walk",
         );
     }

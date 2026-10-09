@@ -222,9 +222,9 @@ parent). A grant of "one item" for such a type is `RootPromises` moving by one a
   `is_active`: a volume with a teardown claimed on it reads active right up to the moment it stops, so the plain
   question answers "already indexing" to the very request that has to bring it back (`../lifecycle/DETAILS.md` § The
   shutting-down window). ❗ Ahead of all of it, a REGISTERED volume whose `capabilities().can_be_indexed` is false
-  answers `Refused(NotAnSmbVolume)`: before the enable marker is written, and before a search walk's writer-only
-  instance on it could be promoted to a scan. The volume switcher offers indexing on that same capability, so the two
-  can't disagree.
+  answers `Refused(NotIndexable)`: before the enable marker is written, and before a search walk's writer-only instance
+  on it could be promoted to a scan. The volume switcher offers indexing on that same capability, so the two can't
+  disagree.
 
 - **`is_active` + `force_scan` ⇒ `Index::rescan_volume`.** "Rescan now" on a drive that isn't indexing yet means "start
   it", and the caller shouldn't have to know that.
@@ -347,7 +347,7 @@ holds at the boundary with this and `Internal(Diagnostic)` named, not with zero 
 ## The platform story: no `cfg` on the surface
 
 `Index`'s signature is identical on every platform. The `cfg`s that used to sit on 14 root re-exports are gone:
-`SmbIndexGateReason` needed none in the first place (the SMB transport module was never platform-gated, only its
+`DriveIndexRefusal` needed none in the first place (the SMB transport module was never platform-gated, only its
 re-export was), and the MTP and local-external routing that IS gated now lives inside method bodies, where a platform
 without those transports simply falls through. `start_volume` reaches the share gate directly there, and
 `on_device_object_changed` / `on_watch_gap(Device(..))` no-op.

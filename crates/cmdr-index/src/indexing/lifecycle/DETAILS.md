@@ -1115,7 +1115,7 @@ policy.
 The per-drive freshness UX drives any drive through three thin `commands/indexing.rs` commands: `enable_drive_index`,
 `disable_drive_index`, `rescan_drive_index`. For root they map to `start_indexing`/`stop_indexing`/`force_scan`;
 SMB/MTP/ local-external routing lives in `../transports/CLAUDE.md`. `enable`/`rescan` return `EnableIndexingOutcome`
-(`{ status: "started" }` or, for SMB, `{ status: "refused", reason: SmbIndexGateReason }`). The per-volume status IPC
+(`{ status: "started" }` or, for SMB, `{ status: "refused", reason: DriveIndexRefusal }`). The per-volume status IPC
 (`get_volume_index_status_by_id`, for the dropdown rows) builds
 `VolumeIndexStatus { volume_id, enabled, freshness, scan_completed_at, scan_duration_ms, coalesced_signals_since_sweep, next_sweep_due_at, live_watch }`:
 freshness from the registry, the scan facts from the persisted `meta`. `enabled: false` + `freshness: None` is gray. The
@@ -1165,7 +1165,7 @@ them again and Decision 5 trusts them as covered-but-stale. ❌ Don't turn eithe
 Enforcement is one choke point: `start_indexing_for`, which all four transports funnel through, refuses an
 `IndexTheVolume` activation while the master is off. Callers that answer a user get a typed refusal of their own instead
 of a silent no-op: `enable_drive_index` → `EnableIndexingOutcome::IndexingDisabled` (transport-neutral, so the FE has
-one shape to match), `start_indexing_for_smb` → `SmbIndexGateReason::IndexingDisabled` (refused BEFORE the os_mount
+one shape to match), `start_indexing_for_smb` → `DriveIndexRefusal::IndexingDisabled` (refused BEFORE the os_mount
 upgrade, so a refused start can't clear the drive's `user_disabled` marker as a side effect).
 
 Toggling the master switch never writes per-drive intent, in either direction. Off runs `stop_all_indexing`, which is

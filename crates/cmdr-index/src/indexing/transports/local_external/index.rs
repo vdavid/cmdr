@@ -93,7 +93,7 @@ async fn classify(volume_id: &str) -> Classified {
     let volumes = crate::indexing::host::volumes::current();
     let Some(volume) = volumes.get(volume_id) else {
         // Not registered — nothing to resolve a mount root from. Let the SMB path
-        // report the typed `NotRegistered` refusal.
+        // report the typed `NotConnected` refusal.
         return Classified::FallThrough;
     };
     let mount_root = volume.root().to_path_buf();
@@ -171,7 +171,7 @@ mod tests {
     fn a_plain_local_drive_routes_to_the_local_external_scanner_not_smb() {
         // The bug this milestone fixes: a healthy local external drive (no smb2
         // session, a local filesystem) used to fall through to the SMB gate and
-        // be refused as `NotAnSmbVolume`. It must route to the local-external
+        // be refused as `NotIndexable`. It must route to the local-external
         // scanner instead.
         use cmdr_fs::volume::BackendKind;
 
@@ -305,7 +305,7 @@ mod tests {
     #[tokio::test]
     async fn classify_falls_through_for_an_unregistered_volume() {
         // No registration => no mount root to resolve => the SMB path handles it
-        // (and reports the typed `NotRegistered`).
+        // (and reports the typed `NotConnected`).
         assert!(
             matches!(
                 classify("local-external-never-registered").await,

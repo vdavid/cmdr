@@ -165,9 +165,15 @@ describe('hasLastScanFacts', () => {
 })
 
 describe('driveIndexRefusalMessageKey', () => {
-  it('maps an internal-error refusal (not an SMB volume) to the internal-error copy, not reconnect advice', () => {
-    expect(driveIndexRefusalMessageKey('not_an_smb_volume')).toBe('fileExplorer.navigation.driveIndex.refusedInternal')
-    expect(driveIndexRefusalMessageKey('not_registered')).toBe('fileExplorer.navigation.driveIndex.refusedInternal')
+  it('maps a drive no index can serve to the internal-error copy, not reconnect advice', () => {
+    expect(driveIndexRefusalMessageKey('not_indexable')).toBe('fileExplorer.navigation.driveIndex.refusedInternal')
+  })
+
+  // Regression anchor for ERR-JUCNB / ERR-JT9ZX: a phone waiting for its USB
+  // debugging tap got "this shouldn't happen, restart Cmdr", so the user restarted
+  // and reported it twice. It only needed connecting.
+  it("tells the user to connect a drive that isn't connected, instead of calling it an internal snag", () => {
+    expect(driveIndexRefusalMessageKey('not_connected')).toBe('fileExplorer.navigation.driveIndex.refusedDisconnected')
   })
 
   it('keeps the SMB-specific reasons on their share-oriented copy', () => {

@@ -7,7 +7,7 @@
 // state→copy contracts are unit-testable without mounting a component.
 
 import type { MessageKey } from '$lib/intl/keys.gen'
-import type { EnableIndexingOutcome, Freshness, SmbIndexGateReason, VolumeIndexStatus } from '$lib/ipc/bindings'
+import type { EnableIndexingOutcome, Freshness, DriveIndexRefusal, VolumeIndexStatus } from '$lib/ipc/bindings'
 
 /**
  * The five visible badge states. `disabled` is gray (no live index); `failed` is
@@ -255,7 +255,7 @@ export type DriveIndexActionFeedback =
   | { kind: 'toast'; key: MessageKey; level: 'info' | 'error' }
   /** A typed SMB refusal the caller routes: `credentials_needed` goes to the
    *  reconnect flow, everything else to `driveIndexRefusalMessageKey`. */
-  | { kind: 'refusal'; reason: SmbIndexGateReason }
+  | { kind: 'refusal'; reason: DriveIndexRefusal }
 
 /**
  * What to tell the user about an enable or rescan, from the TYPED outcome alone.
@@ -310,26 +310,27 @@ export function driveIndexActionFeedback(
 }
 
 /**
- * The toast message key for a typed SMB index refusal, or `null` for
+ * The toast message key for a typed drive-index refusal, or `null` for
  * `credentials_needed` (which routes into the reconnect/login flow instead of a
  * toast). Branch on the typed variant, never the message string.
  *
- * `not_registered` / `not_an_smb_volume` map to the INTERNAL-error copy, not
- * reconnect advice: a drive the user can turn indexing on for can't reach those
- * states through a healthy path, so they signal a "shouldn't happen" internal
- * snag rather than something reconnecting would fix. The remaining SMB-specific
- * reasons keep their share-oriented copy.
+ * `not_connected` and `disconnected` both say "reconnect it": a drive with a row
+ * but no live volume is an ordinary state (a phone waiting for its USB debugging
+ * tap, an asleep NAS), and the internal-error copy for it once sent a user
+ * restarting Cmdr and reporting a bug (`ERR-JUCNB`). Only `not_indexable` gets
+ * the internal-error copy: the UI offers indexing only where a drive index can
+ * serve the volume, so reaching it means something upstream disagreed.
  */
-export function driveIndexRefusalMessageKey(reason: SmbIndexGateReason): MessageKey | null {
+export function driveIndexRefusalMessageKey(reason: DriveIndexRefusal): MessageKey | null {
   switch (reason) {
     case 'credentials_needed':
       return null
     case 'upgrade_failed':
       return 'fileExplorer.navigation.driveIndex.refusedUpgradeFailed'
+    case 'not_connected':
     case 'disconnected':
       return 'fileExplorer.navigation.driveIndex.refusedDisconnected'
-    case 'not_registered':
-    case 'not_an_smb_volume':
+    case 'not_indexable':
       return 'fileExplorer.navigation.driveIndex.refusedInternal'
     // The master switch is off. Not a share problem, so it gets the settings-
     // oriented copy rather than reconnect advice. Normally unreachable from the

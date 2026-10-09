@@ -804,7 +804,7 @@ yellow tooltip branches on `liveWatch`: a phone over ADB, which nothing watches,
     next. ❗ Without this arm, "Rescan now" during a scan reports `started` and does nothing at all.
   - `indexing_disabled` → the settings-oriented toast at `info`, not `error`: transport-neutral, and reachable because
     the master switch can flip between the menu opening and the click, or MCP can call in.
-  - `refused` → the typed `SmbIndexGateReason`, which `credentials_needed` routes into the direct-connect/login flow
+  - `refused` → the typed `DriveIndexRefusal`, which `credentials_needed` routes into the direct-connect/login flow
     (`handleSubmenuAction`) and the rest turn into a friendly toast via `driveIndexRefusalMessageKey`.
   - `drive_leaving` → the `driveLeaving` toast at `info`: an unmount of the drive was under way, so the backend's
     drive-release gate ran no start (it waited out the request, then the drive left or the wait ran out). Not a refusal

@@ -99,6 +99,7 @@ pub use indexing::events::{
 
 /// The vocabulary the handle's own signatures are written in.
 pub use indexing::aggregator::AggregationPhase;
+pub use indexing::handle::DriveIndexRefusal;
 pub use indexing::lifecycle::cover::{CoverOutcome, CoverWalk};
 pub use indexing::lifecycle::freshness::Freshness;
 pub use indexing::lifecycle::state::RemovableStop;
@@ -108,7 +109,6 @@ pub use indexing::read::expected_totals::ExpectedTotals;
 pub use indexing::scanner::CoveredEntry;
 pub use indexing::scanner::SYSTEM_DIR_EXCLUDES;
 pub use indexing::store::IndexFailure;
-pub use indexing::transports::smb::index::SmbIndexGateReason;
 pub use indexing::volume::{IndexVolumeKind, ROOT_VOLUME_ID};
 
 /// The file index's test-only surface. ❌ Not part of the API; see the module docs.

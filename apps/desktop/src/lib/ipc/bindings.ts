@@ -7164,6 +7164,45 @@ export type DragModifiers = {
   shiftHeld: boolean
 }
 
+/**
+ *  Why a drive couldn't be indexed, whatever its transport. Typed (and
+ *  serialized as a snake_case tag) so callers and the per-drive UX classify by
+ *  variant on BOTH sides of the IPC boundary, never by message substring.
+ */
+export type DriveIndexRefusal =
+  /**
+   *  Nothing is registered under this id right now: the drive is unplugged or
+   *  unmounted, a share is offline, or a phone hasn't been dialed (its USB
+   *  debugging prompt may still be waiting for a tap). Connecting it is the fix.
+   */
+  | 'not_connected'
+  /**
+   *  No drive index can serve this volume: its backend has no index
+   *  transport (SFTP, WebDAV, S3), or it's a mount the SMB gate can't upgrade
+   *  because it isn't an SMB share.
+   */
+  | 'not_indexable'
+  /**
+   *  The share is OS-mounted but the upgrade to a direct smb2 session failed
+   *  (network unreachable, server refused). Indexing stays disabled.
+   */
+  | 'upgrade_failed'
+  /**
+   *  The upgrade needs credentials Cmdr doesn't have cached. The user must
+   *  sign in (the FE reconnect/credentials flow) before indexing can start.
+   */
+  | 'credentials_needed'
+  /**
+   *  The share is registered but its smb2 session is `Disconnected`.
+   *  Reconnect first.
+   */
+  | 'disconnected'
+  /**
+   *  The master drive-indexing switch is off, so no drive may index. Nothing is
+   *  wrong with the drive; the user turned indexing off in settings.
+   */
+  | 'indexing_disabled'
+
 // The Drive URLs one resolved item offers, all built from a single resolution.
 export type DriveItemLinks = {
   /**
@@ -7402,7 +7441,7 @@ export type EnableIndexingOutcome =
    *  credentials needed, disconnected). The FE shows an honest status and, for
    *  `credentials_needed`, can route into the reconnect/login flow.
    */
-  | { status: 'refused'; reason: SmbIndexGateReason }
+  | { status: 'refused'; reason: DriveIndexRefusal }
   /**
    *  An unmount of the drive was under way, so no start ran: it hadn't settled
    *  when the wait for it ran out (`drive_release::UNMOUNT_PENDING_WAIT`), or it
@@ -14628,37 +14667,6 @@ export type SmbFellBackToOsMount = {
    */
   displayName: string
 }
-
-/**
- *  Why an SMB volume couldn't be indexed. Typed (and serialized as a
- *  snake_case tag) so callers and the per-drive UX classify by variant on BOTH sides
- *  of the IPC boundary, never by message substring.
- */
-export type SmbIndexGateReason =
-  // No volume is registered for this id (unmounted, or never seen).
-  | 'not_registered'
-  /**
-   *  The volume isn't an SMB share at all: a different backend serves it, or
-   *  it's an ordinary local disk on no network mount.
-   */
-  | 'not_an_smb_volume'
-  /**
-   *  The share is OS-mounted but the upgrade to a direct smb2 session failed
-   *  (network unreachable, server refused). Indexing stays disabled.
-   */
-  | 'upgrade_failed'
-  /**
-   *  The upgrade needs credentials Cmdr doesn't have cached. The user must
-   *  sign in (the FE reconnect/credentials flow) before indexing can start.
-   */
-  | 'credentials_needed'
-  // The volume's smb2 session is currently `Disconnected`. Reconnect first.
-  | 'disconnected'
-  /**
-   *  The master drive-indexing switch is off, so no drive may index. Nothing is
-   *  wrong with the share; the user turned indexing off in settings.
-   */
-  | 'indexing_disabled'
 
 /**
  *  Typed `smb-os-mount-notice-withdrawn` Tauri event: the notice a

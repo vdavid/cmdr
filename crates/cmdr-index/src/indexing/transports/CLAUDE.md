@@ -7,7 +7,7 @@ changes arrive.
 ## Must-knows
 
 - **SMB/MTP index only over a `direct` (smb2/PTP) session; an `os_mount` SMB share upgrades first.** Every SMB refusal
-  is a TYPED `SmbIndexGateReason` (`NotRegistered` / `NotAnSmbVolume` / `UpgradeFailed` / `CredentialsNeeded` /
+  is a TYPED `DriveIndexRefusal` (`NotConnected` / `NotIndexable` / `UpgradeFailed` / `CredentialsNeeded` /
   `Disconnected` / `IndexingDisabled`) crossing IPC as a snake_case tag, NEVER a message substring. MTP has no gate.
 - **Live watch runs with NO pane open.** `apply_smb_change` hooks BEFORE the pane-listing early-return (the watcher's
   lifetime is the volume's, not a pane's). MTP's `mtp_watch` feeds off the PTP event loop the same way.
