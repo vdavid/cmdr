@@ -111,6 +111,8 @@ pub struct LocationInfo {
     pub capabilities: Option<cmdr_fs::volume::VolumeCapabilities>,
     /// Single-letter menu shortcut, present only on favorite rows.
     pub favorite_shortcut: Option<String>,
+    /// Twin of the macOS field: present only on a favorite row (`favorites/target.rs`).
+    pub favorite_target: Option<crate::favorites::target::FavoriteTarget>,
     /// What a tab at this volume's root is called, when the mount directory's
     /// name isn't it: an SMB share's own name. The macOS twin says why.
     pub root_label: Option<String>,
@@ -174,42 +176,64 @@ pub fn list_locations() -> Vec<LocationInfo> {
     dedupe_locations(locations)
 }
 
-/// Get the user's favorites from the editable store (`favorites.json`).
+/// Get the user's favorites from the editable store (`favorites.json`), one row each.
 ///
-/// Maps each stored `{ id, path, name }` to a `LocationInfo` with `category: Favorite`. Seeds the
-/// platform defaults on first launch (file absent); see `favorites/CLAUDE.md`. Linux has no TCC, so
-/// there's no FDA-pending skip: every favorite is existence-checked.
+/// ❗ Every stored favorite publishes a row, a missing one included; the reach pass
+/// (`favorites/reach.rs`) words it. Seeds the platform defaults on first launch (file absent); see
+/// `favorites/CLAUDE.md`.
 fn get_favorites(mounts: &[MountEntry]) -> Vec<LocationInfo> {
     crate::favorites::store::list()
         .into_iter()
-        .filter(|favorite| Path::new(&favorite.path).exists())
-        .map(|favorite| {
-            let fs_type = linux_mounts::fs_type_for_path_from_entries(Path::new(&favorite.path), mounts);
-            let supports_trash = supports_trash_for_fs_type(fs_type.as_deref());
-            LocationInfo {
-                id: format!("fav-{}", favorite.id),
-                name: favorite.name,
-                path: favorite.path.clone(),
-                category: LocationCategory::Favorite,
-                icon: None,
-                is_ejectable: false,
-                fs_type,
-                supports_trash,
-                mount_is_read_only: false,
-                is_disk_image: false,
-                is_cloud_mount: false,
-                connection_state: None,
-                pinned: None,
-                landing_path: None,
-                device_readiness: None,
-                usb_speed: None,
-                capabilities: None,
-                favorite_shortcut: favorite.shortcut,
-                root_label: None,
-                mount_account: None,
-            }
-        })
+        .map(|favorite| favorite_location(favorite, mounts, |path| path.exists()))
         .collect()
+}
+
+/// One favorite's discovery row, the twin of macOS `volumes::favorite_location`. ❗ No syscall on a
+/// network path, ever: the containing mount's type comes from the parsed table, and only a folder
+/// on a local disk is stat'd (`exists`, injected so a test can prove which ones aren't). Linux has
+/// no TCC, so there's no FDA-pending skip.
+fn favorite_location(
+    favorite: crate::favorites::store::Favorite,
+    mounts: &[MountEntry],
+    exists: impl FnOnce(&Path) -> bool,
+) -> LocationInfo {
+    use crate::favorites::target::{FavoriteTarget, Probe, on_disk};
+
+    let path = Path::new(&favorite.path);
+    // ❗ Only an OS path has a containing mount: the table lookup matches `/` for anything.
+    let fs_type = path
+        .is_absolute()
+        .then(|| linux_mounts::fs_type_for_path_from_entries(path, mounts))
+        .flatten();
+    let probe = match fs_type.as_deref().is_some_and(linux_mounts::is_network_fs_type) {
+        true => Probe::NetworkMount,
+        false => Probe::Stat,
+    };
+    let on_disk = on_disk(&favorite.path, probe, exists);
+    LocationInfo {
+        id: format!("fav-{}", favorite.id),
+        name: favorite.name,
+        // A scheme path has no mount, so no OS trash either.
+        supports_trash: fs_type.is_some() && supports_trash_for_fs_type(fs_type.as_deref()),
+        path: favorite.path,
+        category: LocationCategory::Favorite,
+        icon: None,
+        is_ejectable: false,
+        fs_type,
+        mount_is_read_only: false,
+        is_disk_image: false,
+        is_cloud_mount: false,
+        connection_state: None,
+        pinned: None,
+        landing_path: None,
+        device_readiness: None,
+        usb_speed: None,
+        capabilities: None,
+        favorite_shortcut: favorite.shortcut,
+        favorite_target: Some(FavoriteTarget::discovered(favorite.volume, on_disk)),
+        root_label: None,
+        mount_account: None,
+    }
 }
 
 /// Get the root filesystem as the main volume.
@@ -235,6 +259,7 @@ fn get_main_volume(mounts: &[MountEntry]) -> Option<LocationInfo> {
         usb_speed: None,
         capabilities: None,
         favorite_shortcut: None,
+        favorite_target: None,
         root_label: None,
         mount_account: None,
     })
@@ -272,6 +297,7 @@ pub fn resolve_path_volume_fast(path: &str) -> Option<VolumeInfo> {
         usb_speed: None,
         capabilities: None,
         favorite_shortcut: None,
+        favorite_target: None,
         root_label: None,
         mount_account: None,
     })
@@ -292,5 +318,56 @@ mod tests {
         assert_eq!(main.path, "/");
         assert_eq!(main.category, LocationCategory::MainVolume);
         assert_eq!(main.fs_type.as_deref(), Some("ext4"));
+    }
+
+    // -- favorites discovery --
+
+    use crate::favorites::store::Favorite;
+    use crate::favorites::target::{FavoriteReach, OnDisk};
+
+    fn favorite(path: &str) -> Favorite {
+        Favorite {
+            id: "f1".to_string(),
+            path: path.to_string(),
+            name: "docs".to_string(),
+            shortcut: None,
+            volume: None,
+        }
+    }
+
+    fn with_a_share() -> Vec<MountEntry> {
+        linux_mounts::parse_proc_mounts_from_content(
+            "/dev/sda1 / ext4 rw,relatime 0 0\n//nas/naspi /mnt/naspi cifs rw,relatime 0 0\n",
+        )
+    }
+
+    fn never_asked(path: &Path) -> bool {
+        panic!("discovery must not stat {path:?}")
+    }
+
+    /// ❗ The hung-mount guard: a favorite on a wedged CIFS share gets no `exists()`.
+    #[test]
+    fn a_favorite_on_a_network_mount_is_listed_without_touching_it() {
+        let row = favorite_location(favorite("/mnt/naspi/docs"), &with_a_share(), never_asked);
+        assert_eq!(row.fs_type.as_deref(), Some("cifs"));
+        let target = row.favorite_target.expect("a favorite row carries its target");
+        assert_eq!(target.discovered.on_disk, OnDisk::Unchecked);
+    }
+
+    /// ❗ No favorite is filtered out any more: a missing folder still publishes its row.
+    #[test]
+    fn a_missing_local_favorite_still_publishes_a_row() {
+        let row = favorite_location(favorite("/home/nobody/gone"), &with_a_share(), |_| false);
+        assert_eq!(row.id, "fav-f1");
+        let target = row.favorite_target.expect("a favorite row carries its target");
+        assert_eq!(target.discovered.on_disk, OnDisk::No);
+        assert_eq!(target.reach, FavoriteReach::NotFound);
+    }
+
+    #[test]
+    fn a_scheme_path_favorite_has_no_mount() {
+        let row = favorite_location(favorite("sftp://ada@nas:22/srv"), &with_a_share(), never_asked);
+        assert_eq!(row.fs_type, None);
+        assert!(!row.supports_trash);
     }
 }

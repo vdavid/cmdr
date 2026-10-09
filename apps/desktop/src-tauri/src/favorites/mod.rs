@@ -10,3 +10,4 @@
 //! See `favorites/CLAUDE.md` for the seed-once contract and the FDA-pending skip.
 
 pub mod store;
+pub mod target;

@@ -70,6 +70,8 @@ pub struct VolumeInfo {
     /// per-kind defaults. Filled by `enrich_from_volume_registry`, never by a
     /// discovery constructor.
     pub capabilities: Option<cmdr_fs::volume::VolumeCapabilities>,
+    /// Twin of the macOS field: present only on a favorite row (`favorites/target.rs`).
+    pub favorite_target: Option<crate::favorites::target::FavoriteTarget>,
 }
 
 /// Default volume ID for the root filesystem.
@@ -109,6 +111,7 @@ pub fn list_volumes() -> Vec<VolumeInfo> {
                 device_readiness: None,
                 usb_speed: None,
                 capabilities: None,
+                favorite_target: None,
             });
         }
     }
@@ -132,6 +135,7 @@ pub fn list_volumes() -> Vec<VolumeInfo> {
         device_readiness: None,
         usb_speed: None,
         capabilities: None,
+        favorite_target: None,
     });
 
     // Add home directory
@@ -153,6 +157,7 @@ pub fn list_volumes() -> Vec<VolumeInfo> {
         device_readiness: None,
         usb_speed: None,
         capabilities: None,
+        favorite_target: None,
     });
 
     locations

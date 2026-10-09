@@ -215,6 +215,7 @@ pub(crate) fn location_from_place(place: ServerPlace) -> LocationInfo {
         usb_speed: None,
         capabilities: None,
         favorite_shortcut: None,
+        favorite_target: None,
         root_label: None,
         mount_account: None,
     }
@@ -297,6 +298,7 @@ fn fold_saved_smb_shares(
             usb_speed: None,
             capabilities: None,
             favorite_shortcut: None,
+            favorite_target: None,
         });
     }
 }

@@ -43,6 +43,7 @@ pub(super) fn get_cloud_drives(mounts: &[MountEntry]) -> Vec<LocationInfo> {
                 usb_speed: None,
                 capabilities: None,
                 favorite_shortcut: None,
+                favorite_target: None,
                 root_label: None,
                 mount_account: None,
             });

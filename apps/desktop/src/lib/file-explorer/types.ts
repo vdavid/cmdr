@@ -1,4 +1,4 @@
-import type { CompressedSizeEstimate, DeviceReadiness, GitEntryMeta, TagRef } from '$lib/ipc/bindings'
+import type { CompressedSizeEstimate, DeviceReadiness, FavoriteTarget, GitEntryMeta, TagRef } from '$lib/ipc/bindings'
 
 export type { DeviceReadiness } from '$lib/ipc/bindings'
 
@@ -285,6 +285,11 @@ export interface VolumeInfo {
   category: LocationCategory
   /** Unmodified A–Z key that opens this favorite while the favorites menu is visible. */
   favoriteShortcut?: string | null
+  /**
+   * Present only on a favorite row: which volume it lives on (`volumeId`, `volumeRoot`) and whether a
+   * pick can get there (`reach`). Decided by Rust's `favorites/reach.rs`.
+   */
+  favoriteTarget?: FavoriteTarget | null
   /** Base64-encoded icon (WebP format), optional */
   icon?: string
   /** Whether this can be ejected */

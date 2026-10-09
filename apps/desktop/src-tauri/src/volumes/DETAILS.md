@@ -213,7 +213,7 @@ with such syscalls, and a single dead mount used to take the whole app down at l
 up behind the frozen process). The MCP `cmdr://state` resource hit the same wall through `list_locations`: reads took a
 flat ~30s (one smbfs kernel timeout). (Incident: live NAS QA, 2026-07-13.)
 
-**The fix, in three layers.**
+**The fix, in layers.**
 
 1. **Non-blocking enumeration.** `get_attached_volumes` enumerates via `getfsstat(MNT_NOWAIT)` (`enumerate_mounts`), not
    NSFileManager. `MNT_NOWAIT` returns the kernel's cached mount table (mount point, fs type, `MNT_RDONLY` flag, and the
@@ -234,17 +234,23 @@ flat ~30s (one smbfs kernel timeout). (Incident: live NAS QA, 2026-07-13.)
    and spawns attached/cloud discovery on the `volume-init` helper thread, then re-emits `volumes-changed`. Every caller
    of `list_locations` is wrapped in a ~2s `spawn_blocking` timeout: `volume_listing::discover_local` is the only door
    for the `volumes-changed` push and the `list_volumes` IPC, and it has no unbounded path; the MCP
-   `snapshot_volumes` guards its own. So the remaining unguarded blocking
-   paths inside `list_locations` (`get_favorites` and `get_cloud_drives`, which still `statfs`/icon per item and would
-   hang on a favorite or cloud folder that lives on a wedged mount) degrade to a bounded 2s partial result instead of an
-   infinite stall. `get_main_volume` builds root directly from `/`, never enumerating.
-4. **A timed-out listing publishes the LAST GOOD one.** `volume_broadcast` keeps the most recent successful
+   `snapshot_volumes` guards its own. So the remaining unguarded blocking path inside `list_locations`
+   (`get_cloud_drives`, which still `statfs`/icons per item and would hang on a cloud folder that lives on a wedged
+   mount) degrades to a bounded 2s partial result instead of an infinite stall. `get_main_volume` builds root directly
+   from `/`, never enumerating.
+4. **Favorites never touch a network path.** `list_locations` reads ONE `getfsstat` snapshot and hands it to both
+   `attached_volumes_in` and `get_favorites`. Per favorite, the containing mount's fs type comes from that snapshot
+   (`mounts::fs_type_under`, lexical); a folder under a network mount, or a `scheme://` path, gets no `exists()`, no
+   `statfs`, and no NSWorkspace icon (`favorites/target.rs::on_disk`). Only a folder on a local disk is stat'd, and it
+   gets its icon only when it's there. No favorite is filtered out: a missing one publishes its row for the reach pass to
+   word (`favorites/DETAILS.md` § The read side).
+5. **A timed-out listing publishes the LAST GOOD one.** `volume_broadcast` keeps the most recent successful
    `list_locations` and re-emits it (still flagged `timed_out`) when a later one misses the deadline. Publishing the
    empty list beside that flag told the frontend "you have no volumes", and since the picker's refresh button re-ran the
    same listing into the same timeout, nothing the user could do brought them back. Rationale and the staleness bound:
    `apps/desktop/src-tauri/src/volume_broadcast/round.rs` § `LocalSnapshot`. A discovery that STARTED before the one already applied can't roll
    the snapshot back, since overlapping rounds are the norm while a mount hangs.
-5. **Server rows never wait on local discovery.** Every `volumes-changed` round races discovery against
+6. **Server rows never wait on local discovery.** Every `volumes-changed` round races discovery against
    `PROVISIONAL_AFTER` (100 ms). A healthy listing wins and the round emits once. A slow one makes the round emit the
    cached local part beside fresh server, device, and registry rows with `discovery_pending: true`, then emit again
    when discovery lands or times out. Before this, one hung mount (a Tailscale SMB share) held the whole list, server
@@ -260,10 +266,9 @@ and retrying, and caps the threads the mount can pin. `apps/desktop/src-tauri/sr
 Note that the 2s deadline fires for reasons other than a hung mount: `list_locations` runs on the shared blocking pool,
 so a subsystem that saturates the pool starves it just as effectively (`commands/CLAUDE.md` § `BlockingBudget`).
 
-**Follow-up.** `get_favorites` and `get_cloud_drives` still do unguarded per-item `statfs`/icon; a favorite pointing at a
-hung mount makes `list_locations` time out (2s), so that listing carries no fresh volumes at all and the broadcast falls
-back to the last good set. Fully fixing "one dead mount never hides the others" here needs per-item timeouts for those
-two, tracked separately.
+**Follow-up.** `get_cloud_drives` still does unguarded per-item `statfs`/icon; a cloud folder on a hung mount makes
+`list_locations` time out (2s), so that listing carries no fresh volumes at all and the broadcast falls back to the last
+good set. Fully fixing "one dead mount never hides the others" here needs per-item timeouts for it, tracked separately.
 
 ## Global state in `watcher.rs`
 

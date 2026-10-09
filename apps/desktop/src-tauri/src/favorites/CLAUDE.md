@@ -33,11 +33,9 @@ favorites. Full depth in `DETAILS.md`.
   per-process scratch dir under `cfg(test)`, so `list_locations()` in a test never seeds the real
   file). Load-bearing: `get_favorites()` (the read path, in `volumes/mod.rs` and
   `volumes_linux/mod.rs`) is sync and `AppHandle`-free, so `store::list()` must stay no-arg.
-- **FDA-pending skip on the read side.** `volumes::get_favorites` must NOT stat a TCC-protected path
-  while the FDA gate is pending (even `Path::exists()` trips a TCC popup). It skips the existence
-  check for paths where `restricted_paths::tcc_paths::is_potentially_tcc_restricted(path)` is true.
-  This now applies to ANY user-added path, not just the old hardcoded three. Linux has no TCC, so its
-  twin existence-checks everything.
+- **The read side never touches a network path, and never hides a favorite.** Discovery stats a
+  folder only on a local disk, never while the FDA gate is pending for a TCC-protected one (even
+  `exists()` raises a popup), and publishes a row for every stored favorite. `DETAILS.md` § The read side.
 - **Mutations re-emit `volumes-changed`.** Every command calls `volume_broadcast::emit_volumes_changed()`
   after persisting, so both panes' menus update live. Don't add a polling path.
 - **Lock-poison + log compliance.** Uses `IgnorePoison::lock_ignore_poison()` (not `.lock().unwrap()`)

@@ -139,6 +139,7 @@ fn location_from_entry(entry: DeviceVolumeEntry) -> LocationInfo {
         usb_speed: entry.usb_speed,
         capabilities: None,
         favorite_shortcut: None,
+        favorite_target: None,
         root_label: None,
         mount_account: None,
     }

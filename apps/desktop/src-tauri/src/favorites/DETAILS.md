@@ -148,16 +148,31 @@ one ASCII letter (or `None`), including untrusted IPC callers.
 
 Registered in the `ipc.rs` manifest, which feeds both runtime dispatch and the specta types.
 
-## FDA-pending skip (macOS)
+## The read side
 
-`volumes::get_favorites` must not stat a TCC-protected path while the FDA gate is pending: even
-`Path::exists()` trips a macOS TCC popup for the protected-folder service once the bundle is
-registered with tccd, which is exactly the onboarding-flood the FDA modal exists to prevent. The read
-maps each favorite, skipping the existence check when the FDA gate is pending AND
-`restricted_paths::tcc_paths::is_potentially_tcc_restricted(path)` is true (and assuming such a
-protected favorite exists). Non-protected paths are still checked (for example `/Applications` can be
-absent on slim systems). This now applies to ANY user-added path, not just the old hardcoded three.
-Linux has no TCC, so its twin existence-checks everything and there's no gate.
+The listing builds a favorite row in two stages (`target.rs` header), because neither alone sees
+enough. ❗ Every stored favorite publishes a row, a missing or offline one included: hiding is what
+made favorites on an unmounted share silently vanish.
+
+**Stage 1, discovery** (`volumes::favorite_location`, `volumes_linux::favorite_location`). Blocking,
+under `discover_local`'s 2 s timeout, so it may look at the disk but ❌ never at a network path:
+
+- The containing mount's fs type comes from the mount-table snapshot the listing already took
+  (lexical, can't hang), so there's no per-favorite `statfs`.
+- `target::on_disk` decides whether the folder may be stat'd: a `scheme://` path, a folder under a
+  network mount, and (macOS) a TCC-protected folder while the FDA gate is pending are `Unchecked`;
+  only a folder on a local disk gets `exists()` → `Yes` / `No`. The NSWorkspace icon is asked only
+  for `Yes` (it's a call on the path too).
+- The row's `favorite_target` is seeded from the store (`FavoriteTarget::discovered`) with a
+  provisional reach (`NotFound` for `No`, `Ready` otherwise). The stored volume and the `OnDisk`
+  evidence ride along in a `#[serde(skip)]` field for stage 2; they never cross IPC.
+
+**FDA-pending skip (macOS).** Even `Path::exists()` trips a macOS TCC popup for the
+protected-folder service once the bundle is registered with tccd, which is exactly the
+onboarding-flood the FDA modal exists to prevent. So while the gate is pending, a folder where
+`restricted_paths::tcc_paths::is_potentially_tcc_restricted(path)` is true is taken on trust
+(`Unchecked`, reach `Ready`). Non-protected paths are still checked (for example `/Applications`
+can be absent on slim systems). Linux has no TCC, so its twin has no gate.
 
 ## The add gate
 

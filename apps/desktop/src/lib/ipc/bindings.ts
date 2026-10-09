@@ -6827,6 +6827,13 @@ export type DestinationState =
   // The volume didn't answer in time, or isn't mounted.
   | 'unknown'
 
+// Which device backend an [`FavoriteReach::AccessOff`] favorite needs switched on.
+export type DeviceBackend =
+  // Phones and cameras over MTP.
+  | 'mtp'
+  // Android devices over ADB.
+  | 'adb'
+
 /**
  *  Whether the DEVICE behind a volume is reachable at all, which is a different
  *  question from how live a session is ([`ConnectionState`]).
@@ -7647,6 +7654,56 @@ export type ExecuteCommand = {
  *  `LifecycleStatus`. Independent of [`RollbackState`].
  */
 export type ExecutionStatus = 'queued' | 'running' | 'done' | 'failed' | 'canceled'
+
+// Whether a pick of a favorite gets there, and if not, why. One decision site: `favorites/reach.rs`.
+export type FavoriteReach =
+  // The volume is live: a pick opens the folder.
+  | { kind: 'ready' }
+  /**
+   *  The volume is a saved place that isn't connected (an unmounted share, a saved server, a
+   *  dropped or signed-out session, a phone not dialed yet or waiting for "Allow"): a pick
+   *  enters it and the pane's own connect view dials.
+   */
+  | { kind: 'connects' }
+  // The device or drive isn't there.
+  | {
+      kind: 'unplugged'
+      // What's missing, for the words.
+      device: UnpluggedKind
+      // Why a listed device can't be used, when that's the story.
+      reason: DeviceUnavailableReason | null
+    }
+  // The backend that would reach it is switched off in Settings.
+  | {
+      kind: 'access_off'
+      // Which one.
+      backend: DeviceBackend
+    }
+  /**
+   *  Nothing saved knows how to dial the volume any more (a forgotten share or server). The
+   *  same place coming back revives the favorite with no migration.
+   */
+  | { kind: 'forgotten' }
+  // The folder isn't there, or nothing can say which volume it was on.
+  | { kind: 'not_found' }
+
+// Present only on a favorite row: where it points, and whether a pick can get there.
+export type FavoriteTarget = {
+  /**
+   *  The volume the favorite lives on: the stored one, or the one the reach pass claimed for a
+   *  legacy entry. `None` when nothing can say.
+   */
+  volumeId: string | null
+  // The volume's row name when it has a row, else the name stored with the favorite.
+  volumeName: string | null
+  /**
+   *  The volume's root as published NOW: the `volumePath` a pick enters with. `None` when the
+   *  volume has no row.
+   */
+  volumeRoot: string | null
+  // Whether a pick gets there, and if not, why.
+  reach: FavoriteReach
+}
 
 /**
  *  User-selectable text encoding for the file viewer.
@@ -9969,6 +10026,11 @@ export type LocationInfo = {
   capabilities: VolumeCapabilities | null
   // Single-letter menu shortcut, present only on favorite rows.
   favoriteShortcut: string | null
+  /**
+   *  Present only on a favorite row: which volume it lives on and whether a pick can get there
+   *  (`favorites/target.rs`). `None` on every other row.
+   */
+  favoriteTarget: FavoriteTarget | null
   /**
    *  What a tab at this volume's root is called, when the mount directory's
    *  name isn't it: an SMB share's own name. `None` everywhere else, where the
@@ -15575,6 +15637,15 @@ export type UndoReport = {
   restored: number
   skipped: number
 }
+
+// What an [`FavoriteReach::Unplugged`] favorite is waiting for.
+export type UnpluggedKind =
+  // A local drive (or a non-SMB network mount) that isn't mounted.
+  | 'drive'
+  // A phone that isn't connected, or is listed but can't be used.
+  | 'phone'
+  // The phone is connected, but this storage on it isn't (an SD card swapped out).
+  | 'storage'
 
 /**
  *  What else to check when the reachability probe didn't get through. Word-free:

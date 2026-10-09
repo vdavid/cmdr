@@ -20,7 +20,7 @@ use std::path::Path;
 /// discovery uses `getfsstat` instead of NSFileManager's volume enumeration: the
 /// enumeration `getattrlist`s every mount, which blocks 30s–forever on a hung
 /// network mount and froze the app at launch. See `DETAILS.md` § "Hung mounts".
-struct MountEntry {
+pub(super) struct MountEntry {
     /// Mount point, e.g. `/Volumes/naspi` (`f_mntonname`).
     mount_point: String,
     /// Filesystem type, e.g. `apfs`, `exfat`, `smbfs` (`f_fstypename`).
@@ -102,7 +102,7 @@ impl MountEntry {
 /// groups a disk's volumes then lets an unmount take a sibling down under its live
 /// FSEvents watcher. Callers name the third answer (`is_mount_point`,
 /// `has_mount_identity`, `mount_sources`) or fold it deliberately.
-fn enumerate_mounts() -> Option<Vec<MountEntry>> {
+pub(super) fn enumerate_mounts() -> Option<Vec<MountEntry>> {
     // First pass: ask how many mounts exist (null buffer writes nothing).
     // SAFETY: `getfsstat(NULL, 0, flags)` is the documented count query; with a
     // null buffer and zero size the kernel only returns the mount count.
@@ -188,6 +188,27 @@ pub(crate) fn mount_identity_at(path: &str) -> Option<u64> {
 /// listed is the one a lookup reaches.
 pub(crate) fn mount_type_and_source_for(path: &Path) -> Option<(String, String)> {
     mount_under(&enumerate_mounts()?, path).map(|m| (m.fs_type.clone(), m.mount_from.clone()))
+}
+
+/// The filesystem type of the mount `path` lies on, from a table already read: lexical, so it
+/// can't hang on the mount it names. What favorites discovery asks before it decides whether a
+/// folder may be stat'd at all.
+pub(super) fn fs_type_under<'a>(mounts: &'a [MountEntry], path: &Path) -> Option<&'a str> {
+    mount_under(mounts, path).map(|mount| mount.fs_type.as_str())
+}
+
+/// A browsable mount-table row for a sibling module's test, which can't name the private fields.
+#[cfg(test)]
+pub(super) fn mount_entry_for_test(mount_point: &str, fs_type: &str) -> MountEntry {
+    MountEntry {
+        mount_point: mount_point.to_string(),
+        fs_type: fs_type.to_string(),
+        mount_from: String::new(),
+        is_read_only: false,
+        is_browsable: true,
+        fsid: 0,
+        mounted_by: MountedBy::ThisUser,
+    }
 }
 
 /// [`mount_type_and_source_for`] over a table already read.
@@ -459,29 +480,34 @@ fn build_attached_location(
         usb_speed: None,
         capabilities: None,
         favorite_shortcut: None,
+        favorite_target: None,
         // An SMB share is called by its own name, whatever `/Volumes` dir it got.
         root_label: smb_info(mount).map(|info| info.share),
         mount_account: smb_info(mount).and_then(|info| info.username),
     })
 }
 
-/// Get attached volumes (external drives, USB, network mounts, etc.).
-///
-/// Enumerates via the non-blocking `getfsstat` snapshot, then enriches only LOCAL
-/// mounts through blocking macOS APIs. A hung network mount contributes its
-/// getfsstat-derived entry and never blocks the others. See `DETAILS.md`
-/// § "Hung mounts".
+/// Get attached volumes (external drives, USB, network mounts, etc.), from a fresh
+/// snapshot of the mount table. [`attached_volumes_in`] has the rules.
 pub fn get_attached_volumes() -> Vec<LocationInfo> {
+    // A table nobody could read means no rows this pass. The switcher keeps what it has and the
+    // next discovery asks again; ❌ nothing downstream may read this list as "the disk is empty".
+    attached_volumes_in(&enumerate_mounts().unwrap_or_default())
+}
+
+/// The attached volumes in a `getfsstat(MNT_NOWAIT)` snapshot already taken
+/// (`list_locations` shares one with favorites discovery, so a listing reads the
+/// table once). Enriches only LOCAL mounts through blocking macOS APIs: a hung
+/// network mount contributes its getfsstat-derived entry and never blocks the
+/// others. See `DETAILS.md` § "Hung mounts".
+pub(super) fn attached_volumes_in(mounts: &[MountEntry]) -> Vec<LocationInfo> {
     use objc2::rc::autoreleasepool;
     use objc2_foundation::{NSString, NSURL};
 
     // Drain autoreleased ObjC objects from the per-local-mount NSURL enrichment.
     // Called from spawn_blocking / helper threads that lack AppKit's pool.
     autoreleasepool(|_| {
-        // A table nobody could read means no rows this pass. The switcher keeps what it has and the
-        // next discovery asks again; ❌ nothing downstream may read this list as "the disk is empty".
-        let discovered: Vec<LocationInfo> = enumerate_mounts()
-            .unwrap_or_default()
+        let discovered: Vec<LocationInfo> = mounts
             .iter()
             .filter_map(|mount| {
                 build_attached_location(mount, |path| {
