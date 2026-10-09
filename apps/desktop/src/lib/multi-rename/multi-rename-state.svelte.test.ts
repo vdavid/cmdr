@@ -14,11 +14,15 @@ const { ipc } = vi.hoisted(() => ({
     getMultiRenamePresets: vi.fn(),
     saveMultiRenamePreset: vi.fn(),
     deleteMultiRenamePreset: vi.fn(),
+    renameMultiRenamePreset: vi.fn(),
+    updateMultiRenamePreset: vi.fn(),
   },
 }))
 vi.mock('$lib/tauri-commands', () => ipc)
 
 import { PREVIEW_DELAY_MS, createMultiRenameState } from './multi-rename-state.svelte'
+import { DEFAULT_SPEC } from './spec'
+import type { MultiRenamePreset } from '$lib/tauri-commands'
 
 const row = (index: number, oldName: string, newName: string, type = 'ready') => ({
   row: index,
@@ -170,5 +174,122 @@ describe('createMultiRenameState', () => {
     await settle()
     expect(ipc.previewMultiRename).toHaveBeenCalledTimes(2)
     tool.dispose()
+  })
+
+  describe('presets', () => {
+    const photos: MultiRenamePreset = { id: 'p1', name: 'Photos', spec: { ...DEFAULT_SPEC, nameMask: 'IMG_[C]' } }
+    const music: MultiRenamePreset = { id: 'p2', name: 'Music', spec: { ...DEFAULT_SPEC, case: 'lower' } }
+    let stored: MultiRenamePreset[] = []
+
+    /** A backend that keeps its list, as `presets.rs` does. */
+    beforeEach(() => {
+      stored = [photos, music]
+      ipc.getMultiRenamePresets.mockImplementation(() => Promise.resolve(stored.map((p) => ({ ...p }))))
+      ipc.saveMultiRenamePreset.mockImplementation((preset: MultiRenamePreset) => {
+        stored = [preset, ...stored.filter((p) => p.name.toLowerCase() !== preset.name.toLowerCase())]
+        return Promise.resolve()
+      })
+      ipc.renameMultiRenamePreset.mockImplementation((id: string, name: string) => {
+        stored = stored.flatMap((p) =>
+          p.id === id ? [{ ...p, name }] : p.name.toLowerCase() === name.toLowerCase() ? [] : [p],
+        )
+        return Promise.resolve()
+      })
+      ipc.updateMultiRenamePreset.mockImplementation((id: string, spec: MultiRenamePreset['spec']) => {
+        stored = stored.map((p) => (p.id === id ? { ...p, spec } : p))
+        return Promise.resolve()
+      })
+      ipc.deleteMultiRenamePreset.mockImplementation((id: string) => {
+        stored = stored.filter((p) => p.id !== id)
+        return Promise.resolve()
+      })
+    })
+
+    it('loads a saved preset, and marks it edited only while a field differs from it', async () => {
+      const tool = createMultiRenameState('S')
+      await tool.loadPresets()
+      expect(tool.loaded).toBeNull()
+      expect(tool.edited).toBe(false)
+
+      tool.loadPreset({ kind: 'saved', id: 'p1' })
+      expect(tool.spec.nameMask).toBe('IMG_[C]')
+      expect(tool.loaded).toEqual({ kind: 'saved', id: 'p1' })
+      expect(tool.edited).toBe(false)
+
+      tool.update({ nameMask: 'IMG_[C]_x' })
+      expect(tool.edited).toBe(true)
+      tool.update({ nameMask: 'IMG_[C]' })
+      expect(tool.edited).toBe(false)
+      tool.dispose()
+    })
+
+    it('loads a built-in preset, and Reset all fields leaves nothing loaded', async () => {
+      const tool = createMultiRenameState('S')
+      tool.loadPreset({ kind: 'builtIn', id: 'builtin:remove-diacritics' })
+      expect(tool.spec.removeDiacritics).toBe(true)
+      expect(tool.loaded).toEqual({ kind: 'builtIn', id: 'builtin:remove-diacritics' })
+      tool.update({ case: 'upper' })
+      expect(tool.edited).toBe(true)
+
+      tool.resetFields()
+      expect(tool.spec).toEqual(DEFAULT_SPEC)
+      expect(tool.loaded).toBeNull()
+      expect(tool.edited).toBe(false)
+      tool.dispose()
+    })
+
+    it('saves the current fields as a new preset, which becomes the loaded one', async () => {
+      const tool = createMultiRenameState('S')
+      await tool.loadPresets()
+      tool.update({ search: 'draft' })
+      await tool.savePreset('  Drafts ')
+      const saved = stored.find((p) => p.name === 'Drafts')
+      expect(saved?.spec.search).toBe('draft')
+      expect(tool.loaded).toEqual({ kind: 'saved', id: saved?.id })
+      expect(tool.edited).toBe(false)
+      tool.dispose()
+    })
+
+    it('finds a saved preset by name the way the backend does, ignoring case and spaces', async () => {
+      const tool = createMultiRenameState('S')
+      await tool.loadPresets()
+      expect(tool.presetNamed('  photos ')?.id).toBe('p1')
+      expect(tool.presetNamed('Videos')).toBeUndefined()
+      tool.dispose()
+    })
+
+    it('renames a preset in place, and its replacement drops the preset that had the name', async () => {
+      const tool = createMultiRenameState('S')
+      await tool.loadPresets()
+      await tool.renamePreset('p2', ' photos ')
+      expect(ipc.renameMultiRenamePreset).toHaveBeenCalledWith('p2', 'photos')
+      expect(tool.presets.map((p) => p.name)).toEqual(['photos'])
+      tool.dispose()
+    })
+
+    it('updates a preset with the current fields, which loads it unedited', async () => {
+      const tool = createMultiRenameState('S')
+      await tool.loadPresets()
+      tool.loadPreset({ kind: 'saved', id: 'p1' })
+      tool.update({ counterDigits: 3 })
+      expect(tool.edited).toBe(true)
+
+      await tool.updatePreset('p1')
+      expect(ipc.updateMultiRenamePreset).toHaveBeenCalledWith('p1', expect.objectContaining({ counterDigits: 3 }))
+      expect(tool.loaded).toEqual({ kind: 'saved', id: 'p1' })
+      expect(tool.edited).toBe(false)
+      tool.dispose()
+    })
+
+    it('deleting the loaded preset leaves nothing loaded, and keeps the fields', async () => {
+      const tool = createMultiRenameState('S')
+      await tool.loadPresets()
+      tool.loadPreset({ kind: 'saved', id: 'p1' })
+      await tool.deletePreset('p1')
+      expect(tool.loaded).toBeNull()
+      expect(tool.spec.nameMask).toBe('IMG_[C]')
+      expect(tool.presets.map((p) => p.id)).toEqual(['p2'])
+      tool.dispose()
+    })
   })
 })

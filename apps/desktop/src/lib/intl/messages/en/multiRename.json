@@ -83,17 +83,61 @@
   "@multiRename.counterDigits": {
     "description": "Label of how many digits the counter placeholder [C] has; shorter numbers get leading zeros."
   },
-  "multiRename.presets": "Preset",
-  "@multiRename.presets": {
-    "description": "Label of the menu of saved rename settings (presets) to load."
+  "multiRename.presets.title": "Presets",
+  "@multiRename.presets.title": {
+    "description": "Label of the button at the bottom left of the Multi-rename tool that opens the menu of presets (saved rename settings), and the accessible name of that menu. Followed by a down arrow and, when one is loaded, the preset's name."
   },
-  "multiRename.presetPlaceholder": "Load a preset",
-  "@multiRename.presetPlaceholder": {
-    "description": "Placeholder of the preset menu before one is chosen."
+  "multiRename.presets.edited": "{preset} (edited)",
+  "@multiRename.presets.edited": {
+    "description": "Shown on the Presets button after the loaded preset's name once the user changed a field, so the fields no longer match the preset. {preset} is the preset's name."
   },
-  "multiRename.preset.default": "No change",
-  "@multiRename.preset.default": {
-    "description": "Built-in preset that resets every setting, so all names stay as they are (Total Commander's <Default>)."
+  "multiRename.presets.tooltip": "Load, save, and manage presets",
+  "@multiRename.presets.tooltip": {
+    "description": "Tooltip of the Presets button in the Multi-rename tool. The keyboard shortcut (F2) is shown beside it."
+  },
+  "multiRename.presets.reset": "Reset all fields",
+  "@multiRename.presets.reset": {
+    "description": "Presets menu item that sets every field back to its starting value, so all names stay as they are (Total Commander's <Default>)."
+  },
+  "multiRename.presets.saveAs": "Save current as…",
+  "@multiRename.presets.saveAs": {
+    "description": "Presets menu item that asks for a name and saves the tool's current fields as a new preset. The ellipsis means it asks for more before acting."
+  },
+  "multiRename.presets.rename": "Rename…",
+  "@multiRename.presets.rename": {
+    "description": "Item in a saved preset's submenu that asks for a new name for that preset."
+  },
+  "multiRename.presets.update": "Update with current fields",
+  "@multiRename.presets.update": {
+    "description": "Item in a saved preset's submenu that overwrites that preset with the tool's current fields. Greyed out when the preset already matches them."
+  },
+  "multiRename.presets.delete": "Delete",
+  "@multiRename.presets.delete": {
+    "description": "Item in a saved preset's submenu that deletes that preset. Only the preset goes; no files are touched."
+  },
+  "multiRename.presets.saveTitle": "Save preset",
+  "@multiRename.presets.saveTitle": {
+    "description": "Accessible name of the small popup that asks for a name to save the current fields as a preset (opened with Cmd+S or Save current as…)."
+  },
+  "multiRename.presets.renameTitle": "Rename preset",
+  "@multiRename.presets.renameTitle": {
+    "description": "Accessible name of the small popup that asks for a new name for a saved preset."
+  },
+  "multiRename.presets.save": "Save",
+  "@multiRename.presets.save": {
+    "description": "Button in the save-preset popup that saves the current fields under the typed name."
+  },
+  "multiRename.presets.renameConfirm": "Rename",
+  "@multiRename.presets.renameConfirm": {
+    "description": "Button in the rename-preset popup that gives the preset the typed name. Renames the preset only, never files."
+  },
+  "multiRename.presets.clash": "There’s already a preset called “{preset}”. Replace it?",
+  "@multiRename.presets.clash": {
+    "description": "Shown in the preset-name popup when the typed name belongs to another saved preset. Pressing Enter again or the Replace button replaces that preset. {preset} is its name."
+  },
+  "multiRename.presets.replace": "Replace",
+  "@multiRename.presets.replace": {
+    "description": "Button in the preset-name popup, after the question whether to replace the preset that already has the name. Replaces that preset."
   },
   "multiRename.preset.removeDiacritics": "Remove diacritics",
   "@multiRename.preset.removeDiacritics": {
@@ -101,15 +145,7 @@
   },
   "multiRename.presetName": "Preset name",
   "@multiRename.presetName": {
-    "description": "Label of the field where the user names the current settings to save them as a preset."
-  },
-  "multiRename.savePreset": "Save preset",
-  "@multiRename.savePreset": {
-    "description": "Button that saves the current rename settings under the name in the Preset name field; an existing preset with that name is replaced."
-  },
-  "multiRename.deletePreset": "Delete preset",
-  "@multiRename.deletePreset": {
-    "description": "Button that deletes the chosen saved preset."
+    "description": "Label of the name field in the small popup that saves the current fields as a preset (Cmd+S) or renames a saved one."
   },
   "multiRename.preview": "Preview",
   "@multiRename.preview": {

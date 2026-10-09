@@ -199,6 +199,27 @@ export const fileListCommands: CommandSource[] = [
     // most three characters apart, so "batch rename" needs "batch" right before a "rename".
     keywords: ['batch rename', 'bulk rename', 'mass rename', 'rename multiple', 'rename many'],
   },
+  // The keys the open Multi-rename sheet answers itself (its keydown asks
+  // `eventMatchesCommand`). Registered so Settings and the Help window list them.
+  {
+    // Total Commander's F2 in its Multi-Rename Tool: load/save settings.
+    id: 'multiRename.openPresets',
+    nameKey: 'commands.multiRenameOpenPresets.label',
+    scope: 'Main window/Multi-rename',
+    showInPalette: false,
+    shortcuts: ['F2'],
+    whileDialogOpen: BLOCKED_BY_DIALOGS,
+    fixedKey: true,
+  },
+  {
+    id: 'multiRename.savePreset',
+    nameKey: 'commands.multiRenameSavePreset.label',
+    scope: 'Main window/Multi-rename',
+    showInPalette: false,
+    shortcuts: ['⌘S'],
+    whileDialogOpen: BLOCKED_BY_DIALOGS,
+    fixedKey: true,
+  },
   {
     id: 'file.view',
     nameKey: 'commands.fileView.label',

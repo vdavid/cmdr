@@ -26,6 +26,8 @@ export type { CommandScope }
  *   collide with File-list keys (they share only `Main window` + `App`). The error screen's ⌘D
  *   is the clearest case — it deliberately shadows whatever ⌘D is bound to
  *   elsewhere, and that's not a conflict to report.
+ * - `Main window/Multi-rename` is a sibling too: the ⌃M sheet is a modal over the panes, so
+ *   its F2 (the Presets menu) never meets the file list's F2 (Rename).
  *
  * `Command palette` inherits `Main window` (it overlays the main window, so its
  * keys can collide with Main-window keys). `Onboarding` is a modal under `App`
@@ -43,6 +45,7 @@ const scopeHierarchy: Record<CommandScope, CommandScope[]> = {
   'Main window/Volume chooser': ['Main window/Volume chooser', 'Main window', 'App'],
   'Main window/Favorites menu': ['Main window/Favorites menu', 'Main window', 'App'],
   'Main window/Error screen': ['Main window/Error screen', 'Main window', 'App'],
+  'Main window/Multi-rename': ['Main window/Multi-rename', 'Main window', 'App'],
   'About window': ['About window', 'App'],
   Onboarding: ['Onboarding', 'App'],
   'Command palette': ['Command palette', 'Main window', 'App'],

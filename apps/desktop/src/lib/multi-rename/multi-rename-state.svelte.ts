@@ -1,6 +1,7 @@
 /**
  * The Multi-Rename sheet's state: the spec the fields edit, the live preview, the
- * window of rows the table draws, the presets, and Start. One instance per open
+ * window of rows the table draws, the presets (and which one the fields came from),
+ * and Start. One instance per open
  * sheet, over one backend session.
  *
  * The files and their names live in the backend session (`src-tauri/src/multi_rename/session.rs`):
@@ -17,7 +18,9 @@ import {
   getMultiRenamePresets,
   getMultiRenamePreviewRows,
   previewMultiRename,
+  renameMultiRenamePreset,
   saveMultiRenamePreset,
+  updateMultiRenamePreset,
   type MultiRenameError,
   type MultiRenamePreset,
   type MultiRenameSpec,
@@ -26,7 +29,7 @@ import {
   type PreviewRow,
 } from '$lib/tauri-commands'
 import { SvelteMap } from 'svelte/reactivity'
-import { DEFAULT_SPEC } from './spec'
+import { BUILT_IN_PRESETS, DEFAULT_SPEC, specsEqual } from './spec'
 
 export const PREVIEW_DELAY_MS = 120
 
@@ -37,6 +40,12 @@ const PAGE_LIMIT = 1000
 const HELD_ROWS = 3000
 
 const NO_COUNTS: PreviewCounts = { ready: 0, unchanged: 0, problems: 0 }
+
+/** The preset the fields were last loaded from (or saved as): a saved one, or one that ships with Cmdr. */
+export type LoadedPreset = { kind: 'saved'; id: string } | { kind: 'builtIn'; id: string }
+
+/** How the backend tells two preset names apart (`presets.rs`'s `dedupe_key`). */
+const nameKey = (name: string): string => name.trim().toLowerCase()
 
 /** Rows `start..end` of the preview, end exclusive. */
 export interface RowWindow {
@@ -56,16 +65,29 @@ export interface MultiRenameState {
   /** An edit the preview hasn't caught up with yet: Start waits, so it never runs a spec nobody saw. */
   readonly pending: boolean
   readonly presets: MultiRenamePreset[]
+  /** The preset the fields came from, or `null` (nothing loaded, Reset all fields, or it was deleted). */
+  readonly loaded: LoadedPreset | null
+  /** A field differs from the loaded preset. Always `false` with nothing loaded. */
+  readonly edited: boolean
   readonly applying: boolean
   /** Row `index` of the preview, or `undefined` while its page is on its way. */
   rowAt: (index: number) => PreviewRow | undefined
   /** The table shows rows `start..end`: fetch the ones missing, drop the far ones. */
   show: (window: RowWindow) => void
   update: (patch: Partial<MultiRenameSpec>) => void
-  /** Replaces the whole spec (loading a preset). */
-  load: (spec: MultiRenameSpec) => void
+  /** Fills every field from a preset (doesn't start anything). An unknown one is ignored. */
+  loadPreset: (preset: LoadedPreset) => void
+  /** Total Commander's `<Default>`: every field back to "no change", nothing loaded. */
+  resetFields: () => void
   loadPresets: () => Promise<void>
+  /** The saved preset the backend would treat as `name` (trimmed, any case), if any. */
+  presetNamed: (name: string) => MultiRenamePreset | undefined
+  /** Saves the fields under `name`, replacing a preset with that name; it becomes the loaded one. */
   savePreset: (name: string) => Promise<void>
+  /** Renames a preset in place; a preset with that name is replaced. */
+  renamePreset: (id: string, name: string) => Promise<void>
+  /** Gives a preset the current fields; it becomes the loaded one. */
+  updatePreset: (id: string) => Promise<void>
   deletePreset: (id: string) => Promise<void>
   /** Starts the rename. Resolves with the operation, or `null` when it didn't start (`applyError` says why). */
   apply: () => Promise<MultiRenameStarted | null>
@@ -80,6 +102,7 @@ export function createMultiRenameState(sessionId: string): MultiRenameState {
   let rows = $state.raw(new SvelteMap<number, PreviewRow>())
   let error = $state<MultiRenameError | null>(null)
   let presets = $state.raw<MultiRenamePreset[]>([])
+  let loaded = $state.raw<LoadedPreset | null>(null)
   let applying = $state(false)
   let applyError = $state<MultiRenameError | null>(null)
   let waiting = $state(0)
@@ -89,6 +112,18 @@ export function createMultiRenameState(sessionId: string): MultiRenameState {
   let fetching: string | null = null
 
   const totalOf = (c: PreviewCounts): number => c.ready + c.unchanged + c.problems
+
+  function specOf(preset: LoadedPreset): MultiRenameSpec | undefined {
+    const from = preset.kind === 'saved' ? presets : BUILT_IN_PRESETS
+    return from.find((p) => p.id === preset.id)?.spec
+  }
+
+  function presetNamed(name: string): MultiRenamePreset | undefined {
+    return presets.find((p) => nameKey(p.name) === nameKey(name))
+  }
+
+  // Read from the list, so a renamed, updated, or deleted preset is followed with no syncing.
+  const loadedSpec = $derived(loaded ? specOf(loaded) : undefined)
 
   async function refresh(): Promise<void> {
     const asked = ++generation
@@ -177,6 +212,12 @@ export function createMultiRenameState(sessionId: string): MultiRenameState {
     get presets() {
       return presets
     },
+    get loaded() {
+      return loadedSpec ? loaded : null
+    },
+    get edited() {
+      return loadedSpec !== undefined && !specsEqual(spec, loadedSpec)
+    },
     get applying() {
       return applying
     },
@@ -194,27 +235,45 @@ export function createMultiRenameState(sessionId: string): MultiRenameState {
       spec = { ...spec, ...patch }
       schedule()
     },
-    load(next) {
+    loadPreset(preset) {
+      const next = specOf(preset)
+      if (!next) return
+      loaded = preset
       spec = { ...next }
+      schedule()
+    },
+    resetFields() {
+      loaded = null
+      spec = { ...DEFAULT_SPEC }
       schedule()
     },
     async loadPresets() {
       presets = await getMultiRenamePresets()
     },
+    presetNamed,
     async savePreset(name) {
       const trimmed = name.trim()
       if (trimmed === '') return
-      const existing = presets.find((p) => p.name.trim().toLowerCase() === trimmed.toLowerCase())
-      await saveMultiRenamePreset({
-        id: existing?.id ?? crypto.randomUUID(),
-        name: trimmed,
-        spec: $state.snapshot(spec),
-      })
+      const id = presetNamed(trimmed)?.id ?? crypto.randomUUID()
+      await saveMultiRenamePreset({ id, name: trimmed, spec: $state.snapshot(spec) })
       presets = await getMultiRenamePresets()
+      loaded = { kind: 'saved', id }
+    },
+    async renamePreset(id, name) {
+      const trimmed = name.trim()
+      if (trimmed === '') return
+      await renameMultiRenamePreset(id, trimmed)
+      presets = await getMultiRenamePresets()
+    },
+    async updatePreset(id) {
+      await updateMultiRenamePreset(id, $state.snapshot(spec))
+      presets = await getMultiRenamePresets()
+      loaded = { kind: 'saved', id }
     },
     async deletePreset(id) {
       await deleteMultiRenamePreset(id)
       presets = await getMultiRenamePresets()
+      if (loaded?.kind === 'saved' && loaded.id === id) loaded = null
     },
     async apply() {
       const id = previewId

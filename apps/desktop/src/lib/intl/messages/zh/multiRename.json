@@ -83,18 +83,6 @@
   "@multiRename.counterDigits": {
     "sourceHash": "9cd500d"
   },
-  "multiRename.presets": "预设",
-  "@multiRename.presets": {
-    "sourceHash": "7252e7c"
-  },
-  "multiRename.presetPlaceholder": "加载预设",
-  "@multiRename.presetPlaceholder": {
-    "sourceHash": "e07d83e"
-  },
-  "multiRename.preset.default": "无变化",
-  "@multiRename.preset.default": {
-    "sourceHash": "41f9d57"
-  },
   "multiRename.preset.removeDiacritics": "移除变音符号",
   "@multiRename.preset.removeDiacritics": {
     "sourceHash": "4103ca1"
@@ -102,14 +90,6 @@
   "multiRename.presetName": "预设名称",
   "@multiRename.presetName": {
     "sourceHash": "e534a66"
-  },
-  "multiRename.savePreset": "保存预设",
-  "@multiRename.savePreset": {
-    "sourceHash": "362a137"
-  },
-  "multiRename.deletePreset": "删除预设",
-  "@multiRename.deletePreset": {
-    "sourceHash": "f307af8"
   },
   "multiRename.preview": "预览",
   "@multiRename.preview": {

@@ -191,8 +191,6 @@ rule into `translation-principles.md` or `translator-instructions.md`), then del
 - `multiRename.case.lower`, `.upper`, `.words`: say whether locales mirror the show-the-result casing. Proposed rule:
   such keys are exempt from sentence case, and scripts without case (zh, ja, ko) describe the transform. (fr, sv, vi,
   zh-Hant)
-- `multiRename.preset.default` and `.status.unchanged` share "No change" across two roles (a preset name, a row status),
-  forcing identical translations. Give the preset its own English ("Keep names"). (zh, zh-Hant)
 - `multiRename.removeDiacritics` and `.preset.removeDiacritics` share one English for a checkbox and a preset name; and
   say whether an everyday "accents" word is fine, since ß→ss goes beyond diacritics. (ru, pt, fr, nl)
 - `onboarding.stepAi.table.renameWithout` ("batch rename UI") and `.rowRename` ("Mass-rename") likely name the new tool;

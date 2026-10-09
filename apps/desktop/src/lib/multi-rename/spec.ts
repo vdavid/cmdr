@@ -1,6 +1,6 @@
 /**
  * The Multi-Rename sheet's settings: the default (Total Commander's `<Default>`:
- * no change), the built-in presets, and placeholder insertion. Pure, so the
+ * no change), the built-in presets, comparing two specs, and placeholder insertion. Pure, so the
  * sheet's state module and its tests share it.
  */
 
@@ -38,6 +38,14 @@ export const BUILT_IN_PRESETS: BuiltInPreset[] = [
     spec: { ...DEFAULT_SPEC, removeDiacritics: true },
   },
 ]
+
+/**
+ * Whether two specs set the same thing. Field by field, so a spec that came back from
+ * the backend (its own field order) still equals the one the sheet holds.
+ */
+export function specsEqual(a: MultiRenameSpec, b: MultiRenameSpec): boolean {
+  return (Object.keys(DEFAULT_SPEC) as (keyof MultiRenameSpec)[]).every((field) => a[field] === b[field])
+}
 
 /** Inserts `placeholder` into `mask` at the caret (or at the end). Returns the new mask and caret. */
 export function insertAtCaret(

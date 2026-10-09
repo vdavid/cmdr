@@ -7,7 +7,8 @@
      * The rows come a page at a time: the table draws only the ones in view.
      *
      * Keyboard-first: the name mask has focus on open, Tab walks the fields, the
-     * preview follows every keystroke, Enter starts, Esc closes.
+     * preview follows every keystroke, Enter starts, Esc closes, F2 opens the Presets
+     * menu, and ⌘S saves the fields as a preset.
      */
     import { onDestroy, onMount } from 'svelte'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
@@ -18,12 +19,14 @@
     import Select from '$lib/ui/Select.svelte'
     import TextInput from '$lib/ui/TextInput.svelte'
     import { tString } from '$lib/intl/messages.svelte'
-    import { getAppLogger } from '$lib/logging/logger'
+    import { claimKey } from '$lib/shortcuts/claim-key'
     import { getBadgeStatus } from '$lib/feature-status'
     import type { MultiRenameError, MultiRenameOpened, MultiRenameStarted, PreviewRow } from '$lib/tauri-commands'
     import type { CaseChange } from '$lib/ipc/bindings'
     import { createMultiRenameState } from './multi-rename-state.svelte'
-    import { BUILT_IN_PRESETS, DEFAULT_SPEC, insertAtCaret } from './spec'
+    import { presetKeyOf } from './preset-keys'
+    import PresetsControl from './PresetsControl.svelte'
+    import { insertAtCaret } from './spec'
 
     interface Props {
         session: MultiRenameOpened
@@ -33,8 +36,6 @@
 
     const { session, onApplied, onClose }: Props = $props()
 
-    const log = getAppLogger('multiRename')
-
     // Alpha badge policy: the status comes from the repo-root feature-status.json.
     const badge = getBadgeStatus('multi-rename')
 
@@ -42,8 +43,7 @@
     const tool = createMultiRenameState(session.sessionId)
 
     let nameMaskInput = $state<HTMLInputElement>()
-    let presetName = $state('')
-    let selectedPresetId = $state('')
+    let presetsControl = $state<PresetsControl>()
 
     /** Rows drawn above and below the ones in view, so a scroll doesn't flash empty rows. */
     const OVERSCAN = 20
@@ -64,12 +64,6 @@
         { value: 'upper', label: tString('multiRename.case.upper') },
         { value: 'firstUpper', label: tString('multiRename.case.firstUpper') },
         { value: 'words', label: tString('multiRename.case.words') },
-    ])
-
-    const presetItems = $derived([
-        { value: 'default', label: tString('multiRename.preset.default') },
-        ...BUILT_IN_PRESETS.map((p) => ({ value: p.id, label: tString(p.nameKey) })),
-        ...tool.presets.map((p) => ({ value: p.id, label: p.name })),
     ])
 
     const canStart = $derived(tool.counts.ready > 0 && tool.error === null && !tool.pending && !tool.applying)
@@ -128,51 +122,6 @@
         })
     }
 
-    function loadPreset(id: string): void {
-        selectedPresetId = id
-        if (id === 'default') {
-            tool.load(DEFAULT_SPEC)
-            return
-        }
-        const builtIn = BUILT_IN_PRESETS.find((p) => p.id === id)
-        const saved = tool.presets.find((p) => p.id === id)
-        const spec = builtIn?.spec ?? saved?.spec
-        if (spec) tool.load(spec)
-        if (saved) presetName = saved.name
-    }
-
-    async function savePreset(): Promise<void> {
-        if (presetName.trim() === '') return
-        try {
-            await tool.savePreset(presetName)
-        } catch (e) {
-            log.warn("couldn't save a multi-rename preset: {reason}", { reason: String(e) })
-            return
-        }
-        const saved = tool.presets.find((p) => p.name.trim().toLowerCase() === presetName.trim().toLowerCase())
-        if (saved) selectedPresetId = saved.id
-    }
-
-    async function deletePreset(): Promise<void> {
-        if (!tool.presets.some((p) => p.id === selectedPresetId)) return
-        try {
-            await tool.deletePreset(selectedPresetId)
-        } catch (e) {
-            log.warn("couldn't delete a multi-rename preset: {reason}", { reason: String(e) })
-            return
-        }
-        selectedPresetId = ''
-        presetName = ''
-    }
-
-    function handlePresetNameKeydown(e: KeyboardEvent): void {
-        // Enter here saves the preset; it never starts a rename.
-        if (e.key !== 'Enter' || e.isComposing) return
-        e.preventDefault()
-        e.stopPropagation()
-        void savePreset()
-    }
-
     async function start(): Promise<void> {
         if (!canStart) return
         const started = await tool.apply()
@@ -180,6 +129,14 @@
     }
 
     function handleKeydown(e: KeyboardEvent): void {
+        // F2 and ⌘S work from anywhere in the sheet, a text field included.
+        const presetKey = presetKeyOf(e)
+        if (presetKey !== null) {
+            claimKey(e)
+            if (presetKey === 'openMenu') presetsControl?.openMenu()
+            else presetsControl?.openSave()
+            return
+        }
         // Enter in a text field starts, as TC's Start! does; a button or menu keeps its own Enter.
         if (e.key !== 'Enter' || e.isComposing || e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return
         if (!(e.target instanceof HTMLInputElement) || e.target.type === 'checkbox') return
@@ -362,37 +319,6 @@
             </div>
         </div>
 
-        <div class="row">
-            <div class="field grow">
-                <span class="label">{tString('multiRename.presets')}</span>
-                <Select
-                    items={presetItems}
-                    value={selectedPresetId}
-                    onChange={loadPreset}
-                    placeholder={tString('multiRename.presetPlaceholder')}
-                    ariaLabel={tString('multiRename.presets')}
-                />
-            </div>
-            <label class="field grow">
-                <span class="label">{tString('multiRename.presetName')}</span>
-                <TextInput
-                    value={presetName}
-                    oninput={(e: Event) => { presetName = (e.currentTarget as HTMLInputElement).value }}
-                    onkeydown={handlePresetNameKeydown}
-                    ariaLabel={tString('multiRename.presetName')}
-                />
-            </label>
-            <Button onclick={() => { void savePreset() }} disabled={presetName.trim() === ''}>
-                {tString('multiRename.savePreset')}
-            </Button>
-            <Button
-                onclick={() => { void deletePreset() }}
-                disabled={!tool.presets.some((p) => p.id === selectedPresetId)}
-            >
-                {tString('multiRename.deletePreset')}
-            </Button>
-        </div>
-
         {#if shownError}
             <p class="error" role="alert">{errorText(shownError)}</p>
         {/if}
@@ -437,13 +363,16 @@
     </div>
 
     {#snippet footerLeading()}
-        <span class="counts" role="status">
-            {tString('multiRename.counts', {
-                ready: tool.counts.ready,
-                unchanged: tool.counts.unchanged,
-                problems: tool.counts.problems,
-            })}
-        </span>
+        <div class="footer-leading">
+            <PresetsControl bind:this={presetsControl} {tool} />
+            <span class="counts" role="status">
+                {tString('multiRename.counts', {
+                    ready: tool.counts.ready,
+                    unchanged: tool.counts.unchanged,
+                    problems: tool.counts.problems,
+                })}
+            </span>
+        </div>
     {/snippet}
     {#snippet footer()}
         <Button onclick={onClose}>{tString('multiRename.cancel')}</Button>
@@ -557,6 +486,13 @@
     .status {
         color: var(--color-text-secondary);
         white-space: nowrap;
+    }
+
+    .footer-leading {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-md);
+        min-width: 0;
     }
 
     .counts {

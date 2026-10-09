@@ -83,18 +83,6 @@
   "@multiRename.counterDigits": {
     "sourceHash": "9cd500d"
   },
-  "multiRename.presets": "Preajuste",
-  "@multiRename.presets": {
-    "sourceHash": "7252e7c"
-  },
-  "multiRename.presetPlaceholder": "Cargar un preajuste",
-  "@multiRename.presetPlaceholder": {
-    "sourceHash": "e07d83e"
-  },
-  "multiRename.preset.default": "Sin cambios",
-  "@multiRename.preset.default": {
-    "sourceHash": "41f9d57"
-  },
   "multiRename.preset.removeDiacritics": "Quitar diacríticos",
   "@multiRename.preset.removeDiacritics": {
     "sourceHash": "4103ca1"
@@ -102,14 +90,6 @@
   "multiRename.presetName": "Nombre del preajuste",
   "@multiRename.presetName": {
     "sourceHash": "e534a66"
-  },
-  "multiRename.savePreset": "Guardar preajuste",
-  "@multiRename.savePreset": {
-    "sourceHash": "362a137"
-  },
-  "multiRename.deletePreset": "Eliminar preajuste",
-  "@multiRename.deletePreset": {
-    "sourceHash": "f307af8"
   },
   "multiRename.preview": "Vista previa",
   "@multiRename.preview": {

@@ -160,6 +160,9 @@ export const COMMAND_IDS = [
   // File action commands
   'file.rename',
   'file.multiRename',
+  // Keys the Multi-rename sheet answers itself
+  'multiRename.openPresets',
+  'multiRename.savePreset',
   'file.view',
   'file.edit',
   'file.copy',

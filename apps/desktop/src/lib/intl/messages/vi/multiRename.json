@@ -83,18 +83,6 @@
   "@multiRename.counterDigits": {
     "sourceHash": "9cd500d"
   },
-  "multiRename.presets": "Tùy chọn đặt trước",
-  "@multiRename.presets": {
-    "sourceHash": "7252e7c"
-  },
-  "multiRename.presetPlaceholder": "Tải tùy chọn đặt trước",
-  "@multiRename.presetPlaceholder": {
-    "sourceHash": "e07d83e"
-  },
-  "multiRename.preset.default": "Không thay đổi",
-  "@multiRename.preset.default": {
-    "sourceHash": "41f9d57"
-  },
   "multiRename.preset.removeDiacritics": "Bỏ dấu",
   "@multiRename.preset.removeDiacritics": {
     "sourceHash": "4103ca1"
@@ -102,14 +90,6 @@
   "multiRename.presetName": "Tên tùy chọn đặt trước",
   "@multiRename.presetName": {
     "sourceHash": "e534a66"
-  },
-  "multiRename.savePreset": "Lưu tùy chọn đặt trước",
-  "@multiRename.savePreset": {
-    "sourceHash": "362a137"
-  },
-  "multiRename.deletePreset": "Xóa tùy chọn đặt trước",
-  "@multiRename.deletePreset": {
-    "sourceHash": "f307af8"
   },
   "multiRename.preview": "Xem trước",
   "@multiRename.preview": {

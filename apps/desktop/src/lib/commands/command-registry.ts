@@ -66,6 +66,8 @@ export const FIXED_KEY_COMMAND_IDS = [
   'volume.close',
   'favorites.openByNumber',
   'favorites.addFromMenu',
+  'multiRename.openPresets',
+  'multiRename.savePreset',
   'network.selectHost',
   'share.back',
   'share.selectShare',

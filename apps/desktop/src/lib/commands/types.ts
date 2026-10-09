@@ -23,6 +23,7 @@ export type CommandScope =
   | 'Main window/Volume chooser' // Volume dropdown
   | 'Main window/Favorites menu' // The ⌃D favorites menu, the volume dropdown's sibling
   | 'Main window/Error screen' // The full-pane error screen (ErrorPane)
+  | 'Main window/Multi-rename' // The ⌃M Multi-rename sheet
   | 'About window' // About window commands
   | 'Onboarding' // FDA prompt
   | 'Command palette' // Command palette modal

@@ -83,18 +83,6 @@
   "@multiRename.counterDigits": {
     "sourceHash": "9cd500d"
   },
-  "multiRename.presets": "Förinställning",
-  "@multiRename.presets": {
-    "sourceHash": "7252e7c"
-  },
-  "multiRename.presetPlaceholder": "Läs in en förinställning",
-  "@multiRename.presetPlaceholder": {
-    "sourceHash": "e07d83e"
-  },
-  "multiRename.preset.default": "Ingen ändring",
-  "@multiRename.preset.default": {
-    "sourceHash": "41f9d57"
-  },
   "multiRename.preset.removeDiacritics": "Ta bort diakritiska tecken",
   "@multiRename.preset.removeDiacritics": {
     "sourceHash": "4103ca1"
@@ -102,14 +90,6 @@
   "multiRename.presetName": "Förinställningens namn",
   "@multiRename.presetName": {
     "sourceHash": "e534a66"
-  },
-  "multiRename.savePreset": "Spara förinställning",
-  "@multiRename.savePreset": {
-    "sourceHash": "362a137"
-  },
-  "multiRename.deletePreset": "Radera förinställning",
-  "@multiRename.deletePreset": {
-    "sourceHash": "f307af8"
   },
   "multiRename.preview": "Förhandsvisning",
   "@multiRename.preview": {

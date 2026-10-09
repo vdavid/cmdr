@@ -1,11 +1,12 @@
 /**
  * Behavior tests for `MultiRenameDialog.svelte`: every error the backend can
- * answer gets its own words, Enter in a mask starts while Enter in the preset
- * name saves, a placeholder button inserts into the name mask, and presets save
- * and delete.
+ * answer gets its own words, Enter in a mask starts, a placeholder button inserts
+ * into the name mask, and the presets: F2 opens their menu, a digit loads one,
+ * the button says when the fields drifted from it, and ⌘S saves (asking before it
+ * replaces), with Enter and Escape staying inside the name popover.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount, tick } from 'svelte'
 import MultiRenameDialog from './MultiRenameDialog.svelte'
 
@@ -16,6 +17,8 @@ const ipc = vi.hoisted(() => ({
   getMultiRenamePresets: vi.fn(),
   saveMultiRenamePreset: vi.fn(),
   deleteMultiRenamePreset: vi.fn(),
+  renameMultiRenamePreset: vi.fn(),
+  updateMultiRenamePreset: vi.fn(),
 }))
 
 vi.mock('$lib/tauri-commands', () => ({
@@ -37,12 +40,12 @@ async function settle(): Promise<void> {
   }
 }
 
-async function mountSheet(onApplied = vi.fn()): Promise<HTMLElement> {
+async function mountSheet(onApplied = vi.fn(), onClose = vi.fn()): Promise<HTMLElement> {
   const target = document.createElement('div')
   document.body.appendChild(target)
   mount(MultiRenameDialog, {
     target,
-    props: { session: { sessionId: 'S', count: 1 }, onApplied, onClose: vi.fn() },
+    props: { session: { sessionId: 'S', count: 1 }, onApplied, onClose },
   })
   await settle()
   return target
@@ -52,8 +55,14 @@ function inputs(root: HTMLElement): HTMLInputElement[] {
   return [...root.querySelectorAll<HTMLInputElement>('input:not([type="checkbox"])')]
 }
 
-function key(el: Element, k: string): void {
-  el.dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true }))
+function key(el: Element, k: string, init: KeyboardEventInit = {}): void {
+  el.dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true, ...init }))
+}
+
+function presetsButton(root: HTMLElement): HTMLButtonElement {
+  const button = root.querySelector<HTMLButtonElement>('.presets button')
+  if (!button) throw new Error('no Presets button')
+  return button
 }
 
 describe('MultiRenameDialog', () => {
@@ -128,20 +137,108 @@ describe('MultiRenameDialog', () => {
     })
   })
 
-  it('saves a preset from Enter in its name, never starting a rename, and deletes it', async () => {
-    const root = await mountSheet()
-    const name = inputs(root).at(-1) as HTMLInputElement
-    name.value = 'Mine'
-    name.dispatchEvent(new Event('input', { bubbles: true }))
-    await settle()
-    key(name, 'Enter')
-    await settle()
-    expect(ipc.saveMultiRenamePreset).toHaveBeenCalled()
-    expect(ipc.applyMultiRename).not.toHaveBeenCalled()
+  describe('presets', () => {
+    // `formatKeyCombo` emits ⌘-form modifiers only when `isMacOS()` is true, and happy-dom reports a Linux UA.
+    const macNavigator = Object.defineProperty(Object.create(navigator) as Navigator, 'userAgent', {
+      value: 'Mozilla/5.0 (Macintosh; Intel Mac OS X)',
+    })
+    const navigatorSpy = vi.spyOn(globalThis, 'navigator', 'get')
+    beforeEach(() => {
+      navigatorSpy.mockReturnValue(macNavigator)
+      ipc.getMultiRenamePresets.mockResolvedValue([{ id: 'p1', name: 'Mine', spec: { ...SPEC, nameMask: 'IMG_[C]' } }])
+    })
+    afterEach(() => navigatorSpy.mockReset())
 
-    const del = [...root.querySelectorAll('button')].find((b) => !b.disabled && /delete/i.test(b.textContent))
-    del?.click()
-    await settle()
-    expect(ipc.deleteMultiRenamePreset).toHaveBeenCalledWith('p1')
+    const SPEC = {
+      nameMask: '[N]',
+      extensionMask: '[E]',
+      search: '',
+      replace: '',
+      caseSensitive: false,
+      firstOnly: false,
+      includeExtension: false,
+      regex: false,
+      substitute: false,
+      case: 'unchanged',
+      removeDiacritics: false,
+      counterStart: 1,
+      counterStep: 1,
+      counterDigits: 1,
+    }
+
+    it('F2 in a field opens the Presets menu, and 1 loads the first saved preset without renaming', async () => {
+      const root = await mountSheet()
+      expect(presetsButton(root).textContent).not.toContain('Mine')
+      key(inputs(root)[0], 'F2', { code: 'F2' })
+      await settle()
+      expect(document.querySelector('[data-menu]')).toBeTruthy()
+
+      key(document.activeElement ?? document.body, '1', { code: 'Digit1' })
+      await settle()
+      expect(document.querySelector('[data-menu]')).toBeNull()
+      expect(inputs(root)[0].value).toBe('IMG_[C]')
+      expect(presetsButton(root).textContent).toContain('Mine')
+      expect(presetsButton(root).textContent).not.toContain('(edited)')
+      expect(ipc.applyMultiRename).not.toHaveBeenCalled()
+
+      const mask = inputs(root)[0]
+      mask.value = 'IMG_[C]_x'
+      mask.dispatchEvent(new Event('input', { bubbles: true }))
+      await settle()
+      expect(presetsButton(root).textContent).toContain('Mine (edited)')
+    })
+
+    it('⌘S asks for a name, asks before replacing a taken one, and Enter never starts a rename', async () => {
+      const root = await mountSheet()
+      key(inputs(root)[0], 's', { code: 'KeyS', metaKey: true })
+      await settle()
+      const name = document.querySelector<HTMLInputElement>('.ui-popover input')
+      if (!name) throw new Error('no name popover')
+      name.value = 'mine'
+      name.dispatchEvent(new Event('input', { bubbles: true }))
+      await settle()
+
+      key(name, 'Enter')
+      await settle()
+      expect(ipc.saveMultiRenamePreset).not.toHaveBeenCalled()
+      expect(document.querySelector('.ui-popover [role="alert"]')?.textContent).toContain('Mine')
+
+      key(name, 'Enter')
+      await settle()
+      expect(ipc.saveMultiRenamePreset).toHaveBeenCalledWith(expect.objectContaining({ id: 'p1', name: 'mine' }))
+      expect(document.querySelector('.ui-popover')).toBeNull()
+      expect(ipc.applyMultiRename).not.toHaveBeenCalled()
+    })
+
+    it('Escape closes the name popover and leaves the sheet open', async () => {
+      const onClose = vi.fn()
+      const root = await mountSheet(vi.fn(), onClose)
+      key(inputs(root)[0], 's', { code: 'KeyS', metaKey: true })
+      await settle()
+      const name = document.querySelector<HTMLInputElement>('.ui-popover input')
+      if (!name) throw new Error('no name popover')
+      key(name, 'Escape')
+      await settle()
+      expect(document.querySelector('.ui-popover')).toBeNull()
+      expect(onClose).not.toHaveBeenCalled()
+    })
+
+    it("a saved preset's submenu renames it, prefilled with its name", async () => {
+      const root = await mountSheet()
+      presetsButton(root).click()
+      await settle()
+      key(document.activeElement ?? document.body, 'ArrowRight')
+      await settle()
+      key(document.activeElement ?? document.body, 'Enter')
+      await settle()
+      const name = document.querySelector<HTMLInputElement>('.ui-popover input')
+      expect(name?.value).toBe('Mine')
+      if (!name) return
+      name.value = 'Ours'
+      name.dispatchEvent(new Event('input', { bubbles: true }))
+      key(name, 'Enter')
+      await settle()
+      expect(ipc.renameMultiRenamePreset).toHaveBeenCalledWith('p1', 'Ours')
+    })
   })
 })

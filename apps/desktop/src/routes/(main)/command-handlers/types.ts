@@ -54,6 +54,9 @@ export type DispatchExemptId =
   // accelerator column. Registered so Settings and the Help window say the menu has them.
   | 'favorites.openByNumber'
   | 'favorites.addFromMenu'
+  // The Multi-rename sheet's own keys, answered by its keydown through `eventMatchesCommand`.
+  | 'multiRename.openPresets'
+  | 'multiRename.savePreset'
   | 'network.selectHost'
   | 'share.back'
   | 'share.selectShare'

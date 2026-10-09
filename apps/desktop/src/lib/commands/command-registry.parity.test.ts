@@ -107,6 +107,8 @@ const EXPECTED_NAMES: Record<string, string> = {
   'nav.lastInFull': 'Jump to last file',
   'file.rename': 'Rename',
   'file.multiRename': 'Multi-rename',
+  'multiRename.openPresets': 'Open the presets menu',
+  'multiRename.savePreset': 'Save the current settings as a preset',
   'file.view': 'View',
   'file.edit': 'Edit in default editor',
   'file.copy': 'Copy',

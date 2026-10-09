@@ -55,6 +55,11 @@
     "screenshot": "pane-volume-chooser.png"
   },
 
+  "shortcuts.scope.multiRename": "Multi-rename",
+  "@shortcuts.scope.multiRename": {
+    "description": "Group heading in the Keyboard shortcuts list for keys that work inside the Multi-rename tool (Ctrl+M, the sheet that renames many files at once). A short section title; match multiRename.title."
+  },
+
   "shortcuts.scope.favoritesMenu": "Favorites menu",
   "@shortcuts.scope.favoritesMenu": {
     "description": "Group heading in the Keyboard shortcuts list for keys that work inside the favorites menu (the list of bookmarked folders that opens over a pane). A short section title.",

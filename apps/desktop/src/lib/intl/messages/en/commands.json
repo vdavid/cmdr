@@ -482,6 +482,14 @@
   "@commands.fileMultiRename.description": {
     "description": "Longer help text for \"Multi-rename\", shown as a secondary line in the command palette."
   },
+  "commands.multiRenameOpenPresets.label": "Open the presets menu",
+  "@commands.multiRenameOpenPresets.label": {
+    "description": "Row in the Keyboard shortcuts list: what F2 does while the Multi-rename tool is open. It opens the menu of saved rename settings (presets), as in Total Commander. Read-only (the key can't be rebound)."
+  },
+  "commands.multiRenameSavePreset.label": "Save the current settings as a preset",
+  "@commands.multiRenameSavePreset.label": {
+    "description": "Row in the Keyboard shortcuts list: what Cmd+S does while the Multi-rename tool is open. It asks for a name and saves the tool's current fields as a preset to load later. Read-only (the key can't be rebound)."
+  },
   "commands.fileView.label": "View",
   "@commands.fileView.label": {
     "description": "Command name that opens the built-in viewer for the selected file. Appears in the command palette. A terse control label.",
