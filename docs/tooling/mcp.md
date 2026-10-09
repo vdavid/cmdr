@@ -324,6 +324,11 @@ Note the port really does move: the wrapper allocates a fresh ephemeral bridge p
 rebuild (a Rust edit) keeps the port, since the child process inherits `CMDR_MCP_BRIDGE_PORT`; a full `pnpm dev` restart
 does not.
 
+### `webview_screenshot` doesn't paint `backdrop-filter`
+
+Menus, popovers, toasts, and tooltips come out see-through in the capture, with no blur. That's the capture, not the
+app: `apps/desktop/src/DETAILS.md` § Glass material.
+
 ### Window management: use `manage_window`, not JS APIs
 
 The Tauri webview's `window.__TAURI__` JS APIs (e.g. `getCurrentWindow().setSize()`) are gated by per-window capability

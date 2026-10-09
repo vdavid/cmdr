@@ -41,6 +41,16 @@ Frosted-glass material, and `$lib/glass-material` (inited per window) feeds them
   (`--glass-toast-opacity`), since they hold paragraphs over busy lists; tooltips and the unblurred Ask Cmdr drop hint
   use the fixed `--color-bg-glass-steady` instead.
 
+**Gotcha: the MCP bridge's `webview_screenshot` never paints `backdrop-filter`.** Every glass surface reads as bare
+translucency in it, with the text underneath sharp through the fill, so a menu or popover over a busy list (a dialog's
+preview list, say) looks broken while the real window blurs it fine. **Why it matters:** it reads like the nested
+`backdrop-filter` trap (a filter whose ancestor has its own backdrop root sees only that ancestor's content), and an
+agent will "fix" a surface that isn't broken. A menu inside a `ModalDialog` portals into the overlay, which carries no
+`backdrop-filter` unless the dialog sets `blur`, and even then the panel sits inside that root, so the menu still blurs
+the panel. Judge glass on a real display, never from that screenshot. (Verified in the dev app on macOS 27: a body-level
+test div with `backdrop-filter: blur(20px)` above everything left the text under it pixel-sharp in the capture,
+2026-10-09.)
+
 Menu-like surfaces (`Menu`, `Select`, the breadcrumb popup) also take the macOS 26+ menu shape: `--radius-menu`,
 `--shadow-glass` plus the `--shadow-glass-rim` top highlight, and rows highlighted as inset pills.
 
