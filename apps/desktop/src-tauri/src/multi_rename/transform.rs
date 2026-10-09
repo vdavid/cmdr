@@ -53,31 +53,58 @@ pub enum ReplaceError {
 }
 
 impl Transform {
+    /// The search compiled once, to run on every row of a preview.
+    pub fn compile(&self) -> Result<CompiledTransform, ReplaceError> {
+        let rule = match self.replace.as_ref().filter(|r| !r.search.is_empty()) {
+            Some(replace) => rules(replace)?,
+            None => None,
+        };
+        Ok(CompiledTransform {
+            rule,
+            case: self.case,
+            remove_diacritics: self.remove_diacritics,
+        })
+    }
+}
+
+/// A `Transform` with its search compiled.
+pub struct CompiledTransform {
+    rule: Option<Rule>,
+    case: CaseChange,
+    remove_diacritics: bool,
+}
+
+impl CompiledTransform {
     /// The `(name, extension)` after search & replace, case, and diacritics.
-    pub fn apply(&self, name: &str, ext: &str) -> Result<(String, String), ReplaceError> {
+    pub fn apply(&self, name: &str, ext: &str) -> (String, String) {
         let (mut name, mut ext) = (name.to_string(), ext.to_string());
-        if let Some(replace) = self.replace.as_ref().filter(|r| !r.search.is_empty())
-            && let Some(rule) = rules(replace)?
-        {
-            name = run_rules(&rule, &nfc(&name), replace);
-            if replace.include_extension {
-                ext = run_rules(&rule, &nfc(&ext), replace);
+        if let Some(rule) = &self.rule {
+            name = run_rules(rule, &nfc(&name));
+            if rule.include_extension {
+                ext = run_rules(rule, &nfc(&ext));
             }
         }
         name = change_case(&name, self.case);
-        ext = change_case(&ext, self.case);
+        // Lower and upper take the extension too (`.JPG` → `.jpg`); first-upper
+        // and words are about the name's words, and `.Jpg` is never wanted.
+        if matches!(self.case, CaseChange::Lower | CaseChange::Upper) {
+            ext = change_case(&ext, self.case);
+        }
         if self.remove_diacritics {
             name = remove_diacritics(&name);
             ext = remove_diacritics(&ext);
         }
-        Ok((name, ext))
+        (name, ext)
     }
 }
 
-/// The compiled search and what replaces each match.
+/// The compiled search, what replaces each match, and the switches that run it.
 struct Rule {
     pattern: Regex,
     replacement: Replacement,
+    first_only: bool,
+    include_extension: bool,
+    substitute: bool,
 }
 
 enum Replacement {
@@ -106,7 +133,15 @@ impl Replacement {
     }
 }
 
+#[cfg(test)]
+thread_local! {
+    /// How many searches compiled on this thread, so a test proves a preview compiles once.
+    pub(super) static SEARCH_BUILDS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
 fn rules(replace: &Replace) -> Result<Option<Rule>, ReplaceError> {
+    #[cfg(test)]
+    SEARCH_BUILDS.with(|n| n.set(n.get() + 1));
     let build = |pattern: &str| {
         RegexBuilder::new(pattern)
             .case_insensitive(!replace.case_sensitive)
@@ -115,11 +150,18 @@ fn rules(replace: &Replace) -> Result<Option<Rule>, ReplaceError> {
                 detail: err.to_string(),
             })
     };
+    let rule = |pattern: Regex, replacement: Replacement| Rule {
+        pattern,
+        replacement,
+        first_only: replace.first_only,
+        include_extension: replace.include_extension,
+        substitute: replace.substitute,
+    };
     if replace.regex {
-        return Ok(Some(Rule {
-            pattern: build(&nfc(&replace.search))?,
-            replacement: Replacement::Template(replace.replace.clone()),
-        }));
+        return Ok(Some(rule(
+            build(&nfc(&replace.search))?,
+            Replacement::Template(brace_group_numbers(&replace.replace)),
+        )));
     }
     let search = nfc(&replace.search);
     let searches: Vec<&str> = search.split('|').collect();
@@ -143,10 +185,35 @@ fn rules(replace: &Replace) -> Result<Option<Rule>, ReplaceError> {
     if alternatives.is_empty() {
         return Ok(None);
     }
-    Ok(Some(Rule {
-        pattern: build(&alternatives.join("|"))?,
-        replacement: Replacement::Pairs(paired),
-    }))
+    Ok(Some(rule(build(&alternatives.join("|"))?, Replacement::Pairs(paired))))
+}
+
+/// `$1_` as `${1}_`: the regex crate reads `$1_` as a group NAMED `1_`, while a
+/// Total Commander user means group 1, then `_`. `$$`, `${…}`, and `$name` stay.
+fn brace_group_numbers(template: &str) -> String {
+    let mut out = String::with_capacity(template.len());
+    let mut chars = template.chars().peekable();
+    while let Some(c) = chars.next() {
+        if c != '$' {
+            out.push(c);
+            continue;
+        }
+        match chars.peek() {
+            Some('$') => {
+                chars.next();
+                out.push_str("$$");
+            }
+            Some(d) if d.is_ascii_digit() => {
+                out.push_str("${");
+                while let Some(d) = chars.next_if(char::is_ascii_digit) {
+                    out.push(d);
+                }
+                out.push('}');
+            }
+            _ => out.push('$'),
+        }
+    }
+    out
 }
 
 /// `text` composed (NFC), so a typed `é` finds the decomposed one a name from an
@@ -173,14 +240,14 @@ fn wildcard_pattern(search: &str) -> String {
     pattern
 }
 
-fn run_rules(rule: &Rule, text: &str, replace: &Replace) -> String {
-    if replace.substitute {
+fn run_rules(rule: &Rule, text: &str) -> String {
+    if rule.substitute {
         return match rule.pattern.captures(text) {
             Some(caps) => rule.replacement.for_match(&caps),
             None => text.to_string(),
         };
     }
-    let limit = if replace.first_only { 1 } else { 0 };
+    let limit = if rule.first_only { 1 } else { 0 };
     rule.pattern
         .replacen(text, limit, |caps: &regex::Captures<'_>| {
             rule.replacement.for_match(caps)

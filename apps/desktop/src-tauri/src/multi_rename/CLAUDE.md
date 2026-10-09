@@ -26,7 +26,7 @@ removing diacritics, a counter, presets, and a live preview. The sheet is `src/l
 - **Diacritics go only on Latin and Greek letters**: kana dakuten, Indic vowel signs, Cyrillic `й`/`ё` are letters.
 - **The counter width is capped** (`MAX_COUNTER_DIGITS`) and its arithmetic saturates.
 - **Statuses compare folded names** (`name_fold`, as the Mac does, so over-cautious on a case-sensitive volume): a name
-  held by a file that stays is `TargetExists`, one a batch row leaves is free, and blocking repeats until stable (a
-  blocked row stays, which can block the row renaming into it).
+  held by a file that stays is `TargetExists`, one a batch row leaves is free, and a block cascades (a blocked row
+  stays, which can block the row renaming into it) through a worklist, so a long chain stays linear.
 
 Decisions and the TC semantics in detail: `DETAILS.md`.

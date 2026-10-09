@@ -9,8 +9,9 @@ Per row, in rename order (`position` counts from 0 and is what `[C]` counts):
 
 1. `Mask::render` the name mask and the extension mask over `RowFacts` (name, extension, parent, grandparent, modified
    time in local time, position).
-2. `Transform::apply`: search & replace on the name (and the extension with `include_extension`), then the case step on
-   both, then `remove_diacritics` on both.
+2. `CompiledTransform::apply`: search & replace on the name (and the extension with `include_extension`), then the case step
+   (lower and upper on both, first-upper and words on the name only: `.Jpg` is never wanted), then `remove_diacritics`
+   on both. The search compiles once per preview (`Transform::compile`), never per row.
 3. `name` + `.` + `extension`, or just `name` when the extension renders empty.
 
 ## Placeholders (`mask.rs`)
@@ -32,7 +33,9 @@ subfolders (the executor's one-parent rule refuses it today), "next step" chaini
 - Plain search: case-insensitive unless `case_sensitive`, `*` / `?` wildcards (`*` is lazy), `a|b|c` lists paired with
   `x|y|z` (one replacement serves them all). **Decision: one alternation regex, ONE pass.** Why: chaining the pairs ran
   `a` → `b` → `c` and made a swap a no-op; TC replaces each match once.
-- Regex: `$1` groups; `substitute` makes the whole name the expanded replacement when the search matches.
+- Regex: `$1` groups, braced before expanding (`$1_` is group 1 then `_`, as TC users type it, where the regex crate
+  would read a group named `1_`); `$$`, `${…}`, and `$name` pass through. `substitute` makes the whole name the
+  expanded replacement when the search matches.
 - A broken regex is a spec error (`SpecError::BadRegex`), checked once in `Compiled::new`, never per row.
 - `remove_diacritics`: NFD with the combining marks dropped, a table for the letters that don't decompose (`ł` `đ` `ø`
   `ß` `æ` `œ` `þ` `ð` `ı` `ħ` `ŧ`), then NFC. Like foobar2000's `$ascii()`.

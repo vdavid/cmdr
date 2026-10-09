@@ -11,7 +11,7 @@ fn replace(search: &str, with: &str) -> Replace {
 }
 
 fn run(transform: &Transform, name: &str, ext: &str) -> (String, String) {
-    transform.apply(name, ext).expect("a valid transform")
+    transform.compile().expect("a valid transform").apply(name, ext)
 }
 
 fn only(replace: Replace) -> Transform {
@@ -98,7 +98,7 @@ fn a_broken_regex_is_an_error_not_a_panic() {
         regex: true,
         ..replace("(unclosed", "x")
     });
-    assert!(matches!(t.apply("a", "b"), Err(ReplaceError::BadRegex { .. })));
+    assert!(matches!(t.compile(), Err(ReplaceError::BadRegex { .. })));
 }
 
 #[test]
@@ -114,7 +114,10 @@ fn the_case_step_runs_after_replace() {
         case: CaseChange::Words,
         ..Transform::default()
     };
-    assert_eq!(run(&words, "the QUICK brown-fox", "txt").0, "The Quick Brown-Fox");
+    assert_eq!(
+        run(&words, "the QUICK brown-fox", "txt"),
+        ("The Quick Brown-Fox".to_string(), "txt".to_string())
+    );
 
     let lower = Transform {
         case: CaseChange::Lower,
@@ -129,7 +132,10 @@ fn the_case_step_runs_after_replace() {
         case: CaseChange::FirstUpper,
         ..Transform::default()
     };
-    assert_eq!(run(&first, "hELLO world", "txt").0, "Hello world");
+    assert_eq!(
+        run(&first, "hELLO world", "txt"),
+        ("Hello world".to_string(), "txt".to_string())
+    );
 }
 
 #[test]
@@ -199,4 +205,43 @@ fn other_scripts_keep_their_marks() {
     );
     assert_eq!(remove_diacritics("हिन्दी"), "हिन्दी", "Devanagari vowel signs stay");
     assert_eq!(remove_diacritics("Ελληνικά άέ"), "Ελληνικα αε", "Greek accents go");
+}
+
+#[test]
+fn first_upper_and_words_leave_the_extension_alone_but_upper_and_lower_take_it() {
+    let case = |case| Transform {
+        case,
+        ..Transform::default()
+    };
+    assert_eq!(
+        run(&case(CaseChange::FirstUpper), "photo", "txt"),
+        ("Photo".to_string(), "txt".to_string())
+    );
+    assert_eq!(
+        run(&case(CaseChange::Words), "my photo", "JPG"),
+        ("My Photo".to_string(), "JPG".to_string())
+    );
+    assert_eq!(
+        run(&case(CaseChange::Upper), "report", "pdf"),
+        ("REPORT".to_string(), "PDF".to_string())
+    );
+}
+
+#[test]
+fn a_group_number_ends_at_its_last_digit() {
+    let t = |with: &str| {
+        only(Replace {
+            regex: true,
+            ..replace(r"(?P<word>[a-z]+) (\d+)", with)
+        })
+    };
+    assert_eq!(run(&t("$2_$1"), "photo 42", "jpg").0, "42_photo", "TC users type `$1_`");
+    assert_eq!(run(&t("$1x"), "photo 42", "jpg").0, "photox");
+    assert_eq!(run(&t("$$1"), "photo 42", "jpg").0, "$1", "`$$` is a literal dollar");
+    assert_eq!(run(&t("${1}x"), "photo 42", "jpg").0, "photox");
+    assert_eq!(
+        run(&t("#$word"), "photo 42", "jpg").0,
+        "#photo",
+        "a named group stays named"
+    );
 }

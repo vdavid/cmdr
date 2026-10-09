@@ -1,9 +1,10 @@
 //! The preview: new names and their statuses over a folder's entries.
 
+use std::cell::Cell;
 use std::path::Path;
 
-use super::plan::{Compiled, InvalidNameReason, MultiRenameSpec, RowStatus, SpecError, preview};
-use super::transform::CaseChange;
+use super::plan::{Compiled, FOLDS, InvalidNameReason, MultiRenameSpec, RowStatus, SpecError, preview};
+use super::transform::{CaseChange, SEARCH_BUILDS};
 use crate::file_system::listing::metadata::FileEntry;
 
 const DIR: &str = "/Users/me/Photos/Holiday 2026";
@@ -212,4 +213,41 @@ fn a_huge_counter_width_is_capped() {
     };
     let out = run(&wide, &folder, &["a.txt"]);
     assert_eq!(out[0].0.len(), 64 + ".txt".len());
+}
+
+#[test]
+fn a_preview_compiles_the_search_once_not_per_row() {
+    let folder: Vec<FileEntry> = (0..200).map(|i| file(&format!("IMG_{i:04}.jpg"))).collect();
+    let batch: Vec<&str> = folder.iter().map(|e| e.name.as_str()).collect();
+    let s = MultiRenameSpec {
+        search: r"IMG_(\d+)".to_string(),
+        replace: "photo $1".to_string(),
+        regex: true,
+        ..spec("[N]")
+    };
+    SEARCH_BUILDS.with(|n| n.set(0));
+    let out = run(&s, &folder, &batch);
+    assert_eq!(out[7].0, "photo 0007.jpg");
+    assert_eq!(SEARCH_BUILDS.with(Cell::get), 1);
+}
+
+#[test]
+fn a_long_chain_blocked_at_its_end_settles_in_linear_work() {
+    // f0001 → f0002 → … → f1000 → f1001, and f1001 stays: the block runs down
+    // the whole chain, one row at a time from the end.
+    const N: usize = 1000;
+    let folder: Vec<FileEntry> = (1..=N + 1).map(|i| file(&format!("f{i:04}.txt"))).collect();
+    let batch: Vec<&str> = folder[..N].iter().map(|e| e.name.as_str()).collect();
+    let s = MultiRenameSpec {
+        counter_start: 2,
+        counter_digits: 4,
+        ..spec("f[C]")
+    };
+    FOLDS.with(|n| n.set(0));
+    let out = run(&s, &folder, &batch);
+    assert_eq!(out[0].0, "f0002.txt");
+    assert!(out.iter().all(|(_, status)| *status == RowStatus::TargetExists));
+    // Each sibling once, and each row's old and new name once.
+    let folds = FOLDS.with(Cell::get);
+    assert!(folds <= folder.len() + 2 * N, "{folds} folds");
 }

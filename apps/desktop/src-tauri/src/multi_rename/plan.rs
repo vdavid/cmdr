@@ -16,7 +16,7 @@ use crate::file_system::listing::metadata::FileEntry;
 use crate::file_system::validation::{ValidationError, validate_filename};
 
 use super::mask::{Counter, Mask, MaskError, RowFacts};
-use super::transform::{CaseChange, Replace, ReplaceError, Transform};
+use super::transform::{CaseChange, CompiledTransform, Replace, ReplaceError, Transform};
 
 /// Everything the sheet sets.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
@@ -51,7 +51,7 @@ pub enum SpecError {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct PreviewRow {
-    /// The pane row (backend index, no `..`).
+    /// The row's place in the batch (rename order), stable across previews.
     pub row: usize,
     pub old_name: String,
     pub new_name: String,
@@ -73,6 +73,9 @@ pub enum RowStatus {
     Duplicate,
     /// Something that stays in the folder already has the name.
     TargetExists,
+    /// The file left the folder since the sheet opened (set by `session.rs`;
+    /// `preview` never sees it).
+    Missing,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
@@ -97,7 +100,7 @@ impl RowStatus {
 pub(crate) struct Compiled {
     name_mask: Mask,
     extension_mask: Mask,
-    transform: Transform,
+    transform: CompiledTransform,
     counter: Counter,
 }
 
@@ -114,15 +117,14 @@ impl Compiled {
             regex: spec.regex,
             substitute: spec.substitute,
         });
+        // Compiled once: a broken regex is a spec problem, not a per-row one.
         let transform = Transform {
             replace,
             case: spec.case,
             remove_diacritics: spec.remove_diacritics,
-        };
-        // A broken regex is a spec problem, not a per-row one: ask once.
-        transform
-            .apply("", "")
-            .map_err(|ReplaceError::BadRegex { detail }| SpecError::BadRegex { detail })?;
+        }
+        .compile()
+        .map_err(|ReplaceError::BadRegex { detail }| SpecError::BadRegex { detail })?;
         Ok(Self {
             name_mask,
             extension_mask,
@@ -156,9 +158,7 @@ impl Compiled {
         };
         let name = self.name_mask.render(&facts, &self.counter);
         let extension = self.extension_mask.render(&facts, &self.counter);
-        // `Compiled::new` proved the regex; a later failure can't happen, so the
-        // unchanged parts are the safe answer.
-        let (name, extension) = self.transform.apply(&name, &extension).unwrap_or((name, extension));
+        let (name, extension) = self.transform.apply(&name, &extension);
         if extension.is_empty() {
             name
         } else {
@@ -200,50 +200,105 @@ pub(crate) fn preview(
         })
         .collect();
 
-    // Until nothing changes: a row that turns out blocked STAYS, so the name it
-    // holds is taken again, which can block a row renaming into it (a → b while
-    // b → c is blocked by a c that stays).
-    loop {
-        let blocked = settle(&mut preview, siblings);
-        if blocked == 0 {
-            return preview;
+    settle(&mut preview, siblings);
+    preview
+}
+
+/// A ready row's names, folded once.
+struct Claim {
+    index: usize,
+    /// The new name, folded.
+    key: String,
+    /// The old name, folded.
+    own: String,
+    /// Whether the old name is an entry of the folder, which stays if this row
+    /// turns out blocked.
+    holds_sibling: bool,
+}
+
+/// Flags the ready rows that can't go: duplicates, and names held by an entry
+/// that stays. A row that turns out blocked STAYS, so the name it holds is taken
+/// again, which can block the row renaming into it (a → b while b → c is blocked
+/// by a c that stays), and so on down a chain. A worklist follows the chain: each
+/// block re-checks only the row renaming into the freed name, so a 10k-row chain
+/// is linear, never a pass per link.
+fn settle(preview: &mut [PreviewRow], siblings: &[FileEntry]) {
+    let (claims, mut staying) = {
+        let names: HashSet<&str> = siblings.iter().map(|s| s.name.as_str()).collect();
+        let claims: Vec<Claim> = preview
+            .iter()
+            .enumerate()
+            .filter(|(_, p)| p.status.is_ready())
+            .map(|(index, p)| Claim {
+                index,
+                key: fold(&p.new_name),
+                own: fold(&p.old_name),
+                holds_sibling: names.contains(p.old_name.as_str()),
+            })
+            .collect();
+        // Names that stay in the folder: every sibling except the ones this batch
+        // renames away. A row renaming to its own name in another case stays itself.
+        let leaving: HashSet<&str> = claims.iter().map(|c| preview[c.index].old_name.as_str()).collect();
+        let staying: HashSet<String> = siblings
+            .iter()
+            .filter(|s| !leaving.contains(s.name.as_str()))
+            .map(|s| fold(&s.name))
+            .collect();
+        (claims, staying)
+    };
+
+    // Blocked rows whose old names stay, still to follow.
+    let mut blocked: Vec<usize> = Vec::new();
+    let mut counts: HashMap<&str, usize> = HashMap::new();
+    for claim in &claims {
+        *counts.entry(claim.key.as_str()).or_default() += 1;
+    }
+    for (i, claim) in claims.iter().enumerate() {
+        if counts[claim.key.as_str()] > 1 {
+            preview[claim.index].status = RowStatus::Duplicate;
+            blocked.push(i);
+        }
+    }
+    // With duplicates out, every ready row's new name is its own.
+    let mut by_target: HashMap<&str, usize> = HashMap::new();
+    for (i, claim) in claims.iter().enumerate() {
+        if !preview[claim.index].status.is_ready() {
+            continue;
+        }
+        if claim.key != claim.own && staying.contains(&claim.key) {
+            preview[claim.index].status = RowStatus::TargetExists;
+            blocked.push(i);
+        } else {
+            by_target.insert(claim.key.as_str(), i);
+        }
+    }
+    while let Some(i) = blocked.pop() {
+        let claim = &claims[i];
+        // Already staying means whoever renames into it was checked against it.
+        if !claim.holds_sibling || !staying.insert(claim.own.clone()) {
+            continue;
+        }
+        if let Some(&t) = by_target.get(claim.own.as_str()) {
+            let into = &claims[t];
+            if preview[into.index].status.is_ready() && into.key != into.own {
+                preview[into.index].status = RowStatus::TargetExists;
+                blocked.push(t);
+            }
         }
     }
 }
 
-/// One pass over the ready rows: flags duplicates and names held by an entry
-/// that stays. Returns how many rows it blocked.
-fn settle(preview: &mut [PreviewRow], siblings: &[FileEntry]) -> usize {
-    // Names that stay in the folder: every sibling except the ones this batch
-    // renames away. A row renaming to its own name in another case stays itself.
-    let leaving: HashSet<String> = preview
-        .iter()
-        .filter(|p| p.status.is_ready())
-        .map(|p| p.old_name.clone())
-        .collect();
-    let staying: HashSet<String> = siblings
-        .iter()
-        .filter(|s| !leaving.contains(&s.name))
-        .map(|s| fold_name(&s.name).into_owned())
-        .collect();
+/// `name` as the Mac compares it.
+fn fold(name: &str) -> String {
+    #[cfg(test)]
+    FOLDS.with(|n| n.set(n.get() + 1));
+    fold_name(name).into_owned()
+}
 
-    let mut claims: HashMap<String, usize> = HashMap::new();
-    for p in preview.iter().filter(|p| p.status.is_ready()) {
-        *claims.entry(fold_name(&p.new_name).into_owned()).or_default() += 1;
-    }
-    let mut blocked = 0;
-    for p in preview.iter_mut().filter(|p| p.status.is_ready()) {
-        let key = fold_name(&p.new_name).into_owned();
-        let own = fold_name(&p.old_name).into_owned();
-        if claims.get(&key).copied().unwrap_or(0) > 1 {
-            p.status = RowStatus::Duplicate;
-            blocked += 1;
-        } else if key != own && staying.contains(&key) {
-            p.status = RowStatus::TargetExists;
-            blocked += 1;
-        }
-    }
-    blocked
+#[cfg(test)]
+thread_local! {
+    /// How many names folded on this thread, so a test proves the statuses stay linear.
+    pub(super) static FOLDS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
 }
 
 fn invalid(name: &str) -> Option<InvalidNameReason> {
