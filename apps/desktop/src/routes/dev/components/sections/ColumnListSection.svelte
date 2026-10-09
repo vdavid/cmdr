@@ -3,7 +3,12 @@
     import SectionCard from '$lib/ui/SectionCard.svelte'
     import ColumnList from '$lib/ui/ColumnList.svelte'
     import Size from '$lib/ui/Size.svelte'
-    import type { ColumnListColumn, ColumnListWindowedSource } from '$lib/ui/column-list-types'
+    import {
+        columnListProps,
+        type ColumnListApi,
+        type ColumnListColumn,
+        type ColumnListWindowedSource,
+    } from '$lib/ui/column-list-types'
 
     /**
      * Two lists: a short measured listbox (hover moves the cursor; click the list, then the
@@ -52,7 +57,7 @@
         cursor = (cursor + step + files.length) % files.length
         list?.scrollIndexIntoView(cursor)
     }
-    let list: ReturnType<typeof ColumnList<FileRow>> | undefined = $state()
+    let list: ColumnListApi | undefined = $state()
 
     interface RenameRow {
         heading: boolean
@@ -106,23 +111,27 @@
     <div class="frame short" tabindex="0" role="group" aria-label="Measured list demo" onkeydown={onListKeydown}>
         <ColumnList
             bind:this={list}
-            columns={fileColumns}
-            rows={files}
-            rowKey={(row) => row.name}
-            ariaLabel="Files"
-            cursorIndex={cursor}
-            onHover={(index) => (cursor = index)}
+            {...columnListProps({
+                columns: fileColumns,
+                rows: files,
+                rowKey: (row) => row.name,
+                ariaLabel: 'Files',
+                cursorIndex: cursor,
+                onHover: (index) => (cursor = index),
+            })}
         />
     </div>
     <p class="hint">Windowed table: 100,000 rows paged in after 300 ms, a folder heading every 50 rows.</p>
     <div class="frame tall">
         <ColumnList
-            columns={renameColumns}
-            rows={renames}
-            semantics="table"
-            ariaLabel="Rename preview"
-            isGroupHeading={(row) => row.heading}
-            groupHeading={folderHeading}
+            {...columnListProps({
+                columns: renameColumns,
+                rows: renames,
+                semantics: 'table',
+                ariaLabel: 'Rename preview',
+                isGroupHeading: (row) => row.heading,
+                groupHeading: folderHeading,
+            })}
         />
     </div>
 </SectionCard>

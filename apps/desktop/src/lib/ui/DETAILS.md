@@ -1396,6 +1396,10 @@ this leaves to the parent.
 
 ### Consumer contract
 
+- **Pass the props through `columnListProps({ ... })` and spread them**, and type a `bind:this` ref as `ColumnListApi`.
+  The type-aware linter can't instantiate a generic Svelte component, so it reads every prop as `any` and flags each
+  inline callback (`rowKey`, `onRowContextMenu`, `isGroupHeading`); the helper is an identity function typed
+  `ColumnListProps<T>` that infers `T` from `rows`, so the callbacks are typed where the linter can see them.
 - **Columns** (`ColumnListColumn<T>`): `id`, `label` (header text and what the header demand measures; empty means a
   decorative column whose header is `aria-hidden`), optional `labelHidden` (screen-reader-only header) or `header`
   snippet (a consumer-styled label), `width`, optional `demand` / `headerDemand`, `align: 'end'`, `emphasis` (weight

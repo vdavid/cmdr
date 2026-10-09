@@ -27,7 +27,12 @@
     import DateLabel from '$lib/ui/DateLabel.svelte'
     import { useShortenMiddle } from '$lib/utils/shorten-middle-action'
     import ColumnList from '$lib/ui/ColumnList.svelte'
-    import type { ColumnListCellContext, ColumnListColumn } from '$lib/ui/column-list-types'
+    import {
+        columnListProps,
+        type ColumnListApi,
+        type ColumnListCellContext,
+        type ColumnListColumn,
+    } from '$lib/ui/column-list-types'
     import { resultColumnWidths } from './result-column-widths'
     import EmptyState from './EmptyState.svelte'
     import PathPills from './PathPills.svelte'
@@ -158,7 +163,7 @@
         onRowMenu,
     }: Props = $props()
 
-    let columnList: ReturnType<typeof ColumnList<SearchResultEntry>> | undefined = $state()
+    let columnList: ColumnListApi | undefined = $state()
 
     // Subscribe to icon cache version for reactivity
     const iconVersion = $derived($iconCacheVersion)
@@ -509,18 +514,20 @@
         {:else if showingRows}
             <ColumnList
                 bind:this={columnList}
-                {columns}
-                rows={results}
-                rowKey={(entry) => entry.path}
-                ariaLabel={tString('queryUi.results.listboxAria')}
-                {cursorIndex}
-                {onHover}
-                onRowClick={onResultClick}
-                onRowContextMenu={({ row }) => {
-                    onRowMenu(row)
-                }}
-                headerClass="column-header"
-                rowClass="result-row"
+                {...columnListProps({
+                    columns,
+                    rows: results,
+                    rowKey: (entry) => entry.path,
+                    ariaLabel: tString('queryUi.results.listboxAria'),
+                    cursorIndex,
+                    onHover,
+                    onRowClick: onResultClick,
+                    onRowContextMenu: ({ row }) => {
+                        onRowMenu(row)
+                    },
+                    headerClass: 'column-header',
+                    rowClass: 'result-row',
+                })}
             />
         {/if}
     </div>

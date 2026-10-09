@@ -14,54 +14,10 @@
      * columns. Ark UI has no table or data grid, and its `Listbox` owns selection and keys
      * itself, which is exactly what this leaves to the parent.
      */
-    import { untrack, type Snippet } from 'svelte'
+    import { untrack } from 'svelte'
     import { OVERSCAN_ROWS, revealScrollTop, visibleRange } from './column-list-layout'
     import { createColumnTracks } from './column-list-tracks.svelte'
-    import type {
-        ColumnListCellContext,
-        ColumnListColumn,
-        ColumnListRowEvent,
-        ColumnListSource,
-        ColumnListWindowedSource,
-    } from './column-list-types'
-
-    interface Props {
-        columns: ColumnListColumn<T>[]
-        /** An array (measured columns walk it), or a windowed source that pages on demand. */
-        rows: ColumnListSource<T>
-        /** Keys an array source's rows so a re-sorted list moves rows instead of rebuilding them. */
-        rowKey?: (row: T) => string | number
-        /**
-         * `listbox` (default): rows are options and the cursor row is `aria-selected`, for
-         * lists you move through and act on. `table`: rows and cells, for previews and rows
-         * holding their own controls (an option can't contain a checkbox or a text field).
-         */
-        semantics?: 'listbox' | 'table'
-        ariaLabel: string
-        /** The row under the cursor, or -1. */
-        cursorIndex?: number
-        /** The pointer entered a data row. Writing it to `cursorIndex` gives the single cursor. */
-        onHover?: (index: number) => void
-        onRowClick?: (index: number) => void
-        /** Right-click on a data row. The list calls `preventDefault` when this is set. */
-        onRowContextMenu?: (payload: ColumnListRowEvent<T>) => void
-        /** Marks a row as a group heading (a folder name above its files). */
-        isGroupHeading?: (row: T) => boolean
-        /** Renders a group heading across every column. */
-        groupHeading?: Snippet<[ColumnListCellContext<T>]>
-        /** Consumer hook classes on the header and each row (test selectors, contrast audits). */
-        headerClass?: string
-        rowClass?: string
-        /** A CSS length overriding the default row height, for taller rows (thumbnails). */
-        rowHeight?: string
-        /**
-         * `true` (default): fixed-height rows, drawn in a window. `false`: every row drawn, each
-         * as tall as its content (the row height becomes a floor), for short lists whose rows
-         * grow (badges, a wrapped quote, a text field). Array sources only, in practice: it
-         * draws the whole `count`.
-         */
-        virtualized?: boolean
-    }
+    import type { ColumnListProps, ColumnListRow, ColumnListSource, ColumnListWindowedSource } from './column-list-types'
 
     const {
         columns,
@@ -79,7 +35,7 @@
         rowClass = '',
         rowHeight,
         virtualized = true,
-    }: Props = $props()
+    }: ColumnListProps<T> = $props()
 
     function isWindowed(source: ColumnListSource<T>): source is ColumnListWindowedSource<T> {
         return !Array.isArray(source)
@@ -109,7 +65,7 @@
     const padTop = $derived(rowHeightPx > 0 ? range.start * rowHeightPx : 0)
     const padBottom = $derived(rowHeightPx > 0 ? (count - range.end) * rowHeightPx : 0)
 
-    function rowAt(index: number): T | undefined {
+    function rowAt(index: number): ColumnListRow<T> {
         return isWindowed(rows) ? rows.getRow(index) : rows[index]
     }
 
