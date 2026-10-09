@@ -93,3 +93,13 @@ export async function saveMultiRenamePreset(preset: MultiRenamePreset): Promise<
 export async function deleteMultiRenamePreset(id: string): Promise<void> {
   await commands.deleteMultiRenamePreset(id)
 }
+
+/** Renames a preset in place; a preset already called `name` is replaced. */
+export async function renameMultiRenamePreset(id: string, name: string): Promise<void> {
+  await commands.renameMultiRenamePreset(id, name)
+}
+
+/** Gives a preset new settings in place, so the menu's numbers don't move. */
+export async function updateMultiRenamePreset(id: string, spec: MultiRenameSpec): Promise<void> {
+  await commands.updateMultiRenamePreset(id, spec)
+}

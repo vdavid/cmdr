@@ -128,6 +128,12 @@ impl<E: RecentEntry> RecentsFile<E> {
         });
     }
 
+    /// Runs a consumer's own change on the list as ONE locked step, then flushes it.
+    /// `change` returns `false` to say nothing moved, which skips the disk write.
+    pub(crate) fn edit_at(&self, path: Option<&Path>, op: &str, change: impl FnOnce(&mut Vec<E>) -> bool) {
+        self.update(path, op, change);
+    }
+
     /// Mutates the cached list, then flushes it. `change` returns `false` to say
     /// nothing moved, which skips the disk write.
     ///
@@ -181,6 +187,18 @@ impl<E: RecentEntry> RecentsFile<E> {
     /// Removes the entry with this id. Does nothing, disk included, when it's absent.
     pub fn remove<R: tauri::Runtime>(&self, app: &tauri::AppHandle<R>, id: &str) {
         self.remove_at(self.path(app).as_deref(), id);
+    }
+
+    /// A change only this list's consumer knows (a preset renamed in place), as one
+    /// locked step with one durable write, so no reader sees it half done. `op` names
+    /// it in a failed write's log line.
+    pub fn edit<R: tauri::Runtime>(
+        &self,
+        app: &tauri::AppHandle<R>,
+        op: &str,
+        change: impl FnOnce(&mut Vec<E>) -> bool,
+    ) {
+        self.edit_at(self.path(app).as_deref(), op, change);
     }
 
     /// Empties the list. The file is rewritten empty rather than deleted, so a later

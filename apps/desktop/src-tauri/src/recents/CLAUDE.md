@@ -17,6 +17,8 @@ entries the same; this module owns everything else.
   module. The three live in `search/history.rs`, `selection/history.rs`, and `go_to_path/history.rs`.
 - **The cap is a per-call argument, never a property of the list.** Search and Selection read theirs from a live
   setting; Go to path passes a const. Baking a cap into the store is what would couple the three.
+- **A consumer-specific change goes through `edit`** (Multi-rename's presets rename one in place): the consumer's
+  closure runs inside `update`, so it gets the same one-lock, one-write guarantee without the store learning its rules.
 - **The two locks are never held at once, by construction.** `update` confines the cache guard to its own body and hands
   the disk write an owned snapshot; `load_at` releases the disk guard before taking the cache one. Keep any new
   operation inside `update` and the property holds itself.

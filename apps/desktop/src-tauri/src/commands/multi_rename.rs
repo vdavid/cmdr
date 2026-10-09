@@ -7,7 +7,7 @@ use tokio::time::Duration;
 use crate::deadline::{BlockingBudget, blocking_typed_result_with_timeout, timeout_detached_typed};
 use crate::multi_rename::error::MultiRenameError;
 use crate::multi_rename::plan::{MultiRenameSpec, PreviewRow};
-use crate::multi_rename::presets::{MAX_PRESETS, MultiRenamePreset, PRESETS};
+use crate::multi_rename::presets::{MAX_PRESETS, MultiRenamePreset, PRESETS, rename_in, update_spec_in};
 use crate::multi_rename::run::{MultiRenameStarted, apply};
 use crate::multi_rename::session::{self, MultiRenameOpened, MultiRenamePreview};
 
@@ -118,4 +118,20 @@ pub fn save_multi_rename_preset(app: tauri::AppHandle, preset: MultiRenamePreset
 #[specta::specta]
 pub fn delete_multi_rename_preset(app: tauri::AppHandle, id: String) {
     PRESETS.remove(&app, &id);
+}
+
+/// Renames a preset in place; another preset with that name is replaced (the sheet
+/// asks first). No-op for an unknown id or an empty name.
+#[tauri::command]
+#[specta::specta]
+pub fn rename_multi_rename_preset(app: tauri::AppHandle, id: String, name: String) {
+    PRESETS.edit(&app, "a rename", |presets| rename_in(presets, &id, &name));
+}
+
+/// Gives a preset new settings in place, so the menu's numbers don't move. No-op
+/// for an unknown id.
+#[tauri::command]
+#[specta::specta]
+pub fn update_multi_rename_preset(app: tauri::AppHandle, id: String, spec: MultiRenameSpec) {
+    PRESETS.edit(&app, "an update", |presets| update_spec_in(presets, &id, &spec));
 }

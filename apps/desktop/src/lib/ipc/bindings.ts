@@ -1369,6 +1369,18 @@ export const commands = {
   saveMultiRenamePreset: (preset: MultiRenamePreset) => __TAURI_INVOKE<void>('save_multi_rename_preset', { preset }),
   // Deletes a preset by id. No-op when it isn't there.
   deleteMultiRenamePreset: (id: string) => __TAURI_INVOKE<void>('delete_multi_rename_preset', { id }),
+  /**
+   *  Renames a preset in place; another preset with that name is replaced (the sheet
+   *  asks first). No-op for an unknown id or an empty name.
+   */
+  renameMultiRenamePreset: (id: string, name: string) =>
+    __TAURI_INVOKE<void>('rename_multi_rename_preset', { id, name }),
+  /**
+   *  Gives a preset new settings in place, so the menu's numbers don't move. No-op
+   *  for an unknown id.
+   */
+  updateMultiRenamePreset: (id: string, spec: MultiRenameSpec) =>
+    __TAURI_INVOKE<void>('update_multi_rename_preset', { id, spec }),
   // Moves a file or directory to the macOS Trash via NSFileManager.
   moveToTrash: (path: string) => typedError<null, MutationError>(__TAURI_INVOKE('move_to_trash', { path })),
   /**

@@ -77,5 +77,12 @@ subfolders (the executor's one-parent rule refuses it today), "next step" chaini
 ## Presets (`presets.rs`)
 
 `RecentsFile<MultiRenamePreset>` in `multi-rename-presets.json`, keyed by the trimmed, lowercased name: saving under a
-taken name replaces it. Built-in presets (No change, Remove diacritics) live in the frontend (`spec.ts`) so their names
-are translated.
+taken name replaces it (the sheet asks first). The one built-in preset (Remove diacritics) and "Reset all fields" live
+in the frontend (`spec.ts`) so their names are translated.
+
+- **Save** (`save_multi_rename_preset`) is `RecentsFile::add`: the preset goes on top.
+- **Rename** and **Update with current fields** (`rename_multi_rename_preset`, `update_multi_rename_preset`) change the
+  preset where it stands, through `RecentsFile::edit`: one locked step, one temp+rename write. **Decision/Why:** the
+  sheet's Presets menu numbers saved presets 1–9, so moving one to the top on a rename would renumber the rest under the
+  user's fingers. A rename onto a taken name drops the other preset in that same step (`rename_in`), so no reader ever
+  sees two presets with one name, or neither.

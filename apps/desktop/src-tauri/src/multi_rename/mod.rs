@@ -13,6 +13,8 @@ mod mask_test;
 #[cfg(test)]
 mod plan_test;
 #[cfg(test)]
+mod presets_test;
+#[cfg(test)]
 mod run_test;
 #[cfg(test)]
 mod transform_test;
