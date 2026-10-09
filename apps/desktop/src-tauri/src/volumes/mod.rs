@@ -376,7 +376,8 @@ fn favorite_location(
     let on_disk = on_disk(&favorite.path, probe, exists);
     let icon = match on_disk {
         OnDisk::Yes => get_icon_for_path(&favorite.path),
-        OnDisk::No | OnDisk::Unchecked => None,
+        // Not on trust: an NSWorkspace icon read is one of the calls the FDA gate holds back.
+        OnDisk::Assumed | OnDisk::No | OnDisk::Unchecked => None,
     };
     LocationInfo {
         id: format!("fav-{}", favorite.id),
@@ -556,8 +557,38 @@ mod tests {
         let desktop = home.join("Desktop").to_string_lossy().into_owned();
         let row = favorite_location(favorite(&desktop), &snapshot(), true, never_asked);
         let target = row.favorite_target.expect("a favorite row carries its target");
-        assert_eq!(target.discovered.on_disk, OnDisk::Unchecked);
+        assert_eq!(target.discovered.on_disk, OnDisk::Assumed);
         assert_eq!(target.reach, FavoriteReach::Ready);
+    }
+
+    /// ❗ First-launch onboarding: the seeded `~/Desktop` has no stored volume yet and is
+    /// TCC-protected, so discovery can't look. Taken on trust, it must still read `Ready` and be
+    /// claimed by the boot volume, ❌ never greyed "not found" for the whole onboarding.
+    #[test]
+    fn a_seeded_protected_favorite_is_ready_and_claimed_while_fda_is_pending() {
+        let home = dirs::home_dir().expect("a home dir");
+        let desktop = home.join("Desktop").to_string_lossy().into_owned();
+        let mut rows = vec![
+            LocationInfo {
+                id: DEFAULT_VOLUME_ID.to_string(),
+                ..favorite_location(favorite("/"), &snapshot(), false, |_| true)
+            },
+            favorite_location(favorite(&desktop), &snapshot(), true, never_asked),
+        ];
+        rows[0].category = LocationCategory::MainVolume;
+        rows[0].favorite_target = None;
+        let facts = crate::favorites::reach::ReachFacts {
+            mtp_enabled: true,
+            adb_enabled: true,
+        };
+        let claims = crate::favorites::reach::annotate(&mut rows, &facts);
+        let target = rows[1]
+            .favorite_target
+            .as_ref()
+            .expect("a favorite row carries its target");
+        assert_eq!(target.reach, FavoriteReach::Ready);
+        assert_eq!(target.volume_id.as_deref(), Some(DEFAULT_VOLUME_ID));
+        assert_eq!(claims.len(), 1, "the boot volume claims it");
     }
 
     #[test]

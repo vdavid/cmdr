@@ -475,3 +475,16 @@ fn a_volume_row_is_left_alone() {
     assert!(annotate(&mut rows, &ALL_ON).is_empty());
     assert!(rows[0].favorite_target.is_none());
 }
+
+/// A TCC-protected home folder taken on trust while the FDA gate is pending counts as seen.
+#[test]
+fn a_legacy_favorite_taken_on_trust_is_claimed_by_the_boot_volume() {
+    let (row, claims) = reach_of(
+        favorite_row("/Users/x/Desktop", None, OnDisk::Assumed),
+        vec![volume_row("root", "/", LocationCategory::MainVolume)],
+        &ALL_ON,
+    );
+    assert_eq!(target(&row).reach, FavoriteReach::Ready);
+    assert_eq!(claims.len(), 1);
+    assert_eq!(claims[0].1.id, "root");
+}

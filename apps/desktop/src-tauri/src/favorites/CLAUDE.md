@@ -29,8 +29,9 @@ each favorite row tells the frontend about where it points. Full depth in `DETAI
 - **The read side never touches a network path, and never hides a favorite.** Discovery stats a
   folder only on a local disk, never a TCC-protected one while the FDA gate is pending, and
   publishes a row for every stored favorite. `DETAILS.md` § The read side.
-- **❗ A legacy claim needs evidence**: the boot volume claims a folder only when discovery SAW it,
-  or an unmounted share's favorite is written down as the boot disk's forever. Claims fill `None`
+- **❗ A legacy claim needs evidence**: the boot volume claims a folder only when discovery SAW it
+  (or took a TCC-protected home folder on trust, `Assumed`), or an unmounted share's favorite is
+  written down as the boot disk's forever. Claims fill `None`
   only and persist off the listing path. `DETAILS.md` § Claiming legacy entries.
 - **`id` is a random UUID, never derived from `path`**; the row's id is `fav-{id}`.
 - **Data dir resolves WITHOUT an `AppHandle`** (`config::standalone_app_data_dir()`, a scratch dir

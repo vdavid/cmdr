@@ -24,7 +24,7 @@ fn a_folder_on_a_network_mount_is_never_stat() {
 fn a_protected_folder_is_taken_on_trust_without_a_stat() {
     assert_eq!(
         on_disk("/Users/me/Desktop", Probe::TakenOnTrust, never_asked),
-        OnDisk::Unchecked
+        OnDisk::Assumed
     );
 }
 

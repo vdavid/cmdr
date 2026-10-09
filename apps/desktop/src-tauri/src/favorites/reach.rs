@@ -117,7 +117,8 @@ pub(crate) fn annotate(rows: &mut [LocationInfo], facts: &ReachFacts) -> Vec<(St
 /// The volume row a legacy favorite (no stored volume) lives on: the one whose path is the deepest
 /// whole-segment prefix of the favorite's.
 ///
-/// ❗ Claim only from evidence. The boot volume claims only a folder discovery SAW (`OnDisk::Yes`):
+/// ❗ Claim only from evidence. The boot volume claims only a folder discovery SAW (`OnDisk::Yes`),
+/// or took on trust as a TCC-protected home folder while the FDA gate is pending (`Assumed`):
 /// otherwise `/Volumes/naspi/docs` on an unmounted share nobody saved would be claimed by `/`,
 /// written down, and read "not found" forever after the share comes back. Any other row (a live
 /// mount, a saved share at its last mount path, a server place, a device storage) names the volume
@@ -127,7 +128,11 @@ fn claim_for(path: &str, on_disk: OnDisk, volumes: &[LocationInfo]) -> Option<Fa
         .iter()
         .filter(|volume| path_is_under(path, &volume.path))
         .max_by_key(|volume| volume.path.trim_end_matches('/').len())?;
-    if row.id == DEFAULT_VOLUME_ID && on_disk != OnDisk::Yes {
+    let seen = match on_disk {
+        OnDisk::Yes | OnDisk::Assumed => true,
+        OnDisk::No | OnDisk::Unchecked => false,
+    };
+    if row.id == DEFAULT_VOLUME_ID && !seen {
         return None;
     }
     Some(FavoriteVolume {
@@ -168,7 +173,7 @@ fn reach_of_row(row: &LocationInfo, on_disk: OnDisk) -> FavoriteReach {
     }
     match on_disk {
         OnDisk::No => FavoriteReach::NotFound,
-        OnDisk::Yes | OnDisk::Unchecked => FavoriteReach::Ready,
+        OnDisk::Yes | OnDisk::Assumed | OnDisk::Unchecked => FavoriteReach::Ready,
     }
 }
 

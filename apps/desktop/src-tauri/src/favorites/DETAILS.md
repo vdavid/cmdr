@@ -159,9 +159,9 @@ under `discover_local`'s 2 s timeout, so it may look at the disk but ❌ never a
 
 - The containing mount's fs type comes from the mount-table snapshot the listing already took
   (lexical, can't hang), so there's no per-favorite `statfs`.
-- `target::on_disk` decides whether the folder may be stat'd: a `scheme://` path, a folder under a
-  network mount, and (macOS) a TCC-protected folder while the FDA gate is pending are `Unchecked`;
-  only a folder on a local disk gets `exists()` → `Yes` / `No`. The NSWorkspace icon is asked only
+- `target::on_disk` decides whether the folder may be stat'd: a `scheme://` path and a folder under
+  a network mount are `Unchecked`; (macOS) a TCC-protected folder while the FDA gate is pending is
+  `Assumed`; only a folder on a local disk gets `exists()` → `Yes` / `No`. The NSWorkspace icon is asked only
   for `Yes` (it's a call on the path too).
 - The row's `favorite_target` is seeded from the store (`FavoriteTarget::discovered`) with a
   provisional reach (`NotFound` for `No`, `Ready` otherwise). The stored volume and the `OnDisk`
@@ -171,7 +171,10 @@ under `discover_local`'s 2 s timeout, so it may look at the disk but ❌ never a
 protected-folder service once the bundle is registered with tccd, which is exactly the
 onboarding-flood the FDA modal exists to prevent. So while the gate is pending, a folder where
 `restricted_paths::tcc_paths::is_potentially_tcc_restricted(path)` is true is taken on trust
-(`Unchecked`, reach `Ready`). Non-protected paths are still checked (for example `/Applications`
+(`Assumed`: reach `Ready`, and enough evidence for a boot-volume claim, since these are home
+folders on the local disk). ❗ Without that, the seeded `~/Desktop`, `~/Documents`, and
+`~/Downloads` (no stored volume yet) read "not found" all through onboarding. The gate is pending
+only until the person answers the FDA question (a decline clears it too). Non-protected paths are still checked (for example `/Applications`
 can be absent on slim systems). Linux has no TCC, so its twin has no gate.
 
 **Stage 2, the reach pass** (`reach.rs::annotate`). Runs inside `volume_listing::complete` AFTER
@@ -211,7 +214,8 @@ never at load: load stays syscall-free and `AppHandle`-free.
   favorite's path (mount rows, the boot volume, cloud folders, saved SMB rows at their last mount
   path, server places, device storages).
 - ❗ **Claim only from evidence.** The boot volume claims a folder only when discovery SAW it
-  (`OnDisk::Yes`). Otherwise `/Volumes/naspi/docs` on an unmounted share nobody saved would be
+  (`OnDisk::Yes`) or took a TCC-protected home folder on trust while the FDA gate is pending
+  (`Assumed`). Otherwise `/Volumes/naspi/docs` on an unmounted share nobody saved would be
   claimed by `/`, written down, and read "not found" forever after the share comes back. Any other
   row names the volume by being there.
 - Claims persist through `store::claim_volumes`, which fills `None` only, reports nothing to

@@ -59,8 +59,13 @@ pub(crate) enum OnDisk {
     Yes,
     /// The folder isn't there, on a local disk that answered.
     No,
-    /// Nobody looked: a scheme path, a folder on a network mount (a stat there can hang), or a
-    /// TCC-protected one while the Full Disk Access gate is pending (a stat there raises a popup).
+    /// Taken on trust without a look: a TCC-protected folder while the Full Disk Access gate is
+    /// pending (a stat there raises a popup). Those are home folders on the local disk, present on
+    /// essentially every account, so this counts as seen: it reads `Ready` and lets the boot volume
+    /// claim a legacy entry. ❗ Without it, the seeded `~/Desktop` read "not found" all through
+    /// onboarding.
+    Assumed,
+    /// Nobody looked: a scheme path or a folder on a network mount (a stat there can hang).
     #[default]
     Unchecked,
 }
@@ -143,7 +148,7 @@ impl FavoriteTarget {
             volume_root: None,
             reach: match on_disk {
                 OnDisk::No => FavoriteReach::NotFound,
-                OnDisk::Yes | OnDisk::Unchecked => FavoriteReach::Ready,
+                OnDisk::Yes | OnDisk::Assumed | OnDisk::Unchecked => FavoriteReach::Ready,
             },
             discovered: Discovered { stored, on_disk },
         }
@@ -159,7 +164,8 @@ pub(crate) fn on_disk(path: &str, probe: Probe, exists: impl FnOnce(&Path) -> bo
         return OnDisk::Unchecked;
     }
     match probe {
-        Probe::NetworkMount | Probe::TakenOnTrust => OnDisk::Unchecked,
+        Probe::NetworkMount => OnDisk::Unchecked,
+        Probe::TakenOnTrust => OnDisk::Assumed,
         Probe::Stat if exists(path) => OnDisk::Yes,
         Probe::Stat => OnDisk::No,
     }
