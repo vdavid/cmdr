@@ -31,6 +31,7 @@ import Navigation from '~icons/lucide/navigation'
 import PartyPopper from '~icons/lucide/party-popper'
 import Pointer from '~icons/lucide/pointer'
 import Puzzle from '~icons/lucide/puzzle'
+import ReplaceAll from '~icons/lucide/replace-all'
 import Rocket from '~icons/lucide/rocket'
 import ScanText from '~icons/lucide/scan-text'
 import Search from '~icons/lucide/search'
@@ -69,6 +70,7 @@ export const ICONS = {
   'party-popper': PartyPopper,
   pointer: Pointer,
   puzzle: Puzzle,
+  'replace-all': ReplaceAll,
   rocket: Rocket,
   'scan-text': ScanText,
   search: Search,

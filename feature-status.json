@@ -38,6 +38,13 @@
       "note": "A durable history of every copy, move, delete, and rename, with a Roll back button on every reversible row and a plain reason on the rows that can't be reversed."
     },
     {
+      "id": "multi-rename",
+      "name": "Multi-rename tool",
+      "status": "alpha",
+      "note": "Rename a whole selection at once, Total Commander style: name and extension masks, search and replace, case changes, and counters, with a live preview of every row before anything changes. One Undo reverses the whole batch.",
+      "issueUrl": "https://github.com/vdavid/cmdr/issues/372"
+    },
+    {
       "id": "ask-cmdr",
       "name": "Ask Cmdr",
       "status": "alpha",

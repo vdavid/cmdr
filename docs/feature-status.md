@@ -57,7 +57,8 @@ not "1.0 frozen".
   - `src/lib/feature-status.ts`: `getFeatureStatus(id)` + `getBadgeStatus(id)` (alpha/beta only; stable and planned
     return no badge).
   - `src/lib/ui/StatusBadge.svelte`: the uppercase pill that renders the badge.
-  - Wired into the Search dialog title, the Selection dialog title, and the matching command palette rows.
+  - Wired into the Search, Selection, Operation log, and Multi-rename dialog titles, and the matching command palette
+    rows.
 
 ## Updating a status
 

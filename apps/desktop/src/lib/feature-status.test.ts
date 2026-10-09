@@ -16,13 +16,14 @@ describe('feature-status', () => {
 
   it('the in-app alpha surfaces stay pinned to the JSON', () => {
     // The Selection dialog, the Ask Cmdr settings section, and the Image search
-    // settings card wear ALPHA badges in the app; Search wears BETA. If you
+    // settings card, and the Multi-rename sheet wear ALPHA badges in the app; Search wears BETA. If you
     // graduate them in feature-status.json, this test reminds you the badges
     // change with it (that's the point of the single source of truth).
     expect(getFeatureStatus('search')).toBe('beta')
     expect(getFeatureStatus('select-files')).toBe('alpha')
     expect(getFeatureStatus('ask-cmdr')).toBe('alpha')
     expect(getFeatureStatus('image-search')).toBe('alpha')
+    expect(getFeatureStatus('multi-rename')).toBe('alpha')
   })
 
   it('getFeatureStatus returns undefined for unknown ids', () => {

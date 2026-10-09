@@ -11,6 +11,7 @@
      */
     import { onDestroy, onMount } from 'svelte'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
+    import StatusBadge from '$lib/ui/StatusBadge.svelte'
     import Button from '$lib/ui/Button.svelte'
     import Checkbox from '$lib/ui/Checkbox.svelte'
     import NumberInput from '$lib/ui/NumberInput.svelte'
@@ -18,6 +19,7 @@
     import TextInput from '$lib/ui/TextInput.svelte'
     import { tString } from '$lib/intl/messages.svelte'
     import { getAppLogger } from '$lib/logging/logger'
+    import { getBadgeStatus } from '$lib/feature-status'
     import type { MultiRenameError, MultiRenameOpened, MultiRenameStarted, PreviewRow } from '$lib/tauri-commands'
     import type { CaseChange } from '$lib/ipc/bindings'
     import { createMultiRenameState } from './multi-rename-state.svelte'
@@ -32,6 +34,9 @@
     const { session, onApplied, onClose }: Props = $props()
 
     const log = getAppLogger('multiRename')
+
+    // Alpha badge policy: the status comes from the repo-root feature-status.json.
+    const badge = getBadgeStatus('multi-rename')
 
     // One sheet renames one session; a new session remounts it.
     const tool = createMultiRenameState(session.sessionId)
@@ -238,7 +243,11 @@
     onclose={onClose}
     onkeydown={handleKeydown}
 >
-    {#snippet title()}{tString('multiRename.title')}{/snippet}
+    <!-- The title bar's `<h2>` is already the row (gap + badge alignment live there),
+         so the words and the badge are its direct children. -->
+    {#snippet title()}
+        <span>{tString('multiRename.title')}</span>{#if badge}<StatusBadge status={badge} />{/if}
+    {/snippet}
 
     <div class="sheet">
         <div class="masks">
