@@ -4,7 +4,8 @@ Depth and rationale. `CLAUDE.md` holds the must-knows; the flow and edge-case ca
 
 ## How delete flows
 
-1. **Shortcut**: F8 (trash) or Shift+F8 (permanent delete).
+1. **Shortcut**: F8, Delete, or ⌘⌫ (trash); Shift+F8, Shift+Delete, or ⌥⌘⌫ (permanent delete, Finder's "Delete
+   Immediately"). Total Commander users add Shift to the key they trash with.
 2. **Command**: `file.delete` or `file.deletePermanently` in `command-registry.ts`, handled in `+page.svelte`.
 3. **Selection**: `DualPaneExplorer.openDeleteDialog({ permanent })` builds props from selection or cursor item (same
    pattern as copy/move). Looks up `supportsTrash` from the source volume's `VolumeInfo`.
