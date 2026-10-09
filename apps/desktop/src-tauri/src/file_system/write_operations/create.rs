@@ -24,7 +24,7 @@ use std::path::{Path, PathBuf};
 
 use super::archive_edit::{self, ArchiveEditRequest};
 use super::look_alike::{NewEntry, place_new_entry};
-use super::manager::{self, OperationDescriptor, OperationSummaryText};
+use super::manager::{self, OperationDescriptor, OperationPaths, OperationSummaryText};
 use super::mutation_error::MutationError;
 use super::types::WriteOperationType;
 use crate::file_system::volume::Volume;
@@ -257,6 +257,7 @@ async fn route_archive_create(
     };
 
     let events = archive_edit::global_tauri_sink().ok_or(MutationError::ArchiveEditNotReady)?;
+    let archive_display = archive_path.display().to_string();
     let request = ArchiveEditRequest {
         archive_path,
         parent_volume_id: volume_id.unwrap_or_else(|| "root".to_string()),
@@ -264,6 +265,7 @@ async fn route_archive_create(
         summary: OperationSummaryText {
             source: Some(name.to_string()),
             destination: None,
+            paths: OperationPaths::from_strings(0, None, Some(archive_display)),
         },
         skipped_count: 0,
         // No scan preview: nothing walked a tree to plan this edit.
@@ -301,6 +303,9 @@ pub(super) fn instant_descriptor(
         summary: OperationSummaryText {
             source: Some(name.to_string()),
             destination: None,
+            // An instant op is over before anyone could expand its row, and
+            // this builder only has the new entry's name to hand.
+            paths: OperationPaths::default(),
         },
         // An instant metadata op has no partial state, and no cancel path that
         // could catch it mid-flight.

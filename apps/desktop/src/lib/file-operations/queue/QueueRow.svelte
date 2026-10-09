@@ -9,6 +9,7 @@
     import { operationTypeIcon } from './operation-icon'
     import { failureReasonFor } from './failure-reason'
     import TransferProgressReadout from '../TransferProgressReadout.svelte'
+    import QueueRowDetails from './QueueRowDetails.svelte'
     import RollbackConfirmDialog from '../RollbackConfirmDialog.svelte'
     import ScanPhaseBody from '../transfer/ScanPhaseBody.svelte'
     import { stallNoticeFor, waitLineFor } from '../transfer/transfer-stall'
@@ -260,6 +261,12 @@
      *  the question in different words. `../reversal-wording.ts`. */
     const inFlightVariant = $derived(inFlightRollbackVariant(opKindForWireType(snapshot.operationType)))
 
+    /** Whether this row shows its details panel. Component state, so it lives
+     *  exactly as long as the row: the page keys rows by `operationId`, so a
+     *  snapshot rebuild keeps it, and a reopened window starts collapsed. */
+    let expanded = $state(false)
+    const detailsId = $derived(`queue-row-details-${snapshot.operationId}`)
+
 </script>
 
 <li class="queue-row" class:selected data-operation-id={snapshot.operationId} data-status={status}>
@@ -379,6 +386,22 @@
                 </span>
             </Button>
         {/if}
+        <!-- Last, so it sits at the same right edge on every row whatever
+             buttons come before it. -->
+        <button
+            type="button"
+            class="details-toggle"
+            class:expanded
+            aria-expanded={expanded}
+            aria-controls={expanded ? detailsId : undefined}
+            aria-label={tString('queue.row.detailsToggleAria')}
+            use:tooltip={tString('queue.row.detailsToggleAria')}
+            onclick={() => {
+                expanded = !expanded
+            }}
+        >
+            <Icon name="chevron-down" size={13} />
+        </button>
         <!-- Gated on `canRollback` as well, so an operation that finishes while
              the question is up takes the question with it: there is nothing
              left to undo, and the row beneath already says so. -->
@@ -447,6 +470,12 @@
                 countKind={progressCountKind(opKindForWireType(snapshot.operationType), progress.phase)}
             />
         </div>
+    {/if}
+
+    <!-- Last line, under the readout or the failure's reason, both of which stay
+         as they are: what exactly this operation is working on. -->
+    {#if expanded}
+        <QueueRowDetails id={detailsId} {snapshot} {progress} />
     {/if}
 </li>
 
@@ -591,5 +620,36 @@
         display: inline-flex;
         align-items: center;
         gap: var(--spacing-xs);
+    }
+
+    /* A quiet glyph, not a capsule: it opens more of the row, it doesn't act on
+       the operation, so it mustn't read as one of the commands beside it. */
+    .details-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: var(--spacing-xxs);
+        border: none;
+        border-radius: var(--radius-sm);
+        background: none;
+        color: var(--color-text-tertiary);
+        transition: color var(--transition-base);
+    }
+
+    .details-toggle:hover {
+        color: var(--color-text-secondary);
+    }
+
+    .details-toggle:focus-visible {
+        outline: 2px solid var(--color-accent);
+        outline-offset: 1px;
+    }
+
+    .details-toggle :global(svg) {
+        transition: transform var(--transition-base);
+    }
+
+    .details-toggle.expanded :global(svg) {
+        transform: rotate(180deg);
     }
 </style>

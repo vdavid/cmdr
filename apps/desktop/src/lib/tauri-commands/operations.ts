@@ -6,14 +6,30 @@
 
 import type { UnlistenFn } from '@tauri-apps/api/event'
 import { commands, events } from '$lib/ipc/bindings'
-import type { OperationSnapshot, OperationsChanged } from '$lib/ipc/bindings'
+import type { OperationDetails, OperationSnapshot, OperationsChanged } from '$lib/ipc/bindings'
 
-export type { OperationSnapshot, OperationsChanged }
+export type { OperationDetails, OperationSnapshot, OperationsChanged }
 
 /** Snapshot of every operation the manager currently tracks (queued, running,
  *  paused, and recently-terminal until it's pruned). */
 export async function listOperations(): Promise<OperationSnapshot[]> {
   return commands.listOperations()
+}
+
+/** The full source and destination paths of one operation and when it was
+ *  registered and started, for the queue window's EXPANDED row. Fetched on
+ *  demand, never carried on `operations-changed` (which stays thin).
+ *
+ *  Resolves `null` when the manager no longer tracks the operation (the typed
+ *  `notFound` refusal): it settled between the row being drawn and the question
+ *  arriving, so its row is about to leave too and there is nothing to report.
+ *  Rejects only on a broken bridge, which the caller logs. */
+export async function getOperationDetails(operationId: string): Promise<OperationDetails | null> {
+  const res = await commands.getOperationDetails(operationId)
+  if (res.status === 'ok') return res.data
+  // `notFound` is the one refusal (`OperationDetailsError`), and it means the
+  // operation already left. A new variant needs its own decision here.
+  return null
 }
 
 /** Cancel one operation, keeping already-copied files (rollback = false). A

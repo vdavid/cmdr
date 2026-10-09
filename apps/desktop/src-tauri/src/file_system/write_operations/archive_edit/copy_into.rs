@@ -16,7 +16,7 @@ use walkdir::WalkDir;
 
 use super::super::OperationEventSink;
 use super::super::conflict::ApplyToAll;
-use super::super::manager::{self, ManagedTaskGuard, OperationDescriptor, OperationSummaryText};
+use super::super::manager::{self, ManagedTaskGuard, OperationDescriptor, OperationPaths, OperationSummaryText};
 use super::super::scratch_dir::ScratchDir;
 use super::super::state::{WriteOperationState, WriteSettledGuard};
 use super::super::transfer::left_in_source::LeftInSource;
@@ -591,6 +591,7 @@ async fn archive_copy_into_start(
         summary: OperationSummaryText {
             source: summary_source,
             destination: None,
+            paths: OperationPaths::from_paths(&source_paths, Some(archive_path.join(&dest_inner).as_path())),
         },
         // A zip edit is a whole-archive temp+rename rewrite: it either lands or
         // it doesn't, so there's no half-written state to reverse.

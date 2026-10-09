@@ -48,7 +48,7 @@ use crate::operation_log::types::{Initiator, OpKind, RollbackState};
 use crate::operation_log::writer::OperationLogWriter;
 
 use super::event_sinks::OperationEventSink;
-use super::manager::{ManagedTaskGuard, OperationDescriptor, OperationSummaryText, manager};
+use super::manager::{ManagedTaskGuard, OperationDescriptor, OperationPaths, OperationSummaryText, manager};
 use super::state::{StopMeans, WriteOperationState, update_operation_status};
 use super::transfer::volume::move_file_across_volumes;
 use super::types::{DEFAULT_PROGRESS_INTERVAL_MS, WriteOperationPhase, WriteOperationType, WriteProgressEvent};
@@ -368,6 +368,13 @@ fn spawn_managed_inverse(
         summary: OperationSummaryText {
             source: plan.summary.from.clone(),
             destination: plan.summary.to.clone(),
+            // The same one-row sample, as the expanded row's paths: a reversal
+            // knows its folders, not the list of items it will touch.
+            paths: OperationPaths::from_strings(
+                usize::from(plan.summary.from.is_some()),
+                plan.summary.from.clone(),
+                plan.summary.to.clone(),
+            ),
         },
         // This IS the reversal. Offering to roll back a rollback would ask the
         // engine to re-apply what the person just chose to undo.

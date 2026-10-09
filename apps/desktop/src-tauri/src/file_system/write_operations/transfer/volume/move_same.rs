@@ -100,6 +100,7 @@ pub(super) async fn move_within_same_volume(
     let summary = manager::OperationSummaryText {
         source: Some(volume.name().to_string()),
         destination: Some(volume.name().to_string()),
+        paths: manager::OperationPaths::from_paths(&source_paths, Some(Path::new(&dest_path))),
     };
     let descriptor = manager::OperationDescriptor {
         operation_id: operation_id.clone(),

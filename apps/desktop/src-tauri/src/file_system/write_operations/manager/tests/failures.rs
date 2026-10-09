@@ -63,6 +63,7 @@ async fn retained_failure_stays_hidden_until_the_record_settles() {
     desc.summary = OperationSummaryText {
         source: Some("/Users/me/photos".to_string()),
         destination: Some("Naspolya".to_string()),
+        paths: OperationPaths::default(),
     };
     mgr.spawn_managed(
         desc,

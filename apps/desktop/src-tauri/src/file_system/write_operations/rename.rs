@@ -21,7 +21,7 @@ use std::path::{Path, PathBuf};
 
 use super::archive_edit::{self, ArchiveEditRequest};
 use super::look_alike::{NewEntry, place_new_entry};
-use super::manager::{self, OperationDescriptor, OperationSummaryText};
+use super::manager::{self, OperationDescriptor, OperationPaths, OperationSummaryText};
 use super::mutation_error::MutationError;
 use super::types::WriteOperationType;
 use crate::file_system::volume::{RenameWork, Volume};
@@ -432,6 +432,7 @@ async fn route_archive_rename(from: &Path, to: &Path, volume_id: &str) -> Result
     let summary = OperationSummaryText {
         source: Some(leaf(&from_inner)),
         destination: Some(leaf(&to_inner)),
+        paths: OperationPaths::from_paths(&[from], Some(to)),
     };
     let request = ArchiveEditRequest {
         archive_path: from_archive,
@@ -489,6 +490,7 @@ fn rename_descriptor(from: &Path, to: &Path, volume_id: &str) -> OperationDescri
         summary: OperationSummaryText {
             source: Some(name(from)),
             destination: Some(name(to)),
+            paths: OperationPaths::from_paths(&[from], Some(to)),
         },
         // An instant metadata op has no partial state, and no cancel path that
         // could catch it mid-flight.

@@ -77,6 +77,10 @@ use super::state::{
 };
 use super::types::{LifecycleStatus, WriteOperationError, WriteOperationType};
 
+mod details;
+use details::RetainedFailure;
+pub use details::{OperationDetails, OperationDetailsError, OperationPaths};
+
 /// What a pause or resume request actually did, so every caller can say so
 /// instead of assuming it worked. Pause and resume share it: the three outcomes
 /// are the same in both directions.
@@ -192,14 +196,20 @@ pub(crate) struct OperationDescriptor {
     pub reverses: Option<OpKind>,
 }
 
-/// Best-effort human-readable source/destination summary for the queue window.
+/// Best-effort human-readable source/destination summary for the queue window:
+/// the short names the row shows, and the full paths behind them that an
+/// expanded row asks for on demand.
 // DEFAULT-OK: both sides `None` means "couldn't summarize", and the queue window renders
-// that absence rather than an empty string.
+// that absence rather than an empty string; empty `paths` likewise renders as absence.
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct OperationSummaryText {
     pub source: Option<String>,
     pub destination: Option<String>,
+    /// The full paths, for `get_operation_details` ONLY. ❌ Never copied onto
+    /// `OperationSnapshot`: the thin snapshot carries the names above, and an
+    /// expanded row fetches these when it opens. `manager/details.rs`.
+    pub paths: OperationPaths,
 }
 
 /// A deferred start: data describing how to begin the real work. Spawned only
@@ -229,6 +239,11 @@ struct OpRecord {
     /// already learns the same fact from `write-progress`'s `phase`, and two
     /// sources for one truth is how they drift.
     in_scan_wait: bool,
+    /// When the op was registered (Unix seconds), for an expanded row.
+    queued_at: u64,
+    /// When admission flipped it to Running (Unix seconds); `None` while
+    /// Queued. An instant op is born Running, so both stamps match.
+    started_at: Option<u64>,
 }
 
 /// One thin registry snapshot row (membership + lifecycle status, NOT 200 ms
@@ -281,7 +296,7 @@ struct ManagerInner {
     /// after the operation settled. Out-of-band on purpose — `free_and_remove`'s
     /// removal-on-terminal discipline is untouched. DETAILS § "Retained
     /// failures".
-    failures: VecDeque<OperationSnapshot>,
+    failures: VecDeque<RetainedFailure>,
 }
 
 impl ManagerInner {
@@ -334,8 +349,8 @@ impl ManagerInner {
         let settled_failures = self
             .failures
             .iter()
-            .filter(|failure| !self.records.contains_key(&failure.operation_id))
-            .cloned();
+            .filter(|failure| !self.records.contains_key(&failure.snapshot.operation_id))
+            .map(|failure| failure.snapshot.clone());
         live.chain(settled_failures).collect()
     }
 }
@@ -459,6 +474,8 @@ impl OperationManager {
                     reserved_lanes: Vec::new(),
                     claimed_preview,
                     in_scan_wait,
+                    queued_at: details::unix_now(),
+                    started_at: None,
                 },
             );
             inner.order.push(operation_id.clone());
@@ -517,6 +534,7 @@ impl OperationManager {
                 let deferred = {
                     let rec = inner.records.get_mut(&admit_id).expect("just found");
                     rec.status = LifecycleStatus::Running;
+                    rec.started_at = Some(details::unix_now());
                     rec.reserved_lanes = lanes;
                     rec.deferred.take()
                 };
@@ -606,6 +624,7 @@ impl OperationManager {
         // Register a Running record directly — no lane reservation, no admission
         // gate. There are no `.await`s between the insert, the busy-register, and
         // arming the guard below, so no drop can slip in and orphan the busy set.
+        let now = details::unix_now();
         {
             let mut inner = self.inner.lock_ignore_poison();
             inner.records.insert(
@@ -619,6 +638,8 @@ impl OperationManager {
                     // to wait on.
                     claimed_preview: None,
                     in_scan_wait: false,
+                    queued_at: now,
+                    started_at: Some(now),
                 },
             );
             inner.order.push(operation_id.clone());
@@ -836,28 +857,40 @@ impl OperationManager {
         // and a logger doing file I/O must never hold up admission.
         let record_gone = {
             let mut inner = self.inner.lock_ignore_poison();
-            if inner.failures.iter().any(|f| f.operation_id == operation_id) {
+            if inner.failures.iter().any(|f| f.snapshot.operation_id == operation_id) {
                 return;
             }
 
             // Prefer the live record's descriptor, so the failed row reads like the
             // running row it replaces. It's gone only if the op settled before its
             // own error event landed, and then the event's own type is all there is.
-            let (operation_type, source, destination, reverses, record_gone) = match inner.records.get(operation_id) {
-                Some(rec) => (
-                    rec.descriptor.operation_type,
-                    rec.descriptor.summary.source.clone(),
-                    rec.descriptor.summary.destination.clone(),
-                    rec.descriptor.reverses,
-                    false,
-                ),
-                None => (operation_type, None, None, None, true),
-            };
+            let (operation_type, source, destination, reverses, details, record_gone) =
+                match inner.records.get(operation_id) {
+                    Some(rec) => (
+                        rec.descriptor.operation_type,
+                        rec.descriptor.summary.source.clone(),
+                        rec.descriptor.summary.destination.clone(),
+                        rec.descriptor.reverses,
+                        rec.descriptor
+                            .summary
+                            .paths
+                            .details_for(operation_id, rec.queued_at, rec.started_at),
+                        false,
+                    ),
+                    None => (
+                        operation_type,
+                        None,
+                        None,
+                        None,
+                        OperationPaths::default().details_for(operation_id, 0, None),
+                        true,
+                    ),
+                };
 
             if inner.failures.len() == FAILURE_CAPACITY {
                 inner.failures.pop_front();
             }
-            inner.failures.push_back(OperationSnapshot {
+            let snapshot = OperationSnapshot {
                 operation_id: operation_id.to_string(),
                 operation_type,
                 status: LifecycleStatus::Failed,
@@ -870,7 +903,8 @@ impl OperationManager {
                 // a reversal, and the row that explains it must not rename itself.
                 reverses,
                 error: Some(error.clone()),
-            });
+            };
+            inner.failures.push_back(RetainedFailure { snapshot, details });
             record_gone
         };
         log::info!(target: "op_manager", "retain failure op={operation_id}");
@@ -887,7 +921,7 @@ impl OperationManager {
         let removed = {
             let mut inner = self.inner.lock_ignore_poison();
             let before = inner.failures.len();
-            inner.failures.retain(|f| f.operation_id != operation_id);
+            inner.failures.retain(|f| f.snapshot.operation_id != operation_id);
             inner.failures.len() != before
         };
         if removed {
@@ -1099,6 +1133,13 @@ impl Drop for InstantTaskGuard {
 /// window. Backs the `list_operations` IPC command.
 pub fn list_operations() -> Vec<OperationSnapshot> {
     manager().list()
+}
+
+/// The full paths and timing of one operation, for the queue window's expanded
+/// row. Backs the `get_operation_details` IPC command. On demand, ❌ never on
+/// `operations-changed`: DETAILS § "Row details".
+pub fn get_operation_details(operation_id: &str) -> Result<OperationDetails, OperationDetailsError> {
+    manager().details(operation_id)
 }
 
 /// Cancels one operation, keeping already-copied files (the existing

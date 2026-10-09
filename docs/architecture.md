@@ -51,8 +51,9 @@ All under `apps/desktop/src/lib/`.
   to it; so does the main window's conflict prompt. See
   `apps/desktop/src/lib/file-operations/operation-session/CLAUDE.md`
 - `file-operations/queue/`: Standalone operation-queue window (per-row pause/resume/cancel/rollback through each row's
-  session, multi-select, global pause/resume), rendered from an ops store merging `operations-changed` +
-  `write-progress`; route at `routes/queue/`. See `apps/desktop/src/lib/file-operations/queue/CLAUDE.md`
+  session, multi-select, global pause/resume, an expandable row with every full path fetched on demand), rendered from
+  an ops store merging `operations-changed` + `write-progress`; route at `routes/queue/`. See
+  `apps/desktop/src/lib/file-operations/queue/CLAUDE.md`
 - `file-viewer/`: Read-only file viewer (separate window, virtual scrolling)
 - `settings/`: Settings UI + registry-based architecture, reactive state
 - `intl/`: The two locale sources (`getUiLocale` for catalog text, `getFormatLocale` for the OS's number/date

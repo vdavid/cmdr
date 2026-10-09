@@ -945,6 +945,15 @@ export const commands = {
   // Drops every retained failure. Backs the queue window's "Dismiss all".
   dismissAllFailedOperations: () => __TAURI_INVOKE<void>('dismiss_all_failed_operations'),
   /**
+   *  The full source and destination paths and the timing of one operation, for
+   *  the queue window's expanded row. Fetched when a row opens, ❌ never carried
+   *  on `operations-changed`: most rows are never expanded, and a selection can
+   *  hold thousands of sources. An in-memory registry read, so no I/O and no
+   *  timeout. `NotFound` means the operation already left (the row is going too).
+   */
+  getOperationDetails: (operationId: string) =>
+    typedError<OperationDetails, OperationDetailsError>(__TAURI_INVOKE('get_operation_details', { operationId })),
+  /**
    *  Unified copy across volume types (local, MTP, extract out of a `.zip`).
    *  Emits write-progress, write-complete, write-error, write-cancelled.
    */
@@ -11454,6 +11463,45 @@ export type OperationDetail = {
    */
   totalItems: number
 }
+
+/**
+ *  One expanded queue row: the full source and destination paths, and when the
+ *  operation was registered and admitted. Times are Unix seconds, the unit
+ *  `formatDateTime` on the frontend takes.
+ */
+export type OperationDetails = {
+  operationId: string
+  /**
+   *  The first [`DETAILS_SOURCE_CAP`] top-level source paths, in selection
+   *  order. Empty when the operation's builder had none to give.
+   */
+  sourcePaths: string[]
+  /**
+   *  How many top-level sources there are; above `source_paths.len()` when
+   *  the list was capped.
+   */
+  sourceCount: number
+  // Where it writes (see [`OperationPaths`]), `None` for a delete or trash.
+  destinationPath: string | null
+  // When the operation was registered, which is when its row appeared.
+  queuedAt: number
+  // When it was admitted to run. `None` while it waits for a lane.
+  startedAt: number | null
+}
+
+// Why `get_operation_details` has no answer.
+export type OperationDetailsError =
+  /**
+   *  The manager tracks no operation, live or retained, under this id: it
+   *  settled (or its failure was dismissed) between the row being drawn and
+   *  the question arriving. The row is about to leave anyway, so the frontend
+   *  drops the answer rather than reporting anything.
+   */
+  {
+    type: 'notFound'
+    // The id asked about.
+    operationId: string
+  }
 
 /**
  *  One item row with its interned dir prefixes resolved to full paths and real

@@ -7,6 +7,21 @@ import type { OperationSnapshot, WriteProgressEvent } from '$lib/ipc/bindings'
 
 vi.mock('$lib/settings/reactive-settings.svelte', () => ({
   getFileSizeFormat: () => 'decimal',
+  formatDateTime: () => '2026-10-09 14:05',
+}))
+
+vi.mock('$lib/tauri-commands', () => ({
+  requestForegroundOperation: vi.fn(() => Promise.resolve()),
+  getOperationDetails: vi.fn(() =>
+    Promise.resolve({
+      operationId: 'op-1',
+      sourcePaths: ['/Users/me/Documents/report.pdf'],
+      sourceCount: 1,
+      destinationPath: '/Volumes/Backup',
+      queuedAt: 1_700_000_000,
+      startedAt: 1_700_000_001,
+    }),
+  ),
 }))
 
 function row(
@@ -101,6 +116,21 @@ describe('QueueRow a11y', () => {
     const button = list.querySelector('[aria-label="Show this operation in the main window"]')
     expect(button, 'the running row offers Show').not.toBeNull()
     expect(button?.getAttribute('aria-label')).toContain(button?.textContent.trim())
+    await expectNoA11yViolations(list)
+  })
+
+  // The chevron is the row's one disclosure: its name stays put while
+  // `aria-expanded` carries the state, and the panel it controls must exist
+  // once it's open.
+  it('an expanded row with its details panel has no a11y violations', async () => {
+    const list = await mountRow(row('running', 'copy', runningProgress))
+    const toggle = list.querySelector<HTMLButtonElement>('button[aria-label="Details"]')
+    toggle?.click()
+    await tick()
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    await tick()
+    expect(toggle?.getAttribute('aria-expanded')).toBe('true')
+    expect(list.querySelector(`#${toggle?.getAttribute('aria-controls') ?? 'missing'}`)).not.toBeNull()
     await expectNoA11yViolations(list)
   })
 

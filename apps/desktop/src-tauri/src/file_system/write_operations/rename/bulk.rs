@@ -17,7 +17,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use super::super::event_sinks::OperationEventSink;
-use super::super::manager::{self, OperationDescriptor, OperationSummaryText};
+use super::super::manager::{self, OperationDescriptor, OperationPaths, OperationSummaryText};
 use super::super::source_binding::SourceFingerprint;
 use super::super::state::{WriteOperationState, WriteSettledGuard, is_cancelled, update_operation_status};
 use super::super::types::{
@@ -133,6 +133,13 @@ pub(crate) fn start_bulk_rename(
     let summary = OperationSummaryText {
         source: Some(format!("{} files", rows.len())),
         destination: None,
+        // The files being renamed; every new name lands in the same folder, so
+        // there's no destination to name beyond them.
+        paths: OperationPaths::from_strings(
+            rows.len(),
+            rows.iter().map(|row| row.source.to_string_lossy().into_owned()),
+            None,
+        ),
     };
     let descriptor = OperationDescriptor {
         operation_id: operation_id.clone(),

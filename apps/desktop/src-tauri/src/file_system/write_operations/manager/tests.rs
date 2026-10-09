@@ -15,6 +15,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Duration;
 use tokio::sync::oneshot;
 
+mod details;
 mod failures;
 
 /// Deadline for every wait here. Generous on purpose: each wait has a real
