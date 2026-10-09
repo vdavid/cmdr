@@ -412,6 +412,34 @@
   "@commands.multiRenameSavePreset.label": {
     "sourceHash": "f8101a3"
   },
+  "commands.multiRenameLetterCase.label": "Kis- és nagybetűk menü megnyitása",
+  "@commands.multiRenameLetterCase.label": {
+    "sourceHash": "da7409c"
+  },
+  "commands.multiRenameRemoveDiacritics.label": "„Ékezetek eltávolítása” be-/kikapcsolása",
+  "@commands.multiRenameRemoveDiacritics.label": {
+    "sourceHash": "3f5cf53"
+  },
+  "commands.multiRenameMatchCase.label": "„Kis- és nagybetűérzékeny” be-/kikapcsolása",
+  "@commands.multiRenameMatchCase.label": {
+    "sourceHash": "25d478f"
+  },
+  "commands.multiRenameFirstMatchOnly.label": "„Csak az első találat” be-/kikapcsolása",
+  "@commands.multiRenameFirstMatchOnly.label": {
+    "sourceHash": "7641a7b"
+  },
+  "commands.multiRenameIncludeExtension.label": "„A kiterjesztésben is” be-/kikapcsolása",
+  "@commands.multiRenameIncludeExtension.label": {
+    "sourceHash": "2d47826"
+  },
+  "commands.multiRenameRegex.label": "„Reguláris kifejezés” be-/kikapcsolása",
+  "@commands.multiRenameRegex.label": {
+    "sourceHash": "b41d110"
+  },
+  "commands.multiRenameReplaceWholeName.label": "„Teljes név cseréje” be-/kikapcsolása",
+  "@commands.multiRenameReplaceWholeName.label": {
+    "sourceHash": "016c572"
+  },
   "commands.fileView.label": "Megtekintés",
   "@commands.fileView.label": {
     "sourceHash": "dcc839a"

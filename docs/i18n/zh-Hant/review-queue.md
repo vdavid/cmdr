@@ -60,3 +60,7 @@ worth keeping).
 - **`復原的對象：{time} 的「…」` / `最近一次復原：{time} 的「…」`** (`operationLog.dialog.rollbackOf`,
   `.latestRollback`, `.rollbackOfUnlisted`): composed colon frames for "Rollback of … from {time}"; check they read well
   as quiet sub-lines.
+- **`開啟或關閉「…」`** (`commands.multiRename{MatchCase,FirstMatchOnly,…}.label`): "Turn X on or off" rows quote the
+  checkbox label verbatim; the older toggle commands say `切換…`. Check the two styles sit well side by side in the
+  Keyboard shortcuts list. **`起始值`** and **`依序編號 {first}、{second}、{third}⋯，顯示為 …`**
+  (`multiRename.counterEditor.*`): composed for the counter popover.

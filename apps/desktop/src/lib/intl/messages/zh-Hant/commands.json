@@ -412,6 +412,34 @@
   "@commands.multiRenameSavePreset.label": {
     "sourceHash": "f8101a3"
   },
+  "commands.multiRenameLetterCase.label": "開啟大小寫選單",
+  "@commands.multiRenameLetterCase.label": {
+    "sourceHash": "da7409c"
+  },
+  "commands.multiRenameRemoveDiacritics.label": "開啟或關閉「移除變音符號」",
+  "@commands.multiRenameRemoveDiacritics.label": {
+    "sourceHash": "3f5cf53"
+  },
+  "commands.multiRenameMatchCase.label": "開啟或關閉「區分大小寫」",
+  "@commands.multiRenameMatchCase.label": {
+    "sourceHash": "25d478f"
+  },
+  "commands.multiRenameFirstMatchOnly.label": "開啟或關閉「只取代第一處符合的文字」",
+  "@commands.multiRenameFirstMatchOnly.label": {
+    "sourceHash": "7641a7b"
+  },
+  "commands.multiRenameIncludeExtension.label": "開啟或關閉「包含副檔名」",
+  "@commands.multiRenameIncludeExtension.label": {
+    "sourceHash": "2d47826"
+  },
+  "commands.multiRenameRegex.label": "開啟或關閉「正規表示式」",
+  "@commands.multiRenameRegex.label": {
+    "sourceHash": "b41d110"
+  },
+  "commands.multiRenameReplaceWholeName.label": "開啟或關閉「取代整個名稱」",
+  "@commands.multiRenameReplaceWholeName.label": {
+    "sourceHash": "016c572"
+  },
   "commands.fileView.label": "檢視",
   "@commands.fileView.label": {
     "sourceHash": "dcc839a"

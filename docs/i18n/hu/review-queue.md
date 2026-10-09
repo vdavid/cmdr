@@ -35,6 +35,14 @@ wording into `terms.json` (and `decisions.md` when the reason is worth keeping).
 
 ## Wording
 
+- **Multi-rename counter popover** (`multiRename.counterEditor.*`): `Kezdőérték` / `Lépésköz` / `Számjegyek` and the
+  preview line `Így számol: 1, 3, 5…, a nevekben így látszik: 001, 003, 005` were written without the reference pile
+  (absent on the M1 box), so Total Commander's Hungarian counter labels weren't re-checked. `Számjegyek` means a minimum
+  digit count here; `Számjegyek száma` would be more exact but longer.
+- **Shortcut rows `„<checkbox label>” be-/kikapcsolása`** (`commands.multiRename*.label`): the quoted label keeps the
+  checkbox's words byte for byte, but `„A kiterjesztésben is” be-/kikapcsolása` reads a bit stiff, since that label is
+  an adverbial phrase, not a noun.
+
 - **Server sheet coinages with no pile attestation**: `Nem kapcsolódik: {name}` (pane heading for a chosen not-connected
   state), `Bejelentkezés másként…`, `Váltás vendégre`, `{username} felhasználóként`, and `smb:// kezdetű cím`. Each is
   grammatical; a native ear should confirm they read naturally.

@@ -69,3 +69,8 @@ settled wording into `terms.json` (and `decisions.md` when the reason is worth k
 - **Multi-rename labels** (`multiRename.*`): `名称规则` for "Name mask" (TC's `重命名规则`, over DC's `掩码`),
   `移除变音符号` for "Remove diacritics" (no macOS zh-CN source; Microsoft's `音调符号` rejected), the `说明` status
   column, and the preset/status pair `无变化` (same English "No change"). Confirm each reads naturally in the sheet.
+- **Multi-rename shortcuts and counter popover** (`commands.multiRename*.label`, `multiRename.counterEditor.*`,
+  `multiRename.summary`): "Turn X on or off" → `开启或关闭“X”` (quoting the checkbox label byte for byte; no pile
+  source, the reference pile wasn't on the translating machine); counter preview
+  `依次计为 1、3、5…，显示为 001、003、005`; footer `# 个要重命名 · # 个不变 · # 个有问题`. Confirm the preview line and
+  `要重命名` read naturally.

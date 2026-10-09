@@ -167,3 +167,5 @@ wording into `terms.json` (and `decisions.md` when the reason is worth keeping).
 - `multiRename.removeDiacritics` / `.preset.removeDiacritics` `Accenten verwijderen` (everyday) over MS
   `diakritische tekens`; ß → ss is not strictly an accent.
 - `multiRename.case.words` `Elk Woord Met Hoofdletter` shape.
+- `multiRename.counterEditor.*`: `Beginnummer` (over `Begin`, which reads as a verb) and the terse `Cijfers` (fallback
+  `Aantal cijfers`); `Telt 1, 3, 5…` for "Counts". `multiRename.summary` renders "to rename" as `# naamwijzigingen`.

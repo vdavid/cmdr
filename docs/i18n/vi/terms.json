@@ -1606,6 +1606,19 @@
     "forms": "Step 1 of 2: X → Bước 1/2: X (the AI install steps); the onboarding counter reads Bước 1 trên 2",
     "sources": "shipped catalog (onboarding.wizard.stepProgress, ai.local.installStepExtracting)"
   },
+  "rename-counter": {
+    "chosen": "bộ đếm",
+    "accept": ["Bộ đếm"],
+    "confidence": "high",
+    "forms": "the popover title → Bộ đếm; edit it → Sửa bộ đếm; its fields → Số bắt đầu, Bước nhảy (the increment, kept apart from an onboarding Bước), Số chữ số; the preview line → Đếm 1, 2, 3…",
+    "sources": "Total Commander vi (6605 [C] Bộ đếm); shipped catalog before the popover (multiRename.counterStart Bộ đếm bắt đầu từ, .counterDigits Số chữ số)"
+  },
+  "diacritics": {
+    "chosen": "dấu",
+    "confidence": "high",
+    "forms": "Remove diacritics → Bỏ dấu (as in tiếng Việt không dấu); the technical noun → dấu phụ",
+    "sources": "MS terminology (diacritic → dấu phụ); shipped catalog (multiRename.removeDiacritics Bỏ dấu)"
+  },
   "this-mac": {
     "chosen": "máy Mac",
     "confidence": "high",
@@ -2234,7 +2247,8 @@
       "menu.context.removeDownload": "Finder's own item: Remove Download → `Xóa bản tải về`; identical to `commands.cloudRemoveDownload.label`.",
       "onboarding.cloudSetup.removeKey": "Same deletion as `ai.secretError.removeTitle`, so `xóa`.",
       "multiRename.removeDiacritics": "Remove diacritics is a letter transform, not taking an item off a list: Vietnamese says `bỏ dấu` for stripping accents (tiếng Việt không dấu); `gỡ bỏ dấu` is not idiomatic. MS terminology: diacritic → dấu phụ.",
-      "multiRename.preset.removeDiacritics": "Same letter transform as `multiRename.removeDiacritics`, so the identical `Bỏ dấu`."
+      "multiRename.preset.removeDiacritics": "Same letter transform as `multiRename.removeDiacritics`, so the identical `Bỏ dấu`.",
+      "commands.multiRenameRemoveDiacritics.label": "Quotes the checkbox `multiRename.removeDiacritics` byte for byte (`Bật/tắt “Bỏ dấu”`), so it carries that key's `bỏ dấu` exception."
     },
     "forms": "taking an item off a list while it lives on → gỡ bỏ (one form, even with an object); the tag row → Gỡ bỏ “{color}”; forget a saved item → Quên; strip diacritics → bỏ dấu",
     "sources": "Xfce Thunar (_Remove → Gỡ bỏ), GNOME Nautilus (Gỡ bỏ ổ đĩa một cách an toàn)"

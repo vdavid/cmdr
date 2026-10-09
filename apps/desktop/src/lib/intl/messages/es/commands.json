@@ -412,6 +412,34 @@
   "@commands.multiRenameSavePreset.label": {
     "sourceHash": "f8101a3"
   },
+  "commands.multiRenameLetterCase.label": "Abrir el menú de mayúsculas y minúsculas",
+  "@commands.multiRenameLetterCase.label": {
+    "sourceHash": "da7409c"
+  },
+  "commands.multiRenameRemoveDiacritics.label": "Activar o desactivar “Quitar diacríticos”",
+  "@commands.multiRenameRemoveDiacritics.label": {
+    "sourceHash": "3f5cf53"
+  },
+  "commands.multiRenameMatchCase.label": "Activar o desactivar “Distinguir mayúsculas y minúsculas”",
+  "@commands.multiRenameMatchCase.label": {
+    "sourceHash": "25d478f"
+  },
+  "commands.multiRenameFirstMatchOnly.label": "Activar o desactivar “Solo la primera coincidencia”",
+  "@commands.multiRenameFirstMatchOnly.label": {
+    "sourceHash": "7641a7b"
+  },
+  "commands.multiRenameIncludeExtension.label": "Activar o desactivar “Incluir la extensión”",
+  "@commands.multiRenameIncludeExtension.label": {
+    "sourceHash": "2d47826"
+  },
+  "commands.multiRenameRegex.label": "Activar o desactivar “Expresión regular”",
+  "@commands.multiRenameRegex.label": {
+    "sourceHash": "b41d110"
+  },
+  "commands.multiRenameReplaceWholeName.label": "Activar o desactivar “Reemplazar todo el nombre”",
+  "@commands.multiRenameReplaceWholeName.label": {
+    "sourceHash": "016c572"
+  },
   "commands.fileView.label": "Ver",
   "@commands.fileView.label": {
     "sourceHash": "dcc839a"

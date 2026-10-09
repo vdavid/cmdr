@@ -414,6 +414,34 @@
   "@commands.multiRenameSavePreset.label": {
     "sourceHash": "f8101a3"
   },
+  "commands.multiRenameLetterCase.label": "Open hoofdlettergebruikmenu",
+  "@commands.multiRenameLetterCase.label": {
+    "sourceHash": "da7409c"
+  },
+  "commands.multiRenameRemoveDiacritics.label": "Accenten verwijderen aan/uit",
+  "@commands.multiRenameRemoveDiacritics.label": {
+    "sourceHash": "3f5cf53"
+  },
+  "commands.multiRenameMatchCase.label": "Hoofdlettergevoelig aan/uit",
+  "@commands.multiRenameMatchCase.label": {
+    "sourceHash": "25d478f"
+  },
+  "commands.multiRenameFirstMatchOnly.label": "Alleen eerste treffer aan/uit",
+  "@commands.multiRenameFirstMatchOnly.label": {
+    "sourceHash": "7641a7b"
+  },
+  "commands.multiRenameIncludeExtension.label": "Extensie meenemen aan/uit",
+  "@commands.multiRenameIncludeExtension.label": {
+    "sourceHash": "2d47826"
+  },
+  "commands.multiRenameRegex.label": "Reguliere expressie aan/uit",
+  "@commands.multiRenameRegex.label": {
+    "sourceHash": "b41d110"
+  },
+  "commands.multiRenameReplaceWholeName.label": "Hele naam vervangen aan/uit",
+  "@commands.multiRenameReplaceWholeName.label": {
+    "sourceHash": "016c572"
+  },
   "commands.fileView.label": "Toon",
   "@commands.fileView.label": {
     "sourceHash": "dcc839a"

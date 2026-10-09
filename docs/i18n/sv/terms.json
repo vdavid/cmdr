@@ -814,6 +814,12 @@
     "forms": "USB-enhet, MTP-enhet; when English says phone, Swedish says telefon",
     "sources": "macOS, MS terminology"
   },
+  "diacritics": {
+    "chosen": "diakritiska tecken",
+    "confidence": "tentative",
+    "forms": "the option and its shortcut row → Ta bort diakritiska tecken",
+    "sources": "shipped catalog (multiRename.removeDiacritics, multiRename.preset.removeDiacritics); standard Swedish linguistics term; no macOS or file-manager hit on macOS 27.0.1 (Finder, AppKit loctables), reference pile absent on this machine"
+  },
   "dialog": {
     "accept": ["dialogruta"],
     "chosen": "dialog",
@@ -2332,6 +2338,18 @@
     "decision": "Rename toasts",
     "forms": "Byt namn på …; noun namnbyte (ett namnbyte, namnbytet, namnbyten), which takes av: namnbytet av ”X”",
     "sources": "macOS Finder (Byt namn på …), Thunar/Dolphin (Namnbyte)"
+  },
+  "rename-counter": {
+    "chosen": "räknare",
+    "confidence": "tentative",
+    "forms": "the popover title Räknare; its button Redigera räknare; fields Startvärde, Steg, Antal siffror; the preview line Räknar 1, 3, 5…",
+    "avoid": [
+      {
+        "form": "sekvensnummer",
+        "why": "Finder’s Byt namn uses it for the format (Namn och sekvensnummer), the number itself, not the setting you edit"
+      }
+    ],
+    "sources": "shipped catalog (commands.fileMultiRename.description en räknare); macOS 27.0.1 Finder BulkRenameWindow (Name and Counter → Namn och sekvensnummer, Start numbers at → Starta med nummer); reference pile absent on this machine, so Total/Double Commander unverified"
   },
   "renew": {
     "accept": ["förnyelse", "förnyas"],

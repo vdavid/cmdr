@@ -886,6 +886,13 @@
     "note": "device and phone follow the English key by key: Gerät where it says device, Telefon where it says phone.",
     "sources": "standard German; catalog"
   },
+  "diacritics": {
+    "accept": ["diakritische Zeichen", "diakritischen Zeichen"],
+    "chosen": "Diakritische Zeichen",
+    "confidence": "high",
+    "forms": "the Multi-rename checkbox and preset → Diakritische Zeichen entfernen",
+    "sources": "catalog (multiRename.removeDiacritics, multiRename.preset.removeDiacritics); standard German linguistic term (Duden: diakritisches Zeichen)"
+  },
   "dialog": {
     "accept": ["Dialogs", "Fenster"],
     "chosen": "Dialog",
@@ -2508,6 +2515,13 @@
     "confidence": "high",
     "forms": "Rename all → Alle umbenennen; progress Wird umbenannt; noun Umbenennung/Umbenennungen; rename cycle → Umbenennungszyklus",
     "sources": "macOS Finder (Umbenennen …), Double Commander, Nautilus (wird … umbenannt)"
+  },
+  "rename-counter": {
+    "accept": ["Zählers"],
+    "chosen": "Zähler",
+    "confidence": "high",
+    "forms": "the counter popover's fields → Startwert, Schrittweite, Stellen; Edit counter → Zähler bearbeiten; Counts 1, 3, 5… → Zählt 1, 3, 5 …",
+    "sources": "catalog (commands.fileMultiRename.description: mit Namensmaske, Zähler …; the earlier counter fields Schrittweite and Stellen); Total Commander de multi-rename (Zähler [C]), from memory (no pile on this machine); macOS Finder's batch-rename labels sit in nibs and weren't mined"
   },
   "replace": {
     "accept": ["ersetzt", "Ersetzte", "ersetz"],

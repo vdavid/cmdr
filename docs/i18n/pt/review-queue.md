@@ -61,3 +61,11 @@ settled wording into `terms.json` (and `decisions.md` when the reason is worth k
   keeps the catalog's `ponto de extremidade`, though AWS pt-BR docs say `endpoint`. Confirm both.
 - **`Este arquivo está arquivado`** (`*.coldStorage*`, `fileExplorer.archivedFile.*`): cold storage → `arquivado` /
   `armazenamento frio` (MS terminology). `arquivo arquivado` is a known cacophony; confirm it reads fine to a Brazilian.
+- **Multi-rename counter preview** (`multiRename.counterEditor.counts` / `.countsPadded`):
+  `Conta 1, 3, 5…, que aparecem como 001, 003, 005`, with the popover's counter as the implied subject. `Conta` could
+  also read as the noun "account"; confirm it reads as "counts" right under the `Contador` fields, or suggest `Gera` /
+  `Sequência:`.
+- **Multi-rename shortcut rows** (`commands.multiRename*.label`):
+  `Ativar ou desativar “Diferenciar maiúsculas de minúsculas”` quotes the checkbox label byte for byte but runs long in
+  the Keyboard shortcuts list; confirm it doesn't truncate, and that `Ativar ou desativar` reads better here than the
+  catalog's shorter toggle verb `Alternar`.

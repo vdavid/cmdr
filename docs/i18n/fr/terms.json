@@ -3478,7 +3478,19 @@
   "rename-counter": {
     "chosen": "compteur",
     "confidence": "high",
-    "forms": "Counter from → Début du compteur; Step → Pas; Digits → Chiffres",
+    "forms": "Edit counter → Modifier le compteur; the counter popover's fields → Début, Pas, Chiffres (the popover title Compteur already names the counter, so Start drops « du compteur »); its preview line → Donne 1, 3, 5…, affichés sous la forme 001, 003, 005",
     "sources": "Total Commander WCMD.LNG 6605 « [C] Compteur », 6617-6619 (« Partir de : », « Par pas de : », « Chiffres : »); Double Commander (« Compteur »); macOS Finder BulkRenameWindow (« Nom et compteur »)"
+  },
+  "diacritics": {
+    "chosen": "accents",
+    "confidence": "tentative",
+    "forms": "Remove diacritics → Retirer les accents (the checkbox, the preset, and the shortcut row quote it byte for byte)",
+    "avoid": [
+      {
+        "form": "diacritiques",
+        "why": "correct but bookish for an everyday checkbox"
+      }
+    ],
+    "sources": "catalog (multiRename.removeDiacritics, multiRename.preset.removeDiacritics); reference pile not present on this machine, so not re-mined"
   }
 }

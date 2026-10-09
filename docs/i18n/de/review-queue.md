@@ -92,3 +92,7 @@ German runs 20–35% longer than English. Look at these against the pseudolocale
 - `multiRename.case.lower` / `.upper` / `.words` (`alles klein`, `ALLES GROSS`, `Jeder Wortanfang Groß`): written in
   their own result like the English; `Groß` capitalized on purpose, and `GROSS` without ẞ. Check they read as intended.
 - `multiRename.firstOnly` (`Nur den ersten Treffer`) leaves `ersetzen` implicit, as the English does.
+- `commands.multiRename*.label` (`Option „Groß-/Kleinschreibung beachten“ ein-/ausschalten`, 55 vs 25 chars): check the
+  row fits the Keyboard shortcuts list; `„…“ ein-/ausschalten` without `Option` is the shorter fallback.
+- `multiRename.counterEditor.counts` / `.countsPadded` (`Zählt 1, 3, 5 …`): the counter as an implied subject; a
+  reviewer may prefer `Ergibt 1, 3, 5 …`.

@@ -412,6 +412,34 @@
   "@commands.multiRenameSavePreset.label": {
     "sourceHash": "f8101a3"
   },
+  "commands.multiRenameLetterCase.label": "打开大小写菜单",
+  "@commands.multiRenameLetterCase.label": {
+    "sourceHash": "da7409c"
+  },
+  "commands.multiRenameRemoveDiacritics.label": "开启或关闭“移除变音符号”",
+  "@commands.multiRenameRemoveDiacritics.label": {
+    "sourceHash": "3f5cf53"
+  },
+  "commands.multiRenameMatchCase.label": "开启或关闭“区分大小写”",
+  "@commands.multiRenameMatchCase.label": {
+    "sourceHash": "25d478f"
+  },
+  "commands.multiRenameFirstMatchOnly.label": "开启或关闭“只替换第一处匹配”",
+  "@commands.multiRenameFirstMatchOnly.label": {
+    "sourceHash": "7641a7b"
+  },
+  "commands.multiRenameIncludeExtension.label": "开启或关闭“包括扩展名”",
+  "@commands.multiRenameIncludeExtension.label": {
+    "sourceHash": "2d47826"
+  },
+  "commands.multiRenameRegex.label": "开启或关闭“正则表达式”",
+  "@commands.multiRenameRegex.label": {
+    "sourceHash": "b41d110"
+  },
+  "commands.multiRenameReplaceWholeName.label": "开启或关闭“替换整个名称”",
+  "@commands.multiRenameReplaceWholeName.label": {
+    "sourceHash": "016c572"
+  },
   "commands.fileView.label": "查看",
   "@commands.fileView.label": {
     "sourceHash": "dcc839a"

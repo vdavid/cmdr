@@ -203,6 +203,10 @@
   "@multiRename.error.timedOut": {
     "sourceHash": "a336ee5"
   },
+  "multiRename.summary": "{ready, plural, other {# 個要重新命名}} · {unchanged, plural, other {# 個不變}} · <problemsToggle>{problems, plural, other {# 個有問題}}</problemsToggle>",
+  "@multiRename.summary": {
+    "sourceHash": "ca7be9b"
+  },
   "multiRename.cancel": "取消",
   "@multiRename.cancel": {
     "sourceHash": "19766ed"
@@ -274,5 +278,33 @@
   "multiRename.archiveMessage": "如要重新命名這個 zip 壓縮檔裡的檔案，請一次重新命名一個。",
   "@multiRename.archiveMessage": {
     "sourceHash": "2486bf3"
+  },
+  "multiRename.counterEditor.marker": "編輯計數器",
+  "@multiRename.counterEditor.marker": {
+    "sourceHash": "8c3998f"
+  },
+  "multiRename.counterEditor.title": "計數器",
+  "@multiRename.counterEditor.title": {
+    "sourceHash": "a78cfdf"
+  },
+  "multiRename.counterEditor.start": "起始值",
+  "@multiRename.counterEditor.start": {
+    "sourceHash": "e4bb9f1"
+  },
+  "multiRename.counterEditor.step": "增量",
+  "@multiRename.counterEditor.step": {
+    "sourceHash": "8e6a6cc"
+  },
+  "multiRename.counterEditor.digits": "位數",
+  "@multiRename.counterEditor.digits": {
+    "sourceHash": "9cd500d"
+  },
+  "multiRename.counterEditor.counts": "依序編號 {first}、{second}、{third}⋯",
+  "@multiRename.counterEditor.counts": {
+    "sourceHash": "1e814e0"
+  },
+  "multiRename.counterEditor.countsPadded": "依序編號 {first}、{second}、{third}⋯，顯示為 {firstShown}、{secondShown}、{thirdShown}",
+  "@multiRename.counterEditor.countsPadded": {
+    "sourceHash": "0e7d580"
   }
 }

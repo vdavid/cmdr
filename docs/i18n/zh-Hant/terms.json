@@ -3913,7 +3913,7 @@
   "rename-counter": {
     "chosen": "計數器",
     "confidence": "high",
-    "forms": "Counter from → 計數器起始於 (like Finder's 編號起始於：); the counter's step → 增量 (TC 6618); digits → 位數 (TC 6619)",
+    "forms": "Counter from → 計數器起始於 (like Finder's 編號起始於：); the counter editor's Start field → 起始值; the counter's step → 增量 (TC 6618); digits → 位數 (TC 6619); a preview of its numbers → 依序編號 1、2、3⋯ (Finder's 編號)",
     "sources": "Total Commander zh-TW LNG 6605 [C] 計數器, 6616 定義計數器[C]; DC zh-TW Counter → 計數器; macOS Finder BulkRenameWindow 名稱和計數器; MS terminology counter → 計數器"
   },
   "diacritics": {

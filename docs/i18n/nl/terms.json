@@ -3410,6 +3410,26 @@
     "forms": "a token in a mask or format string ([N], [C], YYYY) → plaatshouder (Notatieplaatshouders, Voeg plaatshouder in); the stand-in in a URL the user must replace → tijdelijke aanduiding (onboarding.cloudSetup.hint.azureEndpoint)",
     "sources": "catalog settings.appearance.customDateTimeFormat.description / formatPlaceholdersTitle (plaatshouders); MS terminology placeholder → tijdelijke aanduiding (slide-layout sense); TC/DC have no word for it (TC lists the tokens bare)"
   },
+  "rename-counter": {
+    "chosen": "teller",
+    "accept": ["Teller", "tellers"],
+    "confidence": "high",
+    "forms": "popover title Teller; Edit counter → Wijzig teller (it opens a small form, so Wijzig); fields Beginnummer / Stapgrootte / Cijfers; preview line Telt 1, 3, 5…",
+    "sources": "macOS Finder BulkRenameWindow.strings (Name and Counter → Naam en teller; Start numbers at → Begin nummering met; verified on macOS 27.0.1, plutil, 2026-10-09); TC Teller / Stapgrootte / Cijfers (decisions.md § Wijzig meerdere namen)"
+  },
+  "diacritics": {
+    "chosen": "accenten",
+    "accept": ["accent"],
+    "avoid": [
+      {
+        "form": "diakritische tekens",
+        "why": "MS term, too technical for the voice; the shipped checkbox says Accenten verwijderen"
+      }
+    ],
+    "confidence": "high",
+    "forms": "checkbox and preset Accenten verwijderen; shortcut row Accenten verwijderen aan/uit",
+    "sources": "catalog multiRename.removeDiacritics / .preset.removeDiacritics; review-queue § Wijzig meerdere namen (ß → ss is not strictly an accent)"
+  },
   "regex": {
     "chosen": "reguliere expressie",
     "accept": ["Regex", "regex", "reguliere-expressie"],

@@ -68,6 +68,13 @@ wording into `terms.json` (and `decisions.md` when the reason is worth keeping).
   `Ký hiệu định dạng`; `tùy chọn đặt trước` for a saved rename preset (the tentative preset ruling) runs long on
   `Lưu`/`Xóa`/`Tên tùy chọn đặt trước`, and `thiết lập đã lưu` is the alternative; `Viết Hoa Đầu Mỗi Từ` is title-cased
   on purpose to show the result (EN `Every Word Capitalized`); `Bỏ dấu` for Remove diacritics.
+- **Counter popover** (`multiRename.counterEditor.*`): `Bước nhảy` for Step (over the earlier bare `Bước`, which the
+  catalog uses for onboarding steps); `Số bắt đầu` as a noun label for Start; the preview
+  `Đếm 1, 3, 5…, hiển thị thành 001, 003, 005` (confirm `hiển thị thành` reads natural over `hiện ra là`). The reference
+  pile wasn't on the machine this batch ran on, so the counter terms rest on the TC citation already in `terms.json`
+  plus the catalog's own earlier `Bộ đếm bắt đầu từ` / `Số chữ số`.
+- **Shortcut-list toggles** (`commands.multiRename*.label`): `Bật/tắt “<checkbox label>”`, quoting the checkbox byte for
+  byte (so `Bật/tắt “Phân biệt chữ hoa/thường”` carries two slashes); `Bật hoặc tắt …` is the alternative.
 
 ## Layout
 

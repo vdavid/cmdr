@@ -203,6 +203,10 @@
   "@multiRename.error.timedOut": {
     "sourceHash": "a336ee5"
   },
+  "multiRename.summary": "{ready, plural, one {# к переименованию} few {# к переименованию} many {# к переименованию} other {# к переименованию}} · {unchanged, plural, one {# без изменений} few {# без изменений} many {# без изменений} other {# без изменений}} · <problemsToggle>{problems, plural, one {# проблема} few {# проблемы} many {# проблем} other {# проблемы}}</problemsToggle>",
+  "@multiRename.summary": {
+    "sourceHash": "ca7be9b"
+  },
   "multiRename.cancel": "Отменить",
   "@multiRename.cancel": {
     "sourceHash": "19766ed"
@@ -274,5 +278,33 @@
   "multiRename.archiveMessage": "Чтобы переименовать файлы в этом zip-архиве, переименуйте их по одному.",
   "@multiRename.archiveMessage": {
     "sourceHash": "2486bf3"
+  },
+  "multiRename.counterEditor.marker": "Изменить счетчик",
+  "@multiRename.counterEditor.marker": {
+    "sourceHash": "8c3998f"
+  },
+  "multiRename.counterEditor.title": "Счетчик",
+  "@multiRename.counterEditor.title": {
+    "sourceHash": "a78cfdf"
+  },
+  "multiRename.counterEditor.start": "Начало",
+  "@multiRename.counterEditor.start": {
+    "sourceHash": "e4bb9f1"
+  },
+  "multiRename.counterEditor.step": "Шаг",
+  "@multiRename.counterEditor.step": {
+    "sourceHash": "8e6a6cc"
+  },
+  "multiRename.counterEditor.digits": "Число цифр",
+  "@multiRename.counterEditor.digits": {
+    "sourceHash": "9cd500d"
+  },
+  "multiRename.counterEditor.counts": "Номера: {first}, {second}, {third}…",
+  "@multiRename.counterEditor.counts": {
+    "sourceHash": "1e814e0"
+  },
+  "multiRename.counterEditor.countsPadded": "Номера: {first}, {second}, {third}… (в именах: {firstShown}, {secondShown}, {thirdShown})",
+  "@multiRename.counterEditor.countsPadded": {
+    "sourceHash": "0e7d580"
   }
 }

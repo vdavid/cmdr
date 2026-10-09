@@ -203,6 +203,10 @@
   "@multiRename.error.timedOut": {
     "sourceHash": "a336ee5"
   },
+  "multiRename.summary": "{ready, plural, other {# sẵn sàng đổi tên}} · {unchanged, plural, other {# không đổi}} · <problemsToggle>{problems, plural, other {# có vấn đề}}</problemsToggle>",
+  "@multiRename.summary": {
+    "sourceHash": "ca7be9b"
+  },
   "multiRename.cancel": "Hủy",
   "@multiRename.cancel": {
     "sourceHash": "19766ed"
@@ -274,5 +278,33 @@
   "multiRename.archiveMessage": "Để đổi tên các tệp trong tệp nén zip này, hãy đổi tên từng tệp một.",
   "@multiRename.archiveMessage": {
     "sourceHash": "2486bf3"
+  },
+  "multiRename.counterEditor.marker": "Sửa bộ đếm",
+  "@multiRename.counterEditor.marker": {
+    "sourceHash": "8c3998f"
+  },
+  "multiRename.counterEditor.title": "Bộ đếm",
+  "@multiRename.counterEditor.title": {
+    "sourceHash": "a78cfdf"
+  },
+  "multiRename.counterEditor.start": "Số bắt đầu",
+  "@multiRename.counterEditor.start": {
+    "sourceHash": "e4bb9f1"
+  },
+  "multiRename.counterEditor.step": "Bước nhảy",
+  "@multiRename.counterEditor.step": {
+    "sourceHash": "8e6a6cc"
+  },
+  "multiRename.counterEditor.digits": "Số chữ số",
+  "@multiRename.counterEditor.digits": {
+    "sourceHash": "9cd500d"
+  },
+  "multiRename.counterEditor.counts": "Đếm {first}, {second}, {third}…",
+  "@multiRename.counterEditor.counts": {
+    "sourceHash": "1e814e0"
+  },
+  "multiRename.counterEditor.countsPadded": "Đếm {first}, {second}, {third}…, hiển thị thành {firstShown}, {secondShown}, {thirdShown}",
+  "@multiRename.counterEditor.countsPadded": {
+    "sourceHash": "0e7d580"
   }
 }

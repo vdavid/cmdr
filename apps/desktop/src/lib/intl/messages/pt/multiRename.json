@@ -204,6 +204,10 @@
   "@multiRename.error.timedOut": {
     "sourceHash": "a336ee5"
   },
+  "multiRename.summary": "{ready, plural, one {# para renomear} many {# para renomear} other {# para renomear}} · {unchanged, plural, one {# sem alteração} many {# sem alteração} other {# sem alteração}} · <problemsToggle>{problems, plural, one {# problema} many {# problemas} other {# problemas}}</problemsToggle>",
+  "@multiRename.summary": {
+    "sourceHash": "ca7be9b"
+  },
   "multiRename.cancel": "Cancelar",
   "@multiRename.cancel": {
     "sourceHash": "19766ed"
@@ -275,5 +279,33 @@
   "multiRename.archiveMessage": "Para renomear arquivos neste arquivo zip, renomeie-os um de cada vez.",
   "@multiRename.archiveMessage": {
     "sourceHash": "2486bf3"
+  },
+  "multiRename.counterEditor.marker": "Editar contador",
+  "@multiRename.counterEditor.marker": {
+    "sourceHash": "8c3998f"
+  },
+  "multiRename.counterEditor.title": "Contador",
+  "@multiRename.counterEditor.title": {
+    "sourceHash": "a78cfdf"
+  },
+  "multiRename.counterEditor.start": "Início",
+  "@multiRename.counterEditor.start": {
+    "sourceHash": "e4bb9f1"
+  },
+  "multiRename.counterEditor.step": "Incremento",
+  "@multiRename.counterEditor.step": {
+    "sourceHash": "8e6a6cc"
+  },
+  "multiRename.counterEditor.digits": "Dígitos",
+  "@multiRename.counterEditor.digits": {
+    "sourceHash": "9cd500d"
+  },
+  "multiRename.counterEditor.counts": "Conta {first}, {second}, {third}…",
+  "@multiRename.counterEditor.counts": {
+    "sourceHash": "1e814e0"
+  },
+  "multiRename.counterEditor.countsPadded": "Conta {first}, {second}, {third}…, que aparecem como {firstShown}, {secondShown}, {thirdShown}",
+  "@multiRename.counterEditor.countsPadded": {
+    "sourceHash": "0e7d580"
   }
 }

@@ -802,6 +802,13 @@
     "confidence": "high",
     "sources": "catalog (settings.fileOperations.mtpConnectionWarning.description)"
   },
+  "diacritics": {
+    "chosen": "diacríticos",
+    "accept": ["diacrític"],
+    "forms": "Remove diacritics (checkbox and preset) → Quitar diacríticos; its palette toggle quotes it: Activar o desactivar “Quitar diacríticos”",
+    "confidence": "high",
+    "sources": "catalog (multiRename.removeDiacritics, multiRename.preset.removeDiacritics); reference pile not on this machine, so not re-mined"
+  },
   "dialog": {
     "chosen": "diálogo",
     "forms": "a named Cmdr dialog → el diálogo Mover, el diálogo Seleccionar archivos (name unquoted); cuadro de diálogo is also fine in prose",
@@ -2249,6 +2256,12 @@
       "errors.write.originalsKeptAside.suggestion.one": "Rename back = give the original name again: volver a ponerle su nombre."
     },
     "decision": "Palabras que se separaron sin que ningún check pudiera verlo"
+  },
+  "rename-counter": {
+    "chosen": "contador",
+    "forms": "the popover: Contador; its ▾ button Editar el contador; fields Inicio / Incremento / Dígitos (a counter's step is Incremento, never the onboarding Paso); preview line Numera así: 1, 3, 5…",
+    "confidence": "high",
+    "sources": "catalog (commands.fileMultiRename.description un contador; the retired counter fields shipped Contador desde / Incremento / Dígitos); fr/ru siblings cite Total Commander [C] Compteur / Счётчик; es pile not on this machine"
   },
   "replace": {
     "chosen": "Reemplazar",

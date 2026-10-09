@@ -1001,6 +1001,14 @@
     "sources": "macOS Finder (PE5.1 mert az eszköz eltűnt); Double Commander (külső eszközök (például okostelefonok))",
     "note": "A phone specifically is telefon; eszköz covers cameras and Kindles too."
   },
+  "diacritics": {
+    "chosen": "ékezetek",
+    "accept": ["ékezet"],
+    "forms": "Remove diacritics → Ékezetek eltávolítása (checkbox, preset, and shortcut row alike)",
+    "confidence": "high",
+    "sources": "the shipped catalog (multiRename.removeDiacritics, multiRename.preset.removeDiacritics); ékezet is the everyday Hungarian word for á, ö, ű, while diakritikus jel is linguistics jargon",
+    "avoid": [{ "form": "diakritikus jelek", "why": "bookish linguistics jargon; the everyday word is ékezet" }]
+  },
   "dialog": {
     "chosen": "párbeszédablak",
     "accept": ["párbeszéd", "ablak"],
@@ -2770,6 +2778,14 @@
     "forms": "the short toggle label stays Regex",
     "confidence": "high",
     "sources": "Double Commander"
+  },
+  "rename-counter": {
+    "chosen": "számláló",
+    "accept": ["számlál", "számol"],
+    "forms": "the popover title → Számláló; Edit counter → Számláló szerkesztése; its fields → Kezdőérték, Lépésköz, Számjegyek; the preview line → Így számol: {first}, …",
+    "confidence": "tentative",
+    "sources": "the shipped catalog (commands.fileMultiRename.description: számlálóval; the former multiRename.counterStart/Step/Digits); the reference pile is absent on this machine, so Total Commander was not re-checked",
+    "note": "Step stays Lépésköz (an increment), never lépés, which is the onboarding wizard's step."
   },
   "register-shortcut": {
     "chosen": "regisztrálás",

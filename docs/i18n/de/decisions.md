@@ -846,3 +846,8 @@ Apple's Dock menu (`Dock.app/Contents/Resources/de.lproj/DockMenus.strings`) sup
 
 - `an beiden Orten` (Finder `FI12`), and `Um das Bewegen abzuschließen` keeps the move family's nominalized `Bewegen`.
 - `Es ist nichts verloren gegangen.` repeats `errors.write.deviceDisconnected.sided.destination.copy`.
+
+## Mehrfach-umbenennen-Tasten (`commands.multiRename*.label`)
+
+- `Option „…“ ein-/ausschalten` over `umschalten`: English says „turn on or off“; `ein-/aus` as in
+  `commands.viewShowHidden.label`.
