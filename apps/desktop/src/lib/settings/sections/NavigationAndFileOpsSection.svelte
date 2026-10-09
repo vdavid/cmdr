@@ -5,9 +5,12 @@
      * Cards, in page order:
      *   1. **Navigation** — the `behavior.doubleClickPaneNavigatesToParent` switch
      *      (double-click the empty pane background to go up one folder).
-     *   2. **File operations** — the file-extension-change confirmation radio. The
-     *      conflict/progress settings live in Advanced (their single home); this
-     *      page holds only its own settings, never a mirror.
+     *   2. **File operations** — the file-extension-change confirmation, paste as
+     *      a file, and the copy/move dialog's starting "files already exist"
+     *      choice (`fileOperations.defaultConflictPolicy`, which the dialog also
+     *      writes back). The conflict-preview and progress tuning settings live in
+     *      Advanced (their single home); this page holds only its own settings,
+     *      never a mirror.
      *   3. **Text editor** — which app F4 opens files in (`TextEditorSelect`).
      *   4. **Terminal** — which app "Open terminal here" launches
      *      (`TerminalAppSelect`). Both rows read their options off this Mac, so
@@ -55,6 +58,7 @@
     const doubleClickDef = getSettingDefinition('behavior.doubleClickPaneNavigatesToParent') ?? defaultDef
     const extensionChangesDef = getSettingDefinition('fileOperations.allowFileExtensionChanges') ?? defaultDef
     const pasteAsFileDef = getSettingDefinition('fileOperations.pasteClipboardAsFile') ?? defaultDef
+    const conflictPolicyDef = getSettingDefinition('fileOperations.defaultConflictPolicy') ?? defaultDef
     const textEditorAppDef = getSettingDefinition('behavior.textEditorApp') ?? defaultDef
     const openTerminalHereAppDef = getSettingDefinition('behavior.openTerminalHereApp') ?? defaultDef
     const operationLogMaxAgeDef = getSettingDefinition('operationLog.maxAge') ?? defaultDef
@@ -77,7 +81,12 @@
         </SectionCard>
     {/if}
 
-    {#if anyVisible(shouldShow, 'fileOperations.allowFileExtensionChanges', 'fileOperations.pasteClipboardAsFile')}
+    {#if anyVisible(
+        shouldShow,
+        'fileOperations.allowFileExtensionChanges',
+        'fileOperations.pasteClipboardAsFile',
+        'fileOperations.defaultConflictPolicy',
+    )}
         <SectionCard label={tString('settings.navigationAndFileOps.card.fileOperations')}>
             {#if shouldShow('fileOperations.allowFileExtensionChanges')}
                 <SettingRow
@@ -97,6 +106,17 @@
                     {searchQuery}
                 >
                     <SettingToggleGroup id="fileOperations.pasteClipboardAsFile" />
+                </SettingRow>
+            {/if}
+            {#if shouldShow('fileOperations.defaultConflictPolicy')}
+                <SettingRow
+                    id="fileOperations.defaultConflictPolicy"
+                    label={conflictPolicyDef.label}
+                    description={conflictPolicyDef.description}
+                    split
+                    {searchQuery}
+                >
+                    <SettingSelect id="fileOperations.defaultConflictPolicy" />
                 </SettingRow>
             {/if}
         </SectionCard>

@@ -172,6 +172,32 @@ export const behaviorSettings: SettingDefinitionSource[] = [
       ],
     },
   },
+  {
+    // FE-owned: `TransferDialog` opens its "files already exist" radios on this
+    // and writes a person's confirmed pick back (`file-operations/transfer/
+    // remembered-conflict-policy.ts`). The options mirror the dialog's radios.
+    id: 'fileOperations.defaultConflictPolicy',
+    section: ['Behavior', 'Navigation & file ops'],
+    cardKey: 'settings.navigationAndFileOps.card.fileOperations',
+    labelKey: 'settings.fileOperations.defaultConflictPolicy.label',
+    descriptionKey: 'settings.fileOperations.defaultConflictPolicy.description',
+    keywords: ['conflict', 'clash', 'exists', 'overwrite', 'replace', 'skip', 'ask', 'copy', 'move', 'remember'],
+    type: 'enum',
+    default: 'stop',
+    component: 'select',
+    constraints: {
+      options: [
+        { value: 'stop', labelKey: 'settings.fileOperations.defaultConflictPolicy.opt.stop' },
+        { value: 'skip', labelKey: 'settings.fileOperations.defaultConflictPolicy.opt.skip' },
+        { value: 'overwrite', labelKey: 'settings.fileOperations.defaultConflictPolicy.opt.overwrite' },
+        {
+          value: 'overwrite_smaller',
+          labelKey: 'settings.fileOperations.defaultConflictPolicy.opt.overwriteSmaller',
+        },
+        { value: 'overwrite_older', labelKey: 'settings.fileOperations.defaultConflictPolicy.opt.overwriteOlder' },
+      ],
+    },
+  },
 
   // ------------------------------------------------------------------------
   // Text editor, rendered as its own card inside Navigation & file ops, above

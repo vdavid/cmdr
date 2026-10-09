@@ -531,9 +531,36 @@ to the boolean.
   preview starts for a same-volume copy; toggle both directions cancels/restarts; immediate dispatch with
   `previewId = null`).
 
+### The remembered conflict policy
+
+The "files already exist" radios open on `fileOperations.defaultConflictPolicy` (Settings > Behavior > Navigation & file
+ops, default "Ask for each"), and a person's confirmed pick becomes its new value, the Total Commander habit of setting
+"overwrite older" once. The rules live in `remembered-conflict-policy.ts`, keyed on where the dialog's policy came from
+(`ConflictPolicySource`: `remembered`, `picked`, or `explicit`):
+
+- **Written on confirm, never on pick.** A pick the person then cancels changes nothing; the write happens as the
+  confirm builds its payload. It's skipped when the pick equals the saved value, so sparse persistence never pins the
+  default (`lib/settings/DETAILS.md` § Sparse persistence), and for compress, which has no conflict choice. An MDM lock
+  refuses it inside `setSetting`.
+- **MCP neither reads nor writes it.** `autoConfirm` opens on its named policy (or `stop`) without reading the setting,
+  and a `dialog confirm` marks its policy `explicit`, even over a person's earlier pick: an agent's choice is not the
+  person's habit.
+- **A remembered policy goes out only while its radios are on screen** (`conflictChoiceVisible`). Still checking,
+  "couldn't find out", or no clash at all: the confirm sends `stop` instead. Decision/why: a saved `overwrite` the
+  person never saw would otherwise apply to a clash the upfront check missed (a listing that couldn't run, a file that
+  appeared meanwhile), and confirming before the check answered would send a remembered `skip` without the names it
+  needs (below). A `picked` or `explicit` policy is sent as is.
+- **A remembered overwriting policy says so in words.** Under the radios, `.remembered-overwrite-note` (warning text,
+  icon, and a warning-colored rule on the dialog background, so it stands apart from the card's own warning tint) names
+  which files it replaces, and the radio group's `aria-describedby` points at it. It's gone once the person picks
+  anything, including another overwriting option, since that's no longer an unnoticed carry-over.
+
+E2E specs share one app per shard, so a spec that picks a policy would leak it into the next; the conflict-family specs
+reset it through `resetRememberedConflictPolicy` (`test/e2e-playwright/conflict-helpers.ts`).
+
 ### The confirm dispatches without waiting for the conflict check
 
-`handleConfirm` awaits `conflictCheckPromise` **only when `conflictPolicy === 'skip'`**. Every other policy dispatches
+`handleConfirm` awaits `conflictCheckPromise` **only when the policy it sends is `skip`**. Every other policy dispatches
 as soon as the preview id is in hand, even with the check still running.
 
 **Why it's safe.** The upfront conflict list is not a correctness input, it's a bulk-skip perf optimization:

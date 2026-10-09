@@ -29,7 +29,12 @@ import {
   TRANSFER_DIALOG,
   waitForTransferUiToSettle,
 } from './helpers.js'
-import { clickTransferStart, selectConflictPolicy, waitForConflictPolicy } from './conflict-helpers.js'
+import {
+  clickTransferStart,
+  resetRememberedConflictPolicy,
+  selectConflictPolicy,
+  waitForConflictPolicy,
+} from './conflict-helpers.js'
 import {
   addServerThroughSheet,
   autoReconnectRow,
@@ -111,6 +116,7 @@ export function defineServerOpsSuite(protocol: ServerProtocol): void {
     test.beforeEach(async ({ tauriPage }) => {
       await initMcpClient(tauriPage)
       await ensureAppReady(tauriPage)
+      await resetRememberedConflictPolicy(tauriPage)
     })
 
     // One hook, drain before restore: a restore under a live op deletes its source.
@@ -119,6 +125,7 @@ export function defineServerOpsSuite(protocol: ServerProtocol): void {
       await cancelSheet(tauriPage).catch(() => undefined)
       await closeSwitcher(tauriPage).catch(() => undefined)
       restoreFixtureTree(getFixtureRoot())
+      await resetRememberedConflictPolicy(tauriPage)
     })
 
     /**

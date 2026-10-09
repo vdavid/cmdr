@@ -45,6 +45,7 @@ import {
   settleOnFixtureLeft,
   type PageLike,
 } from './archive-helpers.js'
+import { resetRememberedConflictPolicy } from './conflict-helpers.js'
 
 const DELETE_DIALOG = '[data-dialog-id="delete-confirmation"]'
 const TRANSFER_PROGRESS = '[data-dialog-id="transfer-progress"]'
@@ -84,6 +85,8 @@ test.describe('Archive editing', () => {
     await ensureMcpClient(tauriPage)
     await settleOnFixtureLeft(tauriPage, 'sample.zip')
     await setArchiveEnterBehavior({ zip: 'browse', bundle: 'browse' })
+    // The clash test below relies on the dialog starting on "Ask for each".
+    await resetRememberedConflictPolicy(tauriPage)
   })
 
   test('creating a folder inside the archive adds it and shows it', async ({ tauriPage }) => {
@@ -427,7 +430,7 @@ test.describe('Archive editing', () => {
     await tauriPage.keyboard.press('F5')
     await tauriPage.waitForSelector(TRANSFER_DIALOG, 5000)
     await tauriPage.waitForSelector(`${TRANSFER_DIALOG} .btn-primary`, 3000)
-    // Default policy is "Ask for each", so starting surfaces the inline conflict UI.
+    // The policy starts on "Ask for each" (reset in `beforeEach`), so starting surfaces the inline conflict UI.
     await tauriPage.click(`${TRANSFER_DIALOG} .btn-primary`)
     await tauriPage.waitForSelector(TRANSFER_PROGRESS, 5000)
     await expect.poll(async () => tauriPage.isVisible('.conflict-section'), { timeout: waitBudget(8000) }).toBeTruthy()

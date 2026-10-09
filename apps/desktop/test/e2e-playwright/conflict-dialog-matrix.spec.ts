@@ -77,6 +77,7 @@ import {
   expectNoTempArtifacts,
   waitForDialogsToClose,
   type ConflictSnapshot,
+  resetRememberedConflictPolicy,
 } from './conflict-helpers.js'
 
 const PROGRESS_DIALOG = '[data-dialog-id="transfer-progress"]'
@@ -124,8 +125,9 @@ function expectDirChildren(dirAbs: string, expected: string[]): void {
   expect(actual).toEqual([...expected].sort())
 }
 
-test.beforeEach(() => {
+test.beforeEach(async ({ tauriPage }) => {
   recreateFixtures(getFixtureRoot())
+  await resetRememberedConflictPolicy(tauriPage)
 })
 
 // Putting the shared `left/` + `right/` tree back is this spec's job: the

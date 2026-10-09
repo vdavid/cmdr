@@ -646,6 +646,14 @@
     "screenshot": "conflict-dialog.png"
   },
 
+  "fileOperations.transferDialog.rememberedOverwriteNote": "{reach, select, smaller {Your saved choice overwrites files already there that are smaller.} older {Your saved choice overwrites files already there that are older.} other {Your saved choice overwrites the files already there.}}",
+  "@fileOperations.transferDialog.rememberedOverwriteNote": {
+    "description": "Warning note under the 'files already exist' options in the copy/move dialog. Shown when the dialog opened on an overwriting option the user saved earlier (their last confirmed choice, or the 'When files already exist' setting), so nobody overwrites files without noticing. 'saved choice' = the remembered default option. Disappears once the user picks any option.",
+    "placeholders": {
+      "reach": "which files the saved option overwrites: 'smaller' (only files at the destination that are smaller), 'older' (only older ones), or anything else for every clashing file"
+    }
+  },
+
   "fileOperations.transferDialog.typeMismatchWarning": "Some clashes mix a file and a folder by the same name. Overwriting will replace items of a different type, including the entire contents of a folder.",
   "@fileOperations.transferDialog.typeMismatchWarning": {
     "description": "Red warning in the transfer dialog when 'Overwrite all' is chosen and at least one clash pairs a file with a same-named folder. Stresses the destructive swap. Keep it firm."

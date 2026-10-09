@@ -375,6 +375,10 @@
   "@fileOperations.transferDialog.policyStop": {
     "sourceHash": "61a6295"
   },
+  "fileOperations.transferDialog.rememberedOverwriteNote": "{reach, select, smaller {Your saved choice overwrites files already there that are smaller.} older {Your saved choice overwrites files already there that are older.} other {Your saved choice overwrites the files already there.}}",
+  "@fileOperations.transferDialog.rememberedOverwriteNote": {
+    "sourceHash": "7456023"
+  },
   "fileOperations.transferDialog.typeMismatchWarning": "有些冲突涉及同名的文件和文件夹。覆盖会替换掉类型不同的项目，包括整个文件夹的内容。",
   "@fileOperations.transferDialog.typeMismatchWarning": {
     "sourceHash": "76f1ab1"
