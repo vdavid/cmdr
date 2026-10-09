@@ -404,6 +404,14 @@
   "@commands.fileMultiRename.description": {
     "sourceHash": "d294fb1"
   },
+  "commands.multiRenameOpenPresets.label": "開啟預設組合選單",
+  "@commands.multiRenameOpenPresets.label": {
+    "sourceHash": "ca9ede6"
+  },
+  "commands.multiRenameSavePreset.label": "將目前設定儲存為預設組合",
+  "@commands.multiRenameSavePreset.label": {
+    "sourceHash": "f8101a3"
+  },
   "commands.fileView.label": "檢視",
   "@commands.fileView.label": {
     "sourceHash": "dcc839a"

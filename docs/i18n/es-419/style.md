@@ -69,6 +69,10 @@ with `plutil`, 236,620 strings that exist in `en`, `es`, and `es_419` (2026-09-2
 - **manage → `administrar`**, file manager → `administrador de archivos`: `gestion-` 1,050 / 3, `administr-` 520 /
   1,881.
 - **icon → `ícono`**: `icono(s)` 589 / 10, `ícono(s)` 0 / 717.
+- **preset → `preconfiguración`** (feminine): `preajuste` 108 / 1, `preconfiguraci-` 0 / 94; the print dialog's
+  `Guardar configuración actual como preconfiguración…` (es `Guardar ajustes actuales como preajuste…`). Agreement
+  follows the gender (`una preconfiguración llamada`, `¿Reemplazarla?`, `(editada)`). Verified on macOS 27.0.1 (26A434),
+  `.loctable` sweep, 2026-10-09.
 - **backup → `respaldo`**: `copia(s) de seguridad` 744 / 0, `respaldo` 6 / 703.
 - **Full Disk Access → `Acceso completo al disco`**: the Privacy & Security pane is `Acceso total al disco` in `es` and
   `Acceso completo al disco` in `es_419` and `es_US`

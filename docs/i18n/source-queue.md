@@ -206,3 +206,13 @@ rule into `translation-principles.md` or `translator-instructions.md`), then del
   differ ("Rename those files one at a time." vs "Rename them one at a time."). Align the English. (all)
 - `multiRename.status.missing`: the description says "a file", but a picked row may be a folder; say "item" so locales
   don't pick a file-only subject (all kept it subject-free). (ru, de)
+- `commands.multiRenameSavePreset.label` says "current settings" while `multiRename.presets.saveAs` / `.update` say
+  "current" / "current fields". Pick one noun; the locales used "settings" for the command and "fields" for the menu.
+  (all)
+- `multiRename.presets.saveAs` "Save current as…" is clipped English that most languages can't mirror; consider "Save as
+  preset…", which every locale wrote anyway. (all)
+- `multiRename.status.ready`, `multiRename.reason.*`: the notes say "a file", but a row may be a folder, and "Ready"
+  forces agreement in gendered languages (es, fr, pt, ru restructured). Say "item" in the notes. (es, fr, pt, ru)
+- `time-left` concept matched "it's left out" (`multiRename.reason.missing`) through "s left"; added
+  `notMatch: left out`. A word-boundary-aware `match` would stop the next one. (all)
+- `multiRename.presets.*`: no screenshot of the Presets menu, submenu, or name popover, so lengths are unverified. (all)

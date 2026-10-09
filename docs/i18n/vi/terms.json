@@ -579,6 +579,12 @@
     "forms": "connect to a server → kết nối tới (prose) but the label Kết nối với máy chủ… (Finder N84); reconnect → kết nối lại; the connection dropped → Đã mất kết nối",
     "sources": "Xfce Thunar (kết nối mạng), macOS Finder (Kết nối với máy chủ), CFNetwork (Đã mất kết nối mạng)"
   },
+  "menu": {
+    "chosen": "menu",
+    "forms": "Open the X menu → Mở menu X (Mở menu chuột phải, Menu mục ưa thích)",
+    "confidence": "high",
+    "sources": "macOS 27.0.1 live (AXAction Open Menu → Mở menu); catalog Menu mục ưa thích"
+  },
   "provider-console": {
     "chosen": "bảng điều khiển",
     "confidence": "high",
@@ -2018,8 +2024,8 @@
   "preset": {
     "chosen": "đặt trước",
     "confidence": "tentative",
-    "forms": "tùy chọn đặt trước (bare đặt trước can read \"reserved\"); back to presets → Quay lại tùy chọn đặt trước",
-    "sources": "MS terminology (khung thời gian đặt trước)"
+    "forms": "tùy chọn đặt trước (bare đặt trước can read \"reserved\"); back to presets → Quay lại tùy chọn đặt trước; Multi-rename: Save … as a preset → Lưu … làm tùy chọn đặt trước (macOS: làm Giá trị đặt trước)",
+    "sources": "MS terminology (khung thời gian đặt trước); macOS 27.0.1 live print dialog Save Current Settings as Preset…"
   },
   "preview": {
     "chosen": "xem trước",

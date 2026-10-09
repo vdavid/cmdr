@@ -604,6 +604,13 @@
     "confidence": "high",
     "sources": "macOS/Microsoft es (combinación de teclas, 7 hits in the pile); catalog combinación (shortcuts.conflict.*, downloads.shortcutRow.invalidCombo)"
   },
+  "menu": {
+    "chosen": "menú",
+    "accept": ["menús"],
+    "forms": "Open the X menu → Abrir el menú de X (Abrir el menú contextual, Menú de favoritos)",
+    "confidence": "high",
+    "sources": "macOS 27.0.1 live (AXAction Open Menu → Abrir menú); catalog Menú de favoritos, menú contextual"
+  },
   "provider-console": {
     "chosen": "consola",
     "confidence": "high",
@@ -2023,8 +2030,9 @@
     "chosen": "preajuste",
     "accept": ["preajustes"],
     "confidence": "high",
-    "sources": "Double Commander (Preajustes)",
-    "decision": "Preajustes y el botón «Volver a …»"
+    "sources": "Double Commander (Preajustes); macOS 27.0.1 live print dialog Save Current Settings as Preset…",
+    "decision": "Preajustes y el botón «Volver a …»",
+    "forms": "Multi-rename: Save the current settings as a preset → Guardar los ajustes actuales como preajuste (macOS print dialog); (edited) → (editado); es-419 forks the word to preconfiguración"
   },
   "preview": {
     "chosen": "vista previa",
@@ -2266,6 +2274,13 @@
     "accept": ["reserv"],
     "confidence": "high",
     "sources": "macOS Finder (RN5 reservado para el sistema)"
+  },
+  "reset": {
+    "chosen": "Restablecer",
+    "accept": ["restablec"],
+    "forms": "Reset to default → Restablecer al valor por omisión; Reset all fields → Restablecer todos los campos; the zoom → restablecer el zoom",
+    "confidence": "high",
+    "sources": "macOS 27.0.1 live Reset → Restablecer (es and es_419); catalog settings.control.resetToDefault"
   },
   "respond": {
     "chosen": "responder",

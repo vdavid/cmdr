@@ -35,6 +35,10 @@
   "@shortcuts.scope.volumeChooser": {
     "sourceHash": "16c042e"
   },
+  "shortcuts.scope.multiRename": "Đổi tên hàng loạt",
+  "@shortcuts.scope.multiRename": {
+    "sourceHash": "5ceb1a2"
+  },
   "shortcuts.scope.favoritesMenu": "Menu mục ưa thích",
   "@shortcuts.scope.favoritesMenu": {
     "sourceHash": "7e9f06e"

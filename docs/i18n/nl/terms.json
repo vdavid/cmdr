@@ -625,6 +625,13 @@
     "forms": "button Verbind; Connect to server → Verbind met server; Connect as guest → Verbind als gast; progress Verbinden met {name}…; status Verbonden; in a sentence verbinding maken; a phone plugged in by cable is aangesloten, not verbonden",
     "sources": "macOS Finder (Connect to server → Verbind met server, Connect As… → Verbind als…), AppKit (Connecting… → Verbinden…, Connected → Verbonden)"
   },
+  "menu": {
+    "chosen": "menu",
+    "accept": ["menu’s", "menu's"],
+    "forms": "compounds close up (contextmenu, Favorietenmenu, voorinstellingenmenu); Open the X menu → Open X-menu, closed up (Open voorinstellingenmenu)",
+    "confidence": "high",
+    "sources": "macOS 27.0.1 live (AXAction Open Menu → Open menu); catalog Favorietenmenu, contextmenu"
+  },
   "provider-console": {
     "chosen": "console",
     "confidence": "high",
@@ -2168,8 +2175,8 @@
     "accept": ["voorinstellingen"],
     "chosen": "voorinstelling",
     "confidence": "high",
-    "forms": "back to presets → Terug naar voorinstellingen",
-    "sources": "Double Commander (gewijzigde voorinstelling)"
+    "forms": "back to presets → Terug naar voorinstellingen; Multi-rename: Save the current settings as a preset → Bewaar huidige instellingen als voorinstelling (macOS print dialog, verbatim); the menu → voorinstellingenmenu",
+    "sources": "Double Commander (gewijzigde voorinstelling); macOS 27.0.1 live print dialog Save Current Settings as Preset…"
   },
   "preview": {
     "accept": ["voorvertoning", "bekijken"],
@@ -2406,6 +2413,19 @@
     "chosen": "gereserveerd",
     "confidence": "high",
     "sources": "standard NL"
+  },
+  "reset": {
+    "chosen": "Herstel",
+    "accept": ["herstel", "terugzetten", "teruggezet"],
+    "forms": "button Herstel (Herstel naar standaard, Herstel alle velden); prose and titles terugzetten (Geavanceerde instellingen terugzetten, Zoom teruggezet naar 100%)",
+    "avoid": [
+      {
+        "form": "Stel opnieuw in",
+        "why": "macOS’s bare Reset button; the catalog settled on Herstel for every reset control before this ruling"
+      }
+    ],
+    "confidence": "high",
+    "sources": "catalog settings.control.resetToDefault, shortcuts.section.resetAll (Herstel); macOS 27.0.1 live Reset → Stel opnieuw in"
   },
   "respond": {
     "accept": ["reageert", "reageerde", "gereageerd"],
@@ -3101,7 +3121,7 @@
     "sources": "catalog (errors.write.destinationNotFound.message.copy, errors.write.deviceDisconnected.sided.destination.copy); macOS AppKit Document (To keep the file unchanged…): het bestand ongewijzigd laten, the verb-side form"
   },
   "update": {
-    "accept": ["updates", "bijwerken", "bijgewerkt", "bij te werken", "werkt"],
+    "accept": ["updates", "bijwerken", "bijgewerkt", "bij te werken", "werkt", "werk bij"],
     "avoid": [
       {
         "form": "houdt … bij (for keeping the index current)",
@@ -3110,7 +3130,7 @@
     ],
     "chosen": "update",
     "confidence": "high",
-    "forms": "noun update; verb bijwerken (Herstart om bij te werken; werkt de index bij); Check for updates → Zoek naar updates; Software Update → Software-update; the Settings section Updates keeps the loanword capitalized (Updates en privacy)",
+    "forms": "noun update; verb bijwerken (Herstart om bij te werken; werkt de index bij); a menu item → Werk bij (Werk bij met huidige velden); Check for updates → Zoek naar updates; Software Update → Software-update; the Settings section Updates keeps the loanword capitalized (Updates en privacy)",
     "sources": "MS (update); macOS Software-update"
   },
   "upgrade": {

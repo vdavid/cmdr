@@ -320,7 +320,12 @@
   },
   "camera": {
     "accept": ["câmeras"],
-    "avoid": [{ "form": "câmara", "why": "the pt-PT spelling; Cmdr ships Brazilian" }],
+    "avoid": [
+      {
+        "form": "câmara",
+        "why": "the pt-PT spelling; Cmdr ships Brazilian"
+      }
+    ],
     "chosen": "câmera",
     "confidence": "high",
     "sources": "pt-BR macOS Photos (Modelo da câmera, Marca da câmera); catalog (mtpEnabled, MTP section)"
@@ -572,6 +577,13 @@
     ],
     "confidence": "confirmed",
     "sources": "macOS Finder pt-BR ConnectToWindow, NetAuthAgent (Conectar)"
+  },
+  "menu": {
+    "chosen": "menu",
+    "accept": ["menus"],
+    "forms": "Open the X menu → Abrir menu de X, no article (Abrir menu de contexto, Menu de favoritos)",
+    "confidence": "high",
+    "sources": "macOS 27.0.1 live (AXAction Open Menu → Abrir Menu, sentence-cased here); catalog Menu de favoritos, menu de contexto"
   },
   "provider-console": {
     "chosen": "console",
@@ -1984,7 +1996,8 @@
     "chosen": "predefinição",
     "accept": ["predefinições"],
     "confidence": "high",
-    "sources": "MS terminology pt-BR (indexing preset → predefinição da indexação); macOS print dialog"
+    "sources": "MS terminology pt-BR (indexing preset → predefinição da indexação); macOS print dialog",
+    "forms": "Multi-rename: (edited) → (editada), agreeing with predefinição; the menu → menu de predefinições"
   },
   "preview": {
     "chosen": "Pré-visualizar",

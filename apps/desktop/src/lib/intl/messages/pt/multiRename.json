@@ -83,6 +83,62 @@
   "@multiRename.counterDigits": {
     "sourceHash": "9cd500d"
   },
+  "multiRename.presets.title": "Predefinições",
+  "@multiRename.presets.title": {
+    "sourceHash": "954f93f"
+  },
+  "multiRename.presets.edited": "{preset} (editada)",
+  "@multiRename.presets.edited": {
+    "sourceHash": "6247d29"
+  },
+  "multiRename.presets.tooltip": "Carregar, salvar e gerenciar predefinições",
+  "@multiRename.presets.tooltip": {
+    "sourceHash": "e63a28f"
+  },
+  "multiRename.presets.reset": "Restaurar todos os campos",
+  "@multiRename.presets.reset": {
+    "sourceHash": "39bf87f"
+  },
+  "multiRename.presets.saveAs": "Salvar como predefinição…",
+  "@multiRename.presets.saveAs": {
+    "sourceHash": "8abf582"
+  },
+  "multiRename.presets.rename": "Renomear…",
+  "@multiRename.presets.rename": {
+    "sourceHash": "6fa62b3"
+  },
+  "multiRename.presets.update": "Atualizar com os campos atuais",
+  "@multiRename.presets.update": {
+    "sourceHash": "1bae4e4"
+  },
+  "multiRename.presets.delete": "Apagar",
+  "@multiRename.presets.delete": {
+    "sourceHash": "e2d0a54"
+  },
+  "multiRename.presets.saveTitle": "Salvar predefinição",
+  "@multiRename.presets.saveTitle": {
+    "sourceHash": "362a137"
+  },
+  "multiRename.presets.renameTitle": "Renomear predefinição",
+  "@multiRename.presets.renameTitle": {
+    "sourceHash": "0e7392e"
+  },
+  "multiRename.presets.save": "Salvar",
+  "@multiRename.presets.save": {
+    "sourceHash": "1509f56"
+  },
+  "multiRename.presets.renameConfirm": "Renomear",
+  "@multiRename.presets.renameConfirm": {
+    "sourceHash": "3064d79"
+  },
+  "multiRename.presets.clash": "Já existe uma predefinição chamada “{preset}”. Substituir?",
+  "@multiRename.presets.clash": {
+    "sourceHash": "7b084a2"
+  },
+  "multiRename.presets.replace": "Substituir",
+  "@multiRename.presets.replace": {
+    "sourceHash": "95e1543"
+  },
   "multiRename.preset.removeDiacritics": "Remover acentos",
   "@multiRename.preset.removeDiacritics": {
     "sourceHash": "4103ca1"
@@ -187,6 +243,42 @@
   "multiRename.status.missing": "Não está mais nesta pasta",
   "@multiRename.status.missing": {
     "sourceHash": "80d16af"
+  },
+  "multiRename.status.ready": "Para renomear",
+  "@multiRename.status.ready": {
+    "sourceHash": "f032574"
+  },
+  "multiRename.reason.duplicate": "Outro arquivo deste lote recebe o mesmo nome novo, então nenhum dos dois é renomeado.",
+  "@multiRename.reason.duplicate": {
+    "sourceHash": "de3e331"
+  },
+  "multiRename.reason.targetExists": "Um arquivo que continua nesta pasta já tem este nome, então este mantém o nome.",
+  "@multiRename.reason.targetExists": {
+    "sourceHash": "2356c66"
+  },
+  "multiRename.reason.missing": "Este arquivo foi movido ou apagado depois que “Renomear em lote” abriu, então ficou de fora.",
+  "@multiRename.reason.missing": {
+    "sourceHash": "8697aa3"
+  },
+  "multiRename.reason.empty": "O novo nome está vazio.",
+  "@multiRename.reason.empty": {
+    "sourceHash": "1ba05d4"
+  },
+  "multiRename.reason.tooLong": "O novo nome é longo demais para um nome de arquivo.",
+  "@multiRename.reason.tooLong": {
+    "sourceHash": "b709218"
+  },
+  "multiRename.reason.reserved": "“.” e “..” não podem ser nomes de arquivo.",
+  "@multiRename.reason.reserved": {
+    "sourceHash": "dcca507"
+  },
+  "multiRename.reason.disallowedCharacter": "Nomes de arquivo não podem conter {character}.",
+  "@multiRename.reason.disallowedCharacter": {
+    "sourceHash": "66a09f6"
+  },
+  "multiRename.problemsOnly": "Apenas problemas",
+  "@multiRename.problemsOnly": {
+    "sourceHash": "1d4614b"
   },
   "multiRename.selectionChanged": "A pasta mudou enquanto “Renomear em lote” abria. Confira a seleção e tente de novo.",
   "@multiRename.selectionChanged": {

@@ -2322,7 +2322,7 @@
     "distinct": ["custom", "default"],
     "en": "preset",
     "match": ["preset", "presets"],
-    "sense": "A predefined value in a settings picker."
+    "sense": "A predefined or saved set of values: a preset in a settings picker, or a saved set of Multi-rename fields."
   },
   "preview": {
     "distinct": ["quick-look", "viewer"],
@@ -3329,7 +3329,8 @@
   "time-left": {
     "en": "left",
     "match": ["remaining", "time left", "m left", "s left", "h left"],
-    "note": "\"Left\" as a direction (left pane) and \"left alone\" are other concepts.",
+    "notMatch": ["left out"],
+    "note": "\"Left\" as a direction (left pane), \"left alone\", and \"left out\" (skipped) are other concepts.",
     "sense": "Time remaining in a progress readout (\"3m left\")."
   },
   "timeout": {

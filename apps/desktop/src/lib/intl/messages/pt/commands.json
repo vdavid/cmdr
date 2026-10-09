@@ -404,6 +404,14 @@
   "@commands.fileMultiRename.description": {
     "sourceHash": "d294fb1"
   },
+  "commands.multiRenameOpenPresets.label": "Abrir menu de predefinições",
+  "@commands.multiRenameOpenPresets.label": {
+    "sourceHash": "ca9ede6"
+  },
+  "commands.multiRenameSavePreset.label": "Salvar os ajustes atuais como predefinição",
+  "@commands.multiRenameSavePreset.label": {
+    "sourceHash": "f8101a3"
+  },
   "commands.fileView.label": "Visualizar",
   "@commands.fileView.label": {
     "sourceHash": "dcc839a"

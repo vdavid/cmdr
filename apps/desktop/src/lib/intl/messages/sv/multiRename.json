@@ -83,6 +83,62 @@
   "@multiRename.counterDigits": {
     "sourceHash": "9cd500d"
   },
+  "multiRename.presets.title": "Förinställningar",
+  "@multiRename.presets.title": {
+    "sourceHash": "954f93f"
+  },
+  "multiRename.presets.edited": "{preset} (redigerad)",
+  "@multiRename.presets.edited": {
+    "sourceHash": "6247d29"
+  },
+  "multiRename.presets.tooltip": "Läs in, spara och hantera förinställningar",
+  "@multiRename.presets.tooltip": {
+    "sourceHash": "e63a28f"
+  },
+  "multiRename.presets.reset": "Återställ alla fält",
+  "@multiRename.presets.reset": {
+    "sourceHash": "39bf87f"
+  },
+  "multiRename.presets.saveAs": "Spara som förinställning…",
+  "@multiRename.presets.saveAs": {
+    "sourceHash": "8abf582"
+  },
+  "multiRename.presets.rename": "Byt namn…",
+  "@multiRename.presets.rename": {
+    "sourceHash": "6fa62b3"
+  },
+  "multiRename.presets.update": "Uppdatera med aktuella fält",
+  "@multiRename.presets.update": {
+    "sourceHash": "1bae4e4"
+  },
+  "multiRename.presets.delete": "Radera",
+  "@multiRename.presets.delete": {
+    "sourceHash": "e2d0a54"
+  },
+  "multiRename.presets.saveTitle": "Spara förinställning",
+  "@multiRename.presets.saveTitle": {
+    "sourceHash": "362a137"
+  },
+  "multiRename.presets.renameTitle": "Byt namn på förinställning",
+  "@multiRename.presets.renameTitle": {
+    "sourceHash": "0e7392e"
+  },
+  "multiRename.presets.save": "Spara",
+  "@multiRename.presets.save": {
+    "sourceHash": "1509f56"
+  },
+  "multiRename.presets.renameConfirm": "Byt namn",
+  "@multiRename.presets.renameConfirm": {
+    "sourceHash": "3064d79"
+  },
+  "multiRename.presets.clash": "Det finns redan en förinställning som heter ”{preset}”. Ersätta den?",
+  "@multiRename.presets.clash": {
+    "sourceHash": "7b084a2"
+  },
+  "multiRename.presets.replace": "Ersätt",
+  "@multiRename.presets.replace": {
+    "sourceHash": "95e1543"
+  },
   "multiRename.preset.removeDiacritics": "Ta bort diakritiska tecken",
   "@multiRename.preset.removeDiacritics": {
     "sourceHash": "4103ca1"
@@ -187,6 +243,42 @@
   "multiRename.status.missing": "Finns inte längre i den här mappen",
   "@multiRename.status.missing": {
     "sourceHash": "80d16af"
+  },
+  "multiRename.status.ready": "Redo för namnbyte",
+  "@multiRename.status.ready": {
+    "sourceHash": "f032574"
+  },
+  "multiRename.reason.duplicate": "En annan fil i den här omgången får samma nya namn, så ingen av dem byter namn.",
+  "@multiRename.reason.duplicate": {
+    "sourceHash": "de3e331"
+  },
+  "multiRename.reason.targetExists": "En fil som ligger kvar i den här mappen har redan det här namnet, så den här filen behåller sitt namn.",
+  "@multiRename.reason.targetExists": {
+    "sourceHash": "2356c66"
+  },
+  "multiRename.reason.missing": "Den här filen flyttades eller raderades efter att ”Massbyt namn” öppnades, så den hoppas över.",
+  "@multiRename.reason.missing": {
+    "sourceHash": "8697aa3"
+  },
+  "multiRename.reason.empty": "Det nya namnet är tomt.",
+  "@multiRename.reason.empty": {
+    "sourceHash": "1ba05d4"
+  },
+  "multiRename.reason.tooLong": "Det nya namnet är för långt för ett filnamn.",
+  "@multiRename.reason.tooLong": {
+    "sourceHash": "b709218"
+  },
+  "multiRename.reason.reserved": "”.” och ”..” kan inte vara filnamn.",
+  "@multiRename.reason.reserved": {
+    "sourceHash": "dcca507"
+  },
+  "multiRename.reason.disallowedCharacter": "Filnamn får inte innehålla {character}.",
+  "@multiRename.reason.disallowedCharacter": {
+    "sourceHash": "66a09f6"
+  },
+  "multiRename.problemsOnly": "Bara problem",
+  "@multiRename.problemsOnly": {
+    "sourceHash": "1d4614b"
   },
   "multiRename.selectionChanged": "Mappen ändrades medan ”Massbyt namn” öppnades. Kontrollera markeringen och försök sedan igen.",
   "@multiRename.selectionChanged": {

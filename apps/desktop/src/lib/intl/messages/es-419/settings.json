@@ -394,5 +394,9 @@
   "settings.fileExplorer.quickFilterIntroSeen.description": "Si ya se mostró el aviso que explica el primer filtro rápido.",
   "@settings.fileExplorer.quickFilterIntroSeen.description": {
     "sourceHash": "fa180c6"
+  },
+  "settings.control.backToPresetsAriaLabel": "Volver a las preconfiguraciones",
+  "@settings.control.backToPresetsAriaLabel": {
+    "sourceHash": "ff0937a"
   }
 }

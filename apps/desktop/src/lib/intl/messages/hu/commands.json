@@ -404,6 +404,14 @@
   "@commands.fileMultiRename.description": {
     "sourceHash": "d294fb1"
   },
+  "commands.multiRenameOpenPresets.label": "Előbeállítások menü megnyitása",
+  "@commands.multiRenameOpenPresets.label": {
+    "sourceHash": "ca9ede6"
+  },
+  "commands.multiRenameSavePreset.label": "Aktuális beállítások mentése előbeállításként",
+  "@commands.multiRenameSavePreset.label": {
+    "sourceHash": "f8101a3"
+  },
   "commands.fileView.label": "Megtekintés",
   "@commands.fileView.label": {
     "sourceHash": "dcc839a"

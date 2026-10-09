@@ -170,5 +170,13 @@
   "commands.handler.viewDebugLog.unavailable": "No se pudo abrir el registro de depuración. Inténtalo de nuevo.",
   "@commands.handler.viewDebugLog.unavailable": {
     "sourceHash": "02e53dd"
+  },
+  "commands.multiRenameOpenPresets.label": "Abrir el menú de preconfiguraciones",
+  "@commands.multiRenameOpenPresets.label": {
+    "sourceHash": "ea87a6a"
+  },
+  "commands.multiRenameSavePreset.label": "Guardar la configuración actual como preconfiguración",
+  "@commands.multiRenameSavePreset.label": {
+    "sourceHash": "cf5e463"
   }
 }

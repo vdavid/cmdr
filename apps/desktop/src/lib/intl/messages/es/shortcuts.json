@@ -36,6 +36,10 @@
   "@shortcuts.scope.volumeChooser": {
     "sourceHash": "16c042e"
   },
+  "shortcuts.scope.multiRename": "Renombrado múltiple",
+  "@shortcuts.scope.multiRename": {
+    "sourceHash": "5ceb1a2"
+  },
   "shortcuts.scope.favoritesMenu": "Menú de favoritos",
   "@shortcuts.scope.favoritesMenu": {
     "sourceHash": "7e9f06e"

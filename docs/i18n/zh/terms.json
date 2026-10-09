@@ -650,6 +650,12 @@
     "forms": "Connecting to X… → 正在连接到 {name}…; Connect to server… → 连接服务器…; Connect as guest → 以来宾身份连接; internet connection → 联网 / 互联网连接",
     "sources": "macOS Finder, NetAuthAgent"
   },
+  "menu": {
+    "chosen": "菜单",
+    "forms": "X menu → X菜单, tight (个人收藏菜单, 预设菜单); context menu → 右键菜单; a named menu in prose → “帮助”菜单",
+    "confidence": "high",
+    "sources": "macOS 27.0.1 live (AXAction Open Menu → 打开菜单); catalog 个人收藏菜单, 右键菜单"
+  },
   "provider-console": {
     "chosen": "控制台",
     "confidence": "high",
@@ -2224,8 +2230,8 @@
     ],
     "chosen": "预设",
     "confidence": "high",
-    "forms": "back to presets 返回预设",
-    "sources": "MS terminology"
+    "forms": "back to presets 返回预设; Multi-rename: Save the current settings as a preset → 将当前设置保存为预设 (macOS print dialog frame, with this ruling’s 预设); the menu → 预设菜单",
+    "sources": "MS terminology; macOS 27.0.1 live print dialog Save Current Settings as Preset…"
   },
   "preview": {
     "chosen": "预览",

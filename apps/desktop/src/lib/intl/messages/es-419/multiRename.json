@@ -18,5 +18,41 @@
   "multiRename.error.timedOut": "Tardó demasiado, así que Cmdr dejó de esperar. Inténtalo de nuevo o selecciona menos archivos.",
   "@multiRename.error.timedOut": {
     "sourceHash": "c97a77e"
+  },
+  "multiRename.presets.title": "Preconfiguraciones",
+  "@multiRename.presets.title": {
+    "sourceHash": "8ae0fa8"
+  },
+  "multiRename.presets.edited": "{preset} (editada)",
+  "@multiRename.presets.edited": {
+    "sourceHash": "0884b27"
+  },
+  "multiRename.presets.tooltip": "Cargar, guardar y administrar preconfiguraciones",
+  "@multiRename.presets.tooltip": {
+    "sourceHash": "e506876"
+  },
+  "multiRename.presets.saveAs": "Guardar como preconfiguración…",
+  "@multiRename.presets.saveAs": {
+    "sourceHash": "1d40d04"
+  },
+  "multiRename.presets.saveTitle": "Guardar preconfiguración",
+  "@multiRename.presets.saveTitle": {
+    "sourceHash": "735dd18"
+  },
+  "multiRename.presets.renameTitle": "Renombrar preconfiguración",
+  "@multiRename.presets.renameTitle": {
+    "sourceHash": "40981ba"
+  },
+  "multiRename.presets.clash": "Ya hay una preconfiguración llamada “{preset}”. ¿Reemplazarla?",
+  "@multiRename.presets.clash": {
+    "sourceHash": "0699f6f"
+  },
+  "multiRename.presetName": "Nombre de la preconfiguración",
+  "@multiRename.presetName": {
+    "sourceHash": "f1afbfd"
+  },
+  "multiRename.reason.missing": "Este archivo se movió o eliminó después de abrir “Renombrado múltiple”, así que queda fuera.",
+  "@multiRename.reason.missing": {
+    "sourceHash": "01f75b3"
   }
 }

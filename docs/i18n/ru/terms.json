@@ -3483,7 +3483,7 @@
   "preset": {
     "chosen": "набор настроек",
     "accept": ["набор", "готов"],
-    "forms": "Back to presets → Вернуться к готовым вариантам / к наборам настроек",
+    "forms": "Back to presets → Вернуться к готовым вариантам / к наборам настроек; Multi-rename: Save the current settings as a preset → Сохранить текущие настройки как набор (macOS print dialog, verbatim); (edited) → (изменен)",
     "avoid": [
       {
         "form": "пресет",
@@ -3491,7 +3491,7 @@
       }
     ],
     "confidence": "high",
-    "sources": "macOS live Preset → «Набор настроек», «Набор параметров», Presets → «Наборы настроек»"
+    "sources": "macOS live Preset → «Набор настроек», «Набор параметров», Presets → «Наборы настроек»; macOS 27.0.1 live print dialog Save Current Settings as Preset…"
   },
   "preview": {
     "chosen": "Просмотр",

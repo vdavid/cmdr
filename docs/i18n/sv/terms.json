@@ -631,6 +631,13 @@
     "forms": "ansluta, Anslut, Ansluter till {name}…, anslutning, ansluten; Connect as guest → Anslut som gäst",
     "sources": "macOS Finder (Anslut till server, Ansluter till ^0…)"
   },
+  "menu": {
+    "chosen": "meny",
+    "accept": ["menyn", "menyer"],
+    "forms": "compounds close up (snabbmeny, Favoritmeny, förinställningsmenyn); a named menu in prose → Hjälp-menyn",
+    "confidence": "high",
+    "sources": "macOS 27.0.1 live (AXAction Open Menu → Öppna meny); catalog Favoritmeny, snabbmeny"
+  },
   "provider-console": {
     "chosen": "konsol",
     "confidence": "high",
@@ -2091,7 +2098,8 @@
   "preset": {
     "chosen": "förinställning",
     "confidence": "high",
-    "sources": "macOS print dialog (Förinställningar)"
+    "sources": "macOS print dialog (Förinställningar)",
+    "forms": "Multi-rename: Save the current settings as a preset → Spara aktuella inställningar som förinställning (macOS print dialog, verbatim); the menu → förinställningsmenyn"
   },
   "preview": {
     "accept": ["förhandsvisa"],
@@ -2364,6 +2372,19 @@
     "chosen": "reserverad",
     "confidence": "high",
     "sources": "standard Swedish"
+  },
+  "reset": {
+    "chosen": "Återställ",
+    "accept": ["återställ"],
+    "forms": "Reset to default → Återställ till förval; Reset all fields → Återställ alla fält; the zoom → återställa zoomnivån",
+    "avoid": [
+      {
+        "form": "Nollställ",
+        "why": "macOS’s bare Reset button, but the catalog uses Återställ for every reset control; one control family, one verb"
+      }
+    ],
+    "confidence": "high",
+    "sources": "catalog settings.control.resetToDefault, shortcuts.section.resetAll (Återställ); macOS 27.0.1 live Reset → Nollställ (rejected for consistency)"
   },
   "respond": {
     "chosen": "svara",

@@ -83,6 +83,62 @@
   "@multiRename.counterDigits": {
     "sourceHash": "9cd500d"
   },
+  "multiRename.presets.title": "Voorinstellingen",
+  "@multiRename.presets.title": {
+    "sourceHash": "954f93f"
+  },
+  "multiRename.presets.edited": "{preset} (gewijzigd)",
+  "@multiRename.presets.edited": {
+    "sourceHash": "6247d29"
+  },
+  "multiRename.presets.tooltip": "Laad, bewaar en beheer voorinstellingen",
+  "@multiRename.presets.tooltip": {
+    "sourceHash": "e63a28f"
+  },
+  "multiRename.presets.reset": "Herstel alle velden",
+  "@multiRename.presets.reset": {
+    "sourceHash": "39bf87f"
+  },
+  "multiRename.presets.saveAs": "Bewaar als voorinstelling…",
+  "@multiRename.presets.saveAs": {
+    "sourceHash": "8abf582"
+  },
+  "multiRename.presets.rename": "Wijzig naam…",
+  "@multiRename.presets.rename": {
+    "sourceHash": "6fa62b3"
+  },
+  "multiRename.presets.update": "Werk bij met huidige velden",
+  "@multiRename.presets.update": {
+    "sourceHash": "1bae4e4"
+  },
+  "multiRename.presets.delete": "Verwijder",
+  "@multiRename.presets.delete": {
+    "sourceHash": "e2d0a54"
+  },
+  "multiRename.presets.saveTitle": "Voorinstelling bewaren",
+  "@multiRename.presets.saveTitle": {
+    "sourceHash": "362a137"
+  },
+  "multiRename.presets.renameTitle": "Naam van voorinstelling wijzigen",
+  "@multiRename.presets.renameTitle": {
+    "sourceHash": "0e7392e"
+  },
+  "multiRename.presets.save": "Bewaar",
+  "@multiRename.presets.save": {
+    "sourceHash": "1509f56"
+  },
+  "multiRename.presets.renameConfirm": "Wijzig naam",
+  "@multiRename.presets.renameConfirm": {
+    "sourceHash": "3064d79"
+  },
+  "multiRename.presets.clash": "Er is al een voorinstelling met de naam ‘{preset}’. Vervangen?",
+  "@multiRename.presets.clash": {
+    "sourceHash": "7b084a2"
+  },
+  "multiRename.presets.replace": "Vervang",
+  "@multiRename.presets.replace": {
+    "sourceHash": "95e1543"
+  },
   "multiRename.preset.removeDiacritics": "Accenten verwijderen",
   "@multiRename.preset.removeDiacritics": {
     "sourceHash": "4103ca1"
@@ -187,6 +243,42 @@
   "multiRename.status.missing": "Niet meer in deze map",
   "@multiRename.status.missing": {
     "sourceHash": "80d16af"
+  },
+  "multiRename.status.ready": "Klaar voor naamwijziging",
+  "@multiRename.status.ready": {
+    "sourceHash": "f032574"
+  },
+  "multiRename.reason.duplicate": "Een ander bestand in deze reeks krijgt dezelfde nieuwe naam, dus van geen van beide wordt de naam gewijzigd.",
+  "@multiRename.reason.duplicate": {
+    "sourceHash": "de3e331"
+  },
+  "multiRename.reason.targetExists": "Een bestand dat in deze map blijft, heeft deze naam al, dus dit bestand behoudt zijn naam.",
+  "@multiRename.reason.targetExists": {
+    "sourceHash": "2356c66"
+  },
+  "multiRename.reason.missing": "Dit bestand is verplaatst of verwijderd nadat ‘Wijzig meerdere namen’ werd geopend, dus het wordt overgeslagen.",
+  "@multiRename.reason.missing": {
+    "sourceHash": "8697aa3"
+  },
+  "multiRename.reason.empty": "De nieuwe naam is leeg.",
+  "@multiRename.reason.empty": {
+    "sourceHash": "1ba05d4"
+  },
+  "multiRename.reason.tooLong": "De nieuwe naam is te lang voor een bestandsnaam.",
+  "@multiRename.reason.tooLong": {
+    "sourceHash": "b709218"
+  },
+  "multiRename.reason.reserved": "‘.’ en ‘..’ kunnen geen bestandsnamen zijn.",
+  "@multiRename.reason.reserved": {
+    "sourceHash": "dcca507"
+  },
+  "multiRename.reason.disallowedCharacter": "Bestandsnamen mogen geen {character} bevatten.",
+  "@multiRename.reason.disallowedCharacter": {
+    "sourceHash": "66a09f6"
+  },
+  "multiRename.problemsOnly": "Alleen problemen",
+  "@multiRename.problemsOnly": {
+    "sourceHash": "1d4614b"
   },
   "multiRename.selectionChanged": "De map is gewijzigd terwijl ‘Wijzig meerdere namen’ werd geopend. Controleer je selectie en probeer het dan opnieuw.",
   "@multiRename.selectionChanged": {

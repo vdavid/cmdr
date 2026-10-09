@@ -83,6 +83,62 @@
   "@multiRename.counterDigits": {
     "sourceHash": "9cd500d"
   },
+  "multiRename.presets.title": "Voreinstellungen",
+  "@multiRename.presets.title": {
+    "sourceHash": "954f93f"
+  },
+  "multiRename.presets.edited": "{preset} (bearbeitet)",
+  "@multiRename.presets.edited": {
+    "sourceHash": "6247d29"
+  },
+  "multiRename.presets.tooltip": "Voreinstellungen laden, sichern und verwalten",
+  "@multiRename.presets.tooltip": {
+    "sourceHash": "e63a28f"
+  },
+  "multiRename.presets.reset": "Alle Felder zurücksetzen",
+  "@multiRename.presets.reset": {
+    "sourceHash": "39bf87f"
+  },
+  "multiRename.presets.saveAs": "Als Voreinstellung sichern …",
+  "@multiRename.presets.saveAs": {
+    "sourceHash": "8abf582"
+  },
+  "multiRename.presets.rename": "Umbenennen …",
+  "@multiRename.presets.rename": {
+    "sourceHash": "6fa62b3"
+  },
+  "multiRename.presets.update": "Mit den aktuellen Feldern aktualisieren",
+  "@multiRename.presets.update": {
+    "sourceHash": "1bae4e4"
+  },
+  "multiRename.presets.delete": "Löschen",
+  "@multiRename.presets.delete": {
+    "sourceHash": "e2d0a54"
+  },
+  "multiRename.presets.saveTitle": "Voreinstellung sichern",
+  "@multiRename.presets.saveTitle": {
+    "sourceHash": "362a137"
+  },
+  "multiRename.presets.renameTitle": "Voreinstellung umbenennen",
+  "@multiRename.presets.renameTitle": {
+    "sourceHash": "0e7392e"
+  },
+  "multiRename.presets.save": "Sichern",
+  "@multiRename.presets.save": {
+    "sourceHash": "1509f56"
+  },
+  "multiRename.presets.renameConfirm": "Umbenennen",
+  "@multiRename.presets.renameConfirm": {
+    "sourceHash": "3064d79"
+  },
+  "multiRename.presets.clash": "Es gibt bereits eine Voreinstellung namens „{preset}“. Ersetzen?",
+  "@multiRename.presets.clash": {
+    "sourceHash": "7b084a2"
+  },
+  "multiRename.presets.replace": "Ersetzen",
+  "@multiRename.presets.replace": {
+    "sourceHash": "95e1543"
+  },
   "multiRename.preset.removeDiacritics": "Diakritische Zeichen entfernen",
   "@multiRename.preset.removeDiacritics": {
     "sourceHash": "4103ca1"
@@ -187,6 +243,42 @@
   "multiRename.status.missing": "Nicht mehr in diesem Ordner",
   "@multiRename.status.missing": {
     "sourceHash": "80d16af"
+  },
+  "multiRename.status.ready": "Bereit zum Umbenennen",
+  "@multiRename.status.ready": {
+    "sourceHash": "f032574"
+  },
+  "multiRename.reason.duplicate": "Eine andere Datei, die hier umbenannt wird, bekommt denselben neuen Namen, daher wird keine von beiden umbenannt.",
+  "@multiRename.reason.duplicate": {
+    "sourceHash": "de3e331"
+  },
+  "multiRename.reason.targetExists": "Eine Datei, die in diesem Ordner bleibt, hat bereits diesen Namen, daher behält diese Datei ihren Namen.",
+  "@multiRename.reason.targetExists": {
+    "sourceHash": "2356c66"
+  },
+  "multiRename.reason.missing": "Diese Datei wurde bewegt oder gelöscht, nachdem „Mehrfach umbenennen“ geöffnet wurde, daher wird sie ausgelassen.",
+  "@multiRename.reason.missing": {
+    "sourceHash": "8697aa3"
+  },
+  "multiRename.reason.empty": "Der neue Name ist leer.",
+  "@multiRename.reason.empty": {
+    "sourceHash": "1ba05d4"
+  },
+  "multiRename.reason.tooLong": "Der neue Name ist zu lang für einen Dateinamen.",
+  "@multiRename.reason.tooLong": {
+    "sourceHash": "b709218"
+  },
+  "multiRename.reason.reserved": "„.“ und „..“ können keine Dateinamen sein.",
+  "@multiRename.reason.reserved": {
+    "sourceHash": "dcca507"
+  },
+  "multiRename.reason.disallowedCharacter": "Dateinamen dürfen das Zeichen {character} nicht enthalten.",
+  "@multiRename.reason.disallowedCharacter": {
+    "sourceHash": "66a09f6"
+  },
+  "multiRename.problemsOnly": "Nur Probleme",
+  "@multiRename.problemsOnly": {
+    "sourceHash": "1d4614b"
   },
   "multiRename.selectionChanged": "Der Ordner hat sich geändert, während „Mehrfach umbenennen“ geöffnet wurde. Prüfe deine Auswahl und versuche es dann erneut.",
   "@multiRename.selectionChanged": {

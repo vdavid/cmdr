@@ -710,6 +710,13 @@
     "forms": "button Verbinden; Connect to server → Mit Server verbinden( …); Connecting … → Verbindung wird hergestellt …; Connecting to {name} … → Verbindung zu {name} wird hergestellt …; Connected → Verbunden; Connect as guest → Als Gast verbinden; reflexive with du: wenn du dich … verbindest",
     "sources": "macOS Finder (Mit Server verbinden, Verbinden, Serveradresse); NetAuthAgent (CONNECT)"
   },
+  "menu": {
+    "chosen": "Menü",
+    "accept": ["menü"],
+    "forms": "compounds close up (Kontextmenü, Favoritenmenü); a named menu in prose → das Menü „Hilfe“; Open the presets menu → Menü „Voreinstellungen“ öffnen",
+    "confidence": "high",
+    "sources": "macOS 27.0.1 live (AXAction Open Menu → Menü öffnen); catalog Kontextmenü, Favoritenmenü"
+  },
   "provider-console": {
     "chosen": "Konsole",
     "confidence": "high",
@@ -2289,7 +2296,7 @@
     "accept": ["Voreinstellungen"],
     "chosen": "Voreinstellung",
     "confidence": "high",
-    "forms": "back to presets → Zurück zu den Voreinstellungen",
+    "forms": "back to presets → Zurück zu den Voreinstellungen; Multi-rename: Save the current settings as a preset → Aktuelle Einstellungen als Voreinstellung sichern (macOS print dialog, verbatim); (edited) → (bearbeitet)",
     "sources": "MS terminology (indexing preset → Indizierungsvoreinstellung); macOS print dialog (Voreinstellungen)"
   },
   "preview": {

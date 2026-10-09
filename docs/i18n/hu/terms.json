@@ -770,6 +770,13 @@
     "note": "The two stems are a deliberate split: the pane title keeps Apple's kapcsolód-, the sheet's button and its siblings keep csatlakoz- because Connect is shared with fileExplorer.network.connect.",
     "decision": "A szerverlap, az SSH-kulcs jóváhagyása és a Go-to-path előnézete"
   },
+  "menu": {
+    "chosen": "menü",
+    "accept": ["menüt", "menüb", "menüj"],
+    "forms": "X menu → X menü, two words (Kedvencek menü, Előbeállítások menü); context menu → Helyi menü",
+    "confidence": "high",
+    "sources": "macOS 27.0.1 live (AXAction Open Menu → Menü megnyitása); catalog Kedvencek menü, Helyi menü"
+  },
   "provider-console": {
     "chosen": "konzol",
     "confidence": "high",
@@ -2559,9 +2566,9 @@
   },
   "preset": {
     "chosen": "előbeállítás",
-    "forms": "back to presets → Vissza az előbeállításokhoz",
+    "forms": "back to presets → Vissza az előbeállításokhoz; Multi-rename: Save the current settings as a preset → Aktuális beállítások mentése előbeállításként (macOS print dialog, verbatim); (edited) → (szerkesztve)",
     "confidence": "high",
-    "sources": "Double Commander (előbeállítás)"
+    "sources": "Double Commander (előbeállítás); macOS 27.0.1 live print dialog Save Current Settings as Preset…"
   },
   "preview": {
     "chosen": "előnézet",

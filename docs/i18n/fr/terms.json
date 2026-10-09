@@ -690,6 +690,13 @@
     "note": "`se connecter` is the network action; signing in is `s’identifier`.",
     "sources": "macOS Finder (\"Se connecter comme…\", MenuBar 266.title, MN1 « Connexion à « ^0 »… »)"
   },
+  "menu": {
+    "chosen": "menu",
+    "accept": ["menus"],
+    "forms": "Open the X menu → Ouvrir le menu des X (Ouvrir le menu contextuel, Menu des favoris)",
+    "confidence": "high",
+    "sources": "macOS 27.0.1 live (AXAction Open Menu → Ouvrir le menu); catalog Menu des favoris, menu contextuel"
+  },
   "provider-console": {
     "chosen": "console",
     "confidence": "high",
@@ -2194,8 +2201,8 @@
     ],
     "chosen": "présélection",
     "confidence": "high",
-    "forms": "back to presets → Retour aux présélections",
-    "sources": "MS terminology (présélection d'indexation); Double Commander (Présélections)"
+    "forms": "back to presets → Retour aux présélections; Multi-rename: (edited) → (modifiée), agreeing with présélection",
+    "sources": "MS terminology (présélection d'indexation); Double Commander (Présélections); macOS 27.0.1 live print dialog Save Current Settings as Preset…"
   },
   "preview": {
     "accept": ["prévisualis", "Aperçu"],

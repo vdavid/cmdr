@@ -35,6 +35,10 @@
   "@shortcuts.scope.volumeChooser": {
     "sourceHash": "16c042e"
   },
+  "shortcuts.scope.multiRename": "多檔重新命名",
+  "@shortcuts.scope.multiRename": {
+    "sourceHash": "5ceb1a2"
+  },
   "shortcuts.scope.favoritesMenu": "喜好項目選單",
   "@shortcuts.scope.favoritesMenu": {
     "sourceHash": "7e9f06e"

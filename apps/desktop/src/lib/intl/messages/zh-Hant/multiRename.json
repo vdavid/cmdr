@@ -83,6 +83,62 @@
   "@multiRename.counterDigits": {
     "sourceHash": "9cd500d"
   },
+  "multiRename.presets.title": "預設組合",
+  "@multiRename.presets.title": {
+    "sourceHash": "954f93f"
+  },
+  "multiRename.presets.edited": "{preset}（已編輯）",
+  "@multiRename.presets.edited": {
+    "sourceHash": "6247d29"
+  },
+  "multiRename.presets.tooltip": "載入、儲存和管理預設組合",
+  "@multiRename.presets.tooltip": {
+    "sourceHash": "e63a28f"
+  },
+  "multiRename.presets.reset": "全部重設",
+  "@multiRename.presets.reset": {
+    "sourceHash": "39bf87f"
+  },
+  "multiRename.presets.saveAs": "儲存為預設組合⋯",
+  "@multiRename.presets.saveAs": {
+    "sourceHash": "8abf582"
+  },
+  "multiRename.presets.rename": "重新命名⋯",
+  "@multiRename.presets.rename": {
+    "sourceHash": "6fa62b3"
+  },
+  "multiRename.presets.update": "以目前設定更新",
+  "@multiRename.presets.update": {
+    "sourceHash": "1bae4e4"
+  },
+  "multiRename.presets.delete": "刪除",
+  "@multiRename.presets.delete": {
+    "sourceHash": "e2d0a54"
+  },
+  "multiRename.presets.saveTitle": "儲存預設組合",
+  "@multiRename.presets.saveTitle": {
+    "sourceHash": "362a137"
+  },
+  "multiRename.presets.renameTitle": "重新命名預設組合",
+  "@multiRename.presets.renameTitle": {
+    "sourceHash": "0e7392e"
+  },
+  "multiRename.presets.save": "儲存",
+  "@multiRename.presets.save": {
+    "sourceHash": "1509f56"
+  },
+  "multiRename.presets.renameConfirm": "重新命名",
+  "@multiRename.presets.renameConfirm": {
+    "sourceHash": "3064d79"
+  },
+  "multiRename.presets.clash": "已經有名為「{preset}」的預設組合了。要取代它嗎？",
+  "@multiRename.presets.clash": {
+    "sourceHash": "7b084a2"
+  },
+  "multiRename.presets.replace": "取代",
+  "@multiRename.presets.replace": {
+    "sourceHash": "95e1543"
+  },
   "multiRename.preset.removeDiacritics": "移除變音符號",
   "@multiRename.preset.removeDiacritics": {
     "sourceHash": "4103ca1"
@@ -186,6 +242,42 @@
   "multiRename.status.missing": "已不在這個資料夾中",
   "@multiRename.status.missing": {
     "sourceHash": "80d16af"
+  },
+  "multiRename.status.ready": "可以重新命名",
+  "@multiRename.status.ready": {
+    "sourceHash": "f032574"
+  },
+  "multiRename.reason.duplicate": "這一批裡的另一個檔案也會得到相同的新名稱，所以兩個都不會重新命名。",
+  "@multiRename.reason.duplicate": {
+    "sourceHash": "de3e331"
+  },
+  "multiRename.reason.targetExists": "留在這個資料夾裡的另一個檔案已經用了這個名稱，所以這個檔案保留原本的名稱。",
+  "@multiRename.reason.targetExists": {
+    "sourceHash": "2356c66"
+  },
+  "multiRename.reason.missing": "開啟「多檔重新命名」之後，這個檔案被移動或刪除了，所以略過它。",
+  "@multiRename.reason.missing": {
+    "sourceHash": "8697aa3"
+  },
+  "multiRename.reason.empty": "新名稱是空的。",
+  "@multiRename.reason.empty": {
+    "sourceHash": "1ba05d4"
+  },
+  "multiRename.reason.tooLong": "新名稱太長，不能當作檔名。",
+  "@multiRename.reason.tooLong": {
+    "sourceHash": "b709218"
+  },
+  "multiRename.reason.reserved": "「.」和「..」不能當作檔名。",
+  "@multiRename.reason.reserved": {
+    "sourceHash": "dcca507"
+  },
+  "multiRename.reason.disallowedCharacter": "檔名不能包含「{character}」。",
+  "@multiRename.reason.disallowedCharacter": {
+    "sourceHash": "66a09f6"
+  },
+  "multiRename.problemsOnly": "只顯示有問題的",
+  "@multiRename.problemsOnly": {
+    "sourceHash": "1d4614b"
   },
   "multiRename.selectionChanged": "開啟「多檔重新命名」時，資料夾有了更動。請確認選取的檔案，再試一次。",
   "@multiRename.selectionChanged": {

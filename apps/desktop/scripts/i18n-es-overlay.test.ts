@@ -53,6 +53,7 @@ const SPAIN_ONLY: readonly { term: string; pattern: RegExp; except?: readonly st
   { term: 'copia de seguridad → respaldo', pattern: /copias? de seguridad/iu },
   { term: 'gestionar → administrar', pattern: /(?<!\p{L})gesti[oó]n|(?<!\p{L})gestor/iu },
   { term: 'icono → ícono', pattern: /(?<!\p{L})iconos?(?!\p{L})/iu },
+  { term: 'preajuste → preconfiguración', pattern: /(?<!\p{L})preajustes?(?!\p{L})/iu },
   // The verb only: `Introducción` is Cmdr's name for onboarding and doesn't fork.
   { term: 'introducir → ingresar', pattern: /(?<!\p{L})introd[uú](?!cci)/iu },
   { term: 'informe → reporte', pattern: /(?<!\p{L})informes?(?!\p{L})/iu },
