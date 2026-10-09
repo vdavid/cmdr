@@ -21,6 +21,7 @@ import {
   initOperationSessions,
 } from '$lib/file-operations/operation-session/window-operation-sessions.svelte'
 import TransferProgressDialog from './TransferProgressDialog.svelte'
+import { buttonLabel } from '../test-button-label'
 
 const ROLLBACK_TOOLTIP = 'Rollback is not available for same-volume moves'
 const ALREADY_LANDED_TOOLTIP =
@@ -207,7 +208,7 @@ async function fireConflict(): Promise<void> {
 
 function buttonByText(target: HTMLElement, text: string): HTMLButtonElement | null {
   const buttons = Array.from(target.querySelectorAll<HTMLButtonElement>('button'))
-  return buttons.find((b) => b.textContent.trim() === text) ?? null
+  return buttons.find((b) => buttonLabel(b) === text) ?? null
 }
 
 /** Rollback is offered for real: neither `disabled` nor blocked. Asserting only

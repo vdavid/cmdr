@@ -54,6 +54,9 @@ Umbrella-level files:
   so the two dialogs' pre-fills (`getInitialFolderName` / `getInitialFileName`) can't drift.
 - `S3CostLine.svelte` + `s3-cost-line.ts`: the list-price cost estimate under the Copy, Move, and Delete dialogs' scan
   tallies (§ below).
+- `decision-keys.ts` + `DecisionKeyHint.svelte`: the fixed letter keys that answer the clash prompt and the transfer
+  error dialog, and the chip that shows each one in its button (§ "Letter keys on decision prompts").
+  `test-button-label.ts` is the tests' way to read such a button's label without its chip.
 
 ## S3 cost line
 
@@ -329,6 +332,58 @@ that's free to narrow later.
   foreground dialog closed would be a softer version of the wedge this fixes.
 - **`rollbackUnavailable` comes from the snapshot's `supportsRollback`**, which is more than the progress dialog knows:
   a CROSS-volume move can't roll back either, and that dialog still derives the same-volume case itself.
+
+## Letter keys on decision prompts
+
+Total Commander gives every button of its overwrite and error prompts a letter, and the most frequent decision in a long
+copy is answered without the mouse. Cmdr does the same on the clash prompt (`transfer/TransferConflictDialog.svelte`,
+shown by both the progress dialog and `OperationConflictDialog`) and on `transfer/TransferErrorDialog.svelte`. The
+letters live in `decision-keys.ts` (`CONFLICT_KEYS`, `ERROR_KEYS`):
+
+- Clash: S Skip, K Skip all, R Rename, N Rename all, O Overwrite, A Overwrite all, M Overwrite all smaller, L Overwrite
+  all older, C Cancel, B Rollback. Enter = Skip (this file): the safe default, never an overwrite.
+- Error: R Retry, A Copy anyway, C Close. Enter = Close, as before.
+
+Escape still answers no clash: with a clash up the host has no `onclose`, so `ModalDialog` hands Escape to the host's
+`onkeydown` and the body ignores it. B goes through `RollbackConfirmDialog` exactly like a click.
+
+**The rules every key follows** (`decisionKeyOf`, pinned in `decision-keys.test.ts`):
+
+- The WHOLE combo: any modifier, Shift included, makes it another combo (`⌘C` is never Cancel). Modifiers are rejected
+  up front, which is the shape `cmdr/no-raw-key-match` accepts.
+- No `event.repeat`, so a held key can't answer the next prompt too; nothing during an IME composition (`isComposing`,
+  or its `Process` keydown); nothing from a text field.
+- Enter on a focused button belongs to that button (`ModalDialog` lets the browser activate it).
+- A key does what a click would: a disabled button's key does nothing (an answer in flight, a cancel in flight,
+  Overwrite all smaller with an unknown size, the blocked Rollback, a Retry the dialog isn't offering). Each dialog
+  builds one `DecisionChoice[]` from the same booleans its buttons use, so the two can't disagree.
+- **Fixed, not translated.** The letters are muscle memory, so they don't follow the UI language and no catalog holds
+  them. A non-Latin layout reaches them through the physical key (`event.code`), the way macOS menus do; a Latin layout
+  uses the letter it types, so AZERTY's A is the key labelled A.
+
+**Decision: a keystroke meant for something else can't answer.** A clash can appear mid-typing: the main window raises
+itself for a background clash, and an error dialog opens the moment an operation stops. Two guards, both needed:
+
+1. **Focus-scoped.** The body exports `handleKeydown`, and each host forwards its own `ModalDialog` `onkeydown` to it,
+   so only a keypress inside THAT dialog answers. ❌ Never a window or document listener: a background clash's prompt
+   can stack over a progress dialog showing its own clash, and both would answer one keypress. The stacked
+   `RollbackConfirmDialog` is a separate overlay, so its keys stop there too.
+2. **Armed after `DECISION_KEYS_ARM_MS` (400 ms) on screen**, per clash: each new `conflictId` re-arms. No one reads a
+   new question and answers it faster, so a deliberate answer never meets the delay, and a letter already on its way (or
+   a double-tap of S across two prompts) lands on nothing. The repeat guard covers a held key.
+
+Focus alone wasn't enough, and arming alone wasn't either: a dialog takes focus when it opens, which is exactly when the
+stray keystroke arrives.
+
+**The body reclaims lost focus.** The progress dialog swaps its whole body for the clash, so a focused Pause or Cancel
+button unmounts and focus falls to `<body>`, where no dialog hears a key (the focus trap only pulls back a `focusin`
+outside it, and nothing fires one). On each clash, if focus is on `<body>`, the body focuses its own section
+(`tabindex="-1"`). Focus anywhere else (a stacked dialog, a field) is left alone.
+
+**The chip.** Each button shows its letter in a literal-mode `ShortcutChip` (`DecisionKeyHint.svelte`), wrapped
+`aria-hidden`, with `aria-keyshortcuts` on the button carrying it to a screen reader instead (Skip and Close also name
+`Enter`). The chip is inside the button's text, so a test reads a label through `buttonLabel` and the E2E
+`clickButtonByText` drops `aria-hidden` text the same way.
 
 ## Rollback asks first
 

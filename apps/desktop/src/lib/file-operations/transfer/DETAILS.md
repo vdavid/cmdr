@@ -687,6 +687,13 @@ identically.
   `apps/desktop/src-tauri/src/file_system/write_operations/transfer/volume/DETAILS.md` § "Look-alike names and new-name
   spelling".
 
+### The clash prompt and the error dialog answer by letter
+
+Every button of `TransferConflictDialog` and `TransferErrorDialog` has a fixed bare letter, shown in a chip inside it,
+with Enter as the safe answer (Skip, Close). The progress dialog forwards its keydowns to the conflict body's exported
+`handleKeydown`, and the body takes focus back when the swap from the progress body dropped it. Key map, guards, and the
+"typing elsewhere" decision: `../DETAILS.md` § "Letter keys on decision prompts".
+
 ### Index conversion for ".." entry
 
 When the directory has a parent entry shown at index 0, frontend indices are offset by +1 from backend:

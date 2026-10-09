@@ -567,10 +567,11 @@ is module state that outlives a single test.
 ## Button
 
 Variants: `primary` | `secondary` (default) | `danger`. Sizes: `regular` (default) | `mini`. ⚠️ Props are declared one
-by one, so a native attribute only reaches the `<button>` if `Props` names it: `aria-label` and `aria-describedby` do,
-anything else needs adding. `aria-describedby` is for the button repeated once per row, where it keeps the NAME short
-("Roll back") while still telling a screen reader which row the button belongs to; the operation log's rows point it at
-the row's own head button.
+by one, so a native attribute only reaches the `<button>` if `Props` names it: `aria-label`, `aria-describedby`, and
+`aria-keyshortcuts` do, anything else needs adding. `aria-describedby` is for the button repeated once per row, where it
+keeps the NAME short ("Roll back") while still telling a screen reader which row the button belongs to; the operation
+log's rows point it at the row's own head button. `aria-keyshortcuts` names the bare letter a decision prompt answers
+with (`../file-operations/decision-keys.ts`), whose visible chip is `aria-hidden` so it stays out of the name.
 
 **`disabled` vs `ariaDisabled` ("blocked").** `disabled` is the inert one: no click, no focus, `pointer-events: none`.
 `ariaDisabled` renders the same dimmed look and `not-allowed` cursor but keeps the button focusable, in the tab order,

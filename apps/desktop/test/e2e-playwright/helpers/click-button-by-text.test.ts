@@ -103,4 +103,17 @@ describe('clickButtonByText', () => {
 
     expect(presses).toEqual(['Overwrite all smaller'])
   })
+
+  it("matches the label without a decision prompt's hidden letter chip", async () => {
+    // The clash prompt's buttons read "Skip" plus an aria-hidden "S" chip.
+    const button = addButton('Skip')
+    const chip = document.createElement('span')
+    chip.setAttribute('aria-hidden', 'true')
+    chip.textContent = 'S'
+    button.appendChild(chip)
+
+    await clickButtonByText(page, '.row button', 'Skip', 500)
+
+    expect(presses).toEqual(['Skip'])
+  })
 })

@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { onMount } from 'svelte'
     import type { WriteOperationError, TransferOperationType, FriendlyError } from '$lib/file-explorer/types'
     import type { ProgressAtStop } from '$lib/tauri-commands'
     import { getUserFriendlyMessage, getTechnicalDetails, getErrorDisplayMeta } from './transfer-error-messages'
@@ -8,6 +9,8 @@
     import Icon from '$lib/ui/Icon.svelte'
     import TextArea from '$lib/ui/TextArea.svelte'
     import { tString } from '$lib/intl/messages.svelte'
+    import DecisionKeyHint from '../DecisionKeyHint.svelte'
+    import { answerDecisionKey, DECISION_KEYS_ARM_MS, ERROR_KEYS, type DecisionChoice } from '../decision-keys'
 
     interface Props {
         operationType: TransferOperationType
@@ -53,10 +56,29 @@
 
     const technicalDetails = $derived(getTechnicalDetails(error))
 
-    function handleKeydown(event: KeyboardEvent) {
-        if (event.key === 'Enter') {
-            onClose()
+    /** Retry and Copy anyway are offered only with their handler, so `run` never meets a missing one. */
+    const keyChoices = $derived<DecisionChoice[]>([
+        { key: ERROR_KEYS.retry, enabled: showRetry, run: () => onRetry?.() },
+        { key: ERROR_KEYS.copyAnyway, enabled: showCopyAnyway, run: () => onCopyAnyway?.() },
+        { key: ERROR_KEYS.close, enabled: true, run: onClose },
+    ])
+
+    /** Keys answer only once the dialog has been up `DECISION_KEYS_ARM_MS`: it
+     *  opens when an operation stops, which can be mid-keystroke. */
+    let keysArmed = $state(false)
+    onMount(() => {
+        const timer = setTimeout(() => {
+            keysArmed = true
+        }, DECISION_KEYS_ARM_MS)
+        return () => {
+            clearTimeout(timer)
         }
+    })
+
+    /** A bare letter answers (`decision-keys.ts`); Enter means Close, the safe way out. */
+    function handleKeydown(event: KeyboardEvent) {
+        if (!keysArmed) return
+        answerDecisionKey(event, keyChoices, ERROR_KEYS.close)
     }
 
     function toggleDetails() {
@@ -122,12 +144,18 @@
 
     {#snippet footer()}
         {#if onRetry && showRetry}
-            <Button variant="secondary" onclick={onRetry}>{tString('fileOperations.errorDialog.retry')}</Button>
+            <Button variant="secondary" onclick={onRetry} aria-keyshortcuts={ERROR_KEYS.retry}
+                >{tString('fileOperations.errorDialog.retry')}<DecisionKeyHint key={ERROR_KEYS.retry} /></Button
+            >
         {/if}
         {#if onCopyAnyway && showCopyAnyway}
-            <Button variant="secondary" onclick={onCopyAnyway}>{tString('fileOperations.errorDialog.copyAnyway')}</Button>
+            <Button variant="secondary" onclick={onCopyAnyway} aria-keyshortcuts={ERROR_KEYS.copyAnyway}
+                >{tString('fileOperations.errorDialog.copyAnyway')}<DecisionKeyHint key={ERROR_KEYS.copyAnyway} /></Button
+            >
         {/if}
-        <Button variant="primary" onclick={onClose}>{tString('fileOperations.errorDialog.close')}</Button>
+        <Button variant="primary" onclick={onClose} aria-keyshortcuts="{ERROR_KEYS.close} Enter"
+            >{tString('fileOperations.errorDialog.close')}<DecisionKeyHint key={ERROR_KEYS.close} /></Button
+        >
     {/snippet}
 </ModalDialog>
 

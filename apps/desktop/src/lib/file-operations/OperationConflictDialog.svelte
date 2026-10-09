@@ -36,6 +36,10 @@
      *  rather than acting. `DETAILS.md` § "Rollback asks first". */
     let rollbackAsked = $state(false)
 
+    /** The body's answer keys, reached through this dialog's keydowns: only a
+     *  keypress inside this dialog answers its clash. */
+    let conflictBody: { handleKeydown(event: KeyboardEvent): boolean } | undefined = $state()
+
     const prompt = $derived(getConflictPrompt())
     const snapshot = $derived(prompt?.snapshot ?? null)
     const isCopy = $derived(snapshot?.operationType === 'copy')
@@ -69,12 +73,15 @@
          dialog is a decision about the user's files, and the reflex Escape on a
          modal that appeared over whatever they were doing would cancel a
          transfer they may not even have been watching. The conflict body's own
-         Cancel / Rollback row is the way out. -->
+         Cancel / Rollback row is the way out, by click or by its letter. -->
     <ModalDialog
         titleId="operation-conflict-title"
         ariaDescribedby={context === null ? undefined : 'operation-conflict-context'}
         dialogId="operation-conflict"
         containerStyle={DIALOG_WIDTH_STYLE}
+        onkeydown={(event: KeyboardEvent) => {
+            conflictBody?.handleKeydown(event)
+        }}
     >
         {#snippet title()}{tString('fileOperations.transferProgress.titleConflict')}{/snippet}
 
@@ -83,6 +90,7 @@
         {/if}
 
         <TransferConflictDialog
+            bind:this={conflictBody}
             conflictEvent={prompt.event}
             {isCopy}
             {isMove}
