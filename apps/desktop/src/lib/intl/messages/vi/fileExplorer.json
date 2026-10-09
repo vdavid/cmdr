@@ -1692,9 +1692,9 @@
   "@fileExplorer.navigation.driveIndex.refusedUpgradeFailed": {
     "sourceHash": "79a31a4"
   },
-  "fileExplorer.navigation.driveIndex.refusedDisconnected": "{name} đã bị ngắt kết nối. Hãy kết nối lại, rồi bật lập chỉ mục.",
+  "fileExplorer.navigation.driveIndex.refusedDisconnected": "{name} hiện chưa được kết nối. Hãy kết nối, rồi bật lập chỉ mục.",
   "@fileExplorer.navigation.driveIndex.refusedDisconnected": {
-    "sourceHash": "0cf83a1"
+    "sourceHash": "ed05e59"
   },
   "fileExplorer.navigation.driveIndex.deferredRescan": "Cmdr đang tìm kiếm trong {name}. Việc quét lại sẽ bắt đầu ngay khi xong.",
   "@fileExplorer.navigation.driveIndex.deferredRescan": {

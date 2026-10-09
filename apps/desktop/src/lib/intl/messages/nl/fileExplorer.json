@@ -1705,9 +1705,9 @@
   "@fileExplorer.navigation.driveIndex.refusedUpgradeFailed": {
     "sourceHash": "79a31a4"
   },
-  "fileExplorer.navigation.driveIndex.refusedDisconnected": "{name} is losgekoppeld. Verbind opnieuw en zet dan indexeren aan.",
+  "fileExplorer.navigation.driveIndex.refusedDisconnected": "{name} is nu niet verbonden. Maak er verbinding mee en zet dan indexeren aan.",
   "@fileExplorer.navigation.driveIndex.refusedDisconnected": {
-    "sourceHash": "0cf83a1"
+    "sourceHash": "ed05e59"
   },
   "fileExplorer.navigation.driveIndex.deferredRescan": "Cmdr doorzoekt {name} op dit moment. De nieuwe scan begint zodra dat klaar is.",
   "@fileExplorer.navigation.driveIndex.deferredRescan": {

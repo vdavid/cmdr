@@ -278,7 +278,7 @@ describe('DriveIndexBadge menu', () => {
     const { target } = render(makeStatus({ enabled: false, freshness: null }), vi.fn(), undefined, false)
     await openMenu(target)
     expect(menuLabels()).toEqual([])
-    expect(noteEl()?.textContent).toContain('Backups is disconnected. Reconnect it')
+    expect(noteEl()?.textContent).toContain('Backups isn’t connected right now. Connect it')
   })
 
   it("keeps turning off and forgetting a disconnected drive's index", async () => {

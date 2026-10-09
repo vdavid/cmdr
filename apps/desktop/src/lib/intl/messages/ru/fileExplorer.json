@@ -1691,9 +1691,9 @@
   "@fileExplorer.navigation.driveIndex.refusedUpgradeFailed": {
     "sourceHash": "79a31a4"
   },
-  "fileExplorer.navigation.driveIndex.refusedDisconnected": "Подключение к {name} закрыто. Подключитесь снова, затем включите индексацию.",
+  "fileExplorer.navigation.driveIndex.refusedDisconnected": "Диск {name} сейчас не подключен. Подключите его, затем включите индексацию.",
   "@fileExplorer.navigation.driveIndex.refusedDisconnected": {
-    "sourceHash": "0cf83a1"
+    "sourceHash": "ed05e59"
   },
   "fileExplorer.navigation.driveIndex.deferredRescan": "Cmdr сейчас выполняет поиск на {name}. Повторное сканирование начнется после его завершения.",
   "@fileExplorer.navigation.driveIndex.deferredRescan": {

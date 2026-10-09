@@ -1696,9 +1696,9 @@
   "@fileExplorer.navigation.driveIndex.refusedUpgradeFailed": {
     "sourceHash": "79a31a4"
   },
-  "fileExplorer.navigation.driveIndex.refusedDisconnected": "{name} está desconectado. Vuelve a conectarlo y luego activa la indexación.",
+  "fileExplorer.navigation.driveIndex.refusedDisconnected": "Ahora mismo no hay conexión con {name}. Conecta la unidad y luego activa la indexación.",
   "@fileExplorer.navigation.driveIndex.refusedDisconnected": {
-    "sourceHash": "0cf83a1"
+    "sourceHash": "ed05e59"
   },
   "fileExplorer.navigation.driveIndex.deferredRescan": "Cmdr está buscando en {name} ahora mismo. El nuevo análisis empezará en cuanto termine.",
   "@fileExplorer.navigation.driveIndex.deferredRescan": {

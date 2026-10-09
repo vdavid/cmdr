@@ -1692,9 +1692,9 @@
   "@fileExplorer.navigation.driveIndex.refusedUpgradeFailed": {
     "sourceHash": "79a31a4"
   },
-  "fileExplorer.navigation.driveIndex.refusedDisconnected": "{name} le van választva. Csatlakoztasd újra, majd kapcsold be az indexelést.",
+  "fileExplorer.navigation.driveIndex.refusedDisconnected": "{name} most nincs csatlakoztatva. Csatlakoztasd, majd kapcsold be az indexelést.",
   "@fileExplorer.navigation.driveIndex.refusedDisconnected": {
-    "sourceHash": "0cf83a1"
+    "sourceHash": "ed05e59"
   },
   "fileExplorer.navigation.driveIndex.deferredRescan": "A Cmdr épp keres itt: {name}. Az újbóli átvizsgálás elindul, amint ez befejeződik.",
   "@fileExplorer.navigation.driveIndex.deferredRescan": {

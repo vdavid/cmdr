@@ -1694,9 +1694,9 @@
   "@fileExplorer.navigation.driveIndex.refusedUpgradeFailed": {
     "sourceHash": "79a31a4"
   },
-  "fileExplorer.navigation.driveIndex.refusedDisconnected": "{name} är frånkopplad. Återanslut den och slå sedan på indexering.",
+  "fileExplorer.navigation.driveIndex.refusedDisconnected": "Enheten {name} är inte ansluten just nu. Anslut den och slå sedan på indexering.",
   "@fileExplorer.navigation.driveIndex.refusedDisconnected": {
-    "sourceHash": "0cf83a1"
+    "sourceHash": "ed05e59"
   },
   "fileExplorer.navigation.driveIndex.deferredRescan": "Cmdr söker igenom {name} just nu. Den nya genomsökningen startar så snart det är klart.",
   "@fileExplorer.navigation.driveIndex.deferredRescan": {

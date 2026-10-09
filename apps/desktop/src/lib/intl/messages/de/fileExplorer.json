@@ -1697,9 +1697,9 @@
   "@fileExplorer.navigation.driveIndex.refusedUpgradeFailed": {
     "sourceHash": "79a31a4"
   },
-  "fileExplorer.navigation.driveIndex.refusedDisconnected": "{name} ist getrennt. Verbinde es erneut und schalte dann die Indizierung ein.",
+  "fileExplorer.navigation.driveIndex.refusedDisconnected": "{name} ist gerade nicht verbunden. Verbinde das Laufwerk und schalte dann die Indizierung ein.",
   "@fileExplorer.navigation.driveIndex.refusedDisconnected": {
-    "sourceHash": "0cf83a1"
+    "sourceHash": "ed05e59"
   },
   "fileExplorer.navigation.driveIndex.deferredRescan": "Cmdr durchsucht {name} gerade. Der erneute Durchlauf startet, sobald das fertig ist.",
   "@fileExplorer.navigation.driveIndex.deferredRescan": {

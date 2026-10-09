@@ -2461,7 +2461,7 @@
       "name": "the share’s display name (e.g. Backups)"
     }
   },
-  "fileExplorer.navigation.driveIndex.refusedDisconnected": "{name} is disconnected. Reconnect it, then turn on indexing.",
+  "fileExplorer.navigation.driveIndex.refusedDisconnected": "{name} isn’t connected right now. Connect it, then turn on indexing.",
   "@fileExplorer.navigation.driveIndex.refusedDisconnected": {
     "description": "Shown when indexing for a drive can’t start because it isn’t connected right now, as a toast after a refused \"turn on indexing\" or as the note in the drive’s index menu (in place of its actions): an SMB share whose session dropped or that’s offline, an unplugged drive, or a phone that hasn’t been connected yet (for example, still waiting for the person to allow USB debugging on it).",
     "placeholders": {

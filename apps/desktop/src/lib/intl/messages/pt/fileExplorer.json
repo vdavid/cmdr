@@ -1700,9 +1700,9 @@
   "@fileExplorer.navigation.driveIndex.refusedUpgradeFailed": {
     "sourceHash": "79a31a4"
   },
-  "fileExplorer.navigation.driveIndex.refusedDisconnected": "{name} está desconectado. Reconecte-o e ative a indexação.",
+  "fileExplorer.navigation.driveIndex.refusedDisconnected": "No momento, não há conexão com o disco {name}. Conecte o disco e depois ative a indexação.",
   "@fileExplorer.navigation.driveIndex.refusedDisconnected": {
-    "sourceHash": "0cf83a1"
+    "sourceHash": "ed05e59"
   },
   "fileExplorer.navigation.driveIndex.deferredRescan": "O Cmdr está buscando em {name} agora. A nova varredura começa assim que isso terminar.",
   "@fileExplorer.navigation.driveIndex.deferredRescan": {

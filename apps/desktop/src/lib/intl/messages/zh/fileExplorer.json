@@ -1689,9 +1689,9 @@
   "@fileExplorer.navigation.driveIndex.refusedUpgradeFailed": {
     "sourceHash": "79a31a4"
   },
-  "fileExplorer.navigation.driveIndex.refusedDisconnected": "{name} 已断开连接。请重新连接，然后打开索引。",
+  "fileExplorer.navigation.driveIndex.refusedDisconnected": "{name} 现在没有连接。请先连接，再打开索引。",
   "@fileExplorer.navigation.driveIndex.refusedDisconnected": {
-    "sourceHash": "0cf83a1"
+    "sourceHash": "ed05e59"
   },
   "fileExplorer.navigation.driveIndex.deferredRescan": "Cmdr 正在搜索 {name}。重新扫描会在搜索结束后立即开始。",
   "@fileExplorer.navigation.driveIndex.deferredRescan": {
