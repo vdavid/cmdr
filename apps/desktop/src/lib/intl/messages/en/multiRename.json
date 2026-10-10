@@ -253,6 +253,18 @@
   "@multiRename.cancel": {
     "description": "Button that closes the tool without renaming."
   },
+  "multiRename.undo": "Undo rename",
+  "@multiRename.undo": {
+    "description": "Footer button that reverses the last multi-rename of this session (all its files at once). It sits beside Cancel (multiRename.cancel), so the two must read differently."
+  },
+  "multiRename.undoTooltip": "{count, plural, one {Renames # file back to its old name} other {Renames # files back to their old names}}",
+  "@multiRename.undoTooltip": {
+    "description": "Tooltip of the Undo button. {count} is how many files the last multi-rename renamed."
+  },
+  "multiRename.undoStarted": "{count, plural, one {Renaming # file back} other {Renaming # files back}}.",
+  "@multiRename.undoStarted": {
+    "description": "Toast after Undo started reversing the last multi-rename. {count} is how many files."
+  },
   "multiRename.rename": "{count, plural, =0 {Rename} one {Rename # file} other {Rename # files}}",
   "@multiRename.rename": {
     "description": "Primary button that renames the files that are ready. {count} is how many."

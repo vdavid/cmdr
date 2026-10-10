@@ -17,6 +17,7 @@
     import SearchDialog from '$lib/search/SearchDialog.svelte'
     import SelectionDialog from '$lib/selection-dialog/SelectionDialog.svelte'
     import MultiRenameDialog from '$lib/multi-rename/MultiRenameDialog.svelte'
+    import type { MultiRenameRun } from '$lib/multi-rename/last-run.svelte'
     import { closeMultiRename as endMultiRenameSession, openMultiRename as openMultiRenameSession } from '$lib/tauri-commands'
     import type { MultiRenameOpened, MultiRenameStarted } from '$lib/tauri-commands'
     import GoToPathDialog from '$lib/go-to-path/GoToPathDialog.svelte'
@@ -606,6 +607,11 @@
         })
     }
 
+    function handleMultiRenameUndoStarted(run: MultiRenameRun): void {
+        addToast(tString('multiRename.undoStarted', { count: run.renaming }), { level: 'info' })
+        closeMultiRename()
+    }
+
     function handleMultiRenameApplied(started: MultiRenameStarted): void {
         addToast(tString('multiRename.started', { count: started.renaming }), { level: 'info' })
         // A batch that ran as a move (a rename that copies, on S3) can't swap names.
@@ -828,6 +834,7 @@
             <MultiRenameDialog
                 session={multiRenameSession}
                 onApplied={handleMultiRenameApplied}
+                onUndoStarted={handleMultiRenameUndoStarted}
                 onClose={closeMultiRename}
             />
         {/if}

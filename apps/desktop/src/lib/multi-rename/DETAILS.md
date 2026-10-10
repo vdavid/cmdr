@@ -30,7 +30,14 @@
   its rows in rather than showing it. With no problems it's plain text, and a preview with none (or a lost preview)
   switches the list back to every row.
 - **Start** calls `applyMultiRename`; the page shows a toast and closes the sheet. The operation is in the queue, and
-  the operation log's Undo reverses it. An Undo button in the toast is a follow-up.
+  the operation log's Undo reverses it.
+- **Undo rename** (⌘⌥Z, `multiRename.undoRename`): a started run becomes the session's last run (`last-run.svelte.ts`,
+  module state that outlives the sheet, not persisted), so the flow is rename, look at the pane, ⌃M, ⌘⌥Z. It calls
+  `rollbackOperation`, as the operation log's Roll back does; the page toasts `multiRename.undoStarted` and closes the
+  sheet (its session holds the names the undo is taking away). A typed refusal is worded by `rollbackRefusalNotice` in
+  the error line; `alreadyRolledBack` forgets the run. The footer shows it as a quiet `LinkButton` with its dim key
+  chip, only while there's a run. **Decision/Why:** ⌘⌥Z, not ⌘Z: ⌘Z / ⇧⌘Z stay the fields' text undo and redo, and ⌥ is
+  the sheet's option-key family. Free in the registry and the native menu (checked 2026-10-10). Ported from PR #386.
 - **Target**: the focused pane's selected rows in row order (backend numbers, `..` offset removed), or `null` for the
   whole folder when nothing or everything is selected, plus `getLastSequence()`. A pane with no backend listing
   (servers, search results), or a selection whose rows are still settling (`isRowStateReady`), opens nothing.

@@ -77,6 +77,7 @@ export const FIXED_KEY_COMMAND_IDS = [
   'multiRename.includeExtension',
   'multiRename.regex',
   'multiRename.replaceWholeName',
+  'multiRename.undoRename',
   'network.selectHost',
   'share.back',
   'share.selectShare',

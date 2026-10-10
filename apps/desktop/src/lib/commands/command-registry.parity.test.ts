@@ -118,6 +118,7 @@ const EXPECTED_NAMES: Record<string, string> = {
   'multiRename.includeExtension': 'Turn Include extension on or off',
   'multiRename.regex': 'Turn Regular expression on or off',
   'multiRename.replaceWholeName': 'Turn Replace whole name on or off',
+  'multiRename.undoRename': 'Undo the last multi-rename',
   'file.view': 'View',
   'file.edit': 'Edit in default editor',
   'file.copy': 'Copy',

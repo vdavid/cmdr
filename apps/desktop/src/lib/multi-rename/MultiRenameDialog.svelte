@@ -2,8 +2,9 @@
     /**
      * Multi-Rename Tool (⌃M), Total Commander's: a name mask and an extension
      * mask with placeholders, search & replace, a case step, Greek to Latin,
-     * removing diacritics, Unicode normalization, a counter, presets, and a live preview of every row. Start renames the
-     * rows that are ready as one operation (the queue shows it; Undo reverses it).
+     * removing diacritics, Unicode normalization, a counter, presets, and a live
+     * preview of every row. Start renames the rows that are ready as one operation
+     * (the queue shows it), and Undo rename (⌘⌥Z) rolls the session's last one back.
      * The preview is the house `ColumnList` over a windowed source: the rows come a
      * page at a time, and it draws only the ones in view.
      *
@@ -32,6 +33,10 @@
     import { tString } from '$lib/intl/messages.svelte'
     import type { MessageKey } from '$lib/intl/keys.gen'
     import { claimKey } from '$lib/shortcuts/claim-key'
+    import { eventMatchesCommand } from '$lib/shortcuts'
+    import { rollbackOperation } from '$lib/tauri-commands'
+    import { asRollbackRefusal } from '$lib/operation-log/rollback-refusal'
+    import { rollbackRefusalNotice } from '$lib/operation-log/operation-log-labels'
     import { tooltip } from '$lib/tooltip/tooltip'
     import { claimMenuCommand } from '$lib/commands/menu-claims'
     import { getBadgeStatus } from '$lib/feature-status'
@@ -50,14 +55,17 @@
     import { renderExamples } from './rename-examples'
     import { SEARCH_OPTIONS, searchOptionExamples } from './search-option-help'
     import SearchOptionChips from './SearchOptionChips.svelte'
+    import { getLastMultiRenameRun, setLastMultiRenameRun, type MultiRenameRun } from './last-run.svelte'
 
     interface Props {
         session: MultiRenameOpened
         onApplied: (started: MultiRenameStarted) => void
+        /** Undo rename handed the last run's reversal to the queue. */
+        onUndoStarted: (run: MultiRenameRun) => void
         onClose: () => void
     }
 
-    const { session, onApplied, onClose }: Props = $props()
+    const { session, onApplied, onUndoStarted, onClose }: Props = $props()
 
     const log = getAppLogger('multiRename')
 
@@ -106,8 +114,16 @@
         { value: 'words', label: tString('multiRename.case.words') },
     ])
 
+    /** The session's last run, which Undo rename rolls back; `null` when there's none. */
+    const lastRun = $derived(getLastMultiRenameRun())
+    let undoing = $state(false)
+    /** Why Undo rename didn't go, worded by the operation log's refusal notices. */
+    let undoNotice = $state<MessageKey | null>(null)
+
     const canStart = $derived(tool.counts.ready > 0 && tool.error === null && !tool.pending && !tool.applying)
     const shownError = $derived(tool.error ?? tool.applyError)
+    /** The error line's words: the preview's or Start's error, else why Undo rename didn't go. */
+    const shownMessage = $derived(shownError ? errorText(shownError) : undoNotice ? tString(undoNotice) : '')
 
     // Every track is fixed or shared: a windowed source can't be measured, so the two names
     // split what the glyphs leave.
@@ -183,7 +199,30 @@
     async function start(): Promise<void> {
         if (!canStart) return
         const started = await tool.apply()
-        if (started) onApplied(started)
+        if (started) {
+            setLastMultiRenameRun({ operationId: started.operationId, renaming: started.renaming })
+            onApplied(started)
+        }
+    }
+
+    /** Hands the last run's reversal to the queue, as the operation log's Roll back does. */
+    async function undoLastRun(): Promise<void> {
+        const run = lastRun
+        if (!run || undoing) return
+        undoing = true
+        undoNotice = null
+        try {
+            await rollbackOperation(run.operationId)
+            setLastMultiRenameRun(null)
+            onUndoStarted(run)
+        } catch (e) {
+            const refusal = asRollbackRefusal(e)
+            undoNotice = rollbackRefusalNotice(refusal)
+            if (refusal?.kind === 'alreadyRolledBack') setLastMultiRenameRun(null)
+            if (!refusal) log.warn("couldn't undo the last multi-rename: {error}", { error: String(e) })
+        } finally {
+            undoing = false
+        }
     }
 
     function handleKeydown(e: KeyboardEvent): void {
@@ -201,6 +240,12 @@
             claimKey(e)
             if (optionKey.kind === 'toggle') toggle(optionKey.field)
             else openCaseMenu()
+            return
+        }
+        // ⌘⌥Z rolls back the last run; claimed even with none, so ⌥ never types `Ω` into a field.
+        if (!e.isComposing && eventMatchesCommand(e, 'multiRename.undoRename')) {
+            claimKey(e)
+            void undoLastRun()
             return
         }
         // Enter in a text field starts, as TC's Start! does; a button or menu keeps its own Enter.
@@ -368,9 +413,9 @@
         <p
             class="error"
             role="alert"
-            use:tooltip={shownError ? { text: errorText(shownError), overflowOnly: true } : undefined}
+            use:tooltip={shownMessage ? { text: shownMessage, overflowOnly: true } : undefined}
         >
-            {shownError ? errorText(shownError) : ''}
+            {shownMessage}
         </p>
 
         <div class="preview">
@@ -400,6 +445,20 @@
         </div>
     {/snippet}
     {#snippet footer()}
+        {#if lastRun}
+            <!-- Quiet: a way back, not the sheet's next step. Only there while there's a run to undo. -->
+            <span
+                class="undo"
+                use:tooltip={{ text: tString('multiRename.undoTooltip', { count: lastRun.renaming }) }}
+            >
+                <LinkButton disabled={undoing} onclick={() => { void undoLastRun() }}>
+                    {tString('multiRename.undo')}
+                </LinkButton>
+                <span class="option-key" aria-hidden="true">
+                    <ShortcutChip commandId="multiRename.undoRename" clickable={false} size="sm" />
+                </span>
+            </span>
+        {/if}
         <Button onclick={onClose}>{tString('multiRename.cancel')}</Button>
         <Button variant="primary" onclick={() => { void start() }} disabled={!canStart}>
             {tString('multiRename.rename', { count: tool.counts.ready })}
@@ -619,6 +678,13 @@
         display: flex;
         align-items: center;
         color: var(--color-error-text);
+    }
+
+    .undo {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-xs);
+        margin-right: var(--spacing-sm);
     }
 
     .footer-leading {

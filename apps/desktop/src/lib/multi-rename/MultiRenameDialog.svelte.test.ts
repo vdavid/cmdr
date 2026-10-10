@@ -4,7 +4,7 @@
  * into the name mask, and the presets: F2 opens their menu, a digit loads one,
  * the button says when the fields drifted from it, and ⌘S saves (asking before it
  * replaces), with Enter and Escape staying inside the name popover; closing
- * remembers the fields.
+ * remembers the fields; and ⌘⌥Z rolls back the last run.
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
@@ -13,6 +13,8 @@ import MultiRenameDialog from './MultiRenameDialog.svelte'
 import { runMenuClaim } from '$lib/commands/menu-claims'
 import type { RenameExample } from '$lib/tauri-commands'
 import { MARK_END, MARK_START } from './rename-examples'
+import { setLastMultiRenameRun } from './last-run.svelte'
+import { RollbackRefusalFailure } from '$lib/operation-log/rollback-refusal'
 
 const ipc = vi.hoisted(() => ({
   previewMultiRename: vi.fn(),
@@ -26,6 +28,7 @@ const ipc = vi.hoisted(() => ({
   updateMultiRenamePreset: vi.fn(),
   getMultiRenameLastSettings: vi.fn(),
   saveMultiRenameLastSettings: vi.fn(),
+  rollbackOperation: vi.fn(),
 }))
 
 vi.mock('$lib/tauri-commands', () => ({
@@ -49,12 +52,12 @@ async function settle(): Promise<void> {
   }
 }
 
-async function mountSheet(onApplied = vi.fn(), onClose = vi.fn()): Promise<HTMLElement> {
+async function mountSheet(onApplied = vi.fn(), onClose = vi.fn(), onUndoStarted = vi.fn()): Promise<HTMLElement> {
   const target = document.createElement('div')
   document.body.appendChild(target)
   mount(MultiRenameDialog, {
     target,
-    props: { session: { sessionId: 'S', count: 1 }, onApplied, onClose },
+    props: { session: { sessionId: 'S', count: 1 }, onApplied, onUndoStarted, onClose },
   })
   await settle()
   return target
@@ -99,6 +102,7 @@ describe('MultiRenameDialog', () => {
     ipc.deleteMultiRenamePreset.mockResolvedValue(undefined)
     ipc.getMultiRenameLastSettings.mockResolvedValue(null)
     ipc.saveMultiRenameLastSettings.mockResolvedValue(undefined)
+    setLastMultiRenameRun(null)
   })
 
   it.each([
@@ -120,7 +124,7 @@ describe('MultiRenameDialog', () => {
     document.body.appendChild(target)
     const sheet = mount(MultiRenameDialog, {
       target,
-      props: { session: { sessionId: 'S', count: 1 }, onApplied: vi.fn(), onClose: vi.fn() },
+      props: { session: { sessionId: 'S', count: 1 }, onApplied: vi.fn(), onUndoStarted: vi.fn(), onClose: vi.fn() },
     })
     await settle()
     ;[...target.querySelectorAll('label')]
@@ -291,6 +295,77 @@ describe('MultiRenameDialog', () => {
       const root = await mountSheet()
       expect(problemsToggle(root)).toBeNull()
       expect(root.querySelector('.counts')?.textContent).toContain('0 problems')
+    })
+  })
+
+  describe('undo rename', () => {
+    // `formatKeyCombo` emits ⌘-form modifiers only when `isMacOS()` is true, and happy-dom reports a Linux UA.
+    const navigatorSpy = vi.spyOn(globalThis, 'navigator', 'get')
+    beforeEach(() => {
+      navigatorSpy.mockReturnValue({ userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X)' } as Navigator)
+    })
+    afterEach(() => navigatorSpy.mockReset())
+
+    function undoLink(root: HTMLElement): HTMLButtonElement | undefined {
+      return [...root.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent.trim() === 'Undo rename')
+    }
+
+    /** ⌘⌥Z as macOS sends it on a US layout, from the name mask. */
+    function pressUndo(root: HTMLElement): KeyboardEvent {
+      const event = new KeyboardEvent('keydown', {
+        key: 'Ω',
+        code: 'KeyZ',
+        metaKey: true,
+        altKey: true,
+        bubbles: true,
+        cancelable: true,
+      })
+      inputs(root)[0].dispatchEvent(event)
+      return event
+    }
+
+    it('offers nothing to undo before a run, and ⌘⌥Z is claimed but does nothing', async () => {
+      const root = await mountSheet()
+      expect(undoLink(root)).toBeUndefined()
+      const event = pressUndo(root)
+      await settle()
+      expect(event.defaultPrevented).toBe(true)
+      expect(ipc.rollbackOperation).not.toHaveBeenCalled()
+    })
+
+    it('a started rename becomes the run Undo rename rolls back', async () => {
+      ipc.applyMultiRename.mockResolvedValue({ ok: true, value: { operationId: 'op1', renaming: 1, swapsLeftOut: 0 } })
+      const root = await mountSheet()
+      key(inputs(root)[0], 'Enter')
+      await settle()
+      document.body.innerHTML = ''
+      const again = await mountSheet()
+      expect(undoLink(again)).toBeTruthy()
+    })
+
+    it('⌘⌥Z, or the footer link, rolls back the session’s last run and hands it to the page', async () => {
+      setLastMultiRenameRun({ operationId: 'op9', renaming: 3 })
+      ipc.rollbackOperation.mockResolvedValue({ inverseOpId: 'inv' })
+      const onUndoStarted = vi.fn()
+      const root = await mountSheet(vi.fn(), vi.fn(), onUndoStarted)
+      expect(undoLink(root)).toBeTruthy()
+      pressUndo(root)
+      await settle()
+      expect(ipc.rollbackOperation).toHaveBeenCalledWith('op9')
+      expect(onUndoStarted).toHaveBeenCalledWith({ operationId: 'op9', renaming: 3 })
+      expect(undoLink(root)).toBeUndefined()
+    })
+
+    it('words a refused rollback in the error line, and forgets a run that was already rolled back', async () => {
+      setLastMultiRenameRun({ operationId: 'op9', renaming: 3 })
+      ipc.rollbackOperation.mockRejectedValue(new RollbackRefusalFailure({ kind: 'alreadyRolledBack' }))
+      const onUndoStarted = vi.fn()
+      const root = await mountSheet(vi.fn(), vi.fn(), onUndoStarted)
+      undoLink(root)?.click()
+      await settle()
+      expect(onUndoStarted).not.toHaveBeenCalled()
+      expect(root.querySelector('[role="alert"]')?.textContent.trim()).toBeTruthy()
+      expect(undoLink(root)).toBeUndefined()
     })
   })
 

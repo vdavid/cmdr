@@ -16,6 +16,7 @@ The ⌃M sheet over `src-tauri/src/multi_rename/` (the engine and its rules: tha
 - `PlaceholderTip.svelte` / `placeholder-help.ts` the placeholder tooltips; `SearchOptionChips.svelte` /
   `search-option-help.ts` the search option chips (house `Chip` toggles) and theirs; `rename-examples.ts` renders every
   example.
+- `last-run.svelte.ts` the session's last run, which Undo rename (⌘⌥Z) rolls back. Outlives the sheet.
 - `option-keys.ts` reads the ⌘⌥ option keys (`TOGGLE_COMMANDS`) and lists the whole-name toggles (`WHOLE_NAME_TOGGLES`,
   in pipeline order). Pure.
 

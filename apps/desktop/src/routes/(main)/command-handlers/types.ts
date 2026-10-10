@@ -66,6 +66,7 @@ export type DispatchExemptId =
   | 'multiRename.includeExtension'
   | 'multiRename.regex'
   | 'multiRename.replaceWholeName'
+  | 'multiRename.undoRename'
   | 'network.selectHost'
   | 'share.back'
   | 'share.selectShare'

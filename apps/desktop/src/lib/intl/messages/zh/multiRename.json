@@ -243,6 +243,18 @@
   "@multiRename.cancel": {
     "sourceHash": "19766ed"
   },
+  "multiRename.undo": "撤销重命名",
+  "@multiRename.undo": {
+    "sourceHash": "4e0f79b"
+  },
+  "multiRename.undoTooltip": "{count, plural, other {把 # 个文件改回原来的名称}}",
+  "@multiRename.undoTooltip": {
+    "sourceHash": "522ad32"
+  },
+  "multiRename.undoStarted": "{count, plural, other {正在把 # 个文件改回原来的名称}}。",
+  "@multiRename.undoStarted": {
+    "sourceHash": "b6bd565"
+  },
   "multiRename.rename": "{count, plural, =0 {重命名} other {重命名 # 个文件}}",
   "@multiRename.rename": {
     "sourceHash": "9789ca5"

@@ -1,6 +1,7 @@
 /**
  * Tier 3 a11y tests for `MultiRenameDialog.svelte`: the sheet with a preview of
- * ready, unchanged, blocked, and missing rows, and with a mask error showing; and
+ * ready, unchanged, blocked, and missing rows, with a mask error showing, and with
+ * every whole-name option on and Undo rename in the footer; and
  * its tooltip bodies, `SearchOptionChips` (chips on and off, a tooltip showing) and
  * `PlaceholderTip`, with examples rendered.
  */
@@ -14,9 +15,13 @@ import { DEFAULT_SPEC } from './spec'
 import { PLACEHOLDER_HELP, hintMask } from './placeholder-help'
 import { MARK_END, MARK_START } from './rename-examples'
 import { searchExampleKey } from './search-option-help'
+import { setLastMultiRenameRun } from './last-run.svelte'
 import { expectNoA11yViolations } from '$lib/test-a11y'
 
-const { previewMultiRename } = vi.hoisted(() => ({ previewMultiRename: vi.fn() }))
+const { previewMultiRename, getMultiRenameLastSettings } = vi.hoisted(() => ({
+  previewMultiRename: vi.fn(),
+  getMultiRenameLastSettings: vi.fn(() => Promise.resolve(null as unknown)),
+}))
 
 vi.mock('$lib/tauri-commands', () => ({
   notifyDialogOpened: vi.fn(() => Promise.resolve()),
@@ -28,7 +33,8 @@ vi.mock('$lib/tauri-commands', () => ({
   getMultiRenamePresets: vi.fn(() => Promise.resolve([{ id: 'p1', name: 'Bez diakritiky', spec: {} }])),
   saveMultiRenamePreset: vi.fn(() => Promise.resolve()),
   deleteMultiRenamePreset: vi.fn(() => Promise.resolve()),
-  getMultiRenameLastSettings: vi.fn(() => Promise.resolve(null)),
+  getMultiRenameLastSettings,
+  rollbackOperation: vi.fn(() => Promise.resolve({ inverseOpId: 'inv' })),
   saveMultiRenameLastSettings: vi.fn(() => Promise.resolve()),
 }))
 
@@ -53,6 +59,7 @@ async function mountSheet(): Promise<HTMLElement> {
     props: {
       session: { sessionId: 'S', count: 5 },
       onApplied: () => {},
+      onUndoStarted: () => {},
       onClose: () => {},
     },
   })
@@ -77,6 +84,20 @@ describe('MultiRenameDialog a11y', () => {
       error: { type: 'spec', error: { type: 'nameMask', error: { type: 'unclosed', at: 0 } } },
     })
     await expectNoA11yViolations(await mountSheet())
+  })
+
+  it('with every whole-name option on and Undo rename offered has no violations', async () => {
+    previewMultiRename.mockResolvedValue({
+      ok: true,
+      value: { previewId: 1, counts: { ready: 1, unchanged: 1, problems: 3 }, rows: ROWS },
+    })
+    getMultiRenameLastSettings.mockResolvedValueOnce({
+      spec: { ...DEFAULT_SPEC, greekToLatin: true, removeDiacritics: true, normalizeUnicode: true },
+      preset: null,
+    })
+    setLastMultiRenameRun({ operationId: 'op1', renaming: 2 })
+    await expectNoA11yViolations(await mountSheet())
+    setLastMultiRenameRun(null)
   })
 
   it('search option chips, some on, with a tooltip showing, have no violations', async () => {

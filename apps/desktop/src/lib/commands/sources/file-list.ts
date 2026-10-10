@@ -306,6 +306,16 @@ export const fileListCommands: CommandSource[] = [
     fixedKey: true,
   },
   {
+    // ⌘Z / ⇧⌘Z stay the fields' text undo and redo; ⌥ joins the sheet's option keys.
+    id: 'multiRename.undoRename',
+    nameKey: 'commands.multiRenameUndoRename.label',
+    scope: 'Main window/Multi-rename',
+    showInPalette: false,
+    shortcuts: ['⌘⌥Z'],
+    whileDialogOpen: BLOCKED_BY_DIALOGS,
+    fixedKey: true,
+  },
+  {
     id: 'file.view',
     nameKey: 'commands.fileView.label',
     scope: 'Main window/File list',

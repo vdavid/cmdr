@@ -172,6 +172,7 @@ export const COMMAND_IDS = [
   'multiRename.includeExtension',
   'multiRename.regex',
   'multiRename.replaceWholeName',
+  'multiRename.undoRename',
   'file.view',
   'file.edit',
   'file.copy',

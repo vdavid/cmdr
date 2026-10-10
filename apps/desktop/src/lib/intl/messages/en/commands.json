@@ -526,6 +526,10 @@
   "@commands.multiRenameReplaceWholeName.label": {
     "description": "Row in the Keyboard shortcuts list: what the key does while the Multi-rename tool (renames many files at once) is open. Read-only (the key can’t be rebound). It switches on or off the search & replace option where a match replaces the whole name. Use the same words as that option’s checkbox, \"Replace whole name\"."
   },
+  "commands.multiRenameUndoRename.label": "Undo the last multi-rename",
+  "@commands.multiRenameUndoRename.label": {
+    "description": "Row in the Keyboard shortcuts list: what the key does while the Multi-rename tool (renames many files at once) is open. Read-only (the key can’t be rebound). It renames every file of the last multi-rename back to its old name, in one go."
+  },
   "commands.fileView.label": "View",
   "@commands.fileView.label": {
     "description": "Command name that opens the built-in viewer for the selected file. Appears in the command palette. A terse control label.",
