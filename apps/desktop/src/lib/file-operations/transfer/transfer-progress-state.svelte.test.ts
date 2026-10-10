@@ -602,6 +602,8 @@ describe('createTransferProgressState: pause, queue, and auto-queue', () => {
 
     state.handleQueue()
     expect(openQueueWindow).toHaveBeenCalledTimes(1)
+    // Backgrounding keeps the person in the main window: the queue shows, unfocused.
+    expect(openQueueWindow).toHaveBeenCalledWith({ focus: false })
     expect(addToast).toHaveBeenCalledTimes(1)
     expect(config.onQueue).toHaveBeenCalledTimes(1)
 
@@ -616,6 +618,7 @@ describe('createTransferProgressState: pause, queue, and auto-queue', () => {
     listeners.opsChanged({ operations: [snapshot('busy', 'running'), snapshot('op-1', 'queued')] })
     flushSync()
     expect(openQueueWindow).toHaveBeenCalledTimes(1)
+    expect(openQueueWindow).toHaveBeenCalledWith({ focus: false })
     expect(config.onQueue).toHaveBeenCalledTimes(1)
 
     state.destroy()

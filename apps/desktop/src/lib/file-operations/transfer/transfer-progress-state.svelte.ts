@@ -623,14 +623,18 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
   }
 
   /** The half the manual Queue and the auto-queue share: mark the handoff and
-   *  open the window that now owns it. The foreground slot is released HERE
+   *  show the window that now owns it. The foreground slot is released HERE
    *  rather than in `destroy()`, because handing over is exactly when the corner
    *  chip and the failure notice must start speaking about this operation, and
-   *  `onQueue` is optional so the modal may stay mounted. */
+   *  `onQueue` is optional so the modal may stay mounted.
+   *
+   *  The window opens WITHOUT focus: sending a job away means "let me keep
+   *  working", and focus going to the queue makes the person click back into
+   *  the pane they were in. */
   function handOff(id: string): void {
     backgrounded = true
     clearForegroundOperation(id)
-    void openQueueWindow()
+    void openQueueWindow({ focus: false })
   }
 
   /* ----------------------------------------------------------------------- */

@@ -48,6 +48,18 @@ const BASE_HEIGHT = 480
 const MIN_WIDTH = 620
 const MIN_HEIGHT = 280
 
+export interface OpenQueueWindowOptions {
+  /**
+   * Whether the window takes keyboard focus. `true` (the default) for the
+   * commands that open it so the person can look at it: the menu item, the
+   * corner chip, the failure toast. `false` for a transfer sent to the
+   * background, where the person said "don't make me watch" and keeps working in
+   * the main window: the window still shows (it answers "where did my job go"),
+   * but a fresh one opens unfocused and an open one stays where it is.
+   */
+  focus?: boolean
+}
+
 /**
  * Opens the operation-queue window, or focuses it if already open (singleton,
  * like Settings). Cross-window `setFocus()` doesn't reliably raise a window on
@@ -56,16 +68,16 @@ const MIN_HEIGHT = 280
  * Every Tauri call is awaited in try/catch with a `log.warn`: window perms fail
  * SILENTLY, so a missing grant must surface as a log line, not a dead window.
  */
-export async function openQueueWindow(): Promise<void> {
+export async function openQueueWindow({ focus = true }: OpenQueueWindowOptions = {}): Promise<void> {
   // E2E suites re-open windows many times; stealing OS focus each time makes the
   // host machine unusable while tests run. The plugin drives the webview over a
   // socket, so it doesn't need OS focus. Mirrors Settings / Shortcuts.
-  const isE2e = isE2eRun()
+  const takesFocus = focus && !isE2eRun()
 
   try {
     const existing = await WebviewWindow.getByLabel('queue')
     if (existing) {
-      if (!isE2e) {
+      if (takesFocus) {
         await emitTo('queue', 'focus-self')
       }
       return
@@ -116,7 +128,7 @@ export async function openQueueWindow(): Promise<void> {
     minimizable: true,
     closable: true,
     decorations: true,
-    focus: !isE2e,
+    focus: takesFocus,
     // Translucent glass backdrop via the macOS `NSVisualEffectView` material,
     // UNLESS the user reduces transparency (then open opaque). Requires
     // `tauri/macos-private-api` (enabled in `Cargo.toml`).
