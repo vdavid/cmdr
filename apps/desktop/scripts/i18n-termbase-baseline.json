@@ -2,16 +2,16 @@
   "$comment": "Per-locale count of shipped keys that drift from their termbase ruling (docs/i18n/<tag>/terms.json), read by i18n-check-termbase.ts. A locale may carry up to its number without a warning; local runs ratchet it down and drop a locale that lost its terms.json. A locale not listed is strict. decisionsBytes: the byte size each locale's decisions.md may not grow past, so the file stays distilled rulings rather than a journal; local runs ratchet it down, record a locale's first decisions.md at its size, and drop one that's gone. Raising a drift number needs David's OK (.claude/rules/file-length-allowlist.md); bump a decisionsBytes number when new decisions need room.",
   "drift": {},
   "decisionsBytes": {
-    "de": 64037,
-    "es": 44822,
-    "fr": 57606,
-    "hu": 56651,
-    "nl": 45440,
+    "de": 64035,
+    "es": 44821,
+    "fr": 57605,
+    "hu": 56650,
+    "nl": 45438,
     "pt": 30948,
     "ru": 32438,
-    "sv": 44672,
-    "vi": 53063,
-    "zh": 53090,
-    "zh-Hant": 25958
+    "sv": 44671,
+    "vi": 53065,
+    "zh": 53089,
+    "zh-Hant": 25959
   }
 }
