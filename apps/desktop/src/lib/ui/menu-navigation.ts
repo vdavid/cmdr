@@ -26,6 +26,10 @@ export type MenuAction =
    * keyboard, so the digit is swallowed either way.
    */
   | { kind: 'accelerator'; char: string }
+  /** Open or fold the section whose disclosure row the cursor is on. */
+  | { kind: 'disclose'; expanded: boolean }
+  /** Back from a row inside an open section to that section's disclosure row. */
+  | { kind: 'toDisclosure' }
   | { kind: 'none' }
 
 export interface MenuKeyContext {
@@ -39,15 +43,41 @@ export interface MenuKeyContext {
   submenu: 'closed' | 'shown' | 'entered'
   /** The highlighted row sits in a `reorderable` section, so ⌥↑/⌥↓ move it. */
   reorderable: boolean
+  /** The highlighted row IS a section's disclosure row, open or folded. */
+  disclosure?: 'expanded' | 'collapsed'
+  /** The highlighted row sits inside a section with a disclosure row, so ← goes back to it. */
+  insideDisclosure?: boolean
+}
+
+/**
+ * The value a section's disclosure row goes by: what the cursor holds, what `data-menu-row`
+ * carries, and what the surface hands back on a click. A caller's own values must not start
+ * with `menu-disclosure:`.
+ */
+export function disclosureRowValue(sectionId: string): string {
+  return `menu-disclosure:${sectionId}`
+}
+
+/** The section whose disclosure row `value` is, or null for any other row. */
+export function disclosureOf<T>(sections: readonly MenuSection<T>[], value: string): MenuSection<T> | null {
+  return sections.find((section) => section.disclosure && disclosureRowValue(section.id) === value) ?? null
+}
+
+/** A section whose rows are folded away: not rendered, not walked, and claiming no key. */
+function isFolded<T>(section: MenuSection<T>): boolean {
+  return section.disclosure?.expanded === false
 }
 
 /**
  * Every row the cursor may land on, in display order: headings, separators, empty
- * placeholders, and disabled rows are not among them.
+ * placeholders, and disabled rows are not among them. A disclosure row is, and the rows it
+ * folds away are not.
  */
 export function navigableValues<T>(sections: readonly MenuSection<T>[]): string[] {
   const values: string[] = []
   for (const section of sections) {
+    if (section.disclosure) values.push(disclosureRowValue(section.id))
+    if (isFolded(section)) continue
     for (const item of section.items) {
       if (!item.disabled) values.push(item.value)
     }
@@ -99,6 +129,8 @@ export function itemOf<T>(sections: readonly MenuSection<T>[], value: string): M
  */
 export function itemByAccelerator<T>(sections: readonly MenuSection<T>[], char: string): MenuItem<T> | null {
   for (const section of sections) {
+    // A folded row is out of sight, so a key must not open it either.
+    if (isFolded(section)) continue
     for (const item of section.items) {
       if ((item.accelerator === char || item.shortcut === char) && !item.disabled) return item
     }
@@ -182,6 +214,33 @@ function rowKeyAction(key: string, hasSubmenu: boolean): MenuAction {
 }
 
 /**
+ * The cursor on a disclosure row: → opens the section and ← folds it (each a no-op when it's
+ * already that way, rather than wandering off), and Enter or Space flips it. Everything else is
+ * the plain list contract.
+ */
+function disclosureKeyAction(key: string, state: 'expanded' | 'collapsed'): MenuAction {
+  const expanded = state === 'expanded'
+  switch (key) {
+    case 'ArrowRight':
+      return expanded ? { kind: 'none' } : { kind: 'disclose', expanded: true }
+    case 'ArrowLeft':
+      return expanded ? { kind: 'disclose', expanded: false } : { kind: 'none' }
+    case 'Enter':
+    case ' ':
+      return { kind: 'disclose', expanded: !expanded }
+    default:
+      return rowKeyAction(key, false)
+  }
+}
+
+/** The plain list contract on a closed-submenu row, plus ← back to its section's disclosure row. */
+function closedRowKeyAction(key: string, context: MenuKeyContext): MenuAction {
+  if (context.disclosure) return disclosureKeyAction(key, context.disclosure)
+  if (key === 'ArrowLeft' && context.insideDisclosure) return { kind: 'toDisclosure' }
+  return rowKeyAction(key, context.hasSubmenu)
+}
+
+/**
  * A submenu a hover opened, still cursorless: the parent list keeps the arrows, `→` enters the
  * submenu, and `←` / Escape close it.
  */
@@ -212,6 +271,6 @@ export function menuKeyAction(event: KeyboardEvent, context: MenuKeyContext): Me
     case 'shown':
       return shownSubmenuKeyAction(event.key)
     case 'closed':
-      return rowKeyAction(event.key, context.hasSubmenu)
+      return closedRowKeyAction(event.key, context)
   }
 }

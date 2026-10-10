@@ -17,8 +17,17 @@
  * where focus landed — the model `file-explorer/pane/enter-menu.svelte.ts` proved.
  */
 
-import type { MenuActivationSource, MenuAnchor, MenuItem, MenuReorder, MenuSection } from './menu-types'
+import type {
+  MenuActivationSource,
+  MenuAnchor,
+  MenuDisclosureChange,
+  MenuItem,
+  MenuReorder,
+  MenuSection,
+} from './menu-types'
 import {
+  disclosureOf,
+  disclosureRowValue,
   itemByAccelerator,
   itemOf,
   menuKeyAction,
@@ -68,6 +77,11 @@ export interface MenuDeps<T = unknown> {
   onSelect: (item: MenuItem<T>, source: MenuActivationSource) => void
   /** Fires once, on drop or on a ⌥↑/⌥↓ that actually moves something. The caller persists. */
   onReorder?: (reorder: MenuReorder) => void
+  /**
+   * A section's disclosure row was flipped (a click, Enter or Space, → or ←). The menu stays
+   * open and keeps no copy of the state: the caller applies it to what `getSections` returns.
+   */
+  onDisclosureChange?: (change: MenuDisclosureChange) => void
   /** The caller's first look at every key while open. Return true to claim it. */
   onKey?: (event: KeyboardEvent) => boolean
   /** While true an inline editor owns every keystroke, and drag is off. */
@@ -261,10 +275,26 @@ export function createMenu<T = unknown>(deps: MenuDeps<T>): MenuController<T> {
     enterKeyboardMode()
   }
 
+  /**
+   * Ask the caller to open or fold a section. The cursor goes to its disclosure row, so a fold
+   * never leaves it on a row that just went out of sight.
+   */
+  function disclose(section: MenuSection<T>, expanded: boolean): void {
+    closeSubmenu()
+    highlightedValue = disclosureRowValue(section.id)
+    deps.onDisclosureChange?.({ sectionId: section.id, expanded })
+  }
+
   function activate(value: string, source: MenuActivationSource): void {
     if (!open) return
     if (justDragged) {
       justDragged = false
+      return
+    }
+    // A disclosure row flips its section and picks nothing, so the menu stays up.
+    const folding = disclosureOf(sections(), value)
+    if (folding) {
+      disclose(folding, !folding.disclosure?.expanded)
       return
     }
     const item = itemOf(sections(), value)
@@ -380,11 +410,28 @@ export function createMenu<T = unknown>(deps: MenuDeps<T>): MenuController<T> {
     const value = highlightedValue
     const item = value === null ? null : itemOf(sections(), value)
     const found = value === null ? null : sectionOf(sections(), value)
+    const folding = value === null ? null : disclosureOf(sections(), value)
     return {
       hasSubmenu: (item?.submenu?.length ?? 0) > 0,
       submenu: openSubmenuValue === null ? 'closed' : submenuHighlightedValue === null ? 'shown' : 'entered',
       reorderable: found?.section.reorderable ?? false,
+      disclosure: folding ? (folding.disclosure?.expanded ? 'expanded' : 'collapsed') : undefined,
+      insideDisclosure: found?.section.disclosure !== undefined,
     }
+  }
+
+  /** Flip the section under the cursor, or step back up to the one the cursor sits inside. */
+  function applyDisclosureAction(action: Extract<MenuAction, { kind: 'disclose' } | { kind: 'toDisclosure' }>): void {
+    const value = highlightedValue
+    if (value === null) return
+    if (action.kind === 'disclose') {
+      const folding = disclosureOf(sections(), value)
+      if (folding) disclose(folding, action.expanded)
+    } else {
+      const found = sectionOf(sections(), value)
+      if (found?.section.disclosure) setHighlight(disclosureRowValue(found.section.id))
+    }
+    enterKeyboardMode()
   }
 
   /**
@@ -450,6 +497,10 @@ export function createMenu<T = unknown>(deps: MenuDeps<T>): MenuController<T> {
         return
       case 'accelerator':
         activateAccelerator(action.char)
+        return
+      case 'disclose':
+      case 'toDisclosure':
+        applyDisclosureAction(action)
         return
       case 'absorb':
       case 'none':

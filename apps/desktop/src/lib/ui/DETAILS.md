@@ -839,9 +839,9 @@ those.
 The house menu, and the app's only in-app menu primitive (context menus are otherwise native/muda): a portaled, glass,
 keyboard-first popup built from SECTIONS of rows. Data in, callbacks out — the caller hands over sections and gets
 `onSelect` / `onReorder` back, holds no highlight index, and writes no key handler. Four consumers: the volume switcher
-(`file-explorer/navigation/VolumeChooserMenu.svelte`, the rich one — grouped sections, a submenu, and all four
-snippets), the favorites menu (`file-explorer/navigation/FavoritesMenu.svelte` — a reorderable section, the digit
-accelerators, assigned letter shortcuts at the right, and inline editors), the archive Enter popup
+(`file-explorer/navigation/VolumeChooserMenu.svelte`, the rich one — grouped sections, a submenu, a disclosure section,
+and all five snippets), the favorites menu (`file-explorer/navigation/FavoritesMenu.svelte` — a reorderable section, the
+digit accelerators, assigned letter shortcuts at the right, and inline editors), the archive Enter popup
 (`file-explorer/pane/enter-menu.svelte.ts`, three flat rows), and the drive-index badge
 (`file-explorer/navigation/DriveIndexBadge.svelte` — plain rows plus a `footer`, and the one that opens from INSIDE
 another menu).
@@ -859,9 +859,9 @@ import returned the component and `createMenu is not a function`.) No `.svelte.t
 sibling component.
 
 **Building one**: `createMenu(deps)` takes `getSections` (read live on every access, so the menu tracks the caller's
-state), `onSelect`, and the optional `onReorder`, `onKey`, `isEditing`, `onOpenChange`, `restoreFocus`,
-`keepOpenWithin`. Hand the result to `<Menu {menu} ariaLabel minWidth>`; it renders nothing while closed, so there's no
-`{#if}`.
+state), `onSelect`, and the optional `onReorder`, `onDisclosureChange`, `onKey`, `isEditing`, `onOpenChange`,
+`restoreFocus`, `keepOpenWithin`. Hand the result to `<Menu {menu} ariaLabel minWidth>`; it renders nothing while
+closed, so there's no `{#if}`.
 
 **A pick says how it was made.** `onSelect(item, source)`'s second argument is a `MenuActivationSource`: `'pointer'` (a
 click, or a drag that never crossed the threshold), `'keyboard'` (Enter or Space on the highlighted row), or
@@ -877,7 +877,22 @@ rebuild the answer by sniffing `onKey`: it drifts the moment the keyboard contra
 **Snippets decorate, they don't re-implement.** The default row (accelerator column, checkmark column, icon, label) is
 there; `label` replaces the row's text (an inline rename field), `trailing` fills its right end (badges, an eject
 button), `below` adds a sub-line (the disk-space bar), and `footer` sits under the last section. Each takes one
-`MenuRowContext = { item, section, index, highlighted, dragging }`.
+`MenuRowContext = { item, section, index, highlighted, dragging }`. The fifth, `disclosureTrailing`, fills a disclosure
+row's right end (a shortcut chip) and takes the `MenuSection`.
+
+**A section can fold behind a disclosure row** (`MenuSection.disclosure = { expanded, label, icon?, tooltip? }`), which
+takes the place of its `heading`. The row is a full row the cursor lands on (value `disclosureRowValue(sectionId)`,
+`role="menuitem"` with `aria-expanded`), drawing a chevron in the checkmark column so its label lines up with the rows
+it folds, then the label and a count of the section's rows. Enter, Space, or a click flips it, → opens it, ← folds it
+(each a no-op when already so), and ← on a row inside an open section jumps back to its disclosure row, so ←, ← folds
+from anywhere in it. A flip keeps the menu open, puts the cursor on the disclosure row, and calls
+`onDisclosureChange({ sectionId, expanded })`. ❗ The CALLER owns `expanded` (and persists it, if it should outlive the
+menu), the way it owns reorder: the controller keeps no copy, and the menu shows whatever the next `getSections()` says.
+A folded section's rows aren't rendered, aren't walked, and claim no accelerator or letter: a row out of sight opening
+on a keystroke would be a surprise. Opening or folding re-fits the surface, since revealed rows can be wider. The
+chevron rotates on `--transition-base`, and not at all under reduced motion; the rows appear without animation, the way
+a native menu's do. First consumer: the volume switcher's favorites (`file-explorer/navigation/DETAILS.md` § The
+switcher's favorites section).
 
 **A submenu row is a full row, minus the snippets.** Its leading columns come from the SAME `rowLead` snippet the
 top-level row uses (checkmark, glyph), so the two can't drift, and it honors `disabled` (greyed, `aria-disabled`,
@@ -981,6 +996,7 @@ gets renamed on a whim. `Menu.svelte.test.ts` asserts each one, so none of them 
 - `data-menu-instance="<id>"` on every surface, and `data-menu-nested-in="<id>"` on one whose ANCHOR sits inside another
   menu's surface, naming that menu. It's the link a nested menu is recognized by (below); a top-level menu carries no
   `data-menu-nested-in` at all.
+- `data-menu-disclosure="expanded" | "collapsed"` on a disclosure row, and `data-menu-disclosure-count` on its count.
 - `data-menu-section="<id>"` on a section, `data-menu-heading` on its heading (an E2E spec reads the group names from
   it), `data-menu-empty` on an empty section's placeholder.
 - `data-menu-row="<value>"` on every row (submenu rows too), plus `data-highlighted`, `data-checked` (the checkmark is

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { createMenu } from './menu-controller.svelte'
 import type { MenuController, MenuDeps } from './menu-controller.svelte'
+import { disclosureRowValue } from './menu-navigation'
 import type { MenuSection } from './menu-types'
 
 /**
@@ -961,6 +962,90 @@ describe('submenu row states', () => {
     menu.surface.openSubmenu('share', false)
     menu.surface.activate('forget')
     expect(menu.isOpen).toBe(false)
+  })
+})
+
+/**
+ * A section folded behind a disclosure row. The caller owns whether it's open (the
+ * controller persists nothing), so these play the caller: a flip comes back through
+ * `onDisclosureChange`, and the test applies it to the data the menu reads.
+ */
+describe('disclosure sections', () => {
+  const HEADER = disclosureRowValue('favorites')
+
+  function foldable(onDisclosureChange = vi.fn()) {
+    let expanded = false
+    const onSelect = vi.fn()
+    const menu = build({
+      getSections: () => [
+        {
+          id: 'favorites',
+          disclosure: { expanded, label: 'Favorites' },
+          items: [
+            { value: 'fav-a', label: 'A', submenu: [{ value: 'rename', label: 'Rename' }] },
+            { value: 'fav-b', label: 'B' },
+          ],
+        },
+        { id: 'volumes', items: [{ value: 'vol-1', label: 'Macintosh HD' }] },
+      ],
+      onSelect,
+      onDisclosureChange: (change) => {
+        onDisclosureChange(change)
+        expanded = change.expanded
+      },
+    })
+    menu.openUnder(anchorEl())
+    return { menu, onSelect, onDisclosureChange }
+  }
+
+  it('lands the cursor on the disclosure row when it leads the menu', () => {
+    const { menu } = foldable()
+    expect(menu.highlightedValue).toBe(HEADER)
+  })
+
+  it('opens the section on Enter, keeps the menu up, and picks nothing', () => {
+    const { menu, onSelect, onDisclosureChange } = foldable()
+    menu.handleKey(keydown('Enter'))
+    expect(onDisclosureChange).toHaveBeenCalledWith({ sectionId: 'favorites', expanded: true })
+    expect(menu.isOpen).toBe(true)
+    expect(onSelect).not.toHaveBeenCalled()
+    expect(menu.highlightedValue).toBe(HEADER)
+    menu.handleKey(keydown('ArrowDown'))
+    expect(menu.highlightedValue).toBe('fav-a')
+  })
+
+  it('walks past a collapsed section’s rows', () => {
+    const { menu } = foldable()
+    menu.handleKey(keydown('ArrowDown'))
+    expect(menu.highlightedValue).toBe('vol-1')
+  })
+
+  it('flips on a click, which also leaves the menu open', () => {
+    const { menu, onSelect, onDisclosureChange } = foldable()
+    menu.surface.activate(HEADER)
+    expect(onDisclosureChange).toHaveBeenCalledWith({ sectionId: 'favorites', expanded: true })
+    expect(menu.isOpen).toBe(true)
+    expect(onSelect).not.toHaveBeenCalled()
+  })
+
+  it('collapses from a row inside it with ←, ← (back to the row, then shut)', () => {
+    const { menu, onDisclosureChange } = foldable()
+    menu.handleKey(keydown('ArrowRight'))
+    menu.handleKey(keydown('ArrowDown'))
+    menu.handleKey(keydown('ArrowDown'))
+    expect(menu.highlightedValue).toBe('fav-b')
+    menu.handleKey(keydown('ArrowLeft'))
+    expect(menu.highlightedValue).toBe(HEADER)
+    menu.handleKey(keydown('ArrowLeft'))
+    expect(onDisclosureChange).toHaveBeenLastCalledWith({ sectionId: 'favorites', expanded: false })
+  })
+
+  it('still opens a row’s own submenu on → inside an open section', () => {
+    const { menu } = foldable()
+    menu.handleKey(keydown('ArrowRight'))
+    menu.handleKey(keydown('ArrowDown'))
+    menu.handleKey(keydown('ArrowRight'))
+    expect(menu.openSubmenuValue).toBe('fav-a')
   })
 })
 

@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import {
   acceleratorChar,
+  disclosureOf,
+  disclosureRowValue,
   itemByAccelerator,
   menuKeyAction,
   navigableValues,
@@ -240,5 +242,69 @@ describe('itemByAccelerator', () => {
 
   it('returns null for a character no row declares', () => {
     expect(itemByAccelerator(sections, '9')).toBeNull()
+  })
+})
+
+/**
+ * A section folded behind a disclosure row. The row is navigable like any other, and a
+ * collapsed section's rows are simply not there: not walked, and not claiming a key.
+ */
+describe('disclosure sections', () => {
+  function folded(expanded: boolean): MenuSection[] {
+    return [
+      {
+        id: 'favorites',
+        disclosure: { expanded, label: 'Favorites' },
+        items: [
+          { value: 'fav-a', label: 'A', shortcut: 'A' },
+          { value: 'fav-b', label: 'B' },
+        ],
+      },
+      { id: 'volumes', items: [{ value: 'vol-1', label: 'Macintosh HD' }] },
+    ]
+  }
+
+  it('walks the disclosure row, then the rows only while expanded', () => {
+    const header = disclosureRowValue('favorites')
+    expect(navigableValues(folded(false))).toEqual([header, 'vol-1'])
+    expect(navigableValues(folded(true))).toEqual([header, 'fav-a', 'fav-b', 'vol-1'])
+  })
+
+  it('names the section a disclosure row belongs to, and nothing for an ordinary row', () => {
+    expect(disclosureOf(folded(true), disclosureRowValue('favorites'))?.id).toBe('favorites')
+    expect(disclosureOf(folded(true), 'fav-a')).toBeNull()
+  })
+
+  it('lets a collapsed section’s rows claim no key, so a hidden row never opens', () => {
+    expect(itemByAccelerator(folded(false), 'A')).toBeNull()
+    expect(itemByAccelerator(folded(true), 'A')?.value).toBe('fav-a')
+  })
+
+  const collapsedRow = { hasSubmenu: false, submenu: 'closed', reorderable: false, disclosure: 'collapsed' } as const
+  const expandedRow = { hasSubmenu: false, submenu: 'closed', reorderable: false, disclosure: 'expanded' } as const
+
+  it('expands on → and collapses on ←, the way a disclosure does', () => {
+    expect(menuKeyAction(key('ArrowRight'), collapsedRow)).toEqual({ kind: 'disclose', expanded: true })
+    expect(menuKeyAction(key('ArrowLeft'), expandedRow)).toEqual({ kind: 'disclose', expanded: false })
+    // Already where the key points: nothing to do, and the cursor doesn't wander off.
+    expect(menuKeyAction(key('ArrowRight'), expandedRow)).toEqual({ kind: 'none' })
+    expect(menuKeyAction(key('ArrowLeft'), collapsedRow)).toEqual({ kind: 'none' })
+  })
+
+  it('flips on Enter and Space instead of activating anything', () => {
+    expect(menuKeyAction(key('Enter'), collapsedRow)).toEqual({ kind: 'disclose', expanded: true })
+    expect(menuKeyAction(key(' '), expandedRow)).toEqual({ kind: 'disclose', expanded: false })
+  })
+
+  it('keeps the list keys on a disclosure row', () => {
+    expect(menuKeyAction(key('ArrowDown'), collapsedRow)).toEqual({ kind: 'move', delta: 1 })
+    expect(menuKeyAction(key('Escape'), expandedRow)).toEqual({ kind: 'close' })
+  })
+
+  it('takes ← from a row inside an open section back to its disclosure row', () => {
+    const inside = { hasSubmenu: true, submenu: 'closed', reorderable: true, insideDisclosure: true } as const
+    expect(menuKeyAction(key('ArrowLeft'), inside)).toEqual({ kind: 'toDisclosure' })
+    // → still opens the row's own submenu.
+    expect(menuKeyAction(key('ArrowRight'), inside)).toEqual({ kind: 'openSubmenu' })
   })
 })

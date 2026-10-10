@@ -9,6 +9,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest'
 import { mount, tick, unmount, createRawSnippet } from 'svelte'
 import Menu from './Menu.svelte'
 import { createMenu, type MenuController } from './menu-controller.svelte'
+import { disclosureRowValue } from './menu-navigation'
 import type { MenuRowContext, MenuSection } from './menu-types'
 
 function sections(): MenuSection[] {
@@ -648,5 +649,66 @@ describe('checkable rows', () => {
     expect(row('backup')?.hasAttribute('data-checked')).toBe(false)
     expect(row('hidden')?.querySelector('.menu-check')).toBeNull()
     expect(row('hidden')?.querySelector('.menu-check-placeholder')).not.toBeNull()
+  })
+})
+
+/**
+ * A section folded behind a disclosure row. The row says whether it's open (to VoiceOver
+ * through `aria-expanded`, to a test through `data-menu-disclosure`), says how many rows it
+ * holds, and the rows render only while it's open.
+ */
+describe('disclosure sections', () => {
+  function foldedSections(expanded: boolean): () => MenuSection[] {
+    return () => [
+      {
+        id: 'favorites',
+        disclosure: { expanded, label: 'Favorites', icon: { lucide: 'star' } },
+        items: [
+          { value: 'projects', label: 'Projects' },
+          { value: 'downloads', label: 'Downloads' },
+        ],
+      },
+      { id: 'volumes', items: [{ value: 'hd', label: 'Macintosh HD' }] },
+    ]
+  }
+
+  const HEADER = disclosureRowValue('favorites')
+
+  it('renders a collapsed section as its disclosure row alone, with a count', async () => {
+    await open({}, { getSections: foldedSections(false) })
+    const header = row(HEADER)
+    expect(header?.getAttribute('role')).toBe('menuitem')
+    expect(header?.getAttribute('aria-expanded')).toBe('false')
+    expect(header?.getAttribute('data-menu-disclosure')).toBe('collapsed')
+    expect(header?.textContent).toContain('Favorites')
+    expect(header?.querySelector('[data-menu-disclosure-count]')?.textContent).toBe('2')
+    expect(row('projects')).toBeNull()
+    expect(row('hd')).not.toBeNull()
+  })
+
+  it('renders the rows under an expanded disclosure row', async () => {
+    await open({}, { getSections: foldedSections(true) })
+    expect(row(HEADER)?.getAttribute('aria-expanded')).toBe('true')
+    expect(row(HEADER)?.getAttribute('data-menu-disclosure')).toBe('expanded')
+    expect(row('projects')).not.toBeNull()
+    expect(row('downloads')).not.toBeNull()
+  })
+
+  it('hands a click on the disclosure row to the caller, and stays open', async () => {
+    const onDisclosureChange = vi.fn()
+    const onSelect = vi.fn()
+    const { menu } = await open({}, { getSections: foldedSections(false), onDisclosureChange, onSelect })
+    row(HEADER)?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    expect(onDisclosureChange).toHaveBeenCalledWith({ sectionId: 'favorites', expanded: true })
+    expect(onSelect).not.toHaveBeenCalled()
+    expect(menu.isOpen).toBe(true)
+  })
+
+  it('lets the caller decorate the disclosure row’s right end', async () => {
+    const disclosureTrailing = createRawSnippet<[MenuSection]>(() => ({
+      render: () => '<span class="chip">⌃D</span>',
+    }))
+    await open({ disclosureTrailing }, { getSections: foldedSections(false) })
+    expect(row(HEADER)?.querySelector('.chip')).not.toBeNull()
   })
 })

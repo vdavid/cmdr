@@ -78,6 +78,26 @@ export interface MenuSection<T = unknown> {
   reorderable?: boolean
   /** Shown (disabled, unfocusable) when the section is empty, so the section still reads as a real state. */
   emptyLabel?: string
+  /**
+   * Folds the section behind a disclosure row, which takes the place of `heading`. The CALLER
+   * owns `expanded` (and persists it, if it should outlive the menu): a flip comes back through
+   * `onDisclosureChange`, and the menu shows whatever the next `getSections()` says.
+   */
+  disclosure?: MenuDisclosure
+}
+
+/** A section's disclosure row: a full row the cursor lands on, that shows or hides the rows under it. */
+export interface MenuDisclosure {
+  expanded: boolean
+  label: string
+  icon?: MenuIcon
+  tooltip?: string
+}
+
+/** What `onDisclosureChange` receives: the section, and the state the user asked for. */
+export interface MenuDisclosureChange {
+  sectionId: string
+  expanded: boolean
 }
 
 /** The one argument every row snippet (`label`, `trailing`, `below`) takes. */

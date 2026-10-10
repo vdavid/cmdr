@@ -21,12 +21,15 @@
      * doesn't reliably open (mounted-already-open) or close (controlled `open=false`) when
      * driven programmatically, which every caller here needs.
      */
-    import { tick, type Snippet } from 'svelte'
+    import { tick, untrack, type Snippet } from 'svelte'
+    import { dependOn } from '$lib/utils/reactivity'
     import { Portal } from '@ark-ui/svelte/portal'
     import Icon from './Icon.svelte'
     import ShortcutChip from './ShortcutChip.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
+    import { formatInteger } from '$lib/intl/number-format'
     import type { MenuController } from './menu-controller.svelte'
+    import { disclosureRowValue } from './menu-navigation'
     import type { MenuItem, MenuRowContext, MenuSection } from './menu-types'
 
     /* eslint-disable @typescript-eslint/no-unnecessary-type-arguments -- `T` is this component's OWN
@@ -46,6 +49,8 @@
         below?: Snippet<[MenuRowContext<T>]>
         /** Sits under the last section (a list-level warning). */
         footer?: Snippet
+        /** Fills the right end of a section's disclosure row (a shortcut chip). */
+        disclosureTrailing?: Snippet<[MenuSection<T>]>
         /**
          * The lowest the surface may reach, in viewport px, when that's above the window's
          * own edge: the volume switcher stops above its pane's footer rather than over it.
@@ -53,7 +58,17 @@
         getBottomLimit?: () => number | undefined
     }
 
-    const { menu, ariaLabel, minWidth = 220, label, trailing, below, footer, getBottomLimit }: Props = $props()
+    const {
+        menu,
+        ariaLabel,
+        minWidth = 220,
+        label,
+        trailing,
+        below,
+        footer,
+        disclosureTrailing,
+        getBottomLimit,
+    }: Props = $props()
 
     menuInstanceCount += 1
     const instanceId = `menu-${String(menuInstanceCount)}`
@@ -150,6 +165,19 @@
     function handleResize(): void {
         if (menu.isOpen) void fitToViewport()
     }
+
+    /**
+     * Which sections are open, as one string, so opening or folding one re-fits the surface:
+     * the rows it reveals can be wider than anything before, and the clamp was measured
+     * without them.
+     */
+    const disclosureState = $derived(
+        menu.sections.map((section) => (section.disclosure ? `${section.id}:${String(section.disclosure.expanded)}` : '')).join(','),
+    )
+    $effect(() => {
+        dependOn(disclosureState)
+        if (untrack(() => menu.isOpen && position !== null)) void fitToViewport()
+    })
 
     /** Keep the cursor on screen as the keyboard walks a list taller than the surface. */
     $effect(() => {
@@ -265,7 +293,11 @@
     )
 
     /** The glyph column follows the same all-or-nothing rule, per surface. */
-    const hasIcons = $derived(menu.sections.some((section) => section.items.some((item) => item.icon != null)))
+    const hasIcons = $derived(
+        menu.sections.some(
+            (section) => section.disclosure?.icon != null || section.items.some((item) => item.icon != null),
+        ),
+    )
 
     const submenuItems = $derived(
         menu.openSubmenuValue === null
@@ -338,10 +370,61 @@
                 {#if sectionIndex > 0}
                     <div class="menu-separator"></div>
                 {/if}
-                <div role="group" data-menu-section={section.id} aria-label={section.heading ?? undefined}>
-                    {#if section.heading}
+                <div
+                    role="group"
+                    data-menu-section={section.id}
+                    aria-label={section.disclosure?.label ?? section.heading ?? undefined}
+                >
+                    {#if section.disclosure}
+                        {@const disclosure = section.disclosure}
+                        {@const value = disclosureRowValue(section.id)}
+                        {@const highlighted = menu.highlightedValue === value && !menu.parentHighlightSuppressed}
+                        <!-- The section's own row, in place of a heading: a full row the cursor
+                             lands on, whose pick shows or hides the rows under it. The chevron
+                             takes the checkmark column, so the label lines up with the rows. -->
+                        <!-- svelte-ignore a11y_mouse_events_have_key_events -->
+                        <div
+                            id={rowId(value)}
+                            class="menu-row"
+                            class:is-highlighted={highlighted}
+                            role="menuitem"
+                            tabindex="-1"
+                            aria-expanded={disclosure.expanded}
+                            data-menu-row={value}
+                            data-menu-disclosure={disclosure.expanded ? 'expanded' : 'collapsed'}
+                            data-highlighted={highlighted ? '' : undefined}
+                            use:tooltip={disclosure.tooltip ?? ''}
+                            onclick={(event: MouseEvent) => {
+                                if (isOwnControl(event)) return
+                                menu.surface.activate(value)
+                            }}
+                            onmouseover={() => {
+                                menu.surface.hover(value)
+                            }}
+                        >
+                            {#if hasAccelerators}
+                                <span class="menu-accelerator-placeholder"></span>
+                            {/if}
+                            <span class="menu-disclosure-chevron" class:is-expanded={disclosure.expanded}></span>
+                            {#if disclosure.icon && 'lucide' in disclosure.icon}
+                                <span class="menu-icon"><Icon name={disclosure.icon.lucide} size={16} aria-hidden="true" /></span>
+                            {:else if disclosure.icon}
+                                <img class="menu-icon-image" src={disclosure.icon.src} alt="" />
+                            {:else if hasIcons}
+                                <span class="menu-icon-placeholder"></span>
+                            {/if}
+                            <span class="menu-label">{disclosure.label}</span>
+                            <span class="menu-disclosure-count" data-menu-disclosure-count=""
+                                >{formatInteger(section.items.length)}</span
+                            >
+                            <!-- eslint-disable-next-line @typescript-eslint/no-confusing-void-expression -- Svelte {@render} syntax -->
+                            {#if disclosureTrailing}{@render disclosureTrailing(section)}{/if}
+                        </div>
+                    {:else if section.heading}
                         <div class="menu-heading" data-menu-heading="" aria-hidden="true">{section.heading}</div>
                     {/if}
+                    <!-- A folded section's rows aren't rendered, walked, or claiming keys. -->
+                    {#if section.disclosure?.expanded !== false}
                     {#if section.items.length === 0 && section.emptyLabel}
                         <!-- A real (empty) state, not a missing section: present, said, and unfocusable. -->
                         <div class="menu-empty" data-menu-empty="" role="menuitem" aria-disabled="true" tabindex="-1">
@@ -414,6 +497,7 @@
                         </div>
                         {#if below}{@render below(context)}{/if}
                     {/each}
+                    {/if}
                 </div>
             {/each}
             {#if footer}{@render footer()}{/if}
@@ -627,6 +711,42 @@
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+    }
+
+    /* The disclosure chevron sits in the checkmark column (same 14px), so the section's label
+       lines up with the rows it folds. A CSS triangle like the submenu arrow, pointing right
+       while folded and down while open. */
+    .menu-disclosure-chevron {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: calc(14px * var(--font-scale));
+        flex-shrink: 0;
+    }
+
+    .menu-disclosure-chevron::before {
+        content: '';
+        border-top: 4px solid transparent;
+        border-bottom: 4px solid transparent;
+        border-left: 5px solid var(--color-text-tertiary);
+        transition: transform var(--transition-base);
+    }
+
+    /*noinspection CssUnusedSymbol*/
+    .menu-disclosure-chevron.is-expanded::before {
+        transform: rotate(90deg);
+    }
+
+    .menu-disclosure-count {
+        flex-shrink: 0;
+        color: var(--color-text-tertiary);
+        font-variant-numeric: tabular-nums;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .menu-disclosure-chevron::before {
+            transition: none;
+        }
     }
 
     /* CSS triangle, not a font character: `›` renders at inconsistent sizes across fonts. */
