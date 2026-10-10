@@ -70,6 +70,13 @@
 
     const log = getAppLogger('multiRename')
 
+    /**
+     * How narrow a drag can make the sheet: the field grid (six insert chips, about 370 px, beside
+     * two field columns) and a footer with all four buttons still fit; only the summary beside
+     * Presets wraps. Fits the app window's own floor (950 px).
+     */
+    const MIN_WIDTH_PX = 880
+
     // Alpha badge policy: the status comes from the repo-root feature-status.json.
     const badge = getBadgeStatus('multi-rename')
 
@@ -302,7 +309,7 @@
     titleId="multi-rename-title"
     dialogId="multi-rename"
     resizable
-    containerStyle="width: min(1100px, 92vw); height: min(760px, 88vh)"
+    containerStyle="width: min(1100px, 92vw); min-width: {MIN_WIDTH_PX}px; height: min(760px, 88vh)"
     fillBody
     onclose={onClose}
     onkeydown={handleKeydown}
@@ -315,8 +322,11 @@
 
     <div class="sheet">
         <div class="controls">
-            <!-- First: the masks and the placeholders they take. -->
-            <div class="fields">
+            <!-- The first two rows share one grid, so their edges line up: the masks with the
+                 placeholders they take, then the search, the replacement, and the search's own
+                 options. The chip groups share the last column, right edges level; the masks span
+                 the two field columns, so the Extension field ends where Replace with does. -->
+            <div class="field-grid">
                 <div class="masks">
                     <label class="field grow">
                         <span class="label">{tString('multiRename.nameMask')}</span>
@@ -367,12 +377,7 @@
                         <PlaceholderTip {help} rendered={examples} bind:contentEl={tipContent[help.placeholder]} />
                     {/each}
                 </div>
-            </div>
-
-            <!-- Second: the search, the replacement, and the search's own options as chips
-                 level with the fields. -->
-            <div class="search">
-                <label class="field grow">
+                <label class="field">
                     <span class="label">{tString('multiRename.search')}</span>
                     <TextInput
                         bind:inputElement={searchInput}
@@ -390,7 +395,7 @@
                         {/snippet}
                     </TextInput>
                 </label>
-                <label class="field grow">
+                <label class="field">
                     <span class="label">{tString('multiRename.replace')}</span>
                     <TextInput
                         bind:inputElement={replaceInput}
@@ -407,7 +412,9 @@
                         {/snippet}
                     </TextInput>
                 </label>
-                <SearchOptionChips spec={tool.spec} onToggle={toggle} rendered={examples} />
+                <div class="search-options">
+                    <SearchOptionChips spec={tool.spec} onToggle={toggle} rendered={examples} />
+                </div>
             </div>
 
             <!-- Third, as the rename runs them after search & replace: what changes the whole
@@ -498,30 +505,34 @@
         </div>
     {/snippet}
     {#snippet footer()}
-        {#if lastRun}
-            <!-- A way back, beside Cancel: only there while there's a run to undo. -->
+        <!-- One unit that never shrinks: on a narrow sheet the summary on the left wraps, never a
+             button's label away from its key chip. -->
+        <span class="footer-actions">
+            {#if lastRun}
+                <!-- A way back, beside Cancel: only there while there's a run to undo. -->
+                <Button
+                    disabled={undoing}
+                    onclick={() => { void undoLastRun() }}
+                    tooltipContent={{ text: tString('multiRename.undoTooltip', { count: lastRun.renaming }), shortcut: undoShortcut }}
+                >
+                    {tString('multiRename.undo')}
+                    <ShortcutChip commandId="multiRename.undoRename" clickable={false} size="sm" />
+                </Button>
+            {/if}
             <Button
-                disabled={undoing}
-                onclick={() => { void undoLastRun() }}
-                tooltipContent={{ text: tString('multiRename.undoTooltip', { count: lastRun.renaming }), shortcut: undoShortcut }}
+                disabled={!canResults}
+                onclick={openResults}
+                tooltipContent={{ text: tString('multiRename.resultsTooltip'), shortcut: resultsShortcut }}
             >
-                {tString('multiRename.undo')}
-                <ShortcutChip commandId="multiRename.undoRename" clickable={false} size="sm" />
+                {tString('multiRename.results')}
+                <ShortcutChip commandId="multiRename.results" clickable={false} size="sm" />
             </Button>
-        {/if}
-        <Button
-            disabled={!canResults}
-            onclick={openResults}
-            tooltipContent={{ text: tString('multiRename.resultsTooltip'), shortcut: resultsShortcut }}
-        >
-            {tString('multiRename.results')}
-            <ShortcutChip commandId="multiRename.results" clickable={false} size="sm" />
-        </Button>
-        <Button onclick={onClose}>{tString('multiRename.cancel')}</Button>
-        <Button variant="primary" onclick={() => { void start() }} disabled={!canStart}>
-            {tString('multiRename.rename', { count: tool.counts.ready })}
-            <ShortcutChip commandId="multiRename.rename" clickable={false} size="sm" />
-        </Button>
+            <Button onclick={onClose}>{tString('multiRename.cancel')}</Button>
+            <Button variant="primary" onclick={() => { void start() }} disabled={!canStart}>
+                {tString('multiRename.rename', { count: tool.counts.ready })}
+                <ShortcutChip commandId="multiRename.rename" clickable={false} size="sm" />
+            </Button>
+        </span>
     {/snippet}
 </ModalDialog>
 
@@ -553,18 +564,28 @@
         gap: var(--spacing-lg);
     }
 
-    .fields {
-        display: flex;
-        flex-direction: column;
-        gap: var(--spacing-sm);
-        min-width: 0;
+    /* Two field columns that share what's left, and one chip column as wide as the wider chip
+       group. Chips sit at the bottom of their cell, level with the text boxes. */
+    .field-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+        gap: var(--spacing-lg) var(--spacing-md);
+        align-items: end;
     }
 
-    .masks,
-    .search {
+    .masks {
+        grid-column: span 2;
         display: flex;
         gap: var(--spacing-md);
         align-items: flex-end;
+        min-width: 0;
+    }
+
+    .placeholders,
+    .search-options {
+        justify-self: end;
+        display: flex;
+        align-items: center;
     }
 
     .field {
@@ -588,10 +609,11 @@
         color: var(--color-text-secondary);
     }
 
+    /* As tall as the text box beside it (`app-field.css`'s height, as `Chip`'s `field` size
+       computes it), so the shorter insert chips sit level with the box's middle. */
     .placeholders {
-        display: flex;
+        height: calc(var(--font-size-input) * var(--font-line-height-tight) + 2 * var(--spacing-input) + 2px);
         gap: var(--spacing-xs);
-        flex-wrap: wrap;
     }
 
     /* One row of whole-name options, each with its key chip beside it. */
@@ -664,6 +686,14 @@
     .results-words {
         overflow: hidden;
         text-overflow: ellipsis;
+    }
+
+    .footer-actions {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-md);
+        flex-shrink: 0;
+        white-space: nowrap;
     }
 
     .footer-leading {

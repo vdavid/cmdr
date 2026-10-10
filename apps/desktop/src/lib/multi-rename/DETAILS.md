@@ -108,11 +108,17 @@
 ## Layout and option keys
 
 - **Layout**: three full-width rows, in the order a rename runs them (`plan.rs` → `CompiledTransform::apply`: mask,
-  search & replace, case, Greek to Latin, diacritics, then the Unicode form), a `--spacing-lg` gap between them. First
-  the name mask (grows) and the extension mask (140 px), with the placeholder buttons under them; then Search for,
-  Replace with, and the search option chips; then Letter case, Greek to Latin, Remove diacritics, and Normalize Unicode
+  search & replace, case, Greek to Latin, diacritics, then the Unicode form), a `--spacing-lg` gap between them. The
+  first two share one grid (`.field-grid`: two shared field columns and one `auto` chip column), so their edges line up:
+  the name mask (grows) and the extension mask (140 px) span the field columns, so Extension ends where Replace with
+  does, with the placeholder chips right of them; then Search for, Replace with, and the search option chips. The chip
+  groups share the last column, right edges level, each centred on its row's text box (the insert chips are shorter, so
+  `.placeholders` takes the field's height). Then Letter case, Greek to Latin, Remove diacritics, and Normalize Unicode
   (`WHOLE_NAME_TOGGLES`), each with its dim key chip. Each `Checkbox` sits in a wrapper span, since it renders more than
   one element.
+- **Minimum width** (`MIN_WIDTH_PX`, 880 px, under the app window's 950 px floor): the grid and the footer's four
+  buttons still fit; the footer's buttons sit in one non-shrinking `.footer-actions`, so at the floor with Undo rename
+  showing, the summary beside Presets wraps (to three short lines) rather than a button's label leaving its chip.
 - **Search option chips** (`SearchOptionChips`): Match case `Aa`, First match only `1×`, Include extension `.ext`,
   Regular expression `.*`, Replace whole name `^$` (the regex way to say "the whole string"). Code-editor style find
   toggles: house `Chip`s, `variant="toggle"` (`aria-pressed`, the full name as `aria-label`), mono glyphs, tinted when

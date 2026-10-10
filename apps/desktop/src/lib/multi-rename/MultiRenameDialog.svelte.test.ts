@@ -463,7 +463,7 @@ describe('MultiRenameDialog', () => {
 
     it('shows the five search options as toggle chips beside the search fields, each named in full', async () => {
       const root = await mountSheet()
-      const group = root.querySelector('.search [role="group"]')
+      const group = root.querySelector('.search-options [role="group"]')
       expect(group?.getAttribute('aria-label')).toBe('Search options')
       const chips = [...(group?.querySelectorAll('button') ?? [])]
       expect(chips.map((chip) => chip.getAttribute('aria-label'))).toEqual([
