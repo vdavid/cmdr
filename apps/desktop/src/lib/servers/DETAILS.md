@@ -232,6 +232,12 @@ share ids come off the mount (`docs/notes/server-address-move.md` § "SMB, defer
 rule and says nothing about sign-in mode, where username editability is the SHAPE VARIANT's property (§ "The renderer
 table").
 
+**Edit mode opens on the first field it lets a person change** (`focusFirstEditableField`), which for an SFTP or WebDAV
+server and an "Other S3-compatible" account is the address. Decision (David, 2026-10-11): keep it there, since with the
+address unlocked, fixing a server that moved is the likely reason to open Edit. Where the address is locked (an SMB
+host, an S3 preset), focus falls through to the name. ❌ Never `addressInput.focus()`: focusing a disabled field is a
+silent no-op, and the sheet then opened with nothing taking keys (QA 2026-09-25).
+
 **Edit mode's password field writes what it shows.** A non-empty value on Save goes through `saveSftpCredentials` /
 `saveWebdavCredentials` keyed on the target's tuple, and the Remember box then reports on, because the store holds one.
 An EMPTY field means "I didn't come here to change the password", ❌ never "store an empty one": the field opens empty
