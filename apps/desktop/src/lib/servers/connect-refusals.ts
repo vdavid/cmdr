@@ -106,6 +106,11 @@ export type ConnectRefusalKind =
   | 'secret_not_moved'
   /** Edit mode: the edit named another account or protocol. The sheet locks both, so only a broken caller sees it. */
   | 'account_changed'
+  /**
+   * Edit mode: a copy, move, or delete is queued, running, or paused on the server, and moving it to its new address
+   * would drop the session under it. Nothing was saved.
+   */
+  | 'operation_running'
 
 const REFUSAL_KEYS: Record<ConnectRefusalKind, MessageKey> = {
   authentication_rejected: 'servers.refusal.authenticationRejected',
@@ -137,6 +142,7 @@ const REFUSAL_KEYS: Record<ConnectRefusalKind, MessageKey> = {
   address_taken: 'servers.refusal.addressTaken',
   secret_not_moved: 'servers.refusal.secretNotMoved',
   account_changed: 'servers.refusal.accountChanged',
+  operation_running: 'servers.refusal.operationRunning',
 }
 
 /**
@@ -284,6 +290,8 @@ const REFUSAL_FIELDS: Record<ConnectRefusalKind, RefusalField> = {
   // The password is the one thing that didn't move, so its field is where the retry happens.
   secret_not_moved: 'secret',
   account_changed: 'form',
+  // No field fixes a copy that's still running: letting it finish or canceling it does.
+  operation_running: 'form',
 }
 
 /** Where `kind`'s sentence goes. */

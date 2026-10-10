@@ -186,12 +186,19 @@ impl QueuedOperationFixture {
     /// makes a manager change that breaks the premise fail here instead of
     /// silently weakening whatever test uses the fixture.
     pub(crate) fn park(tag: &str) -> Self {
+        Self::park_naming(tag, Vec::new(), Vec::new())
+    }
+
+    /// [`Self::park`], with each operation naming volumes as its source or
+    /// destination: `holder` for the running one, `queued` for the one waiting.
+    /// How a suite outside this module holds a transfer on a place.
+    pub(crate) fn park_naming(tag: &str, holder: Vec<String>, queued: Vec<String>) -> Self {
         let lane = LaneKey::new(unique_op_id(&format!("{tag}-lane")));
         let holder_id = unique_op_id(&format!("{tag}-holder"));
         let queued_id = unique_op_id(&format!("{tag}-queued"));
 
         let mut releases = Vec::new();
-        for id in [&holder_id, &queued_id] {
+        for (id, volume_ids) in [(&holder_id, holder), (&queued_id, queued)] {
             let (release_tx, release_rx) = oneshot::channel();
             releases.push(release_tx);
             let settle_id = id.clone();
@@ -200,7 +207,7 @@ impl QueuedOperationFixture {
                     operation_id: id.clone(),
                     operation_type: WriteOperationType::Copy,
                     lanes: vec![lane.clone()],
-                    volume_ids: vec![],
+                    volume_ids,
                     summary: OperationSummaryText::default(),
                     supports_rollback: false,
                     preview_id: None,

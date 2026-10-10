@@ -3131,6 +3131,7 @@ export type MessageKey =
   | 'servers.refusal.needsCredentials'
   | 'servers.refusal.notAWebdavServer'
   | 'servers.refusal.notAnS3Endpoint'
+  | 'servers.refusal.operationRunning'
   | 'servers.refusal.passwordMissing'
   | 'servers.refusal.regionMismatch'
   | 'servers.refusal.regionMismatchNamed'

@@ -303,6 +303,10 @@
   "@servers.refusal.accountChanged": {
     "sourceHash": "a0cf23d"
   },
+  "servers.refusal.operationRunning": "Cmdr is still working with files on this server, so nothing was saved. Let that finish or cancel it, then save the new address.",
+  "@servers.refusal.operationRunning": {
+    "sourceHash": "86e3a4d"
+  },
   "servers.sheet.addTitle": "添加服务器",
   "@servers.sheet.addTitle": {
     "sourceHash": "1099b2a"

@@ -363,6 +363,9 @@ token is the only sane state, and a revoked token surfaces as `needs_sign_in` be
   `saved_secret_not_updated`, whose edit landed.
 - `account_changed`: edit mode, the save named another account or protocol. The sheet locks both, so only a broken
   caller meets it. Under `form`.
+- `operation_running`: edit mode, a move while a copy, move, or delete on the server is queued, running, or paused.
+  Nothing was saved: the move drops the old session, which would cut that work off. Under `form`, since no field fixes
+  it; letting the work finish or canceling it does.
 - `access_denied` (S3): the bucket refused the key, which a bodyless 403 can't split into a wrong secret and a key with
   no rights here (Garage answers a wrong secret this way too), so it asks about both. Under `secret`, and it opens the
   sheet (`needsAHuman`), since a wrong secret is one thing it means.

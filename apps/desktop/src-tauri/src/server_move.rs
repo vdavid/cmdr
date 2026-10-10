@@ -19,6 +19,12 @@
 //! (`AddressTaken`): a merge keeps one entry's settings, pin, and password and
 //! silently drops the other's.
 //!
+//! ❗ **A move waits for every operation on its places** (`OperationRunning`):
+//! queued, running, or paused, since dropping the old session would stop a copy
+//! like Disconnect does, and a queued one would set out for a session that's
+//! gone. Asked before the password is copied, so a refusal touches nothing. An
+//! edit that keeps the address keeps the session, so it never asks.
+//!
 //! ❗ **The old session is dropped WITHOUT `VolumeUnmounted`**, which sends a pane
 //! home. A pane on the old place follows to the new one instead
 //! (`ServerPlaceMoved`, and the frontend's `pane/server-move-follow.ts`), lands on
@@ -61,6 +67,9 @@ pub async fn edit_sftp(saved: KnownSftpServer, edit: KnownSftpServer) -> SavedSe
     let edit = KnownSftpServer { start_folder, ..edit };
     if let Some(holder) = sftp_known_servers::find(&edit.host, edit.port, &edit.username) {
         return SavedServerOutcome::AddressTaken { name: holder.label() };
+    }
+    if operations_need_any(&[&old_id]) {
+        return SavedServerOutcome::OperationRunning;
     }
     let from = SecretKey {
         service: sftp_volume_wiring::credential_service(&saved.host, saved.port),
@@ -136,6 +145,9 @@ pub async fn edit_webdav(saved: KnownWebdavServer, edit: KnownWebdavServer) -> S
     });
     if let Some(holder) = holder {
         return SavedServerOutcome::AddressTaken { name: holder.label() };
+    }
+    if operations_need_any(&[&old_id]) {
+        return SavedServerOutcome::OperationRunning;
     }
     let from = SecretKey {
         service: from_service,
@@ -213,6 +225,19 @@ pub async fn edit_s3_account(account_id: &str, name: &str, endpoint: Option<S3Pr
             name: s3_known_places::account_label(&holder),
         };
     }
+    let account_places: Vec<String> = s3_known_places::all()
+        .into_iter()
+        .filter(|place| {
+            place
+                .params()
+                .is_ok_and(|params| s3_known_places::account_id(&params) == account_id)
+        })
+        .filter_map(|place| place.volume_id())
+        .chain([account_id.to_string()])
+        .collect();
+    if operations_need_any(&account_places.iter().map(String::as_str).collect::<Vec<_>>()) {
+        return SavedServerOutcome::OperationRunning;
+    }
     let (Some(from_service), Some(to_service)) = (
         s3_volume_wiring::credential_service(&saved.provider, &key),
         s3_volume_wiring::credential_service(&endpoint, &key),
@@ -266,6 +291,14 @@ pub async fn edit_s3_account(account_id: &str, name: &str, endpoint: Option<S3Pr
         delete_secret(from).await;
     }
     SavedServerOutcome::Saved
+}
+
+/// Whether an operation still needs any of `places` (queued, running, or paused),
+/// so a move would stop it: the move drops the session it reads or writes through.
+fn operations_need_any(places: &[&str]) -> bool {
+    places
+        .iter()
+        .any(|place| crate::file_system::operations_need_volume(place))
 }
 
 /// What moved: the app prefix every path on the server carried, and its places'

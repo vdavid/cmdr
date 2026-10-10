@@ -98,6 +98,8 @@ export function readSavedServerOutcome(outcome: SavedServerOutcome): SaveOutcome
       return { kind: 'refused', refusal: 'secret_not_moved' }
     case 'account_changed':
       return { kind: 'refused', refusal: 'account_changed' }
+    case 'operation_running':
+      return { kind: 'refused', refusal: 'operation_running' }
   }
 }
 

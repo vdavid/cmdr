@@ -72,6 +72,11 @@ pub enum SavedServerOutcome {
     /// said no, or didn't answer), so nothing moved: a server whose password
     /// stayed behind would ask for it again.
     SecretNotMoved,
+    /// The edit moves the server to a new address while an operation (a copy,
+    /// a move, a delete) is queued, running, or paused with one of its places
+    /// as source or destination. Refused: the move drops the old session, which
+    /// would stop it like a Disconnect. Nothing was saved.
+    OperationRunning,
     /// The edit names another protocol or account than the saved server it was
     /// raised on. Another account is another place, so it's an Add, ❌ never an
     /// edit; the sheet locks both fields, so only a broken caller sends one.

@@ -13674,6 +13674,13 @@ export type SavedServerOutcome =
    */
   | { outcome: 'secret_not_moved' }
   /**
+   *  The edit moves the server to a new address while an operation (a copy,
+   *  a move, a delete) is queued, running, or paused with one of its places
+   *  as source or destination. Refused: the move drops the old session, which
+   *  would stop it like a Disconnect. Nothing was saved.
+   */
+  | { outcome: 'operation_running' }
+  /**
    *  The edit names another protocol or account than the saved server it was
    *  raised on. Another account is another place, so it's an Add, ❌ never an
    *  edit; the sheet locks both fields, so only a broken caller sends one.

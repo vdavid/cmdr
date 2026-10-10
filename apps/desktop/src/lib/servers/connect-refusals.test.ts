@@ -32,6 +32,7 @@ const KINDS: ConnectRefusalKind[] = [
   'address_taken',
   'secret_not_moved',
   'account_changed',
+  'operation_running',
   'access_denied',
   'bucket_list_refused',
   'bucket_not_found',
@@ -197,6 +198,8 @@ describe('refusalField', () => {
     expect(refusalField('address_taken')).toBe('address')
     expect(refusalField('secret_not_moved')).toBe('secret')
     expect(refusalField('account_changed')).toBe('form')
+    // No field fixes a copy that's still running.
+    expect(refusalField('operation_running')).toBe('form')
   })
 })
 

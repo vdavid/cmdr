@@ -393,6 +393,10 @@
   "@servers.refusal.accountChanged": {
     "description": "Above the buttons of the edit server sheet, when a save asked to change which account or which protocol a saved server uses. The sheet doesn't let the user type either, so this is rare. Nothing was saved. “Add” refers to adding a server from the Servers list."
   },
+  "servers.refusal.operationRunning": "Cmdr is still working with files on this server, so nothing was saved. Let that finish or cancel it, then save the new address.",
+  "@servers.refusal.operationRunning": {
+    "description": "Above the buttons of the edit server sheet, when the user changed a saved server's address while a copy, move, or delete on that server is still running, paused, or waiting its turn. Moving the server would cut that work off, so nothing was saved. The user can let it finish, or cancel it from its progress window, then press Save again. Keep the opening the same as fileExplorer.navigation.disconnectBusyTooltip (“Cmdr is still working with files on this server”), which says the same thing about Disconnect."
+  },
   "servers.sheet.addTitle": "Add server",
   "@servers.sheet.addTitle": {
     "description": "Title of the sheet where the user types a new server. VERB phrase, imperative.",

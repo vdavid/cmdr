@@ -217,6 +217,7 @@ const REFUSAL_KINDS: ConnectRefusalKind[] = [
   'address_taken',
   'secret_not_moved',
   'account_changed',
+  'operation_running',
   'access_denied',
   'bucket_list_refused',
   'bucket_not_found',

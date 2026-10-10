@@ -941,6 +941,16 @@ impl OperationManager {
             .collect()
     }
 
+    /// Whether any op the manager holds, Queued, Running, or Paused, names
+    /// `volume_id` as its source or destination.
+    fn names_volume(&self, volume_id: &str) -> bool {
+        self.inner
+            .lock_ignore_poison()
+            .records
+            .values()
+            .any(|r| r.descriptor.volume_ids.iter().any(|id| id == volume_id))
+    }
+
     /// The thin registry snapshot (membership + status), FIFO order.
     pub(crate) fn list(&self) -> Vec<OperationSnapshot> {
         self.inner.lock_ignore_poison().snapshot()
@@ -1099,6 +1109,19 @@ impl Drop for InstantTaskGuard {
 /// window. Backs the `list_operations` IPC command.
 pub fn list_operations() -> Vec<OperationSnapshot> {
     manager().list()
+}
+
+/// Whether an operation still needs `volume_id`: one the manager holds, Queued,
+/// Running, or Paused, or an external transfer (a drag-out) reading from it.
+///
+/// ❗ Wider than the busy set Eject reads (`busy_volume_ids`, Running and Paused
+/// only): a Queued op hasn't touched the device yet, but it names the volume and
+/// will set out for it, so anything that retires the volume's id for good (a saved
+/// server moving to a new address) has to wait for it too.
+pub fn operations_need_volume(volume_id: &str) -> bool {
+    // Asked one after the other, ❌ never nested: the busy set takes the status
+    // cache lock, and `get_operation_status` orders the two the other way.
+    manager().names_volume(volume_id) || super::state::busy_volume_ids().iter().any(|id| id == volume_id)
 }
 
 /// Cancels one operation, keeping already-copied files (the existing

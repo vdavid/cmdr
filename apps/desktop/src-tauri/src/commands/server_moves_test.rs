@@ -10,6 +10,7 @@ use super::*;
 use crate::commands::sftp::{has_sftp_credentials, save_sftp_credentials};
 use crate::commands::webdav::{has_webdav_credentials, save_webdav_credentials};
 use crate::favorites::store::{self as favorites, FavoriteVolume};
+use crate::file_system::write_operations::test_support::QueuedOperationFixture;
 use crate::network::s3_known_places::{KnownS3Place, S3ProviderChoice};
 use crate::network::sftp_known_servers::KnownSftpServer;
 use crate::network::webdav_known_servers::KnownWebdavServer;
@@ -157,6 +158,74 @@ async fn moving_onto_an_address_another_saved_server_holds_is_refused_and_moves_
     );
     let old_prefix = cmdr_fs::volume::sftp_app_root(old_host, 22, "ada");
     assert!(crate::volume_broadcast::server_moves_from(&old_prefix).is_empty());
+}
+
+/// ❗ A move drops the old session, which stops a copy on it like Disconnect
+/// would. So it's refused while one runs there, and refused BEFORE the password
+/// moves: nothing is touched.
+#[tokio::test]
+async fn moving_a_server_while_a_copy_runs_on_it_is_refused_and_moves_nothing() {
+    let _secrets = crate::test_support::isolate_secrets();
+    let (old_host, new_host) = ("203.0.113.100", "203.0.113.101");
+    sftp_known_servers::remember(sftp_entry(old_host, 22));
+    save_sftp_credentials(old_host.to_string(), 22, "ada".to_string(), "pa55".to_string())
+        .await
+        .expect("the test store always accepts");
+    let _copy = QueuedOperationFixture::park_naming("server-move-running", vec![sftp_id(old_host, 22)], Vec::new());
+
+    let outcome = update_saved_server(sftp_target(new_host, 22, "ada"), Some(sftp_id(old_host, 22))).await;
+
+    assert_eq!(outcome, SavedServerOutcome::OperationRunning);
+    assert!(
+        sftp_known_servers::find(old_host, 22, "ada").is_some(),
+        "the server stays put"
+    );
+    assert!(sftp_known_servers::find(new_host, 22, "ada").is_none());
+    assert!(
+        !has_sftp_credentials(new_host.to_string(), 22, "ada".to_string()).await,
+        "the password wasn't copied"
+    );
+    let old_prefix = cmdr_fs::volume::sftp_app_root(old_host, 22, "ada");
+    assert!(crate::volume_broadcast::server_moves_from(&old_prefix).is_empty());
+}
+
+/// A queued copy names the old place too, and would set out for a session the
+/// move had already dropped.
+#[tokio::test]
+async fn moving_a_server_a_queued_copy_waits_on_is_refused() {
+    let _secrets = crate::test_support::isolate_secrets();
+    let (old_host, new_host) = ("203.0.113.110", "203.0.113.111");
+    sftp_known_servers::remember(sftp_entry(old_host, 22));
+    let _copy = QueuedOperationFixture::park_naming("server-move-queued", Vec::new(), vec![sftp_id(old_host, 22)]);
+
+    let outcome = update_saved_server(sftp_target(new_host, 22, "ada"), Some(sftp_id(old_host, 22))).await;
+
+    assert_eq!(outcome, SavedServerOutcome::OperationRunning);
+    assert!(sftp_known_servers::find(old_host, 22, "ada").is_some());
+}
+
+/// An edit that keeps the address doesn't touch the session, so a copy running
+/// on the place is no reason to refuse it.
+#[tokio::test]
+async fn an_in_place_edit_saves_while_a_copy_runs() {
+    let host = "203.0.113.120";
+    sftp_known_servers::remember(sftp_entry(host, 22));
+    let _copy = QueuedOperationFixture::park_naming("server-edit-running", vec![sftp_id(host, 22)], Vec::new());
+    let renamed = ServerTarget::Sftp {
+        display_name: "Renamed".to_string(),
+        host: host.to_string(),
+        port: 22,
+        username: "ada".to_string(),
+        remote_root: "/srv/data".to_string(),
+        start_folder: None,
+        key_file: None,
+        use_agent: false,
+        auto_reconnect: true,
+    };
+
+    let outcome = update_saved_server(renamed, Some(sftp_id(host, 22))).await;
+
+    assert_eq!(outcome, SavedServerOutcome::Saved);
 }
 
 /// An edit that keeps the address is the edit it always was: no move, no event.
@@ -333,4 +402,24 @@ async fn moving_a_preset_accounts_endpoint_is_refused() {
 
     assert_eq!(outcome, SavedServerOutcome::AccountChanged);
     assert!(s3_known_places::find(&s3_id(&place)).is_some(), "nothing moved");
+}
+
+/// Every bucket moves with the account, so a copy on any one of them holds the
+/// whole move.
+#[tokio::test]
+async fn moving_an_s3_account_while_a_copy_runs_on_one_of_its_buckets_is_refused() {
+    let _secrets = crate::test_support::isolate_secrets();
+    let (old, new) = (
+        s3_other("http://203.0.113.130:9000"),
+        s3_other("http://203.0.113.131:9000"),
+    );
+    let photos = s3_place_at(old.clone(), "AKIABUSY", Some("photos"));
+    s3_known_places::remember(photos.clone());
+    let account = s3_id(&s3_place_at(old, "AKIABUSY", None));
+    let _copy = QueuedOperationFixture::park_naming("s3-move-running", vec![s3_id(&photos)], Vec::new());
+
+    let outcome = update_saved_s3_account(account, String::new(), Some(new)).await;
+
+    assert_eq!(outcome, SavedServerOutcome::OperationRunning);
+    assert!(s3_known_places::find(&s3_id(&photos)).is_some(), "nothing moved");
 }

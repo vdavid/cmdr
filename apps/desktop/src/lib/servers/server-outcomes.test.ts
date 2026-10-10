@@ -26,6 +26,7 @@ describe('readSavedServerOutcome', () => {
       [{ outcome: 'unreachable' }, 'save_unconfirmed'],
       [{ outcome: 'secret_not_moved' }, 'secret_not_moved'],
       [{ outcome: 'account_changed' }, 'account_changed'],
+      [{ outcome: 'operation_running' }, 'operation_running'],
     ]
     for (const [outcome, refusal] of cases) {
       expect(readSavedServerOutcome(outcome)).toEqual({ kind: 'refused', refusal })

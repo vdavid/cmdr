@@ -61,15 +61,21 @@ Everything that names a place by its id or spells a path with its address prefix
    `place-connect` dials it on landing: that IS the redial at the new address, through the ordinary flow, so a new
    host's key, a missing password, or an unreachable address shows in the pane and the sheet exactly as a first open
    does. Chosen over leaving it disconnected because the person was looking at this server and just pressed Save on it:
-   a pane reading "Not connected yet" would make them ask twice. A transfer running on the old session stops, as it does
-   on Disconnect.
-8. **SFTP host keys** (`known-sftp-hosts.json`, keyed `(host, port, algorithm)`): untouched. The old address's keys are
+   a pane reading "Not connected yet" would make them ask twice.
+8. **An operation on the place**: ❗ REFUSED (`SavedServerOutcome::OperationRunning`) while any copy, move, delete, or
+   other write operation names one of the server's places as source or destination, asked before the secret is copied so
+   a refusal touches nothing. Dropping the old session would stop it like Disconnect. It counts every operation the
+   manager holds (`write_operations::operations_need_volume`): running, PAUSED (it still holds the session and resumes
+   on it), and QUEUED (it names the old id and would set out for a session that's gone), plus a drag-out streaming off
+   the place. That's wider than Eject's busy set, which skips queued operations because they haven't touched the device
+   yet. An edit that keeps the address keeps the session, so it never asks.
+9. **SFTP host keys** (`known-sftp-hosts.json`, keyed `(host, port, algorithm)`): untouched. The old address's keys are
    facts about that address and stay, as they do on Forget. The new address has no trusted key, so the first dial asks
    through the normal host-key step: ❌ never silently trusted because the server "is the same one", which is exactly
    the claim a host-key check exists to verify.
-9. **The drive index and media prefs**: nothing. SFTP, WebDAV, and S3 are never indexed (`cmdr-index` `handle/mod.rs`'s
-   scheme gate), and the media-index network prefs are SMB-only.
-10. **MCP, the hub, and the switcher**: they read the live listing, which `volumes-changed` republishes after the move.
+10. **The drive index and media prefs**: nothing. SFTP, WebDAV, and S3 are never indexed (`cmdr-index` `handle/mod.rs`'s
+    scheme gate), and the media-index network prefs are SMB-only.
+11. **MCP, the hub, and the switcher**: they read the live listing, which `volumes-changed` republishes after the move.
     Nothing caches a server-keyed answer on the frontend for these protocols (`forgetShareListsOfMachine` is SMB's).
 
 ## Validation: Save doesn't dial
