@@ -43,8 +43,28 @@
   "@fileExplorer.navigation.favoritesAlreadyAdded": {
     "sourceHash": "731a929"
   },
-  "fileExplorer.navigation.favoritesCantAddHere": "This folder can’t be a favourite: favourites only work on disks and mounted shares",
+  "fileExplorer.navigation.favoritesCantAddHere": "This folder can’t be a favourite: favourites point at folders on disks, shares, servers, and phones",
   "@fileExplorer.navigation.favoritesCantAddHere": {
-    "sourceHash": "86564ea"
+    "sourceHash": "03886b7"
+  },
+  "fileExplorer.navigation.favoriteStatus.notFound": "This folder isn’t there any more.",
+  "@fileExplorer.navigation.favoriteStatus.notFound": {
+    "sourceHash": "48710a9"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.forgotten": "Cmdr doesn’t know how to reach “{place}” any more. Connect to it again from Servers, and this favourite works again.",
+  "@fileExplorer.navigation.favoriteUnreachable.forgotten": {
+    "sourceHash": "842858c"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.notFound": "“{name}” isn’t at {path} any more.",
+  "@fileExplorer.navigation.favoriteUnreachable.notFound": {
+    "sourceHash": "0fd2e21"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.removeFavorite": "Remove favourite",
+  "@fileExplorer.navigation.favoriteUnreachable.removeFavorite": {
+    "sourceHash": "5bc0aa0"
+  },
+  "fileExplorer.navigation.switcherFavorites": "Favourites",
+  "@fileExplorer.navigation.switcherFavorites": {
+    "sourceHash": "7a1f2a8"
   }
 }

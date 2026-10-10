@@ -1078,6 +1078,17 @@
     "forms": "the Downloads folder → 下載項目",
     "sources": "AP-TW (12), AP-HK (11)"
   },
+  "drag": {
+    "accept": ["拖", "拖曳", "放開"],
+    "chosen": "拖移",
+    "confidence": "high",
+    "exceptions": {
+      "askCmdr.composer.dropHint": "The drop half of drag and drop: 放開就能附加 (let go to attach)."
+    },
+    "forms": "a drag the user is told to do → 拖移 (拖移可重新排序); drag X to a place → 拖到; a slider drag → 拖曳 (settings.mediaIndex.importanceThreshold.previewNone)",
+    "note": "Prefer 拖移 for a new name or hint; MS writes 拖曳, which this catalog keeps only where it already ships.",
+    "sources": "AP live Finder + AppKit TW 9 / HK 10 拖移, 0 拖曳 (macOS 27.0.1, loctable scan, 2026-10-10); catalog fileExplorer.navigation.favoriteTooltip"
+  },
   "drive": {
     "accept": ["磁碟"],
     "avoid": [
@@ -2289,7 +2300,8 @@
     "confidence": "high",
     "exceptions": {
       "errors.volume.staleDestinationHandle": "Open it again means step back into the folder: 再進去一次.",
-      "main.revealNudge.turnedOn": "Cmdr opens Show in Finder requests means it takes them over: 接手."
+      "main.revealNudge.turnedOn": "Cmdr opens Show in Finder requests means it takes them over: 接手.",
+      "settings.behavior.switcherFavoritesExpanded.label": "A section left open (expanded), not a file opened: 展開."
     },
     "forms": "one verb for opening a file with its app and stepping into a folder or server; held open by an app → 開著 (還開著, 開著的檔案); how many files are open → 開了多少檔案",
     "sources": "AP-HK, MS, all five file managers"
@@ -3594,6 +3606,12 @@
     "chosen": "未知",
     "confidence": "high",
     "sources": "AP-TW 12/0, AP-HK 12/0, AP live TW 56/0"
+  },
+  "unlock": {
+    "chosen": "解鎖",
+    "confidence": "high",
+    "forms": "an archive → 解鎖 (fileOperations.archivePassword.unlock); a phone's screen → 把手機…解鎖 (same verb, errors.listing.deviceDisconnected.suggestion)",
+    "sources": "AP live Finder + AppKit TW 14 / HK 14 (macOS 27.0.1, loctable scan, 2026-10-10); catalog uses it for archives, phones, and the keychain"
   },
   "unplug": {
     "accept": ["斷線", "中斷", "接上", "沒有連接", "插上"],

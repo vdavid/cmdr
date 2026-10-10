@@ -553,12 +553,12 @@ Neither failure nor loss: Cmdr couldn't prove the copies landed. kept → `ha co
 not `parcial` (promises part worked) nor `interrumpido`. `una carpeta oculta` is mandatory; `llamada {folderName}`
 agrees with `carpeta`.
 
-## El menú de favoritos: ⌃D, las teclas 1–9 y la fila que lo abre desde el selector (`commands.favoritesOpen.*`, `commands.favoritesOpenByNumber.label`, `commands.favoritesAdd.description`, `fileExplorer.navigation.favoritesAddCurrent`/`favoritesAlreadyAdded`/`favoritesCantAddHere`, `menu.go.showFavorites`, `shortcuts.scope.favoritesMenu`)
+## El menú de favoritos: ⌃D, las teclas 1–9 y la fila que lo abre desde el selector (`commands.favoritesOpen.*`, `commands.favoritesOpenByNumber.label`, `commands.favoritesAdd.description`, `fileExplorer.navigation.favoritesAddCurrent`/`favoritesAlreadyAdded`/`favoritesCantAddHere`/`favoriteUnreachable.removeFavorite`, `menu.go.showFavorites`, `shortcuts.scope.favoritesMenu`)
 
-- favorites → `favoritos`, ❌ never `marcadores` (another feature in Double Commander and Dolphin).
-- `la carpeta actual` keeps the article (an existing folder); `Esta carpeta ya está en favoritos`, the reverse of
+- favorites → `favoritos`, ❌ never `marcadores`.
+- `la carpeta actual` keeps the article; `Esta carpeta ya está en favoritos` and `Quitar de favoritos` mirror
   `Añadir a favoritos`.
-- press a number → `pulsa un número` (keys `pulsar`, mouse `hacer clic`).
+- press a number → `pulsa un número`.
 
 ## Quién retiene el disco cuando la expulsión se rechaza (`errors.eject.unmountRefusedBy*`, `errors.eject.otherApps`, `errors.eject.otherProcesses`)
 

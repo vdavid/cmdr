@@ -558,7 +558,7 @@ source is Apple's own Connect to Server dialog (`NetAuthAgent.app`).
 - show → `Hiển thị mục ưa thích` (the command and `menu.go.showFavorites` match word for word).
 - "press a number to jump to that favorite" → `… để đi tới thư mục đó`, over repeating `mục ưa thích` in one sentence.
 - Row `0` quotes `favoritesAddCurrent`; keep it apart from `commands.favoritesAdd.label`, which names no folder.
-- `favoritesCantAddHere` opens like `favoritesAlreadyAdded` and says `hoạt động trên`, never naming a protocol.
+- `favoritesCantAddHere` opens like `favoritesAlreadyAdded` and says `trỏ tới`, never naming a protocol.
 
 ## macOS từ chối tháo ổ đĩa, và Cmdr nói rõ ai đang giữ (`errors.eject.unmountRefusedBy*`, `errors.eject.otherApps`, `errors.eject.otherProcesses`)
 

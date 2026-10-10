@@ -378,6 +378,14 @@
     "forms": "Calculate folder sizes → 计算文件夹大小; stop the work → 停止计算",
     "sources": "macOS Finder ViewOptionsWindow 65.title (计算所有大小); TC zh-CN 503 计算占用空间, 5138 计算文件夹大小; Double Commander 计算占用空间"
   },
+  "cable": {
+    "accept": ["线缆", "线"],
+    "chosen": "数据线",
+    "confidence": "tentative",
+    "forms": "a USB cable → USB 数据线 (用 USB 数据线把它连上); swapping or replugging one in the ADB readiness hints → 线缆",
+    "note": "Reference pile absent on the agent box; no Tier-1 check yet.",
+    "sources": "catalog (settings.fileOperations.mtpEnabled.description USB 数据线; adb.readiness.* 线缆)"
+  },
   "camera": {
     "chosen": "相机",
     "confidence": "high",
@@ -1981,7 +1989,9 @@
     "exceptions": {
       "errors.volume.deletePending": "\"something still has it open\" is the busy-file idiom 还有东西占着它.",
       "errors.volume.staleDestinationHandle": "\"Open it again\" means entering the folder again (再次进入), the listing-error family's wording.",
-      "main.revealNudge.turnedOn": "\"opens Show in Finder from other apps\" means Cmdr takes over those requests (接手)."
+      "main.revealNudge.turnedOn": "\"opens Show in Finder from other apps\" means Cmdr takes over those requests (接手).",
+      "settings.behavior.switcherFavoritesExpanded.description": "\"left open\" is a disclosure section unfolded, not a thing opened: 展开 (the catalog's pair to 折叠).",
+      "settings.behavior.switcherFavoritesExpanded.label": "\"Favorites open\" is a disclosure section unfolded, not a thing opened: 展开 (the catalog's pair to 折叠)."
     },
     "note": "Opening a server row and opening a file share one verb, like Finder; stepping back into a folder in error copy is 进入.",
     "sources": "macOS"

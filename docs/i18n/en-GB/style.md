@@ -42,8 +42,8 @@ Two things a mechanical `Trash` → `Bin` replace gets wrong:
 - **Apple's article convention**: no article when the string names the command (`Move to Bin`), an article in running
   prose (`moved to the Bin`, `stayed in the Bin`).
 - **The VERB stays lowercase**, because it's an ordinary verb rather than the name of a place: `Counting items to bin…`,
-  `Overwrite and bin old file`, `binning`. Those three are correct as they stand. ❌ Don't "fix" them up to `Bin` to
-  match the noun.
+  `Overwrite and bin old file`, `binning`, `Skip confirmation for copy, move, and bin`. Those four are correct as they
+  stand. ❌ Don't "fix" them up to `Bin` to match the noun.
 
 **Gotcha: AppKit and Finder disagree, and Finder wins here.** `AppKit/Common.json:Trash` is `Delete` in `en-GB` (and
 `Bin` in `en-AU`), and the Touch Bar accessibility labels `NSTouchBarTrashTemplate` / `NSTrashEmpty` say `delete` in

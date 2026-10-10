@@ -3010,6 +3010,7 @@
     "distinct": ["leave-alone", "overwrite"],
     "en": "skip",
     "match": ["skip", "skips", "skipped", "skipping", "skip all"],
+    "notMatch": ["skip confirmation"],
     "sense": "Leaving one item out of an operation (a conflict answer, a per-item outcome)."
   },
   "slideshow": {

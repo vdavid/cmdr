@@ -363,10 +363,11 @@ describe('the rulings the catalogs are supposed to encode', () => {
       expect(cat.messages['fileOperations.delete.trashSwitch'], tag).toBe('Move to Bin')
       expect(cat.messages['errors.mutation.trashRefused'], tag).toBe('macOS wouldn’t move this to the Bin.')
       const lowercased = Object.entries(cat.messages).filter(([, v]) => / bin\b/.test(v))
-      // "bin" survives only as the verb ("Counting items to bin...", "and bin old file").
+      // "bin" survives only as the verb ("Counting items to bin...", "and bin old file", "copy, move, and bin").
       expect(lowercased.map(([k]) => k).sort(), tag).toEqual([
         'fileExplorer.renameConflict.overwriteTrash',
         'fileOperations.transferProgress.scanTitleTrash',
+        'settings.fileOperations.skipConfirmation.label',
       ])
     }
   })

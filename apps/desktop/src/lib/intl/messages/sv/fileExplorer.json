@@ -1367,13 +1367,21 @@
   "@fileExplorer.navigation.favoritesAlreadyAdded": {
     "sourceHash": "731a929"
   },
-  "fileExplorer.navigation.favoritesCantAddHere": "Den här mappen kan inte bli en favorit: favoriter fungerar bara på diskar och monterade delade mappar",
+  "fileExplorer.navigation.favoritesCantAddHere": "Den här mappen kan inte bli en favorit: favoriter pekar på mappar som finns på diskar, delade mappar, servrar och telefoner",
   "@fileExplorer.navigation.favoritesCantAddHere": {
-    "sourceHash": "86564ea"
+    "sourceHash": "03886b7"
+  },
+  "fileExplorer.navigation.switcherFavorites": "Favoriter",
+  "@fileExplorer.navigation.switcherFavorites": {
+    "sourceHash": "7a1f2a8"
   },
   "fileExplorer.navigation.favoriteTooltip": "{path}\nDra för att ändra ordning, eller {reorder}. Högerklicka för att byta namn eller ta bort.",
   "@fileExplorer.navigation.favoriteTooltip": {
     "sourceHash": "88d54d3"
+  },
+  "fileExplorer.navigation.favoriteTooltipWithStatus": "{path}\n{status}\nDra för att ändra ordning, eller {reorder}. Högerklicka för att byta namn eller ta bort.",
+  "@fileExplorer.navigation.favoriteTooltipWithStatus": {
+    "sourceHash": "4ef9623"
   },
   "fileExplorer.navigation.renameFavoriteAriaLabel": "Byt namn på favorit",
   "@fileExplorer.navigation.renameFavoriteAriaLabel": {
@@ -1402,6 +1410,54 @@
   "fileExplorer.navigation.reorderFavoritesFailed": "Det gick inte att ändra ordning på favoriterna. Försök igen?",
   "@fileExplorer.navigation.reorderFavoritesFailed": {
     "sourceHash": "875befb"
+  },
+  "fileExplorer.navigation.favoriteStatus.connects": "Inte ansluten. Cmdr ansluter till {place} när du öppnar favoriten.",
+  "@fileExplorer.navigation.favoriteStatus.connects": {
+    "sourceHash": "a30b8cd"
+  },
+  "fileExplorer.navigation.favoriteStatus.notFound": "Den här mappen finns inte längre.",
+  "@fileExplorer.navigation.favoriteStatus.notFound": {
+    "sourceHash": "48710a9"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.phoneUnplugged": "Telefonen {device} är inte ansluten. Anslut den med en USB-kabel, lås upp telefonen och försök sedan igen.",
+  "@fileExplorer.navigation.favoriteUnreachable.phoneUnplugged": {
+    "sourceHash": "e0232ec"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.storageUnplugged": "Mappens lagring på {device} är inte tillgänglig just nu.",
+  "@fileExplorer.navigation.favoriteUnreachable.storageUnplugged": {
+    "sourceHash": "c16cdc6"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.driveUnplugged": "Enheten ”{drive}” är inte ansluten. Anslut den och försök sedan igen.",
+  "@fileExplorer.navigation.favoriteUnreachable.driveUnplugged": {
+    "sourceHash": "4b44a30"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.mtpOff": "Telefoner och kameror via MTP är avstängda i Inställningar.",
+  "@fileExplorer.navigation.favoriteUnreachable.mtpOff": {
+    "sourceHash": "e441dc0"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.adbOff": "Android-telefoner är avstängda i Inställningar.",
+  "@fileExplorer.navigation.favoriteUnreachable.adbOff": {
+    "sourceHash": "c61bf95"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.forgotten": "Cmdr hittar inte längre någon väg till ”{place}”. Anslut på nytt i Servrar, så fungerar favoriten igen.",
+  "@fileExplorer.navigation.favoriteUnreachable.forgotten": {
+    "sourceHash": "842858c"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.notFound": "”{name}” finns inte längre på {path}.",
+  "@fileExplorer.navigation.favoriteUnreachable.notFound": {
+    "sourceHash": "0fd2e21"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.openSettings": "Öppna inställningar",
+  "@fileExplorer.navigation.favoriteUnreachable.openSettings": {
+    "sourceHash": "ca381c1"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.openServers": "Visa servrar",
+  "@fileExplorer.navigation.favoriteUnreachable.openServers": {
+    "sourceHash": "092283a"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.removeFavorite": "Ta bort favorit",
+  "@fileExplorer.navigation.favoriteUnreachable.removeFavorite": {
+    "sourceHash": "5bc0aa0"
   },
   "fileExplorer.navigation.locationUnreachableToast": "Det gick inte att nå enheten för den platsen. Den kanske inte är ansluten.",
   "@fileExplorer.navigation.locationUnreachableToast": {

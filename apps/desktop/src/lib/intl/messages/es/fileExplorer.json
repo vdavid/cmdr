@@ -1370,13 +1370,21 @@
   "@fileExplorer.navigation.favoritesAlreadyAdded": {
     "sourceHash": "731a929"
   },
-  "fileExplorer.navigation.favoritesCantAddHere": "Esta carpeta no puede estar en favoritos: los favoritos solo funcionan en discos y en recursos compartidos montados",
+  "fileExplorer.navigation.favoritesCantAddHere": "Esta carpeta no puede estar en favoritos: los favoritos apuntan a carpetas de unidades, recursos compartidos, servidores y teléfonos",
   "@fileExplorer.navigation.favoritesCantAddHere": {
-    "sourceHash": "86564ea"
+    "sourceHash": "03886b7"
+  },
+  "fileExplorer.navigation.switcherFavorites": "Favoritos",
+  "@fileExplorer.navigation.switcherFavorites": {
+    "sourceHash": "7a1f2a8"
   },
   "fileExplorer.navigation.favoriteTooltip": "{path}\nArrastra para reordenar, o {reorder}. Haz clic derecho para renombrar o quitar.",
   "@fileExplorer.navigation.favoriteTooltip": {
     "sourceHash": "88d54d3"
+  },
+  "fileExplorer.navigation.favoriteTooltipWithStatus": "{path}\n{status}\nArrastra para reordenar, o {reorder}. Haz clic derecho para renombrar o quitar.",
+  "@fileExplorer.navigation.favoriteTooltipWithStatus": {
+    "sourceHash": "4ef9623"
   },
   "fileExplorer.navigation.renameFavoriteAriaLabel": "Renombrar favorito",
   "@fileExplorer.navigation.renameFavoriteAriaLabel": {
@@ -1405,6 +1413,54 @@
   "fileExplorer.navigation.reorderFavoritesFailed": "No se han podido reordenar los favoritos. ¿Reintentar?",
   "@fileExplorer.navigation.reorderFavoritesFailed": {
     "sourceHash": "875befb"
+  },
+  "fileExplorer.navigation.favoriteStatus.connects": "Sin conexión. Al abrirlo, Cmdr se conecta a {place}.",
+  "@fileExplorer.navigation.favoriteStatus.connects": {
+    "sourceHash": "a30b8cd"
+  },
+  "fileExplorer.navigation.favoriteStatus.notFound": "Esta carpeta ya no está ahí.",
+  "@fileExplorer.navigation.favoriteStatus.notFound": {
+    "sourceHash": "48710a9"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.phoneUnplugged": "El teléfono {device} no está conectado. Conéctalo con un cable USB, desbloquéalo y vuelve a intentarlo.",
+  "@fileExplorer.navigation.favoriteUnreachable.phoneUnplugged": {
+    "sourceHash": "e0232ec"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.storageUnplugged": "Ese almacenamiento de {device} no está disponible ahora mismo.",
+  "@fileExplorer.navigation.favoriteUnreachable.storageUnplugged": {
+    "sourceHash": "c16cdc6"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.driveUnplugged": "La unidad “{drive}” no está conectada. Conéctala y vuelve a intentarlo.",
+  "@fileExplorer.navigation.favoriteUnreachable.driveUnplugged": {
+    "sourceHash": "4b44a30"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.mtpOff": "Los teléfonos y cámaras por MTP están desactivados en Ajustes.",
+  "@fileExplorer.navigation.favoriteUnreachable.mtpOff": {
+    "sourceHash": "e441dc0"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.adbOff": "Los teléfonos Android están desactivados en Ajustes.",
+  "@fileExplorer.navigation.favoriteUnreachable.adbOff": {
+    "sourceHash": "c61bf95"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.forgotten": "Cmdr ya no sabe cómo acceder a “{place}”. Vuelve a conectarte desde Servidores y este favorito volverá a funcionar.",
+  "@fileExplorer.navigation.favoriteUnreachable.forgotten": {
+    "sourceHash": "842858c"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.notFound": "“{name}” ya no está en {path}.",
+  "@fileExplorer.navigation.favoriteUnreachable.notFound": {
+    "sourceHash": "0fd2e21"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.openSettings": "Abrir los ajustes",
+  "@fileExplorer.navigation.favoriteUnreachable.openSettings": {
+    "sourceHash": "ca381c1"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.openServers": "Mostrar servidores",
+  "@fileExplorer.navigation.favoriteUnreachable.openServers": {
+    "sourceHash": "092283a"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.removeFavorite": "Quitar de favoritos",
+  "@fileExplorer.navigation.favoriteUnreachable.removeFavorite": {
+    "sourceHash": "5bc0aa0"
   },
   "fileExplorer.navigation.locationUnreachableToast": "No se ha podido acceder a la unidad de esa ubicación. Puede que esté desconectada.",
   "@fileExplorer.navigation.locationUnreachableToast": {

@@ -370,7 +370,6 @@ the installed macOS `pt_BR.lproj` bundles.
 
 - `favoritos` lowercase as a common noun, `Favoritos` only where the English names the section.
 - `Esta pasta já está nos favoritos` over `já é um favorito`, whose masculine predicate clashes with `pasta`.
-  `favoritesCantAddHere` uses `funcionar em` to stay short.
 - `pressione`, never `aperte`. `ir até esse favorito` because `ir` needs a destination.
 
 ## Select same kind (`menu.select.sameKind`/`.allFolders`/`.sameExtension`/`.noExtension`, `commands.selectionSelectSameKind.*`, `menu.context.selection`)

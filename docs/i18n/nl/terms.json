@@ -366,6 +366,12 @@
     "forms": "menu and command Bereken mapgroottes (imperative first, like Finder); Settings label infinitive last (Mapgrootte berekenen met Spatie); the running work → de berekening",
     "sources": "macOS Finder ViewOptionsWindow 65.title (Bereken alle grootten); TC 503 Ruimte berekenen, 5138; Double Commander Bereken in gebruik zijnde ruimte"
   },
+  "cable": {
+    "accept": ["USB-kabel", "kabels"],
+    "chosen": "kabel",
+    "confidence": "tentative",
+    "sources": "catalog (adb.readiness.noPermissions, errors.provider.macDroid.*: USB-kabel); pile not mined (absent on this machine)"
+  },
   "camera": {
     "accept": ["camera’s", "camera's"],
     "chosen": "camera",
@@ -903,6 +909,16 @@
     "confidence": "high",
     "forms": "progress wordt gedownload",
     "sources": "MS (Download, NLD/BEL)"
+  },
+  "drag": {
+    "accept": ["slepen", "gesleept"],
+    "chosen": "Sleep",
+    "confidence": "tentative",
+    "exceptions": {
+      "askCmdr.composer.dropHint": "English says \"Drop\", the end of a drag: Zet hier neer."
+    },
+    "forms": "Drag to reorder → Sleep om de volgorde te wijzigen",
+    "sources": "catalog (fileExplorer.navigation.favoriteTooltip); pile not mined (absent on this machine)"
   },
   "drive": {
     "accept": ["schijven", "netwerkschijf", "Drive"],

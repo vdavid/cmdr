@@ -597,7 +597,7 @@ sense). Quotes hug Han (`“{server}”上`).
 - Show `显示个人收藏` (`menu.go.showFavorites`, `commands.favoritesOpen.label`, like `显示服务器`).
 - Classifier `项`: `{count} 个个人收藏` doubles the character.
 - `前往` needs an object in Chinese, so `按数字键前往对应的文件夹`, never a bare `前往。`
-- Mounted share `已装载的共享` (Finder), not the error family's `挂载`; name no protocol, like the English.
+- Name no protocol; "anymore" → `已经不…了`; the switcher's fold state `展开`, never `打开`.
 - `favoritesCantAddHere` pairs with `favoritesAlreadyAdded` (`这个文件夹…`), the reason after `：`, no final `。`
   (tooltips).
 

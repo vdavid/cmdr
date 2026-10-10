@@ -1368,13 +1368,21 @@
   "@fileExplorer.navigation.favoritesAlreadyAdded": {
     "sourceHash": "731a929"
   },
-  "fileExplorer.navigation.favoritesCantAddHere": "Thư mục này không thể là mục ưa thích: mục ưa thích chỉ hoạt động trên ổ đĩa và mục chia sẻ đã gắn kết",
+  "fileExplorer.navigation.favoritesCantAddHere": "Thư mục này không thể là mục ưa thích: mục ưa thích trỏ tới thư mục trên ổ đĩa, mục chia sẻ, máy chủ và điện thoại",
   "@fileExplorer.navigation.favoritesCantAddHere": {
-    "sourceHash": "86564ea"
+    "sourceHash": "03886b7"
+  },
+  "fileExplorer.navigation.switcherFavorites": "Mục ưa thích",
+  "@fileExplorer.navigation.switcherFavorites": {
+    "sourceHash": "7a1f2a8"
   },
   "fileExplorer.navigation.favoriteTooltip": "{path}\nKéo để sắp xếp lại, hoặc {reorder}. Bấm chuột phải để đổi tên hoặc gỡ bỏ.",
   "@fileExplorer.navigation.favoriteTooltip": {
     "sourceHash": "88d54d3"
+  },
+  "fileExplorer.navigation.favoriteTooltipWithStatus": "{path}\n{status}\nKéo để sắp xếp lại, hoặc {reorder}. Bấm chuột phải để đổi tên hoặc gỡ bỏ.",
+  "@fileExplorer.navigation.favoriteTooltipWithStatus": {
+    "sourceHash": "4ef9623"
   },
   "fileExplorer.navigation.renameFavoriteAriaLabel": "Đổi tên mục ưa thích",
   "@fileExplorer.navigation.renameFavoriteAriaLabel": {
@@ -1403,6 +1411,54 @@
   "fileExplorer.navigation.reorderFavoritesFailed": "Không thể sắp xếp lại mục ưa thích. Thử lại?",
   "@fileExplorer.navigation.reorderFavoritesFailed": {
     "sourceHash": "875befb"
+  },
+  "fileExplorer.navigation.favoriteStatus.connects": "Chưa kết nối. Mở thư mục này sẽ kết nối tới {place}.",
+  "@fileExplorer.navigation.favoriteStatus.connects": {
+    "sourceHash": "a30b8cd"
+  },
+  "fileExplorer.navigation.favoriteStatus.notFound": "Thư mục này không còn ở đó nữa.",
+  "@fileExplorer.navigation.favoriteStatus.notFound": {
+    "sourceHash": "48710a9"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.phoneUnplugged": "{device} chưa kết nối. Hãy cắm điện thoại bằng cáp USB và mở khóa máy, rồi thử lại.",
+  "@fileExplorer.navigation.favoriteUnreachable.phoneUnplugged": {
+    "sourceHash": "e0232ec"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.storageUnplugged": "Bộ nhớ đó trên {device} hiện không khả dụng.",
+  "@fileExplorer.navigation.favoriteUnreachable.storageUnplugged": {
+    "sourceHash": "c16cdc6"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.driveUnplugged": "“{drive}” chưa kết nối. Hãy kết nối ổ đĩa, rồi thử lại.",
+  "@fileExplorer.navigation.favoriteUnreachable.driveUnplugged": {
+    "sourceHash": "4b44a30"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.mtpOff": "Tính năng điện thoại và máy ảnh qua MTP đang tắt trong Cài đặt.",
+  "@fileExplorer.navigation.favoriteUnreachable.mtpOff": {
+    "sourceHash": "e441dc0"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.adbOff": "Tính năng điện thoại Android đang tắt trong Cài đặt.",
+  "@fileExplorer.navigation.favoriteUnreachable.adbOff": {
+    "sourceHash": "c61bf95"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.forgotten": "Cmdr không còn biết cách kết nối tới “{place}” nữa. Hãy kết nối lại từ Máy chủ, rồi mục ưa thích này sẽ hoạt động lại.",
+  "@fileExplorer.navigation.favoriteUnreachable.forgotten": {
+    "sourceHash": "842858c"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.notFound": "“{name}” không còn ở {path} nữa.",
+  "@fileExplorer.navigation.favoriteUnreachable.notFound": {
+    "sourceHash": "0fd2e21"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.openSettings": "Mở cài đặt",
+  "@fileExplorer.navigation.favoriteUnreachable.openSettings": {
+    "sourceHash": "ca381c1"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.openServers": "Hiển thị máy chủ",
+  "@fileExplorer.navigation.favoriteUnreachable.openServers": {
+    "sourceHash": "092283a"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.removeFavorite": "Gỡ bỏ mục ưa thích",
+  "@fileExplorer.navigation.favoriteUnreachable.removeFavorite": {
+    "sourceHash": "5bc0aa0"
   },
   "fileExplorer.navigation.locationUnreachableToast": "Không thể truy cập ổ đĩa của vị trí đó. Có thể nó chưa được kết nối.",
   "@fileExplorer.navigation.locationUnreachableToast": {

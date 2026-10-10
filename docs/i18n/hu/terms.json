@@ -432,6 +432,13 @@
     "confidence": "high",
     "sources": "ms (cache → gyorsítótár); catalog"
   },
+  "cable": {
+    "accept": ["kábel"],
+    "chosen": "kábel",
+    "confidence": "high",
+    "forms": "USB cable → USB-kábel (USB-kábellel, USB-kábelt); Ethernet cable → Ethernet-kábel",
+    "sources": "catalog (errors.provider.macDroid.*, adb.readiness.*, settings MTP description: 6+ uses); reference pile not on this machine at mining time"
+  },
   "calculate": {
     "accept": ["kiszámít", "számol", "számít"],
     "chosen": "kiszámítás",
@@ -1080,6 +1087,16 @@
     "forms": "the folder → Letöltések; Remove download → Letöltés eltávolítása",
     "confidence": "high",
     "sources": "macOS; ms"
+  },
+  "drag": {
+    "accept": ["húz", "húzd", "húzás", "behúz"],
+    "chosen": "húzás",
+    "confidence": "high",
+    "exceptions": {
+      "askCmdr.composer.dropHint": "the drop half of drag and drop (Ejtsd ide), which takes the verb ejt, not húz"
+    },
+    "forms": "Drag to reorder → Húzd az átrendezéshez; a hint label → Húzás mozgat; drag to the Dock → behúzhatod a Dockba",
+    "sources": "catalog (fileExplorer.navigation.favoriteTooltip, viewer.statusBar.hint.image, main.dockPinNudge.notAdded); reference pile not on this machine at mining time"
   },
   "drive": {
     "chosen": "meghajtó",

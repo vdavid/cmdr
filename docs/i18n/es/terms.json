@@ -308,6 +308,13 @@
     "confidence": "high",
     "sources": "macOS es Finder (bytes, KB, MB, GB); Thunar, Dolphin, and Microsoft es (KiB, MiB); Nautilus es (kB); RAE (byte, pl. bytes); catalog Bytes (fileOperations.transferProgress.progressBytes)"
   },
+  "cable": {
+    "chosen": "cable",
+    "accept": ["cables"],
+    "forms": "a USB cable → un cable USB; by cable → por cable; plug in with a USB cable → conéctalo con un cable USB",
+    "confidence": "high",
+    "sources": "catalog ×8 (adb.readiness.noPermissions, errors.listing.deviceProblem.suggestion, errors.provider.macDroid.*); the live macOS 26 Finder bundle has no cable string, so no Tier-1 override exists"
+  },
   "cache": {
     "chosen": "caché",
     "confidence": "high",
@@ -874,6 +881,16 @@
     "forms": "Descargando…; the folder Descargas",
     "confidence": "high",
     "sources": "macOS (Descargas, Descargando)"
+  },
+  "drag": {
+    "chosen": "arrastrar",
+    "accept": ["arrastr", "arrástr"],
+    "forms": "Drag to reorder → Arrastra para reordenar; drag and drop → arrastrar y soltar",
+    "exceptions": {
+      "askCmdr.composer.dropHint": "English says Drop to attach; the drag sense comes only from the description, and soltar is the drop half of arrastrar y soltar."
+    },
+    "confidence": "high",
+    "sources": "catalog (fileExplorer.navigation.favoriteTooltip, favoriteTooltipWithStatus); the live macOS 26 Finder es strings use sacar for “drag it out of the Trash” (a different sense), no competing verb for dragging itself"
   },
   "drive": {
     "chosen": "unidad",

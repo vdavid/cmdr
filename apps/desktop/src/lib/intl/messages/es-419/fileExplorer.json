@@ -235,6 +235,18 @@
   "@fileExplorer.navigation.favoriteShortcutSaveFailed": {
     "sourceHash": "2883f1c"
   },
+  "fileExplorer.navigation.favoriteUnreachable.mtpOff": "Los teléfonos y cámaras por MTP están desactivados en Configuración.",
+  "@fileExplorer.navigation.favoriteUnreachable.mtpOff": {
+    "sourceHash": "a989486"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.adbOff": "Los teléfonos Android están desactivados en Configuración.",
+  "@fileExplorer.navigation.favoriteUnreachable.adbOff": {
+    "sourceHash": "73acee5"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.openSettings": "Abrir la configuración",
+  "@fileExplorer.navigation.favoriteUnreachable.openSettings": {
+    "sourceHash": "3e708b0"
+  },
   "fileExplorer.navigation.removeFavoriteFailed": "No se pudo quitar ese favorito. ¿Reintentar?",
   "@fileExplorer.navigation.removeFavoriteFailed": {
     "sourceHash": "4832ab4"

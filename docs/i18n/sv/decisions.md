@@ -537,8 +537,7 @@ catalog.
   second, definite wording.
 - `a disk` → `disk` (English disk), `enhet` is drive, `skiva` only in Finder's own wording.
 - The number keys are `siffra`, not `nummer` (a running number, as in `radnumren`).
-- `favoritesCantAddHere` states the reason after a colon with `fungerar bara på`, a flat locative that avoids the split
-  `på en disk` / `i en delad mapp`.
+- `favoritesCantAddHere`: `pekar på mappar som finns på …`, one flat `på` list (`som finns` splits the two `på`).
 
 ## Title-bar full disk access badge and the trash refusal dialog (`onboarding.fdaBadge.*`, `errors.write.trashRefused.*`)
 

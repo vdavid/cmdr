@@ -388,11 +388,11 @@
   "@settings.fileOperations.pasteClipboardAsFile.opt.createFileAndRename": {
     "sourceHash": "ed7b1b9"
   },
-  "settings.fileOperations.skipConfirmation.label": "Skip confirmation for copy, move, and trash",
+  "settings.fileOperations.skipConfirmation.label": "Копировать и перемещать без подтверждения, в том числе в Корзину",
   "@settings.fileOperations.skipConfirmation.label": {
     "sourceHash": "6af6546"
   },
-  "settings.fileOperations.skipConfirmation.description": "F5 and F6 copy and move into the other pane right away, and F8 moves to the trash without asking. A bit risky, since one keypress acts at once. Deleting permanently always asks first.",
+  "settings.fileOperations.skipConfirmation.description": "F5 и F6 сразу копируют и перемещают в другую панель, а F8 без вопросов перемещает в Корзину. Немного рискованно: одно нажатие клавиши срабатывает мгновенно. Перед безвозвратным удалением Cmdr всегда спрашивает.",
   "@settings.fileOperations.skipConfirmation.description": {
     "sourceHash": "086379d"
   },
@@ -1673,6 +1673,14 @@
   "settings.behavior.serversPinHintSeen.description": "Была ли показана однократная подсказка об откреплении серверов.",
   "@settings.behavior.serversPinHintSeen.description": {
     "sourceHash": "fc0722f"
+  },
+  "settings.behavior.switcherFavoritesExpanded.label": "Избранное открыто в переключателе томов",
+  "@settings.behavior.switcherFavoritesExpanded.label": {
+    "sourceHash": "7f22d22"
+  },
+  "settings.behavior.switcherFavoritesExpanded.description": "Запоминает, был ли раздел «Избранное» в переключателе томов открыт в последний раз.",
+  "@settings.behavior.switcherFavoritesExpanded.description": {
+    "sourceHash": "e4c8a41"
   },
   "settings.behavior.dockPinNudgeOfferedAt.label": "Время предложения добавить в Dock",
   "@settings.behavior.dockPinNudgeOfferedAt.label": {

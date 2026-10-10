@@ -384,6 +384,13 @@
     "forms": "unit word after a count → octet / octets (plural many = other); binary (IEC) symbols Kio, Mio, Gio, Tio, Pio; decimal (SI) symbols ko (lowercase SI k, like the English kB), Mo, Go, To, Po; the Bytes size-unit option → Octets",
     "sources": "macOS Finder (SP22–SP28: Po, To, Go, Mo, Ko, octet, octets; decimal only); Microsoft Terminology (MiB → Mio, GiB → Gio, TiB → Tio); Total Commander (Kio); Thunar (Mio, Gio); catalog (Octets)"
   },
+  "cable": {
+    "accept": ["câbles"],
+    "chosen": "câble",
+    "confidence": "high",
+    "forms": "plug in with a USB cable → branchez-le avec un câble USB; try another cable → essayez un autre câble",
+    "sources": "catalog (adb.readiness.noPermissions, mtp errors: câble USB, rebranchez le câble); reference pile not on this machine at ruling time"
+  },
   "cache": {
     "chosen": "cache",
     "confidence": "high",
@@ -977,6 +984,13 @@
     "confidence": "high",
     "forms": "verb télécharger; Downloads folder → dossier Téléchargements; latest download → dernier téléchargement; téléchargement is Internet-only (fetching a file from a phone or server is récupération)",
     "sources": "macOS (Téléchargements)"
+  },
+  "drag": {
+    "accept": ["glisser", "glissez", "glissé", "glissement", "glisser-déposer", "déposer"],
+    "chosen": "faire glisser",
+    "confidence": "high",
+    "forms": "Drag to reorder → Faites glisser pour réordonner (the favorites tooltips share this frame)",
+    "sources": "catalog (fileExplorer.navigation.favoriteTooltip); reference pile not on this machine at ruling time"
   },
   "drive": {
     "avoid": [
@@ -1787,7 +1801,7 @@
     "sources": "macOS Finder (Déplacer les éléments ici)"
   },
   "move-to-trash": {
-    "accept": ["placer", "placé", "placement"],
+    "accept": ["placer", "place", "placé", "placement"],
     "avoid": [
       {
         "form": "mettre à la corbeille",

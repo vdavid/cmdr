@@ -354,6 +354,13 @@
     "forms": "invariant plural: 1 byte / 2 byte; råa byte; unit symbols stay international: binary KiB, MiB, GiB, TiB, PiB and SI kB (lowercase k), MB, GB, TB, PB, never KB; 1 KiB = 1 024 byte with a non-breaking space",
     "sources": "standard Swedish; Microsoft terminology sv (MiB, GiB); KDE Dolphin sv (MiB); GNOME Nautilus sv and Total Commander sv (kB)"
   },
+  "cable": {
+    "accept": ["kabeln", "USB-kabel", "USB-kabeln"],
+    "chosen": "kabel",
+    "confidence": "high",
+    "forms": "a USB cable → en USB-kabel; pull the cable → dra ur kabeln",
+    "sources": "catalog adb.readiness.noPermissions (Prova en annan kabel eller port), mtp.* (sätt i kabeln igen); standard Swedish"
+  },
   "cache": {
     "accept": ["cacha", "cachemapp"],
     "chosen": "cache",
@@ -898,6 +905,16 @@
     "decision": "AI provider setup",
     "forms": "verb hämta, noun hämtning; the Downloads folder is Hämtade filer",
     "sources": "macOS Finder (Hämtade filer, Hämtningar)"
+  },
+  "drag": {
+    "accept": ["drar", "drog", "dragning", "dra och släpp"],
+    "chosen": "dra",
+    "confidence": "high",
+    "exceptions": {
+      "askCmdr.composer.dropHint": "English Drop is the release half of dra och släpp, so the hint says Släpp, not dra."
+    },
+    "forms": "Drag to reorder → Dra för att ändra ordning",
+    "sources": "macOS Finder sv.lproj 285.title (Dra bild hit), 993.title (Dra dina favorittaggar …), live bundle 2026-10-10; catalog fileExplorer.navigation.favoriteTooltip"
   },
   "drive": {
     "accept": ["disk", "skiv"],

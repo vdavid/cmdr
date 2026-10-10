@@ -319,6 +319,12 @@
     "forms": "Calculate folder sizes → Tính toán kích cỡ thư mục; stop the work → dừng tính toán; adding up in prose → cộng dồn",
     "sources": "macOS Finder ViewOptionsWindow 65.title (Tính toán tất cả kích cỡ); TC 5138 Tính toán dung lượng chiếm (503 has bare Tính dung lượng)"
   },
+  "cable": {
+    "chosen": "cáp",
+    "confidence": "high",
+    "forms": "USB cable → cáp USB; plug in → cắm; unplug → rút",
+    "sources": "macOS vi live sweep 2026-10-10 (Network Cáp bị rút, Cáp cho %@ không được cắm; Privacy cáp Thunderbolt); catalog cáp USB"
+  },
   "camera": {
     "chosen": "máy ảnh",
     "confidence": "high",
@@ -745,7 +751,7 @@
   "disable": {
     "chosen": "tắt",
     "confidence": "high",
-    "forms": "a feature switched off → đang tắt; toggle prefix bật/tắt",
+    "forms": "a feature switched off → đang tắt; toggle prefix bật/tắt; phones/devices turned off in Settings → Tính năng điện thoại … đang tắt (a bare Điện thoại … đang tắt reads as powered off)",
     "sources": "MS terminology"
   },
   "disconnect": {
@@ -831,6 +837,13 @@
     "decision": "Rà soát trôi thuật ngữ toàn catalog",
     "forms": "noun and verb alike: Đang tải về; a downloaded item → bản tải về; the Downloads folder → Tải về; re-download → tải lại; separable tải … về is fine in prose",
     "sources": "macOS vi (Đang tải về, Xóa bản tải về)"
+  },
+  "drag": {
+    "accept": ["thả"],
+    "chosen": "kéo",
+    "confidence": "high",
+    "forms": "Drag to reorder → Kéo để sắp xếp lại; drag and drop → kéo và thả; Drop to … → Thả để …",
+    "sources": "macOS vi live sweep 2026-10-10 (toolbar customization Kéo mục ưa thích của bạn vào thanh công cụ…, Accessibility Kéo và thả); catalog favoriteTooltip"
   },
   "drive": {
     "accept": ["đĩa", "Drive"],

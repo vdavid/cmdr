@@ -1378,13 +1378,21 @@
   "@fileExplorer.navigation.favoritesAlreadyAdded": {
     "sourceHash": "731a929"
   },
-  "fileExplorer.navigation.favoritesCantAddHere": "Deze map kan geen favoriet worden: favorieten werken alleen op schijven en gekoppelde netwerkshares",
+  "fileExplorer.navigation.favoritesCantAddHere": "Deze map kan geen favoriet worden: favorieten verwijzen naar mappen op schijven, netwerkshares, servers en telefoons",
   "@fileExplorer.navigation.favoritesCantAddHere": {
-    "sourceHash": "86564ea"
+    "sourceHash": "03886b7"
+  },
+  "fileExplorer.navigation.switcherFavorites": "Favorieten",
+  "@fileExplorer.navigation.switcherFavorites": {
+    "sourceHash": "7a1f2a8"
   },
   "fileExplorer.navigation.favoriteTooltip": "{path}\nSleep om de volgorde te wijzigen, of {reorder}. Klik met de rechtermuisknop om de naam te wijzigen of te verwijderen.",
   "@fileExplorer.navigation.favoriteTooltip": {
     "sourceHash": "88d54d3"
+  },
+  "fileExplorer.navigation.favoriteTooltipWithStatus": "{path}\n{status}\nSleep om de volgorde te wijzigen, of {reorder}. Klik met de rechtermuisknop om de naam te wijzigen of te verwijderen.",
+  "@fileExplorer.navigation.favoriteTooltipWithStatus": {
+    "sourceHash": "4ef9623"
   },
   "fileExplorer.navigation.renameFavoriteAriaLabel": "Wijzig naam van favoriet",
   "@fileExplorer.navigation.renameFavoriteAriaLabel": {
@@ -1413,6 +1421,54 @@
   "fileExplorer.navigation.reorderFavoritesFailed": "De volgorde van favorieten wijzigen lukte niet. Opnieuw proberen?",
   "@fileExplorer.navigation.reorderFavoritesFailed": {
     "sourceHash": "875befb"
+  },
+  "fileExplorer.navigation.favoriteStatus.connects": "Niet verbonden. Bij het openen maakt Cmdr verbinding met {place}.",
+  "@fileExplorer.navigation.favoriteStatus.connects": {
+    "sourceHash": "a30b8cd"
+  },
+  "fileExplorer.navigation.favoriteStatus.notFound": "Deze map is er niet meer.",
+  "@fileExplorer.navigation.favoriteStatus.notFound": {
+    "sourceHash": "48710a9"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.phoneUnplugged": "{device} is niet aangesloten. Ontgrendel de telefoon, sluit hem met een USB-kabel aan en probeer het daarna opnieuw.",
+  "@fileExplorer.navigation.favoriteUnreachable.phoneUnplugged": {
+    "sourceHash": "e0232ec"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.storageUnplugged": "Die opslag op {device} is nu niet beschikbaar.",
+  "@fileExplorer.navigation.favoriteUnreachable.storageUnplugged": {
+    "sourceHash": "c16cdc6"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.driveUnplugged": "‘{drive}’ is niet verbonden. Sluit de schijf aan en probeer het daarna opnieuw.",
+  "@fileExplorer.navigation.favoriteUnreachable.driveUnplugged": {
+    "sourceHash": "4b44a30"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.mtpOff": "Telefoons en camera''s via MTP staan uit in Instellingen.",
+  "@fileExplorer.navigation.favoriteUnreachable.mtpOff": {
+    "sourceHash": "e441dc0"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.adbOff": "Android-telefoons staan uit in Instellingen.",
+  "@fileExplorer.navigation.favoriteUnreachable.adbOff": {
+    "sourceHash": "c61bf95"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.forgotten": "Cmdr weet niet meer hoe het ‘{place}’ kan bereiken. Maak opnieuw verbinding via Servers, dan werkt deze favoriet weer.",
+  "@fileExplorer.navigation.favoriteUnreachable.forgotten": {
+    "sourceHash": "842858c"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.notFound": "‘{name}’ staat niet meer op {path}.",
+  "@fileExplorer.navigation.favoriteUnreachable.notFound": {
+    "sourceHash": "0fd2e21"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.openSettings": "Open instellingen",
+  "@fileExplorer.navigation.favoriteUnreachable.openSettings": {
+    "sourceHash": "ca381c1"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.openServers": "Toon servers",
+  "@fileExplorer.navigation.favoriteUnreachable.openServers": {
+    "sourceHash": "092283a"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.removeFavorite": "Verwijder favoriet",
+  "@fileExplorer.navigation.favoriteUnreachable.removeFavorite": {
+    "sourceHash": "5bc0aa0"
   },
   "fileExplorer.navigation.locationUnreachableToast": "De schijf van die locatie was niet bereikbaar. Misschien is hij losgekoppeld.",
   "@fileExplorer.navigation.locationUnreachableToast": {

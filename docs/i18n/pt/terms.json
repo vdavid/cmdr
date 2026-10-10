@@ -300,6 +300,12 @@
     "confidence": "high",
     "sources": "macOS Finder pt-BR (botão); shipped pt catalog (15 values)"
   },
+  "cable": {
+    "chosen": "cabo",
+    "forms": "USB cable → cabo USB",
+    "confidence": "high",
+    "sources": "shipped pt catalog (adb.readiness.noPermissions, errors.json MacDroid and disconnect texts: cabo USB); pile not on this machine"
+  },
   "cache": {
     "chosen": "cache",
     "confidence": "high",
@@ -845,6 +851,13 @@
     "forms": "progress Baixando; the Downloads folder stays Downloads; Go to latest download → Ir para o último download",
     "confidence": "high",
     "sources": "MS terminology pt-BR (download → baixar)"
+  },
+  "drag": {
+    "chosen": "arrastar",
+    "accept": ["arrast", "solt"],
+    "forms": "Drag to reorder → Arraste para reordenar; Drop to … → Solte para …",
+    "confidence": "high",
+    "sources": "shipped pt catalog (fileExplorer.navigation.favoriteTooltip and 7 other arrast- values); pile not on this machine"
   },
   "drive": {
     "chosen": "disco",

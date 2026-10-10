@@ -1365,13 +1365,21 @@
   "@fileExplorer.navigation.favoritesAlreadyAdded": {
     "sourceHash": "731a929"
   },
-  "fileExplorer.navigation.favoritesCantAddHere": "这个文件夹不能加入个人收藏：个人收藏只能用在磁盘和已装载的共享上",
+  "fileExplorer.navigation.favoritesCantAddHere": "这个文件夹不能加入个人收藏：个人收藏指向的是磁盘、共享、服务器和手机上的文件夹",
   "@fileExplorer.navigation.favoritesCantAddHere": {
-    "sourceHash": "86564ea"
+    "sourceHash": "03886b7"
+  },
+  "fileExplorer.navigation.switcherFavorites": "个人收藏",
+  "@fileExplorer.navigation.switcherFavorites": {
+    "sourceHash": "7a1f2a8"
   },
   "fileExplorer.navigation.favoriteTooltip": "{path}\n拖动可重新排序，或按 {reorder}。右键点击可重命名或移除。",
   "@fileExplorer.navigation.favoriteTooltip": {
     "sourceHash": "88d54d3"
+  },
+  "fileExplorer.navigation.favoriteTooltipWithStatus": "{path}\n{status}\n拖动可重新排序，或按 {reorder}。右键点击可重命名或移除。",
+  "@fileExplorer.navigation.favoriteTooltipWithStatus": {
+    "sourceHash": "4ef9623"
   },
   "fileExplorer.navigation.renameFavoriteAriaLabel": "重命名个人收藏",
   "@fileExplorer.navigation.renameFavoriteAriaLabel": {
@@ -1400,6 +1408,54 @@
   "fileExplorer.navigation.reorderFavoritesFailed": "无法重新排序个人收藏。要重试吗？",
   "@fileExplorer.navigation.reorderFavoritesFailed": {
     "sourceHash": "875befb"
+  },
+  "fileExplorer.navigation.favoriteStatus.connects": "还没连接。打开它就会连接到 {place}。",
+  "@fileExplorer.navigation.favoriteStatus.connects": {
+    "sourceHash": "a30b8cd"
+  },
+  "fileExplorer.navigation.favoriteStatus.notFound": "这个文件夹已经不在了。",
+  "@fileExplorer.navigation.favoriteStatus.notFound": {
+    "sourceHash": "48710a9"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.phoneUnplugged": "{device} 没有连接。请用 USB 数据线把它连上并解锁，然后再试一次。",
+  "@fileExplorer.navigation.favoriteUnreachable.phoneUnplugged": {
+    "sourceHash": "e0232ec"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.storageUnplugged": "{device} 上的那个存储空间现在不可用。",
+  "@fileExplorer.navigation.favoriteUnreachable.storageUnplugged": {
+    "sourceHash": "c16cdc6"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.driveUnplugged": "“{drive}”没有连接。请连接它，然后再试一次。",
+  "@fileExplorer.navigation.favoriteUnreachable.driveUnplugged": {
+    "sourceHash": "4b44a30"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.mtpOff": "通过 MTP 连接手机和相机的功能已在设置中关闭。",
+  "@fileExplorer.navigation.favoriteUnreachable.mtpOff": {
+    "sourceHash": "e441dc0"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.adbOff": "Android 手机功能已在设置中关闭。",
+  "@fileExplorer.navigation.favoriteUnreachable.adbOff": {
+    "sourceHash": "c61bf95"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.forgotten": "Cmdr 已经不知道怎么连到“{place}”了。从“服务器”重新连接它，这个个人收藏就又能用了。",
+  "@fileExplorer.navigation.favoriteUnreachable.forgotten": {
+    "sourceHash": "842858c"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.notFound": "“{name}”已经不在 {path} 了。",
+  "@fileExplorer.navigation.favoriteUnreachable.notFound": {
+    "sourceHash": "0fd2e21"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.openSettings": "打开设置",
+  "@fileExplorer.navigation.favoriteUnreachable.openSettings": {
+    "sourceHash": "ca381c1"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.openServers": "显示服务器",
+  "@fileExplorer.navigation.favoriteUnreachable.openServers": {
+    "sourceHash": "092283a"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.removeFavorite": "移除个人收藏",
+  "@fileExplorer.navigation.favoriteUnreachable.removeFavorite": {
+    "sourceHash": "5bc0aa0"
   },
   "fileExplorer.navigation.locationUnreachableToast": "无法访问那个位置所在的驱动器。它可能已经断开了。",
   "@fileExplorer.navigation.locationUnreachableToast": {

@@ -165,3 +165,24 @@ rule into `translation-principles.md` or `translator-instructions.md`), then del
   needs. (es-419)
 - `settings.appearance.tintMtp.*`: the notes say keep `ADB` and `Kindle` verbatim, but neither is in `BRAND_WORDS`, so
   `dont-translate` can't guard them. Add both (`ADB` alongside `MTP`). (11)
+- Concept `unlock` says "opening a password-protected archive", but
+  `fileExplorer.navigation.favoriteUnreachable.phoneUnplugged` uses it for unlocking a phone's screen, so the termbase
+  match pins the archive word there. Broaden the sense (archive or device screen) or split a `unlock-device` concept.
+  (de, zh-Hant)
+- `fileExplorer.navigation.favoriteUnreachable.phoneUnplugged` vs `.driveUnplugged`: sibling toasts quote the name
+  differently (`{device}` bare, `“{drive}”` quoted), though both are device names the user owns. Pick one; a locale that
+  quotes owned names has to mirror the split or deviate. (hu)
+- `settings.fileOperations.skipConfirmation.label`: "skip confirmation" isn't the `skip` concept (nothing is left out of
+  the operation), yet the termbase pinned the conflict word `Ignorar` on it. Added `"notMatch": ["skip confirmation"]`
+  to concept `skip`; other locales benefit. (pt)
+- `fileExplorer.navigation.favoriteUnreachable.*`, `favoriteStatus.*`: no screenshot of the toasts or the dimmed-row
+  tooltip, so widths are unverified. (pt)
+- `fileExplorer.navigation.favoriteStatus.connects`, `favoriteUnreachable.forgotten`: `{place}` is a share, a server, or
+  a phone, and nothing says which, so case languages can't put a type noun before it (`к серверу «…»`) and fall back to
+  a parenthesis or colon. Pass a `{kind}` select (share / server / phone) alongside it. (ru)
+- `fileExplorer.navigation.favoriteUnreachable.storageUnplugged`: "That storage on {device}" points at nothing the toast
+  or tooltip names, so "that" has no antecedent; "The storage this folder was on" (or a `{storage}` name such as the SD
+  card) would read clearly. (sv)
+- `fileExplorer.navigation.favoriteUnreachable.mtpOff`, `.adbOff`: "Android phones are turned off in Settings" reads,
+  translated literally, as the phones being powered off (vi `Điện thoại … đang tắt`). Name the feature: "Android phone
+  access is turned off in Settings". (vi, zh-Hant)

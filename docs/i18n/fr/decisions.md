@@ -688,8 +688,8 @@ values write the catalog's `’`.
 - `favori` (Finder), never Nautilus’s `signet`. The menu → `le menu des favoris` (the orthodox hotlist’s word).
 - Show favorites → `Afficher les favoris` (opens the menu).
 - current folder → `le dossier actuel`, over the anglicism `dossier courant`.
-- `Ce dossier ne peut pas rejoindre vos favoris : les favoris ne fonctionnent que sur un disque ou un partage monté`:
-  never name a protocol there, the reader doesn’t know which one they’re on.
+- `Ce dossier ne peut pas rejoindre vos favoris : un favori pointe vers un dossier sur un disque, un partage, un serveur ou un téléphone`:
+  no protocol names, the reader can’t tell which.
 - Number vs digit: `Ouvrir le favori portant ce numéro` (its rank), `appuyer sur un chiffre` (the key).
 
 ## Select all of the same kind (`menu.select.sameKind`/`.allFolders`/`.sameExtension`/`.noExtension`, `commands.selectionSelectSameKind.*`, `menu.context.selection`)

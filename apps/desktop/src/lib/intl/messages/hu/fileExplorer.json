@@ -1368,13 +1368,21 @@
   "@fileExplorer.navigation.favoritesAlreadyAdded": {
     "sourceHash": "731a929"
   },
-  "fileExplorer.navigation.favoritesCantAddHere": "Ez a mappa nem lehet kedvenc: a kedvencek csak lemezen és csatolt megosztáson működnek",
+  "fileExplorer.navigation.favoritesCantAddHere": "Ez a mappa nem lehet kedvenc: a kedvencek lemezeken, megosztásokon, szervereken és telefonokon lévő mappák",
   "@fileExplorer.navigation.favoritesCantAddHere": {
-    "sourceHash": "86564ea"
+    "sourceHash": "03886b7"
+  },
+  "fileExplorer.navigation.switcherFavorites": "Kedvencek",
+  "@fileExplorer.navigation.switcherFavorites": {
+    "sourceHash": "7a1f2a8"
   },
   "fileExplorer.navigation.favoriteTooltip": "{path}\nHúzd az átrendezéshez, vagy {reorder}. Kattints jobb gombbal az átnevezéshez vagy eltávolításhoz.",
   "@fileExplorer.navigation.favoriteTooltip": {
     "sourceHash": "88d54d3"
+  },
+  "fileExplorer.navigation.favoriteTooltipWithStatus": "{path}\n{status}\nHúzd az átrendezéshez, vagy {reorder}. Kattints jobb gombbal az átnevezéshez vagy eltávolításhoz.",
+  "@fileExplorer.navigation.favoriteTooltipWithStatus": {
+    "sourceHash": "4ef9623"
   },
   "fileExplorer.navigation.renameFavoriteAriaLabel": "Kedvenc átnevezése",
   "@fileExplorer.navigation.renameFavoriteAriaLabel": {
@@ -1403,6 +1411,54 @@
   "fileExplorer.navigation.reorderFavoritesFailed": "Nem sikerült átrendezni a kedvenceket. Megpróbálod újra?",
   "@fileExplorer.navigation.reorderFavoritesFailed": {
     "sourceHash": "875befb"
+  },
+  "fileExplorer.navigation.favoriteStatus.connects": "Nincs csatlakoztatva. Ha megnyitod, a Cmdr csatlakozik ide: {place}.",
+  "@fileExplorer.navigation.favoriteStatus.connects": {
+    "sourceHash": "a30b8cd"
+  },
+  "fileExplorer.navigation.favoriteStatus.notFound": "Ez a mappa már nincs ott.",
+  "@fileExplorer.navigation.favoriteStatus.notFound": {
+    "sourceHash": "48710a9"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.phoneUnplugged": "{device} nincs csatlakoztatva. Csatlakoztasd USB-kábellel, oldd fel, majd próbáld újra.",
+  "@fileExplorer.navigation.favoriteUnreachable.phoneUnplugged": {
+    "sourceHash": "e0232ec"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.storageUnplugged": "Ez a tárhely most nem érhető el ezen a telefonon: {device}.",
+  "@fileExplorer.navigation.favoriteUnreachable.storageUnplugged": {
+    "sourceHash": "c16cdc6"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.driveUnplugged": "„{drive}” nincs csatlakoztatva. Csatlakoztasd, majd próbáld újra.",
+  "@fileExplorer.navigation.favoriteUnreachable.driveUnplugged": {
+    "sourceHash": "4b44a30"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.mtpOff": "Az MTP-n át csatlakozó telefonok és kamerák ki vannak kapcsolva a Beállításokban.",
+  "@fileExplorer.navigation.favoriteUnreachable.mtpOff": {
+    "sourceHash": "e441dc0"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.adbOff": "Az Android-telefonok ki vannak kapcsolva a Beállításokban.",
+  "@fileExplorer.navigation.favoriteUnreachable.adbOff": {
+    "sourceHash": "c61bf95"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.forgotten": "A Cmdr már nem tudja, hogyan érje el ezt: „{place}”. Csatlakozz újra a Szerverek listájából, és ez a kedvenc ismét működik.",
+  "@fileExplorer.navigation.favoriteUnreachable.forgotten": {
+    "sourceHash": "842858c"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.notFound": "„{name}” már nincs itt: {path}.",
+  "@fileExplorer.navigation.favoriteUnreachable.notFound": {
+    "sourceHash": "0fd2e21"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.openSettings": "Beállítások megnyitása",
+  "@fileExplorer.navigation.favoriteUnreachable.openSettings": {
+    "sourceHash": "ca381c1"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.openServers": "Szerverek megjelenítése",
+  "@fileExplorer.navigation.favoriteUnreachable.openServers": {
+    "sourceHash": "092283a"
+  },
+  "fileExplorer.navigation.favoriteUnreachable.removeFavorite": "Kedvenc eltávolítása",
+  "@fileExplorer.navigation.favoriteUnreachable.removeFavorite": {
+    "sourceHash": "5bc0aa0"
   },
   "fileExplorer.navigation.locationUnreachableToast": "Ennek a helynek a meghajtója nem volt elérhető. Talán nincs csatlakoztatva.",
   "@fileExplorer.navigation.locationUnreachableToast": {

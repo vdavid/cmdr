@@ -551,8 +551,8 @@ In progress → `wordt losgekoppeld`; already gone → `werd losgekoppeld` (the 
 - `favorietenmenu` closed; `Toon favorieten` in both the Go menu and the palette (byte-identical twins).
 - The `0` row has one key, `Voeg huidige map aan favorieten toe` (particle last); the shortcut list quotes it.
 - A favorite's `nummer` identifies it; the key you press is a `cijfer`.
-- `Deze map staat al in je favorieten`; `favoritesCantAddHere` gives the reason after a colon with `werken op`, and
-  "mounted share" → `gekoppelde netwerkshare` over macOS's `activeren`, which the catalog never uses.
+- `Deze map staat al in je favorieten`; `favoritesCantAddHere` gives the reason after a colon with
+  `verwijzen naar mappen op`; "shares" → `netwerkshares`, as `gedeelde mappen` would repeat `mappen`.
 
 ## Wie de schijf vasthoudt: de zes geweigerde-uitwerpzinnen (`errors.eject.unmountRefusedBy*`, `.otherApps`, `.otherProcesses`)
 

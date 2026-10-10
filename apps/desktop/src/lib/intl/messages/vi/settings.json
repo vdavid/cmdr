@@ -388,11 +388,11 @@
   "@settings.fileOperations.pasteClipboardAsFile.opt.createFileAndRename": {
     "sourceHash": "ed7b1b9"
   },
-  "settings.fileOperations.skipConfirmation.label": "Skip confirmation for copy, move, and trash",
+  "settings.fileOperations.skipConfirmation.label": "Bỏ qua xác nhận khi sao chép, di chuyển và chuyển vào thùng rác",
   "@settings.fileOperations.skipConfirmation.label": {
     "sourceHash": "6af6546"
   },
-  "settings.fileOperations.skipConfirmation.description": "F5 and F6 copy and move into the other pane right away, and F8 moves to the trash without asking. A bit risky, since one keypress acts at once. Deleting permanently always asks first.",
+  "settings.fileOperations.skipConfirmation.description": "F5 và F6 sao chép và di chuyển sang khung kia ngay lập tức, còn F8 chuyển vào thùng rác mà không hỏi. Hơi rủi ro, vì chỉ một lần nhấn phím là thao tác chạy luôn. Xóa vĩnh viễn thì luôn hỏi trước.",
   "@settings.fileOperations.skipConfirmation.description": {
     "sourceHash": "086379d"
   },
@@ -1674,6 +1674,14 @@
   "settings.behavior.serversPinHintSeen.description": "Gợi ý một lần về việc bỏ ghim máy chủ đã hiển thị hay chưa.",
   "@settings.behavior.serversPinHintSeen.description": {
     "sourceHash": "fc0722f"
+  },
+  "settings.behavior.switcherFavoritesExpanded.label": "Mục ưa thích đang mở trong bộ chọn ổ đĩa",
+  "@settings.behavior.switcherFavoritesExpanded.label": {
+    "sourceHash": "7f22d22"
+  },
+  "settings.behavior.switcherFavoritesExpanded.description": "Phần mục ưa thích trong bộ chọn ổ đĩa có được để mở ở lần gần nhất hay không.",
+  "@settings.behavior.switcherFavoritesExpanded.description": {
+    "sourceHash": "e4c8a41"
   },
   "settings.behavior.dockPinNudgeOfferedAt.label": "Thời điểm đề nghị thêm vào Dock",
   "@settings.behavior.dockPinNudgeOfferedAt.label": {

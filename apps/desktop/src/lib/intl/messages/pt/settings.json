@@ -391,11 +391,11 @@
   "@settings.fileOperations.pasteClipboardAsFile.opt.createFileAndRename": {
     "sourceHash": "ed7b1b9"
   },
-  "settings.fileOperations.skipConfirmation.label": "Skip confirmation for copy, move, and trash",
+  "settings.fileOperations.skipConfirmation.label": "Copiar, mover e mandar para o Lixo sem pedir confirmação",
   "@settings.fileOperations.skipConfirmation.label": {
     "sourceHash": "6af6546"
   },
-  "settings.fileOperations.skipConfirmation.description": "F5 and F6 copy and move into the other pane right away, and F8 moves to the trash without asking. A bit risky, since one keypress acts at once. Deleting permanently always asks first.",
+  "settings.fileOperations.skipConfirmation.description": "F5 e F6 copiam e movem para o outro painel na hora, e F8 move para o Lixo sem perguntar. É um pouco arriscado, já que uma tecla age de imediato. Apagar permanentemente sempre pergunta antes.",
   "@settings.fileOperations.skipConfirmation.description": {
     "sourceHash": "086379d"
   },
@@ -1678,6 +1678,14 @@
   "settings.behavior.serversPinHintSeen.description": "Se a dica única sobre desafixar servidores já foi exibida.",
   "@settings.behavior.serversPinHintSeen.description": {
     "sourceHash": "fc0722f"
+  },
+  "settings.behavior.switcherFavoritesExpanded.label": "Favoritos abertos no seletor de volumes",
+  "@settings.behavior.switcherFavoritesExpanded.label": {
+    "sourceHash": "7f22d22"
+  },
+  "settings.behavior.switcherFavoritesExpanded.description": "Se a seção de favoritos do seletor de volumes ficou aberta da última vez.",
+  "@settings.behavior.switcherFavoritesExpanded.description": {
+    "sourceHash": "e4c8a41"
   },
   "settings.behavior.dockPinNudgeOfferedAt.label": "Data da oferta do Dock",
   "@settings.behavior.dockPinNudgeOfferedAt.label": {

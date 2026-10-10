@@ -750,12 +750,12 @@ Apple's Dock menu (`Dock.app/Contents/Resources/de.lproj/DockMenus.strings`) sup
 - `Favoriten` (Finder), never `Lesezeichen` (bookmarks). TC's `Verzeichnisliste` and DC's `☆-Tabs` name other features,
   so macOS stays the source even though Cmdr shares TC's key.
 - „Show favorites“ → `Favoriten anzeigen` like `Server anzeigen`; `einblenden` is for toggles.
-- `eine eingebundene Freigabe`, never `gemountet`; `Ordner auf einem Laufwerk`, never `Volume` (plain-speech tooltip).
+- `eingebunden`, never `gemountet`; `Laufwerk`, never `Volume` (plain-speech tooltip).
 - The `0` row has ONE key, `fileExplorer.navigation.favoritesAddCurrent`, which the shortcut list quotes; don't invent a
   second version. `Favorit` is weak (`den Favoriten`).
 - `mit einer Zifferntaste` says a key is meant, clearer than „eine Zahl drücken“.
 - `favoritesCantAddHere` states a fact about THIS folder (`Dieser Ordner kann kein Favorit sein: …`), mirroring
-  `favoritesAlreadyAdded`; a plain locative `auf Laufwerken … funktionieren` avoids forcing a case on the target.
+  `favoritesAlreadyAdded`; `Favoriten gibt es für Ordner auf …` avoids a stacked „zeigen auf Ordner auf“.
 
 ## Wer das Laufwerk festhält: die sechs benannten Absagen (`errors.eject.unmountRefusedBy*`, `errors.eject.otherApps`)
 

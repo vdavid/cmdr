@@ -392,11 +392,11 @@
   "@settings.fileOperations.pasteClipboardAsFile.opt.createFileAndRename": {
     "sourceHash": "ed7b1b9"
   },
-  "settings.fileOperations.skipConfirmation.label": "Skip confirmation for copy, move, and trash",
+  "settings.fileOperations.skipConfirmation.label": "Hoppa över bekräftelse vid kopiering, flytt och flytt till papperskorgen",
   "@settings.fileOperations.skipConfirmation.label": {
     "sourceHash": "6af6546"
   },
-  "settings.fileOperations.skipConfirmation.description": "F5 and F6 copy and move into the other pane right away, and F8 moves to the trash without asking. A bit risky, since one keypress acts at once. Deleting permanently always asks first.",
+  "settings.fileOperations.skipConfirmation.description": "F5 och F6 kopierar och flyttar till den andra panelen direkt, och F8 flyttar till papperskorgen utan att fråga. Lite riskabelt, eftersom ett enda tangenttryck räcker. Permanent radering frågar alltid först.",
   "@settings.fileOperations.skipConfirmation.description": {
     "sourceHash": "086379d"
   },
@@ -1683,6 +1683,14 @@
   "settings.behavior.serversPinHintSeen.description": "Om engångstipset om att lossa servrar har visats.",
   "@settings.behavior.serversPinHintSeen.description": {
     "sourceHash": "fc0722f"
+  },
+  "settings.behavior.switcherFavoritesExpanded.label": "Favoriterna öppna i volymväljaren",
+  "@settings.behavior.switcherFavoritesExpanded.label": {
+    "sourceHash": "7f22d22"
+  },
+  "settings.behavior.switcherFavoritesExpanded.description": "Om favoritavsnittet i volymväljaren senast lämnades öppet.",
+  "@settings.behavior.switcherFavoritesExpanded.description": {
+    "sourceHash": "e4c8a41"
   },
   "settings.behavior.dockPinNudgeOfferedAt.label": "Erbjudande om Dock visat den",
   "@settings.behavior.dockPinNudgeOfferedAt.label": {

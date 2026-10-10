@@ -390,11 +390,11 @@
   "@settings.fileOperations.pasteClipboardAsFile.opt.createFileAndRename": {
     "sourceHash": "ed7b1b9"
   },
-  "settings.fileOperations.skipConfirmation.label": "Skip confirmation for copy, move, and trash",
+  "settings.fileOperations.skipConfirmation.label": "Megerősítés kihagyása másoláskor, áthelyezéskor és Kukába helyezéskor",
   "@settings.fileOperations.skipConfirmation.label": {
     "sourceHash": "6af6546"
   },
-  "settings.fileOperations.skipConfirmation.description": "F5 and F6 copy and move into the other pane right away, and F8 moves to the trash without asking. A bit risky, since one keypress acts at once. Deleting permanently always asks first.",
+  "settings.fileOperations.skipConfirmation.description": "Az F5 és az F6 azonnal másol és áthelyez a másik panelre, az F8 pedig kérdés nélkül a Kukába helyez. Kicsit kockázatos, mert egyetlen billentyűleütés rögtön végrehajtja a műveletet. Végleges törlés előtt a Cmdr mindig rákérdez.",
   "@settings.fileOperations.skipConfirmation.description": {
     "sourceHash": "086379d"
   },
@@ -1676,6 +1676,14 @@
   "settings.behavior.serversPinHintSeen.description": "Megjelent-e már az egyszeri tipp a szerverek rögzítésének feloldásáról.",
   "@settings.behavior.serversPinHintSeen.description": {
     "sourceHash": "fc0722f"
+  },
+  "settings.behavior.switcherFavoritesExpanded.label": "Kedvencek nyitva a kötetválasztóban",
+  "@settings.behavior.switcherFavoritesExpanded.label": {
+    "sourceHash": "7f22d22"
+  },
+  "settings.behavior.switcherFavoritesExpanded.description": "Nyitva maradt-e legutóbb a kötetválasztó Kedvencek szakasza.",
+  "@settings.behavior.switcherFavoritesExpanded.description": {
+    "sourceHash": "e4c8a41"
   },
   "settings.behavior.dockPinNudgeOfferedAt.label": "A Dock-ajánlat ideje",
   "@settings.behavior.dockPinNudgeOfferedAt.label": {

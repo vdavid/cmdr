@@ -143,6 +143,14 @@
   "@settings.fileOperations.adbBinaryPath.description": {
     "sourceHash": "d45ea29"
   },
+  "settings.fileOperations.skipConfirmation.label": "Omitir la confirmación al copiar, mover y mover al basurero",
+  "@settings.fileOperations.skipConfirmation.label": {
+    "sourceHash": "12824c8"
+  },
+  "settings.fileOperations.skipConfirmation.description": "F5 y F6 copian y mueven al otro panel directamente, y F8 mueve al basurero sin preguntar. Es un poco arriesgado, porque una sola tecla actúa al instante. Eliminar permanentemente siempre pregunta antes.",
+  "@settings.fileOperations.skipConfirmation.description": {
+    "sourceHash": "6eb9a3d"
+  },
   "settings.fileExplorer.git.showStatusColumn.description": "Agrega una columna que muestra el estado de git por archivo (modificado, sin seguimiento, etc.) en la vista completa.",
   "@settings.fileExplorer.git.showStatusColumn.description": {
     "sourceHash": "f685271"

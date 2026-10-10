@@ -39,6 +39,14 @@
   "@settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.description": {
     "sourceHash": "9ed41b8"
   },
+  "settings.behavior.switcherFavoritesExpanded.label": "Favourites open in the volume switcher",
+  "@settings.behavior.switcherFavoritesExpanded.label": {
+    "sourceHash": "7f22d22"
+  },
+  "settings.behavior.switcherFavoritesExpanded.description": "Whether the favourites section in the volume switcher was last left open.",
+  "@settings.behavior.switcherFavoritesExpanded.description": {
+    "sourceHash": "e4c8a41"
+  },
   "settings.advanced.virtualizationBufferRows.label": "Virtualisation buffer (rows)",
   "@settings.advanced.virtualizationBufferRows.label": {
     "sourceHash": "07b7869"
@@ -106,5 +114,13 @@
   "settings.managed.summary.title": "Managed by your organisation",
   "@settings.managed.summary.title": {
     "sourceHash": "5450801"
+  },
+  "settings.fileOperations.skipConfirmation.label": "Skip confirmation for copy, move, and bin",
+  "@settings.fileOperations.skipConfirmation.label": {
+    "sourceHash": "6af6546"
+  },
+  "settings.fileOperations.skipConfirmation.description": "F5 and F6 copy and move into the other pane right away, and F8 moves to the Bin without asking. A bit risky, since one keypress acts at once. Deleting permanently always asks first.",
+  "@settings.fileOperations.skipConfirmation.description": {
+    "sourceHash": "086379d"
   }
 }

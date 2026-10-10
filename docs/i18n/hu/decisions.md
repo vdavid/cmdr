@@ -681,10 +681,9 @@ The notice never suggests deleting: these may be the only copies. Its one action
 - favorites menu: the title is appositive `Kedvencek menü` (like `Apple menü`), prose the possessive
   `a kedvencek menüje`. Deliberate: a table label isn't a sentence.
 - Show favorites → `Kedvencek megjelenítése` (Finder's `X megjelenítése`).
-- mounted share → `csatolt megosztás` (macOS `csatol`), ❌ not `csatlakoztatott` (DC's device word).
 - disk here → `lemez`, since English says disk.
-- `favoritesCantAddHere` → `Ez a mappa nem lehet kedvenc: a kedvencek csak lemezen és csatolt megosztáson működnek`,
-  paired with its sibling's subject; a plain locative over a `-ra/-re` "points to".
+- `favoritesCantAddHere` → `…: a kedvencek lemezeken, megosztásokon, szervereken és telefonokon lévő mappák`, paired
+  with its sibling's subject; a plain `lévő` locative over a `-ra/-re mutat` "points at", which reads as a symlink.
 - already a favorite → `Ez a mappa már a kedvencek között van`: `között` names the list the user is looking at.
 
 ## Az elutasított kiadás megnevezi, KI fogja a meghajtót (`errors.eject.unmountRefusedBy*`, `errors.eject.otherApps`/`.otherProcesses`)
