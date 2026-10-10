@@ -7804,11 +7804,6 @@ export type FavoriteTarget = {
   volumeRoot: string | null
   // Whether a pick gets there, and if not, why.
   reach: FavoriteReach
-// One row the user saw in the preview they started from.
-export type ExpectedRename = {
-  row: number
-  oldName: string
-  newName: string
 }
 
 /**

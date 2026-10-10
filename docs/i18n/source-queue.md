@@ -186,8 +186,6 @@ rule into `translation-principles.md` or `translator-instructions.md`), then del
 - `fileExplorer.navigation.favoriteUnreachable.mtpOff`, `.adbOff`: "Android phones are turned off in Settings" reads,
   translated literally, as the phones being powered off (vi `Điện thoại … đang tắt`). Name the feature: "Android phone
   access is turned off in Settings". (vi, zh-Hant)
-- `multiRename.counterStart` "Counter from" is a fragment, and `.counterStep` / `.counterDigits` don't name the counter
-  (no group box like TC's). Consider "Counter start", "Counter step", "Counter digits". (fr, ru, vi)
 - `multiRename.case.lower`, `.upper`, `.words`: say whether locales mirror the show-the-result casing. Proposed rule:
   such keys are exempt from sentence case, and scripts without case (zh, ja, ko) describe the transform. (fr, sv, vi,
   zh-Hant)
