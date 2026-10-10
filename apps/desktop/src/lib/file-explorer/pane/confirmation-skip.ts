@@ -34,7 +34,7 @@
  */
 
 import { getPathValidationError } from '$lib/file-operations/transfer/transfer-dialog-logic'
-import { initialEditedPath } from '$lib/file-operations/transfer/transfer-dialog-utils'
+import { toVolumeRelativePath } from '$lib/file-operations/transfer/transfer-dialog-utils'
 import { validateDirectoryPath } from '$lib/utils/filename-validation'
 import { capabilitiesFor, capabilitiesForInfo } from './volume-capabilities'
 import type { DeleteDialogPropsData, TransferConfirmPayload } from './dialog-props'
@@ -67,13 +67,9 @@ export function skippedTransferConfirmation(
   if (isS3(props.sourceVolumeId, volumes) || isS3(props.currentVolumeId, volumes)) return null
 
   const volumePath = volumes.find((v) => v.id === props.currentVolumeId)?.path ?? '/'
-  const destination = initialEditedPath(
-    operationType,
-    props.destinationPath,
-    volumePath,
-    sourcePaths,
-    props.sourceFolderPath,
-  )
+  // The folder, never the dialog's single-item `folder/name` prefill: a skipped
+  // dialog names nothing, so every item keeps its name (no `destinationName`).
+  const destination = toVolumeRelativePath(props.destinationPath, volumePath)
   if (validateDirectoryPath(destination).severity === 'error') return null
   // Checked against both spellings: the path box holds the volume-relative one, and
   // the sources carry the pane's own, which on a volume mounted below `/` is absolute.
