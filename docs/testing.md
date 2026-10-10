@@ -734,6 +734,10 @@ entry needs a real "we can't make this faster" justification, not convenience.
   drop, so two of them on one share tear down each other's mount, and the symptom lands somewhere else entirely: a wait
   expiring against a path that has stopped being a mount. The two kernel-mount tests hold `public` on the guest fixture
   and `café` on the `unicode` one.
+- ❌ **A test that calls NetFS takes `NetfsFixtureLock` first** (`network/mount_test.rs`), even one that only expects a
+  refusal. macOS hands a mount any live session to the same hostname whatever the port, and every fixture is
+  `localhost`, so two NetFS calls at once land on each other's servers: `café` came back `ShareNotFound` from the guest
+  server on most lane runs while passing alone.
 - **`an_outside_change_in_an_accented_directory_names_the_path_the_pane_opened`**
   (`crates/cmdr-smb/src/volume/unicode_names_integration_test.rs`): a **20 s** delivery budget under a 30 s cap, for
   ~0.3 s of real work. It waits on the fixture Samba's `notifyd`, which lags by seconds when several lanes share the

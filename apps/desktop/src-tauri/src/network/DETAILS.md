@@ -313,6 +313,12 @@ Without it, with 11482's `public` mounted at `public-1`, mounting 11480's `publi
 (it rode 11482's session), and a guest mount of 11480's `public` next to 11482's `testuser` mount came up as
 `//testuser@localhost:11480/public`. The same account on the same server still shares a session.
 
+The guard sees only sessions that have a MOUNT. One whose mount is still in flight, in this process or another, is
+invisible to it and still gets ridden: the tree-connect lands on the wrong server, which answers "no such share", and
+NetFS returns `ENOENT` after a failed DFS-referral retry (`ShareNotFound`). For a user that takes two servers behind one
+hostname on different ports, mounted at the same moment. The fixture tests hit it on every parallel lane (every fixture
+is `localhost`), so they take a machine-wide lock: `mount_test.rs::NetfsFixtureLock`.
+
 ## A reported mount counts once it's there
 
 NetFS has answered `0` for a share that never got mounted. In ERR-SHUSC, `observermch/data` came back OK, yet no FSEvents

@@ -1,8 +1,9 @@
 //! Tests for the NetFS mount path (`mount.rs`).
 //!
 //! Split out under the directory's `*_test.rs` convention: the module's own surface
-//! is small and its tests are not (three drive real Docker Samba containers, two of
-//! those through a real macOS kernel mount).
+//! is small and its tests are not (five drive real Docker Samba containers through
+//! NetFS, one at a time machine-wide: [`NetfsFixtureLock`]; two of them end in a real
+//! macOS kernel mount).
 
 use super::*;
 use crate::network::mount_share;
@@ -220,6 +221,47 @@ fn test_open_options_always_suppress_system_ui() {
     }
 }
 
+/// The machine-wide right to call NetFS against the fixture stack, held for a test's
+/// whole body. Every test below that reaches `NetFSMountURLSync` takes it first.
+///
+/// Why: the macOS SMB client hands a new mount any live session to the same HOSTNAME,
+/// whatever the port, and every fixture is `localhost`. `needs_own_session` forces a
+/// fresh one only against sessions it can SEE, which are mounts; a session whose mount
+/// is still in flight in another process is invisible to it. So under a parallel lane,
+/// `café` (unicode, 11484) rode the guest test's half-open session to 11480, the guest
+/// server answered `couldn't find service café`, and NetFS came back `ENOENT`:
+/// `ShareNotFound` in ~0.2 s, passing alone. The guest server's log showed `private`
+/// and `no-such-share` arriving there too, so the refusal tests were passing on the
+/// wrong server's answer. (Verified on macOS 27.0 against Samba 4.23.8 at log level 3,
+/// NetAuthSysAgent logging `checkForDfsReferral … No such file or directory`,
+/// 2026-10-11.)
+///
+/// An `flock` rather than a nextest group: it also serializes the lanes of sibling
+/// worktrees, which share the one stack and the one kernel SMB client. ❌ Don't drop it
+/// from a test because that test "only gets refused": a refused mount still opens the
+/// session another test can ride.
+#[cfg(target_os = "macos")]
+struct NetfsFixtureLock {
+    _lock: std::fs::File,
+}
+
+#[cfg(target_os = "macos")]
+impl NetfsFixtureLock {
+    fn acquire() -> Self {
+        let path = std::env::temp_dir().join("cmdr-netfs-fixture-tests.lock");
+        let file = std::fs::File::options()
+            .create(true)
+            .truncate(false)
+            .write(true)
+            .open(&path)
+            .unwrap_or_else(|error| panic!("couldn't open the NetFS test lock at {}: {error}", path.display()));
+        // allowed-lock-poison: `File::lock` is an `flock` on the lock file, not a `Mutex`, so there's no poison to recover; a lock that can't be taken must stop the test
+        file.lock()
+            .unwrap_or_else(|error| panic!("couldn't take the NetFS test lock at {}: {error}", path.display()));
+        Self { _lock: file }
+    }
+}
+
 /// Regression test for the macOS NetFS guest-mount credential dialog.
 ///
 /// Asserts a guest mount completes within a tight wall-clock budget. A
@@ -242,6 +284,7 @@ fn test_open_options_always_suppress_system_ui() {
 async fn smb_integration_mount_guest_no_dialog() {
     use std::time::{Duration, Instant};
 
+    let _netfs = NetfsFixtureLock::acquire();
     let port: u16 = std::env::var("SMB_CONSUMER_GUEST_PORT")
         .ok()
         .and_then(|v| v.parse().ok())
@@ -314,6 +357,7 @@ async fn smb_integration_mount_guest_no_dialog() {
 #[tokio::test]
 #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
 async fn smb_integration_mount_non_ascii_share() {
+    let _netfs = NetfsFixtureLock::acquire();
     let port: u16 = std::env::var("SMB_CONSUMER_UNICODE_PORT")
         .ok()
         .and_then(|v| v.parse().ok())
@@ -398,6 +442,7 @@ async fn smb_integration_mount_non_ascii_share() {
 #[tokio::test]
 #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
 async fn smb_integration_mount_guest_refused_share_asks_for_credentials() {
+    let _netfs = NetfsFixtureLock::acquire();
     let port: u16 = std::env::var("SMB_CONSUMER_BOTH_PORT")
         .ok()
         .and_then(|v| v.parse().ok())
@@ -424,6 +469,7 @@ async fn smb_integration_mount_guest_refused_share_asks_for_credentials() {
 #[tokio::test]
 #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
 async fn smb_integration_mount_guest_on_an_accounts_only_server_asks_for_credentials() {
+    let _netfs = NetfsFixtureLock::acquire();
     let port: u16 = std::env::var("SMB_CONSUMER_AUTH_PORT")
         .ok()
         .and_then(|v| v.parse().ok())
@@ -452,6 +498,7 @@ async fn smb_integration_mount_guest_on_an_accounts_only_server_asks_for_credent
 #[tokio::test]
 #[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
 async fn smb_integration_mount_missing_share_stays_not_found() {
+    let _netfs = NetfsFixtureLock::acquire();
     let port: u16 = std::env::var("SMB_CONSUMER_BOTH_PORT")
         .ok()
         .and_then(|v| v.parse().ok())
