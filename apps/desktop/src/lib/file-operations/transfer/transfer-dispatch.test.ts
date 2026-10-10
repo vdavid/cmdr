@@ -21,13 +21,20 @@ vi.mock('$lib/tauri-commands', () => ({
   DEFAULT_VOLUME_ID: 'root',
 }))
 
+vi.mock('@tauri-apps/api/event', () => ({ emit: vi.fn(() => Promise.resolve()) }))
+
+vi.mock('$lib/logging/logger', () => ({
+  getAppLogger: () => ({ debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() }),
+}))
+
 vi.mock('$lib/settings', () => ({
   // Key-aware so the archive compression level is distinguishable from the
   // progress-interval / max-conflicts settings (all others resolve to 200).
   getSetting: vi.fn((key: string) => (key === 'behavior.archiveCompressionLevel' ? 6 : 200)),
 }))
 
-import { dispatchTransferOperation, type TransferDispatchConfig } from './transfer-dispatch'
+import { emit } from '@tauri-apps/api/event'
+import { dispatchTransferOperation, startTransferOperation, type TransferDispatchConfig } from './transfer-dispatch'
 import {
   copyBetweenVolumes,
   moveBetweenVolumes,
@@ -350,4 +357,46 @@ it('forwards a Move target name to the volume engine', async () => {
     expect.objectContaining({ destinationName: 'renamed.txt' }),
     undefined,
   )
+})
+
+/**
+ * `startTransferOperation` is birth for BOTH routes: the progress dialog (which
+ * wraps it in the foreground claim) and a start sent straight to the
+ * background (which has no dialog at all). So the two things every start owes
+ * live here: the MCP round-trip's answer, and one typed error shape.
+ */
+describe('startTransferOperation', () => {
+  it('names the operation and answers the MCP round-trip with its id', async () => {
+    const result = await startTransferOperation({ ...makeConfig(), mcpRequestId: 'req-1' })
+
+    expect(result).toEqual({ started: true, operationId: 'op-1' })
+    expect(emit).toHaveBeenCalledWith('mcp-response', { requestId: 'req-1', ok: true, operationId: 'op-1' })
+  })
+
+  it('stays quiet on MCP when no agent is waiting', async () => {
+    await startTransferOperation(makeConfig())
+
+    expect(emit).not.toHaveBeenCalled()
+  })
+
+  it('passes a structured backend refusal through, and fails the MCP round-trip', async () => {
+    const refusal = Object.assign(new Error('inside'), { type: 'destination_inside_source', path: '/src' })
+    vi.mocked(copyBetweenVolumes).mockImplementationOnce(() => Promise.reject(refusal))
+
+    const result = await startTransferOperation({ ...makeConfig(), mcpRequestId: 'req-2' })
+
+    expect(result).toEqual({ started: false, error: refusal })
+    expect(emit).toHaveBeenCalledWith('mcp-response', { requestId: 'req-2', ok: false, error: 'inside' })
+  })
+
+  it('wraps an untyped failure as an io_error on the first source', async () => {
+    vi.mocked(copyBetweenVolumes).mockImplementationOnce(() => Promise.reject(new Error('kaboom')))
+
+    const result = await startTransferOperation(makeConfig())
+
+    expect(result).toEqual({
+      started: false,
+      error: expect.objectContaining({ type: 'io_error', path: '/src/file.txt' }),
+    })
+  })
 })

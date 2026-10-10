@@ -3,9 +3,11 @@
  *
  * Two things live here, and keeping them apart is the point:
  *
- * **Birth** (`beginOperation`) runs once. It claims the foreground slot,
- * dispatches through `transfer-dispatch.ts`, answers the MCP round-trip, and
- * names the operation. It ends the moment an `operationId` exists.
+ * **Birth** (`beginOperation`) runs once. It claims the foreground slot and
+ * starts the operation through `transfer-dispatch.ts::startTransferOperation`
+ * (which also answers the MCP round-trip), the same start a job sent straight
+ * to the background takes without any dialog. It ends the moment an
+ * `operationId` exists.
  *
  * A view can skip birth entirely: `adoptOperationId` names an operation that is
  * already running, and `start()` binds it instead of dispatching. That is the
@@ -49,7 +51,6 @@
  */
 
 import { cancelOperation, type TransferActivity, type WriteCancelledEvent } from '$lib/tauri-commands'
-import { emit } from '@tauri-apps/api/event'
 import { openQueueWindow } from '$lib/file-operations/queue/queue-window'
 import {
   beginForegroundClaim,
@@ -74,14 +75,14 @@ import { tString } from '$lib/intl/messages.svelte'
 import type { BytesPerSecond, Seconds } from '$lib/units'
 import { bindOperationSession } from '../operation-session/bind-operation-session.svelte'
 import type { OperationOutcome, ScanReadout } from '../operation-session/operation-session.svelte'
-import { dispatchTransferOperation, type TransferDispatchConfig } from './transfer-dispatch'
+import { startTransferOperation, type TransferStartConfig, type TransferStartResult } from './transfer-dispatch'
 import { raiseCancelRollbackToast } from './cancel-rollback-toast'
 import { getTechnicalDetails } from './transfer-error-messages'
 
-export interface TransferProgressStateConfig extends TransferDispatchConfig {
+export interface TransferProgressStateConfig extends TransferStartConfig {
   /** An operation already running that this view ADOPTS instead of starting one
    *  (Foreground from the queue window). When set, `start()` binds the session
-   *  for that id and dispatches nothing, so every `TransferDispatchConfig` field
+   *  for that id and dispatches nothing, so every `TransferStartConfig` field
    *  above is inert: nobody reads them on this path.
    *
    *  The view is otherwise identical. What differs sits with the PARENT, which
@@ -95,11 +96,6 @@ export interface TransferProgressStateConfig extends TransferDispatchConfig {
   onError: (error: WriteOperationError, progressAtStop: ProgressAtStop | null) => void
   /** Send this operation to the background: unmount the modal but keep the op running. */
   onQueue?: () => void
-  /** The MCP round-trip request id, present only for an auto-confirmed op started
-   *  via the MCP `copy`/`move`/`delete`/`compress` tool. When set, this state
-   *  replies `mcp-response` with the spawned `operationId` (or an error) so the
-   *  waiting tool can return the id — see `mcp/executor/file_ops.rs`. */
-  mcpRequestId?: string
 }
 
 /** What a view shows before its operation has said anything. A confirmed
@@ -642,32 +638,21 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
   /* ----------------------------------------------------------------------- */
 
   async function beginOperation(): Promise<void> {
-    log.info('Starting {op} operation: {sourceCount} {sourcesNoun}', {
-      op: config.operationType,
-      sourceCount: config.sourcePaths.length,
-      sourcesNoun: pluralize(config.sourcePaths.length, 'source'),
-    })
-
     // From here until the slot is claimed (or the dispatch is abandoned), this
     // dialog owns an operation nothing can name yet. The conflict host waits out
     // that window rather than deciding ownership against an empty slot; see
     // `../foreground-operation.svelte.ts`.
     beginForegroundClaim()
 
+    let result: TransferStartResult
     try {
-      try {
-        const result = await dispatchTransferOperation(config)
+      // Dispatch, the MCP answer, and the typed error are shared with a start
+      // sent straight to the background; the claim and everything below are
+      // this dialog's.
+      result = await startTransferOperation(config)
+      if (result.started) {
         const id = result.operationId
         operationId = id
-        log.info('{op} operation started with operationId: {operationId}', { op: operationLabel, operationId: id })
-
-        // Reply to the MCP round-trip (if this op was started via an auto-confirmed
-        // MCP tool) with the spawned operationId, so the waiting tool can return it
-        // for a follow-up `queue` / `await operation_complete`. Fire-and-forget: the
-        // op is already running regardless of whether the reply lands.
-        if (config.mcpRequestId) {
-          void emit('mcp-response', { requestId: config.mcpRequestId, ok: true, operationId: id })
-        }
 
         if (cancelRequestedBeforeId) {
           // An explicit Cancel that arrived before the operation had a name.
@@ -704,35 +689,21 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
         // This dialog now owns the operation in the foreground, so ambient
         // surfaces stay quiet about it (`../foreground-operation.svelte.ts`).
         setForegroundOperationId(id)
-      } finally {
-        // Every route out of the dispatch settles the claim: the id landed, the
-        // dialog was already gone, or the command threw. A leaked claim would
-        // leave every later conflict deferred forever.
-        endForegroundClaim()
+        return
       }
-    } catch (err: unknown) {
-      log.error('Failed to start {op} operation: {error}', { op: config.operationType, error: err })
-      clearWindDownTimers()
-      // Fail the MCP round-trip too (the op never spawned, so no operationId).
-      if (config.mcpRequestId) {
-        const message = err instanceof Error ? err.message : String(err)
-        void emit('mcp-response', { requestId: config.mcpRequestId, ok: false, error: message })
-      }
-      // Tauri commands return structured WriteOperationError objects on validation failure
-      // (e.g. destination_inside_source). Pass them through to preserve the specific error type.
-      const error: WriteOperationError =
-        typeof err === 'object' && err !== null && 'type' in err
-          ? (err as WriteOperationError)
-          : {
-              type: 'io_error',
-              path: config.sourcePaths[0] ?? '',
-              message: `Failed to start ${config.operationType}: ${String(err)}`,
-            }
-      close(() => {
-        // The operation never started, so there is no progress to report.
-        config.onError(error, null)
-      }, false)
+    } finally {
+      // Every route out of the dispatch settles the claim: the id landed, the
+      // dialog was already gone, or the command was refused. A leaked claim
+      // would leave every later conflict deferred forever.
+      endForegroundClaim()
     }
+
+    clearWindDownTimers()
+    const { error } = result
+    close(() => {
+      // The operation never started, so there is no progress to report.
+      config.onError(error, null)
+    }, false)
   }
 
   /** Adopts an operation that is already running: name it, claim the foreground

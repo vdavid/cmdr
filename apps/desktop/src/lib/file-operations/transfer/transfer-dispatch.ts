@@ -23,10 +23,21 @@ import {
   DEFAULT_VOLUME_ID,
   type Initiator,
 } from '$lib/tauri-commands'
-import type { ConflictResolution, SortColumn, SortOrder, TransferOperationType } from '$lib/file-explorer/types'
+import { emit } from '@tauri-apps/api/event'
+import type {
+  ConflictResolution,
+  SortColumn,
+  SortOrder,
+  TransferOperationType,
+  WriteOperationError,
+} from '$lib/file-explorer/types'
 import { getSetting } from '$lib/settings'
 import { pathCrossesArchiveBoundary, pathInsideArchive } from '$lib/file-explorer/pane/archive-paths'
 import type { SpaceShortfall } from '$lib/ipc/bindings'
+import { getAppLogger } from '$lib/logging/logger'
+import { pluralize } from '$lib/utils/pluralize'
+
+const log = getAppLogger('transferProgress')
 
 /** Everything the backend needs to start this operation. Captured at the moment
  *  the user confirmed, and never re-read afterwards. */
@@ -98,6 +109,61 @@ export function isVolumeMove(config: TransferDispatchConfig): boolean {
     (config.destVolumeId ?? DEFAULT_VOLUME_ID) !== DEFAULT_VOLUME_ID ||
     touchesArchive
   )
+}
+
+export interface TransferStartConfig extends TransferDispatchConfig {
+  /** The MCP round-trip request id, present only for an operation an agent
+   *  started (`mcp/executor/file_ops.rs`), which waits for the spawned id. */
+  mcpRequestId?: string
+}
+
+/** How a start ended: named, or refused before it ever ran. */
+export type TransferStartResult =
+  | { started: true; operationId: string }
+  | { started: false; error: WriteOperationError }
+
+/**
+ * Birth, as every route takes it: dispatch, answer the MCP round-trip, and hand
+ * back either the operation's id or ONE typed error. The progress dialog wraps
+ * this in its foreground claim; a start sent straight to the background calls it
+ * bare (`../../file-explorer/pane/background-operations.svelte.ts`). Never
+ * rejects.
+ */
+export async function startTransferOperation(config: TransferStartConfig): Promise<TransferStartResult> {
+  log.info('Starting {op} operation: {sourceCount} {sourcesNoun}', {
+    op: config.operationType,
+    sourceCount: config.sourcePaths.length,
+    sourcesNoun: pluralize(config.sourcePaths.length, 'source'),
+  })
+  try {
+    const { operationId } = await dispatchTransferOperation(config)
+    log.info('{op} operation started with operationId: {operationId}', { op: config.operationType, operationId })
+    // So the waiting tool can return the id for a follow-up `queue` / `await
+    // operation_complete`. Fire-and-forget: the op runs regardless.
+    if (config.mcpRequestId) {
+      void emit('mcp-response', { requestId: config.mcpRequestId, ok: true, operationId })
+    }
+    return { started: true, operationId }
+  } catch (err: unknown) {
+    log.error('Failed to start {op} operation: {error}', { op: config.operationType, error: err })
+    // The op never spawned, so the round-trip fails with no operationId.
+    if (config.mcpRequestId) {
+      const message = err instanceof Error ? err.message : String(err)
+      void emit('mcp-response', { requestId: config.mcpRequestId, ok: false, error: message })
+    }
+    // Tauri commands reject with a structured `WriteOperationError` on a
+    // validation failure (like `destination_inside_source`); pass it through so
+    // the error dialog can speak to the specific case.
+    const error: WriteOperationError =
+      typeof err === 'object' && err !== null && 'type' in err
+        ? (err as WriteOperationError)
+        : {
+            type: 'io_error',
+            path: config.sourcePaths[0] ?? '',
+            message: `Failed to start ${config.operationType}: ${String(err)}`,
+          }
+    return { started: false, error }
+  }
 }
 
 /** Starts the operation and resolves with the id the backend gave it. Rejects
