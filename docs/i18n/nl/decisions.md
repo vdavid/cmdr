@@ -395,7 +395,7 @@ split EN makes; the frame is that of `settings.archives.zip.description`.
 - `{name}` and `{host}` never take a pronoun: `De sleutel van {host} is gewijzigd`.
 - Coined (tentative): `Sleutelbestand`, `Manier van verbinden` (aria only), `de servereigenaar`.
 - Add buttons: `Voeg toe`, `Voeg toe en open`, `Voeg toch toe`; the help line quotes the last one in ‘…’. Edit hints say
-  `wijzigen` (a form) and `er valt niets te wijzigen`; `addressLocked` shares the frame of `identityLocked`.
+  `wijzigen` (a form) and `er valt niets te wijzigen`; `addressLocked` shares the frame of `accountLocked`.
 
 ## Twee paneelregels erbij: automatisch opnieuw verbinden en inloggen met een sleutel (`servers.paneState.reconnecting`, `.signedOutNothingToAsk`)
 
@@ -430,7 +430,7 @@ split EN makes; the frame is that of `settings.archives.zip.description`.
   `Annuleer` button.
 - Never name a diagnosis (no adb server, transport, daemon, or serial number).
 
-## De vastgezette serveridentiteit (`servers.sheet.identityLocked`)
+## De vastgezette serveridentiteit (`servers.sheet.accountLocked`)
 
 The hint names the actions as the buttons do (`Vergeet deze server en voeg hem opnieuw toe`), and "are what name this
 server" → `bepalen welke server dit is`, since the form has its own `Naam` field.

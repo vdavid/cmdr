@@ -595,7 +595,7 @@ For Android's own words, Google's German (AOSP `values-de`) is the authority, no
 - `{name} teilt Cmdr nicht mit, …`, never `meldet Cmdr nicht` (reads as an accusative); `Dateien darauf`, no possessive.
 - `bleibt zur Erinnerung stehen`: `Hinweis` is the catalog's toast word.
 
-## Die gesperrte Server-Identität (`servers.sheet.identityLocked`)
+## Die gesperrte Server-Identität (`servers.sheet.accountLocked`)
 
 - `Konto`, never `Account` (that is Apple's `Apple Account`).
 - The hint names the actions exactly as their buttons do (`vergessen`, `hinzufügen`); a synonym points at a menu item
@@ -688,7 +688,7 @@ Apple's Dock menu (`Dock.app/Contents/Resources/de.lproj/DockMenus.strings`) sup
 - `ein Ordner darin` dodges a pronoun between two masculine nouns.
 - `Prüfe, ob es ihn gibt und ob dein Konto ihn lesen darf.` (`darf`: missing rights are the usual cause).
 - `deshalb hat Cmdr nichts gesichert` follows the `Sichern` button.
-- `benennen` fits `nameHelp` (it really is about the `Name` field), unlike `identityLocked`.
+- `benennen` fits `nameHelp` (it really is about the `Name` field), unlike `accountLocked`.
 
 ## Warum eine Freigabe nicht eingebunden wird oder die Freigabenliste nicht lädt (`errors.mount.*`, `errors.shareList.*`)
 

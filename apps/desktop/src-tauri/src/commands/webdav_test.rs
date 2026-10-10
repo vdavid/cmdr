@@ -9,17 +9,17 @@ use crate::network::saved_server_fields::SavedServerOutcome;
 #[test]
 fn the_credential_service_carries_the_origin_and_the_scope_carries_the_account() {
     assert_eq!(
-        credential_key("https://dav.example.test/remote.php/dav/", "ada").as_deref(),
+        credential_key("https://dav.example.test/remote.php/dav/").as_deref(),
         Some("https://dav.example.test:443")
     );
     assert_ne!(
-        credential_key("https://dav.example.test/dav/", "ada"),
-        credential_key("https://dav.example.test:8443/dav/", "ada"),
+        credential_key("https://dav.example.test/dav/"),
+        credential_key("https://dav.example.test:8443/dav/"),
         "two listeners on one machine are different servers"
     );
     assert_eq!(
-        credential_key("https://dav.example.test/a/", "ada"),
-        credential_key("https://dav.example.test/b/", "ada"),
+        credential_key("https://dav.example.test/a/"),
+        credential_key("https://dav.example.test/b/"),
         "the path is addressing: one origin, one secret"
     );
 }
@@ -27,12 +27,9 @@ fn the_credential_service_carries_the_origin_and_the_scope_carries_the_account()
 /// What isn't a server URL is a typed `None`, never a parse message.
 #[test]
 fn a_url_that_is_not_http_has_no_credential_key() {
-    assert!(credential_key("not a url", "ada").is_none());
-    assert!(credential_key("ftp://dav.example.test/", "ada").is_none());
-    assert!(
-        credential_key("dav.example.test/dav", "ada").is_none(),
-        "no scheme, no origin"
-    );
+    assert!(credential_key("not a url").is_none());
+    assert!(credential_key("ftp://dav.example.test/").is_none());
+    assert!(credential_key("dav.example.test/dav").is_none(), "no scheme, no origin");
 }
 
 /// The three credential commands have to agree on the key, or a saved password

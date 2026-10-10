@@ -179,9 +179,14 @@ export async function forgetServerSecret(id: string): Promise<boolean> {
  * A saved server's PIN isn't in the patch: `setPlacePinned` is the one writer
  * that moves one. A start folder outside the root answers
  * `start_folder_outside_root`, and nothing is written.
+ *
+ * `editing` is the id of the saved place the edit sheet opened on, `null` for
+ * "Add anyway". ❗ The backend decides whether the edit moved the address (and
+ * moves the server, its password, and its favorites if so), so a caller never
+ * compares addresses itself. Required, so no caller forgets which it is.
  */
-export async function updateSavedServer(server: ServerTarget): Promise<SavedServerOutcome> {
-  return await commands.updateSavedServer(server)
+export async function updateSavedServer(server: ServerTarget, editing: string | null): Promise<SavedServerOutcome> {
+  return await commands.updateSavedServer(server, editing)
 }
 
 /**

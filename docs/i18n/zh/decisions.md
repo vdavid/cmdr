@@ -490,7 +490,7 @@ English contrasts packages with app bundles.
 - `You stopped opening your phone.` `你停止了打开手机。`: `取消` would point at the Cancel button.
 - Reseat the cable `把线缆拔下再插上`; another cable or port `换一根线缆或另一个端口试试` (each noun its measure word).
 
-## 被锁住的服务器身份与已清除的密码（`servers.sheet.identityLocked`、`fileExplorer.navigation.forgetSecretNoneToast`）
+## 被锁住的服务器身份与已清除的密码（`servers.sheet.accountLocked`、`fileExplorer.navigation.forgetSecretNoneToast`）
 
 - The hint's verbs are the buttons' exact words (`忘记`, `添加`): a synonym sends the reader after a menu item that
   doesn't exist. `决定了这是哪台服务器`, never `命名` (the form has a Name field).

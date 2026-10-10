@@ -379,7 +379,7 @@ async function attemptAddSmb(
 async function saveUnchecked(target: ServerTarget, secret: SecretOffer | null): Promise<SignInAttemptOutcome> {
   let saved
   try {
-    saved = readSavedServerOutcome(await updateSavedServer(target))
+    saved = readSavedServerOutcome(await updateSavedServer(target, null))
   } catch (e) {
     log.warn('Saving the unchecked server broke down: {error}', { error: String(e) })
     return { kind: 'refused', refusal: 'save_unconfirmed' }

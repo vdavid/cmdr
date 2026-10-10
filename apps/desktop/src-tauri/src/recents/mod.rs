@@ -120,6 +120,23 @@ impl<E: RecentEntry> RecentsFile<E> {
         });
     }
 
+    /// Rewrites entries in place (`change` answers whether it changed one), then
+    /// drops any later entry whose dedupe key an earlier one now holds, so two rows
+    /// a rewrite made equal stay one, the newer.
+    pub(crate) fn rewrite_at(&self, path: Option<&Path>, mut change: impl FnMut(&mut E) -> bool) {
+        self.update(path, "a rewrite", |entries| {
+            let mut changed = false;
+            for entry in entries.iter_mut() {
+                changed |= change(entry);
+            }
+            if changed {
+                let mut seen = std::collections::HashSet::new();
+                entries.retain(|e| seen.insert(e.dedupe_key()));
+            }
+            changed
+        });
+    }
+
     pub(crate) fn apply_max_count_at(&self, path: Option<&Path>, max_count: usize) {
         self.update(path, "a cap change", |entries| {
             let before = entries.len();

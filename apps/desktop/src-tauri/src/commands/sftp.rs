@@ -156,9 +156,10 @@ pub fn list_trusted_sftp_host_keys() -> Vec<TrustedHostKey> {
 ///
 /// ❗ `host:port` as the service and the username as the scope, ❌ never the host
 /// alone: two accounts on one server would share an entry, and a reconnect could
-/// retry the wrong account's secret straight into a lockout.
+/// retry the wrong account's secret straight into a lockout. Built where a move
+/// builds it too (`sftp_volume_wiring::credential_service`).
 fn credential_key(host: &str, port: u16) -> String {
-    format!("{host}:{port}")
+    sftp_volume_wiring::credential_service(host, port)
 }
 
 /// Saves the secret for one account on one server.

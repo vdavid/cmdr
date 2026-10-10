@@ -94,6 +94,18 @@ export type ConnectRefusalKind =
   | 's3_field_malformed'
   /** Add mode, before any round trip: the "Other S3-compatible" endpoint isn't `http(s)://host[:port]`. */
   | 'endpoint_malformed'
+  /**
+   * Edit mode: the new address is already another saved server's (`RefusalSubject.takenBy` names it). Refused
+   * rather than merged, and nothing was saved.
+   */
+  | 'address_taken'
+  /**
+   * Edit mode: moving the server to its new address couldn't take its saved password along, so nothing moved.
+   * ❗ Not `saved_secret_not_updated`, whose edit DID land.
+   */
+  | 'secret_not_moved'
+  /** Edit mode: the edit named another account or protocol. The sheet locks both, so only a broken caller sees it. */
+  | 'account_changed'
 
 const REFUSAL_KEYS: Record<ConnectRefusalKind, MessageKey> = {
   authentication_rejected: 'servers.refusal.authenticationRejected',
@@ -122,6 +134,9 @@ const REFUSAL_KEYS: Record<ConnectRefusalKind, MessageKey> = {
   not_an_s3_endpoint: 'servers.refusal.notAnS3Endpoint',
   s3_field_malformed: 'servers.refusal.s3FieldMalformed',
   endpoint_malformed: 'servers.refusal.endpointMalformed',
+  address_taken: 'servers.refusal.addressTaken',
+  secret_not_moved: 'servers.refusal.secretNotMoved',
+  account_changed: 'servers.refusal.accountChanged',
 }
 
 /**
@@ -147,12 +162,17 @@ export interface RefusalSubject {
   protocol?: ServerProtocol
   /** `region_mismatch` only: the region the server says the bucket lives in, when it said. */
   region?: string | null
+  /** `address_taken` only: what the saved server already at that address is called. */
+  takenBy?: string | null
 }
 
 /** The one sentence a refusal says. */
 export function wordConnectRefusal(kind: ConnectRefusalKind, subject: RefusalSubject): string {
   if (kind === 'region_mismatch' && subject.region) {
     return tString('servers.refusal.regionMismatchNamed', { region: subject.region })
+  }
+  if (kind === 'address_taken') {
+    return tString('servers.refusal.addressTaken', { name: subject.takenBy ?? subject.host })
   }
   const key = (subject.protocol === 's3' ? S3_REFUSAL_KEYS[kind] : undefined) ?? REFUSAL_KEYS[kind]
   return tString(key, { host: subject.host, username: subject.username })
@@ -258,6 +278,11 @@ const REFUSAL_FIELDS: Record<ConnectRefusalKind, RefusalField> = {
   endpoint_malformed: 'address',
   // No field fixes this Mac's clock.
   clock_skewed: 'form',
+  // The address is what to change: to one nothing else holds.
+  address_taken: 'address',
+  // The password is the one thing that didn't move, so its field is where the retry happens.
+  secret_not_moved: 'secret',
+  account_changed: 'form',
 }
 
 /** Where `kind`'s sentence goes. */

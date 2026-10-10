@@ -55,6 +55,29 @@ impl RecentEntry for RecentPathEntry {
     }
 }
 
+/// Respells every recent path under a saved server's old address with its new one
+/// (`network/server_move.rs`), by whole segments: the old address names nothing saved
+/// any more, so a row spelled with it would open an Add sheet.
+pub fn follow_server_move(old_prefix: &str, new_prefix: &str) {
+    let file = crate::config::standalone_app_data_dir().map(|dir| dir.join(RecentPathEntry::FILENAME));
+    follow_server_move_at(&RECENT_PATHS, file.as_deref(), old_prefix, new_prefix);
+}
+
+fn follow_server_move_at(
+    list: &RecentsFile<RecentPathEntry>,
+    file: Option<&std::path::Path>,
+    old_prefix: &str,
+    new_prefix: &str,
+) {
+    list.rewrite_at(file, |entry| {
+        let Some(path) = cmdr_fs::volume::app_paths::rebase(&entry.path, old_prefix, new_prefix) else {
+            return false;
+        };
+        entry.path = path;
+        true
+    });
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -65,6 +88,41 @@ mod tests {
             timestamp: 1_700_000_000_000,
             path: path.to_string(),
         }
+    }
+
+    /// The old address names nothing saved any more, so a recent spelled with it would open an
+    /// Add sheet. Whole segments: the server on another port keeps its own row.
+    #[test]
+    fn a_server_move_respells_the_recent_paths_under_its_old_address() {
+        let list = RecentsFile::<RecentPathEntry>::new();
+        list.add_at(None, entry("sftp://ada@nas.local:2222/srv"), MAX_RECENTS);
+        list.add_at(None, entry("/Users/x/a"), MAX_RECENTS);
+        list.add_at(None, entry("sftp://ada@nas.local:22/srv/data"), MAX_RECENTS);
+
+        follow_server_move_at(&list, None, "sftp://ada@nas.local:22", "sftp://ada@10.0.0.5:22");
+
+        let paths: Vec<String> = list.entries(None).into_iter().map(|e| e.path).collect();
+        assert_eq!(
+            paths,
+            [
+                "sftp://ada@10.0.0.5:22/srv/data",
+                "/Users/x/a",
+                "sftp://ada@nas.local:2222/srv"
+            ]
+        );
+    }
+
+    /// A list that already held the new spelling keeps one row for it, the newer one.
+    #[test]
+    fn a_server_move_onto_a_path_already_listed_keeps_one_row() {
+        let list = RecentsFile::<RecentPathEntry>::new();
+        list.add_at(None, entry("sftp://ada@10.0.0.5:22/srv"), MAX_RECENTS);
+        list.add_at(None, entry("sftp://ada@nas.local:22/srv"), MAX_RECENTS);
+
+        follow_server_move_at(&list, None, "sftp://ada@nas.local:22", "sftp://ada@10.0.0.5:22");
+
+        let paths: Vec<String> = list.entries(None).into_iter().map(|e| e.path).collect();
+        assert_eq!(paths, ["sftp://ada@10.0.0.5:22/srv"]);
     }
 
     #[test]

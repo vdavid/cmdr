@@ -25,6 +25,7 @@ vi.mock('$lib/tauri-commands', async (importOriginal) => ({
   getWebdavUnattendedReconnect: vi.fn(() => Promise.resolve('possible')),
   forgetServerSecret: vi.fn(() => Promise.resolve(true)),
   updateSavedServer: vi.fn(() => Promise.resolve({ outcome: 'saved' })),
+  savedServerId: vi.fn(() => Promise.resolve('sftp-nas-local-22-ada')),
   updateSavedSmbHost: vi.fn(() => Promise.resolve(true)),
   saveSftpCredentials: vi.fn(() => Promise.resolve()),
   saveWebdavCredentials: vi.fn(() => Promise.resolve()),
@@ -861,17 +862,73 @@ describe('SignInSheet: edit mode', () => {
     expect(formRefusal?.textContent).toContain('nas.local')
   })
 
-  it('locks the identity and points at the honest way to change it', async () => {
+  it('lets the address move, locks the account and the protocol, and says what each does', async () => {
     await renderSheet({ mode: 'edit', server: SAVED })
 
     const address = document.body.querySelector<HTMLInputElement>('#server-address')
     const username = document.body.querySelector<HTMLInputElement>('#server-username')
     expect(address?.value).toBe('ada@nas.local:22')
-    expect(address?.disabled).toBe(true)
+    // ❗ A server that moved (a new IP, a Tailscale name) keeps everything: the
+    // backend moves it on Save.
+    expect(address?.disabled).toBe(false)
+    expect(document.body.querySelector('#server-address-help')?.textContent).toContain('come along')
+    // Another account is another place, so that one stays an Add.
     expect(username?.disabled).toBe(true)
+    expect(protocolTab('SFTP').disabled).toBe(true)
     // ❗ An inert-looking field with no explanation is worse than no field. The
     // hint names the path that actually works.
-    expect(document.body.textContent).toContain('Forget this server and add it again')
+    expect(document.body.querySelector('#server-identity-hint')?.textContent).toContain('add it as a new server')
+  })
+
+  it('saves as the place it was raised on, so the backend decides whether the address moved', async () => {
+    const commands = await import('$lib/tauri-commands')
+    await renderSheet({ mode: 'edit', server: SAVED })
+
+    typeInto(document.body.querySelector<HTMLInputElement>('#server-address') as HTMLInputElement, '10.0.0.5')
+    await tick()
+    buttonSaying('Save').click()
+    await flush()
+
+    expect(vi.mocked(commands.updateSavedServer)).toHaveBeenCalledWith(
+      expect.objectContaining({ protocol: 'sftp', host: '10.0.0.5', username: 'ada' }),
+      'sftp-nas-local-22-ada',
+    )
+  })
+
+  it('puts an address another saved server holds under the address, naming that server', async () => {
+    const commands = await import('$lib/tauri-commands')
+    vi.mocked(commands.updateSavedServer).mockResolvedValueOnce({ outcome: 'address_taken', name: 'Old NAS' })
+    const { done } = await renderSheet({ mode: 'edit', server: SAVED })
+
+    const address = document.body.querySelector<HTMLInputElement>('#server-address') as HTMLInputElement
+    typeInto(address, 'old-nas.local')
+    await tick()
+    buttonSaying('Save').click()
+    await flush()
+
+    expect(done).toEqual([])
+    expect(document.body.querySelector('#server-address-refusal')?.textContent).toContain('Old NAS')
+    expect(document.activeElement).toBe(address)
+  })
+
+  it('forgets the password at the NEW address when Remember went off in the same save that moved it', async () => {
+    const commands = await import('$lib/tauri-commands')
+    vi.mocked(commands.hasServerSecret).mockResolvedValueOnce(true)
+    vi.mocked(commands.savedServerId).mockResolvedValueOnce('sftp-10-0-0-5-22-ada')
+    await renderSheet({ mode: 'edit', server: SAVED })
+
+    typeInto(document.body.querySelector<HTMLInputElement>('#server-address') as HTMLInputElement, '10.0.0.5')
+    const remember = [...document.body.querySelectorAll('label')].find((l) =>
+      l.textContent.includes('Remember in Keychain'),
+    )
+    remember?.click()
+    await flush()
+    buttonSaying('Save').click()
+    await flush()
+
+    // ❗ The old id names nothing after a move, so a forget aimed there would leave
+    // the moved password filed.
+    expect(vi.mocked(commands.forgetServerSecret)).toHaveBeenCalledWith('sftp-10-0-0-5-22-ada')
   })
 
   it('writes a typed password through the Keychain, so the field does what it shows', async () => {

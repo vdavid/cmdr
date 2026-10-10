@@ -513,7 +513,7 @@ packages from app bundles. The description keeps its siblings' frame, `Mit tesz 
 - You stopped opening your phone → `Leállítottad a telefonod megnyitását.`, the `leállít` stem of
   `search.coverage.walk.cancelled`, never `Mégsem`'s: the sentence reports, it doesn't name the button.
 
-## A zárolt szerveridentitás (`servers.sheet.identityLocked`)
+## A zárolt szerveridentitás (`servers.sheet.accountLocked`)
 
 The hint uses the buttons' own verbs (`elfelejt`, `hozzáad`), since a synonym sends the reader to a menu item that
 doesn't exist. are what name this server → `azonosítja ezt a szervert`: the form has its own `Név` field.

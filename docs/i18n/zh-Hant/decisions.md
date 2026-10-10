@@ -173,7 +173,7 @@ contrasts packages with app bundles.
 - The aria "Disconnect {name}" `中斷連線：{name}`: `中斷與 {name} 的連線` splits the label and fails containment.
 - "You stopped opening your phone" `你停止了…`, ❌ not `取消`: that's the Cancel button's label.
 
-## A locked server identity (`servers.sheet.identityLocked`)
+## A locked server identity (`servers.sheet.accountLocked`)
 
 The hint's verbs match the controls it points to exactly (`忘記`, `加入`, never `刪除` / `新增`). "Are what name this
 server" `決定了這是哪個伺服器`: `命名` would read as the sheet's Name field.

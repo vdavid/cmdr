@@ -29,6 +29,9 @@ const KINDS: ConnectRefusalKind[] = [
   'start_folder_not_found',
   'save_unconfirmed',
   'account_not_permitted',
+  'address_taken',
+  'secret_not_moved',
+  'account_changed',
   'access_denied',
   'bucket_list_refused',
   'bucket_not_found',
@@ -187,5 +190,17 @@ describe('refusalField', () => {
 
   it('puts an unconfirmed save above the buttons, since no field can fix a server that did not answer', () => {
     expect(refusalField('save_unconfirmed')).toBe('form')
+  })
+
+  it('puts a move refusal where the fix is: the address, or the password that stayed behind', () => {
+    expect(refusalField('address_taken')).toBe('address')
+    expect(refusalField('secret_not_moved')).toBe('secret')
+    expect(refusalField('account_changed')).toBe('form')
+  })
+})
+
+describe('a move to an address another saved server holds', () => {
+  it('names the server that holds it, so the person knows which one to open or forget', () => {
+    expect(wordConnectRefusal('address_taken', { ...subject, takenBy: 'Naspolya' })).toContain('Naspolya')
   })
 })

@@ -327,3 +327,55 @@ fn a_first_connect_pins_the_new_server() {
 
     assert!(entries_for(&url)[0].pinned);
 }
+
+#[test]
+fn relocating_moves_the_entry_in_place_and_keeps_its_pin_and_history() {
+    let old_url = url_for("relocate-from");
+    let new_url = "http://relocate-to.webdav-servers.test:8080/remote.php/dav/";
+    let mut saved = server(&old_url, "ada");
+    saved.pinned = true;
+    remember(saved);
+    let mut moved = server(new_url, "ada");
+    moved.last_connected_at = "2026-10-10T00:00:00Z".to_string();
+    moved.remote_root = "/Photos".to_string();
+
+    let outcome = relocate(&old_url, "ada", moved);
+
+    assert!(matches!(outcome, Relocation::Moved { .. }));
+    assert!(entries_for(&old_url).is_empty(), "the old URL is gone");
+    let found = find(new_url, "ada").expect("the entry lives at the new URL");
+    assert!(found.pinned, "the same server keeps its pin");
+    assert_eq!(found.last_connected_at, "2026-09-01T10:00:00Z");
+    assert_eq!(found.remote_root, "/Photos", "the edit's own fields land");
+}
+
+/// Another path on the same host, port, and account mints the same volume id, so
+/// the two would be one volume listed twice.
+#[test]
+fn relocating_onto_another_entrys_volume_id_is_refused() {
+    let old_url = url_for("relocate-id-from");
+    let holder_url = "https://relocate-id-to.webdav-servers.test/dav/";
+    remember(server(&old_url, "ada"));
+    remember(server(holder_url, "ada"));
+
+    let outcome = relocate(
+        &old_url,
+        "ada",
+        server("https://relocate-id-to.webdav-servers.test/other/", "ada"),
+    );
+
+    assert!(matches!(outcome, Relocation::Taken(holder) if holder.url == holder_url));
+    assert_eq!(entries_for(&old_url).len(), 1, "nothing moved");
+}
+
+#[test]
+fn relocating_a_server_nobody_saved_answers_not_found() {
+    let outcome = relocate(
+        &url_for("relocate-missing"),
+        "ada",
+        server(&url_for("relocate-missing-to"), "ada"),
+    );
+
+    assert!(matches!(outcome, Relocation::NotFound));
+    assert!(entries_for(&url_for("relocate-missing-to")).is_empty());
+}

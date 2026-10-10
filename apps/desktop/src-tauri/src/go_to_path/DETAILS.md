@@ -20,6 +20,10 @@ Depth and rationale. `CLAUDE.md` holds the must-knows; the decision rationale an
   resolved path string), and the cap; the file, dedupe, eviction, and quarantine are shared with Search and Selection.
   The cap stays a per-call argument, so this store's fixed `MAX_RECENTS` never becomes a knob the tunable lists carry, or
   the reverse. Where the shared type's edge sits, and why: `apps/desktop/src-tauri/src/recents/DETAILS.md`.
+- **A saved server that moved respells the recents under its old address** (`history::follow_server_move`, called by
+  `../server_move.rs`), by whole segments. The old address names nothing saved any more, so a row spelled with it would
+  open an Add sheet instead of the server. Handle-less, through `config::standalone_app_data_dir()`, the dir the
+  app-bound facade resolves too.
 
 ## v1 limitations
 

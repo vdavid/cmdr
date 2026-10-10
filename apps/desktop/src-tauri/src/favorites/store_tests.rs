@@ -461,6 +461,101 @@ fn a_claim_never_overwrites_a_known_volume_and_reports_no_change() {
     assert_eq!(store.favorites[0].volume, Some(share("/Volumes/naspi")));
 }
 
+// -- following a saved server to a new address --
+
+fn sftp_place(prefix: &str, id: &str) -> FavoriteVolume {
+    FavoriteVolume {
+        id: id.to_string(),
+        root: format!("{prefix}/srv/data"),
+        name: "Naspolya".to_string(),
+    }
+}
+
+/// The favorite keeps its own id, label, shortcut, and place in the list; only where it points
+/// moves: the volume id, the root, and the path, each spelled with the new address.
+#[test]
+fn a_server_move_rekeys_its_favorites_and_respells_their_paths() {
+    let mut store = FavoritesStore::default();
+    let old = "sftp://ada@nas.local:22";
+    let new = "sftp://ada@nas.tail1234.ts.net:2222";
+    let id = add_to_store(
+        &mut store,
+        &format!("{old}/srv/data/photos"),
+        Some("Photos".to_string()),
+        Some(sftp_place(old, "sftp-old")),
+    );
+    add_to_store(&mut store, "/Users/x/Documents", None, None);
+    let moved = FavoriteVolume {
+        id: "sftp-new".to_string(),
+        root: format!("{new}/srv/data"),
+        name: "Naspolya at home".to_string(),
+    };
+
+    assert!(follow_server_move_in_store(
+        &mut store,
+        old,
+        new,
+        &[("sftp-old".to_string(), moved.clone())]
+    ));
+
+    let favorite = &store.favorites[0];
+    assert_eq!(favorite.id, id, "the same favorite");
+    assert_eq!(favorite.name, "Photos", "with the label the person gave it");
+    assert_eq!(favorite.path, format!("{new}/srv/data/photos"));
+    assert_eq!(favorite.volume, Some(moved));
+    assert_eq!(
+        store.favorites[1].path, "/Users/x/Documents",
+        "another volume's favorite stays"
+    );
+}
+
+/// A legacy favorite with no volume yet still spells the old address; the claim pass finds the
+/// moved place only if its path moves too.
+#[test]
+fn a_server_move_respells_an_unclaimed_favorite_under_the_old_address() {
+    let mut store = FavoritesStore::default();
+    add_to_store(&mut store, "sftp://ada@nas.local:22/srv/data", None, None);
+
+    assert!(follow_server_move_in_store(
+        &mut store,
+        "sftp://ada@nas.local:22",
+        "sftp://ada@10.0.0.5:22",
+        &[]
+    ));
+
+    assert_eq!(store.favorites[0].path, "sftp://ada@10.0.0.5:22/srv/data");
+    assert_eq!(
+        store.favorites[0].volume, None,
+        "the claim pass fills it, as for any legacy entry"
+    );
+}
+
+/// ❗ Whole segments: a server on another port shares the old address's characters, not its tree.
+#[test]
+fn a_server_move_leaves_a_lookalike_address_alone_and_reports_no_change() {
+    let mut store = FavoritesStore::default();
+    add_to_store(
+        &mut store,
+        "sftp://ada@nas.local:2222/srv",
+        None,
+        Some(sftp_place("sftp://ada@nas.local:2222", "sftp-other")),
+    );
+
+    assert!(!follow_server_move_in_store(
+        &mut store,
+        "sftp://ada@nas.local:22",
+        "sftp://ada@10.0.0.5:22",
+        &[]
+    ));
+    assert_eq!(store.favorites[0].path, "sftp://ada@nas.local:2222/srv");
+}
+
+/// A move is the person editing a SERVER, ❌ not a favorites gesture.
+#[test]
+fn a_server_move_is_not_an_analytics_event() {
+    assert_eq!(StoreChange::FollowedServerMove.analytics_action(), None);
+}
+
 /// A claim is bookkeeping, ❌ not a user gesture: it reports nothing to analytics.
 #[test]
 fn a_claim_is_not_an_analytics_event() {

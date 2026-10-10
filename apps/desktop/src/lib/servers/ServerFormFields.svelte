@@ -57,15 +57,21 @@
         /** ❗ Off in edit mode: changing which protocol a saved server speaks makes it a different server. */
         protocolEditable: boolean
         /**
-         * ❗ Off in edit mode, and the address and username go with the protocol
-         * toggle. Rust mints the volume id from `(host, port, username)` and
-         * `sftp_known_servers::remember` keys on the same tuple, so an edited one
-         * upserts a SECOND saved entry beside the first rather than moving
-         * anything: the hub grows a duplicate row and the old id's tabs are
-         * orphaned. The honest path to a new identity is Forget then Add, which
+         * ❗ Off in edit mode: the ACCOUNT (the username, S3's key and bucket) goes with
+         * the protocol toggle. Another account is another place, since two accounts on
+         * one server see different files, so the honest path to one is Add, which
          * `identityHint` says.
          */
         identityEditable: boolean
+        /**
+         * Whether the address takes typing. ❗ On in edit mode for SFTP and WebDAV: a
+         * server that MOVED keeps everything, because the backend moves the saved
+         * server to the new address on Save (`src-tauri/src/server_move.rs`). Off for
+         * an SMB host, whose share ids come off the mount.
+         */
+        addressEditable: boolean
+        /** The line under an editable address in edit mode, in place of add mode's paste help. */
+        addressHelp?: string
         /** The two lines under the locked identity fields, saying what to do instead. */
         identityHint?: string
         /**
@@ -133,6 +139,8 @@
         disabled,
         protocolEditable,
         identityEditable,
+        addressEditable,
+        addressHelp,
         identityHint,
         s3EditScope,
         addressRefusal,
@@ -178,7 +186,7 @@
     const addressDescribedBy = $derived.by(() => {
         if (addressRefusal) return addressRefusalHint ? 'server-address-refusal server-address-hint' : 'server-address-refusal'
         if (addressWarning) return 'server-address-warning'
-        if (identityEditable) return 'server-address-help'
+        if (addressEditable) return 'server-address-help'
         return asksForCredentials ? undefined : 'server-address-locked'
     })
     const isSftp = $derived(form.protocol === 'sftp')
@@ -240,7 +248,7 @@
         oninput={(e: Event) => {
             onChange({ address: (e.currentTarget as HTMLInputElement).value })
         }}
-        disabled={disabled || !identityEditable}
+        disabled={disabled || !addressEditable}
         invalid={addressRefusal !== undefined}
         aria-describedby={addressDescribedBy}
         placeholder={tString('servers.sheet.addressPlaceholder')}
@@ -272,15 +280,16 @@
         <!-- `status`, ❌ not `alert`: it arrives while someone is typing, and it
              asks for a look, not an interruption. -->
         <p id="server-address-warning" class="field-warning" role="status">{addressWarning}</p>
-    {:else if identityEditable && form.protocol !== 's3'}
-        <p id="server-address-help" class="field-help">{tString(ADDRESS_HELP_KEY[form.protocol])}</p>
+    {:else if addressEditable && form.protocol !== 's3'}
+        <p id="server-address-help" class="field-help">{addressHelp ?? tString(ADDRESS_HELP_KEY[form.protocol])}</p>
     {:else if !asksForCredentials}
         <!-- SMB: the account stays editable, so the address is the one locked field and says why here. -->
         <p id="server-address-locked" class="field-help">{tString('servers.sheet.addressLocked')}</p>
     {/if}
-    <!-- ❗ No "paste whatever you have" line under a field nobody can type in. SFTP and
-         WebDAV lock the account too, so their sentence sits under the username instead,
-         where it covers all three of address, protocol, and account. -->
+    <!-- ❗ No "paste whatever you have" line under a field nobody can type in. In edit
+         mode SFTP's and WebDAV's address says what typing a new one does (`addressHelp`),
+         and the sentence about what stays locked, the protocol and the account, sits
+         under the username. -->
 </div>
 {/if}
 

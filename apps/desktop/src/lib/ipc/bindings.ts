@@ -4507,6 +4507,11 @@ export const commands = {
    *  server's PIN is not in it: `remember` preserves the stored pin on a replace,
    *  and [`set_place_pinned`] is the one writer that moves one.
    *
+   *  ❗ `editing` is the id of the saved place the edit was raised on (`None` for
+   *  "Add anyway"). The BACKEND decides whether the edit moved the address: in
+   *  place it saves as always, else it moves the server and everything that
+   *  follows it (`server_move.rs`). The frontend never compares addresses.
+   *
    *  ❗ Answers a typed [`SavedServerOutcome`]; a refusal writes nothing at all. A
    *  connected place's edit applies live: `network/live_server_edit.rs`.
    *
@@ -4516,7 +4521,8 @@ export const commands = {
    *  it. The servers hub re-reads the saved list on the same broadcast. A second
    *  request beside the live install's own coalesces in the debounce.
    */
-  updateSavedServer: (server: ServerTarget) => __TAURI_INVOKE<SavedServerOutcome>('update_saved_server', { server }),
+  updateSavedServer: (server: ServerTarget, editing: string | null) =>
+    __TAURI_INVOKE<SavedServerOutcome>('update_saved_server', { server, editing }),
   /**
    *  The id the servers listing gives the account `server` names, through the same
    *  id funnel the listing uses (`cmdr_fs::volume::ids`), or `None` for a WebDAV
@@ -4974,6 +4980,7 @@ export const events = {
   searchError: makeEvent<SearchErrorEvent>('search-error'),
   searchIndexReady: makeEvent<SearchIndexReadyEvent>('search-index-ready'),
   searchProgress: makeEvent<SearchProgressEvent>('search-progress'),
+  serverPlaceMoved: makeEvent<ServerPlaceMoved>('server-place-moved'),
   settingsChanged: makeEvent<SettingsChanged>('settings-changed'),
   showSearchResultInFolder: makeEvent<ShowSearchResultInFolder>('show-search-result-in-folder'),
   smbFellBackToOsMount: makeEvent<SmbFellBackToOsMount>('smb-fell-back-to-os-mount'),
@@ -10845,6 +10852,23 @@ export type MoveLeftoversKeptEvent = {
   folderName: string
 }
 
+// One place of a [`ServerPlaceMoved`].
+export type MovedPlace = {
+  /**
+   *  The id the place had. May equal `new_volume_id`: a WebDAV URL that moved
+   *  only its scheme or path keeps the host, port, and account the id is minted from.
+   */
+  oldVolumeId: string
+  // The id it has now.
+  newVolumeId: string
+  // Its root, as an app path under the new prefix.
+  newRoot: string
+  // Where opening it lands: its start folder, else its root.
+  newLanding: string
+  // What it's called now.
+  name: string
+}
+
 /**
  *  Why an MTP operation couldn't happen, in a shape the app can act on.
  *
@@ -13493,6 +13517,28 @@ export type SavedServerOutcome =
    *  Nothing was checked, so nothing was saved.
    */
   | { outcome: 'unreachable' }
+  /**
+   *  The edit moves the server to an address another saved server already
+   *  holds. Refused rather than merged: a merge would keep one entry's settings,
+   *  pin, and password and silently drop the other's.
+   */
+  | {
+      outcome: 'address_taken'
+      // What the UI calls the server that holds it, so the sentence can say.
+      name: string
+    }
+  /**
+   *  The move couldn't copy the saved password to the new address (the store
+   *  said no, or didn't answer), so nothing moved: a server whose password
+   *  stayed behind would ask for it again.
+   */
+  | { outcome: 'secret_not_moved' }
+  /**
+   *  The edit names another protocol or account than the saved server it was
+   *  raised on. Another account is another place, so it's an Add, ❌ never an
+   *  edit; the sheet locks both fields, so only a broken caller sends one.
+   */
+  | { outcome: 'account_changed' }
 
 /**
  *  A conflict detected during pre-copy scanning: a source item that already exists at the
@@ -14421,6 +14467,29 @@ export type ServerNameSource =
    *  field stayed empty.
    */
   | 'fallback'
+
+/**
+ *  Typed `server-place-moved` Tauri event: a saved server moved to a new address,
+ *  so its places have new volume ids and every app path on them a new prefix.
+ *
+ *  Emitted once the stores, the secret, and the favorites already name the new
+ *  address, and BEFORE the old session is dropped, so a pane standing on the old
+ *  id follows to the new one instead of being sent home. What the panes do with
+ *  it: `apps/desktop/src/lib/file-explorer/pane/server-move-follow.ts`. Why it's
+ *  not a `volume-root-changed`: that event keeps the id, and a move is exactly an
+ *  id change. The move itself: `commands/servers/moves.rs`.
+ */
+export type ServerPlaceMoved = {
+  /**
+   *  The prefix every app path on these places carried until the move
+   *  (`sftp://ada@nas.local:22`).
+   */
+  oldPrefix: string
+  // The prefix they carry now.
+  newPrefix: string
+  // Every place that moved: one for SFTP and WebDAV, each of an account's for S3.
+  places: MovedPlace[]
+}
 
 // Which protocol an account speaks.
 export type ServerProtocol =

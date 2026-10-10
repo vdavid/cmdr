@@ -22,11 +22,29 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct StartFolderOutsideRoot;
 
+/// What moving a saved entry to a new address did to its store
+/// (`network/server_move.rs`).
+///
+/// ❗ One lock, one write: the entry is replaced IN PLACE, so the file never holds
+/// both addresses or neither, and the list keeps its order.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Relocation<T> {
+    /// The entry now lives at the new address. `previous` is how it stood before.
+    Moved {
+        /// The entry as the store held it at the old address.
+        previous: T,
+    },
+    /// Nothing is saved at the old address (a Forget in another pane, say).
+    NotFound,
+    /// Another saved entry already holds the new address. Nothing was written.
+    Taken(T),
+}
+
 /// What saving a server's fields without dialing produced.
 ///
 /// ❗ A refusal writes NOTHING: a half-saved edit is a server that dials one way
 /// and lists another.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "snake_case", tag = "outcome")]
 pub enum SavedServerOutcome {
     /// The store holds the edit.
@@ -43,6 +61,21 @@ pub enum SavedServerOutcome {
     /// and the session didn't answer in time (it dropped, or the server is slow).
     /// Nothing was checked, so nothing was saved.
     Unreachable,
+    /// The edit moves the server to an address another saved server already
+    /// holds. Refused rather than merged: a merge would keep one entry's settings,
+    /// pin, and password and silently drop the other's.
+    AddressTaken {
+        /// What the UI calls the server that holds it, so the sentence can say.
+        name: String,
+    },
+    /// The move couldn't copy the saved password to the new address (the store
+    /// said no, or didn't answer), so nothing moved: a server whose password
+    /// stayed behind would ask for it again.
+    SecretNotMoved,
+    /// The edit names another protocol or account than the saved server it was
+    /// raised on. Another account is another place, so it's an Add, ❌ never an
+    /// edit; the sheet locks both fields, so only a broken caller sends one.
+    AccountChanged,
 }
 
 /// The start folder as a store keeps it, or a refusal when it sits outside

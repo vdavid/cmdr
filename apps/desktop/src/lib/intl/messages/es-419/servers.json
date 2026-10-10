@@ -75,10 +75,6 @@
   "@servers.sheet.addTitle": {
     "sourceHash": "edc745a"
   },
-  "servers.sheet.identityLocked": "La dirección y la cuenta son las que identifican este servidor. Para cambiarlas, olvida el servidor y vuelve a agregarlo.",
-  "@servers.sheet.identityLocked": {
-    "sourceHash": "c3f5837"
-  },
   "servers.sheet.identityLockedS3": "El proveedor, el ID de clave de acceso y el bucket son los que identifican este lugar. Para cambiarlos, olvida este lugar y vuelve a agregarlo.",
   "@servers.sheet.identityLockedS3": {
     "sourceHash": "2982c52"

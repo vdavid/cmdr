@@ -24,10 +24,20 @@ describe('readSavedServerOutcome', () => {
       // ❗ Not the connect path's `unreachable`: nothing was saved, and the
       // address a dial refusal points at is locked in edit mode.
       [{ outcome: 'unreachable' }, 'save_unconfirmed'],
+      [{ outcome: 'secret_not_moved' }, 'secret_not_moved'],
+      [{ outcome: 'account_changed' }, 'account_changed'],
     ]
     for (const [outcome, refusal] of cases) {
       expect(readSavedServerOutcome(outcome)).toEqual({ kind: 'refused', refusal })
     }
+  })
+
+  it('names the saved server that already holds the address a move asked for', () => {
+    expect(readSavedServerOutcome({ outcome: 'address_taken', name: 'Naspolya' })).toEqual({
+      kind: 'refused',
+      refusal: 'address_taken',
+      takenBy: 'Naspolya',
+    })
   })
 })
 

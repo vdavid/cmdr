@@ -23,7 +23,7 @@ use std::sync::{Mutex, OnceLock};
 
 use serde::{Deserialize, Serialize};
 
-use super::saved_server_fields::{self, OwnAddress};
+use super::saved_server_fields::{self, OwnAddress, Relocation};
 use super::server_list_file;
 
 use crate::ignore_poison::IgnorePoison;
@@ -296,6 +296,45 @@ pub fn remember(mut server: KnownWebdavServer) {
         }
     }
     save();
+}
+
+/// Moves the entry at `(url, username)` to `server`'s URL, in place.
+///
+/// ❗ The same server, so it keeps its STORED pin and `last_connected_at`; every
+/// other field is the edit's. Refused, writing nothing, when another entry holds
+/// the new URL, or one whose volume id the new URL would mint (same host, port,
+/// and account under another path): two entries for one id are one volume listed
+/// twice. `network/server_move.rs` owns what else a move takes along.
+pub fn relocate(url: &str, username: &str, mut server: KnownWebdavServer) -> Relocation<KnownWebdavServer> {
+    server.url = normalize_url(&server.url);
+    let relocation = {
+        let mut store = known().lock_ignore_poison();
+        let Some(at) = store
+            .known_webdav_servers
+            .iter()
+            .position(|entry| same_server(entry, url, username))
+        else {
+            return Relocation::NotFound;
+        };
+        let new_endpoint = server.endpoint();
+        let holder = store.known_webdav_servers.iter().enumerate().find(|(i, entry)| {
+            *i != at
+                && (same_server(entry, &server.url, &server.username)
+                    || (entry.username == server.username
+                        && new_endpoint.is_some()
+                        && entry.endpoint() == new_endpoint))
+        });
+        if let Some((_, holder)) = holder {
+            return Relocation::Taken(holder.clone());
+        }
+        let previous = store.known_webdav_servers[at].clone();
+        server.pinned = previous.pinned;
+        server.last_connected_at = previous.last_connected_at.clone();
+        store.known_webdav_servers[at] = server;
+        Relocation::Moved { previous }
+    };
+    save();
+    relocation
 }
 
 /// Moves the pin on `(url, username)`, answering whether an entry was there.

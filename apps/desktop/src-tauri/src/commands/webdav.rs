@@ -17,7 +17,7 @@ use serde::{Deserialize, Serialize};
 use crate::network::keychain::{self, KeychainError};
 use crate::network::webdav_known_servers::{self, KnownWebdavServer};
 use crate::network::webdav_volume_wiring;
-use cmdr_webdav::{UnattendedReconnect, WebdavConnectionParams};
+use cmdr_webdav::UnattendedReconnect;
 
 // ============================================================================
 // The wire vocabulary
@@ -56,19 +56,6 @@ impl From<UnattendedReconnect> for WebdavUnattendedReconnect {
 }
 
 // ============================================================================
-// The server address
-// ============================================================================
-
-/// Parses what a sign-in form typed into the URL the backend dials.
-///
-/// `None` for anything that isn't an absolute `http` or `https` URL. ❗ Typed:
-/// the command answers `InvalidUrl`, and no parse message crosses IPC.
-fn parse_base_url(url: &str) -> Option<url::Url> {
-    let parsed = url::Url::parse(url.trim()).ok()?;
-    matches!(parsed.scheme(), "http" | "https").then_some(parsed)
-}
-
-// ============================================================================
 // Secrets
 // ============================================================================
 
@@ -78,10 +65,11 @@ fn parse_base_url(url: &str) -> Option<url::Url> {
 /// ❌ never the host alone: two accounts on one server would share an entry, and
 /// a reconnect could retry the wrong account's secret straight into a lockout.
 /// ❗ Built by the crate's own `credential_service`, so what this writes is
-/// exactly what the dial reads back. `None` when the URL doesn't parse.
-fn credential_key(url: &str, username: &str) -> Option<String> {
-    let base_url = parse_base_url(url)?;
-    Some(WebdavConnectionParams::new(base_url, username, "/").credential_service())
+/// exactly what the dial reads back (`webdav_volume_wiring::credential_service`,
+/// which a move builds it through too). `None` when the URL isn't an
+/// `http`/`https` URL.
+fn credential_key(url: &str) -> Option<String> {
+    webdav_volume_wiring::credential_service(url)
 }
 
 /// The answer when the secret store can't be asked about a URL that isn't one.
@@ -110,7 +98,7 @@ fn not_a_server_url() -> KeychainError {
 #[tauri::command]
 #[specta::specta]
 pub async fn save_webdav_credentials(url: String, username: String, secret: String) -> Result<(), KeychainError> {
-    let Some(service) = credential_key(&url, &username) else {
+    let Some(service) = credential_key(&url) else {
         return Err(not_a_server_url());
     };
     crate::deadline::blocking_with_timeout(
@@ -131,7 +119,7 @@ pub async fn save_webdav_credentials(url: String, username: String, secret: Stri
 /// collapsing a timeout into its fallback is harmless: both answers send the
 /// frontend to the same place, which is to ask.
 pub(crate) async fn has_webdav_credentials(url: String, username: String) -> bool {
-    let Some(service) = credential_key(&url, &username) else {
+    let Some(service) = credential_key(&url) else {
         return false;
     };
     crate::deadline::blocking_with_timeout(std::time::Duration::from_secs(15), false, move || {
@@ -142,7 +130,7 @@ pub(crate) async fn has_webdav_credentials(url: String, username: String) -> boo
 
 /// Forgets the stored secret for one account on one server.
 pub(crate) async fn delete_webdav_credentials(url: String, username: String) -> Result<(), KeychainError> {
-    let Some(service) = credential_key(&url, &username) else {
+    let Some(service) = credential_key(&url) else {
         return Err(not_a_server_url());
     };
     crate::deadline::blocking_with_timeout(

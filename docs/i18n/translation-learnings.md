@@ -42,7 +42,7 @@ Parity, ICU, plural, stale, coverage, and don't-translate are structural, so the
   leading space and separator. Verify by assembling every present/absent combination. Moving the count out of the label
   into its own `·` fact is a legitimate restructure (de, nl, zh, and hu all did it, each for a grammatical reason).
 - **A verb that doubles as a field label on the same screen takes its sense-verb.** "are what name this server", on a
-  sheet with a `Name` field (`servers.sheet.identityLocked`), became IDENTIFY or DETERMINE in every locale.
+  sheet with a `Name` field (`servers.sheet.accountLocked`), became IDENTIFY or DETERMINE in every locale.
 - **A near-synonym pair only English keeps apart** (row/line, folder/directory, item/entry): drop the second noun and
   say WHERE ("the line continues directly below") before minting a new term per locale.
 - **Don't fuse the subjects of "X did this, and so did N others"** when a `{reason}` describes only X: merging widens

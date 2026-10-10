@@ -85,7 +85,9 @@ use crate::network::{
 use crate::reveal::RevealDelivered;
 use crate::search::live::events::{SearchCancelledEvent, SearchCompleteEvent, SearchErrorEvent, SearchProgressEvent};
 use crate::space_poller::{LowDiskSpacePayload, VolumeSpaceChanged};
-use crate::volume_broadcast::{VolumeContextAction, VolumeMounted, VolumeRootChanged, VolumeUnmounted, VolumesChanged};
+use crate::volume_broadcast::{
+    ServerPlaceMoved, VolumeContextAction, VolumeMounted, VolumeRootChanged, VolumeUnmounted, VolumesChanged,
+};
 // Window-management events: emit_to-targeted window lifecycle.
 use crate::window_events::{
     CloseAbout, CloseAllFileViewers, CloseConfirmation, CloseFileViewer, ExecuteCommand, FocusAbout, FocusConfirmation,
@@ -1065,6 +1067,9 @@ pub fn builder() -> Builder<tauri::Wry> {
             // A volume's root or landing moved: an edit to a connected SFTP or WebDAV
             // place (network/live_server_edit.rs), or a renamed drive (volumes/watcher.rs).
             VolumeRootChanged,
+            // A saved server moved to a new address, so its places have new ids
+            // (commands/servers/moves.rs).
+            ServerPlaceMoved,
             VolumesBusyChanged,
             // The volumes with an eject still running (file_system/volume/eject/in_flight.rs).
             VolumesEjectingChanged,

@@ -33,10 +33,12 @@ use cmdr_webdav::WebdavConnectionParams;
 
 mod outcomes;
 mod s3_accounts;
+mod saves;
 mod smb_hosts;
 mod wire;
 use outcomes::{SavedEntry, outcome_from_s3, outcome_from_sftp, outcome_from_webdav, saved_by_id};
 use s3_accounts::{s3_accounts, s3_place};
+use saves::{save_edit, save_target};
 use smb_hosts::smb_hosts;
 pub use wire::{
     SavedPlace, SavedPlaceRefusal, SavedServer, ServerConnectOutcome, ServerNameSource, ServerProtocol, ServerTarget,
@@ -557,6 +559,11 @@ pub async fn forget_server_secret(id: String) -> bool {
 /// server's PIN is not in it: `remember` preserves the stored pin on a replace,
 /// and [`set_place_pinned`] is the one writer that moves one.
 ///
+/// ❗ `editing` is the id of the saved place the edit was raised on (`None` for
+/// "Add anyway"). The BACKEND decides whether the edit moved the address: in
+/// place it saves as always, else it moves the server and everything that
+/// follows it (`server_move.rs`). The frontend never compares addresses.
+///
 /// ❗ Answers a typed [`SavedServerOutcome`]; a refusal writes nothing at all. A
 /// connected place's edit applies live: `network/live_server_edit.rs`.
 ///
@@ -567,8 +574,11 @@ pub async fn forget_server_secret(id: String) -> bool {
 /// request beside the live install's own coalesces in the debounce.
 #[tauri::command]
 #[specta::specta]
-pub async fn update_saved_server(server: ServerTarget) -> SavedServerOutcome {
-    let outcome = save_target(server).await;
+pub async fn update_saved_server(server: ServerTarget, editing: Option<String>) -> SavedServerOutcome {
+    let outcome = match editing {
+        Some(id) => save_edit(&id, server).await,
+        None => save_target(server).await,
+    };
     if outcome == SavedServerOutcome::Saved {
         crate::volume_broadcast::emit_volumes_changed();
     }
@@ -604,80 +614,6 @@ pub fn saved_server_id(server: ServerTarget) -> Option<String> {
             bucket,
             ..
         } => s3_place(provider, access_key_id, bucket, true).volume_id(),
-    }
-}
-
-/// The per-protocol save behind [`update_saved_server`].
-///
-/// ❗ Calls each wiring's `save_without_connecting` directly: there is no
-/// per-protocol IPC command behind it any more (nothing but its own test ever
-/// called `update_known_sftp_server` / `update_known_webdav_server`), so this
-/// facade builds the known-servers entry itself instead of forwarding.
-async fn save_target(server: ServerTarget) -> SavedServerOutcome {
-    match server {
-        ServerTarget::Sftp {
-            display_name,
-            host,
-            port,
-            username,
-            remote_root,
-            start_folder,
-            key_file,
-            use_agent,
-            auto_reconnect,
-        } => {
-            sftp_volume_wiring::save_without_connecting(sftp_known_servers::KnownSftpServer {
-                host,
-                port,
-                username,
-                display_name,
-                remote_root,
-                start_folder,
-                key_file,
-                use_agent,
-                auto_reconnect,
-                // Only reachable for a NEW entry: editing a saved server leaves its pin
-                // alone, which is `remember`'s rule, and a server nobody saved yet is
-                // being saved for the first time here.
-                pinned: true,
-                last_connected_at: chrono::Utc::now().to_rfc3339(),
-            })
-            .await
-        }
-        ServerTarget::Webdav {
-            display_name,
-            url,
-            username,
-            remote_root,
-            start_folder,
-            auto_reconnect,
-        } => {
-            webdav_volume_wiring::save_without_connecting(webdav_known_servers::KnownWebdavServer {
-                url,
-                username,
-                display_name,
-                remote_root,
-                start_folder,
-                auto_reconnect,
-                // Same rule as the SFTP arm above.
-                pinned: true,
-                last_connected_at: chrono::Utc::now().to_rfc3339(),
-            })
-            .await
-        }
-        ServerTarget::S3 {
-            display_name,
-            provider,
-            access_key_id,
-            bucket,
-            auto_reconnect,
-        } => {
-            s3_volume_wiring::save_without_connecting(
-                s3_place(provider, access_key_id, bucket, auto_reconnect),
-                &display_name,
-            )
-            .await
-        }
     }
 }
 
@@ -796,3 +732,7 @@ pub(super) fn webdav_params(url: &str, username: &str, remote_root: &str) -> Opt
 #[cfg(test)]
 #[path = "servers_test.rs"]
 mod servers_test;
+
+#[cfg(test)]
+#[path = "server_moves_test.rs"]
+mod server_moves_test;

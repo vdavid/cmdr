@@ -140,7 +140,7 @@ describe('the saved list', () => {
 
   it('edits a server through the same shape the add sheet collects', async () => {
     vi.mocked(commands.updateSavedServer).mockResolvedValueOnce({ outcome: 'start_folder_outside_root' })
-    expect(await updateSavedServer(target)).toEqual({ outcome: 'start_folder_outside_root' })
-    expect(commands.updateSavedServer).toHaveBeenCalledWith(target)
+    expect(await updateSavedServer(target, 'sftp-nas-local-22-ada')).toEqual({ outcome: 'start_folder_outside_root' })
+    expect(commands.updateSavedServer).toHaveBeenCalledWith(target, 'sftp-nas-local-22-ada')
   })
 })

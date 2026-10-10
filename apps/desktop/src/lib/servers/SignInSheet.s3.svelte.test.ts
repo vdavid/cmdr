@@ -17,7 +17,8 @@ vi.mock('$lib/tauri-commands', async (importOriginal) => ({
   knownS3PlaceOf: (id: string) => knownS3PlaceOf(id),
   hasServerSecret: vi.fn(() => Promise.resolve(true)),
   getS3UnattendedReconnect: vi.fn(() => Promise.resolve('possible')),
-  updateSavedServer: (target: unknown) => updateSavedServer(target),
+  updateSavedServer: (target: unknown, editing: unknown) => updateSavedServer(target, editing),
+  savedServerId: () => Promise.resolve('s3-photos'),
   updateSavedS3Account: (id: string, name: string) => updateSavedS3Account(id, name),
   saveS3Credentials: (...args: unknown[]) => saveS3Credentials(...args),
 }))
@@ -34,7 +35,7 @@ const { knownS3PlaceOf, updateSavedServer, updateSavedS3Account, saveS3Credentia
       volumeId: 's3-photos',
     }),
   ),
-  updateSavedServer: vi.fn((_target: unknown) => Promise.resolve({ outcome: 'saved' })),
+  updateSavedServer: vi.fn((_target: unknown, _editing: unknown) => Promise.resolve({ outcome: 'saved' })),
   updateSavedS3Account: vi.fn((_id: string, _name: string) => Promise.resolve(true)),
   saveS3Credentials: vi.fn((..._args: unknown[]) => Promise.resolve()),
 }))
@@ -221,14 +222,17 @@ describe('SignInSheet: editing an S3 place', () => {
     press('Save')
     await flush()
     // A blank name leaves the account's name alone (`s3_known_places::adopt_typed_name`).
-    expect(updateSavedServer).toHaveBeenCalledWith({
-      protocol: 's3',
-      displayName: '',
-      provider: { kind: 'wasabi', region: 'eu-central-1' },
-      accessKeyId: 'AKIAEXAMPLE',
-      bucket: 'photos',
-      autoReconnect: false,
-    })
+    expect(updateSavedServer).toHaveBeenCalledWith(
+      {
+        protocol: 's3',
+        displayName: '',
+        provider: { kind: 'wasabi', region: 'eu-central-1' },
+        accessKeyId: 'AKIAEXAMPLE',
+        bucket: 'photos',
+        autoReconnect: false,
+      },
+      's3-photos',
+    )
     expect(saveS3Credentials).toHaveBeenCalledWith({ kind: 'wasabi', region: 'eu-central-1' }, 'AKIAEXAMPLE', 'n3w')
   })
 })

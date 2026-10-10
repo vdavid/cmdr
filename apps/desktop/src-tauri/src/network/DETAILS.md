@@ -909,7 +909,7 @@ rather than a fact about a secret, so the saved-server list is its home. ❗ It 
 doesn't name it: SFTP has always come back on its own, and a missing field must not switch that off under servers saved
 before the setting existed.
 
-`sftp_volume_wiring::save_without_connecting` (behind `commands/servers.rs`'s `update_saved_server`, its only caller)
+`sftp_volume_wiring::save_without_connecting` (behind `update_saved_server`, through `commands/servers/saves.rs` and, for an edit that keeps its address, `server_move.rs`)
 moves both copies: the saved entry, and on a connected place the live volume's switch, so it takes effect now rather
 than on the next connect. The row menus' checkbox takes the narrow twin, `apply_auto_reconnect` (behind
 `set_place_auto_reconnect`): the same two copies, one field, through the store's own in-place writer
@@ -1093,6 +1093,19 @@ from the place's own prefix (`cmdr_fs::volume::ids::sftp_app_root` or `webdav_ap
 folder, else the root. The old landing is the saved start folder only while the LIVE root holds it, so a store that
 drifted from the session reports the old root. It isn't debounced, unlike `volumes-changed`, so it reaches the panes
 first.
+
+### Moving a saved server to a new address
+
+An edit whose address differs from the saved entry's (SFTP: host or port; WebDAV: any part of the base URL) MOVES the
+server rather than saving a second one beside it: `src-tauri/src/server_move.rs`, reached from `update_saved_server`
+with the id the sheet opened on. Each store has a `relocate` (one lock, one write, the entry replaced IN PLACE, its pin
+and `last_connected_at` kept), and refuses with the holder when another entry already has the address (or, for WebDAV,
+the id the new URL mints). The order is the crash story: the secret is COPIED to the new key first, the store moves,
+then the favorites, Go to path's recents, the live session (dropped through the wiring's `disconnect`, ❌ never
+`disconnect_place_inner`, whose `VolumeUnmounted` would send a pane home), the `server-place-moved` event, and the old
+secret is deleted LAST. Trusted host keys stay where they are, so the new address asks through the normal host-key step
+on its first dial. The protocol and the account never move (`AccountChanged`). SMB stays locked: a share's id comes off
+its mount. The inventory behind each step and why: `docs/notes/server-address-move.md`.
 
 ### A secret used for one dial and never stored
 

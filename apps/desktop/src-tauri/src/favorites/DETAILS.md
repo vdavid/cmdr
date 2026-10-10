@@ -97,6 +97,13 @@ All in `store.rs`, unit-tested without disk or an `AppHandle`:
 - `set_shortcut(id, shortcut)`: accepts one ASCII letter or `None` to clear. Letters are stored
   uppercase. Assigning one already owned by another favorite transfers it, keeping keyboard picks
   unambiguous. No-op if the id is absent.
+- `follow_server_move(old_prefix, new_prefix, moved)`: a saved server moved to a new address
+  (`../server_move.rs`), so a favorite on one of its places takes the place's new `FavoriteVolume`
+  (id and name), and every `root` and `path` spelled under the old app prefix is respelled under the
+  new one, by whole segments (`cmdr_fs::volume::app_paths::rebase`). A legacy entry with no volume
+  yet moves its path too, so the claim pass finds the place. The favorite's own id, label,
+  shortcut, and position stay. `StoreChange::FollowedServerMove`, so it reports nothing to
+  analytics: the person edited a server, not their list.
 
 `normalize_for_dedup` strips a single trailing `/` (but keeps root `/`), so `sftp://u@h:22/` and
 `sftp://u@h:22` are one root while `…/srv/data` and `…/srv/data-1` stay two. Case-sensitivity is a known
@@ -184,7 +191,8 @@ plus two in-memory settings (`ReachFacts`: MTP's manager bit, `adb::volume_wirin
 entries). With a row for that id, `volume_root` is the row's path, a mount-rooted volume
 (`VolumeScheme::is_mount_rooted`: root, local, path, SMB, cloud) has the favorite's `path` REBASED
 from the stored root onto the row's (a share back at `/Volumes/naspi-1`, a renamed drive), and a
-server or phone path stays verbatim (it's in that namespace; an edited remote root doesn't move it).
+server or phone path stays verbatim (it's in that namespace; an edited remote root doesn't move it, and a server that
+moved to a new address respells it in the store, `follow_server_move`).
 Discovery's `OnDisk::No` counts only when no rebase happened, since it probed the stored path.
 
 The reach table, one decision site:

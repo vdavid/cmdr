@@ -20,7 +20,7 @@ use std::sync::{Mutex, OnceLock};
 
 use serde::{Deserialize, Serialize};
 
-use super::saved_server_fields::{self, OwnAddress};
+use super::saved_server_fields::{self, OwnAddress, Relocation};
 use super::server_list_file;
 
 use crate::ignore_poison::IgnorePoison;
@@ -247,6 +247,41 @@ pub fn remember(mut server: KnownSftpServer) {
         }
     }
     save();
+}
+
+/// Moves the entry at `(host, port, username)` to `server`'s address, in place.
+///
+/// ❗ The same server, so it keeps its STORED pin and `last_connected_at`; every
+/// other field is the edit's, like any save. Refused, writing nothing, when
+/// another entry already holds the new address: merging two saved servers would
+/// drop one's settings without anyone seeing which. `network/server_move.rs` owns
+/// what else a move takes along.
+pub fn relocate(host: &str, port: u16, username: &str, mut server: KnownSftpServer) -> Relocation<KnownSftpServer> {
+    let relocation = {
+        let mut store = known().lock_ignore_poison();
+        let Some(at) = store
+            .known_sftp_servers
+            .iter()
+            .position(|entry| same_server(entry, host, port, username))
+        else {
+            return Relocation::NotFound;
+        };
+        let holder = store
+            .known_sftp_servers
+            .iter()
+            .enumerate()
+            .find(|(i, entry)| *i != at && same_server(entry, &server.host, server.port, &server.username));
+        if let Some((_, holder)) = holder {
+            return Relocation::Taken(holder.clone());
+        }
+        let previous = store.known_sftp_servers[at].clone();
+        server.pinned = previous.pinned;
+        server.last_connected_at = previous.last_connected_at.clone();
+        store.known_sftp_servers[at] = server;
+        Relocation::Moved { previous }
+    };
+    save();
+    relocation
 }
 
 /// Moves the pin on `(host, port, username)`, answering whether an entry was

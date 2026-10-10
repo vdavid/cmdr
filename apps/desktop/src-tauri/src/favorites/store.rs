@@ -29,7 +29,7 @@
 
 use crate::config;
 use crate::ignore_poison::IgnorePoison;
-use cmdr_fs::volume::app_paths::path_under;
+use cmdr_fs::volume::app_paths::{path_under, rebase};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -247,6 +247,36 @@ fn claim_in_store(store: &mut FavoritesStore, claims: &[(String, FavoriteVolume)
     for (id, volume) in claims {
         if let Some(favorite) = store.favorites.iter_mut().find(|f| &f.id == id && f.volume.is_none()) {
             favorite.volume = Some(volume.clone());
+            changed = true;
+        }
+    }
+    changed
+}
+
+/// Points every favorite on a saved server that moved to its new address
+/// (`network/server_move.rs`): a favorite on a moved place takes the place's new volume (id and
+/// name), and every root and path spelled under `old_prefix` is respelled under `new_prefix`, by
+/// whole segments. A legacy entry with no volume yet moves its path too, so the claim pass finds the
+/// place at its new address. The favorite's own id, label, shortcut, and position stay. Returns
+/// whether anything changed.
+fn follow_server_move_in_store(
+    store: &mut FavoritesStore,
+    old_prefix: &str,
+    new_prefix: &str,
+    moved: &[(String, FavoriteVolume)],
+) -> bool {
+    let mut changed = false;
+    for favorite in &mut store.favorites {
+        if let Some(path) = rebase(&favorite.path, old_prefix, new_prefix) {
+            favorite.path = path;
+            changed = true;
+        }
+        let Some(volume) = favorite.volume.as_mut() else {
+            continue;
+        };
+        if let Some((_, place)) = moved.iter().find(|(old_id, _)| *old_id == volume.id) {
+            let root = rebase(&volume.root, old_prefix, new_prefix).unwrap_or_else(|| place.root.clone());
+            *volume = FavoriteVolume { root, ..place.clone() };
             changed = true;
         }
     }
@@ -480,6 +510,9 @@ enum StoreChange {
     /// The listing filled in a legacy entry's volume (`claim_volumes`): bookkeeping, ❌ not a
     /// gesture, so it reports nothing.
     Claimed,
+    /// A saved server moved to a new address and its favorites followed
+    /// (`follow_server_move`): the person edited a server, ❌ not their list.
+    FollowedServerMove,
 }
 
 impl StoreChange {
@@ -487,7 +520,7 @@ impl StoreChange {
     fn analytics_action(self) -> Option<FavoriteAction> {
         match self {
             Self::Gesture(action) => Some(action),
-            Self::Claimed => None,
+            Self::Claimed | Self::FollowedServerMove => None,
         }
     }
 }
@@ -618,6 +651,16 @@ pub fn reorder(ordered_ids: &[String]) {
 /// ❗ Writes a file, so the listing calls it off its own path (`spawn_blocking`).
 pub fn claim_volumes(claims: &[(String, FavoriteVolume)]) {
     mutate_and_persist(StoreChange::Claimed, |store| claim_in_store(store, claims));
+}
+
+/// Follows a saved server to its new address: every favorite on one of its places (`moved`: the
+/// old volume id, and the place's new volume) re-keys, and every path spelled under `old_prefix`
+/// is respelled under `new_prefix`. Reports nothing to analytics; the caller emits
+/// `volumes-changed` with the rest of the move.
+pub fn follow_server_move(old_prefix: &str, new_prefix: &str, moved: &[(String, FavoriteVolume)]) {
+    mutate_and_persist(StoreChange::FollowedServerMove, |store| {
+        follow_server_move_in_store(store, old_prefix, new_prefix, moved)
+    });
 }
 
 // ---------------------------------------------------------------------------

@@ -558,7 +558,7 @@ values write the catalog's `’`.
 - `The Android tools on this Mac` stays generic (`Les outils Android de ce Mac`), never naming the daemon or protocol.
 - You stopped opening your phone → `Vous avez arrêté l’ouverture de votre téléphone.`, never `annulé` (the button).
 
-## L'identité verrouillée du serveur (`servers.sheet.identityLocked`)
+## L'identité verrouillée du serveur (`servers.sheet.accountLocked`)
 
 - The hint names the actions exactly as their commands (`oublier`, `ajouter`); "name this server" →
   `identifient ce serveur`, since the sheet has its own `Nom` field.

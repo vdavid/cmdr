@@ -450,7 +450,7 @@ Android's own Spanish (AOSP) decides what the user reads on the phone.
   Cancel button.
 - None of the 19 strings says `error`, `fallo`, or `no se pudo`.
 
-## La identidad bloqueada del servidor (`servers.sheet.identityLocked`)
+## La identidad bloqueada del servidor (`servers.sheet.accountLocked`)
 
 Names the actions like their buttons (`olvidar`, `añadir`), so the reader finds the menu. "are what name this server" →
 `son las que identifican este servidor`: the sheet has its own `Nombre` field.

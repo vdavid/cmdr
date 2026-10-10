@@ -391,10 +391,6 @@
   "@servers.sheet.addressLocked": {
     "sourceHash": "b476060"
   },
-  "servers.sheet.identityLocked": "Адрес и учетная запись определяют этот сервер. Чтобы изменить их, забудьте сервер и добавьте заново.",
-  "@servers.sheet.identityLocked": {
-    "sourceHash": "c16657d"
-  },
   "servers.sheet.username": "Имя пользователя",
   "@servers.sheet.username": {
     "sourceHash": "e3b89e9"

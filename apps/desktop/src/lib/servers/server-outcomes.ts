@@ -68,15 +68,17 @@ export function readConnectOutcome(outcome: ServerConnectOutcome): ServerDialOut
   }
 }
 
-/** How saving an edit ended: written, or refused with nothing written. */
-export type SaveOutcome = { kind: 'saved' } | { kind: 'refused'; refusal: ConnectRefusalKind }
+/**
+ * How saving an edit ended: written, or refused with nothing written. `takenBy` names the saved server that
+ * already holds the address an edit tried to move to (`address_taken`).
+ */
+export type SaveOutcome = { kind: 'saved' } | { kind: 'refused'; refusal: ConnectRefusalKind; takenBy?: string }
 
 /**
  * One save's answer, in the app's own vocabulary.
  *
  * ❗ The backend's `unreachable` reads as `save_unconfirmed`, ❌ not the dial's
- * `unreachable`: nothing was saved, and the address that sentence points at is
- * locked in edit mode.
+ * `unreachable`: nothing was saved, which is what the sentence has to say.
  */
 export function readSavedServerOutcome(outcome: SavedServerOutcome): SaveOutcome {
   switch (outcome.outcome) {
@@ -90,6 +92,12 @@ export function readSavedServerOutcome(outcome: SavedServerOutcome): SaveOutcome
       return { kind: 'refused', refusal: 'start_folder_not_found' }
     case 'unreachable':
       return { kind: 'refused', refusal: 'save_unconfirmed' }
+    case 'address_taken':
+      return { kind: 'refused', refusal: 'address_taken', takenBy: outcome.name }
+    case 'secret_not_moved':
+      return { kind: 'refused', refusal: 'secret_not_moved' }
+    case 'account_changed':
+      return { kind: 'refused', refusal: 'account_changed' }
   }
 }
 

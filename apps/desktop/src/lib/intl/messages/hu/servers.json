@@ -391,10 +391,6 @@
   "@servers.sheet.addressLocked": {
     "sourceHash": "b476060"
   },
-  "servers.sheet.identityLocked": "A cím és a fiók azonosítja ezt a szervert. A módosításukhoz felejtsd el a szervert, és add hozzá újra.",
-  "@servers.sheet.identityLocked": {
-    "sourceHash": "c16657d"
-  },
   "servers.sheet.username": "Felhasználónév",
   "@servers.sheet.username": {
     "sourceHash": "e3b89e9"

@@ -631,7 +631,7 @@ async fn saving_a_start_folder_outside_the_root_is_refused_and_writes_nothing() 
     let host = "192.0.2.61";
     sftp_known_servers::remember(sftp_entry(host, true));
 
-    let outcome = update_saved_server(sftp_target(host, 2222, "ada", Some("/srv/data-1"))).await;
+    let outcome = update_saved_server(sftp_target(host, 2222, "ada", Some("/srv/data-1")), None).await;
 
     assert_eq!(outcome, SavedServerOutcome::StartFolderOutsideRoot);
     let stored = sftp_known_servers::find(host, 2222, "ada").expect("the entry stays saved");
@@ -651,12 +651,12 @@ async fn saving_a_start_folder_under_the_root_stores_it_normalized() {
     sftp_known_servers::remember(sftp_entry(host, true));
     let stored = || sftp_known_servers::find(host, 2222, "ada").expect("the entry stays saved");
 
-    let deeper = update_saved_server(sftp_target(host, 2222, "ada", Some("/srv/data/photos/"))).await;
+    let deeper = update_saved_server(sftp_target(host, 2222, "ada", Some("/srv/data/photos/")), None).await;
     assert_eq!(deeper, SavedServerOutcome::Saved);
     assert_eq!(stored().start_folder.as_deref(), Some("/srv/data/photos"));
     assert_eq!(stored().display_name, "Edited");
 
-    let at_root = update_saved_server(sftp_target(host, 2222, "ada", Some("/srv/data"))).await;
+    let at_root = update_saved_server(sftp_target(host, 2222, "ada", Some("/srv/data")), None).await;
     assert_eq!(at_root, SavedServerOutcome::Saved);
     assert_eq!(stored().start_folder, None);
 }
@@ -677,7 +677,7 @@ async fn saving_an_edit_republishes_the_volume_list_and_a_refusal_does_not() {
     sftp_known_servers::remember(sftp_entry(host, true));
 
     let before = crate::volume_broadcast::volumes_changed_requests();
-    let refused = update_saved_server(sftp_target(host, 2222, "ada", Some("/srv/data-1"))).await;
+    let refused = update_saved_server(sftp_target(host, 2222, "ada", Some("/srv/data-1")), None).await;
     assert_eq!(refused, SavedServerOutcome::StartFolderOutsideRoot);
     assert_eq!(
         crate::volume_broadcast::volumes_changed_requests(),
@@ -685,7 +685,7 @@ async fn saving_an_edit_republishes_the_volume_list_and_a_refusal_does_not() {
         "a refusal changed nothing, so nothing is republished"
     );
 
-    let saved = update_saved_server(sftp_target(host, 2222, "ada", Some("/srv/data/photos"))).await;
+    let saved = update_saved_server(sftp_target(host, 2222, "ada", Some("/srv/data/photos")), None).await;
     assert_eq!(saved, SavedServerOutcome::Saved);
     assert!(
         crate::volume_broadcast::volumes_changed_requests() > before,
@@ -701,7 +701,7 @@ async fn saving_a_webdav_start_folder_outside_the_root_is_refused_and_writes_not
     webdav_known_servers::remember(webdav_entry(host, true));
     let url = format!("http://{host}:8080/dav/");
 
-    let outcome = update_saved_server(webdav_target(&url, "ada", Some("/Documents"))).await;
+    let outcome = update_saved_server(webdav_target(&url, "ada", Some("/Documents")), None).await;
 
     assert_eq!(outcome, SavedServerOutcome::StartFolderOutsideRoot);
     let stored = webdav_known_servers::find(&url, "ada").expect("the entry stays saved");

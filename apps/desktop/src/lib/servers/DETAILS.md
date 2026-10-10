@@ -212,12 +212,19 @@ the secret; a bucket reads as its own name and keeps only its "Reconnect automat
 
 A typed secret is the account's either way (`saveS3Credentials`).
 
-**Edit mode changes SETTINGS, ❌ never identity.** The address, the protocol toggle, and the username are locked, and
-`servers.sheet.identityLocked` sits under them saying to Forget and Add instead. Rust mints the volume id from
-`(host, port, username)` and `sftp_known_servers::remember` keys on that same tuple, so an edited one UPSERTS a second
-saved entry beside the first: the hub and the switcher both grow a duplicate row, the old row still points at the
-previous account, and any tab on the old volume id is orphaned. ❗ This is `ServerFormFields`' own rule and says nothing
-about sign-in mode, where username editability is the SHAPE VARIANT's property (§ "The renderer table").
+**Edit mode MOVES an address, ❌ never an account.** The protocol toggle and the username are locked, and
+`servers.sheet.accountLocked` sits under the username saying to Add instead: another account is another place, since two
+accounts on one server see different files. An SFTP or WebDAV address stays editable (`addressEditable`, with
+`servers.sheet.addressMoveHelp` under it), because a server that moved (a NAS's new IP, `nas.local` → its Tailscale
+name) must keep its favorites, tabs, pin, and password. ❗ The sheet never decides whether an edit is a move: Save
+passes the id it opened on (`updateSavedServer(target, editing)`), and the backend saves in place or moves the server
+(`apps/desktop/src-tauri/src/server_move.rs`), refusing an address another saved server holds (`address_taken`, under
+the address, naming that server). A save that moved it leaves the place under a NEW id, which the sheet reads back
+(`savedServerId`) for the Remember flip and any Save again (`savedAs`). Typing an address in edit mode never steers the
+username or the root, as it does in add mode. An SMB host's address stays locked (`servers.sheet.addressLocked`): its
+share ids come off the mount (`docs/notes/server-address-move.md` § "SMB, deferred"). ❗ This is `ServerFormFields`' own
+rule and says nothing about sign-in mode, where username editability is the SHAPE VARIANT's property (§ "The renderer
+table").
 
 **Edit mode's password field writes what it shows.** A non-empty value on Save goes through `saveSftpCredentials` /
 `saveWebdavCredentials` keyed on the target's tuple, and the Remember box then reports on, because the store holds one.
@@ -250,10 +257,11 @@ address's path fills the root folder.
 **Saving answers a typed outcome** (`server-outcomes.ts::readSavedServerOutcome`). `saved` writes the Remember flip and
 the typed password, then closes. ❗ Every refusal writes NOTHING, the password included, keeps the sheet open, and puts
 its sentence under its own field with the caret there, opening Advanced first. The backend's `unreachable` (a connected
-server that didn't confirm a folder within 5 s) reads as `save_unconfirmed`, ❌ never the dial's `unreachable`: nothing
-was saved, and the address that sentence points at is locked. A saved edit republishes the volume list, which is how the
-hub and the switcher learn it (`apps/desktop/src-tauri/src/commands/DETAILS.md` § `servers.rs`). Where panes go when a
-connected place's root moved: `../file-explorer/pane/DETAILS.md` § "A place whose root moved under the pane".
+server that didn't confirm a folder within 5 s, or a server a Forget elsewhere took away meanwhile) reads as
+`save_unconfirmed`, ❌ never the dial's `unreachable`: nothing was saved, which is the half of the story that sentence
+has to tell. A saved edit republishes the volume list, which is how the hub and the switcher learn it
+(`apps/desktop/src-tauri/src/commands/DETAILS.md` § `servers.rs`). Where panes go when a connected place's root moved:
+`../file-explorer/pane/DETAILS.md` § "A place whose root moved under the pane".
 
 **Edit mode's "this can't reconnect on its own" warning is the BACKEND's answer, ❌ never a derivation.**
 `getSftpUnattendedReconnect` / `getWebdavUnattendedReconnect` / `getS3UnattendedReconnect` say whether an unattended
@@ -343,6 +351,12 @@ token is the only sane state, and a revoked token surfaces as `needs_sign_in` be
   Says how to sign in without storing it. ❌ Not `authentication_rejected`: no server was asked anything.
 - `saved_secret_not_updated`: edit mode, the settings saved and the password write didn't. Says the changes are saved,
   so nobody re-saves an edit that landed.
+- `address_taken`: edit mode, the new address is another saved server's. Under `address`, naming that server
+  (`RefusalSubject.takenBy`), and nothing was saved: a merge would silently drop one server's settings and password.
+- `secret_not_moved`: edit mode, a move couldn't take the saved password along, so NOTHING moved. Under `secret`. ❌ Not
+  `saved_secret_not_updated`, whose edit landed.
+- `account_changed`: edit mode, the save named another account or protocol. The sheet locks both, so only a broken
+  caller meets it. Under `form`.
 - `access_denied` (S3): the bucket refused the key, which a bodyless 403 can't split into a wrong secret and a key with
   no rights here (Garage answers a wrong secret this way too), so it asks about both. Under `secret`, and it opens the
   sheet (`needsAHuman`), since a wrong secret is one thing it means.

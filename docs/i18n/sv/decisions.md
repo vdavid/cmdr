@@ -418,7 +418,7 @@ catalog.
 - try → `prova` (test something); `Försök igen` is reserved for Try again.
 - `Lämna fältet tomt`, ❌ not `Lämna den tom`: after `Mappen …` it would mean an empty folder.
 - `ditt konto får läsa den` (permission) over `kan`. The two `*NotFound` siblings share a frame.
-- `identityLocked` says `identifierar`, ❌ not a "name" verb (the sheet has its own `Namn` field), and uses the button
+- `accountLocked` says `identifierar`, ❌ not a "name" verb (the sheet has its own `Namn` field), and uses the button
   verbs `glöm` / `lägg till` verbatim.
 - `Öppna servern igen för att försöka på nytt` names the noun after a sentence ending on `nyckel` / `lösenord`.
 

@@ -28,6 +28,9 @@ it doesn't own a cap. That's what keeps a change to one dialog's semantics from 
   on-disk schemas in three separate files. Collapsing them into one shape (or one file with a `kind` discriminator) would
   bind three independent migrations together forever, and the wire shapes genuinely differ: only Search has `scope` and
   `exclude_system_dirs`, only Go to path has `path`.
+- **`rewrite_at` respells entries in place, then dedupes, keeping the newer.** A rewrite can make two rows one thing
+  (Go to path's paths after a saved server moved), and two equal rows are what `add_to` exists to prevent. The store
+  still learns nothing about what an entry means: the consumer's closure does the respelling.
 - **`RecentsFile::new()` is `const`, so a consumer needs no `OnceLock`.** `Mutex::new` and `Vec::new` are both const, so
   the list is a plain `static`.
 - **The in-memory list is a `Vec<E>`, not the envelope.** The schema version in memory was always the current one:

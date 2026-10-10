@@ -227,6 +227,74 @@ pub enum RootChangeKind {
     Moved,
 }
 
+/// Typed `server-place-moved` Tauri event: a saved server moved to a new address,
+/// so its places have new volume ids and every app path on them a new prefix.
+///
+/// Emitted once the stores, the secret, and the favorites already name the new
+/// address, and BEFORE the old session is dropped, so a pane standing on the old
+/// id follows to the new one instead of being sent home. What the panes do with
+/// it: `apps/desktop/src/lib/file-explorer/pane/server-move-follow.ts`. Why it's
+/// not a `volume-root-changed`: that event keeps the id, and a move is exactly an
+/// id change. The move itself: `commands/servers/moves.rs`.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, specta::Type, Event)]
+#[serde(rename_all = "camelCase")]
+pub struct ServerPlaceMoved {
+    /// The prefix every app path on these places carried until the move
+    /// (`sftp://ada@nas.local:22`).
+    pub old_prefix: String,
+    /// The prefix they carry now.
+    pub new_prefix: String,
+    /// Every place that moved: one for SFTP and WebDAV, each of an account's for S3.
+    pub places: Vec<MovedPlace>,
+}
+
+/// One place of a [`ServerPlaceMoved`].
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct MovedPlace {
+    /// The id the place had. May equal `new_volume_id`: a WebDAV URL that moved
+    /// only its scheme or path keeps the host, port, and account the id is minted from.
+    pub old_volume_id: String,
+    /// The id it has now.
+    pub new_volume_id: String,
+    /// Its root, as an app path under the new prefix.
+    pub new_root: String,
+    /// Where opening it lands: its start folder, else its root.
+    pub new_landing: String,
+    /// What it's called now.
+    pub name: String,
+}
+
+/// The `ServerPlaceMoved` events emitted so far. Test-only, like
+/// [`volume_root_changes`].
+#[cfg(test)]
+static SERVER_PLACES_MOVED: Mutex<Vec<ServerPlaceMoved>> = Mutex::new(Vec::new());
+
+/// Every `ServerPlaceMoved` this process emitted whose old prefix is `old_prefix`.
+#[cfg(test)]
+pub(crate) fn server_moves_from(old_prefix: &str) -> Vec<ServerPlaceMoved> {
+    SERVER_PLACES_MOVED
+        .lock_ignore_poison()
+        .iter()
+        .filter(|moved| moved.old_prefix == old_prefix)
+        .cloned()
+        .collect()
+}
+
+/// Tells the panes a saved server moved, so every tab, remembered path, and
+/// history entry on its places follows. Not debounced.
+pub fn emit_server_place_moved(moved: ServerPlaceMoved) {
+    #[cfg(test)]
+    SERVER_PLACES_MOVED.lock_ignore_poison().push(moved.clone());
+    let Some(app) = APP_HANDLE.get() else {
+        // No app in a unit test; the recording above is what a cell reads.
+        return;
+    };
+    if let Err(e) = moved.emit(app) {
+        error!("Failed to emit server-place-moved: {e}");
+    }
+}
+
 /// The action vocabulary of a volume, server, or favorite row: what the user can
 /// pick from its menu.
 ///

@@ -144,6 +144,10 @@ mod send_schedule;
 // moment one is picked. macOS only. An outer `///` here would merge with the module's own `//!`
 // header and break its intra-doc links (see the `rustdoc` check's hint).
 mod server_request;
+// A saved SFTP, WebDAV, or S3 server moving to a new address, and everything
+// that follows it. Gated with `network`, whose stores it moves.
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+mod server_move;
 #[cfg(target_os = "macos")]
 pub mod services_menu;
 mod settings;

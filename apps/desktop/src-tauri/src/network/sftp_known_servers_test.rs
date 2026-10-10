@@ -387,3 +387,58 @@ fn a_first_connect_pins_the_new_server() {
 
     assert!(entries_for(&host)[0].pinned);
 }
+
+#[test]
+fn relocating_moves_the_entry_in_place_and_keeps_its_pin_and_history() {
+    let old_host = host_for("relocate-from");
+    let new_host = host_for("relocate-to");
+    let mut saved = server(&old_host, "ada");
+    saved.pinned = true;
+    remember(saved);
+    let mut moved = server(&new_host, "ada");
+    moved.port = 2222;
+    moved.pinned = false;
+    moved.last_connected_at = "2026-10-10T00:00:00Z".to_string();
+    moved.remote_root = "/srv/moved".to_string();
+
+    let outcome = relocate(&old_host, 22, "ada", moved);
+
+    assert!(matches!(outcome, Relocation::Moved { .. }));
+    assert!(entries_for(&old_host).is_empty(), "the old address is gone");
+    let found = find(&new_host, 2222, "ada").expect("the entry lives at the new address");
+    assert!(found.pinned, "the same server keeps its pin");
+    assert_eq!(
+        found.last_connected_at, "2026-08-22T10:00:00Z",
+        "and when it was last connected"
+    );
+    assert_eq!(found.remote_root, "/srv/moved", "the edit's own fields land");
+}
+
+#[test]
+fn relocating_onto_an_address_another_entry_holds_is_refused_and_writes_nothing() {
+    let old_host = host_for("relocate-taken-from");
+    let taken_host = host_for("relocate-taken-to");
+    remember(server(&old_host, "ada"));
+    let mut other = server(&taken_host, "ada");
+    other.display_name = "The other one".to_string();
+    remember(other);
+
+    let outcome = relocate(&old_host, 22, "ada", server(&taken_host, "ada"));
+
+    match outcome {
+        Relocation::Taken(holder) => assert_eq!(holder.display_name, "The other one"),
+        _ => panic!("an address another server holds is refused"),
+    }
+    assert_eq!(entries_for(&old_host).len(), 1, "the edited server stays where it was");
+    assert_eq!(entries_for(&taken_host)[0].display_name, "The other one");
+}
+
+#[test]
+fn relocating_a_server_nobody_saved_answers_not_found() {
+    let host = host_for("relocate-missing");
+
+    let outcome = relocate(&host, 22, "ada", server(&host_for("relocate-missing-to"), "ada"));
+
+    assert!(matches!(outcome, Relocation::NotFound));
+    assert!(entries_for(&host_for("relocate-missing-to")).is_empty());
+}

@@ -260,6 +260,16 @@ pub fn apply_auto_reconnect(url: &str, username: &str, on: bool) -> bool {
     true
 }
 
+/// The secret-store service for a server's accounts (the account is the scope):
+/// `scheme://host:port`, built by the crate's own `credential_service` so what a
+/// writer files is exactly what a dial reads. `None` when `url` isn't an
+/// `http`/`https` URL.
+pub fn credential_service(url: &str) -> Option<String> {
+    let parsed = url::Url::parse(url.trim()).ok()?;
+    matches!(parsed.scheme(), "http" | "https")
+        .then(|| WebdavConnectionParams::new(parsed, "", "/").credential_service())
+}
+
 /// Whether an unattended reconnect can actually happen for a mounted volume.
 ///
 /// `None` when nothing WebDAV is registered under that id, which is the honest

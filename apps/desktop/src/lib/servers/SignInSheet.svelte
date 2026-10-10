@@ -66,6 +66,7 @@
         forgetServerSecret,
         hasServerSecret,
         listSavedServers,
+        savedServerId,
         updateSavedS3Account,
         updateSavedServer,
         updateSavedSmbHost,
@@ -97,6 +98,13 @@
     let hinted = $state<{ refusal: ConnectRefusalKind; hint: RefusalHint } | null>(null)
     /** S3's `region_mismatch`: the region the server says the bucket lives in, when it said. */
     let refusalRegion = $state<string | null>(null)
+    /** `address_taken`: what the saved server already at the typed address is called. */
+    let refusalTakenBy = $state<string | null>(null)
+    /**
+     * Edit mode: the id the place has since a save that landed, which differs from the one the
+     * sheet opened on once the save moved its address. Plain, not `$state`: nothing renders it.
+     */
+    let savedAs: string | null = null
     let form = $state<ServerForm>(emptyServerForm())
     /**
      * Sign-in mode's own fields; the add form holds its own.
@@ -178,8 +186,17 @@
     const identityHintKey = $derived.by((): MessageKey => {
         if (s3EditScope === 'account') return 'servers.sheet.identityLockedS3Account'
         if (s3EditScope === 'place') return 'servers.sheet.identityLockedS3'
-        return 'servers.sheet.identityLocked'
+        return 'servers.sheet.accountLocked'
     })
+    /**
+     * Whether the address takes typing. ❗ In edit mode too for SFTP and WebDAV: a server
+     * that MOVED keeps its favorites, tabs, and password, because Save moves it
+     * (`src-tauri/src/server_move.rs`). ❌ Not an SMB host, whose share ids come off the
+     * mount (`docs/notes/server-address-move.md` § "SMB, deferred").
+     */
+    const addressEditable = $derived(
+        !isEdit || editedServer?.protocol === 'sftp' || editedServer?.protocol === 'webdav',
+    )
     const storeId = $derived.by(() => {
         if (request.mode !== 'edit') return null
         if (s3EditScope === 'account') return request.server.places[0]?.volumeId ?? request.server.id
@@ -254,7 +271,13 @@
                 : parsed.kind === 'parsed'
                   ? hostWithPort(parsed.host, parsed.port, form.protocol)
                   : form.address
-        return { host, username: form.username || host, protocol: form.protocol, region: refusalRegion }
+        return {
+            host,
+            username: form.username || host,
+            protocol: form.protocol,
+            region: refusalRegion,
+            takenBy: refusalTakenBy,
+        }
     })
 
     /**
@@ -404,8 +427,8 @@
     }
 
     /**
-     * Edit locks the fields that identify a server (Address, and an account's
-     * username), so it opens on the first field it lets a person change. ❌ Not
+     * Edit locks what can't change (the protocol, the account, and an SMB host's
+     * address), so it opens on the first field it lets a person change. ❌ Not
      * `addressInput.focus()`: focusing a disabled field is a silent no-op, and the
      * sheet then opened with nothing taking keys (QA 2026-09-25).
      */
@@ -630,14 +653,19 @@
         }
         busy = true
         refusal = null
+        refusalTakenBy = null
         const answer = s3EditScope === 'account' ? await saveS3Account(editedServer.id) : await saveTarget(target)
         if (answer.kind === 'refused') {
             busy = false
+            refusalTakenBy = answer.takenBy ?? null
             await refuse(answer.refusal)
             return
         }
         try {
-            await writeRememberFlip(storeId ?? editedServer.id)
+            // ❗ A save that moved the address left the place under a NEW id, which is what
+            // the flip below and any Save again must name: the old one names nothing now.
+            if (s3EditScope !== 'account') savedAs = (await savedServerId(target)) ?? savedAs
+            await writeRememberFlip(savedAs ?? storeId ?? editedServer.id)
             await writeTypedSecret(target)
             close({ kind: 'saved' })
         } catch (e) {
@@ -656,7 +684,7 @@
     /** Edit mode's store write for a server with a place: the target, as the backend answered it. */
     async function saveTarget(target: ServerTarget): Promise<SaveOutcome> {
         try {
-            return readSavedServerOutcome(await updateSavedServer(target))
+            return readSavedServerOutcome(await updateSavedServer(target, savedAs ?? editedId))
         } catch (e) {
             // Nothing confirmed the edit, which is exactly what this refusal says.
             log.warn('Saving the edited server broke down: {error}', { error: String(e) })
@@ -721,8 +749,9 @@
      * stored secret is never read back out of the Keychain to prefill it.
      *
      * ❗ Keyed on the TARGET's tuple, which is the one Rust mints the volume id
-     * from. Identity is locked in edit mode, so that tuple is the saved server's
-     * own and the entry this writes is the one the next dial reads.
+     * from. After a save that moved the address that's the NEW address, where the
+     * backend already moved the stored password, so the entry this writes is the
+     * one the next dial reads.
      */
     async function writeTypedSecret(target: ServerTarget) {
         if (form.secret === '') return
@@ -784,6 +813,8 @@
                 disabled={busy}
                 protocolEditable={!isEdit}
                 identityEditable={!isEdit}
+                {addressEditable}
+                addressHelp={isEdit ? tString('servers.sheet.addressMoveHelp') : undefined}
                 identityHint={isEdit ? tString(identityHintKey) : undefined}
                 s3EditScope={s3EditScope ?? undefined}
                 addressRefusal={refusalWhere === 'address' ? refusalText : undefined}
@@ -833,8 +864,10 @@
                     refusal = null
                     // The account and the SFTP root follow the address, and follow
                     // the toggle too, since whether a path is a root depends on it.
-                    // ❌ The toggle itself never follows the address.
-                    if (patch.address !== undefined || patch.protocol !== undefined) {
+                    // ❌ The toggle itself never follows the address. ❗ Add mode only:
+                    // an edit's account is locked (a new address MOVES the server, it
+                    // never re-signs it as someone else), and its root has its own field.
+                    if (!isEdit && (patch.address !== undefined || patch.protocol !== undefined)) {
                         // An address already saved with an account brings that account.
                         form = withSavedAccount(applyParsedAddress(form, parseServerAddress(form.address)), savedServers)
                     }

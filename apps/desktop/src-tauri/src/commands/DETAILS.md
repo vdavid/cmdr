@@ -129,13 +129,16 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
     moves one, because the stores' `remember` deliberately preserves a stored pin on every replace.
     `set_place_auto_reconnect` is the row menus' narrow writer for the one switch a checkbox flips, so a menu's stale
     snapshot can't overwrite a sheet edit; it moves the store and a connected volume's live switch through each
-    wiring's `apply_auto_reconnect`, and `list_saved_servers` publishes the value (`auto_reconnect`, `None` for SMB). Its own
-    `save_target` builds the `KnownSftpServer` / `KnownWebdavServer` and calls `*_volume_wiring::save_without_connecting`
-    directly — there is no per-protocol command behind it any more. It answers a typed `SavedServerOutcome`
-    (`network/saved_server_fields.rs`), and a refusal writes nothing: `start_folder_outside_root` (connected or not),
-    and for a connected place, whose edit applies live, `root_not_found`, `start_folder_not_found`, and `unreachable`
-    (`network/DETAILS.md` § "Editing a connected place"). All three commands are `async`, because a live edit asks the
-    server.
+    wiring's `apply_auto_reconnect`, and `list_saved_servers` publishes the value (`auto_reconnect`, `None` for SMB). Its
+    `editing` argument is the id of the saved place the edit sheet opened on (`None` for "Add anyway"), and
+    `servers/saves.rs` takes it from there: no id builds the `KnownSftpServer` / `KnownWebdavServer` and calls
+    `*_volume_wiring::save_without_connecting` directly (there is no per-protocol command behind it any more); an id
+    saves in place when the address is the same, else MOVES the server to the new one (`server_move.rs`). It answers a
+    typed `SavedServerOutcome` (`network/saved_server_fields.rs`), and a refusal writes nothing:
+    `start_folder_outside_root` (connected or not), for a connected place, whose edit applies live, `root_not_found`,
+    `start_folder_not_found`, and `unreachable` (`network/DETAILS.md` § "Editing a connected place"), and for a move
+    `address_taken`, `secret_not_moved`, and `account_changed`. An id nothing is saved under any more answers
+    `unreachable`, ❌ never a quiet re-save. All three commands are `async`, because a live edit asks the server.
   - ❗ **A saved edit republishes the volume list, whatever it changed** (`update_saved_server` requests
     `volumes-changed` on `Saved`). The rows carry each place's label and landing, and neither an unconnected place's
     edit nor a start-folder-only one moves anything in the registry that would announce it. The servers hub re-reads

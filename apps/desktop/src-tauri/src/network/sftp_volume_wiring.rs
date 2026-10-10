@@ -258,6 +258,13 @@ pub fn apply_auto_reconnect(host: &str, port: u16, username: &str, on: bool) -> 
     true
 }
 
+/// The secret-store service for a server's accounts (the account is the scope),
+/// built by the crate's own `credential_service` so what a writer files is
+/// exactly what a dial reads.
+pub fn credential_service(host: &str, port: u16) -> String {
+    SftpConnectionParams::new(host, port, "", "/").credential_service()
+}
+
 /// Whether an unattended reconnect can actually happen for a mounted volume.
 ///
 /// `None` when nothing SFTP is registered under that id, which is the honest
