@@ -7,7 +7,7 @@ use std::sync::Arc;
 use super::error::MultiRenameError;
 use super::plan::{MultiRenameSpec, RowStatus};
 use super::run::apply;
-use super::session::{FIRST_PAGE, PreviewFilter, close, is_open, open, page, preview_session};
+use super::session::{FIRST_PAGE, PreviewFilter, close, is_open, open, page, preview_session, spec_of};
 use super::transform::CaseChange;
 use crate::file_system::listing::cached_listing::LISTING_CACHE;
 use crate::file_system::listing::caching_test_support::{TestListing, TestListingGuard};
@@ -225,6 +225,15 @@ async fn a_preview_a_newer_one_replaced_is_refused() {
         page(&session.session_id, seen.preview_id, 0, 10, PreviewFilter::All),
         Err(MultiRenameError::PreviewOutOfDate)
     ));
+    assert!(matches!(
+        spec_of(&session.session_id, seen.preview_id),
+        Err(MultiRenameError::PreviewOutOfDate)
+    ));
+    assert_eq!(
+        spec_of(&session.session_id, newer.preview_id).expect("the latest"),
+        strip_diacritics(),
+        "the field history records the spec of the preview that ran"
+    );
     assert!(dir.join("plán.txt").exists(), "nothing was renamed");
     close(&session.session_id);
 }

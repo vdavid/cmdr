@@ -1,9 +1,11 @@
-// Multi-Rename Tool (⌃M): the session, its preview pages, apply, Results, presets, and the last settings. The
-// work and the file names are the backend's (`src-tauri/src/multi_rename/`); these
-// are pass-throughs.
+// Multi-Rename Tool (⌃M): the session, its preview pages, apply, Results, presets, the last settings, and the
+// fields' history. The work and the file names are the backend's (`src-tauri/src/multi_rename/`); these are
+// pass-throughs.
 
 import {
   commands,
+  type FieldHistoryEntry,
+  type HistoryField,
   type LoadedPreset,
   type MultiRenameError,
   type MultiRenameLastSettings,
@@ -19,6 +21,8 @@ import {
 } from '$lib/ipc/bindings'
 
 export type {
+  FieldHistoryEntry,
+  HistoryField,
   LoadedPreset,
   MultiRenameError,
   MultiRenameLastSettings,
@@ -147,4 +151,9 @@ export async function getMultiRenameLastSettings(): Promise<MultiRenameLastSetti
 /** Remembers the settings the sheet closes with, and the preset they came from, for the next ⌃M. */
 export async function saveMultiRenameLastSettings(spec: MultiRenameSpec, preset: LoadedPreset | null): Promise<void> {
   await commands.saveMultiRenameLastSettings(spec, preset)
+}
+
+/** What the text fields held when earlier renames ran, newest first, every field together. */
+export async function getMultiRenameHistory(): Promise<FieldHistoryEntry[]> {
+  return commands.getMultiRenameHistory()
 }

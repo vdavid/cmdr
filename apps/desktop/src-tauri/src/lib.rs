@@ -541,6 +541,7 @@ pub fn run() {
             selection::history::RECENT_SELECTIONS.load(app.handle());
             multi_rename::presets::PRESETS.load(app.handle());
             multi_rename::presets::LAST_SPEC.load(app.handle());
+            multi_rename::history::FIELD_HISTORY.load(app.handle());
 
             // Same for recent paths (Go to path dialog history).
             go_to_path::history::RECENT_PATHS.load(app.handle());

@@ -479,5 +479,13 @@
   "multiRename.placeholderHelp.counterEditHint": "Ställ textmarkören i en räknare eller håll pekaren över den för att ändra dess tal.",
   "@multiRename.placeholderHelp.counterEditHint": {
     "sourceHash": "6ba268e"
+  },
+  "multiRename.history": "Historik",
+  "@multiRename.history": {
+    "sourceHash": "0e76960"
+  },
+  "multiRename.historyEmpty": "Inget här än. Cmdr sparar värdet varje gång du byter namn.",
+  "@multiRename.historyEmpty": {
+    "sourceHash": "1eb3a52"
   }
 }

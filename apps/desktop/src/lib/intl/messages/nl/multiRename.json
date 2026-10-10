@@ -479,5 +479,13 @@
   "multiRename.placeholderHelp.counterEditHint": "Zet de tekstcursor in een teller of houd de aanwijzer erboven om de getallen ervan te wijzigen.",
   "@multiRename.placeholderHelp.counterEditHint": {
     "sourceHash": "6ba268e"
+  },
+  "multiRename.history": "Geschiedenis",
+  "@multiRename.history": {
+    "sourceHash": "0e76960"
+  },
+  "multiRename.historyEmpty": "Nog niets hier. Bij elke naamwijziging wordt de waarde bewaard.",
+  "@multiRename.historyEmpty": {
+    "sourceHash": "1eb3a52"
   }
 }

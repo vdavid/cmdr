@@ -216,6 +216,7 @@ macro_rules! ipc_command_manifest {
                     crate::commands::multi_rename::write_multi_rename_names,
                     crate::commands::multi_rename::read_multi_rename_names,
                     crate::commands::multi_rename::clear_multi_rename_names,
+                    crate::commands::multi_rename::get_multi_rename_history,
                     crate::commands::multi_rename::get_multi_rename_presets,
                     crate::commands::multi_rename::save_multi_rename_preset,
                     crate::commands::multi_rename::delete_multi_rename_preset,

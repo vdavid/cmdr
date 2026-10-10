@@ -1012,6 +1012,7 @@ export {
   writeMultiRenameNames,
   readMultiRenameNames,
   clearMultiRenameNames,
+  getMultiRenameHistory,
   getMultiRenamePresets,
   saveMultiRenamePreset,
   deleteMultiRenamePreset,
@@ -1022,6 +1023,8 @@ export {
 } from './multi-rename'
 export type {
   LoadedPreset,
+  FieldHistoryEntry,
+  HistoryField,
   MultiRenameError,
   MultiRenameLastSettings,
   MultiRenameOpened,

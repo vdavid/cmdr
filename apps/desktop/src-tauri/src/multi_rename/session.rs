@@ -349,6 +349,11 @@ pub(crate) fn prepare(session_id: &str, preview_id: u64) -> Result<Prepared, Mul
     })
 }
 
+/// The spec preview `preview_id` ran, while it's the session's latest.
+pub(crate) fn spec_of(session_id: &str, preview_id: u64) -> Result<MultiRenameSpec, MultiRenameError> {
+    stored(session_id, preview_id).map(|(latest, _)| latest.spec.clone())
+}
+
 /// Results (⌥⏎): writes preview `preview_id`'s rows as `old<TAB>new` lines for
 /// the user's editor, and returns the file's path. The session reads back only
 /// this file (`read_names`).

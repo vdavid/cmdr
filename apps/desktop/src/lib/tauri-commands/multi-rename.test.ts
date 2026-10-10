@@ -24,6 +24,7 @@ vi.mock('$lib/ipc/bindings', () => ({
     writeMultiRenameNames: vi.fn(),
     readMultiRenameNames: vi.fn(),
     clearMultiRenameNames: vi.fn(),
+    getMultiRenameHistory: vi.fn(),
   },
 }))
 
@@ -33,6 +34,7 @@ import {
   clearMultiRenameNames,
   closeMultiRename,
   deleteMultiRenamePreset,
+  getMultiRenameHistory,
   getMultiRenameLastSettings,
   getMultiRenamePresets,
   getMultiRenamePreviewRows,
@@ -129,6 +131,12 @@ describe('multi-rename wrappers', () => {
     expect(await getMultiRenameLastSettings()).toEqual(last)
     await saveMultiRenameLastSettings(spec, null)
     expect(commands.saveMultiRenameLastSettings).toHaveBeenCalledWith(spec, null)
+  })
+
+  it('passes the fields’ history through', async () => {
+    const history = [{ id: '1', field: 'search', value: 'IMG' }]
+    vi.mocked(commands.getMultiRenameHistory).mockResolvedValueOnce(history as never)
+    expect(await getMultiRenameHistory()).toEqual(history)
   })
 
   it('closes the session', async () => {

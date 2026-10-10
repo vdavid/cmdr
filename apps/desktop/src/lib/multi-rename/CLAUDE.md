@@ -7,42 +7,44 @@ The ⌃M sheet over `src-tauri/src/multi_rename/` (the engine and its rules: tha
 - `multi-rename-state.svelte.ts` the spec, the debounced preview (a generation counter drops stale answers), the rows in
   view, presets (`loaded`, `edited`), the last settings (`persist`), Results' names, Start.
 - `results.svelte.ts` Results (⌥⏎): whether a names file is out in the editor; window focus reads it back.
+- `field-history-menu.svelte.ts` the fields' history (⌥⇧↓): one house `Menu` under the field that asked;
+  `FieldHistoryHint.svelte` its hover chip.
 - `PresetsControl.svelte` the Presets button, its house `Menu`, and the name popover. `preset-menu.ts` (rows, name
   clash) and `preset-keys.ts` (F2 / ⌘S) are pure.
 - `spec.ts` the default spec, built-in presets, `specsEqual`, placeholder insertion; `row-status.ts` a row status →
   glyph, label, reason. Pure.
 - `MaskInput.svelte` both mask fields, `[C…]` tokens with a ▾ marker and an inline `CounterTokenEditor`
   (`mask-token-kinds.ts`); `mask-tokens.ts` / `counter-token.ts` / `token-editor-rules.ts` are its pure logic.
-- `PlaceholderTip.svelte` / `placeholder-help.ts`, `SearchOptionChips.svelte` / `search-option-help.ts`: the tooltips
-  and chips; `rename-examples.ts` renders every example.
+- `PlaceholderTip.svelte` / `placeholder-help.ts`, `SearchOptionChips.svelte` / `search-option-help.ts`: tooltips and
+  chips; `rename-examples.ts` renders the examples.
 - `last-run.svelte.ts` the last run, which Undo rename (⌘⌥Z) rolls back. Outlives the sheet.
 - `option-keys.ts` the ⌘⌥ option keys (`TOGGLE_COMMANDS`) and the whole-name toggles in pipeline order. Pure.
 
 ## Must-knows
 
 - **Names stay in the backend session.** The selection goes over ONCE, with the pane's applied sequence (a stale one is
-  `selectionChanged`: a toast, no sheet). After that the sheet sends the spec and, at Start, the `previewId` it shows;
-  it holds only the counts and the rows near the view. "Problems only" pages the problem rows from the backend
-  (`PreviewFilter`), ❌ never by filtering rows it holds. Results' typed names live there too.
+  `selectionChanged`: a toast, no sheet). Then the sheet sends the spec and, at Start, the `previewId`; it holds only
+  the counts and the rows near the view. "Problems only" pages the problem rows from the backend (`PreviewFilter`), ❌
+  never by filtering rows it holds. Results' typed names live there too.
 - **Start waits for the preview of the last edit** (`pending`), so it never runs a spec nobody saw; a failed Start
   (`applyError`) doesn't block a retry. Results waits the same way.
 - **Enter starts from a mask or search field**, saves from the preset-name popover, and never fires mid-composition.
-- **Every sheet key is a fixed registry command** in `Main window/Multi-rename` (F2, ⌘S, the ⌘⌥ option keys, ⌘⌥Z, ⌥⏎),
-  read through `eventMatchesCommand` and claimed, from a text field too. ❌ No raw key tests. An open Presets menu owns
-  every key, so its `onKey` answers F2 (close) and ⌘S (save) itself.
+- **Every sheet key is a fixed registry command** in `Main window/Multi-rename` (F2, ⌘S, the ⌘⌥ option keys, ⌘⌥Z, ⌥⏎,
+  ⌥⇧↓), read through `eventMatchesCommand` and claimed, from a text field too. ❌ No raw key tests. An open Presets menu
+  owns every key, so its `onKey` answers F2 (close) and ⌘S (save) itself.
 - **F2 is also File > Rename's menu accelerator.** The sheet claims that menu command while mounted, so both roads end
   in `PresetsControl.pressOpenKey`, which toggles once per press (`createKeyRoadEcho`). ❌ Don't call `openMenu` from a
   key path: the echo would close the menu it opened.
 - ⌘⌥ C/A/H/L/O/Q/T/V belong to app commands, D to the Dock. DETAILS § Layout and option keys.
 - **`counter-token.ts` must read `[C…]` as `mask.rs` does**: both test against
   `src-tauri/src/multi_rename/counter_token_vectors.json`; change the grammar there first.
-- **Tooltip examples are the engine's render of made-up files**, the part to set apart between private-use marks. ❌ No
-  slicing or replacing in TS. DETAILS § Tooltip examples.
-- **A spec error keeps the last good preview** on screen under the message; any other error clears it.
-- **A caret-opened editor is `passive`** (no focus, no trap), so typing stays in the field. DETAILS § Mask input.
+- **Tooltip examples are the engine's render of made-up files**, the marked part set apart. ❌ No slicing or replacing
+  in TS. DETAILS § Tooltip examples.
+- **A spec error keeps the last good preview** under the message; any other error clears it.
+- **A caret-opened editor is `passive`** (no focus, no trap): typing stays in the field. DETAILS § Mask input.
 - **The sheet opens on what the last one closed with**: fields AND loaded preset, so "Mine (edited)" survives. An edit
   made before they arrive wins. DETAILS § Presets.
-- Built-in preset names are message keys (translated); saved ones are the user's text. `edited` compares against the
-  preset as it is in the list now, so a rename, update, or delete is followed with no syncing.
+- Built-in preset names are message keys; saved ones are the user's text. `edited` compares against the preset as it is
+  in the list now, so a rename, update, or delete needs no syncing.
 
 More: `DETAILS.md`.

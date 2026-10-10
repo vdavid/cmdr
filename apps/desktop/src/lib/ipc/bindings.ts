@@ -1390,6 +1390,8 @@ export const commands = {
   // Drops the names typed in Results, and its file: every row follows the settings again.
   clearMultiRenameNames: (sessionId: string) =>
     typedError<null, MultiRenameError>(__TAURI_INVOKE('clear_multi_rename_names', { sessionId })),
+  // The text fields' history, newest first, every field together.
+  getMultiRenameHistory: () => __TAURI_INVOKE<FieldHistoryEntry[]>('get_multi_rename_history'),
   // The saved presets, newest first.
   getMultiRenamePresets: () => __TAURI_INVOKE<MultiRenamePreset[]>('get_multi_rename_presets'),
   // Saves a preset; one with the same name is replaced.
@@ -7905,6 +7907,13 @@ export type FavoriteTarget = {
   reach: FavoriteReach
 }
 
+// One value a field had when a rename ran.
+export type FieldHistoryEntry = {
+  id: string
+  field: HistoryField
+  value: string
+}
+
 /**
  *  User-selectable text encoding for the file viewer.
  *
@@ -8598,6 +8607,9 @@ export type HistoryEntry = {
   excludeSystemDirs: boolean
   resultCount: number
 }
+
+// The sheet's text fields that keep a history.
+export type HistoryField = 'nameMask' | 'extensionMask' | 'search' | 'replace'
 
 // Filter slice of a history entry. Mirrors what the dialog carries on the wire.
 export type HistoryFilters = {

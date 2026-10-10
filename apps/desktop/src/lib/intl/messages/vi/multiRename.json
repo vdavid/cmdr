@@ -478,5 +478,13 @@
   "multiRename.placeholderHelp.counterEditHint": "Đặt con trỏ văn bản vào một bộ đếm hoặc đưa chuột lên đó để đổi các con số của nó.",
   "@multiRename.placeholderHelp.counterEditHint": {
     "sourceHash": "6ba268e"
+  },
+  "multiRename.history": "Lịch sử",
+  "@multiRename.history": {
+    "sourceHash": "0e76960"
+  },
+  "multiRename.historyEmpty": "Chưa có gì ở đây. Mỗi lần đổi tên, giá trị sẽ được lưu lại.",
+  "@multiRename.historyEmpty": {
+    "sourceHash": "1eb3a52"
   }
 }

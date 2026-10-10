@@ -2,7 +2,8 @@
  * Tier 3 a11y tests for `MultiRenameDialog.svelte`: the sheet with a preview of
  * ready, unchanged, blocked, and missing rows, with a mask error showing, and with
  * every whole-name option on and Undo rename in the footer, and with names typed in
- * Results (a marked row, the notice and its links); and
+ * Results (a marked row, the notice and its links), and with a field's history hint and list
+ * open; and
  * its tooltip bodies, `SearchOptionChips` (chips on and off, a tooltip showing) and
  * `PlaceholderTip`, with examples rendered.
  */
@@ -19,7 +20,8 @@ import { searchExampleKey } from './search-option-help'
 import { setLastMultiRenameRun } from './last-run.svelte'
 import { expectNoA11yViolations } from '$lib/test-a11y'
 
-const { previewMultiRename, getMultiRenameLastSettings } = vi.hoisted(() => ({
+const { previewMultiRename, getMultiRenameLastSettings, getMultiRenameHistory } = vi.hoisted(() => ({
+  getMultiRenameHistory: vi.fn(() => Promise.resolve([] as unknown[])),
   previewMultiRename: vi.fn(),
   getMultiRenameLastSettings: vi.fn(() => Promise.resolve(null as unknown)),
 }))
@@ -37,7 +39,7 @@ vi.mock('$lib/tauri-commands', () => ({
   getMultiRenameLastSettings,
   rollbackOperation: vi.fn(() => Promise.resolve({ inverseOpId: 'inv' })),
   saveMultiRenameLastSettings: vi.fn(() => Promise.resolve()),
-  getMultiRenameHistory: vi.fn(() => Promise.resolve([])),
+  getMultiRenameHistory,
   writeMultiRenameNames: vi.fn(() => Promise.resolve({ ok: true, value: '/tmp/S.txt' })),
   readMultiRenameNames: vi.fn(() => Promise.resolve({ ok: true, value: 1 })),
 }))
@@ -125,6 +127,35 @@ describe('MultiRenameDialog a11y', () => {
     expect(root.querySelector('.results-notice')).not.toBeNull()
     expect(root.querySelector('.edited-mark')).not.toBeNull()
     await expectNoA11yViolations(root)
+  })
+
+  it('with a field’s history hint showing and its list open has no violations', async () => {
+    previewMultiRename.mockResolvedValue({
+      ok: true,
+      value: { previewId: 1, counts: { ready: 1, unchanged: 1, problems: 3 }, rows: ROWS },
+    })
+    getMultiRenameHistory.mockResolvedValueOnce([
+      { id: '1', field: 'nameMask', value: '[N]_[C]' },
+      { id: '2', field: 'nameMask', value: '[YMD] [N]' },
+    ])
+    const root = await mountSheet()
+    const mask = root.querySelector<HTMLInputElement>('input')
+    mask?.focus()
+    mask?.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'ArrowDown',
+        code: 'ArrowDown',
+        altKey: true,
+        shiftKey: true,
+        bubbles: true,
+        cancelable: true,
+      }),
+    )
+    await tick()
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(root.querySelector('.history-hint')).not.toBeNull()
+    expect(document.querySelector('[data-menu]')).not.toBeNull()
+    await expectNoA11yViolations(document.body)
   })
 
   it('search option chips, some on, with a tooltip showing, have no violations', async () => {

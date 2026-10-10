@@ -132,3 +132,14 @@ Unicode) and "Reset all fields" live in the frontend (`spec.ts`) so their names 
   the old field unless that's the default 1, so `[C]` with start 10, step 5, digits 3 becomes `[C10+5:3]` and `[C:4]`
   with start 10 becomes `[C10:4]`, the names the preset always made. Nothing writes the fields anymore; the next save of
   that preset drops them.
+
+## Field history (`history.rs`)
+
+TC's per-field history (⌥⇧↓): `RecentsFile<FieldHistoryEntry>` in `multi-rename-history.json`, all four text fields
+(name mask, extension mask, search, replace) in one list of `MAX_FIELD_HISTORY` (200), deduped by field and value, so
+using a value again moves it to the top. `apply_multi_rename` reads the spec of the preview it starts from
+(`session::spec_of`) and, once the rename has started, adds `history_entries`: a field at its no-change default (`[N]`,
+`[E]`) or empty is skipped, and a replacement counts only beside a search; the name mask goes in last, so it lands on
+top. **Decision/Why:** recorded on a started rename, never on typing, so the list holds values that renamed something.
+`get_multi_rename_history` hands the sheet the whole list; it filters by field. Ported from PR #386 (Jiri Slovacek),
+where it lived in `presets.rs`.

@@ -479,5 +479,13 @@
   "multiRename.placeholderHelp.counterEditHint": "Placez le point d’insertion dans un compteur ou survolez-le pour modifier ses valeurs.",
   "@multiRename.placeholderHelp.counterEditHint": {
     "sourceHash": "6ba268e"
+  },
+  "multiRename.history": "Historique",
+  "@multiRename.history": {
+    "sourceHash": "0e76960"
+  },
+  "multiRename.historyEmpty": "Rien pour l’instant. Une valeur est conservée à chaque renommage.",
+  "@multiRename.historyEmpty": {
+    "sourceHash": "1eb3a52"
   }
 }

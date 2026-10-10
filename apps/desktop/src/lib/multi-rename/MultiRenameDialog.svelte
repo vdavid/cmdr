@@ -6,7 +6,8 @@
      * preview of every row. Start renames the rows that are ready as one operation
      * (the queue shows it), and Undo rename (⌘⌥Z) rolls the session's last one back.
      * Results (⌥⏎) opens the new names in the user's text editor to change by hand
-     * (`results.svelte.ts`). The preview list is `PreviewList.svelte`.
+     * (`results.svelte.ts`), and ⌥⇧↓ in a text field lists what it held in earlier
+     * renames (`field-history-menu.svelte.ts`). The preview list is `PreviewList.svelte`.
      *
      * Keyboard-first: the name mask has focus on open, Tab walks the fields, the
      * preview follows every keystroke, Enter starts, Esc closes, F2 opens the Presets
@@ -15,6 +16,7 @@
      */
     import { onDestroy, onMount, type Snippet } from 'svelte'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
+    import Menu from '$lib/ui/Menu.svelte'
     import StatusBadge from '$lib/ui/StatusBadge.svelte'
     import Button from '$lib/ui/Button.svelte'
     import Chip from '$lib/ui/Chip.svelte'
@@ -36,12 +38,13 @@
     import { getBadgeStatus } from '$lib/feature-status'
     import { getAppLogger } from '$lib/logging/logger'
     import type { MultiRenameError, MultiRenameOpened, MultiRenameStarted } from '$lib/tauri-commands'
-    import type { CaseChange, SpecError } from '$lib/ipc/bindings'
+    import type { CaseChange, HistoryField, SpecError } from '$lib/ipc/bindings'
     import { createMultiRenameState } from './multi-rename-state.svelte'
     import MaskInput from './MaskInput.svelte'
     import { TOGGLE_COMMANDS, WHOLE_NAME_TOGGLES, optionKeyOf, type ToggleField, type WholeNameField } from './option-keys'
     import { presetKeyOf, type PresetsControlApi } from './preset-keys'
     import PresetsControl from './PresetsControl.svelte'
+    import FieldHistoryHint from './FieldHistoryHint.svelte'
     import PreviewList from './PreviewList.svelte'
     import { insertAtCaret } from './spec'
     import { PLACEHOLDER_HELP, placeholderExamples } from './placeholder-help'
@@ -51,6 +54,7 @@
     import SearchOptionChips from './SearchOptionChips.svelte'
     import { getLastMultiRenameRun, setLastMultiRenameRun, type MultiRenameRun } from './last-run.svelte'
     import { createResults } from './results.svelte'
+    import { createFieldHistoryMenu } from './field-history-menu.svelte'
 
     interface Props {
         session: MultiRenameOpened
@@ -70,8 +74,18 @@
     // One sheet renames one session; a new session remounts it.
     const tool = createMultiRenameState(session.sessionId)
     const results = createResults(tool)
+    const fieldHistory = createFieldHistoryMenu({
+        inputOf: (field) =>
+            ({ nameMask: nameMaskInput, extensionMask: extensionMaskInput, search: searchInput, replace: replaceInput })[
+                field
+            ],
+        fill: fillFromHistory,
+    })
 
     let nameMaskInput = $state<HTMLInputElement>()
+    let extensionMaskInput = $state<HTMLInputElement>()
+    let searchInput = $state<HTMLInputElement>()
+    let replaceInput = $state<HTMLInputElement>()
     /** Holds the Letter case `Select`, so ⌘⌥U can open it through its trigger. */
     let caseField = $state<HTMLElement>()
     let presetsControl = $state<PresetsControlApi>()
@@ -116,6 +130,7 @@
     onMount(() => {
         void tool.loadPresets()
         void loadExamples()
+        void fieldHistory.load()
         nameMaskInput?.focus()
         // F2 is also File > Rename's accelerator. Where AppKit runs the menu item instead of
         // (or as well as) handing the webview the key, its fire comes here too.
@@ -126,6 +141,7 @@
 
     onDestroy(() => {
         tool.dispose()
+        fieldHistory.destroy()
         // The next ⌃M opens where this one left off.
         tool.persist().catch((e: unknown) => {
             log.warn("couldn't remember the multi-rename settings: {reason}", { reason: String(e) })
@@ -140,6 +156,11 @@
             nameMaskInput?.focus()
             nameMaskInput?.setSelectionRange(next.caret, next.caret)
         })
+    }
+
+    /** A history pick: the field takes the value (the menu hands focus back to it). */
+    function fillFromHistory(field: HistoryField, value: string): void {
+        tool.update({ [field]: value })
     }
 
     function toggle(field: ToggleField): void {
@@ -202,6 +223,13 @@
             claimKey(e)
             if (optionKey.kind === 'toggle') toggle(optionKey.field)
             else openCaseMenu()
+            return true
+        }
+        // ⌥⇧↓ in a text field lists its history; elsewhere it's left alone.
+        const historyField = fieldHistory.fieldOf(e.target)
+        if (historyField !== null && !e.isComposing && eventMatchesCommand(e, 'multiRename.fieldHistory')) {
+            claimKey(e)
+            fieldHistory.open(historyField)
             return true
         }
         // ⌥⏎ opens Results; claimed always, so it never falls through to Enter's Rename.
@@ -297,15 +325,22 @@
                             ariaLabel={tString('multiRename.nameMask')}
                             invalid={tool.error?.type === 'spec' && tool.error.error.type === 'nameMask'}
                         />
+                        {#if fieldHistory.historyOf('nameMask').length > 0}
+                            <FieldHistoryHint onOpen={() => { fieldHistory.open('nameMask') }} />
+                        {/if}
                     </label>
                     <label class="field extension">
                         <span class="label">{tString('multiRename.extensionMask')}</span>
                         <MaskInput
+                            bind:inputElement={extensionMaskInput}
                             value={tool.spec.extensionMask}
                             onValueChange={(extensionMask: string) => { tool.update({ extensionMask }) }}
                             ariaLabel={tString('multiRename.extensionMask')}
                             invalid={tool.error?.type === 'spec' && tool.error.error.type === 'extensionMask'}
                         />
+                        {#if fieldHistory.historyOf('extensionMask').length > 0}
+                            <FieldHistoryHint onOpen={() => { fieldHistory.open('extensionMask') }} />
+                        {/if}
                     </label>
                 </div>
                 <div class="placeholders" role="group" aria-label={tString('multiRename.insertPlaceholder')}>
@@ -328,19 +363,27 @@
                 <label class="field grow">
                     <span class="label">{tString('multiRename.search')}</span>
                     <TextInput
+                        bind:inputElement={searchInput}
                         value={tool.spec.search}
                         oninput={(e: Event) => { tool.update({ search: (e.currentTarget as HTMLInputElement).value }) }}
                         ariaLabel={tString('multiRename.search')}
                         invalid={tool.error?.type === 'spec' && tool.error.error.type === 'badRegex'}
                     />
+                    {#if fieldHistory.historyOf('search').length > 0}
+                        <FieldHistoryHint onOpen={() => { fieldHistory.open('search') }} />
+                    {/if}
                 </label>
                 <label class="field grow">
                     <span class="label">{tString('multiRename.replace')}</span>
                     <TextInput
+                        bind:inputElement={replaceInput}
                         value={tool.spec.replace}
                         oninput={(e: Event) => { tool.update({ replace: (e.currentTarget as HTMLInputElement).value }) }}
                         ariaLabel={tString('multiRename.replace')}
                     />
+                    {#if fieldHistory.historyOf('replace').length > 0}
+                        <FieldHistoryHint onOpen={() => { fieldHistory.open('replace') }} />
+                    {/if}
                 </label>
                 <SearchOptionChips spec={tool.spec} onToggle={toggle} rendered={examples} />
             </div>
@@ -460,6 +503,8 @@
     {/snippet}
 </ModalDialog>
 
+<Menu menu={fieldHistory.menu} ariaLabel={tString('multiRename.history')} minWidth={240} />
+
 <!-- "N problems" in the summary: a toggle that lists the problem rows alone while there are any. -->
 {#snippet problemsToggle(children: Snippet)}
     {#if tool.counts.problems > 0}
@@ -503,6 +548,7 @@
     }
 
     .field {
+        position: relative;
         display: flex;
         flex-direction: column;
         gap: var(--spacing-xxs);
@@ -521,6 +567,17 @@
     .label {
         font-size: var(--font-size-sm);
         color: var(--color-text-secondary);
+    }
+
+    /* A field's history hint shows only while the field is in use (`FieldHistoryHint.svelte`). */
+    .field :global(.history-hint) {
+        opacity: 0;
+        transition: opacity var(--transition-fast);
+    }
+
+    .field:hover :global(.history-hint),
+    .field:focus-within :global(.history-hint) {
+        opacity: 1;
     }
 
     .placeholders {

@@ -47,6 +47,15 @@
   (`PreviewList.svelte`). The footer offers it as a quiet link with its key chip, beside Undo rename. **Decision/Why:**
   ⌥⏎, the PR's key: Enter stays Rename, and Enter's handler skips any modifier, so the two never meet. The matching is
   the backend's (`multi_rename/DETAILS.md` § Session); the sheet holds no names. Ported from PR #386.
+- **Field history** (⌥⇧↓, `multiRename.fieldHistory`, TC's): in the name mask, extension mask, search, or replace field,
+  the key opens one house `Menu` (`field-history-menu.svelte.ts`, portaled like the Presets menu) under that field,
+  listing what it held in earlier renames, newest first (at most `HISTORY_SHOWN`); a pick fills the field and the menu
+  hands focus back. An empty list says how it fills. The backend records it (`multi_rename/DETAILS.md` § Field history);
+  the sheet reads it once on mount. **Decision/Why:** no permanent chevron in the fields: the masks already carry `[C…]`
+  token markers, and the sheet stays calm. A quiet ⌥⇧↓ key chip (`FieldHistoryHint.svelte`, named "History") sits at the
+  far end of the field's label row, only while the field is hovered or focused and has a history; it's out of the Tab
+  order (the keyboard has the key) and comes after the input, so the `<label>` still labels the input. MaskInput claims
+  only plain ↓ (into a counter's editor), so ⌥⇧↓ never meets it. Ported from PR #386, whose chevron buttons it replaces.
 - **Target**: the focused pane's selected rows in row order (backend numbers, `..` offset removed), or `null` for the
   whole folder when nothing or everything is selected, plus `getLastSequence()`. A pane with no backend listing
   (servers, search results), or a selection whose rows are still settling (`isRowStateReady`), opens nothing.

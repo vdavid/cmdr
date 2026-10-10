@@ -478,5 +478,13 @@
   "multiRename.placeholderHelp.counterEditHint": "把插入點放進計數器，或把指標停在計數器上，就能更改它的數字。",
   "@multiRename.placeholderHelp.counterEditHint": {
     "sourceHash": "6ba268e"
+  },
+  "multiRename.history": "歷史記錄",
+  "@multiRename.history": {
+    "sourceHash": "0e76960"
+  },
+  "multiRename.historyEmpty": "這裡還沒有內容。每次重新命名時，都會儲存當時的值。",
+  "@multiRename.historyEmpty": {
+    "sourceHash": "1eb3a52"
   }
 }

@@ -478,5 +478,13 @@
   "multiRename.placeholderHelp.counterEditHint": "Pon el cursor de texto en un contador o pasa el puntero por encima para cambiar sus números.",
   "@multiRename.placeholderHelp.counterEditHint": {
     "sourceHash": "6ba268e"
+  },
+  "multiRename.history": "Historial",
+  "@multiRename.history": {
+    "sourceHash": "0e76960"
+  },
+  "multiRename.historyEmpty": "Aún no hay nada. Se guarda un valor cada vez que renombras.",
+  "@multiRename.historyEmpty": {
+    "sourceHash": "1eb3a52"
   }
 }

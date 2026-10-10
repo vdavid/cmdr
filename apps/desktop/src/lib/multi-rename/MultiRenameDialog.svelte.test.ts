@@ -29,6 +29,7 @@ const ipc = vi.hoisted(() => ({
   getMultiRenameLastSettings: vi.fn(),
   saveMultiRenameLastSettings: vi.fn(),
   rollbackOperation: vi.fn(),
+  getMultiRenameHistory: vi.fn(() => Promise.resolve([])),
 }))
 
 vi.mock('$lib/tauri-commands', () => ({
