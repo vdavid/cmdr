@@ -318,8 +318,15 @@ pub(crate) async fn move_within_same_volume_with_progress(
         }
     }
 
-    // Refuse unwritable destinations before creating the parent or renaming
-    // anything. Existing parents are a no-op; missing ancestors are created.
+    // Ensure the destination directory exists before the rename. Each item is
+    // renamed to `dest_path.join(name)`, so `dest_path` itself must be a real
+    // directory; creating it (and any missing ancestors) recursively lets a
+    // same-volume move into a brand-new folder just work, matching copy and the
+    // local-FS path. A merge into an existing dest is a no-op create, so the
+    // server-side-rename fast path is untouched when the dest already exists.
+    // A destination folder that takes no writes is refused first, with the reason
+    // its backend gave, before the folder is created or anything renamed
+    // (`copy.rs::destination_refusal`).
     if let Some(refusal) = super::copy::destination_refusal(&*volume, dest_path).await {
         return Err(refusal);
     }
@@ -328,9 +335,14 @@ pub(crate) async fn move_within_same_volume_with_progress(
         .await
         .map_err(|e| map_volume_error(&dest_path.display().to_string(), PathRole::Destination, e))?;
 
-    // Remove identity moves before rename-merge: otherwise a folder would
-    // rename its leaves onto themselves or shuffle them to `name (1)`.
-    // One volume by construction; identity compares parent and folded leaf.
+    // An item asked to move into the folder it already lives in is already where
+    // it was asked to go: nothing to rename, and it reports itself done. Dropped
+    // HERE, before the driver, so nothing below can see one — a folder would
+    // otherwise reach `rename_merge_directory`, which threads the destination
+    // down through its recursion and would rename every leaf onto itself or
+    // shuffle it aside to `name (1)`. One volume by construction on this path,
+    // so only the same-parent-plus-folded-leaf half of the identity question is
+    // left to ask. An explicit `destination_name` is the leaf asked about.
     // `../DETAILS.md` § "Self-collision (duplicating in place)".
     let (already_in_place, remaining): (Vec<PathBuf>, Vec<PathBuf>) =
         source_paths.iter().cloned().partition(|source| {
@@ -382,9 +394,17 @@ pub(crate) async fn move_within_same_volume_with_progress(
         .map_err(|failure| failure.error);
     }
 
-    // Rename transfers zero bytes. One batch stat of top-level sources supplies
-    // type/size hints and file counts without walking their subtrees. Reuse a
-    // cached dialog preview when present; each top-level rename/merge counts once.
+    // Top-level hints, NOT a deep pre-flight scan. A same-volume move is a
+    // rename — it transfers zero bytes, so there's no Size bar to feed (the FE
+    // hides it on `bytes_total == 0`). We need only the per-source
+    // `is_directory` / size hints (for the conflict resolver and
+    // `known_directory_paths`) and a file count, both of which a single
+    // pipelined batch stat of the TOP-LEVEL items supplies — O(top-level
+    // items), never a subtree walk. A cached TransferDialog preview is consumed
+    // for free when present; otherwise `scan_for_copy_batch` runs one batch
+    // (SMB pipelines the stats; MTP groups by parent). `files_total` is the
+    // count of selected top-level items (each counts 1 when its rename / merge
+    // completes); `bytes_total` is 0.
     let top_level = top_level_move_hints(&volume, source_paths, config).await?;
     // Dropped items wrote nothing, but the person asked for them, so they belong
     // in what the dialog counts down.

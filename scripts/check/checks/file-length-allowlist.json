@@ -64,6 +64,10 @@
       "lines": 805,
       "reason": "One merge level's create-list-decide-dispatch loop, kept together because every child decision reads the level's creation fact (fresh vs merged) and the destination index built beside it; the remaining helpers (`backend_create_directory_detects_collisions`, the resolver call) are already out in `landing.rs` and `merge_ctx.rs`."
     },
+    "apps/desktop/src-tauri/src/file_system/write_operations/transfer/volume/move_cross.rs": {
+      "lines": 816,
+      "reason": "One serial driver for the cross-volume move pipeline (staging, journaling, stall registration, source sweep). Its length is load-bearing why-comments on data-safety paths, which a split across files would scatter rather than shorten."
+    },
     "apps/desktop/src-tauri/src/file_system/write_operations/transfer/volume/move_same.rs": {
       "lines": 846,
       "reason": "TODO: `move_within_same_volume_with_progress` is one function holding two long driver closures. Lift the transfer closure's body (the dir-vs-dir rename-merge branch, the displaced-destination rename, and the journal row) into a `move_same_item.rs` taking a small `SameVolumeItem` context struct, about 180 lines, the way `move_cross.rs` delegates its byte work to `strategy.rs`; what stays is the dispatcher, the guards, the copy-route hand-off (`moves_by_copy`), and the resolver closure."
