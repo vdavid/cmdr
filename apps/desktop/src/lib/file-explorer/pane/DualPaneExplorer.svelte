@@ -94,6 +94,7 @@
     import { createSortOperations } from './sort-operations'
     import { createSwapPanes } from './swap-panes'
     import { createVolumeSelection, type VolumeSelectOutcome } from './volume-selection'
+    import type { FavoriteOpenedEvent } from '../navigation/favorites-analytics'
     import { goToRootFolder } from '../navigation/root-folder'
     import { createEdgeFlowHandlers } from './edge-flow-handlers'
     import { createPaneMirror } from './pane-mirror'
@@ -1080,9 +1081,13 @@
         return volumeSelection.selectVolumeByName(pane, name)
     }
 
-    /** Select a volume by stable id, preserving the exact backend connection. */
-    export async function selectVolumeById(pane: 'left' | 'right', volumeId: string): Promise<VolumeSelectOutcome> {
-        return volumeSelection.selectVolumeById(pane, volumeId)
+    /** Select a volume by stable id, preserving the exact backend connection. `picked`: which surface picked a favorite. */
+    export async function selectVolumeById(
+        pane: 'left' | 'right',
+        volumeId: string,
+        picked?: FavoriteOpenedEvent,
+    ): Promise<VolumeSelectOutcome> {
+        return volumeSelection.selectVolumeById(pane, volumeId, picked)
     }
 
     /**

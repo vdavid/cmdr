@@ -8,6 +8,7 @@
 //! independently-evolving plain-text builders live in their own modules:
 //! [`logs`] (`cmdr://logs`) and [`indexing`] (`cmdr://indexing`).
 
+pub(crate) mod favorites;
 pub(crate) mod importance;
 pub(crate) mod indexing;
 pub(crate) mod logs;
@@ -374,8 +375,15 @@ async fn build_state_yaml<R: Runtime>(app: &tauri::AppHandle<R>, opts: &StateOpt
         yaml.push('\n');
     }
 
-    if opts.includes("volumes") {
-        let snapshot = volumes::snapshot_volumes().await;
+    // One completed listing for both sections that read it.
+    let listing = if opts.includes("volumes") || opts.includes("favorites") {
+        Some(volumes::current_listing().await)
+    } else {
+        None
+    };
+
+    if let Some((rows, _)) = listing.as_ref().filter(|_| opts.includes("volumes")) {
+        let snapshot = volumes::snapshot_volumes_from(rows).await;
         yaml.push_str(&volumes::build_volumes_yaml(&snapshot));
     }
 
@@ -436,23 +444,15 @@ async fn build_state_yaml<R: Runtime>(app: &tauri::AppHandle<R>, opts: &StateOpt
         }
     }
 
-    if opts.includes("favorites") {
-        // The user's favorites (id, name, path) so agents can discover the ids
-        // the `favorites` tool's rename / remove / reorder actions take. Paths
-        // are user-chosen navigation targets shown in the switcher, so — like the
-        // `listings:` section — they render unredacted.
-        let favorites = crate::favorites::store::list();
-        if favorites.is_empty() {
-            yaml.push_str("favorites: []\n");
+    if let Some((rows, timed_out)) = listing.as_ref().filter(|_| opts.includes("favorites")) {
+        // Each favorite with its volume and reach, off the same listing the app shows,
+        // or the store's own list when that listing's discovery came up short.
+        let favorites = if *timed_out {
+            favorites::from_store()
         } else {
-            yaml.push_str("favorites:\n");
-            for fav in &favorites {
-                yaml.push_str(&format!(
-                    "  - id: {}\n    name: {:?}\n    path: {:?}\n",
-                    fav.id, fav.name, fav.path
-                ));
-            }
-        }
+            favorites::from_listing(rows)
+        };
+        yaml.push_str(&favorites::build_favorites_yaml(&favorites));
     }
 
     if opts.includes("operations") {

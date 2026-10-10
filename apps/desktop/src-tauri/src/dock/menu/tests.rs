@@ -99,6 +99,7 @@ fn performing_a_separator_is_a_no_op_even_with_no_app_handle() {
             label: DockLabel::Plain("nowhere".to_string()),
             path: "/tmp/nowhere".to_string(),
             kind: LocationKind::Tab,
+            favorite_id: None,
         }));
     });
 

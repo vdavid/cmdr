@@ -20,6 +20,7 @@ import { tString } from '$lib/intl/messages.svelte'
 import { getAppLogger } from '$lib/logging/logger'
 import { openFavorite } from '../navigation/open-favorite'
 import type { FavoriteRefusal } from '../navigation/favorite-reach'
+import type { FavoriteOpenedEvent } from '../navigation/favorites-analytics'
 import { pathForPickedVolume } from '../navigation/picked-volume-path'
 import type { VolumeInfo } from '../types'
 import type { NavigateIntent, NavigateResult } from './navigate'
@@ -44,10 +45,21 @@ export type VolumeSelectOutcome =
   | { kind: 'unreachable-favorite'; refusal: FavoriteRefusal; message: string }
 
 export interface VolumeSelection {
-  /** Select a volume by zero-based index into the volumes array. */
-  selectVolumeByIndex: (pane: 'left' | 'right', index: number) => Promise<VolumeSelectOutcome>
-  /** Select a volume by its stable backend identity. */
-  selectVolumeById: (pane: 'left' | 'right', volumeId: string) => Promise<VolumeSelectOutcome>
+  /**
+   * Select a volume by zero-based index into the volumes array. `picked` says which
+   * surface picked it when it's a favorite (the analytics payload); a command by default.
+   */
+  selectVolumeByIndex: (
+    pane: 'left' | 'right',
+    index: number,
+    picked?: FavoriteOpenedEvent,
+  ) => Promise<VolumeSelectOutcome>
+  /** Select a volume by its stable backend identity (`picked`: as for `selectVolumeByIndex`). */
+  selectVolumeById: (
+    pane: 'left' | 'right',
+    volumeId: string,
+    picked?: FavoriteOpenedEvent,
+  ) => Promise<VolumeSelectOutcome>
   /** Select a volume by name (MCP `select_volume`). The servers hub is virtual. */
   selectVolumeByName: (pane: 'left' | 'right', name: string) => Promise<VolumeSelectOutcome>
 }
@@ -63,7 +75,11 @@ export function createVolumeSelection(deps: VolumeSelectionDeps): VolumeSelectio
     return { kind: 'selected', volumeId, navigation }
   }
 
-  async function selectVolumeByIndex(pane: 'left' | 'right', index: number): Promise<VolumeSelectOutcome> {
+  async function selectVolumeByIndex(
+    pane: 'left' | 'right',
+    index: number,
+    picked: FavoriteOpenedEvent = { surface: 'command', via: 'command' },
+  ): Promise<VolumeSelectOutcome> {
     const volumes = deps.getVolumes()
     if (index < 0 || index >= volumes.length) {
       log.warn('Invalid volume index: {index} (valid range: 0-{max})', { index, max: volumes.length - 1 })
@@ -79,7 +95,7 @@ export function createVolumeSelection(deps: VolumeSelectionDeps): VolumeSelectio
       const opened = await openFavorite({
         favorite: volume,
         pane,
-        picked: { surface: 'command', via: 'command' },
+        picked,
         go: (target) => select(pane, target.volumeId, target.targetPath, target.exact),
       })
       return opened.kind === 'opened'
@@ -90,11 +106,15 @@ export function createVolumeSelection(deps: VolumeSelectionDeps): VolumeSelectio
     return select(pane, volume.id, pathForPickedVolume(volume))
   }
 
-  async function selectVolumeById(pane: 'left' | 'right', volumeId: string): Promise<VolumeSelectOutcome> {
+  async function selectVolumeById(
+    pane: 'left' | 'right',
+    volumeId: string,
+    picked?: FavoriteOpenedEvent,
+  ): Promise<VolumeSelectOutcome> {
     if (volumeId === 'network') return select(pane, 'network', 'smb://')
 
     const index = deps.getVolumes().findIndex((v) => v.id === volumeId)
-    if (index !== -1) return selectVolumeByIndex(pane, index)
+    if (index !== -1) return selectVolumeByIndex(pane, index, picked)
 
     log.warn('Volume not found: {volumeId}', { volumeId })
     return { kind: 'not-found' }

@@ -28,6 +28,9 @@ folder…, Connect to server…, then the bookmarks, then the open tabs. macOS a
 - **We build the `NSMenu` ourselves.** Tauri exposes none (`Submenu::inner()` is
   `pub(crate)`), and ❌ muda must not become a direct dependency: it works only while
   cargo unifies our copy with Tauri's.
+- **A bookmark click opens the FAVORITE (`OpenFavorite { favoriteId }`), ❌ never
+  `RevealPath`**: an unmounted share's path resolves onto the boot disk, while the
+  favorite names its volume, which then dials. `DETAILS.md` § How a click gets out.
 - **Clicks bypass `menu_handlers::handle_menu_event` entirely**, which is the point:
   its `CommandScope::FileScoped` guard drops anything fired while the main window
   isn't focused, and a Dock right-click is unfocused by definition.

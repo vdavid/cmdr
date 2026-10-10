@@ -13,6 +13,7 @@ import type { FileEntry, FriendlyError, NetworkHost, TransferOperationType } fro
 import type { AdoptedOperationData, ForegroundOperationVerdict } from '$lib/file-explorer/pane/dialog-props'
 import type { NavigateIntent, NavigateResult } from '$lib/file-explorer/pane/navigate'
 import type { VolumeSelectOutcome } from '$lib/file-explorer/pane/volume-selection'
+import type { FavoriteOpenedEvent } from '$lib/file-explorer/navigation/favorites-analytics'
 import type {
   CopyPathBetweenPanesArgs,
   OpenDeleteDialogArgs,
@@ -182,8 +183,15 @@ export interface ExplorerAPI {
    * that result's `corrected` resolves.
    */
   selectVolumeByName: (pane: 'left' | 'right', name: string) => Promise<VolumeSelectOutcome>
-  /** The identity-safe twin of `selectVolumeByName`, used when names can collide. */
-  selectVolumeById: (pane: 'left' | 'right', volumeId: string) => Promise<VolumeSelectOutcome>
+  /**
+   * The identity-safe twin of `selectVolumeByName`, used when names can collide. `picked`
+   * names the surface when the id is a favorite's (the Dock tile menu); a command by default.
+   */
+  selectVolumeById: (
+    pane: 'left' | 'right',
+    volumeId: string,
+    picked?: FavoriteOpenedEvent,
+  ) => Promise<VolumeSelectOutcome>
   handleSelectionAction: (args: SelectionActionArgs) => void
   handleMcpSelect: (pane: 'left' | 'right', start: number, count: number | 'all', mode: McpSelectMode) => Promise<void>
   /**

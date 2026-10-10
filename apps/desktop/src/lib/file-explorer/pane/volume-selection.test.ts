@@ -182,6 +182,21 @@ describe('createVolumeSelection', () => {
     })
   })
 
+  it('selectVolumeById reports the surface that picked a favorite (the Dock tile menu)', async () => {
+    const { trackEvent } = await import('$lib/tauri-commands')
+    const { ops } = setup([
+      vol({
+        id: 'fav-3',
+        name: 'Docs',
+        path: '/Users/me/Docs',
+        category: 'favorite',
+        favoriteTarget: { volumeId: 'root', volumeName: 'Macintosh HD', volumeRoot: '/', reach: { kind: 'ready' } },
+      }),
+    ])
+    await ops.selectVolumeById('left', 'fav-3', { surface: 'dock', via: 'dock' })
+    expect(trackEvent).toHaveBeenCalledWith('favorite_opened', { surface: 'dock', via: 'dock', reach: 'ready' })
+  })
+
   it('selectVolumeById words why a favorite on a forgotten server can`t open, for the MCP reply', async () => {
     const { ops, navigate } = setup([
       vol({

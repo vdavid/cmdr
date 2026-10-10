@@ -125,13 +125,16 @@ dedup, so 12 bookmarks and 12 tabs is the ceiling.
 ## Which paths are offered
 
 Shape only. An absolute path is taken as it is; `~` and `~/…` are expanded against the
-cached home. Everything else is dropped: `search-results`, `mtp://…`, a relative path,
-an empty string. Those are the virtual locations no Dock click could navigate to anyway,
-and testing them by shape keeps the "never a syscall" rule intact.
+cached home. A BOOKMARK with any other non-empty path (a server's `sftp://…`, a phone's
+`mtp://…`) is offered too, since its click opens the favorite by id. A tab's is dropped:
+`search-results`, `mtp://…`, a relative path, an empty string. Those are the virtual
+locations no path-based Dock click could navigate to, and testing them by shape keeps
+the "never a syscall" rule intact.
 
 A consequence worth knowing: a bookmark or tab whose folder has since been deleted,
-unmounted, or renamed still appears, and clicking it lands on the pane's ordinary
-"couldn't open that" path. That is the deliberate trade: the alternative is a `stat`,
+unmounted, or renamed still appears. Clicking a bookmark takes the favorite open, which
+dials a saved place or says why it can't (the favorites menu's toast); clicking a tab
+lands on the pane's ordinary "couldn't open that" path. That is the deliberate trade: the alternative is a `stat`,
 and a `stat` on a wedged mount is a beachballed Dock.
 
 ## How a click gets out
@@ -150,12 +153,19 @@ behind whatever the user is looking at). Then:
 - `Open Cmdr`: raising the window WAS the command.
 - The other three: `ExecuteCommand { command_id }` to `"main"`, with `search.open`,
   `nav.goToPath`, or `servers.connect`.
-- A bookmark or a tab: `RevealPath { path }` to `"main"`, which
-  `routes/(main)/listener-setup.ts` already listens for and turns into
+- A bookmark: `OpenFavorite { favoriteId }` to `"main"`, which
+  `routes/(main)/listener-setup.ts` turns into `selectVolumeById(focused, "fav-<id>",
+  { surface: 'dock', via: 'dock' })`, so it takes the ONE favorite open
+  (`file-explorer/navigation/open-favorite.ts`): a saved share or server dials, an
+  unplugged phone gets its toast. ❌ Never `RevealPath` for a bookmark: an unmounted
+  share's path resolves onto the boot disk. Which click a row makes is
+  `rows::DockLocation::click`, decided by whether the row carries a `favorite_id`.
+- A tab: `RevealPath { path }` to `"main"`, which the same file turns into
   `revealFolderInFocusedPane`.
 
-Both events already existed and both already had a main-window listener, so this
-milestone adds **no IPC type, no binding, and no frontend code**.
+Because a bookmark opens by id, its row is offered whatever its path's shape (a
+server's `sftp://…`, a phone's `mtp://…`); a tab still needs an absolute or `~` path.
+A tab on a bookmark's folder is dropped, so the row (and its id) is the bookmark's.
 
 ### Decision: our own selector, not `handle_menu_event`
 

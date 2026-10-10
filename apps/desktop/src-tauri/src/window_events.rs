@@ -200,8 +200,8 @@ pub struct ForegroundOperation {
 /// `reveal-path`: show a folder in the main window's focused pane. Two emitters:
 /// the settings window's "Open memory folder" button, which knows only that it
 /// wants the folder shown (the path comes from Rust's `ask_cmdr_memory_folder`,
-/// because it moves with `CMDR_DATA_DIR`), and the Dock tile menu's bookmark and
-/// tab rows (`dock/menu/`), where the path is the row the user clicked.
+/// because it moves with `CMDR_DATA_DIR`), and the Dock tile menu's tab rows
+/// (`dock/menu/`), where the path is the row the user clicked.
 ///
 /// ⚠️ The payload is why this isn't `execute-command`, which carries a bare
 /// `command_id` and nothing else.
@@ -209,6 +209,19 @@ pub struct ForegroundOperation {
 #[serde(rename_all = "camelCase")]
 pub struct RevealPath {
     pub path: String,
+}
+
+/// `open-favorite`: open a favorite in the main window's focused pane, exactly as
+/// picking it in the favorites menu does. Emitted by the Dock tile menu's bookmark
+/// rows (`dock/menu/`).
+///
+/// ⚠️ By id, never by path: the path of a favorite on an unmounted share resolves
+/// onto the boot disk, while the favorite's row names its volume, which then dials.
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
+#[serde(rename_all = "camelCase")]
+pub struct OpenFavorite {
+    /// The favorite's store id, without the `fav-` prefix its volume row carries.
+    pub favorite_id: String,
 }
 
 /// `persist-restricted-setting`: the viewer (a restricted-capability window with

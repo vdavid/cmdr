@@ -89,8 +89,8 @@ use crate::volume_broadcast::{VolumeContextAction, VolumeMounted, VolumeRootChan
 // Window-management events: emit_to-targeted window lifecycle.
 use crate::window_events::{
     CloseAbout, CloseAllFileViewers, CloseConfirmation, CloseFileViewer, ExecuteCommand, FocusAbout, FocusConfirmation,
-    FocusFileViewer, ForegroundOperation, FunctionKeyBarHideRequested, McpSettingsClose, MouseNav, OpenFileViewer,
-    OpenSettings, PersistRestrictedSetting, RevealPath, ShowSearchResultInFolder, TabContextAction,
+    FocusFileViewer, ForegroundOperation, FunctionKeyBarHideRequested, McpSettingsClose, MouseNav, OpenFavorite,
+    OpenFileViewer, OpenSettings, PersistRestrictedSetting, RevealPath, ShowSearchResultInFolder, TabContextAction,
     ViewerContextMenuAction, ViewerEditAction, ViewerWordWrapToggled,
 };
 // AI + system/misc events.
@@ -1201,6 +1201,8 @@ pub fn builder() -> Builder<tauri::Wry> {
             // the agent's memory folder in a pane.
             ForegroundOperation,
             RevealPath,
+            // The Dock tile menu opens a favorite by id (dock/menu/).
+            OpenFavorite,
             // The organization's managed policy changed while Cmdr runs (managed_policy/cache.rs).
             ManagedPolicyChanged,
         ])

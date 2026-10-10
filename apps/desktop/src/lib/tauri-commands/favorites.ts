@@ -21,6 +21,11 @@ export function stripFavoritePrefix(locationId: string): string {
   return locationId.startsWith(FAVORITE_ID_PREFIX) ? locationId.slice(FAVORITE_ID_PREFIX.length) : locationId
 }
 
+/** The other direction: the volume-list id of the favorite whose bare store id is `favoriteId`. */
+export function favoriteLocationId(favoriteId: string): string {
+  return FAVORITE_ID_PREFIX + favoriteId
+}
+
 /**
  * Favorites `path`. When `name` is null the backend defaults the label to the path's file name.
  * Deduping by normalized path: re-adding an existing path moves it to the end and keeps its id.

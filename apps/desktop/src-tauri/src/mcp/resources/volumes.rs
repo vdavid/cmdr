@@ -304,7 +304,32 @@ fn index_status_token(status: &cmdr_index::VolumeIndexStatus) -> &'static str {
 /// device storages, plus the synthetic servers hub row. The impure half;
 /// [`build_volumes_yaml`] formats the result.
 pub(crate) async fn snapshot_volumes() -> Vec<VolumeSummary> {
+    #[cfg(target_os = "macos")]
+    let (locations, _incomplete) = current_listing().await;
+    #[cfg(not(target_os = "macos"))]
+    let locations = Vec::new();
+    snapshot_volumes_from(&locations).await
+}
+
+/// The completed listing a snapshot reads: the SAME pipeline the app's own volume
+/// list and its `volumes-changed` push run, and whether its discovery came up short.
+/// `cmdr://state` fetches it once and hands it to both its `volumes:` and
+/// `favorites:` sections.
+///
+/// Discovery stays off-thread and timeout-guarded inside `list_with_timeout`: it runs
+/// blocking macOS metadata syscalls, and a resource read must never wedge the MCP
+/// handler (a dying mount once made `cmdr://state` reads take a flat 30 s). See
+/// `volumes/DETAILS.md` § "Hung mounts".
+pub(crate) async fn current_listing() -> (Vec<crate::volume_listing::LocationInfo>, bool) {
+    crate::volume_listing::list_with_timeout(std::time::Duration::from_secs(2)).await
+}
+
+/// [`snapshot_volumes`] over a listing already in hand (macOS reads it; the Linux
+/// snapshot lists root and MTP storages on its own and ignores it).
+pub(crate) async fn snapshot_volumes_from(locations: &[crate::volume_listing::LocationInfo]) -> Vec<VolumeSummary> {
     let mut out: Vec<VolumeSummary> = Vec::new();
+    #[cfg(not(target_os = "macos"))]
+    let _ = locations;
 
     #[cfg(target_os = "macos")]
     {
@@ -316,15 +341,8 @@ pub(crate) async fn snapshot_volumes() -> Vec<VolumeSummary> {
         // every `connectionState` past `disconnected` were unreachable while this
         // resource's docs advertised them as the contract. It also folds in every
         // device provider's storages, which is why there is no MTP block below on
-        // this platform.
-        //
-        // Discovery stays off-thread and timeout-guarded inside `list_with_timeout`:
-        // it runs blocking macOS metadata syscalls, and a resource read must never
-        // wedge the MCP handler (a dying mount once made `cmdr://state` reads take
-        // a flat 30 s). See `volumes/DETAILS.md` § "Hung mounts".
-        let (locations, _incomplete) =
-            crate::volume_listing::list_with_timeout(std::time::Duration::from_secs(2)).await;
-        for loc in &locations {
+        // this platform. (`current_listing`.)
+        for loc in locations {
             let connection_state = loc.connection_state.map(connection_state_token);
             let device_readiness = loc.device_readiness.map(device_readiness_token);
             let kind = kind_for_location(loc.fs_type.as_deref(), loc.connection_state.is_some());

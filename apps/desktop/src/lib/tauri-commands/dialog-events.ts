@@ -16,6 +16,7 @@ import {
   type FocusFileViewer,
   type ForegroundOperation,
   type MouseNavDirection,
+  type OpenFavorite,
   type OpenFileViewer,
   type OpenSettings,
   type PersistRestrictedSetting,
@@ -211,6 +212,17 @@ export function requestRevealPath(path: string): Promise<void> {
 
 export function onRevealPath(handler: (payload: RevealPath) => void): Promise<UnlistenFn> {
   return events.revealPath.listen((event) => {
+    handler(event.payload)
+  })
+}
+
+/**
+ * Rust's Dock tile menu asks the main window to open a favorite (by its bare store
+ * id) in the focused pane, the way picking it in the favorites menu does. By id,
+ * never by path: an unmounted share's path would resolve onto the boot disk.
+ */
+export function onOpenFavorite(handler: (payload: OpenFavorite) => void): Promise<UnlistenFn> {
+  return events.openFavorite.listen((event) => {
     handler(event.payload)
   })
 }

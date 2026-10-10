@@ -166,6 +166,7 @@ export {
   reorderFavorites,
   setFavoriteShortcut,
   stripFavoritePrefix,
+  favoriteLocationId,
 } from './favorites'
 
 // Icons (fetching and cache management)
@@ -602,6 +603,7 @@ export {
   onPersistRestrictedSetting,
   requestRevealPath,
   onRevealPath,
+  onOpenFavorite,
   requestForegroundOperation,
   onForegroundOperationRequested,
   onMouseNav,

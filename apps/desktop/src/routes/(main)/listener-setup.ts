@@ -36,6 +36,8 @@ import {
   onSettingsChanged,
   onForegroundOperationRequested,
   onRevealPath,
+  onOpenFavorite,
+  favoriteLocationId,
   onMouseNav,
 } from '$lib/tauri-commands'
 import { getAppLogger } from '$lib/logging/logger'
@@ -491,6 +493,23 @@ export async function setupDialogListeners(ctx: ListenerSetupContext): Promise<v
   await pushTauri(unlistenFns, () =>
     onRevealPath((payload) => {
       void revealFolderInFocusedPane(getExplorer(), payload.path)
+    }),
+  )
+
+  // The Dock tile menu's bookmark rows open a favorite BY ID in the focused pane, so the
+  // pane enters the volume the favorite names (and dials it when it's a saved place)
+  // rather than whatever volume its path resolves to now.
+  await pushTauri(unlistenFns, () =>
+    onOpenFavorite((payload) => {
+      const explorer = getExplorer()
+      if (!explorer) {
+        log.debug('Nothing to open favorite {id} in: no explorer yet', { id: payload.favoriteId })
+        return
+      }
+      void explorer.selectVolumeById(explorer.getFocusedPane(), favoriteLocationId(payload.favoriteId), {
+        surface: 'dock',
+        via: 'dock',
+      })
     }),
   )
 

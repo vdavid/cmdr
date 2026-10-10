@@ -30,6 +30,7 @@ pub fn bookmarks() -> Vec<Candidate> {
         .map(|favorite| Candidate {
             name: Some(favorite.name),
             path: favorite.path,
+            favorite_id: Some(favorite.id),
         })
         .collect()
 }
@@ -49,6 +50,7 @@ pub fn tabs(app: &AppHandle) -> Vec<Candidate> {
         .map(|tab| Candidate {
             name: None,
             path: tab.path,
+            favorite_id: None,
         })
         .collect()
 }

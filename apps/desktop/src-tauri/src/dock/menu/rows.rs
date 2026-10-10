@@ -29,6 +29,10 @@ pub struct Candidate {
     pub name: Option<String>,
     /// The path exactly as the source stores it, `~` included.
     pub path: String,
+    /// A favorite's store id (without the `fav-` prefix). A click on its row opens the
+    /// FAVORITE, so the frontend enters the volume it names even while that's offline.
+    /// `None` for a tab.
+    pub favorite_id: Option<String>,
 }
 
 /// Constructors for the tests. Production builds these in `sources.rs`, straight out
@@ -40,14 +44,23 @@ impl Candidate {
         Self {
             name: None,
             path: path.into(),
+            favorite_id: None,
         }
     }
 
-    /// A favorite: the user's own label, and where it points.
+    /// A favorite: the user's own label, and where it points. Its id is its label, which
+    /// is enough for the tests that only care about labels and paths.
     pub fn bookmark(name: impl Into<String>, path: impl Into<String>) -> Self {
+        let name = name.into();
+        Self::favorite(name.clone(), name, path)
+    }
+
+    /// A favorite with its store id.
+    pub fn favorite(id: impl Into<String>, name: impl Into<String>, path: impl Into<String>) -> Self {
         Self {
             name: Some(name.into()),
             path: path.into(),
+            favorite_id: Some(id.into()),
         }
     }
 }
@@ -182,6 +195,28 @@ pub struct DockLocation {
     pub path: String,
     /// Which list it came from.
     pub kind: LocationKind,
+    /// The favorite's store id, for a bookmark row (`Candidate::favorite_id`).
+    pub favorite_id: Option<String>,
+}
+
+/// What a click on a location row asks the main window to do.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum LocationClick {
+    /// Open this favorite (by store id), the way picking it in the favorites menu does.
+    OpenFavorite(String),
+    /// Show this folder in the focused pane.
+    Reveal(String),
+}
+
+impl DockLocation {
+    /// A favorite opens BY ID, never by path: the path of an unmounted share resolves
+    /// onto the boot disk, while the id names the volume, which then dials.
+    pub fn click(&self) -> LocationClick {
+        match &self.favorite_id {
+            Some(id) => LocationClick::OpenFavorite(id.clone()),
+            None => LocationClick::Reveal(self.path.clone()),
+        }
+    }
 }
 
 /// One row of the menu, in the order AppKit draws it.
@@ -250,8 +285,12 @@ fn take_locations(
         if rows.len() >= MAX_LOCATIONS_PER_GROUP {
             break;
         }
-        let Some(path) = menuable_path(&candidate.path, home) else {
-            continue;
+        // A favorite opens by id, so a server's or phone's path is offered too; a tab
+        // still needs a path a Dock click can navigate to.
+        let path = match (menuable_path(&candidate.path, home), &candidate.favorite_id) {
+            (Some(path), _) => path,
+            (None, Some(_)) if !candidate.path.is_empty() => candidate.path.clone(),
+            (None, _) => continue,
         };
         let key = normalize_for_dedup(&path);
         if seen.contains(&key) {
@@ -262,6 +301,7 @@ fn take_locations(
             label: DockLabel::Plain(initial_name(candidate, &path)),
             path,
             kind,
+            favorite_id: candidate.favorite_id.clone(),
         });
     }
     rows

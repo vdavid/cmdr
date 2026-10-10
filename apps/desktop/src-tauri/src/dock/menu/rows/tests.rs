@@ -68,12 +68,14 @@ fn bookmarks_and_tabs_each_get_their_own_separated_group() {
                 label: DockLabel::Plain("Desktop".to_string()),
                 path: "/Users/dave/Desktop".to_string(),
                 kind: LocationKind::Bookmark,
+                favorite_id: Some("Desktop".to_string()),
             }),
             DockRow::Separator,
             DockRow::Location(DockLocation {
                 label: DockLabel::Plain("code".to_string()),
                 path: "/Users/dave/code".to_string(),
                 kind: LocationKind::Tab,
+                favorite_id: None,
             }),
         ]
     );
@@ -122,6 +124,68 @@ fn a_tab_that_repeats_a_bookmark_is_dropped() {
         names(&rows),
         vec!["Applications", "code"],
         "Finder lists Applications twice with nothing to tell them apart; we don't"
+    );
+}
+
+#[test]
+fn a_favorite_row_carries_its_id_so_a_click_opens_the_favorite_rather_than_the_path() {
+    let rows = menu_rows(
+        &[Candidate::favorite("f1", "Docs", "/Volumes/naspi/docs")],
+        &[Candidate::tab("/Users/dave/code")],
+        Some(home()),
+    );
+
+    let clicks: Vec<LocationClick> = rows
+        .iter()
+        .filter_map(|row| match row {
+            DockRow::Location(location) => Some(location.click()),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(
+        clicks,
+        vec![
+            // A `RevealPath` of an unmounted share's path would resolve onto the boot disk.
+            LocationClick::OpenFavorite("f1".to_string()),
+            LocationClick::Reveal("/Users/dave/code".to_string()),
+        ]
+    );
+}
+
+#[test]
+fn a_tab_sharing_a_favorites_path_leaves_the_favorites_row_and_id_in_place() {
+    let rows = menu_rows(
+        &[Candidate::favorite("f1", "Docs", "/Users/dave/Docs")],
+        &[Candidate::tab("/Users/dave/Docs/")],
+        Some(home()),
+    );
+
+    let only: Vec<&DockLocation> = rows
+        .iter()
+        .filter_map(|row| match row {
+            DockRow::Location(location) => Some(location),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(only.len(), 1, "one folder, one row");
+    assert_eq!(only[0].favorite_id.as_deref(), Some("f1"));
+}
+
+#[test]
+fn a_favorite_on_a_server_or_phone_is_offered_since_its_click_goes_by_id() {
+    let rows = menu_rows(
+        &[
+            Candidate::favorite("f1", "Photos", "sftp://ada@nas.local:22/srv/photos"),
+            Candidate::favorite("f2", "Camera", "mtp://pixel-7/65537/DCIM"),
+        ],
+        &[Candidate::tab("sftp://ada@nas.local:22/srv/photos")],
+        Some(home()),
+    );
+
+    assert_eq!(
+        names(&rows),
+        vec!["Photos", "Camera"],
+        "the tab repeats the first favorite"
     );
 }
 

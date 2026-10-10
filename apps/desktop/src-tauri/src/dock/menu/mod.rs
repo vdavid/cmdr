@@ -26,7 +26,7 @@
 //! happens with Cmdr in the background by definition. Each item carries its row index
 //! as its AppKit `tag`; [`item_clicked`] looks the row up, raises the main window, and
 //! emits the same `execute-command` / `reveal-path` events the rest of the app already
-//! listens for.
+//! listens for, or `open-favorite` for a bookmark, which opens by id (`rows::LocationClick`).
 
 mod native;
 mod rows;
@@ -45,8 +45,8 @@ use tauri::{AppHandle, Manager};
 use tauri_specta::Event as _;
 
 use crate::drag_image_detection::warn_once;
-use crate::window_events::{ExecuteCommand, RevealPath};
-use rows::{DockCommand, DockRow};
+use crate::window_events::{ExecuteCommand, OpenFavorite, RevealPath};
+use rows::{DockCommand, DockRow, LocationClick};
 
 const LOG_TARGET: &str = "dock::menu";
 
@@ -297,15 +297,18 @@ fn perform(row: &DockRow) {
                 log::warn!(target: LOG_TARGET, "couldn't send `{command_id}` to the main window: {e}");
             }
         }
-        DockRow::Location(location) => {
-            if let Err(e) = (RevealPath {
-                path: location.path.clone(),
-            })
-            .emit_to(app, "main")
-            {
-                log::warn!(target: LOG_TARGET, "couldn't ask the main window to show a folder: {e}");
+        DockRow::Location(location) => match location.click() {
+            LocationClick::OpenFavorite(favorite_id) => {
+                if let Err(e) = (OpenFavorite { favorite_id }).emit_to(app, "main") {
+                    log::warn!(target: LOG_TARGET, "couldn't ask the main window to open a favorite: {e}");
+                }
             }
-        }
+            LocationClick::Reveal(path) => {
+                if let Err(e) = (RevealPath { path }).emit_to(app, "main") {
+                    log::warn!(target: LOG_TARGET, "couldn't ask the main window to show a folder: {e}");
+                }
+            }
+        },
     }
 }
 
