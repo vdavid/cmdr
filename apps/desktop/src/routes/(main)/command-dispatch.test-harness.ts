@@ -59,6 +59,7 @@ export const EXEMPT_IDS = [
   'multiRename.undoRename',
   'multiRename.results',
   'multiRename.fieldHistory',
+  'multiRename.rename',
   'network.selectHost',
   'share.back',
   'share.selectShare',

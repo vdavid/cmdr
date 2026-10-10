@@ -141,4 +141,15 @@ export const multiRenameCommands: CommandSource[] = [
     whileDialogOpen: BLOCKED_BY_DIALOGS,
     fixedKey: true,
   },
+  {
+    // The primary button's key, from anywhere in the sheet. Plain Enter in a text field renames too
+    // (TC's Start!), outside the registry: it's the field's own key, and buttons keep theirs.
+    id: 'multiRename.rename',
+    nameKey: 'commands.multiRenameRename.label',
+    scope: 'Main window/Multi-rename',
+    showInPalette: false,
+    shortcuts: ['⌘Enter'],
+    whileDialogOpen: BLOCKED_BY_DIALOGS,
+    fixedKey: true,
+  },
 ]

@@ -1,8 +1,9 @@
 # Multi-Rename sheet: details
 
 - **Keyboard-first**: the name mask has focus on open; Tab walks the fields; Enter in a text field starts (TC's Start!),
-  a button or menu keeps its own Enter; Esc closes. The placeholder buttons (house `Chip`s, `variant="insert"`, mono)
-  insert at the name mask's caret.
+  a button or menu keeps its own Enter; ⌘⏎ (`multiRename.rename`, the chip on the Rename button) starts from anywhere, a
+  checkbox or the preview included; Esc closes. The placeholder buttons (house `Chip`s, `variant="insert"`, mono) insert
+  at the name mask's caret.
 - **Placeholder tooltips**: each button's tooltip (`PlaceholderTip`, adopted as the house tooltip's `contentEl`, so it
   shows on hover AND keyboard focus and is the button's `aria-describedby`) gives the meaning, an example on the sample
   file, a few other forms from `mask.rs` with their examples, and for a range the part it takes in bold with what the

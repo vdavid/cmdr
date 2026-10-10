@@ -121,6 +121,7 @@ const EXPECTED_NAMES: Record<string, string> = {
   'multiRename.undoRename': 'Undo the last multi-rename',
   'multiRename.results': 'Edit the new names in your text editor',
   'multiRename.fieldHistory': 'Show the field’s earlier values',
+  'multiRename.rename': 'Rename the files',
   'file.view': 'View',
   'file.edit': 'Edit in default editor',
   'file.copy': 'Copy',

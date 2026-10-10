@@ -483,6 +483,7 @@ export type MessageKey =
   | 'commands.multiRenameOpenPresets.label'
   | 'commands.multiRenameRegex.label'
   | 'commands.multiRenameRemoveDiacritics.label'
+  | 'commands.multiRenameRename.label'
   | 'commands.multiRenameReplaceWholeName.label'
   | 'commands.multiRenameResults.label'
   | 'commands.multiRenameSavePreset.label'

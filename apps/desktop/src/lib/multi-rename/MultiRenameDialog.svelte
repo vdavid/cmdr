@@ -240,12 +240,13 @@
     }
 
     /**
-     * The sheet's plain commands, each claimed even when it can't go: ⌥⏎ never falls through to
-     * Enter's Rename, and ⌘⌥Z with nothing to undo never types `Ω` into a field.
+     * The sheet's plain commands, each claimed even when it can't go: ⌥⏎ and ⌘⏎ never fall through
+     * to Enter's handler, and ⌘⌥Z with nothing to undo never types `Ω` into a field.
      */
     const SHEET_COMMANDS: { id: CommandId; run: () => void }[] = [
         { id: 'multiRename.results', run: openResults },
         { id: 'multiRename.undoRename', run: () => void undoLastRun() },
+        { id: 'multiRename.rename', run: () => void start() },
     ]
 
     function handleKeydown(e: KeyboardEvent): void {
@@ -519,6 +520,7 @@
         <Button onclick={onClose}>{tString('multiRename.cancel')}</Button>
         <Button variant="primary" onclick={() => { void start() }} disabled={!canStart}>
             {tString('multiRename.rename', { count: tool.counts.ready })}
+            <ShortcutChip commandId="multiRename.rename" clickable={false} size="sm" />
         </Button>
     {/snippet}
 </ModalDialog>

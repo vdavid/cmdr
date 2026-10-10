@@ -28,7 +28,8 @@ The ⌃M sheet over `src-tauri/src/multi_rename/` (the engine and its rules: tha
   rows it holds.
 - **Start waits for the preview of the last edit** (`pending`), so it never runs a spec nobody saw; a failed Start
   (`applyError`) doesn't block a retry. Results waits the same way.
-- **Enter starts from a mask or search field**, saves from the preset-name popover, and never fires mid-composition.
+- **Enter starts from a mask or search field** (⌘⏎ from anywhere), saves from the preset-name popover, and never fires
+  mid-composition.
 - **Every sheet key is a fixed registry command** in `Main window/Multi-rename`, read through `eventMatchesCommand` and
   claimed, from a text field too. ❌ No raw key tests. An open Presets menu owns every key (its `onKey` answers F2 and
   ⌘S). ↓ at a mask's `[C…]` token is the counter editor's (MaskInput claims it first), elsewhere the field's history.

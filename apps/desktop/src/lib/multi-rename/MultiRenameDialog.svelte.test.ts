@@ -212,6 +212,36 @@ describe('MultiRenameDialog', () => {
     expect(onApplied).toHaveBeenCalledWith(started)
   })
 
+  describe('rename key', () => {
+    // `formatKeyCombo` emits ⌘-form modifiers only when `isMacOS()` is true, and happy-dom reports a Linux UA.
+    const navigatorSpy = vi.spyOn(globalThis, 'navigator', 'get')
+    beforeEach(() => {
+      navigatorSpy.mockReturnValue({ userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X)' } as Navigator)
+    })
+    afterEach(() => navigatorSpy.mockReset())
+
+    it('⌘⏎ renames from anywhere in the sheet, a checkbox too, and the Rename button shows it', async () => {
+      ipc.applyMultiRename.mockResolvedValue({ ok: true, value: { operationId: 'op', renaming: 1, swapsLeftOut: 0 } })
+      const root = await mountSheet()
+      const rename = root.querySelector<HTMLButtonElement>('button.btn-primary')
+      expect(rename?.querySelector('.shortcut-chip')?.textContent).toBe('⌘↩')
+
+      const checkbox = root.querySelector<HTMLInputElement>('input[type="checkbox"]')
+      if (!checkbox) throw new Error('no checkbox')
+      const event = new KeyboardEvent('keydown', {
+        key: 'Enter',
+        code: 'Enter',
+        metaKey: true,
+        bubbles: true,
+        cancelable: true,
+      })
+      checkbox.dispatchEvent(event)
+      await settle()
+      expect(event.defaultPrevented).toBe(true)
+      expect(ipc.applyMultiRename).toHaveBeenCalledWith('S', 1)
+    })
+  })
+
   describe('preview list', () => {
     const MIXED = {
       previewId: 3,
