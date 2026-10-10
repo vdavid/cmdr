@@ -53,6 +53,7 @@ const seenFlag: Record<string, boolean> = {}
 const raisedToasts: Record<string, unknown>[] = []
 
 import {
+  applyServerPlaceMoved,
   applyVolumeRootChanged,
   initVolumeStore,
   cleanupVolumeStore,
@@ -207,6 +208,83 @@ describe('applyVolumeRootChanged', () => {
       oldLanding: 'sftp://ada@somewhere.else:22/a',
       newLanding: 'sftp://ada@somewhere.else:22/',
       kind: 'edited',
+    })
+
+    expect(getVolumes()).toBe(before)
+  })
+})
+
+/**
+ * ❗ A saved server that moved to a new address re-keys its row BEFORE any pane
+ * follows: the event beats the debounced republish, and a pane navigating to the
+ * new id needs a row to land on. The row reads `saved`, since the session at the
+ * old address is gone and the pane dials the new one.
+ */
+describe('applyServerPlaceMoved', () => {
+  const place: VolumeInfo = {
+    id: 'sftp-nas-local-22-ada',
+    name: 'Naspolya',
+    path: 'sftp://ada@nas.local:22/srv/data',
+    category: 'network',
+    isEjectable: false,
+    connectionState: 'direct',
+  }
+
+  beforeEach(() => {
+    mockListVolumes.mockReset()
+    cleanupVolumeStore()
+  })
+
+  afterEach(() => {
+    cleanupVolumeStore()
+  })
+
+  it('re-keys the row to its new id, root, and name, and reads it as saved', async () => {
+    mockListVolumes.mockResolvedValue({ data: [place], timedOut: false })
+    await initVolumeStore()
+
+    applyServerPlaceMoved({
+      oldPrefix: 'sftp://ada@nas.local:22',
+      newPrefix: 'sftp://ada@10.0.0.5:22',
+      places: [
+        {
+          oldVolumeId: place.id,
+          newVolumeId: 'sftp-10-0-0-5-22-ada',
+          newRoot: 'sftp://ada@10.0.0.5:22/srv/data',
+          newLanding: 'sftp://ada@10.0.0.5:22/srv/data',
+          name: 'Naspolya',
+        },
+      ],
+    })
+
+    expect(getVolumes()).toEqual([
+      {
+        ...place,
+        id: 'sftp-10-0-0-5-22-ada',
+        path: 'sftp://ada@10.0.0.5:22/srv/data',
+        landingPath: null,
+        connectionState: 'saved',
+      },
+    ])
+  })
+
+  it("leaves the list alone for a place it doesn't hold", async () => {
+    mockListVolumes.mockResolvedValue({ data: [place], timedOut: false })
+    await initVolumeStore()
+    const before = getVolumes()
+
+    applyServerPlaceMoved({
+      oldPrefix: 'sftp://ada@elsewhere:22',
+      newPrefix: 'sftp://ada@10.0.0.6:22',
+      places: [
+        {
+          oldVolumeId: 'sftp-elsewhere-22-ada',
+          newVolumeId: 'sftp-10-0-0-6-22-ada',
+          newRoot: 'sftp://ada@10.0.0.6:22/',
+          newLanding: 'sftp://ada@10.0.0.6:22/',
+          name: 'Elsewhere',
+        },
+      ],
     })
 
     expect(getVolumes()).toBe(before)

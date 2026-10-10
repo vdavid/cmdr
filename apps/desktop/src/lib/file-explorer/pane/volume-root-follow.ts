@@ -17,18 +17,21 @@
  * 4. `lastUsedPaths[volumeId]`, so the next switch onto the place lands inside it.
  *
  * Each window's explorer subscribes on its own. The rule is idempotent, so two
- * windows rewriting the one shared remembered path agree.
+ * windows rewriting the one shared remembered path agree. The same subscription
+ * follows a saved server to a new address (`server-move-follow.ts`), the case
+ * where the id changes too.
  */
 
 import type { UnlistenFn } from '@tauri-apps/api/event'
 import type { VolumeRootChanged } from '$lib/ipc/bindings'
-import { onVolumeRootChanged, type Location } from '$lib/tauri-commands'
-import { getLastUsedPathForVolume, saveLastUsedPathForVolume } from '$lib/app-status-store'
-import { applyVolumeRootChanged } from '$lib/stores/volume-store.svelte'
+import { onServerPlaceMoved, onVolumeRootChanged, type Location } from '$lib/tauri-commands'
+import { forgetLastUsedPathForVolume, getLastUsedPathForVolume, saveLastUsedPathForVolume } from '$lib/app-status-store'
+import { applyServerPlaceMoved, applyVolumeRootChanged } from '$lib/stores/volume-store.svelte'
 import { getAppLogger } from '$lib/logging/logger'
 import { pathAfterRootChange } from '../navigation/root-change-follow'
 import { getActiveTab, type TabManager } from '../tabs/tab-state-manager.svelte'
 import type { NavigateIntent, NavigateResult } from './navigate'
+import { followServerMove, type ServerMoveFollowDeps } from './server-move-follow'
 
 const log = getAppLogger('fileExplorer')
 
@@ -79,14 +82,18 @@ export async function followVolumeRootChange(change: VolumeRootChanged, deps: Vo
 }
 
 export interface VolumeRootFollow {
-  /** Subscribes to `volume-root-changed`. Call once the tab managers exist. */
+  /**
+   * Subscribes to `volume-root-changed` and to `server-place-moved` (a saved server's
+   * new address, `server-move-follow.ts`). Call once the tab managers exist.
+   */
   init: () => Promise<void>
   cleanup: () => void
 }
 
 /**
- * The explorer's subscription. It takes only what the explorer owns; the store
- * and the remembered-path writers are the app's own.
+ * The explorer's subscription to both ways a place's paths move under it. It takes
+ * only what the explorer owns; the store and the remembered-path writers are the
+ * app's own.
  */
 export function createVolumeRootFollow(
   deps: Pick<VolumeRootFollowDeps, 'getTabMgr' | 'navigate' | 'saveTabs'>,
@@ -97,21 +104,37 @@ export function createVolumeRootFollow(
     getLastUsedPath: getLastUsedPathForVolume,
     saveLastUsedPath: ({ volumeId, path }) => saveLastUsedPathForVolume(volumeId, path),
   }
-  let unlisten: UnlistenFn | undefined
+  const moveDeps: ServerMoveFollowDeps = {
+    ...full,
+    // Through arrows, so a test that mocks these modules without the move's two exports
+    // still builds the explorer: a mocked binding throws only when it is called.
+    applyToVolumeList: (moved) => {
+      applyServerPlaceMoved(moved)
+    },
+    forgetLastUsedPath: (volumeId) => forgetLastUsedPathForVolume(volumeId),
+  }
+  let unlisteners: UnlistenFn[] = []
   return {
     init: async () => {
-      unlisten = await onVolumeRootChanged((change) => {
-        followVolumeRootChange(change, full).catch((e: unknown) => {
-          log.warn('Following the edited place {volumeId} broke down: {error}', {
-            volumeId: change.volumeId,
-            error: String(e),
+      unlisteners = await Promise.all([
+        onVolumeRootChanged((change) => {
+          followVolumeRootChange(change, full).catch((e: unknown) => {
+            log.warn('Following the edited place {volumeId} broke down: {error}', {
+              volumeId: change.volumeId,
+              error: String(e),
+            })
           })
-        })
-      })
+        }),
+        onServerPlaceMoved((moved) => {
+          followServerMove(moved, moveDeps).catch((e: unknown) => {
+            log.warn('Following a server to its new address broke down: {error}', { error: String(e) })
+          })
+        }),
+      ])
     },
     cleanup: () => {
-      unlisten?.()
-      unlisten = undefined
+      for (const unlisten of unlisteners) unlisten()
+      unlisteners = []
     },
   }
 }

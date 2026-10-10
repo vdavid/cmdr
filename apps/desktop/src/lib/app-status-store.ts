@@ -360,6 +360,23 @@ export async function saveLastUsedPathForVolume(volumeId: string, path: string):
   }
 }
 
+/**
+ * Forgets the last used path for a volume id nothing will carry again: a saved
+ * server that moved to a new address took its path along under its new id.
+ */
+export async function forgetLastUsedPathForVolume(volumeId: string): Promise<void> {
+  try {
+    const store = await getStore()
+    const lastUsedPaths = await store.get('lastUsedPaths')
+    if (!isValidPathMap(lastUsedPaths) || !(volumeId in lastUsedPaths)) return
+    const paths: VolumePathMap = Object.fromEntries(Object.entries(lastUsedPaths).filter(([id]) => id !== volumeId))
+    await store.set('lastUsedPaths', paths)
+    await store.save()
+  } catch {
+    // Silently fail - persistence is nice-to-have
+  }
+}
+
 // ============================================================================
 // Command palette recents persistence
 // ============================================================================

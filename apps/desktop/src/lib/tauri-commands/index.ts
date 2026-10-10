@@ -227,6 +227,7 @@ export {
   onVolumesChanged,
   onVolumeUnmounted,
   onVolumeRootChanged,
+  onServerPlaceMoved,
   onVolumesBusyChanged,
   onVolumesEjectingChanged,
   onVolumeConnectionChanged,

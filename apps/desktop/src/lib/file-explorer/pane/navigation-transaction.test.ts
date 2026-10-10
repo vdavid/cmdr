@@ -163,6 +163,7 @@ vi.mock('$lib/tauri-commands', async (importOriginal) => {
         cb(event.payload)
       }),
     onVolumeRootChanged: vi.fn().mockResolvedValue(() => {}),
+    onServerPlaceMoved: vi.fn().mockResolvedValue(() => {}),
     openInEditor: vi.fn().mockResolvedValue(undefined),
   }
 })

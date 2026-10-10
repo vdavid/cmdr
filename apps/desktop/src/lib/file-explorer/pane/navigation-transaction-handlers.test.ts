@@ -169,6 +169,7 @@ vi.mock('$lib/tauri-commands', async (importOriginal) => {
     onVolumeContextAction: vi.fn().mockResolvedValue(() => {}),
     onVolumeUnmounted: vi.fn().mockResolvedValue(() => {}),
     onVolumeRootChanged: vi.fn().mockResolvedValue(() => {}),
+    onServerPlaceMoved: vi.fn().mockResolvedValue(() => {}),
   }
 })
 

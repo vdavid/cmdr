@@ -582,7 +582,20 @@ renamed (`apps/desktop/src-tauri/src/file_system/volume/DETAILS.md` § "A rename
 
 Each window's `DualPaneExplorer` subscribes on its own (`createVolumeRootFollow`). The rule is idempotent, so two
 windows rewriting the one shared remembered path agree. ❗ A test that mounts `DualPaneExplorer` with a mocked
-`$lib/tauri-commands` needs an `onVolumeRootChanged` stub, or `onMount` throws and the run fails with no failing test.
+`$lib/tauri-commands` needs `onVolumeRootChanged` and `onServerPlaceMoved` stubs, or `onMount` throws and the run fails
+with no failing test.
+
+### A place whose server moved to a new address
+
+`server-move-follow.ts` answers `server-place-moved`, on the same subscription: a saved server's edit changed its
+address, so its places have NEW ids and every path on them a new prefix (`apps/desktop/src-tauri/src/server_move.rs`; by
+then the stores, the password, and the favorites already name the new address, and the old session is gone). Each path
+is respelled by whole components (`pathAfterServerMove`), in one order: the store's rows are re-keyed and read `saved`
+first (`applyServerPlaceMoved`); every tab's back/forward history is respelled in place; each pane's active tab moves
+through `navigate()` (terminal `'fallback'`, no history push) onto the `saved` row, where `place-connect` dials it like
+any first open, so a new host's key or a missing password asks in the usual place; a background tab is respelled in
+place, keeping its cursor row (the same folder), and saved; `lastUsedPaths` moves to the new id. A place that kept its
+id (a WebDAV base path that moved) isn't navigated: its row going `saved` is what redials the pane.
 
 ### A pane on a phone
 

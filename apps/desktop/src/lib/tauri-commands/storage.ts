@@ -12,6 +12,7 @@ import {
   type Location,
   type LowDiskSpacePayload,
   type ResolveLocationResult,
+  type ServerPlaceMoved,
   type SpaceInfo,
   type VolumeConnectionChanged,
   type VolumeContextAction,
@@ -214,6 +215,17 @@ export function onVolumeUnmounted(handler: (payload: VolumeUnmounted) => void): 
  */
 export function onVolumeRootChanged(handler: (payload: VolumeRootChanged) => void): Promise<UnlistenFn> {
   return events.volumeRootChanged.listen((event) => {
+    handler(event.payload)
+  })
+}
+
+/**
+ * Subscribes to a saved server moving to a new address: its places have new
+ * volume ids, and every app path on them a new prefix. Call the returned
+ * `UnlistenFn` on destroy.
+ */
+export function onServerPlaceMoved(handler: (payload: ServerPlaceMoved) => void): Promise<UnlistenFn> {
+  return events.serverPlaceMoved.listen((event) => {
     handler(event.payload)
   })
 }

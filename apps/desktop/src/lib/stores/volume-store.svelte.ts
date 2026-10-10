@@ -10,7 +10,7 @@
 
 import { type UnlistenFn } from '@tauri-apps/api/event'
 import { listVolumes, refreshVolumes, onVolumesChanged, onVolumeConnectionChanged } from '$lib/tauri-commands'
-import type { VolumeConnection, VolumeRootChanged } from '$lib/ipc/bindings'
+import type { ServerPlaceMoved, VolumeConnection, VolumeRootChanged } from '$lib/ipc/bindings'
 import type { ConnectionState, VolumeInfo } from '$lib/file-explorer/types'
 import { getAppLogger } from '$lib/logging/logger'
 import { LogOnceGate } from '$lib/logging/log-once'
@@ -100,6 +100,33 @@ export function applyVolumeRootChanged(change: VolumeRootChanged): void {
   const landingPath = change.newLanding === change.newRoot ? null : change.newLanding
   const next = [...volumes]
   next[idx] = { ...next[idx], path: change.newRoot, landingPath }
+  volumes = next
+}
+
+/**
+ * Re-keys the rows of a saved server that moved to a new address
+ * (`server-place-moved`), ahead of the republish, the same way
+ * `applyVolumeRootChanged` moves a root: a pane following the move navigates to
+ * the NEW id, and `navigate()` needs a row to land on. Each row reads `saved`,
+ * since the session at the old address is gone and the pane dials the new one.
+ * The republish then lands the same values.
+ */
+export function applyServerPlaceMoved(moved: ServerPlaceMoved): void {
+  let next = volumes
+  for (const place of moved.places) {
+    const idx = next.findIndex((v) => v.id === place.oldVolumeId)
+    if (idx < 0) continue
+    if (next === volumes) next = [...volumes]
+    const landingPath = place.newLanding === place.newRoot ? null : place.newLanding
+    next[idx] = {
+      ...next[idx],
+      id: place.newVolumeId,
+      name: place.name,
+      path: place.newRoot,
+      landingPath,
+      connectionState: 'saved',
+    }
+  }
   volumes = next
 }
 
