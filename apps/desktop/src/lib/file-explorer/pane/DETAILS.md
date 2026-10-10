@@ -130,6 +130,9 @@ suite:
 - `rename-flow.svelte.ts`: the whole inline-rename flow (activation, save, the dialogs, the arrow-key chain). It lives
   here because it hangs off the pane, but everything it does is documented next to the rest of rename in
   `../rename/DETAILS.md`, whose `CLAUDE.md` you won't get autoloaded while editing this directory.
+- `rename-in-place.ts`: a single-item Move confirmed inside its own folder goes to the SOURCE pane's
+  `startRename({ commitTarget })` instead of a transfer. Why: `../../file-operations/transfer/DETAILS.md` § "Single-item
+  destinations".
 
 **Where a factory is CREATED matters when it owns `$effect`s.** Svelte runs effects in creation order, so a factory
 whose effects interact with the component's own (`selection-info-feed`, which feeds the MCP push and the menu-context
