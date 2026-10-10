@@ -3,7 +3,7 @@ import type { VolumeInfo } from '$lib/file-explorer/types'
 import { capabilitiesForPane } from '$lib/file-explorer/pane/volume-capabilities'
 import { isPathOnVolume } from '$lib/path/canonical'
 import { DEFAULT_VOLUME_ID } from '$lib/tauri-commands'
-import { containingFolder, resolveTransferFilename, toVolumeRelativePath } from './transfer-dialog-utils'
+import { containingFolder, getFolderName, resolveTransferFilename, toVolumeRelativePath } from './transfer-dialog-utils'
 
 function volumeRoot(volumes: VolumeInfo[], id: string): string {
   return volumes.find((v) => v.id === id)?.path ?? '/'
@@ -32,6 +32,7 @@ export function resolveTransferTarget(args: {
     entered,
     sourceIsLocal ? sourceFolder : parentForVolume(sourceFolder, sourceRoot, false),
     homePath,
+    getFolderName(sourcePath),
   )
   if (!named) return null
   const selectedRoot = volumeRoot(volumes, selectedVolumeId)

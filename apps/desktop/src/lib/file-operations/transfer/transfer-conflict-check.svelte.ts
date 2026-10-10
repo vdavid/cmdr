@@ -83,6 +83,9 @@ export function createTransferConflictCheck(deps: TransferConflictCheckDeps) {
   // direction). Drives the upfront "Overwrite all" red warning, mirroring the
   // per-file dialog's file→folder warning.
   let hasTypeMismatchConflict = $state(false)
+  // A single named target whose path is an existing folder: the user likely
+  // pasted a folder path meaning "into it" (the dialog hints at a trailing slash).
+  let namedTargetIsFolder = $state(false)
   let conflictNames = $state<string[]>([])
   // The file-vs-file clashes' sizes and dates, which an S3 cost estimate prices
   // as overwrites under the chosen policy (`S3CostLine`).
@@ -100,6 +103,7 @@ export function createTransferConflictCheck(deps: TransferConflictCheckDeps) {
     totalConflictCount = 0
     mergeFolderCount = 0
     hasTypeMismatchConflict = false
+    namedTargetIsFolder = false
     conflictNames = []
     status = 'idle'
   }
@@ -173,6 +177,7 @@ export function createTransferConflictCheck(deps: TransferConflictCheckDeps) {
       mergeFolderCount = foundConflicts.length - realConflicts.length
       totalConflictCount = realConflicts.length
       hasTypeMismatchConflict = realConflicts.some((c) => c.sourceIsDirectory !== c.destIsDirectory)
+      namedTargetIsFolder = deps.getDestinationName?.() !== undefined && foundConflicts.some((c) => c.destIsDirectory)
       conflictNames = realConflicts.map((c) =>
         deps.getDestinationName?.() ? (sourcePaths[0].split('/').pop() ?? sourcePaths[0]) : c.sourcePath,
       )
@@ -215,6 +220,9 @@ export function createTransferConflictCheck(deps: TransferConflictCheckDeps) {
     },
     get hasTypeMismatchConflict() {
       return hasTypeMismatchConflict
+    },
+    get namedTargetIsFolder() {
+      return namedTargetIsFolder
     },
     get conflictNames() {
       return conflictNames

@@ -1837,6 +1837,7 @@ export type MessageKey =
   | 'fileOperations.transferDialog.hardlinkNote'
   | 'fileOperations.transferDialog.mergeInfoMany'
   | 'fileOperations.transferDialog.mergeInfoSingle'
+  | 'fileOperations.transferDialog.namedFolderHint'
   | 'fileOperations.transferDialog.operationAria'
   | 'fileOperations.transferDialog.pathErrorAlreadyThere'
   | 'fileOperations.transferDialog.pathErrorNotZip'

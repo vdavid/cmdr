@@ -124,8 +124,17 @@ A single-item Copy/Move target always includes the destination leaf, prefilled w
 paths name the exact location, including the mount root; an absolute remote path names a location within the selected
 volume. Relative paths resolve from the source folder and volume, including nested paths and `..`; `~/` resolves from
 the local home directory. `resolveTransferFilename` splits and normalizes the path, and `transfer-target.ts` selects the
-effective volume. Empty leaves, trailing slashes, and final `.` / `..` components cannot confirm. A folder copy names
-the copied or moved folder itself. Multiple selections still target a directory, preserving each selected item's name.
+effective volume. Empty leaves and final `.` / `..` components cannot confirm. A folder copy names the copied or moved
+folder itself. Multiple selections still target a directory, preserving each selected item's name.
+
+**A trailing slash means "into this folder"**: `/Users/me/Documents/` keeps the item's own name inside `Documents`.
+Without it the last segment is always the new name, so a pasted folder path would rename the item after that folder: a
+folder source silently MERGES into it (dir + dir is a merge, not a conflict), and a Move then removes the original.
+**Decision/Why:** we kept "the last segment is the name" (no existence lookup deciding the meaning, which would make the
+same text mean two things depending on disk state) and made the slash the explicit "into". When the conflict check finds
+the named target is an existing folder under a different name than the source's, the conflict card leads with
+`namedFolderHint` pointing at the slash (`transfer-conflict-check.svelte.ts::namedTargetIsFolder`). Same name means an
+ordinary merge, so it stays quiet.
 
 A complete target equal to its source shows the existing "already in this location" warning and disables confirm for
 both Copy and Move, including Enter and MCP auto-confirm. The comparison uses the full canonical destination, so

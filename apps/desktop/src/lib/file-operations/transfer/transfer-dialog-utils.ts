@@ -224,13 +224,19 @@ export function splitPathLeaf(path: string): { folder: string; leaf: string } {
   return { folder: folder === '' ? '/' : folder, leaf: path.slice(slash + 1) }
 }
 
-/** Split a complete transfer target, resolving relative paths against the source folder. */
+/**
+ * Split a complete transfer target, resolving relative paths against the source folder.
+ * A trailing slash means "into this folder": the item keeps `intoFolderName` (its own name),
+ * so a pasted folder path never turns into the item's new name.
+ */
 export function resolveTransferFilename(
   path: string,
   sourceFolder: string,
   homePath = '',
+  intoFolderName?: string,
 ): { parent: string; name: string } | null {
-  const entered = path.trim()
+  const trimmed = path.trim()
+  const entered = trimmed.endsWith('/') && intoFolderName ? `${trimmed}${intoFolderName}` : trimmed
   const leaf = entered.split('/').at(-1)
   if (!leaf || leaf === '.' || leaf === '..' || entered === '~') return null
   const expanded = entered.startsWith('~/') && homePath ? `${homePath}/${entered.slice(2)}` : entered

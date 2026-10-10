@@ -374,8 +374,25 @@ describe('complete copy targets', () => {
     expect(resolveTransferFilename(entered, '/Users/test', '/Users/home')).toEqual({ parent, name })
   })
 
-  it.each(['', ' ', '/', '/tmp/', '~', '.', '..', 'folder/.', 'folder/..'])('requires a filename in %s', (entered) => {
-    expect(resolveTransferFilename(entered, '/Users/test')).toBeNull()
+  it.each(['', ' ', '~', '.', '..', 'folder/.', 'folder/..'])('requires a filename in %s', (entered) => {
+    expect(resolveTransferFilename(entered, '/Users/test', '', 'notes.txt')).toBeNull()
+  })
+
+  it.each([
+    ['/tmp/', '/tmp'],
+    ['/', '/'],
+    ['~/', '/Users/home'],
+    ['folder/', '/Users/test/folder'],
+    ['../', '/Users'],
+  ])('reads the trailing slash in %s as "into this folder", keeping the source name', (entered, parent) => {
+    expect(resolveTransferFilename(entered, '/Users/test', '/Users/home', 'notes.txt')).toEqual({
+      parent,
+      name: 'notes.txt',
+    })
+  })
+
+  it('still requires a filename after a trailing slash when no source name is known', () => {
+    expect(resolveTransferFilename('/tmp/', '/Users/test')).toBeNull()
   })
 })
 

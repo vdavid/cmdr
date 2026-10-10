@@ -4,6 +4,7 @@ import { tick } from 'svelte'
 import type { TransferConfirmPayload } from '$lib/file-explorer/pane/dialog-props'
 import {
   flushMicrotasks,
+  makeConflict,
   mountDialog,
   confirmButton,
   pathInput,
@@ -73,18 +74,52 @@ describe('complete single-copy target', () => {
     }
   })
 
-  it('requires the final name instead of accepting a trailing slash', async () => {
+  it.each([
+    ['/tmp/', '/tmp'],
+    ['../', '/Users'],
+    ['copies/', '/Users/test/copies'],
+  ])('reads a trailing slash in %s as "into this folder", keeping the name', async (entered, destination) => {
     const onConfirm = vi.fn<ConfirmFn>()
     const target = mountDialog({ sourcePaths: ['/Users/test/notes.txt'], onConfirm })
     await flushMicrotasks()
     const input = pathInput(target)
-    input.value = '/tmp/'
+    input.value = entered
     input.dispatchEvent(new Event('input', { bubbles: true }))
     await tick()
     confirmButton(target).click()
     await flushMicrotasks()
-    expect(onConfirm).not.toHaveBeenCalled()
-    expect(target.querySelector('#transfer-path-error')).not.toBeNull()
+    expect(onConfirm).toHaveBeenCalledWith(expect.objectContaining({ destination, destinationName: 'notes.txt' }))
+    expect(target.querySelector('#transfer-path-error')).toBeNull()
+  })
+})
+
+describe('a target path that names an existing folder', () => {
+  // Pasting a folder path keeps "the last segment is the new name", so the
+  // dialog says how to put the item inside instead.
+  async function mountWithFolderAtTarget(entered: string, sourcePath: string): Promise<HTMLDivElement> {
+    scanVolumeForConflictsMock.mockResolvedValue([
+      makeConflict({ sourcePath: 'Documents', sourceIsDirectory: true, destIsDirectory: true }),
+    ])
+    const target = mountDialog({ sourcePaths: [sourcePath] })
+    await flushMicrotasks()
+    const input = pathInput(target)
+    input.value = entered
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+    await tick()
+    return target
+  }
+
+  it("hints at the trailing slash when the item would take the folder's name", async () => {
+    const target = await mountWithFolderAtTarget('/Users/test/Documents', '/Users/test/src/Photos')
+    await vi.waitFor(() => expect(target.querySelector('.named-folder-hint')?.textContent).toContain('/'))
+    expect(target.querySelector('.named-folder-hint')?.textContent).toContain('Documents')
+    expect(target.querySelector('.named-folder-hint')?.textContent).toContain('Photos')
+  })
+
+  it('stays quiet when the item keeps its own name, an ordinary merge', async () => {
+    const target = await mountWithFolderAtTarget('/Users/test/Documents', '/Users/test/src/Documents')
+    await vi.waitFor(() => expect(target.querySelector('.merge-info')).not.toBeNull())
+    expect(target.querySelector('.named-folder-hint')).toBeNull()
   })
 })
 

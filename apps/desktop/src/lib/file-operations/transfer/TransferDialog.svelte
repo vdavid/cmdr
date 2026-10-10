@@ -27,6 +27,7 @@
     import {
         confirmLabelKey,
         generateTitle,
+        getFolderName,
         initialEditedPath,
         editedPathAfterOperationChange,
         joinPathLeaf,
@@ -296,6 +297,12 @@
     const scanComplete = $derived(scan.scanComplete)
     const totalConflictCount = $derived(conflicts.totalConflictCount)
     const mergeFolderCount = $derived(conflicts.mergeFolderCount)
+    // A single item about to take an existing folder's name almost always means
+    // a pasted folder path meant "into it". Its own name there is a plain merge.
+    const sourceName = $derived(getFolderName(sourcePaths[0] ?? ''))
+    const showNamedFolderHint = $derived(
+        conflicts.namedTargetIsFolder && namedTarget !== null && namedTarget.name !== sourceName,
+    )
     const hasTypeMismatchConflict = $derived(conflicts.hasTypeMismatchConflict)
     const isCheckingConflicts = $derived(conflicts.isCheckingConflicts)
 
@@ -913,6 +920,14 @@
             <!-- A warning-toned card, not a full-bleed band: it's one more block in the
              dialog's column, so it obeys the same inset as the fields above it. -->
             <SectionCard tone="warning">
+                {#if showNamedFolderHint && namedTarget}
+                    <p class="named-folder-hint">
+                        {tString('fileOperations.transferDialog.namedFolderHint', {
+                            target: namedTarget.name,
+                            name: sourceName,
+                        })}
+                    </p>
+                {/if}
                 <!-- Folder merges are informational, never a question: same-named
                  folders always merge silently. Surfaced so a user who didn't
                  expect a same-named folder at the dest gets a visible cue. -->
@@ -1184,6 +1199,7 @@
 
     /* Folder-merge info line: neutral, not a warning. Folders always merge, so
        this is a heads-up, not a question. */
+    .named-folder-hint,
     .merge-info {
         margin: 0 0 var(--spacing-md);
         font-size: var(--font-size-sm);

@@ -212,3 +212,57 @@ it('discards a slow conflict answer after the destination changes', async () => 
   expect(check.totalConflictCount).toBe(0)
   expect(check.conflictNames).toEqual([])
 })
+
+describe('a named target that is an existing folder', () => {
+  function folderAt(destPath: string, sourceIsDirectory: boolean): VolumeConflictInfo[] {
+    return [
+      {
+        sourcePath: 'Documents',
+        destPath,
+        sourceIsDirectory,
+        destIsDirectory: true,
+        sourceSize: 0,
+        destSize: 0,
+        sourceModified: null,
+        destModified: null,
+      },
+    ] as unknown as VolumeConflictInfo[]
+  }
+
+  function namedCheck(destinationName: string | undefined) {
+    return createTransferConflictCheck({
+      getSelectedVolumeId: () => 'volume-1',
+      getSourcePaths: () => ['/src/Photos'],
+      getEditedPath: () => '/Users/me',
+      getDestinationName: () => destinationName,
+      getSourceIsDirectory: () => true,
+      getSourceVolumeId: () => 'volume-1',
+      getDestroyed: () => false,
+      log: log as never,
+    })
+  }
+
+  // Pasting a folder's path names the item after that folder: a folder would
+  // merge into it, a file would clash with it. The dialog hints at the slash.
+  it.each([true, false])('flags it when the source is a folder: %s', async (sourceIsDirectory) => {
+    scanVolumeForConflictsMock.mockResolvedValueOnce(folderAt('/Users/me/Documents', sourceIsDirectory))
+    const check = namedCheck('Documents')
+    await check.check()
+    expect(check.namedTargetIsFolder).toBe(true)
+  })
+
+  it('stays quiet for a folder-targeted batch', async () => {
+    scanVolumeForConflictsMock.mockResolvedValueOnce(folderAt('/Users/me/Documents', true))
+    const check = namedCheck(undefined)
+    await check.check()
+    expect(check.namedTargetIsFolder).toBe(false)
+  })
+
+  it('clears on reset', async () => {
+    scanVolumeForConflictsMock.mockResolvedValueOnce(folderAt('/Users/me/Documents', true))
+    const check = namedCheck('Documents')
+    await check.check()
+    check.reset()
+    expect(check.namedTargetIsFolder).toBe(false)
+  })
+})

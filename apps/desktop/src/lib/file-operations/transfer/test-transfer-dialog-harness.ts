@@ -301,5 +301,3 @@ export function pathInput(target: HTMLElement): HTMLInputElement {
   if (!input) throw new Error('path input not found')
   return input
 }
-
-/** Waits past the destination-existence debounce (300 ms) and flushes. */

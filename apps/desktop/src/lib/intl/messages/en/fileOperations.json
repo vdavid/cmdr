@@ -581,6 +581,15 @@
     "screenshot": "transfer-confirmation-copy-single.png"
   },
 
+  "fileOperations.transferDialog.namedFolderHint": "“{target}” is an existing folder, so “{name}” would take its name. To put “{name}” inside it, end the path with “/”.",
+  "@fileOperations.transferDialog.namedFolderHint": {
+    "description": "Hint in the copy/move dialog when a single item's destination path ends in an existing folder under a different name, which usually means the user pasted a folder path meaning 'into this folder'. Keep the slash character as is.",
+    "placeholders": {
+      "target": "the existing folder's name, the last part of the destination path",
+      "name": "the name of the file or folder being copied or moved"
+    }
+  },
+
   "fileOperations.transferDialog.mergeInfoMany": "{countText} {count, plural, one {folder} other {folders}} will merge with existing folders",
   "@fileOperations.transferDialog.mergeInfoMany": {
     "description": "Informational line in the transfer dialog when several same-named folders exist at the destination and will be merged. Neutral, not a warning.",
