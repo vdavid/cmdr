@@ -5,7 +5,7 @@
  * accelerator matching, `resolve_path_to_volume` in Rust, and a real navigation.
  *
  * Everything else the menu does (the `0` row's three states, the swap keys, the switcher's
- * row, reorder, rename, analytics) is pinned in
+ * favorites section, reorder, rename, analytics) is pinned in
  * `src/lib/file-explorer/navigation/FavoritesMenu.svelte.test.ts` and its controller
  * sibling, which drive the same surfaces far more cheaply.
  *

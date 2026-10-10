@@ -2015,7 +2015,7 @@
   },
   "fileExplorer.navigation.favoritesEmpty": "(Your favorites will show here)",
   "@fileExplorer.navigation.favoritesEmpty": {
-    "description": "Placeholder shown in the favorites menu when the user has no favorites yet. Shown in parentheses as a disabled, non-clickable hint.",
+    "description": "Placeholder shown in the favorites menu, and under the opened Favorites row of the volume switcher, when the user has no favorites yet. Shown in parentheses as a disabled, non-clickable hint.",
     "screenshot": "favorites-menu.png"
   },
   "fileExplorer.navigation.favoritesAddCurrent": "Add current folder to favorites",
@@ -2031,13 +2031,9 @@
   "@fileExplorer.navigation.favoritesCantAddHere": {
     "description": "Hover tooltip on the greyed-out \"Add current folder to favorites\" row when the pane is somewhere a favorite could never point back to: inside an archive, in the .git history browser, in a search results list, or on the list of servers itself. Says a fact about THIS folder first, then the reason after the colon (the places a favorite CAN point at); pair it with its sibling fileExplorer.navigation.favoritesAlreadyAdded, which opens the same way. \"Shares\" are network folders, \"servers\" are machines Cmdr connects to (SFTP, WebDAV, S3), \"phones\" are Android phones and cameras over USB; keep it plain and don't name protocols. No length limit: it's a tooltip, so read naturally rather than trimming."
   },
-  "fileExplorer.navigation.seeFavorites": "{count, plural, =0 {See favorites} one {See {count} favorite} other {See {count} favorites}}",
-  "@fileExplorer.navigation.seeFavorites": {
-    "description": "The top row of the volume switcher, which swaps it for the favorites menu. Shows how many favorites are waiting there, beside a chip showing the keyboard shortcut that opens the same menu directly.",
-    "placeholders": {
-      "count": "how many favorites the user has"
-    },
-    "screenshot": "pane-volume-chooser.png"
+  "fileExplorer.navigation.switcherFavorites": "Favorites",
+  "@fileExplorer.navigation.switcherFavorites": {
+    "description": "The top row of the volume switcher (the drop-down list of drives, servers, and phones under the pane's volume name). It's a row the user clicks to show or hide the folders they saved as favorites, right there in the list; it remembers being left open. A small chevron sits before it, the number of favorites after it, and a chip with the keyboard shortcut that opens the separate favorites menu. NOUN, a section name; match the favorites menu's own heading (fileExplorer.navigation.groupFavorites), but write it as a row label, not an all-caps heading."
   },
   "fileExplorer.navigation.favoriteTooltip": "{path}\nDrag to reorder, or {reorder}. Right-click to rename or remove.",
   "@fileExplorer.navigation.favoriteTooltip": {

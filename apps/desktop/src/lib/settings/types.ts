@@ -393,6 +393,11 @@ export interface SettingsValues {
    * `$lib/stores/volume-store` the first time five server places are pinned.
    */
   'behavior.serversPinHintSeen': boolean
+  /**
+   * Whether the volume switcher's favorites section was last left open. Hidden internal
+   * state, flipped by the section's own row (`file-explorer/navigation/VolumeChooserMenu.svelte`).
+   */
+  'behavior.switcherFavoritesExpanded': boolean
 
   /**
    * When the once-ever "keep Cmdr in your Dock?" offer was made, as an ISO 8601

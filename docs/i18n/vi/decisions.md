@@ -552,12 +552,10 @@ source is Apple's own Connect to Server dialog (`NetAuthAgent.app`).
   `chưa hoàn chỉnh` (an object, the stagedLeftover family); kept → `giữ nguyên chúng ở đó`, since `ở chỗ cũ` would be
   false. `ẩn` in "hidden folder" stays: it's the one thing the reader must act on.
 
-## Menu mục ưa thích (`commands.favoritesOpen.*`, `commands.favoritesOpenByNumber.label`, `commands.favoritesAdd.description`, `fileExplorer.navigation.favoritesAddCurrent` / `.favoritesAlreadyAdded` / `.favoritesCantAddHere` / `.seeFavorites`, `menu.go.showFavorites`, `shortcuts.scope.favoritesMenu`)
+## Menu mục ưa thích (`commands.favoritesOpen.*`, `commands.favoritesOpenByNumber.label`, `commands.favoritesAdd.description`, `fileExplorer.navigation.favoritesAddCurrent` / `.favoritesAlreadyAdded` / `.favoritesCantAddHere`, `menu.go.showFavorites`, `shortcuts.scope.favoritesMenu`)
 
 - favorites → `mục ưa thích` (AppKit) over MS `yêu thích`; the menu is `menu mục ưa thích`.
-- show → `Hiển thị mục ưa thích` (the command and `menu.go.showFavorites` match word for word); see → `Xem` (Finder
-  toolbar tooltips).
-- `seeFavorites` has `=0` (no number: "you have none") plus `other`; ❌ never restore English's `one`.
+- show → `Hiển thị mục ưa thích` (the command and `menu.go.showFavorites` match word for word).
 - "press a number to jump to that favorite" → `… để đi tới thư mục đó`, over repeating `mục ưa thích` in one sentence.
 - Row `0` quotes `favoritesAddCurrent`; keep it apart from `commands.favoritesAdd.label`, which names no folder.
 - `favoritesCantAddHere` opens like `favoritesAlreadyAdded` and says `hoạt động trên`, never naming a protocol.

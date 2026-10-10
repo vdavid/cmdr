@@ -546,10 +546,9 @@ In progress → `wordt losgekoppeld`; already gone → `werd losgekoppeld` (the 
 - `heeft ze allemaal laten staan`; `een verborgen map met de naam {folderName}` (Finder's `met de naam`, never
   `genaamd`).
 
-## Het favorietenmenu (`commands.favoritesOpen.label`/`.description`, `commands.favoritesOpenByNumber.label`, `commands.favoritesAdd.description`, `fileExplorer.navigation.favoritesAddCurrent`/`.favoritesAlreadyAdded`/`.favoritesCantAddHere`/`.seeFavorites`, `menu.go.showFavorites`, `shortcuts.scope.favoritesMenu`)
+## Het favorietenmenu (`commands.favoritesOpen.label`/`.description`, `commands.favoritesOpenByNumber.label`, `commands.favoritesAdd.description`, `fileExplorer.navigation.favoritesAddCurrent`/`.favoritesAlreadyAdded`/`.favoritesCantAddHere`, `menu.go.showFavorites`, `shortcuts.scope.favoritesMenu`)
 
 - `favorietenmenu` closed; `Toon favorieten` in both the Go menu and the palette (byte-identical twins).
-- "See {count} favorites" → `Bekijk …`: EN contrasts See with Show, and the catalog keeps `Bekijk` for looking only.
 - The `0` row has one key, `Voeg huidige map aan favorieten toe` (particle last); the shortcut list quotes it.
 - A favorite's `nummer` identifies it; the key you press is a `cijfer`.
 - `Deze map staat al in je favorieten`; `favoritesCantAddHere` gives the reason after a colon with `werken op`, and

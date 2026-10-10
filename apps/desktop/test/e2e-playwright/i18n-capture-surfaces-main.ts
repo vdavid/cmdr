@@ -130,9 +130,9 @@ export async function captureMainExplorerSurfaces(
   // the dialog tranche nor the gallery pass reaches it, and it's the only place the
   // sidebar's group headings render.
   //
-  // It lists no FAVORITES: those have their own menu (⌃D), captured right after this
-  // one. What it does carry is the "See N favorites" row that hands the header over,
-  // which is this surface's alone.
+  // Its favorites section opens folded (the remembered setting's default), so the shot
+  // carries the "Favorites" row that is this surface's alone; the favorite rows
+  // themselves are the ⌃D menu's, captured right after this one.
   await captureSurface('pane-volume-chooser', report, failed, async () => {
     await captureCall(main, 'reset')
     await captureCall(main, 'setSurface', 'pane-volume-chooser')

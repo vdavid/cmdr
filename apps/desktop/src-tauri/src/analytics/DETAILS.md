@@ -322,7 +322,8 @@ Backend events fire at success chokepoints; frontend events ride `track_event`.
   Counted at the drain rather than at the start, because a promise-backed drag (MTP, a NAS) can be abandoned before
   anything fulfills. ❌ The payload's `failures` holds leaf NAMES; only its length crosses.
 - `favorite_opened` (frontend, `file-explorer/navigation/favorites-analytics.ts`): `surface` (`favorites_menu` /
-  `command` / `dock`) plus `via` (`digit` / `letter` / `keyboard` / `pointer` / `command` / `dock`) plus `reach` (`ready`
+  `switcher` / `command` / `dock`; `switcher` is the volume switcher's favorites section, which numbers no row, so it
+  never reports `digit`) plus `via` (`digit` / `letter` / `keyboard` / `pointer` / `command` / `dock`) plus `reach` (`ready`
   / `connects` / `unplugged` / `access_off` / `forgotten` / `not_found`, Rust's `FavoriteReach` kind for the row). The
   payoff half of favorites —
   `favorite_changed` counts the list being edited and can't say whether anybody ever goes anywhere with it. `via` is
@@ -335,10 +336,9 @@ Backend events fire at success chokepoints; frontend events ride `track_event`.
   and can't tell a favorite from a drive. It counts PICKS: a favorite the pane can't go to (an unplugged phone, a
   forgotten server) still reports, and `reach` splits arrivals (`ready`, `connects`) from offline places, which is how
   often favorites point somewhere that isn't there.
-- `favorites_menu_opened` (frontend, same module): `trigger` (`command` / `switcher_row`). The denominator
-  `favorite_opened` reads against, and the one question the volume switcher's "See N favorites" row asks: is the row
-  how people find the menu, or does everyone already know ⌃D? A menu-bar accelerator and a palette pick both arrive as
-  `command`, so that arm doesn't split further.
+- `favorites_menu_opened` (frontend, same module): `trigger` (`command`). The denominator `favorite_opened` reads
+  against. A menu-bar accelerator, a palette pick, and ⌃D typed inside the open switcher all arrive as `command`, so
+  that arm doesn't split further.
 - `settings_opened` (frontend, `$lib/settings/settings-window.ts` `openSettingsWindow`): `surface` enum (the
   `SettingsSurface` union in that file, one member per entry point); never the section. It sits in the
   window helper every entry point funnels through, so it counts all dozen of them and covers a new one for free. Why

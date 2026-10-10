@@ -528,7 +528,7 @@ catalog.
   half-made object). `lät dem ligga kvar` says Cmdr CHOSE to keep them, ❌ not `blev kvar`. ❌ Never suggest deleting
   the folder: they may be the only copies.
 
-## Favorites menu (`commands.favorites*`, `fileExplorer.navigation.favorites*`, `fileExplorer.navigation.seeFavorites`, `menu.go.showFavorites`, `shortcuts.scope.favoritesMenu`)
+## Favorites menu (`commands.favorites*`, `fileExplorer.navigation.favorites*`, `menu.go.showFavorites`, `shortcuts.scope.favoritesMenu`)
 
 - The scope heading is indefinite `Favoritmeny` like its neighbours; prose is definite `favoritmenyn`. No aria quotes
   the heading, so the forms may differ; if one ever does, the heading changes form.

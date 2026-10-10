@@ -1372,10 +1372,6 @@
   "@fileExplorer.navigation.favoritesCantAddHere": {
     "sourceHash": "86564ea"
   },
-  "fileExplorer.navigation.seeFavorites": "{count, plural, =0 {Kedvencek megtekintése} one {{count} kedvenc megtekintése} other {{count} kedvenc megtekintése}}",
-  "@fileExplorer.navigation.seeFavorites": {
-    "sourceHash": "7a7e169"
-  },
   "fileExplorer.navigation.favoriteTooltip": "{path}\nHúzd az átrendezéshez, vagy {reorder}. Kattints jobb gombbal az átnevezéshez vagy eltávolításhoz.",
   "@fileExplorer.navigation.favoriteTooltip": {
     "sourceHash": "88d54d3"

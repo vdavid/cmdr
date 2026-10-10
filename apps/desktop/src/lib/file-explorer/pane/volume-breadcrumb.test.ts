@@ -199,6 +199,7 @@ vi.mock('$lib/settings/reactive-settings.svelte', () => ({
   getShowVirtualGitPortal: () => false,
   getSizeDisplayMode: vi.fn().mockReturnValue('smart'),
   getNetworkEnabled: vi.fn().mockReturnValue(true),
+  getSwitcherFavoritesExpanded: () => false,
 }))
 
 vi.mock('$lib/drag-drop', () => ({ startDragTracking: vi.fn() }))
@@ -355,10 +356,10 @@ describe('VolumeBreadcrumb', () => {
 
       await waitForUpdates()
 
-      // Find another volume item and click it. ❗ The "See N favorites" row is
-      // unchecked too and swaps menus rather than moving the pane, so skip it.
+      // Find another volume item and click it. ❗ The favorites section's row is
+      // unchecked too and folds the section rather than moving the pane, so skip it.
       const volumeItems = document.querySelectorAll(
-        '[data-menu-row]:not([data-checked]):not([data-menu-row="favorites:see"])',
+        '[data-menu-row]:not([data-checked]):not([data-menu-row="menu-disclosure:favorites"])',
       )
       if (volumeItems.length > 0) {
         volumeItems[0].dispatchEvent(new MouseEvent('click', { bubbles: true }))
@@ -428,7 +429,7 @@ describe('VolumeBreadcrumb', () => {
 
   describe('Keyboard navigation', () => {
     // Three volumes, so the arrow walk has somewhere to go past the checked row and the
-    // "See N favorites" row the switcher leads with.
+    // favorites section's row the switcher leads with.
     beforeEach(() => {
       vi.mocked(getVolumes).mockReturnValue([
         { id: 'root', name: 'Macintosh HD', path: '/', category: 'main_volume', isEjectable: false },
@@ -514,7 +515,7 @@ describe('VolumeBreadcrumb', () => {
       await mountAndOpen()
 
       // The cursor opens on the CHECKED row — the boot disk, which sits after the
-      // "See N favorites" row the switcher leads with.
+      // favorites section's row the switcher leads with.
       const items = menuRows()
       expect(items.length).toBeGreaterThan(2)
       expect(isHighlighted(items[1])).toBe(true)

@@ -243,7 +243,8 @@ describe('the add row', () => {
 
   it('adds the pane`s folder when picked, and opens no favorite', async () => {
     const { menu, went } = harness('/Users/test/elsewhere')
-    await menu.select(addRow(menu) as MenuItem<never>, 'accelerator')
+    await menu.select({ kind: 'add' }, 'accelerator')
+    expect(addRow(menu).data).toEqual({ kind: 'add' })
     expect(addFavorite).toHaveBeenCalledWith('/Users/test/elsewhere', null)
     expect(went).toEqual([])
     expect(trackEvent).not.toHaveBeenCalledWith('favorite_opened', expect.anything())
@@ -257,7 +258,7 @@ describe('the add row', () => {
  */
 describe('opening a favorite', () => {
   async function pick(menu: ReturnType<typeof createFavoritesMenu>, index: number, source: MenuActivationSource) {
-    await menu.select(favoriteRows(menu)[index], source)
+    await menu.select(favoriteRows(menu)[index].data, source)
   }
 
   it('sends the pane to the favorite`s path on the volume its row names', async () => {

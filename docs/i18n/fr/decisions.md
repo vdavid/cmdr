@@ -683,11 +683,10 @@ values write the catalog's `’`.
   `issus d’un déplacement` (tentative), since `d’un` reads as ownership.
 - `les a laissés là où ils sont` (present: where they are now); `Cmdr` stays the subject, never `il`.
 
-## Le menu des favoris (`fileExplorer.navigation.favorites*`, `fileExplorer.navigation.seeFavorites`, `menu.go.showFavorites`, `commands.favorites*`, `shortcuts.scope.favoritesMenu`)
+## Le menu des favoris (`fileExplorer.navigation.favorites*`, `menu.go.showFavorites`, `commands.favorites*`, `shortcuts.scope.favoritesMenu`)
 
 - `favori` (Finder), never Nautilus’s `signet`. The menu → `le menu des favoris` (the orthodox hotlist’s word).
-- Show favorites → `Afficher les favoris` (opens the menu); See favorites → `Voir les favoris` (the shorter row label).
-- `seeFavorites` carries `=0` plus `one` / `many` / `other`; `=0` wins, so `one` only ever sees 1.
+- Show favorites → `Afficher les favoris` (opens the menu).
 - current folder → `le dossier actuel`, over the anglicism `dossier courant`.
 - `Ce dossier ne peut pas rejoindre vos favoris : les favoris ne fonctionnent que sur un disque ou un partage monté`:
   never name a protocol there, the reader doesn’t know which one they’re on.

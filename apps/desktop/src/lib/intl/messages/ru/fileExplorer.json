@@ -1371,10 +1371,6 @@
   "@fileExplorer.navigation.favoritesCantAddHere": {
     "sourceHash": "86564ea"
   },
-  "fileExplorer.navigation.seeFavorites": "{count, plural, =0 {Посмотреть избранное} one {Посмотреть избранное ({count})} few {Посмотреть избранное ({count})} many {Посмотреть избранное ({count})} other {Посмотреть избранное ({count})}}",
-  "@fileExplorer.navigation.seeFavorites": {
-    "sourceHash": "7a7e169"
-  },
   "fileExplorer.navigation.favoriteTooltip": "{path}\nПеретащите, чтобы изменить порядок, или используйте {reorder}. Нажмите правой кнопкой, чтобы переименовать или убрать.",
   "@fileExplorer.navigation.favoriteTooltip": {
     "sourceHash": "88d54d3"

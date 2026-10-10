@@ -76,6 +76,20 @@ export const behaviorSettings: SettingDefinitionSource[] = [
     hidden: true,
   },
   {
+    // Internal (FE-owned): whether the volume switcher's favorites section was
+    // last left open. Driven entirely by the section's own row; ONE value for
+    // both panes, so the two switchers never disagree about it.
+    id: 'behavior.switcherFavoritesExpanded',
+    section: ['Behavior', 'Navigation & file ops'],
+    labelKey: 'settings.behavior.switcherFavoritesExpanded.label',
+    descriptionKey: 'settings.behavior.switcherFavoritesExpanded.description',
+    keywords: [],
+    type: 'boolean',
+    default: false,
+    component: 'switch',
+    hidden: true,
+  },
+  {
     // Internal (FE-owned): when the one-time "keep Cmdr in your Dock?" offer was
     // made, as an ISO 8601 instant. Stamped when the toast is RAISED, so a crash
     // mid-toast can't make it reappear forever. A date rather than a flag because

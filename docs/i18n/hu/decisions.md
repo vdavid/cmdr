@@ -675,13 +675,12 @@ The notice never suggests deleting: these may be the only copies. Its one action
   `egy rejtett, „{folderName}” nevű mappában` (Finder's `„^0” nevű elem`), where `egy` agrees with nothing. Quoted,
   because the 45-character id must be found in Finder; `rejtett` comes first so it isn't lost behind the id.
 
-## A kedvencek menüje (`commands.favoritesOpen.*`, `commands.favoritesOpenByNumber.label`, `commands.favoritesAdd.description`, `fileExplorer.navigation.favoritesAddCurrent`, `fileExplorer.navigation.favoritesAlreadyAdded`, `fileExplorer.navigation.favoritesCantAddHere`, `fileExplorer.navigation.seeFavorites`, `menu.go.showFavorites`, `shortcuts.scope.favoritesMenu`)
+## A kedvencek menüje (`commands.favoritesOpen.*`, `commands.favoritesOpenByNumber.label`, `commands.favoritesAdd.description`, `fileExplorer.navigation.favoritesAddCurrent`, `fileExplorer.navigation.favoritesAlreadyAdded`, `fileExplorer.navigation.favoritesCantAddHere`, `menu.go.showFavorites`, `shortcuts.scope.favoritesMenu`)
 
 - The list stays `kedvenc` / `Kedvencek`, ❌ never `könyvjelző`.
 - favorites menu: the title is appositive `Kedvencek menü` (like `Apple menü`), prose the possessive
   `a kedvencek menüje`. Deliberate: a table label isn't a sentence.
-- Show favorites → `Kedvencek megjelenítése` (Finder's `X megjelenítése`); See {count} favorites →
-  `{count} kedvenc megtekintése`, a different verb, as English uses two.
+- Show favorites → `Kedvencek megjelenítése` (Finder's `X megjelenítése`).
 - mounted share → `csatolt megosztás` (macOS `csatol`), ❌ not `csatlakoztatott` (DC's device word).
 - disk here → `lemez`, since English says disk.
 - `favoritesCantAddHere` → `Ez a mappa nem lehet kedvenc: a kedvencek csak lemezen és csatolt megosztáson működnek`,

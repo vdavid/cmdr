@@ -2040,6 +2040,14 @@
   "@settings.behavior.serversPinHintSeen.description": {
     "description": "Internal, never shown in the UI. Pairs with the long-Network-group hint label."
   },
+  "settings.behavior.switcherFavoritesExpanded.label": "Favorites open in the volume switcher",
+  "@settings.behavior.switcherFavoritesExpanded.label": {
+    "description": "Internal, never shown in the settings UI, but findable in settings search: remembers whether the user last left the Favorites section of the volume switcher (the drive list under the pane's volume chip) open or folded. \"Favorites\" is the same word as the favorites menu's heading."
+  },
+  "settings.behavior.switcherFavoritesExpanded.description": "Whether the favorites section in the volume switcher was last left open.",
+  "@settings.behavior.switcherFavoritesExpanded.description": {
+    "description": "Internal, never shown in the UI. Pairs with the favorites-open-in-the-switcher label."
+  },
   "settings.behavior.dockPinNudgeOfferedAt.label": "Dock offer made at",
   "@settings.behavior.dockPinNudgeOfferedAt.label": {
     "description": "Internal, never shown in the UI: records when the one-time offer to add Cmdr to the macOS Dock was made."

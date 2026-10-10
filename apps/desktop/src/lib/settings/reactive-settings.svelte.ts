@@ -48,6 +48,7 @@ let briefColumnWidthMode = $state<BriefColumnWidthMode>('paneWidth')
 let briefColumnWidthMaxPx = $state<number>(400)
 let networkEnabled = $state<boolean>(true)
 let nearbyServersGroup = $state<NearbyServersGroupChoice>('auto')
+let switcherFavoritesExpanded = $state<boolean>(false)
 let typeToJumpResetDelay = $state<number>(1000)
 let spaceCalculatesFolderSize = $state<boolean>(true)
 let typeToJumpMode = $state<TypeToJumpMode>('jump')
@@ -109,6 +110,7 @@ async function runInit(options?: { restrictedWindow?: boolean }): Promise<void> 
     briefColumnWidthMaxPx = getSetting('listing.briefColumnWidthMaxPx')
     networkEnabled = getSetting('network.enabled')
     nearbyServersGroup = nearbyServersGroupChoiceOf(getSetting('network.nearbyServersGroup'))
+    switcherFavoritesExpanded = getSetting('behavior.switcherFavoritesExpanded')
     typeToJumpResetDelay = getSetting('fileExplorer.typeToJump.resetDelay')
     spaceCalculatesFolderSize = getSetting('listing.spaceCalculatesFolderSize')
     typeToJumpMode = getSetting('fileExplorer.typeToJump.mode')
@@ -203,6 +205,9 @@ function applySettingChange(id: string, value: unknown): void {
       break
     case 'network.nearbyServersGroup':
       nearbyServersGroup = nearbyServersGroupChoiceOf(value)
+      break
+    case 'behavior.switcherFavoritesExpanded':
+      switcherFavoritesExpanded = value as boolean
       break
     case 'fileExplorer.typeToJump.resetDelay':
       typeToJumpResetDelay = value as number
@@ -379,6 +384,11 @@ export function getNetworkEnabled(): boolean {
  */
 export function getNearbyServersGroupChoice(): NearbyServersGroupChoice {
   return nearbyServersGroup
+}
+
+/** Whether the volume switcher's favorites section was last left open (one value for both panes). */
+export function getSwitcherFavoritesExpanded(): boolean {
+  return switcherFavoritesExpanded
 }
 
 /** A stored `string` nothing validates: anything but the two choices reads as "never chose". */

@@ -7,7 +7,13 @@
      * keyboard (including ⌥↑/⌥↓ reorder and the submenu), keyboard-vs-pointer mode, drag,
      * focus, and placement. This component owns only the DATA (sections built from
      * `volume-grouping.ts`) and what a row shows: the filesystem tag, the badges, the
-     * eject or disconnect control, the disk-space line, and the inline rename field.
+     * eject or disconnect control, and the disk-space line.
+     *
+     * The favorites lead the list as a section folded behind its own "Favorites" row, which
+     * remembers being left open (`behavior.switcherFavoritesExpanded`, one value for both
+     * panes). Its rows are the ⌃D menu's own (`createFavoritesMenu` with
+     * `surface: 'switcher'`): the same icon, dimming, tooltip, row actions, rename and
+     * shortcut fields, reorder, and the one open path, `open-favorite.ts`.
      */
     import { onDestroy, untrack } from 'svelte'
     import { getVolumes, getVolumesTimedOut, isVolumesRefreshing, isVolumeRetryFailed, requestVolumeRefresh } from '$lib/stores/volume-store.svelte'
@@ -18,15 +24,15 @@
     import { eventMatchesCommand } from '$lib/shortcuts'
     import { tString } from '$lib/intl/messages.svelte'
     import { restrictedFolderTooltip } from '$lib/system-strings.svelte'
-    import { getFileSizeFormat } from '$lib/settings/reactive-settings.svelte'
+    import { getSwitcherFavoritesExpanded } from '$lib/settings/reactive-settings.svelte'
     import { tooltip } from '$lib/tooltip/tooltip'
     import Icon from '$lib/ui/Icon.svelte'
     import Menu from '$lib/ui/Menu.svelte'
     import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
-    import Spinner from '$lib/ui/Spinner.svelte'
     import StatusGlyph from '$lib/ui/StatusGlyph.svelte'
     import { createMenu } from '$lib/ui/menu-controller.svelte'
-    import type { MenuIcon, MenuItem, MenuRowContext, MenuSection } from '$lib/ui/menu-types'
+    import type { MenuActivationSource, MenuIcon, MenuItem, MenuRowContext, MenuSection } from '$lib/ui/menu-types'
+    import type { PaneId } from '$lib/commands/types'
     import { deviceVolumeLabel } from '$lib/adb/adb-volume-label'
     import { deviceRowState } from '$lib/adb/device-readiness'
     import {
@@ -36,14 +42,17 @@
     } from '$lib/indexing/first-connect-trigger'
     import { silenceDrive } from '$lib/indexing/drive-index-prefs'
     import { setSetting } from '$lib/settings'
-    import { getUsageBar, formatDiskSpaceShort } from '../disk-space-utils'
     import type { VolumeInfo } from '../types'
     import type { VolumeChangePayload } from '../pane/types'
     import ConnectionDot from './ConnectionDot.svelte'
     import DetachButton from './DetachButton.svelte'
     import DriveIndexBadge from './DriveIndexBadge.svelte'
+    import FavoriteRowLabel from './FavoriteRowLabel.svelte'
+    import FavoriteShortcutField from './FavoriteShortcutField.svelte'
+    import { createFavoritesMenu, type FavoritesRow } from './favorites-menu.svelte'
     import ImageIndexDriveBadge from './ImageIndexDriveBadge.svelte'
     import UsbSpeedDot from './UsbSpeedDot.svelte'
+    import VolumeSpaceLine from './VolumeSpaceLine.svelte'
     import { createDirectConnectionSwitches } from './direct-connection-switch.svelte'
     import { detachControlFor } from './detach-control'
     import { runDetach } from './detach-volume'
@@ -64,9 +73,13 @@
     import { groupByCategory } from './volume-grouping'
     import { createVolumeSpaceManager } from './volume-space-manager.svelte'
     import type { DriveBadges } from './drive-badges.svelte'
-    import type { FavoritesMenuOpenTrigger } from './favorites-analytics'
 
     interface Props {
+        /** Which pane this switcher belongs to: where a refused favorite's toast goes. */
+        paneId: PaneId
+        /** The pane's volume and folder, which the favorites controller is built around. */
+        volumeId: string
+        currentPath: string
         /** The volume the pane's path really sits on: the row wearing the checkmark. */
         containingVolumeId: string | null
         /** The index dots, shared with the chip so both placements fetch and subscribe once. */
@@ -79,15 +92,18 @@
         /** Tab hands this switcher to the other pane; the dual-pane owner performs the handoff. */
         onSwitchPane: () => void
         /**
-         * Hand the header over to the favorites menu: the "See N favorites" row, or ⌃D
-         * typed right here (the row has just taught that key, so it has to work).
+         * Hand the header over to the favorites menu: ⌃D typed right here (the favorites
+         * row's chip teaches that key, so it has to work where it's advertised).
          */
-        onShowFavorites: (trigger: FavoritesMenuOpenTrigger) => void
+        onShowFavorites: () => void
         /** So the chip can keep one header menu open at a time. */
         onOpenChange: (open: boolean) => void
     }
 
     const {
+        paneId,
+        volumeId,
+        currentPath,
         containingVolumeId,
         badges,
         getAnchor,
@@ -110,14 +126,6 @@
     const READ_ONLY_TOOLTIP = $derived(tString('fileExplorer.navigation.readOnlyTooltip'))
 
     const spaceManager = createVolumeSpaceManager()
-    const {
-        volumeSpaceMap,
-        spaceTimedOutSet,
-        spaceRetryingSet,
-        spaceRetryFailedSet,
-        spaceRetryAttemptedSet,
-        spaceAutoRetryingSet,
-    } = spaceManager
 
     // Generic macOS folder icon used as fallback when a volume has no icon (for example,
     // FDA-gated favorites whose icons aren't fetched yet to avoid TCC popups). Reading
@@ -129,13 +137,47 @@
 
     const groupedVolumes = $derived(groupByCategory(volumes))
     const allVolumes = $derived(groupedVolumes.flatMap((g) => g.items))
-    const favoritesCount = $derived(volumes.filter((v) => v.category === 'favorite').length)
 
     /**
-     * What a row carries back on a pick: a volume row, or one of its row actions. A union
-     * rather than a value prefix, so a pick can't be read as the wrong kind of row.
+     * What a row carries back on a pick: a volume row, one of its row actions, or a
+     * favorite's (`FavoritesRow`, so the favorites controller takes it as is). A union rather
+     * than a value prefix, so a pick can't be read as the wrong kind of row.
      */
-    type SwitcherRow = { kind: 'volume'; volume: VolumeInfo } | RowMenuPick
+    type SwitcherRow = { kind: 'volume'; volume: VolumeInfo } | RowMenuPick | FavoritesRow
+
+    let renameInputRef: HTMLInputElement | undefined = $state()
+    let shortcutInputRef: HTMLInputElement | undefined = $state()
+
+    /**
+     * The favorites section's rows and edits: the ⌃D menu's own controller, so the two can't
+     * drift. It numbers nothing here, and a pick reports `surface: 'switcher'`.
+     */
+    const favorites = createFavoritesMenu({
+        getVolumes: () => volumes,
+        getPaneId: () => paneId,
+        getPaneVolumeId: () => volumeId,
+        getPaneCurrentPath: () => currentPath,
+        getDirIconFallback: () => dirIconFallback,
+        getRenameInputRef: () => renameInputRef,
+        getShortcutInputRef: () => shortcutInputRef,
+        go: (target) => { onVolumeChange?.(target) },
+        surface: 'switcher',
+    })
+
+    /** The favorites section's id, which `onReorder` and `onDisclosureChange` name. */
+    const FAVORITES_SECTION_ID = 'favorites'
+
+    /**
+     * Whether the favorites section is open. Seeded from the remembered setting on every
+     * open, so the other pane's switcher picks up a flip made in this one, and flipped
+     * locally at once so the row answers before the setting round-trips.
+     */
+    let favoritesExpanded = $state(false)
+
+    function setFavoritesExpanded(expanded: boolean): void {
+        favoritesExpanded = expanded
+        setSetting('behavior.switcherFavoritesExpanded', expanded)
+    }
 
     const directSwitches = createDirectConnectionSwitches()
 
@@ -149,9 +191,6 @@
     function paneFooterTop(): number | undefined {
         return getAnchor()?.closest('.file-pane')?.querySelector('[data-pane-footer]')?.getBoundingClientRect().top
     }
-
-    /** The row that hands the header over to the favorites menu, and teaches ⌃D doing it. */
-    const SEE_FAVORITES_VALUE = 'favorites:see'
 
     function rowIcon(volume: VolumeInfo, restricted: boolean): MenuIcon | undefined {
         if (volume.category === 'cloud_drive') return { src: '/icons/sync-online-only.svg' }
@@ -209,24 +248,30 @@
         }
     }
 
-    /** The volume a top-level row stands for; the "See N favorites" row has none. */
+    /** The volume a top-level row stands for; a favorite's row has none. */
     function rowVolume(item: MenuItem<SwitcherRow>): VolumeInfo | undefined {
         return item.data?.kind === 'volume' ? item.data.volume : undefined
     }
 
+    /** The favorite a top-level row stands for, if it's one. */
+    function rowFavorite(item: MenuItem<SwitcherRow>): VolumeInfo | undefined {
+        return item.data?.kind === 'favorite' ? item.data.volume : undefined
+    }
+
     const sections: MenuSection<SwitcherRow>[] = $derived.by(() => [
-        // One row on top for the favorites, which live in their own menu (⌃D). It keeps
-        // them a click away and is where the key gets taught; ❌ the switcher lists no
-        // favorites itself, so there's no second place to manage them from.
+        // On top, folded behind its own row: the most important places, one click away once
+        // opened, and the row is where ⌃D gets taught. Reorderable, since the rows' tooltip
+        // says so wherever a favorite is shown.
         {
-            id: 'favorites',
-            items: [
-                {
-                    value: SEE_FAVORITES_VALUE,
-                    label: tString('fileExplorer.navigation.seeFavorites', { count: favoritesCount }),
-                    icon: { lucide: 'star' },
-                },
-            ],
+            id: FAVORITES_SECTION_ID,
+            disclosure: {
+                expanded: favoritesExpanded,
+                label: tString('fileExplorer.navigation.switcherFavorites'),
+                icon: { lucide: 'star' },
+            },
+            reorderable: true,
+            emptyLabel: tString('fileExplorer.navigation.favoritesEmpty'),
+            items: favorites.favoriteItems,
         },
         ...groupedVolumes.map((group) => ({
             id: group.category,
@@ -240,8 +285,8 @@
 
     /**
      * ⌃D right here swaps to the favorites menu. Central dispatch is suppressed while a
-     * header menu is open, so nothing else would answer it, and the row above has just
-     * taught the key — it has to work where it's advertised. `eventMatchesCommand` means a
+     * header menu is open, so nothing else would answer it, and the favorites row's chip
+     * teaches the key — it has to work where it's advertised. `eventMatchesCommand` means a
      * rebind follows.
      */
     function handleKey(event: KeyboardEvent): boolean {
@@ -253,15 +298,24 @@
             return true
         }
         if (!eventMatchesCommand(event, 'favorites.open')) return false
-        onShowFavorites('command')
+        onShowFavorites()
         return true
     }
 
     const menu = createMenu<SwitcherRow>({
         getSections: () => sections,
-        onSelect: (item) => {
-            void handleSelect(item)
+        onSelect: (item, source) => {
+            void handleSelect(item, source)
         },
+        onReorder: ({ sectionId, orderedValues }) => {
+            if (sectionId === FAVORITES_SECTION_ID) favorites.applyReorder(orderedValues)
+        },
+        onDisclosureChange: ({ sectionId, expanded }) => {
+            if (sectionId === FAVORITES_SECTION_ID) setFavoritesExpanded(expanded)
+        },
+        // While a favorite's rename or shortcut field is focused, its `<input>` owns every
+        // keystroke: arrows and Home/End must not move the menu cursor.
+        isEditing: favorites.isEditing,
         onKey: handleKey,
         onOpenChange: (open) => {
             onOpenChange(open)
@@ -289,6 +343,7 @@
         const anchor = getAnchor()
         if (!anchor) return
         focusBeforeOpen = document.activeElement instanceof HTMLElement ? document.activeElement : null
+        favoritesExpanded = getSwitcherFavoritesExpanded()
         menu.openUnder(anchor)
         // Land the cursor on the row wearing the checkmark, so Enter re-opens where you
         // already are; with nothing checked the primitive's first row stands.
@@ -309,17 +364,20 @@
         return menu.isOpen
     }
 
-    async function handleSelect(item: MenuItem<SwitcherRow>): Promise<void> {
-        if (item.value === SEE_FAVORITES_VALUE) {
-            onShowFavorites('switcher_row')
+    async function handleSelect(item: MenuItem<SwitcherRow>, source: MenuActivationSource): Promise<void> {
+        const row = item.data
+        if (!row) return
+        if (row.kind === 'volume') {
+            openVolume(row.volume)
             return
         }
-        const row = item.data
-        if (row?.kind === 'row-entry') {
+        // A favorite's own pick and its row actions (Rename, Set shortcut, Remove) belong to
+        // the favorites controller, which opens through `open-favorite.ts` like everywhere.
+        if (row.kind === 'row-entry' && row.volume.category !== 'favorite') {
             await runRowEntry(row)
             return
         }
-        if (row) openVolume(row.volume)
+        await favorites.select(row, source)
     }
 
     /**
@@ -399,25 +457,36 @@
      bar with the status text showing through the glass. -->
 <Menu {menu} ariaLabel={tString('shortcuts.scope.volumeChooser')} getBottomLimit={paneFooterTop}>
     {#snippet label(ctx: MenuRowContext<SwitcherRow>)}
+        {@const favorite = rowFavorite(ctx.item)}
         {@const volume = rowVolume(ctx.item)}
-        <!-- TCC-restricted entries read quiet + italic (the shared `--color-text-quiet`
-             token, as the file list's hidden entries do); a pinned place nobody has
-             dialed is quiet too, so the connected rows above it read as the live ones.
-             ❌ Not `aria-disabled`: opening one is what dials it. The favorites row
-             carries no volume and takes neither treatment. -->
-        <span
-            class="volume-label"
-            class:is-restricted={volume ? isRestricted(volume.path) : false}
-            class:is-saved-place={volume?.connectionState === 'saved'}>{ctx.item.label}</span
-        >
+        {#if favorite}
+            <!-- The ⌃D menu's own label: dimmed when a pick can't open it right away, or the
+                 inline rename field. -->
+            <FavoriteRowLabel {favorites} volume={favorite} label={ctx.item.label} bind:renameInput={renameInputRef} />
+        {:else}
+            <!-- TCC-restricted entries read quiet + italic (the shared `--color-text-quiet`
+                 token, as the file list's hidden entries do); a pinned place nobody has
+                 dialed is quiet too, so the connected rows above it read as the live ones.
+                 ❌ Not `aria-disabled`: opening one is what dials it. -->
+            <span
+                class="volume-label"
+                class:is-restricted={volume ? isRestricted(volume.path) : false}
+                class:is-saved-place={volume?.connectionState === 'saved'}>{ctx.item.label}</span
+            >
+        {/if}
+    {/snippet}
+
+    {#snippet disclosureTrailing()}
+        <!-- The key that opens the favorites on their own from anywhere, live: a rebind shows
+             here. Not clickable — inside a row, a second target would double-activate. -->
+        <ShortcutChip commandId="favorites.open" clickable={false} />
     {/snippet}
 
     {#snippet trailing(ctx: MenuRowContext<SwitcherRow>)}
+        {@const favorite = rowFavorite(ctx.item)}
         {@const volume = rowVolume(ctx.item)}
-        {#if ctx.item.value === SEE_FAVORITES_VALUE}
-            <!-- The key that opens the same menu from anywhere, live: a rebind shows here.
-                 Not clickable — inside a row, a second target would double-activate. -->
-            <ShortcutChip commandId="favorites.open" clickable={false} />
+        {#if favorite}
+            <FavoriteShortcutField {favorites} volume={favorite} bind:shortcutInput={shortcutInputRef} />
         {:else if volume}
             {@const fsLabel = filesystemLabel(volume)}
             <!-- Declared up here because `{@const}` has to be an immediate child of a block;
@@ -481,57 +550,7 @@
     {#snippet below(ctx: MenuRowContext<SwitcherRow>)}
         {@const volume = rowVolume(ctx.item)}
         {#if volume}
-            {@const space = volumeSpaceMap.get(volume.id)}
-            {#if space}
-                {@const bar = getUsageBar(space)}
-                <div class="volume-space-info">
-                    <!-- No bar where there is no total to fill it against: the line carries
-                         the used figure on its own. -->
-                    {#if bar}
-                        <div class="volume-space-bar">
-                            <div
-                                class="volume-space-fill"
-                                style:width="{bar.usedPercent}%"
-                                style:background-color="var({bar.cssVar})"
-                            ></div>
-                        </div>
-                    {/if}
-                    <span class="volume-space-text">{formatDiskSpaceShort(space, getFileSizeFormat())}</span>
-                </div>
-            {:else if spaceRetryingSet.has(volume.id)}
-                <div
-                    class="volume-space-info volume-space-timeout"
-                    use:tooltip={spaceAutoRetryingSet.has(volume.id)
-                        ? tString('fileExplorer.navigation.spaceRetryingAuto')
-                        : tString('fileExplorer.navigation.spaceRetrying')}
-                >
-                    <div class="volume-space-bar volume-space-bar-timeout"><Spinner size="sm" /></div>
-                    <span class="volume-space-text volume-space-text-timeout"
-                        >{tString('fileExplorer.navigation.spaceRetryingText')}</span
-                    >
-                </div>
-            {:else if spaceTimedOutSet.has(volume.id)}
-                <!-- svelte-ignore a11y_click_events_have_key_events -->
-                <!-- svelte-ignore a11y_no_static_element_interactions -->
-                <div
-                    class="volume-space-info volume-space-timeout"
-                    class:space-shake={spaceRetryFailedSet.has(volume.id)}
-                    use:tooltip={spaceRetryAttemptedSet.has(volume.id)
-                        ? tString('fileExplorer.navigation.spaceStillUnavailable')
-                        : tString('fileExplorer.navigation.spaceFetchFailed')}
-                    onclick={(e: MouseEvent) => {
-                        e.stopPropagation()
-                        spaceManager.retryVolumeSpace(volume)
-                    }}
-                >
-                    <div class="volume-space-bar volume-space-bar-timeout">
-                        <span class="volume-space-timeout-icon">?</span>
-                    </div>
-                    <span class="volume-space-text volume-space-text-timeout"
-                        >{tString('fileExplorer.navigation.spaceUnavailableText')}</span
-                    >
-                </div>
-            {/if}
+            <VolumeSpaceLine {volume} {spaceManager} />
         {/if}
     {/snippet}
 
@@ -603,77 +622,6 @@
 
     .row-trailing > :global(* + *) {
         margin-left: var(--spacing-sm);
-    }
-
-    .volume-space-info {
-        display: flex;
-        align-items: center;
-        gap: var(--spacing-sm);
-        /* stylelint-disable-next-line declaration-property-value-disallowed-list -- left pad aligns to a computed icon+gap offset; 14px/16px are measured widths */
-        padding: 0 var(--spacing-md) var(--spacing-xs) calc(14px + var(--spacing-sm) + 16px + var(--spacing-sm));
-    }
-
-    .volume-space-bar {
-        flex: 1;
-        height: 2px;
-        background-color: var(--color-disk-track);
-        border-radius: var(--radius-sm);
-    }
-
-    .volume-space-fill {
-        height: 100%;
-        border-radius: var(--radius-sm);
-    }
-
-    .volume-space-text {
-        font-size: var(--font-size-xs);
-        color: var(--color-text-tertiary);
-        white-space: nowrap;
-        flex-shrink: 0;
-    }
-
-    /* Volume space timeout placeholder */
-    .volume-space-timeout {
-        cursor: default;
-    }
-
-    .volume-space-bar-timeout {
-        border: 1px dashed var(--color-border);
-        background-color: transparent;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        height: 8px;
-    }
-
-    .volume-space-timeout-icon {
-        font-size: var(--font-size-xs);
-        color: var(--color-warning);
-        line-height: var(--font-line-height-flat);
-        transition: opacity var(--transition-base);
-    }
-
-    /* Shake on retry failure */
-    /*noinspection CssUnusedSymbol*/
-    .space-shake {
-        animation: shake 300ms ease;
-    }
-
-    @keyframes shake {
-        0%,
-        100% {
-            transform: translateX(0);
-        }
-        25% {
-            transform: translateX(-3px);
-        }
-        75% {
-            transform: translateX(3px);
-        }
-    }
-
-    .volume-space-text-timeout {
-        color: var(--color-warning);
     }
 
     /* The footer's own rule, matching the primitive's between-section separators. */
@@ -757,12 +705,6 @@
         /*noinspection CssUnusedSymbol*/
         .timeout-warning-row.retry-failed {
             animation: none;
-        }
-
-        /* Reduced motion: opacity flash instead of shake */
-        /*noinspection CssUnusedSymbol*/
-        .space-shake {
-            animation: flash-warning 300ms ease;
         }
     }
 </style>

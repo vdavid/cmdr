@@ -366,7 +366,7 @@ the installed macOS `pt_BR.lproj` bundles.
 - The badge is sentence case (`Sem acesso total ao disco`); `Acesso Total ao Disco` stays for strings naming the pane.
   It equals `onboarding.stepAi.bannerTitle.denied`, and the aria opens with it verbatim.
 
-## Favorites menu (`commands.favoritesOpen.*`, `commands.favoritesOpenByNumber.label`, `commands.favoritesAdd.description`, `fileExplorer.navigation.favoritesAddCurrent`/`favoritesAlreadyAdded`/`favoritesCantAddHere`/`seeFavorites`, `menu.go.showFavorites`, `shortcuts.scope.favoritesMenu`)
+## Favorites menu (`commands.favoritesOpen.*`, `commands.favoritesOpenByNumber.label`, `commands.favoritesAdd.description`, `fileExplorer.navigation.favoritesAddCurrent`/`favoritesAlreadyAdded`/`favoritesCantAddHere`, `menu.go.showFavorites`, `shortcuts.scope.favoritesMenu`)
 
 - `favoritos` lowercase as a common noun, `Favoritos` only where the English names the section.
 - `Esta pasta já está nos favoritos` over `já é um favorito`, whose masculine predicate clashes with `pasta`.

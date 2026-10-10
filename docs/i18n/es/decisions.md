@@ -553,11 +553,9 @@ Neither failure nor loss: Cmdr couldn't prove the copies landed. kept → `ha co
 not `parcial` (promises part worked) nor `interrumpido`. `una carpeta oculta` is mandatory; `llamada {folderName}`
 agrees with `carpeta`.
 
-## El menú de favoritos: ⌃D, las teclas 1–9 y la fila que lo abre desde el selector (`commands.favoritesOpen.*`, `commands.favoritesOpenByNumber.label`, `commands.favoritesAdd.description`, `fileExplorer.navigation.favoritesAddCurrent`/`favoritesAlreadyAdded`/`favoritesCantAddHere`/`seeFavorites`, `menu.go.showFavorites`, `shortcuts.scope.favoritesMenu`)
+## El menú de favoritos: ⌃D, las teclas 1–9 y la fila que lo abre desde el selector (`commands.favoritesOpen.*`, `commands.favoritesOpenByNumber.label`, `commands.favoritesAdd.description`, `fileExplorer.navigation.favoritesAddCurrent`/`favoritesAlreadyAdded`/`favoritesCantAddHere`, `menu.go.showFavorites`, `shortcuts.scope.favoritesMenu`)
 
 - favorites → `favoritos`, ❌ never `marcadores` (another feature in Double Commander and Dolphin).
-- Deliberate `Ver {count} favoritos` (chooser row) / `Mostrar favoritos` (command) boundary: English splits See / Show.
-- `seeFavorites`: `=0` + `one` + `many` + `other`.
 - `la carpeta actual` keeps the article (an existing folder); `Esta carpeta ya está en favoritos`, the reverse of
   `Añadir a favoritos`.
 - press a number → `pulsa un número` (keys `pulsar`, mouse `hacer clic`).

@@ -33,7 +33,7 @@ import { buildFavoriteTooltip } from './favorite-tooltip'
 import { favoriteFallbackGlyph, favoriteIsDimmed, favoriteReachStatus } from './favorite-reach'
 import { openFavorite } from './open-favorite'
 import { favoriteRowMenu, rowMenuItems, type RowMenuPick } from './row-menu'
-import type { FavoriteOpenedEvent } from './favorites-analytics'
+import type { FavoriteRowVia } from './favorites-analytics'
 
 /**
  * What a row carries back on a pick. A discriminated union rather than an optional
@@ -69,11 +69,19 @@ export interface FavoritesMenuDeps {
   getShortcutInputRef: () => HTMLInputElement | undefined
   /** The last mile of opening a favorite: put the pane on the containing volume. */
   go: (target: VolumeChangePayload) => void
+  /**
+   * Where the rows are shown, which is what a pick reports as its `surface`: the ⌃D menu
+   * (the default), or the volume switcher's favorites section. The switcher numbers no row:
+   * a digit column there would widen every volume row too, and the digits are ⌃D's.
+   */
+  surface?: 'favorites_menu' | 'switcher'
 }
 
 export interface FavoritesMenuController {
   /** The two sections the `Menu` renders: the favorites, then the add row. */
   get sections(): MenuSection<FavoritesRow>[]
+  /** The favorites' rows alone, for a surface that hosts them in a section of its own (the switcher). */
+  get favoriteItems(): MenuItem<FavoritesRow>[]
   /** The favorites in display order (the optimistic override applied). */
   get favorites(): VolumeInfo[]
   get renamingFavoriteId(): string | null
@@ -84,8 +92,12 @@ export interface FavoritesMenuController {
   isEditing: () => boolean
   /** Whether a favorite's row reads dimmed: a pick can't open it right away (`favorite-reach.ts`). */
   isDimmed: (favorite: VolumeInfo) => boolean
-  /** Carry out a pick. `source` is the primitive's, and becomes the analytics `via`. */
-  select: (item: MenuItem<FavoritesRow>, source: MenuActivationSource) => Promise<void>
+  /**
+   * Carry out a pick of a row's payload. `source` is the primitive's, and becomes the
+   * analytics `via`. Takes the payload rather than the item, so a host whose own rows carry
+   * a wider union (the switcher) can hand over a narrowed one.
+   */
+  select: (row: FavoritesRow | undefined, source: MenuActivationSource) => Promise<void>
   /** Take the order the menu just settled on (drag or ⌥↑/⌥↓) and persist it. */
   applyReorder: (orderedLocationIds: string[]) => void
   /** A favorite's row action (Rename, Remove from favorites), picked from its submenu. */
@@ -126,7 +138,7 @@ function isPaneFolder(
 }
 
 /** The primitive says HOW a row was activated; the analytics contract words it its own way. */
-function viaOf(source: MenuActivationSource): Extract<FavoriteOpenedEvent, { surface: 'favorites_menu' }>['via'] {
+function viaOf(source: MenuActivationSource): FavoriteRowVia {
   switch (source) {
     case 'accelerator':
       return 'digit'
@@ -140,6 +152,9 @@ function viaOf(source: MenuActivationSource): Extract<FavoriteOpenedEvent, { sur
 }
 
 export function createFavoritesMenu(deps: FavoritesMenuDeps): FavoritesMenuController {
+  const surface = deps.surface ?? 'favorites_menu'
+  const numbered = surface === 'favorites_menu'
+
   // Optimistic favorite order for an instant, local-first reorder. A keyboard (⌥↑/⌥↓) or
   // pointer reorder sets this to the new order of favorite ids SYNCHRONOUSLY, so the menu
   // re-renders immediately and a rapid next press computes against fresh state; the backend
@@ -234,7 +249,7 @@ export function createFavoritesMenu(deps: FavoritesMenuDeps): FavoritesMenuContr
       label: volume.name,
       icon: favoriteIcon(volume),
       // 1-indexed, and only while a single digit is left to give.
-      accelerator: index < NUMBERED_FAVORITES ? String(index + 1) : undefined,
+      accelerator: numbered && index < NUMBERED_FAVORITES ? String(index + 1) : undefined,
       shortcut: editingShortcutId === volume.id ? undefined : (shortcut ?? undefined),
       // The PATH leads, so a renamed favorite still reveals where it points. A dimmed row
       // says why right under it; it stays pickable, since a pick is what dials a saved place.
@@ -245,6 +260,8 @@ export function createFavoritesMenu(deps: FavoritesMenuDeps): FavoritesMenuContr
     }
   }
 
+  const favoriteItems = $derived(favorites.map(favoriteItem))
+
   const sections = $derived<MenuSection<FavoritesRow>[]>([
     {
       id: FAVORITES_SECTION_ID,
@@ -253,7 +270,7 @@ export function createFavoritesMenu(deps: FavoritesMenuDeps): FavoritesMenuContr
       // An emptied list is a real user state (they can remove every favorite), so the
       // section still reads as itself rather than vanishing.
       emptyLabel: tString('fileExplorer.navigation.favoritesEmpty'),
-      items: favorites.map(favoriteItem),
+      items: favoriteItems,
     },
     {
       id: 'add',
@@ -272,8 +289,7 @@ export function createFavoritesMenu(deps: FavoritesMenuDeps): FavoritesMenuContr
     },
   ])
 
-  async function select(item: MenuItem<FavoritesRow>, source: MenuActivationSource): Promise<void> {
-    const row = item.data
+  async function select(row: FavoritesRow | undefined, source: MenuActivationSource): Promise<void> {
     if (!row) return
     if (row.kind === 'add') {
       await addFavoriteFolder(deps.getPaneCurrentPath())
@@ -288,7 +304,7 @@ export function createFavoritesMenu(deps: FavoritesMenuDeps): FavoritesMenuContr
     await openFavorite({
       favorite: row.volume,
       pane: deps.getPaneId(),
-      picked: { surface: 'favorites_menu', via: viaOf(source) },
+      picked: { surface, via: viaOf(source) },
       go: deps.go,
     })
   }
@@ -405,6 +421,9 @@ export function createFavoritesMenu(deps: FavoritesMenuDeps): FavoritesMenuContr
   return {
     get sections() {
       return sections
+    },
+    get favoriteItems() {
+      return favoriteItems
     },
     get favorites() {
       return favorites

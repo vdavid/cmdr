@@ -7,8 +7,9 @@
      * ❗ The house `Menu` primitive (`$lib/ui/Menu.svelte`) owns every interaction: open
      * and close, anchoring, the cursor, the keyboard (including the digit accelerators
      * and ⌥↑/⌥↓ reorder), keyboard-vs-pointer mode, drag, focus, and placement. This
-     * component owns the rename field's markup and the two keys that swap menus; the rows
-     * themselves come from `favorites-menu.svelte.ts`.
+     * component owns the two keys that swap menus; the rows come from
+     * `favorites-menu.svelte.ts`, and a favorite row's label and shortcut field from
+     * `FavoriteRowLabel` / `FavoriteShortcutField`, which the switcher shares.
      */
     import { onDestroy } from 'svelte'
     import { getVolumes } from '$lib/stores/volume-store.svelte'
@@ -21,6 +22,8 @@
     import type { MenuRowContext } from '$lib/ui/menu-types'
     import type { PaneId } from '$lib/commands/types'
     import type { VolumeChangePayload } from '../pane/types'
+    import FavoriteRowLabel from './FavoriteRowLabel.svelte'
+    import FavoriteShortcutField from './FavoriteShortcutField.svelte'
     import { createFavoritesMenu, FAVORITES_SECTION_ID, type FavoritesRow } from './favorites-menu.svelte'
     import { reportFavoritesMenuOpened, type FavoritesMenuOpenTrigger } from './favorites-analytics'
 
@@ -90,7 +93,7 @@
     const menu = createMenu<FavoritesRow>({
         getSections: () => favorites.sections,
         onSelect: (item, source) => {
-            void favorites.select(item, source)
+            void favorites.select(item.data, source)
         },
         onReorder: ({ sectionId, orderedValues }) => {
             if (sectionId === FAVORITES_SECTION_ID) favorites.applyReorder(orderedValues)
@@ -144,81 +147,25 @@
 <Menu {menu} ariaLabel={tString('shortcuts.scope.favoritesMenu')}>
     {#snippet label(ctx: MenuRowContext<FavoritesRow>)}
         {@const row = ctx.item.data}
-        {#if row?.kind === 'favorite' && favorites.renamingFavoriteId === row.volume.id}
-            <!-- eslint-disable-next-line cmdr/prefer-ui-primitive -- Dense inline editor inside a menu row: it inherits the row's font and sits at row height with 2px side padding, which the framed `TextInput`'s padding would blow past, and it carries a resting accent border to read as "editing" rather than one that appears on focus. -->
-            <input
-                class="favorite-rename-input"
-                bind:this={renameInputRef}
-                bind:value={favorites.renameDraft}
-                onkeydown={(e: KeyboardEvent) => { favorites.handleRenameKeyDown(e, row.volume) }}
-                onblur={() => { void favorites.commitRename(row.volume) }}
-                aria-label={tString('fileExplorer.navigation.renameFavoriteAriaLabel')}
-            />
+        {#if row?.kind === 'favorite'}
+            <FavoriteRowLabel {favorites} volume={row.volume} label={ctx.item.label} bind:renameInput={renameInputRef} />
         {:else}
-            <!-- A row a pick can't open right away reads quiet, like the switcher's undialed saved
-                 place. ❌ Not `aria-disabled`: picking it is what dials it. Its tooltip says why. -->
-            <span class="favorite-label" class:is-unreachable={row?.kind === 'favorite' && favorites.isDimmed(row.volume)}>{ctx.item.label}</span>
+            <span class="row-label">{ctx.item.label}</span>
         {/if}
     {/snippet}
     {#snippet trailing(ctx: MenuRowContext<FavoritesRow>)}
         {@const row = ctx.item.data}
-        {#if row?.kind === 'favorite' && favorites.editingShortcutId === row.volume.id}
-            <!-- eslint-disable-next-line cmdr/prefer-ui-primitive -- This read-only, one-key capture sits inside a menu row, not a framed text field. -->
-            <input
-                class="favorite-shortcut-input"
-                bind:this={shortcutInputRef}
-                readonly
-                value={row.volume.favoriteShortcut ?? ''}
-                placeholder={tString('fileExplorer.navigation.favoriteShortcutPrompt')}
-                aria-label={tString('fileExplorer.navigation.favoriteShortcutAriaLabel', { name: row.volume.name })}
-                onkeydown={(event: KeyboardEvent) => { favorites.handleShortcutKeyDown(event, row.volume) }}
-                onblur={favorites.cancelShortcutEdit}
-            />
+        {#if row?.kind === 'favorite'}
+            <FavoriteShortcutField {favorites} volume={row.volume} bind:shortcutInput={shortcutInputRef} />
         {/if}
     {/snippet}
 </Menu>
 
 <style>
-    .favorite-label {
+    .row-label {
         flex: 1;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
-    }
-
-    /*noinspection CssUnusedSymbol*/
-    .favorite-label.is-unreachable {
-        color: var(--color-text-quiet);
-    }
-
-    .favorite-rename-input {
-        flex: 1;
-        min-width: 0;
-        font: inherit;
-        color: var(--color-text-primary);
-        background-color: var(--color-bg-primary);
-        border: 1px solid var(--color-accent);
-        border-radius: var(--radius-sm);
-        padding: 0 var(--spacing-xxs);
-    }
-
-    .favorite-rename-input:focus {
-        outline: none;
-    }
-
-    .favorite-shortcut-input {
-        width: 112px;
-        margin-left: auto;
-        font: inherit;
-        text-align: right;
-        color: var(--color-text-primary);
-        background-color: var(--color-bg-primary);
-        border: 1px solid var(--color-accent);
-        border-radius: var(--radius-sm);
-        padding: 0 var(--spacing-xxs);
-    }
-
-    .favorite-shortcut-input:focus {
-        outline: none;
     }
 </style>

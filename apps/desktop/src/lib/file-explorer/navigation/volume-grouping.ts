@@ -12,9 +12,9 @@ export interface VolumeGroup {
 // Labels are resolved lazily (per call) so they track the active locale; the
 // caller invokes `groupByCategory` from a reactive `$derived`.
 //
-// ❗ No `favorite` row. Favorites have their own menu (⌃D, `FavoritesMenu.svelte`), and
-// the switcher offers one "See N favorites" row that opens it — so a favorite arriving in
-// the volume list is deliberately grouped NOWHERE here.
+// ❗ No `favorite` group. The switcher's favorites section is built from the favorites
+// controller (`favorites-menu.svelte.ts`, shared with the ⌃D menu), so a favorite arriving
+// in the volume list is deliberately grouped NOWHERE here.
 const categoryOrder: { category: LocationCategory; labelKey: MessageKey | null }[] = [
   { category: 'main_volume', labelKey: 'fileExplorer.navigation.groupVolumes' },
   { category: 'attached_volume', labelKey: null }, // No label, continues main volumes

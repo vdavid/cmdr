@@ -46,9 +46,5 @@
   "fileExplorer.navigation.favoritesCantAddHere": "This folder can’t be a favourite: favourites only work on disks and mounted shares",
   "@fileExplorer.navigation.favoritesCantAddHere": {
     "sourceHash": "86564ea"
-  },
-  "fileExplorer.navigation.seeFavorites": "{count, plural, =0 {See favourites} one {See {count} favourite} other {See {count} favourites}}",
-  "@fileExplorer.navigation.seeFavorites": {
-    "sourceHash": "7a7e169"
   }
 }

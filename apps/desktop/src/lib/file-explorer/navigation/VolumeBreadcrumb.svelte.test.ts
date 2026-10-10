@@ -121,6 +121,7 @@ vi.mock('$lib/settings/reactive-settings.svelte', () => ({
   // The drive-index badge's master switch. On, so a row carrying a status renders
   // the badge with its actions rather than the "indexing is off" note.
   getDriveIndexingEnabled: () => true,
+  getSwitcherFavoritesExpanded: () => false,
 }))
 
 vi.mock('$lib/icon-cache', async () => {
@@ -168,12 +169,12 @@ function menuRows(): NodeListOf<HTMLElement> {
 }
 
 /**
- * The VOLUME rows alone. The switcher now leads with a "See N favorites" row that swaps in
- * the favorites menu, so a pin counting volume rows by index has to skip it — ❌ don't fold
+ * The VOLUME rows alone. The switcher leads with its favorites section's row (folded here,
+ * so no favorite rows), so a pin counting volume rows by index has to skip it — ❌ don't fold
  * this back into `menuRows`, which several pins use to count what the menu really renders.
  */
 function volumeRows(): HTMLElement[] {
-  return [...menuRows()].filter((row) => row.getAttribute('data-menu-row') !== 'favorites:see')
+  return [...menuRows()].filter((row) => row.getAttribute('data-menu-row') !== 'menu-disclosure:favorites')
 }
 
 function isHighlighted(row: Element | null | undefined): boolean {
@@ -715,15 +716,15 @@ describe('VolumeBreadcrumb highlight on open', () => {
 
   it('falls back to the menu’s first row when no row is the containing volume', async () => {
     // A phone: it isn't the pane's volume, and neither is the synthetic Servers row,
-    // so nothing is checked. ❗ The fallback is the FIRST row of the menu, which since
-    // M3 is the "See N favorites" row rather than the first volume.
+    // so nothing is checked. ❗ The fallback is the FIRST row of the menu, which is the
+    // favorites section's own row rather than the first volume.
     await openWithRows([
       { id: 'mtp-1', name: 'Pixel', path: 'mtp://pixel', category: 'mobile_device', isEjectable: true },
     ])
 
     expect(document.querySelector('[data-menu-row][data-checked]')).toBeNull()
     expect(isHighlighted(menuRows()[0])).toBe(true)
-    expect(menuRows()[0].getAttribute('data-menu-row')).toBe('favorites:see')
+    expect(menuRows()[0].getAttribute('data-menu-row')).toBe('menu-disclosure:favorites')
   })
 })
 
@@ -758,7 +759,7 @@ describe('VolumeBreadcrumb keyboard vs pointer mode', () => {
 
     // Hovering another row must not move the cursor off row 0 while keyboard mode holds.
     // ❗ `menuRows`, not `volumeRows`: Home lands on the menu's first row, which is the
-    // "See N favorites" row the switcher now leads with.
+    // favorites section's row the switcher leads with.
     const rows = [...menuRows()]
     rows[2].dispatchEvent(new MouseEvent('mouseover', { bubbles: true }))
     await tick()
@@ -843,7 +844,7 @@ describe('VolumeBreadcrumb share submenu', () => {
 
   /** Highlights the share row, then opens its submenu. */
   async function openShareSubmenu(): Promise<void> {
-    // Two steps down: the menu leads with the "See N favorites" row, then the hub.
+    // Two steps down: the menu leads with the favorites section's row, then the hub.
     press('ArrowDown')
     press('ArrowDown')
     await tick()

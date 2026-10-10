@@ -745,13 +745,11 @@ Apple's Dock menu (`Dock.app/Contents/Resources/de.lproj/DockMenus.strings`) sup
 - `auf {volumeName}` and `namens {folderName}` keep the names uninflected; a colon replaces English's comma so the line
   ends on the folder name.
 
-## Das Favoritenmenü (`menu.go.showFavorites`, `commands.favoritesOpen.*`, `commands.favoritesOpenByNumber.label`, `commands.favoritesAdd.description`, `fileExplorer.navigation.favoritesAddCurrent`/`.favoritesAlreadyAdded`/`.favoritesCantAddHere`/`.seeFavorites`, `shortcuts.scope.favoritesMenu`)
+## Das Favoritenmenü (`menu.go.showFavorites`, `commands.favoritesOpen.*`, `commands.favoritesOpenByNumber.label`, `commands.favoritesAdd.description`, `fileExplorer.navigation.favoritesAddCurrent`/`.favoritesAlreadyAdded`/`.favoritesCantAddHere`, `shortcuts.scope.favoritesMenu`)
 
 - `Favoriten` (Finder), never `Lesezeichen` (bookmarks). TC's `Verzeichnisliste` and DC's `☆-Tabs` name other features,
   so macOS stays the source even though Cmdr shares TC's key.
-- „Show favorites“ → `Favoriten anzeigen` like `Server anzeigen`; `einblenden` is for toggles. „See N favorites“ →
-  `… ansehen`, keeping see apart from show.
-- The `=0` arm drops `{count}` so no „0“ shows.
+- „Show favorites“ → `Favoriten anzeigen` like `Server anzeigen`; `einblenden` is for toggles.
 - `eine eingebundene Freigabe`, never `gemountet`; `Ordner auf einem Laufwerk`, never `Volume` (plain-speech tooltip).
 - The `0` row has ONE key, `fileExplorer.navigation.favoritesAddCurrent`, which the shortcut list quotes; don't invent a
   second version. `Favorit` is weak (`den Favoriten`).

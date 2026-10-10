@@ -11,9 +11,9 @@ hosts.
 Where a symbol lives and who calls it: `codegraph_search` / `codegraph_explore`. The area's shape: `CLAUDE.md` § Module
 map. What each piece DOES is in the sections below (a `##` per module for `navigation-history`, `path-navigation`,
 `path-resolution`, `keyboard-shortcuts`, `volume-grouping`, and `volume-space-manager`, plus a `###` per breadcrumb
-feature: the TCC indicator, SMB indicator, eject button, the favorites menu, USB link speed, and the two per-drive
-badges). `resolve-location.ts` and `breadcrumb-navigation.ts` are documented where they're used, in
-`../pane/DETAILS.md`. Only the layout facts that none of those carry live here:
+feature: the TCC indicator, SMB indicator, eject button, the favorites menu, the switcher's favorites section, USB link
+speed, and the two per-drive badges). `resolve-location.ts` and `breadcrumb-navigation.ts` are documented where they're
+used, in `../pane/DETAILS.md`. Only the layout facts that none of those carry live here:
 
 - **`navigate-and-select.ts` holds TWO families with deliberately different contracts.** `navigateToDirInPane` /
   `navigateToFileInPane` ALWAYS navigate the pane they're given (the Go-to-path contract); `revealFileInBestPane` /
@@ -315,7 +315,8 @@ highlight index, or `getBoundingClientRect` here; those belong to the primitive.
   connection dot, the USB dot, both index badges, and the eject-or-disconnect button). `.row-trailing` is
   `display: contents` so an empty cluster costs the row nothing and each badge stays a direct flex child; one rule
   spaces them, replacing the pile of `margin-left: auto` + adjacent-sibling overrides the old markup carried.
-- **`below`** is the disk-space line (`volume-space-manager.svelte.ts`), **`footer`** the volume-list timeout warning.
+- **`below`** is the disk-space line (`VolumeSpaceLine.svelte` over `volume-space-manager.svelte.ts`), **`footer`** the
+  volume-list timeout warning.
 - **`disabled`** is how an unopenable device row is expressed (`deviceRowState`), so the primitive greys it, skips it
   with the arrows, and never opens it — ❌ no separate "is it openable" check at the click site.
 - **Focus** returns to whatever held it when the menu opened, ❌ not to this pane: ⌥F2 opens the OTHER pane's switcher,
@@ -580,12 +581,14 @@ seeing either way. The backend already logs the whole scan at `info`.
 
 A menu of its own, hanging off the same chip as the volume switcher: `FavoritesMenu.svelte` (the surface and the two
 keys that swap menus) over `favorites-menu.svelte.ts` (the rows, the `0` row's three states, what a pick does, and the
-three edits a favorite takes). Favorites arrive from `volume-store` as `VolumeInfo` with `category: 'favorite'` and
-`id: 'fav-<favoriteId>'` (the backend `favorites/` store is the source of truth; see
-`src-tauri/src/favorites/CLAUDE.md`). Every mutation goes through the typed `commands.*` wrappers in
-`$lib/tauri-commands/favorites.ts`, each of which re-emits `volumes-changed`, so the menu re-renders live with no manual
-refresh. `stripFavoritePrefix(locationId)` recovers the bare favorite id (remove / rename / reorder take the bare id,
-never the `fav-…` switcher id). The optional `favoriteShortcut` arrives on the same volume row.
+three edits a favorite takes), with a favorite row's label and shortcut field in `FavoriteRowLabel.svelte` /
+`FavoriteShortcutField.svelte`. The switcher's favorites section reuses all three (§ The switcher's favorites section
+below). Favorites arrive from `volume-store` as `VolumeInfo` with `category: 'favorite'` and `id: 'fav-<favoriteId>'`
+(the backend `favorites/` store is the source of truth; see `src-tauri/src/favorites/CLAUDE.md`). Every mutation goes
+through the typed `commands.*` wrappers in `$lib/tauri-commands/favorites.ts`, each of which re-emits `volumes-changed`,
+so the menu re-renders live with no manual refresh. `stripFavoritePrefix(locationId)` recovers the bare favorite id
+(remove / rename / reorder take the bare id, never the `fav-…` switcher id). The optional `favoriteShortcut` arrives on
+the same volume row.
 
 **Why ⌃D** (David, 2026-09-16): it's what Total Commander and Double Commander bind for their favorites list ("Directory
 hotlist"), and it was free, so Duplicate keeps ⌘D and the error screen's ⌘D (Technical details) stays untouched. macOS
@@ -602,11 +605,11 @@ so an emptied list still reads as a real state) and a one-row `add` section. The
 and reached by arrow or pointer. The add row carries `'0'`. A favorite can also carry an assigned uppercase letter in
 the right-aligned `shortcut` slot, independent of its positional digit.
 
-**Opening a favorite** is `open-favorite.ts`'s, the one way it happens anywhere (this menu, its letter shortcuts, MCP
-`select_volume` through `pane/volume-selection.ts`, the Dock tile menu). It reads the ROW: Rust's reach pass
-(`src-tauri/src/favorites/reach.rs`) put `favoriteTarget` on it (`volumeId`, the live `volumeRoot`, the path rebased
-onto it, and `reach`). ❌ It never asks which volume contains the path: for an unmounted share the mount table walks UP
-and answers the boot disk. Per reach:
+**Opening a favorite** is `open-favorite.ts`'s, the one way it happens anywhere (this menu, its letter shortcuts, the
+switcher's favorites section, MCP `select_volume` through `pane/volume-selection.ts`, the Dock tile menu). It reads the
+ROW: Rust's reach pass (`src-tauri/src/favorites/reach.rs`) put `favoriteTarget` on it (`volumeId`, the live
+`volumeRoot`, the path rebased onto it, and `reach`). ❌ It never asks which volume contains the path: for an unmounted
+share the mount table walks UP and answers the boot disk. Per reach:
 
 - **`ready`, `connects`**: `go({ volumeId, volumePath: volumeRoot, targetPath: path, exact: true })`. For `connects` the
   pane lands on the saved place and its own connect view (`../pane/place-connect.svelte.ts`, or
@@ -703,18 +706,45 @@ one-at-a-time rule spans the window and not just the chip.
 
 **The swap keys work inside a menu.** Central dispatch is suppressed while a header menu is open, so nothing else would
 answer them; each menu's `onKey` matches with `eventMatchesCommand`, so a rebind follows. ⌃D inside the switcher goes to
-favorites (the "See N favorites" row has just taught that key, so it has to work right where it's advertised), ⌃D inside
-favorites closes it, and the pane's OWN chooser key swaps back — ❗ `paneId`'s, not either one, so ⌥F2 pressed over the
-left pane's favorites still means the right pane's switcher.
+favorites (the favorites section's row teaches that key with its chip, so it has to work right where it's advertised),
+⌃D inside favorites closes it, and the pane's OWN chooser key swaps back — ❗ `paneId`'s, not either one, so ⌥F2 pressed
+over the left pane's favorites still means the right pane's switcher. Both report `trigger: 'command'`.
 
-**The switcher's row.** One selectable row on top, "See {count} favorites" with a live `ShortcutChip` for
-`favorites.open` (`clickable={false}`: a second click target inside a row would double-activate). Enter or a click swaps
-the menus in place and reports `trigger: 'switcher_row'`, where ⌃D reports `'command'`. ❗ `volume-grouping.ts` groups
-the `favorite` category NOWHERE, so a favorite arriving in the volume list is deliberately absent from the switcher.
+### The switcher's favorites section
 
-**One consequence worth knowing**: with nothing checked, the switcher's cursor opens on that top row rather than on the
-first volume, so Enter straight after ⌥F1 swaps menus. With a checked row — the ordinary case — the cursor lands there
-as before.
+**Decision (David, 2026-10-10): favorites appear IN the switcher**, as a section folded by default whose open state is
+remembered. Why: two beta users asked for it. Opening the drive list puts every drive, server, and phone one click away,
+but the most important places, the favorites, took a second click ("See N favorites", then the ⌃D menu). Once a person
+opens the section it stays open across restarts, so from then on a favorite is one click from the chip. Folded by
+default, so the switcher of someone who never uses favorites stays the drive list it was. The ⌃D menu is unchanged.
+
+- **Where**: on top of the list. Its first row is the `Menu` primitive's DISCLOSURE row (`MenuSection.disclosure`,
+  `$lib/ui/DETAILS.md` § Menu): a star, "Favorites", the count, and a live `ShortcutChip` for `favorites.open`
+  (`clickable={false}`: a second click target inside a row would double-activate) through the primitive's
+  `disclosureTrailing` snippet. ❌ No key handler or highlight here: Enter, Space, a click, →, and ← are the
+  primitive's.
+- **The rows are the ⌃D menu's own.** `VolumeChooserMenu` builds a second `createFavoritesMenu` with
+  `surface: 'switcher'`, takes its `favoriteItems`, and renders `FavoriteRowLabel` / `FavoriteShortcutField` in its
+  snippets, so the icon, the dimming, the status tooltip, the row actions (`row-menu.ts`'s `favoriteRowMenu`), the
+  inline rename and shortcut fields (and `isEditing`), the optimistic reorder, and the open path (`open-favorite.ts`)
+  can't drift between the two. A pick, or a favorite's row action, goes to `favorites.select`; a pick reports
+  `favorite_opened` with `surface: 'switcher'`. A favorite row is told from a volume row by its `SwitcherRow` kind, and
+  a row action by its volume's `favorite` category.
+- **No digits.** The digit column is all-or-nothing per menu, so numbering the favorites would widen every volume row
+  too, and the digits are ⌃D's thing. An assigned LETTER still works and shows, but only while the section is open: the
+  primitive lets a folded row claim no key, since a hidden row opening on a keystroke would be a surprise.
+- **Reorderable** (drag and ⌥↑/⌥↓), because the row tooltip says so wherever a favorite shows.
+- **Empty**: the row stays, with a `0`, and opens on the ⌃D menu's "(Your favorites will show here)". It's where the
+  feature gets discovered, and it carries the ⌃D chip, which the "See favorites" row did with no favorites too.
+- **The remembered state** is the hidden setting `behavior.switcherFavoritesExpanded`, read through
+  `reactive-settings.svelte.ts` like the servers hub's `network.nearbyServersGroup`. ONE value for both panes, not one
+  per pane: it's a preference about how the switcher reads, not about where a pane is, and per-pane would make Tab
+  (which hands the open switcher to the other pane) visibly re-fold the list. The switcher seeds a local `$state` from
+  it on every `open()` and flips that at once, then `setSetting`s, so the row answers without waiting on the store.
+
+**One consequence worth knowing**: with nothing checked, the switcher's cursor opens on the favorites row rather than on
+the first volume, so Enter straight after ⌥F1 opens or folds the section. With a checked row — the ordinary case — the
+cursor lands there as before.
 
 ### USB link-speed indicator (MTP)
 

@@ -13,6 +13,9 @@
 import { trackEvent } from '$lib/tauri-commands'
 import type { FavoriteReach } from '$lib/ipc/bindings'
 
+/** How a favorite ROW was picked: its digit, its letter, Enter, or a click. */
+export type FavoriteRowVia = 'digit' | 'letter' | 'keyboard' | 'pointer'
+
 /**
  * A pick, as the event carries it: WHERE it happened and HOW.
  *
@@ -24,10 +27,12 @@ import type { FavoriteReach } from '$lib/ipc/bindings'
  * `favorite_opened` by `via` can't meet a row where the prop went missing.
  *
  * `digit` is the question the menu's number column exists to answer: do the
- * number keys earn it, or does everyone arrow down anyway?
+ * number keys earn it, or does everyone arrow down anyway? `switcher` is the
+ * volume switcher's favorites section, which numbers nothing, so it never
+ * reports `digit`.
  */
 export type FavoriteOpenedEvent =
-  | { surface: 'favorites_menu'; via: 'digit' | 'letter' | 'keyboard' | 'pointer' }
+  | { surface: 'favorites_menu' | 'switcher'; via: FavoriteRowVia }
   | { surface: 'command'; via: 'command' }
   /** The Dock tile's right-click menu: like `command`, the menu item IS the interaction. */
   | { surface: 'dock'; via: 'dock' }
@@ -47,17 +52,16 @@ export function reportFavoriteOpened(event: FavoriteOpenedEvent, reach: Favorite
   void trackEvent('favorite_opened', { surface: event.surface, via: event.via, reach })
 }
 
-/** What brought the favorites menu up. */
-export type FavoritesMenuOpenTrigger =
-  /** ⌃D, the Go menu item, or the palette — a menu-bar accelerator and a palette pick both arrive as the command. */
-  | 'command'
-  /** The "See N favorites" row in the volume switcher, which is also where people learn the key. */
-  | 'switcher_row'
+/**
+ * What brought the favorites menu up: ⌃D, the Go menu item, or the palette (a
+ * menu-bar accelerator and a palette pick both arrive as the command), whether
+ * typed over the panes or inside the open volume switcher.
+ */
+export type FavoritesMenuOpenTrigger = 'command'
 
 /**
  * Reports the favorites menu coming up, against which `favorite_opened` reads as
- * a hit rate. Its `trigger` is the one question the switcher row asks: is the row
- * how people find the menu, or does everyone already know ⌃D?
+ * a hit rate.
  */
 export function reportFavoritesMenuOpened({ trigger }: { trigger: FavoritesMenuOpenTrigger }): void {
   void trackEvent('favorites_menu_opened', { trigger })

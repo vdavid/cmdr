@@ -49,10 +49,8 @@ describe('reportFavoriteOpened', () => {
 })
 
 describe('reportFavoritesMenuOpened', () => {
-  it('names both ways the menu comes up', () => {
+  it('names how the menu came up', () => {
     reportFavoritesMenuOpened({ trigger: 'command' })
-    reportFavoritesMenuOpened({ trigger: 'switcher_row' })
-    expect(trackEvent).toHaveBeenNthCalledWith(1, 'favorites_menu_opened', { trigger: 'command' })
-    expect(trackEvent).toHaveBeenNthCalledWith(2, 'favorites_menu_opened', { trigger: 'switcher_row' })
+    expect(trackEvent).toHaveBeenCalledWith('favorites_menu_opened', { trigger: 'command' })
   })
 })

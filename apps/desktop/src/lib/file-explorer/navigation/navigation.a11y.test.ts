@@ -26,6 +26,8 @@ import ServersPinHintToastContent from './ServersPinHintToastContent.svelte'
 // all three so each visible state is deterministic.
 let badgeActivity: VolumeIndexActivity | undefined
 let masterEnabled = true
+/** Whether the switcher's favorites section opens unfolded, as the setting remembers it. */
+let switcherFavoritesExpanded = false
 let enrichActivity: VolumeEnrichActivity | undefined
 
 vi.mock('$lib/indexing', async (importOriginal) => ({
@@ -66,6 +68,7 @@ vi.mock('$lib/settings/reactive-settings.svelte', async (importOriginal) => ({
   // `volume-capabilities` reads it to classify a `.git`-portal path, which the favorites
   // menu's add row asks about.
   getShowVirtualGitPortal: () => false,
+  getSwitcherFavoritesExpanded: () => switcherFavoritesExpanded,
 }))
 
 vi.mock('$lib/tauri-commands', async (importOriginal) => ({
@@ -422,7 +425,13 @@ describe('VolumeChooserMenu a11y', () => {
     destroy: () => {},
   }
 
-  it('the open list has no a11y violations', async () => {
+  // Folded, the favorites section is one disclosure row (`aria-expanded`); unfolded, its
+  // favorite rows sit in the same group under it, with their own submenus.
+  it.each([
+    ['folded', false],
+    ['unfolded', true],
+  ])('the open list has no a11y violations, favorites section %s', async (_label, expanded) => {
+    switcherFavoritesExpanded = expanded
     const target = document.createElement('div')
     document.body.appendChild(target)
     const anchor = document.createElement('span')
@@ -430,6 +439,9 @@ describe('VolumeChooserMenu a11y', () => {
     const instance = mount(VolumeChooserMenu, {
       target,
       props: {
+        paneId: 'left' as const,
+        volumeId: 'root',
+        currentPath: '/',
         containingVolumeId: 'root',
         badges: noBadges,
         getAnchor: () => anchor,
@@ -445,7 +457,9 @@ describe('VolumeChooserMenu a11y', () => {
     await vi.waitFor(() => {
       expect(document.querySelector('[data-menu-row="root"]')).not.toBeNull()
     })
+    expect(document.querySelector('[data-menu-row="fav-1"]') !== null).toBe(expanded)
     await expectNoA11yViolations(document.body)
+    switcherFavoritesExpanded = false
   })
 })
 

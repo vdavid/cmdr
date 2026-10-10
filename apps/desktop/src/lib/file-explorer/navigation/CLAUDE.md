@@ -36,9 +36,9 @@ Back/forward history, path resolution, paged keyboard shortcuts, and the pane's 
   fallback, ❌ never "nothing is using this drive". Precedence: `DETAILS.md`.
 - **The Network group's rows are the LISTING's**, filtered by `belongsInSwitcher`, plus the hub this dir synthesizes. ❗
   No `listSavedServers()` fetch in `volume-grouping.ts`; the row carries `pinned` already.
-- **Favorites live in their OWN menu (⌃D), ❌ never in the switcher.** `volume-grouping.ts` groups the `favorite`
-  category NOWHERE; the switcher's "See N favorites" row swaps the menus. Mutate ONLY through the
-  `$lib/tauri-commands/favorites.ts` wrappers (pass bare ids using `stripFavoritePrefix`).
+- **Favorites show in TWO places from ONE controller**: ⌃D and the switcher's section both build rows with
+  `createFavoritesMenu` + `FavoriteRowLabel` and open via `open-favorite.ts`; ❌ no second row builder. Mutate ONLY via
+  `$lib/tauri-commands/favorites.ts` (bare ids: `stripFavoritePrefix`).
 - **❗ The chip holds ONE `openMenu`**, so its two can't both be up: each reports through `onOpenChange`, and
   `isHeaderMenuOpen()` is the single answer the panes suppress keys on. ❌ No second source of truth.
 - **Favorite inline editors own keystrokes**: preserve `isEditing()` and input `stopPropagation()` or pane shortcuts

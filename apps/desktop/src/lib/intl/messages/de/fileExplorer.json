@@ -1375,10 +1375,6 @@
   "@fileExplorer.navigation.favoritesCantAddHere": {
     "sourceHash": "86564ea"
   },
-  "fileExplorer.navigation.seeFavorites": "{count, plural, =0 {Favoriten ansehen} one {{count} Favorit ansehen} other {{count} Favoriten ansehen}}",
-  "@fileExplorer.navigation.seeFavorites": {
-    "sourceHash": "7a7e169"
-  },
   "fileExplorer.navigation.favoriteTooltip": "{path}\nZum Umsortieren ziehen oder {reorder}. Rechtsklick zum Umbenennen oder Entfernen.",
   "@fileExplorer.navigation.favoriteTooltip": {
     "sourceHash": "88d54d3"

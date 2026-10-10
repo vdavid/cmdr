@@ -3,8 +3,8 @@
  * keydowns, clicks, and drags, through the house `Menu` that owns every interaction.
  *
  * What lives here is the WIRING — a typed digit reaching the right favorite, the two
- * keys that swap the chip's two menus, the switcher row that hands the header over,
- * and the three edits a favorite takes. What each row SAYS and what a pick does is
+ * keys that swap the chip's two menus, the switcher's own favorites section, and
+ * the three edits a favorite takes. What each row SAYS and what a pick does is
  * `favorites-menu.svelte.test.ts`, which drives the controller with no DOM.
  *
  * ❗ The swap keys go through `eventMatchesCommand`, so these press the combos the
@@ -23,12 +23,22 @@ const renameFavorite = vi.fn(() => Promise.resolve())
 const setFavoriteShortcut = vi.fn(() => Promise.resolve())
 const reorderFavorites = vi.fn(() => Promise.resolve())
 const trackEvent = vi.fn()
+const setSetting = vi.fn()
 
 const stubs = vi.hoisted(() => ({
   /** The volume list the store mock answers with: the favorites, plus the disk they sit on. */
   volumes: null as unknown[] | null,
   /** The pane's folder, which is what the `0` add row acts on. */
   currentPath: '/Users/test/elsewhere',
+  /** Whether the switcher's favorites section was left open, as the setting remembers it. */
+  switcherFavoritesExpanded: false,
+}))
+
+vi.mock('$lib/settings', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('$lib/settings')>()),
+  setSetting: (...args: unknown[]) => {
+    setSetting(...(args as []))
+  },
 }))
 
 vi.mock('$lib/tauri-commands', () => ({
@@ -91,6 +101,7 @@ vi.mock('$lib/settings/reactive-settings.svelte', () => ({
   getUseAppIconsForDocuments: () => false,
   getShowVirtualGitPortal: () => false,
   getDriveIndexingEnabled: () => false,
+  getSwitcherFavoritesExpanded: () => stubs.switcherFavoritesExpanded,
 }))
 
 vi.mock('$lib/icon-cache', async () => {
@@ -259,6 +270,8 @@ beforeEach(() => {
   setFavoriteShortcut.mockClear()
   reorderFavorites.mockClear()
   trackEvent.mockClear()
+  setSetting.mockClear()
+  stubs.switcherFavoritesExpanded = false
 })
 
 // A menu left open outlives its target div: it's portaled, and its key listener lives on
@@ -415,10 +428,14 @@ describe('swapping between the two menus', () => {
 })
 
 /**
- * The switcher's one favorites row. It keeps the list a click away now that the switcher
- * lists no favorites itself, and it's where the key gets taught.
+ * The switcher's favorites section: the favorites themselves, folded behind a "Favorites"
+ * row that remembers whether it was left open, so once a person opens it every favorite is
+ * one click from the chip. It reuses the favorites menu's rows, so what a row shows and what
+ * a pick does are pinned in `favorites-menu.svelte.test.ts`; this is the wiring.
  */
-describe('the "See N favorites" row in the switcher', () => {
+describe('the favorites section in the switcher', () => {
+  const HEADER = 'menu-disclosure:favorites'
+
   async function openSwitcher(volumes?: unknown[]) {
     if (volumes) stubs.volumes = volumes
     const { instance } = mountBreadcrumb()
@@ -428,44 +445,154 @@ describe('the "See N favorites" row in the switcher', () => {
     return instance
   }
 
-  it.each([
-    { label: 'three favorites', volumes: DEFAULT_VOLUMES, expected: 'See 3 favorites' },
-    {
-      label: 'one favorite',
-      volumes: [favorite(1, '/Users/test/Documents', 'Documents'), DISK],
-      expected: 'See 1 favorite',
-    },
-    { label: 'no favorites at all', volumes: [DISK], expected: 'See favorites' },
-  ])('counts $label', async ({ volumes, expected }) => {
-    await openSwitcher(volumes)
-    expect(menuRow('favorites:see')?.textContent).toContain(expected)
+  it('starts folded, saying how many favorites it holds', async () => {
+    await openSwitcher()
+    const header = menuRow(HEADER)
+    expect(header?.getAttribute('aria-expanded')).toBe('false')
+    expect(header?.textContent).toContain('Favorites')
+    expect(header?.querySelector('[data-menu-disclosure-count]')?.textContent).toBe('3')
+    expect(menuRow('fav-1')).toBeNull()
   })
 
-  it('teaches the key with a live chip beside the count', async () => {
+  it('teaches the key with a live chip on the section row', async () => {
     await openSwitcher()
     // The chip reads the binding from the registry, so a rebind shows here. Its presence
     // is the contract; the glyphs themselves are `ShortcutChip`'s own tests.
-    expect(menuRow('favorites:see')?.querySelector('.shortcut-chip')).toBeTruthy()
+    expect(menuRow(HEADER)?.querySelector('.shortcut-chip')).toBeTruthy()
   })
 
-  it('swaps the menus in place when picked, and says the row is how it happened', async () => {
+  it('opens on a click, stays up, and remembers it for next time', async () => {
     await openSwitcher()
-    menuRow('favorites:see')?.click()
+    menuRow(HEADER)?.click()
     await tick()
     flushSync()
-
-    expect(openMenuName()).toBe(FAVORITES)
-    expect(trackEvent).toHaveBeenCalledWith('favorites_menu_opened', { trigger: 'switcher_row' })
+    expect(openMenuName()).toBe(SWITCHER)
+    expect(menuRow('fav-1')).not.toBeNull()
+    expect(menuRow('fav-3')).not.toBeNull()
+    expect(setSetting).toHaveBeenCalledWith('behavior.switcherFavoritesExpanded', true)
   })
 
-  it('is the row the cursor opens on, so Enter reaches it too', async () => {
+  it('folds again with ←, from a favorite inside it', async () => {
+    stubs.switcherFavoritesExpanded = true
     await openSwitcher()
-    // Nothing is checked here, and the fallback is the menu's FIRST row.
-    expect(isHighlighted(menuRow('favorites:see'))).toBe(true)
-    expect(press('Enter')).toBe(true)
+    expect(isHighlighted(menuRow(HEADER))).toBe(true)
+    press('ArrowDown')
+    press('ArrowLeft')
+    press('ArrowLeft')
     await tick()
     flushSync()
-    expect(openMenuName()).toBe(FAVORITES)
+    expect(menuRow('fav-1')).toBeNull()
+    expect(setSetting).toHaveBeenLastCalledWith('behavior.switcherFavoritesExpanded', false)
+  })
+
+  it('opens already unfolded once it was left that way', async () => {
+    stubs.switcherFavoritesExpanded = true
+    await openSwitcher()
+    expect(menuRow(HEADER)?.getAttribute('aria-expanded')).toBe('true')
+    expect(menuRow('fav-2')?.textContent).toContain('Downloads')
+  })
+
+  it('opens a picked favorite the one way favorites open, and says the switcher did it', async () => {
+    stubs.switcherFavoritesExpanded = true
+    const onVolumeChange = vi.fn()
+    const { instance } = mountBreadcrumb({ onVolumeChange })
+    instance.openVolumeChooser()
+    await tick()
+    flushSync()
+    menuRow('fav-2')?.click()
+    await vi.waitFor(() => {
+      expect(trackEvent).toHaveBeenCalledWith('favorite_opened', {
+        surface: 'switcher',
+        via: 'pointer',
+        reach: 'ready',
+      })
+    })
+    expect(onVolumeChange).toHaveBeenCalledWith(expect.objectContaining({ targetPath: '/Users/test/Downloads' }))
+  })
+
+  it('numbers no favorite (the digits are ⌃D’s), but a saved letter still opens one', async () => {
+    stubs.switcherFavoritesExpanded = true
+    stubs.volumes = [
+      favorite(1, '/Users/test/Documents', 'Documents'),
+      { ...favorite(2, '/Users/test/Downloads', 'Downloads'), favoriteShortcut: 'P' },
+      DISK,
+    ]
+    await openSwitcher()
+    expect(menuRow('fav-1')?.hasAttribute('data-accelerator')).toBe(false)
+    expect(menuRow('fav-2')?.querySelector('.menu-shortcut')?.textContent).toBe('P')
+    press('p')
+    await vi.waitFor(() => {
+      expect(trackEvent).toHaveBeenCalledWith('favorite_opened', { surface: 'switcher', via: 'letter', reach: 'ready' })
+    })
+  })
+
+  it('lets a folded favorite’s letter open nothing: a row out of sight stays shut', async () => {
+    stubs.volumes = [{ ...favorite(1, '/Users/test/Documents', 'Documents'), favoriteShortcut: 'P' }, DISK]
+    await openSwitcher()
+    press('p')
+    await tick()
+    expect(trackEvent).not.toHaveBeenCalledWith('favorite_opened', expect.anything())
+    expect(openMenuName()).toBe(SWITCHER)
+  })
+
+  it('dims a favorite a pick can’t open right away, and still lets it be picked', async () => {
+    stubs.switcherFavoritesExpanded = true
+    stubs.volumes = [
+      {
+        ...favorite(1, '/Volumes/naspi/docs', 'Docs'),
+        favoriteTarget: {
+          volumeId: 'smb-naspi',
+          volumeName: 'naspi',
+          volumeRoot: '/Volumes/naspi',
+          reach: { kind: 'connects' },
+        },
+      },
+      DISK,
+    ]
+    await openSwitcher()
+    const row = menuRow('fav-1')
+    expect(row?.querySelector('.favorite-label.is-unreachable')).not.toBeNull()
+    expect(row?.hasAttribute('data-disabled')).toBe(false)
+  })
+
+  it('renames a favorite from its row actions, in the row', async () => {
+    stubs.switcherFavoritesExpanded = true
+    await openSwitcher()
+    menuRow('fav-1')?.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true }))
+    await tick()
+    flushSync()
+    await tick()
+    await tick()
+    submenuRow('row:fav-1:rename-favorite')?.click()
+    await tick()
+    flushSync()
+    await tick()
+    const input = document.querySelector<HTMLInputElement>('.favorite-rename-input')
+    expect(input).not.toBeNull()
+    if (!input) return
+    input.value = 'Docs'
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
+    await vi.waitFor(() => {
+      expect(renameFavorite).toHaveBeenCalledWith('1', 'Docs')
+    })
+  })
+
+  it('reorders with ⌥↓ like the favorites menu does', async () => {
+    stubs.switcherFavoritesExpanded = true
+    await openSwitcher()
+    press('ArrowDown')
+    press('ArrowDown', { altKey: true })
+    await vi.waitFor(() => {
+      expect(reorderFavorites).toHaveBeenCalledWith(['2', '1', '3'])
+    })
+  })
+
+  it('keeps the folded row with a zero when there are no favorites, and says so when opened', async () => {
+    stubs.switcherFavoritesExpanded = true
+    await openSwitcher([DISK])
+    expect(menuRow(HEADER)?.querySelector('[data-menu-disclosure-count]')?.textContent).toBe('0')
+    expect(document.querySelector('[data-menu-section="favorites"] [data-menu-empty]')).not.toBeNull()
   })
 
   it('reports ⌃D as the command, whether it was typed in the switcher or anywhere else', async () => {

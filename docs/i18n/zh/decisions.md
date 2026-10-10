@@ -590,13 +590,11 @@ sense). Quotes hug Han (`“{server}”上`).
 - The staging folder holds the USER's files: found `发现` (not a search), unfinished `没完成的`, ❌ never `不完整` or a
   delete. `…原处，也就是在…里` keeps the apposition from reading as Cmdr moving them in.
 
-## 个人收藏菜单（`commands.favoritesOpen.label`/`.description`、`commands.favoritesOpenByNumber.label`、`commands.favoritesAdd.description`、`fileExplorer.navigation.favoritesAddCurrent`/`.favoritesAlreadyAdded`/`.favoritesCantAddHere`/`.seeFavorites`、`menu.go.showFavorites`、`shortcuts.scope.favoritesMenu`）
+## 个人收藏菜单（`commands.favoritesOpen.label`/`.description`、`commands.favoritesOpenByNumber.label`、`commands.favoritesAdd.description`、`fileExplorer.navigation.favoritesAddCurrent`/`.favoritesAlreadyAdded`/`.favoritesCantAddHere`、`menu.go.showFavorites`、`shortcuts.scope.favoritesMenu`）
 
 - The list has one name, `个人收藏`, singular or plural; never `收藏夹` / `书签`. The menu `个人收藏菜单`: never
   `…选择器` (the volume chooser) or `…面板` (the palette).
-- ❗ Show `显示个人收藏` (`menu.go.showFavorites`, `commands.favoritesOpen.label`, like `显示服务器`) vs See
-  `查看 {count} 项个人收藏` (`fileExplorer.navigation.seeFavorites`): the English uses two verbs. Don't unify.
-- `seeFavorites` has `=0` (no count, `查看个人收藏`) and `other` only.
+- Show `显示个人收藏` (`menu.go.showFavorites`, `commands.favoritesOpen.label`, like `显示服务器`).
 - Classifier `项`: `{count} 个个人收藏` doubles the character.
 - `前往` needs an object in Chinese, so `按数字键前往对应的文件夹`, never a bare `前往。`
 - Mounted share `已装载的共享` (Finder), not the error family's `挂载`; name no protocol, like the English.

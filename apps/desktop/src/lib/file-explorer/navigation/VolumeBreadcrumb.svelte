@@ -31,7 +31,6 @@
     import ImageIndexDriveBadge from './ImageIndexDriveBadge.svelte'
     import UsbSpeedDot from './UsbSpeedDot.svelte'
     import VolumeChooserMenu from './VolumeChooserMenu.svelte'
-    import type { FavoritesMenuOpenTrigger } from './favorites-analytics'
     import { connectDirectlyToRow } from './connect-directly-row'
     import { detachControlFor } from './detach-control'
     import { runDetach } from './detach-volume'
@@ -165,9 +164,9 @@
         favoritesMenu?.close()
     }
 
-    /** The favorites menu takes the header: from the switcher's own row, or ⌃D typed in it. */
-    function showFavorites(trigger: FavoritesMenuOpenTrigger) {
-        favoritesMenu?.open(trigger)
+    /** The favorites menu takes the header: ⌃D typed inside the open switcher. */
+    function showFavorites() {
+        favoritesMenu?.open('command')
     }
 
     function handleBreadcrumbPopupClickOutside(event: MouseEvent) {
@@ -309,6 +308,9 @@
 
     <VolumeChooserMenu
         bind:this={chooser}
+        {paneId}
+        {volumeId}
+        {currentPath}
         containingVolumeId={currentVolume?.id ?? containingVolumeId}
         {badges}
         {onVolumeChange}

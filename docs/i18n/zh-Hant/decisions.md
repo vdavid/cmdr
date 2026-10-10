@@ -253,13 +253,12 @@ The one case where waiting can't help, so no temporary tone (no `現在`, no `�
 - A move that couldn't be confirmed is ❌ never a failure (`無法確認這次移動`): Cmdr kept the originals on purpose, so
   `把你原本的檔案留在原處沒有動` keeps Cmdr as the subject. `原處` is right here: those files never left.
 
-## The favorites menu (`commands.favoritesOpen.*`, `commands.favoritesOpenByNumber.label`, `commands.favoritesAdd.description`, `fileExplorer.navigation.favoritesAddCurrent`/`.favoritesAlreadyAdded`/`.favoritesCantAddHere`/`.seeFavorites`, `menu.go.showFavorites`, `shortcuts.scope.favoritesMenu`)
+## The favorites menu (`commands.favoritesOpen.*`, `commands.favoritesOpenByNumber.label`, `commands.favoritesAdd.description`, `fileExplorer.navigation.favoritesAddCurrent`/`.favoritesAlreadyAdded`/`.favoritesCantAddHere`, `menu.go.showFavorites`, `shortcuts.scope.favoritesMenu`)
 
 - Three look-alikes stay apart: `喜好項目選單` (this menu), `卷宗切換器`, `指令面板`. ❌ Never call this one `面板`,
   `清單`, or `切換器`.
 - Show favorites `顯示喜好項目` (`顯示` as `顯示伺服器`; `開啟` opens files). Current folder `目前的資料夾`.
 - Can't add here: `…只能用在磁碟和已裝載的共享資料夾上`, with no protocol names (English avoids them too).
-- `.seeFavorites`'s `=0` branch holds no digit (`查看喜好項目`).
 
 ## Eject refused, and who holds the drive (`errors.eject.unmountRefusedBy*`, `errors.eject.otherApps`, `.otherProcesses`)
 
