@@ -113,7 +113,8 @@ switching volumes. Runs checks **in parallel** with 500ms frontend timeouts per 
 "Non-blocking navigation pattern"). Priority:
 
 1. Favorite path (when `targetPath !== volumePath`, or `exact`: a favorite at a volume ROOT sets it through
-   `VolumeChangePayload.exact` → `NavigateIntent.exact`, or it would read as a plain switch and land elsewhere)
+   `VolumeChangePayload.exact` → `NavigateIntent.exact`, and a cross-volume `{ goTo }` (Go to path, MCP `nav_to_path`)
+   always does, or it would read as a plain switch and land elsewhere)
 2. Other pane's path (if same volume and path exists)
 3. Stored `lastUsedPath` for this volume
 4. Default: `~` for `DEFAULT_VOLUME_ID`, else `firstLandingOn(volumePath, landingPath)`

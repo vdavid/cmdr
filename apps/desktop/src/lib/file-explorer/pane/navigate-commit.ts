@@ -57,7 +57,8 @@ export interface NavigateIntent {
   pushHistory?: boolean
   /**
    * A switch's `path` is the destination even at the volume's root, so the background
-   * correction keeps it (`determineNavigationPath`'s `exact`). Set by `openFavorite`.
+   * correction keeps it (`determineNavigationPath`'s `exact`). Set by `openFavorite`, and by
+   * `navigate.ts` on every cross-volume `{ goTo }`.
    */
   exact?: boolean
 }

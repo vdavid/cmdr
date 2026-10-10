@@ -126,6 +126,16 @@ describe('volume switch (P4 — truly optimistic, synchronous commit)', () => {
     )
   })
 
+  it('makes a cross-volume `goTo` exact, so a path at another volume`s root lands at the root', () => {
+    // `goTo` is a path navigation (Go to path, MCP `nav_to_path`), so its path IS the
+    // destination. Without `exact`, `/Volumes/Ext` read as a plain switch and the pane
+    // came to rest on the remembered folder (verified in the dev app, 2026-10-10).
+    navigate({ pane: 'left', to: { goTo: { volumeId: 'ext', path: '/Volumes/Ext' } }, source: 'mcp' }, h.deps)
+    expect(h.determineNavigationPath).toHaveBeenCalledWith(
+      expect.objectContaining({ volumeId: 'ext', targetPath: '/Volumes/Ext', exact: true }),
+    )
+  })
+
   it("hands the background correction the volume's landing, so a place with nothing remembered opens on its start folder", () => {
     const root = 'sftp://ada@nas.local:22/srv/data'
     navigate({ pane: 'left', to: { selectVolume: { volumeId: 'sftp-nas', path: root } }, source: 'user' }, h.deps)

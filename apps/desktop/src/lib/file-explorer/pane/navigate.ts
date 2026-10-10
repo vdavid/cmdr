@@ -437,7 +437,9 @@ function navigateToLocation(deps: NavigateDeps, intent: NavigateIntent, location
   if (location.volumeId === deps.getPaneVolumeId(pane)) {
     return navigateInPlace(deps, intent, location.path)
   }
-  return switchVolumeArm(deps, intent, location.volumeId, location.path)
+  // A path navigation's path IS the destination, even at the volume's root: never the
+  // other pane's or the remembered folder.
+  return switchVolumeArm(deps, { ...intent, exact: true }, location.volumeId, location.path)
 }
 
 /**
