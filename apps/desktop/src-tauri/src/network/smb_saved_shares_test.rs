@@ -105,4 +105,26 @@ fn a_favorited_share_row_is_an_unpinned_place_the_mount_described() {
     let guest = favorited_share_row("nas.local", 445, "public", None, "/Volumes/public", "smb-public-1");
     assert_eq!(guest.port, None, "445 is the default and isn't written");
     assert_eq!(guest.last_connection_mode, ConnectionMode::Guest);
+    assert_eq!(
+        guest.server_name, "nas.local",
+        "on 445 the server goes by its bare address"
+    );
+}
+
+/// A share Cmdr mounts on a port off 445 is filed under the manual server's discovery name
+/// (`localhost:11481`), so a favorited one must be too, or the hub lists a second, port-less
+/// "localhost" that doesn't group with it.
+#[test]
+fn a_favorited_share_off_445_files_under_the_same_server_name_a_cmdr_mount_uses() {
+    let row = favorited_share_row("localhost", 11481, "private", None, "/Volumes/private", "smb-private-1");
+    assert_eq!(
+        row.server_name,
+        crate::network::manual_servers::discovery_name("localhost", 11481)
+    );
+    assert_eq!(row.server_name, "localhost:11481");
+    assert_eq!(
+        row.address.as_deref(),
+        Some("localhost"),
+        "the address stays what the mount dialed"
+    );
 }

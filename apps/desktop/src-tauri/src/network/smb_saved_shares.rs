@@ -107,8 +107,10 @@ pub fn remember_named_share(host_name: &str, share: &str, username: Option<&str>
 /// the favorite. Writer 4 of `docs/specs/saved-smb-shares.md`.
 ///
 /// ❗ Unpinned (a favorite is no request to crowd the switcher), and a share that's already saved
-/// is left exactly as it is. The server goes by the address the mount dialed, since nothing here
-/// knows a nicer name for it. The account's password lives in Finder's Keychain item, not Cmdr's,
+/// is left exactly as it is. The server goes by the address the mount dialed, spelled the way a
+/// manual server is in the discovery list (`manual_servers::discovery_name`, so `localhost:11481`
+/// off 445), since nothing here knows a nicer name for it. ❗ That's the name a Cmdr mount of the
+/// same server files its shares under; a port-less one would list as a second server in the hub. The account's password lives in Finder's Keychain item, not Cmdr's,
 /// so the first offline pick asks once through the sign-in sheet.
 ///
 /// Reads the mount table for `mount_path`, which the add gate just resolved as live. Runs inside
@@ -146,7 +148,7 @@ fn favorited_share_row(
     volume_id: &str,
 ) -> KnownNetworkShare {
     KnownNetworkShare {
-        server_name: server.to_string(),
+        server_name: crate::network::manual_servers::discovery_name(server, port),
         share_name: share.to_string(),
         protocol: "smb".to_string(),
         last_connected_at: chrono::Utc::now().to_rfc3339(),
