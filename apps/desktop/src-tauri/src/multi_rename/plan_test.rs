@@ -4,7 +4,7 @@ use std::cell::Cell;
 use std::path::Path;
 
 use super::plan::{
-    Compiled, FOLDS, InvalidNameReason, MaskExamples, MultiRenameSpec, RowStatus, SpecError, mask_examples, preview,
+    Compiled, FOLDS, InvalidNameReason, MultiRenameSpec, RenameExample, RowStatus, SpecError, preview, render_examples,
 };
 use super::transform::{CaseChange, SEARCH_BUILDS};
 use crate::file_system::listing::metadata::FileEntry;
@@ -270,49 +270,83 @@ fn the_extension_mask_counts_too() {
     assert_eq!(out[1].0, "b.txt02");
 }
 
-fn masks(list: &[&str]) -> Vec<String> {
-    list.iter().map(|m| (*m).to_string()).collect()
+fn example(file_name: &str, spec: MultiRenameSpec) -> RenameExample {
+    RenameExample {
+        file_name: file_name.to_string(),
+        spec,
+    }
 }
 
 #[test]
-fn examples_render_each_mask_for_the_file_as_the_preview_would() {
-    let entry = file("report.pdf");
-    let out = mask_examples(
-        &entry,
-        Path::new(DIR),
-        &masks(&["[N]", "[E1]", "[E2-]", "[N1--4]", "[N-3-]", "[P]", "[G]"]),
-    );
+fn examples_render_masks_for_a_made_up_file_in_a_made_up_folder_on_a_fixed_date() {
+    let name_only = |mask: &str| MultiRenameSpec {
+        extension_mask: String::new(),
+        ..spec(mask)
+    };
+    let out = render_examples(&[
+        example("Beach day.jpg", spec("[N]")),
+        example("Beach day.jpg", name_only("[N1-2]<[N3]>[N4-]")),
+        example("Beach day.jpg", name_only("[G]/[P]")),
+        example("Beach day.jpg", name_only("[Y]-[M]-[D] [h]:[m]:[s]")),
+        example("Beach day.jpg", name_only("[C10:3]")),
+    ]);
     assert_eq!(
-        out.rendered,
+        out,
         vec![
-            Some("report".to_string()),
-            Some("p".to_string()),
-            Some("df".to_string()),
-            Some("rep".to_string()),
-            Some("ort".to_string()),
-            Some("Holiday 2026".to_string()),
-            Some("Photos".to_string()),
+            Some("Beach day.jpg".to_string()),
+            Some("Be<a>ch day".to_string()),
+            Some("Trips/Lisbon 2026".to_string()),
+            Some("2026-07-14 09:05:30".to_string()),
+            Some("010".to_string()),
         ]
     );
-    assert!(!out.sample_date);
 }
 
 #[test]
-fn an_example_mask_that_doesnt_parse_renders_nothing_rather_than_failing_the_rest() {
-    let out = mask_examples(&file("a.txt"), Path::new(DIR), &masks(&["[Q]", "[E]"]));
-    assert_eq!(out.rendered, vec![None, Some("txt".to_string())]);
-}
-
-#[test]
-fn a_file_with_no_modified_time_shows_dates_for_a_sample_one_and_says_so() {
-    let entry = FileEntry {
-        modified_at: None,
-        ..file("a.txt")
+fn examples_run_search_and_replace_as_a_rename_would() {
+    let replacing = |search: &str, replace: &str| MultiRenameSpec {
+        search: search.to_string(),
+        replace: replace.to_string(),
+        ..spec("[N]")
     };
-    let MaskExamples { rendered, sample_date } = mask_examples(&entry, Path::new(DIR), &masks(&["[YMD]", "[t]"]));
+    let out = render_examples(&[
+        example("Photo photo.jpg", replacing("photo", "pic")),
+        example(
+            "Photo photo.jpg",
+            MultiRenameSpec {
+                case_sensitive: true,
+                ..replacing("photo", "pic")
+            },
+        ),
+        example(
+            "IMG_0042.jpg",
+            MultiRenameSpec {
+                substitute: true,
+                ..replacing("IMG", "Lisbon")
+            },
+        ),
+    ]);
     assert_eq!(
-        rendered,
-        vec![Some("20260615".to_string()), Some("23.10.09".to_string())]
+        out,
+        vec![
+            Some("pic pic.jpg".to_string()),
+            Some("Photo pic.jpg".to_string()),
+            Some("Lisbon.jpg".to_string()),
+        ]
     );
-    assert!(sample_date);
+}
+
+#[test]
+fn an_example_whose_spec_doesnt_run_renders_nothing_rather_than_failing_the_rest() {
+    let bad_regex = MultiRenameSpec {
+        search: "(".to_string(),
+        regex: true,
+        ..spec("[N]")
+    };
+    let out = render_examples(&[
+        example("a.txt", spec("[Q]")),
+        example("a.txt", bad_regex),
+        example("a.txt", spec("[E]")),
+    ]);
+    assert_eq!(out, vec![None, None, Some("txt.txt".to_string())]);
 }

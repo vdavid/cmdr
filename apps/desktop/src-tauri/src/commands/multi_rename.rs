@@ -6,7 +6,7 @@ use tokio::time::Duration;
 
 use crate::deadline::{BlockingBudget, blocking_typed_result_with_timeout, timeout_detached_typed};
 use crate::multi_rename::error::MultiRenameError;
-use crate::multi_rename::plan::{MaskExamples, MultiRenameSpec, PreviewRow};
+use crate::multi_rename::plan::{MultiRenameSpec, PreviewRow, RenameExample, render_examples};
 use crate::multi_rename::presets::{MAX_PRESETS, MultiRenamePreset, PRESETS, rename_in, update_spec_in};
 use crate::multi_rename::run::{MultiRenameStarted, apply};
 use crate::multi_rename::session::{self, MultiRenameOpened, MultiRenamePreview, PreviewFilter};
@@ -79,15 +79,12 @@ pub async fn get_multi_rename_preview_rows(
     session::page(&session_id, preview_id, offset, limit, filter)
 }
 
-/// `masks` rendered for the session's first file, for the placeholder tooltips'
-/// examples. `None` when that file is gone.
+/// Each example's new name for the sheet's tooltips, rendered on made-up files
+/// by the same engine as the preview; `None` for a spec that doesn't run.
 #[tauri::command]
 #[specta::specta]
-pub async fn render_multi_rename_examples(
-    session_id: String,
-    masks: Vec<String>,
-) -> Result<Option<MaskExamples>, MultiRenameError> {
-    session::examples(&session_id, &masks)
+pub async fn render_multi_rename_examples(examples: Vec<RenameExample>) -> Vec<Option<String>> {
+    render_examples(&examples)
 }
 
 /// Renames the rows preview `preview_id` showed as ready, as one operation the

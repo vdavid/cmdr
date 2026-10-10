@@ -101,16 +101,10 @@ describe('multi-rename wrappers', () => {
     expect(commands.deleteMultiRenamePreset).toHaveBeenCalledWith('p')
   })
 
-  it('hands back the first file’s examples, or nothing when there are none to show', async () => {
-    const examples = { rendered: ['pdf'], sampleDate: false }
-    vi.mocked(commands.renderMultiRenameExamples).mockResolvedValueOnce({ status: 'ok', data: examples } as never)
-    expect(await renderMultiRenameExamples('S', ['[E]'])).toEqual(examples)
-    expect(commands.renderMultiRenameExamples).toHaveBeenCalledWith('S', ['[E]'])
-
-    vi.mocked(commands.renderMultiRenameExamples).mockResolvedValueOnce({
-      status: 'error',
-      error: { type: 'sessionClosed' },
-    } as never)
-    expect(await renderMultiRenameExamples('S', ['[E]'])).toBeNull()
+  it('passes the examples through and hands back what the engine rendered', async () => {
+    const examples = [{ fileName: 'a.txt', spec: {} as never }]
+    vi.mocked(commands.renderMultiRenameExamples).mockResolvedValueOnce(['a.txt', null])
+    expect(await renderMultiRenameExamples(examples)).toEqual(['a.txt', null])
+    expect(commands.renderMultiRenameExamples).toHaveBeenCalledWith(examples)
   })
 })

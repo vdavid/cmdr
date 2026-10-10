@@ -1,40 +1,44 @@
 <script lang="ts">
     /**
-     * The body of one placeholder button's tooltip: what the placeholder means, an example from the
-     * batch's first file, a few of its other forms, each with its example, the part a form takes set
+     * The body of one placeholder button's tooltip: what the placeholder means, an example on a
+     * made-up file, a few of its other forms, each with its example, the part a form takes set
      * apart from what the field keeps around it. Rendered into a hidden host and handed to the
      * tooltip as `contentEl` (`$lib/ui/DETAILS.md` § Live rich content), so it reads as text to
      * `aria-describedby` too.
      */
     import { tString } from '$lib/intl/messages.svelte'
-    import { FULL_NAME_MASK, examplePieces, type PlaceholderHelp } from './placeholder-help'
+    import { DATE_LEAD_MASK, FOLDER_LEAD_MASK, hintPieces, type PlaceholderHelp } from './placeholder-help'
+    import { SAMPLE_FILE } from './rename-examples'
 
     interface Props {
         help: PlaceholderHelp
-        /** Each example mask's text for the first file; `null` while there's none to show. */
+        /** Each example's text, keyed as asked; `null` until the engine rendered them. */
         rendered: ReadonlyMap<string, string> | null
-        /** The first file has no modified time, so dates show a sample one. */
-        sampleDate: boolean
         /** The element the tooltip adopts. */
         contentEl?: HTMLDivElement
     }
 
     /* eslint-disable prefer-const -- $bindable() requires `let` destructuring */
-    let { help, rendered, sampleDate, contentEl = $bindable() }: Props = $props()
+    let { help, rendered, contentEl = $bindable() }: Props = $props()
     /* eslint-enable prefer-const */
 
-    /** What `SAMPLE_MODIFIED` in `plan.rs` is, for a file with no modified time. */
-    const SAMPLE_DATE_TEXT = '2026-06-15 23:10:09'
-
     const known = $derived(rendered ?? new Map<string, string>())
-    const example = $derived(examplePieces({ mask: help.example === 'counter' ? '[C]' : help.placeholder }, known))
+    const example = $derived(hintPieces({ mask: help.example === 'counter' ? '[C]' : help.placeholder }, known))
     const lead = $derived.by(() => {
-        if (help.example === 'counter') return tString('multiRename.placeholderHelp.forFirstFiles')
-        if (help.example === 'date' && sampleDate) {
-            return tString('multiRename.placeholderHelp.forSampleDate', { date: SAMPLE_DATE_TEXT })
+        switch (help.example) {
+            case 'counter':
+                return tString('multiRename.placeholderHelp.forFirstFiles')
+            case 'file':
+                return tString('multiRename.placeholderHelp.forFile', { file: SAMPLE_FILE })
+            case 'folder': {
+                const path = known.get(FOLDER_LEAD_MASK)
+                return path === undefined ? null : tString('multiRename.placeholderHelp.forFile', { file: path })
+            }
+            case 'date': {
+                const date = known.get(DATE_LEAD_MASK)
+                return date === undefined ? null : tString('multiRename.placeholderHelp.forSampleDate', { date })
+            }
         }
-        const file = known.get(FULL_NAME_MASK)
-        return file === undefined ? null : tString('multiRename.placeholderHelp.forFile', { file })
     })
 </script>
 
@@ -45,18 +49,18 @@
             <p class="lead">
                 {lead}
                 <span class="example">
-                    {#each example as part, i (i)}<span class:taken={part.taken}>{part.text}</span>{/each}
+                    {#each example as part, i (i)}<span class:marked={part.marked}>{part.text}</span>{/each}
                 </span>
             </p>
         {/if}
         <div class="forms">
             {#each help.syntax as line (line.mask)}
-                {@const parts = examplePieces(line, known)}
+                {@const parts = hintPieces(line, known)}
                 <span class="mask">{line.mask}</span>
                 <span class="meaning">{tString(line.meaning, line.meaningParams)}</span>
-                {#if parts !== null && (lead !== null || help.example === 'counter')}
+                {#if parts !== null}
                     <span class="example">
-                        {#each parts as part, i (i)}<span class:taken={part.taken}>{part.text}</span>{/each}
+                        {#each parts as part, i (i)}<span class:marked={part.marked}>{part.text}</span>{/each}
                     </span>
                 {:else}
                     <span></span>
@@ -117,7 +121,7 @@
         overflow-wrap: anywhere;
     }
 
-    .example .taken {
+    .example .marked {
         color: var(--color-text-primary);
         font-weight: 600;
     }

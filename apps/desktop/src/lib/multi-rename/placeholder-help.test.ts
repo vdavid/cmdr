@@ -1,46 +1,50 @@
 import { describe, it, expect } from 'vitest'
-import { FULL_NAME_MASK, PLACEHOLDER_HELP, exampleMasks, examplePieces, renderedByMask } from './placeholder-help'
+import {
+  DATE_LEAD_MASK,
+  FOLDER_LEAD_MASK,
+  PLACEHOLDER_HELP,
+  hintMask,
+  hintPieces,
+  placeholderExamples,
+} from './placeholder-help'
+import { MARK_END, MARK_START, SAMPLE_FILE } from './rename-examples'
 
 describe('placeholder help', () => {
-  it('asks for each mask once: the full name, every placeholder, its syntax, and what surrounds each part', () => {
-    const masks = exampleMasks(PLACEHOLDER_HELP)
-    expect(masks[0]).toBe(FULL_NAME_MASK)
-    expect(masks).toContain('[E]')
-    expect(masks).toContain('[E2-3]')
-    expect(masks).toContain('[E4-]')
-    expect(new Set(masks).size).toBe(masks.length)
+  it('asks for each example once, on the sample file, the name mask alone', () => {
+    const asked = placeholderExamples(PLACEHOLDER_HELP)
+    expect([...asked.keys()]).toContain(FOLDER_LEAD_MASK)
+    expect([...asked.keys()]).toContain(DATE_LEAD_MASK)
+    expect(asked.get(hintMask({ mask: '[E]' }))).toMatchObject({
+      fileName: SAMPLE_FILE,
+      spec: { nameMask: `${MARK_START}[E]${MARK_END}`, extensionMask: '' },
+    })
+  })
+
+  it('renders a range with what the field keeps around it, the part it takes between the marks', () => {
+    expect(hintMask({ mask: '[E2-3]', around: { before: '[E1]', after: '[E4-]' } })).toBe(
+      `[E1]${MARK_START}[E2-3]${MARK_END}[E4-]`,
+    )
   })
 
   it('leaves counters out of the request: their numbers come from the token itself', () => {
-    expect(exampleMasks(PLACEHOLDER_HELP).some((mask) => mask.startsWith('[C'))).toBe(false)
-  })
-
-  it('pairs each mask with what the backend rendered for it, dropping the ones it couldn’t', () => {
-    const rendered = renderedByMask(['[E]', '[Q]'], { rendered: ['pdf', null], sampleDate: false })
-    expect([...rendered]).toEqual([['[E]', 'pdf']])
+    expect([...placeholderExamples(PLACEHOLDER_HELP).keys()].some((mask) => mask.includes('[C'))).toBe(false)
   })
 
   it('marks the part a range takes, with what the field keeps around it quiet', () => {
-    const rendered = new Map([
-      ['[E1]', 'p'],
-      ['[E2-3]', 'df'],
-      ['[E4-]', ''],
+    const hint = { mask: '[N3]', around: { before: '[N1-2]', after: '[N4-]' } }
+    const rendered = new Map([[hintMask(hint), `Be${MARK_START}a${MARK_END}ch day`]])
+    expect(hintPieces(hint, rendered)).toEqual([
+      { text: 'Be', marked: false },
+      { text: 'a', marked: true },
+      { text: 'ch day', marked: false },
     ])
-    expect(examplePieces({ mask: '[E2-3]', around: { before: '[E1]', after: '[E4-]' } }, rendered)).toEqual([
-      { text: 'p', taken: false },
-      { text: 'df', taken: true },
-    ])
-  })
-
-  it('shows a whole placeholder as taken entirely', () => {
-    expect(examplePieces({ mask: '[E]' }, new Map([['[E]', 'pdf']]))).toEqual([{ text: 'pdf', taken: true }])
   })
 
   it('counts a counter’s first three numbers, padded as the names get them', () => {
-    expect(examplePieces({ mask: '[C10+5:3]' }, new Map())).toEqual([{ text: '010, 015, 020…', taken: true }])
+    expect(hintPieces({ mask: '[C10+5:3]' }, new Map())).toEqual([{ text: '010, 015, 020…', marked: true }])
   })
 
-  it('has no example for a mask the backend didn’t render', () => {
-    expect(examplePieces({ mask: '[N3]', around: { before: '[N1-2]' } }, new Map())).toBeNull()
+  it('has no example for a mask the engine didn’t render', () => {
+    expect(hintPieces({ mask: '[N3]', around: { before: '[N1-2]' } }, new Map())).toBeNull()
   })
 })

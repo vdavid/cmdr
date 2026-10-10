@@ -3,13 +3,11 @@
 - **Keyboard-first**: the name mask has focus on open; Tab walks the fields; Enter in a text field starts (TC's Start!),
   a button or menu keeps its own Enter; Esc closes. The placeholder buttons insert at the name mask's caret.
 - **Placeholder tooltips**: each button's tooltip (`PlaceholderTip`, adopted as the house tooltip's `contentEl`, so it
-  shows on hover AND keyboard focus and is the button's `aria-describedby`) gives the meaning, an example from the
-  batch's first file, a few other forms from `mask.rs` with their examples, and for a range the part it takes in bold
-  with what the field keeps around it quiet. The examples are the backend's own render of each mask
-  (`render_multi_rename_examples` → `plan::mask_examples`), asked once on open (`exampleMasks`): a range also renders
-  its surroundings as masks (`[E2-3]` with `[E1]` and `[E4-]`), so no slicing grammar lives in TypeScript. A file with
-  no modified time gets dates for a sample one (`sampleDate`), and the line says so; counters need no file
-  (`counterSamples`). With no first file (it's gone) the examples are left out.
+  shows on hover AND keyboard focus and is the button's `aria-describedby`) gives the meaning, an example on the sample
+  file, a few other forms from `mask.rs` with their examples, and for a range the part it takes in bold with what the
+  field keeps around it quiet. The lead line names what the example ran on: `Beach day.jpg`, its path with the two
+  folders above it (`[P]`), the date and time (`[YMD]`, `[hms]`), or "the first three files" (a counter, whose numbers
+  come from `counterSamples`, no engine call). § Tooltip examples.
 - **Error line**: always rendered under the search row, one line tall (ellipsis, overflow tooltip), so the preview never
   shifts.
 - **Preview**: reruns `PREVIEW_DELAY_MS` (120 ms) after the last edit. The answer carries the counts (the footer and the
@@ -35,6 +33,9 @@
 - **Target**: the focused pane's selected rows in row order (backend numbers, `..` offset removed), or `null` for the
   whole folder when nothing or everything is selected, plus `getLastSequence()`. A pane with no backend listing
   (servers, search results), or a selection whose rows are still settling (`isRowStateReady`), opens nothing.
+  `routes/(main)/+page.svelte` reads it (`getFocusedPaneRenameTarget`) and opens the session (`openMultiRename`) before
+  the sheet mounts. A read-only pane (any archive, the `.git` portal, a read-only volume) gets `refuseMultiRename`’s
+  alert instead; the backend’s `ReadOnly` at Start is the safety net.
 - **Start's toast** says how many files are renaming; a batch that ran as a move on S3 adds a warning for the swaps it
   left out (`swapsLeftOut`), as Ask Cmdr does.
 - **Gallery**: `not-triggerable`, since the preview is computed from a real listing.
@@ -65,13 +66,20 @@
 
 ## Layout and option keys
 
-- **Two columns over the preview.** Left: name mask (grows) and extension mask (140 px), the placeholder buttons, then
-  Search for / Replace with. Right, past a hairline: a two-column grid of option and key chip, each pair one `subgrid`
-  row, so the chips share one right edge. Letter case and Remove diacritics (they change the whole name) on top; Match
-  case's row is the `1fr` one and sits at its bottom, which sinks the five search options (Match case, First match only,
-  Include extension, Regular expression, Replace whole name) beside the search fields when there's spare height. With
-  none, every row is one gap apart. ❌ No spacer row: it costs its own two grid gaps (it made the gap under Remove
-  diacritics three times the others). Each `Checkbox` sits in a wrapper span, since it renders more than one element.
+- **Layout**: a grid. Top left, the name mask (grows) and the extension mask (140 px), then the placeholder buttons. Top
+  right, past a hairline, what changes the whole name: Letter case and Remove diacritics, each with its key chip, in a
+  two-column grid (`subgrid` rows, so the chips share one right edge), its two rows spread over the masks' height.
+  Across the full width under both: Search for, Replace with, and the search option chips, so their right edge lines up
+  with the key chips above. Each `Checkbox` sits in a wrapper span, since it renders more than one element.
+- **Search option chips** (`SearchOptionChips`): Match case `Aa`, First match only `1×`, Include extension `.ext`,
+  Regular expression `.*`, Replace whole name `^$` (the regex way to say "the whole string"). Code-editor style find
+  toggles: mono glyphs, `aria-hidden`, on the button an `aria-label` with the full name and `aria-pressed`; on is the
+  accent fill, as a chosen `ToggleGroup` cell. A plain `<button>` (no house multi-toggle primitive exists; `ToggleGroup`
+  is single-select). As tall as the text fields by their frame's own recipe (`app-field.css`: font × tight leading + two
+  input paddings + the border). Each tooltip names the option, shows its key chip, and gives one tiny replace on a
+  made-up file with the option on and off: "Replacing `photo` with `pic` in `Photo photo.jpg`:", then
+  `On  Photo pic.jpg` / `Off  pic pic.jpg`, the text the replace put in bold, the rest quiet. Each option's file name is
+  chosen so the option changes the result (`search-option-help.ts`).
 - **Option keys**: ⌘⌥U opens Letter case (focus + click on its `.select-trigger`, `Select`'s stable class, so the menu
   opens on the checked row as a click would), and ⌘⌥ N/I/F/E/R/W flip Remove diacritics, Match case, First match only,
   Include extension, Regular expression, and Replace whole name. Fixed-key registry commands in
@@ -84,8 +92,25 @@
     sends synthetic events).
   - None of U/N/I/F/E/R/W with ⌘⌥ is a Cmdr command or a native menu accelerator (`menu_bar.rs` holds ⌘⌥ C/O/T/V/Q/L/A,
     the registry adds H; checked 2026-10-09), so no menu command needs claiming.
-  - Each key shows as a dim `ShortcutChip` (`commandId`, not clickable: the keys can't be rebound) beside its option,
-    `aria-hidden`: decoration for sighted users, the same keys listed in the Help window.
+  - Letter case's and Remove diacritics' keys show as a dim `ShortcutChip` (`commandId`, not clickable: the keys can't
+    be rebound) beside the option, `aria-hidden`: decoration for sighted users, the same keys listed in the Help window.
+    A search chip shows its key in its tooltip.
+
+## Tooltip examples
+
+- **Made-up files, rendered by the real engine.** Every example is a `RenameExample` (a file name and a full spec on
+  `DEFAULT_SPEC`), all asked in ONE `render_multi_rename_examples` call on open (`renderExamples`, keyed by mask or by
+  `searchExampleKey`) and answered by `plan::render_examples`, which runs `Compiled::render` (what the preview runs) on
+  the file in `Trips/Lisbon 2026`, last changed 2026-07-14 09:05:30. So an example can't drift from what a rename does,
+  and never depends on what's selected: examples from the batch's first file were fragile (a gone file, no date, a name
+  too short for a range). A spec that doesn't run comes back `null` and its example is left out.
+- **Marks set apart the part an example is about.** `U+E000` / `U+E001` (private use, never in a real name or mask) wrap
+  it inside the spec, and the engine copies them through like any text: a range's mask is `[E1]` + marked `[E2-3]` +
+  `[E4-]` (what the field keeps around it, unmarked), and a search option's replacement is marked, so the result marks
+  exactly what the replace put in (and nothing, when it matched nothing). `examplePieces` splits the result. ❌ Don't
+  diff before and after in TS to find the change: a diff can't tell `pic pic` from `Photo photo`.
+- The lead lines' path and date are rendered too (`FOLDER_LEAD_MASK`, `DATE_LEAD_MASK`), so the folder names and the
+  date live only in `plan.rs`.
 
 ## Mask input
 

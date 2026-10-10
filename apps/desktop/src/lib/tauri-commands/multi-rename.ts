@@ -4,7 +4,6 @@
 
 import {
   commands,
-  type MaskExamples,
   type MultiRenameError,
   type MultiRenameOpened,
   type MultiRenamePreset,
@@ -14,10 +13,10 @@ import {
   type PreviewCounts,
   type PreviewFilter,
   type PreviewRow,
+  type RenameExample,
 } from '$lib/ipc/bindings'
 
 export type {
-  MaskExamples,
   MultiRenameError,
   MultiRenameOpened,
   MultiRenamePreset,
@@ -27,6 +26,7 @@ export type {
   PreviewCounts,
   PreviewFilter,
   PreviewRow,
+  RenameExample,
 }
 
 /** A typed answer the sheet words itself: the value, or why there is none. */
@@ -75,12 +75,11 @@ export async function getMultiRenamePreviewRows(
 }
 
 /**
- * `masks` rendered for the session's first file, for the placeholder tooltips' examples.
- * `null` when there's no first file to show (it's gone, or the session is).
+ * Each example's new name, rendered by the rename engine on a made-up file, for the
+ * sheet's tooltips; `null` for a spec that doesn't run.
  */
-export async function renderMultiRenameExamples(sessionId: string, masks: string[]): Promise<MaskExamples | null> {
-  const res = await commands.renderMultiRenameExamples(sessionId, masks)
-  return res.status === 'ok' ? res.data : null
+export async function renderMultiRenameExamples(examples: RenameExample[]): Promise<(string | null)[]> {
+  return commands.renderMultiRenameExamples(examples)
 }
 
 /**

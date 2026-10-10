@@ -10,7 +10,7 @@
      * Keyboard-first: the name mask has focus on open, Tab walks the fields, the
      * preview follows every keystroke, Enter starts, Esc closes, F2 opens the Presets
      * menu, ⌘S saves the fields as a preset, and ⌘⌥ plus a letter flips an option
-     * (the chip beside each one says which).
+     * (the key chip beside a whole-name option, or a search chip's tooltip, says which).
      */
     import { onDestroy, onMount, type Snippet } from 'svelte'
     import ModalDialog from '$lib/ui/ModalDialog.svelte'
@@ -29,7 +29,6 @@
     import TextInput from '$lib/ui/TextInput.svelte'
     import Trans from '$lib/intl/Trans.svelte'
     import { tString } from '$lib/intl/messages.svelte'
-    import type { MessageKey } from '$lib/intl/keys.gen'
     import { claimKey } from '$lib/shortcuts/claim-key'
     import { tooltip } from '$lib/tooltip/tooltip'
     import { claimMenuCommand } from '$lib/commands/menu-claims'
@@ -43,9 +42,11 @@
     import PresetsControl from './PresetsControl.svelte'
     import { rowStatusView, type StatusMessage } from './row-status'
     import { insertAtCaret } from './spec'
-    import { PLACEHOLDER_HELP, exampleMasks, renderedByMask } from './placeholder-help'
+    import { PLACEHOLDER_HELP, placeholderExamples } from './placeholder-help'
     import PlaceholderTip from './PlaceholderTip.svelte'
-    import { renderMultiRenameExamples } from '$lib/tauri-commands'
+    import { renderExamples } from './rename-examples'
+    import { SEARCH_OPTIONS, searchOptionExamples } from './search-option-help'
+    import SearchOptionChips from './SearchOptionChips.svelte'
 
     interface Props {
         session: MultiRenameOpened
@@ -78,26 +79,13 @@
 
     /** Each placeholder button's tooltip body, which the tooltip adopts on show. */
     const tipContent = $state<Partial<Record<string, HTMLDivElement>>>({})
-    /** The tooltips' examples, rendered by the backend for the first file; `null` until they come. */
-    let examples = $state.raw<{ rendered: ReadonlyMap<string, string>; sampleDate: boolean } | null>(null)
+    /** Every tooltip's examples, rendered by the engine on made-up files; `null` until they come. */
+    let examples = $state.raw<ReadonlyMap<string, string> | null>(null)
 
     async function loadExamples(): Promise<void> {
-        const masks = exampleMasks(PLACEHOLDER_HELP)
-        const answer = await renderMultiRenameExamples(session.sessionId, masks)
-        if (answer) examples = { rendered: renderedByMask(masks, answer), sampleDate: answer.sampleDate }
+        const asked = new Map([...placeholderExamples(PLACEHOLDER_HELP), ...searchOptionExamples(SEARCH_OPTIONS)])
+        examples = await renderExamples(asked)
     }
-
-    const TOGGLE_LABELS: Record<ToggleField, MessageKey> = {
-        removeDiacritics: 'multiRename.removeDiacritics',
-        caseSensitive: 'multiRename.caseSensitive',
-        firstOnly: 'multiRename.firstOnly',
-        includeExtension: 'multiRename.includeExtension',
-        regex: 'multiRename.regex',
-        substitute: 'multiRename.substitute',
-    }
-    // Remove diacritics changes the whole name, so it sits with Letter case; Match case's row takes
-    // the spare height, which sinks the rest, which tune the search, down beside the search fields.
-    const FIRST_SEARCH_TOGGLE: ToggleField = 'caseSensitive'
 
     const caseItems = $derived([
         { value: 'unchanged', label: tString('multiRename.case.unchanged') },
@@ -294,38 +282,13 @@
                         >
                             {help.placeholder}
                         </Button>
-                        <PlaceholderTip
-                            {help}
-                            rendered={examples?.rendered ?? null}
-                            sampleDate={examples?.sampleDate ?? false}
-                            bind:contentEl={tipContent[help.placeholder]}
-                        />
+                        <PlaceholderTip {help} rendered={examples} bind:contentEl={tipContent[help.placeholder]} />
                     {/each}
-                </div>
-                <div class="search">
-                    <label class="field grow">
-                        <span class="label">{tString('multiRename.search')}</span>
-                        <TextInput
-                            value={tool.spec.search}
-                            oninput={(e: Event) => { tool.update({ search: (e.currentTarget as HTMLInputElement).value }) }}
-                            ariaLabel={tString('multiRename.search')}
-                            invalid={tool.error?.type === 'spec' && tool.error.error.type === 'badRegex'}
-                        />
-                    </label>
-                    <label class="field grow">
-                        <span class="label">{tString('multiRename.replace')}</span>
-                        <TextInput
-                            value={tool.spec.replace}
-                            oninput={(e: Event) => { tool.update({ replace: (e.currentTarget as HTMLInputElement).value }) }}
-                            ariaLabel={tString('multiRename.replace')}
-                        />
-                    </label>
                 </div>
             </div>
 
-            <!-- The options, a grid of option and key: what changes the whole name on top, the
-                 search's own options sunk to the bottom, level with the search fields. Each names
-                 its ⌘⌥ key in a quiet chip. -->
+            <!-- What changes the whole name, beside the masks: option and key, the keys on one
+                 right edge, each a quiet ⌘⌥ chip. -->
             <div class="options">
                 <span class="option-row">
                     <span class="case-field" bind:this={caseField}>
@@ -341,20 +304,44 @@
                         <ShortcutChip commandId="multiRename.letterCase" clickable={false} size="sm" />
                     </span>
                 </span>
-                {#each TOGGLE_COMMANDS as { field, commandId } (field)}
-                    <span class="option-row" class:sinks={field === FIRST_SEARCH_TOGGLE}>
-                        <!-- One grid cell: `Checkbox` renders more than one element. -->
-                        <span class="option-control">
-                            <Checkbox checked={tool.spec[field]} onCheckedChange={(on: boolean) => { tool.update({ [field]: on }) }}>
-                                {tString(TOGGLE_LABELS[field])}
-                            </Checkbox>
-                        </span>
-                        <!-- The key, quiet: a hint for next time, never a control (it can't be rebound). -->
-                        <span class="option-key" aria-hidden="true">
-                            <ShortcutChip {commandId} clickable={false} size="sm" />
-                        </span>
+                <span class="option-row">
+                    <!-- One grid cell: `Checkbox` renders more than one element. -->
+                    <span class="option-control">
+                        <Checkbox
+                            checked={tool.spec.removeDiacritics}
+                            onCheckedChange={(on: boolean) => { tool.update({ removeDiacritics: on }) }}
+                        >
+                            {tString('multiRename.removeDiacritics')}
+                        </Checkbox>
                     </span>
-                {/each}
+                    <!-- The key, quiet: a hint for next time, never a control (it can't be rebound). -->
+                    <span class="option-key" aria-hidden="true">
+                        <ShortcutChip commandId={TOGGLE_COMMANDS.removeDiacritics} clickable={false} size="sm" />
+                    </span>
+                </span>
+            </div>
+
+            <!-- The full width under both: the search, the replacement, and the search's own
+                 options as chips level with the fields. -->
+            <div class="search">
+                <label class="field grow">
+                    <span class="label">{tString('multiRename.search')}</span>
+                    <TextInput
+                        value={tool.spec.search}
+                        oninput={(e: Event) => { tool.update({ search: (e.currentTarget as HTMLInputElement).value }) }}
+                        ariaLabel={tString('multiRename.search')}
+                        invalid={tool.error?.type === 'spec' && tool.error.error.type === 'badRegex'}
+                    />
+                </label>
+                <label class="field grow">
+                    <span class="label">{tString('multiRename.replace')}</span>
+                    <TextInput
+                        value={tool.spec.replace}
+                        oninput={(e: Event) => { tool.update({ replace: (e.currentTarget as HTMLInputElement).value }) }}
+                        ariaLabel={tString('multiRename.replace')}
+                    />
+                </label>
+                <SearchOptionChips spec={tool.spec} onToggle={toggle} rendered={examples} />
             </div>
         </div>
 
@@ -469,11 +456,16 @@
         min-height: 0;
     }
 
-    /* The fields on the left, the options in a column beside them. */
+    /* The masks and placeholders on the left, the whole-name options beside them, and the
+       search row across both. */
     .controls {
         display: grid;
         grid-template-columns: minmax(0, 1fr) auto;
-        gap: var(--spacing-lg);
+        gap: var(--spacing-md) var(--spacing-lg);
+    }
+
+    .search {
+        grid-column: 1 / -1;
     }
 
     .fields {
@@ -517,16 +509,13 @@
         flex-wrap: wrap;
     }
 
-    /* Two columns, option and key, so the keys line up on one right edge. Match case's row takes
-       any spare height and sits at its bottom, which sinks the search options level with
-       the search fields they tune. With no spare height every row is one gap apart: a spacer row
-       of its own would add two more gaps. */
+    /* Two columns, option and key, so the keys line up on one right edge; the two rows share
+       the masks' and placeholders' height, so the column sits level with them. */
     .options {
         display: grid;
         grid-template-columns: auto auto;
-        grid-template-rows: auto auto 1fr;
-        grid-auto-rows: auto;
-        gap: var(--spacing-xs) var(--spacing-lg);
+        align-content: space-evenly;
+        gap: var(--spacing-sm) var(--spacing-lg);
         padding-left: var(--spacing-lg);
         border-left: 1px solid var(--color-border);
     }
@@ -543,17 +532,13 @@
         align-items: center;
     }
 
-    .option-row.sinks {
-        align-self: end;
-    }
-
     .case-field {
         display: flex;
         align-items: center;
         gap: var(--spacing-sm);
     }
 
-    /* The key hint stays quiet: tertiary text on no fill, so seven of them don't shout. */
+    /* The key hint stays quiet: tertiary text on no fill, so it doesn't shout. */
     .option-key {
         display: flex;
         justify-content: flex-end;

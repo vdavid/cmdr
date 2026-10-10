@@ -1015,7 +1015,6 @@ export {
   updateMultiRenamePreset,
 } from './multi-rename'
 export type {
-  MaskExamples,
   MultiRenameError,
   MultiRenameOpened,
   MultiRenamePreset,
@@ -1026,4 +1025,5 @@ export type {
   PreviewCounts,
   PreviewFilter,
   PreviewRow,
+  RenameExample,
 } from './multi-rename'

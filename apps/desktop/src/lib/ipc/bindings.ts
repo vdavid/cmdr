@@ -1361,19 +1361,11 @@ export const commands = {
       __TAURI_INVOKE('get_multi_rename_preview_rows', { sessionId, previewId, offset, limit, filter }),
     ),
   /**
-   *  `masks` rendered for the session's first file, for the placeholder tooltips'
-   *  examples. `None` when that file is gone.
+   *  Each example's new name for the sheet's tooltips, rendered on made-up files
+   *  by the same engine as the preview; `None` for a spec that doesn't run.
    */
-  renderMultiRenameExamples: (sessionId: string, masks: string[]) =>
-    typedError<
-      {
-        // Each mask's text for the file, in order; `None` for a mask that doesn't parse.
-        rendered: (string | null)[]
-        // The file has no modified time, so dates and times show `SAMPLE_MODIFIED`.
-        sampleDate: boolean
-      } | null,
-      MultiRenameError
-    >(__TAURI_INVOKE('render_multi_rename_examples', { sessionId, masks })),
+  renderMultiRenameExamples: (examples: RenameExample[]) =>
+    __TAURI_INVOKE<(string | null)[]>('render_multi_rename_examples', { examples }),
   /**
    *  Renames the rows preview `preview_id` showed as ready, as one operation the
    *  queue shows and Undo reverses. Refuses with `previewOutOfDate` when the folder
@@ -10254,14 +10246,6 @@ export type MaskError =
   // A placeholder Cmdr doesn't know, as typed between the brackets.
   | { type: 'unknown'; placeholder: string }
 
-// Example masks rendered for one file, for the sheet's placeholder tooltips.
-export type MaskExamples = {
-  // Each mask's text for the file, in order; `None` for a mask that doesn't parse.
-  rendered: (string | null)[]
-  // The file has no modified time, so dates and times show `SAMPLE_MODIFIED`.
-  sampleDate: boolean
-}
-
 /**
  *  `mcp-settings-close`: ask the settings window to close itself. Emitted via a
  *  distinct static `emit_to("settings", …)` (NOT through the generic `mcp-*`
@@ -12776,6 +12760,12 @@ export type RenameByMove = {
 export type RenameEvidence = {
   source: EvidenceSource
   detail: string
+}
+
+// One of the sheet's tooltip examples: `spec` run on a made-up file named `file_name`.
+export type RenameExample = {
+  fileName: string
+  spec: MultiRenameSpec
 }
 
 export type RenameProposalRowSnapshot = {

@@ -19,20 +19,21 @@ export type ToggleField = Extract<
 /** What a keypress in the sheet means for its options, if anything. */
 export type OptionKey = { kind: 'letterCase' } | { kind: 'toggle'; field: ToggleField }
 
-/** Each option's command, in the order the sheet lists them. */
-export const TOGGLE_COMMANDS: readonly { field: ToggleField; commandId: CommandId }[] = [
-  { field: 'removeDiacritics', commandId: 'multiRename.removeDiacritics' },
-  { field: 'caseSensitive', commandId: 'multiRename.matchCase' },
-  { field: 'firstOnly', commandId: 'multiRename.firstMatchOnly' },
-  { field: 'includeExtension', commandId: 'multiRename.includeExtension' },
-  { field: 'regex', commandId: 'multiRename.regex' },
-  { field: 'substitute', commandId: 'multiRename.replaceWholeName' },
-]
+/** Each option's command. */
+export const TOGGLE_COMMANDS: Readonly<Record<ToggleField, CommandId>> = {
+  removeDiacritics: 'multiRename.removeDiacritics',
+  caseSensitive: 'multiRename.matchCase',
+  firstOnly: 'multiRename.firstMatchOnly',
+  includeExtension: 'multiRename.includeExtension',
+  regex: 'multiRename.regex',
+  substitute: 'multiRename.replaceWholeName',
+}
 
 export function optionKeyOf(event: KeyboardEvent): OptionKey | null {
   // A key that finishes an IME composition belongs to the field, never to the sheet.
   if (event.isComposing) return null
   if (eventMatchesCommand(event, 'multiRename.letterCase')) return { kind: 'letterCase' }
-  const toggle = TOGGLE_COMMANDS.find(({ commandId }) => eventMatchesCommand(event, commandId))
-  return toggle ? { kind: 'toggle', field: toggle.field } : null
+  const fields = Object.keys(TOGGLE_COMMANDS) as ToggleField[]
+  const field = fields.find((f) => eventMatchesCommand(event, TOGGLE_COMMANDS[f]))
+  return field === undefined ? null : { kind: 'toggle', field }
 }

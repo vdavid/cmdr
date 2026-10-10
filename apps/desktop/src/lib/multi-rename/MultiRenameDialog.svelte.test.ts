@@ -10,6 +10,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount, tick } from 'svelte'
 import MultiRenameDialog from './MultiRenameDialog.svelte'
 import { runMenuClaim } from '$lib/commands/menu-claims'
+import type { RenameExample } from '$lib/tauri-commands'
+import { MARK_END, MARK_START } from './rename-examples'
 
 const ipc = vi.hoisted(() => ({
   previewMultiRename: vi.fn(),
@@ -73,16 +75,21 @@ describe('MultiRenameDialog', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     ipc.previewMultiRename.mockResolvedValue({ ok: true, value: READY })
-    ipc.renderMultiRenameExamples.mockImplementation((_session: string, masks: string[]) => {
-      const forReportPdf: Record<string, string> = {
-        '[1-]': 'report.pdf',
-        '[E]': 'pdf',
-        '[E1]': 'p',
-        '[E2-]': 'df',
-        '[E2-3]': 'df',
-        '[E4-]': '',
+    // A stand-in for the engine: the few examples these tests read, the rest unrendered.
+    ipc.renderMultiRenameExamples.mockImplementation((examples: RenameExample[]) => {
+      const byMask: Record<string, string> = {
+        [`${MARK_START}[E]${MARK_END}`]: `${MARK_START}jpg${MARK_END}`,
+        [`${MARK_START}[E1]${MARK_END}[E2-]`]: `${MARK_START}j${MARK_END}pg`,
+        [`[E1]${MARK_START}[E2-3]${MARK_END}[E4-]`]: `j${MARK_START}pg${MARK_END}`,
       }
-      return Promise.resolve({ rendered: masks.map((mask) => forReportPdf[mask] ?? null), sampleDate: false })
+      return Promise.resolve(
+        examples.map(({ fileName, spec }) => {
+          if (spec.search === '') return byMask[spec.nameMask] ?? null
+          if (fileName !== 'Photo photo.jpg') return null
+          const pic = `${MARK_START}pic${MARK_END}`
+          return spec.caseSensitive ? `Photo ${pic}.jpg` : `${pic} ${pic}.jpg`
+        }),
+      )
     })
     ipc.getMultiRenamePresets.mockResolvedValue([{ id: 'p1', name: 'Mine', spec: {} }])
     ipc.saveMultiRenamePreset.mockResolvedValue(undefined)
@@ -110,7 +117,7 @@ describe('MultiRenameDialog', () => {
     expect(line?.textContent.trim()).toBe('')
   })
 
-  it('explains a placeholder in its button’s tooltip, with the first file’s example and the part a form takes', async () => {
+  it('explains a placeholder in its button’s tooltip, with a made-up file’s example and the part a form takes', async () => {
     const root = await mountSheet()
     const button = [...root.querySelectorAll<HTMLButtonElement>('.placeholders button')].find(
       (b) => b.textContent.trim() === '[E]',
@@ -118,11 +125,11 @@ describe('MultiRenameDialog', () => {
     if (!button) throw new Error('no [E] button')
     const tip = root.querySelectorAll('.placeholder-tip')[1]
     expect(tip.textContent).toContain('The file’s current extension')
-    expect(tip.textContent).toContain('For “report.pdf”:')
+    expect(tip.textContent).toContain('For “Beach day.jpg”:')
     const range = [...tip.querySelectorAll('.forms .example')][1]
-    expect([...range.children].map((piece) => [piece.textContent, piece.classList.contains('taken')])).toEqual([
-      ['p', false],
-      ['df', true],
+    expect([...range.children].map((piece) => [piece.textContent, piece.classList.contains('marked')])).toEqual([
+      ['j', false],
+      ['pg', true],
     ])
   })
 
@@ -270,12 +277,15 @@ describe('MultiRenameDialog', () => {
     })
     afterEach(() => navigatorSpy.mockReset())
 
-    function checkbox(root: HTMLElement, label: string): HTMLInputElement {
+    /** Whether the option named `label` reads as on: Remove diacritics' checkbox, or a search chip. */
+    function isOn(root: HTMLElement, label: string): boolean {
+      const chip = root.querySelector<HTMLButtonElement>(`.search-options button[aria-label="${label}"]`)
+      if (chip) return chip.getAttribute('aria-pressed') === 'true'
       const box = [...root.querySelectorAll('label')]
         .find((el) => el.textContent.includes(label))
         ?.querySelector<HTMLInputElement>('input[type="checkbox"]')
-      if (!box) throw new Error(`no ${label} checkbox`)
-      return box
+      if (!box) throw new Error(`no ${label} option`)
+      return box.checked
     }
 
     function lastSpec(): Record<string, unknown> {
@@ -290,7 +300,7 @@ describe('MultiRenameDialog', () => {
       ['Include extension', 'KeyE', 'Dead', 'includeExtension'],
       ['Regular expression', 'KeyR', '®', 'regex'],
       ['Replace whole name', 'KeyW', '∑', 'substitute'],
-    ])('⌘⌥ on %s flips its checkbox, from a text field too', async (label, code, composed, field) => {
+    ])('⌘⌥ on %s flips it, from a text field too', async (label, code, composed, field) => {
       const root = await mountSheet()
       const mask = inputs(root)[0]
       const event = new KeyboardEvent('keydown', {
@@ -306,13 +316,68 @@ describe('MultiRenameDialog', () => {
         expect(lastSpec()[field]).toBe(true)
       })
       expect(event.defaultPrevented).toBe(true)
-      expect(checkbox(root, label).checked).toBe(true)
+      expect(isOn(root, label)).toBe(true)
 
       key(mask, composed, { code, metaKey: true, altKey: true })
       await vi.waitFor(() => {
         expect(lastSpec()[field]).toBe(false)
       })
-      expect(checkbox(root, label).checked).toBe(false)
+      expect(isOn(root, label)).toBe(false)
+    })
+
+    it('shows the five search options as toggle chips beside the search fields, each named in full', async () => {
+      const root = await mountSheet()
+      const group = root.querySelector('.search [role="group"]')
+      expect(group?.getAttribute('aria-label')).toBe('Search options')
+      const chips = [...(group?.querySelectorAll('button') ?? [])]
+      expect(chips.map((chip) => chip.getAttribute('aria-label'))).toEqual([
+        'Match case',
+        'First match only',
+        'Include extension',
+        'Regular expression',
+        'Replace whole name',
+      ])
+      expect(chips.map((chip) => chip.textContent.trim())).toEqual(['Aa', '1×', '.ext', '.*', '^$'])
+      expect(chips.every((chip) => chip.getAttribute('aria-pressed') === 'false')).toBe(true)
+    })
+
+    it('a click on a chip flips its option and its pressed state', async () => {
+      const root = await mountSheet()
+      const chip = root.querySelector<HTMLButtonElement>('.search-options button[aria-label="Regular expression"]')
+      chip?.click()
+      await vi.waitFor(() => {
+        expect(lastSpec().regex).toBe(true)
+      })
+      expect(chip?.getAttribute('aria-pressed')).toBe('true')
+      chip?.click()
+      await vi.waitFor(() => {
+        expect(lastSpec().regex).toBe(false)
+      })
+      expect(chip?.getAttribute('aria-pressed')).toBe('false')
+    })
+
+    it('a chip’s tooltip names the option, its key, and a replace with it on and off, the text put in set apart', async () => {
+      const root = await mountSheet()
+      const chip = root.querySelector<HTMLButtonElement>('.search-options button[aria-label="Match case"]')
+      chip?.focus()
+      await new Promise((resolve) => setTimeout(resolve, 450))
+      const tip = document.getElementById(chip?.getAttribute('aria-describedby') ?? '')
+      expect(tip?.querySelector('.head')?.textContent).toContain('Match case')
+      expect(tip?.querySelector('.head .shortcut-chip')?.textContent).toContain('⌘⌥I')
+      expect(tip?.querySelector('.setup')?.textContent.trim()).toBe('Replacing photo with pic in Photo photo.jpg:')
+      const [on, off] = [...(tip?.querySelectorAll('.results .example') ?? [])]
+      const pieces = (line: Element) => [...line.children].map((p) => [p.textContent, p.classList.contains('marked')])
+      expect(pieces(on)).toEqual([
+        ['Photo ', false],
+        ['pic', true],
+        ['.jpg', false],
+      ])
+      expect(pieces(off)).toEqual([
+        ['pic', true],
+        [' ', false],
+        ['pic', true],
+        ['.jpg', false],
+      ])
     })
 
     it('⌘⌥U opens the Letter case menu', async () => {
