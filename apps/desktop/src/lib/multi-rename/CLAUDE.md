@@ -6,7 +6,7 @@ The ⌃M sheet over `src-tauri/src/multi_rename/` (the engine and its rules: tha
   `source`; `routes/(main)/+page.svelte` opens a backend session over the focused pane’s selection first (a read-only
   pane gets `refuseMultiRename`’s alert), and closes it with the sheet.
 - `multi-rename-state.svelte.ts` the spec, the debounced preview (a generation counter drops stale answers), the rows in
-  view, presets (`loaded`, `edited`), Start.
+  view, presets (`loaded`, `edited`), the last settings (`persist`), Start.
 - `PresetsControl.svelte` the footer's Presets button, its house `Menu`, and the name popover (save / rename).
   `preset-menu.ts` builds the menu's rows and finds a name clash; `preset-keys.ts` reads F2 / ⌘S. Both pure.
 - `spec.ts` the default spec, built-in presets, `specsEqual`, placeholder insertion. Pure.
@@ -42,6 +42,8 @@ The ⌃M sheet over `src-tauri/src/multi_rename/` (the engine and its rules: tha
   slicing or replacing in TS. DETAILS § Tooltip examples.
 - **A spec error keeps the last good preview** on screen under the message; any other error clears it.
 - **A caret-opened editor is `passive`** (no focus, no trap), so typing stays in the field. DETAILS § Mask input.
+- **The sheet opens on what the last one closed with**: the fields AND the loaded preset (`LAST_SPEC`), so the Presets
+  button still says "Mine (edited)". An edit made before they arrive wins; Reset all fields remembers the defaults.
 - Built-in preset names are message keys (translated); saved ones are the user's text. `edited` compares against the
   preset as it is in the list now, so a rename, update, or delete is followed with no syncing.
 

@@ -3,11 +3,12 @@
  * answer gets its own words, Enter in a mask starts, a placeholder button inserts
  * into the name mask, and the presets: F2 opens their menu, a digit loads one,
  * the button says when the fields drifted from it, and ⌘S saves (asking before it
- * replaces), with Enter and Escape staying inside the name popover.
+ * replaces), with Enter and Escape staying inside the name popover; closing
+ * remembers the fields.
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { mount, tick } from 'svelte'
+import { mount, tick, unmount } from 'svelte'
 import MultiRenameDialog from './MultiRenameDialog.svelte'
 import { runMenuClaim } from '$lib/commands/menu-claims'
 import type { RenameExample } from '$lib/tauri-commands'
@@ -23,6 +24,8 @@ const ipc = vi.hoisted(() => ({
   deleteMultiRenamePreset: vi.fn(),
   renameMultiRenamePreset: vi.fn(),
   updateMultiRenamePreset: vi.fn(),
+  getMultiRenameLastSettings: vi.fn(),
+  saveMultiRenameLastSettings: vi.fn(),
 }))
 
 vi.mock('$lib/tauri-commands', () => ({
@@ -94,6 +97,8 @@ describe('MultiRenameDialog', () => {
     ipc.getMultiRenamePresets.mockResolvedValue([{ id: 'p1', name: 'Mine', spec: {} }])
     ipc.saveMultiRenamePreset.mockResolvedValue(undefined)
     ipc.deleteMultiRenamePreset.mockResolvedValue(undefined)
+    ipc.getMultiRenameLastSettings.mockResolvedValue(null)
+    ipc.saveMultiRenameLastSettings.mockResolvedValue(undefined)
   })
 
   it.each([
@@ -108,6 +113,26 @@ describe('MultiRenameDialog', () => {
     ipc.previewMultiRename.mockResolvedValue({ ok: false, error })
     const root = await mountSheet()
     expect(root.querySelector('[role="alert"]')?.textContent.trim()).toBeTruthy()
+  })
+
+  it('remembers the fields when it closes, for the next sheet', async () => {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    const sheet = mount(MultiRenameDialog, {
+      target,
+      props: { session: { sessionId: 'S', count: 1 }, onApplied: vi.fn(), onClose: vi.fn() },
+    })
+    await settle()
+    ;[...target.querySelectorAll('label')]
+      .find((el) => el.textContent.includes('Greek to Latin'))
+      ?.querySelector<HTMLInputElement>('input[type="checkbox"]')
+      ?.click()
+    await settle()
+    await unmount(sheet)
+    expect(ipc.saveMultiRenameLastSettings).toHaveBeenCalledWith(
+      expect.objectContaining({ nameMask: '[N]', greekToLatin: true }),
+      null,
+    )
   })
 
   it('keeps the error line in place with no error, so a message coming or going moves nothing', async () => {

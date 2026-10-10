@@ -28,6 +28,8 @@ vi.mock('$lib/tauri-commands', () => ({
   getMultiRenamePresets: vi.fn(() => Promise.resolve([{ id: 'p1', name: 'Bez diakritiky', spec: {} }])),
   saveMultiRenamePreset: vi.fn(() => Promise.resolve()),
   deleteMultiRenamePreset: vi.fn(() => Promise.resolve()),
+  getMultiRenameLastSettings: vi.fn(() => Promise.resolve(null)),
+  saveMultiRenameLastSettings: vi.fn(() => Promise.resolve()),
 }))
 
 const ROWS = [

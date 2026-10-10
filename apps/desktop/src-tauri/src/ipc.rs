@@ -218,6 +218,8 @@ macro_rules! ipc_command_manifest {
                     crate::commands::multi_rename::delete_multi_rename_preset,
                     crate::commands::multi_rename::rename_multi_rename_preset,
                     crate::commands::multi_rename::update_multi_rename_preset,
+                    crate::commands::multi_rename::get_multi_rename_last_settings,
+                    crate::commands::multi_rename::save_multi_rename_last_settings,
                     crate::commands::rename::move_to_trash,
                     crate::commands::rename::get_trash_dir,
                     crate::commands::restricted_paths::get_restricted_paths,

@@ -1,8 +1,9 @@
 /**
  * The Multi-Rename sheet's state: the preview follows edits after a short delay,
  * a stale answer never lands, errors keep or clear the rows, the table's window
- * pages in from the backend, presets round-trip, and Start sends the preview it
- * showed and returns the operation or the reason it didn't start.
+ * pages in from the backend, presets round-trip, the sheet opens on the settings
+ * (and preset) the last one closed with, and Start sends the preview it showed and
+ * returns the operation or the reason it didn't start.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
@@ -16,6 +17,8 @@ const { ipc } = vi.hoisted(() => ({
     deleteMultiRenamePreset: vi.fn(),
     renameMultiRenamePreset: vi.fn(),
     updateMultiRenamePreset: vi.fn(),
+    getMultiRenameLastSettings: vi.fn(),
+    saveMultiRenameLastSettings: vi.fn(),
   },
 }))
 vi.mock('$lib/tauri-commands', () => ipc)
@@ -38,7 +41,7 @@ function preview(previewId: number, rows: ReturnType<typeof row>[], total = rows
 }
 
 async function settle(): Promise<void> {
-  for (let i = 0; i < 4; i++) await Promise.resolve()
+  for (let i = 0; i < 6; i++) await Promise.resolve()
 }
 
 describe('createMultiRenameState', () => {
@@ -47,6 +50,8 @@ describe('createMultiRenameState', () => {
     vi.clearAllMocks()
     ipc.previewMultiRename.mockResolvedValue(preview(1, [row(0, 'a.txt', 'a.txt', 'unchanged')]))
     ipc.getMultiRenamePresets.mockResolvedValue([])
+    ipc.getMultiRenameLastSettings.mockResolvedValue(null)
+    ipc.saveMultiRenameLastSettings.mockResolvedValue(undefined)
   })
   afterEach(() => {
     vi.useRealTimers()
@@ -284,6 +289,21 @@ describe('createMultiRenameState', () => {
     tool.dispose()
   })
 
+  it('keeps an edit made before the last settings arrived', async () => {
+    let release: (v: unknown) => void = () => {}
+    ipc.getMultiRenameLastSettings.mockReturnValue(new Promise((r) => (release = r)))
+    const tool = createMultiRenameState('S')
+    tool.update({ nameMask: 'typed' })
+    release({
+      spec: { ...DEFAULT_SPEC, nameMask: 'remembered' },
+      preset: { kind: 'builtIn', id: 'builtin:remove-diacritics' },
+    })
+    await settle()
+    expect(tool.spec.nameMask).toBe('typed')
+    expect(tool.loaded).toBeNull()
+    tool.dispose()
+  })
+
   describe('presets', () => {
     const photos: MultiRenamePreset = { id: 'p1', name: 'Photos', spec: { ...DEFAULT_SPEC, nameMask: 'IMG_[C]' } }
     const music: MultiRenamePreset = { id: 'p2', name: 'Music', spec: { ...DEFAULT_SPEC, case: 'lower' } }
@@ -311,6 +331,57 @@ describe('createMultiRenameState', () => {
         stored = stored.filter((p) => p.id !== id)
         return Promise.resolve()
       })
+    })
+
+    it('opens on the settings and preset the last sheet closed with, marked edited when they differ', async () => {
+      ipc.getMultiRenameLastSettings.mockResolvedValue({
+        spec: { ...DEFAULT_SPEC, nameMask: 'IMG_[C]_x' },
+        preset: { kind: 'saved', id: 'p1' },
+      })
+      const tool = createMultiRenameState('S')
+      await tool.loadPresets()
+      await settle()
+      expect(tool.spec.nameMask).toBe('IMG_[C]_x')
+      expect((ipc.previewMultiRename.mock.calls[0][1] as { nameMask: string }).nameMask).toBe('IMG_[C]_x')
+      expect(tool.loaded).toEqual({ kind: 'saved', id: 'p1' })
+      expect(tool.edited).toBe(true)
+      tool.dispose()
+    })
+
+    it('remembers the fields and the loaded preset; Reset all fields remembers the defaults and no preset', async () => {
+      const tool = createMultiRenameState('S')
+      await tool.loadPresets()
+      await settle()
+      tool.loadPreset({ kind: 'saved', id: 'p1' })
+      tool.update({ search: 'x' })
+      await tool.persist()
+      expect(ipc.saveMultiRenameLastSettings).toHaveBeenLastCalledWith(
+        expect.objectContaining({ nameMask: 'IMG_[C]', search: 'x' }),
+        { kind: 'saved', id: 'p1' },
+      )
+
+      tool.resetFields()
+      await tool.persist()
+      expect(ipc.saveMultiRenameLastSettings).toHaveBeenLastCalledWith(DEFAULT_SPEC, null)
+      tool.dispose()
+    })
+
+    it('forgets a remembered preset that was deleted since, keeping its fields', async () => {
+      ipc.getMultiRenameLastSettings.mockResolvedValue({
+        spec: { ...DEFAULT_SPEC, nameMask: 'gone' },
+        preset: { kind: 'saved', id: 'deleted' },
+      })
+      const tool = createMultiRenameState('S')
+      await tool.loadPresets()
+      await settle()
+      expect(tool.spec.nameMask).toBe('gone')
+      expect(tool.loaded).toBeNull()
+      await tool.persist()
+      expect(ipc.saveMultiRenameLastSettings).toHaveBeenLastCalledWith(
+        expect.objectContaining({ nameMask: 'gone' }),
+        null,
+      )
+      tool.dispose()
     })
 
     it('loads a saved preset, and marks it edited only while a field differs from it', async () => {

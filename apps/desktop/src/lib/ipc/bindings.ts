@@ -1393,6 +1393,25 @@ export const commands = {
    */
   updateMultiRenamePreset: (id: string, spec: MultiRenameSpec) =>
     __TAURI_INVOKE<void>('update_multi_rename_preset', { id, spec }),
+  // The settings the sheet last closed with, if any.
+  getMultiRenameLastSettings: () =>
+    __TAURI_INVOKE<{
+      spec: MultiRenameSpec
+      // Absent in a file saved before the sheet remembered it.
+      preset?: LoadedPreset | null
+    } | null>('get_multi_rename_last_settings'),
+  /**
+   *  Remembers the settings the sheet closes with, and the preset they came from,
+   *  for the next ⌃M.
+   */
+  saveMultiRenameLastSettings: (
+    spec: MultiRenameSpec,
+    preset:
+      | { kind: 'saved'; id: string }
+      // One that ships with Cmdr (`spec.ts`'s `BUILT_IN_PRESETS`).
+      | { kind: 'builtIn'; id: string }
+      | null,
+  ) => __TAURI_INVOKE<void>('save_multi_rename_last_settings', { spec, preset }),
   // Moves a file or directory to the macOS Trash via NSFileManager.
   moveToTrash: (path: string) => typedError<null, MutationError>(__TAURI_INVOKE('move_to_trash', { path })),
   /**
@@ -10049,6 +10068,15 @@ export type LiveSystemState = {
 }
 
 /**
+ *  The preset the sheet's fields came from, so a reopened sheet's Presets button
+ *  names it (and says "edited" when the fields moved off it).
+ */
+export type LoadedPreset =
+  | { kind: 'saved'; id: string }
+  // One that ships with Cmdr (`spec.ts`'s `BUILT_IN_PRESETS`).
+  | { kind: 'builtIn'; id: string }
+
+/**
  *  Why `start_ai_server` or `start_ai_download` didn't do its job. Exported to `bindings.ts`
  *  through `ipc.rs`'s `.typ` (both commands are generic, so specta doesn't collect them).
  *
@@ -11260,6 +11288,13 @@ export type MultiRenameError =
   | { type: 'timedOut' }
   // The worker failed; `detail` is log text only.
   | { type: 'internal'; detail: string }
+
+// What the sheet closed with: its fields, and the preset they came from.
+export type MultiRenameLastSettings = {
+  spec: MultiRenameSpec
+  // Absent in a file saved before the sheet remembered it.
+  preset?: LoadedPreset | null
+}
 
 // An open sheet's session.
 export type MultiRenameOpened = {

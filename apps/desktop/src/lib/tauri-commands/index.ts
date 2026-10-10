@@ -1014,9 +1014,13 @@ export {
   deleteMultiRenamePreset,
   renameMultiRenamePreset,
   updateMultiRenamePreset,
+  getMultiRenameLastSettings,
+  saveMultiRenameLastSettings,
 } from './multi-rename'
 export type {
+  LoadedPreset,
   MultiRenameError,
+  MultiRenameLastSettings,
   MultiRenameOpened,
   MultiRenamePreset,
   MultiRenamePreview,

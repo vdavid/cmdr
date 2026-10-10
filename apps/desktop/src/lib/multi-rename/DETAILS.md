@@ -44,6 +44,12 @@
   presets newest first, numbered 1–9 (a digit picks one), then the built-ins, then Reset all fields (TC's `<Default>`)
   and Save current as… (⌘S chip). Each saved preset has a submenu (→, hover, or right-click): Rename…, Update with
   current fields (greyed when nothing would change), Delete. Picking a preset loads it; nothing runs.
+  - **Last settings** (TC keeps them too): closing the sheet, any way, saves the fields and the loaded preset (`persist`
+    in `onDestroy` → `save_multi_rename_last_settings`, one entry in `multi-rename-last.json`), and the next sheet's
+    first preview waits for them. **Decision/Why:** the preset travels with the fields, so a reopened sheet's button
+    still names it and `edited` stays honest (fields alone would make an edited preset look like nothing was loaded). A
+    remembered preset deleted since is dropped (`loaded` reads the live list), its fields kept. `touched` makes an edit
+    (or a preset pick) made before they arrive win.
   - The button reads `<name> (edited)` once a field differs from the loaded preset (`specsEqual`), and just "Presets"
     with nothing loaded. Saving or updating makes that preset the loaded one; deleting it leaves nothing loaded and the
     fields as they are.

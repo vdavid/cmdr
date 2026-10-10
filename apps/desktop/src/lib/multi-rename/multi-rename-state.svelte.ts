@@ -1,7 +1,9 @@
 /**
  * The Multi-Rename sheet's state: the spec the fields edit, the live preview, the
  * window of rows the list draws, the presets (and which one the fields came from),
- * and Start. One instance per open sheet, over one backend session.
+ * and Start. One instance per open sheet, over one backend session. It opens on the
+ * settings (and the preset) the last sheet closed with (`persist`), as TC does; an
+ * edit made before they arrive wins.
  *
  * The files and their names live in the backend session (`src-tauri/src/multi_rename/session.rs`):
  * a preview answers its id, the counts, and the first rows, and the list pages in
@@ -15,12 +17,15 @@
 import {
   applyMultiRename,
   deleteMultiRenamePreset,
+  getMultiRenameLastSettings,
   getMultiRenamePresets,
   getMultiRenamePreviewRows,
   previewMultiRename,
   renameMultiRenamePreset,
+  saveMultiRenameLastSettings,
   saveMultiRenamePreset,
   updateMultiRenamePreset,
+  type LoadedPreset,
   type MultiRenameError,
   type MultiRenamePreset,
   type MultiRenameSpec,
@@ -44,7 +49,7 @@ const HELD_ROWS = 3000
 const NO_COUNTS: PreviewCounts = { ready: 0, unchanged: 0, problems: 0 }
 
 /** The preset the fields were last loaded from (or saved as): a saved one, or one that ships with Cmdr. */
-export type LoadedPreset = { kind: 'saved'; id: string } | { kind: 'builtIn'; id: string }
+export type { LoadedPreset }
 
 /** How the backend tells two preset names apart (`presets.rs`'s `dedupe_key`). */
 const nameKey = (name: string): string => name.trim().toLowerCase()
@@ -97,6 +102,8 @@ export interface MultiRenameState {
   /** Gives a preset the current fields; it becomes the loaded one. */
   updatePreset: (id: string) => Promise<void>
   deletePreset: (id: string) => Promise<void>
+  /** Remembers the fields and the loaded preset for the next sheet. */
+  persist: () => Promise<void>
   /** Starts the rename. Resolves with the operation, or `null` when it didn't start (`applyError` says why). */
   apply: () => Promise<MultiRenameStarted | null>
   dispose: () => void
@@ -120,6 +127,8 @@ export function createMultiRenameState(sessionId: string): MultiRenameState {
   let timer: ReturnType<typeof setTimeout> | null = null
   let shown: RowWindow = { start: 0, end: 0 }
   let fetching: string | null = null
+  // An edit made before the last settings arrive wins over them.
+  let touched = false
 
   const totalOf = (c: PreviewCounts): number => c.ready + c.unchanged + c.problems
   const filterOf = (): PreviewFilter => (problemsOnly ? 'problems' : 'all')
@@ -211,8 +220,21 @@ export function createMultiRenameState(sessionId: string): MultiRenameState {
     }, PREVIEW_DELAY_MS)
   }
 
-  // The first preview: the default spec shows every name as it is.
-  void refresh()
+  // The first preview, on the settings the last sheet closed with (or the defaults).
+  async function start(): Promise<void> {
+    let last = null
+    try {
+      last = await getMultiRenameLastSettings()
+    } catch {
+      // Nothing remembered: the defaults.
+    }
+    if (last && !touched) {
+      spec = { ...DEFAULT_SPEC, ...last.spec }
+      loaded = last.preset ?? null
+    }
+    await refresh()
+  }
+  void start()
 
   return {
     get spec() {
@@ -269,17 +291,20 @@ export function createMultiRenameState(sessionId: string): MultiRenameState {
       show(shown)
     },
     update(patch) {
+      touched = true
       spec = { ...spec, ...patch }
       schedule()
     },
     loadPreset(preset) {
       const next = specOf(preset)
       if (!next) return
+      touched = true
       loaded = preset
       spec = { ...next }
       schedule()
     },
     resetFields() {
+      touched = true
       loaded = null
       spec = { ...DEFAULT_SPEC }
       schedule()
@@ -311,6 +336,10 @@ export function createMultiRenameState(sessionId: string): MultiRenameState {
       await deleteMultiRenamePreset(id)
       presets = await getMultiRenamePresets()
       if (loaded?.kind === 'saved' && loaded.id === id) loaded = null
+    },
+    async persist() {
+      // A preset deleted meanwhile isn't remembered: `loaded` reads it from the list.
+      await saveMultiRenameLastSettings($state.snapshot(spec), loadedSpec ? loaded : null)
     },
     async apply() {
       const id = previewId

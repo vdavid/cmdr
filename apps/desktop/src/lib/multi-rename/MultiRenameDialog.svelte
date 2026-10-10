@@ -35,6 +35,7 @@
     import { tooltip } from '$lib/tooltip/tooltip'
     import { claimMenuCommand } from '$lib/commands/menu-claims'
     import { getBadgeStatus } from '$lib/feature-status'
+    import { getAppLogger } from '$lib/logging/logger'
     import type { MultiRenameError, MultiRenameOpened, MultiRenameStarted, PreviewRow } from '$lib/tauri-commands'
     import type { CaseChange } from '$lib/ipc/bindings'
     import { createMultiRenameState } from './multi-rename-state.svelte'
@@ -57,6 +58,8 @@
     }
 
     const { session, onApplied, onClose }: Props = $props()
+
+    const log = getAppLogger('multiRename')
 
     // Alpha badge policy: the status comes from the repo-root feature-status.json.
     const badge = getBadgeStatus('multi-rename')
@@ -150,6 +153,10 @@
 
     onDestroy(() => {
         tool.dispose()
+        // The next ⌃M opens where this one left off.
+        tool.persist().catch((e: unknown) => {
+            log.warn("couldn't remember the multi-rename settings: {reason}", { reason: String(e) })
+        })
     })
 
     function insertPlaceholder(placeholder: string): void {

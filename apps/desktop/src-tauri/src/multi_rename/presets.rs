@@ -1,5 +1,6 @@
-//! Saved Multi-Rename settings: named presets, the newest first. TC's F2
-//! "Load/save settings" list. The list machinery is `crate::recents`.
+//! Saved Multi-Rename settings: named presets, the newest first (TC's F2
+//! "Load/save settings" list), and the settings the last sheet closed with. The
+//! list machinery is `crate::recents`.
 
 use serde::{Deserialize, Serialize};
 
@@ -114,5 +115,72 @@ pub fn update_spec_in(presets: &mut [MultiRenamePreset], id: &str, spec: &MultiR
             true
         }
         _ => false,
+    }
+}
+
+/// The settings the sheet last closed with, so the next ⌃M opens where the last
+/// one left off (TC keeps them too). One entry, in its own file.
+pub static LAST_SPEC: RecentsFile<LastSpec> = RecentsFile::new();
+
+/// The preset the sheet's fields came from, so a reopened sheet's Presets button
+/// names it (and says "edited" when the fields moved off it).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(tag = "kind", rename_all = "camelCase", rename_all_fields = "camelCase")]
+pub enum LoadedPreset {
+    Saved {
+        id: String,
+    },
+    /// One that ships with Cmdr (`spec.ts`'s `BUILT_IN_PRESETS`).
+    BuiltIn {
+        id: String,
+    },
+}
+
+/// What the sheet closed with: its fields, and the preset they came from.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct MultiRenameLastSettings {
+    pub spec: MultiRenameSpec,
+    /// Absent in a file saved before the sheet remembered it.
+    #[serde(default)]
+    pub preset: Option<LoadedPreset>,
+}
+
+/// The one entry `LAST_SPEC` keeps.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LastSpec {
+    pub id: String,
+    #[serde(flatten)]
+    pub settings: MultiRenameLastSettings,
+}
+
+impl LastSpec {
+    const ID: &'static str = "last";
+
+    pub fn new(spec: MultiRenameSpec, preset: Option<LoadedPreset>) -> Self {
+        Self {
+            id: Self::ID.to_string(),
+            settings: MultiRenameLastSettings { spec, preset },
+        }
+    }
+}
+
+impl RecentEntry for LastSpec {
+    const FILENAME: &'static str = "multi-rename-last.json";
+    const LOG_TARGET: &'static str = "multi_rename::presets";
+    const LOG_NAME: &'static str = "multi-rename last settings";
+
+    fn id(&self) -> &str {
+        &self.id
+    }
+
+    fn set_id(&mut self, id: String) {
+        self.id = id;
+    }
+
+    /// Always the same entry, so saving replaces it.
+    fn dedupe_key(&self) -> String {
+        Self::ID.to_string()
     }
 }

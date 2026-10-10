@@ -1,10 +1,12 @@
-// Multi-Rename Tool (⌃M): the session, its preview pages, apply, and presets. The
+// Multi-Rename Tool (⌃M): the session, its preview pages, apply, presets, and the last settings. The
 // work and the file names are the backend's (`src-tauri/src/multi_rename/`); these
 // are pass-throughs.
 
 import {
   commands,
+  type LoadedPreset,
   type MultiRenameError,
+  type MultiRenameLastSettings,
   type MultiRenameOpened,
   type MultiRenamePreset,
   type MultiRenamePreview,
@@ -17,7 +19,9 @@ import {
 } from '$lib/ipc/bindings'
 
 export type {
+  LoadedPreset,
   MultiRenameError,
+  MultiRenameLastSettings,
   MultiRenameOpened,
   MultiRenamePreset,
   MultiRenamePreview,
@@ -118,4 +122,14 @@ export async function renameMultiRenamePreset(id: string, name: string): Promise
 /** Gives a preset new settings in place, so the menu's numbers don't move. */
 export async function updateMultiRenamePreset(id: string, spec: MultiRenameSpec): Promise<void> {
   await commands.updateMultiRenamePreset(id, spec)
+}
+
+/** The settings the sheet last closed with, and the preset they came from; `null` before the first close. */
+export async function getMultiRenameLastSettings(): Promise<MultiRenameLastSettings | null> {
+  return commands.getMultiRenameLastSettings()
+}
+
+/** Remembers the settings the sheet closes with, and the preset they came from, for the next ⌃M. */
+export async function saveMultiRenameLastSettings(spec: MultiRenameSpec, preset: LoadedPreset | null): Promise<void> {
+  await commands.saveMultiRenameLastSettings(spec, preset)
 }

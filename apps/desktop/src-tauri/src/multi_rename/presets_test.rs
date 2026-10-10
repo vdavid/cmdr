@@ -1,7 +1,8 @@
-//! Presets: renaming and updating one in place, and that both survive a restart.
+//! Presets: renaming and updating one in place, and that both survive a restart;
+//! the last settings the sheet closed with.
 
 use super::plan::MultiRenameSpec;
-use super::presets::{MultiRenamePreset, rename_in, update_spec_in};
+use super::presets::{LastSpec, LoadedPreset, MultiRenamePreset, rename_in, update_spec_in};
 use super::transform::CaseChange;
 use crate::recents::RecentsFile;
 
@@ -214,4 +215,46 @@ fn a_preset_saved_before_greek_to_latin_and_normalize_loads_with_both_off() {
     let p = legacy("[N]", "[E]", 1, 1, 1);
     assert!(!p.spec.greek_to_latin);
     assert!(!p.spec.normalize_unicode);
+}
+
+#[test]
+fn the_last_settings_keep_one_entry_and_survive_a_restart() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let path = dir.path().join("multi-rename-last.json");
+
+    let writer: RecentsFile<LastSpec> = RecentsFile::new();
+    writer.add_at(Some(&path), LastSpec::new(spec("[N]-one"), None), 1);
+    let loaded = Some(LoadedPreset::Saved { id: "p1".to_string() });
+    writer.add_at(Some(&path), LastSpec::new(spec("[N]-two"), loaded.clone()), 1);
+
+    let reader: RecentsFile<LastSpec> = RecentsFile::new();
+    reader.load_at(&path);
+    let entries = reader.entries(None);
+    assert_eq!(entries.len(), 1, "saving replaces the one entry");
+    assert_eq!(entries[0].settings.spec, spec("[N]-two"));
+    assert_eq!(entries[0].settings.preset, loaded);
+}
+
+#[test]
+fn last_settings_saved_without_a_preset_or_the_newer_options_load() {
+    let last: LastSpec = serde_json::from_value(serde_json::json!({
+        "id": "last",
+        "spec": {
+            "nameMask": "[N]-old",
+            "extensionMask": "[E]",
+            "search": "",
+            "replace": "",
+            "caseSensitive": false,
+            "firstOnly": false,
+            "includeExtension": false,
+            "regex": false,
+            "substitute": false,
+            "case": "unchanged",
+            "removeDiacritics": false,
+        },
+    }))
+    .expect("an older save loads");
+    assert_eq!(last.settings.spec.name_mask, "[N]-old");
+    assert!(!last.settings.spec.normalize_unicode);
+    assert_eq!(last.settings.preset, None);
 }

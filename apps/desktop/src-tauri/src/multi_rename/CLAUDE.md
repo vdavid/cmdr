@@ -28,8 +28,8 @@ Greek to Latin, removing diacritics, Unicode normalization, a counter, presets, 
   folder's names for long.
 - **`a|b` → `x|y` replaces in ONE pass** (`Replacement::Pairs`): `a|b` → `b|c` turns `a` into `b`, `one|two` →
   `two|one` swaps. ❌ Never chain the pairs: that's how `a` became `c`.
-- **TC's order is fixed**: mask, then search & replace, case, Greek to Latin, diacritics, and Normalize Unicode last. Positions count from 1; a range past
-  the end is empty, never an error.
+- **TC's order is fixed**: mask, then search & replace, case, Greek to Latin, diacritics, and Normalize Unicode last.
+  Positions count from 1; a range past the end is empty, never an error.
 - **A folder has no extension** (`RowFacts::split_name`); a leading or trailing dot belongs to the name. Names are
   composed (NFC) before the mask, so a range never splits an accent off its letter.
 - **Diacritics go only on Latin and Greek letters**: kana dakuten, Indic vowel signs, Cyrillic `й`/`ё` are letters.

@@ -102,6 +102,9 @@ subfolders (the executor's one-parent rule refuses it today), "next step" chaini
 taken name replaces it (the sheet asks first). The built-in presets (Remove diacritics, Greek to Latin, Normalize
 Unicode) and "Reset all fields" live in the frontend (`spec.ts`) so their names are translated.
 
+- **Last settings** (`LAST_SPEC`, `LastSpec`): a one-entry `RecentsFile` in `multi-rename-last.json` (fixed
+  `dedupe_key`, so a save replaces it) holding the spec and the `LoadedPreset` the sheet closed with. Ported from PR
+  #386; the preset is Cmdr's addition (sheet side: `src/lib/multi-rename/DETAILS.md` § Presets).
 - **Newer options load off.** `greek_to_latin` and `normalize_unicode` are `#[serde(default)]`, so a preset (or last
   settings) saved before they existed loads with both off.
 

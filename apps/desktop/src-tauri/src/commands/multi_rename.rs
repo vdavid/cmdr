@@ -7,7 +7,10 @@ use tokio::time::Duration;
 use crate::deadline::{BlockingBudget, blocking_typed_result_with_timeout, timeout_detached_typed};
 use crate::multi_rename::error::MultiRenameError;
 use crate::multi_rename::plan::{MultiRenameSpec, PreviewRow, RenameExample, render_examples};
-use crate::multi_rename::presets::{MAX_PRESETS, MultiRenamePreset, PRESETS, rename_in, update_spec_in};
+use crate::multi_rename::presets::{
+    LAST_SPEC, LastSpec, LoadedPreset, MAX_PRESETS, MultiRenameLastSettings, MultiRenamePreset, PRESETS, rename_in,
+    update_spec_in,
+};
 use crate::multi_rename::run::{MultiRenameStarted, apply};
 use crate::multi_rename::session::{self, MultiRenameOpened, MultiRenamePreview, PreviewFilter};
 
@@ -106,6 +109,21 @@ pub async fn apply_multi_rename(
 #[specta::specta]
 pub async fn close_multi_rename(session_id: String) {
     session::close(&session_id);
+}
+
+/// The settings the sheet last closed with, if any.
+#[tauri::command]
+#[specta::specta]
+pub fn get_multi_rename_last_settings() -> Option<MultiRenameLastSettings> {
+    LAST_SPEC.entries(Some(1)).into_iter().next().map(|last| last.settings)
+}
+
+/// Remembers the settings the sheet closes with, and the preset they came from,
+/// for the next ⌃M.
+#[tauri::command]
+#[specta::specta]
+pub fn save_multi_rename_last_settings(app: tauri::AppHandle, spec: MultiRenameSpec, preset: Option<LoadedPreset>) {
+    LAST_SPEC.add(&app, LastSpec::new(spec, preset), 1);
 }
 
 /// The saved presets, newest first.
