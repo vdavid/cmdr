@@ -1,5 +1,6 @@
 //! What runs on a name after its mask: search & replace, then the case step, then
-//! removing diacritics, in Total Commander's order (the mask first, case last).
+//! Greek to Latin, then removing diacritics, in Total Commander's order (the mask
+//! first, case after search & replace).
 
 use regex::{Regex, RegexBuilder};
 use unicode_normalization::UnicodeNormalization;
@@ -43,6 +44,8 @@ pub enum CaseChange {
 pub struct Transform {
     pub replace: Option<Replace>,
     pub case: CaseChange,
+    /// Greek letters written in Latin ones (ELOT 743), before diacritics go.
+    pub greek_to_latin: bool,
     pub remove_diacritics: bool,
 }
 
@@ -62,6 +65,7 @@ impl Transform {
         Ok(CompiledTransform {
             rule,
             case: self.case,
+            greek_to_latin: self.greek_to_latin,
             remove_diacritics: self.remove_diacritics,
         })
     }
@@ -71,11 +75,13 @@ impl Transform {
 pub struct CompiledTransform {
     rule: Option<Rule>,
     case: CaseChange,
+    greek_to_latin: bool,
     remove_diacritics: bool,
 }
 
 impl CompiledTransform {
-    /// The `(name, extension)` after search & replace, case, and diacritics.
+    /// The `(name, extension)` after search & replace, case, Greek to Latin, and
+    /// diacritics, in that order.
     pub fn apply(&self, name: &str, ext: &str) -> (String, String) {
         let (mut name, mut ext) = (name.to_string(), ext.to_string());
         if let Some(rule) = &self.rule {
@@ -89,6 +95,10 @@ impl CompiledTransform {
         // and words are about the name's words, and `.Jpg` is never wanted.
         if matches!(self.case, CaseChange::Lower | CaseChange::Upper) {
             ext = change_case(&ext, self.case);
+        }
+        if self.greek_to_latin {
+            name = super::transliterate::greek_to_latin(&name);
+            ext = super::transliterate::greek_to_latin(&ext);
         }
         if self.remove_diacritics {
             name = remove_diacritics(&name);

@@ -29,6 +29,8 @@ fn strip_diacritics() -> MultiRenameSpec {
         substitute: false,
         case: CaseChange::Unchanged,
         remove_diacritics: true,
+        greek_to_latin: false,
+        normalize_unicode: false,
     }
 }
 
@@ -287,5 +289,32 @@ fn problems_only_pages_through_the_problem_rows_alone() {
 
     let tail = page(&session.session_id, preview.preview_id, 2, 2, PreviewFilter::Problems).expect("a page");
     assert_eq!(tail, all[2..4].to_vec());
+    close(&session.session_id);
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn normalizing_renames_a_decomposed_name_to_its_composed_spelling_on_disk() {
+    let decomposed = "Z\u{030C}adost.pdf";
+    let (dir, listing) = folder("multi-rename-normalize", &[decomposed]);
+    let session = open(listing.id(), true, None, 0).expect("the session opens");
+    let spec = MultiRenameSpec {
+        remove_diacritics: false,
+        normalize_unicode: true,
+        ..strip_diacritics()
+    };
+    let preview = preview_session(&session.session_id, &spec).expect("a preview");
+    assert_eq!(preview.counts.ready, 1, "{preview:?}");
+
+    let events = Arc::new(CollectorEventSink::new());
+    apply(events.clone(), session.session_id.clone(), preview.preview_id)
+        .await
+        .expect("the rename starts");
+    settled(&events).await;
+
+    assert_eq!(
+        names_on_disk(&dir),
+        vec!["\u{017D}adost.pdf".to_string()],
+        "the composed bytes are on disk"
+    );
     close(&session.session_id);
 }

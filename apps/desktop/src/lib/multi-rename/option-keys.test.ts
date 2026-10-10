@@ -16,6 +16,8 @@ function optionCombo(code: string, composed: string, init: KeyboardEventInit = {
 describe('optionKeyOf', () => {
   it.each([
     ['KeyN', 'Dead', 'removeDiacritics'],
+    ['KeyG', '©', 'greekToLatin'],
+    ['KeyP', 'π', 'normalizeUnicode'],
     ['KeyI', 'Dead', 'caseSensitive'],
     ['KeyF', 'ƒ', 'firstOnly'],
     ['KeyE', 'Dead', 'includeExtension'],

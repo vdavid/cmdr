@@ -245,3 +245,13 @@ fn a_group_number_ends_at_its_last_digit() {
         "a named group stays named"
     );
 }
+
+#[test]
+fn greek_to_latin_comes_before_diacritics() {
+    let t = Transform {
+        greek_to_latin: true,
+        remove_diacritics: true,
+        ..Transform::default()
+    };
+    assert_eq!(run(&t, "Αθήνα Café", "jpg").0, "Athina Cafe");
+}

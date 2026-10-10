@@ -16,7 +16,8 @@ The ⌃M sheet over `src-tauri/src/multi_rename/` (the engine and its rules: tha
 - `PlaceholderTip.svelte` / `placeholder-help.ts` the placeholder tooltips; `SearchOptionChips.svelte` /
   `search-option-help.ts` the search option chips (house `Chip` toggles) and theirs; `rename-examples.ts` renders every
   example.
-- `option-keys.ts` reads the ⌘⌥ option keys (`TOGGLE_COMMANDS`). Pure.
+- `option-keys.ts` reads the ⌘⌥ option keys (`TOGGLE_COMMANDS`) and lists the whole-name toggles (`WHOLE_NAME_TOGGLES`,
+  in pipeline order). Pure.
 
 ## Must-knows
 
@@ -34,7 +35,7 @@ The ⌃M sheet over `src-tauri/src/multi_rename/` (the engine and its rules: tha
   in `PresetsControl.pressOpenKey`, which toggles once per press (`createKeyRoadEcho`). ❌ Don't call `openMenu` from a
   key path: the echo would close the menu it opened.
 - **The ⌘⌥ option keys are registry commands too** (fixed, same scope), read through `optionKeyOf` and claimed, from a
-  text field as well. ⌘⌥ C/A/H/L/O/Q/T/V belong to app commands. DETAILS § Layout and option keys.
+  text field as well. ⌘⌥ C/A/H/L/O/Q/T/V belong to app commands, D to the Dock. DETAILS § Layout and option keys.
 - **`counter-token.ts` must read `[C…]` as `mask.rs` does**: both test against
   `src-tauri/src/multi_rename/counter_token_vectors.json`; change the grammar there first.
 - **Tooltip examples are the engine's render of made-up files**, the part to set apart between private-use marks. ❌ No

@@ -498,6 +498,14 @@
   "@commands.multiRenameRemoveDiacritics.label": {
     "description": "Row in the Keyboard shortcuts list: what the key does while the Multi-rename tool (renames many files at once) is open. Read-only (the key can’t be rebound). It switches on or off the option that turns accented letters into plain ones (á becomes a). Use the same words as that option’s checkbox, \"Remove diacritics\"."
   },
+  "commands.multiRenameGreekToLatin.label": "Turn Greek to Latin on or off",
+  "@commands.multiRenameGreekToLatin.label": {
+    "description": "Row in the Keyboard shortcuts list: what the key does while the Multi-rename tool (renames many files at once) is open. Read-only (the key can’t be rebound). It switches on or off the option that writes Greek letters in Latin ones (Αθήνα becomes Athina). Use the same words as that option’s checkbox, \"Greek to Latin\"."
+  },
+  "commands.multiRenameNormalizeUnicode.label": "Turn Normalize Unicode on or off",
+  "@commands.multiRenameNormalizeUnicode.label": {
+    "description": "Row in the Keyboard shortcuts list: what the key does while the Multi-rename tool (renames many files at once) is open. Read-only (the key can’t be rebound). It switches on or off the option that stores accented letters in the single-character form Windows, Linux, and websites expect. Use the same words as that option’s checkbox, \"Normalize Unicode\"."
+  },
   "commands.multiRenameMatchCase.label": "Turn Match case on or off",
   "@commands.multiRenameMatchCase.label": {
     "description": "Row in the Keyboard shortcuts list: what the key does while the Multi-rename tool (renames many files at once) is open. Read-only (the key can’t be rebound). It switches on or off the search & replace option that only matches the same uppercase and lowercase letters. Use the same words as that option’s checkbox, \"Match case\"."

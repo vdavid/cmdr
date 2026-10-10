@@ -241,6 +241,26 @@ export const fileListCommands: CommandSource[] = [
     fixedKey: true,
   },
   {
+    // G for Greek.
+    id: 'multiRename.greekToLatin',
+    nameKey: 'commands.multiRenameGreekToLatin.label',
+    scope: 'Main window/Multi-rename',
+    showInPalette: false,
+    shortcuts: ['⌘⌥G'],
+    whileDialogOpen: BLOCKED_BY_DIALOGS,
+    fixedKey: true,
+  },
+  {
+    // P for precomposed, the form it renames to (N is Remove diacritics').
+    id: 'multiRename.normalizeUnicode',
+    nameKey: 'commands.multiRenameNormalizeUnicode.label',
+    scope: 'Main window/Multi-rename',
+    showInPalette: false,
+    shortcuts: ['⌘⌥P'],
+    whileDialogOpen: BLOCKED_BY_DIALOGS,
+    fixedKey: true,
+  },
+  {
     id: 'multiRename.matchCase',
     nameKey: 'commands.multiRenameMatchCase.label',
     scope: 'Main window/Multi-rename',

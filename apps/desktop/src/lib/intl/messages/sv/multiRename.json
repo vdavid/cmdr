@@ -87,6 +87,14 @@
   "@multiRename.removeDiacritics": {
     "sourceHash": "4103ca1"
   },
+  "multiRename.greekToLatin": "Grekiska till latinska bokstäver",
+  "@multiRename.greekToLatin": {
+    "sourceHash": "84f2cdc"
+  },
+  "multiRename.normalizeUnicode": "Normalisera Unicode",
+  "@multiRename.normalizeUnicode": {
+    "sourceHash": "6e1c97e"
+  },
   "multiRename.presets.title": "Förinställningar",
   "@multiRename.presets.title": {
     "sourceHash": "954f93f"
@@ -146,6 +154,14 @@
   "multiRename.preset.removeDiacritics": "Ta bort diakritiska tecken",
   "@multiRename.preset.removeDiacritics": {
     "sourceHash": "4103ca1"
+  },
+  "multiRename.preset.greekToLatin": "Grekiska till latinska bokstäver",
+  "@multiRename.preset.greekToLatin": {
+    "sourceHash": "84f2cdc"
+  },
+  "multiRename.preset.normalizeUnicode": "Normalisera Unicode",
+  "@multiRename.preset.normalizeUnicode": {
+    "sourceHash": "6e1c97e"
   },
   "multiRename.presetName": "Förinställningens namn",
   "@multiRename.presetName": {

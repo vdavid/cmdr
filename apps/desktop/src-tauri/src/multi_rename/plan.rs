@@ -33,6 +33,15 @@ pub struct MultiRenameSpec {
     pub substitute: bool,
     pub case: CaseChange,
     pub remove_diacritics: bool,
+    /// Greek letters written in Latin ones (ELOT 743). Off in a preset saved
+    /// before it existed.
+    #[serde(default)]
+    pub greek_to_latin: bool,
+    /// Renames a name that differs only in its Unicode form, to the composed
+    /// (NFC) one Windows, Linux, and the web expect; macOS and SMB often hand
+    /// over decomposed names. Off, such a name counts as unchanged.
+    #[serde(default)]
+    pub normalize_unicode: bool,
 }
 
 /// Why the spec itself can't run (the sheet shows it under the field).
@@ -107,6 +116,7 @@ pub(crate) struct Compiled {
     name_mask: Mask,
     extension_mask: Mask,
     transform: CompiledTransform,
+    normalize_unicode: bool,
 }
 
 impl Compiled {
@@ -126,6 +136,7 @@ impl Compiled {
         let transform = Transform {
             replace,
             case: spec.case,
+            greek_to_latin: spec.greek_to_latin,
             remove_diacritics: spec.remove_diacritics,
         }
         .compile()
@@ -134,6 +145,7 @@ impl Compiled {
             name_mask,
             extension_mask,
             transform,
+            normalize_unicode: spec.normalize_unicode,
         })
     }
 
@@ -163,10 +175,30 @@ impl Compiled {
         let name = self.name_mask.render(facts);
         let extension = self.extension_mask.render(facts);
         let (name, extension) = self.transform.apply(&name, &extension);
-        if extension.is_empty() {
+        self.finish(if extension.is_empty() {
             name
         } else {
             format!("{name}.{extension}")
+        })
+    }
+
+    /// The last step every new name takes: composed when the spec normalizes.
+    fn finish(&self, name: String) -> String {
+        if self.normalize_unicode {
+            name.nfc().collect()
+        } else {
+            name
+        }
+    }
+
+    /// Whether `new_name` leaves `old_name` as it is. The same name in another
+    /// Unicode form is the same name, unless the spec normalizes: then only the
+    /// exact spelling is.
+    fn same_name(&self, new_name: &str, old_name: &str) -> bool {
+        if self.normalize_unicode {
+            new_name == old_name
+        } else {
+            new_name.nfc().eq(old_name.nfc())
         }
     }
 }
@@ -229,8 +261,7 @@ pub(crate) fn preview(
             let new_name = compiled.new_name(entry, dir, position);
             let status = match invalid(&new_name) {
                 Some(reason) => RowStatus::InvalidName { reason },
-                // The same name in another Unicode form is the same name.
-                None if new_name.nfc().eq(entry.name.nfc()) => RowStatus::Unchanged,
+                None if compiled.same_name(&new_name, &entry.name) => RowStatus::Unchanged,
                 None => RowStatus::Ready,
             };
             PreviewRow {

@@ -68,10 +68,11 @@
 ## Layout and option keys
 
 - **Layout**: three full-width rows, in the order a rename runs them (`plan.rs` → `CompiledTransform::apply`: mask,
-  search & replace, case, diacritics), a `--spacing-lg` gap between them. First the name mask (grows) and the extension
-  mask (140 px), with the placeholder buttons under them; then Search for, Replace with, and the search option chips;
-  then Letter case and Remove diacritics, each with its dim key chip. Each `Checkbox` sits in a wrapper span, since it
-  renders more than one element.
+  search & replace, case, Greek to Latin, diacritics, then the Unicode form), a `--spacing-lg` gap between them. First
+  the name mask (grows) and the extension mask (140 px), with the placeholder buttons under them; then Search for,
+  Replace with, and the search option chips; then Letter case, Greek to Latin, Remove diacritics, and Normalize Unicode
+  (`WHOLE_NAME_TOGGLES`), each with its dim key chip. Each `Checkbox` sits in a wrapper span, since it renders more than
+  one element.
 - **Search option chips** (`SearchOptionChips`): Match case `Aa`, First match only `1×`, Include extension `.ext`,
   Regular expression `.*`, Replace whole name `^$` (the regex way to say "the whole string"). Code-editor style find
   toggles: house `Chip`s, `variant="toggle"` (`aria-pressed`, the full name as `aria-label`), mono glyphs, tinted when
@@ -81,20 +82,21 @@
   `On  Photo pic.jpg` / `Off  pic pic.jpg`, the text the replace put in bold, the rest quiet. Each option's file name is
   chosen so the option changes the result (`search-option-help.ts`).
 - **Option keys**: ⌘⌥U opens Letter case (focus + click on its `.select-trigger`, `Select`'s stable class, so the menu
-  opens on the checked row as a click would), and ⌘⌥ N/I/F/E/R/W flip Remove diacritics, Match case, First match only,
-  Include extension, Regular expression, and Replace whole name. Fixed-key registry commands in
-  `Main window/Multi-rename` (`sources/file-list.ts`), so Settings and the Help window list them and
-  `registry-conflicts.test.ts` guards the defaults. The sheet's keydown asks `optionKeyOf` → `eventMatchesCommand` and
-  claims the key.
+  opens on the checked row as a click would), and ⌘⌥ G/N/P/I/F/E/R/W flip Greek to Latin, Remove diacritics, Normalize
+  Unicode (P for precomposed, the form it renames to), Match case, First match only, Include extension, Regular
+  expression, and Replace whole name. Fixed-key registry commands in `Main window/Multi-rename`
+  (`sources/file-list.ts`), so Settings and the Help window list them and `registry-conflicts.test.ts` guards the
+  defaults. The sheet's keydown asks `optionKeyOf` → `eventMatchesCommand` and claims the key.
   - ⌥ composes a character in `key` (`®`, `ƒ`, `∑`, or `Dead`), so the match runs on the key position:
     `physicalKeyCombo` names a letter by `code` while ⌘ / ⌃ is held (`lib/shortcuts/DETAILS.md` § Key capture). Verified
     in unit and component tests with US-layout events; a real keypress in the running app isn't verified (the MCP driver
     sends synthetic events).
-  - None of U/N/I/F/E/R/W with ⌘⌥ is a Cmdr command or a native menu accelerator (`menu_bar.rs` holds ⌘⌥ C/O/T/V/Q/L/A,
-    the registry adds H; checked 2026-10-09), so no menu command needs claiming.
-  - Letter case's and Remove diacritics' keys show as a dim `ShortcutChip` (`commandId`, not clickable: the keys can't
-    be rebound) beside the option, `aria-hidden`: decoration for sighted users, the same keys listed in the Help window.
-    A search chip shows its key in its tooltip.
+  - None of U/G/N/P/I/F/E/R/W with ⌘⌥ is a Cmdr command or a native menu accelerator (`menu_bar.rs` holds ⌘⌥
+    C/O/T/V/Q/L/A, the registry adds H, and macOS takes ⌘⌥D for the Dock; checked 2026-10-10), so no menu command needs
+    claiming.
+  - Letter case's and the whole-name toggles' keys show as a dim `ShortcutChip` (`commandId`, not clickable: the keys
+    can't be rebound) beside the option, `aria-hidden`: decoration for sighted users, the same keys listed in the Help
+    window. A search chip shows its key in its tooltip.
 
 ## Tooltip examples
 

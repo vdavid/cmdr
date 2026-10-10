@@ -92,6 +92,14 @@
   "@multiRename.removeDiacritics": {
     "description": "Option: turn letters with accents and other diacritics into plain letters (á becomes a, ž becomes z, ß becomes ss), in every language."
   },
+  "multiRename.greekToLatin": "Greek to Latin",
+  "@multiRename.greekToLatin": {
+    "description": "Checkbox that writes Greek letters in Latin ones, the way Greek passports do (ELOT 743): Αθήνα becomes Athina."
+  },
+  "multiRename.normalizeUnicode": "Normalize Unicode",
+  "@multiRename.normalizeUnicode": {
+    "description": "Checkbox that renames names whose accented letters are stored as a letter plus a separate accent mark (as macOS and network drives often store them) to the single-character form Windows, Linux, and websites expect. The names look the same before and after."
+  },
   "multiRename.presets.title": "Presets",
   "@multiRename.presets.title": {
     "description": "Label of the button at the bottom left of the Multi-rename tool that opens the menu of presets (saved rename settings), and the accessible name of that menu. Followed by a down arrow and, when one is loaded, the preset's name."
@@ -151,6 +159,14 @@
   "multiRename.preset.removeDiacritics": "Remove diacritics",
   "@multiRename.preset.removeDiacritics": {
     "description": "Built-in preset that keeps names as they are but removes diacritics (á becomes a, ž becomes z)."
+  },
+  "multiRename.preset.greekToLatin": "Greek to Latin",
+  "@multiRename.preset.greekToLatin": {
+    "description": "Built-in preset that writes Greek letters in Latin ones (Αθήνα becomes Athina) and changes nothing else."
+  },
+  "multiRename.preset.normalizeUnicode": "Normalize Unicode",
+  "@multiRename.preset.normalizeUnicode": {
+    "description": "Built-in preset that only stores accented letters in the single-character form Windows, Linux, and websites expect; the names look the same."
   },
   "multiRename.presetName": "Preset name",
   "@multiRename.presetName": {

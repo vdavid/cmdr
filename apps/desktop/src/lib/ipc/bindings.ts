@@ -11296,6 +11296,17 @@ export type MultiRenameSpec = {
   substitute: boolean
   case: CaseChange
   removeDiacritics: boolean
+  /**
+   *  Greek letters written in Latin ones (ELOT 743). Off in a preset saved
+   *  before it existed.
+   */
+  greekToLatin?: boolean
+  /**
+   *  Renames a name that differs only in its Unicode form, to the composed
+   *  (NFC) one Windows, Linux, and the web expect; macOS and SMB often hand
+   *  over decomposed names. Off, such a name counts as unchanged.
+   */
+  normalizeUnicode?: boolean
 }
 
 // A started rename.

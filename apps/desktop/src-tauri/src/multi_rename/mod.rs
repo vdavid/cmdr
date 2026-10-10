@@ -7,6 +7,7 @@ pub(crate) mod presets;
 pub(crate) mod run;
 pub(crate) mod session;
 pub(crate) mod transform;
+mod transliterate;
 
 #[cfg(test)]
 mod mask_test;
@@ -18,3 +19,5 @@ mod presets_test;
 mod run_test;
 #[cfg(test)]
 mod transform_test;
+#[cfg(test)]
+mod transliterate_test;

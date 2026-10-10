@@ -31,6 +31,8 @@ fn spec(name_mask: &str) -> MultiRenameSpec {
         substitute: false,
         case: CaseChange::Unchanged,
         remove_diacritics: false,
+        greek_to_latin: false,
+        normalize_unicode: false,
     }
 }
 
@@ -349,4 +351,35 @@ fn an_example_whose_spec_doesnt_run_renders_nothing_rather_than_failing_the_rest
         example("a.txt", spec("[E]")),
     ]);
     assert_eq!(out, vec![None, None, Some("txt.txt".to_string())]);
+}
+
+#[test]
+fn a_decomposed_name_counts_as_unchanged_unless_the_spec_normalizes() {
+    let decomposed = "Z\u{030C}adost.pdf"; // Ž as Z + combining caron, as macOS and SMB hand it over
+    let folder = [file(decomposed)];
+    assert_eq!(run(&spec("[N]"), &folder, &[decomposed])[0].1, RowStatus::Unchanged);
+
+    let normalize = MultiRenameSpec {
+        normalize_unicode: true,
+        ..spec("[N]")
+    };
+    let renamed = run(&normalize, &folder, &[decomposed]);
+    assert_eq!(renamed[0], ("\u{017D}adost.pdf".to_string(), RowStatus::Ready));
+
+    let composed = [file("\u{017D}adost.pdf")];
+    assert_eq!(
+        run(&normalize, &composed, &["\u{017D}adost.pdf"])[0].1,
+        RowStatus::Unchanged,
+        "an already composed name has nothing to do"
+    );
+}
+
+#[test]
+fn greek_to_latin_runs_through_the_spec() {
+    let s = MultiRenameSpec {
+        greek_to_latin: true,
+        ..spec("[N]")
+    };
+    let folder = [file("Ρόδος 01.jpg")];
+    assert_eq!(run(&s, &folder, &["Ρόδος 01.jpg"])[0].0, "Rodos 01.jpg");
 }

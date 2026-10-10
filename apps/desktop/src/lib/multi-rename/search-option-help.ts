@@ -7,11 +7,11 @@
 
 import type { MessageKey } from '$lib/intl/keys.gen'
 import type { RenameExample } from '$lib/tauri-commands'
-import type { ToggleField } from './option-keys'
+import type { ToggleField, WholeNameField } from './option-keys'
 import { example, marked } from './rename-examples'
 
-/** The options that tune search & replace; Remove diacritics changes the whole name. */
-export type SearchOptionField = Exclude<ToggleField, 'removeDiacritics'>
+/** The options that tune search & replace; the rest change the whole name. */
+export type SearchOptionField = Exclude<ToggleField, WholeNameField>
 
 export interface SearchOptionHelp {
   field: SearchOptionField

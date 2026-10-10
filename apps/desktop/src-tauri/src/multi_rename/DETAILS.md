@@ -10,9 +10,22 @@ Per row, in rename order (`position` counts from 0 and is what `[C]` counts):
 1. `Mask::render` the name mask and the extension mask over `RowFacts` (name, extension, parent, grandparent, modified
    time in local time, position).
 2. `CompiledTransform::apply`: search & replace on the name (and the extension with `include_extension`), then the case step
-   (lower and upper on both, first-upper and words on the name only: `.Jpg` is never wanted), then `remove_diacritics`
-   on both. The search compiles once per preview (`Transform::compile`), never per row.
+   (lower and upper on both, first-upper and words on the name only: `.Jpg` is never wanted), then Greek to Latin, then
+   `remove_diacritics`, both on name and extension. The search compiles once per preview (`Transform::compile`), never
+   per row.
 3. `name` + `.` + `extension`, or just `name` when the extension renders empty.
+4. `Compiled::finish`: composed (NFC) when the spec normalizes.
+
+**Normalize Unicode** (`normalize_unicode`). Off, a new name that differs from the old one only in its Unicode form is
+`Unchanged` (`Compiled::same_name`). On, only the exact spelling is, so a decomposed name (macOS and SMB often hand one
+over) renames to its composed form, the one Windows, Linux, and the web expect (verified on APFS with a real rename by
+`run_test::normalizing_renames_a_decomposed_name_to_its_composed_spelling_on_disk`, 2026-10-10).
+
+**Greek to Latin** (`transliterate.rs`, ELOT 743, close to ISO 843 type 2, what Greek passports use): letter by letter
+with the digraphs that read as one sound (`ου`, `αυ`/`ευ`/`ηυ` as `v` or `f` by what follows, `γγ` `γξ` `γχ`), tonos
+dropped, a dialytika splitting a pair, capitals cased by their neighbor (`Θέση` → `Thesi`, `ΘΕΣΗ` → `THESI`). It runs
+before diacritics, so with both on `Αθήνα Café` is `Athina Cafe`. **Decision/Why:** ELOT 743 over a letter table, ported
+from PR #386 (Jiri Slovacek): a plain table reads `ευ` as `eu`, which no Greek reads it as.
 
 ## Placeholders (`mask.rs`)
 
@@ -86,8 +99,11 @@ subfolders (the executor's one-parent rule refuses it today), "next step" chaini
 ## Presets (`presets.rs`)
 
 `RecentsFile<MultiRenamePreset>` in `multi-rename-presets.json`, keyed by the trimmed, lowercased name: saving under a
-taken name replaces it (the sheet asks first). The one built-in preset (Remove diacritics) and "Reset all fields" live
-in the frontend (`spec.ts`) so their names are translated.
+taken name replaces it (the sheet asks first). The built-in presets (Remove diacritics, Greek to Latin, Normalize
+Unicode) and "Reset all fields" live in the frontend (`spec.ts`) so their names are translated.
+
+- **Newer options load off.** `greek_to_latin` and `normalize_unicode` are `#[serde(default)]`, so a preset (or last
+  settings) saved before they existed loads with both off.
 
 - **Save** (`save_multi_rename_preset`) is `RecentsFile::add`: the preset goes on top.
 - **Rename** and **Update with current fields** (`rename_multi_rename_preset`, `update_multi_rename_preset`) change the

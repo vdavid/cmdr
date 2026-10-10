@@ -1,8 +1,8 @@
 <script lang="ts">
     /**
      * Multi-Rename Tool (⌃M), Total Commander's: a name mask and an extension
-     * mask with placeholders, search & replace, a case step, removing diacritics,
-     * a counter, presets, and a live preview of every row. Start renames the
+     * mask with placeholders, search & replace, a case step, Greek to Latin,
+     * removing diacritics, Unicode normalization, a counter, presets, and a live preview of every row. Start renames the
      * rows that are ready as one operation (the queue shows it; Undo reverses it).
      * The preview is the house `ColumnList` over a windowed source: the rows come a
      * page at a time, and it draws only the ones in view.
@@ -30,6 +30,7 @@
     import TextInput from '$lib/ui/TextInput.svelte'
     import Trans from '$lib/intl/Trans.svelte'
     import { tString } from '$lib/intl/messages.svelte'
+    import type { MessageKey } from '$lib/intl/keys.gen'
     import { claimKey } from '$lib/shortcuts/claim-key'
     import { tooltip } from '$lib/tooltip/tooltip'
     import { claimMenuCommand } from '$lib/commands/menu-claims'
@@ -38,7 +39,7 @@
     import type { CaseChange } from '$lib/ipc/bindings'
     import { createMultiRenameState } from './multi-rename-state.svelte'
     import MaskInput from './MaskInput.svelte'
-    import { TOGGLE_COMMANDS, optionKeyOf, type ToggleField } from './option-keys'
+    import { TOGGLE_COMMANDS, WHOLE_NAME_TOGGLES, optionKeyOf, type ToggleField, type WholeNameField } from './option-keys'
     import { presetKeyOf, type PresetsControlApi } from './preset-keys'
     import PresetsControl from './PresetsControl.svelte'
     import { rowStatusView, type StatusMessage } from './row-status'
@@ -86,6 +87,12 @@
     async function loadExamples(): Promise<void> {
         const asked = new Map([...placeholderExamples(PLACEHOLDER_HELP), ...searchOptionExamples(SEARCH_OPTIONS)])
         examples = await renderExamples(asked)
+    }
+
+    const WHOLE_NAME_LABELS: Readonly<Record<WholeNameField, MessageKey>> = {
+        greekToLatin: 'multiRename.greekToLatin',
+        removeDiacritics: 'multiRename.removeDiacritics',
+        normalizeUnicode: 'multiRename.normalizeUnicode',
     }
 
     const caseItems = $derived([
@@ -313,7 +320,8 @@
             </div>
 
             <!-- Third, as the rename runs them after search & replace: what changes the whole
-                 name, each option with its quiet ⌘⌥ key chip. -->
+                 name (case, Greek to Latin, diacritics, then the Unicode form), each option with
+                 its quiet ⌘⌥ key chip. -->
             <div class="options">
                 <span class="option-row">
                     <span class="case-field" bind:this={caseField}>
@@ -329,21 +337,23 @@
                         <ShortcutChip commandId="multiRename.letterCase" clickable={false} size="sm" />
                     </span>
                 </span>
-                <span class="option-row">
-                    <!-- One flex item: `Checkbox` renders more than one element. -->
-                    <span class="option-control">
-                        <Checkbox
-                            checked={tool.spec.removeDiacritics}
-                            onCheckedChange={(on: boolean) => { tool.update({ removeDiacritics: on }) }}
-                        >
-                            {tString('multiRename.removeDiacritics')}
-                        </Checkbox>
+                {#each WHOLE_NAME_TOGGLES as field (field)}
+                    <span class="option-row">
+                        <!-- One flex item: `Checkbox` renders more than one element. -->
+                        <span class="option-control">
+                            <Checkbox
+                                checked={tool.spec[field]}
+                                onCheckedChange={(on: boolean) => { tool.update({ [field]: on }) }}
+                            >
+                                {tString(WHOLE_NAME_LABELS[field])}
+                            </Checkbox>
+                        </span>
+                        <!-- The key, quiet: a hint for next time, never a control (it can't be rebound). -->
+                        <span class="option-key" aria-hidden="true">
+                            <ShortcutChip commandId={TOGGLE_COMMANDS[field]} clickable={false} size="sm" />
+                        </span>
                     </span>
-                    <!-- The key, quiet: a hint for next time, never a control (it can't be rebound). -->
-                    <span class="option-key" aria-hidden="true">
-                        <ShortcutChip commandId={TOGGLE_COMMANDS.removeDiacritics} clickable={false} size="sm" />
-                    </span>
-                </span>
+                {/each}
             </div>
         </div>
 

@@ -13,8 +13,23 @@ import { eventMatchesCommand } from '$lib/shortcuts'
 /** The spec's on/off fields that have a key. */
 export type ToggleField = Extract<
   keyof MultiRenameSpec,
-  'removeDiacritics' | 'caseSensitive' | 'firstOnly' | 'includeExtension' | 'regex' | 'substitute'
+  | 'removeDiacritics'
+  | 'greekToLatin'
+  | 'normalizeUnicode'
+  | 'caseSensitive'
+  | 'firstOnly'
+  | 'includeExtension'
+  | 'regex'
+  | 'substitute'
 >
+
+/**
+ * The on/off options that change the whole name, after search & replace, in the order a rename
+ * runs them (`transform.rs`, then `plan.rs`'s last step). The sheet's third row shows them so.
+ */
+export const WHOLE_NAME_TOGGLES = ['greekToLatin', 'removeDiacritics', 'normalizeUnicode'] as const
+
+export type WholeNameField = (typeof WHOLE_NAME_TOGGLES)[number]
 
 /** What a keypress in the sheet means for its options, if anything. */
 export type OptionKey = { kind: 'letterCase' } | { kind: 'toggle'; field: ToggleField }
@@ -22,6 +37,8 @@ export type OptionKey = { kind: 'letterCase' } | { kind: 'toggle'; field: Toggle
 /** Each option's command. */
 export const TOGGLE_COMMANDS: Readonly<Record<ToggleField, CommandId>> = {
   removeDiacritics: 'multiRename.removeDiacritics',
+  greekToLatin: 'multiRename.greekToLatin',
+  normalizeUnicode: 'multiRename.normalizeUnicode',
   caseSensitive: 'multiRename.matchCase',
   firstOnly: 'multiRename.firstMatchOnly',
   includeExtension: 'multiRename.includeExtension',

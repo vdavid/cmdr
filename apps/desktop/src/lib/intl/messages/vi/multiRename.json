@@ -87,6 +87,14 @@
   "@multiRename.removeDiacritics": {
     "sourceHash": "4103ca1"
   },
+  "multiRename.greekToLatin": "Chữ Hy Lạp sang Latinh",
+  "@multiRename.greekToLatin": {
+    "sourceHash": "84f2cdc"
+  },
+  "multiRename.normalizeUnicode": "Chuẩn hóa Unicode",
+  "@multiRename.normalizeUnicode": {
+    "sourceHash": "6e1c97e"
+  },
   "multiRename.presets.title": "Tùy chọn đặt trước",
   "@multiRename.presets.title": {
     "sourceHash": "954f93f"
@@ -146,6 +154,14 @@
   "multiRename.preset.removeDiacritics": "Bỏ dấu",
   "@multiRename.preset.removeDiacritics": {
     "sourceHash": "4103ca1"
+  },
+  "multiRename.preset.greekToLatin": "Chữ Hy Lạp sang Latinh",
+  "@multiRename.preset.greekToLatin": {
+    "sourceHash": "84f2cdc"
+  },
+  "multiRename.preset.normalizeUnicode": "Chuẩn hóa Unicode",
+  "@multiRename.preset.normalizeUnicode": {
+    "sourceHash": "6e1c97e"
   },
   "multiRename.presetName": "Tên tùy chọn đặt trước",
   "@multiRename.presetName": {

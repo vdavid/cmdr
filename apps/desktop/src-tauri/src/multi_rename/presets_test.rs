@@ -18,6 +18,8 @@ fn spec(name_mask: &str) -> MultiRenameSpec {
         substitute: false,
         case: CaseChange::Unchanged,
         remove_diacritics: false,
+        greek_to_latin: false,
+        normalize_unicode: false,
     }
 }
 
@@ -205,4 +207,11 @@ fn a_legacy_presets_file_loads_migrated() {
     let reader: RecentsFile<MultiRenamePreset> = RecentsFile::new();
     reader.load_at(&path);
     assert_eq!(reader.entries(None)[0].spec.name_mask, "[N]-[C:3]");
+}
+
+#[test]
+fn a_preset_saved_before_greek_to_latin_and_normalize_loads_with_both_off() {
+    let p = legacy("[N]", "[E]", 1, 1, 1);
+    assert!(!p.spec.greek_to_latin);
+    assert!(!p.spec.normalize_unicode);
 }

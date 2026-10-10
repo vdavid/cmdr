@@ -277,7 +277,7 @@ describe('MultiRenameDialog', () => {
     })
     afterEach(() => navigatorSpy.mockReset())
 
-    /** Whether the option named `label` reads as on: Remove diacritics' checkbox, or a search chip. */
+    /** Whether the option named `label` reads as on: a whole-name option's checkbox, or a search chip. */
     function isOn(root: HTMLElement, label: string): boolean {
       const chip = root.querySelector<HTMLButtonElement>(`.search-options button[aria-label="${label}"]`)
       if (chip) return chip.getAttribute('aria-pressed') === 'true'
@@ -295,6 +295,8 @@ describe('MultiRenameDialog', () => {
     // ⌘⌥ plus the letter as macOS sends it on a US layout, from the name mask: `key` is what ⌥ composed.
     it.each([
       ['Remove diacritics', 'KeyN', 'Dead', 'removeDiacritics'],
+      ['Greek to Latin', 'KeyG', '©', 'greekToLatin'],
+      ['Normalize Unicode', 'KeyP', 'π', 'normalizeUnicode'],
       ['Match case', 'KeyI', 'Dead', 'caseSensitive'],
       ['First match only', 'KeyF', 'ƒ', 'firstOnly'],
       ['Include extension', 'KeyE', 'Dead', 'includeExtension'],
@@ -427,6 +429,8 @@ describe('MultiRenameDialog', () => {
       substitute: false,
       case: 'unchanged',
       removeDiacritics: false,
+      greekToLatin: false,
+      normalizeUnicode: false,
     }
 
     it('F2 in a field opens the Presets menu, and 1 loads the first saved preset without renaming', async () => {

@@ -111,6 +111,8 @@ const EXPECTED_NAMES: Record<string, string> = {
   'multiRename.savePreset': 'Save the current settings as a preset',
   'multiRename.letterCase': 'Open the letter case menu',
   'multiRename.removeDiacritics': 'Turn Remove diacritics on or off',
+  'multiRename.greekToLatin': 'Turn Greek to Latin on or off',
+  'multiRename.normalizeUnicode': 'Turn Normalize Unicode on or off',
   'multiRename.matchCase': 'Turn Match case on or off',
   'multiRename.firstMatchOnly': 'Turn First match only on or off',
   'multiRename.includeExtension': 'Turn Include extension on or off',

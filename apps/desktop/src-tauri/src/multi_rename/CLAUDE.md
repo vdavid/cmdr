@@ -1,12 +1,13 @@
 # Multi-Rename Tool
 
 Total Commander's ⌃M renamer: a name mask and an extension mask with placeholders, search & replace, a case step,
-removing diacritics, a counter, presets, and a live preview. The sheet is `src/lib/multi-rename/`.
+Greek to Latin, removing diacritics, Unicode normalization, a counter, presets, and a live preview. The sheet is `src/lib/multi-rename/`.
 
 ## Module map
 
 - `mask.rs` the placeholders (`[N2-5]`, `[C10+5:3]`, `[YMD]`, `[U]`…), parsed once, rendered per row. Pure.
-- `transform.rs` search & replace, the case step, `remove_diacritics`. Pure.
+- `transform.rs` search & replace, the case step, Greek to Latin, `remove_diacritics`. Pure.
+- `transliterate.rs` Greek to Latin (ELOT 743). Pure.
 - `plan.rs` the preview over a folder's entries: each row's new name and status; `render_examples` runs the sheet's
   tooltip examples (a spec on a made-up file in `Trips/Lisbon 2026`, last changed 2026-07-14 09:05:30) through the
   same `Compiled::render`. Pure.
@@ -14,6 +15,7 @@ removing diacritics, a counter, presets, and a live preview. The sheet is `src/l
 - `run.rs` apply: proves the ready rows against the preview shown, then runs `start_renames` (Ask Cmdr's executor).
 - `error.rs` `MultiRenameError`, shared by `session` and `run` so neither imports the other (`module-cycles`).
 - `presets.rs` named presets on `crate::recents`; rename and update edit one in place (`rename_in`, `update_spec_in`).
+  `LAST_SPEC` keeps the settings the last sheet closed with.
 
 ## Must-knows
 
@@ -26,7 +28,7 @@ removing diacritics, a counter, presets, and a live preview. The sheet is `src/l
   folder's names for long.
 - **`a|b` → `x|y` replaces in ONE pass** (`Replacement::Pairs`): `a|b` → `b|c` turns `a` into `b`, `one|two` →
   `two|one` swaps. ❌ Never chain the pairs: that's how `a` became `c`.
-- **TC's order is fixed**: mask, then search & replace, then case, then diacritics. Positions count from 1; a range past
+- **TC's order is fixed**: mask, then search & replace, case, Greek to Latin, diacritics, and Normalize Unicode last. Positions count from 1; a range past
   the end is empty, never an error.
 - **A folder has no extension** (`RowFacts::split_name`); a leading or trailing dot belongs to the name. Names are
   composed (NFC) before the mask, so a range never splits an accent off its letter.

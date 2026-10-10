@@ -70,6 +70,8 @@ export const FIXED_KEY_COMMAND_IDS = [
   'multiRename.savePreset',
   'multiRename.letterCase',
   'multiRename.removeDiacritics',
+  'multiRename.greekToLatin',
+  'multiRename.normalizeUnicode',
   'multiRename.matchCase',
   'multiRename.firstMatchOnly',
   'multiRename.includeExtension',
