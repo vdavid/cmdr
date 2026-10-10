@@ -2864,7 +2864,11 @@
       }
     ],
     "confidence": "high",
-    "sources": "macOS Finder (Átnevezés, RN33/RN37 nem nevezhető át)"
+    "sources": "macOS Finder (Átnevezés, RN33/RN37 nem nevezhető át)",
+    "exceptions": {
+      "multiRename.undoStarted": "Renaming back = the old name restored: visszaállítás for an old name (style § Top traps), as askCmdr.renameUndo.*",
+      "multiRename.undoTooltip": "Renames back = the old name restored: visszaállítja (style § Top traps), as askCmdr.renameUndo.*"
+    }
   },
   "rename-cycle": {
     "chosen": "átnevezési ciklus",
@@ -3287,6 +3291,7 @@
     "confidence": "high",
     "sources": "catalog",
     "exceptions": {
+      "multiRename.error.couldntWriteNames": "English-sense: startup disk is the startup-disk concept (indítólemez), not the app starting.",
       "lowDiskSpace.notification.body": "English-sense: startup disk is the startup-disk concept (indítólemez), not the app starting.",
       "lowDiskSpace.toast.message": "English-sense: startup disk is the startup-disk concept (indítólemez), not the app starting.",
       "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.description": "English-sense: startup disk is the startup-disk concept (indítólemez), not the app starting.",

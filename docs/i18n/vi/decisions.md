@@ -331,8 +331,7 @@ each one beats the form the catalog had drifted to:
 - Hide others → `Ẩn các mục khác` (Finder, TextEdit, Preview agree, macOS 26.6.2), over `Ẩn các ứng dụng khác`: it must
   read exactly like the row macOS shows above it.
 - System Settings panes macOS localizes are written in vi (`Cài đặt chung`, `Mục đăng nhập & Phần mở rộng`,
-  `Tài khoản Apple`, `Mạng`, `Dung lượng`); where a `{system_settings}`-style token exists, use it, never hand-translate
-  it.
+  `Tài khoản Apple`, `Mạng`, `Dung lượng`); prefer a `{system_settings}`-style token where one exists.
 - Sample email local part → `ban@`, ASCII-folded like Microsoft vi's `ai_do@`.
 - "Put the old names back" → `Đã đặt lại tên cũ cho …` over the trash verb `đưa trở lại`: nothing moves, only the name.
 

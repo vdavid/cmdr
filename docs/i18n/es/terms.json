@@ -231,6 +231,9 @@
     "accept": ["volver", "vuelve"],
     "forms": "the bare Back button is the adverb Atrás; Back to X needs the verb: Volver a X (Volver a los preajustes, Volver al chat)",
     "confidence": "high",
+    "exceptions": {
+      "multiRename.undoTooltip": "rename a file back is not the Back button: restaurar el nombre anterior, as askCmdr.renameUndo.*"
+    },
     "sources": "macOS Finder (Back → Atrás); Double Commander"
   },
   "background": {
@@ -2253,7 +2256,9 @@
     "sources": "macOS Finder (Renombrar; RN1/RN2 Deshacer/Rehacer cambio de nombre)",
     "exceptions": {
       "errors.write.originalsKeptAside.suggestion.many": "Rename back = give the original name again: volver a ponerle su nombre.",
-      "errors.write.originalsKeptAside.suggestion.one": "Rename back = give the original name again: volver a ponerle su nombre."
+      "errors.write.originalsKeptAside.suggestion.one": "Rename back = give the original name again: volver a ponerle su nombre.",
+      "multiRename.undoStarted": "Rename back = restore the old name: restaurando el nombre anterior, as askCmdr.renameUndo.*",
+      "multiRename.undoTooltip": "Rename back = restore the old name: restaura el nombre anterior, as askCmdr.renameUndo.*"
     },
     "decision": "Palabras que se separaron sin que ningún check pudiera verlo"
   },

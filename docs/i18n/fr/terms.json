@@ -268,6 +268,9 @@
     "accept": ["Précédent", "revenir", "revenez"],
     "chosen": "Retour",
     "confidence": "high",
+    "exceptions": {
+      "multiRename.undoTooltip": "Rename back is not the Back button: renommer sous son ancien nom, as multiRename.undoStarted"
+    },
     "forms": "app buttons Retour, Back to X → Retour à X; the Go menu’s Back is Finder’s Précédent",
     "sources": "macOS fr (Précédent, six hits, no bare Retour); catalog"
   },
@@ -1022,7 +1025,7 @@
     "sources": "macOS Finder fr (Fichier > Dupliquer, N154; verified on macOS 26.6.1, 2026-08-19)"
   },
   "edit": {
-    "accept": ["modification", "modifié", "modifiable", "Édition"],
+    "accept": ["modification", "modifié", "modifiable", "Édition", "modifiez"],
     "chosen": "Modifier",
     "confidence": "high",
     "exceptions": {

@@ -420,6 +420,14 @@
   "@commands.multiRenameRemoveDiacritics.label": {
     "sourceHash": "3f5cf53"
   },
+  "commands.multiRenameGreekToLatin.label": "开启或关闭“希腊字母转拉丁字母”",
+  "@commands.multiRenameGreekToLatin.label": {
+    "sourceHash": "1785eea"
+  },
+  "commands.multiRenameNormalizeUnicode.label": "开启或关闭“规范化 Unicode”",
+  "@commands.multiRenameNormalizeUnicode.label": {
+    "sourceHash": "fc2b801"
+  },
   "commands.multiRenameMatchCase.label": "开启或关闭“区分大小写”",
   "@commands.multiRenameMatchCase.label": {
     "sourceHash": "25d478f"
@@ -439,6 +447,22 @@
   "commands.multiRenameReplaceWholeName.label": "开启或关闭“替换整个名称”",
   "@commands.multiRenameReplaceWholeName.label": {
     "sourceHash": "016c572"
+  },
+  "commands.multiRenameUndoRename.label": "撤销上一次批量重命名",
+  "@commands.multiRenameUndoRename.label": {
+    "sourceHash": "e5a0975"
+  },
+  "commands.multiRenameResults.label": "在文本编辑器里编辑新名称",
+  "@commands.multiRenameResults.label": {
+    "sourceHash": "0061b58"
+  },
+  "commands.multiRenameFieldHistory.label": "显示这一栏以前填过的内容",
+  "@commands.multiRenameFieldHistory.label": {
+    "sourceHash": "75fb21f"
+  },
+  "commands.multiRenameRename.label": "重命名这些文件",
+  "@commands.multiRenameRename.label": {
+    "sourceHash": "da881fb"
   },
   "commands.fileView.label": "查看",
   "@commands.fileView.label": {

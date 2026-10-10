@@ -420,6 +420,14 @@
   "@commands.multiRenameRemoveDiacritics.label": {
     "sourceHash": "3f5cf53"
   },
+  "commands.multiRenameGreekToLatin.label": "Bật/tắt “Chữ Hy Lạp sang Latinh”",
+  "@commands.multiRenameGreekToLatin.label": {
+    "sourceHash": "1785eea"
+  },
+  "commands.multiRenameNormalizeUnicode.label": "Bật/tắt “Chuẩn hóa Unicode”",
+  "@commands.multiRenameNormalizeUnicode.label": {
+    "sourceHash": "fc2b801"
+  },
   "commands.multiRenameMatchCase.label": "Bật/tắt “Phân biệt chữ hoa/thường”",
   "@commands.multiRenameMatchCase.label": {
     "sourceHash": "25d478f"
@@ -439,6 +447,22 @@
   "commands.multiRenameReplaceWholeName.label": "Bật/tắt “Thay thế toàn bộ tên”",
   "@commands.multiRenameReplaceWholeName.label": {
     "sourceHash": "016c572"
+  },
+  "commands.multiRenameUndoRename.label": "Hoàn tác lần đổi tên hàng loạt gần nhất",
+  "@commands.multiRenameUndoRename.label": {
+    "sourceHash": "e5a0975"
+  },
+  "commands.multiRenameResults.label": "Chỉnh sửa các tên mới trong trình soạn thảo văn bản",
+  "@commands.multiRenameResults.label": {
+    "sourceHash": "0061b58"
+  },
+  "commands.multiRenameFieldHistory.label": "Hiển thị các giá trị trước đây của trường",
+  "@commands.multiRenameFieldHistory.label": {
+    "sourceHash": "75fb21f"
+  },
+  "commands.multiRenameRename.label": "Đổi tên các tệp",
+  "@commands.multiRenameRename.label": {
+    "sourceHash": "da881fb"
   },
   "commands.fileView.label": "Xem",
   "@commands.fileView.label": {

@@ -232,3 +232,16 @@ rule into `translation-principles.md` or `translator-instructions.md`), then del
   saved secret access key comes too". (all locales rendered the intended reading)
 - `servers.sheet.addressMoveHelp`, `s3EndpointMoveHelp`, `servers.refusal.addressTaken`: no screenshot of the edit sheet
   in its move state; one would confirm the line sits under the Address / Endpoint field.
+- `back` concept: matches "renames # files back to their old names" (`multiRename.undoTooltip`), which restores names;
+  add a `notMatch` for "back to (its|their) old name(s)", then drop the es, fr, vi, zh, and zh-Hant exceptions.
+- `rename` concept: matches "rename(s|ing) … back" (`multiRename.undoStarted`, `.undoTooltip`), which most locales say
+  as "restore the old name"; add a `notMatch` or a put-back concept, then drop the de, es, hu, and vi exceptions.
+- `start-up` concept: matches "startup disk"; add it to `notMatch` (hu carries five identical exceptions).
+- `search-match` concept: fires on `multiRename.results*` and `.editedName`, which name the Results button, not search
+  hits; add a `notMatch`.
+- `multiRename.editedName`: say whether "in Results" means the button or the list file it opens (decides quoting).
+- `multiRename.undoTooltip` vs `.undoStarted`: descriptions should spell out tooltip (what the button does) vs toast
+  (progress); sv had shipped them byte-identical.
+- `commands.multiRenameFieldHistory.label`: say that "values" means the text the user typed into the field earlier.
+- Process: add a button's own key in the same batch as any string that quotes it (`multiRename.results.gone` quoted a
+  Results label each locale had to invent).

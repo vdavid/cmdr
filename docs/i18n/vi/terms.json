@@ -234,6 +234,9 @@
     "chosen": "Quay lại",
     "confidence": "high",
     "decision": "Rà soát trôi thuật ngữ toàn catalog",
+    "exceptions": {
+      "multiRename.undoTooltip": "English-sense: \"back to their old names\" restores names, nothing navigates; `đặt lại tên cũ` carries it."
+    },
     "forms": "returning to the previous SCREEN or step in a flow → Quay lại (Quay lại danh sách máy chủ, Quay lại trò chuyện); back in the folder HISTORY → Trở lại (Go menu, commands.navBack.label, fileExplorer.errorPane.goBack)",
     "sources": "macOS Finder MenuBar 211 (Go > Back → Trở lại); Setup Assistant / Apple ID sheets (Back → Quay lại)"
   },
@@ -2261,6 +2264,10 @@
   "rename": {
     "chosen": "đổi tên",
     "confidence": "high",
+    "exceptions": {
+      "multiRename.undoStarted": "Renaming back to the old names is `đặt lại tên cũ`, like `askCmdr.renameUndo.*`; `đổi tên` would read as a fresh rename.",
+      "multiRename.undoTooltip": "Renaming back to the old names is `đặt lại tên cũ`, like `askCmdr.renameUndo.*`; `đổi tên` would read as a fresh rename."
+    },
     "forms": "this rename (one row) → lần đổi tên này; the renames → các lần đổi tên; the rename of X → việc đổi tên \"{name}\"",
     "sources": "GNOME (Đổi tên)"
   },

@@ -420,6 +420,14 @@
   "@commands.multiRenameRemoveDiacritics.label": {
     "sourceHash": "3f5cf53"
   },
+  "commands.multiRenameGreekToLatin.label": "Activar o desactivar “Griego a latino”",
+  "@commands.multiRenameGreekToLatin.label": {
+    "sourceHash": "1785eea"
+  },
+  "commands.multiRenameNormalizeUnicode.label": "Activar o desactivar “Normalizar Unicode”",
+  "@commands.multiRenameNormalizeUnicode.label": {
+    "sourceHash": "fc2b801"
+  },
   "commands.multiRenameMatchCase.label": "Activar o desactivar “Distinguir mayúsculas y minúsculas”",
   "@commands.multiRenameMatchCase.label": {
     "sourceHash": "25d478f"
@@ -439,6 +447,22 @@
   "commands.multiRenameReplaceWholeName.label": "Activar o desactivar “Reemplazar todo el nombre”",
   "@commands.multiRenameReplaceWholeName.label": {
     "sourceHash": "016c572"
+  },
+  "commands.multiRenameUndoRename.label": "Deshacer el último renombrado múltiple",
+  "@commands.multiRenameUndoRename.label": {
+    "sourceHash": "e5a0975"
+  },
+  "commands.multiRenameResults.label": "Editar los nombres nuevos en tu editor de texto",
+  "@commands.multiRenameResults.label": {
+    "sourceHash": "0061b58"
+  },
+  "commands.multiRenameFieldHistory.label": "Mostrar los valores anteriores del campo",
+  "@commands.multiRenameFieldHistory.label": {
+    "sourceHash": "75fb21f"
+  },
+  "commands.multiRenameRename.label": "Renombrar los archivos",
+  "@commands.multiRenameRename.label": {
+    "sourceHash": "da881fb"
   },
   "commands.fileView.label": "Ver",
   "@commands.fileView.label": {

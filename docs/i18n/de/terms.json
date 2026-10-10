@@ -1015,7 +1015,7 @@
     "sources": "macOS Finder (Ablage > Duplizieren N154, Dupliziert Objekte an ihrem aktuellen Ort), verified 2026-08-19"
   },
   "edit": {
-    "accept": ["bearbeitet", "Bearbeitung"],
+    "accept": ["bearbeitet", "Bearbeitung", "bearbeite"],
     "chosen": "bearbeiten",
     "confidence": "high",
     "exceptions": {
@@ -2520,6 +2520,10 @@
     "accept": ["umbenannt", "Umbenennung", "umbenenn", "benenne", "benenn"],
     "chosen": "umbenennen",
     "confidence": "high",
+    "exceptions": {
+      "multiRename.undoStarted": "renaming files back → die Namen werden zurückgesetzt: old names back → zurücksetzen (style § Top traps), as askCmdr.renameUndo.*",
+      "multiRename.undoTooltip": "renames files back to their old names → setzt auf die alten Namen zurück: old names back → zurücksetzen (style § Top traps), as askCmdr.renameUndo.*"
+    },
     "forms": "Rename all → Alle umbenennen; progress Wird umbenannt; noun Umbenennung/Umbenennungen; rename cycle → Umbenennungszyklus",
     "sources": "macOS Finder (Umbenennen …), Double Commander, Nautilus (wird … umbenannt)"
   },
@@ -3563,9 +3567,10 @@
     "sources": "catalog errors.volume.invalidName, errors.write.invalidName.message (gespeichert per the save trap: storing data); a secret in the keychain → sichern (servers.refusal.secretNotStored, the save button’s verb); a disk image sitting there → liegt"
   },
   "batch-rename": {
+    "accept": ["Mehrfach-Umbenennung"],
     "chosen": "Mehrfach umbenennen",
     "confidence": "high",
-    "forms": "command, menu item, and sheet title → Mehrfach umbenennen (menu with … after a no-break space); the act in prose → das Umbenennen",
+    "forms": "command, menu item, and sheet title → Mehrfach umbenennen (menu with … after a no-break space); the act in prose → das Umbenennen; one run as a noun → Mehrfach-Umbenennung (Letzte Mehrfach-Umbenennung widerrufen)",
     "sources": "Total Commander de (6601 Mehrfach-Umbenenn-Tool; WCMD.MNU 2400 &Mehrfach-Umbenenn-Tool…); Double Commander de (Multi-Rename Tool → Mehrfaches Umbenennen); macOS Finder has no tool name (BulkRenameWindow: Umbenennen, Suchen:, Ersetzen durch:, Name mit Zähler)",
     "exceptions": {
       "onboarding.stepAi.table.rowRename": "pre-existing onboarding comparison row naming bulk renaming in general as a noun (Massenumbenennung); not this batch's key, left for a follow-up alignment with Mehrfach umbenennen",

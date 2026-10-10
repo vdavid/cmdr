@@ -259,6 +259,10 @@
   "@multiRename.undoStarted": {
     "sourceHash": "b6bd565"
   },
+  "multiRename.results": "结果列表…",
+  "@multiRename.results": {
+    "sourceHash": "0140aa5"
+  },
   "multiRename.results.editing": "在文本编辑器里编辑新名称，然后保存文件。回到这个窗口时，新名称就会显示在这里。",
   "@multiRename.results.editing": {
     "sourceHash": "0a54cdc"
@@ -282,6 +286,18 @@
   "multiRename.error.couldntWriteNames": "无法写入名称列表。请确认你的启动磁盘还有剩余空间。",
   "@multiRename.error.couldntWriteNames": {
     "sourceHash": "bb5e415"
+  },
+  "multiRename.resultsTooltip": "在文本编辑器里编辑新名称，然后返回这里使用。",
+  "@multiRename.resultsTooltip": {
+    "sourceHash": "cc9b9ff"
+  },
+  "multiRename.editedName": "这个名称是你在“结果列表”里输入的",
+  "@multiRename.editedName": {
+    "sourceHash": "346c8d8"
+  },
+  "multiRename.history": "历史记录",
+  "@multiRename.history": {
+    "sourceHash": "0e76960"
   },
   "multiRename.rename": "{count, plural, =0 {重命名} other {重命名 # 个文件}}",
   "@multiRename.rename": {
@@ -474,9 +490,5 @@
   "multiRename.placeholderHelp.counterEditHint": "把插入点放进计数器或用指针指向它，就能修改它的数字。",
   "@multiRename.placeholderHelp.counterEditHint": {
     "sourceHash": "6ba268e"
-  },
-  "multiRename.history": "历史记录",
-  "@multiRename.history": {
-    "sourceHash": "0e76960"
   }
 }

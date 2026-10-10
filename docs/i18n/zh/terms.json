@@ -297,6 +297,9 @@
     "chosen": "返回",
     "confidence": "confirmed",
     "decision": "故意保留的分界（英文一词多义，中文必须分开）",
+    "exceptions": {
+      "multiRename.undoTooltip": "English-sense: \"back to their old names\" restores names, nothing navigates; the accepted rename form 改回 carries it."
+    },
     "forms": "navigation back 返回 (menu, network browser, error pane); the onboarding wizard's previous step 上一步, paired with 下一步",
     "sources": "macOS (Back → 返回)"
   },

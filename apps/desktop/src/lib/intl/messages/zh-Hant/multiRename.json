@@ -259,6 +259,10 @@
   "@multiRename.undoStarted": {
     "sourceHash": "b6bd565"
   },
+  "multiRename.results": "結果列表⋯",
+  "@multiRename.results": {
+    "sourceHash": "0140aa5"
+  },
   "multiRename.results.editing": "在文字編輯器裡編輯新名稱，然後儲存檔案。回到這個視窗時，新名稱就會顯示在這裡。",
   "@multiRename.results.editing": {
     "sourceHash": "0a54cdc"
@@ -282,6 +286,18 @@
   "multiRename.error.couldntWriteNames": "無法寫入名稱列表。請確認你的啟動磁碟還有可用空間。",
   "@multiRename.error.couldntWriteNames": {
     "sourceHash": "bb5e415"
+  },
+  "multiRename.resultsTooltip": "在文字編輯器裡編輯新名稱，然後回到這裡使用。",
+  "@multiRename.resultsTooltip": {
+    "sourceHash": "cc9b9ff"
+  },
+  "multiRename.editedName": "這個名稱是你在「結果列表」裡自己打的",
+  "@multiRename.editedName": {
+    "sourceHash": "346c8d8"
+  },
+  "multiRename.history": "歷史記錄",
+  "@multiRename.history": {
+    "sourceHash": "0e76960"
   },
   "multiRename.rename": "{count, plural, =0 {重新命名} other {重新命名 # 個檔案}}",
   "@multiRename.rename": {
@@ -474,9 +490,5 @@
   "multiRename.placeholderHelp.counterEditHint": "把插入點放進計數器，或把指標停在計數器上，就能更改它的數字。",
   "@multiRename.placeholderHelp.counterEditHint": {
     "sourceHash": "6ba268e"
-  },
-  "multiRename.history": "歷史記錄",
-  "@multiRename.history": {
-    "sourceHash": "0e76960"
   }
 }

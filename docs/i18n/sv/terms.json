@@ -2325,7 +2325,9 @@
       "byta namn",
       "byter bara namn",
       "byta tillbaka",
+      "byter tillbaka",
       "massbyte av namn",
+      "massbytet av namn",
       "namnmönster"
     ],
     "avoid": [

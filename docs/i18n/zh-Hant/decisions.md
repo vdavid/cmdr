@@ -175,8 +175,8 @@ contrasts packages with app bundles.
 
 ## A locked server identity (`servers.sheet.accountLocked`)
 
-The hint's verbs match the controls it points to exactly (`忘記`, `加入`, never `刪除` / `新增`). "Are what name this
-server" `決定了這是哪個伺服器`: `命名` would read as the sheet's Name field.
+The hint's verbs match its controls exactly (`忘記`, `加入`, never `刪除` / `新增`). "Are what name this server"
+`決定了這是哪個伺服器`: `命名` would read as the sheet's Name field.
 
 ## Server row menu (`menu.network.open`, `menu.network.edit`, `fileExplorer.navigation.forgetSecretNoneToast`)
 

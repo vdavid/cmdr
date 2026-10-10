@@ -422,6 +422,14 @@
   "@commands.multiRenameRemoveDiacritics.label": {
     "sourceHash": "3f5cf53"
   },
+  "commands.multiRenameGreekToLatin.label": "Grieks naar Latijns schrift aan/uit",
+  "@commands.multiRenameGreekToLatin.label": {
+    "sourceHash": "1785eea"
+  },
+  "commands.multiRenameNormalizeUnicode.label": "Unicode normaliseren aan/uit",
+  "@commands.multiRenameNormalizeUnicode.label": {
+    "sourceHash": "fc2b801"
+  },
   "commands.multiRenameMatchCase.label": "Hoofdlettergevoelig aan/uit",
   "@commands.multiRenameMatchCase.label": {
     "sourceHash": "25d478f"
@@ -441,6 +449,22 @@
   "commands.multiRenameReplaceWholeName.label": "Hele naam vervangen aan/uit",
   "@commands.multiRenameReplaceWholeName.label": {
     "sourceHash": "016c572"
+  },
+  "commands.multiRenameUndoRename.label": "Maak laatste wijziging van meerdere namen ongedaan",
+  "@commands.multiRenameUndoRename.label": {
+    "sourceHash": "e5a0975"
+  },
+  "commands.multiRenameResults.label": "Bewerk de nieuwe namen in je teksteditor",
+  "@commands.multiRenameResults.label": {
+    "sourceHash": "0061b58"
+  },
+  "commands.multiRenameFieldHistory.label": "Toon eerdere waarden van het veld",
+  "@commands.multiRenameFieldHistory.label": {
+    "sourceHash": "75fb21f"
+  },
+  "commands.multiRenameRename.label": "Wijzig de bestandsnamen",
+  "@commands.multiRenameRename.label": {
+    "sourceHash": "da881fb"
   },
   "commands.fileView.label": "Toon",
   "@commands.fileView.label": {
