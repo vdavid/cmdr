@@ -242,3 +242,77 @@ fn gcs_and_spaces_travel_by_their_kind_names() {
     assert_eq!(provider.kind_name(), "digitalocean");
     assert_eq!(S3ProviderChoice::Gcs.to_provider().unwrap().kind_name(), "gcs");
 }
+
+fn other(endpoint: &str) -> S3ProviderChoice {
+    S3ProviderChoice::Other {
+        endpoint: endpoint.to_string(),
+        region: None,
+        path_style: true,
+    }
+}
+
+fn account_of(entry: &KnownS3Place) -> String {
+    entry.account_id().expect("a valid test provider")
+}
+
+/// A self-hosted MinIO on a new IP: every bucket under the key moves together, each
+/// keeping its pin and its history, and the account keeps its name.
+#[test]
+fn relocating_an_account_moves_every_place_under_its_key_and_its_name() {
+    let photos = KnownS3Place {
+        provider: other("http://relocate-from.s3-places.test:9000"),
+        pinned: true,
+        ..place("AKIARELOCATE", Some("photos"))
+    };
+    let root = KnownS3Place {
+        provider: other("http://relocate-from.s3-places.test:9000"),
+        ..place("AKIARELOCATE", None)
+    };
+    remember(photos.clone());
+    remember(root.clone());
+    assert!(rename_account(&account_of(&root), "Home MinIO"));
+
+    let outcome = relocate_account(&account_of(&root), other("https://minio.tail1234.ts.net"));
+
+    assert!(matches!(outcome, Relocation::Moved { ref previous } if previous.len() == 2));
+    assert!(find(&id_of(&photos)).is_none(), "the old endpoint is gone");
+    let moved_photos = KnownS3Place {
+        provider: other("https://minio.tail1234.ts.net"),
+        ..photos.clone()
+    };
+    let stored = find(&id_of(&moved_photos)).expect("the bucket lives at the new endpoint");
+    assert!(stored.pinned, "the same place keeps its pin");
+    assert_eq!(stored.last_connected_at, photos.last_connected_at);
+    assert_eq!(account_name(&stored), "Home MinIO", "and the account its name");
+}
+
+#[test]
+fn relocating_an_account_onto_another_saved_accounts_endpoint_is_refused_and_moves_nothing() {
+    let mine = KnownS3Place {
+        provider: other("http://taken-from.s3-places.test:9000"),
+        ..place("AKIATAKEN", Some("photos"))
+    };
+    let theirs = KnownS3Place {
+        provider: other("http://taken-to.s3-places.test:9000"),
+        ..place("AKIATAKEN", Some("backups"))
+    };
+    remember(mine.clone());
+    remember(theirs.clone());
+
+    let outcome = relocate_account(&account_of(&mine), other("http://taken-to.s3-places.test:9000"));
+
+    assert!(matches!(outcome, Relocation::Taken(_)));
+    assert!(find(&id_of(&mine)).is_some(), "nothing moved");
+}
+
+#[test]
+fn relocating_an_account_nobody_saved_answers_not_found() {
+    let ghost = KnownS3Place {
+        provider: other("http://ghost-from.s3-places.test:9000"),
+        ..place("AKIAGHOST", None)
+    };
+
+    let outcome = relocate_account(&account_of(&ghost), other("http://ghost-to.s3-places.test:9000"));
+
+    assert!(matches!(outcome, Relocation::NotFound));
+}

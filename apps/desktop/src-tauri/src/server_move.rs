@@ -32,10 +32,11 @@ use std::time::Duration;
 
 use crate::favorites::store::FavoriteVolume;
 use crate::network::keychain::{self, KeychainError, SmbCredentials};
+use crate::network::s3_known_places::{self, KnownS3Place, S3ProviderChoice};
 use crate::network::saved_server_fields::{self, Relocation, SavedServerOutcome};
 use crate::network::sftp_known_servers::{self, KnownSftpServer};
 use crate::network::webdav_known_servers::{self, KnownWebdavServer};
-use crate::network::{sftp_volume_wiring, webdav_volume_wiring};
+use crate::network::{s3_volume_wiring, sftp_volume_wiring, webdav_volume_wiring};
 use crate::volume_broadcast::{self, MovedPlace, ServerPlaceMoved};
 
 /// How long the secret store gets to answer, the same as every secret command.
@@ -169,6 +170,106 @@ pub async fn edit_webdav(saved: KnownWebdavServer, edit: KnownWebdavServer) -> S
     SavedServerOutcome::Saved
 }
 
+/// Names the saved S3 account `account_id`, and moves it to `endpoint` when that
+/// names a new one.
+///
+/// ❗ Only an "Other S3-compatible" endpoint moves: a self-hosted server on a new
+/// address is the same storage, while a preset's region, account ID, or location
+/// names DIFFERENT storage (an AWS bucket lives in one region; an R2 account ID is
+/// another account), so changing one answers `AccountChanged`. The endpoint and
+/// the secret are the account's, so every place under the key moves together.
+pub async fn edit_s3_account(account_id: &str, name: &str, endpoint: Option<S3ProviderChoice>) -> SavedServerOutcome {
+    let Some(saved) = s3_known_places::all().into_iter().find(|place| {
+        place
+            .params()
+            .is_ok_and(|params| s3_known_places::account_id(&params) == account_id)
+    }) else {
+        return SavedServerOutcome::Unreachable;
+    };
+    let Some(endpoint) = endpoint.filter(|endpoint| *endpoint != saved.provider) else {
+        // allowed-discarded-outcome: the account was found just above, so the rename has one to name.
+        s3_known_places::rename_account(account_id, name);
+        return SavedServerOutcome::Saved;
+    };
+    if !matches!(saved.provider, S3ProviderChoice::Other { .. }) || !matches!(endpoint, S3ProviderChoice::Other { .. })
+    {
+        return SavedServerOutcome::AccountChanged;
+    }
+    let key = saved.access_key_id.clone();
+    let moved = KnownS3Place {
+        provider: endpoint.clone(),
+        ..saved.clone()
+    };
+    let (Ok(old_params), Ok(new_params)) = (saved.params(), moved.params()) else {
+        return SavedServerOutcome::Unreachable;
+    };
+    let new_account_id = s3_known_places::account_id(&new_params);
+    let holder = s3_known_places::all().into_iter().find(|place| {
+        place
+            .params()
+            .is_ok_and(|params| s3_known_places::account_id(&params) == new_account_id)
+    });
+    if let Some(holder) = holder.filter(|_| new_account_id != account_id) {
+        return SavedServerOutcome::AddressTaken {
+            name: s3_known_places::account_label(&holder),
+        };
+    }
+    let (Some(from_service), Some(to_service)) = (
+        s3_volume_wiring::credential_service(&saved.provider, &key),
+        s3_volume_wiring::credential_service(&endpoint, &key),
+    ) else {
+        return SavedServerOutcome::Unreachable;
+    };
+    let from = SecretKey {
+        service: from_service,
+        scope: key.clone(),
+    };
+    let to = SecretKey {
+        service: to_service,
+        scope: key.clone(),
+    };
+    let copied = if from == to {
+        SecretCopy::NothingStored
+    } else {
+        let Ok(copied) = copy_secret(&from, &to).await else {
+            return SavedServerOutcome::SecretNotMoved;
+        };
+        copied
+    };
+    let previous = match s3_known_places::relocate_account(account_id, endpoint.clone()) {
+        Relocation::Moved { previous } => previous,
+        Relocation::NotFound => return SavedServerOutcome::Unreachable,
+        Relocation::Taken(holder) => {
+            let name = holder.first().map(s3_known_places::account_label).unwrap_or_default();
+            return SavedServerOutcome::AddressTaken { name };
+        }
+    };
+    // allowed-discarded-outcome: the account was just moved under this id, so the rename has one to name.
+    s3_known_places::rename_account(&new_account_id, name);
+    let places = previous
+        .into_iter()
+        .filter_map(|place| {
+            let old_id = place.volume_id()?;
+            let new_id = KnownS3Place {
+                provider: endpoint.clone(),
+                ..place
+            }
+            .volume_id()?;
+            Some((old_id, new_id))
+        })
+        .collect();
+    follow(Move {
+        old_prefix: cmdr_fs::volume::s3_app_root(old_params.host(), old_params.port(), &key),
+        new_prefix: cmdr_fs::volume::s3_app_root(new_params.host(), new_params.port(), &key),
+        places,
+    })
+    .await;
+    if copied == SecretCopy::Copied {
+        delete_secret(from).await;
+    }
+    SavedServerOutcome::Saved
+}
+
 /// What moved: the app prefix every path on the server carried, and its places'
 /// ids, old and new.
 struct Move {
@@ -225,7 +326,9 @@ async fn follow(moved: Move) {
     }
 
     for (old_id, _) in &moved.places {
-        let dropped = sftp_volume_wiring::disconnect(old_id).await || webdav_volume_wiring::disconnect(old_id).await;
+        let dropped = sftp_volume_wiring::disconnect(old_id).await
+            || webdav_volume_wiring::disconnect(old_id).await
+            || s3_volume_wiring::disconnect(old_id).await;
         if dropped {
             log::info!(target: "volume", "dropped {old_id}'s session at its old address");
         }

@@ -145,6 +145,7 @@ describe('S3 refusals', () => {
       'password_missing',
       'secret_not_stored',
       'saved_secret_not_updated',
+      'secret_not_moved',
     ] as const) {
       const sentence = wordConnectRefusal(kind, s3)
       expect(sentence.toLowerCase(), kind).not.toContain('password')

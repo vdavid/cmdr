@@ -8,6 +8,18 @@ import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import { mount, tick } from 'svelte'
 import SignInSheet from './SignInSheet.svelte'
 import type { SignInAttemptOutcome, SignInSheetRequest, SignInSubmission } from './sign-in-contract'
+import type { S3ProviderChoice, SavedServerOutcome } from '$lib/ipc/bindings'
+
+/** What `knownS3PlaceOf` answers, as far as the sheet reads it. */
+interface StoredPlace {
+  provider: S3ProviderChoice
+  accessKeyId: string
+  bucket: string | null
+  displayName: string
+  autoReconnect: boolean
+  pinned: boolean
+  volumeId: string
+}
 
 vi.mock('$lib/tauri-commands', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
@@ -19,12 +31,12 @@ vi.mock('$lib/tauri-commands', async (importOriginal) => ({
   getS3UnattendedReconnect: vi.fn(() => Promise.resolve('possible')),
   updateSavedServer: (target: unknown, editing: unknown) => updateSavedServer(target, editing),
   savedServerId: () => Promise.resolve('s3-photos'),
-  updateSavedS3Account: (id: string, name: string) => updateSavedS3Account(id, name),
+  updateSavedS3Account: (id: string, name: string, endpoint: unknown) => updateSavedS3Account(id, name, endpoint),
   saveS3Credentials: (...args: unknown[]) => saveS3Credentials(...args),
 }))
 
 const { knownS3PlaceOf, updateSavedServer, updateSavedS3Account, saveS3Credentials } = vi.hoisted(() => ({
-  knownS3PlaceOf: vi.fn((_id: string) =>
+  knownS3PlaceOf: vi.fn((_id: string): Promise<StoredPlace> =>
     Promise.resolve({
       provider: { kind: 'wasabi', region: 'eu-central-1' },
       accessKeyId: 'AKIAEXAMPLE',
@@ -36,7 +48,9 @@ const { knownS3PlaceOf, updateSavedServer, updateSavedS3Account, saveS3Credentia
     }),
   ),
   updateSavedServer: vi.fn((_target: unknown, _editing: unknown) => Promise.resolve({ outcome: 'saved' })),
-  updateSavedS3Account: vi.fn((_id: string, _name: string) => Promise.resolve(true)),
+  updateSavedS3Account: vi.fn((_id: string, _name: string, _endpoint: unknown): Promise<SavedServerOutcome> =>
+    Promise.resolve({ outcome: 'saved' }),
+  ),
   saveS3Credentials: vi.fn((..._args: unknown[]) => Promise.resolve()),
 }))
 
@@ -275,13 +289,69 @@ describe('SignInSheet: editing an S3 account', () => {
     press('Save')
     await flush()
 
-    expect(updateSavedS3Account).toHaveBeenCalledExactlyOnceWith('s3-account-root', 'Studio')
+    expect(updateSavedS3Account).toHaveBeenCalledExactlyOnceWith('s3-account-root', 'Studio', null)
     expect(updateSavedServer).not.toHaveBeenCalled()
     expect(saveS3Credentials).toHaveBeenCalledWith({ kind: 'wasabi', region: 'eu-central-1' }, 'AKIAEXAMPLE', 'n3w')
   })
 
+  /** A self-hosted MinIO on a new address: the same storage, so the account moves, every bucket with it. */
+  it('lets an “Other” account’s endpoint move, keeps the provider and the key locked, and sends it with the name', async () => {
+    const minio = { kind: 'other' as const, endpoint: 'http://192.168.1.20:9000', region: null, pathStyle: true }
+    knownS3PlaceOf.mockResolvedValueOnce({
+      provider: minio,
+      accessKeyId: 'AKIAEXAMPLE',
+      bucket: 'photos',
+      displayName: '',
+      autoReconnect: true,
+      pinned: true,
+      volumeId: 's3-photos',
+    })
+    await open({ mode: 'edit', server: account })
+
+    expect(field('server-s3-endpoint')?.disabled).toBe(false)
+    expect(document.body.querySelector('#server-s3-endpoint-help')?.textContent).toContain('Every bucket')
+    expect(field('server-username')?.disabled).toBe(true)
+    type('server-s3-endpoint', 'https://minio.example.test')
+    await tick()
+    press('Save')
+    await flush()
+
+    expect(updateSavedS3Account).toHaveBeenCalledExactlyOnceWith('s3-account-root', '', {
+      ...minio,
+      endpoint: 'https://minio.example.test',
+    })
+  })
+
+  it('keeps a preset account’s region locked: another region is other storage, not a new road to it', async () => {
+    await open({ mode: 'edit', server: account })
+
+    expect(field('server-s3-region')?.disabled).toBe(true)
+    expect(document.body.querySelector('#server-s3-endpoint-help')).toBeNull()
+  })
+
+  it('puts an endpoint another saved account holds under the endpoint, naming it', async () => {
+    knownS3PlaceOf.mockResolvedValueOnce({
+      provider: { kind: 'other', endpoint: 'http://192.168.1.20:9000', region: null, pathStyle: true },
+      accessKeyId: 'AKIAEXAMPLE',
+      bucket: 'photos',
+      displayName: '',
+      autoReconnect: true,
+      pinned: true,
+      volumeId: 's3-photos',
+    })
+    updateSavedS3Account.mockResolvedValueOnce({ outcome: 'address_taken', name: 'Old MinIO' })
+    await open({ mode: 'edit', server: account })
+
+    type('server-s3-endpoint', 'http://192.168.1.30:9000')
+    await tick()
+    press('Save')
+    await flush()
+
+    expect(document.body.querySelector('#server-s3-zone-refusal')?.textContent).toContain('Old MinIO')
+  })
+
   it('stays open and says nothing was saved when the account went away meanwhile', async () => {
-    updateSavedS3Account.mockResolvedValueOnce(false)
+    updateSavedS3Account.mockResolvedValueOnce({ outcome: 'unreachable' })
     await open({ mode: 'edit', server: account })
     press('Save')
     await flush()

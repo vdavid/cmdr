@@ -980,7 +980,9 @@ last place on Forget. Two writers, on purpose:
   one leaves it alone, so a second bucket added without retyping the name doesn't unname the account, and a redial of
   a saved place (which passes `""`) never touches it.
 - `rename_account`, behind `update_saved_s3_account` (Edit on the account row): a blank name UNNAMES it. ❌ Never through
-  `update_saved_server`: a target with no bucket would save the account ROOT as a new place.
+  `update_saved_server`: a target with no bucket would save the account ROOT as a new place. The same command moves an
+  "Other S3-compatible" account to a new endpoint (`relocate_account`: every place under the key, and its name record,
+  in one write), § "Moving a saved server to a new address".
 
 A store written before the name moved carries a `displayName` per place; `migrate` (run at load, written back once)
 gives each account the name of its most recently connected named place.
@@ -1096,9 +1098,11 @@ first.
 
 ### Moving a saved server to a new address
 
-An edit whose address differs from the saved entry's (SFTP: host or port; WebDAV: any part of the base URL) MOVES the
-server rather than saving a second one beside it: `src-tauri/src/server_move.rs`, reached from `update_saved_server`
-with the id the sheet opened on. Each store has a `relocate` (one lock, one write, the entry replaced IN PLACE, its pin
+An edit whose address differs from the saved entry's (SFTP: host or port; WebDAV: any part of the base URL; an S3
+account on "Other S3-compatible": its endpoint, which every place under the key shares) MOVES the server rather than
+saving a second one beside it: `src-tauri/src/server_move.rs`, reached from `update_saved_server` with the id the sheet
+opened on, and from `update_saved_s3_account` with the account's id. A preset's region or account ID names other
+storage, so changing one answers `AccountChanged`. Each store has a `relocate` (one lock, one write, the entry replaced IN PLACE, its pin
 and `last_connected_at` kept), and refuses with the holder when another entry already has the address (or, for WebDAV,
 the id the new URL mints). The order is the crash story: the secret is COPIED to the new key first, the store moves,
 then the favorites, Go to path's recents, the live session (dropped through the wiring's `disconnect`, ❌ never

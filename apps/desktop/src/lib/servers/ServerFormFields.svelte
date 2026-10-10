@@ -66,7 +66,8 @@
         /**
          * Whether the address takes typing. ❗ On in edit mode for SFTP and WebDAV: a
          * server that MOVED keeps everything, because the backend moves the saved
-         * server to the new address on Save (`src-tauri/src/server_move.rs`). Off for
+         * server to the new address on Save (`src-tauri/src/server_move.rs`), and for an S3
+         * ACCOUNT on "Other S3-compatible" (`S3EndpointFields`' `endpointEditable`). Off for
          * an SMB host, whose share ids come off the mount.
          */
         addressEditable: boolean
@@ -225,6 +226,8 @@
         fields={form.s3}
         {disabled}
         {identityEditable}
+        endpointEditable={addressEditable}
+        endpointHelp={addressHelp}
         showBucket={s3EditScope !== 'account'}
         {addressRefusal}
         {regionRefusal}

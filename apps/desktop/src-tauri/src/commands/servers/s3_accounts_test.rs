@@ -6,6 +6,7 @@ use super::super::wire::{ServerConnectOutcome, ServerNameSource, ServerProtocol}
 use super::{s3_accounts, s3_place};
 use crate::network::s3_known_places::{self, KnownS3Place, S3ProviderChoice};
 use crate::network::s3_volume_wiring::S3Connection;
+use crate::network::saved_server_fields::SavedServerOutcome;
 
 fn place(key: &str, bucket: Option<&str>, pinned: bool) -> KnownS3Place {
     KnownS3Place {
@@ -92,23 +93,26 @@ fn the_name_typed_with_an_add_names_the_account_row_and_its_buckets_keep_theirs(
     assert_eq!(names, vec!["Cloudflare R2 test3", "cmdr-s3-test"]);
 }
 
-#[test]
-fn renaming_the_account_relabels_its_row_and_an_empty_name_unnames_it() {
+#[tokio::test]
+async fn renaming_the_account_relabels_its_row_and_an_empty_name_unnames_it() {
     let key = "AKIARENAMED";
     s3_known_places::remember(place(key, Some("photos"), true));
     let id = listed(key)[0].id.clone();
 
-    assert!(super::super::update_saved_s3_account(id.clone(), "Studio".to_string()));
+    let saved = super::super::update_saved_s3_account(id.clone(), "Studio".to_string(), None).await;
+    assert_eq!(saved, SavedServerOutcome::Saved);
     assert_eq!(listed(key)[0].display_name, "Studio");
 
-    assert!(super::super::update_saved_s3_account(id.clone(), String::new()));
+    let unnamed = super::super::update_saved_s3_account(id.clone(), String::new(), None).await;
+    assert_eq!(unnamed, SavedServerOutcome::Saved);
     let account = &listed(key)[0];
     assert_eq!(account.display_name, "AKIARENAMED@s3.eu-central-1.wasabisys.com");
     assert_eq!(account.name_source, ServerNameSource::Fallback);
 
     let nobody = s3_known_places::account_id(&place("AKIANOBODY", None, false).params().expect("valid"));
-    assert!(
-        !super::super::update_saved_s3_account(nobody, "Ghost".to_string()),
+    assert_eq!(
+        super::super::update_saved_s3_account(nobody, "Ghost".to_string(), None).await,
+        SavedServerOutcome::Unreachable,
         "an account nothing saved has nothing to name"
     );
 }

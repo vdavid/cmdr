@@ -24,7 +24,7 @@ use std::sync::{Mutex, OnceLock};
 use cmdr_s3::{InvalidProvider, S3ConnectionParams, S3Provider};
 use serde::{Deserialize, Serialize};
 
-use super::saved_server_fields;
+use super::saved_server_fields::{self, Relocation};
 use super::server_list_file;
 
 use crate::ignore_poison::IgnorePoison;
@@ -469,6 +469,58 @@ pub fn set_pinned(volume_id: &str, pinned: bool) -> bool {
 /// wiring's job (`s3_volume_wiring::apply_auto_reconnect`).
 pub fn set_auto_reconnect(volume_id: &str, on: bool) -> bool {
     update(volume_id, |entry| entry.auto_reconnect = on)
+}
+
+/// Moves the account listed as `account_id` to `provider`'s endpoint: every place
+/// under its key, and its name. `previous` holds the places as they stood.
+///
+/// ❗ The ACCOUNT moves, ❌ never one place: the endpoint and the secret are the
+/// account's, so a bucket moved alone would split one account into two. Each place
+/// keeps its bucket, pin, switch, and `last_connected_at`. Refused, writing nothing,
+/// when another saved account already holds the new endpoint under this key
+/// (`Taken`, one of its places), and `NotFound` when nothing is saved under the id
+/// or `provider` makes no endpoint. `../server_move.rs` owns what else a move
+/// takes along.
+pub fn relocate_account(account_id: &str, provider: S3ProviderChoice) -> Relocation<Vec<KnownS3Place>> {
+    let relocation = {
+        let mut store = known().lock_ignore_poison();
+        let moving: Vec<usize> = store
+            .known_s3_places
+            .iter()
+            .enumerate()
+            .filter(|(_, entry)| entry.account_id().as_deref() == Some(account_id))
+            .map(|(i, _)| i)
+            .collect();
+        let Some(&first) = moving.first() else {
+            return Relocation::NotFound;
+        };
+        let moved_first = KnownS3Place {
+            provider: provider.clone(),
+            ..store.known_s3_places[first].clone()
+        };
+        let Some(new_account_id) = moved_first.account_id() else {
+            return Relocation::NotFound;
+        };
+        let holder =
+            store.known_s3_places.iter().enumerate().find(|(i, entry)| {
+                !moving.contains(i) && entry.account_id().as_deref() == Some(new_account_id.as_str())
+            });
+        if let Some((_, holder)) = holder {
+            return Relocation::Taken(vec![holder.clone()]);
+        }
+        let previous = moving.iter().map(|&i| store.known_s3_places[i].clone()).collect();
+        for &i in &moving {
+            store.known_s3_places[i].provider = provider.clone();
+        }
+        for account in &mut store.known_s3_accounts {
+            if account.id().as_deref() == Some(account_id) {
+                account.provider = provider.clone();
+            }
+        }
+        Relocation::Moved { previous }
+    };
+    save();
+    relocation
 }
 
 /// Drops one place, answering whether it was there. ❌ Leaves the secret alone:

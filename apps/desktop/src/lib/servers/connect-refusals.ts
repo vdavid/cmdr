@@ -150,6 +150,7 @@ const S3_REFUSAL_KEYS: Partial<Record<ConnectRefusalKind, MessageKey>> = {
   password_missing: 'servers.refusal.s3SecretMissing',
   secret_not_stored: 'servers.refusal.s3SecretNotStored',
   saved_secret_not_updated: 'servers.refusal.s3SavedSecretNotUpdated',
+  secret_not_moved: 'servers.refusal.s3SecretNotMoved',
 }
 
 /** What the place is called in a refusal: its host where there is one, else its name. */

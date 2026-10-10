@@ -50,6 +50,15 @@
         disabled: boolean
         /** ❗ Off in edit mode: the provider, its field, and the bucket name the place. */
         identityEditable: boolean
+        /**
+         * Whether "Other S3-compatible"'s endpoint, region, and path-style switch take typing. Defaults to
+         * `identityEditable`. ❗ On for an Other ACCOUNT's edit: a self-hosted server on a new address is the same
+         * storage, and Save moves the account there (`src-tauri/src/server_move.rs`). A preset's field stays
+         * `identityEditable`'s: another region is other storage.
+         */
+        endpointEditable?: boolean
+        /** The line under Other's endpoint while `endpointEditable` is on in edit mode. */
+        endpointHelp?: string
         /** Off for an ACCOUNT's edit: the account is every bucket, so no one bucket is its. */
         showBucket?: boolean
         /** The sentence under the field that makes the endpoint. */
@@ -75,6 +84,8 @@
         fields,
         disabled,
         identityEditable,
+        endpointEditable,
+        endpointHelp,
         showBucket = true,
         addressRefusal,
         regionRefusal,
@@ -94,6 +105,7 @@
     const spacesRegionItems: SelectItem[] = SPACES_REGIONS.map((region) => ({ value: region, label: region }))
 
     const identityDisabled = $derived(disabled || !identityEditable)
+    const endpointDisabled = $derived(disabled || !(endpointEditable ?? identityEditable))
     /** A preset's one field carries both sentences; Other splits them. */
     const presetRefusal = $derived(addressRefusal ?? regionRefusal)
     const bucketDescribedBy = $derived(
@@ -226,15 +238,23 @@
             oninput={(e: Event) => {
                 onChange({ endpoint: (e.currentTarget as HTMLInputElement).value })
             }}
-            disabled={identityDisabled}
+            disabled={endpointDisabled}
             invalid={addressRefusal !== undefined}
-            aria-describedby={addressRefusal ? 'server-s3-zone-refusal' : undefined}
+            aria-describedby={addressRefusal
+                ? 'server-s3-zone-refusal'
+                : endpointHelp && !endpointDisabled
+                  ? 'server-s3-endpoint-help'
+                  : undefined}
             placeholder={tString('servers.sheet.examplePlaceholder', { example: 'https://s3.example.com' })}
             autocapitalize="off"
             autocomplete="off"
             spellcheck={false}
         />
-        {@render zoneRefusal(addressRefusal)}
+        {#if addressRefusal}
+            {@render zoneRefusal(addressRefusal)}
+        {:else if endpointHelp && !endpointDisabled}
+            <p id="server-s3-endpoint-help" class="field-help">{endpointHelp}</p>
+        {/if}
     </div>
 
     <div class="field">
@@ -246,7 +266,7 @@
             oninput={(e: Event) => {
                 onChange({ region: (e.currentTarget as HTMLInputElement).value })
             }}
-            disabled={identityDisabled}
+            disabled={endpointDisabled}
             invalid={regionRefusal !== undefined}
             aria-describedby={regionRefusal ? 'server-s3-region-refusal' : undefined}
             placeholder={tString('servers.sheet.s3RegionOptionalPlaceholder')}
@@ -266,7 +286,7 @@
             onCheckedChange={(checked: boolean) => {
                 onChange({ pathStyle: checked })
             }}
-            disabled={identityDisabled}
+            disabled={endpointDisabled}
         >
             {tString('servers.sheet.s3PathStyle')}
         </Checkbox>

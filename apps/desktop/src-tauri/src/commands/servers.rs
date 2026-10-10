@@ -617,9 +617,14 @@ pub fn saved_server_id(server: ServerTarget) -> Option<String> {
     }
 }
 
-/// Names the saved S3 account the listing calls `id`, answering whether any
-/// saved place belongs to it. An empty name unnames it, so the UI calls it
-/// `key id@host` again.
+/// Names the saved S3 account the listing calls `id`, and moves it to `endpoint`
+/// when that names a new one. An empty name unnames it, so the UI calls it
+/// `key id@host` again. An account nothing is saved under answers `unreachable`.
+///
+/// ❗ Only an "Other S3-compatible" endpoint moves (a self-hosted server on a new
+/// address): a preset's region or account ID names other STORAGE, so changing one
+/// answers `account_changed`. The move takes every place under the key along
+/// (`server_move.rs`).
 ///
 /// ❗ Its own command rather than a [`ServerTarget`] arm, like
 /// [`update_saved_smb_host`]: the account is no place to save, and a target with
@@ -630,12 +635,16 @@ pub fn saved_server_id(server: ServerTarget) -> Option<String> {
 /// the saved list and the switcher relabel the account root.
 #[tauri::command]
 #[specta::specta]
-pub fn update_saved_s3_account(id: String, name: String) -> bool {
-    let named = s3_known_places::rename_account(&id, &name);
-    if named {
+pub async fn update_saved_s3_account(
+    id: String,
+    name: String,
+    endpoint: Option<s3_known_places::S3ProviderChoice>,
+) -> SavedServerOutcome {
+    let outcome = crate::server_move::edit_s3_account(&id, &name, endpoint).await;
+    if outcome == SavedServerOutcome::Saved {
         crate::volume_broadcast::emit_volumes_changed();
     }
-    named
+    outcome
 }
 
 /// Names the saved SMB host the listing calls `id` and sets the account it's used

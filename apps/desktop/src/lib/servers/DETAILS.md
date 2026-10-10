@@ -204,7 +204,12 @@ the secret; a bucket reads as its own name and keeps only its "Reconnect automat
   the provider and the key locked (`servers.sheet.identityLockedS3Account`), ❌ no Bucket field and ❌ no Advanced. It
   reads the store and the Keychain through one of the account's places (`storeId`: they share the secret, and each
   `SavedS3Place` carries the account's raw name), and Save renames through `updateSavedS3Account` (blank unnames it), ❌
-  never `updateSavedServer`, whose bucket-less target would save the account ROOT as a new place.
+  never `updateSavedServer`, whose bucket-less target would save the account ROOT as a new place. ❗ On "Other
+  S3-compatible" the endpoint, region, and path-style switch stay editable (`S3EndpointFields`' `endpointEditable`, with
+  `servers.sheet.s3EndpointMoveHelp`), and Save sends the provider beside the name: a new endpoint MOVES the account and
+  every bucket under its key, with the shared secret (`apps/desktop/src-tauri/src/server_move.rs`). A preset's field
+  stays locked and sends nothing: another region or account ID is other storage, not a new road to the same one. A move
+  leaves the account under a new id, which the sheet reads back (`accountSavedAs`) for any Save again.
 - **A place** (Edit on a bucket or root row, the switcher's menu included:
   `openEditServerSheet(server, placeVolumeId)`): the provider, the key, and the bucket locked
   (`servers.sheet.identityLockedS3`), ❌ no Name field, Advanced with the place's own switch. Save sends the target with
@@ -215,9 +220,10 @@ A typed secret is the account's either way (`saveS3Credentials`).
 **Edit mode MOVES an address, ❌ never an account.** The protocol toggle and the username are locked, and
 `servers.sheet.accountLocked` sits under the username saying to Add instead: another account is another place, since two
 accounts on one server see different files. An SFTP or WebDAV address stays editable (`addressEditable`, with
-`servers.sheet.addressMoveHelp` under it), because a server that moved (a NAS's new IP, `nas.local` → its Tailscale
-name) must keep its favorites, tabs, pin, and password. ❗ The sheet never decides whether an edit is a move: Save
-passes the id it opened on (`updateSavedServer(target, editing)`), and the backend saves in place or moves the server
+`servers.sheet.addressMoveHelp` under it), as does an "Other S3-compatible" account's endpoint (§ "An S3 edit is the
+ACCOUNT's or a PLACE's"), because a server that moved (a NAS's new IP, `nas.local` → its Tailscale name) must keep its
+favorites, tabs, pin, and password. ❗ The sheet never decides whether an edit is a move: Save passes the id it opened
+on (`updateSavedServer(target, editing)`), and the backend saves in place or moves the server
 (`apps/desktop/src-tauri/src/server_move.rs`), refusing an address another saved server holds (`address_taken`, under
 the address, naming that server). A save that moved it leaves the place under a NEW id, which the sheet reads back
 (`savedServerId`) for the Remember flip and any Save again (`savedAs`). Typing an address in edit mode never steers the

@@ -52,7 +52,7 @@
         hostWithPort,
     } from './server-form'
     import { readSavedServerOutcome, type SaveOutcome } from './server-outcomes'
-    import { s3FieldProblem, s3HostOf, s3RequiredFieldOf } from './s3-form'
+    import { s3FieldProblem, s3HostOf, s3ProviderFrom, s3RequiredFieldOf } from './s3-form'
     import { saveTargetSecret, savedEditForm, unattendedReconnectWarning } from './saved-server-io'
     import type {
         AddIntent,
@@ -105,6 +105,8 @@
      * sheet opened on once the save moved its address. Plain, not `$state`: nothing renders it.
      */
     let savedAs: string | null = null
+    /** Edit mode on an S3 account: the account's id since a save that moved its endpoint. */
+    let accountSavedAs: string | null = null
     let form = $state<ServerForm>(emptyServerForm())
     /**
      * Sign-in mode's own fields; the add form holds its own.
@@ -195,7 +197,10 @@
      * mount (`docs/notes/server-address-move.md` § "SMB, deferred").
      */
     const addressEditable = $derived(
-        !isEdit || editedServer?.protocol === 'sftp' || editedServer?.protocol === 'webdav',
+        !isEdit ||
+            editedServer?.protocol === 'sftp' ||
+            editedServer?.protocol === 'webdav' ||
+            (s3EditScope === 'account' && form.s3.provider === 'other'),
     )
     const storeId = $derived.by(() => {
         if (request.mode !== 'edit') return null
@@ -654,7 +659,10 @@
         busy = true
         refusal = null
         refusalTakenBy = null
-        const answer = s3EditScope === 'account' ? await saveS3Account(editedServer.id) : await saveTarget(target)
+        const answer =
+            s3EditScope === 'account'
+                ? await saveS3Account(accountSavedAs ?? editedServer.id)
+                : await saveTarget(target)
         if (answer.kind === 'refused') {
             busy = false
             refusalTakenBy = answer.takenBy ?? null
@@ -663,8 +671,13 @@
         }
         try {
             // ❗ A save that moved the address left the place under a NEW id, which is what
-            // the flip below and any Save again must name: the old one names nothing now.
-            if (s3EditScope !== 'account') savedAs = (await savedServerId(target)) ?? savedAs
+            // the flip below and any Save again must name: the old one names nothing now. An S3
+            // account's target carries the bucket of the place it was read through, so its id is that
+            // place's, and the account's own is its root's.
+            savedAs = (await savedServerId(target)) ?? savedAs
+            if (s3EditScope === 'account' && target.protocol === 's3') {
+                accountSavedAs = (await savedServerId({ ...target, bucket: null })) ?? accountSavedAs
+            }
             await writeRememberFlip(savedAs ?? storeId ?? editedServer.id)
             await writeTypedSecret(target)
             close({ kind: 'saved' })
@@ -693,19 +706,22 @@
     }
 
     /**
-     * Edit mode on an S3 account: its name, by the row's id. ❗ Never through
-     * `updateSavedServer`: a target with no bucket would save the account ROOT as a
-     * new place. An account whose places all went away meanwhile (a Forget in
-     * another pane) reads as the save nobody could confirm. The secret is written
-     * after, like any edit's.
+     * Edit mode on an S3 account: its name, and on "Other S3-compatible" its endpoint,
+     * by the row's id. ❗ Never through `updateSavedServer`: a target with no bucket
+     * would save the account ROOT as a new place. A new endpoint MOVES the account and
+     * every bucket under its key (`src-tauri/src/server_move.rs`); a preset sends none,
+     * since its fields are locked. An account whose places all went away meanwhile (a
+     * Forget in another pane) reads as the save nobody could confirm. The secret is
+     * written after, like any edit's.
      */
     async function saveS3Account(id: string): Promise<SaveOutcome> {
+        const endpoint = form.s3.provider === 'other' ? s3ProviderFrom(form.s3) : null
         try {
-            if (await updateSavedS3Account(id, form.displayName.trim())) return { kind: 'saved' }
+            return readSavedServerOutcome(await updateSavedS3Account(id, form.displayName.trim(), endpoint))
         } catch (e) {
             log.warn('Saving the edited S3 account broke down: {error}', { error: String(e) })
+            return { kind: 'refused', refusal: 'save_unconfirmed' }
         }
-        return { kind: 'refused', refusal: 'save_unconfirmed' }
     }
 
     /**
@@ -814,7 +830,9 @@
                 protocolEditable={!isEdit}
                 identityEditable={!isEdit}
                 {addressEditable}
-                addressHelp={isEdit ? tString('servers.sheet.addressMoveHelp') : undefined}
+                addressHelp={isEdit
+                    ? tString(form.protocol === 's3' ? 'servers.sheet.s3EndpointMoveHelp' : 'servers.sheet.addressMoveHelp')
+                    : undefined}
                 identityHint={isEdit ? tString(identityHintKey) : undefined}
                 s3EditScope={s3EditScope ?? undefined}
                 addressRefusal={refusalWhere === 'address' ? refusalText : undefined}

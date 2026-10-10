@@ -12,6 +12,7 @@
 
 import { commands } from '$lib/ipc/bindings'
 import type {
+  S3ProviderChoice,
   SavedPlace,
   SavedPlaceRefusal,
   SavedServer,
@@ -236,9 +237,16 @@ export async function updateSavedSmbHost(id: string, name: string, username: str
 
 /**
  * Names the saved S3 account the listing calls `id` (its row's id); an empty name
- * unnames it, so it reads as `key id@host` again. Answers whether any saved place
- * belongs to it. The account carries the name: a bucket reads as its own.
+ * unnames it, so it reads as `key id@host` again. The account carries the name: a
+ * bucket reads as its own. `endpoint` is the account's provider as the sheet holds
+ * it, `null` to leave it: a new "Other S3-compatible" endpoint MOVES the account and
+ * every bucket under its key (`src-tauri/src/server_move.rs`), and a changed preset
+ * answers `account_changed`. An account nothing is saved under answers `unreachable`.
  */
-export async function updateSavedS3Account(id: string, name: string): Promise<boolean> {
-  return await commands.updateSavedS3Account(id, name)
+export async function updateSavedS3Account(
+  id: string,
+  name: string,
+  endpoint: S3ProviderChoice | null,
+): Promise<SavedServerOutcome> {
+  return await commands.updateSavedS3Account(id, name, endpoint)
 }

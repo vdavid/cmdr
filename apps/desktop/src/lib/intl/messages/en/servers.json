@@ -385,6 +385,10 @@
   "@servers.refusal.secretNotMoved": {
     "description": "Under the password field of the edit server sheet, when the user changed a saved server's address and Cmdr couldn't copy its stored password to the new address (the user clicked Deny on the system prompt, the keychain is locked, or no password store is available). ❗ NOTHING was saved, not even the other changes, so don't word it as if anything was. Saving again is safe. “Keychain” is Apple’s name for the password store; use the name your language’s macOS uses."
   },
+  "servers.refusal.s3SecretNotMoved": "Cmdr couldn’t take the saved secret access key along to the new endpoint, so nothing changed. Check that your Keychain is unlocked, then save again.",
+  "@servers.refusal.s3SecretNotMoved": {
+    "description": "The S3 twin of servers.refusal.secretNotMoved: under the secret access key field of the edit sheet for an S3 account, when the user changed the account's endpoint and Cmdr couldn't copy its stored secret access key to the new endpoint. ❗ NOTHING was saved. Saving again is safe. “Secret access key” is the S3 term; use the same words as servers.sheet.secretAccessKey. “Keychain” is Apple’s name for the password store; use the name your language’s macOS uses."
+  },
   "servers.refusal.accountChanged": "A different account is a different server, so nothing was saved. Add it as a new server instead.",
   "@servers.refusal.accountChanged": {
     "description": "Above the buttons of the edit server sheet, when a save asked to change which account or which protocol a saved server uses. The sheet doesn't let the user type either, so this is rare. Nothing was saved. “Add” refers to adding a server from the Servers list."
@@ -518,6 +522,10 @@
   "servers.sheet.accountLocked": "The protocol and the account are what name this server. To use another account, add it as a new server.",
   "@servers.sheet.accountLocked": {
     "description": "Under the greyed-out Username field when the user is EDITING a saved SFTP or WebDAV server, explaining why the protocol (the SMB / SFTP / WebDAV / S3 picker) and the account can't be changed there, and what to do instead. The address above them CAN be changed, so don't say it can't. “Add” refers to adding a server from the Servers list."
+  },
+  "servers.sheet.s3EndpointMoveHelp": "Did the server move? Type its new endpoint. Every bucket under this key comes along, with its favorites, open tabs, and saved secret access key.",
+  "@servers.sheet.s3EndpointMoveHelp": {
+    "description": "One line under the Endpoint field when the user is EDITING a saved S3 account on a self-hosted (“Other S3-compatible”) server, saying they can type the server's new endpoint (for example after it got a new IP address) and that every bucket saved under the same access key moves with it, losing nothing: favorites pointing into the buckets, tabs open on them, and the stored secret access key. “Secret access key” is the S3 term; use the same words as servers.sheet.secretAccessKey."
   },
   "servers.sheet.addressMoveHelp": "Did the server move? Type its new address. Its favorites, open tabs, and saved password come along.",
   "@servers.sheet.addressMoveHelp": {

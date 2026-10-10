@@ -4555,9 +4555,14 @@ export const commands = {
   updateSavedSmbHost: (id: string, name: string, username: string | null) =>
     __TAURI_INVOKE<boolean>('update_saved_smb_host', { id, name, username }),
   /**
-   *  Names the saved S3 account the listing calls `id`, answering whether any
-   *  saved place belongs to it. An empty name unnames it, so the UI calls it
-   *  `key id@host` again.
+   *  Names the saved S3 account the listing calls `id`, and moves it to `endpoint`
+   *  when that names a new one. An empty name unnames it, so the UI calls it
+   *  `key id@host` again. An account nothing is saved under answers `unreachable`.
+   *
+   *  ❗ Only an "Other S3-compatible" endpoint moves (a self-hosted server on a new
+   *  address): a preset's region or account ID names other STORAGE, so changing one
+   *  answers `account_changed`. The move takes every place under the key along
+   *  (`server_move.rs`).
    *
    *  ❗ Its own command rather than a [`ServerTarget`] arm, like
    *  [`update_saved_smb_host`]: the account is no place to save, and a target with
@@ -4567,7 +4572,60 @@ export const commands = {
    *  ❗ Emits `volumes-changed`, which is what makes an open servers hub re-read
    *  the saved list and the switcher relabel the account root.
    */
-  updateSavedS3Account: (id: string, name: string) => __TAURI_INVOKE<boolean>('update_saved_s3_account', { id, name }),
+  updateSavedS3Account: (
+    id: string,
+    name: string,
+    endpoint:
+      // Amazon S3, in one region (`eu-west-1`).
+      | {
+          kind: 'aws'
+          // The endpoint's region.
+          region: string
+        }
+      // Cloudflare R2, by account ID.
+      | {
+          kind: 'r2'
+          // The 32-hex account ID from the R2 dashboard.
+          accountId: string
+        }
+      // Backblaze B2, in one region (`us-west-004`).
+      | {
+          kind: 'b2'
+          // The region from the bucket's S3 endpoint.
+          region: string
+        }
+      // Wasabi, in one region (`eu-central-1`).
+      | {
+          kind: 'wasabi'
+          // The endpoint's region.
+          region: string
+        }
+      // Hetzner Object Storage, in one location (`fsn1`, `nbg1`, `hel1`).
+      | {
+          kind: 'hetzner'
+          // The endpoint's location.
+          location: string
+        }
+      // Google Cloud Storage, through its S3-compatible XML API with HMAC keys.
+      | { kind: 'gcs' }
+      // DigitalOcean Spaces, in one region (`fra1`).
+      | {
+          kind: 'digitalocean'
+          // The endpoint's region.
+          region: string
+        }
+      // Any other S3-compatible server.
+      | {
+          kind: 'other'
+          // `http(s)://host[:port]`, nothing after it.
+          endpoint: string
+          // The signing region; `us-east-1` when empty.
+          region: string | null
+          // Whether buckets go in the path rather than the host name.
+          pathStyle: boolean
+        }
+      | null,
+  ) => __TAURI_INVOKE<SavedServerOutcome>('update_saved_s3_account', { id, name, endpoint }),
   /**
    *  Forgets the saved SMB host the listing calls `id`: its manual entry, its
    *  sign-in history, and every share saved under it. Answers whether anything was
