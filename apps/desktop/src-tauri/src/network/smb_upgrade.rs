@@ -43,8 +43,8 @@ struct MountIdentity {
     share_root: String,
 }
 
-/// Reads a mount's identity from `statfs(mount_path)` (macOS) or `/proc/mounts`
-/// (Linux). Returns `None` if the path isn't an SMB mount.
+/// Reads a mount's identity from `statfs(mount_path)` (macOS), or `/proc/mounts` and
+/// a GVFS share folder's name (Linux). Returns `None` if the path isn't an SMB mount.
 ///
 /// Used so the mount-time `register_smb_volume` derives the same canonical ID
 /// as the OS-event watcher (which only has the mount path to work with). The

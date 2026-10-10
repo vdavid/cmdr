@@ -197,7 +197,9 @@ describeSmb('A favorite on an offline SMB share', () => {
     await favoriteAFolderThenLoseTheShare((id) => (favoriteId = id))
 
     // Listed, and a pick can't open it right away: `connects` for a saved share, `forgotten`
-    // for one nothing saved (every GVFS mount today, #348).
+    // while the share's direct session is still registered. On Linux nothing notices a GVFS
+    // unmount from outside (the watcher's inotify sees nothing inside the FUSE mount), so the
+    // registered volume hides the saved row and the favorite reads `forgotten` (#348).
     await expect
       .poll(async () => (await ourFavorite())?.reach, { timeout: waitBudget(15000) })
       .toMatch(/^(connects|forgotten)$/)
@@ -206,9 +208,11 @@ describeSmb('A favorite on an offline SMB share', () => {
   })
 
   test('picking it mounts the share and lands in the folder, with no error flash', async ({ tauriPage }) => {
-    // ❗ A GVFS mount saves no share place yet (#348, `network/DETAILS.md` § "Saved SMB shares"),
-    // so on Linux the favorite reads `forgotten` and has nothing to dial. Drop this once #348 lands.
-    test.fixme(process.platform === 'linux', 'GVFS mounts save no share place (#348)')
+    // ❗ A GVFS share saves its place now, but an unmount from outside Cmdr leaves its direct
+    // session registered (no watcher event), and a registered volume hides the saved row
+    // (`server_volumes::fold_saved_smb_shares`), so the favorite reads `forgotten`. Drop this
+    // once Linux notices a GVFS unmount (#348).
+    test.fixme(process.platform === 'linux', 'a GVFS unmount from outside Cmdr goes unnoticed (#348)')
     await ensureAppReady(tauriPage)
     await initMcpClient(tauriPage)
     await favoriteAFolderThenLoseTheShare((id) => (favoriteId = id))

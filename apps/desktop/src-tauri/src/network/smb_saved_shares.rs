@@ -121,7 +121,7 @@ pub fn remember_favorited_share(mount_path: &str, volume_id: &str) {
     #[cfg(target_os = "linux")]
     let info = crate::volumes_linux::get_smb_mount_info(mount_path);
     let Some(info) = info else {
-        // A GVFS share (Linux) isn't in the mount table, and a non-SMB mount has no source to read.
+        // A non-SMB mount has no source to read.
         log::debug!("No SMB mount source at {mount_path:?}; the favorite's share isn't saved");
         return;
     };

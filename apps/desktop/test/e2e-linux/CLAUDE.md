@@ -42,8 +42,8 @@ pnpm test:e2e:linux:vnc                # VNC mode with hot reload (pnpm dev)
 - **`mcp-volume-select` listener exists only on the file explorer route (`/`), not `/settings`.** A `beforeEach` must
   navigate to `/` first, or volume-select events are silently ignored.
 - **GVFS needs the D-Bus session bus and `gvfsd` running before any `gio mount`.** The entrypoint starts `dbus-launch`
-  then `/usr/libexec/gvfsd` in that order; `XDG_RUNTIME_DIR` must be `/run/user/<uid>` (not `/tmp/...`) for mount paths
-  to match `mount_linux.rs`'s `derive_gvfs_path`. The container runs `--privileged`: default seccomp blocks `mount` even
+  then `/usr/libexec/gvfsd` in that order; `XDG_RUNTIME_DIR` must be `/run/user/<uid>` (not `/tmp/...`), the folder
+  `mount_linux.rs`'s `find_gvfs_mount` reads. The container runs `--privileged`: default seccomp blocks `mount` even
   with `CAP_SYS_ADMIN`, and GVFS-FUSE needs `/dev/fuse`.
 - **Run SMB tests in isolation.** In sequence the app can exit before SMB tests (the accessibility test walks MCP
   settings, which with cross-window setting sync can trigger an MCP state change). Root cause tracked separately.

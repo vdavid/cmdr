@@ -135,7 +135,10 @@ username (`volumes/DETAILS.md` § "SMB mount sources are percent-escaped").
 
 Two differences from the macOS twin, both pre-existing: the segments are taken verbatim (percent-decoding is a macOS
 mount-source concern, `volumes/DETAILS.md` § "SMB mount sources are percent-escaped"), and GVFS shares don't come
-through this parser at all but through `parse_gvfs_smb_dirname`, which carries no subpath.
+through this parser at all but through `parse_gvfs_smb_dirname`, which carries no subpath. That one reads the server,
+share, port, and account off the folder name and URI-decodes each (GVFS's naming: `network/DETAILS.md` § "Linux GVFS
+folder names"); `get_smb_mount_info` asks it first, for a share folder only, so every SMB identity read on Linux takes
+the same door.
 
 ## A path inside a GVFS share resolves to the share
 
@@ -147,10 +150,11 @@ the two can't name one share two ways. ❗ This is what lets a favorite on a GVF
 gate resolves through here); before, it stored the FUSE root's path id and read "unplugged drive" from the first
 listing (caught by `test/e2e-playwright/favorites-offline-smb.spec.ts`, Linux Docker lane, 2026-10-10).
 
-Two GVFS gaps this doesn't close, both visible to that spec: a GVFS mount saves no share place (#348,
-`network/DETAILS.md` § "Saved SMB shares"), so an unmounted share's favorite reads `forgotten` rather than `connects`;
-and in the Docker lane the GVFS watcher's inotify sees nothing inside the FUSE mount, so an unmount from outside Cmdr
-pushes no `volumes-changed` until something else does.
+One GVFS gap this doesn't close, visible to that spec: in the Docker lane the GVFS watcher's inotify sees nothing
+inside the FUSE mount, so an unmount from outside Cmdr pushes no `volumes-changed` until something else does, and
+unregisters nothing. The share's direct `SmbVolume` stays registered, which hides its saved row
+(`server_volumes::fold_saved_smb_shares` skips a registered id), so its favorite reads `forgotten` rather than
+`connects` (#348; verified in the Linux E2E lane, 2026-10-10).
 
 ## One volume ID publishes one mount root
 

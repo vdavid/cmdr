@@ -47,14 +47,28 @@ pub struct SmbMountInfo {
     pub port: u16,
 }
 
-/// Extracts SMB server, share, and username from a mount path via `/proc/mounts`.
+/// Extracts SMB server, share, port, and username for the SMB mount AT `mount_path`.
 ///
-/// On Linux, CIFS mounts have a device field like:
-/// - `//192.168.1.111/share` (no credentials in device)
-/// - `//user@192.168.1.111/share` (some configurations)
+/// Two doors, as the module doc says:
+/// - A GVFS share folder (`/run/user/<uid>/gvfs/smb-share:…`) answers from its name
+///   ([`parse_gvfs_smb_dirname`]), with no syscall, so a dead share can't block it.
+/// - A CIFS mount answers from its `/proc/mounts` device field, like
+///   `//192.168.1.111/share` or `//user@192.168.1.111/share`.
 ///
-/// Returns `None` if the path is not a CIFS mount or parsing fails.
+/// Returns `None` if the path is neither, or parsing fails. A folder inside a share is
+/// not the mount.
 pub fn get_smb_mount_info(mount_path: &str) -> Option<SmbMountInfo> {
+    if gvfs_share_root(mount_path) == Some(mount_path) {
+        let dirname = Path::new(mount_path).file_name()?.to_str()?;
+        let gvfs = parse_gvfs_smb_dirname(dirname)?;
+        return Some(SmbMountInfo {
+            server: gvfs.server,
+            share: gvfs.share,
+            subpath: None,
+            username: gvfs.user,
+            port: gvfs.port,
+        });
+    }
     let mounts = linux_mounts::parse_proc_mounts()?;
     let entry = mounts
         .iter()
@@ -105,23 +119,59 @@ pub(super) fn parse_smb_mount_source(source: &str) -> Option<SmbMountInfo> {
     })
 }
 
-/// Parse a GVFS SMB directory name into (server, share).
+/// What a GVFS SMB share folder's name says about the share.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct GvfsSmbShare {
+    pub server: String,
+    pub share: String,
+    /// 445 unless the name carries `port=`.
+    pub port: u16,
+    /// The account the share was mounted as; `None` for a guest mount.
+    pub user: Option<String>,
+}
+
+/// Parses a GVFS SMB folder name under `/run/user/<uid>/gvfs/`.
 ///
-/// GVFS mounts SMB shares as subdirectories under `/run/user/<uid>/gvfs/`
-/// with names like `smb-share:server=192.168.1.150,share=pihdd` (optionally
-/// with `,user=X,domain=Y` suffixes). Returns None for non-SMB entries.
-pub(crate) fn parse_gvfs_smb_dirname(dirname: &str) -> Option<(String, String)> {
+/// GVFS names the folder after the mount spec (`g_mount_spec_to_string`): the keys
+/// sorted, each value URI-escaped with UTF-8 kept, and `port`, `user`, and `domain`
+/// present only when the mount URL carried them. So `smb://alice@nas:1445/photos`
+/// lands as `smb-share:port=1445,server=nas,share=photos,user=alice` (verified on
+/// gvfs 1.60 in the `cmdr-e2e` image, `gio mount` + `ls`, 2026-10-10). GVFS lowercases
+/// the server and share. Returns `None` for non-SMB entries and malformed names.
+pub(crate) fn parse_gvfs_smb_dirname(dirname: &str) -> Option<GvfsSmbShare> {
     let rest = dirname.strip_prefix("smb-share:")?;
     let mut server = None;
     let mut share = None;
+    let mut port = 445;
+    let mut user = None;
     for part in rest.split(',') {
-        if let Some(val) = part.strip_prefix("server=") {
-            server = Some(val.to_string());
-        } else if let Some(val) = part.strip_prefix("share=") {
-            share = Some(val.to_string());
+        let Some((key, value)) = part.split_once('=') else {
+            continue;
+        };
+        let value = decode_gvfs_value(value);
+        match key {
+            "server" => server = Some(value),
+            "share" => share = Some(value),
+            "port" => port = value.parse().ok()?,
+            "user" => user = Some(value),
+            _ => {}
         }
     }
-    Some((server?, share?))
+    Some(GvfsSmbShare {
+        server: server?,
+        share: share?,
+        port,
+        user,
+    })
+}
+
+/// A `%` that isn't an escape is a character in the name, so a failed decode keeps
+/// the text rather than dropping the share.
+fn decode_gvfs_value(value: &str) -> String {
+    match urlencoding::decode(value) {
+        Ok(decoded) => decoded.into_owned(),
+        Err(_) => value.to_string(),
+    }
 }
 
 /// The GVFS SMB share directory `path` sits in or at
@@ -196,13 +246,13 @@ pub(super) fn get_network_mounts() -> Vec<LocationInfo> {
     for entry in entries.flatten() {
         let name = entry.file_name();
         let dirname = name.to_string_lossy();
-        if let Some((_server, share)) = parse_gvfs_smb_dirname(&dirname) {
+        if let Some(gvfs) = parse_gvfs_smb_dirname(&dirname) {
             let path = entry.path().to_string_lossy().to_string();
             // Skip inaccessible entries (hung FUSE mount)
             if !entry.path().is_dir() {
                 continue;
             }
-            mounts.push(gvfs_share_location(path, share));
+            mounts.push(gvfs_share_location(path, gvfs.share));
         }
     }
 
@@ -271,16 +321,35 @@ mod enrichment_tests {
 mod tests {
     use super::*;
 
+    fn gvfs(server: &str, share: &str, port: u16, user: Option<&str>) -> Option<GvfsSmbShare> {
+        Some(GvfsSmbShare {
+            server: server.to_string(),
+            share: share.to_string(),
+            port,
+            user: user.map(str::to_string),
+        })
+    }
+
     #[test]
     fn test_parse_gvfs_smb_dirname_basic() {
         let result = parse_gvfs_smb_dirname("smb-share:server=192.168.1.150,share=pihdd");
-        assert_eq!(result, Some(("192.168.1.150".to_string(), "pihdd".to_string())));
+        assert_eq!(result, gvfs("192.168.1.150", "pihdd", 445, None));
     }
 
     #[test]
     fn test_parse_gvfs_smb_dirname_with_extra_params() {
         let result = parse_gvfs_smb_dirname("smb-share:server=mynas.local,share=photos,user=alice,domain=WORKGROUP");
-        assert_eq!(result, Some(("mynas.local".to_string(), "photos".to_string())));
+        assert_eq!(result, gvfs("mynas.local", "photos", 445, Some("alice")));
+    }
+
+    /// The shape `gio mount smb://testuser@localhost:11481/private` leaves: keys sorted,
+    /// so `port` leads.
+    #[test]
+    fn a_gvfs_dirname_carries_the_port_and_account() {
+        let result = parse_gvfs_smb_dirname("smb-share:port=11481,server=localhost,share=private,user=testuser");
+        assert_eq!(result, gvfs("localhost", "private", 11481, Some("testuser")));
+        // Not a port at all is not a share GVFS made.
+        assert_eq!(parse_gvfs_smb_dirname("smb-share:port=x,server=a,share=b"), None);
     }
 
     #[test]
@@ -306,6 +375,38 @@ mod tests {
         assert_eq!(gvfs_share_root("/run/user/1000/gvfs/smb-share:server=only"), None);
         assert_eq!(gvfs_share_root("/home/ada/gvfs/smb-share:server=a,share=b"), None);
         assert_eq!(gvfs_share_root("/home/ada/docs"), None);
+    }
+
+    /// GVFS writes the folder name with `g_mount_spec_to_string`, which URI-escapes
+    /// each value (keeping UTF-8): a share named `my docs,old` lands as `my%20docs%2Cold`.
+    #[test]
+    fn a_gvfs_dirname_reads_its_escaped_values_back() {
+        let result = parse_gvfs_smb_dirname("smb-share:server=nas,share=my%20docs%2Cold");
+        assert_eq!(result, gvfs("nas", "my docs,old", 445, None));
+        let result = parse_gvfs_smb_dirname("smb-share:server=smb-consumer-unicode,share=café");
+        assert_eq!(result, gvfs("smb-consumer-unicode", "café", 445, None));
+    }
+
+    /// A share GVFS serves is an SMB mount at its folder, with the port and account the
+    /// folder name carries (`gio mount smb://testuser@host:11481/private` names it
+    /// `smb-share:port=11481,server=host,share=private,user=testuser`; see
+    /// [`parse_gvfs_smb_dirname`]). Pure: no syscall, so a dead share can't block it.
+    #[test]
+    fn a_gvfs_share_folder_is_an_smb_mount_with_its_port_and_account() {
+        let root = "/run/user/1000/gvfs/smb-share:port=11481,server=localhost,share=private,user=testuser";
+        let info = get_smb_mount_info(root).expect("a GVFS share folder is an SMB mount");
+        assert_eq!(info.server, "localhost");
+        assert_eq!(info.share, "private");
+        assert_eq!(info.port, 11481);
+        assert_eq!(info.username.as_deref(), Some("testuser"));
+        assert_eq!(info.subpath, None);
+
+        let guest = get_smb_mount_info("/run/user/1000/gvfs/smb-share:server=nas,share=public").expect("guest share");
+        assert_eq!(guest.port, 445);
+        assert_eq!(guest.username, None);
+
+        // A folder INSIDE the share is not the mount, same as a CIFS mount point.
+        assert!(get_smb_mount_info(&format!("{root}/docs")).is_none());
     }
 
     #[test]

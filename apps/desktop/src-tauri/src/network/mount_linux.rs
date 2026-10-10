@@ -76,73 +76,73 @@ fn is_gio_available() -> bool {
     Command::new("gio").arg("version").output().is_ok()
 }
 
-/// Extracts the `(server, share)` of any `smb://` mount URL on one `gio mount -l` line.
+/// The share a mount is looked up for: what `gio mount` was (or would be) handed.
+struct WantedShare<'a> {
+    server: &'a str,
+    share: &'a str,
+    port: u16,
+    username: Option<&'a str>,
+}
+
+/// Finds the GVFS folder serving `wanted`, or `None` when GVFS serves no such share.
 ///
-/// Lines look like `  Mount(0): docs on naspolya -> smb://naspolya/docs/`. The server is
-/// stripped of any `user@` prefix and `:port` suffix so it compares cleanly against a
-/// discovered host. Returns `None` for non-SMB or malformed lines.
-fn parse_smb_mount(line: &str) -> Option<(String, String)> {
-    let rest = line.split("smb://").nth(1)?;
-    let url = rest.split_whitespace().next()?.trim_end_matches('/');
-    let (host_part, share) = url.split_once('/')?;
-    let host = host_part.rsplit('@').next().unwrap_or(host_part);
-    let host = host.split(':').next().unwrap_or(host);
-    if host.is_empty() || share.is_empty() {
-        return None;
-    }
-    Some((host.to_string(), share.to_string()))
-}
-
-/// Scans `gio mount -l` output for a mount of `share` on a server that is the same
-/// identity as `server` (mDNS name ↔ `.local` hostname ↔ IP, via the discovery state).
-/// Returns the server name as it appears in the existing mount, so the caller can derive
-/// the matching GVFS path. Identity-aware so a share mounted under one name (for example
-/// by Nautilus using the hostname) is recognized when we look it up by another (the IP).
-fn match_existing_smb_mount(
-    stdout: &str,
-    server: &str,
-    share: &str,
-    hosts: &[crate::network::NetworkHost],
-) -> Option<String> {
-    for line in stdout.lines() {
-        if let Some((mount_server, mount_share)) = parse_smb_mount(line)
-            && mount_share.eq_ignore_ascii_case(share)
-            && crate::network::server_identity::same_machine(&mount_server, server, hosts)
-        {
-            return Some(mount_server);
-        }
-    }
-    None
-}
-
-/// Finds the GVFS mount path for an SMB share.
-/// Checks `gio mount -l` output for an existing mount matching the server/share.
-fn find_existing_mount(server: &str, share: &str) -> Option<String> {
-    let output = Command::new("gio").args(["mount", "-l"]).output().ok()?;
-
-    if !output.status.success() {
-        return None;
-    }
-
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    let hosts = crate::network::fresh_discovered_hosts();
-    let mount_server = match_existing_smb_mount(&stdout, server, share, &hosts)?;
-    // Derive from the server name the existing mount actually uses, so the GVFS path
-    // matches even when it was mounted under a different alias than we looked up.
-    Some(derive_gvfs_path(&mount_server, share))
-}
-
-/// Derives the expected GVFS mount path for an SMB share.
-/// GVFS mounts appear at `/run/user/<uid>/gvfs/smb-share:server=<server>,share=<share>`
-fn derive_gvfs_path(server: &str, share: &str) -> String {
+/// Reads the folder names under `/run/user/<uid>/gvfs`, which `gvfsd-fuse` lists from
+/// its own mount table (no round trip to any server), and matches what each name says
+/// (`volumes_linux::parse_gvfs_smb_dirname`). ❌ Never build the path from parts: GVFS
+/// adds `port=` and `user=` when the mount URL carries them and URI-escapes the values,
+/// so a built path misses every authenticated or off-445 share.
+fn find_gvfs_mount(wanted: &WantedShare<'_>) -> Option<String> {
     // SAFETY: `getuid` reads the process's real UID; always safe, no args or pointers.
     let uid = unsafe { libc::getuid() };
-    format!(
-        "/run/user/{}/gvfs/smb-share:server={},share={}",
-        uid,
-        server.to_lowercase(),
-        share.to_lowercase()
-    )
+    let gvfs_dir = format!("/run/user/{uid}/gvfs");
+    let dirnames: Vec<String> = std::fs::read_dir(&gvfs_dir)
+        .ok()?
+        .flatten()
+        .filter_map(|entry| entry.file_name().into_string().ok())
+        .collect();
+    let hosts = crate::network::fresh_discovered_hosts();
+    let dirname = match_gvfs_mount(dirnames.iter().map(String::as_str), wanted, &hosts)?;
+    Some(format!("{gvfs_dir}/{dirname}"))
+}
+
+/// Picks the GVFS folder name of the mount of `wanted.share`, on `wanted.port`, on a
+/// server that is the same machine as `wanted.server` (mDNS name ↔ `.local` hostname ↔
+/// IP, via the discovery state), so a share Nautilus mounted by hostname is found when
+/// we look it up by IP.
+///
+/// The mount as `wanted.username` wins. A guest lookup settles for any account's mount
+/// of the share, which reads at least as much; an account lookup takes only its own,
+/// since a share saved "as sven" mounts as sven.
+fn match_gvfs_mount<'a>(
+    dirnames: impl IntoIterator<Item = &'a str>,
+    wanted: &WantedShare<'_>,
+    hosts: &[crate::network::NetworkHost],
+) -> Option<&'a str> {
+    use cmdr_fs::name_fold::fold_name;
+    let mut any_account = None;
+    for dirname in dirnames {
+        let Some(mount) = crate::volumes_linux::parse_gvfs_smb_dirname(dirname) else {
+            continue;
+        };
+        if mount.port != wanted.port
+            || fold_name(&mount.share) != fold_name(wanted.share)
+            || !crate::network::server_identity::same_machine(&mount.server, wanted.server, hosts)
+        {
+            continue;
+        }
+        let same_account = match (mount.user.as_deref(), wanted.username) {
+            (Some(user), Some(wanted_user)) => fold_name(user) == fold_name(wanted_user),
+            (None, None) => true,
+            _ => false,
+        };
+        if same_account {
+            return Some(dirname);
+        }
+        if wanted.username.is_none() && any_account.is_none() {
+            any_account = Some(dirname);
+        }
+    }
+    any_account
 }
 
 /// Mount an SMB share synchronously using `gio mount`.
@@ -164,8 +164,13 @@ pub(crate) fn mount_share_sync(
         return Err(MountError::GvfsMissing);
     }
 
-    // Check if already mounted
-    if let Some(mount_path) = find_existing_mount(server, share) {
+    let wanted = WantedShare {
+        server,
+        share,
+        port,
+        username,
+    };
+    if let Some(mount_path) = find_gvfs_mount(&wanted) {
         debug!("Share already mounted at path={:?}", mount_path);
         return Ok(MountResult {
             mount_path,
@@ -208,12 +213,10 @@ pub(crate) fn mount_share_sync(
     }
 
     // ❗ A zero exit is a claim, not a mount, same as NetFS's OK on macOS
-    // (`mount.rs::settle_netfs_answer`, ERR-SHUSC).
-    let Some(mount_path) = present_gvfs_path(
-        find_existing_mount(server, share),
-        derive_gvfs_path(server, share),
-        |path| std::path::Path::new(path).is_dir(),
-    ) else {
+    // (`mount.rs::settle_netfs_answer`, ERR-SHUSC): only a folder GVFS lists counts. ❌ Never
+    // a path sent on its own say-so: a pane sent to a folder that doesn't exist bounces,
+    // and the direct-connect upgrade that follows speaks about a mount nobody made.
+    let Some(mount_path) = find_gvfs_mount(&wanted) else {
         log::warn!(
             "Mount missing after success: server={:?}, share={:?}, source=cli, backend=gio, error_kind=mount_missing",
             server,
@@ -229,14 +232,6 @@ pub(crate) fn mount_share_sync(
         mount_path,
         already_mounted: false,
     })
-}
-
-/// Where a mount `gio mount` just reported sits: the one `gio mount -l` lists, else the
-/// path GVFS names such a mount, ❗ only when something is there. ❌ Never the derived
-/// path on its own say-so: a pane sent to a folder that doesn't exist bounces, and the
-/// direct-connect upgrade that follows speaks about a mount nobody made.
-fn present_gvfs_path(listed: Option<String>, derived: String, is_present: impl FnOnce(&str) -> bool) -> Option<String> {
-    listed.or_else(|| is_present(&derived).then_some(derived))
 }
 
 /// Runs `gio mount <url>`, feeding the password (when present) through the child's
@@ -379,47 +374,83 @@ pub fn unmount_smb_shares_from_host(_targets: &[crate::network::server_identity:
 mod tests {
     use super::*;
 
-    #[test]
-    fn test_derive_gvfs_path() {
-        let path = derive_gvfs_path("MyNAS", "Documents");
-        assert!(path.contains("smb-share:server=mynas,share=documents"));
-        assert!(path.starts_with("/run/user/"));
+    fn wanted<'a>(server: &'a str, share: &'a str, port: u16, username: Option<&'a str>) -> WantedShare<'a> {
+        WantedShare {
+            server,
+            share,
+            port,
+            username,
+        }
     }
 
-    /// `gio mount` exiting 0 counts only where a mount is: the listed one, or the
-    /// derived GVFS path when it exists. The macOS twin is
-    /// `mount_test.rs::a_netfs_success_with_no_mount_of_the_share_is_not_a_mount`.
+    /// What `ls /run/user/0/gvfs` showed after `gio mount`ing the E2E fixtures as guest,
+    /// as `testuser`, and through a published port (gvfs 1.60, `cmdr-e2e` image, 2026-10-10).
+    const FIXTURE_FOLDERS: [&str; 4] = [
+        "smb-share:port=11480,server=host.docker.internal,share=public",
+        "smb-share:port=11481,server=host.docker.internal,share=private,user=testuser",
+        "smb-share:server=smb-consumer-auth,share=private,user=testuser",
+        "smb-share:server=smb-consumer-guest,share=public",
+    ];
+
+    /// The folder a share lands in carries its port and account, so a path built from
+    /// server and share alone named a folder that wasn't there (#348).
     #[test]
-    fn a_gio_success_counts_only_where_a_mount_is() {
-        let listed = present_gvfs_path(Some("/run/listed".into()), "/run/derived".into(), |_| false);
-        assert_eq!(listed.as_deref(), Some("/run/listed"));
-        let derived = present_gvfs_path(None, "/run/derived".into(), |_| true);
-        assert_eq!(derived.as_deref(), Some("/run/derived"));
-        assert_eq!(present_gvfs_path(None, "/run/derived".into(), |_| false), None);
+    fn a_share_is_found_by_its_port_and_account() {
+        let found = |w: WantedShare<'_>| match_gvfs_mount(FIXTURE_FOLDERS, &w, &[]);
+        assert_eq!(
+            found(wanted("smb-consumer-guest", "public", 445, None)),
+            Some(FIXTURE_FOLDERS[3])
+        );
+        assert_eq!(
+            found(wanted("host.docker.internal", "public", 11480, None)),
+            Some(FIXTURE_FOLDERS[0])
+        );
+        assert_eq!(
+            found(wanted("smb-consumer-auth", "private", 445, Some("testuser"))),
+            Some(FIXTURE_FOLDERS[2])
+        );
+        assert_eq!(
+            found(wanted("host.docker.internal", "private", 11481, Some("testuser"))),
+            Some(FIXTURE_FOLDERS[1])
+        );
+        // GVFS lowercases what it was handed; the lookup folds the same way.
+        assert_eq!(
+            found(wanted("SMB-Consumer-Guest", "PUBLIC", 445, None)),
+            Some(FIXTURE_FOLDERS[3])
+        );
+        // Another port on the same host is another server.
+        assert_eq!(found(wanted("host.docker.internal", "public", 445, None)), None);
     }
 
+    /// A guest lookup settles for any account's mount of the share; an account lookup
+    /// takes only its own, and prefers it when both are there.
     #[test]
-    fn test_parse_smb_mount_line() {
-        // The shape `gio mount -l` emits.
+    fn an_account_lookup_takes_only_that_accounts_mount() {
+        let as_sven = "smb-share:server=nas,share=docs,user=sven";
+        let as_guest = "smb-share:server=nas,share=docs";
         assert_eq!(
-            parse_smb_mount("  Mount(0): docs on naspolya -> smb://naspolya/docs/"),
-            Some(("naspolya".to_string(), "docs".to_string()))
+            match_gvfs_mount([as_sven], &wanted("nas", "docs", 445, None), &[]),
+            Some(as_sven)
         );
-        // user@ and :port decorations are stripped from the server.
         assert_eq!(
-            parse_smb_mount("Mount(1): x -> smb://david@192.168.1.111:445/naspi"),
-            Some(("192.168.1.111".to_string(), "naspi".to_string()))
+            match_gvfs_mount([as_sven, as_guest], &wanted("nas", "docs", 445, None), &[]),
+            Some(as_guest)
         );
-        // Non-SMB and malformed lines yield nothing.
-        assert_eq!(parse_smb_mount("Drive(0): SSD"), None);
-        assert_eq!(parse_smb_mount("-> smb://serveronly"), None);
+        assert_eq!(
+            match_gvfs_mount([as_guest], &wanted("nas", "docs", 445, Some("sven")), &[]),
+            None
+        );
+        assert_eq!(
+            match_gvfs_mount([as_guest, as_sven], &wanted("nas", "docs", 445, Some("Sven")), &[]),
+            Some(as_sven)
+        );
     }
 
     /// The existing-mount lookup must recognize a share already mounted under a different
     /// name for the same server (for example, Nautilus mounted it by hostname while we
     /// look it up by IP). Identity comes from the discovery state, mirroring macOS.
     #[test]
-    fn test_match_existing_smb_mount_is_identity_aware() {
+    fn the_mount_lookup_is_identity_aware() {
         use crate::network::{HostSource, NetworkHost};
         let hosts = [NetworkHost {
             id: "naspolya".into(),
@@ -429,16 +460,16 @@ mod tests {
             port: 445,
             source: HostSource::Discovered,
         }];
-        let lines = "Mount(0): naspi on naspolya -> smb://naspolya.local/naspi/";
+        let folders = ["smb-share:server=naspolya.local,share=naspi", "dav+sd:host=example.com"];
 
         // Looking up by IP finds the hostname-mounted share via discovery identity.
-        let hit = match_existing_smb_mount(lines, "192.168.1.111", "naspi", &hosts);
-        assert_eq!(hit.as_deref(), Some("naspolya.local"), "expected identity match by IP");
+        let hit = match_gvfs_mount(folders, &wanted("192.168.1.111", "naspi", 445, None), &hosts);
+        assert_eq!(hit, Some(folders[0]), "expected identity match by IP");
 
         // A genuinely different share name does not match.
-        assert!(match_existing_smb_mount(lines, "192.168.1.111", "other", &hosts).is_none());
+        assert!(match_gvfs_mount(folders, &wanted("192.168.1.111", "other", 445, None), &hosts).is_none());
         // A different server (no identity link) does not match.
-        assert!(match_existing_smb_mount(lines, "192.168.1.150", "naspi", &[]).is_none());
+        assert!(match_gvfs_mount(folders, &wanted("192.168.1.150", "naspi", 445, None), &[]).is_none());
     }
 
     #[test]

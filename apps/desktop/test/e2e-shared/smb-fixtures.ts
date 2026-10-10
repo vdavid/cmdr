@@ -181,8 +181,8 @@ export function ensureSmbContainers(): void {
 /**
  * Pre-mounts the guest SMB share.
  * - macOS: uses mount_smbfs (avoids NetFSMountURLSync's permission dialog)
- * - Linux: uses gio mount (GVFS) so the mount appears at the same path that
- *   Cmdr's mount_linux.rs will detect via `gio mount -l`
+ * - Linux: uses gio mount (GVFS) so the mount appears in the GVFS folder that
+ *   Cmdr's mount_linux.rs reads for existing mounts
  */
 export function preMountGuestShare(): void {
   if (IS_LINUX) {
@@ -220,7 +220,7 @@ function preMountGuestShareLinux(): void {
     return
   }
   try {
-    // Cmdr's mount_linux.rs checks `gio mount -l` for existing mounts and derives paths from GVFS.
+    // Cmdr's mount_linux.rs finds existing mounts by their GVFS folder names.
     const smbUrl = `smb://${SMB_GUEST_HOST}/${SMB_GUEST_SHARE}`
     execSync(`gio mount --anonymous '${smbUrl}'`, { encoding: 'utf-8', timeout: 30_000 })
     console.log(`Mounted guest share at ${SMB_GUEST_MOUNT}`)

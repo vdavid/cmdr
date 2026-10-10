@@ -253,7 +253,7 @@ Every `NSWorkspaceDidMountNotification` on an SMB share triggers a fresh `regist
 
 `gio mount` is used for user-space SMB mounting on Linux. It requires the `gvfs-smb` package. If `gio` is not available, a helpful error message is returned. Mounts appear under `/run/user/<uid>/gvfs/`.
 
-The password is fed to `gio mount` through the child's **stdin** (`run_gio_mount` spawns `gio` directly with a piped stdin), never via a shell command line. An earlier `sh -c "echo 'PASS' | gio mount …"` shape leaked the cleartext password into the process argument list (`ps` / `/proc/<pid>/cmdline`), the same argv exposure the macOS smbutil path is careful to avoid. The already-mounted check (`find_existing_mount` → `match_existing_smb_mount`) parses `gio mount -l` and compares servers by identity (`server_identity::same_machine`), so a share mounted under one name (for example by Nautilus using the hostname) is recognized when we look it up by another (the IP).
+The password is fed to `gio mount` through the child's **stdin** (`run_gio_mount` spawns `gio` directly with a piped stdin), never via a shell command line. An earlier `sh -c "echo 'PASS' | gio mount …"` shape leaked the cleartext password into the process argument list (`ps` / `/proc/<pid>/cmdline`), the same argv exposure the macOS smbutil path is careful to avoid. The already-mounted check (`find_gvfs_mount` → `match_gvfs_mount`) reads the GVFS folder names and compares servers by identity (`server_identity::same_machine`), so a share mounted under one name (for example by Nautilus using the hostname) is recognized when we look it up by another (the IP). It also matches port and account: a guest lookup takes any account's mount of the share, an account lookup only its own.
 
 ### `HostSource` enum on `NetworkHost`
 
@@ -331,17 +331,32 @@ becomes a `MountResult`, and a success (`0` or `EEXIST`) lands on the first sigh
   kernel-mount fallback whose retry could never work. The frontend shows it as the pane's error with "Try again", since
   no credential answers it.
 
-Linux has the same shape: a zero exit from `gio mount` counts only for a mount `gio mount -l` lists, or a derived GVFS
-path that exists (`mount_linux.rs::present_gvfs_path`).
+Linux has the same shape: a zero exit from `gio mount` counts only for a folder GVFS lists under `/run/user/<uid>/gvfs`
+whose name says it's this share (`mount_linux.rs::find_gvfs_mount`, § "Linux GVFS folder names" below).
 
 **No second guard in `register_smb_volume`.** Every caller hands it a live mount: the mount command only after the
-check above, and the watcher and the startup pass take the path from a `statfs` read that just succeeded. Refusing to
-dial when `identity_from_statfs` answers `None` would also strand Linux, where a GVFS mount is never a `cifs` row in
-`/proc/mounts`, so that answer is `None` for every mount the app makes there.
+check above, and the watcher and the startup pass take the path from a `statfs` read that just succeeded. A mount whose
+identity reads `None` still dials, under the id built from the caller's server, port, and share.
 
 Pinned by `mount_test.rs` (`a_netfs_success_with_no_mount_of_the_share_is_not_a_mount` and its siblings, over fabricated
-`statfs` rows, since NetFS can't be made to lie on demand), `mount_linux.rs::a_gio_success_counts_only_where_a_mount_is`,
+`statfs` rows, since NetFS can't be made to lie on demand), `mount_linux.rs::a_share_is_found_by_its_port_and_account`,
 and `NetworkMountView.test.ts` for the pane.
+
+### Linux GVFS folder names
+
+GVFS names a share's folder after its mount spec (`g_mount_spec_to_string` in gvfs `common/gmountspec.c`): keys sorted,
+values URI-escaped with UTF-8 kept, server and share lowercased, and `port`, `user`, and `domain` present only when the
+mount URL carried them. So `smb://testuser@localhost:11481/private` lands at
+`/run/user/<uid>/gvfs/smb-share:port=11481,server=localhost,share=private,user=testuser` (verified on gvfs 1.60 in the
+`cmdr-e2e` image, `gio mount` then `ls`, 2026-10-10). Two consequences:
+
+- **The mount path is FOUND, ❌ never built.** `find_gvfs_mount` reads the folder names (`gvfsd-fuse` answers that
+  readdir from its own table, no server round trip) and matches each through `volumes_linux::parse_gvfs_smb_dirname`.
+  A path built from server and share alone missed every authenticated or off-445 share.
+- **The id comes off the name.** `volumes_linux::get_smb_mount_info` answers a GVFS share folder from its name (pure,
+  no syscall), so `volume_id_for_mount`, `identity_from_statfs`, and the saved row all key it by the same
+  `(server, port, share)`. The Linux E2E fixtures sit on 445 by container name, which is why a port-less id never
+  tripped them.
 
 ## A mount refusal is data, and the frontend words it
 
@@ -424,9 +439,7 @@ Every one of these folds NFC, and a new use of a name has to join them:
 - **Stores and comparisons.** `known_shares::share_key`, `mount::same_share_name`, `mount::mount_is_from`.
 - **Never the password.** It's bytes the user typed; folding it would change the secret.
 
-Two places deliberately stay byte-exact: `path_volume_id` (the kernel is self-consistent about how it spells a mount
-point) and `mount_linux::derive_gvfs_path` (it has to match the path GVFS actually created, which is GVFS's convention
-to set, not ours).
+`path_volume_id` deliberately stays byte-exact: the kernel is self-consistent about how it spells a mount point.
 
 ## A mount's identity comes off the mount, not the request
 
@@ -666,10 +679,10 @@ the migration, and what Forget does). What the code has to defend:
   password for the host, and answers `NeedsCredentials` rather than trying guest when there is none. Cancel stops the
   wait; a kernel mount under way may still finish. A password the sheet offered is stored only after the mount went
   through.
-- **Known gap (#348): a Linux GVFS mount saves no place.** `smb_upgrade::mounted_volume_id` reads only `/proc/mounts` CIFS rows
-  (`volumes_linux::get_smb_mount_info`), so a `gio mount` share is recorded with no volume id: listed in the hub, never
-  pinned, no `saved` row. The mount row's own id comes off the GVFS dirname (`volumes_linux/ids.rs`), which carries no
-  port. The SMB E2E specs run on Linux only, so they can't cover pins until this closes.
+- **A Linux GVFS mount saves its place like a CIFS one**: `smb_upgrade::mounted_volume_id` reads the share folder's
+  name through `volumes_linux::get_smb_mount_info`, the same read the mount row's id comes off (§ "Linux GVFS folder
+  names"). Known gap (#348): an unmount from outside Cmdr goes unnoticed, so the share stays registered and its saved
+  row stays hidden (`volumes_linux/DETAILS.md` § "A path inside a GVFS share resolves to the share").
 - **A restored tab on an unmounted saved share keeps its folder**: launch leaves the path unprobed and keeps the
   share's id (`pane/initialization.ts::restoreShareTab`), the `saved` row dials, and the pane enters that folder or the
   nearest one still there (`pane/DETAILS.md` § "A pane on a saved place").

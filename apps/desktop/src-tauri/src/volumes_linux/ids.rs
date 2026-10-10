@@ -7,8 +7,7 @@
 //! can't drift into handing one volume two IDs.
 
 use super::linux_mounts;
-use super::smb::{get_smb_mount_info, parse_gvfs_smb_dirname};
-use std::path::Path;
+use super::smb::get_smb_mount_info;
 
 pub(crate) use crate::file_system::volume::{local_volume_id, smb_volume_id};
 
@@ -16,30 +15,23 @@ pub(crate) use crate::file_system::volume::{local_volume_id, smb_volume_id};
 ///
 /// Same ladder, same reasons (that module carries the rationale):
 ///
-/// 1. A CIFS mount or GVFS SMB share keys on `(server, port, share)`, never on
-///    the path shape, so two same-named shares on different servers don't
-///    collide.
+/// 1. A CIFS mount or GVFS SMB share keys on `(server, port, share)` via
+///    `get_smb_mount_info`, never on the path shape, so two same-named shares on
+///    different servers don't collide.
 /// 2. Any other mount keys on its filesystem UUID via [`volume_uuid_for_mount`],
 ///    which survives a remount at a different mount point.
 /// 3. Failing that, on its mount path.
 ///
 /// # Gotcha: this can't recover an UNMOUNTED volume's ID
 ///
-/// Every branch reads the mount table, so after an unmount this returns the
-/// path-derived fallback rather than the ID the volume was registered under. The
+/// Every branch but GVFS's (which reads only the folder name) reads the mount table,
+/// so after an unmount this returns the path-derived fallback rather than the ID the volume was registered under. The
 /// unmount path uses `VolumeManager::find_by_root` instead.
 pub(crate) fn volume_id_for_mount(mount_path: &str) -> String {
-    // CIFS mount: /proc/mounts records the source as `//server[:port]/share`.
+    // A GVFS share folder (its name carries server, port, and share) or a CIFS mount
+    // (`/proc/mounts` records the source as `//server[:port]/share`).
     if let Some(info) = get_smb_mount_info(mount_path) {
         return smb_volume_id(&info.server, info.port, &info.share);
-    }
-    // GVFS SMB share: /run/user/<uid>/gvfs/smb-share:server=...,share=...
-    // GVFS doesn't expose the port, so default to 445. Mixing custom-port GVFS
-    // mounts on the same host+share isn't something GVFS supports today.
-    if let Some(dirname) = Path::new(mount_path).file_name().and_then(|n| n.to_str())
-        && let Some((server, share)) = parse_gvfs_smb_dirname(dirname)
-    {
-        return smb_volume_id(&server, 445, &share);
     }
     local_volume_id(volume_uuid_for_mount(mount_path).as_deref(), mount_path)
 }
@@ -82,6 +74,19 @@ mod tests {
             path_volume_id("/run/media/user/My-Drive"),
             path_volume_id("/run/media/user/My Drive")
         );
+    }
+
+    /// Two servers on one host, told apart only by port (the E2E fixtures, a NAS with a
+    /// second Samba), are two volumes. ❗ The id must be the one `register_smb_volume` and
+    /// the saved share row key the share by, or a share and its pin list twice (#348).
+    #[test]
+    fn gvfs_shares_on_one_host_key_by_their_port() {
+        let gvfs = "/run/user/1000/gvfs";
+        let on_445 = volume_id_for_mount(&format!("{gvfs}/smb-share:server=localhost,share=public"));
+        let on_11480 = volume_id_for_mount(&format!("{gvfs}/smb-share:port=11480,server=localhost,share=public"));
+        assert_eq!(on_445, smb_volume_id("localhost", 445, "public"));
+        assert_eq!(on_11480, smb_volume_id("localhost", 11480, "public"));
+        assert_ne!(on_445, on_11480);
     }
 
     #[test]

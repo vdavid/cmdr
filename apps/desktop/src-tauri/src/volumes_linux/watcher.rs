@@ -429,8 +429,8 @@ fn register_volume_with_manager(volume_path: &str) {
 
     // For GVFS SMB shares, extract the share name instead of the raw dirname
     let name = if let Some(dirname) = Path::new(volume_path).file_name().and_then(|n| n.to_str()) {
-        if let Some((_server, share)) = super::parse_gvfs_smb_dirname(dirname) {
-            share
+        if let Some(gvfs) = super::parse_gvfs_smb_dirname(dirname) {
+            gvfs.share
         } else {
             dirname.to_string()
         }

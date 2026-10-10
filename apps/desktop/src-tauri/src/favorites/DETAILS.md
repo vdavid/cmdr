@@ -267,7 +267,7 @@ favorite. For an SMB-scheme volume, `add_favorite` calls
 account from the live mount's source, the gate's volume id, `pinned: false`, and ❗ an existing row
 left exactly as it is (pin and account included). Visible effect: the share appears in the servers
 hub, unpinned. Its password lives in Finder's Keychain item, so the first offline pick asks once
-through the sign-in sheet. A GVFS share (Linux) has no mount-table source, so it isn't saved.
+through the sign-in sheet. A GVFS share (Linux) reads the same fields off its folder name.
 
 **A resolver timeout is not a refusal.** It means the gate could not classify the path, so
 `add_favorite` returns `AddFavoriteError::TimedOut` and does not persist anything. Resolver-correctness

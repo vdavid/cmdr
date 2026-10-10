@@ -272,8 +272,8 @@ pub fn resolve_path_volume_fast(path: &str) -> Option<VolumeInfo> {
     // walk below would answer that FUSE root: the share's own row, as discovery lists it.
     if let Some(root) = smb::gvfs_share_root(path) {
         let dirname = Path::new(root).file_name()?.to_str()?;
-        let (_server, share) = parse_gvfs_smb_dirname(dirname)?;
-        return Some(smb::gvfs_share_location(root.to_string(), share));
+        let gvfs = parse_gvfs_smb_dirname(dirname)?;
+        return Some(smb::gvfs_share_location(root.to_string(), gvfs.share));
     }
     let (mount_point, fs_type) = get_mount_point(path)?;
 
