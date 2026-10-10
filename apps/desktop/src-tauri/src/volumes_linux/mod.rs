@@ -268,6 +268,13 @@ fn get_main_volume(mounts: &[MountEntry]) -> Option<LocationInfo> {
 /// Build a `VolumeInfo` for the volume containing `path` using only
 /// mount table data. Does NOT call `list_locations()`.
 pub fn resolve_path_volume_fast(path: &str) -> Option<VolumeInfo> {
+    // A GVFS share never reaches the mount table (one FUSE mount serves them all), so the
+    // walk below would answer that FUSE root: the share's own row, as discovery lists it.
+    if let Some(root) = smb::gvfs_share_root(path) {
+        let dirname = Path::new(root).file_name()?.to_str()?;
+        let (_server, share) = parse_gvfs_smb_dirname(dirname)?;
+        return Some(smb::gvfs_share_location(root.to_string(), share));
+    }
     let (mount_point, fs_type) = get_mount_point(path)?;
 
     let name = mounts::mount_display_name(&mount_point);

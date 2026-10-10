@@ -137,6 +137,21 @@ Two differences from the macOS twin, both pre-existing: the segments are taken v
 mount-source concern, `volumes/DETAILS.md` § "SMB mount sources are percent-escaped"), and GVFS shares don't come
 through this parser at all but through `parse_gvfs_smb_dirname`, which carries no subpath.
 
+## A path inside a GVFS share resolves to the share
+
+GVFS serves every share through ONE FUSE mount at `/run/user/<uid>/gvfs`, each share a subdirectory, so the
+longest-prefix walk over `/proc/mounts` in `resolve_path_volume_fast` lands on that FUSE root for every share: a volume
+with no row and no registration. A path under `/run/user/<uid>/gvfs/smb-share:…` (`smb::gvfs_share_root`, pure, no
+syscall) answers the share's own row instead, built by the same `smb::gvfs_share_location` discovery lists it with, so
+the two can't name one share two ways. ❗ This is what lets a favorite on a GVFS share remember the share's id (the add
+gate resolves through here); before, it stored the FUSE root's path id and read "unplugged drive" from the first
+listing (caught by `test/e2e-playwright/favorites-offline-smb.spec.ts`, Linux Docker lane, 2026-10-10).
+
+Two GVFS gaps this doesn't close, both visible to that spec: a GVFS mount saves no share place (#348,
+`network/DETAILS.md` § "Saved SMB shares"), so an unmounted share's favorite reads `forgotten` rather than `connects`;
+and in the Docker lane the GVFS watcher's inotify sees nothing inside the FUSE mount, so an unmount from outside Cmdr
+pushes no `volumes-changed` until something else does.
+
 ## One volume ID publishes one mount root
 
 **Decision**: `get_mounted_volumes` collapses mounts that share a volume ID through

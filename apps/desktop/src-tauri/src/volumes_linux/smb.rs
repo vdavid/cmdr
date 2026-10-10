@@ -124,6 +124,54 @@ pub(crate) fn parse_gvfs_smb_dirname(dirname: &str) -> Option<(String, String)> 
     Some((server?, share?))
 }
 
+/// The GVFS SMB share directory `path` sits in or at
+/// (`/run/user/<uid>/gvfs/smb-share:server=…,share=…`), or `None`.
+///
+/// ❗ The mount table can't answer this: GVFS serves every share through ONE FUSE mount at
+/// `/run/user/<uid>/gvfs`, so a longest-prefix walk over `/proc/mounts` lands on that FUSE
+/// root for every share, a volume with no row and no registration. Pure (no syscall), so a
+/// dead share can't block it.
+pub(crate) fn gvfs_share_root(path: &str) -> Option<&str> {
+    let rest = path.strip_prefix("/run/user/")?;
+    let (uid, rest) = rest.split_once('/')?;
+    let rest = rest.strip_prefix("gvfs/")?;
+    let dirname = rest.split('/').next()?;
+    if uid.is_empty() || parse_gvfs_smb_dirname(dirname).is_none() {
+        return None;
+    }
+    let root_len = "/run/user/".len() + uid.len() + "/gvfs/".len() + dirname.len();
+    path.get(..root_len)
+}
+
+/// The `Network` location a GVFS SMB share directory publishes, the same row discovery lists
+/// it as ([`get_network_mounts`]) and the one `resolve_path_volume_fast` answers for a path
+/// inside it, so the two can't name one share two ways.
+pub(super) fn gvfs_share_location(path: String, share: String) -> LocationInfo {
+    LocationInfo {
+        id: volume_id_for_mount(&path),
+        name: share.clone(),
+        path,
+        category: LocationCategory::Network,
+        icon: None,
+        is_ejectable: true,
+        fs_type: None,
+        supports_trash: false,
+        mount_is_read_only: false,
+        is_disk_image: false,
+        is_cloud_mount: false,
+        connection_state: None,
+        pinned: None,
+        landing_path: None,
+        device_readiness: None,
+        usb_speed: None,
+        capabilities: None,
+        favorite_shortcut: None,
+        favorite_target: None,
+        root_label: Some(share),
+        mount_account: None,
+    }
+}
+
 /// Discover GVFS-mounted SMB shares as network locations.
 ///
 /// Scans `/run/user/<uid>/gvfs/` for `smb-share:*` directories. Each one
@@ -154,29 +202,7 @@ pub(super) fn get_network_mounts() -> Vec<LocationInfo> {
             if !entry.path().is_dir() {
                 continue;
             }
-            mounts.push(LocationInfo {
-                id: volume_id_for_mount(&path),
-                name: share.clone(),
-                path,
-                category: LocationCategory::Network,
-                icon: None,
-                is_ejectable: true,
-                fs_type: None,
-                supports_trash: false,
-                mount_is_read_only: false,
-                is_disk_image: false,
-                is_cloud_mount: false,
-                connection_state: None,
-                pinned: None,
-                landing_path: None,
-                device_readiness: None,
-                usb_speed: None,
-                capabilities: None,
-                favorite_shortcut: None,
-                favorite_target: None,
-                root_label: Some(share),
-                mount_account: None,
-            });
+            mounts.push(gvfs_share_location(path, share));
         }
     }
 
@@ -262,6 +288,24 @@ mod tests {
         assert_eq!(parse_gvfs_smb_dirname("dav+sd:host=example.com"), None);
         assert_eq!(parse_gvfs_smb_dirname("ftp:host=ftp.example.com"), None);
         assert_eq!(parse_gvfs_smb_dirname("some-random-dir"), None);
+    }
+
+    #[test]
+    fn a_path_inside_a_gvfs_share_resolves_to_that_shares_directory() {
+        let share = "/run/user/1000/gvfs/smb-share:server=localhost,share=public";
+        assert_eq!(gvfs_share_root(share), Some(share));
+        assert_eq!(gvfs_share_root(&format!("{share}/e2e/docs")), Some(share));
+        assert_eq!(gvfs_share_root(&format!("{share}/")), Some(share));
+    }
+
+    #[test]
+    fn only_an_smb_share_directly_under_a_users_gvfs_dir_is_a_gvfs_share() {
+        // The FUSE root itself, another GVFS backend, and look-alikes elsewhere are not.
+        assert_eq!(gvfs_share_root("/run/user/1000/gvfs"), None);
+        assert_eq!(gvfs_share_root("/run/user/1000/gvfs/dav+sd:host=example.com/x"), None);
+        assert_eq!(gvfs_share_root("/run/user/1000/gvfs/smb-share:server=only"), None);
+        assert_eq!(gvfs_share_root("/home/ada/gvfs/smb-share:server=a,share=b"), None);
+        assert_eq!(gvfs_share_root("/home/ada/docs"), None);
     }
 
     #[test]
