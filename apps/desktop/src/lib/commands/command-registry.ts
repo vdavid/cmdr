@@ -22,6 +22,7 @@ import { tString } from '$lib/intl/messages.svelte'
 import { appCommands } from './sources/app'
 import { mainWindowCommands } from './sources/main-window'
 import { fileListCommands } from './sources/file-list'
+import { multiRenameCommands } from './sources/multi-rename'
 import { browsersCommands } from './sources/browsers'
 import { mcpCommands } from './sources/mcp'
 import { aboutWindowCommands } from './sources/about-window'
@@ -99,6 +100,7 @@ const commandSources: CommandSource[] = [
   ...appCommands,
   ...mainWindowCommands,
   ...fileListCommands,
+  ...multiRenameCommands,
   ...browsersCommands,
   ...mcpCommands,
   ...aboutWindowCommands,

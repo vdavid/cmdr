@@ -85,13 +85,13 @@ silently vanishes from the rebinding UI, which its exhaustiveness test catches.
 
 ## Command registry
 
-The registry data is split by top-level scope into `sources/*.ts` (`app`, `main-window`, `file-list`, `browsers`, `mcp`,
-`about-window`, `command-palette`), each exporting a `CommandSource[]`. `command-registry.ts` concatenates them in
-authoring order into `commandSources` (order is load-bearing: it drives palette listing and shortcut conflict
-resolution) and holds all the logic. Most commands are palette-visible; the rest are `showInPalette: false`: low-level
-navigation and MCP-only per-pane commands. `app.commandPalette` is `showInPalette: false` (opening the palette from
-inside itself makes no sense). `getPaletteCommands(holds?)` is the only filter exported; `commands` (the full array) is
-exported too, for shortcut documentation and Settings panes.
+The registry data is split by top-level scope into `sources/*.ts` (`app`, `main-window`, `file-list`, `multi-rename`,
+`browsers`, `mcp`, `about-window`, `command-palette`), each exporting a `CommandSource[]`. `command-registry.ts`
+concatenates them in authoring order into `commandSources` (order is load-bearing: it drives palette listing and
+shortcut conflict resolution) and holds all the logic. Most commands are palette-visible; the rest are
+`showInPalette: false`: low-level navigation and MCP-only per-pane commands. `app.commandPalette` is
+`showInPalette: false` (opening the palette from inside itself makes no sense). `getPaletteCommands(holds?)` is the only
+filter exported; `commands` (the full array) is exported too, for shortcut documentation and Settings panes.
 
 **Conditional palette rows.** A source may carry a `paletteCondition` (a `PaletteCondition` member, today only
 `focusedPaneSharesLinks`), and the palette shows it only while that holds. `CommandPalette.svelte` answers each one
