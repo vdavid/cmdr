@@ -71,10 +71,11 @@ export function skippedTransferConfirmation(
   // dialog names nothing, so every item keeps its name (no `destinationName`).
   const destination = toVolumeRelativePath(props.destinationPath, volumePath)
   if (validateDirectoryPath(destination).severity === 'error') return null
-  // Checked against both spellings: the path box holds the volume-relative one, and
-  // the sources carry the pane's own, which on a volume mounted below `/` is absolute.
-  if (getPathValidationError(sourcePaths, destination, operationType) !== null) return null
-  if (getPathValidationError(sourcePaths, props.destinationPath, operationType) !== null) return null
+  const roots = {
+    sourceVolumePath: volumes.find((v) => v.id === props.sourceVolumeId)?.path ?? '/',
+    destinationVolumePath: volumePath,
+  }
+  if (getPathValidationError(sourcePaths, destination, operationType, roots) !== null) return null
 
   return {
     destination,

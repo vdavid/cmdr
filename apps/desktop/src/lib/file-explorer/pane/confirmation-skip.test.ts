@@ -99,6 +99,29 @@ describe('skippedTransferConfirmation', () => {
     expect(skippedTransferConfirmation(props, VOLUMES)).toBeNull()
   })
 
+  it('shows the dialog for a copy into its own subfolder on a drive under /Volumes', () => {
+    const props = transferProps({
+      sourcePaths: ['/Volumes/Stick/photos'],
+      sourceFolderPath: '/Volumes/Stick',
+      sourceVolumeId: 'stick',
+      destinationPath: '/Volumes/Stick/photos/2026',
+      currentVolumeId: 'stick',
+      destVolumeId: 'stick',
+    })
+    expect(skippedTransferConfirmation(props, VOLUMES)).toBeNull()
+  })
+
+  it('skips a copy whose destination on another drive only repeats the source path', () => {
+    const props = transferProps({
+      sourcePaths: ['/photos'],
+      sourceFolderPath: '/',
+      destinationPath: '/Volumes/Stick/photos/2026',
+      currentVolumeId: 'stick',
+      destVolumeId: 'stick',
+    })
+    expect(skippedTransferConfirmation(props, VOLUMES)?.destination).toBe('/photos/2026')
+  })
+
   it('shows the dialog for a move into the folder the items already sit in', () => {
     const props = transferProps({ operationType: 'move', destinationPath: '/Users/me/photos' })
     expect(skippedTransferConfirmation(props, VOLUMES)).toBeNull()

@@ -398,7 +398,17 @@
         if (singleTransfer && !namedTarget) return validateNotEmpty('').message
         const structural = validateDirectoryPath(namedTarget ? `${namedTarget.parent}/${namedTarget.name}` : editedPath)
         if (structural.severity === 'error') return structural.message
-        return getPathValidationError(sourcePaths, namedTarget?.fullPath ?? targetPath, activeOperationType, !!namedTarget)
+        // `fullPath` is already rooted; `anchorOnVolume` passes a path on the volume through.
+        return getPathValidationError(
+            sourcePaths,
+            namedTarget?.fullPath ?? targetPath,
+            activeOperationType,
+            {
+                sourceVolumePath: volumes.find((v) => v.id === sourceVolumeId)?.path ?? '/',
+                destinationVolumePath: selectedVolume?.path ?? '/',
+            },
+            !!namedTarget,
+        )
     })
 
     /** Rename mode validates the folder's shape and the NEW NAME as a name.

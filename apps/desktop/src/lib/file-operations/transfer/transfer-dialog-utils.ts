@@ -156,6 +156,20 @@ export function toVolumeRelativePath(fullPath: string, volumePath: string): stri
 }
 
 /**
+ * The inverse of `toVolumeRelativePath`: the path box's volume-relative spelling
+ * rooted at its volume, so it compares against the panes' own paths. Mirrors the
+ * backend's `cmdr_fs::volume::root_anchored`, which is what the transfer itself
+ * does with it: a path already on the volume (the box holding an absolute
+ * `/Volumes/Stick/photos`) passes through, anything else joins under the root.
+ */
+export function anchorOnVolume(path: string, volumePath: string): string {
+  const root = volumePath.length > 1 ? volumePath.replace(/\/+$/, '') : volumePath
+  if (root === '/' || isPathOnVolume(path, root)) return path
+  if (path === '' || path === '/') return root
+  return `${root}/${path.replace(/^\/+/, '')}`
+}
+
+/**
  * Whether to show the "X will be written, source is Y" hardlink note in the
  * transfer dialog. A copy materializes every hardlink as a full independent
  * file, so the bytes written (`writeBytes`, the write footprint) exceed the

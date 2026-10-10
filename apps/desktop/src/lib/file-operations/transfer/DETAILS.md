@@ -175,6 +175,11 @@ already supplied a name. Backend landing and safety:
      limits), then checks logical constraints (a folder into its own subfolder). A destination that IS the source's own
      folder is allowed: it duplicates, and the backend resolves that per item
      (`src-tauri/src/file_system/write_operations/transfer/DETAILS.md` § "Self-collision (duplicating in place)").
+   - The logical check anchors BOTH sides on their own volumes first (`anchorOnVolume`, the frontend twin of
+     `root_anchored`): the box is volume-relative, the sources are the pane's absolute paths. Comparing raw spellings
+     never caught a folder copied into itself on a drive under `/Volumes`, and refused cross-volume copies whose paths
+     merely repeated. It doesn't fold case (it can't know the volume's case rule); the backend's canonicalizing guard
+     catches that. The skip-confirmation path calls the same validator.
    - Optional dry-run scan to detect conflicts upfront. Shows sampled conflicts (max 200) with streaming progress.
    - User makes conflict decisions before operation starts, inside a `warning`-toned `SectionCard`: the count and the
      question it raises ("3 files already exist. What do you want to do with them?") in normal text color, over five

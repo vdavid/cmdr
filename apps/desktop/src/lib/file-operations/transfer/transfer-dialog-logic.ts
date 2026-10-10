@@ -9,6 +9,13 @@
 import type { TransferOperationType } from '$lib/file-explorer/types'
 import type { SpaceInfo } from '$lib/tauri-commands'
 import { tString } from '$lib/intl/messages.svelte'
+import { anchorOnVolume } from './transfer-dialog-utils'
+
+/** The roots of the volumes either side lives on (`VolumeInfo.path`). */
+export interface TransferVolumeRoots {
+  sourceVolumePath: string
+  destinationVolumePath: string
+}
 
 /**
  * Checks whether the destination path is invalid relative to the source paths.
@@ -18,7 +25,15 @@ import { tString } from '$lib/intl/messages.svelte'
  * Folder-targeted batches retain the Move-only same-parent check; copying a
  * batch into its source folder uses the backend's duplicate naming instead.
  *
- * Trailing slashes are normalized off both sides before comparison. Returns the
+ * Both sides are compared rooted at their own volumes: the path box holds a
+ * volume-relative path (`/photos` on a drive at `/Volumes/Stick`) while the
+ * sources carry the pane's own, absolute one. Comparing the raw spellings never
+ * fired on a drive mounted below `/`, and fired falsely across volumes whose
+ * paths happened to repeat. Trailing slashes are normalized off both sides. No
+ * case folding: whether a volume folds case isn't known here, so a spelling that
+ * differs only in case is left to the backend's canonicalizing guard
+ * (`write_operations/validation.rs::validate_destination_not_inside_source`).
+ * Returns the
  * user-facing error string, or `null` when the path is acceptable. The verb
  * ("copy" / "move") comes from the active operation so the message matches what
  * the user is doing.
@@ -27,6 +42,7 @@ export function getPathValidationError(
   sources: string[],
   destination: string,
   operationType: TransferOperationType,
+  roots: TransferVolumeRoots,
   includesName = false,
 ): string | null {
   const normDest = destination.replace(/\/+$/, '')
@@ -45,17 +61,18 @@ export function getPathValidationError(
   }
 
   const verb = operationType === 'copy' ? 'copy' : 'move'
+  const anchoredDest = anchorOnVolume(destination, roots.destinationVolumePath).replace(/\/+$/, '')
+  const anchoredSources = sources.map((source) => anchorOnVolume(source, roots.sourceVolumePath).replace(/\/+$/, ''))
 
-  for (const source of sources) {
-    const refusal = sourceDestinationError(source, normDest, verb, includesName)
+  for (const normSource of anchoredSources) {
+    const refusal = sourceDestinationError(normSource, anchoredDest, verb, includesName)
     if (refusal) return refusal
   }
 
   if (operationType === 'move' && !includesName) {
-    for (const source of sources) {
-      const normSource = source.replace(/\/+$/, '')
+    for (const normSource of anchoredSources) {
       const sourceParent = normSource.substring(0, normSource.lastIndexOf('/'))
-      if (normDest === sourceParent) {
+      if (anchoredDest === sourceParent) {
         const fileName = normSource.split('/').pop() ?? normSource
         return tString('fileOperations.transferDialog.pathErrorAlreadyThere', { name: fileName })
       }
