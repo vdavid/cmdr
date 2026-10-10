@@ -16,7 +16,7 @@ Greek to Latin, removing diacritics, Unicode normalization, a counter, presets, 
 - `names_file.rs` Results (⌥⏎): the preview as `old<TAB>new` lines, and the user's edits merged back by old name.
 - `run.rs` apply: proves the ready rows against the preview shown, then runs `start_renames` (Ask Cmdr's executor).
 - `error.rs` `MultiRenameError`, shared by `session` and `run` so neither imports the other (`module-cycles`).
-- `history.rs` the text fields' history (⌥⇧↓) on `crate::recents`, recorded when a rename starts.
+- `history.rs` the text fields' history on `crate::recents`, recorded when a rename starts.
 - `presets.rs` named presets on `crate::recents`; rename and update edit one in place (`rename_in`, `update_spec_in`).
   `LAST_SPEC` keeps the settings the last sheet closed with.
 

@@ -6,8 +6,8 @@
      * preview of every row. Start renames the rows that are ready as one operation
      * (the queue shows it), and Undo rename (⌘⌥Z) rolls the session's last one back.
      * Results (⌥⏎) opens the new names in the user's text editor to change by hand
-     * (`results.svelte.ts`), and ⌥⇧↓ in a text field lists what it held in earlier
-     * renames (`field-history-menu.svelte.ts`). The preview list is `PreviewList.svelte`.
+     * (`results.svelte.ts`), and ↓ in a text field (or the chevron at its end) lists
+     * what it held in earlier renames (`field-history-menu.svelte.ts`). The preview list is `PreviewList.svelte`.
      *
      * Keyboard-first: the name mask has focus on open, Tab walks the fields, the
      * preview follows every keystroke, Enter starts, Esc closes, F2 opens the Presets
@@ -30,6 +30,7 @@
     import type { MessageKey } from '$lib/intl/keys.gen'
     import { claimKey } from '$lib/shortcuts/claim-key'
     import { eventMatchesCommand } from '$lib/shortcuts'
+    import type { CommandId } from '$lib/commands'
     import { rollbackOperation } from '$lib/tauri-commands'
     import { asRollbackRefusal } from '$lib/operation-log/rollback-refusal'
     import { rollbackRefusalNotice } from '$lib/operation-log/operation-log-labels'
@@ -44,7 +45,7 @@
     import { TOGGLE_COMMANDS, WHOLE_NAME_TOGGLES, optionKeyOf, type ToggleField, type WholeNameField } from './option-keys'
     import { presetKeyOf, type PresetsControlApi } from './preset-keys'
     import PresetsControl from './PresetsControl.svelte'
-    import FieldHistoryHint from './FieldHistoryHint.svelte'
+    import FieldHistoryChevron from './FieldHistoryChevron.svelte'
     import PreviewList from './PreviewList.svelte'
     import { insertAtCaret } from './spec'
     import { PLACEHOLDER_HELP, placeholderExamples } from './placeholder-help'
@@ -225,27 +226,23 @@
             else openCaseMenu()
             return true
         }
-        // ⌥⇧↓ in a text field lists its history; elsewhere it's left alone.
-        const historyField = fieldHistory.fieldOf(e.target)
-        if (historyField !== null && !e.isComposing && eventMatchesCommand(e, 'multiRename.fieldHistory')) {
-            claimKey(e)
-            fieldHistory.open(historyField)
-            return true
-        }
-        // ⌥⏎ opens Results; claimed always, so it never falls through to Enter's Rename.
-        if (!e.isComposing && eventMatchesCommand(e, 'multiRename.results')) {
-            claimKey(e)
-            openResults()
-            return true
-        }
-        // ⌘⌥Z rolls back the last run; claimed even with none, so ⌥ never types `Ω` into a field.
-        if (!e.isComposing && eventMatchesCommand(e, 'multiRename.undoRename')) {
-            claimKey(e)
-            void undoLastRun()
-            return true
-        }
-        return false
+        if (fieldHistory.answerKey(e)) return true
+        if (e.isComposing) return false
+        const command = SHEET_COMMANDS.find(({ id }) => eventMatchesCommand(e, id))
+        if (!command) return false
+        claimKey(e)
+        command.run()
+        return true
     }
+
+    /**
+     * The sheet's plain commands, each claimed even when it can't go: ⌥⏎ never falls through to
+     * Enter's Rename, and ⌘⌥Z with nothing to undo never types `Ω` into a field.
+     */
+    const SHEET_COMMANDS: { id: CommandId; run: () => void }[] = [
+        { id: 'multiRename.results', run: openResults },
+        { id: 'multiRename.undoRename', run: () => void undoLastRun() },
+    ]
 
     function handleKeydown(e: KeyboardEvent): void {
         if (answerSheetKey(e)) return
@@ -324,10 +321,15 @@
                             onValueChange={(nameMask: string) => { tool.update({ nameMask }) }}
                             ariaLabel={tString('multiRename.nameMask')}
                             invalid={tool.error?.type === 'spec' && tool.error.error.type === 'nameMask'}
-                        />
-                        {#if fieldHistory.historyOf('nameMask').length > 0}
-                            <FieldHistoryHint onOpen={() => { fieldHistory.open('nameMask') }} />
-                        {/if}
+                        >
+                            {#snippet trailing()}
+                                <FieldHistoryChevron
+                                    disabled={fieldHistory.historyOf('nameMask').length === 0}
+                                    expanded={fieldHistory.openField === 'nameMask'}
+                                    onOpen={() => { fieldHistory.open('nameMask') }}
+                                />
+                            {/snippet}
+                        </MaskInput>
                     </label>
                     <label class="field extension">
                         <span class="label">{tString('multiRename.extensionMask')}</span>
@@ -337,10 +339,15 @@
                             onValueChange={(extensionMask: string) => { tool.update({ extensionMask }) }}
                             ariaLabel={tString('multiRename.extensionMask')}
                             invalid={tool.error?.type === 'spec' && tool.error.error.type === 'extensionMask'}
-                        />
-                        {#if fieldHistory.historyOf('extensionMask').length > 0}
-                            <FieldHistoryHint onOpen={() => { fieldHistory.open('extensionMask') }} />
-                        {/if}
+                        >
+                            {#snippet trailing()}
+                                <FieldHistoryChevron
+                                    disabled={fieldHistory.historyOf('extensionMask').length === 0}
+                                    expanded={fieldHistory.openField === 'extensionMask'}
+                                    onOpen={() => { fieldHistory.open('extensionMask') }}
+                                />
+                            {/snippet}
+                        </MaskInput>
                     </label>
                 </div>
                 <div class="placeholders" role="group" aria-label={tString('multiRename.insertPlaceholder')}>
@@ -368,10 +375,15 @@
                         oninput={(e: Event) => { tool.update({ search: (e.currentTarget as HTMLInputElement).value }) }}
                         ariaLabel={tString('multiRename.search')}
                         invalid={tool.error?.type === 'spec' && tool.error.error.type === 'badRegex'}
-                    />
-                    {#if fieldHistory.historyOf('search').length > 0}
-                        <FieldHistoryHint onOpen={() => { fieldHistory.open('search') }} />
-                    {/if}
+                    >
+                        {#snippet trailing()}
+                            <FieldHistoryChevron
+                                disabled={fieldHistory.historyOf('search').length === 0}
+                                expanded={fieldHistory.openField === 'search'}
+                                onOpen={() => { fieldHistory.open('search') }}
+                            />
+                        {/snippet}
+                    </TextInput>
                 </label>
                 <label class="field grow">
                     <span class="label">{tString('multiRename.replace')}</span>
@@ -380,10 +392,15 @@
                         value={tool.spec.replace}
                         oninput={(e: Event) => { tool.update({ replace: (e.currentTarget as HTMLInputElement).value }) }}
                         ariaLabel={tString('multiRename.replace')}
-                    />
-                    {#if fieldHistory.historyOf('replace').length > 0}
-                        <FieldHistoryHint onOpen={() => { fieldHistory.open('replace') }} />
-                    {/if}
+                    >
+                        {#snippet trailing()}
+                            <FieldHistoryChevron
+                                disabled={fieldHistory.historyOf('replace').length === 0}
+                                expanded={fieldHistory.openField === 'replace'}
+                                onOpen={() => { fieldHistory.open('replace') }}
+                            />
+                        {/snippet}
+                    </TextInput>
                 </label>
                 <SearchOptionChips spec={tool.spec} onToggle={toggle} rendered={examples} />
             </div>
@@ -549,7 +566,6 @@
     }
 
     .field {
-        position: relative;
         display: flex;
         flex-direction: column;
         gap: var(--spacing-xxs);
@@ -568,17 +584,6 @@
     .label {
         font-size: var(--font-size-sm);
         color: var(--color-text-secondary);
-    }
-
-    /* A field's history hint shows only while the field is in use (`FieldHistoryHint.svelte`). */
-    .field :global(.history-hint) {
-        opacity: 0;
-        transition: opacity var(--transition-fast);
-    }
-
-    .field:hover :global(.history-hint),
-    .field:focus-within :global(.history-hint) {
-        opacity: 1;
     }
 
     .placeholders {

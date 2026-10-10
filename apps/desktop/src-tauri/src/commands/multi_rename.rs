@@ -105,7 +105,7 @@ pub async fn apply_multi_rename(
     // Read before apply: the spec of the preview it starts from, for the fields' history.
     let spec = session::spec_of(&session_id, preview_id).ok();
     let started = apply(events, session_id, preview_id).await?;
-    // What the fields held when a rename ran: TC's per-field history (⌥⇧↓).
+    // What the fields held when a rename ran: TC's per-field history (↓ in a field).
     for entry in spec.as_ref().map(history_entries).unwrap_or_default() {
         FIELD_HISTORY.add(&app, entry, MAX_FIELD_HISTORY);
     }

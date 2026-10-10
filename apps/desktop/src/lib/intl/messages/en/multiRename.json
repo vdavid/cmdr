@@ -307,11 +307,7 @@
   },
   "multiRename.history": "History",
   "@multiRename.history": {
-    "description": "A text field’s history: what it held when earlier renames ran. The quiet link that appears beside the label of the name mask, extension mask, search, and replace fields while the field is in use (it opens the list), and the accessible name of that list."
-  },
-  "multiRename.historyEmpty": "Nothing here yet. A value is kept when a rename runs.",
-  "@multiRename.historyEmpty": {
-    "description": "Shown in a text field’s history menu before any rename has run with a value in that field."
+    "description": "A text field’s history: what it held when earlier renames ran. The accessible name of the chevron at the end of the name mask, extension mask, search, and replace fields (it opens the list), and of that list."
   },
   "multiRename.rename": "{count, plural, =0 {Rename} one {Rename # file} other {Rename # files}}",
   "@multiRename.rename": {

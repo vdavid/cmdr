@@ -482,9 +482,5 @@
   "multiRename.history": "Historial",
   "@multiRename.history": {
     "sourceHash": "0e76960"
-  },
-  "multiRename.historyEmpty": "Aún no hay nada. Se guarda un valor cada vez que renombras.",
-  "@multiRename.historyEmpty": {
-    "sourceHash": "1eb3a52"
   }
 }

@@ -18,7 +18,7 @@
      *   Escape, or ArrowUp from its first field return focus here with the caret after the token;
      *   a click elsewhere closes it and leaves focus where the click put it.
      */
-    import { flushSync, onDestroy, onMount, tick } from 'svelte'
+    import { flushSync, onDestroy, onMount, tick, type Snippet } from 'svelte'
     import { tString } from '$lib/intl/messages.svelte'
     import Icon from '$lib/ui/Icon.svelte'
     import Popover from '$lib/ui/Popover.svelte'
@@ -38,10 +38,12 @@
         invalid?: boolean
         /** The text field, for imperative focus and caret moves. */
         inputElement?: HTMLInputElement
+        /** Controls at the field's end (the sheet's history chevron), in `TextInput`'s trailing slot. */
+        trailing?: Snippet
     }
 
     /* eslint-disable prefer-const -- $bindable() requires `let` destructuring */
-    let { value, onValueChange, ariaLabel, invalid = false, inputElement = $bindable() }: Props = $props()
+    let { value, onValueChange, ariaLabel, invalid = false, inputElement = $bindable(), trailing }: Props = $props()
     /* eslint-enable prefer-const */
 
     const MARKER_WIDTH = 12
@@ -310,6 +312,7 @@
         onblur={handleBlur}
         {ariaLabel}
         {invalid}
+        {trailing}
     />
     {#each tokens as token (token.span.from)}
         {@const middle = middleOf(token.span.from)}

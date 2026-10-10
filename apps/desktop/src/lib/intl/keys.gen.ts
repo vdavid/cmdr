@@ -2455,7 +2455,6 @@ export type MessageKey =
   | 'multiRename.firstOnly'
   | 'multiRename.greekToLatin'
   | 'multiRename.history'
-  | 'multiRename.historyEmpty'
   | 'multiRename.includeExtension'
   | 'multiRename.insertPlaceholder'
   | 'multiRename.nameMask'

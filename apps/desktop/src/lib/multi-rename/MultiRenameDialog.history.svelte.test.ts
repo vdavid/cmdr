@@ -1,7 +1,7 @@
 /**
- * The text fields' history (⌥⇧↓), the sheet side: the key in a field opens that field's
- * earlier values newest first, a pick fills the field, a field with no history says so, plain
- * ↓ stays the mask's own, and a field with history shows a quiet hint on hover or focus.
+ * The text fields' history, the sheet side: plain ↓ in a field, or the chevron at its end, opens
+ * that field's earlier values newest first, and a pick fills the field. In a mask, ↓ with the caret
+ * in a `[C…]` token stays the counter editor's. A field with no history has a disabled chevron.
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
@@ -62,18 +62,19 @@ function fields(root: HTMLElement): HTMLInputElement[] {
   return [...root.querySelectorAll<HTMLInputElement>('input:not([type="checkbox"])')]
 }
 
-/** ⌥⇧↓ as macOS sends it. */
-function pressHistory(input: HTMLElement): KeyboardEvent {
-  const event = new KeyboardEvent('keydown', {
-    key: 'ArrowDown',
-    code: 'ArrowDown',
-    altKey: true,
-    shiftKey: true,
-    bubbles: true,
-    cancelable: true,
-  })
+/** Plain ↓, from `input` with the caret at `caret` (its end by default). */
+function pressDown(input: HTMLInputElement, caret = input.value.length): KeyboardEvent {
+  input.focus()
+  input.setSelectionRange(caret, caret)
+  const event = new KeyboardEvent('keydown', { key: 'ArrowDown', code: 'ArrowDown', bubbles: true, cancelable: true })
   input.dispatchEvent(event)
   return event
+}
+
+function chevron(root: HTMLElement, field: number): HTMLButtonElement {
+  const button = fields(root)[field].closest('.field')?.querySelector<HTMLButtonElement>('.history-chevron')
+  if (!button) throw new Error(`no chevron in field ${String(field)}`)
+  return button
 }
 
 function menuRows(): string[] {
@@ -101,10 +102,9 @@ describe('MultiRenameDialog field history', () => {
     navigatorSpy.mockReset()
   })
 
-  it('⌥⇧↓ in a field lists that field’s values, newest first, and a pick fills the field', async () => {
+  it('↓ in a field lists that field’s values, newest first, and a pick fills the field', async () => {
     const root = await mountSheet()
-    const search = fields(root)[2]
-    const event = pressHistory(search)
+    const event = pressDown(fields(root)[2])
     await settle()
     expect(event.defaultPrevented).toBe(true)
     expect(menuRows()).toEqual(['IMG', 'DSC'])
@@ -119,30 +119,50 @@ describe('MultiRenameDialog field history', () => {
     expect(ipc.previewMultiRename).toHaveBeenLastCalledWith('S', expect.objectContaining({ search: 'IMG' }))
   })
 
-  it('a field with no history yet says so', async () => {
+  it('↓ in a mask opens its history with the caret away from a counter', async () => {
     const root = await mountSheet()
-    pressHistory(fields(root)[3])
+    const mask = fields(root)[0]
+    mask.value = 'x [C] y'
+    mask.dispatchEvent(new Event('input', { bubbles: true }))
     await settle()
-    expect(menuRows()).toEqual(['Nothing here yet. A value is kept when a rename runs.'])
+    pressDown(mask, 1)
+    await settle()
+    expect(menuRows()).toEqual(['[N]_[C]'])
   })
 
-  it('plain ↓ in the name mask stays the mask’s own', async () => {
+  it('↓ with the caret in a counter token opens the counter editor, not the history', async () => {
     const root = await mountSheet()
-    fields(root)[0].dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', code: 'ArrowDown', bubbles: true }))
+    const mask = fields(root)[0]
+    mask.value = 'x [C] y'
+    mask.dispatchEvent(new Event('input', { bubbles: true }))
     await settle()
+    pressDown(mask, 4)
+    await settle()
+    expect(document.querySelector('[data-menu]')).toBeNull()
+    expect(document.querySelectorAll('.ui-popover input').length).toBeGreaterThan(0)
+  })
+
+  it('↓ in a field with no history is left alone', async () => {
+    const root = await mountSheet()
+    const event = pressDown(fields(root)[3])
+    await settle()
+    expect(event.defaultPrevented).toBe(false)
     expect(document.querySelector('[data-menu]')).toBeNull()
   })
 
-  it('shows a quiet hint only in a field with history, and a click on it opens the list', async () => {
+  it('each field ends in a chevron that opens its list, named and stated, and disabled with no history', async () => {
     const root = await mountSheet()
-    const hints = [...root.querySelectorAll<HTMLButtonElement>('.history-hint')]
-    expect(hints).toHaveLength(2)
-    expect(hints[0].closest('.field')?.contains(fields(root)[0])).toBe(true)
-    expect(hints[1].closest('.field')?.contains(fields(root)[2])).toBe(true)
-    expect(hints[0].tabIndex).toBe(-1)
+    const search = chevron(root, 2)
+    expect(search.getAttribute('aria-haspopup')).toBe('menu')
+    expect(search.getAttribute('aria-label')).toBe('History')
+    expect(search.getAttribute('aria-expanded')).toBe('false')
+    expect(search.disabled).toBe(false)
+    expect(chevron(root, 1).disabled).toBe(true)
+    expect(chevron(root, 3).disabled).toBe(true)
 
-    hints[1].click()
+    search.click()
     await settle()
     expect(menuRows()).toEqual(['IMG', 'DSC'])
+    expect(search.getAttribute('aria-expanded')).toBe('true')
   })
 })

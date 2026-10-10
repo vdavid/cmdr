@@ -1,4 +1,4 @@
-//! TC's per-field history (⌥⇧↓): what the name mask, extension mask, search, and
+//! TC's per-field history (↓ in a field): what the name mask, extension mask, search, and
 //! replace fields held when a rename ran, newest first, all four in one list. The
 //! list machinery is `crate::recents`.
 

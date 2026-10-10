@@ -135,7 +135,7 @@ Unicode) and "Reset all fields" live in the frontend (`spec.ts`) so their names 
 
 ## Field history (`history.rs`)
 
-TC's per-field history (⌥⇧↓): `RecentsFile<FieldHistoryEntry>` in `multi-rename-history.json`, all four text fields
+TC's per-field history (↓ in a field): `RecentsFile<FieldHistoryEntry>` in `multi-rename-history.json`, all four text fields
 (name mask, extension mask, search, replace) in one list of `MAX_FIELD_HISTORY` (200), deduped by field and value, so
 using a value again moves it to the top. `apply_multi_rename` reads the spec of the preview it starts from
 (`session::spec_of`) and, once the rename has started, adds `history_entries`: a field at its no-change default (`[N]`,

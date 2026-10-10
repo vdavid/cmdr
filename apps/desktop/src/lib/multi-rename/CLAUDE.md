@@ -7,8 +7,8 @@ The ⌃M sheet over `src-tauri/src/multi_rename/` (the engine and its rules: tha
 - `multi-rename-state.svelte.ts` the spec, the debounced preview (a generation counter drops stale answers), the rows in
   view, presets (`loaded`, `edited`), the last settings (`persist`), Results' names, Start.
 - `results.svelte.ts` Results (⌥⏎): whether a names file is out in the editor; window focus reads it back.
-- `field-history-menu.svelte.ts` the fields' history (⌥⇧↓): one house `Menu` under the field that asked;
-  `FieldHistoryHint.svelte` its hover chip.
+- `field-history-menu.svelte.ts` the fields' history (↓): one house `Menu` under the field that asked;
+  `FieldHistoryChevron.svelte` the chevron at each field's end.
 - `PresetsControl.svelte` the Presets button, its house `Menu`, and the name popover. `preset-menu.ts` (rows, name
   clash) and `preset-keys.ts` (F2 / ⌘S) are pure.
 - `spec.ts` the default spec, built-in presets, `specsEqual`, placeholder insertion; `row-status.ts` a row status →
@@ -22,16 +22,16 @@ The ⌃M sheet over `src-tauri/src/multi_rename/` (the engine and its rules: tha
 
 ## Must-knows
 
-- **Names stay in the backend session.** The selection goes over ONCE, with the pane's applied sequence (a stale one is
-  `selectionChanged`: a toast, no sheet). Then the sheet sends the spec and, at Start, the `previewId`; it holds only
-  the counts and the rows near the view. "Problems only" pages the problem rows from the backend (`PreviewFilter`), ❌
-  never by filtering rows it holds. Results' typed names live there too.
+- **Names stay in the backend session**, Results' typed names too. The selection goes over ONCE, with the pane's applied
+  sequence (stale: `selectionChanged`, a toast). Then the sheet sends the spec and, at Start, the `previewId`; it holds
+  only the counts and the rows in view. "Problems only" pages from the backend (`PreviewFilter`), ❌ never by filtering
+  rows it holds.
 - **Start waits for the preview of the last edit** (`pending`), so it never runs a spec nobody saw; a failed Start
   (`applyError`) doesn't block a retry. Results waits the same way.
 - **Enter starts from a mask or search field**, saves from the preset-name popover, and never fires mid-composition.
-- **Every sheet key is a fixed registry command** in `Main window/Multi-rename` (F2, ⌘S, the ⌘⌥ option keys, ⌘⌥Z, ⌥⏎,
-  ⌥⇧↓), read through `eventMatchesCommand` and claimed, from a text field too. ❌ No raw key tests. An open Presets menu
-  owns every key, so its `onKey` answers F2 (close) and ⌘S (save) itself.
+- **Every sheet key is a fixed registry command** in `Main window/Multi-rename`, read through `eventMatchesCommand` and
+  claimed, from a text field too. ❌ No raw key tests. An open Presets menu owns every key (its `onKey` answers F2 and
+  ⌘S). ↓ at a mask's `[C…]` token is the counter editor's (MaskInput claims it first), elsewhere the field's history.
 - **F2 is also File > Rename's menu accelerator.** The sheet claims that menu command while mounted, so both roads end
   in `PresetsControl.pressOpenKey`, which toggles once per press (`createKeyRoadEcho`). ❌ Don't call `openMenu` from a
   key path: the echo would close the menu it opened.
@@ -44,7 +44,6 @@ The ⌃M sheet over `src-tauri/src/multi_rename/` (the engine and its rules: tha
 - **A caret-opened editor is `passive`** (no focus, no trap): typing stays in the field. DETAILS § Mask input.
 - **The sheet opens on what the last one closed with**: fields AND loaded preset, so "Mine (edited)" survives. An edit
   made before they arrive wins. DETAILS § Presets.
-- Built-in preset names are message keys; saved ones are the user's text. `edited` compares against the preset as it is
-  in the list now, so a rename, update, or delete needs no syncing.
+- `edited` compares against the preset as it is in the list now, so a rename, update, or delete needs no syncing.
 
 More: `DETAILS.md`.

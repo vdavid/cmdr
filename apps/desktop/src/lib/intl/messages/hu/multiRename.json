@@ -482,9 +482,5 @@
   "multiRename.history": "Előzmények",
   "@multiRename.history": {
     "sourceHash": "0e76960"
-  },
-  "multiRename.historyEmpty": "Még nincs itt semmi. Minden átnevezéskor ide kerül a mező értéke.",
-  "@multiRename.historyEmpty": {
-    "sourceHash": "1eb3a52"
   }
 }

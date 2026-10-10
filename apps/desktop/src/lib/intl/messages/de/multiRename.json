@@ -483,9 +483,5 @@
   "multiRename.history": "Verlauf",
   "@multiRename.history": {
     "sourceHash": "0e76960"
-  },
-  "multiRename.historyEmpty": "Noch nichts da. Beim Umbenennen wird die Eingabe gespeichert.",
-  "@multiRename.historyEmpty": {
-    "sourceHash": "1eb3a52"
   }
 }

@@ -47,15 +47,18 @@
   (`PreviewList.svelte`). The footer offers it as a quiet link with its key chip, beside Undo rename. **Decision/Why:**
   ⌥⏎, the PR's key: Enter stays Rename, and Enter's handler skips any modifier, so the two never meet. The matching is
   the backend's (`multi_rename/DETAILS.md` § Session); the sheet holds no names. Ported from PR #386.
-- **Field history** (⌥⇧↓, `multiRename.fieldHistory`, TC's): in the name mask, extension mask, search, or replace field,
-  the key opens one house `Menu` (`field-history-menu.svelte.ts`, portaled like the Presets menu) under that field,
-  listing what it held in earlier renames, newest first (at most `HISTORY_SHOWN`); a pick fills the field and the menu
-  hands focus back. An empty list says how it fills. The backend records it (`multi_rename/DETAILS.md` § Field history);
-  the sheet reads it once on mount. **Decision/Why:** no permanent chevron in the fields: the masks already carry `[C…]`
-  token markers, and the sheet stays calm. A quiet ⌥⇧↓ key chip (`FieldHistoryHint.svelte`, named "History") sits at the
-  far end of the field's label row, only while the field is hovered or focused and has a history; it's out of the Tab
-  order (the keyboard has the key) and comes after the input, so the `<label>` still labels the input. MaskInput claims
-  only plain ↓ (into a counter's editor), so ⌥⇧↓ never meets it. Ported from PR #386, whose chevron buttons it replaces.
+- **Field history** (↓, `multiRename.fieldHistory`, TC's): in the name mask, extension mask, search, or replace field, ↓
+  or the chevron at the field's end opens one house `Menu` (`field-history-menu.svelte.ts`, rendered inside the dialog
+  so it portals into the modal's layer) under that field, listing what it held in earlier renames, newest first (at most
+  `HISTORY_SHOWN`); a pick fills the field and the menu hands focus back. The backend records it
+  (`multi_rename/DETAILS.md` § Field history); the sheet reads it once on mount. **↓ routing:** with the caret inside or
+  right after a mask's `[C…]` token, MaskInput claims ↓ first (into the counter's editor), so the sheet never sees it;
+  anywhere else the sheet's keydown opens the history, unless the field has none, when ↓ is left to the field.
+  **Decision/Why:** the chevron (`FieldHistoryChevron.svelte`) is `Combobox`'s 16 px tertiary glyph in `TextInput`'s
+  trailing slot, so it reads as the field's own list, apart from the small ▾ markers under tokens. It's disabled while
+  the field has no history (the affordance stays put, and an empty list would only explain itself), out of the Tab order
+  (↓ is the keyboard road), and carries `aria-haspopup="menu"`, `aria-expanded`, and the name "History". Ported from PR
+  #386, whose chevron buttons it follows.
 - **Target**: the focused pane's selected rows in row order (backend numbers, `..` offset removed), or `null` for the
   whole folder when nothing or everything is selected, plus `getLastSequence()`. A pane with no backend listing
   (servers, search results), or a selection whose rows are still settling (`isRowStateReady`), opens nothing.

@@ -2,7 +2,7 @@
  * Tier 3 a11y tests for `MultiRenameDialog.svelte`: the sheet with a preview of
  * ready, unchanged, blocked, and missing rows, with a mask error showing, and with
  * every whole-name option on and Undo rename in the footer, and with names typed in
- * Results (a marked row, the notice and its links), and with a field's history hint and list
+ * Results (a marked row, the notice and its links), and with the fields' history chevrons and a list
  * open; and
  * its tooltip bodies, `SearchOptionChips` (chips on and off, a tooltip showing) and
  * `PlaceholderTip`, with examples rendered.
@@ -129,7 +129,7 @@ describe('MultiRenameDialog a11y', () => {
     await expectNoA11yViolations(root)
   })
 
-  it('with a field’s history hint showing and its list open has no violations', async () => {
+  it('with the history chevrons and a field’s list open has no violations', async () => {
     previewMultiRename.mockResolvedValue({
       ok: true,
       value: { previewId: 1, counts: { ready: 1, unchanged: 1, problems: 3 }, rows: ROWS },
@@ -145,15 +145,13 @@ describe('MultiRenameDialog a11y', () => {
       new KeyboardEvent('keydown', {
         key: 'ArrowDown',
         code: 'ArrowDown',
-        altKey: true,
-        shiftKey: true,
         bubbles: true,
         cancelable: true,
       }),
     )
     await tick()
     await new Promise((resolve) => setTimeout(resolve, 0))
-    expect(root.querySelector('.history-hint')).not.toBeNull()
+    expect(root.querySelectorAll('.history-chevron')).toHaveLength(4)
     expect(document.querySelector('[data-menu]')).not.toBeNull()
     await expectNoA11yViolations(document.body)
   })

@@ -482,9 +482,5 @@
   "multiRename.history": "历史记录",
   "@multiRename.history": {
     "sourceHash": "0e76960"
-  },
-  "multiRename.historyEmpty": "这里还没有内容。每次重命名时，都会保存当时的值。",
-  "@multiRename.historyEmpty": {
-    "sourceHash": "1eb3a52"
   }
 }

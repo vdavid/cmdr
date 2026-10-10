@@ -482,9 +482,5 @@
   "multiRename.history": "История",
   "@multiRename.history": {
     "sourceHash": "0e76960"
-  },
-  "multiRename.historyEmpty": "Пока здесь пусто. Значение сохраняется при каждом переименовании.",
-  "@multiRename.historyEmpty": {
-    "sourceHash": "1eb3a52"
   }
 }
