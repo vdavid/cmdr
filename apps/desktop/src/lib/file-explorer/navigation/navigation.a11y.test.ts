@@ -126,6 +126,14 @@ import UsbSpeedDot from './UsbSpeedDot.svelte'
 import FavoritesMenu from './FavoritesMenu.svelte'
 import VolumeBreadcrumb from './VolumeBreadcrumb.svelte'
 import VolumeChooserMenu from './VolumeChooserMenu.svelte'
+import FavoriteRowLabel from './FavoriteRowLabel.svelte'
+import FavoriteShortcutField from './FavoriteShortcutField.svelte'
+import VolumeSpaceLine from './VolumeSpaceLine.svelte'
+import { SvelteMap, SvelteSet } from 'svelte/reactivity'
+import type { SpaceInfo } from '$lib/tauri-commands'
+import type { VolumeInfo } from '../types'
+import type { FavoritesMenuController } from './favorites-menu.svelte'
+import type { VolumeSpaceManager } from './volume-space-manager.svelte'
 import type { DriveBadges } from './drive-badges.svelte'
 
 // These components share one jsdom document, the badge menu portals out of its
@@ -498,5 +506,93 @@ describe('FavoritesMenu a11y', () => {
     })
     expect(document.querySelector('[data-menu-row="favorites:add"][data-disabled]')).not.toBeNull()
     await expectNoA11yViolations(document.body)
+  })
+})
+
+/**
+ * Tier 3 a11y for the pieces a favorite or volume row carries inside both menus: the favorite's
+ * label (plain, quiet, and as the rename field), its shortcut capture, and a volume's disk-space
+ * line in each of its states. The menus' own blocks above mount them folded away, so each state
+ * is audited here directly.
+ */
+describe('favorite and volume row pieces a11y', () => {
+  const favorite: VolumeInfo = { id: 'fav-1', name: 'Documents', path: '/Users/test/Documents', category: 'favorite' }
+
+  /** Only what the two row pieces read off the controller; the rest isn't reached. */
+  function stubFavorites(state: {
+    renaming?: boolean
+    editingShortcut?: boolean
+    dimmed?: boolean
+  }): FavoritesMenuController {
+    return {
+      renamingFavoriteId: state.renaming ? favorite.id : null,
+      renameDraft: favorite.name,
+      editingShortcutId: state.editingShortcut ? favorite.id : null,
+      isDimmed: () => state.dimmed ?? false,
+      handleRenameKeyDown: () => {},
+      commitRename: () => Promise.resolve(),
+      handleShortcutKeyDown: () => {},
+      cancelShortcutEdit: () => {},
+    } as unknown as FavoritesMenuController
+  }
+
+  function hostElement(): HTMLDivElement {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    return target
+  }
+
+  it.each([
+    ['ready', {}],
+    ['quiet (a pick connects first)', { dimmed: true }],
+    ['renaming', { renaming: true }],
+  ])('the favorite label has no violations, %s', async (_label, state) => {
+    const target = hostElement()
+    mount(FavoriteRowLabel, {
+      target,
+      props: { favorites: stubFavorites(state), volume: favorite, label: 'Documents' },
+    })
+    await tick()
+    expect(target.querySelector(state.renaming ? 'input' : '.favorite-label')).not.toBeNull()
+    await expectNoA11yViolations(target)
+  })
+
+  it('the shortcut capture has no violations while setting a shortcut', async () => {
+    const target = hostElement()
+    mount(FavoriteShortcutField, {
+      target,
+      props: { favorites: stubFavorites({ editingShortcut: true }), volume: favorite },
+    })
+    await tick()
+    expect(target.querySelector('.favorite-shortcut-input')).not.toBeNull()
+    await expectNoA11yViolations(target)
+  })
+
+  function stubSpaceManager(state: { space?: SpaceInfo; retrying?: boolean; timedOut?: boolean }): VolumeSpaceManager {
+    const volumeSpaceMap = new SvelteMap<string, SpaceInfo>()
+    if (state.space) volumeSpaceMap.set('root', state.space)
+    return {
+      volumeSpaceMap,
+      spaceTimedOutSet: new SvelteSet(state.timedOut ? ['root'] : []),
+      spaceRetryingSet: new SvelteSet(state.retrying ? ['root'] : []),
+      spaceRetryFailedSet: new SvelteSet<string>(),
+      spaceRetryAttemptedSet: new SvelteSet<string>(),
+      spaceAutoRetryingSet: new SvelteSet<string>(),
+      retryVolumeSpace: () => {},
+    } as unknown as VolumeSpaceManager
+  }
+
+  it.each([
+    ['bounded', { space: { kind: 'bounded', totalBytes: 1000, availableBytes: 400, usedBytes: 600 } as SpaceInfo }],
+    ['unbounded', { space: { kind: 'unbounded', usedBytes: 600 } as SpaceInfo }],
+    ['retrying', { retrying: true }],
+    ['timed out', { timedOut: true }],
+  ])('the disk-space line has no violations, %s', async (_label, state) => {
+    const target = hostElement()
+    const volume: VolumeInfo = { id: 'root', name: 'Macintosh HD', path: '/', category: 'main_volume' }
+    mount(VolumeSpaceLine, { target, props: { volume, spaceManager: stubSpaceManager(state) } })
+    await tick()
+    expect(target.querySelector('.volume-space-info')).not.toBeNull()
+    await expectNoA11yViolations(target)
   })
 })
