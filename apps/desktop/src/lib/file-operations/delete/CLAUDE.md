@@ -5,9 +5,9 @@ Backend counterpart: `apps/desktop/src-tauri/src/file_system/write_operations/de
 
 ## Files
 
-- **DeleteDialog.svelte**: the confirmation, with a file list (max 10 + overflow), live scan stats, symlink notice, a
-  no-trash warning, and a `footerLeading` "Move to trash" switch that flips the operation in-dialog, hidden wherever
-  permanent is forced. Role follows the mode: `dialog` for trash, `alertdialog` for permanent.
+- **DeleteDialog.svelte**: the confirmation: file list (max 10 + overflow), scan stats, symlink notice, no-trash
+  warning, and a `footerLeading` "Move to trash" switch, hidden wherever permanent is forced. Role follows the mode:
+  `dialog` for trash, `alertdialog` for permanent.
 - **delete-dialog-utils.ts** (+ test): pure title, path-abbreviation, and symlink-notice helpers.
 - **TrashCompleteToastContent.svelte** + **trash-undo.ts** (journal rollback, worded) + **go-to-trash.ts** (toast
   button + `file.goToTrash`).
@@ -20,11 +20,13 @@ Backend counterpart: `apps/desktop/src-tauri/src/file_system/write_operations/de
   ignores the hold. Keep `blur` clearing the hold, or a window switch strands the dialog on "Delete permanently", and ❌
   keep the `keydown`/`keyup` listeners in the CAPTURE phase: `ModalDialog`'s overlay stops keydown, so a bubble-phase
   listener never sees the hold. DETAILS § Shift-hold upgrade.
+- **F2 / Background only TRASH, ❌ never delete**: shown only while the FINAL `isPermanent` is false;
+  `onConfirmInBackground` takes no mode. `../transfer/DETAILS.md` § "Starting in the background".
 - **`data-scan-state` on `.scan-stats`** (`counting` | `done`) is the only "counting done" signal.
 - **`DeleteDialog` must forward `sourceVolumeId` into `startScanPreview`**, or a non-local volume (MTP, SMB) runs the
   local-FS walker, hits path-not-found, and leaves the dialog stuck at "0 files".
-- **`supportsTrash` drives the mode.** Each volume exposes it from `fsType` (statfs): APFS/HFS+ yes; FAT32, exFAT,
-  smbfs, nfs, afpfs, webdav no. When false, the dialog forces permanent with a banner.
+- **`supportsTrash` drives the mode** (per volume, from `fsType`; DETAILS § "Which volumes have a trash"). When false,
+  the dialog forces permanent with a banner.
 - **Online-only cloud content opens the PERMANENT delete, with its own banner** (`cloudOnlineOnly`: `'all'` or
   `'mixed'`): trashing an evicted file downloads it first, so `openDeleteDialog` asks `trashRoutingForPaths` and drops
   `supportsTrash`. ❌ That rule is Rust's (`delete/cloud_trash.rs`); an answer that never lands keeps the trash. A
@@ -45,10 +47,9 @@ Backend counterpart: `apps/desktop/src-tauri/src/file_system/write_operations/de
   must stay reachable.
 - **The trash is PER VOLUME** (`get_trash_dir`), and revealing a trashed dotfile with hidden files off THROWS in
   `moveCursor`; keep that guarded. DETAILS § Undo and go-to-trash.
-- **`TransferProgressDialog` is shared** (`operationType: 'delete' | 'trash'`); transfer-only props are optional and
-  hidden, and it stays visible ≥400 ms.
-- **After delete, the cursor keeps its row**, or the same position index (clamped) when that row went away
-  (`pane/listing-diff-sync.svelte.ts`). Selection is cleared; both panes refresh.
+- **`TransferProgressDialog` is shared** (`operationType: 'delete' | 'trash'`), and stays visible ≥400 ms.
+- **After delete, the cursor keeps its row**, or its index (clamped) once the row is gone
+  (`pane/listing-diff-sync.svelte.ts`). Selection clears; both panes refresh.
 
 ## Backend touchpoints
 

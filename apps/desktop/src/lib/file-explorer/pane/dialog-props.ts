@@ -40,20 +40,32 @@ export interface TransferConfirmPayload {
   /** A single-item Move inside the item's own folder: the source pane renames it
    *  (`transfer-target.ts::isRenameInPlace`) and no transfer starts. */
   renameInPlace?: boolean
+  /** F2 or the Background button: start the operation with no progress dialog
+   *  (`background-operations.svelte.ts`). Everything else is what Enter sends. */
+  startInBackground?: boolean
+}
+
+/** How a programmatic confirm presses the button: Confirm, or (with
+ *  `startInBackground`) the Background button beside it. */
+export interface ConfirmOptions {
+  startInBackground?: boolean
 }
 
 /**
  * The transfer dialog's own confirm, as something a caller outside it can press
  * (the MCP `dialog confirm`): the same function its button runs, under the
- * conflict policy the caller names.
+ * conflict policy the caller names. `startInBackground` presses the Background
+ * button instead, with the same guards F2 has.
  */
-export type TransferConfirmer = (conflictResolution: ConflictResolution) => void
+export type TransferConfirmer = (conflictResolution: ConflictResolution, options?: ConfirmOptions) => void
 
 /**
  * The delete dialog's own confirm, as something a caller outside it can press
  * (the MCP `dialog confirm`): the same function its button runs.
+ * `startInBackground` presses the Background button instead, which exists only
+ * for a TRASH: on a permanent delete it does nothing, as F2 does.
  */
-export type DeleteConfirmer = () => void
+export type DeleteConfirmer = (options?: ConfirmOptions) => void
 
 /**
  * What a transfer operation reports when it finishes: `TransferProgressDialog`'s
@@ -135,6 +147,11 @@ export interface TransferProgressPropsData {
   /** Rename mode: a move of the ONE source into `destinationPath` under this name
    *  (`rename-as-move.ts`). Kept on retry, which renames the same way. */
   newName?: string
+  /** The operation runs in the BACKGROUND, with no progress dialog: started
+   *  there (F2 in a setup dialog) or sent there (Queue). A retry and an
+   *  archive-password re-dispatch start it the same way again
+   *  (`background-operations.svelte.ts`). */
+  startInBackground?: boolean
 }
 
 /**

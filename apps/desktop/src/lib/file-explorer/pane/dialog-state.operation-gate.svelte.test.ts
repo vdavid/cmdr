@@ -233,7 +233,7 @@ describe('steering the operation that IS running', () => {
     const { dialogs } = makeState()
     dialogs.startTransferProgress(copyProps())
 
-    dialogs.handleTransferQueue()
+    dialogs.handleTransferQueue('op-1')
 
     expect(dialogs.showTransferProgressDialog).toBe(false)
     expect(dialogs.transferProgressProps).toBeNull()

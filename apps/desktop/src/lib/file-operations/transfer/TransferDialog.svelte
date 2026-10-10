@@ -4,7 +4,9 @@
     import { homeDir } from '@tauri-apps/api/path'
     import { getVolumeSpace, DEFAULT_VOLUME_ID, type SpaceInfo } from '$lib/tauri-commands'
     import type { SortColumn, SortOrder, ConflictResolution, TransferOperationType } from '$lib/file-explorer/types'
-    import type { TransferConfirmPayload, TransferConfirmer } from '$lib/file-explorer/pane/dialog-props'
+    import type { ConfirmOptions, TransferConfirmPayload, TransferConfirmer } from '$lib/file-explorer/pane/dialog-props'
+    import StartInBackgroundButton from '../StartInBackgroundButton.svelte'
+    import { isStartInBackgroundKey } from '../start-in-background-key'
     import {
         validateDirectoryPath,
         validateDisallowedChars,
@@ -618,7 +620,7 @@
         return isAuto && conflictPolicy === 'skip'
     }
 
-    async function handleConfirm(isAuto = false) {
+    async function handleConfirm(isAuto = false, { startInBackground = false }: ConfirmOptions = {}) {
         // A refused source can't be read, so there's nothing to confirm. A confirm that
         // beats the refusal (MCP auto-confirm) reaches the backend, which refuses it typed.
         if (pathError || scan.sourceRefusal || confirmed) return
@@ -644,7 +646,7 @@
         // check only gates `skip`.
         if (isSameVolumeMove) {
             scan.cancelPreview()
-            await confirmTransfer({ previewId: null, isAuto })
+            await confirmTransfer({ previewId: null, isAuto, startInBackground })
             return
         }
         // Wait for `startScanPreview` so `previewId` is non-null on a fast
@@ -661,10 +663,18 @@
         // can take minutes on a big remote dir, and only `skip` consumes its
         // names.
         await scan.scanStarted
-        await confirmTransfer({ previewId: scan.previewId, isAuto })
+        await confirmTransfer({ previewId: scan.previewId, isAuto, startInBackground })
     }
 
-    async function confirmTransfer({ previewId, isAuto }: { previewId: string | null; isAuto: boolean }) {
+    async function confirmTransfer({
+        previewId,
+        isAuto,
+        startInBackground,
+    }: {
+        previewId: string | null
+        isAuto: boolean
+        startInBackground: boolean
+    }) {
         if (needsConflictNames(isAuto) && !isRenameMode) await (conflictCheckPromise ??= conflicts.check())
         onConfirm({
             destination: targetPath,
@@ -679,15 +689,18 @@
             isRenameInPlace({ target: namedTarget, sourcePath: sourcePaths[0], sourceVolumeId })
                 ? { renameInPlace: true }
                 : {}),
+            // F2 / Background: the one difference from Enter.
+            ...(startInBackground ? { startInBackground: true } : {}),
         })
     }
 
     // An MCP `dialog confirm` is the Confirm button under a policy the agent named:
     // same path, same box contents, same preview. Registered during init, so a
     // confirm that lands while the mount is still resolving the home dir finds it.
-    const unregisterConfirmer = registerConfirmer?.((policy) => {
+    // Asking for the background presses the Background button instead.
+    const unregisterConfirmer = registerConfirmer?.((policy, options) => {
         conflictPolicy = policy
-        void handleConfirm()
+        void handleConfirm(false, options)
     })
 
     function handleCancel() {
@@ -708,14 +721,23 @@
      * refuses writes, where the button reads disabled. ❌ Not in `handleConfirm`:
      * an MCP confirm goes through that, and it meets the backend's typed refusal.
      */
-    function confirmFromUser() {
+    function confirmFromUser(options: ConfirmOptions = {}) {
         if (targetRefusal) return
-        void handleConfirm()
+        void handleConfirm(false, options)
     }
 
     function handleKeydown(event: KeyboardEvent) {
         if (event.key === 'Enter') {
             confirmFromUser()
+            return
+        }
+        // Dialog-scoped F2 = confirm and background, Total Commander's "F2 Queue".
+        // `ModalDialog`'s overlay stops every keydown, so F2 never reaches the
+        // global `file.rename` while this is open, and is that again once it
+        // closes. No binding to leak.
+        if (isStartInBackgroundKey(event)) {
+            event.preventDefault()
+            confirmFromUser({ startInBackground: true })
         }
     }
 
@@ -1004,7 +1026,11 @@
              button has to look busy rather than inviting a second click. The spinner
              is decorative (no `label`, so `aria-hidden`), which keeps the button's
              accessible name exactly `confirmLabel` and needs no new catalog string. -->
-        <Button variant="primary" onclick={confirmFromUser} disabled={!!pathError || !!targetRefusal || !!scan.sourceRefusal || confirmPending}>
+        <StartInBackgroundButton
+            onclick={() => { confirmFromUser({ startInBackground: true }); }}
+            disabled={!!pathError || !!targetRefusal || !!scan.sourceRefusal || confirmPending}
+        />
+        <Button variant="primary" onclick={() => { confirmFromUser(); }} disabled={!!pathError || !!targetRefusal || !!scan.sourceRefusal || confirmPending}>
             <span class="confirm-content">
                 {#if confirmPending}
                     <Spinner size="sm" />

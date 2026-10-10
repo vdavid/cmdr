@@ -1092,22 +1092,24 @@ back/settled, no conflict prompt up).
   lane slot while paused). The session's `pauseInFlight` guards against a double-click racing the IPC, and because the
   guard lives on the shared session, a queue row watching the same operation sees the press too.
 - **Queue (send to background)** is FRONTEND-ONLY state, no backend command. `handleQueue` sets the local `backgrounded`
-  flag, opens the queue window (`openQueueWindow`), shows a quiet `info` toast (group `transfer-queue`), and calls the
-  `onQueue` prop so the parent (`dialog-state.svelte.ts` → `handleTransferQueue`) unmounts the modal **without
-  cancelling** the op. The op runs on, now managed in the queue window. The button reads "Background" with an empty
-  queue and "Queue" otherwise (`../queue/queue-backlog.ts`); the action is the same either way.
+  flag, shows the queue window WITHOUT focus (`openQueueWindow({ focus: false })`, so the keyboard stays in the pane the
+  person was working in), shows a quiet `info` toast (group `transfer-queue`), and calls `onQueue(operationId)` so the
+  parent (`dialog-state.svelte.ts` → `handleTransferQueue`) unmounts the modal **without cancelling** the op and hands
+  its birth context to the background watch (§ "Starting in the background", for the archive-password stop). The op runs
+  on, now managed in the queue window. The button reads "Background" with an empty queue and "Queue" otherwise
+  (`../queue/queue-backlog.ts`); the action is the same either way.
 - **`backgrounded` is a one-way latch, not a guard against anything.** It records that this view has already handed the
   operation over, so a second Queue press, an auto-queue firing behind a manual one, and a close during the handoff are
   all no-ops. It no longer suppresses a teardown cancel, because there is no teardown cancel: every unmount leaves the
   operation running. It stays a plain `let` regardless — see § "File map".
 - **Dialog-scoped F2 → Queue.** `handleKeydown` (passed to `ModalDialog` as `onkeydown`) intercepts `F2` and triggers
-  `handleQueue`, mirroring Total Commander's copy-dialog-local F2. It is NOT a `command-registry` binding: F2 is
-  globally `file.rename`. The mechanism that scopes it: `ModalDialog`'s overlay `handleOverlayKeydown`
-  `stopPropagation`s every keydown before it can reach the global root key handler, so while the dialog is open F2 never
-  reaches `file.rename`; and when the dialog unmounts, the handler goes with it, so F2 falls through to `file.rename`
-  again. No global binding is ever installed or removed — the leak-free property is structural, not bookkeeping. (Pinned
-  by the negative test in `TransferProgressDialog.queue.test.ts`.) `preventDefault` stops any default browser action on
-  the key.
+  `handleQueue`, so F5, Enter, F2 still works; F5, F2 (TC's own muscle memory) is the setup dialog's, § "Starting in the
+  background". It is NOT a `command-registry` binding: F2 is globally `file.rename`. The mechanism that scopes it:
+  `ModalDialog`'s overlay `handleOverlayKeydown` `stopPropagation`s every keydown before it can reach the global root
+  key handler, so while the dialog is open F2 never reaches `file.rename`; and when the dialog unmounts, the handler
+  goes with it, so F2 falls through to `file.rename` again. No global binding is ever installed or removed — the
+  leak-free property is structural, not bookkeeping. (Pinned by the negative test in
+  `TransferProgressDialog.queue.test.ts`.) `preventDefault` stops any default browser action on the key.
 - **Auto-queue surfacing.** When a new op starts on a busy lane, the manager admits it as `queued` rather than spawning
   it. A DISPATCHING view watches `session.status` for that and auto-backgrounds: it surfaces the queue window with a
   quiet "N transfers ahead" toast and unmounts, exactly like a manual Queue. ❌ An ADOPTED view (`adoptedOperationId`,
@@ -1117,3 +1119,56 @@ back/settled, no conflict prompt up).
   operations store — the same live rows the Background/Queue label reads — floored at 1. The dialog needs no seeding
   logic of its own: a session that hears nothing on attach asks `list_operations()` itself, which is what catches the
   registration tick that fired before anything in this window was watching.
+
+## Starting in the background (F2 in a setup dialog)
+
+Total Commander's "F2 Queue": in the copy / move / compress dialog (`TransferDialog.svelte`) and the trash dialog
+(`../delete/DeleteDialog.svelte`), F2 or the Background / Queue button beside Confirm starts the operation with NO
+progress dialog (#381). So F5, F2, F5, F2 queues two copies without a modal in between.
+
+**F2 is Enter plus one flag.** The dialog runs its own confirm (`confirmFromUser` → `handleConfirm`), so it meets the
+same guards (a destination that refuses writes, a source that can't be read), waits for `scan.scanStarted` the same way,
+and sends the same `TransferConfirmPayload` with `startInBackground: true`. The button, its label rule ("Queue" while
+other work is live, "Background" otherwise, `../queue/queue-backlog.ts` with no self id), and its tooltip naming F2 live
+in `../StartInBackgroundButton.svelte`; the plain-F2 matcher in `../start-in-background-key.ts`. Dialog-scoped exactly
+like the progress dialog's F2: `ModalDialog`'s overlay stops every keydown, so F2 is `file.rename` again once the dialog
+closes (negative tests in `TransferDialog.background.test.ts` and `../delete/DeleteDialog.background.svelte.test.ts`).
+
+**Trash only, ❌ never a permanent delete.** The delete dialog offers the button and F2 only while its FINAL
+`isPermanent` is false, so the switch, a held Shift, online-only content (up front or found by the walk mid-confirm), an
+archive, and a volume with no trash all take them away, and `⇧F2` matches nothing. The confirm re-checks after its
+awaits (Shift can go down meanwhile), and the background callback `onConfirmInBackground(previewId)` carries no mode, so
+`dialog-state`'s `handleTrashInBackground` can only build a `trash`.
+
+**No modal, ever.** `../../file-explorer/pane/dialog-state.svelte.ts` hands the birth props to
+`../../file-explorer/pane/background-operations.svelte.ts`, which starts them through
+`transfer-dispatch.ts::startTransferOperation` (the same dispatch, MCP reply, and typed error the progress dialog's
+birth uses) and never touches the progress slot. Nothing mounts, not for a frame (pinned with a `MutationObserver` in
+`dialog-state.transfer-confirm.svelte.test.ts`), and the next F5 opens at once. Then: the source pane's selection drops
+(as a Queue press does), a quiet toast says where the job went, the queue window shows without focus, and the pane gets
+the keyboard back (`onRefocus`). **Decision/Why:** mounting the progress dialog with a "background on bind" prop was the
+smaller change, but it holds the slot until the id lands and can flash a frame.
+
+**What each follow-up a foreground start has becomes** (pinned in `dialog-state.background.svelte.test.ts` and
+`background-operations.svelte.test.ts`):
+
+- **Conflict prompts**: no foreground claim and no foreground id, so `../operation-conflict.svelte.ts` owns any clash
+  and asks on the main window, as for any backgrounded job. F2 never means "overwrite silently".
+- **A refused start** (the backend says no before anything runs): the error dialog, with no failure to claim. Its Retry
+  (and "Copy anyway") starts in the background again, because `startInBackground` rides on the retry props.
+- **Archive password**: the backend doesn't retain `archive_needs_password` as a failure, so with no dialog nobody would
+  ask. The background module holds the session until the outcome lands and hands that one stop back; `dialog-state`
+  borrows the birth slot for the prompt, and a person's submit re-dispatches in the background again (fresh scan). With
+  the slot taken by a foreground operation, a warn toast says to start it again. A job sent to the background from the
+  progress dialog gets the same watch, which closed the same gap there.
+- **Errors after the start**: the retained failure, the failure toast, and the corner chip, as for any backgrounded job.
+- **Completion toast, pane refresh, cancel's selection restore, duplicate rename editor**: deliberately absent, matching
+  a job sent to the background from the progress dialog (the file watcher updates the panes). F5, F2 and F5, Enter, F2
+  end the same way.
+- **Cancel and rollback**: from the queue window's row, like any background job. **Quit gate**: backend-owned, it sees
+  the registry, so nothing to do here. **Foreground claim**: none, on purpose (above).
+
+**MCP.** Both confirmers take `{ startInBackground }` (`../../file-explorer/pane/dialog-props.ts::ConfirmOptions`) and
+press the Background button under the same guards, trash-only included.
+`../../file-explorer/pane/programmatic-confirm.ts::confirmOpenDialog` is where a background option on `dialog confirm`
+passes it through.

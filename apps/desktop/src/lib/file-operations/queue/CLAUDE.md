@@ -46,7 +46,7 @@ The standalone macOS window for running, waiting, and couldn't-finish operations
   `pnpm dev` after a perm change. Being its own webview, the page inits its own i18n / theme / transparency / text size
   (`initWindowSettings()`, `lib/settings/CLAUDE.md`).
 - **One opener, one store per webview**: `openQueueWindow`, plus the main window's own
-  (`main-window-operations.svelte.ts`).
+  (`main-window-operations.svelte.ts`). Backgrounding a job passes `{ focus: false }`: DETAILS § "Backgrounding never
+  takes focus".
 
-Architecture, the store's public API, retained failures, the vibrancy model, and decision detail: `DETAILS.md`. Read it
-before any non-trivial work here: editing, planning, reorganizing, or advising.
+Depth (the store's API, retained failures, vibrancy, decisions): `DETAILS.md`. Read it before non-trivial work here.

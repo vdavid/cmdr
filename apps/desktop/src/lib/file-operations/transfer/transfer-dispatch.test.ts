@@ -394,9 +394,6 @@ describe('startTransferOperation', () => {
 
     const result = await startTransferOperation(makeConfig())
 
-    expect(result).toEqual({
-      started: false,
-      error: expect.objectContaining({ type: 'io_error', path: '/src/file.txt' }),
-    })
+    expect(result).toMatchObject({ started: false, error: { type: 'io_error', path: '/src/file.txt' } })
   })
 })

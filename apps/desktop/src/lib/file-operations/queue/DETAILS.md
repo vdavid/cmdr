@@ -267,8 +267,16 @@ reopen.
   `apps/desktop/src/lib/status-corner/CLAUDE.md`. Both render `failure-reason.ts`, so the three surfaces can't describe
   one failure three ways.
 
-The progress-dialog Queue button and the auto-queue surfacing open the window via `openQueueWindow()` and read this same
-store. Don't fork a second opener or store.
+The progress-dialog Queue button, the auto-queue surfacing, and a start sent straight to the background (F2 in a setup
+dialog) open the window via `openQueueWindow({ focus: false })` and read this same store. Don't fork a second opener or
+store.
+
+## Backgrounding never takes focus
+
+The person sent the job away to keep working, so a fresh window opens with Tauri's `focus: false` and an open one gets
+no `focus-self`; it still shows, which answers "where did my job go". The commands that open it to LOOK at it (the menu
+item, the corner chip, the failure toast) keep the default `focus: true`. Pinned in `queue-window.test.ts`; not yet
+confirmed on a real macOS run that a fresh unfocused window leaves the main window key.
 
 ## The main window's instance
 

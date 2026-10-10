@@ -1518,8 +1518,8 @@
     onTransferError={(error: WriteOperationError, progressAtStop: ProgressAtStop | null) => {
         dialogs.handleTransferError(error, progressAtStop)
     }}
-    onTransferQueue={() => {
-        dialogs.handleTransferQueue()
+    onTransferQueue={(operationId: string) => {
+        dialogs.handleTransferQueue(operationId)
     }}
     onTransferErrorClose={() => {
         dialogs.handleTransferErrorClose()
@@ -1554,6 +1554,7 @@
     onDeleteConfirm={(previewId: string | null, isPermanent: boolean) => {
         dialogs.handleDeleteConfirm(previewId, isPermanent)
     }}
+    onTrashInBackground={(previewId: string | null) => { dialogs.handleTrashInBackground(previewId); }}
     onDeleteCancel={() => {
         dialogs.handleDeleteCancel()
     }}

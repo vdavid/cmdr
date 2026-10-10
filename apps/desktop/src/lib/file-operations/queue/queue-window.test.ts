@@ -11,7 +11,7 @@ const { getByLabel, once, warn, emitTo, webviewWindow } = vi.hoisted(() => ({
   getByLabel: vi.fn<(label: string) => Promise<unknown>>(),
   once: vi.fn<(event: string, handler: (event: { payload: unknown }) => void) => Promise<() => void>>(),
   warn: vi.fn(),
-  emitTo: vi.fn<(target: string, event: string) => Promise<void>>(() => Promise.resolve()),
+  emitTo: vi.fn<(...args: unknown[]) => Promise<void>>(() => Promise.resolve()),
   webviewWindow: vi.fn<(label: string, options: { focus?: boolean }) => void>(),
 }))
 

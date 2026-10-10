@@ -7,20 +7,20 @@ Copy (F5), move (F6), compress (⌥F5): setup, conflict scan, progress, errors. 
 
 - `TransferDialog.svelte` is the setup shell, `TransferProgressDialog.svelte` the execution shell; each sits over its
   own `transfer-*-state.svelte.ts`.
-- `transfer-dispatch.ts` is birth: which backend command a confirmed copy/move/compress/delete/trash routes to. The
-  rest: DETAILS § File map.
+- `transfer-dispatch.ts` is birth: which command a confirmed operation routes to, and `startTransferOperation`, the one
+  start every route shares. The rest: DETAILS § File map.
 
 ## Must-knows
 
 - **The dialog is a VIEW of its operation, ❌ never its owner.** Everything (phase, counts, ETA, clash, outcome) comes
-  from its session (`../operation-session/CLAUDE.md`), shared with the queue rows and the corner chip. ❌ Never a second
-  smoother, listener, or event buffer.
+  from its session (`../operation-session/CLAUDE.md`). ❌ Never a second smoother, listener, or event buffer.
 - **A close is a DETACH, ❌ never a cancel.** `onclose` calls `detach()`; only the Cancel button cancels, and unmounting
   stops nothing. With no session yet it leaves the operation ALONE. ❌ While a clash is up there's no `onclose` at all:
   every way out of a clash decides something about the user's files.
-- **Queue and the dialog-scoped F2 are FRONTEND-ONLY** (set `backgrounded`, open the queue, unmount). ❌ `backgrounded`
-  and `destroyed` stay plain `let`s: teardown reads them during reactive-scope disposal, where a rune goes stale (a
-  just-queued transfer once got cancelled).
+- **Background is FRONTEND-ONLY.** The progress dialog's Queue / F2 set `backgrounded`, show the queue UNFOCUSED, and
+  unmount; the SETUP dialog's F2 is Enter plus `startInBackground`, ❌ no modal ever (DETAILS § "Starting in the
+  background"). ❌ `backgrounded` and `destroyed` stay plain `let`s: teardown reads them mid-disposal, where a rune goes
+  stale (a just-queued transfer once got cancelled).
 - **One transfer entry seam**: F5/F6, drag-and-drop, and paste all prepare through `pane/transfer-entry.ts`. Paste's
   scheme-path refusal stays SEPARATE and BEFORE the shared guard.
 - **Single Copy/Move names its leaf; a trailing slash means "into"**. Forward `destinationName`. DETAILS § "Single-item
@@ -40,9 +40,8 @@ Copy (F5), move (F6), compress (⌥F5): setup, conflict scan, progress, errors. 
 - **Rollback / Cancel disable during the settle window; an unavailable Rollback is `aria-disabled` + a why, ❌ never
   `disabled`**, which hides it from a keyboard. A cancel close waits for both `write-cancelled` AND `write-settled` — ❌
   but never as the ONLY exit: `progress.dismiss()` leaves at once.
-- **The progress dialog does NOT wait for the scan; the BACKEND does.** It dispatches on mount, so a still-counting
-  transfer is a real operation from frame one. ❌ Never cancel the preview on teardown; confirm ALWAYS awaits
-  `scan.scanStarted`. DETAILS § Scan.
+- **The progress dialog does NOT wait for the scan; the BACKEND does.** It dispatches on mount. ❌ Never cancel the
+  preview on teardown; confirm ALWAYS awaits `scan.scanStarted`. DETAILS § Scan.
 - **"Skip confirmation" confirms copy/move unmounted**, into the FOLDER with no leaf. A new must-see notice needs a case
   in `../../file-explorer/pane/confirmation-skip.ts`.
 - **Compress swaps the conflict-policy UI for a dest-exists overwrite check**; its MCP auto-confirm ❌ never silently
@@ -51,5 +50,4 @@ Copy (F5), move (F6), compress (⌥F5): setup, conflict scan, progress, errors. 
   presses `handleConfirm` via `registerConfirmer`. ❌ Never a second map (an unmapped name silently becomes `skip`) or a
   payload built from the opening props.
 
-File map, rollback's limits, password interception, E2E markers, phase catalog, flows, and decisions: `DETAILS.md`. Read
-it before non-trivial work here.
+Everything else: `DETAILS.md`. Read it before non-trivial work here.

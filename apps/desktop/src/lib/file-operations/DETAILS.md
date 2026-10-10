@@ -31,6 +31,9 @@ Umbrella-level files:
   no name yet, so ambient main-window surfaces stay quiet about all three (§ below).
 - `foreground-request.ts`: `adoptedOperationFor(rows, id)`, the pure half of the queue's Show button, resolving the id
   that crossed the window boundary against the MAIN window's own snapshot.
+- `StartInBackgroundButton.svelte` + `start-in-background-key.ts`: the setup dialogs' Background / Queue button and
+  their dialog-scoped F2, shared by the transfer and delete dialogs (`transfer/DETAILS.md` § "Starting in the
+  background").
 - `reversal-wording.ts` + `op-kind.ts`: what a reversal will DO to the files, and every surface's wording for it (§
   "Rollback asks first"). `op-kind.ts` is the two `Record`s that turn the registry snapshot's `WriteOperationType` and
   the progress dialog's `TransferOperationType` into the `OpKind` those decisions are taken in.

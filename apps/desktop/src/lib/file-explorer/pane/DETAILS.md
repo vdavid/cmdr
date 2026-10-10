@@ -866,6 +866,8 @@ below rather than merely spreading lines:
   module that can touch a pane, and the one an adopted view is built without.
 - `adopted-operation.svelte.ts`: the progress dialog's adopted arm, owning that slot and its four outcomes.
 - `archive-password-flow.svelte.ts`: the password prompt and its `transfer` / `browse` modes.
+- `background-operations.svelte.ts`: operations with NO progress dialog, started there (F2 in a setup dialog) or sent
+  there (Queue). Holds their birth context privately and watches each for the one stop nobody else asks about.
 - `transfer-op-label.ts`: the log-line label for an operation type, shared by the two families.
 - `programmatic-confirm.ts`: the MCP `dialog confirm`, owning the transfer and delete dialogs' registered confirms.
 - `confirmation-skip.ts`: which copy, move, and trash confirmations the "Skip confirmation" setting leaves out, and the
@@ -1009,6 +1011,13 @@ both its modes but holds no reference to birth context: it asks `hasBirthContext
 operation the user unlocked" is a property of the wiring, not of the flow behaving itself. What the re-dispatch MUST
 keep doing is clearing `previewId` (a preview accepts exactly one claimant, so a carried-over id silently downgrades the
 retry to a full re-walk); that lives in `dialog-state.svelte.ts`'s `redispatchBirthOperation`.
+
+**A background job keeps its birth context out of the slot.** `background-operations.svelte.ts` holds the props of every
+operation running with no progress dialog, so a background start never occupies the slot and the next F5 opens at once.
+The slot is BORROWED only for that job's archive-password prompt (the submit re-dispatches from it, back into the
+background because `startInBackground` rides on the props), and only when it's free: a slot held by a foreground
+operation is never overwritten, which is the same wrong-write hazard as above. Then a toast says to start the job again.
+Whole flow: `$lib/file-operations/transfer/DETAILS.md` § "Starting in the background".
 
 **A refusal is the honest answer to an occupied slot**, and it is a toast in the main window rather than silence: the
 listener focuses this window whatever the verdict, because a refusal behind the queue window reads as a dead button.

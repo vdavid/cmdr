@@ -4,7 +4,7 @@ import { mount, unmount, tick } from 'svelte'
 import TransferDialog from './TransferDialog.svelte'
 import * as commands from '$lib/tauri-commands'
 import type { VolumeConflictInfo } from '$lib/tauri-commands'
-import type { TransferConfirmPayload } from '$lib/file-explorer/pane/dialog-props'
+import type { TransferConfirmPayload, TransferConfirmer } from '$lib/file-explorer/pane/dialog-props'
 
 export const startScanPreviewMock = vi.mocked(commands.startScanPreview)
 export const cancelScanPreviewMock = vi.mocked(commands.cancelScanPreview)
@@ -191,6 +191,8 @@ interface MountOpts {
   /** Rename mode (F2 on a big S3 folder): one source, renamed in place. */
   newName?: string
   sourcePaths?: string[]
+  /** Takes the dialog's own confirm, as the MCP `dialog confirm` does. */
+  registerConfirmer?: (confirm: TransferConfirmer) => () => void
 }
 
 export type ConfirmFn = (payload: TransferConfirmPayload) => void
@@ -218,6 +220,7 @@ export function mountDialog(opts: MountOpts = {}): HTMLDivElement {
       autoConfirmOnConflict: opts.autoConfirmOnConflict,
       newName: opts.newName,
       onConfirm: opts.onConfirm ?? (() => {}),
+      registerConfirmer: opts.registerConfirmer,
       onCancel: opts.onCancel ?? (() => {}),
     },
   })

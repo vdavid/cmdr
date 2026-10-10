@@ -1371,6 +1371,44 @@
     "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
   },
 
+  "fileOperations.backgroundStart.background": "Background",
+  "@fileOperations.backgroundStart.background": {
+    "description": "Button in the copy, move, compress, and move-to-trash confirmation dialogs, beside the main confirm button. It confirms AND starts the operation out of sight, with no progress window, so the user can keep working. Shown when nothing else is running; with other operations running it reads as fileOperations.backgroundStart.queue instead. The word is a verb here, the thing you do to the operation, not the noun for a background. Short control label; must fit the same button as \"Queue\"."
+  },
+
+  "fileOperations.backgroundStart.queue": "Queue",
+  "@fileOperations.backgroundStart.queue": {
+    "description": "The same button as fileOperations.backgroundStart.background, worded for when other operations are already running: the new one joins them in the operation queue and runs out of sight, with no progress window. Mirrors Total Commander’s \"F2 Queue\" button in its copy dialog. Short control label; must fit the same button as \"Background\"."
+  },
+
+  "fileOperations.backgroundStart.backgroundAria": "Start this in the background",
+  "@fileOperations.backgroundStart.backgroundAria": {
+    "description": "Screen-reader label for the confirmation dialog’s button while nothing else is running (the visible button shows only \"Background\"). Must contain the visible word, so a person using both sight and a screen reader hears what they see. Its sibling for a busy queue is fileOperations.backgroundStart.queueAria."
+  },
+
+  "fileOperations.backgroundStart.queueAria": "Start this in the operation queue",
+  "@fileOperations.backgroundStart.queueAria": {
+    "description": "Screen-reader label for the confirmation dialog’s button while other operations are running (the visible button shows only \"Queue\"). \"Operation queue\" is the name of the window that lists running operations; keep it identical to queue.windowTitle."
+  },
+
+  "fileOperations.backgroundStart.tooltip": "Start this without a progress window and follow it in the operation queue (F2)",
+  "@fileOperations.backgroundStart.tooltip": {
+    "description": "Tooltip on the Background / Queue button of the copy, move, compress, and move-to-trash confirmation dialogs. The operation starts right away but out of sight, and the user follows it in the operation queue window. \"Operation queue\" is that window’s name; keep it identical to queue.windowTitle. F2 is the keyboard shortcut for the same button while the dialog is open; keep it as is."
+  },
+
+  "fileOperations.backgroundStart.startedToast": "Sent to the background. Find it in the operation queue.",
+  "@fileOperations.backgroundStart.startedToast": {
+    "description": "Quiet toast shown after the user starts a copy, move, compress, or move to trash in the background from its confirmation dialog (F2 or the Background / Queue button). No progress window opens; the operation queue window shows up behind the main window, which keeps the keyboard. It may be running already or waiting its turn behind other operations, so the wording must not claim either. \"Operation queue\" is that window’s name; keep it identical to queue.windowTitle."
+  },
+
+  "fileOperations.backgroundStart.needsPasswordToast": "“{archiveName}” needs its password. Start the operation again to type it in.",
+  "@fileOperations.backgroundStart.needsPasswordToast": {
+    "description": "Warning toast for an operation that was running in the background and stopped because it reads from a password-protected archive (zip). Normally a password prompt appears; this toast shows instead when another operation’s progress window is on screen and the prompt can’t. Nothing was copied from the archive. \"Start the operation again\" means repeat the copy or move, which then asks for the password.",
+    "placeholders": {
+      "archiveName": "file name of the archive, for example \"photos.zip\""
+    }
+  },
+
   "fileOperations.transferProgress.foregroundBusyToast": "Something else is open here. Close it, then bring this one up.",
   "@fileOperations.transferProgress.foregroundBusyToast": {
     "description": "Quiet toast in the main window, shown when the user presses Show on a row in the operation queue but the main window already has a dialog on screen. The blocker is ANY dialog, not necessarily another operation: it can be another operation’s progress dialog or question, but equally a New folder prompt or a delete confirmation, so the wording must not claim an operation exists. The main window comes forward as this appears, so \"here\" is the window the user is now looking at and \"it\" is the dialog they can see. Only one thing can occupy that space, so the operation stays where it is, still running, in the queue; \"bring this one up\" means press Show again afterwards.",

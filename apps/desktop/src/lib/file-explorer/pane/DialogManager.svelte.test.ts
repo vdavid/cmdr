@@ -82,6 +82,7 @@ function baseProps(onDialogRenderError: (error: unknown) => void): DialogManager
     onNewFileCancel: noop,
     onAlertClose: noop,
     onDeleteConfirm: noop,
+    onTrashInBackground: noop,
     onDeleteCancel: noop,
   }
 }

@@ -36,7 +36,9 @@
     import { withTimeout } from '$lib/utils/timing'
     import Trans from '$lib/intl/Trans.svelte'
     import { t, tString } from '$lib/intl/messages.svelte'
-    import type { DeleteConfirmer } from '$lib/file-explorer/pane/dialog-props'
+    import type { ConfirmOptions, DeleteConfirmer } from '$lib/file-explorer/pane/dialog-props'
+    import StartInBackgroundButton from '../StartInBackgroundButton.svelte'
+    import { isStartInBackgroundKey } from '../start-in-background-key'
 
     const log = getAppLogger('deleteDialog')
 
@@ -70,6 +72,11 @@
         /** When true, dialog auto-confirms without user interaction (MCP). */
         autoConfirm?: boolean
         onConfirm: (previewId: string | null, isPermanent: boolean) => void
+        /** F2 or the Background button: TRASH with no progress dialog. No mode
+         *  rides along, so this can't start a permanent delete; the dialog offers
+         *  it only while it would trash. Absent, the dialog offers no background
+         *  start at all. */
+        onConfirmInBackground?: (previewId: string | null) => void
         /** Takes this dialog's own confirm for as long as it's mounted, so an MCP
          *  `dialog confirm` presses the same button a person does. Returns the
          *  unregister. */
@@ -92,6 +99,7 @@
         sourceVolumeId,
         autoConfirm = false,
         onConfirm,
+        onConfirmInBackground,
         registerConfirmer,
         onCancel,
     }: Props = $props()
@@ -125,6 +133,11 @@
     const shiftUpgradesToPermanent = !initialIsPermanent && supportsTrash
     // Shift only ever upgrades: a hold can't demote a permanent delete back to a trash.
     const isPermanent = $derived(switchIsPermanent || routedForOnlineOnly || (shiftUpgradesToPermanent && shiftHeld))
+    /** A permanent delete never starts out of sight: it's the one operation nothing
+     *  undoes. So the background start follows the FINAL mode, whatever flipped it
+     *  (the switch, a held Shift, online-only content, an archive, a volume with no
+     *  trash), and goes the moment it reads "Delete permanently". */
+    const canTrashInBackground = $derived(!isPermanent && onConfirmInBackground !== undefined)
 
     const dialogTitle = $derived(generateDeleteTitle(sourceItems, isFromCursor))
     const abbreviatedPath = $derived(abbreviatePath(sourceFolderPath))
@@ -377,13 +390,15 @@
         cleanup()
     })
 
-    async function handleConfirm() {
+    async function handleConfirm({ startInBackground = false }: ConfirmOptions = {}) {
         if (confirming) return
+        if (startInBackground && !canTrashInBackground) return
         confirming = true
         handedBackForOnlineOnly = false
-        log.info('Delete confirmed: isPermanent={isPermanent}, items={count}', {
+        log.info('Delete confirmed: isPermanent={isPermanent}, items={count}, inBackground={inBackground}', {
             isPermanent,
             count: sourceItems.length,
+            inBackground: startInBackground,
         })
         // The scan-preview IPC only mints an id and spawns the walk, so it
         // answers promptly even on a wedged share. See `scanStarted`.
@@ -408,15 +423,28 @@
             }
         }
 
+        if (startInBackground) {
+            // Asked again after the awaits: Shift could have gone down meanwhile.
+            // A press that meant "trash, out of sight" never becomes a delete.
+            if (!onConfirmInBackground || isPermanent) {
+                confirming = false
+                return
+            }
+            confirmed = true
+            onConfirmInBackground(previewId)
+            return
+        }
+
         confirmed = true
         onConfirm(previewId, isPermanent)
     }
 
     // An MCP `dialog confirm` is the Confirm button: same preview, same mode.
     // Registered during init, so a confirm that lands while the scan is still
-    // starting finds it and waits for the id like a fast Enter does.
-    const unregisterConfirmer = registerConfirmer?.(() => {
-        void handleConfirm()
+    // starting finds it and waits for the id like a fast Enter does. Asking for
+    // the background presses the Background button, under the same trash-only rule.
+    const unregisterConfirmer = registerConfirmer?.((options) => {
+        void handleConfirm(options)
     })
 
     function handleCancel() {
@@ -432,6 +460,14 @@
     function handleKeydown(event: KeyboardEvent) {
         if (event.key === 'Enter') {
             void handleConfirm()
+            return
+        }
+        // Dialog-scoped F2, like the progress dialog's: `ModalDialog`'s overlay
+        // stops every keydown, so F2 never reaches the global `file.rename` while
+        // this is open, and is that again once it closes. No binding to leak.
+        if (isStartInBackgroundKey(event)) {
+            event.preventDefault()
+            void handleConfirm({ startInBackground: true })
         }
     }
 
@@ -631,7 +667,13 @@
 
     {#snippet footer()}
         <Button variant="secondary" onclick={handleCancel}>{tString('fileOperations.button.cancel')}</Button>
-        <Button variant={confirmVariant} onclick={handleConfirm}>
+        {#if canTrashInBackground}
+            <StartInBackgroundButton
+                onclick={() => void handleConfirm({ startInBackground: true })}
+                disabled={confirming}
+            />
+        {/if}
+        <Button variant={confirmVariant} onclick={() => void handleConfirm()}>
             {#if confirming}<span class="confirm-spinner"><Spinner size="sm" /></span>{/if}{confirmLabel}
         </Button>
     {/snippet}

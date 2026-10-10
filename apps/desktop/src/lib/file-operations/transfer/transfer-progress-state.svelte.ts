@@ -95,7 +95,7 @@ export interface TransferProgressStateConfig extends TransferStartConfig {
    *  dialog can say how far a transfer got before its drive left. */
   onError: (error: WriteOperationError, progressAtStop: ProgressAtStop | null) => void
   /** Send this operation to the background: unmount the modal but keep the op running. */
-  onQueue?: () => void
+  onQueue?: (operationId: string) => void
 }
 
 /** What a view shows before its operation has said anything. A confirmed
@@ -559,7 +559,7 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
       level: 'info',
       toastGroup: 'transfer-queue',
     })
-    config.onQueue?.()
+    config.onQueue?.(operationId)
   }
 
   /** Called once the operation first reports itself as `queued`: the manager
@@ -583,7 +583,7 @@ export function createTransferProgressState(config: TransferProgressStateConfig)
       level: 'info',
       toastGroup: 'transfer-queue',
     })
-    config.onQueue?.()
+    config.onQueue?.(operationId)
   }
 
   /**

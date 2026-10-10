@@ -44,6 +44,11 @@ dialog and lets the event bubble, exactly as a browser does. Dispatching straigh
 turns the suite into a false-positive net; one test asserts the overlay really does eat the keydown, so a future
 "simplification" back to `window.dispatchEvent` fails loudly.
 
+## Which volumes have a trash
+
+Each volume exposes `supportsTrash` from its `fsType` (statfs): APFS and HFS+ yes; FAT32, exFAT, smbfs, nfs, afpfs, and
+webdav no.
+
 ## Scan-preview detail
 
 The confirmation dialog starts a scan preview for deep file/dir/byte counts and shows running tallies, the current

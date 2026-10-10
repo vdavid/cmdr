@@ -94,7 +94,7 @@
          *  op running, managed in the queue window. Fired by the Queue button, the
          *  dialog-scoped F2, and the auto-queue path (an op admitted as Queued).
          *  Optional so existing callers/tests that don't background stay valid. */
-        onQueue?: () => void
+        onQueue?: (operationId: string) => void
         /** MCP round-trip id, present only for an auto-confirmed MCP op. Passed to
          *  the state machine so it replies with the spawned operationId. */
         mcpRequestId?: string

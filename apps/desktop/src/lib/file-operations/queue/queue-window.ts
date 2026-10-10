@@ -48,6 +48,22 @@ const BASE_HEIGHT = 480
 const MIN_WIDTH = 620
 const MIN_HEIGHT = 280
 
+/** The backend's (NSWorkspace) answer, opaque when it can't be read. */
+async function readReduceTransparency(): Promise<boolean> {
+  try {
+    return await getShouldReduceTransparency()
+  } catch (error) {
+    log.warn('Failed to read reduce-transparency; opening opaque: {error}', { error: String(error) })
+    return true
+  }
+}
+
+/** Clear behind the vibrancy material, or an opaque fill in the system appearance. */
+function windowBackground(reduceTransparency: boolean): [number, number, number, number] {
+  if (!reduceTransparency) return [0, 0, 0, 0]
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? [30, 30, 30, 255] : [255, 255, 255, 255]
+}
+
 export interface OpenQueueWindowOptions {
   /**
    * Whether the window takes keyboard focus. `true` (the default) for the
@@ -102,19 +118,8 @@ export async function openQueueWindow({ focus = true }: OpenQueueWindowOptions =
   // `reduce-transparency` class). Read the value from the backend (NSWorkspace),
   // NOT a media query: WKWebView doesn't reflect `prefers-reduced-transparency`.
   // `prefers-color-scheme` IS reflected, so dark detection stays a media query.
-  let reduceTransparency: boolean
-  try {
-    reduceTransparency = await getShouldReduceTransparency()
-  } catch (error) {
-    log.warn('Failed to read reduce-transparency; opening opaque: {error}', { error: String(error) })
-    reduceTransparency = true
-  }
-  const darkAppearance = window.matchMedia('(prefers-color-scheme: dark)').matches
-  const backgroundColor: [number, number, number, number] = reduceTransparency
-    ? darkAppearance
-      ? [30, 30, 30, 255]
-      : [255, 255, 255, 255]
-    : [0, 0, 0, 0]
+  const reduceTransparency = await readReduceTransparency()
+  const backgroundColor = windowBackground(reduceTransparency)
 
   const win = new WebviewWindow('queue', {
     url: '/queue',

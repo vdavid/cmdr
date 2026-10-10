@@ -67,6 +67,7 @@
         onNewFileCancel,
         onAlertClose,
         onDeleteConfirm,
+        onTrashInBackground,
         onDeleteCancel,
     }: {
         /** Dismisses every dialog and returns focus to the pane. See `handleRenderError`. */
@@ -101,7 +102,7 @@
             progressAtStop: ProgressAtStop | null,
             friendly?: FriendlyError,
         ) => void
-        onTransferQueue: () => void
+        onTransferQueue: (operationId: string) => void
         /** The four outcomes of a dialog that ADOPTED its operation. Separate
          *  callbacks, not a flag on the started ones: an adopted view has no
          *  birth context, so its tail must not be able to reach the pane work. */
@@ -122,6 +123,8 @@
         onNewFileCancel: () => void
         onAlertClose: () => void
         onDeleteConfirm: (previewId: string | null, isPermanent: boolean) => void
+        /** The delete dialog's F2 / Background button: always a trash, never a delete. */
+        onTrashInBackground: (previewId: string | null) => void
         onDeleteCancel: () => void
     } = $props()
 
@@ -267,6 +270,7 @@
                 sourceVolumeId={deleteDialogProps.sourceVolumeId}
                 autoConfirm={deleteDialogProps.autoConfirm}
                 onConfirm={onDeleteConfirm}
+                onConfirmInBackground={onTrashInBackground}
                 registerConfirmer={registerDeleteConfirmer}
                 onCancel={onDeleteCancel}
             />

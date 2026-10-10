@@ -51,7 +51,10 @@ vi.mock('$lib/tauri-commands', async (importOriginal) => ({
   destinationExists: vi.fn(() => Promise.resolve({ data: true, timedOut: false })),
   destinationWriteAccess: vi.fn(() => Promise.resolve({ kind: 'unknown' })),
   destinationRootEcho: vi.fn(() => Promise.resolve(null)),
+  copyBetweenVolumes: vi.fn(() => Promise.resolve({ operationId: 'op-1', operationType: 'copy' })),
 }))
+
+vi.mock('$lib/file-operations/queue/queue-window', () => ({ openQueueWindow: vi.fn(() => Promise.resolve()) }))
 
 vi.mock('$lib/settings', async (importOriginal) => ({
   ...(await importOriginal<typeof import('$lib/settings')>()),
@@ -234,6 +237,7 @@ describe('an MCP confirm on the transfer dialog', () => {
       onNewFileCancel: noop,
       onAlertClose: noop,
       onDeleteConfirm: noop,
+      onTrashInBackground: noop,
       onDeleteCancel: noop,
     }
     const target = document.createElement('div')
@@ -384,5 +388,39 @@ describe('an MCP confirm on the transfer dialog', () => {
     expect(commands.cancelScanPreview).not.toHaveBeenCalled()
     expect(unlistens.length).toBeGreaterThan(0)
     for (const unlisten of unlistens) expect(unlisten).toHaveBeenCalledOnce()
+  })
+
+  it('starts on F2 with no progress dialog EVER rendered, not even for a frame, and hands the preview over', async () => {
+    registrations.resolve(undefined)
+    const { dialogs, target, onDialogRenderError } = openTransferDialog()
+    await vi.waitFor(() => {
+      expect(commands.checkScanPreviewStatus).toHaveBeenCalledWith('preview-1')
+    })
+    // Catches a progress dialog that mounts and unmounts between two checks.
+    let progressDialogSeen = false
+    const observer = new MutationObserver(() => {
+      if (target.querySelector('[data-testid="progress-dialog"]')) progressDialogSeen = true
+    })
+    observer.observe(target, { childList: true, subtree: true })
+
+    target
+      .querySelector<HTMLElement>('.modal-overlay')
+      ?.dispatchEvent(new KeyboardEvent('keydown', { key: 'F2', bubbles: true }))
+    await vi.waitFor(() => {
+      expect(commands.copyBetweenVolumes).toHaveBeenCalledOnce()
+    })
+    flushSync()
+    await settle()
+    observer.disconnect()
+
+    expect(progressDialogSeen).toBe(false)
+    expect(dialogs.showTransferProgressDialog).toBe(false)
+    expect(target.querySelector('[data-dialog-id="transfer-confirmation"]')).toBeNull()
+    expect(vi.mocked(commands.copyBetweenVolumes).mock.calls[0]?.[4]).toEqual(
+      expect.objectContaining({ previewId: 'preview-1' }),
+    )
+    expect(commands.cancelScanPreview).not.toHaveBeenCalled()
+    expect(rejections).toEqual([])
+    expect(onDialogRenderError).not.toHaveBeenCalled()
   })
 })

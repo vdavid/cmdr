@@ -12,6 +12,10 @@
  *   any way to write birth context — see its module doc for why that is the one
  *   hazard in this feature.
  * - `archive-password-flow.svelte.ts`: the password prompt and its two flows.
+ * - `background-operations.svelte.ts`: operations running with NO progress
+ *   dialog, started there by F2 or sent there by Queue. It holds its own birth
+ *   context and hands it back here for the two follow-ups that need a dialog: a
+ *   refused start's error dialog and an archive-password prompt.
  *
  * Shapes live in `dialog-props.ts`; the architecture is `DETAILS.md` § "Birth
  * context".
@@ -34,11 +38,12 @@ import { getTechnicalDetails } from '$lib/file-operations/transfer/transfer-erro
 import TrashCompleteToastContent from '$lib/file-operations/delete/TrashCompleteToastContent.svelte'
 import { getAppLogger } from '$lib/logging/logger'
 import { moveCursorToNewFolder } from '$lib/file-operations/mkdir/new-folder-operations'
-import { pathCrossesArchiveBoundary } from './archive-paths'
+import { archiveNameFromPath, pathCrossesArchiveBoundary } from './archive-paths'
 import { transferOpLabel } from './transfer-op-label'
 import { createTransferPaneEffects } from './transfer-pane-effects'
 import { createAdoptedOperation } from './adopted-operation.svelte'
 import { createArchivePasswordFlow } from './archive-password-flow.svelte'
+import { createBackgroundOperations, type ArchiveNeedsPasswordError } from './background-operations.svelte'
 import { createProgrammaticConfirm } from './programmatic-confirm'
 import { skippedDeleteConfirmation, skippedTransferConfirmation } from './confirmation-skip'
 import { getVolumes } from '$lib/stores/volume-store.svelte'
@@ -260,7 +265,12 @@ export function createDialogState(deps: DialogStateDeps) {
       return
     }
     const op = retry.operationType
-    if (startBirthOperation(retry) === 'started') {
+    if (retry.startInBackground) {
+      // Started in the background, so it starts there again.
+      log.info('{op} {how} from the error dialog, in the background', { op: transferOpLabel(op), how })
+      void background.start(retry)
+      deps.onRefocus()
+    } else if (startBirthOperation(retry) === 'started') {
       log.info('{op} {how} from the error dialog', { op: transferOpLabel(op), how })
     } else {
       deps.onRefocus()
@@ -275,7 +285,16 @@ export function createDialogState(deps: DialogStateDeps) {
       // A fresh scan runs, so `previewId` is cleared. ⚠️ It MUST be: the retry is
       // a NEW operation, and the backend refuses a second claim on one preview,
       // so a carried-over id would silently fall back to a full re-walk.
-      transferProgressProps = { ...props, previewId: null }
+      const retry = { ...props, previewId: null }
+      if (retry.startInBackground) {
+        // A background job goes back where it was: the slot only held it for
+        // the prompt.
+        transferProgressProps = null
+        void background.start(retry)
+        deps.onRefocus()
+        return
+      }
+      transferProgressProps = retry
       paneEffects.snapshotSourcePaneSelection()
       showTransferProgressDialog = true
     },
@@ -295,6 +314,58 @@ export function createDialogState(deps: DialogStateDeps) {
       showTransferProgressDialog = shown
     },
     onRefocus: deps.onRefocus,
+  })
+
+  /**
+   * A background job stopped for its archive's password. The prompt needs the
+   * birth slot (the submit re-dispatches from it), so it borrows the slot for as
+   * long as the prompt is up, with nothing mounted. A slot already held by a
+   * foreground operation, or a progress dialog on screen, can't be borrowed: the
+   * job has already ended (a password stop settles it), so a toast says how to
+   * get it back rather than overwriting the operation the person is watching.
+   */
+  function promptBackgroundPassword(
+    props: TransferProgressPropsData,
+    error: ArchiveNeedsPasswordError,
+    operationId: string | null,
+  ): void {
+    if (progressSlotHolder() !== null || showTransferProgressDialog) {
+      log.info('{op} in the background needs an archive password, but the progress slot is taken', {
+        op: transferOpLabel(props.operationType),
+      })
+      addToast(
+        tString('fileOperations.backgroundStart.needsPasswordToast', { archiveName: archiveNameFromPath(error.path) }),
+        { level: 'warn', timeoutMs: 10000 },
+      )
+      return
+    }
+    transferProgressProps = props
+    archivePassword.promptForTransfer({
+      operationType: props.operationType,
+      parentVolumeId: props.sourceVolumeId,
+      archivePath: error.path,
+      wrongAttempt: error.wrongAttempt,
+      operationId,
+    })
+  }
+
+  const background = createBackgroundOperations({
+    getLeftPaneRef: deps.getLeftPaneRef,
+    getRightPaneRef: deps.getRightPaneRef,
+    onStartRefused: (props, error) => {
+      if (error.type === 'archive_needs_password') {
+        promptBackgroundPassword(props, error, null)
+        return
+      }
+      log.error('{op} in the background was refused: {detail}', {
+        op: transferOpLabel(props.operationType),
+        detail: getTechnicalDetails(error).replaceAll('\n', '; '),
+      })
+      // Nothing ran, so there is no retained failure to claim, and nothing to
+      // refresh. The Retry starts it in the background again.
+      openTransferError(props.operationType, error, null, null, retryPropsFrom(props))
+    },
+    onNeedsPassword: promptBackgroundPassword,
   })
 
   const adopted = createAdoptedOperation({
@@ -328,6 +399,36 @@ export function createDialogState(deps: DialogStateDeps) {
     paneEffects.snapshotSourcePaneSelection()
     showTransferProgressDialog = true
     return 'started'
+  }
+
+  /** The birth context a confirmed delete or trash starts from, or `null` with
+   *  no delete dialog up. */
+  function deleteBirthProps(
+    previewId: string | null,
+    operationType: 'delete' | 'trash',
+  ): TransferProgressPropsData | null {
+    if (!deleteDialogProps) return null
+    // Collect per-item sizes for trash progress if available.
+    // Group A wire-format: IPC sends `null` for absent sizes, so reject both null and undefined.
+    const sizes = deleteDialogProps.sourceItems
+      .map((item) => (item.isDirectory ? item.recursiveSize : item.size))
+      .filter((s): s is number => s != null)
+    const itemSizes = sizes.length === deleteDialogProps.sourceItems.length ? sizes : undefined
+    return {
+      operationType,
+      sourcePaths: deleteDialogProps.sourcePaths,
+      sourceFolderPath: deleteDialogProps.sourceFolderPath,
+      sourcePaneSide: deps.getFocusedPaneSide(),
+      sortColumn: deleteDialogProps.sortColumn,
+      sortOrder: deleteDialogProps.sortOrder,
+      previewId,
+      sourceVolumeId: deleteDialogProps.sourceVolumeId,
+      itemSizes,
+      mcpRequestId: deleteDialogProps.mcpRequestId,
+      initiator: deleteDialogProps.initiator,
+      // A delete creates nothing, so there is never a copy to name.
+      duplicateFollowUp: 'nothing',
+    }
   }
 
   const programmaticConfirm = createProgrammaticConfirm({
@@ -463,6 +564,7 @@ export function createDialogState(deps: DialogStateDeps) {
       preKnownConflicts,
       newName,
       renameInPlace,
+      startInBackground,
     }: TransferConfirmPayload) {
       if (!transferDialogProps) return
       if (renameInPlace && destinationName && renameInSourcePane(transferDialogProps, destinationName, deps)) {
@@ -471,10 +573,7 @@ export function createDialogState(deps: DialogStateDeps) {
         return
       }
 
-      // A refusal still takes this dialog down (below): the user answered it, and
-      // leaving it stacked over the operation it can't join would say nothing. The
-      // refusal itself does the talking.
-      startBirthOperation({
+      const props: TransferProgressPropsData = {
         operationType,
         sourcePaths: transferDialogProps.sourcePaths,
         sourceFolderPath: transferDialogProps.sourceFolderPath,
@@ -495,10 +594,21 @@ export function createDialogState(deps: DialogStateDeps) {
         initiator: transferDialogProps.initiator,
         duplicateFollowUp: destinationName ? 'nothing' : transferDialogProps.duplicateFollowUp,
         newName,
-      })
+      }
 
       showTransferDialog = false
       transferDialogProps = null
+
+      if (startInBackground) {
+        // No progress dialog will take focus, so the pane gets it back now.
+        void background.start({ ...props, startInBackground: true })
+        deps.onRefocus()
+        return
+      }
+      // A refusal takes this dialog down too (above): the user answered it, and
+      // leaving it stacked over the operation it can't join would say nothing.
+      // The refusal itself does the talking.
+      startBirthOperation(props)
     },
 
     handleTransferCancel() {
@@ -508,35 +618,23 @@ export function createDialogState(deps: DialogStateDeps) {
     },
 
     handleDeleteConfirm(previewId: string | null, isPermanent: boolean) {
-      if (!deleteDialogProps) return
-
-      const opType: TransferOperationType = isPermanent ? 'delete' : 'trash'
-
-      // Collect per-item sizes for trash progress if available.
-      // Group A wire-format: IPC sends `null` for absent sizes, so reject both null and undefined.
-      const sizes = deleteDialogProps.sourceItems
-        .map((item) => (item.isDirectory ? item.recursiveSize : item.size))
-        .filter((s): s is number => s != null)
-      const itemSizes = sizes.length === deleteDialogProps.sourceItems.length ? sizes : undefined
-
-      startBirthOperation({
-        operationType: opType,
-        sourcePaths: deleteDialogProps.sourcePaths,
-        sourceFolderPath: deleteDialogProps.sourceFolderPath,
-        sourcePaneSide: deps.getFocusedPaneSide(),
-        sortColumn: deleteDialogProps.sortColumn,
-        sortOrder: deleteDialogProps.sortOrder,
-        previewId,
-        sourceVolumeId: deleteDialogProps.sourceVolumeId,
-        itemSizes,
-        mcpRequestId: deleteDialogProps.mcpRequestId,
-        initiator: deleteDialogProps.initiator,
-        // A delete creates nothing, so there is never a copy to name.
-        duplicateFollowUp: 'nothing',
-      })
-
+      const props = deleteBirthProps(previewId, isPermanent ? 'delete' : 'trash')
+      if (!props) return
+      startBirthOperation(props)
       showDeleteDialog = false
       deleteDialogProps = null
+    },
+
+    /** The delete dialog's F2 / Background button: a TRASH with no progress
+     *  dialog. It takes no mode on purpose, so a permanent delete can't be
+     *  started out of sight from here, whatever the dialog sends. */
+    handleTrashInBackground(previewId: string | null) {
+      const props = deleteBirthProps(previewId, 'trash')
+      if (!props) return
+      showDeleteDialog = false
+      deleteDialogProps = null
+      void background.start({ ...props, startInBackground: true })
+      deps.onRefocus()
     },
 
     handleDeleteCancel() {
@@ -637,11 +735,14 @@ export function createDialogState(deps: DialogStateDeps) {
      *  window. We do NOT cancel it and do NOT refresh panes here — the op is still
      *  in flight; the file watcher and the queue window cover its lifecycle. We DO
      *  drop the source-pane operation snapshot and selection, since this dialog
-     *  has handed the op off and won't fire `handleTransferComplete` for it. */
-    handleTransferQueue() {
+     *  has handed the op off and won't fire `handleTransferComplete` for it, and
+     *  hand its birth context to the background watch, which raises the archive
+     *  password prompt the dialog would have. */
+    handleTransferQueue(operationId: string) {
       const op = transferProgressProps?.operationType ?? 'copy'
       log.info('{op} sent to the background (managed in the queue window)', { op: transferOpLabel(op) })
 
+      if (transferProgressProps) background.watch({ ...transferProgressProps, startInBackground: true }, operationId)
       paneEffects.clearSourcePaneAfterTransfer()
 
       showTransferProgressDialog = false
