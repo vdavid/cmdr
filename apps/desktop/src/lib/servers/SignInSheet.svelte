@@ -481,7 +481,14 @@
         if (request.mode === 'sign-in') {
             return {
                 mode: 'sign-in',
-                secret: credentials.guest ? null : { secret: credentials.secret, remember: credentials.remember },
+                // ❗ Nothing typed offers nothing: an offered secret WINS over the stored one for
+                // its dial, so an empty one (the round a freshly trusted host key runs) turned a
+                // remembered password into "That password didn't work". `canSubmit` keeps every
+                // other round from sending an empty field.
+                secret:
+                    credentials.guest || credentials.secret === ''
+                        ? null
+                        : { secret: credentials.secret, remember: credentials.remember },
                 // ❗ Only where the VARIANT says the username is editable, and
                 // only for a real account: SFTP's and WebDAV's reconnect refuse a
                 // changed username because the volume id IS the account, and a

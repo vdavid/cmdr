@@ -299,6 +299,32 @@ describe('SignInSheet: the host-key step', () => {
     expect(document.body.textContent).not.toContain('SHA256:THE-ONE-ON-SCREEN')
     expect(document.body.textContent).toContain('The key for nas.local changed')
   })
+
+  /**
+   * ❗ An offered secret wins over the stored one for its dial, so an EMPTY one offered
+   * after a trusted key turned a remembered password into "That password didn't work"
+   * (first seen after moving a saved server to a new address, whose key is new).
+   */
+  it('dials past a freshly trusted key with no secret when nothing was typed, so a stored one answers', async () => {
+    const attempt = (submission: SignInSubmission): Promise<SignInAttemptOutcome> => {
+      submissions.push(submission)
+      return Promise.resolve({ kind: 'connected', volumeId: 'v' })
+    }
+    await renderSheet({
+      mode: 'sign-in',
+      remembered: true,
+      endpoint,
+      shape: { kind: 'password' },
+      hostKey: { host: 'nas.local', port: 22, algorithm: 'ssh-ed25519', fingerprint: 'SHA256:NEW', kind: 'unknown' },
+      attempt,
+    })
+
+    buttonSaying('Trust and connect').click()
+    await flush()
+
+    expect(submissions).toHaveLength(1)
+    expect(submissions[0]).toMatchObject({ mode: 'sign-in', secret: null })
+  })
 })
 
 describe('SignInSheet: the keyboard', () => {
