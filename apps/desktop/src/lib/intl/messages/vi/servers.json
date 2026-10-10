@@ -287,6 +287,22 @@
   "@servers.refusal.endpointMalformed": {
     "sourceHash": "beb63dd"
   },
+  "servers.refusal.addressTaken": "Bạn đã lưu địa chỉ này với tên {name}. Hãy mở máy chủ đó, hoặc quên máy chủ đó trước để chuyển máy chủ này sang đây.",
+  "@servers.refusal.addressTaken": {
+    "sourceHash": "5a14a92"
+  },
+  "servers.refusal.secretNotMoved": "Cmdr không thể mang mật khẩu đã lưu sang địa chỉ mới, nên không có gì thay đổi. Hãy kiểm tra xem chuỗi khóa đã được mở khóa chưa, rồi nhấn Lưu lần nữa.",
+  "@servers.refusal.secretNotMoved": {
+    "sourceHash": "7f3c328"
+  },
+  "servers.refusal.s3SecretNotMoved": "Cmdr không thể mang khóa truy cập bí mật đã lưu sang điểm cuối mới, nên không có gì thay đổi. Hãy kiểm tra xem chuỗi khóa đã được mở khóa chưa, rồi nhấn Lưu lần nữa.",
+  "@servers.refusal.s3SecretNotMoved": {
+    "sourceHash": "69901e7"
+  },
+  "servers.refusal.accountChanged": "Một tài khoản khác là một máy chủ khác, nên Cmdr chưa lưu gì. Thay vào đó, hãy thêm tài khoản này thành một máy chủ mới.",
+  "@servers.refusal.accountChanged": {
+    "sourceHash": "a0cf23d"
+  },
   "servers.sheet.addTitle": "Thêm máy chủ",
   "@servers.sheet.addTitle": {
     "sourceHash": "1099b2a"
@@ -390,6 +406,18 @@
   "servers.sheet.addressLocked": "Địa chỉ là thứ xác định máy chủ này. Để dùng một địa chỉ khác, hãy quên máy chủ này rồi thêm lại.",
   "@servers.sheet.addressLocked": {
     "sourceHash": "b476060"
+  },
+  "servers.sheet.accountLocked": "Giao thức và tài khoản là những gì xác định máy chủ này. Để dùng một tài khoản khác, hãy thêm tài khoản đó thành một máy chủ mới.",
+  "@servers.sheet.accountLocked": {
+    "sourceHash": "248d279"
+  },
+  "servers.sheet.s3EndpointMoveHelp": "Máy chủ đã chuyển đi nơi khác? Hãy nhập điểm cuối mới. Mọi bộ chứa thuộc khóa này sẽ đi theo, cùng mục ưa thích, các tab đang mở và khóa truy cập bí mật đã lưu.",
+  "@servers.sheet.s3EndpointMoveHelp": {
+    "sourceHash": "79195cc"
+  },
+  "servers.sheet.addressMoveHelp": "Máy chủ đã chuyển đi nơi khác? Hãy nhập địa chỉ mới. Mục ưa thích, các tab đang mở và mật khẩu đã lưu của máy chủ sẽ đi theo.",
+  "@servers.sheet.addressMoveHelp": {
+    "sourceHash": "210ff1c"
   },
   "servers.sheet.username": "Tên người dùng",
   "@servers.sheet.username": {

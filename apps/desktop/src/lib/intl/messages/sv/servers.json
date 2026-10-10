@@ -288,6 +288,22 @@
   "@servers.refusal.endpointMalformed": {
     "sourceHash": "beb63dd"
   },
+  "servers.refusal.addressTaken": "Du har redan sparat den här adressen som {name}. Öppna den andra servern i stället, eller glöm den först för att flytta hit den här servern.",
+  "@servers.refusal.addressTaken": {
+    "sourceHash": "5a14a92"
+  },
+  "servers.refusal.secretNotMoved": "Cmdr kunde inte ta med det sparade lösenordet till den nya adressen, så ingenting ändrades. Kontrollera att nyckelringen är upplåst och spara sedan igen.",
+  "@servers.refusal.secretNotMoved": {
+    "sourceHash": "7f3c328"
+  },
+  "servers.refusal.s3SecretNotMoved": "Cmdr kunde inte ta med den sparade hemliga åtkomstnyckeln till den nya slutpunkten, så ingenting ändrades. Kontrollera att nyckelringen är upplåst och spara sedan igen.",
+  "@servers.refusal.s3SecretNotMoved": {
+    "sourceHash": "69901e7"
+  },
+  "servers.refusal.accountChanged": "Ett annat konto är en annan server, så Cmdr sparade ingenting. Lägg till det som en ny server i stället.",
+  "@servers.refusal.accountChanged": {
+    "sourceHash": "a0cf23d"
+  },
   "servers.sheet.addTitle": "Lägg till server",
   "@servers.sheet.addTitle": {
     "sourceHash": "1099b2a"
@@ -391,6 +407,18 @@
   "servers.sheet.addressLocked": "Adressen är det som identifierar den här servern. Glöm servern och lägg till den igen om du vill använda en annan adress.",
   "@servers.sheet.addressLocked": {
     "sourceHash": "b476060"
+  },
+  "servers.sheet.accountLocked": "Protokollet och kontot är det som identifierar den här servern. Lägg till det som en ny server om du vill använda ett annat konto.",
+  "@servers.sheet.accountLocked": {
+    "sourceHash": "248d279"
+  },
+  "servers.sheet.s3EndpointMoveHelp": "Har servern flyttat? Skriv in den nya slutpunkten. Alla bucketar under den här nyckeln följer med, tillsammans med favoriterna, de öppna flikarna och den sparade hemliga åtkomstnyckeln.",
+  "@servers.sheet.s3EndpointMoveHelp": {
+    "sourceHash": "79195cc"
+  },
+  "servers.sheet.addressMoveHelp": "Har servern flyttat? Skriv in den nya adressen. Favoriterna, de öppna flikarna och det sparade lösenordet följer med.",
+  "@servers.sheet.addressMoveHelp": {
+    "sourceHash": "210ff1c"
   },
   "servers.sheet.username": "Användarnamn",
   "@servers.sheet.username": {

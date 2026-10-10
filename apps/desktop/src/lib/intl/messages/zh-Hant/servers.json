@@ -287,6 +287,22 @@
   "@servers.refusal.endpointMalformed": {
     "sourceHash": "beb63dd"
   },
+  "servers.refusal.addressTaken": "你已經把這個位址儲存為 {name}。直接開啟那個伺服器，或先忘記它，再把這個伺服器移到這裡。",
+  "@servers.refusal.addressTaken": {
+    "sourceHash": "5a14a92"
+  },
+  "servers.refusal.secretNotMoved": "Cmdr 沒辦法把已儲存的密碼帶到新位址，所以什麼都沒變。請確認鑰匙圈已經解鎖，再儲存一次。",
+  "@servers.refusal.secretNotMoved": {
+    "sourceHash": "7f3c328"
+  },
+  "servers.refusal.s3SecretNotMoved": "Cmdr 沒辦法把已儲存的私密存取金鑰帶到新端點，所以什麼都沒變。請確認鑰匙圈已經解鎖，再儲存一次。",
+  "@servers.refusal.s3SecretNotMoved": {
+    "sourceHash": "69901e7"
+  },
+  "servers.refusal.accountChanged": "不同的帳號就是不同的伺服器，所以什麼都沒儲存。請把它加入成新的伺服器。",
+  "@servers.refusal.accountChanged": {
+    "sourceHash": "a0cf23d"
+  },
   "servers.sheet.addTitle": "加入伺服器",
   "@servers.sheet.addTitle": {
     "sourceHash": "1099b2a"
@@ -390,6 +406,18 @@
   "servers.sheet.addressLocked": "位址決定了這是哪個伺服器。要改用其他位址，先忘記這個伺服器，再重新加入。",
   "@servers.sheet.addressLocked": {
     "sourceHash": "b476060"
+  },
+  "servers.sheet.accountLocked": "通訊協定和帳號決定了這是哪個伺服器。要改用其他帳號，就把它加入成新的伺服器。",
+  "@servers.sheet.accountLocked": {
+    "sourceHash": "248d279"
+  },
+  "servers.sheet.s3EndpointMoveHelp": "伺服器搬家了嗎？輸入它的新端點。這組金鑰底下的每個儲存貯體都會跟著過去，連同它們的喜好項目、開著的分頁和已儲存的私密存取金鑰。",
+  "@servers.sheet.s3EndpointMoveHelp": {
+    "sourceHash": "79195cc"
+  },
+  "servers.sheet.addressMoveHelp": "伺服器搬家了嗎？輸入它的新位址。它的喜好項目、開著的分頁和已儲存的密碼都會跟著過去。",
+  "@servers.sheet.addressMoveHelp": {
+    "sourceHash": "210ff1c"
   },
   "servers.sheet.username": "使用者名稱",
   "@servers.sheet.username": {

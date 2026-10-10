@@ -288,6 +288,22 @@
   "@servers.refusal.endpointMalformed": {
     "sourceHash": "beb63dd"
   },
+  "servers.refusal.addressTaken": "Vous avez déjà enregistré cette adresse sous {name}. Ouvrez plutôt l’autre serveur, ou oubliez-le d’abord pour déplacer ce serveur ici.",
+  "@servers.refusal.addressTaken": {
+    "sourceHash": "5a14a92"
+  },
+  "servers.refusal.secretNotMoved": "Cmdr n’a pas pu emporter le mot de passe enregistré vers la nouvelle adresse, donc rien n’a changé. Vérifiez que le trousseau est déverrouillé, puis enregistrez à nouveau.",
+  "@servers.refusal.secretNotMoved": {
+    "sourceHash": "7f3c328"
+  },
+  "servers.refusal.s3SecretNotMoved": "Cmdr n’a pas pu emporter la clé d’accès secrète enregistrée vers le nouveau point de terminaison, donc rien n’a changé. Vérifiez que le trousseau est déverrouillé, puis enregistrez à nouveau.",
+  "@servers.refusal.s3SecretNotMoved": {
+    "sourceHash": "69901e7"
+  },
+  "servers.refusal.accountChanged": "Un compte différent est un serveur différent, Cmdr n’a donc rien enregistré. Ajoutez-le plutôt comme nouveau serveur.",
+  "@servers.refusal.accountChanged": {
+    "sourceHash": "a0cf23d"
+  },
   "servers.sheet.addTitle": "Ajouter un serveur",
   "@servers.sheet.addTitle": {
     "sourceHash": "1099b2a"
@@ -391,6 +407,18 @@
   "servers.sheet.addressLocked": "L’adresse identifie ce serveur. Pour en utiliser une autre, oubliez ce serveur puis ajoutez-le à nouveau.",
   "@servers.sheet.addressLocked": {
     "sourceHash": "b476060"
+  },
+  "servers.sheet.accountLocked": "Le protocole et le compte identifient ce serveur. Pour utiliser un autre compte, ajoutez-le comme nouveau serveur.",
+  "@servers.sheet.accountLocked": {
+    "sourceHash": "248d279"
+  },
+  "servers.sheet.s3EndpointMoveHelp": "Le serveur a déménagé ? Saisissez son nouveau point de terminaison. Tous les compartiments de cette clé passent au nouveau point de terminaison, avec leurs favoris, leurs onglets ouverts et la clé d’accès secrète enregistrée.",
+  "@servers.sheet.s3EndpointMoveHelp": {
+    "sourceHash": "79195cc"
+  },
+  "servers.sheet.addressMoveHelp": "Le serveur a déménagé ? Saisissez sa nouvelle adresse. Ses favoris, ses onglets ouverts et son mot de passe enregistré passent à la nouvelle adresse.",
+  "@servers.sheet.addressMoveHelp": {
+    "sourceHash": "210ff1c"
   },
   "servers.sheet.username": "Nom d’utilisateur",
   "@servers.sheet.username": {

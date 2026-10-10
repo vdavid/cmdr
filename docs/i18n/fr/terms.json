@@ -2649,6 +2649,11 @@
     "forms": "a hit inside the viewer → correspondance; search results → résultats",
     "sources": "MS terminology FRA"
   },
+  "secret-access-key": {
+    "chosen": "clé d’accès secrète",
+    "confidence": "high",
+    "sources": "decisions.md \"Le stockage S3\" (AWS FR console, MS FRA); catalog servers.sheet.secretAccessKey (the S3 form label), servers.refusal.s3SecretMissing, servers.refusal.s3SecretNotMoved"
+  },
   "see": {
     "accept": ["Visualiser", "consult"],
     "avoid": [

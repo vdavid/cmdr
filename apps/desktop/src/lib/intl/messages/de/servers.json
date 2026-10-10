@@ -289,6 +289,22 @@
   "@servers.refusal.endpointMalformed": {
     "sourceHash": "beb63dd"
   },
+  "servers.refusal.addressTaken": "Du hast diese Adresse schon als {name} gespeichert. Öffne stattdessen den anderen Server oder vergiss ihn zuerst, damit dieser Server hierher umziehen kann.",
+  "@servers.refusal.addressTaken": {
+    "sourceHash": "5a14a92"
+  },
+  "servers.refusal.secretNotMoved": "Cmdr konnte das gespeicherte Passwort nicht zur neuen Adresse mitnehmen, deshalb hat sich nichts geändert. Prüfe, ob dein Schlüsselbund entsperrt ist, und sichere dann noch einmal.",
+  "@servers.refusal.secretNotMoved": {
+    "sourceHash": "7f3c328"
+  },
+  "servers.refusal.s3SecretNotMoved": "Cmdr konnte den gespeicherten geheimen Zugriffsschlüssel nicht zum neuen Endpunkt mitnehmen, deshalb hat sich nichts geändert. Prüfe, ob dein Schlüsselbund entsperrt ist, und sichere dann noch einmal.",
+  "@servers.refusal.s3SecretNotMoved": {
+    "sourceHash": "69901e7"
+  },
+  "servers.refusal.accountChanged": "Ein anderes Konto ist ein anderer Server, deshalb hat Cmdr nichts gesichert. Füge es stattdessen als neuen Server hinzu.",
+  "@servers.refusal.accountChanged": {
+    "sourceHash": "a0cf23d"
+  },
   "servers.sheet.addTitle": "Server hinzufügen",
   "@servers.sheet.addTitle": {
     "sourceHash": "1099b2a"
@@ -392,6 +408,18 @@
   "servers.sheet.addressLocked": "Die Adresse macht diesen Server aus. Um eine andere zu verwenden, vergiss diesen Server und füge ihn erneut hinzu.",
   "@servers.sheet.addressLocked": {
     "sourceHash": "b476060"
+  },
+  "servers.sheet.accountLocked": "Protokoll und Konto machen diesen Server aus. Um ein anderes Konto zu verwenden, füge es als neuen Server hinzu.",
+  "@servers.sheet.accountLocked": {
+    "sourceHash": "248d279"
+  },
+  "servers.sheet.s3EndpointMoveHelp": "Ist der Server umgezogen? Gib seinen neuen Endpunkt ein. Alle Buckets unter diesem Schlüssel kommen mit, samt ihren Favoriten, offenen Tabs und dem gespeicherten geheimen Zugriffsschlüssel.",
+  "@servers.sheet.s3EndpointMoveHelp": {
+    "sourceHash": "79195cc"
+  },
+  "servers.sheet.addressMoveHelp": "Ist der Server umgezogen? Gib seine neue Adresse ein. Seine Favoriten, offenen Tabs und das gespeicherte Passwort kommen mit.",
+  "@servers.sheet.addressMoveHelp": {
+    "sourceHash": "210ff1c"
   },
   "servers.sheet.username": "Benutzername",
   "@servers.sheet.username": {

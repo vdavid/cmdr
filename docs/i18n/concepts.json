@@ -1948,7 +1948,7 @@
     "distinct": ["copy", "transfer", "move-to-trash"],
     "en": "move",
     "match": ["move", "moves", "moving", "moved"],
-    "note": "\"Move to left column\" and \"moves down\" (cursor movement) are not this concept.",
+    "note": "\"Move to left column\" and \"moves down\" (cursor movement) are not this concept, and neither is a saved server moving to a new address.",
     "notMatch": [
       "move down",
       "move to left column",
@@ -1963,7 +1963,9 @@
       "moving those to the trash",
       "move the cursor",
       "moves the cursor",
-      "moving the cursor"
+      "moving the cursor",
+      "did the server move",
+      "move this server"
     ],
     "sense": "Relocating files to another folder (F6)."
   },

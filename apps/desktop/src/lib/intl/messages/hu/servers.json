@@ -287,6 +287,22 @@
   "@servers.refusal.endpointMalformed": {
     "sourceHash": "beb63dd"
   },
+  "servers.refusal.addressTaken": "Ezt a címet már elmentetted ezen a néven: {name}. Inkább azt a szervert nyisd meg, vagy előbb felejtsd el, hogy ezt a szervert ide költöztethesd.",
+  "@servers.refusal.addressTaken": {
+    "sourceHash": "5a14a92"
+  },
+  "servers.refusal.secretNotMoved": "A Cmdr nem tudta átvinni a mentett jelszót az új címre, ezért semmi sem változott. Ellenőrizd, hogy a kulcskarika fel van oldva, aztán ments újra.",
+  "@servers.refusal.secretNotMoved": {
+    "sourceHash": "7f3c328"
+  },
+  "servers.refusal.s3SecretNotMoved": "A Cmdr nem tudta átvinni a mentett titkos hozzáférési kulcsot az új végpontra, ezért semmi sem változott. Ellenőrizd, hogy a kulcskarika fel van oldva, aztán ments újra.",
+  "@servers.refusal.s3SecretNotMoved": {
+    "sourceHash": "69901e7"
+  },
+  "servers.refusal.accountChanged": "Egy másik fiók egy másik szervert jelent, ezért a Cmdr nem mentett semmit. Add hozzá inkább új szerverként.",
+  "@servers.refusal.accountChanged": {
+    "sourceHash": "a0cf23d"
+  },
   "servers.sheet.addTitle": "Szerver hozzáadása",
   "@servers.sheet.addTitle": {
     "sourceHash": "1099b2a"
@@ -390,6 +406,18 @@
   "servers.sheet.addressLocked": "A cím azonosítja ezt a szervert. Másik cím használatához felejtsd el ezt a szervert, és add hozzá újra.",
   "@servers.sheet.addressLocked": {
     "sourceHash": "b476060"
+  },
+  "servers.sheet.accountLocked": "A protokoll és a fiók azonosítja ezt a szervert. Másik fiók használatához add hozzá új szerverként.",
+  "@servers.sheet.accountLocked": {
+    "sourceHash": "248d279"
+  },
+  "servers.sheet.s3EndpointMoveHelp": "Elköltözött a szerver? Írd be az új végpontját. Az ehhez a kulcshoz tartozó összes bucket átkerül az új végpontra, a kedvenceivel, a nyitott lapjaival és a mentett titkos hozzáférési kulccsal együtt.",
+  "@servers.sheet.s3EndpointMoveHelp": {
+    "sourceHash": "79195cc"
+  },
+  "servers.sheet.addressMoveHelp": "Elköltözött a szerver? Írd be az új címét. A kedvencei, a nyitott lapjai és a mentett jelszava is átkerülnek az új címre.",
+  "@servers.sheet.addressMoveHelp": {
+    "sourceHash": "210ff1c"
   },
   "servers.sheet.username": "Felhasználónév",
   "@servers.sheet.username": {

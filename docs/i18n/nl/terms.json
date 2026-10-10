@@ -2601,6 +2601,11 @@
     "forms": "No matches → Geen resultaten; Next / Previous match → Volgend / Vorig resultaat; search results → zoekresultaten",
     "sources": "macOS Finder (matches → zoekresultaten)"
   },
+  "secret-access-key": {
+    "chosen": "geheime toegangssleutel",
+    "confidence": "high",
+    "sources": "decisions.md \"S3\" (MS geheime toegangssleutel); catalog servers.sheet.secretAccessKey (the S3 form label), servers.refusal.s3SecretMissing, servers.refusal.s3SecretNotMoved"
+  },
   "see": {
     "accept": ["bekijken", "Toon", "bekeken"],
     "chosen": "Bekijk",

@@ -107,6 +107,22 @@
   "@servers.refusal.passwordMissing": {
     "sourceHash": "dd6fc96"
   },
+  "servers.refusal.addressTaken": "Ya guardaste esta dirección como {name}. Abre ese servidor en su lugar, u olvídalo primero para mover este aquí.",
+  "@servers.refusal.addressTaken": {
+    "sourceHash": "560f7ce"
+  },
+  "servers.refusal.secretNotMoved": "Cmdr no pudo llevar la contraseña guardada a la nueva dirección, así que no cambió nada. Comprueba que el Llavero esté desbloqueado y vuelve a guardar.",
+  "@servers.refusal.secretNotMoved": {
+    "sourceHash": "5ed096f"
+  },
+  "servers.refusal.s3SecretNotMoved": "Cmdr no pudo llevar la clave de acceso secreta guardada al nuevo punto de conexión, así que no cambió nada. Comprueba que el Llavero esté desbloqueado y vuelve a guardar.",
+  "@servers.refusal.s3SecretNotMoved": {
+    "sourceHash": "20c3c7d"
+  },
+  "servers.refusal.accountChanged": "Una cuenta distinta es un servidor distinto, así que no se guardó nada. Agrégala como un servidor nuevo.",
+  "@servers.refusal.accountChanged": {
+    "sourceHash": "bc39732"
+  },
   "servers.sheet.addAndOpen": "Agregar y abrir",
   "@servers.sheet.addAndOpen": {
     "sourceHash": "af7dbdc"
@@ -130,5 +146,17 @@
   "servers.sheet.addedToast": "{name} se guardó en tu lista Servidores.",
   "@servers.sheet.addedToast": {
     "sourceHash": "7c4642f"
+  },
+  "servers.sheet.accountLocked": "El protocolo y la cuenta son los que identifican este servidor. Para usar otra cuenta, agrégala como un servidor nuevo.",
+  "@servers.sheet.accountLocked": {
+    "sourceHash": "5ea0760"
+  },
+  "servers.sheet.s3EndpointMoveHelp": "¿Se mudó el servidor? Escribe su nuevo punto de conexión. Todos los buckets de esta clave pasan al nuevo punto de conexión, con sus favoritos, sus pestañas abiertas y la clave de acceso secreta guardada.",
+  "@servers.sheet.s3EndpointMoveHelp": {
+    "sourceHash": "e19c5f6"
+  },
+  "servers.sheet.addressMoveHelp": "¿Se mudó el servidor? Escribe su nueva dirección. Sus favoritos, sus pestañas abiertas y su contraseña guardada pasan a la nueva dirección.",
+  "@servers.sheet.addressMoveHelp": {
+    "sourceHash": "92104e5"
   }
 }

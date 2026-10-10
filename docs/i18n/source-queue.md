@@ -227,3 +227,8 @@ rule into `translation-principles.md` or `translator-instructions.md`), then del
 - Tooling: the brief's reference-pile path (`<main clone>/_ignored/i18n/<tag>/`) doesn't exist on the M1 agent box, so
   "no ruling" terms there can't be mined as the brief requires. Sync the pile to the box, or have the brief say so and
   fall back to `terms.json` sources; vi mined the live Finder bundle instead (§ No pile on this machine). (ru, vi, sv)
+- `servers.sheet.s3EndpointMoveHelp`: "with its favorites, open tabs, and saved secret access key" reads as each bucket
+  owning a secret; the secret belongs to the account. Say "…comes along, with their favorites and open tabs, and the
+  saved secret access key comes too". (all locales rendered the intended reading)
+- `servers.sheet.addressMoveHelp`, `s3EndpointMoveHelp`, `servers.refusal.addressTaken`: no screenshot of the edit sheet
+  in its move state; one would confirm the line sits under the Address / Endpoint field.

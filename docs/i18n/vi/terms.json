@@ -1569,6 +1569,11 @@
     "forms": "the whole-run time-left label → Tổng thể: {eta}",
     "sources": "GN tổng (a summed quantity); no source names a whole-run time; tổng thể is the standard gloss for overall"
   },
+  "secret-access-key": {
+    "chosen": "khóa truy cập bí mật",
+    "confidence": "tentative",
+    "sources": "catalog servers.sheet.secretAccessKey (the S3 form label), servers.refusal.s3SecretMissing, servers.refusal.s3SecretNotMoved; MS access key → khóa truy cập; no AWS console ships Vietnamese"
+  },
   "size-unit-gibibyte": {
     "chosen": "GiB",
     "confidence": "high",

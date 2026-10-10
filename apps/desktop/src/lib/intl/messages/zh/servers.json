@@ -287,6 +287,22 @@
   "@servers.refusal.endpointMalformed": {
     "sourceHash": "beb63dd"
   },
+  "servers.refusal.addressTaken": "你已经把这个地址保存为 {name}。直接打开那台服务器吧，或者先忘记它，再把这台服务器移到这里。",
+  "@servers.refusal.addressTaken": {
+    "sourceHash": "5a14a92"
+  },
+  "servers.refusal.secretNotMoved": "Cmdr 没能把保存的密码带到新地址，所以什么都没改。检查一下钥匙串有没有解锁，然后再保存一次。",
+  "@servers.refusal.secretNotMoved": {
+    "sourceHash": "7f3c328"
+  },
+  "servers.refusal.s3SecretNotMoved": "Cmdr 没能把保存的秘密访问密钥带到新端点，所以什么都没改。检查一下钥匙串有没有解锁，然后再保存一次。",
+  "@servers.refusal.s3SecretNotMoved": {
+    "sourceHash": "69901e7"
+  },
+  "servers.refusal.accountChanged": "不同的账户就是不同的服务器，所以什么都没保存。把它添加为一台新服务器吧。",
+  "@servers.refusal.accountChanged": {
+    "sourceHash": "a0cf23d"
+  },
   "servers.sheet.addTitle": "添加服务器",
   "@servers.sheet.addTitle": {
     "sourceHash": "1099b2a"
@@ -390,6 +406,18 @@
   "servers.sheet.addressLocked": "地址决定了这是哪台服务器。要换一个地址，先忘记这台服务器，再重新添加。",
   "@servers.sheet.addressLocked": {
     "sourceHash": "b476060"
+  },
+  "servers.sheet.accountLocked": "协议和账户决定了这是哪台服务器。要用别的账户，就把它添加为一台新服务器。",
+  "@servers.sheet.accountLocked": {
+    "sourceHash": "248d279"
+  },
+  "servers.sheet.s3EndpointMoveHelp": "服务器搬家了？输入它的新端点。这个密钥下的所有存储桶都会跟过去，连同它们的个人收藏、打开的标签页和保存的秘密访问密钥。",
+  "@servers.sheet.s3EndpointMoveHelp": {
+    "sourceHash": "79195cc"
+  },
+  "servers.sheet.addressMoveHelp": "服务器搬家了？输入它的新地址。它的个人收藏、打开的标签页和保存的密码都会跟过去。",
+  "@servers.sheet.addressMoveHelp": {
+    "sourceHash": "210ff1c"
   },
   "servers.sheet.username": "用户名",
   "@servers.sheet.username": {

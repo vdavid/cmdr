@@ -287,6 +287,22 @@
   "@servers.refusal.endpointMalformed": {
     "sourceHash": "beb63dd"
   },
+  "servers.refusal.addressTaken": "Этот адрес уже сохранен как {name}. Откройте лучше тот сервер или сначала забудьте его, чтобы перенести этот сервер сюда.",
+  "@servers.refusal.addressTaken": {
+    "sourceHash": "5a14a92"
+  },
+  "servers.refusal.secretNotMoved": "Cmdr не удалось перенести сохраненный пароль на новый адрес, поэтому ничего не изменилось. Проверьте, что Связка ключей разблокирована, и нажмите «Сохранить» еще раз.",
+  "@servers.refusal.secretNotMoved": {
+    "sourceHash": "7f3c328"
+  },
+  "servers.refusal.s3SecretNotMoved": "Cmdr не удалось перенести сохраненный секретный ключ доступа на новый URL сервиса, поэтому ничего не изменилось. Проверьте, что Связка ключей разблокирована, и нажмите «Сохранить» еще раз.",
+  "@servers.refusal.s3SecretNotMoved": {
+    "sourceHash": "69901e7"
+  },
+  "servers.refusal.accountChanged": "Другая учетная запись — это другой сервер, поэтому ничего не сохранено. Добавьте ее как новый сервер.",
+  "@servers.refusal.accountChanged": {
+    "sourceHash": "a0cf23d"
+  },
   "servers.sheet.addTitle": "Добавить сервер",
   "@servers.sheet.addTitle": {
     "sourceHash": "1099b2a"
@@ -390,6 +406,18 @@
   "servers.sheet.addressLocked": "Адрес определяет этот сервер. Чтобы использовать другой адрес, забудьте сервер и добавьте заново.",
   "@servers.sheet.addressLocked": {
     "sourceHash": "b476060"
+  },
+  "servers.sheet.accountLocked": "Протокол и учетная запись определяют этот сервер. Чтобы использовать другую учетную запись, добавьте ее как новый сервер.",
+  "@servers.sheet.accountLocked": {
+    "sourceHash": "248d279"
+  },
+  "servers.sheet.s3EndpointMoveHelp": "Сервер переехал? Введите его новый URL сервиса. Все бакеты этого ключа перейдут туда же вместе с избранным, открытыми вкладками и сохраненным секретным ключом доступа.",
+  "@servers.sheet.s3EndpointMoveHelp": {
+    "sourceHash": "79195cc"
+  },
+  "servers.sheet.addressMoveHelp": "Сервер переехал? Введите его новый адрес. Избранное, открытые вкладки и сохраненный пароль перейдут вместе с ним.",
+  "@servers.sheet.addressMoveHelp": {
+    "sourceHash": "210ff1c"
   },
   "servers.sheet.username": "Имя пользователя",
   "@servers.sheet.username": {

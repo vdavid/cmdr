@@ -1204,7 +1204,7 @@
   },
   "forget": {
     "chosen": "olvidar",
-    "accept": ["olvid"],
+    "accept": ["olvid", "olvíd"],
     "forms": "with the article on a thing under the cursor: Olvidar el servidor, Olvidar la contraseña guardada",
     "confidence": "high",
     "sources": "catalog (fileExplorer.network.share.forgetPassword, menu.network.forgetServer)",
@@ -2428,6 +2428,11 @@
     "accept": ["coincid", "resultado"],
     "confidence": "high",
     "sources": "catalog (coincidir for match)"
+  },
+  "secret-access-key": {
+    "chosen": "clave de acceso secreta",
+    "confidence": "high",
+    "sources": "catalog servers.sheet.secretAccessKey (the S3 form label), servers.refusal.s3SecretMissing, servers.refusal.s3SecretNotMoved; decisions.md \"S3\" (AWS console and docs in this language (outside the pile, not verified live))"
   },
   "see": {
     "chosen": "Ver",

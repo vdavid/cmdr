@@ -2539,6 +2539,13 @@
     "forms": "Föregående träff / Nästa träff; Sökresultat",
     "sources": "catalog"
   },
+  "secret-access-key": {
+    "accept": ["hemliga åtkomstnyckel"],
+    "chosen": "hemlig åtkomstnyckel",
+    "confidence": "tentative",
+    "forms": "the S3 form label → Hemlig åtkomstnyckel; definite den hemliga åtkomstnyckeln",
+    "sources": "catalog servers.sheet.secretAccessKey (the S3 form label), servers.refusal.s3SecretMissing, servers.refusal.s3SecretNotMoved; MS access key → åtkomstnyckel; no AWS console ships Swedish"
+  },
   "see": {
     "accept": ["se "],
     "chosen": "visa",

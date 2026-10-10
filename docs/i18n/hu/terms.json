@@ -1526,6 +1526,13 @@
     "sources": "macOS AppKit Revisions (Restore → Visszaállítás); ms (restore → visszaállítás); catalog (Visszaállítás 3×)",
     "decision": "S3"
   },
+  "secret-access-key": {
+    "accept": ["titkos hozzáférési kulc"],
+    "chosen": "titkos hozzáférési kulcs",
+    "confidence": "high",
+    "forms": "the S3 form label → Titkos hozzáférési kulcs; with -val/-vel → a titkos hozzáférési kulccsal",
+    "sources": "decisions.md \"S3\" (MS); catalog servers.sheet.secretAccessKey (the S3 form label), servers.refusal.s3SecretMissing, servers.refusal.s3SecretNotMoved"
+  },
   "size-unit-gibibyte": {
     "chosen": "GiB",
     "confidence": "high",

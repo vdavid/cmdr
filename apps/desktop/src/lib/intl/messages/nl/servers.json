@@ -290,6 +290,22 @@
   "@servers.refusal.endpointMalformed": {
     "sourceHash": "beb63dd"
   },
+  "servers.refusal.addressTaken": "Je hebt dit adres al bewaard als {name}. Open liever die server, of vergeet hem eerst om deze server hierheen te verhuizen.",
+  "@servers.refusal.addressTaken": {
+    "sourceHash": "5a14a92"
+  },
+  "servers.refusal.secretNotMoved": "Cmdr kon het opgeslagen wachtwoord niet meenemen naar het nieuwe adres, dus er is niets veranderd. Controleer of Sleutelhanger ontgrendeld is en bewaar dan opnieuw.",
+  "@servers.refusal.secretNotMoved": {
+    "sourceHash": "7f3c328"
+  },
+  "servers.refusal.s3SecretNotMoved": "Cmdr kon de opgeslagen geheime toegangssleutel niet meenemen naar het nieuwe eindpunt, dus er is niets veranderd. Controleer of Sleutelhanger ontgrendeld is en bewaar dan opnieuw.",
+  "@servers.refusal.s3SecretNotMoved": {
+    "sourceHash": "69901e7"
+  },
+  "servers.refusal.accountChanged": "Een ander account is een andere server, dus er is niets bewaard. Voeg het in plaats daarvan toe als nieuwe server.",
+  "@servers.refusal.accountChanged": {
+    "sourceHash": "a0cf23d"
+  },
   "servers.sheet.addTitle": "Voeg server toe",
   "@servers.sheet.addTitle": {
     "sourceHash": "1099b2a"
@@ -394,6 +410,18 @@
   "servers.sheet.addressLocked": "Het adres bepaalt welke server dit is. Vergeet deze server en voeg hem opnieuw toe om een ander adres te gebruiken.",
   "@servers.sheet.addressLocked": {
     "sourceHash": "b476060"
+  },
+  "servers.sheet.accountLocked": "Het protocol en het account bepalen welke server dit is. Wil je een ander account gebruiken, voeg het dan toe als nieuwe server.",
+  "@servers.sheet.accountLocked": {
+    "sourceHash": "248d279"
+  },
+  "servers.sheet.s3EndpointMoveHelp": "Is de server verhuisd? Typ het nieuwe eindpunt. Elke bucket onder deze sleutel gaat mee, met de favorieten, open tabbladen en de opgeslagen geheime toegangssleutel.",
+  "@servers.sheet.s3EndpointMoveHelp": {
+    "sourceHash": "79195cc"
+  },
+  "servers.sheet.addressMoveHelp": "Is de server verhuisd? Typ het nieuwe adres. De favorieten, open tabbladen en het opgeslagen wachtwoord gaan mee.",
+  "@servers.sheet.addressMoveHelp": {
+    "sourceHash": "210ff1c"
   },
   "servers.sheet.username": "Gebruikersnaam",
   "@servers.sheet.username": {

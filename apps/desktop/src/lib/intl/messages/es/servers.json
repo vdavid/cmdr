@@ -287,6 +287,22 @@
   "@servers.refusal.endpointMalformed": {
     "sourceHash": "beb63dd"
   },
+  "servers.refusal.addressTaken": "Ya has guardado esta dirección como {name}. Abre ese servidor en su lugar, u olvídalo primero para mover este aquí.",
+  "@servers.refusal.addressTaken": {
+    "sourceHash": "5a14a92"
+  },
+  "servers.refusal.secretNotMoved": "Cmdr no ha podido llevar la contraseña guardada a la nueva dirección, así que no ha cambiado nada. Comprueba que el Llavero esté desbloqueado y vuelve a guardar.",
+  "@servers.refusal.secretNotMoved": {
+    "sourceHash": "7f3c328"
+  },
+  "servers.refusal.s3SecretNotMoved": "Cmdr no ha podido llevar la clave de acceso secreta guardada al nuevo punto de conexión, así que no ha cambiado nada. Comprueba que el Llavero esté desbloqueado y vuelve a guardar.",
+  "@servers.refusal.s3SecretNotMoved": {
+    "sourceHash": "69901e7"
+  },
+  "servers.refusal.accountChanged": "Una cuenta distinta es un servidor distinto, así que no se ha guardado nada. Añádela como un servidor nuevo.",
+  "@servers.refusal.accountChanged": {
+    "sourceHash": "a0cf23d"
+  },
   "servers.sheet.addTitle": "Añadir servidor",
   "@servers.sheet.addTitle": {
     "sourceHash": "1099b2a"
@@ -390,6 +406,18 @@
   "servers.sheet.addressLocked": "La dirección es lo que identifica este servidor. Para usar otra, olvida el servidor y vuelve a añadirlo.",
   "@servers.sheet.addressLocked": {
     "sourceHash": "b476060"
+  },
+  "servers.sheet.accountLocked": "El protocolo y la cuenta son los que identifican este servidor. Para usar otra cuenta, añádela como un servidor nuevo.",
+  "@servers.sheet.accountLocked": {
+    "sourceHash": "248d279"
+  },
+  "servers.sheet.s3EndpointMoveHelp": "¿Se ha mudado el servidor? Escribe su nuevo punto de conexión. Todos los buckets de esta clave pasan al nuevo punto de conexión, con sus favoritos, sus pestañas abiertas y la clave de acceso secreta guardada.",
+  "@servers.sheet.s3EndpointMoveHelp": {
+    "sourceHash": "79195cc"
+  },
+  "servers.sheet.addressMoveHelp": "¿Se ha mudado el servidor? Escribe su nueva dirección. Sus favoritos, sus pestañas abiertas y su contraseña guardada pasan a la nueva dirección.",
+  "@servers.sheet.addressMoveHelp": {
+    "sourceHash": "210ff1c"
   },
   "servers.sheet.username": "Nombre de usuario",
   "@servers.sheet.username": {

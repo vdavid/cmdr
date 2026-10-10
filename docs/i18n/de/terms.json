@@ -1342,6 +1342,13 @@
     "forms": "the whole-run time-left label → Insgesamt: {eta}",
     "sources": "GN insgesamt; DC Gesamt: (the label form, read stiffer before a time phrase)"
   },
+  "secret-access-key": {
+    "accept": ["geheim"],
+    "chosen": "geheimer Zugriffsschlüssel",
+    "confidence": "high",
+    "forms": "the S3 form label → Geheimer Zugriffsschlüssel; acc./dat. → den / dem geheimen Zugriffsschlüssel",
+    "sources": "catalog servers.sheet.secretAccessKey (the S3 form label), servers.refusal.s3SecretMissing, servers.refusal.s3SecretNotMoved; pairs with access-key-id (Zugriffsschlüssel-ID); MS access key → Zugriffsschlüssel"
+  },
   "size-unit-gibibyte": {
     "chosen": "GiB",
     "confidence": "high",

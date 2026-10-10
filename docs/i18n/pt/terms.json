@@ -2379,6 +2379,11 @@
     "confidence": "high",
     "sources": "shipped pt catalog"
   },
+  "secret-access-key": {
+    "chosen": "chave de acesso secreta",
+    "confidence": "high",
+    "sources": "catalog servers.sheet.secretAccessKey (the S3 form label), servers.refusal.s3SecretMissing, servers.refusal.s3SecretNotMoved; AWS console and docs in pt-BR (outside the pile, not verified live)"
+  },
   "see": {
     "chosen": "Ver",
     "accept": ["Visualizar"],
