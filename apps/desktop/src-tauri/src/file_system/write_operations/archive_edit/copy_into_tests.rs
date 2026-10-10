@@ -682,7 +682,7 @@ async fn a_named_copy_into_zip_uses_the_requested_leaf_and_preserves_existing_en
     }
     std::fs::write(tmp.path().join("original.txt"), b"new bytes").unwrap();
     for policy in [ConflictResolution::Skip, ConflictResolution::Overwrite] {
-        let source: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("src", tmp.path().to_path_buf()));
+        let source: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("src", tmp.path().to_path_buf()));
         let events = Arc::new(CollectorEventSink::new());
         route_archive_copy_into_with_provenance(
             events.clone(),
@@ -733,7 +733,7 @@ async fn a_named_move_into_zip_deletes_only_the_source_that_landed() {
         }
         let original = tmp.path().join("original.txt");
         std::fs::write(&original, b"new bytes").unwrap();
-        let source: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("src", tmp.path().to_path_buf()));
+        let source: Arc<dyn Volume> = Arc::new(LocalPosixVolume::local_folder("src", tmp.path().to_path_buf()));
         let events = Arc::new(CollectorEventSink::new());
         route_archive_copy_into_with_provenance(
             events.clone(),
