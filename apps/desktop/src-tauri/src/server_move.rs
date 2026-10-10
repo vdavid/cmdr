@@ -187,7 +187,6 @@ pub async fn edit_s3_account(account_id: &str, name: &str, endpoint: Option<S3Pr
         return SavedServerOutcome::Unreachable;
     };
     let Some(endpoint) = endpoint.filter(|endpoint| *endpoint != saved.provider) else {
-        // allowed-discarded-outcome: the account was found just above, so the rename has one to name.
         s3_known_places::rename_account(account_id, name);
         return SavedServerOutcome::Saved;
     };
@@ -244,7 +243,6 @@ pub async fn edit_s3_account(account_id: &str, name: &str, endpoint: Option<S3Pr
             return SavedServerOutcome::AddressTaken { name };
         }
     };
-    // allowed-discarded-outcome: the account was just moved under this id, so the rename has one to name.
     s3_known_places::rename_account(&new_account_id, name);
     let places = previous
         .into_iter()
