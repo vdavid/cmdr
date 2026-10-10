@@ -225,29 +225,35 @@
         }
     }
 
-    function handleKeydown(e: KeyboardEvent): void {
-        // F2 and ⌘S work from anywhere in the sheet, a text field included.
+    /** The sheet's registry keys, which work from anywhere in it, a text field included. Claims what it answers. */
+    function answerSheetKey(e: KeyboardEvent): boolean {
+        // F2 and ⌘S.
         const presetKey = presetKeyOf(e)
         if (presetKey !== null) {
             claimKey(e)
             if (presetKey === 'openMenu') presetsControl?.pressOpenKey('keyboard')
             else presetsControl?.openSave()
-            return
+            return true
         }
-        // So do the option keys: ⌘⌥ plus a letter flips a checkbox or opens Letter case.
+        // The option keys: ⌘⌥ plus a letter flips a checkbox or opens Letter case.
         const optionKey = optionKeyOf(e)
         if (optionKey !== null) {
             claimKey(e)
             if (optionKey.kind === 'toggle') toggle(optionKey.field)
             else openCaseMenu()
-            return
+            return true
         }
         // ⌘⌥Z rolls back the last run; claimed even with none, so ⌥ never types `Ω` into a field.
         if (!e.isComposing && eventMatchesCommand(e, 'multiRename.undoRename')) {
             claimKey(e)
             void undoLastRun()
-            return
+            return true
         }
+        return false
+    }
+
+    function handleKeydown(e: KeyboardEvent): void {
+        if (answerSheetKey(e)) return
         // Enter in a text field starts, as TC's Start! does; a button or menu keeps its own Enter.
         if (e.key !== 'Enter' || e.isComposing || e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return
         if (!(e.target instanceof HTMLInputElement) || e.target.type === 'checkbox') return

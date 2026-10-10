@@ -241,7 +241,6 @@ export const fileListCommands: CommandSource[] = [
     fixedKey: true,
   },
   {
-    // G for Greek.
     id: 'multiRename.greekToLatin',
     nameKey: 'commands.multiRenameGreekToLatin.label',
     scope: 'Main window/Multi-rename',
