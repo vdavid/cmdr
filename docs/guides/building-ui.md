@@ -119,7 +119,8 @@ instead:
   options are short and benefit from sitting side by side.
 - `Select`: a dropdown for a longer list of values.
 - `Combobox`: a text field with suggestions (free text plus a filtered list), not a value-bound select.
-- `Chip`: a small pill button (filter trigger or recent-query pill).
+- `Chip`: the chip family: a filter (popover trigger), a toggle (on/off option), an insert (momentary action), or a
+  recent-query pill. One shape, and the accent tint as its only "on" look.
 
 ## Info glyphs
 

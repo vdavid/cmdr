@@ -14,7 +14,8 @@ The ⌃M sheet over `src-tauri/src/multi_rename/` (the engine and its rules: tha
 - `MaskInput.svelte` both mask fields, `[C…]` tokens with a ▾ marker and an inline `CounterTokenEditor`
   (`mask-token-kinds.ts`); `mask-tokens.ts` / `counter-token.ts` / `token-editor-rules.ts` are its pure logic.
 - `PlaceholderTip.svelte` / `placeholder-help.ts` the placeholder tooltips; `SearchOptionChips.svelte` /
-  `search-option-help.ts` the search option chips and theirs; `rename-examples.ts` renders every example.
+  `search-option-help.ts` the search option chips (house `Chip` toggles) and theirs; `rename-examples.ts` renders every
+  example.
 - `option-keys.ts` reads the ⌘⌥ option keys (`TOGGLE_COMMANDS`). Pure.
 
 ## Must-knows

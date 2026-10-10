@@ -1,16 +1,17 @@
 <script lang="ts">
     /**
      * The five search options as toggle chips beside the search fields, the way code editors
-     * draw their find options: a few characters each (`Aa`, `.*`), on in the accent fill. Each is
-     * a real toggle button (`aria-pressed`, its full name as `aria-label`), and its tooltip gives
-     * the name, its ⌘⌥ key, and a tiny replace on a made-up file with the option on and off, the
-     * text the replace put in set apart (`search-option-help.ts`).
+     * draw their find options: a few mono characters each (`Aa`, `.*`), tinted when on. Each is a
+     * house `Chip` toggle (`aria-pressed`, its full name as `aria-label`), as tall as the fields
+     * (`size="field"`). Its tooltip gives the name, its ⌘⌥ key, and a tiny replace on a made-up
+     * file with the option on and off, the text the replace put in set apart
+     * (`search-option-help.ts`).
      */
     import type { Snippet } from 'svelte'
     import Trans from '$lib/intl/Trans.svelte'
     import { tString } from '$lib/intl/messages.svelte'
+    import Chip from '$lib/ui/Chip.svelte'
     import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
-    import { tooltip } from '$lib/tooltip/tooltip'
     import type { MultiRenameSpec } from '$lib/tauri-commands'
     import { TOGGLE_COMMANDS } from './option-keys'
     import { examplePieces } from './rename-examples'
@@ -37,16 +38,16 @@
 
 <div class="search-options" role="group" aria-label={tString('multiRename.searchOptions')}>
     {#each SEARCH_OPTIONS as option (option.field)}
-        <button
-            type="button"
-            class="option-chip"
-            aria-pressed={spec[option.field]}
-            aria-label={tString(option.label)}
-            onclick={() => { onToggle(option.field) }}
-            use:tooltip={{ contentEl: tips[option.field] }}
-        >
-            <span aria-hidden="true">{option.glyph}</span>
-        </button>
+        <Chip
+            variant="toggle"
+            size="field"
+            mono
+            label={option.glyph}
+            ariaLabel={tString(option.label)}
+            pressed={spec[option.field]}
+            tooltipContent={{ contentEl: tips[option.field] }}
+            onActivate={() => { onToggle(option.field) }}
+        />
     {/each}
 </div>
 
@@ -89,50 +90,6 @@
     .search-options {
         display: flex;
         gap: var(--spacing-xxs);
-    }
-
-    /* As tall as the text fields beside it: their frame's own recipe (`app-field.css`). */
-    .option-chip {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        min-width: calc(var(--font-size-input) * var(--font-line-height-tight) + 2 * var(--spacing-input) + 2px);
-        height: calc(var(--font-size-input) * var(--font-line-height-tight) + 2 * var(--spacing-input) + 2px);
-        padding: 0 var(--spacing-xs);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-md);
-        background: var(--color-bg-primary);
-        color: var(--color-text-secondary);
-        font-family: var(--font-mono);
-        font-size: var(--font-size-sm);
-        font-weight: 600;
-        white-space: nowrap;
-        transition:
-            background var(--transition-base),
-            border-color var(--transition-base),
-            color var(--transition-base);
-    }
-
-    .option-chip:hover {
-        background: var(--color-bg-tertiary);
-        color: var(--color-text-primary);
-    }
-
-    /* On: the accent fill, as a chosen `ToggleGroup` cell. */
-    .option-chip[aria-pressed='true'] {
-        border-color: var(--color-accent);
-        background: var(--color-accent);
-        color: var(--color-accent-fg);
-    }
-
-    .option-chip[aria-pressed='true']:hover {
-        background: var(--color-accent-hover);
-    }
-
-    .option-chip:focus-visible {
-        outline: 2px solid var(--color-accent);
-        outline-offset: 1px;
-        box-shadow: var(--shadow-focus);
     }
 
     .search-option-tip {

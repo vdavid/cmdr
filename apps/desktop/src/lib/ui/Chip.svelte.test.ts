@@ -165,3 +165,67 @@ describe('Chip recent variant', () => {
     target.remove()
   })
 })
+
+describe('Chip insert variant', () => {
+  it('is a plain button: no popover ARIA, no pressed state', async () => {
+    const onActivate = vi.fn()
+    const target = mountChip({ variant: 'insert', label: '[N]', mono: true, onActivate })
+    await tick()
+    const button = target.querySelector('button') as HTMLButtonElement
+    expect(button.textContent.trim()).toBe('[N]')
+    expect(button.getAttribute('aria-haspopup')).toBeNull()
+    expect(button.getAttribute('aria-expanded')).toBeNull()
+    expect(button.getAttribute('aria-pressed')).toBeNull()
+    expect(button.classList.contains('is-mono')).toBe(true)
+    button.click()
+    expect(onActivate).toHaveBeenCalledTimes(1)
+    target.remove()
+  })
+})
+
+describe('Chip toggle variant', () => {
+  it('carries aria-pressed and the tint when pressed, and no popover ARIA', async () => {
+    const target = mountChip({
+      variant: 'toggle',
+      label: 'Aa',
+      ariaLabel: 'Match case',
+      pressed: true,
+      onActivate: () => {},
+    })
+    await tick()
+    const button = target.querySelector('button') as HTMLButtonElement
+    expect(button.getAttribute('aria-pressed')).toBe('true')
+    expect(button.getAttribute('aria-label')).toBe('Match case')
+    expect(button.getAttribute('aria-haspopup')).toBeNull()
+    expect(button.getAttribute('aria-expanded')).toBeNull()
+    expect(button.classList.contains('is-pressed')).toBe(true)
+    target.remove()
+  })
+
+  it('reads aria-pressed="false" and stays untinted when not pressed', async () => {
+    const target = mountChip({ variant: 'toggle', label: 'Aa', ariaLabel: 'Match case', onActivate: () => {} })
+    await tick()
+    const button = target.querySelector('button') as HTMLButtonElement
+    expect(button.getAttribute('aria-pressed')).toBe('false')
+    expect(button.classList.contains('is-pressed')).toBe(false)
+    target.remove()
+  })
+
+  it('stands as tall as a text field when sized `field`', async () => {
+    const target = mountChip({ variant: 'toggle', size: 'field', label: '.*', onActivate: () => {} })
+    await tick()
+    expect(target.querySelector('button')?.classList.contains('chip-field')).toBe(true)
+    target.remove()
+  })
+})
+
+describe('Chip aria-pressed is the toggle variant alone', () => {
+  it('leaves a filter chip without aria-pressed even when given `pressed`', async () => {
+    const target = mountChip({ label: 'Size', pressed: true, onActivate: () => {} })
+    await tick()
+    const button = target.querySelector('button') as HTMLButtonElement
+    expect(button.getAttribute('aria-pressed')).toBeNull()
+    expect(button.getAttribute('aria-haspopup')).toBe('dialog')
+    target.remove()
+  })
+})

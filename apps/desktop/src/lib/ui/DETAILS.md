@@ -35,7 +35,8 @@ Pull-tier docs for `lib/ui/`: architecture, component APIs, and decision rationa
   and ⌥↑/⌥↓ index math
 - **`FilterPopover.svelte`**: `Popover` + a labelled section header; the query dialogs' Size / Modified / Search-in
   surface
-- **`Chip.svelte`**: Small pill button: filter chip (popover trigger + × clear) or recent pill (badge + truncate)
+- **`Chip.svelte`**: The chip family: filter (popover trigger + × clear), toggle (`aria-pressed`), insert (momentary
+  action), or recent pill (badge + truncate)
 - **`LinkButton.svelte`**: Link-styled `<button>` (default) or `<a>` (with `href`); the only sanctioned
   `cursor: pointer`
 - **`CopyBox.svelte`**: Copyable monospace text, a command or a path (+ Copy button)
@@ -1097,7 +1098,10 @@ section), `children: Snippet`.
 
 ## Chip
 
-A small pill button with two variants:
+The house chip family: one shape (border, `--radius-sm`, hover, the global focus ring, transitions) and one "on" signal,
+the accent TINT (`--color-accent-subtle` fill + `--color-accent` border + primary text). A pressed toggle and a filter
+chip carrying a value look the same, on purpose. ❌ No solid accent fill on a chip: that's the primary button and
+`ToggleGroup`'s chosen cell, and a chip strip beside a `ToggleGroup` would read as a second segmented control. Variants:
 
 - `filter` (default): a popover trigger. Default state shows just the label ("Size"); a chip carrying a value shows
   "Size: > 100 MB", tinted, and a CONFIGURED one adds a decorative `×` clear marker. Carries `aria-haspopup="dialog"` +
@@ -1111,20 +1115,33 @@ the user usually didn't choose it and there'd be nothing to clear. Collapsing th
 unset Size or Modified slot, and a user reported search as broken when it was only scoped to a folder (`ERR-FCAXU`). The
 style hook is `.is-filled`, ❌ never re-derive it from `configured`.
 
+- `toggle`: an on/off option. `aria-pressed={pressed}`, the tint while pressed (`.is-pressed`, a hook of its own so
+  `.is-filled` keeps meaning "a filter carrying a value"). Give a glyph label its full name as `ariaLabel`. The
+  multi-rename search options are the consumer.
+- `insert`: a momentary action (insert this text): a plain button, no `aria-pressed`, no popover ARIA, never tinted. The
+  multi-rename placeholders are the consumer.
 - `recent`: a denser history pill with a leading mode badge (via the `leading` snippet) and a middle-truncated label.
   Activates on click; `onContextMenu` handles right-click "remove from history". No popover ARIA, no clear.
 
-**The `filter` variant is sized to `ToggleGroup`.** Same padding (`--spacing-xs` / `--spacing-md`) at the same
-`--font-size-md` + `line-height: 1`, so a chip and a segmented control in the same strip resolve to the same height
-(24px: 4 + 14 + 4 plus 1px of border each side). The filter-chip strip relies on that — it puts the Type `ToggleGroup`
-and the chips shoulder to shoulder. If `ToggleGroup`'s cell padding moves, move this with it. The `recent` variant keeps
-its own tighter padding on purpose: it stacks in a history list, not beside segmented controls.
+**`mono`** sets the label in `--font-mono`, for literal syntax (`[N]`, `Aa`, `.*`, `^$`, `.ext`, `1×`); words stay sans.
 
-Props (see the tint/`×` split above before touching `value` or `configured`): `variant?`, `label` (required), `value?`,
-`configured?`, `isOpen?`, `disabled?`, `highlighted?`, `onActivate` (required), `onClear?`, `onContextMenu?`,
-`ariaLabel?`, `tooltipContent?` (a `TooltipParam`), `leading?` (Snippet), `chipElement?` (bindable button ref). The two
-variants render through `class:chip-filter` / `class:chip-recent` directives (not a `chip--{variant}` interpolation,
-which the `css-unused` checker can't resolve, and the `--` form trips its var-definition regex against `:not(...)`).
+**`size="field"`** stands a chip as tall as the text fields beside it, by their frame's own recipe (`app-field.css`:
+font × tight leading + two input paddings + the border), and at least square. Only for a chip in a row of fields (the
+multi-rename search options); the default `strip` size is the one below.
+
+**The strip size (every variant but `recent`) is sized to `ToggleGroup`.** Same padding (`--spacing-xs` /
+`--spacing-md`) at the same `--font-size-md` + `line-height: 1`, so a chip and a segmented control in the same strip
+resolve to the same height (24px: 4 + 14 + 4 plus 1px of border each side). The filter-chip strip relies on that — it
+puts the Type `ToggleGroup` and the chips shoulder to shoulder. If `ToggleGroup`'s cell padding moves, move this with
+it. The `recent` variant keeps its own tighter padding on purpose: it stacks in a history list, not beside segmented
+controls.
+
+Props (see the tint/`×` split above before touching `value` or `configured`): `variant?`, `size?`, `mono?`, `pressed?`,
+`label` (required), `value?`, `configured?`, `isOpen?`, `disabled?`, `highlighted?`, `onActivate` (required),
+`onClear?`, `onContextMenu?`, `ariaLabel?`, `tooltipContent?` (a `TooltipParam`), `leading?` (Snippet), `chipElement?`
+(bindable button ref). Variant and size classes render through `class:` directives (`chip-filter`, `chip-recent`,
+`chip-field`) (not a `chip--{variant}` interpolation, which the `css-unused` checker can't resolve, and the `--` form
+trips its var-definition regex against `:not(...)`).
 
 ## LinkButton
 

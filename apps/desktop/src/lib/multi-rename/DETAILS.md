@@ -1,7 +1,8 @@
 # Multi-Rename sheet: details
 
 - **Keyboard-first**: the name mask has focus on open; Tab walks the fields; Enter in a text field starts (TC's Start!),
-  a button or menu keeps its own Enter; Esc closes. The placeholder buttons insert at the name mask's caret.
+  a button or menu keeps its own Enter; Esc closes. The placeholder buttons (house `Chip`s, `variant="insert"`, mono)
+  insert at the name mask's caret.
 - **Placeholder tooltips**: each button's tooltip (`PlaceholderTip`, adopted as the house tooltip's `contentEl`, so it
   shows on hover AND keyboard focus and is the button's `aria-describedby`) gives the meaning, an example on the sample
   file, a few other forms from `mask.rs` with their examples, and for a range the part it takes in bold with what the
@@ -73,10 +74,9 @@
   renders more than one element.
 - **Search option chips** (`SearchOptionChips`): Match case `Aa`, First match only `1×`, Include extension `.ext`,
   Regular expression `.*`, Replace whole name `^$` (the regex way to say "the whole string"). Code-editor style find
-  toggles: mono glyphs, `aria-hidden`, on the button an `aria-label` with the full name and `aria-pressed`; on is the
-  accent fill, as a chosen `ToggleGroup` cell. A plain `<button>` (no house multi-toggle primitive exists; `ToggleGroup`
-  is single-select). As tall as the text fields by their frame's own recipe (`app-field.css`: font × tight leading + two
-  input paddings + the border). Each tooltip names the option, shows its key chip, and gives one tiny replace on a
+  toggles: house `Chip`s, `variant="toggle"` (`aria-pressed`, the full name as `aria-label`), mono glyphs, tinted when
+  on like a set filter chip (the chip family's one "on" look, `$lib/ui/DETAILS.md` § Chip), and `size="field"` so they
+  stand as tall as the text fields. Each tooltip names the option, shows its key chip, and gives one tiny replace on a
   made-up file with the option on and off: "Replacing `photo` with `pic` in `Photo photo.jpg`:", then
   `On  Photo pic.jpg` / `Off  pic pic.jpg`, the text the replace put in bold, the rest quiet. Each option's file name is
   chosen so the option changes the result (`search-option-help.ts`).

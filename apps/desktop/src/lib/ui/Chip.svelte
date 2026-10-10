@@ -1,14 +1,25 @@
 <script lang="ts">
     /**
-     * Chip: a small pill button used across the query dialogs. Two flavors, one component:
+     * Chip: the house chip family. Every variant shares one shape (border, radius, hover, focus
+     * ring, transitions) and one "on" signal, the accent TINT (`--color-accent-subtle` fill,
+     * `--color-accent` border, primary text). ❌ No solid accent fill on a chip: that's for
+     * primary buttons and `ToggleGroup`'s chosen cell. What each variant means:
      *
      *   - Filter chip (`variant="filter"`, default): opens a popover. Default state shows just the
      *     label ("Size", "Modified"); a chip carrying a value shows "Size: > 100 MB", tinted.
      *     Carries `aria-haspopup="dialog"` + `aria-expanded`. Backspace on a focused configured
      *     chip clears it.
+     *   - Toggle chip (`variant="toggle"`): an on/off option. Carries `aria-pressed`, and tints
+     *     while `pressed`. A short glyph label wants the full name as `ariaLabel`.
+     *   - Insert chip (`variant="insert"`): a momentary action (insert this text). A plain button
+     *     that never shows an "on" state.
      *   - Recent pill (`variant="recent"`): a denser pill with a leading mode badge and a
      *     middle-truncated label. Click loads + runs the entry; right-click removes it. No popover
      *     semantics, no clear.
+     *
+     * `mono` sets literal syntax (`[N]`, `Aa`, `.*`) in the monospace face; words stay sans.
+     * `size="field"` stands a chip as tall as the text fields beside it, for a chip in a row of
+     * fields; the default sits in a chip strip beside `ToggleGroup`.
      *
      * TINT and the `×` answer different questions, and the scope chip is why they had to split.
      * The tint says "this chip is CONSTRAINING the search" and follows `value`; the `×` says "you
@@ -27,8 +38,17 @@
     interface Props {
         /** Bindable ref to the chip button (so the parent can focus it after Esc, etc.). */
         chipElement?: HTMLButtonElement
-        /** `filter` (popover trigger) or `recent` (history pill). Drives semantics + density. */
-        variant?: 'filter' | 'recent'
+        /**
+         * `filter` (popover trigger), `toggle` (on/off option), `insert` (momentary action), or
+         * `recent` (history pill). Drives semantics + density.
+         */
+        variant?: 'filter' | 'toggle' | 'insert' | 'recent'
+        /** `strip` (default) matches `ToggleGroup`'s height; `field` matches a text field's. */
+        size?: 'strip' | 'field'
+        /** Sets the label in the monospace face, for literal syntax like `[N]` or `.*`. */
+        mono?: boolean
+        /** Whether a `toggle` chip is on. Drives `aria-pressed` and the tint; ignored elsewhere. */
+        pressed?: boolean
         /** Static label shown when there's no value ("Size"), or the pill's primary text. */
         label: string
         /**
@@ -63,6 +83,9 @@
     let {
         chipElement = $bindable(),
         variant = 'filter',
+        size = 'strip',
+        mono = false,
+        pressed = false,
         label,
         value = '',
         configured = false,
@@ -85,6 +108,7 @@
      * it reads as active. The recent pill has its own hover-only treatment and opts out.
      */
     const filled = $derived(variant === 'filter' && value !== '')
+    const isToggle = $derived(variant === 'toggle')
 
     function handleKeyDown(e: KeyboardEvent): void {
         if (disabled) return
@@ -120,11 +144,15 @@
     class="chip"
     class:chip-filter={variant === 'filter'}
     class:chip-recent={variant === 'recent'}
+    class:chip-field={size === 'field'}
+    class:is-mono={mono}
     class:is-filled={filled}
+    class:is-pressed={isToggle && pressed}
     class:is-open={isOpen}
     class:is-highlighted={highlighted}
     aria-haspopup={haspopup ? 'dialog' : undefined}
     aria-expanded={haspopup ? isOpen : undefined}
+    aria-pressed={isToggle ? pressed : undefined}
     aria-label={computedAriaLabel}
     {disabled}
     onclick={() => {
@@ -138,7 +166,7 @@
     <span class="chip-label">
         {#if value}{label}: {value}{:else}{label}{/if}
     </span>
-    {#if configured && onClear}
+    {#if haspopup && configured && onClear}
         <!--
           Decorative clear marker (no role, no tabindex). The keyboard path is Backspace on the
           chip itself; the × is a mouse-only affordance. Nested interactive controls (a button
@@ -155,6 +183,11 @@
 </button>
 
 <style>
+    /* The strip size (every variant but `recent`): padding is `ToggleGroup`'s `.tg-item`
+       padding, and at the same `--font-size-md` + `line-height: 1` the two land on the same
+       height (4 + 14 + 4 + 2 px of border), which is what lets a chip sit beside the Type
+       toggle in the filter strip without either looking like the odd one out. Change one,
+       change the other. */
     .chip {
         display: inline-flex;
         align-items: center;
@@ -165,6 +198,8 @@
         background: transparent;
         border: 1px solid var(--color-border);
         border-radius: var(--radius-sm);
+        padding: var(--spacing-xs) var(--spacing-md);
+        font-size: var(--font-size-md);
         white-space: nowrap;
         transition:
             background var(--transition-base),
@@ -172,14 +207,18 @@
             color var(--transition-base);
     }
 
-    /* === Filter chip: opens a popover. Slightly larger type for the calmer chip strip. ===
-       Padding is `ToggleGroup`'s `.tg-item` padding, and at the same `--font-size-md` +
-       `line-height: 1` the two land on the same height (4 + 14 + 4 + 2 px of border), which
-       is what lets a chip sit beside the Type toggle in the filter strip without either
-       looking like the odd one out. Change one, change the other. */
-    .chip-filter {
-        padding: var(--spacing-xs) var(--spacing-md);
-        font-size: var(--font-size-md);
+    /* === Field size: as tall as the text fields beside it, by their frame's own recipe
+       (`app-field.css`: font × tight leading + two input paddings + the border), and at
+       least square, so a two-glyph toggle doesn't read as a sliver. === */
+    .chip-field {
+        justify-content: center;
+        min-width: calc(var(--font-size-input) * var(--font-line-height-tight) + 2 * var(--spacing-input) + 2px);
+        height: calc(var(--font-size-input) * var(--font-line-height-tight) + 2 * var(--spacing-input) + 2px);
+        padding: 0 var(--spacing-xs);
+    }
+
+    .is-mono {
+        font-family: var(--font-mono);
     }
 
     /* === Recent pill: deliberately denser than the filter chip (it stacks in a history
@@ -205,9 +244,10 @@
     }
 
     .chip.is-filled,
-    .chip.is-open {
-        /* When the chip's popover is open OR it carries a value, it reads as the "active"
-           target via the same tinted treatment. */
+    .chip.is-open,
+    .chip.is-pressed {
+        /* The family's one "on" signal: a filter chip whose popover is open or that carries a
+           value, and a pressed toggle, all read as active through the same tint. */
         background: var(--color-accent-subtle);
         border-color: var(--color-accent);
         color: var(--color-text-primary);
@@ -240,7 +280,8 @@
         max-width: 180px;
     }
 
-    .chip-clear {
+    /* The × is the filter chip's alone: it's the one variant a user configures. */
+    .chip-filter .chip-clear {
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -252,7 +293,7 @@
         line-height: var(--font-line-height-flat);
     }
 
-    .chip-clear:hover {
+    .chip-filter .chip-clear:hover {
         background: var(--color-bg-tertiary);
         color: var(--color-text-primary);
     }

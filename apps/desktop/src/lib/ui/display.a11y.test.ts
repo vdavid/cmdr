@@ -138,10 +138,11 @@ describe('ColumnList a11y', () => {
 /**
  * Tier-3 a11y tests for `Chip.svelte`.
  *
- * Covers the filter variant (default, configured, disabled, open) and the recent variant
- * (with a leading mode badge). The chip is a single `<button>`; the filter variant carries
- * `aria-haspopup="dialog"` + `aria-expanded`, the `×` clear control is decorative (the keyboard
- * path is Backspace), so axe shouldn't flag a nested-interactive pattern.
+ * Covers the filter variant (default, configured, disabled, open), the toggle variant (off and
+ * on), the insert variant, and the recent variant (with a leading mode badge). The chip is a
+ * single `<button>`; the filter variant carries `aria-haspopup="dialog"` + `aria-expanded`, the
+ * toggle `aria-pressed`, and the `×` clear control is decorative (the keyboard path is
+ * Backspace), so axe shouldn't flag a nested-interactive pattern.
  */
 describe('Chip a11y', () => {
   type Props = ComponentProps<typeof Chip>
@@ -179,6 +180,24 @@ describe('Chip a11y', () => {
 
   it('filter disabled state has no a11y violations', async () => {
     await mountAndAudit(baseProps({ disabled: true }))
+  })
+
+  it('toggle variant, off and on (aria-pressed), has no a11y violations', async () => {
+    await mountAndAudit(baseProps({ variant: 'toggle', label: 'Aa', ariaLabel: 'Match case', mono: true }))
+    await mountAndAudit(
+      baseProps({
+        variant: 'toggle',
+        size: 'field',
+        label: '.*',
+        ariaLabel: 'Regular expression',
+        mono: true,
+        pressed: true,
+      }),
+    )
+  })
+
+  it('insert variant has no a11y violations', async () => {
+    await mountAndAudit(baseProps({ variant: 'insert', label: '[N]', mono: true }))
   })
 
   it('recent variant with a leading badge has no a11y violations', async () => {

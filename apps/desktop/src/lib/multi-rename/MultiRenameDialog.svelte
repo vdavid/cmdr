@@ -17,6 +17,7 @@
     import StatusBadge from '$lib/ui/StatusBadge.svelte'
     import StatusGlyph from '$lib/ui/StatusGlyph.svelte'
     import Button from '$lib/ui/Button.svelte'
+    import Chip from '$lib/ui/Chip.svelte'
     import Checkbox from '$lib/ui/Checkbox.svelte'
     import LinkButton from '$lib/ui/LinkButton.svelte'
     import ShortcutChip from '$lib/ui/ShortcutChip.svelte'
@@ -276,13 +277,13 @@
                 </div>
                 <div class="placeholders" role="group" aria-label={tString('multiRename.insertPlaceholder')}>
                     {#each PLACEHOLDER_HELP as help (help.placeholder)}
-                        <Button
-                            size="mini"
+                        <Chip
+                            variant="insert"
+                            mono
+                            label={help.placeholder}
                             tooltipContent={{ contentEl: tipContent[help.placeholder] }}
-                            onclick={() => { insertPlaceholder(help.placeholder) }}
-                        >
-                            {help.placeholder}
-                        </Button>
+                            onActivate={() => { insertPlaceholder(help.placeholder) }}
+                        />
                         <PlaceholderTip {help} rendered={examples} bind:contentEl={tipContent[help.placeholder]} />
                     {/each}
                 </div>
