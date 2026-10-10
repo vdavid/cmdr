@@ -56,7 +56,8 @@ pub enum S3Connection {
     TimedOut,
     /// No route, refused, DNS, or a transport-level breakdown.
     Unreachable,
-    /// The user called it off. Nothing was registered, remembered, or stored.
+    /// The user called it off, or the account moved to a new endpoint while the
+    /// dial was out. Nothing was registered, remembered, or stored.
     Cancelled,
 }
 
@@ -67,6 +68,12 @@ static ATTEMPTS: AttemptTable = AttemptTable::new("an s3");
 /// running.
 pub fn cancel_connect(attempt_id: &str) -> bool {
     ATTEMPTS.cancel(attempt_id)
+}
+
+/// Calls off every connect dialing `place`, for a move that took it to a new
+/// address (`server_move.rs`). Answers how many were running.
+pub fn cancel_dials_to(place: &str) -> usize {
+    ATTEMPTS.cancel_dials_to(place)
 }
 
 /// Dials the place `provider` + `access_key_id` + `bucket` names, and on
@@ -101,22 +108,30 @@ pub async fn connect_and_register(
         return S3Connection::InvalidProvider;
     };
     let volume_id = s3_known_places::place_id(&params);
+    // The account too: a move takes every place under the key, a bucket nobody
+    // saved yet included.
+    let places = vec![volume_id.clone(), s3_known_places::account_id(&params)];
     let (host, offer) =
         one_shot_credentials::host_for_dial(&params.credential_service(), params.access_key_id(), secret).await;
-    let (cancel, _attempt) = ATTEMPTS.register(attempt_id);
+    let (cancel, attempt) = ATTEMPTS.register_dialing(attempt_id, places);
     // The root reads as its account, so a name typed in this very add is its label already.
     let label = match place.bucket {
         None if super::saved_server_fields::is_named(display_name) => display_name.trim().to_string(),
         _ => s3_known_places::place_label(&place),
     };
     let volume = match cmdr_s3::connect_s3_volume(&label, &volume_id, params, host, cancel).await {
-        Ok(volume) => {
-            // Only now: a secret filed before the dial outlived a refused one.
-            offer.went_through().await;
-            volume
-        }
+        Ok(volume) => volume,
         Err(e) => return failed(e),
     };
+    // The account moved while this dial was out: remembering the place here
+    // would save the old endpoint again, beside the moved account
+    // (`connect_wiring.rs`).
+    let Some(_landing) = attempt.land().await else {
+        connect_wiring::let_go(Arc::new(volume)).await;
+        return S3Connection::Cancelled;
+    };
+    // Only now: a secret filed before the dial outlived a refused one.
+    offer.went_through().await;
     connect_wiring::install_retiring_incumbent(&volume_id, Arc::new(volume)).await;
     s3_known_places::adopt_typed_name(&place, display_name);
     s3_known_places::remember(place);

@@ -56,7 +56,8 @@ pub enum WebdavConnection {
     TimedOut,
     /// No route, refused, DNS, or a transport-level breakdown.
     Unreachable,
-    /// The user called it off. ❗ Nothing was registered, remembered, or stored,
+    /// The user called it off, or the server moved to a new address while the
+    /// dial was out. ❗ Nothing was registered, remembered, or stored,
     /// so there is nothing to report and nothing to retry.
     Cancelled,
 }
@@ -74,6 +75,12 @@ static ATTEMPTS: AttemptTable = AttemptTable::new("a webdav");
 /// running. An id nobody is holding is a plain `false`.
 pub fn cancel_connect(attempt_id: &str) -> bool {
     ATTEMPTS.cancel(attempt_id)
+}
+
+/// Calls off every connect dialing `place`, for a move that took it to a new
+/// address (`server_move.rs`). Answers how many were running.
+pub fn cancel_dials_to(place: &str) -> usize {
+    ATTEMPTS.cancel_dials_to(place)
 }
 
 /// Dials `params`, and on success registers the volume and remembers the server.
@@ -112,18 +119,22 @@ pub async fn connect_and_register(
     let start_folder = saved_server_fields::start_folder_for_root(&params.remote_root.to_string_lossy(), start_folder);
     let (host, offer) =
         one_shot_credentials::host_for_dial(&params.credential_service(), &params.username, secret).await;
-    let (cancel, _attempt) = ATTEMPTS.register(attempt_id);
+    let (cancel, attempt) = ATTEMPTS.register_dialing(attempt_id, vec![volume_id.clone()]);
     let label = saved_server_fields::server_label(display_name, &params.username, params.host());
     let outcome = cmdr_webdav::connect_webdav_volume(&label, &volume_id, params.clone(), host, cancel).await;
 
     let volume = match outcome {
-        Ok(volume) => {
-            // Only now: a secret filed before the dial outlived a cancelled or refused one.
-            offer.went_through().await;
-            volume
-        }
+        Ok(volume) => volume,
         Err(e) => return failed(e),
     };
+    // The server moved while this dial was out: remembering it here would save
+    // the old URL again, beside the moved entry (`connect_wiring.rs`).
+    let Some(_landing) = attempt.land().await else {
+        connect_wiring::let_go(Arc::new(volume)).await;
+        return WebdavConnection::Cancelled;
+    };
+    // Only now: a secret filed before the dial outlived a cancelled or refused one.
+    offer.went_through().await;
 
     connect_wiring::install_retiring_incumbent(&volume_id, Arc::new(volume)).await;
     webdav_known_servers::remember(KnownWebdavServer {

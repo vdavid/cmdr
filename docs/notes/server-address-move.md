@@ -61,7 +61,10 @@ Everything that names a place by its id or spells a path with its address prefix
    `place-connect` dials it on landing: that IS the redial at the new address, through the ordinary flow, so a new
    host's key, a missing password, or an unreachable address shows in the pane and the sheet exactly as a first open
    does. Chosen over leaving it disconnected because the person was looking at this server and just pressed Save on it:
-   a pane reading "Not connected yet" would make them ask twice.
+   a pane reading "Not connected yet" would make them ask twice. A dial to the OLD address still out when Save lands is
+   called off, and one that succeeds anyway is let go rather than remembered (it would save the old entry again): a
+   landing check under a lock is the guarantee, cancellation only a courtesy. Mechanism and why:
+   `apps/desktop/src-tauri/src/network/DETAILS.md` § "Moving a saved server to a new address".
 8. **An operation on the place**: ❗ REFUSED (`SavedServerOutcome::OperationRunning`) while any copy, move, delete, or
    other write operation names one of the server's places as source or destination, asked before the secret is copied so
    a refusal touches nothing. Dropping the old session would stop it like Disconnect. It counts every operation the

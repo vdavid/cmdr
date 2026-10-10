@@ -204,6 +204,27 @@ async fn moving_a_server_a_queued_copy_waits_on_is_refused() {
     assert!(sftp_known_servers::find(old_host, 22, "ada").is_some());
 }
 
+/// ❗ A dial to the old address that set out before Save and succeeds after it
+/// would remember the old entry again, a second saved server beside the moved
+/// one. The move calls it off, and a dial already past that can't land.
+#[tokio::test]
+async fn a_dial_to_the_old_address_that_was_out_during_the_move_is_called_off_and_cannot_land() {
+    let _secrets = crate::test_support::isolate_secrets();
+    let (old_host, new_host) = ("203.0.113.140", "203.0.113.141");
+    sftp_known_servers::remember(sftp_entry(old_host, 22));
+    let (cancel, attempt) =
+        sftp_volume_wiring::attempts().register_dialing("server-move-dial-out", vec![sftp_id(old_host, 22)]);
+
+    let outcome = update_saved_server(sftp_target(new_host, 22, "ada"), Some(sftp_id(old_host, 22))).await;
+
+    assert_eq!(outcome, SavedServerOutcome::Saved);
+    assert!(cancel.is_cancelled(), "the dial to the old address is called off");
+    assert!(
+        attempt.land().await.is_none(),
+        "and one already past its last cancel check can't land"
+    );
+}
+
 /// An edit that keeps the address doesn't touch the session, so a copy running
 /// on the place is no reason to refuse it.
 #[tokio::test]

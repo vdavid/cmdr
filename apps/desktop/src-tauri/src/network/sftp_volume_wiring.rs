@@ -58,8 +58,9 @@ pub enum SftpConnection {
     TimedOut,
     /// No route, refused, DNS, or the SFTP subsystem itself declining.
     Unreachable,
-    /// The user called it off. ❗ Nothing was registered, remembered, or stored,
-    /// so there is nothing to report and nothing to retry.
+    /// The user called it off, or the server moved to a new address while the
+    /// dial was out. ❗ Nothing was registered, remembered, or stored, so there is
+    /// nothing to report and nothing to retry.
     Cancelled,
 }
 
@@ -76,6 +77,19 @@ static ATTEMPTS: AttemptTable = AttemptTable::new("an sftp");
 /// running. An id nobody is holding is a plain `false`.
 pub fn cancel_connect(attempt_id: &str) -> bool {
     ATTEMPTS.cancel(attempt_id)
+}
+
+/// Calls off every connect dialing `place`, for a move that took it to a new
+/// address (`server_move.rs`). Answers how many were running.
+pub fn cancel_dials_to(place: &str) -> usize {
+    ATTEMPTS.cancel_dials_to(place)
+}
+
+/// The attempt table itself, for a cell that dials nothing but needs an attempt
+/// filed the way a connect files one.
+#[cfg(test)]
+pub(crate) fn attempts() -> &'static AttemptTable {
+    &ATTEMPTS
 }
 
 /// Dials `params`, and on success registers the volume and remembers the server.
@@ -116,19 +130,23 @@ pub async fn connect_and_register(
     let start_folder = saved_server_fields::start_folder_for_root(&params.remote_root.to_string_lossy(), start_folder);
     let (host, offer) =
         one_shot_credentials::host_for_dial(&params.credential_service(), &params.username, secret).await;
-    let (cancel, _attempt) = ATTEMPTS.register(attempt_id);
+    let (cancel, attempt) = ATTEMPTS.register_dialing(attempt_id, vec![volume_id.clone()]);
     let label = saved_server_fields::server_label(display_name, &params.username, &params.host);
     let outcome = cmdr_sftp::connect_sftp_volume(&label, &volume_id, params.clone(), host, cancel).await;
 
     let volume = match outcome {
-        Ok(SftpConnectOutcome::Connected(volume)) => {
-            // Only now: a secret filed before the dial outlived a cancelled or refused one.
-            offer.went_through().await;
-            volume
-        }
+        Ok(SftpConnectOutcome::Connected(volume)) => volume,
         Ok(SftpConnectOutcome::NeedsHostKeyApproval(prompt)) => return SftpConnection::NeedsHostKeyApproval(prompt),
         Err(e) => return failed(e),
     };
+    // The server moved while this dial was out: remembering it here would save
+    // the old address again, beside the moved entry (`connect_wiring.rs`).
+    let Some(_landing) = attempt.land().await else {
+        connect_wiring::let_go(Arc::new(volume)).await;
+        return SftpConnection::Cancelled;
+    };
+    // Only now: a secret filed before the dial outlived a cancelled or refused one.
+    offer.went_through().await;
 
     connect_wiring::install_retiring_incumbent(&volume_id, Arc::new(volume)).await;
     sftp_known_servers::remember(KnownSftpServer {

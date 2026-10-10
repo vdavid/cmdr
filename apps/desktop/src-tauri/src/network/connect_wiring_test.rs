@@ -86,3 +86,59 @@ fn one_backends_cancel_never_reaches_another_backends_dial() {
     assert!(mine.is_cancelled());
     assert!(!theirs.is_cancelled());
 }
+
+// -- a place that moved while a dial to it was out --
+
+#[tokio::test]
+async fn a_dial_whose_place_moved_while_it_was_out_cannot_land() {
+    // ❗ The race the landing exists for: a dial to the OLD address that set out
+    // before Save and succeeds after it would remember the old entry again, a
+    // second saved server beside the moved one.
+    let (_cancel, attempt) = TABLE.register_dialing("dial-out-during-move", vec!["moved-while-out".to_string()]);
+
+    let mut moving = start_move().await;
+    moving.moved_away("moved-while-out");
+    drop(moving);
+
+    assert!(attempt.land().await.is_none());
+}
+
+#[tokio::test]
+async fn a_dial_that_set_out_after_the_move_lands() {
+    let mut moving = start_move().await;
+    moving.moved_away("moved-before-dial");
+    drop(moving);
+
+    let (_cancel, attempt) = TABLE.register_dialing("dial-after-move", vec!["moved-before-dial".to_string()]);
+
+    assert!(
+        attempt.land().await.is_some(),
+        "a later Add of the old address is a new server"
+    );
+}
+
+#[tokio::test]
+async fn a_move_waits_for_a_dial_that_is_landing() {
+    use futures_util::FutureExt;
+
+    let (_cancel, attempt) = TABLE.register_dialing("landing-now", vec!["landing-place".to_string()]);
+    let landing = attempt.land().await.expect("nothing moved");
+
+    assert!(
+        start_move().now_or_never().is_none(),
+        "a move between a landing's install and its remember would leave the old entry behind it"
+    );
+    drop(landing);
+    drop(start_move().await);
+}
+
+#[test]
+fn a_move_calls_off_the_dials_to_its_place_and_only_those() {
+    let (to_moved, _guard) = TABLE.register_dialing("dial-to-moved", vec!["calls-off-this".to_string()]);
+    let (elsewhere, _other) = TABLE.register_dialing("dial-elsewhere", vec!["leaves-this".to_string()]);
+
+    assert_eq!(TABLE.cancel_dials_to("calls-off-this"), 1);
+
+    assert!(to_moved.is_cancelled());
+    assert!(!elsewhere.is_cancelled());
+}

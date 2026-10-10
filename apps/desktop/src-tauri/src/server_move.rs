@@ -25,6 +25,13 @@
 //! gone. Asked before the password is copied, so a refusal touches nothing. An
 //! edit that keeps the address keeps the session, so it never asks.
 //!
+//! ❗ **A dial to the old address that lands after the move is let go, ❌ never
+//! remembered**: that would save the old entry again beside the moved one. The
+//! move holds `connect_wiring::start_move` from the secret copy to the session
+//! drop, marks each place left behind, and a landing checks the mark under the
+//! same lock (`AttemptGuard::land`). In-flight dials to it are also called off,
+//! which only saves them the trip: cancellation can race, the mark can't.
+//!
 //! ❗ **The old session is dropped WITHOUT `VolumeUnmounted`**, which sends a pane
 //! home. A pane on the old place follows to the new one instead
 //! (`ServerPlaceMoved`, and the frontend's `pane/server-move-follow.ts`), lands on
@@ -42,7 +49,7 @@ use crate::network::s3_known_places::{self, KnownS3Place, S3ProviderChoice};
 use crate::network::saved_server_fields::{self, Relocation, SavedServerOutcome};
 use crate::network::sftp_known_servers::{self, KnownSftpServer};
 use crate::network::webdav_known_servers::{self, KnownWebdavServer};
-use crate::network::{s3_volume_wiring, sftp_volume_wiring, webdav_volume_wiring};
+use crate::network::{connect_wiring, s3_volume_wiring, sftp_volume_wiring, webdav_volume_wiring};
 use crate::volume_broadcast::{self, MovedPlace, ServerPlaceMoved};
 
 /// How long the secret store gets to answer, the same as every secret command.
@@ -71,6 +78,7 @@ pub async fn edit_sftp(saved: KnownSftpServer, edit: KnownSftpServer) -> SavedSe
     if operations_need_any(&[&old_id]) {
         return SavedServerOutcome::OperationRunning;
     }
+    let mut moving = connect_wiring::start_move().await;
     let from = SecretKey {
         service: sftp_volume_wiring::credential_service(&saved.host, saved.port),
         scope: saved.username.clone(),
@@ -89,12 +97,14 @@ pub async fn edit_sftp(saved: KnownSftpServer, edit: KnownSftpServer) -> SavedSe
         Relocation::NotFound => return SavedServerOutcome::Unreachable,
         Relocation::Taken(holder) => return SavedServerOutcome::AddressTaken { name: holder.label() },
     }
+    leave_behind(&mut moving, std::slice::from_ref(&old_id));
     follow(Move {
         old_prefix,
         new_prefix,
         places: vec![(old_id, new_id)],
     })
     .await;
+    drop(moving);
     if copied == SecretCopy::Copied {
         delete_secret(from).await;
     }
@@ -149,6 +159,7 @@ pub async fn edit_webdav(saved: KnownWebdavServer, edit: KnownWebdavServer) -> S
     if operations_need_any(&[&old_id]) {
         return SavedServerOutcome::OperationRunning;
     }
+    let mut moving = connect_wiring::start_move().await;
     let from = SecretKey {
         service: from_service,
         scope: saved.username.clone(),
@@ -170,12 +181,16 @@ pub async fn edit_webdav(saved: KnownWebdavServer, edit: KnownWebdavServer) -> S
         Relocation::NotFound => return SavedServerOutcome::Unreachable,
         Relocation::Taken(holder) => return SavedServerOutcome::AddressTaken { name: holder.label() },
     }
+    // The same id when only the path moved: a dial that set out for the old URL
+    // still mustn't land, and the pane's redial at the new one sets out after this.
+    leave_behind(&mut moving, std::slice::from_ref(&old_id));
     follow(Move {
         old_prefix: cmdr_fs::volume::webdav_app_root(&old_host, old_port, &saved.username),
         new_prefix: cmdr_fs::volume::webdav_app_root(&new_host, new_port, &saved.username),
         places: vec![(old_id, new_id)],
     })
     .await;
+    drop(moving);
     if copied == SecretCopy::Copied {
         delete_secret(from).await;
     }
@@ -225,6 +240,8 @@ pub async fn edit_s3_account(account_id: &str, name: &str, endpoint: Option<S3Pr
             name: s3_known_places::account_label(&holder),
         };
     }
+    // Every saved place under the key, and the account itself, which also names
+    // a bucket nobody saved yet.
     let account_places: Vec<String> = s3_known_places::all()
         .into_iter()
         .filter(|place| {
@@ -252,6 +269,7 @@ pub async fn edit_s3_account(account_id: &str, name: &str, endpoint: Option<S3Pr
         service: to_service,
         scope: key.clone(),
     };
+    let mut moving = connect_wiring::start_move().await;
     let copied = if from == to {
         SecretCopy::NothingStored
     } else {
@@ -269,6 +287,7 @@ pub async fn edit_s3_account(account_id: &str, name: &str, endpoint: Option<S3Pr
         }
     };
     s3_known_places::rename_account(&new_account_id, name);
+    leave_behind(&mut moving, &account_places);
     let places = previous
         .into_iter()
         .filter_map(|place| {
@@ -287,6 +306,7 @@ pub async fn edit_s3_account(account_id: &str, name: &str, endpoint: Option<S3Pr
         places,
     })
     .await;
+    drop(moving);
     if copied == SecretCopy::Copied {
         delete_secret(from).await;
     }
@@ -299,6 +319,24 @@ fn operations_need_any(places: &[&str]) -> bool {
     places
         .iter()
         .any(|place| crate::file_system::operations_need_volume(place))
+}
+
+/// Marks `places` as left behind at the old address, once the store holds the
+/// new one, and calls off the dials still out to them.
+///
+/// ❗ The mark is the guarantee and the cancel only a courtesy: a dial past its
+/// last cancel check still lands, and the mark is what refuses it
+/// (`network/connect_wiring.rs`, `AttemptGuard::land`).
+fn leave_behind(moving: &mut connect_wiring::PlaceMove, places: &[String]) {
+    for place in places {
+        moving.moved_away(place);
+        let called_off = sftp_volume_wiring::cancel_dials_to(place)
+            + webdav_volume_wiring::cancel_dials_to(place)
+            + s3_volume_wiring::cancel_dials_to(place);
+        if called_off > 0 {
+            log::info!(target: "volume", "called off {called_off} dial(s) to {place} at its old address");
+        }
+    }
 }
 
 /// What moved: the app prefix every path on the server carried, and its places'

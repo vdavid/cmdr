@@ -139,6 +139,10 @@ export function createPlaceConnect(deps: PlaceConnectDeps): PlaceConnect {
       // It owns the rounds from there and stays open across them.
       openSignIn: openSignInForPlace,
     })
+    // ❗ The pane left this place while the dial was out (a server move followed it to
+    // the new address, which the backend answers with `cancelled`): the answer is
+    // about a place it no longer shows, so it neither words a view nor enters.
+    if (deps.getVolumeId() !== volumeId) return
     attemptId = null
     switch (result.kind) {
       case 'connected':

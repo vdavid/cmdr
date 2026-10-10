@@ -287,6 +287,35 @@ describe('createPlaceConnect', () => {
     expect(connectPlace).toHaveBeenCalledTimes(1)
   })
 
+  /**
+   * ❗ A server move follows the pane to the new address while its dial to the old
+   * one is still out. The backend calls that dial off, and its late answer is about
+   * a place the pane left: it must neither replace the new dial's spinner with "Not
+   * connected" nor, had it connected, send the pane back to the old address.
+   */
+  for (const late of [{ kind: 'cancelled' }, { kind: 'connected', volumeId: savedPlace.id }] as const) {
+    it(`ignores the ${late.kind} answer of a dial to a place the pane already left`, async () => {
+      let answerOldDial!: (result: typeof late) => void
+      connectPlace.mockReturnValueOnce(
+        new Promise((resolve) => {
+          answerOldDial = resolve
+        }),
+      )
+      connectPlace.mockReturnValueOnce(new Promise(() => {}))
+      const { sub, enter } = create()
+      info = { ...savedPlace, id: 'sftp-nas-moved-22-ada', path: 'sftp://ada@nas.moved:22/srv/data' }
+      flushSync()
+      expect(connectPlace).toHaveBeenCalledTimes(2)
+
+      answerOldDial(late)
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      flushSync()
+
+      expect(sub.state?.kind).toBe('connecting')
+      expect(enter).not.toHaveBeenCalled()
+    })
+  }
+
   it('keeps the spinner while the reconnect manager owns the recovery', async () => {
     connectPlace.mockResolvedValue({ kind: 'reconnecting' })
     const { sub } = create()
