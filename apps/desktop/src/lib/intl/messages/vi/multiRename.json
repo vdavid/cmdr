@@ -43,6 +43,22 @@
   "@multiRename.substitute": {
     "sourceHash": "1cee1b2"
   },
+  "multiRename.searchOptions": "Tùy chọn tìm kiếm",
+  "@multiRename.searchOptions": {
+    "sourceHash": "556a085"
+  },
+  "multiRename.searchOptionHelp.setup": "Thay thế <code>{search}</code> bằng <code>{replace}</code> trong <code>{name}</code>:",
+  "@multiRename.searchOptionHelp.setup": {
+    "sourceHash": "28e2893"
+  },
+  "multiRename.searchOptionHelp.on": "Bật",
+  "@multiRename.searchOptionHelp.on": {
+    "sourceHash": "1300117"
+  },
+  "multiRename.searchOptionHelp.off": "Tắt",
+  "@multiRename.searchOptionHelp.off": {
+    "sourceHash": "ca7981b"
+  },
   "multiRename.case": "Chữ hoa/thường",
   "@multiRename.case": {
     "sourceHash": "9785096"
@@ -302,5 +318,105 @@
   "multiRename.counterEditor.counts": "Đếm {first}, {second}, {third}…",
   "@multiRename.counterEditor.counts": {
     "sourceHash": "1e814e0"
+  },
+  "multiRename.placeholderHelp.name": "Tên tệp, không có đuôi tệp",
+  "@multiRename.placeholderHelp.name": {
+    "sourceHash": "64ccdbf"
+  },
+  "multiRename.placeholderHelp.extension": "Đuôi hiện tại của tệp",
+  "@multiRename.placeholderHelp.extension": {
+    "sourceHash": "47411f5"
+  },
+  "multiRename.placeholderHelp.parent": "Tên thư mục chứa tệp",
+  "@multiRename.placeholderHelp.parent": {
+    "sourceHash": "cd08701"
+  },
+  "multiRename.placeholderHelp.counter": "Một con số tăng thêm một bước nhảy sau mỗi tệp, theo thứ tự trong danh sách",
+  "@multiRename.placeholderHelp.counter": {
+    "sourceHash": "2d7fbf4"
+  },
+  "multiRename.placeholderHelp.date": "Ngày tệp được sửa đổi lần cuối: năm, tháng và ngày",
+  "@multiRename.placeholderHelp.date": {
+    "sourceHash": "d4f6468"
+  },
+  "multiRename.placeholderHelp.time": "Thời điểm tệp được sửa đổi lần cuối: giờ, phút và giây",
+  "@multiRename.placeholderHelp.time": {
+    "sourceHash": "69c80a0"
+  },
+  "multiRename.placeholderHelp.oneChar": "Chỉ ký tự thứ {at}",
+  "@multiRename.placeholderHelp.oneChar": {
+    "sourceHash": "79e798e"
+  },
+  "multiRename.placeholderHelp.charRange": "Ký tự từ {from} đến {to}",
+  "@multiRename.placeholderHelp.charRange": {
+    "sourceHash": "60bd1e5"
+  },
+  "multiRename.placeholderHelp.lastChars": "{count, plural, other {# ký tự cuối cùng}}",
+  "@multiRename.placeholderHelp.lastChars": {
+    "sourceHash": "9f073f8"
+  },
+  "multiRename.placeholderHelp.firstChar": "Chỉ ký tự đầu tiên",
+  "@multiRename.placeholderHelp.firstChar": {
+    "sourceHash": "99755d8"
+  },
+  "multiRename.placeholderHelp.firstChars": "{count, plural, other {# ký tự đầu tiên}}",
+  "@multiRename.placeholderHelp.firstChars": {
+    "sourceHash": "340917c"
+  },
+  "multiRename.placeholderHelp.grandparent": "Tên thư mục chứa thư mục đó",
+  "@multiRename.placeholderHelp.grandparent": {
+    "sourceHash": "1f52d63"
+  },
+  "multiRename.placeholderHelp.counterStart": "Bắt đầu từ {start}",
+  "@multiRename.placeholderHelp.counterStart": {
+    "sourceHash": "f581c27"
+  },
+  "multiRename.placeholderHelp.counterStep": "Mỗi lần tăng {step}",
+  "@multiRename.placeholderHelp.counterStep": {
+    "sourceHash": "435eafd"
+  },
+  "multiRename.placeholderHelp.counterDigits": "{digits, plural, other {Ít nhất # chữ số}}, thêm số 0 ở đầu",
+  "@multiRename.placeholderHelp.counterDigits": {
+    "sourceHash": "cb37674"
+  },
+  "multiRename.placeholderHelp.counterAll": "Cả ba cùng lúc; bước nhảy âm sẽ đếm ngược",
+  "@multiRename.placeholderHelp.counterAll": {
+    "sourceHash": "60be18c"
+  },
+  "multiRename.placeholderHelp.isoDate": "Ngày đầy đủ, có dấu gạch ngang",
+  "@multiRename.placeholderHelp.isoDate": {
+    "sourceHash": "d5d3357"
+  },
+  "multiRename.placeholderHelp.shortYear": "Với năm có hai chữ số",
+  "@multiRename.placeholderHelp.shortYear": {
+    "sourceHash": "c042ccb"
+  },
+  "multiRename.placeholderHelp.datePart": "Chỉ ngày; [Y] và [M] cũng tương tự",
+  "@multiRename.placeholderHelp.datePart": {
+    "sourceHash": "ce0ba83"
+  },
+  "multiRename.placeholderHelp.dottedTime": "Giờ đầy đủ, có dấu chấm",
+  "@multiRename.placeholderHelp.dottedTime": {
+    "sourceHash": "0edc240"
+  },
+  "multiRename.placeholderHelp.hoursMinutes": "Chỉ giờ và phút",
+  "@multiRename.placeholderHelp.hoursMinutes": {
+    "sourceHash": "55998f6"
+  },
+  "multiRename.placeholderHelp.forFile": "Với “{file}”:",
+  "@multiRename.placeholderHelp.forFile": {
+    "sourceHash": "44f23bc"
+  },
+  "multiRename.placeholderHelp.forSampleDate": "Với một tệp được sửa đổi lần cuối lúc {date}:",
+  "@multiRename.placeholderHelp.forSampleDate": {
+    "sourceHash": "f2032cc"
+  },
+  "multiRename.placeholderHelp.forFirstFiles": "Với ba tệp đầu tiên:",
+  "@multiRename.placeholderHelp.forFirstFiles": {
+    "sourceHash": "012bd5a"
+  },
+  "multiRename.placeholderHelp.counterEditHint": "Đặt con trỏ văn bản vào một bộ đếm hoặc đưa chuột lên đó để đổi các con số của nó.",
+  "@multiRename.placeholderHelp.counterEditHint": {
+    "sourceHash": "6ba268e"
   }
 }

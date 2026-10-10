@@ -635,3 +635,4 @@ points at `deze gedeelde map`, since `hij` floats between two de-words.
 - `Wijzig meerdere namen` over TC `Uitgebreid hernoemen` (no `hernoemen`); Finder `Wijzig naam van ^0 onderdelen…`.
 - TC `Vervang door`, `Teller`, `Stapgrootte`, `Cijfers`; MS `Hoofdlettergebruik`; `Opmerking`.
 - `commands.multiRename*.label`: `<label> aan/uit` over `Zet … aan of uit`.
+- `multiRename.placeholderHelp.*`: `tijdstip` (`de hele tijd` means ‘constantly’); caret → `tekstcursor`.

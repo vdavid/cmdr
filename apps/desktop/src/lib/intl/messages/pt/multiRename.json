@@ -43,6 +43,22 @@
   "@multiRename.substitute": {
     "sourceHash": "1cee1b2"
   },
+  "multiRename.searchOptions": "Opções de busca",
+  "@multiRename.searchOptions": {
+    "sourceHash": "556a085"
+  },
+  "multiRename.searchOptionHelp.setup": "Substituindo <code>{search}</code> por <code>{replace}</code> em <code>{name}</code>:",
+  "@multiRename.searchOptionHelp.setup": {
+    "sourceHash": "28e2893"
+  },
+  "multiRename.searchOptionHelp.on": "Ativado",
+  "@multiRename.searchOptionHelp.on": {
+    "sourceHash": "1300117"
+  },
+  "multiRename.searchOptionHelp.off": "Desativado",
+  "@multiRename.searchOptionHelp.off": {
+    "sourceHash": "ca7981b"
+  },
   "multiRename.case": "Maiúsculas e minúsculas",
   "@multiRename.case": {
     "sourceHash": "9785096"
@@ -303,5 +319,105 @@
   "multiRename.counterEditor.counts": "Conta {first}, {second}, {third}…",
   "@multiRename.counterEditor.counts": {
     "sourceHash": "1e814e0"
+  },
+  "multiRename.placeholderHelp.name": "O nome do arquivo, sem a extensão",
+  "@multiRename.placeholderHelp.name": {
+    "sourceHash": "64ccdbf"
+  },
+  "multiRename.placeholderHelp.extension": "A extensão atual do arquivo",
+  "@multiRename.placeholderHelp.extension": {
+    "sourceHash": "47411f5"
+  },
+  "multiRename.placeholderHelp.parent": "O nome da pasta onde o arquivo está",
+  "@multiRename.placeholderHelp.parent": {
+    "sourceHash": "cd08701"
+  },
+  "multiRename.placeholderHelp.counter": "Um número que aumenta um incremento a cada arquivo, na ordem da lista",
+  "@multiRename.placeholderHelp.counter": {
+    "sourceHash": "2d7fbf4"
+  },
+  "multiRename.placeholderHelp.date": "A data da última alteração do arquivo: ano, mês e dia",
+  "@multiRename.placeholderHelp.date": {
+    "sourceHash": "d4f6468"
+  },
+  "multiRename.placeholderHelp.time": "A hora da última alteração do arquivo: horas, minutos e segundos",
+  "@multiRename.placeholderHelp.time": {
+    "sourceHash": "69c80a0"
+  },
+  "multiRename.placeholderHelp.oneChar": "Só o caractere {at}",
+  "@multiRename.placeholderHelp.oneChar": {
+    "sourceHash": "79e798e"
+  },
+  "multiRename.placeholderHelp.charRange": "Os caracteres de {from} a {to}",
+  "@multiRename.placeholderHelp.charRange": {
+    "sourceHash": "60bd1e5"
+  },
+  "multiRename.placeholderHelp.lastChars": "{count, plural, one {O último caractere} many {Os últimos # caracteres} other {Os últimos # caracteres}}",
+  "@multiRename.placeholderHelp.lastChars": {
+    "sourceHash": "9f073f8"
+  },
+  "multiRename.placeholderHelp.firstChar": "Só o primeiro caractere",
+  "@multiRename.placeholderHelp.firstChar": {
+    "sourceHash": "99755d8"
+  },
+  "multiRename.placeholderHelp.firstChars": "{count, plural, one {O primeiro caractere} many {Os primeiros # caracteres} other {Os primeiros # caracteres}}",
+  "@multiRename.placeholderHelp.firstChars": {
+    "sourceHash": "340917c"
+  },
+  "multiRename.placeholderHelp.grandparent": "O nome da pasta acima dessa",
+  "@multiRename.placeholderHelp.grandparent": {
+    "sourceHash": "1f52d63"
+  },
+  "multiRename.placeholderHelp.counterStart": "Começa em {start}",
+  "@multiRename.placeholderHelp.counterStart": {
+    "sourceHash": "f581c27"
+  },
+  "multiRename.placeholderHelp.counterStep": "Aumenta {step} a cada vez",
+  "@multiRename.placeholderHelp.counterStep": {
+    "sourceHash": "435eafd"
+  },
+  "multiRename.placeholderHelp.counterDigits": "{digits, plural, one {Pelo menos # dígito} many {Pelo menos # dígitos} other {Pelo menos # dígitos}}, com zeros à esquerda",
+  "@multiRename.placeholderHelp.counterDigits": {
+    "sourceHash": "cb37674"
+  },
+  "multiRename.placeholderHelp.counterAll": "Os três de uma vez; um incremento negativo faz a contagem descer",
+  "@multiRename.placeholderHelp.counterAll": {
+    "sourceHash": "60be18c"
+  },
+  "multiRename.placeholderHelp.isoDate": "A data completa, com traços",
+  "@multiRename.placeholderHelp.isoDate": {
+    "sourceHash": "d5d3357"
+  },
+  "multiRename.placeholderHelp.shortYear": "Com o ano em dois dígitos",
+  "@multiRename.placeholderHelp.shortYear": {
+    "sourceHash": "c042ccb"
+  },
+  "multiRename.placeholderHelp.datePart": "Só o dia; [Y] e [M] funcionam do mesmo jeito",
+  "@multiRename.placeholderHelp.datePart": {
+    "sourceHash": "ce0ba83"
+  },
+  "multiRename.placeholderHelp.dottedTime": "A hora completa, com pontos",
+  "@multiRename.placeholderHelp.dottedTime": {
+    "sourceHash": "0edc240"
+  },
+  "multiRename.placeholderHelp.hoursMinutes": "Só horas e minutos",
+  "@multiRename.placeholderHelp.hoursMinutes": {
+    "sourceHash": "55998f6"
+  },
+  "multiRename.placeholderHelp.forFile": "Para “{file}”:",
+  "@multiRename.placeholderHelp.forFile": {
+    "sourceHash": "44f23bc"
+  },
+  "multiRename.placeholderHelp.forSampleDate": "Para um arquivo alterado pela última vez em {date}:",
+  "@multiRename.placeholderHelp.forSampleDate": {
+    "sourceHash": "f2032cc"
+  },
+  "multiRename.placeholderHelp.forFirstFiles": "Para os três primeiros arquivos:",
+  "@multiRename.placeholderHelp.forFirstFiles": {
+    "sourceHash": "012bd5a"
+  },
+  "multiRename.placeholderHelp.counterEditHint": "Para mudar os números de um contador, leve até ele o cursor de texto ou o ponteiro do mouse.",
+  "@multiRename.placeholderHelp.counterEditHint": {
+    "sourceHash": "6ba268e"
   }
 }

@@ -71,6 +71,10 @@ wording into `terms.json` (and `decisions.md` when the reason is worth keeping).
   (`commands.fileMultiRename.description`); the counter popover's preview line
   `Donne 1, 3, 5…, affichés sous la forme 001, 003, 005` (`counterEditor.counts*`: is `Donne` natural with the counter
   as implied subject?); `# sans changement` in the footer summary (picked over `inchangé` so no agreement is needed).
+- **Multi-rename tooltips** (`multiRename.placeholderHelp.*`, `searchOptionHelp.*`): `point d’insertion` for the text
+  caret in `counterEditHint` (picked over `curseur`, which names the file-list cursor here; the reference pile wasn’t
+  available to confirm Apple’s form); `Le caractère {at} seul` (no ordinal available); `Activé` / `Désactivé` as the
+  on/off row labels (masculine, matching the shipped `Désactivé`, though the implied noun is `option`).
 
 ## Overflow (check against the `en-XA` pseudolocale)
 

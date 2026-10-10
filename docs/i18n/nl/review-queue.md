@@ -169,3 +169,6 @@ wording into `terms.json` (and `decisions.md` when the reason is worth keeping).
 - `multiRename.case.words` `Elk Woord Met Hoofdletter` shape.
 - `multiRename.counterEditor.*`: `Beginnummer` (over `Begin`, which reads as a verb) and the terse `Cijfers` (fallback
   `Aantal cijfers`); `Telt 1, 3, 5…` for "Counts". `multiRename.summary` renders "to rename" as `# naamwijzigingen`.
+- `multiRename.placeholderHelp.counterDigits` `met voorloopnullen`, `.counterEditHint` `houd de aanwijzer erboven`, and
+  `.counterAll` `een negatieve stap telt terug`: written without the reference pile (absent on the agent box); confirm
+  against macOS/MS Dutch.

@@ -632,3 +632,10 @@ source is Apple's own Connect to Server dialog (`NetAuthAgent.app`).
 
 - Both Cmdr's failed step and the user's are `xóa bản gốc`: the original really leaves the disk, so `xóa`, not `gỡ bỏ`.
 - `Không mất gì cả` repeats `deviceDisconnected.sided.destination.copy`, not `originalsKeptAside`'s "thrown away" line.
+
+## Chú giải ký hiệu đổi tên hàng loạt (`multiRename.placeholderHelp.*`, `multiRename.searchOptionHelp.*`)
+
+- Start → `Bắt đầu từ` (Finder Rename Finder Items `Bắt đầu số từ:`, macOS 27.0.1); [P]/[G] → `thư mục chứa` (Finder);
+  step → `bước nhảy`, as in the counter popover.
+- caret → `con trỏ văn bản` (`settings.viewer.showTextCursor`); On/Off rows → `Bật` / `Tắt`, as the catalog's off
+  options.

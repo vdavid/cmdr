@@ -63,6 +63,9 @@ wording into `terms.json` (and `decisions.md` when the reason is worth keeping).
 - **Corpus-less forms**: `félbemaradt`, `leválasztódott`, `megállt`, `sikerülhetett`, `átneveződött`, `emlékeztetőül`,
   `Hogyan?` (the ADB hint link), `Nem, köszönöm`, `Soha többé`, `még egy kör`, `odatette`: each is sound grammar with no
   pile attestation.
+- **`multiRename.placeholderHelp.counterDigits` / `.counterAll`**: leading zeros → `elöl nullákkal kiegészítve` and a
+  minus step → `mínuszos lépésköz` are plain-word picks with no Tier-1 attestation (no pile here); `vezető nullák` and
+  `negatív lépésköz` are the technical alternatives.
 - **`Mac-eden` vs `Macen`**: both ship; new text uses the majority `Macen` / `Macet`.
 
 ## Length

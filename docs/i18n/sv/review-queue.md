@@ -80,6 +80,9 @@ wording into `terms.json` (and `decisions.md` when the reason is worth keeping).
   verb phrase and doesn't fit a short field label.
 - **`# byter namn · # oförändrade · # problem`** (`multiRename.summary`): `oförändrad(e)` agrees with an unstated `fil`;
   confirm it reads right when folders are in the batch too.
+- **Placeholder tooltips** (`multiRename.placeholderHelp.*`), set without the pile: caret → `textmarkören` (the cursor
+  ruling's viewer form) and hover → `håll pekaren över`; the [C] value → `Ett nummer` (not `löpnummer`); time of day →
+  `klockslaget`, since `Hela tiden` would read as "all the time"; leading zeros → `inledande nollor`.
 
 ## Layout (overflow-check against the pseudolocale)
 

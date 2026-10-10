@@ -87,3 +87,6 @@ item once settled, and record the outcome in `terms.json` or `decisions.md`.
 - **Multi-Rename footer and counter popover** (`multiRename.summary`, `multiRename.counterEditor.counts`): the footer
   reads `3 к переименованию · 2 без изменений · 1 проблема` (count first, invariant tails), and the counter preview
   reads `Номера: 001, 003, 005…`. Natural, or would counted labels (`К переименованию: 3`) read better?
+- **Multi-Rename placeholder tooltips** (`multiRename.placeholderHelp.*`): `Номер, который растет на один шаг…`,
+  `с ведущими нулями` for leading zeros, `Имя папки уровнем выше` for [G], and `если шаг с минусом, номера уменьшаются`.
+  Natural, or is there a more familiar TC wording?

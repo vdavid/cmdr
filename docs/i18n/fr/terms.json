@@ -2894,7 +2894,11 @@
     "accept": ["Étape"],
     "confidence": "high",
     "forms": "Step 1 of 2: X → Étape 1 sur 2 : x (no-break space before the colon; the phase continues lowercase, as in ai.local.installStepExtracting)",
-    "sources": "MS terminology (step → étape); shipped catalog (onboarding.wizard.stepProgress, ai.local.installStepExtracting)"
+    "sources": "MS terminology (step → étape); shipped catalog (onboarding.wizard.stepProgress, ai.local.installStepExtracting)",
+    "exceptions": {
+      "multiRename.placeholderHelp.counter": "The Multi-rename counter’s increment, not a stage: pas, as multiRename.counterEditor.step ships (Total Commander « Par pas de »).",
+      "multiRename.placeholderHelp.counterAll": "The Multi-rename counter’s increment, not a stage: pas, as multiRename.counterEditor.step ships (Total Commander « Par pas de »)."
+    }
   },
   "stop": {
     "accept": ["arrêt", "cesse"],

@@ -638,3 +638,7 @@ in labels. `Solo verás este aviso una vez.`: names the notice, no gendered adje
 
 - Nothing agrees with the reader (`Lo que gestiona…`); `*Off` agrees with its row (`Desactivadas`), as System Settings
   does.
+
+## Ayudas de Renombrado múltiple (`multiRename.*Help.*`)
+
+- `On`/`Off` → `Activado`/`Desactivado`; caret → `cursor de texto` (bare `cursor` is the pane's).

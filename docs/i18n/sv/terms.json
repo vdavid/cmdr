@@ -420,8 +420,9 @@
   },
   "character": {
     "chosen": "tecken",
+    "accept": ["tecknet", "tecknen"],
     "confidence": "high",
-    "forms": "neuter, plural unchanged",
+    "forms": "neuter, plural unchanged; definite tecknet / tecknen (Det första tecknet, De sista # tecknen)",
     "sources": "MS terminology (character → tecken)"
   },
   "character-viewer": {

@@ -2654,7 +2654,11 @@
     ],
     "confidence": "high",
     "forms": "Step 1 of 2: X → Paso 1 de 2: X",
-    "sources": "shipped catalog (onboarding.wizard.stepProgress, ai.local.installStepExtracting); MS terminology gives etapa (tiebreak only)"
+    "sources": "shipped catalog (onboarding.wizard.stepProgress, ai.local.installStepExtracting); MS terminology gives etapa (tiebreak only)",
+    "exceptions": {
+      "multiRename.placeholderHelp.counter": "The counter's step, not a stage: it says incremento, the counter editor's field name (multiRename.counterEditor.step), per the rename-counter ruling.",
+      "multiRename.placeholderHelp.counterAll": "The counter's step, not a stage: it says incremento, the counter editor's field name (multiRename.counterEditor.step), per the rename-counter ruling."
+    }
   },
   "stop": {
     "chosen": "Detener",

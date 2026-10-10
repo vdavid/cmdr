@@ -43,6 +43,22 @@
   "@multiRename.substitute": {
     "sourceHash": "1cee1b2"
   },
+  "multiRename.searchOptions": "Suchoptionen",
+  "@multiRename.searchOptions": {
+    "sourceHash": "556a085"
+  },
+  "multiRename.searchOptionHelp.setup": "In <code>{name}</code> wird <code>{search}</code> durch <code>{replace}</code> ersetzt:",
+  "@multiRename.searchOptionHelp.setup": {
+    "sourceHash": "28e2893"
+  },
+  "multiRename.searchOptionHelp.on": "Ein",
+  "@multiRename.searchOptionHelp.on": {
+    "sourceHash": "1300117"
+  },
+  "multiRename.searchOptionHelp.off": "Aus",
+  "@multiRename.searchOptionHelp.off": {
+    "sourceHash": "ca7981b"
+  },
   "multiRename.case": "Groß-/Kleinschreibung",
   "@multiRename.case": {
     "sourceHash": "9785096"
@@ -303,5 +319,105 @@
   "multiRename.counterEditor.counts": "Zählt {first}, {second}, {third} …",
   "@multiRename.counterEditor.counts": {
     "sourceHash": "1e814e0"
+  },
+  "multiRename.placeholderHelp.name": "Der Dateiname ohne Endung",
+  "@multiRename.placeholderHelp.name": {
+    "sourceHash": "64ccdbf"
+  },
+  "multiRename.placeholderHelp.extension": "Die aktuelle Dateiendung",
+  "@multiRename.placeholderHelp.extension": {
+    "sourceHash": "47411f5"
+  },
+  "multiRename.placeholderHelp.parent": "Der Name des Ordners, in dem die Datei liegt",
+  "@multiRename.placeholderHelp.parent": {
+    "sourceHash": "cd08701"
+  },
+  "multiRename.placeholderHelp.counter": "Eine Zahl, die in der Reihenfolge der Liste pro Datei um einen Schritt steigt",
+  "@multiRename.placeholderHelp.counter": {
+    "sourceHash": "2d7fbf4"
+  },
+  "multiRename.placeholderHelp.date": "Das Datum, an dem die Datei zuletzt geändert wurde: Jahr, Monat und Tag",
+  "@multiRename.placeholderHelp.date": {
+    "sourceHash": "d4f6468"
+  },
+  "multiRename.placeholderHelp.time": "Die Uhrzeit, zu der die Datei zuletzt geändert wurde: Stunden, Minuten und Sekunden",
+  "@multiRename.placeholderHelp.time": {
+    "sourceHash": "69c80a0"
+  },
+  "multiRename.placeholderHelp.oneChar": "Nur Zeichen {at}",
+  "@multiRename.placeholderHelp.oneChar": {
+    "sourceHash": "79e798e"
+  },
+  "multiRename.placeholderHelp.charRange": "Zeichen {from} bis {to}",
+  "@multiRename.placeholderHelp.charRange": {
+    "sourceHash": "60bd1e5"
+  },
+  "multiRename.placeholderHelp.lastChars": "{count, plural, one {Das letzte Zeichen} other {Die letzten # Zeichen}}",
+  "@multiRename.placeholderHelp.lastChars": {
+    "sourceHash": "9f073f8"
+  },
+  "multiRename.placeholderHelp.firstChar": "Nur das erste Zeichen",
+  "@multiRename.placeholderHelp.firstChar": {
+    "sourceHash": "99755d8"
+  },
+  "multiRename.placeholderHelp.firstChars": "{count, plural, one {Das erste Zeichen} other {Die ersten # Zeichen}}",
+  "@multiRename.placeholderHelp.firstChars": {
+    "sourceHash": "340917c"
+  },
+  "multiRename.placeholderHelp.grandparent": "Der Name des Ordners eine Ebene darüber",
+  "@multiRename.placeholderHelp.grandparent": {
+    "sourceHash": "1f52d63"
+  },
+  "multiRename.placeholderHelp.counterStart": "Beginnt mit {start}",
+  "@multiRename.placeholderHelp.counterStart": {
+    "sourceHash": "f581c27"
+  },
+  "multiRename.placeholderHelp.counterStep": "Steigt jedes Mal um {step}",
+  "@multiRename.placeholderHelp.counterStep": {
+    "sourceHash": "435eafd"
+  },
+  "multiRename.placeholderHelp.counterDigits": "{digits, plural, one {Mindestens # Stelle} other {Mindestens # Stellen}}, mit führenden Nullen",
+  "@multiRename.placeholderHelp.counterDigits": {
+    "sourceHash": "cb37674"
+  },
+  "multiRename.placeholderHelp.counterAll": "Alle drei auf einmal; eine negative Schrittweite zählt abwärts",
+  "@multiRename.placeholderHelp.counterAll": {
+    "sourceHash": "60be18c"
+  },
+  "multiRename.placeholderHelp.isoDate": "Das ganze Datum, mit Bindestrichen",
+  "@multiRename.placeholderHelp.isoDate": {
+    "sourceHash": "d5d3357"
+  },
+  "multiRename.placeholderHelp.shortYear": "Mit zweistelliger Jahreszahl",
+  "@multiRename.placeholderHelp.shortYear": {
+    "sourceHash": "c042ccb"
+  },
+  "multiRename.placeholderHelp.datePart": "Nur der Tag; [Y] und [M] funktionieren genauso",
+  "@multiRename.placeholderHelp.datePart": {
+    "sourceHash": "ce0ba83"
+  },
+  "multiRename.placeholderHelp.dottedTime": "Die ganze Uhrzeit, mit Punkten",
+  "@multiRename.placeholderHelp.dottedTime": {
+    "sourceHash": "0edc240"
+  },
+  "multiRename.placeholderHelp.hoursMinutes": "Nur Stunden und Minuten",
+  "@multiRename.placeholderHelp.hoursMinutes": {
+    "sourceHash": "55998f6"
+  },
+  "multiRename.placeholderHelp.forFile": "Für „{file}“:",
+  "@multiRename.placeholderHelp.forFile": {
+    "sourceHash": "44f23bc"
+  },
+  "multiRename.placeholderHelp.forSampleDate": "Für eine Datei, die zuletzt am {date} geändert wurde:",
+  "@multiRename.placeholderHelp.forSampleDate": {
+    "sourceHash": "f2032cc"
+  },
+  "multiRename.placeholderHelp.forFirstFiles": "Für die ersten drei Dateien:",
+  "@multiRename.placeholderHelp.forFirstFiles": {
+    "sourceHash": "012bd5a"
+  },
+  "multiRename.placeholderHelp.counterEditHint": "Setze die Einfügemarke in einen Zähler oder bewege den Zeiger darauf, um seine Zahlen zu ändern.",
+  "@multiRename.placeholderHelp.counterEditHint": {
+    "sourceHash": "6ba268e"
   }
 }

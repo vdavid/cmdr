@@ -2325,6 +2325,12 @@
     "forms": "the window → 操作佇列; the send-to-queue button → 加入佇列 (must stay a substring of queueAria); status Queued → 等待中",
     "sources": "MS, DC"
   },
+  "options": {
+    "chosen": "選項",
+    "confidence": "high",
+    "forms": "search options → 搜尋選項 (multiRename.searchOptions)",
+    "sources": "macOS 27.0.1 live loctables, AP-TW = AP-HK (Show Options → 顯示選項, search options → 搜尋選項); shipped catalog (ui.popover.defaultAriaLabel 選項)"
+  },
   "organization": {
     "avoid": [
       {
@@ -3306,7 +3312,11 @@
     "accept": ["步驟"],
     "confidence": "high",
     "forms": "Step 1 of 2: X → 第 1 步（共 2 步）：X (the AI install steps); the onboarding counter reads 第 1 步，共 2 步; the standalone noun is 步驟 (MS terminology)",
-    "sources": "shipped catalog (onboarding.wizard.stepProgress, ai.local.installStepExtracting); MS terminology (step → 步驟)"
+    "sources": "shipped catalog (onboarding.wizard.stepProgress, ai.local.installStepExtracting); MS terminology (step → 步驟)",
+    "exceptions": {
+      "multiRename.placeholderHelp.counter": "The counter's step, not a stage: rename-counter's 增量 (as in multiRename.counterEditor.step).",
+      "multiRename.placeholderHelp.counterAll": "Same as multiRename.placeholderHelp.counter: the counter's 增量."
+    }
   },
   "stop": {
     "accept": ["停"],

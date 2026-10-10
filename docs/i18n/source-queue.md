@@ -214,3 +214,16 @@ rule into `translation-principles.md` or `translator-instructions.md`), then del
 - `time-left` concept matched "it's left out" (`multiRename.reason.missing`) through "s left"; added
   `notMatch: left out`. A word-boundary-aware `match` would stop the next one. (all)
 - `multiRename.presets.*`: no screenshot of the Presets menu, submenu, or name popover, so lengths are unverified. (all)
+- `multiRename.placeholderHelp.grandparent` "the folder above that one": "that one" points back at the `[P]` line, but
+  the note doesn't say that line sits right above it, so it reads as a free-standing noun phrase. Say so in the note, or
+  write "the folder above the file's folder". (fr, es, pt, hu, ru, vi, zh-Hant)
+- The `step` concept (onboarding stage) matches the counter's step in prose (`multiRename.placeholderHelp.counter`,
+  `.counterAll`), so `termbase` flags the `rename-counter` word (es `incremento`). Add those keys to `step`'s
+  `notMatch`, or match only "Step N of M", so no locale needs per-key exceptions. (es, pt, zh-Hant)
+- `multiRename.searchOptionHelp.on` / `.off` share "On"/"Off" with the settings switch options, so `term-consistency`
+  forces the settings form, while in gendered languages the tooltip row agrees with "option" (pt wanted `Desativada`,
+  shipped `Desativado` to pass). Add an `agreesWith`-style hook or an allowlisted reason so a locale can agree with the
+  option. (pt, ru)
+- Tooling: the brief's reference-pile path (`<main clone>/_ignored/i18n/<tag>/`) doesn't exist on the M1 agent box, so
+  "no ruling" terms there can't be mined as the brief requires. Sync the pile to the box, or have the brief say so and
+  fall back to `terms.json` sources; vi mined the live Finder bundle instead (§ No pile on this machine). (ru, vi, sv)

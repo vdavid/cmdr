@@ -851,3 +851,7 @@ Apple's Dock menu (`Dock.app/Contents/Resources/de.lproj/DockMenus.strings`) sup
 
 - `Option „…“ ein-/ausschalten` over `umschalten`: English says „turn on or off“; `ein-/aus` as in
   `commands.viewShowHidden.label`.
+
+## Tooltips im Mehrfach-Umbenennen (`multiRename.placeholderHelp.*`, `multiRename.searchOptionHelp.*`)
+
+- `Ein`/`Aus` wie `settings.*`; caret → `Einfügemarke` (macOS 27 AppKit); `Beginnt mit` wie Finders Umbenennen.

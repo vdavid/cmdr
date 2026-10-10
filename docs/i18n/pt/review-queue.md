@@ -68,3 +68,7 @@ settled wording into `terms.json` (and `decisions.md` when the reason is worth k
   `Ativar ou desativar “Diferenciar maiúsculas de minúsculas”` quotes the checkbox label byte for byte but runs long in
   the Keyboard shortcuts list; confirm it doesn't truncate, and that `Ativar ou desativar` reads better here than the
   catalog's shorter toggle verb `Alternar`.
+- **Multi-rename placeholder tooltips** (`multiRename.placeholderHelp.counterEditHint`, `.counterStep`): "caret" is
+  `cursor de texto` (everyday) over Apple's `ponto de inserção`, and the hint is restructured
+  (`leve até ele o cursor de texto ou o ponteiro do mouse`) so `ele` can't reach past `cursor` to `contador`. Confirm it
+  reads naturally, and that `Aumenta {step} a cada vez` reads as the counter growing by that much per file.

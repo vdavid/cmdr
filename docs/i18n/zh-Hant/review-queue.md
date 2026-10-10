@@ -64,3 +64,7 @@ worth keeping).
   checkbox label verbatim; the older toggle commands say `切換…`. Check the two styles sit well side by side in the
   Keyboard shortcuts list. **`起始值`** and **`依序編號 {first}、{second}、{third}⋯，顯示為 …`**
   (`multiRename.counterEditor.*`): composed for the counter popover.
+- **`三項一起設定，增量用負數就會倒數`** (`multiRename.placeholderHelp.counterAll`): `倒數` for "counts down" can also
+  read as a countdown timer; `數字會遞減` is the fallback. **`只取日期中的「日」`** (`.datePart`) and **`以…為例：`**
+  (`.forFile`, `.forSampleDate`, `.forFirstFiles`, where `以最前面的三個檔案` dodges a `以前` misreading): composed for
+  the placeholder tooltips.

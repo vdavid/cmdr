@@ -311,3 +311,8 @@ Allow `允許` (TCC's permission button), ❌ not `同意`, which is approve. Ev
 ## Size units (`common.sizeUnit.*`, `settings.appearance.fileSizeFormat.*`)
 
 - IEC `KiB` and SI `kB` stay Latin (DOL `MiB`, MS `GiB`), ❌ not `KB`. `4 GiB or more` → `4 GiB 以上`.
+
+## Text caret and hover (`multiRename.placeholderHelp.counterEditHint`)
+
+- The text caret is Apple's `插入點` (AP-TW `文字插入點`), ❌ not `游標`: that's this catalog's pane cursor. Point at it
+  → `把指標停在…上` (Apple `指標`).

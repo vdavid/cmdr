@@ -2783,8 +2783,8 @@
     "chosen": "számláló",
     "accept": ["számlál", "számol"],
     "forms": "the popover title → Számláló; Edit counter → Számláló szerkesztése; its fields → Kezdőérték, Lépésköz, Számjegyek; the preview line → Így számol: {first}, …",
-    "confidence": "tentative",
-    "sources": "the shipped catalog (commands.fileMultiRename.description: számlálóval; the former multiRename.counterStart/Step/Digits); the reference pile is absent on this machine, so Total Commander was not re-checked",
+    "confidence": "high",
+    "sources": "macOS Finder BulkRenameWindow (Name and Counter → Név és számláló, Start numbers at → Számok kezdése…; macOS 27, live bundle, 2026-10-10); the shipped catalog (commands.fileMultiRename.description: számlálóval)",
     "note": "Step stays Lépésköz (an increment), never lépés, which is the onboarding wizard's step."
   },
   "register-shortcut": {
@@ -2868,8 +2868,8 @@
   },
   "replace": {
     "chosen": "lecserél",
-    "accept": ["csere", "cserél", "cser", "felülír", "helyébe"],
-    "forms": "Cmdr will replace it → A Cmdr lecseréli",
+    "accept": ["csere", "cserél", "cser", "felülír", "helyébe", "helyére"],
+    "forms": "Cmdr will replace it → A Cmdr lecseréli; replacing X with Y (a worked example) → X helyére Y kerül",
     "confidence": "high",
     "sources": "macOS Finder (Replace → Kicserélés, Csere)"
   },

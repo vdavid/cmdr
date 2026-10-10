@@ -74,3 +74,7 @@ settled wording into `terms.json` (and `decisions.md` when the reason is worth k
   source, the reference pile wasn't on the translating machine); counter preview
   `依次计为 1、3、5…，显示为 001、003、005`; footer `# 个要重命名 · # 个不变 · # 个有问题`. Confirm the preview line and
   `要重命名` read naturally.
+- **Multi-rename chip tooltips** (`multiRename.placeholderHelp.*`, `multiRename.searchOptionHelp.*`): the text caret is
+  `插入点` (macOS's word, kept apart from Cmdr's pane `光标`; not verified, the reference pile wasn't on the translating
+  machine), hover is `用指针指向`, last changed follows Finder's `修改日期` / `修改时间`, example lines open with
+  `对于…：`, and the grandparent folder is `再上一层文件夹`. Confirm `插入点` is recognizable and `对于` isn't stiff.

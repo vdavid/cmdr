@@ -2676,6 +2676,7 @@
     "sources": "macOS",
     "exceptions": {
       "multiRename.search": "find-and-replace inside file names is 查找 / 替换为 in every Chinese source (macOS Finder BulkRenameWindow 查找： / 替换成：, Total Commander 6613 查找, Double Commander 查找(&F)...), and the catalog's in-text find is already 查找 (viewer.search.placeholder); 搜索 is the file-search feature",
+      "multiRename.searchOptions": "the options of the tool's find-and-replace, so it takes the multiRename.search label 查找 (查找选项), not the file-search 搜索",
       "commands.fileMultiRename.description": "the tool's search & replace is the fixed phrase 查找替换 (Total Commander 6612 查找并替换, Double Commander 查找与替换), matching the multiRename.search label 查找"
     }
   },

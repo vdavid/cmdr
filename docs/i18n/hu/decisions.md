@@ -782,3 +782,8 @@ share options → `Nincs megosztási lehetőség`.
 - manage → `kezel` (ms): `A szervezeted kezeli`; IT team → `IT-csapat`, the shipped `errors.*` form; the card's Off →
   `Ki`, a switch state that agrees with no label.
 - `{ceiling}` sits in a colon slot (`legfeljebb ezt a verziót engedi: {ceiling}`): a version's article can't be known.
+
+## Csoportos átnevezés súgói (`multiRename.placeholderHelp.*`, `multiRename.searchOptionHelp.*`)
+
+- Positions sit in a colon slot (`ezen a helyen: {at}`), the example file after `esetén` or before `nevű`, the date
+  before `időpontban`: none of them can take an article or suffix. On/Off → `Be` / `Ki` (the switch states).

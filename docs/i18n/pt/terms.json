@@ -2588,7 +2588,11 @@
     ],
     "confidence": "high",
     "sources": "shipped pt catalog (onboarding.wizard.stepProgress)",
-    "decision": "Onboarding"
+    "decision": "Onboarding",
+    "exceptions": {
+      "multiRename.placeholderHelp.counter": "The Multi-rename counter's increment, not a stage: it says incremento, the counter editor's field name (multiRename.counterEditor.step), per the rename-counter ruling.",
+      "multiRename.placeholderHelp.counterAll": "The Multi-rename counter's increment, not a stage: it says incremento, the counter editor's field name (multiRename.counterEditor.step), per the rename-counter ruling."
+    }
   },
   "stop": {
     "chosen": "Parar",
