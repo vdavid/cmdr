@@ -2496,6 +2496,7 @@ export type MessageKey =
   | 'multiRename.presets.save'
   | 'multiRename.presets.saveAs'
   | 'multiRename.presets.saveTitle'
+  | 'multiRename.presets.saved'
   | 'multiRename.presets.title'
   | 'multiRename.presets.tooltip'
   | 'multiRename.presets.update'

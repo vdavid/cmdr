@@ -4,6 +4,7 @@ import { presetMenuSections, presetNameClash, type PresetMenuInput } from './pre
 import { DEFAULT_SPEC } from './spec'
 
 const labels = {
+  saved: 'Your presets',
   reset: 'Reset all fields',
   saveAs: 'Save current as…',
   rename: 'Rename…',
@@ -38,6 +39,12 @@ describe('presetMenuSections', () => {
       ['Remove diacritics'],
       ['Reset all fields', 'Save current as…'],
     ])
+  })
+
+  it('heads the saved presets “Your presets”', () => {
+    const [savedSection, builtIns] = presetMenuSections(input())
+    expect(savedSection.heading).toBe('Your presets')
+    expect(builtIns.heading).toBeUndefined()
   })
 
   it('numbers the first nine saved presets, and only those', () => {

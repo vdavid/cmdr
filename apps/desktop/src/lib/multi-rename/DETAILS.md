@@ -48,9 +48,10 @@
   left out (`swapsLeftOut`), as Ask Cmdr does.
 - **Gallery**: `not-triggerable`, since the preview is computed from a real listing.
 - **Presets** (TC's F2 "Load/save settings"): the footer's `[Presets ▾ <name>]` button opens a house `Menu`: saved
-  presets newest first, numbered 1–9 (a digit picks one), then the built-ins, then Reset all fields (TC's `<Default>`)
-  and Save current as… (⌘S chip). Each saved preset has a submenu (→, hover, or right-click): Rename…, Update with
-  current fields (greyed when nothing would change), Delete. Picking a preset loads it; nothing runs.
+  presets under a "Your presets" heading, newest first, numbered 1–9 (a digit picks one), then the built-ins, then Reset
+  all fields (TC's `<Default>`) and Save current as… (⌘S chip). Each saved preset has a submenu (→, hover, or
+  right-click): Rename…, Update with current fields (greyed when nothing would change), Delete. Picking a preset loads
+  it; nothing runs.
   - **Last settings** (TC keeps them too): closing the sheet, any way, saves the fields and the loaded preset (`persist`
     in `onDestroy` → `save_multi_rename_last_settings`, one entry in `multi-rename-last.json`), and the next sheet's
     first preview waits for them. **Decision/Why:** the preset travels with the fields, so a reopened sheet's button

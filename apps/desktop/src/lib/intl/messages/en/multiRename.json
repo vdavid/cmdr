@@ -112,6 +112,10 @@
   "@multiRename.presets.tooltip": {
     "description": "Tooltip of the Presets button in the Multi-rename tool. The keyboard shortcut (F2) is shown beside it."
   },
+  "multiRename.presets.saved": "Your presets",
+  "@multiRename.presets.saved": {
+    "description": "Heading of the presets the user saved, at the top of the Presets menu (above the presets that come with Cmdr)."
+  },
   "multiRename.presets.reset": "Reset all fields",
   "@multiRename.presets.reset": {
     "description": "Presets menu item that sets every field back to its starting value, so all names stay as they are (Total Commander's <Default>)."

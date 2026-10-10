@@ -107,6 +107,10 @@
   "@multiRename.presets.tooltip": {
     "sourceHash": "e63a28f"
   },
+  "multiRename.presets.saved": "Az előbeállításaid",
+  "@multiRename.presets.saved": {
+    "sourceHash": "e83f142"
+  },
   "multiRename.presets.reset": "Összes mező visszaállítása",
   "@multiRename.presets.reset": {
     "sourceHash": "39bf87f"

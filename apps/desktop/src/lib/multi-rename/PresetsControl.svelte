@@ -65,6 +65,7 @@
                 loaded: tool.loaded,
                 current: tool.spec,
                 labels: {
+                    saved: tString('multiRename.presets.saved'),
                     reset: tString('multiRename.presets.reset'),
                     saveAs: tString('multiRename.presets.saveAs'),
                     rename: tString('multiRename.presets.rename'),

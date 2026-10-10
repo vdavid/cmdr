@@ -27,7 +27,7 @@ export interface PresetMenuInput {
   loaded: LoadedPreset | null
   /** The fields as they are now, so Update is offered only where it would change something. */
   current: MultiRenameSpec
-  labels: { reset: string; saveAs: string; rename: string; update: string; delete: string }
+  labels: { saved: string; reset: string; saveAs: string; rename: string; update: string; delete: string }
 }
 
 export function presetMenuSections(input: PresetMenuInput): MenuSection<PresetAction>[] {
@@ -66,7 +66,7 @@ export function presetMenuSections(input: PresetMenuInput): MenuSection<PresetAc
   })
 
   const sections: MenuSection<PresetAction>[] = []
-  if (savedRows.length > 0) sections.push({ id: 'saved', items: savedRows })
+  if (savedRows.length > 0) sections.push({ id: 'saved', heading: labels.saved, items: savedRows })
   sections.push({ id: 'builtIn', items: builtInRows })
   sections.push({
     id: 'actions',
