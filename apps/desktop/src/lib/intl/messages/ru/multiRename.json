@@ -259,10 +259,6 @@
   "@multiRename.undoStarted": {
     "sourceHash": "b6bd565"
   },
-  "multiRename.results": "Список имен",
-  "@multiRename.results": {
-    "sourceHash": "219c4a6"
-  },
   "multiRename.results.editing": "Измените новые имена в текстовом редакторе и сохраните файл. Они появятся здесь, когда вы вернетесь в это окно.",
   "@multiRename.results.editing": {
     "sourceHash": "0a54cdc"

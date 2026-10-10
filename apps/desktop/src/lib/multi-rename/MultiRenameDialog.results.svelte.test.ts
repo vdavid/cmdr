@@ -89,6 +89,11 @@ function pressResults(root: HTMLElement): KeyboardEvent {
   return event
 }
 
+/** A footer button by its label, ahead of its key chip. */
+function footerButton(root: Element, label: string): HTMLButtonElement | undefined {
+  return [...root.querySelectorAll<HTMLButtonElement>('button.btn')].find((b) => b.textContent.trim().startsWith(label))
+}
+
 function link(root: Element, text: string): HTMLButtonElement | undefined {
   return [...root.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent.trim() === text)
 }
@@ -134,11 +139,12 @@ describe('MultiRenameDialog Results', () => {
     expect(notice(root)).toContain('Edit the new names in your text editor')
   })
 
-  it('the footer link with its key chip does the same', async () => {
+  it('the footer’s Results… button, its key chip on it, does the same', async () => {
     const root = await mountSheet()
-    const results = link(root, 'Results')
-    if (!results) throw new Error('no Results link')
-    expect(results.closest('.footer-link')?.querySelector('.shortcut-chip')?.textContent).toBe('⌥↩')
+    const results = footerButton(root, 'Results…')
+    if (!results) throw new Error('no Results… button')
+    expect(results.classList.contains('btn')).toBe(true)
+    expect(results.querySelector('.shortcut-chip')?.textContent).toBe('⌥↩')
     results.click()
     await settle()
     expect(editor.openFileInEditor).toHaveBeenCalled()

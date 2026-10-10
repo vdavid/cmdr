@@ -259,10 +259,6 @@
   "@multiRename.undoStarted": {
     "sourceHash": "b6bd565"
   },
-  "multiRename.results": "Eredménylista",
-  "@multiRename.results": {
-    "sourceHash": "219c4a6"
-  },
   "multiRename.results.editing": "Szerkeszd az új neveket a szövegszerkesztődben, és mentsd a fájlt. Amikor visszajössz ebbe az ablakba, itt megjelennek.",
   "@multiRename.results.editing": {
     "sourceHash": "0a54cdc"

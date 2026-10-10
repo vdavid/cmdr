@@ -259,7 +259,7 @@
   },
   "multiRename.undo": "Undo rename",
   "@multiRename.undo": {
-    "description": "Footer button that reverses the last multi-rename of this session (all its files at once). It sits beside Cancel (multiRename.cancel), so the two must read differently."
+    "description": "Footer button that reverses the last multi-rename of this session (all its files at once), right away, with no question first. It sits beside Cancel (multiRename.cancel), so the two must read differently. Shows its keyboard shortcut beside it."
   },
   "multiRename.undoTooltip": "{count, plural, one {Renames # file back to its old name} other {Renames # files back to their old names}}",
   "@multiRename.undoTooltip": {
@@ -269,9 +269,9 @@
   "@multiRename.undoStarted": {
     "description": "Toast after Undo started reversing the last multi-rename. {count} is how many files."
   },
-  "multiRename.results": "Results",
+  "multiRename.results": "Results…",
   "@multiRename.results": {
-    "description": "Footer link (Total Commander’s name) that opens the list of old and new names in the user’s text editor, so they can edit the new names by hand."
+    "description": "Footer button (Total Commander’s name for it) that opens the list of old and new names in the user’s text editor, so they can change any new name by hand. The trailing “…” is Cmdr’s mark for a command whose next step lets the user change what it does; keep it. Shows its keyboard shortcut beside it."
   },
   "multiRename.results.editing": "Edit the new names in your text editor and save the file. They show here when you come back to this window.",
   "@multiRename.results.editing": {
@@ -297,9 +297,9 @@
   "@multiRename.error.couldntWriteNames": {
     "description": "Shown when Results couldn’t create its text file in the temporary folder."
   },
-  "multiRename.resultsTooltip": "Edit the new names in your text editor, then come back here",
+  "multiRename.resultsTooltip": "Edit the new names in your text editor, then come back here to use them.",
   "@multiRename.resultsTooltip": {
-    "description": "Tooltip of the Results footer link (multiRename.results): it opens the list of old and new names in the user's text editor, one file per line, to change any new name by hand; the sheet reads the list back when the user returns to the window."
+    "description": "Tooltip of the Results… footer button (multiRename.results): it opens the list of old and new names in the user’s text editor, one file per line, to change any new name by hand; the sheet reads the list back when the user returns to the window. The tooltip shows the button’s keyboard shortcut after this text."
   },
   "multiRename.editedName": "You typed this name in Results",
   "@multiRename.editedName": {

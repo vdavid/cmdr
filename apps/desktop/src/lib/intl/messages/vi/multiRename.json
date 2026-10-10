@@ -259,10 +259,6 @@
   "@multiRename.undoStarted": {
     "sourceHash": "b6bd565"
   },
-  "multiRename.results": "Danh sách kết quả",
-  "@multiRename.results": {
-    "sourceHash": "219c4a6"
-  },
   "multiRename.results.editing": "Hãy chỉnh sửa các tên mới trong trình soạn thảo văn bản rồi lưu tệp. Tên mới sẽ hiển thị ở đây khi bạn quay lại cửa sổ này.",
   "@multiRename.results.editing": {
     "sourceHash": "0a54cdc"

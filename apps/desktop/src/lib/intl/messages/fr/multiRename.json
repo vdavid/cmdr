@@ -260,10 +260,6 @@
   "@multiRename.undoStarted": {
     "sourceHash": "b6bd565"
   },
-  "multiRename.results": "Résultats",
-  "@multiRename.results": {
-    "sourceHash": "219c4a6"
-  },
   "multiRename.results.editing": "Modifiez les nouveaux noms dans votre éditeur de texte, puis enregistrez le fichier. Ils s’affichent ici dès que vous revenez dans cette fenêtre.",
   "@multiRename.results.editing": {
     "sourceHash": "0a54cdc"

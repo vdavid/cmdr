@@ -35,18 +35,22 @@
   module state that outlives the sheet, not persisted), so the flow is rename, look at the pane, ⌃M, ⌘⌥Z. It calls
   `rollbackOperation`, as the operation log's Roll back does; the page toasts `multiRename.undoStarted` and closes the
   sheet (its session holds the names the undo is taking away). A typed refusal is worded by `rollbackRefusalNotice` in
-  the error line; `alreadyRolledBack` forgets the run. The footer shows it as a quiet `LinkButton` with its dim key
-  chip, only while there's a run. **Decision/Why:** ⌘⌥Z, not ⌘Z: ⌘Z / ⇧⌘Z stay the fields' text undo and redo, and ⌥ is
-  the sheet's option-key family. Free in the registry and the native menu (checked 2026-10-10). Ported from PR #386.
+  the error line; `alreadyRolledBack` forgets the run. The footer shows it as a house `Button` beside Cancel, its key
+  chip on it and its count in the tooltip, only while there's a run. No ellipsis: it acts at once, with no question
+  first (`docs/style-guide.md` § Menu labels). **Decision/Why:** ⌘⌥Z, not ⌘Z: ⌘Z / ⇧⌘Z stay the fields' text undo and
+  redo, and ⌥ is the sheet's option-key family. Free in the registry and the native menu (checked 2026-10-10). Ported
+  from PR #386.
 - **Results** (⌥⏎, `multiRename.results`, TC's "edit names"): `results.svelte.ts` asks the state to write the shown
   preview (`writeNames`, waiting for the settled preview as Start does), opens the file through `openFileInEditor`
   (which toasts a launch that didn't start), and reads it back on the window's next `focus` until "Use the settings
   again" (`clearNames`) or a read that fails (`namesFileGone`, worded in the error line). The line under the fields says
   quietly what's going on (`results.editing`, then `results.edited` with the count) with "Read names now" and "Use the
   settings again" links; an error wins the line. A row with a typed name shows an accent pencil where its arrow is
-  (`PreviewList.svelte`). The footer offers it as a quiet link with its key chip, beside Undo rename. **Decision/Why:**
-  ⌥⏎, the PR's key: Enter stays Rename, and Enter's handler skips any modifier, so the two never meet. The matching is
-  the backend's (`multi_rename/DETAILS.md` § Session); the sheet holds no names. Ported from PR #386.
+  (`PreviewList.svelte`). The footer offers it as a house `Button`, "Results…", its key chip on it. The ellipsis follows
+  `docs/style-guide.md` § Menu labels: the editor is where the user changes what the rename will do, so the next step
+  steers the command. **Decision/Why:** ⌥⏎, the PR's key: Enter stays Rename, and Enter's handler skips any modifier, so
+  the two never meet. The matching is the backend's (`multi_rename/DETAILS.md` § Session); the sheet holds no names.
+  Ported from PR #386.
 - **Field history** (↓, `multiRename.fieldHistory`, TC's): in the name mask, extension mask, search, or replace field, ↓
   or the chevron at the field's end opens one house `Menu` (`field-history-menu.svelte.ts`, rendered inside the dialog
   so it portals into the modal's layer) under that field, listing what it held in earlier renames, newest first (at most

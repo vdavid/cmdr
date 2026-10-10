@@ -308,7 +308,10 @@ describe('MultiRenameDialog', () => {
     afterEach(() => navigatorSpy.mockReset())
 
     function undoLink(root: HTMLElement): HTMLButtonElement | undefined {
-      return [...root.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent.trim() === 'Undo rename')
+      // A house button, its key chip on it.
+      return [...root.querySelectorAll<HTMLButtonElement>('button.btn')].find((b) =>
+        b.textContent.trim().startsWith('Undo rename'),
+      )
     }
 
     /** ⌘⌥Z as macOS sends it on a US layout, from the name mask. */

@@ -30,6 +30,7 @@
     import type { MessageKey } from '$lib/intl/keys.gen'
     import { claimKey } from '$lib/shortcuts/claim-key'
     import { eventMatchesCommand } from '$lib/shortcuts'
+    import { getFirstShortcutReactive } from '$lib/shortcuts/reactive-shortcuts.svelte'
     import type { CommandId } from '$lib/commands'
     import { rollbackOperation } from '$lib/tauri-commands'
     import { asRollbackRefusal } from '$lib/operation-log/rollback-refusal'
@@ -120,6 +121,9 @@
     let undoing = $state(false)
     /** Why Undo rename didn't go, worded by the operation log's refusal notices. */
     let undoNotice = $state<MessageKey | null>(null)
+
+    const undoShortcut = $derived(getFirstShortcutReactive('multiRename.undoRename'))
+    const resultsShortcut = $derived(getFirstShortcutReactive('multiRename.results'))
 
     const canStart = $derived(tool.counts.ready > 0 && tool.error === null && !tool.pending && !tool.applying)
     /** Results writes what the preview shows, so it waits for the same settled preview Start does. */
@@ -494,28 +498,24 @@
     {/snippet}
     {#snippet footer()}
         {#if lastRun}
-            <!-- Quiet: a way back, not the sheet's next step. Only there while there's a run to undo. -->
-            <span
-                class="footer-link"
-                use:tooltip={{ text: tString('multiRename.undoTooltip', { count: lastRun.renaming }) }}
+            <!-- A way back, beside Cancel: only there while there's a run to undo. -->
+            <Button
+                disabled={undoing}
+                onclick={() => { void undoLastRun() }}
+                tooltipContent={{ text: tString('multiRename.undoTooltip', { count: lastRun.renaming }), shortcut: undoShortcut }}
             >
-                <LinkButton disabled={undoing} onclick={() => { void undoLastRun() }}>
-                    {tString('multiRename.undo')}
-                </LinkButton>
-                <span class="option-key" aria-hidden="true">
-                    <ShortcutChip commandId="multiRename.undoRename" clickable={false} size="sm" />
-                </span>
-            </span>
+                {tString('multiRename.undo')}
+                <ShortcutChip commandId="multiRename.undoRename" clickable={false} size="sm" />
+            </Button>
         {/if}
-        <!-- Quiet too: a side road to the names, never the sheet's next step. -->
-        <span class="footer-link" use:tooltip={{ text: tString('multiRename.resultsTooltip') }}>
-            <LinkButton disabled={!canResults} onclick={openResults}>
-                {tString('multiRename.results')}
-            </LinkButton>
-            <span class="option-key" aria-hidden="true">
-                <ShortcutChip commandId="multiRename.results" clickable={false} size="sm" />
-            </span>
-        </span>
+        <Button
+            disabled={!canResults}
+            onclick={openResults}
+            tooltipContent={{ text: tString('multiRename.resultsTooltip'), shortcut: resultsShortcut }}
+        >
+            {tString('multiRename.results')}
+            <ShortcutChip commandId="multiRename.results" clickable={false} size="sm" />
+        </Button>
         <Button onclick={onClose}>{tString('multiRename.cancel')}</Button>
         <Button variant="primary" onclick={() => { void start() }} disabled={!canStart}>
             {tString('multiRename.rename', { count: tool.counts.ready })}
@@ -662,13 +662,6 @@
     .results-words {
         overflow: hidden;
         text-overflow: ellipsis;
-    }
-
-    .footer-link {
-        display: flex;
-        align-items: center;
-        gap: var(--spacing-xs);
-        margin-right: var(--spacing-sm);
     }
 
     .footer-leading {

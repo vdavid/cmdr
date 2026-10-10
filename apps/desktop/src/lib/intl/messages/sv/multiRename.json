@@ -260,10 +260,6 @@
   "@multiRename.undoStarted": {
     "sourceHash": "b6bd565"
   },
-  "multiRename.results": "Resultatlista",
-  "@multiRename.results": {
-    "sourceHash": "219c4a6"
-  },
   "multiRename.results.editing": "Redigera de nya namnen i din textredigerare och spara filen. De visas här när du kommer tillbaka till det här fönstret.",
   "@multiRename.results.editing": {
     "sourceHash": "0a54cdc"

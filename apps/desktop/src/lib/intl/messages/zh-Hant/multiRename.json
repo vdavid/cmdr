@@ -259,10 +259,6 @@
   "@multiRename.undoStarted": {
     "sourceHash": "b6bd565"
   },
-  "multiRename.results": "結果列表",
-  "@multiRename.results": {
-    "sourceHash": "219c4a6"
-  },
   "multiRename.results.editing": "在文字編輯器裡編輯新名稱，然後儲存檔案。回到這個視窗時，新名稱就會顯示在這裡。",
   "@multiRename.results.editing": {
     "sourceHash": "0a54cdc"
