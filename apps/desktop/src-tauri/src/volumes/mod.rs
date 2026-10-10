@@ -257,7 +257,8 @@ pub fn resolve_path_volume_fast(path: &str) -> Option<VolumeInfo> {
     autoreleasepool(|_| {
         let url = NSURL::fileURLWithPath(&NSString::from_str(&mount_point));
 
-        let name = get_volume_name(&url, &mount_point);
+        let smb = get_smb_mount_info(&mount_point);
+        let name = resolved_volume_name(smb.as_ref(), || get_volume_name(&url, &mount_point));
         // Local mounts only, as `get_attached_volumes` answers it: a network mount ends through
         // its session, and the lookup can hang on a dead one.
         let is_ejectable = !is_network_fs_type(Some(&fs_type)) && is_volume_ejectable(&url, &mount_point);
@@ -280,7 +281,6 @@ pub fn resolve_path_volume_fast(path: &str) -> Option<VolumeInfo> {
         // Ask for a UUID only where `get_attached_volumes` does (local mounts), or
         // the same volume would get two different IDs depending on which path
         // discovered it. A network mount's UUID probe can also hang.
-        let smb = get_smb_mount_info(&mount_point);
         let uuid = match smb.is_some() || is_network_fs_type(Some(&fs_type)) {
             true => None,
             false => get_volume_uuid(&url),
@@ -310,6 +310,16 @@ pub fn resolve_path_volume_fast(path: &str) -> Option<VolumeInfo> {
             mount_account: None,
         })
     })
+}
+
+/// The name [`resolve_path_volume_fast`] gives a volume: an SMB share's the switcher row's
+/// ("private on localhost:11482", `mounts::smb_share_name`), so a favorite added there stores the
+/// name that says which server it means; any other volume its NSURL name (`local`).
+fn resolved_volume_name(smb: Option<&SmbMountInfo>, local: impl FnOnce() -> String) -> String {
+    match smb {
+        Some(info) => mounts::smb_share_name(info),
+        None => local(),
+    }
 }
 
 /// Get all locations organized by category, deduplicated.
@@ -457,6 +467,18 @@ pub use LocationInfo as VolumeInfo;
 mod tests {
     use super::*;
     use std::collections::HashSet;
+
+    /// ❗ The resolver names an SMB share the way its switcher row does, or a favorite added on it
+    /// stores the bare share name and an offline pick says "private" without saying which server.
+    #[test]
+    fn the_resolver_names_an_smb_share_like_its_switcher_row() {
+        let info = parse_smb_mount_source("//localhost:11482/private").expect("an SMB source");
+        assert_eq!(
+            resolved_volume_name(Some(&info), || "private".to_string()),
+            "private on localhost:11482"
+        );
+        assert_eq!(resolved_volume_name(None, || "Backup".to_string()), "Backup");
+    }
 
     #[test]
     fn test_list_locations_includes_root() {

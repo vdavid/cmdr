@@ -398,15 +398,19 @@ fn smb_info(mount: &MountEntry) -> Option<SmbMountInfo> {
 /// path. No syscalls: everything comes from the `getfsstat` snapshot. Pure.
 fn network_name(mount: &MountEntry) -> String {
     match smb_info(mount) {
-        Some(info) => {
-            // With the port off 445, as the saved row names it: two servers on one
-            // machine would otherwise read identically.
-            let server = crate::network::smb_server_address::friendly_server_name(&info.server);
-            let display = crate::network::server_identity::smb_server(&server, info.port);
-            format!("{} on {}", info.share, display)
-        }
+        Some(info) => smb_share_name(&info),
         None => volume_name_from_path(&mount.mount_point),
     }
+}
+
+/// What an SMB share's row is called: "share on server". Also what the path resolver names it
+/// (`resolve_path_volume_fast`), so a favorite stores the same words the switcher shows.
+pub(super) fn smb_share_name(info: &SmbMountInfo) -> String {
+    // With the port off 445, as the saved row names it: two servers on one
+    // machine would otherwise read identically.
+    let server = crate::network::smb_server_address::friendly_server_name(&info.server);
+    let display = crate::network::server_identity::smb_server(&server, info.port);
+    format!("{} on {}", info.share, display)
 }
 
 /// Classify one mount-table entry into a switcher [`LocationInfo`], or `None` if

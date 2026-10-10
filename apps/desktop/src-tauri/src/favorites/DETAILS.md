@@ -255,7 +255,9 @@ servers-hub path would be written down with nothing able to reopen it.
    `AddFavoriteError::PlaceNotConnected`, so MCP can say "connect first"; anything else
    unregistered (the servers hub) answers `NotAPlace`.
 
-It answers `FavoriteVolume { id, root, name }` from the resolved row. An OS-mounted SMB share
+It answers `FavoriteVolume { id, root, name }` from the resolved row. On macOS the resolver names an
+SMB share the way its switcher row does ("naspi on nas.local", `volumes/mounts.rs::smb_share_name`),
+so a pick after the share is forgotten says which server it means; a bare share name couldn't. An OS-mounted SMB share
 served by `LocalPosixVolume` reports `BackendKind::Local`, which is admitted like any drive.
 
 **A folder on a share nothing saved saves the share** (D2, `docs/specs/saved-smb-shares.md` writer
