@@ -516,7 +516,13 @@ describe('FavoritesMenu a11y', () => {
  * is audited here directly.
  */
 describe('favorite and volume row pieces a11y', () => {
-  const favorite: VolumeInfo = { id: 'fav-1', name: 'Documents', path: '/Users/test/Documents', category: 'favorite' }
+  const favorite: VolumeInfo = {
+    id: 'fav-1',
+    name: 'Documents',
+    path: '/Users/test/Documents',
+    category: 'favorite',
+    isEjectable: false,
+  }
 
   /** Only what the two row pieces read off the controller; the rest isn't reached. */
   function stubFavorites(state: {
@@ -542,7 +548,7 @@ describe('favorite and volume row pieces a11y', () => {
     return target
   }
 
-  it.each([
+  it.each<[string, { renaming?: boolean; dimmed?: boolean }]>([
     ['ready', {}],
     ['quiet (a pick connects first)', { dimmed: true }],
     ['renaming', { renaming: true }],
@@ -589,7 +595,13 @@ describe('favorite and volume row pieces a11y', () => {
     ['timed out', { timedOut: true }],
   ])('the disk-space line has no violations, %s', async (_label, state) => {
     const target = hostElement()
-    const volume: VolumeInfo = { id: 'root', name: 'Macintosh HD', path: '/', category: 'main_volume' }
+    const volume: VolumeInfo = {
+      id: 'root',
+      name: 'Macintosh HD',
+      path: '/',
+      category: 'main_volume',
+      isEjectable: false,
+    }
     mount(VolumeSpaceLine, { target, props: { volume, spaceManager: stubSpaceManager(state) } })
     await tick()
     expect(target.querySelector('.volume-space-info')).not.toBeNull()
