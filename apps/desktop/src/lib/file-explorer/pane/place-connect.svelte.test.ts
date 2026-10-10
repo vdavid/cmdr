@@ -41,6 +41,65 @@ const savedPlace: VolumeInfo = {
   connectionState: 'saved',
 }
 
+/**
+ * A favorite (or a restored tab) enters a saved SERVER at a deep folder, and that
+ * folder may be gone by the time the session is up: the pane lands on the deepest
+ * one still there, ❌ never a listing error over the missing one.
+ */
+describe('createPlaceConnect on a server entered at a deep folder', () => {
+  let dispose: (() => void) | undefined
+  const deep = 'sftp://ada@nas.local:22/srv/data/photos/2026'
+
+  function create(): ReturnType<typeof vi.fn> {
+    const enter = vi.fn()
+    dispose = $effect.root(() => {
+      createPlaceConnect({
+        getVolumeId: () => savedPlace.id,
+        getCurrentVolumeInfo: () => savedPlace,
+        getVolumePath: () => savedPlace.path,
+        getCurrentPath: () => deep,
+        enter,
+      })
+    })
+    flushSync()
+    return enter
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    connectPlace.mockResolvedValue({ kind: 'connected', volumeId: savedPlace.id })
+  })
+
+  afterEach(() => {
+    dispose?.()
+    dispose = undefined
+  })
+
+  it('keeps the folder when it is still there', async () => {
+    resolveValidPath.mockImplementation((path: string) => Promise.resolve(path))
+    const enter = create()
+    await vi.waitFor(() => {
+      expect(enter).toHaveBeenCalledWith({ volumeId: savedPlace.id, volumePath: savedPlace.path, targetPath: deep })
+    })
+  })
+
+  it('lands on the nearest folder still there, asking the server itself', async () => {
+    resolveValidPath.mockResolvedValue('sftp://ada@nas.local:22/srv/data/photos')
+    const enter = create()
+    await vi.waitFor(() => {
+      expect(enter).toHaveBeenCalledWith({
+        volumeId: savedPlace.id,
+        volumePath: savedPlace.path,
+        targetPath: 'sftp://ada@nas.local:22/srv/data/photos',
+      })
+    })
+    expect(resolveValidPath).toHaveBeenCalledWith(
+      deep,
+      expect.objectContaining({ volumeRoot: savedPlace.path, volumeId: savedPlace.id }),
+    )
+  })
+})
+
 describe('createPlaceConnect', () => {
   let dispose: (() => void) | undefined
   /** The pane's live `VolumeInfo`, reactive so a reassignment re-runs the factory's effect. */

@@ -215,7 +215,9 @@ describe('the add row', () => {
     const { menu } = harness('/Users/test/archive.zip/inner')
     const row = addRow(menu)
     expect(row.disabled).toBe(true)
-    expect(row.tooltip).toBe('This folder can’t be a favorite: favorites only work on disks and mounted shares')
+    expect(row.tooltip).toBe(
+      'This folder can’t be a favorite: favorites point at folders on disks, shares, servers, and phones',
+    )
 
     // The point of the pin: a user who sees the greyed row learns which of the two
     // it is. Same string for both would be a dead end wearing an explanation.
@@ -229,7 +231,7 @@ describe('the add row', () => {
     stubs.volumes = [favorite(1, '/Users/test/archive.zip/inner'), DISK]
     const { menu } = harness('/Users/test/archive.zip/inner')
     expect(addRow(menu).tooltip).toBe(
-      'This folder can’t be a favorite: favorites only work on disks and mounted shares',
+      'This folder can’t be a favorite: favorites point at folders on disks, shares, servers, and phones',
     )
   })
 

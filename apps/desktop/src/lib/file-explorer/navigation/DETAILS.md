@@ -592,9 +592,8 @@ hotlist"), and it was free, so Duplicate keeps ⌘D and the error screen's ⌘D 
 reads ⌃D as forward-delete inside a text field; the central typing guard already bails there. "Favorites" is the one
 word everywhere (UI, command ids, code, events); "bookmark" and "hotlist" are palette keywords only.
 
-**Deliberately not built**: a favorites settings screen (the menu is where favorites get managed), favorites on
-non-local volumes (the store's v1 limit; the `0` row only makes the gate real), an MCP "open the menu" tool
-(`select_volume` already reaches a favorite by name and the `favorites` tool edits the list), and letters or
+**Deliberately not built**: a favorites settings screen (the menu is where favorites get managed), an MCP "open the
+menu" tool (`select_volume` already reaches a favorite by name and the `favorites` tool edits the list), and letters or
 type-to-filter inside the menu.
 
 **Two sections, and the primitive draws the separator between them**: the favorites (`reorderable`, with an `emptyLabel`
@@ -632,16 +631,18 @@ kind (`server` for a share or server, `smartphone` for a phone; the read side ne
 else the generic folder.
 
 **The `0` row's three states.** Enabled; disabled saying "This folder is already a favorite"; disabled saying this
-folder can't be a favorite because favorites only work on disks and mounted shares. Both refusals open with the same
-"this folder" subject, so a reader learns which one they hit without re-reading. The reason IS the tooltip — a greyed
-row that says nothing is a dead end. ❗ Capability first (`paneFolderCanBeFavorited`, `pane/volume-capabilities.ts`),
-THEN the already-a-favorite test: on an archive or `.git`-portal pane the folder could never be a favorite at all, so
-"already a favorite" would be answering a question that doesn't arise. "Already a favorite" compares the way the store
-dedupes an add: with a known target on the pane's volume, the same path under each one's root (so a share mounted at a
-moved path still matches), else the paths with trailing slashes aside. Re-adding a folder that IS one is refused rather
-than allowed because the store answers a duplicate by moving that favorite to the END of the list, which looks like the
-row jumping for no reason (David, 2026-09-16). The add itself is `add-favorite-folder.ts`, shared with the
-`favorites.add` command so the success and failure wording can't drift.
+folder can't be a favorite because favorites point at folders on disks, shares, servers, and phones
+(`kindCanBeFavorited` says yes to every pane kind but the servers hub, search results, an archive, and the `.git`
+portal). Both refusals open with the same "this folder" subject, so a reader learns which one they hit without
+re-reading. The reason IS the tooltip — a greyed row that says nothing is a dead end. ❗ Capability first
+(`paneFolderCanBeFavorited`, `pane/volume-capabilities.ts`), THEN the already-a-favorite test: on an archive or
+`.git`-portal pane the folder could never be a favorite at all, so "already a favorite" would be answering a question
+that doesn't arise. "Already a favorite" compares the way the store dedupes an add: with a known target on the pane's
+volume, the same path under each one's root (so a share mounted at a moved path still matches), else the paths with
+trailing slashes aside. Re-adding a folder that IS one is refused rather than allowed because the store answers a
+duplicate by moving that favorite to the END of the list, which looks like the row jumping for no reason (David,
+2026-09-16). The add itself is `add-favorite-folder.ts`, shared with the `favorites.add` command so the success and
+failure wording can't drift.
 
 **Add** has three surfaces. The `favorites.add` command (palette + the Go menu's "Add to favorites", no default
 shortcut, handler in `routes/(main)/command-handlers/misc-handlers.ts`) favorites the focused pane's current dir; the

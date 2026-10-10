@@ -287,13 +287,15 @@ AFFORDANCE: it tells someone up front that this pane can't be favorited. This on
 ENFORCEMENT, and it's authoritative — the MCP tool and the native menus never go near the frontend.
 The frontend's half is `kindCanBeFavorited` / `paneFolderCanBeFavorited` in
 `src/lib/file-explorer/pane/volume-capabilities.ts`, reading the pane's ROUTED kind. The two give
-the same answer set from different readings (pane kind vs backend kind), so a change to one is a
-prompt to check the other.
+the same answer set from different readings (pane kind vs backend kind: `local`, `smb`, `sftp`,
+`webdav`, `s3`, `mtp`, `adb` yes; the servers hub, search results, an archive, and the `.git`
+portal no, each switch exhaustive), so a change to one is a prompt to check the other.
 
 ## MCP consumer
 
 The MCP `favorites` tool wraps the `commands::favorites` pass-throughs (add / rename / remove / reorder), and
-`cmdr://state` `favorites:` reads `store::list()` for id discovery. See `mcp/DETAILS.md`.
+`cmdr://state` `favorites:` reads the favorite rows of the completed listing (id, volume, reach), falling back to
+`store::list()` when discovery timed out (`mcp/resources/favorites.rs`). See `mcp/DETAILS.md`.
 
 ## Analytics
 

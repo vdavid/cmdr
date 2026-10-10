@@ -2027,9 +2027,9 @@
   "@fileExplorer.navigation.favoritesAlreadyAdded": {
     "description": "Hover tooltip on the greyed-out \"Add current folder to favorites\" row, explaining why it can't be picked: the pane's folder is already in the list. A statement, not an error."
   },
-  "fileExplorer.navigation.favoritesCantAddHere": "This folder can’t be a favorite: favorites only work on disks and mounted shares",
+  "fileExplorer.navigation.favoritesCantAddHere": "This folder can’t be a favorite: favorites point at folders on disks, shares, servers, and phones",
   "@fileExplorer.navigation.favoritesCantAddHere": {
-    "description": "Hover tooltip on the greyed-out \"Add current folder to favorites\" row when the pane is somewhere a favorite could never point back to: inside an archive, in the .git history browser, on a phone, or on a server Cmdr connects to itself. Says a fact about THIS folder first, then the reason after the colon; pair it with its sibling fileExplorer.navigation.favoritesAlreadyAdded, which opens the same way. \"Mounted share\" is a network folder the Mac itself mounts, which behaves like a local disk; keep it plain and don't name protocols (SMB, MTP). No length limit: it's a tooltip, so read naturally rather than trimming."
+    "description": "Hover tooltip on the greyed-out \"Add current folder to favorites\" row when the pane is somewhere a favorite could never point back to: inside an archive, in the .git history browser, in a search results list, or on the list of servers itself. Says a fact about THIS folder first, then the reason after the colon (the places a favorite CAN point at); pair it with its sibling fileExplorer.navigation.favoritesAlreadyAdded, which opens the same way. \"Shares\" are network folders, \"servers\" are machines Cmdr connects to (SFTP, WebDAV, S3), \"phones\" are Android phones and cameras over USB; keep it plain and don't name protocols. No length limit: it's a tooltip, so read naturally rather than trimming."
   },
   "fileExplorer.navigation.seeFavorites": "{count, plural, =0 {See favorites} one {See {count} favorite} other {See {count} favorites}}",
   "@fileExplorer.navigation.seeFavorites": {

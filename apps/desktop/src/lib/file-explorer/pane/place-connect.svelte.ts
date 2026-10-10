@@ -190,14 +190,14 @@ export function createPlaceConnect(deps: PlaceConnectDeps): PlaceConnect {
   }
 
   /**
-   * The deepest folder of `target` that exists inside a share that just went live,
-   * else its root. ❗ A restored tab keeps the folder it stood on inside an unmounted
-   * share (`initialization.ts`), and that folder may be gone by the time the mount
-   * lands. Only an SMB share: a server place's folders aren't probed before the
-   * listing asks.
+   * The deepest folder of `target` that exists inside a place that just went live,
+   * else its root. ❗ A restored tab (`initialization.ts`) or a favorite keeps the
+   * folder it points at inside an unconnected share or server, and that folder may be
+   * gone by the time the session is up. The walk asks the place itself (`volumeId`),
+   * which is live by now, and stops at its root.
    */
   async function folderThatExists(volumeId: string, target: string, volumePath: string): Promise<string> {
-    if (volumeScheme(volumeId) !== 'smb' || target === volumePath) return target
+    if (target === volumePath || !walksOnConnect(volumeId)) return target
     const found = await resolveValidPath(target, { volumeRoot: volumePath, volumeId })
     return found && isAtOrUnder(found, volumePath) ? found : volumePath
   }
@@ -248,6 +248,31 @@ export function createPlaceConnect(deps: PlaceConnectDeps): PlaceConnect {
       return state
     },
     picked,
+  }
+}
+
+/**
+ * Whether a place this factory dials is one whose folders it checks once live: a share
+ * or a server. A phone dials through `device-connect.svelte.ts` instead, and the rest
+ * never reach a `saved` row.
+ */
+function walksOnConnect(volumeId: string): boolean {
+  const scheme = volumeScheme(volumeId)
+  switch (scheme) {
+    case 'smb':
+    case 'sftp':
+    case 'webdav':
+    case 's3':
+      return true
+    case 'root':
+    case 'local':
+    case 'path':
+    case 'mtp':
+    case 'adb':
+    case 'cloud':
+    case 'favorite':
+    case 'unknown':
+      return false
   }
 }
 

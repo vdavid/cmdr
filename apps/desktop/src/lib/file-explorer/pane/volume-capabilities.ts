@@ -423,18 +423,13 @@ export function paneRowsAreOsVisible(kind: VolumeKind): boolean {
 }
 
 /**
- * Whether a folder on this kind can become a favorite: it has to be a real
- * folder that's still there next launch, and that a cold start can open without
- * dialing anything first.
+ * Whether a folder on this kind can become a favorite: it has to be a real folder
+ * on a place Cmdr can find again. A favorite remembers its VOLUME, so one on a
+ * share, server, or phone stays listed while that place is offline, and a pick
+ * dials it or says why it can't (`navigation/open-favorite.ts`).
  *
- * `local` and `smb` yes — both are ordinary `/Volumes/…` paths the Mac itself
- * mounts, so `resolve_path_to_volume` answers from the mount table. Every other
- * kind fails one half:
+ * `local`, `smb`, `sftp`, `webdav`, `s3`, `mtp`, `adb`: yes. The rest no:
  *
- * - `sftp` / `webdav` / `s3` / `mtp` / `adb` carry a scheme path that resolves only
- *   while that server or device is live, and the volume list filters a favorite
- *   whose path doesn't exist on disk — so one of these stores fine and then
- *   never shows up again, with no row and no word about why.
  * - `search-results` is a per-session snapshot id: dead the moment the app
  *   restarts, and the one kind that can't point at a folder at all.
  * - `archive` and `git-portal` are views synthesized from a container, not
@@ -443,9 +438,11 @@ export function paneRowsAreOsVisible(kind: VolumeKind): boolean {
  *
  * ❗ This is the AFFORDANCE half only: it decides whether the favorites menu's
  * "Add current folder to favorites" row is enabled and what its disabled
- * tooltip says. The authoritative rejection lives in Rust's `add_favorite`,
- * which also covers the MCP tool and the folder-row context menus. ❌ Don't
- * "de-duplicate" the two: a frontend gate a backend trusts is no gate.
+ * tooltip says. The authoritative rejection lives in Rust's `add_favorite`
+ * (`commands/favorites.rs`: an exhaustive match over the BACKEND kind, the same
+ * answer set from a different reading), which also covers the MCP tool and the
+ * folder-row context menus. ❌ Don't "de-duplicate" the two: a frontend gate a
+ * backend trusts is no gate. Change one, check the other.
  *
  * ❌ Never a test on the path string: an archive-inner path and a `.git`-portal
  * path both look exactly like ordinary folder paths.
@@ -454,12 +451,12 @@ export function kindCanBeFavorited(kind: VolumeKind): boolean {
   switch (kind) {
     case 'local':
     case 'smb':
-      return true
     case 'sftp':
     case 'webdav':
     case 's3':
     case 'mtp':
     case 'adb':
+      return true
     case 'network':
     case 'search-results':
     case 'archive':

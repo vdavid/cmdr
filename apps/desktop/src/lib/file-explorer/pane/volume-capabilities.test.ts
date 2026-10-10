@@ -855,17 +855,11 @@ describe('rowIsOsVisible — the per-ROW share gate', () => {
 })
 
 describe('kindCanBeFavorited — where a favorite may point', () => {
-  it('says yes for the two kinds the Mac itself mounts', () => {
-    expect(kindCanBeFavorited('local')).toBe(true)
-    expect(kindCanBeFavorited('smb')).toBe(true)
-  })
-
-  it('says no for every kind a favorite would silently vanish from', () => {
-    // A scheme path resolves only while its server or device is live, and the
-    // volume list drops a favorite whose path isn't on disk — so each of these
-    // stores fine and then never shows up again.
-    for (const kind of ['sftp', 'webdav', 's3', 'mtp', 'adb'] as const) {
-      expect(kindCanBeFavorited(kind), kind).toBe(false)
+  it('says yes for every place a favorite can find again: disks, shares, servers, and phones', () => {
+    // A favorite remembers its VOLUME, so one on a server or phone stays listed while
+    // that place is offline, and a pick dials it (or says why it can't).
+    for (const kind of ['local', 'smb', 'sftp', 'webdav', 's3', 'mtp', 'adb'] as const) {
+      expect(kindCanBeFavorited(kind), kind).toBe(true)
     }
   })
 
@@ -941,14 +935,14 @@ describe('paneFolderCanBeFavorited — the pane-level add gate', () => {
     expect(paneFolderCanBeFavorited('network', 'smb://')).toBe(false)
   })
 
-  it('says no on a phone', () => {
+  it('says yes on a phone', () => {
     volumes.list = [vol({ id: 'mtp-1:1', category: 'mobile_device' })]
-    expect(paneFolderCanBeFavorited('mtp-1:1', '/DCIM')).toBe(false)
+    expect(paneFolderCanBeFavorited('mtp-1:1', '/DCIM')).toBe(true)
   })
 
-  it('says no on a server', () => {
+  it('says yes on a server', () => {
     volumes.list = [vol({ id: 'sftp-1', fsType: 'sftp' }), vol({ id: 'dav-1', fsType: 'webdav' })]
-    expect(paneFolderCanBeFavorited('sftp-1', 'sftp://host/home/me')).toBe(false)
-    expect(paneFolderCanBeFavorited('dav-1', 'webdav://host/files')).toBe(false)
+    expect(paneFolderCanBeFavorited('sftp-1', 'sftp://host/home/me')).toBe(true)
+    expect(paneFolderCanBeFavorited('dav-1', 'webdav://host/files')).toBe(true)
   })
 })

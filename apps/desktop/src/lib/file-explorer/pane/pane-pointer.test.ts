@@ -235,7 +235,8 @@ describe('createPanePointer', () => {
     })
 
     it('greys out "Open terminal here" on a pane whose volume has no OS-visible paths', async () => {
-      // The item acts on the pane's folder, so a phone offers nothing to open.
+      // The item acts on the pane's folder, so a phone offers nothing to open. A
+      // favorite remembers its volume, so a phone's folder can still be one.
       state.volumeId = 'mtp-1'
       await createPanePointer(deps).handleContextMenu(entryOf())
       expect(ipc.showFileContextMenu).toHaveBeenCalledWith(
@@ -248,7 +249,7 @@ describe('createPanePointer', () => {
           canOpenTerminalHere: false,
           canShare: false,
           canTag: false,
-          canFavorite: false,
+          canFavorite: true,
           canShareLink: false,
         },
         { countText: undefined, sizeText: undefined },
