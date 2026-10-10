@@ -61,3 +61,22 @@ export function resolveTransferTarget(args: {
     fullPath: `${fullParent.replace(/\/+$/, '')}/${named.name}`,
   }
 }
+
+/**
+ * A single-item Move whose target stays in the item's own folder on the same volume
+ * is a rename, so the pane's rename flow runs it (`dialog-state.svelte.ts`): the
+ * same conflict and extension asks as F2, a case-only change on a case-folding
+ * volume, and one undo row. S3 keeps the transfer, which is what its rename runs on.
+ */
+export function isRenameInPlace(args: {
+  target: { volumeId: string; fullPath: string } | null
+  sourcePath: string
+  sourceVolumeId: string
+}): boolean {
+  const { target, sourcePath, sourceVolumeId } = args
+  if (!target || target.volumeId !== sourceVolumeId) return false
+  const sourceFolder = containingFolder(sourcePath)
+  if (sourceFolder === null || capabilitiesForPane(sourceVolumeId, sourceFolder).kind === 's3') return false
+  const trim = (path: string) => path.replace(/\/+$/, '') || '/'
+  return trim(containingFolder(target.fullPath) ?? '') === trim(sourceFolder) && target.fullPath !== sourcePath
+}

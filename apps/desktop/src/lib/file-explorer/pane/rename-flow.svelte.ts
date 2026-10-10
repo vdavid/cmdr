@@ -175,7 +175,7 @@ export function createRenameFlow(deps: RenameFlowDeps) {
   }
 
   /** Activates the inline rename editor on `entry` (the real activation body). */
-  function activateRename(entry: FileEntry, initialName?: string): void {
+  function activateRename(entry: Pick<FileEntry, 'path' | 'name' | 'isDirectory'>, initialName?: string): void {
     const target = {
       path: entry.path,
       originalName: entry.name,
@@ -458,6 +458,21 @@ export function createRenameFlow(deps: RenameFlowDeps) {
     toastIfHiddenAfterRename(newName)
   }
 
+  /** Enter's verdict on the editor's name: refuse it, close on no change, or save. */
+  function submitEditor() {
+    if (rename.severity === 'error') {
+      rename.triggerShake()
+      addToast(rename.validation.message, { level: 'error' })
+      return
+    }
+    if (!rename.hasChanged()) {
+      closeEditor()
+      restoreFocus()
+      return
+    }
+    void executeFlow()
+  }
+
   async function executeFlow(skipExtensionCheck?: boolean) {
     const target = rename.target
     if (!target) return
@@ -498,6 +513,20 @@ export function createRenameFlow(deps: RenameFlowDeps) {
       suppressExtensionWarningOnce = options?.suppressExtensionWarning ?? false
       const expectedName = options?.expectedName
       const initialName = options?.initialName
+
+      const commitTarget = options?.commitTarget
+      if (commitTarget && initialName !== undefined) {
+        const name = commitTarget.path.slice(commitTarget.path.lastIndexOf('/') + 1)
+        activateRename({ ...commitTarget, name }, initialName)
+        if (rename.severity === 'error') {
+          // Nobody is typing into an editor here, so the reason goes out and the session ends.
+          addToast(rename.validation.message, { level: 'error' })
+          endRenameSession()
+          return
+        }
+        submitEditor()
+        return
+      }
 
       // Activate ONLY on the intended entry. The permission check (skipped for MTP
       // and archive-inner paths) and the directory-name read live in `activateRename`.
@@ -561,17 +590,7 @@ export function createRenameFlow(deps: RenameFlowDeps) {
     },
 
     handleRenameSubmit() {
-      if (rename.severity === 'error') {
-        rename.triggerShake()
-        addToast(rename.validation.message, { level: 'error' })
-        return
-      }
-      if (!rename.hasChanged()) {
-        closeEditor()
-        restoreFocus()
-        return
-      }
-      void executeFlow()
+      submitEditor()
     },
 
     /**

@@ -50,7 +50,7 @@
     import { useShortenMiddle } from '$lib/utils/shorten-middle-action'
     import Trans from '$lib/intl/Trans.svelte'
     import { t, tString } from '$lib/intl/messages.svelte'
-    import { resolveTransferTarget } from './transfer-target'
+    import { isRenameInPlace, resolveTransferTarget } from './transfer-target'
     import { dependOn } from '$lib/utils/reactivity'
 
     const log = getAppLogger('transferDialog')
@@ -665,6 +665,10 @@
             operationType: activeOperationType,
             preKnownConflicts: conflicts.conflictNames,
             ...(isRenameMode ? { newName: renameTarget.leaf } : {}),
+            ...(activeOperationType === 'move' &&
+            isRenameInPlace({ target: namedTarget, sourcePath: sourcePaths[0], sourceVolumeId })
+                ? { renameInPlace: true }
+                : {}),
         })
     }
 

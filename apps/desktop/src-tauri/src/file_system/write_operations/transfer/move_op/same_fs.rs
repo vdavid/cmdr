@@ -28,9 +28,7 @@ use crate::file_system::write_operations::types::{
     CancelRollback, SourceItemOutcome, TopLevelSkipped, WriteCancelledEvent, WriteCompleteEvent, WriteOperationConfig,
     WriteOperationError, WriteOperationPhase, WriteOperationType, WriteSourceItemDoneEvent,
 };
-use crate::file_system::write_operations::validation::{
-    is_case_only_self_rename, is_real_directory, path_exists_or_is_symlink,
-};
+use crate::file_system::write_operations::validation::{is_real_directory, path_exists_or_is_symlink};
 use crate::file_system::write_operations::{journal, journal_search};
 
 /// `already_in_place` counts the top-level sources the caller dropped as already
@@ -126,20 +124,7 @@ pub(super) fn move_with_rename(
             // When both source and dest are real directories, merge recursively
             // instead of replacing (which would destroy dest-only files). A
             // symlink on either side is a leaf and takes the conflict branch.
-            if is_case_only_self_rename(source, &dest_path) {
-                // The "existing" target IS the source under another case, so this
-                // is neither a merge nor a conflict, and `rename_no_replace` would
-                // refuse it as taken. A plain rename changes only the case.
-                crate::downloads::note_pending_write_for_cmdr(source);
-                crate::downloads::note_pending_write_for_cmdr(&dest_path);
-                fs::rename(source, &dest_path)
-                    .with_path(source)
-                    .map_err(|e| e.sided_by_locked_source(source))?;
-                move_tx.record(
-                    source.clone(),
-                    WrittenFile::local_stat(dest_path.clone(), source_meta.as_ref()),
-                );
-            } else if is_real_directory(source) && is_real_directory(&dest_path) {
+            if is_real_directory(source) && is_real_directory(&dest_path) {
                 // Same-FS merge operates on the original tree directly, so a
                 // skipped child just leaves the source non-empty; no skip-set
                 // bookkeeping is needed (there's no later source-delete phase).

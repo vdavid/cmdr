@@ -93,6 +93,27 @@ describe('complete single-copy target', () => {
   })
 })
 
+describe('a Move inside its own folder is a rename', () => {
+  it.each([
+    ['move', 'Notes.txt', true],
+    ['move', 'renamed.txt', true],
+    ['move', '/tmp/notes.txt', false],
+    ['copy', 'Notes.txt', false],
+  ] as const)('%s to %s flags renameInPlace: %s', async (operationType, entered, renameInPlace) => {
+    const onConfirm = vi.fn<ConfirmFn>()
+    const target = mountDialog({ operationType, sourcePaths: ['/Users/test/notes.txt'], onConfirm })
+    await flushMicrotasks()
+    const input = pathInput(target)
+    input.value = entered
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+    await tick()
+    confirmButton(target).click()
+    await flushMicrotasks()
+    expect(onConfirm).toHaveBeenCalledTimes(1)
+    expect(onConfirm.mock.calls[0][0].renameInPlace ?? false).toBe(renameInPlace)
+  })
+})
+
 describe('a target path that names an existing folder', () => {
   // Pasting a folder path keeps "the last segment is the new name", so the
   // dialog says how to put the item inside instead.

@@ -37,6 +37,9 @@ export interface TransferConfirmPayload {
   /** Rename mode only: the leaf of the edited path, which the source moves under
    *  into `destination` (then the folder part alone). */
   newName?: string
+  /** A single-item Move inside the item's own folder: the source pane renames it
+   *  (`transfer-target.ts::isRenameInPlace`) and no transfer starts. */
+  renameInPlace?: boolean
 }
 
 /**

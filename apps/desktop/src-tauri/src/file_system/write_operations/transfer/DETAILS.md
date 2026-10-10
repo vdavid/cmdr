@@ -252,7 +252,7 @@ the single-source count, leaf components, null bytes, and path limits before wri
 
 Native Copy seeds the shared `named_destination::initial_remap` before its identity check. The per-file loop and
 empty-directory pass use that map, so staging, journal entries, durability, and rollback refer to the requested paths.
-Native same-filesystem Move uses the leaf at its top-level rename and identity guard. A leaf that changes only the case (`notes.txt` to `Notes.txt` in place) folds onto the source's own entry on APFS, so `validation::is_case_only_self_rename` keeps it out of the identity drop and `same_fs` lands it with a plain `fs::rename` (`rename_no_replace` would call its own entry taken); the restore's `occupant_is_the_item_itself` already reverses it. Pinned by `move_op/named_move_tests.rs::a_case_only_named_move_renames_the_item_in_place`. **Gap:** a non-local same-volume Move (SMB, MTP) still drops a case-only leaf as already in place, because `is_the_same_volume_path` compares folded leaves. A native cross-filesystem Move
+Native same-filesystem Move uses the leaf at its top-level rename and identity guard. A single-item Move inside its own folder never reaches these engines from the dialog: the frontend runs it as a rename (`apps/desktop/src/lib/file-operations/transfer/DETAILS.md` § "Single-item destinations"), so a case-only leaf, which identity would drop as already in place, renames on every volume. A native cross-filesystem Move
 seeds the remap under its staging directory and lands that same leaf at the destination; ordinary staging-to-final
 rebasing therefore journals and flushes the named files and directories. Original-source stamps and deletion ledgers
 continue naming the originals.

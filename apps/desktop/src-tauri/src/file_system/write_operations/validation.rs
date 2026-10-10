@@ -380,20 +380,6 @@ pub(crate) fn is_same_file(source: &Path, destination: &Path) -> bool {
     src_meta.dev() == dst_meta.dev() && src_meta.ino() == dst_meta.ino()
 }
 
-/// A move onto the source's own entry under a different letter case: a
-/// case-folding filesystem (APFS, HFS+) reports `Notes.txt` as `notes.txt` itself.
-/// That's a rename the person asked for, never an item already in place, and its
-/// target is "taken" only by the source, so `rename_no_replace` would refuse it.
-pub(crate) fn is_case_only_self_rename(source: &Path, destination: &Path) -> bool {
-    let (Some(from), Some(to)) = (source.file_name(), destination.file_name()) else {
-        return false;
-    };
-    source.parent() == destination.parent()
-        && from != to
-        && from.to_string_lossy().to_lowercase() == to.to_string_lossy().to_lowercase()
-        && is_same_file(source, destination)
-}
-
 #[cfg(not(unix))]
 pub(crate) fn is_same_file(_source: &Path, _destination: &Path) -> bool {
     false

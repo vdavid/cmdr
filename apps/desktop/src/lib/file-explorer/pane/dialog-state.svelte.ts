@@ -44,6 +44,7 @@ import { skippedDeleteConfirmation, skippedTransferConfirmation } from './confir
 import { getVolumes } from '$lib/stores/volume-store.svelte'
 import { openRenameOnDuplicate } from './duplicate-rename'
 import type { TransferDialogPropsData } from './transfer-operations'
+import { renameInSourcePane } from './rename-in-place'
 import type { TransferOperationType, WriteOperationError } from '../types'
 import type {
   AdoptedOperationData,
@@ -461,8 +462,14 @@ export function createDialogState(deps: DialogStateDeps) {
       operationType,
       preKnownConflicts,
       newName,
+      renameInPlace,
     }: TransferConfirmPayload) {
       if (!transferDialogProps) return
+      if (renameInPlace && destinationName && renameInSourcePane(transferDialogProps, destinationName, deps)) {
+        showTransferDialog = false
+        transferDialogProps = null
+        return
+      }
 
       // A refusal still takes this dialog down (below): the user answered it, and
       // leaving it stacked over the operation it can't join would say nothing. The

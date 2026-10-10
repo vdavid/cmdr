@@ -141,6 +141,17 @@ both Copy and Move, including Enter and MCP auto-confirm. The comparison uses th
 matching volume-relative names on different volumes remain valid. A different name in the source folder is valid.
 Copy/Move toggles preserve the complete edited target; switching to/from Compress derives a target from the same parent.
 
+**A single-item Move inside its own folder is a rename, and the rename flow runs it.**
+`transfer-target.ts::isRenameInPlace` flags it on the confirm (`renameInPlace`): same volume, target parent equal to the
+source's folder, not S3. `dialog-state.svelte.ts::renameInSourcePane` then calls the source pane's
+`startRename({ initialName, commitTarget })` (`pane/rename-flow.svelte.ts`), which renames that path at once, with no
+Enter. **Decision/Why:** the rename engine already answers everything such a move needs, on every volume: F2's conflict
+and extension asks, a case-only change on a case-folding filesystem (`notes.txt` to `Notes.txt`, which the move engine's
+identity check would drop as "already in place"), and one undo row. Teaching the move engines a case-only special case
+instead fixed local drives only, since SMB and MTP have no inode to settle identity. It falls back to the transfer for
+an MCP call (it waits for an operation id) and when the source pane has left the folder. S3 keeps the transfer, which is
+what its rename runs on anyway.
+
 The confirm carries the effective volume, its volume-relative parent, and `destinationName` separately. The volume
 selector and space, existence, and conflict checks follow that destination. A filename conflict probe asks for the new
 name but forwards the ORIGINAL source name as a bulk-skip key. Destination edits invalidate old conflict answers

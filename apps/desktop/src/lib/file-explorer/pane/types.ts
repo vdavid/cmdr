@@ -34,6 +34,14 @@ export interface StartRenameOptions {
    * Omit it for user-initiated renames (F2), which activate on the cursor entry.
    */
   expectedName?: string
+  /**
+   * Renames THIS item to `initialName` straight away, as if Enter were pressed:
+   * the Move dialog's single-item move inside its own folder
+   * (`dialog-state.svelte.ts::renameInSourcePane`). Path-bound, never the cursor's
+   * entry. The caller checks the pane shows the item's folder first. A conflict or
+   * an extension change still asks, through the same dialogs F2 uses.
+   */
+  commitTarget?: { path: string; isDirectory: boolean }
 }
 
 /**

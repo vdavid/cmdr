@@ -28,9 +28,7 @@ use super::super::state::WriteOperationState;
 use super::super::types::{
     SourceItemOutcome, WriteOperationConfig, WriteOperationError, WriteOperationType, WriteSourceItemDoneEvent,
 };
-use super::super::validation::{
-    is_case_only_self_rename, is_real_directory, is_same_file, is_same_filesystem, path_exists_or_is_symlink,
-};
+use super::super::validation::{is_real_directory, is_same_file, is_same_filesystem, path_exists_or_is_symlink};
 use crate::operation_log::rollback::ItemResult;
 use crate::operation_log::types::SkipReason;
 
@@ -428,9 +426,7 @@ pub(in crate::file_system::write_operations) fn move_files_with_progress_inner(
                     .as_deref()
                     .map(Path::new)
                     .unwrap_or_else(|| Path::new(name));
-                let target = destination.join(leaf);
-                // A case-only rename folds onto its own entry, yet it's real work.
-                is_same_file(source, &target) && !is_case_only_self_rename(source, &target)
+                is_same_file(source, &destination.join(leaf))
             })
             .unwrap_or(false)
     });

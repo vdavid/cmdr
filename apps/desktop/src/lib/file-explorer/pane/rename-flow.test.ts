@@ -265,6 +265,40 @@ describe('startRename expectedName guard (auto-rename must land on the new file,
   })
 })
 
+// A Move dialog whose single-item target sits in the item's own folder is a
+// rename: it runs here, so conflicts, the extension ask, case-only changes, the
+// undo journal, and every volume behave exactly as F2 does.
+describe('a committed rename from the Move dialog', () => {
+  const TARGET = { path: '/dir/report.txt', isDirectory: false }
+
+  it('renames the named item, never the one under the cursor, with no Enter', async () => {
+    const { rename, flow } = buildFlow()
+
+    flow.startRename({ initialName: 'Report.txt', commitTarget: TARGET })
+
+    await vi.waitFor(() => {
+      expect(executeRenameSaveSpy).toHaveBeenCalled()
+    })
+    const [target, newName] = executeRenameSaveSpy.mock.calls[0]
+    expect(target).toMatchObject({ path: '/dir/report.txt', originalName: 'report.txt' })
+    expect(newName).toBe('Report.txt')
+    await vi.waitFor(() => {
+      expect(rename.active).toBe(false)
+    })
+  })
+
+  it('says why and renames nothing when the name is unusable', () => {
+    validateFilenameSpy.mockReturnValue(ERROR_VALIDATION)
+    const { rename, flow } = buildFlow()
+
+    flow.startRename({ initialName: 'bad/name', commitTarget: TARGET })
+
+    expect(executeRenameSaveSpy).not.toHaveBeenCalled()
+    expect(addToastSpy).toHaveBeenCalledWith('left', ERROR_VALIDATION.message, { level: 'error' })
+    expect(rename.active).toBe(false)
+  })
+})
+
 describe('Enter (submit) ends the session the way the user asked', () => {
   it('a changed valid name saves', async () => {
     const { rename, flow } = buildFlow()
