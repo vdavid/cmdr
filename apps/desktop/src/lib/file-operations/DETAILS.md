@@ -489,3 +489,5 @@ unmounts the dialog partway through, and the async function keeps running.
   deferred null can outrun them; both parents null the props object in the same tick as a close, confirms included
   (`handleTransferConfirm` and `handleDeleteConfirm` alike). Keeping the object alive would pin a possibly 50k-path
   selection until the next open, in two parents.
+
+The write config’s optional destination leaf follows `transfer/DETAILS.md` § "Single-item destinations".

@@ -1,18 +1,19 @@
 # Transfer (copy + move)
 
-Copy and move, local-FS and volume-aware (Local ↔ MTP ↔ SMB), via `transfer_driver/` and `OperationEventSink`. Op
-state, intent, cancel/rollback, ETA, conflict mutex, settle: `../CLAUDE.md`. Frontend:
+Local and cross-volume copy/move (`transfer_driver/`, `OperationEventSink`). Shared operation state:
+`../CLAUDE.md`. Frontend:
 `apps/desktop/src/lib/file-operations/transfer/CLAUDE.md`.
 
-Local-FS is `copy/`, `move_op/`, `copy_strategy.rs`; cross-volume is `volume/`, a facade reached only as
-`transfer::volume::<item>` (contracts: `volume/CLAUDE.md`). All four cores run through `transfer_driver/CLAUDE.md`.
-File map: `DETAILS.md` § Files.
+Local: `copy/`, `move_op/`, `copy_strategy.rs`. Cross-volume facade: `transfer::volume::<item>`
+(`volume/CLAUDE.md`). Drivers: `transfer_driver/CLAUDE.md`. File map: `DETAILS.md` § Files.
 
 ## Streaming, cancel, and diagnosis
 
 - **EVERY write stages, local included**: bytes land on a `.cmdr-tmp-<uuid>` SIBLING, then one same-directory rename. Local-FS uses `overwrite::stage_and_land_file` (❌ never straight to the destination); cross-volume asks `resolve_staging`. A non-overwrite landing REFUSES an
   occupied destination, a move's renames included (`move_op::rename_onto_free_name`); ❌ only a name the CALLER
   claimed earns `land`'s clear-and-rename (`staged_write::LandingName`).
+- **An explicit transfer leaf applies before conflict/identity checks**, across native, volume, and archive transfers; never copy then rename.
+  DETAILS § "Named destinations".
 - **A source that would land on ITSELF is a duplicate, ❌ never a conflict**: settled by `dev+ino` per TOP-LEVEL source
   before either engine's loop. DETAILS § "Self-collision".
 - **A symlink is a LEAF to every move, and a DESTINATION one to every copy**: ask `validation::is_real_directory` /
@@ -48,5 +49,4 @@ File map: `DETAILS.md` § Files.
   stall watchdog is GATED** (`connection_liveness() == Dead` AND `STALL_ABORT_AFTER`; only SMB answers `Dead`), so ❌
   never collapse the AND.
 
-Semantics, flows, decisions, and the staging/retry/auto-yield/stall contracts: `DETAILS.md`, read before non-trivial
-work here.
+Read `DETAILS.md` before non-trivial work: semantics, staging, retry, yielding, and stalls.

@@ -229,6 +229,7 @@
             sourcePaths={transferProgressProps.sourcePaths}
             sourceFolderPath={transferProgressProps.sourceFolderPath}
             destinationPath={transferProgressProps.destinationPath}
+            destinationName={transferProgressProps.destinationName}
             direction={transferProgressProps.direction}
             sortColumn={transferProgressProps.sortColumn}
             sortOrder={transferProgressProps.sortOrder}

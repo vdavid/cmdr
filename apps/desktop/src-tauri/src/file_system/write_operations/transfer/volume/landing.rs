@@ -81,12 +81,16 @@ pub(super) fn top_level_precheck(
     dest_volume: &Arc<dyn Volume>,
     probe: Option<Arc<OperationProbe>>,
     new_name: NewName,
+    destination_name: Option<&str>,
 ) -> impl for<'a> FnMut(&'a Path) -> FetchFut<'a> + use<> {
     let dest_volume = Arc::clone(dest_volume);
+    let destination_name = destination_name.map(str::to_owned);
     move |dest: &Path| -> FetchFut<'_> {
         let dest_volume = Arc::clone(&dest_volume);
         let probe = probe.clone();
-        let dest = dest.to_path_buf();
+        let dest = destination_name
+            .as_deref()
+            .map_or_else(|| dest.to_path_buf(), |name| dest.with_file_name(name));
         Box::pin(async move {
             if let Some(probe) = probe {
                 probe.set_driver_phase(DriverPhase::PreparingNext, &dest.display().to_string());

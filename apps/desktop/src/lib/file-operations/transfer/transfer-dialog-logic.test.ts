@@ -125,3 +125,17 @@ describe('formatSpaceInfo', () => {
     expect(formatSpaceInfo(space, fmt)).toBe('64000000 B used, no size limit')
   })
 })
+
+describe('complete destination validation', () => {
+  it.each(['copy', 'move'] as const)('rejects the identical %s target', (operationType) => {
+    expect(getPathValidationError(['/a/notes.txt'], '/a/notes.txt', operationType, true)).toBe(
+      '“notes.txt” is already in this location',
+    )
+  })
+  it.each(['copy', 'move'] as const)('allows %s with a different name in the source folder', (operationType) => {
+    expect(getPathValidationError(['/a/notes.txt'], '/a/backup.txt', operationType, true)).toBeNull()
+  })
+  it.each(['copy', 'move'] as const)('keeps the %s subtree guard for a complete target', (operationType) => {
+    expect(getPathValidationError(['/a/folder'], '/a/folder/new-folder', operationType, true)).not.toBeNull()
+  })
+})

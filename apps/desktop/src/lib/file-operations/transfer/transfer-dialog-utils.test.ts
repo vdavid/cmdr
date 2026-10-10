@@ -1,6 +1,7 @@
 /**
  * Tests for transfer dialog utility functions
  */
+import { resolveTransferFilename, initialEditedPath, editedPathAfterOperationChange } from './transfer-dialog-utils'
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { _setLocaleForTests } from '$lib/intl/locale'
 import {
@@ -345,6 +346,87 @@ describe('shouldShowHardlinkNote', () => {
   })
 })
 
+describe('complete copy targets', () => {
+  it.each(['copy', 'move'] as const)('prefills the full path and original filename for %s', (operationType) => {
+    expect(
+      initialEditedPath(
+        operationType,
+        '/Volumes/External/docs',
+        '/Volumes/External',
+        ['/Users/test/notes.txt'],
+        '/Users/test',
+      ),
+    ).toBe('/Volumes/External/docs/notes.txt')
+    expect(
+      initialEditedPath(operationType, '/DCIM', 'mtp://phone/storage', ['/Users/test/photo.jpg'], '/Users/test'),
+    ).toBe('/DCIM/photo.jpg')
+  })
+
+  it.each([
+    [' résumé copy.txt ', '/Users/test', 'résumé copy.txt'],
+    ['/tmp/copy.txt', '/tmp', 'copy.txt'],
+    ['folder/copy.txt', '/Users/test/folder', 'copy.txt'],
+    ['../copy.txt', '/Users', 'copy.txt'],
+    ['./folder/../copy.txt', '/Users/test', 'copy.txt'],
+    ['~/copy.txt', '/Users/home', 'copy.txt'],
+    ['/copy.txt', '/', 'copy.txt'],
+  ])('resolves %s to its exact parent and filename', (entered, parent, name) => {
+    expect(resolveTransferFilename(entered, '/Users/test', '/Users/home')).toEqual({ parent, name })
+  })
+
+  it.each(['', ' ', '/', '/tmp/', '~', '.', '..', 'folder/.', 'folder/..'])('requires a filename in %s', (entered) => {
+    expect(resolveTransferFilename(entered, '/Users/test')).toBeNull()
+  })
+})
+
+describe('operation changes preserve the destination folder', () => {
+  const base = { sourcePaths: ['/src/notes.txt'], sourceFolderPath: '/src', volumePath: '/Volumes/External' }
+  it('preserves the chosen name when switching from Move to Copy', () => {
+    expect(
+      editedPathAfterOperationChange({
+        ...base,
+        operationType: 'move',
+        nextOperationType: 'copy',
+        editedPath: '/Volumes/External/docs/chosen.txt',
+      }),
+    ).toBe('/Volumes/External/docs/chosen.txt')
+  })
+  it('preserves the chosen name when switching from Copy to Move', () => {
+    expect(
+      editedPathAfterOperationChange({
+        ...base,
+        operationType: 'copy',
+        nextOperationType: 'move',
+        editedPath: '/Volumes/External/docs/new.txt',
+        targetParent: '/Volumes/External/docs',
+      }),
+    ).toBe('/Volumes/External/docs/new.txt')
+  })
+  it('replaces the archive filename when switching from compress to copy', () => {
+    expect(
+      editedPathAfterOperationChange({
+        ...base,
+        operationType: 'compress',
+        nextOperationType: 'copy',
+        editedPath: '/docs/archive.zip',
+      }),
+    ).toBe('/Volumes/External/docs/notes.txt')
+  })
+})
+
+it('keeps the complete phone target when switching Copy to Move', () => {
+  expect(
+    editedPathAfterOperationChange({
+      operationType: 'copy',
+      nextOperationType: 'move',
+      editedPath: '/DCIM/backup.jpg',
+      targetParent: '/DCIM',
+      volumePath: '/mtp-20-5/65538',
+      sourcePaths: ['/mtp-20-5/65538/DCIM/original.jpg'],
+      sourceFolderPath: '/mtp-20-5/65538/DCIM',
+    }),
+  ).toBe('/DCIM/backup.jpg')
+})
 describe('rename mode: the path box holds folder + new name', () => {
   it('joins the new name onto the folder', () => {
     expect(joinPathLeaf('/bucket/photos', 'pictures')).toBe('/bucket/photos/pictures')

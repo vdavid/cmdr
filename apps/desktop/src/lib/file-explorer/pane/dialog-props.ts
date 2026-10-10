@@ -25,6 +25,7 @@ import type { PaneRevealAPI } from '../navigation/navigate-and-select'
  */
 export interface TransferConfirmPayload {
   destination: string
+  destinationName?: string
   volumeId: string
   previewId: string | null
   conflictResolution: ConflictResolution
@@ -86,6 +87,8 @@ export interface TransferProgressPropsData {
   sourcePaneSide: 'left' | 'right'
   /** Not applicable for delete/trash */
   destinationPath?: string
+  /** Explicit leaf name for a single local copy. */
+  destinationName?: string
   /** Not applicable for delete/trash */
   direction?: 'left' | 'right'
   sortColumn: SortColumn

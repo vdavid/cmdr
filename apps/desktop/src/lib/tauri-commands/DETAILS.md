@@ -250,3 +250,7 @@ text only (`../ask-cmdr/DETAILS.md` § The "Why this name" column).
   test; change one side and it tells you about the other. ❌ Don't invent a per-feature bucketing next to a call to it —
   the one documented exception is a count with a hard low cap of its own (open tabs cap at ten, where this ladder has
   two values across the whole range), and those say so at the call site.
+
+`VolumeCopyConfig.destinationName` preserves the named local-copy request across IPC. Contract:
+`../file-operations/transfer/DETAILS.md` § "Single-item destinations". `SourceItemInput.isDirectory` can supply the
+known selection kind when a conflict probe checks an alternate name.

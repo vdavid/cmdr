@@ -666,3 +666,102 @@ async fn a_blanket_overwrite_never_replaces_an_archive_directory_with_a_file() {
         );
     }
 }
+
+#[tokio::test]
+async fn a_named_copy_into_zip_uses_the_requested_leaf_and_preserves_existing_entries() {
+    use super::copy_into::route_archive_copy_into_with_provenance;
+    use crate::file_system::volume::backends::LocalPosixVolume;
+    let tmp = tempfile::tempdir().unwrap();
+    let archive = tmp.path().join("target.zip");
+    {
+        let mut zip = ZipWriter::new(std::fs::File::create(&archive).unwrap());
+        zip.start_file("folder/renamed.txt", SimpleFileOptions::default())
+            .unwrap();
+        zip.write_all(b"old bytes").unwrap();
+        zip.finish().unwrap();
+    }
+    std::fs::write(tmp.path().join("original.txt"), b"new bytes").unwrap();
+    for policy in [ConflictResolution::Skip, ConflictResolution::Overwrite] {
+        let source: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("src", tmp.path().to_path_buf()));
+        let events = Arc::new(CollectorEventSink::new());
+        route_archive_copy_into_with_provenance(
+            events.clone(),
+            source,
+            vec![PathBuf::from("original.txt")],
+            archive.join("folder"),
+            unique_lane_id(),
+            policy,
+            0,
+            false,
+            None,
+            None,
+            super::super::journal::ArchiveProvenance::edit(crate::operation_log::types::Initiator::User),
+            Some("renamed.txt".into()),
+        )
+        .await
+        .unwrap();
+        wait_until_async(Duration::from_secs(5), "named ZIP copy completion", || {
+            !events.complete.lock_ignore_poison().is_empty()
+        })
+        .await;
+        let expected = if policy == ConflictResolution::Skip {
+            b"old bytes"
+        } else {
+            b"new bytes"
+        };
+        assert_eq!(
+            read_entry(&archive, "folder/renamed.txt").as_deref(),
+            Some(expected.as_slice())
+        );
+        assert_eq!(read_entry(&archive, "folder/original.txt"), None);
+        assert_eq!(std::fs::read(tmp.path().join("original.txt")).unwrap(), b"new bytes");
+    }
+}
+
+#[tokio::test]
+async fn a_named_move_into_zip_deletes_only_the_source_that_landed() {
+    use super::copy_into::route_archive_copy_into_with_provenance;
+    use crate::file_system::volume::backends::LocalPosixVolume;
+    for policy in [ConflictResolution::Skip, ConflictResolution::Overwrite] {
+        let tmp = tempfile::tempdir().unwrap();
+        let archive = tmp.path().join("target.zip");
+        {
+            let mut zip = ZipWriter::new(std::fs::File::create(&archive).unwrap());
+            zip.start_file("renamed.txt", SimpleFileOptions::default()).unwrap();
+            zip.write_all(b"old bytes").unwrap();
+            zip.finish().unwrap();
+        }
+        let original = tmp.path().join("original.txt");
+        std::fs::write(&original, b"new bytes").unwrap();
+        let source: Arc<dyn Volume> = Arc::new(LocalPosixVolume::new("src", tmp.path().to_path_buf()));
+        let events = Arc::new(CollectorEventSink::new());
+        route_archive_copy_into_with_provenance(
+            events.clone(),
+            source,
+            vec![PathBuf::from("original.txt")],
+            archive.clone(),
+            unique_lane_id(),
+            policy,
+            0,
+            true,
+            None,
+            None,
+            super::super::journal::ArchiveProvenance::edit(crate::operation_log::types::Initiator::User),
+            Some("renamed.txt".into()),
+        )
+        .await
+        .unwrap();
+        wait_until_async(Duration::from_secs(5), "named ZIP move completion", || {
+            !events.complete.lock_ignore_poison().is_empty()
+        })
+        .await;
+        let skipped = policy == ConflictResolution::Skip;
+        let expected = if skipped { b"old bytes" } else { b"new bytes" };
+        assert_eq!(
+            read_entry(&archive, "renamed.txt").as_deref(),
+            Some(expected.as_slice())
+        );
+        assert_eq!(read_entry(&archive, "original.txt"), None);
+        assert_eq!(original.exists(), skipped);
+    }
+}

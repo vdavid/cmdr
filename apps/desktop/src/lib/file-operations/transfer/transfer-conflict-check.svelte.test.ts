@@ -164,3 +164,51 @@ describe('createTransferConflictCheck', () => {
     expect(check.fileClashes).toEqual([{ sourceSize: 10, destSize: 5, sourceModified: 200, destModified: 100 }])
   })
 })
+
+it('probes the requested filename but keeps the original source name as the bulk-skip key', async () => {
+  namesAtDestination = ['backup.txt']
+  const check = createTransferConflictCheck({
+    getSelectedVolumeId: () => 'volume-1',
+    getSourcePaths: () => ['/photos/notes.txt'],
+    getEditedPath: () => '/photos',
+    getDestinationName: () => 'backup.txt',
+    getSourceVolumeId: () => 'volume-1',
+    getDestroyed: () => false,
+    log: log as never,
+  })
+  await check.check()
+  expect(check.totalConflictCount).toBe(1)
+  expect(check.conflictNames).toEqual(['notes.txt'])
+  expect(scanVolumeForConflictsMock.mock.calls[0][1][0].name).toBe('backup.txt')
+})
+
+it('discards a slow conflict answer after the destination changes', async () => {
+  let resolveOld!: (value: VolumeConflictInfo[]) => void
+  scanVolumeForConflictsMock.mockImplementationOnce(
+    () =>
+      new Promise<VolumeConflictInfo[]>((resolve) => {
+        resolveOld = resolve
+      }),
+  )
+  const check = makeCheck(['/backup/photo.jpg'], '/photos')
+  const oldCheck = check.check()
+  check.reset()
+  namesAtDestination = []
+  await check.check()
+  resolveOld([
+    {
+      sourcePath: 'photo.jpg',
+      destPath: '/photos/photo.jpg',
+      sourceIsDirectory: false,
+      destIsDirectory: false,
+      sourceSize: 0,
+      destSize: 0,
+      sourceModified: null,
+      destModified: null,
+    },
+  ])
+  await oldCheck
+  expect(check.conflictCheckComplete).toBe(true)
+  expect(check.totalConflictCount).toBe(0)
+  expect(check.conflictNames).toEqual([])
+})

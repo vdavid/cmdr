@@ -180,6 +180,7 @@ pub(crate) async fn scan_volume_for_conflicts_within(
             // below) and the destination scan after it is not. Detached (see
             // `timeout_detached`): the stats reach the source device, so the
             // deadline must not drop them mid-request.
+            let single_source = (paths.len() == 1).then(|| paths[0].clone());
             let stat_deadline = deadline.fraction(SOURCE_STAT_BUDGET_DIVISOR);
             let stats = timeout_detached_within(
                 &stat_deadline,
@@ -189,7 +190,7 @@ pub(crate) async fn scan_volume_for_conflicts_within(
             )
             .await;
             match stats {
-                Ok(stats) => merge_source_types_from_stats(&mut source_items, &stats),
+                Ok(stats) => merge_source_types_from_stats(&mut source_items, &stats, single_source.as_deref()),
                 // A source-side stat that doesn't come back is non-fatal: fall
                 // back to the name-only items the caller sent. Conflict
                 // detection still works by name; only the dir/size hints
@@ -380,14 +381,20 @@ fn stats_from_watched_panes(source_volume_id: &str, paths: &[PathBuf]) -> (Vec<(
 fn merge_source_types_from_stats(
     source_items: &mut [crate::file_system::SourceItemInfo],
     stats: &[(PathBuf, FileEntry)],
+    single_source: Option<&Path>,
 ) {
     use std::collections::HashMap;
     let by_name: HashMap<&str, &FileEntry> = stats
         .iter()
         .filter_map(|(path, entry)| path.file_name().and_then(|n| n.to_str()).map(|n| (n, entry)))
         .collect();
+    // One explicit target name may differ from its original source basename.
+    // Bind that alias by the actual stat path, never by a guessed filename.
+    let bound_entry = single_source
+        .filter(|_| source_items.len() == 1)
+        .and_then(|source| stats.iter().find(|(path, _)| path == source).map(|(_, entry)| entry));
     for item in source_items.iter_mut() {
-        if let Some(entry) = by_name.get(item.name.as_str()) {
+        if let Some(entry) = bound_entry.or_else(|| by_name.get(item.name.as_str()).copied()) {
             item.is_directory = entry.is_directory;
             if !entry.is_directory
                 && let Some(size) = entry.size

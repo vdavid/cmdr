@@ -60,6 +60,10 @@ COMPLETED files".
 
 ## File map
 
+`TransferDialog.test.ts` covers preflight and conflict UX; `TransferDialog.targets.test.ts` covers filename targets and
+rename-by-move. Both use the IPC doubles and mount helpers in `test-transfer-dialog-harness.ts`, which unmounts every
+dialog after each test so pending debounce work cannot reach another test's mocks.
+
 Where a symbol lives and who calls it: `codegraph_search` / `codegraph_explore`. The area's shape: `CLAUDE.md` § Module
 map. What the pieces DO is in the sections below: the two dialogs and both state factories in § "How transfer flows",
 the compress components (level slider, estimate line, name helper, dest-exists check) in § "Compress mode", the password
@@ -114,6 +118,29 @@ prompt in § "Archive-password prompt", the `..` helpers in § "Index conversion
   reads as a success, and the toast stays `success`, not a warning: nothing went wrong, some files simply arrived too
   late to travel. Absent on every other ending, so the historic wordings render byte-identical.
 
+## Single-item destinations
+
+A single-item Copy/Move target always includes the destination leaf, prefilled with the original name. Absolute local
+paths name the exact location, including the mount root; an absolute remote path names a location within the selected
+volume. Relative paths resolve from the source folder and volume, including nested paths and `..`; `~/` resolves from
+the local home directory. `resolveTransferFilename` splits and normalizes the path, and `transfer-target.ts` selects the
+effective volume. Empty leaves, trailing slashes, and final `.` / `..` components cannot confirm. A folder copy names
+the copied or moved folder itself. Multiple selections still target a directory, preserving each selected item's name.
+
+A complete target equal to its source shows the existing "already in this location" warning and disables confirm for
+both Copy and Move, including Enter and MCP auto-confirm. The comparison uses the full canonical destination, so
+matching volume-relative names on different volumes remain valid. A different name in the source folder is valid.
+Copy/Move toggles preserve the complete edited target; switching to/from Compress derives a target from the same parent.
+
+The confirm carries the effective volume, its volume-relative parent, and `destinationName` separately. The volume
+selector and space, existence, and conflict checks follow that destination. A filename conflict probe asks for the new
+name but forwards the ORIGINAL source name as a bulk-skip key. Destination edits invalidate old conflict answers
+immediately and debounce another check; an old in-flight answer cannot supply skip names to a newer target.
+
+The pane preserves `destinationName` through progress and retry and suppresses the automatic rename editor when the user
+already supplied a name. Backend landing and safety:
+`apps/desktop/src-tauri/src/file_system/write_operations/transfer/DETAILS.md` § "Named destinations".
+
 ## How transfer flows
 
 1. **TransferDialog** (destination picker + dry-run scan)
@@ -123,9 +150,10 @@ prompt in § "Archive-password prompt", the `..` helpers in § "Index conversion
      root needs trimming before the slice: `$lib/path/DETAILS.md` § "Volume membership is a component match".
    - The segmented Copy/Move toggle is always shown so the user can flip the operation regardless of how the dialog was
      triggered (F5/F6, command palette, drag-and-drop).
-   - Validates path structure via `validateDirectoryPath()` from `$lib/utils/filename-validation` (empty, absolute, null
-     bytes, length limits), then checks logical constraints (a folder into its own subfolder). A destination that IS the
-     source's own folder is allowed: it duplicates, and the backend resolves that per item
+   - Resolves a complete single-item Copy/Move target as described in § "Single-item destinations", then validates path
+     structure via `validateDirectoryPath()` from `$lib/utils/filename-validation` (empty, absolute, null bytes, length
+     limits), then checks logical constraints (a folder into its own subfolder). A destination that IS the source's own
+     folder is allowed: it duplicates, and the backend resolves that per item
      (`src-tauri/src/file_system/write_operations/transfer/DETAILS.md` § "Self-collision (duplicating in place)").
    - Optional dry-run scan to detect conflicts upfront. Shows sampled conflicts (max 200) with streaming progress.
    - User makes conflict decisions before operation starts, inside a `warning`-toned `SectionCard`: the count and the
@@ -344,15 +372,13 @@ and BEFORE the shared guard, because that toast points the user at the copy flow
 handles read-only / search-results destinations uniformly. The key it names is read live off `file.copy`, never spelled
 `F5` in the catalog: both transfer keys are rebindable.
 
-**A transfer into the folder the sources already live in is asymmetric between copy and move**, and both halves live on
-this side. A COPY there duplicates each item under a free ` (N)` name, so
-`transfer-dialog-logic.ts::getPathValidationError` accepts it (the subfolder rejection above it stays: copying a folder
-into its own subtree recurses until the disk fills). A MOVE there is already done, so the validator still rejects it,
-and `clipboard-operations.ts::pasteWouldMoveNothing` short-circuits a cut-paste whose sources are ALL already in the
-destination to nothing at all: no dialog, no transfer, no "Moved 0 files", and the clipboard survives so the next paste
-still works. A PARTIAL set dispatches normally and the backend drops the ones already there. That frontend check is
-lexical because the frontend holds paths and nothing else; the backend settles identity properly
-(`src-tauri/src/file_system/write_operations/transfer/DETAILS.md` § "Self-collision (duplicating in place)").
+**Folder-targeted transfers into the source folder are asymmetric between Copy and Move.** Copy duplicates each item
+under a free ` (N)` name. Move is already done, so the batch validator rejects it, and
+`clipboard-operations.ts::pasteWouldMoveNothing` short-circuits a cut-paste whose sources are all already in the
+destination: no dialog or transfer, and the clipboard survives for the next paste. A partial set dispatches normally and
+the backend drops identity moves. The frontend check is lexical; the backend settles filesystem identity
+(`src-tauri/src/file_system/write_operations/transfer/DETAILS.md` § "Self-collision (duplicating in place)"). The
+single-item dialog instead compares complete destinations, as described in § "Single-item destinations".
 
 What the pre-confirm conflict check owes that backend is the SOURCE side of the question:
 `transfer-conflict-check.svelte.ts` forwards `sourceVolumeId` and `sourcePaths` to `scanVolumeForConflicts`, and only
@@ -373,7 +399,7 @@ inherit whatever the last one wanted. The mechanism is `pane/duplicate-rename.ts
 
 Who answers what, and why:
 
-- **Paste** (`clipboard-operations.ts`) and **F5** (`file-operation-commands.ts::openUnifiedTransferDialog`) say
+- **Paste** (`clipboard-operations.ts`) and **batch F5** (`file-operation-commands.ts::openUnifiedTransferDialog`) say
   `openRenameEditor`. They're the gestures where a person has just DIRECTED a copy somewhere, and they're what issue #50
   actually asked for ("all file managers I used so far would ask for a new name **when pasting**").
 - **An auto-confirmed F5 is MCP**, and says `nothing`: an agent's copy has no business pulling focus into a text field
@@ -392,13 +418,8 @@ land in an editor one keystroke sequence long, the ones that don't are already f
 the same reason: two gestures that ask and two that don't already cover both preferences, so a toggle would be a
 preference nobody needs to find.
 
-**So don't give the F5 dialog a target-NAME field.** It looks a short step away, since `editedPath` is free text passed
-straight to `onConfirm` and compress already pre-fills a full path ending in a new `.zip` leaf
-(`transfer-dialog-utils.ts`). Copy's backend treats that string as a FOLDER: `validation.rs::ensure_destination_dir`
-creates it and requires a directory, so a leaf-named target produces a **folder** called `photo (1).jpg`. Making it mean
-what it looks like needs per-item target names across every transfer engine; inline rename reaches the same outcome with
-no new API. If it ever becomes worth it, the shape is a per-source name map on the copy command, not a special case for
-the single-source path.
+**Single-item F5/F6 chooses the name in its target field**, so its duplicate follow-up is `nothing`; the target contract
+lives in § "Single-item destinations". Batch F5 and Paste retain the inline rename follow-up above.
 
 ### Unified components for Copy + Move
 
@@ -591,6 +612,13 @@ the counter line, so an assertion never fires against a partial in-flight tally.
 
 Pinned by `TransferDialog.test.ts` § "data-scan-state marker" (counting → done, the skipped fast path, and the counting
 → skipped toggle), and `TransferDialog.unavailable.test.ts` for `unavailable`.
+
+### Conflict-check indicator
+
+The conflict check uses a reserved spinner slot beside the file count. It appears only after the actual check has run
+for 100 ms, clears immediately on completion or target changes, and never adds a row or shifts the count. The existing
+checking message labels the spinner for assistive technology; the shared spinner honors reduced motion. The debounce
+before a check starts does not count toward the delay.
 
 ### `data-conflict-state` marker on the dialog body
 

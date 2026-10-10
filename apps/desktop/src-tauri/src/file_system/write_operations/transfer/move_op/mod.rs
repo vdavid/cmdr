@@ -386,6 +386,11 @@ pub(in crate::file_system::write_operations) fn move_files_with_progress_inner(
     destination: &Path,
     config: &WriteOperationConfig,
 ) -> Result<(), WriteOperationError> {
+    super::super::validation::validate_transfer_destination_name(
+        sources,
+        destination,
+        config.destination_name.as_deref(),
+    )?;
     // Handle dry-run mode
     if handle_dry_run(
         config.dry_run,
@@ -415,7 +420,14 @@ pub(in crate::file_system::write_operations) fn move_files_with_progress_inner(
     let (already_in_place, sources): (Vec<PathBuf>, Vec<PathBuf>) = sources.iter().cloned().partition(|source| {
         source
             .file_name()
-            .map(|name| is_same_file(source, &destination.join(name)))
+            .map(|name| {
+                let leaf = config
+                    .destination_name
+                    .as_deref()
+                    .map(Path::new)
+                    .unwrap_or_else(|| Path::new(name));
+                is_same_file(source, &destination.join(leaf))
+            })
             .unwrap_or(false)
     });
     for source in &already_in_place {
@@ -669,3 +681,6 @@ mod move_vanished_tests;
 #[cfg(test)]
 #[path = "move_journal_tests.rs"]
 mod journal_tests;
+
+#[cfg(test)]
+mod named_move_tests;

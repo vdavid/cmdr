@@ -54,6 +54,8 @@ export interface TransferConflictCheckDeps {
   getSourcePaths: () => string[]
   /** Current destination path (volume-relative). */
   getEditedPath: () => string
+  getDestinationName?: () => string | undefined
+  getSourceIsDirectory?: () => boolean
   /** Real source volume id, forwarded so the backend resolves real per-item types + sizes. */
   getSourceVolumeId: () => string
   /** Whether the dialog is being destroyed (the check no-ops once torn down). */
@@ -91,10 +93,22 @@ export function createTransferConflictCheck(deps: TransferConflictCheckDeps) {
   // destination.
   let status = $state<'idle' | 'checking' | 'answered' | 'unknown'>('idle')
 
+  let checkSeq = 0
+
+  function reset(): void {
+    checkSeq++
+    totalConflictCount = 0
+    mergeFolderCount = 0
+    hasTypeMismatchConflict = false
+    conflictNames = []
+    status = 'idle'
+  }
+
   /** Checks for conflicts at the destination. */
   async function check(): Promise<void> {
     if (deps.getDestroyed() || status !== 'idle') return
 
+    const seq = ++checkSeq
     status = 'checking'
     // Build source item info from the source paths. We extract the
     // filename from each path for name matching. The real per-item
@@ -105,12 +119,12 @@ export function createTransferConflictCheck(deps: TransferConflictCheckDeps) {
     // is unavailable (e.g. the source volume vanished).
     const sourcePaths = deps.getSourcePaths()
     const sourceItems: SourceItemInput[] = sourcePaths.map((path) => {
-      const name = path.split('/').pop() || path
+      const name = deps.getDestinationName?.() ?? (path.split('/').pop() || path)
       return {
         name,
         size: 0,
         modified: null,
-        isDirectory: false,
+        isDirectory: deps.getSourceIsDirectory?.() ?? false,
       }
     })
 
@@ -137,9 +151,10 @@ export function createTransferConflictCheck(deps: TransferConflictCheckDeps) {
       // their files. The dialog says so on screen, so this is a warn: at error
       // level, every unreachable volume filed an error report.
       deps.log.warn('Could not check for conflicts: {error}', { error: err })
-      status = 'unknown'
+      if (seq === checkSeq && !deps.getDestroyed()) status = 'unknown'
       return
     }
+    if (seq !== checkSeq || deps.getDestroyed()) return
     if (foundConflicts === null) {
       deps.log.warn('The conflict check did not come back within {ms}ms', { ms: CONFLICT_CHECK_TIMEOUT_MS })
       status = 'unknown'
@@ -158,7 +173,9 @@ export function createTransferConflictCheck(deps: TransferConflictCheckDeps) {
       mergeFolderCount = foundConflicts.length - realConflicts.length
       totalConflictCount = realConflicts.length
       hasTypeMismatchConflict = realConflicts.some((c) => c.sourceIsDirectory !== c.destIsDirectory)
-      conflictNames = realConflicts.map((c) => c.sourcePath)
+      conflictNames = realConflicts.map((c) =>
+        deps.getDestinationName?.() ? (sourcePaths[0].split('/').pop() ?? sourcePaths[0]) : c.sourcePath,
+      )
       fileClashes = realConflicts
         .filter((c) => !c.sourceIsDirectory && !c.destIsDirectory)
         .map((c) => ({
@@ -189,6 +206,7 @@ export function createTransferConflictCheck(deps: TransferConflictCheckDeps) {
 
   return {
     check,
+    reset,
     get totalConflictCount() {
       return totalConflictCount
     },

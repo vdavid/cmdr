@@ -10,6 +10,29 @@ use std::path::{Path, PathBuf};
 
 use super::types::{PermissionSide, WriteOperationError};
 
+/// An explicit transfer leaf names exactly one source and never escapes its parent.
+pub(crate) fn validate_transfer_destination_name(
+    sources: &[PathBuf],
+    destination: &Path,
+    name: Option<&str>,
+) -> Result<(), WriteOperationError> {
+    let Some(name) = name else { return Ok(()) };
+    let named_path = destination.join(name);
+    if sources.len() != 1
+        || sources[0].file_name().is_none()
+        || name.is_empty()
+        || name.contains(['/', '\0'])
+        || name == "."
+        || name == ".."
+    {
+        return Err(WriteOperationError::InvalidName {
+            path: named_path.display().to_string(),
+            message: "Choose one item and a filename without path separators".to_string(),
+        });
+    }
+    validate_path_length(&named_path)
+}
+
 pub(crate) fn validate_sources(sources: &[PathBuf]) -> Result<(), WriteOperationError> {
     for source in sources {
         // Use symlink_metadata to check existence without following symlinks

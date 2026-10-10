@@ -725,6 +725,8 @@ export const commands = {
        *  `VolumeCopyConfig::pre_known_conflicts` for the full rationale.
        */
       preKnownConflicts?: string[]
+      // Explicit leaf name for a single copy or move; the destination still names its parent.
+      destinationName?: string | null
       // What a copy does when the destination looks too small. See [`SpaceShortfall`].
       spaceShortfall?: SpaceShortfall
     } | null,
@@ -760,6 +762,8 @@ export const commands = {
        *  `VolumeCopyConfig::pre_known_conflicts` for the full rationale.
        */
       preKnownConflicts?: string[]
+      // Explicit leaf name for a single copy or move; the destination still names its parent.
+      destinationName?: string | null
       // What a copy does when the destination looks too small. See [`SpaceShortfall`].
       spaceShortfall?: SpaceShortfall
     } | null,
@@ -792,6 +796,8 @@ export const commands = {
        *  `VolumeCopyConfig::pre_known_conflicts` for the full rationale.
        */
       preKnownConflicts?: string[]
+      // Explicit leaf name for a single copy or move; the destination still names its parent.
+      destinationName?: string | null
       // What a copy does when the destination looks too small. See [`SpaceShortfall`].
       spaceShortfall?: SpaceShortfall
     } | null,
@@ -972,6 +978,8 @@ export const commands = {
        *  conflicts.
        */
       preKnownConflicts?: string[]
+      // Explicit leaf name for a single copy or move; the destination still names its parent.
+      destinationName?: string | null
       /**
        *  Deflate level (1..=9) for zip writes this op produces (compress, or
        *  copy/move INTO an archive); `None` = the crate default (level 6). The
@@ -1024,6 +1032,8 @@ export const commands = {
        *  conflicts.
        */
       preKnownConflicts?: string[]
+      // Explicit leaf name for a single copy or move; the destination still names its parent.
+      destinationName?: string | null
       /**
        *  Deflate level (1..=9) for zip writes this op produces (compress, or
        *  copy/move INTO an archive); `None` = the crate default (level 6). The
@@ -1077,6 +1087,8 @@ export const commands = {
        *  conflicts.
        */
       preKnownConflicts?: string[]
+      // Explicit leaf name for a single copy or move; the destination still names its parent.
+      destinationName?: string | null
       /**
        *  Deflate level (1..=9) for zip writes this op produces (compress, or
        *  copy/move INTO an archive); `None` = the crate default (level 6). The
@@ -1122,6 +1134,8 @@ export const commands = {
        *  conflicts.
        */
       preKnownConflicts?: string[]
+      // Explicit leaf name for a single copy or move; the destination still names its parent.
+      destinationName?: string | null
       /**
        *  Deflate level (1..=9) for zip writes this op produces (compress, or
        *  copy/move INTO an archive); `None` = the crate default (level 6). The
@@ -16314,6 +16328,8 @@ export type VolumeCopyConfig = {
    *  conflicts.
    */
   preKnownConflicts?: string[]
+  // Explicit leaf name for a single copy or move; the destination still names its parent.
+  destinationName?: string | null
   /**
    *  Deflate level (1..=9) for zip writes this op produces (compress, or
    *  copy/move INTO an archive); `None` = the crate default (level 6). The
@@ -17134,6 +17150,8 @@ export type WriteOperationConfig = {
    *  `VolumeCopyConfig::pre_known_conflicts` for the full rationale.
    */
   preKnownConflicts?: string[]
+  // Explicit leaf name for a single copy or move; the destination still names its parent.
+  destinationName?: string | null
   // What a copy does when the destination looks too small. See [`SpaceShortfall`].
   spaceShortfall?: SpaceShortfall
 }

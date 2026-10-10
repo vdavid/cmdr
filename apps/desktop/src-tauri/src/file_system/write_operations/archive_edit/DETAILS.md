@@ -346,3 +346,7 @@ fresh spared, other-archive ignored, delete-failure doesn't fail the edit).
   cancel-during-rewrite bridge. These are UX/timing, data-safe by construction (the mutator's own cancel-abandons-temp
   and progress semantics are pinned in `crates/cmdr-archive/src/mutation/mutator_test.rs`), and killing them would need flaky
   timing-based tests — not worth it per the mutation-score guidance.
+
+
+A single Copy can supply an explicit top-level destination leaf to the copy-into changeset. The shared contract and
+validation live in `../transfer/DETAILS.md` § "Named destinations"; the change applies before archive conflict resolution.

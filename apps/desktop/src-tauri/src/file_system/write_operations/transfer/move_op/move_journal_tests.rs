@@ -611,3 +611,34 @@ async fn a_cross_fs_move_reverses_the_directories_it_created_too() {
         "the reversal must not leave the moved folder's empty skeleton behind"
     );
 }
+
+#[tokio::test]
+async fn named_local_moves_journal_the_final_name_and_reverse_to_the_original() {
+    for staged in [false, true] {
+        let fixture = MoveLoop::new(if staged {
+            "named-staged-journal"
+        } else {
+            "named-rename-journal"
+        });
+        fixture.write("src/original/nested/child.txt", b"payload");
+        fixture.write("dst/keep.txt", b"keep");
+        let config = WriteOperationConfig {
+            destination_name: Some("renamed".into()),
+            ..Default::default()
+        };
+        let sources = [fixture.path("src/original")];
+        if staged {
+            fixture.move_cross_fs(&sources, &fixture.path("dst"), &config);
+        } else {
+            fixture.move_same_fs(&sources, &fixture.path("dst"), &config);
+        }
+        assert_eq!(fixture.read("dst/renamed/nested/child.txt"), "payload");
+        for item in fixture.items() {
+            assert!(Path::new(dest_of(&item)).starts_with(fixture.path("dst/renamed")));
+        }
+        fixture.attempt_rollback().await.expect("the named move reverses");
+        assert_eq!(fixture.read("src/original/nested/child.txt"), "payload");
+        assert!(!fixture.exists("dst/renamed"));
+        assert_eq!(fixture.read("dst/keep.txt"), "keep");
+    }
+}

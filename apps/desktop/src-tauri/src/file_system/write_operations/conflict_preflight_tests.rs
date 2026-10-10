@@ -400,7 +400,7 @@ fn overlays_real_directory_flag_onto_placeholder_items() {
     let mut items = vec![item("photos"), item("readme.txt")];
     let stats = vec![stat("/src/photos", true, 999_999), stat("/src/readme.txt", false, 42)];
 
-    merge_source_types_from_stats(&mut items, &stats);
+    merge_source_types_from_stats(&mut items, &stats, None);
 
     // The directory item is now flagged as such; whatever size the stat
     // reported for it is deliberately NOT copied (a dir's conflict size is
@@ -422,10 +422,24 @@ fn keeps_caller_values_when_no_stat_hit() {
     }];
     let stats = vec![stat("/src/other", false, 1)];
 
-    merge_source_types_from_stats(&mut items, &stats);
+    merge_source_types_from_stats(&mut items, &stats, None);
 
     // No matching name → the caller's values survive untouched.
     assert!(items[0].is_directory);
     assert_eq!(items[0].size, 7);
     assert_eq!(items[0].modified, Some(123));
+}
+
+#[test]
+fn a_named_target_keeps_its_original_sources_type_and_size() {
+    let mut items = vec![item("new-name.txt")];
+    let stats = vec![stat("/src/original.txt", false, 42)];
+    merge_source_types_from_stats(&mut items, &stats, Some(Path::new("/src/original.txt")));
+    assert_eq!(items[0].name, "new-name.txt");
+    assert_eq!(items[0].size, 42);
+    assert!(!items[0].is_directory);
+
+    let stats = vec![stat("/src/original-folder", true, 999)];
+    merge_source_types_from_stats(&mut items, &stats, Some(Path::new("/src/original-folder")));
+    assert!(items[0].is_directory);
 }

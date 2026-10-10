@@ -504,6 +504,10 @@ the switcher row's → submenu "Reconnect automatically" checkbox, and Disconnec
 
 ## Transfer-dialog counters + programmatic drop entry
 
+`duplicate-in-place.spec.ts` covers F5's source-path refusal and a relative filename landing beside the source, without
+a follow-up rename editor. The target contract lives in `src/lib/file-operations/transfer/DETAILS.md` § "Single-item
+destinations".
+
 **`expectDialogCounters(tauriPage, { bytes?, files, dirs, allowSkipped? })`** (helpers.ts) asserts the transfer dialog's
 counter line ("1.02 kB / 1 file / 0 folders") race-free. It polls the `data-scan-state` attribute on the dialog's
 `.scan-stats` element to a terminal state (`done`, or `done`/`skipped` when `allowSkipped` is set) BEFORE reading, so an

@@ -13,14 +13,10 @@ import { tString } from '$lib/intl/messages.svelte'
 /**
  * Checks whether the destination path is invalid relative to the source paths.
  *
- * Two rejection cases, in order:
- *  - the destination IS a source or sits inside one (copying a folder into its
- *    own subtree recurses until the disk fills), and
- *  - **for a move only**, the destination is the source's own parent, so the
- *    move would do nothing. A COPY there is a request to duplicate the item,
- *    which the backend answers with a free ` (N)` name and no prompt
- *    (`src-tauri/src/file_system/write_operations/transfer/DETAILS.md`
- *    § "Self-collision (duplicating in place)").
+ * A complete single-item destination equal to the source cannot confirm for
+ * either Copy or Move. A destination inside a source subtree is also rejected.
+ * Folder-targeted batches retain the Move-only same-parent check; copying a
+ * batch into its source folder uses the backend's duplicate naming instead.
  *
  * Trailing slashes are normalized off both sides before comparison. Returns the
  * user-facing error string, or `null` when the path is acceptable. The verb
@@ -31,6 +27,7 @@ export function getPathValidationError(
   sources: string[],
   destination: string,
   operationType: TransferOperationType,
+  includesName = false,
 ): string | null {
   const normDest = destination.replace(/\/+$/, '')
 
@@ -50,14 +47,11 @@ export function getPathValidationError(
   const verb = operationType === 'copy' ? 'copy' : 'move'
 
   for (const source of sources) {
-    const normSource = source.replace(/\/+$/, '')
-    if (normDest === normSource || normDest.startsWith(normSource + '/')) {
-      const folderName = normSource.split('/').pop() ?? normSource
-      return tString('fileOperations.transferDialog.pathErrorSubfolder', { verb, name: folderName })
-    }
+    const refusal = sourceDestinationError(source, normDest, verb, includesName)
+    if (refusal) return refusal
   }
 
-  if (operationType === 'move') {
+  if (operationType === 'move' && !includesName) {
     for (const source of sources) {
       const normSource = source.replace(/\/+$/, '')
       const sourceParent = normSource.substring(0, normSource.lastIndexOf('/'))
@@ -68,6 +62,23 @@ export function getPathValidationError(
     }
   }
 
+  return null
+}
+
+function sourceDestinationError(
+  source: string,
+  destination: string,
+  verb: 'copy' | 'move',
+  includesName: boolean,
+): string | null {
+  const normalized = source.replace(/\/+$/, '')
+  const name = normalized.split('/').pop() ?? normalized
+  if (includesName && destination === normalized) {
+    return tString('fileOperations.transferDialog.pathErrorAlreadyThere', { name })
+  }
+  if (destination === normalized || destination.startsWith(normalized + '/')) {
+    return tString('fileOperations.transferDialog.pathErrorSubfolder', { verb, name })
+  }
   return null
 }
 

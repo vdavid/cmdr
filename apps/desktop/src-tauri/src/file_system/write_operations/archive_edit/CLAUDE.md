@@ -8,7 +8,7 @@ are O(archive) temp+rename rewrites. Up: `../CLAUDE.md`; mutation: `crates/cmdr-
 - `routing.rs`: inner-path helpers, the tar/7z write guard, duplicate pre-check, and instant-op sink builder.
 - `driver.rs`: managed lifecycle and delete routing. `engine.rs`: local/remote dispatch; `remote.rs`: pull, apply,
   upload, swap. `edit_error.rs`: shared error leaf. `conflicts.rs`: archive-index resolution.
-- Per-shape routes: `copy_into.rs` (`route_archive_copy_into`, plus the remote-source pull), `move_out.rs`, and
+- Per-shape routes: `copy_into.rs` (transfer routing, plus the remote-source pull), `move_out.rs`, and
   `compress.rs`. Fresh creation uses `fresh_plan.rs` (sources/identity), `fresh_compress.rs` (managed driver),
   `fresh_zip.rs` (bounded producer), and `fresh_validate.rs` (pre-publish checks). Create and rename routes live with
   their instant ops in `../create.rs` and `../rename.rs`.

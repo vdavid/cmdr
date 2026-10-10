@@ -23,6 +23,8 @@ Copy (F5), move (F6), compress (⌥F5): setup, conflict scan, progress, errors. 
   is how a just-queued transfer once got cancelled.
 - **One transfer entry seam**: F5/F6, drag-and-drop, and paste all prepare through `pane/transfer-entry.ts`. Paste's
   scheme-path refusal stays SEPARATE and BEFORE the shared guard.
+- **Single Copy/Move includes its leaf**; relative paths use the source folder/volume. Forward `destinationName`.
+  DETAILS § "Single-item destinations".
 - **Batch IPC for selection lookups** (`get_paths_at_indices` / `get_files_at_indices`), ❌ never per index: 50k files
   costs 5-10 s vs ~1 ms.
 - **Speed, ETA, and bars are backend-owned and SHARED with the queue window** (`../TransferProgressReadout.svelte`): ❌

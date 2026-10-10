@@ -1587,3 +1587,12 @@ module's own `tests` so they reach the private record types. The real-detach hal
 sweep runs on its own thread, so a cell that wants a fixture directory to read as a mounted drive calls `settle` (or
 `settle_kind`) on its own thread rather than going through `init_and_sweep`. `TestVolumeRegistration::install` stands
 in for the arrival: `force_register` announces, which is what wakes the ledger's listener.
+
+
+The copy configs carry an optional explicit leaf name; its validation and landing contract live in
+`transfer/DETAILS.md` § "Named destinations".
+
+
+For a single named transfer, `conflict_preflight::merge_source_types_from_stats` binds the destination-name hint to the
+explicit original source path. Its type and size come from that source's stat; batch hints continue matching by basename.
+The destination leaf contract lives in `transfer/DETAILS.md` § "Named destinations".

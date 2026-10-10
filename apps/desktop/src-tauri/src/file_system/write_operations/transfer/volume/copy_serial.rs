@@ -174,7 +174,12 @@ pub(super) async fn drive_transfer_serial(ctx: SerialCopy<'_>) -> SerialOutcome 
         bulk_skip_bytes,
         pre_skip_paths,
         &driver_config,
-        super::landing::top_level_precheck(&dest_volume, op_probe.clone(), super::landing::NewName::Respell),
+        super::landing::top_level_precheck(
+            &dest_volume,
+            op_probe.clone(),
+            super::landing::NewName::Respell,
+            config.destination_name.as_deref(),
+        ),
         {
             let source_volume = Arc::clone(&source_volume);
             let dest_volume = Arc::clone(&dest_volume);

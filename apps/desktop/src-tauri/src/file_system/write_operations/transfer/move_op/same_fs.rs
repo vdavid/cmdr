@@ -85,7 +85,12 @@ pub(super) fn move_with_rename(
                 path: source.display().to_string(),
                 message: "Invalid source path".to_string(),
             })?;
-            let dest_path = destination.join(file_name);
+            let leaf = config
+                .destination_name
+                .as_deref()
+                .map(Path::new)
+                .unwrap_or_else(|| Path::new(file_name));
+            let dest_path = destination.join(leaf);
 
             // Snapshot the source (kind + mtime) BEFORE the rename for the
             // journal's top-level `rollback_unit` row; `item_overwrote` records

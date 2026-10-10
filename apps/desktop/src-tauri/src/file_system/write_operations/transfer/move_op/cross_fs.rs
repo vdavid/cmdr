@@ -60,6 +60,11 @@ pub(super) fn move_with_staging(
     config: &WriteOperationConfig,
     already_in_place: usize,
 ) -> Result<(), WriteOperationError> {
+    super::super::super::validation::validate_transfer_destination_name(
+        sources,
+        destination,
+        config.destination_name.as_deref(),
+    )?;
     // Phase 1: Scan (or reuse cached preview results)
     let scan_result = if let Some(preview_id) = &config.preview_id {
         // Volume scans cache aggregate stats with an empty `files` list; the
@@ -129,7 +134,8 @@ pub(super) fn move_with_staging(
     let mut files_skipped = 0usize;
     let mut apply_to_all_resolution = ApplyToAll::default();
     let mut created_dirs: HashSet<PathBuf> = HashSet::new();
-    let mut dir_remap: HashMap<PathBuf, PathBuf> = HashMap::new();
+    let mut dir_remap =
+        super::super::named_destination::initial_remap(sources, &staging_dir, config.destination_name.as_deref())?;
     let mut skipped_subtrees: HashSet<PathBuf> = HashSet::new();
     // Durability bookkeeping. The Phase-2 copy records each file's STAGING dest
     // in `transaction.created_files` (and in `already_synced` when the strategy
@@ -329,8 +335,13 @@ pub(super) fn move_with_staging(
                 message: "Invalid source path".to_string(),
             })?;
 
-            let staged_path = staging_dir.join(file_name);
-            let final_path = destination.join(file_name);
+            let leaf = config
+                .destination_name
+                .as_deref()
+                .map(Path::new)
+                .unwrap_or_else(|| Path::new(file_name));
+            let staged_path = staging_dir.join(leaf);
+            let final_path = destination.join(leaf);
 
             // When both staged and final are real directories, merge
             // recursively. No MoveTransaction needed here: staging cleanup

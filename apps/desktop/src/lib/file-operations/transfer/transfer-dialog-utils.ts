@@ -6,7 +6,7 @@
 import type { TransferOperationType } from '$lib/file-explorer/types'
 import type { MessageKey } from '$lib/intl/keys.gen'
 import { tString } from '$lib/intl/messages.svelte'
-import { isPathOnVolume, parentOf, toCanonical } from '$lib/path/canonical'
+import { isPathOnVolume, isPlainFilesystemPath, parentOf, toCanonical } from '$lib/path/canonical'
 import { suggestCompressArchiveName } from './transfer-compress-name'
 
 /**
@@ -184,13 +184,7 @@ export function confirmLabelKey(operationType: TransferOperationType): MessageKe
   return 'fileOperations.transferDialog.confirmMove'
 }
 
-/**
- * The dialog's initial volume-relative destination path. For copy/move it's the
- * other pane's folder; for compress it's that folder plus a suggested `.zip`
- * filename (the field stays editable). Keeping the join here lets the dialog set
- * `editedPath` in one line and unit-test the compress default via
- * `suggestCompressArchiveName`.
- */
+/** Copy and Move name a single destination item; batches target a folder. */
 export function initialEditedPath(
   operationType: TransferOperationType,
   destinationPath: string,
@@ -198,9 +192,17 @@ export function initialEditedPath(
   sourcePaths: string[],
   sourceFolderPath: string,
 ): string {
-  const folder = toVolumeRelativePath(destinationPath, volumePath)
-  if (operationType !== 'compress') return folder
-  return joinPathLeaf(folder, suggestCompressArchiveName(sourcePaths, sourceFolderPath))
+  const singleTransfer = (operationType === 'copy' || operationType === 'move') && sourcePaths.length === 1
+  const folder =
+    singleTransfer && isPlainFilesystemPath(volumePath)
+      ? destinationPath
+      : toVolumeRelativePath(destinationPath, volumePath)
+  if (operationType !== 'compress' && !singleTransfer) return folder
+  const name = singleTransfer
+    ? getFolderName(sourcePaths[0])
+    : suggestCompressArchiveName(sourcePaths, sourceFolderPath)
+  const base = folder === '/' ? '' : folder.replace(/\/+$/, '')
+  return `${base}/${name}`
 }
 
 /** `folder` + `/` + `leaf`, with no doubled slash at the root or after a trailing one. */
@@ -220,4 +222,46 @@ export function splitPathLeaf(path: string): { folder: string; leaf: string } {
   if (slash === -1) return { folder: '/', leaf: path }
   const folder = path.slice(0, slash).replace(/\/+$/, '')
   return { folder: folder === '' ? '/' : folder, leaf: path.slice(slash + 1) }
+}
+
+/** Split a complete transfer target, resolving relative paths against the source folder. */
+export function resolveTransferFilename(
+  path: string,
+  sourceFolder: string,
+  homePath = '',
+): { parent: string; name: string } | null {
+  const entered = path.trim()
+  const leaf = entered.split('/').at(-1)
+  if (!leaf || leaf === '.' || leaf === '..' || entered === '~') return null
+  const expanded = entered.startsWith('~/') && homePath ? `${homePath}/${entered.slice(2)}` : entered
+  const absolute = expanded.startsWith('/') ? expanded : `${sourceFolder}/${expanded}`
+  // Dot segments cannot obscure a destination inside the source subtree.
+  const parts: string[] = []
+  for (const part of absolute.split('/')) {
+    if (!part || part === '.') continue
+    if (part === '..') parts.pop()
+    else parts.push(part)
+  }
+  const name = parts.pop()
+  return name ? { parent: `/${parts.join('/')}`, name } : null
+}
+
+/** Keep the target folder when switching between folder and filename modes. */
+export function editedPathAfterOperationChange(args: {
+  operationType: TransferOperationType
+  nextOperationType: TransferOperationType
+  editedPath: string
+  targetParent?: string
+  volumePath: string
+  sourcePaths: string[]
+  sourceFolderPath: string
+}): string {
+  const { operationType, nextOperationType, editedPath, targetParent, volumePath, sourcePaths, sourceFolderPath } = args
+  if (sourcePaths.length === 1 && operationType !== 'compress' && nextOperationType !== 'compress') return editedPath
+  let folder =
+    targetParent ?? (operationType === 'compress' ? (containingFolder(editedPath) ?? editedPath) : editedPath)
+  if (volumePath !== '/' && isPlainFilesystemPath(volumePath) && !isPathOnVolume(folder, volumePath)) {
+    folder = `${volumePath.replace(/\/+$/, '')}/${folder.replace(/^\/+/, '')}`
+  }
+  return initialEditedPath(nextOperationType, folder, volumePath, sourcePaths, sourceFolderPath)
 }

@@ -347,3 +347,6 @@ enforced by the TS bindings. **Don't write IPC tests for every command.** Focus 
 many-arg surfaces.
 
 See `docs/testing.md` § "Decision table" for the broader picture.
+
+The defaulted transfer leaf in the generated configs follows `../file-operations/transfer/DETAILS.md` § "Single-item
+destinations".

@@ -308,3 +308,46 @@ describe('dispatchTransferOperation: compression-level threading', () => {
     )
   })
 })
+
+it('forwards the explicit filename to the local copy engine', async () => {
+  await dispatchTransferOperation(makeConfig({ destinationPath: '/src', destinationName: 'copy.txt' }))
+  expect(copyBetweenVolumes).toHaveBeenCalledWith(
+    'root',
+    ['/src/file.txt'],
+    'root',
+    '/src',
+    expect.objectContaining({ destinationName: 'copy.txt' }),
+    undefined,
+  )
+})
+
+it('forwards a Move target name to the local engine', async () => {
+  await dispatchTransferOperation(
+    makeConfig({ operationType: 'move', destinationPath: '/src', destinationName: 'renamed.txt' }),
+  )
+  expect(moveFiles).toHaveBeenCalledWith(
+    ['/src/file.txt'],
+    '/src',
+    expect.objectContaining({ destinationName: 'renamed.txt' }),
+    undefined,
+  )
+})
+
+it('forwards a Move target name to the volume engine', async () => {
+  await dispatchTransferOperation(
+    makeConfig({
+      operationType: 'move',
+      sourceVolumeId: 'mtp-1',
+      destinationPath: '/dst',
+      destinationName: 'renamed.txt',
+    }),
+  )
+  expect(moveBetweenVolumes).toHaveBeenCalledWith(
+    'mtp-1',
+    ['/src/file.txt'],
+    'root',
+    '/dst',
+    expect.objectContaining({ destinationName: 'renamed.txt' }),
+    undefined,
+  )
+})

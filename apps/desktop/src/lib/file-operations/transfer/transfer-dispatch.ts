@@ -35,6 +35,8 @@ export interface TransferDispatchConfig {
   sourcePaths: string[]
   /** Destination path (not applicable for delete/trash). */
   destinationPath?: string
+  /** Explicit leaf name for a single copy or move. */
+  destinationName?: string
   /** Current sort column on the source pane (files processed in this order). */
   sortColumn: SortColumn
   /** Current sort order on the source pane. */
@@ -126,6 +128,7 @@ export function dispatchTransferOperation(config: TransferDispatchConfig): Promi
   }
   if (config.operationType === 'move') {
     const volumeMoveConfig = {
+      destinationName: config.destinationName,
       conflictResolution: config.conflictResolution ?? 'stop',
       progressIntervalMs,
       maxConflictsToShow,
@@ -167,6 +170,7 @@ export function dispatchTransferOperation(config: TransferDispatchConfig): Promi
         sortOrder: config.sortOrder,
         previewId: config.previewId,
         preKnownConflicts: config.preKnownConflicts ?? [],
+        destinationName: config.destinationName,
       },
       config.initiator,
     )
@@ -196,6 +200,7 @@ function dispatchCopy(
       previewId: config.previewId,
       preKnownConflicts: config.preKnownConflicts ?? [],
       compressionLevel,
+      destinationName: config.destinationName,
       spaceShortfall: config.spaceShortfall ?? 'refuse',
     },
     config.initiator,

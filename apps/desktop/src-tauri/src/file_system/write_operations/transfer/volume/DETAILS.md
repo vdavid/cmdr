@@ -9,6 +9,10 @@ The shared scaffolding this engine runs on is documented one level up, next to t
 signal (§ "The stall signal"), per-file retry and its watchdog (§ "Retrying one FILE, and the watchdog that ends a wait
 nothing else will"), and cancel/rollback against a parked driver (§ "Cancel and rollback reach a parked driver").
 
+The both-local copy delegation preserves an explicit leaf name in its config. The serial drivers pass that leaf to
+`landing.rs::top_level_precheck`, which substitutes it before probing the destination. Contract:
+`../DETAILS.md` § "Named destinations".
+
 ## Files
 
 Where a symbol lives and who calls it: `codegraph_search` / `codegraph_explore`. The area's shape and its

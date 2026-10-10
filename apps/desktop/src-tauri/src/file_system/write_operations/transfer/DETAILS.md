@@ -244,6 +244,30 @@ Pinned by `move_interruption_tests.rs::{a_rollback_during_the_source_sweep_repor
 
 The split exists so the landing discipline is written once instead of once per branch, and so a test can drive a mechanism the machine's own filesystems would never select — on a Mac every tempdir pair is one APFS volume, so without `copy_file_using` nothing would ever exercise the chunked branch that runs for an external drive or a Finder-mounted NAS.
 
+### Named destinations
+
+`WriteOperationConfig::destination_name` and `VolumeCopyConfig::destination_name` supply an explicit leaf for one
+source. The destination argument remains its parent directory. `validation::validate_transfer_destination_name` checks
+the single-source count, leaf components, null bytes, and path limits before writes.
+
+Native Copy seeds the shared `named_destination::initial_remap` before its identity check. The per-file loop and
+empty-directory pass use that map, so staging, journal entries, durability, and rollback refer to the requested paths.
+Native same-filesystem Move uses the leaf at its top-level rename and identity guard. A native cross-filesystem Move
+seeds the remap under its staging directory and lands that same leaf at the destination; ordinary staging-to-final
+rebasing therefore journals and flushes the named files and directories. Original-source stamps and deletion ledgers
+continue naming the originals.
+
+Both-local volume facades forward the leaf into the native engines. Other volume copies and moves apply it in the
+serial driver's landing probe before conflict resolution. Same-volume Move's no-op guard also checks the requested leaf.
+Archive destinations carry it into the changeset's top-level inner path before conflicts and subtree expansion; archive
+moves remove only originals whose bytes committed. Archive move-out passes the same config to its extraction engine.
+
+The dialog refuses a complete target equal to its source; directory-targeted Paste/Duplicate callers retain the backend
+self-collision behavior below. Frontend interpretation:
+`apps/desktop/src/lib/file-operations/transfer/DETAILS.md` § "Single-item destinations". Regression coverage:
+`copy/named_copy_tests.rs`, `move_op/named_move_tests.rs`, the move journal suite, `volume/named_move_tests.rs`, and archive
+`copy_into_tests.rs`.
+
 ### Self-collision (duplicating in place)
 
 **Decision.** A top-level source that would land on ITSELF is a request to duplicate, never a conflict. Copy redirects it to a free ` (N)` name and proceeds; move writes nothing and counts the item done. Neither consults the user's conflict policy, and neither prompts. Why the suffix is ` (N)` rather than Finder's localized `copy` word: `../DETAILS.md`, the `unique_name.rs::numbered_name` bullets.

@@ -163,6 +163,9 @@ pub(in crate::file_system::write_operations) fn copy_files_with_progress_inner(
         sources.len()
     );
 
+    let mut dir_remap =
+        super::named_destination::initial_remap(sources, destination, config.destination_name.as_deref())?;
+
     // Handle dry-run mode
     if handle_dry_run(
         config.dry_run,
@@ -253,7 +256,6 @@ pub(in crate::file_system::write_operations) fn copy_files_with_progress_inner(
     let mut transaction = CopyTransaction::new();
     let mut apply_to_all_resolution = ApplyToAll::default();
     let mut created_dirs: HashSet<PathBuf> = HashSet::new();
-    let mut dir_remap: HashMap<PathBuf, PathBuf> = HashMap::new();
     let mut skipped_subtrees: HashSet<PathBuf> = HashSet::new();
     // Destinations the copy strategy already flushed (chunked) or for which a
     // flush is moot (clonefile/reflink); the end-of-op flush pass skips these.
@@ -275,7 +277,8 @@ pub(in crate::file_system::write_operations) fn copy_files_with_progress_inner(
     let mut duplicated_sources: HashSet<PathBuf> = HashSet::new();
     for source in sources {
         let Some(file_name) = source.file_name() else { continue };
-        let original_dest = destination.join(file_name);
+        let default_dest = destination.join(file_name);
+        let original_dest = apply_dir_remap(&default_dest, &dir_remap);
         if !is_same_file(source, &original_dest) {
             continue;
         }
@@ -306,7 +309,7 @@ pub(in crate::file_system::write_operations) fn copy_files_with_progress_inner(
             source.display(),
             unique_dest.display()
         );
-        dir_remap.insert(original_dest, unique_dest);
+        dir_remap.insert(default_dest, unique_dest);
         duplicated_sources.insert(source.clone());
     }
 
@@ -773,6 +776,9 @@ mod tests;
 #[cfg(test)]
 #[path = "copy_failure_tests.rs"]
 mod copy_failure_tests;
+
+#[cfg(test)]
+mod named_copy_tests;
 
 #[cfg(test)]
 #[path = "copy_dest_link_tests.rs"]

@@ -8,10 +8,6 @@
     "scripts/check/checks/registry.go": "append-only check registry (one CheckDefinition entry per check); line count tracks the number of checks, not splittable logic"
   },
   "files": {
-    "apps/desktop/src-tauri/src/file_system/volume/backends/local_posix.rs": {
-      "lines": 802,
-      "reason": "TODO: the `impl Volume for LocalPosixVolume` block plus the query and mutation bodies it can't spread across files. `scan` and `streams` already moved to `local_posix/`; the mutation bodies (create, delete, rename, `set_modified`) should follow into `local_posix/mutation.rs` as `pub(super)` inherent methods with one-line delegators here, the shape `cmdr-sftp` and `cmdr-smb` use."
-    },
     "apps/desktop/src-tauri/src/ai/client.rs": {
       "lines": 800,
       "reason": "TODO: two seams sit beside the request path and only share imports with it. Move the policy-guarded HTTP client (`policy_guarded_http_client`, `policy_guarded_redirects`, `follow_allowed_hop`, `remote_destination`, `remote_endpoint`, `parse_endpoint`) into `client_policy.rs`, and the provider-error mapping (`AiError` with its `Display`, `ai_error_for_status`, `provider_error_detail`, `map_genai_error`) into `client_errors.rs`, about 140 lines out together. What stays is `AiBackend`, the three `chat_completion*` entry points, the model-specific option tweaks, and the response logging, which is what callers mean by the AI client."
@@ -27,6 +23,10 @@
     "apps/desktop/src-tauri/src/file_system/listing/caching.rs": {
       "lines": 903,
       "reason": "TODO: three concerns share one file and the test siblings already name the seams. Move the full-refresh machinery (`RefreshSlot`, `REFRESH_SLOTS`, `refresh_slot`, `spawn_full_refresh`, `notify_full_refresh`, `notify_full_refresh_locked`, `publish_replacement`, `find_listings_under_path_on_volume`, `refresh_archive_listings`, roughly lines 540-800) into `caching_refresh.rs` at about 260 lines, and the freshness oracle `try_get_authoritative_listing` with its long contract doc into `caching_oracle.rs` at about 105 lines, matching the `caching_replacement_test.rs` and `caching_oracle_test.rs` siblings that already test exactly those two. What stays is about 550 lines of listing lookups (`snapshot_listings`, `find_listings_for_path*`, `find_listings_on_volume`), the cache patch helpers (`insert_entry_sorted`, `remove_entries_by_paths`, `update_entry_sorted`, `carry_forward_tags`, `apply_tags_to_listing`), and the `notify_directory_changed` dispatch with its `notify_added` / `notify_removed` / `notify_modified` arms, which is what the module map in `listing/CLAUDE.md` calls this file."
+    },
+    "apps/desktop/src-tauri/src/file_system/volume/backends/local_posix.rs": {
+      "lines": 802,
+      "reason": "TODO: the `impl Volume for LocalPosixVolume` block plus the query and mutation bodies it can't spread across files. `scan` and `streams` already moved to `local_posix/`; the mutation bodies (create, delete, rename, `set_modified`) should follow into `local_posix/mutation.rs` as `pub(super)` inherent methods with one-line delegators here, the shape `cmdr-sftp` and `cmdr-smb` use."
     },
     "apps/desktop/src-tauri/src/file_system/write_operations/delete/walker.rs": {
       "lines": 942,
@@ -63,10 +63,6 @@
     "apps/desktop/src-tauri/src/file_system/write_operations/transfer/volume/merge.rs": {
       "lines": 805,
       "reason": "One merge level's create-list-decide-dispatch loop, kept together because every child decision reads the level's creation fact (fresh vs merged) and the destination index built beside it; the remaining helpers (`backend_create_directory_detects_collisions`, the resolver call) are already out in `landing.rs` and `merge_ctx.rs`."
-    },
-    "apps/desktop/src-tauri/src/file_system/write_operations/transfer/volume/move_cross.rs": {
-      "lines": 804,
-      "reason": "One engine, `move_volumes_with_progress`, whose length is its two driver closures (the conflict resolver and the per-source copy-then-sweep) and the doc comments that carry the move invariant; the last lines are the index of the eight `#[path]` test modules hung off it, which must live here for their `super::` paths. Splitting the closures into named functions would thread a dozen captured `Arc`s through each signature without moving any decision."
     },
     "apps/desktop/src-tauri/src/file_system/write_operations/transfer/volume/move_same.rs": {
       "lines": 846,
@@ -151,10 +147,6 @@
     "apps/desktop/src/lib/file-operations/transfer/TransferDialog.svelte": {
       "lines": 1208,
       "reason": "TODO: Script 680 / markup 282 / style 246, with the script already orchestration only (`transfer-scan-state.svelte.ts`, `transfer-conflict-check.svelte.ts`, `transfer-dest-exists.svelte.ts`, and `transfer-dialog-logic.ts` hold the logic). Two presentational blocks can follow the `ScanPhaseBody.svelte` and `CompressEstimateLine.svelte` precedent in the same directory: a `TransferScanTallies.svelte` for the `.scan-stats` row plus the `scan.scanFailure` retry notice (about 45 markup and 50 style), and a `TransferConflictsSection.svelte` for the `isCheckingConflicts` to `conflictCheckUnknown` to merge-info, summary, `RadioGroup`, and type-mismatch chain (about 70 markup and 55 style). That is roughly 220 lines out, leaving `handleConfirm` and `handleCancel`, whose dense rationale comments are the part of this file worth protecting."
-    },
-    "apps/desktop/src/lib/file-operations/transfer/TransferDialog.test.ts": {
-      "lines": 1222,
-      "reason": "TODO: split it by the dialog's concerns into sibling `TransferDialog.\u003ctopic\u003e.test.ts` files, the way `DeleteDialog.*.svelte.test.ts` already is. The ~130-line `vi.mock` and mount harness (the `$lib/tauri-commands` mock with its captured scan-complete callback, the volume-store fixture, `mountDialog`, `confirmButton`, `flushMicrotasks`) moves to a `transfer-dialog-test-harness.ts`, and the describes split cleanly: conflicts (the decoupling, cross-type guardrail, and policy describes), the scan-state marker plus the S3 scan and cost-line cases, the destination path and write-access describes, and rename mode plus auto-confirm."
     },
     "apps/desktop/src/lib/file-operations/transfer/transfer-progress-state.svelte.ts": {
       "lines": 803,

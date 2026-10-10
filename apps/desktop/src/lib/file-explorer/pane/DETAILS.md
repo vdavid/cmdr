@@ -920,6 +920,9 @@ the folder that pane is already showing, and the backend gives each copy a free 
 **Decision: no F-key bar button.** The bar's ten slots are full, and Duplicate is an F-key idiom in neither Finder nor
 Total Commander. It's reachable by ⌘D, the palette, the right-click menu, and the File menu.
 
+`handleTransferConfirm` carries an explicit `destinationName` through birth context and suppresses the naming tail when
+the user already supplied it. Contract: `../../file-operations/transfer/DETAILS.md` § "Single-item destinations".
+
 ### Naming a duplicate
 
 A transfer that duplicated ONE item in the folder it already lived in can end by opening the inline rename editor on the

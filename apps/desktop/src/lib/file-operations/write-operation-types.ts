@@ -53,6 +53,8 @@ export type ConflictResolution = 'stop' | 'skip' | 'overwrite' | 'rename' | 'ove
 
 /** Configuration for write operations. */
 export interface WriteOperationConfig {
+  /** Explicit destination leaf for a single-item copy or move. */
+  destinationName?: string
   /** Progress update interval in milliseconds (default: 200) */
   progressIntervalMs?: number
   /** How to handle conflicts */

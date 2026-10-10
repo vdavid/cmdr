@@ -65,19 +65,16 @@ pub(crate) async fn move_volumes_with_progress(
     dest_path: &Path,
     config: &VolumeCopyConfig,
 ) -> Result<(), WriteFailure> {
-    // Phase 0: Ensure the destination directory exists, creating it and any
-    // missing ancestors on the dest volume (local, SMB, MTP, in-memory), so a
-    // cross-volume move into a not-yet-existing folder just works on every
-    // backend (parity with the local-FS `ensure_destination_dir`). Source and
-    // dest are different volumes here, so the dest-inside-source guard doesn't
-    // apply. A move into an already-existing dest is a no-op create.
-    // The move pipeline is serial across TOP-LEVEL sources, so it builds no
-    // destination name index and has no use for the `DirectoryCreation` answer
-    // that gates one (see `volume/copy.rs`, Phase 0.5). Its subtree walk still
-    // fans out; that width is the `FileWindow`'s, further down.
-    // A destination folder that takes no writes is refused first, before its
-    // folder is created and before any source is touched
-    // (`copy.rs::destination_refusal`).
+    super::super::super::validation::validate_transfer_destination_name(
+        source_paths,
+        dest_path,
+        config.destination_name.as_deref(),
+    )
+    .map_err(WriteFailure::synthetic)?;
+    // Refuse unwritable destinations before creating the parent or touching
+    // sources. Different volumes cannot nest the destination inside a source.
+    // This serial top-level driver needs no destination name index; subtree
+    // concurrency belongs to the FileWindow below.
     if let Some(refusal) = super::copy::destination_refusal(&*dest_volume, dest_path).await {
         return Err(WriteFailure::synthetic(refusal));
     }
@@ -179,20 +176,10 @@ pub(crate) async fn move_volumes_with_progress(
     // (`displaced_destination.rs`).
     let displaced = Arc::new(DisplacedLedger::default());
 
-    // Live in-flight table + stall watchdog, the same registration
-    // `volume/copy.rs` makes for both of its paths. Without it
-    // `state.rs::enrich_progress` misses the lookup, every `write-progress`
-    // event goes out with `activity: None`, and a wedged move shows a frozen bar
-    // with a confident ETA and no stall notice at all — silent, on the one
-    // operation that has the user's ONLY copy of the data in flight. Dropping
-    // the guard when this function returns deregisters the operation and stops
-    // the watchdog on its next tick.
-    //
-    // The width it declares is the FAN-OUT's, not the source loop's: one
-    // top-level source rides at a time up here, but a DIRECTORY source's subtree
-    // streams this many files at once through the `FileWindow` below, and the
-    // dump's `in_flight=<open>/<width>` is the one output a wedge investigation
-    // reads.
+    // Register live activity and the stall watchdog until this guard drops.
+    // Its width is subtree fan-out, since the top-level source loop is serial.
+    // Without registration, progress loses activity and a stalled move keeps
+    // showing a confident ETA while the user's only copy is in flight.
     let concurrency = super::copy::transfer_concurrency(&*source_volume, &*dest_volume);
     let probe_guard = super::super::transfer_probe::register_operation(
         operation_id,
@@ -229,7 +216,10 @@ pub(crate) async fn move_volumes_with_progress(
         bulk_skip_bytes,
         &pre_skip_paths,
         &driver_config,
-        super::landing::top_level_precheck(&dest_volume, Some(Arc::clone(&op_probe)), super::landing::NewName::Respell),
+        super::landing::top_level_precheck(
+            &dest_volume, Some(Arc::clone(&op_probe)), super::landing::NewName::Respell,
+            config.destination_name.as_deref(),
+        ),
         {
             let source_volume = Arc::clone(&source_volume);
             let dest_volume = Arc::clone(&dest_volume);
@@ -801,3 +791,7 @@ mod test_support;
 #[cfg(test)]
 #[path = "move_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "named_move_tests.rs"]
+mod named_move_tests;

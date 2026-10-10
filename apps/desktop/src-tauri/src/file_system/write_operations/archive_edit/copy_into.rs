@@ -54,6 +54,7 @@ use cmdr_archive::{ArchiveFormat, ArchiveIndex, LocalFileSource};
 /// `copy_between_volumes` passes them. For a MOVE, the top-level sources are
 /// deleted after the commit — but only when nothing was skipped, so a partial
 /// (conflict-skipped) move never deletes a source whose bytes didn't land.
+#[cfg(test)]
 #[allow(
     clippy::too_many_arguments,
     reason = "the cross-volume→archive seam threads the source handle, paths, dest, parent id, and policy; a struct would just shuffle them"
@@ -86,11 +87,12 @@ pub(crate) async fn route_archive_copy_into(
         compression_level,
         preview_id,
         super::super::journal::ArchiveProvenance::edit(crate::operation_log::types::Initiator::User),
+        None,
     )
     .await
 }
 
-/// Like [`route_archive_copy_into`] but with an explicit [`ArchiveProvenance`](super::super::journal::ArchiveProvenance), so
+/// Routes a transfer into an archive with explicit [`ArchiveProvenance`](super::super::journal::ArchiveProvenance), so
 /// the compress driver can supply `subkind = compress` + the net-new flag the
 /// journal can't derive.
 #[allow(
@@ -109,7 +111,13 @@ pub(crate) async fn route_archive_copy_into_with_provenance(
     compression_level: Option<i64>,
     preview_id: Option<String>,
     prov: super::super::journal::ArchiveProvenance,
+    destination_name: Option<String>,
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
+    super::super::validation::validate_transfer_destination_name(
+        &source_paths,
+        &dest_full_path,
+        destination_name.as_deref(),
+    )?;
     // A LOCAL source volume's root — `Some` skips the pull (the changeset walks
     // real paths); `None` (a remote source) triggers the in-op pull-to-scratch.
     let src_local_root = source_volume.local_path();
@@ -146,6 +154,7 @@ pub(crate) async fn route_archive_copy_into_with_provenance(
         compression_level,
         preview_id,
         prov,
+        destination_name,
     )
     .await
 }
@@ -316,16 +325,19 @@ fn build_copy_into_changeset(
     archive_path: &Path,
     absolute_sources: &[PathBuf],
     dest_inner: &str,
+    destination_name: Option<&str>,
     conflict: ConflictResolution,
 ) -> Result<CopyIntoPlan, WriteOperationError> {
     let mut mode = ConflictMode::Policy(conflict);
-    build_copy_into_changeset_inner(archive_path, absolute_sources, dest_inner, &mut mode).map_err(|e| match e {
-        EditError::Op(w) => w,
-        // A pre-resolved policy never prompts, so it can't be cancelled here.
-        EditError::Cancelled => WriteOperationError::Cancelled {
-            message: "the archive copy was cancelled".to_string(),
+    build_copy_into_changeset_inner(archive_path, absolute_sources, dest_inner, destination_name, &mut mode).map_err(
+        |e| match e {
+            EditError::Op(w) => w,
+            // A pre-resolved policy never prompts, so it can't be cancelled here.
+            EditError::Cancelled => WriteOperationError::Cancelled {
+                message: "the archive copy was cancelled".to_string(),
+            },
         },
-    })
+    )
 }
 
 /// Walks the local sources and builds the changeset with INTERACTIVE per-file
@@ -336,6 +348,7 @@ fn build_copy_into_changeset_interactive(
     archive_path: &Path,
     absolute_sources: &[PathBuf],
     dest_inner: &str,
+    destination_name: Option<&str>,
     events: &dyn OperationEventSink,
     operation_id: &str,
     state: &Arc<WriteOperationState>,
@@ -347,7 +360,7 @@ fn build_copy_into_changeset_interactive(
         state,
         apply_to_all: &mut latch,
     };
-    build_copy_into_changeset_inner(archive_path, absolute_sources, dest_inner, &mut mode)
+    build_copy_into_changeset_inner(archive_path, absolute_sources, dest_inner, destination_name, &mut mode)
 }
 
 /// The shared copy-into walk. Resolves each FILE collision via `mode`; directory
@@ -357,6 +370,7 @@ fn build_copy_into_changeset_inner(
     archive_path: &Path,
     absolute_sources: &[PathBuf],
     dest_inner: &str,
+    destination_name: Option<&str>,
     mode: &mut ConflictMode<'_>,
 ) -> Result<CopyIntoPlan, EditError> {
     let source = LocalFileSource::open(archive_path).map_err(|e| {
@@ -383,7 +397,7 @@ fn build_copy_into_changeset_inner(
         let Some(name) = src.file_name().and_then(|n| n.to_str()) else {
             continue;
         };
-        let base_inner = join_inner_str(dest_inner, name);
+        let base_inner = join_inner_str(dest_inner, destination_name.unwrap_or(name));
         let meta = std::fs::symlink_metadata(src).map_err(|e| {
             EditError::Op(WriteOperationError::ReadError {
                 path: src.display().to_string(),
@@ -566,6 +580,7 @@ async fn archive_copy_into_start(
     compression_level: Option<i64>,
     preview_id: Option<String>,
     prov: super::super::journal::ArchiveProvenance,
+    destination_name: Option<String>,
 ) -> Result<WriteOperationStartResult, WriteOperationError> {
     let operation_id = crate::operation_log::new_operation_id();
     let operation_type = if prov.subkind == ArchiveSubkind::Compress {
@@ -674,13 +689,20 @@ async fn archive_copy_into_start(
                                     working,
                                     &absolute_sources,
                                     &dest_inner,
+                                    destination_name.as_deref(),
                                     &*events_for_blocking,
                                     &op_id_for_blocking,
                                     &state_for_blocking,
                                 )?
                             } else {
-                                build_copy_into_changeset(working, &absolute_sources, &dest_inner, conflict)
-                                    .map_err(EditError::Op)?
+                                build_copy_into_changeset(
+                                    working,
+                                    &absolute_sources,
+                                    &dest_inner,
+                                    destination_name.as_deref(),
+                                    conflict,
+                                )
+                                .map_err(EditError::Op)?
                             };
                             // The user's compression level governs every newly added
                             // entry in this edit (the mutator clamps it to 1..=9).

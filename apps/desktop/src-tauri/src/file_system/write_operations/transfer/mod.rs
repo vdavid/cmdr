@@ -20,6 +20,7 @@ pub(super) mod linux_copy;
 #[cfg(target_os = "macos")]
 pub(crate) mod macos_copy;
 pub(super) mod move_op;
+mod named_destination;
 pub(super) mod recovered_name;
 pub(super) mod retry;
 pub(super) mod staged_write;

@@ -150,6 +150,73 @@ async fn a_destination_that_cannot_be_addressed_is_never_reported_as_a_missing_s
     );
 }
 
+#[tokio::test]
+async fn an_explicit_volume_copy_name_uses_the_requested_leaf_and_conflict_policy() {
+    let (source, dest) = make_volumes();
+    source
+        .create_file(Path::new("/original.txt"), b"new bytes")
+        .await
+        .unwrap();
+    dest.create_file(Path::new("/renamed.txt"), b"old bytes").await.unwrap();
+    for policy in [ConflictResolution::Skip, ConflictResolution::Overwrite] {
+        let config = VolumeCopyConfig {
+            destination_name: Some("renamed.txt".into()),
+            conflict_resolution: policy,
+            ..Default::default()
+        };
+        let result = copy_volumes_with_progress(
+            Arc::new(CollectorEventSink::new()),
+            "named-volume-copy",
+            &make_state(),
+            Arc::clone(&source),
+            &[PathBuf::from("/original.txt")],
+            Arc::clone(&dest),
+            Path::new("/"),
+            &config,
+        )
+        .await;
+        assert!(result.is_ok(), "{result:?}");
+        assert!(!dest.exists(Path::new("/original.txt")).await);
+        let mut reader = dest.open_read_stream(Path::new("/renamed.txt")).await.unwrap();
+        let expected = if policy == ConflictResolution::Skip {
+            b"old bytes"
+        } else {
+            b"new bytes"
+        };
+        assert_eq!(reader.next_chunk().await.unwrap().unwrap(), expected);
+        assert!(source.exists(Path::new("/original.txt")).await);
+    }
+}
+
+#[tokio::test]
+async fn an_explicit_volume_copy_folder_name_preserves_children_and_empty_folders() {
+    let (source, dest) = make_volumes();
+    source.create_directory_all(Path::new("/original/empty")).await.unwrap();
+    source
+        .create_file(Path::new("/original/file.txt"), b"payload")
+        .await
+        .unwrap();
+    let config = VolumeCopyConfig {
+        destination_name: Some("renamed".into()),
+        ..Default::default()
+    };
+    let result = copy_volumes_with_progress(
+        Arc::new(CollectorEventSink::new()),
+        "named-volume-folder-copy",
+        &make_state(),
+        Arc::clone(&source),
+        &[PathBuf::from("/original")],
+        Arc::clone(&dest),
+        Path::new("/nested"),
+        &config,
+    )
+    .await;
+    assert!(result.is_ok(), "{result:?}");
+    assert!(dest.exists(Path::new("/nested/renamed/file.txt")).await);
+    assert!(dest.is_directory(Path::new("/nested/renamed/empty")).await.unwrap());
+    assert!(!dest.exists(Path::new("/nested/original")).await);
+}
+
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn a_file_where_the_destination_folder_should_be_is_named_and_nothing_is_written() {
     // `/photos/2026` is a FILE, and the copy is told to land in it and then in

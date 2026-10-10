@@ -57,7 +57,9 @@ mod remote;
 mod routing;
 
 pub(crate) use compress::compress_start;
+#[cfg(test)]
 pub(crate) use copy_into::route_archive_copy_into;
+pub(crate) use copy_into::route_archive_copy_into_with_provenance;
 pub(crate) use driver::{ArchiveEditRequest, archive_edit_start, route_archive_delete};
 pub(crate) use move_out::route_archive_move_out;
 pub(crate) use routing::{
