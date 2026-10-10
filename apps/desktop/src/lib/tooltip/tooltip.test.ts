@@ -90,6 +90,59 @@ describe('tooltip', () => {
 
   // Typing or moving the pane cursor must clear the tooltip the way OS-native ones do: a tooltip
   // hovering over the file list obstructs the very rows you're arrowing through.
+  // Regression: with the volume switcher open, a file row behind it still showed its tooltip, drawn
+  // over the menu (tooltips sit above every layer). A macOS menu owns the screen while it's open, so
+  // only the menu's own rows show one.
+  describe('while a menu is open', () => {
+    function openMenu(): HTMLElement {
+      const surface = document.createElement('div')
+      surface.setAttribute('data-menu', '')
+      document.body.appendChild(surface)
+      return surface
+    }
+
+    it('a trigger behind the menu shows nothing', () => {
+      openMenu()
+      const row = makeTrigger()
+      tooltip(row, 'report.pdf')
+      row.dispatchEvent(new MouseEvent('mouseenter'))
+      vi.advanceTimersByTime(500)
+
+      expect(document.querySelector('.cmdr-tooltip.visible')).toBeNull()
+    })
+
+    it('a show already pending when the menu opens is dropped', () => {
+      const row = makeTrigger()
+      tooltip(row, 'report.pdf')
+      row.dispatchEvent(new MouseEvent('mouseenter'))
+      openMenu()
+      vi.advanceTimersByTime(500)
+
+      expect(document.querySelector('.cmdr-tooltip.visible')).toBeNull()
+    })
+
+    it("the menu's own rows and its submenu's still show theirs", () => {
+      const surface = openMenu()
+      const row = makeTrigger()
+      surface.appendChild(row)
+      tooltip(row, 'Connects when picked')
+      row.dispatchEvent(new MouseEvent('mouseenter'))
+      vi.advanceTimersByTime(500)
+      expect(document.querySelector('.cmdr-tooltip.visible')?.textContent).toContain('Connects when picked')
+
+      row.dispatchEvent(new MouseEvent('mouseleave'))
+      const submenu = document.createElement('div')
+      submenu.setAttribute('data-menu-submenu', '')
+      document.body.appendChild(submenu)
+      const child = makeTrigger()
+      submenu.appendChild(child)
+      tooltip(child, 'Rename')
+      child.dispatchEvent(new MouseEvent('mouseenter'))
+      vi.advanceTimersByTime(500)
+      expect(document.querySelector('.cmdr-tooltip.visible')?.textContent).toContain('Rename')
+    })
+  })
+
   describe('hides on keypress', () => {
     it('hides a visible tooltip when a key is pressed', () => {
       const el = makeTrigger()

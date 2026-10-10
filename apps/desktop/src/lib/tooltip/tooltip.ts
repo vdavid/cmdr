@@ -240,11 +240,28 @@ function positionTooltip(triggerEl: HTMLElement): void {
   tip.style.top = String(top) + 'px'
 }
 
+/** A house menu's surface or its submenu (`ui/Menu.svelte`), the one place a tooltip may show while a menu is open. */
+const MENU_SURFACE_SELECTOR = '[data-menu], [data-menu-submenu]'
+
+/**
+ * Whether an open menu covers the app for this trigger: like a macOS menu, which owns the screen
+ * while it's up, only its own rows show tooltips. Tooltips sit above every layer, so a file row's
+ * would otherwise draw right over the menu. Read at show time, so a show already pending when the
+ * menu opened is dropped too.
+ */
+function isBehindOpenMenu(triggerEl: HTMLElement): boolean {
+  return document.querySelector(MENU_SURFACE_SELECTOR) !== null && triggerEl.closest(MENU_SURFACE_SELECTOR) === null
+}
+
 function showTooltip(triggerEl: HTMLElement, param: TooltipParam): void {
   // The trigger may have been removed from the DOM during the show delay (e.g. a virtual-scroll row
   // recycled while hovered). Never show against a detached element: its rect is all-zero, which would
   // place the tooltip in the top-left corner.
   if (isTriggerDetached(triggerEl)) return
+  if (isBehindOpenMenu(triggerEl)) {
+    if (openListener?.node === triggerEl) notifyClosed()
+    return
+  }
   // An `onOpenChange` caller that mounted nothing in time has nothing to show; an empty box is worse.
   if (hasNoContent(param)) {
     if (openListener?.node === triggerEl) notifyClosed()

@@ -473,6 +473,12 @@ corner. Two guards prevent this and must both stay: (1) the action's `destroy()`
 zero-rect heuristic — happy-dom reports zero rects for every connected element, so it false-positives the whole test
 suite. Covered by `tooltip.test.ts`.
 
+**While a menu is open, only its rows show tooltips.** Tooltips sit at `--z-tooltip`, above every layer, so a file row
+behind the open volume switcher once drew its tooltip right over the menu. `showTooltip` drops a show whose trigger is
+outside `[data-menu]` / `[data-menu-submenu]` while one is in the document, read at show time so a show pending when the
+menu opened is dropped too. This matches macOS, where an open menu owns the screen. Covered by `tooltip.test.ts` §
+"while a menu is open".
+
 ### InfoTip
 
 `InfoTip.svelte` packages the commonest `contentEl` shape: an info glyph whose whole job is to hold the long version of
