@@ -262,16 +262,17 @@
                 {/if}
             </span>
             {#if typeof content === 'string'}
-                <div>
-                    <span class="toast-message">{content}</span>
-                    {#if showSendErrorReport}
-                        <div class="toast-actions">
-                            <Button size="mini" variant="secondary" onclick={handleSendErrorReport}>
-                                {tString('ui.toast.sendErrorReport')}
-                            </Button>
-                        </div>
-                    {/if}
-                </div>
+                <!-- Inline, right beside the corner, ❌ never inside a block row: a browser leaves a
+                     float out of a block sibling's width, so a short message got a box as narrow as
+                     its text and broke mid-word around the corner ("Copie / d 1 / file."). -->
+                <span class="toast-message">{content}</span>
+                {#if showSendErrorReport}
+                    <div class="toast-actions">
+                        <Button size="mini" variant="secondary" onclick={handleSendErrorReport}>
+                            {tString('ui.toast.sendErrorReport')}
+                        </Button>
+                    </div>
+                {/if}
             {:else}
                 {@const ContentComponent = content}
                 <!-- `toastId` goes to EVERY component toast, props or not: a body that

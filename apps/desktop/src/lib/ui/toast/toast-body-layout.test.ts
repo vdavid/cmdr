@@ -90,6 +90,32 @@ describe('toast body layout contract', () => {
     expect(target.querySelector('.toast-content')?.firstElementChild?.classList.contains('toast-corner')).toBe(true)
   })
 
+  // A toast sizes itself to its content, and a browser leaves a float out of a block sibling's
+  // max-content width. So a short string in a block row got a box exactly as wide as the text, the
+  // corner then took ~40px of its first line, and "Copied 1 file." broke as "Copie / d 1 / file."
+  // (WebKit and Chromium alike). Inline beside the float, the corner counts toward the width.
+  it('renders a string message inline, right beside the corner float', async () => {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(ToastItem, {
+      target,
+      props: {
+        id: 'inline-message',
+        content: 'Copied 1 file.',
+        level: 'info',
+        dismissal: 'persistent',
+        timeoutMs: 0,
+        postedAt: Date.now(),
+        onTimeout: vi.fn(),
+        onUserDismiss: vi.fn(),
+      },
+    })
+    await tick()
+
+    const corner = target.querySelector('.toast-content > .toast-corner')
+    expect(corner?.nextElementSibling?.classList.contains('toast-message')).toBe(true)
+  })
+
   it('finds the toast bodies', () => {
     expect(bodyFiles.length).toBeGreaterThan(25)
   })

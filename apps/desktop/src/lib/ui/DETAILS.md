@@ -1189,6 +1189,12 @@ every toast body keeps this contract:
   rules in `ToastItem`). A row that sets its own `margin-top` sets its whole distance from the row above, so the usual
   buttons row says `--spacing-lg`. Rows below the first can be flex (a buttons row, the downloads lesson); keep the
   first row plain text with any glyph inline, so its lines wrap around the corner.
+- **The corner counts toward a toast's width only beside inline text.** A toast sizes to its content, and browsers leave
+  a float out of a BLOCK sibling's max-content width, so a short string in a block row got a box as narrow as its text
+  and broke mid-word around the corner ("Copie / d 1 / file.", verified in Playwright WebKit 26.6 and Chromium,
+  2026-10-10). A string toast's `.toast-message` is therefore an inline sibling of the corner. A component body's first
+  row is a block, so a body whose first row is shorter than the box can still hit this; keep such first rows long, or
+  render the line inline.
 - **Decision: CSS floats do the wrapping.** `@chenglou/pretext` lays out plain text lines in JS, and a toast body is
   rich markup (chips, links, `<Trans>` sentences, buttons) that it can't lay out, while a float costs no JS at all.
 - **A long unbroken run breaks inside the box.** `.toast-content` sets `overflow-wrap: anywhere`, inherited by every
