@@ -680,6 +680,7 @@
         getCurrentVolumeInfo: () => currentVolumeInfo,
         getVolumePath: () => volumePath,
         getCurrentPath: () => currentPath,
+        getEnteredPath: () => initialPath,
         enter: (change) => { breadcrumb.handleVolumeChange(change) },
         landingOf: placeRootOf,
         goBack: () => onGoBack?.(),

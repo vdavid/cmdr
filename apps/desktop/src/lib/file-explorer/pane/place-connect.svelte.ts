@@ -36,6 +36,12 @@ export interface PlaceConnectDeps {
   /** The folder the pane stands in. */
   getCurrentPath: () => string
   /**
+   * The folder the pane was last sent to, committed TOGETHER with `getVolumeId()`. ❗ The
+   * follow below reads this, ❌ never `getCurrentPath()`: that one catches up an effect
+   * after a volume switch, so for one run it still names the previous volume's folder.
+   */
+  getEnteredPath: () => string
+  /**
    * Enters the volume: the route a switcher pick takes, so the pane's root, its
    * path, its listing, and its disk space all move together. Used once the place
    * is live, and whenever a live share's mount path isn't the root the pane holds.
@@ -84,21 +90,23 @@ export function createPlaceConnect(deps: PlaceConnectDeps): PlaceConnect {
     // `statfs`'s, so it is the one to trust.
     if (info && volumeScheme(volumeId) === 'smb' && isLiveSession(info.connectionState)) {
       const root = deps.getVolumePath()
+      const entered = deps.getEnteredPath()
       // ❗ Also when the root matches but the folder is outside the mount: a mount that
       // finished after a Cancel left the pane at the stale saved path, listing "Not
       // connected yet" over a share that was live elsewhere (final QA).
-      const outside = !isAtOrUnder(deps.getCurrentPath(), info.path)
-      if ((info.path !== root || outside) && followed !== `${volumeId}:${info.path}:${deps.getCurrentPath()}`) {
-        followed = `${volumeId}:${info.path}:${deps.getCurrentPath()}`
-        log.info('The share {volumeId} is mounted at {path}, not {root}; following it', {
+      const outside = !isAtOrUnder(entered, info.path)
+      if ((info.path !== root || outside) && followed !== `${volumeId}:${info.path}:${entered}`) {
+        followed = `${volumeId}:${info.path}:${entered}`
+        log.info('The share {volumeId} is mounted at {path}, not {root} (pane sent to {entered}); following it', {
           volumeId,
           path: info.path,
           root,
+          entered,
         })
         deps.enter({
           volumeId,
           volumePath: info.path,
-          targetPath: rebaseOnRoot(deps.getCurrentPath(), root, info.path),
+          targetPath: rebaseOnRoot(entered, root, info.path),
         })
       }
     }

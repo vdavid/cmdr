@@ -58,6 +58,7 @@ describe('createPlaceConnect on a server entered at a deep folder', () => {
         getCurrentVolumeInfo: () => savedPlace,
         getVolumePath: () => savedPlace.path,
         getCurrentPath: () => deep,
+        getEnteredPath: () => deep,
         enter,
       })
     })
@@ -114,6 +115,7 @@ describe('createPlaceConnect', () => {
         getCurrentVolumeInfo: () => info,
         getVolumePath: () => savedPlace.path,
         getCurrentPath: () => savedPlace.path,
+        getEnteredPath: () => savedPlace.path,
         enter,
       })
     })
@@ -314,6 +316,7 @@ describe('createPlaceConnect: a saved SMB share', () => {
   let shareInfo = $state<VolumeInfo>({ ...savedShare })
   let volumePath = $state('/Volumes/naspi')
   let currentPath = $state('/Volumes/naspi/docs')
+  let enteredPath = $state('/Volumes/naspi/docs')
 
   let sub: PlaceConnect | undefined
 
@@ -325,6 +328,7 @@ describe('createPlaceConnect: a saved SMB share', () => {
         getCurrentVolumeInfo: () => shareInfo,
         getVolumePath: () => volumePath,
         getCurrentPath: () => currentPath,
+        getEnteredPath: () => enteredPath,
         enter,
         landingOf,
       })
@@ -338,6 +342,7 @@ describe('createPlaceConnect: a saved SMB share', () => {
     shareInfo = { ...savedShare }
     volumePath = '/Volumes/naspi'
     currentPath = '/Volumes/naspi/docs'
+    enteredPath = '/Volumes/naspi/docs'
     connectPlace.mockResolvedValue({ kind: 'connected', volumeId: savedShare.id })
     // Every folder is there unless a cell says otherwise.
     resolveValidPath.mockImplementation((path: string) => Promise.resolve(path))
@@ -424,6 +429,7 @@ describe('createPlaceConnect: a saved SMB share', () => {
   it('follows a live share when the pane stands outside its mount, even with the right root', () => {
     shareInfo = { ...savedShare, category: 'attached_volume', connectionState: 'direct' }
     currentPath = '/Volumes/naspi-1'
+    enteredPath = '/Volumes/naspi-1'
     const enter = create()
     expect(enter).toHaveBeenCalledWith({
       volumeId: savedShare.id,
@@ -480,6 +486,21 @@ describe('createPlaceConnect: a saved SMB share', () => {
 
   it('leaves a live share alone when the pane already stands on its mount path', () => {
     shareInfo = { ...savedShare, category: 'attached_volume', connectionState: 'direct' }
+    const enter = create()
+    expect(enter).not.toHaveBeenCalled()
+  })
+
+  /**
+   * ❗ A switch onto a live share from another volume commits the share and its folder
+   * together, but the pane's own folder catches up an effect later, so for one run it
+   * still names the PREVIOUS volume's folder. Reading that as "outside the mount"
+   * re-entered the share at its root, and the switch then landed on the remembered
+   * folder: Go to path `/Volumes/public/docs` from `~/Downloads` came to rest at
+   * `/Volumes/public` (verified in the dev app, 2026-10-10).
+   */
+  it('leaves a live share alone while the pane catches up with a switch onto it', () => {
+    shareInfo = { ...savedShare, category: 'attached_volume', connectionState: 'direct' }
+    currentPath = '/Users/ada/Downloads'
     const enter = create()
     expect(enter).not.toHaveBeenCalled()
   })

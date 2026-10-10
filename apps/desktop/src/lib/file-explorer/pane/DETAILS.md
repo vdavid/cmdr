@@ -539,7 +539,10 @@ no session behind it, so every listing on it would refuse until something dials.
   pane stands in is outside it, and `connected` / `already_live` land at the LIVE path before the saved row's remembered
   one. ❗ A kernel mount can finish after a Cancel without updating the saved row: the pane then sat at the stale path
   listing "Not connected yet" over a live share, and Try again landed there again. A `cancelled` answer over a place
-  that is live by then shows no "isn't connected" view.
+  that is live by then shows no "isn't connected" view. ❗ "The folder" is the one the pane was SENT to
+  (`getEnteredPath`, the `initialPath` prop committed with the volume id), ❌ never the pane's own `currentPath`: that
+  catches up an effect after a switch, so it still named the previous volume's folder, the follow re-entered the share
+  at its root, and Go to path into a share folder from another volume came to rest on the remembered folder.
 - **A failed listing lists again the moment its volume is live** (`live-retry.svelte.ts`), by any route and with no
   timing assumptions, once per live spell so a real error can't loop. ❗ The structural answer to the Cancel race: a
   Cancel within ~20 ms of a pick left "Not connected yet" over a share whose mount then finished; whatever order the
