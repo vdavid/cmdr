@@ -251,6 +251,7 @@
 
     <div class="sheet">
         <div class="controls">
+            <!-- First: the masks and the placeholders they take. -->
             <div class="fields">
                 <div class="masks">
                     <label class="field grow">
@@ -287,42 +288,8 @@
                 </div>
             </div>
 
-            <!-- What changes the whole name, beside the masks: option and key, the keys on one
-                 right edge, each a quiet ⌘⌥ chip. -->
-            <div class="options">
-                <span class="option-row">
-                    <span class="case-field" bind:this={caseField}>
-                        <span class="label">{tString('multiRename.case')}</span>
-                        <Select
-                            items={caseItems}
-                            value={tool.spec.case}
-                            onChange={(v: string) => { tool.update({ case: v as CaseChange }) }}
-                            ariaLabel={tString('multiRename.case')}
-                        />
-                    </span>
-                    <span class="option-key" aria-hidden="true">
-                        <ShortcutChip commandId="multiRename.letterCase" clickable={false} size="sm" />
-                    </span>
-                </span>
-                <span class="option-row">
-                    <!-- One grid cell: `Checkbox` renders more than one element. -->
-                    <span class="option-control">
-                        <Checkbox
-                            checked={tool.spec.removeDiacritics}
-                            onCheckedChange={(on: boolean) => { tool.update({ removeDiacritics: on }) }}
-                        >
-                            {tString('multiRename.removeDiacritics')}
-                        </Checkbox>
-                    </span>
-                    <!-- The key, quiet: a hint for next time, never a control (it can't be rebound). -->
-                    <span class="option-key" aria-hidden="true">
-                        <ShortcutChip commandId={TOGGLE_COMMANDS.removeDiacritics} clickable={false} size="sm" />
-                    </span>
-                </span>
-            </div>
-
-            <!-- The full width under both: the search, the replacement, and the search's own
-                 options as chips level with the fields. -->
+            <!-- Second: the search, the replacement, and the search's own options as chips
+                 level with the fields. -->
             <div class="search">
                 <label class="field grow">
                     <span class="label">{tString('multiRename.search')}</span>
@@ -342,6 +309,40 @@
                     />
                 </label>
                 <SearchOptionChips spec={tool.spec} onToggle={toggle} rendered={examples} />
+            </div>
+
+            <!-- Third, as the rename runs them after search & replace: what changes the whole
+                 name, each option with its quiet ⌘⌥ key chip. -->
+            <div class="options">
+                <span class="option-row">
+                    <span class="case-field" bind:this={caseField}>
+                        <span class="label">{tString('multiRename.case')}</span>
+                        <Select
+                            items={caseItems}
+                            value={tool.spec.case}
+                            onChange={(v: string) => { tool.update({ case: v as CaseChange }) }}
+                            ariaLabel={tString('multiRename.case')}
+                        />
+                    </span>
+                    <span class="option-key" aria-hidden="true">
+                        <ShortcutChip commandId="multiRename.letterCase" clickable={false} size="sm" />
+                    </span>
+                </span>
+                <span class="option-row">
+                    <!-- One flex item: `Checkbox` renders more than one element. -->
+                    <span class="option-control">
+                        <Checkbox
+                            checked={tool.spec.removeDiacritics}
+                            onCheckedChange={(on: boolean) => { tool.update({ removeDiacritics: on }) }}
+                        >
+                            {tString('multiRename.removeDiacritics')}
+                        </Checkbox>
+                    </span>
+                    <!-- The key, quiet: a hint for next time, never a control (it can't be rebound). -->
+                    <span class="option-key" aria-hidden="true">
+                        <ShortcutChip commandId={TOGGLE_COMMANDS.removeDiacritics} clickable={false} size="sm" />
+                    </span>
+                </span>
             </div>
         </div>
 
@@ -456,16 +457,12 @@
         min-height: 0;
     }
 
-    /* The masks and placeholders on the left, the whole-name options beside them, and the
-       search row across both. */
+    /* Three rows across the full width, in the order a rename runs them: the masks, search &
+       replace, then case and diacritics. A wider gap between them than inside them. */
     .controls {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) auto;
-        gap: var(--spacing-md) var(--spacing-lg);
-    }
-
-    .search {
-        grid-column: 1 / -1;
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-lg);
     }
 
     .fields {
@@ -509,27 +506,22 @@
         flex-wrap: wrap;
     }
 
-    /* Two columns, option and key, so the keys line up on one right edge; the two rows share
-       the masks' and placeholders' height, so the column sits level with them. */
+    /* One row of whole-name options, each with its key chip beside it. */
     .options {
-        display: grid;
-        grid-template-columns: auto auto;
-        align-content: space-evenly;
-        gap: var(--spacing-sm) var(--spacing-lg);
-        padding-left: var(--spacing-lg);
-        border-left: 1px solid var(--color-border);
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--spacing-sm) var(--spacing-xl);
     }
 
     .option-control {
         display: flex;
     }
 
-    /* One row: the option and its key share the column tracks and center on each other. */
     .option-row {
-        grid-column: 1 / -1;
-        display: grid;
-        grid-template-columns: subgrid;
+        display: flex;
         align-items: center;
+        gap: var(--spacing-sm);
     }
 
     .case-field {
@@ -541,7 +533,6 @@
     /* The key hint stays quiet: tertiary text on no fill, so it doesn't shout. */
     .option-key {
         display: flex;
-        justify-content: flex-end;
     }
 
     .option-key :global(.shortcut-chip) {

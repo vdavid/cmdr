@@ -66,11 +66,11 @@
 
 ## Layout and option keys
 
-- **Layout**: a grid. Top left, the name mask (grows) and the extension mask (140 px), then the placeholder buttons. Top
-  right, past a hairline, what changes the whole name: Letter case and Remove diacritics, each with its key chip, in a
-  two-column grid (`subgrid` rows, so the chips share one right edge), its two rows spread over the masks' height.
-  Across the full width under both: Search for, Replace with, and the search option chips, so their right edge lines up
-  with the key chips above. Each `Checkbox` sits in a wrapper span, since it renders more than one element.
+- **Layout**: three full-width rows, in the order a rename runs them (`plan.rs` → `CompiledTransform::apply`: mask,
+  search & replace, case, diacritics), a `--spacing-lg` gap between them. First the name mask (grows) and the extension
+  mask (140 px), with the placeholder buttons under them; then Search for, Replace with, and the search option chips;
+  then Letter case and Remove diacritics, each with its dim key chip. Each `Checkbox` sits in a wrapper span, since it
+  renders more than one element.
 - **Search option chips** (`SearchOptionChips`): Match case `Aa`, First match only `1×`, Include extension `.ext`,
   Regular expression `.*`, Replace whole name `^$` (the regex way to say "the whole string"). Code-editor style find
   toggles: mono glyphs, `aria-hidden`, on the button an `aria-label` with the full name and `aria-pressed`; on is the
